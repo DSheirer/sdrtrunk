@@ -1,0 +1,9 @@
+#summary System
+
+= System =
+
+A system is a top-level folder for managing a set of sites and channels.  Use a different system for each trunked radio network, or to organize a collection of related sites and channels.
+
+= Creating a System =
+
+Expand the [Playlist] folder and the [Systems] folder.
