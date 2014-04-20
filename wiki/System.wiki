@@ -4,6 +4,8 @@
 
 A system is a top-level folder for managing a set of sites and channels.  Use a different system for each trunked radio network, or to organize a collection of related sites and channels.
 
+When a channel within the system is actively decoding, the system icon is colored Green.
+
 http://sdrtrunk.googlecode.com/svn/wiki/images/System.png
 
 = Creating a New System =
