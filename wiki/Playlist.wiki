@@ -1,3 +1,11 @@
 #summary Playlist
 
 = Playlist =
+
+The playlist folder contains
+
+  * [Systems]
+  * ChannelMaps
+  * AliasLists
+
+http://sdrtrunk.googlecode.com/svn/wiki/images/Configuration.png
