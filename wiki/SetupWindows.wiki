@@ -1,0 +1,8 @@
+#summary SDRTrunk setup instructions for Windows
+
+1. Copy program files to your computer.
+2. Execute the run_SDRTrunk.bat script
+
+{{{
+C:\SDRTRunk\run_SDRTrunk.bat
+}}}
