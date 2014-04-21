@@ -4,7 +4,7 @@
 
 http://sdrtrunk.googlecode.com/svn/wiki/images/FuncubeDonglePro.png
 
-=== Tuner Configurations ===
+== Tuner Configurations ==
 
 SDRTrunk allows you to define multiple named tuner configurations per tuner type.  A *Default* configuration is automatically created the first time you use each specific tuner type and will be recreated again if you accidentally delete or rename the *Default* configuration.
 
