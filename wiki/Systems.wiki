@@ -1,0 +1,5 @@
+#summary Systems description
+
+= Introduction =
+
+The Systems folder contains all of the [System systems] in the playlist.
