@@ -8,11 +8,11 @@ http://sdrtrunk.googlecode.com/svn/wiki/images/ChannelMap.png
 
 == Create a Channel Map ==
 
-Right-click on the Channel Maps folder and selected 'New Channel Map'
+Right-click on the Channel Maps folder and selected *New Channel Map*
 
 == Delete a Channel Map ==
 
-Right-click on the Channel Map and select 'Delete'
+Right-click on the Channel Map and select *Delete*
 
 == Channel Ranges ==
 
