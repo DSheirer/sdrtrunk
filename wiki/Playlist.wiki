@@ -5,7 +5,7 @@
 The playlist folder contains
 
   * [System Systems]
-  * ChannelMaps
-  * AliasLists
+  * [ChannelMap Channel Maps]
+  * [AliasList Alias Lists]
 
 http://sdrtrunk.googlecode.com/svn/wiki/images/Configuration.png
