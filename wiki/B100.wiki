@@ -3,3 +3,5 @@
 = Ettus Research B100 with WBX Daughter Card =
 
 Coming soon.
+
+https://www.ettus.com/product/details/UB100D-BDL
