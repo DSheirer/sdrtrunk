@@ -1,4 +1,4 @@
-#summary Channel
+#summary Channel description
 
 = Channel =
 
