@@ -40,4 +40,4 @@ The info tab displays information about the tuner:
   * *Cellular Band* - indicates if the cellular band is blocked or unblocked for this tuner
   * *Firmware* - firmware revision
 
-Note: firmware on the www.funcube.com website is identified by a major revision and letter.  Convert the listed firmware minor revision number to a letter to identify the correct firmware revision on the funcube website.
+Note: firmware on the http://www.funcubedongle.com/?page_id=313 website is identified by a major revision and letter.  Convert the listed firmware minor revision number to a letter to identify the correct firmware revision on the funcube website.  For example, firmware *18.10* is listed as *18j* on the funcube website.
