@@ -2,7 +2,7 @@
 
 = Tuner =
 
-The Tuners folder contains a listing of all recognized tuners that are automatically discovered upon startup of the SDRTrunk application.  Each tuner displays the tuner type, name, serial number (if known), and the currently tuned frequency and bandwidth/sample rate.
+The Tuners folder contains a listing of all recognized tuners that are automatically discovered upon startup of the SDRTrunk application.  Each tuner displays the tuner type, name, serial number (if known), and the currently tuned frequency and [bandwidth/sample] rate.
 
 http://sdrtrunk.googlecode.com/svn/wiki/images/Tuners.png
 
