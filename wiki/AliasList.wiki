@@ -1,0 +1,5 @@
+#summary Alias List description
+
+= Alias List =
+
+Contains a list of [AliasGroup Alias Groups] and [Alias Aliases] used by the decoder to assign an alias name to one or more identifiers produced by the decoder.
