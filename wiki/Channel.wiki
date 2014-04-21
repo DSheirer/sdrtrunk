@@ -32,3 +32,13 @@ The source tab allows you to specify the source for raw sampled data to feed the
   * *No Source* - this is the default source when a new channel is created.  You cannot decode a channel with this source.
   * *Mixer/Sound Card* - allows you to use an external radio scanner with the audio output or discriminator tapped audio from the scanner patched to a sound card input on the computer.  Select the Mixer (Sound Card) and Channel for the sound card where you have the scanner audio patched.
   * *Tuner* - allows you to specify a radio frequency as the source for raw samples.  You must have a [Tuner] attached to your computer and it must appear in the list of [Tuners] in the SDRTrunk [Configuration] window.  If no tuners are attached, or if none of the attached tuners can tune the requested frequency, the channel will indicated 'No Tuner' when you enable it.
+
+=== Decoder Tab ===
+
+The decoder tab provides a list of available primary decoders to select for the channel.  Only one primary decoder can be selected per channel.  If you want to run multiple primary decoders, create additional channels, each with a different primary decoder.
+
+  * *[LTRStandardDecoder LTR-Standard]* - FM demodulator and Logic Trunked Radio (LTR) trunked radio signaling decoder
+  * *[LTRNetDecoder LTR-Net]* - FM demodulator and LTR-Net trunked radio signaling decoder
+  * *[MPT1327Decoder MPT-1327]* - FM demodulator and MPT-1327 trunked radio signaling decoder.  Provides automatic traffic channel following.
+  * *[NBFMDecoder NBFM]* - narrow-band FM demodulator.
+  * *[PassportDecoder Passport]* - FM demodulator and Passport trunked radio signaling decoder.
