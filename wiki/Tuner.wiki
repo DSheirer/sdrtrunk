@@ -16,7 +16,7 @@ The following tuners are currently supported or will soon be supported by the SD
   * *[HackRF HackRF]* - (coming soon after they are shipped)
   * *[E4000 RTL-2832 with Elonics E4000]*
   * *[R820T RTL-2832 with Rafael Micro R820T]* - (coming soon)
-  * *[FC0012 RTL-2832 with Fitipower FC0012]* - (coming soon)
+  * *[FC0012 RTL-2832 with Fitipower FC0013]* - (coming soon)
 
 == Tuner Management ==
 
