@@ -25,7 +25,7 @@ SDRTrunk manages all tuners as a pooled set of resources.  As you enable channel
 Each tuner can source one or more channel frequencies, as long as the set of channel frequencies fit within the current center tuned frequency and bandwidth (sample rate) of the tuner.  As additional channels are sourced by the tuner, the tuner controller will automatically tune the center frequency to provide a best-fit of all of the requested channels, while ensuring that no channels overlap the DC-spike normally present in the center of the spectrum for these types of tuners.
 
 == Visualizing the Tuner Spectrum ==
-On startup, SDRTrunk automatically displays the first discovered tuner in the [SpectralDisplay Spectral Display].  All tuners can be displayed in the main spectral display or in additonal spectral display windows.
+On startup, SDRTrunk automatically displays the first discovered tuner in the [SpectralDisplay Spectral Display].  All tuners can be displayed in the main spectral display or in additional spectral display windows.
 
   * *Application Spectral Display* - right-click on any of the tuners and select *Show in Main Spectrum* to show the spectral display for that tuner in the main application display.
 
