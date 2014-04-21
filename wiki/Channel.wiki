@@ -14,6 +14,12 @@ Right-click on a [Site] folder and select 'New Channel'.
 
 Right-click on the [Channel] and select 'Delete'
 
+== Starting/Stopping Channel Decoding==
+
+Use the Enabled check box in the channel configuration to turn decoding on or off.  Once you save the configuration, the channel will automatically start decoding, if enabled.
+
+*Quick Start* - right-click on the channel in the configuration window, or right-click on the channel in the spectral display and selected 'Enable' or 'Disable' to turn the decoder on or off with one click.
+
 == Channel Configuration ==
 
   * *Enabled* - turns the channel on/off for decoding.
