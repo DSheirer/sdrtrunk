@@ -8,7 +8,7 @@ http://sdrtrunk.googlecode.com/svn/wiki/images/Tuners.png
 
 == Supported Tuners ==
 
-The following tuners are currently supported or will soon be supported by the SDRTrunk application.  Additional tuners may be added to the application in the future.
+The following tuners are currently supported or will soon be supported by the SDRTrunk application.  Additional tuner support may be added in the future.
 
   * *[B100 Ettus B100/WBX Daughter Card]* - (coming soon).  SDRTrunk will recognize the B100 but it will not allow you to use or configure the B100
   * *[FuncubeDonglePro Funcube Dongle Pro] (1.0)*
