@@ -1,0 +1,7 @@
+#summary RTL-2832 with Rafael Micro R820T Tuner description
+
+= RTL-2832 with Rafael Micro R820T Tuner =
+
+Coming soon.
+
+http://www.nooelec.com/store/sdr/sdr-receivers.html
