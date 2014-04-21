@@ -1,4 +1,4 @@
-#summary Playlist
+#summary Playlist description
 
 = Playlist =
 
