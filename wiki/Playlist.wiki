@@ -2,10 +2,12 @@
 
 = Playlist =
 
-The playlist folder contains
+The playlist contains a folder for each of the following:
 
   * [System Systems]
   * [ChannelMap Channel Maps]
   * [AliasList Alias Lists]
+
+Note: the Systems, Channel Maps and Alias Lists folders cannot be deleted or changed.
 
 http://sdrtrunk.googlecode.com/svn/wiki/images/Configuration.png
