@@ -22,12 +22,22 @@ All changes to a named configuration are automatically saved.
 
   * *Configuration Selection List* - selects a named configuration to use.  Automatically applies the corresponding settings to the tuner
   * *Name* - tuner configuration name.
+  * *Correction Tab - Frequency PPM* - correction value to align the currently tuned frequency with the frequency display values.  Increasing the value causes the frequency display to move to the left and vice-versa.
+  * *Correction Tab - DC Inphase* - corrects for DC offset in the Inphase component
+  * *Correction Tab - DC Quadrature* - corrects for DC offset in the Quadrature component
+  * *Correction Tab - Gain* - corrects for Gain
+  * *Correction Tab - Phase* - corrects for Phase
   * *Gain Tab - LNA* - LNA gain setting
   * *Gain Tab - LNA Enahance* - LNA enhance gain setting
   * *Gain Tab - Mixer* - Mixer gain setting
   * *New* - creates a new named tuner configuration
   * *Delete* - deletes the currently listed tuner configuration
-  * *Info Tab* - displays the current USB port address, cellular band blocking, and firmware revision
-
 
 === Info Tab ===
+The info tab displays information about the tuner:
+
+  * *USB Address* - current USB bus and device port, and USB vendor and product identifiers.
+  * *Cellular Band* - indicates if the cellular band is blocked or unblocked for this tuner
+  * *Firmware* - firmware revision
+
+Note: firmware on the www.funcube.com website is identified by a major revision and letter.  Convert the listed firmware minor revision number to a letter to identify the correct firmware revision on the funcube website.
