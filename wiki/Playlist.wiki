@@ -4,9 +4,9 @@
 
 The playlist contains a folder for each of the following:
 
-  * [System Systems]
-  * [ChannelMap Channel Maps]
   * [AliasList Alias Lists]
+  * [ChannelMap Channel Maps]
+  * [System Systems]
 
 Note: the Systems, Channel Maps and Alias Lists folders cannot be deleted or changed.
 
