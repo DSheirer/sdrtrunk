@@ -1,0 +1,34 @@
+#summary Channel
+
+= Channel =
+
+A channel defines all of the configuration details needed for to setup a radio channel for decoding. When a [Channel] is actively decoding, the system icon is colored Green.  If there is no source available, the channel icon turns red.
+
+http://sdrtrunk.googlecode.com/svn/wiki/images/Channel.png
+
+== Creating a New Channel ==
+
+Right-click on a [Site] folder and select 'New Channel'.
+
+== Deleting a Channel ==
+
+Right-click on the [Channel] and select 'Delete'
+
+== Channel Configuration ==
+
+  * *Enabled* - turns the channel on/off for decoding.
+  * *Name* - name for the channel
+  * *Aliases* - assigns an AliasList to the channel so that any identifiers produced by the decoder can have an [Alias] value.
+  * *Source Tab* - designates the source for raw sampled data to feed the decoder
+  * *Decoder Tab* - designates the primary decoder to use for this channel
+  * *Aux Tab* - identifies additional auxiliary decoders to use in addition to the primary decoder
+  * *Event Log Tab* - logging options for decoded events
+  * *Record Tab* - recording options
+
+=== Source Tab ===
+
+The source tab allows you to specify the source for raw sampled data to feed the primary and auxiliary decoders.
+
+  * *No Source* - this is the default source when a new channel is created.  You cannot decode a channel with this source.
+  * *Mixer/Sound Card* - allows you to use an external radio scanner with the audio output or discriminator tapped audio from the scanner patched to a sound card input on the computer.  Select the Mixer (Sound Card) and Channel for the sound card where you have the scanner audio patched.
+  * *Tuner* - allows you to specify a radio frequency as the source for raw samples.  You must have a [Tuner] attached to your computer and it must appear in the list of [Tuners] in the SDRTrunk [Configuration] window.  If no tuners are attached, or if none of the attached tuners can tune the requested frequency, the channel will indicated 'No Tuner' when you enable it.
