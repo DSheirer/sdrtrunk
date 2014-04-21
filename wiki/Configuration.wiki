@@ -1,0 +1,10 @@
+#summary Configuration window description
+
+= Configuration =
+
+The configuration window uses a tree list to provide access to all of the configurable features and settings in the SDRTrunk application.
+
+  * [Tuner Tuners]
+  * [Playlist Playlist]
+
+http://sdrtrunk.googlecode.com/svn/wiki/images/Configuration.png
