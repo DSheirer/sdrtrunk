@@ -2,6 +2,8 @@
 
 = Elonics E4000 =
 
+http://www.nooelec.com/store/sdr/sdr-receivers.html
+
 http://sdrtrunk.googlecode.com/svn/wiki/images/E4000.png
 
 == Tuner Configurations ==
