@@ -4,7 +4,7 @@
 
 The playlist folder contains
 
-  * [Systems]
+  * [System Systems]
   * ChannelMaps
   * AliasLists
 
