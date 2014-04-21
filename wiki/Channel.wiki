@@ -42,3 +42,22 @@ The decoder tab provides a list of available primary decoders to select for the 
   * *[MPT1327Decoder MPT-1327]* - FM demodulator and MPT-1327 trunked radio signaling decoder.  Provides automatic traffic channel following.
   * *[NBFMDecoder NBFM]* - narrow-band FM demodulator.
   * *[PassportDecoder Passport]* - FM demodulator and Passport trunked radio signaling decoder.
+
+== Aux Tab ==
+The aux tab allows you to select from multiple auxiliary decoders to use in addition to the selected primary decoder.  Auxiliary decoders are used to decode digital radio identification bursts that are used on some trunked and conventional radio systems.
+
+  * *[Fleetsync2Decoder Fleetsync II]* - decodes ANI, Acknowledge, Status, Paging and GPS bursts
+  * *[MDC1200Decoder MDC-1200] - decodes MDC-1200 ANI bursts.
+
+=== Event Log Tab ===
+The event log tab allows you to select from multiple textual logging options.
+
+  * *Binary Messages* - logs raw binary messages created by the decoder.  Each message contains a timestamp, protocol, and a string of binary ones and zeros.
+  * *Decoded Messages* - logs decoded textual messages created by the decoder.
+  * *Call Events* - logs all of the call events that can be seen in the [CallEvents Calls] window.
+
+=== Record Tab ===
+The record tab provides options for recording of the demodulated/decoded audio and/or the raw I/Q samples from a tuner or complex mixer source.
+
+  * *Audio* - records all demodulated audio, uninterrupted and without squelch control in a wave file.
+  * *Baseband I/Q* - records all raw baseband sample data in a two-channel, 16-bits per sample wave file.
