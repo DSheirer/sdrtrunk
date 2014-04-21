@@ -1,5 +1,10 @@
 #summary Getting started with SDRTrunk
 
-= Setup =
-[SetupLinux Linux]
-[SetupWindows Windows]
+== Getting started with SDRTRunk ==
+
+=== Setup ===
+
+  * *[SetupLinux Linux]*
+  * *[SetupWindows Windows]*
+
+=== Application Overview ===
