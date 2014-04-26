@@ -1,3 +1,5 @@
+#summary Overview of the application components
+
 === Application Overview ===
 
 http://sdrtrunk.googlecode.com/svn/wiki/images/Overview.png
@@ -7,4 +9,6 @@ http://sdrtrunk.googlecode.com/svn/wiki/images/Overview.png
   * *[DecodingChannels Decoding Channels]*
   * *[Configuration]
   * *[EditorPanel Editor Panel]*
-  
+  * *[CallEvents Calls]*
+  * *[Messages]*
+  * *[Map]*
