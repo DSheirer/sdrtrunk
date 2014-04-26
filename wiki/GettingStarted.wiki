@@ -16,3 +16,18 @@ http://sdrtrunk.googlecode.com/svn/wiki/images/Overview.png
   * *[DecodingChannels Decoding Channels]*
   * *[Configuration]
   * *Editor Panel*
+  
+=== Quick Start ===
+
+1. Select a tuner to display in the spectral display
+
+2. Tune to a frequency near the channel that you want to decode.  Do not tune
+the channel into the center of the display.  Adjust the frequency so that the
+channel is either to the left or to the right of the center of the display.
+
+3. Right-click on the frequency in the spectral display, choose *Add Decoder* 
+select the type of decoder that you want to use.
+
+4. If a tuner is available, the channel will immediately start decoding with 
+default settings. Select the channel in the *Decoding Channels* window to see 
+call events and decoded messages.   
