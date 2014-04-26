@@ -1,0 +1,1 @@
+java -cp "SDRTrunk.jar;libs/*;config/*;images/*" gui.SDRTrunk
