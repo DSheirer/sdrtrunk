@@ -50,7 +50,7 @@ The decoder tab provides a list of available primary decoders to select for the 
   * *[PassportDecoder Passport]* - FM demodulator and Passport trunked radio signaling decoder.
 
 == Aux Tab ==
-The aux tab allows you to select from multiple auxiliary decoders to use in addition to the selected primary decoder.  Auxiliary decoders are used to decode digital radio identification bursts that are used on some trunked and conventional radio systems.
+The aux tab allows you to select from multiple auxiliary decoders to use in addition to the selected primary decoder.  Auxiliary decoders are used to decode pass-band audio signals like gps and digital radio identification bursts that are used on some trunked and conventional radio systems.
 
   * *[Fleetsync2Decoder Fleetsync II]* - decodes ANI, Acknowledge, Status, Paging and GPS bursts
   * *[MDC1200Decoder MDC-1200] - decodes MDC-1200 ANI bursts.
