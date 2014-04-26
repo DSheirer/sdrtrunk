@@ -77,13 +77,11 @@
     
     <!-- Copy program scripts -->
     <copy todir="${product}">
-	  <fileset dir="${scripts}" excludes="run_sdrtrunk" />
+	  <fileset dir="${scripts}" />
     </copy>
-	<exec executable="cp">
-	  <arg value="${scripts}/run_sdrtrunk" />
-	  <arg value="${product}/run_sdrtrunk" />
-	</exec> 
-  	<chmod file="${product}/run_sdrtrunk" perm="777" />
+
+    <!-- Set linux permissions on start script -->
+  	<chmod file="${product}/run_sdrtrunk_linux" perm="777" />
   </target>
 
   <target name="clean"
