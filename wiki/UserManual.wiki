@@ -1,0 +1,43 @@
+#summary User's manual
+
+= SDRTrunk User's Manual =
+
+  # [ApplicationOverview Application Overview]
+    # [CallEvents Call Events]
+    # [DecodingChannels Decoding Channels List]
+    # [Editor]
+    # [Map]
+    # [Messages]
+    # [SpectralDisplay Spectral Display]
+    # [WaterfallDisplay Waterfall Display]
+  # Aliases
+    # [AliasList Alias List]
+    # [AliasGroup Alias Group]
+    # [Alias]
+  # Auxiliary Decoders
+    # [Fleetsync2 Fleetsync II]
+    # [MDC1200] 
+  # [Configuration]
+    # [AliasList Alias Lists]
+    # [ChannelMap Channel Maps]
+    # [Playlist Playlist]
+  # Decoders
+    # [LTR]
+    # [LTRNet]
+    # [MPT1327]
+    # [NBFM]
+    # [Passport]
+  # Logging
+    # Application Log
+    # [EventLogger Event Log]
+  # [Recorder]
+  # Sources
+    # Sound Card
+    # [Tuner Tuners]
+      # [B100 Ettus Research B100]
+      # [FuncubeDonglePro Funcube Dongle Pro]
+      # [FuncubeDongleProPlus Funcube Dongle Pro Plus]
+      # [E4000 RTL-2832 with E4000 Tuner]
+      # [FC0013 RTL-2832 with FC0013 Tuner]
+      # [R820T RTL-2832 with R820T Tuner]  
+  
