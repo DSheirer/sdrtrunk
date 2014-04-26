@@ -47,23 +47,22 @@ public class MINEditor extends JPanel implements ActionListener
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout() );
-		
-		setBorder( BorderFactory.createTitledBorder( "Mobile ID Number (MIN)" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][grow]" ) );
 
-		mLabelName = new JLabel( "MIN:" );
-		add( mLabelName, "align right" );
+		add( new JLabel( "Mobile ID Number (MIN)" ), "span,align center" );
+
+		add( new JLabel( "MIN:" ) );
 		
 		mTextMIN = new JTextField( mMINNode.getMIN().getMin() );
-		add( mTextMIN, "grow, wrap" );
+		add( mTextMIN, "growx,push" );
 		
 		JButton btnSave = new JButton( "Save" );
 		btnSave.addActionListener( MINEditor.this );
-		add( btnSave );
+		add( btnSave, "growx,push" );
 
 		JButton btnReset = new JButton( "Reset" );
 		btnReset.addActionListener( MINEditor.this );
-		add( btnReset, "wrap" );
+		add( btnReset, "growx,push" );
 	}
 
 	@Override

@@ -20,7 +20,6 @@ package alias.mpt1327;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -35,7 +34,6 @@ public class MPT1327IDEditor extends JPanel implements ActionListener
     private static final long serialVersionUID = 1L;
     private MPT1327IDNode mMPT1327IDNode;
     
-    private JLabel mLabelName;
     private JTextField mTextIdent;
 
 	public MPT1327IDEditor( MPT1327IDNode fsNode )
@@ -46,23 +44,22 @@ public class MPT1327IDEditor extends JPanel implements ActionListener
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout() );
-		
-		setBorder( BorderFactory.createTitledBorder( "MPT-1327" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][grow]" ) );
 
-		mLabelName = new JLabel( "Unit ID:" );
-		add( mLabelName, "align right" );
+		add( new JLabel( "MPT-1327 Radio or Group ID" ), "span,align center" );
+
+		add( new JLabel( "ID:" ) );
 		
 		mTextIdent = new JTextField( mMPT1327IDNode.getMPT1327ID().getIdent() );
-		add( mTextIdent, "grow, wrap" );
+		add( mTextIdent, "growx,push" );
 		
 		JButton btnSave = new JButton( "Save" );
 		btnSave.addActionListener( MPT1327IDEditor.this );
-		add( btnSave );
+		add( btnSave, "growx,push" );
 
 		JButton btnReset = new JButton( "Reset" );
 		btnReset.addActionListener( MPT1327IDEditor.this );
-		add( btnReset, "wrap" );
+		add( btnReset, "growx,push" );
 	}
 
 	@Override
