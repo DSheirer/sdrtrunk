@@ -8,7 +8,7 @@ http://sdrtrunk.googlecode.com/svn/wiki/images/Overview.png
   * *[WaterfallDisplay Waterfall Display]*
   * *[DecodingChannels Decoding Channels]*
   * *[Configuration]
-  * *[EditorPanel Editor Panel]*
+  * *[Editor Editor]*
   * *[CallEvents Calls]*
   * *[Messages]*
   * *[Map]*
