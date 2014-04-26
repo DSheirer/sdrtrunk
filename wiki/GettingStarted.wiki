@@ -11,7 +11,7 @@ http://sdrtrunk.googlecode.com/svn/wiki/images/Overview.png
 
 [ApplicationOverview Application Overview]
 
-=== Quick Start ===
+=== Quick Start - SDR Dongle ===
 
 1. Select a tuner to display in the spectral display
 
@@ -25,3 +25,15 @@ select the type of decoder that you want to use.
 4. If a tuner is available, the channel will immediately start decoding with 
 default settings. Select the channel in the *Decoding Channels* window to see 
 call events and decoded messages.   
+
+=== Quick Start - Sound Card / Scanner Audio ===
+
+1.  Create a new [Channel channel]
+
+2.  In the channel editor select the correct *Mixer* and *Channel* in the source tab, corresponding to where you have patched your scanner audio into the computer.
+
+3.  Select *Enabled*
+
+4.  Hit *Save*.
+
+5.  Select the channel in the [DecodingChannels decoding channels] window to hear the pass-through audio. 
