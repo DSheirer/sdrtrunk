@@ -1,0 +1,11 @@
+#summary MPT1327 decoder description
+
+= MPT-1327 =
+
+The MPT-1327 decoder provides decoding of both control and traffic channel signaling.
+
+== Traffic Channels ==
+
+SDRTrunk will create traffic channels dynamically to follow trunked radio calls as they occur.  This feature requires a channel map and an available tuner that can provide the channel's frequency.
+
+SDRTrunk decodes the traffic channel tear down event broadcast at the end of the call on the traffic channel.  If the decoder misses this event, a timer will end the call after 45 seconds.
