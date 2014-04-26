@@ -34,8 +34,6 @@ public class ESNEditor extends JPanel implements ActionListener
 {
     private static final long serialVersionUID = 1L;
     private ESNNode mESNNode;
-    
-    private JLabel mLabelName;
     private JTextField mTextESN;
 
 	public ESNEditor( ESNNode esnNode )
@@ -47,23 +45,21 @@ public class ESNEditor extends JPanel implements ActionListener
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout() );
-		
-		setBorder( BorderFactory.createTitledBorder( "ESN" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][grow]" ) );
 
-		mLabelName = new JLabel( "ESN:" );
-		add( mLabelName, "align right" );
-		
+		add( new JLabel( "Electronic Serial Number ID" ), "span,align center" );
+
+		add( new JLabel( "ESN:" ) );
 		mTextESN = new JTextField( mESNNode.getESN().getEsn() );
-		add( mTextESN, "grow, wrap" );
+		add( mTextESN, "growx,push" );
 		
 		JButton btnSave = new JButton( "Save" );
 		btnSave.addActionListener( ESNEditor.this );
-		add( btnSave );
+		add( btnSave, "growx,push" );
 
 		JButton btnReset = new JButton( "Reset" );
 		btnReset.addActionListener( ESNEditor.this );
-		add( btnReset, "wrap" );
+		add( btnReset, "growx,push" );
 	}
 
 	@Override

@@ -35,7 +35,6 @@ public class MDC1200IDEditor extends JPanel implements ActionListener
     private static final long serialVersionUID = 1L;
     private MDC1200IDNode mMDC1200IDNode;
     
-    private JLabel mLabelName;
     private JTextField mTextIdent;
 
 	public MDC1200IDEditor( MDC1200IDNode fsNode )
@@ -46,23 +45,21 @@ public class MDC1200IDEditor extends JPanel implements ActionListener
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout() );
-		
-		setBorder( BorderFactory.createTitledBorder( "MDC-1200" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][grow]" ) );
 
-		mLabelName = new JLabel( "Unit ID:" );
-		add( mLabelName, "align right" );
-		
+		add( new JLabel( "MDC-1200 " ), "span,align center" );
+
+		add( new JLabel( "Unit ID:" ) );
 		mTextIdent = new JTextField( mMDC1200IDNode.getMDC1200ID().getIdent() );
-		add( mTextIdent, "grow, wrap" );
+		add( mTextIdent, "growx,push" );
 		
 		JButton btnSave = new JButton( "Save" );
 		btnSave.addActionListener( MDC1200IDEditor.this );
-		add( btnSave );
+		add( btnSave, "growx,push" );
 
 		JButton btnReset = new JButton( "Reset" );
 		btnReset.addActionListener( MDC1200IDEditor.this );
-		add( btnReset, "wrap" );
+		add( btnReset, "growx,push" );
 	}
 
 	@Override

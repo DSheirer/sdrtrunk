@@ -52,27 +52,26 @@ public class FleetsyncIDEditor extends JPanel implements ActionListener
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout() );
-		
-		setBorder( BorderFactory.createTitledBorder( "Fleetsync" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][grow]" ) );
 
-		mLabelName = new JLabel( "Ident:" );
-		add( mLabelName, "align right" );
-		
+		add( new JLabel( "Fleetsync ID" ), "span,align center" );
+
+		add( new JLabel( "Ident:" ) );
 		mTextIdent = new JTextField( mFleetsyncIDNode.getFleetsyncID().getIdent() );
+
 		add( mTextIdent, "grow, wrap" );
 		
 		JButton btnSave = new JButton( "Save" );
 		btnSave.addActionListener( FleetsyncIDEditor.this );
-		add( btnSave );
+		add( btnSave, "growx,push" );
 
 		JButton btnReset = new JButton( "Reset" );
 		btnReset.addActionListener( FleetsyncIDEditor.this );
-		add( btnReset, "wrap" );
+		add( btnReset, "growx,push" );
 		
 		JTextArea helpText = new JTextArea( mHelpText );
 		helpText.setLineWrap( true );
-		add( helpText, "span,grow" );
+		add( helpText, "span,grow,push" );
 	}
 
 	@Override

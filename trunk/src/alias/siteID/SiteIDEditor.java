@@ -48,24 +48,23 @@ public class SiteIDEditor extends JPanel implements ActionListener
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout() );
-		
-		setBorder( BorderFactory.createTitledBorder( "Site ID" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][grow]" ) );
 
-		mLabelName = new JLabel( "Site ID:" );
-		add( mLabelName, "align right" );
+		add( new JLabel( "Site ID" ), "span,align center" );
+
+		add( new JLabel( "Site:" ) );
 		
 		mTextSiteID = new JTextField( 
 				String.valueOf( mSiteIDNode.getSiteID().getSite() ) );
-		add( mTextSiteID, "grow, wrap" );
+		add( mTextSiteID, "growx,push" );
 		
 		JButton btnSave = new JButton( "Save" );
 		btnSave.addActionListener( SiteIDEditor.this );
-		add( btnSave );
+		add( btnSave, "growx,push" );
 
 		JButton btnReset = new JButton( "Reset" );
 		btnReset.addActionListener( SiteIDEditor.this );
-		add( btnReset, "wrap" );
+		add( btnReset, "growx,push" );
 	}
 
 	@Override

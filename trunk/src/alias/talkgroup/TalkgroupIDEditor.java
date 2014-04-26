@@ -62,21 +62,18 @@ public class TalkgroupIDEditor extends JPanel implements ActionListener
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout() );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][][grow]" ) );
 		
-		setBorder( BorderFactory.createTitledBorder( "Talkgroup ID" ) );
-
-		mLabelName = new JLabel( "TGID:" );
-		add( mLabelName, "align right" );
-
+		add( new JLabel( "Talkgroup ID" ), "span,align center" );
+		
+		add( new JLabel( "TGID:" ) );
         mTextTalkgroupID = new JTextField();
 
 		mTextTalkgroupID.setText( mTalkgroupIDNode.getTalkgroupID().getTalkgroup() );
 
-		add( mTextTalkgroupID, "grow, wrap" );
-		
-		mLabelAudio = new JLabel( "Audio:" );
-		add( mLabelAudio, "align right" );
+		add( mTextTalkgroupID, "growx,push" );
+
+		add( new JLabel( "Audio:" ) );
 
 		mComboAudioTypes = new JComboBox<AudioType>();
 
@@ -90,18 +87,19 @@ public class TalkgroupIDEditor extends JPanel implements ActionListener
 			mComboAudioTypes.setSelectedItem( audioType );
 		}
 		
-		add( mComboAudioTypes, "wrap" );
+		add( mComboAudioTypes, "growx,push" );
+		
 		JButton btnSave = new JButton( "Save" );
 		btnSave.addActionListener( TalkgroupIDEditor.this );
-		add( btnSave );
+		add( btnSave, "growx,push" );
 
 		JButton btnReset = new JButton( "Reset" );
 		btnReset.addActionListener( TalkgroupIDEditor.this );
-		add( btnReset, "wrap" );
+		add( btnReset, "growx,push" );
 		
 		JTextArea helpText = new JTextArea( mHelpText );
 		helpText.setLineWrap( true );
-		add( helpText, "span,grow" );
+		add( helpText, "span,grow,push" );
 	}
 
 	@Override

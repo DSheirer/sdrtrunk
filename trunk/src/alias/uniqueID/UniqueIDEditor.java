@@ -48,24 +48,23 @@ public class UniqueIDEditor extends JPanel implements ActionListener
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout() );
-		
-		setBorder( BorderFactory.createTitledBorder( "Unique ID" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][grow]" ) );
 
-		mLabelUniqueID = new JLabel( "Unique ID:" );
-		add( mLabelUniqueID, "align right" );
+		add( new JLabel( "LTR-Net Radio Unique ID" ), "span,align center" );
+
+		add( new JLabel( "Unique ID:" ) );
 		
 		mTextUniqueID = new JTextField( 
 				String.valueOf( mUniqueIDNode.getUniqueID().getUid() ) );
-		add( mTextUniqueID, "grow, wrap" );
+		add( mTextUniqueID, "growx,push" );
 		
 		JButton btnSave = new JButton( "Save" );
 		btnSave.addActionListener( UniqueIDEditor.this );
-		add( btnSave );
+		add( btnSave, "growx,push" );
 
 		JButton btnReset = new JButton( "Reset" );
 		btnReset.addActionListener( UniqueIDEditor.this );
-		add( btnReset, "wrap" );
+		add( btnReset, "growx,push" );
 	}
 
 	@Override
