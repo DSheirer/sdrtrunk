@@ -1,0 +1,96 @@
+<project name="SDRTrunk" default="SDRTrunk" basedir=".">
+  <description>
+    Ant build script for SDRTrunk Decoder Application
+  </description>
+
+  <!-- Build properties -->
+  <property name="classes" location="../classes"/>
+  <property name="configs"  location="../config"/>
+  <property name="images"  location="../images"/>
+  <property name="libs"  location="../imports"/>
+  <property name="license"  location="../license"/>
+  <property name="product"  location="../product"/>
+  <property name="scripts"  location="../scripts"/>
+  <property name="src" location="../src"/>
+
+  <path id="classpath">
+    <fileset dir="${libs}" includes="*.jar" />
+  </path>
+  
+  <target name="init">
+    <!-- Create the classes folder to contain the compiled java classes -->
+    <mkdir dir="${classes}"/>
+  </target>
+
+  <target name="compile" depends="clean,init"
+        description="Compile java classes" >
+    <!-- Compile the java code from ${src} into ${classes} -->
+    <javac srcdir="${src}" 
+           destdir="${classes}" 
+           classpathref="classpath"
+           includeantruntime="false" />
+  </target>
+
+  <target name="SDRTrunk" depends="compile" description="Create SDRTrunk application" >
+    <!-- Create the distribution directory -->
+    <mkdir dir="${product}"/>
+  	
+    <!-- Create jar file -->
+    <jar jarfile="${product}/SDRTrunk.jar" 
+         basedir="${classes}">
+	  <manifest>
+        <attribute name="Main-Class" value="gui.SDRTrunk"/>
+      </manifest>
+	  <fileset dir="${configs}">
+	  	<include name="javax.usb.properties"/>
+	  	<include name="version.properties"/>
+	  </fileset>
+  	  <fileset dir="${license}">
+  	  	<include name="license.txt"/>
+  	  </fileset>
+      
+    </jar>
+    
+    <!-- Copy third-party libraries -->
+    <mkdir dir="${product}/libs"/>
+    <copy todir="${product}/libs">
+	  <fileset dir="${libs}" includes="*.jar" />
+    </copy>
+    
+    <!-- Copy config files -->
+    <mkdir dir="${product}/config"/>
+
+    <copy todir="${product}/config">
+	  <fileset dir="${configs}" />
+    </copy>
+    
+    <!-- Copy image files -->
+    <mkdir dir="${product}/images"/>
+    <copy todir="${product}/images">
+	  <fileset dir="${images}" />
+    </copy>
+    
+    <!-- Copy license file -->
+    <copy todir="${product}">
+	  <fileset dir="${license}" />
+    </copy>
+    
+    <!-- Copy program scripts -->
+    <copy todir="${product}">
+	  <fileset dir="${scripts}" excludes="run_sdrtrunk" />
+    </copy>
+	<exec executable="cp">
+	  <arg value="${scripts}/run_sdrtrunk" />
+	  <arg value="${product}/run_sdrtrunk" />
+	</exec> 
+  	<chmod file="${product}/run_sdrtrunk" perm="777" />
+  </target>
+
+  <target name="clean"
+        description="Clean previous build artifacts" >
+    <!-- Delete the ${classes} and ${product} directory trees -->
+    <delete dir="${classes}"/>
+    <delete dir="${product}"/>
+  </target>
+
+</project>
