@@ -9,5 +9,6 @@ If you are using [AuxiliaryDecoder auxiliary decoders], then the activity summar
 
 The activity summary window can be accessed from any of the channel context menus
 
-  * *[Configuration]* - right-click on a currently decoding channel in the configuration tree   * *[DecodingChannels Decoding Channels]* - right-click on a channel
+  * *[Configuration]* - right-click on a currently decoding channel in the configuration tree
+  * *[DecodingChannels Decoding Channels]* - right-click on a channel
   * *[SpectralDisplay Spectral Display]* - right click on a currently decoding channel overlay
