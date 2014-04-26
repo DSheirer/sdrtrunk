@@ -1,0 +1,7 @@
+#summary Description of the map component
+
+= Map =
+
+The map displays any decoded messages that contain location data, like GPS positions.
+
+The map component uses aliases to determine the display label, icon and color to use when plotting decoded messages.  Update messages from the same entity are chained together.
