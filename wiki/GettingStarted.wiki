@@ -7,16 +7,10 @@
   * *[SetupLinux Linux]*
   * *[SetupWindows Windows]*
 
-=== Application Overview ===
-
 http://sdrtrunk.googlecode.com/svn/wiki/images/Overview.png
 
-  * *[SpectralDisplay Spectral Display]*
-  * *[WaterfallDisplay Waterfall Display]*
-  * *[DecodingChannels Decoding Channels]*
-  * *[Configuration]
-  * *Editor Panel*
-  
+[ApplicationOverview Application Overview]
+
 === Quick Start ===
 
 1. Select a tuner to display in the spectral display
