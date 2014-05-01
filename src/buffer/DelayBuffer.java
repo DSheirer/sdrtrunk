@@ -15,45 +15,53 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package instrument.tap.stream;
+package buffer;
 
-import log.Log;
-import instrument.tap.TapListener;
-import instrument.tap.TapType;
 import sample.Listener;
-import dsp.fsk.SymbolEvent;
 
-public class SymbolEventTap extends StreamTap implements Listener<SymbolEvent>
+/**
+ * Delay Buffer - implements a circular delay buffer backed by an object array
+ */
+public class DelayBuffer<T> implements Listener<T>
 {
-	private Listener<SymbolEvent> mListener;
+	private Object[] mBuffer;
+	private int mBufferPointer = 0;
+	private Listener<T> mListener;
 	
-	public SymbolEventTap( String name, int delay, float sampleRate )
+	public DelayBuffer( int length )
+	{
+		mBuffer = new Object[ length ];
+	}
+	
+    @Override
+	@SuppressWarnings( "unchecked" )
+    public void receive( T value )
     {
-	    super( TapType.STREAM_SYMBOL, name, delay, sampleRate );
-    }
-
-	@Override
-    public void receive( SymbolEvent symbolEvent )
-    {
-		if( mListener != null )
-		{
-			mListener.receive( symbolEvent );
-		}
+		Object delayed = mBuffer[ mBufferPointer ];
 		
-		for( TapListener listener: mListeners )
+		mBuffer[ mBufferPointer ] = value;
+		
+		mBufferPointer++;
+
+		/* Wrap the buffer pointer around to 0 when necessary */
+		if( mBufferPointer >= mBuffer.length )
 		{
-			listener.receive( symbolEvent );
+			mBufferPointer = 0;
+		}
+
+		if( mListener != null && delayed != null )
+		{
+			mListener.receive( (T)delayed );
 		}
     }
 	
-    public void setListener( Listener<SymbolEvent> listener )
-    {
+	public void setListener( Listener<T> listener )
+	{
 		mListener = listener;
-    }
-
-    public void removeListener( Listener<SymbolEvent> listener )
-    {
-		mListener = null;
-    }
+	}
 	
+	public void removeListener( Listener<T> listener )
+	{
+		mListener = null;
+	}
 }

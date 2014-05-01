@@ -17,84 +17,50 @@
  ******************************************************************************/
 package dsp.filter;
 
-import java.util.Arrays;
+import java.util.BitSet;
 
 import sample.Listener;
 
 /**
- * Averages (low pass filter) boolean values over the defined length
+ * Averages (low pass filter) boolean values over the defined size
  */
 public class BooleanAveragingFilter implements Listener<Boolean>
 {
-	private boolean[] mBuffer;
+	private BitSet mBuffer = new BitSet();
 	private int mBufferPointer;
+	private int mBufferLength;
 	private int mThreshold;
 	private Listener<Boolean> mListener;
 	
 	public BooleanAveragingFilter( int length )
 	{
-		mBuffer = new boolean[ length ];
-
-		if( length % 2 == 0 )
+		mBufferLength = length;
+		
+		/* Round up */
+		mThreshold = (int)( length / 2) + ( length % 2 );
+	}
+	
+	public void receive( Boolean value )
+	{
+		if( value )
 		{
-			mThreshold = (int)( length /2 );
+			mBuffer.set( mBufferPointer );
 		}
 		else
 		{
-			mThreshold = (int)( ( length + 1 ) / 2 );
+			mBuffer.clear( mBufferPointer );
 		}
-		
-		//Preload the array with false values
-		Arrays.fill( mBuffer, false );
-	}
-	
-	/**
-	 * Loads the newValue into this buffer and adjusts the buffer pointer
-	 * to prepare for the next get/put cycle
-	 */
-	public void put( boolean newValue )
-	{
-		//Store the new value to the buffer
-		mBuffer[ mBufferPointer ] = newValue;
-		
-		//Increment the buffer pointer
-		mBufferPointer++;
 
-		//Wrap the buffer pointer around to 0 when necessary
-		if( mBufferPointer >= mBuffer.length )
+		mBufferPointer++;
+		
+		if( mBufferPointer >= mBufferLength )
 		{
 			mBufferPointer = 0;
 		}
-	}
-
-	/**
-	 * Loads the newValue into the buffer, calculates the average
-	 * and returns that average from this method
-	 * 
-	 * This effectively performs low-pass filtering
-	 */
-	public void receive( Boolean newValue )
-	{
-		//Load the new value into the buffer
-		put( newValue );
 		
-		int trueCount = 0;
-		
-		for( int x = 0; x < mBuffer.length; x++ )
-		{
-			if( mBuffer[ x ] )
-			{
-				trueCount++;
-			}
-		}
-
-		/**
-		 * If the number of true values in the buffer is 
-		 * more than half, send true, otherwise, false
-		 */
 		if( mListener != null )
 		{
-			mListener.receive( trueCount >= mThreshold );
+			mListener.receive( mBuffer.cardinality() >= mThreshold );
 		}
 	}
 	
@@ -103,7 +69,7 @@ public class BooleanAveragingFilter implements Listener<Boolean>
 		mListener = listener;
     }
 
-    public void clearListener()
+    public void removeListener( Listener<Boolean> listener )
     {
 		mListener = null;
     }

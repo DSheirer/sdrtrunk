@@ -17,17 +17,23 @@
  ******************************************************************************/
 package decode.passport;
 
+import instrument.Instrumentable;
+import instrument.tap.Tap;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import source.Source.SampleType;
 import alias.AliasList;
 import bits.MessageFramer;
 import bits.SyncPattern;
 import decode.Decoder;
 import decode.DecoderType;
-import decode.ltrstandard.LTRFSKDemodulator;
 import dsp.filter.DCRemovalFilter2;
+import dsp.fsk.LTRFSKDecoder;
 import dsp.nbfm.FilteringNBFMDemodulator;
 
-public class PassportDecoder extends Decoder
+public class PassportDecoder extends Decoder implements Instrumentable
 {
 	/**
 	 * This value determines how quickly the DC remove filter responds to 
@@ -39,9 +45,11 @@ public class PassportDecoder extends Decoder
 	public static final int sPASSPORT_SYNC_LENGTH = 9;
 	private FilteringNBFMDemodulator mNBFMDemodulator;
 	private DCRemovalFilter2 mDCRemovalFilter; 
-	private LTRFSKDemodulator mPassportFSKDemodulator;
+	private LTRFSKDecoder mPassportFSKDecoder;
 	private MessageFramer mPassportMessageFramer;
 	private PassportMessageProcessor mPassportMessageProcessor;
+	
+    private List<Tap> mAvailableTaps;
 
 	public PassportDecoder( SampleType sampleType, AliasList aliasList )
 	{
@@ -72,8 +80,8 @@ public class PassportDecoder extends Decoder
 			mDCRemovalFilter.setListener( this.getFloatReceiver() );
 		}
 
-		mPassportFSKDemodulator = 
-				new LTRFSKDemodulator();
+		mPassportFSKDecoder = 
+				new LTRFSKDecoder();
 
 		/**
 		 * The DC removal filter will impact performance of the LTRFSKDemod,
@@ -81,11 +89,11 @@ public class PassportDecoder extends Decoder
 		 */
 		if( mSourceSampleType == SampleType.COMPLEX )
 		{
-			mNBFMDemodulator.addListener( mPassportFSKDemodulator );
+			mNBFMDemodulator.addListener( mPassportFSKDecoder );
 		}
 		else
 		{
-			addFloatListener( mPassportFSKDemodulator );
+			addFloatListener( mPassportFSKDecoder );
 		}
 		
 
@@ -93,7 +101,7 @@ public class PassportDecoder extends Decoder
 				new MessageFramer( SyncPattern.PASSPORT.getPattern(),
 						sPASSPORT_MESSAGE_LENGTH );
 
-		mPassportFSKDemodulator.addListener( mPassportMessageFramer );
+		mPassportFSKDecoder.addListener( mPassportMessageFramer );
 
 		mPassportMessageProcessor = new PassportMessageProcessor( aliasList );
 		mPassportMessageFramer.addMessageListener( mPassportMessageProcessor );
@@ -104,5 +112,30 @@ public class PassportDecoder extends Decoder
     public DecoderType getType()
     {
 	    return DecoderType.PASSPORT;
+    }
+
+	@Override
+    public List<Tap> getTaps()
+    {
+		if( mAvailableTaps == null )
+		{
+			mAvailableTaps = new ArrayList<Tap>();
+			
+			mAvailableTaps.addAll( mPassportFSKDecoder.getTaps() );
+		}
+
+		return mAvailableTaps;
+    }
+
+	@Override
+    public void addTap( Tap tap )
+    {
+		mPassportFSKDecoder.addTap( tap );
+    }
+
+	@Override
+    public void removeTap( Tap tap )
+    {
+		mPassportFSKDecoder.removeTap( tap );
     }
 }

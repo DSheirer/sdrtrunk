@@ -26,7 +26,7 @@ import java.util.BitSet;
 import java.util.List;
 
 import sample.Listener;
-import buffer.AveragingCircularBooleanBuffer;
+import buffer.BooleanAveragingBuffer;
 import dsp.fsk.SymbolEvent.Shift;
 
 /**
@@ -60,8 +60,8 @@ public class FSK2Decoder implements Instrumentable, Listener<Float>
 	private ArrayList<SymbolEventTap> mTaps = new ArrayList<SymbolEventTap>();
 	
 	private Listener<Boolean> mListener;
-	private AveragingCircularBooleanBuffer mDelayBuffer;
-	private AveragingCircularBooleanBuffer mLowPassFilter;
+	private BooleanAveragingBuffer mDelayBuffer;
+	private BooleanAveragingBuffer mLowPassFilter;
 	private Slicer mSlicer;
 	private boolean mNormalOutput;
 	private int mSamplesPerSymbol;
@@ -76,8 +76,8 @@ public class FSK2Decoder implements Instrumentable, Listener<Float>
 		mNormalOutput = ( output == Output.NORMAL );
 		mSymbolRate = symbolRate;
 		
-		mDelayBuffer = new AveragingCircularBooleanBuffer( mSamplesPerSymbol );
-		mLowPassFilter = new AveragingCircularBooleanBuffer( mSamplesPerSymbol );
+		mDelayBuffer = new BooleanAveragingBuffer( mSamplesPerSymbol );
+		mLowPassFilter = new BooleanAveragingBuffer( mSamplesPerSymbol );
 		mSlicer = new Slicer( mSamplesPerSymbol );		
 	}
 	

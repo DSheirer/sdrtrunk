@@ -28,8 +28,11 @@ import java.awt.geom.Point2D;
 import java.util.List;
 import java.util.Observable;
 
+import log.Log;
+
 public class FloatTapViewPanel extends TapViewPanel
 {
+    private static final long serialVersionUID = 1L;
 	private Tap mTap;
 	private List<Float> mSamples;
 	private int mSampleCount;
@@ -40,16 +43,20 @@ public class FloatTapViewPanel extends TapViewPanel
 		
 		mTap = tap;
 		mTap.addListener( getModel() );
+
+		mSampleCount = (int)( 2000 * tap.getSampleRateRatio() );
+
+		getModel().setSampleCount( mSampleCount );
+		getModel().setDelay( tap.getDelay() );
 		
-		getModel().setSampleCount( 
-			(int)( getModel().getSampleCount() * tap.getSampleRateRatio() ) );
+		Log.info( "Float Tap Panel [" + tap.getName() + "] count: " + 
+			getModel().getSampleCount() + " delay:" + getModel().getDelay() );
 	}
 	
 	@Override
     public void update( Observable arg0, Object arg1 )
     {
 		mSamples = (List<Float>)getModel().getSamples();
-		mSampleCount = getModel().getSampleCount();
 		repaint();
     }
 	
@@ -68,7 +75,8 @@ public class FloatTapViewPanel extends TapViewPanel
 
 		g2.drawLine( 0, (int)middle, width, (int)middle );
 
-		if( mSamples != null && mSamples.size() > 0 )
+		if( mSamples != null && 
+			mSamples.size() > 0  )
 		{
 			g2.setColor( getForeground() );
 			

@@ -24,9 +24,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Observable;
 
+import log.Log;
+import dsp.fsk.SymbolEvent;
+
 public class SampleModel<T> extends Observable implements TapListener<T>
 {
 	private int mSampleCount = 2000;
+	private int mDelay = 0;
 	private ArrayList<T> mSamples = new ArrayList<T>();
 	
 	public SampleModel()
@@ -56,15 +60,32 @@ public class SampleModel<T> extends Observable implements TapListener<T>
 		
 		changed();
 	}
+
+	public void setDelay( int delay )
+	{
+		mDelay = delay;
+	}
+	
+	public int getDelay()
+	{
+		return mDelay;
+	}
 	
 	@Override
     public void receive( T t )
     {
-		mSamples.add( t );
-		
-		while( mSamples.size() > mSampleCount )
+		if( mDelay > 0 )
 		{
-			mSamples.remove( 0 );
+			mDelay--;
+		}
+		else
+		{
+			mSamples.add( t );
+			
+			while( mSamples.size() > mSampleCount )
+			{
+				mSamples.remove( 0 );
+			}
 		}
 		
 		changed();

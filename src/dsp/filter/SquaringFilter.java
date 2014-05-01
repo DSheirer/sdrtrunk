@@ -35,7 +35,7 @@ public class SquaringFilter implements Listener<Float>
     {
 		if( mListener != null )
 		{
-			mListener.receive( ( sample >= 0 ? true : false ) );
+			mListener.receive( sample >= 0  );
 		}
     }
 
