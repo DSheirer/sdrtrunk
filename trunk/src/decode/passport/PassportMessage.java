@@ -175,8 +175,13 @@ public class PassportMessage extends Message
     public Alias getTalkgroupIDAlias()
     {
     	int tg = getTalkgroupID();
-    	
-    	return mAliasList.getTalkgroupAlias( String.valueOf( tg ) );
+
+    	if( mAliasList != null )
+    	{
+        	return mAliasList.getTalkgroupAlias( String.valueOf( tg ) );
+    	}
+
+		return null;
     }
     
     public int getLCN()
@@ -262,7 +267,7 @@ public class PassportMessage extends Message
     {
     	String min = getMobileID();
     	
-    	if( min != null )
+    	if( mAliasList != null && min != null )
     	{
     		return mAliasList.getMobileIDNumberAlias( min );
     	}

@@ -45,6 +45,8 @@ public class BinaryTapViewPanel extends TapViewPanel
 		
 		getModel().setSampleCount( 
 			(int)( getModel().getSampleCount() * tap.getSampleRateRatio() ) );
+		
+		getModel().setDelay( tap.getDelay() );
 	}
 	
 	@Override

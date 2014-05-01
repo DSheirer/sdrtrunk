@@ -25,6 +25,7 @@ import bits.SyncPattern;
 import decode.Decoder;
 import decode.DecoderType;
 import dsp.filter.DCRemovalFilter2;
+import dsp.fsk.LTRFSKDecoder;
 import dsp.nbfm.FilteringNBFMDemodulator;
 
 public class LTRStandardDecoder extends Decoder
@@ -38,7 +39,7 @@ public class LTRStandardDecoder extends Decoder
 	public static final int sLTR_STANDARD_MESSAGE_LENGTH = 40;
 	private FilteringNBFMDemodulator mDemodulator;
 	private DCRemovalFilter2 mDCRemovalFilter; 
-	private LTRFSKDemodulator mLTRFSKDemodulator;
+	private LTRFSKDecoder mLTRFSKDecoder;
 	private MessageFramer mLTRMessageFramer;
 	private LTRStandardMessageProcessor mLTRMessageProcessor;
 
@@ -74,7 +75,7 @@ public class LTRStandardDecoder extends Decoder
 			mDCRemovalFilter.setListener( this.getFloatReceiver() );
 		}
 
-		mLTRFSKDemodulator = new LTRFSKDemodulator();
+		mLTRFSKDecoder = new LTRFSKDecoder();
 
 		/**
 		 * The DC removal filter will impact performance of the LTRFSKDemod,
@@ -82,11 +83,11 @@ public class LTRStandardDecoder extends Decoder
 		 */
 		if( mSourceSampleType == SampleType.COMPLEX )
 		{
-			mDemodulator.addListener( mLTRFSKDemodulator );
+			mDemodulator.addListener( mLTRFSKDecoder );
 		}
 		else
 		{
-			mDCRemovalFilter.setListener( mLTRFSKDemodulator );
+			mDCRemovalFilter.setListener( mLTRFSKDecoder );
 		}
 		
 		if( direction == MessageDirection.OSW )
@@ -102,7 +103,7 @@ public class LTRStandardDecoder extends Decoder
 							sLTR_STANDARD_MESSAGE_LENGTH );
 		}
 		
-		mLTRFSKDemodulator.addListener( mLTRMessageFramer );
+		mLTRFSKDecoder.addListener( mLTRMessageFramer );
 
 		mLTRMessageProcessor = new LTRStandardMessageProcessor( direction, aliasList );
 		mLTRMessageFramer.addMessageListener( mLTRMessageProcessor );

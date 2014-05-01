@@ -66,7 +66,8 @@ public enum DecoderType
     {
     	return EnumSet.of( DecoderType.FLEETSYNC2,
     					   DecoderType.MDC1200,
-    					   DecoderType.MPT1327 );
+    					   DecoderType.MPT1327,
+    					   DecoderType.PASSPORT );
     }
     
     /**

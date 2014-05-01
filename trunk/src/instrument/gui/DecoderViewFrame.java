@@ -29,10 +29,12 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.HashMap;
+import java.util.List;
 
 import javax.swing.JCheckBoxMenuItem;
 import javax.swing.JInternalFrame;
 import javax.swing.JMenu;
+import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 
@@ -101,8 +103,12 @@ public class DecoderViewFrame extends JInternalFrame
 					{
 						JMenu tapMenu = new JMenu( "Taps" );
 						popup.add( tapMenu );
-
+						
 						Instrumentable i = (Instrumentable)mDecoder;
+
+						tapMenu.add( new AddAllTapsItem( i.getTaps() ) );
+						
+						tapMenu.add( new JSeparator() );
 						
 						for( Tap tap: i.getTaps() )
 						{
@@ -157,13 +163,21 @@ public class DecoderViewFrame extends JInternalFrame
 				break;
 		}
 		
-		add( panel, "span" );
-		
-		validate();
-		
-		mPanelMap.put( tap, panel );
+		if( panel != null )
+		{
+			add( panel, "span" );
+			
+			validate();
+			
+			mPanelMap.put( tap, panel );
 
-		((Instrumentable)mDecoder).addTap( tap );
+			((Instrumentable)mDecoder).addTap( tap );
+		}
+		else
+		{
+			Log.info( "Tap panel is null, couldn't add for tap " + 
+					tap.getName() + "[" + tap.getType().toString() + "]" );
+		}
 	}
 	
 	public void remove( Tap tap )
@@ -178,9 +192,34 @@ public class DecoderViewFrame extends JInternalFrame
 		
 		mPanelMap.remove( tap );
 	}
+
+	public class AddAllTapsItem extends JMenuItem
+	{
+		private final List<Tap> mTaps;
+		
+		public AddAllTapsItem( final List<Tap> taps )
+		{
+			super( "All Taps" );
+			
+			mTaps = taps;
+			
+			addActionListener( new ActionListener() 
+			{
+				@Override
+                public void actionPerformed( ActionEvent e )
+                {
+					for( Tap tap: mTaps )
+					{
+						DecoderViewFrame.this.add( tap );
+					}
+                }
+			} );
+		}
+	}
 	
 	public class TapSelectionItem extends JCheckBoxMenuItem
 	{
+        private static final long serialVersionUID = 1L;
 		private Tap mTap;
 		
 		public TapSelectionItem( Tap tap )

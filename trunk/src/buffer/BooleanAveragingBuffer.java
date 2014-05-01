@@ -27,12 +27,12 @@ import java.util.Arrays;
  * 
  * Also provides averaging over the elements in the buffer
  */
-public class AveragingCircularBooleanBuffer {
+public class BooleanAveragingBuffer {
 
 	private boolean[] mBuffer;
 	private int mBufferPointer;
 	
-	public AveragingCircularBooleanBuffer( int length )
+	public BooleanAveragingBuffer( int length )
 	{
 		mBuffer = new boolean[ length ];
 		

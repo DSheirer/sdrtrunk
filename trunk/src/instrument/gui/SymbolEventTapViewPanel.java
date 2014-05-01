@@ -28,14 +28,16 @@ import java.awt.geom.Rectangle2D;
 import java.util.List;
 import java.util.Observable;
 
+import log.Log;
 import dsp.fsk.SymbolEvent;
 
 public class SymbolEventTapViewPanel extends TapViewPanel
 {
-	private SymbolEventTap mTap;
+    private static final long serialVersionUID = 1L;
+
+    private SymbolEventTap mTap;
 	private List<SymbolEvent> mSamples;
 	private int mSampleCount;
-	private int mOffset = 0;
 
 	public SymbolEventTapViewPanel( SymbolEventTap tap )
 	{
@@ -44,15 +46,18 @@ public class SymbolEventTapViewPanel extends TapViewPanel
 		mTap = tap;
 		mTap.addListener( getModel() );
 		
-		getModel().setSampleCount( 
-			(int)( getModel().getSampleCount() * tap.getSampleRateRatio() ) );
+		mSampleCount = (int)( getModel().getSampleCount() * tap.getSampleRateRatio() );
+
+		getModel().setSampleCount( mSampleCount );
+
+		getModel().setDelay( tap.getDelay() );
 	}
 	
 	@Override
     public void update( Observable arg0, Object arg1 )
     {
 		mSamples = (List<SymbolEvent>)getModel().getSamples();
-		mSampleCount = getModel().getSampleCount();
+
 		repaint();
     }
 	
