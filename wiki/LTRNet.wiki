@@ -1,4 +1,4 @@
-#LTR-Net decoder description
+# LTR-Net decoder description
 
 = LTR-Net Decoder =
 
