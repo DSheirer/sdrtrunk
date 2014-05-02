@@ -71,7 +71,7 @@ public class LTRNetActivitySummary implements ActivitySummaryProvider
 				{
 					case CA_STRT:
 					case CA_ENDD:
-						String talkgroup = ltr.getTalkgroupID( false );
+						String talkgroup = ltr.getTalkgroupID();
 						
 						if( mTalkgroupsFirstHeard.contains( talkgroup ) )
 						{
@@ -298,7 +298,7 @@ public class LTRNetActivitySummary implements ActivitySummaryProvider
 				String tgid = it.next();
 				
 				sb.append( "  " );
-				sb.append( formatTalkgroup( tgid ) );
+				sb.append( tgid );
 				sb.append( " " );
 				
 				Alias alias = mAliasList.getTalkgroupAlias( tgid );
@@ -401,24 +401,4 @@ public class LTRNetActivitySummary implements ActivitySummaryProvider
 		
 	    return sb.toString();
     }
-	
-	public static String formatTalkgroup( String talkgroup )
-	{
-		StringBuilder sb = new StringBuilder();
-		
-		if( talkgroup.length() == 6 )
-		{
-			sb.append( talkgroup.substring( 0, 1 ) );
-			sb.append( "-" );
-			sb.append( talkgroup.substring( 1, 3 ) );
-			sb.append( "-" );
-			sb.append( talkgroup.substring( 3, 6 ) );
-
-			return sb.toString();
-		}
-		else
-		{
-			return talkgroup;
-		}
-	}
 }
