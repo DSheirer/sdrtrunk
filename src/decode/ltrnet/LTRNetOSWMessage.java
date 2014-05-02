@@ -242,27 +242,12 @@ public class LTRNetOSWMessage extends LTRNetMessage
 	
 	public String getTalkgroupID()
 	{
-		return getTalkgroupID( true );
-	}
-	
-	public String getTalkgroupID( boolean format )
-	{
 		StringBuilder sb = new StringBuilder();
 		
 		sb.append( getArea() );
-		
-		if( format )
-		{
-			sb.append( "-" );
-		}
-
+		sb.append( "-" );
 		sb.append( format( getHomeRepeater(), 2 ) );
-		
-		if( format )
-		{
-			sb.append( "-" );
-		}
-
+		sb.append( "-" );
 		sb.append( format( getGroup(), 3 ) );
 		
 		return sb.toString();
