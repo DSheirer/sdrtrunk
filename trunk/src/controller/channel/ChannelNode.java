@@ -156,13 +156,10 @@ public class ChannelNode extends ConfigurableNode implements ChannelListener
 	
 	public void delete()
 	{
-		Log.info( "Channel Node - deleting ..." );
 		((SiteNode)getParent()).getSite().removeChannel( getChannel() );
 		
-		Log.info( "Channel Node - saving after channel delete" );
 		save();
 		
-		Log.info( "Channel Node - removing from site node" );
 		getModel().removeNodeFromParent( ChannelNode.this );
 	}
 }
