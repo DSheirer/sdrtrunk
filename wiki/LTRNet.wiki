@@ -4,7 +4,7 @@
 
 The LTR-Net decoder will decode both Inbound Status Word (ISW) and Outbound Status Word (OSW) messaging.  ISW messages are transmitted by the mobile radio on the uplink, or input frequency of the repeater.  The network broadcasts OSW messages on the downlink or output frequency of the repeater.
 
-Most LTR-Net messages are two-part messages.  In the decoded messages table, you will see references to part 1 of 2 or for ESNs, you may only see one half of the ESN (1234xxxx).
+Many of the LTR-Net system information messages are two-part messages.  In the decoded messages table, you will see references to part 1 of 2 or for ESNs, you may only see one half of the ESN (1234xxxx).
 
 == Channels ==
 
