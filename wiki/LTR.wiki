@@ -1,0 +1,7 @@
+#summary LTR Decoder description
+
+= LTR Standard Decoder =
+
+== Squelch Control ==
+
+The LTR decoder provides signalling-based squelch control.  If you have a decoding channel selected, then audio will play automatically during a call, and will be squelched at the end of the call, or upon call timeout.
