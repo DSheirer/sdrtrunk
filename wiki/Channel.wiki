@@ -43,11 +43,11 @@ The source tab allows you to specify the source for raw sampled data to feed the
 
 The decoder tab provides a list of available primary decoders to select for the channel.  Only one primary decoder can be selected per channel.  If you want to run multiple primary decoders, create additional channels, each with a different primary decoder.
 
-  * *[LTRStandardDecoder LTR-Standard]* - FM demodulator and Logic Trunked Radio (LTR) trunked radio signaling decoder
-  * *[LTRNetDecoder LTR-Net]* - FM demodulator and LTR-Net trunked radio signaling decoder
-  * *[MPT1327Decoder MPT-1327]* - FM demodulator and MPT-1327 trunked radio signaling decoder.  Provides automatic traffic channel following.
-  * *[NBFMDecoder NBFM]* - narrow-band FM demodulator.
-  * *[PassportDecoder Passport]* - FM demodulator and Passport trunked radio signaling decoder.
+  * *[LTR LTR-Standard]* - FM demodulator and Logic Trunked Radio (LTR) trunked radio signaling decoder
+  * *[LTRNet LTR-Net]* - FM demodulator and LTR-Net trunked radio signaling decoder
+  * *[MPT1327 MPT-1327]* - FM demodulator and MPT-1327 trunked radio signaling decoder.  Provides automatic traffic channel following.
+  * *[NBFM NBFM]* - narrow-band FM demodulator.
+  * *[Passport Passport]* - FM demodulator and Passport trunked radio signaling decoder.
 
 == Aux Tab ==
 The aux tab allows you to select from multiple auxiliary decoders to use in addition to the selected primary decoder.  Auxiliary decoders are used to decode pass-band audio signals like gps and digital radio identification bursts that are used on some trunked and conventional radio systems.
