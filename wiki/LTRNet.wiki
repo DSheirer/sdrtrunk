@@ -6,6 +6,10 @@ The LTR-Net decoder will decode both Inbound Status Word (ISW) and Outbound Stat
 
 Many of the LTR-Net system information messages are two-part messages.  In the decoded messages table, you will see references to part 1 of 2 or for ESNs, you may only see one half of the ESN (1234xxxx).
 
+== Squelch Control ==
+
+The LTR-Net decoder provides signalling-based squelch control.  If you have a decoding channel selected, then audio will play automatically during a call, and will be squelched at the end of the call, or upon call timeout.
+
 == Channels ==
 
 Each LTR-Net site supports 1-20 Logical Channel Numbers (LCN).  Each site will have a continuously transmitting Home Status Channel (HSC).
