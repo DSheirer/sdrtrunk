@@ -21,3 +21,11 @@ Mobile radios are programmed with a pre-defined list of canned status messages. 
 == Acknowledge ==
 
 Some radio networks will acknowledge status messages.  When this happens, the mobile radio will broadcast a status message, and the network will immediately respond with an acknowledgement.
+
+== Aliases ==
+
+Add the following aliases to each alias list you are using for Fleetsync:
+
+  * 099-0999 Broadcast Call
+  * `*``*``*`-0999 Fleet Call
+  * 099-`*``*``*``*` Supervisor Call
