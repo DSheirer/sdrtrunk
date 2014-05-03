@@ -39,5 +39,6 @@
       # [FuncubeDongleProPlus Funcube Dongle Pro Plus]
       # [E4000 RTL-2832 with E4000 Tuner]
       # [FC0013 RTL-2832 with FC0013 Tuner]
-      # [R820T RTL-2832 with R820T Tuner]  
+      # [R820T RTL-2832 with R820T Tuner]
+  # [ScreenCapture] Screen Captures
   
