@@ -4,8 +4,11 @@
 
 The MPT-1327 decoder provides decoding of both control and traffic channel signaling.
 
-== Traffic Channels ==
+== Squelch Control ==
 
-SDRTrunk will create traffic channels dynamically to follow trunked radio calls as they occur.  This feature requires a channel map and an available tuner that can provide the channel's frequency.
+The control channel is not squelch controlled and will produce audio of the control signal when selected.  Each individual traffic channel is unsquelched for the duration of the call, until call end, or call timeout.
 
-SDRTrunk decodes the traffic channel tear down event broadcast at the end of the call on the traffic channel.  If the decoder misses this event, a timer will end the call after 45 seconds.
+== Usage ==
+Run the decoder against the control channel.  If a tuner is available, traffic channels will be created and started decoding automatically.  Upon call tear down, or call timeout, traffic channels will automatically be destroyed.
+
+NOTE: the decoder requires a channel map in order to automatically allocate and trunk track traffic channels.
