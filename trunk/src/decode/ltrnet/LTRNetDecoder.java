@@ -87,7 +87,7 @@ public class LTRNetDecoder extends Decoder
 		}
 		else
 		{
-			mDCRemovalFilter.setListener( mLTRFSKDecoder );
+		    this.addFloatListener( mLTRFSKDecoder );
 		}
 		
 		if( direction == MessageDirection.OSW )
