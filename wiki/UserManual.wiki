@@ -32,7 +32,7 @@
     # [EventLogger Event Log]
   # [Recorder]
   # Sources
-    # Sound Card
+    # [SoundCard Sound Card]
     # [Tuner Tuners]
       # [B100 Ettus Research B100]
       # [FuncubeDonglePro Funcube Dongle Pro]
