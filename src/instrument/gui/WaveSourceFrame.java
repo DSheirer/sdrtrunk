@@ -35,6 +35,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import log.Log;
+import message.MessageDirection;
 import net.miginfocom.swing.MigLayout;
 import source.Source.SampleType;
 import source.wave.WaveSource;
@@ -42,6 +43,7 @@ import source.wave.WaveSource.PositionListener;
 import decode.Decoder;
 import decode.DecoderType;
 import decode.fleetsync2.Fleetsync2Decoder;
+import decode.ltrnet.LTRNetDecoder;
 import decode.mdc1200.MDCDecoder;
 import decode.mpt1327.MPT1327Decoder;
 import decode.passport.PassportDecoder;
@@ -133,6 +135,9 @@ public class WaveSourceFrame extends JInternalFrame implements PositionListener
 						case FLEETSYNC2:
 							decoder = new Fleetsync2Decoder( null );
 							break;
+						case LTR_NET:
+						    decoder = new LTRNetDecoder( SampleType.FLOAT, null, MessageDirection.OSW );
+						    break;
 						case MDC1200:
 							decoder = new MDCDecoder( null );
 							break;

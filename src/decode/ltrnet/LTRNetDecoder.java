@@ -17,6 +17,12 @@
  ******************************************************************************/
 package decode.ltrnet;
 
+import instrument.Instrumentable;
+import instrument.tap.Tap;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import message.MessageDirection;
 import source.Source.SampleType;
 import alias.AliasList;
@@ -28,7 +34,7 @@ import dsp.filter.DCRemovalFilter2;
 import dsp.fsk.LTRFSKDecoder;
 import dsp.nbfm.FilteringNBFMDemodulator;
 
-public class LTRNetDecoder extends Decoder
+public class LTRNetDecoder extends Decoder implements Instrumentable
 {
 	/**
 	 * This value determines how quickly the DC remove filter responds to 
@@ -42,6 +48,8 @@ public class LTRNetDecoder extends Decoder
 	private LTRFSKDecoder mLTRFSKDecoder;
 	private MessageFramer mLTRMessageFramer;
 	private LTRNetMessageProcessor mLTRMessageProcessor;
+
+    private List<Tap> mAvailableTaps;
 
 	public LTRNetDecoder( SampleType sampleType, 
 					      AliasList aliasList,
@@ -114,5 +122,30 @@ public class LTRNetDecoder extends Decoder
     public DecoderType getType()
     {
 	    return DecoderType.LTR_NET;
+    }
+
+    @Override
+    public List<Tap> getTaps()
+    {
+        if( mAvailableTaps == null )
+        {
+            mAvailableTaps = new ArrayList<Tap>();
+            
+            mAvailableTaps.addAll( mLTRFSKDecoder.getTaps() );
+        }
+
+        return mAvailableTaps;
+    }
+
+    @Override
+    public void addTap( Tap tap )
+    {
+        mLTRFSKDecoder.addTap( tap );
+    }
+
+    @Override
+    public void removeTap( Tap tap )
+    {
+        mLTRFSKDecoder.removeTap( tap );
     }
 }
