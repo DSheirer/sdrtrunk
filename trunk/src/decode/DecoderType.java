@@ -65,6 +65,7 @@ public enum DecoderType
     public static EnumSet<DecoderType> getInstrumentableDecoders()
     {
     	return EnumSet.of( DecoderType.FLEETSYNC2,
+    	                   DecoderType.LTR_NET,
     					   DecoderType.MDC1200,
     					   DecoderType.MPT1327,
     					   DecoderType.PASSPORT );
