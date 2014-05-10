@@ -22,17 +22,13 @@ import javax.xml.bind.annotation.XmlAttribute;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
 import source.tuner.rtl.RTL2832TunerController.SampleRate;
-import source.tuner.rtl.r820t.R820TTunerController.R820TEnhanceGain;
-import source.tuner.rtl.r820t.R820TTunerController.R820TGain;
-import source.tuner.rtl.r820t.R820TTunerController.R820TLNAGain;
-import source.tuner.rtl.r820t.R820TTunerController.R820TMixerGain;
 
 public class R820TTunerConfiguration extends TunerConfiguration
 {
-	private R820TGain mMasterGain = R820TGain.AUTOMATIC;
-	private R820TMixerGain mMixerGain = R820TMixerGain.AUTOMATIC;
-	private R820TLNAGain mLNAGain = R820TLNAGain.AUTOMATIC;
-	private R820TEnhanceGain mEnhanceGain = R820TEnhanceGain.AUTOMATIC;
+//	private R820TGain mMasterGain = R820TGain.AUTOMATIC;
+//	private R820TMixerGain mMixerGain = R820TMixerGain.AUTOMATIC;
+//	private R820TLNAGain mLNAGain = R820TLNAGain.AUTOMATIC;
+//	private R820TEnhanceGain mEnhanceGain = R820TEnhanceGain.AUTOMATIC;
 	private double mFrequencyCorrection = -12.0d;
 	private SampleRate mSampleRate = SampleRate.RATE_1_200MHZ;
 
@@ -55,50 +51,50 @@ public class R820TTunerConfiguration extends TunerConfiguration
 	    return TunerType.ELONICS_E4000;
     }
 
-	@XmlAttribute( name = "master_gain" )
-	public R820TGain getMasterGain()
-	{
-		return mMasterGain;
-	}
-
-	public void setMasterGain( R820TGain gain )
-	{
-		mMasterGain = gain;
-	}
-
-	@XmlAttribute( name = "mixer_gain" )
-	public R820TMixerGain getMixerGain()
-	{
-		return mMixerGain;
-	}
-
-	public void setMixerGain( R820TMixerGain mixerGain )
-	{
-		mMixerGain = mixerGain;
-	}
-
-	@XmlAttribute( name = "lna_gain" )
-	public R820TLNAGain getLNAGain()
-	{
-		return mLNAGain;
-	}
-
-	public void setLNAGain( R820TLNAGain lnaGain )
-	{
-		mLNAGain = lnaGain;
-	}
-
-	@XmlAttribute( name = "enhance_gain" )
-	public R820TEnhanceGain getEnhanceGain()
-	{
-		return mEnhanceGain;
-	}
-
-	public void setEnhanceGain( R820TEnhanceGain enhanceGain )
-	{
-		mEnhanceGain = enhanceGain;
-	}
-
+//	@XmlAttribute( name = "master_gain" )
+//	public R820TGain getMasterGain()
+//	{
+//		return mMasterGain;
+//	}
+//
+//	public void setMasterGain( R820TGain gain )
+//	{
+//		mMasterGain = gain;
+//	}
+//
+//	@XmlAttribute( name = "mixer_gain" )
+//	public R820TMixerGain getMixerGain()
+//	{
+//		return mMixerGain;
+//	}
+//
+//	public void setMixerGain( R820TMixerGain mixerGain )
+//	{
+//		mMixerGain = mixerGain;
+//	}
+//
+//	@XmlAttribute( name = "lna_gain" )
+//	public R820TLNAGain getLNAGain()
+//	{
+//		return mLNAGain;
+//	}
+//
+//	public void setLNAGain( R820TLNAGain lnaGain )
+//	{
+//		mLNAGain = lnaGain;
+//	}
+//
+//	@XmlAttribute( name = "enhance_gain" )
+//	public R820TEnhanceGain getEnhanceGain()
+//	{
+//		return mEnhanceGain;
+//	}
+//
+//	public void setEnhanceGain( R820TEnhanceGain enhanceGain )
+//	{
+//		mEnhanceGain = enhanceGain;
+//	}
+//
 	@XmlAttribute( name = "frequency_correction" )
 	public double getFrequencyCorrection()
 	{

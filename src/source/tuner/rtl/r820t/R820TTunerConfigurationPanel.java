@@ -49,10 +49,6 @@ import source.tuner.TunerConfiguration;
 import source.tuner.TunerConfigurationAssignment;
 import source.tuner.TunerType;
 import source.tuner.rtl.RTL2832TunerController.SampleRate;
-import source.tuner.rtl.r820t.R820TTunerController.R820TEnhanceGain;
-import source.tuner.rtl.r820t.R820TTunerController.R820TGain;
-import source.tuner.rtl.r820t.R820TTunerController.R820TLNAGain;
-import source.tuner.rtl.r820t.R820TTunerController.R820TMixerGain;
 import controller.ResourceManager;
 
 public class R820TTunerConfigurationPanel extends JPanel
@@ -69,10 +65,10 @@ public class R820TTunerConfigurationPanel extends JPanel
     private JTextField mName;
 
     private JSpinner mFrequencyCorrection;
-    private JComboBox<R820TGain> mComboMasterGain;
-    private JComboBox<R820TMixerGain> mComboMixerGain;
-    private JComboBox<R820TLNAGain> mComboLNAGain;
-    private JComboBox<R820TEnhanceGain> mComboEnhanceGain;
+//    private JComboBox<R820TGain> mComboMasterGain;
+//    private JComboBox<R820TMixerGain> mComboMixerGain;
+//    private JComboBox<R820TLNAGain> mComboLNAGain;
+//    private JComboBox<R820TEnhanceGain> mComboEnhanceGain;
     
     private JComboBox<SampleRate> mComboSampleRate;
     
@@ -126,21 +122,21 @@ public class R820TTunerConfigurationPanel extends JPanel
 
         mComboConfigurations.setSelectedItem( mSelectedConfig );
 
-		mComboConfigurations.addActionListener( new ActionListener()
-		{
-			@Override
-           public void actionPerformed( ActionEvent e )
-           {
-				R820TTunerConfiguration selected = 
-						(R820TTunerConfiguration)mComboConfigurations
-						.getItemAt( mComboConfigurations.getSelectedIndex() );
-
-				if( selected != null )
-				{
-					update( selected );
-				}
-           }
-		});
+//		mComboConfigurations.addActionListener( new ActionListener()
+//		{
+//			@Override
+//           public void actionPerformed( ActionEvent e )
+//           {
+//				R820TTunerConfiguration selected = 
+//						(R820TTunerConfiguration)mComboConfigurations
+//						.getItemAt( mComboConfigurations.getSelectedIndex() );
+//
+//				if( selected != null )
+//				{
+//					update( selected );
+//				}
+//           }
+//		});
 
 		add( mComboConfigurations, "span 2,wrap" );
 		
@@ -270,301 +266,301 @@ public class R820TTunerConfigurationPanel extends JPanel
         gainPanel.setBorder( BorderFactory.createTitledBorder( "Gain" ) );
         
         /* Master Gain Control */
-        mComboMasterGain = new JComboBox<R820TGain>( R820TGain.values() );
-        mComboMasterGain.setSelectedItem( mSelectedConfig.getMasterGain() );
-        
-        mComboMasterGain.addActionListener( new ActionListener() 
-        {
-			@Override
-            public void actionPerformed( ActionEvent arg0 )
-            {
-				try
-                {
-					R820TGain gain = (R820TGain)mComboMasterGain.getSelectedItem();
-					
-	                mController.setGain( (R820TGain)mComboMasterGain.getSelectedItem(), true );
-	                
-	                if( gain == R820TGain.MANUAL )
-	                {
-	                	mComboMixerGain.setSelectedItem( 
-	                			mController.getMixerGain( true ) );
-	                	mComboMixerGain.setEnabled( true );
-	                	
-	                	mComboLNAGain.setSelectedItem( 
-	                			mController.getLNAGain( true ) );
-	                	mComboLNAGain.setEnabled( true );
-
-	                	mComboEnhanceGain.setEnabled( true );
-	                	mComboEnhanceGain.setSelectedItem( 
-	                			mController.getEnhanceGain( true ) );
-	                }
-	                else
-	                {
-	                	mComboMixerGain.setEnabled( false );
-	                	mComboMixerGain.setSelectedItem( gain.getMixerGain() );
-
-	                	mComboLNAGain.setEnabled( false );
-	                	mComboLNAGain.setSelectedItem( gain.getLNAGain() );
-
-	                	mComboEnhanceGain.setEnabled( false );
-	                	mComboEnhanceGain.setSelectedItem( gain.getEnhanceGain() );
-	                }
-	                
-	                mSelectedConfig.setMasterGain( gain );
-	                save();
-                }
-                catch ( UsbException e )
-                {
-                	JOptionPane.showMessageDialog( 
-                			R820TTunerConfigurationPanel.this, 
-                			"E4K Tuner Controller - couldn't apply the gain "
-                			+ "setting - " + e.getLocalizedMessage() );  
-                	
-                	Log.error( "E4K Tuner Controller - couldn't apply "
-                			+ "gain setting - " + e.getLocalizedMessage() );
-                }
-            }
-        } );
-        mComboMasterGain.setToolTipText( "<html>Select <b>AUTOMATIC</b> for auto "
-        		+ "gain, <b>MANUAL</b> to enable<br> independent control of "
-        		+ "<i>Mixer</i>, <i>LNA</i> and <i>Enhance</i> gain<br>"
-        		+ "settings, or one of the individual gain settings for<br>"
-        		+ "semi-manual gain control</html>" );
-        gainPanel.add( mComboMasterGain );
-        gainPanel.add( new JLabel( "Master" ), "wrap" );
-
-        /* Mixer Gain Control */
-        mComboMixerGain = new JComboBox<R820TMixerGain>( R820TMixerGain.values() );
-        mComboMixerGain.setSelectedItem( mSelectedConfig.getMixerGain() );
-        mComboMixerGain.addActionListener( new ActionListener() 
-        {
-			@Override
-            public void actionPerformed( ActionEvent arg0 )
-            {
-				EventQueue.invokeLater( new Runnable() 
-				{
-					@Override
-                    public void run()
-                    {
-						try
-		                {
-							R820TMixerGain mixerGain = 
-									(R820TMixerGain)mComboMixerGain.getSelectedItem();
-							
-							if( mComboMixerGain.isEnabled() )
-							{
-								mController.setMixerGain( mixerGain, true );
-							}
-
-							mSelectedConfig.setMixerGain( mixerGain );
-			                save();
-		                }
-		                catch ( UsbException e )
-		                {
-		                	JOptionPane.showMessageDialog( 
-		                			R820TTunerConfigurationPanel.this, 
-		                			"E4K Tuner Controller - couldn't apply the mixer "
-		                			+ "gain setting - " + e.getLocalizedMessage() );  
-		                	
-		                	Log.error( "E4K Tuner Controller - couldn't apply mixer "
-		                			+ "gain setting - " + e.getLocalizedMessage() );
-		                }
-                    }
-				} );
-            }
-        } );
-        mComboMixerGain.setToolTipText( "<html>Mixer Gain.  Set master gain "
-        		+ "to <b>MASTER</b> to enable adjustment</html>" );
-        mComboMixerGain.setEnabled( false );
-        gainPanel.add( mComboMixerGain );
-        gainPanel.add( new JLabel( "Mixer" ), "wrap" );
-
-        /* LNA Gain Control */
-        mComboLNAGain = new JComboBox<R820TLNAGain>( R820TLNAGain.values() );
-        mComboLNAGain.setSelectedItem( mSelectedConfig.getLNAGain() );
-        mComboLNAGain.addActionListener( new ActionListener() 
-        {
-			@Override
-            public void actionPerformed( ActionEvent arg0 )
-            {
-				try
-                {
-					R820TLNAGain lnaGain = (R820TLNAGain)mComboLNAGain.getSelectedItem();
-					
-					if( mComboLNAGain.isEnabled() )
-					{
-						mController.setLNAGain( lnaGain, true );
-					}
-
-					mSelectedConfig.setLNAGain( lnaGain );
-	                save();
-                }
-                catch ( UsbException e )
-                {
-                	JOptionPane.showMessageDialog( 
-                			R820TTunerConfigurationPanel.this, 
-                			"E4K Tuner Controller - couldn't apply the LNA "
-                			+ "gain setting - " + e.getLocalizedMessage() );  
-                	
-                	Log.error( "E4K Tuner Controller - couldn't apply LNA "
-                			+ "gain setting - " + e.getLocalizedMessage() );
-                }
-            }
-        } );
-        mComboLNAGain.setToolTipText( "<html>LNA Gain.  Set master gain "
-        		+ "to <b>MANUAL</b> to enable adjustment</html>" );
-        mComboLNAGain.setEnabled( false );
-        gainPanel.add( mComboLNAGain );
-        gainPanel.add( new JLabel( "LNA" ), "wrap" );
-
-        /* Enhance Gain Control */
-        mComboEnhanceGain = new JComboBox<R820TEnhanceGain>( R820TEnhanceGain.values() );
-        mComboEnhanceGain.setSelectedItem( mSelectedConfig.getEnhanceGain() );
-        mComboEnhanceGain.addActionListener( new ActionListener() 
-        {
-			@Override
-            public void actionPerformed( ActionEvent arg0 )
-            {
-				try
-                {
-					R820TEnhanceGain enhanceGain = 
-							(R820TEnhanceGain)mComboEnhanceGain.getSelectedItem();
-
-					if( mComboEnhanceGain.isEnabled() )
-					{
-						mController.setEnhanceGain( enhanceGain, true );
-					}
-					
-					mSelectedConfig.setEnhanceGain( enhanceGain );
-	                save();
-                }
-                catch ( UsbException e )
-                {
-                	JOptionPane.showMessageDialog( 
-                			R820TTunerConfigurationPanel.this, 
-                			"E4K Tuner Controller - couldn't apply the enhance "
-                			+ "gain setting - " + e.getLocalizedMessage() );  
-                	
-                	Log.error( "E4K Tuner Controller - couldn't apply enhance "
-                			+ "gain setting - " + e.getLocalizedMessage() );
-                }
-            }
-        } );
-        mComboEnhanceGain.setToolTipText( "<html>Enhance Gain.  Set master gain "
-        		+ "to <b>MANUAL</b> to enable adjustment</html>" );
-        mComboEnhanceGain.setEnabled( false );
-        gainPanel.add( mComboEnhanceGain );
-        gainPanel.add( new JLabel( "Enhance" ), "wrap" );
-
-        add( gainPanel, "span" );
-
-        /**
-         * Create a new configuration
-         */
-        mNewConfiguration = new JButton( "New" );
-
-		mNewConfiguration.addActionListener( new ActionListener() 
-		{
-			@Override
-            public void actionPerformed( ActionEvent e )
-            {
-				TunerConfiguration config = 
-						mResourceManager.getSettingsManager()
-							.addNewTunerConfiguration( 
-									TunerType.ELONICS_E4000, 
-									"New Configuration" );
-				
-				mComboConfigurations.setModel( getModel() );
-				
-				mComboConfigurations.setSelectedItem( config );
-
-				repaint();
-            }
-		} );
-		
-		add( mNewConfiguration );
-
-		/**
-		 * Delete the currently selected configuration
-		 */
-		mDeleteConfiguration = new JButton( "Delete" );
-		
-		mDeleteConfiguration.addActionListener( new ActionListener() 
-		{
-			@Override
-            public void actionPerformed( ActionEvent e )
-            {
-				R820TTunerConfiguration selected = 
-						(R820TTunerConfiguration)mComboConfigurations
-						.getItemAt( mComboConfigurations.getSelectedIndex() );
-
-				if( selected != null )
-				{
-					int n = JOptionPane.showConfirmDialog(
-						    R820TTunerConfigurationPanel.this,
-						    "Are you sure you want to delete '"
-					    		+ selected.getName() + "'?",
-						    "Are you sure?",
-						    JOptionPane.YES_NO_OPTION );
-
-					if( n == JOptionPane.YES_OPTION )
-					{
-						mResourceManager.getSettingsManager()
-							.deleteTunerConfiguration( selected );
-
-						mComboConfigurations.setModel( getModel() );
-						
-						mComboConfigurations.setSelectedIndex( 0 );
-						
-						repaint();
-					}
-				}
-            }
-		} );
-
-		add( mDeleteConfiguration, "wrap" );
-    }
-
-    /**
-     * Updates gui controls with the values from the tuner configuration
-     * @param config - tuner configuration
-     */
-    private void update( R820TTunerConfiguration config )
-    {
-    	mSelectedConfig = config;
-    	
-		try
-        {
-	        mController.apply( config );
-	        
-	        mName.setText( config.getName() );
-	        mFrequencyCorrection.setValue( config.getFrequencyCorrection() );
-
-	        mComboMixerGain.setSelectedItem( mSelectedConfig.getMixerGain() );
-	        mComboLNAGain.setSelectedItem( mSelectedConfig.getLNAGain() );
-	        mComboEnhanceGain.setSelectedItem( mSelectedConfig.getEnhanceGain() );
-
-	        /* Apply master gain last so that the Mixer, LNA, and Enhance gain
-	         * settings are updated with the master setting where necessary */
-	        mComboMasterGain.setSelectedItem( mSelectedConfig.getMasterGain() );
-
-	        mComboSampleRate.setSelectedItem( mSelectedConfig.getSampleRate() );
-
-	        mResourceManager.getSettingsManager().setSelectedTunerConfiguration( 
-    			TunerType.ELONICS_E4000, mController.getUniqueID(), config );
-        }
-        catch ( SourceException e1 )
-        {
-        	JOptionPane.showMessageDialog( 
-        			R820TTunerConfigurationPanel.this, 
-        			"E4K Tuner Controller - couldn't "
-        			+ "apply the tuner configuration settings - " + 
-        					e1.getLocalizedMessage() );  
-        	
-        	Log.error( "E4K Tuner Controller - couldn't apply "
-        			+ "config [" + config.getName() + "] - " + 
-        			e1.getLocalizedMessage() );
-        }
+//        mComboMasterGain = new JComboBox<R820TGain>( R820TGain.values() );
+//        mComboMasterGain.setSelectedItem( mSelectedConfig.getMasterGain() );
+//        
+//        mComboMasterGain.addActionListener( new ActionListener() 
+//        {
+//			@Override
+//            public void actionPerformed( ActionEvent arg0 )
+//            {
+//				try
+//                {
+//					R820TGain gain = (R820TGain)mComboMasterGain.getSelectedItem();
+//					
+//	                mController.setGain( (R820TGain)mComboMasterGain.getSelectedItem(), true );
+//	                
+//	                if( gain == R820TGain.MANUAL )
+//	                {
+//	                	mComboMixerGain.setSelectedItem( 
+//	                			mController.getMixerGain( true ) );
+//	                	mComboMixerGain.setEnabled( true );
+//	                	
+//	                	mComboLNAGain.setSelectedItem( 
+//	                			mController.getLNAGain( true ) );
+//	                	mComboLNAGain.setEnabled( true );
+//
+//	                	mComboEnhanceGain.setEnabled( true );
+//	                	mComboEnhanceGain.setSelectedItem( 
+//	                			mController.getEnhanceGain( true ) );
+//	                }
+//	                else
+//	                {
+//	                	mComboMixerGain.setEnabled( false );
+//	                	mComboMixerGain.setSelectedItem( gain.getMixerGain() );
+//
+//	                	mComboLNAGain.setEnabled( false );
+//	                	mComboLNAGain.setSelectedItem( gain.getLNAGain() );
+//
+//	                	mComboEnhanceGain.setEnabled( false );
+//	                	mComboEnhanceGain.setSelectedItem( gain.getEnhanceGain() );
+//	                }
+//	                
+//	                mSelectedConfig.setMasterGain( gain );
+//	                save();
+//                }
+//                catch ( UsbException e )
+//                {
+//                	JOptionPane.showMessageDialog( 
+//                			R820TTunerConfigurationPanel.this, 
+//                			"E4K Tuner Controller - couldn't apply the gain "
+//                			+ "setting - " + e.getLocalizedMessage() );  
+//                	
+//                	Log.error( "E4K Tuner Controller - couldn't apply "
+//                			+ "gain setting - " + e.getLocalizedMessage() );
+//                }
+//            }
+//        } );
+//        mComboMasterGain.setToolTipText( "<html>Select <b>AUTOMATIC</b> for auto "
+//        		+ "gain, <b>MANUAL</b> to enable<br> independent control of "
+//        		+ "<i>Mixer</i>, <i>LNA</i> and <i>Enhance</i> gain<br>"
+//        		+ "settings, or one of the individual gain settings for<br>"
+//        		+ "semi-manual gain control</html>" );
+//        gainPanel.add( mComboMasterGain );
+//        gainPanel.add( new JLabel( "Master" ), "wrap" );
+//
+//        /* Mixer Gain Control */
+//        mComboMixerGain = new JComboBox<R820TMixerGain>( R820TMixerGain.values() );
+//        mComboMixerGain.setSelectedItem( mSelectedConfig.getMixerGain() );
+//        mComboMixerGain.addActionListener( new ActionListener() 
+//        {
+//			@Override
+//            public void actionPerformed( ActionEvent arg0 )
+//            {
+//				EventQueue.invokeLater( new Runnable() 
+//				{
+//					@Override
+//                    public void run()
+//                    {
+//						try
+//		                {
+//							R820TMixerGain mixerGain = 
+//									(R820TMixerGain)mComboMixerGain.getSelectedItem();
+//							
+//							if( mComboMixerGain.isEnabled() )
+//							{
+//								mController.setMixerGain( mixerGain, true );
+//							}
+//
+//							mSelectedConfig.setMixerGain( mixerGain );
+//			                save();
+//		                }
+//		                catch ( UsbException e )
+//		                {
+//		                	JOptionPane.showMessageDialog( 
+//		                			R820TTunerConfigurationPanel.this, 
+//		                			"E4K Tuner Controller - couldn't apply the mixer "
+//		                			+ "gain setting - " + e.getLocalizedMessage() );  
+//		                	
+//		                	Log.error( "E4K Tuner Controller - couldn't apply mixer "
+//		                			+ "gain setting - " + e.getLocalizedMessage() );
+//		                }
+//                    }
+//				} );
+//            }
+//        } );
+//        mComboMixerGain.setToolTipText( "<html>Mixer Gain.  Set master gain "
+//        		+ "to <b>MASTER</b> to enable adjustment</html>" );
+//        mComboMixerGain.setEnabled( false );
+//        gainPanel.add( mComboMixerGain );
+//        gainPanel.add( new JLabel( "Mixer" ), "wrap" );
+//
+//        /* LNA Gain Control */
+//        mComboLNAGain = new JComboBox<R820TLNAGain>( R820TLNAGain.values() );
+//        mComboLNAGain.setSelectedItem( mSelectedConfig.getLNAGain() );
+//        mComboLNAGain.addActionListener( new ActionListener() 
+//        {
+//			@Override
+//            public void actionPerformed( ActionEvent arg0 )
+//            {
+//				try
+//                {
+//					R820TLNAGain lnaGain = (R820TLNAGain)mComboLNAGain.getSelectedItem();
+//					
+//					if( mComboLNAGain.isEnabled() )
+//					{
+//						mController.setLNAGain( lnaGain, true );
+//					}
+//
+//					mSelectedConfig.setLNAGain( lnaGain );
+//	                save();
+//                }
+//                catch ( UsbException e )
+//                {
+//                	JOptionPane.showMessageDialog( 
+//                			R820TTunerConfigurationPanel.this, 
+//                			"E4K Tuner Controller - couldn't apply the LNA "
+//                			+ "gain setting - " + e.getLocalizedMessage() );  
+//                	
+//                	Log.error( "E4K Tuner Controller - couldn't apply LNA "
+//                			+ "gain setting - " + e.getLocalizedMessage() );
+//                }
+//            }
+//        } );
+//        mComboLNAGain.setToolTipText( "<html>LNA Gain.  Set master gain "
+//        		+ "to <b>MANUAL</b> to enable adjustment</html>" );
+//        mComboLNAGain.setEnabled( false );
+//        gainPanel.add( mComboLNAGain );
+//        gainPanel.add( new JLabel( "LNA" ), "wrap" );
+//
+//        /* Enhance Gain Control */
+//        mComboEnhanceGain = new JComboBox<R820TEnhanceGain>( R820TEnhanceGain.values() );
+//        mComboEnhanceGain.setSelectedItem( mSelectedConfig.getEnhanceGain() );
+//        mComboEnhanceGain.addActionListener( new ActionListener() 
+//        {
+//			@Override
+//            public void actionPerformed( ActionEvent arg0 )
+//            {
+//				try
+//                {
+//					R820TEnhanceGain enhanceGain = 
+//							(R820TEnhanceGain)mComboEnhanceGain.getSelectedItem();
+//
+//					if( mComboEnhanceGain.isEnabled() )
+//					{
+//						mController.setEnhanceGain( enhanceGain, true );
+//					}
+//					
+//					mSelectedConfig.setEnhanceGain( enhanceGain );
+//	                save();
+//                }
+//                catch ( UsbException e )
+//                {
+//                	JOptionPane.showMessageDialog( 
+//                			R820TTunerConfigurationPanel.this, 
+//                			"E4K Tuner Controller - couldn't apply the enhance "
+//                			+ "gain setting - " + e.getLocalizedMessage() );  
+//                	
+//                	Log.error( "E4K Tuner Controller - couldn't apply enhance "
+//                			+ "gain setting - " + e.getLocalizedMessage() );
+//                }
+//            }
+//        } );
+//        mComboEnhanceGain.setToolTipText( "<html>Enhance Gain.  Set master gain "
+//        		+ "to <b>MANUAL</b> to enable adjustment</html>" );
+//        mComboEnhanceGain.setEnabled( false );
+//        gainPanel.add( mComboEnhanceGain );
+//        gainPanel.add( new JLabel( "Enhance" ), "wrap" );
+//
+//        add( gainPanel, "span" );
+//
+//        /**
+//         * Create a new configuration
+//         */
+//        mNewConfiguration = new JButton( "New" );
+//
+//		mNewConfiguration.addActionListener( new ActionListener() 
+//		{
+//			@Override
+//            public void actionPerformed( ActionEvent e )
+//            {
+//				TunerConfiguration config = 
+//						mResourceManager.getSettingsManager()
+//							.addNewTunerConfiguration( 
+//									TunerType.ELONICS_E4000, 
+//									"New Configuration" );
+//				
+//				mComboConfigurations.setModel( getModel() );
+//				
+//				mComboConfigurations.setSelectedItem( config );
+//
+//				repaint();
+//            }
+//		} );
+//		
+//		add( mNewConfiguration );
+//
+//		/**
+//		 * Delete the currently selected configuration
+//		 */
+//		mDeleteConfiguration = new JButton( "Delete" );
+//		
+//		mDeleteConfiguration.addActionListener( new ActionListener() 
+//		{
+//			@Override
+//            public void actionPerformed( ActionEvent e )
+//            {
+//				R820TTunerConfiguration selected = 
+//						(R820TTunerConfiguration)mComboConfigurations
+//						.getItemAt( mComboConfigurations.getSelectedIndex() );
+//
+//				if( selected != null )
+//				{
+//					int n = JOptionPane.showConfirmDialog(
+//						    R820TTunerConfigurationPanel.this,
+//						    "Are you sure you want to delete '"
+//					    		+ selected.getName() + "'?",
+//						    "Are you sure?",
+//						    JOptionPane.YES_NO_OPTION );
+//
+//					if( n == JOptionPane.YES_OPTION )
+//					{
+//						mResourceManager.getSettingsManager()
+//							.deleteTunerConfiguration( selected );
+//
+//						mComboConfigurations.setModel( getModel() );
+//						
+//						mComboConfigurations.setSelectedIndex( 0 );
+//						
+//						repaint();
+//					}
+//				}
+//            }
+//		} );
+//
+//		add( mDeleteConfiguration, "wrap" );
+//    }
+//
+//    /**
+//     * Updates gui controls with the values from the tuner configuration
+//     * @param config - tuner configuration
+//     */
+//    private void update( R820TTunerConfiguration config )
+//    {
+//    	mSelectedConfig = config;
+//    	
+//		try
+//        {
+//	        mController.apply( config );
+//	        
+//	        mName.setText( config.getName() );
+//	        mFrequencyCorrection.setValue( config.getFrequencyCorrection() );
+//
+//	        mComboMixerGain.setSelectedItem( mSelectedConfig.getMixerGain() );
+//	        mComboLNAGain.setSelectedItem( mSelectedConfig.getLNAGain() );
+//	        mComboEnhanceGain.setSelectedItem( mSelectedConfig.getEnhanceGain() );
+//
+//	        /* Apply master gain last so that the Mixer, LNA, and Enhance gain
+//	         * settings are updated with the master setting where necessary */
+//	        mComboMasterGain.setSelectedItem( mSelectedConfig.getMasterGain() );
+//
+//	        mComboSampleRate.setSelectedItem( mSelectedConfig.getSampleRate() );
+//
+//	        mResourceManager.getSettingsManager().setSelectedTunerConfiguration( 
+//    			TunerType.ELONICS_E4000, mController.getUniqueID(), config );
+//        }
+//        catch ( SourceException e1 )
+//        {
+//        	JOptionPane.showMessageDialog( 
+//        			R820TTunerConfigurationPanel.this, 
+//        			"E4K Tuner Controller - couldn't "
+//        			+ "apply the tuner configuration settings - " + 
+//        					e1.getLocalizedMessage() );  
+//        	
+//        	Log.error( "E4K Tuner Controller - couldn't apply "
+//        			+ "config [" + config.getName() + "] - " + 
+//        			e1.getLocalizedMessage() );
+//        }
     }
     
     /**
