@@ -1,6 +1,11 @@
 /*******************************************************************************
  *     SDR Trunk 
  *     Copyright (C) 2014 Dennis Sheirer
+ *     
+ *     Java port of librtlsdr <https://github.com/steve-m/librtlsdr>
+ *     
+ *     Copyright (C) 2013 Mauro Carvalho Chehab <mchehab@redhat.com>
+ *     Copyright (C) 2013 Steve Markgraf <steve@steve-m.de>
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -30,86 +35,26 @@ import controller.ResourceManager;
 
 public class R820TTunerController extends RTL2832TunerController
 {
-	/**
-	 * Note: E4K tuner max frequency range is 2200 MHz, but the 
-	 * max value that can be assigned to a signed integer is
-	 * 2147xxxxxx, so we constrain the E4K to the max integer value, for now
-	 * 
-	 * TODO: change frequency to a long primitive type
-	 */
-	public static final int sMIN_FREQUENCY = 52000000;
-	public static final int sMIN_FREQUENCY_EXTENDED = 52000000;
-	public static final int sMAX_FREQUENCY = 2147000000;
-	public static final int sMAX_FREQUENCY_EXTENDED = 2147000000;
-	public static final long sMIN_VCO = 2600000000l; //2.6 GHz
-	public static final long sMAX_VCO = 3900000000l; //3.9 GHz
+	public static final int MIN_FREQUENCY = 24000000;
+	public static final int MAX_FREQUENCY = 176600000;
+	public static final byte VERSION = (byte)49;
+	
+	private byte mI2CAddress = (byte)0x34; 
 
-	/* The local oscillator is defined by whole (integer) units of the oscillator
-	 * frequency and fractional units representing 1/65536th of the oscillator
-	 * frequency, meaning we can only tune the local oscillator in units of 
-	 * 439.453125 hertz. */
-	public static final long sE4K_PLL_Y = 65536l; /* 16-bit fractional register */
-	public static final byte MASTER1_RESET = (byte)0x01;
-	public static final byte MASTER1_NORM_STBY = (byte)0x02;
-	public static final byte MASTER1_POR_DET = (byte)0x04;
-	
-	public static final byte SYNTH1_PLL_LOCK = (byte)0x01;
-	public static final byte SYNTH1_BAND_SHIF = (byte)0x01;
-
-	public static final byte SYNTH7_3PHASE_EN = (byte)0x08;
-
-	public static final byte SYNTH8_VCOCAL_UPD = (byte)0x04;
-	
-	public static final byte FILT3_MASK = (byte)0x20;
-	public static final byte FILT3_ENABLE = (byte)0x00;
-	public static final byte FILT3_DISABLE = (byte)0x20;
-	
-	public static final byte MIXER_FILTER_MASK = (byte)0xF0;
-	public static final byte IF_CHANNEL_FILTER_MASK = (byte)0x1F;
-	public static final byte IF_RC_FILTER_MASK = (byte)0x0F;
-	
-
-	public static final byte AGC1_LIN_MODE = (byte)0x10;
-	public static final byte AGC1_LNA_UPDATE = (byte)0x20;
-	public static final byte AGC1_LNA_G_LOW = (byte)0x40;
-	public static final byte AGC1_LNA_G_HIGH = (byte)0x80;
-	public static final byte AGC1_MOD_MASK = (byte)0xF;
-
-	public static final byte GAIN1_MOD_MASK = (byte)0xF;
-	public static final byte IF_GAIN_MODE_SWITCHING_MASK = (byte)0x1;
-
-	public static final byte AGC6_LNA_CAL_REQ = (byte)0x10;
-	
-	public static final byte AGC7_MIXER_GAIN_MASK = (byte)0x01;
-	public static final byte AGC7_MIX_GAIN_MANUAL = (byte)0x00;
-	public static final byte AGC7_MIX_GAIN_AUTO = (byte)0x01;
-	public static final byte AGC7_GAIN_STEP_5DB = (byte)0x20;
-	
-	public static final byte AGC8_SENS_LIN_AUTO = (byte)0x01;
-
-	public static final byte AGC11_LNA_GAIN_ENH = (byte)0x01;
-	public static final byte ENH_GAIN_MOD_MASK = (byte)0x07;
-	public static final byte MIXER_GAIN_MASK = (byte)0x01;
-	
-	public static final byte DC1_CAL_REQ = (byte)0x01;
-	
-	public static final byte DC5_I_LUT_EN = (byte)0x01;
-	public static final byte DC5_Q_LUT_EN = (byte)0x02;
-	public static final byte DC5_RANGE_DETECTOR_ENABLED_MASK = (byte)0x04; //DC Offset Detector Enabled
-	public static final byte DC5_RANGE_DETECTOR_ENABLED = (byte)0x04; //DC Offset Detector Enabled
-	public static final byte DC5_RANGE_EN = (byte)0x08;
-	public static final byte DC5_RANGE_DETECTOR_DISABLED_MASK = (byte)0x03;
-	public static final byte DC5_RANGE_DETECTOR_DISABLED = (byte)0x00;
-	
-	public static final byte DC5_TIMEVAR_EN = (byte)0x10;
-	
-	public static final byte CLKOUT_DISABLE = (byte)0x96;
-	
-	public static final byte CHFCALIB_CMD = (byte)0x01;
+	/* Shadow register is used to keep a cached copy of all registers, so that
+	 * we don't have to read a full byte from a register in order to apply a 
+	 * masked value and then re-write the full byte.  With the shadow register,
+	 * we can apply the masked value to the cached value, and then just write 
+	 * the masked byte, skipping the need to read the byte first. */
+	private int[] mShadowRegister = 
+	    { 0x00, 0x00, 0x00, 0x00, 0x00, 0x83, 0x32, 0x75,
+	      0xC0, 0x40, 0xD6, 0x6C, 0xF5, 0x63, 0x75, 0x68,
+	      0x6C, 0x83, 0x80, 0x00, 0x0F, 0x00, 0xC0, 0x30,
+	      0x48, 0xCC, 0x60, 0x00, 0x54, 0xAE, 0x4A, 0xC0 };
 	
 	public R820TTunerController( USBTunerDevice device ) throws SourceException
 	{
-		super( device, sMIN_FREQUENCY, sMAX_FREQUENCY );
+	    super( device, MIN_FREQUENCY, MAX_FREQUENCY );
 	}
 
 	@Override
@@ -118,35 +63,30 @@ public class R820TTunerController extends RTL2832TunerController
 	    return TunerType.RAFAELMICRO_R820T;
     }
 	
-	public void apply( R820TTunerConfiguration config ) throws SourceException
-	{
-		//TODO: apply the config settings
-	}
+	@Override
+    public void setSampleRateFilters( int sampleRate ) throws UsbException
+    {
+		//TODO: why is this being forced as an abstract method?
+    }
+	
+	@Override
+    public void apply( TunerConfiguration config ) throws SourceException
+    {
+		Log.error( "********* Apply tuner config not yet implemented - R820T tuner controller" );
+    }
 
 	public void init() throws SourceException
 	{
-		try
-		{
-			/* Dummy write to test USB interface */
-			writeRegister( mUSBDevice, Block.USB, 
-					Address.USB_SYSCTL.getAddress(), (short)0x09, 1 );
-
-			initBaseband( mUSBDevice );
-
-			enableI2CRepeater( mUSBDevice, true );
-			
-			boolean i2CRepeaterControl = false;
-			
-			initTuner( i2CRepeaterControl );
-
-			enableI2CRepeater( mUSBDevice, false );
-		}
-		catch( UsbException e )
-		{
-			e.printStackTrace();
-			throw new SourceException( "E4K Tuner Controller - error during "
-					+ "init()", e );
-		}
+	    try
+	    {
+	        initializeRegisters();
+	    }
+	    catch( UsbException e )
+	    {
+	        throw new SourceException( "R820TTunerController - error setting "
+                + "registers to initial startup value", e );
+	    }
+	    
 	}
 	
 	public JPanel getEditor( ResourceManager resourceManager )
@@ -154,165 +94,17 @@ public class R820TTunerController extends RTL2832TunerController
 		return new R820TTunerEditorPanel( this, resourceManager );
 	}
 	
-	/**
-	 * Sets the IF filters (mixer, channel and RC) to the correct filter setting
-	 * for the selected bandwidth/sample rate
-	 */
-	@Override
-    public void setSampleRateFilters( int bandwidth ) throws UsbException
-    {
-		/* Determine repeater state so we can restore it when done */
-		boolean i2CRepeaterEnabled = isI2CRepeaterEnabled();
-
-		if( !i2CRepeaterEnabled )
-		{
-			enableI2CRepeater( mUSBDevice, true );
-		}
-
-		boolean controlI2CRepeater = false;
-		
-		MixerFilter mixer = MixerFilter.getFilter( bandwidth );
-		setMixerFilter( mixer, controlI2CRepeater );
-
-		ChannelFilter channel = ChannelFilter.getFilter( bandwidth );
-		setChannelFilter( channel, controlI2CRepeater );
-
-		RCFilter rc = RCFilter.getFilter( bandwidth ); 
-		setRCFilter( rc, controlI2CRepeater );
-
-		if( !i2CRepeaterEnabled )
-		{
-			enableI2CRepeater( mUSBDevice, false );
-		}
-    }
-
 	@Override
     public int getTunedFrequency() throws SourceException
     {
-		try
-		{
-			/* Determine repeater state so we can restore it when done */
-			boolean i2CRepeaterEnabled = isI2CRepeaterEnabled();
-
-			if( !i2CRepeaterEnabled )
-			{
-				enableI2CRepeater( mUSBDevice, true );
-			}
-
-			boolean controlI2CRepeater = false;
-			
-			byte z = (byte)readE4KRegister( Register.SYNTH3, controlI2CRepeater );
-			
-			int xHigh = readE4KRegister( Register.SYNTH4, controlI2CRepeater );
-			int xLow = readE4KRegister( Register.SYNTH5, controlI2CRepeater );
-
-			int x = ( Integer.rotateLeft( xHigh, 8 ) ) | xLow;
-
-			int pllSetting = readE4KRegister( Register.SYNTH7, controlI2CRepeater );
-			PLL pll = PLL.fromSetting( pllSetting );
-			
-			/* Return the repeater to its previous state */
-			if( !i2CRepeaterEnabled )
-			{
-				enableI2CRepeater( mUSBDevice, false );
-			}
-
-			return calculateActualFrequency( pll, z, x );
-		}
-		catch( UsbException e )
-		{
-			throw new SourceException( "E4K tuner controller - couldn't get "
-					+ "tuned frequency", e );
-		}
+		return 0;
     }
 
 	@Override
     public void setTunedFrequency( int frequency ) throws SourceException
     {
-		/* Get the phase locked loop setting */ 
-		PLL pll = PLL.fromFrequency( frequency );
-
-		/* Z is an integer representing the number of scaled oscillator frequency 
-		 * increments the multiplied frequency. */
-		byte z = (byte)( frequency / pll.getScaledOscillator() );
-		
-		/* remainder is just as it describes.  It is what is left over after we
-		 * carve out scaled oscillator frequency increments (z) from the desired 
-		 * frequency. */
-		int remainder = frequency - ( ( z & 0xFF ) * pll.getScaledOscillator() );
-
-		/* X is a 16-bit representation of the remainder */
-		int x = (int)( (double)remainder / (double)pll.getScaledOscillator() * sE4K_PLL_Y );
-
-		/* Calculate the exact (tunable) frequency and apply that to the tuner */
-		int actualFrequency = calculateActualFrequency( pll, z, x );
-		
-		/* Apply the actual frequency */
-		try
-		{
-//			/* Determine repeater state so we can restore it when done */
-//			boolean i2CRepeaterEnabled = isI2CRepeaterEnabled();
-//
-//			if( !i2CRepeaterEnabled )
-//			{
-				enableI2CRepeater( mUSBDevice, true );
-//			}
-
-			boolean controlI2CRepeater = false;
-			
-			/* Write the PLL setting */
-			writeE4KRegister( Register.SYNTH7, pll.getIndex(), controlI2CRepeater );
-			
-			/* Write z (integral) value */
-			writeE4KRegister( Register.SYNTH3, z, controlI2CRepeater );
-			
-			/* Write the x (fractional) value high-order byte to synth4 register */
-			writeE4KRegister( Register.SYNTH4, (byte)( x & 0xFF ), controlI2CRepeater );
-			
-			/* Write the x (fractional) value low-order byte to synth5 register */
-			writeE4KRegister( Register.SYNTH5, 
-							  (byte)( ( Integer.rotateRight( x, 8 ) ) & 0xFF ),
-							  controlI2CRepeater );
-
-			/* Set the band for the new frequency */
-			setBand( actualFrequency, controlI2CRepeater );
-
-			/* Set the filter */
-			setRFFilter( actualFrequency, controlI2CRepeater );
-			
-			/* Check for PLL lock */
-			int lock = readE4KRegister( Register.SYNTH1, controlI2CRepeater );
-			
-			if( !( ( lock & 0x1 ) == 0x1 ) )
-			{
-				throw new SourceException( "E4K tuner controller - couldn't "
-						+ "achieve PLL lock for frequency [" + 
-						actualFrequency + "]" );
-			}
-			
-			/* Return the repeater to its previous state */
-//			if( !i2CRepeaterEnabled )
-//			{
-				enableI2CRepeater( mUSBDevice, false );
-//			}
-		}
-		catch( UsbException e )
-		{
-			throw new SourceException( "E4K tuner controller - error tuning "
-					+ "frequency [" + frequency + "]", e );
-		}
     }
 	
-	private int calculateActualFrequency( PLL pll, byte z, int x )
-	{
-		int whole = (int)( pll.getScaledOscillator() * ( z & 0xFF ) );
-
-		int fractional = (int)( pll.getScaledOscillator() * 
-								( (double)x / (double)sE4K_PLL_Y ) );
-
-		return whole + fractional;
-	}
-
 	public void initTuner( boolean controlI2CRepeater ) throws UsbException
 	{
 		if( controlI2CRepeater )
@@ -322,2087 +114,517 @@ public class R820TTunerController extends RTL2832TunerController
 		
 		boolean i2CRepeaterControl = false;
 		
-		/* Perform dummy read */
-		readE4KRegister( Register.DUMMY, i2CRepeaterControl );
-
-		/* Reset everything and clear POR indicator */
-		/* NOTE: register value remains 0010 even after we write 0111 to it */
-		writeE4KRegister( Register.MASTER1, (byte)( MASTER1_RESET | 
-													MASTER1_NORM_STBY | 
-													MASTER1_POR_DET ), 
-													i2CRepeaterControl );
-
-		/* Configure clock input */
-		writeE4KRegister( Register.CLK_INP, (byte)0x00, i2CRepeaterControl );
-		
-		/* Disable clock output */
-		writeE4KRegister( Register.REF_CLK, (byte)0x00, i2CRepeaterControl );
-		writeE4KRegister( Register.CLKOUT_PWDN, (byte)0x96, i2CRepeaterControl );
-		
-		/* Magic Init */
-		magicInit( i2CRepeaterControl );
-
-//		/* Set common mode voltage a bit higher for more margin - 850 mv */
-//		writeMaskedE4KRegister( Register.DC7, (byte)0x7, 
-//								(byte)0x4, i2CRepeaterControl );
-//
-//		/* Initialize DC offset lookup tables */
-//		generateDCOffsetTables( i2CRepeaterControl );
-//		
-//		/* Enable time variant DC correction */
-//		writeE4KRegister( Register.DCTIME1, (byte)0x01, i2CRepeaterControl );
-//		writeE4KRegister( Register.DCTIME2, (byte)0x01, i2CRepeaterControl );
-//		
-		/* Set LNA Mode */
-		writeE4KRegister( Register.AGC4, (byte)0x10, i2CRepeaterControl ); //High Threshold
-		writeE4KRegister( Register.AGC5, (byte)0x04, i2CRepeaterControl ); //Low Threshold
-		writeE4KRegister( Register.AGC6, (byte)0x1A, i2CRepeaterControl ); //LNA calibrate + loop rate
-
-		//TODO: lna and mixer gain were already set to manual when we generated
-		//the DC offset tables.  Check the LNA gain setting after we set the 
-		//LNA mode above, to see if the lna or mixer gain settings have changed
-		//and if not, remove the next two steps
-		
-//		/* Set LNA gain to manual using current auto LNA gain setting */
-//		LNAGain lnaGain = getLNAGain( i2CRepeaterControl );
-//		setLNAGain( lnaGain, i2CRepeaterControl );
-//		
-//		/* Set Mixer gain to manual using current auto Mixer gain setting */
-//		MixerGain mixerGain = getMixerGain( i2CRepeaterControl );
-//		setMixerGain( mixerGain, i2CRepeaterControl );
-		
-		//Temp - manual set lna mode to manual
-		writeMaskedE4KRegister( Register.AGC1, 
-				AGC1_MOD_MASK, 
-				AGCMode.SERIAL.getValue(),
-				false );
-		//Temp - set mixer gain to manual
-		writeMaskedE4KRegister( Register.AGC7, 
-				AGC7_MIXER_GAIN_MASK, 
-				AGC7_MIX_GAIN_MANUAL, 
-				false );
-		
-		
-//		/* Enable enhance gain */
-//		setEnhanceGain( EnhanceGain.GAIN_5, i2CRepeaterControl );
-//
-//		/* Enable automatic IF gain mode switching */
-//		writeMaskedE4KRegister( Register.AGC8, 
-//								IF_GAIN_MODE_SWITCHING_MASK, 
-//								AGC8_SENS_LIN_AUTO,
-//								i2CRepeaterControl );
-
-		
-		/* Use automatic gain as a default */
-		setLNAGain( R820TLNAGain.AUTOMATIC, i2CRepeaterControl );
-		setMixerGain( R820TMixerGain.AUTOMATIC, i2CRepeaterControl );
-		setEnhanceGain( R820TEnhanceGain.AUTOMATIC, i2CRepeaterControl );
-		
-		/* Set IF gain stages */
-		setIFStage1Gain( IFStage1Gain.GAIN_PLUS6, i2CRepeaterControl );
-		setIFStage2Gain( IFStage2Gain.GAIN_PLUS0, i2CRepeaterControl );
-		setIFStage3Gain( IFStage3Gain.GAIN_PLUS0, i2CRepeaterControl );
-		setIFStage4Gain( IFStage4Gain.GAIN_PLUS0, i2CRepeaterControl );
-		setIFStage5Gain( IFStage5Gain.GAIN_PLUS9, i2CRepeaterControl );
-		setIFStage6Gain( IFStage6Gain.GAIN_PLUS9, i2CRepeaterControl );
-		
-		/* Set the most narrow filter we can possible use */
-		setMixerFilter( MixerFilter.BW_1M9, i2CRepeaterControl );
-		setRCFilter( RCFilter.BW_1M0, i2CRepeaterControl );
-		setChannelFilter( ChannelFilter.BW_2M15, i2CRepeaterControl );
-
-		setChannelFilterEnabled( true, i2CRepeaterControl );
-
-//		/* Disable DC detector */
-//		setDCRangeDetectorEnabled( false, i2CRepeaterControl );
-
-		/* Disable time variant DC correction */
-		writeMaskedE4KRegister( Register.DC5, (byte)0x03, (byte)0, i2CRepeaterControl );
-		writeMaskedE4KRegister( Register.DCTIME1, (byte)0x03, (byte)0, i2CRepeaterControl );
-		writeMaskedE4KRegister( Register.DCTIME2, (byte)0x03, (byte)0, i2CRepeaterControl );
-		
 		if( controlI2CRepeater )
 		{
 			enableI2CRepeater( mUSBDevice, false );
-		}
-	}
-	
-	private void generateDCOffsetTables( boolean controlI2CRepeater ) 
-							throws UsbException
-	{
-		boolean i2CRepeaterControl = false;
-		
-		if( controlI2CRepeater )
-		{
-			enableI2CRepeater( mUSBDevice, true );
-		}
-		
-		/* Capture current gain settings to reapply at the end */
-		IFStage1Gain stage1 = getIFStage1Gain( i2CRepeaterControl );
-		IFStage2Gain stage2 = getIFStage2Gain( i2CRepeaterControl );
-		IFStage3Gain stage3 = getIFStage3Gain( i2CRepeaterControl );
-		IFStage4Gain stage4 = getIFStage4Gain( i2CRepeaterControl );
-		IFStage5Gain stage5 = getIFStage5Gain( i2CRepeaterControl );
-		IFStage6Gain stage6 = getIFStage6Gain( i2CRepeaterControl );
-
-		/* Set Mixer gain to manual using current auto Mixer gain setting */
-		R820TMixerGain mixerGain = getMixerGain( i2CRepeaterControl );
-		setMixerGain( mixerGain, i2CRepeaterControl );
-		
-		/* Set LNA gain to manual using current auto LNA gain setting */
-		R820TLNAGain lnaGain = getLNAGain( i2CRepeaterControl );
-		setLNAGain( lnaGain, i2CRepeaterControl );
-		
-		/* Set IF Stage 2 - 6 gains to maximum */
-		setIFStage2Gain( IFStage2Gain.GAIN_PLUS9, i2CRepeaterControl );
-		setIFStage3Gain( IFStage3Gain.GAIN_PLUS9, i2CRepeaterControl );
-		setIFStage4Gain( IFStage4Gain.GAIN_PLUS2B, i2CRepeaterControl );
-		setIFStage5Gain( IFStage5Gain.GAIN_PLUS15D, i2CRepeaterControl );
-		setIFStage6Gain( IFStage6Gain.GAIN_PLUS15D, i2CRepeaterControl );
-		
-		/**
-		 * Iterate all DC gain combinations, apply gain settings, read the 
-		 * DC offset value and apply it to the lookup table entry
-		 */
-		for( DCGainCombination combo: DCGainCombination.values() )
-		{
-			/* Set mixer and stage1 gain values */
-			setMixerGain( combo.getMixerGain(), i2CRepeaterControl );
-			setIFStage1Gain( combo.getIFStage1Gain(), i2CRepeaterControl );
-
-			/* Turn on the DC range detector */
-			setDCRangeDetectorEnabled( true, i2CRepeaterControl );
-			
-			/* Calibrate the DC value */
-			writeE4KRegister( Register.DC1, (byte)0x01, i2CRepeaterControl );
-
-			/* Get the I/Q offset and range values */
-			byte offsetI = (byte)( readE4KRegister( Register.DC2, 
-													i2CRepeaterControl ) & 0x3F );
-			byte offsetQ = (byte)( readE4KRegister( Register.DC3, 
-													i2CRepeaterControl ) & 0x3F );
-			byte range = (byte)readE4KRegister( Register.DC4, 
-												i2CRepeaterControl );
-			byte rangeI = (byte)( range & 0x3 );
-			byte rangeQ = (byte)( ( range >> 4 ) & 0x3 );
-			
-			/* Write the offset and range values to the lookup table */
-			writeE4KRegister( combo.getIRegister(), 
-							  (byte)( offsetI | ( rangeI << 6 ) ), 
-							  i2CRepeaterControl );
-
-			writeE4KRegister( combo.getQRegister(), 
-							  (byte)( offsetQ | ( rangeQ << 6 ) ),
-							  i2CRepeaterControl );
-		}
-		
-		if( controlI2CRepeater )
-		{
-			enableI2CRepeater( mUSBDevice, false );
-		}
-	}
-	
-	public void setDCRangeDetectorEnabled( boolean enabled, 
-							boolean controlI2CRepeater ) throws UsbException
-	{
-		if( enabled )
-		{
-			writeMaskedE4KRegister( Register.DC5, 
-									DC5_RANGE_DETECTOR_ENABLED_MASK, 
-									DC5_RANGE_DETECTOR_ENABLED,
-									controlI2CRepeater );
-		}
-		else
-		{
-			writeMaskedE4KRegister( Register.DC5, 
-									DC5_RANGE_DETECTOR_DISABLED_MASK, 
-									DC5_RANGE_DETECTOR_DISABLED,
-									controlI2CRepeater );
 		}
 	}
 
 	/**
-	 * Sets the LNA gain within the E4K Tuner
-	 * 
-	 * Note: requires I2C repeater enabled
-	 * 
-	 * @param gain
+	 * Partially implements the r82xx_set_tv_standard() method from librtlsdr.
+	 * Sets standard to digital tv to support sdr operations only.
+	 */
+	private void setTVStandard() throws UsbException
+	{
+	    enableI2CRepeater( mUSBDevice, true );
+	    
+	    /* Init Flag & Xtal check Result */
+	    writeR820TRegister( Register.XTAL_CHECK, (byte)0x00, false );
+	    
+	    /* Set version */
+        writeR820TRegister( Register.VERSION, VERSION, false );
+	    
+        /* LT Gain Test */
+        writeR820TRegister( Register.LNA_TOP, (byte)0x00, false );
+
+        for( int x = 0; x < 2; x++ )
+        {
+            /* Set filter cap */
+            writeR820TRegister( Register.FILTER_CAPACITOR, (byte)0x6B, false );
+
+            /* Set calibration clock on */
+            writeR820TRegister( Register.CALIBRATION_CLOCK, (byte)0x04, false );
+
+            /* XTAL capacitor 0pF for PLL */
+            writeR820TRegister( Register.PLL_XTAL_CAPACITOR, (byte)0x00, false );
+
+            setPLL( 5600 * 1000, false );
+        }
+        
+	    enableI2CRepeater( mUSBDevice, false );
+	}
+	
+	private void setPLL( int frequency, boolean controlI2C ) throws UsbException
+	{
+	    /* Set reference divider to 0 */
+        writeR820TRegister( Register.PLL_XTAL_CAPACITOR, (byte)0x00, false );
+
+        /* Set PLL autotune to 128kHz */
+        writeR820TRegister( Register.PLL_AUTOTUNE, (byte)0x00, false );
+
+        /* Set VCO current to 100 */
+        writeR820TRegister( Register.VCO_CURRENT, (byte)0x80, false );
+
+        /* Calculate divider */
+        int mix_div =2;
+        int div_buf = 0;
+        int div_num = 0;
+        int vco_min = 1770000;
+        int vco_max = vco_min * 2;
+        
+        int freq_khz = (int)( ( frequency + 500 ) / 1000 );
+        
+        while( mix_div <= 64 )
+        {
+            int value = freq_khz * mix_div;
+            
+            if( vco_min <= value && value < vco_max )
+            {
+                div_buf = mix_div;
+                
+                while( div_buf > 2 )
+                {
+                    div_buf = div_buf >> 1;
+                    div_num++;
+                }
+                break;
+                
+            }
+            
+            mix_div = mix_div << 1;
+        }
+	}
+	
+	/**
+	 * Writes initial starting value of registers 0x05 through 0x1F using the 
+	 * default value initialized in the shadow register array.  This method only
+	 * needs to be called once, upon initialization.
 	 * @throws UsbException
 	 */
-    public void setLNAGain( R820TLNAGain gain, boolean controlI2CRepeater ) 
-    								throws UsbException
+	private void initializeRegisters() throws UsbException
 	{
-    	if( controlI2CRepeater )
-    	{
-    		enableI2CRepeater( mUSBDevice, true );
-    	}
-    	
-    	if( gain == R820TLNAGain.AUTOMATIC )
-		{
-			writeMaskedE4KRegister( Register.AGC1, 
-									AGC1_MOD_MASK, 
-									AGCMode.IF_SERIAL_LNA_AUTON.getValue(),
-									false );
-		}
-		else
-		{
-			writeMaskedE4KRegister( Register.AGC1, 
-									AGC1_MOD_MASK, 
-									AGCMode.SERIAL.getValue(),
-									false );
-			
+        enableI2CRepeater( mUSBDevice, true );
+	    
+	    for( int x = 5; x < mShadowRegister.length; x++ )
+	    {
+	        writeI2CRegister( mUSBDevice, 
+	                          mI2CAddress,
+	                          (byte)x,
+	                          (byte)mShadowRegister[ x ],
+	                          false );
+	    }
 
-			writeMaskedE4KRegister( R820TLNAGain.getRegister(), 
-									R820TLNAGain.getMask(), 
-									gain.getValue(),
-									false );
-		}
-    	
-    	if( controlI2CRepeater )
-    	{
-    		enableI2CRepeater( mUSBDevice, false );
-    	}
-	}
-    
-    /**
-     * Reads LNA gain from E4K tuner
-     * 
-     * Note: requires I2C repeater enabled
-     */
-	public R820TLNAGain getLNAGain( boolean controlI2CRepeater ) throws UsbException
-	{
-		return R820TLNAGain.fromRegisterValue( 
-				readE4KRegister( R820TLNAGain.getRegister(), controlI2CRepeater ) );
-	}
-
-	/**
-	 * Sets enhanced gain for E4K repeater.
-	 * 
-	 * Note: requires I2C repeater enabled
-	 * 
-	 * @param gain
-	 * @throws UsbException
-	 */
-	public void setEnhanceGain( R820TEnhanceGain gain, boolean controlI2CRepeater ) 
-								throws UsbException
-	{
-		writeMaskedE4KRegister( R820TEnhanceGain.getRegister(), 
-								R820TEnhanceGain.getMask(), 
-								gain.getValue(),
-								controlI2CRepeater );
-	}
-
-	/**
-	 * Gets the enhanced gain setting in the E4K tuner.
-	 * 
-	 * Note: requires I2C repeater
-	 * @return
-	 * @throws UsbException
-	 */
-	public R820TEnhanceGain getEnhanceGain( boolean controlI2CRepeater ) 
-								throws UsbException
-	{
-		return R820TEnhanceGain.fromRegisterValue( 
-			readE4KRegister( R820TEnhanceGain.getRegister(), controlI2CRepeater ) );
+	    enableI2CRepeater( mUSBDevice, false );
 	}
 	
-	public void setMixerGain( R820TMixerGain gain, boolean controlI2CRepeater ) 
-								throws UsbException
+	private void readStatusRegisters( boolean controlI2C ) throws UsbException
 	{
-		if( controlI2CRepeater )
-		{
-			enableI2CRepeater( mUSBDevice, true );
-		}
-		
-		boolean localI2CRepeaterControl = false;
-		
-		if( gain == R820TMixerGain.AUTOMATIC )
-		{
-			writeMaskedE4KRegister( Register.AGC7, 
-									AGC7_MIXER_GAIN_MASK, 
-									AGC7_MIX_GAIN_AUTO,
-									localI2CRepeaterControl );
-		}
-		else
-		{
-			writeMaskedE4KRegister( Register.AGC7, 
-									AGC7_MIXER_GAIN_MASK, 
-									AGC7_MIX_GAIN_MANUAL, 
-									localI2CRepeaterControl );
+        /* Set the I2C bus to register 0 to read 5 bytes */
+	    writeI2CRegister( mUSBDevice, mI2CAddress, (byte)0, (byte)5, controlI2C );
 
-			/* Set the desired manual gain setting */
-			writeMaskedE4KRegister( R820TMixerGain.getRegister(), 
-					R820TMixerGain.getMask(), 
-					gain.getValue(),
-					localI2CRepeaterControl );
-		}
-		
-		if( controlI2CRepeater )
-		{
-			enableI2CRepeater( mUSBDevice, false );
-		}
+	    byte[] data = new byte[ 5 ];
+	    
+	    byte[] status = read( mUSBDevice, Block.IIC, (byte)0, data );
+
+	    for( int x = 0; x < 5; x++ )
+	    {
+	        mShadowRegister[ x ] = status[ x ];
+	    }
 	}
 	
-	public R820TMixerGain getMixerGain( boolean controlI2CRepeater ) 
-								throws UsbException
+	public void writeR820TRegister( Register register, 
+	                                byte value, 
+	                                boolean controlI2C ) throws UsbException
 	{
-		byte autoOrManual = readMaskedE4KRegister( Register.AGC7, 
-											  AGC7_MIXER_GAIN_MASK, 
-											  controlI2CRepeater );
+	    if( register.isMasked() )
+	    {
+	        int current = mShadowRegister[ register.getRegister() ];
 
-		if( autoOrManual == AGC7_MIX_GAIN_AUTO )
-		{
-			return R820TMixerGain.AUTOMATIC;
-		}
-		else
-		{
-			int register = readE4KRegister( R820TMixerGain.getRegister(), 
-											controlI2CRepeater );
-			
-			return R820TMixerGain.fromRegisterValue( register ); 
-		}
+	        value = (byte)( ( current & ~register.getMask() ) | 
+	                        ( value & register.getMask() ) );
+	    }
+
+        writeI2CRegister( mUSBDevice, mI2CAddress, 
+                (byte)register.getRegister(), value, controlI2C );
+        
+        mShadowRegister[ register.getRegister() ] = value;
 	}
 	
-    public void setIFStage1Gain( IFStage1Gain gain, 
-    							 boolean controlI2CRepeater ) throws UsbException
+	public int readR820TRegister( Register register, boolean controlI2C )
+	                    throws UsbException
 	{
-		writeMaskedE4KRegister( IFStage1Gain.getRegister(), 
-								IFStage1Gain.getMask(), 
-								gain.getValue(),
-								controlI2CRepeater );
-	}
-
-	public IFStage1Gain getIFStage1Gain( boolean controlI2CRepeater ) 
-								throws UsbException
-	{
-		return IFStage1Gain.fromRegisterValue( 
-			readE4KRegister( IFStage1Gain.getRegister(), controlI2CRepeater ) );
+	    return readI2CRegister( mUSBDevice, 
+	                            mI2CAddress, 
+	                            (byte)register.getRegister(), 
+	                            controlI2C );
 	}
 	
-    public void setIFStage2Gain( IFStage2Gain gain, 
-    							 boolean controlI2CRepeater ) throws UsbException
+	public enum VGAGain
 	{
-		writeMaskedE4KRegister( IFStage2Gain.getRegister(), 
-								IFStage2Gain.getMask(), 
-								gain.getValue(),
-								controlI2CRepeater );
+	    GAIN_0( "0", 0x00 ),
+	    GAIN_26( "26", 0x01 ),
+	    GAIN_52( "52", 0x02 ),
+	    GAIN_82( "82", 0x03 ),
+	    GAIN_124( "124", 0x04 ),
+	    GAIN_159( "159", 0x05 ),
+	    GAIN_183( "183", 0x06 ),
+	    GAIN_196( "196", 0x07 ),
+	    GAIN_210( "210", 0x08 ),
+	    GAIN_242( "242", 0x09 ),
+	    GAIN_278( "278", 0x0A ),
+	    GAIN_312( "312", 0x0B ),
+	    GAIN_347( "347", 0x0C ),
+	    GAIN_384( "384", 0x0D ),
+	    GAIN_419( "419", 0x0E ),
+	    GAIN_455( "455", 0x0F );
+	    
+	    private String mLabel;
+	    private int mSetting;
+	    
+	    private VGAGain( String label, int setting )
+	    {
+	        mLabel = label;
+	        mSetting = setting;
+	    }
+	    
+	    public String toString()
+	    {
+	        return mLabel;
+	    }
+	    
+	    public byte getSetting()
+	    {
+	        return (byte)mSetting;
+	    }
 	}
 
-	public IFStage2Gain getIFStage2Gain( boolean controlI2CRepeater ) 
-							throws UsbException
-	{
-		return IFStage2Gain.fromRegisterValue( 
-			readE4KRegister( IFStage2Gain.getRegister(), controlI2CRepeater ) );
-	}
-	
-    public void setIFStage3Gain( IFStage3Gain gain, 
-    							 boolean controlI2CRepeater ) throws UsbException
-	{
-		writeMaskedE4KRegister( IFStage3Gain.getRegister(), 
-								IFStage3Gain.getMask(), 
-								gain.getValue(),
-								controlI2CRepeater );
-	}
-
-	public IFStage3Gain getIFStage3Gain( boolean controlI2CRepeater ) 
-							throws UsbException
-	{
-		return IFStage3Gain.fromRegisterValue( 
-			readE4KRegister( IFStage3Gain.getRegister(), controlI2CRepeater ) );
-	}
-	
-    public void setIFStage4Gain( IFStage4Gain gain, 
-    							 boolean controlI2CRepeater ) throws UsbException
-	{
-		writeMaskedE4KRegister( IFStage4Gain.getRegister(), 
-								IFStage4Gain.getMask(), 
-								gain.getValue(),
-								controlI2CRepeater );
-	}
-
-	public IFStage4Gain getIFStage4Gain( boolean controlI2CRepeater ) 
-								throws UsbException
-	{
-		return IFStage4Gain.fromRegisterValue( 
-			readE4KRegister( IFStage4Gain.getRegister(), controlI2CRepeater ) );
-	}
-	
-    public void setIFStage5Gain( IFStage5Gain gain, 
-    							 boolean controlI2CRepeater ) throws UsbException
-	{
-		writeMaskedE4KRegister( IFStage5Gain.getRegister(), 
-								IFStage5Gain.getMask(), 
-								gain.getValue(),
-								controlI2CRepeater );
-	}
-
-	public IFStage5Gain getIFStage5Gain( boolean controlI2CRepeater ) 
-								throws UsbException
-	{
-		return IFStage5Gain.fromRegisterValue( 
-			readE4KRegister( IFStage5Gain.getRegister(), controlI2CRepeater ) );
-	}
-	
-    public void setIFStage6Gain( IFStage6Gain gain, 
-    							 boolean controlI2CRepeater ) throws UsbException
-	{
-		writeMaskedE4KRegister( IFStage6Gain.getRegister(), 
-								IFStage6Gain.getMask(), 
-								gain.getValue(),
-								controlI2CRepeater );
-	}
-
-	public IFStage6Gain getIFStage6Gain( boolean controlI2CRepeater ) 
-									throws UsbException
-	{
-		return IFStage6Gain.fromRegisterValue( 
-			readE4KRegister( IFStage6Gain.getRegister(), controlI2CRepeater ) );
-	}
-	
-    public void setMixerFilter( MixerFilter filter, 
-    							boolean controlI2CRepeater ) throws UsbException
-	{
-		writeMaskedE4KRegister( MixerFilter.getRegister(), 
-								MixerFilter.getMask(), 
-								filter.getValue(),
-								controlI2CRepeater );
-	}
-
-    public MixerFilter getMixerFilter( boolean controlI2CRepeater ) 
-    								throws UsbException
-	{
-		int value = readE4KRegister( MixerFilter.getRegister(), 
-									 controlI2CRepeater );
-
-		return MixerFilter.fromRegisterValue( value );
-	}
-	
-    public void setRCFilter( RCFilter filter, 
-    						 boolean controlI2CRepeater ) throws UsbException
-	{
-		writeMaskedE4KRegister( RCFilter.getRegister(), 
-								RCFilter.getMask(), 
-								filter.getValue(),
-								controlI2CRepeater );
-	}
-
-    public RCFilter getRCFilter( boolean controlI2CRepeater ) throws UsbException
-	{
-		int value = readE4KRegister( RCFilter.getRegister(), controlI2CRepeater );
-
-		return RCFilter.fromRegisterValue( value );
-	}
-	
-    public void setChannelFilter( ChannelFilter filter, 
-    							  boolean controlI2CRepeater ) throws UsbException
-	{
-		writeMaskedE4KRegister( ChannelFilter.getRegister(), 
-								ChannelFilter.getMask(), 
-								filter.getValue(),
-								controlI2CRepeater );
-	}
-
-    public ChannelFilter getChannelFilter( boolean controlI2CRepeater ) 
-    							throws UsbException
-	{
-		int value = readE4KRegister( ChannelFilter.getRegister(), controlI2CRepeater );
-
-		return ChannelFilter.fromRegisterValue( value );
-
-	}
-    
-    public void setChannelFilterEnabled( boolean enabled, 
-    									 boolean controlI2CRepeater ) throws UsbException
+    public enum LNAGain
     {
-    	if( enabled )
-    	{
-    		writeMaskedE4KRegister( Register.FILT3, 
-    								FILT3_MASK, 
-    								FILT3_ENABLE, 
-    								controlI2CRepeater );
-    	}
-    	else
-    	{
-    		writeMaskedE4KRegister( Register.FILT3, 
-    								FILT3_MASK, 
-    								FILT3_DISABLE, 
-    								controlI2CRepeater );
-    	}
+        AUTOMATIC( "Automatic", 0x00 ),
+        GAIN_0( "0", 0x10 ),
+        GAIN_9( "9", 0x11 ),
+        GAIN_21( "21", 0x12 ),
+        GAIN_61( "61", 0x13 ),
+        GAIN_99( "99", 0x14 ),
+        GAIN_112( "112", 0x15 ),
+        GAIN_143( "143", 0x16 ),
+        GAIN_165( "165", 0x17 ),
+        GAIN_191( "191", 0x18 ),
+        GAIN_222( "222", 0x19 ),
+        GAIN_248( "248", 0x1A ),
+        GAIN_262( "262", 0x1B ),
+        GAIN_281( "281", 0x1C ),
+        GAIN_286( "286", 0x1D ),
+        GAIN_321( "321", 0x1E ),
+        GAIN_334( "334", 0x1F );
+        
+        private String mLabel;
+        private int mSetting;
+        
+        private LNAGain( String label, int setting )
+        {
+            mLabel = label;
+            mSetting = setting;
+        }
+        
+        public String toString()
+        {
+            return mLabel;
+        }
+        
+        public byte getSetting()
+        {
+            return (byte)mSetting;
+        }
+    }
+
+    public enum MixerGain
+    {
+        AUTOMATIC( "Automatic", 0x10 ),
+        GAIN_0( "0", 0x00 ),
+        GAIN_5( "5", 0x01 ),
+        GAIN_15( "15", 0x02 ),
+        GAIN_25( "25", 0x03 ),
+        GAIN_44( "44", 0x04 ),
+        GAIN_53( "53", 0x05 ),
+        GAIN_63( "63", 0x06 ),
+        GAIN_88( "88", 0x07 ),
+        GAIN_105( "105", 0x08 ),
+        GAIN_115( "115", 0x09 ),
+        GAIN_123( "123", 0x0A ),
+        GAIN_139( "139", 0x0B ),
+        GAIN_152( "152", 0x0C ),
+        GAIN_158( "158", 0x0D ),
+        GAIN_161( "161", 0x0E ),
+        GAIN_153( "153", 0x0F );
+        
+        private String mLabel;
+        private int mSetting;
+        
+        private MixerGain( String label, int setting )
+        {
+            mLabel = label;
+            mSetting = setting;
+        }
+        
+        public String toString()
+        {
+            return mLabel;
+        }
+        
+        public byte getSetting()
+        {
+            return (byte)mSetting;
+        }
     }
     
-    public void setBand( int frequency, 
-    					 boolean controlI2CRepeater ) throws UsbException
+    public enum Gain
     {
-    	if( controlI2CRepeater )
-    	{
-    		enableI2CRepeater( mUSBDevice, true );
-    	}
+        AUTOMATIC( "Automatic", VGAGain.GAIN_312, LNAGain.AUTOMATIC, MixerGain.AUTOMATIC ),
+        MANUAL( "Manual", VGAGain.GAIN_210, LNAGain.GAIN_112, MixerGain.GAIN_105 ),
+        GAIN_0( "0", VGAGain.GAIN_210, LNAGain.GAIN_0, MixerGain.GAIN_0 ),
+        GAIN_9( "9", VGAGain.GAIN_210, LNAGain.GAIN_9, MixerGain.GAIN_0 ),
+        GAIN_14( "14", VGAGain.GAIN_210, LNAGain.GAIN_9, MixerGain.GAIN_5 ),
+        GAIN_26( "26", VGAGain.GAIN_210, LNAGain.GAIN_21, MixerGain.GAIN_5 ),
+        GAIN_36( "36", VGAGain.GAIN_210, LNAGain.GAIN_21, MixerGain.GAIN_15 ),
+        GAIN_76( "76", VGAGain.GAIN_210, LNAGain.GAIN_61, MixerGain.GAIN_15 ),
+        GAIN_86( "86", VGAGain.GAIN_210, LNAGain.GAIN_61, MixerGain.GAIN_25 ),
+        GAIN_124( "124", VGAGain.GAIN_210, LNAGain.GAIN_99, MixerGain.GAIN_25 ),
+        GAIN_143( "143", VGAGain.GAIN_210, LNAGain.GAIN_99, MixerGain.GAIN_44 ),
+        GAIN_156( "156", VGAGain.GAIN_210, LNAGain.GAIN_112, MixerGain.GAIN_44 ),
+        GAIN_165( "165", VGAGain.GAIN_210, LNAGain.GAIN_112, MixerGain.GAIN_53 ),
+        GAIN_196( "196", VGAGain.GAIN_210, LNAGain.GAIN_143, MixerGain.GAIN_53 ),
+        GAIN_208( "208", VGAGain.GAIN_210, LNAGain.GAIN_143, MixerGain.GAIN_63 ),
+        GAIN_228( "228", VGAGain.GAIN_210, LNAGain.GAIN_165, MixerGain.GAIN_63 ),
+        GAIN_253( "253", VGAGain.GAIN_210, LNAGain.GAIN_165, MixerGain.GAIN_88 ),
+        GAIN_279( "279", VGAGain.GAIN_210, LNAGain.GAIN_191, MixerGain.GAIN_88 ),
+        GAIN_296( "296", VGAGain.GAIN_210, LNAGain.GAIN_191, MixerGain.GAIN_105 ),
+        GAIN_327( "327", VGAGain.GAIN_210, LNAGain.GAIN_222, MixerGain.GAIN_105 ),
+        GAIN_337( "337", VGAGain.GAIN_210, LNAGain.GAIN_222, MixerGain.GAIN_115 ),
+        GAIN_363( "363", VGAGain.GAIN_210, LNAGain.GAIN_248, MixerGain.GAIN_115 ),
+        GAIN_371( "371", VGAGain.GAIN_210, LNAGain.GAIN_248, MixerGain.GAIN_123 ),
+        GAIN_385( "385", VGAGain.GAIN_210, LNAGain.GAIN_262, MixerGain.GAIN_123 ),
+        GAIN_401( "401", VGAGain.GAIN_210, LNAGain.GAIN_262, MixerGain.GAIN_139 ),
+        GAIN_420( "420", VGAGain.GAIN_210, LNAGain.GAIN_281, MixerGain.GAIN_139 ),
+        GAIN_433( "433", VGAGain.GAIN_210, LNAGain.GAIN_281, MixerGain.GAIN_152 ),
+        GAIN_438( "438", VGAGain.GAIN_210, LNAGain.GAIN_286, MixerGain.GAIN_152 ),
+        GAIN_444( "444", VGAGain.GAIN_210, LNAGain.GAIN_286, MixerGain.GAIN_158 ),
+        GAIN_479( "479", VGAGain.GAIN_210, LNAGain.GAIN_321, MixerGain.GAIN_158 ),
+        GAIN_482( "482", VGAGain.GAIN_210, LNAGain.GAIN_321, MixerGain.GAIN_161 ),
+        GAIN_495( "495", VGAGain.GAIN_210, LNAGain.GAIN_334, MixerGain.GAIN_161 ); 
+        
+        private String mLabel;
+        private VGAGain mVGAGain;
+        private LNAGain mLNAGain;
+        private MixerGain mMixerGain;
+        
+        private Gain( String label, VGAGain vga, LNAGain lna, MixerGain mixer )
+        {
+            mLabel = label;
+            mVGAGain = vga;
+            mLNAGain = lna;
+            mMixerGain = mixer;
+        }
+        
+        public String toString()
+        {
+            return mLabel;
+        }
+        
+        public VGAGain getVGAGain()
+        {
+            return mVGAGain;
+        }
 
-    	Band band = Band.fromFrequency( frequency );
-
-    	/* Set the bias */
-    	switch( band )
-    	{
-			case UHF:
-			case VHF2:
-			case VHF3:
-				writeE4KRegister( Register.BIAS, (byte)0x3, false );
-				break;
-			case L:
-			default:
-				writeE4KRegister( Register.BIAS, (byte)0x0, false );
-				break;
-    		
-    	}
-    	
-    	/**
-    	 * Workaround - reset register (set value to 0) before writing to it, to 
-    	 * avoid a gap around 325-350 MHz
-    	 */
-    	writeMaskedE4KRegister( Register.SYNTH1, Band.getMask(), (byte)0x0, false );
-    	writeMaskedE4KRegister( Register.SYNTH1, Band.getMask(), band.getValue(), false );
-
-    	if( controlI2CRepeater )
-    	{
-    		enableI2CRepeater( mUSBDevice, false );
-    	}
+        public LNAGain getLNAGain()
+        {
+            return mLNAGain;
+        }
+        
+        public MixerGain getMixerGain()
+        {
+            return mMixerGain;
+        }
     }
     
-    private void setRFFilter( int frequency, 
-    						  boolean controlI2CRepeater ) throws UsbException
-    {
-    	RFFilter filter = RFFilter.fromFrequency( frequency );
-
-    	writeMaskedE4KRegister( Register.FILT1, 
-    							RFFilter.getMask(), 
-    							filter.getValue(), 
-    							controlI2CRepeater );
-    }
     
-    /**
-     * Sets the gain combination setting.
-     * 
-     * Note: does not respond to the MANUAL setting.  Use the manual setting
-     * to configure gui components to expose the individual Mixer, LNA and 
-     * Enhance gain settings, to allow the user to change those settings
-     * individually.
-     * 
-     * @param gain - requested gain setting
-     * @throws UsbException if there are any errors
-     */
-    public void setGain( R820TGain gain, boolean controlI2CRepeater ) throws UsbException
-    {
-		if( gain != R820TGain.MANUAL )
-    	{
-			if( controlI2CRepeater )
-			{
-				enableI2CRepeater( mUSBDevice, true );
-			}
-
-			boolean i2CRepeaterControl = false;
-			
-    		setLNAGain( gain.getLNAGain(), i2CRepeaterControl );
-			setMixerGain( gain.getMixerGain(), i2CRepeaterControl );
-    		setEnhanceGain( gain.getEnhanceGain(), i2CRepeaterControl );
-
-    		if( controlI2CRepeater )
-    		{
-    			enableI2CRepeater( mUSBDevice, false );
-    		}
-    	}
-    }
-	
-	/*
-	 * Performs magic initialization ... and that's all we need to know, I guess
-	 */
-	private void magicInit( boolean controlI2CRepeater ) throws UsbException
+    public enum Register
 	{
-		if( controlI2CRepeater )
+	    LNA_GAIN( 0x05, 0x1F ),
+	    AIR_CABLE1_INPUT_SELECTOR( 0x05, 0x60 ),
+	    LOOP_THROUGH( 0x05, 0x80 ),
+	    CABLE2_INPUT_SELECTOR( 0x06, 0x08 ),
+	    FILTER_GAIN( 0x06, 0x30 ),
+	    PRE_DETECT( 0x06, 0x40 ),
+	    MIXER_GAIN( 0x07, 0x1F ),
+	    IMAGE_REVERSE( 0x07, 0x80 ),
+        UNKNOWN_REGISTER_8( 0x08, 0x3F ),
+        UNKNOWN_REGISTER_9( 0x09, 0x3F ),
+        FILTER_CALIBRATION_CODE( 0x0A, 0x1F ),
+        FILTER_CURRENT( 0x0A, 0x60 ),
+        CALIBRATION_TRIGGER( 0x0B, 0x10 ),
+        FILTER_CAPACITOR( 0x0B, 0x60 ),
+        BANDWIDTH_FILTER_GAIN_HIGHPASS_FILTER_CORNER( 0x0B, 0xEF ),
+        XTAL_CHECK( 0x0C, 0x0F ),
+        VGA_GAIN( 0x0C, 0x9F ),
+        LNA_VTH_L( 0x0D, 0x0 ),
+        MIXER_VTH_L( 0x0E, 0x0 ),
+        CALIBRATION_CLOCK( 0x0F, 0x04 ),
+        FILTER_EXTENSION_WIDEST( 0x0F, 0x80 ),
+        PLL_XTAL_CAPACITOR( 0x10, 0x03 ),
+        UNKNOWN_REGISTER_10( 0x10, 0x04 ),
+        PLL_XTAL_CAPACITOR_AND_DRIVE( 0x10, 0x0B ),
+        REFERENCE_DIVIDER_2( 0x10, 0x10 ),
+        CAPACITOR_SELECTOR( 0x10, 0x1B ),
+        DIVIDER( 0x10, 0xE0 ),
+        CP_CUR( 0x11, 0x38 ),
+        PW_SDM( 0x12, 0x08 ),
+        VCO_CURRENT( 0x12, 0xE0 ),
+        VERSION( 0x13, 0x3F ),
+        UNKNOWN_REGISTER_14( 0x14, 0x0 ),
+        SDM_LSB( 0x15, 0x0 ),
+        SDM_MSB( 0x16, 0x0 ),
+        DRAIN( 0x17, 0x08 ),
+        DIVIDER_BUFFER_CURRENT( 0x17, 0x30 ),
+        RF_POLY_FILTER_CURRENT( 0x19, 0x60 ),
+        PLL_AUTOTUNE( 0x1A, 0x0C ),
+        AGC_CLOCK( 0x1A, 0x30 ),
+        RF_POLY_MUX( 0x1A, 0xC3 ),
+        TF_BAND( 0x1B, 0x0 ),
+        MIXER_TOP( 0x1C, 0xF8 ),
+        MIXER_TOP2( 0X1C, 0x04 ),
+        LNA_TOP( 0x1D, 0x38 ),
+        LNA_TOP2( 0x1D, 0xC7 ),
+        CHANNEL_FILTER_EXTENSION( 0x1E, 0x60 ),
+        LNA_DISCHARGE_CURRENT( 0x1E, 0x1F ),
+        LOOP_THROUGH_ATTENUATION( 0x1F, 0x80 );
+
+	    private int mRegister;
+		private int mMask;
+		
+		private Register( int register, int mask )
 		{
-			enableI2CRepeater( mUSBDevice, true );
+			mRegister = register;
+			mMask = mask;
 		}
-
-		writeE4KRegister( Register.MAGIC_1, (byte)0x01, false );
-		writeE4KRegister( Register.MAGIC_2, (byte)0xFE, false );
-		writeE4KRegister( Register.MAGIC_3, (byte)0x00, false );
-		writeE4KRegister( Register.MAGIC_4, (byte)0x50, false ); //Polarity A
-		writeE4KRegister( Register.MAGIC_5, (byte)0x20, false );
-		writeE4KRegister( Register.MAGIC_6, (byte)0x01, false );
-		writeE4KRegister( Register.MAGIC_7, (byte)0x7F, false );
-		writeE4KRegister( Register.MAGIC_8, (byte)0x07, false );
-
-		if( controlI2CRepeater )
+		
+		public int getRegister()
 		{
-			enableI2CRepeater( mUSBDevice, false );
+			return mRegister;
+		}
+		
+		public byte getMask()
+		{
+		    return (byte)mMask;
+		}
+		
+		public boolean isMasked()
+		{
+		    return mMask != 0;
 		}
 	}
 	
-	private byte readMaskedE4KRegister( Register register, 
-										byte mask, 
-										boolean controlI2CRepeater )
-					throws UsbException
+	public enum FrequencyRange
 	{
-		int temp = readE4KRegister( register, controlI2CRepeater );
-		return (byte)( temp & mask );
-	}
-	
-	private void writeMaskedE4KRegister( Register register, 
-										 byte mask, 
-										 byte value,
-										 boolean controlI2CRepeater ) throws UsbException
-	{
-		int temp = readE4KRegister( register, controlI2CRepeater );
+		BAND_024(  24000000,   49999999, 0x08, 0x02, 0xDF, 0x02, 0x01 ),
+		BAND_050(  50000000,   54999999, 0x08, 0x02, 0xBE, 0x02, 0x01 ),
+		BAND_055(  55000000,   59999999, 0x08, 0x02, 0x8B, 0x02, 0x01 ),
+		BAND_060(  60000000,   64999999, 0x08, 0x02, 0x7B, 0x02, 0x01 ),
+		BAND_065(  65000000,   69999999, 0x08, 0x02, 0x69, 0x02, 0x01 ),
+		BAND_070(  70000000,   74999999, 0x08, 0x02, 0x58, 0x02, 0x01 ),
+		BAND_075(  75000000,   79999999, 0x00, 0x02, 0x44, 0x02, 0x01 ),
+		BAND_080(  80000000,   89999999, 0x00, 0x02, 0x44, 0x02, 0x01 ),
+		BAND_090(  90000000,   99999999, 0x00, 0x02, 0x34, 0x01, 0x01 ),
+		BAND_100( 100000000,  109999999, 0x00, 0x02, 0x34, 0x01, 0x01 ),
+		BAND_110( 110000000,  119999999, 0x00, 0x02, 0x24, 0x01, 0x01 ),
+		BAND_120( 120000000,  139999999, 0x00, 0x02, 0x24, 0x01, 0x01 ),
+		BAND_140( 140000000,  179999999, 0x00, 0x02, 0x14, 0x01, 0x01 ),
+		BAND_180( 180000000,  219999999, 0x00, 0x02, 0x13, 0x00, 0x00 ),
+		BAND_220( 220000000,  249999999, 0x00, 0x02, 0x13, 0x00, 0x00 ),
+		BAND_250( 250000000,  279999999, 0x00, 0x02, 0x11, 0x00, 0x00 ),
+		BAND_280( 280000000,  309999999, 0x00, 0x02, 0x00, 0x00, 0x00 ),
+		BAND_310( 310000000,  449999999, 0x00, 0x41, 0x00, 0x00, 0x00 ),
+		BAND_450( 450000000,  587999999, 0x00, 0x41, 0x00, 0x00, 0x00 ),
+		BAND_588( 588000000,  649999999, 0x00, 0x40, 0x00, 0x00, 0x00 ),
+		BAND_650( 650000000, 1766000000, 0x00, 0x40, 0x00, 0x00, 0x00 ),
+		BAND_UNK( 0, 0, 0, 0, 0, 0, 0 );
 
-		/* If the register is not set to the masked value, then change it */
-		if( (byte)( temp & mask ) != value )
-		{
-			writeE4KRegister( register, 
-							  (byte)( ( temp & ~mask ) | ( value & mask ) ), 
-							  controlI2CRepeater );
-		}
-	}
-	
-	private int readE4KRegister( Register register, 
-			 boolean controlI2CRepeater ) throws UsbException
-	{
-		return readI2CRegister( mUSBDevice, Register.I2C_REGISTER.getValue(), 
-						register.getValue(), controlI2CRepeater );
-	}
-
-
-	private void writeE4KRegister( Register register, 
-								   byte value,
-								   boolean controlI2CRepeater ) throws UsbException
-	{
-		writeI2CRegister( mUSBDevice, Register.I2C_REGISTER.getValue(), 
-						  register.getValue(), value, controlI2CRepeater );
-	}
-
-	public enum Band
-	{
-		VHF2( 0 ),
-		VHF3( 2 ),
-		UHF( 4 ),
-		L( 6 );
-		
-		private int mValue;
-		
-		private Band( int value )
-		{
-			mValue = value;
-		}
-		
-		public static byte getMask()
-		{
-			return (byte)0x06;
-		}
-		
-		public byte getValue()
-		{
-			return (byte)mValue;
-		}
-		
-		public String getLabel()
-		{
-			return toString();
-		}
-		
-		public static Band fromFrequency( int frequency )
-		{
-			if( frequency < 140000000 ) //140 MHz
-			{
-				return VHF2;
-			}
-			else if( frequency < 350000000 ) //350 MHz
-			{
-				return VHF3;
-			}
-			else if( frequency < 1135000000 ) //1135 MHz
-			{
-				return UHF;
-			}
-			else
-			{
-				return L;
-			}
-		}
-	}
-
-	public enum PLL
-	{
-		PLL_72M4(   0x0F,   72400000, 48,  600000,  true,   "72.4 MHz" ),
-		PLL_81M2(   0x0E,   81200000, 40,  720000,  true,   "81.2 MHz" ),
-		PLL_108M3(  0x0D,  108300000, 32,  900000,  true,  "108.3 MHz" ),
-		PLL_162M5(  0x0C,  162500000, 24, 1200000,  true,  "162.5 MHz" ),
-		PLL_216M6(  0x0B,  216600000, 16, 1800000,  true,  "216.6 MHz" ),
-		PLL_325M0(  0x0A,  325000000, 12, 2400000,  true,  "325.0 MHz" ),
-		PLL_350M0(  0x09,  350000000,  8, 3600000,  true,  "350.0 MHz" ),
-		PLL_432M0(  0x03,  432000000,  8, 3600000, false,  "432.0 MHz" ),
-		PLL_667M0(  0x02,  667000000,  6, 4800000, false,  "667.0 MHz" ),
-		PLL_1200M0( 0x01, 1200000000,  4, 7200000, false, "1200.0 MHz" );
-		
-		private int mValue;
-		private int mFrequency;
-		private int mMultiplier;
-		private int mScaledOscillator;
-		private boolean mRequires3PhaseMixing;
-		private String mLabel;
-		
-		private PLL( int value, 
-					 int frequency, 
-					 int multiplier, 
-					 int scaledOscillator,
-					 boolean requires3Phase,
-					 String label )
-		{
-			mValue = value;
-			mFrequency = frequency;
-			mMultiplier = multiplier;
-			mScaledOscillator = scaledOscillator;
-			mRequires3PhaseMixing = requires3Phase;
-			mLabel = label;
-			
-		}
-
-		public byte getIndex()
-		{
-			return (byte)mValue;
-		}
-		
-		public int getFrequency()
-		{
-			return mFrequency;
-		}
-		
-		public byte getMultiplier()
-		{
-			return (byte)mMultiplier;
-		}
-		
-		public int getScaledOscillator()
-		{
-			return mScaledOscillator;
-		}
-		
-		public boolean requires3PhaseMixing()
-		{
-			return mRequires3PhaseMixing;
-		}
-		
-		public String getLabel()
-		{
-			return mLabel;
-		}
-		
-		public String toString()
-		{
-			return mLabel;
-		}
-		
-		/* Returns the PLL setting with the closest frequency that is greater
-		 * than the frequency argument */
-		public static PLL fromFrequency( int frequency )
-		{
-			for( PLL pll: values() )
-			{
-				if( frequency < pll.getFrequency() )
-				{
-					return pll;
-				}
-			}
-		
-			//Default
-			return PLL.PLL_72M4;
-		}
-		
-		public static PLL fromSetting( int setting )
-		{
-			int value = setting & 0xF;
-			
-			for( PLL pll: values() )
-			{
-				if( value == pll.getIndex() )
-				{
-					return pll;
-				}
-			}
-
-			//Default
-			return PLL.PLL_72M4;
-		}
-	}
-
-	/**
-	 * RF filters - UHF Band.  Each enum entry defines the center frequency for 
-	 * the filter and the applicable frequency minimums and maximums for the 
-	 * filter.
-	 * 
-	 * Note: max frequency overlaps with the next minimum frequency, so valid
-	 * frequencies should be less than the maximum frequency defined for the
-	 * filter.
-	 */
-	public enum RFFilter
-	{
-		NO_FILTER( 0, 0, 0 ),
-		
-		//UHF band Filters
-		M360( 0,  350000000,  370000000 ),
-		M380( 1,  370000000,  392500000 ),
-		M405( 2,  392500000,  417500000 ),
-		M425( 3,  417500000,  437500000 ),
-		M450( 4,  437500000,  462500000 ),
-		M475( 5,  462500000,  490000000 ),
-		M505( 6,  490000000,  522500000 ),
-		M540( 7,  522500000,  557500000 ),
-		M575( 8,  557500000,  595000000 ),
-		M615( 9,  595000000,  642500000 ),
-		M670( 10, 642500000,  695000000 ),
-		M720( 11, 695000000,  740000000 ),
-		M760( 12, 740000000,  800000000 ),
-		M840( 13, 800000000,  865000000 ),
-		M890( 14, 865000000,  930000000 ),
-		M970( 15, 930000000, 1135000000 ),
-		
-		//L band filters
-		M1300(  0, 1135000000, 1310000000 ),
-		M1320(  1, 1310000000, 1340000000 ),
-		M1360(  2, 1340000000, 1385000000 ),
-		M1410(  3, 1385000000, 1427500000 ),
-		M1445(  4, 1427500000, 1452500000 ),
-		M1460(  5, 1452500000, 1475000000 ),
-		M1490(  6, 1475000000, 1510000000 ),
-		M1530(  7, 1510000000, 1545000000 ),
-		M1560(  8, 1545000000, 1575000000 ),
-		M1590(  9, 1575000000, 1615000000 ),
-		M1640( 10, 1615000000, 1650000000 ),
-		M1660( 11, 1650000000, 1670000000 ),
-		M1680( 12, 1670000000, 1690000000 ),
-		M1700( 13, 1690000000, 1710000000 ),
-		M1720( 14, 1710000000, 1735000000 ),
-
-		/* Note: max frequency is currently limited by the max integer value
-		 * and we set the max frequency for this filter to 2147 MHz */
-		M1750( 15, 1735000000, 2147000000 );
-		
-		private int mValue;
 		private int mMinFrequency;
 		private int mMaxFrequency;
+		private int mOpenD;
+		private int mRFMuxPloy;
+		private int mTF_c;
+		private int mXtalCap20p;
+		private int mXtalCap10p;
 		
-		private RFFilter( int value, int minFrequency, int maxFrequency )
+		private FrequencyRange( int minFrequency,
+								int maxFrequency,
+								int openD,
+								int rfMuxPloy,
+								int tf_c,
+								int xtalCap20p,
+								int xtalCap10p )
 		{
-			mValue = value;
-			mMinFrequency = minFrequency;
-			mMaxFrequency = maxFrequency;
+			
 		}
 		
-		public static Register getRegister()
+		public boolean contains( int frequency )
 		{
-			return Register.FILT1;
+			return mMinFrequency <= frequency && frequency <= mMaxFrequency;
 		}
 		
-		public static byte getMask()
+		public static FrequencyRange getRangeForFrequency( int frequency )
 		{
-			return (byte)0xF;  //TODO: make this a constant
+			for( FrequencyRange range: values() )
+			{
+				if( range.contains( frequency ) )
+				{
+					return range;
+				}
+			}
+			
+			return BAND_UNK;
 		}
 		
-		public byte getValue()
-		{
-			return (byte)mValue;
-		}
-
-		/**
-		 * Minimum frequency for this filter.
-		 */
-		public int getMinimumFrequency()
+		public int getMinFrequency()
 		{
 			return mMinFrequency;
 		}
 		
-		/**
-		 * Maximum frequency for this filter is less than this value, but does
-		 * not include this value.
-		 */
-		public int getMaximumFrequency()
+		public int getMaxFrequency()
 		{
 			return mMaxFrequency;
 		}
 		
-		/**
-		 * Selects the appropriate filter for the frequency
-		 * 
-		 * @param frequency
-		 * @return selected filter
-		 * @throws IllegalArgumentException if the frequency is outside the 
-		 * max value (2200 MHz)
-		 */
-		public static RFFilter fromFrequency( int frequency )
+		public byte getOpenD()
 		{
-			if( frequency < 350000000 )
-			{
-				return NO_FILTER;
-			}
-			
-			for( RFFilter filter: values() )
-			{
-				if( filter.getMinimumFrequency() <= frequency &&
-					frequency < filter.getMaximumFrequency() )
-				{
-					return filter;
-				}
-			}
-
-			throw new IllegalArgumentException( "E4KTunerController - "
-				+ "cannot find RF filter for frequency [" + frequency + "]" );
+			return (byte)mOpenD;
+		}
+		
+		public byte getRFMuxPloy()
+		{
+			return (byte)mRFMuxPloy;
+		}
+		
+		public byte getTFC()
+		{
+			return (byte) mTF_c;
+		}
+		
+		public byte getXTALCap20P()
+		{
+			return (byte)mXtalCap20p;
+		}
+		
+		public byte getXTALCap10P()
+		{
+			return (byte)mXtalCap10p;
+		}
+		
+		public byte getXTALCap0P()
+		{
+			return (byte)0x0;
 		}
 	}
 	
-	public enum MixerFilter
-	{
-		BW_27M0( 0x00, 27000000, 4800000, 28800000, "27.0 MHz" ),
-		BW_4M6(  0x80,  4600000, 4400000,  4800000,  "4.6 MHz" ),
-		BW_4M2(  0x90,  4200000, 4000000,  4400000,  "4.2 MHz" ),
-		BW_3M8(  0xA0,  3800000, 3600000,  4000000,  "3.8 MHz" ),
-		BW_3M4(  0xB0,  3400000, 3200000,  3600000,  "3.4 MHz" ),
-		BW_3M0(  0xC0,  3000000, 2850000,  3200000,  "3.0 MHz" ),
-		BW_2M7(  0xD0,  2700000, 2500000,  2850000,  "2.7 MHz" ),
-		BW_2M3(  0xE0,  2300000, 2100000,  2500000,  "2.3 MHz" ),
-		BW_1M9(  0xF0,  1900000,       0,  2100000,  "1.9 MHz" );
-	 	
-		private int mValue;
-		private int mBandwidth;
-		private int mMinBandwidth;
-		private int mMaxBandwidth;
-		private String mLabel;
-		
-		private MixerFilter( int value, 
-							 int bandwidth, 
-							 int minimumBandwidth,
-							 int maximumBandwidth,
-							 String label )
-		{
-			mValue = value;
-			mBandwidth = bandwidth;
-			mMinBandwidth = minimumBandwidth;
-			mMaxBandwidth = maximumBandwidth;
-			mLabel = label;
-		}
-		
-		public static Register getRegister()
-		{
-			return Register.FILT2;
-		}
-		
-		public static byte getMask()
-		{
-			return MIXER_FILTER_MASK;
-		}
-		
-		public byte getValue()
-		{
-			return (byte)mValue;
-		}
-		
-		public int getBandwidth()
-		{
-			return mBandwidth;
-		}
-		
-		public int getMinimumBandwidth()
-		{
-			return mMinBandwidth;
-		}
-		
-		public int getMaximumBandwidth()
-		{
-			return mMaxBandwidth;
-		}
-		
-		public String getLabel()
-		{
-			return mLabel;
-		}
-
-		/**
-		 * Returns the correct filter to use for the bandwidth/sample rate
-		 * @param bandwidth - current sample rate
-		 * @return - correct filter to use for the bandwidth/sample rate
-		 */
-		public static MixerFilter getFilter( int bandwidth )
-		{
-			for( MixerFilter filter: values() )
-			{
-				if( filter.getMinimumBandwidth() <= bandwidth &&
-					bandwidth < filter.getMaximumBandwidth() )
-				{
-					return filter;
-				}
-			}
-
-			/* default */
-			return MixerFilter.BW_27M0;
-		}
-		
-		public static MixerFilter fromRegisterValue( int registerValue )
-		{
-			int value = registerValue & getMask();
-
-			for( MixerFilter filter: values() )
-			{
-				if( value == filter.getValue() )
-				{
-					return filter;
-				}
-			}
-
-			throw new IllegalArgumentException( "E4KTunerController - "
-					+ "unrecognized mixer filter value [" + value + "]" );
-		}
-	}
-	
-	public enum RCFilter
-	{
-		BW_21M4( 0x00, 21400000, 21200000, 28800000, "21.4 MHz" ),
-		BW_21M0( 0x01, 21000000, 19300000, 21200000, "21.0 MHz" ),
-		BW_17M6( 0x02, 17600000, 16150000, 19300000, "17.6 MHz" ),
-		BW_14M7( 0x03, 14700000, 13550000, 16150000, "14.7 MHz" ),
-		BW_12M4( 0x04, 12400000, 11500000, 13550000, "12.4 MHz" ),
-		BW_10M6( 0x05, 10600000,  9800000, 11500000, "10.6 MHz" ),
-		BW_9M0(  0x06,  9000000,  8350000,  9800000,  "9.0 MHz" ),
-		BW_7M7(  0x07,  7700000,  7050000,  8350000,  "7.7 MHz" ),
-		BW_6M4(  0x08,  6400000,  5805000,  7050000,  "6.4 MHz" ),
-		BW_5M3(  0x09,  5300000,  4850000,  5805000,  "5.3 MHz" ),
-		BW_4M4(  0x0A,  4400000,  3900000,  4850000,  "4.4 MHz" ),
-		BW_3M4(  0x0B,  3400000,  3000000,  3900000,  "3.4 MHz" ),
-		BW_2M6(  0x0C,  2600000,  2200000,  3000000,  "2.6 MHz" ),
-		BW_1M8(  0x0D,  1800000,  1500000,  2200000,  "1.8 MHz" ),
-		BW_1M2(  0x0E,  1200000,  1100000,  1500000,  "1.2 MHz" ),
-		BW_1M0(  0x0F,  1000000,        0,  1100000,  "1.0 MHz" );
-		
-		private int mValue;
-		private int mBandwidth;
-		private int mMinBandwidth;
-		private int mMaxBandwidth;
-		private String mLabel;
-		
-		private RCFilter( int value, 
-						  int bandwidth,
-						  int minimumBandwidth,
-						  int maximumBandwidth,
-						  String label )
-		{
-			mValue = value;
-			mBandwidth = bandwidth;
-			mMinBandwidth = minimumBandwidth;
-			mMaxBandwidth = maximumBandwidth;
-			mLabel = label;
-		}
-		
-		public static Register getRegister()
-		{
-			return Register.FILT2;
-		}
-		
-		public static byte getMask()
-		{
-			return IF_RC_FILTER_MASK;
-		}
-		
-		public byte getValue()
-		{
-			return (byte)mValue;
-		}
-		
-		public int getBandwidth()
-		{
-			return mBandwidth;
-		}
-		
-		public int getMinimumBandwidth()
-		{
-			return mMinBandwidth;
-		}
-		
-		public int getMaximumBandwidth()
-		{
-			return mMaxBandwidth;
-		}
-		
-		public String getLabel()
-		{
-			return mLabel;
-		}
-		
-		/**
-		 * Returns the correct filter to use for the bandwidth/sample rate
-		 * @param bandwidth - current sample rate
-		 * @return - correct filter to use for the bandwidth/sample rate
-		 */
-		public static RCFilter getFilter( int bandwidth )
-		{
-			for( RCFilter filter: values() )
-			{
-				if( filter.getMinimumBandwidth() <= bandwidth &&
-					bandwidth < filter.getMaximumBandwidth() )
-				{
-					return filter;
-				}
-			}
-
-			/* default */
-			return RCFilter.BW_21M4;
-		}
-		
-		public static RCFilter fromRegisterValue( int registerValue )
-		{
-			int value = registerValue & getMask();
-
-			for( RCFilter filter: values() )
-			{
-				if( value == filter.getValue() )
-				{
-					return filter;
-				}
-			}
-
-			throw new IllegalArgumentException( "E4KTunerController - "
-					+ "unrecognized rc filter value [" + value + "]" );
-		}
-	}
-	
-	public enum ChannelFilter
-	{
-		BW_5M50( 0x00, 5500000, 5400000, 28800000, "5.50 MHz" ),
-		BW_5M30( 0x01, 5300000, 5150000,  5400000, "5.30 MHz" ),
-		BW_5M00( 0x02, 5000000, 4900000,  5150000, "5.00 MHz" ),
-		BW_4M80( 0x03, 4800000, 4700000,  4900000, "4.80 MHz" ),
-		BW_4M60( 0x04, 4600000, 4500000,  4700000, "4.60 MHz" ),
-		BW_4M40( 0x05, 4400000, 4350000,  4500000, "4.40 MHz" ),
-		BW_4M30( 0x06, 4300000, 4200000,  4350000, "4.30 MHz" ),
-		BW_4M10( 0x07, 4100000, 4000000,  4200000, "4.10 MHz" ),
-		BW_3M90( 0x08, 3900000, 3850000,  4000000, "3.90 MHz" ),
-		BW_3M80( 0x09, 3800000, 3750000,  3850000, "3.80 MHz" ),
-		BW_3M70( 0x0A, 3700000, 3650000,  3750000, "3.70 MHz" ),
-		BW_3M60( 0x0B, 3600000, 3500000,  3650000, "3.60 MHz" ),
-		BW_3M40( 0x0C, 3400000, 3350000,  3500000, "3.40 MHz" ),
-		BW_3M30( 0x0D, 3300000, 3250000,  3350000, "3.30 MHz" ),
-		BW_3M20( 0x0E, 3200000, 3150000,  3250000, "3.20 MHz" ),
-		BW_3M10( 0x0F, 3100000, 3050000,  3150000, "3.10 MHz" ),
-		BW_3M00( 0x10, 3000000, 2975000,  3050000, "3.00 MHz" ),
-		BW_2M95( 0x11, 2950000, 2925000,  2975000, "2.95 MHz" ),
-		BW_2M90( 0x12, 2900000, 2850000,  2925000, "2.90 MHz" ),
-		BW_2M80( 0x13, 2800000, 2775000,  2850000, "2.80 MHz" ),
-		BW_2M75( 0x14, 2750000, 2750000,  2775000, "2.75 MHz" ),
-		BW_2M70( 0x15, 2700000, 2650000,  2750000, "2.70 MHz" ),
-		BW_2M60( 0x16, 2600000, 2575000,  2650000, "2.60 MHz" ),
-		BW_2M55( 0x17, 2550000, 2525000,  2575000, "2.55 MHz" ),
-		BW_2M50( 0x18, 2500000, 2475000,  2525000, "2.50 MHz" ),
-		BW_2M45( 0x19, 2450000, 2425000,  2475000, "2.45 MHz" ),
-		BW_2M40( 0x1A, 2400000, 2350000,  2425000, "2.40 MHz" ),
-		BW_2M30( 0x1B, 2300000, 2290000,  2350000, "2.30 MHz" ),
-		BW_2M28( 0x1C, 2280000, 2260000,  2290000, "2.28 MHz" ),
-		BW_2M24( 0x1D, 2240000, 2220000,  2260000, "2.24 MHz" ),
-		BW_2M20( 0x1E, 2200000, 2175000,  2220000, "2.20 MHz" ),
-		BW_2M15( 0x1F, 2150000,       0,  2175000, "2.15 MHz" );
-		
-		private int mValue;
-		private int mBandwidth;
-		private int mMinBandwidth;
-		private int mMaxBandwidth;
-		private String mLabel;
-		
-		private ChannelFilter( int value, 
-							   int bandwidth, 
-							   int minimumBandwidth,
-							   int maximumBandwidth,
-							   String label )
-		{
-			mValue = value;
-			mBandwidth = bandwidth;
-			mMinBandwidth = minimumBandwidth;
-			mMaxBandwidth = maximumBandwidth;
-			mLabel = label;
-		}
-		
-		public static Register getRegister()
-		{
-			return Register.FILT3;
-		}
-		
-		public static byte getMask()
-		{
-			return IF_CHANNEL_FILTER_MASK;
-		}
-		
-		public byte getValue()
-		{
-			return (byte)mValue;
-		}
-		
-		public int getBandwidth()
-		{
-			return mBandwidth;
-		}
-		
-		public int getMinimumBandwidth()
-		{
-			return mMinBandwidth;
-		}
-		
-		public int getMaximumBandwidth()
-		{
-			return mMaxBandwidth;
-		}
-		
-		public String getLabel()
-		{
-			return mLabel;
-		}
-		
-		/**
-		 * Returns the correct filter to use for the bandwidth/sample rate
-		 * @param bandwidth - current sample rate
-		 * @return - correct filter to use for the bandwidth/sample rate
-		 */
-		public static ChannelFilter getFilter( int bandwidth )
-		{
-			for( ChannelFilter filter: values() )
-			{
-				if( filter.getMinimumBandwidth() <= bandwidth &&
-					bandwidth < filter.getMaximumBandwidth() )
-				{
-					return filter;
-				}
-			}
-
-			/* default */
-			return ChannelFilter.BW_5M50;
-		}
-		
-		public static ChannelFilter fromRegisterValue( int registerValue )
-		{
-			int value = registerValue & getMask();
-
-			for( ChannelFilter filter: values() )
-			{
-				if( value == filter.getValue() )
-				{
-					return filter;
-				}
-			}
-
-			throw new IllegalArgumentException( "E4KTunerController - "
-					+ "unrecognized channel filter value [" + value + "]" );
-		}
-	}
-	
-	public enum R820TLNAGain
-	{
-		AUTOMATIC(     -1,    "Auto" ),
-		GAIN_MINUS_50(  0, "-5.0 db" ),
-		GAIN_MINUS_25(  1, "-2.5 db" ),
-		GAIN_PLUS_0(    4,  "0.0 db" ),
-		GAIN_PLUS_25(   5,  "2.5 db" ),
-		GAIN_PLUS_50(   6,  "5.0 db" ),
-		GAIN_PLUS_75(   7,  "7.5 db" ),
-		GAIN_PLUS_100(  8, "10.0 db" ),
-		GAIN_PLUS_125(  9, "12.5 db" ),
-		GAIN_PLUS_150( 10, "15.0 db" ),
-		GAIN_PLUS_175( 11, "17.5 db" ),
-		GAIN_PLUS_200( 12, "20.0 db" ),
-		GAIN_PLUS_250( 13, "25.0 db" ),
-		GAIN_PLUS_300( 14, "30.0 db" );
-		
-		private int mValue;
-		private String mLabel;
-		
-		private R820TLNAGain( int value, String label )
-		{
-			mValue = value;
-			mLabel = label;
-		}
-		
-		public static Register getRegister()
-		{
-			return Register.GAIN1;
-		}
-		
-		public static byte getMask()
-		{
-			return GAIN1_MOD_MASK;
-		}
-		
-		public byte getValue()
-		{
-			return (byte)mValue;
-		}
-		
-		public String getLabel()
-		{
-			return mLabel;
-		}
-		
-		public String toString()
-		{
-			return mLabel;
-		}
-		
-		public static R820TLNAGain fromRegisterValue( int registerValue )
-		{
-			int value = registerValue & getMask();
-
-			for( R820TLNAGain setting: values() )
-			{
-				if( value == setting.getValue() )
-				{
-					return setting;
-				}
-			}
-
-			throw new IllegalArgumentException( "E4KTunerController"
-					+ " - unrecognized LNA Gain value [" + 
-					value + "]" );
-		}
-	}
-
-	/**
-	 * Defines the default gain settings that are exposed to the user.
-	 * 
-	 * Manual is an override that keeps each of the settings intact and allows
-	 * the user to change each of them individually
-	 */
-	public enum R820TGain
-	{
-		AUTOMATIC( "Auto", R820TMixerGain.AUTOMATIC, R820TLNAGain.AUTOMATIC,     R820TEnhanceGain.AUTOMATIC ),
-		MANUAL(  "Manual", null,                null,                  null ),
-		MINUS_10(  "-1.0 db", R820TMixerGain.GAIN_4,    R820TLNAGain.GAIN_MINUS_50, R820TEnhanceGain.AUTOMATIC ),
-		PLUS_15(    "1.5 db", R820TMixerGain.GAIN_4,    R820TLNAGain.GAIN_MINUS_25, R820TEnhanceGain.AUTOMATIC ),
-		PLUS_40(    "4.0 db", R820TMixerGain.GAIN_4,    R820TLNAGain.GAIN_PLUS_0,   R820TEnhanceGain.AUTOMATIC ),
-		PLUS_65(    "6.5 db", R820TMixerGain.GAIN_4,    R820TLNAGain.GAIN_PLUS_25,  R820TEnhanceGain.AUTOMATIC ),
-		PLUS_90(    "9.0 db", R820TMixerGain.GAIN_4,    R820TLNAGain.GAIN_PLUS_50,  R820TEnhanceGain.AUTOMATIC ),
-		PLUS_115(  "11.5 db", R820TMixerGain.GAIN_4,    R820TLNAGain.GAIN_PLUS_75,  R820TEnhanceGain.AUTOMATIC ),
-		PLUS_140(  "14.0 db", R820TMixerGain.GAIN_4,    R820TLNAGain.GAIN_PLUS_100, R820TEnhanceGain.AUTOMATIC ),
-		PLUS_165(  "16.5 db", R820TMixerGain.GAIN_4,    R820TLNAGain.GAIN_PLUS_125, R820TEnhanceGain.AUTOMATIC ),
-		PLUS_190(  "19.0 db", R820TMixerGain.GAIN_4,    R820TLNAGain.GAIN_PLUS_150, R820TEnhanceGain.AUTOMATIC ),
-		PLUS_215(  "21.5 db", R820TMixerGain.GAIN_4,    R820TLNAGain.GAIN_PLUS_175, R820TEnhanceGain.AUTOMATIC ),
-		PLUS_240(  "24.0 db", R820TMixerGain.GAIN_4,    R820TLNAGain.GAIN_PLUS_200, R820TEnhanceGain.AUTOMATIC ),
-		PLUS_290(  "29.0 db", R820TMixerGain.GAIN_4,    R820TLNAGain.GAIN_PLUS_250, R820TEnhanceGain.AUTOMATIC ),
-		PLUS_340(  "34.0 db", R820TMixerGain.GAIN_4,    R820TLNAGain.GAIN_PLUS_300, R820TEnhanceGain.AUTOMATIC ),
-		PLUS_420(  "42.0 db", R820TMixerGain.GAIN_12,   R820TLNAGain.GAIN_PLUS_300, R820TEnhanceGain.AUTOMATIC );
-		
-		private String mLabel;
-		private R820TMixerGain mMixerGain;
-		private R820TLNAGain mLNAGain;
-		private R820TEnhanceGain mEnhanceGain;
-		
-		private R820TGain( String label, 
-					  R820TMixerGain mixerGain, 
-					  R820TLNAGain lnaGain, 
-					  R820TEnhanceGain enhanceGain )
-		{
-			mLabel = label;
-			mMixerGain = mixerGain;
-			mLNAGain = lnaGain;
-			mEnhanceGain = enhanceGain;
-		}
-		
-		public String getLabel()
-		{
-			return mLabel;
-		}
-
-		public String toString()
-		{
-			return mLabel;
-		}
-		
-		public R820TMixerGain getMixerGain()
-		{
-			return mMixerGain;
-		}
-		
-		public R820TLNAGain getLNAGain()
-		{
-			return mLNAGain;
-		}
-		
-		public R820TEnhanceGain getEnhanceGain()
-		{
-			return mEnhanceGain;
-		}
-	}
-	
-	public enum R820TEnhanceGain
-	{
-		AUTOMATIC( 0, "Auto" ),
-		GAIN_1(    1, "10 db" ),
-		GAIN_3(    3, "30 db" ),
-		GAIN_5(    5, "50 db" ),
-		GAIN_7(    7, "70 db" );
-		
-		private int mValue;
-		private String mLabel;
-		
-		private R820TEnhanceGain( int value, String label )
-		{
-			mValue = value;
-			mLabel = label;
-		}
-		
-		public static Register getRegister()
-		{
-			return Register.AGC11;
-		}
-		
-		public static byte getMask()
-		{
-			return ENH_GAIN_MOD_MASK;
-		}
-		
-		public byte getValue()
-		{
-			return (byte)mValue;
-		}
-		
-		public String getLabel()
-		{
-			return mLabel;
-		}
-		
-		public String toString()
-		{
-			return mLabel;
-		}
-
-		public static R820TEnhanceGain fromRegisterValue( int registerValue )
-		{
-			int value = registerValue & getMask();
-
-			for( R820TEnhanceGain setting: values() )
-			{
-				if( value == setting.getValue() )
-				{
-					return setting;
-				}
-			}
-
-			throw new IllegalArgumentException( "E4KTunerController"
-					+ " - unrecognized Enhance Gain value [" + 
-					value + "]" );
-		}
-	}
-
-	public enum DCGainCombination
-	{
-		LOOKUP_TABLE_0( Register.QLUT0, 
-						Register.ILUT0, 
-						R820TMixerGain.GAIN_4, 
-						IFStage1Gain.GAIN_MINUS3 ),
-		LOOKUP_TABLE_1( Register.QLUT1,
-						Register.ILUT1,
-						R820TMixerGain.GAIN_4,
-						IFStage1Gain.GAIN_PLUS6 ),
-		LOOKUP_TABLE_2( Register.QLUT2,
-						Register.ILUT2,
-						R820TMixerGain.GAIN_12,
-						IFStage1Gain.GAIN_MINUS3 ),
-	    LOOKUP_TABLE_3( Register.QLUT3,
-	    				Register.ILUT3,
-	    				R820TMixerGain.GAIN_12,
-	    				IFStage1Gain.GAIN_PLUS6 );
-		
-		private Register mQRegister;
-		private Register mIRegister;
-		private R820TMixerGain mMixerGain;
-		private IFStage1Gain mIFStage1Gain;
-		
-		private DCGainCombination( Register qRegister, 
-							Register iRegister,
-							R820TMixerGain mixer, 
-							IFStage1Gain stage1 )
-		{
-			mQRegister = qRegister;
-			mIRegister = iRegister;
-			mMixerGain = mixer;
-			mIFStage1Gain = stage1;
-		}
-		
-		public Register getQRegister()
-		{
-			return mQRegister;
-		}
-		
-		public Register getIRegister()
-		{
-			return mIRegister;
-		}
-		
-		public R820TMixerGain getMixerGain()
-		{
-			return mMixerGain;
-		}
-		
-		public IFStage1Gain getIFStage1Gain()
-		{
-			return mIFStage1Gain;
-		}
-	}
-	
-	
-	public enum R820TMixerGain
-	{
-		AUTOMATIC( -1,  "Auto" ),
-		GAIN_4(     0,  "4 db" ),
-		GAIN_12(    1, "12 db" );
-		
-		private int mValue;
-		private String mLabel;
-		
-		private R820TMixerGain( int value, String label )
-		{
-			mValue = value;
-			mLabel = label;
-		}
-		
-		public static Register getRegister()
-		{
-			return Register.GAIN2;
-		}
-		
-		public static byte getMask()
-		{
-			return MIXER_GAIN_MASK;
-		}
-		
-		public byte getValue()
-		{
-			return (byte)mValue;
-		}
-		
-		public String getLabel()
-		{
-			return mLabel;
-		}
-		
-		public String toString()
-		{
-			return mLabel;
-		}
-		
-		public static R820TMixerGain fromRegisterValue( int registerValue )
-		{
-			int value = registerValue & getMask();
-
-			for( R820TMixerGain setting: values() )
-			{
-				if( value == setting.getValue() )
-				{
-					return setting;
-				}
-			}
-
-			throw new IllegalArgumentException( "E4KTunerController"
-					+ " - unrecognized Mixer Gain value [" + 
-					value + "]" );
-		}
-	}
-
-	public enum IFStage1Gain
-	{
-		GAIN_MINUS3( 0x0, "-3 db" ),
-		GAIN_PLUS6(  0x1,  "6 db" );
-
-		private int mValue;
-		private String mLabel;
-		
-		private IFStage1Gain( int value, String label )
-		{
-			mValue = value;
-			mLabel = label;
-		}
-
-		public static Register getRegister()
-		{
-			return Register.GAIN3;
-		}
-		
-		public static byte getMask()
-		{
-			return (byte)0x1;
-		}
-		
-		public byte getValue()
-		{
-			return (byte)mValue;
-		}
-		
-		public String getLabel()
-		{
-			return mLabel;
-		}
-		
-		public String toString()
-		{
-			return mLabel;
-		}
-		
-		public static IFStage1Gain fromRegisterValue( int registerValue )
-		{
-			int value = registerValue & getMask();
-
-			for( IFStage1Gain setting: values() )
-			{
-				if( value == setting.getValue() )
-				{
-					return setting;
-				}
-			}
-
-			throw new IllegalArgumentException( "E4KTunerController"
-					+ " - unrecognized IF Gain Stage 1 value [" + 
-					value + "]" );
-		}
-	}
-
-	public enum IFStage2Gain
-	{
-		GAIN_PLUS0( 0x0, "0 db" ),
-		GAIN_PLUS3( 0x2, "3 db" ),
-		GAIN_PLUS6( 0x4, "6 db" ),
-		GAIN_PLUS9( 0x6, "9 db" );
-
-		private int mValue;
-		private String mLabel;
-		
-		private IFStage2Gain( int value, String label )
-		{
-			mValue = value;
-			mLabel = label;
-		}
-
-		public static Register getRegister()
-		{
-			return Register.GAIN3;
-		}
-		
-		public static byte getMask()
-		{
-			return (byte)0x6;
-		}
-		
-		public byte getValue()
-		{
-			return (byte)mValue;
-		}
-		
-		public String getLabel()
-		{
-			return mLabel;
-		}
-		
-		public String toString()
-		{
-			return mLabel;
-		}
-
-		public static IFStage2Gain fromRegisterValue( int registerValue )
-		{
-			int value = registerValue & getMask();
-
-			for( IFStage2Gain setting: values() )
-			{
-				if( value == setting.getValue() )
-				{
-					return setting;
-				}
-			}
-
-			throw new IllegalArgumentException( "E4KTunerController"
-					+ " - unrecognized IF Gain Stage 2 value [" + 
-					value + "]" );
-		}
-	}
-
-	public enum IFStage3Gain
-	{
-		GAIN_PLUS0( 0x00, "0 db" ),
-		GAIN_PLUS3( 0x08, "3 db" ),
-		GAIN_PLUS6( 0x10, "6 db" ),
-		GAIN_PLUS9( 0x30, "9 db" );
-
-		private int mValue;
-		private String mLabel;
-		
-		private IFStage3Gain( int value, String label )
-		{
-			mValue = value;
-			mLabel = label;
-		}
-
-		public static Register getRegister()
-		{
-			return Register.GAIN3;
-		}
-		
-		public static byte getMask()
-		{
-			return (byte)0x18;
-		}
-		
-		public byte getValue()
-		{
-			return (byte)mValue;
-		}
-		
-		public String getLabel()
-		{
-			return mLabel;
-		}
-		
-		public String toString()
-		{
-			return mLabel;
-		}
-
-		public static IFStage3Gain fromRegisterValue( int registerValue )
-		{
-			int value = registerValue & getMask();
-
-			for( IFStage3Gain setting: values() )
-			{
-				if( value == setting.getValue() )
-				{
-					return setting;
-				}
-			}
-
-			throw new IllegalArgumentException( "E4KTunerController"
-					+ " - unrecognized IF Gain Stage 3 value [" + 
-					value + "]" );
-		}
-	}
-
-	public enum IFStage4Gain
-	{
-		GAIN_PLUS0(  0x00, "0 db" ),
-		GAIN_PLUS1(  0x20, "1 db" ),
-		GAIN_PLUS2A( 0x40, "2 db" ),
-		GAIN_PLUS2B( 0x60, "2 db" );
-
-		private int mValue;
-		private String mLabel;
-		
-		private IFStage4Gain( int value, String label )
-		{
-			mValue = value;
-			mLabel = label;
-		}
-
-		public static Register getRegister()
-		{
-			return Register.GAIN3;
-		}
-		
-		public static byte getMask()
-		{
-			return (byte)0x60;
-		}
-		
-		public byte getValue()
-		{
-			return (byte)mValue;
-		}
-		
-		public String getLabel()
-		{
-			return mLabel;
-		}
-		
-		public String toString()
-		{
-			return mLabel;
-		}
-
-		public static IFStage4Gain fromRegisterValue( int registerValue )
-		{
-			int value = registerValue & getMask();
-
-			for( IFStage4Gain setting: values() )
-			{
-				if( value == setting.getValue() )
-				{
-					return setting;
-				}
-			}
-
-			throw new IllegalArgumentException( "E4KTunerController"
-					+ " - unrecognized IF Gain Stage 4 value [" + 
-					value + "]" );
-		}
-	}
-
-	public enum IFStage5Gain
-	{
-		GAIN_PLUS3(   0x0,  "3 db" ),
-		GAIN_PLUS6(   0x1,  "6 db" ),
-		GAIN_PLUS9(   0x2,  "9 db" ),
-		GAIN_PLUS12(  0x3, "12 db" ),
-		GAIN_PLUS15A( 0x4, "15 db" ),
-		GAIN_PLUS15B( 0x5, "15 db" ),
-		GAIN_PLUS15C( 0x6, "15 db" ),
-		GAIN_PLUS15D( 0x7, "15 db" );
-
-		private int mValue;
-		private String mLabel;
-		
-		private IFStage5Gain( int value, String label )
-		{
-			mValue = value;
-			mLabel = label;
-		}
-
-		public static Register getRegister()
-		{
-			return Register.GAIN4;
-		}
-		
-		public static byte getMask()
-		{
-			return (byte)0x7;
-		}
-		
-		public byte getValue()
-		{
-			return (byte)mValue;
-		}
-		
-		public String getLabel()
-		{
-			return mLabel;
-		}
-		
-		public String toString()
-		{
-			return mLabel;
-		}
-		
-		public static IFStage5Gain fromRegisterValue( int registerValue )
-		{
-			int value = registerValue & getMask();
-
-			for( IFStage5Gain setting: values() )
-			{
-				if( value == setting.getValue() )
-				{
-					return setting;
-				}
-			}
-
-			throw new IllegalArgumentException( "E4KTunerController"
-					+ " - unrecognized IF Gain Stage 5 value [" + 
-					value + "]" );
-		}
-		
-	}
-
-	public enum IFStage6Gain
-	{
-		GAIN_PLUS3(   0x00,  "3 db" ),
-		GAIN_PLUS6(   0x08,  "6 db" ),
-		GAIN_PLUS9(   0x10,  "9 db" ),
-		GAIN_PLUS12(  0x18, "12 db" ),
-		GAIN_PLUS15A( 0x20, "15 db" ),
-		GAIN_PLUS15B( 0x28, "15 db" ),
-		GAIN_PLUS15C( 0x30, "15 db" ),
-		GAIN_PLUS15D( 0x38, "15 db" );
-
-		private int mValue;
-		private String mLabel;
-		
-		private IFStage6Gain( int value, String label )
-		{
-			mValue = value;
-			mLabel = label;
-		}
-
-		public static Register getRegister()
-		{
-			return Register.GAIN4;
-		}
-		
-		public static byte getMask()
-		{
-			return (byte)0x38;
-		}
-		
-		public byte getValue()
-		{
-			return (byte)mValue;
-		}
-		
-		public String getLabel()
-		{
-			return mLabel;
-		}
-		
-		public String toString()
-		{
-			return mLabel;
-		}
-
-		public static IFStage6Gain fromRegisterValue( int registerValue )
-		{
-			int value = registerValue & getMask();
-
-			for( IFStage6Gain setting: values() )
-			{
-				if( value == setting.getValue() )
-				{
-					return setting;
-				}
-			}
-
-			throw new IllegalArgumentException( "E4KTunerController"
-					+ " - unrecognized IF Gain Stage 6 value [" + 
-					value + "]" );
-		}
-	}
-
-	public enum IFFilter
-	{
-		MIX(  "Mix" ),
-		CHAN( "Channel" ),
-		RC(   "RC" );
-		
-		private String mLabel;
-		
-		private IFFilter( String label )
-		{
-			mLabel = label;
-		}
-		
-		public String getLabel()
-		{
-			return mLabel;
-		}
-	}
-
-	public enum AGCMode
-	{
-		SERIAL(               (byte)0x0 ),
-		IF_PWM_LNA_SERIAL(    (byte)0x1 ),
-		IF_PWM_LNA_AUTONL(    (byte)0x2 ),
-		IF_PWM_LNA_SUPERV(    (byte)0x3 ),
-		IF_SERIAL_LNA_PWM(    (byte)0x4 ),
-		IF_PWM_LNA_PWM(       (byte)0x5 ),
-		IF_DIG_LNA_SERIAL(    (byte)0x6 ),
-		IF_DIG_LNA_AUTON(     (byte)0x7 ),
-		IF_DIG_LNA_SUPERV(    (byte)0x8 ),
-		IF_SERIAL_LNA_AUTON(  (byte)0x9 ),
-		IF_SERIAL_LNA_SUPERV( (byte)0xA );
-		
-		private byte mValue;
-		
-		private AGCMode( byte value )
-		{
-			mValue = value;
-		}
-		
-		public byte getValue()
-		{
-			return mValue;
-		}
-	}
-	
-	public enum Register
-	{
-		DUMMY( 0x00 ),
-		MASTER1( 0x00 ),
-		MASTER2( 0x01 ),
-		MASTER3( 0x02 ),
-		MASTER4( 0x03 ),
-		MASTER5( 0x04 ),
-		CLK_INP( 0x05 ),
-		REF_CLK( 0x06 ),
-		SYNTH1( 0x07 ),
-		SYNTH2( 0x08 ),
-		SYNTH3( 0x09 ),
-		SYNTH4( 0x0A ),
-		SYNTH5( 0x0B ),
-		SYNTH6( 0x0C ),
-		SYNTH7( 0x0D ),
-		SYNTH8( 0x0E ),
-		SYNTH9( 0x0F ),
-		FILT1( 0x10 ),
-		FILT2( 0x11 ),
-		FILT3( 0x12 ),
-		GAIN1( 0x14 ),
-		GAIN2( 0x15 ),
-		GAIN3( 0x16 ),
-		GAIN4( 0x17 ),
-		AGC1( 0x1A ),
-		AGC2( 0x1B ),
-		AGC3( 0x1C ),
-		AGC4( 0x1D ),
-		AGC5( 0x1E ),
-		AGC6( 0x1F ),
-		AGC7( 0x20 ),
-		AGC8( 0x21 ),
-		AGC11( 0x24 ),
-		AGC12( 0x25 ),
-		DC1( 0x29 ),
-		DC2( 0x2A ),
-		DC3( 0x2B ),
-		DC4( 0x2C ),
-		DC5( 0x2D ),
-		DC6( 0x2E ),
-		DC7( 0x2F ),
-		DC8( 0x30 ),
-		QLUT0( 0x50 ),
-		QLUT1( 0x51 ),
-		QLUT2( 0x52 ),
-		QLUT3( 0x53 ),
-		ILUT0( 0x60 ),
-		ILUT1( 0x61 ),
-		ILUT2( 0x62 ),
-		ILUT3( 0x63 ),
-		DCTIME1( 0x70 ),
-		DCTIME2( 0x71 ),
-		DCTIME3( 0x72 ),
-		DCTIME4( 0x73 ),
-		PWM1( 0x74 ),
-		PWM2( 0x75 ),
-		PWM3( 0x76 ),
-		PWM4( 0x77 ),
-		BIAS( 0x78 ),
-		CLKOUT_PWDN( 0x7A ),
-		CHFILT_CALIB( 0x7B ),
-		I2C_REG_ADDR( 0x7D ),
-		MAGIC_1( 0x7E ),
-		MAGIC_2( 0x7F ),
-		MAGIC_3( 0x82 ),
-		MAGIC_4( 0x86 ),
-		MAGIC_5( 0x87 ),
-		MAGIC_6( 0x88 ),
-		MAGIC_7( 0x9F ),
-		MAGIC_8( 0xA0 ),
-		I2C_REGISTER( 0xC8 );
-
-		private int mValue;
-		
-		private Register( int value )
-		{
-			mValue = value;
-		}
-		
-		public byte getValue()
-		{
-			return (byte)mValue;
-		}
-	}
-
-	@Override
-    public void apply( TunerConfiguration config ) throws SourceException
-    {
-		Log.error( "********* HEY - apply tuner config not yet implemented - R820T tuner controller" );
-    }
 }
