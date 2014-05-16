@@ -24,6 +24,7 @@ import java.util.List;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.TreeNode;
 
 public class BaseNode extends DefaultMutableTreeNode
                               implements Comparable<BaseNode>
@@ -103,7 +104,16 @@ public class BaseNode extends DefaultMutableTreeNode
     {
     	if( mModel == null )
     	{
-    		return ((BaseNode)getParent()).getModel();
+    		TreeNode parent = getParent();
+    		
+    		if( parent != null )
+    		{
+        		return ((BaseNode)parent).getModel();
+    		}
+    		else
+    		{
+    			return null;
+    		}
     	}
     	else
     	{

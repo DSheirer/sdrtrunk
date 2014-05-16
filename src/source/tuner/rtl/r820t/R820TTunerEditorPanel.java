@@ -84,7 +84,7 @@ public class R820TTunerEditorPanel extends JPanel implements FrequencyChangeList
 		        }
 		        catch ( SourceException e )
 		        {
-		        	Log.error( "E4KTunerController - error setting frequency [" + 
+		        	Log.error( "R820T Tuner Controller - error setting frequency [" + 
 		        			frequency + "] - " + e.getLocalizedMessage() );
 		        }
             }

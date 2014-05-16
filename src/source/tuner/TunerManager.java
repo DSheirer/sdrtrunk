@@ -292,37 +292,37 @@ public class TunerManager
 							}
 							break;
 						case RAFAELMICRO_R820T:
-//							try
-//							{
-//								R820TTunerController controller = 
-//									new R820TTunerController( device );
-//								
-//								controller.init();
-//								
-//								RTL2832Tuner rtlTuner = 
-//									new RTL2832Tuner( tunerClass, controller );
-//								
-//								
-//		                        TunerConfiguration config = 
-//		                        		getTunerConfiguration( rtlTuner );
-//
-//								if( config != null )
-//		    	                {
-//									rtlTuner.apply( config );
-//		    	                }					
-//								
-//								mTuners.add( rtlTuner );
-//								status = sLOADED;
-//								name = rtlTuner.getName();
-//								reason = null;
-//							}
-//							catch( SourceException se )
-//							{
-//								status = sNOT_LOADED;
-//								reason = "Error constructing E4K tuner "
-//									+ "controller - " + se.getLocalizedMessage();
-//							}
-//							break;
+							try
+							{
+								R820TTunerController controller = 
+									new R820TTunerController( device );
+								
+								controller.init();
+								
+								RTL2832Tuner rtlTuner = 
+									new RTL2832Tuner( tunerClass, controller );
+								
+								
+		                        TunerConfiguration config = 
+		                        		getTunerConfiguration( rtlTuner );
+
+								if( config != null )
+		    	                {
+									rtlTuner.apply( config );
+		    	                }					
+								
+								mTuners.add( rtlTuner );
+								status = sLOADED;
+								name = rtlTuner.getName();
+								reason = null;
+							}
+							catch( SourceException se )
+							{
+								status = sNOT_LOADED;
+								reason = "Error constructing E4K tuner "
+									+ "controller - " + se.getLocalizedMessage();
+							}
+							break;
 						case FITIPOWER_FC0012:
 						case FITIPOWER_FC0013:
 						case RAFAELMICRO_R828D:
