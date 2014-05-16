@@ -142,7 +142,6 @@ public abstract class RTL2832TunerController extends TunerController
 	private Descriptor mDescriptor;
 
 	public static final int sTWO_TO_22_POWER = 4194304;
-	public static final int sOSCILLATOR_FREQUENCY = 28800000; //28.8 MHz
 	public static final SampleRate sDEFAULT_SAMPLE_RATE = SampleRate.RATE_1_200MHZ;
 	
 	private SampleRate mSampleRate = sDEFAULT_SAMPLE_RATE;
@@ -159,6 +158,7 @@ public abstract class RTL2832TunerController extends TunerController
 	private AtomicInteger mSampleCounter = new AtomicInteger();
 	private double mSampleRateAverageSum;
 	private int mSampleRateAverageCount;
+	protected int mOscillatorFrequency = 28800000; //28.8 MHz
 	
 	/**
 	 * Abstract tuner controller device.  Use the static getTunerClass() method
@@ -304,7 +304,7 @@ public abstract class RTL2832TunerController extends TunerController
 	public void setIFFrequency( int frequency ) throws UsbException
 	{
 		long ifFrequency = ( (long)sTWO_TO_22_POWER * (long)frequency ) / 
-						   (long)sOSCILLATOR_FREQUENCY * -1;
+						   (long)mOscillatorFrequency * -1;
 
 		/* Write byte 2 (high) */
 		writeDemodRegister( mUSBDevice, 
@@ -1080,7 +1080,7 @@ public abstract class RTL2832TunerController extends TunerController
 
 			int ratio = Integer.rotateLeft( high, 16 ) | low;
 			
-			int rate = (int)( sOSCILLATOR_FREQUENCY * sTWO_TO_22_POWER / ratio );
+			int rate = (int)( mOscillatorFrequency * sTWO_TO_22_POWER / ratio );
 			
 			SampleRate sampleRate = SampleRate.getClosest( rate );
 
@@ -1479,7 +1479,7 @@ public abstract class RTL2832TunerController extends TunerController
 			{
 				if( mRunning.compareAndSet( false, true ) )
 				{
-					Log.debug( "RTL2832TunerController [" + mDescriptor.getSerial() + "] - starting sample fetch thread" );
+					Log.debug( "RTL2832TunerController [" + getUniqueID() + "] - starting sample fetch thread" );
 
 					ArrayList<UsbIrp> irps = new ArrayList<UsbIrp>();
 					

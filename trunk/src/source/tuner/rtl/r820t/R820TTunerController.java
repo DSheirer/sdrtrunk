@@ -30,13 +30,15 @@ import source.SourceException;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
 import source.tuner.rtl.RTL2832TunerController;
+import source.tuner.rtl.RTL2832TunerController.Address;
+import source.tuner.rtl.RTL2832TunerController.Block;
 import source.tuner.usb.USBTunerDevice;
 import controller.ResourceManager;
 
 public class R820TTunerController extends RTL2832TunerController
 {
 	public static final int MIN_FREQUENCY = 24000000;
-	public static final int MAX_FREQUENCY = 176600000;
+	public static final int MAX_FREQUENCY = 1766000000;
 	public static final byte VERSION = (byte)49;
 	
 	private byte mI2CAddress = (byte)0x34; 
@@ -70,25 +72,44 @@ public class R820TTunerController extends RTL2832TunerController
     }
 	
 	@Override
-    public void apply( TunerConfiguration config ) throws SourceException
+    public void apply( TunerConfiguration tunerConfig ) throws SourceException
     {
-		Log.error( "********* Apply tuner config not yet implemented - R820T tuner controller" );
+		if( tunerConfig != null && 
+			tunerConfig instanceof R820TTunerConfiguration )
+		{
+			R820TTunerConfiguration config = (R820TTunerConfiguration)tunerConfig;
+			
+			try
+			{
+				SampleRate sampleRate = config.getSampleRate();
+				setSampleRate( sampleRate );
+				
+				double correction = config.getFrequencyCorrection();
+				setFrequencyCorrection( correction );
+				
+				R820TGain masterGain = config.getMasterGain();
+				setGain( masterGain, true );
+				
+				if( masterGain == R820TGain.MANUAL )
+				{
+					R820TMixerGain mixerGain = config.getMixerGain();
+					setMixerGain( mixerGain, true );
+					
+					R820TLNAGain lnaGain = config.getLNAGain();
+					setLNAGain( lnaGain, true );
+					
+					R820TVGAGain vgaGain = config.getVGAGain();
+					setVGAGain( vgaGain, true );
+				}
+			}
+			catch( UsbException e )
+			{
+				throw new SourceException( "R820TTunerController - usb error "
+						+ "while applying tuner config", e );
+			}
+		}
     }
 
-	public void init() throws SourceException
-	{
-	    try
-	    {
-	        initializeRegisters();
-	    }
-	    catch( UsbException e )
-	    {
-	        throw new SourceException( "R820TTunerController - error setting "
-                + "registers to initial startup value", e );
-	    }
-	    
-	}
-	
 	public JPanel getEditor( ResourceManager resourceManager )
 	{
 		return new R820TTunerEditorPanel( this, resourceManager );
@@ -103,67 +124,263 @@ public class R820TTunerController extends RTL2832TunerController
 	@Override
     public void setTunedFrequency( int frequency ) throws SourceException
     {
-    }
-	
-	public void initTuner( boolean controlI2CRepeater ) throws UsbException
-	{
-		if( controlI2CRepeater )
+		Log.info( "R820T - setting frequency to " + frequency );
+		try
 		{
 			enableI2CRepeater( mUSBDevice, true );
-		}
-		
-		boolean i2CRepeaterControl = false;
-		
-		if( controlI2CRepeater )
-		{
+
+			boolean controlI2C = false;
+			
+			setMux( frequency, controlI2C );
+			
+			setPLL( frequency, controlI2C );
+
 			enableI2CRepeater( mUSBDevice, false );
 		}
+		catch( UsbException e )
+		{
+			throw new SourceException( "R820TTunerController - exception "
+					+ "while setting frequency [" + frequency + "] - " + 
+					e.getLocalizedMessage() );
+		}
+		
+    }
+	
+	private void setMux( int frequency, boolean controlI2C ) throws UsbException
+	{
+		FrequencyRange range = FrequencyRange.getRangeForFrequency( frequency );
+
+		/* Set open drain */
+		writeR820TRegister( Register.DRAIN, range.getOpenDrain(), controlI2C );
+
+		/* RF_MUX, Polymux */
+		writeR820TRegister( Register.RF_POLY_MUX, range.getRFMuxPolyMux(), controlI2C );
+		
+		/* TF Band */
+		writeR820TRegister( Register.TF_BAND, range.getTFC(), controlI2C );
+		
+		/* XTAL CAP & Drive */
+		writeR820TRegister( Register.PLL_XTAL_CAPACITOR_AND_DRIVE, 
+				range.getXTALHighCap0P(), controlI2C );
+		
+		/* Register 8 - what is it? */
+		writeR820TRegister( Register.UNKNOWN_REGISTER_8, (byte)0x00, controlI2C );
+		
+		/* Register 9 - what is it? */
+		writeR820TRegister( Register.UNKNOWN_REGISTER_9, (byte)0x00, controlI2C );
+	}
+	
+	public void init() throws SourceException
+	{
+		try
+		{
+			/* Dummy write to test USB interface */
+			writeRegister( mUSBDevice, Block.USB, 
+					Address.USB_SYSCTL.getAddress(), (short)0x09, 1 );
+
+			initBaseband( mUSBDevice );
+
+			enableI2CRepeater( mUSBDevice, true );
+			
+			boolean i2CRepeaterControl = false;
+			
+			initTuner( i2CRepeaterControl );
+
+			enableI2CRepeater( mUSBDevice, false );
+			
+			/* Initialize the super class */
+			super.init();
+		}
+		catch( UsbException e )
+		{
+			e.printStackTrace();
+			throw new SourceException( "E4K Tuner Controller - error during "
+					+ "init()", e );
+		}
+	}
+	
+	public void initTuner( boolean controlI2C ) throws UsbException
+	{
+        initializeRegisters( controlI2C );
+
+        setTVStandard( controlI2C );
+        
+        systemFrequencySelect( 0, controlI2C );
+        
+        getGain();
 	}
 
 	/**
 	 * Partially implements the r82xx_set_tv_standard() method from librtlsdr.
 	 * Sets standard to digital tv to support sdr operations only.
 	 */
-	private void setTVStandard() throws UsbException
+	private void setTVStandard( boolean controlI2C ) throws UsbException
 	{
-	    enableI2CRepeater( mUSBDevice, true );
-	    
+		Log.info( "Setting TV Standard" );
 	    /* Init Flag & Xtal check Result */
-	    writeR820TRegister( Register.XTAL_CHECK, (byte)0x00, false );
+	    writeR820TRegister( Register.XTAL_CHECK, (byte)0x00, controlI2C );
 	    
 	    /* Set version */
-        writeR820TRegister( Register.VERSION, VERSION, false );
+        writeR820TRegister( Register.VERSION, VERSION, controlI2C );
 	    
         /* LT Gain Test */
-        writeR820TRegister( Register.LNA_TOP, (byte)0x00, false );
+        writeR820TRegister( Register.LNA_TOP, (byte)0x00, controlI2C );
 
+        int calibrationCode = 0;
+        
         for( int x = 0; x < 2; x++ )
         {
             /* Set filter cap */
-            writeR820TRegister( Register.FILTER_CAPACITOR, (byte)0x6B, false );
+            writeR820TRegister( Register.FILTER_CAPACITOR, (byte)0x6B, controlI2C );
 
             /* Set calibration clock on */
-            writeR820TRegister( Register.CALIBRATION_CLOCK, (byte)0x04, false );
+            writeR820TRegister( Register.CALIBRATION_CLOCK, (byte)0x04, controlI2C );
 
             /* XTAL capacitor 0pF for PLL */
-            writeR820TRegister( Register.PLL_XTAL_CAPACITOR, (byte)0x00, false );
+            writeR820TRegister( Register.PLL_XTAL_CAPACITOR, (byte)0x00, controlI2C );
 
-            setPLL( 5600 * 1000, false );
+            setPLL( 5600 * 1000, controlI2C );
+            
+            /* Start trigger */
+            writeR820TRegister( Register.CALIBRATION_TRIGGER, (byte)0x10, controlI2C );
+
+            /* Stop trigger */
+            writeR820TRegister( Register.CALIBRATION_TRIGGER, (byte)0x00, controlI2C );
+
+            /* Set calibration clock off */
+            writeR820TRegister( Register.CALIBRATION_CLOCK, (byte)0x00, controlI2C );
+
+            calibrationCode = getCalibrationCode( controlI2C );
+            
+            if( calibrationSuccessful( calibrationCode ) )
+            {
+            	Log.info( "Calibration successful!!" );
+            	
+            	
+            	break;
+            }
+            else
+            {
+            	Log.info( "Calibration NOT successful!!" );
+            }
         }
-        
-	    enableI2CRepeater( mUSBDevice, false );
+
+    	if( calibrationCode == 0x0F )
+    	{
+    		calibrationCode = 0;
+    	}
+    	
+    	/* Write calibration code */
+    	writeR820TRegister( Register.FILTER_CALIBRATION_CODE, 
+    			(byte)calibrationCode, controlI2C );
+
+    	/* Set BW, Filter gain & HP Corner */
+    	writeR820TRegister( Register.BANDWIDTH_FILTER_GAIN_HIGHPASS_FILTER_CORNER, 
+    			(byte)0x6B, controlI2C );
+
+    	/* Set Image_R */
+    	writeR820TRegister( Register.IMAGE_REVERSE, (byte)0x00, controlI2C );
+    	
+    	/* Set filter_3db, V6MHz */
+    	writeR820TRegister( Register.FILTER_GAIN, (byte)0x10, controlI2C );
+
+    	/* Channel filter extension */
+    	writeR820TRegister( Register.CHANNEL_FILTER_EXTENSION, (byte)0x60, controlI2C );
+
+    	/* Loop through */
+    	writeR820TRegister( Register.LOOP_THROUGH, (byte)0x00, controlI2C );
+
+    	/* Loop through attenuation */
+    	writeR820TRegister( Register.LOOP_THROUGH_ATTENUATION, (byte)0x00, controlI2C );
+    	
+    	/* Filter extension widest */
+    	writeR820TRegister( Register.FILTER_EXTENSION_WIDEST, (byte)0x00, controlI2C );
+
+    	/* RF poly filter current */
+    	writeR820TRegister( Register.RF_POLY_FILTER_CURRENT, (byte)0x60, controlI2C );
+
+    	Log.info( "Done Setting TV Standard" );
+	}
+	
+	private boolean calibrationSuccessful( int calibrationCode )
+	{
+		return calibrationCode != 0 && calibrationCode != 0x0F;
+	}
+	
+	private int getCalibrationCode( boolean controlI2C ) throws UsbException
+	{
+		return getStatusRegister( 4, controlI2C ) & 0x0F;
+	}
+	
+	private void systemFrequencySelect( int frequency, boolean controlI2C )
+									throws UsbException
+	{
+		/* Set pre_detect to off */
+		writeR820TRegister( Register.PRE_DETECT, (byte)0x00, controlI2C );
+
+		/* LNA top? */
+		writeR820TRegister( Register.LNA_TOP, (byte)0xE5, controlI2C );
+		
+		byte mixer_top;
+		byte cp_cur;
+		byte div_buf_cur;
+		
+		if( frequency == 506000000 || 
+			frequency == 666000000 || 
+			frequency == 818000000 )
+		{
+			mixer_top = (byte)0x14;
+			cp_cur = (byte)0x28;
+			div_buf_cur = (byte)0x20;
+		}
+		else
+		{
+			mixer_top = (byte)0x24;
+			cp_cur = (byte)0x38;
+			div_buf_cur = (byte)0x30;
+		}
+
+		writeR820TRegister( Register.MIXER_TOP, mixer_top, controlI2C );
+
+		writeR820TRegister( Register.LNA_VTH_L, (byte)0x53, controlI2C );
+
+		writeR820TRegister( Register.MIXER_VTH_L, (byte)0x76, controlI2C );
+		
+		/* Air-In only for Astrometa */
+		writeR820TRegister( Register.AIR_CABLE1_INPUT_SELECTOR, (byte)0x00, controlI2C );
+		
+		writeR820TRegister( Register.CABLE2_INPUT_SELECTOR, (byte)0x00, controlI2C );
+		
+		writeR820TRegister( Register.CP_CUR, cp_cur, controlI2C );
+		
+		writeR820TRegister( Register.DIVIDER_BUFFER_CURRENT, div_buf_cur, controlI2C );
+
+		writeR820TRegister( Register.FILTER_CURRENT, (byte)0x40, controlI2C );
+		
+		/* Set LNA - omitted, because this is redundant to first 2 writes */
+		
+		/* Write discharge mode */
+		writeR820TRegister( Register.MIXER_TOP2, mixer_top, controlI2C );
+		
+		/* LNA discharge current */
+		writeR820TRegister( Register.LNA_DISCHARGE_CURRENT, (byte)0x14, controlI2C );
+		
+		/* AGC clock 1 khz, external det1 cap 1u */
+		writeR820TRegister( Register.AGC_CLOCK, (byte)0x00, controlI2C );
+
+		writeR820TRegister( Register.UNKNOWN_REGISTER_10, (byte)0x00, controlI2C );
 	}
 	
 	private void setPLL( int frequency, boolean controlI2C ) throws UsbException
 	{
 	    /* Set reference divider to 0 */
-        writeR820TRegister( Register.PLL_XTAL_CAPACITOR, (byte)0x00, false );
+        writeR820TRegister( Register.PLL_XTAL_CAPACITOR, (byte)0x00, controlI2C );
 
         /* Set PLL autotune to 128kHz */
-        writeR820TRegister( Register.PLL_AUTOTUNE, (byte)0x00, false );
+        writeR820TRegister( Register.PLL_AUTOTUNE, (byte)0x00, controlI2C );
 
         /* Set VCO current to 100 */
-        writeR820TRegister( Register.VCO_CURRENT, (byte)0x80, false );
+        writeR820TRegister( Register.VCO_CURRENT, (byte)0x80, controlI2C );
 
         /* Calculate divider */
         int mix_div =2;
@@ -171,8 +388,11 @@ public class R820TTunerController extends RTL2832TunerController
         int div_num = 0;
         int vco_min = 1770000;
         int vco_max = vco_min * 2;
+        int vco_power_ref = 2;
         
         int freq_khz = (int)( ( frequency + 500 ) / 1000 );
+        int pll_ref = mOscillatorFrequency;
+        int pll_ref_khz = ( mOscillatorFrequency + 500 ) / 1000;
         
         while( mix_div <= 64 )
         {
@@ -193,6 +413,95 @@ public class R820TTunerController extends RTL2832TunerController
             
             mix_div = mix_div << 1;
         }
+        
+        int statusRegister4 = getStatusRegister( 4, controlI2C );
+        
+        int vco_fine_tune = ( statusRegister4 & 0x30 ) >> 4;
+            
+        if( vco_fine_tune > vco_power_ref )
+        {
+        	div_num--;
+        }
+        else if( vco_fine_tune < vco_power_ref )
+        {
+        	div_num++;
+        }
+        
+        writeR820TRegister( Register.DIVIDER, (byte)( div_num << 5 ), controlI2C );
+
+        long vco_freq = (long)frequency * (long)mix_div;
+
+        int nint = (int)( vco_freq / ( 2 * pll_ref ) );
+        
+        int vco_fra = (int)( ( vco_freq - ( 2 * pll_ref * nint ) ) / 1000 );
+
+        if( nint > (( 128 / vco_power_ref ) - 1 ) )
+        {
+        	Log.error( "R820T Tuner Controller - no valid PLL value for frequency [" + frequency + "]" );
+        }
+        
+        int ni = ( nint - 13 ) / 4;
+        int si = nint - ( 4 * ni ) - 13;
+        
+        writeR820TRegister( Register.UNKNOWN_REGISTER_14, (byte)ni, controlI2C );
+
+        /* PW_SDM */
+        if( vco_fra > 0 )
+        {
+        	writeR820TRegister( Register.PW_SDM, (byte)0x08, controlI2C );
+        }
+        else
+        {
+        	writeR820TRegister( Register.PW_SDM, (byte)0x00, controlI2C );
+        }
+        
+        /* sdm calculator */
+        int n_sdm = 2;
+        int sdm = 0;
+        
+        while( vco_fra > 1 )
+        {
+        	if( vco_fra > ( 2 * pll_ref_khz / n_sdm ) )
+        	{
+        		sdm+= 32768 / ( n_sdm / 2 );
+        		vco_fra -= 2 * pll_ref_khz / n_sdm;
+        		if( n_sdm >= 0x8000 )
+        		{
+        			break;
+        		}
+        	}
+        	
+        	n_sdm <<= 1;
+        }
+        
+        writeR820TRegister( Register.SDM_MSB, (byte)( sdm >> 8 ), controlI2C );
+        writeR820TRegister( Register.SDM_LSB, (byte)( sdm & 0xFF ), controlI2C );
+
+        if( !isPLLLocked( controlI2C ) )
+        {
+        	/* Increase VCO current */
+        	writeR820TRegister( Register.VCO_CURRENT, (byte)0x60, controlI2C );
+        	
+        	if( !isPLLLocked( controlI2C ) )
+        	{
+        		throw new UsbException( "R820T Tuner Controller - couldn't "
+        				+ "achieve PLL lock on frequency [" + frequency + "]" );
+        	}
+        }
+
+        /* set pll autotune to 8kHz */
+        writeR820TRegister( Register.PLL_AUTOTUNE, (byte)0x08, controlI2C );
+	}
+
+	/**
+	 * Indicates if the Phase Locked Loop (PLL) is locked.  Checks status 
+	 * register 2 to see if the PLL locked indicator bit is set. 
+	 */
+	private boolean isPLLLocked( boolean controlI2C ) throws UsbException
+	{
+		int register = getStatusRegister( 2, controlI2C );
+		
+		return ( register & 0x40 ) == 0x40; 
 	}
 	
 	/**
@@ -201,35 +510,29 @@ public class R820TTunerController extends RTL2832TunerController
 	 * needs to be called once, upon initialization.
 	 * @throws UsbException
 	 */
-	private void initializeRegisters() throws UsbException
+	private void initializeRegisters( boolean controlI2C ) throws UsbException
 	{
-        enableI2CRepeater( mUSBDevice, true );
-	    
 	    for( int x = 5; x < mShadowRegister.length; x++ )
 	    {
 	        writeI2CRegister( mUSBDevice, 
 	                          mI2CAddress,
 	                          (byte)x,
 	                          (byte)mShadowRegister[ x ],
-	                          false );
+	                          controlI2C );
 	    }
-
-	    enableI2CRepeater( mUSBDevice, false );
 	}
 	
-	private void readStatusRegisters( boolean controlI2C ) throws UsbException
+	private int getStatusRegister( int register, boolean controlI2C ) throws UsbException
 	{
-        /* Set the I2C bus to register 0 to read 5 bytes */
-	    writeI2CRegister( mUSBDevice, mI2CAddress, (byte)0, (byte)5, controlI2C );
-
-	    byte[] data = new byte[ 5 ];
-	    
-	    byte[] status = read( mUSBDevice, Block.IIC, (byte)0, data );
-
-	    for( int x = 0; x < 5; x++ )
-	    {
-	        mShadowRegister[ x ] = status[ x ];
-	    }
+		if( 0 <= register && register <= 4 )
+		{
+			return readI2CRegister( mUSBDevice, mI2CAddress, (byte)register, controlI2C );
+		}
+		else
+		{
+			throw new IllegalArgumentException( "R820T Tuner Controller - "
+					+ "attempt to read unknown status register #" + register );
+		}
 	}
 	
 	public void writeR820TRegister( Register register, 
@@ -259,7 +562,55 @@ public class R820TTunerController extends RTL2832TunerController
 	                            controlI2C );
 	}
 	
-	public enum VGAGain
+	private void getGain() throws UsbException
+	{
+		int gain = getStatusRegister( 3, true );
+
+		Log.info( "Gain original value is [" + gain + "]" );
+
+		int converted = ( ( gain & 0x0F ) << 1 ) + ( ( gain & 0xF0 ) >> 4 );
+
+		Log.info( "Gain converted value is [" + converted + "]" );
+	}
+	
+	public void setGain( R820TGain gain, boolean controlI2C ) throws UsbException
+	{
+		setLNAGain( gain.getLNAGain(), controlI2C );
+		setMixerGain( gain.getMixerGain(), controlI2C );
+		setVGAGain( gain.getVGAGain(), controlI2C );
+	}
+	
+	public void setLNAGain( R820TLNAGain gain, boolean controlI2C ) throws UsbException
+	{
+		writeR820TRegister( Register.LNA_GAIN, gain.getSetting(), controlI2C );
+	}
+	
+	public R820TLNAGain getLNAGain( boolean controlI2C ) throws UsbException
+	{
+		return null;
+	}
+	
+	public void setMixerGain( R820TMixerGain gain, boolean controlI2C ) throws UsbException 
+	{
+		writeR820TRegister( Register.MIXER_GAIN, gain.getSetting(), controlI2C );
+	}
+	
+	public R820TMixerGain getMixerGain( boolean controlI2C ) throws UsbException 
+	{
+		return null;
+	}
+	
+	public void setVGAGain( R820TVGAGain gain, boolean controlI2C ) throws UsbException
+	{
+		writeR820TRegister( Register.VGA_GAIN, gain.getSetting(), controlI2C );
+	}
+	
+	public R820TVGAGain getVGAGain( boolean controlI2C ) throws UsbException
+	{
+		return null;
+	}
+	
+	public enum R820TVGAGain
 	{
 	    GAIN_0( "0", 0x00 ),
 	    GAIN_26( "26", 0x01 ),
@@ -281,7 +632,7 @@ public class R820TTunerController extends RTL2832TunerController
 	    private String mLabel;
 	    private int mSetting;
 	    
-	    private VGAGain( String label, int setting )
+	    private R820TVGAGain( String label, int setting )
 	    {
 	        mLabel = label;
 	        mSetting = setting;
@@ -298,7 +649,7 @@ public class R820TTunerController extends RTL2832TunerController
 	    }
 	}
 
-    public enum LNAGain
+    public enum R820TLNAGain
     {
         AUTOMATIC( "Automatic", 0x00 ),
         GAIN_0( "0", 0x10 ),
@@ -321,7 +672,7 @@ public class R820TTunerController extends RTL2832TunerController
         private String mLabel;
         private int mSetting;
         
-        private LNAGain( String label, int setting )
+        private R820TLNAGain( String label, int setting )
         {
             mLabel = label;
             mSetting = setting;
@@ -338,7 +689,7 @@ public class R820TTunerController extends RTL2832TunerController
         }
     }
 
-    public enum MixerGain
+    public enum R820TMixerGain
     {
         AUTOMATIC( "Automatic", 0x10 ),
         GAIN_0( "0", 0x00 ),
@@ -361,7 +712,7 @@ public class R820TTunerController extends RTL2832TunerController
         private String mLabel;
         private int mSetting;
         
-        private MixerGain( String label, int setting )
+        private R820TMixerGain( String label, int setting )
         {
             mLabel = label;
             mSetting = setting;
@@ -378,47 +729,47 @@ public class R820TTunerController extends RTL2832TunerController
         }
     }
     
-    public enum Gain
+    public enum R820TGain
     {
-        AUTOMATIC( "Automatic", VGAGain.GAIN_312, LNAGain.AUTOMATIC, MixerGain.AUTOMATIC ),
-        MANUAL( "Manual", VGAGain.GAIN_210, LNAGain.GAIN_112, MixerGain.GAIN_105 ),
-        GAIN_0( "0", VGAGain.GAIN_210, LNAGain.GAIN_0, MixerGain.GAIN_0 ),
-        GAIN_9( "9", VGAGain.GAIN_210, LNAGain.GAIN_9, MixerGain.GAIN_0 ),
-        GAIN_14( "14", VGAGain.GAIN_210, LNAGain.GAIN_9, MixerGain.GAIN_5 ),
-        GAIN_26( "26", VGAGain.GAIN_210, LNAGain.GAIN_21, MixerGain.GAIN_5 ),
-        GAIN_36( "36", VGAGain.GAIN_210, LNAGain.GAIN_21, MixerGain.GAIN_15 ),
-        GAIN_76( "76", VGAGain.GAIN_210, LNAGain.GAIN_61, MixerGain.GAIN_15 ),
-        GAIN_86( "86", VGAGain.GAIN_210, LNAGain.GAIN_61, MixerGain.GAIN_25 ),
-        GAIN_124( "124", VGAGain.GAIN_210, LNAGain.GAIN_99, MixerGain.GAIN_25 ),
-        GAIN_143( "143", VGAGain.GAIN_210, LNAGain.GAIN_99, MixerGain.GAIN_44 ),
-        GAIN_156( "156", VGAGain.GAIN_210, LNAGain.GAIN_112, MixerGain.GAIN_44 ),
-        GAIN_165( "165", VGAGain.GAIN_210, LNAGain.GAIN_112, MixerGain.GAIN_53 ),
-        GAIN_196( "196", VGAGain.GAIN_210, LNAGain.GAIN_143, MixerGain.GAIN_53 ),
-        GAIN_208( "208", VGAGain.GAIN_210, LNAGain.GAIN_143, MixerGain.GAIN_63 ),
-        GAIN_228( "228", VGAGain.GAIN_210, LNAGain.GAIN_165, MixerGain.GAIN_63 ),
-        GAIN_253( "253", VGAGain.GAIN_210, LNAGain.GAIN_165, MixerGain.GAIN_88 ),
-        GAIN_279( "279", VGAGain.GAIN_210, LNAGain.GAIN_191, MixerGain.GAIN_88 ),
-        GAIN_296( "296", VGAGain.GAIN_210, LNAGain.GAIN_191, MixerGain.GAIN_105 ),
-        GAIN_327( "327", VGAGain.GAIN_210, LNAGain.GAIN_222, MixerGain.GAIN_105 ),
-        GAIN_337( "337", VGAGain.GAIN_210, LNAGain.GAIN_222, MixerGain.GAIN_115 ),
-        GAIN_363( "363", VGAGain.GAIN_210, LNAGain.GAIN_248, MixerGain.GAIN_115 ),
-        GAIN_371( "371", VGAGain.GAIN_210, LNAGain.GAIN_248, MixerGain.GAIN_123 ),
-        GAIN_385( "385", VGAGain.GAIN_210, LNAGain.GAIN_262, MixerGain.GAIN_123 ),
-        GAIN_401( "401", VGAGain.GAIN_210, LNAGain.GAIN_262, MixerGain.GAIN_139 ),
-        GAIN_420( "420", VGAGain.GAIN_210, LNAGain.GAIN_281, MixerGain.GAIN_139 ),
-        GAIN_433( "433", VGAGain.GAIN_210, LNAGain.GAIN_281, MixerGain.GAIN_152 ),
-        GAIN_438( "438", VGAGain.GAIN_210, LNAGain.GAIN_286, MixerGain.GAIN_152 ),
-        GAIN_444( "444", VGAGain.GAIN_210, LNAGain.GAIN_286, MixerGain.GAIN_158 ),
-        GAIN_479( "479", VGAGain.GAIN_210, LNAGain.GAIN_321, MixerGain.GAIN_158 ),
-        GAIN_482( "482", VGAGain.GAIN_210, LNAGain.GAIN_321, MixerGain.GAIN_161 ),
-        GAIN_495( "495", VGAGain.GAIN_210, LNAGain.GAIN_334, MixerGain.GAIN_161 ); 
+        AUTOMATIC( "Automatic", R820TVGAGain.GAIN_312, R820TLNAGain.AUTOMATIC, R820TMixerGain.AUTOMATIC ),
+        MANUAL( "Manual", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_112, R820TMixerGain.GAIN_105 ),
+        GAIN_0( "0", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_0, R820TMixerGain.GAIN_0 ),
+        GAIN_9( "9", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_9, R820TMixerGain.GAIN_0 ),
+        GAIN_14( "14", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_9, R820TMixerGain.GAIN_5 ),
+        GAIN_26( "26", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_21, R820TMixerGain.GAIN_5 ),
+        GAIN_36( "36", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_21, R820TMixerGain.GAIN_15 ),
+        GAIN_76( "76", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_61, R820TMixerGain.GAIN_15 ),
+        GAIN_86( "86", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_61, R820TMixerGain.GAIN_25 ),
+        GAIN_124( "124", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_99, R820TMixerGain.GAIN_25 ),
+        GAIN_143( "143", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_99, R820TMixerGain.GAIN_44 ),
+        GAIN_156( "156", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_112, R820TMixerGain.GAIN_44 ),
+        GAIN_165( "165", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_112, R820TMixerGain.GAIN_53 ),
+        GAIN_196( "196", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_143, R820TMixerGain.GAIN_53 ),
+        GAIN_208( "208", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_143, R820TMixerGain.GAIN_63 ),
+        GAIN_228( "228", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_165, R820TMixerGain.GAIN_63 ),
+        GAIN_253( "253", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_165, R820TMixerGain.GAIN_88 ),
+        GAIN_279( "279", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_191, R820TMixerGain.GAIN_88 ),
+        GAIN_296( "296", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_191, R820TMixerGain.GAIN_105 ),
+        GAIN_327( "327", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_222, R820TMixerGain.GAIN_105 ),
+        GAIN_337( "337", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_222, R820TMixerGain.GAIN_115 ),
+        GAIN_363( "363", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_248, R820TMixerGain.GAIN_115 ),
+        GAIN_371( "371", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_248, R820TMixerGain.GAIN_123 ),
+        GAIN_385( "385", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_262, R820TMixerGain.GAIN_123 ),
+        GAIN_401( "401", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_262, R820TMixerGain.GAIN_139 ),
+        GAIN_420( "420", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_281, R820TMixerGain.GAIN_139 ),
+        GAIN_433( "433", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_281, R820TMixerGain.GAIN_152 ),
+        GAIN_438( "438", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_286, R820TMixerGain.GAIN_152 ),
+        GAIN_444( "444", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_286, R820TMixerGain.GAIN_158 ),
+        GAIN_479( "479", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_321, R820TMixerGain.GAIN_158 ),
+        GAIN_482( "482", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_321, R820TMixerGain.GAIN_161 ),
+        GAIN_495( "495", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_334, R820TMixerGain.GAIN_161 ); 
         
         private String mLabel;
-        private VGAGain mVGAGain;
-        private LNAGain mLNAGain;
-        private MixerGain mMixerGain;
+        private R820TVGAGain mVGAGain;
+        private R820TLNAGain mLNAGain;
+        private R820TMixerGain mMixerGain;
         
-        private Gain( String label, VGAGain vga, LNAGain lna, MixerGain mixer )
+        private R820TGain( String label, R820TVGAGain vga, R820TLNAGain lna, R820TMixerGain mixer )
         {
             mLabel = label;
             mVGAGain = vga;
@@ -431,17 +782,17 @@ public class R820TTunerController extends RTL2832TunerController
             return mLabel;
         }
         
-        public VGAGain getVGAGain()
+        public R820TVGAGain getVGAGain()
         {
             return mVGAGain;
         }
 
-        public LNAGain getLNAGain()
+        public R820TLNAGain getLNAGain()
         {
             return mLNAGain;
         }
         
-        public MixerGain getMixerGain()
+        public R820TMixerGain getMixerGain()
         {
             return mMixerGain;
         }
@@ -526,46 +877,52 @@ public class R820TTunerController extends RTL2832TunerController
 	
 	public enum FrequencyRange
 	{
-		BAND_024(  24000000,   49999999, 0x08, 0x02, 0xDF, 0x02, 0x01 ),
-		BAND_050(  50000000,   54999999, 0x08, 0x02, 0xBE, 0x02, 0x01 ),
-		BAND_055(  55000000,   59999999, 0x08, 0x02, 0x8B, 0x02, 0x01 ),
-		BAND_060(  60000000,   64999999, 0x08, 0x02, 0x7B, 0x02, 0x01 ),
-		BAND_065(  65000000,   69999999, 0x08, 0x02, 0x69, 0x02, 0x01 ),
-		BAND_070(  70000000,   74999999, 0x08, 0x02, 0x58, 0x02, 0x01 ),
-		BAND_075(  75000000,   79999999, 0x00, 0x02, 0x44, 0x02, 0x01 ),
-		BAND_080(  80000000,   89999999, 0x00, 0x02, 0x44, 0x02, 0x01 ),
-		BAND_090(  90000000,   99999999, 0x00, 0x02, 0x34, 0x01, 0x01 ),
-		BAND_100( 100000000,  109999999, 0x00, 0x02, 0x34, 0x01, 0x01 ),
-		BAND_110( 110000000,  119999999, 0x00, 0x02, 0x24, 0x01, 0x01 ),
-		BAND_120( 120000000,  139999999, 0x00, 0x02, 0x24, 0x01, 0x01 ),
-		BAND_140( 140000000,  179999999, 0x00, 0x02, 0x14, 0x01, 0x01 ),
-		BAND_180( 180000000,  219999999, 0x00, 0x02, 0x13, 0x00, 0x00 ),
-		BAND_220( 220000000,  249999999, 0x00, 0x02, 0x13, 0x00, 0x00 ),
-		BAND_250( 250000000,  279999999, 0x00, 0x02, 0x11, 0x00, 0x00 ),
-		BAND_280( 280000000,  309999999, 0x00, 0x02, 0x00, 0x00, 0x00 ),
-		BAND_310( 310000000,  449999999, 0x00, 0x41, 0x00, 0x00, 0x00 ),
-		BAND_450( 450000000,  587999999, 0x00, 0x41, 0x00, 0x00, 0x00 ),
-		BAND_588( 588000000,  649999999, 0x00, 0x40, 0x00, 0x00, 0x00 ),
-		BAND_650( 650000000, 1766000000, 0x00, 0x40, 0x00, 0x00, 0x00 ),
-		BAND_UNK( 0, 0, 0, 0, 0, 0, 0 );
+		RANGE_024(  24000000,   49999999, 0x08, 0x02, 0xDF, 0x02, 0x01 ),
+		RANGE_050(  50000000,   54999999, 0x08, 0x02, 0xBE, 0x02, 0x01 ),
+		RANGE_055(  55000000,   59999999, 0x08, 0x02, 0x8B, 0x02, 0x01 ),
+		RANGE_060(  60000000,   64999999, 0x08, 0x02, 0x7B, 0x02, 0x01 ),
+		RANGE_065(  65000000,   69999999, 0x08, 0x02, 0x69, 0x02, 0x01 ),
+		RANGE_070(  70000000,   74999999, 0x08, 0x02, 0x58, 0x02, 0x01 ),
+		RANGE_075(  75000000,   79999999, 0x00, 0x02, 0x44, 0x02, 0x01 ),
+		RANGE_080(  80000000,   89999999, 0x00, 0x02, 0x44, 0x02, 0x01 ),
+		RANGE_090(  90000000,   99999999, 0x00, 0x02, 0x34, 0x01, 0x01 ),
+		RANGE_100( 100000000,  109999999, 0x00, 0x02, 0x34, 0x01, 0x01 ),
+		RANGE_110( 110000000,  119999999, 0x00, 0x02, 0x24, 0x01, 0x01 ),
+		RANGE_120( 120000000,  139999999, 0x00, 0x02, 0x24, 0x01, 0x01 ),
+		RANGE_140( 140000000,  179999999, 0x00, 0x02, 0x14, 0x01, 0x01 ),
+		RANGE_180( 180000000,  219999999, 0x00, 0x02, 0x13, 0x00, 0x00 ),
+		RANGE_220( 220000000,  249999999, 0x00, 0x02, 0x13, 0x00, 0x00 ),
+		RANGE_250( 250000000,  279999999, 0x00, 0x02, 0x11, 0x00, 0x00 ),
+		RANGE_280( 280000000,  309999999, 0x00, 0x02, 0x00, 0x00, 0x00 ),
+		RANGE_310( 310000000,  449999999, 0x00, 0x41, 0x00, 0x00, 0x00 ),
+		RANGE_450( 450000000,  587999999, 0x00, 0x41, 0x00, 0x00, 0x00 ),
+		RANGE_588( 588000000,  649999999, 0x00, 0x40, 0x00, 0x00, 0x00 ),
+		RANGE_650( 650000000, 1766000000, 0x00, 0x40, 0x00, 0x00, 0x00 ),
+		RANGE_UNK( 0, 0, 0, 0, 0, 0, 0 );
 
 		private int mMinFrequency;
 		private int mMaxFrequency;
-		private int mOpenD;
-		private int mRFMuxPloy;
+		private int mOpenDrain;
+		private int mRFMux_PolyMux;
 		private int mTF_c;
 		private int mXtalCap20p;
 		private int mXtalCap10p;
 		
 		private FrequencyRange( int minFrequency,
 								int maxFrequency,
-								int openD,
+								int openDrain,
 								int rfMuxPloy,
 								int tf_c,
 								int xtalCap20p,
 								int xtalCap10p )
 		{
-			
+			mMinFrequency = minFrequency;
+			mMaxFrequency = maxFrequency;
+			mOpenDrain = openDrain;
+			mRFMux_PolyMux = rfMuxPloy;
+			mTF_c = tf_c;
+			mXtalCap20p = xtalCap20p;
+			mXtalCap10p = xtalCap10p;
 		}
 		
 		public boolean contains( int frequency )
@@ -583,7 +940,7 @@ public class R820TTunerController extends RTL2832TunerController
 				}
 			}
 			
-			return BAND_UNK;
+			return RANGE_UNK;
 		}
 		
 		public int getMinFrequency()
@@ -596,14 +953,14 @@ public class R820TTunerController extends RTL2832TunerController
 			return mMaxFrequency;
 		}
 		
-		public byte getOpenD()
+		public byte getOpenDrain()
 		{
-			return (byte)mOpenD;
+			return (byte)mOpenDrain;
 		}
 		
-		public byte getRFMuxPloy()
+		public byte getRFMuxPolyMux()
 		{
-			return (byte)mRFMuxPloy;
+			return (byte)mRFMux_PolyMux;
 		}
 		
 		public byte getTFC()
@@ -621,9 +978,14 @@ public class R820TTunerController extends RTL2832TunerController
 			return (byte)mXtalCap10p;
 		}
 		
-		public byte getXTALCap0P()
+		public byte getXTALLowCap0P()
 		{
-			return (byte)0x0;
+			return (byte)0x08;
+		}
+
+		public byte getXTALHighCap0P()
+		{
+			return (byte)0x10;
 		}
 	}
 	
