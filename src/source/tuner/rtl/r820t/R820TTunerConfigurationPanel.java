@@ -288,17 +288,14 @@ public class R820TTunerConfigurationPanel extends JPanel
 	                
 	                if( gain == R820TGain.MANUAL )
 	                {
-	                	mComboMixerGain.setSelectedItem( 
-	                			mController.getMixerGain( true ) );
+	                	mComboMixerGain.setSelectedItem( gain.getMixerGain() ); 
 	                	mComboMixerGain.setEnabled( true );
 	                	
-	                	mComboLNAGain.setSelectedItem( 
-	                			mController.getLNAGain( true ) );
+	                	mComboLNAGain.setSelectedItem( gain.getLNAGain() );
 	                	mComboLNAGain.setEnabled( true );
 
+	                	mComboVGAGain.setSelectedItem( gain.getVGAGain() );
 	                	mComboVGAGain.setEnabled( true );
-	                	mComboVGAGain.setSelectedItem( 
-	                			mController.getVGAGain( true ) );
 	                }
 	                else
 	                {

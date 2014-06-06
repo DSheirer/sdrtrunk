@@ -30,8 +30,6 @@ import source.SourceException;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
 import source.tuner.rtl.RTL2832TunerController;
-import source.tuner.rtl.RTL2832TunerController.Address;
-import source.tuner.rtl.RTL2832TunerController.Block;
 import source.tuner.usb.USBTunerDevice;
 import controller.ResourceManager;
 
@@ -39,20 +37,31 @@ public class R820TTunerController extends RTL2832TunerController
 {
 	public static final int MIN_FREQUENCY = 24000000;
 	public static final int MAX_FREQUENCY = 1766000000;
+	public static final int R820T_IF_FREQUENCY = 3570000;
 	public static final byte VERSION = (byte)49;
 	
-	private byte mI2CAddress = (byte)0x34; 
-
-	/* Shadow register is used to keep a cached copy of all registers, so that
-	 * we don't have to read a full byte from a register in order to apply a 
-	 * masked value and then re-write the full byte.  With the shadow register,
-	 * we can apply the masked value to the cached value, and then just write 
-	 * the masked byte, skipping the need to read the byte first. */
+	public static final byte[] BIT_REV_LOOKUP_TABLE = 
+		{ (byte)0x0, (byte)0x8, (byte)0x4, (byte)0xC, 
+		  (byte)0x2, (byte)0xA, (byte)0x6, (byte)0xE,
+		  (byte)0x1, (byte)0x9, (byte)0x5, (byte)0xD, 
+		  (byte)0x3, (byte)0xB, (byte)0x7, (byte)0xF }; 
+	
+	/* R820T I2C address */
+	private byte mI2CAddress = (byte)0x34;
+	
+	/* Shadow register is used to keep a cached (in-memory) copy of all 
+	 * registers, so that we don't have to read a full byte from a register in 
+	 * order to apply a masked value and then re-write the full byte.  With the 
+	 * shadow register, we can apply the masked value to the cached value, and 
+	 * then just write the masked byte, skipping the need to read the byte 
+	 * first. */
 	private int[] mShadowRegister = 
 	    { 0x00, 0x00, 0x00, 0x00, 0x00, 0x83, 0x32, 0x75,
 	      0xC0, 0x40, 0xD6, 0x6C, 0xF5, 0x63, 0x75, 0x68,
 	      0x6C, 0x83, 0x80, 0x00, 0x0F, 0x00, 0xC0, 0x30,
 	      0x48, 0xCC, 0x60, 0x00, 0x54, 0xAE, 0x4A, 0xC0 };
+	
+	private JPanel mEditor;
 	
 	public R820TTunerController( USBTunerDevice device ) throws SourceException
 	{
@@ -68,7 +77,7 @@ public class R820TTunerController extends RTL2832TunerController
 	@Override
     public void setSampleRateFilters( int sampleRate ) throws UsbException
     {
-		//TODO: why is this being forced as an abstract method?
+		//TODO: why is this being forced as an abstract method on sub classes?
     }
 	
 	@Override
@@ -110,21 +119,35 @@ public class R820TTunerController extends RTL2832TunerController
 		}
     }
 
+	/**
+	 * Controller gui editor component for this tuner
+	 */
 	public JPanel getEditor( ResourceManager resourceManager )
 	{
-		return new R820TTunerEditorPanel( this, resourceManager );
+		if( mEditor == null )
+		{
+			mEditor = new R820TTunerEditorPanel( this, resourceManager );
+		}
+		
+		return mEditor;
 	}
-	
+
+	/**
+	 * Not implemented.
+	 */
 	@Override
     public int getTunedFrequency() throws SourceException
     {
 		return 0;
     }
 
+	/**
+	 * Sets the center frequency.  Setting the frequency is a two-part process
+	 * of setting the multiplexer and then setting the Oscillator (PLL).
+	 */
 	@Override
     public void setTunedFrequency( int frequency ) throws SourceException
     {
-		Log.info( "R820T - setting frequency to " + frequency );
 		try
 		{
 			enableI2CRepeater( mUSBDevice, true );
@@ -143,9 +166,43 @@ public class R820TTunerController extends RTL2832TunerController
 					+ "while setting frequency [" + frequency + "] - " + 
 					e.getLocalizedMessage() );
 		}
-		
     }
-	
+
+	/**
+	 * Overrides the same method from the RTL2832 tuner controller to apply 
+	 * settings specific to the R820T tuner.
+	 */
+	public void setSamplingMode( SampleMode mode ) throws UsbException
+	{
+		switch( mode )
+		{
+			case QUADRATURE:
+				/* Set intermediate frequency to R820T IF frequency */
+				setIFFrequency( R820T_IF_FREQUENCY );
+
+				/* Enable spectrum inversion */
+				writeDemodRegister( mUSBDevice, 
+									Page.ONE, 
+									(short)0x15, 
+									(short)0x01, 
+									1 );
+				
+				/* Set default i/q path */
+				writeDemodRegister( mUSBDevice, 
+									Page.ZERO, 
+									(short)0x06, 
+									(short)0x80, 
+									1 );
+				break;
+			default:
+				break;
+			
+		}
+	}
+
+	/**
+	 * Sets the multiplexer for the desired center frequency.
+	 */
 	private void setMux( int frequency, boolean controlI2C ) throws UsbException
 	{
 		FrequencyRange range = FrequencyRange.getRangeForFrequency( frequency );
@@ -169,7 +226,10 @@ public class R820TTunerController extends RTL2832TunerController
 		/* Register 9 - what is it? */
 		writeR820TRegister( Register.UNKNOWN_REGISTER_9, (byte)0x00, controlI2C );
 	}
-	
+
+	/**
+	 * Initializes the tuner for use.
+	 */
 	public void init() throws SourceException
 	{
 		try
@@ -198,16 +258,41 @@ public class R820TTunerController extends RTL2832TunerController
 					+ "init()", e );
 		}
 	}
-	
+
+	/**
+	 * Initializes the tuner section.
+	 */
 	public void initTuner( boolean controlI2C ) throws UsbException
 	{
+		/* Disable zero IF mode */
+		writeDemodRegister( mUSBDevice, 
+							Page.ONE, 
+							(short)0xB1, 
+							(short)0x1A, 
+							1 );
+		
+		/* Only enable in-phase ADC input */
+		writeDemodRegister( mUSBDevice, 
+							Page.ZERO, 
+							(short)0x08, 
+							(short)0x4D, 
+							1 );
+		
+		/* Set intermediate frequency to R820T IF frequency (3.57 MHz) */
+		setIFFrequency( R820T_IF_FREQUENCY );
+
+		/* Enable spectrum inversion */
+		writeDemodRegister( mUSBDevice, 
+							Page.ONE, 
+							(short)0x15, 
+							(short)0x01, 
+							1 );
+		
         initializeRegisters( controlI2C );
 
         setTVStandard( controlI2C );
         
         systemFrequencySelect( 0, controlI2C );
-        
-        getGain();
 	}
 
 	/**
@@ -216,7 +301,6 @@ public class R820TTunerController extends RTL2832TunerController
 	 */
 	private void setTVStandard( boolean controlI2C ) throws UsbException
 	{
-		Log.info( "Setting TV Standard" );
 	    /* Init Flag & Xtal check Result */
 	    writeR820TRegister( Register.XTAL_CHECK, (byte)0x00, controlI2C );
 	    
@@ -239,7 +323,7 @@ public class R820TTunerController extends RTL2832TunerController
             /* XTAL capacitor 0pF for PLL */
             writeR820TRegister( Register.PLL_XTAL_CAPACITOR, (byte)0x00, controlI2C );
 
-            setPLL( 5600 * 1000, controlI2C );
+            setPLL( 56000 * 1000, controlI2C );
             
             /* Start trigger */
             writeR820TRegister( Register.CALIBRATION_TRIGGER, (byte)0x10, controlI2C );
@@ -252,16 +336,9 @@ public class R820TTunerController extends RTL2832TunerController
 
             calibrationCode = getCalibrationCode( controlI2C );
             
-            if( calibrationSuccessful( calibrationCode ) )
+            if( !calibrationSuccessful( calibrationCode ) )
             {
-            	Log.info( "Calibration successful!!" );
-            	
-            	
-            	break;
-            }
-            else
-            {
-            	Log.info( "Calibration NOT successful!!" );
+            	Log.error( "Calibration NOT successful!!" );
             }
         }
 
@@ -271,6 +348,9 @@ public class R820TTunerController extends RTL2832TunerController
     	}
     	
     	/* Write calibration code */
+    	byte filt_q = 0x10;
+    	calibrationCode = calibrationCode | filt_q;
+    	
     	writeR820TRegister( Register.FILTER_CALIBRATION_CODE, 
     			(byte)calibrationCode, controlI2C );
 
@@ -298,28 +378,32 @@ public class R820TTunerController extends RTL2832TunerController
 
     	/* RF poly filter current */
     	writeR820TRegister( Register.RF_POLY_FILTER_CURRENT, (byte)0x60, controlI2C );
-
-    	Log.info( "Done Setting TV Standard" );
 	}
-	
+
+	/**
+	 * Indicates if a calibration request was successful.
+	 */
 	private boolean calibrationSuccessful( int calibrationCode )
 	{
 		return calibrationCode != 0 && calibrationCode != 0x0F;
 	}
-	
+
+	/**
+	 * Returns the calibration code resulting from a calibration request.
+	 */
 	private int getCalibrationCode( boolean controlI2C ) throws UsbException
 	{
 		return getStatusRegister( 4, controlI2C ) & 0x0F;
 	}
-	
+
+	/**
+	 * Sets the system IF frequency
+	 */
 	private void systemFrequencySelect( int frequency, boolean controlI2C )
 									throws UsbException
 	{
-		/* Set pre_detect to off */
-		writeR820TRegister( Register.PRE_DETECT, (byte)0x00, controlI2C );
-
 		/* LNA top? */
-		writeR820TRegister( Register.LNA_TOP, (byte)0xE5, controlI2C );
+		writeR820TRegister( Register.LNA_TOP2, (byte)0xE5, controlI2C );
 		
 		byte mixer_top;
 		byte cp_cur;
@@ -344,7 +428,7 @@ public class R820TTunerController extends RTL2832TunerController
 
 		writeR820TRegister( Register.LNA_VTH_L, (byte)0x53, controlI2C );
 
-		writeR820TRegister( Register.MIXER_VTH_L, (byte)0x76, controlI2C );
+		writeR820TRegister( Register.MIXER_VTH_L, (byte)0x75, controlI2C );
 		
 		/* Air-In only for Astrometa */
 		writeR820TRegister( Register.AIR_CABLE1_INPUT_SELECTOR, (byte)0x00, controlI2C );
@@ -356,25 +440,40 @@ public class R820TTunerController extends RTL2832TunerController
 		writeR820TRegister( Register.DIVIDER_BUFFER_CURRENT, div_buf_cur, controlI2C );
 
 		writeR820TRegister( Register.FILTER_CURRENT, (byte)0x40, controlI2C );
+
+		/* if( type != TUNER_ANALOG_TV ) ... */
 		
-		/* Set LNA - omitted, because this is redundant to first 2 writes */
+		writeR820TRegister( Register.LNA_TOP, (byte)0x00, controlI2C );
+
+		writeR820TRegister( Register.MIXER_TOP2, (byte)0x00, controlI2C );
 		
-		/* Write discharge mode */
+		writeR820TRegister( Register.PRE_DETECT, (byte)0x00, controlI2C );
+		
+		writeR820TRegister( Register.AGC_CLOCK, (byte)0x30, controlI2C );
+
+		writeR820TRegister( Register.LNA_TOP, (byte)0x18, controlI2C );
+
 		writeR820TRegister( Register.MIXER_TOP2, mixer_top, controlI2C );
-		
+
 		/* LNA discharge current */
 		writeR820TRegister( Register.LNA_DISCHARGE_CURRENT, (byte)0x14, controlI2C );
 		
 		/* AGC clock 1 khz, external det1 cap 1u */
-		writeR820TRegister( Register.AGC_CLOCK, (byte)0x00, controlI2C );
-
-		writeR820TRegister( Register.UNKNOWN_REGISTER_10, (byte)0x00, controlI2C );
+		writeR820TRegister( Register.AGC_CLOCK, (byte)0x20, controlI2C );
 	}
 	
+	/**
+	 * Sets the tuner's Phase-Locked-Loop (PLL) oscillator used for frequency 
+	 * (tuning) control
+	 * 
+	 * @param frequency - desired center frequency
+	 * @param controlI2C - control the I2C repeater locally
+	 * @throws UsbException - if unable to set any of the R820T registers
+	 */
 	private void setPLL( int frequency, boolean controlI2C ) throws UsbException
 	{
 	    /* Set reference divider to 0 */
-        writeR820TRegister( Register.PLL_XTAL_CAPACITOR, (byte)0x00, controlI2C );
+        writeR820TRegister( Register.REFERENCE_DIVIDER_2, (byte)0x00, controlI2C );
 
         /* Set PLL autotune to 128kHz */
         writeR820TRegister( Register.PLL_AUTOTUNE, (byte)0x00, controlI2C );
@@ -382,8 +481,7 @@ public class R820TTunerController extends RTL2832TunerController
         /* Set VCO current to 100 */
         writeR820TRegister( Register.VCO_CURRENT, (byte)0x80, controlI2C );
 
-        /* Calculate divider */
-        int mix_div =2;
+        int mix_div = 2;
         int div_buf = 0;
         int div_num = 0;
         int vco_min = 1770000;
@@ -392,7 +490,6 @@ public class R820TTunerController extends RTL2832TunerController
         
         int freq_khz = (int)( ( frequency + 500 ) / 1000 );
         int pll_ref = mOscillatorFrequency;
-        int pll_ref_khz = ( mOscillatorFrequency + 500 ) / 1000;
         
         while( mix_div <= 64 )
         {
@@ -407,17 +504,17 @@ public class R820TTunerController extends RTL2832TunerController
                     div_buf = div_buf >> 1;
                     div_num++;
                 }
-                break;
                 
+                break;
             }
             
             mix_div = mix_div << 1;
         }
         
         int statusRegister4 = getStatusRegister( 4, controlI2C );
-        
+
         int vco_fine_tune = ( statusRegister4 & 0x30 ) >> 4;
-            
+        
         if( vco_fine_tune > vco_power_ref )
         {
         	div_num--;
@@ -430,52 +527,61 @@ public class R820TTunerController extends RTL2832TunerController
         writeR820TRegister( Register.DIVIDER, (byte)( div_num << 5 ), controlI2C );
 
         long vco_freq = (long)frequency * (long)mix_div;
-
-        int nint = (int)( vco_freq / ( 2 * pll_ref ) );
         
-        int vco_fra = (int)( ( vco_freq - ( 2 * pll_ref * nint ) ) / 1000 );
+        int nint = (int)( vco_freq / ( 2L * (long)pll_ref ) );
+        
+        long integral = 2l * (long)pll_ref * (long)nint;
+        
+        int vco_fra = (int)( ( vco_freq - integral ) / 1000 );
 
         if( nint > (( 128 / vco_power_ref ) - 1 ) )
         {
-        	Log.error( "R820T Tuner Controller - no valid PLL value for frequency [" + frequency + "]" );
+        	Log.error( "R820T Tuner Controller - no valid PLL value for "
+        			+ "frequency [" + frequency + "]" );
         }
         
         int ni = ( nint - 13 ) / 4;
-        int si = nint - ( 4 * ni ) - 13;
-        
-        writeR820TRegister( Register.UNKNOWN_REGISTER_14, (byte)ni, controlI2C );
 
-        /* PW_SDM */
-        if( vco_fra > 0 )
+        /* Note: this deviates from the original by adding 1 to the si value.  
+         * Testing (wireshark USB packet captures) indicated that this driver
+         * was setting the si value one lower than what the c++ version was 
+         * setting ... an error introduced through primitive casting I think. */
+        int si = ( nint - ( 4 * ni ) - 13 ) + 1;
+
+        int register14 = ni + ( si << 6 );
+        
+        writeR820TRegister( Register.PLL, (byte)register14, controlI2C );
+
+        /**
+         *  Sigma-Delta Modulator - fractional PLL 
+         *  
+         *  The sdm value represents the leftover or fractional part of a 
+         *  divided mixer unit ( 2 * XTAL frequency in kHz = 57600 ) that 
+         *  remains after we set the number of integral divided mixer units in 
+         *  register 14.
+         */
+        
+        if( vco_fra == 0 ) /* Do we need fractional PLL? */
         {
-        	writeR820TRegister( Register.PW_SDM, (byte)0x08, controlI2C );
+        	/* Turn off sigma-delta modulator */
+        	writeR820TRegister( Register.SIGMA_DELTA_MODULATOR_POWER, 
+        			(byte)0x08, controlI2C );
         }
         else
         {
-        	writeR820TRegister( Register.PW_SDM, (byte)0x00, controlI2C );
+        	/* Turn on sigma-delta modulator */
+        	writeR820TRegister( Register.SIGMA_DELTA_MODULATOR_POWER, 
+        			(byte)0x00, controlI2C );
         }
         
-        /* sdm calculator */
-        int n_sdm = 2;
-        int sdm = 0;
+        /* Sigma-delta modulator fractional PLL setting */
+        int sdm = (int)( ( ( ( (long)vco_freq << 16 ) + (long)pll_ref ) / 
+        			(long)( 2 * pll_ref ) ) & 0xFFFF );
         
-        while( vco_fra > 1 )
-        {
-        	if( vco_fra > ( 2 * pll_ref_khz / n_sdm ) )
-        	{
-        		sdm+= 32768 / ( n_sdm / 2 );
-        		vco_fra -= 2 * pll_ref_khz / n_sdm;
-        		if( n_sdm >= 0x8000 )
-        		{
-        			break;
-        		}
-        	}
-        	
-        	n_sdm <<= 1;
-        }
-        
-        writeR820TRegister( Register.SDM_MSB, (byte)( sdm >> 8 ), controlI2C );
-        writeR820TRegister( Register.SDM_LSB, (byte)( sdm & 0xFF ), controlI2C );
+        writeR820TRegister( Register.SIGMA_DELTA_MODULATOR_MSB, 
+        		(byte)( ( sdm >> 8 ) & 0xFF ), controlI2C );
+        writeR820TRegister( Register.SIGMA_DELTA_MODULATOR_LSB, 
+        		(byte)( sdm & 0xFF ), controlI2C );
 
         if( !isPLLLocked( controlI2C ) )
         {
@@ -490,12 +596,13 @@ public class R820TTunerController extends RTL2832TunerController
         }
 
         /* set pll autotune to 8kHz */
-        writeR820TRegister( Register.PLL_AUTOTUNE, (byte)0x08, controlI2C );
+        writeR820TRegister( Register.PLL_AUTOTUNE_VARIANT, (byte)0x08, controlI2C );
 	}
 
 	/**
-	 * Indicates if the Phase Locked Loop (PLL) is locked.  Checks status 
-	 * register 2 to see if the PLL locked indicator bit is set. 
+	 * Indicates if the Phase Locked Loop (PLL) oscillator is locked following
+	 * a change in the tuned center frequency.  Checks status register 2 to see 
+	 * if the PLL locked indicator bit is set. 
 	 */
 	private boolean isPLLLocked( boolean controlI2C ) throws UsbException
 	{
@@ -521,20 +628,32 @@ public class R820TTunerController extends RTL2832TunerController
 	                          controlI2C );
 	    }
 	}
-	
+
+	/**
+	 * Returns the contents of status registers 0 through 4 
+	 */
 	private int getStatusRegister( int register, boolean controlI2C ) throws UsbException
 	{
-		if( 0 <= register && register <= 4 )
-		{
-			return readI2CRegister( mUSBDevice, mI2CAddress, (byte)register, controlI2C );
-		}
-		else
-		{
-			throw new IllegalArgumentException( "R820T Tuner Controller - "
-					+ "attempt to read unknown status register #" + register );
-		}
+		byte[] data = new byte[ 5 ];
+		
+		byte[] statusRegisters = read( mUSBDevice, Block.IIC, mI2CAddress, data );
+
+		return bitReverse( statusRegisters[ register ] & 0xFF );
 	}
 	
+	/**
+	 * Assumes value is a byte value and reverses the bits in the byte.
+	 */
+	private static int bitReverse( int value )
+	{
+		return BIT_REV_LOOKUP_TABLE[ value & 0x0F ] << 4 | 
+			   BIT_REV_LOOKUP_TABLE[ ( value & 0xF0 ) >> 4 ];
+	}
+
+	/**
+	 * Writes the byte value to the specified register, optionally controlling
+	 * the I2C repeater as needed.
+	 */
 	public void writeR820TRegister( Register register, 
 	                                byte value, 
 	                                boolean controlI2C ) throws UsbException
@@ -549,30 +668,28 @@ public class R820TTunerController extends RTL2832TunerController
 
         writeI2CRegister( mUSBDevice, mI2CAddress, 
                 (byte)register.getRegister(), value, controlI2C );
-        
+
         mShadowRegister[ register.getRegister() ] = value;
 	}
-	
+
+	/**
+	 * Reads the specified register, optionally controlling the I2C repeater
+	 */
 	public int readR820TRegister( Register register, boolean controlI2C )
 	                    throws UsbException
 	{
-	    return readI2CRegister( mUSBDevice, 
+		int value = readI2CRegister( mUSBDevice, 
 	                            mI2CAddress, 
 	                            (byte)register.getRegister(), 
 	                            controlI2C );
+		
+		return value;
 	}
 	
-	private void getGain() throws UsbException
-	{
-		int gain = getStatusRegister( 3, true );
-
-		Log.info( "Gain original value is [" + gain + "]" );
-
-		int converted = ( ( gain & 0x0F ) << 1 ) + ( ( gain & 0xF0 ) >> 4 );
-
-		Log.info( "Gain converted value is [" + converted + "]" );
-	}
-	
+	/**
+	 * Sets master gain by applying gain component values to LNA, Mixer and
+	 * VGA gain registers.
+	 */
 	public void setGain( R820TGain gain, boolean controlI2C ) throws UsbException
 	{
 		setLNAGain( gain.getLNAGain(), controlI2C );
@@ -580,36 +697,33 @@ public class R820TTunerController extends RTL2832TunerController
 		setVGAGain( gain.getVGAGain(), controlI2C );
 	}
 	
+	/**
+	 * Sets LNA gain
+	 */
 	public void setLNAGain( R820TLNAGain gain, boolean controlI2C ) throws UsbException
 	{
 		writeR820TRegister( Register.LNA_GAIN, gain.getSetting(), controlI2C );
 	}
-	
-	public R820TLNAGain getLNAGain( boolean controlI2C ) throws UsbException
-	{
-		return null;
-	}
-	
+
+	/**
+	 * Sets Mixer gain
+	 */
 	public void setMixerGain( R820TMixerGain gain, boolean controlI2C ) throws UsbException 
 	{
 		writeR820TRegister( Register.MIXER_GAIN, gain.getSetting(), controlI2C );
 	}
-	
-	public R820TMixerGain getMixerGain( boolean controlI2C ) throws UsbException 
-	{
-		return null;
-	}
-	
+
+	/**
+	 * Sets VGA gain
+	 */
 	public void setVGAGain( R820TVGAGain gain, boolean controlI2C ) throws UsbException
 	{
 		writeR820TRegister( Register.VGA_GAIN, gain.getSetting(), controlI2C );
 	}
 	
-	public R820TVGAGain getVGAGain( boolean controlI2C ) throws UsbException
-	{
-		return null;
-	}
-	
+	/**
+	 * R820T VGA gain settings 
+	 */
 	public enum R820TVGAGain
 	{
 	    GAIN_0( "0", 0x00 ),
@@ -648,7 +762,10 @@ public class R820TTunerController extends RTL2832TunerController
 	        return (byte)mSetting;
 	    }
 	}
-
+	
+	/**
+	 * R820T Low Noise Amplifier gain settings
+	 */
     public enum R820TLNAGain
     {
         AUTOMATIC( "Automatic", 0x00 ),
@@ -689,6 +806,9 @@ public class R820TTunerController extends RTL2832TunerController
         }
     }
 
+    /**
+     * R820T mixer gain settings
+     */
     public enum R820TMixerGain
     {
         AUTOMATIC( "Automatic", 0x10 ),
@@ -729,10 +849,13 @@ public class R820TTunerController extends RTL2832TunerController
         }
     }
     
+    /**
+     * R820T Master gain settings 
+     */
     public enum R820TGain
     {
         AUTOMATIC( "Automatic", R820TVGAGain.GAIN_312, R820TLNAGain.AUTOMATIC, R820TMixerGain.AUTOMATIC ),
-        MANUAL( "Manual", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_112, R820TMixerGain.GAIN_105 ),
+        MANUAL( "Manual", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_248, R820TMixerGain.GAIN_123 ),
         GAIN_0( "0", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_0, R820TMixerGain.GAIN_0 ),
         GAIN_9( "9", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_9, R820TMixerGain.GAIN_0 ),
         GAIN_14( "14", R820TVGAGain.GAIN_210, R820TLNAGain.GAIN_9, R820TMixerGain.GAIN_5 ),
@@ -798,7 +921,9 @@ public class R820TTunerController extends RTL2832TunerController
         }
     }
     
-    
+    /**
+     * R820T tuner registers and register mask values
+     */
     public enum Register
 	{
 	    LNA_GAIN( 0x05, 0x1F ),
@@ -829,16 +954,17 @@ public class R820TTunerController extends RTL2832TunerController
         CAPACITOR_SELECTOR( 0x10, 0x1B ),
         DIVIDER( 0x10, 0xE0 ),
         CP_CUR( 0x11, 0x38 ),
-        PW_SDM( 0x12, 0x08 ),
+        SIGMA_DELTA_MODULATOR_POWER( 0x12, 0x08 ),
         VCO_CURRENT( 0x12, 0xE0 ),
         VERSION( 0x13, 0x3F ),
-        UNKNOWN_REGISTER_14( 0x14, 0x0 ),
-        SDM_LSB( 0x15, 0x0 ),
-        SDM_MSB( 0x16, 0x0 ),
+        PLL( 0x14, 0x0 ),
+        SIGMA_DELTA_MODULATOR_LSB( 0x15, 0x0 ),
+        SIGMA_DELTA_MODULATOR_MSB( 0x16, 0x0 ),
         DRAIN( 0x17, 0x08 ),
         DIVIDER_BUFFER_CURRENT( 0x17, 0x30 ),
         RF_POLY_FILTER_CURRENT( 0x19, 0x60 ),
         PLL_AUTOTUNE( 0x1A, 0x0C ),
+        PLL_AUTOTUNE_VARIANT( 0x1A, 0x08 ),
         AGC_CLOCK( 0x1A, 0x30 ),
         RF_POLY_MUX( 0x1A, 0xC3 ),
         TF_BAND( 0x1B, 0x0 ),
@@ -985,8 +1111,112 @@ public class R820TTunerController extends RTL2832TunerController
 
 		public byte getXTALHighCap0P()
 		{
-			return (byte)0x10;
+			return (byte)0x00;
 		}
 	}
 	
+    /**
+     * Frequency Divider Values:
+     * 
+     * div_num	mix_div	min	     - max
+     * 0		2		885.0000 - 1770.0000 MHz
+     * 1		4		442.5000 -  885.9999 MHz
+     * 2		8		221.2500 -  442.4999 MHz
+     * 3		16		110.6250 -  221.2499 MHz
+     * 4		32		 55.3125 -  110.6249 MHz
+     * 5		64		 27.65625 -  55.31249 MHz
+     */
+	public enum FrequencyDivider
+	{
+		DIVIDER_0( 0,  2, 885000000, 1770000000, 0x00 ),
+		DIVIDER_1( 1,  4, 442500000,  884999999, 0x20 ),
+		DIVIDER_2( 2,  8, 221250000,  442499999, 0x40 ),
+		DIVIDER_3( 3, 16, 110625000,  221249999, 0x60 ),
+		DIVIDER_4( 4, 32,  55312500,  110624999, 0x80 ),
+		DIVIDER_5( 5, 64,  24000000,   55312499, 0xA0 );
+		
+		private int mDividerNumber;
+		private int mMixerDivider;
+		private int mMinimumFrequency;
+		private int mMaximumFrequency;
+		private int mRegisterSetting;
+		private static final int mVCOPowerReference = 2;
+		
+		private FrequencyDivider( int dividerNumber, 
+								  int mixerDivider,
+								  int minimumFrequency,
+								  int maximumFrequency,
+								  int registerSetting )
+		{
+			mDividerNumber = dividerNumber;
+			mMixerDivider = mixerDivider;
+			mMinimumFrequency = minimumFrequency;
+			mMaximumFrequency = maximumFrequency;
+			mRegisterSetting = registerSetting;
+		}
+
+		public int getDividerNumber( int vcoFineTune )
+		{
+	        if( vcoFineTune == mVCOPowerReference )
+	        {
+	        	return mDividerNumber;
+	        }
+	        else if( vcoFineTune < mVCOPowerReference )
+	        {
+	        	return mDividerNumber - 1;
+	        }
+	        else if( vcoFineTune > mVCOPowerReference )
+	        {
+	        	return mDividerNumber + 1;
+	        }
+	        
+	        return mDividerNumber;
+		}
+		
+		public int getMixerDivider()
+		{
+			return mMixerDivider;
+		}
+		
+		public int getMinimumFrequency()
+		{
+			return mMinimumFrequency;
+		}
+		
+		public int getMaximumFrequency()
+		{
+			return mMaximumFrequency;
+		}
+		
+		public byte getRegisterSetting()
+		{
+			return (byte)mRegisterSetting;
+		}
+		
+		public boolean contains( int frequency )
+		{
+			return mMinimumFrequency <= frequency && 
+					frequency <= mMaximumFrequency;
+		}
+
+		/**
+		 * Returns the correct frequency divider for the specified frequency,
+		 * or returns divider #5, if the frequency is outside of the specified
+		 * frequency ranges.
+		 * @param frequency - desired frequency 
+		 * @return - FrequencyDivider to use for the specified frequency
+		 */
+		public static FrequencyDivider fromFrequency( int frequency )
+		{
+			for( FrequencyDivider divider: FrequencyDivider.values() )
+			{
+				if( divider.contains( frequency ) )
+				{
+					return divider;
+				}
+			}
+			
+			return FrequencyDivider.DIVIDER_5;
+		}
+	}
 }

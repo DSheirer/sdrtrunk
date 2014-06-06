@@ -265,9 +265,6 @@ public abstract class RTL2832TunerController extends TunerController
 		switch( mode )
 		{
 			case QUADRATURE:
-//				/* Initialize the tuner */
-//				initTuner();
-
 				/* Set intermediate frequency to 0 Hz */
 				setIFFrequency( 0 );
 
@@ -1335,14 +1332,13 @@ public abstract class RTL2832TunerController extends TunerController
 		/* Note: sample rates below 1.0MHz are subject to aliasing */
 		RATE_0_240MHZ( 0x0DFC, 0x0000,  240000, "0.240 MHz" ),
 		RATE_0_288MHZ( 0x08FC, 0x0000,  288000, "0.288 MHz" ),
-
 		RATE_0_912MHZ( 0x07E6, 0x0000,  912000, "0.912 MHz" ),
-		RATE_0_960MHZ( 0x0780, 0x0000,  960000, "0.960 MHz" ),
+		RATE_0_960MHZ( 0x077A, 0x0000,  960000, "0.960 MHz" ),
 		RATE_1_200MHZ( 0x05F4, 0x0000, 1200000, "1.200 MHz" ),
 		RATE_1_440MHZ( 0x0500, 0x0000, 1440000, "1.440 MHz" ),
 		RATE_1_680MHZ( 0x044A, 0x0000, 1680000, "1.680 MHz" ),
 		RATE_1_824MHZ( 0x03F3, 0x0000, 1824000, "1.824 MHz" ),
-		RATE_2_016MHZ( 0x038E, 0x0000, 2016000, "2.016 MHz" );
+		RATE_2_016MHZ( 0x0387, 0x0000, 2016000, "2.016 MHz" );
 
 		/* Note: usb4java library buffer processing scheme doesn't seem capable 
 		 * of supporting these rates */
