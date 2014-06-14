@@ -29,12 +29,12 @@ import source.tuner.rtl.r820t.R820TTunerController.R820TVGAGain;
 
 public class R820TTunerConfiguration extends TunerConfiguration
 {
-	private R820TGain mMasterGain = R820TGain.GAIN_36;
-	private R820TMixerGain mMixerGain = R820TMixerGain.GAIN_15;
-	private R820TLNAGain mLNAGain = R820TLNAGain.GAIN_21;
+	private R820TGain mMasterGain = R820TGain.GAIN_327;
+	private R820TMixerGain mMixerGain = R820TMixerGain.GAIN_105;
+	private R820TLNAGain mLNAGain = R820TLNAGain.GAIN_222;
 	private R820TVGAGain mVGAGain = R820TVGAGain.GAIN_210;
 	private double mFrequencyCorrection = 0.0d;
-	private SampleRate mSampleRate = SampleRate.RATE_1_200MHZ;
+	private SampleRate mSampleRate = SampleRate.RATE_0_912MHZ;
 
 	/**
 	 * Default constructor for JAXB
