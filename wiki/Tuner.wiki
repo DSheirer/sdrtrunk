@@ -16,7 +16,7 @@ The following tuners are currently supported or will soon be supported by the SD
 
   * *[B100 Ettus B100/WBX Daughter Card]* - (coming soon).  SDRTrunk will recognize the B100 but it will not allow you to use or configure the B100
   * *[HackRF HackRF]* - (coming soon after they are shipped)
-  * *[R820T RTL-2832 with Rafael Micro R820T]* - (coming soon)
+  * *[R820T RTL-2832 with Rafael Micro R820T]*
   * *[FC0013 RTL-2832 with Fitipower FC0013]* - (coming soon)
 
 == Tuner Management ==
