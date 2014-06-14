@@ -154,9 +154,11 @@ public class R820TTunerController extends RTL2832TunerController
 
 			boolean controlI2C = false;
 			
-			setMux( frequency, controlI2C );
+			int offsetFrequency = frequency + R820T_IF_FREQUENCY;
 			
-			setPLL( frequency, controlI2C );
+			setMux( offsetFrequency, controlI2C );
+			
+			setPLL( offsetFrequency, controlI2C );
 
 			enableI2CRepeater( mUSBDevice, false );
 		}
@@ -481,108 +483,46 @@ public class R820TTunerController extends RTL2832TunerController
         /* Set VCO current to 100 */
         writeR820TRegister( Register.VCO_CURRENT, (byte)0x80, controlI2C );
 
-        int mix_div = 2;
-        int div_buf = 0;
-        int div_num = 0;
-        int vco_min = 1770000;
-        int vco_max = vco_min * 2;
-        int vco_power_ref = 2;
-        
-        int freq_khz = (int)( ( frequency + 500 ) / 1000 );
-        int pll_ref = mOscillatorFrequency;
-        
-        while( mix_div <= 64 )
-        {
-            int value = freq_khz * mix_div;
-            
-            if( vco_min <= value && value < vco_max )
-            {
-                div_buf = mix_div;
-                
-                while( div_buf > 2 )
-                {
-                    div_buf = div_buf >> 1;
-                    div_num++;
-                }
-                
-                break;
-            }
-            
-            mix_div = mix_div << 1;
-        }
-        
+        /* Set the frequency divider - adjust for vco_fine_tune status */
+        FrequencyDivider divider = FrequencyDivider.fromFrequency( frequency );
+
         int statusRegister4 = getStatusRegister( 4, controlI2C );
 
         int vco_fine_tune = ( statusRegister4 & 0x30 ) >> 4;
         
-        if( vco_fine_tune > vco_power_ref )
-        {
-        	div_num--;
-        }
-        else if( vco_fine_tune < vco_power_ref )
-        {
-        	div_num++;
-        }
+        int div_num = divider.getDividerNumber( vco_fine_tune );
         
         writeR820TRegister( Register.DIVIDER, (byte)( div_num << 5 ), controlI2C );
 
-        long vco_freq = (long)frequency * (long)mix_div;
-        
-        int nint = (int)( vco_freq / ( 2L * (long)pll_ref ) );
-        
-        long integral = 2l * (long)pll_ref * (long)nint;
-        
-        int vco_fra = (int)( ( vco_freq - integral ) / 1000 );
+        /* Get the integral number for this divider and frequency */
+        Integral integral = divider.getIntegral( frequency );
 
-        if( nint > (( 128 / vco_power_ref ) - 1 ) )
+        writeR820TRegister( Register.PLL, integral.getRegisterValue(), controlI2C );
+
+        /* Calculate the sigma-delta modulator fractional setting.  If it's
+         * non-zero, power up the sdm and apply the fractional setting,
+         * otherwise turn it off */
+        int sdm = divider.getSDM( integral, frequency );
+
+        if( sdm != 0 ) 
         {
-        	Log.error( "R820T Tuner Controller - no valid PLL value for "
-        			+ "frequency [" + frequency + "]" );
-        }
-        
-        int ni = ( nint - 13 ) / 4;
-
-        /* Note: this deviates from the original by adding 1 to the si value.  
-         * Testing (wireshark USB packet captures) indicated that this driver
-         * was setting the si value one lower than what the c++ version was 
-         * setting ... an error introduced through primitive casting I think. */
-        int si = ( nint - ( 4 * ni ) - 13 ) + 1;
-
-        int register14 = ni + ( si << 6 );
-        
-        writeR820TRegister( Register.PLL, (byte)register14, controlI2C );
-
-        /**
-         *  Sigma-Delta Modulator - fractional PLL 
-         *  
-         *  The sdm value represents the leftover or fractional part of a 
-         *  divided mixer unit ( 2 * XTAL frequency in kHz = 57600 ) that 
-         *  remains after we set the number of integral divided mixer units in 
-         *  register 14.
-         */
-        
-        if( vco_fra == 0 ) /* Do we need fractional PLL? */
-        {
-        	/* Turn off sigma-delta modulator */
         	writeR820TRegister( Register.SIGMA_DELTA_MODULATOR_POWER, 
-        			(byte)0x08, controlI2C );
+        			(byte)0x00, controlI2C );
+
+        	writeR820TRegister( Register.SIGMA_DELTA_MODULATOR_MSB, 
+            		(byte)( ( sdm >> 8 ) & 0xFF ), controlI2C );
+
+            writeR820TRegister( Register.SIGMA_DELTA_MODULATOR_LSB, 
+            		(byte)( sdm & 0xFF ), controlI2C );
         }
         else
         {
-        	/* Turn on sigma-delta modulator */
         	writeR820TRegister( Register.SIGMA_DELTA_MODULATOR_POWER, 
-        			(byte)0x00, controlI2C );
+        			(byte)0x08, controlI2C );
         }
-        
-        /* Sigma-delta modulator fractional PLL setting */
-        int sdm = (int)( ( ( ( (long)vco_freq << 16 ) + (long)pll_ref ) / 
-        			(long)( 2 * pll_ref ) ) & 0xFFFF );
-        
-        writeR820TRegister( Register.SIGMA_DELTA_MODULATOR_MSB, 
-        		(byte)( ( sdm >> 8 ) & 0xFF ), controlI2C );
-        writeR820TRegister( Register.SIGMA_DELTA_MODULATOR_LSB, 
-        		(byte)( sdm & 0xFF ), controlI2C );
 
+        /* Check to see if the PLL locked with these divider, integral and sdm
+         * settings */
         if( !isPLLLocked( controlI2C ) )
         {
         	/* Increase VCO current */
@@ -670,6 +610,10 @@ public class R820TTunerController extends RTL2832TunerController
                 (byte)register.getRegister(), value, controlI2C );
 
         mShadowRegister[ register.getRegister() ] = value;
+        
+//        Log.info( "R820T writing register " + 
+//        		String.format( "%02X", register.getRegister() ) + " value " + 
+//        		String.format( "%02X", value ) );
 	}
 
 	/**
@@ -1116,7 +1060,7 @@ public class R820TTunerController extends RTL2832TunerController
 	}
 	
     /**
-     * Frequency Divider Values:
+     * Frequency Divider Ranges
      * 
      * div_num	mix_div	min	     - max
      * 0		2		885.0000 - 1770.0000 MHz
@@ -1125,34 +1069,56 @@ public class R820TTunerController extends RTL2832TunerController
      * 3		16		110.6250 -  221.2499 MHz
      * 4		32		 55.3125 -  110.6249 MHz
      * 5		64		 27.65625 -  55.31249 MHz
+     * 
+     * Subtract 3.57 MHz IF frequency from each of these values to yield:
+     * 
+     * div_num	mix_div	min	     - max
+     * 0		2		881.430000 - 1766.430000 MHz
+     * 1		4		438.930000 -  881.429999 MHz
+     * 2		8		217.680000 -  438.929999 MHz
+     * 3		16		107.055000 -  217.679999 MHz
+     * 4		32		 51.742500 -  107.054999 MHz
+     * 5		64		 24.086250 -   51.742499 MHz
      */
 	public enum FrequencyDivider
 	{
-		DIVIDER_0( 0,  2, 885000000, 1770000000, 0x00 ),
-		DIVIDER_1( 1,  4, 442500000,  884999999, 0x20 ),
-		DIVIDER_2( 2,  8, 221250000,  442499999, 0x40 ),
-		DIVIDER_3( 3, 16, 110625000,  221249999, 0x60 ),
-		DIVIDER_4( 4, 32,  55312500,  110624999, 0x80 ),
-		DIVIDER_5( 5, 64,  24000000,   55312499, 0xA0 );
+		//Subtracted IF values
+//		DIVIDER_0( 0,  2, 881430000, 1664300000, 0x00, 28800000 ),
+//		DIVIDER_1( 1,  4, 438930000,  881429999, 0x20, 14400000 ),
+//		DIVIDER_2( 2,  8, 217680000,  438929999, 0x40,  7200000 ),
+//		DIVIDER_3( 3, 16, 107055000,  217679999, 0x60,  3600000 ),
+//		DIVIDER_4( 4, 32,  51742500,  107054599, 0x80,  1800000 ),
+//		DIVIDER_5( 5, 64,  24086250,   51742499, 0xA0,   900000 );
+
+		//Normal divider values
+		DIVIDER_0( 0,  2, 885000000, 1770000000, 0x00, 28800000 ),
+		DIVIDER_1( 1,  4, 442500000,  884999999, 0x20, 14400000 ),
+		DIVIDER_2( 2,  8, 221250000,  442499999, 0x40,  7200000 ),
+		DIVIDER_3( 3, 16, 110625000,  221249999, 0x60,  3600000 ),
+		DIVIDER_4( 4, 32,  55312500,  110624999, 0x80,  1800000 ),
+		DIVIDER_5( 5, 64,  27656250,   55312499, 0xA0,   900000 );
 		
 		private int mDividerNumber;
 		private int mMixerDivider;
 		private int mMinimumFrequency;
 		private int mMaximumFrequency;
 		private int mRegisterSetting;
+		private int mIntegralValue;
 		private static final int mVCOPowerReference = 2;
 		
 		private FrequencyDivider( int dividerNumber, 
 								  int mixerDivider,
 								  int minimumFrequency,
 								  int maximumFrequency,
-								  int registerSetting )
+								  int registerSetting,
+								  int integralValue )
 		{
 			mDividerNumber = dividerNumber;
 			mMixerDivider = mixerDivider;
 			mMinimumFrequency = minimumFrequency;
 			mMaximumFrequency = maximumFrequency;
 			mRegisterSetting = registerSetting;
+			mIntegralValue = integralValue;
 		}
 
 		public int getDividerNumber( int vcoFineTune )
@@ -1188,7 +1154,7 @@ public class R820TTunerController extends RTL2832TunerController
 			return mMaximumFrequency;
 		}
 		
-		public byte getRegisterSetting()
+		public byte getDividerRegisterSetting()
 		{
 			return (byte)mRegisterSetting;
 		}
@@ -1217,6 +1183,132 @@ public class R820TTunerController extends RTL2832TunerController
 			}
 			
 			return FrequencyDivider.DIVIDER_5;
+		}
+
+		/**
+		 * Returns the integral to use for this frequency
+		 */
+		public Integral getIntegral( int frequency )
+		{
+			if( contains( frequency ) )
+			{
+				int delta = frequency - mMinimumFrequency;
+				
+				int integral = (int)Math.round( (double)delta / 
+											    (double)mIntegralValue );
+				
+				return Integral.fromValue( integral );
+			}
+			
+			throw new IllegalArgumentException( "PLL frequency [" + frequency + 
+					"] is not valid for frequency divider " + this.toString() );
+		}
+
+		/**
+		 * Calculates the 16-bit value of the sigma-delta modulator setting
+		 * which represents the fractional portion of the requested frequency
+		 * that is left over after subtracting the divider minimum frequency
+		 * and the integral frequency units.  That residual value is divided
+		 * by the integral value to derive a 16-bit fractional value, returned
+		 * as an integer
+		 */
+		public int getSDM( Integral integral, int frequency )
+		{
+			if( contains( frequency ) )
+			{
+				int delta = frequency - ( integral.getNumber() * mIntegralValue );
+
+				double fractional = (double)delta / (double)mIntegralValue;
+				
+				//Left shift the double value 16 bits and truncate to an integer
+				return (int)( fractional * 0x10000 ) & 0xFFFF;
+			}
+
+			Log.info( "Freuqency not contained!" );
+			return 0;
+		}
+	}
+
+	/**
+	 * PLL Integral values.  Each value represents one unit of the divided
+	 * crystal frequency as follows:
+	 * 
+	 * Divider   Value
+	 * 64        I *  0.9 MHz
+	 * 32		 I *  1.8 MHz
+	 * 16        I *  3.6 MHz
+	 *  8        I *  7.2 MHz
+	 *  4        I * 14.4 MHz
+	 *  2        I * 28.8 MHz
+	 * @author denny
+	 *
+	 */
+	public enum Integral
+	{
+		I00( 0, 0x44 ),
+		I01( 1, 0x84 ),
+		I02( 2, 0xC4 ),
+		I03( 3, 0x05 ),
+		I04( 4, 0x45 ),
+		I05( 5, 0x85 ),
+		I06( 6, 0xC5 ),
+		I07( 7, 0x06 ),
+		I08( 8, 0x46 ),
+		I09( 9, 0x86 ),
+		I10( 10, 0xC6 ),
+		I11( 11, 0x07 ),
+		I12( 12, 0x47 ),
+		I13( 13, 0x87 ),
+		I14( 14, 0xC7 ),
+		I15( 15, 0x08 ),
+		I16( 16, 0x48 ),
+		I17( 17, 0x88 ),
+		I18( 18, 0xC8 ),
+		I19( 19, 0x09 ),
+		I20( 20, 0x49 ),
+		I21( 21, 0x89 ),
+		I22( 22, 0xC9 ),
+		I23( 23, 0x0A ),
+		I24( 24, 0x4A ),
+		I25( 25, 0x8A ),
+		I26( 26, 0xCA ),
+		I27( 27, 0x0B ),
+		I28( 28, 0x4B ),
+		I29( 29, 0x8B ),
+		I30( 30, 0xCB ),
+		I31( 31, 0x0C );
+
+		private int mNumber;
+		private int mRegister;
+		
+		private Integral( int number, int register )
+		{
+			mNumber = number;
+			mRegister = register;
+		}
+		
+		public int getNumber()
+		{
+			return mNumber;
+		}
+		
+		public byte getRegisterValue()
+		{
+			return (byte)mRegister;
+		}
+		
+		public static Integral fromValue( int value )
+		{
+			for( Integral integral: Integral.values() )
+			{
+				if( integral.getNumber() == value )
+				{
+					return integral;
+				}
+			}
+			
+			throw new IllegalArgumentException( "PLL integral value [" + value + 
+					"] must be in the range 0 - 31");
 		}
 	}
 }
