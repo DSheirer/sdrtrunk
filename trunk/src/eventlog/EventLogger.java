@@ -30,6 +30,14 @@ import util.TimeStamp;
 
 public abstract class EventLogger
 {
+	/* Illegal filename characters */
+	private static final String[] mIllegalCharacters = { "#", "%", "&", "{",
+														 "}", "\\", "<", ">",
+														 "*", "?", "/", " ",
+														 "$", "!", "'", "\"",
+														 ":", "@", "+", "`",
+														 "|", "=" };
+	
 	private Path mLogDirectory;
 	private String mFileNameSuffix;
 	private String mLogFileName;
@@ -67,7 +75,7 @@ public abstract class EventLogger
     		sb.append( "_" );
     		sb.append( mFileNameSuffix );
     		
-    		mLogFileName = sb.toString();
+    		mLogFileName = replaceIllegalCharacters( sb.toString() );
 
     		Log.info( "Creating log file:" + mLogFileName );
     		
@@ -79,6 +87,19 @@ public abstract class EventLogger
     	{
     		Log.error("Couldn't create log file in directory:" + mLogDirectory );
 		}    	
+    }
+
+    /**
+     * Replaces any illegal filename characters in the proposed filename
+     */
+    private String replaceIllegalCharacters( String filename )
+    {
+    	for( String illegalCharacter: mIllegalCharacters )
+    	{
+    		filename.replace( illegalCharacter, "_" );
+    	}
+    	
+    	return filename;
     }
 
     public void stop()
