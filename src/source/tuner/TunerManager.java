@@ -30,12 +30,6 @@ import javax.usb.UsbHub;
 import javax.usb.UsbServices;
 
 import log.Log;
-
-import org.usb4java.Context;
-import org.usb4java.DeviceList;
-import org.usb4java.LibUsb;
-import org.usb4java.LibUsbException;
-
 import source.Source;
 import source.SourceException;
 import source.config.SourceConfigTuner;
@@ -319,7 +313,7 @@ public class TunerManager
 							catch( SourceException se )
 							{
 								status = sNOT_LOADED;
-								reason = "Error constructing E4K tuner "
+								reason = "Error constructing R820T tuner "
 									+ "controller - " + se.getLocalizedMessage();
 							}
 							break;
@@ -355,9 +349,6 @@ public class TunerManager
 			sb.append( String.format( "%04X", 
 					device.getDevice().getUsbDeviceDescriptor().idProduct() ) );
 			sb.append( " " );
-//			sb.append( device.getTunerType().getVendorDescription() );
-//			sb.append( " " );
-//			sb.append( device.getTunerType().getDeviceDescription() );
 
 			sb.append( name );
 			
