@@ -308,42 +308,52 @@ public class JFrequencyControl extends JPanel implements FrequencyChangeListener
 				switch( key )
 				{
 					case KeyEvent.VK_0:
+					case KeyEvent.VK_NUMPAD0:
 						set( 0 );
 						Digit.this.transferFocus();
 						break;
 					case KeyEvent.VK_1:
+					case KeyEvent.VK_NUMPAD1:
 						set( 1 );
 						Digit.this.transferFocus();
 						break;
 					case KeyEvent.VK_2:
+					case KeyEvent.VK_NUMPAD2:
 						set( 2 );
 						Digit.this.transferFocus();
 						break;
 					case KeyEvent.VK_3:
+					case KeyEvent.VK_NUMPAD3:
 						set( 3 );
 						Digit.this.transferFocus();
 						break;
 					case KeyEvent.VK_4:
+					case KeyEvent.VK_NUMPAD4:
 						set( 4 );
 						Digit.this.transferFocus();
 						break;
 					case KeyEvent.VK_5:
+					case KeyEvent.VK_NUMPAD5:
 						set( 5 );
 						Digit.this.transferFocus();
 						break;
 					case KeyEvent.VK_6:
+					case KeyEvent.VK_NUMPAD6:
 						set( 6 );
 						Digit.this.transferFocus();
 						break;
 					case KeyEvent.VK_7:
+					case KeyEvent.VK_NUMPAD7:
 						set( 7 );
 						Digit.this.transferFocus();
 						break;
 					case KeyEvent.VK_8:
+					case KeyEvent.VK_NUMPAD8:
 						set( 8 );
 						Digit.this.transferFocus();
 						break;
 					case KeyEvent.VK_9:
+					case KeyEvent.VK_NUMPAD9:
 						set( 9 );
 						Digit.this.transferFocus();
 						break;
