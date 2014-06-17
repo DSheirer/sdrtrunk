@@ -22,6 +22,8 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.geom.Point2D;
 
+import log.Log;
+
 import org.jdesktop.swingx.JXMapViewer;
 
 /**
@@ -47,21 +49,35 @@ public class PanKeyListener extends KeyAdapter
 	{
 		int delta_x = 0;
 		int delta_y = 0;
+		int requestedZoom = 0;
 
-		switch (e.getKeyCode())
+		switch ( e.getKeyCode() )
 		{
-		case KeyEvent.VK_LEFT:
-			delta_x = -OFFSET;
-			break;
-		case KeyEvent.VK_RIGHT:
-			delta_x = OFFSET;
-			break;
-		case KeyEvent.VK_UP:
-			delta_y = -OFFSET;
-			break;
-		case KeyEvent.VK_DOWN:
-			delta_y = OFFSET;
-			break;
+			
+			case KeyEvent.VK_LEFT:
+			case KeyEvent.VK_NUMPAD4:
+				delta_x = -OFFSET;
+				break;
+			case KeyEvent.VK_RIGHT:
+			case KeyEvent.VK_NUMPAD6:
+				delta_x = OFFSET;
+				break;
+			case KeyEvent.VK_UP:
+			case KeyEvent.VK_NUMPAD8:
+				delta_y = -OFFSET;
+				break;
+			case KeyEvent.VK_DOWN:
+			case KeyEvent.VK_NUMPAD2:
+				delta_y = OFFSET;
+				break;
+			case KeyEvent.VK_MINUS:
+			case KeyEvent.VK_SUBTRACT:
+				requestedZoom = 1;
+				break;
+			case KeyEvent.VK_ADD:
+			case KeyEvent.VK_EQUALS:
+				requestedZoom = -1;
+				break;
 		}
 
 		if (delta_x != 0 || delta_y != 0)
@@ -71,6 +87,13 @@ public class PanKeyListener extends KeyAdapter
 			double y = bounds.getCenterY() + delta_y;
 			viewer.setCenter(new Point2D.Double(x, y));
 			viewer.repaint();
+		}
+		
+		if( requestedZoom != 0 )
+		{
+			int zoomLevel = viewer.getZoom() + requestedZoom;
+			
+			viewer.setZoom( zoomLevel );
 		}
 	}
 }
