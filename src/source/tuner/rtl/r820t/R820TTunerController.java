@@ -1224,7 +1224,6 @@ public class R820TTunerController extends RTL2832TunerController
 				return (int)( fractional * 0x10000 ) & 0xFFFF;
 			}
 
-			Log.info( "Freuqency not contained!" );
 			return 0;
 		}
 	}

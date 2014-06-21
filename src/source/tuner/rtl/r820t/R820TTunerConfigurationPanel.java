@@ -92,9 +92,7 @@ public class R820TTunerConfigurationPanel extends JPanel
      */
     private void init()
     {
-        setLayout( new MigLayout( "", "[grow,fill]", "[grow,fill]" ) );
-
-        setBorder( BorderFactory.createTitledBorder( "Tuner Configuration" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[grow,right][grow]", "[][][][][][][grow]" ) );
 
         /**
          * Tuner configuration selector
@@ -144,7 +142,8 @@ public class R820TTunerConfigurationPanel extends JPanel
            }
 		});
 
-		add( mComboConfigurations, "span 2,wrap" );
+		add( new JLabel( "Config:" ) );
+		add( mComboConfigurations, "growx,push" );
 		
 
 		/**
@@ -165,8 +164,8 @@ public class R820TTunerConfigurationPanel extends JPanel
             public void focusGained( FocusEvent e ) {}
 		} );
 		
-		add( mName );
-		add( new JLabel( "Name" ), "wrap" );
+		add( new JLabel( "Name:" ) );
+		add( mName, "growx,push" );
 		
         /**
          * Frequency Correction
@@ -224,8 +223,8 @@ public class R820TTunerConfigurationPanel extends JPanel
             }
         } );
         
-        add( mFrequencyCorrection );
-        add( new JLabel( "Frequency Correction (ppm)" ), "wrap" );
+        add( new JLabel( "Correction PPM:" ) );
+        add( mFrequencyCorrection, "growx,push" );
 
         /**
          * Sample Rate
@@ -261,8 +260,8 @@ public class R820TTunerConfigurationPanel extends JPanel
                 }
             }
         } );
-        add( mComboSampleRate );
-        add( new JLabel( "Sample Rate" ), "wrap" );
+        add( new JLabel( "Sample Rate:" ) );
+        add( mComboSampleRate, "growx,push" );
         
         /**
          * Gain Controls 
@@ -329,8 +328,8 @@ public class R820TTunerConfigurationPanel extends JPanel
         		+ "<i>Mixer</i>, <i>LNA</i> and <i>Enhance</i> gain<br>"
         		+ "settings, or one of the individual gain settings for<br>"
         		+ "semi-manual gain control</html>" );
+        gainPanel.add( new JLabel( "Master" ) );
         gainPanel.add( mComboMasterGain );
-        gainPanel.add( new JLabel( "Master" ), "wrap" );
 
         /* Mixer Gain Control */
         mComboMixerGain = new JComboBox<R820TMixerGain>( R820TMixerGain.values() );
@@ -380,8 +379,8 @@ public class R820TTunerConfigurationPanel extends JPanel
         mComboMixerGain.setToolTipText( "<html>Mixer Gain.  Set master gain "
         		+ "to <b>MASTER</b> to enable adjustment</html>" );
         mComboMixerGain.setEnabled( false );
-        gainPanel.add( mComboMixerGain );
-        gainPanel.add( new JLabel( "Mixer" ), "wrap" );
+        gainPanel.add( new JLabel( "Mixer" ) );
+        gainPanel.add( mComboMixerGain, "wrap" );
 
         /* LNA Gain Control */
         mComboLNAGain = new JComboBox<R820TLNAGain>( R820TLNAGain.values() );
@@ -424,8 +423,8 @@ public class R820TTunerConfigurationPanel extends JPanel
         mComboLNAGain.setToolTipText( "<html>LNA Gain.  Set master gain "
         		+ "to <b>MANUAL</b> to enable adjustment</html>" );
         mComboLNAGain.setEnabled( false );
+        gainPanel.add( new JLabel( "LNA" ) );
         gainPanel.add( mComboLNAGain );
-        gainPanel.add( new JLabel( "LNA" ), "wrap" );
 
         /* VGA Gain Control */
         mComboVGAGain = new JComboBox<R820TVGAGain>( R820TVGAGain.values() );
@@ -468,8 +467,8 @@ public class R820TTunerConfigurationPanel extends JPanel
         mComboVGAGain.setToolTipText( "<html>VGA Gain.  Set master gain "
         		+ "to <b>MANUAL</b> to enable adjustment</html>" );
         mComboVGAGain.setEnabled( false );
-        gainPanel.add( mComboVGAGain );
-        gainPanel.add( new JLabel( "VGA" ), "wrap" );
+        gainPanel.add( new JLabel( "VGA" ) );
+        gainPanel.add( mComboVGAGain, "wrap" );
 
         add( gainPanel, "span" );
 
@@ -497,7 +496,7 @@ public class R820TTunerConfigurationPanel extends JPanel
             }
 		} );
 		
-		add( mNewConfiguration );
+		add( mNewConfiguration, "growx,push" );
 
 		/**
 		 * Delete the currently selected configuration
@@ -537,7 +536,7 @@ public class R820TTunerConfigurationPanel extends JPanel
             }
 		} );
 
-		add( mDeleteConfiguration, "wrap" );
+		add( mDeleteConfiguration, "growx,push,wrap" );
     }
 
     /**

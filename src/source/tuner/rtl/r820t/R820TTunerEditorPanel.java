@@ -19,15 +19,21 @@ package source.tuner.rtl.r820t;
 
 import gui.control.JFrequencyControl;
 
+import java.awt.Color;
 import java.awt.EventQueue;
 
 import javax.swing.BorderFactory;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
+
+import com.jidesoft.swing.JideTabbedPane;
 
 import log.Log;
 import net.miginfocom.swing.MigLayout;
 import source.SourceException;
 import source.tuner.FrequencyChangeListener;
+import source.tuner.rtl.RTL2832InfoPanel;
+import source.tuner.rtl.e4k.E4KTunerConfigurationPanel;
 import controller.ResourceManager;
 
 public class R820TTunerEditorPanel extends JPanel implements FrequencyChangeListener
@@ -50,9 +56,9 @@ public class R820TTunerEditorPanel extends JPanel implements FrequencyChangeList
 
     private void initGUI()
     {
-        setLayout( new MigLayout( "", "[grow,fill]", "[grow,fill]" ) );
-        
-        setBorder( BorderFactory.createTitledBorder( "Rafael Micro R820T Tuner" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][grow]", "[][][grow]" ) );
+		
+		add( new JLabel( "RTL2832 with R820T Tuner" ), "span 2, align center, wrap" );
 
         mFrequencyControl = new JFrequencyControl();
         
@@ -60,10 +66,18 @@ public class R820TTunerEditorPanel extends JPanel implements FrequencyChangeList
         
         mFrequencyControl.setFrequency( mController.getFrequency(), false );
 
-        add( mFrequencyControl, "wrap" );
+        add( mFrequencyControl, "span 2, align center, wrap" );
         
-        add( new R820TTunerConfigurationPanel( mResourceManager, mController ), 
-        	 "wrap" );
+		JideTabbedPane tabs = new JideTabbedPane();
+        tabs.setFont( this.getFont() );
+    	tabs.setForeground( Color.BLACK );
+		
+		tabs.addTab( "Configuration", 
+			new R820TTunerConfigurationPanel( mResourceManager, mController ) );
+
+		tabs.addTab( "Info", new RTL2832InfoPanel( mController ) );
+		
+		add( tabs, "grow,push,span" );
     }
 
     /**
