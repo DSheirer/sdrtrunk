@@ -64,6 +64,9 @@ public class R820TTunerEditorPanel extends JPanel implements FrequencyChangeList
         
         mFrequencyControl.addListener( this );
         
+        /* Add frequency control as frequency change listener. */
+        mController.addListener( mFrequencyControl );
+        
         mFrequencyControl.setFrequency( mController.getFrequency(), false );
 
         add( mFrequencyControl, "span 2, align center, wrap" );
