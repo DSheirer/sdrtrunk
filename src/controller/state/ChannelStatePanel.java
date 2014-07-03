@@ -29,7 +29,6 @@ import java.util.HashMap;
 import javax.swing.JMenu;
 import javax.swing.JPanel;
 
-import log.Log;
 import net.miginfocom.swing.MigLayout;
 import sample.Listener;
 import settings.ColorSetting;
@@ -193,7 +192,10 @@ public abstract class ChannelStatePanel extends JPanel
 
 				validate();
 				
-				getParent().validate();
+				if( getParent() != null )
+				{
+					getParent().validate();
+				}
 
 				if( panel instanceof ChannelStatePanel )
 				{
