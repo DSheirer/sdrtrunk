@@ -519,7 +519,7 @@ public class DFTProcessor implements Listener<Float[]>,
 	}
 	
 	@Override
-    public void frequencyChanged( int frequency, int bandwidth )
+    public void frequencyChanged( long frequency, int bandwidth )
     {
 		mSampleRate = bandwidth;
 		

@@ -35,8 +35,8 @@ import controller.ResourceManager;
 
 public class R820TTunerController extends RTL2832TunerController
 {
-	public static final int MIN_FREQUENCY = 24000000;
-	public static final int MAX_FREQUENCY = 1766000000;
+	public static final long MIN_FREQUENCY = 24000000;
+	public static final long MAX_FREQUENCY = 1766000000;
 	public static final int R820T_IF_FREQUENCY = 3570000;
 	public static final byte VERSION = (byte)49;
 	
@@ -136,7 +136,7 @@ public class R820TTunerController extends RTL2832TunerController
 	 * Not implemented.
 	 */
 	@Override
-    public int getTunedFrequency() throws SourceException
+    public long getTunedFrequency() throws SourceException
     {
 		return 0;
     }
@@ -146,7 +146,7 @@ public class R820TTunerController extends RTL2832TunerController
 	 * of setting the multiplexer and then setting the Oscillator (PLL).
 	 */
 	@Override
-    public void setTunedFrequency( int frequency ) throws SourceException
+    public void setTunedFrequency( long frequency ) throws SourceException
     {
 		try
 		{
@@ -154,7 +154,7 @@ public class R820TTunerController extends RTL2832TunerController
 
 			boolean controlI2C = false;
 			
-			int offsetFrequency = frequency + R820T_IF_FREQUENCY;
+			long offsetFrequency = frequency + R820T_IF_FREQUENCY;
 			
 			setMux( offsetFrequency, controlI2C );
 			
@@ -205,7 +205,7 @@ public class R820TTunerController extends RTL2832TunerController
 	/**
 	 * Sets the multiplexer for the desired center frequency.
 	 */
-	private void setMux( int frequency, boolean controlI2C ) throws UsbException
+	private void setMux( long frequency, boolean controlI2C ) throws UsbException
 	{
 		FrequencyRange range = FrequencyRange.getRangeForFrequency( frequency );
 
@@ -401,7 +401,7 @@ public class R820TTunerController extends RTL2832TunerController
 	/**
 	 * Sets the system IF frequency
 	 */
-	private void systemFrequencySelect( int frequency, boolean controlI2C )
+	private void systemFrequencySelect( long frequency, boolean controlI2C )
 									throws UsbException
 	{
 		/* LNA top? */
@@ -472,7 +472,7 @@ public class R820TTunerController extends RTL2832TunerController
 	 * @param controlI2C - control the I2C repeater locally
 	 * @throws UsbException - if unable to set any of the R820T registers
 	 */
-	private void setPLL( int frequency, boolean controlI2C ) throws UsbException
+	private void setPLL( long frequency, boolean controlI2C ) throws UsbException
 	{
 	    /* Set reference divider to 0 */
         writeR820TRegister( Register.REFERENCE_DIVIDER_2, (byte)0x00, controlI2C );
@@ -970,16 +970,16 @@ public class R820TTunerController extends RTL2832TunerController
 		RANGE_650( 650000000, 1766000000, 0x00, 0x40, 0x00, 0x00, 0x00 ),
 		RANGE_UNK( 0, 0, 0, 0, 0, 0, 0 );
 
-		private int mMinFrequency;
-		private int mMaxFrequency;
+		private long mMinFrequency;
+		private long mMaxFrequency;
 		private int mOpenDrain;
 		private int mRFMux_PolyMux;
 		private int mTF_c;
 		private int mXtalCap20p;
 		private int mXtalCap10p;
 		
-		private FrequencyRange( int minFrequency,
-								int maxFrequency,
+		private FrequencyRange( long minFrequency,
+								long maxFrequency,
 								int openDrain,
 								int rfMuxPloy,
 								int tf_c,
@@ -995,12 +995,12 @@ public class R820TTunerController extends RTL2832TunerController
 			mXtalCap10p = xtalCap10p;
 		}
 		
-		public boolean contains( int frequency )
+		public boolean contains( long frequency )
 		{
 			return mMinFrequency <= frequency && frequency <= mMaxFrequency;
 		}
 		
-		public static FrequencyRange getRangeForFrequency( int frequency )
+		public static FrequencyRange getRangeForFrequency( long frequency )
 		{
 			for( FrequencyRange range: values() )
 			{
@@ -1013,12 +1013,12 @@ public class R820TTunerController extends RTL2832TunerController
 			return RANGE_UNK;
 		}
 		
-		public int getMinFrequency()
+		public long getMinFrequency()
 		{
 			return mMinFrequency;
 		}
 		
-		public int getMaxFrequency()
+		public long getMaxFrequency()
 		{
 			return mMaxFrequency;
 		}
@@ -1100,16 +1100,16 @@ public class R820TTunerController extends RTL2832TunerController
 		
 		private int mDividerNumber;
 		private int mMixerDivider;
-		private int mMinimumFrequency;
-		private int mMaximumFrequency;
+		private long mMinimumFrequency;
+		private long mMaximumFrequency;
 		private int mRegisterSetting;
 		private int mIntegralValue;
 		private static final int mVCOPowerReference = 2;
 		
 		private FrequencyDivider( int dividerNumber, 
 								  int mixerDivider,
-								  int minimumFrequency,
-								  int maximumFrequency,
+								  long minimumFrequency,
+								  long maximumFrequency,
 								  int registerSetting,
 								  int integralValue )
 		{
@@ -1144,12 +1144,12 @@ public class R820TTunerController extends RTL2832TunerController
 			return mMixerDivider;
 		}
 		
-		public int getMinimumFrequency()
+		public long getMinimumFrequency()
 		{
 			return mMinimumFrequency;
 		}
 		
-		public int getMaximumFrequency()
+		public long getMaximumFrequency()
 		{
 			return mMaximumFrequency;
 		}
@@ -1159,7 +1159,7 @@ public class R820TTunerController extends RTL2832TunerController
 			return (byte)mRegisterSetting;
 		}
 		
-		public boolean contains( int frequency )
+		public boolean contains( long frequency )
 		{
 			return mMinimumFrequency <= frequency && 
 					frequency <= mMaximumFrequency;
@@ -1172,7 +1172,7 @@ public class R820TTunerController extends RTL2832TunerController
 		 * @param frequency - desired frequency 
 		 * @return - FrequencyDivider to use for the specified frequency
 		 */
-		public static FrequencyDivider fromFrequency( int frequency )
+		public static FrequencyDivider fromFrequency( long frequency )
 		{
 			for( FrequencyDivider divider: FrequencyDivider.values() )
 			{
@@ -1188,11 +1188,11 @@ public class R820TTunerController extends RTL2832TunerController
 		/**
 		 * Returns the integral to use for this frequency
 		 */
-		public Integral getIntegral( int frequency )
+		public Integral getIntegral( long frequency )
 		{
 			if( contains( frequency ) )
 			{
-				int delta = frequency - mMinimumFrequency;
+				int delta = (int)( frequency - mMinimumFrequency );
 				
 				int integral = (int)Math.round( (double)delta / 
 											    (double)mIntegralValue );
@@ -1212,11 +1212,11 @@ public class R820TTunerController extends RTL2832TunerController
 		 * by the integral value to derive a 16-bit fractional value, returned
 		 * as an integer
 		 */
-		public int getSDM( Integral integral, int frequency )
+		public int getSDM( Integral integral, long frequency )
 		{
 			if( contains( frequency ) )
 			{
-				int delta = frequency - ( integral.getNumber() * mIntegralValue );
+				int delta = (int)( frequency - ( integral.getNumber() * mIntegralValue ) );
 
 				double fractional = (double)delta / (double)mIntegralValue;
 				

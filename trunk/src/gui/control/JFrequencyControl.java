@@ -51,7 +51,7 @@ public class JFrequencyControl extends JPanel implements FrequencyChangeListener
     
     private Color mHighlightColor = Color.YELLOW;
     
-	private int mFrequency;
+	private long mFrequency;
 	
 	private Cursor mBlankCursor;
 	
@@ -62,7 +62,7 @@ public class JFrequencyControl extends JPanel implements FrequencyChangeListener
 		init();
 	}
 	
-	public JFrequencyControl( int value )
+	public JFrequencyControl( long value )
 	{
 		this();
 		mFrequency = value;
@@ -127,7 +127,7 @@ public class JFrequencyControl extends JPanel implements FrequencyChangeListener
 	 * rebroadcast this event, just set the control to indicate the new frequency.
 	 */
 	@Override
-    public void frequencyChanged( int frequency, int bandwidth )
+    public void frequencyChanged( long frequency, int bandwidth )
     {
 		setFrequency( frequency, false );
     }
@@ -136,7 +136,7 @@ public class JFrequencyControl extends JPanel implements FrequencyChangeListener
 	 * Loads the frequency into the display and optionally fires a change event
 	 * to all registered listeners
 	 */
-	public void setFrequency( int frequency, boolean fireChangeEvent )
+	public void setFrequency( long frequency, boolean fireChangeEvent )
 	{
 		mFrequency = frequency;
 		
@@ -146,14 +146,14 @@ public class JFrequencyControl extends JPanel implements FrequencyChangeListener
 		}
 	}
 	
-	public int getFrequency()
+	public long getFrequency()
 	{
 		return mFrequency;
 	}
 	
 	private void updateFrequency()
 	{
-		int frequency = 0;
+		long frequency = 0;
 		
 		for( Digit digit: mDigits.values() )
 		{
@@ -209,10 +209,10 @@ public class JFrequencyControl extends JPanel implements FrequencyChangeListener
          * to the power (ie column) set for this digit.  Optionally, fires a 
          * value change event to all listeners.
          */
-        public void setFrequency( int frequency, boolean fireChangeEvent )
+        public void setFrequency( long frequency, boolean fireChangeEvent )
         {
         	//Strip the digits higher than this one
-        	int lower = frequency % (int)( Math.pow( 10, mPower + 1) );
+        	long lower = frequency % (int)( Math.pow( 10, mPower + 1) );
 
         	//Set the value to int value of dividing by 10 to this power
         	int value = (int)( lower / (int)( Math.pow( 10, mPower ) ) );
@@ -220,7 +220,7 @@ public class JFrequencyControl extends JPanel implements FrequencyChangeListener
         	set( value, fireChangeEvent );
         }
         
-        public int getFrequency()
+        public long getFrequency()
         {
         	return mValue * (int)Math.pow( 10, mPower );
         }

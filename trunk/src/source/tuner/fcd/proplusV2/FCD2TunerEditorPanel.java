@@ -85,7 +85,7 @@ public class FCD2TunerEditorPanel extends JPanel implements FrequencyChangeListe
     }
 
 	@Override
-    public void frequencyChanged( int frequency, int bandwidth )
+    public void frequencyChanged( long frequency, int bandwidth )
     {
 		//Disregard the bandwidth, which shouldn't be changing
 		try

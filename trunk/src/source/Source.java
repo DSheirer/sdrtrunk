@@ -40,7 +40,7 @@ public abstract class Source
 
     public abstract int getSampleRate() throws SourceException;
     
-    public abstract int getFrequency() throws SourceException;
+    public abstract long getFrequency() throws SourceException;
     
     public abstract void dispose();
     

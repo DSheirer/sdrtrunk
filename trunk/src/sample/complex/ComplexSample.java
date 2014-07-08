@@ -38,33 +38,6 @@ public class ComplexSample implements Serializable
 		mRight = right;
 	}
 
-	public static void main( String[] args )
-	{
-		Log.info( "Starting ... " );
-
-		int frequency = 15000;
-		int sampleRate = 2000000;
-		
-		float anglePerSample = (float)( 2.0d * Math.PI * (float)frequency / (float)sampleRate );
-
-		ComplexSample current = new ComplexSample( 0.0f, -1.0f );
-		
-		ComplexSample stepPerSample = ComplexSample.fromAngle( anglePerSample );
-		
-		long start = System.currentTimeMillis();
-		
-		for( int x = 0; x < sampleRate; x++ )
-		{
-//			Log.info( x + " " + current.toString() );
-			current.multiply( stepPerSample );
-			current.fastNormalize();
-		}
-
-		Log.info( "Elapsed: " + ( System.currentTimeMillis() - start  ) );
-
-		Log.info( "Finished!" );
-	}
-
 	public ComplexSample copy()
 	{
 		return new ComplexSample( mLeft, mRight );

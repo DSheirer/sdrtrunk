@@ -22,18 +22,17 @@ import gui.control.JFrequencyControl;
 import java.awt.Color;
 import java.awt.EventQueue;
 
-import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import com.jidesoft.swing.JideTabbedPane;
-
 import log.Log;
 import net.miginfocom.swing.MigLayout;
-import source.SourceComponentEditor;
 import source.SourceException;
 import source.tuner.FrequencyChangeListener;
 import source.tuner.rtl.RTL2832InfoPanel;
+
+import com.jidesoft.swing.JideTabbedPane;
+
 import controller.ResourceManager;
 
 public class E4KTunerEditorPanel extends JPanel implements FrequencyChangeListener
@@ -89,7 +88,7 @@ public class E4KTunerEditorPanel extends JPanel implements FrequencyChangeListen
      * apply end-user requested frequency changes against the tuner
      */
 	@Override
-    public void frequencyChanged( final int frequency, int bandwidth )
+    public void frequencyChanged( final long frequency, int bandwidth )
     {
 		EventQueue.invokeLater( new Runnable() 
 		{

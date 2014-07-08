@@ -98,7 +98,7 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
 	 * Tuner Local Oscillator Frequency
 	 * @return - frequency in Hertz
 	 */
-	public abstract int getFrequency() throws SourceException;
+	public abstract long getFrequency() throws SourceException;
 
 	/**
 	 * Returns a tuner frequency channel source, tuned to the correct frequency
@@ -171,7 +171,7 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
     /**
      * Broadcasts a frequency change event to all registered listeners
      */
-    public void broadcastFrequencyChange( int frequency, int bandwidth )
+    public void broadcastFrequencyChange( long frequency, int bandwidth )
     {
     	for( FrequencyChangeListener listener: mFrequencyChangeListeners )
     	{
@@ -183,7 +183,7 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
      * Frequency change listener method.  We receive change events from the
      * controller and rebroadcast them to all registered listeners.
      */
-	public void frequencyChanged( int frequency, int bandwidth )
+	public void frequencyChanged( long frequency, int bandwidth )
 	{
 		broadcastFrequencyChange( frequency, bandwidth );
 	}

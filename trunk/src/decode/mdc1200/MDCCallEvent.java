@@ -63,7 +63,7 @@ public class MDCCallEvent extends CallEvent
     }
 
     @Override
-    public int getFrequency()
+    public long getFrequency()
     {
         return 0;
     }

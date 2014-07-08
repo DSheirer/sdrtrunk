@@ -34,5 +34,5 @@ public interface FrequencyChangeListener
 	 * @param frequency - uncorrected frequency in hertz
 	 * @param bandwidth - bandwidth in hertz
 	 */
-	public void frequencyChanged( int frequency, int bandwidth );
+	public void frequencyChanged( long frequency, int bandwidth );
 }

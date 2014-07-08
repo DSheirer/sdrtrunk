@@ -20,10 +20,10 @@ package source.tuner;
 public class TunerChannel implements Comparable<TunerChannel>
 {
 	private Type mType;
-	private int mFrequency;
+	private long mFrequency;
 	private int mBandwidth;
 	
-	public TunerChannel( Type type, int frequency, int bandwidth )
+	public TunerChannel( Type type, long frequency, int bandwidth )
 	{
 		mType = type;
 		mFrequency = frequency;
@@ -40,12 +40,12 @@ public class TunerChannel implements Comparable<TunerChannel>
 		mType = type;
 	}
 
-	public int getFrequency()
+	public long getFrequency()
 	{
 		return mFrequency;
 	}
 	
-	public void setFrequency( int frequency )
+	public void setFrequency( long frequency )
 	{
 		mFrequency = frequency;
 	}
@@ -60,12 +60,12 @@ public class TunerChannel implements Comparable<TunerChannel>
 		mBandwidth = bandwidth;
 	}
 	
-	public int getMinFrequency()
+	public long getMinFrequency()
 	{
 		return mFrequency - ( mBandwidth / 2 );
 	}
 	
-	public int getMaxFrequency()
+	public long getMaxFrequency()
 	{
 		return mFrequency + ( mBandwidth / 2 );
 	}
@@ -74,7 +74,7 @@ public class TunerChannel implements Comparable<TunerChannel>
 	 * Indicates if any part of this tuner channel is contained within the
 	 * minimum and maximum frequency values.
 	 */
-	public boolean isWithin( int minimum, int maximum )
+	public boolean isWithin( long minimum, long maximum )
 	{
 		return ( ( minimum <= getMinFrequency() && getMinFrequency() <= maximum ) ||
 				 ( minimum <= getMaxFrequency() && getMaxFrequency() <= maximum ) );

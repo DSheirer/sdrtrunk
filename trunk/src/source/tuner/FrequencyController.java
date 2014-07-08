@@ -24,10 +24,10 @@ import source.SourceException;
 public class FrequencyController
 {
 	private Tunable mTunable;
-	private int mFrequency = 101100000;
-	private int mTunedFrequency = 101100000;
-	private int mMinimumFrequency;
-	private int mMaximumFrequency;
+	private long mFrequency = 101100000;
+	private long mTunedFrequency = 101100000;
+	private long mMinimumFrequency;
+	private long mMaximumFrequency;
 	private double mFrequencyCorrection = 0d;
 	private int mBandwidth = 0;
 	
@@ -35,8 +35,8 @@ public class FrequencyController
 								new ArrayList<FrequencyChangeListener>();
 	
 	public FrequencyController( Tunable tunable,
-								int minFrequency,
-								int maxFrequency,
+								long minFrequency,
+								long maxFrequency,
 								double frequencyCorrection ) throws SourceException
 	{
 		mTunable = tunable;
@@ -66,7 +66,7 @@ public class FrequencyController
 	/**
 	 * Get frequency in hertz
 	 */
-	public int getFrequency()
+	public long getFrequency()
 	{
 		return mFrequency;
 	}
@@ -77,7 +77,7 @@ public class FrequencyController
 	 * @throws SourceException if tunable doesn't support tuning a corrected
 	 * version of the requested frequency
 	 */
-	public void setFrequency( int frequency ) throws SourceException
+	public void setFrequency( long frequency ) throws SourceException
 	{
 		setFrequency( frequency, true );
 	}
@@ -87,10 +87,10 @@ public class FrequencyController
 	 * method supports changing the frequency correction value without
 	 * broadcasting a frequency change event.
 	 */
-	private void setFrequency( int frequency, boolean broadcastChange ) 
+	private void setFrequency( long frequency, boolean broadcastChange ) 
 													throws SourceException
 	{
-		int tunedFrequency = getTunedFrequency( frequency );
+		long tunedFrequency = getTunedFrequency( frequency );
 		
 		if( tunedFrequency < mMinimumFrequency || 
 			tunedFrequency > mMaximumFrequency )
@@ -114,17 +114,17 @@ public class FrequencyController
 		}
 	}
 	
-	public int getTunedFrequency()
+	public long getTunedFrequency()
 	{
 		return mTunedFrequency;
 	}
 	
-	public int getMinimumFrequency()
+	public long getMinimumFrequency()
 	{
 		return mMinimumFrequency;
 	}
 	
-	public int getMaximumFrequency()
+	public long getMaximumFrequency()
 	{
 		return mMaximumFrequency;
 	}
@@ -134,9 +134,9 @@ public class FrequencyController
      * corrected frequency.
      * @param correctedFrequency
      */
-    private int getTunedFrequency( int correctedFrequency )
+    private long getTunedFrequency( long correctedFrequency )
     {
-		return (int)( (double)correctedFrequency / 
+		return (long)( (double)correctedFrequency / 
 				( 1.0 + ( mFrequencyCorrection / 1000000.0 ) ) );
     }
 
@@ -145,7 +145,7 @@ public class FrequencyController
      * from the tuned frequency.
      * @param tunedFrequency
      */
-    private int getCorrectedFrequency( int tunedFrequency )
+    private long getCorrectedFrequency( long tunedFrequency )
     {
 		return (int)( (double)tunedFrequency / 
 				( 1.0 - ( mFrequencyCorrection / 1000000.0 ) ) );
@@ -205,12 +205,12 @@ public class FrequencyController
 		/**
 		 * Gets the tuned frequency of the device
 		 */
-		public int getTunedFrequency() throws SourceException;
+		public long getTunedFrequency() throws SourceException;
 
 		/**
 		 * Sets the tuned frequency of the device
 		 */
-		public void setTunedFrequency( int frequency ) throws SourceException;
+		public void setTunedFrequency( long frequency ) throws SourceException;
 
 		/**
 		 * Gets the current bandwidth setting of the device

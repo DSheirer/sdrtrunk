@@ -56,7 +56,7 @@ public class ChannelRange
 		return mFirst <= channel && channel <= mLast;
 	}
 	
-	public int getFrequency( int channel )
+	public long getFrequency( int channel )
 	{
 		if( hasChannel( channel ) )
 		{

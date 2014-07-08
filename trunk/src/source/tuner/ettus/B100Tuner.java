@@ -78,7 +78,7 @@ public class B100Tuner extends Tuner
     }
 
 	@Override
-    public int getFrequency() throws SourceException
+    public long getFrequency() throws SourceException
     {
 	    return 0;
     }

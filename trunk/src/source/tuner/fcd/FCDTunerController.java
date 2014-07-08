@@ -55,7 +55,6 @@ public abstract class FCDTunerController extends TunerController
 	private UsbPipe mPipeIn;
 	private UsbPipe mPipeOut;
 	private FCDConfiguration mConfiguration = new FCDConfiguration();
-	private int mSampleRate;
 
 	public FCDTunerController( USBTunerDevice device, 
 							   int minTunableFrequency,
@@ -147,7 +146,7 @@ public abstract class FCDTunerController extends TunerController
 	/**
 	 * Sets the actual (uncorrected) device frequency
 	 */
-	public void setTunedFrequency( int frequency ) throws SourceException
+	public void setTunedFrequency( long frequency ) throws SourceException
 	{
 		try
 		{
@@ -163,11 +162,11 @@ public abstract class FCDTunerController extends TunerController
 	/**
 	 * Gets the actual (uncorrected) device frequency
 	 */
-	public int getTunedFrequency() throws SourceException
+	public long getTunedFrequency() throws SourceException
 	{
 		try
 		{
-			return (int)send( FCDCommand.APP_GET_FREQUENCY_HZ );
+			return send( FCDCommand.APP_GET_FREQUENCY_HZ );
 		}
 		catch( Exception e )
 		{

@@ -25,14 +25,14 @@ import decode.DecoderType;
 public class PassportCallEvent extends CallEvent
 {
 	private int mChannel;
-	private int mFrequency;
+	private long mFrequency;
 	
 	public PassportCallEvent( CallEventType callEventType, 
 							 AliasList aliasList,
 							 String fromID,
 							 String toID,
 							 int channel,
-							 int frequency,
+							 long frequency,
 							 String details )
     {
 	    super( DecoderType.PASSPORT, callEventType, 
@@ -81,7 +81,7 @@ public class PassportCallEvent extends CallEvent
     }
 
 	@Override
-    public int getFrequency()
+    public long getFrequency()
     {
 	    return mFrequency;
     }
@@ -97,7 +97,7 @@ public class PassportCallEvent extends CallEvent
 		private String mToID;
 		private String mDetails;
 		private int mChannel;
-		private int mFrequency;
+		private long mFrequency;
 
 		public Builder( CallEventType callEventType )
 		{
@@ -128,7 +128,7 @@ public class PassportCallEvent extends CallEvent
 			return this;
 		}
 		
-		public Builder frequency( int frequency )
+		public Builder frequency( long frequency )
 		{
 			mFrequency = frequency;
 			return this;

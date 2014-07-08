@@ -118,7 +118,7 @@ public abstract class CallEvent
 	
 	public abstract int getChannel();
 
-	public abstract int getFrequency();
+	public abstract long getFrequency();
 	
 	public static String getCSVHeader()
 	{

@@ -34,7 +34,7 @@ public class Oscillator
 	 * @param frequency - positive or negative frequency in hertz
 	 * @param sampleRate - in hertz
 	 */
-	public Oscillator( int frequency, int sampleRate )
+	public Oscillator( long frequency, int sampleRate )
 	{
 		mSampleRate = (double)sampleRate;
 		mFrequency = (double)frequency;
@@ -53,7 +53,7 @@ public class Oscillator
 	/**
 	 * Sets or changes the frequency of this oscillator
 	 */
-	public void setFrequency( int frequency )
+	public void setFrequency( long frequency )
 	{
 		mFrequency = (double)frequency;
 		update();

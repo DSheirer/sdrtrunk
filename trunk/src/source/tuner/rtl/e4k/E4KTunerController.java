@@ -36,10 +36,10 @@ public class E4KTunerController extends RTL2832TunerController
 	 * 
 	 * TODO: change frequency to a long primitive type
 	 */
-	public static final int sMIN_FREQUENCY = 52000000;
-	public static final int sMIN_FREQUENCY_EXTENDED = 52000000;
-	public static final int sMAX_FREQUENCY = 2147000000;
-	public static final int sMAX_FREQUENCY_EXTENDED = 2147000000;
+	public static final long sMIN_FREQUENCY = 52000000;
+	public static final long sMIN_FREQUENCY_EXTENDED = 52000000;
+	public static final long sMAX_FREQUENCY = 2200000000l;
+	public static final long sMAX_FREQUENCY_EXTENDED = 2200000000l;
 	public static final long sMIN_VCO = 2600000000l; //2.6 GHz
 	public static final long sMAX_VCO = 3900000000l; //3.9 GHz
 
@@ -236,7 +236,7 @@ public class E4KTunerController extends RTL2832TunerController
     }
 
 	@Override
-    public int getTunedFrequency() throws SourceException
+    public long getTunedFrequency() throws SourceException
     {
 		try
 		{
@@ -276,7 +276,7 @@ public class E4KTunerController extends RTL2832TunerController
     }
 
 	@Override
-    public void setTunedFrequency( int frequency ) throws SourceException
+    public void setTunedFrequency( long frequency ) throws SourceException
     {
 		/* Get the phase locked loop setting */ 
 		PLL pll = PLL.fromFrequency( frequency );
@@ -288,13 +288,13 @@ public class E4KTunerController extends RTL2832TunerController
 		/* remainder is just as it describes.  It is what is left over after we
 		 * carve out scaled oscillator frequency increments (z) from the desired 
 		 * frequency. */
-		int remainder = frequency - ( ( z & 0xFF ) * pll.getScaledOscillator() );
+		int remainder = (int)( frequency - ( ( z & 0xFF ) * pll.getScaledOscillator() ) );
 
 		/* X is a 16-bit representation of the remainder */
 		int x = (int)( (double)remainder / (double)pll.getScaledOscillator() * sE4K_PLL_Y );
 
 		/* Calculate the exact (tunable) frequency and apply that to the tuner */
-		int actualFrequency = calculateActualFrequency( pll, z, x );
+		long actualFrequency = calculateActualFrequency( pll, z, x );
 		
 		/** 
 		 * Hack: if we're trying to set the minimum frequency for the E4K, due
@@ -353,9 +353,9 @@ public class E4KTunerController extends RTL2832TunerController
 		}
     }
 	
-	private int calculateActualFrequency( PLL pll, byte z, int x )
+	private long calculateActualFrequency( PLL pll, byte z, int x )
 	{
-		int whole = (int)( pll.getScaledOscillator() * ( z & 0xFF ) );
+		long whole = pll.getScaledOscillator() * ( z & 0xFF );
 
 		int fractional = (int)( pll.getScaledOscillator() * 
 								( (double)x / (double)sE4K_PLL_Y ) );
@@ -880,7 +880,7 @@ public class E4KTunerController extends RTL2832TunerController
     	}
     }
     
-    public void setBand( int frequency, 
+    public void setBand( long frequency, 
     					 boolean controlI2CRepeater ) throws UsbException
     {
     	if( controlI2CRepeater )
@@ -918,7 +918,7 @@ public class E4KTunerController extends RTL2832TunerController
     	}
     }
     
-    private void setRFFilter( int frequency, 
+    private void setRFFilter( long frequency, 
     						  boolean controlI2CRepeater ) throws UsbException
     {
     	RFFilter filter = RFFilter.fromFrequency( frequency );
@@ -1057,7 +1057,7 @@ public class E4KTunerController extends RTL2832TunerController
 			return toString();
 		}
 		
-		public static Band fromFrequency( int frequency )
+		public static Band fromFrequency( long frequency )
 		{
 			if( frequency < 140000000 ) //140 MHz
 			{
@@ -1092,14 +1092,14 @@ public class E4KTunerController extends RTL2832TunerController
 		PLL_1200M0( 0x01, 1200000000,  4, 7200000, false, "1200.0 MHz" );
 		
 		private int mValue;
-		private int mFrequency;
+		private long mFrequency;
 		private int mMultiplier;
 		private int mScaledOscillator;
 		private boolean mRequires3PhaseMixing;
 		private String mLabel;
 		
 		private PLL( int value, 
-					 int frequency, 
+					 long frequency, 
 					 int multiplier, 
 					 int scaledOscillator,
 					 boolean requires3Phase,
@@ -1119,7 +1119,7 @@ public class E4KTunerController extends RTL2832TunerController
 			return (byte)mValue;
 		}
 		
-		public int getFrequency()
+		public long getFrequency()
 		{
 			return mFrequency;
 		}
@@ -1151,7 +1151,7 @@ public class E4KTunerController extends RTL2832TunerController
 		
 		/* Returns the PLL setting with the closest frequency that is greater
 		 * than the frequency argument */
-		public static PLL fromFrequency( int frequency )
+		public static PLL fromFrequency( long frequency )
 		{
 			for( PLL pll: values() )
 			{
@@ -1235,10 +1235,10 @@ public class E4KTunerController extends RTL2832TunerController
 		M1750( 15, 1735000000, 2147000000 );
 		
 		private int mValue;
-		private int mMinFrequency;
-		private int mMaxFrequency;
+		private long mMinFrequency;
+		private long mMaxFrequency;
 		
-		private RFFilter( int value, int minFrequency, int maxFrequency )
+		private RFFilter( int value, long minFrequency, long maxFrequency )
 		{
 			mValue = value;
 			mMinFrequency = minFrequency;
@@ -1263,7 +1263,7 @@ public class E4KTunerController extends RTL2832TunerController
 		/**
 		 * Minimum frequency for this filter.
 		 */
-		public int getMinimumFrequency()
+		public long getMinimumFrequency()
 		{
 			return mMinFrequency;
 		}
@@ -1272,7 +1272,7 @@ public class E4KTunerController extends RTL2832TunerController
 		 * Maximum frequency for this filter is less than this value, but does
 		 * not include this value.
 		 */
-		public int getMaximumFrequency()
+		public long getMaximumFrequency()
 		{
 			return mMaxFrequency;
 		}
@@ -1285,7 +1285,7 @@ public class E4KTunerController extends RTL2832TunerController
 		 * @throws IllegalArgumentException if the frequency is outside the 
 		 * max value (2200 MHz)
 		 */
-		public static RFFilter fromFrequency( int frequency )
+		public static RFFilter fromFrequency( long frequency )
 		{
 			if( frequency < 350000000 )
 			{

@@ -27,7 +27,7 @@ public class SourceConfigTuner extends SourceConfiguration
 {
 	private static DecimalFormat sFORMAT = new DecimalFormat( "0.00000" );
 
-	private int mFrequency = 0;
+	private long mFrequency = 0;
 	
 	public SourceConfigTuner()
     {
@@ -35,12 +35,12 @@ public class SourceConfigTuner extends SourceConfiguration
     }
 	
 	@XmlAttribute( name = "frequency" )
-	public int getFrequency()
+	public long getFrequency()
 	{
 		return mFrequency;
 	}
 	
-	public void setFrequency( int frequency )
+	public void setFrequency( long frequency )
 	{
 		mFrequency = frequency;
 	}

@@ -829,7 +829,7 @@ public class Channel extends Configuration
 	 * Indicates if any part of this channel is contained within the
 	 * minimum and maximum frequency values.
 	 */
-	public boolean isWithin( int minimum, int maximum )
+	public boolean isWithin( long minimum, long maximum )
 	{
 		return getTunerChannel() != null &&
 			   getTunerChannel().isWithin( minimum, maximum );

@@ -167,7 +167,7 @@ public class ConfigurationControllerModel extends DefaultTreeModel
      * Convenience method to add a new default system, site and channel to 
      * the tree
      */
-    public void createChannel( int frequency, DecoderType decoder )
+    public void createChannel( long frequency, DecoderType decoder )
     {
     	System system = new System();
 

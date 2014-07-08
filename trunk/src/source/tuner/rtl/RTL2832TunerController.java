@@ -166,8 +166,8 @@ public abstract class RTL2832TunerController extends TunerController
 	 * tuner controller class for that tuner type.
 	 */
 	public RTL2832TunerController( USBTunerDevice tunerDevice, 
-								   int minTunableFrequency, 
-								   int maxTunableFrequency ) throws SourceException
+								   long minTunableFrequency, 
+								   long maxTunableFrequency ) throws SourceException
 	{
 		super( minTunableFrequency, maxTunableFrequency );
 		

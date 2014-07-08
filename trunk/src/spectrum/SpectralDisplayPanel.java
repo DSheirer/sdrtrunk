@@ -319,7 +319,7 @@ public class SpectralDisplayPanel extends JPanel
 	 * Receives frequency change events -- primarily from tuner components.
 	 */
 	@Override
-    public void frequencyChanged( int frequency, int bandwidth )
+    public void frequencyChanged( long frequency, int bandwidth )
     {
 		mChannelPanel.frequencyChanged( frequency, bandwidth );
 		mDFTProcessor.frequencyChanged( frequency, bandwidth );
@@ -479,7 +479,7 @@ public class SpectralDisplayPanel extends JPanel
 					contextMenu.add( new PauseItem( mWaterfallPanel, "Pause" ) );
 				}
 
-				int frequency = 
+				long frequency = 
 						mChannelPanel.getFrequencyFromAxis( event.getX() );
 				
 				if( event.getComponent() == mChannelPanel )
@@ -757,10 +757,10 @@ public class SpectralDisplayPanel extends JPanel
         private static final long serialVersionUID = 1L;
 
         private ResourceManager mResourceManager;
-        private int mFrequency;
+        private long mFrequency;
         private DecoderType mDecoder;
         
-        public DecoderItem( ResourceManager manager, int frequency, DecoderType type )
+        public DecoderItem( ResourceManager manager, long frequency, DecoderType type )
         {
         	super( type.getDisplayString() );
         	
