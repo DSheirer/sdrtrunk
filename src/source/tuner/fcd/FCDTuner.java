@@ -92,7 +92,7 @@ public class FCDTuner extends MixerTuner
     }
 	
 	@Override
-    public int getFrequency() throws SourceException
+    public long getFrequency() throws SourceException
     {
 		return mController.getFrequency();
     }

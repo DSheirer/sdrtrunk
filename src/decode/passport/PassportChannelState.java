@@ -34,7 +34,7 @@ public class PassportChannelState extends ChannelState
 	private String mMobileID;
 	private Alias mMobileIDAlias;
 	private int mChannelNumber;
-	private int mFrequency;
+	private long mFrequency;
 	private PassportCallEvent mCurrentCallEvent;
 	private PassportActivitySummary mActivitySummary;
 	

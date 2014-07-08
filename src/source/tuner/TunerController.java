@@ -45,7 +45,7 @@ public abstract class TunerController implements Tunable
 	 * @throws SourceException - for any issues related to constructing the 
 	 * class, tuning a frequency, or setting the bandwidth
 	 */
-	public TunerController( int minimumFrequency, int maximumFrequency ) 
+	public TunerController( long minimumFrequency, long maximumFrequency ) 
 			throws SourceException
 	{
 		mFrequencyController = new FrequencyController( this, 
@@ -71,7 +71,7 @@ public abstract class TunerController implements Tunable
      * @param frequency in hertz
      * @throws SourceException - if the tuner has any issues
      */
-	public void setFrequency( int frequency ) throws SourceException
+	public void setFrequency( long frequency ) throws SourceException
 	{
 		mFrequencyController.setFrequency( frequency );
 	}
@@ -81,7 +81,7 @@ public abstract class TunerController implements Tunable
 	 * 
 	 * @return frequency in hertz
 	 */
-	public int getFrequency()	
+	public long getFrequency()	
 	{
 		return mFrequencyController.getFrequency();
 	}
@@ -96,12 +96,12 @@ public abstract class TunerController implements Tunable
 		mFrequencyController.setFrequencyCorrection( correction );
 	}
 	
-	public int getMinFrequency()
+	public long getMinFrequency()
 	{
 		return mFrequencyController.getMinimumFrequency();
 	}
 
-	public int getMaxFrequency()
+	public long getMaxFrequency()
 	{
 		return mFrequencyController.getMaximumFrequency();
 	}
@@ -127,8 +127,8 @@ public abstract class TunerController implements Tunable
 				//Sort the existing locks and get the min/max locked frequencies
 				Collections.sort( mTunedChannels );
 
-				int minLockedFrequency = mTunedChannels.get( 0 ).getMinFrequency();
-				int maxLockedFrequency = mTunedChannels
+				long minLockedFrequency = mTunedChannels.get( 0 ).getMinFrequency();
+				long maxLockedFrequency = mTunedChannels
 						.get( mTunedChannels.size() - 1 ).getMaxFrequency();
 
 				//Requested channel is higher than min locked frequency
@@ -195,14 +195,14 @@ public abstract class TunerController implements Tunable
 	{
 		Collections.sort( mTunedChannels );
 
-		int minLockedFrequency = mTunedChannels.get( 0 ).getMinFrequency();
-		int maxLockedFrequency = mTunedChannels
+		long minLockedFrequency = mTunedChannels.get( 0 ).getMinFrequency();
+		long maxLockedFrequency = mTunedChannels
 				.get( mTunedChannels.size() - 1 ).getMaxFrequency();
 
-		int middle = minLockedFrequency + 
+		long middle = minLockedFrequency + 
 				( ( maxLockedFrequency - minLockedFrequency ) / 2 );
-		int middleMin = middle - 10000;
-		int middleMax = middle + 10000;
+		long middleMin = middle - 10000;
+		long middleMax = middle + 10000;
 		
 		Iterator<TunerChannel> it = mTunedChannels.iterator();
 		

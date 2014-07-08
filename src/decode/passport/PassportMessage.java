@@ -34,8 +34,6 @@ import decode.DecoderType;
 public class PassportMessage extends Message
 {
 	private static final String sUNKNOWN = "**UNKNOWN**";
-	private static final int sINT_NULL_VALUE = -1;
-	private static final double sDOUBLE_NULL_VALUE = -1.0D;
 	private SimpleDateFormat mSDF = new SimpleDateFormat( "yyyyMMdd HHmmss" );
 	private DecimalFormat mDecimalFormatter = new DecimalFormat("0.00000");
 	
@@ -189,7 +187,7 @@ public class PassportMessage extends Message
         return getInt( sLCN );
     }
 
-    public int getLCNFrequency()
+    public long getLCNFrequency()
     {
     	return getSiteFrequency( getLCN() );
     }
@@ -209,7 +207,7 @@ public class PassportMessage extends Message
         return PassportBand.lookup( getInt( sNEIGHBOR_BAND ) );
     }
 
-    public int getFrequency( int base, int channel )
+    public long getFrequency( int base, int channel )
     {
     	return ( base + ( channel * 12500 ) );
     }
@@ -219,7 +217,7 @@ public class PassportMessage extends Message
         return getInt( sFREE );
     }
     
-    public int getFreeFrequency()
+    public long getFreeFrequency()
     {
     	return getSiteFrequency( getFree() );
     }
@@ -229,18 +227,16 @@ public class PassportMessage extends Message
     	return mDecimalFormatter.format( (double)getFreeFrequency() / 1000000.0d );   
     }
     
-    public int getNeighborFrequency()
+    public long getNeighborFrequency()
     {
-    	int retVal = 0;
-    	
     	if( getMessageType() == MessageType.SY_IDLE )
     	{
     		PassportBand band = getNeighborBand();
     		
-    		retVal = getFrequency( band.getBase(), getFree() );
+    		return getFrequency( band.getBase(), getFree() );
     	}
     	
-    	return retVal;
+    	return 0;
     }
     
     /**
@@ -392,10 +388,8 @@ public class PassportMessage extends Message
 	    return null;
     }
 	
-	public int getSiteFrequency( int channel )
+	public long getSiteFrequency( int channel )
 	{
-		int freq = 0;
-		
 		if( mIdleMessage != null && 0 < channel && channel < 1792 )
 		{
 			PassportBand band = mIdleMessage.getSiteBand();
@@ -404,11 +398,11 @@ public class PassportMessage extends Message
 			{
 				int base = band.getBase();
 				
-				freq = getFrequency( base, channel );
+				return getFrequency( base, channel );
 			}
 		}
 
-		return freq;
+		return 0;
 	}
 
 	@Override

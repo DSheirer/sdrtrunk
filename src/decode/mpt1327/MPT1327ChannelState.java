@@ -191,7 +191,7 @@ public class MPT1327ChannelState extends ChannelState
 									.build() );
 						}
 						
-						int frequency = mChannelMap.getFrequency( channelNumber );
+						long frequency = mChannelMap.getFrequency( channelNumber );
 						
 						break;
 					case CLEAR:
@@ -330,7 +330,7 @@ public class MPT1327ChannelState extends ChannelState
 		
 		SourceConfigTuner source = new SourceConfigTuner();
 
-		int frequency = mChannelMap.getFrequency( channelNumber );
+		long frequency = mChannelMap.getFrequency( channelNumber );
 		
 		source.setFrequency( frequency );
 		

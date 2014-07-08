@@ -33,7 +33,6 @@ public class LTRNetChannelState extends ChannelState
 	private Alias mFromTalkgroupAlias;
 	private String mFromTalkgroupType;
 	private int mChannelNumber;
-	private String mUniqueID;
 	private LTRCallEvent mCurrentCallEvent;
 	private LTRNetActivitySummary mActivitySummary;
 	

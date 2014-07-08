@@ -55,7 +55,7 @@ public class TunerChannelSource extends ComplexSource
 
 	private ComplexSampleAssembler mBufferAssembler = 
 								new ComplexSampleAssembler( 3000 );
-	private int mTunerFrequency;
+	private long mTunerFrequency;
 	private int mTunerSampleRate;
 	private ThreadPoolManager mThreadPoolManager;
 	private ScheduledFuture<?> mTaskHandle;
@@ -153,13 +153,13 @@ public class TunerChannelSource extends ComplexSource
     }
 	
 	@Override
-    public void frequencyChanged( int frequency, int bandwidth )
+    public void frequencyChanged( long frequency, int bandwidth )
     {
 		
 		/* Frequency change */
 		if( frequency != mTunerFrequency )
 		{
-			int frequencyOffset = frequency - mTunerChannel.getFrequency();
+			long frequencyOffset = frequency - mTunerChannel.getFrequency();
 			
 			if( mSineWaveGenerator == null )
 			{
@@ -180,7 +180,7 @@ public class TunerChannelSource extends ComplexSource
 		/* Bandwidth/Sample rate change */
 		if( bandwidth != mTunerSampleRate )
 		{
-			int frequencyOffset = frequency - mTunerChannel.getFrequency();
+			long frequencyOffset = frequency - mTunerChannel.getFrequency();
 			
 			if( mSineWaveGenerator == null )
 			{
@@ -225,7 +225,7 @@ public class TunerChannelSource extends ComplexSource
 	    return mTuner.getSampleRate();
     }
 
-    public int getFrequency() throws SourceException
+    public long getFrequency() throws SourceException
     {
 	    return mTuner.getFrequency();
     }

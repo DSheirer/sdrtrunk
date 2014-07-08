@@ -94,7 +94,7 @@ public class ChannelMap
 		mName = name;
 	}
 	
-	public int getFrequency( int channelNumber )
+	public long getFrequency( int channelNumber )
 	{
 		for( ChannelRange range: mRanges )
 		{

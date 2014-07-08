@@ -53,7 +53,7 @@ public class OverlayPanel extends JPanel
 	
 	private static DecimalFormat sFORMAT = new DecimalFormat( "000.000" );
 	private static DecimalFormat sCURSOR_FORMAT = new DecimalFormat( "000.00000" );
-	private int mFrequency = 0;
+	private long mFrequency = 0;
 	private int mBandwidth = 0;
 	private Point mCursorLocation = new Point( 0, 0 );
 	private boolean mCursorVisible = false;
@@ -239,13 +239,13 @@ public class OverlayPanel extends JPanel
      */
     private void drawFrequencies( Graphics2D graphics )
     {
-    	int minFrequency = getMinFrequency();
-    	int maxFrequency = getMaxFrequency();
+    	long minFrequency = getMinFrequency();
+    	long maxFrequency = getMaxFrequency();
 
 //TODO: the increment should be changeable according to the overall bandwidth
 //   	so that when we move to higher sample rates, the display reacts accordingly
 
-    	int frequency;
+    	long frequency;
     	
     	if( mBandwidth < 200000 )
     	{
@@ -280,7 +280,7 @@ public class OverlayPanel extends JPanel
     /**
      * Draws a vertical line and a corresponding frequency label at the bottom
      */
-    private void drawFrequencyLineAndLabel( Graphics2D graphics, int frequency )
+    private void drawFrequencyLineAndLabel( Graphics2D graphics, long frequency )
     {
     	float xAxis = getAxisFromFrequency( frequency );
     	
@@ -305,12 +305,12 @@ public class OverlayPanel extends JPanel
     /**
      * Returns the x-axis value corresponding to the frequency
      */
-    public float getAxisFromFrequency( int frequency )
+    public float getAxisFromFrequency( long frequency )
     {
     	float canvasMiddle = (float)getSize().getWidth() / 2;
 
     	//Determine frequency offset from middle
-    	int frequencyOffset = mFrequency - frequency;
+    	long frequencyOffset = mFrequency - frequency;
 
     	//Determine ratio of offset to bandwidth
     	float ratio = (float)frequencyOffset / (float)mBandwidth;
@@ -325,7 +325,7 @@ public class OverlayPanel extends JPanel
     /**
      * Returns the frequency corresponding to the x-axis value
      */
-    public int getFrequencyFromAxis( double xAxis )
+    public long getFrequencyFromAxis( double xAxis )
     {
     	float width = (float)getSize().getWidth();
     	
@@ -339,7 +339,7 @@ public class OverlayPanel extends JPanel
      */
     private void drawFrequencyLabel( Graphics2D graphics, 
     								 float xaxis,
-    								 int frequency )
+    								 long frequency )
     {
     	String label = sFORMAT.format( (float)frequency / 1000000.0f );
     	
@@ -483,7 +483,7 @@ public class OverlayPanel extends JPanel
      * Frequency change event handler
      */
 	@Override
-    public void frequencyChanged( int frequency, int bandwidth )
+    public void frequencyChanged( long frequency, int bandwidth )
     {
 		mBandwidth = bandwidth;
 		mFrequency = frequency;
@@ -493,8 +493,8 @@ public class OverlayPanel extends JPanel
 		 */
 		mVisibleChannels.clear();
 
-		int minimum = getMinFrequency();
-		int maximum = getMaxFrequency();
+		long minimum = getMinFrequency();
+		long maximum = getMaxFrequency();
 		
 		for( Channel channel: mChannels )
 		{
@@ -545,7 +545,7 @@ public class OverlayPanel extends JPanel
 	/**
 	 * Currently displayed minimum frequency
 	 */
-	private int getMinFrequency()
+	private long getMinFrequency()
 	{
 		return mFrequency - ( mBandwidth / 2 );
 	}
@@ -553,7 +553,7 @@ public class OverlayPanel extends JPanel
 	/**
 	 * Currently displayed maximum frequency
 	 */
-	private int getMaxFrequency()
+	private long getMaxFrequency()
 	{
 		return mFrequency + ( mBandwidth / 2 );
 	}
@@ -562,7 +562,7 @@ public class OverlayPanel extends JPanel
 	 * Returns a list of channel configs that contain the frequency within their
 	 * min/max frequency settings.
 	 */
-	public ArrayList<Channel> getChannelsAtFrequency( int frequency )
+	public ArrayList<Channel> getChannelsAtFrequency( long frequency )
 	{
 		ArrayList<Channel> configs = new ArrayList<Channel>();
 		

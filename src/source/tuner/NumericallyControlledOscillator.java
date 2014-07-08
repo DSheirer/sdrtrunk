@@ -26,7 +26,7 @@ import util.Oscillator;
 public class NumericallyControlledOscillator implements Listener<ComplexSample>,
 														FrequencyChangeListener
 {
-	private int mFrequency;
+	private long mFrequency;
 	private int mSampleRate;
 	private Oscillator mSineWaveGenerator;
 	private Listener<ComplexSample> mListener;
@@ -39,7 +39,7 @@ public class NumericallyControlledOscillator implements Listener<ComplexSample>,
 	 * shifted outside of the sampling bandwidth will wrap around, due to the 
 	 * nature of quadrature sampling.
 	 */
-	public NumericallyControlledOscillator( int frequencyShift, int sampleRate )
+	public NumericallyControlledOscillator( long frequencyShift, int sampleRate )
 	{
 		mFrequency = frequencyShift;
 		mSampleRate = sampleRate;
@@ -66,7 +66,7 @@ public class NumericallyControlledOscillator implements Listener<ComplexSample>,
     }
 	
 	@Override
-    public void frequencyChanged( int frequency, int bandwidth )
+    public void frequencyChanged( long frequency, int bandwidth )
     {
 		if( frequency != mFrequency )
 		{
@@ -84,7 +84,7 @@ public class NumericallyControlledOscillator implements Listener<ComplexSample>,
 	 * all subsequent samples will be output at the new translated frequency
 	 * @param frequency - hertz
 	 */
-	public void setFrequency( int frequency )
+	public void setFrequency( long frequency )
 	{
 		Log.info( "NumericallyControlledOscillator - setting sine wave gen to freq:" + frequency );
 
@@ -96,7 +96,7 @@ public class NumericallyControlledOscillator implements Listener<ComplexSample>,
 	 * Current frequency shift setting
 	 * @return - frequency - hertz
 	 */
-	public int getFrequency()
+	public long getFrequency()
 	{
 		return mFrequency;
 	}

@@ -88,7 +88,7 @@ public class R820TTunerEditorPanel extends JPanel implements FrequencyChangeList
      * apply end-user requested frequency changes against the tuner
      */
 	@Override
-    public void frequencyChanged( final int frequency, int bandwidth )
+    public void frequencyChanged( final long frequency, int bandwidth )
     {
 		EventQueue.invokeLater( new Runnable() 
 		{

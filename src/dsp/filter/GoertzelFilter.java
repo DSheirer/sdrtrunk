@@ -30,7 +30,7 @@ import dsp.filter.Window.WindowType;
 public class GoertzelFilter
 {
     private int mSampleRate;
-    private int mTargetFrequency;
+    private long mTargetFrequency;
     private int mBlockSize;
     private double[] mWindowCoefficients;
 
@@ -51,7 +51,7 @@ public class GoertzelFilter
      *            the magnitude
      */
     public GoertzelFilter( int sampleRate, 
-        	    		   int targetFrequency, 
+        	    		   long targetFrequency, 
         	    		   int blockSize,
         	    		   WindowType window )
     {
@@ -139,15 +139,15 @@ public class GoertzelFilter
      */
     public int getSampleRate()
     {
-	return mSampleRate;
+    	return mSampleRate;
     }
 
     /**
      * @return the Target Frequency
      */
-    public int getTargetFrequency()
+    public long getTargetFrequency()
     {
-	return mTargetFrequency;
+    	return mTargetFrequency;
     }
 
     /**
@@ -155,7 +155,7 @@ public class GoertzelFilter
      */
     public int getBlockSize()
     {
-	return mBlockSize;
+    	return mBlockSize;
     }
 
 }

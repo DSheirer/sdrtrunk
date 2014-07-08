@@ -23,7 +23,6 @@ import java.util.LinkedList;
 
 import javax.swing.table.AbstractTableModel;
 
-import log.Log;
 import sample.Broadcaster;
 import sample.Listener;
 

@@ -38,7 +38,7 @@ public class FloatWaveSource extends WaveSource
 
     private AudioInputStream mInputStream = null;
     private int mBytesPerFrame = 0;
-    private int mFrequency = 0;
+    private long mFrequency = 0;
     
     private byte[] mBuffer;
     private int mBufferPointer = 0;
@@ -84,7 +84,7 @@ public class FloatWaveSource extends WaveSource
 	 * Returns the frequency set for this file.  Normally returns zero, but
 	 * the value can be set with setFrequency() method.
 	 */
-    public int getFrequency()
+    public long getFrequency()
     {
 	    return mFrequency;
     }

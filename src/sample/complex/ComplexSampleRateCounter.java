@@ -100,7 +100,7 @@ public class ComplexSampleRateCounter implements Listener<ComplexSample>,
     }
 
 	@Override
-    public void frequencyChanged( int frequency, int bandwidth )
+    public void frequencyChanged( long frequency, int bandwidth )
     {
 		mExpectedSampleRate = bandwidth;
     }

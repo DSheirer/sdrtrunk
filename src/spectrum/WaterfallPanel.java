@@ -69,7 +69,7 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 
 	private Point mCursorLocation = new Point( 0, 0 );
 	private boolean mCursorVisible = false;
-	private int mCursorFrequency = 0;
+	private long mCursorFrequency = 0;
 	private AtomicBoolean mPaused = new AtomicBoolean();
 	
 	private ResourceManager mResourceManager;
@@ -162,7 +162,7 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 		repaint();
 	}
 	
-	public void setCursorFrequency( int frequency )
+	public void setCursorFrequency( long frequency )
 	{
 		mCursorFrequency = frequency;
 	}

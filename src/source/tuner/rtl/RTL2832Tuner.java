@@ -119,7 +119,7 @@ public class RTL2832Tuner extends Tuner
 	}
 
 	@Override
-    public int getFrequency() throws SourceException
+    public long getFrequency() throws SourceException
     {
 	    return mController.getFrequency();
     }

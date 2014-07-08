@@ -58,19 +58,23 @@ final public class IIRBiQuadraticFilter {
     }
 
     // constructor without gain setting
-    public IIRBiQuadraticFilter(Type type, double center_freq, double sample_rate, double Q) {
+    public IIRBiQuadraticFilter(Type type, double center_freq, double sample_rate, double Q) 
+    {
         configure(type, center_freq, sample_rate, Q, 0);
     }
 
-    public void reset() {
+    public void reset() 
+    {
         x1 = x2 = y1 = y2 = 0;
     }
 
-    public double frequency() {
+    public double frequency() 
+    {
         return center_freq;
     }
 
-    public void configure(Type type, double center_freq, double sample_rate, double Q, double gainDB) {
+    public void configure(Type type, double center_freq, double sample_rate, double Q, double gainDB) 
+    {
         reset();
         Q = (Q == 0) ? 1e-9 : Q;
         this.type = type;
@@ -80,7 +84,8 @@ final public class IIRBiQuadraticFilter {
         reconfigure(center_freq);
     }
 
-    public void configure(Type type, double center_freq, double sample_rate, double Q) {
+    public void configure(Type type, double center_freq, double sample_rate, double Q) 
+    {
         configure(type, center_freq, sample_rate, Q, 0);
     }
 
@@ -167,7 +172,8 @@ final public class IIRBiQuadraticFilter {
     }
 
     // provide a static decibel result for testing
-    public double log_result(double f) {
+    public double log_result(double f) 
+    {
         double r;
         try {
             r = 10 * Math.log10(result(f));
@@ -181,12 +187,14 @@ final public class IIRBiQuadraticFilter {
     }
 
     // return the constant set for this filter
-    public double[] constants() {
+    public double[] constants() 
+    {
         return new double[]{b0, b1, b2, a1, a2};
     }
 
     // perform one filtering step
-    public double filter(double x) {
+    public double filter(double x) 
+    {
         y = b0 * x + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
         x2 = x1;
         x1 = x;

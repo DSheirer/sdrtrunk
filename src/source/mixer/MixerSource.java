@@ -34,7 +34,7 @@ import source.SourceException;
 
 public class MixerSource extends FloatArraySource
 {
-	private int mFrequency = 0;
+	private long mFrequency = 0;
 	private int mBufferSize = 16384;
 	
 	private BufferReader mBufferReader = new BufferReader();
@@ -141,7 +141,7 @@ public class MixerSource extends FloatArraySource
     /**
      * Returns the frequency of this source.  Default is 0.
      */
-    public int getFrequency() throws SourceException
+    public long getFrequency() throws SourceException
     {
 	    return mFrequency;
     }
@@ -151,7 +151,7 @@ public class MixerSource extends FloatArraySource
      * be useful if you are streaming an external audio source in through the
      * sound card and you want to specify a frequency for that source
      */
-    public void setFrequency( int frequency )
+    public void setFrequency( long frequency )
     {
     	mFrequency = frequency;
     }

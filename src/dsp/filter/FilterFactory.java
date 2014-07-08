@@ -50,7 +50,7 @@ public class FilterFactory
 	 * @return
 	 */
 	public static double[] getSinc( int sampleRate, 
-								    int frequency, 
+								    long frequency, 
 								    int length,
 								    WindowType window )
 	{
@@ -129,7 +129,7 @@ public class FilterFactory
 	 * @return
 	 */
 	public static double[] getUnityResponseArray( int sampleRate, 
-												  int frequency, 
+												  long frequency, 
 												  int length )
 	{
 		double[] unityArray = new double[ length * 2 ];
@@ -215,7 +215,7 @@ public class FilterFactory
 	 * @return
 	 */
 	public static double[] getLowPass( int sampleRate, 
-									   int cutoff, 
+									   long cutoff, 
 									   int filterLength, 
 									   WindowType windowType )
 	{
@@ -293,14 +293,14 @@ public class FilterFactory
 	 * @return
 	 */
 	public static double[] getHighPass( int sampleRate, 
-										int cutoff, 
+										long cutoff, 
 										int filterLength, 
 										WindowType windowType )
 	{
 		//Convert the high frequency cutoff to its low frequency cutoff 
 		//equivalent, so that when we generate the low pass filter, prior to 
 		//inversion, its at the correct frequency
-		int convertedCutoff = sampleRate / 2 - cutoff;
+		long convertedCutoff = sampleRate / 2 - cutoff;
 		
 		return invert( getSinc( sampleRate, 
 								convertedCutoff, 
@@ -309,8 +309,8 @@ public class FilterFactory
 	}
 	
 	public static double[] getHighPass( int sampleRate,
-										int stopFrequency,
-										int passFrequency,
+										long stopFrequency,
+										long passFrequency,
 										int attenuation,
 										WindowType windowType,
 										boolean forceOddLength )
@@ -376,8 +376,8 @@ public class FilterFactory
 	 * @return
 	 */
 	public static int getTapCount( int sampleRate, 
-								   int pass, 
-								   int stop, 
+								   long pass, 
+								   long stop, 
 								   int attenuation )
 	{
 		double frequency = ( (double)stop - (double)pass ) / (double)sampleRate;
@@ -386,8 +386,10 @@ public class FilterFactory
 	}
 	
 	public static ComplexFilter[] getDecimationFilters( int sampleRate, 
-			int decimatedRate, int passFrequency, int attenuation,
-			WindowType windowType )
+														int decimatedRate, 
+														long passFrequency, 
+														int attenuation,
+														WindowType windowType )
 	{
 		ComplexFilter[] filters;
 		
@@ -480,9 +482,9 @@ public class FilterFactory
 	 * @throws - AssertionException if sample rate is not a multiple of 48 kHz
 	 */
 	public static int[] getPolyphaseDecimationRates( int sampleRate, 
-													  int decimatedRate,
-													  int passFrequency,
-													  int stopFrequency )
+													 int decimatedRate,
+													 long passFrequency,
+													 long stopFrequency )
 	{
 		int[] rates;
 
@@ -609,8 +611,8 @@ public class FilterFactory
 	 */
 	public static int getOptimalStageOneRate( int sampleRate, 
 											  int decimation,
-											  int passFrequency,
-											  int stopFrequency )
+											  long passFrequency,
+											  long stopFrequency )
 	{
 		double ratio = getBandwidthRatio( passFrequency, stopFrequency );
 		
@@ -637,7 +639,7 @@ public class FilterFactory
 	 * Used in conjunction with the optimal stage one decimation rate method
 	 * above.
 	 */
-	private static double getBandwidthRatio( int passFrequency, int stopFrequency )
+	private static double getBandwidthRatio( long passFrequency, long stopFrequency )
 	{
 		assert( passFrequency < stopFrequency );
 

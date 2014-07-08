@@ -36,7 +36,7 @@ public class TunerNode extends BaseNode implements FrequencyChangeListener
 	private static DecimalFormat FREQUENCY_FORMAT = new DecimalFormat( "0.00000" );
 	private static DecimalFormat SAMPLE_RATE_FORMAT = new DecimalFormat( "0.000" );
     
-    private int mFrequency;
+    private long mFrequency;
     private int mBandwidth;
 
 	public TunerNode( Tuner tuner )
@@ -117,7 +117,7 @@ public class TunerNode extends BaseNode implements FrequencyChangeListener
 	}
 
 	@Override
-    public void frequencyChanged( int frequency, int bandwidth )
+    public void frequencyChanged( long frequency, int bandwidth )
     {
 		mFrequency = frequency;
 		mBandwidth = bandwidth;
