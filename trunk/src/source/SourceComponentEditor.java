@@ -73,7 +73,8 @@ public class SourceComponentEditor extends AbstractChannelEditor
 					}
 					
 					//Change to the new one
-					mEditor = SourceEditorFactory.getPanel( config );
+					mEditor = SourceEditorFactory.getPanel( 
+						mChannelNode.getModel().getResourceManager(), config );
 					
 					//Add it to the jpanel
 					add( mEditor, "span 2" );

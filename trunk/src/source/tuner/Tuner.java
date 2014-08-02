@@ -31,7 +31,8 @@ import controller.ThreadPoolManager;
  * Tuner - provides tuner channel sources, representing a channel frequency
  */
 public abstract class Tuner implements FrequencyChangeBroadcaster,
-									   FrequencyChangeListener
+									   FrequencyChangeListener,
+									   TunerChannelProvider
 {
 	private String mName;
 

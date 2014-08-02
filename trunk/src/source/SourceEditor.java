@@ -19,20 +19,28 @@ package source;
 
 import source.config.SourceConfiguration;
 import controller.Editor;
+import controller.ResourceManager;
 
 public abstract class SourceEditor extends Editor
 {
     private static final long serialVersionUID = 1L;
 
+    protected ResourceManager mResourceManager;
     protected SourceConfiguration mConfig;
 	
-	public SourceEditor( SourceConfiguration config )
+	public SourceEditor( ResourceManager resourceManager, SourceConfiguration config )
 	{
+		mResourceManager = resourceManager;
 		mConfig = config;
 	}
 
 	public SourceConfiguration getConfig()
 	{
 		return mConfig;
+	}
+	
+	public ResourceManager getResourceManager()
+	{
+		return mResourceManager;
 	}
 }

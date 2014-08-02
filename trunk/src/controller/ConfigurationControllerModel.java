@@ -31,6 +31,7 @@ import javax.swing.tree.TreePath;
 import map.IconManager;
 import playlist.PlaylistNode;
 import source.config.SourceConfigTuner;
+import source.recording.RecordingGroupNode;
 import source.tuner.Tuner;
 import source.tuner.TunerGroupNode;
 import source.tuner.TunerNode;
@@ -61,8 +62,8 @@ public class ConfigurationControllerModel extends DefaultTreeModel
 
     
     private PlaylistNode mPlaylistNode;
-    
     private TunerGroupNode mTunerGroupNode;
+    private RecordingGroupNode mRecordingGroupNode;
     
     private IconManager mIconManagerFrame;
 
@@ -114,17 +115,24 @@ public class ConfigurationControllerModel extends DefaultTreeModel
 	public void init()
 	{
     	/**
-    	 * Add the root tuner group node
+    	 * Add the tuner group node
     	 */
     	mTunerGroupNode = new TunerGroupNode();
     	insertNodeInto( mTunerGroupNode, (MutableTreeNode)root, 0 );
     	addTuners( mTunerGroupNode );
     	
+    	/**
+    	 * Add the recording group node
+    	 */
+    	mRecordingGroupNode = new RecordingGroupNode();
+    	insertNodeInto( mRecordingGroupNode, (MutableTreeNode)root, 1 );
+    	mRecordingGroupNode.loadRecordings();
+    	
 		/**
 		 * Add the playlist node
 		 */
     	mPlaylistNode = new PlaylistNode();
-    	insertNodeInto( mPlaylistNode, (MutableTreeNode)root, 1 );
+    	insertNodeInto( mPlaylistNode, (MutableTreeNode)root, 2 );
     	mPlaylistNode.loadPlaylist();
 	}
 	

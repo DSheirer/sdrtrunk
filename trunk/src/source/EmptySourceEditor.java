@@ -20,14 +20,16 @@ package source;
 import javax.swing.JLabel;
 
 import source.config.SourceConfiguration;
+import controller.ResourceManager;
 
 public class EmptySourceEditor extends SourceEditor
 {
     private static final long serialVersionUID = 1L;
 
-	public EmptySourceEditor( SourceConfiguration config )
+	public EmptySourceEditor( ResourceManager resourceManager, 
+							  SourceConfiguration config )
 	{
-		super( config );
+		super( resourceManager, config );
 		
 		initGUI();
 	}

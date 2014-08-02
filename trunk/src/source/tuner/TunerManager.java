@@ -65,15 +65,15 @@ public class TunerManager
      * Iterates current tuners to get a tuner channel source for the frequency
      * specified in the channel config's source config object
      */
-    public Source getSource( ProcessingChain channel )
+    public Source getSource( ProcessingChain processingChain )
     {
     	TunerChannelSource retVal = null;
 
     	
-    	if( channel.getChannel().getSourceConfiguration()
+    	if( processingChain.getChannel().getSourceConfiguration()
     						instanceof SourceConfigTuner )
     	{
-    		TunerChannel tunerChannel = channel.getChannel().getTunerChannel();
+    		TunerChannel tunerChannel = processingChain.getChannel().getTunerChannel();
 			
 			Iterator<Tuner> it = mTuners.iterator();
 			

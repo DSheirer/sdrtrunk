@@ -15,9 +15,11 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package instrument.gui;
+package instrument.tap.stream;
 
-import instrument.tap.stream.SymbolEventTap;
+import instrument.gui.SampleModel;
+import instrument.tap.Tap;
+import instrument.tap.TapViewPanel;
 
 import java.awt.Color;
 import java.awt.FontMetrics;
@@ -28,36 +30,31 @@ import java.awt.geom.Rectangle2D;
 import java.util.List;
 import java.util.Observable;
 
-import log.Log;
-import dsp.fsk.SymbolEvent;
-
-public class SymbolEventTapViewPanel extends TapViewPanel
+public class BinaryTapViewPanel extends TapViewPanel
 {
-    private static final long serialVersionUID = 1L;
-
-    private SymbolEventTap mTap;
-	private List<SymbolEvent> mSamples;
+	private Tap mTap;
+	private List<Boolean> mSamples;
 	private int mSampleCount;
+	private int mOffset = 0;
 
-	public SymbolEventTapViewPanel( SymbolEventTap tap )
+	public BinaryTapViewPanel( BinaryTap tap )
 	{
-		super( new SampleModel<SymbolEvent>(), tap.getName() );
+		super( new SampleModel<Boolean>(), tap.getName() );
 		
 		mTap = tap;
 		mTap.addListener( getModel() );
 		
-		mSampleCount = (int)( getModel().getSampleCount() * tap.getSampleRateRatio() );
-
-		getModel().setSampleCount( mSampleCount );
-
+		getModel().setSampleCount( 
+			(int)( getModel().getSampleCount() * tap.getSampleRateRatio() ) );
+		
 		getModel().setDelay( tap.getDelay() );
 	}
 	
 	@Override
     public void update( Observable arg0, Object arg1 )
     {
-		mSamples = (List<SymbolEvent>)getModel().getSamples();
-
+		mSamples = (List<Boolean>)getModel().getSamples();
+		mSampleCount = getModel().getSampleCount();
 		repaint();
     }
 	
@@ -84,7 +81,7 @@ public class SymbolEventTapViewPanel extends TapViewPanel
 
 			for( int x = 1; x < mSamples.size(); x++ )
 			{
-				paint( g, x, mSamples.get( x ) );
+				paintBit( g, x, mSamples.get( x ) );
 			}
 		}
 		
@@ -99,12 +96,10 @@ public class SymbolEventTapViewPanel extends TapViewPanel
 	 * @param index - index of the sample int the sample buffer
 	 * @param value - bit value, 0 or 1
 	 */
-	private void paint( Graphics graphics, int index, SymbolEvent symbol )
+	private void paintBit( Graphics graphics, int index, boolean value )
 	{
 		Graphics2D g2 = (Graphics2D)graphics;
 
-		g2.setColor( getForeground() );
-		
 		Path2D.Float polyline = 
 		        new Path2D.Float( Path2D.Float.WIND_EVEN_ODD, mSamples.size() );
 		
@@ -124,8 +119,8 @@ public class SymbolEventTapViewPanel extends TapViewPanel
 		/* Left horizonal segment */
 		polyline.lineTo( leftX, middleY );
 
-		float y = ( symbol.getDecision() ? ( middleY - ( middleY * 0.5f) ) : 
-			( middleY + ( middleY * 0.5f) ) );
+		float y = ( value ? ( middleY - ( middleY * 0.5f) ) : 
+							( middleY + ( middleY * 0.5f) ) );
 
 		/* Left vertical segment */
 		polyline.lineTo( leftX, y );
@@ -142,50 +137,19 @@ public class SymbolEventTapViewPanel extends TapViewPanel
 		g2.draw( polyline );
 		
 		/* Draw the bit value label */
-		String bit = symbol.getDecision() ? "1" : "0";
+		String bit = value ? "1" : "0";
 
         FontMetrics fontMetrics = graphics.getFontMetrics( this.getFont() );
         
         Rectangle2D label = fontMetrics.getStringBounds( bit, graphics );
         
         float offsetX = (float)label.getWidth() / 2.0f;
-        float offsetY = (float)label.getHeight() / 2.0f;
+        float offsetY = (float)label.getWidth() / 2.0f;
 
         float middleX = startX + ( indexWidth / 2.0f );
         
         graphics.drawString( bit, 
         					 (int)( middleX - offsetX ), 
-        					 (int)( middleY - ( ( middleY < y ) ? offsetY : -( 2.0f * offsetY ) ) ) );
-        
-        /* Draw samples */
-        float sampleWidth = ( rightX - leftX ) / (float)( symbol.getSamplesPerSymbol() + 1 );
-
-        g2.setColor( Color.GREEN );
-        
-        for( int x = 0; x < symbol.getSamplesPerSymbol(); x++ )
-        {
-    		Path2D.Float line = 
-		        new Path2D.Float( Path2D.Float.WIND_EVEN_ODD, 2 );
-
-    		float sampleX = leftX + ( ( x + 1 ) * sampleWidth );
-    		
-//    		line.moveTo( sampleX, middleY );
-    		line.moveTo( sampleX, ( symbol.getBitSet().get( x ) ?
-    								middleY - ( middleY * .05f ) :
-    								middleY + ( middleY * .05f ) ) );
-    		
-    		float sampleY = ( symbol.getBitSet().get( x ) ? 
-    						( middleY - ( middleY * 0.45f ) ) : 
-    						( middleY + ( middleY * 0.45f ) ) );
-    		
-    		line.lineTo( sampleX, sampleY );
-    		
-    		g2.draw( line );
-
-            graphics.drawString( symbol.getShift().getLabel(), 
-					 (int)( middleX - offsetX ), 
-					 (int)( y - ( ( y < middleY ) ? offsetY : -( 2.0f * offsetY ) ) ) );
-    		
-        }
+        					 (int)( middleY - offsetY ) );
 	}
 }

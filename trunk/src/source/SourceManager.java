@@ -40,7 +40,7 @@ public class SourceManager {
 		mResourceManager = resourceManager;
 	}
 	
-	public Source getSource( ProcessingChain channel )
+	public Source getSource( ProcessingChain channel ) throws SourceException
 	{
 		Source retVal = null;
 
@@ -55,6 +55,9 @@ public class SourceManager {
 				case TUNER:
 					retVal = mResourceManager.getTunerManager().getSource( channel );
 					break;
+				case RECORDING:
+					retVal = mResourceManager.getRecordingSourceManager()
+									.getSource( channel );
 				case NONE:
 				default:
 					break;

@@ -368,15 +368,23 @@ public abstract class RTL2832TunerController extends TunerController
 			
 			if( claim( iface ) )
 			{
+				Log.debug( "RTL2832 - usb interface claimed" );
+				
 				/* Perform a dummy write to see if the device needs reset */
 				writeRegister( device, Block.USB, Address.USB_SYSCTL.getAddress(), 0x09, 1 );
+
+				Log.debug( "RTL2832 - initializing baseband" );
 
 				/* Initialize the baseband */
 				initBaseband( device );
 
+				Log.debug( "RTL2832 - enabling I2C repeater" );
+
 				enableI2CRepeater( device, true );
 				
 				boolean controlI2CRepeater = false;
+
+				Log.debug( "RTL2832 - testing for tuner types" );
 
 				/* Test for each tuner type until we find the correct one */
 				if( isE4000Tuner( device, controlI2CRepeater ) )
@@ -404,7 +412,11 @@ public abstract class RTL2832TunerController extends TunerController
 					tunerClass =  TunerType.FITIPOWER_FC0012;
 				}
 				
+				Log.debug( "RTL2832 - disabling I2C repeater" );
+
 				enableI2CRepeater( device, false );
+
+				Log.debug( "RTL2832 - releasing USB interface" );
 
 				iface.release();
 			}
@@ -412,7 +424,7 @@ public abstract class RTL2832TunerController extends TunerController
 		catch( Exception e )
 		{
 			Log.error( "RTL2832TunerController - error while determining "
-					+ "tuner type - " + e.getLocalizedMessage() );
+					+ "tuner type - ", e );
 		}
 		
 		return tunerClass;
@@ -927,6 +939,8 @@ public abstract class RTL2832TunerController extends TunerController
 	protected static boolean isE4000Tuner( UsbDevice device, 
 			boolean controlI2CRepeater ) throws UsbClaimException
 	{
+		Log.debug( "RTL2832 - testing for E4000 tuner" );
+
 		try
 		{
 			int value = readI2CRegister( device, E4K_I2C_ADDRESS, 
@@ -974,6 +988,7 @@ public abstract class RTL2832TunerController extends TunerController
 											boolean controlI2CRepeater )
 									throws UsbClaimException
 	{
+		Log.debug( "RTL2832 - testing for F0013 tuner" );
 		try
 		{
 			int value = readI2CRegister( device, FC0013_I2C_ADDRESS, 
@@ -1030,6 +1045,7 @@ public abstract class RTL2832TunerController extends TunerController
 	protected static boolean isR820TTuner( UsbDevice device, 
 			boolean controlI2CRepeater ) throws UsbClaimException
 	{
+		Log.debug( "RTL2832 - testing for R820T tuner" );
 		try
 		{
 			int value = readI2CRegister( device, R820T_I2C_ADDRESS, 

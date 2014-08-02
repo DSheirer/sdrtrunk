@@ -21,8 +21,8 @@ public enum SourceType
 {
 	NONE( "No Source" ),
 	MIXER( "Mixer/Sound Card" ),
-	TUNER( "Tuner" );
-//	WAVE( "Wave File" );
+	TUNER( "Tuner" ),
+	RECORDING( "IQ Recording" );
 	
     private String mDisplayString;
     

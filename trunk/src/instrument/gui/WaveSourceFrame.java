@@ -46,6 +46,7 @@ import decode.fleetsync2.Fleetsync2Decoder;
 import decode.ltrnet.LTRNetDecoder;
 import decode.mdc1200.MDCDecoder;
 import decode.mpt1327.MPT1327Decoder;
+import decode.p25.P25Decoder;
 import decode.passport.PassportDecoder;
 
 public class WaveSourceFrame extends JInternalFrame implements PositionListener
@@ -146,6 +147,10 @@ public class WaveSourceFrame extends JInternalFrame implements PositionListener
 							break;
 						case PASSPORT:
 							decoder = new PassportDecoder( SampleType.FLOAT, null );
+							break;
+						case P25:
+							decoder = new P25Decoder( SampleType.FLOAT, null );
+							break;
 					}
 
 					if( decoder != null )
