@@ -27,6 +27,7 @@ import javax.swing.JLabel;
 import source.SourceEditor;
 import source.config.SourceConfigMixer;
 import source.config.SourceConfiguration;
+import controller.ResourceManager;
 
 public class MixerEditor extends SourceEditor
 {
@@ -36,9 +37,10 @@ public class MixerEditor extends SourceEditor
     protected Mixer.Info mSelectedMixer = null;
     
 
-	public MixerEditor( SourceConfiguration config )
+	public MixerEditor( ResourceManager resourceManager, 
+						SourceConfiguration config )
 	{
-		super( config );
+		super( resourceManager, config );
 		
 		initGUI();
 	}

@@ -15,10 +15,11 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package instrument.gui;
+package instrument.tap.stream;
 
+import instrument.gui.SampleModel;
 import instrument.tap.Tap;
-import instrument.tap.stream.FloatTap;
+import instrument.tap.TapViewPanel;
 
 import java.awt.Color;
 import java.awt.Graphics;
@@ -30,14 +31,14 @@ import java.util.Observable;
 
 import log.Log;
 
-public class FloatTapViewPanel extends TapViewPanel
+public class FloatTapPhaseViewPanel extends TapViewPanel
 {
     private static final long serialVersionUID = 1L;
 	private Tap mTap;
 	private List<Float> mSamples;
 	private int mSampleCount;
 
-	public FloatTapViewPanel( FloatTap tap )
+	public FloatTapPhaseViewPanel( FloatTap tap )
 	{
 		super( new SampleModel<Float>(), tap.getName() );
 		
@@ -106,9 +107,9 @@ public class FloatTapViewPanel extends TapViewPanel
 	{
 		int middle = (int)( getHeight() / 2 );
 		
-		float scaledValue = value / (float)Short.MAX_VALUE;
+		double scaledValue = Math.asin( value );
 		
-		float y = middle - ( middle * scaledValue * mVerticalZoom );
+		float y = middle - (float)( middle * scaledValue * mVerticalZoom );
 
 		/* Clip y to zero as necessary */
 		y = ( y < 0 ) ? 0 : y;

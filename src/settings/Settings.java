@@ -26,10 +26,8 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 
 import map.DefaultIcon;
 import map.MapIcon;
-
-import org.jdesktop.swingx.mapviewer.GeoPosition;
-
 import settings.ColorSetting.ColorSettingName;
+import source.recording.RecordingConfiguration;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerConfigurationAssignment;
 import source.tuner.TunerType;
@@ -50,6 +48,7 @@ import source.tuner.rtl.r820t.R820TTunerConfiguration;
 			   MapViewSetting.class,
 			   MapIcon.class,
 			   R820TTunerConfiguration.class,
+			   RecordingConfiguration.class,
 			   Setting.class,
 			   TunerConfiguration.class, 
 			   TunerConfigurationAssignment.class} )
@@ -65,10 +64,35 @@ public class Settings
 	private ArrayList<TunerConfigurationAssignment> mConfigurationAssignments =
 			new ArrayList<TunerConfigurationAssignment>();
 	
+	private ArrayList<RecordingConfiguration> mRecordingConfigurations =
+			new ArrayList<RecordingConfiguration>();
+
 	public Settings()
 	{
 	}
 
+	@XmlElement( name="recording_configuration" )
+	public ArrayList<RecordingConfiguration> getRecordingConfigurations()
+	{
+		return mRecordingConfigurations;
+	}
+	
+	public void setRecordingConfigurations( ArrayList<RecordingConfiguration> configs )
+	{
+		mRecordingConfigurations = configs;
+	}
+	
+	public void addRecordingConfiguration( RecordingConfiguration config )
+	{
+		mRecordingConfigurations.add( config );
+		
+	}
+	
+	public void removeRecordingConfiguration( RecordingConfiguration config )
+	{
+		mRecordingConfigurations.remove( config );
+	}
+	
 	@XmlElement( name="tuner_configuration" )
 	public ArrayList<TunerConfiguration> getTunerConfigurations()
 	{

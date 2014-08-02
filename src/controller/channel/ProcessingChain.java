@@ -41,6 +41,7 @@ import source.FloatArraySource;
 import source.FloatSource;
 import source.Source;
 import source.Source.SampleType;
+import source.SourceException;
 import source.config.SourceConfigMixer;
 import source.tuner.Tuner;
 import source.tuner.TunerChannelSource;
@@ -256,8 +257,18 @@ public class ProcessingChain implements Listener<Message>
 		/* Get a new source if needed and start the sample processor thread */
 		if( mChannel.getEnabled() && mResourceManager != null )
 		{
-			mSource = mResourceManager.getSourceManager()
-								.getSource( ProcessingChain.this );
+			try
+            {
+	            mSource = mResourceManager.getSourceManager()
+	            					.getSource( ProcessingChain.this );
+            }
+            catch ( SourceException e )
+            {
+            	Log.error( "Couldn't obtain source for processing chain [" + 
+            					toString() + "] - " + e.getLocalizedMessage() );
+            	
+            	mSource = null;
+            }
 
 			if( mSource != null )
 			{

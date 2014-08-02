@@ -45,6 +45,7 @@ import org.jdesktop.swingx.mapviewer.GeoPosition;
 
 import properties.SystemProperties;
 import settings.ColorSetting.ColorSettingName;
+import source.recording.RecordingConfiguration;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerConfigurationAssignment;
 import source.tuner.TunerType;
@@ -515,6 +516,23 @@ public class SettingsManager
 		save();
 		
 		broadcastSettingChange( setting );
+	}
+	
+	public ArrayList<RecordingConfiguration> getRecordingConfigurations()
+	{
+		return mSettings.getRecordingConfigurations();
+	}
+	
+	public void addRecordingConfiguration( RecordingConfiguration config )
+	{
+		mSettings.addRecordingConfiguration( config );
+		save();
+	}
+	
+	public void removeRecordingConfiguration( RecordingConfiguration config )
+	{
+		mSettings.removeRecordingConfiguration( config );
+		save();
 	}
 	
 	public ArrayList<TunerConfiguration> getTunerConfigurations( TunerType type )

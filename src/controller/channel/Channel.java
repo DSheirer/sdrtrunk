@@ -40,6 +40,7 @@ import record.config.RecordConfiguration;
 import sample.Listener;
 import source.SourceType;
 import source.config.SourceConfigFactory;
+import source.config.SourceConfigRecording;
 import source.config.SourceConfigTuner;
 import source.config.SourceConfiguration;
 import source.tuner.TunerChannel;
@@ -343,6 +344,14 @@ public class Channel extends Configuration
 
             retVal = new TunerChannel( Type.LOCKED, config.getFrequency(), 
                     mDecodeConfiguration.getDecoderType().getChannelBandwidth() );
+        }
+        else if( mSourceConfiguration.getSourceType() == SourceType.RECORDING )
+        {
+            SourceConfigRecording config = 
+            		(SourceConfigRecording)mSourceConfiguration;
+
+            retVal = new TunerChannel( Type.LOCKED, config.getFrequency(), 
+                mDecodeConfiguration.getDecoderType().getChannelBandwidth() );
         }
         
         return retVal;

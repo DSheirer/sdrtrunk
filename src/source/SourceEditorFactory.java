@@ -19,25 +19,31 @@ package source;
 
 import source.config.SourceConfiguration;
 import source.mixer.MixerEditor;
+import source.recording.RecordingEditor;
 import source.tuner.TunerEditor;
+import controller.ResourceManager;
 
 public class SourceEditorFactory
 {
-	public static SourceEditor getPanel( SourceConfiguration config )
+	public static SourceEditor getPanel( ResourceManager resourceManager,
+										 SourceConfiguration config )
 	{
 		SourceEditor configuredPanel;
 		
 		switch( config.getSourceType() )
 		{
 			case MIXER:
-				configuredPanel = new MixerEditor( config );
+				configuredPanel = new MixerEditor( resourceManager, config );
 				break;
 			case TUNER:
-				configuredPanel = new TunerEditor( config );
+				configuredPanel = new TunerEditor( resourceManager, config );
+				break;
+			case RECORDING:
+				configuredPanel = new RecordingEditor( resourceManager, config );
 				break;
 			case NONE:
 			default:
-				configuredPanel = new EmptySourceEditor( config );
+				configuredPanel = new EmptySourceEditor( resourceManager, config );
 				break;
 		}
 		

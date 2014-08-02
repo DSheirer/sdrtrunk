@@ -15,45 +15,47 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package source.tuner;
+package source.config;
 
-import gui.control.JFrequencyControl;
-import source.SourceEditor;
-import source.config.SourceConfigTuner;
-import source.config.SourceConfiguration;
-import controller.ResourceManager;
+import javax.xml.bind.annotation.XmlAttribute;
 
-public class TunerEditor extends SourceEditor
+import source.SourceType;
+
+public class SourceConfigRecording extends SourceConfiguration
 {
-    private static final long serialVersionUID = 1L;
-    private JFrequencyControl mFrequencyControl;
-    
-	public TunerEditor( ResourceManager resourceManager, 
-						SourceConfiguration config )
+	private String mRecordingAlias;
+	private long mFrequency;
+	
+	public SourceConfigRecording()
+    {
+	    super( SourceType.RECORDING );
+    }
+	
+	@XmlAttribute( name = "recording_alias" )
+	public String getRecordingAlias()
 	{
-		super( resourceManager, config );
-		
-		initGUI();
+		return mRecordingAlias;
+	}
+	
+	public void setRecordingAlias( String alias )
+	{
+		mRecordingAlias = alias;
 	}
 
-	public void reset()
+	@XmlAttribute( name = "frequency" )
+	public long getFrequency()
 	{
-		mFrequencyControl.setFrequency( 
-				((SourceConfigTuner)mConfig).getFrequency(), false );
+		return mFrequency;
 	}
 	
-	public void save()
+	public void setFrequency( long frequency )
 	{
-		((SourceConfigTuner)mConfig).setFrequency( mFrequencyControl.getFrequency() );
+		mFrequency = frequency;
 	}
-	
-	private void initGUI()
-	{
-		mFrequencyControl = new JFrequencyControl();
-		
-		mFrequencyControl.setFrequency( 
-				((SourceConfigTuner)mConfig).getFrequency(), false );
-		
-		add( mFrequencyControl );
-	}
+
+	@Override
+    public String getDescription()
+    {
+	    return getRecordingAlias();
+    }
 }

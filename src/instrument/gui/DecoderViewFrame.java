@@ -19,9 +19,13 @@ package instrument.gui;
 
 import instrument.Instrumentable;
 import instrument.tap.Tap;
+import instrument.tap.TapViewPanel;
 import instrument.tap.stream.BinaryTap;
+import instrument.tap.stream.BinaryTapViewPanel;
 import instrument.tap.stream.FloatTap;
+import instrument.tap.stream.FloatTapViewPanel;
 import instrument.tap.stream.SymbolEventTap;
+import instrument.tap.stream.SymbolEventTapViewPanel;
 
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -51,7 +55,9 @@ import decode.Decoder;
 public class DecoderViewFrame extends JInternalFrame 
 							  implements PositionListener, Listener<Message>
 {
-	private Decoder mDecoder;
+    private static final long serialVersionUID = 1L;
+
+    private Decoder mDecoder;
 	private WaveSource mWaveSource;
 	
 	private HashMap<Tap,TapViewPanel> mPanelMap = 

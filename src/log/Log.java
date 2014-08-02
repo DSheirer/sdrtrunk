@@ -86,6 +86,32 @@ public class Log
 		System.out.println( ( label == null ? "" : label + ": " ) + msg );
 	}
 	
+	private static void log( String msg, String label, Throwable throwable )
+	{
+		StringBuilder sb = new StringBuilder();
+		
+		if( msg != null )
+		{
+			sb.append( msg );
+			sb.append( "\n" );
+		}
+
+		sb.append( "---- STACK TRACE ----\n" );
+		sb.append( "\tERROR: " );
+		sb.append( throwable.getLocalizedMessage() + "\n" );
+		
+		StackTraceElement[] stack = throwable.getStackTrace();
+		
+		for( StackTraceElement element: stack )
+		{
+			sb.append( "\t" );
+			sb.append( element.toString() );
+			sb.append( "\n" );
+		}
+
+		log( sb.toString(), label );
+	}
+	
 	public static void header( String name )
 	{
 		StringBuilder sb = new StringBuilder();
@@ -138,11 +164,21 @@ public class Log
     	log( msg, "ERROR" );
     }
     
+    public static void error( String msg, Throwable throwable )
+    {
+    	log( msg, "ERROR", throwable );
+    }
+    
     public static void debug( String msg )
     {
     	log( msg, "DEBUG" );
     }
 
+    public static void debug( String msg, Throwable throwable )
+    {
+    	log( msg, "DEBUG", throwable );
+    }
+ 
     /**
      * Initializes logging to the specified filename
      */

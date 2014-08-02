@@ -22,6 +22,7 @@ import playlist.PlaylistManager;
 import record.RecorderManager;
 import settings.SettingsManager;
 import source.SourceManager;
+import source.recording.RecordingSourceManager;
 import source.tuner.TunerManager;
 import controller.channel.ChannelManager;
 import eventlog.EventLogManager;
@@ -35,6 +36,7 @@ public class ResourceManager
     private EventLogManager mEventLogManager;
     private PlaylistManager mPlaylistManager;
     private RecorderManager mRecorderManager;
+    private RecordingSourceManager mRecordingSourceManager;
 	private SettingsManager mSettingsManager;
     private SourceManager mSourceManager;
     private TunerManager mTunerManager;
@@ -66,6 +68,7 @@ public class ResourceManager
     	 */
     	mChannelManager = new ChannelManager( this );
     	mSourceManager = new SourceManager( this );
+    	mRecordingSourceManager = new RecordingSourceManager( this );
     	mTunerManager = new TunerManager( this );
     	mController = new ConfigurationControllerModel( this );
     	mMapService = new MapService( this );    
@@ -145,6 +148,16 @@ public class ResourceManager
     public void setSourceManager( SourceManager sourceManager )
     {
     	mSourceManager = sourceManager;
+    }
+    
+    public RecordingSourceManager getRecordingSourceManager()
+    {
+    	return mRecordingSourceManager;
+    }
+    
+    public void setRecordingSourceManager( RecordingSourceManager manager )
+    {
+    	mRecordingSourceManager = manager;
     }
 
     public ChannelManager getChannelManager()

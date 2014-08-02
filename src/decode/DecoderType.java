@@ -31,7 +31,8 @@ public enum DecoderType
     MDC1200( "MDC1200", "MDC1200", "images/fm", 12500 ),
     MPT1327( "MPT1327", "MPT1327", "images/mpt1327", 12500 ),
     NBFM( "NBFM", "NBFM", "images/fm", 12500 ),
-    PASSPORT( "Passport", "Passport", "images/passport", 12500 );
+    PASSPORT( "Passport", "Passport", "images/passport", 12500 ),
+    P25( "P25", "P25", "images/p25", 12500 );
     
     private String mDisplayString;
     private String mShortDisplayString;
@@ -68,7 +69,8 @@ public enum DecoderType
     	                   DecoderType.LTR_NET,
     					   DecoderType.MDC1200,
     					   DecoderType.MPT1327,
-    					   DecoderType.PASSPORT );
+    					   DecoderType.PASSPORT,
+    					   DecoderType.P25 );
     }
     
     /**
