@@ -28,7 +28,7 @@
     # [NBFM]
     # [Passport]
   # Logging
-    # Application Log
+    # [ApplicationLog Application Log]
     # [EventLogger Event Log]
   # [Recorder]
   # Sources
