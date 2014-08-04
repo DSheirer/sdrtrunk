@@ -82,7 +82,9 @@ public class MPT1327Decoder extends Decoder implements Instrumentable
     private MessageFramer mTrafficMessageFramer;
     private MPT1327MessageProcessor mMessageProcessor;
 
-    public MPT1327Decoder( SampleType sampleType, AliasList aliasList )
+    public MPT1327Decoder( SampleType sampleType, 
+    					   AliasList aliasList,
+    					   Sync sync )
 	{
     	super( sampleType );
 
@@ -134,13 +136,13 @@ public class MPT1327Decoder extends Decoder implements Instrumentable
 
         /* Message framer for control channel messages */
         mControlMessageFramer = 
-        		new MessageFramer( SyncPattern.MPT1327_CONTROL.getPattern(), 
+        		new MessageFramer( sync.getControlSyncPattern().getPattern(), 
         						   sMESSAGE_LENGTH );
         mSymbolBroadcaster.addListener( mControlMessageFramer );
 
         /* Message framer for traffic channel massages */
         mTrafficMessageFramer = 
-        		new MessageFramer( SyncPattern.MPT1327_TRAFFIC.getPattern(), 
+        		new MessageFramer( sync.getTrafficSyncPattern().getPattern(), 
         								sMESSAGE_LENGTH );
         mSymbolBroadcaster.addListener( mTrafficMessageFramer );
 
@@ -280,4 +282,47 @@ public class MPT1327Decoder extends Decoder implements Instrumentable
 		        break;
 		}
     }
+
+	public enum Sync
+	{
+		NORMAL( "Normal", 
+				SyncPattern.MPT1327_CONTROL, 
+				SyncPattern.MPT1327_TRAFFIC ),
+		FRENCH( "French", 
+				SyncPattern.MPT1327_CONTROL_FRENCH, 
+				SyncPattern.MPT1327_TRAFFIC );
+		
+		private String mLabel;
+		private SyncPattern mControlSyncPattern;
+		private SyncPattern mTrafficSyncPattern;
+
+		private Sync( String label, 
+					  SyncPattern controlPattern, 
+					  SyncPattern trafficPattern )
+		{
+			mLabel = label;
+			mControlSyncPattern = controlPattern;
+			mTrafficSyncPattern = trafficPattern;
+		}
+		
+		public String getLabel()
+		{
+			return mLabel;
+		}
+		
+		public SyncPattern getControlSyncPattern()
+		{
+			return mControlSyncPattern;
+		}
+		
+		public SyncPattern getTrafficSyncPattern()
+		{
+			return mTrafficSyncPattern;
+		}
+		
+		public String toString()
+		{
+			return getLabel();
+		}
+	}
 }

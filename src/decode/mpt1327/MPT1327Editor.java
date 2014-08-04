@@ -28,12 +28,14 @@ import controller.channel.ChannelNode;
 import decode.DecodeEditor;
 import decode.config.DecodeConfigMPT1327;
 import decode.config.DecodeConfiguration;
+import decode.mpt1327.MPT1327Decoder.Sync;
 
 public class MPT1327Editor extends DecodeEditor
 {
     private static final long serialVersionUID = 1L;
     
     private JComboBox<ChannelMap> mComboChannelMaps;
+    private JComboBox<Sync> mComboSync;
     private ChannelNode mChannelNode;
 
 	public MPT1327Editor( DecodeConfiguration config, ChannelNode channelNode )
@@ -62,24 +64,41 @@ public class MPT1327Editor extends DecodeEditor
 		add( new JLabel( "Channel Map" ), "wrap" );
 		add( mComboChannelMaps, "wrap" );
 		
+		mComboSync = new JComboBox<Sync>();
+		mComboSync.setModel( new DefaultComboBoxModel<Sync>( Sync.values() ) );
+		
+		add( new JLabel( "Sync" ), "wrap" );
+		add( mComboSync, "wrap" );
+		
 		reset();
 	}
 	
 	@Override
     public void save()
 	{
+		DecodeConfigMPT1327 config = (DecodeConfigMPT1327)mConfig;
+		
 		ChannelMap selected = (ChannelMap)mComboChannelMaps.getSelectedItem();
 		
 		if( selected != null )
 		{
-			((DecodeConfigMPT1327)mConfig).setChannelMapName( selected.getName() );
+			config.setChannelMapName( selected.getName() );
+		}
+		
+		Sync selectedSync = (Sync)mComboSync.getSelectedItem();
+		
+		if( selectedSync != null )
+		{
+			config.setSync( selectedSync );
 		}
     }
 
 	@Override
     public void reset()
     {
-		String name = ((DecodeConfigMPT1327)mConfig).getChannelMapName();
+		DecodeConfigMPT1327 config = (DecodeConfigMPT1327)mConfig;
+		
+		String name = config.getChannelMapName();
 
 		ChannelMap selected = null;
 
@@ -99,5 +118,7 @@ public class MPT1327Editor extends DecodeEditor
 		mComboChannelMaps.setSelectedItem( selected );
 		mComboChannelMaps.requestFocus();
 		mComboChannelMaps.requestFocusInWindow();
+		
+		mComboSync.setSelectedItem( config.getSync() );
     }
 }

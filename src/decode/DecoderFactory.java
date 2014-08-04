@@ -79,7 +79,11 @@ public class DecoderFactory
 						ltrNetConfig.getMessageDirection() );
 				break;
 			case MPT1327:
-				retVal = new MPT1327Decoder( sampleType, aliasList );
+				DecodeConfigMPT1327 mptConfig = (DecodeConfigMPT1327)config;
+
+				
+				retVal = new MPT1327Decoder( sampleType, aliasList, 
+									mptConfig.getSync() );
 				break;
 			case PASSPORT:
 				retVal = new PassportDecoder( sampleType, aliasList );
