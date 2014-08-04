@@ -17,13 +17,16 @@
  ******************************************************************************/
 package decode.config;
 
+import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 
 import decode.DecoderType;
+import decode.mpt1327.MPT1327Decoder.Sync;
 
 public class DecodeConfigMPT1327 extends DecodeConfiguration
 {
 	private String mChannelMapName;
+	private Sync mSync = Sync.NORMAL;
 	
 	public DecodeConfigMPT1327()
     {
@@ -39,5 +42,16 @@ public class DecodeConfigMPT1327 extends DecodeConfiguration
 	public void setChannelMapName( String name )
 	{
 		mChannelMapName = name;
+	}
+
+	@XmlAttribute( name="sync" )
+	public Sync getSync()
+	{
+		return mSync;
+	}
+	
+	public void setSync( Sync sync )
+	{
+		mSync = sync;
 	}
 }
