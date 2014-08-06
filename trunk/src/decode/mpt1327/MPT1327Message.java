@@ -109,7 +109,7 @@ public class MPT1327Message extends Message
                     checkParity( 1, BLOCK_2_START, BLOCK_3_START );
                     checkParity( 2, BLOCK_3_START, BLOCK_4_START );
                     checkParity( 3, BLOCK_4_START, BLOCK_5_START );
-                    checkParity( 3, BLOCK_5_START, BLOCK_5_END );
+                    checkParity( 4, BLOCK_5_START, BLOCK_5_END );
                     break;
             	case ACK:
             	case ACKB:
