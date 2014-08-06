@@ -127,8 +127,22 @@ public class MPT1327Decoder extends Decoder implements Instrumentable
 					, 2.0 ); //Gain
 		mDecimationFilter.setListener( mLowPassFilter );
 
-		/* 2FSK Decoder with output inverted */
-		mFSKDecoder = new FSK2Decoder( 24000, 1200, Output.INVERTED );
+		/** 
+		 * Normal: 2FSK Decoder with inverted output 
+		 * French: 2FSK Decoder with normal output
+		 */
+		if( sync == Sync.NORMAL )
+		{
+			mFSKDecoder = new FSK2Decoder( 24000, 1200, Output.INVERTED );
+		}
+		else if( sync == Sync.FRENCH )
+		{
+			mFSKDecoder = new FSK2Decoder( 24000, 1200, Output.NORMAL );
+		}
+		else
+		{
+			throw new IllegalArgumentException( "MPT1327 Decoder - unrecognized Sync type" );
+		}
 		mLowPassFilter.setListener( mFSKDecoder );
 		
 		mSymbolBroadcaster = new Broadcaster<Boolean>();
@@ -290,7 +304,7 @@ public class MPT1327Decoder extends Decoder implements Instrumentable
 				SyncPattern.MPT1327_TRAFFIC ),
 		FRENCH( "French", 
 				SyncPattern.MPT1327_CONTROL_FRENCH, 
-				SyncPattern.MPT1327_TRAFFIC );
+				SyncPattern.MPT1327_TRAFFIC_FRENCH );
 		
 		private String mLabel;
 		private SyncPattern mControlSyncPattern;
