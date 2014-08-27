@@ -21,3 +21,7 @@ The Passport decoder provides signalling-based squelch control.  If you have a d
 If you are in the United States, and your Passport network occasionally broadcasts its FCC station callsign, then add the following alias to each alias list you are using for Passport:
 
   * 65535 FCC CWID
+
+== Passport Decode Example ==
+
+http://sdrtrunk.googlecode.com/svn/wiki/images/passport_decoding.png
