@@ -53,7 +53,8 @@ public class MPT1327Message extends Message
 	/* Block 1 Fields */
 	private static int[] B1_PREFIX = { 21,22,23,24,25,26,27 };
 	private static int[] B1_IDENT1 = { 28,29,30,31,32,33,34,35,36,37,38,39,40 };
-	private static int[] B1_IDENT2 = { 53,54,55,56,57,58,59,60,61,62,63,64,65 };
+	private static int[] B1_IDENT2_GTC = { 53,54,55,56,57,58,59,60,61,62,63,64,65 };
+	private static int[] B1_IDENT2 = { 50,51,52,53,54,55,56,57,58,59,60,61,62 };
 	private static int[] B1_GTC_CHAN = { 43,44,45,46,47,48,49,50,51,52 }; 
 	private static int[] B1_MESSAGE_TYPE = { 41,42,43,44,45,46,47,48,49 };
 	private static int[] B1_STATUS_MESSAGE = { 66,67,68,69,70 };
@@ -63,6 +64,9 @@ public class MPT1327Message extends Message
 	private static int[] B1_TRAFFIC_CHANNEL = { 21,22,23,24,25,26,27,28,29,30 };
 	private static int[] B1_CONTROL_CHANNEL = { 31,32,33,34,35,36,37,38,39,40 };
 	private static int[] B1_ADJSITE = { 49,50,51,52 };
+	private static int[] B1_SLOTS = { 63,64 };
+	private static int[] B1_DESCRIPTOR = { 65,66,67 };
+	
 	
 	/* Block 2 Fields */
 	private static int[] B2_SYSTEM_ID = { 85,86,87,88,89,90,91,92,93,94,95,96,97,98,99 };
@@ -292,9 +296,26 @@ public class MPT1327Message extends Message
     	return mMessage.getInt( B1_IDENT1 );
     }
     
+    public IdentType getIdent1Type()
+    {
+    	return IdentType.fromIdent( getIdent1() );
+    }
+    
     public int getIdent2()
     {
-    	return mMessage.getInt( B1_IDENT2 );
+    	if( getMessageType() == MPTMessageType.GTC )
+    	{
+        	return mMessage.getInt( B1_IDENT2_GTC );
+    	}
+    	else
+    	{
+        	return mMessage.getInt( B1_IDENT2 );
+    	}
+    }
+    
+    public IdentType getIdent2Type()
+    {
+    	return IdentType.fromIdent( getIdent2() );
     }
     
     public int getBlock2Ident2()
@@ -368,7 +389,7 @@ public class MPT1327Message extends Message
     	return sb.toString();
     }
     
-	@Override
+    @Override
     public String getMessage()
     {
     	StringBuilder sb = new StringBuilder();
@@ -378,18 +399,53 @@ public class MPT1327Message extends Message
     	switch( mMessageType )
     	{
     		case ACK:
-    			sb.append( " MESSAGE ACKNOWLEDGED" );
+    			sb.append( " ACKNOWLEDGE " );
 
     			if( hasFromID() )
     			{
-        			sb.append( " FROM:" );
         			sb.append( getFromID() );
+    			}
+
+    			IdentType type = getIdent1Type();
+    			
+    			switch( type )
+    			{
+    				case ALLI:
+    				case IPFIXI:
+    				case PABXI:
+    				case PSTNGI:
+    				case PSTNSI1:
+    				case PSTNSI2:
+    				case PSTNSI3:
+    				case PSTNSI4:
+    				case PSTNSI5:
+    				case PSTNSI6:
+    				case PSTNSI7:
+    				case PSTNSI8:
+    				case PSTNSI9:
+    				case PSTNSI10:
+    				case PSTNSI11:
+    				case PSTNSI12:
+    				case PSTNSI13:
+    				case PSTNSI14:
+    				case PSTNSI15:
+    				case USER:
+    					sb.append( type.getLabel() );
+    					sb.append( " CALL REQUEST" );
+    					break;
+    				case TSCI:
+    					sb.append( " RQQ or RQC TRANSACTION" );
+    					break;
+    				case DIVERTI:
+    					sb.append( " CANCELLATION OF CALL DIVERSION REQUEST" );
+    					break;
+					default:
+						sb.append( " " );
+						sb.append( type.getLabel() );
+						sb.append( " REQUEST" );
     			}
     			break;
     		case ACKI:
-    			sb.append( " SYSTEM:" );
-    			sb.append( format( getSiteID(), 5 ) );
-
     			sb.append( " MESSAGE ACKNOWLEDGED - MORE TO FOLLOW" );
 
     			if( hasFromID() )
@@ -461,8 +517,12 @@ public class MPT1327Message extends Message
     			}
     			break;
     		case AHYC:
-    			/* SDM */
-    			sb.append( " SHORT DATA INVITATION MESSAGE ********* " );
+    			sb.append( " FM:" );
+				sb.append( getFromID() );
+    			sb.append( " TO:" );
+    			sb.append( getToID() );
+    			sb.append( " " );
+    			sb.append( getRequestString() );
     			break;
     		case AHYQ:
     			/* Status Message */
@@ -574,6 +634,66 @@ public class MPT1327Message extends Message
 	    // TODO Auto-generated method stub
 	    return null;
     }
+	
+	/**
+	 * Translates the AHYC request from the values in ident1 and ident2
+	 */
+	public String getRequestString()
+	{
+		StringBuilder sb = new StringBuilder();
+		
+		IdentType type2 = getIdent2Type();
+		
+		if( type2 == IdentType.USER )
+		{
+			IdentType type1 = getIdent1Type();
+			
+			Slots slots = getSlots();
+
+			switch( type1 )
+			{
+				case DIVERTI:
+					sb.append( "SEND BLOCKED ADDRESS FOR THIRD-PARTY CALL DIVERSION USING " );
+					sb.append( slots.getLabel() );
+					break;
+				case IPFIXI:
+					sb.append( "SEND INTER-PREFIX CALL EXTENDED ADDRESSING INFORMATION USING " );
+					sb.append( slots.getLabel() );
+					break;
+				case PABXI:
+					sb.append( "SEND PABX EXTENSION USING" );
+					sb.append( slots.getLabel() );
+					break;
+				case PSTNGI:
+					if( slots == Slots.SLOTS_1 )
+					{
+						sb.append( "SEND UP TO 9 PSTN DIALED DIGITS" );
+					}
+					else if( slots == Slots.SLOTS_2 )
+					{
+						sb.append( "SEND 10 TO 31 PSTN DIALED DIGITS" );
+					}
+					else
+					{
+						sb.append( "SEND PSTN DIALED DIGITS USING " );
+						sb.append( slots.getLabel() );
+					}
+					break;
+				case SDMI:
+					sb.append( "SEND SHORT DATA MESSAGE USING " );
+					sb.append( slots.getLabel() );
+					break;
+			}
+		}
+		else
+		{
+			/* MODE 2 */
+			sb.append( "SEND " );
+			sb.append( getDescriptor().getMode2Label() );
+		}
+		
+		return sb.toString();
+	}
 
 	@Override
     public String getFromID()
@@ -657,7 +777,7 @@ public class MPT1327Message extends Message
     			sb.append( "PSTN GATEWAY" );
     			break;
     		case TSCI:
-    			sb.append( "CONTROLLER" );
+    			sb.append( "SYSTEM CONTROLLER" );
     			break;
     		case DIVERTI:
     			sb.append( "CALL DIVERT" );
@@ -670,6 +790,16 @@ public class MPT1327Message extends Message
 	public boolean hasToID()
 	{
 		return getToID() != null;
+	}
+	
+	public Descriptor getDescriptor()
+	{
+		return Descriptor.fromNumber( mMessage.getInt( B1_DESCRIPTOR ) );
+	}
+	
+	public Slots getSlots()
+	{
+		return Slots.fromNumber( mMessage.getInt( B1_SLOTS ) );
 	}
 
 	@Override
@@ -699,36 +829,36 @@ public class MPT1327Message extends Message
 	
 	public enum IdentType
 	{
-		ALLI( "All Subscribers" ),
-		DIVERTI( "Divert" ),
-		DNI( "Data Network Gateway" ),
-		DUMMYI( "Dummy Ident" ),
-		INCI( "Include in Call" ),
-		IPFIXI( "Inter-Prefix" ),
-		PABXI( "PABX Gateway" ),
-		PSTNGI( "PSTN Gateway" ),
-		PSTNSI1( "PSTN or Network 1" ),
-		PSTNSI2( "PSTN or Network 2" ),
-		PSTNSI3( "PSTN or Network 3" ),
-		PSTNSI4( "PSTN or Network 4" ),
-		PSTNSI5( "PSTN or Network 5" ),
-		PSTNSI6( "PSTN or Network 6" ),
-		PSTNSI7( "PSTN or Network 7" ),
-		PSTNSI8( "PSTN or Network 8" ),
-		PSTNSI9( "PSTN or Network 9" ),
-		PSTNSI10( "PSTN or Network 10" ),
-		PSTNSI11( "PSTN or Network 11" ),
-		PSTNSI12( "PSTN or Network 12" ),
-		PSTNSI13( "PSTN or Network 13" ),
-		PSTNSI14( "PSTN or Network 14" ),
-		PSTNSI15( "PSTN or Network 15" ),
-		REGI( "Registration" ),
-		RESERVED( "Reserved" ),
-		SDMI( "Short Data Message" ),
-		SPARE( "Spare" ),
-		TSCI( "TSC" ),
-		USER( "Individual or Group Ident" ),
-		UNKNOWN( "Unknown" );
+		ALLI( "SYSTEM-WIDE" ),
+		DIVERTI( "DIVERT" ),
+		DNI( "DATA NETWORK GATEWAY" ),
+		DUMMYI( "DUMMY IDENT" ),
+		INCI( "INCLUDE IN CALL" ),
+		IPFIXI( "INTER-PREFIX" ),
+		PABXI( "PABX GATEWAY" ),
+		PSTNGI( "PSTN GATEWAY" ),
+		PSTNSI1( "PSTN OR NETWORK 1" ),
+		PSTNSI2( "PSTN OR NETWORK 2" ),
+		PSTNSI3( "PSTN OR NETWORK 3" ),
+		PSTNSI4( "PSTN OR NETWORK 4" ),
+		PSTNSI5( "PSTN OR NETWORK 5" ),
+		PSTNSI6( "PSTN OR NETWORK 6" ),
+		PSTNSI7( "PSTN OR NETWORK 7" ),
+		PSTNSI8( "PSTN OR NETWORK 8" ),
+		PSTNSI9( "PSTN OR NETWORK 9" ),
+		PSTNSI10( "PSTN OR NETWORK 10" ),
+		PSTNSI11( "PSTN OR NETWORK 11" ),
+		PSTNSI12( "PSTN OR NETWORK 12" ),
+		PSTNSI13( "PSTN OR NETWORK 13" ),
+		PSTNSI14( "PSTN OR NETWORK 14" ),
+		PSTNSI15( "PSTN OR NETWORK 15" ),
+		REGI( "REGISTRATION" ),
+		RESERVED( "RESERVED" ),
+		SDMI( "SHORT DATA MESSAGE" ),
+		SPARE( "SPARE" ),
+		TSCI( "SYSTEM CONTROLLER" ),
+		USER( "COMMON-PREFIX IDENT" ),
+		UNKNOWN( "UNKNOWN" );
 		
 		private String mLabel;
 		
@@ -821,6 +951,94 @@ public class MPT1327Message extends Message
 		}
 	}
 	
+	public enum Descriptor
+	{
+		DESC_0( "EXTENDED ADDRESSING INFORMATION", "SERIAL NUMBER" ),
+		DESC_1( "PSTN DIALED DIGITS", "RESERVED" ),
+		DESC_2( "PABX EXTENSION", "RESERVED" ),
+		RESERVED( "RESERVED", "RESERVED" ),
+		UNKNOWN( "UNKNOWN", "UNKNOWN" );
+		
+		private String mMode1Label;
+		private String mMode2Label;
+		
+		private Descriptor( String mode1Label, String mode2Label )
+		{
+			mMode1Label = mode1Label;
+			mMode2Label = mode2Label;
+		}
+		
+		public String getMode1Label()
+		{
+			return mMode1Label;
+		}
+		
+		public String getMode2Label()
+		{
+			return mMode2Label;
+		}
+		
+		public static Descriptor fromNumber( int number )
+		{
+			switch( number )
+			{
+				case 0:
+					return DESC_0;
+				case 1:
+					return DESC_1;
+				case 2:
+					return DESC_2;
+				case 3:
+				case 4:
+				case 5:
+				case 6:
+				case 7:
+					return RESERVED;
+				default:
+					return UNKNOWN;
+			}
+		}
+	}
+	
+	public enum Slots
+	{
+		SLOTS_0( "RESERVED" ),
+		SLOTS_1( "ADDRESS CODEWORD ONLY" ),
+		SLOTS_2( "ADDRESS CODEWORD & 1-2 DATA CODEWORDS" ),
+		SLOTS_3( "ADDRESS CODEWORD & 3-4 DATA CODEWORDS" ),
+		UNKNOWN( "UNKNOWN" );
+
+		private String mLabel;
+		
+		private Slots( String label )
+		{
+			mLabel = label;
+		}
+		
+		public String getLabel()
+		{
+			return mLabel;
+		}
+		
+		public static Slots fromNumber( int number )
+		{
+			switch( number )
+			{
+				case 0:
+					return SLOTS_0;
+				case 1:
+					return SLOTS_1;
+				case 2:
+					return SLOTS_2;
+				case 3:
+					return SLOTS_3;
+				default:
+					return UNKNOWN;
+			}
+		}
+	}
+	
+
 	public enum SystemDefinition
 	{
 		UNKNOWN( "UNKNOWN" ),

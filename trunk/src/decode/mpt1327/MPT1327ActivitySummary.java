@@ -73,6 +73,9 @@ public class MPT1327ActivitySummary implements ActivitySummaryProvider,
 						mIdents.add( mpt.getFromID() );
 						mIdents.add( mpt.getToID() );
 						break;
+					case AHYC:
+						mIdents.add( mpt.getToID() );
+						break;
 					case ALH:
 						mSite = mpt.getSiteID();
 						break;
