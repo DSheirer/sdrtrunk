@@ -31,6 +31,7 @@ import controller.channel.ProcessingChain;
 import controller.state.AuxChannelState;
 import controller.state.ChannelState;
 import decode.config.DecodeConfigMPT1327;
+import decode.mpt1327.MPT1327Message.IdentType;
 
 public class MPT1327ChannelState extends ChannelState
 {
@@ -94,12 +95,40 @@ public class MPT1327ChannelState extends ChannelState
 			{
 				switch( mpt.getMessageType() )
 				{
+					case ACK:
+						IdentType identType = ( (MPT1327Message) message ).getIdent1Type();
+
+						if( identType == IdentType.REGI )
+						{
+							mCallEventModel.add( 
+									new MPT1327CallEvent.Builder( CallEventType.REGISTER )
+										.aliasList( getProcessingChain().getAliasList() )
+										.channel( mChannelNumber )
+										.details( "REGISTERED ON NETWORK" )
+										.frequency( mChannelMap.getFrequency( mChannelNumber ) )
+										.from( mpt.getToID() )
+										.to( mpt.getFromID() )
+										.build() );
+						}
+						else
+						{
+							mCallEventModel.add( 
+									new MPT1327CallEvent.Builder( CallEventType.ACKNOWLEDGE )
+										.aliasList( getProcessingChain().getAliasList() )
+										.channel( mChannelNumber )
+										.details( "ACK " + identType.getLabel() )
+										.frequency( mChannelMap.getFrequency( mChannelNumber ) )
+										.from( mpt.getFromID() )
+										.to( mpt.getToID() )
+										.build() );
+						}
+						break;
 					case AHYC:
 						mCallEventModel.add( 
-								new MPT1327CallEvent.Builder( CallEventType.SDM )
+								new MPT1327CallEvent.Builder( CallEventType.REQUEST )
 									.aliasList( getProcessingChain().getAliasList() )
 									.channel( mChannelNumber )
-									.details( "Short Data Message" )
+									.details( ( (MPT1327Message) message ).getRequestString() )
 									.frequency( mChannelMap.getFrequency( mChannelNumber ) )
 									.from( mpt.getFromID() )
 									.to( mpt.getToID() )
