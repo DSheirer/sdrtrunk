@@ -202,6 +202,7 @@ public abstract class CallEvent
 		PAGE( "Page" ),
 		REGISTER( "Register" ),
 		REGISTER_ESN( "ESN" ),
+		REQUEST( "Request" ),
 		SDM( "SDM" ),
 		STATUS( "Status" ),
 		UNKNOWN( "Unknown" );

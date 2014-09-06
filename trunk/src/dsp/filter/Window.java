@@ -157,7 +157,7 @@ public class Window
      */
     public static float[] apply( double[] coefficients, float[] samples )
     {
-		for( int x = 0; x < samples.length; x++ )
+		for( int x = 0; x < coefficients.length; x++ )
 		{
 		    samples[ x ] = (float)( samples[ x ] * coefficients[ x ] );
 		}
@@ -177,7 +177,7 @@ public class Window
      */
     public static double[] apply( double[] coefficients, double[] samples )
     {
-		for( int x = 0; x < samples.length; x++ )
+		for( int x = 0; x < coefficients.length; x++ )
 		{
 		    samples[ x ] = samples[ x ] * coefficients[ x ];
 		}
@@ -231,9 +231,4 @@ public class Window
 		
 		return sb.toString();
 	}
-
-	public static void main( String[] args )
-    {
-    	System.out.println(  arrayToString( getBlackmanWindow( 31 ), false ) );
-    }
 }

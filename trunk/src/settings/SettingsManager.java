@@ -143,6 +143,33 @@ public class SettingsManager
 		return mSettings.getSetting( name );
 	}
 	
+	public IntegerSetting getIntegerSetting( String name, int defaultValue )
+	{
+		IntegerSetting setting = mSettings.getIntegerSetting( name );
+		
+		if( setting == null )
+		{
+			setting = new IntegerSetting( name, defaultValue );
+			
+			mSettings.addSetting( setting );
+			
+			save();
+		}
+		
+		return setting;
+	}
+
+	public void setIntegerSetting( String name, int value )
+	{
+		IntegerSetting setting = getIntegerSetting( name, value );
+		
+		setting.setValue( value );
+		
+		save();
+		
+		broadcastSettingChange( setting );
+	}
+	
 	/**
 	 * Returns the current setting, or if the setting doesn't exist
 	 * returns a newly created setting with the specified parameters

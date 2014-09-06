@@ -22,8 +22,10 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import log.Log;
+
+import org.jtransforms.fft.DoubleFFT_1D;
+
 import dsp.filter.Window.WindowType;
-import edu.emory.mathcs.jtransforms.fft.DoubleFFT_1D;
 
 public class FilterFactory
 {

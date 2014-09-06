@@ -145,8 +145,8 @@ public class SDRTrunk
     	
     	JideSplitPane splitPane = new JideSplitPane( JideSplitPane.VERTICAL_SPLIT );
     	splitPane.setDividerSize( 5 );
-    	splitPane.add( "Denny", mSpectralPanel );
-    	splitPane.add( "Denny2", mControllerPanel );
+    	splitPane.add( mSpectralPanel );
+    	splitPane.add( mControllerPanel );
 
     	mMainGui.add( splitPane, "cell 0 0,span,grow");
     	
@@ -174,13 +174,13 @@ public class SDRTrunk
         
         JMenuItem exitMenu = new JMenuItem( "Exit" );
         exitMenu.addActionListener( 
-        		new ActionListener() 
-        		{
-        			public void actionPerformed( ActionEvent event )
-        			{
-        				System.exit( 0 );
-        			}
-        		}
+    		new ActionListener() 
+    		{
+    			public void actionPerformed( ActionEvent event )
+    			{
+    				System.exit( 0 );
+    			}
+    		}
         );
         
         fileMenu.add( exitMenu );

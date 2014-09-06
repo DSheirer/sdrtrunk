@@ -47,7 +47,8 @@ import controller.ResourceManager;
  */
 public class WaterfallPanel extends JPanel implements DFTResultsListener,
 													  Pausable,
-													  SettingChangeListener
+													  SettingChangeListener,
+													  SpectralDisplayAdjuster
 {
     private static final long serialVersionUID = 1L;
 	private static DecimalFormat sCURSOR_FORMAT = new DecimalFormat( "000.00000" );
@@ -61,11 +62,7 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
     private ColorModel mColorModel = WaterfallColorModel.getDefaultColorModel();
 	private Color mColorSpectrumCursor;
     private Image mWaterfallImage;
-
-    float mAverage = 0.0f;
-    double mAlpha = 0.95d;
-    int mScalor = 85;
-    int temp = 0;
+    private int mBaseline = 50;
 
 	private Point mCursorLocation = new Point( 0, 0 );
 	private boolean mCursorVisible = false;
@@ -108,7 +105,7 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 
         mWaterfallImage = createImage( mMemoryImageSource );
 	}
-
+	
 	/**
 	 * Pausable interface - pauses updates to the screen
 	 */
@@ -210,9 +207,9 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
     public void receive( float[] update )
     {
 		//If our FFT size changes, reset our pixel map and image source
-		if( mFFTSize != update.length )
+		if( mFFTSize != update.length - 1 )
 		{
-			mFFTSize = update.length;
+			mFFTSize = update.length - 1;
 
 			reset();
 		}
@@ -221,37 +218,41 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 		System.arraycopy( mPixels, 0, 
 				mPixels, mFFTSize, mPixels.length - mFFTSize );
 		
-		//Convert the power spectrum bin values into a byte (0-255)
-		//value to use with the color mapping
+		float baseline = mBaseline / 50.0f; 
 		
-		double averagingTotal = 0.0;
+		/**
+		 * Scale the power spectrum bin values into a byte range (0-255) value
+		 * using the last bin as the scaling factor
+		 */
+		float scale = 256.0f / update[ update.length - 1 ];
+
+		double sum = 0.0d;
 		
-		for( int x = 0; x < update.length; x++ )
+		for( int x = 0; x < update.length - 1; x++ )
 		{
-			float value = update[ x ];
-			
-			averagingTotal += value;
-
-			//Average the values toward zero
-			float pixel = value - mAverage;
-
-			//If we're below the average, make the negative value a positive
-			if( pixel < 0 )
-			{
-//				pixel = -pixel;
-				pixel = 0.0f;
-			}
-
-			//Scale the value
-			pixel *= mScalor;
-
-//			mPixels[ x ] = (byte)pixel;
-			mPixels[ x ] = (byte)( mIntraBinAveragingBuffer.get( pixel ) );
+			sum += update[ x ];
 		}
 		
-		//Update the average value
-		mAverage = (float) averagingTotal / update.length;
+		float average = (float)( sum / (double)update.length - 1 );
+		
+		for( int x = 0; x < update.length - 1; x++ )
+		{
+			float value = ( update[ x ] - average ) * scale * baseline;
 
+			if( value < 0 )
+			{
+				mPixels[ x ] = 0;
+			}
+			else if( value > 255 )
+			{
+				mPixels[ x ] = (byte)255;
+			}
+			else
+			{
+				mPixels[ x ] = (byte)value;
+			}
+		}
+		
 		if( !mPaused.get() )
 		{
 			EventQueue.invokeLater( new Runnable() 
@@ -284,4 +285,42 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 
 	@Override
     public void settingDeleted( Setting setting ) {}
+
+	@Override
+	public void setBaseline( int baseline )
+	{
+		mBaseline = baseline;
+	}
+	
+	@Override
+	public int getBaseline()
+	{
+		return mBaseline;
+	}
+
+	@Override
+    public int getAmplification()
+    {
+		/* Not Implemented */
+		return 0;
+    }
+
+	@Override
+    public void setAmplification( int amplification )
+    {
+		/* Not Implemented */
+    }
+
+	@Override
+    public int getAveraging()
+    {
+		/* Not Implemented */
+	    return 0;
+    }
+
+	@Override
+    public void setAveraging( int averaging )
+    {
+		/* Not Implemented */
+    }
 }

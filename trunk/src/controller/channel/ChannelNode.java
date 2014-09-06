@@ -22,10 +22,8 @@ import java.text.DecimalFormat;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 
-import log.Log;
 import source.tuner.TunerChannel;
 import controller.ConfigurableNode;
-import controller.channel.Channel.ChannelEvent;
 import controller.site.SiteNode;
 import controller.system.SystemNode;
 
@@ -33,7 +31,7 @@ import controller.system.SystemNode;
  * A channel has all of the pieces needed to wire together a source, decoder,
  * event logger and recorder and be started and stopped.
  */
-public class ChannelNode extends ConfigurableNode implements ChannelListener
+public class ChannelNode extends ConfigurableNode implements ChannelEventListener
 {
     private static final long serialVersionUID = 1L;
     
@@ -73,9 +71,9 @@ public class ChannelNode extends ConfigurableNode implements ChannelListener
 	 * Listener method to receive channel changes from the underlying chnannel
 	 */
 	@Override
-    public void occurred( Channel channel, ChannelEvent event )
+    public void channelChanged( ChannelEvent event )
     {
-		switch( event )
+		switch( event.getEvent() )
 		{
 			/* Refresh the node for each of these events */
 			case CHANGE_DECODER:

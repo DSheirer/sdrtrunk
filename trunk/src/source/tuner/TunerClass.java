@@ -84,7 +84,7 @@ public enum TunerClass
 		return mVendorDescription + " " + mDeviceDescription;
 	}
 	
-	public TunerType getTunerClass()
+	public TunerType getTunerType()
 	{
 		return mTunerType;
 	}

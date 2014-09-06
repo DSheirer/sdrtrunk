@@ -40,12 +40,12 @@ import source.tuner.FrequencyChangeListener;
 import source.tuner.TunerChannel;
 import controller.ResourceManager;
 import controller.channel.Channel;
-import controller.channel.Channel.ChannelEvent;
 import controller.channel.Channel.ChannelType;
-import controller.channel.ChannelListener;
+import controller.channel.ChannelEvent;
+import controller.channel.ChannelEventListener;
 
 public class OverlayPanel extends JPanel 
-						   implements ChannelListener,
+						   implements ChannelEventListener,
 						   			  FrequencyChangeListener,
 						   			  SettingChangeListener
 {
@@ -362,7 +362,7 @@ public class OverlayPanel extends JPanel
     	for( Channel channel: mVisibleChannels )
     	{
     		//Choose the correct background color to use
-    		if( channel.getSelected() )
+    		if( channel.isSelected() )
     		{
             	graphics.setColor( mColorChannelConfigSelected );
     		}
@@ -510,9 +510,11 @@ public class OverlayPanel extends JPanel
 	 */
     @Override
 	@SuppressWarnings( "incomplete-switch" )
-	public void occurred( Channel channel, ChannelEvent component )
+	public void channelChanged( ChannelEvent event )
 	{
-		switch( component )
+    	Channel channel = event.getChannel();
+    	
+		switch( event.getEvent() )
 		{
 			case CHANNEL_ADDED:
 				if( !mChannels.contains( channel ) )

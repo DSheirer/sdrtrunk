@@ -45,6 +45,7 @@ import source.tuner.rtl.r820t.R820TTunerConfiguration;
 			   FCD1TunerConfiguration.class,
 			   FCD2TunerConfiguration.class,
 			   FileSetting.class,
+			   IntegerSetting.class,
 			   MapViewSetting.class,
 			   MapIcon.class,
 			   R820TTunerConfiguration.class,
@@ -172,6 +173,20 @@ public class Settings
 			if( setting instanceof DefaultIcon )
 			{
 				return (DefaultIcon)setting;
+			}
+		}
+		
+		return null;
+	}
+
+	public IntegerSetting getIntegerSetting( String name )
+	{
+		for( Setting setting: mSettings )
+		{
+			if( setting instanceof IntegerSetting &&
+				((IntegerSetting)setting).getName().contentEquals( name ) )
+			{
+				return (IntegerSetting)setting;
 			}
 		}
 		

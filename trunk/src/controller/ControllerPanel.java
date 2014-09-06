@@ -18,22 +18,27 @@
 package controller;
 
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import map.MapPanel;
 import message.Message;
 import net.miginfocom.swing.MigLayout;
 import sample.Listener;
+import spectrum.ChannelSpectrumPanel;
 
 import com.jidesoft.swing.JideSplitPane;
 import com.jidesoft.swing.JideTabbedPane;
 
 import controller.activity.CallEventPanel;
 import controller.activity.MessageActivityPanel;
+import controller.channel.ChannelManager;
 import controller.state.ChannelStateList;
 
 public class ControllerPanel extends JPanel
@@ -46,7 +51,9 @@ public class ControllerPanel extends JPanel
     
     private MessageActivityPanel mMessageActivityPanel = 
     		new MessageActivityPanel();
-
+    
+    private ChannelSpectrumPanel mChannelSpectrumPanel;
+    
     private JideTabbedPane mTabbedPane;
 
     protected ConfigurationTreePanel mSystemControlViewPanel;
@@ -79,13 +86,40 @@ public class ControllerPanel extends JPanel
     	mSystemControlSplitPane.add( mSystemControlViewPanel );
     	mSystemControlSplitPane.add( mConfigurationEditor );
     	
+    	mChannelSpectrumPanel = new ChannelSpectrumPanel( mResourceManager );
+    	
     	//Tabbed View - configuration, calls, messages, map
     	mTabbedPane = new JideTabbedPane();
     	mTabbedPane.setFont( this.getFont() );
     	mTabbedPane.setForeground( Color.BLACK );
     	mTabbedPane.addTab( "Configuration", mSystemControlSplitPane  );
-    	mTabbedPane.addTab( "Calls", mCallEventPanel );
+    	mTabbedPane.addTab( "Channel Spectrum", mChannelSpectrumPanel );
+    	mTabbedPane.addTab( "Events", mCallEventPanel );
     	mTabbedPane.addTab( "Messages", mMessageActivityPanel );
+
+    	/**
+    	 * Change listener to enable/disable the channel spectrum display
+    	 * only when the tab is visible, and a channel has been selected
+    	 */
+    	mTabbedPane.addChangeListener( new ChangeListener()
+		{
+			@Override
+			public void stateChanged( ChangeEvent event )
+			{
+				int index = mTabbedPane.getSelectedIndex();
+				
+				Component component = mTabbedPane.getComponentAt( index );
+				
+				if( component instanceof ChannelSpectrumPanel )
+				{
+					mChannelSpectrumPanel.setEnabled( true );
+				}
+				else
+				{
+					mChannelSpectrumPanel.setEnabled( false );
+				}
+			}
+		} );
 
     	/**
     	 * Add mapping services and map panel to a new tab
@@ -102,17 +136,13 @@ public class ControllerPanel extends JPanel
 		/* Channel state list */
     	mChannelStateList = new ChannelStateList( mResourceManager.getSettingsManager() );
 
-    	/* Add message activity panel to receive channel selection events so
-    	 * that we can display the correct message listings */
-    	mResourceManager.getChannelManager().addListener( mMessageActivityPanel );
-
-    	/* Add call event panel to receive channel selection events so
-    	 * that we can display the correct call event listings */
-    	mResourceManager.getChannelManager().addListener( mCallEventPanel );
-
-    	/* Register ChannelStateList as a listener on the channel manager to
-		 * receive channel starts and stops and deletes */
-		mResourceManager.getChannelManager().addListener( mChannelStateList );
+    	/* Register each of the components to receive channel events when the
+    	 * channels are selected or change */
+    	ChannelManager channelManager = mResourceManager.getChannelManager();
+    	channelManager.addListener( mCallEventPanel );
+    	channelManager.addListener( mChannelStateList );
+    	channelManager.addListener( mChannelSpectrumPanel );
+    	channelManager.addListener( mMessageActivityPanel );
 		
 		JScrollPane channelStateListScroll = new JScrollPane();
     	channelStateListScroll.getViewport().setView( mChannelStateList );

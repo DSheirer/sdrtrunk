@@ -23,10 +23,11 @@ import javax.swing.JTable;
 
 import net.miginfocom.swing.MigLayout;
 import controller.channel.Channel;
-import controller.channel.Channel.ChannelEvent;
-import controller.channel.ChannelListener;
+import controller.channel.ChannelEvent;
+import controller.channel.ChannelEvent.Event;
+import controller.channel.ChannelEventListener;
 
-public class CallEventPanel extends JPanel implements ChannelListener
+public class CallEventPanel extends JPanel implements ChannelEventListener
 {
     private static final long serialVersionUID = 1L;
 
@@ -46,31 +47,34 @@ public class CallEventPanel extends JPanel implements ChannelListener
 	}
 
 	@Override
-    public void occurred( Channel channel, ChannelEvent event )
+    public void channelChanged( ChannelEvent event )
     {
-		if( event == ChannelEvent.CHANGE_SELECTED && channel.getSelected() )
+		if( event.getEvent() == Event.CHANGE_SELECTED && 
+			event.getChannel().isSelected() )
 		{
 			if( mDisplayedChannel == null || 
-				( mDisplayedChannel != null && mDisplayedChannel != channel ) )
+				( mDisplayedChannel != null && 
+				  mDisplayedChannel != event.getChannel() ) )
 			{
 				removeAll();
 				
 				JScrollPane scroller = new JScrollPane(
-						channel.getProcessingChain().getChannelState()
+						event.getChannel().getProcessingChain().getChannelState()
 						.getCallEventTable() );
 
 				add( scroller );
 				
-				mDisplayedChannel = channel;
+				mDisplayedChannel = event.getChannel();
 				
 				revalidate();
 				repaint();
 			}
 		}
-		else if( event == ChannelEvent.PROCESSING_STOPPED ||
-				 event == ChannelEvent.CHANNEL_DELETED )
+		else if( event.getEvent() == Event.PROCESSING_STOPPED ||
+				 event.getEvent() == Event.CHANNEL_DELETED )
 		{
-			if( mDisplayedChannel != null && mDisplayedChannel == channel )
+			if( mDisplayedChannel != null && 
+				mDisplayedChannel == event.getChannel() )
 			{
 				mDisplayedChannel = null;
 				removeAll();

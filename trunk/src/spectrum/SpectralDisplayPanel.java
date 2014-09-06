@@ -29,6 +29,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.text.DecimalFormat;
+import java.text.Format;
 import java.util.ArrayList;
 
 import javax.swing.JCheckBoxMenuItem;
@@ -55,13 +56,21 @@ import source.SourceException;
 import source.tuner.FrequencyChangeListener;
 import source.tuner.Tuner;
 import source.tuner.TunerSelectionListener;
+import spectrum.converter.ComplexDecibelConverter;
+import spectrum.converter.DFTResultsConverter;
+import spectrum.menu.AmplificationItem;
+import spectrum.menu.AveragingItem;
+import spectrum.menu.BaselineItem;
+import spectrum.menu.FFTWidthItem;
+import spectrum.menu.FFTWindowTypeItem;
+import spectrum.menu.FrameRateItem;
 
 import com.jidesoft.swing.JideSplitPane;
 
 import controller.ResourceManager;
 import controller.channel.Channel;
-import controller.channel.Channel.ChannelEvent;
-import controller.channel.ChannelListener;
+import controller.channel.ChannelEvent;
+import controller.channel.ChannelEventListener;
 import decode.DecoderType;
 import dsp.filter.Window.WindowType;
 
@@ -74,7 +83,7 @@ import dsp.filter.Window.WindowType;
  * in the spectral and waterfall displays.
  */
 public class SpectralDisplayPanel extends JPanel 
-								  implements ChannelListener,
+								  implements ChannelEventListener,
 								  			 Listener<Float[]>,
 								  			 FrequencyChangeListener,
 								  			 SettingChangeListener,
@@ -98,8 +107,9 @@ public class SpectralDisplayPanel extends JPanel
     private JLayeredPane mLayeredPanel;
     private SpectrumPanel mSpectrumPanel;
     private WaterfallPanel mWaterfallPanel;
-    private OverlayPanel mChannelPanel;
+    private OverlayPanel mOverlayPanel;
     private DFTProcessor mDFTProcessor;
+    private DFTResultsConverter mDFTConverter;
     private ResourceManager mResourceManager;
 	private Tuner mTuner;
     
@@ -122,14 +132,17 @@ public class SpectralDisplayPanel extends JPanel
     	mDFTProcessor.dispose();
     	mDFTProcessor = null;
     	
+    	mDFTConverter.dispose();
+    	mDFTConverter = null;
+    	
     	mSpectrumPanel.dispose();
     	mSpectrumPanel = null;
     	
     	mWaterfallPanel.dispose();
     	mWaterfallPanel = null;
     	
-    	mChannelPanel.dispose();
-    	mChannelPanel = null;
+    	mOverlayPanel.dispose();
+    	mOverlayPanel = null;
     	
     	mResourceManager = null;
     	
@@ -193,9 +206,9 @@ public class SpectralDisplayPanel extends JPanel
 	@Override
     public void settingChanged( Setting setting )
     {
-		if( mChannelPanel != null )
+		if( mOverlayPanel != null )
 		{
-			mChannelPanel.settingChanged( setting );
+			mOverlayPanel.settingChanged( setting );
 		}
 		
 		if( mWaterfallPanel != null )
@@ -274,14 +287,14 @@ public class SpectralDisplayPanel extends JPanel
     	//Create the spectrum panel
     	mSpectrumPanel = new SpectrumPanel( mResourceManager );
 
-    	//Create the channel panel
-    	mChannelPanel = new OverlayPanel( mResourceManager );
-    	mChannelPanel.addMouseListener( mouser );
-    	mChannelPanel.addMouseMotionListener( mouser );
+    	//Create the overlay panel
+    	mOverlayPanel = new OverlayPanel( mResourceManager );
+    	mOverlayPanel.addMouseListener( mouser );
+    	mOverlayPanel.addMouseMotionListener( mouser );
 
     	//Add the spectrum and channel panels to the layered panel
     	mLayeredPanel.add( mSpectrumPanel, new Integer( 0 ), 0 );
-    	mLayeredPanel.add( mChannelPanel, new Integer( 1 ), 0 );
+    	mLayeredPanel.add( mOverlayPanel, new Integer( 1 ), 0 );
 
     	//Create the waterfall
     	mWaterfallPanel = new WaterfallPanel( mResourceManager );
@@ -311,8 +324,11 @@ public class SpectralDisplayPanel extends JPanel
     	 * spectrum panel to receive the processed dft results
     	 */
 		mDFTProcessor = new DFTProcessor( SampleType.COMPLEX );
-    	mDFTProcessor.addListener( (DFTResultsListener)mSpectrumPanel );
-    	mDFTProcessor.addListener( (DFTResultsListener)mWaterfallPanel );
+		mDFTConverter = new ComplexDecibelConverter();
+		mDFTProcessor.addConverter( mDFTConverter );
+		
+    	mDFTConverter.addListener( (DFTResultsListener)mSpectrumPanel );
+    	mDFTConverter.addListener( (DFTResultsListener)mWaterfallPanel );
     }
 
 	/**
@@ -321,17 +337,17 @@ public class SpectralDisplayPanel extends JPanel
 	@Override
     public void frequencyChanged( long frequency, int bandwidth )
     {
-		mChannelPanel.frequencyChanged( frequency, bandwidth );
+		mOverlayPanel.frequencyChanged( frequency, bandwidth );
 		mDFTProcessor.frequencyChanged( frequency, bandwidth );
     }
 
 	/**
-	 * Channel config change events
+	 * Channel change events
 	 */
 	@Override
-    public void occurred( Channel config, ChannelEvent component )
+    public void channelChanged( ChannelEvent event )
     {
-		mChannelPanel.occurred( config, component );
+		mOverlayPanel.channelChanged( event );
     }
 
 	@Override
@@ -402,7 +418,7 @@ public class SpectralDisplayPanel extends JPanel
 			Component c = e.getComponent();
 			
 			mSpectrumPanel.setBounds( 0, 0, c.getWidth(), c.getHeight() );
-			mChannelPanel.setBounds( 0, 0, c.getWidth(), c.getHeight() );
+			mOverlayPanel.setBounds( 0, 0, c.getWidth(), c.getHeight() );
         }
 
 		@Override
@@ -432,24 +448,24 @@ public class SpectralDisplayPanel extends JPanel
 		
 		private void update( MouseEvent event )
 		{
-			if( event.getComponent() == mChannelPanel )
+			if( event.getComponent() == mOverlayPanel )
 			{
-				mChannelPanel.setCursorLocation( event.getPoint() );
+				mOverlayPanel.setCursorLocation( event.getPoint() );
 			}
 			else
 			{
 				mWaterfallPanel.setCursorLocation( event.getPoint() );
 				mWaterfallPanel.setCursorFrequency( 
-					mChannelPanel.getFrequencyFromAxis( event.getPoint().x ) );
+				mOverlayPanel.getFrequencyFromAxis( event.getPoint().x ) );
 			}
 		}
 
 		@Override
         public void mouseEntered( MouseEvent e ) 
 		{
-			if( e.getComponent() == mChannelPanel )
+			if( e.getComponent() == mOverlayPanel )
 			{
-				mChannelPanel.setCursorVisible( true );
+				mOverlayPanel.setCursorVisible( true );
 			}
 			else
 			{
@@ -460,7 +476,7 @@ public class SpectralDisplayPanel extends JPanel
 		@Override
         public void mouseExited( MouseEvent e )
 		{
-			mChannelPanel.setCursorVisible( false );
+			mOverlayPanel.setCursorVisible( false );
 			mWaterfallPanel.setCursorVisible( false );
 		}
 
@@ -480,12 +496,12 @@ public class SpectralDisplayPanel extends JPanel
 				}
 
 				long frequency = 
-						mChannelPanel.getFrequencyFromAxis( event.getX() );
+						mOverlayPanel.getFrequencyFromAxis( event.getX() );
 				
-				if( event.getComponent() == mChannelPanel )
+				if( event.getComponent() == mOverlayPanel )
 				{
 					ArrayList<Channel> channels = 
-							mChannelPanel.getChannelsAtFrequency( frequency );
+							mOverlayPanel.getChannelsAtFrequency( frequency );
 
 					for( Channel channel: channels )
 					{
@@ -562,6 +578,44 @@ public class SpectralDisplayPanel extends JPanel
 				JMenu displayMenu = new JMenu( "Display" );
 				contextMenu.add(  displayMenu );
 
+				if( event.getComponent() == mWaterfallPanel )
+				{
+					/**
+					 * Baseline menu
+					 */
+					JMenu baselineMenu = new JMenu( "Baseline" );
+					baselineMenu.add( 
+							new BaselineItem( mWaterfallPanel, 50 ) );
+					displayMenu.add( baselineMenu );
+				}
+				else
+				{
+					/**
+					 * Amplification menu
+					 */
+					JMenu amplificationMenu = new JMenu( "Amplify" );
+					amplificationMenu.add( 
+							new AmplificationItem( mSpectrumPanel, 50 ) );
+					displayMenu.add( amplificationMenu );
+
+					/**
+					 * Averaging menu
+					 */
+					JMenu averagingMenu = new JMenu( "Average" );
+					averagingMenu.add( 
+							new AveragingItem( mSpectrumPanel, 4 ) );
+					displayMenu.add( averagingMenu );
+					
+					/**
+					 * Baseline menu
+					 */
+					JMenu baselineMenu = new JMenu( "Baseline" );
+					baselineMenu.add( 
+							new BaselineItem( mSpectrumPanel, 50 ) );
+					displayMenu.add( baselineMenu );
+				}
+
+				
 				/**
 				 * FFT width
 				 */
@@ -602,9 +656,9 @@ public class SpectralDisplayPanel extends JPanel
 
 				if( contextMenu != null )
 				{
-					if( event.getComponent() == mChannelPanel )
+					if( event.getComponent() == mOverlayPanel )
 					{
-						contextMenu.show( mChannelPanel, 
+						contextMenu.show( mOverlayPanel, 
 										  event.getX(), 
 										  event.getY() );
 					}
@@ -658,95 +712,6 @@ public class SpectralDisplayPanel extends JPanel
         }
 	}
 	
-	public class FFTWidthItem extends JCheckBoxMenuItem
-	{
-        private static final long serialVersionUID = 1L;
-
-        private DFTProcessor mDFTProcessor;
-        private FFTWidth mFFTWidth;
-        
-        public FFTWidthItem( DFTProcessor processor, FFTWidth width )
-        {
-        	super( width.getLabel() );
-        	
-        	mDFTProcessor = processor;
-        	mFFTWidth = width;
-
-        	if( processor.getFFTWidth() == mFFTWidth )
-        	{
-        		setSelected( true );
-        	}
-        	
-        	addActionListener( new ActionListener() 
-        	{
-				@Override
-                public void actionPerformed( ActionEvent arg0 )
-                {
-					mDFTProcessor.setFFTSize( mFFTWidth );
-                }
-			} );
-        }
-	}
-	
-	public class FFTWindowTypeItem extends JCheckBoxMenuItem
-	{
-        private static final long serialVersionUID = 1L;
-
-        private DFTProcessor mDFTProcessor;
-        private WindowType mWindowType;
-        
-        public FFTWindowTypeItem( DFTProcessor processor, WindowType windowType )
-        {
-        	super( windowType.toString() );
-        	
-        	mDFTProcessor = processor;
-        	mWindowType = windowType;
-
-        	if( processor.getWindowType() == mWindowType )
-        	{
-        		setSelected( true );
-        	}
-        	
-        	addActionListener( new ActionListener() 
-        	{
-				@Override
-                public void actionPerformed( ActionEvent arg0 )
-                {
-					mDFTProcessor.setWindowType( mWindowType );
-                }
-			} );
-        }
-	}
-	
-	public class FrameRateItem extends JCheckBoxMenuItem
-	{
-        private static final long serialVersionUID = 1L;
-
-        private DFTProcessor mDFTProcessor;
-        private int mFrameRate;
-        
-        public FrameRateItem( DFTProcessor processor, int frameRate )
-        {
-        	super( String.valueOf( frameRate ) );
-        	
-        	mDFTProcessor = processor;
-        	mFrameRate = frameRate;
-
-        	if( processor.getFrameRate() == mFrameRate )
-        	{
-        		setSelected( true );
-        	}
-        	
-        	addActionListener( new ActionListener() 
-        	{
-				@Override
-                public void actionPerformed( ActionEvent arg0 )
-                {
-					mDFTProcessor.setFrameRate( mFrameRate );
-                }
-			} );
-        }
-	}
 	
 	/**
 	 * Context menu item to provide one-click access to starting a channel

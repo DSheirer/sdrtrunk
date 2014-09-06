@@ -412,7 +412,7 @@ public abstract class RTL2832TunerController extends TunerController
 					tunerClass =  TunerType.FITIPOWER_FC0012;
 				}
 				
-				Log.debug( "RTL2832 - disabling I2C repeater" );
+				Log.debug( "RTL2832 - disabling I2C repeater -- detected tuner type:" + tunerClass.toString() );
 
 				enableI2CRepeater( device, false );
 

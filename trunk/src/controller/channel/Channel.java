@@ -47,6 +47,7 @@ import source.tuner.TunerChannel;
 import source.tuner.TunerChannel.Type;
 import controller.ResourceManager;
 import controller.activity.ActivitySummaryFrame;
+import controller.channel.ChannelEvent.Event;
 import controller.config.Configuration;
 import controller.site.Site;
 import controller.state.ChannelState;
@@ -71,8 +72,8 @@ public class Channel extends Configuration
 	private static final boolean DISABLED = false;
 	private static final boolean BROADCAST_CHANGE = true;
 	
-	private CopyOnWriteArrayList<ChannelListener> mChannelListeners =
-				new CopyOnWriteArrayList<ChannelListener>();
+	private CopyOnWriteArrayList<ChannelEventListener> mChannelListeners =
+				new CopyOnWriteArrayList<ChannelEventListener>();
 
 	private CopyOnWriteArrayList<Listener<Message>> mMessageListeners =
 			new CopyOnWriteArrayList<Listener<Message>>();
@@ -181,7 +182,7 @@ public class Channel extends Configuration
 	 * Indicates if this channel has been selected for audio output
 	 */
 	@XmlTransient
-	public boolean getSelected()
+	public boolean isSelected()
 	{
 		return mSelected;
 	}
@@ -195,7 +196,7 @@ public class Channel extends Configuration
 			mProcessingChain.getAudioOutput().setAudioPlaybackEnabled( selected );
 		}
 		
-		fireChannelEvent( ChannelEvent.CHANGE_SELECTED );
+		fireChannelEvent( Event.CHANGE_SELECTED );
 	}
 	
 	public JMenu getContextMenu()
@@ -290,7 +291,7 @@ public class Channel extends Configuration
 		setEnabled( DISABLED, BROADCAST_CHANGE );
 
 		/* Broadcast channel deleted event */
-		fireChannelEvent( ChannelEvent.CHANNEL_DELETED );
+		fireChannelEvent( Event.CHANNEL_DELETED );
 	}
 	
 	/**
@@ -375,7 +376,7 @@ public class Channel extends Configuration
 	    
 	    if( fireChangeEvent )
 	    {
-	        fireChannelEvent( ChannelEvent.CHANGE_SYSTEM );
+	        fireChannelEvent( Event.CHANGE_SYSTEM );
 	    }
 	}
 
@@ -397,7 +398,7 @@ public class Channel extends Configuration
         
         if( fireChangeEvent )
         {
-            fireChannelEvent( ChannelEvent.CHANGE_SITE );
+            fireChannelEvent( Event.CHANGE_SITE );
         }
     }
 
@@ -440,7 +441,7 @@ public class Channel extends Configuration
 		
 		if( fireChannelEvent )
 		{
-			fireChannelEvent( ChannelEvent.CHANGE_ENABLED );
+			fireChannelEvent( Event.CHANGE_ENABLED );
 		}
 	}
 
@@ -475,7 +476,7 @@ public class Channel extends Configuration
 		
 		if( fireChangeEvent )
 		{
-			fireChannelEvent( ChannelEvent.CHANGE_ALIAS_LIST );
+			fireChannelEvent( Event.CHANGE_ALIAS_LIST );
 		}
 	}
 
@@ -534,7 +535,7 @@ public class Channel extends Configuration
 		
 		if( fireChangeEvent )
 		{
-			fireChannelEvent( ChannelEvent.CHANGE_DECODER );
+			fireChannelEvent( Event.CHANGE_DECODER );
 		}
 	}
 
@@ -571,7 +572,7 @@ public class Channel extends Configuration
 		
 		if( fireChangeEvent )
 		{
-			fireChannelEvent( ChannelEvent.CHANGE_SOURCE );
+			fireChannelEvent( Event.CHANGE_SOURCE );
 		}
 	}
 	
@@ -608,7 +609,7 @@ public class Channel extends Configuration
 		
 		if( fireChangeEvent )
 		{
-			fireChannelEvent( ChannelEvent.CHANGE_EVENT_LOGGER );
+			fireChannelEvent( Event.CHANGE_EVENT_LOGGER );
 		}
 	}
 
@@ -645,7 +646,7 @@ public class Channel extends Configuration
 		
 		if( fireChangeEvent )
 		{
-			fireChannelEvent( ChannelEvent.CHANGE_RECORDER );
+			fireChannelEvent( Event.CHANGE_RECORDER );
 		}
 	}
 
@@ -676,7 +677,7 @@ public class Channel extends Configuration
 		
 		if( fireChangeEvent )
 		{
-			fireChannelEvent( ChannelEvent.CHANGE_NAME );
+			fireChannelEvent( Event.CHANGE_NAME );
 		}
 	}
 
@@ -715,7 +716,7 @@ public class Channel extends Configuration
 
 			mProcessingChain.start();
 			
-			fireChannelEvent( ChannelEvent.PROCESSING_STARTED );
+			fireChannelEvent( Event.PROCESSING_STARTED );
 		}
 
 		/* If this is a traffic channel, override the call fade timeout before
@@ -762,17 +763,17 @@ public class Channel extends Configuration
 			mSelected = false;
 		}
 
-		fireChannelEvent( ChannelEvent.PROCESSING_STOPPED );
+		fireChannelEvent( Event.PROCESSING_STOPPED );
 	}
 	
 	/**
 	 * Broadcasts a channel change event to all registered listeners
 	 */
-	public void fireChannelEvent( ChannelEvent event )
+	public void fireChannelEvent( Event event )
 	{
-		for( ChannelListener listener: mChannelListeners )
+		for( ChannelEventListener listener: mChannelListeners )
 		{
-			listener.occurred( this, event );
+			listener.channelChanged( new ChannelEvent( this, event ) );
 		}
 	}
 	
@@ -780,17 +781,19 @@ public class Channel extends Configuration
 	 * Adds a channel listener to receive all channel events from this channel
 	 * and automatically sends the listener a channel add event.
 	 */
-	public void addListener( ChannelListener listener )
+	public void addListener( ChannelEventListener listener )
 	{
 		if( !mChannelListeners.contains( listener ) )
 		{
 			mChannelListeners.add( listener );
 			
-			listener.occurred( this, ChannelEvent.CHANNEL_ADDED );
+			listener.channelChanged( 
+					new ChannelEvent( this, Event.CHANNEL_ADDED ) );
 		}
 		else
 		{
-			Log.error( "Channel - attempt to add already existing channel listener [" + listener.getClass() + "]" );
+			Log.error( "Channel - attempt to add already existing channel "
+					+ "listener [" + listener.getClass() + "]" );
 		}
 	}
 
@@ -798,9 +801,9 @@ public class Channel extends Configuration
 	 * Adds a list of channel listeners to receive all channel events from this
 	 * channel and automatically sends each one a channel add event.
 	 */
-	public void addListeners( List<ChannelListener> listeners )
+	public void addListeners( List<ChannelEventListener> listeners )
 	{
-		for( ChannelListener listener: listeners )
+		for( ChannelEventListener listener: listeners )
 		{
 			addListener( listener );
 		}
@@ -809,7 +812,7 @@ public class Channel extends Configuration
 	/**
 	 * Removes a channel listener from receiving channel events from this channel
 	 */
-	public void removeListener( ChannelListener listener )
+	public void removeListener( ChannelEventListener listener )
 	{
 		mChannelListeners.remove( listener );
 	}
@@ -883,29 +886,5 @@ public class Channel extends Configuration
 	public boolean hasTrafficChannel( int channelNumber )
 	{
 		return mTrafficChannels.containsKey( channelNumber );
-	}
-	
-	/**
-	 * Channel Events - used to specify channel events and changes to channel
-	 * configurations and settings.
-	 */
-	public enum ChannelEvent
-	{
-		CHANGE_ALIAS_LIST,
-		CHANGE_DECODER,
-		CHANGE_ENABLED,
-        CHANGE_EVENT_LOGGER,
-		CHANGE_NAME,
-		CHANGE_SITE,
-		CHANGE_RECORDER,
-		CHANGE_SELECTED,
-		CHANGE_SOURCE,
-		CHANGE_SYSTEM,
-
-		CHANNEL_ADDED,
-        CHANNEL_DELETED,
-
-		PROCESSING_STARTED,
-		PROCESSING_STOPPED,
 	}
 }

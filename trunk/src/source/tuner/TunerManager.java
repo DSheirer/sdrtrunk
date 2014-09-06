@@ -141,7 +141,7 @@ public class TunerManager
 				case FUNCUBE_DONGLE_PRO:
 					//Locate the matching mixer tuner dataline
 					MixerTunerDataLine fcd1Dataline = 
-						getMixerTunerDataLine( tunerClass.getTunerClass() );
+						getMixerTunerDataLine( tunerClass.getTunerType() );
 					if( fcd1Dataline != null )
 					{
 						FCD1TunerController fcd1Controller;
@@ -182,7 +182,7 @@ public class TunerManager
 				case FUNCUBE_DONGLE_PRO_PLUS:
 					//Locate the matching mixer tuner dataline
 					MixerTunerDataLine fcd2Dataline = 
-								getMixerTunerDataLine( tunerClass.getTunerClass() );
+								getMixerTunerDataLine( tunerClass.getTunerType() );
 
 					if( fcd2Dataline != null )
 					{
@@ -245,12 +245,14 @@ public class TunerManager
 				case TERRATEC_T_STICK_PLUS:
 				case TWINTECH_UT40:
 				case ZAAPA_ZTMINDVBZP:
-					TunerType tunerType = tunerClass.getTunerClass();
+					TunerType tunerType = tunerClass.getTunerType();
 					
 					if( tunerType == TunerType.RTL2832_VARIOUS )
 					{
 						tunerType = RTL2832TunerController.identifyTunerType( device );
 					}
+					
+					Log.debug( "TunerManager - identified tuner class [" + tunerClass.toString() + "] with tuner type [" + tunerType.toString() + "]" );
 					
 					switch( tunerType )
 					{
@@ -286,11 +288,13 @@ public class TunerManager
 							}
 							break;
 						case RAFAELMICRO_R820T:
+							Log.debug( "TunerManager - attempting to construct R820T tuner controller" );
 							try
 							{
 								R820TTunerController controller = 
 									new R820TTunerController( device );
 								
+								Log.debug( "TunerManager - init() R820T tuner controller" );
 								controller.init();
 								
 								RTL2832Tuner rtlTuner = 
@@ -302,8 +306,13 @@ public class TunerManager
 
 								if( config != null )
 		    	                {
+									Log.debug( "TunerManager - applying tuner config to R820T tuner" );
 									rtlTuner.apply( config );
 		    	                }					
+								else
+								{
+									Log.debug( "TunerManager - R820T tuner config was null - not applied" );
+								}
 								
 								mTuners.add( rtlTuner );
 								status = sLOADED;
@@ -315,6 +324,8 @@ public class TunerManager
 								status = sNOT_LOADED;
 								reason = "Error constructing R820T tuner "
 									+ "controller - " + se.getLocalizedMessage();
+								
+								Log.error( "TunerManager - error constructing tuner", se );
 							}
 							break;
 						case FITIPOWER_FC0012:
@@ -324,8 +335,8 @@ public class TunerManager
 						default:
 							status = sNOT_LOADED;
 							reason = "SDRTRunk doesn't currently support RTL2832 "
-									+ "Dongle with [" + tunerType.toString() + 
-									"] tuner";
+								+ "Dongle with [" + tunerType.toString() + 
+								"] tuner for tuner class[" + tunerClass.toString() + "]";
 							break;
 					}
 					break;

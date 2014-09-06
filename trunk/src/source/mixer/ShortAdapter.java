@@ -20,8 +20,6 @@ package source.mixer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import source.Source.SampleType;
-
 /**
  * Converts 16-bit little endian byte data into an array of floats 
  */

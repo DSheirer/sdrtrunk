@@ -22,14 +22,13 @@ import java.util.ArrayList;
 import message.Message;
 import sample.Listener;
 import controller.ResourceManager;
-import controller.channel.Channel.ChannelEvent;
 
-public class ChannelManager implements ChannelListener
+public class ChannelManager implements ChannelEventListener
 {
 	private ArrayList<Channel> mChannels = new ArrayList<Channel>();
 	
-	private ArrayList<ChannelListener> mChannelListeners =
-									new ArrayList<ChannelListener>();
+	private ArrayList<ChannelEventListener> mChannelListeners =
+									new ArrayList<ChannelEventListener>();
 	private ArrayList<Listener<Message>> mMessageListeners =
 									new ArrayList<Listener<Message>>();
 
@@ -45,18 +44,18 @@ public class ChannelManager implements ChannelListener
 	 */
 	@SuppressWarnings( "incomplete-switch" )
     @Override
-    public void occurred( Channel channel, ChannelEvent component )
+    public void channelChanged( ChannelEvent event )
     {
-		switch( component )
+		switch( event.getEvent() )
 		{
 			case CHANNEL_ADDED:
-				if( !mChannels.contains( channel ) )
+				if( !mChannels.contains( event.getChannel() ) )
 				{
-					mChannels.add( channel );
+					mChannels.add( event.getChannel() );
 				}
 				break;
 			case CHANNEL_DELETED:
-				mChannels.remove( channel );
+				mChannels.remove( event.getChannel() );
 				break;
 		}
     }
@@ -66,7 +65,7 @@ public class ChannelManager implements ChannelListener
 	 * any channel change events.  This listener will automatically receive
 	 * a channel add event as it is added to each of the existing channels.
 	 */
-	public void addListener( ChannelListener listener )
+	public void addListener( ChannelEventListener listener )
 	{
 	    mChannelListeners.add( listener );
 	    
@@ -80,7 +79,7 @@ public class ChannelManager implements ChannelListener
 	 * Removes a channel listener from being automatically added to all channels
 	 * to receive channel change events.
 	 */
-	public void removeListener( ChannelListener listener )
+	public void removeListener( ChannelEventListener listener )
 	{
 	    mChannelListeners.remove( listener );
 	    
@@ -94,7 +93,7 @@ public class ChannelManager implements ChannelListener
 	 * Returns the list of channel change listeners that will be automatically
 	 * added to all channels to receive channel change events
 	 */
-	public ArrayList<ChannelListener> getChannelListeners()
+	public ArrayList<ChannelEventListener> getChannelListeners()
 	{
 	    return mChannelListeners;
 	}
