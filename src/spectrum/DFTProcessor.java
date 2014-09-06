@@ -27,24 +27,26 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import log.Log;
+
+import org.jtransforms.fft.FloatFFT_1D;
+
 import sample.Listener;
 import source.Source;
 import source.Source.SampleType;
 import source.tuner.FrequencyChangeListener;
+import spectrum.converter.DFTResultsConverter;
 import dsp.filter.Window;
 import dsp.filter.Window.WindowType;
-import edu.emory.mathcs.jtransforms.fft.FloatFFT_1D;
 
 /**
  * Processes both complex samples or float samples and dispatches a float array
  * of DFT results, using configurable fft size and output dispatch timelines.  
  */
 public class DFTProcessor implements Listener<Float[]>,
-									 DFTResultsProvider,
 									 FrequencyChangeListener
 {
-	private CopyOnWriteArrayList<DFTResultsListener> mListeners =
-			new CopyOnWriteArrayList<DFTResultsListener>();
+	private CopyOnWriteArrayList<DFTResultsConverter> mListeners =
+			new CopyOnWriteArrayList<DFTResultsConverter>();
 
 	private ArrayBlockingQueue<Float[]> mQueue = 
 							new ArrayBlockingQueue<Float[]>( 200 );
@@ -56,14 +58,16 @@ public class DFTProcessor implements Listener<Float[]>,
 	private FFTWidth mNewFFTWidth = FFTWidth.FFT04096;
 	
 	private double[] mWindow;
-	private WindowType mWindowType = Window.WindowType.HANNING;
+	private WindowType mWindowType = Window.WindowType.BLACKMAN;
 
 	private FloatFFT_1D mFFT = new FloatFFT_1D( mFFTWidth.getWidth() );
 	
 	private int mFrameRate;
 	private int mSampleRate;
-	private float mOverlapPerFrame;
-	private float mOverlapResidual;
+	private int mFFTFloatsPerFrame;
+	private float mNewFloatsPerFrame;
+	private float mNewFloatsPerFrameToConsume;
+	private float mNewFloatResidual;
 	private float[] mPreviousFrame = new float[ 8192 ];
 	
 	private Float[] mCurrentBuffer;
@@ -81,17 +85,7 @@ public class DFTProcessor implements Listener<Float[]>,
 	
 	public void dispose()
 	{
-		try
-        {
-	        clearScheduler();
-        }
-        catch ( InterruptedException e )
-        {
-        	Log.error( "DFTProcessor - exception shutting down processor - " + 
-        				e.getLocalizedMessage() );
-        }
-
-		mScheduler.shutdown();
+		stop();
 		
 		mListeners.clear();
 		mQueue.clear();
@@ -165,54 +159,56 @@ public class DFTProcessor implements Listener<Float[]>,
 			+ "more than 1000 times per second -- requested setting:" 
 					+ framesPerSecond );
 		}
-		else
-		{
-			mFrameRate = framesPerSecond;
 
-			calculateOverlap();
+		mFrameRate = framesPerSecond;
 
-			/**
-			 * Shutdown the scheduler and clear out any remaining tasks
-			 */
-	        try
-	        {
-	    		clearScheduler();
-	        }
-	        catch ( InterruptedException e )
-	        {
-		        Log.error( "DFTProcessor - exception while awaiting shutdown of "
-		        		+ "calculation scheduler for reset" );
-	        }
+		calculateConsumptionRate();
 
-			/**
-	         * Reset the scheduler
-	         */
-			mScheduler = Executors.newScheduledThreadPool(1);
-
-			/**
-			 * Schedule the DFT to run calculations at a fixed rate
-			 */
-			int initialDelay = 0;
-			int period = (int)( 1000 / mFrameRate );
-			TimeUnit unit = TimeUnit.MILLISECONDS;
-
-			mScheduler.scheduleAtFixedRate( new DFTCalculationTask(), 
-												initialDelay, period, unit );
-			
-		}
+		restart();
 	}
 	
-	/**
-	 * Shuts down the scheduler and blocks up to 100 milliseconds until all
-	 * tasks have completed.
-	 */
-	private void clearScheduler() throws InterruptedException
+	public void start()
 	{
-		mScheduler.shutdown();
+		/**
+         * Reset the scheduler
+         */
+		mScheduler = Executors.newScheduledThreadPool(1);
 
-        mScheduler.awaitTermination( 100, TimeUnit.MILLISECONDS );
+		/**
+		 * Schedule the DFT to run calculations at a fixed rate
+		 */
+		int initialDelay = 0;
+		int period = (int)( 1000 / mFrameRate );
+		TimeUnit unit = TimeUnit.MILLISECONDS;
+
+		mScheduler.scheduleAtFixedRate( new DFTCalculationTask(), 
+											initialDelay, period, unit );
 	}
+	
+	public void stop()
+	{
+		/**
+		 * Shutdown the scheduler and clear out any remaining tasks
+		 */
+        try
+        {
+    		mScheduler.shutdown();
 
+            mScheduler.awaitTermination( 100, TimeUnit.MILLISECONDS );
+        }
+        catch ( InterruptedException e )
+        {
+	        Log.error( "DFTProcessor - exception while awaiting shutdown of "
+	        		+ "calculation scheduler for reset" );
+        }
+	}
+	
+	public void restart()
+	{
+		stop();
+		start();
+	}
+	
 	public int getCalculationsPerSecond()
 	{
 		return mFrameRate;
@@ -226,7 +222,10 @@ public class DFTProcessor implements Listener<Float[]>,
     {
 		if( !mQueue.offer( samples ) )
 		{
-			Log.error( "DFTProcessor - queue is full, purging queue, samples[" + samples + "]" );
+			Log.error( "DFTProcessor - [" + mSampleType.toString()
+						+ "]queue is full, purging queue, "
+						+ "samples[" + samples + "]" );
+
 			mQueue.clear();
 			mQueue.offer( samples );
 		}
@@ -236,8 +235,6 @@ public class DFTProcessor implements Listener<Float[]>,
 	{
 		mCurrentBuffer = null;
 
-		long start = System.currentTimeMillis();
-		
 		try
         {
             mCurrentBuffer = mQueue.take();
@@ -252,107 +249,66 @@ public class DFTProcessor implements Listener<Float[]>,
 
 	private float[] getSamples()
 	{
-		int remaining;
-		
-		if( mSampleType == SampleType.COMPLEX )
-		{
-			remaining = mFFTWidth.getWidth() * 2;
-		}
-		else
-		{
-			remaining = mFFTWidth.getWidth();
-		}
+		int remaining = (int)mFFTFloatsPerFrame;
 
-		float[] currentFrame = new float[ mFFTWidth.getWidth() * 2 ];
+		float[] currentFrame = new float[ remaining ];
+
 		int currentFramePointer = 0;
-		
-		/* Get the integer component of the overlap, leaving the fractional 
-		 * residual for the next frame */
-		float requiredOverlap = mOverlapPerFrame + mOverlapResidual;
-		int overlap = (int)requiredOverlap;
-		mOverlapResidual = requiredOverlap - overlap;
 
-		/* If positive overlap, we have to re-use samples from previous frame */
-		if( overlap > 0 )
+		float integralFloatsToConsume = mNewFloatsPerFrame + mNewFloatResidual;
+		
+		int newFloatsToConsumeThisFrame = (int)integralFloatsToConsume;
+		
+		mNewFloatResidual = integralFloatsToConsume - newFloatsToConsumeThisFrame;
+		
+		/* If the number of required floats for the fft is greater than the
+		 * consumption rate per frame, we have to reach into the previous
+		 * frame to makeup the difference. */
+		if( newFloatsToConsumeThisFrame < remaining )
 		{
-			int previousFramePointer;
-			int length;
+			int previousFloatsRequired = remaining - newFloatsToConsumeThisFrame;
 			
-			if( mSampleType == SampleType.COMPLEX )
-			{
-				length = overlap * 2;
-				previousFramePointer = mPreviousFrame.length - length;
-			}
-			else
-			{
-				length = overlap;
-				previousFramePointer = (int)(mPreviousFrame.length / 2) - length;
-			}
+			System.arraycopy( mPreviousFrame, 
+							  mPreviousFrame.length - previousFloatsRequired, 
+							  currentFrame, 
+							  currentFramePointer, 
+							  previousFloatsRequired );
+			
+			remaining -= previousFloatsRequired;
+			currentFramePointer += previousFloatsRequired;
+		}
 
-			System.arraycopy( mPreviousFrame, previousFramePointer, 
-							  currentFrame, currentFramePointer, length );
-			
-			remaining -= length;
-			currentFramePointer += length;			
-		}
-		
-		/* If negative overlap, we have to throw away samples */
-		else
-		{
-			if( mSampleType == SampleType.COMPLEX )
-			{
-				purge( -( overlap * 2 ) );
-			}
-			else
-			{
-				purge( -overlap );
-			}
-		}
-		
+		/* Fill the rest of the buffer with new samples */
 		while( mRunning.get() && remaining > 0 )
 		{
 			if( mCurrentBuffer == null || 
-					mCurrentBufferPointer == mCurrentBuffer.length )
+					mCurrentBufferPointer >= mCurrentBuffer.length )
 			{
 				getNextBuffer();
 			}
 
 			int samplesAvailable = mCurrentBuffer.length - mCurrentBufferPointer;
 
-			if( samplesAvailable >= remaining )
+			while( remaining > 0 && samplesAvailable > 0 )
 			{
-				while( remaining > 0 )
-				{
-					currentFrame[ currentFramePointer ] = 
-								(float)mCurrentBuffer[ mCurrentBufferPointer ];
-					
-					currentFramePointer++;
-					mCurrentBufferPointer++;
-					remaining --;
-				}
-
-				mCurrentBufferPointer += remaining;
-				remaining = 0;
-			}
-			else
-			{
-				while( samplesAvailable > 0 )
-				{
-					currentFrame[ currentFramePointer ] = 
-							(float)mCurrentBuffer[ mCurrentBufferPointer ];
+				currentFrame[ currentFramePointer++ ] = 
+						(float)mCurrentBuffer[ mCurrentBufferPointer++ ];
 				
-					currentFramePointer++;
-					mCurrentBufferPointer++;
-					samplesAvailable--;
-					remaining--;
-				}
+				samplesAvailable--;
+				remaining--;
+				newFloatsToConsumeThisFrame--;
 			}
 		}
-
-		/* If frames are overlapping, store current frame to use next time */
-		if( mOverlapPerFrame > 0 )
+		
+		/* If the incoming float rate is greater than the fft consumption rate,
+		 * then we have to purge some floats, otherwise, store the previous
+		 * frame, because we have overlapping frames */
+		if( newFloatsToConsumeThisFrame > 0 )
 		{
-			mPreviousFrame = null;
+			purge( newFloatsToConsumeThisFrame );
+		}
+		else
+		{
 			mPreviousFrame = Arrays.copyOf( currentFrame, currentFrame.length );
 		}
 
@@ -367,7 +323,7 @@ public class DFTProcessor implements Listener<Float[]>,
 
 		if( mSampleType == SampleType.FLOAT )
 		{
-			mFFT.realForwardFull( samples );
+			mFFT.realForward( samples );
 		}
 		else
 		{
@@ -389,7 +345,7 @@ public class DFTProcessor implements Listener<Float[]>,
 		while( mRunning.get() && samplesToPurge > 0 )
 		{
 			if( mCurrentBuffer == null || 
-					mCurrentBufferPointer == mCurrentBuffer.length )
+					mCurrentBufferPointer >= mCurrentBuffer.length )
 			{
 				getNextBuffer();
 			}
@@ -415,56 +371,20 @@ public class DFTProcessor implements Listener<Float[]>,
 	 */
 	private void dispatch( float[] results )
 	{
-		float dc = Math.abs( results[ 0 ] );
+		Iterator<DFTResultsConverter> it = mListeners.iterator();
 
-		/* Ensure we have power in the DC power bin (bin 0), otherwise don't
-		 * dispatch the results */
-		if( dc != 0 )
+		while( it.hasNext() )
 		{
-			float[] processed = new float[ results.length / 2 ];
-
-			int half = results.length / 2;
-			int quarter = results.length / 4;
-			
-			for( int x = 2; x < half; x += 2 )
-			{
-				processed[ quarter + ( x / 2 ) ] = 
-						 (float)( Math.log10( 
-						 (double)( Math.abs( results[ x ] ) / 
-					     dc ) ) );
-			}
-			
-			for( int x = 0; x < quarter - 1; x++ )
-			{
-				processed[ x ] = 
-						 (float)( Math.log10( 
-						 (double)( Math.abs( results[ half + ( ( x + 1 ) * 2 ) ] ) / 
-					     dc ) ) );
-			}
-
-			//Real bin n/2 -1
-			processed[ quarter - 1 ] = (float)( Math.log10( 
-							(double)( Math.abs( results[ 1 ] ) / dc ) ) ); 
-
-			Iterator<DFTResultsListener> it = mListeners.iterator();
-
-			while( it.hasNext() )
-			{
-				it.next().receive( processed );
-			}
+			it.next().receive( results );
 		}
-		
-		results = null;
 	}
 
-	@Override
-    public void addListener( DFTResultsListener listener )
+    public void addConverter( DFTResultsConverter listener )
     {
 		mListeners.add( listener );
     }
 
-	@Override
-    public void removeListener( DFTResultsListener listener )
+    public void removeConverter( DFTResultsConverter listener )
     {
 		mListeners.remove( listener );
     }
@@ -483,11 +403,6 @@ public class DFTProcessor implements Listener<Float[]>,
 				
 				mRunning.set( false );
 			}
-			else
-			{
-				Log.error( "DFTProcessor - calculation already in progress"
-						+ " - skipping this iteration" );
-			}
         }
 	}
 	
@@ -502,12 +417,18 @@ public class DFTProcessor implements Listener<Float[]>,
 		{
 			mFFTWidth = mNewFFTWidth;
 			
-			calculateOverlap();
+			calculateConsumptionRate();
 
-			mWindow = Window.getWindow( WindowType.HANNING, 
-					( mFFTWidth.getWidth() * 2 ) );
-			
-			mPreviousFrame = new float[ mFFTWidth.getWidth() * 2 ];
+			setWindowType( mWindowType );
+
+			if( mSampleType == SampleType.COMPLEX )
+			{
+				mPreviousFrame = new float[ mFFTWidth.getWidth() * 2 ];
+			}
+			else
+			{
+				mPreviousFrame = new float[ mFFTWidth.getWidth() ];
+			}
 
 			mFFT = new FloatFFT_1D( mFFTWidth.getWidth() );
 		}
@@ -523,24 +444,30 @@ public class DFTProcessor implements Listener<Float[]>,
     {
 		mSampleRate = bandwidth;
 		
-		calculateOverlap();
+		calculateConsumptionRate();
     }
 	
 	/**
-	 * Positive overlap means we have to re-use samples from the previous
-	 * frame
 	 * 
-	 * Negative overlap means we have to throw away samples
 	 */
-	private void calculateOverlap()
+	private void calculateConsumptionRate()
 	{
-		mOverlapPerFrame = 0.0f;
-		mOverlapResidual = 0.0f;
+		mNewFloatResidual = 0.0f;
 		
-		int requiredSampleRate = mFFTWidth.getWidth() * mFrameRate;
+		mNewFloatsPerFrame = ( (float)mSampleRate / (float)mFrameRate ) *
+				( mSampleType == SampleType.COMPLEX ? 2.0f : 1.0f );
 		
-		int overlap = requiredSampleRate - mSampleRate;
+		mFFTFloatsPerFrame = ( mSampleType == SampleType.COMPLEX ? 
+					mFFTWidth.getWidth() * 2 : 
+					mFFTWidth.getWidth() );
 
-		mOverlapPerFrame = (float)overlap / (float)mFrameRate;
+		if( mFFTFloatsPerFrame < mNewFloatsPerFrame )
+		{
+			mNewFloatsPerFrameToConsume = mFFTFloatsPerFrame;
+		}
+		else
+		{
+			mNewFloatsPerFrameToConsume = mNewFloatsPerFrame;
+		}
 	}
 }

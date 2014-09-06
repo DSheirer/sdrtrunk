@@ -17,16 +17,14 @@
  ******************************************************************************/
 package controller.channel;
 
-import controller.channel.Channel.ChannelEvent;
-
 /**
  * Interface for receiving channel events.  Each listener will receive
  * notification of all channel events.
  */
-public interface ChannelListener
+public interface ChannelEventListener
 {
 	/**
-	 * Notifies the listener that a channel has changed and what has changed
+	 * Notifies the listener that a channel event has occurred
 	 */
-	public void occurred( Channel channel, ChannelEvent event );
+	public void channelChanged( ChannelEvent event );
 }

@@ -163,9 +163,9 @@ public abstract class ChannelStatePanel extends JPanel
 		return null;
     }
     
-    public boolean getSelected()
+    public boolean isSelected()
     {
-    	return mChannel.getSelected();
+    	return mChannel.isSelected();
     }
     
 	public void addPanel( final JPanel panel )
@@ -224,13 +224,13 @@ public abstract class ChannelStatePanel extends JPanel
 
     public void setSelected( boolean selected )
     {
-    	mChannel.setSelected( selected );
-
 		for( ChannelStatePanel traffic: getTrafficPanels().values() )
 		{
 			traffic.setSelected( false );
 		}
-    	
+		
+    	mChannel.setSelected( selected );
+
     	repaint();
     }
     
@@ -293,7 +293,7 @@ public abstract class ChannelStatePanel extends JPanel
         g2.drawLine( 0, getHeight() - 1, getWidth(), getHeight() - 1 );
 
         /* Draw channel selected box */
-        if( mChannel.getSelected() )
+        if( mChannel.isSelected() )
         {
             g2.setColor( mColorChannelSelected );
             g2.drawRect( 1, 1, getWidth() - 2, getHeight() - 2 );

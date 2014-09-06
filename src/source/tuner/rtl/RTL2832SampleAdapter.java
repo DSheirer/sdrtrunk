@@ -17,7 +17,6 @@
  ******************************************************************************/
 package source.tuner.rtl;
 
-import source.Source.SampleType;
 import source.mixer.SampleAdapter;
 
 public class RTL2832SampleAdapter extends SampleAdapter
@@ -26,17 +25,15 @@ public class RTL2832SampleAdapter extends SampleAdapter
 
 	/**
 	 * Creates a static lookup table that converts the 8-bit valued range 
-	 * from 0 - 255 into scaled float values of -128 to 0 to 127
+	 * from 0 - 255 into scaled float values of -32768.0 to 0 to 32512.0
 	 */
 	static
 	{
 		mLOOKUP_VALUES = new float[ 256 ];
 		
-		float scale = (float)( 1.0f / 127.0f );
-		
 		for( int x = 0; x < 256; x++ )
 		{
-			mLOOKUP_VALUES[ x ] = (float)( x - 128 ) * scale;
+			mLOOKUP_VALUES[ x ] = (float)( x - 128 ) * 256.0f;
 		}
 		
 		mLOOKUP_VALUES[ 128 ] = 0.0000001f;

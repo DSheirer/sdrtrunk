@@ -37,7 +37,7 @@ import source.tuner.TunerGroupNode;
 import source.tuner.TunerNode;
 import source.tuner.TunerSelectionListener;
 import controller.channel.Channel;
-import controller.channel.ChannelListener;
+import controller.channel.ChannelEventListener;
 import controller.channel.ChannelNode;
 import controller.site.Site;
 import controller.system.System;
@@ -54,8 +54,8 @@ public class ConfigurationControllerModel extends DefaultTreeModel
 
     private ResourceManager mResourceManager;
 
-    private ArrayList<ChannelListener> mChannelConfigChangeListeners =
-			new ArrayList<ChannelListener>();
+    private ArrayList<ChannelEventListener> mChannelConfigChangeListeners =
+			new ArrayList<ChannelEventListener>();
 
     private ArrayList<TunerSelectionListener> mTunerSelectionListeners =
 			new ArrayList<TunerSelectionListener>();

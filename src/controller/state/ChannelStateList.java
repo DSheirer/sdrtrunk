@@ -36,9 +36,9 @@ import settings.ColorSettingMenuItem;
 import settings.ColorSettingResetMenuItem;
 import settings.SettingsManager;
 import controller.channel.Channel;
-import controller.channel.Channel.ChannelEvent;
 import controller.channel.Channel.ChannelType;
-import controller.channel.ChannelListener;
+import controller.channel.ChannelEvent;
+import controller.channel.ChannelEventListener;
 import decode.fleetsync2.FleetsyncChannelState;
 import decode.fleetsync2.FleetsyncPanel;
 import decode.ltrnet.LTRNetChannelState;
@@ -54,7 +54,7 @@ import decode.nbfm.NBFMPanel;
 import decode.passport.PassportChannelState;
 import decode.passport.PassportPanel;
 
-public class ChannelStateList extends JPanel implements ChannelListener
+public class ChannelStateList extends JPanel implements ChannelEventListener
 {
     private static final long serialVersionUID = 1L;
     
@@ -79,24 +79,25 @@ public class ChannelStateList extends JPanel implements ChannelListener
     }
     
 	@Override
-    public void occurred( Channel channel, ChannelEvent event )
+    public void channelChanged( ChannelEvent event )
     {
-		ChannelType type = channel.getChannelType();
+		ChannelType type = event.getChannel().getChannelType();
 		
-		switch( event )
+		switch( event.getEvent() )
 		{
 			case PROCESSING_STARTED:
 				if( type == ChannelType.STANDARD )
 				{
-					channelStarted( channel );
+					channelStarted( event.getChannel() );
 				}
 				else if( type == ChannelType.TRAFFIC )
 				{
 					for( Channel parent: mDisplayedPanels.keySet() )
 					{
-						if( parent.hasTrafficChannel( channel ) )
+						if( parent.hasTrafficChannel( event.getChannel() ) )
 						{
-							mDisplayedPanels.get( parent ).trafficChannelAdded( channel );
+							mDisplayedPanels.get( parent )
+								.trafficChannelAdded( event.getChannel() );
 							validate();
 						}
 					}
@@ -105,7 +106,7 @@ public class ChannelStateList extends JPanel implements ChannelListener
 			case PROCESSING_STOPPED:
 				if( type == ChannelType.STANDARD )
 				{
-					channelStopped( channel );
+					channelStopped( event.getChannel() );
 				}
 				/* Since we don't have a reference to the parent channel that
 				 * owns the traffic channel, iterate all channels to find the 
@@ -114,11 +115,12 @@ public class ChannelStateList extends JPanel implements ChannelListener
 				{
 					for( Channel control: mDisplayedPanels.keySet() )
 					{
-						if( control.hasTrafficChannel( channel ) )
+						if( control.hasTrafficChannel( event.getChannel() ) )
 						{
-							control.removeTrafficChannel( channel );
+							control.removeTrafficChannel( event.getChannel() );
 							
-							mDisplayedPanels.get( control ).trafficChannelDeleted( channel );
+							mDisplayedPanels.get( control )
+								.trafficChannelDeleted( event.getChannel() );
 
 							validate();
 						}
@@ -252,15 +254,17 @@ public class ChannelStateList extends JPanel implements ChannelListener
 	
 	public void setSelectedChannel( ChannelStatePanel selectedPanel )
 	{
-		boolean current = selectedPanel.getSelected();
-		
+		//De-select any other selected panel
 		for( ChannelStatePanel panel: mDisplayedPanels.values() )
 		{
-			//Turn selected off
-			panel.setSelected( false );
+			if( panel != selectedPanel && panel.isSelected() )
+			{
+				panel.setSelected( false );
+			}
 		}
 
-		selectedPanel.setSelected( !current );
+		//Toggle selection state
+		selectedPanel.setSelected( !selectedPanel.isSelected() );
 	}
 	
 	public class ListSelectionListener implements MouseListener
