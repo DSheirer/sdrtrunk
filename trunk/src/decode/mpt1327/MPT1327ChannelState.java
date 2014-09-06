@@ -230,6 +230,18 @@ public class MPT1327ChannelState extends ChannelState
 							fade( CallEventType.CALL_END );
 						}
 						break;
+					case HEAD_PLUS1:
+					case HEAD_PLUS2:
+					case HEAD_PLUS3:
+					case HEAD_PLUS4:
+						mCallEventModel.add( 
+								new MPT1327CallEvent.Builder( CallEventType.SDM )
+									.aliasList( mAliasList )
+									.details( mpt.getMessageType().getDescription() )
+									.from( mpt.getFromID() )
+									.to( mpt.getToID() )
+									.build() );
+						break;
 				}
 			}
 		}

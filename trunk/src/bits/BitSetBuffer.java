@@ -251,6 +251,13 @@ public class BitSetBuffer extends BitSet
      */
     public int getInt( int[] bits )
     {
+    	if( bits.length > 31 )
+    	{
+    		throw new IllegalArgumentException( "BitSetBuffer getInt() "
+				+ "array length must be less than 32 or the value exceeds "
+				+ "integer size" );
+    	}
+    	
     	int retVal = 0;
     	
     	for( int x = 0; x < bits.length; x++ )
@@ -264,11 +271,86 @@ public class BitSetBuffer extends BitSet
     	return retVal;
     }
     
+    /**
+     * Returns the integer value represented by the bit array
+     * @param bits - an array of bit positions that will be treated as if they
+     * 			were contiguous bits, with index 0 being the MSB and index
+     * 			length - 1 being the LSB
+     * @return - integer value of the bit array
+     */
+    public long getLong( int[] bits )
+    {
+    	if( bits.length > 63 )
+    	{
+    		throw new IllegalArgumentException( "BitSetBuffer getLong() "
+				+ "array length must be less than 64 or the value exceeds "
+				+ "a primitive long size" );
+    	}
+
+    	long retVal = 0;
+    	
+    	for( int x = 0; x < bits.length; x++ )
+    	{
+    		if( get( bits[ x ] ) )
+    		{
+    			retVal += 1<<( bits.length - 1 - x );
+    		}
+    	}
+    	
+    	return retVal;
+    }
+
+    /**
+     * Converts up to 63 bits from the bit array into an integer and then 
+     * formats the value into hexadecimal, prefixing the value with zeros to
+     * provide a total length of digitDisplayCount;
+     * 
+     * @param bits
+     * @param digitDisplayCount
+     * @return
+     */
     public String getHex( int[] bits, int digitDisplayCount )
     {
-    	int value = getInt( bits );
+    	if( bits.length <= 31 )
+    	{
+        	int value = getInt( bits );
+        	
+        	return String.format( "%0" + digitDisplayCount + "X", value );
+    	}
+    	else if( bits.length <= 63 )
+    	{
+    		long value = getLong( bits );
+        	
+        	return String.format( "%0" + digitDisplayCount + "X", value );
+    	}
+    	else
+    	{
+    		throw new IllegalArgumentException( "BitSetBuffer.getHex() "
+    				+ "maximum array length is 63 bits" );
+    	}
+    }
+
+    public String getHex( int msb, int lsb, int digitDisplayCount )
+    {
+    	int length = lsb - msb;
     	
-    	return String.format( "%0" + digitDisplayCount + "X", value );
+    	if( length <= 31 )
+    	{
+        	int value = getInt( msb, lsb );
+        	
+        	return String.format( "%0" + digitDisplayCount + "X", value );
+    	}
+    	else if( length <= 63 )
+    	{
+    		long value = getLong( msb, lsb );
+        	
+        	return String.format( "%0" + digitDisplayCount + "X", value );
+    	}
+    	else
+    	{
+    		throw new IllegalArgumentException( "BitSetBuffer.getHex() "
+    				+ "maximum array length is 63 bits" );
+    	}
     }
 
     /**
