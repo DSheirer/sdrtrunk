@@ -766,8 +766,7 @@ public class MPT1327Message extends Message
     		case HEAD_PLUS2:
     		case HEAD_PLUS3:
     		case HEAD_PLUS4:
-    			sb.append( "SHORT DATA MESSAGE: " );
-    			sb.append( mMessageType.getDescription() );
+    			sb.append( getSDM() );
     			break;
     	}
     	
