@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import message.MessageDirection;
+import sample.Listener;
 import source.Source.SampleType;
 import alias.AliasList;
 import bits.MessageFramer;
@@ -147,5 +148,15 @@ public class LTRNetDecoder extends Decoder implements Instrumentable
     public void removeTap( Tap tap )
     {
         mLTRFSKDecoder.removeTap( tap );
+    }
+
+	@Override
+    public void addUnfilteredFloatListener( Listener<Float> listener )
+    {
+		if( mDemodulator != null )
+		{
+			mDemodulator.addListener( listener );
+		}
+	    // TODO Auto-generated method stub
     }
 }

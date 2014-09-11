@@ -17,12 +17,16 @@
  ******************************************************************************/
 package decode.nbfm;
 
+import javax.swing.JCheckBox;
+
 import decode.DecodeEditor;
 import decode.config.DecodeConfiguration;
 
 public class NBFMEditor extends DecodeEditor
 {
     private static final long serialVersionUID = 1L;
+    
+    private JCheckBox mAFC;
 
 	public NBFMEditor( DecodeConfiguration config )
 	{

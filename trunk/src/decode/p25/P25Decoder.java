@@ -24,10 +24,12 @@ import instrument.tap.stream.FloatTap;
 import java.util.ArrayList;
 import java.util.List;
 
+import sample.Listener;
 import source.Source.SampleType;
 import alias.AliasList;
 import decode.Decoder;
 import decode.DecoderType;
+import dsp.afc.AutomaticFrequencyControl;
 import dsp.filter.DCRemovalFilter2;
 import dsp.fsk.C4FMDecoder;
 import dsp.nbfm.FilteringNBFMDemodulator;
@@ -140,5 +142,12 @@ public class P25Decoder extends Decoder implements Instrumentable
 				addFloatListener( mC4FMDecoder );
 				break;
 		}
+    }
+
+	@Override
+    public void addUnfilteredFloatListener( Listener<Float> listener )
+    {
+	    // TODO Auto-generated method stub
+	    
     }
 }

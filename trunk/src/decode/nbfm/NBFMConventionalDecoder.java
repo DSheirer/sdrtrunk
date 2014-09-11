@@ -17,9 +17,11 @@
  ******************************************************************************/
 package decode.nbfm;
 
+import sample.Listener;
 import source.Source.SampleType;
 import decode.Decoder;
 import decode.DecoderType;
+import dsp.afc.AutomaticFrequencyControl;
 import dsp.filter.DCRemovalFilter2;
 import dsp.nbfm.FilteringNBFMDemodulator;
 
@@ -32,7 +34,7 @@ public class NBFMConventionalDecoder extends Decoder
 	private static final double sDC_REMOVAL_RATIO = 0.000003;
 
 	private FilteringNBFMDemodulator mDemodulator;
-	private DCRemovalFilter2 mDCRemovalFilter; 
+	private DCRemovalFilter2 mDCRemovalFilter;
 	
 	public NBFMConventionalDecoder( SampleType sampleType )
 	{
@@ -60,7 +62,7 @@ public class NBFMConventionalDecoder extends Decoder
 			 */
 			mDCRemovalFilter = new DCRemovalFilter2( sDC_REMOVAL_RATIO );
 			mDemodulator.addListener( mDCRemovalFilter );
-
+			
 			/**
 			 * Route the demodulated, filtered samples back to this class to send
 			 * to all registered listeners
@@ -73,5 +75,14 @@ public class NBFMConventionalDecoder extends Decoder
     public DecoderType getType()
     {
 	    return DecoderType.NBFM;
+    }
+
+	@Override
+    public void addUnfilteredFloatListener( Listener<Float> listener )
+    {
+		if( mDemodulator != null )
+		{
+			mDemodulator.addListener( listener );
+		}
     }
 }

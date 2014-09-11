@@ -181,4 +181,10 @@ public class Fleetsync2Decoder extends Decoder implements Instrumentable
 		        break;
 		}
     }
+
+	@Override
+    public void addUnfilteredFloatListener( Listener<Float> listener )
+    {
+		//Not implemented
+    }
 }

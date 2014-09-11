@@ -1354,7 +1354,7 @@ public abstract class RTL2832TunerController extends TunerController
 		RATE_1_440MHZ( 0x0500, 0x0000, 1440000, "1.440 MHz" ),
 		RATE_1_680MHZ( 0x044A, 0x0000, 1680000, "1.680 MHz" ),
 		RATE_1_824MHZ( 0x03F3, 0x0000, 1824000, "1.824 MHz" ),
-		RATE_2_016MHZ( 0x0387, 0x0000, 2016000, "2.016 MHz" );
+		RATE_2_016MHZ( 0x038F, 0x0000, 2016000, "2.016 MHz" );
 
 		/* Note: usb4java library buffer processing scheme doesn't seem capable 
 		 * of supporting these rates */

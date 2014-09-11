@@ -34,13 +34,11 @@ import record.wave.ComplexWaveRecorder;
 import record.wave.FloatWaveRecorder;
 import sample.Broadcaster;
 import sample.Listener;
-import sample.Provider;
 import sample.complex.ComplexSample;
 import source.ComplexSource;
 import source.FloatArraySource;
 import source.FloatSource;
 import source.Source;
-import source.Source.SampleType;
 import source.SourceException;
 import source.config.SourceConfigMixer;
 import source.tuner.Tuner;
@@ -57,6 +55,8 @@ import controller.state.ChannelState;
 import controller.state.ChannelState.State;
 import decode.Decoder;
 import decode.DecoderFactory;
+import dsp.afc.AutomaticFrequencyControl;
+import dsp.afc.FrequencyErrorListener;
 import eventlog.EventLogType;
 import eventlog.EventLogger;
 
@@ -73,6 +73,7 @@ public class ProcessingChain implements Listener<Message>
 	protected List<Recorder> mRecorders = new ArrayList<Recorder>();
 	protected ArrayList<EventLogger> mEventLoggers = new ArrayList<EventLogger>();
 	protected AudioOutput mAudioOutput;
+	protected AutomaticFrequencyControl mAFC;
 	protected ChannelState mChannelState;
 	protected ResourceManager mResourceManager;
 	private ScheduledFuture<?> mProcessorTask;
@@ -100,6 +101,14 @@ public class ProcessingChain implements Listener<Message>
 					.getPlayist().getAliasDirectory().getAliasList(  
 							mChannel.getAliasListName() );
 		}
+	}
+
+	/**
+	 * Automatic Frequency Control, or null if disabled
+	 */
+	public AutomaticFrequencyControl getAFC()
+	{
+		return mAFC;
 	}
 	
 	public Listener<List<ComplexSample>> getComplexListener()
@@ -379,6 +388,28 @@ public class ProcessingChain implements Listener<Message>
 					
 					mAudioOutput = new AudioOutput( threadName );
 					addFloatListener( mAudioOutput );
+					
+					/* Automatic frequency control */
+					if( mAFC != null )
+					{
+						mAFC.dispose();
+						mAFC = null;
+					}
+					
+					if( mSource instanceof FrequencyErrorListener &&
+						mChannel.getDecodeConfiguration().isAFCEnabled() )
+					{
+						FrequencyErrorListener listener = 
+								(FrequencyErrorListener)mSource;
+						
+						mAFC = new AutomaticFrequencyControl( listener );
+
+						/* Register AFC to receive frequency change events */
+						listener.addListener( mAFC );
+
+						/* Add AFC as listener to the decoder */
+						mDecoder.addUnfilteredFloatListener( mAFC );
+					}
 				}
 			}
 

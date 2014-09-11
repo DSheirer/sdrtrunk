@@ -25,6 +25,7 @@ import instrument.tap.stream.FloatTap;
 import java.util.ArrayList;
 import java.util.List;
 
+import sample.Listener;
 import source.Source.SampleType;
 import alias.AliasList;
 import bits.MessageFramer;
@@ -198,5 +199,11 @@ public class MDCDecoder extends Decoder implements Instrumentable
 		        break;
 			default:
 		}
+    }
+
+	@Override
+    public void addUnfilteredFloatListener( Listener<Float> listener )
+    {
+		//Not implemented
     }
 }
