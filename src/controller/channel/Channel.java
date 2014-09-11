@@ -56,6 +56,7 @@ import controller.system.System;
 import decode.config.AuxDecodeConfiguration;
 import decode.config.DecodeConfigFactory;
 import decode.config.DecodeConfiguration;
+import dsp.afc.AutomaticFrequencyControl;
 import eventlog.config.EventLogConfiguration;
 
 @XmlSeeAlso( { Configuration.class } )
@@ -132,6 +133,27 @@ public class Channel extends Configuration
 	public ChannelType getChannelType()
 	{
 		return mChannelType;
+	}
+
+	/**
+	 * Indicates if the channel is using Automatic Frequency Control
+	 * @return
+	 */
+	public boolean hasAFC()
+	{
+		return getAFC() != null;
+	}
+	
+	public AutomaticFrequencyControl getAFC()
+	{
+		if( isProcessing() )
+		{
+			return getProcessingChain().getAFC();
+		}
+		else
+		{
+			return null;
+		}
 	}
 
 	/**

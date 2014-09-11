@@ -18,6 +18,7 @@
 package decode.ltrstandard;
 
 import message.MessageDirection;
+import sample.Listener;
 import source.Source.SampleType;
 import alias.AliasList;
 import bits.MessageFramer;
@@ -114,5 +115,14 @@ public class LTRStandardDecoder extends Decoder
     public DecoderType getType()
     {
 	    return DecoderType.LTR_STANDARD;
+    }
+
+	@Override
+    public void addUnfilteredFloatListener( Listener<Float> listener )
+    {
+		if( mDemodulator != null )
+		{
+			mDemodulator.addListener( listener );
+		}
     }
 }

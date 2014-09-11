@@ -281,6 +281,13 @@ public class MPT1327Message extends Message
         return mCRC[ 0 ] == CRC.PASSED || 
         	   mCRC[ 0 ] == CRC.CORRECTED;
     }
+    
+    public boolean isValidCall()
+    {
+    	return getPrefix() != 0 &&
+    		   getIdent1() != 0 &&
+    		   getIdent2() != 0;
+    }
 
     /**
      * Constructs a decoded message string
@@ -312,9 +319,9 @@ public class MPT1327Message extends Message
      */
     public MPTMessageType getMessageType()
     {
-    	int type = mMessage.getInt( B1_MESSAGE_TYPE );
+    	int value = mMessage.getInt( B1_MESSAGE_TYPE );
 
-    	return MPTMessageType.fromNumber( type );
+    	return MPTMessageType.fromNumber( value );
     }
 
     /**
@@ -766,6 +773,7 @@ public class MPT1327Message extends Message
     		case HEAD_PLUS2:
     		case HEAD_PLUS3:
     		case HEAD_PLUS4:
+    			sb.append( " " );
     			sb.append( getSDM() );
     			break;
     	}
@@ -947,9 +955,12 @@ public class MPT1327Message extends Message
     			break;
     		case USER:
 			default:
-            	sb.append( format( prefix, 3 ) );
-            	sb.append( "-" );
-            	sb.append( format( ident, 4) );
+				if( prefix != 0 || ident != 0 )
+				{
+	            	sb.append( format( prefix, 3 ) );
+	            	sb.append( "-" );
+	            	sb.append( format( ident, 4) );
+				}
             	break;
     	}
 
@@ -1701,7 +1712,7 @@ public class MPT1327Message extends Message
 	public enum Descriptor
 	{
 		DESC0( "EXTENDED ADDRESSING INFORMATION", 
-			   "SERIAL NUMBER", 
+			   "ESN", 
 			   "SINGLE SEGMENT TRANSACTIONS (SST) ONLY" ),
 		DESC1( "PSTN DIALED DIGITS", "RESERVED", "N/A" ),
 		DESC2( "PABX EXTENSION", "RESERVED", "N/A" ),

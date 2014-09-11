@@ -303,6 +303,32 @@ public class OverlayPanel extends JPanel
     }
 
     /**
+     * Draws a vertical line at the xaxis
+     */
+    private void drawAFC( Graphics2D graphics, float xaxis, boolean isError )
+    {
+    	float height = (float)(getSize().getHeight()) - mSpectrumInset;
+
+    	if( isError )
+    	{
+        	graphics.setColor( Color.YELLOW );
+
+        	graphics.draw( new Line2D.Float( xaxis, height * 0.75f, 
+					 xaxis, height - 1.0f ) );
+    	}
+    	else
+    	{
+        	graphics.setColor( Color.LIGHT_GRAY );
+
+        	graphics.draw( new Line2D.Float( xaxis, height * 0.65f, 
+					 xaxis, height - 1.0f ) );
+    	}
+    	
+    	
+    }
+
+    
+    /**
      * Returns the x-axis value corresponding to the frequency
      */
     public float getAxisFromFrequency( long frequency )
@@ -436,8 +462,22 @@ public class OverlayPanel extends JPanel
                 		   yAxis,
                 		   width );
             }
+            
+            /* Draw Automatic Frequency Control line */
+            if( channel.hasAFC() )
+            {
+            	int frequency = (int)tunerChannel.getFrequency();
+            	
+            	int error = frequency + channel.getAFC().getErrorCorrection();
+            	
+                drawAFC( graphics, getAxisFromFrequency( frequency ), false );
+
+                drawAFC( graphics, getAxisFromFrequency( error ), true );
+            }
     	}
     }
+    
+    
     /**
      * Draws a textual label at the x/y position, clipping the end of the text
      * to fit within the maxwidth value.

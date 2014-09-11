@@ -17,6 +17,11 @@
  ******************************************************************************/
 package decode;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import javax.swing.JCheckBox;
+
 import controller.Editor;
 import decode.config.DecodeConfiguration;
 
@@ -25,10 +30,25 @@ public class DecodeEditor extends Editor
     private static final long serialVersionUID = 1L;
 
     protected DecodeConfiguration mConfig;
-	
+    
+    protected JCheckBox mAFC;
+
 	public DecodeEditor( DecodeConfiguration config )
 	{
 		mConfig = config;
+
+		mAFC = new JCheckBox( "Automatic Frequency Control" );
+		mAFC.setSelected( mConfig.isAFCEnabled() );
+		mAFC.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent arg0 )
+			{
+				mConfig.setAFC( mAFC.isSelected() );				
+			}
+		} );
+
+		add( mAFC, "wrap" );
 	}
 
 	public DecodeConfiguration getConfig()

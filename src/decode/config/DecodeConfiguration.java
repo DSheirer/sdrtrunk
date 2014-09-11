@@ -17,6 +17,7 @@
  ******************************************************************************/
 package decode.config;
 
+import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
@@ -32,6 +33,7 @@ import decode.DecoderType;
 public abstract class DecodeConfiguration extends Configuration
 {
 	private DecoderType mDecoderType = DecoderType.NBFM;
+	private boolean mAFCEnabled = true;
 
 	public DecodeConfiguration()
 	{
@@ -46,5 +48,21 @@ public abstract class DecodeConfiguration extends Configuration
 	public DecoderType getDecoderType()
 	{
 		return mDecoderType;
+	}
+
+	@XmlElement( name = "afc" )
+	public boolean getAFC()
+	{
+		return mAFCEnabled;
+	}
+	
+	public boolean isAFCEnabled()
+	{
+		return mAFCEnabled;
+	}
+	
+	public void setAFC( boolean enabled )
+	{
+		mAFCEnabled = enabled;
 	}
 }

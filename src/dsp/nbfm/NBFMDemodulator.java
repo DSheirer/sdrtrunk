@@ -17,9 +17,11 @@
  ******************************************************************************/
 package dsp.nbfm;
 
+import log.Log;
 import sample.Broadcaster;
 import sample.Listener;
 import sample.complex.ComplexSample;
+import dsp.afc.AutomaticFrequencyControl;
 import dsp.filter.ComplexFIRFilter;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
@@ -30,7 +32,17 @@ public class NBFMDemodulator implements Listener<ComplexSample>
 	private ComplexFIRFilter mIQFilter;
 	private FMDiscriminator mDiscriminator;
 
-	public NBFMDemodulator( double[] iqFilter, double iqGain )
+	/**
+	 * Implements a quadrature narrow-band demodulator that produces float
+	 * valued demodulated, audio filtered output samples.
+	 */
+	public NBFMDemodulator()
+	{
+		this( FilterFactory.getLowPass( 48000, 4000, 73, WindowType.HAMMING ), 
+			  1.0002, true );
+	}
+
+	public NBFMDemodulator( double[] iqFilter, double iqGain, boolean afc )
 	{
 		mIQFilter = new ComplexFIRFilter( iqFilter, iqGain );
 
@@ -54,16 +66,6 @@ public class NBFMDemodulator implements Listener<ComplexSample>
 		mIQFilter.dispose();
 	}
 	
-	/**
-	 * Implements a quadrature narrow-band demodulator that produces float
-	 * valued demodulated, audio filtered output samples.
-	 */
-	public NBFMDemodulator()
-	{
-		this( FilterFactory.getLowPass( 48000, 4000, 73, WindowType.HAMMING ), 
-			  1.0002 );
-	}
-
 	/**
 	 * Receive method for complex samples that are fed into this class to be
 	 * processed

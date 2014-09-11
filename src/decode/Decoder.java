@@ -20,6 +20,7 @@ package decode;
 import java.util.ArrayList;
 import java.util.List;
 
+import dsp.afc.AutomaticFrequencyControl;
 import message.Message;
 import sample.Broadcaster;
 import sample.Listener;
@@ -130,6 +131,8 @@ public abstract class Decoder implements Listener<Message>
     {
 		mFloatBroadcaster.addListener( listener );
     }
+    
+    public abstract void addUnfilteredFloatListener( Listener<Float> listener );
 
     public void removeFloatListener( Listener<Float> listener )
     {

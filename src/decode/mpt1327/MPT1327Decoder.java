@@ -25,13 +25,16 @@ import instrument.tap.stream.FloatTap;
 import java.util.ArrayList;
 import java.util.List;
 
+import log.Log;
 import sample.Broadcaster;
+import sample.Listener;
 import source.Source.SampleType;
 import alias.AliasList;
 import bits.MessageFramer;
 import bits.SyncPattern;
 import decode.Decoder;
 import decode.DecoderType;
+import dsp.afc.AutomaticFrequencyControl;
 import dsp.filter.DCRemovalFilter;
 import dsp.filter.FilterFactory;
 import dsp.filter.Filters;
@@ -95,7 +98,7 @@ public class MPT1327Decoder extends Decoder implements Instrumentable
 			/* I/Q low pass filtering narrow band FM demodulator */
 			mNBFMDemodulator = new NBFMDemodulator( 
 				FilterFactory.getLowPass( 48000, 4000, 73, WindowType.HAMMING ), 
-			    1.0002 );
+			    1.0002, true );
 			
 			this.addComplexListener( mNBFMDemodulator );
 			
@@ -166,6 +169,15 @@ public class MPT1327Decoder extends Decoder implements Instrumentable
         mControlMessageFramer.addMessageListener( mMessageProcessor );
         mTrafficMessageFramer.addMessageListener( mMessageProcessor );
 	}
+    
+	@Override
+    public void addUnfilteredFloatListener( Listener<Float> listener )
+    {
+		if( mNBFMDemodulator != null )
+		{
+			mNBFMDemodulator.addListener( listener );
+		}
+    }
 
 	@Override
     public DecoderType getType()

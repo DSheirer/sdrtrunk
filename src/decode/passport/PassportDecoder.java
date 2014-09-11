@@ -23,12 +23,14 @@ import instrument.tap.Tap;
 import java.util.ArrayList;
 import java.util.List;
 
+import sample.Listener;
 import source.Source.SampleType;
 import alias.AliasList;
 import bits.MessageFramer;
 import bits.SyncPattern;
 import decode.Decoder;
 import decode.DecoderType;
+import dsp.afc.AutomaticFrequencyControl;
 import dsp.filter.DCRemovalFilter2;
 import dsp.fsk.LTRFSKDecoder;
 import dsp.nbfm.FilteringNBFMDemodulator;
@@ -137,5 +139,14 @@ public class PassportDecoder extends Decoder implements Instrumentable
     public void removeTap( Tap tap )
     {
 		mPassportFSKDecoder.removeTap( tap );
+    }
+
+	@Override
+    public void addUnfilteredFloatListener( Listener<Float> listener )
+    {
+		if( mNBFMDemodulator != null )
+		{
+			mNBFMDemodulator.addListener( listener );
+		}
     }
 }

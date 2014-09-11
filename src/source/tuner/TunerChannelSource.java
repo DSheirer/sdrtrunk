@@ -24,22 +24,23 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import log.Log;
 import sample.Listener;
-import sample.Provider;
 import sample.complex.ComplexSample;
 import sample.complex.ComplexSampleAssembler;
 import source.ComplexSource;
-import source.Source.SampleType;
 import source.SourceException;
 import util.Oscillator;
 import controller.ThreadPoolManager;
 import controller.ThreadPoolManager.ThreadType;
+import dsp.afc.FrequencyErrorListener;
 import dsp.filter.ComplexFilter;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
 
 public class TunerChannelSource extends ComplexSource
 							 implements FrequencyChangeListener,
+							 			FrequencyErrorListener,
 							 			Listener<Float[]>
 {
 	private static int sCHANNEL_RATE = 48000;
@@ -55,8 +56,10 @@ public class TunerChannelSource extends ComplexSource
 
 	private ComplexSampleAssembler mBufferAssembler = 
 								new ComplexSampleAssembler( 3000 );
-	private long mTunerFrequency;
+	private long mTunerFrequency = 0;
+	private int mTunerFrequencyError = 0;
 	private int mTunerSampleRate;
+	private FrequencyChangeListener mFrequencyChangeListener;
 	private ThreadPoolManager mThreadPoolManager;
 	private ScheduledFuture<?> mTaskHandle;
 	
@@ -95,6 +98,8 @@ public class TunerChannelSource extends ComplexSource
     @Override
     public void dispose()
     {
+    	mFrequencyChangeListener = null;
+    	
 		//Tell the tuner to release our resources
 		mTuner.removeListener( (FrequencyChangeListener)this );
 		mTuner.releaseChannel( this );
@@ -155,43 +160,33 @@ public class TunerChannelSource extends ComplexSource
 	@Override
     public void frequencyChanged( long frequency, int bandwidth )
     {
-		
-		/* Frequency change */
-		if( frequency != mTunerFrequency )
+		/* Send change to Automatic Frequency Control */
+		if( mFrequencyChangeListener != null )
 		{
-			long frequencyOffset = frequency - mTunerChannel.getFrequency();
-			
-			if( mSineWaveGenerator == null )
-			{
-				mSineWaveGenerator = 
-					new Oscillator( frequencyOffset, bandwidth );
-			}
-			else
-			{
-				mSineWaveGenerator.setFrequency( frequencyOffset );
-			}
-			
-			/* Clear the buffer for the frequency to take immediate effect */
-			mBuffer.clear();
-			
-			mTunerFrequency = frequency;
+			mFrequencyChangeListener.frequencyChanged( frequency, bandwidth );
 		}
+		
+		long frequencyOffset = frequency - 
+				   mTunerChannel.getFrequency() -
+				   mTunerFrequencyError;
+
+		if( mSineWaveGenerator == null )
+		{
+			mSineWaveGenerator = new Oscillator( frequencyOffset, bandwidth );
+		}
+		else
+		{
+			mSineWaveGenerator.setFrequency( frequencyOffset );
+		}
+		
+		/* Clear the buffer for the frequency to take immediate effect */
+//		mBuffer.clear();
+		
+		mTunerFrequency = frequency;
 
 		/* Bandwidth/Sample rate change */
 		if( bandwidth != mTunerSampleRate )
 		{
-			long frequencyOffset = frequency - mTunerChannel.getFrequency();
-			
-			if( mSineWaveGenerator == null )
-			{
-				mSineWaveGenerator = 
-					new Oscillator( frequencyOffset, bandwidth );
-			}
-			else
-			{
-				mSineWaveGenerator.setSampleRate( bandwidth );
-			}
-
 			/* Get the original decimation filter output listener */
 			Listener<ComplexSample> listener = null;
 			
@@ -270,4 +265,26 @@ public class TunerChannelSource extends ComplexSource
 			}
         }
 	}
+
+	/**
+	 * Automatic Frequency Control
+	 */
+	@Override
+    public void setError( int error )
+    {
+		if( mTunerFrequencyError != error )
+		{
+			mTunerFrequencyError = error;
+			frequencyChanged( mTunerFrequency, mTunerSampleRate );
+		}
+		
+		Log.info( "TunerChannelSource - mistuned quantity:" + 
+						mTunerFrequencyError + " Hz" );
+    }
+
+	@Override
+    public void addListener( FrequencyChangeListener listener )
+    {
+		mFrequencyChangeListener = listener;
+    }
 }
