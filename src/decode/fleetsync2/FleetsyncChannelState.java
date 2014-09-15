@@ -17,6 +17,7 @@
  ******************************************************************************/
 package decode.fleetsync2;
 
+import log.Log;
 import message.Message;
 import alias.Alias;
 import controller.state.AuxChannelState;

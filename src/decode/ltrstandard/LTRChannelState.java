@@ -22,7 +22,9 @@ import java.util.HashMap;
 import message.Message;
 import alias.Alias;
 import alias.AliasList;
+import controller.activity.CallEvent;
 import controller.activity.CallEvent.CallEventType;
+import controller.activity.CallEventModel;
 import controller.channel.ProcessingChain;
 import controller.state.AuxChannelState;
 import controller.state.ChannelState;
@@ -72,19 +74,24 @@ public class LTRChannelState extends ChannelState
 			
 			switch( ltr.getMessageType() )
 			{
+				/**
+				 * Process Call Message
+				 * 
+				 * States:
+				 * 1) Call message with invalid LCN
+				 * 2) State=IDLE/FADE, new CA_STRT
+				 * 3) State=CALL, new CA_STRT, same talkgroup
+				 * 4) State=CALL, new CA_STRT, different talkgroup
+				 */
 				case CA_STRT:
 				    if( 0 < ltr.getChannel() && ltr.getChannel() <=20 )
 				    {
-                        /* If this channel is the same as the talkgroup's home
-                         * repeater, then the channel number refers to the 
-                         * currently tuned frequency and we capture the channel
-                         * number ... otherwise, it might be reflecting a call 
-                         * on another LCN */
-                        if( ltr.getChannel() == ltr.getHomeRepeater() )
-                        {
+				    	/* If we haven't captured the LCN yet ... */
+				    	if( mChannelNumber == 0 )
+				    	{
                             mChannelNumber = ltr.getChannel();
                             broadcastChange( ChangedAttribute.CHANNEL_NUMBER );
-                        }
+				    	}
 
                         /* If this call event is for this channel, then update
                          * talkgroup and alias */
@@ -95,32 +102,47 @@ public class LTRChannelState extends ChannelState
                             
                             mTalkgroupAlias = ltr.getTalkgroupIDAlias();
                             broadcastChange( ChangedAttribute.FROM_TALKGROUP_ALIAS );
+                            
+                        	LTRCallEvent current = getCurrentLTRCallEvent();
+                        	
+                        	/* If we have an ongoing call, then add this message
+                        	 * to the current event - if addMessage returns 
+                        	 * false, then we have a different talkgroup and a
+                        	 * new call event, so close out the old one. */
+                        	if( current != null && !current.addMessage( ltr ) )
+                        	{
+                    			if( current.isValid() )
+                    			{
+                    				mCallEventModel.setEnd( current );
+                    			}
+                    			else
+                    			{
+                    				mCallEventModel.remove( current );
+                    			}
+
+                    			setCallEventModel( null );
+                    			current = null;
+                        	}
+                        	
+                    		if( current == null )
+                    		{
+    	                        LTRCallEvent event = 
+    	                        		new LTRCallEvent.Builder( CallEventType.CALL )
+        	                            .to( ltr.getTalkgroupID() )
+        	                            .aliasList( getAliasList() )
+        	                            .channel( ltr.getChannel() )
+        	                            .frequency( ( ltr.getChannel() == mChannelNumber ) ? 
+        	                                    mProcessingChain.getChannel()
+        	                                        .getTunerChannel().getFrequency() : 0 )
+        	                            .build();
+        	                        
+        	                        mCallEventModel.add( event );
+
+        	                        setCurrentCallEvent( event );
+                    		}
+                        
+                        	setState( State.CALL );
                         }
-
-                        /* If this is a new call, log a call event */
-                        if( !mActiveCalls.containsKey( ltr.getChannel() ) ||
-                            !mActiveCalls.get( ltr.getChannel() )
-                                    .contentEquals( ltr.getTalkgroupID() )    )
-	                    {
-	                        mActiveCalls.put( ltr.getChannel(), ltr.getTalkgroupID() );
-
-	                        CallEventType callEventType = 
-	                                ( ltr.getChannel() == mChannelNumber ) ? 
-	                                     CallEventType.CALL_START : 
-	                                     CallEventType.CALL_DETECT;
-
-	                        mCallEventModel.add( 
-                                new LTRCallEvent.Builder( callEventType )
-                                .to( ltr.getTalkgroupID() )
-                                .aliasList( getAliasList() )
-                                .channel( ltr.getChannel() )
-                                .frequency( ( ltr.getChannel() == mChannelNumber ) ? 
-                                        mProcessingChain.getChannel()
-                                            .getTunerChannel().getFrequency() : 0 )
-                                .build() );
-                        }
-	                    
-	                    setState( State.CALL );
 				    }
 					break;
 				case CA_ENDD:
@@ -149,27 +171,47 @@ public class LTRChannelState extends ChannelState
 		}
     }
 	
+	public LTRCallEvent getCurrentLTRCallEvent()
+	{
+		CallEvent current = getCurrentCallEvent();
+		
+		if( current != null )
+		{
+			return (LTRCallEvent)current;
+		}
+		
+		return null;
+	}
+	
     /**
      * Intercept the fade event so that we can generate a call end event
      */
     @Override
     public void fade( final CallEventType type )
     {
-        /*
-         * We can receive multiple call tear-down messages -- only post a call
-         * end event for the one that can change the state to fade
-         */
+        /* We can receive multiple call tear-down messages -- only respond to
+         * the message that can change the state to fade */
         if( getState().canChangeTo( State.FADE ) )
         {
             mActiveCalls.clear();
             
-            mCallEventModel.add( 
-                    new LTRCallEvent.Builder( type )
-                        .aliasList( getAliasList() )
-                        .channel( mChannelNumber )
-                        .frequency( mProcessingChain.getChannel().getTunerChannel().getFrequency() )
-                        .to( mTalkgroup )
-                        .build() );
+            LTRCallEvent current = getCurrentLTRCallEvent();
+            
+            if( current != null )
+            {
+            	/* Close out the call event.  If we only received 1 call 
+            	 * message, then flag it as noise and remove the call event */
+            	if( current.isValid() )
+            	{
+            		mCallEventModel.setEnd( current );
+            	}
+            	else
+            	{
+            		mCallEventModel.remove( current );
+            	}
+            }
+            
+    		setCurrentCallEvent( null );
         }
         
         super.fade( type );

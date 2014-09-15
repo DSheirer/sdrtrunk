@@ -21,11 +21,13 @@ import alias.Alias;
 import alias.AliasList;
 import controller.activity.CallEvent;
 import decode.DecoderType;
+import decode.ltrstandard.LTRStandardMessage;
 
 public class LTRCallEvent extends CallEvent
 {
 	private int mChannel;
 	private long mFrequency;
+	private int mValidCallMessages = 1;
 	
 	public LTRCallEvent( CallEventType callEventType, 
 							 AliasList aliasList,
@@ -41,6 +43,50 @@ public class LTRCallEvent extends CallEvent
 	    mChannel = channel;
 	    mFrequency = frequency;
     }
+
+	/**
+	 * LTR sends multiple CALL messages during a call.  In order to detect noise
+	 * bursts from valid calls, send every valid call message to this method
+	 * and the event will keep a tally of valid call messages in order to
+	 * determine if the call was a valid (and loggable) call event.
+	 */
+	public boolean addMessage( LTRStandardMessage message )
+	{
+		String talkgroup = message.getTalkgroupID();
+		
+		if( talkgroup.contentEquals( getToID() ) )
+		{
+			mValidCallMessages++;
+			
+			return true;
+		}
+		
+		return false;
+	}
+	
+	public boolean addMessage( LTRNetMessage message )
+	{
+		String talkgroup = message.getTalkgroupID();
+		
+		if( talkgroup.contentEquals( getToID() ) )
+		{
+			mValidCallMessages++;
+			
+			return true;
+		}
+		
+		return false;
+	}
+	
+	public boolean isValid()
+	{
+		if( getCallEventType() == CallEventType.CALL )
+		{
+			return mValidCallMessages > 1;
+		}
+		
+		return true;
+	}
 	
 	private Alias getAlias( String talkgroup )
 	{
@@ -55,7 +101,7 @@ public class LTRCallEvent extends CallEvent
 	@Override
     public Alias getFromIDAlias()
     {
-		if( mCallEventType == CallEventType.CALL_START ||
+		if( mCallEventType == CallEventType.CALL ||
 			mCallEventType == CallEventType.REGISTER ||
 			mCallEventType == CallEventType.ID_UNIQUE )
 		{

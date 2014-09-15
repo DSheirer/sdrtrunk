@@ -17,6 +17,8 @@
  ******************************************************************************/
 package decode.passport;
 
+import log.Log;
+
 public enum PassportBand
 {
     BAND_800( "800", 800000000 ),
@@ -38,6 +40,8 @@ public enum PassportBand
     BAND_VHF( "VHF", 0 ),
     BAND_UNKNOWN( "UNK", 0 );
     
+    public static int CHANNEL_BANDWIDTH = 12500; //Hertz
+    
     private String mDescription;
     private int mBase;
     
@@ -57,6 +61,17 @@ public enum PassportBand
         {
             return PassportBand.BAND_UNKNOWN;
         }
+    }
+    
+    public long getFrequency( int channel )
+    {
+    	return ( mBase + ( channel * CHANNEL_BANDWIDTH ) );
+    }
+    
+    public int getChannel( long frequency )
+    {
+    	return Math.round( (float)( frequency - mBase ) / 
+    					   (float)CHANNEL_BANDWIDTH );
     }
     
     public String getDescription()

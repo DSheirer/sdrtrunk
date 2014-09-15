@@ -26,7 +26,8 @@ import decode.DecoderType;
 
 public abstract class CallEvent
 {
-	protected long mEventTime = System.currentTimeMillis();
+	protected long mEventStart = System.currentTimeMillis();
+	protected long mEventEnd;
 	
 	private SimpleDateFormat mSDF = new SimpleDateFormat( "yyyyMMdd','HHmmss" );
 
@@ -50,6 +51,11 @@ public abstract class CallEvent
 		mFromID = fromID;
 		mToID = toID;
 		mDetails = details;
+	}
+	
+	public void setEnd( long end )
+	{
+		mEventEnd = end;
 	}
 	
 	public DecoderType getDecoderType()
@@ -77,9 +83,14 @@ public abstract class CallEvent
 		return mAliasList != null;
 	}
 	
-	public long getEventTime()
+	public long getEventStartTime()
 	{
-		return mEventTime;
+		return mEventStart;
+	}
+	
+	public long getEventEndTime()
+	{
+		return mEventEnd;
 	}
 	
 	public String getFromID()
@@ -122,7 +133,8 @@ public abstract class CallEvent
 	
 	public static String getCSVHeader()
 	{
-		return "DATE,TIME,DECODER,EVENT,FROM,FROM_ALIAS,TO,TO_ALIAS,"
+		return "START_DATE,START_TIME,END_DATE,END_TIME,"
+				+ "DECODER,EVENT,FROM,FROM_ALIAS,TO,TO_ALIAS,"
 				+ "CHANNEL,FREQUENCY,DETAILS";
 	}
 	
@@ -131,7 +143,16 @@ public abstract class CallEvent
 		StringBuilder sb = new StringBuilder();
 
 		sb.append( "'" );
-		sb.append( mSDF.format( new Date( getEventTime() ) ) );
+		sb.append( mSDF.format( new Date( getEventStartTime() ) ) );
+		sb.append( "','" );
+		if( mEventEnd != 0 )
+		{
+			sb.append( mSDF.format( new Date( getEventEndTime() ) ) );
+		}
+		else
+		{
+			sb.append( "','" );
+		}
 		sb.append( "','" );
 		sb.append( getDecoderType().toString() );
 		sb.append( "','" );
@@ -189,11 +210,11 @@ public abstract class CallEvent
 	public enum CallEventType
 	{
 	    ACKNOWLEDGE( "Acknowledge" ),
-		CALL_DETECT( "Call Detect" ),
-		CALL_START( "Call Start" ),
-		CALL_START_UNIQUE_ID( "Call Start" ),
-		CALL_START_NO_TUNER( "Call - No Tuner" ),
+		CALL( "Call" ),
 		CALL_END( "Call End" ),
+		CALL_DETECT( "Call Detect" ),
+		CALL_UNIQUE_ID( "UID Call" ),
+		CALL_NO_TUNER( "Call - No Tuner" ),
 		CALL_TIMEOUT( "Call Timeout" ),
 		EMERGENCY( "EMERGENCY" ),
 		GPS( "GPS" ),
@@ -205,7 +226,8 @@ public abstract class CallEvent
 		REQUEST( "Request" ),
 		SDM( "SDM" ),
 		STATUS( "Status" ),
-		UNKNOWN( "Unknown" );
+		UNKNOWN( "Unknown" ),
+		INVALID( "Invalid" );
 		
 		private String mLabel;
 		

@@ -26,6 +26,7 @@ public class PassportCallEvent extends CallEvent
 {
 	private int mChannel;
 	private long mFrequency;
+	private int mValidCallMessages = 1;
 	
 	public PassportCallEvent( CallEventType callEventType, 
 							 AliasList aliasList,
@@ -41,6 +42,29 @@ public class PassportCallEvent extends CallEvent
 	    mChannel = channel;
 	    mFrequency = frequency;
     }
+	
+	public boolean addMessage( PassportMessage message )
+	{
+		String tg = message.getToID();
+		
+		if( tg.contentEquals( getToID() ) )
+		{
+			mValidCallMessages++;
+			return true;
+		}
+		
+		return false;
+	}
+	
+	public boolean isValid()
+	{
+		if( getCallEventType() == CallEventType.CALL )
+		{
+			return mValidCallMessages > 1;
+		}
+		
+		return true;
+	}
 	
 	private Alias getAlias( String talkgroup )
 	{

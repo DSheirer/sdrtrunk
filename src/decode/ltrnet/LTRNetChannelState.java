@@ -17,23 +17,27 @@
  ******************************************************************************/
 package decode.ltrnet;
 
+import java.awt.EventQueue;
+import java.util.HashMap;
+
 import message.Message;
 import alias.Alias;
 import alias.AliasList;
+import controller.activity.CallEvent;
 import controller.activity.CallEvent.CallEventType;
+import controller.activity.CallEventModel;
 import controller.channel.ProcessingChain;
 import controller.state.AuxChannelState;
 import controller.state.ChannelState;
+import controller.state.ChannelState.State;
 
 public class LTRNetChannelState extends ChannelState
 {
-	private String mToTalkgroup;
-	private Alias mToTalkgroupAlias;
-	private String mFromTalkgroup;
-	private Alias mFromTalkgroupAlias;
-	private String mFromTalkgroupType;
+	private String mTalkgroup;
+	private Alias mTalkgroupAlias;
+	private String mDescription;
 	private int mChannelNumber;
-	private LTRCallEvent mCurrentCallEvent;
+    private HashMap<Integer,String> mActiveCalls = new HashMap<Integer,String>();
 	private LTRNetActivitySummary mActivitySummary;
 	
 	public LTRNetChannelState( ProcessingChain channel, AliasList aliasList )
@@ -50,25 +54,45 @@ public class LTRNetChannelState extends ChannelState
 	public void fade( final CallEventType type )
 	{
 		/*
-		 * We can receive multiple call tear-down messages -- only post a call
-		 * end event for the one that can change the state to fade
+		 * We can receive multiple call tear-down messages -- only respond to
+		 * the message that can change the state to fade
 		 */
 		if( getState().canChangeTo( State.FADE ) )
 		{
-			mCallEventModel.add( 
-					new LTRCallEvent.Builder( type )
-						.aliasList( getAliasList() )
-						.channel( mChannelNumber )
-						.frequency( mProcessingChain.getChannel()
-								.getTunerChannel().getFrequency() )
-						.to( mToTalkgroup )
-						.build() );
-			
+			LTRCallEvent current = getCurrentLTRCallEvent();
+
+			if( current != null )
+			{
+            	/* Close out the call event.  If we only received 1 call 
+            	 * message, then flag it as noise and remove the call event */
+            	if( current.isValid() )
+            	{
+            		mCallEventModel.setEnd( current );
+            	}
+            	else
+            	{
+            		mCallEventModel.remove( current );
+            	}
+			}
 		}
 		
-		mCurrentCallEvent = null;
+		setCurrentCallEvent( null );
+		
+		mActiveCalls.clear();
 
 		super.fade( type );
+	}
+	
+	public LTRCallEvent getCurrentLTRCallEvent()
+	{
+		CallEvent current = getCurrentCallEvent();
+		
+		if( current != null )
+		{
+			return (LTRCallEvent)current;
+		}
+		
+		return null;
 	}
 	
 	@Override
@@ -103,64 +127,106 @@ public class LTRNetChannelState extends ChannelState
 			switch( ltr.getMessageType() )
 			{
 				case CA_STRT:
-					mToTalkgroup = ltr.getTalkgroupID();
-					broadcastChange( ChangedAttribute.TO_TALKGROUP );
-
-					if( talkgroupAlias != null )
+					if( mChannelNumber == 0 )
 					{
-						mToTalkgroupAlias = talkgroupAlias;
-						broadcastChange( ChangedAttribute.TO_TALKGROUP_ALIAS );
+						mChannelNumber = ltr.getChannel();
 					}
 					
-					mChannelNumber = ltr.getChannel();
-					broadcastChange( ChangedAttribute.CHANNEL_NUMBER );
-
-					if( getState() != ChannelState.State.CALL )
+					if( ltr.getChannel() == mChannelNumber )
 					{
-						mCallEventModel.add( 
-								new LTRCallEvent.Builder( CallEventType.CALL_START )
+						processCallMessage( ltr );
+
+						if( ltr.getGroup() == 253 )
+						{
+							mDescription = "REGISTER";
+							broadcastChange( ChangedAttribute.DESCRIPTION );
+						}
+						else
+						{
+							mTalkgroup = ltr.getTalkgroupID();
+							broadcastChange( ChangedAttribute.TO_TALKGROUP );
+							
+							if( talkgroupAlias != null )
+							{
+								mTalkgroupAlias = talkgroupAlias;
+								broadcastChange( ChangedAttribute.TO_TALKGROUP_ALIAS );
+							}
+						}
+					}
+					else
+					{
+						//Call Detect
+						if( !mActiveCalls.containsKey( ltr.getChannel() ) ||
+							!mActiveCalls.get( ltr.getChannel() )
+								.contentEquals( ltr.getTalkgroupID() ) )
+						{
+							mActiveCalls.put( ltr.getChannel(), 
+											  ltr.getTalkgroupID() );
+							
+							mCallEventModel.add(  
+								new LTRCallEvent.Builder( CallEventType.CALL_DETECT )
 								.aliasList( mAliasList )
 								.channel( ltr.getChannel() )
-								.frequency( mProcessingChain.getChannel()
-										.getTunerChannel().getFrequency() )
-								.to( mToTalkgroup )
+								.to( ltr.getTalkgroupID() )
 								.build() );
+						}
 					}
-
-					setState( State.CALL );
 					break;
 				case CA_ENDD:
-					mToTalkgroup = ltr.getTalkgroupID();
-					broadcastChange( ChangedAttribute.TO_TALKGROUP );
-
-					if( talkgroupAlias != null )
+					if( ltr.getGroup() != 253 )
 					{
-						mToTalkgroupAlias = talkgroupAlias;
-						broadcastChange( ChangedAttribute.TO_TALKGROUP_ALIAS );
+						mTalkgroup = ltr.getTalkgroupID();
+						broadcastChange( ChangedAttribute.TO_TALKGROUP );
+
+						if( talkgroupAlias != null )
+						{
+							mTalkgroupAlias = talkgroupAlias;
+							broadcastChange( ChangedAttribute.TO_TALKGROUP_ALIAS );
+						}
 					}
 					
 					fade( CallEventType.CALL_END );
 					break;
 				case ID_UNIQ:
-					mFromTalkgroupType = "UID";
-					broadcastChange( ChangedAttribute.FROM_TALKGROUP_TYPE );
+					mDescription = "REGISTER UID";
+					broadcastChange( ChangedAttribute.DESCRIPTION );
 
-					mFromTalkgroup = String.valueOf( ltr.getRadioUniqueID() );
-					broadcastChange( ChangedAttribute.FROM_TALKGROUP );
+					mTalkgroup = String.valueOf( ltr.getRadioUniqueID() );
+					broadcastChange( ChangedAttribute.TO_TALKGROUP );
 					
-					mFromTalkgroupAlias = ltr.getRadioUniqueIDAlias();
-					broadcastChange( ChangedAttribute.FROM_TALKGROUP_ALIAS );
+					mTalkgroupAlias = ltr.getRadioUniqueIDAlias();
+					broadcastChange( ChangedAttribute.TO_TALKGROUP_ALIAS );
 
-					mCallEventModel.add( 
+					final LTRCallEvent currentEvent = getCurrentLTRCallEvent();
+					
+					if( currentEvent != null && 
+						currentEvent.getCallEventType() == CallEventType.REGISTER )
+					{
+						final String uid = String.valueOf( ltr.getRadioUniqueID() );
+						
+						if( uid != null )
+						{
+							mCallEventModel.setFromID( currentEvent, uid );
+						}
+					}
+					else
+					{
+						mCallEventModel.add(  
 							new LTRCallEvent.Builder( CallEventType.REGISTER )
-							.aliasList( mAliasList )
-							.details( "Radio Unique ID" )
-							.frequency( mProcessingChain.getChannel()
-									.getTunerChannel().getFrequency() )
-							.from( String.valueOf( ltr.getRadioUniqueID() ) )
-							.build() );
+								.aliasList( mAliasList )
+								.details( "Radio Unique ID" )
+								.frequency( mProcessingChain.getChannel()
+										.getTunerChannel().getFrequency() )
+								.from( String.valueOf( ltr.getRadioUniqueID() ) )
+								.build() );
+					}
 
 					setState( State.CALL );
+					break;
+				case SY_IDLE:
+					mChannelNumber = ltr.getChannel();
+					broadcastChange( ChangedAttribute.CHANNEL_NUMBER );
+					break;
 				default:
 					break;
 			}
@@ -177,85 +243,83 @@ public class LTRNetChannelState extends ChannelState
 			switch( ltr.getMessageType() )
 			{
 				case CA_STRT:
-					mToTalkgroup = ltr.getTalkgroupID();
-					broadcastChange( ChangedAttribute.TO_TALKGROUP );
-					
-					if( talkgroupAlias != null )
-					{
-						mToTalkgroupAlias = talkgroupAlias;
-						broadcastChange( ChangedAttribute.TO_TALKGROUP_ALIAS );
-					}
+					processCallMessage( ltr );
 
-					if( getState() != State.CALL )
+					if( ltr.getGroup() == 253 )
 					{
-						mCurrentCallEvent = 
-							new LTRCallEvent.Builder( CallEventType.CALL_START )
-								.aliasList( mAliasList )
-								.channel( ltr.getChannel() )
-								.frequency( mProcessingChain.getChannel()
-										.getTunerChannel().getFrequency() )
-								.to( mToTalkgroup )
-								.build();
-						
-						mCallEventModel.add( mCurrentCallEvent );
+						mDescription = "REGISTER";
+						broadcastChange( ChangedAttribute.DESCRIPTION );
 					}
-					setState( State.CALL );
+					else
+					{
+						mTalkgroup = ltr.getTalkgroupID();
+						broadcastChange( ChangedAttribute.TO_TALKGROUP );
+						
+						if( talkgroupAlias != null )
+						{
+							mTalkgroupAlias = talkgroupAlias;
+							broadcastChange( ChangedAttribute.TO_TALKGROUP_ALIAS );
+						}
+					}
 					break;
 				case CA_ENDD:
-					mToTalkgroup = ltr.getTalkgroupID();
+					mTalkgroup = ltr.getTalkgroupID();
 					broadcastChange( ChangedAttribute.TO_TALKGROUP );
 
 					if( talkgroupAlias != null )
 					{
-						mToTalkgroupAlias = talkgroupAlias;
+						mTalkgroupAlias = talkgroupAlias;
 						broadcastChange( ChangedAttribute.TO_TALKGROUP_ALIAS );
 					}
 					fade( CallEventType.CALL_END );
 					break;
 				case ID_UNIQ:
-					mFromTalkgroupType = "UID";
-					broadcastChange( ChangedAttribute.FROM_TALKGROUP_TYPE );
+					mDescription = "REGISTER UID";
+					broadcastChange( ChangedAttribute.DESCRIPTION );
 
-					mFromTalkgroup = String.valueOf( ltr.getRadioUniqueID() );
-					broadcastChange( ChangedAttribute.FROM_TALKGROUP );
+					mTalkgroup = String.valueOf( ltr.getRadioUniqueID() );
+					broadcastChange( ChangedAttribute.TO_TALKGROUP );
 
-					mFromTalkgroupAlias = ltr.getRadioUniqueIDAlias();
-					broadcastChange( ChangedAttribute.FROM_TALKGROUP_ALIAS );
+					mTalkgroupAlias = ltr.getRadioUniqueIDAlias();
+					broadcastChange( ChangedAttribute.TO_TALKGROUP_ALIAS );
 					
-					if( getState() != State.CALL )
+					if( getState() != State.DATA )
 					{
-						mCallEventModel.add( new LTRCallEvent.Builder( 
-								CallEventType.ID_UNIQUE )
-								.aliasList( mAliasList )
-								.details( "Unique ID" )
-								.frequency( mProcessingChain.getChannel()
-										.getTunerChannel().getFrequency() )
-								.from( String.valueOf( ltr.getRadioUniqueID() ) )
-								.build() );
+						LTRCallEvent event = 
+							new LTRCallEvent.Builder( CallEventType.REGISTER )
+						.aliasList( mAliasList )
+						.channel( ltr.getChannel() )
+						.frequency( mProcessingChain.getChannel()
+								.getTunerChannel().getFrequency() )
+						.to( ltr.getTalkgroupID() )
+						.build();
+						
+						mCallEventModel.add( event );
+						
+						setCurrentCallEvent( event );
+
+						setState( State.DATA );
 					}
-					else
+					
+					if( mCurrentCallEvent != null )
 					{
-						if( mCurrentCallEvent != null )
-						{
-							mCurrentCallEvent.setFromID( 
-									String.valueOf( ltr.getRadioUniqueID() ) );
-							mCurrentCallEvent.setDetails( "Unique ID" );
-						}
+						mCurrentCallEvent.setFromID( 
+								String.valueOf( ltr.getRadioUniqueID() ) );
+						mCurrentCallEvent.setDetails( "Unique ID" );
 					}
-					setState( State.CALL );
 					break;
 				case ID_ESNH:
 				case ID_ESNL:
-					mFromTalkgroupType = "ESN";
-					broadcastChange( ChangedAttribute.FROM_TALKGROUP_TYPE );
+					mDescription = "ESN";
+					broadcastChange( ChangedAttribute.DESCRIPTION );
 					
-					mFromTalkgroup = ltr.getESN();
-					broadcastChange( ChangedAttribute.FROM_TALKGROUP );
+					mTalkgroup = ltr.getESN();
+					broadcastChange( ChangedAttribute.TO_TALKGROUP );
 
-					mFromTalkgroupAlias = ltr.getESNAlias();
-					broadcastChange( ChangedAttribute.FROM_TALKGROUP_ALIAS );
+					mTalkgroupAlias = ltr.getESNAlias();
+					broadcastChange( ChangedAttribute.TO_TALKGROUP_ALIAS );
 
-					setState( State.CALL );
+					setState( State.DATA );
 
 					mCallEventModel.add( 
 							new LTRCallEvent.Builder( CallEventType.REGISTER_ESN )
@@ -273,49 +337,88 @@ public class LTRNetChannelState extends ChannelState
 		}
     }
 	
+	private void processCallMessage( LTRNetMessage message )
+	{
+		LTRCallEvent current = getCurrentLTRCallEvent();
+
+		if( current == null || !current.addMessage( message ) )
+		{
+			if( current != null )
+			{
+				mCallEventModel.remove( current );
+			}
+			
+			LTRCallEvent event;
+			
+			if( message.getGroup() == 253 )
+			{
+				event = new LTRCallEvent.Builder( CallEventType.REGISTER )
+					.aliasList( mAliasList )
+					.channel( message.getChannel() )
+					.frequency( mProcessingChain.getChannel()
+							.getTunerChannel().getFrequency() )
+					.to( message.getTalkgroupID() )
+					.build();
+				
+				setState( State.DATA );
+			}
+			else
+			{
+				event = new LTRCallEvent.Builder( CallEventType.CALL )
+					.aliasList( mAliasList )
+					.channel( message.getChannel() )
+					.frequency( mProcessingChain.getChannel()
+							.getTunerChannel().getFrequency() )
+					.to( message.getTalkgroupID() )
+					.build();
+
+				setState( State.CALL );
+			}
+			
+			mCallEventModel.add( event );
+
+			setCurrentCallEvent( event );
+		}
+		else
+		{
+			if( getState() == State.CALL )
+			{
+				setState( State.CALL );
+			}
+			else if( getState() == State.DATA )
+			{
+				setState( State.DATA );
+			}
+		}
+	}
+	
 	public void reset()
 	{
-		mToTalkgroup = null;
+		mTalkgroup = null;
 		broadcastChange( ChangedAttribute.TO_TALKGROUP );
 
-		mToTalkgroupAlias = null;
+		mTalkgroupAlias = null;
 		broadcastChange( ChangedAttribute.TO_TALKGROUP_ALIAS );
 
-		mFromTalkgroup = null;
-		broadcastChange( ChangedAttribute.FROM_TALKGROUP );
-
-		mFromTalkgroupAlias = null;
-		broadcastChange( ChangedAttribute.FROM_TALKGROUP_ALIAS );
-
-		mFromTalkgroupType = " ";
-		broadcastChange( ChangedAttribute.FROM_TALKGROUP_TYPE );
+		mDescription = null;
+		broadcastChange( ChangedAttribute.DESCRIPTION );
 
 		super.reset();
 	}
 	
 	public String getToTalkgroup()
 	{
-		return mToTalkgroup;
+		return mTalkgroup;
 	}
 	
 	public Alias getToTalkgroupAlias()
 	{
-		return mToTalkgroupAlias;
+		return mTalkgroupAlias;
 	}
 	
-	public String getFromTalkgroup()
+	public String getDescription()
 	{
-		return mFromTalkgroup;
-	}
-	
-	public Alias getFromTalkgroupAlias()
-	{
-		return mFromTalkgroupAlias;
-	}
-
-	public String getFromTalkgroupType()
-	{
-		return mFromTalkgroupType;
+		return mDescription;
 	}
 	
 	public boolean hasChannelNumber()

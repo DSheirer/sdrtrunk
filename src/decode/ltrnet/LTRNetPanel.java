@@ -37,12 +37,11 @@ public class LTRNetPanel extends ChannelStatePanel
     private JLabel mChannelLabel;
 
     private JLabel mProtocol = new JLabel( "LTR-Net" );
-    private JLabel mToTalkgroup = new JLabel();
-    private JLabel mToTalkgroupAlias = new JLabel();
+    private JLabel mTalkgroup = new JLabel();
+    private JLabel mTalkgroupAlias = new JLabel();
 
-    private JLabel mFromType = new JLabel( " " );
-    private JLabel mFromTalkgroup = new JLabel();
-    private JLabel mFromTalkgroupAlias = new JLabel();
+    private JLabel mLCN = new JLabel( "LCN:" );
+    private JLabel mDescription = new JLabel();
     
 	public LTRNetPanel( Channel channel )
 	{
@@ -69,32 +68,28 @@ public class LTRNetPanel extends ChannelStatePanel
 		mProtocol.setFont( mFontDecoder );
 		mProtocol.setForeground( mColorLabelDecoder );
 
-		mToTalkgroup.setFont( mFontDecoder );
-		mToTalkgroup.setForeground( mColorLabelDecoder );
+		mTalkgroup.setFont( mFontDecoder );
+		mTalkgroup.setForeground( mColorLabelDecoder );
 
-		mToTalkgroupAlias.setFont( mFontDecoder );
-		mToTalkgroupAlias.setForeground( mColorLabelDecoder );
+		mTalkgroupAlias.setFont( mFontDecoder );
+		mTalkgroupAlias.setForeground( mColorLabelDecoder );
 
-		mFromType.setFont( mFontDecoder );
-		mFromType.setForeground( mColorLabelDecoder );
+		mLCN.setFont( mFontDecoder );
+		mLCN.setForeground( mColorLabelDecoder );
 
-		mFromTalkgroup.setFont( mFontDecoder );
-		mFromTalkgroup.setForeground( mColorLabelDecoder );
-
-		mFromTalkgroupAlias.setFont( mFontDecoder );
-		mFromTalkgroupAlias.setForeground( mColorLabelDecoder );
+		mDescription.setFont( mFontDecoder );
+		mDescription.setForeground( mColorLabelDecoder );
 
 		add( mStateLabel );
 		add( mSourceLabel );
 		add( mChannelLabel, "wrap" );
 
 		add( mProtocol );
-		add( mToTalkgroup );
-		add( mToTalkgroupAlias, "wrap" );
+		add( mTalkgroup );
+		add( mTalkgroupAlias, "wrap" );
 		
-		add( mFromType );
-		add( mFromTalkgroup );
-		add( mFromTalkgroupAlias, "wrap" );
+		add( mLCN );
+		add( mDescription, "span,wrap" );
 	}
 
 	@Override
@@ -122,46 +117,30 @@ public class LTRNetPanel extends ChannelStatePanel
 					case SYSTEM_NAME:
 				    	mChannelLabel.setText( mChannel.getChannelDisplayName() );
 				    	break;
-					case FROM_TALKGROUP:
-			    		mFromTalkgroup.setText( state.getFromTalkgroup() );
-			    		break;
-					case FROM_TALKGROUP_ALIAS:
-			    		Alias fromAlias = state.getFromTalkgroupAlias();
-			    		
-			    		if( fromAlias != null )
-			    		{
-							mFromTalkgroupAlias.setText( fromAlias.getName() );
-							String iconNameString = fromAlias.getIconName();
-				    		mFromTalkgroupAlias.setIcon( getSettingsManager()
-				    				.getImageIcon( iconNameString, 12 ) );
-			    		}
-			    		else
-			    		{
-			    			mFromTalkgroupAlias.setText( null );
-			    			mFromTalkgroupAlias.setIcon( null );
-			    		}
-						break;
-					case FROM_TALKGROUP_TYPE:
-						mFromType.setText( state.getFromTalkgroupType() );
-						break;
 					case TO_TALKGROUP:
-			    		mToTalkgroup.setText( state.getToTalkgroup() );
+			    		mTalkgroup.setText( state.getToTalkgroup() );
 			    		break;
 					case TO_TALKGROUP_ALIAS:
 						Alias tgAlias = state.getToTalkgroupAlias();
 						
 						if( tgAlias != null )
 						{
-							mToTalkgroupAlias.setText( tgAlias.getName() );
+							mTalkgroupAlias.setText( tgAlias.getName() );
 							String iconNameString = tgAlias.getIconName();
-				    		mToTalkgroupAlias.setIcon( getSettingsManager()
+				    		mTalkgroupAlias.setIcon( getSettingsManager()
 				    				.getImageIcon( iconNameString, 12 ) );
 						}
 						else
 						{
-							mToTalkgroupAlias.setText( null );
-							mToTalkgroupAlias.setIcon( null );
+							mTalkgroupAlias.setText( null );
+							mTalkgroupAlias.setIcon( null );
 						}
+						break;
+					case DESCRIPTION:
+						mDescription.setText( state.getDescription() );
+						break;
+					case CHANNEL_NUMBER:
+						mLCN.setText( "LCN: " + state.getChannelNumber() );
 						break;
 					default:
 						break;
@@ -192,25 +171,21 @@ public class LTRNetPanel extends ChannelStatePanel
 					{
 						mProtocol.setForeground( mColorLabelDecoder );
 					}
-					if( mToTalkgroup != null )
+					if( mTalkgroup != null )
 					{
-						mToTalkgroup.setForeground( mColorLabelDecoder );
+						mTalkgroup.setForeground( mColorLabelDecoder );
 					}
-					if( mToTalkgroupAlias != null )
+					if( mTalkgroupAlias != null )
 					{
-						mToTalkgroupAlias.setForeground( mColorLabelDecoder );
+						mTalkgroupAlias.setForeground( mColorLabelDecoder );
 					}
-					if( mFromType != null )
+					if( mLCN != null )
 					{
-						mFromType.setForeground( mColorLabelDecoder );
+						mLCN.setForeground( mColorLabelDecoder );
 					}
-					if( mFromTalkgroup != null )
+					if( mDescription != null )
 					{
-						mFromTalkgroup.setForeground( mColorLabelDecoder );
-					}
-					if( mFromTalkgroupAlias != null )
-					{
-						mFromTalkgroupAlias.setForeground( mColorLabelDecoder );
+						mDescription.setForeground( mColorLabelDecoder );
 					}
 					break;
 				case CHANNEL_STATE_LABEL_DETAILS:

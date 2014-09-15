@@ -17,11 +17,15 @@
  ******************************************************************************/
 package decode.passport;
 
+import java.util.HashMap;
+
+import log.Log;
 import message.Message;
 import alias.Alias;
 import alias.AliasList;
 import audio.AudioType;
 import audio.SquelchListener;
+import controller.activity.CallEvent;
 import controller.activity.CallEvent.CallEventType;
 import controller.channel.ProcessingChain;
 import controller.state.AuxChannelState;
@@ -34,9 +38,10 @@ public class PassportChannelState extends ChannelState
 	private String mMobileID;
 	private Alias mMobileIDAlias;
 	private int mChannelNumber;
-	private long mFrequency;
-	private PassportCallEvent mCurrentCallEvent;
+	private int mSiteNumber;
+	private PassportBand mSiteBand;
 	private PassportActivitySummary mActivitySummary;
+	private HashMap<Integer,String> mActiveCalls = new HashMap<Integer,String>();
 	
 	public PassportChannelState( ProcessingChain channel, AliasList aliasList )
 	{
@@ -44,7 +49,7 @@ public class PassportChannelState extends ChannelState
 		
 		mActivitySummary = new PassportActivitySummary( aliasList );
 	}
-
+	
 	@Override
     public String getActivitySummary()
     {
@@ -66,7 +71,7 @@ public class PassportChannelState extends ChannelState
     public void receive( Message message )
     {
 		super.receive( message );
-		
+
 		if( message instanceof PassportMessage )
 		{
 			mActivitySummary.receive( message );
@@ -78,44 +83,109 @@ public class PassportChannelState extends ChannelState
 				switch( passport.getMessageType() )
 				{
 	                case CA_STRT:
-	                	setTalkgroup( String.valueOf( passport.getTalkgroupID() ) );
-	                	setTalkgroupAlias( passport.getTalkgroupIDAlias() );
-	                    
-	                    if( mTalkgroupAlias != null )
+	                    if( mChannelNumber == 0 )
 	                    {
-	                    	try
-	                    	{
-		                    	if( mTalkgroupAlias.hasAudioType() )
+	                    	mChannelNumber = passport.getLCN();
+	                    }
+	                	
+	                    if( passport.getLCN() == mChannelNumber )
+	                    {
+		                	setTalkgroup( String.valueOf( passport.getTalkgroupID() ) );
+		                	setTalkgroupAlias( passport.getTalkgroupIDAlias() );
+		                    
+		                    if( mTalkgroupAlias != null )
+		                    {
+		                    	try
 		                    	{
-	                				mAudioTypeListener.setAudioType( 
-	                							mTalkgroupAlias.getAudioType() );
+			                    	if( mTalkgroupAlias.hasAudioType() )
+			                    	{
+		                				mAudioTypeListener.setAudioType( 
+		                							mTalkgroupAlias.getAudioType() );
+			                    	}
 		                    	}
-	                    	}
-	                    	catch( Exception e )
-	                    	{
-	                    		e.printStackTrace();
-	                    	}
+		                    	catch( Exception e )
+		                    	{
+		                    		Log.error( "Error setting audio for "
+		                    				+ "passport call", e );
+		                    	}
+		                    }
+		                    
+		                    PassportCallEvent current = 
+		                    		getCurrentPassportCallEvent();
+
+		                    /* If we're already in a call event, add the message
+		                     * to the current call event ... if false, then we
+		                     * have a different call ... cleanup the old one. */
+		                    if( current != null && !current.addMessage( passport ) )
+		                    {
+		                    	Log.info( "Current call event - testing"  );
+
+		                    	if( current.isValid() )
+		                    	{
+		                    		final PassportCallEvent endEvent = 
+		                    				getCurrentPassportCallEvent();
+		                    		
+		                    		mCallEventModel.setEnd( endEvent );
+		                    	}
+		                    	else
+		                    	{
+		                    		mCallEventModel.remove( current );
+		                    	}
+		                    	
+		                    	current = null;
+		                    	setCurrentCallEvent( null );
+		                    }
+
+		                    if( current == null )
+		                    {
+		                    	mCurrentCallEvent = new PassportCallEvent
+		                    			.Builder( CallEventType.CALL )
+		                    			.aliasList( mAliasList )
+		                    			.channel( mChannelNumber )
+		                    			.frequency( passport.getLCNFrequency() )
+		                    			.to( String.valueOf( passport.getTalkgroupID() ) )
+		                    			.build();
+		                    	
+			                    mCallEventModel.add( mCurrentCallEvent );
+		                    }
+		                    
+		                    State state = getState();
+		                    
+		                    if( state == State.IDLE || state == State.CALL )
+		                    {
+			                    setState( State.CALL );
+		                    }
+		                    else if( state == State.DATA )
+		                    {
+		                    	setState( State.DATA );
+		                    }
 	                    }
-	                    
-	                    mChannelNumber = passport.getLCN();
-	                    mFrequency = passport.getLCNFrequency();
-	                    
-	                    if( getState() != State.CALL )
+	                    else
 	                    {
-	                    	mCurrentCallEvent = new PassportCallEvent
-	                    			.Builder( CallEventType.CALL_START )
-	                    			.aliasList( mAliasList )
-	                    			.channel( mChannelNumber )
-	                    			.frequency( mFrequency )
-	                    			.to( String.valueOf( passport.getTalkgroupID() ) )
-	                    			.build();
+	                    	//Call Detection
+	                    	int lcn = passport.getLCN();
+	                    	String tg = String.valueOf( passport.getTalkgroupID() );
 	                    	
-		                    mCallEventModel.add( mCurrentCallEvent );
+	                    	if( !mActiveCalls.containsKey( lcn ) ||
+	                    		!mActiveCalls.get( lcn ).contentEquals( tg ) )
+	                    	{
+	                    		mActiveCalls.put( lcn, tg );
+
+	                    		PassportCallEvent event = new PassportCallEvent
+		                    			.Builder( CallEventType.CALL_DETECT )
+		                    			.aliasList( mAliasList )
+		                    			.channel( lcn )
+		                    			.details( "Site: " + passport.getSite() )
+		                    			.frequency( passport.getLCNFrequency() )
+		                    			.to( tg )
+		                    			.build();
+	                    		
+	                    		mCallEventModel.add( event );
+	                    	}
 	                    }
-	                    
-	                    setState( State.CALL );
 	                    break;
 	                case DA_STRT:
+//TODO: add channel number checking and log a call event if on another site
 	                	setTalkgroup( String.valueOf( passport.getTalkgroupID() ) );
 	                	setTalkgroupAlias( passport.getTalkgroupIDAlias() );
 	                    setState( State.DATA );
@@ -129,12 +199,48 @@ public class PassportChannelState extends ChannelState
 	                	setMobileID( passport.getMobileID() );
 	                	setMobileIDAlias( passport.getMobileIDAlias() );
 	                	
-	                	if( mCurrentCallEvent != null )
+	                	final String mid = passport.getMobileID();
+	                	
+	                	final PassportCallEvent event = 
+	                			getCurrentPassportCallEvent();
+	                	
+	                	if( event != null && mid != null )
 	                	{
-	                		mCurrentCallEvent.setFromID( mMobileID );
+	                		mCallEventModel.setFromID( event, mid );
 	                	}
+
 	                    setState( State.CALL );
 	                	break;
+	                case RA_REGI:
+	                	mCallEventModel.add( new PassportCallEvent
+            			.Builder( CallEventType.REGISTER )
+            			.aliasList( mAliasList )
+            			.channel( passport.getLCN() )
+            			.frequency( passport.getLCNFrequency() )
+            			.to( passport.getToID() )
+            			.build() );
+//TODO: add logic to recognize the register event and suppress the subsequent
+//call messages, but capture the group assignments. 
+	                	setState( State.DATA );
+	                	break;
+	                case SY_IDLE:
+	                	PassportBand band = passport.getSiteBand();
+	                	
+	                	if( mSiteBand == null || mSiteBand != band )
+	                	{
+	                		mSiteBand = band;
+	                		
+	                		mSiteNumber = passport.getSite();
+	                		
+	                		long frequency = mProcessingChain.getChannel()
+	                				.getTunerChannel().getFrequency();
+	                		
+	                		mChannelNumber = mSiteBand.getChannel( frequency );
+	                		
+	                		broadcastChange( ChangedAttribute.CHANNEL_NUMBER );
+	                	}
+                	default:
+                		break;
 				}
 			}
 		}
@@ -152,21 +258,33 @@ public class PassportChannelState extends ChannelState
 		 */
 		if( getState().canChangeTo( State.FADE ) )
 		{
-			mCallEventModel.add( 
-					new PassportCallEvent.Builder( type )
-						.aliasList( getAliasList() )
-						.channel( mChannelNumber )
-						.frequency( mProcessingChain.getChannel()
-								.getTunerChannel().getFrequency() )
-						.to( mTalkgroup )
-						.build() );
+			final PassportCallEvent current = getCurrentPassportCallEvent();
+			
+			if( current != null )
+			{
+				mCallEventModel.setEnd( current );
+			}
 		}
+		
+		setCurrentCallEvent( null );
+		
+		mActiveCalls.clear();
 		
 		super.fade( type );
 	}
 	
+	public PassportCallEvent getCurrentPassportCallEvent()
+	{
+		CallEvent current = getCurrentCallEvent();
+		
+		if( current != null )
+		{
+			return (PassportCallEvent)current;
+		}
+		
+		return null;
+	}
     
-	
     /**
      * Make the ConventionalChannelState always unsquelched
      */
@@ -188,6 +306,16 @@ public class PassportChannelState extends ChannelState
 		setMobileIDAlias( null );
 
 		super.reset();
+	}
+	
+	public int getChannelNumber()
+	{
+		return mChannelNumber;
+	}
+	
+	public int getSiteNumber()
+	{
+		return mSiteNumber;
 	}
 	
 	public String getTalkgroup()
