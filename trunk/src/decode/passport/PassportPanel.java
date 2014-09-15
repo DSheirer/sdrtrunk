@@ -41,7 +41,7 @@ public class PassportPanel extends ChannelStatePanel
     private JLabel mToTalkgroup = new JLabel();
     private JLabel mToTalkgroupAlias = new JLabel();
     
-    private JLabel mFromTalkgroupType = new JLabel( " " );
+    private JLabel mSiteAndChannel = new JLabel( "Site:" );
     private JLabel mFromTalkgroup = new JLabel();
     private JLabel mFromTalkgroupAlias = new JLabel();
     
@@ -86,8 +86,8 @@ public class PassportPanel extends ChannelStatePanel
 		mToTalkgroupAlias.setFont( mFontDecoder );
 		mToTalkgroupAlias.setForeground( mColorLabelDecoder );
 
-		mFromTalkgroupType.setFont( mFontDecoder );
-		mFromTalkgroupType.setForeground( mColorLabelDecoder );
+		mSiteAndChannel.setFont( mFontDecoder );
+		mSiteAndChannel.setForeground( mColorLabelDecoder );
 
 		mFromTalkgroup.setFont( mFontDecoder );
 		mFromTalkgroup.setForeground( mColorLabelDecoder );
@@ -103,7 +103,7 @@ public class PassportPanel extends ChannelStatePanel
 		add( mToTalkgroup );
 		add( mToTalkgroupAlias, "wrap" );
 
-		add( mFromTalkgroupType );
+		add( mSiteAndChannel );
 		add( mFromTalkgroup );
 		add( mFromTalkgroupAlias, "wrap" );
 	}
@@ -135,7 +135,16 @@ public class PassportPanel extends ChannelStatePanel
 				    	mChannelLabel.setText( mChannel.getChannelDisplayName() );
 				    	break;
 					case TO_TALKGROUP:
-			    		mToTalkgroup.setText( state.getTalkgroup() );
+						String tg = state.getTalkgroup();
+						
+						if( tg != null )
+						{
+				    		mToTalkgroup.setText( "TG:" + tg );
+						}
+						else
+						{
+				    		mToTalkgroup.setText( null );
+						}
 			    		break;
 					case TO_TALKGROUP_ALIAS:
 						Alias toAlias = state.getTalkgroupAlias();
@@ -156,16 +165,14 @@ public class PassportPanel extends ChannelStatePanel
 					case FROM_TALKGROUP:
 						String mid = state.getMobileID();
 						
-			    		mFromTalkgroup.setText( state.getMobileID() );
-
-			    		if( mid != null )
-			    		{
-				    		mFromTalkgroupType.setText( "Mobile ID" );
-			    		}
-			    		else
-			    		{
-			    			mFromTalkgroupType.setText( " " );
-			    		}
+						if( mid != null )
+						{
+				    		mFromTalkgroup.setText( "MIN:" + mid );
+						}
+						else
+						{
+							mFromTalkgroup.setText( null );
+						}
 			    		break;
 					case FROM_TALKGROUP_ALIAS:
 			    		Alias fromAlias = state.getMobileIDAlias();
@@ -183,6 +190,15 @@ public class PassportPanel extends ChannelStatePanel
 			    			mFromTalkgroupAlias.setIcon( null );
 			    		}
 			    		break;
+					case CHANNEL_NUMBER:
+						StringBuilder sb = new StringBuilder();
+						sb.append( "Site: " );
+						sb.append( state.getSiteNumber() );
+						sb.append( "/" );
+						sb.append( state.getChannelNumber() );
+						
+						mSiteAndChannel.setText( sb.toString() );
+						break;
 		    		default:
 		    			break;
 				}
@@ -222,9 +238,9 @@ public class PassportPanel extends ChannelStatePanel
 						{
 							mToTalkgroupAlias.setForeground( mColorLabelDecoder );
 						}
-						if( mFromTalkgroupType != null )
+						if( mSiteAndChannel != null )
 						{
-							mFromTalkgroupType.setForeground( mColorLabelDecoder );
+							mSiteAndChannel.setForeground( mColorLabelDecoder );
 						}
 						if( mFromTalkgroup != null )
 						{

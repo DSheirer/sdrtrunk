@@ -207,11 +207,6 @@ public class PassportMessage extends Message
         return PassportBand.lookup( getInt( sNEIGHBOR_BAND ) );
     }
 
-    public long getFrequency( int base, int channel )
-    {
-    	return ( base + ( channel * 12500 ) );
-    }
-    
     public int getFree()
     {
         return getInt( sFREE );
@@ -233,7 +228,7 @@ public class PassportMessage extends Message
     	{
     		PassportBand band = getNeighborBand();
     		
-    		return getFrequency( band.getBase(), getFree() );
+    		return band.getFrequency( getFree() );
     	}
     	
     	return 0;
@@ -377,15 +372,13 @@ public class PassportMessage extends Message
 	@Override
     public String getToID()
     {
-	    // TODO Auto-generated method stub
-	    return null;
+		return String.valueOf( getTalkgroupID() );
     }
 
 	@Override
     public Alias getToIDAlias()
     {
-	    // TODO Auto-generated method stub
-	    return null;
+	    return getTalkgroupIDAlias();
     }
 	
 	public long getSiteFrequency( int channel )
@@ -396,9 +389,7 @@ public class PassportMessage extends Message
 			
 			if( band != PassportBand.BAND_UNKNOWN )
 			{
-				int base = band.getBase();
-				
-				return getFrequency( base, channel );
+				return band.getFrequency( channel );
 			}
 		}
 
@@ -493,7 +484,7 @@ public class PassportMessage extends Message
 	        	sb.append( getFreeFrequencyFormatted() );
 		        break;
 			case CA_ENDD:
-				sb.append( "END TG:" );
+				sb.append( "END  TG:" );
 				sb.append( format( getTalkgroupID(), 5 ) );
 				sb.append( "/" );
 				Alias endAlias = getTalkgroupIDAlias();

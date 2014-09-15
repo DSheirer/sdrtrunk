@@ -17,6 +17,7 @@
  ******************************************************************************/
 package controller.state;
 
+import java.awt.EventQueue;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.ScheduledFuture;
@@ -42,6 +43,7 @@ import controller.activity.CallEventModel;
 import controller.activity.MessageActivityModel;
 import controller.channel.Channel.ChannelType;
 import controller.channel.ProcessingChain;
+import decode.mpt1327.MPT1327CallEvent;
 
 /**
  * ChannelState provides a state machine for tracking a voice or data call
@@ -98,7 +100,6 @@ public abstract class ChannelState implements Listener<Message>
 	protected AudioTypeListener mAudioTypeListener;
 	protected AudioType mAudioType = AudioType.NORMAL;
 	
-	
 	protected CallEventModel mCallEventModel = new CallEventModel();
 
 	protected JTable mCallEventTable;
@@ -110,6 +111,8 @@ public abstract class ChannelState implements Listener<Message>
 	protected ProcessingChain mProcessingChain;
 
 	protected AliasList mAliasList;
+	
+	protected CallEvent mCurrentCallEvent;
 	
 	public ChannelState( ProcessingChain processingChain, AliasList aliasList )
 	{
@@ -123,6 +126,16 @@ public abstract class ChannelState implements Listener<Message>
 		SystemProperties props = SystemProperties.getInstance();
 		mCallFadeTimeout = props.get( "call.fade.timeout", 2000 );
 		mCallResetTimeout = props.get( "call.reset.timeout", 4000 );
+	}
+	
+	public void setCurrentCallEvent( CallEvent callEvent )
+	{
+		mCurrentCallEvent = callEvent;
+	}
+	
+	public CallEvent getCurrentCallEvent()
+	{
+		return mCurrentCallEvent;
 	}
 	
 	/**
@@ -190,12 +203,9 @@ public abstract class ChannelState implements Listener<Message>
 		return mAliasList != null;
 	}
 	
-	public void broadcastChange( ChangedAttribute attribute )
+	public void broadcastChange( final ChangedAttribute attribute )
 	{
-		if( mChangeBroadcaster != null )
-		{
-			mChangeBroadcaster.broadcast( attribute );
-		}
+		mChangeBroadcaster.broadcast( attribute );
 	}
 	
 	public void setCallFadeTimeout( long milliseconds )
@@ -648,6 +658,7 @@ public abstract class ChannelState implements Listener<Message>
         CHANNEL_SITE_NUMBER,
         CHANNEL_SITE_NUMBER_ALIAS,
         CHANNEL_STATE,
+        DESCRIPTION,
         FROM_TALKGROUP,
         FROM_TALKGROUP_ALIAS,
         FROM_TALKGROUP_TYPE,

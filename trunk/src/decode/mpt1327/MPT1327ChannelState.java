@@ -23,6 +23,7 @@ import source.config.SourceConfigTuner;
 import alias.AliasList;
 import audio.SquelchListener;
 import audio.SquelchListener.SquelchState;
+import controller.activity.CallEvent;
 import controller.activity.CallEvent.CallEventType;
 import controller.channel.Channel;
 import controller.channel.Channel.ChannelType;
@@ -43,7 +44,6 @@ public class MPT1327ChannelState extends ChannelState
 	private ChannelMap mChannelMap;
 	private MPT1327ActivitySummary mActivitySummary;
 	
-	
 	public MPT1327ChannelState( ProcessingChain processingChain, 
 								AliasList aliasList,
 								ChannelMap channelMap )
@@ -63,6 +63,12 @@ public class MPT1327ChannelState extends ChannelState
 		
 		mActivitySummary.dispose();
 		mActivitySummary = null;
+		mCurrentCallEvent = null;
+	}
+	
+	public void setCurrentCall( MPT1327CallEvent event )
+	{
+		mCurrentCallEvent = event;
 	}
 	
 	@Override
@@ -203,8 +209,8 @@ public class MPT1327ChannelState extends ChannelState
 								traffic.addListener( (Listener<Message>)this );
 								
 								CallEventType type = traffic.isProcessing() ? 
-											CallEventType.CALL_START : 
-											CallEventType.CALL_START_NO_TUNER;
+											CallEventType.CALL : 
+											CallEventType.CALL_NO_TUNER;
 								
 								/*
 								 * Set the traffic channel's call event model to
@@ -212,15 +218,20 @@ public class MPT1327ChannelState extends ChannelState
 								 */
 								traffic.getProcessingChain().getChannelState()
 										.setCallEventModel( mCallEventModel );
+
+								MPT1327CallEvent callStartEvent = 
+										new MPT1327CallEvent.Builder( type )
+								.aliasList( traffic.getProcessingChain().getAliasList() )
+								.channel( channelNumber )
+								.frequency( mChannelMap.getFrequency( channelNumber ) )
+								.from( mpt.getFromID() )
+								.to( mpt.getToID() )
+								.build();
 								
-								mCallEventModel.add( 
-									new MPT1327CallEvent.Builder( type )
-										.aliasList( traffic.getProcessingChain().getAliasList() )
-										.channel( channelNumber )
-										.frequency( mChannelMap.getFrequency( channelNumber ) )
-										.from( mpt.getFromID() )
-										.to( mpt.getToID() )
-										.build() );
+								traffic.getProcessingChain().getChannelState()
+									.setCurrentCallEvent( callStartEvent );
+
+								mCallEventModel.add( callStartEvent );
 							}
 						}
 						break;
@@ -260,14 +271,25 @@ public class MPT1327ChannelState extends ChannelState
 		 */
 		if( getState().canChangeTo( State.FADE ) )
 		{
-			mCallEventModel.add( 
-					new MPT1327CallEvent.Builder( type )
-						.aliasList( getAliasList() )
-						.channel( mChannelNumber )
-						.frequency( mChannelMap.getFrequency( mChannelNumber ) )
-						.from( mFromTalkgroup )
-						.to( mToTalkgroup )
-						.build() );
+			CallEvent current = getCurrentCallEvent();
+
+			if( current != null )
+			{
+				mCallEventModel.setEnd( current );
+			}
+			else
+			{
+				mCallEventModel.add( 
+						new MPT1327CallEvent.Builder( type )
+							.aliasList( getAliasList() )
+							.channel( mChannelNumber )
+							.frequency( mChannelMap.getFrequency( mChannelNumber ) )
+							.from( mFromTalkgroup )
+							.to( mToTalkgroup )
+							.build() );
+			}
+			
+			setCurrentCall( null );
 		}
 		
 		super.fade( type );

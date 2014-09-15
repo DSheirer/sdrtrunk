@@ -58,7 +58,7 @@ public class DFTProcessor implements Listener<Float[]>,
 	private FFTWidth mNewFFTWidth = FFTWidth.FFT04096;
 	
 	private double[] mWindow;
-	private WindowType mWindowType = Window.WindowType.BLACKMAN;
+	private WindowType mWindowType = Window.WindowType.COSINE;
 
 	private FloatFFT_1D mFFT = new FloatFFT_1D( mFFTWidth.getWidth() );
 	

@@ -18,29 +18,36 @@
 package controller.activity;
 
 import java.awt.EventQueue;
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.LinkedList;
 
 import javax.swing.table.AbstractTableModel;
 
+import log.Log;
 import sample.Broadcaster;
 import sample.Listener;
+import controller.activity.CallEvent.CallEventType;
 
 public class CallEventModel extends AbstractTableModel
 {
     private static final long serialVersionUID = 1L;
     
+	private static DecimalFormat mFrequencyFormatter = 
+			new DecimalFormat( "0.000000" );
+    
     private static final int DEFAULT_ICON_HEIGHT = 14;
     
-    private static final int sTIME = 0;
-    private static final int sEVENT = 1;
-    private static final int sFROM_ID = 2;
-    private static final int sFROM_ALIAS = 3;
-    private static final int sTO_ID = 4;
-    private static final int sTO_ALIAS =5;
-    private static final int sCHANNEL = 6;
-    private static final int sFREQUENCY = 7;
-    private static final int sDETAILS = 8;
+    public static final int TIME = 0;
+    public static final int EVENT = 1;
+    public static final int FROM_ID = 2;
+    public static final int FROM_ALIAS = 3;
+    public static final int TO_ID = 4;
+    public static final int TO_ALIAS = 5;
+    public static final int CHANNEL = 6;
+    public static final int FREQUENCY = 7;
+    public static final int DETAILS = 8;
 
 	protected int mMaxMessages = 500;
 
@@ -49,9 +56,9 @@ public class CallEventModel extends AbstractTableModel
 	protected String[] mHeaders = new String[] { "Time",
 												 "Event",
 												 "From",
-												 "From Alias",
+												 "Alias",
 												 "To",
-												 "To Alias",
+												 "Alias",
 												 "Channel",
 												 "Frequency",
 												 "Details" };
@@ -67,16 +74,23 @@ public class CallEventModel extends AbstractTableModel
 	
 	public void dispose()
 	{
-		mEvents.clear();
+		synchronized( mEvents )
+		{
+			mEvents.clear();
+		}
+		
 		mBroadcaster.dispose();
 	}
 	
 	public void flush()
 	{
 		/* Flush all events to listeners ( normally the call event logger ) */
-		for( CallEvent event: mEvents )
+		synchronized( mEvents )
 		{
-			mBroadcaster.receive( event );
+			for( CallEvent event: mEvents )
+			{
+				mBroadcaster.receive( event );
+			}
 		}
 	}
 	
@@ -92,29 +106,136 @@ public class CallEventModel extends AbstractTableModel
 	
 	public void add( final CallEvent event )
 	{
+		try
+		{
+			synchronized ( mEvents )
+	        {
+				mEvents.addFirst( event );
+	        }
+
+			fireTableRowsInserted( 0, 0 );
+
+			prune();
+		}
+		catch( Exception e )
+		{
+			e.printStackTrace();
+		}
+	}
+	
+	public void remove( final CallEvent event )
+	{
 		EventQueue.invokeLater( new Runnable() 
 		{
 			@Override
             public void run()
             {
-				mEvents.addFirst( event );
-
-				CallEventModel.this.fireTableRowsInserted( 0, 0 );
-
-				prune();
+				synchronized ( mEvents )
+                {
+					final int row = mEvents.indexOf( event );
+					
+					mEvents.remove( event );
+					
+					if( row != -1 )
+					{
+						fireTableRowsDeleted( row, row );
+					}
+                }
             }
 		} );
 	}
 	
+	public int indexOf( CallEvent event )
+	{
+		return mEvents.indexOf( event );
+	}
+	
+	public void setEnd( final CallEvent event )
+	{
+		try
+		{
+			EventQueue.invokeAndWait( new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					if( event != null )
+					{
+						event.setEnd( System.currentTimeMillis() );
+
+						synchronized ( mEvents )
+	                    {
+							int row = indexOf( event );
+
+							if( row != -1 )
+							{
+								fireTableCellUpdated( row, TIME );
+							}
+	                    }
+					}
+					else 
+					{
+						Log.error( "CallEventModel - couldn't log end time - event was null" );
+					}
+				}
+			} );
+		}
+		catch( Exception e )
+		{
+			e.printStackTrace();
+		}
+	}
+	
+	public void setFromID( final CallEvent event, final String from )
+	{
+        EventQueue.invokeLater( new Runnable()
+        {
+        	@Override
+        	public void run()
+        	{
+        		try
+        		{
+            		if( event != null )
+            		{
+            			event.setFromID( from );
+
+            			synchronized ( mEvents )
+                        {
+                			int row = indexOf( event );
+
+                			if( row != -1 )
+                			{
+                    			fireTableCellUpdated( row, FROM_ID );
+                    			fireTableCellUpdated( row, FROM_ALIAS );
+                			}
+                			else
+                			{
+                				Log.error( "CallEventModel - tried to set from ID on "
+            						+ "call event - couldn't find index of event" );
+                			}
+                        }
+            		}
+        		}
+        		catch( Exception e )
+        		{
+        			e.printStackTrace();
+        		}
+        	}
+        } );
+	}
+	
 	private void prune()
 	{
-		while( mEvents.size() > mMaxMessages )
+		synchronized( mEvents )
 		{
-			CallEvent event = mEvents.removeLast();
-			
-			mBroadcaster.receive( event );
-			
-			super.fireTableRowsDeleted( mEvents.size(), mEvents.size() );
+			while( mEvents.size() > mMaxMessages )
+			{
+				CallEvent event = mEvents.removeLast();
+				
+				mBroadcaster.receive( event );
+				
+				fireTableRowsDeleted( mEvents.size(), mEvents.size() );
+			}
 		}
 	}
 
@@ -138,26 +259,64 @@ public class CallEventModel extends AbstractTableModel
 	@Override
     public Object getValueAt( int rowIndex, int columnIndex )
     {
-		switch( columnIndex )
+		synchronized( mEvents )
 		{
-			case sTIME:
-				return mSDFTime.format( mEvents.get( rowIndex ).getEventTime() );
-			case sEVENT:
-				return mEvents.get( rowIndex ).getCallEventType();
-			case sFROM_ID:
-				return mEvents.get( rowIndex ).getFromID();
-			case sFROM_ALIAS:
-				return mEvents.get( rowIndex ).getFromIDAlias();
-			case sTO_ID:
-				return mEvents.get( rowIndex ).getToID();
-			case sTO_ALIAS:
-				return mEvents.get( rowIndex ).getToIDAlias();
-			case sCHANNEL:
-				return mEvents.get( rowIndex ).getChannel();
-			case sFREQUENCY:
-				return mEvents.get( rowIndex ).getFrequency();
-			case sDETAILS:
-				return mEvents.get( rowIndex ).getDetails();
+			switch( columnIndex )
+			{
+				case TIME:
+					StringBuilder sb = new StringBuilder();
+					
+					sb.append( mSDFTime.format( 
+							mEvents.get( rowIndex ).getEventStartTime() ) );
+					
+					if( mEvents.get( rowIndex ).getEventEndTime() != 0 )
+					{
+						sb.append( " - " );
+						sb.append( mSDFTime.format( 
+								mEvents.get( rowIndex ).getEventEndTime() ) );
+					}
+					else if( mEvents.get( rowIndex )
+							.getCallEventType() == CallEventType.CALL )
+					{
+						sb.append( " - In Progress" );
+					}
+					
+					return sb.toString();
+				case EVENT:
+					return mEvents.get( rowIndex ).getCallEventType();
+				case FROM_ID:
+					return mEvents.get( rowIndex ).getFromID();
+				case FROM_ALIAS:
+					return mEvents.get( rowIndex ).getFromIDAlias();
+				case TO_ID:
+					return mEvents.get( rowIndex ).getToID();
+				case TO_ALIAS:
+					return mEvents.get( rowIndex ).getToIDAlias();
+				case CHANNEL:
+					int channel = mEvents.get( rowIndex ).getChannel();
+					
+					if( channel != 0 )
+					{
+						return channel;
+					}
+					else
+					{
+						return null;
+					}
+				case FREQUENCY:
+					long frequency = mEvents.get( rowIndex ).getFrequency();
+					
+					if( frequency != 0 )
+					{
+						return mFrequencyFormatter.format( (double)frequency / 1E6d );
+					}
+					else
+					{
+						return null;
+					}
+				case DETAILS:
+					return mEvents.get( rowIndex ).getDetails();
+			}
 		}
 		
 		return null;

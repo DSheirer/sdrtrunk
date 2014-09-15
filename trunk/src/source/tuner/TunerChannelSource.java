@@ -24,7 +24,6 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import log.Log;
 import sample.Listener;
 import sample.complex.ComplexSample;
 import sample.complex.ComplexSampleAssembler;
@@ -52,7 +51,6 @@ public class TunerChannelSource extends ComplexSource
 	private TunerChannel mTunerChannel;
 	private Oscillator mSineWaveGenerator;
 	private ComplexFilter[] mDecimationFilters;
-	private DecimationProcessor mDecimationProcessor = new DecimationProcessor();
 
 	private ComplexSampleAssembler mBufferAssembler = 
 								new ComplexSampleAssembler( 3000 );
@@ -188,7 +186,7 @@ public class TunerChannelSource extends ComplexSource
 		if( bandwidth != mTunerSampleRate )
 		{
 			/* Get the original decimation filter output listener */
-			Listener<ComplexSample> listener = null;
+//			Listener<ComplexSample> listener = null;
 			
 			/* Get new decimation filters */
 			mDecimationFilters = FilterFactory
@@ -277,9 +275,6 @@ public class TunerChannelSource extends ComplexSource
 			mTunerFrequencyError = error;
 			frequencyChanged( mTunerFrequency, mTunerSampleRate );
 		}
-		
-		Log.info( "TunerChannelSource - mistuned quantity:" + 
-						mTunerFrequencyError + " Hz" );
     }
 
 	@Override

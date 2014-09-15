@@ -41,8 +41,7 @@ public class LTRPanel extends ChannelStatePanel
     private JLabel mTalkgroup = new JLabel();
     private JLabel mTalkgroupAlias = new JLabel();
 
-    private JLabel mLCNLabel = new JLabel( "LCN" );
-    private JLabel mLCN = new JLabel();
+    private JLabel mLCN = new JLabel( "LCN:" );
     
     private SettingsManager mSettingsManager;
 	
@@ -86,9 +85,6 @@ public class LTRPanel extends ChannelStatePanel
 		mTalkgroupAlias.setFont( mFontDecoder );
 		mTalkgroupAlias.setForeground( mColorLabelDecoder );
 
-        mLCNLabel.setFont( mFontDecoder );
-        mLCNLabel.setForeground( mColorLabelDetails );
-
         mLCN.setFont( mFontDecoder );
         mLCN.setForeground( mColorLabelDecoder );
 
@@ -100,7 +96,6 @@ public class LTRPanel extends ChannelStatePanel
 		add( mTalkgroup );
 		add( mTalkgroupAlias, "wrap" );
 		
-		add( mLCNLabel );
 		add( mLCN, "wrap" );
 	}
 
@@ -120,12 +115,7 @@ public class LTRPanel extends ChannelStatePanel
 	                case CHANNEL_NUMBER:
 	                    if( state.getChannelNumber() != 0 )
 	                    {
-	                        mLCN.setText( 
-                        		String.valueOf( state.getChannelNumber() ) );
-	                    }
-	                    else
-	                    {
-	                        mLCN.setText( "" );
+    						mLCN.setText( "LCN: " + state.getChannelNumber() );
 	                    }
 	                    break;
 	                case FROM_TALKGROUP:
@@ -207,10 +197,6 @@ public class LTRPanel extends ChannelStatePanel
 					if( mChannelLabel != null )
 					{
 						mChannelLabel.setForeground( mColorLabelDetails );
-					}
-					if( mLCNLabel != null )
-					{
-						mLCNLabel.setForeground( mColorLabelDetails );
 					}
 					break;
 			}
