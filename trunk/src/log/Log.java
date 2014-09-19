@@ -98,7 +98,9 @@ public class Log
 
 		sb.append( "---- STACK TRACE ----\n" );
 		sb.append( "\tERROR: " );
-		sb.append( throwable.getLocalizedMessage() + "\n" );
+		sb.append( "\tCause: " + throwable.getCause().toString()  );
+		sb.append( "\t" + throwable.getMessage() );
+		sb.append( "\t" + throwable.getLocalizedMessage() + "\n" );
 		
 		StackTraceElement[] stack = throwable.getStackTrace();
 		
@@ -106,10 +108,19 @@ public class Log
 		{
 			sb.append( "\t" );
 			sb.append( element.toString() );
+			sb.append( ":" );
+			sb.append( element.getLineNumber() );
 			sb.append( "\n" );
 		}
 
+		sb.append( "\n" );
+
 		log( sb.toString(), label );
+		
+		for( Throwable t: throwable.getSuppressed() )
+		{
+			log( "Suppressed", label, t );
+		}
 	}
 	
 	public static void header( String name )
