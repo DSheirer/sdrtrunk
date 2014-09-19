@@ -111,17 +111,7 @@ public class LTRChannelState extends ChannelState
                         	 * new call event, so close out the old one. */
                         	if( current != null && !current.addMessage( ltr ) )
                         	{
-                    			if( current.isValid() )
-                    			{
-                    				mCallEventModel.setEnd( current );
-                    			}
-                    			else
-                    			{
-                    				mCallEventModel.remove( current );
-                    			}
-
-                    			setCallEventModel( null );
-                    			current = null;
+                    			setState( State.FADE );
                         	}
                         	
                     		if( current == null )

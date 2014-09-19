@@ -142,7 +142,7 @@ public abstract class RTL2832TunerController extends TunerController
 	private Descriptor mDescriptor;
 
 	public static final int sTWO_TO_22_POWER = 4194304;
-	public static final SampleRate sDEFAULT_SAMPLE_RATE = SampleRate.RATE_1_200MHZ;
+	public static final SampleRate sDEFAULT_SAMPLE_RATE = SampleRate.RATE_0_960MHZ;
 	
 	private SampleRate mSampleRate = sDEFAULT_SAMPLE_RATE;
 	
@@ -208,17 +208,40 @@ public abstract class RTL2832TunerController extends TunerController
 		try
 		{
 			setSampleRate( sDEFAULT_SAMPLE_RATE );
-
-			/* Read the contents of the 256-byte EEPROM */
-			byte[] eeprom = readEEPROM( mUSBDevice, (short)0, 256 );
-			
-			/* Create the descriptor with the contents from the EEPROM */
-			mDescriptor = new Descriptor( eeprom );
 		}
 		catch( Exception e )
 		{
 			throw new SourceException( "RTL2832 Tuner Controller - couldn't "
-				+ "set default sample rate or read EEPROM descriptor", e );
+				+ "set default sample rate", e );
+		}
+
+		byte[] eeprom;
+		
+		try
+		{
+			/* Read the contents of the 256-byte EEPROM */
+			eeprom = readEEPROM( mUSBDevice, (short)0, 256 );
+		}
+		catch( Exception e )
+		{
+			throw new SourceException( "RTL2832 Tuner Controller - couldn't "
+				+ "read EEPROM descriptor byte array", e );
+		}
+		
+		try
+		{
+			mDescriptor = new Descriptor( eeprom );
+
+			if( eeprom == null )
+			{
+				Log.error( "RTL2832 Tuner Controller - eeprom byte array was "
+						+ "null - constructed empty descriptor object" );
+			}
+		}
+		catch( Exception e )
+		{
+			throw new SourceException( "RTL2832 Tuner Controller - error "
+				+ "constructing descriptor object from eeprom byte array", e );
 		}
 	}
 
@@ -1705,7 +1728,14 @@ public abstract class RTL2832TunerController extends TunerController
 		
 		public Descriptor( byte[] data )
 		{
-			mData = data;
+			if( data != null )
+			{
+				mData = data;
+			}
+			else
+			{
+				data = new byte[ 256 ];
+			}
 			
 			getLabels();
 		}
