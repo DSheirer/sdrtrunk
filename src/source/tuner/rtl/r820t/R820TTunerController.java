@@ -35,8 +35,8 @@ import controller.ResourceManager;
 
 public class R820TTunerController extends RTL2832TunerController
 {
-	public static final long MIN_FREQUENCY = 24000000;
-	public static final long MAX_FREQUENCY = 1766000000;
+	public static final long MIN_FREQUENCY =  3180000;
+	public static final long MAX_FREQUENCY = 1782030000;
 	public static final int R820T_IF_FREQUENCY = 3570000;
 	public static final byte VERSION = (byte)49;
 	
@@ -236,27 +236,32 @@ public class R820TTunerController extends RTL2832TunerController
 	{
 		try
 		{
+			Log.debug( "R820T Tuner Controller - testing USB interface" );
 			/* Dummy write to test USB interface */
 			writeRegister( mUSBDevice, Block.USB, 
 					Address.USB_SYSCTL.getAddress(), (short)0x09, 1 );
 
+			Log.debug( "R820T Tuner Controller - initializing RTL2832 tuner baseband" );
 			initBaseband( mUSBDevice );
 
+			Log.debug( "R820T Tuner Controller - enabling I2C repeater" );
 			enableI2CRepeater( mUSBDevice, true );
 			
 			boolean i2CRepeaterControl = false;
 			
+			Log.debug( "R820T Tuner Controller - initializing R820T tuner" );
 			initTuner( i2CRepeaterControl );
 
+			Log.debug( "R820T Tuner Controller - disabling I2C repeater" );
 			enableI2CRepeater( mUSBDevice, false );
 			
+			Log.debug( "R820T Tuner Controller - initializing RTL tuner controller super class" );
 			/* Initialize the super class */
 			super.init();
 		}
 		catch( UsbException e )
 		{
-			e.printStackTrace();
-			throw new SourceException( "E4K Tuner Controller - error during "
+			throw new SourceException( "R820T Tuner Controller - error during "
 					+ "init()", e );
 		}
 	}
@@ -348,6 +353,8 @@ public class R820TTunerController extends RTL2832TunerController
     	{
     		calibrationCode = 0;
     	}
+    	
+    	Log.debug( "Calibration Code is:" + calibrationCode );
     	
     	/* Write calibration code */
     	byte filt_q = 0x10;
@@ -1062,41 +1069,27 @@ public class R820TTunerController extends RTL2832TunerController
     /**
      * Frequency Divider Ranges
      * 
-     * div_num	mix_div	min	     - max
-     * 0		2		885.0000 - 1770.0000 MHz
-     * 1		4		442.5000 -  885.9999 MHz
-     * 2		8		221.2500 -  442.4999 MHz
-     * 3		16		110.6250 -  221.2499 MHz
-     * 4		32		 55.3125 -  110.6249 MHz
-     * 5		64		 27.65625 -  55.31249 MHz
+     * Actual Tuned Frequency Ranges (after subtracting IF = 3.57 MHz )
      * 
-     * Subtract 3.57 MHz IF frequency from each of these values to yield:
-     * 
-     * div_num	mix_div	min	     - max
-     * 0		2		881.430000 - 1766.430000 MHz
-     * 1		4		438.930000 -  881.429999 MHz
-     * 2		8		217.680000 -  438.929999 MHz
-     * 3		16		107.055000 -  217.679999 MHz
-     * 4		32		 51.742500 -  107.054999 MHz
-     * 5		64		 24.086250 -   51.742499 MHz
+     *   Divider 0: 860.43 to 1782.03 MHz
+     *   Divider 1: 428.43 to  889.23 MHz
+     *   Divider 2: 212.43 to  457.23 MHz
+     *   Divider 3: 104.43 to  219.63 MHz
+     *   Divider 4:  50.43 to  108.03 MHz
+     *   Divider 5:  23.43 to   52.23 MHz
+     *   Divider 6:   9.93 to   24.33 MHz
+     *   Divider 7:   3.18 to   10.38 MHz
      */
 	public enum FrequencyDivider
 	{
-		//Subtracted IF values
-//		DIVIDER_0( 0,  2, 881430000, 1664300000, 0x00, 28800000 ),
-//		DIVIDER_1( 1,  4, 438930000,  881429999, 0x20, 14400000 ),
-//		DIVIDER_2( 2,  8, 217680000,  438929999, 0x40,  7200000 ),
-//		DIVIDER_3( 3, 16, 107055000,  217679999, 0x60,  3600000 ),
-//		DIVIDER_4( 4, 32,  51742500,  107054599, 0x80,  1800000 ),
-//		DIVIDER_5( 5, 64,  24086250,   51742499, 0xA0,   900000 );
-
-		//Normal divider values
-		DIVIDER_0( 0,  2, 885000000, 1770000000, 0x00, 28800000 ),
-		DIVIDER_1( 1,  4, 442500000,  884999999, 0x20, 14400000 ),
-		DIVIDER_2( 2,  8, 221250000,  442499999, 0x40,  7200000 ),
-		DIVIDER_3( 3, 16, 110625000,  221249999, 0x60,  3600000 ),
-		DIVIDER_4( 4, 32,  55312500,  110624999, 0x80,  1800000 ),
-		DIVIDER_5( 5, 64,  27656250,   55312499, 0xA0,   900000 );
+		DIVIDER_0( 0,   2, 864000000, 1785600000, 0x00, 28800000 ),
+		DIVIDER_1( 1,   4, 432000000,  892800000, 0x20, 14400000 ),
+		DIVIDER_2( 2,   8, 216000000,  460800000, 0x40,  7200000 ),
+		DIVIDER_3( 3,  16, 108000000,  223200000, 0x60,  3600000 ),
+		DIVIDER_4( 4,  32,  54000000,  111600000, 0x80,  1800000 ),
+		DIVIDER_5( 5,  64,  27000000,   55800000, 0xA0,   900000 ),
+		DIVIDER_6( 6, 128,  13500000,   27900000, 0xC0,   450000 ),
+		DIVIDER_7( 7, 256,   6750000,   13950000, 0xE0,   225000 );
 		
 		private int mDividerNumber;
 		private int mMixerDivider;
@@ -1186,22 +1179,21 @@ public class R820TTunerController extends RTL2832TunerController
 		}
 
 		/**
-		 * Returns the integral to use for this frequency
+		 * Returns the integral to use for this frequency and divider
 		 */
 		public Integral getIntegral( long frequency )
 		{
 			if( contains( frequency ) )
 			{
 				int delta = (int)( frequency - mMinimumFrequency );
-				
-				int integral = (int)Math.round( (double)delta / 
-											    (double)mIntegralValue );
-				
+
+				int integral = (int)( (double)delta / (double)mIntegralValue );
+
 				return Integral.fromValue( integral );
 			}
 			
 			throw new IllegalArgumentException( "PLL frequency [" + frequency + 
-					"] is not valid for frequency divider " + this.toString() );
+				"] is not valid for this frequency divider " + this.toString() );
 		}
 
 		/**
@@ -1209,14 +1201,15 @@ public class R820TTunerController extends RTL2832TunerController
 		 * which represents the fractional portion of the requested frequency
 		 * that is left over after subtracting the divider minimum frequency
 		 * and the integral frequency units.  That residual value is divided
-		 * by the integral value to derive a 16-bit fractional value, returned
-		 * as an integer
+		 * by the integral unit value to derive a 16-bit fractional value, 
+		 * returned as an integer
 		 */
 		public int getSDM( Integral integral, long frequency )
 		{
 			if( contains( frequency ) )
 			{
-				int delta = (int)( frequency - ( integral.getNumber() * mIntegralValue ) );
+				int delta = (int)( frequency - mMinimumFrequency - 
+							( integral.getNumber() * mIntegralValue ) );
 
 				double fractional = (double)delta / (double)mIntegralValue;
 				
@@ -1239,7 +1232,6 @@ public class R820TTunerController extends RTL2832TunerController
 	 *  8        I *  7.2 MHz
 	 *  4        I * 14.4 MHz
 	 *  2        I * 28.8 MHz
-	 * @author denny
 	 *
 	 */
 	public enum Integral
@@ -1298,12 +1290,9 @@ public class R820TTunerController extends RTL2832TunerController
 		
 		public static Integral fromValue( int value )
 		{
-			for( Integral integral: Integral.values() )
+			if( 0 <= value && value <= 31 )
 			{
-				if( integral.getNumber() == value )
-				{
-					return integral;
-				}
+				return Integral.values()[ value ];
 			}
 			
 			throw new IllegalArgumentException( "PLL integral value [" + value + 
