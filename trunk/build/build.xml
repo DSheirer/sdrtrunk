@@ -48,7 +48,6 @@
   	  <fileset dir="${license}">
   	  	<include name="license.txt"/>
   	  </fileset>
-      
     </jar>
     
     <!-- Copy third-party libraries -->
@@ -82,6 +81,12 @@
 
     <!-- Set linux permissions on start script -->
   	<chmod file="${product}/run_sdrtrunk_linux" perm="777" />
+  	
+  	<tstamp prefix="build" />
+
+  	<!-- Bundle the files into .zip -->
+  	<zip destfile="${product}/sdrtrunk_${build.DSTAMP}_${build.TSTAMP}.zip"
+  	     basedir="${product}" />
   </target>
 
   <target name="clean"
