@@ -23,7 +23,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.sound.sampled.AudioFormat;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import record.Recorder;
 import record.RecorderType;
 import sample.Listener;
@@ -35,6 +37,9 @@ import buffer.FloatSampleBufferAssembler;
  */
 public class FloatWaveRecorder extends Recorder implements Listener<Float>
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( FloatWaveRecorder.class );
+
 	private AudioFormat mAudioFormat;
     private boolean mRunning = false;
     private boolean mPaused = false;
@@ -117,7 +122,7 @@ public class FloatWaveRecorder extends Recorder implements Listener<Float>
 
     		if( !success )
     		{
-    			Log.error( "Wave recorder buffer overflow - throwing away " + 
+    			mLog.error( "Wave recorder buffer overflow - throwing away " + 
     							buffer.capacity() + " samples" );
     		}
     	}
@@ -134,7 +139,7 @@ public class FloatWaveRecorder extends Recorder implements Listener<Float>
 			if( !mToWriteBufferQueue.offer( mCurrentBuffer.get() ) )
 			{
 				//We had an overflow ... log it
-				Log.error( "FloatWaveRecorder: buffer overflow - throwing "
+				mLog.error( "FloatWaveRecorder: buffer overflow - throwing "
 						+ "away 1 second of sample data" );
 			}
 			
@@ -157,14 +162,13 @@ public class FloatWaveRecorder extends Recorder implements Listener<Float>
                 }
 				catch ( IOException ioe )
 				{
-					Log.error( "IOException while trying to write to the wave "
-							+ "writer - " + ioe.getLocalizedMessage() );
+					mLog.error( "IOException while trying to write to the wave "
+							+ "writer", ioe );
 				}
                 catch ( InterruptedException e )
                 {
-                	Log.error( "Oops ... error while processing the buffer "
-                			+ "queue for the wave recorder - " + 
-                			e.getLocalizedMessage() );
+                	mLog.error( "Oops ... error while processing the buffer "
+                			+ "queue for the wave recorder", e );
                 }
 			}
     	}

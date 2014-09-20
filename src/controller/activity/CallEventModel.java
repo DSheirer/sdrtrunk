@@ -20,12 +20,13 @@ package controller.activity;
 import java.awt.EventQueue;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
-import java.util.Collections;
 import java.util.LinkedList;
 
 import javax.swing.table.AbstractTableModel;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import sample.Broadcaster;
 import sample.Listener;
 import controller.activity.CallEvent.CallEventType;
@@ -33,6 +34,8 @@ import controller.activity.CallEvent.CallEventType;
 public class CallEventModel extends AbstractTableModel
 {
     private static final long serialVersionUID = 1L;
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( CallEventModel.class );
     
 	private static DecimalFormat mFrequencyFormatter = 
 			new DecimalFormat( "0.000000" );
@@ -175,7 +178,7 @@ public class CallEventModel extends AbstractTableModel
 					}
 					else 
 					{
-						Log.error( "CallEventModel - couldn't log end time - event was null" );
+						mLog.error( "CallEventModel - couldn't log end time - event was null" );
 					}
 				}
 			} );
@@ -210,7 +213,7 @@ public class CallEventModel extends AbstractTableModel
                 			}
                 			else
                 			{
-                				Log.error( "CallEventModel - tried to set from ID on "
+                				mLog.error( "CallEventModel - tried to set from ID on "
             						+ "call event - couldn't find index of event" );
                 			}
                         }

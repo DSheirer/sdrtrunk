@@ -54,8 +54,8 @@ import javax.usb.event.UsbPipeErrorEvent;
 import javax.usb.event.UsbPipeListener;
 import javax.usb.util.DefaultUsbControlIrp;
 
-import log.Log;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.usb4java.LibUsb;
 
 import sample.Listener;
@@ -68,6 +68,9 @@ import controller.ResourceManager;
 
 public abstract class RTL2832TunerController extends TunerController
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( RTL2832TunerController.class );
+
 	public final static int sINT_NULL_VALUE = -1;
 	public final static long sLONG_NULL_VALUE = -1l;
 	public final static double sDOUBLE_NULL_VALUE = -1.0D;
@@ -215,7 +218,7 @@ public abstract class RTL2832TunerController extends TunerController
 				+ "set default sample rate", e );
 		}
 
-		byte[] eeprom;
+		byte[] eeprom = null;
 		
 		try
 		{
@@ -224,8 +227,7 @@ public abstract class RTL2832TunerController extends TunerController
 		}
 		catch( Exception e )
 		{
-			throw new SourceException( "RTL2832 Tuner Controller - couldn't "
-				+ "read EEPROM descriptor byte array", e );
+			mLog.error( "error while reading the EEPROM device descriptor", e );
 		}
 		
 		try
@@ -234,14 +236,15 @@ public abstract class RTL2832TunerController extends TunerController
 
 			if( eeprom == null )
 			{
-				Log.error( "RTL2832 Tuner Controller - eeprom byte array was "
-						+ "null - constructed empty descriptor object" );
+				mLog.error( "eeprom byte array was null - constructed "
+						+ "empty descriptor object" );
 			}
 		}
 		catch( Exception e )
 		{
-			throw new SourceException( "RTL2832 Tuner Controller - error "
-				+ "constructing descriptor object from eeprom byte array", e );
+			mLog.error( "error while constructing device descriptor using "
+				+ "descriptor byte array " + 
+				( eeprom == null ? "[null]" : Arrays.toString( eeprom )), e );
 		}
 	}
 
@@ -391,23 +394,23 @@ public abstract class RTL2832TunerController extends TunerController
 			
 			if( claim( iface ) )
 			{
-				Log.debug( "RTL2832 - usb interface claimed" );
+				mLog.debug( "usb interface claimed" );
 				
 				/* Perform a dummy write to see if the device needs reset */
 				writeRegister( device, Block.USB, Address.USB_SYSCTL.getAddress(), 0x09, 1 );
 
-				Log.debug( "RTL2832 - initializing baseband" );
+				mLog.debug( "initializing baseband" );
 
 				/* Initialize the baseband */
 				initBaseband( device );
 
-				Log.debug( "RTL2832 - enabling I2C repeater" );
+				mLog.debug( "enabling I2C repeater" );
 
 				enableI2CRepeater( device, true );
 				
 				boolean controlI2CRepeater = false;
 
-				Log.debug( "RTL2832 - testing for tuner types" );
+				mLog.debug( "testing for tuner types" );
 
 				/* Test for each tuner type until we find the correct one */
 				if( isE4000Tuner( device, controlI2CRepeater ) )
@@ -435,19 +438,18 @@ public abstract class RTL2832TunerController extends TunerController
 					tunerClass =  TunerType.FITIPOWER_FC0012;
 				}
 				
-				Log.debug( "RTL2832 - disabling I2C repeater -- detected tuner type:" + tunerClass.toString() );
+				mLog.debug( "disabling I2C repeater -- detected tuner type:" + tunerClass.toString() );
 
 				enableI2CRepeater( device, false );
 
-				Log.debug( "RTL2832 - releasing USB interface" );
+				mLog.debug( "releasing USB interface" );
 
 				iface.release();
 			}
 		}
 		catch( Exception e )
 		{
-			Log.error( "RTL2832TunerController - error while determining "
-					+ "tuner type - ", e );
+			mLog.error( "error while determining tuner type", e );
 		}
 		
 		return tunerClass;
@@ -518,8 +520,8 @@ public abstract class RTL2832TunerController extends TunerController
 		}
 		else
 		{
-			Log.error( "RTL2832 Tuner Controller - attempt to claim USB "
-					+ "interface failed - in use by another application" );
+			mLog.error( "attempt to claim USB interface failed - in use by "
+					+ "another application" );
 		}
 		
 		return false;
@@ -556,8 +558,7 @@ public abstract class RTL2832TunerController extends TunerController
         }
         catch ( Exception e )
         {
-			Log.error( "RTL2832 Tuner Controller - attempt to release USB "
-					+ "interface failed - " + e.getLocalizedMessage() );
+        	mLog.error( "attempt to release USB interface failed", e );
         }
     }
 	
@@ -962,7 +963,7 @@ public abstract class RTL2832TunerController extends TunerController
 	protected static boolean isE4000Tuner( UsbDevice device, 
 			boolean controlI2CRepeater ) throws UsbClaimException
 	{
-		Log.debug( "RTL2832 - testing for E4000 tuner" );
+		mLog.debug( "testing for E4000 tuner" );
 
 		try
 		{
@@ -1011,7 +1012,8 @@ public abstract class RTL2832TunerController extends TunerController
 											boolean controlI2CRepeater )
 									throws UsbClaimException
 	{
-		Log.debug( "RTL2832 - testing for F0013 tuner" );
+		mLog.debug( "testing for F0013 tuner" );
+
 		try
 		{
 			int value = readI2CRegister( device, FC0013_I2C_ADDRESS, 
@@ -1068,7 +1070,8 @@ public abstract class RTL2832TunerController extends TunerController
 	protected static boolean isR820TTuner( UsbDevice device, 
 			boolean controlI2CRepeater ) throws UsbClaimException
 	{
-		Log.debug( "RTL2832 - testing for R820T tuner" );
+		mLog.debug( "testing for R820T tuner" );
+
 		try
 		{
 			int value = readI2CRegister( device, R820T_I2C_ADDRESS, 
@@ -1210,24 +1213,44 @@ public abstract class RTL2832TunerController extends TunerController
 	 * Label 4,5 ... (user defined)
 	 */
 	public byte[] readEEPROM( UsbDevice device, short offset, int length ) 
-		throws IllegalArgumentException, UsbDisconnectedException, UsbException
+									throws IllegalArgumentException
 	{
 		if( offset + length > 256 )
 		{
-			throw new IllegalArgumentException( "RTL2832 Tuner Controller - "
-					+ "cannot read more than 256 bytes from EEPROM" );
+			throw new IllegalArgumentException( "cannot read more than 256 "
+					+ "bytes from EEPROM - requested to read to byte [" + 
+					( offset + length ) + "]" );
 		}
 
 		byte[] data = new byte[ length ];
 		byte[] onebyte = new byte[ 1 ];
 		
-		/* Tell the RTL-2832 to address the EEPROM */
-		writeRegister( device, Block.IIC, EEPROM_ADDRESS, (byte)offset, 1 );
+		try
+		{
+			/* Tell the RTL-2832 to address the EEPROM */
+			writeRegister( device, Block.IIC, EEPROM_ADDRESS, (byte)offset, 1 );
+		}
+		catch( UsbException e )
+		{
+			mLog.error( "usb error while attempting to set read address to "
+				+ "EEPROM register, prior to reading the EEPROM device "
+				+ "descriptor", e );
+		}
 
 		for( int x = 0; x < length; x++ )
 		{
-			byte[] temp = read( device, Block.IIC, EEPROM_ADDRESS, onebyte );
-			data[ x ] = temp[ 0 ];
+			try
+			{
+				byte[] temp = read( device, Block.IIC, EEPROM_ADDRESS, onebyte );
+				data[ x ] = temp[ 0 ];
+			}
+			catch( Exception e )
+			{
+				mLog.error( "error while reading eeprom byte [" + x + "/" + 
+					length + "] aborting eeprom read and returning partially "
+							+ "filled descriptor byte array", e );
+				x = length;
+			}
 		}
 		
 		return data;
@@ -1514,7 +1537,8 @@ public abstract class RTL2832TunerController extends TunerController
 			{
 				if( mRunning.compareAndSet( false, true ) )
 				{
-					Log.debug( "RTL2832TunerController [" + getUniqueID() + "] - starting sample fetch thread" );
+					mLog.debug( "rtl2832 [" + getUniqueID() + 
+							"] - starting sample fetch thread" );
 
 					ArrayList<UsbIrp> irps = new ArrayList<UsbIrp>();
 					
@@ -1570,7 +1594,8 @@ public abstract class RTL2832TunerController extends TunerController
 			{
 				if( mRunning.compareAndSet( true, false ) )
 				{
-					Log.debug( "RTL2832TunerController - stopping sample fetch thread" );
+					mLog.debug( "rtl2832 [" + getUniqueID() + 
+							"] - stopping sample fetch thread" );
 
 					mUSBPipe.abortAllSubmissions();
 					
@@ -1626,8 +1651,7 @@ public abstract class RTL2832TunerController extends TunerController
 	                    | IllegalArgumentException | UsbDisconnectedException
 	                    | UsbException e )
 	            {
-	            	Log.error( "RTL2832TunerController - error while "
-	        			+ "processing samples - " + e.getLocalizedMessage() );
+	            	mLog.error( "error while processing samples", e );
 	            }
 			}
         }
@@ -1640,9 +1664,8 @@ public abstract class RTL2832TunerController extends TunerController
 			 * the reset process and ignore all subsequent errors */
 			if( mResetting.compareAndSet( false, true ) )
 			{
-		        Log.error( "RTL2832TunerController - error during data transfer - "
-		        		+ "resetting USB pipe to RTL-2832 - " +
-		        		e.getUsbException().getLocalizedMessage() );
+				mLog.error( "error during data transfer resetting USB pipe to "
+						+ "RTL-2832", e );
 				
 	        	stop();
 	        	
@@ -1714,7 +1737,7 @@ public abstract class RTL2832TunerController extends TunerController
 			sb.append( " count:" );
 			sb.append( mSampleRateAverageCount );
 			
-			Log.info( sb.toString() );
+			mLog.info( sb.toString() );
         }
 	}
 

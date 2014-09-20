@@ -34,13 +34,17 @@ import java.net.URLConnection;
 import java.util.List;
 import java.util.Map;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author joshy
  */
 public class LocalResponseCache extends ResponseCache
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( LocalResponseCache.class );
+
 	private final File cacheDir;
 
 	private boolean checkForUpdates;
@@ -159,12 +163,12 @@ public class LocalResponseCache extends ResponseCache
 		}
 		catch (MalformedURLException ex)
 		{
-			Log.error("An exception occurred - " + ex.getLocalizedMessage() );
+			mLog.error("An exception occurred - ", ex );
 			return false;
 		}
 		catch (IOException ex)
 		{
-			Log.error("An exception occurred - " + ex.getLocalizedMessage() );
+			mLog.error("An exception occurred - ", ex );
 			return false;
 		}
 		if (!(conn instanceof HttpURLConnection))
@@ -260,7 +264,7 @@ public class LocalResponseCache extends ResponseCache
 			catch (FileNotFoundException ex)
 			{
 				// should not happen, since we already checked for existence
-				Log.error("An exception occurred - " + ex.getLocalizedMessage() );
+				mLog.error("An exception occurred - ", ex );
 			}
 			this.headers = rqstHeaders;
 		}
@@ -293,7 +297,7 @@ public class LocalResponseCache extends ResponseCache
 			catch (FileNotFoundException ex)
 			{
 				// should not happen if cache dir is valid
-				Log.error("An exception occurred" + ex.getLocalizedMessage() );
+				mLog.error("An exception occurred", ex );
 			}
 		}
 

@@ -23,7 +23,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.sound.sampled.AudioFormat;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import record.Recorder;
 import record.RecorderType;
 import sample.Listener;
@@ -37,6 +39,9 @@ import buffer.ComplexSampleBufferAssembler;
  */
 public class ComplexWaveRecorder extends Recorder implements Listener<ComplexSample>
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( ComplexWaveRecorder.class );
+
 	private AudioFormat mAudioFormat;
     private boolean mRunning = false;
     private boolean mPaused = false;
@@ -119,7 +124,7 @@ public class ComplexWaveRecorder extends Recorder implements Listener<ComplexSam
 
     		if( !success )
     		{
-    			Log.error( "Wave recorder buffer overflow - throwing away " + 
+    			mLog.error( "Wave recorder buffer overflow - throwing away " + 
     						buffer.capacity() + " samples" );
     		}
     	}
@@ -136,7 +141,7 @@ public class ComplexWaveRecorder extends Recorder implements Listener<ComplexSam
 			if( !mToWriteBufferQueue.offer( mCurrentBuffer.get() ) )
 			{
 				//We had an overflow ... log it
-				Log.error( "ComplexWaveRecorder: buffer overflow - throwing "
+				mLog.error( "ComplexWaveRecorder: buffer overflow - throwing "
 						+ "away 1 second of sample data" );
 			}
 			
@@ -159,14 +164,13 @@ public class ComplexWaveRecorder extends Recorder implements Listener<ComplexSam
                 }
 				catch ( IOException ioe )
 				{
-					Log.error( "IOException while trying to write to the wave "
-							+ "writer - " + ioe.getLocalizedMessage() );
+					mLog.error( "IOException while trying to write to the wave "
+							+ "writer", ioe );
 				}
                 catch ( InterruptedException e )
                 {
-                	Log.error( "Oops ... error while processing the buffer "
-                			+ "queue for the wave recorder - " + 
-                			e.getLocalizedMessage() );
+                	mLog.error( "Oops ... error while processing the buffer "
+                			+ "queue for the wave recorder", e );
                 }
 			}
     	}

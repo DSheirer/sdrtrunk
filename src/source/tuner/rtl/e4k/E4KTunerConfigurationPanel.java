@@ -42,10 +42,11 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.usb.UsbException;
 
-import com.jidesoft.swing.JideTabbedPane;
-
-import log.Log;
 import net.miginfocom.swing.MigLayout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import source.SourceException;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerConfigurationAssignment;
@@ -60,7 +61,10 @@ import controller.ResourceManager;
 public class E4KTunerConfigurationPanel extends JPanel
 {
     private static final long serialVersionUID = 1L;
-    private ResourceManager mResourceManager;
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( E4KTunerConfigurationPanel.class );
+
+	private ResourceManager mResourceManager;
     private E4KTunerController mController;
     private E4KTunerConfiguration mSelectedConfig;
 
@@ -223,9 +227,8 @@ public class E4KTunerConfigurationPanel extends JPanel
 		                			+ "frequency correction value: " + value + 
 		                					e1.getLocalizedMessage() );  
 		                	
-		                	Log.error( "E4K Tuner Controller - couldn't apply "
-		                			+ "frequency correction value: " + value + 
-		                			e1.getLocalizedMessage() );
+		                	mLog.error( "E4K Tuner Controller - couldn't apply "
+	                			+ "frequency correction value: " + value, e1 ); 
 		                }
                     }
 				} );
@@ -263,9 +266,9 @@ public class E4KTunerConfigurationPanel extends JPanel
                 			+ "rate setting [" + sampleRate.getLabel() + "] " + 
                 					eSampleRate.getLocalizedMessage() );  
                 	
-                	Log.error( "E4K Tuner Controller - couldn't apply sample "
-                			+ "rate setting [" + sampleRate.getLabel() + "] " + 
-                			eSampleRate.getLocalizedMessage() );
+                	mLog.error( "E4K Tuner Controller - couldn't apply sample "
+                			+ "rate setting [" + sampleRate.getLabel() + "]", 
+                			eSampleRate );
                 }
             }
         } );
@@ -389,8 +392,8 @@ public class E4KTunerConfigurationPanel extends JPanel
                 			"E4K Tuner Controller - couldn't apply the gain "
                 			+ "setting - " + e.getLocalizedMessage() );  
                 	
-                	Log.error( "E4K Tuner Controller - couldn't apply "
-                			+ "gain setting - " + e.getLocalizedMessage() );
+                	mLog.error( "E4K Tuner Controller - couldn't apply "
+                			+ "gain setting", e );
                 }
             }
         } );
@@ -435,8 +438,8 @@ public class E4KTunerConfigurationPanel extends JPanel
 		                			"E4K Tuner Controller - couldn't apply the mixer "
 		                			+ "gain setting - " + e.getLocalizedMessage() );  
 		                	
-		                	Log.error( "E4K Tuner Controller - couldn't apply mixer "
-		                			+ "gain setting - " + e.getLocalizedMessage() );
+		                	mLog.error( "E4K Tuner Controller - couldn't apply mixer "
+		                			+ "gain setting", e );
 		                }
                     }
 				} );
@@ -475,8 +478,8 @@ public class E4KTunerConfigurationPanel extends JPanel
                 			"E4K Tuner Controller - couldn't apply the LNA "
                 			+ "gain setting - " + e.getLocalizedMessage() );  
                 	
-                	Log.error( "E4K Tuner Controller - couldn't apply LNA "
-                			+ "gain setting - " + e.getLocalizedMessage() );
+                	mLog.error( "E4K Tuner Controller - couldn't apply LNA "
+                			+ "gain setting - ", e );
                 }
             }
         } );
@@ -514,8 +517,8 @@ public class E4KTunerConfigurationPanel extends JPanel
                 			"E4K Tuner Controller - couldn't apply the enhance "
                 			+ "gain setting - " + e.getLocalizedMessage() );  
                 	
-                	Log.error( "E4K Tuner Controller - couldn't apply enhance "
-                			+ "gain setting - " + e.getLocalizedMessage() );
+                	mLog.error( "E4K Tuner Controller - couldn't apply enhance "
+                			+ "gain setting", e );
                 }
             }
         } );
@@ -630,9 +633,8 @@ public class E4KTunerConfigurationPanel extends JPanel
         			+ "apply the tuner configuration settings - " + 
         					e1.getLocalizedMessage() );  
         	
-        	Log.error( "E4K Tuner Controller - couldn't apply "
-        			+ "config [" + config.getName() + "] - " + 
-        			e1.getLocalizedMessage() );
+        	mLog.error( "E4K Tuner Controller - couldn't apply "
+        			+ "config [" + config.getName() + "]", e1 ); 
         }
     }
     

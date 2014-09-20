@@ -20,20 +20,24 @@ package alias.siteID;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-import log.Log;
 import net.miginfocom.swing.MigLayout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import controller.ConfigurableNode;
 
 public class SiteIDEditor extends JPanel implements ActionListener
 {
     private static final long serialVersionUID = 1L;
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( SiteIDEditor.class );
     private SiteIDNode mSiteIDNode;
     
     private JLabel mLabelName;
@@ -92,7 +96,7 @@ public class SiteIDEditor extends JPanel implements ActionListener
 				}
 				catch( Exception ex )
 				{
-					Log.error( "SiteIDEditor - error parsing int site " +
+					mLog.error( "SiteIDEditor - error parsing int site " +
 							"id from [" + siteIDString + "]" );
 				}
 			}

@@ -17,7 +17,6 @@
  ******************************************************************************/
 package controller.state;
 
-import java.awt.EventQueue;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.ScheduledFuture;
@@ -26,8 +25,11 @@ import java.util.concurrent.TimeUnit;
 
 import javax.swing.JTable;
 
-import log.Log;
 import message.Message;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import properties.SystemProperties;
 import sample.Broadcaster;
 import sample.Listener;
@@ -43,7 +45,6 @@ import controller.activity.CallEventModel;
 import controller.activity.MessageActivityModel;
 import controller.channel.Channel.ChannelType;
 import controller.channel.ProcessingChain;
-import decode.mpt1327.MPT1327CallEvent;
 
 /**
  * ChannelState provides a state machine for tracking a voice or data call
@@ -82,6 +83,9 @@ import decode.mpt1327.MPT1327CallEvent;
  */
 public abstract class ChannelState implements Listener<Message>
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( ChannelState.class );
+
 	private State mState = State.IDLE;
 	private Object mCallFadeLock = new Object();
 	private Object mCallResetLock = new Object();
@@ -349,7 +353,7 @@ public abstract class ChannelState implements Listener<Message>
 			}
 			else
 			{
-				Log.error( "Channel State - can't change from [" + 
+				mLog.error( "Channel State - can't change from [" + 
 					mState.toString() + "] to [" + state.toString() + "]" );
 			}
 		}

@@ -9,15 +9,17 @@
 
 package org.jdesktop.swingx.mapviewer;
 
+import gui.SDRTrunk;
+
 import java.awt.Graphics2D;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 
 import javax.imageio.ImageIO;
 
-import log.Log;
-
 import org.jdesktop.swingx.JXMapViewer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This is a standard waypoint renderer.
@@ -25,6 +27,9 @@ import org.jdesktop.swingx.JXMapViewer;
  */
 public class DefaultWaypointRenderer implements WaypointRenderer<Waypoint>
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( DefaultWaypointRenderer.class );
+
 	private BufferedImage img = null;
 
 	/**
@@ -38,7 +43,7 @@ public class DefaultWaypointRenderer implements WaypointRenderer<Waypoint>
 		}
 		catch (Exception ex)
 		{
-			Log.warning("couldn't read standard_waypoint.png - " + ex.getLocalizedMessage() );
+			mLog.error("couldn't read standard_waypoint.png", ex );
 		}
 	}
 

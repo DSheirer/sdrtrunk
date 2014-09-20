@@ -24,11 +24,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Observable;
 
-import log.Log;
-import dsp.fsk.SymbolEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SampleModel<T> extends Observable implements TapListener<T>
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( SampleModel.class );
+
 	private int mSampleCount = 2000;
 	private int mDelay = 0;
 	private ArrayList<T> mSamples = new ArrayList<T>();

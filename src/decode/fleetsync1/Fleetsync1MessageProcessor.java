@@ -17,22 +17,26 @@
  ******************************************************************************/
 package decode.fleetsync1;
 
-import log.Log;
 import message.Message;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import sample.Broadcaster;
 import sample.Listener;
 import bits.BitSetBuffer;
 
 public class Fleetsync1MessageProcessor implements Listener<BitSetBuffer>
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( Fleetsync1MessageProcessor.class );
+
 	private Broadcaster<Message> mBroadcaster = new Broadcaster<Message>();
 	
 	@Override
     public void receive( BitSetBuffer buffer )
     {
 		Fleetsync1Message message = new Fleetsync1Message( buffer );
-		
-		Log.info( message.toString() );
 
 		mBroadcaster.receive( message );
     }

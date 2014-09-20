@@ -19,7 +19,6 @@ package decode.passport;
 
 import java.util.HashMap;
 
-import log.Log;
 import message.Message;
 import message.MessageType;
 import sample.Broadcaster;

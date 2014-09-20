@@ -17,13 +17,17 @@
  ******************************************************************************/
 package record.wave;
 
+import gui.SDRTrunk;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.sound.sampled.AudioFormat;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import record.Recorder;
 import record.RecorderType;
 import util.waveaudio.WaveWriter;
@@ -33,6 +37,9 @@ import util.waveaudio.WaveWriter;
  */
 public class WaveRecorder extends Recorder
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( WaveRecorder.class );
+
 	private AudioFormat mAudioFormat;
     private boolean mRunning = false;
     private boolean mPaused = false;
@@ -101,7 +108,8 @@ public class WaveRecorder extends Recorder
 
     		if( !success )
     		{
-    			Log.error( "Wave recorder buffer overflow - throwing away " + buffer.capacity() + " samples" );
+    			mLog.error( "Wave recorder buffer overflow - throwing away " + 
+    					buffer.capacity() + " samples" );
     		}
     	}
     }
@@ -121,12 +129,13 @@ public class WaveRecorder extends Recorder
                 }
 				catch ( IOException ioe )
 				{
-					Log.error( "IOException while trying to write to the wave writer - " + ioe.getLocalizedMessage() );
+					mLog.error( "IOException while trying to write to the "
+							+ "wave writer", ioe );
 				}
                 catch ( InterruptedException e )
                 {
-                	Log.error( "Oops ... error while processing the buffer queue for " + 
-                			" the wave recorder - " + e.getLocalizedMessage() );
+                	mLog.error( "Oops ... error while processing the buffer"
+                			+ " queue for the wave recorder", e );
                 }
 			}
     	}

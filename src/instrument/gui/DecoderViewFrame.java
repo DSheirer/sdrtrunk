@@ -42,9 +42,12 @@ import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 
-import log.Log;
 import message.Message;
 import net.miginfocom.swing.MigLayout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import sample.Listener;
 import source.Source.SampleType;
 import source.wave.FloatWaveSource;
@@ -56,6 +59,8 @@ public class DecoderViewFrame extends JInternalFrame
 							  implements PositionListener, Listener<Message>
 {
     private static final long serialVersionUID = 1L;
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( DecoderViewFrame.class );
 
     private Decoder mDecoder;
 	private WaveSource mWaveSource;
@@ -70,7 +75,7 @@ public class DecoderViewFrame extends JInternalFrame
 
 		if( source.getSampleType() == SampleType.COMPLEX )
 		{
-			Log.error( "Hey, we're not wired up yet for complex" );
+			mLog.error( "Hey, we're not wired up yet for complex" );
 		}
 		else if( source.getSampleType() == SampleType.FLOAT )
 		{
@@ -181,7 +186,7 @@ public class DecoderViewFrame extends JInternalFrame
 		}
 		else
 		{
-			Log.info( "Tap panel is null, couldn't add for tap " + 
+			mLog.info( "Tap panel is null, couldn't add for tap " + 
 					tap.getName() + "[" + tap.getType().toString() + "]" );
 		}
 	}
@@ -272,6 +277,6 @@ public class DecoderViewFrame extends JInternalFrame
 	@Override
     public void receive( Message message )
     {
-		Log.info( "Decoder message: " + message.toString() );
+		mLog.info( "Decoder message: " + message.toString() );
     }
 }

@@ -17,9 +17,13 @@
  ******************************************************************************/
 package decode.passport;
 
+import gui.SDRTrunk;
+
 import java.util.HashMap;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import message.Message;
 import alias.Alias;
 import alias.AliasList;
@@ -33,6 +37,9 @@ import controller.state.ChannelState;
 
 public class PassportChannelState extends ChannelState
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( PassportChannelState.class );
+
 	private String mTalkgroup;
 	private Alias mTalkgroupAlias;
 	private String mMobileID;
@@ -105,7 +112,7 @@ public class PassportChannelState extends ChannelState
 		                    	}
 		                    	catch( Exception e )
 		                    	{
-		                    		Log.error( "Error setting audio for "
+		                    		mLog.error( "Error setting audio for "
 		                    				+ "passport call", e );
 		                    	}
 		                    }
@@ -118,8 +125,6 @@ public class PassportChannelState extends ChannelState
 		                     * have a different call ... cleanup the old one. */
 		                    if( current != null && !current.addMessage( passport ) )
 		                    {
-		                    	Log.info( "Current call event - testing"  );
-
 		                    	if( current.isValid() )
 		                    	{
 		                    		final PassportCallEvent endEvent = 

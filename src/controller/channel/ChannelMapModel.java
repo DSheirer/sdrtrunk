@@ -19,12 +19,16 @@ package controller.channel;
 
 import javax.swing.table.AbstractTableModel;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ChannelMapModel extends AbstractTableModel
 {
     private static final long serialVersionUID = 1L;
-    private static final int sSTART = 0;
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( ChannelMapModel.class );
+
+	private static final int sSTART = 0;
     private static final int sSTOP = 1;
     private static final int sBASE = 2;
     private static final int sSIZE = 3;
@@ -160,8 +164,8 @@ public class ChannelMapModel extends AbstractTableModel
 		}
 		catch( Exception e )
 		{
-			Log.info( "ChannelMapModel - couldn't parse integer value "
-					+ "for [" + value + "] - " + e.getLocalizedMessage() );
+			mLog.error( "ChannelMapModel - couldn't parse integer value "
+					+ "for [" + value + "]", e );
 		}
 	}
 }

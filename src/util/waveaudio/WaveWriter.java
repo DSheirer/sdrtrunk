@@ -25,10 +25,13 @@ import java.nio.ByteBuffer;
 
 import javax.sound.sampled.AudioFormat;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class WaveWriter
 {
+	private final static Logger mLog = LoggerFactory.getLogger( WaveWriter.class );
+
 	private static final int sTOTAL_BYTE_LIMIT = Integer.MAX_VALUE;
 	private BufferedOutputStream mOutputStream;
 	private boolean mRunning = false;
@@ -128,8 +131,7 @@ public class WaveWriter
 		raf.seek( 40 );
 		raf.write( newDataSize );
 
-		//debug
-		Log.info( "Closing recording [" + mFileName + "] amending file byte size to:" + newByteCount );
+		mLog.info( "Closing recording [" + mFileName + "] amending file byte size to:" + newByteCount );
 		
 		raf.close();
 	}

@@ -17,6 +17,8 @@
  ******************************************************************************/
 package eventlog;
 
+import gui.SDRTrunk;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -25,11 +27,16 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.file.Path;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import util.TimeStamp;
 
 public abstract class EventLogger
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( EventLogger.class );
+
 	/* Illegal filename characters */
 	private static final String[] mIllegalCharacters = 
 		{ "#", "%", "&", "{", "}", "\\", "<", ">", "*", "?", "/", 
@@ -73,7 +80,7 @@ public abstract class EventLogger
 
     		mLogFileName = sb.toString();
     		
-    		Log.info( "Creating log file:" + mLogFileName );
+    		mLog.info( "Creating log file:" + mLogFileName );
     		
 			mLogFile = new OutputStreamWriter(new FileOutputStream( mLogFileName ) );
 			
@@ -81,7 +88,7 @@ public abstract class EventLogger
 		} 
     	catch (FileNotFoundException e) 
     	{
-    		Log.error("Couldn't create log file in directory:" + mLogDirectory );
+    		mLog.error("Couldn't create log file in directory:" + mLogDirectory );
 		}    	
     }
 
@@ -109,7 +116,7 @@ public abstract class EventLogger
     		}
     		catch( Exception e )
     		{
-    			Log.error( "Couldn't close log file:" + mFileNameSuffix );
+    			mLog.error( "Couldn't close log file:" + mFileNameSuffix );
     		}
     	}
     }
@@ -122,7 +129,7 @@ public abstract class EventLogger
         }
         catch ( IOException e )
         {
-        	Log.error( "Error writing entry to event log file:" + e.getLocalizedMessage() );
+        	mLog.error( "Error writing entry to event log file", e );
         }
     }
 }

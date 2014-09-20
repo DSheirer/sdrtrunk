@@ -17,6 +17,8 @@
  ******************************************************************************/
 package map;
 
+import gui.SDRTrunk;
+
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -43,7 +45,9 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.filechooser.FileFilter;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import net.miginfocom.swing.MigLayout;
 import settings.Setting;
 import settings.SettingChangeListener;
@@ -56,6 +60,8 @@ public class IconManager extends JFrame
 	public enum Mode { NORMAL, NEW, EDIT }
 
 	private static final long serialVersionUID = 1L;
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( IconManager.class );
     
     private ResourceManager mResourceManager;
     
@@ -334,11 +340,9 @@ public class IconManager extends JFrame
 			{
 				case EDIT: //Cancel
 				case NEW:  //Cancel
-					Log.info( "Right clicked - cancel" );
 					setMode( Mode.NORMAL );
 					break;
 				case NORMAL: //Edit
-					Log.info( "Right clicked - edit" );
 					setMode( Mode.EDIT );
 					break;
 			}

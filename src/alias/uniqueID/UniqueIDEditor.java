@@ -20,20 +20,24 @@ package alias.uniqueID;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-import log.Log;
 import net.miginfocom.swing.MigLayout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import controller.ConfigurableNode;
 
 public class UniqueIDEditor extends JPanel implements ActionListener
 {
     private static final long serialVersionUID = 1L;
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( UniqueIDEditor.class );
     private UniqueIDNode mUniqueIDNode;
     
     private JLabel mLabelUniqueID;
@@ -92,8 +96,8 @@ public class UniqueIDEditor extends JPanel implements ActionListener
 				}
 				catch( Exception ex )
 				{
-					Log.error( "UniqueIDEditor - exception trying to parse " +
-						"int from uid [" + uid + "]" );
+					mLog.error( "UniqueIDEditor - exception trying to parse " +
+						"int from uid [" + uid + "]", ex );
 				}
 			}
 			else

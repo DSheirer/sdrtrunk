@@ -17,26 +17,31 @@
  ******************************************************************************/
 package source.tuner.fcd.proplusV2;
 
-import java.awt.Color;
-
 import gui.control.JFrequencyControl;
 
-import javax.swing.BorderFactory;
+import java.awt.Color;
+
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import com.jidesoft.swing.JideTabbedPane;
-
-import log.Log;
 import net.miginfocom.swing.MigLayout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import source.SourceException;
 import source.tuner.FrequencyChangeListener;
 import source.tuner.fcd.FCDTuner;
 import source.tuner.fcd.FCDTunerDetailsPanel;
+
+import com.jidesoft.swing.JideTabbedPane;
+
 import controller.ResourceManager;
 
 public class FCD2TunerEditorPanel extends JPanel implements FrequencyChangeListener
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( FCD2TunerEditorPanel.class );
     private static final long serialVersionUID = 1L;
     
     private FCDTuner mTuner;
@@ -94,8 +99,8 @@ public class FCD2TunerEditorPanel extends JPanel implements FrequencyChangeListe
         }
         catch ( SourceException e )
         {
-        	Log.error( "FCTProController - error setting frequency [" + 
-        			frequency + "] - " + e.getLocalizedMessage() );
+        	mLog.error( "FCTProController - error setting frequency [" + 
+        			frequency + "]", e );
         }
     }
 }

@@ -17,32 +17,23 @@
  ******************************************************************************/
 package dsp.filter;
 
+import gui.SDRTrunk;
+
 import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
 
-import log.Log;
-
 import org.jtransforms.fft.DoubleFFT_1D;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import dsp.filter.Window.WindowType;
 
 public class FilterFactory
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( FilterFactory.class );
 
-	public static void main( String[] args )
-	{
-		Log.info( "Testing filter factory" );
-		
-		double[] coefficients = getCICCleanupFilter( 48000, 1, WindowType.BLACKMAN );
-
-		for( int x = 0; x < coefficients.length; x++ )
-		{
-			Log.info( x + ": " + coefficients[ x ] );
-		}
-		
-		Log.info( "Finished" );
-	}
 	/**
 	 * Generates coefficients for a unity-gain, windowed low-pass filter
 	 * @param sampleRate - hertz
@@ -514,7 +505,7 @@ public class FilterFactory
 			
 			int stage1 = findClosest( optimalStage1, factors );
 			
-			Log.info( "Decimation rate [" + decimation +
+			mLog.info( "Decimation rate [" + decimation +
 					  "] stage1 optimal [" + optimalStage1 +
 					  "] stage1 actual [" + stage1 +
 					  "]");
@@ -625,7 +616,7 @@ public class FilterFactory
 		
 		int retVal = (int)( 2.0d * decimation * ( numerator / denominator ) );
 
-		Log.info( "Optimal Stage 1 Decimation - rate [" + sampleRate +
+		mLog.info( "Optimal Stage 1 Decimation - rate [" + sampleRate +
 				  "] pass [" + passFrequency +
 				  "] bw ratio [" + ratio +
 				  "] optimal [" + retVal +

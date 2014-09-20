@@ -17,7 +17,6 @@
  ******************************************************************************/
 package decode.passport;
 
-import log.Log;
 
 public enum PassportBand
 {

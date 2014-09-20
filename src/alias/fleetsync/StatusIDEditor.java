@@ -27,14 +27,20 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-import log.Log;
 import net.miginfocom.swing.MigLayout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import controller.ConfigurableNode;
 
 public class StatusIDEditor extends JPanel implements ActionListener
 {
-    private static final long serialVersionUID = 1L;
-    private StatusIDNode mStatusIDNode;
+	private static final long serialVersionUID = 1L;
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( StatusIDEditor.class );
+
+	private StatusIDNode mStatusIDNode;
     
     private JLabel mLabelName;
     private JTextField mTextStatusID;
@@ -93,7 +99,7 @@ public class StatusIDEditor extends JPanel implements ActionListener
 				}
 				catch( Exception ex )
 				{
-					Log.error( "StatusIDEditor - error parsing int status " +
+					mLog.error( "StatusIDEditor - error parsing int status " +
 							"id from [" + statusIDString + "]" );
 				}
 			}

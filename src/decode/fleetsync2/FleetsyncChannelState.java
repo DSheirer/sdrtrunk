@@ -17,7 +17,6 @@
  ******************************************************************************/
 package decode.fleetsync2;
 
-import log.Log;
 import message.Message;
 import alias.Alias;
 import controller.state.AuxChannelState;
@@ -27,8 +26,6 @@ import controller.state.ChannelState.State;
 
 public class FleetsyncChannelState extends AuxChannelState
 {
-	private static final String PROTOCOL = "FSync II";
-
 	private String mFleetFrom;
 	private Alias mFleetFromAlias;
 

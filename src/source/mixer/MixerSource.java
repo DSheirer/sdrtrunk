@@ -27,13 +27,18 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.TargetDataLine;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import sample.Listener;
 import source.FloatArraySource;
 import source.SourceException;
 
 public class MixerSource extends FloatArraySource
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( MixerSource.class );
+
 	private long mFrequency = 0;
 	private int mBufferSize = 16384;
 	
@@ -174,7 +179,7 @@ public class MixerSource extends FloatArraySource
         		{
         			mRunning.set( false );
 
-        			Log.error( "ComplexMixerSource - mixer target data line"
+        			mLog.error( "ComplexMixerSource - mixer target data line"
                 			+ " is null" );
         		}
         		else
@@ -201,9 +206,8 @@ public class MixerSource extends FloatArraySource
                     }
                     catch ( LineUnavailableException e )
                     {
-                    	Log.error( "ComplexMixerSource - mixer target data line"
-                    			+ "not available to read data from - " + 
-                    			e.getLocalizedMessage() );
+                    	mLog.error( "ComplexMixerSource - mixer target data line"
+                    			+ "not available to read data from", e );
                     	
                     	mRunning.set( false );
                     }
@@ -224,9 +228,8 @@ public class MixerSource extends FloatArraySource
                         }
                         catch ( Exception e )
                         {
-                        	Log.error( "ComplexMixerSource - error while reading"
-                        			+ "from the mixer target data line - " +
-                        			e.getLocalizedMessage() );
+                        	mLog.error( "ComplexMixerSource - error while reading"
+                        			+ "from the mixer target data line", e );
                         	
                         	mRunning.set( false );
                         }

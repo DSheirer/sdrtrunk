@@ -22,23 +22,28 @@ import gui.control.JFrequencyControl;
 import java.awt.Color;
 import java.awt.EventQueue;
 
-import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import com.jidesoft.swing.JideTabbedPane;
-
-import log.Log;
 import net.miginfocom.swing.MigLayout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import source.SourceException;
 import source.tuner.FrequencyChangeListener;
 import source.tuner.rtl.RTL2832InfoPanel;
-import source.tuner.rtl.e4k.E4KTunerConfigurationPanel;
+
+import com.jidesoft.swing.JideTabbedPane;
+
 import controller.ResourceManager;
 
 public class R820TTunerEditorPanel extends JPanel implements FrequencyChangeListener
 {
-    private static final long serialVersionUID = 1L;
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( R820TTunerEditorPanel.class );
+
+	private static final long serialVersionUID = 1L;
     
     private R820TTunerController mController;
     private ResourceManager mResourceManager;
@@ -101,8 +106,8 @@ public class R820TTunerEditorPanel extends JPanel implements FrequencyChangeList
 		        }
 		        catch ( SourceException e )
 		        {
-		        	Log.error( "R820T Tuner Controller - error setting frequency [" + 
-		        			frequency + "] - " + e.getLocalizedMessage() );
+		        	mLog.error( "R820T Tuner Controller - error setting frequency [" + 
+		        			frequency + "]", e );
 		        }
             }
 		} );

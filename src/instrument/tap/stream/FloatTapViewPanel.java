@@ -17,6 +17,7 @@
  ******************************************************************************/
 package instrument.tap.stream;
 
+import gui.SDRTrunk;
 import instrument.gui.SampleModel;
 import instrument.tap.Tap;
 import instrument.tap.TapViewPanel;
@@ -29,11 +30,14 @@ import java.awt.geom.Point2D;
 import java.util.List;
 import java.util.Observable;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FloatTapViewPanel extends TapViewPanel
 {
     private static final long serialVersionUID = 1L;
+	private final static Logger mLog = LoggerFactory.getLogger( SDRTrunk.class );
+
 	private Tap mTap;
 	private List<Float> mSamples;
 	private int mSampleCount;
@@ -50,7 +54,7 @@ public class FloatTapViewPanel extends TapViewPanel
 		getModel().setSampleCount( mSampleCount );
 		getModel().setDelay( tap.getDelay() );
 		
-		Log.info( "Float Tap Panel [" + tap.getName() + "] count: " + 
+		mLog.info( "Float Tap Panel [" + tap.getName() + "] count: " + 
 			getModel().getSampleCount() + " delay:" + getModel().getDelay() );
 	}
 	
@@ -109,7 +113,7 @@ public class FloatTapViewPanel extends TapViewPanel
 		
 		float scaledValue = value / (float)Short.MAX_VALUE;
 		
-		Log.info( "Float value is:" + scaledValue );
+//		mLog.info( "Float value is:" + scaledValue );
 		float y = middle - ( middle * scaledValue * mVerticalZoom );
 
 		/* Clip y to zero as necessary */

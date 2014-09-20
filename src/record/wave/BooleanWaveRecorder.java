@@ -23,7 +23,9 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.sound.sampled.AudioFormat;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import record.Recorder;
 import record.RecorderType;
 import sample.Listener;
@@ -35,6 +37,9 @@ import buffer.FloatSampleBufferAssembler;
  */
 public class BooleanWaveRecorder extends Recorder implements Listener<Boolean>
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( BooleanWaveRecorder.class );
+
 	private AudioFormat mAudioFormat;
     private boolean mRunning = false;
     private boolean mPaused = false;
@@ -117,7 +122,8 @@ public class BooleanWaveRecorder extends Recorder implements Listener<Boolean>
 
     		if( !success )
     		{
-    			Log.error( "Wave recorder buffer overflow - throwing away " + buffer.capacity() + " samples" );
+    			mLog.error( "Wave recorder buffer overflow - throwing away " + 
+    					buffer.capacity() + " samples" );
     		}
     	}
     }
@@ -137,7 +143,8 @@ public class BooleanWaveRecorder extends Recorder implements Listener<Boolean>
 			if( !mToWriteBufferQueue.offer( mCurrentBuffer.get() ) )
 			{
 				//We had an overflow ... log it
-				Log.error( "ShortWaveRecorder: buffer overflow - throwing away 1 second of sample data" );
+				mLog.error( "ShortWaveRecorder: buffer overflow - throwing "
+						+ "away 1 second of sample data" );
 			}
 			
 			mCurrentBuffer.reset();
@@ -159,12 +166,13 @@ public class BooleanWaveRecorder extends Recorder implements Listener<Boolean>
                 }
 				catch ( IOException ioe )
 				{
-					Log.error( "IOException while trying to write to the wave writer - " + ioe.getLocalizedMessage() );
+					mLog.error( "IOException while trying to write to the "
+							+ "wave writer", ioe );
 				}
                 catch ( InterruptedException e )
                 {
-                	Log.error( "Oops ... error while processing the buffer queue for " + 
-                			" the wave recorder - " + e.getLocalizedMessage() );
+                	mLog.error( "Oops ... error while processing the buffer "
+                			+ "queue for the wave recorder", e );
                 }
 			}
     	}

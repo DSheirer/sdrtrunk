@@ -24,7 +24,9 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import sample.Listener;
 import buffer.FloatSampleBufferAssembler;
 
@@ -32,6 +34,8 @@ public class AudioOutput implements Listener<Float>,
 									SquelchListener,
 									AudioTypeListener
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( AudioOutput.class );
 	private static final int sAUDIO_BLOCK_SIZE = 24000;
 	
     private static final AudioFormat sAUDIO_FORMAT = 
@@ -60,8 +64,8 @@ public class AudioOutput implements Listener<Float>,
         }
         catch ( LineUnavailableException e )
         {
-        	Log.warning( "AudioOutput - couldn't open audio speakers "
-        			+ "for playback:" + e.getLocalizedMessage() );
+        	mLog.error( "AudioOutput - couldn't open audio speakers "
+        			+ "for playback", e );
         }
 	}
 

@@ -19,8 +19,6 @@ package sample.complex;
 
 import java.io.Serializable;
 
-import log.Log;
-
 /**
  * ComplexSample for handling left/right channel audio, or inphase/quadrature 
  * samples, etc.  

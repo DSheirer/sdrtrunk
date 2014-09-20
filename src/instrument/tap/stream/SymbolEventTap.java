@@ -17,7 +17,6 @@
  ******************************************************************************/
 package instrument.tap.stream;
 
-import log.Log;
 import instrument.tap.TapListener;
 import instrument.tap.TapType;
 import sample.Listener;

@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Date;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
@@ -37,8 +38,11 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JSeparator;
 
-import log.Log;
 import net.miginfocom.swing.MigLayout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import properties.SystemProperties;
 import source.tuner.TunerSelectionListener;
 import spectrum.SpectralDisplayPanel;
@@ -51,24 +55,34 @@ import controller.ResourceManager;
 
 public class SDRTrunk
 {
-    private ResourceManager mResourceManager;
+	private final static Logger mLog = LoggerFactory.getLogger( SDRTrunk.class );
+
+	private ResourceManager mResourceManager;
 	private ControllerPanel mControllerPanel;
 	private SpectralDisplayPanel mSpectralPanel;
 	private JFrame mMainGui = new JFrame();
     
     public SDRTrunk() 
     {
+    	mLog.info( "" );
+    	mLog.info( "" );
+    	mLog.info( "*******************************************************************" );
+    	mLog.info( "**** SDRTrunk: a trunked radio and digital decoding application ***" );
+    	mLog.info( "****  website: https://code.google.com/p/sdrtrunk               ***" );
+    	mLog.info( "*******************************************************************" );
+    	mLog.info( "" );
+    	mLog.info( "" );
+    	
     	//Setup the application home directory
     	Path home = getHomePath();
+    	
+    	mLog.info( "Home path: " + home.toString() );
 
     	//Load properties file
     	if( home != null )
     	{
     		loadProperties( home );
     	}
-
-    	//Start the logger
-    	Log.init();
 		
 		//Log current properties setting
 		SystemProperties.getInstance().logCurrentSettings();
@@ -82,7 +96,8 @@ public class SDRTrunk
 		//Initialize the GUI
         initGUI();
 
-        Log.info( "Starting the main gui" );
+    	mLog.info( "starting main application gui" );
+
         //Start the gui
         EventQueue.invokeLater( new Runnable()
         {
@@ -210,9 +225,9 @@ public class SDRTrunk
 	                    }
 	                    catch ( IOException e )
 	                    {
-	                    	Log.error( "Couldn't create 'screen_captures' "
+	                    	mLog.error( "Couldn't create 'screen_captures' "
 	                    			+ "subdirectory in the " +
-	                    			"SDRTrunk application directory" );
+	                    			"SDRTrunk application directory", e );
 	                    }
 	            	}
 	            	
@@ -233,15 +248,14 @@ public class SDRTrunk
                             }
                             catch ( IOException e )
                             {
-                            	Log.error( "Couldn't write screen capture to "
-                        			+ "file [" + captureFile.toString() + "]" );
+                            	mLog.error( "Couldn't write screen capture to "
+                    			+ "file [" + captureFile.toString() + "]", e );
                             }
                         }} );
                 }
                 catch ( AWTException e )
                 {
-	                Log.error( "Exception while taking screen capture - " + 
-	                			e.getLocalizedMessage() );
+                	mLog.error( "Exception while taking screen capture", e );
                 }
             }
         } );
@@ -261,15 +275,15 @@ public class SDRTrunk
 		{
 			try
             {
-				Log.info( "SDRTrunk - creating application properties file [" + 
+				mLog.info( "SDRTrunk - creating application properties file [" + 
 						propsPath.toAbsolutePath() + "]" );
 
 				Files.createFile( propsPath );
             }
             catch ( IOException e )
             {
-	            Log.error( "SDRTrunk - couldn't create application properties "
-	            		+ "file [" + propsPath.toAbsolutePath() );
+            	mLog.error( "SDRTrunk - couldn't create application properties "
+	            		+ "file [" + propsPath.toAbsolutePath(), e );
             }
 		}
 		
@@ -279,7 +293,7 @@ public class SDRTrunk
 		}
 		else
 		{
-			Log.error( "SDRTrunk - couldn't find or recreate the SDRTrunk " +
+			mLog.error( "SDRTrunk - couldn't find or recreate the SDRTrunk " +
 					"application properties file" );
 		}
     }
@@ -301,15 +315,15 @@ public class SDRTrunk
 	        {
 	            Files.createDirectory( homePath );
 	            
-	            Log.info( "SDRTrunk - created application home directory [" + 
+	            mLog.info( "SDRTrunk - created application home directory [" + 
 	            				homePath.toString() + "]" );
 	        }
 	        catch ( Exception e )
 	        {
 	        	homePath = null;
 	        	
-	        	Log.error( "SDRTrunk: exception while creating SDRTrunk home " +
-	        			"directory in the user's home directory" );
+	        	mLog.error( "SDRTrunk: exception while creating SDRTrunk home " +
+	        			"directory in the user's home directory", e );
 	        }
 		}
 

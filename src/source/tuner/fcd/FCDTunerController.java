@@ -27,7 +27,9 @@ import javax.usb.UsbInterface;
 import javax.usb.UsbInterfacePolicy;
 import javax.usb.UsbPipe;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import source.SourceException;
 import source.tuner.TunerClass;
 import source.tuner.TunerConfiguration;
@@ -39,6 +41,9 @@ import controller.ResourceManager;
 
 public abstract class FCDTunerController extends TunerController
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( FCDTunerController.class );
+
 	public final static int sINT_NULL_VALUE = -1;
 	public final static long sLONG_NULL_VALUE = -1l;
 	public final static double sDOUBLE_NULL_VALUE = -1.0D;
@@ -208,7 +213,8 @@ public abstract class FCDTunerController extends TunerController
 		}
 		else
 		{
-			Log.info( "Attempted to claim the Funcube HID interface, but it's in use by another program" );
+			mLog.info( "Attempted to claim the Funcube HID interface, but "
+					+ "it's in use by another program" );
 		}
 		
 		return claimed;
@@ -228,7 +234,8 @@ public abstract class FCDTunerController extends TunerController
         }
         catch ( Exception e )
         {
-	        Log.error( "Exception thrown while releasing the funcube HID interface" + e.getLocalizedMessage() );
+        	mLog.error( "Exception thrown while releasing the funcube HID "
+        			+ "interface", e );
         }
 	}
 
@@ -345,13 +352,13 @@ public abstract class FCDTunerController extends TunerController
 			}
 			else
 			{
-				Log.error( "FCD Pro Tuner Controller - couldn't gain access " +
+				mLog.error( "FCD Pro Tuner Controller - couldn't gain access " +
 						"to the USB in/out endpoints or pipes." );
 			}
 		}
 		else
 		{
-			Log.error( "FCD Pro Tuner Controller - couldn't claim the USB " +
+			mLog.error( "FCD Pro Tuner Controller - couldn't claim the USB " +
 				"interface.  Check to see if another program is using it." );
 		}
 	}

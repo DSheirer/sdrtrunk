@@ -17,9 +17,13 @@
  ******************************************************************************/
 package sample.complex;
 
+import gui.SDRTrunk;
+
 import java.util.List;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import sample.Listener;
 import source.tuner.FrequencyChangeListener;
 import buffer.FloatAveragingBuffer;
@@ -28,6 +32,9 @@ public class ComplexSampleRateCounter implements Listener<ComplexSample>,
 												 ComplexSampleListListener,
 												 FrequencyChangeListener
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( ComplexSampleRateCounter.class );
+
 	private int mCounter;
 	private int mAverageCounter;
 	private int mExpectedSampleRate;
@@ -44,7 +51,7 @@ public class ComplexSampleRateCounter implements Listener<ComplexSample>,
 
 		mLastRun = System.currentTimeMillis();
 
-		Log.info( "Complex Sample Rate Counter started ...." );
+		mLog.info( "Complex Sample Rate Counter started ...." );
 	}
 	
 	@Override
@@ -65,7 +72,7 @@ public class ComplexSampleRateCounter implements Listener<ComplexSample>,
 			
 			mAverageCounter++;
 			
-			Log.info( "Complex Sample Rate Avg " + mAverageCounter + 
+			mLog.info( "Complex Sample Rate Avg " + mAverageCounter + 
 					  " current [" + elapsed + " ms/" + average + 
 					  " hz] average [" + runningAverage + " hz] expected [" +
 					  mExpectedSampleRate + " hz] over [" +
@@ -91,7 +98,7 @@ public class ComplexSampleRateCounter implements Listener<ComplexSample>,
 			
 			mAverageCounter++;
 			
-			Log.info( "Complex Sample Rate Avg " + mAverageCounter + 
+			mLog.info( "Complex Sample Rate Avg " + mAverageCounter + 
 					  " current [" + elapsed + " ms/" + average + 
 					  " hz] average [" + runningAverage + " hz] expected [" +
 					  mExpectedSampleRate + " hz] over [" +
