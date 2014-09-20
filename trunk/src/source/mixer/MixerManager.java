@@ -28,7 +28,9 @@ import javax.sound.sampled.Line;
 import javax.sound.sampled.Mixer;
 import javax.sound.sampled.TargetDataLine;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import source.config.SourceConfigMixer;
 import source.config.SourceConfiguration;
 import source.tuner.MixerTunerDataLine;
@@ -37,6 +39,9 @@ import controller.channel.ProcessingChain;
 
 public class MixerManager
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( MixerManager.class );
+
 	private static MixerManager sInstance = null;
 	
 	private HashMap<String,TargetDataLine> mMixerLines = 
@@ -129,7 +134,7 @@ public class MixerManager
 	{
 		StringBuilder sb = new StringBuilder();
 		
-		sb.append( "MixerManager - loading system mixer devices\n" );
+		sb.append( "loading system mixer devices\n" );
 		
         for( Mixer.Info  mixerInfo: AudioSystem.getMixerInfo() )
         {
@@ -189,7 +194,7 @@ public class MixerManager
         	}
         }
         
-		Log.info( sb.toString() );
+        mLog.info( sb.toString() );
 	}
 	
 	private TargetDataLine getTargetDataLine( Mixer.Info mixerInfo, AudioFormat format )
@@ -254,5 +259,4 @@ public class MixerManager
 		
 		return sb.toString();
 	}
-
 }

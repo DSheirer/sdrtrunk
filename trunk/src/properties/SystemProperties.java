@@ -28,7 +28,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * SystemProperties - provides an isolated instance of properties for the
@@ -37,6 +38,9 @@ import log.Log;
 
 public class SystemProperties
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( SystemProperties.class );
+
 	private static String sDEFAULT_APP_ROOT = "SDRTrunk";
 	private static String sPROPERTIES_FILENAME = "SDRTrunk.properties";
 	
@@ -83,13 +87,13 @@ public class SystemProperties
 			
 			mProperties.store( out, comments );
 			
-			Log.info( "SystemProperties - saved current properties [" + 
+			mLog.info( "SystemProperties - saved current properties [" + 
 							propsPath.toString() + "]" );
 		}
 		catch( Exception e )
 		{
-			Log.error( "SystemProperties - exception while saving " +
-					"application properties:" + e.getLocalizedMessage() );
+			mLog.error( "SystemProperties - exception while saving " +
+					"application properties", e );
 		}
 		finally
 		{
@@ -142,8 +146,8 @@ public class SystemProperties
             }
             catch ( IOException e )
             {
-            	Log.error( "SystemProperties - exception while creating " +
-            			"app folder [" + folder + "]" );
+            	mLog.error( "SystemProperties - exception while creating " +
+            			"app folder [" + folder + "]", e );
             }
 		}
 		
@@ -154,11 +158,11 @@ public class SystemProperties
 	{
 		if( mPropertiesPath == null )
 		{
-			Log.info( "SystemProperties - no properties file loaded - using defaults" );
+			mLog.info( "SystemProperties - no properties file loaded - using defaults" );
 		}
 		else
 		{
-			Log.info( "SystemProperties - application properties loaded [" + mPropertiesPath.toString() + "]" );
+			mLog.info( "SystemProperties - application properties loaded [" + mPropertiesPath.toString() + "]" );
 		}
 	}
 	
@@ -180,8 +184,8 @@ public class SystemProperties
             }
             catch ( FileNotFoundException e )
             {
-            	Log.error( "SDRTrunk - exception while opening inputstream on " +
-    			"application properties file - " + e.getLocalizedMessage()  );
+            	mLog.error( "SDRTrunk - exception while opening inputstream on " +
+    			"application properties file", e  );
             }
 
 			if( in != null )
@@ -192,9 +196,8 @@ public class SystemProperties
                 }
                 catch ( IOException e )
                 {
-                	Log.error( "SDRTrunk - exception while loading properties " +
-                			"inputstream into SystemProperties - " + 
-                			e.getLocalizedMessage()  );
+                	mLog.error( "SDRTrunk - exception while loading properties " +
+                			"inputstream into SystemProperties", e );
                 }
 				finally
 				{
@@ -209,7 +212,7 @@ public class SystemProperties
 			}
 		}
 		
-		Log.info( "SystemProperties - loaded [" + 
+		mLog.info( "SystemProperties - loaded [" + 
 						propertiesPath.toString() + "]" );
 	}
 

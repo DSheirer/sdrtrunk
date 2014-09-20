@@ -34,9 +34,12 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-import log.Log;
 import message.MessageDirection;
 import net.miginfocom.swing.MigLayout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import source.Source.SampleType;
 import source.wave.WaveSource;
 import source.wave.WaveSource.PositionListener;
@@ -52,6 +55,10 @@ import decode.passport.PassportDecoder;
 
 public class WaveSourceFrame extends JInternalFrame implements PositionListener
 {
+    private static final long serialVersionUID = 1L;
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( WaveSourceFrame.class );
+
 	private WaveSource mSource;
 	private JDesktopPane mDesktop;
 	
@@ -128,7 +135,7 @@ public class WaveSourceFrame extends JInternalFrame implements PositionListener
 					DecoderType selected = 
 							(DecoderType)mComboDecoders.getSelectedItem();
 					
-					Log.info( "Selected:" + selected.getDisplayString() );
+					mLog.info( "Selected:" + selected.getDisplayString() );
 
 					Decoder decoder = null;
 					
@@ -189,8 +196,8 @@ public class WaveSourceFrame extends JInternalFrame implements PositionListener
                     }
                     catch ( IOException e )
                     {
-                    	Log.error( "Viewer - error trying to fetch next [" + 
-                    			mCount + "] samples - " + e.getLocalizedMessage() );
+                    	mLog.error( "Viewer - error trying to fetch next [" + 
+                    			mCount + "] samples", e );
 
                     	JOptionPane.showMessageDialog( WaveSourceFrame.this,
                     		    "Cannot read " + mCount + " more samples [" + 
@@ -230,8 +237,8 @@ public class WaveSourceFrame extends JInternalFrame implements PositionListener
 					}
 					catch( Exception e )
 					{
-						Log.error( "WaveSourceFrame - exception during jump "
-								+ "to - " + e.getLocalizedMessage() );
+						mLog.error( "WaveSourceFrame - exception during jump "
+								+ "to", e );
 						
                     	JOptionPane.showMessageDialog( WaveSourceFrame.this,
                     		    "Can't jump to position [" + getText() + "]",

@@ -17,11 +17,15 @@
  ******************************************************************************/
 package source.recording;
 
+import gui.SDRTrunk;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import settings.SettingsManager;
 import source.Source;
 import source.SourceException;
@@ -33,6 +37,9 @@ import controller.channel.ProcessingChain;
 
 public class RecordingSourceManager
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( RecordingSourceManager.class );
+
 	private ResourceManager mResourceManager;
 	
 	private ArrayList<Recording> mRecordings = new ArrayList<Recording>();
@@ -138,7 +145,8 @@ public class RecordingSourceManager
     			ArrayList<RecordingConfiguration> recordingConfigurations = 
     					settingsManager.getRecordingConfigurations();
 
-    			Log.info( "RecordingSourceManager - discovered [" + recordingConfigurations.size() + "] recording configurations" );
+    			mLog.info( "RecordingSourceManager - discovered [" + 
+    			recordingConfigurations.size() + "] recording configurations" );
     			
     			for( RecordingConfiguration config: recordingConfigurations )
     			{

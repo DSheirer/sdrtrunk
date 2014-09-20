@@ -26,9 +26,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import log.Log;
-
 import org.jtransforms.fft.FloatFFT_1D;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import sample.Listener;
 import source.Source;
@@ -45,6 +45,9 @@ import dsp.filter.Window.WindowType;
 public class DFTProcessor implements Listener<Float[]>,
 									 FrequencyChangeListener
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( DFTProcessor.class );
+
 	private CopyOnWriteArrayList<DFTResultsConverter> mListeners =
 			new CopyOnWriteArrayList<DFTResultsConverter>();
 
@@ -198,8 +201,8 @@ public class DFTProcessor implements Listener<Float[]>,
         }
         catch ( InterruptedException e )
         {
-	        Log.error( "DFTProcessor - exception while awaiting shutdown of "
-	        		+ "calculation scheduler for reset" );
+	        mLog.error( "DFTProcessor - exception while awaiting shutdown of "
+	        		+ "calculation scheduler for reset", e );
         }
 	}
 	
@@ -222,7 +225,7 @@ public class DFTProcessor implements Listener<Float[]>,
     {
 		if( !mQueue.offer( samples ) )
 		{
-			Log.error( "DFTProcessor - [" + mSampleType.toString()
+			mLog.error( "DFTProcessor - [" + mSampleType.toString()
 						+ "]queue is full, purging queue, "
 						+ "samples[" + samples + "]" );
 

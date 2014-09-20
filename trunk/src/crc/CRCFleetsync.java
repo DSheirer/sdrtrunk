@@ -19,7 +19,8 @@ package crc;
 
 import java.util.BitSet;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Fleetsync CRC checksum utility
@@ -36,6 +37,9 @@ import log.Log;
  */
 public class CRCFleetsync
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( CRCFleetsync.class );
+
 	private static short[] sCHECKSUMS = new short[] {
 		0x740A, // 111010000001010 Bit 0
 		0x3A05, // 011101000000101 Bit 1
@@ -205,48 +209,5 @@ public class CRCFleetsync
 		}
 
 		return retVal;
-    }
-    
-    public static void main( String[] args )
-    {
-    	BitSet test = new BitSet();
-    	
-    	int[] msg = new int[] 
-    	{ 1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,0,
-    	  0,0,1,1,1,1,1,1,1,1,0,1,0,1,1,0,
-    	  0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,
-    	  0,1,0,0,1,0,1,1,1,1,0,0,1,1,0,0 };
-
-    	for( int x = 0; x < msg.length; x++ )
-    	{
-    		if( msg[ x ] == 0 )
-    		{
-    			test.clear( x );
-    		}
-    		else if( msg[ x ] == 1 )
-    		{
-    			test.set( x );
-    		}
-    	}
-    	CRC result = check( test );
-
-    	Log.info( "CRC:" + result.toString() );
-
-//    	for( int y = 0; y < 64; y++ )
-//    	{
-//    		BitSet test2 = test.get( y, y + 63 );
-//
-//    		if( test2.get( 63 ) )
-//    		{
-//    			test2.clear( 63 );
-//    		}
-//    		else
-//    		{
-//    			test2.set( 63 );
-//    		}
-//        	CRC result = check( test2 );
-//
-//        	Log.info( y + " crc:" + result.toString() );
-//    	}
     }
 }

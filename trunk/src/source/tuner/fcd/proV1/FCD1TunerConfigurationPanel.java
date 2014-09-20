@@ -25,7 +25,6 @@ import java.awt.event.FocusListener;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 
-import javax.swing.BorderFactory;
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
@@ -43,21 +42,28 @@ import javax.swing.event.ChangeListener;
 import javax.usb.UsbClaimException;
 import javax.usb.UsbException;
 
-import com.jidesoft.swing.JideTabbedPane;
-
-import log.Log;
 import net.miginfocom.swing.MigLayout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import source.SourceException;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
 import source.tuner.fcd.proV1.FCD1TunerController.LNAEnhance;
 import source.tuner.fcd.proV1.FCD1TunerController.LNAGain;
 import source.tuner.fcd.proV1.FCD1TunerController.MixerGain;
+
+import com.jidesoft.swing.JideTabbedPane;
+
 import controller.ResourceManager;
 
 public class FCD1TunerConfigurationPanel extends JPanel
 {
-    private static final long serialVersionUID = 1L;
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( FCD1TunerConfigurationPanel.class );
+
+	private static final long serialVersionUID = 1L;
     private ResourceManager mResourceManager;
     private FCD1TunerController mController;
 
@@ -180,10 +186,9 @@ public class FCD1TunerConfigurationPanel extends JPanel
                 			"FCD Pro Tuner Controller - cannot claim FCD "
                 			+ "Controller to apply LNA gain [" + gain.toString() + "]" );  
                 	
-                	Log.error( "FuncubeDonglePro Controller - usb claim "
+                	mLog.error( "FuncubeDonglePro Controller - usb claim "
                 			+ "exception while applying LNA gain value [" + 
-                			gain.toString() + "] - " + 
-                			e1.getLocalizedMessage() );
+                			gain.toString() + "]", e1 );
                 }
                 catch ( UsbException e1 )
                 {
@@ -192,10 +197,9 @@ public class FCD1TunerConfigurationPanel extends JPanel
                 			"FCD Pro Tuner Controller - FCD Controller "
                 			+ "cannot apply LNA gain [" + gain.toString() + "]" );  
                 	
-                	Log.error( "FuncubeDonglePro Controller - "
+                	mLog.error( "FuncubeDonglePro Controller - "
                 			+ "exception while applying LNA gain value [" + 
-                			gain.toString() + "] - " + 
-                			e1.getLocalizedMessage() );
+                			gain.toString() + "]", e1 );
                 }
 				
 				save();
@@ -235,10 +239,9 @@ public class FCD1TunerConfigurationPanel extends JPanel
                 			"FCD Pro Tuner Controller - cannot claim FCD "
                 			+ "Controller to apply LNA enhance [" + enhance.toString() + "]" );  
                 	
-                	Log.error( "FuncubeDonglePro Controller - usb claim "
+                	mLog.error( "FuncubeDonglePro Controller - usb claim "
                 			+ "exception while applying LNA enhance value [" + 
-                			enhance.toString() + "] - " + 
-                			e1.getLocalizedMessage() );
+                			enhance.toString() + "]", e1 );
                 }
                 catch ( UsbException e1 )
                 {
@@ -247,10 +250,9 @@ public class FCD1TunerConfigurationPanel extends JPanel
                 			"FCD Pro Tuner Controller - FCD Controller "
                 			+ "cannot apply LNA enhance [" + enhance.toString() + "]" );  
                 	
-                	Log.error( "FuncubeDonglePro Controller - "
+                	mLog.error( "FuncubeDonglePro Controller - "
                 			+ "exception while applying LNA enhance value [" + 
-                			enhance.toString() + "] - " + 
-                			e1.getLocalizedMessage() );
+                			enhance.toString() + "]", e1 );
                 }
 				
 				save();
@@ -289,10 +291,9 @@ public class FCD1TunerConfigurationPanel extends JPanel
                 			"FCD Pro Tuner Controller - cannot claim FCD "
                 			+ "Controller to apply Mixer gain [" + gain.toString() + "]" );  
                 	
-                	Log.error( "FuncubeDonglePro Controller - usb claim "
+                	mLog.error( "FuncubeDonglePro Controller - usb claim "
                 			+ "exception while applying Mixer gain value [" + 
-                			gain.toString() + "] - " + 
-                			e1.getLocalizedMessage() );
+                			gain.toString() + "]", e1 );
                 }
                 catch ( UsbException e1 )
                 {
@@ -301,10 +302,9 @@ public class FCD1TunerConfigurationPanel extends JPanel
                 			"FCD Pro Tuner Controller - FCD Controller "
                 			+ "cannot apply Mixer gain [" + gain.toString() + "]" );  
                 	
-                	Log.error( "FuncubeDonglePro Controller - "
+                	mLog.error( "FuncubeDonglePro Controller - "
                 			+ "exception while applying Mixer gain value [" + 
-                			gain.toString() + "] - " + 
-                			e1.getLocalizedMessage() );
+                			gain.toString() + "]", e1 ); 
                 }
 				
 				save();
@@ -363,9 +363,8 @@ public class FCD1TunerConfigurationPanel extends JPanel
                 			+ "apply frequency correction value: " + value + 
                 					e1.getLocalizedMessage() );  
                 	
-                	Log.error( "FuncubeDonglePro Controller - couldn't apply "
-                			+ "frequency correction value: " + value + 
-                			e1.getLocalizedMessage() );
+                	mLog.error( "FuncubeDonglePro Controller - couldn't apply "
+                			+ "frequency correction value: " + value, e1 ); 
                 }
             }
         } );
@@ -522,9 +521,8 @@ public class FCD1TunerConfigurationPanel extends JPanel
         			+ "apply the tuner configuration settings - " + 
         					e1.getLocalizedMessage() );  
         	
-        	Log.error( "FuncubeDonglePro Controller - couldn't apply "
-        			+ "config [" + config.getName() + "] - " + 
-        			e1.getLocalizedMessage() );
+        	mLog.error( "FuncubeDonglePro Controller - couldn't apply "
+        			+ "config [" + config.getName() + "]", e1 );
         }
     }
     
@@ -639,11 +637,10 @@ public class FCD1TunerConfigurationPanel extends JPanel
 	                			+ mCorrectionComponent.toString() + 
 	                			" correction value [" + value + "]" );  
 	                	
-	                	Log.error( "FuncubeDonglePro Controller - usb claim "
+	                	mLog.error( "FuncubeDonglePro Controller - usb claim "
 	                			+ "exception while applying "
 	                			+ mCorrectionComponent.toString() 
-	                			+ " correction value [" + value + "] - " + 
-	                			e1.getLocalizedMessage() );
+	                			+ " correction value [" + value + "]", e1 );
                     }
                     catch ( UsbException e1 )
                     {
@@ -654,11 +651,10 @@ public class FCD1TunerConfigurationPanel extends JPanel
 	                			+ mCorrectionComponent.toString() + 
 	                			" correction value [" + value + "]" );  
 	                	
-	                	Log.error( "FuncubeDonglePro Controller - usb "
+	                	mLog.error( "FuncubeDonglePro Controller - usb "
 	                			+ "exception while applying "
 	                			+ mCorrectionComponent.toString() 
-	                			+ " correction value [" + value + "] - " + 
-	                			e1.getLocalizedMessage() );
+	                			+ " correction value [" + value + "]", e1 );
                     }
 	            }
 	        } );

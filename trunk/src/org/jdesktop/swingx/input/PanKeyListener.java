@@ -22,8 +22,6 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.geom.Point2D;
 
-import log.Log;
-
 import org.jdesktop.swingx.JXMapViewer;
 
 /**

@@ -34,8 +34,11 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 import javax.xml.bind.annotation.XmlTransient;
 
-import log.Log;
 import message.Message;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import record.config.RecordConfiguration;
 import sample.Listener;
 import source.SourceType;
@@ -63,6 +66,8 @@ import eventlog.config.EventLogConfiguration;
 @XmlRootElement( name = "channel" )
 public class Channel extends Configuration
 {
+	private final static Logger mLog = LoggerFactory.getLogger( Channel.class );
+
 	public enum ChannelType 
 	{ 
 		STANDARD,
@@ -814,7 +819,7 @@ public class Channel extends Configuration
 		}
 		else
 		{
-			Log.error( "Channel - attempt to add already existing channel "
+			mLog.error( "Channel - attempt to add already existing channel "
 					+ "listener [" + listener.getClass() + "]" );
 		}
 	}

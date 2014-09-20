@@ -25,14 +25,19 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import source.SourceException;
 import spectrum.SpectrumFrame;
 import controller.BaseNode;
 
 public class TunerNode extends BaseNode implements FrequencyChangeListener
 {
-    private static final long serialVersionUID = 1L;
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( TunerNode.class );
+
+	private static final long serialVersionUID = 1L;
 	private static DecimalFormat FREQUENCY_FORMAT = new DecimalFormat( "0.00000" );
 	private static DecimalFormat SAMPLE_RATE_FORMAT = new DecimalFormat( "0.000" );
     
@@ -52,8 +57,8 @@ public class TunerNode extends BaseNode implements FrequencyChangeListener
         }
         catch ( SourceException e )
         {
-        	Log.error( "TunerNode - error reading frequency and sample rate "
-        			+ "from tuner - " + e.getLocalizedMessage() );
+        	mLog.error( "TunerNode - error reading frequency and sample rate "
+        			+ "from tuner", e );
         }
 	}
 

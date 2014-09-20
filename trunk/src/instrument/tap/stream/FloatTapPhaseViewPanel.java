@@ -17,6 +17,7 @@
  ******************************************************************************/
 package instrument.tap.stream;
 
+import gui.SDRTrunk;
 import instrument.gui.SampleModel;
 import instrument.tap.Tap;
 import instrument.tap.TapViewPanel;
@@ -29,11 +30,15 @@ import java.awt.geom.Point2D;
 import java.util.List;
 import java.util.Observable;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FloatTapPhaseViewPanel extends TapViewPanel
 {
-    private static final long serialVersionUID = 1L;
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( FloatTapPhaseViewPanel.class );
+
+	private static final long serialVersionUID = 1L;
 	private Tap mTap;
 	private List<Float> mSamples;
 	private int mSampleCount;
@@ -50,7 +55,7 @@ public class FloatTapPhaseViewPanel extends TapViewPanel
 		getModel().setSampleCount( mSampleCount );
 		getModel().setDelay( tap.getDelay() );
 		
-		Log.info( "Float Tap Panel [" + tap.getName() + "] count: " + 
+		mLog.info( "Float Tap Panel [" + tap.getName() + "] count: " + 
 			getModel().getSampleCount() + " delay:" + getModel().getDelay() );
 	}
 	

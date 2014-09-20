@@ -25,8 +25,11 @@ import java.awt.EventQueue;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import log.Log;
 import net.miginfocom.swing.MigLayout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import source.SourceException;
 import source.tuner.FrequencyChangeListener;
 import source.tuner.rtl.RTL2832InfoPanel;
@@ -37,6 +40,9 @@ import controller.ResourceManager;
 
 public class E4KTunerEditorPanel extends JPanel implements FrequencyChangeListener
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( E4KTunerEditorPanel.class );
+	
     private static final long serialVersionUID = 1L;
     
     private E4KTunerController mController;
@@ -101,8 +107,8 @@ public class E4KTunerEditorPanel extends JPanel implements FrequencyChangeListen
 		        }
 		        catch ( SourceException e )
 		        {
-		        	Log.error( "E4KTunerController - error setting frequency [" + 
-		        			frequency + "] - " + e.getLocalizedMessage() );
+		        	mLog.error( "E4KTunerController - error setting frequency [" + 
+		        			frequency + "]", e );
 		        }
             }
 		} );

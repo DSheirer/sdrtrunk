@@ -29,7 +29,9 @@ import java.awt.geom.Line2D;
 
 import javax.swing.JPanel;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
 import settings.IntegerSetting;
@@ -45,7 +47,9 @@ public class SpectrumPanel extends JPanel
 									   SpectralDisplayAdjuster
 {
 	private static final long serialVersionUID = 1L;
-
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( SpectrumPanel.class );
+	
 	/* Set display bins size to 1, so that we're guaranteed a reset to the 
 	 * correct width once the first sample set arrives */
 	private float[] mDisplayFFTBins = new float[ 1 ];

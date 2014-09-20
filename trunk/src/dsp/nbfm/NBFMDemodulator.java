@@ -17,11 +17,9 @@
  ******************************************************************************/
 package dsp.nbfm;
 
-import log.Log;
 import sample.Broadcaster;
 import sample.Listener;
 import sample.complex.ComplexSample;
-import dsp.afc.AutomaticFrequencyControl;
 import dsp.filter.ComplexFIRFilter;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;

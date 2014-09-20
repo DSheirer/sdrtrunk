@@ -34,19 +34,24 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 
-import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-import log.Log;
 import net.miginfocom.swing.MigLayout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import source.tuner.FrequencyChangeListener;
 
 public class JFrequencyControl extends JPanel implements FrequencyChangeListener
 {
     private static final long serialVersionUID = 1L;
-    private ArrayList<FrequencyChangeListener> mListeners =
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( JFrequencyControl.class );
+
+	private ArrayList<FrequencyChangeListener> mListeners =
     		new ArrayList<FrequencyChangeListener>();
     
     private Color mHighlightColor = Color.YELLOW;
@@ -84,8 +89,8 @@ public class JFrequencyControl extends JPanel implements FrequencyChangeListener
             }
             catch ( ParseException e )
             {
-            	Log.error( "JFrequencyControl - parse exception "
-            			+ "constructing a digit - " + e.getLocalizedMessage() );
+            	mLog.error( "JFrequencyControl - parse exception "
+            			+ "constructing a digit - " + e );
             }
 
 			if( digit != null )

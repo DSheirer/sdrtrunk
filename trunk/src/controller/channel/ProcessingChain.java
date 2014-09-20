@@ -17,6 +17,8 @@
  ******************************************************************************/
 package controller.channel;
 
+import gui.SDRTrunk;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,8 +29,11 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import log.Log;
 import message.Message;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import record.Recorder;
 import record.wave.ComplexWaveRecorder;
 import record.wave.FloatWaveRecorder;
@@ -66,6 +71,8 @@ import eventlog.EventLogger;
  */
 public class ProcessingChain implements Listener<Message>
 {
+	private final static Logger mLog = LoggerFactory.getLogger( SDRTrunk.class );
+
 	protected AtomicBoolean mRunning = new AtomicBoolean();
     protected Channel mChannel;
 	protected Source mSource;
@@ -189,7 +196,7 @@ public class ProcessingChain implements Listener<Message>
 		}
 		else
 		{
-			Log.info( getLogPrefix() + "start() invoked, but processing chain is "
+			mLog.info( getLogPrefix() + "start() invoked, but processing chain is "
 					+ "already started" );
 		}
     }
@@ -224,7 +231,7 @@ public class ProcessingChain implements Listener<Message>
 		}
 		else
 		{
-			Log.info( getLogPrefix() + "stop() invoked, but processing chain was "
+			mLog.info( getLogPrefix() + "stop() invoked, but processing chain was "
 					+ "already stopped" );
 		}
 	}
@@ -273,8 +280,8 @@ public class ProcessingChain implements Listener<Message>
             }
             catch ( SourceException e )
             {
-            	Log.error( "Couldn't obtain source for processing chain [" + 
-            					toString() + "] - " + e.getLocalizedMessage() );
+            	mLog.error( "Couldn't obtain source for processing chain [" + 
+            					toString() + "]", e );
             	
             	mSource = null;
             }
@@ -296,7 +303,7 @@ public class ProcessingChain implements Listener<Message>
 					}
 					catch( RejectedExecutionException ree )
 					{
-						Log.error( getLogPrefix() + "ProcessingChain - "
+						mLog.error( getLogPrefix() + "ProcessingChain - "
 								+ "error scheduling complex sample processing "
 								+ "thread - " + ree.getLocalizedMessage() );
 						
@@ -318,9 +325,9 @@ public class ProcessingChain implements Listener<Message>
 					}
 					catch( RejectedExecutionException ree )
 					{
-						Log.error( getLogPrefix() + "ProcessingChain - "
+						mLog.error( getLogPrefix() + "ProcessingChain - "
 								+ "error scheduling float sample processing "
-								+ "thread - " + ree.getLocalizedMessage() );
+								+ "thread", ree );
 						
 						mSource.dispose();
 					}
@@ -340,9 +347,9 @@ public class ProcessingChain implements Listener<Message>
 					}
 					catch( RejectedExecutionException ree )
 					{
-						Log.error( getLogPrefix() + "ProcessingChain - "
+						mLog.error( getLogPrefix() + "ProcessingChain - "
 								+ "error scheduling float sample processing "
-								+ "thread - " + ree.getLocalizedMessage() );
+								+ "thread", ree );
 						
 						mSource.dispose();
 					}
@@ -491,9 +498,8 @@ public class ProcessingChain implements Listener<Message>
 	                }
 					catch ( IOException ioe )
 					{
-		                Log.error( getLogPrefix() + "Couldn't stop recorder [" + 
-		                		recorder.getFileName() + "] " + 
-		                		ioe.getLocalizedMessage() );
+						mLog.error( getLogPrefix() + "Couldn't stop recorder [" + 
+		                		recorder.getFileName() + "]", ioe );
 					}
 				}
 			}
@@ -516,14 +522,14 @@ public class ProcessingChain implements Listener<Message>
 
 					if( recorder instanceof FloatWaveRecorder )
 					{
-						Log.info( getLogPrefix() + "- started audio recording [" + 
+						mLog.info( getLogPrefix() + "- started audio recording [" + 
 								recorder.getFileName() + "]" );
 
 						mDecoder.addFloatListener( (FloatWaveRecorder)recorder );
 					}
 					else if( recorder instanceof ComplexWaveRecorder )
 					{
-						Log.info( getLogPrefix() + "- started baseband recording [" + 
+						mLog.info( getLogPrefix() + "- started baseband recording [" + 
 								recorder.getFileName() + "]" );
 
 						mDecoder.addComplexListener( (ComplexWaveRecorder )recorder );
@@ -532,7 +538,7 @@ public class ProcessingChain implements Listener<Message>
 	            }
 	            catch ( IOException e )
 	            {
-	            	Log.error( getLogPrefix() + "Unable to start recorder [" + 
+	            	mLog.error( getLogPrefix() + "Unable to start recorder [" + 
 	            							recorder.getFileName() + "]" );
 	            }
 			}
@@ -638,7 +644,7 @@ public class ProcessingChain implements Listener<Message>
 		}
 		else
 		{
-			Log.error( getLogPrefix() + "attempt to add a complex sample "
+			mLog.error( getLogPrefix() + "attempt to add a complex sample "
 					+ "listener, but the decoder is null" );
 		}
     }
@@ -651,7 +657,7 @@ public class ProcessingChain implements Listener<Message>
 		}
 		else
 		{
-			Log.error( getLogPrefix() + "attempt to remove a complex sample "
+			mLog.error( getLogPrefix() + "attempt to remove a complex sample "
 					+ "listener, but the decoder is null" );
 		}
     }

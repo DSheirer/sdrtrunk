@@ -25,7 +25,9 @@ package source.tuner.rtl.r820t;
 import javax.swing.JPanel;
 import javax.usb.UsbException;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import source.SourceException;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
@@ -35,6 +37,9 @@ import controller.ResourceManager;
 
 public class R820TTunerController extends RTL2832TunerController
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( R820TTunerController.class );
+
 	public static final long MIN_FREQUENCY =  3180000;
 	public static final long MAX_FREQUENCY = 1782030000;
 	public static final int R820T_IF_FREQUENCY = 3570000;
@@ -236,33 +241,32 @@ public class R820TTunerController extends RTL2832TunerController
 	{
 		try
 		{
-			Log.debug( "R820T Tuner Controller - testing USB interface" );
+			mLog.debug( "testing USB interface" );
 			/* Dummy write to test USB interface */
 			writeRegister( mUSBDevice, Block.USB, 
 					Address.USB_SYSCTL.getAddress(), (short)0x09, 1 );
 
-			Log.debug( "R820T Tuner Controller - initializing RTL2832 tuner baseband" );
+			mLog.debug( "initializing RTL2832 tuner baseband" );
 			initBaseband( mUSBDevice );
 
-			Log.debug( "R820T Tuner Controller - enabling I2C repeater" );
+			mLog.debug( "enabling I2C repeater" );
 			enableI2CRepeater( mUSBDevice, true );
 			
 			boolean i2CRepeaterControl = false;
 			
-			Log.debug( "R820T Tuner Controller - initializing R820T tuner" );
+			mLog.debug( "initializing R820T tuner" );
 			initTuner( i2CRepeaterControl );
 
-			Log.debug( "R820T Tuner Controller - disabling I2C repeater" );
+			mLog.debug( "disabling I2C repeater" );
 			enableI2CRepeater( mUSBDevice, false );
 			
-			Log.debug( "R820T Tuner Controller - initializing RTL tuner controller super class" );
+			mLog.debug( "initializing RTL2832 tuner controller super class" );
 			/* Initialize the super class */
 			super.init();
 		}
 		catch( UsbException e )
 		{
-			throw new SourceException( "R820T Tuner Controller - error during "
-					+ "init()", e );
+			throw new SourceException( "error during init()", e );
 		}
 	}
 
@@ -345,7 +349,8 @@ public class R820TTunerController extends RTL2832TunerController
             
             if( !calibrationSuccessful( calibrationCode ) )
             {
-            	Log.error( "Calibration NOT successful!!" );
+            	mLog.error( "Calibration NOT successful - code: " + 
+            			calibrationCode );
             }
         }
 
@@ -354,14 +359,11 @@ public class R820TTunerController extends RTL2832TunerController
     		calibrationCode = 0;
     	}
     	
-    	Log.debug( "Calibration Code is:" + calibrationCode );
-    	
     	/* Write calibration code */
     	byte filt_q = 0x10;
-    	calibrationCode = calibrationCode | filt_q;
     	
     	writeR820TRegister( Register.FILTER_CALIBRATION_CODE, 
-    			(byte)calibrationCode, controlI2C );
+    			(byte)( calibrationCode | filt_q ), controlI2C );
 
     	/* Set BW, Filter gain & HP Corner */
     	writeR820TRegister( Register.BANDWIDTH_FILTER_GAIN_HIGHPASS_FILTER_CORNER, 

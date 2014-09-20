@@ -37,11 +37,12 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
-import log.Log;
 import map.DefaultIcon;
 import map.MapIcon;
 
 import org.jdesktop.swingx.mapviewer.GeoPosition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import properties.SystemProperties;
 import settings.ColorSetting.ColorSettingName;
@@ -56,6 +57,9 @@ import source.tuner.rtl.r820t.R820TTunerConfiguration;
 
 public class SettingsManager
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( SettingsManager.class );
+
 	private Settings mSettings = new Settings();
 	
 	private ArrayList<SettingChangeListener> mListeners = 
@@ -441,7 +445,7 @@ public class SettingsManager
 		}
 
 		/* Something happened ... the above should always return an icon */
-		Log.error( "SettingsManager - couldn't return an icon named [" + 
+		mLog.error( "SettingsManager - couldn't return an icon named [" + 
 				name + "] of heigh [" + height + "]" );
 
 		return null;
@@ -697,8 +701,8 @@ public class SettingsManager
 		}
 		catch( Exception e )
 		{
-			Log.error( "SettingsManager - couldn't create file to save "
-					+ "settings [" + filePath.toString() + "]" );
+			mLog.error( "SettingsManager - couldn't create file to save "
+					+ "settings [" + filePath.toString() + "]", e );
 		}
 		
 		OutputStream out = null;
@@ -719,13 +723,13 @@ public class SettingsManager
 	        }
 	        catch ( JAXBException e )
 	        {
-		        Log.error( "SettingsManager - jaxb exception while saving " +
-		        		"settings: " + e.getLocalizedMessage() );
+	        	mLog.error( "SettingsManager - jaxb exception while saving " +
+		        		"settings", e );
 	        }
         }
         catch ( Exception e )
         {
-        	Log.error( "SettingsManager - coulcn't open outputstream to " +
+        	mLog.error( "SettingsManager - coulcn't open outputstream to " +
         			"save settings [" + filePath.toString() + "]" );
         }
 		finally
@@ -752,7 +756,7 @@ public class SettingsManager
 	{
 		if( Files.exists( settingsPath ) )
 		{
-			Log.info( "SettingsManager - loading settings file [" + 
+			mLog.info( "SettingsManager - loading settings file [" + 
 							settingsPath.toString() + "]" );
 			
 			JAXBContext context = null;
@@ -773,16 +777,14 @@ public class SettingsManager
 		        }
 		        catch ( JAXBException e )
 		        {
-			        Log.error( "SettingsManager - jaxb exception while loading " +
-			        		"settings: " + e.getLocalizedMessage() );
-			        		
-			        e.printStackTrace();
+		        	mLog.error( "SettingsManager - jaxb exception while loading " +
+			        		"settings", e );
 		        }
 	        }
 	        catch ( Exception e )
 	        {
-	        	Log.error( "SettingsManager - coulcn't open inputstream to " +
-	        			"load settings [" + settingsPath.toString() + "]" );
+	        	mLog.error( "SettingsManager - coulcn't open inputstream to " +
+	        			"load settings [" + settingsPath.toString() + "]", e );
 	        }
 			finally
 			{
@@ -794,16 +796,15 @@ public class SettingsManager
 	                }
 	                catch ( IOException e )
 	                {
-	                	Log.error( "SettingsManager - exception while closing " +
-	                			"the settings file inputstream reader - " + 
-	                			e.getLocalizedMessage() );
+	                	mLog.error( "SettingsManager - exception while closing " +
+	                			"the settings file inputstream reader", e );
 	                }
 				}
 			}
 		}
 		else
 		{
-			Log.info( "SettingsManager - settings does not exist [" + 
+			mLog.info( "SettingsManager - settings does not exist [" + 
 							settingsPath.toString() + "]" );
 		}
 		

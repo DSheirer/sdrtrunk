@@ -21,7 +21,9 @@ import javax.swing.JPanel;
 import javax.usb.UsbClaimException;
 import javax.usb.UsbException;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import source.SourceException;
 import source.tuner.TunerClass;
 import source.tuner.TunerConfiguration;
@@ -34,6 +36,9 @@ import controller.ResourceManager;
 
 public class FCD1TunerController extends FCDTunerController
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( FCD1TunerController.class );
+
 	public static final int sMINIMUM_TUNABLE_FREQUENCY = 64000000;
 	public static final int sMAXIMUM_TUNABLE_FREQUENCY = 1700000000;
 	public static final int sSAMPLE_RATE = 96000;
@@ -153,7 +158,7 @@ public class FCD1TunerController extends FCDTunerController
 	{
 		int gain = (int)send( FCDCommand.APP_GET_LNA_GAIN );
 
-		Log.info( "FCD1: lna gain setting is:" + gain );
+		mLog.info( "FCD1: lna gain setting is:" + gain );
 		
 		mLNAGain = LNAGain.valueOf( gain );
 	}
@@ -301,7 +306,7 @@ public class FCD1TunerController extends FCDTunerController
 		
 		mPhaseCorrection = ( (double)phase / (double)Short.MAX_VALUE );
 		
-		Log.info( "FCD1: correction:" + correction + " gain:" + gain + " phase:" + phase );
+		mLog.info( "FCD1: correction:" + correction + " gain:" + gain + " phase:" + phase );
 	}
 	
 	/**
@@ -440,7 +445,7 @@ public class FCD1TunerController extends FCDTunerController
 	{
 		int enhance = (int)send( FCDCommand.APP_GET_LNA_ENHANCE );
 
-		Log.info( "FCD1: lna enhance setting is: " + enhance );
+		mLog.info( "FCD1: lna enhance setting is: " + enhance );
 
 		mLNAEnhance = LNAEnhance.valueOf( enhance );
 	}
@@ -460,7 +465,7 @@ public class FCD1TunerController extends FCDTunerController
 	{
 		int gain = (int)send( FCDCommand.APP_GET_MIXER_GAIN );
 		
-		Log.info( "FCD1: mixer gain setting is:" + gain );
+		mLog.info( "FCD1: mixer gain setting is:" + gain );
 
 		mMixerGain = MixerGain.valueOf( gain );
 	}

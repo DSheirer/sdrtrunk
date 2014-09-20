@@ -21,7 +21,9 @@ import java.util.concurrent.RejectedExecutionException;
 
 import javax.swing.JPanel;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import source.SourceException;
 import source.tuner.Tuner;
 import source.tuner.TunerChannel;
@@ -35,6 +37,8 @@ import controller.ThreadPoolManager;
 
 public class B100Tuner extends Tuner
 {
+	private final static Logger mLog = LoggerFactory.getLogger( B100Tuner.class );
+
 	private USBTunerDevice mDevice;
 	
 	public B100Tuner( USBTunerDevice device )
@@ -68,7 +72,7 @@ public class B100Tuner extends Tuner
 	@Override
     public void apply( TunerConfiguration config ) throws SourceException
     {
-		Log.error( "B100 Tuner - can't apply tuner configuration" );
+		mLog.error( "B100 Tuner - can't apply tuner configuration" );
     }
 
 	@Override

@@ -25,7 +25,6 @@ import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 
 import javax.swing.AbstractCellEditor;
-import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
@@ -37,13 +36,18 @@ import javax.swing.JTextField;
 import javax.swing.table.TableCellEditor;
 import javax.swing.text.InternationalFormatter;
 
-import log.Log;
 import net.miginfocom.swing.MigLayout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ChannelMapEditor extends JPanel implements ActionListener
 {
     private static final long serialVersionUID = 1L;
-    private ChannelMapNode mChannelMapNode;
+	private final static Logger mLog =
+			LoggerFactory.getLogger( ChannelMapEditor.class );
+
+	private ChannelMapNode mChannelMapNode;
     
     private JLabel mNameLabel;
     private JTextField mNameText;
@@ -76,7 +80,7 @@ public class ChannelMapEditor extends JPanel implements ActionListener
 			@Override
             public void focusLost( FocusEvent arg0 )
             {
-				Log.info( "text field action event fired, new value:" + mNameText.getText() );
+				mLog.info( "text field action event fired, new value:" + mNameText.getText() );
 				mChannelMapCopy.setName( mNameText.getText() );
             }
 		} );
@@ -198,14 +202,13 @@ public class ChannelMapEditor extends JPanel implements ActionListener
 		@Override
         public Object getCellEditorValue()
         {
-			Log.info( "getCellEditorValue - I've been invoked!" );
 	        return mEditor.getText();
         }
 
 		@Override
         public void actionPerformed( ActionEvent e )
         {
-			Log.info( "Action Performed:" + e.getActionCommand() );
+			mLog.info( "Action Performed:" + e.getActionCommand() );
         }
 
 		@Override

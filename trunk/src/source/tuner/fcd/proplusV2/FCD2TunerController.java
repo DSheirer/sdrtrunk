@@ -21,7 +21,9 @@ import javax.swing.JPanel;
 import javax.usb.UsbClaimException;
 import javax.usb.UsbException;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import source.SourceException;
 import source.tuner.TunerClass;
 import source.tuner.TunerConfiguration;
@@ -34,6 +36,9 @@ import controller.ResourceManager;
 
 public class FCD2TunerController extends FCDTunerController
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( FCD2TunerController.class );
+
 	public static final int sMINIMUM_TUNABLE_FREQUENCY = 150000;
 	public static final int sMAXIMUM_TUNABLE_FREQUENCY = 2050000000;
 	public static final int sSAMPLE_RATE = 192000;
@@ -162,14 +167,13 @@ public class FCD2TunerController extends FCDTunerController
         }
         catch ( UsbClaimException e )
         {
-        	Log.error( "FCTTunerController - couldn't claim funcube HID to"
-        			+ " get dc correction value" );
+        	mLog.error( "FCTTunerController - couldn't claim funcube HID to"
+        			+ " get dc correction value", e );
         }
         catch ( UsbException e )
         {
-        	Log.error( "FCTTunerController - error getting dc correction "
-        			+ "value - " + e.getLocalizedMessage() );
-	        
+        	mLog.error( "FCTTunerController - error getting dc correction "
+        			+ "value", e );
         }
 		
 		return dcCorrection;
@@ -183,14 +187,13 @@ public class FCD2TunerController extends FCDTunerController
         }
         catch ( UsbClaimException e )
         {
-	        Log.error( "FCDTunerController - error claiming usb hid while "
-	        		+ "trying to set dc correction to [" + value + "]" );
+        	mLog.error( "FCDTunerController - error claiming usb hid while "
+	        		+ "trying to set dc correction to [" + value + "]", e );
         }
         catch ( UsbException e )
         {
-	        Log.error( "FCDTunerController - error while "
-	        		+ "trying to set dc correction to [" + value + "] - " +
-	        		e.getLocalizedMessage() );
+        	mLog.error( "FCDTunerController - error while "
+	        		+ "trying to set dc correction to [" + value + "]", e );
         }
 	}
 	
@@ -204,13 +207,13 @@ public class FCD2TunerController extends FCDTunerController
         }
         catch ( UsbClaimException e )
         {
-        	Log.error( "FCTTunerController - couldn't claim funcube HID to"
-        			+ " get iq correction value" );
+        	mLog.error( "FCTTunerController - couldn't claim funcube HID to"
+        			+ " get iq correction value", e );
         }
         catch ( UsbException e )
         {
-        	Log.error( "FCTTunerController - error getting iq correction "
-        			+ "value - " + e.getLocalizedMessage() );
+        	mLog.error( "FCTTunerController - error getting iq correction "
+        			+ "value", e );
 	        
         }
 		
@@ -225,14 +228,13 @@ public class FCD2TunerController extends FCDTunerController
         }
         catch ( UsbClaimException e )
         {
-	        Log.error( "FCDTunerController - error claiming usb hid while "
-	        		+ "trying to set iq correction to [" + value + "]" );
+        	mLog.error( "FCDTunerController - error claiming usb hid while "
+	        		+ "trying to set iq correction to [" + value + "]", e );
         }
         catch ( UsbException e )
         {
-	        Log.error( "FCDTunerController - error while "
-	        		+ "trying to set iq correction to [" + value + "] - " +
-	        		e.getLocalizedMessage() );
+        	mLog.error( "FCDTunerController - error while "
+	        		+ "trying to set iq correction to [" + value + "]", e );
         }
 	}
 	

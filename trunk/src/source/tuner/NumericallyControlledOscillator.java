@@ -17,7 +17,6 @@
  ******************************************************************************/
 package source.tuner;
 
-import log.Log;
 import sample.Listener;
 import sample.complex.ComplexSample;
 import sample.complex.ComplexSampleUtils;
@@ -86,8 +85,6 @@ public class NumericallyControlledOscillator implements Listener<ComplexSample>,
 	 */
 	public void setFrequency( long frequency )
 	{
-		Log.info( "NumericallyControlledOscillator - setting sine wave gen to freq:" + frequency );
-
 		mFrequency = frequency;
 		mSineWaveGenerator.setFrequency( frequency );
 	}

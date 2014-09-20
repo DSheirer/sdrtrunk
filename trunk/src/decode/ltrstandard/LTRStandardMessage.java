@@ -20,7 +20,6 @@ package decode.ltrstandard;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 
-import log.Log;
 import message.Message;
 import message.MessageDirection;
 import message.MessageType;
@@ -203,7 +202,6 @@ public abstract class LTRStandardMessage extends Message
 	
 	public Alias getTalkgroupIDAlias()
 	{
-	    Log.debug( "LTRStandardMessage - getting alias for:" + getTalkgroupID() );
 		return mAliasList.getTalkgroupAlias( getTalkgroupID() );
 	}
 	

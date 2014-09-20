@@ -25,7 +25,6 @@ import instrument.tap.stream.FloatTap;
 import java.util.ArrayList;
 import java.util.List;
 
-import log.Log;
 import sample.Broadcaster;
 import sample.Listener;
 import source.Source.SampleType;
@@ -34,7 +33,6 @@ import bits.MessageFramer;
 import bits.SyncPattern;
 import decode.Decoder;
 import decode.DecoderType;
-import dsp.afc.AutomaticFrequencyControl;
 import dsp.filter.DCRemovalFilter;
 import dsp.filter.FilterFactory;
 import dsp.filter.Filters;

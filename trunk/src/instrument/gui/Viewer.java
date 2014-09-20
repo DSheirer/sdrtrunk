@@ -31,7 +31,9 @@ import javax.swing.JMenuItem;
 import javax.swing.JSeparator;
 import javax.swing.filechooser.FileFilter;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import source.Source;
 import source.wave.ComplexWaveSource;
 import source.wave.FloatWaveSource;
@@ -39,6 +41,8 @@ import source.wave.WaveSource;
 
 public class Viewer
 {
+	private final static Logger mLog = LoggerFactory.getLogger( Viewer.class );
+
 	private JFrame mFrame;
 	private JDesktopPane mDesktop;
 	
@@ -129,7 +133,7 @@ public class Viewer
     
     private void setSourceFile( File file )
     {
-    	Log.info( "File selected [" + file.getAbsolutePath() + "]");
+    	mLog.info( "File selected [" + file.getAbsolutePath() + "]");
 
     	WaveSource source = null;
     	
@@ -141,12 +145,11 @@ public class Viewer
     		
     		source = floatSource;
     		
-    		Log.info( "File opened as float wave file" );
+    		mLog.info( "File opened as float wave file" );
     	}
     	catch( Exception e )
     	{
-    		Log.error( "Couldn't open file as float source - " + 
-    						e.getLocalizedMessage() );
+    		mLog.error( "Couldn't open file as float source", e);
     	}
     	
     	if( source == null )
@@ -159,12 +162,11 @@ public class Viewer
         		
         		source = complex;
 
-        		Log.info( "File opened as complex wave file" );
+        		mLog.info( "File opened as complex wave file" );
         	}
         	catch( Exception e )
         	{
-        		Log.error( "Couldn't open file as float source - " + 
-        						e.getLocalizedMessage() );
+        		mLog.error( "Couldn't open file as float source", e);
         	}
     	}
     	

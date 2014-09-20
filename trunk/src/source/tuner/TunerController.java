@@ -22,13 +22,18 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.concurrent.RejectedExecutionException;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import source.SourceException;
 import source.tuner.FrequencyController.Tunable;
 import controller.ThreadPoolManager;
 
 public abstract class TunerController implements Tunable
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( TunerController.class );
+
 	/* List of currently tuned channels being served to demod channels */
 	protected ArrayList<TunerChannel> mTunedChannels = 
 					new ArrayList<TunerChannel>();
@@ -176,7 +181,7 @@ public abstract class TunerController implements Tunable
 		}
 		else
 		{
-			Log.error( "Tuner Controller - couldn't find the tuned channel "
+			mLog.error( "Tuner Controller - couldn't find the tuned channel "
 					+ "to release it" );
 		}
 	}

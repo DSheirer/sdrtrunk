@@ -22,7 +22,9 @@ import java.util.concurrent.RejectedExecutionException;
 import javax.swing.JPanel;
 import javax.usb.UsbException;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import sample.Listener;
 import source.SourceException;
 import source.tuner.FrequencyChangeListener;
@@ -38,6 +40,9 @@ import controller.ThreadPoolManager;
 
 public class RTL2832Tuner extends Tuner
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( RTL2832Tuner.class );
+
 	private TunerClass mTunerClass;
 	protected RTL2832TunerController mController;
 
@@ -98,8 +103,7 @@ public class RTL2832Tuner extends Tuner
 		}
 		catch( SourceException e )
 		{
-			Log.error( "RTL2832 Tuner - couldn't get sample rate - " + 
-						e.getLocalizedMessage() );
+			mLog.error( "RTL2832 Tuner - couldn't get sample rate", e );
 		}
 		
 		return 0;

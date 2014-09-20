@@ -26,19 +26,15 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelListener;
 import java.awt.geom.Point2D;
 
-import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 import javax.swing.event.MouseInputAdapter;
 
-import log.Log;
-
 import org.jdesktop.swingx.JXMapViewer;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 
 import settings.SettingsManager;
-import controller.ResourceManager;
 
 public class MapMouseListener extends MouseInputAdapter implements MouseWheelListener
 {

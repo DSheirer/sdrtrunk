@@ -1,0 +1,20 @@
+<configuration>
+  <timestamp key="appstart" datePattern="HHmmss"/>
+
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${user.home}/SDRTrunk/logs/sdrtrunk_application.log</file>
+	<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+	  <!-- daily log rollover -->
+	  <fileNamePattern>${user.home}/SDRTrunk/logs/%d{yyyyMMdd}_sdrtrunk_application.log</fileNamePattern>	
+      <maxHistory>10</maxHistory>
+	</rollingPolicy>
+    <encoder>
+      <pattern>%-25(%d{ddMMyyyy HHmmss} [%thread]) %-5level %logger{30} - %msg%n</pattern>
+    </encoder>
+  </appender>
+        
+  <root level="DEBUG">
+    <appender-ref ref="FILE" />
+  </root>
+  
+</configuration>

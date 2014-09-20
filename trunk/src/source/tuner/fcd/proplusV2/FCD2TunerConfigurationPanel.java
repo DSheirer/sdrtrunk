@@ -25,7 +25,6 @@ import java.awt.event.FocusListener;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 
-import javax.swing.BorderFactory;
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
@@ -42,8 +41,11 @@ import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import log.Log;
 import net.miginfocom.swing.MigLayout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import source.SourceException;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerConfigurationAssignment;
@@ -52,7 +54,10 @@ import controller.ResourceManager;
 
 public class FCD2TunerConfigurationPanel extends JPanel
 {
-    private static final long serialVersionUID = 1L;
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( FCD2TunerConfigurationPanel.class );
+
+	private static final long serialVersionUID = 1L;
     private ResourceManager mResourceManager;
     private FCD2TunerController mController;
     private FCD2TunerConfiguration mSelectedConfig;
@@ -158,9 +163,8 @@ public class FCD2TunerConfigurationPanel extends JPanel
                 			+ "apply frequency correction value: " + value + 
                 					e1.getLocalizedMessage() );  
                 	
-                	Log.error( "FuncubeDongleProPlus Controller - couldn't apply "
-                			+ "frequency correction value: " + value + 
-                			e1.getLocalizedMessage() );
+                	mLog.error( "FuncubeDongleProPlus Controller - couldn't apply "
+                			+ "frequency correction value: " + value, e1 );
                 }
             }
         } );
@@ -330,9 +334,8 @@ public class FCD2TunerConfigurationPanel extends JPanel
         			+ "apply the tuner configuration settings - " + 
         					e1.getLocalizedMessage() );  
         	
-        	Log.error( "FuncubeDongleProPlus Controller - couldn't apply "
-        			+ "config [" + config.getName() + "] - " + 
-        			e1.getLocalizedMessage() );
+        	mLog.error( "FuncubeDongleProPlus Controller - couldn't apply "
+        			+ "config [" + config.getName() + "]", e1 );
         }
     }
     

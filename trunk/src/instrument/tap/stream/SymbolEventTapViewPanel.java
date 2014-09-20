@@ -29,7 +29,6 @@ import java.awt.geom.Rectangle2D;
 import java.util.List;
 import java.util.Observable;
 
-import log.Log;
 import dsp.fsk.SymbolEvent;
 
 public class SymbolEventTapViewPanel extends TapViewPanel

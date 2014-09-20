@@ -20,5 +20,8 @@
 	<classpathentry kind="lib" path="imports/JTransforms-3.0.jar" sourcepath="/home/denny/.m2/repository/com/github/wendykierp/JTransforms/3.0/JTransforms-3.0-sources.jar"/>
 	<classpathentry kind="lib" path="imports/libusb4java-1.2.0-linux-ppc.jar"/>
 	<classpathentry kind="lib" path="imports/JLargeArrays-1.2.jar"/>
+	<classpathentry kind="lib" path="imports/slf4j-api-1.7.7.jar"/>
+	<classpathentry kind="lib" path="imports/logback-classic-1.1.2.jar"/>
+	<classpathentry kind="lib" path="imports/logback-core-1.1.2.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

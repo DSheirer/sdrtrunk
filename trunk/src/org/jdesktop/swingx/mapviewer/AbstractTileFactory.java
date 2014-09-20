@@ -17,6 +17,8 @@
  ******************************************************************************/
 package org.jdesktop.swingx.mapviewer;
 
+import gui.SDRTrunk;
+
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -38,9 +40,9 @@ import java.util.concurrent.ThreadFactory;
 import javax.imageio.ImageIO;
 import javax.swing.SwingUtilities;
 
-import log.Log;
-
 import org.jdesktop.swingx.mapviewer.util.GeoUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The <code>AbstractTileFactory</code> provides 
@@ -48,6 +50,9 @@ import org.jdesktop.swingx.mapviewer.util.GeoUtil;
  */
 public abstract class AbstractTileFactory extends TileFactory
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( AbstractTileFactory.class );
+
 	/**
 	 * Creates a new instance of DefaultTileFactory using the spcified TileFactoryInfo
 	 * @param info a TileFactoryInfo to configure this TileFactory
@@ -345,7 +350,6 @@ public abstract class AbstractTileFactory extends TileFactory
 					if (img == null)
 					{
 						System.out.println("error loading: " + uri);
-						Log.info("Failed to load: " + uri);
 						trys--;
 					}
 					else
@@ -371,11 +375,13 @@ public abstract class AbstractTileFactory extends TileFactory
 				{
 					if (trys == 0)
 					{
-						Log.error("Failed to load a tile at url: " + tile.getURL() + ", stopping - " + e.getLocalizedMessage() );
+						mLog.error("Failed to load a tile at url: " + 
+					tile.getURL() + ", stopping", e );
 					}
 					else
 					{
-						Log.warning("Failed to load a tile at url: " + tile.getURL() + ", retrying - " + e.getLocalizedMessage() );
+						mLog.error("Failed to load a tile at url: " + 
+					tile.getURL() + ", retrying", e );
 						trys--;
 					}
 				}

@@ -29,7 +29,6 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.text.DecimalFormat;
-import java.text.Format;
 import java.util.ArrayList;
 
 import javax.swing.JCheckBoxMenuItem;
@@ -42,8 +41,11 @@ import javax.swing.JSeparator;
 import javax.swing.JSplitPane;
 import javax.swing.SwingUtilities;
 
-import log.Log;
 import net.miginfocom.swing.MigLayout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import sample.Listener;
 import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
@@ -90,6 +92,9 @@ public class SpectralDisplayPanel extends JPanel
 								  			 TunerSelectionListener
  {
     private static final long serialVersionUID = 1L;
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( SpectralDisplayPanel.class );
+
 	private static DecimalFormat sCURSOR_FORMAT = new DecimalFormat( "000.00000" );
 
 	/**
@@ -384,8 +389,8 @@ public class SpectralDisplayPanel extends JPanel
             }
             catch ( SourceException e )
             {
-            	Log.info( "DFTProcessor - exception during new tuner setup - "
-            			+ "couldn't get frequency from the tuner" );
+            	mLog.info( "DFTProcessor - exception during new tuner setup - "
+            			+ "couldn't get frequency from the tuner", e );
             }
 		}
 	}

@@ -29,7 +29,9 @@ import javax.usb.UsbHostManager;
 import javax.usb.UsbHub;
 import javax.usb.UsbServices;
 
-import log.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import source.Source;
 import source.SourceException;
 import source.config.SourceConfigTuner;
@@ -48,6 +50,9 @@ import controller.channel.ProcessingChain;
 
 public class TunerManager
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( TunerManager.class );
+
 	private static final String sLOADED = "\t[LOADED]\t";
 	private static final String sNOT_LOADED = "\t[NOT LOADED]\t";
 
@@ -90,14 +95,12 @@ public class TunerManager
                 }
 				catch ( RejectedExecutionException ree )
 				{
-					Log.error( "TunerManager - couldn't provide tuner channel "
-							+ "source - " + ree.getLocalizedMessage() );
+					mLog.error( "couldn't provide tuner channel source", ree );
 				}
                 catch ( SourceException e )
                 {
-                	Log.error( "TunerManager - error obtaining channel " +
-                			"from tuner [" + tuner.getName() + "] - "
-                			+ e.getLocalizedMessage() );
+                	mLog.error( "error obtaining channel from tuner [" + 
+                			tuner.getName() + "]", e );
                 }
 			}
     	}
@@ -125,11 +128,20 @@ public class TunerManager
 
 		StringBuilder sb = new StringBuilder();
 		
-		sb.append( "Tuner Manager - discovered [" + devices.size() + 
-				"] USB tuner devices\n" );
+		sb.append( "discovered and using [" + devices.size() + 
+				"] available tuner devices\n" );
+
+		mLog.info( "inspecting [" + devices.size() + "] available usb tuner devices" );
+		
+		int counter = 0;
 		
 		for( USBTunerDevice device: devices )
 		{
+			counter++;
+			
+			mLog.info( "inspecting usb device [" + counter + "] tuner class: " 
+					+ device.getTunerClass().toString() );
+			
 			String status = sNOT_LOADED;
 			String name = "Unknown";
 			String reason = "No device driver class available";
@@ -252,7 +264,9 @@ public class TunerManager
 						tunerType = RTL2832TunerController.identifyTunerType( device );
 					}
 					
-					Log.debug( "TunerManager - identified tuner class [" + tunerClass.toString() + "] with tuner type [" + tunerType.toString() + "]" );
+					mLog.debug( "identified tuner class [" + 
+							tunerClass.toString() + "] with tuner type [" + 
+							tunerType.toString() + "]" );
 					
 					switch( tunerType )
 					{
@@ -288,13 +302,14 @@ public class TunerManager
 							}
 							break;
 						case RAFAELMICRO_R820T:
-							Log.debug( "TunerManager - attempting to construct R820T tuner controller" );
+							mLog.debug( "attempting to construct R820T "
+									+ "tuner controller" );
 							try
 							{
 								R820TTunerController controller = 
 									new R820TTunerController( device );
 								
-								Log.debug( "TunerManager - init() R820T tuner controller" );
+								mLog.debug( "initializing R820T tuner controller" );
 								controller.init();
 								
 								RTL2832Tuner rtlTuner = 
@@ -306,12 +321,13 @@ public class TunerManager
 
 								if( config != null )
 		    	                {
-									Log.debug( "TunerManager - applying tuner config to R820T tuner" );
+									mLog.debug( "applying tuner config to R820T tuner" );
 									rtlTuner.apply( config );
 		    	                }					
 								else
 								{
-									Log.debug( "TunerManager - R820T tuner config was null - not applied" );
+									mLog.debug( "R820T tuner config was "
+											+ "null - not applied" );
 								}
 								
 								mTuners.add( rtlTuner );
@@ -325,7 +341,7 @@ public class TunerManager
 								reason = "Error constructing R820T tuner "
 									+ "controller - " + se.getLocalizedMessage();
 								
-								Log.error( "TunerManager - error constructing tuner", se );
+								mLog.error( "error constructing tuner", se );
 							}
 							break;
 						case FITIPOWER_FC0012:
@@ -372,8 +388,8 @@ public class TunerManager
 			sb.append( "\n" );
 		}
 		
-		Log.header( "Configuring USB Tuners" );
-		Log.info( sb.toString() );
+		mLog.info( "Configuring USB Tuners" );
+		mLog.info( sb.toString() );
 	}
 	
 	/**
@@ -385,8 +401,8 @@ public class TunerManager
 		
 		List<UsbDevice> devices = getUSBDevices();
 
-		sb.append( "TunerManager - discovered [" + devices.size() + 
-					"] attached usb devices\n" );
+		sb.append( "discovered [" + devices.size() + 
+					"] attached USB devices\n" );
 	    
 		ArrayList<USBTunerDevice> tuners = new ArrayList<USBTunerDevice>();
 
@@ -416,8 +432,8 @@ public class TunerManager
             sb.append( "\n" );
         }
         
-		Log.header( "USB Device Discovery" );
-        Log.info( sb.toString() );
+        mLog.info( "USB Device Discovery" );
+        mLog.info( sb.toString() );
 
         return tuners;
 	}
@@ -437,13 +453,11 @@ public class TunerManager
         }
         catch( SecurityException e )
         {
-        	Log.error( "TunerManager - security exception while getting "
-        			+ "USB devices" );
+        	mLog.error( "security exception while getting USB devices", e );
         }
         catch( UsbException e )
         {
-        	Log.error( "TunerManager - usb exception while getting USB "
-        			+ "devices - " + e.getLocalizedMessage() );
+        	mLog.error( "usb exception while getting USB devices", e );
         }
 
         return devices;
