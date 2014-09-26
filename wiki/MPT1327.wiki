@@ -14,3 +14,10 @@ Run the decoder against the control channel.  If a tuner is available, traffic c
 NOTE: the decoder requires a [ChannelMap channel map] in order to automatically allocate and trunk track traffic channels.
 
 Monitor the messages window to verify that the decoder is working.  Ensure the tuner is accurately aligned with the center of the control signal for optimal decoding.
+
+== Talkgroups ==
+
+Create an alias group containing the following MPT-1327 system idents:
+
+***-8185 = System Register
+***-8190 = System Controller
