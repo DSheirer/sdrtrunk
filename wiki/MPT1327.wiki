@@ -19,5 +19,5 @@ Monitor the messages window to verify that the decoder is working.  Ensure the t
 
 Create an alias group containing the following MPT-1327 system idents:
 
-***-8185 = System Register
-***-8190 = System Controller
+ ***-8185 = System Register
+ ***-8190 = System Controller
