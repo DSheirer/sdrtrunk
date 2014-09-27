@@ -29,17 +29,16 @@ import sample.complex.ComplexSample;
 import sample.complex.ComplexSampleAssembler;
 import source.ComplexSource;
 import source.SourceException;
+import source.tuner.FrequencyChangeEvent.Attribute;
 import util.Oscillator;
 import controller.ThreadPoolManager;
 import controller.ThreadPoolManager.ThreadType;
-import dsp.afc.FrequencyErrorListener;
 import dsp.filter.ComplexFilter;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
 
 public class TunerChannelSource extends ComplexSource
 							 implements FrequencyChangeListener,
-							 			FrequencyErrorListener,
 							 			Listener<Float[]>
 {
 	private static int sCHANNEL_RATE = 48000;
@@ -64,32 +63,34 @@ public class TunerChannelSource extends ComplexSource
 	public TunerChannelSource( ThreadPoolManager threadPoolManager,
 							   Tuner tuner, 
 							   TunerChannel tunerChannel )
-									   throws RejectedExecutionException
+						   throws RejectedExecutionException, SourceException
     {
 	    super( "Tuner Channel Source" );
 
 	    mThreadPoolManager = threadPoolManager;
 
-	    /* Schedule the decimation task to run 20 times a second */
-	    mTaskHandle = mThreadPoolManager.schedule( ThreadType.DECIMATION, 
-	    		new DecimationProcessor(), 50, TimeUnit.MILLISECONDS );
 	    
 	    mTuner = tuner;
 	    mTuner.addListener( (FrequencyChangeListener)this );
 	    
 	    mTunerChannel = tunerChannel;
 
+	    mTunerFrequency = mTuner.getFrequency();
+	    
 	    /* Setup the frequency translator to the current source frequency */
-		try
-        {
-	        frequencyChanged( mTuner.getFrequency(), mTuner.getSampleRate() );
-        }
-        catch ( SourceException e )
-        {
-	        e.printStackTrace();
-        }
+		long frequencyOffset = mTunerFrequency - mTunerChannel.getFrequency();
+		
+		mSineWaveGenerator = new Oscillator( frequencyOffset, mTuner.getSampleRate() );
 
-		/* Finally, register to receive samples from the tuner */
+		/* Fire a sample rate change event to get the decimation chain setup */
+		frequencyChanged( new FrequencyChangeEvent( 
+					Attribute.SAMPLE_RATE, mTuner.getSampleRate() ) );
+	    
+		/* Schedule the decimation task to run 20 times a second */
+	    mTaskHandle = mThreadPoolManager.schedule( ThreadType.DECIMATION, 
+	    		new DecimationProcessor(), 50, TimeUnit.MILLISECONDS );
+
+	    /* Finally, register to receive samples from the tuner */
 		mTuner.addListener( (Listener<Float[]>)this );
     }
 	
@@ -156,60 +157,73 @@ public class TunerChannelSource extends ComplexSource
     }
 	
 	@Override
-    public void frequencyChanged( long frequency, int bandwidth )
+    public void frequencyChanged( FrequencyChangeEvent event )
     {
-		/* Send change to Automatic Frequency Control */
+		/* Send change to Automatic Frequency Control if it exists */
 		if( mFrequencyChangeListener != null )
 		{
-			mFrequencyChangeListener.frequencyChanged( frequency, bandwidth );
+			mFrequencyChangeListener.frequencyChanged( event );
 		}
-		
-		long frequencyOffset = frequency - 
-				   mTunerChannel.getFrequency() -
-				   mTunerFrequencyError;
 
-		if( mSineWaveGenerator == null )
+		switch( event.getAttribute() )
 		{
-			mSineWaveGenerator = new Oscillator( frequencyOffset, bandwidth );
-		}
-		else
-		{
-			mSineWaveGenerator.setFrequency( frequencyOffset );
-		}
-		
-		/* Clear the buffer for the frequency to take immediate effect */
-//		mBuffer.clear();
-		
-		mTunerFrequency = frequency;
-
-		/* Bandwidth/Sample rate change */
-		if( bandwidth != mTunerSampleRate )
-		{
-			/* Get the original decimation filter output listener */
-//			Listener<ComplexSample> listener = null;
-			
-			/* Get new decimation filters */
-			mDecimationFilters = FilterFactory
-					.getDecimationFilters( bandwidth, 
+			case SAMPLE_RATE_ERROR:
+				break;
+			case SAMPLE_RATE:
+				int sampleRate = (int)event.getValue();
+				
+				if( mTunerSampleRate != sampleRate )
+				{
+					/* Set the oscillator to the new frequency */
+					mSineWaveGenerator.setSampleRate( sampleRate );
+					
+					/* Get new decimation filters */
+					mDecimationFilters = FilterFactory
+							.getDecimationFilters( sampleRate, 
 												   sCHANNEL_RATE, 
 												   sCHANNEL_PASS_FREQUENCY, 
 												   48, //dB attenuation
 												   WindowType.HAMMING );
-			
-			/* wire the filters together */
-			if( mDecimationFilters.length > 1 )
-			{
-				for( int x = 1; x < mDecimationFilters.length; x++ )
-				{
-					mDecimationFilters[ x - 1 ].setListener( mDecimationFilters[ x ] );
-				}
-			}
-			
-			/* re-add the original output listener */
-			mDecimationFilters[ mDecimationFilters.length - 1 ]
-								.setListener( mBufferAssembler );
+					
+					/* wire the filters together */
+					if( mDecimationFilters.length > 1 )
+					{
+						for( int x = 1; x < mDecimationFilters.length; x++ )
+						{
+							mDecimationFilters[ x - 1 ]
+									.setListener( mDecimationFilters[ x ] );
+						}
+					}
+					
+					/* re-add the original output listener */
+					mDecimationFilters[ mDecimationFilters.length - 1 ]
+										.setListener( mBufferAssembler );
 
-			mTunerSampleRate = bandwidth;
+					mTunerSampleRate = sampleRate;
+				}
+				break;
+			case FREQUENCY_ERROR:
+				mTunerFrequencyError = (int)event.getValue();
+				
+				long frequencyErrorOffset = mTunerFrequency - 
+									   mTunerChannel.getFrequency() -
+									   mTunerFrequencyError;
+				
+				mSineWaveGenerator.setFrequency( frequencyErrorOffset );
+				break;
+			case FREQUENCY:
+				int frequency = (int)event.getValue();
+				
+				/* If the frequency is updated, the AFC will also get reset, so
+				 * we don't include the frequency error value here */
+				long frequencyOffset = frequency - mTunerChannel.getFrequency(); 
+
+				mSineWaveGenerator.setFrequency( frequencyOffset );
+				
+				mTunerFrequency = frequency;
+				break;
+			default:
+				break;
 		}
     }
 
@@ -264,20 +278,6 @@ public class TunerChannelSource extends ComplexSource
         }
 	}
 
-	/**
-	 * Automatic Frequency Control
-	 */
-	@Override
-    public void setError( int error )
-    {
-		if( mTunerFrequencyError != error )
-		{
-			mTunerFrequencyError = error;
-			frequencyChanged( mTunerFrequency, mTunerSampleRate );
-		}
-    }
-
-	@Override
     public void addListener( FrequencyChangeListener listener )
     {
 		mFrequencyChangeListener = listener;

@@ -55,9 +55,11 @@ import settings.SettingChangeListener;
 import settings.SettingsManager;
 import source.Source.SampleType;
 import source.SourceException;
+import source.tuner.FrequencyChangeEvent;
 import source.tuner.FrequencyChangeListener;
 import source.tuner.Tuner;
 import source.tuner.TunerSelectionListener;
+import source.tuner.FrequencyChangeEvent.Attribute;
 import spectrum.converter.ComplexDecibelConverter;
 import spectrum.converter.DFTResultsConverter;
 import spectrum.menu.AmplificationItem;
@@ -340,10 +342,10 @@ public class SpectralDisplayPanel extends JPanel
 	 * Receives frequency change events -- primarily from tuner components.
 	 */
 	@Override
-    public void frequencyChanged( long frequency, int bandwidth )
+    public void frequencyChanged( FrequencyChangeEvent event )
     {
-		mOverlayPanel.frequencyChanged( frequency, bandwidth );
-		mDFTProcessor.frequencyChanged( frequency, bandwidth );
+		mOverlayPanel.frequencyChanged( event );
+		mDFTProcessor.frequencyChanged( event );
     }
 
 	/**
@@ -381,11 +383,15 @@ public class SpectralDisplayPanel extends JPanel
 			//Register the dft processor to receive samples from the tuner
 			mTuner.addListener( (Listener<Float[]>)mDFTProcessor );
 			
-			//Fire a frequency change event so that everyone can init
+			//Fire frequency and sample rate change events so that everyone 
+			//can init
 			try
             {
-	            frequencyChanged( mTuner.getFrequency(), 
-	            				  mTuner.getSampleRate() );
+				frequencyChanged( new FrequencyChangeEvent( 
+						Attribute.FREQUENCY, mTuner.getFrequency() ) );
+				
+				frequencyChanged( new FrequencyChangeEvent( 
+						Attribute.SAMPLE_RATE, mTuner.getSampleRate() ) );
             }
             catch ( SourceException e )
             {

@@ -1,7 +1,9 @@
 package dsp.afc;
 
 import sample.Listener;
+import source.tuner.FrequencyChangeEvent;
 import source.tuner.FrequencyChangeListener;
+import source.tuner.FrequencyChangeEvent.Attribute;
 import buffer.FloatAveragingBuffer;
 
 public class AutomaticFrequencyControl implements Listener<Float>, 
@@ -22,15 +24,14 @@ public class AutomaticFrequencyControl implements Listener<Float>,
 	private int mSkipThreshold = 4;
 	private int mErrorCorrection = 0;
 	private long mCurrentFrequency;
-	private int mCurrentSampleRate;
-	private FrequencyErrorListener mListener;
+	private FrequencyChangeListener mListener;
 	
 	public enum Mode
 	{
 		NORMAL,FAST;
 	}
 	
-	public AutomaticFrequencyControl( FrequencyErrorListener listener )
+	public AutomaticFrequencyControl( FrequencyChangeListener listener )
 	{
 		mListener = listener;
 	}
@@ -57,7 +58,9 @@ public class AutomaticFrequencyControl implements Listener<Float>,
 	{
 		if( mListener != null )
 		{
-			mListener.setError( mErrorCorrection );
+			mListener.frequencyChanged( 
+				new FrequencyChangeEvent( Attribute.FREQUENCY_ERROR, 
+										  mErrorCorrection ) );
 		}
 	}
 
@@ -156,14 +159,23 @@ public class AutomaticFrequencyControl implements Listener<Float>,
 	}
 
 	@Override
-    public void frequencyChanged( long frequency, int bandwidth )
+    public void frequencyChanged( FrequencyChangeEvent event )
     {
-		if( mCurrentFrequency != frequency || mCurrentSampleRate != bandwidth )
+		switch( event.getAttribute() )
 		{
-			mCurrentFrequency = frequency;
-			mCurrentSampleRate = bandwidth;
-			
-			reset();
+			case FREQUENCY:
+				int frequency = (int)event.getValue();
+				
+				if( mCurrentFrequency != frequency )
+				{
+					mCurrentFrequency = frequency;
+					
+					reset();
+				}
+			case SAMPLE_RATE_ERROR:
+				break;
+			default:
+				break;
 		}
     }
 }

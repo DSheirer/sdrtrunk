@@ -46,6 +46,7 @@ import source.FloatSource;
 import source.Source;
 import source.SourceException;
 import source.config.SourceConfigMixer;
+import source.tuner.FrequencyChangeListener;
 import source.tuner.Tuner;
 import source.tuner.TunerChannelSource;
 import alias.AliasList;
@@ -61,7 +62,6 @@ import controller.state.ChannelState.State;
 import decode.Decoder;
 import decode.DecoderFactory;
 import dsp.afc.AutomaticFrequencyControl;
-import dsp.afc.FrequencyErrorListener;
 import eventlog.EventLogType;
 import eventlog.EventLogger;
 
@@ -403,16 +403,15 @@ public class ProcessingChain implements Listener<Message>
 						mAFC = null;
 					}
 					
-					if( mSource instanceof FrequencyErrorListener &&
+					if( mSource instanceof TunerChannelSource &&
 						mChannel.getDecodeConfiguration().isAFCEnabled() )
 					{
-						FrequencyErrorListener listener = 
-								(FrequencyErrorListener)mSource;
+						TunerChannelSource tcs = (TunerChannelSource)mSource;
 						
-						mAFC = new AutomaticFrequencyControl( listener );
+						mAFC = new AutomaticFrequencyControl( tcs );
 
 						/* Register AFC to receive frequency change events */
-						listener.addListener( mAFC );
+						tcs.addListener( mAFC );
 
 						/* Add AFC as listener to the decoder */
 						mDecoder.addUnfilteredFloatListener( mAFC );

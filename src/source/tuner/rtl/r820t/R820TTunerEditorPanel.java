@@ -31,7 +31,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import source.SourceException;
+import source.tuner.FrequencyChangeEvent;
 import source.tuner.FrequencyChangeListener;
+import source.tuner.FrequencyChangeEvent.Attribute;
 import source.tuner.rtl.RTL2832InfoPanel;
 
 import com.jidesoft.swing.JideTabbedPane;
@@ -93,23 +95,28 @@ public class R820TTunerEditorPanel extends JPanel implements FrequencyChangeList
      * apply end-user requested frequency changes against the tuner
      */
 	@Override
-    public void frequencyChanged( final long frequency, int bandwidth )
+    public void frequencyChanged( FrequencyChangeEvent event )
     {
-		EventQueue.invokeLater( new Runnable() 
+		if( event.getAttribute() == Attribute.FREQUENCY )
 		{
-			@Override
-            public void run()
-            {
-				try
-		        {
-			        mController.setFrequency( frequency );
-		        }
-		        catch ( SourceException e )
-		        {
-		        	mLog.error( "R820T Tuner Controller - error setting frequency [" + 
-		        			frequency + "]", e );
-		        }
-            }
-		} );
+			final int frequency = (int)event.getValue();
+			
+			EventQueue.invokeLater( new Runnable() 
+			{
+				@Override
+	            public void run()
+	            {
+					try
+			        {
+				        mController.setFrequency( frequency );
+			        }
+			        catch ( SourceException e )
+			        {
+			        	mLog.error( "R820T Tuner Controller - error setting frequency [" + 
+			        			frequency + "]", e );
+			        }
+	            }
+			} );
+		}
     }
 }

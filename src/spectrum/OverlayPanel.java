@@ -36,6 +36,7 @@ import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
 import settings.Setting;
 import settings.SettingChangeListener;
+import source.tuner.FrequencyChangeEvent;
 import source.tuner.FrequencyChangeListener;
 import source.tuner.TunerChannel;
 import controller.ResourceManager;
@@ -523,10 +524,22 @@ public class OverlayPanel extends JPanel
      * Frequency change event handler
      */
 	@Override
-    public void frequencyChanged( long frequency, int bandwidth )
+    public void frequencyChanged( FrequencyChangeEvent event )
     {
-		mBandwidth = bandwidth;
-		mFrequency = frequency;
+		switch( event.getAttribute() )
+		{
+			case SAMPLE_RATE_ERROR:
+//				System.out.println( "OVerlay panel got a sample rate error update" );
+				break;
+			case SAMPLE_RATE:
+				mBandwidth = (int)event.getValue();
+				break;
+			case FREQUENCY:
+				mFrequency = (int)event.getValue();
+				break;
+			default:
+				break;
+		}
 		
 		/**
 		 * Reset the visible channel configs list

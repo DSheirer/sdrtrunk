@@ -406,7 +406,15 @@ public class FilterFactory
 			
 			int decimate = (int)( sampleRate / decimatedRate );
 			
-			filters[ 0 ] = new ComplexCICDecimate( decimate, 2, decimatedRate );
+//			if( decimate < 25 )
+//			{
+				filters[ 0 ] = new ComplexCICDecimate( decimate, 1, decimatedRate );
+//			}
+//			else
+//			{
+//				filters[ 0 ] = new ComplexCICDecimate( decimate, 3, decimatedRate );
+//			}
+			
 
 //			int finalStopFrequency = decimatedRate - passFrequency;
 //			

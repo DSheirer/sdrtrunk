@@ -20,6 +20,7 @@ package source.tuner;
 import java.util.ArrayList;
 
 import source.SourceException;
+import source.tuner.FrequencyChangeEvent.Attribute;
 
 public class FrequencyController
 {
@@ -29,7 +30,7 @@ public class FrequencyController
 	private long mMinimumFrequency;
 	private long mMaximumFrequency;
 	private double mFrequencyCorrection = 0d;
-	private int mBandwidth = 0;
+	private int mSampleRate = 0;
 	
 	private ArrayList<FrequencyChangeListener> mListeners =
 								new ArrayList<FrequencyChangeListener>();
@@ -50,17 +51,17 @@ public class FrequencyController
 	 */
 	public int getBandwidth()
 	{
-		return mBandwidth;
+		return mSampleRate;
 	}
 
 	/**
-	 * Set bandwidth/sample rate in hertz
+	 * Set sample rate in hertz
 	 */
-	public void setBandwidth( int bandwidth )
+	public void setSampleRate( int sampleRate )
 	{
-		mBandwidth = bandwidth;
+		mSampleRate = sampleRate;
 		
-		broadcastFrequencyChange();
+		broadcastSampleRateChange();
 	}
 
 	/**
@@ -194,11 +195,27 @@ public class FrequencyController
      */
     protected void broadcastFrequencyChange()
     {
+    	broadcastFrequencyChangeEvent( 
+    			new FrequencyChangeEvent( Attribute.FREQUENCY, mFrequency ) );
+    }
+	
+    /**
+     * Broadcasts a sample rate change
+     */
+    protected void broadcastSampleRateChange()
+    {
+    	broadcastFrequencyChangeEvent( 
+			new FrequencyChangeEvent( Attribute.SAMPLE_RATE, mSampleRate ) );
+    }
+    
+    public void broadcastFrequencyChangeEvent( FrequencyChangeEvent event )
+    {
     	for( FrequencyChangeListener listener: mListeners )
     	{
-    		listener.frequencyChanged( mFrequency, mBandwidth );
+    		listener.frequencyChanged( event );
     	}
     }
+    
 	
 	public interface Tunable
 	{

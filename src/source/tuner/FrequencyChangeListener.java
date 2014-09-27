@@ -18,8 +18,8 @@
 package source.tuner;
 
 /**
- * Interface for broadcasting changes to frequency and/or bandwidth/sample rate
- * to all registered listeners.
+ * Interface for broadcasting changes to frequency, bandwidth, sample rate,
+ * and actual sample rate values to all registered listeners.
  * 
  * Note: broadcasted frequency should be the uncorrected, or displayable 
  * frequency value.  All frequency correction aspects should be handled within
@@ -27,12 +27,5 @@ package source.tuner;
  */
 public interface FrequencyChangeListener
 {
-	/**
-	 * Broadcasts a change to the (uncorrected) frequency and/or bandwidth
-	 * or sample rate.
-	 * 
-	 * @param frequency - uncorrected frequency in hertz
-	 * @param bandwidth - bandwidth in hertz
-	 */
-	public void frequencyChanged( long frequency, int bandwidth );
+	public void frequencyChanged( FrequencyChangeEvent event );
 }

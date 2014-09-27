@@ -24,6 +24,7 @@ import javax.swing.JPanel;
 
 import sample.Listener;
 import source.SourceException;
+import source.tuner.FrequencyChangeEvent.Attribute;
 import controller.ResourceManager;
 import controller.ThreadPoolManager;
 
@@ -172,11 +173,38 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
     /**
      * Broadcasts a frequency change event to all registered listeners
      */
-    public void broadcastFrequencyChange( long frequency, int bandwidth )
+    public void broadcastFrequencyChange( long frequency )
+    {
+    	broadcastFrequencyChangeEvent( 
+				new FrequencyChangeEvent( Attribute.FREQUENCY, frequency ) );
+    }
+
+    /**
+     * Broadcasts a sample rate change event to all registered listeners
+     */
+    public void broadcastSampleRateChange( int sampleRate )
+    {
+    	broadcastFrequencyChangeEvent( 
+				new FrequencyChangeEvent( Attribute.SAMPLE_RATE, sampleRate ) );
+    }
+    
+    /**
+     * Broadcasts actual sample rate change event to all registered listeners
+     */
+    public void broadcastActualSampleRateChange( int actualSampleRate )
+    {
+    	broadcastFrequencyChangeEvent( 
+			new FrequencyChangeEvent( Attribute.SAMPLE_RATE, actualSampleRate ) );
+    }
+
+    /**
+     * Broadcasts a frequency change event to all registered listeners
+     */
+    public void broadcastFrequencyChangeEvent( FrequencyChangeEvent event )
     {
     	for( FrequencyChangeListener listener: mFrequencyChangeListeners )
     	{
-    		listener.frequencyChanged( frequency, bandwidth );
+    		listener.frequencyChanged( event );
     	}
     }
 
@@ -184,8 +212,19 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
      * Frequency change listener method.  We receive change events from the
      * controller and rebroadcast them to all registered listeners.
      */
-	public void frequencyChanged( long frequency, int bandwidth )
+	public void frequencyChanged( FrequencyChangeEvent event )
 	{
-		broadcastFrequencyChange( frequency, bandwidth );
+		broadcastFrequencyChangeEvent( event );
 	}
+
+//  /**
+//  * Broadcasts a frequency change event to all registered listeners
+//  */
+// public void broadcastBandwidthChange( int bandwidth )
+// {
+// 	broadcastFrequencyChangeEvent( 
+//				new FrequencyChangeEvent( Attribute.BANDWIDTH, bandwidth ) );
+// }
+// 
+
 }

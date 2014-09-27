@@ -60,7 +60,7 @@ public class FCD1TunerController extends FCDTunerController
 			   sMINIMUM_TUNABLE_FREQUENCY, 
 			   sMAXIMUM_TUNABLE_FREQUENCY );
 		
-		mFrequencyController.setBandwidth( sSAMPLE_RATE );
+		mFrequencyController.setSampleRate( sSAMPLE_RATE );
 		
 		try
 		{

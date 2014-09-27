@@ -60,10 +60,13 @@ import org.usb4java.LibUsb;
 
 import sample.Listener;
 import source.SourceException;
+import source.tuner.FrequencyChangeEvent;
+import source.tuner.FrequencyChangeEvent.Attribute;
 import source.tuner.TunerController;
 import source.tuner.TunerType;
 import source.tuner.usb.USBTunerDevice;
 import util.TimeStamp;
+import buffer.FloatAveragingBuffer;
 import controller.ResourceManager;
 
 public abstract class RTL2832TunerController extends TunerController
@@ -85,7 +88,6 @@ public abstract class RTL2832TunerController extends TunerController
 			(byte)( LibUsb.ENDPOINT_OUT | LibUsb.REQUEST_TYPE_VENDOR );
 	public final static byte sREQUEST_ZERO = (byte)0;
 	
-	public final static int sUSB_IRP_DATA_SIZE = 65536;
 	public final static int sUSB_IRP_POOL_SIZE = 10;
 	
 	public final static byte EEPROM_ADDRESS = (byte)0xA0;
@@ -135,7 +137,9 @@ public abstract class RTL2832TunerController extends TunerController
 	};
 	
 	private static final DecimalFormat mDecimalFormatter = 
-						new DecimalFormat( "###,###,###.#" );
+						new DecimalFormat( "###,###,###.0" );
+	private static final DecimalFormat mPercentFormatter = 
+			new DecimalFormat( "###.00" );
 	
 	private USBTunerDevice mUSBTunerDevice;
 	protected UsbDevice mUSBDevice;
@@ -162,6 +166,9 @@ public abstract class RTL2832TunerController extends TunerController
 	private double mSampleRateAverageSum;
 	private int mSampleRateAverageCount;
 	protected int mOscillatorFrequency = 28800000; //28.8 MHz
+	
+	private SampleRateMonitor mSampleRateMonitor;
+	public int mBufferSize = 16384;
 	
 	/**
 	 * Abstract tuner controller device.  Use the static getTunerClass() method
@@ -1163,7 +1170,17 @@ public abstract class RTL2832TunerController extends TunerController
 
 		mSampleRate = sampleRate;
 
-		mFrequencyController.setBandwidth( sampleRate.getRate() );
+		/**
+		 * Adjust the size of the byte array buffers sent over the USB bus
+		 */
+		mBufferSize = mSampleRate.getBufferSize();
+
+		mFrequencyController.setSampleRate( sampleRate.getRate() );
+		
+		if( mSampleRateMonitor != null )
+		{
+			mSampleRateMonitor.setSampleRate( mSampleRate.getRate() );
+		}
 	}
 	
 	public void setSampleRateFrequencyCorrection( int ppm ) 
@@ -1392,34 +1409,37 @@ public abstract class RTL2832TunerController extends TunerController
 	public enum SampleRate
 	{
 		/* Note: sample rates below 1.0MHz are subject to aliasing */
-		RATE_0_240MHZ( 0x0DFC, 0x0000,  240000, "0.240 MHz" ),
-		RATE_0_288MHZ( 0x08FC, 0x0000,  288000, "0.288 MHz" ),
-		RATE_0_912MHZ( 0x07E6, 0x0000,  912000, "0.912 MHz" ),
-		RATE_0_960MHZ( 0x077A, 0x0000,  960000, "0.960 MHz" ),
-		RATE_1_200MHZ( 0x05F4, 0x0000, 1200000, "1.200 MHz" ),
-		RATE_1_440MHZ( 0x0500, 0x0000, 1440000, "1.440 MHz" ),
-		RATE_1_680MHZ( 0x044A, 0x0000, 1680000, "1.680 MHz" ),
-		RATE_1_824MHZ( 0x03F3, 0x0000, 1824000, "1.824 MHz" ),
-		RATE_2_016MHZ( 0x038F, 0x0000, 2016000, "2.016 MHz" );
-
-		/* Note: usb4java library buffer processing scheme doesn't seem capable 
-		 * of supporting these rates */
-		//RATE_2_400MHZ( 0x0300, 0x0000, 2400000, "2.400 MHz" ),
-		//RATE_2_880MHZ( 0x0280, 0x0000, 2880000, "2.880 MHz" ),
-		//RATE_3_072MHZ( 0x0258, 0x0000, 3072000, "3.072 MHz" ),
-		//RATE_3_216MHZ( 0x023D, 0x0000, 3216000, "3.216 MHz" );
+		RATE_0_240MHZ( 0x0DFC, 0x0000,  240000, "0.240 MHz", 16384 ),
+		RATE_0_288MHZ( 0x08FC, 0x0000,  288000, "0.288 MHz", 16384 ),
+		RATE_0_912MHZ( 0x07E4, 0x0000,  912000, "0.912 MHz", 32768 ),
+		RATE_0_960MHZ( 0x0778, 0x0000,  960000, "0.960 MHz", 32768 ),
+		RATE_1_200MHZ( 0x05F4, 0x0000, 1200000, "1.200 MHz", 65536 ),
+		RATE_1_440MHZ( 0x04FC, 0x0000, 1440000, "1.440 MHz", 65536 ),
+		RATE_1_680MHZ( 0x0448, 0x0000, 1680000, "1.680 MHz", 65536 ),
+		RATE_1_824MHZ( 0x03F0, 0x0000, 1824000, "1.824 MHz", 65536 ),
+		RATE_2_016MHZ( 0x038C, 0x0000, 2016000, "2.016 MHz", 131072 ),
+		RATE_2_208MHZ( 0x0340, 0x0000, 2208000, "2.208 MHz", 131072 ),
+		RATE_2_400MHZ( 0x02FC, 0x0000, 2400000, "2.400 MHz", 131072 ),
+		RATE_2_640MHZ( 0x02B4, 0x8000, 2640000, "2.640 MHz", 262144 ),
+		RATE_2_880MHZ( 0x027C, 0x0000, 2880000, "2.880 MHz", 262144 );
 		
 		private int mRatioHigh;
 		private int mRatioLow;
 		private int mRate;
 		private String mLabel;
+		private int mBufferSize;
 		
-		private SampleRate( int ratioHigh, int ratioLow, int rate, String label )
+		private SampleRate( int ratioHigh, 
+							int ratioLow, 
+							int rate, 
+							String label,
+							int bufferSize )
 		{
 			mRatioHigh = ratioHigh;
 			mRatioLow = ratioLow;
 			mRate = rate;
 			mLabel = label;
+			mBufferSize = bufferSize;
 		}
 
 		public int getRatioHighBits()
@@ -1445,6 +1465,11 @@ public abstract class RTL2832TunerController extends TunerController
 		public String toString()
 		{
 			return mLabel;
+		}
+		
+		public int getBufferSize()
+		{
+			return mBufferSize;
 		}
 		
 		/**
@@ -1545,7 +1570,7 @@ public abstract class RTL2832TunerController extends TunerController
 					for( int x = 0; x < sUSB_IRP_POOL_SIZE; x++ )
 					{
 						UsbIrp irp = mUSBPipe.createUsbIrp();
-						irp.setData( new byte[ sUSB_IRP_DATA_SIZE ] );
+						irp.setData( new byte[ mBufferSize ] );
 						irps.add( irp );
 					}
 
@@ -1566,12 +1591,15 @@ public abstract class RTL2832TunerController extends TunerController
 							if( mUSBPipe.isOpen() )
 							{
 					            mSampleDispatcherTask = mExecutor
-					            		.scheduleAtFixedRate( new BufferDispatcher(), 
-					            							  0, 20, TimeUnit.MILLISECONDS );
+				            		.scheduleAtFixedRate( new BufferDispatcher(), 
+	            							  0, 20, TimeUnit.MILLISECONDS );
+					            
+					            mSampleRateMonitor = 
+				            		new SampleRateMonitor( mSampleRate.getRate() );
 					            
 					            mSampleRateCounterTask = mExecutor
-					            		.scheduleAtFixedRate( new SampleRateMonitor(), 
-					            							  60, 60, TimeUnit.SECONDS );
+					            		.scheduleAtFixedRate( mSampleRateMonitor, 
+	            							  10, 10, TimeUnit.SECONDS );
 
 					            mUSBPipe.asyncSubmit( irps );
 							}
@@ -1645,7 +1673,7 @@ public abstract class RTL2832TunerController extends TunerController
 			{
 				try
 	            {
-	                mUSBPipe.asyncSubmit( new byte[ sUSB_IRP_DATA_SIZE ] );
+	                mUSBPipe.asyncSubmit( new byte[ mBufferSize ] );
 	            }
 	            catch ( UsbNotActiveException | UsbNotOpenException
 	                    | IllegalArgumentException | UsbDisconnectedException
@@ -1707,37 +1735,103 @@ public abstract class RTL2832TunerController extends TunerController
 	 */
 	public class SampleRateMonitor implements Runnable
 	{
+		private static final int BUFFER_SIZE = 5;
+		private int mTargetSampleRate;
+		private int mSampleRateMinimum;
+		private int mSampleRateMaximum;
+		private int mNewTargetSampleRate;
+		private FloatAveragingBuffer mRateErrorBuffer = 
+							new FloatAveragingBuffer( BUFFER_SIZE );
+		private AtomicBoolean mRateChanged = new AtomicBoolean();
+		
+		public SampleRateMonitor( int sampleRate )
+		{
+			setTargetRate( sampleRate );
+		}
+		
+		public void setSampleRate( int sampleRate )
+		{
+			mNewTargetSampleRate = sampleRate;
+			mRateChanged.set( true );
+		}
+		
+		private void setTargetRate( int rate )
+		{
+			mTargetSampleRate = rate;
+			mSampleRateMinimum = (int)( (float)mTargetSampleRate * 0.95f );
+			mSampleRateMaximum = (int)( (float)mTargetSampleRate * 1.05f );
+
+			for( int x = 0; x < BUFFER_SIZE; x++ )
+			{
+				mRateErrorBuffer.get( 0 );
+			}
+		}
+		
 		@Override
         public void run()
         {
-			int count = mSampleCounter.getAndSet( 0 );
-			
-			double rate = (double)count / 120.0d;
-
-			mSampleRateAverageSum += rate;
-			mSampleRateAverageCount++;
-			
-			double average = mSampleRateAverageSum / (double)mSampleRateAverageCount;
-			
-			StringBuilder sb = new StringBuilder();
-			sb.append( TimeStamp.getTimeStamp( " " ) );
-			sb.append( " RTL-2832 [" );
-			if( mDescriptor != null )
+			if( mRateChanged.compareAndSet( true, false ) )
 			{
-				sb.append( mDescriptor.getSerial() );
+				setTargetRate( mNewTargetSampleRate );
+
+				/* Reset the sample counter */
+				mSampleCounter.set( 0 );
+				
+				mLog.info( "monitor reset for new sample rate [" + mTargetSampleRate + "]" );
+				System.out.println( "monitor reset for new sample rate [" + mTargetSampleRate + "]" );
 			}
 			else
 			{
-				sb.append( "DESCRIPTOR IS NULL" );
+				int count = mSampleCounter.getAndSet( 0 );
+				
+				float current = (float)count / 20.0f;
+
+				/**
+				 * Only accept values +/- 5% of target rate 
+				 */
+				float average;
+				
+				if( mSampleRateMinimum < current && current < mSampleRateMaximum )
+				{
+					average = mRateErrorBuffer.get( (float)mTargetSampleRate - current );
+
+					/* broadcast an actual sample rate update */
+					if( mFrequencyController != null )
+					{
+						mFrequencyController.broadcastFrequencyChangeEvent( 
+							new FrequencyChangeEvent( 
+								Attribute.SAMPLE_RATE_ERROR, (int)average ) );
+					}
+				}
+				else
+				{
+					average = mTargetSampleRate;
+				}
+				
+				StringBuilder sb = new StringBuilder();
+				sb.append( TimeStamp.getTimeStamp( " " ) );
+				sb.append( " RTL-2832 [" );
+				if( mDescriptor != null )
+				{
+					sb.append( mDescriptor.getSerial() );
+				}
+				else
+				{
+					sb.append( "DESCRIPTOR IS NULL" );
+				}
+				sb.append( "] sample rate current [" );
+				sb.append( mDecimalFormatter.format( current ) );
+				sb.append( " Hz " );
+				sb.append( mPercentFormatter.format( 100.0f * ( current / (float)mTargetSampleRate ) ) );
+				sb.append( "% ] average error [" );
+				sb.append( average );
+				sb.append( " Hz ] target " );
+				sb.append( mTargetSampleRate );
+				
+				System.out.println( sb.toString() );
+				
+				mLog.info( sb.toString() );
 			}
-			sb.append( "] Sample Rate - current: " );
-			sb.append( mDecimalFormatter.format( rate ) );
-			sb.append( "\taverage: " );
-			sb.append( mDecimalFormatter.format( average ) );
-			sb.append( " count:" );
-			sb.append( mSampleRateAverageCount );
-			
-			mLog.info( sb.toString() );
         }
 	}
 
