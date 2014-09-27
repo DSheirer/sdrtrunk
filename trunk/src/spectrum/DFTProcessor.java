@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import sample.Listener;
 import source.Source;
 import source.Source.SampleType;
+import source.tuner.FrequencyChangeEvent;
 import source.tuner.FrequencyChangeListener;
 import spectrum.converter.DFTResultsConverter;
 import dsp.filter.Window;
@@ -443,11 +444,19 @@ public class DFTProcessor implements Listener<Float[]>,
 	}
 	
 	@Override
-    public void frequencyChanged( long frequency, int bandwidth )
+    public void frequencyChanged( FrequencyChangeEvent event )
     {
-		mSampleRate = bandwidth;
-		
-		calculateConsumptionRate();
+		switch( event.getAttribute() )
+		{
+			case SAMPLE_RATE_ERROR:
+				break;
+			case SAMPLE_RATE:
+				mSampleRate = (int)event.getValue();
+				calculateConsumptionRate();
+				break;
+			default:
+				break;
+		}
     }
 	
 	/**

@@ -42,6 +42,11 @@ public class Oscillator
 		update();
 	}
 	
+	public ComplexSample getCurrentAngle()
+	{
+		return mCurrentAngle;
+	}
+
 	private void update()
 	{
 		float anglePerSample = 
@@ -64,6 +69,7 @@ public class Oscillator
 	 */
 	public void setSampleRate( int sampleRate )
 	{
+		System.out.println( "Oscillator - setting sampleRate to:" + sampleRate );
 		mSampleRate = (double)sampleRate;
 		update();
 	}

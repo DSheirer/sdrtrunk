@@ -77,6 +77,7 @@ public class R820TTunerConfigurationPanel extends JPanel
     private JTextField mName;
 
     private JSpinner mFrequencyCorrection;
+    private JSpinner mSampleRateCorrection;
     private JComboBox<R820TGain> mComboMasterGain;
     private JComboBox<R820TMixerGain> mComboMixerGain;
     private JComboBox<R820TLNAGain> mComboLNAGain;
@@ -268,6 +269,65 @@ public class R820TTunerConfigurationPanel extends JPanel
         add( new JLabel( "Sample Rate:" ) );
         add( mComboSampleRate, "growx,push" );
         
+      /**
+      * Sample Rate Correction
+      */
+     SpinnerModel sampleRateCorrectionModel =
+             new SpinnerNumberModel(     0,   //initial value
+                                     -32768,   //min
+                                      32767,   //max
+                                         1 ); //step
+
+     mSampleRateCorrection = new JSpinner( sampleRateCorrectionModel );
+
+     JSpinner.NumberEditor sampleRateCorrectionEditor = 
+     		(JSpinner.NumberEditor)mSampleRateCorrection.getEditor();  
+     
+     DecimalFormat sampleRateCorrectionFormat = 
+     						sampleRateCorrectionEditor.getFormat();  
+     
+     sampleRateCorrectionFormat.setMinimumFractionDigits( 0 );  
+     
+     sampleRateCorrectionEditor.getTextField()
+     			.setHorizontalAlignment( SwingConstants.CENTER );          
+
+     mSampleRateCorrection.addChangeListener( new ChangeListener() 
+     {
+			@Override
+         public void stateChanged( ChangeEvent e )
+         {
+				final int value = ((SpinnerNumberModel)mSampleRateCorrection
+						.getModel()).getNumber().intValue();
+
+				EventQueue.invokeLater( new Runnable() 
+				{
+					@Override
+                 public void run()
+                 {
+					try
+	                {
+		                mController.setSampleRateFrequencyCorrection( value );
+	                }
+	                catch ( SourceException | UsbException e1 )
+	                {
+	                	JOptionPane.showMessageDialog( 
+	                			R820TTunerConfigurationPanel.this, 
+	                			"E4K Tuner Controller - couldn't apply "
+	                			+ "sample rate correction value: " + value + 
+	                					e1.getLocalizedMessage() );  
+	                	
+	                	mLog.error( "E4K Tuner Controller - couldn't apply "
+	                			+ "sample rate correction value: " + value + 
+	                			e1.getLocalizedMessage() );
+	                }
+                 }
+			} );
+         }
+     } );
+     
+     add( mSampleRateCorrection );
+     add( new JLabel( "Sample Rate Correction (ppm)" ), "grow,push" );
+
         /**
          * Gain Controls 
          */

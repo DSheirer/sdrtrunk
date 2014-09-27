@@ -30,6 +30,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import source.SourceException;
+import source.tuner.FrequencyChangeEvent;
+import source.tuner.FrequencyChangeEvent.Attribute;
 import source.tuner.FrequencyChangeListener;
 import source.tuner.fcd.FCDTuner;
 import source.tuner.fcd.FCDTunerDetailsPanel;
@@ -90,17 +92,20 @@ public class FCD2TunerEditorPanel extends JPanel implements FrequencyChangeListe
     }
 
 	@Override
-    public void frequencyChanged( long frequency, int bandwidth )
+    public void frequencyChanged( FrequencyChangeEvent event )
     {
-		//Disregard the bandwidth, which shouldn't be changing
-		try
-        {
-	        mController.setFrequency( frequency );
-        }
-        catch ( SourceException e )
-        {
-        	mLog.error( "FCTProController - error setting frequency [" + 
-        			frequency + "]", e );
-        }
+		if( event.getAttribute() == Attribute.FREQUENCY )
+		{
+			//Disregard the bandwidth, which shouldn't be changing
+			try
+	        {
+		        mController.setFrequency( event.getValue() );
+	        }
+	        catch ( SourceException e )
+	        {
+	        	mLog.error( "FCDProController - error setting frequency [" + 
+	        			event.getValue() + "]", e );
+	        }
+		}
     }
 }

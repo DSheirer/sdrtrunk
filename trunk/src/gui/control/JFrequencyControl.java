@@ -43,7 +43,9 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import source.tuner.FrequencyChangeEvent;
 import source.tuner.FrequencyChangeListener;
+import source.tuner.FrequencyChangeEvent.Attribute;
 
 public class JFrequencyControl extends JPanel implements FrequencyChangeListener
 {
@@ -132,9 +134,12 @@ public class JFrequencyControl extends JPanel implements FrequencyChangeListener
 	 * rebroadcast this event, just set the control to indicate the new frequency.
 	 */
 	@Override
-    public void frequencyChanged( long frequency, int bandwidth )
+    public void frequencyChanged( FrequencyChangeEvent event )
     {
-		setFrequency( frequency, false );
+		if( event.getAttribute() == Attribute.FREQUENCY )
+		{
+			setFrequency( (int)event.getValue(), false );
+		}
     }
 	
 	/**
@@ -174,9 +179,12 @@ public class JFrequencyControl extends JPanel implements FrequencyChangeListener
 		
 		Iterator<FrequencyChangeListener> it = mListeners.iterator();
 		
+		FrequencyChangeEvent event = 
+				new FrequencyChangeEvent( Attribute.FREQUENCY, mFrequency );
+		
 		while( it.hasNext() )
 		{
-			it.next().frequencyChanged( mFrequency, -1 );
+			it.next().frequencyChanged( event );
 		}
 	}
 	

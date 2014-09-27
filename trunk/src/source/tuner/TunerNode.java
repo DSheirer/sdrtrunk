@@ -42,7 +42,7 @@ public class TunerNode extends BaseNode implements FrequencyChangeListener
 	private static DecimalFormat SAMPLE_RATE_FORMAT = new DecimalFormat( "0.000" );
     
     private long mFrequency;
-    private int mBandwidth;
+    private int mSampleRate;
 
 	public TunerNode( Tuner tuner )
 	{
@@ -53,7 +53,7 @@ public class TunerNode extends BaseNode implements FrequencyChangeListener
 		try
         {
 	        mFrequency = tuner.getFrequency();
-			mBandwidth = tuner.getSampleRate();
+			mSampleRate = tuner.getSampleRate();
         }
         catch ( SourceException e )
         {
@@ -82,7 +82,7 @@ public class TunerNode extends BaseNode implements FrequencyChangeListener
 		sb.append( "  " );
 		sb.append( FREQUENCY_FORMAT.format( (double)mFrequency / 1E6d ) );
 		sb.append( " [" );
-		sb.append( SAMPLE_RATE_FORMAT.format( (double)mBandwidth / 1E6d ) );
+		sb.append( SAMPLE_RATE_FORMAT.format( (double)mSampleRate / 1E6d ) );
 		sb.append( "] MHz" );
 		
 		return sb.toString();
@@ -122,11 +122,29 @@ public class TunerNode extends BaseNode implements FrequencyChangeListener
 	}
 
 	@Override
-    public void frequencyChanged( long frequency, int bandwidth )
+    public void frequencyChanged( FrequencyChangeEvent event )
     {
-		mFrequency = frequency;
-		mBandwidth = bandwidth;
-		
-		getModel().nodeChanged( TunerNode.this );
+		switch( event.getAttribute() )
+		{
+			case FREQUENCY:
+				int frequency = (int)event.getValue();
+				
+				if( mFrequency != frequency )
+				{
+					mFrequency = frequency;
+					getModel().nodeChanged( TunerNode.this );
+				}
+			case SAMPLE_RATE:
+				int sampleRate = (int)event.getValue();
+				
+				if( mSampleRate != sampleRate )
+				{
+					mSampleRate = sampleRate;
+					getModel().nodeChanged( TunerNode.this );
+				}
+				break;
+			default:
+				break;
+		}
     }
 }

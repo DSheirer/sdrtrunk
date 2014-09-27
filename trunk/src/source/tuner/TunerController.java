@@ -167,7 +167,8 @@ public abstract class TunerController implements Tunable
 			
 			updateLOFrequency();
 			
-			source = new TunerChannelSource( threadPoolManager, tuner, tunerChannel );
+			source = new TunerChannelSource( threadPoolManager, 
+					tuner, tunerChannel );
 		}
 
 		return source;
