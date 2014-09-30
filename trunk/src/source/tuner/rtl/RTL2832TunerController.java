@@ -155,7 +155,7 @@ public abstract class RTL2832TunerController extends TunerController
 	
 	private BufferProcessor mBufferProcessor = new BufferProcessor();
 	
-	private RTL2832SampleAdapter mSampleAdapter = new RTL2832SampleAdapter();
+	private ByteSampleAdapter mSampleAdapter = new ByteSampleAdapter();
 
 	private CopyOnWriteArrayList<Listener<Float[]>> mSampleListeners =
 			new CopyOnWriteArrayList<Listener<Float[]>>();

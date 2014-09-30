@@ -69,7 +69,6 @@ public class Oscillator
 	 */
 	public void setSampleRate( int sampleRate )
 	{
-		System.out.println( "Oscillator - setting sampleRate to:" + sampleRate );
 		mSampleRate = (double)sampleRate;
 		update();
 	}

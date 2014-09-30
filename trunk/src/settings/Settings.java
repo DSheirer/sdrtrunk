@@ -33,6 +33,7 @@ import source.tuner.TunerConfigurationAssignment;
 import source.tuner.TunerType;
 import source.tuner.fcd.proV1.FCD1TunerConfiguration;
 import source.tuner.fcd.proplusV2.FCD2TunerConfiguration;
+import source.tuner.hackrf.HackRFTunerConfiguration;
 import source.tuner.rtl.e4k.E4KTunerConfiguration;
 import source.tuner.rtl.r820t.R820TTunerConfiguration;
 
@@ -45,7 +46,7 @@ import source.tuner.rtl.r820t.R820TTunerConfiguration;
 			   FCD1TunerConfiguration.class,
 			   FCD2TunerConfiguration.class,
 			   FileSetting.class,
-			   IntegerSetting.class,
+			   HackRFTunerConfiguration.class,
 			   MapViewSetting.class,
 			   MapIcon.class,
 			   R820TTunerConfiguration.class,
@@ -179,20 +180,6 @@ public class Settings
 		return null;
 	}
 
-	public IntegerSetting getIntegerSetting( String name )
-	{
-		for( Setting setting: mSettings )
-		{
-			if( setting instanceof IntegerSetting &&
-				((IntegerSetting)setting).getName().contentEquals( name ) )
-			{
-				return (IntegerSetting)setting;
-			}
-		}
-		
-		return null;
-	}
-	
 	public ColorSetting getColorSetting( ColorSettingName name )
 	{
 		for( Setting setting: mSettings )

@@ -40,6 +40,8 @@ import source.tuner.ettus.B100Tuner;
 import source.tuner.fcd.FCDTuner;
 import source.tuner.fcd.proV1.FCD1TunerController;
 import source.tuner.fcd.proplusV2.FCD2TunerController;
+import source.tuner.hackrf.HackRFTuner;
+import source.tuner.hackrf.HackRFTunerController;
 import source.tuner.rtl.RTL2832Tuner;
 import source.tuner.rtl.RTL2832TunerController;
 import source.tuner.rtl.e4k.E4KTunerController;
@@ -360,6 +362,29 @@ public class TunerManager
 					mTuners.add(  new B100Tuner( device ) );
 					status = sLOADED;
 					reason = null;
+					break;
+				case HACKRF_ONE:
+//					try
+//                    {
+//						HackRFTunerController hackRFController = 
+//									new HackRFTunerController( device );
+//						
+//						hackRFController.init();
+//						
+//						HackRFTuner hackRFTuner = 
+//								new HackRFTuner( hackRFController );
+//						
+//	                    mTuners.add( hackRFTuner );
+//						name = hackRFTuner.getName();
+//						status = sLOADED;
+//						reason = null;
+//                    }
+//					catch( SourceException se )
+//					{
+//						status = sNOT_LOADED;
+//						reason = "Error constructing HackRF tuner "
+//							+ "controller - " + se.getLocalizedMessage();
+//					}
 					break;
 				case UNKNOWN:
 				default:

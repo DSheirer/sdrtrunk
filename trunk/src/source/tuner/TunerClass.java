@@ -34,6 +34,7 @@ public enum TunerClass
 	FUNCUBE_DONGLE_PRO_PLUS( TunerType.FUNCUBE_DONGLE_PRO_PLUS, "04D8", "FB31", "Hamlincrest", "Funcube Dongle Pro Plus" ),
 	GIGABYTE_GTU7300( TunerType.FITIPOWER_FC0012, "1B80", "D393", "Gigabyte", "GT-U7300" ),
 	GTEK_T803( TunerType.FITIPOWER_FC0012, "1F4D", "B803", "GTek", "T803" ),
+	HACKRF_ONE( TunerType.HACKRF, "1D50", "6089", "Great Scott Gadgets", "HackRF One" ),
 	LIFEVIEW_LV5T_DELUXE( TunerType.FITIPOWER_FC0012, "1F4D", "C803", "Liveview", "LV5T Deluxe" ),
 	MYGICA_TD312( TunerType.FITIPOWER_FC0012, "1F4D", "D286", "MyGica", "TD312" ),
 	PEAK_102569AGPK( TunerType.FITIPOWER_FC0012, "1B80", "D395", "Peak", "102569AGPK" ),
@@ -172,6 +173,12 @@ public enum TunerClass
 				else if( productID == 4355 ) //1103
 				{
 					retVal = DEXATEK_5217_DVBT;
+				}
+				break;
+			case 7504: //1D50 
+				if( productID == 24713 ) //6089
+				{
+					retVal = HACKRF_ONE;
 				}
 				break;
 			case 8013: //1F4D
