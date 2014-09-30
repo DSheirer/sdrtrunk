@@ -34,7 +34,6 @@ import org.slf4j.LoggerFactory;
 
 import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
-import settings.IntegerSetting;
 import settings.Setting;
 import settings.SettingChangeListener;
 import buffer.FloatArrayCircularAveragingBuffer;
@@ -97,8 +96,8 @@ public class SpectrumPanel extends JPanel
 	{
 		mAveraging = size;
 		
-		mResourceManager.getSettingsManager().setIntegerSetting( 
-				SPECTRUM_AVERAGING_SIZE, mAveraging );
+//		mResourceManager.getSettingsManager().setIntegerSetting( 
+//				SPECTRUM_AVERAGING_SIZE, mAveraging );
 		
 		mFFTAveragingBuffer = 
 				new FloatArrayCircularAveragingBuffer( mAveraging );		
@@ -149,16 +148,17 @@ public class SpectrumPanel extends JPanel
 
 		mColorSpectrumLine = getColor( ColorSettingName.SPECTRUM_LINE );
 
-		mAveraging = getIntegerSetting( "spectrum_averaging_size", 4 );
+		mAveraging = 4;
+//		mAveraging = getIntegerSetting( "spectrum_averaging_size", 4 );
 	}
 	
-	private int getIntegerSetting( String name, int defaultValue )
-	{
-		IntegerSetting setting = mResourceManager.getSettingsManager()
-				.getIntegerSetting( name, defaultValue );
-		
-		return setting.getValue();
-	}
+//	private int getIntegerSetting( String name, int defaultValue )
+//	{
+//		IntegerSetting setting = mResourceManager.getSettingsManager()
+//				.getIntegerSetting( name, defaultValue );
+//		
+//		return setting.getValue();
+//	}
 	
 	private Color getColor( ColorSettingName name )
 	{

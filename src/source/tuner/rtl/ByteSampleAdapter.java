@@ -19,9 +19,9 @@ package source.tuner.rtl;
 
 import source.mixer.SampleAdapter;
 
-public class RTL2832SampleAdapter extends SampleAdapter
+public class ByteSampleAdapter extends SampleAdapter
 {
-	private final static float[] mLOOKUP_VALUES;
+	private final static float[] LOOKUP_VALUES;
 
 	/**
 	 * Creates a static lookup table that converts the 8-bit valued range 
@@ -29,14 +29,14 @@ public class RTL2832SampleAdapter extends SampleAdapter
 	 */
 	static
 	{
-		mLOOKUP_VALUES = new float[ 256 ];
+		LOOKUP_VALUES = new float[ 256 ];
 		
 		for( int x = 0; x < 256; x++ )
 		{
-			mLOOKUP_VALUES[ x ] = (float)( x - 128 ) * 256.0f;
+			LOOKUP_VALUES[ x ] = (float)( x - 128 ) * 256.0f;
 		}
 		
-		mLOOKUP_VALUES[ 128 ] = 0.0000001f;
+		LOOKUP_VALUES[ 128 ] = 0.0000001f;
 	}
 
 	@Override
@@ -48,7 +48,7 @@ public class RTL2832SampleAdapter extends SampleAdapter
 		for( byte sample: samples )
 		{
 			/* Convert byte value into float from the lookup table */
-			convertedSamples[ pointer++ ] = mLOOKUP_VALUES[ ( sample & 0xFF ) ];
+			convertedSamples[ pointer++ ] = LOOKUP_VALUES[ ( sample & 0xFF ) ];
 		}
 		
 	    return convertedSamples;

@@ -27,6 +27,7 @@ public enum TunerType
 	FITIPOWER_FC0013( "FC0013" ),
 	FUNCUBE_DONGLE_PRO( "Funcube Dongle Pro" ),
 	FUNCUBE_DONGLE_PRO_PLUS( "Funcube Dongle Pro Plus" ),
+	HACKRF( "HackRF" ),
 	RAFAELMICRO_R820T( "R820T" ),
 	RAFAELMICRO_R828D( "R828D" ),
 	RTL2832_VARIOUS( "Generic" ),

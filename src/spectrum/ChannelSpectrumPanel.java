@@ -77,8 +77,9 @@ public class ChannelSpectrumPanel extends JPanel
     	mOverlayPanel = new ChannelOverlayPanel( mResourceManager );
     	
     	
-    	mSpectrumAveragingSize = mResourceManager.getSettingsManager()
-			.getIntegerSetting( CHANNEL_SPECTRUM_AVERAGING_SIZE, 10 ).getValue();
+    	mSpectrumAveragingSize = 10;
+//    	mSpectrumAveragingSize = mResourceManager.getSettingsManager()
+//			.getIntegerSetting( CHANNEL_SPECTRUM_AVERAGING_SIZE, 10 ).getValue();
     	
     	mSpectrumPanel.setAveraging( mSpectrumAveragingSize );
  

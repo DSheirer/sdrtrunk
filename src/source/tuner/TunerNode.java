@@ -134,6 +134,7 @@ public class TunerNode extends BaseNode implements FrequencyChangeListener
 					mFrequency = frequency;
 					getModel().nodeChanged( TunerNode.this );
 				}
+				break;
 			case SAMPLE_RATE:
 				int sampleRate = (int)event.getValue();
 				

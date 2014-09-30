@@ -52,6 +52,7 @@ import source.tuner.TunerConfigurationAssignment;
 import source.tuner.TunerType;
 import source.tuner.fcd.proV1.FCD1TunerConfiguration;
 import source.tuner.fcd.proplusV2.FCD2TunerConfiguration;
+import source.tuner.hackrf.HackRFTunerConfiguration;
 import source.tuner.rtl.e4k.E4KTunerConfiguration;
 import source.tuner.rtl.r820t.R820TTunerConfiguration;
 
@@ -145,33 +146,6 @@ public class SettingsManager
 	public Setting getSetting( String name )
 	{
 		return mSettings.getSetting( name );
-	}
-	
-	public IntegerSetting getIntegerSetting( String name, int defaultValue )
-	{
-		IntegerSetting setting = mSettings.getIntegerSetting( name );
-		
-		if( setting == null )
-		{
-			setting = new IntegerSetting( name, defaultValue );
-			
-			mSettings.addSetting( setting );
-			
-			save();
-		}
-		
-		return setting;
-	}
-
-	public void setIntegerSetting( String name, int value )
-	{
-		IntegerSetting setting = getIntegerSetting( name, value );
-		
-		setting.setValue( value );
-		
-		save();
-		
-		broadcastSettingChange( setting );
 	}
 	
 	/**
@@ -616,6 +590,15 @@ public class SettingsManager
 				save();
 				
 				return configPlus;
+			case HACKRF:
+				HackRFTunerConfiguration hackConfig = 
+							new HackRFTunerConfiguration( name );
+				
+				getSettings().addTunerConfiguration( hackConfig );
+				
+				save();
+				
+				return hackConfig;
 			case RAFAELMICRO_R820T:
 				R820TTunerConfiguration r820TConfig = 
 							new R820TTunerConfiguration( name );
