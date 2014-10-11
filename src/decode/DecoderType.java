@@ -25,6 +25,7 @@ import java.util.EnumSet;
  */
 public enum DecoderType
 {
+    AM( "AM", "AM", "images/am", 10000 ),
     FLEETSYNC2( "Fleetsync II", "Fsync2", "images/fm", 12500 ),
     LTR_STANDARD( "LTR-Standard", "LTR", "images/ltr_standard", 10000 ),
     LTR_NET( "LTR-Net", "LTR-Net", "images/ltr_net", 10000 ),
@@ -53,7 +54,8 @@ public enum DecoderType
      */
     public static EnumSet<DecoderType> getAvailableDecoders()
     {
-    	return EnumSet.of( DecoderType.LTR_NET,
+    	return EnumSet.of( DecoderType.AM,
+    	                   DecoderType.LTR_NET,
     					   DecoderType.LTR_STANDARD,
     					   DecoderType.MPT1327,
     					   DecoderType.NBFM,

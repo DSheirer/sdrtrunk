@@ -17,7 +17,6 @@
  ******************************************************************************/
 package gui;
 
-
 import java.awt.AWTException;
 import java.awt.Dimension;
 import java.awt.EventQueue;
@@ -29,7 +28,6 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Date;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;

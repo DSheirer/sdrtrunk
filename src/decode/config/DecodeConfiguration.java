@@ -24,7 +24,8 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 import controller.config.Configuration;
 import decode.DecoderType;
 
-@XmlSeeAlso( { DecodeConfigNBFM.class,
+@XmlSeeAlso( { DecodeConfigAM.class,
+               DecodeConfigNBFM.class,
 			   DecodeConfigLTRNet.class,
 			   DecodeConfigLTRStandard.class,
 			   DecodeConfigMPT1327.class,
@@ -64,5 +65,10 @@ public abstract class DecodeConfiguration extends Configuration
 	public void setAFC( boolean enabled )
 	{
 		mAFCEnabled = enabled;
+	}
+	
+	public boolean supportsAFC()
+	{
+	    return true;
 	}
 }

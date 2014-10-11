@@ -39,6 +39,8 @@ import controller.channel.Channel;
 import controller.channel.Channel.ChannelType;
 import controller.channel.ChannelEvent;
 import controller.channel.ChannelEventListener;
+import decode.am.AMChannelState;
+import decode.am.AMPanel;
 import decode.fleetsync2.FleetsyncChannelState;
 import decode.fleetsync2.FleetsyncPanel;
 import decode.ltrnet.LTRNetChannelState;
@@ -139,8 +141,12 @@ public class ChannelStateList extends JPanel implements ChannelEventListener
     		ChannelState state = channel.getProcessingChain().getChannelState();
 
     		ChannelStatePanel panel = null;
-    		
-    		if( state instanceof NBFMChannelState )
+
+            if( state instanceof AMChannelState )
+            {
+                panel = new AMPanel( channel );
+            }
+    		else if( state instanceof NBFMChannelState )
     		{
     			NBFMChannelState convState = 
     					(NBFMChannelState)state;

@@ -404,6 +404,7 @@ public class ProcessingChain implements Listener<Message>
 					}
 					
 					if( mSource instanceof TunerChannelSource &&
+					    mChannel.getDecodeConfiguration().supportsAFC() &&
 						mChannel.getDecodeConfiguration().isAFCEnabled() )
 					{
 						TunerChannelSource tcs = (TunerChannelSource)mSource;

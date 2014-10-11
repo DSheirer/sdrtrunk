@@ -22,6 +22,8 @@ import alias.AliasList;
 import controller.channel.ChannelMap;
 import controller.channel.ProcessingChain;
 import controller.state.ChannelState;
+import decode.am.AMChannelState;
+import decode.am.AMDecoder;
 import decode.config.AuxDecodeConfiguration;
 import decode.config.DecodeConfigLTRNet;
 import decode.config.DecodeConfigLTRStandard;
@@ -62,6 +64,9 @@ public class DecoderFactory
 		
 		switch( config.getDecoderType() )
 		{
+		    case AM:
+		        retVal = new AMDecoder( sampleType );
+		        break;
 			case NBFM:
 				retVal = new NBFMConventionalDecoder( sampleType );
 				break;
@@ -128,12 +133,11 @@ public class DecoderFactory
 
 		switch( decodeConfig.getDecoderType() )
 		{
+		    case AM:
+		        retVal = new AMChannelState( chain, aliasList );
+		        break;
 			case NBFM:
 				retVal = new NBFMChannelState( chain, aliasList );
-
-				DecodeConfigNBFM conv = 
-						(DecodeConfigNBFM)decodeConfig;
-				
 				break;
 			case LTR_STANDARD:
 				retVal = new LTRChannelState( chain, aliasList );
