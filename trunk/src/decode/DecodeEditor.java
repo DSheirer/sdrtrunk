@@ -37,18 +37,21 @@ public class DecodeEditor extends Editor
 	{
 		mConfig = config;
 
-		mAFC = new JCheckBox( "Automatic Frequency Control" );
-		mAFC.setSelected( mConfig.isAFCEnabled() );
-		mAFC.addActionListener( new ActionListener()
+		if( config.supportsAFC() )
 		{
-			@Override
-			public void actionPerformed( ActionEvent arg0 )
-			{
-				mConfig.setAFC( mAFC.isSelected() );				
-			}
-		} );
+	        mAFC = new JCheckBox( "Automatic Frequency Control" );
+	        mAFC.setSelected( mConfig.isAFCEnabled() );
+	        mAFC.addActionListener( new ActionListener()
+	        {
+	            @Override
+	            public void actionPerformed( ActionEvent arg0 )
+	            {
+	                mConfig.setAFC( mAFC.isSelected() );                
+	            }
+	        } );
 
-		add( mAFC, "wrap" );
+	        add( mAFC, "wrap" );
+		}
 	}
 
 	public DecodeConfiguration getConfig()

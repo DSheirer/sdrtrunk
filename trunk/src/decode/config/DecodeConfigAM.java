@@ -19,43 +19,17 @@ package decode.config;
 
 import decode.DecoderType;
 
-public class DecodeConfigFactory
+public class DecodeConfigAM extends DecodeConfiguration
 {
-	public static DecodeConfiguration getDefaultDecodeConfiguration()
-	{
-		return getDecodeConfiguration( DecoderType.NBFM );
-	}
+	public DecodeConfigAM()
+    {
+	    super( DecoderType.AM );
+	    
+	    setAFC( false );
+    }
 	
-	public static DecodeConfiguration 
-						getDecodeConfiguration( DecoderType decoder )
-	{
-		DecodeConfiguration retVal;
-
-		switch( decoder )
-		{
-		    case AM:
-		        retVal = new DecodeConfigAM();
-		        break;
-			case NBFM:
-				retVal = new DecodeConfigNBFM();
-				break;
-			case LTR_STANDARD:
-				retVal = new DecodeConfigLTRStandard();
-				break;
-			case LTR_NET:
-				retVal = new DecodeConfigLTRNet();
-				break;
-			case MPT1327:
-				retVal = new DecodeConfigMPT1327();
-				break;
-			case PASSPORT:
-				retVal = new DecodeConfigPassport();
-				break;
-			default:
-				throw new IllegalArgumentException( "DecodeConfigFactory - "
-						+ "unknown decoder type [" + decoder.toString() + "]" );
-		}
-		
-		return retVal;
-	}
+    public boolean supportsAFC()
+    {
+        return false;
+    }
 }
