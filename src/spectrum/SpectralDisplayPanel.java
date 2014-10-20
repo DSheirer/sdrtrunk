@@ -56,10 +56,11 @@ import settings.SettingsManager;
 import source.Source.SampleType;
 import source.SourceException;
 import source.tuner.FrequencyChangeEvent;
+import source.tuner.FrequencyChangeEvent.Attribute;
 import source.tuner.FrequencyChangeListener;
 import source.tuner.Tuner;
 import source.tuner.TunerSelectionListener;
-import source.tuner.FrequencyChangeEvent.Attribute;
+import spectrum.OverlayPanel.ChannelDisplay;
 import spectrum.converter.ComplexDecibelConverter;
 import spectrum.converter.DFTResultsConverter;
 import spectrum.menu.AmplificationItem;
@@ -624,6 +625,20 @@ public class SpectralDisplayPanel extends JPanel
 					baselineMenu.add( 
 							new BaselineItem( mSpectrumPanel, 50 ) );
 					displayMenu.add( baselineMenu );
+					
+					/**
+					 * Channel Display setting menu
+					 */
+					JMenu channelDisplayMenu = new JMenu( "Channel" );
+
+					channelDisplayMenu.add( new ChannelDisplayItem( 
+							mOverlayPanel, ChannelDisplay.ALL ) );
+					channelDisplayMenu.add( new ChannelDisplayItem( 
+							mOverlayPanel, ChannelDisplay.ENABLED ) );
+					channelDisplayMenu.add( new ChannelDisplayItem( 
+							mOverlayPanel, ChannelDisplay.NONE ) );
+
+					displayMenu.add( channelDisplayMenu );
 				}
 
 				
@@ -723,6 +738,40 @@ public class SpectralDisplayPanel extends JPanel
         }
 	}
 	
+	public class ChannelDisplayItem extends JCheckBoxMenuItem
+	{
+        private static final long serialVersionUID = 1L;
+        
+        private OverlayPanel mOverlayPanel;
+        private ChannelDisplay mChannelDisplay;
+
+        public ChannelDisplayItem( OverlayPanel panel, ChannelDisplay display )
+        {
+        	super( display.name() );
+
+        	mOverlayPanel = panel;
+        	
+        	mChannelDisplay = display;
+        	
+        	setSelected( mOverlayPanel.getChannelDisplay() == mChannelDisplay );
+        	
+        	addActionListener( new ActionListener() 
+        	{
+				@Override
+                public void actionPerformed( ActionEvent e )
+                {
+					EventQueue.invokeLater( new Runnable() 
+					{
+						@Override
+                        public void run()
+                        {
+							mOverlayPanel.setChannelDisplay( mChannelDisplay );
+                        }
+					} );
+                }
+        	} );
+        }
+	}
 	
 	/**
 	 * Context menu item to provide one-click access to starting a channel
