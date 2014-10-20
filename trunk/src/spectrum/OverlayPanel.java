@@ -24,6 +24,8 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.RenderingHints;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.text.DecimalFormat;
@@ -31,6 +33,9 @@ import java.util.ArrayList;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.JPanel;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
@@ -52,8 +57,11 @@ public class OverlayPanel extends JPanel
 {
 	private static final long serialVersionUID = 1L;
 	
-	private static DecimalFormat sFORMAT = new DecimalFormat( "000.000" );
-	private static DecimalFormat sCURSOR_FORMAT = new DecimalFormat( "000.00000" );
+	private final static Logger mLog = 
+						LoggerFactory.getLogger( OverlayPanel.class );
+
+	private static DecimalFormat CURSOR_FORMAT = new DecimalFormat( "000.00000" );
+	private DecimalFormat mFrequencyFormat = new DecimalFormat( "0.0" );
 	private long mFrequency = 0;
 	private int mBandwidth = 0;
 	private Point mCursorLocation = new Point( 0, 0 );
@@ -75,10 +83,12 @@ public class OverlayPanel extends JPanel
 	//Currently visible/displayable channels
 	private CopyOnWriteArrayList<Channel> mVisibleChannels = 
 								new CopyOnWriteArrayList<Channel>();
+	private ChannelDisplay mChannelDisplay = ChannelDisplay.ALL;
 
 	//Defines the offset at the bottom of the spectral display to account for
 	//the frequency labels
-	private float mSpectrumInset = 20.0f;
+	private double mSpectrumInset = 20.0d;
+	private LabelSizeMonitor mLabelSizeMonitor = new LabelSizeMonitor();
 
 	private ResourceManager mResourceManager;
 	
@@ -90,6 +100,8 @@ public class OverlayPanel extends JPanel
 	public OverlayPanel( ResourceManager resourceManager )
     {
 		mResourceManager = resourceManager;
+		
+		addComponentListener( mLabelSizeMonitor );
 		
 		//Set the background transparent, so the spectrum display can be seen
 		setOpaque( false );
@@ -106,6 +118,16 @@ public class OverlayPanel extends JPanel
 		mResourceManager = null;
 	}
 	
+	public ChannelDisplay getChannelDisplay()
+	{
+		return mChannelDisplay;
+	}
+
+	public void setChannelDisplay( ChannelDisplay display )
+	{
+		mChannelDisplay = display;
+	}
+	
 	public void setCursorLocation( Point point )
 	{
 		mCursorLocation = point;
@@ -119,7 +141,7 @@ public class OverlayPanel extends JPanel
 		
 		repaint();
 	}
-
+	
 	/**
 	 * Fetches the color settings from the settings manager
 	 */
@@ -185,6 +207,8 @@ public class OverlayPanel extends JPanel
 				case SPECTRUM_LINE:
 					mColorSpectrumLine = colorSetting.getColor();
 					break;
+				default:
+					break;
 			}
 		}
     }
@@ -226,7 +250,7 @@ public class OverlayPanel extends JPanel
     						   mCursorLocation.x, 
     						   mColorSpectrumCursor );
 
-    		String frequency = sCURSOR_FORMAT.format( 
+    		String frequency = CURSOR_FORMAT.format( 
 				getFrequencyFromAxis( mCursorLocation.getX() ) / 1000000.0D );
 
     		graphics.drawString( frequency , 
@@ -243,38 +267,32 @@ public class OverlayPanel extends JPanel
     	long minFrequency = getMinFrequency();
     	long maxFrequency = getMaxFrequency();
 
-//TODO: the increment should be changeable according to the overall bandwidth
-//   	so that when we move to higher sample rates, the display reacts accordingly
-
-    	long frequency;
+    	int major = mLabelSizeMonitor.getMajorTickIncrement( graphics );
+    	int minor = mLabelSizeMonitor.getMinorTickIncrement( graphics );
+    	int label = mLabelSizeMonitor.getLabelIncrement( graphics );
     	
-    	if( mBandwidth < 200000 )
+    	long start = minFrequency - ( minFrequency % label );
+    	
+    	long frequency = start;
+    	
+    	while( frequency < maxFrequency )
     	{
-        	//Start with the first diplayable frequency (ie whole 10kHz increment)
-    		frequency = minFrequency - ( minFrequency % 10000 );
-        	frequency += 10000;
-
-        	//Draw a line and label at each 10kHz interval
-        	while( frequency < maxFrequency )
-        	{
+    		int offset = (int)( frequency - start );
+    		
+    		if( offset % label == 0  )
+    		{
         		drawFrequencyLineAndLabel( graphics, frequency );
-        		
-        		frequency += 10000;
-        	}
-    	}
-    	else
-    	{
-        	//Start with the first diplayable frequency (ie whole 100kHz increment)
-    		frequency = minFrequency - ( minFrequency % 100000 );
-        	frequency += 100000;
-
-        	//Draw a line and label at each 10kHz interval
-        	while( frequency < maxFrequency )
-        	{
-        		drawFrequencyLineAndLabel( graphics, frequency );
-        		
-        		frequency += 100000;
-        	}
+    		}
+    		else if( offset % major == 0 )
+    		{
+    			drawTickLine( graphics, frequency, true );
+    		}
+    		else
+    		{
+    			drawTickLine( graphics, frequency, false );
+    		}
+    		
+    		frequency += minor;
     	}
     }
     
@@ -283,9 +301,11 @@ public class OverlayPanel extends JPanel
      */
     private void drawFrequencyLineAndLabel( Graphics2D graphics, long frequency )
     {
-    	float xAxis = getAxisFromFrequency( frequency );
+    	double xAxis = getAxisFromFrequency( frequency );
     	
     	drawFrequencyLine( graphics, xAxis, mColorSpectrumLine );
+    	
+    	drawTickLine( graphics, frequency, false );
 
     	graphics.setColor( mColorSpectrumLine );
 
@@ -295,55 +315,68 @@ public class OverlayPanel extends JPanel
     /**
      * Draws a vertical line at the xaxis
      */
-    private void drawFrequencyLine( Graphics2D graphics, float xaxis, Color color )
+    private void drawTickLine( Graphics2D graphics, long frequency, boolean major )
+    {
+    	graphics.setColor( mColorSpectrumLine );
+    	
+    	double xAxis = getAxisFromFrequency( frequency );
+
+    	double start = getSize().getHeight() - mSpectrumInset;
+    	double end = start + ( major ? 6.0d : 3.0d );
+    	
+    	graphics.draw( new Line2D.Double( xAxis, start, xAxis, end ) ); 
+    }
+
+
+    /**
+     * Draws a vertical line at the xaxis
+     */
+    private void drawFrequencyLine( Graphics2D graphics, double xaxis, Color color )
     {
     	graphics.setColor( color );
     	
-    	graphics.draw( new Line2D.Float( xaxis, 0, 
-					 xaxis, (float)(getSize().getHeight()) - mSpectrumInset ) );
+    	graphics.draw( new Line2D.Double( xaxis, 0.0d, 
+					 xaxis, getSize().getHeight() - mSpectrumInset ) );
     }
 
     /**
      * Draws a vertical line at the xaxis
      */
-    private void drawAFC( Graphics2D graphics, float xaxis, boolean isError )
+    private void drawAFC( Graphics2D graphics, double xaxis, boolean isError )
     {
-    	float height = (float)(getSize().getHeight()) - mSpectrumInset;
+    	double height = getSize().getHeight() - mSpectrumInset;
 
     	if( isError )
     	{
         	graphics.setColor( Color.YELLOW );
 
-        	graphics.draw( new Line2D.Float( xaxis, height * 0.75f, 
-					 xaxis, height - 1.0f ) );
+        	graphics.draw( new Line2D.Double( xaxis, height * 0.75d, 
+					 xaxis, height - 1.0d ) );
     	}
     	else
     	{
         	graphics.setColor( Color.LIGHT_GRAY );
 
-        	graphics.draw( new Line2D.Float( xaxis, height * 0.65f, 
-					 xaxis, height - 1.0f ) );
+        	graphics.draw( new Line2D.Double( xaxis, height * 0.65d, 
+					 xaxis, height - 1.0d ) );
     	}
-    	
-    	
     }
-
     
     /**
      * Returns the x-axis value corresponding to the frequency
      */
-    public float getAxisFromFrequency( long frequency )
+    public double getAxisFromFrequency( long frequency )
     {
-    	float canvasMiddle = (float)getSize().getWidth() / 2;
+    	double canvasMiddle = getSize().getWidth() / 2.0d;
 
     	//Determine frequency offset from middle
-    	long frequencyOffset = mFrequency - frequency;
+    	double frequencyOffset = mFrequency - frequency;
 
     	//Determine ratio of offset to bandwidth
-    	float ratio = (float)frequencyOffset / (float)mBandwidth;
+    	double ratio = frequencyOffset / (double)mBandwidth;
 
     	//Calculate offset against the total width
-    	float xOffset = (float)getSize().getWidth() * ratio;
+    	double xOffset = getSize().getWidth() * ratio;
 
     	//Apply the offset against the canvas middle
     	return canvasMiddle - xOffset;
@@ -354,30 +387,32 @@ public class OverlayPanel extends JPanel
      */
     public long getFrequencyFromAxis( double xAxis )
     {
-    	float width = (float)getSize().getWidth();
+    	double width = getSize().getWidth();
     	
     	double offset = xAxis / width;
     	
-    	return getMinFrequency() + (int)( mBandwidth * offset ); 
+    	return getMinFrequency() + Math.round( (double)mBandwidth * offset ); 
     }
 
     /**
      * Draws a frequency label at the x-axis position, at the bottom of the panel
      */
     private void drawFrequencyLabel( Graphics2D graphics, 
-    								 float xaxis,
+    								 double xaxis,
     								 long frequency )
     {
-    	String label = sFORMAT.format( (float)frequency / 1000000.0f );
+    	String label = mFrequencyFormat.format( (float)frequency / 1000000.0f );
     	
     	FontMetrics fontMetrics   = graphics.getFontMetrics( this.getFont() );
 
     	Rectangle2D rect = fontMetrics.getStringBounds( label, graphics );
 
-    	float offset  = (float)rect.getWidth() / 2;
+    	float xOffset  = (float)rect.getWidth() / 2;
 
-    	graphics.drawString( label, xaxis - offset, 
-    			(float)getSize().getHeight() - ( mSpectrumInset * 0.2f ) );
+//    	graphics.drawString( label, (float)( xaxis - xOffset ), 
+//			(float)( getSize().getHeight() - ( mSpectrumInset * 0.2d ) ) );
+    	graphics.drawString( label, (float)( xaxis - xOffset ), 
+			(float)( getSize().getHeight() - 2.0f ) );
     }
     
 
@@ -388,93 +423,94 @@ public class OverlayPanel extends JPanel
     {
     	for( Channel channel: mVisibleChannels )
     	{
-    		//Choose the correct background color to use
-    		if( channel.isSelected() )
+    		if( mChannelDisplay == ChannelDisplay.ALL ||
+    			( mChannelDisplay == ChannelDisplay.ENABLED && 
+    			  channel.isProcessing() ) )
     		{
-            	graphics.setColor( mColorChannelConfigSelected );
-    		}
-    		else if( channel.isProcessing() )
-    		{
-            	graphics.setColor( mColorChannelConfigProcessing );
-    		}
-    		else
-    		{
-            	graphics.setColor( mColorChannelConfig );
-    		}
-        	
-    	    TunerChannel tunerChannel = channel.getTunerChannel();
-    	    
-            if( tunerChannel != null )
-            {
-                float xAxis = getAxisFromFrequency( 
-                        (int)( tunerChannel.getFrequency() ) );
-
-                float width = (float)( tunerChannel.getBandwidth() ) / 
-                            (float)mBandwidth * (float)getSize().getWidth(); 
-                
-                Rectangle2D.Float box = 
-                    new Rectangle2D.Float( xAxis - ( width / 2 ),
-                                           0,
-                                           width,
-                                           (float)( getSize().getHeight() - 
-                                                                mSpectrumInset ) );
-
-                //Fill the box with the correct color
-                graphics.fill( box );
-
-                graphics.draw( box );
-
-                //Change to the line color to render the channel name, etc.
-                graphics.setColor( mColorSpectrumLine );
-
-                //Draw the labels starting at yAxis position 0
-                float yAxis = 0;
-                
-                //Draw the system label and adjust the y-axis position
-                yAxis += drawLabel( graphics, 
-                				   	channel.getSystem().getName(),
-                				   	this.getFont(),
-                				   	xAxis,
-                				   	yAxis,
-                				   	width );
-
-                //Draw the site label and adjust the y-axis position
-                yAxis += drawLabel( graphics, 
-                					channel.getSite().getName(),
-                					this.getFont(),
-                					xAxis,
-                					yAxis,
-                					width );
-
-                //Draw the channel label and adjust the y-axis position
-                yAxis += drawLabel( graphics, 
-                					channel.getName(),
-                					this.getFont(),
-                					xAxis,
-                					yAxis,
-                					width );
-                
-                //Draw the decoder label
-                drawLabel( graphics, 
-                		channel.getDecodeConfiguration().getDecoderType()
-                			.getShortDisplayString(),
-                		   this.getFont(),
-                		   xAxis,
-                		   yAxis,
-                		   width );
-            }
-            
-            /* Draw Automatic Frequency Control line */
-            if( channel.hasAFC() )
-            {
-            	int frequency = (int)tunerChannel.getFrequency();
+        		//Choose the correct background color to use
+        		if( channel.isSelected() )
+        		{
+                	graphics.setColor( mColorChannelConfigSelected );
+        		}
+        		else if( channel.isProcessing() )
+        		{
+                	graphics.setColor( mColorChannelConfigProcessing );
+        		}
+        		else
+        		{
+                	graphics.setColor( mColorChannelConfig );
+        		}
             	
-            	int error = frequency + channel.getAFC().getErrorCorrection();
-            	
-                drawAFC( graphics, getAxisFromFrequency( frequency ), false );
+        	    TunerChannel tunerChannel = channel.getTunerChannel();
+        	    
+                if( tunerChannel != null )
+                {
+                	double xAxis = getAxisFromFrequency( tunerChannel.getFrequency() );
 
-                drawAFC( graphics, getAxisFromFrequency( error ), true );
-            }
+                	double width = (double)( tunerChannel.getBandwidth() ) / 
+                                (double)mBandwidth * getSize().getWidth(); 
+                    
+                    Rectangle2D.Double box = 
+                        new Rectangle2D.Double( xAxis - ( width / 2.0d ),
+                    		0.0d, width, getSize().getHeight() - mSpectrumInset );
+
+                    //Fill the box with the correct color
+                    graphics.fill( box );
+
+                    graphics.draw( box );
+
+                    //Change to the line color to render the channel name, etc.
+                    graphics.setColor( mColorSpectrumLine );
+
+                    //Draw the labels starting at yAxis position 0
+                    double yAxis = 0;
+                    
+                    //Draw the system label and adjust the y-axis position
+                    yAxis += drawLabel( graphics, 
+                    				   	channel.getSystem().getName(),
+                    				   	this.getFont(),
+                    				   	xAxis,
+                    				   	yAxis,
+                    				   	width );
+
+                    //Draw the site label and adjust the y-axis position
+                    yAxis += drawLabel( graphics, 
+                    					channel.getSite().getName(),
+                    					this.getFont(),
+                    					xAxis,
+                    					yAxis,
+                    					width );
+
+                    //Draw the channel label and adjust the y-axis position
+                    yAxis += drawLabel( graphics, 
+                    					channel.getName(),
+                    					this.getFont(),
+                    					xAxis,
+                    					yAxis,
+                    					width );
+                    
+                    //Draw the decoder label
+                    drawLabel( graphics, 
+                    		channel.getDecodeConfiguration().getDecoderType()
+                    			.getShortDisplayString(),
+                    		   this.getFont(),
+                    		   xAxis,
+                    		   yAxis,
+                    		   width );
+                }
+                
+                /* Draw Automatic Frequency Control line */
+                if( channel.hasAFC() )
+                {
+                	int frequency = (int)tunerChannel.getFrequency();
+                	
+                	int error = frequency + channel.getAFC().getErrorCorrection();
+                	
+                    drawAFC( graphics, getAxisFromFrequency( frequency ), false );
+
+                    drawAFC( graphics, getAxisFromFrequency( error ), true );
+                }
+    		}
     	}
     }
     
@@ -485,39 +521,40 @@ public class OverlayPanel extends JPanel
      * 
      * @return height of the drawn label
      */
-    private float drawLabel( Graphics2D graphics, String text, Font font, 
-    						 float x, float baseY, float maxWidth )
+    private double drawLabel( Graphics2D graphics, String text, Font font, 
+    						 double x, double baseY, double maxWidth )
     {
         FontMetrics fontMetrics = graphics.getFontMetrics( font );
         
         Rectangle2D label = fontMetrics.getStringBounds( text, graphics );
         
-        float offset = (float)label.getWidth() / 2;
-        float y = baseY + (float)label.getHeight();
+        double offset = label.getWidth() / 2.0d;
+        double y = baseY + label.getHeight();
         
         /**
          * If the label is wider than the max width, left justify the text and
          * clip the end of it
          */
-        if( offset > ( maxWidth / 2 ) )
+        if( offset > ( maxWidth / 2.0d ) )
         {
-        	label.setRect( x - ( maxWidth / 2 ), 		
+        	label.setRect( x - ( maxWidth / 2.0d ), 		
         				   y - label.getHeight(), 
 		   				   maxWidth, 
-		   				   label.getHeight() );  //* 2
+		   				   label.getHeight() );
         	
         	graphics.setClip( label );		
 
-            graphics.drawString( text, x - ( maxWidth / 2 ), y );
+            graphics.drawString( text, 
+            		(float)( x - ( maxWidth / 2.0d ) ), (float)y );
         	
         	graphics.setClip( null );
         }
         else
         {
-            graphics.drawString( text, x - offset, y );
+            graphics.drawString( text, (float)( x - offset ), (float)y );
         }
         
-        return (float)label.getHeight();
+        return label.getHeight();
     }
 
     /**
@@ -526,16 +563,24 @@ public class OverlayPanel extends JPanel
 	@Override
     public void frequencyChanged( FrequencyChangeEvent event )
     {
+		mLabelSizeMonitor.frequencyChanged( event );
+		
 		switch( event.getAttribute() )
 		{
-			case SAMPLE_RATE_ERROR:
-//				System.out.println( "OVerlay panel got a sample rate error update" );
-				break;
 			case SAMPLE_RATE:
 				mBandwidth = (int)event.getValue();
+				
+				if( mBandwidth < 200000 )
+				{
+					mFrequencyFormat = new DecimalFormat( "0.00" );					
+				}
+				else
+				{
+					mFrequencyFormat = new DecimalFormat( "0.0" );
+				}
 				break;
 			case FREQUENCY:
-				mFrequency = (int)event.getValue();
+				mFrequency = event.getValue();
 				break;
 			default:
 				break;
@@ -640,6 +685,185 @@ public class OverlayPanel extends JPanel
     public void settingDeleted( Setting setting )
     {
 	    // TODO Auto-generated method stub
-	    
     }
+
+	/**
+	 * Monitors the display for resize events so that we can calculate how many
+	 * frequency labels will fit within the current screen real estate
+	 */
+	public class LabelSizeMonitor implements ComponentListener, 
+											 FrequencyChangeListener
+	{
+		private static final int MAJOR_TICK_MINIMUM = 10000; //10 kHz
+		private static final int MINOR_TICK_MINIMUM = 1000; //1 kHz
+		private static final int TICK_SPACING_MINIMUM = 10; //pixels
+		
+		private boolean mUpdateRequired = true;
+		private LabelDisplay mLabelDisplay = LabelDisplay.DIGIT_3;
+		private int mMajorTickIncrement;
+		private int mMinorTickIncrement;
+		private int mLabelIncrement;
+
+		private void update( Graphics2D graphics )
+		{
+			if( mUpdateRequired )
+			{
+				double width = OverlayPanel.this.getSize().getWidth();
+
+				int major = MAJOR_TICK_MINIMUM;
+
+				while( width / ( (double)mBandwidth / 
+						(double)major ) < TICK_SPACING_MINIMUM )
+				{
+					major *= 10;
+				}
+				
+				mMajorTickIncrement = major;
+				
+				int minor = MINOR_TICK_MINIMUM;
+
+				while( width / ( (double)mBandwidth / 
+						(double)minor ) < TICK_SPACING_MINIMUM )
+				{
+					minor *= 10;
+				}
+				
+				if( minor == major )
+				{
+					minor = (int)( major / 2 );
+				}
+				
+				mMinorTickIncrement = minor;
+				
+		        FontMetrics fontMetrics = 
+		        		graphics.getFontMetrics( OverlayPanel.this.getFont() );
+		        
+		        Rectangle2D labelDimension = fontMetrics.getStringBounds( 
+		        		mLabelDisplay.getExample(), graphics );
+				
+		        int maxLabelCount = (int)( width / labelDimension.getWidth() );
+		        
+		        int label = major;
+		        
+				while( ( (double)mBandwidth / (double)label ) > maxLabelCount )
+				{
+					label += major;
+				}
+		        
+				mLabelIncrement = label;
+				
+		        mUpdateRequired = false;
+			}
+		}
+
+		public int getMajorTickIncrement( Graphics2D graphics )
+		{
+			update( graphics );
+			
+			return mMajorTickIncrement;
+		}
+		
+		public int getMinorTickIncrement( Graphics2D graphics )
+		{
+			update( graphics );
+			
+			return mMinorTickIncrement;
+		}
+		
+		public int getLabelIncrement( Graphics2D graphics )
+		{
+			update( graphics );
+			
+			return mLabelIncrement;
+		}
+		
+		public LabelDisplay getLabelDisplay()
+		{
+			return mLabelDisplay;
+		}
+		
+		@Override
+        public void componentResized( ComponentEvent arg0 )
+        {
+			mUpdateRequired = true;
+        }
+
+		public void componentHidden( ComponentEvent arg0 ) {}
+        public void componentMoved( ComponentEvent arg0 ) {}
+        public void componentShown( ComponentEvent arg0 ) {}
+
+		@Override
+        public void frequencyChanged( FrequencyChangeEvent event )
+        {
+			switch( event.getAttribute() )
+			{
+				case FREQUENCY:
+					LabelDisplay display = 
+								LabelDisplay.fromFrequency( event.getValue() );
+					
+					if( mLabelDisplay != display )
+					{
+						mLabelDisplay = display;
+						mUpdateRequired = true;
+					}
+					break;
+				case SAMPLE_RATE:
+					mUpdateRequired = true;
+					break;
+				default:
+					break;
+			}
+        }
+	}
+
+	/**
+	 * Frequency display formats for determining label sizing and value formatting
+	 */
+	public enum LabelDisplay
+	{
+		DIGIT_1( " 9.9 " ),
+		DIGIT_2( " 99.9 " ),
+		DIGIT_3( " 999.9 " ),
+		DIGIT_4( " 9999.9 " ),
+		DIGIT_5( " 99999.9 " );
+		
+		private String mExample;
+		
+		private LabelDisplay( String example )
+		{
+			mExample = example;
+		}
+		
+		public String getExample()
+		{
+			return mExample;
+		}
+		
+		public static LabelDisplay fromFrequency( long frequency )
+		{
+			if( frequency < 10000000l ) //10 MHz
+			{
+				return LabelDisplay.DIGIT_1;
+			}
+			else if( frequency < 100000000l ) //100 MHz
+			{
+				return LabelDisplay.DIGIT_2;
+			}
+			else if( frequency < 1000000000l ) //1,000 MHz
+			{
+				return LabelDisplay.DIGIT_3;
+			}
+			else if( frequency < 10000000000l ) //10,000 MHz
+			{
+				return LabelDisplay.DIGIT_4;
+			}
+
+			return LabelDisplay.DIGIT_5;
+		}
+	}
+	
+	public enum ChannelDisplay
+	{
+		ALL, ENABLED, NONE;
+	}
 }

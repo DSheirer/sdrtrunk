@@ -277,7 +277,7 @@ public class SpectrumPanel extends JPanel
     		
     		float insideHeight = size.height - mSpectrumInset;
 
-			float baseline = ( insideHeight * ( 50.0f / (float)mBaseline ) );
+			float baseline = ( insideHeight * ( 50.0f / (float)mBaseline ) ) - 20.0f;
 
 			/* Use the DC component as a reference to scale values to panel height */
 			float scale = mScaleBuffer.get( ( insideHeight * 0.75f ) / 
