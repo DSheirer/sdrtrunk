@@ -6,6 +6,9 @@ import decode.Decoder;
 import decode.DecoderType;
 import dsp.am.AMDemodulator;
 import dsp.filter.DCRemovalFilter2;
+import dsp.filter.FilterFactory;
+import dsp.filter.FloatFIRFilter;
+import dsp.filter.Window.WindowType;
 
 public class AMDecoder extends Decoder
 {
@@ -13,10 +16,11 @@ public class AMDecoder extends Decoder
      * This value determines how quickly the DC remove filter responds to 
      * changes in frequency.
      */
-    private static final double DC_REMOVAL_RATIO = 0.000003;
+    private static final double DC_REMOVAL_RATIO = 0.003;
 
     private AMDemodulator mDemodulator;
     private DCRemovalFilter2 mDCRemovalFilter;
+    private FloatFIRFilter mLowPassFilter;
     
     public AMDecoder( SampleType sampleType )
     {
@@ -50,7 +54,14 @@ public class AMDecoder extends Decoder
              * Route the demodulated, filtered samples back to this class to send
              * to all registered listeners
              */
-            mDCRemovalFilter.setListener( this.getFloatReceiver() );
+            
+            mLowPassFilter = new FloatFIRFilter( 
+            		FilterFactory.getLowPass( 48000, 3000, 31, 
+            				WindowType.COSINE ), 100.0 );
+            
+            mDCRemovalFilter.setListener( mLowPassFilter );
+            
+            mLowPassFilter.setListener( this.getFloatReceiver() );
         }
     }
 

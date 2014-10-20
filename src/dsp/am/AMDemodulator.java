@@ -14,7 +14,7 @@ public class AMDemodulator implements Listener<ComplexSample>
 
     public AMDemodulator()
     {
-        this( FilterFactory.getLowPass( 48000, 2000, 73, WindowType.HAMMING ), 
+        this( FilterFactory.getLowPass( 48000, 3000, 73, WindowType.HAMMING ), 
                 1000.0 );
     }
     
@@ -53,8 +53,8 @@ public class AMDemodulator implements Listener<ComplexSample>
         public void receive( ComplexSample sample )
         {
             float demodulated = (float)Math.abs( 
-                Math.sqrt( ( sample.real() * sample.real() ) +
-                           ( sample.imaginery() * sample.imaginery() ) ) ); 
+                    Math.sqrt( ( sample.real() * sample.real() ) +
+                               ( sample.imaginery() * sample.imaginery() ) ) ); 
             
             mBroadcaster.broadcast( demodulated * 30.0f );
         }

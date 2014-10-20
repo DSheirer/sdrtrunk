@@ -20,10 +20,10 @@ package source.tuner.rtl;
 import java.util.concurrent.RejectedExecutionException;
 
 import javax.swing.JPanel;
-import javax.usb.UsbException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.usb4java.LibUsbException;
 
 import sample.Listener;
 import source.SourceException;
@@ -57,6 +57,11 @@ public class RTL2832Tuner extends Tuner
 		mTunerClass = tunerClass;
 		mController = controller;
 		mController.addListener( (FrequencyChangeListener)this );
+	}
+	
+	public void dispose()
+	{
+		//TODO: dispose of something here
 	}
 	
 	public RTL2832TunerController getController()
@@ -115,7 +120,7 @@ public class RTL2832Tuner extends Tuner
 		{
 			mController.setSampleRate( sampleRate );
 		}
-		catch( UsbException e )
+		catch( LibUsbException e )
 		{
 			throw new SourceException( "RTL2832 Tuner - error setting "
 					+ "sample rate", e );
@@ -139,7 +144,18 @@ public class RTL2832Tuner extends Tuner
     									    throws RejectedExecutionException,
     									    	   SourceException
 	{
-		return mController.getChannel( threadPoolManager, this, channel );
+		TunerChannelSource source = null;
+		
+		try
+		{
+			source = mController.getChannel( threadPoolManager, this, channel );
+		}
+		catch( Exception e )
+		{
+			mLog.error( "couldn't provide source channel", e );
+		}
+		
+		return source;
     }
 	/**
 	 * Releases the tuned channel so that the tuner controller can tune to

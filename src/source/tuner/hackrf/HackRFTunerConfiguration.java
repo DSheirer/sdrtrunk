@@ -31,6 +31,7 @@ public class HackRFTunerConfiguration extends TunerConfiguration
 	private HackRFSampleRate mSampleRate = HackRFSampleRate.RATE2_016MHZ;
 	private HackRFLNAGain mLNAGain = HackRFLNAGain.GAIN_0;
 	private HackRFVGAGain mVGAGain = HackRFVGAGain.GAIN_10;
+	private boolean mAmplifierEnabled = false;
 	private double mFrequencyCorrection = 0.0d;
 
 	/**
@@ -52,6 +53,17 @@ public class HackRFTunerConfiguration extends TunerConfiguration
 	    return TunerType.HACKRF;
     }
 
+	@XmlAttribute( name = "amplifier_enabled" )
+	public boolean getAmplifierEnabled()
+	{
+		return mAmplifierEnabled;
+	}
+	
+	public void setAmplifierEnabled( boolean enabled )
+	{
+		mAmplifierEnabled = enabled;
+	}
+	
 	@XmlAttribute( name = "lna_gain" )
 	public HackRFLNAGain getLNAGain()
 	{

@@ -221,7 +221,7 @@ public class FCD2TunerConfigurationPanel extends JPanel
         TunerConfigurationAssignment savedConfig = mResourceManager
         		.getSettingsManager().getSelectedTunerConfiguration( 
         				TunerType.FUNCUBE_DONGLE_PRO_PLUS, 
-        								mController.getAddress() );
+        								mController.getUSBAddress() );
         
         if( savedConfig != null )
         {
@@ -237,7 +237,7 @@ public class FCD2TunerConfigurationPanel extends JPanel
         	mResourceManager.getSettingsManager()
         		.setSelectedTunerConfiguration( 
         				TunerType.FUNCUBE_DONGLE_PRO_PLUS, 
-        				mController.getAddress(), mSelectedConfig );
+        				mController.getUSBAddress(), mSelectedConfig );
         }
 
         mComboConfigurations.setSelectedItem( mSelectedConfig );
@@ -324,7 +324,7 @@ public class FCD2TunerConfigurationPanel extends JPanel
 	        
 	        mResourceManager.getSettingsManager().setSelectedTunerConfiguration( 
         			TunerType.FUNCUBE_DONGLE_PRO_PLUS, 
-        			mController.getAddress(), config );
+        			mController.getUSBAddress(), config );
         }
         catch ( SourceException e1 )
         {

@@ -17,18 +17,21 @@
  ******************************************************************************/
 package source.tuner.fcd;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.IntBuffer;
+
 import javax.swing.JPanel;
 import javax.usb.UsbClaimException;
-import javax.usb.UsbConfiguration;
-import javax.usb.UsbDevice;
-import javax.usb.UsbEndpoint;
 import javax.usb.UsbException;
-import javax.usb.UsbInterface;
-import javax.usb.UsbInterfacePolicy;
-import javax.usb.UsbPipe;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.usb4java.Device;
+import org.usb4java.DeviceDescriptor;
+import org.usb4java.DeviceHandle;
+import org.usb4java.LibUsb;
+import org.usb4java.LibUsbException;
 
 import source.SourceException;
 import source.tuner.TunerClass;
@@ -36,7 +39,6 @@ import source.tuner.TunerConfiguration;
 import source.tuner.TunerController;
 import source.tuner.TunerType;
 import source.tuner.fcd.proV1.FCD1TunerController.Block;
-import source.tuner.usb.USBTunerDevice;
 import controller.ResourceManager;
 
 public abstract class FCDTunerController extends TunerController
@@ -44,57 +46,105 @@ public abstract class FCDTunerController extends TunerController
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( FCDTunerController.class );
 
-	public final static int sINT_NULL_VALUE = -1;
-	public final static long sLONG_NULL_VALUE = -1l;
-	public final static double sDOUBLE_NULL_VALUE = -1.0D;
+	public final static byte FCD_INTERFACE = (byte)0x2;
+	public final static byte FCD_ENDPOINT_IN = (byte)0x82;
+	public final static byte FCD_ENDPOINT_OUT = (byte)0x2;
 	
-	public final static byte sFCD_INTERFACE = (byte)0x2;
-	public final static byte sFCD_ENDPOINT_IN = (byte)0x82;
-	public final static byte sFCD_ENDPOINT_OUT = (byte)0x2;
+	private Device mDevice;
+	private DeviceDescriptor mDeviceDescriptor;
+	private DeviceHandle mDeviceHandle;
 	
-	public final static boolean sFCD_FORCE_CLAIM_HID_INTERFACE = true;
-	
-	private UsbDevice mFuncube;
-	private UsbConfiguration mUsbConfiguration;
-	private UsbInterface mFuncubeHID;
-	private UsbPipe mPipeIn;
-	private UsbPipe mPipeOut;
 	private FCDConfiguration mConfiguration = new FCDConfiguration();
-
-	public FCDTunerController( USBTunerDevice device, 
+	
+	/**
+	 * Generic FCD tuner controller - contains functionality common across both
+	 * funcube dongle tuners 
+	 * 
+	 * @param device
+	 * @param descriptor
+	 * @param minTunableFrequency
+	 * @param maxTunableFrequency
+	 */
+	public FCDTunerController( Device device, 
+							   DeviceDescriptor descriptor,
 							   int minTunableFrequency,
-							   int maxTunableFrequency ) throws SourceException
+							   int maxTunableFrequency )
 	{
 		super( minTunableFrequency, maxTunableFrequency );
 
-		mFuncube = device.getDevice();
-		mUsbConfiguration = mFuncube.getActiveUsbConfiguration();
-		mFuncubeHID = mUsbConfiguration.getUsbInterface( sFCD_INTERFACE );
+		mDevice = device;
+		mDeviceDescriptor = descriptor;
 	}
-	
+
+	/**
+	 * Initializes the controller by opening the USB device and claiming the
+	 * HID interface.
+	 * 
+	 * Invoke this method after constructing this class to setup the
+	 * controller.
+	 * 
+	 * @throws SourceException if cannot open and claim the USB device
+	 */
+	public void init() throws SourceException
+	{
+		mDeviceHandle = new DeviceHandle();
+		
+		int result = LibUsb.open( mDevice, mDeviceHandle );
+
+		if( result != LibUsb.SUCCESS )
+		{
+			mDeviceHandle = null;
+			
+			throw new SourceException( "libusb couldn't open funcube usb "
+					+ "device [" + LibUsb.errorName( result ) + "]" );
+		}
+		
+		claimInterface();
+	}
+
+	/**
+	 * Disposes of resources.  Closes the USB device and interface.
+	 */
+	public void dispose()
+	{
+		if( mDeviceHandle != null )
+		{
+			try
+			{
+				LibUsb.close( mDeviceHandle );
+			}
+			catch( Exception e )
+			{
+				mLog.error( "error while closing device handle", e );
+			}
+			
+			mDeviceHandle = null;
+		}
+		
+		mDeviceDescriptor = null;
+		mDevice = null;
+	}
+
+	/**
+	 * Sample rate of the tuner
+	 */
 	public abstract int getCurrentSampleRate() throws SourceException;
 	
 	/**
-	 * Returns the tuner class.  Since this is a generic container for both
-	 * types of funcube, we let the controller self identify the class and type
-	 * 
-	 * @return - tuner class
+	 * Tuner class
 	 */
 	public abstract TunerClass getTunerClass();
 
 	/**
-	 * Returns the tuner type.  Since this is a generic container for both
-	 * types of funcube, we let the controller self identify the class and type
-	 * 
-	 * @return - tuner type
+	 * Tuner type
 	 */
 	public abstract TunerType getTunerType();
 
 	/**
-	 * FCD editor panel
+	 * Editor panel (GUI) component.
 	 */
 	public abstract JPanel getEditor( FCDTuner tuner, 
-				ResourceManager resourceManager );
+								ResourceManager resourceManager );
 
 	/**
 	 * Applies the settings in the tuner configuration
@@ -103,17 +153,81 @@ public abstract class FCDTunerController extends TunerController
 						throws SourceException;
 
 	/**
-	 * Returns the applied tuner configuration or null if one hasn't yet been
-	 * applied
+	 * Returns the currently applied tuner configuration or null if one hasn't 
+	 * yet been applied
 	 */
 	public abstract TunerConfiguration getTunerConfiguration();
 
 	/**
-	 * USB address
+	 * USB address (bus/port)
 	 */
-	public String getAddress()
+	public String getUSBAddress()
 	{
-	    return mFuncube.toString();
+		if( mDevice != null )
+		{
+			StringBuilder sb = new StringBuilder();
+			
+			sb.append( "Bus:" );
+			int bus = LibUsb.getBusNumber( mDevice );
+			sb.append( bus );
+			
+			sb.append( " Port:" );
+			int port = LibUsb.getPortNumber( mDevice );
+			sb.append( port );
+			
+			return sb.toString();
+		}
+
+		return "UNKNOWN";
+	}
+
+	/**
+	 * USB Vendor and Product ID 
+	 */
+	public String getUSBID()
+	{
+		if( mDeviceDescriptor != null )
+		{
+			StringBuilder sb = new StringBuilder();
+			
+			sb.append( String.format( "%04X", 
+					(int)( mDeviceDescriptor.idVendor() & 0xFFFF ) ) );
+
+			sb.append( ":" );
+			
+			sb.append( String.format( "%04X", 
+					(int)( mDeviceDescriptor.idProduct() & 0xFFFF ) ) );
+
+			return sb.toString();
+		}
+
+		return "UNKNOWN";
+	}
+
+	/**
+	 * USB Port Speed.  Should be 2.0 for both types of funcube dongles
+	 */
+	public String getUSBSpeed()
+	{
+		if( mDevice != null )
+		{
+			int speed = LibUsb.getDeviceSpeed( mDevice );
+
+			switch( speed )
+			{
+				case 0:
+					return "1.1 LOW";
+				case 1:
+					return "1.1 FULL";
+				case 2:
+					return "2.0 HIGH";
+				case 3:
+					return "3.0 SUPER";
+				default:
+			}
+		}
+		
+		return "UNKNOWN";
 	}
 	
 	/**
@@ -121,20 +235,17 @@ public abstract class FCDTunerController extends TunerController
 	 */
 	public void setFCDMode( Mode mode ) throws UsbException, UsbClaimException
 	{
-		byte[] response = null;
+		ByteBuffer response = null;
 		
 		switch( mode )
 		{
 			case APPLICATION:
-				response = send( FCDCommand.BL_QUERY.getRequestTemplate(), 
-								 FCDCommand.BL_QUERY.getResponseTemplate() );
+				response = send( FCDCommand.BL_QUERY );
 				break;
 			case BOOTLOADER:
-				response = send( FCDCommand.APP_RESET.getRequestTemplate(), 
-								 FCDCommand.APP_RESET.getResponseTemplate() );
+				response = send( FCDCommand.APP_RESET );
 				break;
-			case ERROR:
-			case UNKNOWN:
+			default:
 				break;
 		}
 		
@@ -171,7 +282,11 @@ public abstract class FCDTunerController extends TunerController
 	{
 		try
 		{
-			return send( FCDCommand.APP_GET_FREQUENCY_HZ );
+			ByteBuffer buffer = send( FCDCommand.APP_GET_FREQUENCY_HZ );
+			
+			buffer.order( ByteOrder.LITTLE_ENDIAN );
+			
+			return (int)( buffer.getInt( 2 ) & 0xFFFFFFFF );
 		}
 		catch( Exception e )
 		{
@@ -189,185 +304,206 @@ public abstract class FCDTunerController extends TunerController
 	}
 
 	/**
-	 * Claims the FCD USB HID interface.  If another application currently has
-	 * the interface claimed, the sFCD_FORCE_CLAIM_HID_INTERFACE setting
-	 * will dictate if the interface is forcibly claimed from the other 
-	 * application
+	 * Claims the USB interface.  Attempts to detach the active kernel driver if
+	 * one is currently attached.
 	 */
-	private boolean claim() throws UsbException, UsbClaimException
+	private void claimInterface() throws SourceException
 	{
-		boolean claimed = false;
-		
-		if( !mFuncubeHID.isClaimed() )
+		if( mDeviceHandle != null )
 		{
-			mFuncubeHID.claim( new UsbInterfacePolicy() 
-			{
-				@Override
-                public boolean forceClaim( UsbInterface arg0 )
-                {
-                    return sFCD_FORCE_CLAIM_HID_INTERFACE;
-                }
-			} );
+			int result = LibUsb.kernelDriverActive( mDeviceHandle, FCD_INTERFACE );
 			
-			claimed = true;
-		}
-		else
-		{
-			mLog.info( "Attempted to claim the Funcube HID interface, but "
-					+ "it's in use by another program" );
-		}
-		
-		return claimed;
-	}
-	
-	/**
-	 * Releases the claimed USB (FCD) interface
-	 */
-	private void release()
-	{
-		mPipeIn = null;
-		mPipeOut = null;
-		
-		try
-        {
-	        mFuncubeHID.release();
-        }
-        catch ( Exception e )
-        {
-        	mLog.error( "Exception thrown while releasing the funcube HID "
-        			+ "interface", e );
-        }
-	}
-
-	/**
-	 * Convenience wrapper for commands that don't take arguments 
-	 */
-	public long send( FCDCommand command ) throws UsbException, UsbClaimException
-	{
-		return send( command, sLONG_NULL_VALUE );
-	}
-
-	/**
-	 * Sends the command, optionally placing the argument value parsed into 
-	 * little endian bytes in the request array.  Returns any integer value that
-	 * part of the response, or sINT_NULL_VALUE (-1) if it fails.
-	 * 
-	 * Note: we use a long return value to avoid any issues with the MSB of a
-	 * 32-bit response value being misinterpreted as the integer sign bit.
-	 * 
-	 * @param command
-	 * @param commandArgument - command argument.  Use -1 for no-argument commands
-	 * @return - response long value, or -1 if fails
-	 * @throws UsbException
-	 * @throws UsbClaimException
-	 */
-	public long send( FCDCommand command, long commandArgument ) throws UsbException,
-															UsbClaimException
-	{
-		long retVal = sLONG_NULL_VALUE;
-		
-		byte[] request = command.getRequestTemplate();
-
-		if( commandArgument != sLONG_NULL_VALUE )
-		{
-			//Parse the value argument into the request byte indices, according to command length
-			for( int x = 1; x < command.getArrayLength(); x++ )
+			if( result == 1 )
 			{
-				//Little endian
-				request[ x ] = (byte)( 0xFF & 
-						Long.rotateRight( commandArgument, ( x - 1 ) * 8 ) ); 
+				result = LibUsb.detachKernelDriver( mDeviceHandle, 
+						FCD_INTERFACE );
+
+				if( result != LibUsb.SUCCESS )
+				{
+					mLog.error( "failed attempt to detach kernel driver [" + 
+					LibUsb.errorName( result ) + "]" );
+				}
 			}
-		}
-
-		byte[] response = send( request, command.getResponseTemplate() );
-
-		if( response != null )
-		{
-			retVal = parseResponse( command, response );
-		}
-		
-		return retVal;
-	}
-	
-	/**
-	 * Sends the request byte array to the device and returns the response array 
-	 * filled with the response bytes from the device, or returns null if 
-	 * something failed along the way
-	 */
-	private byte[] send( byte[] request, byte[] response ) 
-			throws UsbException, UsbClaimException
-	{
-		byte[] retVal = null;
-		
-		if( mPipeIn != null && mPipeOut != null )
-		{
-			mPipeOut.syncSubmit( request );
-
-			mPipeIn.syncSubmit( response );
 			
-			retVal = response;
-		}
-		
-		return retVal;
-	}
-	
-	/**
-	 * Parses a multi-byte integer response value from a byte array that is
-	 * 2 or more bytes long
-	 */
-	private long parseResponse( FCDCommand command, byte[] response )
-	{
-		long retVal = 0;
-
-		//Parse the value argument into the request byte indices, according to command length
-		for( int x = 2; x < command.getArrayLength(); x++ )
-		{
-			retVal += Long.rotateLeft( ( response[ x ] & 0xFF ), ( x - 2 ) * 8 );
-		}
-
-		return retVal;
-	}
-	
-	protected void open() throws UsbException, UsbClaimException
-	{
-		if( claim() )
-		{
-			//Get the USB endpoints
-			UsbEndpoint endpointIn = 
-					mFuncubeHID.getUsbEndpoint( sFCD_ENDPOINT_IN );
-
-			UsbEndpoint endpointOut = 
-					mFuncubeHID.getUsbEndpoint( sFCD_ENDPOINT_OUT );
-
-			//Setup the pipes
-			if( endpointIn != null && endpointOut != null )
+			result = LibUsb.claimInterface( mDeviceHandle, FCD_INTERFACE );
+			
+			if( result != LibUsb.SUCCESS )
 			{
-				mPipeOut = endpointOut.getUsbPipe();
-				mPipeOut.open();
-
-				mPipeIn = endpointIn.getUsbPipe();
-				mPipeIn.open();
-				
-				setFCDMode( Mode.APPLICATION );
-			}
-			else
-			{
-				mLog.error( "FCD Pro Tuner Controller - couldn't gain access " +
-						"to the USB in/out endpoints or pipes." );
+				throw new SourceException( "couldn't claim usb interface [" + 
+					LibUsb.errorName( result ) + "]" );
 			}
 		}
 		else
 		{
-			mLog.error( "FCD Pro Tuner Controller - couldn't claim the USB " +
-				"interface.  Check to see if another program is using it." );
+			throw new SourceException( "couldn't claim usb hid interface - no "
+					+ "device handle" );
+		}
+	}
+
+	/**
+	 * Performs an interrupt write to the OUT endpoint.
+	 * @param buffer - direct allocated buffer.  Must be 64 bytes in length.
+	 * 
+	 * @throws LibUsbException on error
+	 */
+	private void write( ByteBuffer buffer ) throws LibUsbException
+	{
+		if( mDeviceHandle != null )
+		{
+			IntBuffer transferred = IntBuffer.allocate( 1 );
+			
+			int result = LibUsb.interruptTransfer( mDeviceHandle,
+												   FCD_ENDPOINT_OUT,
+												   buffer, 
+												   transferred,
+												   500l );
+			
+			if( result != LibUsb.SUCCESS )
+			{
+				throw new LibUsbException( "error writing byte buffer", 
+								result );
+			}
+			else if( transferred.get() != buffer.capacity() )
+			{
+				throw new LibUsbException( "transferred bytes [" + 
+						transferred.get( 0 ) + "] is not what was expected [" + 
+						buffer.capacity() + "]", result );
+			}
+		}
+		else
+		{
+			throw new LibUsbException( "device handle is null", 
+							LibUsb.ERROR_NO_DEVICE );
 		}
 	}
 	
-    protected void close()
+	/**
+	 * Performs an interrupt write to the OUT endpoint for the FCD command.
+	 * @param command - no-argument command to write
+	 * @throws LibUsbException - on error
+	 */
+	private void write( FCDCommand command ) throws LibUsbException
 	{
-		release();
+		ByteBuffer buffer = ByteBuffer.allocateDirect( 64 );
+
+		buffer.put( 0, command.getCommand() );
+		buffer.put( 1, (byte)0x00 );
+
+		write( buffer );
 	}
 
+	/**
+	 * Convenience logger for debugging read/write operations
+	 */
+	@SuppressWarnings( "unused" )
+    private void log( String label, ByteBuffer buffer )
+	{
+		StringBuilder sb = new StringBuilder();
+
+		sb.append( label );
+		
+		sb.append( " " );
+
+		sb.append( buffer.get( 0 ) );
+		sb.append( " | " );
+		
+		for( int x = 0; x < 64; x++ )
+		{
+			sb.append( String.format( "%02X", (int)( buffer.get( x ) & 0xFF ) ) );
+			sb.append( " " );
+		}
+		
+		mLog.debug( sb.toString() );
+	}
+	
+	/**
+	 * Performs an interrupt write to the OUT endpoint for the FCD command.
+	 * @param command - command to write
+	 * @param argument - value to write with the command
+	 * @throws LibUsbException - on error
+	 */
+	private void write( FCDCommand command, long argument ) throws LibUsbException
+	{
+		ByteBuffer buffer = ByteBuffer.allocateDirect( 64 );
+
+		/* The FCD expects little-endian formatted values */
+		buffer.order( ByteOrder.LITTLE_ENDIAN );
+
+		buffer.put( 0, command.getCommand() );
+		buffer.putLong( 1, argument );
+
+		write( buffer );
+	}
+	
+	/**
+	 * Performs an interrupt read against the endpoint
+	 * @return buffer read from FCD
+	 * @throws LibUsbException on error
+	 */
+	private ByteBuffer read() throws LibUsbException
+	{
+		if( mDeviceHandle != null )
+		{
+			ByteBuffer buffer = ByteBuffer.allocateDirect( 64 );
+
+			IntBuffer transferred = IntBuffer.allocate( 1 );
+			
+
+			int result = LibUsb.interruptTransfer( mDeviceHandle,
+												   FCD_ENDPOINT_IN,
+												   buffer, 
+												   transferred,
+												   500l );
+			
+			if( result != LibUsb.SUCCESS )
+			{
+				throw new LibUsbException( "error reading byte buffer", 
+								result );
+			}
+			else if( transferred.get( 0 ) != buffer.capacity() )
+			{
+				throw new LibUsbException( "received bytes [" + 
+						transferred.get( 0 ) + "] didn't match expected "
+						+ "length [" + buffer.capacity() + "]", result );
+			}
+
+			return buffer;
+		}
+		
+		throw new LibUsbException( "device handle is null", 
+				LibUsb.ERROR_NO_DEVICE );
+	}
+	
+	/**
+	 * Sends the FCD command and argument.  Performs a read to complete the
+	 * command.
+	 * 
+	 * @param command - command to send
+	 * @param argument - command argument to send
+	 * @throws LibUsbException - on error
+	 */
+	protected void send( FCDCommand command, long argument ) throws LibUsbException
+	{
+		write( command, argument );
+		read();
+	}
+		
+	/**
+	 * Sends the no-argument FCD command.  Performs a read to complete the
+	 * command.
+	 * 
+	 * @param command - command to send
+	 * @throws LibUsbException - on error
+	 */
+	protected ByteBuffer send( FCDCommand command ) throws LibUsbException
+	{
+		write( command );
+		return read();
+	}
+
+	/**
+	 * FCD configuration string parsing  class
+	 */
 	public class FCDConfiguration
 	{
 		private String mConfig;
@@ -385,11 +521,20 @@ public abstract class FCDTunerController extends TunerController
 			mMode = Mode.UNKNOWN;
 		}
 		
-		public void set( byte[] data )
+		/**
+		 * Extracts the configuration string from the buffer
+		 */
+		public void set( ByteBuffer buffer )
 		{
-			if( FCDCommand.checkResponse( FCDCommand.BL_QUERY, data ) || 
-					FCDCommand.checkResponse( FCDCommand.APP_RESET, data ) )
+			if( buffer.capacity() == 64 )
 			{
+				byte[] data = new byte[ 64 ];
+				
+				for( int x = 0; x < 64; x++ )
+				{
+					data[ x ] = buffer.get( x );
+				}
+
 				mConfig = new String( data );
 				mMode = Mode.getMode( mConfig );
 			}

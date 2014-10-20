@@ -46,6 +46,7 @@ import net.miginfocom.swing.MigLayout;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.usb4java.LibUsbException;
 
 import source.SourceException;
 import source.tuner.TunerConfiguration;
@@ -258,7 +259,7 @@ public class E4KTunerConfigurationPanel extends JPanel
 					mSelectedConfig.setSampleRate( sampleRate );
 	                save();
                 }
-                catch ( SourceException | UsbException eSampleRate )
+                catch ( SourceException | LibUsbException eSampleRate )
                 {
                 	JOptionPane.showMessageDialog( 
                 			E4KTunerConfigurationPanel.this, 

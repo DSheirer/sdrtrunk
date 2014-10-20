@@ -511,7 +511,7 @@ public class FCD1TunerConfigurationPanel extends JPanel
 	        mResourceManager.getSettingsManager()
 	        	.setSelectedTunerConfiguration( 
 	        			TunerType.FUNCUBE_DONGLE_PRO, 
-	        			mController.getAddress(), config );
+	        			mController.getUSBAddress(), config );
         }
         catch ( SourceException e1 )
         {

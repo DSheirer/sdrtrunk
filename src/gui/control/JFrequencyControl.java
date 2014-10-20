@@ -138,7 +138,7 @@ public class JFrequencyControl extends JPanel implements FrequencyChangeListener
     {
 		if( event.getAttribute() == Attribute.FREQUENCY )
 		{
-			setFrequency( (int)event.getValue(), false );
+			setFrequency( (long)event.getValue(), false );
 		}
     }
 	
@@ -202,7 +202,7 @@ public class JFrequencyControl extends JPanel implements FrequencyChangeListener
 	{
         private static final long serialVersionUID = 1L;
         private int mPower = 0;
-        private int mValue = 0;
+        private long mValue = 0;
         
         private Digit( int position ) throws ParseException
         {
@@ -225,17 +225,17 @@ public class JFrequencyControl extends JPanel implements FrequencyChangeListener
         public void setFrequency( long frequency, boolean fireChangeEvent )
         {
         	//Strip the digits higher than this one
-        	long lower = frequency % (int)( Math.pow( 10, mPower + 1) );
+        	long lower = frequency % (long)( Math.pow( 10, mPower + 1) );
 
         	//Set the value to int value of dividing by 10 to this power
-        	int value = (int)( lower / (int)( Math.pow( 10, mPower ) ) );
+        	long value = (long)( lower / (long)( Math.pow( 10, mPower ) ) );
         	
         	set( value, fireChangeEvent );
         }
         
         public long getFrequency()
         {
-        	return mValue * (int)Math.pow( 10, mPower );
+        	return mValue * (long)Math.pow( 10, mPower );
         }
 
         public void increment()
@@ -261,7 +261,7 @@ public class JFrequencyControl extends JPanel implements FrequencyChangeListener
         /**
          * Convenience wrapper to change amount and fire change event
          */
-        private void set( int amount )
+        private void set( long amount )
         {
         	set( amount, true );
         }
@@ -269,7 +269,7 @@ public class JFrequencyControl extends JPanel implements FrequencyChangeListener
         /**
          * Changes the value and optionally fires change event to listeners
          */
-        private void set( int amount, boolean fireChangeEvent )
+        private void set( long amount, boolean fireChangeEvent )
         {
         	mValue = amount;
 

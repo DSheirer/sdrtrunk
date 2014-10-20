@@ -21,6 +21,8 @@
  ******************************************************************************/
 package source.tuner.rtl;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -36,27 +38,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.swing.JPanel;
-import javax.usb.UsbClaimException;
-import javax.usb.UsbConfiguration;
-import javax.usb.UsbControlIrp;
-import javax.usb.UsbDevice;
 import javax.usb.UsbDisconnectedException;
-import javax.usb.UsbEndpoint;
 import javax.usb.UsbException;
-import javax.usb.UsbInterface;
-import javax.usb.UsbInterfacePolicy;
-import javax.usb.UsbIrp;
-import javax.usb.UsbNotActiveException;
-import javax.usb.UsbNotOpenException;
-import javax.usb.UsbPipe;
-import javax.usb.event.UsbPipeDataEvent;
-import javax.usb.event.UsbPipeErrorEvent;
-import javax.usb.event.UsbPipeListener;
-import javax.usb.util.DefaultUsbControlIrp;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.usb4java.Device;
+import org.usb4java.DeviceDescriptor;
+import org.usb4java.DeviceHandle;
 import org.usb4java.LibUsb;
+import org.usb4java.LibUsbException;
+import org.usb4java.Transfer;
+import org.usb4java.TransferCallback;
 
 import sample.Listener;
 import source.SourceException;
@@ -64,7 +57,6 @@ import source.tuner.FrequencyChangeEvent;
 import source.tuner.FrequencyChangeEvent.Attribute;
 import source.tuner.TunerController;
 import source.tuner.TunerType;
-import source.tuner.usb.USBTunerDevice;
 import util.TimeStamp;
 import buffer.FloatAveragingBuffer;
 import controller.ResourceManager;
@@ -74,60 +66,26 @@ public abstract class RTL2832TunerController extends TunerController
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( RTL2832TunerController.class );
 
-	public final static int sINT_NULL_VALUE = -1;
-	public final static long sLONG_NULL_VALUE = -1l;
-	public final static double sDOUBLE_NULL_VALUE = -1.0D;
+	public final static int INT_NULL_VALUE = -1;
+	public final static long LONG_NULL_VALUE = -1l;
+	public final static double DOUBLE_NULL_VALUE = -1.0D;
+	public final static int TWO_TO_22_POWER = 4194304;
 	
-	public final static byte sUSB_INTERFACE = (byte)0x0;
-	public final static byte sUSB_ENDPOINT = (byte)0x81;
-	public final static boolean sUSB_FORCE_CLAIM_INTERFACE = true;
-	
-	public final static byte sREQUEST_TYPE_IN = 
+	public final static byte USB_INTERFACE = (byte)0x0;
+	public final static byte BULK_ENDPOINT_IN = (byte)0x81;
+	public final static byte CONTROL_ENDPOINT_IN = 
 			(byte)( LibUsb.ENDPOINT_IN | LibUsb.REQUEST_TYPE_VENDOR );
-	public final static byte sREQUEST_TYPE_OUT = 
+	public final static byte CONTROL_ENDPOINT_OUT = 
 			(byte)( LibUsb.ENDPOINT_OUT | LibUsb.REQUEST_TYPE_VENDOR );
-	public final static byte sREQUEST_ZERO = (byte)0;
+
+	public final static long TIMEOUT_US = 1000000l; //uSeconds
+
+	public final static byte REQUEST_ZERO = (byte)0;
 	
-	public final static int sUSB_IRP_POOL_SIZE = 10;
+	public final static int TRANSFER_BUFFER_POOL_SIZE = 16;
 	
 	public final static byte EEPROM_ADDRESS = (byte)0xA0;
 	
-	public final static byte BIT_0 = (byte)0x01;
-	public final static byte BIT_1 = (byte)0x02;
-	public final static byte BIT_2 = (byte)0x04;
-	public final static byte BIT_3 = (byte)0x08;
-	public final static byte BIT_4 = (byte)0x10;
-	public final static byte BIT_5 = (byte)0x20;
-	public final static byte BIT_6 = (byte)0x40;
-	public final static byte BIT_7 = (byte)0x80;
-
-	public final static byte E4K_I2C_ADDRESS = (byte)0xC8;
-	public final static byte E4K_CHECK_ADDRESS = (byte)0x02;
-	public final static byte E4K_CHECK_VALUE = (byte)0x40;
-
-	public final static byte FC0012_I2C_ADDRESS	= (byte)0xC6;
-	public final static byte FC0012_CHECK_ADDRESS = (byte)0x00;
-	public final static byte FC0012_CHECK_VALUE = (byte)0xA1;
-
-	public final static byte FC0013_I2C_ADDRESS = (byte)0xC6;
-	public final static byte FC0013_CHECK_ADDRESS = (byte)0x00;
-	public final static byte FC0013_CHECK_VALUE = (byte)0xA3;
-
-	public final static byte FC2580_I2C_ADDRESS = (byte)0xAC;
-	public final static byte FC2580_CHECK_ADDRESS = (byte)0x01;
-	public final static byte FC2580_CHECK_VALUE = (byte)0x56;
-
-	public final static byte R820T_I2C_ADDRESS = (byte)0x34;
-	public final static byte R820T_CHECK_ADDRESS = (byte)0x00;
-	public final static byte R820T_CHECK_VALUE = (byte)0x69;
-
-	public final static byte R828D_I2C_ADDRESS = (byte)0x74;
-	public final static byte R828D_CHECK_ADDRESS = (byte)0x00;
-	public final static byte R828D_CHECK_VALUE = (byte)0x69;
-
-	public static final int sMIN_OSCILLATOR_FREQUENCY = 28799000;
-	public static final int sMAX_OSCILLATOR_FREQUENCY = 28801000;
-
 	public final static byte[] sFIR_COEFFICIENTS = 
 	{
 		(byte)0xCA, (byte)0xDC, (byte)0xD7, (byte)0xD8, (byte)0xE0,
@@ -136,22 +94,14 @@ public abstract class RTL2832TunerController extends TunerController
 		(byte)0x71, (byte)0x74, (byte)0x19, (byte)0x41, (byte)0xA5
 	};
 	
-	private static final DecimalFormat mDecimalFormatter = 
-						new DecimalFormat( "###,###,###.0" );
-	private static final DecimalFormat mPercentFormatter = 
-			new DecimalFormat( "###.00" );
-	
-	private USBTunerDevice mUSBTunerDevice;
-	protected UsbDevice mUSBDevice;
-	private UsbConfiguration mUSBConfiguration;
-	protected UsbInterface mUSBInterface;
-	private UsbPipe mUSBPipe;
-	private Descriptor mDescriptor;
+	public static final SampleRate DEFAULT_SAMPLE_RATE = 
+							SampleRate.RATE_0_960MHZ;
 
-	public static final int sTWO_TO_22_POWER = 4194304;
-	public static final SampleRate sDEFAULT_SAMPLE_RATE = SampleRate.RATE_0_960MHZ;
+	protected Device mDevice;
+	protected DeviceDescriptor mDeviceDescriptor;
+	protected DeviceHandle mDeviceHandle;
 	
-	private SampleRate mSampleRate = sDEFAULT_SAMPLE_RATE;
+	private SampleRate mSampleRate = DEFAULT_SAMPLE_RATE;
 	
 	private BufferProcessor mBufferProcessor = new BufferProcessor();
 	
@@ -160,64 +110,58 @@ public abstract class RTL2832TunerController extends TunerController
 	private CopyOnWriteArrayList<Listener<Float[]>> mSampleListeners =
 			new CopyOnWriteArrayList<Listener<Float[]>>();
 	
-	private LinkedTransferQueue<byte[]> mRawSampleBuffer = 
+	private LinkedTransferQueue<byte[]> mFilledBuffers = 
 									new LinkedTransferQueue<byte[]>();
-	private AtomicInteger mSampleCounter = new AtomicInteger();
-	private double mSampleRateAverageSum;
-	private int mSampleRateAverageCount;
-	protected int mOscillatorFrequency = 28800000; //28.8 MHz
-	
+									
 	private SampleRateMonitor mSampleRateMonitor;
-	public int mBufferSize = 16384;
+    private AtomicInteger mSampleCounter = new AtomicInteger();
+    private double mSampleRateAverageSum;
+    private int mSampleRateAverageCount;
+    private static final DecimalFormat mDecimalFormatter = 
+    			new DecimalFormat( "###,###,###.0" );
+    private static final DecimalFormat mPercentFormatter = 
+    			new DecimalFormat( "###.00" );
+    
+	protected int mOscillatorFrequency = 28800000; //28.8 MHz
+	public int mBufferSize = 131072;
+
+	protected Descriptor mDescriptor;
 	
 	/**
 	 * Abstract tuner controller device.  Use the static getTunerClass() method
 	 * to determine the tuner type, and construct the corresponding child
 	 * tuner controller class for that tuner type.
 	 */
-	public RTL2832TunerController( USBTunerDevice tunerDevice, 
+	public RTL2832TunerController( Device device,
+								   DeviceDescriptor deviceDescriptor,
 								   long minTunableFrequency, 
 								   long maxTunableFrequency ) throws SourceException
 	{
 		super( minTunableFrequency, maxTunableFrequency );
 		
-		mUSBTunerDevice = tunerDevice;
-		mUSBDevice = tunerDevice.getDevice();
-		mUSBConfiguration = mUSBDevice.getActiveUsbConfiguration();
-		mUSBInterface = mUSBConfiguration.getUsbInterface( sUSB_INTERFACE );
-
-		try
-		{
-			if( claim( mUSBInterface ) )
-			{
-				/* Get the USB endpoint */
-				UsbEndpoint endpoint = mUSBInterface.getUsbEndpoint( sUSB_ENDPOINT );
-				mUSBPipe = endpoint.getUsbPipe();
-			}
-			else
-			{
-				throw new SourceException( "RTL2832 Tuner Controller - couldn't "
-						+ "claim USB interface" );
-			}
-		}
-		catch( UsbException e )
-		{
-			throw new SourceException( "RTL2832 Tuner Controller - couldn't "
-					+ "claim USB interface or get endpoint or pipe", e );
-		}
-        catch ( UsbDisconnectedException e )
-        {
-			throw new SourceException( "RTL2832 Tuner Controller - usb device "
-					+ "is disconnected", e );
-        }
-		
+		mDevice = device;
+		mDeviceDescriptor = deviceDescriptor;
 	}
 	
 	public void init() throws SourceException
 	{
+		mDeviceHandle = new DeviceHandle();
+		
+		int result = LibUsb.open( mDevice, mDeviceHandle );
+
+		if( result != LibUsb.SUCCESS )
+		{
+			mDeviceHandle = null;
+			
+			throw new SourceException( "libusb couldn't open RTL2832 usb "
+					+ "device [" + LibUsb.errorName( result ) + "]" );
+		}
+
+		claimInterface( mDeviceHandle );
+
 		try
 		{
-			setSampleRate( sDEFAULT_SAMPLE_RATE );
+			setSampleRate( DEFAULT_SAMPLE_RATE );
 		}
 		catch( Exception e )
 		{
@@ -230,7 +174,7 @@ public abstract class RTL2832TunerController extends TunerController
 		try
 		{
 			/* Read the contents of the 256-byte EEPROM */
-			eeprom = readEEPROM( mUSBDevice, (short)0, 256 );
+			eeprom = readEEPROM( mDeviceHandle, (short)0, 256 );
 		}
 		catch( Exception e )
 		{
@@ -254,6 +198,57 @@ public abstract class RTL2832TunerController extends TunerController
 				( eeprom == null ? "[null]" : Arrays.toString( eeprom )), e );
 		}
 	}
+	
+	/**
+	 * Claims the USB interface.  Attempts to detach the active kernel driver
+	 * if one is currently attached.
+	 */
+	public static void claimInterface( DeviceHandle handle ) throws SourceException
+	{
+		if( handle != null )
+		{
+			int result = LibUsb.kernelDriverActive( handle, USB_INTERFACE );
+					
+			if( result == 1 )
+			{
+				result = LibUsb.detachKernelDriver( handle, USB_INTERFACE );
+
+				if( result != LibUsb.SUCCESS )
+				{
+					mLog.error( "failed attempt to detach kernel driver [" + 
+							LibUsb.errorName( result ) + "]" );
+					
+					throw new SourceException( "couldn't detach kernel driver "
+							+ "from device" );
+				}
+			}
+			
+			result = LibUsb.claimInterface( handle, USB_INTERFACE );
+			
+			if( result != LibUsb.SUCCESS )
+			{
+				throw new SourceException( "couldn't claim usb interface [" + 
+					LibUsb.errorName( result ) + "]" );
+			}
+		}
+		else
+		{
+			throw new SourceException( "couldn't claim usb interface - no "
+					+ "device handle" );
+		}
+	}
+	
+	public static void releaseInterface( DeviceHandle handle ) 
+						throws SourceException
+	{
+		int result = LibUsb.releaseInterface( handle, USB_INTERFACE );
+		
+		if( result != LibUsb.SUCCESS )
+		{
+			throw new SourceException( "couldn't release interface [" + 
+					LibUsb.errorName( result ) + "]" );
+		}
+	}
 
 	/**
 	 * Descriptor contains all identifiers and labels parsed from the EEPROM.
@@ -272,28 +267,7 @@ public abstract class RTL2832TunerController extends TunerController
 		return null;
 	}
 	
-//	public void start()
-//	{
-//		if( !mBufferProcessor.isRunning() )
-//		{
-//			try
-//	        {
-//		        resetUSBBuffer();
-//
-//		        /* Open the USB pipe */
-//				openPipe();
-//
-//				mBufferProcessor.start();
-//	        }
-//	        catch ( UsbException e )
-//	        {
-//	        	Log.error( "RTL2832TunerController - error starting sample "
-//	        			+ "buffer processor - " + e.getLocalizedMessage() );
-//	        }
-//		}
-//	}
-	
-	public void setSamplingMode( SampleMode mode ) throws UsbException
+	public void setSamplingMode( SampleMode mode ) throws LibUsbException
 	{
 		switch( mode )
 		{
@@ -302,56 +276,54 @@ public abstract class RTL2832TunerController extends TunerController
 				setIFFrequency( 0 );
 
 				/* Enable I/Q ADC Input */
-				writeDemodRegister( mUSBDevice, 
+				writeDemodRegister( mDeviceHandle, 
 									Page.ZERO, 
 									(short)0x08, 
 									(short)0xCD, 
 									1 );
 				
 				/* Enable zero-IF mode */
-				writeDemodRegister( mUSBDevice, 
+				writeDemodRegister( mDeviceHandle, 
 									Page.ONE, 
 									(short)0xB1, 
 									(short)0x1B, 
 									1 );
 				
 				/* Set default i/q path */
-				writeDemodRegister( mUSBDevice, 
+				writeDemodRegister( mDeviceHandle, 
 									Page.ZERO, 
 									(short)0x06, 
 									(short)0x80, 
 									1 );
 				break;
 			case DIRECT:
-				//TODO: add code for direct sampling
-				break;
 			default:
-				break;
-			
+				throw new LibUsbException( "QUADRATURE mode is the only mode "
+					+ "currently supported", LibUsb.ERROR_NOT_SUPPORTED );
 		}
 	}
 	
-	public void setIFFrequency( int frequency ) throws UsbException
+	public void setIFFrequency( int frequency ) throws LibUsbException
 	{
-		long ifFrequency = ( (long)sTWO_TO_22_POWER * (long)frequency ) / 
+		long ifFrequency = ( (long)TWO_TO_22_POWER * (long)frequency ) / 
 						   (long)mOscillatorFrequency * -1;
 
 		/* Write byte 2 (high) */
-		writeDemodRegister( mUSBDevice, 
+		writeDemodRegister( mDeviceHandle, 
 							Page.ONE, 
 							(short)0x19, 
 							(short)( Long.rotateRight( ifFrequency, 16 ) & 0x3F ), 
 							1 );
 		
 		/* Write byte 1 (middle) */
-		writeDemodRegister( mUSBDevice, 
+		writeDemodRegister( mDeviceHandle, 
 							Page.ONE, 
 							(short)0x1A, 
 							(short)( Long.rotateRight( ifFrequency, 8 ) & 0xFF ), 
 							1 );
 		
 		/* Write byte 0 (low) */
-		writeDemodRegister( mUSBDevice, 
+		writeDemodRegister( mDeviceHandle, 
 							Page.ONE, 
 							(short)0x1B, 
 							(short)( ifFrequency & 0xFF ), 
@@ -377,7 +349,7 @@ public abstract class RTL2832TunerController extends TunerController
 		else
 		{
 			int serial = 
-					( 0xFF & mUSBDevice.getUsbDeviceDescriptor().iSerialNumber() );
+					( 0xFF & mDeviceDescriptor.iSerialNumber() );
 
 			return "SER#" + serial;
 		}
@@ -385,74 +357,118 @@ public abstract class RTL2832TunerController extends TunerController
 	
 	public abstract JPanel getEditor( ResourceManager resourceManager );
 	
-	public abstract void setSampleRateFilters( int sampleRate ) throws UsbException;
+	public abstract void setSampleRateFilters( int sampleRate ) 
+						throws SourceException;
 	
 	public abstract TunerType getTunerType();
 	
-	public static TunerType identifyTunerType( USBTunerDevice tunerDevice )
+	public static TunerType identifyTunerType( Device device ) 
+										throws SourceException
 	{
+		DeviceHandle handle = new DeviceHandle();
+		
+		int reason = LibUsb.open( device, handle );
+		
+		if( reason != LibUsb.SUCCESS )
+		{
+			throw new SourceException( "couldn't open device - check permissions"
+				+ " (udev.rule) [" + LibUsb.errorName( reason ) + "]" );
+		}
+		
 		TunerType tunerClass = TunerType.UNKNOWN;
 		
 		try
 		{
-			UsbDevice device = tunerDevice.getDevice();
-			UsbConfiguration config = device.getActiveUsbConfiguration();
-			UsbInterface iface = config.getUsbInterface( sUSB_INTERFACE );
+			claimInterface( handle );
 			
-			if( claim( iface ) )
+			/* Perform a dummy write to see if the device needs reset */
+			boolean resetRequired = false;
+			
+			try
 			{
-				mLog.debug( "usb interface claimed" );
-				
-				/* Perform a dummy write to see if the device needs reset */
-				writeRegister( device, Block.USB, Address.USB_SYSCTL.getAddress(), 0x09, 1 );
-
-				mLog.debug( "initializing baseband" );
-
-				/* Initialize the baseband */
-				initBaseband( device );
-
-				mLog.debug( "enabling I2C repeater" );
-
-				enableI2CRepeater( device, true );
-				
-				boolean controlI2CRepeater = false;
-
-				mLog.debug( "testing for tuner types" );
-
-				/* Test for each tuner type until we find the correct one */
-				if( isE4000Tuner( device, controlI2CRepeater ) )
-				{
-					tunerClass = TunerType.ELONICS_E4000;
-				}
-				else if( isFC0013Tuner( device, controlI2CRepeater ) )
-				{
-					tunerClass =  TunerType.FITIPOWER_FC0013;
-				}
-				else if( isR820TTuner( device, controlI2CRepeater ) )
-				{
-					tunerClass =  TunerType.RAFAELMICRO_R820T;
-				}
-				else if( isR828DTuner( device, controlI2CRepeater ) )
-				{
-					tunerClass =  TunerType.RAFAELMICRO_R828D;
-				}
-				else if( isFC2580Tuner( device, controlI2CRepeater ) )
-				{
-					tunerClass =  TunerType.FCI_FC2580;
-				}
-				else if( isFC0012Tuner( device, controlI2CRepeater ) )
-				{
-					tunerClass =  TunerType.FITIPOWER_FC0012;
-				}
-				
-				mLog.debug( "disabling I2C repeater -- detected tuner type:" + tunerClass.toString() );
-
-				enableI2CRepeater( device, false );
-
-				mLog.debug( "releasing USB interface" );
-
-				iface.release();
+				writeRegister( handle, 
+							   Block.USB, 
+							   Address.USB_SYSCTL.getAddress(), 
+							   0x09, 
+							   1 );
 			}
+			catch( LibUsbException e )
+			{
+				
+				if( e.getErrorCode() < 0 )
+				{
+					mLog.error( "error performing dummy write - attempting "
+							+ "device reset", e );
+
+					resetRequired = true;
+				}
+				else
+				{
+					throw new SourceException( "error performing dummy write "
+							+ "to device [" + LibUsb.errorName( 
+									e.getErrorCode() ) + "]", e );
+				}
+			}
+
+			if( resetRequired )
+			{
+				reason = LibUsb.resetDevice( handle );
+				
+				try
+				{
+					writeRegister( handle, 
+								   Block.USB, 
+								   Address.USB_SYSCTL.getAddress(), 
+								   0x09, 
+								   1 );
+				}
+				catch( LibUsbException e2 )
+				{
+					mLog.error( "device reset attempted, but lost device handle.  "
+					+ "Try restarting the application to use this device" );
+
+					throw new SourceException( "couldn't reset device" );
+				}
+			}
+
+			/* Initialize the baseband */
+			initBaseband( handle );
+
+			enableI2CRepeater( handle, true );
+			
+			boolean controlI2CRepeater = false;
+
+			/* Test for each tuner type until we find the correct one */
+			if( isTuner( TunerTypeCheck.E4K, handle, controlI2CRepeater ) )
+			{
+				tunerClass = TunerType.ELONICS_E4000;
+			}
+			else if( isTuner( TunerTypeCheck.FC0013, handle, controlI2CRepeater ) )
+			{
+				tunerClass =  TunerType.FITIPOWER_FC0013;
+			}
+			else if( isTuner( TunerTypeCheck.R820T, handle, controlI2CRepeater ) )
+			{
+				tunerClass =  TunerType.RAFAELMICRO_R820T;
+			}
+			else if( isTuner( TunerTypeCheck.R828D, handle, controlI2CRepeater ) )
+			{
+				tunerClass =  TunerType.RAFAELMICRO_R828D;
+			}
+			else if( isTuner( TunerTypeCheck.FC2580, handle, controlI2CRepeater ) )
+			{
+				tunerClass =  TunerType.FCI_FC2580;
+			}
+			else if( isTuner( TunerTypeCheck.FC0012, handle, controlI2CRepeater ) )
+			{
+				tunerClass =  TunerType.FITIPOWER_FC0012;
+			}
+			
+			enableI2CRepeater( handle, false );
+
+			releaseInterface( handle );
+			
+			LibUsb.close( handle );
 		}
 		catch( Exception e )
 		{
@@ -460,88 +476,6 @@ public abstract class RTL2832TunerController extends TunerController
 		}
 		
 		return tunerClass;
-	}
-
-	public USBTunerDevice getUSBTunerDevice()
-	{
-		return mUSBTunerDevice;
-	}
-	
-//	protected void openPipe() throws UsbException, UsbClaimException
-//	{
-//		/* Get the USB endpoint */
-//		UsbEndpoint endpoint = mUSBInterface.getUsbEndpoint( sUSB_ENDPOINT );
-//		
-//		/* Get the pipe from the endpoint */
-//		if( endpoint != null )
-//		{
-//			mUSBPipe = endpoint.getUsbPipe();
-//			
-//			if( mUSBPipe != null )
-//			{
-//				if( !mUSBPipe.isOpen() )
-//				{
-//					try
-//					{
-//						resetUSBBuffer();
-//
-//						mUSBPipe.open();
-//					}
-//					catch( Exception e )
-//					{
-//						Log.error( "RTL2832 Tuner Controller - exception while " +
-//								"opening the endpoint pipe." + 
-//								e.getLocalizedMessage() );
-//					}
-//				}
-//			}
-//			else
-//			{
-//				Log.error( "RTL2832 Tuner Controller - returned endpoint "
-//						+ "OUT pipe is null" );
-//			}
-//		}
-//	}
-//	
-	/**
-	 * Claims the USB interface.  If another application currently has
-	 * the interface claimed, the sFCD_FORCE_CLAIM_HID_INTERFACE setting
-	 * will dictate if the interface is forcibly claimed from the other 
-	 * application
-	 */
-	public static boolean claim( UsbInterface iface ) throws UsbException, 
-														   UsbClaimException
-	{
-		if( !iface.isClaimed() )
-		{
-			iface.claim( new UsbInterfacePolicy() 
-			{
-				@Override
-                public boolean forceClaim( UsbInterface arg0 )
-                {
-                    return sUSB_FORCE_CLAIM_INTERFACE;
-                }
-			} );
-			
-			return iface.isClaimed();
-		}
-		else
-		{
-			mLog.error( "attempt to claim USB interface failed - in use by "
-					+ "another application" );
-		}
-		
-		return false;
-	}
-	
-	/**
-	 * Releases the claimed USB interface
-	 */
-    private void closePipe() throws UsbException
-	{
-    	mBufferProcessor.stop();
-    	
-		mUSBPipe.close();
 	}
 
     /**
@@ -556,12 +490,9 @@ public abstract class RTL2832TunerController extends TunerController
 				mBufferProcessor.stop();
 			}
 			
-			if( mUSBPipe.isOpen() )
-			{
-				mUSBPipe.close();
-			}
-			
-	        mUSBInterface.release();
+	        LibUsb.releaseInterface( mDeviceHandle, USB_INTERFACE );
+	        
+	        LibUsb.exit( null );
         }
         catch ( Exception e )
         {
@@ -569,44 +500,43 @@ public abstract class RTL2832TunerController extends TunerController
         }
     }
 	
-	public void resetUSBBuffer() throws UsbException
+	public void resetUSBBuffer() throws LibUsbException
 	{
-		writeRegister( mUSBDevice, Block.USB, Address.USB_EPA_CTL.getAddress(), 0x1002,  2 );
-		writeRegister( mUSBDevice, Block.USB, Address.USB_EPA_CTL.getAddress(), 0x0000,  2 );
+		writeRegister( mDeviceHandle, Block.USB, Address.USB_EPA_CTL.getAddress(), 0x1002,  2 );
+		writeRegister( mDeviceHandle, Block.USB, Address.USB_EPA_CTL.getAddress(), 0x0000,  2 );
 	}
 	
-	public static void initBaseband( UsbDevice device )
-		throws IllegalArgumentException, UsbDisconnectedException, UsbException
+	public static void initBaseband( DeviceHandle handle ) throws LibUsbException
 	{
 		/* Initialize USB */
-		writeRegister( device, Block.USB, Address.USB_SYSCTL.getAddress(), 0x09, 1 );
-		writeRegister( device, Block.USB, Address.USB_EPA_MAXPKT.getAddress(), 0x0002, 2 );
-		writeRegister( device, Block.USB, Address.USB_EPA_CTL.getAddress(), 0x1002, 2 );
+		writeRegister( handle, Block.USB, Address.USB_SYSCTL.getAddress(), 0x09, 1 );
+		writeRegister( handle, Block.USB, Address.USB_EPA_MAXPKT.getAddress(), 0x0002, 2 );
+		writeRegister( handle, Block.USB, Address.USB_EPA_CTL.getAddress(), 0x1002, 2 );
 
 		/* Power on demod */
-		writeRegister( device, Block.SYS, Address.DEMOD_CTL_1.getAddress(), 0x22, 1 );
-		writeRegister( device, Block.SYS, Address.DEMOD_CTL.getAddress(), 0xE8, 1 );
+		writeRegister( handle, Block.SYS, Address.DEMOD_CTL_1.getAddress(), 0x22, 1 );
+		writeRegister( handle, Block.SYS, Address.DEMOD_CTL.getAddress(), 0xE8, 1 );
 
 		/* Reset demod */
-		writeDemodRegister( device, Page.ONE, (short)0x01, 0x14, 1 ); //Bit 3 = soft reset
-		writeDemodRegister( device, Page.ONE, (short)0x01, 0x10, 1 );
+		writeDemodRegister( handle, Page.ONE, (short)0x01, 0x14, 1 ); //Bit 3 = soft reset
+		writeDemodRegister( handle, Page.ONE, (short)0x01, 0x10, 1 );
 		
 		/* Disable spectrum inversion and adjacent channel rejection */
-		writeDemodRegister( device, Page.ONE, (short)0x15, 0x00, 1 );
-		writeDemodRegister( device, Page.ONE, (short)0x16, 0x0000, 2 );
+		writeDemodRegister( handle, Page.ONE, (short)0x15, 0x00, 1 );
+		writeDemodRegister( handle, Page.ONE, (short)0x16, 0x0000, 2 );
 
 		/* Clear DDC shift and IF frequency registers */
-		writeDemodRegister( device, Page.ONE, (short)0x16, 0x00, 1 );
-		writeDemodRegister( device, Page.ONE, (short)0x17, 0x00, 1 );
-		writeDemodRegister( device, Page.ONE, (short)0x18, 0x00, 1 );
-		writeDemodRegister( device, Page.ONE, (short)0x19, 0x00, 1 );
-		writeDemodRegister( device, Page.ONE, (short)0x1A, 0x00, 1 );
-		writeDemodRegister( device, Page.ONE, (short)0x1B, 0x00, 1 );
+		writeDemodRegister( handle, Page.ONE, (short)0x16, 0x00, 1 );
+		writeDemodRegister( handle, Page.ONE, (short)0x17, 0x00, 1 );
+		writeDemodRegister( handle, Page.ONE, (short)0x18, 0x00, 1 );
+		writeDemodRegister( handle, Page.ONE, (short)0x19, 0x00, 1 );
+		writeDemodRegister( handle, Page.ONE, (short)0x1A, 0x00, 1 );
+		writeDemodRegister( handle, Page.ONE, (short)0x1B, 0x00, 1 );
 		
 		/* Set FIR coefficients */
 		for( int x = 0; x < sFIR_COEFFICIENTS.length; x++ )
 		{
-			writeDemodRegister( device, 
+			writeDemodRegister( handle, 
 								Page.ONE, 
 								(short)( 0x1C + x ), 
 								sFIR_COEFFICIENTS[ x ], 
@@ -614,47 +544,43 @@ public abstract class RTL2832TunerController extends TunerController
 		}
 		
 		/* Enable SDR mode, disable DAGC (bit 5) */
-		writeDemodRegister( device, Page.ZERO, (short)0x19, 0x05, 1 );
+		writeDemodRegister( handle, Page.ZERO, (short)0x19, 0x05, 1 );
 		
 		/* Init FSM state-holding register */
-		writeDemodRegister( device, Page.ONE, (short)0x93, 0xF0, 1 );
-		writeDemodRegister( device, Page.ONE, (short)0x94, 0x0F, 1 );
+		writeDemodRegister( handle, Page.ONE, (short)0x93, 0xF0, 1 );
+		writeDemodRegister( handle, Page.ONE, (short)0x94, 0x0F, 1 );
 		
 		/* Disable AGC (en_dagc, bit 0) (seems to have no effect) */
-		writeDemodRegister( device, Page.ONE, (short)0x11, 0x00, 1 );
+		writeDemodRegister( handle, Page.ONE, (short)0x11, 0x00, 1 );
 
 		/* Disable RF and IF AGC loop */
-		writeDemodRegister( device, Page.ONE, (short)0x04, 0x00, 1 );
+		writeDemodRegister( handle, Page.ONE, (short)0x04, 0x00, 1 );
 		
 		/* Disable PID filter */
-		writeDemodRegister( device, Page.ZERO, (short)0x61, 0x60, 1 );
+		writeDemodRegister( handle, Page.ZERO, (short)0x61, 0x60, 1 );
 
 		/* opt_adc_iq = 0, default ADC_I/ADC_Q datapath */
-		writeDemodRegister( device, Page.ZERO, (short)0x06, 0x80, 1 );
+		writeDemodRegister( handle, Page.ZERO, (short)0x06, 0x80, 1 );
 		
 		/* Enable Zero-if mode (en_bbin bit), 
 		 *        DC cancellation (en_dc_est),
 		 *        IQ estimation/compensation (en_iq_comp, en_iq_est) */
-		writeDemodRegister( device, Page.ONE, (short)0xB1, 0x1B, 1 );
+		writeDemodRegister( handle, Page.ONE, (short)0xB1, 0x1B, 1 );
 
 		/* Disable 4.096 MHz clock output on pin TP_CK0 */
-		writeDemodRegister( device, Page.ZERO, (short)0x0D, 0x83, 1 );
+		writeDemodRegister( handle, Page.ZERO, (short)0x0D, 0x83, 1 );
 	}
 	
-	protected void deinitBaseband( UsbDevice device )
+	protected void deinitBaseband( DeviceHandle handle )
 		throws IllegalArgumentException, UsbDisconnectedException, UsbException
 	{
-//		setI2CRepeater( device, true );
-
-		writeRegister( device, Block.SYS, Address.DEMOD_CTL.getAddress(), 0x20, 1);
-
-//		setI2CRepeater( device, false );
+		writeRegister( handle, Block.SYS, Address.DEMOD_CTL.getAddress(), 0x20, 1);
 	}
 
 	/**
 	 * Sets the General Purpose Input/Output (GPIO) register bit
 	 * 
-	 * @param device - USB tuner device
+	 * @param handle - USB tuner device
 	 * @param bitMask - bit mask with one for targeted register bits and zero 
 	 *		for the non-targeted register bits
 	 * @param enabled - true to set the bit and false to clear the bit
@@ -662,11 +588,12 @@ public abstract class RTL2832TunerController extends TunerController
 	 * @throws UsbException - if there is a USB error while communicating with 
 	 *		the device
 	 */
-	protected static void setGPIOBit( UsbDevice device, byte bitMask, boolean enabled )
-			throws UsbDisconnectedException, UsbException
+	protected static void setGPIOBit( DeviceHandle handle, 
+									  byte bitMask, 
+									  boolean enabled )	throws LibUsbException
 	{
 		//Get current register value
-		int value = readRegister( device, Block.SYS, Address.GPO.getAddress(), 1 );
+		int value = readRegister( handle, Block.SYS, Address.GPO.getAddress(), 1 );
 
 		//Update the masked bits
 		if( enabled )
@@ -679,36 +606,37 @@ public abstract class RTL2832TunerController extends TunerController
 		}
 
 		//Write the change back to the device
-		writeRegister( device, Block.SYS, Address.GPO.getAddress(), value, 1 );
+		writeRegister( handle, Block.SYS, Address.GPO.getAddress(), value, 1 );
 	}
 
 	/**
 	 * Enables GPIO Output
-	 * @param device - usb tuner device
+	 * @param handle - usb tuner device
 	 * @param bitMask - mask containing one bit value in targeted bit field(s)
 	 * @throws UsbDisconnectedException 
 	 * @throws UsbException
 	 */
-	protected static void setGPIOOutput( UsbDevice device, byte bitMask )
-			throws UsbDisconnectedException, UsbException
+	protected static void setGPIOOutput( DeviceHandle handle, byte bitMask )
+						throws LibUsbException
 	{
 		//Get current register value
-		int value = readRegister( device, Block.SYS, Address.GPD.getAddress(), 1 );
+		int value = readRegister( handle, Block.SYS, Address.GPD.getAddress(), 1 );
 
 		//Mask the value and rewrite it
-		writeRegister( device, Block.SYS, Address.GPO.getAddress(), 
+		writeRegister( handle, Block.SYS, Address.GPO.getAddress(), 
 							value & ~bitMask, 1 );
 		
 		//Get current register value
-		value = readRegister( device, Block.SYS, Address.GPOE.getAddress(), 1 );
+		value = readRegister( handle, Block.SYS, Address.GPOE.getAddress(), 1 );
 
 		//Mask the value and rewrite it
-		writeRegister( device, Block.SYS, Address.GPOE.getAddress(), 
+		writeRegister( handle, Block.SYS, Address.GPOE.getAddress(), 
 							value | bitMask, 1 );
 	}
 	
-	protected static void enableI2CRepeater( UsbDevice device, boolean enabled )
-		throws IllegalArgumentException, UsbDisconnectedException, UsbException
+	protected static void enableI2CRepeater( DeviceHandle handle, 
+											 boolean enabled ) 
+												 	throws LibUsbException
 	{
 		Page page = Page.ONE;
 		short address = 1;
@@ -723,89 +651,91 @@ public abstract class RTL2832TunerController extends TunerController
 			value = 0x10; //OFF
 		}
 
-		writeDemodRegister( device, page, address, value, 1 );
+		writeDemodRegister( handle, page, address, value, 1 );
 	}
 	
-	protected boolean isI2CRepeaterEnabled() throws UsbException
+	protected boolean isI2CRepeaterEnabled() throws SourceException
 	{
-		int register = readDemodRegister( mUSBDevice, Page.ONE, (short)0x1, 1 );
+		int register = readDemodRegister( mDeviceHandle, Page.ONE, (short)0x1, 1 );
 		
 		return register == 0x18;
 	}
 	
-	protected static int readI2CRegister( UsbDevice device, 
+	protected static int readI2CRegister( DeviceHandle handle, 
 										  byte i2CAddress, 
 										  byte i2CRegister,
 										  boolean controlI2CRepeater )
-		throws IllegalArgumentException, UsbDisconnectedException, UsbException
+												  		throws LibUsbException
 	{
 		short address = (short)( i2CAddress & 0xFF );
 
-		byte[] writeData = new byte[ 1 ];
-		writeData[ 0 ] = i2CRegister;
+		ByteBuffer buffer = ByteBuffer.allocateDirect( 1 );
+		buffer.put( i2CRegister );
+		buffer.rewind();
 		
-		byte[] readData = new byte[ 1 ];
+		ByteBuffer data = ByteBuffer.allocateDirect( 1 );
 
 		if( controlI2CRepeater )
 		{
-			enableI2CRepeater( device, true );
+			enableI2CRepeater( handle, true );
 
-			write( device, Block.IIC, address, writeData );
-			read( device, Block.IIC, address, readData );
+			write( handle, address, Block.I2C, buffer );
+			read( handle, address, Block.I2C, data );
 
-			enableI2CRepeater( device, false );
+			enableI2CRepeater( handle, false );
 		}
 		else
 		{
-			write( device, Block.IIC, address, writeData );
-			read( device, Block.IIC, address, readData );
+			write( handle, address, Block.I2C, buffer );
+			read( handle, address, Block.I2C, data );
 		}
-
-		return (int)( readData[ 0 ] & 0xFF );
+		
+		return (int)( data.get() & 0xFF );
 	}
 	
-	protected void writeI2CRegister( UsbDevice device, 
+	protected void writeI2CRegister( DeviceHandle handle, 
 									 byte i2CAddress,
 									 byte i2CRegister, 
 									 byte value,
-									 boolean controlI2CRepeater ) throws UsbException
+									 boolean controlI2CRepeater ) throws LibUsbException
 	{
 		
 		short address = (short)( i2CAddress & 0xFF );
 
-		byte[] data = new byte[ 2 ];
-		
-		data[ 0 ] = i2CRegister;
-		data[ 1 ] = value;
+		ByteBuffer buffer = ByteBuffer.allocateDirect( 2 );
+		buffer.put( i2CRegister );
+		buffer.put( value );
+
+		buffer.rewind();
 
 		if( controlI2CRepeater )
 		{
-			enableI2CRepeater( device, true );
-			write( mUSBDevice, Block.IIC, address, data );
-			enableI2CRepeater( device, false );
+			enableI2CRepeater( handle, true );
+			write( handle, address, Block.I2C, buffer );
+			enableI2CRepeater( handle, false );
 		}
 		else
 		{
-			write( mUSBDevice, Block.IIC, address, data );
+			write( handle, address, Block.I2C, buffer );
 		}
 	}
 
-	protected static void writeDemodRegister( UsbDevice device, Page page, 
-									short address, int value, int length )
-		throws IllegalArgumentException, UsbDisconnectedException, UsbException
+	protected static void writeDemodRegister( DeviceHandle handle, 
+											  Page page,
+											  short address, 
+											  int value, 
+											  int length ) throws LibUsbException
 	{
-		byte[] data;
+		ByteBuffer buffer = ByteBuffer.allocateDirect( length );
+		buffer.order( ByteOrder.BIG_ENDIAN );
 		
 		if( length == 1 )
 		{
-			data = new byte[ 1 ];
-			data[0] = (byte)( value & 0xFF );
+			buffer.put( (byte)( value & 0xFF ) );
 		}
 		else if( length == 2 )
 		{
-			data = new byte[ 2 ];
-			data[1] = (byte)( value & 0xFF );          //LSB
-			data[0] = (byte)( ( value >> 8 ) & 0xFF ); //MSB
+			buffer.putShort( (short)( value & 0xFFFF ) );
 		}
 		else
 		{
@@ -817,301 +747,224 @@ public abstract class RTL2832TunerController extends TunerController
 		
 		short newAddress = (short)( address << 8 | 0x20 );
 
-		write( device, newAddress, index, data );
+		write( handle, newAddress, index, buffer );
 		
-		readDemodRegister( device, Page.TEN, (short)1, length );
+		readDemodRegister( handle, Page.TEN, (short)1, length );
 	}
 
-	protected static int readDemodRegister( UsbDevice device, 
+	protected static int readDemodRegister( DeviceHandle handle, 
 											Page page, 
 											short address, 
-											int length )
-		throws IllegalArgumentException, UsbDisconnectedException, UsbException
+											int length ) throws LibUsbException
 	{
 		short index = page.getPage();
 		short newAddress = (short)( ( address << 8 ) | 0x20 );
-		byte[] empty = new byte[ 2 ];
 		
-		byte[] data = read( device, newAddress, index, empty );
+		ByteBuffer buffer = ByteBuffer.allocateDirect( length );
+		
+		read( handle, newAddress, index, buffer );
+		buffer.order( ByteOrder.LITTLE_ENDIAN );
 
 		if( length == 2 )
 		{
-			return (int)( ( data[ 1 ] << 8 | data[ 0 ] ) & 0xFFFF );
+			return (int)( buffer.getShort() & 0xFFFF );
 		}
 		else
 		{
-			return (int)( data[ 0 ] & 0xFF );
+			return (int)( buffer.get() & 0xFF );
 		}
 	}
 	
-	protected static void writeRegister( UsbDevice device, Block block, short address, 
-									int value, int length )
-		throws IllegalArgumentException, UsbDisconnectedException, UsbException
+	protected static void writeRegister( DeviceHandle handle, 
+										 Block block, 
+										 short address, 	
+										 int value, 
+										 int length ) throws LibUsbException
 	{
-		byte[] data;
+		ByteBuffer buffer = ByteBuffer.allocateDirect( length );
+		buffer.order( ByteOrder.BIG_ENDIAN );
 		
 		if( length == 1 )
 		{
-			data = new byte[ 1 ];
-			data[0] = (byte)( value & 0xFF );
+			buffer.put( (byte)( value & 0xFF ) ) ;
 		}
 		else if( length == 2 )
 		{
-			data = new byte[ 2 ];
-			data[1] = (byte)( value & 0xFF );          //LSB
-			data[0] = (byte)( ( value >> 8 ) & 0xFF ); //MSB
+			buffer.putShort( (short)value );
 		}
 		else
 		{
 			throw new IllegalArgumentException( "Cannot write value greater "
 				+ "than 16 bits to the register - length [" + length + "]" );
 		}
+		
+		buffer.rewind();
 
-		write( device, block, address, data );
+		write( handle, address, block, buffer );
 	}
 
-	protected static int readRegister( UsbDevice device, Block block, short address, int length )
-		throws IllegalArgumentException, UsbDisconnectedException, UsbException
+	protected static int readRegister( DeviceHandle handle, 
+									   Block block, 
+									   short address, 
+									   int length ) throws LibUsbException
 	{
-		byte[] empty = new byte[ 2 ]; 		
+		ByteBuffer buffer = ByteBuffer.allocateDirect( 2 );
 
-		byte[] data = read( device, block, address, empty );
+		read( handle, address, block, buffer );
+
+		buffer.order( ByteOrder.LITTLE_ENDIAN );
 		
 		if( length == 2 )
 		{
-			return (int)( ( data[ 1 ] << 8 | data[ 0 ] ) & 0xFFFF );
+			return (int)( buffer.getShort() & 0xFFFF );
 		}
 		else
 		{
-			return (int)( data[ 0 ] & 0xFF );
+			return (int)( buffer.get() & 0xFF );
 		}
 	}
 
 	/**
-	 * Write array convenience method.  Allow you to specify the Block that you
-	 * are writing to.
-	 * 
-	 * @param device
-	 * @param block
-	 * @param address
-	 * @param data
-	 * @throws IllegalArgumentException
-	 * @throws UsbDisconnectedException
-	 * @throws UsbException
 	 */
-	protected static void write( UsbDevice device, Block block, short address, byte[] data )
-		throws IllegalArgumentException, UsbDisconnectedException, UsbException
+	protected static void write( DeviceHandle handle, 
+								 short address, 
+								 Block block, 
+								 ByteBuffer buffer ) throws LibUsbException
 	{
-			write( device, address, block.getWriteIndex(), data );
+			write( handle, address, block.getWriteIndex(), buffer );
 	}
 	
-	/**
-	 * Write byte array
-	 * @param device - tuner
-	 * @param value - 
-	 * @param index - start
-	 * @param data - to write
-	 * @throws IllegalArgumentException
-	 * @throws UsbDisconnectedException
-	 * @throws UsbException
-	 */
-	protected static void write( UsbDevice device, short value, short index, byte[] data )
-		throws IllegalArgumentException, UsbDisconnectedException, UsbException
+	protected static void write( DeviceHandle handle, 
+								 short value, 
+								 short index, 
+								 ByteBuffer buffer ) throws LibUsbException
 	{
-		UsbControlIrp irp = 
-				device.createUsbControlIrp( sREQUEST_TYPE_OUT, 
-												sREQUEST_ZERO, 
-												value,
-												index );
+		if( handle != null )
+		{
+			int transferred = LibUsb.controlTransfer( handle, 
+													  CONTROL_ENDPOINT_OUT, 
+													  REQUEST_ZERO, 
+													  value, 
+													  index, 
+													  buffer, 
+													  TIMEOUT_US );
 
-		irp.setData( data );
-		
-		device.syncSubmit( irp );
+			if( transferred < 0 )
+			{
+				throw new LibUsbException( "error writing byte buffer", 
+								transferred );
+			}
+			else if( transferred != buffer.capacity() )
+			{
+				throw new LibUsbException( "transferred bytes [" + 
+						transferred + "] is not what was expected [" + 
+						buffer.capacity() + "]", transferred );
+			}
+		}
+		else
+		{
+			throw new LibUsbException( "device handle is null", 
+							LibUsb.ERROR_NO_DEVICE );
+		}
 	}
 
+	/**
+	 * Performs a control type read
+	 */
+	protected static void read( DeviceHandle handle, 
+								short address, 
+								short index, 
+								ByteBuffer buffer ) throws LibUsbException
+	{
+		if( handle != null )
+		{
+			int transferred = LibUsb.controlTransfer( handle, 
+													  CONTROL_ENDPOINT_IN, 
+													  REQUEST_ZERO, 
+													  address, 
+													  index, 
+													  buffer, 
+													  TIMEOUT_US );
+
+			if( transferred < 0 )
+			{
+				throw new LibUsbException( "read error", transferred );
+			}
+			else if( transferred != buffer.capacity() )
+			{
+				throw new LibUsbException( "transferred bytes [" + 
+						transferred + "] is not what was expected [" + 
+						buffer.capacity() + "]", transferred );
+			}
+		}
+		else
+		{
+			throw new LibUsbException( "device handle is null", 
+							LibUsb.ERROR_NO_DEVICE );
+		}
+	}
+	
 	/**
 	 * Reads byte array from index at the address.
 	 * 
 	 * @return big-endian byte array (needs to be swapped to be usable)
 	 * 
 	 */
-	protected static byte[] read( UsbDevice device, Block block, short address, byte[] data )
-			throws IllegalArgumentException, UsbDisconnectedException, UsbException
+	protected static void read( DeviceHandle handle, 
+								short address, 
+								Block block, 
+								ByteBuffer buffer ) throws LibUsbException
 	{
-		byte[] retVal;
-		
-		retVal = read( device, address, block.getReadIndex(), data );
-		
-		return retVal;
+		read( handle, address, block.getReadIndex(), buffer );
 	}
 
 	/**
-	 * Reads the byte array from the index at the address with the length of the
-	 * read determined by the size of the data array
+	 * Tests if the specified tuner type is contained in the usb tuner device.  
 	 * 
-	 * @return - big-endian byte array (needs to be swapped to be usable)
+	 * @param type - tuner type to test for
+	 * @param handle - handle to the usb tuner device
+	 * @param controlI2CRepeater - indicates if the method should control the
+	 * I2C repeater independently
+	 * 
+	 * @return - true if the device is the specified tuner type
 	 */
-	protected static byte[] read( UsbDevice device, short address, short index, byte[] data )
-		throws IllegalArgumentException, UsbDisconnectedException, UsbException
+	protected static boolean isTuner( TunerTypeCheck type,
+									  DeviceHandle handle, 
+									  boolean controlI2CRepeater )
 	{
-		DefaultUsbControlIrp irp = 
-				new DefaultUsbControlIrp( sREQUEST_TYPE_IN, 
-										  (byte)0, 
-										  address,
-										  index );
-
-		irp.setData( data );
-		
-		device.syncSubmit( irp );
-		
-		return irp.getData();
-	}
-	
-	protected static boolean isE4000Tuner( UsbDevice device, 
-			boolean controlI2CRepeater ) throws UsbClaimException
-	{
-		mLog.debug( "testing for E4000 tuner" );
-
 		try
 		{
-			int value = readI2CRegister( device, E4K_I2C_ADDRESS, 
-					E4K_CHECK_ADDRESS, controlI2CRepeater );
+			if( type == TunerTypeCheck.FC0012 ||
+				type == TunerTypeCheck.FC2580 )
+			{
+				/* Initialize the GPIOs */
+				setGPIOOutput( handle, (byte)0x20 );
+
+				/* Reset tuner before probing */
+				setGPIOBit( handle, (byte)0x20, true );
+				setGPIOBit( handle, (byte)0x20, false );
+			}
 			
-			return ( value == E4K_CHECK_VALUE );
+			int value = readI2CRegister( handle, type.getI2CAddress(), 
+					type.getCheckAddress(), controlI2CRepeater );
+
+			if( type == TunerTypeCheck.FC2580 )
+			{
+				return ( ( value & 0x7F ) == type.getCheckValue() );
+			}
+			else
+			{
+				return ( value == type.getCheckValue() );
+			}
 		}
-		catch( UsbException e )
+		catch( LibUsbException e )
 		{
-			//Do nothing ... it's not an E4000
+			//Do nothing ... it's not the specified tuner
 		}
 		
 		return false;
 	}
-	
-	protected static boolean isFC0012Tuner( UsbDevice device, 
-			boolean controlI2CRepeater ) throws UsbClaimException
-	{
-		try
-		{
-			/* Initialize the GPIOs */
-			setGPIOOutput( device, BIT_5 );
 
-			/* Reset tuner before probing */
-			setGPIOBit( device, BIT_5, true );
-			setGPIOBit( device, BIT_5, false );
-			
-			
-			int value = readI2CRegister( device, 
-										 FC0012_I2C_ADDRESS, 
-										 FC0012_CHECK_ADDRESS,
-										 controlI2CRepeater );
-			
-			return ( value == FC0012_CHECK_VALUE );
-		}
-		catch( UsbException e )
-		{
-			//Do nothing, it's not an FC0012
-		}
-		
-		return false;
-	}
-	
-	protected static boolean isFC0013Tuner( UsbDevice device, 
-											boolean controlI2CRepeater )
-									throws UsbClaimException
-	{
-		mLog.debug( "testing for F0013 tuner" );
-
-		try
-		{
-			int value = readI2CRegister( device, FC0013_I2C_ADDRESS, 
-					FC0013_CHECK_ADDRESS, controlI2CRepeater );
-
-			return ( value == FC0013_CHECK_VALUE );
-		}
-		catch( UsbException e )
-		{
-			//Do nothing ... it's probably not an FC0013
-		}
-		
-		return false;
-	}
-	
-	/**
-	 * Determines if the device's tuner is an FC2580 Tuner.  
-	 * 
-	 * Note: call initBaseband(device) prior to calling this method.
-	 * 
-	 * @param device - usb tuner device
-	 * @return true if the tuner is an FC2580
-	 * @throws UsbException
-	 * @throws UsbClaimException
-	 */
-	protected static boolean isFC2580Tuner( UsbDevice device, 
-			boolean controlI2CRepeater ) throws UsbClaimException
-	{
-		try
-		{
-			/* Initialize the GPIOs */
-			setGPIOOutput( device, BIT_5 );
-
-			/* Reset tuner before probing */
-			setGPIOBit( device, BIT_5, true );
-			setGPIOBit( device, BIT_5, false );
-			
-
-			/* Read the check value */
-			int value = readI2CRegister( device, FC2580_I2C_ADDRESS, 
-								FC2580_CHECK_ADDRESS, controlI2CRepeater );
-
-			/* Compare masked return value to the known check value */
-			return ( ( value & 0x7F ) == FC2580_CHECK_VALUE );
-		}
-		catch( UsbException e )
-		{
-			//Do nothing, it's not an FC2580
-		}
-		
-		return false;
-	}
-	
-	protected static boolean isR820TTuner( UsbDevice device, 
-			boolean controlI2CRepeater ) throws UsbClaimException
-	{
-		mLog.debug( "testing for R820T tuner" );
-
-		try
-		{
-			int value = readI2CRegister( device, R820T_I2C_ADDRESS, 
-					R820T_CHECK_ADDRESS, controlI2CRepeater );
-
-			return ( value == R820T_CHECK_VALUE );
-		}
-		catch( UsbException e )
-		{
-			//Do nothing, it's not an R820T
-		}
-		
-		return false;
-	}
-	
-	protected static boolean isR828DTuner( UsbDevice device, 
-			boolean controlI2CRepeater ) throws UsbClaimException
-	{
-		try
-		{
-			int value = readI2CRegister( device, R828D_I2C_ADDRESS, 
-					R828D_CHECK_ADDRESS, controlI2CRepeater );
-
-			return ( value == R828D_CHECK_VALUE );
-		}
-		catch( UsbException e )
-		{
-			//Do nothing, it's not an R828D
-		}
-		
-		return false;
-	}
-	
 	public int getCurrentSampleRate() throws SourceException 
 	{
 		return mSampleRate.getRate();
@@ -1121,12 +974,12 @@ public abstract class RTL2832TunerController extends TunerController
 	{
         try
         {
-    		int high= readDemodRegister( mUSBDevice, Page.ONE, (short)0x9F, 2 );
-			int low = readDemodRegister( mUSBDevice, Page.ONE, (short)0xA1, 2 );
+    		int high= readDemodRegister( mDeviceHandle, Page.ONE, (short)0x9F, 2 );
+			int low = readDemodRegister( mDeviceHandle, Page.ONE, (short)0xA1, 2 );
 
 			int ratio = Integer.rotateLeft( high, 16 ) | low;
 			
-			int rate = (int)( mOscillatorFrequency * sTWO_TO_22_POWER / ratio );
+			int rate = (int)( mOscillatorFrequency * TWO_TO_22_POWER / ratio );
 			
 			SampleRate sampleRate = SampleRate.getClosest( rate );
 
@@ -1144,36 +997,30 @@ public abstract class RTL2832TunerController extends TunerController
         			+ "current sample rate", e );
         }
 
-        return sDEFAULT_SAMPLE_RATE.getRate();
+        return DEFAULT_SAMPLE_RATE.getRate();
 	}
 	
-	public void setSampleRate( SampleRate sampleRate ) 
-							throws SourceException, UsbException
+	public void setSampleRate( SampleRate sampleRate ) throws SourceException
 	{
 		/* Write high-order 16-bits of sample rate ratio to demod register */
-		writeDemodRegister( mUSBDevice, Page.ONE, (short)0x9F, 
+		writeDemodRegister( mDeviceHandle, Page.ONE, (short)0x9F, 
 				sampleRate.getRatioHighBits(), 2 );
 		
 		/* Write low-order 16-bits of sample rate ratio to demod register */
-		writeDemodRegister( mUSBDevice, Page.ONE, (short)0xA1, 
+		writeDemodRegister( mDeviceHandle, Page.ONE, (short)0xA1, 
 				sampleRate.getRatioLowBits(), 2 );
 		
 		/* Set sample rate correction to 0 */
 		setSampleRateFrequencyCorrection( 0 );
 
 		/* Reset the demod for the changes to take effect */
-		writeDemodRegister( mUSBDevice, Page.ONE, (short)0x01, 0x14, 1 );
-		writeDemodRegister( mUSBDevice, Page.ONE, (short)0x01, 0x10, 1 );
+		writeDemodRegister( mDeviceHandle, Page.ONE, (short)0x01, 0x14, 1 );
+		writeDemodRegister( mDeviceHandle, Page.ONE, (short)0x01, 0x10, 1 );
 
 		/* Apply any tuner specific sample rate filter settings */
 		setSampleRateFilters( sampleRate.getRate() );
 
 		mSampleRate = sampleRate;
-
-		/**
-		 * Adjust the size of the byte array buffers sent over the USB bus
-		 */
-		mBufferSize = mSampleRate.getBufferSize();
 
 		mFrequencyController.setSampleRate( sampleRate.getRate() );
 		
@@ -1183,29 +1030,35 @@ public abstract class RTL2832TunerController extends TunerController
 		}
 	}
 	
-	public void setSampleRateFrequencyCorrection( int ppm ) 
-							throws SourceException, UsbException
+	public void setSampleRateFrequencyCorrection( int ppm ) throws SourceException
 	{
-		int offset = -ppm * sTWO_TO_22_POWER / 1000000;
+		int offset = -ppm * TWO_TO_22_POWER / 1000000;
 		
-		writeDemodRegister( mUSBDevice, 
+		writeDemodRegister( mDeviceHandle, 
 							Page.ONE, 
 							(short)0x3F, 
 							( offset & 0xFF ), 
 							1 );
-		writeDemodRegister( mUSBDevice, 
+		writeDemodRegister( mDeviceHandle, 
 							Page.ONE, 
 							(short)0x3E, 
 							( Integer.rotateRight( offset, 8 ) & 0xFF ), 
 							1 );
 		/* Test to retune controller to apply frequency correction */
-		mFrequencyController.setFrequency( mFrequencyController.getFrequency() );
+		try
+		{
+			mFrequencyController.setFrequency( mFrequencyController.getFrequency() );
+		}
+		catch( Exception e )
+		{
+			throw new SourceException( "couldn't set sample rate frequency correction", e );
+		}
 	}
 	
 	public int getSampleRateFrequencyCorrection() throws UsbException
 	{
-		int high = readDemodRegister( mUSBDevice, Page.ONE, (short)0x3E, 1 );
-		int low = readDemodRegister( mUSBDevice, Page.ONE, (short)0x3F, 1 );
+		int high = readDemodRegister( mDeviceHandle, Page.ONE, (short)0x3E, 1 );
+		int low = readDemodRegister( mDeviceHandle, Page.ONE, (short)0x3F, 1 );
 		
 		return ( Integer.rotateLeft( high, 8 ) | low );
 	}
@@ -1229,7 +1082,7 @@ public abstract class RTL2832TunerController extends TunerController
 	 * Label 3: serial
 	 * Label 4,5 ... (user defined)
 	 */
-	public byte[] readEEPROM( UsbDevice device, short offset, int length ) 
+	public byte[] readEEPROM( DeviceHandle handle, short offset, int length ) 
 									throws IllegalArgumentException
 	{
 		if( offset + length > 256 )
@@ -1240,14 +1093,14 @@ public abstract class RTL2832TunerController extends TunerController
 		}
 
 		byte[] data = new byte[ length ];
-		byte[] onebyte = new byte[ 1 ];
+		ByteBuffer buffer = ByteBuffer.allocateDirect( 1 );
 		
 		try
 		{
 			/* Tell the RTL-2832 to address the EEPROM */
-			writeRegister( device, Block.IIC, EEPROM_ADDRESS, (byte)offset, 1 );
+			writeRegister( handle, Block.I2C, EEPROM_ADDRESS, (byte)offset, 1 );
 		}
-		catch( UsbException e )
+		catch( LibUsbException e )
 		{
 			mLog.error( "usb error while attempting to set read address to "
 				+ "EEPROM register, prior to reading the EEPROM device "
@@ -1258,8 +1111,9 @@ public abstract class RTL2832TunerController extends TunerController
 		{
 			try
 			{
-				byte[] temp = read( device, Block.IIC, EEPROM_ADDRESS, onebyte );
-				data[ x ] = temp[ 0 ];
+				read( handle, EEPROM_ADDRESS, Block.I2C, buffer );
+				data[ x ] = buffer.get();
+				buffer.rewind();
 			}
 			catch( Exception e )
 			{
@@ -1279,7 +1133,7 @@ public abstract class RTL2832TunerController extends TunerController
 	 * Note: introduce a 5 millisecond delay between each successive write to
 	 * the EEPROM or subsequent writes may fail.
 	 */
-	public void writeEEPROMByte( UsbDevice device, byte offset, byte value ) 
+	public void writeEEPROMByte( DeviceHandle handle, byte offset, byte value ) 
 		throws IllegalArgumentException, UsbDisconnectedException, UsbException
 	{
 		if( offset < 0 || offset > 255 )
@@ -1291,7 +1145,7 @@ public abstract class RTL2832TunerController extends TunerController
 		int offsetAndValue = Integer.rotateLeft( ( 0xFF & offset ), 8 ) | 
 								( 0xFF & value );
 		
-		writeRegister( device, Block.IIC, EEPROM_ADDRESS, offsetAndValue, 2 );
+		writeRegister( handle, Block.I2C, EEPROM_ADDRESS, offsetAndValue, 2 );
 	}
 	
 	public enum Address
@@ -1363,7 +1217,7 @@ public abstract class RTL2832TunerController extends TunerController
 		TUN( 3 ),
 		ROM( 4 ),
 		IR( 5 ),
-		IIC( 6 ); //I2C controller
+		I2C( 6 ); //I2C controller
 		
 		private int mValue;
 		
@@ -1409,37 +1263,34 @@ public abstract class RTL2832TunerController extends TunerController
 	public enum SampleRate
 	{
 		/* Note: sample rates below 1.0MHz are subject to aliasing */
-		RATE_0_240MHZ( 0x0DFC, 0x0000,  240000, "0.240 MHz", 16384 ),
-		RATE_0_288MHZ( 0x08FC, 0x0000,  288000, "0.288 MHz", 16384 ),
-		RATE_0_912MHZ( 0x07E4, 0x0000,  912000, "0.912 MHz", 32768 ),
-		RATE_0_960MHZ( 0x0778, 0x0000,  960000, "0.960 MHz", 32768 ),
-		RATE_1_200MHZ( 0x05F4, 0x0000, 1200000, "1.200 MHz", 65536 ),
-		RATE_1_440MHZ( 0x04FC, 0x0000, 1440000, "1.440 MHz", 65536 ),
-		RATE_1_680MHZ( 0x0448, 0x0000, 1680000, "1.680 MHz", 65536 ),
-		RATE_1_824MHZ( 0x03F0, 0x0000, 1824000, "1.824 MHz", 65536 ),
-		RATE_2_016MHZ( 0x038C, 0x0000, 2016000, "2.016 MHz", 131072 ),
-		RATE_2_208MHZ( 0x0340, 0x0000, 2208000, "2.208 MHz", 131072 ),
-		RATE_2_400MHZ( 0x02FC, 0x0000, 2400000, "2.400 MHz", 131072 ),
-		RATE_2_640MHZ( 0x02B4, 0x8000, 2640000, "2.640 MHz", 262144 ),
-		RATE_2_880MHZ( 0x027C, 0x0000, 2880000, "2.880 MHz", 262144 );
+		RATE_0_240MHZ( 0x0DFC, 0x0000,  240000, "0.240 MHz" ),
+		RATE_0_288MHZ( 0x08FC, 0x0000,  288000, "0.288 MHz" ),
+		RATE_0_912MHZ( 0x07E4, 0x0000,  912000, "0.912 MHz" ),
+		RATE_0_960MHZ( 0x0778, 0x0000,  960000, "0.960 MHz" ),
+		RATE_1_200MHZ( 0x05F4, 0x0000, 1200000, "1.200 MHz" ),
+		RATE_1_440MHZ( 0x04FC, 0x0000, 1440000, "1.440 MHz" ),
+		RATE_1_680MHZ( 0x0448, 0x0000, 1680000, "1.680 MHz" ),
+		RATE_1_824MHZ( 0x03F0, 0x0000, 1824000, "1.824 MHz" ),
+		RATE_2_016MHZ( 0x038C, 0x0000, 2016000, "2.016 MHz" ),
+		RATE_2_208MHZ( 0x0340, 0x0000, 2208000, "2.208 MHz" ),
+		RATE_2_400MHZ( 0x02FC, 0x0000, 2400000, "2.400 MHz" ),
+		RATE_2_640MHZ( 0x02B4, 0x8000, 2640000, "2.640 MHz" ),
+		RATE_2_880MHZ( 0x027C, 0x0000, 2880000, "2.880 MHz" );
 		
 		private int mRatioHigh;
 		private int mRatioLow;
 		private int mRate;
 		private String mLabel;
-		private int mBufferSize;
 		
 		private SampleRate( int ratioHigh, 
 							int ratioLow, 
 							int rate, 
-							String label,
-							int bufferSize )
+							String label )
 		{
 			mRatioHigh = ratioHigh;
 			mRatioLow = ratioLow;
 			mRate = rate;
 			mLabel = label;
-			mBufferSize = bufferSize;
 		}
 
 		public int getRatioHighBits()
@@ -1467,11 +1318,6 @@ public abstract class RTL2832TunerController extends TunerController
 			return mLabel;
 		}
 		
-		public int getBufferSize()
-		{
-			return mBufferSize;
-		}
-		
 		/**
 		 * Returns the sample rate that is equal to the argument or the next
 		 * higher sample rate
@@ -1488,7 +1334,7 @@ public abstract class RTL2832TunerController extends TunerController
 				}
 			}
 			
-			return sDEFAULT_SAMPLE_RATE;
+			return DEFAULT_SAMPLE_RATE;
 		}
 	}
 
@@ -1500,7 +1346,16 @@ public abstract class RTL2832TunerController extends TunerController
     {
 		mSampleListeners.add( listener );
 
-		mBufferProcessor.start();
+		if( mBufferProcessor == null || !mBufferProcessor.isRunning() )
+		{
+			mBufferProcessor = new BufferProcessor();
+
+			Thread thread = new Thread( mBufferProcessor );
+			thread.setDaemon( true );
+			thread.setName( "Sample Processor" );
+
+			thread.start();
+		}
     }
 
 	/**
@@ -1545,95 +1400,93 @@ public abstract class RTL2832TunerController extends TunerController
 	 * Buffer processing thread.  Fetches samples from the RTL2832 Tuner and 
 	 * dispatches them to all registered listeners
 	 */
-	public class BufferProcessor implements UsbPipeListener
+	public class BufferProcessor implements Runnable, TransferCallback
 	{
 		private ScheduledExecutorService mExecutor = 
 							Executors.newScheduledThreadPool( 2 );
 		private ScheduledFuture<?> mSampleDispatcherTask;
-		private ScheduledFuture<?> mSampleRateCounterTask;
-		
+        private ScheduledFuture<?> mSampleRateCounterTask;
+        private ArrayList<Transfer> mTransfers;
 		private AtomicBoolean mRunning = new AtomicBoolean();
-		private AtomicBoolean mResetting = new AtomicBoolean();
-		private Boolean mTransitioning = false;
 
-        public void start()
+		@Override
+        public void run()
         {
-			synchronized( mTransitioning )
+			if( mRunning.compareAndSet( false, true ) )
 			{
-				if( mRunning.compareAndSet( false, true ) )
+				mLog.debug( "rtl2832 [" + getUniqueID() + 
+						"] - starting sample fetch thread" );
+
+				try
 				{
-					mLog.debug( "rtl2832 [" + getUniqueID() + 
-							"] - starting sample fetch thread" );
+					setSampleRate( mSampleRate );
 
-					ArrayList<UsbIrp> irps = new ArrayList<UsbIrp>();
-					
-					for( int x = 0; x < sUSB_IRP_POOL_SIZE; x++ )
-					{
-						UsbIrp irp = mUSBPipe.createUsbIrp();
-						irp.setData( new byte[ mBufferSize ] );
-						irps.add( irp );
-					}
-
-					try
-		            {
-						if( mUSBPipe.isActive() )
-						{
-							if( !mUSBPipe.isOpen() )
-							{
-								resetUSBBuffer();
-								
-								mUSBPipe.open();
-								
-								//TODO: move this to the constructor
-								mUSBPipe.addUsbPipeListener( this );
-							}
-							
-							if( mUSBPipe.isOpen() )
-							{
-					            mSampleDispatcherTask = mExecutor
-				            		.scheduleAtFixedRate( new BufferDispatcher(), 
-	            							  0, 20, TimeUnit.MILLISECONDS );
-					            
-					            mSampleRateMonitor = 
-				            		new SampleRateMonitor( mSampleRate.getRate() );
-					            
-					            mSampleRateCounterTask = mExecutor
-					            		.scheduleAtFixedRate( mSampleRateMonitor, 
-	            							  10, 10, TimeUnit.SECONDS );
-
-					            mUSBPipe.asyncSubmit( irps );
-							}
-						}
-		            }
-		            catch ( Exception e )
-		            {
-			            e.printStackTrace();
-		            }
+					resetUSBBuffer();
 				}
-	        }
-		}
+				catch( SourceException e )
+				{
+					mLog.error( "couldn't start buffer processor", e );
+					
+					mRunning.set( false );
+				}
+
+	            prepareTransfers();
+	            
+				for( Transfer transfer: mTransfers )
+				{
+					int result = LibUsb.submitTransfer( transfer );
+					
+					if( result != LibUsb.SUCCESS )
+					{
+						mLog.error( "error submitting transfer [" + 
+								LibUsb.errorName( result ) + "]" );
+						break;
+					}
+				}
+
+	            mSampleDispatcherTask = mExecutor
+	            		.scheduleAtFixedRate( new BufferDispatcher(), 
+								  0, 20, TimeUnit.MILLISECONDS );
+
+	            mSampleRateMonitor = 
+	                        new SampleRateMonitor( mSampleRate.getRate() );
+	                    
+	            mSampleRateCounterTask = mExecutor
+	                                .scheduleAtFixedRate( mSampleRateMonitor, 
+	                                          10, 10, TimeUnit.SECONDS );
+
+            	while( mRunning.get() )
+				{
+					ByteBuffer completed = ByteBuffer.allocateDirect( 4 );
+					
+					int result = LibUsb.handleEventsTimeoutCompleted( 
+							null, TIMEOUT_US, completed.asIntBuffer() );
+					
+					if( result != LibUsb.SUCCESS )
+					{
+						mLog.error( "error handling events for libusb" );
+					}
+				}
+			}
+        }
 
 		/**
 		 * Stops the sample fetching thread
 		 */
 		public void stop()
 		{
-			synchronized( mTransitioning )
+			if( mRunning.compareAndSet( true, false ) )
 			{
-				if( mRunning.compareAndSet( true, false ) )
-				{
-					mLog.debug( "rtl2832 [" + getUniqueID() + 
-							"] - stopping sample fetch thread" );
+				mLog.debug( "rtl2832 [" + getUniqueID() + 
+						"] - stopping sample fetch thread" );
 
-					mUSBPipe.abortAllSubmissions();
-					
-					if( mSampleDispatcherTask != null )
-					{
-						mSampleDispatcherTask.cancel( true );
-						mSampleRateCounterTask.cancel( true );
-						mRawSampleBuffer.clear();
-						mSampleCounter.set( 0 );
-					}
+				cancel();
+				
+				if( mSampleDispatcherTask != null )
+				{
+					mSampleDispatcherTask.cancel( true );
+					mSampleRateCounterTask.cancel( true );					
+					mFilledBuffers.clear();
 				}
 			}
 		}
@@ -1645,66 +1498,107 @@ public abstract class RTL2832TunerController extends TunerController
 		{
 			return mRunning.get();
 		}
-
-		/**
-		 * This method is invoked by the usb pipe when a response is returned
-		 * from the data request.  If there is byte sample data in the response
-		 * then we will buffer it and allow the buffer processor to convert it
-		 * and dispatch it to listeners.  We automatically insert another 
-		 * irp to get more data.
-		 * 
-		 * This method runs on the usb4java library processing thread, so we
-		 * don't want to weigh it down.
-		 */
+		
 		@Override
-        public synchronized void dataEventOccurred( UsbPipeDataEvent event )
-        {
-			UsbIrp irp = event.getUsbIrp();
-			
-			byte[] data = irp.getData();
-			
-			if( data.length > 0 )
+	    public void processTransfer( Transfer transfer )
+	    {
+			if( transfer.status() == LibUsb.TRANSFER_COMPLETED )
 			{
-				mRawSampleBuffer.add( data );
-				mSampleCounter.addAndGet( data.length );
-			}
-
-			if( mRunning.get() )
-			{
-				try
-	            {
-	                mUSBPipe.asyncSubmit( new byte[ mBufferSize ] );
-	            }
-	            catch ( UsbNotActiveException | UsbNotOpenException
-	                    | IllegalArgumentException | UsbDisconnectedException
-	                    | UsbException e )
-	            {
-	            	mLog.error( "error while processing samples", e );
-	            }
-			}
-        }
-
-		@Override
-        public void errorEventOccurred( UsbPipeErrorEvent e )
-        {
-			/* When an error occurs, we'll get errors on all of the 
-			 * queued IRPS in succession.  We use the mResetting to control
-			 * the reset process and ignore all subsequent errors */
-			if( mResetting.compareAndSet( false, true ) )
-			{
-				mLog.error( "error during data transfer resetting USB pipe to "
-						+ "RTL-2832", e );
+				ByteBuffer buffer = transfer.buffer();
 				
-	        	stop();
-	        	
-	        	if( !mSampleListeners.isEmpty() )
-	        	{
-		        	start();
-	        	}
+				byte[] data = new byte[ transfer.actualLength() ];
+				
+				buffer.get( data );
 
-		        mResetting.set( false );
+				buffer.rewind();
+
+				mFilledBuffers.add( data );
+				
+				mSampleCounter.addAndGet( transfer.actualLength() );
+				
+				if( !isRunning() )
+				{
+					LibUsb.cancelTransfer( transfer );
+				}
 			}
-        }
+			
+			switch( transfer.status() )
+			{
+				case LibUsb.TRANSFER_COMPLETED:
+					/* resubmit the transfer */
+					int result = LibUsb.submitTransfer( transfer );
+					
+					if( result != LibUsb.SUCCESS )
+					{
+						mLog.error( "couldn't resubmit buffer transfer to tuner" );
+						LibUsb.freeTransfer( transfer );
+						mTransfers.remove( transfer );
+					}
+					break;
+				case LibUsb.TRANSFER_CANCELLED:
+					/* free the transfer and remove it */
+					LibUsb.freeTransfer( transfer );
+					mTransfers.remove( transfer );
+					break;
+				default:
+					/* unexpected error */
+					mLog.error( "transfer error [" + 
+						getTransferStatus( transfer.status() ) + 
+						"] transferred actual: " + transfer.actualLength() );
+			}
+	    }
+		
+		private void cancel()
+		{
+			for( Transfer transfer: mTransfers )
+			{
+				LibUsb.cancelTransfer( transfer );
+			}
+
+			ByteBuffer completed = ByteBuffer.allocateDirect( 4 );
+
+			int result = LibUsb.handleEventsTimeoutCompleted( 
+					null, TIMEOUT_US, completed.asIntBuffer() );
+			
+			if( result != LibUsb.SUCCESS )
+			{
+				mLog.error( "error handling usb events during cancel [" + 
+						LibUsb.errorName( result ) + "]" );
+			}
+		}
+		
+	    /**
+	     * Prepares (allocates) a set of transfer buffers for use in 
+	     * transferring data from the tuner via the bulk interface
+	     */
+	    private void prepareTransfers() throws LibUsbException
+	    {
+	    	mTransfers = new ArrayList<Transfer>();
+
+	    	for( int x = 0; x < TRANSFER_BUFFER_POOL_SIZE; x++ )
+	    	{
+	    		Transfer transfer = LibUsb.allocTransfer();
+
+	    		if( transfer == null )
+	    		{
+	    			throw new LibUsbException( "couldn't allocate transfer", 
+	    						LibUsb.ERROR_NO_MEM );
+	    		}
+	    		
+	    		final ByteBuffer buffer = 
+	    				ByteBuffer.allocateDirect( mBufferSize );
+	    		
+	    		LibUsb.fillBulkTransfer( transfer, 
+	    								 mDeviceHandle, 
+	    								 BULK_ENDPOINT_IN, 
+	    								 buffer, 
+	    								 BufferProcessor.this, 
+	    								 "Buffer #" + x,
+	    								 TIMEOUT_US );
+	    		
+	    		mTransfers.add( transfer );
+	    	}
+	    }
 	}
 
 	/**
@@ -1718,16 +1612,41 @@ public abstract class RTL2832TunerController extends TunerController
         {
 			ArrayList<byte[]> buffers = new ArrayList<byte[]>();
 			
-			mRawSampleBuffer.drainTo( buffers );
-			
+			mFilledBuffers.drainTo( buffers );
+
 			for( byte[] buffer: buffers )
 			{
+				//TODO: convert this to float primitive				
 				Float[] samples = mSampleAdapter.convert( buffer );
+				
 				broadcast( samples );
 			}
         }
 	}
-
+	
+	public static String getTransferStatus( int status )
+	{
+		switch( status )
+		{
+			case 0:
+				return "TRANSFER COMPLETED (0)";
+			case 1:
+				return "TRANSFER ERROR (1)";
+			case 2:
+				return "TRANSFER TIMED OUT (2)";
+			case 3:
+				return "TRANSFER CANCELLED (3)";
+			case 4:
+				return "TRANSFER STALL (4)";
+			case 5:
+				return "TRANSFER NO DEVICE (5)";
+			case 6:
+				return "TRANSFER OVERFLOW (6)";
+			default:
+				return "UNKNOWN TRANSFER STATUS (" + status + ")";
+		}
+	}
+	
 	/**
 	 * Averages the sample rate over a 10-second period.  The count is for the
 	 * number of bytes received from the tuner.  There are two bytes for each
@@ -1778,7 +1697,6 @@ public abstract class RTL2832TunerController extends TunerController
 				mSampleCounter.set( 0 );
 				
 				mLog.info( "monitor reset for new sample rate [" + mTargetSampleRate + "]" );
-				System.out.println( "monitor reset for new sample rate [" + mTargetSampleRate + "]" );
 			}
 			else
 			{
@@ -1809,8 +1727,7 @@ public abstract class RTL2832TunerController extends TunerController
 				}
 				
 				StringBuilder sb = new StringBuilder();
-				sb.append( TimeStamp.getTimeStamp( " " ) );
-				sb.append( " RTL-2832 [" );
+				sb.append( "[" );
 				if( mDescriptor != null )
 				{
 					sb.append( mDescriptor.getSerial() );
@@ -1823,12 +1740,10 @@ public abstract class RTL2832TunerController extends TunerController
 				sb.append( mDecimalFormatter.format( current ) );
 				sb.append( " Hz " );
 				sb.append( mPercentFormatter.format( 100.0f * ( current / (float)mTargetSampleRate ) ) );
-				sb.append( "% ] average error [" );
+				sb.append( "% ] error [" );
 				sb.append( average );
 				sb.append( " Hz ] target " );
-				sb.append( mTargetSampleRate );
-				
-				System.out.println( sb.toString() );
+				sb.append( mDecimalFormatter.format( mTargetSampleRate ) );
 				
 				mLog.info( sb.toString() );
 			}
@@ -2004,4 +1919,75 @@ public abstract class RTL2832TunerController extends TunerController
 			return sb.toString();
 		}
 	}
+	
+	public class USBEventHandlingThread implements Runnable
+	{
+	    /** If thread should abort. */
+	    private volatile boolean mAbort;
+
+	    /**
+	     * Aborts the event handling thread.
+	     */
+	    public void abort()
+	    {
+	    	mAbort = true;
+	    }
+
+	    @Override
+	    public void run()
+	    {
+	        while ( !mAbort )
+	        {
+	            int result = LibUsb.handleEventsTimeout( null, 1000 );
+	            
+	            if ( result != LibUsb.SUCCESS )
+	            {
+	                mAbort = true;
+
+	                mLog.error( "error handling usb events [" + 
+	            			LibUsb.errorName( result ) + "]" );
+	                
+	                throw new LibUsbException("Unable to handle USB "
+	                		+ "events", result );
+	            }
+	        }
+	    }
+	}
+
+	public enum TunerTypeCheck
+	{
+		E4K( 0xC8, 0x02, 0x40 ),
+		FC0012( 0xC6, 0x00, 0xA1 ),
+		FC0013( 0xC6, 0x00, 0xA3 ),
+		FC2580( 0xAC, 0x01, 0x56 ),
+		R820T( 0x34, 0x00, 0x69 ),
+		R828D( 0x74, 0x00, 0x69 );
+		
+		private int mI2CAddress;
+		private int mCheckAddress;
+		private int mCheckValue;
+		
+		private TunerTypeCheck( int i2c, int address, int value )
+		{
+			mI2CAddress = i2c;
+			mCheckAddress = address;
+			mCheckValue = value;
+		}
+
+		public byte getI2CAddress()
+		{
+			return (byte)mI2CAddress;
+		}
+		
+		public byte getCheckAddress()
+		{
+			return (byte)mCheckAddress;
+		}
+		
+		public byte getCheckValue()
+		{
+			return (byte)mCheckValue;
+		}
+	}
+	
 }

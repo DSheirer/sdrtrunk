@@ -17,26 +17,27 @@
  ******************************************************************************/
 package source.tuner.fcd;
 
-import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import source.tuner.rtl.RTL2832TunerController.Descriptor;
 import net.miginfocom.swing.MigLayout;
 
 public class FCDTunerDetailsPanel extends JPanel
 {
     private static final long serialVersionUID = 1L;
-    private JLabel mAddress;
-    private JLabel mCellBlock;
-    private JLabel mFirmware;
 
     public FCDTunerDetailsPanel( FCDTunerController controller )
     {
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][][][grow]" ) );
 
+		add( new JLabel( "USB ID:" ) );
+		add( new JLabel( controller.getUSBID() ) );
+        
 		add( new JLabel( "USB Address:" ) );
-		add( new JLabel( controller.getAddress() ) );
+		add( new JLabel( controller.getUSBAddress() ) );
+        
+		add( new JLabel( "USB Speed:" ) );
+		add( new JLabel( controller.getUSBSpeed() ) );
         
 		add( new JLabel( "Cellular Band:" ) );
 		add( new JLabel( controller.getConfiguration().getBandBlocking()

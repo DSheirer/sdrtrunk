@@ -1,5 +1,7 @@
 package source.tuner.hackrf;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -10,46 +12,34 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.usb.UsbClaimException;
-import javax.usb.UsbConfiguration;
-import javax.usb.UsbControlIrp;
-import javax.usb.UsbDevice;
-import javax.usb.UsbDisconnectedException;
-import javax.usb.UsbEndpoint;
-import javax.usb.UsbEndpointDescriptor;
 import javax.usb.UsbException;
-import javax.usb.UsbInterface;
-import javax.usb.UsbInterfacePolicy;
-import javax.usb.UsbIrp;
-import javax.usb.UsbNotActiveException;
-import javax.usb.UsbNotOpenException;
-import javax.usb.UsbPipe;
-import javax.usb.event.UsbPipeDataEvent;
-import javax.usb.event.UsbPipeErrorEvent;
-import javax.usb.event.UsbPipeListener;
 
 import org.apache.commons.io.EndianUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.usb4java.Device;
+import org.usb4java.DeviceDescriptor;
+import org.usb4java.DeviceHandle;
 import org.usb4java.LibUsb;
+import org.usb4java.LibUsbException;
+import org.usb4java.Transfer;
+import org.usb4java.TransferCallback;
 
 import sample.Listener;
 import source.SourceException;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerController;
 import source.tuner.rtl.ByteSampleAdapter;
-import source.tuner.usb.USBTunerDevice;
 
 public class HackRFTunerController extends TunerController
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( HackRFTunerController.class );
 
+	public final static long TIMEOUT_US = 1000000l; //uSeconds
 	public static final byte USB_ENDPOINT = (byte)0x81;
 	public static final byte USB_INTERFACE = (byte)0x0;
-	public static final boolean USB_FORCE_CLAIM_INTERFACE = true;
 	
 	public static final byte REQUEST_TYPE_IN = 
 								(byte)( LibUsb.ENDPOINT_IN | 
@@ -65,10 +55,10 @@ public class HackRFTunerController extends TunerController
 	public static final long MAX_FREQUENCY = 6000000000l;
 	public static final long DEFAULT_FREQUENCY = 101100000;
 
-	public final static int USB_IRP_POOL_SIZE = 10;
+	public final static int TRANSFER_BUFFER_POOL_SIZE = 16;
 	
-	private LinkedTransferQueue<UsbIrp> mReceivedBuffers = 
-								new LinkedTransferQueue<UsbIrp>();
+	private LinkedTransferQueue<byte[]> mFilledBuffers = 
+			new LinkedTransferQueue<byte[]>();
 	
 	private CopyOnWriteArrayList<Listener<Float[]>> mSampleListeners =
 							new CopyOnWriteArrayList<Listener<Float[]>>();
@@ -76,63 +66,42 @@ public class HackRFTunerController extends TunerController
 	private ByteSampleAdapter mSampleAdapter = new ByteSampleAdapter();
 	private BufferProcessor mBufferProcessor = new BufferProcessor();
 	
-	private UsbDevice mUSBDevice;
-	private UsbInterface mUSBInterface;
-	private UsbPipe mUSBPipe;
+	private HackRFSampleRate mSampleRate = HackRFSampleRate.RATE2_016MHZ;
+	public int mBufferSize = 262144;
+	private boolean mAmplifierEnabled = false;
 	
-	private HackRFSampleRate mSampleRate = HackRFSampleRate.RATE4_464MHZ;
-	public int mBufferSize = mSampleRate.getBufferSize();
+	private Device mDevice;
+	private DeviceDescriptor mDeviceDescriptor;
+	private DeviceHandle mDeviceHandle;
 	
-	public HackRFTunerController( USBTunerDevice tunerDevice ) 
+	public HackRFTunerController( Device device, DeviceDescriptor descriptor ) 
 						throws SourceException
 	{
 	    super( MIN_FREQUENCY, MAX_FREQUENCY );
-	    
-	    mUSBDevice = tunerDevice.getDevice();
+
+	    mDevice = device;
+	    mDeviceDescriptor = descriptor;
 	}
 	
 	public void init() throws SourceException
 	{
-		mLog.info( "HackRF Tuner Controller init() starting" );
-
-		UsbConfiguration config = mUSBDevice.getActiveUsbConfiguration();
+		mDeviceHandle = new DeviceHandle();
 		
-		mUSBInterface = config.getUsbInterface( USB_INTERFACE );
-
+		LibUsb.open( mDevice, mDeviceHandle );
+		
 		try
 		{
-			if( claim( mUSBInterface ) )
-			{
-				/* Get the USB endpoint */
-				UsbEndpoint endpoint = mUSBInterface.getUsbEndpoint( USB_ENDPOINT );
-				
-				UsbEndpointDescriptor d = endpoint.getUsbEndpointDescriptor();
-				System.out.println( "Endpoint max packet size:" + d.wMaxPacketSize() );
-				
-				mUSBPipe = endpoint.getUsbPipe();
-				
-				setMode( Mode.RECEIVE );
-				
-				setFrequency( DEFAULT_FREQUENCY );
-			}
-			else
-			{
-				throw new SourceException( "HackRF Tuner Controller - couldn't "
-						+ "claim USB interface" );
-			}
+			claimInterface();
+
+			setMode( Mode.RECEIVE );
+			
+			setFrequency( DEFAULT_FREQUENCY );
 		}
-		catch( UsbException e )
+		catch( Exception e )
 		{
 			throw new SourceException( "HackRF Tuner Controller - couldn't "
 					+ "claim USB interface or get endpoint or pipe", e );
 		}
-        catch ( UsbDisconnectedException e )
-        {
-			throw new SourceException( "HackRF Tuner Controller - usb device "
-					+ "is disconnected", e );
-        }
-		
-		mLog.info( "HackRF Tuner Controller init() complete" );
 	}
 
 	/**
@@ -141,29 +110,39 @@ public class HackRFTunerController extends TunerController
 	 * will dictate if the interface is forcibly claimed from the other 
 	 * application
 	 */
-	public static boolean claim( UsbInterface iface ) throws UsbException, 
-														   UsbClaimException
+	private void claimInterface() throws SourceException
 	{
-		if( !iface.isClaimed() )
+		if( mDeviceHandle != null )
 		{
-			iface.claim( new UsbInterfacePolicy() 
+			int result = LibUsb.kernelDriverActive( mDeviceHandle, USB_INTERFACE );
+					
+			if( result == 1 )
 			{
-				@Override
-                public boolean forceClaim( UsbInterface arg0 )
-                {
-                    return USB_FORCE_CLAIM_INTERFACE;
-                }
-			} );
+				result = LibUsb.detachKernelDriver( mDeviceHandle, USB_INTERFACE );
+
+				if( result != LibUsb.SUCCESS )
+				{
+					mLog.error( "failed attempt to detach kernel driver [" + 
+							LibUsb.errorName( result ) + "]" );
+					
+					throw new SourceException( "couldn't detach kernel driver "
+							+ "from device" );
+				}
+			}
 			
-			return iface.isClaimed();
+			result = LibUsb.claimInterface( mDeviceHandle, USB_INTERFACE );
+			
+			if( result != LibUsb.SUCCESS )
+			{
+				throw new SourceException( "couldn't claim usb interface [" + 
+					LibUsb.errorName( result ) + "]" );
+			}
 		}
 		else
 		{
-			mLog.error( "attempt to claim USB interface failed - in use by "
-					+ "another application" );
+			throw new SourceException( "couldn't claim usb interface - no "
+					+ "device handle" );
 		}
-		
-		return false;
 	}
 
 	/**
@@ -181,19 +160,13 @@ public class HackRFTunerController extends TunerController
 	 */
 	public String getFirmwareVersion() throws UsbException
 	{
-		byte[] data = readArray( Request.VERSION_STRING_READ, 0, 0, 255 ); 
+		ByteBuffer buffer = readArray( Request.VERSION_STRING_READ, 0, 0, 255 ); 
+
+		byte[] data = new byte[ 255 ];
 		
-		StringBuilder sb = new StringBuilder();
-		
-		for( byte b: data )
-		{
-			if( b != (byte)0 )
-			{
-				sb.append( (char)b );
-			}
-		}
-		
-		return sb.toString();
+		buffer.get( data );
+
+		return new String( data );
 	}
 	
 	/**
@@ -201,9 +174,9 @@ public class HackRFTunerController extends TunerController
 	 */
 	public Serial getSerial() throws UsbException
 	{
-		byte[] data = readArray( Request.BOARD_PARTID_SERIALNO_READ, 0, 0, 24 ); 
+		ByteBuffer buffer = readArray( Request.BOARD_PARTID_SERIALNO_READ, 0, 0, 24 ); 
 
-		return new Serial( data ); 
+		return new Serial( buffer ); 
 	}
 
 	/**
@@ -230,6 +203,13 @@ public class HackRFTunerController extends TunerController
 	public void setAmplifierEnabled( boolean enabled ) throws UsbException
 	{
 		write( Request.AMP_ENABLE, ( enabled ? 1 : 0 ), 0 );
+		
+		mAmplifierEnabled = enabled;
+	}
+	
+	public boolean getAmplifier()
+	{
+		return mAmplifierEnabled;
 	}
 
 	/**
@@ -269,17 +249,20 @@ public class HackRFTunerController extends TunerController
 	@Override
     public void setTunedFrequency( long frequency ) throws SourceException
     {
+		ByteBuffer buffer = ByteBuffer.allocateDirect( 8 );
+		buffer.order( ByteOrder.LITTLE_ENDIAN );
+		
 		int mhz = (int)( frequency / 1E6 );
 		int hz = (int)( frequency - ( mhz * 1E6 ) );
-		
-		byte[] data = new byte[ 8 ];
-		
-		EndianUtils.writeSwappedInteger( data, 0, mhz );
-		EndianUtils.writeSwappedInteger( data, 4, hz );
+
+		buffer.putInt( mhz );
+		buffer.putInt( hz );
+
+		buffer.rewind();
 
 		try
 		{
-			write( Request.SET_FREQUENCY, 0, 0, data );
+			write( Request.SET_FREQUENCY, 0, 0, buffer );
 		}
 		catch( UsbException e )
 		{
@@ -288,7 +271,6 @@ public class HackRFTunerController extends TunerController
 			throw new SourceException( "error setting frequency [" + 
 					frequency + "]", e );
 		}
-	    
     }
 
 	@Override
@@ -302,15 +284,15 @@ public class HackRFTunerController extends TunerController
     {
 		if( config instanceof HackRFTunerConfiguration )
 		{
-			HackRFTunerConfiguration hackConfig = 
+			HackRFTunerConfiguration hackRFConfig = 
 					(HackRFTunerConfiguration)config;
 			
 			try
             {
-	            setSampleRate( hackConfig.getSampleRate() );
-	            setFrequencyCorrection( hackConfig.getFrequencyCorrection() );
-	            setLNAGain( hackConfig.getLNAGain() );
-	            setVGAGain( hackConfig.getVGAGain() );
+	            setSampleRate( hackRFConfig.getSampleRate() );
+	            setFrequencyCorrection( hackRFConfig.getFrequencyCorrection() );
+	            setLNAGain( hackRFConfig.getLNAGain() );
+	            setVGAGain( hackRFConfig.getVGAGain() );
 	            setFrequency( getFrequency() );
             }
             catch ( UsbException e )
@@ -326,21 +308,35 @@ public class HackRFTunerController extends TunerController
 		}
     }
 	
-	public byte[] readArray( Request request, 
+	public ByteBuffer readArray( Request request, 
 							 int value, 
 							 int index, 
 							 int length ) throws UsbException
 	{
-		UsbControlIrp irp = mUSBDevice.createUsbControlIrp( REQUEST_TYPE_IN, 
-				request.getRequestNumber(), (short)value, (short)index );
+		if( mDeviceHandle != null )
+		{
+			ByteBuffer buffer = ByteBuffer.allocateDirect( length );
+			
+			int transferred = LibUsb.controlTransfer( mDeviceHandle, 
+													  REQUEST_TYPE_IN, 
+													  request.getRequestNumber(), 
+													  (short)value,
+													  (short)index,
+													  buffer, 
+													  TIMEOUT_US );
 
-		byte[] data = new byte[ length ];
-		
-		irp.setData( data );
-		
-		mUSBDevice.syncSubmit( irp );
-		
-		return data;
+			if( transferred < 0 )
+			{
+				throw new LibUsbException( "read error", transferred );
+			}
+
+			return buffer;
+		}
+		else
+		{
+			throw new LibUsbException( "device handle is null", 
+							LibUsb.ERROR_NO_DEVICE );
+		}
 	}
 	
 	public int read( Request request, int value, int index, int length ) 
@@ -349,10 +345,14 @@ public class HackRFTunerController extends TunerController
 		if( !( length == 1 || length == 2 || length == 4 ) )
 		{
 			throw new IllegalArgumentException( "invalid length [" + length + 
-					"] must be: byte=1, short=2, int=3 to read a primitive" );
+					"] must be: byte=1, short=2, int=4 to read a primitive" );
 		}
 		
-		byte[] data = readArray( request, value, index, length );
+		ByteBuffer buffer = readArray( request, value, index, length );
+		
+		byte[] data = new byte[ buffer.capacity() ];
+		
+		buffer.get( data );
 		
 		switch( data.length )
 		{
@@ -371,29 +371,50 @@ public class HackRFTunerController extends TunerController
 	public int readByte( Request request, int value, int index, boolean signed ) 
 									throws UsbException
 	{
-		byte[] data = readArray( request, value, index, 1 );
+		ByteBuffer buffer = readArray( request, value, index, 1 );
 
 		if( signed )
 		{
-			return (int)( data[ 0 ] );
+			return (int)( buffer.get() );
 		}
 		else
 		{
-			return (int)( data[ 0 ] & 0xFF );
+			return (int)( buffer.get() & 0xFF );
 		}
 	}
 	
 	public void write( Request request, 
 					   int value, 
 					   int index, 
-					   byte[] data ) throws UsbException
+					   ByteBuffer buffer ) throws UsbException
 	{
-		UsbControlIrp irp = mUSBDevice.createUsbControlIrp( REQUEST_TYPE_OUT, 
-					request.getRequestNumber(), (short)value, (short)index );
+		if( mDeviceHandle != null )
+		{
+			int transferred = LibUsb.controlTransfer( mDeviceHandle, 
+													  REQUEST_TYPE_OUT,
+													  request.getRequestNumber(),
+													  (short)value, 
+													  (short)index, 
+													  buffer, 
+													  TIMEOUT_US );
 
-		irp.setData( data );
-		
-		mUSBDevice.syncSubmit( irp );
+			if( transferred < 0 )
+			{
+				throw new LibUsbException( "error writing byte buffer", 
+								transferred );
+			}
+			else if( transferred != buffer.capacity() )
+			{
+				throw new LibUsbException( "transferred bytes [" + 
+						transferred + "] is not what was expected [" + 
+						buffer.capacity() + "]", transferred );
+			}
+		}
+		else
+		{
+			throw new LibUsbException( "device handle is null", 
+							LibUsb.ERROR_NO_DEVICE );
+		}
 	}
 
 	/**
@@ -403,63 +424,21 @@ public class HackRFTunerController extends TunerController
 					   int value, 
 					   int index ) throws UsbException
 	{
-		write( request, value, index, new byte[ 0 ] );
+		write( request, value, index, ByteBuffer.allocateDirect( 0 ) );
 	}
 
 	/**
 	 * Sample Rate
 	 * 
-	 *  Note: this is direct translation of the libhackrf code, because I still
-	 *  can't figure out how it works ... one day, maybe.
+	 * Note: the libhackrf set sample rate method is designed to allow fractional
+	 * sample rates.  However, since we're only using integral sample rates, we
+	 * simply invoke the setSampleRateManual method directly.
 	 */
 	public void setSampleRate( HackRFSampleRate rate ) throws UsbException
 	{
-//		int MAX_N = 32;
-//		
-//		double freq = (double)rate.getRate() / 1E6d;
-//		
-//		double freq_frac = 1.0d + freq - (int)freq;
-//		
-//		long u64 = Double.doubleToLongBits( freq );
-//		
-//		int e = (int)( ( u64 >> 52 ) - 1023 );
-//		
-//		long m = (long)( 1l << 52 ) - 1l;
-//		
-//		u64 = Double.doubleToLongBits( freq_frac );
-//		
-//		u64 &= m;
-//		
-//		m &= ~( ( 1 << ( e + 4 ) ) - 1 );
-//
-//		long a = 0;
-//
-//		int x;
-//		
-//		for( x = 1; x < MAX_N; x++ )
-//		{
-//			a += u64;
-//
-//			if( ( ( a & m ) == 0 ) || ( ( ~a & m ) == 0 ) )
-//			{
-//				break;
-//			}
-//		}
-//
-//		if( x == MAX_N )
-//		{
-//			x = 1;
-//		}
-//
-//		int freq_hz = (int)( freq * (double)x * 0.5d );
-//		
-//		setSampleRateManual( freq_hz, x );
-
 		setSampleRateManual( rate.getRate(), 1 );
 		
 		mFrequencyController.setSampleRate( rate.getRate() );
-		
-		mBufferSize = rate.getBufferSize();
 		
 		setBasebandFilter( rate.getFilter() );
 		
@@ -469,12 +448,14 @@ public class HackRFTunerController extends TunerController
 	public void setSampleRateManual( int frequency, int divider ) 
 							throws UsbException
 	{
-		byte[] data = new byte[ 8 ];
-		
-		EndianUtils.writeSwappedInteger( data, 0, frequency );
-		EndianUtils.writeSwappedInteger( data, 4, divider );
+		ByteBuffer buffer = ByteBuffer.allocateDirect( 8 );
 
-		write( Request.SET_SAMPLE_RATE, 0, 0, data );
+		buffer.order( ByteOrder.LITTLE_ENDIAN );
+
+		buffer.putInt( frequency );
+		buffer.putInt( divider );
+
+		write( Request.SET_SAMPLE_RATE, 0, 0, buffer );
 	}
 	
 	public int getSampleRate()
@@ -522,29 +503,26 @@ public class HackRFTunerController extends TunerController
 
 	public enum HackRFSampleRate
 	{
-		RATE2_016MHZ(   2016000,  65536,  "2.016 MHz", BasebandFilter.F2_50 ),
-		RATE3_024MHZ(   3024000,  98304,  "3.024 MHz", BasebandFilter.F3_50 ),
-		RATE4_464MHZ(   4464000, 131072,  "4.464 MHz", BasebandFilter.F5_00 ),
-		RATE5_472MHZ(   5472000, 196608,  "5.472 MHz", BasebandFilter.F6_00 ),
-		RATE7_488MHZ(   7488000, 262144,  "7.488 MHz", BasebandFilter.F8_00 ),
-		RATE10_032MHZ(  9984000, 131072, " 9.984 MHz", BasebandFilter.F10_00 ),
-		RATE12_000MHZ( 12000000, 262144, "12.000 MHz", BasebandFilter.F12_00 ),
-		RATE13_488MHZ( 13488000, 262144, "13.488 MHz", BasebandFilter.F14_00 ),
-		RATE14_976MHZ( 14976000, 262144, "14.976 MHz", BasebandFilter.F15_00 ),
-		RATE19_968MHZ( 19968000, 262144, "19.968 MHz", BasebandFilter.F20_00 );
+		RATE2_016MHZ(   2016000,  "2.016 MHz", BasebandFilter.F3_50 ),
+		RATE3_024MHZ(   3024000,  "3.024 MHz", BasebandFilter.F5_00 ),
+		RATE4_464MHZ(   4464000,  "4.464 MHz", BasebandFilter.F6_00 ),
+		RATE5_472MHZ(   5472000,  "5.472 MHz", BasebandFilter.F7_00 ),
+		RATE7_488MHZ(   7488000,  "7.488 MHz", BasebandFilter.F9_00 ),
+		RATE10_032MHZ(  9984000, " 9.984 MHz", BasebandFilter.F12_00 ),
+		RATE12_000MHZ( 12000000, "12.000 MHz", BasebandFilter.F14_00 ),
+		RATE13_488MHZ( 13488000, "13.488 MHz", BasebandFilter.F15_00 ),
+		RATE14_976MHZ( 14976000, "14.976 MHz", BasebandFilter.F20_00 ),
+		RATE19_968MHZ( 19968000, "19.968 MHz", BasebandFilter.F24_00 );
 		
 		private int mRate;
-		private int mBufferSize;
 		private String mLabel;
 		private BasebandFilter mFilter;
 		
 		private HackRFSampleRate( int rate, 
-								  int bufferSize, 
 								  String label, 
 								  BasebandFilter filter )
 		{
 			mRate = rate;
-			mBufferSize = bufferSize;
 			mLabel = label;
 			mFilter = filter;
 		}
@@ -552,11 +530,6 @@ public class HackRFTunerController extends TunerController
 		public int getRate()
 		{
 			return mRate;
-		}
-		
-		public int getBufferSize()
-		{
-			return mBufferSize;
 		}
 		
 		public String getLabel()
@@ -577,6 +550,7 @@ public class HackRFTunerController extends TunerController
 	
 	public enum BasebandFilter
 	{
+		FAUTO(         0,  "AUTO" ),
 		F1_75(   1750000,  "1.75 MHz" ),
 		F2_50(   2500000,  "2.50 MHz" ),
 		F3_50(   3500000,  "3.50 MHz" ),
@@ -793,9 +767,11 @@ public class HackRFTunerController extends TunerController
 	{
 		private byte[] mData;
 		
-		public Serial( byte[] data )
+		public Serial( ByteBuffer buffer )
 		{
-			mData = data;
+			mData = new byte[ buffer.capacity() ];
+			
+			buffer.get( mData );
 		}
 		
 		public String getPartID()
@@ -841,8 +817,16 @@ public class HackRFTunerController extends TunerController
     {
 		mSampleListeners.add( listener );
 
-		System.out.println( "HackRF - listener added - count:" + mSampleListeners.size() );
-		mBufferProcessor.start();
+		if( mBufferProcessor == null || !mBufferProcessor.isRunning() )
+		{
+			mBufferProcessor = new BufferProcessor();
+
+			Thread thread = new Thread( mBufferProcessor );
+			thread.setDaemon( true );
+			thread.setName( "Sample Processor" );
+
+			thread.start();
+		}
     }
 
 	/**
@@ -889,93 +873,72 @@ public class HackRFTunerController extends TunerController
     }
 
 	/**
-	 * Buffer processing thread.  Fetches samples from the RTL2832 Tuner and 
+	 * Buffer processing thread.  Fetches samples from the HackRF Tuner and 
 	 * dispatches them to all registered listeners
 	 */
-	public class BufferProcessor implements UsbPipeListener
+	public class BufferProcessor implements Runnable, TransferCallback
 	{
 		private ScheduledExecutorService mExecutor = 
-							Executors.newScheduledThreadPool( 2 );
+							Executors.newScheduledThreadPool( 1 );
 		private ScheduledFuture<?> mSampleDispatcherTask;
-//		private ScheduledFuture<?> mSampleRateCounterTask;
-		
+        private ArrayList<Transfer> mTransfers;
 		private AtomicBoolean mRunning = new AtomicBoolean();
-		private AtomicBoolean mResetting = new AtomicBoolean();
-		private Boolean mTransitioning = false;
 
-        public void start()
+		@Override
+        public void run()
         {
-			synchronized( mTransitioning )
+			if( mRunning.compareAndSet( false, true ) )
 			{
-				if( mRunning.compareAndSet( false, true ) )
+				mLog.debug( "starting sample fetch thread" );
+
+	            prepareTransfers();
+	            
+				for( Transfer transfer: mTransfers )
 				{
-					mLog.debug( "HackRF - starting sample fetch thread" );
-
-					ArrayList<UsbIrp> irps = new ArrayList<UsbIrp>();
+					int result = LibUsb.submitTransfer( transfer );
 					
-					for( int x = 0; x < USB_IRP_POOL_SIZE; x++ )
+					if( result != LibUsb.SUCCESS )
 					{
-						UsbIrp irp = mUSBPipe.createUsbIrp();
-						irp.setData( new byte[ mBufferSize ] );
-						irps.add( irp );
+						mLog.error( "error submitting transfer [" + 
+								LibUsb.errorName( result ) + "]" );
+						break;
 					}
-
-					try
-		            {
-						if( mUSBPipe.isActive() )
-						{
-							if( !mUSBPipe.isOpen() )
-							{
-								mUSBPipe.open();
-								
-								mUSBPipe.addUsbPipeListener( this );
-							}
-							
-							if( mUSBPipe.isOpen() )
-							{
-					            mSampleDispatcherTask = mExecutor
-				            		.scheduleAtFixedRate( new BufferDispatcher(), 
-	            							  0, 20, TimeUnit.MILLISECONDS );
-					            
-//					            mSampleRateMonitor = 
-//				            		new SampleRateMonitor( mSampleRate.getRate() );
-					            
-//					            mSampleRateCounterTask = mExecutor
-//					            		.scheduleAtFixedRate( mSampleRateMonitor, 
-//	            							  10, 10, TimeUnit.SECONDS );
-
-					            mUSBPipe.asyncSubmit( irps );
-							}
-						}
-		            }
-		            catch ( Exception e )
-		            {
-		            	mLog.error( "Error in buffer processor thread", e );
-		            }
 				}
-	        }
-		}
+
+	            mSampleDispatcherTask = mExecutor
+	            		.scheduleAtFixedRate( new BufferDispatcher(), 
+								  0, 20, TimeUnit.MILLISECONDS );
+
+            	while( mRunning.get() )
+				{
+					ByteBuffer completed = ByteBuffer.allocateDirect( 4 );
+					
+					int result = LibUsb.handleEventsTimeoutCompleted( 
+							null, TIMEOUT_US, completed.asIntBuffer() );
+					
+					if( result != LibUsb.SUCCESS )
+					{
+						mLog.error( "error handling events for libusb" );
+					}
+				}
+			}
+        }
 
 		/**
 		 * Stops the sample fetching thread
 		 */
 		public void stop()
 		{
-			synchronized( mTransitioning )
+			if( mRunning.compareAndSet( true, false ) )
 			{
-				if( mRunning.compareAndSet( true, false ) )
-				{
-					mLog.debug( "HackRF - stopping sample fetch thread" );
+				mLog.debug( "stopping sample fetch thread" );
 
-					mUSBPipe.abortAllSubmissions();
-					
-					if( mSampleDispatcherTask != null )
-					{
-						mSampleDispatcherTask.cancel( true );
-//						mSampleRateCounterTask.cancel( true );
-//						mRawSampleBuffer.clear();
-//						mSampleCounter.set( 0 );
-					}
+				cancel();
+				
+				if( mSampleDispatcherTask != null )
+				{
+					mSampleDispatcherTask.cancel( true );
+					mFilledBuffers.clear();
 				}
 			}
 		}
@@ -987,85 +950,150 @@ public class HackRFTunerController extends TunerController
 		{
 			return mRunning.get();
 		}
-
-		/**
-		 * Receives filled data buffers and places them in the queue for the 
-		 * BufferDispatcher to process
-		 */
+		
 		@Override
-        public synchronized void dataEventOccurred( UsbPipeDataEvent event )
-        {
-			mReceivedBuffers.add( event.getUsbIrp() );
-        }
-
-		@Override
-        public void errorEventOccurred( UsbPipeErrorEvent e )
-        {
-			/* When an error occurs, we'll get errors on all of the 
-			 * queued IRPS in succession.  We use the mResetting to control
-			 * the reset process and ignore all subsequent errors */
-			if( mResetting.compareAndSet( false, true ) )
+	    public void processTransfer( Transfer transfer )
+	    {
+			if( transfer.status() == LibUsb.TRANSFER_COMPLETED )
 			{
-				mLog.error( "error during data transfer resetting USB pipe to "
-						+ "HackRF", e );
+				ByteBuffer buffer = transfer.buffer();
 				
-	        	stop();
-	        	
-	        	if( !mSampleListeners.isEmpty() )
-	        	{
-		        	start();
-	        	}
+				byte[] data = new byte[ transfer.actualLength() ];
+				
+				buffer.get( data );
 
-		        mResetting.set( false );
+				buffer.rewind();
+
+				mFilledBuffers.add( data );
+				
+				if( !isRunning() )
+				{
+					LibUsb.cancelTransfer( transfer );
+				}
 			}
-        }
+			
+			switch( transfer.status() )
+			{
+				case LibUsb.TRANSFER_COMPLETED:
+					/* resubmit the transfer */
+					int result = LibUsb.submitTransfer( transfer );
+					
+					if( result != LibUsb.SUCCESS )
+					{
+						mLog.error( "couldn't resubmit buffer transfer to tuner" );
+						LibUsb.freeTransfer( transfer );
+						mTransfers.remove( transfer );
+					}
+					break;
+				case LibUsb.TRANSFER_CANCELLED:
+					/* free the transfer and remove it */
+					LibUsb.freeTransfer( transfer );
+					mTransfers.remove( transfer );
+					break;
+				default:
+					/* unexpected error */
+					mLog.error( "transfer error [" + 
+						getTransferStatus( transfer.status() ) + 
+						"] transferred actual: " + transfer.actualLength() );
+			}
+	    }
+		
+		private void cancel()
+		{
+			for( Transfer transfer: mTransfers )
+			{
+				LibUsb.cancelTransfer( transfer );
+			}
+
+			ByteBuffer completed = ByteBuffer.allocateDirect( 4 );
+
+			int result = LibUsb.handleEventsTimeoutCompleted( 
+					null, TIMEOUT_US, completed.asIntBuffer() );
+			
+			if( result != LibUsb.SUCCESS )
+			{
+				mLog.error( "error handling usb events during cancel [" + 
+						LibUsb.errorName( result ) + "]" );
+			}
+		}
+		
+	    /**
+	     * Prepares (allocates) a set of transfer buffers for use in 
+	     * transferring data from the tuner via the bulk interface
+	     */
+	    private void prepareTransfers() throws LibUsbException
+	    {
+	    	mTransfers = new ArrayList<Transfer>();
+
+	    	for( int x = 0; x < TRANSFER_BUFFER_POOL_SIZE; x++ )
+	    	{
+	    		Transfer transfer = LibUsb.allocTransfer();
+
+	    		if( transfer == null )
+	    		{
+	    			throw new LibUsbException( "couldn't allocate transfer", 
+	    						LibUsb.ERROR_NO_MEM );
+	    		}
+	    		
+	    		final ByteBuffer buffer = 
+	    				ByteBuffer.allocateDirect( mBufferSize );
+	    		
+	    		LibUsb.fillBulkTransfer( transfer, 
+	    								 mDeviceHandle, 
+	    								 USB_ENDPOINT, 
+	    								 buffer, 
+	    								 BufferProcessor.this, 
+	    								 "Buffer #" + x,
+	    								 TIMEOUT_US );
+	    		
+	    		mTransfers.add( transfer );
+	    	}
+	    }
 	}
 
 	/**
-	 * Fetches received UsbIrp buffers from the received queue, dispatches them
-	 * and resubmits the processed buffer for more samples
+	 * Fetches byte[] chunks from the raw sample buffer.  Converts each byte
+	 * array and broadcasts the array to all registered listeners
 	 */
 	public class BufferDispatcher implements Runnable
 	{
 		@Override
         public void run()
         {
-			ArrayList<UsbIrp> buffers = new ArrayList<UsbIrp>();
+			ArrayList<byte[]> buffers = new ArrayList<byte[]>();
 			
-			mReceivedBuffers.drainTo( buffers );
-			
-			for( UsbIrp buffer: buffers )
+			mFilledBuffers.drainTo( buffers );
+
+			for( byte[] buffer: buffers )
 			{
-				Float[] samples = mSampleAdapter.convert( buffer.getData() );
+				//TODO: convert this to float primitive				
+				Float[] samples = mSampleAdapter.convert( buffer );
 				
 				broadcast( samples );
-				
-				if( mBufferProcessor != null && mBufferProcessor.isRunning() )
-				{
-					try
-		            {
-						/* We adjust the buffer size according to sample rate.
-						 * If this byte array matches the current buffer size
-						 * then we reuse the byte array, otherwise create a 
-						 * new one. */
-						if( buffer.getData().length == mBufferSize )
-						{
-			                mUSBPipe.asyncSubmit( buffer.getData() );
-						}
-						else
-						{
-			                mUSBPipe.asyncSubmit( new byte[ mBufferSize ] );
-						}
-		            }
-		            catch ( UsbNotActiveException | UsbNotOpenException
-		                    | IllegalArgumentException | UsbDisconnectedException
-		                    | UsbException e )
-		            {
-		            	mLog.error( "error submitting a byte array to the usb "
-		            			+ "pipe for samples", e );
-		            }
-				}
 			}
         }
+	}
+	
+	public static String getTransferStatus( int status )
+	{
+		switch( status )
+		{
+			case 0:
+				return "TRANSFER COMPLETED (0)";
+			case 1:
+				return "TRANSFER ERROR (1)";
+			case 2:
+				return "TRANSFER TIMED OUT (2)";
+			case 3:
+				return "TRANSFER CANCELLED (3)";
+			case 4:
+				return "TRANSFER STALL (4)";
+			case 5:
+				return "TRANSFER NO DEVICE (5)";
+			case 6:
+				return "TRANSFER OVERFLOW (6)";
+			default:
+				return "UNKNOWN TRANSFER STATUS (" + status + ")";
+		}
 	}
 }

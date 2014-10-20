@@ -23,20 +23,17 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 
-import javax.usb.UsbDevice;
-import javax.usb.UsbException;
-import javax.usb.UsbHostManager;
-import javax.usb.UsbHub;
-import javax.usb.UsbServices;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.usb4java.Device;
+import org.usb4java.DeviceDescriptor;
+import org.usb4java.DeviceList;
+import org.usb4java.LibUsb;
 
 import source.Source;
 import source.SourceException;
 import source.config.SourceConfigTuner;
 import source.mixer.MixerManager;
-import source.tuner.ettus.B100Tuner;
 import source.tuner.fcd.FCDTuner;
 import source.tuner.fcd.proV1.FCD1TunerController;
 import source.tuner.fcd.proplusV2.FCD2TunerController;
@@ -46,27 +43,34 @@ import source.tuner.rtl.RTL2832Tuner;
 import source.tuner.rtl.RTL2832TunerController;
 import source.tuner.rtl.e4k.E4KTunerController;
 import source.tuner.rtl.r820t.R820TTunerController;
-import source.tuner.usb.USBTunerDevice;
 import controller.ResourceManager;
 import controller.channel.ProcessingChain;
 
 public class TunerManager
 {
 	private final static Logger mLog = 
-			LoggerFactory.getLogger( TunerManager.class );
-
-	private static final String sLOADED = "\t[LOADED]\t";
-	private static final String sNOT_LOADED = "\t[NOT LOADED]\t";
+							LoggerFactory.getLogger( TunerManager.class );
 
 	private ResourceManager mResourceManager;
-
 	private ArrayList<Tuner> mTuners = new ArrayList<Tuner>();
-
+	
     public TunerManager( ResourceManager resourceManager )
 	{
     	mResourceManager = resourceManager;
-		loadTuners();
+    	
+    	/* initialize mixers */
+    	MixerManager.getInstance();
+    	
+    	initTuners();
 	}
+    
+    /**
+     * Performs cleanup of USB related issues
+     */
+    public void dispose()
+    {
+    	LibUsb.exit( null );
+    }
 
     /**
      * Iterates current tuners to get a tuner channel source for the frequency
@@ -121,127 +125,103 @@ public class TunerManager
     /**
      * Loads all USB tuners and USB/Mixer tuner devices
      */
-	private void loadTuners()
+	private void initTuners()
 	{
-		mTuners.clear();
+		DeviceList deviceList = new DeviceList();
 
-		//Get list of attached USB tuner devices
-		ArrayList<USBTunerDevice> devices = getUSBTunerDevices();
+		int result = LibUsb.init( null );
 
-		StringBuilder sb = new StringBuilder();
-		
-		sb.append( "discovered and using [" + devices.size() + 
-				"] available tuner devices\n" );
-
-		mLog.info( "inspecting [" + devices.size() + "] available usb tuner devices" );
-		
-		int counter = 0;
-		
-		for( USBTunerDevice device: devices )
+		if( result != LibUsb.SUCCESS )
 		{
-			counter++;
+			mLog.error( "unable to initialize libusb [" + 
+						LibUsb.errorName( result ) + "]" );
+		}
+		else
+		{
+			mLog.info( "LibUSB API Version: " + LibUsb.getApiVersion() );
+			mLog.info( "LibUSB Version: " + LibUsb.getVersion() );
 			
-			mLog.info( "inspecting usb device [" + counter + "] tuner class: " 
-					+ device.getTunerClass().toString() );
+			result = LibUsb.getDeviceList( null, deviceList );
 			
-			String status = sNOT_LOADED;
-			String name = "Unknown";
-			String reason = "No device driver class available";
+			if( result < 0 )
+			{
+				mLog.error( "unable to get device list from libusb [" + result + " / " + 
+							LibUsb.errorName( result ) + "]" );
+			}
+			else
+			{
+				mLog.info( "discovered [" + result + "] attached USB devices" );
+			}
+		}
+
+		for( Device device: deviceList )
+		{
+			DeviceDescriptor descriptor = new DeviceDescriptor();
 			
-			TunerClass tunerClass = device.getTunerClass();
+			result = LibUsb.getDeviceDescriptor( device, descriptor );
+			
+			if( result != LibUsb.SUCCESS )
+			{
+				mLog.error( "unable to read device descriptor [" + 
+							LibUsb.errorName( result ) + "]" );
+			}
+			else
+			{
+				TunerInitStatus status = initTuner( device, descriptor );
+
+				StringBuilder sb = new StringBuilder();
+
+				sb.append( "usb device [" );
+				sb.append( String.format( "%04X", descriptor.idVendor() ) );
+				sb.append( ":" );
+				sb.append( String.format( "%04X", descriptor.idProduct() ) );
+
+				if( status.isLoaded() )
+				{
+					Tuner tuner = status.getTuner();
+					sb.append( "] LOADED: "  );
+					sb.append( tuner.toString() );
+					mTuners.add( tuner );
+				}
+				else
+				{
+					sb.append( "] NOT LOADED: " );
+					sb.append( status.getInfo() );
+				}
+
+				mLog.info( sb.toString() );
+			}
+		}
+		
+		LibUsb.freeDeviceList( deviceList, true );
+	}
+	
+	private TunerInitStatus initTuner( Device device, 
+									   DeviceDescriptor descriptor )
+	{
+		if( device != null && descriptor != null )
+		{
+			TunerClass tunerClass = TunerClass.valueOf( descriptor.idVendor(), 
+					descriptor.idProduct() );
 			
 			switch( tunerClass )
 			{
+				case ETTUS_USRP_B100:
+					return initEttusB100Tuner( device, descriptor );
 				case FUNCUBE_DONGLE_PRO:
-					//Locate the matching mixer tuner dataline
-					MixerTunerDataLine fcd1Dataline = 
-						getMixerTunerDataLine( tunerClass.getTunerType() );
-					if( fcd1Dataline != null )
-					{
-						FCD1TunerController fcd1Controller;
-
-						try
-                        {
-	                        fcd1Controller = new FCD1TunerController( device );
-
-							FCDTuner fcd1Tuner = 
-									new FCDTuner( fcd1Dataline, fcd1Controller );
-							
-	                        TunerConfiguration config = 
-	                        		getTunerConfiguration( fcd1Tuner );
-
-							if( config != null )
-	    	                {
-								fcd1Tuner.apply( config );
-	    	                }					
-
-							mTuners.add( fcd1Tuner );
-
-							name = fcd1Tuner.getName();
-							status = sLOADED;
-							reason = null;
-                        }
-                        catch ( SourceException e )
-                        {
-                        	reason = "Controller Source Exception: " + 
-                        					e.getLocalizedMessage();
-                        }
-						
-					}
-					else
-					{
-						reason = "Couldn't locate matching mixer/sound card device";
-					}
-					break;
+					return initFuncubeProTuner( device, descriptor );
 				case FUNCUBE_DONGLE_PRO_PLUS:
-					//Locate the matching mixer tuner dataline
-					MixerTunerDataLine fcd2Dataline = 
-								getMixerTunerDataLine( tunerClass.getTunerType() );
-
-					if( fcd2Dataline != null )
-					{
-						FCD2TunerController fcd2Controller;
-
-						try
-                        {
-	                        fcd2Controller = new FCD2TunerController( device );
-
-							FCDTuner fcd2Tuner = 
-								new FCDTuner( fcd2Dataline, fcd2Controller );
-
-	                        TunerConfiguration config = 
-	                        		getTunerConfiguration( fcd2Tuner );
-
-							if( config != null )
-	    	                {
-								fcd2Tuner.apply( config );
-	    	                }					
-
-							mTuners.add( fcd2Tuner );
-
-							status = sLOADED;
-							name = fcd2Tuner.getName();
-							reason = null;
-                        }
-                        catch ( SourceException e )
-                        {
-                        	reason = "Controller Source Exception: " + 
-                        					e.getLocalizedMessage();
-                        }
-					}
-					else
-					{
-						reason = "Couldn't locate matching mixer/sound card device";
-					}
-					break;
-				case GENERIC_2832:
+					return initFuncubeProPlusTuner( device, descriptor );
+				case HACKRF_ONE:
+					return initHackRFTuner( device, descriptor );
 				case COMPRO_VIDEOMATE_U620F:
 				case COMPRO_VIDEOMATE_U650F:
 				case COMPRO_VIDEOMATE_U680F:
+				case GENERIC_2832:
+				case GENERIC_2838:
 				case DEXATEK_5217_DVBT:
 				case DEXATEK_DIGIVOX_MINI_II_REV3:
 				case DEXATEK_LOGILINK_VG002A:
-				case GENERIC_2838:
 				case GIGABYTE_GTU7300:
 				case GTEK_T803:
 				case LIFEVIEW_LV5T_DELUXE:
@@ -259,254 +239,333 @@ public class TunerManager
 				case TERRATEC_T_STICK_PLUS:
 				case TWINTECH_UT40:
 				case ZAAPA_ZTMINDVBZP:
-					TunerType tunerType = tunerClass.getTunerType();
-					
-					if( tunerType == TunerType.RTL2832_VARIOUS )
-					{
-						tunerType = RTL2832TunerController.identifyTunerType( device );
-					}
-					
-					mLog.debug( "identified tuner class [" + 
-							tunerClass.toString() + "] with tuner type [" + 
-							tunerType.toString() + "]" );
-					
-					switch( tunerType )
-					{
-						case ELONICS_E4000:
-							try
-							{
-								E4KTunerController controller = 
-									new E4KTunerController( device );
-								
-								controller.init();
-								
-								RTL2832Tuner rtlTuner = 
-									new RTL2832Tuner( tunerClass, controller );
-								
-		                        TunerConfiguration config = 
-		                        		getTunerConfiguration( rtlTuner );
-
-								if( config != null )
-		    	                {
-									rtlTuner.apply( config );
-		    	                }					
-								
-								mTuners.add( rtlTuner );
-								status = sLOADED;
-								name = rtlTuner.getName();
-								reason = null;
-							}
-							catch( SourceException se )
-							{
-								status = sNOT_LOADED;
-								reason = "Error constructing E4K tuner "
-									+ "controller - " + se.getLocalizedMessage();
-							}
-							break;
-						case RAFAELMICRO_R820T:
-							mLog.debug( "attempting to construct R820T "
-									+ "tuner controller" );
-							try
-							{
-								R820TTunerController controller = 
-									new R820TTunerController( device );
-								
-								mLog.debug( "initializing R820T tuner controller" );
-								controller.init();
-								
-								RTL2832Tuner rtlTuner = 
-									new RTL2832Tuner( tunerClass, controller );
-								
-								
-		                        TunerConfiguration config = 
-		                        		getTunerConfiguration( rtlTuner );
-
-								if( config != null )
-		    	                {
-									mLog.debug( "applying tuner config to R820T tuner" );
-									rtlTuner.apply( config );
-		    	                }					
-								else
-								{
-									mLog.debug( "R820T tuner config was "
-											+ "null - not applied" );
-								}
-								
-								mTuners.add( rtlTuner );
-								status = sLOADED;
-								name = rtlTuner.getName();
-								reason = null;
-							}
-							catch( SourceException se )
-							{
-								status = sNOT_LOADED;
-								reason = "Error constructing R820T tuner "
-									+ "controller - " + se.getLocalizedMessage();
-								
-								mLog.error( "error constructing tuner", se );
-							}
-							break;
-						case FITIPOWER_FC0012:
-						case FITIPOWER_FC0013:
-						case RAFAELMICRO_R828D:
-						case UNKNOWN:
-						default:
-							status = sNOT_LOADED;
-							reason = "SDRTRunk doesn't currently support RTL2832 "
-								+ "Dongle with [" + tunerType.toString() + 
-								"] tuner for tuner class[" + tunerClass.toString() + "]";
-							break;
-					}
-					break;
-				case ETTUS_USRP_B100:
-					mTuners.add(  new B100Tuner( device ) );
-					status = sLOADED;
-					reason = null;
-					break;
-				case HACKRF_ONE:
-//					try
-//                    {
-//						HackRFTunerController hackRFController = 
-//									new HackRFTunerController( device );
-//						
-//						hackRFController.init();
-//						
-//						HackRFTuner hackRFTuner = 
-//								new HackRFTuner( hackRFController );
-//						
-//	                    mTuners.add( hackRFTuner );
-//						name = hackRFTuner.getName();
-//						status = sLOADED;
-//						reason = null;
-//                    }
-//					catch( SourceException se )
-//					{
-//						status = sNOT_LOADED;
-//						reason = "Error constructing HackRF tuner "
-//							+ "controller - " + se.getLocalizedMessage();
-//					}
-					break;
+					return initRTL2832Tuner( tunerClass, device, descriptor );
 				case UNKNOWN:
 				default:
 					break;
 			}
-
-			/**
-			 * Log the tuner loading status
-			 */
-			sb.append( status );
-			sb.append( String.format( "%04X", 
-					device.getDevice().getUsbDeviceDescriptor().idVendor() ) );
-			sb.append( ":" );
-			sb.append( String.format( "%04X", 
-					device.getDevice().getUsbDeviceDescriptor().idProduct() ) );
-			sb.append( " " );
-
-			sb.append( name );
-			
-			if( reason != null )
-			{
-				sb.append( " - " );
-				sb.append( reason );
-			}
-			
-			sb.append( "\n" );
 		}
 		
-		mLog.info( "Configuring USB Tuners" );
-		mLog.info( sb.toString() );
+		return new TunerInitStatus( null, "Unknown Device" );
 	}
 	
-	/**
-	 * Get all USB tuner devices
-	 */
-	private ArrayList<USBTunerDevice> getUSBTunerDevices()
+	private TunerInitStatus initEttusB100Tuner( Device device, 
+												DeviceDescriptor descriptor )
 	{
-		StringBuilder sb = new StringBuilder();
+		return new TunerInitStatus( null, "Ettus B100 tuner not currently "
+				+ "supported" );
+//		case ETTUS_USRP_B100:
+//		mTuners.add(  new B100Tuner( device ) );
+//		status = sLOADED;
+//		reason = null;
+//		break;
+	}
+	
+	private TunerInitStatus initFuncubeProTuner( Device device, 
+												 DeviceDescriptor descriptor )
+	{
+		String reason = "NOT LOADED";
 		
-		List<UsbDevice> devices = getUSBDevices();
+		MixerTunerDataLine dataline = getMixerTunerDataLine( 
+							TunerClass.FUNCUBE_DONGLE_PRO.getTunerType() );
+		
+		if( dataline != null )
+		{
+			FCD1TunerController controller = 
+						new FCD1TunerController( device, descriptor );
 
-		sb.append( "discovered [" + devices.size() + 
-					"] attached USB devices\n" );
-	    
-		ArrayList<USBTunerDevice> tuners = new ArrayList<USBTunerDevice>();
-
-        for (UsbDevice device : devices )
-        {
-        	String status = "\t[NOT RECOGNIZED]\t";
-        	
-            TunerClass type = TunerClass.valueOf( device.getUsbDeviceDescriptor() );
-
-            if( type != TunerClass.UNKNOWN )
+			try
             {
-            	status = "\t[RECOGNIZED]    \t";
-                tuners.add( new USBTunerDevice( device, type) );
+	            controller.init();
+	            
+				FCDTuner tuner = 
+						new FCDTuner( dataline, controller );
+
+	            TunerConfiguration config = getTunerConfiguration( tuner );
+
+				if( config != null )
+	            {
+					tuner.apply( config );
+	            }					
+
+				return new TunerInitStatus( tuner, "LOADED" );
             }
-           
-            sb.append( status );
-            sb.append( device.toString() );
-            
-            if( type != TunerClass.UNKNOWN )
+            catch ( SourceException e )
             {
-            	sb.append( " " );
-            	sb.append( type.getVendorDescription() );
-            	sb.append( " " );
-            	sb.append( type.getDeviceDescription() );
+            	mLog.error( "couldn't load funcube dongle pro tuner", e );
+            	
+            	reason = "error during initialization - " + e.getLocalizedMessage();
             }
+		}
+		else
+		{
+			reason = "couldn't find matching mixer dataline";
+		}
 
-            sb.append( "\n" );
-        }
-        
-        mLog.info( "USB Device Discovery" );
-        mLog.info( sb.toString() );
-
-        return tuners;
+		return new TunerInitStatus( null, "Funcube Dongle Pro tuner not "
+				+ "loaded - " + reason  );
 	}
 
-	/**
-	 * Gets all USB devices from the root hub downward, recursively, or 
-	 * returns empty list if none are discovered
-	 */
-    public static List<UsbDevice> getUSBDevices()
-    {
-        ArrayList<UsbDevice> devices = new ArrayList<UsbDevice>();
-        
-        try
-        {
-            UsbServices services = UsbHostManager.getUsbServices();
-            devices = getUsbChildDevices( services.getRootUsbHub() );
-        }
-        catch( SecurityException e )
-        {
-        	mLog.error( "security exception while getting USB devices", e );
-        }
-        catch( UsbException e )
-        {
-        	mLog.error( "usb exception while getting USB devices", e );
-        }
+	private TunerInitStatus initFuncubeProPlusTuner( Device device, 
+													 DeviceDescriptor descriptor )
+	{
+		String reason = "NOT LOADED";
+		
+		MixerTunerDataLine dataline = getMixerTunerDataLine( 
+					TunerClass.FUNCUBE_DONGLE_PRO_PLUS.getTunerType() );
+		
+		if( dataline != null )
+		{
+			FCD2TunerController controller = 
+						new FCD2TunerController( device, descriptor );
 
-        return devices;
-    }
-    
-    /**
-     * Get (recursively) all usb child devices below the usb hub
-     */
-    public static ArrayList<UsbDevice> getUsbChildDevices( UsbHub hub )
-    {
-        ArrayList<UsbDevice> devices = new ArrayList<UsbDevice>();
-
-        for ( UsbDevice device : (List<UsbDevice>) hub.getAttachedUsbDevices() )
-        {
-            devices.add( device );
-            
-            if ( device.isUsbHub() )
+			try
             {
-                devices.addAll( getUsbChildDevices( (UsbHub)device ) );
+	            controller.init();
+	            
+				FCDTuner tuner = 
+						new FCDTuner( dataline, controller );
+
+	            TunerConfiguration config = getTunerConfiguration( tuner );
+
+				if( config != null )
+	            {
+					tuner.apply( config );
+	            }				
+
+				return new TunerInitStatus( tuner, "LOADED" );
             }
-        }
-        
-        return devices;
-    }
+            catch ( SourceException e )
+            {
+            	mLog.error( "couldn't load funcube dongle pro plus tuner", e );
+            	
+            	reason = "error during initialization - " + 
+            						e.getLocalizedMessage();
+            }
+		}
+		else
+		{
+			reason = "couldn't find matching mixer dataline";
+		}
+
+		return new TunerInitStatus( null, "Funcube Dongle Pro tuner not "
+				+ "loaded - " + reason );
+	}
+
+	private TunerInitStatus initHackRFTuner( Device device, 
+											 DeviceDescriptor descriptor )
+	{
+		try
+	    {
+			HackRFTunerController hackRFController = 
+						new HackRFTunerController( device, descriptor );
+			
+			hackRFController.init();
+			
+			HackRFTuner tuner = new HackRFTuner( hackRFController );
+			
+	        return new TunerInitStatus( tuner, "LOADED" );
+	    }
+		catch( SourceException se )
+		{
+			mLog.error( "couldn't construct HackRF controller/tuner", se );
+			
+			return new TunerInitStatus( null, 
+					"error constructing HackRF tuner controller" );
+		}
+	}
+
+	private TunerInitStatus initRTL2832Tuner( TunerClass tunerClass,
+											  Device device, 
+											  DeviceDescriptor deviceDescriptor )
+	{
+		String reason = "NOT LOADED";
+
+		TunerType tunerType = tunerClass.getTunerType();
+			
+		if( tunerType == TunerType.RTL2832_VARIOUS )
+		{
+			try
+			{
+				tunerType = RTL2832TunerController.identifyTunerType( device );
+			}
+			catch( SourceException e )
+			{
+				mLog.error( "couldn't determine RTL2832 tuner type", e );
+				tunerType = TunerType.UNKNOWN;
+			}
+		}
+			
+		switch( tunerType )
+		{
+			case ELONICS_E4000:
+				try
+				{
+					E4KTunerController controller = 
+						new E4KTunerController( device, deviceDescriptor );
+					
+					controller.init();
+					
+					RTL2832Tuner rtlTuner = 
+						new RTL2832Tuner( tunerClass, controller );
+					
+                    TunerConfiguration config = 
+                    		getTunerConfiguration( rtlTuner );
+
+					if( config != null )
+	                {
+						rtlTuner.apply( config );
+	                }					
+
+					return new TunerInitStatus( rtlTuner, "LOADED" );
+				}
+				catch( SourceException se )
+				{
+					return new TunerInitStatus( null, "Error constructing E4K tuner "
+						+ "controller - " + se.getLocalizedMessage() );
+				}
+			case RAFAELMICRO_R820T:
+				mLog.debug( "attempting to construct R820T "
+						+ "tuner controller" );
+				try
+				{
+					R820TTunerController controller = 
+						new R820TTunerController( device, deviceDescriptor );
+					
+					mLog.debug( "initializing R820T tuner controller" );
+					controller.init();
+					
+					RTL2832Tuner rtlTuner = 
+						new RTL2832Tuner( tunerClass, controller );
+					
+                    TunerConfiguration config = 
+                    		getTunerConfiguration( rtlTuner );
+
+					if( config != null )
+	                {
+						mLog.debug( "applying tuner config to R820T tuner" );
+						rtlTuner.apply( config );
+	                }					
+					else
+					{
+						mLog.debug( "R820T tuner config was "
+								+ "null - not applied" );
+					}
+					
+					return new TunerInitStatus( rtlTuner, "LOADED" );
+				}
+				catch( SourceException se )
+				{
+					mLog.error( "error constructing tuner", se );
+					
+					return new TunerInitStatus( null, "Error constructing R820T "
+						+ "tuner controller - " + se.getLocalizedMessage() );
+				}
+			case FITIPOWER_FC0012:
+			case FITIPOWER_FC0013:
+			case RAFAELMICRO_R828D:
+			case UNKNOWN:
+			default:
+				reason = "SDRTRunk doesn't currently support RTL2832 "
+					+ "Dongle with [" + tunerType.toString() + 
+					"] tuner for tuner class[" + tunerClass.toString() + "]";
+				break;
+		}
+		
+		return new TunerInitStatus( null, reason );
+	}
+	
+	
+//	/**
+//	 * Get all USB tuner devices
+//	 */
+//	private ArrayList<USBTunerDevice> getUSBTunerDevices()
+//	{
+//		StringBuilder sb = new StringBuilder();
+//		
+//		List<UsbDevice> devices = getUSBDevices();
+//
+//		sb.append( "discovered [" + devices.size() + 
+//					"] attached USB devices\n" );
+//	    
+//		ArrayList<USBTunerDevice> tuners = new ArrayList<USBTunerDevice>();
+//
+//        for (UsbDevice device : devices )
+//        {
+//        	String status = "\t[NOT RECOGNIZED]\t";
+//        	
+//            TunerClass type = TunerClass.valueOf( device.getUsbDeviceDescriptor() );
+//
+//            if( type != TunerClass.UNKNOWN )
+//            {
+//            	status = "\t[RECOGNIZED]    \t";
+//                tuners.add( new USBTunerDevice( device, type) );
+//            }
+//           
+//            sb.append( status );
+//            sb.append( device.toString() );
+//            
+//            if( type != TunerClass.UNKNOWN )
+//            {
+//            	sb.append( " " );
+//            	sb.append( type.getVendorDescription() );
+//            	sb.append( " " );
+//            	sb.append( type.getDeviceDescription() );
+//            }
+//
+//            sb.append( "\n" );
+//        }
+//        
+//        mLog.info( "USB Device Discovery" );
+//        mLog.info( sb.toString() );
+//
+//        return tuners;
+//	}
+//
+//	/**
+//	 * Gets all USB devices from the root hub downward, recursively, or 
+//	 * returns empty list if none are discovered
+//	 */
+//    public static List<UsbDevice> getUSBDevices()
+//    {
+//        ArrayList<UsbDevice> devices = new ArrayList<UsbDevice>();
+//        
+//        try
+//        {
+//            UsbServices services = UsbHostManager.getUsbServices();
+//            devices = getUsbChildDevices( services.getRootUsbHub() );
+//        }
+//        catch( SecurityException e )
+//        {
+//        	mLog.error( "security exception while getting USB devices", e );
+//        }
+//        catch( UsbException e )
+//        {
+//        	mLog.error( "usb exception while getting USB devices", e );
+//        }
+//
+//        return devices;
+//    }
+//    
+//    /**
+//     * Get (recursively) all usb child devices below the usb hub
+//     */
+//    public static ArrayList<UsbDevice> getUsbChildDevices( UsbHub hub )
+//    {
+//        ArrayList<UsbDevice> devices = new ArrayList<UsbDevice>();
+//
+//        for ( UsbDevice device : (List<UsbDevice>) hub.getAttachedUsbDevices() )
+//        {
+//            devices.add( device );
+//            
+//            if ( device.isUsbHub() )
+//            {
+//                devices.addAll( getUsbChildDevices( (UsbHub)device ) );
+//            }
+//        }
+//        
+//        return devices;
+//    }
 
     /**
      * Get a stored tuner configuration or create a default tuner configuration
@@ -584,5 +643,32 @@ public class TunerManager
 		}
     	
     	return null;
+    }
+    
+    public class TunerInitStatus
+    {
+    	private Tuner mTuner;
+    	private String mInfo;
+    	
+    	public TunerInitStatus( Tuner tuner, String info )
+    	{
+    		mTuner = tuner;
+    		mInfo = info;
+    	}
+    	
+    	public Tuner getTuner()
+    	{
+    		return mTuner;
+    	}
+    	
+    	public String getInfo()
+    	{
+    		return mInfo;
+    	}
+    	
+    	public boolean isLoaded()
+    	{
+    		return mTuner != null;
+    	}
     }
 }

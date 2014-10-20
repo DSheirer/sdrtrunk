@@ -35,6 +35,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.JTextField;
+import javax.swing.JToggleButton;
 import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
@@ -74,6 +75,7 @@ public class HackRFTunerConfigurationPanel extends JPanel
     private JTextField mName;
 
     private JSpinner mFrequencyCorrection;
+    private JToggleButton mAmplifier;
     private JComboBox<HackRFLNAGain> mComboLNAGain;
     private JComboBox<HackRFVGAGain> mComboVGAGain;
     
@@ -284,8 +286,38 @@ public class HackRFTunerConfigurationPanel extends JPanel
          * Gain Controls 
          */
         JPanel gainPanel = new JPanel();
-        gainPanel.setLayout( new MigLayout( "", "[grow,fill]", "[grow,fill]" ) );
+        gainPanel.setLayout( new MigLayout( "", 
+        		"[][right][grow,fill][right][grow,fill]", "[grow,fill]" ) );
         gainPanel.setBorder( BorderFactory.createTitledBorder( "Gain" ) );
+
+        /* Amplifier */
+        mAmplifier = new JToggleButton( "Amp" );
+        mAmplifier.setSelected( mSelectedConfig.getAmplifierEnabled() );
+        mAmplifier.addActionListener( new ActionListener() 
+        {
+			@Override
+            public void actionPerformed( ActionEvent arg0 )
+            {
+				try
+                {
+	                mController.setAmplifierEnabled( mAmplifier.isSelected() );
+					mSelectedConfig.setAmplifierEnabled( mAmplifier.isSelected() );
+					save();
+                }
+                catch ( UsbException e )
+                {
+                	mLog.error( "couldn't enable/disable amplifier", e );
+                	mAmplifier.setEnabled( !mAmplifier.isSelected() );
+                	
+                	JOptionPane.showMessageDialog( 
+            			HackRFTunerConfigurationPanel.this, 
+            			"Couldn't change amplifier setting",  
+            			"Error changing amplifier setting", 
+            			JOptionPane.ERROR_MESSAGE );
+                }
+            }
+        } );
+        gainPanel.add( mAmplifier );
         
         /* LNA Gain Control */
         mComboLNAGain = new JComboBox<HackRFLNAGain>( HackRFLNAGain.values() );
@@ -311,6 +343,7 @@ public class HackRFTunerConfigurationPanel extends JPanel
 					}
 
 					mSelectedConfig.setLNAGain( lnaGain );
+					
 	                save();
                 }
                 catch ( UsbException e )
@@ -325,8 +358,8 @@ public class HackRFTunerConfigurationPanel extends JPanel
                 }
             }
         } );
-        mComboLNAGain.setToolTipText( "<html>LNA Gain.  Set master gain "
-        		+ "to <b>MANUAL</b> to enable adjustment</html>" );
+        mComboLNAGain.setToolTipText( "<html>LNA Gain.  Adjust to set "
+        		+ "the IF gain</html>" );
         gainPanel.add( new JLabel( "LNA" ) );
         gainPanel.add( mComboLNAGain );
 
@@ -367,12 +400,12 @@ public class HackRFTunerConfigurationPanel extends JPanel
                 }
             }
         } );
-        mComboVGAGain.setToolTipText( "<html>VGA Gain.  Set master gain "
-        		+ "to <b>MANUAL</b> to enable adjustment</html>" );
+        mComboVGAGain.setToolTipText( "<html>VGA Gain.  Adjust to set the "
+        		+ "baseband gain</html>" );
         gainPanel.add( new JLabel( "VGA" ) );
         gainPanel.add( mComboVGAGain, "wrap" );
 
-        add( gainPanel, "span" );
+        add( gainPanel, "span,growx" );
 
         /**
          * Create a new configuration
