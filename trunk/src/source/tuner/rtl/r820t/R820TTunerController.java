@@ -22,17 +22,21 @@
  ******************************************************************************/
 package source.tuner.rtl.r820t;
 
+import java.nio.ByteBuffer;
+
 import javax.swing.JPanel;
 import javax.usb.UsbException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.usb4java.Device;
+import org.usb4java.DeviceDescriptor;
+import org.usb4java.LibUsbException;
 
 import source.SourceException;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
 import source.tuner.rtl.RTL2832TunerController;
-import source.tuner.usb.USBTunerDevice;
 import controller.ResourceManager;
 
 public class R820TTunerController extends RTL2832TunerController
@@ -68,9 +72,11 @@ public class R820TTunerController extends RTL2832TunerController
 	
 	private JPanel mEditor;
 	
-	public R820TTunerController( USBTunerDevice device ) throws SourceException
+	public R820TTunerController( Device device, 
+								 DeviceDescriptor deviceDescriptor ) 
+										 throws SourceException
 	{
-	    super( device, MIN_FREQUENCY, MAX_FREQUENCY );
+	    super( device, deviceDescriptor, MIN_FREQUENCY, MAX_FREQUENCY );
 	}
 
 	@Override
@@ -80,7 +86,7 @@ public class R820TTunerController extends RTL2832TunerController
     }
 	
 	@Override
-    public void setSampleRateFilters( int sampleRate ) throws UsbException
+    public void setSampleRateFilters( int sampleRate ) throws LibUsbException
     {
 		//TODO: why is this being forced as an abstract method on sub classes?
     }
@@ -155,7 +161,7 @@ public class R820TTunerController extends RTL2832TunerController
     {
 		try
 		{
-			enableI2CRepeater( mUSBDevice, true );
+			enableI2CRepeater( mDeviceHandle, true );
 
 			boolean controlI2C = false;
 			
@@ -165,7 +171,7 @@ public class R820TTunerController extends RTL2832TunerController
 			
 			setPLL( offsetFrequency, controlI2C );
 
-			enableI2CRepeater( mUSBDevice, false );
+			enableI2CRepeater( mDeviceHandle, false );
 		}
 		catch( UsbException e )
 		{
@@ -179,7 +185,7 @@ public class R820TTunerController extends RTL2832TunerController
 	 * Overrides the same method from the RTL2832 tuner controller to apply 
 	 * settings specific to the R820T tuner.
 	 */
-	public void setSamplingMode( SampleMode mode ) throws UsbException
+	public void setSamplingMode( SampleMode mode ) throws LibUsbException
 	{
 		switch( mode )
 		{
@@ -188,14 +194,14 @@ public class R820TTunerController extends RTL2832TunerController
 				setIFFrequency( R820T_IF_FREQUENCY );
 
 				/* Enable spectrum inversion */
-				writeDemodRegister( mUSBDevice, 
+				writeDemodRegister( mDeviceHandle, 
 									Page.ONE, 
 									(short)0x15, 
 									(short)0x01, 
 									1 );
 				
 				/* Set default i/q path */
-				writeDemodRegister( mUSBDevice, 
+				writeDemodRegister( mDeviceHandle, 
 									Page.ZERO, 
 									(short)0x06, 
 									(short)0x80, 
@@ -239,18 +245,16 @@ public class R820TTunerController extends RTL2832TunerController
 	 */
 	public void init() throws SourceException
 	{
+		/* Initialize the super class to open and claim the usb interface*/
+		super.init();
+		
 		try
 		{
-			mLog.debug( "testing USB interface" );
-			/* Dummy write to test USB interface */
-			writeRegister( mUSBDevice, Block.USB, 
-					Address.USB_SYSCTL.getAddress(), (short)0x09, 1 );
-
 			mLog.debug( "initializing RTL2832 tuner baseband" );
-			initBaseband( mUSBDevice );
+			initBaseband( mDeviceHandle );
 
 			mLog.debug( "enabling I2C repeater" );
-			enableI2CRepeater( mUSBDevice, true );
+			enableI2CRepeater( mDeviceHandle, true );
 			
 			boolean i2CRepeaterControl = false;
 			
@@ -258,11 +262,9 @@ public class R820TTunerController extends RTL2832TunerController
 			initTuner( i2CRepeaterControl );
 
 			mLog.debug( "disabling I2C repeater" );
-			enableI2CRepeater( mUSBDevice, false );
+			enableI2CRepeater( mDeviceHandle, false );
 			
 			mLog.debug( "initializing RTL2832 tuner controller super class" );
-			/* Initialize the super class */
-			super.init();
 		}
 		catch( UsbException e )
 		{
@@ -276,14 +278,14 @@ public class R820TTunerController extends RTL2832TunerController
 	public void initTuner( boolean controlI2C ) throws UsbException
 	{
 		/* Disable zero IF mode */
-		writeDemodRegister( mUSBDevice, 
+		writeDemodRegister( mDeviceHandle, 
 							Page.ONE, 
 							(short)0xB1, 
 							(short)0x1A, 
 							1 );
 		
 		/* Only enable in-phase ADC input */
-		writeDemodRegister( mUSBDevice, 
+		writeDemodRegister( mDeviceHandle, 
 							Page.ZERO, 
 							(short)0x08, 
 							(short)0x4D, 
@@ -293,7 +295,7 @@ public class R820TTunerController extends RTL2832TunerController
 		setIFFrequency( R820T_IF_FREQUENCY );
 
 		/* Enable spectrum inversion */
-		writeDemodRegister( mUSBDevice, 
+		writeDemodRegister( mDeviceHandle, 
 							Page.ONE, 
 							(short)0x15, 
 							(short)0x01, 
@@ -570,7 +572,7 @@ public class R820TTunerController extends RTL2832TunerController
 	{
 	    for( int x = 5; x < mShadowRegister.length; x++ )
 	    {
-	        writeI2CRegister( mUSBDevice, 
+	        writeI2CRegister( mDeviceHandle, 
 	                          mI2CAddress,
 	                          (byte)x,
 	                          (byte)mShadowRegister[ x ],
@@ -583,11 +585,11 @@ public class R820TTunerController extends RTL2832TunerController
 	 */
 	private int getStatusRegister( int register, boolean controlI2C ) throws UsbException
 	{
-		byte[] data = new byte[ 5 ];
+		ByteBuffer buffer = ByteBuffer.allocateDirect( 5 );
 		
-		byte[] statusRegisters = read( mUSBDevice, Block.IIC, mI2CAddress, data );
+		read( mDeviceHandle, mI2CAddress, Block.I2C, buffer );
 
-		return bitReverse( statusRegisters[ register ] & 0xFF );
+		return bitReverse( buffer.get( register ) & 0xFF );
 	}
 	
 	/**
@@ -615,7 +617,7 @@ public class R820TTunerController extends RTL2832TunerController
 	                        ( value & register.getMask() ) );
 	    }
 
-        writeI2CRegister( mUSBDevice, mI2CAddress, 
+        writeI2CRegister( mDeviceHandle, mI2CAddress, 
                 (byte)register.getRegister(), value, controlI2C );
 
         mShadowRegister[ register.getRegister() ] = value;
@@ -631,7 +633,7 @@ public class R820TTunerController extends RTL2832TunerController
 	public int readR820TRegister( Register register, boolean controlI2C )
 	                    throws UsbException
 	{
-		int value = readI2CRegister( mUSBDevice, 
+		int value = readI2CRegister( mDeviceHandle, 
 	                            mI2CAddress, 
 	                            (byte)register.getRegister(), 
 	                            controlI2C );

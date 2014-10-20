@@ -48,6 +48,13 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
 		mName = name;
 	}
 	
+	public String toString()
+	{
+		return mName;
+	}
+	
+	public abstract void dispose();
+	
 	public void setName( String name )
 	{
 		mName = name;

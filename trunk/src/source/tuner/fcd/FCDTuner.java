@@ -50,6 +50,13 @@ public class FCDTuner extends MixerTuner
 		mController.addListener( (FrequencyChangeListener)this );
 	}
 	
+	public void dispose()
+	{
+		//TODO: release the mixer tuner data line as well
+		
+		mController.dispose();
+	}
+	
 	public FCDTunerController getController()
 	{
 		return mController;
@@ -70,7 +77,7 @@ public class FCDTuner extends MixerTuner
 	@Override
     public String getUniqueID()
     {
-	    return mController.getAddress();
+	    return mController.getUSBAddress();
     }
 
 	@Override

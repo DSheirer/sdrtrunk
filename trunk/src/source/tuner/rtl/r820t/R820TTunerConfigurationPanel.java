@@ -46,6 +46,7 @@ import net.miginfocom.swing.MigLayout;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.usb4java.LibUsbException;
 
 import source.SourceException;
 import source.tuner.TunerConfiguration;
@@ -252,7 +253,7 @@ public class R820TTunerConfigurationPanel extends JPanel
 					mSelectedConfig.setSampleRate( sampleRate );
 	                save();
                 }
-                catch ( SourceException | UsbException eSampleRate )
+                catch ( SourceException | LibUsbException eSampleRate )
                 {
                 	JOptionPane.showMessageDialog( 
                 			R820TTunerConfigurationPanel.this, 
@@ -308,7 +309,7 @@ public class R820TTunerConfigurationPanel extends JPanel
 	                {
 		                mController.setSampleRateFrequencyCorrection( value );
 	                }
-	                catch ( SourceException | UsbException e1 )
+	                catch ( SourceException | LibUsbException e1 )
 	                {
 	                	JOptionPane.showMessageDialog( 
 	                			R820TTunerConfigurationPanel.this, 

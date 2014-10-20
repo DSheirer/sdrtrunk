@@ -17,37 +17,39 @@
  ******************************************************************************/
 package source.tuner.rtl.e4k;
 
+import java.util.Arrays;
+
 import javax.swing.JPanel;
 import javax.usb.UsbException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.usb4java.Device;
+import org.usb4java.DeviceDescriptor;
+import org.usb4java.DeviceHandle;
+import org.usb4java.LibUsb;
+import org.usb4java.LibUsbException;
 
 import source.SourceException;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
 import source.tuner.rtl.RTL2832TunerController;
-import source.tuner.usb.USBTunerDevice;
+import source.tuner.rtl.RTL2832TunerController.Descriptor;
 import controller.ResourceManager;
 
 public class E4KTunerController extends RTL2832TunerController
 {
-	/**
-	 * Note: E4K tuner max frequency range is 2200 MHz, but the 
-	 * max value that can be assigned to a signed integer is
-	 * 2147xxxxxx, so we constrain the E4K to the max integer value, for now
-	 * 
-	 * TODO: change frequency to a long primitive type
-	 */
-	public static final long sMIN_FREQUENCY = 52000000;
-	public static final long sMIN_FREQUENCY_EXTENDED = 52000000;
-	public static final long sMAX_FREQUENCY = 2200000000l;
-	public static final long sMAX_FREQUENCY_EXTENDED = 2200000000l;
-	public static final long sMIN_VCO = 2600000000l; //2.6 GHz
-	public static final long sMAX_VCO = 3900000000l; //3.9 GHz
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( E4KTunerController.class );
+
+	public static final long MIN_FREQUENCY = 52000000;
+	public static final long MAX_FREQUENCY = 2200000000l;
 
 	/* The local oscillator is defined by whole (integer) units of the oscillator
 	 * frequency and fractional units representing 1/65536th of the oscillator
 	 * frequency, meaning we can only tune the local oscillator in units of 
 	 * 439.453125 hertz. */
-	public static final long sE4K_PLL_Y = 65536l; /* 16-bit fractional register */
+	public static final long E4K_PLL_Y = 65536l; /* 16-bit fractional register */
 	public static final byte MASTER1_RESET = (byte)0x01;
 	public static final byte MASTER1_NORM_STBY = (byte)0x02;
 	public static final byte MASTER1_POR_DET = (byte)0x04;
@@ -108,9 +110,11 @@ public class E4KTunerController extends RTL2832TunerController
 	
 	private E4KTunerEditorPanel mEditor;
 	
-	public E4KTunerController( USBTunerDevice device ) throws SourceException
+	public E4KTunerController( Device device, 
+							   DeviceDescriptor deviceDescriptor ) 
+									   throws SourceException
 	{
-		super( device, sMIN_FREQUENCY, sMAX_FREQUENCY );
+		super( device, deviceDescriptor, MIN_FREQUENCY, MAX_FREQUENCY );
 	}
 
 	@Override
@@ -166,24 +170,75 @@ public class E4KTunerController extends RTL2832TunerController
 
 	public void init() throws SourceException
 	{
+		mDeviceHandle = new DeviceHandle();
+		
+		int result = LibUsb.open( mDevice, mDeviceHandle );
+
+		if( result != LibUsb.SUCCESS )
+		{
+			mDeviceHandle = null;
+			
+			throw new SourceException( "libusb couldn't open RTL2832 usb "
+					+ "device [" + LibUsb.errorName( result ) + "]" );
+		}
+
+		claimInterface( mDeviceHandle );
+
+		byte[] eeprom = null;
+		
+		try
+		{
+			/* Read the contents of the 256-byte EEPROM */
+			eeprom = readEEPROM( mDeviceHandle, (short)0, 256 );
+		}
+		catch( Exception e )
+		{
+			mLog.error( "error while reading the EEPROM device descriptor", e );
+		}
+		
+		try
+		{
+			mDescriptor = new Descriptor( eeprom );
+
+			if( eeprom == null )
+			{
+				mLog.error( "eeprom byte array was null - constructed "
+						+ "empty descriptor object" );
+			}
+		}
+		catch( Exception e )
+		{
+			mLog.error( "error while constructing device descriptor using "
+				+ "descriptor byte array " + 
+				( eeprom == null ? "[null]" : Arrays.toString( eeprom )), e );
+		}
+
 		try
 		{
 			/* Dummy write to test USB interface */
-			writeRegister( mUSBDevice, Block.USB, 
+			writeRegister( mDeviceHandle, Block.USB, 
 					Address.USB_SYSCTL.getAddress(), (short)0x09, 1 );
 
-			initBaseband( mUSBDevice );
+			initBaseband( mDeviceHandle );
 
-			enableI2CRepeater( mUSBDevice, true );
+			enableI2CRepeater( mDeviceHandle, true );
 			
 			boolean i2CRepeaterControl = false;
 			
 			initTuner( i2CRepeaterControl );
 
-			enableI2CRepeater( mUSBDevice, false );
+			enableI2CRepeater( mDeviceHandle, false );
 			
-			/* Initialize the super class */
-			super.init();
+			try
+			{
+				setSampleRate( DEFAULT_SAMPLE_RATE );
+			}
+			catch( Exception e )
+			{
+				throw new SourceException( "RTL2832 Tuner Controller - couldn't "
+					+ "set default sample rate", e );
+			}
+
 		}
 		catch( UsbException e )
 		{
@@ -208,14 +263,14 @@ public class E4KTunerController extends RTL2832TunerController
 	 * for the selected bandwidth/sample rate
 	 */
 	@Override
-    public void setSampleRateFilters( int bandwidth ) throws UsbException
+    public void setSampleRateFilters( int bandwidth ) throws SourceException
     {
 		/* Determine repeater state so we can restore it when done */
 		boolean i2CRepeaterEnabled = isI2CRepeaterEnabled();
 
 		if( !i2CRepeaterEnabled )
 		{
-			enableI2CRepeater( mUSBDevice, true );
+			enableI2CRepeater( mDeviceHandle, true );
 		}
 
 		boolean controlI2CRepeater = false;
@@ -231,7 +286,7 @@ public class E4KTunerController extends RTL2832TunerController
 
 		if( !i2CRepeaterEnabled )
 		{
-			enableI2CRepeater( mUSBDevice, false );
+			enableI2CRepeater( mDeviceHandle, false );
 		}
     }
 
@@ -245,7 +300,7 @@ public class E4KTunerController extends RTL2832TunerController
 
 			if( !i2CRepeaterEnabled )
 			{
-				enableI2CRepeater( mUSBDevice, true );
+				enableI2CRepeater( mDeviceHandle, true );
 			}
 
 			boolean controlI2CRepeater = false;
@@ -263,12 +318,12 @@ public class E4KTunerController extends RTL2832TunerController
 			/* Return the repeater to its previous state */
 			if( !i2CRepeaterEnabled )
 			{
-				enableI2CRepeater( mUSBDevice, false );
+				enableI2CRepeater( mDeviceHandle, false );
 			}
 
 			return calculateActualFrequency( pll, z, x );
 		}
-		catch( UsbException e )
+		catch( LibUsbException e )
 		{
 			throw new SourceException( "E4K tuner controller - couldn't get "
 					+ "tuned frequency", e );
@@ -291,7 +346,7 @@ public class E4KTunerController extends RTL2832TunerController
 		int remainder = (int)( frequency - ( ( z & 0xFF ) * pll.getScaledOscillator() ) );
 
 		/* X is a 16-bit representation of the remainder */
-		int x = (int)( (double)remainder / (double)pll.getScaledOscillator() * sE4K_PLL_Y );
+		int x = (int)( (double)remainder / (double)pll.getScaledOscillator() * E4K_PLL_Y );
 
 		/* Calculate the exact (tunable) frequency and apply that to the tuner */
 		long actualFrequency = calculateActualFrequency( pll, z, x );
@@ -310,7 +365,7 @@ public class E4KTunerController extends RTL2832TunerController
 		/* Apply the actual frequency */
 		try
 		{
-			enableI2CRepeater( mUSBDevice, true );
+			enableI2CRepeater( mDeviceHandle, true );
 
 			boolean controlI2CRepeater = false;
 			
@@ -341,10 +396,10 @@ public class E4KTunerController extends RTL2832TunerController
 			{
 				throw new SourceException( "E4K tuner controller - couldn't "
 						+ "achieve PLL lock for frequency [" + 
-						actualFrequency + "]" );
+						actualFrequency + "] lock value [" + lock + "]" );
 			}
 			
-			enableI2CRepeater( mUSBDevice, false );
+			enableI2CRepeater( mDeviceHandle, false );
 		}
 		catch( UsbException e )
 		{
@@ -358,7 +413,7 @@ public class E4KTunerController extends RTL2832TunerController
 		long whole = pll.getScaledOscillator() * ( z & 0xFF );
 
 		int fractional = (int)( pll.getScaledOscillator() * 
-								( (double)x / (double)sE4K_PLL_Y ) );
+								( (double)x / (double)E4K_PLL_Y ) );
 
 		return whole + fractional;
 	}
@@ -367,7 +422,7 @@ public class E4KTunerController extends RTL2832TunerController
 	{
 		if( controlI2CRepeater )
 		{
-			enableI2CRepeater( mUSBDevice, true );
+			enableI2CRepeater( mDeviceHandle, true );
 		}
 		
 		boolean i2CRepeaterControl = false;
@@ -473,7 +528,7 @@ public class E4KTunerController extends RTL2832TunerController
 		
 		if( controlI2CRepeater )
 		{
-			enableI2CRepeater( mUSBDevice, false );
+			enableI2CRepeater( mDeviceHandle, false );
 		}
 	}
 	
@@ -484,7 +539,7 @@ public class E4KTunerController extends RTL2832TunerController
 		
 		if( controlI2CRepeater )
 		{
-			enableI2CRepeater( mUSBDevice, true );
+			enableI2CRepeater( mDeviceHandle, true );
 		}
 		
 		/* Capture current gain settings to reapply at the end */
@@ -548,7 +603,7 @@ public class E4KTunerController extends RTL2832TunerController
 		
 		if( controlI2CRepeater )
 		{
-			enableI2CRepeater( mUSBDevice, false );
+			enableI2CRepeater( mDeviceHandle, false );
 		}
 	}
 	
@@ -584,7 +639,7 @@ public class E4KTunerController extends RTL2832TunerController
 	{
     	if( controlI2CRepeater )
     	{
-    		enableI2CRepeater( mUSBDevice, true );
+    		enableI2CRepeater( mDeviceHandle, true );
     	}
     	
     	if( gain == E4KLNAGain.AUTOMATIC )
@@ -610,7 +665,7 @@ public class E4KTunerController extends RTL2832TunerController
     	
     	if( controlI2CRepeater )
     	{
-    		enableI2CRepeater( mUSBDevice, false );
+    		enableI2CRepeater( mDeviceHandle, false );
     	}
 	}
     
@@ -661,7 +716,7 @@ public class E4KTunerController extends RTL2832TunerController
 	{
 		if( controlI2CRepeater )
 		{
-			enableI2CRepeater( mUSBDevice, true );
+			enableI2CRepeater( mDeviceHandle, true );
 		}
 		
 		boolean localI2CRepeaterControl = false;
@@ -689,7 +744,7 @@ public class E4KTunerController extends RTL2832TunerController
 		
 		if( controlI2CRepeater )
 		{
-			enableI2CRepeater( mUSBDevice, false );
+			enableI2CRepeater( mDeviceHandle, false );
 		}
 	}
 	
@@ -810,7 +865,7 @@ public class E4KTunerController extends RTL2832TunerController
 	}
 	
     public void setMixerFilter( MixerFilter filter, 
-    							boolean controlI2CRepeater ) throws UsbException
+    							boolean controlI2CRepeater ) throws LibUsbException
 	{
 		writeMaskedE4KRegister( MixerFilter.getRegister(), 
 								MixerFilter.getMask(), 
@@ -828,7 +883,7 @@ public class E4KTunerController extends RTL2832TunerController
 	}
 	
     public void setRCFilter( RCFilter filter, 
-    						 boolean controlI2CRepeater ) throws UsbException
+    						 boolean controlI2CRepeater ) throws LibUsbException
 	{
 		writeMaskedE4KRegister( RCFilter.getRegister(), 
 								RCFilter.getMask(), 
@@ -844,7 +899,7 @@ public class E4KTunerController extends RTL2832TunerController
 	}
 	
     public void setChannelFilter( ChannelFilter filter, 
-    							  boolean controlI2CRepeater ) throws UsbException
+    							  boolean controlI2CRepeater ) throws LibUsbException
 	{
 		writeMaskedE4KRegister( ChannelFilter.getRegister(), 
 								ChannelFilter.getMask(), 
@@ -885,7 +940,7 @@ public class E4KTunerController extends RTL2832TunerController
     {
     	if( controlI2CRepeater )
     	{
-    		enableI2CRepeater( mUSBDevice, true );
+    		enableI2CRepeater( mDeviceHandle, true );
     	}
 
     	Band band = Band.fromFrequency( frequency );
@@ -914,7 +969,7 @@ public class E4KTunerController extends RTL2832TunerController
 
     	if( controlI2CRepeater )
     	{
-    		enableI2CRepeater( mUSBDevice, false );
+    		enableI2CRepeater( mDeviceHandle, false );
     	}
     }
     
@@ -946,7 +1001,7 @@ public class E4KTunerController extends RTL2832TunerController
     	{
 			if( controlI2CRepeater )
 			{
-				enableI2CRepeater( mUSBDevice, true );
+				enableI2CRepeater( mDeviceHandle, true );
 			}
 
 			boolean i2CRepeaterControl = false;
@@ -957,7 +1012,7 @@ public class E4KTunerController extends RTL2832TunerController
 
     		if( controlI2CRepeater )
     		{
-    			enableI2CRepeater( mUSBDevice, false );
+    			enableI2CRepeater( mDeviceHandle, false );
     		}
     	}
     }
@@ -969,7 +1024,7 @@ public class E4KTunerController extends RTL2832TunerController
 	{
 		if( controlI2CRepeater )
 		{
-			enableI2CRepeater( mUSBDevice, true );
+			enableI2CRepeater( mDeviceHandle, true );
 		}
 
 		writeE4KRegister( Register.MAGIC_1, (byte)0x01, false );
@@ -983,7 +1038,7 @@ public class E4KTunerController extends RTL2832TunerController
 
 		if( controlI2CRepeater )
 		{
-			enableI2CRepeater( mUSBDevice, false );
+			enableI2CRepeater( mDeviceHandle, false );
 		}
 	}
 	
@@ -999,7 +1054,7 @@ public class E4KTunerController extends RTL2832TunerController
 	private void writeMaskedE4KRegister( Register register, 
 										 byte mask, 
 										 byte value,
-										 boolean controlI2CRepeater ) throws UsbException
+										 boolean controlI2CRepeater ) throws LibUsbException
 	{
 		int temp = readE4KRegister( register, controlI2CRepeater );
 
@@ -1009,22 +1064,24 @@ public class E4KTunerController extends RTL2832TunerController
 			writeE4KRegister( register, 
 							  (byte)( ( temp & ~mask ) | ( value & mask ) ), 
 							  controlI2CRepeater );
+			
+			int temp2 = readE4KRegister( register, controlI2CRepeater );
 		}
 	}
 	
 	private int readE4KRegister( Register register, 
-			 boolean controlI2CRepeater ) throws UsbException
+			 boolean controlI2CRepeater ) throws LibUsbException
 	{
-		return readI2CRegister( mUSBDevice, Register.I2C_REGISTER.getValue(), 
+		return readI2CRegister( mDeviceHandle, Register.I2C_REGISTER.getValue(), 
 						register.getValue(), controlI2CRepeater );
 	}
 
 
 	private void writeE4KRegister( Register register, 
 								   byte value,
-								   boolean controlI2CRepeater ) throws UsbException
+								   boolean controlI2CRepeater ) throws LibUsbException
 	{
-		writeI2CRegister( mUSBDevice, Register.I2C_REGISTER.getValue(), 
+		writeI2CRegister( mDeviceHandle, Register.I2C_REGISTER.getValue(), 
 						  register.getValue(), value, controlI2CRepeater );
 	}
 

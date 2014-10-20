@@ -17,12 +17,17 @@
  ******************************************************************************/
 package source.tuner.fcd.proV1;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 import javax.swing.JPanel;
 import javax.usb.UsbClaimException;
 import javax.usb.UsbException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.usb4java.Device;
+import org.usb4java.DeviceDescriptor;
 
 import source.SourceException;
 import source.tuner.TunerClass;
@@ -31,7 +36,6 @@ import source.tuner.TunerType;
 import source.tuner.fcd.FCDCommand;
 import source.tuner.fcd.FCDTuner;
 import source.tuner.fcd.FCDTunerController;
-import source.tuner.usb.USBTunerDevice;
 import controller.ResourceManager;
 
 public class FCD1TunerController extends FCDTunerController
@@ -53,19 +57,22 @@ public class FCD1TunerController extends FCDTunerController
 	private FCD1TunerConfiguration mTunerConfiguration;
 	private FCD1TunerEditorPanel mEditor;
 
-	public FCD1TunerController( USBTunerDevice device ) 
-			throws SourceException 
+	public FCD1TunerController( Device device, DeviceDescriptor descriptor ) 
 	{
-		super( device,
+		super( device, 
+			   descriptor, 
 			   sMINIMUM_TUNABLE_FREQUENCY, 
 			   sMAXIMUM_TUNABLE_FREQUENCY );
+	}
+	
+	public void init() throws SourceException
+	{
+		super.init();
 		
 		mFrequencyController.setSampleRate( sSAMPLE_RATE );
 		
 		try
 		{
-			open();
-			
 			setFCDMode( Mode.APPLICATION );
 			getPhaseAndGainCorrection();
 			getDCIQCorrection();
@@ -73,7 +80,7 @@ public class FCD1TunerController extends FCDTunerController
 			getLNAEnhanceSetting();
 			getMixerGainSetting();
 			
-			send( FCDCommand.APP_SET_MIXER_GAIN, 1 );
+			send( FCDCommand.APP_SET_MIXER_GAIN, 1l );
 		}
 		catch( Exception e )
 		{
@@ -156,10 +163,12 @@ public class FCD1TunerController extends FCDTunerController
 	 */
 	private void getLNAGainSetting() throws UsbClaimException, UsbException
 	{
-		int gain = (int)send( FCDCommand.APP_GET_LNA_GAIN );
-
-		mLog.info( "FCD1: lna gain setting is:" + gain );
+		ByteBuffer buffer = send( FCDCommand.APP_GET_LNA_GAIN );
 		
+		buffer.order( ByteOrder.LITTLE_ENDIAN );
+		
+		int gain = buffer.getInt( 2 );
+
 		mLNAGain = LNAGain.valueOf( gain );
 	}
 	
@@ -286,7 +295,11 @@ public class FCD1TunerController extends FCDTunerController
 	private void getPhaseAndGainCorrection() throws UsbClaimException,
 													UsbException
 	{
-		long correction = send( FCDCommand.APP_GET_IQ_CORRECTION );
+		ByteBuffer buffer = send( FCDCommand.APP_GET_IQ_CORRECTION );
+		
+		buffer.order( ByteOrder.LITTLE_ENDIAN );
+		
+		int correction = buffer.getInt( 2 );
 		
 		/**
 		 * Gain: mask the upper 16 phase bits and right shift to get the 
@@ -305,8 +318,6 @@ public class FCD1TunerController extends FCDTunerController
 		short phase = (short)( correction & 0x0000FFFF );
 		
 		mPhaseCorrection = ( (double)phase / (double)Short.MAX_VALUE );
-		
-		mLog.info( "FCD1: correction:" + correction + " gain:" + gain + " phase:" + phase );
 	}
 	
 	/**
@@ -413,7 +424,11 @@ public class FCD1TunerController extends FCDTunerController
 	private void getDCIQCorrection() throws UsbClaimException,
 													UsbException
 	{
-		long correction = send( FCDCommand.APP_GET_DC_CORRECTION );
+		ByteBuffer buffer = send( FCDCommand.APP_GET_DC_CORRECTION );
+		
+		buffer.order( ByteOrder.LITTLE_ENDIAN );
+		
+		int correction = buffer.getInt( 2 );
 
 		/**
 		 * Quadrature: mask the upper 16 bits and divide by 32768 to get the
@@ -443,9 +458,11 @@ public class FCD1TunerController extends FCDTunerController
 	
 	private void getLNAEnhanceSetting() throws UsbClaimException, UsbException
 	{
-		int enhance = (int)send( FCDCommand.APP_GET_LNA_ENHANCE );
-
-		mLog.info( "FCD1: lna enhance setting is: " + enhance );
+		ByteBuffer buffer = send( FCDCommand.APP_GET_LNA_ENHANCE );
+		
+		buffer.order( ByteOrder.LITTLE_ENDIAN );
+		
+		int enhance = buffer.getInt( 2 );
 
 		mLNAEnhance = LNAEnhance.valueOf( enhance );
 	}
@@ -463,9 +480,11 @@ public class FCD1TunerController extends FCDTunerController
 	
 	private void getMixerGainSetting() throws UsbClaimException, UsbException
 	{
-		int gain = (int)send( FCDCommand.APP_GET_MIXER_GAIN );
+		ByteBuffer buffer = send( FCDCommand.APP_GET_MIXER_GAIN );
 		
-		mLog.info( "FCD1: mixer gain setting is:" + gain );
+		buffer.order( ByteOrder.LITTLE_ENDIAN );
+		
+		int gain = buffer.getInt( 2 );
 
 		mMixerGain = MixerGain.valueOf( gain );
 	}

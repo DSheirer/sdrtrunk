@@ -17,7 +17,6 @@
  ******************************************************************************/
 package source.mixer;
 
-import source.Source.SampleType;
 
 /*
  * Adapter to convert byte data received from a data stream into float[] 

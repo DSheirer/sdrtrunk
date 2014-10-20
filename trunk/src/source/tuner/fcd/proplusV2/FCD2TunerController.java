@@ -17,12 +17,15 @@
  ******************************************************************************/
 package source.tuner.fcd.proplusV2;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+
 import javax.swing.JPanel;
-import javax.usb.UsbClaimException;
-import javax.usb.UsbException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.usb4java.Device;
+import org.usb4java.DeviceDescriptor;
 
 import source.SourceException;
 import source.tuner.TunerClass;
@@ -31,7 +34,6 @@ import source.tuner.TunerType;
 import source.tuner.fcd.FCDCommand;
 import source.tuner.fcd.FCDTuner;
 import source.tuner.fcd.FCDTunerController;
-import source.tuner.usb.USBTunerDevice;
 import controller.ResourceManager;
 
 public class FCD2TunerController extends FCDTunerController
@@ -46,25 +48,27 @@ public class FCD2TunerController extends FCDTunerController
 	private FCD2TunerConfiguration mTunerConfiguration;
 	private FCD2TunerEditorPanel mEditor;
 	
-	public FCD2TunerController( USBTunerDevice device ) 
-			throws SourceException 
+	public FCD2TunerController( Device device, DeviceDescriptor descriptor ) 
 	{
 		super( device,
+			   descriptor,
 			   sMINIMUM_TUNABLE_FREQUENCY, 
 			   sMAXIMUM_TUNABLE_FREQUENCY );
+	}
+
+	public void init() throws SourceException
+	{
+		super.init();
 
 		mFrequencyController.setSampleRate( sSAMPLE_RATE );
 
 		try
 		{
-			open();
-			
 			setFCDMode( Mode.APPLICATION );
 		}
 		catch( Exception e )
 		{
-			throw new SourceException( "FCDTunerController error " +
-					"during construction", e );
+			throw new SourceException( "error setting Mode to APPLICATION", e );
 		}
 	}
 	
@@ -109,7 +113,7 @@ public class FCD2TunerController extends FCDTunerController
             {
                 if( plusConfig.getGainLNA() )
     			{
-                    send( FCDCommand.APP_SET_LNA_GAIN, 1 );
+                	send( FCDCommand.APP_SET_LNA_GAIN, 1 );
 
     			}
     			else
@@ -117,34 +121,26 @@ public class FCD2TunerController extends FCDTunerController
     				send( FCDCommand.APP_SET_LNA_GAIN, 0 );
     			}
             }
-            catch ( UsbClaimException e )
+            catch ( Exception e )
             {
-            	throw new SourceException( "Exception while setting LNA Gain", e );
-            }
-            catch ( UsbException e )
-            {
-            	throw new SourceException( "Exception while setting LNA Gain", e );
+            	throw new SourceException( "error while setting LNA Gain", e );
             }
 
             try
             {
                 if( plusConfig.getGainMixer() )
     			{
-                    send( FCDCommand.APP_SET_MIXER_GAIN, 1 );
-
+                	send( FCDCommand.APP_SET_MIXER_GAIN, 1 );
+                    
     			}
     			else
     			{
     				send( FCDCommand.APP_SET_MIXER_GAIN, 0 );
     			}
             }
-            catch ( UsbClaimException e )
+            catch ( Exception e )
             {
-            	throw new SourceException( "Exception while setting mixer gain", e );
-            }
-            catch ( UsbException e )
-            {
-            	throw new SourceException( "Exception while setting mixer gain", e );
+            	throw new SourceException( "error while setting Mixer Gain", e );
             }
             
             mTunerConfiguration = plusConfig;
@@ -163,17 +159,15 @@ public class FCD2TunerController extends FCDTunerController
 		
 		try
         {
-	        dcCorrection = (int)send( FCDCommand.APP_GET_DC_CORRECTION );
+			ByteBuffer buffer = send( FCDCommand.APP_GET_DC_CORRECTION );
+			
+			buffer.order( ByteOrder.LITTLE_ENDIAN );
+			
+			return buffer.getInt( 2 );
         }
-        catch ( UsbClaimException e )
+        catch ( Exception e )
         {
-        	mLog.error( "FCTTunerController - couldn't claim funcube HID to"
-        			+ " get dc correction value", e );
-        }
-        catch ( UsbException e )
-        {
-        	mLog.error( "FCTTunerController - error getting dc correction "
-        			+ "value", e );
+        	mLog.error( "error getting dc correction value", e );
         }
 		
 		return dcCorrection;
@@ -183,17 +177,11 @@ public class FCD2TunerController extends FCDTunerController
 	{
 		try
         {
-	        send( FCDCommand.APP_SET_DC_CORRECTION, value );
+			send( FCDCommand.APP_SET_DC_CORRECTION, value );
         }
-        catch ( UsbClaimException e )
+        catch ( Exception e )
         {
-        	mLog.error( "FCDTunerController - error claiming usb hid while "
-	        		+ "trying to set dc correction to [" + value + "]", e );
-        }
-        catch ( UsbException e )
-        {
-        	mLog.error( "FCDTunerController - error while "
-	        		+ "trying to set dc correction to [" + value + "]", e );
+        	mLog.error( "error setting dc correction to [" + value + "]", e );
         }
 	}
 	
@@ -203,20 +191,17 @@ public class FCD2TunerController extends FCDTunerController
 		
 		try
         {
-	        iqCorrection = (int)send( FCDCommand.APP_GET_IQ_CORRECTION );
+			ByteBuffer buffer = send( FCDCommand.APP_GET_IQ_CORRECTION );
+			
+			buffer.order( ByteOrder.LITTLE_ENDIAN );
+			
+			return buffer.getInt( 2 );
         }
-        catch ( UsbClaimException e )
+        catch ( Exception e )
         {
-        	mLog.error( "FCTTunerController - couldn't claim funcube HID to"
-        			+ " get iq correction value", e );
+        	mLog.error( "error reading IQ correction value", e );
         }
-        catch ( UsbException e )
-        {
-        	mLog.error( "FCTTunerController - error getting iq correction "
-        			+ "value", e );
 	        
-        }
-		
 		return iqCorrection;
 	}
 	
@@ -226,15 +211,9 @@ public class FCD2TunerController extends FCDTunerController
         {
 	        send( FCDCommand.APP_SET_IQ_CORRECTION, value );
         }
-        catch ( UsbClaimException e )
+        catch ( Exception e )
         {
-        	mLog.error( "FCDTunerController - error claiming usb hid while "
-	        		+ "trying to set iq correction to [" + value + "]", e );
-        }
-        catch ( UsbException e )
-        {
-        	mLog.error( "FCDTunerController - error while "
-	        		+ "trying to set iq correction to [" + value + "]", e );
+        	mLog.error( "error setting IQ correction to [" + value + "]", e );
         }
 	}
 	
@@ -272,98 +251,4 @@ public class FCD2TunerController extends FCDTunerController
 			return retVal;
 		}
 	}
-
-	public enum TunerRFFilter
-	{
-		TRF_0_4,
-		TRF_4_8,
-		TRF_8_16,
-		TRF_16_32,
-		TRF_32_75,
-		TRF_75_125,
-		TRF_125_250,
-		TRF_145,
-		TRF_410_875,
-		TRF_435,
-		TRF_875_2000,
-		UNKNOWN;
-		
-		public static TunerRFFilter get( int value )
-		{
-			TunerRFFilter retVal = UNKNOWN;
-			
-			if( 0 <= value && value <= 10 )
-			{
-				retVal = values()[ value ];
-			}
-			
-			return retVal;
-		}
-	}
-
-	public enum TunerIFFilter
-	{
-		TIF_200KHZ,
-		TIF_300KHZ,
-		TIF_600KHZ,
-		TIF_1536KHZ,
-		TIF_5MHZ,
-		TIF_6MHZ,
-		TIF_7MHZ,
-		TIF_8MHZ,
-		UNKNOWN;
-		
-		public static TunerIFFilter get( int value )
-		{
-			TunerIFFilter retVal = UNKNOWN;
-			
-			if( 0 <= value && value <= 7 )
-			{
-				retVal = values()[ value ];
-			}
-			
-			return retVal;
-		}
-	}
-	
-    public enum LNAGain 
-    {
-    	LNA_GAIN_MINUS_5_0( 0, "-5.0 dB" ),
-    	LNA_GAIN_MINUS_2_5( 1, "-2.5 dB" ),
-    	LNA_GAIN_PLUS_0_0( 4, "0.0 dB" ),
-    	LNA_GAIN_PLUS_2_5( 5, "2.5 dB" ),
-    	LNA_GAIN_PLUS_5_0( 6, "5.0 dB" ),
-    	LNA_GAIN_PLUS_7_5( 7, "7.5 dB" ),
-    	LNA_GAIN_PLUS_10_0( 8, "10.0 dB" ),
-    	LNA_GAIN_PLUS_12_5( 9, "12.5 dB" ),
-    	LNA_GAIN_PLUS_15_0( 10, "15.0 dB" ),
-    	LNA_GAIN_PLUS_17_5( 11, "17.5 dB" ),
-    	LNA_GAIN_PLUS_20_0( 12, "20.0 dB" ),
-    	LNA_GAIN_PLUS_25_0( 13, "25.0 dB" ),
-    	LNA_GAIN_PLUS_30_0( 14, "30.0 dB" );
-    	
-    	private int mSetting;
-    	private String mLabel;
-    	
-    	private LNAGain( int setting, String label )
-    	{
-    		mSetting = setting;
-    		mLabel = label;
-    	}
-    	
-    	public int getSetting()
-    	{
-    		return mSetting;
-    	}
-    	
-    	public String getLabel()
-    	{
-    		return mLabel;
-    	}
-    	
-    	public String toString()
-    	{
-    		return getLabel();
-    	}
-    }
 }

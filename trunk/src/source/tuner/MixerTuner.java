@@ -21,6 +21,9 @@ import java.util.ArrayList;
 
 import javax.sound.sampled.TargetDataLine;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import sample.Listener;
 import sample.complex.ComplexSampleListListener;
 import source.mixer.MixerSource;
@@ -28,6 +31,9 @@ import source.mixer.SampleAdapter;
 
 public abstract class MixerTuner extends Tuner
 {
+	private final static Logger mLog = 
+							LoggerFactory.getLogger( MixerTuner.class );
+
 	private TargetDataLine mTargetDataLine;
 	protected MixerTunerType mMixerTunerType;
 	protected MixerSource mMixerSource;

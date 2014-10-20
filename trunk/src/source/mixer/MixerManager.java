@@ -197,6 +197,11 @@ public class MixerManager
         mLog.info( sb.toString() );
 	}
 	
+	public HashMap<String,MixerTunerDataLine> getMixerTuners()
+	{
+		return mMixerTuners;
+	}
+	
 	private TargetDataLine getTargetDataLine( Mixer.Info mixerInfo, AudioFormat format )
 	{
 		TargetDataLine retVal = null;

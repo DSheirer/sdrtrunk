@@ -38,7 +38,7 @@ public class FrequencyController
 	public FrequencyController( Tunable tunable,
 								long minFrequency,
 								long maxFrequency,
-								double frequencyCorrection ) throws SourceException
+								double frequencyCorrection )
 	{
 		mTunable = tunable;
 		mMinimumFrequency = minFrequency;
@@ -148,7 +148,7 @@ public class FrequencyController
      */
     private long getCorrectedFrequency( long tunedFrequency )
     {
-		return (int)( (double)tunedFrequency / 
+		return (long)( (double)tunedFrequency / 
 				( 1.0 - ( mFrequencyCorrection / 1000000.0 ) ) );
     }
     

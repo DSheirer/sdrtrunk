@@ -70,6 +70,11 @@ public class HackRFTuner extends Tuner
 			mLog.error( "couldn't read HackRF board id", e  );
 		}
 	}
+
+	public void dispose()
+	{
+		//TODO: dispose of something here
+	}
 	
 	public HackRFTunerController getController()
 	{

@@ -51,6 +51,11 @@ public class B100Tuner extends Tuner
 		mDevice = device;
 	}
 	
+	public void dispose()
+	{
+		
+	}
+	
 	@Override
     public TunerClass getTunerClass()
     {

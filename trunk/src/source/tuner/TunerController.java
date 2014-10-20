@@ -51,7 +51,6 @@ public abstract class TunerController implements Tunable
 	 * class, tuning a frequency, or setting the bandwidth
 	 */
 	public TunerController( long minimumFrequency, long maximumFrequency ) 
-			throws SourceException
 	{
 		mFrequencyController = new FrequencyController( this, 
 														minimumFrequency, 
