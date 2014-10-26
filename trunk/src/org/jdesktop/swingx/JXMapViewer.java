@@ -36,6 +36,10 @@ import org.jdesktop.swingx.mapviewer.TileListener;
 import org.jdesktop.swingx.mapviewer.empty.EmptyTileFactory;
 import org.jdesktop.swingx.painter.AbstractPainter;
 import org.jdesktop.swingx.painter.Painter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import source.tuner.hackrf.HackRFTunerController;
 
 /**
  * A tile oriented map component that can easily be used with tile sources
@@ -63,6 +67,9 @@ public class JXMapViewer extends JPanel implements DesignMode
 {
 	private static final long serialVersionUID = -3530746298586937321L;
 
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( JXMapViewer.class );
+	
 	private final boolean isNegativeYAllowed = true; // maybe rename to isNorthBounded and isSouthBounded?
 
 	/**
@@ -121,12 +128,14 @@ public class JXMapViewer extends JPanel implements DesignMode
 		// make a dummy loading image
 		try
 		{
-			URL url = this.getClass().getResource("mapviewer/resources/loading.png");
+			URL url = JXMapViewer.class.getResource("mapviewer/resources/loading.png");
 			this.setLoadingImage(ImageIO.read(url));
 		}
 		catch (Throwable ex)
 		{
-			System.out.println("could not load 'loading.png'");
+			
+			mLog.error( "JXMapViewer could not load 'loading.png'" );
+			
 			BufferedImage img = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
 			Graphics2D g2 = img.createGraphics();
 			g2.setColor(Color.black);
