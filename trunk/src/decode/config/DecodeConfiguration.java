@@ -35,6 +35,7 @@ public abstract class DecodeConfiguration extends Configuration
 {
 	private DecoderType mDecoderType = DecoderType.NBFM;
 	private boolean mAFCEnabled = true;
+	private int mAFCMaxCorrection = 3000;
 
 	public DecodeConfiguration()
 	{
@@ -65,6 +66,16 @@ public abstract class DecodeConfiguration extends Configuration
 	public void setAFC( boolean enabled )
 	{
 		mAFCEnabled = enabled;
+	}
+	
+	public int getAFCMaximumCorrection()
+	{
+		return mAFCMaxCorrection;
+	}
+	
+	public void setAFCMaximumCorrection( int max )
+	{
+		mAFCMaxCorrection = max;
 	}
 	
 	public boolean supportsAFC()

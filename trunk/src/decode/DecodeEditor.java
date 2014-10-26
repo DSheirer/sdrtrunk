@@ -21,6 +21,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.JCheckBox;
+import javax.swing.JLabel;
+import javax.swing.JSpinner;
+import javax.swing.SpinnerModel;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingConstants;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import controller.Editor;
 import decode.config.DecodeConfiguration;
@@ -32,6 +39,7 @@ public class DecodeEditor extends Editor
     protected DecodeConfiguration mConfig;
     
     protected JCheckBox mAFC;
+    protected JSpinner mAFCMaximumCorrection;
 
 	public DecodeEditor( DecodeConfiguration config )
 	{
@@ -49,8 +57,42 @@ public class DecodeEditor extends Editor
 	                mConfig.setAFC( mAFC.isSelected() );                
 	            }
 	        } );
+	        
+	        mAFC.setToolTipText( "AFC automatically adjusts the center "
+        		+ "frequency of the channel to correct/compensate for "
+        		+ "inaccuracies and frequency drift in the tuner" );
 
-	        add( mAFC, "wrap" );
+	        add( mAFC, "span" );
+	        
+	        int initial = mConfig.getAFCMaximumCorrection();
+	        
+	        SpinnerModel model = new SpinnerNumberModel( initial, 0, 15000, 1 );
+
+	        mAFCMaximumCorrection = new JSpinner( model );
+
+	        JSpinner.NumberEditor editor = 
+	        		(JSpinner.NumberEditor)mAFCMaximumCorrection.getEditor();  
+	        editor.getTextField().setHorizontalAlignment( SwingConstants.CENTER );
+	        
+	        mAFCMaximumCorrection.setToolTipText( "Sets the maximum frequency "
+	        		+ "correction value in hertz, 0 - 15kHz" );
+
+	        mAFCMaximumCorrection.addChangeListener( new ChangeListener() 
+	        {
+				@Override
+	            public void stateChanged( ChangeEvent e )
+	            {
+					int value = ((SpinnerNumberModel)mAFCMaximumCorrection
+							.getModel()).getNumber().intValue();
+
+	                mConfig.setAFCMaximumCorrection( value );
+	                
+	                save();
+	            }
+	        } );
+	        
+	        add( mAFCMaximumCorrection );
+	        add( new JLabel( "Correction Limit Hz" ), "growx, push" );
 		}
 	}
 
@@ -62,14 +104,12 @@ public class DecodeEditor extends Editor
 	@Override
     public void save()
     {
-	    // TODO Auto-generated method stub
 	    
     }
 
 	@Override
     public void reset()
     {
-	    // TODO Auto-generated method stub
 	    
     }
 }
