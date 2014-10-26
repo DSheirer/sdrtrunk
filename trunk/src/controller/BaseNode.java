@@ -158,7 +158,10 @@ public class BaseNode extends DefaultMutableTreeNode
     
     public void refresh()
     {
-        getModel().nodeChanged( this );
+    	if( getModel() != null )
+    	{
+            getModel().nodeChanged( this );
+    	}
     }
 
     public void sort()
