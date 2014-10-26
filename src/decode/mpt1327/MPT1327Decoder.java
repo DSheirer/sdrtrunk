@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import sample.Broadcaster;
-import sample.Listener;
+import sample.simplex.SimplexSampleListener;
 import source.Source.SampleType;
 import alias.AliasList;
 import bits.MessageFramer;
@@ -106,7 +106,7 @@ public class MPT1327Decoder extends Decoder implements Instrumentable
 			if( mNBFMDemodulator != null )
 			{
 				mNBFMDemodulator.addListener( mDCRemovalFilter );
-				mDCRemovalFilter.setListener( this.getFloatReceiver() );
+				mDCRemovalFilter.setListener( this.getSimplexReceiver() );
 			}
 		}
 
@@ -115,7 +115,7 @@ public class MPT1327Decoder extends Decoder implements Instrumentable
 		/* Decimation filter - 48000 / 2 = 24000 output */
 		mDecimationFilter = new FloatHalfBandFilter( 
 				Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.0002 );
-		addFloatListener( mDecimationFilter );
+		addSimplexSampleListener( mDecimationFilter );
 		
 		/* Low pass filter: 2kHz to pass the 1200 & 1800 Hz FSK  */
 		mLowPassFilter = new FloatFIRFilter( 
@@ -169,7 +169,7 @@ public class MPT1327Decoder extends Decoder implements Instrumentable
 	}
     
 	@Override
-    public void addUnfilteredFloatListener( Listener<Float> listener )
+    public void addUnfilteredSimplexSampleListener( SimplexSampleListener listener )
     {
 		if( mNBFMDemodulator != null )
 		{
@@ -256,7 +256,7 @@ public class MPT1327Decoder extends Decoder implements Instrumentable
 				}
 				else
 				{
-					addFloatListener( inputTap );
+					addSimplexSampleListener( inputTap );
 				}
 				break;
 			case INSTRUMENT_HB1_FILTER_TO_LOW_PASS:
@@ -292,7 +292,7 @@ public class MPT1327Decoder extends Decoder implements Instrumentable
 				}
 				else
 				{
-					removeFloatListener( inputTap );
+					removeSimplexListener( inputTap );
 				}
 				break;
 			case INSTRUMENT_HB1_FILTER_TO_LOW_PASS:

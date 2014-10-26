@@ -18,8 +18,9 @@
 package dsp.filter;
 
 import sample.Listener;
+import sample.simplex.SimplexSampleListener;
 
-public class SquaringFilter implements Listener<Float>
+public class SquaringFilter implements SimplexSampleListener
 {
 	private Listener<Boolean> mListener;
 	
@@ -31,7 +32,7 @@ public class SquaringFilter implements Listener<Float>
 	}
 
 	@Override
-    public void receive( Float sample )
+    public void receive( float sample )
     {
 		if( mListener != null )
 		{

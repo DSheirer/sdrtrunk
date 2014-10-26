@@ -25,7 +25,7 @@ import instrument.tap.stream.FloatTap;
 import java.util.ArrayList;
 import java.util.List;
 
-import sample.Listener;
+import sample.simplex.SimplexSampleListener;
 import source.Source.SampleType;
 import alias.AliasList;
 import bits.MessageFramer;
@@ -79,7 +79,7 @@ public class MDCDecoder extends Decoder implements Instrumentable
     	/* Decimation filter: 48000 / 2 = 24000 */
     	mDecimationFilter = new FloatHalfBandFilter( 
         		Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.0002 );
-        addFloatListener( mDecimationFilter );
+        addSimplexSampleListener( mDecimationFilter );
 
         /* Bandpass filter - predefined */
         mBandPassFilter = new FloatFIRFilter( 
@@ -154,7 +154,7 @@ public class MDCDecoder extends Decoder implements Instrumentable
 		switch( tap.getName() )
 		{
 			case INSTRUMENT_INPUT:
-				addFloatListener( (FloatTap)tap ); 
+				addSimplexSampleListener( (FloatTap)tap ); 
 				break;
 			case INSTRUMENT_BANDPASS_FILTER_TO_FSK2_DEMOD:
 				/* wire the tap between the bandpass filter and the demod */
@@ -186,7 +186,7 @@ public class MDCDecoder extends Decoder implements Instrumentable
 		switch( tap.getName() )
 		{
 			case INSTRUMENT_INPUT:
-				removeFloatListener( (FloatTap)tap );
+				removeSimplexListener( (FloatTap)tap );
 				break;
 			case INSTRUMENT_BANDPASS_FILTER_TO_FSK2_DEMOD:
 		        mBandPassFilter.setListener( mFSKDecoder );
@@ -202,7 +202,7 @@ public class MDCDecoder extends Decoder implements Instrumentable
     }
 
 	@Override
-    public void addUnfilteredFloatListener( Listener<Float> listener )
+    public void addUnfilteredSimplexSampleListener( SimplexSampleListener listener )
     {
 		//Not implemented
     }

@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
+import sample.complex.ComplexBuffer;
 import source.SourceException;
 import source.tuner.Tuner;
 import source.tuner.TunerChannel;
@@ -102,7 +103,7 @@ public class HackRFTuner extends Tuner
 	@Override
     public void apply( TunerConfiguration config ) throws SourceException
     {
-		mLog.error( "B100 Tuner - can't apply tuner configuration" );
+		mController.apply( config );
     }
 
 	@Override
@@ -128,7 +129,7 @@ public class HackRFTuner extends Tuner
     public void releaseChannel( TunerChannelSource source )
     {
 		/* Unregister for receiving samples */
-		removeListener( (Listener<Float[]>)source );
+		removeListener( (Listener<ComplexBuffer>)source );
 		
 		/* Tell the controller to release the channel and cleanup */
 		if( source != null )
@@ -153,13 +154,13 @@ public class HackRFTuner extends Tuner
     }
 	
 	@Override
-	public void addListener( Listener<Float[]> listener )
+	public void addListener( Listener<ComplexBuffer> listener )
 	{
 		mController.addListener( listener );
 	}
 	
 	@Override
-	public void removeListener( Listener<Float[]> listener )
+	public void removeListener( Listener<ComplexBuffer> listener )
 	{
 		mController.removeListener( listener );
 	}

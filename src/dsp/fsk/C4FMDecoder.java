@@ -7,9 +7,9 @@ import instrument.tap.stream.FloatTap;
 import java.util.ArrayList;
 import java.util.List;
 
-import sample.Listener;
+import sample.simplex.SimplexSampleListener;
 
-public class C4FMDecoder implements Listener<Float>, Instrumentable
+public class C4FMDecoder implements SimplexSampleListener, Instrumentable
 {
 	private final String TAP_C4FM_INPUT = "C4FM Input";
 	private ArrayList<Tap> mTaps;
@@ -56,7 +56,7 @@ public class C4FMDecoder implements Listener<Float>, Instrumentable
     }
 
 	@Override
-    public void receive( Float t )
+    public void receive( float t )
     {
 		if( mInputTap != null )
 		{

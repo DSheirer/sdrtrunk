@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import sample.Listener;
+import sample.simplex.SimplexSampleListener;
 import source.Source.SampleType;
 import alias.AliasList;
 import bits.MessageFramer;
@@ -75,7 +76,7 @@ public class Fleetsync2Decoder extends Decoder implements Instrumentable
     	
         mDecimationFilter = new FloatHalfBandFilter( 
         		Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.0002 );
-        addFloatListener( mDecimationFilter );
+        addSimplexSampleListener( mDecimationFilter );
 
         mBandPassFilter = new FloatFIRFilter( 
         		Filters.FIRBP_1200FSK_24000FS.getCoefficients(), 1.02 );
@@ -115,9 +116,9 @@ public class Fleetsync2Decoder extends Decoder implements Instrumentable
 	 * Returns a float listener interface for connecting this decoder to a 
 	 * float stream provider
 	 */
-	public Listener<Float> getFloatReceiver()
+	public SimplexSampleListener getSimplexReceiver()
 	{
-		return (Listener<Float>)mDecimationFilter;
+		return (SimplexSampleListener)mDecimationFilter;
 	}
 	
 	@Override
@@ -147,7 +148,7 @@ public class Fleetsync2Decoder extends Decoder implements Instrumentable
 		{
 			case INSTRUMENT_INPUT:
 				FloatTap inputTap = (FloatTap)tap;
-				addFloatListener( inputTap );
+				addSimplexSampleListener( inputTap );
 				break;
 			case INSTRUMENT_BANDPASS_FILTER_TO_FSK2_DEMOD:
 				FloatTap bpTap = (FloatTap)tap;
@@ -171,7 +172,7 @@ public class Fleetsync2Decoder extends Decoder implements Instrumentable
 		{
 			case INSTRUMENT_INPUT:
 				FloatTap inputTap = (FloatTap)tap;
-				removeFloatListener( inputTap );
+				removeSimplexListener( inputTap );
 				break;
 			case INSTRUMENT_BANDPASS_FILTER_TO_FSK2_DEMOD:
 				mBandPassFilter.setListener( mFSKDecoder );
@@ -183,7 +184,7 @@ public class Fleetsync2Decoder extends Decoder implements Instrumentable
     }
 
 	@Override
-    public void addUnfilteredFloatListener( Listener<Float> listener )
+    public void addUnfilteredSimplexSampleListener( SimplexSampleListener listener )
     {
 		//Not implemented
     }

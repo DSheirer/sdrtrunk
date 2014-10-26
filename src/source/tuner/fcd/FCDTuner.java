@@ -22,8 +22,9 @@ import java.util.concurrent.RejectedExecutionException;
 import javax.swing.JPanel;
 
 import sample.Listener;
+import sample.adapter.ShortAdapter;
+import sample.complex.ComplexBuffer;
 import source.SourceException;
-import source.mixer.ShortAdapter;
 import source.tuner.FrequencyChangeListener;
 import source.tuner.MixerTuner;
 import source.tuner.MixerTunerDataLine;
@@ -122,7 +123,7 @@ public class FCDTuner extends MixerTuner
 		if( source != null )
 		{
 			/* Unregister for receiving samples */
-			removeListener( (Listener<Float[]>)source );
+			removeListener( (Listener<ComplexBuffer>)source );
 
 			/* Tell the controller to release the channel and cleanup */
 			/* This will release the channel as a frequency change listener */

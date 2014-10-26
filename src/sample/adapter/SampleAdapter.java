@@ -15,8 +15,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package source.mixer;
-
+package sample.adapter;
 
 /*
  * Adapter to convert byte data received from a data stream into float[] 
@@ -24,5 +23,5 @@ package source.mixer;
  */
 public abstract class SampleAdapter
 {
-	public abstract Float[] convert( byte[] samples );
+	public abstract float[] convert( byte[] samples );
 }

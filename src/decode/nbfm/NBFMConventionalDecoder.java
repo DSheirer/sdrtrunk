@@ -17,11 +17,10 @@
  ******************************************************************************/
 package decode.nbfm;
 
-import sample.Listener;
+import sample.simplex.SimplexSampleListener;
 import source.Source.SampleType;
 import decode.Decoder;
 import decode.DecoderType;
-import dsp.afc.AutomaticFrequencyControl;
 import dsp.filter.DCRemovalFilter2;
 import dsp.nbfm.FilteringNBFMDemodulator;
 
@@ -67,7 +66,7 @@ public class NBFMConventionalDecoder extends Decoder
 			 * Route the demodulated, filtered samples back to this class to send
 			 * to all registered listeners
 			 */
-			mDCRemovalFilter.setListener( this.getFloatReceiver() );
+			mDCRemovalFilter.setListener( this.getSimplexReceiver() );
 		}
 	}
 
@@ -78,7 +77,7 @@ public class NBFMConventionalDecoder extends Decoder
     }
 
 	@Override
-    public void addUnfilteredFloatListener( Listener<Float> listener )
+    public void addUnfilteredSimplexSampleListener( SimplexSampleListener listener )
     {
 		if( mDemodulator != null )
 		{

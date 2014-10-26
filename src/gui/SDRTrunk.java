@@ -42,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import properties.SystemProperties;
+import source.tuner.Tuner;
 import source.tuner.TunerSelectionListener;
 import spectrum.SpectralDisplayPanel;
 import util.TimeStamp;
@@ -144,15 +145,31 @@ public class SDRTrunk
     	//init() the controller to load tuners and playlists
     	mControllerPanel.getController().init();
 
-    	//Fire first tuner selection so it is displayed in the spectrum/waterfall
-    	mControllerPanel.getController().fireFirstTunerSelected();
-
     	/**
     	 * Setup main JFrame window
     	 */
     	mMainGui.setTitle( "SDRTrunk" );
     	mMainGui.setBounds( 100, 100, 1280, 800 );
     	mMainGui.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
+    	
+    	mControllerPanel.getController().addListener( new TunerSelectionListener() 
+    	{
+			@Override
+            public void tunerSelected( Tuner tuner )
+            {
+				if( tuner != null )
+				{
+					mMainGui.setTitle( "SDRTrunk - " + tuner.getName() );
+				}
+				else
+				{
+			    	mMainGui.setTitle( "SDRTrunk" );
+				}
+            }
+    	} );
+
+    	//Fire first tuner selection so it is displayed in the spectrum/waterfall
+    	mControllerPanel.getController().fireFirstTunerSelected();
 
     	mSpectralPanel.setPreferredSize( new Dimension( 1280, 400 ) );
     	

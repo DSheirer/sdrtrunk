@@ -15,52 +15,62 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package dsp.filter;
+package sample.simplex;
 
-import sample.Listener;
-import sample.simplex.SimplexSampleListener;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Implements the real-time general DC removal algorithm described on page 
- * 762, figure 13-62d, in Understanding Digital Signal Processing 3e, Lyons.
+ * Broadcasts a received float sample to multiple listeners
  */
-public class DCRemovalFilter implements SimplexSampleListener
+public class SimplexSampleBroadcaster implements SimplexSampleListener
 {
-	private double mAlpha;
-	private float mPrevious;
-	private SimplexSampleListener mListener;
-	
-	public DCRemovalFilter( double alpha )
-	{
-		mAlpha = alpha;
-	}
-	
-	public void dispose()
-	{
-		mListener = null;
-	}
+	private CopyOnWriteArrayList<SimplexSampleListener> mListeners = 
+			new CopyOnWriteArrayList<SimplexSampleListener>();
 
 	@Override
     public void receive( float sample )
     {
-		send( (float)( sample + ( mPrevious * mAlpha ) - mPrevious ) );
-		
-		mPrevious = sample;
+		broadcast( sample );
     }
 	
 	/**
-	 * Sends the filtered sample to the listener
+	 * Clear listeners to prepare for garbage collection
 	 */
-	private void send( float sample )
+	public void dispose()
 	{
-		if( mListener != null )
-		{
-			mListener.receive( sample );
-		}
+		mListeners.clear();
+	}
+	
+	public boolean hasListeners()
+	{
+		return !mListeners.isEmpty();
+	}
+	
+	public int getListenerCount()
+	{
+		return mListeners.size();
+	}
+	
+	public void addListener( SimplexSampleListener listener )
+	{
+		mListeners.add( listener );
+	}
+	
+	public void removeListener( SimplexSampleListener listener )
+	{
+		mListeners.remove( listener );
+	}
+	
+	public void clear()
+	{
+		mListeners.clear();
 	}
 
-    public void setListener( SimplexSampleListener listener )
+    public void broadcast( float sample )
     {
-		mListener = listener;
+    	for( SimplexSampleListener listener: mListeners )
+    	{
+    		listener.receive( sample );
+    	}
     }
 }

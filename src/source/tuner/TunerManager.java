@@ -364,7 +364,14 @@ public class TunerManager
 			
 			HackRFTuner tuner = new HackRFTuner( hackRFController );
 			
-	        return new TunerInitStatus( tuner, "LOADED" );
+            TunerConfiguration config = getTunerConfiguration( tuner );
+
+			if( config != null )
+            {
+				tuner.apply( config );
+            }				
+
+			return new TunerInitStatus( tuner, "LOADED" );
 	    }
 		catch( SourceException se )
 		{
@@ -475,98 +482,6 @@ public class TunerManager
 		return new TunerInitStatus( null, reason );
 	}
 	
-	
-//	/**
-//	 * Get all USB tuner devices
-//	 */
-//	private ArrayList<USBTunerDevice> getUSBTunerDevices()
-//	{
-//		StringBuilder sb = new StringBuilder();
-//		
-//		List<UsbDevice> devices = getUSBDevices();
-//
-//		sb.append( "discovered [" + devices.size() + 
-//					"] attached USB devices\n" );
-//	    
-//		ArrayList<USBTunerDevice> tuners = new ArrayList<USBTunerDevice>();
-//
-//        for (UsbDevice device : devices )
-//        {
-//        	String status = "\t[NOT RECOGNIZED]\t";
-//        	
-//            TunerClass type = TunerClass.valueOf( device.getUsbDeviceDescriptor() );
-//
-//            if( type != TunerClass.UNKNOWN )
-//            {
-//            	status = "\t[RECOGNIZED]    \t";
-//                tuners.add( new USBTunerDevice( device, type) );
-//            }
-//           
-//            sb.append( status );
-//            sb.append( device.toString() );
-//            
-//            if( type != TunerClass.UNKNOWN )
-//            {
-//            	sb.append( " " );
-//            	sb.append( type.getVendorDescription() );
-//            	sb.append( " " );
-//            	sb.append( type.getDeviceDescription() );
-//            }
-//
-//            sb.append( "\n" );
-//        }
-//        
-//        mLog.info( "USB Device Discovery" );
-//        mLog.info( sb.toString() );
-//
-//        return tuners;
-//	}
-//
-//	/**
-//	 * Gets all USB devices from the root hub downward, recursively, or 
-//	 * returns empty list if none are discovered
-//	 */
-//    public static List<UsbDevice> getUSBDevices()
-//    {
-//        ArrayList<UsbDevice> devices = new ArrayList<UsbDevice>();
-//        
-//        try
-//        {
-//            UsbServices services = UsbHostManager.getUsbServices();
-//            devices = getUsbChildDevices( services.getRootUsbHub() );
-//        }
-//        catch( SecurityException e )
-//        {
-//        	mLog.error( "security exception while getting USB devices", e );
-//        }
-//        catch( UsbException e )
-//        {
-//        	mLog.error( "usb exception while getting USB devices", e );
-//        }
-//
-//        return devices;
-//    }
-//    
-//    /**
-//     * Get (recursively) all usb child devices below the usb hub
-//     */
-//    public static ArrayList<UsbDevice> getUsbChildDevices( UsbHub hub )
-//    {
-//        ArrayList<UsbDevice> devices = new ArrayList<UsbDevice>();
-//
-//        for ( UsbDevice device : (List<UsbDevice>) hub.getAttachedUsbDevices() )
-//        {
-//            devices.add( device );
-//            
-//            if ( device.isUsbHub() )
-//            {
-//                devices.addAll( getUsbChildDevices( (UsbHub)device ) );
-//            }
-//        }
-//        
-//        return devices;
-//    }
-
     /**
      * Get a stored tuner configuration or create a default tuner configuration
      * for the tuner type, connected at the address.  

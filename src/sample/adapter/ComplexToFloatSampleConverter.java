@@ -15,43 +15,43 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package sample.complex;
+package sample.adapter;
 
-@Deprecated
-public class RTLComplexSample extends ComplexSample
+import java.util.List;
+
+import sample.Listener;
+import sample.complex.ComplexSample;
+import source.mixer.MixerChannel;
+
+/**
+ * Receives complex samples and send either the left channel or the right 
+ * channel to the short sample listener
+ */
+public class ComplexToFloatSampleConverter implements Listener<List<ComplexSample>>
 {
-    private static final long serialVersionUID = 1L;
-
-	private static float[] mValues;
-
-	/**
-	 * Creates a lookup table that converts the 8-bit valued range from 0 - 255
-	 * into scaled float values of -128 to 0 to 127
-	 */
-	static
+	private MixerChannel mChannel;
+	private Listener<Float> mListener;
+	
+	public ComplexToFloatSampleConverter( Listener<Float> listener, 
+										  MixerChannel channel )
 	{
-		mValues = new float[ 256 ];
-		
-		float scale = (float)( 1.0f / 127.0f );
-		
-		for( int x = 0; x < 256; x++ )
-		{
-			mValues[ x ] = (float)( x - 128 ) * scale;
-		}
-		
-		mValues[ 128 ] = 0.0000001f;
+		mListener = listener;
+		mChannel = channel;
 	}
 
-	/**
-	 * Constructs a complex sample from the sample format produced by the 
-	 * RTL-2832 chip, where the byte values run from 0 - 255, but represent
-	 * the value -127 to 127
-	 * 
-	 * @param left
-	 * @param right
-	 */
-	public RTLComplexSample( byte left, byte right )
+	@Override
+    public void receive( List<ComplexSample> samples )
     {
-	    super( mValues[ left & 0xFF ], mValues[ right & 0xFF ] );
+		for( ComplexSample sample: samples )
+		{
+			mListener.receive( mChannel == MixerChannel.LEFT ? 
+										   sample.left() : 
+										   sample.right() );
+		}
     }
+	
+	public Listener<Float> getListener()
+	{
+		return mListener;
+	}
 }

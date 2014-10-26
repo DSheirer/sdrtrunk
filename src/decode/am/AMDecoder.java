@@ -1,6 +1,6 @@
 package decode.am;
 
-import sample.Listener;
+import sample.simplex.SimplexSampleListener;
 import source.Source.SampleType;
 import decode.Decoder;
 import decode.DecoderType;
@@ -61,7 +61,7 @@ public class AMDecoder extends Decoder
             
             mDCRemovalFilter.setListener( mLowPassFilter );
             
-            mLowPassFilter.setListener( this.getFloatReceiver() );
+            mLowPassFilter.setListener( this.getSimplexReceiver() );
         }
     }
 
@@ -72,7 +72,7 @@ public class AMDecoder extends Decoder
     }
 
     @Override
-    public void addUnfilteredFloatListener( Listener<Float> listener )
+    public void addUnfilteredSimplexSampleListener( SimplexSampleListener listener )
     {
         mDemodulator.addListener( listener );
     }

@@ -17,16 +17,17 @@
  ******************************************************************************/
 package dsp.nbfm;
 
-import sample.Broadcaster;
 import sample.Listener;
 import sample.complex.ComplexSample;
+import sample.simplex.SimplexSampleBroadcaster;
+import sample.simplex.SimplexSampleListener;
 import dsp.filter.ComplexFIRFilter;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
 
 public class NBFMDemodulator implements Listener<ComplexSample>
 {
-	private Broadcaster<Float> mBroadcaster = new Broadcaster<Float>();
+	private SimplexSampleBroadcaster mBroadcaster = new SimplexSampleBroadcaster();
 	private ComplexFIRFilter mIQFilter;
 	private FMDiscriminator mDiscriminator;
 
@@ -77,7 +78,7 @@ public class NBFMDemodulator implements Listener<ComplexSample>
 	/**
 	 * Adds a listener to receive demodulated samples
 	 */
-	public void addListener( Listener<Float> listener )
+	public void addListener( SimplexSampleListener listener )
     {
 		mBroadcaster.addListener( listener );
     }
@@ -85,7 +86,7 @@ public class NBFMDemodulator implements Listener<ComplexSample>
 	/**
 	 * Removes a listener from receiving demodulated samples
 	 */
-    public void removeListener( Listener<Float> listener )
+    public void removeListener( SimplexSampleListener listener )
     {
 		mBroadcaster.removeListener( listener );
     }

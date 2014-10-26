@@ -17,20 +17,25 @@
  ******************************************************************************/
 package source.mixer;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.Set;
+import java.util.List;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.Line;
+import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.Mixer;
 import javax.sound.sampled.TargetDataLine;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import sample.adapter.ChannelShortAdapter;
+import sample.adapter.ShortAdapter;
 import source.config.SourceConfigMixer;
 import source.config.SourceConfiguration;
 import source.tuner.MixerTunerDataLine;
@@ -44,8 +49,8 @@ public class MixerManager
 
 	private static MixerManager sInstance = null;
 	
-	private HashMap<String,TargetDataLine> mMixerLines = 
-								new HashMap<String,TargetDataLine>();
+	private ArrayList<DiscoveredMixer> mDiscoveredMixers = 
+				new ArrayList<DiscoveredMixer>();
 	
 	private HashMap<String,MixerTunerDataLine> mMixerTuners = 
 						new HashMap<String,MixerTunerDataLine>();
@@ -77,52 +82,109 @@ public class MixerManager
     	return sInstance;
     }
     
-    public MixerSource getSource( ProcessingChain channel )
+    public SimplexMixerSource getSource( ProcessingChain processingChain )
     {
-		MixerSource retVal = null;
+		SimplexMixerSource retVal = null;
 		
 		SourceConfiguration config = 
-				channel.getChannel().getSourceConfiguration();
+				processingChain.getChannel().getSourceConfiguration();
 
     	if( config instanceof SourceConfigMixer )
     	{
 			SourceConfigMixer mixerConfig = (SourceConfigMixer)config;
 
-			//Get the name of the requested mixer
 			String mixerName = mixerConfig.getMixer();
 
 			if( mixerName != null )
 			{
-				TargetDataLine tdl = mMixerLines.get( mixerName );
+				DiscoveredMixer mixer = getDiscoveredMixer( mixerName );
 
-				if( tdl != null )
+				if( mixer != null )
 				{
-					switch( mixerConfig.getChannel() )
+					MixerChannel channel = mixerConfig.getChannel();
+					
+					if( mixer.supportsChannel( channel ) )
 					{
-						case MONO:
-				    		retVal = new MixerSource( mMixerLines.get( mixerName ),
-				    				 MONO,
-									 mixerName,
-									 new ShortAdapter() );
-							break;
-						case LEFT:
-						case RIGHT:
-				    		retVal = new MixerSource( mMixerLines.get( mixerName ),
-				    				 STEREO,
-									 mixerName,
-									 new ChannelShortAdapter( mixerConfig.getChannel() ) );
-							break;
+						
+						if( channel == MixerChannel.MONO )
+						{
+							DataLine.Info info = 
+								new DataLine.Info(TargetDataLine.class, MONO );
+
+							TargetDataLine dataLine;
+							
+                            try
+                            {
+	                            dataLine = (TargetDataLine)mixer
+	                            		.getMixer().getLine( info );
+
+	                            if( dataLine != null )
+	                            {
+									return new SimplexMixerSource( dataLine,
+						    				 MONO,
+											 mixerName,
+											 new ShortAdapter() );
+	                            }
+                            }
+                            catch ( LineUnavailableException e )
+                            {
+	                            mLog.error( "couldn't get mixer data line " +
+	                            		"for [" + mixerName + "] for channel [" + 
+	                            		channel.name() + "]", e );
+                            }
+							
+						}
+						else
+						{
+							DataLine.Info info = 
+								new DataLine.Info(TargetDataLine.class, STEREO );
+
+							TargetDataLine dataLine;
+
+							try
+                            {
+	                            dataLine = (TargetDataLine)mixer
+	                            		.getMixer().getLine( info );
+
+	                            if( dataLine != null )
+								{
+									return new SimplexMixerSource( dataLine, STEREO,
+										mixerName, new ChannelShortAdapter( 
+												mixerConfig.getChannel() ) );
+								}
+                            }
+                            catch ( LineUnavailableException e )
+                            {
+	                            mLog.error( "couldn't get mixer data line " +
+	                            		"for [" + mixerName + "] for channel [" + 
+	                            		channel.name() + "]", e );
+                            }
+						}
 					}
 				}
 			}
     	}
 
-    	return retVal;
+    	return null;
     }
     
-    public Set<String> getMixers()
+    public DiscoveredMixer[] getMixers()
     {
-    	return mMixerLines.keySet();
+    	return mDiscoveredMixers.toArray( 
+    			new DiscoveredMixer[ mDiscoveredMixers.size() ] );
+    }
+    
+    public DiscoveredMixer getDiscoveredMixer( String name )
+    {
+    	for( DiscoveredMixer mixer: mDiscoveredMixers )
+    	{
+    		if( mixer.getMixerName().contentEquals( name ) )
+    		{
+    			return mixer;
+    		}
+    	}
+    	
+    	return null;
     }
     
     public Collection<MixerTunerDataLine> getMixerTunerDataLines()
@@ -147,22 +209,27 @@ public class MixerManager
 
                 if( mixer != null )
                 {
-                	TargetDataLine tdl = getTargetDataLine( mixerInfo, STEREO );
-
-                	if( tdl != null )
+                	EnumSet<MixerChannel> channels = getSupportedChannels( mixer );
+                	
+                	if( channels != null )
                 	{
-                        mMixerLines.put( mixerInfo.getName(), tdl );
-
-                        sb.append( "\t[LOADED]     Mixer:" + mixerInfo.getName() + "\n"  );
+                		mDiscoveredMixers.add( 
+                				new DiscoveredMixer( mixer, channels ) );
+                		
+                        sb.append( "\t[LOADED]     Mixer:" + mixerInfo.getName() + 
+                        		" CHANNELS: " + channels + "\n"  );
                 	}
                 	else
                 	{
-                        sb.append( "\t[NOT LOADED] Mixer:" + mixerInfo.getName() + " - audio format not supported\n" );
+                        sb.append( "\t[NOT LOADED] Mixer:" + 
+		                			mixerInfo.getName() + 
+		                			" - audio format not supported\n" );
                 	}
                 }
                 else
                 {
-                    sb.append( "\t[NOT LOADED] Mixer:" + mixerInfo.getName() + " - couldn't get mixer\n" );
+                    sb.append( "\t[NOT LOADED] Mixer:" + mixerInfo.getName() + 
+                    		" - couldn't get mixer\n" );
                 }
         	}
         	else //Process as a Mixer-based tuner data line
@@ -226,6 +293,38 @@ public class MixerManager
         return retVal;
 	}
 	
+	private EnumSet<MixerChannel> getSupportedChannels( Mixer mixer )
+	{
+        DataLine.Info stereoInfo=
+        		new DataLine.Info(TargetDataLine.class, STEREO );
+
+        boolean stereoSupported = mixer.isLineSupported( stereoInfo );
+        
+        DataLine.Info monoInfo=
+        		new DataLine.Info(TargetDataLine.class, MONO );
+
+        boolean monoSupported = mixer.isLineSupported( monoInfo );
+        
+        if( stereoSupported && monoSupported )
+        {
+        	return EnumSet.of( MixerChannel.LEFT,
+        					   MixerChannel.RIGHT,
+        					   MixerChannel.MONO );
+        }
+        else if( stereoSupported )
+        {
+        	return EnumSet.of( MixerChannel.LEFT,
+					   MixerChannel.RIGHT,
+					   MixerChannel.MONO );
+        }
+        else if( monoSupported )
+        {
+        	return EnumSet.of( MixerChannel.MONO );
+        }
+        
+        return null;
+	}
+	
 	public static String getMixerDevices()
 	{
 		StringBuilder sb = new StringBuilder();
@@ -263,5 +362,42 @@ public class MixerManager
 		}
 		
 		return sb.toString();
+	}
+	
+	public class DiscoveredMixer
+	{
+		private Mixer mMixer;
+		private EnumSet<MixerChannel> mChannels;
+		
+		public DiscoveredMixer( Mixer mixer, EnumSet<MixerChannel> channels )
+		{
+			mMixer = mixer;
+			mChannels = channels;
+		}
+		
+		public Mixer getMixer()
+		{
+			return mMixer;
+		}
+		
+		public String getMixerName()
+		{
+			return mMixer.getMixerInfo().getName();
+		}
+		
+		public EnumSet<MixerChannel> getChannels()
+		{
+			return mChannels;
+		}
+		
+		public boolean supportsChannel( MixerChannel channel )
+		{
+			return mChannels.contains( channel );
+		}
+		
+		public String toString()
+		{
+			return getMixerName();
+		}
 	}
 }

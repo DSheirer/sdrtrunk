@@ -80,7 +80,7 @@ public class DecoderViewFrame extends JInternalFrame
 		else if( source.getSampleType() == SampleType.FLOAT )
 		{
 			FloatWaveSource fws = (FloatWaveSource)mWaveSource;
-			fws.setListener( mDecoder.getFloatReceiver() );
+			fws.setListener( mDecoder.getSimplexReceiver() );
 		}
 		
 		mDecoder.addMessageListener( this );

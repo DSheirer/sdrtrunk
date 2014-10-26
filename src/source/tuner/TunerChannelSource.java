@@ -25,6 +25,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import sample.Listener;
+import sample.complex.ComplexBuffer;
 import sample.complex.ComplexSample;
 import sample.complex.ComplexSampleAssembler;
 import source.ComplexSource;
@@ -39,13 +40,13 @@ import dsp.filter.Window.WindowType;
 
 public class TunerChannelSource extends ComplexSource
 							 implements FrequencyChangeListener,
-							 			Listener<Float[]>
+							 			Listener<ComplexBuffer>
 {
 	private static int sCHANNEL_RATE = 48000;
 	private static int sCHANNEL_PASS_FREQUENCY = 12500;
 	
-	private LinkedTransferQueue<Float[]> mBuffer =
-							new LinkedTransferQueue<Float[]>();
+	private LinkedTransferQueue<ComplexBuffer> mBuffer =
+							new LinkedTransferQueue<ComplexBuffer>();
 	private Tuner mTuner;
 	private TunerChannel mTunerChannel;
 	private Oscillator mSineWaveGenerator;
@@ -91,7 +92,7 @@ public class TunerChannelSource extends ComplexSource
 	    		new DecimationProcessor(), 50, TimeUnit.MILLISECONDS );
 
 	    /* Finally, register to receive samples from the tuner */
-		mTuner.addListener( (Listener<Float[]>)this );
+		mTuner.addListener( (Listener<ComplexBuffer>)this );
     }
 	
     @Override
@@ -137,9 +138,9 @@ public class TunerChannelSource extends ComplexSource
 	}
 	
 	@Override
-    public void receive( Float[] samples )
+    public void receive( ComplexBuffer sampleArray )
     {
-		mBuffer.add( samples );
+		mBuffer.add( sampleArray );
     }
 
 	@Override
@@ -242,17 +243,20 @@ public class TunerChannelSource extends ComplexSource
 		@Override
         public void run()
         {
-			List<Float[]> samplesList = new ArrayList<Float[]>();
+			List<ComplexBuffer> sampleBuffers = 
+								new ArrayList<ComplexBuffer>();
 			
 			if( mBuffer != null )
 			{
 				/* Limit to 10, so that after a garbage collect we don't
 				 * induce wild swings as it tries to take tons of samples
 				 * and process them, causing delays and buffer refill */
-				mBuffer.drainTo( samplesList, 10 );
+				mBuffer.drainTo( sampleBuffers, 10 );
 
-				for( Float[] samples: samplesList )
+				for( ComplexBuffer sampleArray: sampleBuffers )
 				{
+					float[] samples = sampleArray.getSamples();
+					
 					for( int x = 0; x < samples.length; x += 2 )
 					{
 						Float left = samples[ x ];
@@ -273,7 +277,7 @@ public class TunerChannelSource extends ComplexSource
 					}
 				}
 				
-				samplesList.clear();
+				sampleBuffers.clear();
 			}
         }
 	}

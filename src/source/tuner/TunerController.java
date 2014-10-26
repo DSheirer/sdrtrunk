@@ -135,6 +135,10 @@ public abstract class TunerController implements Tunable
 				long maxLockedFrequency = mTunedChannels
 						.get( mTunedChannels.size() - 1 ).getMaxFrequency();
 
+				mLog.debug( "Tuner Controller min [" + minLockedFrequency +
+						   "] max [" + maxLockedFrequency + 
+						   "] bw [" + getBandwidth() + "]" );
+
 				//Requested channel is higher than min locked frequency
 				if( minLockedFrequency <= channel.getMinFrequency() &&
 					( channel.getMaxFrequency() - minLockedFrequency ) <= getBandwidth()  )

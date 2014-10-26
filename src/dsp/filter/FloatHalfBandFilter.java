@@ -19,11 +19,11 @@ package dsp.filter;
 
 import java.util.ArrayList;
 
-import sample.Listener;
+import sample.simplex.SimplexSampleListener;
 
-public class FloatHalfBandFilter implements Listener<Float>
+public class FloatHalfBandFilter implements SimplexSampleListener
 {
-	private Listener<Float> mListener;
+	private SimplexSampleListener mListener;
 	private ArrayList<Float> mBuffer;
     private int mBufferSize = 1; //Temporary initial value
 	private int mBufferPointer = 0;
@@ -75,7 +75,7 @@ public class FloatHalfBandFilter implements Listener<Float>
 	 * Calculate the filtered value by applying the coefficients against
 	 * the complex samples in mBuffer
 	 */
-	public void receive( Float newSample )
+	public void receive( float newSample )
 	{
 		//Add the new sample to the buffer
 		mBuffer.set( mBufferPointer, newSample );
@@ -188,7 +188,7 @@ public class FloatHalfBandFilter implements Listener<Float>
 	/**
 	 * Registers a listener for filtered samples
 	 */
-    public void setListener( Listener<Float> listener )
+    public void setListener( SimplexSampleListener listener )
     {
 		mListener = listener;
     }
