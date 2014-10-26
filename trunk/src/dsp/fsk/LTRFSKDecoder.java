@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import sample.Listener;
+import sample.simplex.SimplexSampleListener;
 import dsp.Slicer;
 import dsp.Slicer.Output;
 import dsp.filter.DCRemovalFilter3;
@@ -36,7 +37,7 @@ import dsp.filter.FloatHalfBandNoDecimateFilter;
 import dsp.filter.LTRPulseShapingFilter;
 import dsp.filter.SquaringFilter;
 
-public class LTRFSKDecoder implements Listener<Float>, Instrumentable
+public class LTRFSKDecoder implements SimplexSampleListener, Instrumentable
 {
 	private FloatHalfBandFilter mHBFilter1;
 	private FloatHalfBandFilter mHBFilter2;
@@ -104,7 +105,7 @@ public class LTRFSKDecoder implements Listener<Float>, Instrumentable
 	}
 
 	@Override
-    public void receive( Float sample )
+    public void receive( float sample )
     {
 		mHBFilter1.receive( sample );
     }

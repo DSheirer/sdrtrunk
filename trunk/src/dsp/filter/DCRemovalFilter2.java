@@ -18,12 +18,13 @@
 package dsp.filter;
 
 import sample.Listener;
+import sample.simplex.SimplexSampleListener;
 
-public class DCRemovalFilter2 implements Listener<Float>
+public class DCRemovalFilter2 implements SimplexSampleListener
 {
 	private double mAverage;
 	private double mRatio;
-	private Listener<Float> mListener;
+	private SimplexSampleListener mListener;
 	
 	public DCRemovalFilter2( double ratio )
 	{
@@ -31,7 +32,7 @@ public class DCRemovalFilter2 implements Listener<Float>
 	}
 
 	@Override
-    public void receive( Float sample )
+    public void receive( float sample )
     {
 		mAverage += mRatio * ( (double)sample - mAverage );
 
@@ -49,7 +50,7 @@ public class DCRemovalFilter2 implements Listener<Float>
 		}
 	}
 
-    public void setListener( Listener<Float> listener )
+    public void setListener( SimplexSampleListener listener )
     {
 		mListener = listener;
     }

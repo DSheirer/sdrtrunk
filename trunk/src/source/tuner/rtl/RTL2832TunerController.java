@@ -52,12 +52,12 @@ import org.usb4java.Transfer;
 import org.usb4java.TransferCallback;
 
 import sample.Listener;
+import sample.complex.ComplexBuffer;
 import source.SourceException;
 import source.tuner.FrequencyChangeEvent;
 import source.tuner.FrequencyChangeEvent.Attribute;
 import source.tuner.TunerController;
 import source.tuner.TunerType;
-import util.TimeStamp;
 import buffer.FloatAveragingBuffer;
 import controller.ResourceManager;
 
@@ -107,8 +107,8 @@ public abstract class RTL2832TunerController extends TunerController
 	
 	private ByteSampleAdapter mSampleAdapter = new ByteSampleAdapter();
 
-	private CopyOnWriteArrayList<Listener<Float[]>> mSampleListeners =
-			new CopyOnWriteArrayList<Listener<Float[]>>();
+	private CopyOnWriteArrayList<Listener<ComplexBuffer>> mSampleListeners =
+			new CopyOnWriteArrayList<Listener<ComplexBuffer>>();
 	
 	private LinkedTransferQueue<byte[]> mFilledBuffers = 
 									new LinkedTransferQueue<byte[]>();
@@ -1342,7 +1342,7 @@ public abstract class RTL2832TunerController extends TunerController
 	 * Adds a sample listener.  If the buffer processing thread is
 	 * not currently running, starts it running in a new thread.
 	 */
-    public void addListener( Listener<Float[]> listener )
+    public void addListener( Listener<ComplexBuffer> listener )
     {
 		mSampleListeners.add( listener );
 
@@ -1352,7 +1352,7 @@ public abstract class RTL2832TunerController extends TunerController
 
 			Thread thread = new Thread( mBufferProcessor );
 			thread.setDaemon( true );
-			thread.setName( "Sample Processor" );
+			thread.setName( "RTL2832 Sample Processor" );
 
 			thread.start();
 		}
@@ -1362,7 +1362,7 @@ public abstract class RTL2832TunerController extends TunerController
 	 * Removes the sample listener.  If this is the last registered listener,
 	 * shuts down the buffer processing thread.
 	 */
-    public void removeListener( Listener<Float[]> listener )
+    public void removeListener( Listener<ComplexBuffer> listener )
     {
 		mSampleListeners.remove( listener );
 		
@@ -1375,23 +1375,23 @@ public abstract class RTL2832TunerController extends TunerController
 	/**
 	 * Dispatches float sample buffers to all registered listeners
 	 */
-    public void broadcast( Float[] samples )
+    public void broadcast( ComplexBuffer buffer )
     {
-		Iterator<Listener<Float[]>> it = mSampleListeners.iterator();
+		Iterator<Listener<ComplexBuffer>> it = mSampleListeners.iterator();
 		
 		while( it.hasNext() )
 		{
-			Listener<Float[]> next = it.next();
+			Listener<ComplexBuffer> next = it.next();
 			
 			/* if this is the last (or only) listener, send him the original 
 			 * buffer, otherwise send him a copy of the buffer */
 			if( it.hasNext() )
 			{
-				next.receive( Arrays.copyOf( samples, samples.length ) );
+				next.receive( buffer.copyOf() );
 			}
 			else
 			{
-				next.receive( samples );
+				next.receive( buffer );
 			}
 		}
     }
@@ -1406,7 +1406,7 @@ public abstract class RTL2832TunerController extends TunerController
 							Executors.newScheduledThreadPool( 2 );
 		private ScheduledFuture<?> mSampleDispatcherTask;
         private ScheduledFuture<?> mSampleRateCounterTask;
-        private ArrayList<Transfer> mTransfers;
+        private CopyOnWriteArrayList<Transfer> mTransfers;
 		private AtomicBoolean mRunning = new AtomicBoolean();
 
 		@Override
@@ -1573,7 +1573,7 @@ public abstract class RTL2832TunerController extends TunerController
 	     */
 	    private void prepareTransfers() throws LibUsbException
 	    {
-	    	mTransfers = new ArrayList<Transfer>();
+	    	mTransfers = new CopyOnWriteArrayList<Transfer>();
 
 	    	for( int x = 0; x < TRANSFER_BUFFER_POOL_SIZE; x++ )
 	    	{
@@ -1616,10 +1616,9 @@ public abstract class RTL2832TunerController extends TunerController
 
 			for( byte[] buffer: buffers )
 			{
-				//TODO: convert this to float primitive				
-				Float[] samples = mSampleAdapter.convert( buffer );
+				float[] samples = mSampleAdapter.convert( buffer );
 				
-				broadcast( samples );
+				broadcast( new ComplexBuffer( samples ) );
 			}
         }
 	}

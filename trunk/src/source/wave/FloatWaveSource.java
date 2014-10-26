@@ -29,7 +29,7 @@ import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
-import sample.Listener;
+import sample.simplex.SimplexSampleListener;
 
 public class FloatWaveSource extends WaveSource
 {
@@ -44,7 +44,7 @@ public class FloatWaveSource extends WaveSource
     private int mBufferPointer = 0;
     private int mBufferLength;
     private ShortBuffer mBufferWrapper;
-    private Listener<Float> mListener; 
+    private SimplexSampleListener mListener; 
     
     private static int BUFFER_SAMPLE_SIZE = 2000;
 
@@ -272,12 +272,12 @@ public class FloatWaveSource extends WaveSource
     /**
      * Adds a new listener to receive samples as they are read from the wave file
      */
-    public void setListener( Listener<Float> listener )
+    public void setListener( SimplexSampleListener listener )
     {
         mListener = listener;
     }
 
-    public void removeListener( Listener<Float> listener )
+    public void removeListener( SimplexSampleListener listener )
     {
     	mListener = null;
     }

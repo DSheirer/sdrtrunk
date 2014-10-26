@@ -17,7 +17,7 @@
  ******************************************************************************/
 package source.mixer;
 
-import java.util.Set;
+import java.util.List;
 
 import javax.sound.sampled.Mixer;
 import javax.swing.DefaultComboBoxModel;
@@ -27,12 +27,13 @@ import javax.swing.JLabel;
 import source.SourceEditor;
 import source.config.SourceConfigMixer;
 import source.config.SourceConfiguration;
+import source.mixer.MixerManager.DiscoveredMixer;
 import controller.ResourceManager;
 
 public class MixerEditor extends SourceEditor
 {
     private static final long serialVersionUID = 1L;
-    private JComboBox<String> mComboMixers;
+    private JComboBox<DiscoveredMixer> mComboMixers;
     private JComboBox<MixerChannel>mComboChannels;
     protected Mixer.Info mSelectedMixer = null;
     
@@ -50,7 +51,7 @@ public class MixerEditor extends SourceEditor
 		JLabel mixerLabel = new JLabel( "Mixer:" );
 		add( mixerLabel, "align right" );
 		
-		mComboMixers = new JComboBox<String>();
+		mComboMixers = new JComboBox<DiscoveredMixer>();
 
 		add( mComboMixers, "wrap" );
 
@@ -76,11 +77,12 @@ public class MixerEditor extends SourceEditor
 	{
 		SourceConfigMixer config = (SourceConfigMixer)mConfig;
 
-		String mixer = mComboMixers.getItemAt( mComboMixers.getSelectedIndex() );
+		DiscoveredMixer selectedMixer = 
+				mComboMixers.getItemAt( mComboMixers.getSelectedIndex() );
 		
-		if( mixer != null )
+		if( selectedMixer != null )
 		{
-			config.setMixer( mixer );
+			config.setMixer( selectedMixer.getMixerName() );
 		}
 
 		MixerChannel channel = mComboChannels.getItemAt( 
@@ -103,16 +105,16 @@ public class MixerEditor extends SourceEditor
             @Override
             public void run() 
             {
-            	Set<String> mixers = MixerManager.getInstance().getMixers();
-            	String[] mixerStrings = mixers.toArray( new String[ mixers.size() ] );
+            	DiscoveredMixer[] mixers = MixerManager.getInstance().getMixers();
 
         		mComboMixers.setModel( 
-        				new DefaultComboBoxModel<String>( mixerStrings ) );
+        				new DefaultComboBoxModel<DiscoveredMixer>( mixers ) );
         		
         		SourceConfigMixer config = (SourceConfigMixer)mConfig;
+        		
         		String mixer = config.getMixer();
         		
-        		if( mixer != null && mixers.contains( mixer ) )
+        		if( mixer != null )
         		{
             		mComboMixers.setSelectedItem( mixer );
         		}
@@ -121,11 +123,14 @@ public class MixerEditor extends SourceEditor
         			//Mixer either hasn't been set yet, or it was set to a 
         			//mixer that is no longer available.  Set the mixer to the
         			//first item, and then store the value
-        			if( mixers.size() > 0 )
+        			if( mixers.length > 0 )
         			{
         				mComboMixers.setSelectedIndex( 0 );
         				
-        				config.setMixer( mComboMixers.getItemAt( 0 ) );
+        				DiscoveredMixer selectedMixer = 
+        						(DiscoveredMixer)mComboMixers.getSelectedItem();
+        				
+        				config.setMixer( selectedMixer.getMixerName() );
         			}
         		}
             }

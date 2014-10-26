@@ -17,6 +17,8 @@ import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
 import sample.Listener;
+import sample.complex.ComplexBuffer;
+import sample.simplex.SimplexSampleListener;
 import settings.ColorSetting.ColorSettingName;
 import settings.ColorSettingMenuItem;
 import settings.Setting;
@@ -43,7 +45,7 @@ import dsp.filter.Window.WindowType;
 
 public class ChannelSpectrumPanel extends JPanel 
 								  implements ChannelEventListener,
-								  			 Listener<Float>,
+								  			 SimplexSampleListener,
 								  			 SettingChangeListener,
 								  			 SpectralDisplayAdjuster
 {
@@ -62,7 +64,7 @@ public class ChannelSpectrumPanel extends JPanel
     
     private int mSpectrumAveragingSize;
     private int mSampleBufferSize = 2400;
-    private Float[] mSamples = new Float[ mSampleBufferSize ];
+    private float[] mSamples = new float[ mSampleBufferSize ];
     private int mSamplePointer = 0;
 
     private DecimatingSampleAssembler mDecimatingSampleAssembler;
@@ -204,7 +206,7 @@ public class ChannelSpectrumPanel extends JPanel
 	{
 		if( mEnabled.get() && mCurrentChannel != null && mCurrentChannel.isProcessing() )
 		{
-			mCurrentChannel.getProcessingChain().addFloatListener( this );
+			mCurrentChannel.getProcessingChain().addSimplexListener( (SimplexSampleListener)this );
 			mDFTProcessor.start();
 		}
 	}
@@ -214,7 +216,7 @@ public class ChannelSpectrumPanel extends JPanel
 		
 		if( mCurrentChannel != null && mCurrentChannel.isProcessing() )
 		{
-			mCurrentChannel.getProcessingChain().removeFloatListener( this );
+			mCurrentChannel.getProcessingChain().removeSimplexListener( (SimplexSampleListener)this );
 		}
 
 		mDFTProcessor.stop();
@@ -250,7 +252,7 @@ public class ChannelSpectrumPanel extends JPanel
     }
 
 	@Override
-    public void receive( Float sample )
+    public void receive( float sample )
     {
 		mDecimatingSampleAssembler.receive( sample );
     }
@@ -470,37 +472,36 @@ public class ChannelSpectrumPanel extends JPanel
 		mSpectrumPanel.setBaseline( baseline );
     }
 	
-	public class DecimatingSampleAssembler implements Listener<Float>
+	public class DecimatingSampleAssembler
 	{
 		private FloatHalfBandFilter mDecimationFilter = new FloatHalfBandFilter( 
 				Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.0002 );
 		
 		private SampleAssembler mSampleAssembler;
 
-		public DecimatingSampleAssembler( Listener<Float[]> listener )
+		public DecimatingSampleAssembler( Listener<ComplexBuffer> listener )
 		{
 			mSampleAssembler = new SampleAssembler( listener );
 			mDecimationFilter.setListener( mSampleAssembler );
 		}
 
-		@Override
-        public void receive( Float sample )
+        public void receive( float sample )
         {
 			mDecimationFilter.receive( sample );
         }
 	}
 	
-	public class SampleAssembler implements Listener<Float>
+	public class SampleAssembler implements SimplexSampleListener
 	{
-	    private Listener<Float[]> mListener;
+	    private Listener<ComplexBuffer> mListener;
 
-	    public SampleAssembler( Listener<Float[]> listener )
+	    public SampleAssembler( Listener<ComplexBuffer> listener )
 		{
 	    	mListener = listener;
 		}
 
 		@Override
-	    public void receive( Float sample )
+	    public void receive( float sample )
 	    {
 			mSamples[ mSamplePointer++ ] = sample;
 
@@ -508,15 +509,16 @@ public class ChannelSpectrumPanel extends JPanel
 			{
 				if( mEnabled.get() )
 				{
-					mListener.receive( Arrays.copyOf( mSamples, 
-														  mSamples.length ) );
+					float[] copy = Arrays.copyOf( mSamples, mSamples.length );
+					
+					mListener.receive( new ComplexBuffer( copy ) );
 				}
 				
 				mSamplePointer = 0;
 				
 				if( mSamples.length != mSampleBufferSize )
 				{
-					mSamples = new Float[ mSampleBufferSize ];
+					mSamples = new float[ mSampleBufferSize ];
 				}
 			}
 	    }

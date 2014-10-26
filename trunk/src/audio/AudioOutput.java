@@ -27,10 +27,10 @@ import javax.sound.sampled.SourceDataLine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sample.Listener;
+import sample.simplex.SimplexSampleListener;
 import buffer.FloatSampleBufferAssembler;
 
-public class AudioOutput implements Listener<Float>, 
+public class AudioOutput implements SimplexSampleListener, 
 									SquelchListener,
 									AudioTypeListener
 {
@@ -88,7 +88,7 @@ public class AudioOutput implements Listener<Float>,
 	}
 
 	@Override
-    public void receive( Float sample )
+    public void receive( float sample )
     {
 		float outputSample = mAdapter.get( sample );
 

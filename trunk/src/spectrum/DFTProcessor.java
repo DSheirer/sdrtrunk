@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
+import sample.complex.ComplexBuffer;
 import source.Source;
 import source.Source.SampleType;
 import source.tuner.FrequencyChangeEvent;
@@ -43,7 +44,7 @@ import dsp.filter.Window.WindowType;
  * Processes both complex samples or float samples and dispatches a float array
  * of DFT results, using configurable fft size and output dispatch timelines.  
  */
-public class DFTProcessor implements Listener<Float[]>,
+public class DFTProcessor implements Listener<ComplexBuffer>,
 									 FrequencyChangeListener
 {
 	private final static Logger mLog = 
@@ -52,8 +53,8 @@ public class DFTProcessor implements Listener<Float[]>,
 	private CopyOnWriteArrayList<DFTResultsConverter> mListeners =
 			new CopyOnWriteArrayList<DFTResultsConverter>();
 
-	private ArrayBlockingQueue<Float[]> mQueue = 
-							new ArrayBlockingQueue<Float[]>( 200 );
+	private ArrayBlockingQueue<ComplexBuffer> mQueue = 
+							new ArrayBlockingQueue<ComplexBuffer>( 200 );
 							
 	private ScheduledExecutorService mScheduler = 
 							Executors.newScheduledThreadPool(1);	
@@ -74,7 +75,7 @@ public class DFTProcessor implements Listener<Float[]>,
 	private float mNewFloatResidual;
 	private float[] mPreviousFrame = new float[ 8192 ];
 	
-	private Float[] mCurrentBuffer;
+	private float[] mCurrentBuffer;
 	private int mCurrentBufferPointer = 0;
 	
 	private SampleType mSampleType;
@@ -222,16 +223,16 @@ public class DFTProcessor implements Listener<Float[]>,
 	 * Places the sample into a transfer queue for future processing. 
 	 */
 	@Override
-    public void receive( Float[] samples )
+    public void receive( ComplexBuffer sampleBuffer )
     {
-		if( !mQueue.offer( samples ) )
+		if( !mQueue.offer( sampleBuffer ) )
 		{
 			mLog.error( "DFTProcessor - [" + mSampleType.toString()
 						+ "]queue is full, purging queue, "
-						+ "samples[" + samples + "]" );
+						+ "samples[" + sampleBuffer + "]" );
 
 			mQueue.clear();
-			mQueue.offer( samples );
+			mQueue.offer( sampleBuffer );
 		}
     }
 	
@@ -241,7 +242,8 @@ public class DFTProcessor implements Listener<Float[]>,
 
 		try
         {
-            mCurrentBuffer = mQueue.take();
+			ComplexBuffer buffer = mQueue.take();
+            mCurrentBuffer = buffer.getSamples();
         }
         catch ( InterruptedException e )
         {

@@ -17,9 +17,8 @@
  ******************************************************************************/
 package source.mixer;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.sound.sampled.AudioFormat;
@@ -31,13 +30,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
-import source.FloatArraySource;
+import sample.adapter.SampleAdapter;
+import sample.complex.ComplexBuffer;
+import sample.complex.ComplexSample;
 import source.SourceException;
 
-public class MixerSource extends FloatArraySource
+public class ComplexMixer
 {
 	private final static Logger mLog = 
-			LoggerFactory.getLogger( MixerSource.class );
+			LoggerFactory.getLogger( ComplexMixer.class );
 
 	private long mFrequency = 0;
 	private int mBufferSize = 16384;
@@ -45,90 +46,82 @@ public class MixerSource extends FloatArraySource
 	private BufferReader mBufferReader = new BufferReader();
 	private TargetDataLine mTargetDataLine;
 	private AudioFormat mAudioFormat;
-	private String mDisplayName;
+	private String mName;
 	private int mBytesPerFrame = 0;
 	private SampleAdapter mSampleAdapter;
-	
-	CopyOnWriteArrayList<Listener<Float[]>> mSampleListeners = 
-							new CopyOnWriteArrayList<Listener<Float[]>>();
+	private Listener<ComplexBuffer> mListener;
     
 	/**
-	 * Complex Mixer Source - constructs a reader on the mixer/sound card target 
+	 * Complex Mixer - constructs a reader on the mixer/sound card target 
 	 * data line using the specified audio format (sample size, sample rate ) 
-	 * and broadcasts float[] sample data to all registered listeners.  Reads 
-	 * sample buffers sized to 10% of the sample rate specified in audio format.
+	 * and broadcasts complex (I/Q) sample buffers to all registered listeners.
+	 * Reads sample buffers sized to 10% of the sample rate specified in audio 
+	 * format.
 	 * 
 	 * @param targetDataLine - mixer or sound card to be used
 	 * 
 	 * @param format - audio format
 	 * 
-	 * @param name - token name to use for this source
+	 * @param name - token name to use for this mixer
 	 * 
 	 * @param sampleAdapter - adapter to convert byte array data read from the
-	 * mixer into float array data.  Can optionally invert the channel data if
-	 * the left/right stereo channels are inverted.
+	 * mixer into ComplexBuffer.  The adapter can optionally invert the channel 
+	 * data if the left/right stereo channels are inverted.
 	 */
-    public MixerSource( TargetDataLine targetDataLine, 
-    						   AudioFormat format,
-    						   String name,
-    						   SampleAdapter sampleAdapter )
+    public ComplexMixer( TargetDataLine targetDataLine, 
+    					 AudioFormat format,
+    					 String name,
+    					 SampleAdapter sampleAdapter,
+    					 Listener<ComplexBuffer> listener )
     {
-    	super( name );
-    	
     	mTargetDataLine = targetDataLine;
+    	mName = name;
         mAudioFormat = format;
         mSampleAdapter = sampleAdapter;
+        mListener = listener;
     }
     
-    public void setListener( Listener<Float[]> listener )
+    public TargetDataLine getTargetDataLine()
     {
-		mSampleListeners.add( listener );
-		
-		/* If this is the first listener, start the reader thread */
+    	return mTargetDataLine;
+    }
+    
+    public void start()
+    {
 		if( !mBufferReader.isRunning() )
 		{
 			Thread thread = new Thread( mBufferReader );
-			thread.setName( getName() + " Sample Reader" );
+			thread.setDaemon( true );
+			thread.setName( mName + " Complex Sample Reader" );
 			thread.start();
 		}
     }
 
-    public void removeListener( Listener<Float[]> listener )
+    public void stop()
     {
-		mSampleListeners.remove( listener );
-
-		/* If this is the laster listener, stop the reader thread */
-		if( mSampleListeners.isEmpty() )
-		{
-			mBufferReader.stop();
-		}
+		mBufferReader.stop();
     }
 
-    public void broadcast( Float[] samples )
+    private List<ComplexSample> convert( ComplexBuffer sampleBuffer )
     {
-		Iterator<Listener<Float[]>> it = mSampleListeners.iterator();
-		
-		while( it.hasNext() )
-		{
-			Listener<Float[]> next = it.next();
-			
-			/* if this is the last (or only) listener, send him the original 
-			 * buffer, otherwise send him a copy of the buffer */
-			if( it.hasNext() )
-			{
-				next.receive( Arrays.copyOf( samples, samples.length ) );
-			}
-			else
-			{
-				next.receive( samples );
-			}
-		}
+    	float[] samples = sampleBuffer.getSamples();
+
+    	ArrayList<ComplexSample> converted = new ArrayList<ComplexSample>();
+    	
+    	for( int x = 0; x < samples.length; x += 2 )
+    	{
+    		converted.add( new ComplexSample( samples[ x ], samples[ x + 1 ] ) );
+    	}
+
+    	sampleBuffer.dispose();
+    	
+    	return converted;
     }
     
 	@Override
 	public String toString()
 	{
-		return mDisplayName;
+		return mName;
 	}
 	
     public int getSampleRate()
@@ -220,16 +213,19 @@ public class MixerSource extends FloatArraySource
         					mTargetDataLine.read( buffer, 0, buffer.length );
 
 	                        /* Convert samples to float array */
-	            			Float[] convertedSamples = 
+        					float[] samples =  
 	            					mSampleAdapter.convert( buffer );
 	            			
 	            			/* Dispatch samples to registered listeners */
-	            			broadcast( convertedSamples );
+        					if( mListener != null )
+        					{
+        						mListener.receive( new ComplexBuffer( samples ) );
+        					}
                         }
                         catch ( Exception e )
                         {
-                        	mLog.error( "ComplexMixerSource - error while reading"
-                        			+ "from the mixer target data line", e );
+                        	mLog.error( "error while reading"
+                    			+ "from the mixer target data line", e );
                         	
                         	mRunning.set( false );
                         }
@@ -265,13 +261,13 @@ public class MixerSource extends FloatArraySource
 		}
 	}
 
-	@Override
     public void dispose()
     {
 		if( mBufferReader != null )
 		{
 			mBufferReader.stop();
-			mSampleListeners.clear();			
 		}
+		
+		mListener = null;			
     }
 }

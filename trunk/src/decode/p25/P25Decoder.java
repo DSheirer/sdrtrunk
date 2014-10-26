@@ -24,12 +24,11 @@ import instrument.tap.stream.FloatTap;
 import java.util.ArrayList;
 import java.util.List;
 
-import sample.Listener;
+import sample.simplex.SimplexSampleListener;
 import source.Source.SampleType;
 import alias.AliasList;
 import decode.Decoder;
 import decode.DecoderType;
-import dsp.afc.AutomaticFrequencyControl;
 import dsp.filter.DCRemovalFilter2;
 import dsp.fsk.C4FMDecoder;
 import dsp.nbfm.FilteringNBFMDemodulator;
@@ -84,12 +83,12 @@ public class P25Decoder extends Decoder implements Instrumentable
 			 * Route the demodulated, filtered samples back to this class to send
 			 * to all registered listeners
 			 */
-			mDCRemovalFilter.setListener( this.getFloatReceiver() );
+			mDCRemovalFilter.setListener( this.getSimplexReceiver() );
 			
 		}
 
 		mC4FMDecoder = new C4FMDecoder();
-		addFloatListener( mC4FMDecoder );
+		addSimplexSampleListener( mC4FMDecoder );
 	}
 
 	@Override
@@ -121,8 +120,8 @@ public class P25Decoder extends Decoder implements Instrumentable
 		{
 			case TAP_DEMOD_TO_DECODER:
 				FloatTap demodTap = (FloatTap)tap;
-				removeFloatListener( mC4FMDecoder );
-				addFloatListener( demodTap );
+				removeSimplexListener( mC4FMDecoder );
+				addSimplexSampleListener( demodTap );
 				demodTap.setListener( mC4FMDecoder );
 				break;
 		}
@@ -137,17 +136,16 @@ public class P25Decoder extends Decoder implements Instrumentable
 		{
 			case TAP_DEMOD_TO_DECODER:
 				FloatTap demodTap = (FloatTap)tap;
-				removeFloatListener( demodTap );
+				removeSimplexListener( demodTap );
 				demodTap.removeListener( mC4FMDecoder );
-				addFloatListener( mC4FMDecoder );
+				addSimplexSampleListener( mC4FMDecoder );
 				break;
 		}
     }
 
 	@Override
-    public void addUnfilteredFloatListener( Listener<Float> listener )
+    public void addUnfilteredSimplexSampleListener( SimplexSampleListener listener )
     {
 	    // TODO Auto-generated method stub
-	    
     }
 }

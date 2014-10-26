@@ -21,7 +21,6 @@ import gui.SDRTrunk;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.RejectedExecutionException;
@@ -40,13 +39,13 @@ import record.wave.FloatWaveRecorder;
 import sample.Broadcaster;
 import sample.Listener;
 import sample.complex.ComplexSample;
+import sample.simplex.SimplexBuffer;
+import sample.simplex.SimplexSampleListener;
 import source.ComplexSource;
-import source.FloatArraySource;
-import source.FloatSource;
+import source.SimplexSource;
 import source.Source;
 import source.SourceException;
 import source.config.SourceConfigMixer;
-import source.tuner.FrequencyChangeListener;
 import source.tuner.Tuner;
 import source.tuner.TunerChannelSource;
 import alias.AliasList;
@@ -86,14 +85,13 @@ public class ProcessingChain implements Listener<Message>
 	private ScheduledFuture<?> mProcessorTask;
 	private AliasList mAliasList;
 
-	private ComplexListener mComplexListener = new ComplexListener();
-	private LinkedTransferQueue<List<ComplexSample>> mComplexBuffer = 
+	private ComplexSampleReceiver mComplexReceiver = new ComplexSampleReceiver();
+	private LinkedTransferQueue<List<ComplexSample>> mComplexQueue = 
 								new LinkedTransferQueue<List<ComplexSample>>();
 
-	private FloatListener mFloatListener = new FloatListener();
-	private FloatArrayListener mFloatArrayListener = new FloatArrayListener();
-	private LinkedTransferQueue<Float> mFloatBuffer = 
-										new LinkedTransferQueue<Float>();
+	private SimplexSampleReceiver mSimplexReceiver = new SimplexSampleReceiver();
+	private LinkedTransferQueue<SimplexBuffer> mSimplexQueue = 
+									new LinkedTransferQueue<SimplexBuffer>();
 
 	protected Broadcaster<Message> mBroadcaster = new Broadcaster<Message>();
 
@@ -118,19 +116,14 @@ public class ProcessingChain implements Listener<Message>
 		return mAFC;
 	}
 	
-	public Listener<List<ComplexSample>> getComplexListener()
+	public Listener<List<ComplexSample>> getComplexReceiver()
 	{
-		return mComplexListener;
+		return mComplexReceiver;
 	}
 	
-	public Listener<Float> getFloatListener()
+	public Listener<SimplexBuffer> getSimplexReceiver()
 	{
-		return mFloatListener;
-	}
-	
-	public Listener<Float[]> getFloatArrayListener()
-	{
-		return mFloatArrayListener;
+		return (Listener<SimplexBuffer>)mSimplexReceiver;
 	}
 	
 	public String toString()
@@ -248,16 +241,12 @@ public class ProcessingChain implements Listener<Message>
 		{
 			if( mSource instanceof ComplexSource )
 			{
-				((ComplexSource)mSource).removeListener( this.getComplexListener() );
+				((ComplexSource)mSource).removeListener( this.getComplexReceiver() );
 			}
-			else if( mSource instanceof FloatSource )
+			else if( mSource instanceof SimplexSource )
 			{
-				((FloatSource)mSource).removeListener( this.getFloatListener() );
-			}
-			else if( mSource instanceof FloatArraySource )
-			{
-				((FloatArraySource)mSource)
-					.removeListener( this.getFloatArrayListener() );
+				((SimplexSource)mSource)
+					.removeListener( this.getSimplexReceiver() );
 			}
 			
 			if( mProcessorTask != null )
@@ -299,7 +288,7 @@ public class ProcessingChain implements Listener<Message>
 											   50, TimeUnit.MILLISECONDS );
 
 						((ComplexSource)mSource)
-							.setListener( this.getComplexListener() );
+							.setListener( this.getComplexReceiver() );
 					}
 					catch( RejectedExecutionException ree )
 					{
@@ -310,40 +299,18 @@ public class ProcessingChain implements Listener<Message>
 						mSource.dispose();
 					}
 				}
-				else if( mSource instanceof FloatSource )
+				else if( mSource instanceof SimplexSource )
 				{
 					try
 					{
 						mProcessorTask = 
 								mResourceManager.getThreadPoolManager()
 									.schedule( ThreadType.DECODER, 
-											   new FloatProcessor(), 
+											   new SimplexProcessor(), 
 											   50, TimeUnit.MILLISECONDS );
 
-						((FloatSource)mSource)
-								.setListener( this.getFloatListener() );
-					}
-					catch( RejectedExecutionException ree )
-					{
-						mLog.error( getLogPrefix() + "ProcessingChain - "
-								+ "error scheduling float sample processing "
-								+ "thread", ree );
-						
-						mSource.dispose();
-					}
-				}
-				else if( mSource instanceof FloatArraySource )
-				{
-					try
-					{
-						mProcessorTask = 
-								mResourceManager.getThreadPoolManager()
-									.schedule( ThreadType.DECODER, 
-											   new FloatProcessor(), 
-											   50, TimeUnit.MILLISECONDS );
-
-						((FloatArraySource)mSource)
-								.setListener( this.getFloatArrayListener() );
+						((SimplexSource)mSource)
+								.setListener( this.getSimplexReceiver() );
 					}
 					catch( RejectedExecutionException ree )
 					{
@@ -394,7 +361,7 @@ public class ProcessingChain implements Listener<Message>
 										"-" + mChannel.getName();
 					
 					mAudioOutput = new AudioOutput( threadName );
-					addFloatListener( mAudioOutput );
+					addSimplexListener( mAudioOutput );
 					
 					/* Automatic frequency control */
 					if( mAFC != null )
@@ -415,7 +382,7 @@ public class ProcessingChain implements Listener<Message>
 						tcs.addListener( mAFC );
 
 						/* Add AFC as listener to the decoder */
-						mDecoder.addUnfilteredFloatListener( mAFC );
+						mDecoder.addUnfilteredSimplexSampleListener( mAFC );
 					}
 				}
 			}
@@ -525,7 +492,7 @@ public class ProcessingChain implements Listener<Message>
 						mLog.info( getLogPrefix() + "- started audio recording [" + 
 								recorder.getFileName() + "]" );
 
-						mDecoder.addFloatListener( (FloatWaveRecorder)recorder );
+						mDecoder.addSimplexSampleListener( (FloatWaveRecorder)recorder );
 					}
 					else if( recorder instanceof ComplexWaveRecorder )
 					{
@@ -620,22 +587,32 @@ public class ProcessingChain implements Listener<Message>
 		
     }
 
-    public void addFloatListener( Listener<Float> listener )
+	/**
+	 * Adds the listener to receive demodulated samples from the decoder
+	 */
+    public void addSimplexListener( SimplexSampleListener listener )
     {
 		if( mDecoder != null )
 		{
-			mDecoder.addFloatListener( listener );
+			mDecoder.addSimplexSampleListener( listener );
 		}
     }
 
-    public void removeFloatListener( Listener<Float> listener )
+    /**
+     * Removes the listener from receiving demodulated samples from the decoder
+     */
+    public void removeSimplexListener( SimplexSampleListener listener )
     {
 		if( mDecoder != null )
 		{
-			mDecoder.removeFloatListener( listener );
+			mDecoder.removeSimplexListener( listener );
 		}
     }
 
+    /**
+     * Adds a listener to receive a copy of complex (I/Q) baseband samples 
+     * received by this processing chain
+     */
     public void addComplexListener( Listener<ComplexSample> listener )
     {
 		if( mDecoder != null )
@@ -649,6 +626,10 @@ public class ProcessingChain implements Listener<Message>
 		}
     }
 
+    /**
+     * Removes the listener from receiving a copy of complex (I/Q) baseband 
+     * samples received by this processing chain
+     */
     public void removeComplexListener( Listener<ComplexSample> listener )
     {
 		if( mDecoder != null )
@@ -662,11 +643,17 @@ public class ProcessingChain implements Listener<Message>
 		}
     }
 
+    /**
+     * Registers the listener to receive messages
+     */
     public void addListener( Listener<Message> listener )
     {
     	mBroadcaster.addListener( listener );
     }
     
+    /**
+     * Registers all listeners in the list to receive messages
+     */
     public void addListeners( List<Listener<Message>> listeners )
     {
     	for( Listener<Message> listener: listeners )
@@ -675,43 +662,47 @@ public class ProcessingChain implements Listener<Message>
     	}
     }
 
+    /**
+     * Removes the listener from receiving messages
+     */
     public void removeListener( Listener<Message> listener )
     {
 		mBroadcaster.removeListener( listener );
     }
 
     /**
-     * Runnable float sample processing task.  Schedule this task to run 20
-     * times a second when we're receiving complex samples from our source.
-     * Schedule execution via the thread pool manager, obtainable from the 
-     * resource manager, 
+     * Manages the simplex sample queue and distributes samples to the decoder.
      */
-	private class FloatProcessor implements Runnable
+	private class SimplexProcessor implements Runnable
 	{
 		@Override
         public void run()
         {
-			List<Float> samples = new ArrayList<Float>();
+			List<SimplexBuffer> sampleBuffers = new ArrayList<SimplexBuffer>();
 
-			mFloatBuffer.drainTo( samples, 48000 );
+			mSimplexQueue.drainTo( sampleBuffers, 4 );
 
-			for( Float sample: samples )
+			for( SimplexBuffer sampleBuffer: sampleBuffers )
 			{
 				if( mDecoder != null )
 				{
-					mDecoder.getFloatReceiver().receive( sample );
+					float[] samples = sampleBuffer.getSamples();
+					
+					for( float sample: samples )
+					{
+						mDecoder.getSimplexReceiver().receive( sample );
+					}
 				}
+				
+				sampleBuffer.dispose();
 			}
 			
-			samples.clear();
+			sampleBuffers.clear();
         }
 	}
 
 	/**
-     * Runnable complex sample processing task.  Schedule this task to run 20
-     * times a second when we're receiving complex samples from our source.
-     * Schedule execution via the thread pool manager, obtainable from the 
-     * resource manager, 
+     * Manages the complex sample queue and distributes samples to the decoder.
      */
 	private class ComplexProcessor implements Runnable
 	{
@@ -721,7 +712,7 @@ public class ProcessingChain implements Listener<Message>
 			List<List<ComplexSample>> sampleSets = 
 								new ArrayList<List<ComplexSample>>();
 
-			mComplexBuffer.drainTo( sampleSets, 16 );
+			mComplexQueue.drainTo( sampleSets, 16 );
 
 			for( List<ComplexSample> samples: sampleSets )
 			{
@@ -740,30 +731,29 @@ public class ProcessingChain implements Listener<Message>
         }
 	}
 	
-	public class ComplexListener implements Listener<List<ComplexSample>>
+	/**
+	 * Internal listener to receive complex (I/Q) baseband samples.  Places 
+	 * received samples into the queue managed by the ComplexProcessor.
+	 */
+	public class ComplexSampleReceiver implements Listener<List<ComplexSample>>
 	{
 		@Override
         public void receive( List<ComplexSample> samples )
         {
-			mComplexBuffer.add( samples );
+			mComplexQueue.add( samples );
         }
 	}
-	
-	public class FloatListener implements Listener<Float>
+
+	/**
+	 * Internal listener to receive simplex (ie demodulated) samples.  Places
+	 * received samples into the queue managed by the SimplexProcessor
+	 */
+	public class SimplexSampleReceiver implements Listener<SimplexBuffer>
 	{
 		@Override
-        public void receive( Float sample )
+        public void receive( SimplexBuffer samples )
         {
-			mFloatBuffer.add( sample );
-        }
-	}
-	
-	public class FloatArrayListener implements Listener<Float[]>
-	{
-		@Override
-        public void receive( Float[] samples )
-        {
-			mFloatBuffer.addAll( Arrays.asList( samples ) );
+			mSimplexQueue.add( samples );
         }
 	}
 }

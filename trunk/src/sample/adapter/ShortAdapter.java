@@ -15,33 +15,22 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package source.mixer;
+package sample.adapter;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import source.Source.SampleType;
-
 /**
  * Converts 16-bit little endian byte data into an array of floats 
  */
-public class ChannelShortAdapter extends SampleAdapter
+public class ShortAdapter extends SampleAdapter
 {
 	private ByteOrder mByteOrder = ByteOrder.LITTLE_ENDIAN;
-	private MixerChannel mMixerChannel;
 	
-	public ChannelShortAdapter( MixerChannel channel )
-	{
-		/* Only use with LEFT/RIGHT channels */
-		assert( channel != MixerChannel.MONO );
-		
-		mMixerChannel = channel;
-	}
-			
 	@Override
-    public Float[] convert( byte[] samples )
+    public float[] convert( byte[] samples )
     {
-		Float[] processed = new Float[ samples.length / 4 ];
+		float[] processed = new float[ samples.length / 2 ];
 
 		int pointer = 0;
 
@@ -53,21 +42,8 @@ public class ChannelShortAdapter extends SampleAdapter
 
         while( buffer.hasRemaining() )
         {
-        	if( mMixerChannel == MixerChannel.LEFT )
-        	{
-            	processed[ pointer ] = (float)buffer.getShort();
+        	processed[ pointer ] = (float)buffer.getShort();
 
-            	/* Throw away the right channel */
-            	buffer.getShort();
-        	}
-        	else
-        	{
-            	/* Throw away the left channel */
-            	buffer.getShort();
-
-            	processed[ pointer ] = (float)buffer.getShort();
-        	}
-        	
         	pointer++;
         }
         

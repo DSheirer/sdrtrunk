@@ -1,12 +1,12 @@
 package dsp.afc;
 
-import sample.Listener;
+import sample.simplex.SimplexSampleListener;
 import source.tuner.FrequencyChangeEvent;
-import source.tuner.FrequencyChangeListener;
 import source.tuner.FrequencyChangeEvent.Attribute;
+import source.tuner.FrequencyChangeListener;
 import buffer.FloatAveragingBuffer;
 
-public class AutomaticFrequencyControl implements Listener<Float>, 
+public class AutomaticFrequencyControl implements SimplexSampleListener, 
 												  FrequencyChangeListener
 {
 	private static float LARGE_ERROR = 10000.0f;
@@ -65,11 +65,11 @@ public class AutomaticFrequencyControl implements Listener<Float>,
 	}
 
 	@Override
-    public void receive( Float sample )
+    public void receive( float sample )
     {
 		if( mMode == Mode.FAST )
 		{
-			float average = mBuffer.get( sample.floatValue() );
+			float average = mBuffer.get( sample );
 			
 			mSampleCounter++;
 			
@@ -88,7 +88,7 @@ public class AutomaticFrequencyControl implements Listener<Float>,
 			{
 				mSkipCounter = 0;
 
-				float average = mBuffer.get( sample.floatValue() );
+				float average = mBuffer.get( sample );
 				
 				mSampleCounter++;
 				

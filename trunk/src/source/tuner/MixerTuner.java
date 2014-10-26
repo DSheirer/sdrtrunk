@@ -25,25 +25,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
+import sample.adapter.SampleAdapter;
+import sample.complex.ComplexBuffer;
 import sample.complex.ComplexSampleListListener;
-import source.mixer.MixerSource;
-import source.mixer.SampleAdapter;
+import source.mixer.ComplexMixer;
 
-public abstract class MixerTuner extends Tuner
+public abstract class MixerTuner extends Tuner implements Listener<ComplexBuffer>
 {
 	private final static Logger mLog = 
 							LoggerFactory.getLogger( MixerTuner.class );
 
-	private TargetDataLine mTargetDataLine;
 	protected MixerTunerType mMixerTunerType;
-	protected MixerSource mMixerSource;
+	protected ComplexMixer mComplexMixer;
 	protected ArrayList<ComplexSampleListListener> mListeners = 
 					new ArrayList<ComplexSampleListListener>();
 	
 	/**
-	 * Provides a wrapper around a MixerSource to treat it like a Tuner that
-	 * can provide ComplexSample<Short> samples.  Subclasses should couple this
-	 * functionality with a tuner control class to allow tuning.
+	 * Wrapper class to add basic Tuner functionality to the ComplexMixer.  
+	 * Subclasses should couple this functionality with a tuner controller class 
+	 * to support tuning.
 	 */
 	public MixerTuner( String name,
 					   MixerTunerType mixerTunerType,
@@ -54,12 +54,11 @@ public abstract class MixerTuner extends Tuner
 		
 		mMixerTunerType = mixerTunerType;
 
-		mTargetDataLine = targetDataLine;
-		
-        mMixerSource = new MixerSource( targetDataLine, 
-				   mMixerTunerType.getAudioFormat(),
-				   name,
-				   sampleAdapter );
+        mComplexMixer = new ComplexMixer( targetDataLine, 
+        								  mMixerTunerType.getAudioFormat(),
+        								  name,
+        								  sampleAdapter,
+        								  (Listener<ComplexBuffer>)this );
 	}
 	
 	public MixerTuner( String name, 
@@ -72,6 +71,13 @@ public abstract class MixerTuner extends Tuner
 			  sampleAdapter );
 	}
 
+	public void dispose()
+	{
+		mComplexMixer.stop();
+		
+		super.dispose();
+	}
+	
 	public MixerTunerType getMixerTunerType()
 	{
 		return mMixerTunerType;
@@ -79,26 +85,44 @@ public abstract class MixerTuner extends Tuner
 	
 	public TargetDataLine getTargetDataLine()
 	{
-		return mTargetDataLine;
+		return mComplexMixer.getTargetDataLine();
 	}
 	
 	/**
-	 * Overrides the Tuner listener management methods and allows the 
-	 * complex mixer source to manage sample listeners
+	 * Dispatches the received complex buffers from the mComplexMixer to all
+	 * listeners registered on the parent Tuner class
 	 */
 	@Override
-    public void addListener( Listener<Float[]> listener )
+	public void receive( ComplexBuffer buffer )
+	{
+		super.broadcast( buffer );
+	}
+	
+	/**
+	 * Overrides the parent Tuner class listener management method to allow
+	 * starting the buffer processing thread
+	 */
+	@Override
+    public void addListener( Listener<ComplexBuffer> listener )
     {
-		mMixerSource.setListener( listener );
+		super.addListener( listener );
+
+		/* We can call start multiple times -- it ignores additional requests */
+		mComplexMixer.start();
     }
 
 	/**
-	 * Overrides the Tuner listener management methods and allows the 
-	 * complex mixer source to manage sample listeners
+	 * Overrides the parent Tuner class listener management method to allow
+	 * stopping the buffer processing thread when there are no more listeners
 	 */
 	@Override
-    public void removeListener( Listener<Float[]> listener )
+    public void removeListener( Listener<ComplexBuffer> listener )
     {
-	    mMixerSource.removeListener( listener );
+		super.removeListener( listener );
+		
+		if( mSampleListeners.isEmpty() )
+		{
+			mComplexMixer.stop();
+		}
     }
 }

@@ -1,14 +1,14 @@
 package dsp.filter;
 
-import sample.Listener;
+import sample.simplex.SimplexSampleListener;
 
-public class DCRemovalFilter3 implements Listener<Float>
+public class DCRemovalFilter3 implements SimplexSampleListener
 {
 	private float mAlpha;
 	private float mPreviousInput = 0.0f;
 	private float mPreviousOutput = 0.0f;
 
-	private Listener<Float> mListener;
+	private SimplexSampleListener mListener;
 	
 	/**
 	 * IIR single-pole DC removal filter, as described by J M de Freitas in
@@ -24,7 +24,7 @@ public class DCRemovalFilter3 implements Listener<Float>
 		mAlpha = alpha;
 	}
 	@Override
-    public void receive( Float currentInput )
+    public void receive( float currentInput )
     {
 		float currentOutput = ( currentInput - mPreviousInput ) + 
 							  ( mAlpha * mPreviousOutput );
@@ -38,7 +38,7 @@ public class DCRemovalFilter3 implements Listener<Float>
 		mPreviousOutput = currentOutput;
     }
 
-	public void setListener( Listener<Float> listener )
+	public void setListener( SimplexSampleListener listener )
 	{
 		mListener = listener;
 	}

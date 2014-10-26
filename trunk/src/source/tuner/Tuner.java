@@ -23,6 +23,7 @@ import java.util.concurrent.RejectedExecutionException;
 import javax.swing.JPanel;
 
 import sample.Listener;
+import sample.complex.ComplexBuffer;
 import source.SourceException;
 import source.tuner.FrequencyChangeEvent.Attribute;
 import controller.ResourceManager;
@@ -37,8 +38,12 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
 {
 	private String mName;
 
-	protected CopyOnWriteArrayList<Listener<Float[]>> 
-		mSampleListeners = new CopyOnWriteArrayList<Listener<Float[]>>();
+	/**
+	 * Sample Listeners - these will typically be the DFT processor for spectral
+	 * display, or it will be one or more tuner channel sources
+	 */
+	protected CopyOnWriteArrayList<Listener<ComplexBuffer>> 
+		mSampleListeners = new CopyOnWriteArrayList<Listener<ComplexBuffer>>();
 	
 	protected CopyOnWriteArrayList<FrequencyChangeListener> 
 		mFrequencyChangeListeners = new CopyOnWriteArrayList<FrequencyChangeListener>();
@@ -53,7 +58,11 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
 		return mName;
 	}
 	
-	public abstract void dispose();
+	public void dispose()
+	{
+		mSampleListeners.clear();
+		mFrequencyChangeListeners.clear();
+	}
 	
 	public void setName( String name )
 	{
@@ -141,7 +150,7 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
 	/**
 	 * Registers the listener to receive complex float sample arrays
 	 */
-    public void addListener( Listener<Float[]> listener )
+    public void addListener( Listener<ComplexBuffer> listener )
     {
 		mSampleListeners.add( listener );
     }
@@ -149,7 +158,7 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
 	/**
 	 * Removes the registered listener
 	 */
-    public void removeListener( Listener<Float[]> listener )
+    public void removeListener( Listener<ComplexBuffer> listener )
     {
 	    mSampleListeners.remove( listener );
     }
@@ -157,11 +166,11 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
     /**
      * Broadcasts the samples to all registered listeners
      */
-    public void broadcast( Float[] samples )
+    public void broadcast( ComplexBuffer sampleBuffer )
     {
-    	for( Listener<Float[]> listener: mSampleListeners )
+    	for( Listener<ComplexBuffer> listener: mSampleListeners )
     	{
-    		listener.receive( samples );
+    		listener.receive( sampleBuffer );
     	}
     }
 
@@ -228,15 +237,4 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
 	{
 		broadcastFrequencyChangeEvent( event );
 	}
-
-//  /**
-//  * Broadcasts a frequency change event to all registered listeners
-//  */
-// public void broadcastBandwidthChange( int bandwidth )
-// {
-// 	broadcastFrequencyChangeEvent( 
-//				new FrequencyChangeEvent( Attribute.BANDWIDTH, bandwidth ) );
-// }
-// 
-
 }

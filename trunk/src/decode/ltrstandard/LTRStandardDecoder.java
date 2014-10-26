@@ -18,7 +18,7 @@
 package decode.ltrstandard;
 
 import message.MessageDirection;
-import sample.Listener;
+import sample.simplex.SimplexSampleListener;
 import source.Source.SampleType;
 import alias.AliasList;
 import bits.MessageFramer;
@@ -73,7 +73,7 @@ public class LTRStandardDecoder extends Decoder
 			mDCRemovalFilter = new DCRemovalFilter2( sDC_REMOVAL_RATIO );
 			mDemodulator.addListener( mDCRemovalFilter );
 			
-			mDCRemovalFilter.setListener( this.getFloatReceiver() );
+			mDCRemovalFilter.setListener( this.getSimplexReceiver() );
 		}
 
 		mLTRFSKDecoder = new LTRFSKDecoder();
@@ -88,7 +88,7 @@ public class LTRStandardDecoder extends Decoder
 		}
 		else
 		{
-			this.addFloatListener( mLTRFSKDecoder );
+			this.addSimplexSampleListener( mLTRFSKDecoder );
 		}
 		
 		if( direction == MessageDirection.OSW )
@@ -118,7 +118,7 @@ public class LTRStandardDecoder extends Decoder
     }
 
 	@Override
-    public void addUnfilteredFloatListener( Listener<Float> listener )
+    public void addUnfilteredSimplexSampleListener( SimplexSampleListener listener )
     {
 		if( mDemodulator != null )
 		{

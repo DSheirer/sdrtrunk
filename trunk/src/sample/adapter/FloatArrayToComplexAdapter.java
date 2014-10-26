@@ -15,42 +15,47 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package sample;
+package sample.adapter;
 
-import java.util.List;
-
+import sample.Listener;
 import sample.complex.ComplexSample;
-import source.mixer.MixerChannel;
 
-/**
- * Receives complex samples and send either the left channel or the right 
- * channel to the short sample listener
- */
-public class ComplexToFloatSampleConverter implements Listener<List<ComplexSample>>
+public class FloatArrayToComplexAdapter implements Listener<Float[]>
 {
-	private MixerChannel mChannel;
-	private Listener<Float> mListener;
-	
-	public ComplexToFloatSampleConverter( Listener<Float> listener, 
-										  MixerChannel channel )
-	{
-		mListener = listener;
-		mChannel = channel;
-	}
+	private Listener<ComplexSample> mListener;
 
 	@Override
-    public void receive( List<ComplexSample> samples )
+    public void receive( Float[] samples )
     {
-		for( ComplexSample sample: samples )
+		if( samples != null )
 		{
-			mListener.receive( mChannel == MixerChannel.LEFT ? 
-										   sample.left() : 
-										   sample.right() );
+			for( int x = 0; x < samples.length; x += 2 )
+			{
+				if( mListener != null &&
+					samples[ x ] != null && 
+					samples[ x + 1 ] != null )
+				{
+					mListener.receive( new ComplexSample( samples[ x ], 
+											  			  samples[ x + 1 ] ) );
+				}
+			}
+			
+			samples = null;
 		}
     }
-	
-	public Listener<Float> getListener()
+
+	public void setListener( Listener<ComplexSample> listener )
 	{
-		return mListener;
+		mListener = listener;
+	}
+	
+	public void removeListener( Listener<ComplexSample> listener )
+	{
+		mListener = null;
+	}
+	
+	public void dispose()
+	{
+		mListener = null;
 	}
 }

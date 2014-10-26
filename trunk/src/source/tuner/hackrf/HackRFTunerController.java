@@ -53,7 +53,6 @@ package source.tuner.hackrf;
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
 import java.nio.ByteBuffer;
-
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -80,6 +79,7 @@ import org.usb4java.Transfer;
 import org.usb4java.TransferCallback;
 
 import sample.Listener;
+import sample.complex.ComplexBuffer;
 import source.SourceException;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerController;
@@ -114,8 +114,8 @@ public class HackRFTunerController extends TunerController
 	private LinkedTransferQueue<byte[]> mFilledBuffers = 
 			new LinkedTransferQueue<byte[]>();
 	
-	private CopyOnWriteArrayList<Listener<Float[]>> mSampleListeners =
-							new CopyOnWriteArrayList<Listener<Float[]>>();
+	private CopyOnWriteArrayList<Listener<ComplexBuffer>> mSampleListeners =
+					new CopyOnWriteArrayList<Listener<ComplexBuffer>>();
 	
 	private ByteSampleAdapter mSampleAdapter = new ByteSampleAdapter();
 	private BufferProcessor mBufferProcessor = new BufferProcessor();
@@ -491,6 +491,8 @@ public class HackRFTunerController extends TunerController
 	 */
 	public void setSampleRate( HackRFSampleRate rate ) throws UsbException
 	{
+		mLog.debug( "Setting sample rate to:" + rate.name() );
+		
 		setSampleRateManual( rate.getRate(), 1 );
 		
 		mFrequencyController.setSampleRate( rate.getRate() );
@@ -561,11 +563,11 @@ public class HackRFTunerController extends TunerController
 		RATE2_016MHZ(   2016000,  "2.016 MHz", BasebandFilter.F3_50 ),
 		RATE3_024MHZ(   3024000,  "3.024 MHz", BasebandFilter.F5_00 ),
 		RATE4_464MHZ(   4464000,  "4.464 MHz", BasebandFilter.F6_00 ),
-		RATE5_472MHZ(   5472000,  "5.472 MHz", BasebandFilter.F7_00 ),
+		RATE5_376MHZ(   5376000,  "5.376 MHz", BasebandFilter.F7_00 ),
 		RATE7_488MHZ(   7488000,  "7.488 MHz", BasebandFilter.F9_00 ),
-		RATE10_032MHZ(  9984000, " 9.984 MHz", BasebandFilter.F12_00 ),
+		RATE10_080MHZ( 10080000, "10.080 MHz", BasebandFilter.F12_00 ),
 		RATE12_000MHZ( 12000000, "12.000 MHz", BasebandFilter.F14_00 ),
-		RATE13_488MHZ( 13488000, "13.488 MHz", BasebandFilter.F15_00 ),
+		RATE13_440MHZ( 13440000, "13.440 MHz", BasebandFilter.F15_00 ),
 		RATE14_976MHZ( 14976000, "14.976 MHz", BasebandFilter.F20_00 ),
 		RATE19_968MHZ( 19968000, "19.968 MHz", BasebandFilter.F24_00 );
 		
@@ -868,7 +870,7 @@ public class HackRFTunerController extends TunerController
 	 * Adds a sample listener.  If the buffer processing thread is
 	 * not currently running, starts it running in a new thread.
 	 */
-    public void addListener( Listener<Float[]> listener )
+    public void addListener( Listener<ComplexBuffer> listener )
     {
 		mSampleListeners.add( listener );
 
@@ -878,7 +880,7 @@ public class HackRFTunerController extends TunerController
 
 			Thread thread = new Thread( mBufferProcessor );
 			thread.setDaemon( true );
-			thread.setName( "Sample Processor" );
+			thread.setName( "HackRF Sample Processor" );
 
 			thread.start();
 		}
@@ -888,7 +890,7 @@ public class HackRFTunerController extends TunerController
 	 * Removes the sample listener.  If this is the last registered listener,
 	 * shuts down the buffer processing thread.
 	 */
-    public void removeListener( Listener<Float[]> listener )
+    public void removeListener( Listener<ComplexBuffer> listener )
     {
 		mSampleListeners.remove( listener );
 		
@@ -906,19 +908,19 @@ public class HackRFTunerController extends TunerController
 	 * This is to facilitate garbage collection of the array when the listener
 	 * is done processing the samples.
 	 */
-    public void broadcast( Float[] samples )
+    public void broadcast( ComplexBuffer samples )
     {
-    	Iterator<Listener<Float[]>> it = mSampleListeners.iterator();
+    	Iterator<Listener<ComplexBuffer>> it = mSampleListeners.iterator();
 
     	while( it.hasNext() )
     	{
-        	Listener<Float[]> next = it.next();
+        	Listener<ComplexBuffer> next = it.next();
 			
 			/* if this is the last (or only) listener, send the original 
 			 * buffer, otherwise send a copy of the buffer */
 			if( it.hasNext() )
 			{
-				next.receive( Arrays.copyOf( samples, samples.length ) );
+				next.receive( samples.copyOf() );
 			}
 			else
 			{
@@ -936,7 +938,7 @@ public class HackRFTunerController extends TunerController
 		private ScheduledExecutorService mExecutor = 
 							Executors.newScheduledThreadPool( 1 );
 		private ScheduledFuture<?> mSampleDispatcherTask;
-        private ArrayList<Transfer> mTransfers;
+        private CopyOnWriteArrayList<Transfer> mTransfers;
 		private AtomicBoolean mRunning = new AtomicBoolean();
 
 		@Override
@@ -1078,7 +1080,7 @@ public class HackRFTunerController extends TunerController
 	     */
 	    private void prepareTransfers() throws LibUsbException
 	    {
-	    	mTransfers = new ArrayList<Transfer>();
+	    	mTransfers = new CopyOnWriteArrayList<Transfer>();
 
 	    	for( int x = 0; x < TRANSFER_BUFFER_POOL_SIZE; x++ )
 	    	{
@@ -1121,10 +1123,9 @@ public class HackRFTunerController extends TunerController
 
 			for( byte[] buffer: buffers )
 			{
-				//TODO: convert this to float primitive				
-				Float[] samples = mSampleAdapter.convert( buffer );
+				float[] samples = mSampleAdapter.convert( buffer );
 				
-				broadcast( samples );
+				broadcast( new ComplexBuffer( samples ) );
 			}
         }
 	}

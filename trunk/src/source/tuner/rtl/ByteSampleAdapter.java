@@ -17,7 +17,8 @@
  ******************************************************************************/
 package source.tuner.rtl;
 
-import source.mixer.SampleAdapter;
+import sample.adapter.SampleAdapter;
+import sample.complex.ComplexBuffer;
 
 public class ByteSampleAdapter extends SampleAdapter
 {
@@ -40,9 +41,9 @@ public class ByteSampleAdapter extends SampleAdapter
 	}
 
 	@Override
-    public Float[] convert( byte[] samples )
+    public float[] convert( byte[] samples )
     {
-		Float[] convertedSamples = new Float[ samples.length ];
+		float[] convertedSamples = new float[ samples.length ];
 		int pointer = 0;
 		
 		for( byte sample: samples )

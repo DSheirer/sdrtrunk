@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.usb4java.LibUsbException;
 
 import sample.Listener;
+import sample.complex.ComplexBuffer;
 import source.SourceException;
 import source.tuner.FrequencyChangeListener;
 import source.tuner.Tuner;
@@ -165,7 +166,7 @@ public class RTL2832Tuner extends Tuner
     public void releaseChannel( TunerChannelSource source )
     {
 		/* Unregister for receiving samples */
-		removeListener( (Listener<Float[]>)source );
+		removeListener( (Listener<ComplexBuffer>)source );
 		
 		/* Tell the controller to release the channel and cleanup */
 		if( source != null )
@@ -175,13 +176,13 @@ public class RTL2832Tuner extends Tuner
     }
 
 	@Override
-	public void addListener( Listener<Float[]> listener )
+	public void addListener( Listener<ComplexBuffer> listener )
 	{
 		mController.addListener( listener );
 	}
 	
 	@Override
-	public void removeListener( Listener<Float[]> listener )
+	public void removeListener( Listener<ComplexBuffer> listener )
 	{
 		mController.removeListener( listener );
 	}

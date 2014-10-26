@@ -28,14 +28,14 @@ import org.slf4j.LoggerFactory;
 
 import record.Recorder;
 import record.RecorderType;
-import sample.Listener;
+import sample.simplex.SimplexSampleListener;
 import util.waveaudio.WaveWriter;
 import buffer.FloatSampleBufferAssembler;
 
 /**
  * Threaded WAVE audio recorder for recording mono float samples to a wave file
  */
-public class FloatWaveRecorder extends Recorder implements Listener<Float>
+public class FloatWaveRecorder extends Recorder implements SimplexSampleListener
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( FloatWaveRecorder.class );
@@ -129,7 +129,7 @@ public class FloatWaveRecorder extends Recorder implements Listener<Float>
     }
     
 	@Override
-    public void receive( Float sample )
+    public void receive( float sample )
     {
 		mCurrentBuffer.put( sample );
 		

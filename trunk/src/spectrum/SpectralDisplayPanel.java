@@ -47,6 +47,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
+import sample.complex.ComplexBuffer;
 import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
 import settings.ColorSettingMenuItem;
@@ -89,7 +90,7 @@ import dsp.filter.Window.WindowType;
  */
 public class SpectralDisplayPanel extends JPanel 
 								  implements ChannelEventListener,
-								  			 Listener<Float[]>,
+								  			 Listener<ComplexBuffer>,
 								  			 FrequencyChangeListener,
 								  			 SettingChangeListener,
 								  			 TunerSelectionListener
@@ -359,9 +360,9 @@ public class SpectralDisplayPanel extends JPanel
     }
 
 	@Override
-    public void receive( Float[] samples )
+    public void receive( ComplexBuffer sampleBuffer )
     {
-		mDFTProcessor.receive( samples );
+		mDFTProcessor.receive( sampleBuffer );
     }
 
 	/**
@@ -382,7 +383,7 @@ public class SpectralDisplayPanel extends JPanel
 			mTuner.addListener( (FrequencyChangeListener)this );
 
 			//Register the dft processor to receive samples from the tuner
-			mTuner.addListener( (Listener<Float[]>)mDFTProcessor );
+			mTuner.addListener( (Listener<ComplexBuffer>)mDFTProcessor );
 			
 			//Fire frequency and sample rate change events so that everyone 
 			//can init
@@ -413,7 +414,7 @@ public class SpectralDisplayPanel extends JPanel
 			mTuner.removeListener( (FrequencyChangeListener)this );
 			
 			//Deregister the dft processor from receiving samples
-			mTuner.removeListener( (Listener<Float[]>)mDFTProcessor );
+			mTuner.removeListener( (Listener<ComplexBuffer>)mDFTProcessor );
 			mTuner = null;
 		}
 	}
