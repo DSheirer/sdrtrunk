@@ -376,7 +376,11 @@ public class ProcessingChain implements Listener<Message>
 					{
 						TunerChannelSource tcs = (TunerChannelSource)mSource;
 						
-						mAFC = new AutomaticFrequencyControl( tcs );
+						int maximumCorrection = mChannel
+							.getDecodeConfiguration().getAFCMaximumCorrection();
+						
+						mAFC = new AutomaticFrequencyControl( tcs, 
+											maximumCorrection );
 
 						/* Register AFC to receive frequency change events */
 						tcs.addListener( mAFC );

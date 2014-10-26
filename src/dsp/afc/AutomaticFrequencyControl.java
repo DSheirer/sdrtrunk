@@ -24,6 +24,7 @@ public class AutomaticFrequencyControl implements SimplexSampleListener,
 	private int mSkipThreshold = 4;
 	private int mErrorCorrection = 0;
 	private long mCurrentFrequency;
+	private int mMaximumCorrection;
 	private FrequencyChangeListener mListener;
 	
 	public enum Mode
@@ -31,9 +32,11 @@ public class AutomaticFrequencyControl implements SimplexSampleListener,
 		NORMAL,FAST;
 	}
 	
-	public AutomaticFrequencyControl( FrequencyChangeListener listener )
+	public AutomaticFrequencyControl( FrequencyChangeListener listener,
+									  int maximumCorrection )
 	{
 		mListener = listener;
+		mMaximumCorrection = maximumCorrection;
 	}
 	
 	public void dispose()
@@ -150,6 +153,14 @@ public class AutomaticFrequencyControl implements SimplexSampleListener,
 		if( correction != 0 )
 		{
 			mErrorCorrection -= correction;
+			
+			if( Math.abs( mErrorCorrection ) > mMaximumCorrection )
+			{
+				mErrorCorrection = ( mErrorCorrection < 0 ) ? 
+										-mMaximumCorrection : 
+										 mMaximumCorrection;
+			}
+			
 			dispatch();
 		}
 		else
