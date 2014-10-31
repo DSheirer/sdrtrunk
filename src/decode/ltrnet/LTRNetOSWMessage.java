@@ -153,10 +153,10 @@ public class LTRNetOSWMessage extends LTRNetMessage
 				sb.append( "CHAN RX LOW  LCN:" );
 				sb.append( format( getHomeRepeater(), 2 ) );
 				sb.append( " = " );
-				double rxfreqhi = getFrequency();
-				if( rxfreqhi != sDOUBLE_NULL_VALUE )
+				double rxFreqLo = getFrequency();
+				if( rxFreqLo != sDOUBLE_NULL_VALUE )
 				{
-					sb.append( mDecimalFormatter.format( rxfreqhi ) );
+					sb.append( mDecimalFormatter.format( rxFreqLo ) );
 				}
 				else
 				{
@@ -167,7 +167,17 @@ public class LTRNetOSWMessage extends LTRNetMessage
 			case FQ_RXHI:
 				sb.append( "CHAN RX HIGH LCN:" );
 				sb.append( format( getHomeRepeater(), 2 ) );
-				sb.append( " MSG 1 OF 2" );
+				sb.append( " = " );
+				double rxfreqhi = getFrequency();
+				if( rxfreqhi != sDOUBLE_NULL_VALUE )
+				{
+					sb.append( mDecimalFormatter.format( rxfreqhi ) );
+				}
+				else
+				{
+					sb.append( "000.00000" );
+				}
+				sb.append( " MHz" );
 				break;
 			case FQ_TXHI:
 				sb.append( "CHAN TX LOW  LCN:" );
@@ -187,7 +197,17 @@ public class LTRNetOSWMessage extends LTRNetMessage
 			case FQ_TXLO:
 				sb.append( "CHAN TX HIGH LCN:" );
 				sb.append( format( getHomeRepeater(), 2 ) );
-				sb.append( " MSG 1 OF 2" );
+				sb.append( " = " );
+				double txFreqLo = getFrequency();
+				if( txFreqLo != sDOUBLE_NULL_VALUE )
+				{
+					sb.append( mDecimalFormatter.format( txFreqLo ) );
+				}
+				else
+				{
+					sb.append( "000.00000" );
+				}
+				sb.append( " MHz" );
 				break;
 			case ID_SITE:
 				int siteId = getSiteID();
@@ -396,8 +416,21 @@ public class LTRNetOSWMessage extends LTRNetMessage
 
 		if( mAuxMessage != null )
 		{
-			int high = getHighChannelUnits();
-			int low = mAuxMessage.getLowChannelUnits();
+			int high;
+			int low;
+			
+			MessageType type = getMessageType();
+			
+			if( type == MessageType.FQ_RXHI || type == MessageType.FQ_TXHI )
+			{
+				high = getHighChannelUnits();
+				low = mAuxMessage.getLowChannelUnits();
+			}
+			else
+			{
+				high = mAuxMessage.getHighChannelUnits();
+				low = getLowChannelUnits();
+			}
 			
 			if( high != sINT_NULL_VALUE && low != sINT_NULL_VALUE )
 			{
