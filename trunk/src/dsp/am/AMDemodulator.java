@@ -2,62 +2,44 @@ package dsp.am;
 
 import sample.Listener;
 import sample.complex.ComplexSample;
-import sample.simplex.SimplexSampleBroadcaster;
-import sample.simplex.SimplexSampleListener;
-import dsp.filter.ComplexFIRFilter;
-import dsp.filter.FilterFactory;
-import dsp.filter.Window.WindowType;
+import sample.real.RealSampleListener;
+import sample.real.RealSampleProvider;
 
-public class AMDemodulator implements Listener<ComplexSample>
+public class AMDemodulator implements Listener<ComplexSample>, RealSampleProvider
 {
-    private SimplexSampleBroadcaster mBroadcaster = new SimplexSampleBroadcaster();
-    private ComplexFIRFilter mIQFilter;
+    private RealSampleListener mListener;
 
     public AMDemodulator()
     {
-        this( FilterFactory.getLowPass( 48000, 3000, 73, WindowType.HAMMING ), 
-                1000.0 );
-    }
-    
-    public AMDemodulator( double[] iqFilter, double iqGain )
-    {
-        mIQFilter = new ComplexFIRFilter( iqFilter, iqGain );
-        
-        mIQFilter.setListener( new Demodulator() );
     }
     
     @Override
     public void receive( ComplexSample sample )
     {
-        mIQFilter.receive( sample );
+        float demodulated = (float)Math.sqrt( ( sample.real() * 
+				sample.real() ) +
+			  ( sample.imaginery() * 
+			    sample.imaginery() ) ); 
+
+        if( mListener != null )
+        {
+        	mListener.receive( demodulated * 500.0f );
+        }
     }
 
     /**
      * Adds a listener to receive demodulated samples
      */
-    public void addListener( SimplexSampleListener listener )
+    public void setListener( RealSampleListener listener )
     {
-        mBroadcaster.addListener( listener );
+    	mListener = listener;
     }
 
     /**
      * Removes a listener from receiving demodulated samples
      */
-    public void removeListener( SimplexSampleListener listener )
+    public void removeListener( RealSampleListener listener )
     {
-        mBroadcaster.removeListener( listener );
-    }
-
-    public class Demodulator implements Listener<ComplexSample>
-    {
-        @Override
-        public void receive( ComplexSample sample )
-        {
-            float demodulated = (float)Math.abs( 
-                    Math.sqrt( ( sample.real() * sample.real() ) +
-                               ( sample.imaginery() * sample.imaginery() ) ) ); 
-            
-            mBroadcaster.broadcast( demodulated * 30.0f );
-        }
+    	mListener = null;
     }
 }
