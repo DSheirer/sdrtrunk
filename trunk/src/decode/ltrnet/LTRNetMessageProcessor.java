@@ -30,10 +30,17 @@ import bits.BitSetBuffer;
 public class LTRNetMessageProcessor implements Listener<BitSetBuffer>
 {
 	private Broadcaster<Message> mBroadcaster = new Broadcaster<Message>();
-	private HashMap<Integer,LTRNetOSWMessage> mReceiveAuxMessages =
+
+	private HashMap<Integer,LTRNetOSWMessage> mReceiveHighAuxMessages =
 			new HashMap<Integer,LTRNetOSWMessage>();
-	private HashMap<Integer,LTRNetOSWMessage> mTransmitAuxMessages =
+	private HashMap<Integer,LTRNetOSWMessage> mReceiveLowAuxMessages =
 			new HashMap<Integer,LTRNetOSWMessage>();
+
+	private HashMap<Integer,LTRNetOSWMessage> mTransmitHighAuxMessages =
+			new HashMap<Integer,LTRNetOSWMessage>();
+	private HashMap<Integer,LTRNetOSWMessage> mTransmitLowAuxMessages =
+			new HashMap<Integer,LTRNetOSWMessage>();
+
 	private LTRNetISWMessage mESNHighMessage;
 	private LTRNetISWMessage mESNLowMessage;
 	
@@ -60,23 +67,34 @@ public class LTRNetMessageProcessor implements Listener<BitSetBuffer>
 			{
 				if( message.getMessageType() == MessageType.FQ_TXHI )
 				{
-					message.setAuxiliaryMessage( 
-							mTransmitAuxMessages.get( message.getHomeRepeater() ) );
+					mTransmitHighAuxMessages.put( message.getHomeRepeater(), 
+												  (LTRNetOSWMessage)message );
+					
+					message.setAuxiliaryMessage( mTransmitLowAuxMessages.get( 
+							message.getHomeRepeater() ) );
 				}
 				else if( message.getMessageType() == MessageType.FQ_TXLO )
 				{
-					mTransmitAuxMessages.put( message.getHomeRepeater(), 
+					mTransmitLowAuxMessages.put( message.getHomeRepeater(), 
 											  (LTRNetOSWMessage)message );
+
+					message.setAuxiliaryMessage( mTransmitHighAuxMessages.get( 
+							message.getHomeRepeater() ) );
 				}
 				else if( message.getMessageType() == MessageType.FQ_RXHI )
 				{
-					message.setAuxiliaryMessage( 
-							mReceiveAuxMessages.get( message.getHomeRepeater() ) );
+					mReceiveHighAuxMessages.put( message.getHomeRepeater(), 
+							  (LTRNetOSWMessage)message );
+
+					message.setAuxiliaryMessage( mReceiveLowAuxMessages.get( 
+							message.getHomeRepeater() ) );
 				}
 				else if( message.getMessageType() == MessageType.FQ_RXLO )
 				{
-					mReceiveAuxMessages.put( message.getHomeRepeater(), 
+					mReceiveLowAuxMessages.put( message.getHomeRepeater(), 
 											(LTRNetOSWMessage)message );
+					message.setAuxiliaryMessage( mReceiveHighAuxMessages.get( 
+							message.getHomeRepeater() ) );
 				}
 			}
 		}
