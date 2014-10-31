@@ -7,9 +7,9 @@ import instrument.tap.stream.FloatTap;
 import java.util.ArrayList;
 import java.util.List;
 
-import sample.simplex.SimplexSampleListener;
+import sample.real.RealSampleListener;
 
-public class C4FMDecoder implements SimplexSampleListener, Instrumentable
+public class C4FMDecoder implements RealSampleListener, Instrumentable
 {
 	private final String TAP_C4FM_INPUT = "C4FM Input";
 	private ArrayList<Tap> mTaps;

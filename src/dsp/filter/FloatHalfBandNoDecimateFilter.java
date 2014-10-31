@@ -19,11 +19,11 @@ package dsp.filter;
 
 import java.util.ArrayList;
 
-import sample.simplex.SimplexSampleListener;
+import sample.real.RealSampleListener;
 
-public class FloatHalfBandNoDecimateFilter implements SimplexSampleListener
+public class FloatHalfBandNoDecimateFilter implements RealSampleListener
 {
-	private SimplexSampleListener mListener;
+	private RealSampleListener mListener;
 	private ArrayList<Float> mBuffer;
     private int mBufferSize = 1; //Temporary initial value
 	private int mBufferPointer = 0;
@@ -178,7 +178,7 @@ public class FloatHalfBandNoDecimateFilter implements SimplexSampleListener
 	/**
 	 * Registers a listener for filtered samples
 	 */
-    public void setListener( SimplexSampleListener listener )
+    public void setListener( RealSampleListener listener )
     {
 		mListener = listener;
     }

@@ -39,10 +39,10 @@ import record.wave.FloatWaveRecorder;
 import sample.Broadcaster;
 import sample.Listener;
 import sample.complex.ComplexSample;
-import sample.simplex.SimplexBuffer;
-import sample.simplex.SimplexSampleListener;
+import sample.real.RealBuffer;
+import sample.real.RealSampleListener;
 import source.ComplexSource;
-import source.SimplexSource;
+import source.RealSource;
 import source.Source;
 import source.SourceException;
 import source.config.SourceConfigMixer;
@@ -89,9 +89,9 @@ public class ProcessingChain implements Listener<Message>
 	private LinkedTransferQueue<List<ComplexSample>> mComplexQueue = 
 								new LinkedTransferQueue<List<ComplexSample>>();
 
-	private SimplexSampleReceiver mSimplexReceiver = new SimplexSampleReceiver();
-	private LinkedTransferQueue<SimplexBuffer> mSimplexQueue = 
-									new LinkedTransferQueue<SimplexBuffer>();
+	private RealSampleReceiver mRealReceiver = new RealSampleReceiver();
+	private LinkedTransferQueue<RealBuffer> mRealQueue = 
+									new LinkedTransferQueue<RealBuffer>();
 
 	protected Broadcaster<Message> mBroadcaster = new Broadcaster<Message>();
 
@@ -121,9 +121,9 @@ public class ProcessingChain implements Listener<Message>
 		return mComplexReceiver;
 	}
 	
-	public Listener<SimplexBuffer> getSimplexReceiver()
+	public Listener<RealBuffer> getRealReceiver()
 	{
-		return (Listener<SimplexBuffer>)mSimplexReceiver;
+		return (Listener<RealBuffer>)mRealReceiver;
 	}
 	
 	public String toString()
@@ -243,10 +243,10 @@ public class ProcessingChain implements Listener<Message>
 			{
 				((ComplexSource)mSource).removeListener( this.getComplexReceiver() );
 			}
-			else if( mSource instanceof SimplexSource )
+			else if( mSource instanceof RealSource )
 			{
-				((SimplexSource)mSource)
-					.removeListener( this.getSimplexReceiver() );
+				((RealSource)mSource)
+					.removeListener( this.getRealReceiver() );
 			}
 			
 			if( mProcessorTask != null )
@@ -299,18 +299,18 @@ public class ProcessingChain implements Listener<Message>
 						mSource.dispose();
 					}
 				}
-				else if( mSource instanceof SimplexSource )
+				else if( mSource instanceof RealSource )
 				{
 					try
 					{
 						mProcessorTask = 
 								mResourceManager.getThreadPoolManager()
 									.schedule( ThreadType.DECODER, 
-											   new SimplexProcessor(), 
+											   new RealProcessor(), 
 											   50, TimeUnit.MILLISECONDS );
 
-						((SimplexSource)mSource)
-								.setListener( this.getSimplexReceiver() );
+						((RealSource)mSource)
+								.setListener( this.getRealReceiver() );
 					}
 					catch( RejectedExecutionException ree )
 					{
@@ -361,7 +361,7 @@ public class ProcessingChain implements Listener<Message>
 										"-" + mChannel.getName();
 					
 					mAudioOutput = new AudioOutput( threadName );
-					addSimplexListener( mAudioOutput );
+					addRealListener( mAudioOutput );
 					
 					/* Automatic frequency control */
 					if( mAFC != null )
@@ -386,7 +386,7 @@ public class ProcessingChain implements Listener<Message>
 						tcs.addListener( mAFC );
 
 						/* Add AFC as listener to the decoder */
-						mDecoder.addUnfilteredSimplexSampleListener( mAFC );
+						mDecoder.addUnfilteredRealSampleListener( mAFC );
 					}
 				}
 			}
@@ -496,7 +496,7 @@ public class ProcessingChain implements Listener<Message>
 						mLog.info( getLogPrefix() + "- started audio recording [" + 
 								recorder.getFileName() + "]" );
 
-						mDecoder.addSimplexSampleListener( (FloatWaveRecorder)recorder );
+						mDecoder.addRealSampleListener( (FloatWaveRecorder)recorder );
 					}
 					else if( recorder instanceof ComplexWaveRecorder )
 					{
@@ -594,22 +594,22 @@ public class ProcessingChain implements Listener<Message>
 	/**
 	 * Adds the listener to receive demodulated samples from the decoder
 	 */
-    public void addSimplexListener( SimplexSampleListener listener )
+    public void addRealListener( RealSampleListener listener )
     {
 		if( mDecoder != null )
 		{
-			mDecoder.addSimplexSampleListener( listener );
+			mDecoder.addRealSampleListener( listener );
 		}
     }
 
     /**
      * Removes the listener from receiving demodulated samples from the decoder
      */
-    public void removeSimplexListener( SimplexSampleListener listener )
+    public void removeRealListener( RealSampleListener listener )
     {
 		if( mDecoder != null )
 		{
-			mDecoder.removeSimplexListener( listener );
+			mDecoder.removeRealListener( listener );
 		}
     }
 
@@ -675,18 +675,18 @@ public class ProcessingChain implements Listener<Message>
     }
 
     /**
-     * Manages the simplex sample queue and distributes samples to the decoder.
+     * Manages the real sample queue and distributes samples to the decoder.
      */
-	private class SimplexProcessor implements Runnable
+	private class RealProcessor implements Runnable
 	{
 		@Override
         public void run()
         {
-			List<SimplexBuffer> sampleBuffers = new ArrayList<SimplexBuffer>();
+			List<RealBuffer> sampleBuffers = new ArrayList<RealBuffer>();
 
-			mSimplexQueue.drainTo( sampleBuffers, 4 );
+			mRealQueue.drainTo( sampleBuffers, 4 );
 
-			for( SimplexBuffer sampleBuffer: sampleBuffers )
+			for( RealBuffer sampleBuffer: sampleBuffers )
 			{
 				if( mDecoder != null )
 				{
@@ -694,7 +694,7 @@ public class ProcessingChain implements Listener<Message>
 					
 					for( float sample: samples )
 					{
-						mDecoder.getSimplexReceiver().receive( sample );
+						mDecoder.getRealReceiver().receive( sample );
 					}
 				}
 				
@@ -749,15 +749,15 @@ public class ProcessingChain implements Listener<Message>
 	}
 
 	/**
-	 * Internal listener to receive simplex (ie demodulated) samples.  Places
-	 * received samples into the queue managed by the SimplexProcessor
+	 * Internal listener to receive real(ie demodulated) samples.  Places
+	 * received samples into the queue managed by the RealProcessor
 	 */
-	public class SimplexSampleReceiver implements Listener<SimplexBuffer>
+	public class RealSampleReceiver implements Listener<RealBuffer>
 	{
 		@Override
-        public void receive( SimplexBuffer samples )
+        public void receive( RealBuffer samples )
         {
-			mSimplexQueue.add( samples );
+			mRealQueue.add( samples );
         }
 	}
 }

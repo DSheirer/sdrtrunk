@@ -18,17 +18,17 @@
 package dsp.filter;
 
 import sample.Listener;
-import sample.simplex.SimplexSampleListener;
+import sample.real.RealSampleListener;
 
 /**
  * Implements the real-time general DC removal algorithm described on page 
  * 762, figure 13-62d, in Understanding Digital Signal Processing 3e, Lyons.
  */
-public class DCRemovalFilter implements SimplexSampleListener
+public class DCRemovalFilter implements RealSampleListener
 {
 	private double mAlpha;
 	private float mPrevious;
-	private SimplexSampleListener mListener;
+	private RealSampleListener mListener;
 	
 	public DCRemovalFilter( double alpha )
 	{
@@ -59,7 +59,7 @@ public class DCRemovalFilter implements SimplexSampleListener
 		}
 	}
 
-    public void setListener( SimplexSampleListener listener )
+    public void setListener( RealSampleListener listener )
     {
 		mListener = listener;
     }

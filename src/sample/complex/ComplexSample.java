@@ -183,6 +183,21 @@ public class ComplexSample implements Serializable
 	}
 
 	/**
+	 * Returns the greater absolute value between left and right values 
+	 */
+	public float maximumAbsolute()
+	{
+		if( Math.abs( mLeft ) > Math.abs( mRight ) )
+		{
+			return Math.abs( mLeft );
+		}
+		else
+		{
+			return Math.abs(  mRight );
+		}
+	}
+
+	/**
 	 * Creates a new complex sample representing the angle with unit circle
 	 * magnitude
 	 * @param angle in radians

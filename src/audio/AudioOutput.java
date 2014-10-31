@@ -27,10 +27,10 @@ import javax.sound.sampled.SourceDataLine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sample.simplex.SimplexSampleListener;
+import sample.real.RealSampleListener;
 import buffer.FloatSampleBufferAssembler;
 
-public class AudioOutput implements SimplexSampleListener, 
+public class AudioOutput implements RealSampleListener, 
 									SquelchListener,
 									AudioTypeListener
 {

@@ -19,11 +19,11 @@ package instrument.tap.stream;
 
 import instrument.tap.TapListener;
 import instrument.tap.TapType;
-import sample.simplex.SimplexSampleListener;
+import sample.real.RealSampleListener;
 
-public class FloatTap extends StreamTap implements SimplexSampleListener
+public class FloatTap extends StreamTap implements RealSampleListener
 {
-	private SimplexSampleListener mListener;
+	private RealSampleListener mListener;
 	
 	public FloatTap( String name, 
 						   int delay, 
@@ -46,12 +46,12 @@ public class FloatTap extends StreamTap implements SimplexSampleListener
 		}
     }
 
-	public void setListener( SimplexSampleListener listener )
+	public void setListener( RealSampleListener listener )
     {
 		mListener = listener;
     }
 
-    public void removeListener( SimplexSampleListener listener )
+    public void removeListener( RealSampleListener listener )
     {
 		mListener = null;
     }

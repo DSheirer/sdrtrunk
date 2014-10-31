@@ -17,7 +17,7 @@
  ******************************************************************************/
 package audio;
 
-import sample.simplex.SimplexSampleListener;
+import sample.real.RealSampleListener;
 import util.Oscillator;
 import dsp.filter.Filters;
 import dsp.filter.FloatFIRFilter;
@@ -26,11 +26,11 @@ import dsp.filter.FloatFIRFilter;
  * Applies audio inversion (or un-inversion) to a stream of float audio samples
  * by multiplying each successive sample by either a 1 or a -1 value.
  */
-public class AudioInverter implements SimplexSampleListener
+public class AudioInverter implements RealSampleListener
 {
 	private Oscillator mSineWaveGenerator;
 	private FloatFIRFilter mPostInversionLowPassFilter;
-	private SimplexSampleListener mListener;
+	private RealSampleListener mListener;
 	
 	public AudioInverter( int inversionFrequency, int sampleRate )
 	{
@@ -47,7 +47,7 @@ public class AudioInverter implements SimplexSampleListener
 		this( frequency.getFrequency(), sampleRate );
 	}
 	
-    public void setListener( SimplexSampleListener listener )
+    public void setListener( RealSampleListener listener )
     {
 	    mListener = listener;
     }
@@ -68,7 +68,7 @@ public class AudioInverter implements SimplexSampleListener
 	 * Simple class to receive the output of the FIR low pass filter and then
 	 * send it to the registered listener(s)
 	 */
-	class FilteredSampleProcessor implements SimplexSampleListener
+	class FilteredSampleProcessor implements RealSampleListener
 	{
 		@Override
         public void receive( float sample )

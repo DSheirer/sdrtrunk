@@ -31,14 +31,14 @@ import org.slf4j.LoggerFactory;
 
 import sample.Listener;
 import sample.adapter.SampleAdapter;
-import sample.simplex.SimplexBuffer;
-import source.SimplexSource;
+import sample.real.RealBuffer;
+import source.RealSource;
 import source.SourceException;
 
-public class SimplexMixerSource extends SimplexSource
+public class RealMixerSource extends RealSource
 {
 	private final static Logger mLog = 
-			LoggerFactory.getLogger( SimplexMixerSource.class );
+			LoggerFactory.getLogger( RealMixerSource.class );
 
 	private long mFrequency = 0;
 	private int mBufferSize = 16384;
@@ -50,13 +50,13 @@ public class SimplexMixerSource extends SimplexSource
 	private int mBytesPerFrame = 0;
 	private SampleAdapter mSampleAdapter;
 	
-	CopyOnWriteArrayList<Listener<SimplexBuffer>> mSampleListeners = 
-					new CopyOnWriteArrayList<Listener<SimplexBuffer>>();
+	CopyOnWriteArrayList<Listener<RealBuffer>> mSampleListeners = 
+					new CopyOnWriteArrayList<Listener<RealBuffer>>();
     
 	/**
-	 * Simplex Mixer Source - constructs a reader on the mixer/sound card target 
+	 * Real Mixer Source - constructs a reader on the mixer/sound card target 
 	 * data line using the specified audio format (sample size, sample rate ) 
-	 * and broadcasts simplex buffers (float arrays) to all registered listeners.  
+	 * and broadcasts real buffers (float arrays) to all registered listeners.  
 	 * Reads buffers sized to 10% of the sample rate specified in audio format.
 	 * 
 	 * @param targetDataLine - mixer or sound card to be used
@@ -69,7 +69,7 @@ public class SimplexMixerSource extends SimplexSource
 	 * mixer into float array data.  Can optionally invert the channel data if
 	 * the left/right stereo channels are inverted.
 	 */
-    public SimplexMixerSource( TargetDataLine targetDataLine, 
+    public RealMixerSource( TargetDataLine targetDataLine, 
     						   AudioFormat format,
     						   String name,
     						   SampleAdapter sampleAdapter )
@@ -81,7 +81,7 @@ public class SimplexMixerSource extends SimplexSource
         mSampleAdapter = sampleAdapter;
     }
     
-    public void setListener( Listener<SimplexBuffer> listener )
+    public void setListener( Listener<RealBuffer> listener )
     {
 		mSampleListeners.add( listener );
 		
@@ -95,7 +95,7 @@ public class SimplexMixerSource extends SimplexSource
 		}
     }
 
-    public void removeListener( Listener<SimplexBuffer> listener )
+    public void removeListener( Listener<RealBuffer> listener )
     {
 		mSampleListeners.remove( listener );
 
@@ -106,13 +106,13 @@ public class SimplexMixerSource extends SimplexSource
 		}
     }
 
-    public void broadcast( SimplexBuffer samples )
+    public void broadcast( RealBuffer samples )
     {
-		Iterator<Listener<SimplexBuffer>> it = mSampleListeners.iterator();
+		Iterator<Listener<RealBuffer>> it = mSampleListeners.iterator();
 		
 		while( it.hasNext() )
 		{
-			Listener<SimplexBuffer> next = it.next();
+			Listener<RealBuffer> next = it.next();
 			
 			/* if this is the last (or only) listener, send him the original 
 			 * buffer, otherwise send him a copy of the buffer */
@@ -226,7 +226,7 @@ public class SimplexMixerSource extends SimplexSource
 	            					mSampleAdapter.convert( buffer );
 	            			
 	            			/* Dispatch samples to registered listeners */
-	            			broadcast( new SimplexBuffer( samples ) );
+	            			broadcast( new RealBuffer( samples ) );
                         }
                         catch ( Exception e )
                         {

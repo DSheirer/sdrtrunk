@@ -23,7 +23,7 @@ import instrument.tap.Tap;
 import java.util.ArrayList;
 import java.util.List;
 
-import sample.simplex.SimplexSampleListener;
+import sample.real.RealSampleListener;
 import source.Source.SampleType;
 import alias.AliasList;
 import bits.MessageFramer;
@@ -78,7 +78,7 @@ public class PassportDecoder extends Decoder implements Instrumentable
 			 */
 			mDCRemovalFilter = new DCRemovalFilter2( sDC_REMOVAL_RATIO );
 			mNBFMDemodulator.addListener( mDCRemovalFilter );
-			mDCRemovalFilter.setListener( this.getSimplexReceiver() );
+			mDCRemovalFilter.setListener( this.getRealReceiver() );
 		}
 
 		mPassportFSKDecoder = 
@@ -94,7 +94,7 @@ public class PassportDecoder extends Decoder implements Instrumentable
 		}
 		else
 		{
-			addSimplexSampleListener( mPassportFSKDecoder );
+			addRealSampleListener( mPassportFSKDecoder );
 		}
 		
 
@@ -141,7 +141,7 @@ public class PassportDecoder extends Decoder implements Instrumentable
     }
 
 	@Override
-    public void addUnfilteredSimplexSampleListener( SimplexSampleListener listener )
+    public void addUnfilteredRealSampleListener( RealSampleListener listener )
     {
 		if( mNBFMDemodulator != null )
 		{

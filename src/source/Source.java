@@ -25,7 +25,7 @@ public abstract class Source
     protected String mName;
     protected SampleType mSampleType;
 
-    public enum SampleType { COMPLEX, FLOAT }
+    public enum SampleType { COMPLEX, REAL }
 
     public Source( String name, SampleType sampleType )
     {

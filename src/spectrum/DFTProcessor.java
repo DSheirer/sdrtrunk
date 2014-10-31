@@ -327,7 +327,7 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 		
 		Window.apply( mWindow, samples );
 
-		if( mSampleType == SampleType.FLOAT )
+		if( mSampleType == SampleType.REAL )
 		{
 			mFFT.realForward( samples );
 		}
