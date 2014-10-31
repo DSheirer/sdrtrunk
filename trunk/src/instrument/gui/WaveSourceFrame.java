@@ -145,19 +145,19 @@ public class WaveSourceFrame extends JInternalFrame implements PositionListener
 							decoder = new Fleetsync2Decoder( null );
 							break;
 						case LTR_NET:
-						    decoder = new LTRNetDecoder( SampleType.FLOAT, null, MessageDirection.OSW );
+						    decoder = new LTRNetDecoder( SampleType.REAL, null, MessageDirection.OSW );
 						    break;
 						case MDC1200:
 							decoder = new MDCDecoder( null );
 							break;
 						case MPT1327:
-							decoder = new MPT1327Decoder( SampleType.FLOAT, null, Sync.NORMAL );
+							decoder = new MPT1327Decoder( SampleType.REAL, null, Sync.NORMAL );
 							break;
 						case PASSPORT:
-							decoder = new PassportDecoder( SampleType.FLOAT, null );
+							decoder = new PassportDecoder( SampleType.REAL, null );
 							break;
 						case P25:
-							decoder = new P25Decoder( SampleType.FLOAT, null );
+							decoder = new P25Decoder( SampleType.REAL, null );
 							break;
 					}
 

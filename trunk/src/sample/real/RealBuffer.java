@@ -1,15 +1,15 @@
-package sample.simplex;
+package sample.real;
 
 import java.util.Arrays;
 
-public class SimplexBuffer
+public class RealBuffer
 {
 	private float[] mSamples;
 
 	/**
 	 * Wrapper around float array containing float samples
 	 */
-	public SimplexBuffer( float[] samples )
+	public RealBuffer( float[] samples )
 	{
 		mSamples = samples;
 	}
@@ -17,11 +17,11 @@ public class SimplexBuffer
 	/**
 	 * Creates a deep copy of the buffer 
 	 */
-	public SimplexBuffer copyOf()
+	public RealBuffer copyOf()
 	{
 		float[] copy = Arrays.copyOf( mSamples, mSamples.length );
 		
-		return new SimplexBuffer( copy );
+		return new RealBuffer( copy );
 	}
 	
 	/**

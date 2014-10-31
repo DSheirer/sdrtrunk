@@ -17,7 +17,7 @@
  ******************************************************************************/
 package decode.nbfm;
 
-import sample.simplex.SimplexSampleListener;
+import sample.real.RealSampleListener;
 import source.Source.SampleType;
 import decode.Decoder;
 import decode.DecoderType;
@@ -66,7 +66,7 @@ public class NBFMConventionalDecoder extends Decoder
 			 * Route the demodulated, filtered samples back to this class to send
 			 * to all registered listeners
 			 */
-			mDCRemovalFilter.setListener( this.getSimplexReceiver() );
+			mDCRemovalFilter.setListener( this.getRealReceiver() );
 		}
 	}
 
@@ -77,7 +77,7 @@ public class NBFMConventionalDecoder extends Decoder
     }
 
 	@Override
-    public void addUnfilteredSimplexSampleListener( SimplexSampleListener listener )
+    public void addUnfilteredRealSampleListener( RealSampleListener listener )
     {
 		if( mDemodulator != null )
 		{

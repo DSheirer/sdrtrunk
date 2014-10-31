@@ -18,13 +18,13 @@
 package dsp.filter;
 
 import sample.Listener;
-import sample.simplex.SimplexSampleListener;
+import sample.real.RealSampleListener;
 
-public class DCRemovalFilter2 implements SimplexSampleListener
+public class DCRemovalFilter2 implements RealSampleListener
 {
 	private double mAverage;
 	private double mRatio;
-	private SimplexSampleListener mListener;
+	private RealSampleListener mListener;
 	
 	public DCRemovalFilter2( double ratio )
 	{
@@ -50,7 +50,7 @@ public class DCRemovalFilter2 implements SimplexSampleListener
 		}
 	}
 
-    public void setListener( SimplexSampleListener listener )
+    public void setListener( RealSampleListener listener )
     {
 		mListener = listener;
     }

@@ -15,17 +15,17 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package sample.simplex;
+package sample.real;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Broadcasts a received float sample to multiple listeners
  */
-public class SimplexSampleBroadcaster implements SimplexSampleListener
+public class RealSampleBroadcaster implements RealSampleListener
 {
-	private CopyOnWriteArrayList<SimplexSampleListener> mListeners = 
-			new CopyOnWriteArrayList<SimplexSampleListener>();
+	private CopyOnWriteArrayList<RealSampleListener> mListeners = 
+			new CopyOnWriteArrayList<RealSampleListener>();
 
 	@Override
     public void receive( float sample )
@@ -51,12 +51,12 @@ public class SimplexSampleBroadcaster implements SimplexSampleListener
 		return mListeners.size();
 	}
 	
-	public void addListener( SimplexSampleListener listener )
+	public void addListener( RealSampleListener listener )
 	{
 		mListeners.add( listener );
 	}
 	
-	public void removeListener( SimplexSampleListener listener )
+	public void removeListener( RealSampleListener listener )
 	{
 		mListeners.remove( listener );
 	}
@@ -68,7 +68,7 @@ public class SimplexSampleBroadcaster implements SimplexSampleListener
 
     public void broadcast( float sample )
     {
-    	for( SimplexSampleListener listener: mListeners )
+    	for( RealSampleListener listener: mListeners )
     	{
     		listener.receive( sample );
     	}

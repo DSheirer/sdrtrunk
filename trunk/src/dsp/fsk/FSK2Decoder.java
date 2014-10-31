@@ -26,7 +26,7 @@ import java.util.BitSet;
 import java.util.List;
 
 import sample.Listener;
-import sample.simplex.SimplexSampleListener;
+import sample.real.RealSampleListener;
 import buffer.BooleanAveragingBuffer;
 import dsp.fsk.SymbolEvent.Shift;
 
@@ -50,7 +50,7 @@ import dsp.fsk.SymbolEvent.Shift;
  * Implements instrumentable interface, so that slice events can be received
  * externally to analyze decoder performance.
  */
-public class FSK2Decoder implements Instrumentable, SimplexSampleListener
+public class FSK2Decoder implements Instrumentable, RealSampleListener
 {
 	public enum Output{ NORMAL, INVERTED };
 

@@ -491,8 +491,6 @@ public class HackRFTunerController extends TunerController
 	 */
 	public void setSampleRate( HackRFSampleRate rate ) throws UsbException
 	{
-		mLog.debug( "Setting sample rate to:" + rate.name() );
-		
 		setSampleRateManual( rate.getRate(), 1 );
 		
 		mFrequencyController.setSampleRate( rate.getRate() );

@@ -19,11 +19,11 @@ package dsp.filter;
 
 import java.util.ArrayList;
 
-import sample.simplex.SimplexSampleListener;
+import sample.real.RealSampleListener;
 
-public class FloatFIRFilter implements SimplexSampleListener
+public class FloatFIRFilter implements RealSampleListener
 {
-	private SimplexSampleListener mListener;
+	private RealSampleListener mListener;
 	private ArrayList<Float> mBuffer;
     private int mBufferSize = 1; //Temporary initial value
 	private int mBufferPointer = 0;
@@ -61,7 +61,7 @@ public class FloatFIRFilter implements SimplexSampleListener
 		return mCoefficients.length;
 	}
 	
-	public void setListener( SimplexSampleListener listener )
+	public void setListener( RealSampleListener listener )
 	{
 		mListener = listener;
 	}

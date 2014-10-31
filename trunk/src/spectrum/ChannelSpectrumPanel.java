@@ -18,7 +18,7 @@ import javax.swing.SwingUtilities;
 import net.miginfocom.swing.MigLayout;
 import sample.Listener;
 import sample.complex.ComplexBuffer;
-import sample.simplex.SimplexSampleListener;
+import sample.real.RealSampleListener;
 import settings.ColorSetting.ColorSettingName;
 import settings.ColorSettingMenuItem;
 import settings.Setting;
@@ -45,7 +45,7 @@ import dsp.filter.Window.WindowType;
 
 public class ChannelSpectrumPanel extends JPanel 
 								  implements ChannelEventListener,
-								  			 SimplexSampleListener,
+								  			 RealSampleListener,
 								  			 SettingChangeListener,
 								  			 SpectralDisplayAdjuster
 {
@@ -54,7 +54,7 @@ public class ChannelSpectrumPanel extends JPanel
     		"channel_spectrum_averaging_size";
 
     private ResourceManager mResourceManager;
-    private DFTProcessor mDFTProcessor = new DFTProcessor( SampleType.FLOAT );    
+    private DFTProcessor mDFTProcessor = new DFTProcessor( SampleType.REAL );    
     private DFTResultsConverter mDFTConverter = new RealDecibelConverter();
     private JLayeredPane mLayeredPane;
     private SpectrumPanel mSpectrumPanel;
@@ -206,7 +206,7 @@ public class ChannelSpectrumPanel extends JPanel
 	{
 		if( mEnabled.get() && mCurrentChannel != null && mCurrentChannel.isProcessing() )
 		{
-			mCurrentChannel.getProcessingChain().addSimplexListener( (SimplexSampleListener)this );
+			mCurrentChannel.getProcessingChain().addRealListener( (RealSampleListener)this );
 			mDFTProcessor.start();
 		}
 	}
@@ -216,7 +216,7 @@ public class ChannelSpectrumPanel extends JPanel
 		
 		if( mCurrentChannel != null && mCurrentChannel.isProcessing() )
 		{
-			mCurrentChannel.getProcessingChain().removeSimplexListener( (SimplexSampleListener)this );
+			mCurrentChannel.getProcessingChain().removeRealListener( (RealSampleListener)this );
 		}
 
 		mDFTProcessor.stop();
@@ -491,7 +491,7 @@ public class ChannelSpectrumPanel extends JPanel
         }
 	}
 	
-	public class SampleAssembler implements SimplexSampleListener
+	public class SampleAssembler implements RealSampleListener
 	{
 	    private Listener<ComplexBuffer> mListener;
 

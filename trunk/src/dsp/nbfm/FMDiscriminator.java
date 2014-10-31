@@ -19,11 +19,11 @@ package dsp.nbfm;
 
 import sample.Listener;
 import sample.complex.ComplexSample;
-import sample.simplex.SimplexSampleListener;
+import sample.real.RealSampleListener;
 
 public class FMDiscriminator implements Listener<ComplexSample>
 {
-	private SimplexSampleListener mListener;
+	private RealSampleListener mListener;
 	private ComplexSample mPreviousSample = new ComplexSample( 0.0f, 0.0f );
 	private double mGain;
 	
@@ -94,7 +94,7 @@ public class FMDiscriminator implements Listener<ComplexSample>
 		mPreviousSample = currentSample;
     }
 
-    public void setListener( SimplexSampleListener listener )
+    public void setListener( RealSampleListener listener )
     {
 		mListener = listener;
     }

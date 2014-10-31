@@ -6,6 +6,6 @@ public abstract class FloatSource extends Source implements Provider<Float>
 {
 	public FloatSource( String name )
 	{
-		super( name, SampleType.FLOAT );
+		super( name, SampleType.REAL );
 	}
 }

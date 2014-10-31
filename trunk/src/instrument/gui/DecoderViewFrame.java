@@ -77,10 +77,10 @@ public class DecoderViewFrame extends JInternalFrame
 		{
 			mLog.error( "Hey, we're not wired up yet for complex" );
 		}
-		else if( source.getSampleType() == SampleType.FLOAT )
+		else if( source.getSampleType() == SampleType.REAL )
 		{
 			FloatWaveSource fws = (FloatWaveSource)mWaveSource;
-			fws.setListener( mDecoder.getSimplexReceiver() );
+			fws.setListener( mDecoder.getRealReceiver() );
 		}
 		
 		mDecoder.addMessageListener( this );

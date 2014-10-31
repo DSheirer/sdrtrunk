@@ -1,12 +1,12 @@
 package dsp.afc;
 
-import sample.simplex.SimplexSampleListener;
+import sample.real.RealSampleListener;
 import source.tuner.FrequencyChangeEvent;
 import source.tuner.FrequencyChangeEvent.Attribute;
 import source.tuner.FrequencyChangeListener;
 import buffer.FloatAveragingBuffer;
 
-public class AutomaticFrequencyControl implements SimplexSampleListener, 
+public class AutomaticFrequencyControl implements RealSampleListener, 
 												  FrequencyChangeListener
 {
 	private static float LARGE_ERROR = 10000.0f;

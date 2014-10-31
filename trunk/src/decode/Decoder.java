@@ -24,8 +24,8 @@ import message.Message;
 import sample.Broadcaster;
 import sample.Listener;
 import sample.complex.ComplexSample;
-import sample.simplex.SimplexSampleBroadcaster;
-import sample.simplex.SimplexSampleListener;
+import sample.real.RealSampleBroadcaster;
+import sample.real.RealSampleListener;
 import source.Source.SampleType;
 import eventlog.MessageEventLogger;
 
@@ -33,7 +33,7 @@ public abstract class Decoder implements Listener<Message>
 {
 	private MessageEventLogger mEventLogger;
 	private Broadcaster<Message> mMessageBroadcaster = new Broadcaster<Message>();
-	private SimplexSampleBroadcaster mSimplexBroadcaster = new SimplexSampleBroadcaster();
+	private RealSampleBroadcaster mRealBroadcaster = new RealSampleBroadcaster();
 	private Broadcaster<ComplexSample> mComplexBroadcaster = 
 							new Broadcaster<ComplexSample>();
 
@@ -43,11 +43,11 @@ public abstract class Decoder implements Listener<Message>
 	/**
 	 * Abstract decoder class.
 	 * 
-	 * @param sampleType - complex (I/Q) or simplex (demodulated) sample type.
+	 * @param sampleType - complex (I/Q) or real (demodulated) sample type.
 	 * Each decoder instance will be configured to receive either complex or 
-	 * simplex samples.  When configured to receive complex samples, the
+	 * real samples.  When configured to receive complex samples, the
 	 * decoder will implement a demodulator component and feed the output from
-	 * that demodulator back onto itself via the simplex sample interface, so 
+	 * that demodulator back onto itself via the real sample interface, so 
 	 * that any added auxiliary decoders will then receive the demodulated 
 	 * output stream.
 	 */
@@ -57,12 +57,12 @@ public abstract class Decoder implements Listener<Message>
 	}
 	
 	/**
-	 * Returns a simplex (ie demodulated) sample listener interface for 
-	 * connecting this decoder to a simplex sample stream provider
+	 * Returns a real (ie demodulated) sample listener interface for 
+	 * connecting this decoder to a real sample stream provider
 	 */
-	public SimplexSampleListener getSimplexReceiver()
+	public RealSampleListener getRealReceiver()
 	{
-		return mSimplexBroadcaster;
+		return mRealBroadcaster;
 	}
 	
 	/**
@@ -93,7 +93,7 @@ public abstract class Decoder implements Listener<Message>
 
 		mMessageBroadcaster.clear();
 		mComplexBroadcaster.clear();
-		mSimplexBroadcaster.clear();
+		mRealBroadcaster.clear();
 	}
 
 	/**
@@ -111,7 +111,7 @@ public abstract class Decoder implements Listener<Message>
 	public void addAuxiliaryDecoder( Decoder decoder )
 	{
 		mAuxiliaryDecoders.add( decoder );
-		mSimplexBroadcaster.addListener( decoder.getSimplexReceiver() );
+		mRealBroadcaster.addListener( decoder.getRealReceiver() );
 		decoder.addMessageListener( this );
 	}
 	
@@ -179,24 +179,24 @@ public abstract class Decoder implements Listener<Message>
     }
 
     /**
-     * Adds a simplex sample listener to receive unfiltered demodulated samples
+     * Adds a real sample listener to receive unfiltered demodulated samples
      */
-    public abstract void addUnfilteredSimplexSampleListener( SimplexSampleListener listener );
+    public abstract void addUnfilteredRealSampleListener( RealSampleListener listener );
 
     /**
-     * Adds a simplex sample listener to receive demodulated samples
+     * Adds a real sample listener to receive demodulated samples
      */
-    public void addSimplexSampleListener( SimplexSampleListener listener )
+    public void addRealSampleListener( RealSampleListener listener )
     {
-		mSimplexBroadcaster.addListener( listener );
+		mRealBroadcaster.addListener( listener );
     }
 
     /**
-     * Remove the simplex sample listener from receiving demodulated samples
+     * Remove the real sample listener from receiving demodulated samples
      */
-    public void removeSimplexListener( SimplexSampleListener listener )
+    public void removeRealListener( RealSampleListener listener )
     {
-		mSimplexBroadcaster.removeListener( listener );
+		mRealBroadcaster.removeListener( listener );
     }
 
     /**

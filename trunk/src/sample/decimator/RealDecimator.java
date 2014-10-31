@@ -3,7 +3,7 @@ package sample.decimator;
 import sample.complex.ComplexSampleListener;
 
 
-public class SimplexDecimator implements ComplexSampleListener
+public class RealDecimator implements ComplexSampleListener
 {
 	private ComplexSampleListener mListener;
 	private int mCounter = 0;
@@ -12,7 +12,7 @@ public class SimplexDecimator implements ComplexSampleListener
 	/**
 	 * Constructs a new Decimator object with the specified decimation rate.
 	 */
-	public SimplexDecimator( int rate )
+	public RealDecimator( int rate )
 	{
 		mDecimationRate = rate;
 	}

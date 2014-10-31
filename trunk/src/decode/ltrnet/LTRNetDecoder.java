@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import message.MessageDirection;
-import sample.simplex.SimplexSampleListener;
+import sample.real.RealSampleListener;
 import source.Source.SampleType;
 import alias.AliasList;
 import bits.MessageFramer;
@@ -81,7 +81,7 @@ public class LTRNetDecoder extends Decoder implements Instrumentable
 			mDCRemovalFilter = new DCRemovalFilter2( sDC_REMOVAL_RATIO );
 			mDemodulator.addListener( mDCRemovalFilter );
 			
-			mDCRemovalFilter.setListener( this.getSimplexReceiver() );
+			mDCRemovalFilter.setListener( this.getRealReceiver() );
 		}
 
 		mLTRFSKDecoder = new LTRFSKDecoder();
@@ -96,7 +96,7 @@ public class LTRNetDecoder extends Decoder implements Instrumentable
 		}
 		else
 		{
-		    this.addSimplexSampleListener( mLTRFSKDecoder );
+		    this.addRealSampleListener( mLTRFSKDecoder );
 		}
 		
 		if( direction == MessageDirection.OSW )
@@ -151,7 +151,7 @@ public class LTRNetDecoder extends Decoder implements Instrumentable
     }
 
 	@Override
-    public void addUnfilteredSimplexSampleListener( SimplexSampleListener listener )
+    public void addUnfilteredRealSampleListener( RealSampleListener listener )
     {
 		if( mDemodulator != null )
 		{

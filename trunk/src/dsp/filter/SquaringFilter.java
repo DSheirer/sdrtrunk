@@ -18,9 +18,9 @@
 package dsp.filter;
 
 import sample.Listener;
-import sample.simplex.SimplexSampleListener;
+import sample.real.RealSampleListener;
 
-public class SquaringFilter implements SimplexSampleListener
+public class SquaringFilter implements RealSampleListener
 {
 	private Listener<Boolean> mListener;
 	

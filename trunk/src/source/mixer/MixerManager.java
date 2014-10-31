@@ -82,9 +82,9 @@ public class MixerManager
     	return sInstance;
     }
     
-    public SimplexMixerSource getSource( ProcessingChain processingChain )
+    public RealMixerSource getSource( ProcessingChain processingChain )
     {
-		SimplexMixerSource retVal = null;
+		RealMixerSource retVal = null;
 		
 		SourceConfiguration config = 
 				processingChain.getChannel().getSourceConfiguration();
@@ -120,7 +120,7 @@ public class MixerManager
 
 	                            if( dataLine != null )
 	                            {
-									return new SimplexMixerSource( dataLine,
+									return new RealMixerSource( dataLine,
 						    				 MONO,
 											 mixerName,
 											 new ShortAdapter() );
@@ -148,7 +148,7 @@ public class MixerManager
 
 	                            if( dataLine != null )
 								{
-									return new SimplexMixerSource( dataLine, STEREO,
+									return new RealMixerSource( dataLine, STEREO,
 										mixerName, new ChannelShortAdapter( 
 												mixerConfig.getChannel() ) );
 								}
