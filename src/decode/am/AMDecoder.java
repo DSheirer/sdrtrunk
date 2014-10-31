@@ -1,10 +1,13 @@
 package decode.am;
 
-import sample.simplex.SimplexSampleListener;
+import sample.real.RealSampleListener;
 import source.Source.SampleType;
 import decode.Decoder;
 import decode.DecoderType;
+import dsp.agc.ComplexAutomaticGainControl;
+import dsp.agc.RealAutomaticGainControl;
 import dsp.am.AMDemodulator;
+import dsp.filter.ComplexFIRFilter;
 import dsp.filter.DCRemovalFilter2;
 import dsp.filter.FilterFactory;
 import dsp.filter.FloatFIRFilter;
@@ -18,8 +21,14 @@ public class AMDecoder extends Decoder
      */
     private static final double DC_REMOVAL_RATIO = 0.003;
 
-    private AMDemodulator mDemodulator;
-    private DCRemovalFilter2 mDCRemovalFilter;
+    private ComplexFIRFilter mIQFilter;
+    private ComplexAutomaticGainControl mBasebandAGC = 
+    							new ComplexAutomaticGainControl();
+    private AMDemodulator mDemodulator = new AMDemodulator();
+    private DCRemovalFilter2 mDCRemovalFilter = 
+    						new DCRemovalFilter2( DC_REMOVAL_RATIO );
+    private RealAutomaticGainControl mAudioAGC = new RealAutomaticGainControl();
+
     private FloatFIRFilter mLowPassFilter;
     
     public AMDecoder( SampleType sampleType )
@@ -33,6 +42,9 @@ public class AMDecoder extends Decoder
          */
         if( mSourceSampleType == SampleType.COMPLEX )
         {
+        	mIQFilter = new ComplexFIRFilter( 
+    			FilterFactory.getLowPass( 48000, 6500, 73, WindowType.HAMMING ), 
+                    1.0 );
             /**
              * The Decoder super class is both a Complex listener and a float
              * listener.  So, we add the demod to listen to the incoming 
@@ -40,15 +52,15 @@ public class AMDecoder extends Decoder
              * back to this class, so we can receive the demodulated output
              * to process
              */
-            mDemodulator = new AMDemodulator();
+            this.addComplexListener( mIQFilter );
+            mIQFilter.setListener( mBasebandAGC );
+            mBasebandAGC.setListener( mDemodulator );
             
-            this.addComplexListener( mDemodulator );
 
             /**
              * Remove the DC component that is present when we're mistuned
              */
-            mDCRemovalFilter = new DCRemovalFilter2( DC_REMOVAL_RATIO );
-            mDemodulator.addListener( mDCRemovalFilter );
+            mDemodulator.setListener( mDCRemovalFilter );
             
             /**
              * Route the demodulated, filtered samples back to this class to send
@@ -56,12 +68,12 @@ public class AMDecoder extends Decoder
              */
             
             mLowPassFilter = new FloatFIRFilter( 
-            		FilterFactory.getLowPass( 48000, 3000, 31, 
-            				WindowType.COSINE ), 100.0 );
+        		FilterFactory.getLowPass( 48000, 3000, 31, WindowType.COSINE ), 1.0 );
             
             mDCRemovalFilter.setListener( mLowPassFilter );
             
-            mLowPassFilter.setListener( this.getSimplexReceiver() );
+            mLowPassFilter.setListener( mAudioAGC );
+            mAudioAGC.setListener( this.getRealReceiver() );
         }
     }
 
@@ -72,8 +84,9 @@ public class AMDecoder extends Decoder
     }
 
     @Override
-    public void addUnfilteredSimplexSampleListener( SimplexSampleListener listener )
+    public void addUnfilteredRealSampleListener( RealSampleListener listener )
     {
-        mDemodulator.addListener( listener );
+    	throw new IllegalArgumentException( "cannot add real sample "
+    			+ "listener to AM demodulator - not implemented" );
     }
 }
