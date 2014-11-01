@@ -42,6 +42,8 @@ import decode.mpt1327.MPT1327ChannelState;
 import decode.mpt1327.MPT1327Decoder;
 import decode.nbfm.NBFMChannelState;
 import decode.nbfm.NBFMConventionalDecoder;
+import decode.p25.P25ChannelState;
+import decode.p25.P25Decoder;
 import decode.passport.PassportChannelState;
 import decode.passport.PassportDecoder;
 
@@ -92,6 +94,9 @@ public class DecoderFactory
 				break;
 			case PASSPORT:
 				retVal = new PassportDecoder( sampleType, aliasList );
+				break;
+			case P25_PHASE1:
+				retVal = new P25Decoder( sampleType, aliasList );
 				break;
 			default:
 				throw new IllegalArgumentException( 
@@ -158,6 +163,9 @@ public class DecoderFactory
 				break;
 			case PASSPORT:
 				retVal = new PassportChannelState( chain, aliasList );
+				break;
+			case P25_PHASE1:
+				retVal = new P25ChannelState( chain, aliasList );
 				break;
 			default:
 				break;

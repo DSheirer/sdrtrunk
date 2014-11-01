@@ -33,7 +33,7 @@ public enum DecoderType
     MPT1327( "MPT1327", "MPT1327", "images/mpt1327", 12500 ),
     NBFM( "NBFM", "NBFM", "images/fm", 12500 ),
     PASSPORT( "Passport", "Passport", "images/passport", 12500 ),
-    P25( "P25", "P25", "images/p25", 12500 );
+    P25_PHASE1( "P25 Phase 1", "P25-1", "images/p25p1", 12500 );
     
     private String mDisplayString;
     private String mShortDisplayString;
@@ -59,7 +59,8 @@ public enum DecoderType
     					   DecoderType.LTR_STANDARD,
     					   DecoderType.MPT1327,
     					   DecoderType.NBFM,
-    					   DecoderType.PASSPORT );
+    					   DecoderType.PASSPORT,
+    					   DecoderType.P25_PHASE1 );
     }
 
     /**
@@ -72,7 +73,7 @@ public enum DecoderType
     					   DecoderType.MDC1200,
     					   DecoderType.MPT1327,
     					   DecoderType.PASSPORT,
-    					   DecoderType.P25 );
+    					   DecoderType.P25_PHASE1 );
     }
     
     /**

@@ -2,23 +2,7 @@ package spectrum;
 
 public interface SpectralDisplayAdjuster
 {
-	/**
-	 * Gets the amplification multiplier that is applied against the FFT bin 
-	 * results when displaying the value in the spectral display.
-	 * 
-	 * @return amplification value ( 1 - 100 )
-	 */
-	public int getAmplification();
-	
-	/**
-	 * Sets the amplification multiplier that is applied against the FFT bin
-	 * results when displaying the value in the spectral display.
-	 * 
-	 * @param amplification value ( 1 - 100 )
-	 */
-	public void setAmplification( int amplification );
-
-	/**
+/**
 	 * Gets the averaging value indicating the number of FFT results that are
 	 * averaged to produce each FFT results output.
 	 * 
@@ -34,22 +18,18 @@ public interface SpectralDisplayAdjuster
 	public void setAveraging( int averaging );
 
 	/**
-	 * Gets the baseline used when plotting the FFT bin results in the FFT
-	 * spectral display.  This value determines the vertical position within the
-	 * spectral display upon which the amplified values are added and then 
-	 * plotted.
+	 * Gets the dBm scale used when plotting the FFT bin results in the FFT
+	 * spectral display.  This value determines the smallest displayed power
+	 * spectrum value that is shown at the bottom of the display.
 	 * 
 	 * @return averaging value ( 1 - 50 )
 	 */
-	public int getBaseline();
+	public int getDBScale();
 	
 	/**
-	 * Sets the baseline used when plotting the FFT bin results in the FFT
-	 * spectral display.  This value determines the vertical position within the
-	 * spectral display upon which the amplified values are added and then 
-	 * plotted.
+	 * Sets the dBm scale from 0 (top of display) to the scale value (bottom).
 	 * 
-	 * @param baseline value ( 1 - 50 )
+	 * @param baseline value ( -160 to -30 dBm )
 	 */
-	public void setBaseline( int baseline );
+	public void setDBScale( int baseline );
 }

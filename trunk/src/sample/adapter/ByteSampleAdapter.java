@@ -15,10 +15,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package source.tuner.rtl;
-
-import sample.adapter.SampleAdapter;
-import sample.complex.ComplexBuffer;
+package sample.adapter;
 
 public class ByteSampleAdapter extends SampleAdapter
 {
@@ -26,7 +23,7 @@ public class ByteSampleAdapter extends SampleAdapter
 
 	/**
 	 * Creates a static lookup table that converts the 8-bit valued range 
-	 * from 0 - 255 into scaled float values of -32768.0 to 0 to 32512.0
+	 * from 0 - 255 into scaled float values of -1.0 to 0 to 1.0
 	 */
 	static
 	{
@@ -34,7 +31,7 @@ public class ByteSampleAdapter extends SampleAdapter
 		
 		for( int x = 0; x < 256; x++ )
 		{
-			LOOKUP_VALUES[ x ] = (float)( x - 128 ) * 256.0f;
+			LOOKUP_VALUES[ x ] = (float)( x - 128 );
 		}
 		
 		LOOKUP_VALUES[ 128 ] = 0.0000001f;

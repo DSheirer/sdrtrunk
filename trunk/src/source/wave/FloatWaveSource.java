@@ -29,10 +29,12 @@ import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
+import sample.adapter.ShortToFloatMap;
 import sample.real.RealSampleListener;
 
 public class FloatWaveSource extends WaveSource
 {
+	private ShortToFloatMap mMap = new ShortToFloatMap();
 	private boolean mRunning = false;
     private boolean mLoop = false;
 
@@ -221,7 +223,7 @@ public class FloatWaveSource extends WaveSource
     		if( broadcast && mListener != null )
     		{
         		/* Convert the short into a float value */
-    			mListener.receive( (float)sample );
+    			mListener.receive( mMap.get( sample ) );
     		}
     		
     		success = true;

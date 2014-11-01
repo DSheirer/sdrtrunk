@@ -156,7 +156,7 @@ public class WaveSourceFrame extends JInternalFrame implements PositionListener
 						case PASSPORT:
 							decoder = new PassportDecoder( SampleType.REAL, null );
 							break;
-						case P25:
+						case P25_PHASE1:
 							decoder = new P25Decoder( SampleType.REAL, null );
 							break;
 					}

@@ -27,6 +27,7 @@ import source.mixer.MixerChannel;
  */
 public class ChannelShortAdapter extends SampleAdapter
 {
+	private ShortToFloatMap mMap = new ShortToFloatMap();
 	private ByteOrder mByteOrder = ByteOrder.LITTLE_ENDIAN;
 	private MixerChannel mMixerChannel;
 	
@@ -55,7 +56,7 @@ public class ChannelShortAdapter extends SampleAdapter
         {
         	if( mMixerChannel == MixerChannel.LEFT )
         	{
-            	processed[ pointer ] = (float)buffer.getShort();
+            	processed[ pointer ] = mMap.get( buffer.getShort() );
 
             	/* Throw away the right channel */
             	buffer.getShort();
@@ -65,7 +66,7 @@ public class ChannelShortAdapter extends SampleAdapter
             	/* Throw away the left channel */
             	buffer.getShort();
 
-            	processed[ pointer ] = (float)buffer.getShort();
+            	processed[ pointer ] = mMap.get( buffer.getShort() );
         	}
         	
         	pointer++;

@@ -1,5 +1,8 @@
 package dsp.afc;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import sample.real.RealSampleListener;
 import source.tuner.FrequencyChangeEvent;
 import source.tuner.FrequencyChangeEvent.Attribute;
@@ -9,10 +12,19 @@ import buffer.FloatAveragingBuffer;
 public class AutomaticFrequencyControl implements RealSampleListener, 
 												  FrequencyChangeListener
 {
-	private static float LARGE_ERROR = 10000.0f;
-	private static float MEDIUM_ERROR = 5000.0f;
-	private static float SMALL_ERROR = 1000.0f;
-	private static float FINE_ERROR = 500.0f;
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( AutomaticFrequencyControl.class );
+	
+	private static float LARGE_ERROR = 0.300f;
+	private static float MEDIUM_ERROR = 0.150f;
+	private static float SMALL_ERROR = 0.030f;
+	private static float FINE_ERROR = 0.015f;
+
+	private static int LARGE_FREQUENCY_CORRECTION = 1500; //Hertz
+	private static int MEDIUM_FREQUENCY_CORRECTION = 500;
+	private static int SMALL_FREQUENCY_CORRECTION = 100;
+	private static int FINE_FREQUENCY_CORRECTION = 50;
+	
 	private static int SAMPLE_THRESHOLD = 15000;
 	private Mode mMode = Mode.FAST;
 	
@@ -111,42 +123,42 @@ public class AutomaticFrequencyControl implements RealSampleListener,
 		
 		if( average > LARGE_ERROR )
 		{
-			correction = -1000;
+			correction = -LARGE_FREQUENCY_CORRECTION;
 			mMode = Mode.FAST;
 		}
 		else if( average > MEDIUM_ERROR )
 		{
-			correction = -500;
+			correction = -MEDIUM_FREQUENCY_CORRECTION;
 			mMode = Mode.FAST;
 		}
 		else if( average > SMALL_ERROR )
 		{
-			correction = -100;
+			correction = -SMALL_FREQUENCY_CORRECTION;
 			mMode = Mode.NORMAL;
 		}
 		else if( average > FINE_ERROR )
 		{
-			correction = -50;
+			correction = -FINE_FREQUENCY_CORRECTION;
 			mMode = Mode.NORMAL;
 		}
 		else if( average < -LARGE_ERROR )
 		{
-			correction = 1000;
+			correction = LARGE_FREQUENCY_CORRECTION;
 			mMode = Mode.FAST;
 		}
 		else if( average < -MEDIUM_ERROR )
 		{
-			correction = 500;
+			correction = MEDIUM_FREQUENCY_CORRECTION;
 			mMode = Mode.FAST;
 		}
 		else if( average < -SMALL_ERROR )
 		{
-			correction = 100;
+			correction = SMALL_FREQUENCY_CORRECTION;
 			mMode = Mode.NORMAL;
 		}
 		else if( average < -FINE_ERROR )
 		{
-			correction = 50;
+			correction = FINE_FREQUENCY_CORRECTION;
 			mMode = Mode.NORMAL;
 		}
 

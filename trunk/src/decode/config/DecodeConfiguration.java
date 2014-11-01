@@ -29,7 +29,8 @@ import decode.DecoderType;
 			   DecodeConfigLTRNet.class,
 			   DecodeConfigLTRStandard.class,
 			   DecodeConfigMPT1327.class,
-			   DecodeConfigPassport.class } )
+			   DecodeConfigPassport.class,
+			   DecodeConfigP25Phase1.class } )
 @XmlRootElement( name = "decode_configuration" )
 public abstract class DecodeConfiguration extends Configuration
 {
