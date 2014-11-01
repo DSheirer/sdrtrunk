@@ -40,11 +40,7 @@ public class FilteringNBFMDemodulator implements Listener<ComplexSample>
 
 		mAudioFilter = new FloatFIRFilter( audioFilter, audioGain ); 
 		
-		/**
-		 * Add the FM polar discriminator with a gain of 32768, to match
-		 * the fact that we're producing demodulated float values
-		 */
-		mDiscriminator = new FMDiscriminator( 32768 );
+		mDiscriminator = new FMDiscriminator( 1 );
 
 		mIQFilter.setListener( mDiscriminator );
 

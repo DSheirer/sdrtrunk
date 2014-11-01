@@ -52,6 +52,7 @@ import org.usb4java.Transfer;
 import org.usb4java.TransferCallback;
 
 import sample.Listener;
+import sample.adapter.ByteSampleAdapter;
 import sample.complex.ComplexBuffer;
 import source.SourceException;
 import source.tuner.FrequencyChangeEvent;

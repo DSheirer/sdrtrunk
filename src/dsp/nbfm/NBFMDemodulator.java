@@ -37,7 +37,7 @@ public class NBFMDemodulator implements Listener<ComplexSample>
 	 */
 	public NBFMDemodulator()
 	{
-		this( FilterFactory.getLowPass( 48000, 4000, 73, WindowType.HAMMING ), 
+		this( FilterFactory.getLowPass( 48000, 6250, 73, WindowType.HAMMING ), 
 			  1.0002, true );
 	}
 
@@ -45,11 +45,7 @@ public class NBFMDemodulator implements Listener<ComplexSample>
 	{
 		mIQFilter = new ComplexFIRFilter( iqFilter, iqGain );
 
-		/**
-		 * Add the FM polar discriminator with a gain of 32768, to match
-		 * the fact that we're producing demodulated float values
-		 */
-		mDiscriminator = new FMDiscriminator( 32768 );
+		mDiscriminator = new FMDiscriminator( 1 );
 
 		mIQFilter.setListener( mDiscriminator );
 

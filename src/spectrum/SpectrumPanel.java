@@ -37,7 +37,6 @@ import settings.ColorSetting.ColorSettingName;
 import settings.Setting;
 import settings.SettingChangeListener;
 import buffer.FloatArrayCircularAveragingBuffer;
-import buffer.FloatAveragingBuffer;
 import controller.ResourceManager;
 
 public class SpectrumPanel extends JPanel
@@ -53,10 +52,8 @@ public class SpectrumPanel extends JPanel
 	 * correct width once the first sample set arrives */
 	private float[] mDisplayFFTBins = new float[ 1 ];
 	private FloatArrayCircularAveragingBuffer mFFTAveragingBuffer;
-	private FloatAveragingBuffer mScaleBuffer = new FloatAveragingBuffer( 20 );
-	private int mAmplification = 50;
 	private int mAveraging = 4;
-	private int mBaseline = 50;
+	private int mDBScale = -100; //dBm
 
 	/**
 	 * Spectral Display Color Settings
@@ -96,9 +93,6 @@ public class SpectrumPanel extends JPanel
 	{
 		mAveraging = size;
 		
-//		mResourceManager.getSettingsManager().setIntegerSetting( 
-//				SPECTRUM_AVERAGING_SIZE, mAveraging );
-		
 		mFFTAveragingBuffer = 
 				new FloatArrayCircularAveragingBuffer( mAveraging );		
 	}
@@ -108,24 +102,17 @@ public class SpectrumPanel extends JPanel
 		return mAveraging;
 	}
 	
-	public void setAmplification( int amplification )
+	/**
+	 * Sets the lowest decibel scale value to show on the display
+	 */
+	public void setDBScale( int dbScale )
 	{
-		mAmplification = amplification;
+		mDBScale = dbScale;
 	}
 	
-	public int getAmplification()
+	public int getDBScale()
 	{
-		return mAmplification;
-	}
-	
-	public void setBaseline( int baseline )
-	{
-		mBaseline = baseline;
-	}
-	
-	public int getBaseline()
-	{
-		return mBaseline;
+		return mDBScale;
 	}
 	
 	public void clearSpectrum()
@@ -149,16 +136,7 @@ public class SpectrumPanel extends JPanel
 		mColorSpectrumLine = getColor( ColorSettingName.SPECTRUM_LINE );
 
 		mAveraging = 4;
-//		mAveraging = getIntegerSetting( "spectrum_averaging_size", 4 );
 	}
-	
-//	private int getIntegerSetting( String name, int defaultValue )
-//	{
-//		IntegerSetting setting = mResourceManager.getSettingsManager()
-//				.getIntegerSetting( name, defaultValue );
-//		
-//		return setting.getValue();
-//	}
 	
 	private Color getColor( ColorSettingName name )
 	{
@@ -271,42 +249,37 @@ public class SpectrumPanel extends JPanel
     	//If we have FFT data to display ...
     	if( mDisplayFFTBins != null )
     	{
-    		int binCount = mDisplayFFTBins.length - 1;
-    		
-    		float amplify = mAmplification / 50.0f;
-    		
     		float insideHeight = size.height - mSpectrumInset;
 
-			float baseline = ( insideHeight * ( 50.0f / (float)mBaseline ) ) - 20.0f;
-
-			/* Use the DC component as a reference to scale values to panel height */
-			float scale = mScaleBuffer.get( ( insideHeight * 0.75f ) / 
-					mDisplayFFTBins[ binCount ] );
+    		float scalor = insideHeight / ( -mDBScale );
 			
     		float insideWidth = size.width;
+
+    		int binCount = mDisplayFFTBins.length;
 
     		float binSize = insideWidth / ( binCount );
     		
     		for( int x = 0; x < binCount; x++ )
     		{
-    			/**
-    			 * Height is an inverse value reflecting the drawable spectral 
-    			 * display vertical axis between the inset value at the bottom 
-    			 * and the top of the display.  Values range from:
-    			 * 
-    			 *    top = 0
-    			 * bottom = insideHeight = panel height - mSpectrumInset
-    			 */
-    			float height = baseline - ( mDisplayFFTBins[ x ] * scale * amplify );
-
-    			if( height > insideHeight )
-    			{
-    				height = insideHeight;
-    			}
+    			float height;
     			
-    			if( height < 0 )
+    			if( mDisplayFFTBins[ x ] > 0 )
     			{
     				height = 0;
+    			}
+    			else
+    			{
+    				height = (float)( Math.abs( mDisplayFFTBins[ x ] ) * scalor );
+    				
+        			if( height > insideHeight )
+        			{
+        				height = insideHeight;
+        			}
+        			
+        			if( height < 0 )
+        			{
+        				height = 0;
+        			}
     			}
 
         		spectrumShape.lineTo( ( x * binSize ), height );

@@ -53,6 +53,8 @@ import decode.mpt1327.MPT1327ChannelState;
 import decode.mpt1327.MPT1327Panel;
 import decode.nbfm.NBFMChannelState;
 import decode.nbfm.NBFMPanel;
+import decode.p25.P25ChannelState;
+import decode.p25.P25Panel;
 import decode.passport.PassportChannelState;
 import decode.passport.PassportPanel;
 
@@ -228,6 +230,10 @@ public class ChannelStateList extends JPanel implements ChannelEventListener
     					panel.addPanel( fsPanel );
     				}
     			}
+    		}
+    		else if( state instanceof P25ChannelState )
+    		{
+    			panel = new P25Panel( channel );
     		}
     		
     		if( panel != null )

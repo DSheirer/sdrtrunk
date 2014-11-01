@@ -40,7 +40,7 @@ public class FloatSampleBufferAssembler
 	 */
 	public void put( float sample )
 	{
-		mByteBuffer.putShort( Float.valueOf( sample ).shortValue() );
+		mByteBuffer.putShort( (short)( sample * 32768 ) );
 	}
 
 	/**

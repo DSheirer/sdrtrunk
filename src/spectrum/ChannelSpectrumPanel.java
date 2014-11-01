@@ -29,9 +29,8 @@ import source.tuner.FrequencyChangeEvent;
 import source.tuner.FrequencyChangeEvent.Attribute;
 import spectrum.converter.DFTResultsConverter;
 import spectrum.converter.RealDecibelConverter;
-import spectrum.menu.AmplificationItem;
 import spectrum.menu.AveragingItem;
-import spectrum.menu.BaselineItem;
+import spectrum.menu.DBScaleItem;
 import spectrum.menu.FFTWidthItem;
 import spectrum.menu.FFTWindowTypeItem;
 import spectrum.menu.FrameRateItem;
@@ -360,14 +359,6 @@ public class ChannelSpectrumPanel extends JPanel
 				contextMenu.add(  displayMenu );
 
 				/**
-				 * Amplification menu
-				 */
-				JMenu amplificationMenu = new JMenu( "Amplification" );
-				amplificationMenu.add( 
-						new AmplificationItem( ChannelSpectrumPanel.this, 50 ) );
-				displayMenu.add( amplificationMenu );
-				
-				/**
 				 * Averaging menu
 				 */
 				JMenu averagingMenu = new JMenu( "Averaging" );
@@ -380,7 +371,7 @@ public class ChannelSpectrumPanel extends JPanel
 				 */
 				JMenu baselineMenu = new JMenu( "Baseline" );
 				baselineMenu.add( 
-						new BaselineItem( ChannelSpectrumPanel.this, 50 ) );
+						new DBScaleItem( ChannelSpectrumPanel.this, 50 ) );
 				displayMenu.add( baselineMenu );
 				
 				/**
@@ -437,18 +428,6 @@ public class ChannelSpectrumPanel extends JPanel
 	}
 
 	@Override
-    public int getAmplification()
-    {
-	    return mSpectrumPanel.getAmplification();
-    }
-
-	@Override
-    public void setAmplification( int amplification )
-    {
-		mSpectrumPanel.setAmplification( amplification );
-    }
-
-	@Override
     public int getAveraging()
     {
 	    return mSpectrumPanel.getAveraging();
@@ -461,15 +440,15 @@ public class ChannelSpectrumPanel extends JPanel
     }
 
 	@Override
-    public int getBaseline()
+    public int getDBScale()
     {
-	    return mSpectrumPanel.getBaseline();
+	    return mSpectrumPanel.getDBScale();
     }
 
 	@Override
-    public void setBaseline( int baseline )
+    public void setDBScale( int baseline )
     {
-		mSpectrumPanel.setBaseline( baseline );
+		mSpectrumPanel.setDBScale( baseline );
     }
 	
 	public class DecimatingSampleAssembler

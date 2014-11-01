@@ -19,9 +19,7 @@ package decode.p25;
 
 import instrument.Instrumentable;
 import instrument.tap.Tap;
-import instrument.tap.stream.FloatTap;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import sample.real.RealSampleListener;
@@ -29,26 +27,22 @@ import source.Source.SampleType;
 import alias.AliasList;
 import decode.Decoder;
 import decode.DecoderType;
-import dsp.filter.DCRemovalFilter2;
+import dsp.filter.ComplexFIRFilter;
+import dsp.filter.FilterFactory;
+import dsp.filter.FloatFIRFilter;
+import dsp.filter.Window.WindowType;
 import dsp.fsk.C4FMDecoder;
-import dsp.nbfm.FilteringNBFMDemodulator;
+import dsp.nbfm.FMDiscriminator;
 
 public class P25Decoder extends Decoder implements Instrumentable
 {
-	/**
-	 * This value determines how quickly the DC remove filter responds to 
-	 * changes in frequency.
-	 */
-	private static final double sDC_REMOVAL_RATIO = 0.000003;
-
-	private final String TAP_DEMOD_TO_DECODER = "Demodulated Audio <> C4FM Decoder";
-	
-	private FilteringNBFMDemodulator mDemodulator;
-	private DCRemovalFilter2 mDCRemovalFilter; 
-	private C4FMDecoder mC4FMDecoder;
+	private ComplexFIRFilter mBasebandFilter = new ComplexFIRFilter( 
+		FilterFactory.getLowPass( 48000, 6250, 73, WindowType.HAMMING ), 1.0 );
+	private FMDiscriminator mFMDiscriminator = new FMDiscriminator( 1 );
+//	private FloatFIRFilter mAudioFilter = new FloatFIRFilter( FilterFactory
+//			.getLowPass( 48000, 6000, 73, WindowType.HAMMING ), 1.0 );
+	private C4FMDecoder mC4FMDecoder = new C4FMDecoder();
 	private AliasList mAliasList;
-	
-	private ArrayList<Tap> mTaps;
 	
 	public P25Decoder( SampleType sampleType, AliasList aliasList )
 	{
@@ -70,82 +64,43 @@ public class P25Decoder extends Decoder implements Instrumentable
 			 * back to this class, so we can receive the demodulated output
 			 * to process
 			 */
-			mDemodulator = new FilteringNBFMDemodulator();
-			this.addComplexListener( mDemodulator );
-
-			/**
-			 * Remove the DC component that is present when we're mistuned
-			 */
-			mDCRemovalFilter = new DCRemovalFilter2( sDC_REMOVAL_RATIO );
-			mDemodulator.addListener( mDCRemovalFilter );
-
-			/**
-			 * Route the demodulated, filtered samples back to this class to send
-			 * to all registered listeners
-			 */
-			mDCRemovalFilter.setListener( this.getRealReceiver() );
-			
+			this.addComplexListener( mBasebandFilter );
+			mBasebandFilter.setListener( mFMDiscriminator );
+			mFMDiscriminator.setListener( getRealReceiver() );
+//			mFMDiscriminator.setListener( mAudioFilter );
+//			mAudioFilter.setListener( getRealReceiver() );
 		}
 
-		mC4FMDecoder = new C4FMDecoder();
 		addRealSampleListener( mC4FMDecoder );
 	}
 
 	@Override
     public DecoderType getType()
     {
-	    return DecoderType.NBFM;
+	    return DecoderType.P25_PHASE1;
     }
 
 	@Override
     public List<Tap> getTaps()
     {
-		if( mTaps == null )
-		{
-			mTaps = new ArrayList<Tap>();
-			mTaps.add( new FloatTap( TAP_DEMOD_TO_DECODER, 0, 1.0f ) );
-			
-			mTaps.addAll( mC4FMDecoder.getTaps() );
-		}
-		
-	    return mTaps;
+		return mC4FMDecoder.getTaps();
     }
 
 	@Override
     public void addTap( Tap tap )
     {
 		mC4FMDecoder.addTap( tap );
-		
-		switch( tap.getName() )
-		{
-			case TAP_DEMOD_TO_DECODER:
-				FloatTap demodTap = (FloatTap)tap;
-				removeRealListener( mC4FMDecoder );
-				addRealSampleListener( demodTap );
-				demodTap.setListener( mC4FMDecoder );
-				break;
-		}
     }
 
 	@Override
     public void removeTap( Tap tap )
     {
 		mC4FMDecoder.removeTap( tap );
-		
-		switch( tap.getName() )
-		{
-			case TAP_DEMOD_TO_DECODER:
-				FloatTap demodTap = (FloatTap)tap;
-				removeRealListener( demodTap );
-				demodTap.removeListener( mC4FMDecoder );
-				addRealSampleListener( mC4FMDecoder );
-				break;
-		}
     }
 
 	@Override
     public void addUnfilteredRealSampleListener( RealSampleListener listener )
     {
-	    // TODO Auto-generated method stub
+	    throw new IllegalArgumentException( "unfiltered real sample provider not implemented in P25 Decoder" );
     }
 }

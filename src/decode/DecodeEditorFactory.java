@@ -23,6 +23,7 @@ import decode.ltrnet.LTRNetEditor;
 import decode.ltrstandard.LTRStandardEditor;
 import decode.mpt1327.MPT1327Editor;
 import decode.nbfm.NBFMEditor;
+import decode.p25.P25Editor;
 import decode.passport.PassportEditor;
 
 public class DecodeEditorFactory
@@ -48,6 +49,9 @@ public class DecodeEditorFactory
 				break;
 			case PASSPORT:
 				configuredPanel = new PassportEditor( config );
+				break;
+			case P25_PHASE1:
+				configuredPanel = new P25Editor( config );
 				break;
 			default:
 				configuredPanel = new DecodeEditor( config );

@@ -25,6 +25,7 @@ import java.nio.ByteOrder;
  */
 public class ShortAdapter extends SampleAdapter
 {
+	private ShortToFloatMap mMap = new ShortToFloatMap();
 	private ByteOrder mByteOrder = ByteOrder.LITTLE_ENDIAN;
 	
 	@Override
@@ -42,7 +43,7 @@ public class ShortAdapter extends SampleAdapter
 
         while( buffer.hasRemaining() )
         {
-        	processed[ pointer ] = (float)buffer.getShort();
+        	processed[ pointer ] = mMap.get( buffer.getShort() );
 
         	pointer++;
         }

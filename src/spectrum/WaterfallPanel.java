@@ -47,13 +47,12 @@ import controller.ResourceManager;
  */
 public class WaterfallPanel extends JPanel implements DFTResultsListener,
 													  Pausable,
-													  SettingChangeListener,
-													  SpectralDisplayAdjuster
+													  SettingChangeListener
 {
     private static final long serialVersionUID = 1L;
-	private static DecimalFormat sCURSOR_FORMAT = new DecimalFormat( "000.00000" );
-	private static final String sSPECTRUM_CURSOR = "spectrum_cursor";
-	private static final String sPAUSED = "PAUSED";
+	private static DecimalFormat CURSOR_FORMAT = new DecimalFormat( "0.00000" );
+	private static final String SPECTRUM_CURSOR = "spectrum_cursor";
+	private static final String PAUSED = "PAUSED";
 
 	private byte[] mPixels;
     private int mFFTSize = 1024;
@@ -62,7 +61,6 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
     private ColorModel mColorModel = WaterfallColorModel.getDefaultColorModel();
 	private Color mColorSpectrumCursor;
     private Image mWaterfallImage;
-    private int mBaseline = 50;
 
 	private Point mCursorLocation = new Point( 0, 0 );
 	private boolean mCursorVisible = false;
@@ -71,8 +69,6 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 	
 	private ResourceManager mResourceManager;
     
-    private FloatAveragingBuffer mIntraBinAveragingBuffer = new FloatAveragingBuffer( 9 );
-
 	public WaterfallPanel( ResourceManager resourceManager )
 	{
 		super();
@@ -187,7 +183,7 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
         									 mCursorLocation.x, 
         									 (float)(getSize().getHeight() ) ) );
 
-    		String frequency = sCURSOR_FORMAT.format( mCursorFrequency / 1000000.0D );
+    		String frequency = CURSOR_FORMAT.format( mCursorFrequency / 1000000.0D );
 
     		graphics.drawString( frequency , 
     							 mCursorLocation.x + 5, 
@@ -197,7 +193,7 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
     	
     	if( mPaused.get() )
     	{
-    		graphics.drawString( sPAUSED, 20, 20 ); 
+    		graphics.drawString( PAUSED, 20, 20 ); 
     	}
     	
 		graphics.dispose();
@@ -218,14 +214,9 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 		System.arraycopy( mPixels, 0, 
 				mPixels, mFFTSize, mPixels.length - mFFTSize );
 		
-		float baseline = mBaseline / 50.0f; 
-		
 		/**
-		 * Scale the power spectrum bin values into a byte range (0-255) value
-		 * using the last bin as the scaling factor
+		 * Find the average value and scale the display to it
 		 */
-		float scale = 256.0f / update[ update.length - 1 ];
-
 		double sum = 0.0d;
 		
 		for( int x = 0; x < update.length - 1; x++ )
@@ -234,10 +225,12 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 		}
 		
 		float average = (float)( sum / (double)update.length - 1 );
+
+		float scale = 256.0f / average;
 		
 		for( int x = 0; x < update.length - 1; x++ )
 		{
-			float value = ( update[ x ] - average ) * scale * baseline;
+			float value = ( average - update[ x ] ) * scale;
 
 			if( value < 0 )
 			{
@@ -285,42 +278,4 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 
 	@Override
     public void settingDeleted( Setting setting ) {}
-
-	@Override
-	public void setBaseline( int baseline )
-	{
-		mBaseline = baseline;
-	}
-	
-	@Override
-	public int getBaseline()
-	{
-		return mBaseline;
-	}
-
-	@Override
-    public int getAmplification()
-    {
-		/* Not Implemented */
-		return 0;
-    }
-
-	@Override
-    public void setAmplification( int amplification )
-    {
-		/* Not Implemented */
-    }
-
-	@Override
-    public int getAveraging()
-    {
-		/* Not Implemented */
-	    return 0;
-    }
-
-	@Override
-    public void setAveraging( int averaging )
-    {
-		/* Not Implemented */
-    }
 }

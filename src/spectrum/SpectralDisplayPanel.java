@@ -64,9 +64,8 @@ import source.tuner.TunerSelectionListener;
 import spectrum.OverlayPanel.ChannelDisplay;
 import spectrum.converter.ComplexDecibelConverter;
 import spectrum.converter.DFTResultsConverter;
-import spectrum.menu.AmplificationItem;
 import spectrum.menu.AveragingItem;
-import spectrum.menu.BaselineItem;
+import spectrum.menu.DBScaleItem;
 import spectrum.menu.FFTWidthItem;
 import spectrum.menu.FFTWindowTypeItem;
 import spectrum.menu.FrameRateItem;
@@ -591,41 +590,23 @@ public class SpectralDisplayPanel extends JPanel
 				JMenu displayMenu = new JMenu( "Display" );
 				contextMenu.add(  displayMenu );
 
-				if( event.getComponent() == mWaterfallPanel )
+				if( event.getComponent() != mWaterfallPanel )
 				{
 					/**
-					 * Baseline menu
+					 * DB Scale menu
 					 */
-					JMenu baselineMenu = new JMenu( "Baseline" );
-					baselineMenu.add( 
-							new BaselineItem( mWaterfallPanel, 50 ) );
-					displayMenu.add( baselineMenu );
-				}
-				else
-				{
-					/**
-					 * Amplification menu
-					 */
-					JMenu amplificationMenu = new JMenu( "Amplify" );
-					amplificationMenu.add( 
-							new AmplificationItem( mSpectrumPanel, 50 ) );
-					displayMenu.add( amplificationMenu );
-
+					JMenu dbScaleMenu = new JMenu( "Scale: 0 to dBm" );
+					dbScaleMenu.add( 
+							new DBScaleItem( mSpectrumPanel, -100 ) );
+					displayMenu.add( dbScaleMenu );
+					
 					/**
 					 * Averaging menu
 					 */
-					JMenu averagingMenu = new JMenu( "Average" );
+					JMenu averagingMenu = new JMenu( "Averaging" );
 					averagingMenu.add( 
 							new AveragingItem( mSpectrumPanel, 4 ) );
 					displayMenu.add( averagingMenu );
-					
-					/**
-					 * Baseline menu
-					 */
-					JMenu baselineMenu = new JMenu( "Baseline" );
-					baselineMenu.add( 
-							new BaselineItem( mSpectrumPanel, 50 ) );
-					displayMenu.add( baselineMenu );
 					
 					/**
 					 * Channel Display setting menu

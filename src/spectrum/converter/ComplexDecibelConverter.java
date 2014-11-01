@@ -1,7 +1,17 @@
 package spectrum.converter;
 
+import java.util.Arrays;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import spectrum.DFTProcessor;
+
 public class ComplexDecibelConverter extends DFTResultsConverter
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( DFTResultsConverter.class );
+
 	/**
 	 * Converts the output of the JTransforms FloatFFT_1D.complexForward()
 	 * calculation into a normalized power spectrum in decibels, per description
@@ -10,51 +20,40 @@ public class ComplexDecibelConverter extends DFTResultsConverter
 	@Override
     public void receive( float[] results )
     {
-		float dc = Math.abs( results[ 0 ] );
+		float[] processed = new float[ results.length / 2 ];
+
+		/* Output from JTransforms 3.0 has the lower and upper halves of the
+		 * spectrum swapped. */
+		int half = processed.length / 2;
 		
-		/* Ensure we have power in the DC power bin (bin 0), otherwise don't
-		 * dispatch the results */
-		if( dc > 0 )
+		for( int x = 0; x < results.length; x += 2 )
 		{
-			float[] processed = new float[ results.length / 2 + 1 ];
-
-			/**
-			 * Output from JTransforms 3.0 has the lower and upper halves of the
-			 * spectrum swapped.
-			 */
-			int half = processed.length / 2;
+			float magnitude = (float)Math.sqrt( results[ x ] * 
+					results[ x ] + results[ x + 1 ] * results[ x + 1 ] );
 			
-			for( int x = 0; x < processed.length - 2; x ++ )
+			/* Place upper half of magnitudes in lower half of results, vice-versa */
+			if( x / 2 >= half )
 			{
-				int index = ( x + 1 ) * 2;
-
-				double magnitude2 = ( ( results[ index ] * results[ index ] ) +
-						   ( results[ index + 1 ] * results[ index + 1 ] ) );
-				
-				if( x < half )
-				{
-					processed[ x + half ] = 10.0f * 
-							(float)( Math.log10( magnitude2 / dc ) );
-				}
-				else
-				{
-					processed[ x - half ] = 10.0f * 
-							(float)( Math.log10( magnitude2 / dc ) );
-				}
+				processed[ x / 2 - half ] = magnitude;
 			}
-			
-			/**
-			 * Place scaled dc component in last bin of processed array as 
-			 * scaling reference
-			 */
-			processed[ results.length / 2 ] = processed[ half ];
-			
-			/**
-			 * Repair the erroneous DC component bin by using the average of 
-			 * the neighboring bins 
-			 */
-			processed[ half ] = ( processed[ half - 1 ] + 
-								  processed[ half + 1 ] / 2.0f );
+			else
+			{
+				processed[ x / 2 + half ] = magnitude;
+			}
+		}
+
+		/* Use the DC component as the largest magnitude value to keep the 
+		 * display from jumping when a strong bursting signal exists */
+		float largestMagnitude = processed[ half ];
+		
+		if( largestMagnitude > 0 )
+		{
+			/* Convert magnitudes to normized power spectrum dBm */
+			for( int i = 0; i < processed.length; i++ )
+			{
+				processed[ i ] = 20.0f * 
+						(float)Math.log10( processed[ i ] / largestMagnitude );
+			}
 			
 			dispatch( processed );
 		}
