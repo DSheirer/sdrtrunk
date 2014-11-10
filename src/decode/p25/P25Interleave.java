@@ -94,4 +94,30 @@ public class P25Interleave
         
         return message;
     }
+    
+    public static void main( String[] args )
+    {
+    	int start = 0;
+    	int end = 196;
+    	
+    	BitSetBuffer b = new BitSetBuffer( end );
+    	
+    	for( int x = 0; x < end; x += 3 )
+    	{
+    		if( x > 20 )
+    		{
+        		b.set( x );
+    		}
+    	}
+
+    	mLog.debug( "Origi:" + b.toString() );
+
+    	P25Interleave.interleave( b, start, end );
+    	
+    	mLog.debug( "Inter:" + b.toString() );
+    	
+    	P25Interleave.deinterleave( b, start, end );
+    		
+    	mLog.debug( "Donee:" + b.toString() );
+    }
 }

@@ -111,10 +111,7 @@ public class FloatTapViewPanel extends TapViewPanel
 	{
 		int middle = (int)( getHeight() / 2 );
 		
-		float scaledValue = value / (float)Short.MAX_VALUE;
-		
-//		mLog.info( "Float value is:" + scaledValue );
-		float y = middle - ( middle * scaledValue * mVerticalZoom );
+		float y = middle - ( middle * value * mVerticalZoom );
 
 		/* Clip y to zero as necessary */
 		y = ( y < 0 ) ? 0 : y;

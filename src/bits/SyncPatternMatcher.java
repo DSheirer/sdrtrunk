@@ -48,6 +48,28 @@ public class SyncPatternMatcher
 		}
 	}
 	
+	public SyncPatternMatcher( long sync )
+	{
+		mSync = sync;
+		mMask = getMask( sync );
+	}
+
+	/**
+	 * Generates an all ones mask corresponding to the sync pattern
+	 */
+	private static long getMask( long sync )
+	{
+		long mask = sync;
+		
+		for( int x = 1; x < 64; x *= 2 )
+		{
+			mask |= ( mask >> x );
+		}
+		
+		return mask;
+	}
+	
+	
 	public void receive( boolean bit )
 	{
 		//Left shift the previous value
