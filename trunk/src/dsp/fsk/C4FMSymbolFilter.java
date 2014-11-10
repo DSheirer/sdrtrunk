@@ -1,4 +1,4 @@
-package dsp.filter;
+package dsp.fsk;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -147,6 +147,7 @@ public class C4FMSymbolFilter implements RealSampleListener,
 	
 	private static final int NUMBER_FILTER_TAPS = 8;
 	private static final int NUMBER_FILTER_STEPS = 128;
+	
 	private static final int SAMPLE_RATE = 48000;
 	private static final int SYMBOL_RATE = 4800;
 	
@@ -171,6 +172,7 @@ public class C4FMSymbolFilter implements RealSampleListener,
 	private float mSymbolSpread = 2.0f;
 	private float mSymbolClock = 0.0f;
 	private float mSymbolTime = (float)SYMBOL_RATE / (float)SAMPLE_RATE;
+	
 	private float mFineFrequencyCorrection = 0.0f;
 	private float mCoarseFrequencyCorrection = 0.0f;
 
@@ -178,8 +180,20 @@ public class C4FMSymbolFilter implements RealSampleListener,
 	private int mHistoryLast = 0;
 	
 	private RealSampleListener mListener;
-	
 
+	/**
+	 * C4FM Symbol Filter
+	 * 
+	 * Sample Gain values - the gain of incoming sample values will critically
+	 * impact the performance of this filter.  Gain should be adjusted to
+	 * optimize the value of mSymbolSpread toward a value of 2.0.  If the value
+	 * is less than 2.0, then increase gain.  If the value is over 2.0, then
+	 * decrease gain.
+	 * 
+	 * During testing, the incoming samples were within the range of -0.5 <> 0.5
+	 * and applying a gain of 11.0 to those samples achieved the best symbol
+	 * spread, centered about 2.0 with +/- 0.5% deviations on a strong signal.
+	 */
 	public C4FMSymbolFilter()
 	{
 	}
@@ -189,7 +203,8 @@ public class C4FMSymbolFilter implements RealSampleListener,
     {
 		mSymbolClock += mSymbolTime;
 		
-		mHistory[ mHistoryLast++ ] = sample;
+//		mHistory[ mHistoryLast++ ] = sample;
+		mHistory[ mHistoryLast++ ] = sample * 10.5f;
 		mHistoryLast %= NUMBER_FILTER_TAPS;
 		
 		if( mSymbolClock > 1.0f )
@@ -199,13 +214,12 @@ public class C4FMSymbolFilter implements RealSampleListener,
 			int imu = (int)Math.floor( 0.5 + 
 				( (float)NUMBER_FILTER_STEPS * ( mSymbolClock / mSymbolTime ) ) );
 			
-			int imu_p1 = imu + 1;
-			
 			if( imu >= NUMBER_FILTER_STEPS )
 			{
 				imu = NUMBER_FILTER_STEPS - 1;
-				imu_p1 = NUMBER_FILTER_STEPS;
 			}
+
+			int imu_p1 = imu + 1;
 
 			int j = mHistoryLast;
 			
@@ -220,7 +234,7 @@ public class C4FMSymbolFilter implements RealSampleListener,
 				j = ( j + 1 ) % NUMBER_FILTER_TAPS;
 			}
 
-			/* Ouput symbol will be interpolated value corrected for symbol
+			/* Output symbol will be interpolated value corrected for symbol
 			 * spread and frequency offset */
 			interp -= mFineFrequencyCorrection;
 			interp_p1 -= mFineFrequencyCorrection;
@@ -230,7 +244,7 @@ public class C4FMSymbolFilter implements RealSampleListener,
 
 			/* Detect received symbol error: basically use a hard decision and
 			 * subtract off expected position nominal symbol level which will be
-			 * +/= 0.5 * symbol spread and +/- 1.5 symbol spread.  Rembmer that
+			 * +/- 0.5 * symbol spread and +/- 1.5 symbol spread.  Remember that
 			 * nominal symbol spread will be 2.0 */
 			double symbolError;
 			
@@ -269,8 +283,6 @@ public class C4FMSymbolFilter implements RealSampleListener,
 				mSymbolClock -= symbolError * K_SYMBOL_TIMING;
 			}
 			
-			mLog.debug( "Symbol Clock Adjusted: " + mSymbolClock );
-
 			mSymbolSpread = Math.max( mSymbolSpread, SYMBOL_SPREAD_MIN );
 			mSymbolSpread = Math.min( mSymbolSpread, SYMBOL_SPREAD_MAX );
 			
@@ -282,11 +294,11 @@ public class C4FMSymbolFilter implements RealSampleListener,
 			/* send frequency correction */
 			if( Math.abs( mCoarseFrequencyCorrection ) > COARSE_FREQUENCY_DEADBAND )
 			{
+				mLog.debug( "Frequency Correction [" + 
+						( mCoarseFrequencyCorrection > 0 ? "-" : "+" ) + 
+						mCoarseFrequencyCorrection + "]" );
 			}
 
-			mLog.error( "C4FM Filter - output [ " + output + " ] frequency correction: " + 
-			mCoarseFrequencyCorrection );
-			
 			/* dispatch the interpolated value to the listener */
 			if( mListener != null )
 			{

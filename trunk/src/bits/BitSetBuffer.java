@@ -87,6 +87,13 @@ public class BitSetBuffer extends BitSet
         this.or( toCopyFrom );
         this.mPointer = toCopyFrom.pointer();
     }
+
+    public BitSetBuffer( BitSet bitset, int size )
+    {
+        this( size );
+        this.or( bitset );
+        this.mPointer = size - 1;
+    }
     
     /**
      * Current pointer index
@@ -94,6 +101,11 @@ public class BitSetBuffer extends BitSet
     public int pointer()
     {
         return mPointer;
+    }
+    
+    public void setPointer( int index )
+    {
+    	mPointer = index;
     }
 
     /**
@@ -152,6 +164,11 @@ public class BitSetBuffer extends BitSet
     public int size()
     {
         return mSize;
+    }
+    
+    public void setSize( int size )
+    {
+    	mSize = size;
     }
 
     /**

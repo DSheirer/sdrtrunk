@@ -28,14 +28,13 @@ import java.util.List;
 
 import sample.Listener;
 import sample.real.RealSampleListener;
-import dsp.Slicer;
-import dsp.Slicer.Output;
 import dsp.filter.DCRemovalFilter3;
 import dsp.filter.Filters;
 import dsp.filter.FloatHalfBandFilter;
 import dsp.filter.FloatHalfBandNoDecimateFilter;
 import dsp.filter.LTRPulseShapingFilter;
 import dsp.filter.SquaringFilter;
+import dsp.fsk.Slicer.Output;
 
 public class LTRFSKDecoder implements RealSampleListener, Instrumentable
 {

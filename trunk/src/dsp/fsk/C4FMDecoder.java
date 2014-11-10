@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import sample.real.RealSampleListener;
-import dsp.filter.C4FMSymbolFilter;
 
 public class C4FMDecoder implements RealSampleListener, Instrumentable
 {

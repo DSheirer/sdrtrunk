@@ -1,14 +1,10 @@
-package dsp;
+package dsp.fsk;
 
-import instrument.tap.Tap;
 import instrument.tap.stream.SymbolEventTap;
 
-import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.List;
 
 import sample.Listener;
-import dsp.fsk.SymbolEvent;
 import dsp.fsk.SymbolEvent.Shift;
 
 /**

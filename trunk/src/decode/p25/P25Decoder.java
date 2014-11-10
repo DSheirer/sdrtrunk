@@ -20,7 +20,11 @@ package decode.p25;
 import instrument.Instrumentable;
 import instrument.tap.Tap;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import sample.real.RealSampleListener;
 import source.Source.SampleType;
@@ -29,19 +33,26 @@ import decode.Decoder;
 import decode.DecoderType;
 import dsp.filter.ComplexFIRFilter;
 import dsp.filter.FilterFactory;
-import dsp.filter.FloatFIRFilter;
 import dsp.filter.Window.WindowType;
-import dsp.fsk.C4FMDecoder;
+import dsp.fsk.P25MessageFramer;
+import dsp.fsk.C4FMSlicer;
+import dsp.fsk.C4FMSymbolFilter;
 import dsp.nbfm.FMDiscriminator;
 
 public class P25Decoder extends Decoder implements Instrumentable
 {
+	private final static Logger mLog = LoggerFactory.getLogger( P25Decoder.class );
+
 	private ComplexFIRFilter mBasebandFilter = new ComplexFIRFilter( 
-		FilterFactory.getLowPass( 48000, 6250, 73, WindowType.HAMMING ), 1.0 );
-	private FMDiscriminator mFMDiscriminator = new FMDiscriminator( 1 );
-//	private FloatFIRFilter mAudioFilter = new FloatFIRFilter( FilterFactory
-//			.getLowPass( 48000, 6000, 73, WindowType.HAMMING ), 1.0 );
-	private C4FMDecoder mC4FMDecoder = new C4FMDecoder();
+			FilterFactory.getLowPass( 48000, 5000, 31, WindowType.HAMMING ), 1.0 );
+
+	private FMDiscriminator mDemodulator = new FMDiscriminator( 1 );
+	private C4FMSymbolFilter mSymbolFilter = new C4FMSymbolFilter();
+	private C4FMSlicer mSlicer = new C4FMSlicer();
+	private P25MessageFramer mNormalFramer;
+	private P25MessageFramer mInvertedFramer;
+	private P25MessageProcessor mMessageProcessor;
+
 	private AliasList mAliasList;
 	
 	public P25Decoder( SampleType sampleType, AliasList aliasList )
@@ -65,13 +76,25 @@ public class P25Decoder extends Decoder implements Instrumentable
 			 * to process
 			 */
 			this.addComplexListener( mBasebandFilter );
-			mBasebandFilter.setListener( mFMDiscriminator );
-			mFMDiscriminator.setListener( getRealReceiver() );
-//			mFMDiscriminator.setListener( mAudioFilter );
-//			mAudioFilter.setListener( getRealReceiver() );
+			mBasebandFilter.setListener( mDemodulator );
+			mDemodulator.setListener( getRealReceiver() );
 		}
 
-		addRealSampleListener( mC4FMDecoder );
+		addRealSampleListener( mSymbolFilter );
+		
+		mSymbolFilter.setListener( mSlicer );
+		
+		mMessageProcessor = new P25MessageProcessor( mAliasList );
+
+		mNormalFramer = new P25MessageFramer( 
+				FrameSync.P25_PHASE1.getSync(), 64, false );
+		mSlicer.addListener( mNormalFramer );
+		mNormalFramer.setListener( mMessageProcessor );
+		
+		mInvertedFramer = new P25MessageFramer( 
+				FrameSync.P25_PHASE1_INVERTED.getSync(), 64, true );
+		mSlicer.addListener( mInvertedFramer );
+		mInvertedFramer.setListener( mMessageProcessor );
 	}
 
 	@Override
@@ -83,24 +106,23 @@ public class P25Decoder extends Decoder implements Instrumentable
 	@Override
     public List<Tap> getTaps()
     {
-		return mC4FMDecoder.getTaps();
+		return new ArrayList<Tap>();
     }
 
 	@Override
     public void addTap( Tap tap )
     {
-		mC4FMDecoder.addTap( tap );
     }
 
 	@Override
     public void removeTap( Tap tap )
     {
-		mC4FMDecoder.removeTap( tap );
     }
 
 	@Override
     public void addUnfilteredRealSampleListener( RealSampleListener listener )
     {
-	    throw new IllegalArgumentException( "unfiltered real sample provider not implemented in P25 Decoder" );
+	    throw new IllegalArgumentException( "unfiltered real sample provider "
+	    		+ "not implemented in P25 Decoder" );
     }
 }
