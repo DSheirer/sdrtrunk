@@ -1,20 +1,24 @@
-package decode.p25.message;
+package decode.p25.message.tsbk;
 
+import alias.AliasList;
+import bits.BitSetBuffer;
+import decode.p25.message.P25Message;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
 import decode.p25.reference.Vendor;
-import bits.BitSetBuffer;
 
 public class TSBKMessage extends P25Message
 {
-	public static final int LAST_BLOCK_FLAG = 0;
-	public static final int ENCRYPTED_FLAG = 1;
-	public static final int[] OPCODE = { 2,3,4,5,6,7 };
-	public static final int[] VENDOR_ID = { 8,9,10,11,12,13,14,15 };
-	
-	public TSBKMessage( int system, BitSetBuffer message )
+	public static final int LAST_BLOCK_FLAG = 64;
+	public static final int ENCRYPTED_FLAG = 65;
+	public static final int[] OPCODE = { 66,67,68,69,70,71 };
+	public static final int[] VENDOR_ID = { 72,73,74,75,76,77,78,79 };
+    public static final int[] CRC = { 144,145,146,147,148,149,150,151,152,153,
+        154,155,156,157,158,159 };
+
+    public TSBKMessage( BitSetBuffer message, DataUnitID duid, AliasList aliasList )
     {
-	    super( message, DataUnitID.TSBK1 );
+	    super( message, duid, aliasList );
     }
 	
 	public boolean isLastBlock()

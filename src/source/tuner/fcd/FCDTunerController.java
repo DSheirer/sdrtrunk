@@ -363,12 +363,12 @@ public abstract class FCDTunerController extends TunerController
 				throw new LibUsbException( "error writing byte buffer", 
 								result );
 			}
-			else if( transferred.get() != buffer.capacity() )
-			{
-				throw new LibUsbException( "transferred bytes [" + 
-						transferred.get( 0 ) + "] is not what was expected [" + 
-						buffer.capacity() + "]", result );
-			}
+//			else if( transferred.get() != buffer.capacity() )
+//			{
+//				throw new LibUsbException( "transferred bytes [" + 
+//						transferred.get( 0 ) + "] is not what was expected [" + 
+//						buffer.capacity() + "]", result );
+//			}
 		}
 		else
 		{
