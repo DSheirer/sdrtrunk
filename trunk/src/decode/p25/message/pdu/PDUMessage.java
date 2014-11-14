@@ -1,10 +1,12 @@
-package decode.p25.message;
+package decode.p25.message.pdu;
 
+import alias.AliasList;
+import bits.BitSetBuffer;
+import decode.p25.message.P25Message;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.PDUFormat;
 import decode.p25.reference.ServiceAccessPoint;
 import decode.p25.reference.Vendor;
-import bits.BitSetBuffer;
 
 public class PDUMessage extends P25Message
 {
@@ -37,9 +39,9 @@ public class PDUMessage extends P25Message
 		155,156,157,158,159,160,161,162 };
 
 	//status 166,167
-	public PDUMessage( BitSetBuffer message, DataUnitID duid )
+	public PDUMessage( BitSetBuffer message, DataUnitID duid, AliasList aliasList )
     {
-	    super( message, duid );
+        super( message, duid, aliasList );
     }
 	
 	public String getConfirmation()

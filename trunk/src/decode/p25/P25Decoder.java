@@ -86,15 +86,16 @@ public class P25Decoder extends Decoder implements Instrumentable
 		
 		mMessageProcessor = new P25MessageProcessor( mAliasList );
 
-		mNormalFramer = new P25MessageFramer( 
-				FrameSync.P25_PHASE1.getSync(), 64, false );
-		mSlicer.addListener( mNormalFramer );
-		mNormalFramer.setListener( mMessageProcessor );
+        mNormalFramer = new P25MessageFramer( 
+                FrameSync.P25_PHASE1.getSync(), 64, false, mAliasList );
+        mSlicer.addListener( mNormalFramer );
+        mNormalFramer.setListener( mMessageProcessor );
+
+        mInvertedFramer = new P25MessageFramer( 
+                FrameSync.P25_PHASE1_INVERTED.getSync(), 64, true, mAliasList );
+        mSlicer.addListener( mInvertedFramer );
+        mInvertedFramer.setListener( mMessageProcessor );
 		
-		mInvertedFramer = new P25MessageFramer( 
-				FrameSync.P25_PHASE1_INVERTED.getSync(), 64, true );
-		mSlicer.addListener( mInvertedFramer );
-		mInvertedFramer.setListener( mMessageProcessor );
 	}
 
 	@Override

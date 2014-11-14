@@ -1,10 +1,11 @@
 package decode.p25.message;
 
-import decode.p25.reference.DataUnitID;
 import map.Plottable;
 import message.Message;
 import alias.Alias;
+import alias.AliasList;
 import bits.BitSetBuffer;
+import decode.p25.reference.DataUnitID;
 
 public class P25Message extends Message
 {
@@ -16,13 +17,17 @@ public class P25Message extends Message
 	
 	protected BitSetBuffer mMessage;
 	protected DataUnitID mDUID;
+	protected AliasList mAliasList;
 	
-	public P25Message( BitSetBuffer message, DataUnitID duid )
+	public P25Message( BitSetBuffer message, 
+	                   DataUnitID duid,
+	                   AliasList aliasList )
 	{
 		super();
 		
 		mMessage = message;
 		mDUID = duid;
+		mAliasList = aliasList;
 	}
 	
 	public String getNAC()

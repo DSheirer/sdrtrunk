@@ -1,7 +1,6 @@
 package dsp.fsk;
 
 import java.util.ArrayList;
-import java.util.BitSet;
 
 import message.Message;
 
@@ -9,15 +8,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
+import alias.AliasList;
 import bits.BitSetBuffer;
 import bits.BitSetFullException;
 import bits.SyncPatternMatcher;
 import decode.p25.P25Interleave;
 import decode.p25.TrellisHalfRate;
 import decode.p25.message.P25Message;
-import decode.p25.message.PDUMessage;
-import decode.p25.message.TSBKMessage;
-import decode.p25.message.TSBKMessageFactory;
+import decode.p25.message.pdu.PDUMessage;
+import decode.p25.message.tsbk.TSBKMessage;
+import decode.p25.message.tsbk.TSBKMessageFactory;
 import decode.p25.reference.DataUnitID;
 
 public class P25MessageFramer implements Listener<C4FMSymbol>
@@ -36,6 +36,7 @@ public class P25MessageFramer implements Listener<C4FMSymbol>
 	public static final int TSBK_DECODED_END = 162;
 	
 	private Listener<Message> mListener;
+	private AliasList mAliasList;
 	private SyncPatternMatcher mMatcher;
 	private boolean mInverted = false;
 	private TrellisHalfRate mHalfRate = new TrellisHalfRate();
@@ -51,10 +52,14 @@ public class P25MessageFramer implements Listener<C4FMSymbol>
 	 * @param inverted - optional flag to indicate the symbol stream should be
 	 * uninverted prior to processing 
 	 */
-	public P25MessageFramer( long sync, int messageLength, boolean inverted )
+	public P25MessageFramer( long sync, 
+	                         int messageLength, 
+	                         boolean inverted,
+	                         AliasList aliasList )
 	{
 		mMatcher = new SyncPatternMatcher( sync );
 		mInverted = inverted;
+		mAliasList = aliasList;
 
 		/**
 		 * We use two message assemblers to catch any sync detections, so that
@@ -218,15 +223,15 @@ public class P25MessageFramer implements Listener<C4FMSymbol>
 					break;
 				case HDU:
 					mComplete = true;
-					dispatch( new P25Message( mMessage.copy(), mDUID ) );
+                    dispatch( new P25Message( mMessage.copy(), mDUID, mAliasList ) );
 					break;
 				case LDU1:
 					mComplete = true;
-					dispatch( new P25Message( mMessage.copy(), mDUID ) );
+                    dispatch( new P25Message( mMessage.copy(), mDUID, mAliasList ) );
 					break;
 				case LDU2:
 					mComplete = true;
-					dispatch( new P25Message( mMessage.copy(), mDUID ) );
+                    dispatch( new P25Message( mMessage.copy(), mDUID, mAliasList ) );
 					break;
 				case PDU1:
 					int blocks = mMessage.getInt( 
@@ -245,22 +250,22 @@ public class P25MessageFramer implements Listener<C4FMSymbol>
 					}
 					else
 					{
-						dispatch( new PDUMessage( mMessage.copy(), mDUID ) );
+						dispatch( new PDUMessage( mMessage.copy(), mDUID, mAliasList ) );
 						mComplete = true;
 					}
 					break;
 				case PDU2:
 				case PDU3:
 					mComplete = true;
-					dispatch( new P25Message( mMessage.copy(), mDUID ) );
+                    dispatch( new P25Message( mMessage.copy(), mDUID, mAliasList ) );
 					break;
 				case TDU:
 					mComplete = true;
-					dispatch( new P25Message( mMessage.copy(), mDUID ) );
+                    dispatch( new P25Message( mMessage.copy(), mDUID, mAliasList ) );
 					break;
 				case TDULC:
 					mComplete = true;
-					dispatch( new P25Message( mMessage.copy(), mDUID ) );
+                    dispatch( new P25Message( mMessage.copy(), mDUID, mAliasList ) );
 					break;
 				case TSBK1:
 					/* Remove interleaving */
@@ -269,14 +274,10 @@ public class P25MessageFramer implements Listener<C4FMSymbol>
 					/* Remove trellis encoding */
 					mHalfRate.decode( mMessage, TSBK_BEGIN, TSBK_END );
 
-					/* Construct the message */
-					int tsbkSystem1 = mMessage.getInt( P25Message.NAC );
-
-					BitSetBuffer tsbkBuffer1 = new BitSetBuffer( mMessage.get( 
-							TSBK_BEGIN, TSBK_DECODED_END ), 96 );
+					BitSetBuffer tsbkBuffer1 = mMessage.copy();
 					
-					TSBKMessage tsbkMessage1 = 
-							TSBKMessageFactory.getMessage( tsbkSystem1, tsbkBuffer1 ); 
+                    TSBKMessage tsbkMessage1 = TSBKMessageFactory.getMessage( 
+                            tsbkBuffer1, DataUnitID.TSBK1, mAliasList ); 
 
 					if( tsbkMessage1.isLastBlock() )
 					{
@@ -297,14 +298,10 @@ public class P25MessageFramer implements Listener<C4FMSymbol>
 					/* Remove trellis encoding */
 					mHalfRate.decode( mMessage, TSBK_BEGIN, TSBK_END );
 
-					/* Construct the message */
-					int tsbkSystem2 = mMessage.getInt( P25Message.NAC );
-
-					BitSetBuffer tsbkBuffer2 = new BitSetBuffer( mMessage.get( 
-							TSBK_BEGIN, TSBK_DECODED_END ), 98 );
+					BitSetBuffer tsbkBuffer2 = mMessage.copy();
 					
-					TSBKMessage tsbkMessage2 = 
-							TSBKMessageFactory.getMessage( tsbkSystem2, tsbkBuffer2 ); 
+                    TSBKMessage tsbkMessage2 = TSBKMessageFactory.getMessage( 
+                            tsbkBuffer2, DataUnitID.TSBK2, mAliasList ); 
 
 					if( tsbkMessage2.isLastBlock() )
 					{
@@ -326,14 +323,10 @@ public class P25MessageFramer implements Listener<C4FMSymbol>
 					/* Remove trellis encoding */
 					mHalfRate.decode( mMessage, TSBK_BEGIN, TSBK_END );
 
-					/* Construct the message */
-					int tsbkSystem3 = mMessage.getInt( P25Message.NAC );
-
-					BitSetBuffer tsbkBuffer3 = new BitSetBuffer( mMessage.get( 
-							TSBK_BEGIN, TSBK_DECODED_END ), 96 );
-					
-					TSBKMessage tsbkMessage3 = 
-							TSBKMessageFactory.getMessage( tsbkSystem3, tsbkBuffer3 ); 
+                    BitSetBuffer tsbkBuffer3 = mMessage.copy();
+                    
+                    TSBKMessage tsbkMessage3 = TSBKMessageFactory.getMessage( 
+                            tsbkBuffer3, DataUnitID.TSBK3, mAliasList ); 
 
 					mComplete = true;
 
@@ -342,7 +335,7 @@ public class P25MessageFramer implements Listener<C4FMSymbol>
 					break;
 				case UNKN:
 					mComplete = true;
-					dispatch( new P25Message( mMessage.copy(), mDUID ) );
+                    dispatch( new P25Message( mMessage.copy(), mDUID, mAliasList ) );
 					break;
 				default:
 					mComplete = true;
