@@ -63,7 +63,7 @@ public enum Opcode
 	RFSS_STATUS_BROADCAST( "RFSS Status Broadcast", 58 ),
 	NETWORK_STATUS_BROADCAST( "Network Status Broadcast", 59 ),
 	ADJACENT_STATUS_BROADCAST( "Adjacent Status Broadcast", 60 ),
-	IDENTIFIER_UPDATE_NON_VHF_UHF( "Identifier Update for non-VHF/UHF Bands", 61 ),
+	IDENTIFIER_UPDATE( "Identifier Update", 61 ),
 	PROTECTION_PARAMETER_BROADCAST( "Protection Parameter Broadcast", 62 ),
 	PROTECTION_PARAMETER_UPDATE( "Protection Parameter Update", 63 ),
 	UNKNOWN( "Unknown", -1 );
