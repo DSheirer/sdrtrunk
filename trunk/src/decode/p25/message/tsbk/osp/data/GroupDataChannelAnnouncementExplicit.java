@@ -1,13 +1,14 @@
-package decode.p25.message.tsbk;
+package decode.p25.message.tsbk.osp.data;
 
 import alias.AliasList;
 import bits.BitSetBuffer;
+import decode.p25.message.tsbk.GroupChannelGrantExplicit;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
 
-public class UnitToUnitAnswerRequest extends UnitChannelGrant
+public class GroupDataChannelAnnouncementExplicit extends GroupChannelGrantExplicit
 {
-    public UnitToUnitAnswerRequest( BitSetBuffer message, 
+    public GroupDataChannelAnnouncementExplicit( BitSetBuffer message, 
                                    DataUnitID duid,
                                    AliasList aliasList ) 
     {
@@ -17,6 +18,6 @@ public class UnitToUnitAnswerRequest extends UnitChannelGrant
     @Override
     public String getEventType()
     {
-        return Opcode.UNIT_TO_UNIT_ANSWER_REQUEST.getDescription();
+        return Opcode.GROUP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT.getDescription();
     }
 }

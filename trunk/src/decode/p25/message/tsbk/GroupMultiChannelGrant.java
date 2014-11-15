@@ -83,30 +83,8 @@ public abstract class GroupMultiChannelGrant extends ChannelGrant
     }
 
     @Override
-    public Alias getFromIDAlias()
-    {
-        if( mAliasList != null )
-        {
-            return mAliasList.getTalkgroupAlias( getFromID() );
-        }
-        
-        return null;
-    }
-
-    @Override
     public String getToID()
     {
         return getGroupAddress2();
-    }
-
-    @Override
-    public Alias getToIDAlias()
-    {
-        if( mAliasList != null )
-        {
-            return mAliasList.getTalkgroupAlias( getToID() );
-        }
-        
-        return null;
     }
 }

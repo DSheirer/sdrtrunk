@@ -86,7 +86,12 @@ public class P25Message extends Message
 	@Override
     public Alias getFromIDAlias()
     {
-	    return null;
+        if( mAliasList != null )
+        {
+            return mAliasList.getTalkgroupAlias( getFromID() );
+        }
+        
+        return null;
     }
 
 	@Override
@@ -98,6 +103,11 @@ public class P25Message extends Message
 	@Override
     public Alias getToIDAlias()
     {
+	    if( mAliasList != null )
+	    {
+	        return mAliasList.getTalkgroupAlias( getToID() );
+	    }
+	    
 	    return null;
     }
 

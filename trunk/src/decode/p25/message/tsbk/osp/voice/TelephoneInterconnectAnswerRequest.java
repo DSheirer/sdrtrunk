@@ -1,4 +1,4 @@
-package decode.p25.message.tsbk;
+package decode.p25.message.tsbk.osp.voice;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,6 +6,7 @@ import java.util.List;
 import alias.Alias;
 import alias.AliasList;
 import bits.BitSetBuffer;
+import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Digit;
 import decode.p25.reference.Opcode;
@@ -81,16 +82,5 @@ public class TelephoneInterconnectAnswerRequest extends TSBKMessage
     public String getToID()
     {
         return getTargetAddress();
-    }
-
-    @Override
-    public Alias getToIDAlias()
-    {
-        if( mAliasList != null )
-        {
-            return mAliasList.getTalkgroupAlias( getToID() );
-        }
-        
-        return null;
     }
 }
