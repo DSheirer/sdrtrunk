@@ -65,7 +65,7 @@ public class LJ1200CallEvent extends CallEvent
     @Override
     public long getFrequency()
     {
-        return 0;
+        return 173075000;
     }
 
     public static class Builder
@@ -94,7 +94,7 @@ public class LJ1200CallEvent extends CallEvent
         {
             mFromID = val;
             return this;
-        }
+}
 
         public Builder details( String details )
         {
@@ -128,12 +128,11 @@ public class LJ1200CallEvent extends CallEvent
     
     public static LJ1200CallEvent getLJ1200Event( LJ1200Message message )
     {
-        CallEventType type = CallEventType.UNKNOWN;
-        StringBuilder sbDetails = new StringBuilder();
-        sbDetails.append( "LJ-1200 " );
+        CallEventType type = CallEventType.REQUEST;
         
         return new LJ1200CallEvent.Builder( type )
-        						.details( sbDetails.toString() )
+        						.to( message.getAddress() )
+        						.details( message.getMessage() )
         						.build();
     }
 }

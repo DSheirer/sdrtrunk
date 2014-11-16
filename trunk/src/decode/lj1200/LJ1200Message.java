@@ -33,15 +33,16 @@ public class LJ1200Message extends Message
 {
 	public static int[] SYNC = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 };
 
-	public static int[] MESSAGE = { 16,17,18,19,20,21,22,23,
-		                            24,25,26,27,28,29,30,31,
-		                            32,33,34,35,36,37,38,39,
-		                            40,41,42,43,44,45,46,47,
-		                            48,49,50,51,52,53,54,55,
-		                            56,57,58,59,60,61,62,63 };
+	public static int[] VRC = { 16,17,18,19,20,21,22,23 };
+	
+	public static int[] LRC = { 24,25,26,27,28,29,30,31 };
 
-	public static int[] CRC = { 64,65,66,67,68,69,70,71,
-		                        72,73,74,75,76,77,78,79 };
+	public static int[] FUNCTION = { 32,33,34,35 };
+	
+	public static int[] ADDRESS = { 36,37,38,39,40,41,42,43,44,45,46,47,
+		48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63 };
+
+	public static int[] CRC = { 64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79 };
 	
 	private static SimpleDateFormat mSDF = new SimpleDateFormat( "yyyyMMdd HHmmss" );
 
@@ -90,16 +91,34 @@ public class LJ1200Message extends Message
     	return true;
     }
     
+    public int getVRC()
+    {
+    	return mMessage.getInt( VRC );
+    }
+    
+    public int getLRC()
+    {
+    	return mMessage.getInt( LRC );
+    }
+    
+    public int getFunction()
+    {
+    	return mMessage.getInt( FUNCTION );
+    }
+    
+    public String getAddress()
+    {
+    	return mMessage.getHex( ADDRESS, 7 );
+    }
+    
     @Override
     public String toString()
     {
     	StringBuilder sb = new StringBuilder();
 
-    	sb.append( mSDF.format( new Date( System.currentTimeMillis() ) ) );
-
-    	sb.append( " LJ1200 [" );
-    	sb.append( mMessage.toString() );
-    	sb.append( "]" );
+    	sb.append( "VRC: " + getVRC() );
+    	sb.append( " LRC: " + getLRC() );
+    	sb.append( " FUNCTION: " + getFunction() );
 
     	return sb.toString();
     }
@@ -149,7 +168,7 @@ public class LJ1200Message extends Message
 	@Override
     public String getProtocol()
     {
-	    return "LJ 1200";
+	    return "LJ-1200";
     }
 
 	@Override
@@ -173,7 +192,7 @@ public class LJ1200Message extends Message
 	@Override
 	public String getToID()
 	{
-	    return null;
+		return getAddress();
 	}
 
 	@Override

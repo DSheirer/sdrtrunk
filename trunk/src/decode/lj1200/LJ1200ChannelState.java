@@ -20,7 +20,6 @@ package decode.lj1200;
 import message.Message;
 import controller.state.AuxChannelState;
 import controller.state.ChannelState;
-import controller.state.ChannelState.State;
 
 public class LJ1200ChannelState extends AuxChannelState
 {
@@ -50,10 +49,9 @@ public class LJ1200ChannelState extends AuxChannelState
 		if( message instanceof LJ1200Message )
 		{
 			mActivitySummary.receive( message );
-
-			/* Set the state to CALL on the parent channel state, so that the
-			 * parent state timer can track turning off any updates we apply */
-			mParentChannelState.setState( State.CALL );
+			
+			mParentChannelState.receiveCallEvent( 
+					LJ1200CallEvent.getLJ1200Event( (LJ1200Message)message ) );
 		}
     }
 	
