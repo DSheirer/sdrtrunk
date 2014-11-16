@@ -46,6 +46,7 @@ import source.wave.WaveSource.PositionListener;
 import decode.Decoder;
 import decode.DecoderType;
 import decode.fleetsync2.Fleetsync2Decoder;
+import decode.lj1200.LJ1200Decoder;
 import decode.ltrnet.LTRNetDecoder;
 import decode.mdc1200.MDCDecoder;
 import decode.mpt1327.MPT1327Decoder;
@@ -143,6 +144,9 @@ public class WaveSourceFrame extends JInternalFrame implements PositionListener
 					{
 						case FLEETSYNC2:
 							decoder = new Fleetsync2Decoder( null );
+							break;
+						case LJ_1200:
+							decoder = new LJ1200Decoder( null );
 							break;
 						case LTR_NET:
 						    decoder = new LTRNetDecoder( SampleType.REAL, null, MessageDirection.OSW );

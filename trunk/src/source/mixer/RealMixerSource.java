@@ -29,6 +29,7 @@ import javax.sound.sampled.TargetDataLine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import dsp.agc.RealAutomaticGainControl;
 import sample.Listener;
 import sample.adapter.SampleAdapter;
 import sample.real.RealBuffer;
@@ -49,6 +50,7 @@ public class RealMixerSource extends RealSource
 	private String mDisplayName;
 	private int mBytesPerFrame = 0;
 	private SampleAdapter mSampleAdapter;
+	private RealAutomaticGainControl mAGC = new RealAutomaticGainControl();
 	
 	CopyOnWriteArrayList<Listener<RealBuffer>> mSampleListeners = 
 					new CopyOnWriteArrayList<Listener<RealBuffer>>();
@@ -118,10 +120,12 @@ public class RealMixerSource extends RealSource
 			 * buffer, otherwise send him a copy of the buffer */
 			if( it.hasNext() )
 			{
+//				next.receive( mAGC.process( samples.copyOf() ) );
 				next.receive( samples.copyOf() );
 			}
 			else
 			{
+//				next.receive( mAGC.process( samples ) );
 				next.receive( samples );
 			}
 		}
