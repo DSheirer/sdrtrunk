@@ -27,6 +27,7 @@ public enum DecoderType
 {
     AM( "AM", "AM", "images/am", 10000 ),
     FLEETSYNC2( "Fleetsync II", "Fsync2", "images/fm", 12500 ),
+    LJ_1200( "LJ1200 173.075", "LJ1200", "images/lj1200", 12500 ),
     LTR_STANDARD( "LTR-Standard", "LTR", "images/ltr_standard", 10000 ),
     LTR_NET( "LTR-Net", "LTR-Net", "images/ltr_net", 10000 ),
     MDC1200( "MDC1200", "MDC1200", "images/fm", 12500 ),
@@ -69,6 +70,7 @@ public enum DecoderType
     public static EnumSet<DecoderType> getInstrumentableDecoders()
     {
     	return EnumSet.of( DecoderType.FLEETSYNC2,
+    				 	   DecoderType.LJ_1200,
     	                   DecoderType.LTR_NET,
     					   DecoderType.MDC1200,
     					   DecoderType.MPT1327,
@@ -84,6 +86,7 @@ public enum DecoderType
     	ArrayList<DecoderType> decoders = new ArrayList<DecoderType>();
     	
     	decoders.add( DecoderType.FLEETSYNC2 );
+    	decoders.add( DecoderType.LJ_1200 );
     	decoders.add( DecoderType.MDC1200 );
     	
     	return decoders;

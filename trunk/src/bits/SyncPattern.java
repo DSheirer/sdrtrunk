@@ -38,6 +38,14 @@ public enum SyncPattern
 		true, true, true, false,            //1110 0xE
 		true, false, true, true             //1011 0xB
 	} ),
+	
+	LJ1200( new boolean[] 
+	{
+		true, false, true, false,
+		true, false, true, false,
+		true, true, true, true,
+		false, false, false, false
+	}),
 
 	/**
 	 * Note: we use a truncated portion of the NRZ-I encoded sync pattern.

@@ -43,6 +43,8 @@ import decode.am.AMChannelState;
 import decode.am.AMPanel;
 import decode.fleetsync2.FleetsyncChannelState;
 import decode.fleetsync2.FleetsyncPanel;
+import decode.lj1200.LJ1200ChannelState;
+import decode.lj1200.LJ1200Panel;
 import decode.ltrnet.LTRNetChannelState;
 import decode.ltrnet.LTRNetPanel;
 import decode.ltrstandard.LTRChannelState;
@@ -171,6 +173,13 @@ public class ChannelStateList extends JPanel implements ChannelEventListener
     									(MDCChannelState)aux );
     					
     					panel.addPanel( mdsPanel );
+    				}
+    				else if( aux instanceof LJ1200ChannelState )
+    				{
+    					LJ1200Panel ljPanel = new LJ1200Panel( mSettingsManager, 
+    							(LJ1200ChannelState)aux );
+    					
+    					panel.addPanel( ljPanel );
     				}
     			}
     		}

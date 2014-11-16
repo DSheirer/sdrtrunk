@@ -28,10 +28,11 @@ import decode.config.AuxDecodeConfiguration;
 import decode.config.DecodeConfigLTRNet;
 import decode.config.DecodeConfigLTRStandard;
 import decode.config.DecodeConfigMPT1327;
-import decode.config.DecodeConfigNBFM;
 import decode.config.DecodeConfiguration;
 import decode.fleetsync2.Fleetsync2Decoder;
 import decode.fleetsync2.FleetsyncChannelState;
+import decode.lj1200.LJ1200ChannelState;
+import decode.lj1200.LJ1200Decoder;
 import decode.ltrnet.LTRNetChannelState;
 import decode.ltrnet.LTRNetDecoder;
 import decode.ltrstandard.LTRChannelState;
@@ -121,6 +122,9 @@ public class DecoderFactory
 						retVal.addAuxiliaryDecoder( 
 								new MDCDecoder( aliasList ) );
 						break;
+					case LJ_1200:
+						retVal.addAuxiliaryDecoder( 
+								new LJ1200Decoder( aliasList ) );
 				}
 			}
 		}
@@ -184,10 +188,15 @@ public class DecoderFactory
 						retVal.addAuxChannelState( 
 								new FleetsyncChannelState( retVal ) );
 						break;
+					case LJ_1200:
+						retVal.addAuxChannelState( 
+								new LJ1200ChannelState( retVal ) );
+						break;
 					case MDC1200:
 						retVal.addAuxChannelState( 
 								new MDCChannelState( retVal ) );
 						break;
+						
 				}
 			}
 		}
