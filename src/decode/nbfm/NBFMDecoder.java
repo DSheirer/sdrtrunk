@@ -24,7 +24,7 @@ import decode.DecoderType;
 import dsp.filter.DCRemovalFilter2;
 import dsp.nbfm.FilteringNBFMDemodulator;
 
-public class NBFMConventionalDecoder extends Decoder
+public class NBFMDecoder extends Decoder
 {
 	/**
 	 * This value determines how quickly the DC remove filter responds to 
@@ -35,7 +35,7 @@ public class NBFMConventionalDecoder extends Decoder
 	private FilteringNBFMDemodulator mDemodulator;
 	private DCRemovalFilter2 mDCRemovalFilter;
 	
-	public NBFMConventionalDecoder( SampleType sampleType )
+	public NBFMDecoder( SampleType sampleType )
 	{
 		super( sampleType );
 		

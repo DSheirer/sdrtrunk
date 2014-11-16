@@ -80,7 +80,7 @@ public class LJ1200Decoder extends Decoder implements Instrumentable
         mDecimationFilter.setListener( mBandPassFilter );
 
         mFSKDecoder = new FSK2Decoder( DECIMATED_SAMPLE_RATE, 
-        					SYMBOL_RATE, Output.INVERTED );
+        					SYMBOL_RATE, Output.NORMAL );
         mBandPassFilter.setListener( mFSKDecoder );
 
         mMessageFramer = new MessageFramer( 

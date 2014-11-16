@@ -2,6 +2,7 @@ package dsp.agc;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import sample.real.RealBuffer;
 import sample.real.RealSampleListener;
 import sample.real.RealSampleProvider;
 import buffer.DoubleCircularBuffer;
@@ -145,7 +146,32 @@ public class RealAutomaticGainControl implements RealSampleListener,
 	}
 
 	@Override
-    public void receive( float currentSample )
+	public void receive( float currentSample )
+	{
+		float processed = process( currentSample );
+		
+		if( mListener != null )
+		{
+			mListener.receive( processed );
+		}
+	}
+	
+	/**
+	 * Applies AGC to a buffer of real (float) samples
+	 */
+	public RealBuffer process( RealBuffer buffer )
+	{
+		float[] samples = buffer.getSamples();
+
+		for( int x = 0; x < samples.length; x++ )
+		{
+			samples[ x ] = process( samples[ x ] );
+		}
+		
+		return new RealBuffer( samples );
+	}
+	
+    public float process( float currentSample )
     {
 		float delayedSample = mDelayBuffer.get( currentSample );
 
@@ -208,11 +234,8 @@ public class RealAutomaticGainControl implements RealSampleListener,
 		}
 
 		delayedSample = (float)( delayedSample * gain );
-		
-		if( mListener != null )
-		{
-			mListener.receive( delayedSample );
-		}
+
+		return delayedSample;
     }
 	
 	/**

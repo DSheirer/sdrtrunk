@@ -42,7 +42,7 @@ import decode.mdc1200.MDCDecoder;
 import decode.mpt1327.MPT1327ChannelState;
 import decode.mpt1327.MPT1327Decoder;
 import decode.nbfm.NBFMChannelState;
-import decode.nbfm.NBFMConventionalDecoder;
+import decode.nbfm.NBFMDecoder;
 import decode.p25.P25ChannelState;
 import decode.p25.P25Decoder;
 import decode.passport.PassportChannelState;
@@ -71,7 +71,7 @@ public class DecoderFactory
 		        retVal = new AMDecoder( sampleType );
 		        break;
 			case NBFM:
-				retVal = new NBFMConventionalDecoder( sampleType );
+				retVal = new NBFMDecoder( sampleType );
 				break;
 			case LTR_STANDARD:
 				DecodeConfigLTRStandard ltrStandardConfig = 
