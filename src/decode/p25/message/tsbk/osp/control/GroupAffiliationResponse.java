@@ -5,13 +5,12 @@ import bits.BitSetBuffer;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
+import decode.p25.reference.Response;
 
 public class GroupAffiliationResponse extends TSBKMessage
 {
-    public enum AffiliationStatus { ACCEPT, FAIL, DENY, REFUSED };
-
     public static final int LOCAL_GLOBAL_AFFILIATION_FLAG = 80;
-    public static final int[] GROUP_AFFILIATION_VALUE = { 86,87 };
+    public static final int[] AFFILIATION_RESPONSE = { 86,87 };
     public static final int[] ANNOUNCEMENT_GROUP_ADDRESS = { 88,89,90,91,
         92,93,94,95,96,97,98,99,100,101,102,103 };
     public static final int[] GROUP_ADDRESS = { 104,105,106,107,108,109,110,111,
@@ -38,7 +37,7 @@ public class GroupAffiliationResponse extends TSBKMessage
         
         sb.append( super.getMessage() );
 
-        sb.append( " STATUS:" + getStatus().name() );
+        sb.append( " AFFILIATION:" + getResponse().name() );
         sb.append( " ANNOUNCE GROUP:" + getAnnouncementGroupAddress() );
         sb.append( " GRP ADDR:" + getGroupAddress() );
         sb.append( " TGT ADDR: " + getTargetAddress() );
@@ -51,11 +50,11 @@ public class GroupAffiliationResponse extends TSBKMessage
         return mMessage.get( LOCAL_GLOBAL_AFFILIATION_FLAG) ? " GLOBAL" : " LOCAL";
     }
     
-    public AffiliationStatus getStatus()
+    public Response getResponse()
     {
-        int status = mMessage.getInt( GROUP_AFFILIATION_VALUE );
+    	int response = mMessage.getInt( AFFILIATION_RESPONSE );
         
-        return AffiliationStatus.values()[ status ];
+        return Response.fromValue( response );
     }
     
     public String getAnnouncementGroupAddress()
