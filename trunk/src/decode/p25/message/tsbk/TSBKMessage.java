@@ -13,6 +13,20 @@ public class TSBKMessage extends P25Message
 	public static final int ENCRYPTED_FLAG = 65;
 	public static final int[] OPCODE = { 66,67,68,69,70,71 };
 	public static final int[] VENDOR_ID = { 72,73,74,75,76,77,78,79 };
+	
+	public static final int[] BLOCK1 = { 64,65,66,67,68,69,70,71 };
+	public static final int[] BLOCK2 = { 72,73,74,75,76,77,78,79 };
+	public static final int[] BLOCK3 = { 80,81,82,83,84,85,86,87 };
+	public static final int[] BLOCK4 = { 88,89,90,91,92,93,94,95 };
+	public static final int[] BLOCK5 = { 96,97,98,99,100,101,102,103 };
+	public static final int[] BLOCK6 = { 104,105,106,107,108,109,110,111 };
+	public static final int[] BLOCK7 = { 112,113,114,115,116,117,118,119 };
+	public static final int[] BLOCK8 = { 120,121,122,123,124,125,126,127 };
+	public static final int[] BLOCK9 = { 128,129,130,131,132,133,134,135 };
+	public static final int[] BLOCK10 = { 136,137,138,139,140,141,142,143 };
+	public static final int[] BLOCK11 = { 144,145,146,147,148,149,150,151 };
+	public static final int[] BLOCK12 = { 152,153,154,155,156,157,158,159 };
+	
     public static final int[] CRC = { 144,145,146,147,148,149,150,151,152,153,
         154,155,156,157,158,159 };
 
@@ -45,27 +59,43 @@ public class TSBKMessage extends P25Message
     public String getMessage()
     {
 		StringBuilder sb = new StringBuilder();
+
+		Vendor vendor = getVendor();
 		
-		sb.append( "SYSTEM:" );
+		sb.append( " SYSTEM:" );
 		sb.append( getNAC() ); /* NAC is the system id for TSBK messages */
+		sb.append( " " );
+		sb.append( getDUID().name() );
 		sb.append( " VEND:" );
-		sb.append( getVendor().getLabel() );
+		sb.append( vendor.getLabel() );
 		
 		if( isEncrypted() )
 		{
 			sb.append( " ENCRYPTED" );
 		}
-		else
-		{
-			Opcode opcode = getOpcode();
-			
-			sb.append( " OPCODE:" );
-			sb.append( opcode.name() );
-			sb.append( " [" );
-			sb.append( mMessage.getHex( OPCODE, 2 ) );
-			sb.append( "]" );
-		}
+		
+		sb.append( " " + getMessageHex() );
 		
 	    return sb.toString();
     }
+	
+	public String getMessageHex()
+	{
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append( mMessage.getHex( BLOCK1, 2 ) + " " );
+		sb.append( mMessage.getHex( BLOCK2, 2 ) + " " );
+		sb.append( mMessage.getHex( BLOCK3, 2 ) + " " );
+		sb.append( mMessage.getHex( BLOCK4, 2 ) + " " );
+		sb.append( mMessage.getHex( BLOCK5, 2 ) + " " );
+		sb.append( mMessage.getHex( BLOCK6, 2 ) + " " );
+		sb.append( mMessage.getHex( BLOCK7, 2 ) + " " );
+		sb.append( mMessage.getHex( BLOCK8, 2 ) + " " );
+		sb.append( mMessage.getHex( BLOCK9, 2 ) + " " );
+		sb.append( mMessage.getHex( BLOCK10, 2 ) + " " );
+		sb.append( mMessage.getHex( BLOCK11, 2 ) + " " );
+		sb.append( mMessage.getHex( BLOCK12, 2 ) + " " );
+		
+		return sb.toString();
+	}
 }

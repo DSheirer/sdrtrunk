@@ -6,13 +6,10 @@ import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
 
-public class AdjacentStatusBroadcast extends TSBKMessage
+public class RFSSStatusBroadcast extends TSBKMessage
 {
     public static final int[] LOCATION_REGISTRATION_AREA = { 80,81,82,83,84,85,
         86,87 };
-    public static final int CONVENTIONAL_CHANNEL_FLAG = 88;
-    public static final int SITE_FAILURE_CONDITION_FLAG = 89;
-    public static final int VALID_FLAG = 90;
     public static final int ACTIVE_NETWORK_CONNECTION_FLAG = 91;
     public static final int[] SYSTEM_ID = { 92,93,94,95,96,97,98,99,100,101,
         102,103 };
@@ -23,7 +20,7 @@ public class AdjacentStatusBroadcast extends TSBKMessage
     public static final int[] SYSTEM_SERVICE_CLASS = { 136,137,138,139,140,141,
         142,143 };
     
-    public AdjacentStatusBroadcast( BitSetBuffer message, 
+    public RFSSStatusBroadcast( BitSetBuffer message, 
                                 DataUnitID duid,
                                 AliasList aliasList ) 
     {
@@ -33,7 +30,7 @@ public class AdjacentStatusBroadcast extends TSBKMessage
     @Override
     public String getEventType()
     {
-        return Opcode.ADJACENT_STATUS_BROADCAST.getDescription();
+        return Opcode.RFSS_STATUS_BROADCAST.getDescription();
     }
     
     public String getMessage()
@@ -52,21 +49,6 @@ public class AdjacentStatusBroadcast extends TSBKMessage
         
         sb.append( " CHAN:" + getChannel() );
         
-        if( isConventionalChannel() )
-        {
-            sb.append( " CONVENTIONAL" );
-        }
-        
-        if( isSiteFailureCondition() )
-        {
-            sb.append( " FAILURE-CONDITION" );
-        }
-        
-        if( isValidSiteInformation() )
-        {
-            sb.append( " VALID-INFO" );
-        }
-        
         if( hasActiveNetworkConnection() )
         {
             sb.append( " ACTIVE-NETWORK-CONN" );
@@ -80,21 +62,6 @@ public class AdjacentStatusBroadcast extends TSBKMessage
     public String getLocationRegistrationArea()
     {
         return mMessage.getHex( LOCATION_REGISTRATION_AREA, 2 );
-    }
-    
-    public boolean isConventionalChannel()
-    {
-        return mMessage.get( CONVENTIONAL_CHANNEL_FLAG );
-    }
-    
-    public boolean isSiteFailureCondition()
-    {
-        return mMessage.get( SITE_FAILURE_CONDITION_FLAG );
-    }
-    
-    public boolean isValidSiteInformation()
-    {
-        return mMessage.get( VALID_FLAG );
     }
     
     public boolean hasActiveNetworkConnection()
