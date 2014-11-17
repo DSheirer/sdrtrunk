@@ -41,10 +41,10 @@ public enum SyncPattern
 	
 	LJ1200( new boolean[] 
 	{
-		true, false, true, false,
-		true, false, true, false,
-		true, true, true, true,
-		false, false, false, false
+		false, true, false,true, 
+		false, true, false,true,
+		false, false, false, false,
+		true, true, true, true
 	}),
 
 	/**

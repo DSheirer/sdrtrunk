@@ -17,8 +17,6 @@
  ******************************************************************************/
 package eventlog;
 
-import gui.SDRTrunk;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
