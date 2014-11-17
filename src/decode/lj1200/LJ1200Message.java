@@ -19,7 +19,6 @@ package decode.lj1200;
 
 import java.text.SimpleDateFormat;
 import java.util.BitSet;
-import java.util.Date;
 
 import map.Plottable;
 import message.Message;
@@ -91,14 +90,14 @@ public class LJ1200Message extends Message
     	return true;
     }
     
-    public int getVRC()
+    public String getVRC()
     {
-    	return mMessage.getInt( VRC );
+    	return mMessage.getHex( VRC, 2 );
     }
     
-    public int getLRC()
+    public String getLRC()
     {
-    	return mMessage.getInt( LRC );
+    	return mMessage.getHex( LRC, 2 );
     }
     
     public int getFunction()
@@ -119,7 +118,7 @@ public class LJ1200Message extends Message
     	sb.append( "VRC: " + getVRC() );
     	sb.append( " LRC: " + getLRC() );
     	sb.append( " FUNCTION: " + getFunction() );
-    	sb.append( "ADDRESS:" + getAddress() );
+    	sb.append( " ADDRESS:" + getAddress() );
 
     	return sb.toString();
     }
