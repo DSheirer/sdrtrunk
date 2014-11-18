@@ -4,6 +4,7 @@ import alias.AliasList;
 import bits.BitSetBuffer;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.reference.DataUnitID;
+import decode.p25.reference.Encryption;
 import decode.p25.reference.Opcode;
 
 public class ProtectionParameterUpdate extends TSBKMessage
@@ -35,16 +36,16 @@ public class ProtectionParameterUpdate extends TSBKMessage
 
         sb.append( " TGT ADDR: " + getTargetAddress() );
         
-        sb.append( " ALGORITHM:" + getAlgorithmID() );
+        sb.append( " ENCRYPTION ALGORITHM:" + getAlgorithm().name() );
         
         sb.append( " KEY:" + getKeyID() );
         
         return sb.toString();
     }
     
-    public String getAlgorithmID()
+    public Encryption getAlgorithm()
     {
-        return mMessage.getHex( ALGORITHM_ID, 2 );
+        return Encryption.fromValue( mMessage.getInt( ALGORITHM_ID ) );
     }
     
     public String getKeyID()
