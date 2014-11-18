@@ -88,7 +88,7 @@ public class CRCFleetsync
 		0x08E9, // 000100011101001 Bit 44
 		0x707E, // 111000001111110 Bit 45
 		0x383F, // 011100000111111 Bit 46
-		0x6815,  // 110100000010101 Bit 47
+		0x6815, // 110100000010101 Bit 47
 		
 		//Single bit errors in the CRC Checksum
 		0x4000, //Bit 48
