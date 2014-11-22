@@ -35,7 +35,7 @@ public class RoamingAddressCommand extends TSBKMessage
     {
         StringBuilder sb = new StringBuilder();
         
-        sb.append( super.getMessage() );
+        sb.append( getMessageStub() );
         
         sb.append( getStackOperation().name() );
         sb.append( " WACN:" + getWACN() );

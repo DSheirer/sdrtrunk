@@ -97,27 +97,31 @@ public class P25Interleave
     
     public static void main( String[] args )
     {
+    	TrellisHalfRate halfrate = new TrellisHalfRate();
+    	
     	int start = 0;
     	int end = 196;
-    	
+    	String interleaved = "1000100100100011001000100010110010001000100010010000100010011100100101001000001000100010001011000110010001111011110010001000100010001000100010000011011100101011001000101000100010001000100010110101";
+
     	BitSetBuffer b = new BitSetBuffer( end );
     	
-    	for( int x = 0; x < end; x += 3 )
+    	for( int x = 0; x < end; x++ )
     	{
-    		if( x > 20 )
+    		if( interleaved.substring( x, x + 1 ).contentEquals( "1" ) )
     		{
-        		b.set( x );
+    			b.set( x );
     		}
     	}
-
-    	mLog.debug( "Origi:" + b.toString() );
-
-    	P25Interleave.interleave( b, start, end );
     	
-    	mLog.debug( "Inter:" + b.toString() );
-    	
+    	mLog.debug( "Interleaved:" + interleaved );
+    	mLog.debug( "     Buffer:" + b.toString() );
+
     	P25Interleave.deinterleave( b, start, end );
     		
-    	mLog.debug( "Donee:" + b.toString() );
+    	mLog.debug( "Deinterleav:" + b.toString() );
+
+    	halfrate.decode( b, start, end );
+    	
+    	mLog.debug( "Trellis Off:" + b.toString() );
     }
 }

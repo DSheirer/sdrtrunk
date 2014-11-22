@@ -26,7 +26,7 @@ public abstract class GroupChannelGrantExplicit extends ChannelGrant
     {
         StringBuilder sb = new StringBuilder();
         
-        sb.append( super.getMessage() );
+        sb.append( getMessageStub() );
         
         if( isEmergency() )
         {

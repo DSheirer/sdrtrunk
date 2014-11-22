@@ -33,7 +33,7 @@ public class UnitRegistrationResponse extends TSBKMessage
     {
         StringBuilder sb = new StringBuilder();
         
-        sb.append( super.getMessage() );
+        sb.append( getMessageStub() );
         
         sb.append( " REGISTRATION:" + getResponse().name() );
         sb.append( " SYSTEM:" + getSystemID() );

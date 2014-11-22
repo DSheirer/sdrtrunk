@@ -15,7 +15,7 @@ public class C4FMSlicer implements RealSampleListener
 {
 	private static final float THRESHOLD = 2.0f;
 
-	private Broadcaster<C4FMSymbol> mBroadcaster = new Broadcaster<C4FMSymbol>();
+	private Broadcaster<Dibit> mBroadcaster = new Broadcaster<Dibit>();
 	
 	/**
 	 * Primary method for receiving output from the C4FMSymbolFilter.  Slices
@@ -26,26 +26,26 @@ public class C4FMSlicer implements RealSampleListener
     {
 		if( sample > THRESHOLD )
 		{
-			dispatch( C4FMSymbol.SYMBOL_PLUS_3 );
+			dispatch( Dibit.D01_PLUS_3 );
 		}
 		else if( sample > 0 )
 		{
-			dispatch( C4FMSymbol.SYMBOL_PLUS_1 );
+			dispatch( Dibit.D00_PLUS_1 );
 		}
 		else if( sample > -THRESHOLD )
 		{
-			dispatch( C4FMSymbol.SYMBOL_MINUS_1 );
+			dispatch( Dibit.D10_MINUS_1 );
 		}
 		else
 		{
-			dispatch( C4FMSymbol.SYMBOL_MINUS_3 );
+			dispatch( Dibit.D11_MINUS_3 );
 		}
     }
 
 	/**
 	 * Dispatches the symbol decision to any registered listeners
 	 */
-	private void dispatch( C4FMSymbol symbol )
+	private void dispatch( Dibit symbol )
 	{
 		mBroadcaster.receive( symbol );
 	}
@@ -54,7 +54,7 @@ public class C4FMSlicer implements RealSampleListener
 	 * Registers the listener to receive the normal (non-inverted) C4FM symbol
 	 * stream.
 	 */
-    public void addListener( Listener<C4FMSymbol> listener )
+    public void addListener( Listener<Dibit> listener )
     {
 		mBroadcaster.addListener( listener );
     }
@@ -62,7 +62,7 @@ public class C4FMSlicer implements RealSampleListener
 	/**
 	 * Removes the listener
 	 */
-    public void removeListener( Listener<C4FMSymbol> listener )
+    public void removeListener( Listener<Dibit> listener )
     {
     	mBroadcaster.removeListener( listener );
     }

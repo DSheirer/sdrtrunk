@@ -60,24 +60,54 @@ public class TSBKMessage extends P25Message
     {
 		StringBuilder sb = new StringBuilder();
 
-		Vendor vendor = getVendor();
+		sb.append( getMessageStub() );
 		
-		sb.append( " SYSTEM:" );
-		sb.append( getNAC() ); /* NAC is the system id for TSBK messages */
-		sb.append( " " );
-		sb.append( getDUID().name() );
-		sb.append( " VEND:" );
-		sb.append( vendor.getLabel() );
-		
-		if( isEncrypted() )
-		{
-			sb.append( " ENCRYPTED" );
-		}
-		
-		sb.append( " " + getMessageHex() );
+		sb.append( " - " + getMessageHex() );
 		
 	    return sb.toString();
     }
+	
+	protected String getMessageStub()
+	{
+		StringBuilder sb = new StringBuilder();
+
+		Vendor vendor = getVendor();
+		
+		sb.append( "SYS:" );
+		sb.append( getNAC() ); /* NAC is the system id for TSBK messages */
+		sb.append( " " );
+		sb.append( getDUID().getLabel() );
+
+		if( vendor == Vendor.STANDARD )
+		{
+			if( isEncrypted() )
+			{
+				sb.append( " ENCRYPTED" );
+			}
+			else
+			{
+				sb.append( " " );
+				sb.append( getOpcode().getLabel() );
+			}
+		}
+		else
+		{
+			sb.append( " " );
+			sb.append( vendor.getLabel() );
+
+			if( isEncrypted() )
+			{
+				sb.append( " ENCRYPTED" );
+			}
+			else
+			{
+				sb.append( " OPCD:" );
+				sb.append( mMessage.getHex( OPCODE, 2 ) );
+			}
+		}
+		
+	    return sb.toString();
+	}
 	
 	public String getMessageHex()
 	{

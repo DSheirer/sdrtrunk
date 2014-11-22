@@ -26,8 +26,8 @@ public class IdentifierUpdate extends TSBKMessage
         137,138,139,140,141,142,143 };
     
     public IdentifierUpdate( BitSetBuffer message, 
-                                DataUnitID duid,
-                                AliasList aliasList ) 
+                             DataUnitID duid,
+                             AliasList aliasList ) 
     {
         super( message, duid, aliasList );
     }
@@ -35,14 +35,14 @@ public class IdentifierUpdate extends TSBKMessage
     @Override
     public String getEventType()
     {
-        return Opcode.IDENTIFIER_UPDATE.getDescription();
+    	return getOpcode().getDescription();
     }
     
     public String getMessage()
     {
         StringBuilder sb = new StringBuilder();
         
-        sb.append( super.getMessage() );
+        sb.append( getMessageStub() );
 
         sb.append( " CHAN:" + getIdentifier() );
 

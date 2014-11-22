@@ -2,10 +2,17 @@ package decode.p25;
 
 import java.util.ArrayList;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import bits.BitSetBuffer;
+import dsp.fsk.Dibit;
+import dsp.fsk.P25MessageFramer;
 
 public class TrellisHalfRate
 {
+	private final static Logger mLog = LoggerFactory.getLogger( TrellisHalfRate.class );
+
 	private ArrayList<ConstellationNode> mConstellationNodes = 
 				new ArrayList<ConstellationNode>();
 
@@ -56,38 +63,76 @@ public class TrellisHalfRate
 		
 		mConstellationNodes.clear();
 	}
+	
+	private String constellationsToString( String label )
+	{
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append( label );
+
+		for( ConstellationNode node: mConstellationNodes )
+		{
+			sb.append( "  " + node.getConstellation().name() );
+		}
+		
+		return sb.toString();
+	}
+
+	private String inputsToString()
+	{
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append( "  INPUTS: " );
+
+		for( ConstellationNode node: mConstellationNodes )
+		{
+			sb.append( "  " );
+			sb.append( ( node.getConstellation().getInput().getBit1() ? "1" : "0" ) );
+			sb.append( ( node.getConstellation().getInput().getBit2() ? "1" : "0" ) );
+		}
+		
+		return sb.toString();
+	}
 
 	public void decode( BitSetBuffer message, int start, int end )
 	{
-		/* load each of the nodes with deinterleaved constellations */
+		/* load each of the nodes with de-interleaved constellations */
 		for( int index = 0; index < 49; index++ )
 		{
-			Constellation c = getConstellation( message, index * 4 );
-			
+			Constellation c = getConstellation( message, start + index * 4 );
+
 			mConstellationNodes.get( index ).setConstellation( c );
 		}
 
+//		mLog.debug( constellationsToString( "  LOADED: ") );
+//		
 		/* test to see if constellations are correct - otherwise correct them */
 		ConstellationNode firstNode = mConstellationNodes.get( 0 );
 
-		if( !firstNode.startsWith( Dibit.D0 ) || !firstNode.isCorrect() )
+		if( !firstNode.hasStateDibit( Dibit.D00_PLUS_1 ) || !firstNode.isCorrect() )
 		{
-			firstNode.correctTo( Dibit.D0 );
+			firstNode.correctTo( Dibit.D00_PLUS_1 );
 		}
 
+//		mLog.debug( constellationsToString( "CORRECTD: " ) );
+//		
+//		mLog.debug( inputsToString() );
+//
 		/* clear constellations from original message */
 		message.clear( start, end );
 
-		/* replace with decoded values from the nodes */
+		/* replace with decoded values from the constellation nodes */
 		for( int index = 0; index < 49; index++ )
 		{
 			ConstellationNode node = mConstellationNodes.get( index );
 			
-			if( node.firstBit() )
+			Dibit input = node.getInputDibit();
+			
+			if( input.getBit1() )
 			{
 				message.set( start + ( index * 2 ) );
 			}
-			if( node.secondBit() )
+			if( input.getBit2() )
 			{
 				message.set( start + ( index * 2 ) + 1 );
 			}
@@ -96,17 +141,17 @@ public class TrellisHalfRate
 	
 	private Constellation getConstellation( BitSetBuffer message, int index )
 	{
-		int constellation = 0;
+		int transmittedValue = 0;
 		
 		for( int x = 0; x < 4; x++ )
 		{
 			if( message.get( index + x ) )
 			{
-				constellation += ( 1 << ( 3 - x ) );
+				transmittedValue += ( 1 << ( 3 - x ) );
 			}
 		}
 		
-		return Constellation.fromValue( constellation );
+		return Constellation.fromTransmittedValue( transmittedValue );
 	}
 	
 	public class ConstellationNode
@@ -124,19 +169,19 @@ public class TrellisHalfRate
 			mConnectedNode = null;
 		}
 		
-		public boolean startsWith( Dibit dibit )
+		public Constellation getConstellation()
 		{
-			return mConstellation.getLeft() == dibit;
+			return mConstellation;
 		}
 		
-		public boolean firstBit()
+		public Dibit getInputDibit()
 		{
-			return mConstellation.getRight().firstBit();
+			return mConstellation.getInput();
 		}
 		
-		public boolean secondBit()
+		public boolean hasStateDibit( Dibit dibit )
 		{
-			return mConstellation.getRight().secondBit();
+			return mConstellation.getState() == dibit;
 		}
 		
 		/**
@@ -147,50 +192,52 @@ public class TrellisHalfRate
 		 * corrective sequence by invoking this method with Dibit.D0 on the
 		 * first node.
 		 * 
-		 * @param dibit to use for the left side.
+		 * @param stateDibit to use for the left side.
 		 */
-		public void correctTo( Dibit dibit )
+		public void correctTo( Dibit stateDibit )
 		{
-			if( mCorrect && mConstellation.getLeft() == dibit )
+			if( mCorrect && mConstellation.getState() == stateDibit )
 			{
 				return;
 			}
 			
 			if( isCurrentConnectionCorrect() )
 			{
-				mConstellation = Constellation.
-						fromDibits( dibit, mConstellation.getRight() );
+				mConstellation = Constellation.fromStateAndInputDibits( stateDibit, 
+						mConstellation.getInput() );
 
 				mCorrect = true;
 				
 				if( mConnectedNode != null )
 				{
-					mConnectedNode.correctTo( mConstellation.getRight() );
+					/* the next node's state was this node's input */
+					mConnectedNode.correctTo( mConstellation.getInput() );
 				}
 			}
 			else
 			{
-				Constellation cheapest = mConstellation;
+				Constellation cheapestConstellation = mConstellation;
 				
-				int cost = 100; //arbitrary
+				int cheapestCost = 100; //arbitrary
 				
-				for( Dibit d: Dibit.values() )
+				for( Dibit testInput: Dibit.values() )
 				{
-					Constellation test = Constellation.fromDibits( dibit, d );
+					Constellation testConstellation = Constellation
+							.fromStateAndInputDibits( stateDibit, testInput );
 					
-					int testCost = mConstellation.costTo( test ) + 
-								   mConnectedNode.costTo( d );
+					int testCost = mConstellation.costTo( testConstellation ) + 
+								   mConnectedNode.costTo( testInput );
 
-					if( testCost < cost )
+					if( testCost < cheapestCost )
 					{
-						cost = testCost;
-						cheapest = test;
+						cheapestCost = testCost;
+						cheapestConstellation = testConstellation;
 					}
 				}
 
-				mConstellation = cheapest;
+				mConstellation = cheapestConstellation;
 				
-				mConnectedNode.correctTo( mConstellation.getRight() );
+				mConnectedNode.correctTo( mConstellation.getInput() );
 				
 				mCorrect = true;
 			}
@@ -198,18 +245,18 @@ public class TrellisHalfRate
 
 		/**
 		 * Calculates the cost (hamming distance) of using the argument as the
-		 * left side dibit for the current node, and recursively finding the
-		 * cheapest corresponding right dibit.
+		 * state dibit for the current node, and recursively finding the
+		 * cheapest corresponding input dibit.
 		 * 
-		 * @param leftTest
+		 * @param stateTest
 		 * @return
 		 */
-		public int costTo( Dibit leftTest )
+		public int costTo( Dibit stateTest )
 		{
 			if( isCurrentConnectionCorrect() )
 			{
-				Constellation c = Constellation.
-						fromDibits( leftTest, mConstellation.getRight() );
+				Constellation c = Constellation.fromStateAndInputDibits( 
+						stateTest, mConstellation.getInput() );
 				
 				return mConstellation.costTo( c );
 			}
@@ -217,12 +264,13 @@ public class TrellisHalfRate
 			{
 				int cheapestCost = 100; //arbitrary
 				
-				for( Dibit d: Dibit.values() )
+				for( Dibit inputTest: Dibit.values() )
 				{
-					Constellation c = Constellation.fromDibits( leftTest, d );
+					Constellation constellationTest = 
+						Constellation.fromStateAndInputDibits( stateTest, inputTest );
 					
-					int cost = mConnectedNode.costTo( d ) + 
-							   mConstellation.costTo( c );
+					int cost = mConnectedNode.costTo( inputTest ) + 
+							   mConstellation.costTo( constellationTest );
 					
 					if( cost < cheapestCost )
 					{
@@ -235,12 +283,12 @@ public class TrellisHalfRate
 		}
 
 		/**
-		 * Indicates if the immediate connection is correct
+		 * Indicates if the immediate connection to the right is correct
 		 */
 		public boolean isCurrentConnectionCorrect()
 		{
 			return ( mConnectedNode == null || 
-					 mConstellation.getRight() == mConnectedNode.getLeft() );
+					 mConstellation.getInput() == mConnectedNode.getStateDibit() );
 		}
 		
 		/**
@@ -267,15 +315,15 @@ public class TrellisHalfRate
 			else
 			{
 				mCorrect = mConnectedNode.isCorrect() &&
-					mConstellation.getRight() == mConnectedNode.getLeft();
+					mConstellation.getInput() == mConnectedNode.getStateDibit();
 			}
 
 			return mCorrect;
 		}
 		
-		public Dibit getLeft()
+		public Dibit getStateDibit()
 		{
-			return mConstellation.getLeft();
+			return mConstellation.getState();
 		}
 		
 		public void setConstellation( Constellation constellation )
@@ -292,57 +340,143 @@ public class TrellisHalfRate
 	
 	public enum Constellation
 	{
-		C0( Dibit.D1, Dibit.D1, 0 ),
-		C1( Dibit.D0, Dibit.D2, 1 ),
-		C2( Dibit.D0, Dibit.D0, 2 ),
-		C3( Dibit.D1, Dibit.D3, 3 ),
-		C4( Dibit.D2, Dibit.D3, 4 ),
-		C5( Dibit.D3, Dibit.D0, 5 ),
-		C6( Dibit.D3, Dibit.D2, 6 ),
-		C7( Dibit.D2, Dibit.D1, 7 ),
-		C8( Dibit.D3, Dibit.D3, 8 ),
-		C9( Dibit.D2, Dibit.D0, 9 ),
-		CA( Dibit.D2, Dibit.D2, 10 ),
-		CB( Dibit.D3, Dibit.D1, 11 ),
-		CC( Dibit.D0, Dibit.D1, 12 ),
-		CD( Dibit.D1, Dibit.D2, 13 ),
-		CE( Dibit.D1, Dibit.D0, 14 ),
-		CF( Dibit.D0, Dibit.D3, 15 );
+		/*  State (previous),  Input (next),      Transmit 1,        Transmit 2   */
+		CB( Dibit.D01_PLUS_3,  Dibit.D01_PLUS_3,  Dibit.D00_PLUS_1,  Dibit.D00_PLUS_1,   0 ),
+		CC( Dibit.D00_PLUS_1,  Dibit.D10_MINUS_1, Dibit.D00_PLUS_1,  Dibit.D01_PLUS_3,   1 ),
+		C0( Dibit.D00_PLUS_1,  Dibit.D00_PLUS_1,  Dibit.D00_PLUS_1,  Dibit.D10_MINUS_1,  2 ),
+		C7( Dibit.D01_PLUS_3,  Dibit.D11_MINUS_3, Dibit.D00_PLUS_1,  Dibit.D11_MINUS_3,  3 ),
+		CE( Dibit.D10_MINUS_1, Dibit.D11_MINUS_3, Dibit.D01_PLUS_3,  Dibit.D00_PLUS_1,   4 ),
+		C9( Dibit.D11_MINUS_3, Dibit.D00_PLUS_1,  Dibit.D01_PLUS_3,  Dibit.D01_PLUS_3,   5 ),
+		C5( Dibit.D11_MINUS_3, Dibit.D10_MINUS_1, Dibit.D01_PLUS_3,  Dibit.D10_MINUS_1,  6 ),
+		C2( Dibit.D10_MINUS_1, Dibit.D01_PLUS_3,  Dibit.D01_PLUS_3,  Dibit.D11_MINUS_3,  7 ),
+		CA( Dibit.D11_MINUS_3, Dibit.D11_MINUS_3, Dibit.D10_MINUS_1, Dibit.D00_PLUS_1,   8 ),
+		CD( Dibit.D10_MINUS_1, Dibit.D00_PLUS_1,  Dibit.D10_MINUS_1, Dibit.D01_PLUS_3,   9 ),
+		C1( Dibit.D10_MINUS_1, Dibit.D10_MINUS_1, Dibit.D10_MINUS_1, Dibit.D10_MINUS_1, 10 ),
+		C6( Dibit.D11_MINUS_3, Dibit.D01_PLUS_3,  Dibit.D10_MINUS_1, Dibit.D11_MINUS_3, 11 ),
+		CF( Dibit.D00_PLUS_1,  Dibit.D01_PLUS_3,  Dibit.D11_MINUS_3, Dibit.D00_PLUS_1,  12 ),
+		C8( Dibit.D01_PLUS_3,  Dibit.D10_MINUS_1, Dibit.D11_MINUS_3, Dibit.D01_PLUS_3,  13 ),
+		C4( Dibit.D01_PLUS_3,  Dibit.D00_PLUS_1,  Dibit.D11_MINUS_3, Dibit.D10_MINUS_1, 14 ),
+		C3( Dibit.D00_PLUS_1,  Dibit.D11_MINUS_3, Dibit.D11_MINUS_3, Dibit.D11_MINUS_3, 15 );
 		
-		private Dibit mLeftDibit;
-		private Dibit mRightDibit;
-		private int mValue;
+		private Dibit mStateDibit;
+		private Dibit mInputDibit;
+		private Dibit mTransmitDibit1;
+		private Dibit mTransmitDibit2;
+		private int mTransmittedValue;
 		
-		private Constellation( Dibit leftDibit, Dibit rightDibit, int value )
+		private Constellation( Dibit stateDibit, 
+							   Dibit inputDibit, 
+							   Dibit transmitDibit1,
+							   Dibit transmitDibit2,
+							   int transmittedValue )
 		{
-			mLeftDibit = leftDibit;
-			mRightDibit = rightDibit;
-			mValue = value;
+			mStateDibit = stateDibit;
+			mInputDibit = inputDibit;
+			mTransmitDibit1 = transmitDibit1;
+			mTransmitDibit2 = transmitDibit2;
+			mTransmittedValue = transmittedValue;
 		}
 		
-		public Dibit getLeft()
+		public Dibit getState()
 		{
-			return mLeftDibit;
+			return mStateDibit;
 		}
 		
-		public Dibit getRight()
+		public Dibit getInput()
 		{
-			return mRightDibit;
+			return mInputDibit;
 		}
 		
-		public int getValue()
+		public Dibit getTransmitDibit1()
 		{
-			return mValue;
+			return mTransmitDibit1;
 		}
 		
-		public static Constellation fromValue( int value )
+		public Dibit getTransmitDibit2()
+		{
+			return mTransmitDibit2;
+		}
+		
+		public int getTransmittedValue()
+		{
+			return mTransmittedValue;
+		}
+		
+		public static Constellation fromTransmittedValue( int value )
 		{
 			if( 0 <= value && value <= 15 )
 			{
-				return Constellation.values()[ value ];
+				return values()[ value ];
 			}
 			
 			return null;
+		}
+
+		public static Constellation fromTransmittedDibits( Dibit left, Dibit right )
+		{
+			return fromTransmittedValue( left.getHighValue() + right.getLowValue() );
+		}
+
+		public static Constellation fromStateAndInputDibits( Dibit state, Dibit input )
+		{
+			switch( state )
+			{
+				case D00_PLUS_1:
+					switch( input )
+					{
+						case D00_PLUS_1:
+							return C0;
+						case D01_PLUS_3:
+							return CF;
+						case D10_MINUS_1:
+							return CC;
+						case D11_MINUS_3:
+							return C3;
+					}
+					break;
+				case D01_PLUS_3:
+					switch( input )
+					{
+						case D00_PLUS_1:
+							return C4;
+						case D01_PLUS_3:
+							return CB;
+						case D10_MINUS_1:
+							return C8;
+						case D11_MINUS_3:
+							return C7;
+					}
+					break;
+				case D10_MINUS_1:
+					switch( input )
+					{
+						case D00_PLUS_1:
+							return CD;
+						case D01_PLUS_3:
+							return C2;
+						case D10_MINUS_1:
+							return C1;
+						case D11_MINUS_3:
+							return CE;
+					}
+					break;
+				case D11_MINUS_3:
+					switch( input )
+					{
+						case D00_PLUS_1:
+							return C9;
+						case D01_PLUS_3:
+							return C6;
+						case D10_MINUS_1:
+							return C5;
+						case D11_MINUS_3:
+							return CA;
+					}
+					break;
+			}
+
+			/* Should never get to here */
+			return C0;
 		}
 
 		/**
@@ -351,98 +485,9 @@ public class TrellisHalfRate
 		 */
 		public int costTo( Constellation other )
 		{
-			return CONSTELLATION_COSTS[ getValue() ][ other.getValue() ];
+			return CONSTELLATION_COSTS[ getTransmittedValue() ][ other.getTransmittedValue() ];
 		}
 		
-		public static Constellation fromDibits( Dibit left, Dibit right )
-		{
-			switch( left )
-			{
-				case D0:
-					switch( right )
-					{
-						case D0:
-							return C2;
-						case D1:
-							return CC;
-						case D2:
-							return C1;
-						case D3:
-							return CF;
-						default:
-					}
-				case D1:
-					switch( right )
-					{
-						case D0:
-							return CE;
-						case D1:
-							return C0;
-						case D2:
-							return CD;
-						case D3:
-							return C3;
-						default:
-					}
-				case D2:
-					switch( right )
-					{
-						case D0:
-							return C9;
-						case D1:
-							return C7;
-						case D2:
-							return CA;
-						case D3:
-							return C4;
-						default:
-					}
-				case D3:
-					switch( right )
-					{
-						case D0:
-							return C5;
-						case D1:
-							return CB;
-						case D2:
-							return C6;
-						case D3:
-							return C8;
-						default:
-					}
-				default:
-			}
-
-			/* we should never get to here */
-			return C0;
-		}
-	}
-	
-	public enum Dibit
-	{
-		D0( false, false ), 
-		D1( false, true ), 
-		D2( true, false ), 
-		D3( true, true );
-		
-		private boolean mFirstBit;
-		private boolean mSecondBit;
-
-		private Dibit( boolean firstBit, boolean secondBit )
-		{
-			mFirstBit = firstBit;
-			mSecondBit = secondBit;
-		}
-		
-		public boolean firstBit()
-		{
-			return mFirstBit;
-		}
-		
-		public boolean secondBit()
-		{
-			return mSecondBit;
-		}
 	}
 	
 	/**
@@ -450,21 +495,21 @@ public class TrellisHalfRate
 	 */
 	public static void main( String[] args )
 	{
-		String original = "00100110000001111000101111110011111000011110100111100001000100100010001011000000110101111110001000100010001000100010001000100010001000100010001000100010001000100010001000100010001000100010001000100010001000100010001000100010111110111110110000110101001011110101";
+		String original = "00100110000001111000101111110011111000011110100111100001000100100010110000001101100100100010001000100010001000101100111000100010111110001000100010001000100010001000100010001000100010001000100010001000100010001000100010001000101100001110000101000110011100001110";
 
-		BitSetBuffer bufferOriginal = new BitSetBuffer( 260 );
+		BitSetBuffer buffer = new BitSetBuffer( original.length() );
 		
 		try
 		{
-			for( int x = 0; x < 260; x++ )
+			for( int x = 0; x < original.length(); x++ )
 			{
 				if( original.substring( x, x + 1 ).contentEquals( "0" ) )
 				{
-					bufferOriginal.add( false );
+					buffer.add( false );
 				}
 				else
 				{
-					bufferOriginal.add( true );
+					buffer.add( true );
 				}
 			}
 		}
@@ -473,12 +518,13 @@ public class TrellisHalfRate
 			e.printStackTrace();
 		}
 
-		System.out.println( "    ORIGINAL: " + original );
+		mLog.debug( "ORIGINAL: " + original );
+		mLog.debug( "  BUFFER: " + buffer.toString() );
 		
 		TrellisHalfRate t = new TrellisHalfRate();
 		
-		t.decode( bufferOriginal, 64, 260 );
-		System.out.println( "ORIG DECODED: " + bufferOriginal.toString() );
-
+		t.decode( buffer, 64, original.length() );
+		mLog.debug( " DECODED: " + buffer.toString() );
+		mLog.debug( "Finished!" );
 	}
 }

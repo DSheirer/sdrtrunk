@@ -36,7 +36,7 @@ public class SecondaryControlChannelBroadcast extends TSBKMessage
     {
         StringBuilder sb = new StringBuilder();
         
-        sb.append( super.getMessage() );
+        sb.append( getMessageStub() );
         
         sb.append( " RFSS:" + getRFSS() );
         

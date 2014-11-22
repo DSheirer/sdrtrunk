@@ -32,7 +32,7 @@ public class MessageUpdate extends TSBKMessage
     {
         StringBuilder sb = new StringBuilder();
         
-        sb.append( super.getMessage() );
+        sb.append( getMessageStub() );
 
         sb.append( " MSG:" + getShortDataMessage() );
         sb.append( " SRC ADDR: " + getSourceAddress() );

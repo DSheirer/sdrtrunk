@@ -30,7 +30,7 @@ public class UnitRegistrationCommand extends TSBKMessage
     {
         StringBuilder sb = new StringBuilder();
         
-        sb.append( super.getMessage() );
+        sb.append( getMessageStub() );
 
         sb.append( " SRC ADDR: " + getSourceAddress() );
         sb.append( " TGT ADDR: " + getTargetAddress() );

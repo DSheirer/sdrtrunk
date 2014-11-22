@@ -31,7 +31,7 @@ public class ExtendedFunctionCommand extends TSBKMessage
     {
         StringBuilder sb = new StringBuilder();
         
-        sb.append( super.getMessage() );
+        sb.append( getMessageStub() );
 
         sb.append( " EXTENDED FUNCTION:" + getExtendedFunction() );
 

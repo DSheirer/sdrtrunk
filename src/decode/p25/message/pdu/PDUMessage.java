@@ -117,7 +117,7 @@ public class PDUMessage extends P25Message
 		sb.append( "NAC:" );
 		sb.append( getNAC() );
 		sb.append( " " );
-		sb.append( getDUID().name() );
+		sb.append( getDUID().getLabel() );
 		sb.append( " " );
 		sb.append( getConfirmation() );
 		sb.append( " " );

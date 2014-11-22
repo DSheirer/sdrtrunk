@@ -47,7 +47,7 @@ public class TSBKMessageFactory
 	                                      DataUnitID duid,
 	                                      AliasList aliasList )
 	{
-		int opcode = message.getInt( TSBKMessage.OPCODE );
+		Opcode opcode = Opcode.fromValue( message.getInt( TSBKMessage.OPCODE ) );
 
 		Vendor vendor = Vendor.fromValue( 
 				message.getInt( TSBKMessage.VENDOR_ID ) );
@@ -55,7 +55,7 @@ public class TSBKMessageFactory
 		switch( vendor )
 		{
 			case STANDARD:
-				switch( Opcode.fromValue( opcode ) )
+				switch( opcode )
 				{
                     case ACKNOWLEDGE_RESPONSE_FNE:
                         return new AcknowledgeResponse( message, duid, 
@@ -98,6 +98,7 @@ public class TSBKMessageFactory
 				        return new GroupVoiceChannelGrantUpdateExplicit( message, 
 				                duid, aliasList );
                     case IDENTIFIER_UPDATE:
+                    case IDENTIFIER_UPDATE_VHF_UHF_BANDS:
                         return new IdentifierUpdate( message, duid, aliasList );
                     case INDIVIDUAL_DATA_CHANNEL_GRANT:
                         return new IndividualDataChannelGrant( message, duid, 

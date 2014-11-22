@@ -20,20 +20,17 @@ import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.message.tsbk.TSBKMessageFactory;
 import decode.p25.reference.DataUnitID;
 
-public class P25MessageFramer implements Listener<C4FMSymbol>
+public class P25MessageFramer implements Listener<Dibit>
 {
 	private final static Logger mLog = 
 							LoggerFactory.getLogger( P25MessageFramer.class );
 	
-	private static final int[] STATUS_BITS = 
-		new int[] { 22,92,162,232,302,372,442,512,582,652,722,792,862,932 };
-
 	private ArrayList<P25MessageAssembler> mAssemblers =
 			new ArrayList<P25MessageAssembler>();
 
 	public static final int TSBK_BEGIN = 64;
 	public static final int TSBK_END = 260;
-	public static final int TSBK_DECODED_END = 162;
+	public static final int TSBK_DECODED_END = 160;
 	
 	private Listener<Message> mListener;
 	private AliasList mAliasList;
@@ -82,18 +79,16 @@ public class P25MessageFramer implements Listener<C4FMSymbol>
 	}
 	
 	@Override
-    public void receive( C4FMSymbol symbol )
+    public void receive( Dibit symbol )
     {
-		C4FMSymbol correctedSymbol = symbol;
-		
-    	mMatcher.receive( correctedSymbol.getBit1() );
-    	mMatcher.receive( correctedSymbol.getBit2() );
+    	mMatcher.receive( symbol.getBit1() );
+    	mMatcher.receive( symbol.getBit2() );
 
     	for( P25MessageAssembler assembler: mAssemblers )
     	{
     		if( assembler.isActive() )
     		{
-        		assembler.receive( correctedSymbol );
+        		assembler.receive( symbol );
         		
         		if( assembler.complete() )
         		{
@@ -120,7 +115,7 @@ public class P25MessageFramer implements Listener<C4FMSymbol>
         	
         	if( !found )
         	{
-            	mLog.debug( "no inactive C4FM message assemblers available" );
+            	mLog.debug( "no inactive P25 message assemblers available" );
         	}
     	}
     }
@@ -137,7 +132,9 @@ public class P25MessageFramer implements Listener<C4FMSymbol>
 	
     private class P25MessageAssembler
     {
-    	private int mStatusIndicatorPointer = 0;
+    	/* Starting position of the status symbol counter is 24 symbols to 
+    	 * account for the 48-bit sync pattern */
+    	private int mStatusSymbolPointer = 24;
     	private BitSetBuffer mMessage;
         private int mMessageLength;
         private boolean mComplete = false;
@@ -151,21 +148,22 @@ public class P25MessageFramer implements Listener<C4FMSymbol>
         	reset();
         }
         
-        public void receive( C4FMSymbol symbol )
+        public void receive( Dibit dibit )
         {
         	if( mActive )
         	{
-        		/* Throw away status bits that are injected every 70 bits */
-        		if( mMessage.pointer() == STATUS_BITS[ mStatusIndicatorPointer ] )
+        		if( mStatusSymbolPointer == 35 )
         		{
-        			mStatusIndicatorPointer++;
+        			mStatusSymbolPointer = 0;
         		}
         		else
         		{
+        			mStatusSymbolPointer++;
+
                     try
                     {
-                        mMessage.add( symbol.getBit1() );
-                        mMessage.add( symbol.getBit2() );
+                        mMessage.add( dibit.getBit1() );
+                        mMessage.add( dibit.getBit2() );
                     }
                     catch( BitSetFullException e )
                     {
@@ -186,7 +184,7 @@ public class P25MessageFramer implements Listener<C4FMSymbol>
         	mDUID = DataUnitID.NID;
         	mMessage.setSize( mDUID.getMessageLength() );
         	mMessage.clear();
-        	mStatusIndicatorPointer = 0;
+        	mStatusSymbolPointer = 24;
             mComplete = false;
             mActive = false;
         }
@@ -268,13 +266,20 @@ public class P25MessageFramer implements Listener<C4FMSymbol>
                     dispatch( new P25Message( mMessage.copy(), mDUID, mAliasList ) );
 					break;
 				case TSBK1:
+//					mLog.debug( "NEW: " + mMessage.toString() );
+
 					/* Remove interleaving */
 					P25Interleave.deinterleave( mMessage, TSBK_BEGIN, TSBK_END );
+
+//					mLog.debug( "DEI: " + mMessage.toString() );
 	
 					/* Remove trellis encoding */
 					mHalfRate.decode( mMessage, TSBK_BEGIN, TSBK_END );
 
+//					mLog.debug( "DEC: " + mMessage.toString() );
+
 					BitSetBuffer tsbkBuffer1 = mMessage.copy();
+					tsbkBuffer1.setSize( TSBK_DECODED_END );
 					
                     TSBKMessage tsbkMessage1 = TSBKMessageFactory.getMessage( 
                             tsbkBuffer1, DataUnitID.TSBK1, mAliasList ); 
@@ -299,6 +304,7 @@ public class P25MessageFramer implements Listener<C4FMSymbol>
 					mHalfRate.decode( mMessage, TSBK_BEGIN, TSBK_END );
 
 					BitSetBuffer tsbkBuffer2 = mMessage.copy();
+					tsbkBuffer2.setSize( TSBK_DECODED_END );
 					
                     TSBKMessage tsbkMessage2 = TSBKMessageFactory.getMessage( 
                             tsbkBuffer2, DataUnitID.TSBK2, mAliasList ); 
@@ -324,6 +330,7 @@ public class P25MessageFramer implements Listener<C4FMSymbol>
 					mHalfRate.decode( mMessage, TSBK_BEGIN, TSBK_END );
 
                     BitSetBuffer tsbkBuffer3 = mMessage.copy();
+					tsbkBuffer3.setSize( TSBK_DECODED_END );
                     
                     TSBKMessage tsbkMessage3 = TSBKMessageFactory.getMessage( 
                             tsbkBuffer3, DataUnitID.TSBK3, mAliasList ); 

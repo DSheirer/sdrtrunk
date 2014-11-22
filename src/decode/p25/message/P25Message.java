@@ -54,7 +54,7 @@ public class P25Message extends Message
 		sb.append( "NAC:" );
 		sb.append( getNAC() );
 		sb.append( " " );
-		sb.append( getDUID().name() );
+		sb.append( getDUID().getLabel() );
 		
 	    return sb.toString();
     }
@@ -74,7 +74,7 @@ public class P25Message extends Message
 	@Override
     public String getEventType()
     {
-	    return mDUID.name();
+	    return "P25 " + mDUID.name();
     }
 
 	@Override
