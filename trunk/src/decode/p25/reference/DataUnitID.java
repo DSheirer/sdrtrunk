@@ -6,31 +6,34 @@ package decode.p25.reference;
  */
 public enum DataUnitID
 {
-	NID  ( -1,   64, "Network and Data Unit ID", false ),
-	HDU  (  0,  722, "Header Data Unit", false ),
-	TDU  (  3,   64, "Simple Terminator Data Unit", false ),
-	LDU1 (  5, 1630, "Logical Link Data Unit 1", true ),
-	TSBK1(  7,  260, "Trunking Signaling Block", false ), //Single Block
-	TSBK2(  7,  260, "Trunking Signaling Block", false ), //Single Block
-	TSBK3(  7,  260, "Trunking Signaling Block", false ), //Single Block
-	LDU2 ( 10, 1632, "Logical Link Data Unit 2", true ),
-	PDU1 ( 12,  456, "Packet Data Unit", false ),
-	PDU2 ( 12,  652, "Packet Data Unit", false ),
-	PDU3 ( 12,  848, "Packet Data Unit", false ),
-	TDULC( 15,  372, "Terminator Data Unit With Link Control", false ),
-	UNKN ( -1,    0, "Unknown", false );
+	NID  ( -1,   64, false, "NID  ", "Network and Data Unit ID" ),
+	HDU  (  0,  722, false, "HDU  ", "Header Data Unit" ),
+	TDU  (  3,   64, false, "TDU  ", "Simple Terminator Data Unit" ),
+	LDU1 (  5, 1630, true,  "LDU1 ", "Logical Link Data Unit 1" ),
+	TSBK1(  7,  260, false, "TSBK1", "Trunking Signaling Block" ),
+	TSBK2(  7,  260, false, "TSBK2", "Trunking Signaling Block" ),
+	TSBK3(  7,  260, false, "TSBK3", "Trunking Signaling Block" ),
+	LDU2 ( 10, 1632, true,  "LDU2 ", "Logical Link Data Unit 2" ),
+	PDU1 ( 12,  456, false, "PDU1 ", "Packet Data Unit" ),
+	PDU2 ( 12,  652, false, "PDU2 ", "Packet Data Unit" ),
+	PDU3 ( 12,  848, false, "PDU3 ", "Packet Data Unit" ),
+	TDULC( 15,  372, false, "TDULC", "Terminator Data Unit With Link Control" ),
+	UNKN ( -1,    0, false, "UNKWN", "Unknown" );
 	
 	private int mValue;
 	private int mMessageLength;
-	private String mLabel;
 	private boolean mParity;
+	private String mLabel;
+	private String mDescription;
 	
-	private DataUnitID( int value, int length, String label, boolean parity )
+	private DataUnitID( int value, int length, boolean parity, String label, 
+			String description )
 	{
 		mValue = value;
 		mMessageLength = length;
-		mLabel = label;
 		mParity = parity;
+		mLabel = label;
+		mDescription = description;
 	}
 	
 	public int getValue()
@@ -46,6 +49,11 @@ public enum DataUnitID
 	public String getLabel()
 	{
 		return mLabel;
+	}
+	
+	public String getDescription()
+	{
+		return mDescription;
 	}
 	
 	public boolean getParity()

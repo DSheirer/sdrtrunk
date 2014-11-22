@@ -31,7 +31,7 @@ public class RadioUnitMonitorCommand extends TSBKMessage
     {
         StringBuilder sb = new StringBuilder();
         
-        sb.append( super.getMessage() );
+        sb.append( getMessageStub() );
 
         sb.append( " MULT:" + getTransmitMultiplier() );
         sb.append( " SRC ADDR: " + getSourceAddress() );

@@ -29,7 +29,7 @@ public abstract class GroupMultiChannelGrant extends ChannelGrant
     {
         StringBuilder sb = new StringBuilder();
         
-        sb.append( super.getMessage() );
+        sb.append( getMessageStub() );
         
         sb.append( " CHAN1:" );
         sb.append( getChannelID1() + "/" + getChannelNumber1() );

@@ -32,7 +32,7 @@ public class AuthenticationCommand extends TSBKMessage
     {
         StringBuilder sb = new StringBuilder();
         
-        sb.append( super.getMessage() );
+        sb.append( getMessageStub() );
 
         sb.append( " WACN: " + getWACN() );
         sb.append( " SYS ID: " + getSystemID() );

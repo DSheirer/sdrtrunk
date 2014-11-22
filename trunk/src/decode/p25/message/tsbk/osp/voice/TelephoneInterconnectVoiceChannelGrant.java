@@ -22,7 +22,7 @@ public class TelephoneInterconnectVoiceChannelGrant extends UnitChannelGrant
     {
         StringBuilder sb = new StringBuilder();
         
-        sb.append( super.getMessage() );
+        sb.append( getMessageStub() );
         
         if( isEmergency() )
         {

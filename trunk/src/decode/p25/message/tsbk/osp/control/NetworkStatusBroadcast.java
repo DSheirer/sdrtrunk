@@ -36,7 +36,7 @@ public class NetworkStatusBroadcast extends TSBKMessage
     {
         StringBuilder sb = new StringBuilder();
         
-        sb.append( super.getMessage() );
+        sb.append( getMessageStub() );
 
         sb.append( " LRA:" + getLocationRegistrationArea() );
         

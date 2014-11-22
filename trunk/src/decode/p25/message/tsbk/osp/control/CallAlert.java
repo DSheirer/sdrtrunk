@@ -30,7 +30,7 @@ public class CallAlert extends TSBKMessage
     {
         StringBuilder sb = new StringBuilder();
         
-        sb.append( super.getMessage() );
+        sb.append( getMessageStub() );
 
         sb.append( " SRC ID: " + getSourceID() );
         sb.append( " TGT ADDR: " + getTargetAddress() );
