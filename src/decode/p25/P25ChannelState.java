@@ -17,12 +17,14 @@
  ******************************************************************************/
 package decode.p25;
 
+import message.Message;
 import alias.AliasList;
 import audio.SquelchListener;
 import audio.SquelchListener.SquelchState;
 import controller.channel.ProcessingChain;
 import controller.state.AuxChannelState;
 import controller.state.ChannelState;
+import decode.p25.message.P25Message;
 
 public class P25ChannelState extends ChannelState
 {
@@ -31,21 +33,30 @@ public class P25ChannelState extends ChannelState
 		super( chain, aliasList );
 	}
 	
-	/**
-	 * Make the ConventionalChannelState always unsquelched
-	 */
 	public void addListener( SquelchListener listener )
 	{
 		super.addListener( listener );
 		
 		super.setSquelchState( SquelchState.UNSQUELCH );
 	}
+
+	public void receive( Message message )
+	{
+		super.receive( message );
+		
+		if( message instanceof P25Message )
+		{
+			
+		}
+	}
+
 	
 	@Override
 	public void setSquelchState( SquelchState state )
 	{
 		//do nothing ... we want the squelch state always unsquelched (for now)
 	}
+	
 	@Override
     public String getActivitySummary()
     {

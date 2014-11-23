@@ -85,6 +85,7 @@ public class P25Decoder extends Decoder implements Instrumentable
 		mSymbolFilter.setListener( mSlicer );
 		
 		mMessageProcessor = new P25MessageProcessor( mAliasList );
+		mMessageProcessor.addMessageListener( this );
 
         mNormalFramer = new P25MessageFramer( 
                 FrameSync.P25_PHASE1.getSync(), 64, false, mAliasList );

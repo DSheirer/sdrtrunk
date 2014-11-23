@@ -6,7 +6,7 @@ import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
 
-public class RFSSStatusBroadcast extends TSBKMessage
+public class RFSSStatusBroadcast extends TSBKMessage implements IdentifierUpdateReceiver
 {
     public static final int[] LOCATION_REGISTRATION_AREA = { 80,81,82,83,84,85,
         86,87 };
@@ -15,10 +15,13 @@ public class RFSSStatusBroadcast extends TSBKMessage
         102,103 };
     public static final int[] RFSS_ID = { 104,105,106,107,108,109,110,111 };
     public static final int[] SITE_ID = { 112,113,114,115,116,117,118,119 };
-    public static final int[] CHANNEL = { 120,121,122,123,124,125,126,127,
-        128,129,130,131,132,133,134,135 };
+    public static final int[] IDENTIFIER = { 120,121,122,123 };
+    public static final int[] CHANNEL = { 124,125,126,127,128,129,130,131,132,
+    	133,134,135 };
     public static final int[] SYSTEM_SERVICE_CLASS = { 136,137,138,139,140,141,
         142,143 };
+    
+    private IdentifierUpdate mIdentifierUpdate;
     
     public RFSSStatusBroadcast( BitSetBuffer message, 
                                 DataUnitID duid,
@@ -47,8 +50,12 @@ public class RFSSStatusBroadcast extends TSBKMessage
         
         sb.append( " SITE:" + getSiteID() );
         
-        sb.append( " CHAN:" + getChannel() );
+        sb.append( " CHAN:" + getIdentifier() + "-" + getChannel() );
         
+        sb.append( " DN:" + getDownlinkFrequency() );
+        
+        sb.append( " UP:" + getUplinkFrequency() );
+
         if( hasActiveNetworkConnection() )
         {
             sb.append( " ACTIVE-NETWORK-CONN" );
@@ -83,6 +90,11 @@ public class RFSSStatusBroadcast extends TSBKMessage
     {
         return mMessage.getHex( SITE_ID, 2 );
     }
+
+    public int getIdentifier()
+    {
+    	return mMessage.getInt( IDENTIFIER );
+    }
     
     public int getChannel()
     {
@@ -93,4 +105,30 @@ public class RFSSStatusBroadcast extends TSBKMessage
     {
         return mMessage.getInt( SYSTEM_SERVICE_CLASS );
     }
+    
+    public long getDownlinkFrequency()
+    {
+    	return calculateDownlink( mIdentifierUpdate, getChannel() );
+    }
+    
+    public long getUplinkFrequency()
+    {
+    	return calculateUplink( mIdentifierUpdate, getChannel() );
+    }
+
+	@Override
+    public void setIdentifierMessage( int identifier, IdentifierUpdate message )
+    {
+		/* we're only expecting 1 identifier, so use whatever is received */
+		mIdentifierUpdate = message;
+    }
+	
+	public int[] getIdentifiers()
+	{
+		int[] idens = new int[ 1 ];
+		
+		idens[ 0 ] = getIdentifier();
+		
+		return idens;
+	}
 }
