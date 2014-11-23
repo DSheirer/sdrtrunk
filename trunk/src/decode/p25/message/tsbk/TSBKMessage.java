@@ -3,6 +3,7 @@ package decode.p25.message.tsbk;
 import alias.AliasList;
 import bits.BitSetBuffer;
 import decode.p25.message.P25Message;
+import decode.p25.message.tsbk.osp.control.IdentifierUpdate;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
 import decode.p25.reference.Vendor;
@@ -127,5 +128,28 @@ public class TSBKMessage extends P25Message
 		sb.append( mMessage.getHex( BLOCK12, 2 ) + " " );
 		
 		return sb.toString();
+	}
+	
+	protected static long calculateUplink( IdentifierUpdate iden, int channel )
+	{
+		long downlink = calculateDownlink( iden, channel );
+		
+		if( downlink > 0 && iden != null )
+		{
+			return downlink + iden.getTransmitOffset();
+		}
+		
+		return 0;
+	}
+	
+	protected static long calculateDownlink( IdentifierUpdate iden, int channel )
+	{
+		if( iden != null )
+		{
+			return iden.getBaseFrequency() + 
+					( channel * iden.getChannelSpacing() );
+		}
+		
+		return 0;
 	}
 }

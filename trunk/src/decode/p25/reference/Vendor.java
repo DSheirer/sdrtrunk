@@ -3,7 +3,7 @@ package decode.p25.reference;
 public enum Vendor
 {
 	STANDARD( "STANDARD", "STANDARD", 0),
-	V1( "VENDOR01", "V_01", 1),
+	STANDARD_V1( "STANDARD", "STANDARD_01", 1),
 	V2( "VENDOR02", "V_02", 2),
 	V3( "VENDOR03", "V_03", 3),
 	V4( "VENDOR04", "V_04", 4),

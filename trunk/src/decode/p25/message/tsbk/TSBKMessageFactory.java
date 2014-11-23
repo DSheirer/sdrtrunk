@@ -2,6 +2,10 @@ package decode.p25.message.tsbk;
 
 import alias.AliasList;
 import bits.BitSetBuffer;
+import decode.p25.message.tsbk.motorola.ChannelCWIDUpdate;
+import decode.p25.message.tsbk.motorola.MotorolaOpcode;
+import decode.p25.message.tsbk.motorola.MotorolaTSBKMessage;
+import decode.p25.message.tsbk.motorola.SystemLoading;
 import decode.p25.message.tsbk.osp.control.AcknowledgeResponse;
 import decode.p25.message.tsbk.osp.control.AdjacentStatusBroadcast;
 import decode.p25.message.tsbk.osp.control.AuthenticationCommand;
@@ -10,7 +14,8 @@ import decode.p25.message.tsbk.osp.control.DenyResponse;
 import decode.p25.message.tsbk.osp.control.ExtendedFunctionCommand;
 import decode.p25.message.tsbk.osp.control.GroupAffiliationQuery;
 import decode.p25.message.tsbk.osp.control.GroupAffiliationResponse;
-import decode.p25.message.tsbk.osp.control.IdentifierUpdate;
+import decode.p25.message.tsbk.osp.control.IdentifierUpdateNonVUHF;
+import decode.p25.message.tsbk.osp.control.IdentifierUpdateVUHF;
 import decode.p25.message.tsbk.osp.control.LocationRegistrationResponse;
 import decode.p25.message.tsbk.osp.control.MessageUpdate;
 import decode.p25.message.tsbk.osp.control.NetworkStatusBroadcast;
@@ -19,9 +24,11 @@ import decode.p25.message.tsbk.osp.control.RFSSStatusBroadcast;
 import decode.p25.message.tsbk.osp.control.RadioUnitMonitorCommand;
 import decode.p25.message.tsbk.osp.control.RoamingAddressCommand;
 import decode.p25.message.tsbk.osp.control.SecondaryControlChannelBroadcast;
+import decode.p25.message.tsbk.osp.control.SecondaryControlChannelBroadcastExplicit;
 import decode.p25.message.tsbk.osp.control.StatusQuery;
 import decode.p25.message.tsbk.osp.control.StatusUpdate;
 import decode.p25.message.tsbk.osp.control.SystemServiceBroadcast;
+import decode.p25.message.tsbk.osp.control.TimeAndDateAnnouncement;
 import decode.p25.message.tsbk.osp.control.UnitDeregistrationAcknowledge;
 import decode.p25.message.tsbk.osp.control.UnitRegistrationCommand;
 import decode.p25.message.tsbk.osp.control.UnitRegistrationResponse;
@@ -29,6 +36,9 @@ import decode.p25.message.tsbk.osp.data.GroupDataChannelAnnouncement;
 import decode.p25.message.tsbk.osp.data.GroupDataChannelAnnouncementExplicit;
 import decode.p25.message.tsbk.osp.data.GroupDataChannelGrant;
 import decode.p25.message.tsbk.osp.data.IndividualDataChannelGrant;
+import decode.p25.message.tsbk.osp.data.SNDCPDataChannelAnnouncementExplicit;
+import decode.p25.message.tsbk.osp.data.SNDCPDataChannelGrant;
+import decode.p25.message.tsbk.osp.data.SNDCPDataPageRequest;
 import decode.p25.message.tsbk.osp.voice.GroupVoiceChannelGrant;
 import decode.p25.message.tsbk.osp.voice.GroupVoiceChannelGrantUpdate;
 import decode.p25.message.tsbk.osp.voice.GroupVoiceChannelGrantUpdateExplicit;
@@ -47,14 +57,15 @@ public class TSBKMessageFactory
 	                                      DataUnitID duid,
 	                                      AliasList aliasList )
 	{
-		Opcode opcode = Opcode.fromValue( message.getInt( TSBKMessage.OPCODE ) );
-
 		Vendor vendor = Vendor.fromValue( 
 				message.getInt( TSBKMessage.VENDOR_ID ) );
 		
 		switch( vendor )
 		{
 			case STANDARD:
+				Opcode opcode = 
+					Opcode.fromValue( message.getInt( TSBKMessage.OPCODE ) );
+
 				switch( opcode )
 				{
                     case ACKNOWLEDGE_RESPONSE_FNE:
@@ -97,9 +108,12 @@ public class TSBKMessageFactory
 				    case GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:
 				        return new GroupVoiceChannelGrantUpdateExplicit( message, 
 				                duid, aliasList );
-                    case IDENTIFIER_UPDATE:
+                    case IDENTIFIER_UPDATE_NON_VUHF:
+                        return new IdentifierUpdateNonVUHF( message, duid, 
+                        		aliasList );
                     case IDENTIFIER_UPDATE_VHF_UHF_BANDS:
-                        return new IdentifierUpdate( message, duid, aliasList );
+                        return new IdentifierUpdateVUHF( message, duid, 
+                        		aliasList );
                     case INDIVIDUAL_DATA_CHANNEL_GRANT:
                         return new IndividualDataChannelGrant( message, duid, 
                                 aliasList );
@@ -126,6 +140,18 @@ public class TSBKMessageFactory
                     case SECONDARY_CONTROL_CHANNEL_BROADCAST:
                     	return new SecondaryControlChannelBroadcast( message, 
                     			duid, aliasList );
+                    case SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT:
+                    	return new SecondaryControlChannelBroadcastExplicit( 
+                    			message, duid, aliasList );
+                    case SNDCP_DATA_CHANNEL_GRANT:
+                    	return new SNDCPDataChannelGrant( message, duid, 
+                    			aliasList );
+                    case SNDCP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT:
+                    	return new SNDCPDataChannelAnnouncementExplicit( 
+                    			message, duid, aliasList );
+                    case SNDCP_DATA_PAGE_REQUEST:
+                    	return new SNDCPDataPageRequest( message, duid, 
+                    			aliasList );
                     case STATUS_QUERY:
                     	return new StatusQuery( message, duid, aliasList );
                     case STATUS_UPDATE:
@@ -139,6 +165,9 @@ public class TSBKMessageFactory
 				    case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
 				        return new TelephoneInterconnectVoiceChannelGrant( 
 				                message, duid, aliasList );
+				    case TIME_DATE_ANNOUNCEMENT:
+				    	return new TimeAndDateAnnouncement( message, duid, 
+				    			aliasList );
                     case UNIT_DEREGISTRATION_ACKNOWLEDGE:
                     	return new UnitDeregistrationAcknowledge( message, 
                     			duid, aliasList );
@@ -162,6 +191,19 @@ public class TSBKMessageFactory
 				}
 				
 			case MOTOROLA:
+				MotorolaOpcode motorolaOpcode = MotorolaOpcode.
+						fromValue( message.getInt( TSBKMessage.OPCODE ) );
+				
+				switch( motorolaOpcode )
+				{
+					case CHANNEL_CWID_UPDATE:
+						return new ChannelCWIDUpdate( message, duid, aliasList );
+					case SYSTEM_LOADING:
+						return new SystemLoading( message, duid, aliasList );
+					default:
+				}
+				
+				return new MotorolaTSBKMessage( message, duid, aliasList );
 			default:
 				return new TSBKMessage( message, duid, aliasList );
 		}
