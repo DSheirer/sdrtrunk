@@ -210,8 +210,8 @@ public class LTRNetOSWMessage extends LTRNetMessage
 				sb.append( " MHz" );
 				break;
 			case ID_SITE:
-				int siteId = getSiteID();
-				if( siteId != sINT_NULL_VALUE )
+				String siteId = getSiteID();
+				if( siteId != null )
 				{
 					sb.append( "SITE ID: " );
 					sb.append( siteId );
@@ -221,10 +221,10 @@ public class LTRNetOSWMessage extends LTRNetMessage
 				break;
 			case ID_NBOR:
 				int neighborRank = getNeighborRank();
-				int neighborId = getNeighborID();
+				String neighborId = getNeighborID();
 				
 				if( neighborRank != sINT_NULL_VALUE && 
-					neighborId != sINT_NULL_VALUE )
+					neighborId != null )
 				{
 					sb.append( "NEIGHBOR SITE " );
 					sb.append( neighborRank );
@@ -354,16 +354,14 @@ public class LTRNetOSWMessage extends LTRNetMessage
 		return null;
 	}
 	
-	public int getSiteID()
+	public String getSiteID()
 	{
-		int retVal = sINT_NULL_VALUE;
-		
 		if( mMessageType == MessageType.ID_SITE )
 		{
-			retVal = mMessage.getInt( 23, 32 );
+			return String.valueOf( mMessage.getInt( 23, 32 ) );
 		}
 		
-		return retVal;
+		return null;
 	}
 	
 	public Alias getSiteIDAlias()
@@ -376,16 +374,14 @@ public class LTRNetOSWMessage extends LTRNetMessage
 		return null;
 	}
 	
-	public int getNeighborID()
+	public String getNeighborID()
 	{
-		int retVal = sINT_NULL_VALUE;
-		
 		if( mMessageType == MessageType.ID_NBOR )
 		{
-			retVal = mMessage.getInt( 23, 32 );
+			return String.valueOf( mMessage.getInt( 23, 32 ) );
 		}
 		
-		return retVal;
+		return null;
 	}
 	
 	private Alias getNeighborIDAlias()

@@ -17,6 +17,7 @@ import decode.p25.TrellisHalfRate;
 import decode.p25.message.P25Message;
 import decode.p25.message.pdu.PDUMessage;
 import decode.p25.message.pdu.PDUMessageFactory;
+import decode.p25.message.tdu.TDUMessage;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.message.tsbk.TSBKMessageFactory;
 import decode.p25.reference.DataUnitID;
@@ -321,7 +322,7 @@ public class P25MessageFramer implements Listener<Dibit>
 					break;
 				case TDU:
 					mComplete = true;
-                    dispatch( new P25Message( mMessage.copy(), mDUID, mAliasList ) );
+                    dispatch( new TDUMessage( mMessage.copy(), mDUID, mAliasList ) );
 					break;
 				case TDULC:
 					mComplete = true;

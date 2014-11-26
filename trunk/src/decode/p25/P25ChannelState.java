@@ -18,6 +18,7 @@
 package decode.p25;
 
 import message.Message;
+import alias.Alias;
 import alias.AliasList;
 import audio.SquelchListener;
 import audio.SquelchListener.SquelchState;
@@ -25,10 +26,20 @@ import controller.channel.ProcessingChain;
 import controller.state.AuxChannelState;
 import controller.state.ChannelState;
 import decode.p25.message.P25Message;
+import decode.p25.message.pdu.RFSSStatusBroadcastExtended;
+import decode.p25.message.tsbk.osp.control.RFSSStatusBroadcast;
 
 public class P25ChannelState extends ChannelState
 {
 	private P25ActivitySummary mActivitySummary;
+	private String mNAC;
+	private String mSystem;
+	private String mSite;
+	private String mSiteAlias;
+	private String mFromTalkgroup;
+	private String mFromAlias;
+	private String mToTalkgroup;
+	private String mToAlias;
 	
 	public P25ChannelState( ProcessingChain chain, AliasList aliasList )
 	{
@@ -51,6 +62,73 @@ public class P25ChannelState extends ChannelState
 		if( message instanceof P25Message )
 		{
 			mActivitySummary.receive( (P25Message)message );
+		}
+		
+		if( message instanceof RFSSStatusBroadcast )
+		{
+			RFSSStatusBroadcast rfss = (RFSSStatusBroadcast)message;
+			
+			if( mNAC == null || !mNAC.contentEquals( rfss.getNAC() ) )
+			{
+				mNAC = rfss.getNAC();
+				
+				broadcastChange( ChangedAttribute.NAC );
+			}
+			
+			if( mSystem == null || !mSystem.contentEquals( rfss.getSystemID() ) )
+			{
+				mSystem = rfss.getSystemID();
+				
+				broadcastChange( ChangedAttribute.SYSTEM );
+			}
+			
+			String site = rfss.getRFSubsystemID() + "-" + rfss.getSiteID();
+			
+			if( mSite == null || !mSite.contentEquals( site ) )
+			{
+				mSite = site;
+				
+				broadcastChange( ChangedAttribute.SITE );
+			}
+		}
+		else if( message instanceof RFSSStatusBroadcastExtended )
+		{
+			RFSSStatusBroadcastExtended rfss = (RFSSStatusBroadcastExtended)message;
+			
+			if( mNAC == null || !mNAC.contentEquals( rfss.getNAC() ) )
+			{
+				mNAC = rfss.getNAC();
+				
+				broadcastChange( ChangedAttribute.NAC );
+			}
+			
+			if( mSystem == null || !mSystem.contentEquals( rfss.getSystemID() ) )
+			{
+				mSystem = rfss.getSystemID();
+				
+				broadcastChange( ChangedAttribute.SYSTEM );
+			}
+			
+			String site = rfss.getRFSubsystemID() + "-" + rfss.getSiteID();
+			
+			if( mSite == null || !mSite.contentEquals( site ) )
+			{
+				mSite = site;
+				
+				if( mAliasList != null )
+				{
+					Alias alias = mAliasList.getSiteID( mSite );
+							
+					if( alias != null )
+					{
+						mSiteAlias = alias.getName();
+						
+						broadcastChange( ChangedAttribute.SITE_ALIAS );
+					}
+				}
+				
+				broadcastChange( ChangedAttribute.SITE );
+			}
 		}
 	}
 
@@ -76,4 +154,44 @@ public class P25ChannelState extends ChannelState
 		
 		return sb.toString();
     }
+	
+	public String getNAC()
+	{
+		return mNAC;
+	}
+	
+	public String getSystem()
+	{
+		return mSystem;
+	}
+	
+	public String getSiteAlias()
+	{
+		return mSiteAlias;
+	}
+	
+	public String getSite()
+	{
+		return mSite;
+	}
+	
+	public String getFromTalkgroup()
+	{
+		return mFromTalkgroup;
+	}
+	
+	public String getFromAlias()
+	{
+		return mFromAlias;
+	}
+	
+	public String getToTalkgroup()
+	{
+		return mToTalkgroup;
+	}
+	
+	public String getToAlias()
+	{
+		return mToAlias;
+	}
 }

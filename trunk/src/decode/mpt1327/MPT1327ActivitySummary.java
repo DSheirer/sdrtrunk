@@ -33,7 +33,7 @@ public class MPT1327ActivitySummary implements ActivitySummaryProvider,
 
 	private AliasList mAliasList;
 	private TreeSet<String> mIdents = new TreeSet<String>();
-	private int mSite;
+	private String mSite;
 
 	/**
 	 * Compiles a summary of active talkgroups, unique radio ids encountered
@@ -103,7 +103,7 @@ public class MPT1327ActivitySummary implements ActivitySummaryProvider,
 		sb.append( "Decoder:\tMPT-1327\n" );
 		sb.append( "Site:\t" );
 		
-		if( mSite != 0 )
+		if( mSite != null )
 		{
 			sb.append( mSite );
 			
@@ -118,21 +118,6 @@ public class MPT1327ActivitySummary implements ActivitySummaryProvider,
 					sb.append( "\n" );
 				}
 			}
-			
-			sb.append( "Network:\t" );
-			
-			if( ( mSite & 0x4000 ) == 0x4000 )
-			{
-				sb.append( "National #" );
-				int net = (int)Long.rotateRight( ( mSite & 0x3000 ) , 12 );
-				sb.append( net );
-				sb.append( "\n" );
-			}
-			else
-			{
-				sb.append( "Regional\n" );
-			}
-			
 		}
 		else
 		{

@@ -36,6 +36,17 @@ public class P25Panel extends ChannelStatePanel
     private JLabel mChannelLabel;
 
     private JLabel mProtocol = new JLabel( "P25" );
+    private JLabel mFrom = new JLabel( " " );
+    private JLabel mFromAlias = new JLabel( " " );
+    
+    private JLabel mNAC = new JLabel( "NAC:" );
+    private JLabel mTo = new JLabel( " " );
+    private JLabel mToAlias = new JLabel( " " );
+    
+    private JLabel mSystem = new JLabel( "SYS:" );
+    private JLabel mSite = new JLabel( "Site:" );
+    private JLabel mSiteAlias = new JLabel( "WACN:" );
+    
 	
 	public P25Panel( Channel channel )
 	{
@@ -62,11 +73,45 @@ public class P25Panel extends ChannelStatePanel
 		mProtocol.setFont( mFontDecoder );
 		mProtocol.setForeground( mColorLabelDecoder );
 
+		mFrom.setFont( mFontDecoder );
+		mFrom.setForeground( mColorLabelDecoder );
+		
+		mFromAlias.setFont( mFontDecoder );
+		mFromAlias.setForeground( mColorLabelDecoder );
+
+		mNAC.setFont( mFontDecoder );
+		mNAC.setForeground( mColorLabelDecoder );
+
+		mTo.setFont( mFontDecoder );
+		mTo.setForeground( mColorLabelDecoder );
+		
+		mToAlias.setFont( mFontDecoder );
+		mToAlias.setForeground( mColorLabelDecoder );
+
+		mSystem.setFont( mFontDecoder );
+		mSystem.setForeground( mColorLabelDecoder );
+
+		mSiteAlias.setFont( mFontDecoder );
+		mSiteAlias.setForeground( mColorLabelDecoder );
+
+		mSite.setFont( mFontDecoder );
+		mSite.setForeground( mColorLabelDecoder );
+
 		add( mStateLabel );
 		add( mSourceLabel );
 		add( mChannelLabel, "wrap" );
 
-		add( mProtocol, "wrap" );
+		add( mProtocol );
+		add( mFrom );
+		add( mFromAlias, "wrap" );
+		
+		add( mNAC );
+		add( mTo );
+		add( mToAlias, "wrap" );
+		
+		add( mSystem );
+		add( mSite );
+		add( mSiteAlias, "wrap" );
 	}
 
 	@Override
@@ -77,11 +122,13 @@ public class P25Panel extends ChannelStatePanel
 			@Override
             public void run()
             {
+				final P25ChannelState channelState = (P25ChannelState)mChannel.
+						getProcessingChain().getChannelState();
+				
 				switch( changedAttribute )
 				{
 					case CHANNEL_STATE:
-			    		mStateLabel.setText( mChannel.getProcessingChain().
-			    				getChannelState().getState().getDisplayValue() );
+			    		mStateLabel.setText( channelState.getState().getDisplayValue() );
 						break;
 					case SOURCE:
 			    		mSourceLabel.setText( mChannel.getSourceConfiguration()
@@ -92,6 +139,31 @@ public class P25Panel extends ChannelStatePanel
 					case SYSTEM_NAME:
 				    	mChannelLabel.setText( mChannel.getChannelDisplayName() );
 						break;
+					case NAC:
+						mNAC.setText( "NAC:" + channelState.getNAC() );
+						break;
+					case SYSTEM:
+						mSystem.setText( "SYS:" + channelState.getSystem() );
+						break;
+					case SITE:
+						mSite.setText( "SITE:" + channelState.getSite() );
+						break;
+					case SITE_ALIAS:
+						mSiteAlias.setText( channelState.getSiteAlias() );
+						break;
+					case FROM_TALKGROUP:
+						mFrom.setText( channelState.getFromTalkgroup() );
+						break;
+					case FROM_TALKGROUP_ALIAS:
+						mFromAlias.setText( channelState.getFromAlias() );
+						break;
+					case TO_TALKGROUP:
+						mTo.setText( channelState.getToTalkgroup() );
+						break;
+					case TO_TALKGROUP_ALIAS:
+						mToAlias.setText( channelState.getToAlias() );
+						break;
+						
 				}
 
 				repaint();

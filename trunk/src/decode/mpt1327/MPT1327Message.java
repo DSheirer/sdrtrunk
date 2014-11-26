@@ -327,19 +327,19 @@ public class MPT1327Message extends Message
     /**
      * MPT1327 Site identifier
      */
-    public int getSiteID()
+    public String getSiteID()
     {
     	if( mMessageType == MPTMessageType.BCAST )
     	{
-    		return mMessage.getInt( B1_SYSTEM_ID );
+    		return String.valueOf( mMessage.getInt( B1_SYSTEM_ID ) );
     	}
     	else if( mMessageType == MPTMessageType.ALH )
     	{
-        	return mMessage.getInt( B2_SYSTEM_ID );
+        	return String.valueOf( mMessage.getInt( B2_SYSTEM_ID ) );
     	}
     	else
     	{
-    		return 0;
+    		return null;
     	}
     }
 
@@ -348,7 +348,7 @@ public class MPT1327Message extends Message
      */
     public boolean hasSystemID()
     {
-    	return getSiteID() != 0;
+    	return getSiteID() != null;
     }
     
     public SystemDefinition getSystemDefinition()
@@ -599,7 +599,7 @@ public class MPT1327Message extends Message
     			break;
     		case ACKT:
     			sb.append( " SITE:" );
-    			sb.append( format( getSiteID(), 5 ) );
+    			sb.append( getSiteID() );
 
     			sb.append( " LONG ACK MESSAGE" );
 
@@ -619,7 +619,7 @@ public class MPT1327Message extends Message
     			break;
     		case ACKQ:
     			sb.append( " SYSTEM:" );
-    			sb.append( format( getSiteID(), 5 ) );
+    			sb.append( getSiteID() );
 
     			sb.append( " CALL QUEUED FROM:" );
 
@@ -637,7 +637,7 @@ public class MPT1327Message extends Message
     			break;
     		case ACKX:
     			sb.append( " SYSTEM:" );
-    			sb.append( format( getSiteID(), 5 ) );
+    			sb.append( getSiteID() );
 
     			sb.append( " MESSAGE REJECTED FROM:" );
 
@@ -687,7 +687,7 @@ public class MPT1327Message extends Message
     		case ALHX:
     		case ALHF:
     			sb.append( " SYSTEM:" );
-    			sb.append( format( getSiteID(), 5 ) );
+    			sb.append( getSiteID() );
 
     			if( hasToID() )
     			{
@@ -706,7 +706,7 @@ public class MPT1327Message extends Message
     			break;
     		case BCAST:
     			sb.append( " SYSTEM:" );
-    			sb.append( format( getSiteID(), 5 ) );
+    			sb.append( getSiteID() );
 
     			SystemDefinition sysdef = getSystemDefinition();
 

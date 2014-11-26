@@ -36,7 +36,7 @@ import decode.mpt1327.MPT1327Message.IdentType;
 
 public class MPT1327ChannelState extends ChannelState
 {
-	private int mSite;
+	private String mSite;
 	private String mFromTalkgroup;
 	private String mToTalkgroup;
 	private int mChannelNumber;
@@ -153,9 +153,9 @@ public class MPT1327ChannelState extends ChannelState
 									.build() );
 						break;
 					case ALH:
-						int sys = mpt.getSiteID();
+						String sys = mpt.getSiteID();
 						
-						if( sys != 0 && sys != mSite )
+						if( sys != null && !sys.contentEquals( mSite ) )
 						{
 							mSite = sys;
 							broadcastChange( ChangedAttribute.CHANNEL_SITE_NUMBER  );
@@ -315,7 +315,7 @@ public class MPT1327ChannelState extends ChannelState
 		super.reset();
 	}
 	
-	public int getSite()
+	public String getSite()
 	{
 		return mSite;
 	}
