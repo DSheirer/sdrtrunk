@@ -5,6 +5,7 @@ import message.Message;
 import alias.Alias;
 import alias.AliasList;
 import bits.BitSetBuffer;
+import decode.p25.message.tsbk.osp.control.IdentifierUpdate;
 import decode.p25.reference.DataUnitID;
 
 public class P25Message extends Message
@@ -128,4 +129,44 @@ public class P25Message extends Message
     {
 	    return true;
     }
+
+	/**
+	 * Calculates the frequency of the uplink channel using the channel number
+	 * and the IdentifierUpdate message.
+	 * 
+	 * @param iden - Identifier Update message
+	 * @param channel - channel number
+	 * @return - frequency in Hertz
+	 */
+	protected static long calculateUplink( IdentifierUpdate iden, int channel )
+	{
+		long downlink = calculateDownlink( iden, channel );
+		
+		if( downlink > 0 && iden != null )
+		{
+			return downlink + iden.getTransmitOffset();
+		}
+		
+		return 0;
+	}
+	
+	/**
+	 * Calculates the frequency of the downlink channel using the channel number
+	 * and the IdentifierUpdate message.
+	 * 
+	 * @param iden - Identifier Update message
+	 * @param channel - channel number
+	 * @return - frequency in Hertz
+	 */
+	protected static long calculateDownlink( IdentifierUpdate iden, int channel )
+	{
+		if( iden != null )
+		{
+			return iden.getBaseFrequency() + 
+					( channel * iden.getChannelSpacing() );
+		}
+		
+		return 0;
+	}
+	
 }

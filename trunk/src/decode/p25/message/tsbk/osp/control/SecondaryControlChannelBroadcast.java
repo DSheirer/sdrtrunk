@@ -10,7 +10,7 @@ import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
 
 public class SecondaryControlChannelBroadcast extends TSBKMessage 
-								implements IdentifierUpdateReceiver
+	implements IdentifierUpdateReceiver, Comparable<SecondaryControlChannelBroadcast>
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( SecondaryControlChannelBroadcast.class );
@@ -50,9 +50,7 @@ public class SecondaryControlChannelBroadcast extends TSBKMessage
         
         sb.append( getMessageStub() );
         
-        sb.append( " RFSS:" + getRFSS() );
-        
-        sb.append( " SITE:" + getSiteID() );
+        sb.append( " SITE:" + getRFSS() + "-" + getSiteID() );
         
         sb.append( " CHAN1:" + getIdentifier1() + "-" + getChannel1() );
         
@@ -151,14 +149,10 @@ public class SecondaryControlChannelBroadcast extends TSBKMessage
 		{
 			mIdentifierUpdate1 = message;
 		}
-		else if( identifier == getIdentifier2() )
+		
+		if( identifier == getIdentifier2() )
 		{
 			mIdentifierUpdate2 = message;
-		}
-		else
-		{
-			throw new IllegalArgumentException( "Unexpected identifier update "
-					+ "message for identifier [" + identifier + "]" );
 		}
     }
 	
@@ -182,4 +176,29 @@ public class SecondaryControlChannelBroadcast extends TSBKMessage
 		
 		return idens;
 	}
+
+	@Override
+    public int compareTo( SecondaryControlChannelBroadcast other )
+    {
+		if( other.getSiteID().contentEquals( getSiteID() ) &&
+			other.getIdentifier1() == getIdentifier1() &&
+			other.getChannel1() == getChannel1() &&
+			other.getChannel2() == getChannel2() && 
+			other.getIdentifier2() == getIdentifier2() &&
+			other.getDownlinkFrequency1() == getDownlinkFrequency1() &&
+			other.getUplinkFrequency1() == getUplinkFrequency1() &&
+			other.getDownlinkFrequency2() == getDownlinkFrequency2() &&
+			other.getUplinkFrequency2() == getUplinkFrequency2() )
+		{
+			return 0;
+		}
+		else if( other.getIdentifier1() < getIdentifier1() )
+		{
+			return -1;
+		}
+		else
+		{
+			return 1;
+		}
+    }
 }
