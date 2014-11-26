@@ -57,7 +57,7 @@ public class AliasList implements Comparable<AliasList>
 	private HashMap<String,Alias> mMDC1200 = new HashMap<String,Alias>();
 	private HashMap<String,Alias> mMobileID = new HashMap<String,Alias>();
 	private HashMap<String,Alias> mMPT1327 = new HashMap<String,Alias>();
-	private HashMap<Integer, Alias> mSiteID = new HashMap<Integer,Alias>();
+	private HashMap<String, Alias> mSiteID = new HashMap<String,Alias>();
 	private HashMap<Integer, Alias> mStatus = new HashMap<Integer,Alias>();
 	private HashMap<String,Alias> mTalkgroup = new HashMap<String,Alias>();
 	private HashMap<Integer,Alias> mUniqueID = new HashMap<Integer,Alias>();
@@ -203,7 +203,7 @@ public class AliasList implements Comparable<AliasList>
 		}
 	}
 	
-	public Alias getSiteID( int siteID )
+	public Alias getSiteID( String siteID )
 	{
 		return mSiteID.get( siteID );
 	}

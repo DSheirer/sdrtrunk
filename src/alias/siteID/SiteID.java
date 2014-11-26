@@ -24,21 +24,21 @@ import alias.AliasIDType;
 
 public class SiteID extends AliasID
 {
-	private int mSite;
+	private String mSite;
 	
 	public SiteID()
 	{
 	}
 
 	@XmlAttribute
-	public int getSite()
+	public String getSite()
 	{
 		return mSite;
 	}
 
-	public void setSite( int site )
+	public void setSite( String site )
 	{
-		this.mSite = site;
+		mSite = site;
 	}
 	
 	public String toString()
@@ -47,18 +47,11 @@ public class SiteID extends AliasID
 	}
 
 	@Override
-    public boolean matches( AliasID id )
+    public boolean matches( AliasID otherID )
     {
-		boolean retVal = false;
-		
-		if( id instanceof SiteID )
-		{
-			SiteID uid = (SiteID)id;
-			
-			retVal = ( mSite == uid.getSite() );
-		}
-		
-	    return retVal;
+		return otherID != null && 
+			   otherID instanceof SiteID && 
+			   getSite().contentEquals( ( (SiteID)otherID).getSite() );
     }
 
 	@Override

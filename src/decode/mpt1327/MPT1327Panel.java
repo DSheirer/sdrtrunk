@@ -191,9 +191,9 @@ public class MPT1327Panel extends ChannelStatePanel
 		return null;
 	}
 
-	private Alias getSiteAlias( int site )
+	private Alias getSiteAlias( String site )
 	{
-		if( site != 0 && mAliasList != null )
+		if( site != null && mAliasList != null )
 		{
 			return mAliasList.getSiteID( site );
 		}

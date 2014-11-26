@@ -38,8 +38,8 @@ public class LTRNetActivitySummary implements ActivitySummaryProvider
 	private TreeSet<String> mTalkgroups = new TreeSet<String>();
 	private TreeSet<String> mESNs = new TreeSet<String>();
 	private TreeSet<Integer> mUniqueIDs = new TreeSet<Integer>();
-	private TreeSet<Integer> mNeighborIDs = new TreeSet<Integer>();
-	private TreeSet<Integer> mSiteIDs = new TreeSet<Integer>();
+	private TreeSet<String> mNeighborIDs = new TreeSet<String>();
+	private TreeSet<String> mSiteIDs = new TreeSet<String>();
 	private HashMap<Integer,Double> mReceiveFrequencies = 
 			new HashMap<Integer,Double>();
 	private HashMap<Integer,Double> mTransmitFrequencies = 
@@ -106,9 +106,9 @@ public class LTRNetActivitySummary implements ActivitySummaryProvider
 					case ID_ESNL:
 						break;
 					case ID_NBOR:
-						int neighborID = ltr.getNeighborID();
+						String neighborID = ltr.getNeighborID();
 						
-						if( neighborID != sINT_NULL_VALUE )
+						if( neighborID != null )
 						{
 							mNeighborIDs.add( neighborID );
 						}
@@ -123,9 +123,9 @@ public class LTRNetActivitySummary implements ActivitySummaryProvider
 						
 						break;
 					case ID_SITE:
-						int siteID = ltr.getSiteID();
+						String siteID = ltr.getSiteID();
 						
-						if( siteID != sINT_NULL_VALUE )
+						if( siteID != null )
 						{
 							mSiteIDs.add( siteID );
 						}
@@ -198,17 +198,17 @@ public class LTRNetActivitySummary implements ActivitySummaryProvider
 		}
 		else
 		{
-			Iterator<Integer> it = mSiteIDs.iterator();
+			Iterator<String> it = mSiteIDs.iterator();
 			
 			while( it.hasNext() )
 			{
 				sb.append( "Site:\t" );
 				
-				int siteID = it.next();
+				String siteID = it.next();
 
 				sb.append( siteID );
 				
-				Alias siteAlias = mAliasList.getSiteID( siteID );
+				Alias siteAlias = mAliasList.getSiteID( String.valueOf( siteID ) );
 
 				if( siteAlias != null )
 				{
@@ -378,17 +378,17 @@ public class LTRNetActivitySummary implements ActivitySummaryProvider
 		}
 		else
 		{
-			Iterator<Integer> it = mNeighborIDs.iterator();
+			Iterator<String> it = mNeighborIDs.iterator();
 			
 			while( it.hasNext() )
 			{
-				int neighbor = it.next();
+				String neighbor = it.next();
 				
 				sb.append( "  " );
 				sb.append( neighbor );
 				sb.append( " " );
 				
-				Alias alias = mAliasList.getSiteID( neighbor );
+				Alias alias = mAliasList.getSiteID( String.valueOf( neighbor ) );
 				
 				if( alias != null )
 				{

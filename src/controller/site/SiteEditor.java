@@ -90,7 +90,7 @@ public class SiteEditor extends JPanel implements ActionListener
 			}
 			else
 			{
-				JOptionPane.showMessageDialog( SiteEditor.this, "Please enter a system name" );
+				JOptionPane.showMessageDialog( SiteEditor.this, "Please enter a site name" );
 			}
 		}
 		else if( command.contentEquals( "Reset" ) )

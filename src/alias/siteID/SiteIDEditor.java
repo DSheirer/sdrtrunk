@@ -24,6 +24,7 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
@@ -31,16 +32,12 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import controller.ConfigurableNode;
-
 public class SiteIDEditor extends JPanel implements ActionListener
 {
     private static final long serialVersionUID = 1L;
 	private final static Logger mLog = 
-			LoggerFactory.getLogger( SiteIDEditor.class );
+							LoggerFactory.getLogger( SiteIDEditor.class );
     private SiteIDNode mSiteIDNode;
-    
-    private JLabel mLabelName;
     private JTextField mTextSiteID;
 
 	public SiteIDEditor( SiteIDNode siteIDNode )
@@ -52,7 +49,7 @@ public class SiteIDEditor extends JPanel implements ActionListener
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][][grow]" ) );
 
 		add( new JLabel( "Site ID" ), "span,align center" );
 
@@ -61,6 +58,16 @@ public class SiteIDEditor extends JPanel implements ActionListener
 		mTextSiteID = new JTextField( 
 				String.valueOf( mSiteIDNode.getSiteID().getSite() ) );
 		add( mTextSiteID, "growx,push" );
+
+		JTextArea description = new JTextArea( "Enter a site number.  "
+				+ "For P25 systems, use the format RR-SS, where RR = RF "
+				+ "Subsystem and SS = Site Number.  For example, RFSS 1 and "
+				+ "Site 3 would be: 01-03");
+		
+		description.setLineWrap( true );
+		description.setBackground( getBackground() );
+		
+		add( description, "growx,span" );
 		
 		JButton btnSave = new JButton( "Save" );
 		btnSave.addActionListener( SiteIDEditor.this );
@@ -82,23 +89,11 @@ public class SiteIDEditor extends JPanel implements ActionListener
 			
 			if( siteIDString != null )
 			{
-				try
-				{
-					int id = Integer.parseInt( siteIDString );
-					
-					mSiteIDNode.getSiteID().setSite( id );
-					
-					((ConfigurableNode)mSiteIDNode.getParent()).sort();
+				mSiteIDNode.getSiteID().setSite( siteIDString );
 
-					mSiteIDNode.save();
-					
-					mSiteIDNode.show();
-				}
-				catch( Exception ex )
-				{
-					mLog.error( "SiteIDEditor - error parsing int site " +
-							"id from [" + siteIDString + "]" );
-				}
+				mSiteIDNode.save();
+				
+				mSiteIDNode.show();
 			}
 			else
 			{
@@ -108,8 +103,7 @@ public class SiteIDEditor extends JPanel implements ActionListener
 		}
 		else if( command.contentEquals( "Reset" ) )
 		{
-			mTextSiteID.setText( 
-					String.valueOf( mSiteIDNode.getSiteID().getSite() ) );
+			mTextSiteID.setText( mSiteIDNode.getSiteID().getSite() );
 		}
 		
 		mSiteIDNode.refresh();

@@ -75,7 +75,7 @@ public class P25Message extends Message
 	@Override
     public String getEventType()
     {
-	    return "P25 " + mDUID.name();
+	    return mDUID.name();
     }
 
 	@Override

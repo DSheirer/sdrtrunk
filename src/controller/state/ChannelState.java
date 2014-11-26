@@ -668,12 +668,17 @@ public abstract class ChannelState implements Listener<Message>
         FROM_TALKGROUP_TYPE,
         MESSAGE,
         MESSAGE_TYPE,
+        NAC,
+        SITE,
+        SITE_ALIAS,
         SITE_NAME,
         SOURCE,
+        SYSTEM,
         SYSTEM_NAME,
         SQUELCH,
         TO_TALKGROUP,
         TO_TALKGROUP_ALIAS,
-        TO_TALKGROUP_TYPE;
+        TO_TALKGROUP_TYPE,
+        WACN;
     }
 }
