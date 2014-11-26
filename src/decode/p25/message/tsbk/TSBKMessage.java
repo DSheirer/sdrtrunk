@@ -74,8 +74,8 @@ public class TSBKMessage extends P25Message
 
 		Vendor vendor = getVendor();
 		
-		sb.append( "SYS:" );
-		sb.append( getNAC() ); /* NAC is the system id for TSBK messages */
+		sb.append( "NAC:" );
+		sb.append( getNAC() );
 		sb.append( " " );
 		sb.append( getDUID().getLabel() );
 
@@ -128,28 +128,5 @@ public class TSBKMessage extends P25Message
 		sb.append( mMessage.getHex( BLOCK12, 2 ) + " " );
 		
 		return sb.toString();
-	}
-	
-	protected static long calculateUplink( IdentifierUpdate iden, int channel )
-	{
-		long downlink = calculateDownlink( iden, channel );
-		
-		if( downlink > 0 && iden != null )
-		{
-			return downlink + iden.getTransmitOffset();
-		}
-		
-		return 0;
-	}
-	
-	protected static long calculateDownlink( IdentifierUpdate iden, int channel )
-	{
-		if( iden != null )
-		{
-			return iden.getBaseFrequency() + 
-					( channel * iden.getChannelSpacing() );
-		}
-		
-		return 0;
 	}
 }

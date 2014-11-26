@@ -14,9 +14,10 @@ public enum DataUnitID
 	TSBK2(  7,  260, false, "TSBK2", "Trunking Signaling Block" ),
 	TSBK3(  7,  260, false, "TSBK3", "Trunking Signaling Block" ),
 	LDU2 ( 10, 1632, true,  "LDU2 ", "Logical Link Data Unit 2" ),
-	PDU1 ( 12,  456, false, "PDU1 ", "Packet Data Unit" ),
-	PDU2 ( 12,  652, false, "PDU2 ", "Packet Data Unit" ),
-	PDU3 ( 12,  848, false, "PDU3 ", "Packet Data Unit" ),
+	PDU0 ( 12,  260, false, "PDU0 ", "Packet Header Data Unit" ),
+	PDU1 ( 12,  356, false, "PDU1 ", "Packet Data Unit" ),
+	PDU2 ( 12,  452, false, "PDU2 ", "Packet Data Unit" ),
+	PDU3 ( 12,  548, false, "PDU3 ", "Packet Data Unit" ),
 	TDULC( 15,  372, false, "TDULC", "Terminator Data Unit With Link Control" ),
 	UNKN ( -1,    0, false, "UNKWN", "Unknown" );
 	
@@ -76,7 +77,7 @@ public enum DataUnitID
 			case 10:
 				return LDU2;
 			case 12:
-				return PDU1;
+				return PDU0;
 			case 15:
 				return TDULC;
 			default:

@@ -58,7 +58,10 @@ public enum Service
 		{
 			if( isSupported( service, serviceBitmap ) )
 			{
-				services.add( service );
+				if( service != Service.UNKNOWN )
+				{
+					services.add( service );
+				}
 			}
 		}
 	

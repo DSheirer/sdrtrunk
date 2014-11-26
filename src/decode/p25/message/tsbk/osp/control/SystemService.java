@@ -41,7 +41,7 @@ public class SystemService
     {
         StringBuilder sb = new StringBuilder();
         
-        sb.append( "CONTROL CHAN:" );
+        sb.append( "CONTROL CHAN[" );
         
         if( isCompositeControlChannel( service ) )
         {
@@ -58,7 +58,7 @@ public class SystemService
             sb.append( " BACKUP" );
         }
         
-        sb.append( " SERVICES:" );
+        sb.append( " ] SERVICES[" );
         
         if( providesAuthenticationServices( service ) )
         {
@@ -79,6 +79,8 @@ public class SystemService
         {
             sb.append( " VOICE" );
         }
+
+        sb.append( " ]" );
         
         return sb.toString();
     }

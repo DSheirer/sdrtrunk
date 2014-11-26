@@ -46,7 +46,7 @@ public class RFSSStatusBroadcast extends TSBKMessage implements IdentifierUpdate
 
         sb.append( " SYSID:" + getSystemID() );
 
-        sb.append( " RFSS:" + getRFSS() );
+        sb.append( " RFSS:" + getRFSubsystemID() );
         
         sb.append( " SITE:" + getSiteID() );
         
@@ -81,7 +81,7 @@ public class RFSSStatusBroadcast extends TSBKMessage implements IdentifierUpdate
         return mMessage.getHex( SYSTEM_ID, 3 );
     }
     
-    public String getRFSS()
+    public String getRFSubsystemID()
     {
         return mMessage.getHex( RFSS_ID, 2 );
     }

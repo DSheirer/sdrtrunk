@@ -16,6 +16,7 @@ import decode.p25.P25Interleave;
 import decode.p25.TrellisHalfRate;
 import decode.p25.message.P25Message;
 import decode.p25.message.pdu.PDUMessage;
+import decode.p25.message.pdu.PDUMessageFactory;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.message.tsbk.TSBKMessageFactory;
 import decode.p25.reference.DataUnitID;
@@ -31,6 +32,16 @@ public class P25MessageFramer implements Listener<Dibit>
 	public static final int TSBK_BEGIN = 64;
 	public static final int TSBK_END = 260;
 	public static final int TSBK_DECODED_END = 160;
+
+	public static final int PDU0_BEGIN = 64;
+	public static final int PDU0_END = 260;
+	public static final int PDU1_BEGIN = 160;
+	public static final int PDU1_END = 356;
+	public static final int PDU2_BEGIN = 256;
+	public static final int PDU2_END = 452;
+	public static final int PDU3_BEGIN = 352;
+	public static final int PDU3_END = 548;
+	public static final int PDU3_DECODED_END = 448;
 	
 	private Listener<Message> mListener;
 	private AliasList mAliasList;
@@ -133,7 +144,7 @@ public class P25MessageFramer implements Listener<Dibit>
     private class P25MessageAssembler
     {
     	/* Starting position of the status symbol counter is 24 symbols to 
-    	 * account for the 48-bit sync pattern */
+    	 * account for the 48-bit sync pattern which is not included in message */
     	private int mStatusSymbolPointer = 24;
     	private BitSetBuffer mMessage;
         private int mMessageLength;
@@ -231,31 +242,82 @@ public class P25MessageFramer implements Listener<Dibit>
 					mComplete = true;
                     dispatch( new P25Message( mMessage.copy(), mDUID, mAliasList ) );
 					break;
-				case PDU1:
-					int blocks = mMessage.getInt( 
-								PDUMessage.PDU_HEADER_BLOCKS_TO_FOLLOW );
-					int padBlocks = mMessage.getInt( PDUMessage.PDU_HEADER_PAD_BLOCKS );
-					
-					int blockCount = blocks + padBlocks;
+				case PDU0:
+					/* Remove interleaving */
+					P25Interleave.deinterleave( mMessage, PDU0_BEGIN, PDU0_END );
+	
+					/* Remove trellis encoding */
+					mHalfRate.decode( mMessage, PDU0_BEGIN, PDU0_END );
 
-					if( blockCount == 24 || blockCount == 32 )
+					setDUID( DataUnitID.PDU1 );
+					
+					mMessage.setPointer( PDU1_BEGIN );
+					break;
+				case PDU1:
+					/* Remove interleaving */
+					P25Interleave.deinterleave( mMessage, PDU1_BEGIN, PDU1_END );
+	
+					/* Remove trellis encoding */
+					mHalfRate.decode( mMessage, PDU1_BEGIN, PDU1_END );
+
+					if( mMessage.getInt( PDUMessage.BLOCKS_TO_FOLLOW ) == 1 )
 					{
-						setDUID( DataUnitID.PDU2 );
-					}
-					else if( blockCount == 36 || blockCount == 48 )
-					{
-						setDUID( DataUnitID.PDU3 );
+						mMessage.setSize( PDU2_BEGIN );
+						
+	                    PDUMessage pduMessage1 = PDUMessageFactory.getMessage( 
+	                    		mMessage.copy(), DataUnitID.PDU1, mAliasList ); 
+
+	                    dispatch( pduMessage1 );
+						
+						mComplete = true;
 					}
 					else
 					{
-						dispatch( new PDUMessage( mMessage.copy(), mDUID, mAliasList ) );
-						mComplete = true;
+						setDUID( DataUnitID.PDU2 );
+						
+						mMessage.setPointer( PDU2_BEGIN );
 					}
 					break;
 				case PDU2:
+					/* Remove interleaving */
+					P25Interleave.deinterleave( mMessage, PDU2_BEGIN, PDU2_END );
+	
+					/* Remove trellis encoding */
+					mHalfRate.decode( mMessage, PDU2_BEGIN, PDU2_END );
+
+					if( mMessage.getInt( PDUMessage.BLOCKS_TO_FOLLOW ) == 2 )
+					{
+						mMessage.setSize( PDU3_BEGIN );
+						
+	                    PDUMessage pduMessage2 = PDUMessageFactory.getMessage( 
+	                    		mMessage.copy(), DataUnitID.PDU2, mAliasList ); 
+
+	                    dispatch( pduMessage2 );
+						
+						mComplete = true;
+					}
+					else
+					{
+						setDUID( DataUnitID.PDU3 );
+						
+						mMessage.setPointer( PDU3_BEGIN );
+					}
+					break;
 				case PDU3:
+					/* Remove interleaving */
+					P25Interleave.deinterleave( mMessage, PDU3_BEGIN, PDU3_END );
+	
+					/* Remove trellis encoding */
+					mHalfRate.decode( mMessage, PDU3_BEGIN, PDU3_END );
+					
+					mMessage.setSize( PDU3_DECODED_END );
+					
+                    PDUMessage pduMessage3 = PDUMessageFactory.getMessage( 
+                    		mMessage.copy(), DataUnitID.PDU3, mAliasList ); 
+
+                    dispatch( pduMessage3 );
+					
 					mComplete = true;
-                    dispatch( new P25Message( mMessage.copy(), mDUID, mAliasList ) );
 					break;
 				case TDU:
 					mComplete = true;
@@ -266,17 +328,11 @@ public class P25MessageFramer implements Listener<Dibit>
                     dispatch( new P25Message( mMessage.copy(), mDUID, mAliasList ) );
 					break;
 				case TSBK1:
-//					mLog.debug( "NEW: " + mMessage.toString() );
-
 					/* Remove interleaving */
 					P25Interleave.deinterleave( mMessage, TSBK_BEGIN, TSBK_END );
-
-//					mLog.debug( "DEI: " + mMessage.toString() );
 	
 					/* Remove trellis encoding */
 					mHalfRate.decode( mMessage, TSBK_BEGIN, TSBK_END );
-
-//					mLog.debug( "DEC: " + mMessage.toString() );
 
 					BitSetBuffer tsbkBuffer1 = mMessage.copy();
 					tsbkBuffer1.setSize( TSBK_DECODED_END );

@@ -28,9 +28,13 @@ import decode.p25.message.P25Message;
 
 public class P25ChannelState extends ChannelState
 {
+	private P25ActivitySummary mActivitySummary;
+	
 	public P25ChannelState( ProcessingChain chain, AliasList aliasList )
 	{
 		super( chain, aliasList );
+		
+		mActivitySummary = new P25ActivitySummary( aliasList );
 	}
 	
 	public void addListener( SquelchListener listener )
@@ -43,10 +47,10 @@ public class P25ChannelState extends ChannelState
 	public void receive( Message message )
 	{
 		super.receive( message );
-		
+
 		if( message instanceof P25Message )
 		{
-			
+			mActivitySummary.receive( (P25Message)message );
 		}
 	}
 
@@ -61,9 +65,8 @@ public class P25ChannelState extends ChannelState
     public String getActivitySummary()
     {
 		StringBuilder sb = new StringBuilder();
-		
-		sb.append( "Activity Summary\n" );
-		sb.append( "\tDecoder:\tP25\n\n" );
+
+		sb.append( mActivitySummary.getSummary() );
 		
 		for( AuxChannelState state: mAuxChannelStates )
 		{

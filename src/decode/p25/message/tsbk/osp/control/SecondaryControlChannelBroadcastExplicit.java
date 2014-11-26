@@ -32,9 +32,7 @@ public class SecondaryControlChannelBroadcastExplicit
         
         sb.append( getMessageStub() );
         
-        sb.append( " RFSS:" + getRFSS() );
-        
-        sb.append( " SITE:" + getSiteID() );
+        sb.append( " SITE:" + getRFSS() + "-" + getSiteID() );
         
         sb.append( " DOWNLINK:" + getIdentifier1() + "-" + getChannel1() );
         

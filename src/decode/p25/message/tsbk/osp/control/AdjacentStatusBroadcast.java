@@ -47,11 +47,9 @@ public class AdjacentStatusBroadcast extends TSBKMessage implements IdentifierUp
         
         sb.append( " LRA:" + getLocationRegistrationArea() );
 
-        sb.append( " SYSID:" + getSystemID() );
+        sb.append( " SYS:" + getSystemID() );
 
-        sb.append( " RFSS:" + getRFSS() );
-        
-        sb.append( " SITE:" + getSiteID() );
+        sb.append( " SITE:" + getRFSS() + "-" + getSiteID() );
         
         sb.append( " CHAN:" + getIdentifier() + "-" + getChannel() );
 
@@ -107,6 +105,19 @@ public class AdjacentStatusBroadcast extends TSBKMessage implements IdentifierUp
     public boolean hasActiveNetworkConnection()
     {
         return mMessage.get( ACTIVE_NETWORK_CONNECTION_FLAG );
+    }
+    
+    public String getUniqueID()
+    {
+    	StringBuilder sb = new StringBuilder();
+    	
+    	sb.append( getSystemID() );
+    	sb.append( ":" );
+    	sb.append( getRFSS() );
+    	sb.append( ":" );
+    	sb.append( getSiteID() );
+    	
+    	return sb.toString();
     }
     
     public String getSystemID()
