@@ -17,6 +17,9 @@
  ******************************************************************************/
 package decode.mpt1327;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import message.Message;
 import sample.Listener;
 import source.config.SourceConfigTuner;
@@ -36,6 +39,8 @@ import decode.mpt1327.MPT1327Message.IdentType;
 
 public class MPT1327ChannelState extends ChannelState
 {
+	private final static Logger mLog = LoggerFactory.getLogger( MPT1327ChannelState.class );
+
 	private String mSite;
 	private String mFromTalkgroup;
 	private String mToTalkgroup;
@@ -153,13 +158,18 @@ public class MPT1327ChannelState extends ChannelState
 									.build() );
 						break;
 					case ALH:
-						String sys = mpt.getSiteID();
+						String site = mpt.getSiteID();
 						
-						if( sys != null && !sys.contentEquals( mSite ) )
+						if( mSite == null )
 						{
-							mSite = sys;
+							mSite = site;
+						}
+						else if( site != null && !site.contentEquals( mSite ) )
+						{
+							mSite = site;
 							broadcastChange( ChangedAttribute.CHANNEL_SITE_NUMBER  );
 						}
+						
 						setState( State.CONTROL );
 						break;
 					case GTC:
