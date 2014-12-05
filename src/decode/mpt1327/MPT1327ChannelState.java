@@ -163,6 +163,7 @@ public class MPT1327ChannelState extends ChannelState
 						if( mSite == null )
 						{
 							mSite = site;
+							broadcastChange( ChangedAttribute.CHANNEL_SITE_NUMBER  );
 						}
 						else if( site != null && !site.contentEquals( mSite ) )
 						{
