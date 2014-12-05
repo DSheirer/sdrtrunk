@@ -1,2 +1,2 @@
 #!/bin/bash
-java -cp "SDRTrunk.jar:libs/*" gui.SDRTrunk&
+java -XX:+UseG1GC -cp "SDRTrunk.jar:libs/*" gui.SDRTrunk&
