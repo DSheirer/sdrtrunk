@@ -19,12 +19,12 @@ package crc;
 
 public enum CRC
 {
-	PASSED       ( "*", "Pass" ),
-	PASSED_INV   ( "#", "Pass Invert" ),
-	FAILED_CRC   ( "f", "Fail CRC" ),
-	FAILED_PARITY( "p", "Fail Parity" ),
-	CORRECTED    ( "C", "Corrected" ),
-	UNKNOWN      ( "-", "Unknown");
+	PASSED       ( "*", "PASS" ),
+	PASSED_INV   ( "#", "PASS INVERTED" ),
+	FAILED_CRC   ( "f", "FAIL CRC" ),
+	FAILED_PARITY( "p", "FAIL PARITY" ),
+	CORRECTED    ( "C", "CORRECTED" ),
+	UNKNOWN      ( "-", "UNKNOWN");
 
 	private String mAbbreviation;
 	private String mDisplayText;
