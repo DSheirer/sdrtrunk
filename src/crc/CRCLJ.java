@@ -52,11 +52,11 @@ public class CRCLJ
 
 	private static int[] CHECKSUMS = new int[] 
 	{
-		0x26EA, //Function 0 (MSB)
+		0x26EA, //Function 0 (LSB)
 		0x1375, //Function 1
 		0xBE0B, //Function 2
-		0xE8B4, //Function 3 (LSB)
-		0x745A, //Address 0 (MSB)
+		0xE8B4, //Function 3 (MSB)
+		0x745A, //Address 0 (LSB)
 		0x3A2D, //Address 1
 		0xAAA7, //Address 2
 		0xE2E2, //Address 3
@@ -83,7 +83,7 @@ public class CRCLJ
 		0xCABD, //Address 24
 		0xD2EF, //Address 25
 		0xDEC6, //Address 26
-		0x6F63, //Address 27
+		0x6F63, //Address 27 (MSB)
 		
 		//Single bit errors in the CRC Checksum
 		0x8000, //CRC 0
@@ -105,25 +105,24 @@ public class CRCLJ
 	};
 
 	/**
-	 * Determines if message bits 16 - 47 pass the LJ CRC checksum 
-	 * contained in bits 48 - 63, using a lookup table of CRC checksum values
-	 * derived from the CRC-16 value
+	 * Determines if FUNCTION AND ADDRESS bits pass the LJ CRC checksum 
+	 * using a lookup table of CRC checksum values derived from the CRC-16 value
 	 */
-	public static CRC checkAndCorrect( BitSetBuffer msg )
+	public static CRC checkAndCorrect( BitSetBuffer message )
 	{
 		int calculated = 0; //Starting value
 
 		/* Iterate the set bits and XOR running checksum with lookup value */
-		for (int i = msg.nextSetBit( MESSAGE_START ); 
+		for (int i = message.nextSetBit( MESSAGE_START ); 
 				 i >= MESSAGE_START && i < CRC_START; 
-				 i = msg.nextSetBit( i+1 ) ) 
+				 i = message.nextSetBit( i+1 ) ) 
 		{
 			calculated ^= CHECKSUMS[ i - MESSAGE_START ];
 		}
 
-		int checksum = getChecksum( msg );
+		int checksum = getChecksum( message );
 		
-		if( calculated == getChecksum( msg ) )
+		if( calculated == checksum )
 		{
 			return CRC.PASSED;
 		}
@@ -135,7 +134,7 @@ public class CRCLJ
 			{
 				for( int error: errors )
 				{
-					msg.flip( MESSAGE_START + error );
+					message.flip( MESSAGE_START + error );
 				}
 				
 				return CRC.CORRECTED;
@@ -146,7 +145,7 @@ public class CRCLJ
 	}
 
 	/**
-	 * Returns the integer value of the 15 bit crc checksum
+	 * Returns the integer value of the 16 bit crc checksum
 	 */
     public static int getChecksum( BitSet msg )
     {
@@ -164,8 +163,7 @@ public class CRCLJ
     }
 
     /**
-     * Returns the bit position of any bit checksums that match the checksum
-     * error pattern.
+     * Identifies 1 or 2 bit error positions that match the checksum error value.
      */
     public static int[] findBitErrors( int checksumError )
     {
