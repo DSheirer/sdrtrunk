@@ -19,14 +19,13 @@ package controller;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Font;
 import java.awt.Image;
 import java.util.HashMap;
 
 import javax.swing.ImageIcon;
 import javax.swing.JTree;
 import javax.swing.tree.DefaultTreeCellRenderer;
-
-import controller.channel.ChannelNode;
 
 public class ControllerTreeCellRenderer extends DefaultTreeCellRenderer
 {
