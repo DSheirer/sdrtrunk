@@ -25,16 +25,23 @@ import java.util.EnumSet;
  */
 public enum DecoderType
 {
+	ACARS( "ACARS", "ACARS", "images/acars.png", 12500 ),
+	AIS( "AIS", "AIS", "images/ais.png", 12500 ),
     AM( "AM", "AM", "images/am.png", 10000 ),
+    APRS( "APRS", "APRS", "images/aprs.png", 12500 ),
+    DMR( "DMR", "DMR", "images/dmr.png", 12500 ),
     FLEETSYNC2( "Fleetsync II", "Fsync2", "images/fm.png", 12500 ),
     LJ_1200( "LJ1200 173.075", "LJ1200", "images/lj1200.png", 12500 ),
-    LTR_STANDARD( "LTR-Standard", "LTR", "images/ltr_standard.png", 10000 ),
+    LTR_STANDARD( "LTR-Standard", "LTR", "images/ltr.png", 10000 ),
     LTR_NET( "LTR-Net", "LTR-Net", "images/ltr_net.png", 10000 ),
     MDC1200( "MDC1200", "MDC1200", "images/fm.png", 12500 ),
+    MOTOROLA_TYPE_2( "MOTO T2", "MOTO T2", "images/motorola_type_2.png", 15000 ),
     MPT1327( "MPT1327", "MPT1327", "images/mpt1327.png", 12500 ),
+    NXDN( "NXDN", "NXDN", "images/nxdn.png", 8000 ),
     NBFM( "NBFM", "NBFM", "images/fm.png", 12500 ),
     PASSPORT( "Passport", "Passport", "images/passport.png", 12500 ),
-    P25_PHASE1( "P25 Phase 1", "P25-1", "images/p25_1.png", 12500 );
+    P25_PHASE1( "P25 Phase I", "P25-1", "images/p25_1.png", 12500 ),
+    P25_PHASE2( "P25 Phase II", "P25-2", "images/p25_2.png", 15000 );
     
     private String mDisplayString;
     private String mShortDisplayString;
