@@ -1,6 +1,5 @@
 package decode.p25.message.tsbk.osp.voice;
 
-import alias.Alias;
 import alias.AliasList;
 import bits.BitSetBuffer;
 import decode.p25.message.tsbk.GroupChannelGrant;

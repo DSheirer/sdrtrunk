@@ -68,7 +68,7 @@ public class TSBKMessageFactory
 
 				switch( opcode )
 				{
-                    case ACKNOWLEDGE_RESPONSE_FNE:
+                    case ACKNOWLEDGE_RESPONSE:
                         return new AcknowledgeResponse( message, duid, 
                                 aliasList );
                     case ADJACENT_STATUS_BROADCAST:
