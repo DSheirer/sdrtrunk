@@ -17,6 +17,7 @@
  ******************************************************************************/
 package controller;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -53,6 +54,11 @@ public class BaseNode extends DefaultMutableTreeNode
      * @return
      */
     public String getIconPath()
+    {
+    	return null;
+    }
+    
+    public Color getForegroundColor()
     {
     	return null;
     }

@@ -17,6 +17,7 @@
  ******************************************************************************/
 package controller;
 
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Image;
 import java.util.HashMap;
@@ -24,6 +25,8 @@ import java.util.HashMap;
 import javax.swing.ImageIcon;
 import javax.swing.JTree;
 import javax.swing.tree.DefaultTreeCellRenderer;
+
+import controller.channel.ChannelNode;
 
 public class ControllerTreeCellRenderer extends DefaultTreeCellRenderer
 {
@@ -46,18 +49,17 @@ public class ControllerTreeCellRenderer extends DefaultTreeCellRenderer
     	
     	if( value instanceof BaseNode )
     	{
-    		ImageIcon icon = getIcon( (BaseNode)value );
+    		BaseNode node = (BaseNode)value;
     		
-    		if( icon != null )
+    		ImageIcon icon = getIcon( node );
+    		
+    		setIcon( icon );
+
+    		Color foreground = node.getForegroundColor();
+    		
+    		if( foreground != null )
     		{
-    			if( icon.getIconHeight() > 16 )
-    			{
-    				
-    			}
-    			else
-    			{
-            		setIcon( icon );
-    			}
+    			setForeground( foreground );
     		}
     	}
     	

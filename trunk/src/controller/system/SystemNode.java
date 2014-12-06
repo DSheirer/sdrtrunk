@@ -18,6 +18,7 @@
 package controller.system;
 
 
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Enumeration;
@@ -29,6 +30,7 @@ import javax.swing.JSeparator;
 import javax.swing.tree.DefaultMutableTreeNode;
 
 import controller.ConfigurableNode;
+import controller.channel.ChannelNode;
 import controller.site.Site;
 import controller.site.SiteNode;
 
@@ -58,28 +60,28 @@ public class SystemNode extends ConfigurableNode
 	@Override
     public String getIconPath()
     {
-    	String retVal = "images/system.png";
-
+		return "images/system.png";
+    }
+	
+	@Override
+	public Color getForegroundColor()
+	{
     	@SuppressWarnings( "unchecked" )
         Enumeration<DefaultMutableTreeNode> nodes = children();
 
     	while( nodes.hasMoreElements() )
     	{
     		SiteNode child = (SiteNode)nodes.nextElement();
-    		
-    		if( child.getIconPath().contains( "green.png" ) )
+
+    		if( child.getForegroundColor() != null )
     		{
-    			return "images/system_green.png";
-    		}
-    		else if( child.getIconPath().contains( "red.png" ) )
-    		{
-    			retVal = "images/system_red.png";
+    			return Color.BLUE;
     		}
     	}
-    	
-    	return retVal;
-    }
-	
+
+    	return null;
+	}
+
 	@Override
 	public JPanel getEditor()
 	{
