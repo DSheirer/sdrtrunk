@@ -34,7 +34,7 @@ public enum Opcode
 	RADIO_UNIT_MONITOR_COMMAND( "RADIO_MONITR_CMD", "Radio Unit Monitor Command", 29 ),
 	RESERVED_1E( "RESERVED_1E     ", "Reserved", 30 ),
 	CALL_ALERT( "CALL_ALERT      ", "Call Alert", 31 ),
-	ACKNOWLEDGE_RESPONSE_FNE( "ACK_RESPONSE_FNE", "Acknowledge Response - FNE", 32 ),
+	ACKNOWLEDGE_RESPONSE( "ACK_RESPONSE_FNE", "Acknowledge Response - FNE", 32 ),
 	QUEUED_RESPONSE( "QUEUED_RESPONSE ", "Queued Response", 33 ),
 	RESERVED_22( "RESERVED_22     ", "Reserved", 34 ),
 	RESERVED_23( "RESERVED_23     ", "Reserved", 35 ),

@@ -25,28 +25,28 @@ import java.util.EnumSet;
  */
 public enum DecoderType
 {
-    AM( "AM", "AM", "images/am", 10000 ),
-    FLEETSYNC2( "Fleetsync II", "Fsync2", "images/fm", 12500 ),
-    LJ_1200( "LJ1200 173.075", "LJ1200", "images/lj1200", 12500 ),
-    LTR_STANDARD( "LTR-Standard", "LTR", "images/ltr_standard", 10000 ),
-    LTR_NET( "LTR-Net", "LTR-Net", "images/ltr_net", 10000 ),
-    MDC1200( "MDC1200", "MDC1200", "images/fm", 12500 ),
-    MPT1327( "MPT1327", "MPT1327", "images/mpt1327", 12500 ),
-    NBFM( "NBFM", "NBFM", "images/fm", 12500 ),
-    PASSPORT( "Passport", "Passport", "images/passport", 12500 ),
-    P25_PHASE1( "P25 Phase 1", "P25-1", "images/p25p1", 12500 );
+    AM( "AM", "AM", "images/am.png", 10000 ),
+    FLEETSYNC2( "Fleetsync II", "Fsync2", "images/fm.png", 12500 ),
+    LJ_1200( "LJ1200 173.075", "LJ1200", "images/lj1200.png", 12500 ),
+    LTR_STANDARD( "LTR-Standard", "LTR", "images/ltr_standard.png", 10000 ),
+    LTR_NET( "LTR-Net", "LTR-Net", "images/ltr_net.png", 10000 ),
+    MDC1200( "MDC1200", "MDC1200", "images/fm.png", 12500 ),
+    MPT1327( "MPT1327", "MPT1327", "images/mpt1327.png", 12500 ),
+    NBFM( "NBFM", "NBFM", "images/fm.png", 12500 ),
+    PASSPORT( "Passport", "Passport", "images/passport.png", 12500 ),
+    P25_PHASE1( "P25 Phase 1", "P25-1", "images/p25_1.png", 12500 );
     
     private String mDisplayString;
     private String mShortDisplayString;
-    private String mIconPrefix;
+    private String mIconFilename;
     private int mChannelBandwidth;
     
     DecoderType( String displayString, String shortDisplayString, 
-    			 String iconPrefix, int bandwidth )
+    			 String iconFilename, int bandwidth )
     {
         mDisplayString = displayString;
         mShortDisplayString = shortDisplayString;
-        mIconPrefix = iconPrefix;
+        mIconFilename = iconFilename;
         mChannelBandwidth = bandwidth;
     }
 
@@ -102,9 +102,9 @@ public enum DecoderType
     	return mShortDisplayString;
     }
     
-    public String getIconPrefix()
+    public String getIconFilename()
     {
-    	return mIconPrefix;
+    	return mIconFilename;
     }
     
     public int getChannelBandwidth()

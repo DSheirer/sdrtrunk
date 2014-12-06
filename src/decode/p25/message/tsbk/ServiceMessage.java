@@ -12,9 +12,6 @@ public abstract class ServiceMessage extends TSBKMessage
     public static final int DUPLEX_MODE = 82;
     public static final int SESSION_MODE = 83;
     
-    public enum DuplexMode { HALF, FULL };
-    public enum SessionMode { PACKET, CIRCUIT };
-    
     public ServiceMessage( BitSetBuffer message, 
     					   DataUnitID duid,
     					   AliasList aliasList ) 

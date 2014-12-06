@@ -1,7 +1,8 @@
-package decode.p25.message.pdu;
+package decode.p25.message.pdu.osp.control;
 
 import alias.AliasList;
 import bits.BitSetBuffer;
+import decode.p25.message.pdu.PDUMessage;
 import decode.p25.message.tsbk.osp.control.IdentifierUpdate;
 import decode.p25.message.tsbk.osp.control.IdentifierUpdateReceiver;
 import decode.p25.message.tsbk.osp.control.SystemService;

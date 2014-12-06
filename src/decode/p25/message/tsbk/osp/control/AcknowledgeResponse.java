@@ -30,7 +30,7 @@ public class AcknowledgeResponse extends TSBKMessage
     @Override
     public String getEventType()
     {
-        return Opcode.ACKNOWLEDGE_RESPONSE_FNE.getDescription();
+        return Opcode.ACKNOWLEDGE_RESPONSE.getDescription();
     }
     
     public String getMessage()

@@ -26,7 +26,7 @@ import controller.channel.ProcessingChain;
 import controller.state.AuxChannelState;
 import controller.state.ChannelState;
 import decode.p25.message.P25Message;
-import decode.p25.message.pdu.RFSSStatusBroadcastExtended;
+import decode.p25.message.pdu.osp.control.RFSSStatusBroadcastExtended;
 import decode.p25.message.tsbk.osp.control.RFSSStatusBroadcast;
 
 public class P25ChannelState extends ChannelState
