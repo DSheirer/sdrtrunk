@@ -17,6 +17,7 @@
  ******************************************************************************/
 package controller.channel;
 
+import java.awt.Color;
 import java.text.DecimalFormat;
 
 import javax.swing.JPanel;
@@ -98,21 +99,27 @@ public class ChannelNode extends ConfigurableNode implements ChannelEventListene
 	@Override
     public String getIconPath()
     {
-		StringBuilder sb = new StringBuilder();
-		
-		Channel channel = getChannel();
-		
-		sb.append( channel.getDecodeConfiguration().getDecoderType().getIconPrefix() );
-		
-		if( channel.getEnabled() )
+		return getChannel().getDecodeConfiguration().getDecoderType()
+				.getIconFilename();
+    }
+
+	@Override
+	public Color getForegroundColor()
+	{
+		if( getChannel().getEnabled() )
 		{
-			sb.append( channel.isProcessing() ? "_green" : "_red" );
+			if( getChannel().isProcessing() )
+			{
+				return Color.GREEN;
+			}
+			else
+			{
+				return Color.RED;
+			}
 		}
 		
-		sb.append( ".png" );
-		
-    	return sb.toString();
-    }
+		return null;
+	}
 	
     @Override
     public JPanel getEditor()

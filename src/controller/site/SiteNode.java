@@ -18,6 +18,7 @@
 package controller.site;
 
 
+import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Enumeration;
@@ -59,27 +60,27 @@ public class SiteNode extends ConfigurableNode
 	
     public String getIconPath()
     {
-    	String retVal = "images/site.png";
-
+    	return "images/site.png";
+    }
+	
+	@Override
+	public Color getForegroundColor()
+	{
     	@SuppressWarnings( "unchecked" )
         Enumeration<DefaultMutableTreeNode> nodes = children();
 
     	while( nodes.hasMoreElements() )
     	{
     		ChannelNode child = (ChannelNode)nodes.nextElement();
-    		
-    		if( child.getIconPath().contains( "green.png" ) )
+
+    		if( child.getForegroundColor() != null )
     		{
-    			return "images/site_green.png";
-    		}
-    		else if( child.getIconPath().contains( "red.png" ) )
-    		{
-    			retVal = "images/site_red.png";
+    			return Color.BLUE;
     		}
     	}
-    	
-    	return retVal;
-    }
+
+    	return null;
+	}
 	
 	@Override
     public JPanel getEditor()
