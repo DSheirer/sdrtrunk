@@ -18,8 +18,10 @@
 package controller.activity;
 
 import java.awt.Component;
+import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.lang.reflect.InvocationTargetException;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -63,7 +65,13 @@ public class ActivitySummaryFrame extends JFrame
 		} );
 		
 		add( close );
-		
-		setVisible( true );
+
+		EventQueue.invokeLater( new Runnable() 
+        {
+            public void run()
+            {
+        		setVisible( true );
+            }
+        } );
 	}
 }

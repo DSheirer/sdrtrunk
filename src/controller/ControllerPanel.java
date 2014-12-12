@@ -21,6 +21,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -131,7 +132,7 @@ public class ControllerPanel extends JPanel
     	
     	MapPanel mapPanel = new MapPanel( mResourceManager );
     	mTabbedPane.addTab( "Map", mapPanel );
-
+    	
     	
 		/* Channel state list */
     	mChannelStateList = new ChannelStateList( mResourceManager.getSettingsManager() );

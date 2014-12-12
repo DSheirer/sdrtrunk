@@ -52,7 +52,7 @@ public class ConfigurationTreePanel extends JPanel
 		mSystemTree.getSelectionModel().setSelectionMode( 
 				TreeSelectionModel.SINGLE_TREE_SELECTION );
 		mSystemTree.setShowsRootHandles( true );
-		mSystemTree.addMouseListener( new Handler() );
+		mSystemTree.addMouseListener( new MouseHandler() );
 		mSystemTree.setCellRenderer( new ControllerTreeCellRenderer() );
 
 		//Give the model a reference to the tree, so that it can force newly
@@ -68,9 +68,9 @@ public class ConfigurationTreePanel extends JPanel
 		mSystemTree.addTreeSelectionListener( listener );
 	}
 	
-	public class Handler implements MouseListener
+	public class MouseHandler implements MouseListener
 	{
-		public Handler()
+		public MouseHandler()
 		{
 		}
 
