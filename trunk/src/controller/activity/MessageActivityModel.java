@@ -25,6 +25,7 @@ import javax.swing.table.AbstractTableModel;
 
 import message.Message;
 import sample.Listener;
+import filter.FilterSet;
 
 public class MessageActivityModel extends AbstractTableModel
 								  implements Listener<Message>
@@ -51,8 +52,39 @@ public class MessageActivityModel extends AbstractTableModel
 	
 	private boolean mNewMessagesFirst = true;
 	
+	private FilterSet mMessageFilter;
+	
+	public MessageActivityModel( FilterSet messageFilter )
+	{
+		mMessageFilter = messageFilter;
+	}
+	
 	public MessageActivityModel()
 	{
+	}
+	
+	/**
+	 * Clears all messages from history
+	 */
+	public void clear()
+	{
+		EventQueue.invokeLater( new Runnable()
+		{
+			@Override
+            public void run()
+            {
+				int messageCount = mMessages.size();
+				
+				mMessages.clear();
+
+				fireTableRowsDeleted( 0, messageCount - 1 );
+            }
+		});
+	}
+	
+	public FilterSet getMessageFilter()
+	{
+		return mMessageFilter;
 	}
 	
 	public void dispose()
@@ -90,18 +122,21 @@ public class MessageActivityModel extends AbstractTableModel
 	
 	public void receive( final Message message )
 	{
-		EventQueue.invokeLater( new Runnable() 
+		if( mMessageFilter.passes( message ) )
 		{
-			@Override
-            public void run()
-            {
-				mMessages.addFirst( message );
+			EventQueue.invokeLater( new Runnable() 
+			{
+				@Override
+	            public void run()
+	            {
+					mMessages.addFirst( message );
 
-				MessageActivityModel.this.fireTableRowsInserted( 0, 0 );
+					MessageActivityModel.this.fireTableRowsInserted( 0, 0 );
 
-				prune();
-            }
-		} );
+					prune();
+	            }
+			} );
+		}
 	}
 	
 	private void prune()

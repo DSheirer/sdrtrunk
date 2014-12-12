@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import javax.swing.JTable;
 
 import message.Message;
+import message.MessageFilterFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,6 +46,7 @@ import controller.activity.CallEventModel;
 import controller.activity.MessageActivityModel;
 import controller.channel.Channel.ChannelType;
 import controller.channel.ProcessingChain;
+import filter.FilterSet;
 
 /**
  * ChannelState provides a state machine for tracking a voice or data call
@@ -108,8 +110,7 @@ public abstract class ChannelState implements Listener<Message>
 
 	protected JTable mCallEventTable;
 	
-	protected MessageActivityModel mMessageActivityModel = 
-					new MessageActivityModel();
+	protected MessageActivityModel mMessageActivityModel;
 	protected JTable mMessageActivityTable;
 	
 	protected ProcessingChain mProcessingChain;
@@ -130,6 +131,12 @@ public abstract class ChannelState implements Listener<Message>
 		SystemProperties props = SystemProperties.getInstance();
 		mCallFadeTimeout = props.get( "call.fade.timeout", 2000 );
 		mCallResetTimeout = props.get( "call.reset.timeout", 4000 );
+		
+		/* Get a message filter for the primary decoder and aux decoders */
+		FilterSet messageFilter = MessageFilterFactory
+				.getMessageFilter( mProcessingChain.getChannel() );
+		
+		mMessageActivityModel = new MessageActivityModel( messageFilter );
 	}
 	
 	public void setCurrentCallEvent( CallEvent callEvent )
@@ -240,20 +247,11 @@ public abstract class ChannelState implements Listener<Message>
 	}
 	
 	/**
-	 * Returns the message activity model wrapped in a JTable.  Although this
-	 * may seem to violate separation between model and view, it simplifies
-	 * retaining the JTable state for each channel by keeping a local reference
-	 * to reuse
+	 * Returns the message activity model.
 	 */
-	public JTable getMessageActivityTable()
+	public MessageActivityModel getMessageActivityModel()
 	{
-		if( mMessageActivityTable == null )
-		{
-			mMessageActivityTable = new JTable( mMessageActivityModel );
-			mMessageActivityTable.setAutoResizeMode( JTable.AUTO_RESIZE_LAST_COLUMN );
-		}
-
-		return mMessageActivityTable;
+		return mMessageActivityModel;
 	}
 	
 	public void addAuxChannelState( AuxChannelState state )

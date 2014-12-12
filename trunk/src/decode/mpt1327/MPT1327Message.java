@@ -1930,6 +1930,11 @@ public class MPT1327Message extends Message
 		{
 			return mDescription;
 		}
+		
+		public String toString()
+		{
+			return getDescription();
+		}
 
 		public static MPTMessageType fromNumber( int number )
 		{

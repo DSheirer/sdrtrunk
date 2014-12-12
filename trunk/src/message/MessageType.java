@@ -71,4 +71,9 @@ public enum MessageType
 	{
 		return mDisplayText;
 	}
+	
+	public String toString()
+	{
+		return getDisplayText();
+	}
 }

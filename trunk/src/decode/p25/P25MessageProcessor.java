@@ -1,6 +1,5 @@
 package decode.p25;
 
-import java.util.Arrays;
 import java.util.HashMap;
 
 import message.Message;
@@ -8,12 +7,9 @@ import message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import bits.BitSetBuffer;
 import sample.Broadcaster;
 import sample.Listener;
 import alias.AliasList;
-import decode.mpt1327.MPT1327Message;
-import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.message.tsbk.osp.control.IdentifierUpdate;
 import decode.p25.message.tsbk.osp.control.IdentifierUpdateReceiver;
 
