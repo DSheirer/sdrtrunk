@@ -106,7 +106,14 @@ public class FilterEditorPanel<T> extends JPanel
 	{
 		List<FilterElement<?>> elements = filter.getFilterElements();
 		
-		Collections.sort( elements );
+		Collections.sort( elements, new Comparator<FilterElement<?>>() 
+		{
+			@Override
+            public int compare( FilterElement<?> o1, FilterElement<?> o2 )
+            {
+	            return o1.toString().compareTo( o2.toString() );
+            }
+		} );
 		
 		for( FilterElement<?> element: elements )
 		{
