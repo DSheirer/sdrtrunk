@@ -45,7 +45,7 @@ public class P25Panel extends ChannelStatePanel
     
     private JLabel mSystem = new JLabel( "SYS:" );
     private JLabel mSite = new JLabel( "Site:" );
-    private JLabel mSiteAlias = new JLabel( "WACN:" );
+    private JLabel mSiteAlias = new JLabel( "" );
     
 	
 	public P25Panel( Channel channel )

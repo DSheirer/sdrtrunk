@@ -120,7 +120,7 @@ public class LTRChannelState extends ChannelState
     	                        		new LTRCallEvent.Builder( CallEventType.CALL )
         	                            .to( ltr.getTalkgroupID() )
         	                            .aliasList( getAliasList() )
-        	                            .channel( ltr.getChannel() )
+        	                            .channel( String.valueOf( ltr.getChannel() ) )
         	                            .frequency( ( ltr.getChannel() == mChannelNumber ) ? 
         	                                    mProcessingChain.getChannel()
         	                                        .getTunerChannel().getFrequency() : 0 )

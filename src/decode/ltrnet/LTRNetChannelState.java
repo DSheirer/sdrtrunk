@@ -166,7 +166,7 @@ public class LTRNetChannelState extends ChannelState
 							mCallEventModel.add(  
 								new LTRCallEvent.Builder( CallEventType.CALL_DETECT )
 								.aliasList( mAliasList )
-								.channel( ltr.getChannel() )
+								.channel( String.valueOf( ltr.getChannel() ) )
 								.to( ltr.getTalkgroupID() )
 								.build() );
 						}
@@ -288,7 +288,7 @@ public class LTRNetChannelState extends ChannelState
 						LTRCallEvent event = 
 							new LTRCallEvent.Builder( CallEventType.REGISTER )
 						.aliasList( mAliasList )
-						.channel( ltr.getChannel() )
+						.channel( String.valueOf( ltr.getChannel() ) )
 						.frequency( mProcessingChain.getChannel()
 								.getTunerChannel().getFrequency() )
 						.to( ltr.getTalkgroupID() )
@@ -354,7 +354,7 @@ public class LTRNetChannelState extends ChannelState
 			{
 				event = new LTRCallEvent.Builder( CallEventType.REGISTER )
 					.aliasList( mAliasList )
-					.channel( message.getChannel() )
+					.channel( String.valueOf( message.getChannel() ) )
 					.frequency( mProcessingChain.getChannel()
 							.getTunerChannel().getFrequency() )
 					.to( message.getTalkgroupID() )
@@ -366,7 +366,7 @@ public class LTRNetChannelState extends ChannelState
 			{
 				event = new LTRCallEvent.Builder( CallEventType.CALL )
 					.aliasList( mAliasList )
-					.channel( message.getChannel() )
+					.channel( String.valueOf( message.getChannel() ) )
 					.frequency( mProcessingChain.getChannel()
 							.getTunerChannel().getFrequency() )
 					.to( message.getTalkgroupID() )

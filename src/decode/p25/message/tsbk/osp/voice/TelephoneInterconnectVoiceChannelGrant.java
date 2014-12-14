@@ -30,7 +30,7 @@ public class TelephoneInterconnectVoiceChannelGrant extends UnitChannelGrant
         }
         
         sb.append( " CHAN:" );
-        sb.append( getChannelID() + "/" + getChannelNumber() );
+        sb.append( getChannelIdentifier() + "/" + getChannel() );
         
         sb.append( " CALL TIMER:" );
         sb.append( getCallTimer() );

@@ -54,7 +54,8 @@ public class TimeAndDateAnnouncement extends TSBKMessage
         {
         	sb.append( " DATE-TIME:" );
         }
-        
+
+        sb.append( " " );
         sb.append( mTimeFormatter.format( new Date( getDateTimestamp() ) ) );
         
         return sb.toString();

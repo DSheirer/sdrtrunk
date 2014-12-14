@@ -296,16 +296,7 @@ public class CallEventModel extends AbstractTableModel
 				case TO_ALIAS:
 					return mEvents.get( rowIndex ).getToIDAlias();
 				case CHANNEL:
-					int channel = mEvents.get( rowIndex ).getChannel();
-					
-					if( channel != 0 )
-					{
-						return channel;
-					}
-					else
-					{
-						return null;
-					}
+					return mEvents.get( rowIndex ).getChannel();
 				case FREQUENCY:
 					long frequency = mEvents.get( rowIndex ).getFrequency();
 					

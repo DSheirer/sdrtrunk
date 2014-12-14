@@ -22,12 +22,21 @@ import alias.Alias;
 import alias.AliasList;
 import audio.SquelchListener;
 import audio.SquelchListener.SquelchState;
+import controller.activity.CallEvent.CallEventType;
 import controller.channel.ProcessingChain;
 import controller.state.AuxChannelState;
 import controller.state.ChannelState;
 import decode.p25.message.P25Message;
 import decode.p25.message.pdu.osp.control.RFSSStatusBroadcastExtended;
+import decode.p25.message.tsbk.TSBKMessage;
+import decode.p25.message.tsbk.osp.control.LocationRegistrationResponse;
 import decode.p25.message.tsbk.osp.control.RFSSStatusBroadcast;
+import decode.p25.message.tsbk.osp.control.UnitDeregistrationAcknowledge;
+import decode.p25.message.tsbk.osp.voice.GroupVoiceChannelGrant;
+import decode.p25.message.tsbk.osp.voice.GroupVoiceChannelGrantUpdate;
+import decode.p25.message.tsbk.osp.voice.GroupVoiceChannelGrantUpdateExplicit;
+import decode.p25.message.tsbk.osp.voice.UnitToUnitAnswerRequest;
+import decode.p25.reference.Vendor;
 
 public class P25ChannelState extends ChannelState
 {
@@ -123,11 +132,118 @@ public class P25ChannelState extends ChannelState
 					{
 						mSiteAlias = alias.getName();
 						
-						broadcastChange( ChangedAttribute.SITE_ALIAS );
+					}
+					else
+					{
+						mSiteAlias = null;
 					}
 				}
-				
+
 				broadcastChange( ChangedAttribute.SITE );
+				
+				broadcastChange( ChangedAttribute.SITE_ALIAS );
+			}
+		}
+		else if( message instanceof TSBKMessage )
+		{
+			TSBKMessage tsbk = (TSBKMessage)message;
+			
+			setState( State.CONTROL );
+			
+			if( tsbk.getVendor() == Vendor.STANDARD )
+			{
+				switch( tsbk.getOpcode() )
+				{
+					case GROUP_VOICE_CHANNEL_GRANT:
+						GroupVoiceChannelGrant gvcg = (GroupVoiceChannelGrant)tsbk;
+
+						mCallEventModel.add( 
+							new P25CallEvent.Builder( CallEventType.CALL )
+								.aliasList( mAliasList )
+								.channel( gvcg.getChannelIdentifier() + "-" + gvcg.getChannel() )
+								.details( ( gvcg.isEncrypted() ? "ENCRYPTED" : "" ) + 
+										  ( gvcg.isEmergency() ? " EMERGENCY" : "") )
+							    .frequency( gvcg.getDownlinkFrequency() )
+								.from( gvcg.getSourceAddress() )
+								.to( gvcg.getGroupAddress() )
+								.build() );
+						break;
+					case GROUP_VOICE_CHANNEL_GRANT_UPDATE:
+						GroupVoiceChannelGrantUpdate gvcgu =
+								(GroupVoiceChannelGrantUpdate)tsbk;
+						mCallEventModel.add( 
+								new P25CallEvent.Builder( CallEventType.CALL )
+									.aliasList( mAliasList )
+									.channel( gvcgu.getChannelID1() + "-" + gvcgu.getChannelNumber1() )
+									.details( ( gvcgu.isEncrypted() ? "ENCRYPTED" : "" ) + 
+											  ( gvcgu.isEmergency() ? " EMERGENCY" : "") )
+									.frequency( gvcgu.getDownlinkFrequency() )
+									.to( gvcgu.getGroupAddress1() )
+									.build() );
+						if( gvcgu.getChannelNumber2() != 0 )
+						{
+							mCallEventModel.add( 
+									new P25CallEvent.Builder( CallEventType.CALL )
+										.aliasList( mAliasList )
+										.channel( gvcgu.getChannelID2() + "-" + gvcgu.getChannelNumber2() )
+										.details( ( gvcgu.isEncrypted() ? "ENCRYPTED" : "" ) + 
+												  ( gvcgu.isEmergency() ? " EMERGENCY" : "") )
+										.frequency( gvcgu.getDownlinkFrequency() )
+										.to( gvcgu.getGroupAddress2() )
+										.build() );
+						}
+						break;
+					case GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:
+						GroupVoiceChannelGrantUpdateExplicit gvcgue = 
+							(GroupVoiceChannelGrantUpdateExplicit)tsbk;
+
+						mCallEventModel.add( 
+							new P25CallEvent.Builder( CallEventType.CALL )
+								.aliasList( mAliasList )
+								.channel( gvcgue.getTransmitChannelID() + "-" + 
+										  gvcgue.getTransmitChannelNumber() )
+								.details( ( gvcgue.isEncrypted() ? "ENCRYPTED" : "" ) + 
+										  ( gvcgue.isEmergency() ? " EMERGENCY" : "") )
+							    .frequency( gvcgue.getDownlinkFrequency() )
+								.to( gvcgue.getGroupAddress() )
+								.build() );
+						break;
+					case UNIT_TO_UNIT_ANSWER_REQUEST:
+						UnitToUnitAnswerRequest utuar = 
+									(UnitToUnitAnswerRequest)tsbk;
+						mCallEventModel.add( 
+								new P25CallEvent.Builder( CallEventType.PAGE )
+								.aliasList( mAliasList )
+								.details( ( utuar.isEmergency() ? "EMERGENCY" : "" ) ) 
+								.from( utuar.getSourceAddress() )
+								.to( utuar.getTargetAddress() )
+								.build() );
+						break;
+					case LOCATION_REGISTRATION_RESPONSE:
+						LocationRegistrationResponse lrr = 
+										(LocationRegistrationResponse)tsbk;
+						
+						mCallEventModel.add( 
+							new P25CallEvent.Builder( CallEventType.REGISTER )
+								.aliasList( mAliasList )
+								.details( "REG:" + lrr.getResponse().name() +
+										  " SITE: " + lrr.getRFSSID() + "-" + 
+										  lrr.getSiteID() )
+								.from( lrr.getTargetAddress() )
+								.to( lrr.getGroupAddress() )
+								.build() );
+						break;
+					case UNIT_DEREGISTRATION_ACKNOWLEDGE:
+						UnitDeregistrationAcknowledge udr =
+								(UnitDeregistrationAcknowledge)tsbk;
+						
+						mCallEventModel.add( 
+							new P25CallEvent.Builder( CallEventType.DEREGISTER )
+								.aliasList( mAliasList )
+								.from( udr.getSourceID() )
+								.build() );
+						break;
+				}
 			}
 		}
 	}

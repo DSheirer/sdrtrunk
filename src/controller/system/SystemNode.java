@@ -64,7 +64,7 @@ public class SystemNode extends ConfigurableNode
     }
 	
 	@Override
-	public Color getForegroundColor()
+	public Color getBackgroundColor()
 	{
     	@SuppressWarnings( "unchecked" )
         Enumeration<DefaultMutableTreeNode> nodes = children();
@@ -73,9 +73,9 @@ public class SystemNode extends ConfigurableNode
     	{
     		SiteNode child = (SiteNode)nodes.nextElement();
 
-    		if( child.getForegroundColor() != null )
+    		if( child.getBackgroundColor() != null )
     		{
-    			return Color.BLUE;
+    			return Color.CYAN;
     		}
     	}
 

@@ -104,7 +104,7 @@ public class ChannelNode extends ConfigurableNode implements ChannelEventListene
     }
 
 	@Override
-	public Color getForegroundColor()
+	public Color getBackgroundColor()
 	{
 		if( getChannel().getEnabled() )
 		{

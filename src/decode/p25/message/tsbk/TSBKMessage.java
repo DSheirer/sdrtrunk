@@ -3,7 +3,8 @@ package decode.p25.message.tsbk;
 import alias.AliasList;
 import bits.BitSetBuffer;
 import decode.p25.message.P25Message;
-import decode.p25.message.tsbk.osp.control.IdentifierUpdate;
+import decode.p25.message.tsbk.motorola.MotorolaOpcode;
+import decode.p25.message.tsbk.vendor.VendorOpcode;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
 import decode.p25.reference.Vendor;
@@ -54,6 +55,16 @@ public class TSBKMessage extends P25Message
 	public Opcode getOpcode()
 	{
 		return Opcode.fromValue( mMessage.getInt( OPCODE ) );
+	}
+	
+	public MotorolaOpcode getMotorolaOpcode()
+	{
+		return MotorolaOpcode.fromValue( mMessage.getInt( OPCODE ) );
+	}
+	
+	public VendorOpcode getVendorOpcode()
+	{
+		return VendorOpcode.fromValue( mMessage.getInt( OPCODE ) );
 	}
 	
 	@Override

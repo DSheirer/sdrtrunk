@@ -54,11 +54,32 @@ public class ControllerTreeCellRenderer extends DefaultTreeCellRenderer
     		
     		setIcon( icon );
 
-    		Color foreground = node.getForegroundColor();
+    		Color background = node.getBackgroundColor();
     		
-    		if( foreground != null )
+    		if( background != null )
     		{
-    			setForeground( foreground );
+    			setBackground( background );
+    			setOpaque( true );
+    			
+    			if( selected )
+    			{
+    				if( background == Color.CYAN )
+    				{
+        				setForeground( Color.ORANGE );
+    				}
+    				else if( background == Color.GREEN )
+    				{
+        				setForeground( Color.MAGENTA );
+    				}
+    				else if( background == Color.RED )
+    				{
+        				setForeground( Color.YELLOW );
+    				}
+    			}
+    		}
+    		else
+    		{
+    			setOpaque( false );
     		}
     	}
     	

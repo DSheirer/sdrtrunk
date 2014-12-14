@@ -12,6 +12,8 @@ import alias.AliasList;
 import bits.BitSetBuffer;
 import bits.BitSetFullException;
 import bits.SyncPatternMatcher;
+import crc.CRC;
+import crc.CRCP25NetworkID;
 import decode.p25.P25Interleave;
 import decode.p25.TrellisHalfRate;
 import decode.p25.message.P25Message;
@@ -218,13 +220,22 @@ public class P25MessageFramer implements Listener<Dibit>
         	switch( mDUID )
         	{
 				case NID:
-					int value = mMessage.getInt( P25Message.DUID );
-					
-					DataUnitID duid = DataUnitID.fromValue( value );
-					
-					if( duid != DataUnitID.UNKN )
+					CRC crc = CRCP25NetworkID.checkAndCorrect( mMessage );
+
+					if( crc != CRC.FAILED_CRC )
 					{
-						setDUID( duid );
+						int value = mMessage.getInt( P25Message.DUID );
+						
+						DataUnitID duid = DataUnitID.fromValue( value );
+						
+						if( duid != DataUnitID.UNKN )
+						{
+							setDUID( duid );
+						}
+						else
+						{
+							mComplete = true;
+						}
 					}
 					else
 					{
@@ -247,155 +258,187 @@ public class P25MessageFramer implements Listener<Dibit>
 					/* Remove interleaving */
 					P25Interleave.deinterleave( mMessage, PDU0_BEGIN, PDU0_END );
 	
-					/* Remove trellis encoding */
-					mHalfRate.decode( mMessage, PDU0_BEGIN, PDU0_END );
-
-					setDUID( DataUnitID.PDU1 );
-					
-					mMessage.setPointer( PDU1_BEGIN );
+					/* Remove trellis encoding - abort processing if we have an
+					 * unsuccessful decode due to excessive errors */
+					if( mHalfRate.decode( mMessage, PDU0_BEGIN, PDU0_END ) )
+					{
+						setDUID( DataUnitID.PDU1 );
+						
+						mMessage.setPointer( PDU1_BEGIN );
+					}
+					else
+					{
+						mComplete = true;
+					}
 					break;
 				case PDU1:
 					/* Remove interleaving */
 					P25Interleave.deinterleave( mMessage, PDU1_BEGIN, PDU1_END );
 	
-					/* Remove trellis encoding */
-					mHalfRate.decode( mMessage, PDU1_BEGIN, PDU1_END );
-
-					if( mMessage.getInt( PDUMessage.BLOCKS_TO_FOLLOW ) == 1 )
+					/* Remove trellis encoding - abort processing if we have an
+					 * unsuccessful decode due to excessive errors */
+					if( mHalfRate.decode( mMessage, PDU1_BEGIN, PDU1_END ) )
 					{
-						mMessage.setSize( PDU2_BEGIN );
-						
-	                    PDUMessage pduMessage1 = PDUMessageFactory.getMessage( 
-	                    		mMessage.copy(), DataUnitID.PDU1, mAliasList ); 
+						if( mMessage.getInt( PDUMessage.BLOCKS_TO_FOLLOW ) == 1 )
+						{
+							mMessage.setSize( PDU2_BEGIN );
+							
+		                    PDUMessage pduMessage1 = PDUMessageFactory.getMessage( 
+		                    		mMessage.copy(), DataUnitID.PDU1, mAliasList ); 
 
-	                    dispatch( pduMessage1 );
-						
-						mComplete = true;
+		                    dispatch( pduMessage1 );
+							
+							mComplete = true;
+						}
+						else
+						{
+							setDUID( DataUnitID.PDU2 );
+							
+							mMessage.setPointer( PDU2_BEGIN );
+						}
 					}
 					else
 					{
-						setDUID( DataUnitID.PDU2 );
-						
-						mMessage.setPointer( PDU2_BEGIN );
+						mComplete = true;
 					}
 					break;
 				case PDU2:
 					/* Remove interleaving */
 					P25Interleave.deinterleave( mMessage, PDU2_BEGIN, PDU2_END );
 	
-					/* Remove trellis encoding */
-					mHalfRate.decode( mMessage, PDU2_BEGIN, PDU2_END );
-
-					if( mMessage.getInt( PDUMessage.BLOCKS_TO_FOLLOW ) == 2 )
+					/* Remove trellis encoding - abort processing if we have an
+					 * unsuccessful decode due to excessive errors */
+					if( mHalfRate.decode( mMessage, PDU2_BEGIN, PDU2_END ) )
 					{
-						mMessage.setSize( PDU3_BEGIN );
-						
-	                    PDUMessage pduMessage2 = PDUMessageFactory.getMessage( 
-	                    		mMessage.copy(), DataUnitID.PDU2, mAliasList ); 
+						if( mMessage.getInt( PDUMessage.BLOCKS_TO_FOLLOW ) == 2 )
+						{
+							mMessage.setSize( PDU3_BEGIN );
+							
+		                    PDUMessage pduMessage2 = PDUMessageFactory.getMessage( 
+		                    		mMessage.copy(), DataUnitID.PDU2, mAliasList ); 
 
-	                    dispatch( pduMessage2 );
-						
-						mComplete = true;
+		                    dispatch( pduMessage2 );
+							
+							mComplete = true;
+						}
+						else
+						{
+							setDUID( DataUnitID.PDU3 );
+							
+							mMessage.setPointer( PDU3_BEGIN );
+						}
 					}
 					else
 					{
-						setDUID( DataUnitID.PDU3 );
-						
-						mMessage.setPointer( PDU3_BEGIN );
+						mComplete = true;
 					}
 					break;
 				case PDU3:
 					/* Remove interleaving */
 					P25Interleave.deinterleave( mMessage, PDU3_BEGIN, PDU3_END );
 	
-					/* Remove trellis encoding */
-					mHalfRate.decode( mMessage, PDU3_BEGIN, PDU3_END );
-					
-					mMessage.setSize( PDU3_DECODED_END );
-					
-                    PDUMessage pduMessage3 = PDUMessageFactory.getMessage( 
-                    		mMessage.copy(), DataUnitID.PDU3, mAliasList ); 
+					/* Remove trellis encoding - abort processing if we have an
+					 * unsuccessful decode due to excessive errors */
+					if( mHalfRate.decode( mMessage, PDU3_BEGIN, PDU3_END ) )
+					{
+						mMessage.setSize( PDU3_DECODED_END );
+						
+	                    PDUMessage pduMessage3 = PDUMessageFactory.getMessage( 
+	                    		mMessage.copy(), DataUnitID.PDU3, mAliasList ); 
 
-                    dispatch( pduMessage3 );
+	                    dispatch( pduMessage3 );
+					}
 					
 					mComplete = true;
 					break;
 				case TDU:
-					mComplete = true;
                     dispatch( new TDUMessage( mMessage.copy(), mDUID, mAliasList ) );
+					mComplete = true;
 					break;
 				case TDULC:
-					mComplete = true;
                     dispatch( new P25Message( mMessage.copy(), mDUID, mAliasList ) );
+					mComplete = true;
 					break;
 				case TSBK1:
 					/* Remove interleaving */
 					P25Interleave.deinterleave( mMessage, TSBK_BEGIN, TSBK_END );
 	
-					/* Remove trellis encoding */
-					mHalfRate.decode( mMessage, TSBK_BEGIN, TSBK_END );
-
-					BitSetBuffer tsbkBuffer1 = mMessage.copy();
-					tsbkBuffer1.setSize( TSBK_DECODED_END );
-					
-                    TSBKMessage tsbkMessage1 = TSBKMessageFactory.getMessage( 
-                            tsbkBuffer1, DataUnitID.TSBK1, mAliasList ); 
-
-					if( tsbkMessage1.isLastBlock() )
+					/* Remove trellis encoding - abort processing if we have an
+					 * unsuccessful decode due to excessive errors */
+					if( mHalfRate.decode( mMessage, TSBK_BEGIN, TSBK_END ) )
 					{
-						mComplete = true;
+						BitSetBuffer tsbkBuffer1 = mMessage.copy();
+						tsbkBuffer1.setSize( TSBK_DECODED_END );
+						
+	                    TSBKMessage tsbkMessage1 = TSBKMessageFactory.getMessage( 
+	                            tsbkBuffer1, DataUnitID.TSBK1, mAliasList ); 
+
+						if( tsbkMessage1.isLastBlock() )
+						{
+							mComplete = true;
+						}
+						else
+						{
+							setDUID( DataUnitID.TSBK2 );
+							mMessage.setPointer( TSBK_BEGIN );
+						}
+						
+						dispatch( tsbkMessage1 );
 					}
 					else
 					{
-						setDUID( DataUnitID.TSBK2 );
-						mMessage.setPointer( TSBK_BEGIN );
+						mComplete = true;
 					}
-					
-					dispatch( tsbkMessage1 );
 					break;
 				case TSBK2:
 					/* Remove interleaving */
 					P25Interleave.deinterleave( mMessage, TSBK_BEGIN, TSBK_END );
 
-					/* Remove trellis encoding */
-					mHalfRate.decode( mMessage, TSBK_BEGIN, TSBK_END );
-
-					BitSetBuffer tsbkBuffer2 = mMessage.copy();
-					tsbkBuffer2.setSize( TSBK_DECODED_END );
-					
-                    TSBKMessage tsbkMessage2 = TSBKMessageFactory.getMessage( 
-                            tsbkBuffer2, DataUnitID.TSBK2, mAliasList ); 
-
-					if( tsbkMessage2.isLastBlock() )
+					/* Remove trellis encoding - abort processing if we have an
+					 * unsuccessful decode due to excessive errors */
+					if( mHalfRate.decode( mMessage, TSBK_BEGIN, TSBK_END ) )
 					{
-						mComplete = true;
+						BitSetBuffer tsbkBuffer2 = mMessage.copy();
+						tsbkBuffer2.setSize( TSBK_DECODED_END );
+						
+	                    TSBKMessage tsbkMessage2 = TSBKMessageFactory.getMessage( 
+	                            tsbkBuffer2, DataUnitID.TSBK2, mAliasList ); 
+
+						if( tsbkMessage2.isLastBlock() )
+						{
+							mComplete = true;
+						}
+						else
+						{
+							setDUID( DataUnitID.TSBK3 );
+							mMessage.setPointer( TSBK_BEGIN );
+						}
+						
+						dispatch( tsbkMessage2 );
 					}
 					else
 					{
-						setDUID( DataUnitID.TSBK3 );
-						mMessage.setPointer( TSBK_BEGIN );
+						mComplete = true;
 					}
-					
-					dispatch( tsbkMessage2 );
-					
 					break;
 				case TSBK3:
 					/* Remove interleaving */
 					P25Interleave.deinterleave( mMessage, TSBK_BEGIN, TSBK_END );
 	
-					/* Remove trellis encoding */
-					mHalfRate.decode( mMessage, TSBK_BEGIN, TSBK_END );
+					/* Remove trellis encoding - abort processing if we have an
+					 * unsuccessful decode due to excessive errors */
+					if( mHalfRate.decode( mMessage, TSBK_BEGIN, TSBK_END ) )
+					{
+	                    BitSetBuffer tsbkBuffer3 = mMessage.copy();
+						tsbkBuffer3.setSize( TSBK_DECODED_END );
+	                    
+	                    TSBKMessage tsbkMessage3 = TSBKMessageFactory.getMessage( 
+	                            tsbkBuffer3, DataUnitID.TSBK3, mAliasList ); 
 
-                    BitSetBuffer tsbkBuffer3 = mMessage.copy();
-					tsbkBuffer3.setSize( TSBK_DECODED_END );
-                    
-                    TSBKMessage tsbkMessage3 = TSBKMessageFactory.getMessage( 
-                            tsbkBuffer3, DataUnitID.TSBK3, mAliasList ); 
+						dispatch( tsbkMessage3 );
+					}
 
 					mComplete = true;
-
-					dispatch( tsbkMessage3 );
-					
 					break;
 				case UNKN:
 					mComplete = true;

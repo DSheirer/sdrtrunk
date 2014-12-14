@@ -57,9 +57,9 @@ public class MDCCallEvent extends CallEvent
     }
 
     @Override
-    public int getChannel()
+    public String getChannel()
     {
-        return 0;
+        return null;
     }
 
     @Override

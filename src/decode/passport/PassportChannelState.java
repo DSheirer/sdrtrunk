@@ -146,7 +146,7 @@ public class PassportChannelState extends ChannelState
 		                    	mCurrentCallEvent = new PassportCallEvent
 		                    			.Builder( CallEventType.CALL )
 		                    			.aliasList( mAliasList )
-		                    			.channel( mChannelNumber )
+		                    			.channel( String.valueOf( mChannelNumber ) )
 		                    			.frequency( passport.getLCNFrequency() )
 		                    			.to( String.valueOf( passport.getTalkgroupID() ) )
 		                    			.build();
@@ -179,7 +179,7 @@ public class PassportChannelState extends ChannelState
 	                    		PassportCallEvent event = new PassportCallEvent
 		                    			.Builder( CallEventType.CALL_DETECT )
 		                    			.aliasList( mAliasList )
-		                    			.channel( lcn )
+		                    			.channel( String.valueOf( lcn ) )
 		                    			.details( "Site: " + passport.getSite() )
 		                    			.frequency( passport.getLCNFrequency() )
 		                    			.to( tg )
@@ -220,7 +220,7 @@ public class PassportChannelState extends ChannelState
 	                	mCallEventModel.add( new PassportCallEvent
             			.Builder( CallEventType.REGISTER )
             			.aliasList( mAliasList )
-            			.channel( passport.getLCN() )
+            			.channel( String.valueOf( passport.getLCN() ) )
             			.frequency( passport.getLCNFrequency() )
             			.to( passport.getToID() )
             			.build() );

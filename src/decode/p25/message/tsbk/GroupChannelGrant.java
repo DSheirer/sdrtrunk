@@ -41,15 +41,19 @@ public abstract class GroupChannelGrant extends ChannelGrant
             sb.append( " EMERGENCY" );
         }
         
-        sb.append( " CHAN:" );
-        sb.append( getChannelID() + "/" + getChannelNumber() );
-        
-        sb.append( " FROM:" );
+        sb.append( " SOURCE UNIT:" );
         sb.append( getSourceAddress() );
         
-        sb.append( " GRP:" );
+        sb.append( " GROUP:" );
         sb.append( getGroupAddress() );
         
+        sb.append( " CHAN:" );
+        sb.append( getChannelIdentifier() + "-" + getChannel() );
+        
+        sb.append( " DN:" + getDownlinkFrequency() );
+        
+        sb.append( " UP:" + getUplinkFrequency() );
+
         return sb.toString();
     }
     

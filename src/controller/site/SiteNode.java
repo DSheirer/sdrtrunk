@@ -64,7 +64,7 @@ public class SiteNode extends ConfigurableNode
     }
 	
 	@Override
-	public Color getForegroundColor()
+	public Color getBackgroundColor()
 	{
     	@SuppressWarnings( "unchecked" )
         Enumeration<DefaultMutableTreeNode> nodes = children();
@@ -73,9 +73,9 @@ public class SiteNode extends ConfigurableNode
     	{
     		ChannelNode child = (ChannelNode)nodes.nextElement();
 
-    		if( child.getForegroundColor() != null )
+    		if( child.getBackgroundColor() != null )
     		{
-    			return Color.BLUE;
+    			return Color.CYAN;
     		}
     	}
 

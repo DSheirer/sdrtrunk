@@ -58,7 +58,7 @@ public class BaseNode extends DefaultMutableTreeNode
     	return null;
     }
     
-    public Color getForegroundColor()
+    public Color getBackgroundColor()
     {
     	return null;
     }
