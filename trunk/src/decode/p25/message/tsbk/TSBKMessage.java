@@ -2,6 +2,8 @@ package decode.p25.message.tsbk;
 
 import alias.AliasList;
 import bits.BitSetBuffer;
+import crc.CRC;
+import crc.CRCP25;
 import decode.p25.message.P25Message;
 import decode.p25.message.tsbk.motorola.MotorolaOpcode;
 import decode.p25.message.tsbk.vendor.VendorOpcode;
@@ -11,6 +13,7 @@ import decode.p25.reference.Vendor;
 
 public class TSBKMessage extends P25Message
 {
+	public static final int MESSAGE_START = 64;
 	public static final int LAST_BLOCK_FLAG = 64;
 	public static final int ENCRYPTED_FLAG = 65;
 	public static final int[] OPCODE = { 66,67,68,69,70,71 };
@@ -28,13 +31,20 @@ public class TSBKMessage extends P25Message
 	public static final int[] BLOCK10 = { 136,137,138,139,140,141,142,143 };
 	public static final int[] BLOCK11 = { 144,145,146,147,148,149,150,151 };
 	public static final int[] BLOCK12 = { 152,153,154,155,156,157,158,159 };
-	
-    public static final int[] CRC = { 144,145,146,147,148,149,150,151,152,153,
-        154,155,156,157,158,159 };
+	public static final int CRC_START = 144;
 
     public TSBKMessage( BitSetBuffer message, DataUnitID duid, AliasList aliasList )
     {
 	    super( message, duid, aliasList );
+	    
+	    checkCRC();
+    }
+    
+    protected void checkCRC()
+    {
+    	mCRC = new CRC[ 1 ];
+
+    	mCRC[ 0 ] = CRCP25.correctCCITT80( mMessage, MESSAGE_START, CRC_START );
     }
 	
 	public boolean isLastBlock()

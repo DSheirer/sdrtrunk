@@ -131,7 +131,6 @@ public class P25ChannelState extends ChannelState
 					if( alias != null )
 					{
 						mSiteAlias = alias.getName();
-						
 					}
 					else
 					{

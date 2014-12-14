@@ -199,7 +199,8 @@ public class BitSetBuffer extends BitSet
         }
         else
         {
-            throw new BitSetFullException( "bitset is full -- contains " + ( mPointer + 1 ) + " bits" );
+            throw new BitSetFullException( "bitset is full -- contains " + 
+            		( mPointer + 1 ) + " bits" );
         }
     }
     
@@ -268,24 +269,25 @@ public class BitSetBuffer extends BitSet
      */
     public int getInt( int[] bits )
     {
-    	if( bits.length > 31 )
+    	if( bits.length > 32 )
     	{
-    		throw new IllegalArgumentException( "BitSetBuffer getInt() "
-				+ "array length must be less than 32 or the value exceeds "
-				+ "integer size" );
+    		throw new IllegalArgumentException( "Overflow - must be 32 bits "
+    				+ "or less to fit into a primitive integer value" );
     	}
-    	
-    	int retVal = 0;
-    	
-    	for( int x = 0; x < bits.length; x++ )
+
+    	int value = 0;
+
+    	for( int index: bits )
     	{
-    		if( get( bits[ x ] ) )
+    		value = Integer.rotateLeft( value, 1 );
+    		
+    		if( get( index ) )
     		{
-    			retVal += 1<<( bits.length - 1 - x );
+    			value++;
     		}
     	}
     	
-    	return retVal;
+    	return value;
     }
     
     /**
@@ -297,25 +299,28 @@ public class BitSetBuffer extends BitSet
      */
     public long getLong( int[] bits )
     {
-    	if( bits.length > 63 )
+    	if( bits.length > 64 )
     	{
-    		throw new IllegalArgumentException( "BitSetBuffer getLong() "
-				+ "array length must be less than 64 or the value exceeds "
-				+ "a primitive long size" );
+    		throw new IllegalArgumentException( "Overflow - must be 64 bits "
+    				+ "or less to fit into a primitive long value" );
     	}
 
-    	long retVal = 0;
-    	
-    	for( int x = 0; x < bits.length; x++ )
+    	long value = 0;
+
+    	for( int index: bits )
     	{
-    		if( get( bits[ x ] ) )
+    		value = Long.rotateLeft( value, 1 );
+    		
+    		if( get( index ) )
     		{
-    			retVal += 1<<( bits.length - 1 - x );
+    			value++;
     		}
     	}
     	
-    	return retVal;
+    	return value;
     }
+    
+    
 
     /**
      * Converts up to 63 bits from the bit array into an integer and then 
@@ -328,13 +333,13 @@ public class BitSetBuffer extends BitSet
      */
     public String getHex( int[] bits, int digitDisplayCount )
     {
-    	if( bits.length <= 31 )
+    	if( bits.length <= 32 )
     	{
         	int value = getInt( bits );
         	
         	return String.format( "%0" + digitDisplayCount + "X", value );
     	}
-    	else if( bits.length <= 63 )
+    	else if( bits.length <= 64 )
     	{
     		long value = getLong( bits );
         	
@@ -351,13 +356,13 @@ public class BitSetBuffer extends BitSet
     {
     	int length = lsb - msb;
     	
-    	if( length <= 31 )
+    	if( length <= 32 )
     	{
         	int value = getInt( msb, lsb );
         	
         	return String.format( "%0" + digitDisplayCount + "X", value );
     	}
-    	else if( length <= 63 )
+    	else if( length <= 64 )
     	{
     		long value = getLong( msb, lsb );
         	
@@ -366,7 +371,7 @@ public class BitSetBuffer extends BitSet
     	else
     	{
     		throw new IllegalArgumentException( "BitSetBuffer.getHex() "
-    				+ "maximum array length is 63 bits" );
+    				+ "maximum array length is 64 bits" );
     	}
     }
 
@@ -380,22 +385,23 @@ public class BitSetBuffer extends BitSet
     {
     	if( end - start > 32 )
     	{
-    		throw new IllegalArgumentException( "BitSetBuffer - requested bit "
-    				+ "length [" + ( end - start ) + "] is larger than an "
-    						+ "integer (32 bits)" );
+    		throw new IllegalArgumentException( "Overflow - must be 32 bits "
+    				+ "or less to fit into a primitive integer value" );
     	}
     	
-    	int retVal = 0;
+    	int value = 0;
     	
     	for( int x = start; x <= end; x++ )
     	{
+    		value = Integer.rotateLeft( value, 1 );
+
     		if( get( x ) )
     		{
-    			retVal += 1<<( end - x );
+    			value++;;
     		}
     	}
     	
-    	return retVal;
+    	return value;
     }
     
     /**
@@ -406,16 +412,116 @@ public class BitSetBuffer extends BitSet
      */
     public long getLong( int start, int end )
     {
-    	long retVal = 0;
+    	if( end - start > 64 )
+    	{
+    		throw new IllegalArgumentException( "Overflow - must be 64 bits "
+    				+ "or less to fit into a primitive long value" );
+    	}
+    	
+    	long value = 0;
     	
     	for( int x = start; x <= end; x++ )
     	{
+    		value = Long.rotateLeft( value, 1 );
+    		
     		if( get( x ) )
     		{
-    			retVal += 1<<( end - x );
+    			value++;
     		}
     	}
     	
-    	return retVal;
+    	return value;
     }
+
+    /**
+     * Creates a buffer of size=width and fills the buffer with the fill value
+     * @param width - size of the buffer
+     * @param fill - initial fill value
+     * @return - filled buffer
+     */
+	public static BitSetBuffer getBuffer( int width, long fill )
+	{
+		BitSetBuffer buffer = new BitSetBuffer( width );
+		
+		buffer.load( 0, width, fill );
+		
+		return buffer;
+	}
+
+	/**
+	 * Loads the value into the buffer starting at the offset index, and 
+	 * assuming that the value represents (width) number of bits.  The MSB of
+	 * the value will be located at the offset and the LSB of the value will 
+	 * be located at ( offset + width ).
+	 * 
+	 * @param offset - starting bit index for the MSB of the value
+	 * @param width - representative bit width of the value
+	 * @param value - value to be loaded into the buffer
+	 */
+	public void load( int offset, int width, long value )
+	{
+		for( int x = 0; x < width; x++ )
+		{
+			long mask = Long.rotateLeft( 1, width - x - 1 );
+
+			if( ( mask & value ) == mask )
+			{
+				set( offset + x );
+			}
+		}
+	}
+	
+	/**
+	 * Generates an array of message bit position indexes to support accessing
+	 * a contiguous field value
+	 * 
+	 * @param start - starting bit position of the field
+	 * @param length - field length
+	 * @return - array of field indexes
+	 */
+	public static int[] getFieldIndexes( int start, int length, boolean bigEndian )
+	{
+		int[] checksumIndexes = new int[ length ];
+		
+		for( int x = 0; x < length; x++ )
+		{
+			if( bigEndian )
+			{
+				checksumIndexes[ length - x - 1 ] = start + x;
+			}
+			else
+			{
+				checksumIndexes[ x ] = start + x;
+			}
+		}
+
+		return checksumIndexes;
+	}
+
+	/**
+	 * Creates a bitsetbuffer loaded from a string of zeros and ones
+	 * 
+	 * @param message - string containing only zeros and ones
+	 * @return - loaded buffer
+	 */
+	public static BitSetBuffer load( String message )
+	{
+		if( !message.matches( "[01]*" ) )
+		{
+			throw new IllegalArgumentException( 
+					"Message must contain only zeros and ones" );
+		}
+		
+		BitSetBuffer buffer = new BitSetBuffer( message.length() );
+
+		for( int x = 0; x < message.length(); x++ )
+		{
+			if( message.substring( x, x + 1 ).contentEquals( "1" ) )
+			{
+				buffer.set( x );
+			}
+		}
+
+		return buffer;
+	}
 }

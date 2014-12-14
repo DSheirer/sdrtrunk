@@ -47,6 +47,11 @@ public enum CRC
 
 	public static String format( CRC[] checks )
 	{
+		if( checks == null )
+		{
+			return CRC.UNKNOWN.getAbbreviation();
+		}
+		
 		StringBuilder sb = new StringBuilder();
 		
 		for( int x = 0; x < checks.length; x++ )
