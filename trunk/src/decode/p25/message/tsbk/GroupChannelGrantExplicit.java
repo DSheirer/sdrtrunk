@@ -2,6 +2,7 @@ package decode.p25.message.tsbk;
 
 import alias.AliasList;
 import bits.BitSetBuffer;
+import decode.p25.message.tsbk.osp.control.IdentifierUpdate;
 import decode.p25.reference.DataUnitID;
 
 public abstract class GroupChannelGrantExplicit extends ChannelGrant
@@ -15,6 +16,9 @@ public abstract class GroupChannelGrantExplicit extends ChannelGrant
     public static final int[] GROUP_ADDRESS = { 128,129,130,131,132,133,134,135,
         136,137,138,139,140,141,142,143 };
     
+    private IdentifierUpdate mTransmitIdentifierUpdate;
+    private IdentifierUpdate mReceiveIdentifierUpdate;
+
     public GroupChannelGrantExplicit( BitSetBuffer message, 
                                    DataUnitID duid,
                                    AliasList aliasList ) 
@@ -68,5 +72,39 @@ public abstract class GroupChannelGrantExplicit extends ChannelGrant
     public String getGroupAddress()
     {
         return mMessage.getHex( GROUP_ADDRESS, 4 );
+    }
+    
+	@Override
+    public void setIdentifierMessage( int identifier, IdentifierUpdate message )
+    {
+		if( identifier == getTransmitChannelID() )
+		{
+			mTransmitIdentifierUpdate = message;
+		}
+		
+		if( identifier == getReceiveChannelID() )
+		{
+			mReceiveIdentifierUpdate = message;
+		}
+    }
+
+	@Override
+    public int[] getIdentifiers()
+    {
+		int[] identifiers = new int[ 2 ];
+		identifiers[ 0 ] = getTransmitChannelID();
+		identifiers[ 1 ] = getReceiveChannelID();
+		
+		return identifiers;
+    }
+    
+    public long getDownlinkFrequency()
+    {
+    	return calculateDownlink( mTransmitIdentifierUpdate, getChannel() );
+    }
+    
+    public long getUplinkFrequency()
+    {
+    	return calculateUplink( mReceiveIdentifierUpdate, getChannel() );
     }
 }

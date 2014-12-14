@@ -52,7 +52,7 @@ public class LocationRegistrationResponse extends TSBKMessage
     
     public String getGroupAddress()
     {
-    	return mMessage.getHex( GROUP_ADDRESS, 6 );
+    	return mMessage.getHex( GROUP_ADDRESS, 4 );
     }
 
     public String getRFSSID()

@@ -34,7 +34,7 @@ public class ChannelCWIDUpdate extends MotorolaTSBKMessage
     @Override
     public String getEventType()
     {
-        return MotorolaOpcode.CHANNEL_CWID_UPDATE.getDescription();
+        return MotorolaOpcode.OP0B.getDescription();
     }
     
     public String getMessage()
@@ -58,92 +58,29 @@ public class ChannelCWIDUpdate extends MotorolaTSBKMessage
     public String getCWID()
     {
     	StringBuilder sb = new StringBuilder();
-    	
-    	int char1 = mMessage.getInt( CHARACTER_1 );
-    	
-    	if( char1 != 0 )
-    	{
-    		sb.append( (char)( char1 + 46 ) );
-    	}
-    	else
-    	{
-    		return null;
-    	}
-    	
-    	int char2 = mMessage.getInt( CHARACTER_2 );
-    	
-    	if( char2 != 0 )
-    	{
-    		sb.append( (char)( char2 + 46 ) );
-    	}
-    	else
-    	{
-    		return sb.toString();
-    	}
 
-    	int char3 = mMessage.getInt( CHARACTER_3 );
-    	
-    	if( char3 != 0 )
-    	{
-    		sb.append( (char)( char3 + 46 ) );
-    	}
-    	else
-    	{
-    		return sb.toString();
-    	}
-
-    	int char4 = mMessage.getInt( CHARACTER_4 );
-    	
-    	if( char4 != 0 )
-    	{
-    		sb.append( (char)( char4 + 46 ) );
-    	}
-    	else
-    	{
-    		return sb.toString();
-    	}
-
-    	int char5 = mMessage.getInt( CHARACTER_5 );
-    	
-    	if( char5 != 0 )
-    	{
-    		sb.append( (char)( char5 + 46 ) );
-    	}
-    	else
-    	{
-    		return sb.toString();
-    	}
-
-    	int char6 = mMessage.getInt( CHARACTER_6 );
-    	
-    	if( char6 != 0 )
-    	{
-    		sb.append( (char)( char6 + 46 ) );
-    	}
-    	else
-    	{
-    		return sb.toString();
-    	}
-
-    	int char7 = mMessage.getInt( CHARACTER_7 );
-    	
-    	if( char7 != 0 )
-    	{
-    		sb.append( (char)( char7 + 46 ) );
-    	}
-    	else
-    	{
-    		return sb.toString();
-    	}
-
-    	int char8 = mMessage.getInt( CHARACTER_8 );
-    	
-    	if( char8 != 0 )
-    	{
-    		sb.append( (char)( char8 + 46 ) );
-    	}
+    	sb.append( getCharacter( CHARACTER_1 ) );
+    	sb.append( getCharacter( CHARACTER_2 ) );
+    	sb.append( getCharacter( CHARACTER_3 ) );
+    	sb.append( getCharacter( CHARACTER_4 ) );
+    	sb.append( getCharacter( CHARACTER_5 ) );
+    	sb.append( getCharacter( CHARACTER_6 ) );
+    	sb.append( getCharacter( CHARACTER_7 ) );
+    	sb.append( getCharacter( CHARACTER_8 ) );
     	
 		return sb.toString();
+    }
+    
+    private String getCharacter( int[] field )
+    {
+    	int value = mMessage.getInt( field );
+    	
+    	if( value != 0 )
+    	{
+    		return String.valueOf( (char)( value + 43 ) );
+    	}
+    	
+    	return null;
     }
     
     public int getIdentifier()

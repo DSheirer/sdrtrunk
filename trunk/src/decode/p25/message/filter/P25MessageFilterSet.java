@@ -12,7 +12,7 @@ public class P25MessageFilterSet extends FilterSet<Message>
 		
 		addFilter( new PDUMessageFilter() );
 		addFilter( new TDUMessageFilter() );
-		addFilter( new TSBKMessageFilter() );
+		addFilter( new TSBKMessageFilterSet() );
 	}
 
 	@Override

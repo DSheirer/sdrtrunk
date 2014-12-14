@@ -1,17 +1,20 @@
 package decode.p25;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import bits.BitSetBuffer;
 import dsp.fsk.Dibit;
-import dsp.fsk.P25MessageFramer;
 
 public class TrellisHalfRate
 {
-	private final static Logger mLog = LoggerFactory.getLogger( TrellisHalfRate.class );
+	public final static int MAX_ERROR_THRESHOLD = 7;
+	
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( TrellisHalfRate.class );
 
 	private ArrayList<ConstellationNode> mConstellationNodes = 
 				new ArrayList<ConstellationNode>();
@@ -94,7 +97,7 @@ public class TrellisHalfRate
 		return sb.toString();
 	}
 
-	public void decode( BitSetBuffer message, int start, int end )
+	public boolean decode( BitSetBuffer message, int start, int end )
 	{
 		/* load each of the nodes with de-interleaved constellations */
 		for( int index = 0; index < 49; index++ )
@@ -104,20 +107,24 @@ public class TrellisHalfRate
 			mConstellationNodes.get( index ).setConstellation( c );
 		}
 
-//		mLog.debug( constellationsToString( "  LOADED: ") );
-//		
 		/* test to see if constellations are correct - otherwise correct them */
 		ConstellationNode firstNode = mConstellationNodes.get( 0 );
 
-		if( !firstNode.hasStateDibit( Dibit.D00_PLUS_1 ) || !firstNode.isCorrect() )
-		{
-			firstNode.correctTo( Dibit.D00_PLUS_1 );
-		}
+		int errorCount = firstNode.getErrorCount();
 
-//		mLog.debug( constellationsToString( "CORRECTD: " ) );
-//		
-//		mLog.debug( inputsToString() );
-//
+		if( errorCount > 0 )
+		{
+			if( errorCount < MAX_ERROR_THRESHOLD )
+			{
+				/* repair the errors */
+				firstNode.correctTo( Dibit.D00_PLUS_1 );
+			}
+			else
+			{
+				return false;
+			}
+		}
+		
 		/* clear constellations from original message */
 		message.clear( start, end );
 
@@ -137,6 +144,8 @@ public class TrellisHalfRate
 				message.set( start + ( index * 2 ) + 1 );
 			}
 		}
+		
+		return true;
 	}
 	
 	private Constellation getConstellation( BitSetBuffer message, int index )
@@ -301,24 +310,18 @@ public class TrellisHalfRate
 		 * @return - true - all node connections to the right are correct
 		 * 			 false - one or more nodes to the right are incorrect
 		 */
-		public boolean isCorrect()
+		public int getErrorCount()
 		{
-			if( mCorrect )
-			{
-				return mCorrect;
-			}
-			
 			if( mConnectedNode == null )
 			{
 				mCorrect = true;
+				
+				return 0;
 			}
-			else
-			{
-				mCorrect = mConnectedNode.isCorrect() &&
-					mConstellation.getInput() == mConnectedNode.getStateDibit();
-			}
+			
+			mCorrect = mConstellation.getInput() == mConnectedNode.getStateDibit();
 
-			return mCorrect;
+			return mConnectedNode.getErrorCount() + ( mCorrect ? 0 : 1 );
 		}
 		
 		public Dibit getStateDibit()
@@ -495,15 +498,17 @@ public class TrellisHalfRate
 	 */
 	public static void main( String[] args )
 	{
-		String original = "00100110000001111000101111110011111000011110100111100001000100100010110000001101100100100010001000100010001000101100111000100010111110001000100010001000100010001000100010001000100010001000100010001000100010001000100010001000101100001110000101000110011100001110";
-
-		BitSetBuffer buffer = new BitSetBuffer( original.length() );
+		Random random = new Random();
+		
+		BitSetBuffer buffer = new BitSetBuffer( 196 );
 		
 		try
 		{
-			for( int x = 0; x < original.length(); x++ )
+			for( int x = 0; x < 196; x++ )
 			{
-				if( original.substring( x, x + 1 ).contentEquals( "0" ) )
+				int number = random.nextInt( 2 );
+				
+				if( number == 1 )
 				{
 					buffer.add( false );
 				}
@@ -518,12 +523,11 @@ public class TrellisHalfRate
 			e.printStackTrace();
 		}
 
-		mLog.debug( "ORIGINAL: " + original );
 		mLog.debug( "  BUFFER: " + buffer.toString() );
 		
 		TrellisHalfRate t = new TrellisHalfRate();
 		
-		t.decode( buffer, 64, original.length() );
+		t.decode( buffer, 0, 196 );
 		mLog.debug( " DECODED: " + buffer.toString() );
 		mLog.debug( "Finished!" );
 	}

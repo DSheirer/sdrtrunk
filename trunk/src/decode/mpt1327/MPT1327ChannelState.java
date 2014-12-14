@@ -115,7 +115,7 @@ public class MPT1327ChannelState extends ChannelState
 							mCallEventModel.add( 
 									new MPT1327CallEvent.Builder( CallEventType.REGISTER )
 										.aliasList( getProcessingChain().getAliasList() )
-										.channel( mChannelNumber )
+										.channel( String.valueOf( mChannelNumber ) )
 										.details( "REGISTERED ON NETWORK" )
 										.frequency( mChannelMap.getFrequency( mChannelNumber ) )
 										.from( mpt.getToID() )
@@ -127,7 +127,7 @@ public class MPT1327ChannelState extends ChannelState
 							mCallEventModel.add( 
 									new MPT1327CallEvent.Builder( CallEventType.ACKNOWLEDGE )
 										.aliasList( getProcessingChain().getAliasList() )
-										.channel( mChannelNumber )
+										.channel( String.valueOf( mChannelNumber ) )
 										.details( "ACK " + identType.getLabel() )
 										.frequency( mChannelMap.getFrequency( mChannelNumber ) )
 										.from( mpt.getFromID() )
@@ -139,7 +139,7 @@ public class MPT1327ChannelState extends ChannelState
 						mCallEventModel.add( 
 								new MPT1327CallEvent.Builder( CallEventType.REQUEST )
 									.aliasList( getProcessingChain().getAliasList() )
-									.channel( mChannelNumber )
+									.channel( String.valueOf( mChannelNumber ) )
 									.details( ( (MPT1327Message) message ).getRequestString() )
 									.frequency( mChannelMap.getFrequency( mChannelNumber ) )
 									.from( mpt.getFromID() )
@@ -150,7 +150,7 @@ public class MPT1327ChannelState extends ChannelState
 						mCallEventModel.add( 
 								new MPT1327CallEvent.Builder( CallEventType.STATUS )
 									.aliasList( getProcessingChain().getAliasList() )
-									.channel( mChannelNumber )
+									.channel( String.valueOf( mChannelNumber ) )
 									.details( mpt.getStatusMessage() )
 									.frequency( mChannelMap.getFrequency( mChannelNumber ) )
 									.from( mpt.getFromID() )
@@ -233,7 +233,7 @@ public class MPT1327ChannelState extends ChannelState
 								MPT1327CallEvent callStartEvent = 
 										new MPT1327CallEvent.Builder( type )
 								.aliasList( traffic.getProcessingChain().getAliasList() )
-								.channel( channelNumber )
+								.channel( String.valueOf( channelNumber ) )
 								.frequency( mChannelMap.getFrequency( channelNumber ) )
 								.from( mpt.getFromID() )
 								.to( mpt.getToID() )
@@ -293,7 +293,7 @@ public class MPT1327ChannelState extends ChannelState
 				mCallEventModel.add( 
 						new MPT1327CallEvent.Builder( type )
 							.aliasList( getAliasList() )
-							.channel( mChannelNumber )
+							.channel( String.valueOf( mChannelNumber ) )
 							.frequency( mChannelMap.getFrequency( mChannelNumber ) )
 							.from( mFromTalkgroup )
 							.to( mToTalkgroup )

@@ -20,4 +20,5 @@ public class GroupVoiceChannelGrant extends GroupChannelGrant
     {
         return Opcode.GROUP_VOICE_CHANNEL_GRANT.getDescription();
     }
+    
 }

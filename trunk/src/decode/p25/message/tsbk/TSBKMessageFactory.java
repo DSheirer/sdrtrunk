@@ -196,9 +196,9 @@ public class TSBKMessageFactory
 				
 				switch( motorolaOpcode )
 				{
-					case CHANNEL_CWID_UPDATE:
+					case OP0B:
 						return new ChannelCWIDUpdate( message, duid, aliasList );
-					case SYSTEM_LOADING:
+					case OP09:
 						return new SystemLoading( message, duid, aliasList );
 					default:
 				}

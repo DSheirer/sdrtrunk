@@ -24,16 +24,16 @@ import decode.DecoderType;
 
 public class P25CallEvent extends CallEvent
 {
-	private int mChannel;
+	private String mChannel;
 	private long mFrequency;
 	
 	public P25CallEvent( CallEventType callEventType, 
-							 AliasList aliasList,
-							 String fromID,
-							 String toID,
-							 int channel,
-							 long frequency,
-							 String details )
+						 AliasList aliasList,
+						 String fromID,
+						 String toID,
+						 String channel,
+						 long frequency,
+						 String details )
     {
 	    super( DecoderType.MPT1327, callEventType, 
 	    		aliasList, fromID, toID, details );
@@ -42,11 +42,11 @@ public class P25CallEvent extends CallEvent
 	    mFrequency = frequency;
     }
 	
-	private Alias getAlias( String mpt1327Talkgroup )
+	private Alias getAlias( String talkgroup )
 	{
 		if( hasAliasList() )
 		{
-			return getAliasList().getMPT1327Alias( mpt1327Talkgroup );
+			return getAliasList().getTalkgroupAlias( talkgroup );
 		}
 
 		return null;
@@ -65,7 +65,7 @@ public class P25CallEvent extends CallEvent
     }
 
 	@Override
-    public int getChannel()
+    public String getChannel()
     {
 	    return mChannel;
     }
@@ -86,7 +86,7 @@ public class P25CallEvent extends CallEvent
 		private String mFromID;
 		private String mToID;
 		private String mDetails;
-		private int mChannel;
+		private String mChannel;
 		private long mFrequency;
 
 		public Builder( CallEventType callEventType )
@@ -106,7 +106,7 @@ public class P25CallEvent extends CallEvent
 			return this;
 		}
 
-		public Builder channel( int channel )
+		public Builder channel( String channel )
 		{
 			mChannel = channel;
 			return this;

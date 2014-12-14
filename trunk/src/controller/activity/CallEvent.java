@@ -127,7 +127,7 @@ public abstract class CallEvent
 	
 	public abstract Alias getToIDAlias();
 	
-	public abstract int getChannel();
+	public abstract String getChannel();
 
 	public abstract long getFrequency();
 	
@@ -216,6 +216,7 @@ public abstract class CallEvent
 		CALL_UNIQUE_ID( "UID Call" ),
 		CALL_NO_TUNER( "Call - No Tuner" ),
 		CALL_TIMEOUT( "Call Timeout" ),
+		DEREGISTER( "Deregister" ),
 		EMERGENCY( "EMERGENCY" ),
 		GPS( "GPS" ),
 		ID_ANI( "ANI" ),

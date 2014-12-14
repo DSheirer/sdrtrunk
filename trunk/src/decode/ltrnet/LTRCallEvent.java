@@ -25,7 +25,7 @@ import decode.ltrstandard.LTRStandardMessage;
 
 public class LTRCallEvent extends CallEvent
 {
-	private int mChannel;
+	private String mChannel;
 	private long mFrequency;
 	private int mValidCallMessages = 1;
 	
@@ -33,7 +33,7 @@ public class LTRCallEvent extends CallEvent
 							 AliasList aliasList,
 							 String fromID,
 							 String toID,
-							 int channel,
+							 String channel,
 							 long frequency,
 							 String details )
     {
@@ -141,7 +141,7 @@ public class LTRCallEvent extends CallEvent
     }
 
 	@Override
-    public int getChannel()
+    public String getChannel()
     {
 	    return mChannel;
     }
@@ -162,7 +162,7 @@ public class LTRCallEvent extends CallEvent
 		private String mFromID;
 		private String mToID;
 		private String mDetails;
-		private int mChannel;
+		private String mChannel;
 		private long mFrequency;
 
 		public Builder( CallEventType callEventType )
@@ -182,7 +182,7 @@ public class LTRCallEvent extends CallEvent
 			return this;
 		}
 
-		public Builder channel( int channel )
+		public Builder channel( String channel )
 		{
 			mChannel = channel;
 			return this;
