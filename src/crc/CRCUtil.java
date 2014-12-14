@@ -17,42 +17,182 @@
  ******************************************************************************/
 package crc;
 
-import java.util.BitSet;
+import java.util.Arrays;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import bits.BitSetBuffer;
 
 public class CRCUtil
 {
-    public static BitSet check( BitSet originalMessage,
-                         int messageLength,
-                         BitSet polynomial,
-                         int polynomialLength )
-    {
-        //Make a copy of the message, since we're going to modify it
-        BitSet copy = originalMessage.get( 0, messageLength );
+	private final static Logger mLog = LoggerFactory.getLogger( CRCUtil.class );
 
-        //Iterate through the message bits
-        for( int x = 0; x < messageLength; x++ )
-        {
-            //If we're aligned against a starting 1 in the message, divide it
-            if( copy.get( 0 ) )
-            {
-                copy.xor( polynomial );
-            }
-            
-            //Left shift the message
-            copy = copy.get( 1, messageLength + polynomialLength - x );
-        }
-        
-        return copy.get( 0, polynomialLength );
-    }
-    
-    public static void log( String message )
-    {
-        System.out.println( message );
-    }
-    
-    public enum Status
-    {
-        PASS, FAIL, BITINVERTED, WORDINVERTED;
-    }
+	public static long[] generate( int messageSize,
+								   int crcSize,
+								   long polynomial,
+								   long initialFill,
+								   boolean includeCRCBitErrors )
+	{
+		long[] crcTable = new long[ messageSize + 
+		                            ( includeCRCBitErrors ? crcSize : 0 ) ];
+		
+		int[] checksumIndexes = new int[ crcSize ];
+		
+		for( int x = 0; x < crcSize; x++ )
+		{
+			checksumIndexes[ x ] = messageSize + x;
+		}
+
+		for( int x = 0; x < messageSize; x++ )
+		{
+			BitSetBuffer message = new BitSetBuffer( messageSize + crcSize );
+			
+			message.load( messageSize, crcSize, initialFill );
+			
+			message.set( x );
+			
+			message = decode( message, polynomial, crcSize, messageSize );
+			
+			long checksum = message.getLong( checksumIndexes );
+			
+			mLog.debug( "Index " + x + " Checksum:" + Long.toHexString( checksum ) );
+			
+			crcTable[ x ] = checksum;
+		}
+		
+		if( includeCRCBitErrors )
+		{
+			for( int x = 0; x < crcSize; x++ )
+			{
+				crcTable[ messageSize + x ] = Long.rotateLeft( 1, x );
+			}
+		}
+		
+		return crcTable;
+	}
+
+
+	/**
+	 * Performs binary division of the polynomial into the message for bits
+	 * in index 0 to index messageLength - 1, leaving the results in the
+	 * checksum filed following the message.
+	 * 
+	 * IN:   MMMMMMMMMMMMMMMMCCCCCCCCCCC
+	 * OUT:  0000000000000000RRRRRRRRRRR
+	 * 
+	 * M: Message
+	 * C: Checksum
+	 * R: Remainder
+	 * 
+	 * @param message - message and crc
+	 * @param polynomial - crc polynomial - must be 1 bit longer than the crc width
+	 * @param messageSize - message length and start of the checksum
+	 * 
+	 * @return message with all message bits zeroed out, and the remainder 
+	 * placed in the crc field which starts at index messageLength
+	 */
+	public static BitSetBuffer decode( BitSetBuffer message,
+									   long polynomial,
+									   int crcSize,
+									   int messageSize )
+	{
+		int MESSAGE_START = 0;
+		
+		for (int i = message.nextSetBit( MESSAGE_START ); 
+				 i >= MESSAGE_START && i < messageSize; 
+				 i = message.nextSetBit( i+1 ) )
+		{
+			BitSetBuffer polySet = new BitSetBuffer( crcSize + i + 1 );
+			
+			polySet.load( i, crcSize + 1, polynomial );
+			
+			message.xor( polySet );
+		}
+		
+		return message;
+	}
+	
+	public static void main( String[] args )
+	{
+		long crcCCITT = 0x11021l;
+		long initialFill = 0xFFFFl;
+		
+		mLog.debug( "Starting" );
+
+		long[] table = generate( 80, 16, crcCCITT, initialFill, true );
+
+		mLog.debug( toCodeArray( table ) );
+		mLog.debug( "Finished" );
+	}
+	
+	public static String toCodeArray( long[] values )
+	{
+		boolean integerArray = true;
+
+		/* Determine the correct primitive type: int or long */
+		for( long value: values )
+		{
+			if( value > Integer.MAX_VALUE || value < Integer.MIN_VALUE )
+			{
+				integerArray = false;
+				break;
+			}
+		}
+
+		StringBuilder sb = new StringBuilder();
+
+		if( integerArray )
+		{
+			sb.append( "\npublic static final int[] CHECKSUMS = new int[]\n" );
+		}
+		else
+		{
+			sb.append( "\npublic static final long[] CHECKSUMS = new long[]\n" );
+		}
+		sb.append( "{\n" );
+
+		StringBuilder row = new StringBuilder();
+		row.append( "    " );
+		
+		for( long value: values )
+		{
+			StringBuilder element = new StringBuilder();
+			
+			element.append( "0x" );
+			element.append( Long.toHexString( value ).toUpperCase() );
+			
+			if( !integerArray )
+			{
+				element.append( "l" );
+			}
+			
+			element.append( ", " );
+			
+			if( row.length() + element.length() <= 80 )
+			{
+				row.append( element.toString() );
+			}
+			else
+			{
+				sb.append( row.toString() );
+				sb.append( "\n" );
+				row = new StringBuilder();
+				row.append( "    " );
+				
+				row.append( element.toString() );
+			}
+		}
+		
+		if( row.length() > 4 )
+		{
+			sb.append( row.toString() );
+			sb.append( "\n" );
+		}
+		
+		sb.append( "};\n" );
+
+		return sb.toString();
+	}
 
 }

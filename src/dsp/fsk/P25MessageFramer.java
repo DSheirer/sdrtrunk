@@ -13,7 +13,7 @@ import bits.BitSetBuffer;
 import bits.BitSetFullException;
 import bits.SyncPatternMatcher;
 import crc.CRC;
-import crc.CRCP25NetworkID;
+import crc.CRCP25;
 import decode.p25.P25Interleave;
 import decode.p25.TrellisHalfRate;
 import decode.p25.message.P25Message;
@@ -220,7 +220,7 @@ public class P25MessageFramer implements Listener<Dibit>
         	switch( mDUID )
         	{
 				case NID:
-					CRC crc = CRCP25NetworkID.checkAndCorrect( mMessage );
+					CRC crc = CRCP25.correctNID( mMessage );
 
 					if( crc != CRC.FAILED_CRC )
 					{

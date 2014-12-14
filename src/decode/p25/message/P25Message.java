@@ -7,6 +7,7 @@ import message.Message;
 import alias.Alias;
 import alias.AliasList;
 import bits.BitSetBuffer;
+import crc.CRC;
 import decode.p25.message.tsbk.osp.control.IdentifierUpdate;
 import decode.p25.reference.DataUnitID;
 
@@ -27,6 +28,8 @@ public class P25Message extends Message
 	protected BitSetBuffer mMessage;
 	protected DataUnitID mDUID;
 	protected AliasList mAliasList;
+	
+	protected CRC[] mCRC;
 	
 	public P25Message( BitSetBuffer message, 
 	                   DataUnitID duid,
@@ -52,7 +55,12 @@ public class P25Message extends Message
 	@Override
     public String getErrorStatus()
     {
-	    return "UNK";
+		if( mCRC == null )
+		{
+			return "UNKNOWN";
+		}
+		
+		return CRC.format( mCRC );
     }
 
 	@Override
