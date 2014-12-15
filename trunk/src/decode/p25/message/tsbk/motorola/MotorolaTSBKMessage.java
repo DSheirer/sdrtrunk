@@ -17,7 +17,7 @@ public class MotorolaTSBKMessage extends TSBKMessage
 	{
 		StringBuilder sb = new StringBuilder();
 
-		sb.append( "SYS:" );
+		sb.append( "NAC:" );
 		sb.append( getNAC() ); /* NAC is the system id for TSBK messages */
 		sb.append( " " );
 		sb.append( getDUID().getLabel() );
