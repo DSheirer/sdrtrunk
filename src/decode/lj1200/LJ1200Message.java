@@ -87,8 +87,7 @@ public class LJ1200Message extends Message
     
     public boolean isValid()
     {
-//    	return mCRC == CRC.PASSED || mCRC == CRC.CORRECTED;
-    	return true;
+    	return mCRC == CRC.PASSED || mCRC == CRC.CORRECTED;
     }
     
     public String getVRC()
