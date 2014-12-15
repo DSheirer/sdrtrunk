@@ -2,6 +2,7 @@ package decode.p25.message.pdu;
 
 import alias.AliasList;
 import bits.BitSetBuffer;
+import crc.CRC;
 import decode.p25.message.P25Message;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
@@ -28,6 +29,10 @@ public class PDUMessage extends P25Message
 	public PDUMessage( BitSetBuffer message, DataUnitID duid, AliasList aliasList )
     {
         super( message, duid, aliasList );
+
+        /* Setup a CRC array to hold the header CRC and the multi-block CRC */
+        mCRC = new CRC[ 2 ];
+        mCRC[ 0 ] = CRC.PASSED;
     }
 	
 	protected String getMessageStub()

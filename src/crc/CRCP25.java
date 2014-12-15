@@ -105,7 +105,7 @@ public class CRCP25
 			
 			if( errorLocation >= 0 )
 			{
-				message.flip( errorLocation );
+				message.flip( errorLocation + NID_MESSAGE_START );
 				
 				return CRC.CORRECTED;
 			}
@@ -144,7 +144,7 @@ public class CRCP25
 			
 			if( errorLocation >= 0 )
 			{
-				message.flip( errorLocation );
+				message.flip( errorLocation + messageStart );
 				
 				return CRC.CORRECTED;
 			}
@@ -212,13 +212,15 @@ public class CRCP25
     
     public static void main( String[] args )
     {
-    	String raw = "0010011000000111100010111111001111100001111010011110000100010010000001011001000000000000000000000000000000000000000000000000000000000000000000001101000111000011";
+    	String raw = "0010011000000111101010111111001111100001111010011110000100010010000010011001000000101101110000000000000000000000000000000000000000000000000000000001011011001100";
     	
     	BitSetBuffer message = BitSetBuffer.load( raw );
     	
     	mLog.debug( "MSG:" + message.toString() );
 
     	CRC results = correctCCITT80( message, 64, 144 );
+
+    	mLog.debug( "COR:" + message.toString() );
 
     	mLog.debug( "Results: " + results.getDisplayText() );
     }

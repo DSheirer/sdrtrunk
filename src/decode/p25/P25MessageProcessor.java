@@ -59,15 +59,6 @@ public class P25MessageProcessor implements Listener<Message>
 			mIdentifierMap.put( identifierUpdate.getIdentifier(), identifierUpdate );
 		}
 		
-//		if( message instanceof TSBKMessage )
-//		{
-//			mLog.debug( message.getMessage() );
-//		}
-//		else
-//		{
-//			mLog.debug( message.getMessage() + "\t" + message.getBinaryMessage() );
-//		}
-		
 		mBroadcaster.broadcast( message );
     }
 	

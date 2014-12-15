@@ -37,6 +37,7 @@ public class P25MessageFramer implements Listener<Dibit>
 	public static final int TSBK_DECODED_END = 160;
 
 	public static final int PDU0_BEGIN = 64;
+	public static final int PDU0_CRC_BEGIN = 144;
 	public static final int PDU0_END = 260;
 	public static final int PDU1_BEGIN = 160;
 	public static final int PDU1_END = 356;
@@ -262,9 +263,19 @@ public class P25MessageFramer implements Listener<Dibit>
 					 * unsuccessful decode due to excessive errors */
 					if( mHalfRate.decode( mMessage, PDU0_BEGIN, PDU0_END ) )
 					{
-						setDUID( DataUnitID.PDU1 );
+						CRC pduCRC = CRCP25.correctCCITT80( mMessage, 
+								PDU0_BEGIN, PDU0_CRC_BEGIN );
 						
-						mMessage.setPointer( PDU1_BEGIN );
+						if( pduCRC != CRC.FAILED_CRC )
+						{
+							setDUID( DataUnitID.PDU1 );
+							
+							mMessage.setPointer( PDU1_BEGIN );
+						}
+						else
+						{
+							mComplete = true;
+						}
 					}
 					else
 					{
