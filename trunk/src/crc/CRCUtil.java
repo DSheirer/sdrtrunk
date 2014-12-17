@@ -17,8 +17,6 @@
  ******************************************************************************/
 package crc;
 
-import java.util.Arrays;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +50,7 @@ public class CRCUtil
 			
 			message.set( x );
 			
-			message = decode( message, polynomial, crcSize, messageSize );
+			message = decode( message, messageSize, polynomial, crcSize );
 			
 			long checksum = message.getLong( checksumIndexes );
 			
@@ -93,9 +91,9 @@ public class CRCUtil
 	 * placed in the crc field which starts at index messageLength
 	 */
 	public static BitSetBuffer decode( BitSetBuffer message,
+									   int messageSize,
 									   long polynomial,
-									   int crcSize,
-									   int messageSize )
+									   int crcSize )
 	{
 		int MESSAGE_START = 0;
 		
@@ -115,13 +113,19 @@ public class CRCUtil
 	
 	public static void main( String[] args )
 	{
-		long crcCCITT = 0x11021l;
-		long initialFill = 0xFFFFl;
-		
 		mLog.debug( "Starting" );
 
-		long[] table = generate( 80, 16, crcCCITT, initialFill, true );
+		long polynomial = 0x104C11DB7l;
 
+//		String raw = "101111101110000000000000001101111110001100111100001110000111000011111111101010111011000011100100";
+//		BitSetBuffer buffer = BitSetBuffer.load( raw );
+//		mLog.debug( "ORIG:" + buffer.toString() );
+//		BitSetBuffer processed = decode( buffer, 64, polynomial, 32 );
+//		mLog.debug( "PROC:" + processed.toString() );
+
+		long[] table = generate( 256, 32, 0x104C11DB7l, 0xFFFFFFFFl, true );
+		
+//		long[] table = generate( 80, 16, 0x11021l, 0xFFFFl, true );
 		mLog.debug( toCodeArray( table ) );
 		mLog.debug( "Finished" );
 	}

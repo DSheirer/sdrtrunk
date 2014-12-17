@@ -36,30 +36,33 @@ public class P25MessageProcessor implements Listener<Message>
 	@Override
     public void receive( Message message )
     {
-		/* Insert band identifier update messages into channel-type messages */
-		if( message instanceof IdentifierUpdateReceiver )
+		if( message.isValid() )
 		{
-			IdentifierUpdateReceiver receiver = (IdentifierUpdateReceiver)message;
-			
-			int[] identifiers = receiver.getIdentifiers();
-			
-			for( int identifier: identifiers )
+			/* Insert band identifier update messages into channel-type messages */
+			if( message instanceof IdentifierUpdateReceiver )
 			{
-				receiver.setIdentifierMessage( identifier, 
-								mIdentifierMap.get( identifier ) );
+				IdentifierUpdateReceiver receiver = (IdentifierUpdateReceiver)message;
+				
+				int[] identifiers = receiver.getIdentifiers();
+				
+				for( int identifier: identifiers )
+				{
+					receiver.setIdentifierMessage( identifier, 
+									mIdentifierMap.get( identifier ) );
+				}
 			}
-		}
 
-		/* Store band identifiers so that they can be injected into channel
-		 * type messages */
-		if( message instanceof IdentifierUpdate )
-		{
-			IdentifierUpdate identifierUpdate = (IdentifierUpdate)message;
+			/* Store band identifiers so that they can be injected into channel
+			 * type messages */
+			if( message instanceof IdentifierUpdate )
+			{
+				IdentifierUpdate identifierUpdate = (IdentifierUpdate)message;
+				
+				mIdentifierMap.put( identifierUpdate.getIdentifier(), identifierUpdate );
+			}
 			
-			mIdentifierMap.put( identifierUpdate.getIdentifier(), identifierUpdate );
+			mBroadcaster.broadcast( message );
 		}
-		
-		mBroadcaster.broadcast( message );
     }
 	
 	public void dispose()

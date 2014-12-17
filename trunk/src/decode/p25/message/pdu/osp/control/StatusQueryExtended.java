@@ -1,5 +1,6 @@
 package decode.p25.message.pdu.osp.control;
 
+import crc.CRCP25;
 import alias.AliasList;
 import bits.BitSetBuffer;
 import decode.p25.message.pdu.PDUMessage;
@@ -24,6 +25,10 @@ public class StatusQueryExtended extends PDUMessage
             DataUnitID duid, AliasList aliasList )
     {
 	    super( message, duid, aliasList );
+	    
+	    /* Header block is already error detected/corrected - perform error
+	     * detection correction on the intermediate and final data blocks */
+	    mCRC[ 1 ] = CRCP25.correctPDU1( mMessage );
     }
 
     @Override

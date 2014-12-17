@@ -60,7 +60,7 @@ public class P25Decoder extends Decoder implements Instrumentable
 		super( sampleType );
 		
 		mAliasList = aliasList;
-		
+
 		/**
 		 * Only setup a demod chain if we're receiving complex samples.  If
 		 * we're receiving demodulated samples, they'll be handled the same 

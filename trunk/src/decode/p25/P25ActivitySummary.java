@@ -17,15 +17,20 @@
  ******************************************************************************/
 package decode.p25;
 
+import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.TreeSet;
 
 import message.Message;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import sample.Listener;
+import alias.Alias;
 import alias.AliasList;
 import controller.activity.ActivitySummaryProvider;
-import decode.p25.message.P25Message;
 import decode.p25.message.pdu.PDUMessage;
 import decode.p25.message.pdu.osp.control.NetworkStatusBroadcastExtended;
 import decode.p25.message.pdu.osp.control.RFSSStatusBroadcastExtended;
@@ -41,6 +46,12 @@ public class P25ActivitySummary implements ActivitySummaryProvider,
 											   Listener<Message>
 {
 	private static final int sINT_NULL_VALUE = -1;
+
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( P25ActivitySummary.class );
+
+	private static final DecimalFormat mFrequencyFormatter = 
+			new DecimalFormat( "0.000000" );
 
 	private AliasList mAliasList;
 	
@@ -69,6 +80,11 @@ public class P25ActivitySummary implements ActivitySummaryProvider,
 	@Override
     public void receive( Message message )
     {
+		if( !message.isValid() )
+		{
+			mLog.debug( "Got an invalid message!" );
+		}
+		
 		if( message instanceof TSBKMessage )
 		{
 			if( message instanceof AdjacentStatusBroadcast )
@@ -118,7 +134,7 @@ public class P25ActivitySummary implements ActivitySummaryProvider,
 
 		sb.append( "Activity Summary\n" );
 		sb.append( "Decoder:\tP25\n" );
-		sb.append( "---------- THIS SITE --------------" );
+		sb.append( "===================== THIS SITE ======================" );
 		
 		if( mNetworkStatus != null )
 		{
@@ -126,14 +142,6 @@ public class P25ActivitySummary implements ActivitySummaryProvider,
 			sb.append( "\nSYSTEM:\t" + mNetworkStatus.getSystemID() );
 			sb.append( "\nWACN:\t" + mNetworkStatus.getWACN() );
 			sb.append( "\nLRA:\t" + mNetworkStatus.getLocationRegistrationArea() );
-			sb.append( "\nSERVICES:\t" + SystemService.toString( 
-					mNetworkStatus.getSystemServiceClass() ) );
-			sb.append( "\nPCCH:\tDNLINK " + mNetworkStatus.getDownlinkFrequency() + 
-					" [" + mNetworkStatus.getIdentifier() + "-" + 
-					mNetworkStatus.getChannel() + "]\n" );
-			sb.append( "\tUPLINK " + mNetworkStatus.getUplinkFrequency() + " [" + 
-					mNetworkStatus.getIdentifier() + "-" +
-					mNetworkStatus.getChannel() + "]\n" );
 		}
 		else if( mNetworkStatusExtended != null )
 		{
@@ -141,16 +149,59 @@ public class P25ActivitySummary implements ActivitySummaryProvider,
 			sb.append( "\nSYSTEM:\t" + mNetworkStatusExtended.getSystemID() );
 			sb.append( "\nWACN:\t" + mNetworkStatusExtended.getWACN() );
 			sb.append( "\nLRA:\t" + mNetworkStatusExtended.getLocationRegistrationArea() );
-			sb.append( "\nSERVICES:\t" + SystemService.toString( 
-					mNetworkStatusExtended.getSystemServiceClass() ) );
-			sb.append( "\nPCCH:\tDNLINK " + mNetworkStatusExtended.getDownlinkFrequency() + 
-					" [" + mNetworkStatusExtended.getTransmitIdentifier() + "-" + 
-					mNetworkStatusExtended.getTransmitChannel() + "]\n" );
-			sb.append( "\tUPLINK " + mNetworkStatusExtended.getUplinkFrequency() + " [" + 
-					mNetworkStatusExtended.getReceiveIdentifier() + "-" +
-					mNetworkStatusExtended.getReceiveChannel() + "]" );
 		}
 
+		String site = null;
+		
+		if( mRFSSStatusMessage != null )
+		{
+			site = mRFSSStatusMessage.getRFSubsystemID() + "-" + mRFSSStatusMessage.getSiteID();
+		}
+		else if( mRFSSStatusMessageExtended != null )
+		{
+			site = mRFSSStatusMessageExtended.getRFSubsystemID() + "-" +
+				   mRFSSStatusMessageExtended.getSiteID();
+		}
+
+		sb.append( "\nRFSS-SITE:\t" + site );
+		
+		if( mAliasList != null )
+		{
+			Alias siteAlias = mAliasList.getSiteID( site );
+			
+			if( siteAlias != null )
+			{
+				sb.append( " " + siteAlias.getName() );
+			}
+		}
+
+		if( mNetworkStatus != null )
+		{
+			sb.append( "\nSERVICES:\t" + SystemService.toString( 
+					mNetworkStatus.getSystemServiceClass() ) );
+			sb.append( "\nPCCH:\tDNLINK " + mFrequencyFormatter.format( 
+					(double)mNetworkStatus.getDownlinkFrequency() / 1E6d ) + 
+					" [" + mNetworkStatus.getIdentifier() + "-" + 
+					mNetworkStatus.getChannel() + "]\n" );
+			sb.append( "\tUPLINK " + mFrequencyFormatter.format( 
+					(double)mNetworkStatus.getUplinkFrequency() / 1E6d ) + " [" + 
+					mNetworkStatus.getIdentifier() + "-" +
+					mNetworkStatus.getChannel() + "]\n" );
+		}
+		else if( mNetworkStatusExtended != null )
+		{
+			sb.append( "\nSERVICES:\t" + SystemService.toString( 
+					mNetworkStatusExtended.getSystemServiceClass() ) );
+			sb.append( "\nPCCH:\tDNLINK " + mFrequencyFormatter.format( 
+					(double)mNetworkStatusExtended.getDownlinkFrequency() / 1E6d ) + 
+					" [" + mNetworkStatusExtended.getTransmitIdentifier() + "-" + 
+					mNetworkStatusExtended.getTransmitChannel() + "]\n" );
+			sb.append( "\tUPLINK " + mFrequencyFormatter.format( 
+					(double)mNetworkStatusExtended.getUplinkFrequency() / 1E6d ) + 
+					" [" + mNetworkStatusExtended.getReceiveIdentifier() + "-" +
+					mNetworkStatusExtended.getReceiveChannel() + "]" );
+		}
+		
 		if( mSecondaryControlChannels.isEmpty() )
 		{
 			sb.append( "\nSCCH:\tNONE" );
@@ -159,45 +210,33 @@ public class P25ActivitySummary implements ActivitySummaryProvider,
 		{
 			for( SecondaryControlChannelBroadcast sec: mSecondaryControlChannels )
 			{
-				sb.append( "\nSCCH:\tDNLINK " + sec.getDownlinkFrequency1() +
+				sb.append( "\nSCCH:\tDNLINK " + mFrequencyFormatter.format( 
+						(double)sec.getDownlinkFrequency1() / 1E6d ) +
 						" [" + sec.getIdentifier1() + "-" + sec.getChannel1() + "]\n" );
-				sb.append( "\tUPLINK " + sec.getUplinkFrequency1() + " [" +
+				sb.append( "\tUPLINK " + mFrequencyFormatter.format( 
+						(double)sec.getUplinkFrequency1() / 1E6d ) + " [" +
 						sec.getIdentifier1() + "-" + sec.getChannel1() + "]\n" );
 				
 				if( sec.hasChannel2() )
 				{
-					sb.append( "\nSCCH:\tDNLINK " + sec.getDownlinkFrequency2() +
+					sb.append( "\nSCCH:\tDNLINK " + mFrequencyFormatter.format( 
+							(double)sec.getDownlinkFrequency2() / 1E6d ) +
 							" [" + sec.getIdentifier2() + "-" + sec.getChannel2() + "]\n" );
-					sb.append( "\tUPLINK " + sec.getUplinkFrequency2() + " [" +
+					sb.append( "\tUPLINK " + mFrequencyFormatter.format( 
+							(double)sec.getUplinkFrequency2() / 1E6d ) + " [" +
 							sec.getIdentifier2() + "-" + sec.getChannel2() + "]" );
 				}
 			}
 		}
 
-		if( mRFSSStatusMessage != null )
-		{
-			sb.append( "\nRFSS:\t" + mRFSSStatusMessage.getRFSubsystemID() );
-			sb.append( "\nSITE:\t" + mRFSSStatusMessage.getSiteID() );
-
-			if( mAliasList != null )
-			{
-				/* Add site alias here */
-			}
-			
-		}
-		else if( mRFSSStatusMessageExtended != null )
-		{
-			sb.append( "\nRFSS:\t" + mRFSSStatusMessageExtended.getRFSubsystemID() );
-			sb.append( "\nSITE:\t" + mRFSSStatusMessageExtended.getSiteID() );
-		}
 		
 		
-		sb.append( "\n\n----------- NEIGHBORS -------------" );
+		sb.append( "\n\n=================== NEIGHBORS ======================" );
 		
 		if( mNeighborMap.isEmpty() )
 		{
 			sb.append( "\n\tNONE\n" );
-			sb.append( "------------------------\n" );
+			sb.append( "\n----------------------------------------------------" );
 		}
 		else
 		{
@@ -206,11 +245,25 @@ public class P25ActivitySummary implements ActivitySummaryProvider,
 				sb.append( "\nNAC:\t" + neighbor.getNAC() );
 				sb.append( "\nSYSTEM:\t" + neighbor.getSystemID()  );
 				sb.append( "\nLRA:\t" + neighbor.getLocationRegistrationArea() );
-				sb.append( "\nRFSS:\t" + neighbor.getRFSS()  );
-				sb.append( "\nSITE:\t" + neighbor.getSiteID()  );
-				sb.append( "\nPCCH:\tDNLINK " + neighbor.getDownlinkFrequency() +
+				
+				String neighborID = neighbor.getRFSS() + "-" + neighbor.getSiteID();
+				sb.append( "\nRFSS-SITE:\t" + neighborID  );
+				
+				if( mAliasList != null )
+				{
+					Alias siteAlias = mAliasList.getSiteID( neighborID );
+					
+					if( siteAlias != null )
+					{
+						sb.append( " " + siteAlias.getName() );
+					}
+				}
+				
+				sb.append( "\nPCCH:\tDNLINK " + mFrequencyFormatter.format( 
+						(double)neighbor.getDownlinkFrequency() / 1E6d ) +
 						" [" + neighbor.getIdentifier() + "-" + neighbor.getChannel() + "]" );
-				sb.append( "\n\tUPLINK:" + neighbor.getUplinkFrequency() + "\n" );
+				sb.append( "\n\tUPLINK:" + mFrequencyFormatter.format(  
+						(double)neighbor.getUplinkFrequency() / 1E6d ) + "\n" );
 				sb.append( "\nSERVICES:\t" + Service.getServices( neighbor.getSystemServiceClass() ) );
 				sb.append( "\n----------------------------------------------------" );
 			}

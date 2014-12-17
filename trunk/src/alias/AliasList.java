@@ -24,6 +24,10 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import decode.p25.P25ActivitySummary;
 import alias.esn.Esn;
 import alias.fleetsync.FleetsyncID;
 import alias.fleetsync.StatusID;
@@ -49,6 +53,8 @@ import alias.uniqueID.UniqueID;
 @XmlRootElement( name = "alias_list" )
 public class AliasList implements Comparable<AliasList>
 {
+	private final static Logger mLog = LoggerFactory.getLogger( AliasList.class );
+
 	private String mName;
 	private ArrayList<Group> mGroups = new ArrayList<Group>();
 	

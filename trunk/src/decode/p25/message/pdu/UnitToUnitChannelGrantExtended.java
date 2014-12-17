@@ -1,5 +1,6 @@
 package decode.p25.message.pdu;
 
+import crc.CRCP25;
 import alias.AliasList;
 import bits.BitSetBuffer;
 import decode.p25.message.tsbk.osp.control.IdentifierUpdate;
@@ -45,6 +46,10 @@ public abstract class UnitToUnitChannelGrantExtended extends PDUMessage
             DataUnitID duid, AliasList aliasList )
     {
 	    super( message, duid, aliasList );
+
+	    /* Header block is already error detected/corrected - perform error
+	     * detection correction on the intermediate and final data blocks */
+	    mCRC[ 1 ] = CRCP25.correctPDU2( mMessage );
     }
 
     public String getMessage()
