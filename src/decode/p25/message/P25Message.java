@@ -143,7 +143,18 @@ public class P25Message extends Message
 	@Override
     public boolean isValid()
     {
-	    return true;
+		if( mCRC != null )
+		{
+			for( CRC crc: mCRC )
+			{
+				if( crc == CRC.FAILED_CRC )
+				{
+					return false;
+				}
+			}
+		}
+		
+		return true;
     }
 
 	/**

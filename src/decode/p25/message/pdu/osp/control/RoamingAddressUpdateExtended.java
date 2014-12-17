@@ -1,5 +1,6 @@
 package decode.p25.message.pdu.osp.control;
 
+import crc.CRCP25;
 import alias.AliasList;
 import bits.BitSetBuffer;
 import decode.p25.message.pdu.PDUMessage;
@@ -69,18 +70,34 @@ public class RoamingAddressUpdateExtended extends PDUMessage
 	    if( mMessage.size() == P25MessageFramer.PDU2_BEGIN )
 	    {
 	    	mFormat = Format.FORMAT_1;
+		    
+		    /* Header block is already error detected/corrected - perform error
+		     * detection correction on the intermediate and final data blocks */
+		    mCRC[ 1 ] = CRCP25.correctPDU1( mMessage );
 	    }
 	    else if( mMessage.size() == P25MessageFramer.PDU3_BEGIN )
 	    {
 	    	mFormat = Format.FORMAT_2;
+		    
+		    /* Header block is already error detected/corrected - perform error
+		     * detection correction on the intermediate and final data blocks */
+		    mCRC[ 1 ] = CRCP25.correctPDU2( mMessage );
 	    }
 	    else if( mMessage.size() == P25MessageFramer.PDU3_DECODED_END )
 	    {
 	    	mFormat = Format.FORMAT_3;
+		    
+		    /* Header block is already error detected/corrected - perform error
+		     * detection correction on the intermediate and final data blocks */
+		    mCRC[ 1 ] = CRCP25.correctPDU3( mMessage );
 	    }
 	    else
 	    {
 	    	mFormat = Format.FORMAT_1;
+		    
+		    /* Header block is already error detected/corrected - perform error
+		     * detection correction on the intermediate and final data blocks */
+		    mCRC[ 1 ] = CRCP25.correctPDU1( mMessage );
 	    }
     }
 
