@@ -124,7 +124,10 @@ public class DecodeComponentEditor extends AbstractChannelEditor
     @Override
     public void save()
     {
-    	mEditor.save();
+    	if( mEditor != null )
+    	{
+        	mEditor.save();
+    	}
     	
     	//The component that calls save will invoke the change broadcast
 	    mChannelNode.getChannel()

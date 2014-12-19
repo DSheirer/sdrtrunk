@@ -17,6 +17,10 @@
  ******************************************************************************/
 package decode.p25;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
 import message.Message;
 import alias.Alias;
 import alias.AliasList;
@@ -35,11 +39,19 @@ import decode.p25.message.tsbk.osp.control.UnitDeregistrationAcknowledge;
 import decode.p25.message.tsbk.osp.voice.GroupVoiceChannelGrant;
 import decode.p25.message.tsbk.osp.voice.GroupVoiceChannelGrantUpdate;
 import decode.p25.message.tsbk.osp.voice.GroupVoiceChannelGrantUpdateExplicit;
+import decode.p25.message.tsbk.osp.voice.TelephoneInterconnectVoiceChannelGrant;
+import decode.p25.message.tsbk.osp.voice.TelephoneInterconnectVoiceChannelGrantUpdate;
 import decode.p25.message.tsbk.osp.voice.UnitToUnitAnswerRequest;
+import decode.p25.message.tsbk.osp.voice.UnitToUnitVoiceChannelGrant;
+import decode.p25.message.tsbk.osp.voice.UnitToUnitVoiceChannelGrantUpdate;
+import decode.p25.reference.Opcode;
 import decode.p25.reference.Vendor;
 
 public class P25ChannelState extends ChannelState
 {
+	private HashMap<String,Long> mRegistrations = new HashMap<String,Long>();
+	private String mLastDeRegistration;
+	
 	private P25ActivitySummary mActivitySummary;
 	private String mNAC;
 	private String mSystem;
@@ -154,99 +166,261 @@ public class P25ChannelState extends ChannelState
 				switch( tsbk.getOpcode() )
 				{
 					case GROUP_VOICE_CHANNEL_GRANT:
-						GroupVoiceChannelGrant gvcg = (GroupVoiceChannelGrant)tsbk;
-
-						mCallEventModel.add( 
-							new P25CallEvent.Builder( CallEventType.CALL )
-								.aliasList( mAliasList )
-								.channel( gvcg.getChannelIdentifier() + "-" + gvcg.getChannel() )
-								.details( ( gvcg.isEncrypted() ? "ENCRYPTED" : "" ) + 
-										  ( gvcg.isEmergency() ? " EMERGENCY" : "") )
-							    .frequency( gvcg.getDownlinkFrequency() )
-								.from( gvcg.getSourceAddress() )
-								.to( gvcg.getGroupAddress() )
-								.build() );
-						break;
 					case GROUP_VOICE_CHANNEL_GRANT_UPDATE:
-						GroupVoiceChannelGrantUpdate gvcgu =
-								(GroupVoiceChannelGrantUpdate)tsbk;
-						mCallEventModel.add( 
-								new P25CallEvent.Builder( CallEventType.CALL )
-									.aliasList( mAliasList )
-									.channel( gvcgu.getChannelID1() + "-" + gvcgu.getChannelNumber1() )
-									.details( ( gvcgu.isEncrypted() ? "ENCRYPTED" : "" ) + 
-											  ( gvcgu.isEmergency() ? " EMERGENCY" : "") )
-									.frequency( gvcgu.getDownlinkFrequency() )
-									.to( gvcgu.getGroupAddress1() )
-									.build() );
-						if( gvcgu.getChannelNumber2() != 0 )
-						{
-							mCallEventModel.add( 
-									new P25CallEvent.Builder( CallEventType.CALL )
-										.aliasList( mAliasList )
-										.channel( gvcgu.getChannelID2() + "-" + gvcgu.getChannelNumber2() )
-										.details( ( gvcgu.isEncrypted() ? "ENCRYPTED" : "" ) + 
-												  ( gvcgu.isEmergency() ? " EMERGENCY" : "") )
-										.frequency( gvcgu.getDownlinkFrequency() )
-										.to( gvcgu.getGroupAddress2() )
-										.build() );
-						}
-						break;
 					case GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:
-						GroupVoiceChannelGrantUpdateExplicit gvcgue = 
-							(GroupVoiceChannelGrantUpdateExplicit)tsbk;
-
-						mCallEventModel.add( 
-							new P25CallEvent.Builder( CallEventType.CALL )
-								.aliasList( mAliasList )
-								.channel( gvcgue.getTransmitChannelID() + "-" + 
-										  gvcgue.getTransmitChannelNumber() )
-								.details( ( gvcgue.isEncrypted() ? "ENCRYPTED" : "" ) + 
-										  ( gvcgue.isEmergency() ? " EMERGENCY" : "") )
-							    .frequency( gvcgue.getDownlinkFrequency() )
-								.to( gvcgue.getGroupAddress() )
-								.build() );
+					case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
+					case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT_UPDATE:
+					case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
+					case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
+						processCall( tsbk );
 						break;
+					case TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
 					case UNIT_TO_UNIT_ANSWER_REQUEST:
-						UnitToUnitAnswerRequest utuar = 
-									(UnitToUnitAnswerRequest)tsbk;
-						mCallEventModel.add( 
-								new P25CallEvent.Builder( CallEventType.PAGE )
-								.aliasList( mAliasList )
-								.details( ( utuar.isEmergency() ? "EMERGENCY" : "" ) ) 
-								.from( utuar.getSourceAddress() )
-								.to( utuar.getTargetAddress() )
-								.build() );
+						processPage( tsbk );
 						break;
 					case LOCATION_REGISTRATION_RESPONSE:
-						LocationRegistrationResponse lrr = 
-										(LocationRegistrationResponse)tsbk;
-						
-						mCallEventModel.add( 
-							new P25CallEvent.Builder( CallEventType.REGISTER )
-								.aliasList( mAliasList )
-								.details( "REG:" + lrr.getResponse().name() +
-										  " SITE: " + lrr.getRFSSID() + "-" + 
-										  lrr.getSiteID() )
-								.from( lrr.getTargetAddress() )
-								.to( lrr.getGroupAddress() )
-								.build() );
-						break;
 					case UNIT_DEREGISTRATION_ACKNOWLEDGE:
-						UnitDeregistrationAcknowledge udr =
-								(UnitDeregistrationAcknowledge)tsbk;
-						
-						mCallEventModel.add( 
-							new P25CallEvent.Builder( CallEventType.DEREGISTER )
-								.aliasList( mAliasList )
-								.from( udr.getSourceID() )
-								.build() );
+						processRegistration( tsbk );
+					default:
 						break;
 				}
 			}
 		}
 	}
+	
+	/**
+	 * Process a call event message
+	 */
+	private void processCall( TSBKMessage message )
+	{
+		switch( message.getOpcode() )
+		{
+			case GROUP_VOICE_CHANNEL_GRANT:
+				GroupVoiceChannelGrant gvcg = (GroupVoiceChannelGrant)message;
 
+				mCallEventModel.add( 
+					new P25CallEvent.Builder( CallEventType.CALL )
+						.aliasList( mAliasList )
+						.channel( gvcg.getChannelIdentifier() + "-" + gvcg.getChannel() )
+						.details( ( gvcg.isEncrypted() ? "ENCRYPTED" : "" ) + 
+								  ( gvcg.isEmergency() ? " EMERGENCY" : "") )
+					    .frequency( gvcg.getDownlinkFrequency() )
+						.from( gvcg.getSourceAddress() )
+						.to( gvcg.getGroupAddress() )
+						.build() );
+				break;
+			case GROUP_VOICE_CHANNEL_GRANT_UPDATE:
+				GroupVoiceChannelGrantUpdate gvcgu =
+						(GroupVoiceChannelGrantUpdate)message;
+				mCallEventModel.add( 
+						new P25CallEvent.Builder( CallEventType.CALL )
+							.aliasList( mAliasList )
+							.channel( gvcgu.getChannelID1() + "-" + gvcgu.getChannelNumber1() )
+							.details( ( gvcgu.isEncrypted() ? "ENCRYPTED" : "" ) + 
+									  ( gvcgu.isEmergency() ? " EMERGENCY" : "") )
+							.frequency( gvcgu.getDownlinkFrequency1() )
+							.to( gvcgu.getGroupAddress1() )
+							.build() );
+				if( gvcgu.hasChannelNumber2() )
+				{
+					mCallEventModel.add( 
+							new P25CallEvent.Builder( CallEventType.CALL )
+								.aliasList( mAliasList )
+								.channel( gvcgu.getChannelID2() + "-" + gvcgu.getChannelNumber2() )
+								.details( ( gvcgu.isEncrypted() ? "ENCRYPTED" : "" ) + 
+										  ( gvcgu.isEmergency() ? " EMERGENCY" : "") )
+								.frequency( gvcgu.getDownlinkFrequency2() )
+								.to( gvcgu.getGroupAddress2() )
+								.build() );
+				}
+				break;
+			case GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:
+				GroupVoiceChannelGrantUpdateExplicit gvcgue = 
+					(GroupVoiceChannelGrantUpdateExplicit)message;
+
+				mCallEventModel.add( 
+					new P25CallEvent.Builder( CallEventType.CALL )
+						.aliasList( mAliasList )
+						.channel( gvcgue.getTransmitChannelID() + "-" + 
+								  gvcgue.getTransmitChannelNumber() )
+						.details( ( gvcgue.isEncrypted() ? "ENCRYPTED" : "" ) + 
+								  ( gvcgue.isEmergency() ? " EMERGENCY" : "") )
+					    .frequency( gvcgue.getDownlinkFrequency() )
+						.to( gvcgue.getGroupAddress() )
+						.build() );
+				break;
+			case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
+				TelephoneInterconnectVoiceChannelGrant tivcg =
+							(TelephoneInterconnectVoiceChannelGrant)message;
+				
+				mCallEventModel.add( 
+						new P25CallEvent.Builder( CallEventType.CALL )
+							.aliasList( mAliasList )
+							.channel( tivcg.getChannelIdentifier() + "-" + 
+									tivcg.getChannel() )
+							.details( ( tivcg.isEncrypted() ? "ENCRYPTED" : "" ) + 
+									  ( tivcg.isEmergency() ? " EMERGENCY" : "") )
+						    .frequency( tivcg.getDownlinkFrequency() )
+						    .from( tivcg.getSourceAddress() )
+							.to( tivcg.getTargetAddress() )
+							.build() );
+				break;
+			case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT_UPDATE:
+				TelephoneInterconnectVoiceChannelGrantUpdate tivcgu =
+							(TelephoneInterconnectVoiceChannelGrantUpdate)message;
+				
+				mCallEventModel.add( 
+						new P25CallEvent.Builder( CallEventType.CALL )
+							.aliasList( mAliasList )
+							.channel( tivcgu.getChannelIdentifier() + "-" + 
+									tivcgu.getChannel() )
+							.details( ( tivcgu.isEncrypted() ? "ENCRYPTED" : "" ) + 
+									  ( tivcgu.isEmergency() ? " EMERGENCY" : "") )
+						    .frequency( tivcgu.getDownlinkFrequency() )
+						    .from( tivcgu.getSourceAddress() )
+							.to( tivcgu.getTargetAddress() )
+							.build() );
+				break;
+			case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
+				UnitToUnitVoiceChannelGrant uuvcg = 
+							(UnitToUnitVoiceChannelGrant)message;
+
+				mCallEventModel.add( 
+						new P25CallEvent.Builder( CallEventType.CALL )
+							.aliasList( mAliasList )
+							.channel( uuvcg.getChannelIdentifier() + "-" + 
+									uuvcg.getChannel() )
+							.details( ( uuvcg.isEncrypted() ? "ENCRYPTED" : "" ) + 
+									  ( uuvcg.isEmergency() ? " EMERGENCY" : "") )
+						    .frequency( uuvcg.getDownlinkFrequency() )
+						    .from( uuvcg.getSourceAddress() )
+							.to( uuvcg.getTargetAddress() )
+							.build() );
+				break;
+			case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
+				UnitToUnitVoiceChannelGrantUpdate uuvcgu = 
+							(UnitToUnitVoiceChannelGrantUpdate)message;
+
+				mCallEventModel.add( 
+						new P25CallEvent.Builder( CallEventType.CALL )
+							.aliasList( mAliasList )
+							.channel( uuvcgu.getChannelIdentifier() + "-" + 
+									uuvcgu.getChannel() )
+							.details( ( uuvcgu.isEncrypted() ? "ENCRYPTED" : "" ) + 
+									  ( uuvcgu.isEmergency() ? " EMERGENCY" : "") )
+						    .frequency( uuvcgu.getDownlinkFrequency() )
+						    .from( uuvcgu.getSourceAddress() )
+							.to( uuvcgu.getTargetAddress() )
+							.build() );
+				break;
+			default:
+				break;
+		}
+	}
+
+	/**
+	 * Process a unit paging event message
+	 */
+	private void processPage( TSBKMessage message )
+	{
+		if( message.getOpcode() == Opcode.UNIT_TO_UNIT_ANSWER_REQUEST )
+		{
+			UnitToUnitAnswerRequest utuar = (UnitToUnitAnswerRequest)message;
+			mCallEventModel.add( 
+					new P25CallEvent.Builder( CallEventType.PAGE )
+					.aliasList( mAliasList )
+					.details( ( utuar.isEmergency() ? "EMERGENCY" : "" ) ) 
+					.from( utuar.getSourceAddress() )
+					.to( utuar.getTargetAddress() )
+					.build() );
+		}
+	}
+
+	/**
+	 * Process a unit registration or deregistration message
+	 */
+	private void processRegistration( TSBKMessage message )
+	{
+		switch( message.getOpcode() )
+		{
+			case LOCATION_REGISTRATION_RESPONSE:
+				LocationRegistrationResponse lrr = 
+								(LocationRegistrationResponse)message;
+				
+				String addressPlusGroup = lrr.getTargetAddress() + 
+										  lrr.getGroupAddress();
+
+				boolean updateEvent = false;
+				
+				if( mRegistrations.containsKey( addressPlusGroup ) )
+				{
+					long timestamp = mRegistrations.get( addressPlusGroup );
+					
+					updateEvent = ( System.currentTimeMillis() - 
+							timestamp ) > 300000; //5 minutes
+				}
+				else
+				{
+					updateEvent = true;
+				}
+				
+				mRegistrations.put( addressPlusGroup, System.currentTimeMillis() );
+
+				if( updateEvent )
+				{
+					mCallEventModel.add( 
+							new P25CallEvent.Builder( CallEventType.REGISTER )
+								.aliasList( mAliasList )
+								.details( "RESPONSE:" + lrr.getResponse().name() +
+										  " SITE: " + lrr.getRFSSID() + "-" + 
+										  lrr.getSiteID() )
+								.from( lrr.getTargetAddress() )
+								.to( lrr.getGroupAddress() )
+								.build() );
+				}
+				
+				/* Reset the deregistration variable */
+				mLastDeRegistration = null;
+				break;
+			case UNIT_DEREGISTRATION_ACKNOWLEDGE:
+				UnitDeregistrationAcknowledge udr =
+						(UnitDeregistrationAcknowledge)message;
+
+				if( mLastDeRegistration != null && 
+					mLastDeRegistration.contentEquals( udr.getSourceID() ) )
+				{
+					break; //Suppress duplicate event
+				}
+				
+				mLastDeRegistration = udr.getSourceID();
+				
+				mCallEventModel.add( 
+					new P25CallEvent.Builder( CallEventType.DEREGISTER )
+						.aliasList( mAliasList )
+						.from( udr.getSourceID() )
+						.build() );
+
+				List<String> keysToRemove = new ArrayList<String>();
+
+				/* Remove this radio from the registrations set */
+				for( String key: mRegistrations.keySet() )
+				{
+					if( key.startsWith( udr.getSourceID() ) )
+					{
+						keysToRemove.add( key );
+					}
+				}
+				
+				for( String key: keysToRemove )
+				{
+					mRegistrations.remove( key );
+				}
+				
+				break;
+			default:
+				break;
+		}
+	}
 	
 	@Override
 	public void setSquelchState( SquelchState state )

@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ThreadPoolManager
 {
-	private int THREAD_POOL_SIZE = 10;
+	private int THREAD_POOL_SIZE = 2;
 	private int MAX_TASK_COUNT = 24;
 
 	private HashMap<ScheduledFuture<?>,ThreadType> mTasks = 

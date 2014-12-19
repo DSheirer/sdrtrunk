@@ -400,14 +400,21 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 		@Override
         public void run()
         {
-			/* Only run if we're not currently running */
-			if( mRunning.compareAndSet( false, true ) )
+			try
 			{
-				checkFFTSize();
+				/* Only run if we're not currently running */
+				if( mRunning.compareAndSet( false, true ) )
+				{
+					checkFFTSize();
 
-				calculate();
-				
-				mRunning.set( false );
+					calculate();
+					
+					mRunning.set( false );
+				}
+			}
+			catch( Exception e )
+			{
+				mLog.error( "error during dft processor calculation task", e );
 			}
         }
 	}

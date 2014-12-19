@@ -19,6 +19,7 @@ package decode.p25;
 
 import instrument.Instrumentable;
 import instrument.tap.Tap;
+import instrument.tap.stream.FloatTap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,6 +32,7 @@ import source.Source.SampleType;
 import alias.AliasList;
 import decode.Decoder;
 import decode.DecoderType;
+import dsp.agc.RealAutomaticGainControl;
 import dsp.filter.ComplexFIRFilter;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
@@ -43,10 +45,17 @@ public class P25Decoder extends Decoder implements Instrumentable
 {
 	private final static Logger mLog = LoggerFactory.getLogger( P25Decoder.class );
 
+    /* Instrumentation Taps */
+	private static final String INSTRUMENT_INPUT_TO_AGC = "Tap Point: Input to AGC";
+	private static final String INSTRUMENT_AGC_TO_SYMBOL_FILTER = "Tap Point: AGC to Symbol Filter";
+	private static final String INSTRUMENT_SYMBOL_FILTER_TO_SLICER = "Tap Point: Symbol Filter to Slicer";
+    private List<Tap> mAvailableTaps;
+	
 	private ComplexFIRFilter mBasebandFilter = new ComplexFIRFilter( 
 			FilterFactory.getLowPass( 48000, 5000, 31, WindowType.HAMMING ), 1.0 );
 
 	private FMDiscriminator mDemodulator = new FMDiscriminator( 1 );
+	private RealAutomaticGainControl mAGC = new RealAutomaticGainControl();
 	private C4FMSymbolFilter mSymbolFilter = new C4FMSymbolFilter();
 	private C4FMSlicer mSlicer = new C4FMSlicer();
 	private P25MessageFramer mNormalFramer;
@@ -80,7 +89,8 @@ public class P25Decoder extends Decoder implements Instrumentable
 			mDemodulator.setListener( getRealReceiver() );
 		}
 
-		addRealSampleListener( mSymbolFilter );
+		addRealSampleListener( mAGC );
+		mAGC.setListener( mSymbolFilter );
 		
 		mSymbolFilter.setListener( mSlicer );
 		
@@ -108,17 +118,65 @@ public class P25Decoder extends Decoder implements Instrumentable
 	@Override
     public List<Tap> getTaps()
     {
-		return new ArrayList<Tap>();
+		if( mAvailableTaps == null )
+		{
+			mAvailableTaps = new ArrayList<Tap>();
+
+			mAvailableTaps.add( new FloatTap( INSTRUMENT_INPUT_TO_AGC, 0, 1.0f ) );
+			mAvailableTaps.add( new FloatTap( INSTRUMENT_AGC_TO_SYMBOL_FILTER, 0, 1.0f ) );
+			mAvailableTaps.add( new FloatTap( INSTRUMENT_SYMBOL_FILTER_TO_SLICER, 0, 0.1f ) );
+			
+			mAvailableTaps.addAll( mSymbolFilter.getTaps() );
+		}
+		
+		return mAvailableTaps;
     }
 
 	@Override
     public void addTap( Tap tap )
     {
+		mSymbolFilter.addTap( tap );
+		
+		switch( tap.getName() )
+		{
+			case INSTRUMENT_INPUT_TO_AGC:
+				FloatTap inputAGC = (FloatTap)tap;
+				removeRealListener( mAGC );
+				addRealSampleListener( inputAGC );
+				inputAGC.setListener( mAGC );
+				break;
+			case INSTRUMENT_AGC_TO_SYMBOL_FILTER:
+				FloatTap agcSymbol = (FloatTap)tap;
+				mAGC.setListener( agcSymbol );
+				agcSymbol.setListener( mSymbolFilter );
+				break;
+			case INSTRUMENT_SYMBOL_FILTER_TO_SLICER:
+				FloatTap symbolSlicer = (FloatTap)tap;
+				mSymbolFilter.setListener( symbolSlicer );
+				symbolSlicer.setListener( mSlicer );
+				break;
+		}
     }
 
 	@Override
     public void removeTap( Tap tap )
     {
+		mSymbolFilter.removeTap( tap );
+		
+		switch( tap.getName() )
+		{
+			case INSTRUMENT_INPUT_TO_AGC:
+				FloatTap inputAGC = (FloatTap)tap;
+				removeRealListener( inputAGC );
+				addRealSampleListener( mAGC );
+				break;
+			case INSTRUMENT_AGC_TO_SYMBOL_FILTER:
+				mAGC.setListener( mSymbolFilter );
+				break;
+			case INSTRUMENT_SYMBOL_FILTER_TO_SLICER:
+				mSymbolFilter.setListener( mSlicer );
+				break;
+		}
     }
 
 	@Override

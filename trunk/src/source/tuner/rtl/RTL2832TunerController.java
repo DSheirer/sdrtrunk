@@ -1611,15 +1611,22 @@ public abstract class RTL2832TunerController extends TunerController
 		@Override
         public void run()
         {
-			ArrayList<byte[]> buffers = new ArrayList<byte[]>();
-			
-			mFilledBuffers.drainTo( buffers );
-
-			for( byte[] buffer: buffers )
+			try
 			{
-				float[] samples = mSampleAdapter.convert( buffer );
+				ArrayList<byte[]> buffers = new ArrayList<byte[]>();
 				
-				broadcast( new ComplexBuffer( samples ) );
+				mFilledBuffers.drainTo( buffers );
+
+				for( byte[] buffer: buffers )
+				{
+					float[] samples = mSampleAdapter.convert( buffer );
+					
+					broadcast( new ComplexBuffer( samples ) );
+				}
+			}
+			catch( Exception e )
+			{
+				mLog.error( "error duing rtl2832 buffer dispatcher run", e );
 			}
         }
 	}

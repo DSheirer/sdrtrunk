@@ -36,15 +36,10 @@ public class TSBKMessage extends P25Message
     public TSBKMessage( BitSetBuffer message, DataUnitID duid, AliasList aliasList )
     {
 	    super( message, duid, aliasList );
-	    
-	    checkCRC();
-    }
-    
-    protected void checkCRC()
-    {
-    	mCRC = new CRC[ 1 ];
 
-    	mCRC[ 0 ] = CRCP25.correctCCITT80( mMessage, MESSAGE_START, CRC_START );
+	    /* Since CRC is checked before construction, mark it as passed */
+    	mCRC = new CRC[ 1 ];
+    	mCRC[ 0 ] = CRC.PASSED;
     }
 	
 	public boolean isLastBlock()

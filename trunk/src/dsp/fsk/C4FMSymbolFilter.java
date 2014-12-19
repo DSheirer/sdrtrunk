@@ -1,5 +1,13 @@
 package dsp.fsk;
 
+import instrument.Instrumentable;
+import instrument.tap.Tap;
+import instrument.tap.stream.AdditiveFloatTap;
+import instrument.tap.stream.FloatTap;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -7,7 +15,8 @@ import sample.real.RealSampleListener;
 import sample.real.RealSampleProvider;
 
 public class C4FMSymbolFilter implements RealSampleListener, 
-												RealSampleProvider
+										 RealSampleProvider,
+										 Instrumentable
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( C4FMSymbolFilter.class );
@@ -145,6 +154,11 @@ public class C4FMSymbolFilter implements RealSampleListener,
 		{  0.00000e+00f,  0.00000e+00f,  0.00000e+00f,  1.00000e+00f,  0.00000e+00f,  0.00000e+00f,  0.00000e+00f,  0.00000e+00f }, // 128/128
 	};
 	
+    /* Instrumentation Taps */
+	private static final String INSTRUMENT_SYMBOL_SPREAD = "Tap Point: Symbol Spread (Goal=2.0)";
+	private FloatTap mSymbolSpreadTap;
+    private List<Tap> mAvailableTaps;
+	
 	private static final int NUMBER_FILTER_TAPS = 8;
 	private static final int NUMBER_FILTER_STEPS = 128;
 	
@@ -181,6 +195,8 @@ public class C4FMSymbolFilter implements RealSampleListener,
 	
 	private RealSampleListener mListener;
 
+	private float mGain = 15.4f;
+	
 	/**
 	 * C4FM Symbol Filter
 	 * 
@@ -190,10 +206,15 @@ public class C4FMSymbolFilter implements RealSampleListener,
 	 * is less than 2.0, then increase gain.  If the value is over 2.0, then
 	 * decrease gain.
 	 * 
-	 * During testing, the incoming samples were within the range of -0.5 <> 0.5
-	 * and applying a gain of 11.0 to those samples achieved the best symbol
-	 * spread, centered about 2.0 with +/- 0.5% deviations on a strong signal.
+	 * When preceded by the RealAutomaticGainFilter class, an optimal gain
+	 * setting for this filter is 15.4 and that yields a symbol spread that
+	 * is centered on 2.0, ranging 1.92 to 2.08.
 	 */
+	public C4FMSymbolFilter( float gain )
+	{
+		mGain = gain;
+	}
+	
 	public C4FMSymbolFilter()
 	{
 	}
@@ -203,8 +224,7 @@ public class C4FMSymbolFilter implements RealSampleListener,
     {
 		mSymbolClock += mSymbolTime;
 		
-//		mHistory[ mHistoryLast++ ] = sample;
-		mHistory[ mHistoryLast++ ] = sample * 10.5f;
+		mHistory[ mHistoryLast++ ] = sample * mGain;
 		mHistoryLast %= NUMBER_FILTER_TAPS;
 		
 		if( mSymbolClock > 1.0f )
@@ -298,6 +318,11 @@ public class C4FMSymbolFilter implements RealSampleListener,
 						( mCoarseFrequencyCorrection > 0 ? "-" : "+" ) + 
 						mCoarseFrequencyCorrection + "]" );
 			}
+			
+			if( mSymbolSpreadTap != null )
+			{
+				mSymbolSpreadTap.receive( mSymbolSpread );
+			}
 
 			/* dispatch the interpolated value to the listener */
 			if( mListener != null )
@@ -317,5 +342,41 @@ public class C4FMSymbolFilter implements RealSampleListener,
     public void removeListener( RealSampleListener listener )
     {
 		mListener = null;
+    }
+
+	@Override
+    public List<Tap> getTaps()
+    {
+		if( mAvailableTaps == null )
+		{
+			mAvailableTaps = new ArrayList<Tap>();
+			
+			/*
+			 * Since the target is 2.0, we subtract 2.0 from the value so that
+			 * a good value is plotted right on the zero center line
+			 */
+			mAvailableTaps.add( 
+					new AdditiveFloatTap( INSTRUMENT_SYMBOL_SPREAD, 0, 0.1f, -2.0f ) );
+		}
+		
+		return mAvailableTaps;
+    }
+
+	@Override
+    public void addTap( Tap tap )
+    {
+		if( tap.getName().contentEquals( INSTRUMENT_SYMBOL_SPREAD ) )
+		{
+			mSymbolSpreadTap = (FloatTap)tap;
+		}
+    }
+
+	@Override
+    public void removeTap( Tap tap )
+    {
+		if( tap.getName().contentEquals( INSTRUMENT_SYMBOL_SPREAD ) )
+		{
+			mSymbolSpreadTap = null;
+		}
     }
 }
