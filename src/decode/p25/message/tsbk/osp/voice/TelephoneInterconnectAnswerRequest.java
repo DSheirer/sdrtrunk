@@ -3,7 +3,6 @@ package decode.p25.message.tsbk.osp.voice;
 import java.util.ArrayList;
 import java.util.List;
 
-import alias.Alias;
 import alias.AliasList;
 import bits.BitSetBuffer;
 import decode.p25.message.tsbk.TSBKMessage;
@@ -32,6 +31,12 @@ public class TelephoneInterconnectAnswerRequest extends TSBKMessage
                                    AliasList aliasList ) 
     {
         super( message, duid, aliasList );
+    }
+
+    @Override
+    public String getEventType()
+    {
+        return Opcode.TELEPHONE_INTERCONNECT_ANSWER_REQUEST.getDescription();
     }
 
     public String getMessage()
@@ -72,12 +77,6 @@ public class TelephoneInterconnectAnswerRequest extends TSBKMessage
         return mMessage.getHex( TARGET_ADDRESS, 6 );
     }
     
-    @Override
-    public String getEventType()
-    {
-        return Opcode.TELEPHONE_INTERCONNECT_ANSWER_REQUEST.getDescription();
-    }
-
     @Override
     public String getToID()
     {

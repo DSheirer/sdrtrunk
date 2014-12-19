@@ -18,6 +18,6 @@ public class GroupVoiceChannelGrantUpdate extends GroupMultiChannelGrant
     @Override
     public String getEventType()
     {
-        return Opcode.GROUP_VOICE_CHANNEL_GRANT.getDescription();
+        return Opcode.GROUP_VOICE_CHANNEL_GRANT_UPDATE.getDescription();
     }
 }

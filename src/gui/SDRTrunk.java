@@ -18,12 +18,14 @@
 package gui;
 
 import java.awt.AWTException;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Robot;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -34,6 +36,7 @@ import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JSeparator;
 
 import net.miginfocom.swing.MigLayout;
@@ -188,6 +191,30 @@ public class SDRTrunk
         
         JMenu fileMenu = new JMenu( "File" );
         menuBar.add( fileMenu );
+
+        JMenuItem logFilesMenu = new JMenuItem( "Logs & Recordings" );
+        logFilesMenu.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent arg0 )
+			{
+				try
+				{
+					Desktop.getDesktop().open( getHomePath().toFile() );				
+				}
+				catch( Exception e )
+				{
+					mLog.error( "Couldn't open file explorer" );
+					
+					JOptionPane.showMessageDialog( mMainGui, 
+						"Can't launch file explorer - files are located at: " + 
+										getHomePath().toString(),
+						"Can't launch file explorer",
+						JOptionPane.ERROR_MESSAGE );
+				}
+			}
+		} );
+        fileMenu.add( logFilesMenu );
         
         JMenuItem settingsMenu = new JMenuItem( "Icon Manager" );
         settingsMenu.addActionListener( new ActionListener()

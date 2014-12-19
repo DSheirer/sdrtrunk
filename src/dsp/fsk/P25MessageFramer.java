@@ -33,6 +33,7 @@ public class P25MessageFramer implements Listener<Dibit>
 			new ArrayList<P25MessageAssembler>();
 
 	public static final int TSBK_BEGIN = 64;
+	public static final int TSBK_CRC_START = 144;
 	public static final int TSBK_END = 260;
 	public static final int TSBK_DECODED_END = 160;
 
@@ -378,23 +379,33 @@ public class P25MessageFramer implements Listener<Dibit>
 					 * unsuccessful decode due to excessive errors */
 					if( mHalfRate.decode( mMessage, TSBK_BEGIN, TSBK_END ) )
 					{
-						BitSetBuffer tsbkBuffer1 = mMessage.copy();
-						tsbkBuffer1.setSize( TSBK_DECODED_END );
-						
-	                    TSBKMessage tsbkMessage1 = TSBKMessageFactory.getMessage( 
-	                            tsbkBuffer1, DataUnitID.TSBK1, mAliasList ); 
+						CRC tsbkCRC = CRCP25.correctCCITT80( mMessage, 
+								TSBK_BEGIN, TSBK_CRC_START );
 
-						if( tsbkMessage1.isLastBlock() )
+						if( tsbkCRC != CRC.FAILED_CRC )
 						{
-							mComplete = true;
+							BitSetBuffer tsbkBuffer1 = mMessage.copy();
+							tsbkBuffer1.setSize( TSBK_DECODED_END );
+							
+		                    TSBKMessage tsbkMessage1 = TSBKMessageFactory.getMessage( 
+		                            tsbkBuffer1, DataUnitID.TSBK1, mAliasList ); 
+
+							if( tsbkMessage1.isLastBlock() )
+							{
+								mComplete = true;
+							}
+							else
+							{
+								setDUID( DataUnitID.TSBK2 );
+								mMessage.setPointer( TSBK_BEGIN );
+							}
+							
+							dispatch( tsbkMessage1 );
 						}
 						else
 						{
-							setDUID( DataUnitID.TSBK2 );
-							mMessage.setPointer( TSBK_BEGIN );
+							mComplete = true;
 						}
-						
-						dispatch( tsbkMessage1 );
 					}
 					else
 					{
@@ -409,23 +420,33 @@ public class P25MessageFramer implements Listener<Dibit>
 					 * unsuccessful decode due to excessive errors */
 					if( mHalfRate.decode( mMessage, TSBK_BEGIN, TSBK_END ) )
 					{
-						BitSetBuffer tsbkBuffer2 = mMessage.copy();
-						tsbkBuffer2.setSize( TSBK_DECODED_END );
+						CRC tsbkCRC = CRCP25.correctCCITT80( mMessage, 
+								TSBK_BEGIN, TSBK_CRC_START );
 						
-	                    TSBKMessage tsbkMessage2 = TSBKMessageFactory.getMessage( 
-	                            tsbkBuffer2, DataUnitID.TSBK2, mAliasList ); 
-
-						if( tsbkMessage2.isLastBlock() )
+						if( tsbkCRC != CRC.FAILED_CRC )
 						{
-							mComplete = true;
+							BitSetBuffer tsbkBuffer2 = mMessage.copy();
+							tsbkBuffer2.setSize( TSBK_DECODED_END );
+							
+		                    TSBKMessage tsbkMessage2 = TSBKMessageFactory.getMessage( 
+		                            tsbkBuffer2, DataUnitID.TSBK2, mAliasList ); 
+
+							if( tsbkMessage2.isLastBlock() )
+							{
+								mComplete = true;
+							}
+							else
+							{
+								setDUID( DataUnitID.TSBK3 );
+								mMessage.setPointer( TSBK_BEGIN );
+							}
+							
+							dispatch( tsbkMessage2 );
 						}
 						else
 						{
-							setDUID( DataUnitID.TSBK3 );
-							mMessage.setPointer( TSBK_BEGIN );
+							mComplete = true;
 						}
-						
-						dispatch( tsbkMessage2 );
 					}
 					else
 					{
@@ -440,13 +461,19 @@ public class P25MessageFramer implements Listener<Dibit>
 					 * unsuccessful decode due to excessive errors */
 					if( mHalfRate.decode( mMessage, TSBK_BEGIN, TSBK_END ) )
 					{
-	                    BitSetBuffer tsbkBuffer3 = mMessage.copy();
-						tsbkBuffer3.setSize( TSBK_DECODED_END );
-	                    
-	                    TSBKMessage tsbkMessage3 = TSBKMessageFactory.getMessage( 
-	                            tsbkBuffer3, DataUnitID.TSBK3, mAliasList ); 
+						CRC tsbkCRC = CRCP25.correctCCITT80( mMessage, 
+								TSBK_BEGIN, TSBK_CRC_START );
+						
+						if( tsbkCRC != CRC.FAILED_CRC )
+						{
+		                    BitSetBuffer tsbkBuffer3 = mMessage.copy();
+							tsbkBuffer3.setSize( TSBK_DECODED_END );
+		                    
+		                    TSBKMessage tsbkMessage3 = TSBKMessageFactory.getMessage( 
+		                            tsbkBuffer3, DataUnitID.TSBK3, mAliasList ); 
 
-						dispatch( tsbkMessage3 );
+							dispatch( tsbkMessage3 );
+						}
 					}
 
 					mComplete = true;

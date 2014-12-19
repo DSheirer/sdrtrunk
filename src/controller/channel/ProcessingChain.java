@@ -682,26 +682,33 @@ public class ProcessingChain implements Listener<Message>
 		@Override
         public void run()
         {
-			List<RealBuffer> sampleBuffers = new ArrayList<RealBuffer>();
-
-			mRealQueue.drainTo( sampleBuffers, 4 );
-
-			for( RealBuffer sampleBuffer: sampleBuffers )
+			try
 			{
-				if( mDecoder != null )
+				List<RealBuffer> sampleBuffers = new ArrayList<RealBuffer>();
+
+				mRealQueue.drainTo( sampleBuffers, 4 );
+
+				for( RealBuffer sampleBuffer: sampleBuffers )
 				{
-					float[] samples = sampleBuffer.getSamples();
-					
-					for( float sample: samples )
+					if( mDecoder != null )
 					{
-						mDecoder.getRealReceiver().receive( sample );
+						float[] samples = sampleBuffer.getSamples();
+						
+						for( float sample: samples )
+						{
+							mDecoder.getRealReceiver().receive( sample );
+						}
 					}
+					
+					sampleBuffer.dispose();
 				}
 				
-				sampleBuffer.dispose();
+				sampleBuffers.clear();
 			}
-			
-			sampleBuffers.clear();
+			catch( Exception e )
+			{
+				mLog.error( "error during processing chain real processor run", e );
+			}
         }
 	}
 
@@ -713,25 +720,32 @@ public class ProcessingChain implements Listener<Message>
 		@Override
         public void run()
         {
-			List<List<ComplexSample>> sampleSets = 
-								new ArrayList<List<ComplexSample>>();
-
-			mComplexQueue.drainTo( sampleSets, 16 );
-
-			for( List<ComplexSample> samples: sampleSets )
+			try
 			{
-				for( ComplexSample sample: samples )
+				List<List<ComplexSample>> sampleSets = 
+						new ArrayList<List<ComplexSample>>();
+
+				mComplexQueue.drainTo( sampleSets, 16 );
+			
+				for( List<ComplexSample> samples: sampleSets )
 				{
-					if( sample != null && mDecoder != null )
+					for( ComplexSample sample: samples )
 					{
-						mDecoder.getComplexReceiver().receive( sample );
+						if( sample != null && mDecoder != null )
+						{
+							mDecoder.getComplexReceiver().receive( sample );
+						}
 					}
+					
+					samples.clear();
 				}
 				
-				samples.clear();
+				sampleSets.clear();
 			}
-			
-			sampleSets.clear();
+			catch( Exception e )
+			{
+				mLog.error( "error during processing chain complex processor run", e );
+			}
         }
 	}
 	

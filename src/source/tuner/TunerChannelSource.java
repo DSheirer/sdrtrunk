@@ -24,6 +24,9 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import sample.Listener;
 import sample.complex.ComplexBuffer;
 import sample.complex.ComplexSample;
@@ -34,6 +37,7 @@ import source.tuner.FrequencyChangeEvent.Attribute;
 import util.Oscillator;
 import controller.ThreadPoolManager;
 import controller.ThreadPoolManager.ThreadType;
+import decode.p25.P25Decoder;
 import dsp.filter.ComplexFilter;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
@@ -42,6 +46,9 @@ public class TunerChannelSource extends ComplexSource
 							 implements FrequencyChangeListener,
 							 			Listener<ComplexBuffer>
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( TunerChannelSource.class );
+	
 	private static int sCHANNEL_RATE = 48000;
 	private static int sCHANNEL_PASS_FREQUENCY = 12500;
 	
@@ -87,9 +94,9 @@ public class TunerChannelSource extends ComplexSource
 		frequencyChanged( new FrequencyChangeEvent( 
 					Attribute.SAMPLE_RATE, mTuner.getSampleRate() ) );
 	    
-		/* Schedule the decimation task to run 20 times a second */
+		/* Schedule the decimation task to run 50 times a second */
 	    mTaskHandle = mThreadPoolManager.schedule( ThreadType.DECIMATION, 
-	    		new DecimationProcessor(), 50, TimeUnit.MILLISECONDS );
+	    		new DecimationProcessor(), 20, TimeUnit.MILLISECONDS );
 
 	    /* Finally, register to receive samples from the tuner */
 		mTuner.addListener( (Listener<ComplexBuffer>)this );
@@ -243,41 +250,51 @@ public class TunerChannelSource extends ComplexSource
 		@Override
         public void run()
         {
-			List<ComplexBuffer> sampleBuffers = 
-								new ArrayList<ComplexBuffer>();
-			
-			if( mBuffer != null )
+			/* General exception handler so that any errors won't kill the
+			 * decimation thread and cause the input buffers to fill up and
+			 * run the program out of memory */
+			try
 			{
-				/* Limit to 10, so that after a garbage collect we don't
-				 * induce wild swings as it tries to take tons of samples
-				 * and process them, causing delays and buffer refill */
-				mBuffer.drainTo( sampleBuffers, 10 );
-
-				for( ComplexBuffer sampleArray: sampleBuffers )
+				List<ComplexBuffer> sampleBuffers = 
+						new ArrayList<ComplexBuffer>();
+	
+				if( mBuffer != null )
 				{
-					float[] samples = sampleArray.getSamples();
-					
-					for( int x = 0; x < samples.length; x += 2 )
+					/* Limit to 4, so that after a garbage collect we don't
+					 * induce wild swings as it tries to take tons of samples
+					 * and process them, causing delays and buffer refill */
+					mBuffer.drainTo( sampleBuffers, 4 );
+			
+					for( ComplexBuffer sampleArray: sampleBuffers )
 					{
-						Float left = samples[ x ];
-						Float right = samples[ x + 1 ];
+						float[] samples = sampleArray.getSamples();
 						
-						if( left != null && right != null )
+						for( int x = 0; x < samples.length; x += 2 )
 						{
-			            	/* perform frequency translation */
-		        			ComplexSample translated = ComplexSample.multiply( 
-		        					mSineWaveGenerator.nextComplex(), left, right ); 
-			            	
-			            	/* decimate the sample rate */
-		        			if( mDecimationFilters[ 0 ] != null )
-		        			{
-				            	mDecimationFilters[ 0 ].receive( translated );
-		        			}
+							Float left = samples[ x ];
+							Float right = samples[ x + 1 ];
+							
+							if( left != null && right != null )
+							{
+				            	/* perform frequency translation */
+			        			ComplexSample translated = ComplexSample.multiply( 
+			        					mSineWaveGenerator.nextComplex(), left, right ); 
+				            	
+				            	/* decimate the sample rate */
+			        			if( mDecimationFilters[ 0 ] != null )
+			        			{
+					            	mDecimationFilters[ 0 ].receive( translated );
+			        			}
+							}
 						}
 					}
+					
+					sampleBuffers.clear();
 				}
-				
-				sampleBuffers.clear();
+			}
+			catch( Exception e )
+			{
+				mLog.error( "encountered an error during decimation process", e );
 			}
         }
 	}

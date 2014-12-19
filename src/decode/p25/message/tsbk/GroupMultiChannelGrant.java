@@ -1,11 +1,13 @@
 package decode.p25.message.tsbk;
 
-import alias.Alias;
 import alias.AliasList;
 import bits.BitSetBuffer;
+import decode.p25.message.tsbk.osp.control.IdentifierUpdate;
+import decode.p25.message.tsbk.osp.control.IdentifierUpdateReceiver;
 import decode.p25.reference.DataUnitID;
 
 public abstract class GroupMultiChannelGrant extends ChannelGrant
+									implements IdentifierUpdateReceiver
 {
     public static final int[] CHANNEL_ID_1 = { 80,81,82,83 };
     public static final int[] CHANNEL_NUMBER_1 = { 84,85,86,87,
@@ -17,6 +19,9 @@ public abstract class GroupMultiChannelGrant extends ChannelGrant
         112,113,114,115,116,117,118,119 };
     public static final int[] GROUP_ADDRESS_2 = { 120,121,122,123,124,125,126,
         127,128,129,130,131,132,133,134,135 };
+    
+    private IdentifierUpdate mIdentifierUpdate1;
+    private IdentifierUpdate mIdentifierUpdate2;
 
     public GroupMultiChannelGrant( BitSetBuffer message, 
                               DataUnitID duid,
@@ -37,11 +42,14 @@ public abstract class GroupMultiChannelGrant extends ChannelGrant
         sb.append( " GRP1:" );
         sb.append( getGroupAddress1() );
         
-        sb.append( " CHAN2:" );
-        sb.append( getChannelID2() + "/" + getChannelNumber2() );
-        
-        sb.append( " GRP2:" );
-        sb.append( getGroupAddress2() );
+        if( hasChannelNumber2() )
+        {
+            sb.append( " CHAN2:" );
+            sb.append( getChannelID2() + "/" + getChannelNumber2() );
+            
+            sb.append( " GRP2:" );
+            sb.append( getGroupAddress2() );
+        }
         
         return sb.toString();
     }
@@ -76,6 +84,11 @@ public abstract class GroupMultiChannelGrant extends ChannelGrant
         return mMessage.getHex( GROUP_ADDRESS_2, 4 );
     }
     
+    public boolean hasChannelNumber2()
+    {
+    	return mMessage.getInt( GROUP_ADDRESS_2 ) > 0;
+    }
+    
     @Override
     public String getFromID()
     {
@@ -87,4 +100,59 @@ public abstract class GroupMultiChannelGrant extends ChannelGrant
     {
         return getGroupAddress2();
     }
+    
+	@Override
+    public void setIdentifierMessage( int identifier, IdentifierUpdate message )
+    {
+		if( identifier == getChannelID1() )
+		{
+			mIdentifierUpdate1 = message;
+		}
+
+		if( hasChannelNumber2() && identifier == getChannelID2() )
+		{
+			mIdentifierUpdate2 = message;
+		}
+    }
+
+	@Override
+    public int[] getIdentifiers()
+    {
+		int[] identifiers;
+		
+		if( hasChannelNumber2() )
+		{
+			identifiers = new int[ 2 ];
+			identifiers[ 0 ] = getChannelID1();
+			identifiers[ 1 ] = getChannelID2();
+		}
+		else
+		{
+			identifiers = new int[ 1 ];
+			identifiers[ 0 ] = getChannelID1();
+		}
+		
+		return identifiers;
+    }
+    
+    public long getDownlinkFrequency1()
+    {
+    	return calculateDownlink( mIdentifierUpdate1, getChannel() );
+    }
+    
+    public long getUplinkFrequency1()
+    {
+    	return calculateUplink( mIdentifierUpdate1, getChannel() );
+    }
+    
+    public long getDownlinkFrequency2()
+    {
+    	return calculateDownlink( mIdentifierUpdate2, getChannel() );
+    }
+    
+    public long getUplinkFrequency2()
+    {
+    	return calculateUplink( mIdentifierUpdate2, getChannel() );
+    }
+    
 }
