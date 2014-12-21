@@ -128,7 +128,7 @@ public class LJ1200CallEvent extends CallEvent
     
     public static LJ1200CallEvent getLJ1200Event( LJ1200Message message )
     {
-        CallEventType type = CallEventType.REQUEST;
+        CallEventType type = CallEventType.COMMAND;
         
         return new LJ1200CallEvent.Builder( type )
         						.to( message.getAddress() )

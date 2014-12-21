@@ -95,7 +95,7 @@ public class TunerChannelSource extends ComplexSource
 					Attribute.SAMPLE_RATE, mTuner.getSampleRate() ) );
 	    
 		/* Schedule the decimation task to run 50 times a second */
-	    mTaskHandle = mThreadPoolManager.schedule( ThreadType.DECIMATION, 
+	    mTaskHandle = mThreadPoolManager.scheduleFixedRate( ThreadType.DECIMATION, 
 	    		new DecimationProcessor(), 20, TimeUnit.MILLISECONDS );
 
 	    /* Finally, register to receive samples from the tuner */

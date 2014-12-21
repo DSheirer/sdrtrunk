@@ -39,7 +39,7 @@ public class UnitToUnitVoiceChannelGrant extends UnitChannelGrant
         sb.append( " TARGET UNIT:" );
         sb.append( getTargetAddress() );
 
-        sb.append( " CHAN:" + getChannelIdentifier() + "-" + getChannel() );
+        sb.append( " CHAN:" + getChannelIdentifier() + "-" + getChannelNumber() );
         sb.append( " DN:" + getDownlinkFrequency() );
         sb.append( " UP:" + getUplinkFrequency() );
         

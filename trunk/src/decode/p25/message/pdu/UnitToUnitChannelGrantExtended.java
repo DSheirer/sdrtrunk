@@ -30,10 +30,10 @@ public abstract class UnitToUnitChannelGrantExtended extends PDUMessage
 	public static final int[] TARGET_ADDRESS = { 216,217,218,219,220,221,222,
 		223,224,225,226,227,228,229,230,231,232,233,234,235,236,237,238,239	};
 	public static final int[] TRANSMIT_IDENTIFIER = { 240,241,242,243 };
-	public static final int[] TRANSMIT_CHANNEL = { 244,245,246,247,248,249,250,
+	public static final int[] TRANSMIT_NUMBER = { 244,245,246,247,248,249,250,
 		251,252,253,254,255 };
 	public static final int[] RECEIVE_IDENTIFIER = { 256,257,258,259 };
-	public static final int[] RECEIVE_CHANNEL = { 260,261,262,263,264,265,266,
+	public static final int[] RECEIVE_NUMBER = { 260,261,262,263,264,265,266,
 		267,268,269,270,271 };
 	public static final int[] MULTIPLE_BLOCK_CRC = { 320,321,322,323,324,325,
 		326,327,328,329,330,331,332,333,334,335,336,337,338,339,340,341,342,
@@ -78,10 +78,10 @@ public abstract class UnitToUnitChannelGrantExtended extends PDUMessage
         sb.append( " SYS:" );
         sb.append( getSourceSystemID() );
 
-        sb.append( " CHAN DN:" + getTransmitIdentifier() + "-" + getTransmitChannel() );
+        sb.append( " CHAN DN:" + getTransmitChannelIdentifier() + "-" + getTransmitChannelNumber() );
         sb.append( " " + getDownlinkFrequency() );
         
-        sb.append( " CHAN UP:" + getReceiveIdentifier() + "-" + getReceiveChannel() );
+        sb.append( " CHAN UP:" + getReceiveChannelIdentifier() + "-" + getReceiveChannelNumber() );
         sb.append( " " + getUplinkFrequency() );
         
         return sb.toString();
@@ -133,45 +133,55 @@ public abstract class UnitToUnitChannelGrantExtended extends PDUMessage
     	return mMessage.getHex( TARGET_ADDRESS, 6 );
     }
     
-	public int getTransmitIdentifier()
+	public int getTransmitChannelIdentifier()
 	{
 		return mMessage.getInt( TRANSMIT_IDENTIFIER );
 	}
 	
-	public int getTransmitChannel()
+	public int getTransmitChannelNumber()
 	{
-		return mMessage.getInt( TRANSMIT_CHANNEL );
+		return mMessage.getInt( TRANSMIT_NUMBER );
 	}
 	
-	public int getReceiveIdentifier()
+	public String getTransmitChannel()
+	{
+		return getTransmitChannelIdentifier() + "-" + getTransmitChannelNumber();
+	}
+	
+	public int getReceiveChannelIdentifier()
 	{
 		return mMessage.getInt( RECEIVE_IDENTIFIER );
 	}
 	
-	public int getReceiveChannel()
+	public int getReceiveChannelNumber()
 	{
-		return mMessage.getInt( RECEIVE_CHANNEL );
+		return mMessage.getInt( RECEIVE_NUMBER );
+	}
+	
+	public String getReceiveChannel()
+	{
+		return getReceiveChannelIdentifier() + "-" + getReceiveChannelNumber();
 	}
 	
     public long getDownlinkFrequency()
     {
-    	return calculateDownlink( mTransmitIdentifierUpdate, getTransmitChannel() );
+    	return calculateDownlink( mTransmitIdentifierUpdate, getTransmitChannelNumber() );
     }
     
     public long getUplinkFrequency()
     {
-    	return calculateUplink( mReceiveIdentifierUpdate, getReceiveChannel() );
+    	return calculateUplink( mReceiveIdentifierUpdate, getReceiveChannelNumber() );
     }
 
 	@Override
     public void setIdentifierMessage( int identifier, IdentifierUpdate message )
     {
-		if( identifier == getTransmitIdentifier() )
+		if( identifier == getTransmitChannelIdentifier() )
 		{
 			mTransmitIdentifierUpdate = message;
 		}
 		
-		if( identifier == getReceiveIdentifier() )
+		if( identifier == getReceiveChannelIdentifier() )
 		{
 			mReceiveIdentifierUpdate = message;
 		}
@@ -181,8 +191,8 @@ public abstract class UnitToUnitChannelGrantExtended extends PDUMessage
 	{
 		int[] idens = new int[ 2 ];
 		
-		idens[ 0 ] = getTransmitIdentifier();
-		idens[ 1 ] = getReceiveIdentifier();
+		idens[ 0 ] = getTransmitChannelIdentifier();
+		idens[ 1 ] = getReceiveChannelIdentifier();
 		
 		return idens;
 	}

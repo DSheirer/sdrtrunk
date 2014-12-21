@@ -18,7 +18,10 @@
 package decode.p25;
 
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -33,13 +36,16 @@ import alias.AliasList;
 import controller.activity.ActivitySummaryProvider;
 import decode.p25.message.pdu.PDUMessage;
 import decode.p25.message.pdu.osp.control.NetworkStatusBroadcastExtended;
+import decode.p25.message.pdu.osp.control.ProtectionParameterBroadcast;
 import decode.p25.message.pdu.osp.control.RFSSStatusBroadcastExtended;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.message.tsbk.osp.control.AdjacentStatusBroadcast;
+import decode.p25.message.tsbk.osp.control.IdentifierUpdate;
 import decode.p25.message.tsbk.osp.control.NetworkStatusBroadcast;
 import decode.p25.message.tsbk.osp.control.RFSSStatusBroadcast;
 import decode.p25.message.tsbk.osp.control.SecondaryControlChannelBroadcast;
 import decode.p25.message.tsbk.osp.control.SystemService;
+import decode.p25.message.tsbk.osp.data.SNDCPDataChannelAnnouncementExplicit;
 import decode.p25.reference.Service;
 
 public class P25ActivitySummary implements ActivitySummaryProvider, 
@@ -57,13 +63,18 @@ public class P25ActivitySummary implements ActivitySummaryProvider,
 	
 	private NetworkStatusBroadcast mNetworkStatus;
 	private NetworkStatusBroadcastExtended mNetworkStatusExtended;
+	private ProtectionParameterBroadcast mProtectionParameterBroadcast;
 	private RFSSStatusBroadcast mRFSSStatusMessage;
 	private RFSSStatusBroadcastExtended mRFSSStatusMessageExtended;
+	private SNDCPDataChannelAnnouncementExplicit mSNDCPDataChannel;
 	private HashMap<String,AdjacentStatusBroadcast> mNeighborMap = 
 						new HashMap<String,AdjacentStatusBroadcast>();
 
 	private Set<SecondaryControlChannelBroadcast> mSecondaryControlChannels = 
 			new TreeSet<SecondaryControlChannelBroadcast>();
+	
+	private HashMap<Integer,IdentifierUpdate> mBands = 
+							new HashMap<Integer,IdentifierUpdate>();
 	
 	public P25ActivitySummary( AliasList list )
 	{
@@ -94,6 +105,23 @@ public class P25ActivitySummary implements ActivitySummaryProvider,
 				
 				mNeighborMap.put( neighborMessage.getUniqueID(), neighborMessage );
 			}
+			else if( message instanceof IdentifierUpdate )
+			{
+				IdentifierUpdate iu = (IdentifierUpdate)message;
+				
+				if( !mBands.containsKey( iu.getIdentifier() ) )
+				{
+					mBands.put( iu.getIdentifier(), iu );
+				}
+			}
+			else if( message instanceof NetworkStatusBroadcast )
+			{
+				mNetworkStatus = (NetworkStatusBroadcast)message;
+			}
+			else if( message instanceof RFSSStatusBroadcast )
+			{
+				mRFSSStatusMessage = (RFSSStatusBroadcast)message;
+			}
 			else if( message instanceof SecondaryControlChannelBroadcast )
 			{
 				SecondaryControlChannelBroadcast sccb = 
@@ -105,13 +133,9 @@ public class P25ActivitySummary implements ActivitySummaryProvider,
 							(SecondaryControlChannelBroadcast)message );
 				}
 			}
-			else if( message instanceof NetworkStatusBroadcast )
+			else if( message instanceof SNDCPDataChannelAnnouncementExplicit )
 			{
-				mNetworkStatus = (NetworkStatusBroadcast)message;
-			}
-			else if( message instanceof RFSSStatusBroadcast )
-			{
-				mRFSSStatusMessage = (RFSSStatusBroadcast)message;
+				mSNDCPDataChannel = (SNDCPDataChannelAnnouncementExplicit)message;
 			}
 		}
 		else if( message instanceof PDUMessage )
@@ -119,6 +143,11 @@ public class P25ActivitySummary implements ActivitySummaryProvider,
 			if( message instanceof NetworkStatusBroadcastExtended )
 			{
 				mNetworkStatusExtended = (NetworkStatusBroadcastExtended)message;
+			}
+			else if( message instanceof ProtectionParameterBroadcast )
+			{
+				mProtectionParameterBroadcast = 
+							(ProtectionParameterBroadcast)message;
 			}
 			else if( message instanceof RFSSStatusBroadcastExtended )
 			{
@@ -139,15 +168,21 @@ public class P25ActivitySummary implements ActivitySummaryProvider,
 		if( mNetworkStatus != null )
 		{
 			sb.append( "\nNAC:\t" + mNetworkStatus.getNAC() );
-			sb.append( "\nSYSTEM:\t" + mNetworkStatus.getSystemID() );
-			sb.append( "\nWACN:\t" + mNetworkStatus.getWACN() );
+			sb.append( "\nWACN-SYS:\t" + mNetworkStatus.getWACN() );
+			sb.append( "-" + mNetworkStatus.getSystemID() );
+			sb.append( " [" );
+			sb.append( mNetworkStatus.getNetworkCallsign() );
+			sb.append( "]" );
 			sb.append( "\nLRA:\t" + mNetworkStatus.getLocationRegistrationArea() );
 		}
 		else if( mNetworkStatusExtended != null )
 		{
 			sb.append( "\nNAC:\t" + mNetworkStatusExtended.getNAC() );
-			sb.append( "\nSYSTEM:\t" + mNetworkStatusExtended.getSystemID() );
-			sb.append( "\nWACN:\t" + mNetworkStatusExtended.getWACN() );
+			sb.append( "\nWACN-SYS:\t" + mNetworkStatusExtended.getWACN() );
+			sb.append( "-" + mNetworkStatusExtended.getSystemID() );
+			sb.append( " [" );
+			sb.append( mNetworkStatusExtended.getNetworkCallsign() );
+			sb.append( "]" );
 			sb.append( "\nLRA:\t" + mNetworkStatusExtended.getLocationRegistrationArea() );
 		}
 
@@ -228,8 +263,48 @@ public class P25ActivitySummary implements ActivitySummaryProvider,
 				}
 			}
 		}
-
 		
+		if( mSNDCPDataChannel != null )
+		{
+			sb.append( "\nSNDCP:" );
+			sb.append( "\tDNLINK " + mFrequencyFormatter.format( 
+					(double)mSNDCPDataChannel.getDownlinkFrequency()/1E6D ) +
+					" [" + mSNDCPDataChannel.getTransmitChannel() + "]" );
+			sb.append( "\tUPLINK " + mFrequencyFormatter.format( 
+					(double)mSNDCPDataChannel.getUplinkFrequency()/1E6D ) +
+					" [" + mSNDCPDataChannel.getReceiveChannel() + "]" );
+		}
+		
+		if( mProtectionParameterBroadcast != null )
+		{
+			sb.append( "\nENCRYPTION:" );
+			sb.append( "\nTYPE:\t" + mProtectionParameterBroadcast
+						.getEncryptionType().name() );
+			sb.append( "\nALGORITHM:\t" + mProtectionParameterBroadcast
+						.getAlgorithmID() );
+			sb.append( "\nKEY:\t" + mProtectionParameterBroadcast.getKeyID() );
+			sb.append( "\nINBOUND IV:\t" + mProtectionParameterBroadcast
+						.getInboundInitializationVector() );
+			sb.append( "\nOUTBOUND IV:\t" + mProtectionParameterBroadcast
+						.getOutboundInitializationVector() );
+		}
+		
+		List<Integer> identifiers = new ArrayList( mBands.keySet() );
+		Collections.sort( identifiers );
+		
+		sb.append( "\nFREQUENCY BANDS:" );
+		for( Integer id: identifiers )
+		{
+			IdentifierUpdate band = mBands.get( id );
+			
+			sb.append( "\n\t" + id );
+			sb.append( "- BASE: " + mFrequencyFormatter.format( 
+					(double)band.getBaseFrequency() / 1E6d ) );
+			sb.append( " CHANNEL SIZE: " + mFrequencyFormatter.format( 
+					(double)band.getChannelSpacing() / 1E6d ) );
+			sb.append( " UPLINK OFFSET: " + mFrequencyFormatter.format( 
+					(double)band.getTransmitOffset() / 1E6D ) );
+		}
 		
 		sb.append( "\n\n=================== NEIGHBORS ======================" );
 		

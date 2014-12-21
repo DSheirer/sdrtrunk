@@ -45,7 +45,7 @@ public class GroupAffiliationResponse extends TSBKMessage
         return sb.toString();
     }
     
-    public String getAffiliation()
+    public String getAffiliationScope()
     {
         return mMessage.get( LOCAL_GLOBAL_AFFILIATION_FLAG) ? " GLOBAL" : " LOCAL";
     }

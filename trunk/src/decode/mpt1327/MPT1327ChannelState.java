@@ -125,7 +125,7 @@ public class MPT1327ChannelState extends ChannelState
 						else
 						{
 							mCallEventModel.add( 
-									new MPT1327CallEvent.Builder( CallEventType.ACKNOWLEDGE )
+									new MPT1327CallEvent.Builder( CallEventType.RESPONSE )
 										.aliasList( getProcessingChain().getAliasList() )
 										.channel( String.valueOf( mChannelNumber ) )
 										.details( "ACK " + identType.getLabel() )
@@ -137,7 +137,7 @@ public class MPT1327ChannelState extends ChannelState
 						break;
 					case AHYC:
 						mCallEventModel.add( 
-								new MPT1327CallEvent.Builder( CallEventType.REQUEST )
+								new MPT1327CallEvent.Builder( CallEventType.COMMAND )
 									.aliasList( getProcessingChain().getAliasList() )
 									.channel( String.valueOf( mChannelNumber ) )
 									.details( ( (MPT1327Message) message ).getRequestString() )

@@ -38,7 +38,7 @@ public class ThreadPoolManager
 	{
 	}
 
-	public ScheduledFuture<?> schedule( ThreadType type, 
+	public ScheduledFuture<?> scheduleFixedRate( ThreadType type, 
 										Runnable command, 
 										long period, 
 										TimeUnit unit )
@@ -66,6 +66,25 @@ public class ThreadPoolManager
 		
 	}
 	
+	public void scheduleOnce( Runnable command, long delay, TimeUnit unit )	
+			throws RejectedExecutionException
+	{
+		if( mExecutor == null )
+		{
+			mExecutor = Executors.newScheduledThreadPool( THREAD_POOL_SIZE );
+		}
+		
+		if( mTasks.size() <= MAX_TASK_COUNT )
+		{
+			mExecutor.schedule( command, delay, unit );
+		}
+		else
+		{
+			throw new RejectedExecutionException( "Cannot schedule task - at "
+			+ "max task count [" + mTasks.size() + "]" );
+		}
+	}
+
 	public void cancel( ScheduledFuture<?> task )
 	{
 		task.cancel( true );

@@ -29,8 +29,10 @@ public class TelephoneInterconnectVoiceChannelGrant extends UnitChannelGrant
             sb.append( " EMERGENCY" );
         }
         
+        sb.append( " ADDR:" + getSourceAddress() );
+        
         sb.append( " CHAN:" );
-        sb.append( getChannelIdentifier() + "/" + getChannel() );
+        sb.append( getChannel() );
         
         sb.append( " CALL TIMER:" );
         sb.append( getCallTimer() );
@@ -39,6 +41,11 @@ public class TelephoneInterconnectVoiceChannelGrant extends UnitChannelGrant
         sb.append( getToID() );
         
         return sb.toString();
+    }
+    
+    public String getAddress()
+    {
+    	return getSourceAddress();
     }
     
     /**

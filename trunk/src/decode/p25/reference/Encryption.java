@@ -13,6 +13,7 @@ public enum Encryption
 	TRIPLE_DES_2_KEY( 0x82 ),
 	TRIPLE_DES_3_KEY( 0x83 ),
 	AES( 0x84 ),
+	ADP( 0xAA ),
 	UNKNOWN( -1 );
 	
 	private int mValue;

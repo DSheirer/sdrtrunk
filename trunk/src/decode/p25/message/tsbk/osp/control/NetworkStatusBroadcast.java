@@ -5,6 +5,7 @@ import bits.BitSetBuffer;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
+import decode.p25.reference.P25NetworkCallsign;
 
 public class NetworkStatusBroadcast extends TSBKMessage implements IdentifierUpdateReceiver
 {
@@ -74,6 +75,12 @@ public class NetworkStatusBroadcast extends TSBKMessage implements IdentifierUpd
         return mMessage.getHex( SYSTEM_ID, 3 );
     }
 
+	public String getNetworkCallsign()
+	{
+		return P25NetworkCallsign.getCallsign( mMessage.getInt( WACN ), 
+											   mMessage.getInt( SYSTEM_ID ) );
+	}
+	
     public int getIdentifier()
     {
     	return mMessage.getInt( IDENTIFIER );

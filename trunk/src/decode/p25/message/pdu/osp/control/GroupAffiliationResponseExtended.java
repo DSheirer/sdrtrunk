@@ -54,7 +54,7 @@ public class GroupAffiliationResponseExtended extends PDUMessage
         sb.append( getMessageStub() );
 
         sb.append( "AFFILIATION:" );
-        sb.append( getGroupAffiliationResponse().name() );
+        sb.append( getResponse().name() );
         
         sb.append( " TO:" );
         sb.append( getTargetAddress() );
@@ -123,7 +123,7 @@ public class GroupAffiliationResponseExtended extends PDUMessage
     	return mMessage.getHex( GROUP_ID, 4 );
     }
     
-    public Response getGroupAffiliationResponse()
+    public Response getResponse()
     {
     	return Response.fromValue( 
     			mMessage.getInt( GROUP_AFFILIATION_RESPONSE_VALUE ) );

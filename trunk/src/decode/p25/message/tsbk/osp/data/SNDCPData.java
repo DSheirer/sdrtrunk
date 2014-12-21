@@ -21,4 +21,9 @@ public abstract class SNDCPData extends ServiceMessage
     {
     	super( message, duid, aliasList );
     }
+    
+    public String getNSAPI()
+    {
+    	return mMessage.getHex( NETWORK_SERVICE_ACCESS_POINT_ID, 1 );
+    }
 }
