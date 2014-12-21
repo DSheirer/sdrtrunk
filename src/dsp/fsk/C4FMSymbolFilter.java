@@ -311,13 +311,13 @@ public class C4FMSymbolFilter implements RealSampleListener,
 			
 			mFineFrequencyCorrection += ( symbolError * K_FINE_FREQUENCY );
 			
-			/* send frequency correction */
-			if( Math.abs( mCoarseFrequencyCorrection ) > COARSE_FREQUENCY_DEADBAND )
-			{
-				mLog.debug( "Frequency Correction [" + 
-						( mCoarseFrequencyCorrection > 0 ? "-" : "+" ) + 
-						mCoarseFrequencyCorrection + "]" );
-			}
+//			/* send frequency correction */
+//			if( Math.abs( mCoarseFrequencyCorrection ) > COARSE_FREQUENCY_DEADBAND )
+//			{
+//				mLog.debug( "Frequency Correction [" + 
+//						( mCoarseFrequencyCorrection > 0 ? "-" : "+" ) + 
+//						mCoarseFrequencyCorrection + "]" );
+//			}
 			
 			if( mSymbolSpreadTap != null )
 			{
