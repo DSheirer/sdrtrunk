@@ -484,7 +484,7 @@ public class P25ChannelState extends ChannelState
 							.details( "AFFILIATION:" + gar.getResponse().name() + 
 									  " FOR " + gar.getAffiliationScope() + 
 									  " GROUP:" + gar.getGroupAddress() + 
-									  " GROUP ANNOUNCEMENT:" + 
+									  " ANNOUNCEMENT GROUP:" + 
 									  gar.getAnnouncementGroupAddress() )
 							.to( gar.getTargetAddress() )
 							.build() );	
@@ -628,7 +628,7 @@ public class P25ChannelState extends ChannelState
 							.details( "AFFILIATION:" + gar.getResponse().name() + 
 									  " FOR GROUP:" + gar.getGroupWACN() + "-" +
 									  gar.getGroupSystemID() + "-" + 
-									  gar.getGroupID() + " GROUP ANNOUNCEMENT:" + 
+									  gar.getGroupID() + " ANNOUNCEMENT GROUP:" + 
 									  gar.getAnnouncementGroupID() )
 						    .from( gar.getSourceWACN() + "-" + 
 								   gar.getSourceSystemID() + "-" + 
@@ -1222,14 +1222,18 @@ public class P25ChannelState extends ChannelState
 			case SNDCP_DATA_CHANNEL_GRANT:
 				SNDCPDataChannelGrant sdcg = (SNDCPDataChannelGrant)message;
 				
-				mCallEventModel.add(   
+				CallEvent event = 
 						new P25CallEvent.Builder( CallEventType.DATA_CALL )
 							.aliasList( mAliasList )
 							.channel( sdcg.getTransmitChannel() )
 							.details( "SNDCP DATA NSAPI:" + sdcg.getNSAPI() )
 						    .frequency( sdcg.getDownlinkFrequency() )
 							.to( sdcg.getTargetAddress() )
-							.build() );
+							.build();
+
+				mCallEventModel.add( event );
+				
+				addCall( event );
 				break;
 			case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
 				TelephoneInterconnectVoiceChannelGrant tivcg =
@@ -1445,12 +1449,6 @@ public class P25ChannelState extends ChannelState
 		}
 	}
 
-	@Override
-	public void setSquelchState( SquelchState state )
-	{
-		//do nothing ... we want the squelch state always unsquelched (for now)
-	}
-	
 	@Override
     public String getActivitySummary()
     {

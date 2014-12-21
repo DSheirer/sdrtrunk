@@ -302,8 +302,14 @@ public abstract class ChannelState implements Listener<Message>
 
 				switch( state )
 				{
+					case CONTROL:
+						setSquelchState( SquelchState.SQUELCH );
+						break;
 					case CALL:
 						setSquelchState( SquelchState.UNSQUELCH );
+						mTimerService.stopResetTimer();
+						mTimerService.startFadeTimer();
+						break;
 					case DATA:
 						mTimerService.stopResetTimer();
 						mTimerService.startFadeTimer();
