@@ -23,10 +23,10 @@ public class GroupVoiceChannelGrantExplicit extends PDUMessage
 	public static final int[] SERVICE_OPTIONS = { 128,129,130,131,132,133,134,
 		135 };
 	public static final int[] TRANSMIT_IDENTIFIER = { 176,177,178,179 };
-	public static final int[] TRANSMIT_CHANNEL = { 180,181,182,183,184,185,186,
+	public static final int[] TRANSMIT_NUMBER = { 180,181,182,183,184,185,186,
 		187,188,189,190,191 };
 	public static final int[] RECEIVE_IDENTIFIER = { 192,193,194,195 };
-	public static final int[] RECEIVE_CHANNEL = { 196,197,198,199,200,201,202,
+	public static final int[] RECEIVE_NUMBER = { 196,197,198,199,200,201,202,
 		203,204,205,206,207 };
 	public static final int[] GROUP_ADDRESS = { 208,209,210,211,212,213,214,215,
 		216,217,218,219,220,221,222,223 };
@@ -70,10 +70,10 @@ public class GroupVoiceChannelGrantExplicit extends PDUMessage
         sb.append( " GRP:" );
         sb.append( getGroupAddress() );
 
-        sb.append( " CHAN DN:" + getTransmitIdentifier() + "-" + getTransmitChannel() );
+        sb.append( " CHAN DN:" + getTransmitChannelIdentifier() + "-" + getTransmitChannelNumber() );
         sb.append( " " + getDownlinkFrequency() );
         
-        sb.append( " CHAN UP:" + getReceiveIdentifier() + "-" + getReceiveChannel() );
+        sb.append( " CHAN UP:" + getReceiveChannelIdentifier() + "-" + getReceiveChannelNumber() );
         sb.append( " " + getUplinkFrequency() );
         
         return sb.toString();
@@ -110,45 +110,55 @@ public class GroupVoiceChannelGrantExplicit extends PDUMessage
     	return mMessage.getHex( GROUP_ADDRESS, 4 );
     }
     
-	public int getTransmitIdentifier()
+	public int getTransmitChannelIdentifier()
 	{
 		return mMessage.getInt( TRANSMIT_IDENTIFIER );
 	}
 	
-	public int getTransmitChannel()
+	public int getTransmitChannelNumber()
 	{
-		return mMessage.getInt( TRANSMIT_CHANNEL );
+		return mMessage.getInt( TRANSMIT_NUMBER );
 	}
 	
-	public int getReceiveIdentifier()
+	public String getTransmitChannel()
+	{
+		return getTransmitChannelIdentifier() + "-" + getTransmitChannelNumber();
+	}
+	
+	public int getReceiveChannelIdentifier()
 	{
 		return mMessage.getInt( RECEIVE_IDENTIFIER );
 	}
 	
-	public int getReceiveChannel()
+	public int getReceiveChannelNumber()
 	{
-		return mMessage.getInt( RECEIVE_CHANNEL );
+		return mMessage.getInt( RECEIVE_NUMBER );
+	}
+	
+	public String getReceiveChannel()
+	{
+		return getReceiveChannelIdentifier() + "-" + getReceiveChannelNumber();
 	}
 	
     public long getDownlinkFrequency()
     {
-    	return calculateDownlink( mTransmitIdentifierUpdate, getTransmitChannel() );
+    	return calculateDownlink( mTransmitIdentifierUpdate, getTransmitChannelNumber() );
     }
     
     public long getUplinkFrequency()
     {
-    	return calculateUplink( mReceiveIdentifierUpdate, getReceiveChannel() );
+    	return calculateUplink( mReceiveIdentifierUpdate, getReceiveChannelNumber() );
     }
 
 	@Override
     public void setIdentifierMessage( int identifier, IdentifierUpdate message )
     {
-		if( identifier == getTransmitIdentifier() )
+		if( identifier == getTransmitChannelIdentifier() )
 		{
 			mTransmitIdentifierUpdate = message;
 		}
 		
-		if( identifier == getReceiveIdentifier() )
+		if( identifier == getReceiveChannelIdentifier() )
 		{
 			mReceiveIdentifierUpdate = message;
 		}
@@ -158,8 +168,8 @@ public class GroupVoiceChannelGrantExplicit extends PDUMessage
 	{
 		int[] idens = new int[ 2 ];
 		
-		idens[ 0 ] = getTransmitIdentifier();
-		idens[ 1 ] = getReceiveIdentifier();
+		idens[ 0 ] = getTransmitChannelIdentifier();
+		idens[ 1 ] = getReceiveChannelIdentifier();
 		
 		return idens;
 	}

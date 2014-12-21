@@ -283,7 +283,7 @@ public class ProcessingChain implements Listener<Message>
 					{
 						mProcessorTask = 
 								mResourceManager.getThreadPoolManager()
-									.schedule( ThreadType.DECODER, 
+									.scheduleFixedRate( ThreadType.DECODER, 
 											   new ComplexProcessor(), 
 											   50, TimeUnit.MILLISECONDS );
 
@@ -305,7 +305,7 @@ public class ProcessingChain implements Listener<Message>
 					{
 						mProcessorTask = 
 								mResourceManager.getThreadPoolManager()
-									.schedule( ThreadType.DECODER, 
+									.scheduleFixedRate( ThreadType.DECODER, 
 											   new RealProcessor(), 
 											   50, TimeUnit.MILLISECONDS );
 

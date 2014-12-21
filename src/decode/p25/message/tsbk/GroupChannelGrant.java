@@ -48,7 +48,7 @@ public abstract class GroupChannelGrant extends ChannelGrant
         sb.append( getGroupAddress() );
         
         sb.append( " CHAN:" );
-        sb.append( getChannelIdentifier() + "-" + getChannel() );
+        sb.append( getChannelIdentifier() + "-" + getChannelNumber() );
         
         sb.append( " DN:" + getDownlinkFrequency() );
         

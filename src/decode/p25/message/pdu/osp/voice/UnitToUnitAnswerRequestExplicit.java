@@ -95,12 +95,12 @@ public class UnitToUnitAnswerRequestExplicit extends PDUMessage
 	
 	public String getWACN()
 	{
-		return mMessage.getHex( WACN, 6 );
+		return mMessage.getHex( WACN, 5 );
 	}
 	
     public String getSourceID()
     {
-    	return mMessage.getHex( SOURCE_ID, 4 );
+    	return mMessage.getHex( SOURCE_ID, 6 );
     }
     
     public String getTargetAddress()

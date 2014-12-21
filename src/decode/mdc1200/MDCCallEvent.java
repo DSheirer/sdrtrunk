@@ -137,7 +137,7 @@ public class MDCCallEvent extends CallEvent
         switch( message.getMessageType() )
         {
             case ACKNOWLEDGE:
-                type = CallEventType.ACKNOWLEDGE;
+                type = CallEventType.RESPONSE;
                 break;
             case ANI:
                 type = CallEventType.ID_ANI;

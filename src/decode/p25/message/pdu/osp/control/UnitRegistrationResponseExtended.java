@@ -10,7 +10,7 @@ import decode.p25.reference.Response;
 
 public class UnitRegistrationResponseExtended extends PDUMessage 
 {
-	public static final int[] REGISTRATION_DEFAULT_ADDRESS = { 88,89,90,91,92,
+	public static final int[] ASSIGNED_SOURCE_ADDRESS = { 88,89,90,91,92,
 		93,94,95,96,97,98,99,100,101,102,103,104,105,106,107,108,109,110,111 };
 	public static final int[] WACN = { 128,129,130,131,132,133,134,135,
 		136,137,138,139,140,141,142,143,160,161,162,163 };
@@ -48,7 +48,7 @@ public class UnitRegistrationResponseExtended extends PDUMessage
         sb.append( getMessageStub() );
 
         sb.append( "REGISTRATION:" );
-        sb.append( getUnitRegistrationResponse().name() );
+        sb.append( getResponse().name() );
         
         sb.append( " SRC ID:" );
         sb.append( getSourceID() );
@@ -63,6 +63,11 @@ public class UnitRegistrationResponseExtended extends PDUMessage
         sb.append( getSystemID() );
         
         return sb.toString();
+    }
+    
+    public String getAssignedSourceAddress()
+    {
+    	return mMessage.getHex( ASSIGNED_SOURCE_ADDRESS, 6 );
     }
     
     public String getWACN()
@@ -85,7 +90,7 @@ public class UnitRegistrationResponseExtended extends PDUMessage
     	return mMessage.getHex( SOURCE_ADDRESS, 6 );
     }
 
-    public Response getUnitRegistrationResponse()
+    public Response getResponse()
     {
     	return Response.fromValue( 
     			mMessage.getInt( UNIT_REGISTRATION_RESPONSE_VALUE ) );

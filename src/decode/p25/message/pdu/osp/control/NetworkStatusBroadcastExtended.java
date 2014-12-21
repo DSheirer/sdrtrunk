@@ -9,6 +9,7 @@ import decode.p25.message.tsbk.osp.control.IdentifierUpdateReceiver;
 import decode.p25.message.tsbk.osp.control.SystemService;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
+import decode.p25.reference.P25NetworkCallsign;
 
 public class NetworkStatusBroadcastExtended extends PDUMessage 
 								implements IdentifierUpdateReceiver
@@ -88,7 +89,13 @@ public class NetworkStatusBroadcastExtended extends PDUMessage
 	
 	public String getWACN()
 	{
-		return mMessage.getHex( WACN, 6 );
+		return mMessage.getHex( WACN, 5 );
+	}
+	
+	public String getNetworkCallsign()
+	{
+		return P25NetworkCallsign.getCallsign( mMessage.getInt( WACN ), 
+											   mMessage.getInt( SYSTEM_ID ) );
 	}
 	
 	public int getTransmitIdentifier()

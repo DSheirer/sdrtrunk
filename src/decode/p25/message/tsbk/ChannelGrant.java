@@ -10,7 +10,7 @@ public abstract class ChannelGrant extends ServiceMessage
 								   implements IdentifierUpdateReceiver
 {
     public static final int[] PRIORITY = { 85,86,87 };
-    public static final int[] CHANNEL_ID = { 88,89,90,91 };
+    public static final int[] CHANNEL_IDENTIFIER = { 88,89,90,91 };
     public static final int[] CHANNEL_NUMBER = { 92,93,94,95,96,97,98,99,100,
         101,102,103 };
     
@@ -33,14 +33,18 @@ public abstract class ChannelGrant extends ServiceMessage
     
     public int getChannelIdentifier()
     {
-        return mMessage.getInt( CHANNEL_ID );
+        return mMessage.getInt( CHANNEL_IDENTIFIER );
     }
     
-    public int getChannel()
+    public int getChannelNumber()
     {
         return mMessage.getInt( CHANNEL_NUMBER );
     }
-    
+
+    public String getChannel()
+    {
+    	return getChannelIdentifier() + "-" + getChannelNumber();
+    }
 
 	@Override
     public void setIdentifierMessage( int identifier, IdentifierUpdate message )
@@ -59,12 +63,12 @@ public abstract class ChannelGrant extends ServiceMessage
     
     public long getDownlinkFrequency()
     {
-    	return calculateDownlink( mIdentifierUpdate, getChannel() );
+    	return calculateDownlink( mIdentifierUpdate, getChannelNumber() );
     }
     
     public long getUplinkFrequency()
     {
-    	return calculateUplink( mIdentifierUpdate, getChannel() );
+    	return calculateUplink( mIdentifierUpdate, getChannelNumber() );
     }
 
 }

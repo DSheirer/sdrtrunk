@@ -9,10 +9,10 @@ import decode.p25.reference.DataUnitID;
 public class SNDCPDataChannelGrant extends SNDCPData implements IdentifierUpdateReceiver
 {
 	public static final int[] TRANSMIT_IDENTIFIER = { 88,89,90,91 };
-    public static final int[] TRANSMIT_CHANNEL = { 92,93,94,95,96,97,98,99,100,
+    public static final int[] TRANSMIT_NUMBER = { 92,93,94,95,96,97,98,99,100,
     	101,102,103 };
 	public static final int[] RECEIVE_IDENTIFIER = { 104,105,106,107 };
-    public static final int[] RECEIVE_CHANNEL = { 108,109,110,111,112,113,114,
+    public static final int[] RECEIVE_NUMBER = { 108,109,110,111,112,113,114,
     	115,116,117,118,119 };
     
     public static final int[] TARGET_ADDRESS = { 120,121,122,123,124,125,126,
@@ -40,12 +40,12 @@ public class SNDCPDataChannelGrant extends SNDCPData implements IdentifierUpdate
         }
         
         sb.append( " UPLINK:" );
-        sb.append( getTransmitIdentifier() + "-" + getTransmitChannel() );
+        sb.append( getTransmitChannelIdentifier() + "-" + getTransmitChannelNumber() );
         
         sb.append( " " + getUplinkFrequency() );
         
         sb.append( " DOWNLINK:" );
-        sb.append( getReceiveIdentifier() + "-" + getReceiveChannel() );
+        sb.append( getReceiveChannelIdentifier() + "-" + getReceiveChannelNumber() );
         
         sb.append( " " + getDownlinkFrequency() );
 
@@ -55,26 +55,36 @@ public class SNDCPDataChannelGrant extends SNDCPData implements IdentifierUpdate
         return sb.toString();
     }
     
-    public int getTransmitIdentifier()
+    public int getTransmitChannelIdentifier()
     {
         return mMessage.getInt( TRANSMIT_IDENTIFIER );
     }
     
-    public int getTransmitChannel()
+    public int getTransmitChannelNumber()
     {
-        return mMessage.getInt( TRANSMIT_CHANNEL );
+        return mMessage.getInt( TRANSMIT_NUMBER );
     }
     
-    public int getReceiveIdentifier()
+    public String getTransmitChannel()
+    {
+    	return getTransmitChannelIdentifier() + "-" + getTransmitChannelNumber();
+    }
+
+    public int getReceiveChannelIdentifier()
     {
         return mMessage.getInt( RECEIVE_IDENTIFIER );
     }
     
-    public int getReceiveChannel()
+    public int getReceiveChannelNumber()
     {
-        return mMessage.getInt( RECEIVE_CHANNEL );
+        return mMessage.getInt( RECEIVE_NUMBER );
     }
     
+    public String getReceiveChannel()
+    {
+    	return getReceiveChannelIdentifier() + "-" + getReceiveChannelNumber();
+    }
+
     public String getTargetAddress()
     {
         return mMessage.getHex( TARGET_ADDRESS, 6 );
@@ -83,11 +93,11 @@ public class SNDCPDataChannelGrant extends SNDCPData implements IdentifierUpdate
 	@Override
     public void setIdentifierMessage( int identifier, IdentifierUpdate message )
     {
-		if( identifier == getTransmitIdentifier() )
+		if( identifier == getTransmitChannelIdentifier() )
 		{
 			mIdentifierUpdateTransmit = message;
 		}
-		else if( identifier == getReceiveIdentifier() )
+		else if( identifier == getReceiveChannelIdentifier() )
 		{
 			mIdentifierUpdateReceive = message;
 		}
@@ -103,21 +113,19 @@ public class SNDCPDataChannelGrant extends SNDCPData implements IdentifierUpdate
     {
 		int[] identifiers = new int[ 2 ];
 		
-		identifiers[ 0 ] = getTransmitIdentifier();
-		identifiers[ 1 ] = getReceiveIdentifier();
+		identifiers[ 0 ] = getTransmitChannelIdentifier();
+		identifiers[ 1 ] = getReceiveChannelIdentifier();
 
 	    return identifiers;
     }
 
     public long getDownlinkFrequency()
     {
-    	return calculateDownlink( mIdentifierUpdateReceive, getReceiveChannel() );
+    	return calculateDownlink( mIdentifierUpdateTransmit, getTransmitChannelNumber() );
     }
     
     public long getUplinkFrequency()
     {
-    	return calculateUplink( mIdentifierUpdateTransmit, getTransmitChannel() );
+    	return calculateUplink( mIdentifierUpdateReceive, getReceiveChannelNumber() );
     }
-
-	
 }

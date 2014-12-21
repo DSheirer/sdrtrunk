@@ -209,24 +209,29 @@ public abstract class CallEvent
 	
 	public enum CallEventType
 	{
-	    ACKNOWLEDGE( "Acknowledge" ),
 		CALL( "Call" ),
+		CALL_ALERT( "Call Alert" ),
 		CALL_END( "Call End" ),
 		CALL_DETECT( "Call Detect" ),
 		CALL_UNIQUE_ID( "UID Call" ),
 		CALL_NO_TUNER( "Call - No Tuner" ),
 		CALL_TIMEOUT( "Call Timeout" ),
+		COMMAND( "Command" ),
+		DATA_CALL( "Data Call" ),
 		DEREGISTER( "Deregister" ),
 		EMERGENCY( "EMERGENCY" ),
+		FUNCTION( "Function" ),
 		GPS( "GPS" ),
 		ID_ANI( "ANI" ),
 		ID_UNIQUE( "Unique ID" ),
 		PAGE( "Page" ),
+		QUERY( "Query" ),
 		REGISTER( "Register" ),
 		REGISTER_ESN( "ESN" ),
-		REQUEST( "Request" ),
-		SDM( "SDM" ),
+		RESPONSE( "Response" ),
+		SDM( "Short Data Message" ),
 		STATUS( "Status" ),
+		TELEPHONE_CALL( "Telephone Call" ),
 		UNKNOWN( "Unknown" ),
 		INVALID( "Invalid" );
 		

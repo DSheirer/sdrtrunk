@@ -136,7 +136,8 @@ public class FleetsyncCallEvent extends CallEvent
         switch( message.getMessageType() )
         {
             case ACKNOWLEDGE:
-                type = CallEventType.ACKNOWLEDGE;
+                type = CallEventType.RESPONSE;
+                sbDetails.append( "ACK" );
                 break;
             case ANI:
                 type = CallEventType.ID_ANI;
