@@ -220,7 +220,9 @@ public class CRCP25
 	    0x00080000l, 0x00100000l, 0x00200000l, 0x00400000l, 0x00800000l, 
 	    0x01000000l, 0x02000000l, 0x04000000l, 0x08000000l, 0x10000000l, 
 	    0x20000000l, 0x40000000l, 0x80000000l 
-	};	
+	};
+	
+	
 
 	/**
 	 * Performs CRC check and corrects single-bit errors against the message.

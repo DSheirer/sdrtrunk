@@ -17,8 +17,12 @@ import crc.CRCP25;
 import decode.p25.P25Interleave;
 import decode.p25.TrellisHalfRate;
 import decode.p25.message.P25Message;
+import decode.p25.message.hdu.HDUMessage;
+import decode.p25.message.ldu.LDU1Message;
+import decode.p25.message.ldu.LDU2Message;
 import decode.p25.message.pdu.PDUMessage;
 import decode.p25.message.pdu.PDUMessageFactory;
+import decode.p25.message.tdu.TDULCMessage;
 import decode.p25.message.tdu.TDUMessage;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.message.tsbk.TSBKMessageFactory;
@@ -246,15 +250,15 @@ public class P25MessageFramer implements Listener<Dibit>
 					break;
 				case HDU:
 					mComplete = true;
-                    dispatch( new P25Message( mMessage.copy(), mDUID, mAliasList ) );
+                    dispatch( new HDUMessage( mMessage.copy(), mDUID, mAliasList ) );
 					break;
 				case LDU1:
 					mComplete = true;
-                    dispatch( new P25Message( mMessage.copy(), mDUID, mAliasList ) );
+                    dispatch( new LDU1Message( mMessage.copy(), mDUID, mAliasList ) );
 					break;
 				case LDU2:
 					mComplete = true;
-                    dispatch( new P25Message( mMessage.copy(), mDUID, mAliasList ) );
+                    dispatch( new LDU2Message( mMessage.copy(), mDUID, mAliasList ) );
 					break;
 				case PDU0:
 					/* Remove interleaving */
@@ -368,7 +372,7 @@ public class P25MessageFramer implements Listener<Dibit>
 					mComplete = true;
 					break;
 				case TDULC:
-                    dispatch( new P25Message( mMessage.copy(), mDUID, mAliasList ) );
+                    dispatch( new TDULCMessage( mMessage.copy(), mDUID, mAliasList ) );
 					mComplete = true;
 					break;
 				case TSBK1:

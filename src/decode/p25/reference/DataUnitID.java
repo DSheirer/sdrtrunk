@@ -18,7 +18,7 @@ public enum DataUnitID
 	PDU1 ( 12,  356, false, "PDU1 ", "Packet Data Unit" ),
 	PDU2 ( 12,  452, false, "PDU2 ", "Packet Data Unit" ),
 	PDU3 ( 12,  548, false, "PDU3 ", "Packet Data Unit" ),
-	TDULC( 15,  372, false, "TDULC", "Terminator Data Unit With Link Control" ),
+	TDULC( 15,  352, false, "TDULC", "Terminator Data Unit With Link Control" ),
 	UNKN ( -1,    0, false, "UNKWN", "Unknown" );
 	
 	private int mValue;

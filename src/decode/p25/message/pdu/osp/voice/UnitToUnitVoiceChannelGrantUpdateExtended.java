@@ -99,7 +99,7 @@ public class UnitToUnitVoiceChannelGrantUpdateExtended extends PDUMessage
         return mMessage.get( EMERGENCY_FLAG );
     }
     
-    public boolean isEncryptedChannel()
+    public boolean isEncrypted()
     {
         return mMessage.get( ENCRYPTED_CHANNEL_FLAG );
     }

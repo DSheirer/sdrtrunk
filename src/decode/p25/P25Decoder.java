@@ -19,6 +19,7 @@ package decode.p25;
 
 import instrument.Instrumentable;
 import instrument.tap.Tap;
+import instrument.tap.stream.DibitTap;
 import instrument.tap.stream.FloatTap;
 
 import java.util.ArrayList;
@@ -36,9 +37,9 @@ import dsp.agc.RealAutomaticGainControl;
 import dsp.filter.ComplexFIRFilter;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
-import dsp.fsk.P25MessageFramer;
 import dsp.fsk.C4FMSlicer;
 import dsp.fsk.C4FMSymbolFilter;
+import dsp.fsk.P25MessageFramer;
 import dsp.nbfm.FMDiscriminator;
 
 public class P25Decoder extends Decoder implements Instrumentable
@@ -49,6 +50,7 @@ public class P25Decoder extends Decoder implements Instrumentable
 	private static final String INSTRUMENT_INPUT_TO_AGC = "Tap Point: Input to AGC";
 	private static final String INSTRUMENT_AGC_TO_SYMBOL_FILTER = "Tap Point: AGC to Symbol Filter";
 	private static final String INSTRUMENT_SYMBOL_FILTER_TO_SLICER = "Tap Point: Symbol Filter to Slicer";
+	private static final String INSTRUMENT_SLICER_OUTPUT = "Tap Point: Slicer Output";
     private List<Tap> mAvailableTaps;
 	
 	private ComplexFIRFilter mBasebandFilter = new ComplexFIRFilter( 
@@ -125,6 +127,7 @@ public class P25Decoder extends Decoder implements Instrumentable
 			mAvailableTaps.add( new FloatTap( INSTRUMENT_INPUT_TO_AGC, 0, 1.0f ) );
 			mAvailableTaps.add( new FloatTap( INSTRUMENT_AGC_TO_SYMBOL_FILTER, 0, 1.0f ) );
 			mAvailableTaps.add( new FloatTap( INSTRUMENT_SYMBOL_FILTER_TO_SLICER, 0, 0.1f ) );
+			mAvailableTaps.add( new DibitTap( INSTRUMENT_SLICER_OUTPUT, 0, 0.1f ) );
 			
 			mAvailableTaps.addAll( mSymbolFilter.getTaps() );
 		}
@@ -155,6 +158,10 @@ public class P25Decoder extends Decoder implements Instrumentable
 				mSymbolFilter.setListener( symbolSlicer );
 				symbolSlicer.setListener( mSlicer );
 				break;
+			case INSTRUMENT_SLICER_OUTPUT:
+				DibitTap slicer = (DibitTap)tap;
+				mSlicer.addListener( slicer );
+				break;
 		}
     }
 
@@ -175,6 +182,10 @@ public class P25Decoder extends Decoder implements Instrumentable
 				break;
 			case INSTRUMENT_SYMBOL_FILTER_TO_SLICER:
 				mSymbolFilter.setListener( mSlicer );
+				break;
+			case INSTRUMENT_SLICER_OUTPUT:
+				DibitTap slicerTap = (DibitTap)tap;
+				mSlicer.removeListener( slicerTap );
 				break;
 		}
     }

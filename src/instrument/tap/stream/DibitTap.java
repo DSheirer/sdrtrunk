@@ -15,14 +15,46 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package instrument.tap;
+package instrument.tap.stream;
 
-public enum TapType
+import instrument.tap.TapListener;
+import instrument.tap.TapType;
+import sample.Listener;
+import dsp.fsk.Dibit;
+
+public class DibitTap extends StreamTap implements Listener<Dibit>
+												
 {
-	EVENT_SYNC_DETECT,
-	STREAM_BINARY,
-	STREAM_COMPLEX,
-	STREAM_DIBIT,
-	STREAM_FLOAT,
-	STREAM_SYMBOL;
+	private Listener<Dibit> mListener;
+	
+	public DibitTap( String name, 
+						   int delay, 
+						   float sampleRateRatio )
+    {
+	    super( TapType.STREAM_DIBIT, name, delay, sampleRateRatio );
+    }
+
+	@Override
+    public void receive( Dibit dibit )
+    {
+		if( mListener != null )
+		{
+			mListener.receive( dibit );
+		}
+		
+		for( TapListener listener: mListeners )
+		{
+			listener.receive( dibit );
+		}
+    }
+
+    public void setListener( Listener<Dibit> listener )
+    {
+		mListener = listener;
+    }
+
+    public void removeListener( Listener<Dibit> listener )
+    {
+		mListener = null;
+    }
 }
