@@ -55,6 +55,19 @@ public class AuthenticationCommand extends TSBKMessage
     {
         return mMessage.getHex( TARGET_ID, 6 );
     }
+    
+    public String getFullTargetID()
+    {
+    	StringBuilder sb = new StringBuilder();
+    	
+    	sb.append( getWACN() );
+    	sb.append( "-" );
+    	sb.append( getSystemID() );
+    	sb.append( "-" );
+    	sb.append( getTargetID() );
+    	
+    	return sb.toString();
+    }
 
     @Override
     public String getToID()

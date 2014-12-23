@@ -22,6 +22,8 @@ import instrument.tap.Tap;
 import instrument.tap.TapViewPanel;
 import instrument.tap.stream.BinaryTap;
 import instrument.tap.stream.BinaryTapViewPanel;
+import instrument.tap.stream.DibitTap;
+import instrument.tap.stream.DibitTapViewPanel;
 import instrument.tap.stream.FloatTap;
 import instrument.tap.stream.FloatTapViewPanel;
 import instrument.tap.stream.SymbolEventTap;
@@ -165,6 +167,9 @@ public class DecoderViewFrame extends JInternalFrame
 				panel = new BinaryTapViewPanel( (BinaryTap)tap );
 				break;
 			case STREAM_COMPLEX:
+				break;
+			case STREAM_DIBIT:
+				panel = new DibitTapViewPanel( (DibitTap)tap );
 				break;
 			case STREAM_FLOAT:
 				panel = new FloatTapViewPanel( (FloatTap)tap );

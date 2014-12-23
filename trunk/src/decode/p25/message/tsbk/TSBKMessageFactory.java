@@ -20,6 +20,7 @@ import decode.p25.message.tsbk.osp.control.LocationRegistrationResponse;
 import decode.p25.message.tsbk.osp.control.MessageUpdate;
 import decode.p25.message.tsbk.osp.control.NetworkStatusBroadcast;
 import decode.p25.message.tsbk.osp.control.ProtectionParameterUpdate;
+import decode.p25.message.tsbk.osp.control.QueuedResponse;
 import decode.p25.message.tsbk.osp.control.RFSSStatusBroadcast;
 import decode.p25.message.tsbk.osp.control.RadioUnitMonitorCommand;
 import decode.p25.message.tsbk.osp.control.RoamingAddressCommand;
@@ -125,6 +126,8 @@ public class TSBKMessageFactory
                     case NETWORK_STATUS_BROADCAST:
                         return new NetworkStatusBroadcast( message, duid, 
                                 aliasList );
+                    case QUEUED_RESPONSE:
+                    	return new QueuedResponse( message, duid, aliasList );
                     case PROTECTION_PARAMETER_UPDATE:
                         return new ProtectionParameterUpdate( message, duid, 
                                 aliasList );
