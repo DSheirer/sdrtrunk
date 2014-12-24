@@ -34,17 +34,16 @@
   <target name="SDRTrunk" depends="compile" description="Create SDRTrunk application" >
     <!-- Create the distribution directory -->
     <mkdir dir="${product}"/>
-  	
+
     <!-- Create jar file -->
-    <jar jarfile="${product}/SDRTrunk.jar" 
-         basedir="${classes}">
+    <jar jarfile="${product}/SDRTrunk.jar" basedir="${classes}">
 	  <manifest>
         <attribute name="Main-Class" value="gui.SDRTrunk"/>
       </manifest>
 	  <fileset dir="${configs}">
-	  	<include name="javax.usb.properties"/>
-	  	<include name="version.properties"/>
-	  </fileset>
+  	  	<exclude name="*.rules"/>
+  	  </fileset>
+	  
   	  <fileset dir="${license}">
   	  	<include name="license.txt"/>
   	  </fileset>
@@ -60,7 +59,9 @@
     <mkdir dir="${product}/config"/>
 
     <copy todir="${product}/config">
-	  <fileset dir="${configs}" />
+	  <fileset dir="${configs}">
+  	  	<include name="*.rules"/>
+  	  </fileset>
     </copy>
     
     <!-- Copy image files -->

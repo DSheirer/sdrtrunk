@@ -25,7 +25,6 @@ import java.awt.Robot;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -66,6 +65,9 @@ public class SDRTrunk
     
     public SDRTrunk() 
     {
+//    	LoggerContext lc = (LoggerContext)LoggerFactory.getILoggerFactory();
+//    	StatusPrinter.print( lc );
+    	
     	mLog.info( "" );
     	mLog.info( "" );
     	mLog.info( "*******************************************************************" );
