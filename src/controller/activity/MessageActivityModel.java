@@ -52,9 +52,9 @@ public class MessageActivityModel extends AbstractTableModel
 	
 	private boolean mNewMessagesFirst = true;
 	
-	private FilterSet mMessageFilter;
+	private FilterSet<Message> mMessageFilter;
 	
-	public MessageActivityModel( FilterSet messageFilter )
+	public MessageActivityModel( FilterSet<Message> messageFilter )
 	{
 		mMessageFilter = messageFilter;
 	}
@@ -82,7 +82,7 @@ public class MessageActivityModel extends AbstractTableModel
 		});
 	}
 	
-	public FilterSet getMessageFilter()
+	public FilterSet<Message> getMessageFilter()
 	{
 		return mMessageFilter;
 	}

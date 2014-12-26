@@ -375,10 +375,7 @@ public class CRCP25
     public static long getLongChecksum( BitSetBuffer message, 
     				int crcStart, int crcLength )
     {
-    	int[] checksumIndexes = BitSetBuffer
-    			.getFieldIndexes( crcStart, crcLength, false );
-
-    	return message.getLong( checksumIndexes );
+    	return message.getLong( crcStart, crcStart + crcLength );
     }
 
 	/**
@@ -387,10 +384,7 @@ public class CRCP25
     public static int getIntChecksum( BitSetBuffer message, 
     				int crcStart, int crcLength )
     {
-    	int[] checksumIndexes = BitSetBuffer
-    			.getFieldIndexes( crcStart, crcLength, false );
-    	
-    	return message.getInt( checksumIndexes );
+    	return message.getInt( crcStart, crcStart + crcLength );
     }
 
     /**

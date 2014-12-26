@@ -273,7 +273,7 @@ public class MessageActivityPanel extends JPanel implements ChannelEventListener
 								"[grow,fill][][]" ) );
 
 						@SuppressWarnings( "unchecked" )
-                        FilterSet<Message> filter = 
+                        FilterSet<Message> filter = (FilterSet<Message>)
 								mDisplayedChannel
 								.getProcessingChain().getChannelState()
 								.getMessageActivityModel().getMessageFilter();
