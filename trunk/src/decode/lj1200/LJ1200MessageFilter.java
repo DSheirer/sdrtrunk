@@ -24,7 +24,8 @@ public class LJ1200MessageFilter extends Filter<Message>
 	@Override
     public boolean canProcess( Message message )
     {
-	    return message instanceof LJ1200Message;
+	    return message instanceof LJ1200Message ||
+	    	   message instanceof LJ1200TransponderMessage;
     }
 
 	@Override

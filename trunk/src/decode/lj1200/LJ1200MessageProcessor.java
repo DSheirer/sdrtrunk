@@ -18,6 +18,10 @@
 package decode.lj1200;
 
 import message.Message;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import sample.Broadcaster;
 import sample.Listener;
 import alias.AliasList;
@@ -25,6 +29,14 @@ import bits.BitSetBuffer;
 
 public class LJ1200MessageProcessor implements Listener<BitSetBuffer>
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( LJ1200MessageProcessor.class );
+
+	public static int[] SYNC = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 };
+
+	public static int SYNC_TOWER = 0x550F;
+	public static int SYNC_TRANSPONDER = 0x2AD5;
+
 	private Broadcaster<Message> mBroadcaster = new Broadcaster<Message>();
 	
 	private AliasList mAliasList;
@@ -42,9 +54,20 @@ public class LJ1200MessageProcessor implements Listener<BitSetBuffer>
 	@Override
     public void receive( BitSetBuffer buffer )
     {
-		LJ1200Message message = new LJ1200Message( buffer, mAliasList );
+		int sync = buffer.getInt( SYNC );
 
-		mBroadcaster.receive( message );
+		if( sync == SYNC_TOWER )
+		{
+			LJ1200Message towerMessage = new LJ1200Message( buffer, mAliasList );
+			mBroadcaster.receive( towerMessage );
+		}
+		else if( sync == SYNC_TRANSPONDER )
+		{
+			LJ1200TransponderMessage transponderMessage = 
+					new LJ1200TransponderMessage( buffer, mAliasList );
+			
+			mBroadcaster.receive( transponderMessage );
+		}
     }
 	
     public void addMessageListener( Listener<Message> listener )

@@ -31,25 +31,11 @@ import bits.BitSetBuffer;
 import crc.CRC;
 import crc.CRCLJ;
 
-public class LJ1200Message extends Message
+public class LJ1200TransponderMessage extends Message
 {
-	private final static Logger mLog = LoggerFactory.getLogger( LJ1200Message.class );
+	private final static Logger mLog = LoggerFactory.getLogger( LJ1200TransponderMessage.class );
 
 	public static int[] SYNC = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 };
-
-	public static int[] VRC = { 16,17,18,19,20,21,22,23 };
-	
-	public static int[] LRC = { 24,25,26,27,28,29,30,31 };
-
-	public static int[] FUNCTION = { 32,33,34,35 };
-
-	/* Message 8 Site ID */
-	public static int[] SITE_ID_PREFIX = { 36,37,38,39,40,41,42,43,44,45,46,47 };
-	public static int[] NETWORK_ID = { 48,49,50,51,52,53,54,55 };
-	public static int[] SITE_ID = { 56,57,58,59,60,61,62,63 };
-	
-	public static int[] ADDRESS = { 36,37,38,39,40,41,42,43,44,45,46,47,48,49,
-		50,51,52,53,54,55,56,57,58,59,60,61,62,63 };
 
 	public static int[] MESSAGE_CRC = { 64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79 };
 	
@@ -59,7 +45,7 @@ public class LJ1200Message extends Message
     private AliasList mAliasList;
     private CRC mCRC;
     
-    public LJ1200Message( BitSetBuffer message, AliasList list )
+    public LJ1200TransponderMessage( BitSetBuffer message, AliasList list )
     {
     	mMessage = message;
         mAliasList = list;
@@ -77,27 +63,23 @@ public class LJ1200Message extends Message
 			case PASSED:
 	        	mLog.debug( "PASS:" + message.toString() );
 				break;
+			case UNKNOWN:
+	        	mLog.debug( "UNKNOWN:" + message.toString() );
+				break;
         }
     }
     
     private void checkCRC()
     {
-    	mCRC = CRCLJ.checkAndCorrect( mMessage );
+    	mCRC = CRC.UNKNOWN;
     }
     
     public boolean isValid()
     {
-    	return mCRC == CRC.PASSED || mCRC == CRC.CORRECTED;
-    }
-    
-    public String getVRC()
-    {
-    	return mMessage.getHex( VRC, 2 );
-    }
-    
-    public String getLRC()
-    {
-    	return mMessage.getHex( LRC, 2 );
+//    	return mCRC == CRC.PASSED || mCRC == CRC.CORRECTED;
+    	
+    	/* Override validity check until proper CRC is implemented */
+    	return true;
     }
     
     public String getCRC()
@@ -105,73 +87,12 @@ public class LJ1200Message extends Message
     	return mMessage.getHex( MESSAGE_CRC, 4 );
     }
     
-    public Function getFunction()
-    {
-    	return Function.fromValue( mMessage.getInt( FUNCTION ) );
-    }
-    
-    public String getAddress()
-    {
-    	return mMessage.getHex( ADDRESS, 7 );
-    }
-    
-    public String getNetwork()
-    {
-    	return mMessage.getHex( NETWORK_ID, 2 );
-    }
-    
-    public String getSite()
-    {
-    	return mMessage.getHex( SITE_ID, 2 );
-    }
-    
-    public String getSiteID()
-    {
-    	return getNetwork() + "-" + getSite();
-    }
-    
-    public Alias getSiteIDAlias()
-    {
-    	if( mAliasList != null )
-    	{
-    		return mAliasList.getSiteID( getSiteID() );
-    	}
-    	
-    	return null;
-    }
-    
     @Override
     public String toString()
     {
     	StringBuilder sb = new StringBuilder();
-
-    	Function function = getFunction();
     	
-    	sb.append( "FUNCTION: " );
-    	sb.append( function.toString() );
-
-    	if( function == Function.F8_SITE_ID )
-    	{
-    		sb.append( " SITE [" );
-    		sb.append( getSiteID() );
-
-    		Alias site = getSiteIDAlias();
-    		
-    		if( site != null )
-    		{
-    			sb.append( "/" );
-    			sb.append( site.getName() );
-    		}
-    		
-    		sb.append( "]" );
-    	}
-    	
-    	sb.append( " ADDRESS [" );
-    	sb.append( getAddress() );
-    	sb.append( "] VRC [" + getVRC() );
-    	sb.append( "] LRC [" + getLRC() );
-    	sb.append( "] CRC [" + getCRC() );
-    	sb.append( "]" );
+    	sb.append( "TRANSPONDER TEST" );
 
     	return sb.toString();
     }
@@ -227,7 +148,7 @@ public class LJ1200Message extends Message
 	@Override
     public String getEventType()
     {
-	    return "TOWER";
+	    return "TRANSPONDER";
     }
 
 	@Override
@@ -245,7 +166,7 @@ public class LJ1200Message extends Message
 	@Override
 	public String getToID()
 	{
-		return getAddress();
+		return null;
 	}
 
 	@Override
@@ -271,59 +192,4 @@ public class LJ1200Message extends Message
     {
 		return null;
     }
-	
-	public enum Function
-	{
-		F0(             0x0, "0-UNKNOWN" ),
-		F1(             0x1, "1-UNKNOWN" ),
-		F2_ACTIVATION(  0x2, "2-ACTIVATION" ),
-		F3_SPEED_UP(    0x3, "3-SPEED-UP" ),
-		F4_TEST(        0x4, "4-TEST" ),
-		F5(             0x5, "5-UNKNOWN" ),
-		F6_SET_RATE(    0x6, "6-SET RATE" ),
-		F7(             0x7, "7-UNKNOWN" ),
-		F8_SITE_ID(     0x8, "8-SITE ID" ),
-		F9(             0x9, "9-UNKNOWN" ),
-		FA(             0xA, "A-UNKNOWN" ),
-		FB(             0xB, "B-UNKNOWN" ),
-		FC_DEACTIVATE(  0xC, "C-DEACTIVATE" ),
-		FD(             0xD, "D-UNKNOWN" ),
-		FE(             0xE, "E-UNKNOWN" ),
-		FF_TRACK_PULSE( 0xF, "F-TRACK PULSE" ),
-		UNKNOWN(         -1, "UNKNOWN" );
-		
-		private int mValue;
-		private String mLabel;
-		
-		private Function( int value, String label )
-		{
-			mValue = value;
-			mLabel = label;
-		}
-		
-		public int getValue()
-		{
-			return mValue;
-		}
-		
-		public String getLabel()
-		{
-			return mLabel;
-		}
-		
-		public String toString()
-		{
-			return getLabel();
-		}
-		
-		public static Function fromValue( int value )
-		{
-			if( 0 <= value && value <= 15 )
-			{
-				return Function.values()[ value ];
-			}
-			
-			return UNKNOWN;
-		}
-	}
 }
