@@ -19,9 +19,14 @@ package bits;
 
 import java.util.BitSet;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class BitSetBuffer extends BitSet
 {
-    private static final long serialVersionUID = 1L;
+	private final static Logger mLog = LoggerFactory.getLogger( BitSetBuffer.class );
+
+	private static final long serialVersionUID = 1L;
 
     /**
      * Logical (ie constructed) size of this bitset, despite the actual size of
@@ -523,5 +528,100 @@ public class BitSetBuffer extends BitSet
 		}
 
 		return buffer;
+	}
+	
+	/**
+	 * Left rotates the bits between start and end indices, number of places.
+	 */
+	public void rotateLeft( int places, int startIndex, int endIndex )
+	{
+		for( int x = 0; x < places; x++ )
+		{
+			rotateLeft( startIndex, endIndex );
+		}
+	}
+	
+	/**
+	 * Left rotates the bits between start and end and wraps the left-most
+	 * bit around to the end.
+	 */
+	public void rotateLeft( int startIndex, int endIndex )
+	{
+		boolean wrapBit = get( startIndex );
+		
+		for( int x = startIndex; x < endIndex; x++ )
+		{
+			if( get( x + 1 ) )
+			{
+				set( x );
+			}
+			else
+			{
+				clear( x );
+			}
+		}
+		
+		if( wrapBit )
+		{
+			set( endIndex );
+		}
+		else
+		{
+			clear( endIndex );
+		}
+	}
+
+	/**
+	 * Right rotates the bits between start and end indices, number of places.
+	 */
+	public void rotateRight( int places, int startIndex, int endIndex )
+	{
+		for( int x = 0; x < places; x++ )
+		{
+			rotateRight( startIndex, endIndex );
+		}
+	}
+	
+	/**
+	 * Right rotates the bits between start and end and wraps the right-most
+	 * bit around to the start.
+	 */
+	public void rotateRight( int startIndex, int endIndex )
+	{
+		boolean wrapBit = get( endIndex );
+		
+		for( int x = endIndex - 1; x >= startIndex; x-- )
+		{
+			if( get( x ) )
+			{
+				set( x + 1 );
+			}
+			else
+			{
+				clear( x + 1 );
+			}
+		}
+		
+		if( wrapBit )
+		{
+			set( startIndex );
+		}
+		else
+		{
+			clear( startIndex );
+		}
+	}
+	
+	/**
+	 * Performs exclusive or of the value against this bitset starting at the
+	 * offset position using width bits from the value.
+	 */
+	public void xor( int offset, int width, int value )
+	{
+		BitSetBuffer mask = new BitSetBuffer( this.size() );
+		
+		mask.load( offset, width, value );
+		
+		this.xor( mask );
 	}
 }

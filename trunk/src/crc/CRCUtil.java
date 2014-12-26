@@ -50,11 +50,9 @@ public class CRCUtil
 			
 			message.set( x );
 			
-			message = decode( message, messageSize, polynomial, crcSize );
+			message = decode( message, 0, messageSize, polynomial, crcSize );
 			
 			long checksum = message.getLong( checksumIndexes );
-			
-			mLog.debug( "Index " + x + " Checksum:" + Long.toHexString( checksum ) );
 			
 			crcTable[ x ] = checksum;
 		}
@@ -70,6 +68,48 @@ public class CRCUtil
 		return crcTable;
 	}
 
+	/**
+	 * Generates the checksum table and treats the final bit of each check value
+	 * as a parity bit that complies with the request parity argument.
+	 */
+	public static long[] generate( int messageSize,
+								   int crcSize,
+								   long polynomial,
+								   long initialFill,
+								   boolean includeCRCBitErrors,
+								   Parity parity )
+	{
+		long[] table = generate( messageSize, crcSize, polynomial, initialFill, 
+				includeCRCBitErrors );
+
+		if( parity == Parity.NONE )
+		{
+			return table;
+		}
+		else
+		{
+			for( int x = 0; x < table.length; x++ )
+			{
+				table[ x ] <<= 1;
+				
+				if( parity( table[ x ] ) != parity )
+				{
+					table[ x ] ^= 0x1;
+				}
+			}
+			
+			return table;
+		}
+	}
+	
+	public enum Parity{ EVEN, ODD, NONE };
+
+	/* Determines the parity (number of 1 bits) for the value */
+	public static Parity parity( long value ) 
+	{ 
+		return Long.bitCount( value ) % 2 == 0 ? Parity.EVEN : Parity.ODD;
+	} 
+	
 
 	/**
 	 * Performs binary division of the polynomial into the message for bits
@@ -91,14 +131,13 @@ public class CRCUtil
 	 * placed in the crc field which starts at index messageLength
 	 */
 	public static BitSetBuffer decode( BitSetBuffer message,
+									   int messageStart,
 									   int messageSize,
 									   long polynomial,
 									   int crcSize )
 	{
-		int MESSAGE_START = 0;
-		
-		for (int i = message.nextSetBit( MESSAGE_START ); 
-				 i >= MESSAGE_START && i < messageSize; 
+		for (int i = message.nextSetBit( messageStart ); 
+				 i >= messageStart && i < messageSize; 
 				 i = message.nextSetBit( i+1 ) )
 		{
 			BitSetBuffer polySet = new BitSetBuffer( crcSize + i + 1 );
@@ -115,17 +154,9 @@ public class CRCUtil
 	{
 		mLog.debug( "Starting" );
 
-		long polynomial = 0x104C11DB7l;
+		long polynomial = 0xC75l;
 
-//		String raw = "101111101110000000000000001101111110001100111100001110000111000011111111101010111011000011100100";
-//		BitSetBuffer buffer = BitSetBuffer.load( raw );
-//		mLog.debug( "ORIG:" + buffer.toString() );
-//		BitSetBuffer processed = decode( buffer, 64, polynomial, 32 );
-//		mLog.debug( "PROC:" + processed.toString() );
-
-		long[] table = generate( 256, 32, 0x104C11DB7l, 0xFFFFFFFFl, true );
-		
-//		long[] table = generate( 80, 16, 0x11021l, 0xFFFFl, true );
+		long[] table = generate( 12, 11, polynomial, 0x0, true, Parity.NONE );
 		mLog.debug( toCodeArray( table ) );
 		mLog.debug( "Finished" );
 	}
