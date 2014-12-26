@@ -38,13 +38,23 @@ public enum SyncPattern
 		true, true, true, false,            //1110 0xE
 		true, false, true, true             //1011 0xB
 	} ),
-	
+
+	/* 0x550F */
 	LJ1200( new boolean[] 
 	{
 		false, true, false,true, 
 		false, true, false,true,
 		false, false, false, false,
 		true, true, true, true
+	}),
+
+	/* 0x2AD5 */
+	LJ1200_TRANSPONDER( new boolean[]
+	{
+		false, false, true, false,
+		true, false, true, false,
+		true, true, false, true,
+		false, true, false, true
 	}),
 
 	/**

@@ -200,4 +200,13 @@ public class CRCLJ
 		
 		return null;
     }
+    
+    public static void main( String[] args )
+    {
+    	BitSetBuffer msg = BitSetBuffer.load( "01010101101010101010000100011000000000100001000110000000001000010001100000000010" );
+    	
+    	CRC crc = checkAndCorrect( msg );
+    	
+    	mLog.debug( "CRC:" + crc.getDisplayText() );
+    }
 }

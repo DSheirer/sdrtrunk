@@ -53,6 +53,10 @@ public class LJ1200ChannelState extends AuxChannelState
 			mParentChannelState.receiveCallEvent( 
 					LJ1200CallEvent.getLJ1200Event( (LJ1200Message)message ) );
 		}
+		else if( message instanceof LJ1200TransponderMessage )
+		{
+			mActivitySummary.receive( message );
+		}
     }
 	
 	@Override

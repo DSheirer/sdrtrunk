@@ -64,7 +64,8 @@ public class LJ1200Decoder extends Decoder implements Instrumentable
     private FSK2Decoder mFSKDecoder;
     private FloatHalfBandFilter mDecimationFilter;
     private FloatFIRFilter mBandPassFilter;
-    private MessageFramer mMessageFramer;
+    private MessageFramer mTowerMessageFramer;
+    private MessageFramer mTransponderMessageFramer;
     private LJ1200MessageProcessor mMessageProcessor;
     
     public LJ1200Decoder( AliasList aliasList )
@@ -83,12 +84,17 @@ public class LJ1200Decoder extends Decoder implements Instrumentable
         					SYMBOL_RATE, Output.INVERTED );
         mBandPassFilter.setListener( mFSKDecoder );
 
-        mMessageFramer = new MessageFramer( 
+        mTowerMessageFramer = new MessageFramer( 
         		SyncPattern.LJ1200.getPattern(), MESSAGE_LENGTH );
-        mFSKDecoder.setListener( mMessageFramer );
+        mFSKDecoder.setListener( mTowerMessageFramer );
+
+        mTransponderMessageFramer = new MessageFramer( 
+        		SyncPattern.LJ1200_TRANSPONDER.getPattern(), MESSAGE_LENGTH );
+        mFSKDecoder.setListener( mTransponderMessageFramer );
         
         mMessageProcessor = new LJ1200MessageProcessor( aliasList );
-        mMessageFramer.addMessageListener( mMessageProcessor );
+        mTowerMessageFramer.addMessageListener( mMessageProcessor );
+        mTransponderMessageFramer.addMessageListener( mMessageProcessor );
         mMessageProcessor.addMessageListener( this );
 	}
     
@@ -99,7 +105,7 @@ public class LJ1200Decoder extends Decoder implements Instrumentable
     	mDecimationFilter.dispose();
     	mBandPassFilter.dispose();
     	mFSKDecoder.dispose();
-    	mMessageFramer.dispose();
+    	mTowerMessageFramer.dispose();
     	mMessageProcessor.dispose();
     }
 
@@ -155,7 +161,7 @@ public class LJ1200Decoder extends Decoder implements Instrumentable
 			case INSTRUMENT_FSK2_DECODER_TO_MESSAGE_FRAMER:
 				BinaryTap decoderTap = (BinaryTap)tap;
 				mFSKDecoder.setListener( decoderTap );
-				decoderTap.setListener( mMessageFramer );
+				decoderTap.setListener( mTowerMessageFramer );
 		        break;
 		}
     }
@@ -175,7 +181,7 @@ public class LJ1200Decoder extends Decoder implements Instrumentable
 				mBandPassFilter.setListener( mFSKDecoder );
 				break;
 			case INSTRUMENT_FSK2_DECODER_TO_MESSAGE_FRAMER:
-				mFSKDecoder.setListener( mMessageFramer );
+				mFSKDecoder.setListener( mTowerMessageFramer );
 		        break;
 		}
     }
