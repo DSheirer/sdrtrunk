@@ -25,6 +25,7 @@ import instrument.tap.stream.FloatTap;
 import java.util.ArrayList;
 import java.util.List;
 
+import sample.Broadcaster;
 import sample.real.RealSampleListener;
 import source.Source.SampleType;
 import alias.AliasList;
@@ -62,6 +63,9 @@ public class LJ1200Decoder extends Decoder implements Instrumentable
 			"Tap Point: FSK2 Decoder > < Message Framer";
 	
     private FSK2Decoder mFSKDecoder;
+    private Broadcaster<Boolean> mFSKDecoderBroadcaster = 
+    					new Broadcaster<Boolean>();
+    
     private FloatHalfBandFilter mDecimationFilter;
     private FloatFIRFilter mBandPassFilter;
     private MessageFramer mTowerMessageFramer;
@@ -84,13 +88,14 @@ public class LJ1200Decoder extends Decoder implements Instrumentable
         					SYMBOL_RATE, Output.INVERTED );
         mBandPassFilter.setListener( mFSKDecoder );
 
+        mFSKDecoder.setListener( mFSKDecoderBroadcaster );
+
         mTowerMessageFramer = new MessageFramer( 
         		SyncPattern.LJ1200.getPattern(), MESSAGE_LENGTH );
-        mFSKDecoder.setListener( mTowerMessageFramer );
-
         mTransponderMessageFramer = new MessageFramer( 
         		SyncPattern.LJ1200_TRANSPONDER.getPattern(), MESSAGE_LENGTH );
-        mFSKDecoder.setListener( mTransponderMessageFramer );
+        mFSKDecoderBroadcaster.addListener( mTowerMessageFramer );
+        mFSKDecoderBroadcaster.addListener( mTransponderMessageFramer );
         
         mMessageProcessor = new LJ1200MessageProcessor( aliasList );
         mTowerMessageFramer.addMessageListener( mMessageProcessor );
