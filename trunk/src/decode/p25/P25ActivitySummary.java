@@ -34,6 +34,7 @@ import sample.Listener;
 import alias.Alias;
 import alias.AliasList;
 import controller.activity.ActivitySummaryProvider;
+import decode.p25.message.IdentifierProvider;
 import decode.p25.message.pdu.PDUMessage;
 import decode.p25.message.pdu.osp.control.NetworkStatusBroadcastExtended;
 import decode.p25.message.pdu.osp.control.ProtectionParameterBroadcast;
@@ -295,7 +296,7 @@ public class P25ActivitySummary implements ActivitySummaryProvider,
 		sb.append( "\nFREQUENCY BANDS:" );
 		for( Integer id: identifiers )
 		{
-			IdentifierUpdate band = mBands.get( id );
+			IdentifierProvider band = mBands.get( id );
 			
 			sb.append( "\n\t" + id );
 			sb.append( "- BASE: " + mFrequencyFormatter.format( 

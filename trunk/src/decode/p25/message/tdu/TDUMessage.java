@@ -2,9 +2,9 @@ package decode.p25.message.tdu;
 
 import alias.AliasList;
 import bits.BitSetBuffer;
-import crc.CRC;
 import decode.p25.message.P25Message;
 import decode.p25.reference.DataUnitID;
+import edac.CRC;
 
 public class TDUMessage extends P25Message
 {

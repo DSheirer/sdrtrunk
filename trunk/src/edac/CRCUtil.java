@@ -15,7 +15,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package crc;
+package edac;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

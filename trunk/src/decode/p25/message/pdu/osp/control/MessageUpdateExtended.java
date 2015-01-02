@@ -1,11 +1,11 @@
 package decode.p25.message.pdu.osp.control;
 
-import crc.CRCP25;
 import alias.AliasList;
 import bits.BitSetBuffer;
 import decode.p25.message.pdu.PDUMessage;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
+import edac.CRCP25;
 
 public class MessageUpdateExtended extends PDUMessage 
 {

@@ -2,10 +2,12 @@ package decode.p25.message.tsbk.osp.control;
 
 import alias.AliasList;
 import bits.BitSetBuffer;
+import decode.p25.message.IdentifierProvider;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.reference.DataUnitID;
 
-public abstract class IdentifierUpdate extends TSBKMessage
+public abstract class IdentifierUpdate extends TSBKMessage 
+									   implements IdentifierProvider
 {
     public static final int[] IDENTIFIER = { 80,81,82,83 };
 
@@ -23,29 +25,24 @@ public abstract class IdentifierUpdate extends TSBKMessage
         super( message, duid, aliasList );
     }
     
-    /**
-     * (Band) Identifier
-     */
+    @Override
     public int getIdentifier()
     {
         return mMessage.getInt( IDENTIFIER );
     }
     
-    /**
-     * Channel spacing in hertz
-     */
+    @Override
     public long getChannelSpacing()
     {
     	return mMessage.getLong( CHANNEL_SPACING ) * 125l;
     }
 
-    /**
-     * Base frequency in hertz
-     */
+    @Override
     public long getBaseFrequency()
     {
         return mMessage.getLong( BASE_FREQUENCY ) * 5l;
     }
     
+    @Override
     public abstract long getTransmitOffset();
 }

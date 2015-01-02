@@ -2,12 +2,12 @@ package decode.p25.message.tsbk;
 
 import alias.AliasList;
 import bits.BitSetBuffer;
-import decode.p25.message.tsbk.osp.control.IdentifierUpdate;
-import decode.p25.message.tsbk.osp.control.IdentifierUpdateReceiver;
+import decode.p25.message.IdentifierProvider;
+import decode.p25.message.tsbk.osp.control.IdentifierProviderReceiver;
 import decode.p25.reference.DataUnitID;
 
 public abstract class GroupMultiChannelGrant extends ChannelGrant
-									implements IdentifierUpdateReceiver
+									implements IdentifierProviderReceiver
 {
     public static final int[] CHANNEL_IDENTIFIER_1 = { 80,81,82,83 };
     public static final int[] CHANNEL_NUMBER_1 = { 84,85,86,87,
@@ -21,8 +21,8 @@ public abstract class GroupMultiChannelGrant extends ChannelGrant
     public static final int[] GROUP_ADDRESS_2 = { 128,129,130,131,132,133,134,
     	135,136,137,138,139,140,141,142,143 };
     
-    private IdentifierUpdate mIdentifierUpdate1;
-    private IdentifierUpdate mIdentifierUpdate2;
+    private IdentifierProvider mIdentifierUpdate1;
+    private IdentifierProvider mIdentifierUpdate2;
 
     public GroupMultiChannelGrant( BitSetBuffer message, 
                               DataUnitID duid,
@@ -114,7 +114,7 @@ public abstract class GroupMultiChannelGrant extends ChannelGrant
     }
     
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierUpdate message )
+    public void setIdentifierMessage( int identifier, IdentifierProvider message )
     {
 		if( identifier == getChannelIdentifier1() )
 		{

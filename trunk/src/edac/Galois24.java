@@ -1,4 +1,4 @@
-package crc;
+package edac;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,7 +82,6 @@ public class Galois24
 		
 		int index = -1;
 		int syndromeWeight = 3;
-		int maskBit = 0;
 		int errors = 0;
 		
 		while( index < 23 )
@@ -92,10 +91,10 @@ public class Galois24
 				/* restore the previous flipped bit */
 				if( index > 0 )
 				{
-					message.flip( maskBit - 1 );
+					message.flip( index - 1 );
 				}
 				
-				message.flip( maskBit );
+				message.flip( index );
 				
 				syndromeWeight = 2;
 			}

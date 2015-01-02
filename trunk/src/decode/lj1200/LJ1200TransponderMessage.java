@@ -28,8 +28,8 @@ import org.slf4j.LoggerFactory;
 import alias.Alias;
 import alias.AliasList;
 import bits.BitSetBuffer;
-import crc.CRC;
-import crc.CRCLJ;
+import edac.CRC;
+import edac.CRCLJ;
 
 public class LJ1200TransponderMessage extends Message
 {

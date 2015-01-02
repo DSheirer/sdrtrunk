@@ -1,3 +1,5 @@
+package edac;
+
 /*******************************************************************************
  *     SDR Trunk 
  *     Copyright (C) 2014 Dennis Sheirer
@@ -15,38 +17,15 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package crc;
 
-import java.util.BitSet;
-
-/**
- * Calculates a 7-bit checksum using an array of xor values from the 
- * ChecksumType class
- */
-public class Checksum
+public class ReedSolomon_24_12_13 extends ReedSolomon
 {
-	public static boolean validate7BitChecksum( BitSet message,
-									byte messageChecksum,
-									ChecksumType checksumType )
-	{
-		return ( messageChecksum & get7BitChecksum( message, checksumType ) ) == 0;
-	}
-
-	public static byte get7BitChecksum( BitSet message, 
-									ChecksumType checksumType )
-	{
-		byte checksum = 0x00;
-
-		short[] checkValues = checksumType.getValues();
-		
-		for( int x = 0; x < checkValues.length; x++ )
-		{
-			if( message.get( x ) )
-			{
-				checksum ^= checkValues[ x ];
-			}
-		}
-		
-		return checksum;
-	}
+	/**
+	 * Reed-Solomon RS(24,12,13) decoder
+	 */
+	public ReedSolomon_24_12_13()
+    {
+		/* TT = 6 = maximum correctable bit errors */
+	    super( 6 );
+    }
 }

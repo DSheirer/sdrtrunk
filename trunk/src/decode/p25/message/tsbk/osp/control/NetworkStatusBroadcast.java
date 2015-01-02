@@ -2,12 +2,13 @@ package decode.p25.message.tsbk.osp.control;
 
 import alias.AliasList;
 import bits.BitSetBuffer;
+import decode.p25.message.IdentifierProvider;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
 import decode.p25.reference.P25NetworkCallsign;
 
-public class NetworkStatusBroadcast extends TSBKMessage implements IdentifierUpdateReceiver
+public class NetworkStatusBroadcast extends TSBKMessage implements IdentifierProviderReceiver
 {
     public static final int[] LOCATION_REGISTRATION_AREA = { 80,81,82,83,84,85,
         86,87 };
@@ -21,7 +22,7 @@ public class NetworkStatusBroadcast extends TSBKMessage implements IdentifierUpd
     public static final int[] SYSTEM_SERVICE_CLASS = { 136,137,138,139,140,141,
         142,143 };
     
-    private IdentifierUpdate mIdentifierUpdate;
+    private IdentifierProvider mIdentifierUpdate;
     
     public NetworkStatusBroadcast( BitSetBuffer message, 
                                 DataUnitID duid,
@@ -107,7 +108,7 @@ public class NetworkStatusBroadcast extends TSBKMessage implements IdentifierUpd
     }
 
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierUpdate message )
+    public void setIdentifierMessage( int identifier, IdentifierProvider message )
     {
 		/* we're only expecting 1 identifier, so use whatever is received */
 		mIdentifierUpdate = message;

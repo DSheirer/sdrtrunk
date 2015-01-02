@@ -7,7 +7,7 @@ package decode.p25.reference;
 public enum DataUnitID
 {
 	NID  ( -1,   64, false, "NID  ", "Network and Data Unit ID" ),
-	HDU  (  0,  722, false, "HDU  ", "Header Data Unit" ),
+	HDU  (  0,  712, false, "HDU  ", "Header Data Unit" ),
 	TDU  (  3,   64, false, "TDU  ", "Simple Terminator Data Unit" ),
 	LDU1 (  5, 1630, true,  "LDU1 ", "Logical Link Data Unit 1" ),
 	TSBK1(  7,  260, false, "TSBK1", "Trunking Signaling Block" ),
@@ -15,9 +15,10 @@ public enum DataUnitID
 	TSBK3(  7,  260, false, "TSBK3", "Trunking Signaling Block" ),
 	LDU2 ( 10, 1632, true,  "LDU2 ", "Logical Link Data Unit 2" ),
 	PDU0 ( 12,  260, false, "PDU0 ", "Packet Header Data Unit" ),
-	PDU1 ( 12,  356, false, "PDU1 ", "Packet Data Unit" ),
-	PDU2 ( 12,  452, false, "PDU2 ", "Packet Data Unit" ),
-	PDU3 ( 12,  548, false, "PDU3 ", "Packet Data Unit" ),
+	PDU1 ( 12,  356, false, "PDU1 ", "Packet Data Unit-Unconfirmed" ),
+	PDU2 ( 12,  452, false, "PDU2 ", "Packet Data Unit-Unconfirmed" ),
+	PDU3 ( 12,  548, false, "PDU3 ", "Packet Data Unit-Unconfirmed" ),
+	PDUC ( 12,  356, false, "PDUC", "Packet Data Unit-Confirmed" ),
 	TDULC( 15,  352, false, "TDULC", "Terminator Data Unit With Link Control" ),
 	UNKN ( -1,    0, false, "UNKWN", "Unknown" );
 	

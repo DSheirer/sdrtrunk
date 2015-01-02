@@ -67,7 +67,7 @@ public enum DecoderType
     					   DecoderType.LTR_STANDARD,
     					   DecoderType.MPT1327,
     					   DecoderType.NBFM,
-//    					   DecoderType.P25_PHASE1,
+    					   DecoderType.P25_PHASE1,
     					   DecoderType.PASSPORT );
     }
 
@@ -86,7 +86,7 @@ public enum DecoderType
     }
     
     /**
-     * Returns listing of auxiliary decoders.
+     * Available auxiliary decoders.
      */
     public static ArrayList<DecoderType> getAuxDecoders()
     {

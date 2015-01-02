@@ -25,8 +25,8 @@ import message.MessageType;
 import alias.Alias;
 import alias.AliasList;
 import bits.BitSetBuffer;
-import crc.CRC;
-import crc.CRCLTR;
+import edac.CRC;
+import edac.CRCLTR;
 
 public class LTRNetISWMessage extends LTRNetMessage
 {

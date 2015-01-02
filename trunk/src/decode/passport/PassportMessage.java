@@ -27,9 +27,9 @@ import message.MessageType;
 import alias.Alias;
 import alias.AliasList;
 import bits.BitSetBuffer;
-import crc.CRC;
-import crc.CRCPassport;
 import decode.DecoderType;
+import edac.CRC;
+import edac.CRCPassport;
 
 public class PassportMessage extends Message
 {

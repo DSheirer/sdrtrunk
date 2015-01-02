@@ -15,59 +15,38 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package crc;
+package edac;
 
-public enum CRC
+import java.util.BitSet;
+
+/**
+ * Calculates a 7-bit checksum using an array of xor values from the 
+ * ChecksumType class
+ */
+public class Checksum
 {
-	PASSED       ( "*", "PASS" ),
-	PASSED_INV   ( "#", "PASS INVERTED" ),
-	FAILED_CRC   ( "f", "FAIL CRC" ),
-	FAILED_PARITY( "p", "FAIL PARITY" ),
-	CORRECTED    ( "C", "CORRECTED" ),
-	UNKNOWN      ( "-", "UNKNOWN");
-
-	private String mAbbreviation;
-	private String mDisplayText;
-	
-	CRC( String abbreviation, String displayText )
+	public static boolean validate7BitChecksum( BitSet message,
+									byte messageChecksum,
+									ChecksumType checksumType )
 	{
-		mAbbreviation = abbreviation;
-		mDisplayText = displayText;
-	}
-	
-	public String getAbbreviation()
-	{
-		return mAbbreviation;
-	}
-	
-	public String getDisplayText()
-	{
-		return mDisplayText;
+		return ( messageChecksum & get7BitChecksum( message, checksumType ) ) == 0;
 	}
 
-	public static String format( CRC[] checks )
+	public static byte get7BitChecksum( BitSet message, 
+									ChecksumType checksumType )
 	{
-		if( checks == null )
-		{
-			return CRC.UNKNOWN.getAbbreviation();
-		}
+		byte checksum = 0x00;
+
+		short[] checkValues = checksumType.getValues();
 		
-		StringBuilder sb = new StringBuilder();
-		
-		for( int x = 0; x < checks.length; x++ )
+		for( int x = 0; x < checkValues.length; x++ )
 		{
-			CRC check = checks[ x ];
-			
-			if( check != null )
+			if( message.get( x ) )
 			{
-				sb.append( check.getAbbreviation() );
-			}
-			else
-			{
-				sb.append( CRC.UNKNOWN.getAbbreviation() );
+				checksum ^= checkValues[ x ];
 			}
 		}
 		
-		return sb.toString();
+		return checksum;
 	}
 }

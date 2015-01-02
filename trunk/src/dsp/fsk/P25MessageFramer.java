@@ -12,21 +12,24 @@ import alias.AliasList;
 import bits.BitSetBuffer;
 import bits.BitSetFullException;
 import bits.SyncPatternMatcher;
-import crc.CRC;
-import crc.CRCP25;
 import decode.p25.P25Interleave;
 import decode.p25.TrellisHalfRate;
 import decode.p25.message.P25Message;
 import decode.p25.message.hdu.HDUMessage;
 import decode.p25.message.ldu.LDU1Message;
 import decode.p25.message.ldu.LDU2Message;
+import decode.p25.message.ldu.lc.LDULCMessageFactory;
+import decode.p25.message.pdu.PDUConfirmedMessage;
 import decode.p25.message.pdu.PDUMessage;
 import decode.p25.message.pdu.PDUMessageFactory;
-import decode.p25.message.tdu.TDULCMessage;
 import decode.p25.message.tdu.TDUMessage;
+import decode.p25.message.tdu.lc.TDULCMessageFactory;
+import decode.p25.message.tdu.lc.TDULinkControlMessage;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.message.tsbk.TSBKMessageFactory;
 import decode.p25.reference.DataUnitID;
+import edac.CRC;
+import edac.CRCP25;
 
 public class P25MessageFramer implements Listener<Dibit>
 {
@@ -227,13 +230,13 @@ public class P25MessageFramer implements Listener<Dibit>
         	{
 				case NID:
 					CRC crc = CRCP25.correctNID( mMessage );
-
+					
 					if( crc != CRC.FAILED_CRC )
 					{
 						int value = mMessage.getInt( P25Message.DUID );
 						
 						DataUnitID duid = DataUnitID.fromValue( value );
-						
+
 						if( duid != DataUnitID.UNKN )
 						{
 							setDUID( duid );
@@ -254,7 +257,12 @@ public class P25MessageFramer implements Listener<Dibit>
 					break;
 				case LDU1:
 					mComplete = true;
-                    dispatch( new LDU1Message( mMessage.copy(), mDUID, mAliasList ) );
+					
+					LDU1Message ldu1 = new LDU1Message( mMessage.copy(), 
+							mDUID, mAliasList );
+
+					/* Convert the LDU1 message into a link control LDU1 message */
+                    dispatch( LDULCMessageFactory.getMessage( ldu1 ) );
 					break;
 				case LDU2:
 					mComplete = true;
@@ -262,7 +270,7 @@ public class P25MessageFramer implements Listener<Dibit>
 					break;
 				case PDU0:
 					/* Remove interleaving */
-					P25Interleave.deinterleave( mMessage, PDU0_BEGIN, PDU0_END );
+					P25Interleave.deinterleaveData( mMessage, PDU0_BEGIN, PDU0_END );
 	
 					/* Remove trellis encoding - abort processing if we have an
 					 * unsuccessful decode due to excessive errors */
@@ -271,9 +279,21 @@ public class P25MessageFramer implements Listener<Dibit>
 						CRC pduCRC = CRCP25.correctCCITT80( mMessage, 
 								PDU0_BEGIN, PDU0_CRC_BEGIN );
 						
+
 						if( pduCRC != CRC.FAILED_CRC )
 						{
-							setDUID( DataUnitID.PDU1 );
+							boolean confirmed = mMessage.get( 
+									PDUMessage.CONFIRMATION_REQUIRED_INDICATOR );
+							
+							if( confirmed )
+							{
+								setDUID( DataUnitID.PDUC );
+								
+							}
+							else
+							{
+								setDUID( DataUnitID.PDU1 );
+							}
 							
 							mMessage.setPointer( PDU1_BEGIN );
 						}
@@ -289,7 +309,7 @@ public class P25MessageFramer implements Listener<Dibit>
 					break;
 				case PDU1:
 					/* Remove interleaving */
-					P25Interleave.deinterleave( mMessage, PDU1_BEGIN, PDU1_END );
+					P25Interleave.deinterleaveData( mMessage, PDU1_BEGIN, PDU1_END );
 	
 					/* Remove trellis encoding - abort processing if we have an
 					 * unsuccessful decode due to excessive errors */
@@ -320,7 +340,7 @@ public class P25MessageFramer implements Listener<Dibit>
 					break;
 				case PDU2:
 					/* Remove interleaving */
-					P25Interleave.deinterleave( mMessage, PDU2_BEGIN, PDU2_END );
+					P25Interleave.deinterleaveData( mMessage, PDU2_BEGIN, PDU2_END );
 	
 					/* Remove trellis encoding - abort processing if we have an
 					 * unsuccessful decode due to excessive errors */
@@ -351,7 +371,7 @@ public class P25MessageFramer implements Listener<Dibit>
 					break;
 				case PDU3:
 					/* Remove interleaving */
-					P25Interleave.deinterleave( mMessage, PDU3_BEGIN, PDU3_END );
+					P25Interleave.deinterleaveData( mMessage, PDU3_BEGIN, PDU3_END );
 	
 					/* Remove trellis encoding - abort processing if we have an
 					 * unsuccessful decode due to excessive errors */
@@ -367,20 +387,45 @@ public class P25MessageFramer implements Listener<Dibit>
 					
 					mComplete = true;
 					break;
+				case PDUC:
+					int blocks = mMessage.getInt( PDUMessage.BLOCKS_TO_FOLLOW );
+					
+					int current = ( mMessage.size() - 260 ) / 196;
+					
+					if( current < blocks )
+					{
+						mMessageLength += 196;
+						mMessage.setSize( mMessage.size() + 196 );
+					}
+					else
+					{
+						dispatch( new PDUConfirmedMessage( mMessage.copy(), 
+								mDUID, mAliasList ) );
+						
+						mComplete = true;
+					}
+					break;
 				case TDU:
                     dispatch( new TDUMessage( mMessage.copy(), mDUID, mAliasList ) );
 					mComplete = true;
 					break;
 				case TDULC:
-                    dispatch( new TDULCMessage( mMessage.copy(), mDUID, mAliasList ) );
+					TDULinkControlMessage tdulc =  new TDULinkControlMessage( 
+							mMessage.copy(), mDUID, mAliasList );
+
+					/* Convert to an appropriate link control message */
+					tdulc = TDULCMessageFactory.getMessage( tdulc );
+
+					dispatch( tdulc );
 					mComplete = true;
 					break;
 				case TSBK1:
 					/* Remove interleaving */
-					P25Interleave.deinterleave( mMessage, TSBK_BEGIN, TSBK_END );
+					P25Interleave.deinterleaveData( mMessage, TSBK_BEGIN, TSBK_END );
 	
 					/* Remove trellis encoding - abort processing if we have an
 					 * unsuccessful decode due to excessive errors */
+					
 					if( mHalfRate.decode( mMessage, TSBK_BEGIN, TSBK_END ) )
 					{
 						CRC tsbkCRC = CRCP25.correctCCITT80( mMessage, 
@@ -418,7 +463,7 @@ public class P25MessageFramer implements Listener<Dibit>
 					break;
 				case TSBK2:
 					/* Remove interleaving */
-					P25Interleave.deinterleave( mMessage, TSBK_BEGIN, TSBK_END );
+					P25Interleave.deinterleaveData( mMessage, TSBK_BEGIN, TSBK_END );
 
 					/* Remove trellis encoding - abort processing if we have an
 					 * unsuccessful decode due to excessive errors */
@@ -459,7 +504,7 @@ public class P25MessageFramer implements Listener<Dibit>
 					break;
 				case TSBK3:
 					/* Remove interleaving */
-					P25Interleave.deinterleave( mMessage, TSBK_BEGIN, TSBK_END );
+					P25Interleave.deinterleaveData( mMessage, TSBK_BEGIN, TSBK_END );
 	
 					/* Remove trellis encoding - abort processing if we have an
 					 * unsuccessful decode due to excessive errors */

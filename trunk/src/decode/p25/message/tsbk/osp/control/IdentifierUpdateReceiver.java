@@ -1,5 +1,7 @@
 package decode.p25.message.tsbk.osp.control;
 
+import decode.p25.message.IdentifierProvider;
+
 /**
  * Interface to allow messages to be augmented with IdentiferUpdateXXX type 
  * messages that provide the channel information necessary to calculate the
@@ -7,7 +9,7 @@ package decode.p25.message.tsbk.osp.control;
  */
 public interface IdentifierUpdateReceiver
 {
-	public void setIdentifierMessage( int identifier, IdentifierUpdate message );
+	public void setIdentifierMessage( int identifier, IdentifierProvider message );
 	
 	public int[] getIdentifiers();
 }

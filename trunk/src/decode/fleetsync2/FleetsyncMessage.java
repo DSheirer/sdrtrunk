@@ -32,8 +32,8 @@ import org.jdesktop.swingx.mapviewer.GeoPosition;
 import alias.Alias;
 import alias.AliasList;
 import bits.BitSetBuffer;
-import crc.CRC;
-import crc.CRCFleetsync;
+import edac.CRC;
+import edac.CRCFleetsync;
 
 public class FleetsyncMessage extends Message
 {

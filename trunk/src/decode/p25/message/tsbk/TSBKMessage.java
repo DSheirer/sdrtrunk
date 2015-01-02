@@ -2,14 +2,13 @@ package decode.p25.message.tsbk;
 
 import alias.AliasList;
 import bits.BitSetBuffer;
-import crc.CRC;
-import crc.CRCP25;
 import decode.p25.message.P25Message;
 import decode.p25.message.tsbk.motorola.MotorolaOpcode;
 import decode.p25.message.tsbk.vendor.VendorOpcode;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
 import decode.p25.reference.Vendor;
+import edac.CRC;
 
 public class TSBKMessage extends P25Message
 {

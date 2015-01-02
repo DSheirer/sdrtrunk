@@ -282,6 +282,6 @@ public class DecoderViewFrame extends JInternalFrame
 	@Override
     public void receive( Message message )
     {
-		mLog.info( "Decoder message: " + message.toString() );
+		mLog.info( message.toString() );
     }
 }

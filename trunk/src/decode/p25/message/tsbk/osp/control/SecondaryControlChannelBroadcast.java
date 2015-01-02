@@ -5,12 +5,13 @@ import org.slf4j.LoggerFactory;
 
 import alias.AliasList;
 import bits.BitSetBuffer;
+import decode.p25.message.IdentifierProvider;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
 
 public class SecondaryControlChannelBroadcast extends TSBKMessage 
-	implements IdentifierUpdateReceiver, Comparable<SecondaryControlChannelBroadcast>
+	implements IdentifierProviderReceiver, Comparable<SecondaryControlChannelBroadcast>
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( SecondaryControlChannelBroadcast.class );
@@ -28,8 +29,8 @@ public class SecondaryControlChannelBroadcast extends TSBKMessage
     public static final int[] SYSTEM_SERVICE_CLASS_2 = { 136,137,138,139,140,
     	141,142,143 };
     
-    private IdentifierUpdate mIdentifierUpdate1;
-    private IdentifierUpdate mIdentifierUpdate2;
+    private IdentifierProvider mIdentifierUpdate1;
+    private IdentifierProvider mIdentifierUpdate2;
     
     public SecondaryControlChannelBroadcast( BitSetBuffer message, 
                                 DataUnitID duid,
@@ -143,7 +144,7 @@ public class SecondaryControlChannelBroadcast extends TSBKMessage
     }
 
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierUpdate message )
+    public void setIdentifierMessage( int identifier, IdentifierProvider message )
     {
 		if( identifier == getIdentifier1() )
 		{

@@ -1,18 +1,18 @@
 package decode.p25.message.pdu.osp.control;
 
-import crc.CRCP25;
 import alias.AliasList;
 import bits.BitSetBuffer;
+import decode.p25.message.IdentifierProvider;
 import decode.p25.message.pdu.PDUMessage;
-import decode.p25.message.tsbk.osp.control.IdentifierUpdate;
-import decode.p25.message.tsbk.osp.control.IdentifierUpdateReceiver;
+import decode.p25.message.tsbk.osp.control.IdentifierProviderReceiver;
 import decode.p25.message.tsbk.osp.control.SystemService;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
 import decode.p25.reference.P25NetworkCallsign;
+import edac.CRCP25;
 
 public class NetworkStatusBroadcastExtended extends PDUMessage 
-								implements IdentifierUpdateReceiver
+								implements IdentifierProviderReceiver
 {
 	public static final int[] LRA = { 88,89,90,91,92,93,94,95 };
 	public static final int[] SYSTEM_ID = { 100,101,102,103,104,105,106,107,108,
@@ -31,8 +31,8 @@ public class NetworkStatusBroadcastExtended extends PDUMessage
 		230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,
 		248,249,250,251,252,253,254,255 };
 	
-	private IdentifierUpdate mTransmitIdentifierUpdate;
-	private IdentifierUpdate mReceiveIdentifierUpdate;
+	private IdentifierProvider mTransmitIdentifierUpdate;
+	private IdentifierProvider mReceiveIdentifierUpdate;
 	
 	public NetworkStatusBroadcastExtended( BitSetBuffer message,
             DataUnitID duid, AliasList aliasList )
@@ -134,7 +134,7 @@ public class NetworkStatusBroadcastExtended extends PDUMessage
     }
 
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierUpdate message )
+    public void setIdentifierMessage( int identifier, IdentifierProvider message )
     {
 		if( identifier == getTransmitIdentifier() )
 		{
