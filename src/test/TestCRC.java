@@ -19,7 +19,7 @@ package test;
 
 import java.util.BitSet;
 
-import crc.CRCLTR;
+import edac.CRCLTR;
 
 
 public class TestCRC

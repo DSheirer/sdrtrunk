@@ -2,11 +2,11 @@ package decode.p25.message.tsbk.osp.data;
 
 import alias.AliasList;
 import bits.BitSetBuffer;
-import decode.p25.message.tsbk.osp.control.IdentifierUpdate;
-import decode.p25.message.tsbk.osp.control.IdentifierUpdateReceiver;
+import decode.p25.message.IdentifierProvider;
+import decode.p25.message.tsbk.osp.control.IdentifierProviderReceiver;
 import decode.p25.reference.DataUnitID;
 
-public class SNDCPDataChannelGrant extends SNDCPData implements IdentifierUpdateReceiver
+public class SNDCPDataChannelGrant extends SNDCPData implements IdentifierProviderReceiver
 {
 	public static final int[] TRANSMIT_IDENTIFIER = { 88,89,90,91 };
     public static final int[] TRANSMIT_NUMBER = { 92,93,94,95,96,97,98,99,100,
@@ -18,8 +18,8 @@ public class SNDCPDataChannelGrant extends SNDCPData implements IdentifierUpdate
     public static final int[] TARGET_ADDRESS = { 120,121,122,123,124,125,126,
         127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143 };
     
-    private IdentifierUpdate mIdentifierUpdateTransmit;
-    private IdentifierUpdate mIdentifierUpdateReceive;
+    private IdentifierProvider mIdentifierUpdateTransmit;
+    private IdentifierProvider mIdentifierUpdateReceive;
 
     public SNDCPDataChannelGrant( BitSetBuffer message, 
 								  DataUnitID duid,
@@ -91,7 +91,7 @@ public class SNDCPDataChannelGrant extends SNDCPData implements IdentifierUpdate
     }
 
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierUpdate message )
+    public void setIdentifierMessage( int identifier, IdentifierProvider message )
     {
 		if( identifier == getTransmitChannelIdentifier() )
 		{

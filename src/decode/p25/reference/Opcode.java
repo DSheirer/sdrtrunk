@@ -62,7 +62,7 @@ public enum Opcode
 	SECONDARY_CONTROL_CHANNEL_BROADCAST( "SEC_CCH_BROADCST", "Secondary Control Channel Broadcast", 57 ),
 	RFSS_STATUS_BROADCAST( "RFSS_STATUS_BCST", "RFSS Status Broadcast", 58 ),
 	NETWORK_STATUS_BROADCAST( "NET_STATUS_BCAST", "Network Status Broadcast", 59 ),
-	ADJACENT_STATUS_BROADCAST( "NGHBR_STAT_BCAST", "Adjacent Status Broadcast", 60 ),
+	ADJACENT_STATUS_BROADCAST( "ADJ SITE STATUS ", "Adjacent Site Status Broadcast", 60 ),
 	IDENTIFIER_UPDATE_NON_VUHF( "IDEN_UPDATE     ", "Identifier Update", 61 ),
 	PROTECTION_PARAMETER_BROADCAST( "ENCRYPT_PAR_BCST", "Protection Parameter Broadcast", 62 ),
 	PROTECTION_PARAMETER_UPDATE( "ENCRYPT_PAR_UPDT", "Protection Parameter Update", 63 ),

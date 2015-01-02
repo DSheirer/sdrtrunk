@@ -7,9 +7,8 @@ import message.Message;
 import alias.Alias;
 import alias.AliasList;
 import bits.BitSetBuffer;
-import crc.CRC;
-import decode.p25.message.tsbk.osp.control.IdentifierUpdate;
 import decode.p25.reference.DataUnitID;
+import edac.CRC;
 
 public class P25Message extends Message
 {
@@ -40,6 +39,16 @@ public class P25Message extends Message
 		mMessage = message;
 		mDUID = duid;
 		mAliasList = aliasList;
+	}
+	
+	public BitSetBuffer getSourceMessage()
+	{
+		return mMessage;
+	}
+	
+	public AliasList getAliasList()
+	{
+		return mAliasList;
 	}
 	
 	public String getNAC()
@@ -165,7 +174,7 @@ public class P25Message extends Message
 	 * @param channel - channel number
 	 * @return - frequency in Hertz
 	 */
-	protected static long calculateUplink( IdentifierUpdate iden, int channel )
+	protected static long calculateUplink( IdentifierProvider iden, int channel )
 	{
 		long downlink = calculateDownlink( iden, channel );
 		
@@ -185,7 +194,7 @@ public class P25Message extends Message
 	 * @param channel - channel number
 	 * @return - frequency in Hertz
 	 */
-	protected static long calculateDownlink( IdentifierUpdate iden, int channel )
+	protected static long calculateDownlink( IdentifierProvider iden, int channel )
 	{
 		if( iden != null )
 		{

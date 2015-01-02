@@ -15,7 +15,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package crc;
+package edac;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +31,7 @@ public class CRCP25
 	
 	private static final int NID_MESSAGE_START = 0;
 	private static final int NID_CRC_START = 16;
-	private static final int NID_CRC_LENGTH = 48;
+	private static final int NID_CRC_END = 48;
 
 	/**
 	 * Network ID and Data Unit ID checksums
@@ -241,7 +241,7 @@ public class CRCP25
 			calculated ^= NID_DUID_CHECKSUMS[ i - NID_MESSAGE_START ];
 		}
 		
-		long checksum = getLongChecksum( message, NID_CRC_START, NID_CRC_LENGTH );
+		long checksum = getLongChecksum( message, NID_CRC_START, NID_CRC_END );
 
 		if( calculated == checksum )
 		{
@@ -367,6 +367,28 @@ public class CRCP25
 
 		return CRC.FAILED_CRC;
 	}
+	
+	/**
+	 * Performs Galois 24/12/7 error detection and correction against the 12
+	 * encoded 24-bit message segments following the 64-bit NID in the message
+	 * 
+	 * @return - true if all 12 segments of the message can be checked/corrected
+	 */
+	public static boolean correctGalois24( BitSetBuffer tdulc )
+	{
+		boolean passes = true;
+		
+		int x = 64;
+		
+		while( x < tdulc.size() && passes )
+		{
+			passes = Galois24.checkAndCorrect( tdulc, x );
+
+			x += 24;
+		}
+
+		return passes;
+	}
 
 	
 	/**
@@ -375,7 +397,7 @@ public class CRCP25
     public static long getLongChecksum( BitSetBuffer message, 
     				int crcStart, int crcLength )
     {
-    	return message.getLong( crcStart, crcStart + crcLength );
+    	return message.getLong( crcStart, crcStart + crcLength - 1 );
     }
 
 	/**
@@ -384,7 +406,7 @@ public class CRCP25
     public static int getIntChecksum( BitSetBuffer message, 
     				int crcStart, int crcLength )
     {
-    	return message.getInt( crcStart, crcStart + crcLength );
+    	return message.getInt( crcStart, crcStart + crcLength - 1 );
     }
 
     /**

@@ -20,6 +20,7 @@ package decode.p25;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
@@ -104,7 +105,8 @@ public class P25ChannelState extends ChannelState
 	private String mLastRegistrationEventID;
 	private String mLastResponseEventID;
 
-	private ArrayList<ActiveCall> mActiveCalls = new ArrayList<ActiveCall>();
+	private CopyOnWriteArrayList<ActiveCall> mActiveCalls = 
+							new CopyOnWriteArrayList<ActiveCall>();
 	
 	private P25ActivitySummary mActivitySummary;
 	private String mNAC;

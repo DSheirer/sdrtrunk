@@ -2,13 +2,13 @@ package decode.p25.message.pdu;
 
 import alias.AliasList;
 import bits.BitSetBuffer;
-import crc.CRC;
 import decode.p25.message.P25Message;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
 import decode.p25.reference.PDUFormat;
 import decode.p25.reference.ServiceAccessPoint;
 import decode.p25.reference.Vendor;
+import edac.CRC;
 
 public class PDUMessage extends P25Message
 {
@@ -55,8 +55,6 @@ public class PDUMessage extends P25Message
 		{
 			sb.append( " " );
 			sb.append( vendor.getLabel() );
-			sb.append( " OPCD:" );
-			sb.append( mMessage.getHex( OPCODE, 2 ) );
 		}
 		
 	    return sb.toString();
@@ -87,7 +85,7 @@ public class PDUMessage extends P25Message
 		sb.append( " FMT:" );
 		sb.append( getFormat().getLabel() );
 		sb.append( " SAP:" );
-		sb.append( getServiceAccessPoint().getLabel() );
+		sb.append( getServiceAccessPoint().name() );
 		sb.append( " VEND:" );
 		sb.append( getVendor().getLabel() );
 		sb.append( " LLID:" );
@@ -100,7 +98,7 @@ public class PDUMessage extends P25Message
 
 	public String getConfirmation()
 	{
-		return mMessage.get( CONFIRMATION_REQUIRED_INDICATOR ) ? "CON" : "UNC";
+		return mMessage.get( CONFIRMATION_REQUIRED_INDICATOR ) ? "CONFIRMED" : "UNCONFIRMED";
 	}
 	
 	public String getDirection()

@@ -381,58 +381,102 @@ public class BitSetBuffer extends BitSet
     }
 
     /**
-     * Returns the integer value represented by the bit range
-     * @param start - MSB of the integer
-     * @param end - LSB of the integer
-     * @return - integer value of the bit range
+     * Returns the int value represented by the bit range.  This method will
+     * parse the bits in big endian or little endian format.  The start value
+     * represents the MSB and the end value represents the LSB of the value.
+     * 
+     * start < end: little endian interpretation
+     * end < start: big endian interpretation
+     * 
+     * @param start - MSB of the value
+     * @param end - LSB of the value
+     * 
+     * @return - int value of the bit range
      */
     public int getInt( int start, int end )
     {
-    	if( end - start > 32 )
+    	if( Math.abs( end - start ) > 32 )
     	{
     		throw new IllegalArgumentException( "Overflow - must be 32 bits "
     				+ "or less to fit into a primitive integer value" );
     	}
     	
     	int value = 0;
-    	
-    	for( int x = start; x <= end; x++ )
-    	{
-    		value = Integer.rotateLeft( value, 1 );
 
-    		if( get( x ) )
-    		{
-    			value++;;
-    		}
+    	if( start < end )
+    	{
+        	for( int x = start; x <= end; x++ )
+        	{
+        		value = Integer.rotateLeft( value, 1 );
+
+        		if( get( x ) )
+        		{
+        			value++;;
+        		}
+        	}
+    	}
+    	else
+    	{
+        	for( int x = end; x >= start; x-- )
+        	{
+        		value = Integer.rotateLeft( value, 1 );
+
+        		if( get( x ) )
+        		{
+        			value++;;
+        		}
+        	}
     	}
     	
     	return value;
     }
     
     /**
-     * Returns the long value represented by the bit range
-     * @param start - MSB of the long
-     * @param end - LSB of the long
+     * Returns the long value represented by the bit range.  This method will
+     * parse the bits in big endian or little endian format.  The start value
+     * represents the MSB and the end value represents the LSB of the value.
+     * 
+     * start < end: little endian interpretation
+     * end < start: big endian interpretation
+     * 
+     * @param start - MSB of the value
+     * @param end - LSB of the value
+     * 
      * @return - long value of the bit range
      */
     public long getLong( int start, int end )
     {
-    	if( end - start > 64 )
+    	if( Math.abs( end - start ) > 64 )
     	{
     		throw new IllegalArgumentException( "Overflow - must be 64 bits "
     				+ "or less to fit into a primitive long value" );
     	}
     	
     	long value = 0;
-    	
-    	for( int x = start; x <= end; x++ )
+
+    	if( start < end )
     	{
-    		value = Long.rotateLeft( value, 1 );
-    		
-    		if( get( x ) )
-    		{
-    			value++;
-    		}
+        	for( int x = start; x <= end; x++ )
+        	{
+        		value = Long.rotateLeft( value, 1 );
+        		
+        		if( get( x ) )
+        		{
+        			value++;
+        		}
+        	}
+    	}
+    	else
+    	{
+        	for( int x = end; x >= start; x-- )
+        	{
+        		value = Long.rotateLeft( value, 1 );
+        		
+        		if( get( x ) )
+        		{
+        			value++;
+        		}
+        	}
     	}
     	
     	return value;

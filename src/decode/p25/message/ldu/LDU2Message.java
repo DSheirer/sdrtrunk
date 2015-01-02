@@ -2,11 +2,11 @@ package decode.p25.message.ldu;
 
 import alias.AliasList;
 import bits.BitSetBuffer;
-import crc.CRC;
 import decode.p25.message.P25Message;
 import decode.p25.reference.DataUnitID;
+import edac.CRC;
 
-public class LDU2Message extends P25Message
+public class LDU2Message extends LDUMessage
 {
 	public LDU2Message( BitSetBuffer message, DataUnitID duid,
             AliasList aliasList )

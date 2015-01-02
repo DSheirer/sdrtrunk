@@ -1,15 +1,15 @@
 package decode.p25.message.pdu;
 
-import crc.CRCP25;
 import alias.AliasList;
 import bits.BitSetBuffer;
-import decode.p25.message.tsbk.osp.control.IdentifierUpdate;
-import decode.p25.message.tsbk.osp.control.IdentifierUpdateReceiver;
+import decode.p25.message.IdentifierProvider;
+import decode.p25.message.tsbk.osp.control.IdentifierProviderReceiver;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
+import edac.CRCP25;
 
 public abstract class UnitToUnitChannelGrantExtended extends PDUMessage 
-								implements IdentifierUpdateReceiver
+								implements IdentifierProviderReceiver
 {
     /* Service Options */
     public static final int EMERGENCY_FLAG = 128;
@@ -39,8 +39,8 @@ public abstract class UnitToUnitChannelGrantExtended extends PDUMessage
 		326,327,328,329,330,331,332,333,334,335,336,337,338,339,340,341,342,
 		343,344,345,346,347,348,349,350,351 };
 	
-	private IdentifierUpdate mTransmitIdentifierUpdate;
-	private IdentifierUpdate mReceiveIdentifierUpdate;
+	private IdentifierProvider mTransmitIdentifierUpdate;
+	private IdentifierProvider mReceiveIdentifierUpdate;
 	
 	public UnitToUnitChannelGrantExtended( BitSetBuffer message,
             DataUnitID duid, AliasList aliasList )
@@ -174,7 +174,7 @@ public abstract class UnitToUnitChannelGrantExtended extends PDUMessage
     }
 
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierUpdate message )
+    public void setIdentifierMessage( int identifier, IdentifierProvider message )
     {
 		if( identifier == getTransmitChannelIdentifier() )
 		{

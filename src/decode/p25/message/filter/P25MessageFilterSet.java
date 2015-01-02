@@ -10,8 +10,11 @@ public class P25MessageFilterSet extends FilterSet<Message>
 	{
 		super( "P25 Message Filter" );
 		
+		addFilter( new HDUMessageFilter() );
+		addFilter( new LDUMessageFilter() );
 		addFilter( new PDUMessageFilter() );
 		addFilter( new TDUMessageFilter() );
+		addFilter( new TDULCMessageFilter() );
 		addFilter( new TSBKMessageFilterSet() );
 	}
 

@@ -11,7 +11,7 @@ import sample.Broadcaster;
 import sample.Listener;
 import alias.AliasList;
 import decode.p25.message.tsbk.osp.control.IdentifierUpdate;
-import decode.p25.message.tsbk.osp.control.IdentifierUpdateReceiver;
+import decode.p25.message.tsbk.osp.control.IdentifierProviderReceiver;
 
 public class P25MessageProcessor implements Listener<Message>
 {
@@ -39,9 +39,9 @@ public class P25MessageProcessor implements Listener<Message>
 		if( message.isValid() )
 		{
 			/* Insert band identifier update messages into channel-type messages */
-			if( message instanceof IdentifierUpdateReceiver )
+			if( message instanceof IdentifierProviderReceiver )
 			{
-				IdentifierUpdateReceiver receiver = (IdentifierUpdateReceiver)message;
+				IdentifierProviderReceiver receiver = (IdentifierProviderReceiver)message;
 				
 				int[] identifiers = receiver.getIdentifiers();
 				

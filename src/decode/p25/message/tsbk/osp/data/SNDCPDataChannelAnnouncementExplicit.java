@@ -2,12 +2,12 @@ package decode.p25.message.tsbk.osp.data;
 
 import alias.AliasList;
 import bits.BitSetBuffer;
-import decode.p25.message.tsbk.osp.control.IdentifierUpdate;
-import decode.p25.message.tsbk.osp.control.IdentifierUpdateReceiver;
+import decode.p25.message.IdentifierProvider;
+import decode.p25.message.tsbk.osp.control.IdentifierProviderReceiver;
 import decode.p25.reference.DataUnitID;
 
 public class SNDCPDataChannelAnnouncementExplicit extends SNDCPData 
-					implements IdentifierUpdateReceiver
+					implements IdentifierProviderReceiver
 {
 	public static final int AUTONOMOUS_ACCESS_AVAILABLE_INDICATOR = 88;
 	public static final int REQUESTED_ACCESS_AVAILABLE_INDICATOR = 89;
@@ -22,8 +22,8 @@ public class SNDCPDataChannelAnnouncementExplicit extends SNDCPData
     public static final int[] DATA_ACCESS_CONTROL = { 128,129,130,131,132,133,
     	134,135,136,137,138,139,140,141,142,143 };
     
-    private IdentifierUpdate mIdentifierUpdateTransmit;
-    private IdentifierUpdate mIdentifierUpdateReceive;
+    private IdentifierProvider mIdentifierUpdateTransmit;
+    private IdentifierProvider mIdentifierUpdateReceive;
 
     public SNDCPDataChannelAnnouncementExplicit( BitSetBuffer message, 
 								  DataUnitID duid,
@@ -118,7 +118,7 @@ public class SNDCPDataChannelAnnouncementExplicit extends SNDCPData
     }
     
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierUpdate message )
+    public void setIdentifierMessage( int identifier, IdentifierProvider message )
     {
 		if( identifier == getTransmitChannelIdentifier() )
 		{
