@@ -3,12 +3,13 @@ package decode.p25.message.tsbk.osp.control;
 import alias.AliasList;
 import bits.BitSetBuffer;
 import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
 import decode.p25.reference.P25NetworkCallsign;
 
-public class NetworkStatusBroadcast extends TSBKMessage implements IdentifierProviderReceiver
+public class NetworkStatusBroadcast extends TSBKMessage implements IdentifierReceiver
 {
     public static final int[] LOCATION_REGISTRATION_AREA = { 80,81,82,83,84,85,
         86,87 };

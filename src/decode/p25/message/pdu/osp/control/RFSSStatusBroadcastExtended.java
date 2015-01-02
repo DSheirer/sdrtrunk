@@ -3,15 +3,15 @@ package decode.p25.message.pdu.osp.control;
 import alias.AliasList;
 import bits.BitSetBuffer;
 import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.pdu.PDUMessage;
-import decode.p25.message.tsbk.osp.control.IdentifierProviderReceiver;
 import decode.p25.message.tsbk.osp.control.SystemService;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
 import edac.CRCP25;
 
 public class RFSSStatusBroadcastExtended extends PDUMessage 
-								implements IdentifierProviderReceiver
+								implements IdentifierReceiver
 {
 	public static final int[] LRA = { 88,89,90,91,92,93,94,95 };
 	public static final int ACTIVE_NETWORK_CONNECTION_INDICATOR = 99;

@@ -3,8 +3,8 @@ package decode.p25.message.pdu.osp.control;
 import alias.AliasList;
 import bits.BitSetBuffer;
 import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.pdu.PDUMessage;
-import decode.p25.message.tsbk.osp.control.IdentifierProviderReceiver;
 import decode.p25.message.tsbk.osp.control.SystemService;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
@@ -12,7 +12,7 @@ import decode.p25.reference.P25NetworkCallsign;
 import edac.CRCP25;
 
 public class NetworkStatusBroadcastExtended extends PDUMessage 
-								implements IdentifierProviderReceiver
+								implements IdentifierReceiver
 {
 	public static final int[] LRA = { 88,89,90,91,92,93,94,95 };
 	public static final int[] SYSTEM_ID = { 100,101,102,103,104,105,106,107,108,

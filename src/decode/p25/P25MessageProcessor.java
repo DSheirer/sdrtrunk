@@ -10,8 +10,8 @@ import org.slf4j.LoggerFactory;
 import sample.Broadcaster;
 import sample.Listener;
 import alias.AliasList;
+import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.tsbk.osp.control.IdentifierUpdate;
-import decode.p25.message.tsbk.osp.control.IdentifierProviderReceiver;
 
 public class P25MessageProcessor implements Listener<Message>
 {
@@ -39,9 +39,9 @@ public class P25MessageProcessor implements Listener<Message>
 		if( message.isValid() )
 		{
 			/* Insert band identifier update messages into channel-type messages */
-			if( message instanceof IdentifierProviderReceiver )
+			if( message instanceof IdentifierReceiver )
 			{
-				IdentifierProviderReceiver receiver = (IdentifierProviderReceiver)message;
+				IdentifierReceiver receiver = (IdentifierReceiver)message;
 				
 				int[] identifiers = receiver.getIdentifiers();
 				

@@ -3,11 +3,11 @@ package decode.p25.message.tsbk;
 import alias.AliasList;
 import bits.BitSetBuffer;
 import decode.p25.message.IdentifierProvider;
-import decode.p25.message.tsbk.osp.control.IdentifierProviderReceiver;
+import decode.p25.message.IdentifierReceiver;
 import decode.p25.reference.DataUnitID;
 
 public abstract class GroupMultiChannelGrant extends ChannelGrant
-									implements IdentifierProviderReceiver
+									implements IdentifierReceiver
 {
     public static final int[] CHANNEL_IDENTIFIER_1 = { 80,81,82,83 };
     public static final int[] CHANNEL_NUMBER_1 = { 84,85,86,87,

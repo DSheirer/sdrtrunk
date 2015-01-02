@@ -26,14 +26,17 @@ public class LDU1Message extends LDUMessage
 	public static final int[] OPCODE = { 354,355,356,357,362,363 };
 	public static final int[] VENDOR = { 364,365,366,367,372,373,374,375 };
 	
-	public static final int[] OCTET_1 = { 364,365,366,367,372,373,374,375 };
-	public static final int[] OCTET_2 = { 376,377,382,383,384,385,386,387 };
-	public static final int[] OCTET_3 = { 536,537,538,539,540,541,546,547 };
-	public static final int[] OCTET_4 = { 548,549,550,551,556,557,558,559 };
-	public static final int[] OCTET_5 = { 560,561,566,567,568,569,570,571 };
-	public static final int[] OCTET_6 = { 720,721,722,723,724,725,730,731 };
-	public static final int[] OCTET_7 = { 732,733,734,735,740,741,742,743 };
-	public static final int[] OCTET_8 = { 744,745,750,751,752,753,754,755 };
+	public static final int[] LOW_SPEED_DATA = { 1456,1457,1458,1459,1460,1461,
+		1462,1463,1472,1473,1474,1475,1476,1477,1478,1479 };
+	
+//	public static final int[] OCTET_1 = { 364,365,366,367,372,373,374,375 };
+//	public static final int[] OCTET_2 = { 376,377,382,383,384,385,386,387 };
+//	public static final int[] OCTET_3 = { 536,537,538,539,540,541,546,547 };
+//	public static final int[] OCTET_4 = { 548,549,550,551,556,557,558,559 };
+//	public static final int[] OCTET_5 = { 560,561,566,567,568,569,570,571 };
+//	public static final int[] OCTET_6 = { 720,721,722,723,724,725,730,731 };
+//	public static final int[] OCTET_7 = { 732,733,734,735,740,741,742,743 };
+//	public static final int[] OCTET_8 = { 744,745,750,751,752,753,754,755 };
 	
 	public LDU1Message( BitSetBuffer message, DataUnitID duid,
             AliasList aliasList )
@@ -98,6 +101,8 @@ public class LDU1Message extends LDUMessage
 		sb.append( getNAC() );
 		sb.append( " " );
 		sb.append( getDUID().getLabel() );
+		sb.append( " LSD:" );
+		sb.append( getLowSpeedData() );
 		sb.append( " " );
 		
 		if( isEncrypted() )
@@ -148,6 +153,11 @@ public class LDU1Message extends LDUMessage
 		}
 		
 		return Vendor.fromValue( mMessage.getInt( VENDOR ) );
+	}
+	
+	public String getLowSpeedData()
+	{
+		return mMessage.getHex( LOW_SPEED_DATA, 4 );
 	}
 	
 	/* Temporary override */

@@ -6,12 +6,13 @@ import org.slf4j.LoggerFactory;
 import alias.AliasList;
 import bits.BitSetBuffer;
 import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
 
 public class SecondaryControlChannelBroadcast extends TSBKMessage 
-	implements IdentifierProviderReceiver, Comparable<SecondaryControlChannelBroadcast>
+	implements IdentifierReceiver, Comparable<SecondaryControlChannelBroadcast>
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( SecondaryControlChannelBroadcast.class );
