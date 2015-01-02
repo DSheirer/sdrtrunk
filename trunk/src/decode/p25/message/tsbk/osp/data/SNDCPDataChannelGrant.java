@@ -3,10 +3,10 @@ package decode.p25.message.tsbk.osp.data;
 import alias.AliasList;
 import bits.BitSetBuffer;
 import decode.p25.message.IdentifierProvider;
-import decode.p25.message.tsbk.osp.control.IdentifierProviderReceiver;
+import decode.p25.message.IdentifierReceiver;
 import decode.p25.reference.DataUnitID;
 
-public class SNDCPDataChannelGrant extends SNDCPData implements IdentifierProviderReceiver
+public class SNDCPDataChannelGrant extends SNDCPData implements IdentifierReceiver
 {
 	public static final int[] TRANSMIT_IDENTIFIER = { 88,89,90,91 };
     public static final int[] TRANSMIT_NUMBER = { 92,93,94,95,96,97,98,99,100,

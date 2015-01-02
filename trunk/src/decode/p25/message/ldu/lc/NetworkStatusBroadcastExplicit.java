@@ -1,35 +1,35 @@
-package decode.p25.message.tdu.lc;
+package decode.p25.message.ldu.lc;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import decode.p25.message.IdentifierProvider;
 import decode.p25.message.IdentifierReceiver;
+import decode.p25.message.ldu.LDU1Message;
 import decode.p25.reference.LinkControlOpcode;
-import decode.p25.reference.Service;
 
-public class NetworkStatusBroadcastExplicit extends TDULinkControlMessage
+public class NetworkStatusBroadcastExplicit extends LDU1Message
 									implements IdentifierReceiver
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( NetworkStatusBroadcastExplicit.class );
-	public static final int[] NETWORK_ID = { 72,73,74,75,88,89,90,91,92,93,94,
-		95,96,97,98,99,112,113,114,115 };
-	public static final int[] SYSTEM_ID = { 116,117,118,119,120,121,122,123,136,
-		137,138,139 };
-	public static final int[] TRANSMIT_IDENTIFIER = { 140,141,142,143 };
-	public static final int[] TRANSMIT_CHANNEL = { 144,145,146,147,160,161,162,
-		163,164,165,166,167 };
-	public static final int[] RECEIVE_IDENTIFIER = { 168,169,170,171 };
-	public static final int[] RECEIVE_CHANNEL = { 184,185,186,187,188,189,190,
-		191,192,193,194,195 };
+	public static final int[] NETWORK_ID = { 364,365,366,367,372,373,374,375,
+		376,377,382,383,384,385,386,387,536,537,538,539 };
+	public static final int[] SYSTEM_ID = { 540,541,546,547,548,549,550,551,556,
+		557,558,559 };
+	public static final int[] TRANSMIT_IDENTIFIER = { 560,561,566,567 };
+	public static final int[] TRANSMIT_CHANNEL = { 568,569,570,571,720,721,722,
+		723,724,725,730,731 };
+	public static final int[] RECEIVE_IDENTIFIER = { 732,733,734,735 };
+	public static final int[] RECEIVE_CHANNEL = { 740,741,742,743,744,745,750,
+		751,752,753,754,755 };
 	
 	private IdentifierProvider mTransmitIdentifierUpdate;
 	private IdentifierProvider mReceiveIdentifierUpdate;
 	
-	public NetworkStatusBroadcastExplicit( TDULinkControlMessage source )
+	public NetworkStatusBroadcastExplicit( LDU1Message message )
 	{
-		super( source );
+		super( message );
 	}
 	
     @Override

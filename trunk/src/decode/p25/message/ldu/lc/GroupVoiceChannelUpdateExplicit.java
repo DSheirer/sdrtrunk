@@ -1,4 +1,4 @@
-package decode.p25.message.tdu.lc;
+package decode.p25.message.ldu.lc;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,33 +7,34 @@ import decode.p25.message.IdentifierProvider;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.P25Message.DuplexMode;
 import decode.p25.message.P25Message.SessionMode;
+import decode.p25.message.ldu.LDU1Message;
 import decode.p25.reference.LinkControlOpcode;
 
-public class GroupVoiceChannelUpdateExplicit extends TDULinkControlMessage
+public class GroupVoiceChannelUpdateExplicit extends LDU1Message
 									 implements IdentifierReceiver
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( GroupVoiceChannelUpdateExplicit.class );
 
-    public static final int EMERGENCY_FLAG = 92;
-    public static final int ENCRYPTED_CHANNEL_FLAG = 93;
-    public static final int DUPLEX_MODE = 94;
-    public static final int SESSION_MODE = 95;
-	public static final int[] GROUP_ADDRESS = { 112,113,114,115,116,117,118,
-		119,120,121,122,123,136,137,138,139 };
-	public static final int[] TRANSMIT_IDENTIFIER = { 140,141,142,143 };
-	public static final int[] TRANSMIT_CHANNEL = { 144,145,146,147,160,161,162,
-		163,164,165,166,167 };
-	public static final int[] RECEIVE_IDENTIFIER = { 168,169,170,171 };
-	public static final int[] RECEIVE_CHANNEL = { 184,185,186,187,188,189,190,
-		191,192,193,194,195,196,197,198,199 };
-	
+    public static final int EMERGENCY_FLAG = 376;
+    public static final int ENCRYPTED_CHANNEL_FLAG = 377;
+    public static final int DUPLEX_MODE = 382;
+    public static final int SESSION_MODE = 383;
+	public static final int[] GROUP_ADDRESS = { 536,537,538,539,540,541,546,547,
+		548,549,550,551,556,557,558,559 };
+	public static final int[] TRANSMIT_IDENTIFIER = { 560,561,566,567 };
+	public static final int[] TRANSMIT_CHANNEL = { 568,569,570,571,720,721,722,
+		723,724,725,730,731 };
+	public static final int[] RECEIVE_IDENTIFIER = { 732,733,734,735 };
+	public static final int[] RECEIVE_CHANNEL = { 740,741,742,743,744,745,750,
+		751,752,753,754,755 };
+
 	private IdentifierProvider mTransmitIdentifierUpdate;
 	private IdentifierProvider mReceiveIdentifierUpdate;
 	
-	public GroupVoiceChannelUpdateExplicit( TDULinkControlMessage source )
+	public GroupVoiceChannelUpdateExplicit( LDU1Message message )
 	{
-		super( source );
+		super( message );
 	}
 	
     @Override

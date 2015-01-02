@@ -1,34 +1,36 @@
-package decode.p25.message.tdu.lc;
+package decode.p25.message.ldu.lc;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import decode.p25.message.IdentifierProvider;
 import decode.p25.message.IdentifierReceiver;
+import decode.p25.message.ldu.LDU1Message;
 import decode.p25.reference.LinkControlOpcode;
 
-public class GroupVoiceChannelUpdate extends TDULinkControlMessage
+public class GroupVoiceChannelUpdate extends LDU1Message
 									 implements IdentifierReceiver
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( GroupVoiceChannelUpdate.class );
 
-	public static final int[] IDENTIFIER_A = { 72,73,74,75 };
-	public static final int[] CHANNEL_A = { 88,89,90,91,92,93,94,95,96,97,98,99 };
-	public static final int[] GROUP_ADDRESS_A = { 112,113,114,115,116,117,118,
-		119,120,121,122,123,136,137,138,139 };
-	public static final int[] IDENTIFIER_B = { 140,141,142,143 };
-	public static final int[] CHANNEL_B = { 144,145,146,147,160,161,162,163,164,
-		165,166,167 };
-	public static final int[] GROUP_ADDRESS_B = { 168,169,170,171,184,185,186,
-		187,188,189,190,191,192,193,194,195 };
+	public static final int[] IDENTIFIER_A = { 364,365,366,367 };
+	public static final int[] CHANNEL_A = { 372,373,374,375,376,377,382,383,384,
+		385,386,387 };
+	public static final int[] GROUP_ADDRESS_A = { 536,537,538,539,540,541,546,
+		547,548,549,550,551,556,557,558,559 };
+	public static final int[] IDENTIFIER_B = { 560,561,566,567 };
+	public static final int[] CHANNEL_B = { 568,569,570,571,720,721,722,723,724,
+		725,730,731 };
+	public static final int[] GROUP_ADDRESS_B = { 732,733,734,735,740,741,742,
+		743,744,745,750,751,752,753,754,755 };
 	
 	private IdentifierProvider mIdentifierUpdateA;
 	private IdentifierProvider mIdentifierUpdateB;
 	
-	public GroupVoiceChannelUpdate( TDULinkControlMessage source )
+	public GroupVoiceChannelUpdate( LDU1Message message )
 	{
-		super( source );
+		super( message );
 	}
 	
     @Override

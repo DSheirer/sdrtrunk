@@ -3,11 +3,11 @@ package decode.p25.message.tsbk;
 import alias.AliasList;
 import bits.BitSetBuffer;
 import decode.p25.message.IdentifierProvider;
-import decode.p25.message.tsbk.osp.control.IdentifierProviderReceiver;
+import decode.p25.message.IdentifierReceiver;
 import decode.p25.reference.DataUnitID;
 
 public abstract class ChannelGrant extends ServiceMessage 
-								   implements IdentifierProviderReceiver
+								   implements IdentifierReceiver
 {
     public static final int[] PRIORITY = { 85,86,87 };
     public static final int[] CHANNEL_IDENTIFIER = { 88,89,90,91 };

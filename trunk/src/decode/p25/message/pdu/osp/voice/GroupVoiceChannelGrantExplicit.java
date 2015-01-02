@@ -3,14 +3,14 @@ package decode.p25.message.pdu.osp.voice;
 import alias.AliasList;
 import bits.BitSetBuffer;
 import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.pdu.PDUMessage;
-import decode.p25.message.tsbk.osp.control.IdentifierProviderReceiver;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
 import edac.CRCP25;
 
 public class GroupVoiceChannelGrantExplicit extends PDUMessage 
-								implements IdentifierProviderReceiver
+								implements IdentifierReceiver
 {
     /* Service Options */
     public static final int EMERGENCY_FLAG = 128;

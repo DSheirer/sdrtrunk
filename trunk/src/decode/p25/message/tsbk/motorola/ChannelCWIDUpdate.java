@@ -3,11 +3,11 @@ package decode.p25.message.tsbk.motorola;
 import alias.AliasList;
 import bits.BitSetBuffer;
 import decode.p25.message.IdentifierProvider;
-import decode.p25.message.tsbk.osp.control.IdentifierProviderReceiver;
+import decode.p25.message.IdentifierReceiver;
 import decode.p25.reference.DataUnitID;
 
 public class ChannelCWIDUpdate extends MotorolaTSBKMessage 
-						implements IdentifierProviderReceiver
+						implements IdentifierReceiver
 {
     public static final int[] CHARACTER_1 = { 80,81,82,83,84,85 };
     public static final int[] CHARACTER_2 = { 86,87,88,89,90,91 };

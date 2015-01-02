@@ -4,13 +4,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import decode.p25.message.IdentifierProvider;
-import decode.p25.message.tsbk.osp.control.IdentifierProviderReceiver;
+import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.tsbk.osp.control.SystemService;
 import decode.p25.reference.LinkControlOpcode;
 import decode.p25.reference.Service;
 
 public class AdjacentSiteStatusBroadcast extends TDULinkControlMessage
-										 implements IdentifierProviderReceiver
+										 implements IdentifierReceiver
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( AdjacentSiteStatusBroadcast.class );

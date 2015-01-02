@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import alias.AliasList;
 import bits.BitSetBuffer;
 import decode.p25.reference.DataUnitID;
+import decode.p25.reference.Vendor;
 
 public class PDUConfirmedMessage extends PDUMessage
 {
@@ -25,6 +26,36 @@ public class PDUConfirmedMessage extends PDUMessage
 	{
 		return true;
 	}
+	
+	@Override
+    public String getMessage()
+    {
+		StringBuilder sb = new StringBuilder();
+
+		sb.append( "NAC:" );
+		sb.append( getNAC() );
+		sb.append( " " );
+		sb.append( getDUID().getLabel() );
+
+		sb.append( " LLID:" );
+		sb.append( getLogicalLinkID() );
+
+		sb.append( " " );
+		sb.append( getConfirmation() );
+		sb.append( " " );
+		sb.append( getDirection() );
+		sb.append( " FMT:" );
+		sb.append( getFormat().getLabel() );
+		sb.append( " SAP:" );
+		sb.append( getServiceAccessPoint().name() );
+		sb.append( " VEND:" );
+		sb.append( getVendor().getLabel() );
+		sb.append( " BLKS TO FOLLOW:" );
+		sb.append( getBlocksToFollowCount() );
+		
+	    return sb.toString();
+    }
+	
 
 	public String toString()
 	{
