@@ -24,10 +24,7 @@ public class LDU2Message extends LDUMessage
     {
 		StringBuilder sb = new StringBuilder();
 		
-		sb.append( "NAC:" );
-		sb.append( getNAC() );
-		sb.append( " " );
-		sb.append( getDUID().getLabel() );
+		sb.append( super.getMessageStub() );
 		sb.append( " " );
 		
 		sb.append( mMessage.toString() );

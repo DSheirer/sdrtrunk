@@ -11,23 +11,10 @@ import edac.CRC;
 
 public class LDU1Message extends LDUMessage
 {
-	public static final int IMBE_1 = 64;
-	public static final int IMBE_2 = 208;
-	public static final int IMBE_3 = 392;
-	public static final int IMBE_4 = 576;
-	public static final int IMBE_5 = 760;
-	public static final int IMBE_6 = 944;
-	public static final int IMBE_7 = 1128;
-	public static final int IMBE_8 = 1312;
-	public static final int IMBE_9 = 1488;
-
 	public static final int ENCRYPTION_FLAG = 352;
 	public static final int IMPLICIT_VENDOR_FLAG = 353;
 	public static final int[] OPCODE = { 354,355,356,357,362,363 };
 	public static final int[] VENDOR = { 364,365,366,367,372,373,374,375 };
-	
-	public static final int[] LOW_SPEED_DATA = { 1456,1457,1458,1459,1460,1461,
-		1462,1463,1472,1473,1474,1475,1476,1477,1478,1479 };
 	
 //	public static final int[] OCTET_1 = { 364,365,366,367,372,373,374,375 };
 //	public static final int[] OCTET_2 = { 376,377,382,383,384,385,386,387 };
@@ -43,7 +30,6 @@ public class LDU1Message extends LDUMessage
     {
 	    super( message, duid, aliasList );
 
-	    deinterleaveVoiceFrames();
 	    
 	    /* NID CRC is checked in the message framer, thus a constructed message
 	     * means it passed the CRC */
@@ -61,19 +47,6 @@ public class LDU1Message extends LDUMessage
 		super( message.getSourceMessage(), DataUnitID.LDU1, message.getAliasList() );
 		
 		mCRC = message.mCRC;
-	}
-	
-	private void deinterleaveVoiceFrames()
-	{
-		P25Interleave.deinterleaveVoice( mMessage, IMBE_1, IMBE_1 + 144 );
-		P25Interleave.deinterleaveVoice( mMessage, IMBE_2, IMBE_2 + 144 );
-		P25Interleave.deinterleaveVoice( mMessage, IMBE_3, IMBE_3 + 144 );
-		P25Interleave.deinterleaveVoice( mMessage, IMBE_4, IMBE_4 + 144 );
-		P25Interleave.deinterleaveVoice( mMessage, IMBE_5, IMBE_5 + 144 );
-		P25Interleave.deinterleaveVoice( mMessage, IMBE_6, IMBE_6 + 144 );
-		P25Interleave.deinterleaveVoice( mMessage, IMBE_7, IMBE_7 + 144 );
-		P25Interleave.deinterleaveVoice( mMessage, IMBE_8, IMBE_8 + 144 );
-		P25Interleave.deinterleaveVoice( mMessage, IMBE_9, IMBE_9 + 144 );
 	}
 	
 	private void checkCRC()
@@ -96,14 +69,8 @@ public class LDU1Message extends LDUMessage
     public String getMessageStub()
     {
 		StringBuilder sb = new StringBuilder();
-		
-		sb.append( "NAC:" );
-		sb.append( getNAC() );
-		sb.append( " " );
-		sb.append( getDUID().getLabel() );
-		sb.append( " LSD:" );
-		sb.append( getLowSpeedData() );
-		sb.append( " " );
+
+		sb.append( super.getMessageStub() );
 		
 		if( isEncrypted() )
 		{
@@ -154,16 +121,4 @@ public class LDU1Message extends LDUMessage
 		
 		return Vendor.fromValue( mMessage.getInt( VENDOR ) );
 	}
-	
-	public String getLowSpeedData()
-	{
-		return mMessage.getHex( LOW_SPEED_DATA, 4 );
-	}
-	
-	/* Temporary override */
-	public boolean isValid()
-	{
-		return true;
-	}
-
 }
