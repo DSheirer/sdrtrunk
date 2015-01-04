@@ -29,33 +29,6 @@ public class CRCP25
 {
 	private final static Logger mLog = LoggerFactory.getLogger( CRCP25.class );
 	
-	private static final int NID_MESSAGE_START = 0;
-	private static final int NID_CRC_START = 16;
-	private static final int NID_CRC_END = 48;
-
-	/**
-	 * Network ID and Data Unit ID checksums
-	 */
-	private static long[] NID_DUID_CHECKSUMS = new long[] 
-	{
-		0xCD930BDD3B2Al, 0xAB5A8E33A6BEl, 0x983E4CC4E874l, 0x4C1F2662743Al,
-		0xEB9C98EC0136l, 0xB85D47AB3BB0l, 0x5C2EA3D59DD8l, 0x2E1751EACEECl,
-		0x170BA8F56776l, 0xC616DFA78890l, 0x630B6FD3C448l, 0x3185B7E9E224l,
-		0x18C2DBF4F112l, 0xC1F2662743A2l, 0xAD6A38CE9AFBl, 0x9B2617BA7657l, 
-		0x800000000000l, 0x400000000000l, 0x200000000000l, 0x100000000000l,
-		0x080000000000l, 0x040000000000l, 0x020000000000l, 0x010000000000l,
-		0x008000000000l, 0x004000000000l, 0x002000000000l, 0x001000000000l,
-		0x000800000000l, 0x000400000000l, 0x000200000000l, 0x000100000000l,
-		0x000080000000l, 0x000040000000l, 0x000020000000l, 0x000010000000l,
-		0x000008000000l, 0x000004000000l, 0x000002000000l, 0x000001000000l,
-		0x000000800000l, 0x000000400000l, 0x000000200000l, 0x000000100000l,
-		0x000000080000l, 0x000000040000l, 0x000000020000l, 0x000000010000l,
-		0x000000008000l, 0x000000004000l, 0x000000002000l, 0x000000001000l,
-		0x000000000800l, 0x000000000400l, 0x000000000200l, 0x000000000100l,
-		0x000000000080l, 0x000000000040l, 0x000000000020l, 0x000000000010l,
-		0x000000000008l, 0x000000000004l, 0x000000000002l, 0x000000000001l
-	};
-
 	/**
 	 * CRC-CCITT 16-bit checksums for a message length of 80 bits plus 16
 	 * additional checksums representing CRC checksum bit errors
@@ -222,47 +195,6 @@ public class CRCP25
 	    0x20000000l, 0x40000000l, 0x80000000l 
 	};
 	
-	
-
-	/**
-	 * Performs CRC check and corrects single-bit errors against the message.
-	 * @param message - bitsetbuffer containing a message of at least 64 bits.
-	 * @return - results of CRC check and/or correction attempt
-	 */
-	public static CRC correctNID( BitSetBuffer message )
-	{
-		long calculated = 0; //Starting value
-
-		/* Iterate the set bits and XOR running checksum with lookup value */
-		for (int i = message.nextSetBit( NID_MESSAGE_START ); 
-				 i >= NID_MESSAGE_START && i < NID_CRC_START; 
-				 i = message.nextSetBit( i+1 ) ) 
-		{
-			calculated ^= NID_DUID_CHECKSUMS[ i - NID_MESSAGE_START ];
-		}
-		
-		long checksum = getLongChecksum( message, NID_CRC_START, NID_CRC_END );
-
-		if( calculated == checksum )
-		{
-			return CRC.PASSED;
-		}
-		else
-		{
-			int errorLocation = getBitError( calculated ^ checksum, 
-											 NID_DUID_CHECKSUMS );
-			
-			if( errorLocation >= 0 )
-			{
-				message.flip( errorLocation + NID_MESSAGE_START );
-				
-				return CRC.CORRECTED;
-			}
-		}
-
-		return CRC.FAILED_CRC;
-	}
-
 	/**
 	 * Performs error detection and single-bit error correction against the
 	 * data blocks of a PDU1 message.

@@ -51,6 +51,7 @@ public class LDUMessage extends P25Message
 		sb.append( getDUID().getLabel() );
 		sb.append( " LSD:" );
 		sb.append( getLowSpeedData() );
+		sb.append( " " );
 		
 		return sb.toString();
     }

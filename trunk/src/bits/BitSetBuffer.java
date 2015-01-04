@@ -220,6 +220,36 @@ public class BitSetBuffer extends BitSet
         
         return sb.toString();
     }
+
+    /**
+     * Returns this bitset as an array of integer ones and zeros
+     */
+    public int[] toIntegerArray()
+    {
+    	int[] values = new int[ mSize ];
+    	
+		for (int i = nextSetBit( 0 ); i >= 0 && i < mSize; i = nextSetBit( i+1 ) ) 
+		{
+			values[ i ] = 1;
+		}
+		
+		return values;
+    }
+    
+    /**
+     * Returns this bitset as a reversed bit order array of integer ones and zeros
+     */
+    public int[] toReverseIntegerArray()
+    {
+    	int[] values = new int[ mSize ];
+    	
+		for (int i = nextSetBit( 0 ); i >= 0 && i < mSize; i = nextSetBit( i+1 ) ) 
+		{
+			values[ mSize - i - 1 ] = 1;
+		}
+		
+		return values;
+    }
     
     /**
      * Returns a boolean array from startIndex to end of the bitset
