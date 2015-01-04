@@ -28,6 +28,7 @@ import decode.p25.message.tdu.lc.TDULinkControlMessage;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.message.tsbk.TSBKMessageFactory;
 import decode.p25.reference.DataUnitID;
+import edac.BCH_63_16_11;
 import edac.CRC;
 import edac.CRCP25;
 
@@ -60,6 +61,7 @@ public class P25MessageFramer implements Listener<Dibit>
 	private SyncPatternMatcher mMatcher;
 	private boolean mInverted = false;
 	private TrellisHalfRate mHalfRate = new TrellisHalfRate();
+	private BCH_63_16_11 mNIDDecoder = new BCH_63_16_11();
 	
 	/**
 	 * Constructs a C4FM message framer to receive a stream of C4FM symbols and
@@ -229,14 +231,14 @@ public class P25MessageFramer implements Listener<Dibit>
         	switch( mDUID )
         	{
 				case NID:
-					CRC crc = CRCP25.correctNID( mMessage );
+					CRC crc = mNIDDecoder.correctNID( mMessage );
 					
 					if( crc != CRC.FAILED_CRC )
 					{
 						int value = mMessage.getInt( P25Message.DUID );
 						
 						DataUnitID duid = DataUnitID.fromValue( value );
-
+						
 						if( duid != DataUnitID.UNKN )
 						{
 							setDUID( duid );

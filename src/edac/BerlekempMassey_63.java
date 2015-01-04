@@ -41,9 +41,12 @@ package edac;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ReedSolomon
+/**
+ * Berlekemp Massey decoder for 63-bit primitive RS/BCH block codes
+ */
+public class BerlekempMassey_63
 {
-	public final static Logger mLog = LoggerFactory.getLogger( ReedSolomon.class );
+	public final static Logger mLog = LoggerFactory.getLogger( BerlekempMassey_63.class );
 
 	/* Golay field size GF( 2 ** MM ) */
 	private static final int MM = 6;
@@ -61,7 +64,7 @@ public class ReedSolomon
 	int[] index_of;
 	int[] gg;
 	
-	public ReedSolomon( int tt )
+	public BerlekempMassey_63( int tt )
     {
 		TT = tt;
 		KK = NN - 2 * TT;
