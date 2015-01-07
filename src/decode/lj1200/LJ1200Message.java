@@ -34,6 +34,10 @@ import edac.CRCLJ;
 public class LJ1200Message extends Message
 {
 	private final static Logger mLog = LoggerFactory.getLogger( LJ1200Message.class );
+	
+	public static final String[] REPLY_CODE = { "0","1","2","3","4","5","6","7",
+		"8","9","A","C","D","E","F","G","H","J","K","L","M","N","P","Q","R","S",
+		"T","U","V","W","X","Y" };
 
 	public static int[] SYNC = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 };
 
@@ -50,6 +54,12 @@ public class LJ1200Message extends Message
 	
 	public static int[] ADDRESS = { 36,37,38,39,40,41,42,43,44,45,46,47,48,49,
 		50,51,52,53,54,55,56,57,58,59,60,61,62,63 };
+
+	public static int[] REPLY_1 = { 39,38,37,36,43 };
+	public static int[] REPLY_2 = { 42,41,40,47,46 };
+	public static int[] REPLY_3 = { 45,44,51,50,49 };
+	public static int[] REPLY_4 = { 48,55,54,53,52 };
+	public static int[] REPLY_5 = { 59,58,57,56,63 };
 
 	public static int[] MESSAGE_CRC = { 64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79 };
 	
@@ -139,6 +149,23 @@ public class LJ1200Message extends Message
     	
     	return null;
     }
+
+    /**
+     * 5 character reply code for function E and F, transponder activation.
+     * @return - reply code
+     */
+    public String getReplyCode()
+    {
+    	StringBuilder sb = new StringBuilder();
+    	
+    	sb.append( REPLY_CODE[ mMessage.getInt( REPLY_1 ) ] );
+    	sb.append( REPLY_CODE[ mMessage.getInt( REPLY_2 ) ] );
+    	sb.append( REPLY_CODE[ mMessage.getInt( REPLY_3 ) ] );
+    	sb.append( REPLY_CODE[ mMessage.getInt( REPLY_4 ) ] );
+    	sb.append( REPLY_CODE[ mMessage.getInt( REPLY_5 ) ] );
+    	
+    	return sb.toString();
+    }
     
     @Override
     public String toString()
@@ -150,24 +177,35 @@ public class LJ1200Message extends Message
     	sb.append( "FUNCTION: " );
     	sb.append( function.toString() );
 
-    	if( function == Function.F8_SITE_ID )
+    	switch( function )
     	{
-    		sb.append( " SITE [" );
-    		sb.append( getSiteID() );
+	    	case FE_TRACK_PULSE:
+	    	case FF_TRACK_PULSE:
+	    		sb.append( " REPLY CODE [" );
+	    		sb.append( getReplyCode() );
+	    		break;
+	    	case F8_SITE_ID:
+	    		sb.append( " SITE [" );
+	    		sb.append( getSiteID() );
 
-    		Alias site = getSiteIDAlias();
-    		
-    		if( site != null )
-    		{
-    			sb.append( "/" );
-    			sb.append( site.getName() );
-    		}
-    		
-    		sb.append( "]" );
+	    		Alias site = getSiteIDAlias();
+	    		
+	    		if( site != null )
+	    		{
+	    			sb.append( "/" );
+	    			sb.append( site.getName() );
+	    		}
+	    		
+	    		sb.append( "]" );
+	        	sb.append( " ADDRESS [" );
+	        	sb.append( getAddress() );
+	    		break;
+    		default:
+    	    	sb.append( " ADDRESS [" );
+    	    	sb.append( getAddress() );
+    	    	break;
     	}
     	
-    	sb.append( " ADDRESS [" );
-    	sb.append( getAddress() );
     	sb.append( "] VRC [" + getVRC() );
     	sb.append( "] LRC [" + getLRC() );
     	sb.append( "] CRC [" + getCRC() );
@@ -288,7 +326,7 @@ public class LJ1200Message extends Message
 		FB(             0xB, "B-UNKNOWN" ),
 		FC_DEACTIVATE(  0xC, "C-DEACTIVATE" ),
 		FD(             0xD, "D-UNKNOWN" ),
-		FE(             0xE, "E-UNKNOWN" ),
+		FE_TRACK_PULSE( 0xE, "E-TRACK PULSE" ),
 		FF_TRACK_PULSE( 0xF, "F-TRACK PULSE" ),
 		UNKNOWN(         -1, "UNKNOWN" );
 		
