@@ -53,6 +53,7 @@ import decode.mpt1327.MPT1327Decoder;
 import decode.mpt1327.MPT1327Decoder.Sync;
 import decode.p25.P25Decoder;
 import decode.passport.PassportDecoder;
+import decode.tait.Tait1200Decoder;
 
 public class WaveSourceFrame extends JInternalFrame implements PositionListener
 {
@@ -162,6 +163,9 @@ public class WaveSourceFrame extends JInternalFrame implements PositionListener
 							break;
 						case P25_PHASE1:
 							decoder = new P25Decoder( SampleType.REAL, null );
+							break;
+						case TAIT_1200:
+							decoder = new Tait1200Decoder( null );
 							break;
 					}
 

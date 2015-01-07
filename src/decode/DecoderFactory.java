@@ -47,6 +47,8 @@ import decode.p25.P25ChannelState;
 import decode.p25.P25Decoder;
 import decode.passport.PassportChannelState;
 import decode.passport.PassportDecoder;
+import decode.tait.Tait1200ChannelState;
+import decode.tait.Tait1200Decoder;
 
 public class DecoderFactory
 {
@@ -125,6 +127,11 @@ public class DecoderFactory
 					case LJ_1200:
 						retVal.addAuxiliaryDecoder( 
 								new LJ1200Decoder( aliasList ) );
+						break;
+					case TAIT_1200:
+						retVal.addAuxiliaryDecoder( 
+								new Tait1200Decoder( aliasList ) );
+						break;
 				}
 			}
 		}
@@ -196,7 +203,9 @@ public class DecoderFactory
 						retVal.addAuxChannelState( 
 								new MDCChannelState( retVal ) );
 						break;
-						
+					case TAIT_1200:
+						retVal.addAuxChannelState( 
+								new Tait1200ChannelState( retVal ) );
 				}
 			}
 		}

@@ -148,7 +148,24 @@ public enum SyncPattern
 	LTR_STANDARD_ISW( new boolean[] 
 	{
 		false, true, false, true,false, false, true, true, true
-	} );
+	} ),
+	
+	TAIT_MESSAGE_A( new boolean[]
+	{
+		true,false,true,false,
+		false,false,false,true,
+		false,true,false,false,
+		true,true,false,true,
+		true,true,false,false
+	}),
+	TAIT_MESSAGE_B( new boolean[]
+	{
+//		true,false,true,false,
+		false,false,false,false,
+		true,true,false,false,
+		false,true,true,true,
+		false,true,true,true
+	});
 	
 	boolean[] mBits;
 	
