@@ -60,7 +60,11 @@ public class HDUMessage extends P25Message
 			sb.append( " ENCRYPTION:" );
 			sb.append( encryption.name() );
 			sb.append( " KEY ID:" + getKeyID() );
-			sb.append( " IV:" + getEncryptionInitializationVector() );
+			sb.append( " MSG INDICATOR:" + getMessageIndicator() );
+		}
+		else
+		{
+			sb.append( " UNENCRYPTED" );
 		}
 		
 		sb.append( " " );
@@ -69,7 +73,7 @@ public class HDUMessage extends P25Message
 	    return sb.toString();
     }
 	
-	public String getEncryptionInitializationVector()
+	public String getMessageIndicator()
 	{
 		StringBuilder sb = new StringBuilder();
 		

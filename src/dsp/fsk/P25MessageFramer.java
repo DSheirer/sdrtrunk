@@ -13,7 +13,7 @@ import bits.BitSetBuffer;
 import bits.BitSetFullException;
 import bits.SyncPatternMatcher;
 import decode.p25.P25Interleave;
-import decode.p25.TrellisHalfRate;
+import decode.p25.Trellis_1_2_Rate;
 import decode.p25.message.P25Message;
 import decode.p25.message.hdu.HDUMessage;
 import decode.p25.message.ldu.LDU1Message;
@@ -60,7 +60,7 @@ public class P25MessageFramer implements Listener<Dibit>
 	private AliasList mAliasList;
 	private SyncPatternMatcher mMatcher;
 	private boolean mInverted = false;
-	private TrellisHalfRate mHalfRate = new TrellisHalfRate();
+	private Trellis_1_2_Rate mHalfRate = new Trellis_1_2_Rate();
 	private BCH_63_16_11 mNIDDecoder = new BCH_63_16_11();
 	
 	/**

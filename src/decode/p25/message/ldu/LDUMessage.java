@@ -49,7 +49,7 @@ public class LDUMessage extends P25Message
 		sb.append( getNAC() );
 		sb.append( " " );
 		sb.append( getDUID().getLabel() );
-		sb.append( " LSD:" );
+		sb.append( " VOICE LSD:" );
 		sb.append( getLowSpeedData() );
 		sb.append( " " );
 		

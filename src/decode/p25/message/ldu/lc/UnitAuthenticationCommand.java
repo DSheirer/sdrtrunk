@@ -14,7 +14,7 @@ public class UnitAuthenticationCommand extends LDU1Message
 		376,377,382,383,384,385,386,387,536,537,538,539 };
 	public static final int[] SYSTEM_ID = { 540,541,546,547,548,549,550,551,556,
 		557,558,559 };
-	public static final int[] SOURCE_ID = { 560,561,566,567,568,569,570,571,720,
+	public static final int[] TARGET_ID = { 560,561,566,567,568,569,570,571,720,
 		721,722,723,724,725,730,731,732,733,734,735,740,741,742,743 };
 	
 	public UnitAuthenticationCommand( LDU1Message message )
@@ -35,9 +35,20 @@ public class UnitAuthenticationCommand extends LDU1Message
 		
 		sb.append( getMessageStub() );
 
-		sb.append( " NETWORK:" + getNetworkID() );
-		sb.append( " SYS:" + getSystemID() );
-		sb.append( " ID:" + getSourceID() );
+		sb.append( " ADDRESS:" + getCompleteTargetAddress() );
+		
+		return sb.toString();
+	}
+	
+	public String getCompleteTargetAddress()
+	{
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append( getNetworkID() );
+		sb.append( ":" );
+		sb.append( getSystemID() );
+		sb.append( ":" );
+		sb.append( getTargetID() );
 		
 		return sb.toString();
 	}
@@ -52,8 +63,8 @@ public class UnitAuthenticationCommand extends LDU1Message
 		return mMessage.getHex( SYSTEM_ID, 3 );
 	}
 
-    public String getSourceID()
+    public String getTargetID()
     {
-    	return mMessage.getHex( SOURCE_ID, 6 );
+    	return mMessage.getHex( TARGET_ID, 6 );
     }
 }

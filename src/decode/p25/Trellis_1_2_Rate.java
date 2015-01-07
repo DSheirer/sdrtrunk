@@ -9,12 +9,12 @@ import org.slf4j.LoggerFactory;
 import bits.BitSetBuffer;
 import dsp.fsk.Dibit;
 
-public class TrellisHalfRate
+public class Trellis_1_2_Rate
 {
 	public final static int MAX_ERROR_THRESHOLD = 7;
 	
 	private final static Logger mLog = 
-			LoggerFactory.getLogger( TrellisHalfRate.class );
+			LoggerFactory.getLogger( Trellis_1_2_Rate.class );
 
 	private ArrayList<ConstellationNode> mConstellationNodes = 
 				new ArrayList<ConstellationNode>();
@@ -37,7 +37,7 @@ public class TrellisHalfRate
 		  { 3,4,2,3,2,3,1,2,2,3,1,2,1,2,0,1 },
 		  { 4,3,3,2,3,2,2,1,3,2,2,1,2,1,1,0 } };
 		
-	public TrellisHalfRate()
+	public Trellis_1_2_Rate()
 	{
 		/* Create 49 x 4-bit constellation nodes to handle 196-bit blocks */
 		ConstellationNode previous = null;
@@ -525,7 +525,7 @@ public class TrellisHalfRate
 
 		mLog.debug( "  BUFFER: " + buffer.toString() );
 		
-		TrellisHalfRate t = new TrellisHalfRate();
+		Trellis_1_2_Rate t = new Trellis_1_2_Rate();
 		
 		t.decode( buffer, 0, 196 );
 		mLog.debug( " DECODED: " + buffer.toString() );
