@@ -140,7 +140,7 @@ public class P25Interleave
 
     public static void main( String[] args )
     {
-    	TrellisHalfRate halfrate = new TrellisHalfRate();
+    	Trellis_1_2_Rate halfrate = new Trellis_1_2_Rate();
     	
     	int start = 0;
     	int end = 196;

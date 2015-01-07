@@ -13,7 +13,9 @@ public class UnitAuthenticationCommand extends TDULinkControlMessage
 		95,96,97,98,99,112,113,114,115 };
 	public static final int[] SYSTEM_ID = { 116,117,118,119,120,121,122,123,
 		136,137,138,139 };
-	public static final int[] SOURCE_ID = { 140,141,142,143,144,145,146,147,
+	/* ICD says this is a source id, but this is a command messages, so this 
+	 * must be a target id */
+	public static final int[] TARGET_ID = { 140,141,142,143,144,145,146,147,
 		160,161,162,163,164,165,166,167,168,169,170,171,184,185,186,187 };
 	
 	public UnitAuthenticationCommand( TDULinkControlMessage source )
@@ -34,9 +36,20 @@ public class UnitAuthenticationCommand extends TDULinkControlMessage
 		
 		sb.append( getMessageStub() );
 
-		sb.append( " NETWORK:" + getNetworkID() );
-		sb.append( " SYS:" + getSystemID() );
-		sb.append( " ID:" + getSourceID() );
+		sb.append( " ADDRESS:" + getCompleteTargetAddress() );
+		
+		return sb.toString();
+	}
+	
+	public String getCompleteTargetAddress()
+	{
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append( getNetworkID() );
+		sb.append( ":" );
+		sb.append( getSystemID() );
+		sb.append( ":" );
+		sb.append( getTargetID() );
 		
 		return sb.toString();
 	}
@@ -51,8 +64,8 @@ public class UnitAuthenticationCommand extends TDULinkControlMessage
 		return mMessage.getHex( SYSTEM_ID, 3 );
 	}
 
-    public String getSourceID()
+    public String getTargetID()
     {
-    	return mMessage.getHex( SOURCE_ID, 6 );
+    	return mMessage.getHex( TARGET_ID, 6 );
     }
 }
