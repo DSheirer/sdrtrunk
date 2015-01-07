@@ -597,6 +597,17 @@ public abstract class ChannelState implements Listener<Message>
 			           state == FADE;
 	        }
         },
+        ENCRYPTED( "ENCRYPTED" )
+        {
+	        @Override
+	        public boolean canChangeTo( State state )
+	        {
+		        return state == CALL ||
+		        	   state == CONTROL ||
+			           state == DATA ||
+			           state == FADE;
+	        }
+        },
         CONTROL( "CONTROL" )
         {
 			@Override

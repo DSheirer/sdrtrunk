@@ -41,7 +41,8 @@ public enum DecoderType
     NBFM( "NBFM", "NBFM", "images/fm.png", 12500 ),
     PASSPORT( "Passport", "Passport", "images/passport.png", 12500 ),
     P25_PHASE1( "P25 Phase I", "P25-1", "images/p25_1.png", 12500 ),
-    P25_PHASE2( "P25 Phase II", "P25-2", "images/p25_2.png", 15000 );
+    P25_PHASE2( "P25 Phase II", "P25-2", "images/p25_2.png", 15000 ),
+    TAIT_1200( "Tait 1200", "Tait 1200", "images/tait.png", 12500 );
     
     private String mDisplayString;
     private String mShortDisplayString;
@@ -67,7 +68,7 @@ public enum DecoderType
     					   DecoderType.LTR_STANDARD,
     					   DecoderType.MPT1327,
     					   DecoderType.NBFM,
-    					   DecoderType.P25_PHASE1,
+//    					   DecoderType.P25_PHASE1,
     					   DecoderType.PASSPORT );
     }
 
@@ -82,7 +83,8 @@ public enum DecoderType
     					   DecoderType.MDC1200,
     					   DecoderType.MPT1327,
     					   DecoderType.PASSPORT,
-    					   DecoderType.P25_PHASE1 );
+    					   DecoderType.P25_PHASE1,
+    					   DecoderType.TAIT_1200 );
     }
     
     /**
@@ -95,6 +97,7 @@ public enum DecoderType
     	decoders.add( DecoderType.FLEETSYNC2 );
     	decoders.add( DecoderType.LJ_1200 );
     	decoders.add( DecoderType.MDC1200 );
+    	decoders.add( DecoderType.TAIT_1200 );
     	
     	return decoders;
     }
