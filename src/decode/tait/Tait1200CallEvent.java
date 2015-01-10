@@ -126,7 +126,7 @@ public class Tait1200CallEvent extends CallEvent
               builder.mDetails );
     }
     
-    public static Tait1200CallEvent getLJ1200Event( Tait1200MessageA message )
+    public static Tait1200CallEvent getLJ1200Event( Tait1200GPSMessage message )
     {
         CallEventType type = CallEventType.COMMAND;
         

@@ -66,11 +66,11 @@ public class Tait1200Decoder extends Decoder implements Instrumentable
     
     private FloatHalfBandFilter mDecimationFilter;
     private FloatFIRFilter mBandPassFilter;
-    private MessageFramer mMessageFramerA;
-    private MessageFramer mMessageFramerB;
+    private MessageFramer mMessageFramerGPS;
+    private MessageFramer mMessageFramerSELCALL;
     private Broadcaster<Boolean> mFSKBroadcaster = new Broadcaster<Boolean>();
-    private Tait1200MessageAProcessor mMessageAProcessor;
-    private Tait1200MessageBProcessor mMessageBProcessor;
+    private Tait1200GPSMessageProcessor mMessageAProcessor;
+    private Tait1200SELCALLMessageProcessor mMessageBProcessor;
     
     public Tait1200Decoder( AliasList aliasList )
 	{
@@ -91,19 +91,19 @@ public class Tait1200Decoder extends Decoder implements Instrumentable
 
         mFSKDecoder.setListener( mFSKBroadcaster );
 
-        mMessageFramerA = new MessageFramer( 
-        		SyncPattern.TAIT_MESSAGE_A.getPattern(), MESSAGE_LENGTH );
-        mMessageFramerB = new MessageFramer( 
-        		SyncPattern.TAIT_MESSAGE_B.getPattern(), MESSAGE_LENGTH );
+        mMessageFramerGPS = new MessageFramer( 
+        		SyncPattern.TAIT_CCDI_GPS_MESSAGE.getPattern(), MESSAGE_LENGTH );
+        mMessageFramerSELCALL = new MessageFramer( 
+        		SyncPattern.TAIT_SELCAL_MESSAGE.getPattern(), MESSAGE_LENGTH );
         
-        mFSKBroadcaster.addListener( mMessageFramerA );
-        mFSKBroadcaster.addListener( mMessageFramerB );
+        mFSKBroadcaster.addListener( mMessageFramerGPS );
+        mFSKBroadcaster.addListener( mMessageFramerSELCALL );
 
-        mMessageAProcessor = new Tait1200MessageAProcessor( aliasList );
-        mMessageBProcessor = new Tait1200MessageBProcessor( aliasList );
+        mMessageAProcessor = new Tait1200GPSMessageProcessor( aliasList );
+        mMessageBProcessor = new Tait1200SELCALLMessageProcessor( aliasList );
         
-        mMessageFramerA.addMessageListener( mMessageAProcessor );
-        mMessageFramerB.addMessageListener( mMessageBProcessor );
+        mMessageFramerGPS.addMessageListener( mMessageAProcessor );
+        mMessageFramerSELCALL.addMessageListener( mMessageBProcessor );
         
         mMessageAProcessor.addMessageListener( this );
         mMessageBProcessor.addMessageListener( this );
@@ -116,8 +116,8 @@ public class Tait1200Decoder extends Decoder implements Instrumentable
     	mDecimationFilter.dispose();
     	mBandPassFilter.dispose();
     	mFSKDecoder.dispose();
-    	mMessageFramerA.dispose();
-    	mMessageFramerB.dispose();
+    	mMessageFramerGPS.dispose();
+    	mMessageFramerSELCALL.dispose();
     	mMessageAProcessor.dispose();
     	mMessageBProcessor.dispose();
     }

@@ -39,9 +39,9 @@ public class Tait1200ActivitySummary implements ActivitySummaryProvider,
 	@Override
     public void receive( Message message )
     {
-		if( message instanceof Tait1200MessageA )
+		if( message instanceof Tait1200GPSMessage )
 		{
-			Tait1200MessageA tait = ((Tait1200MessageA)message);
+			Tait1200GPSMessage tait = ((Tait1200GPSMessage)message);
 			
 			//Do something here in the future
 		}

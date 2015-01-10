@@ -30,9 +30,9 @@ import alias.AliasList;
 import bits.BitSetBuffer;
 import edac.CRC;
 
-public class Tait1200MessageA extends Message
+public class Tait1200SELCALMessage extends Message
 {
-	private final static Logger mLog = LoggerFactory.getLogger( Tait1200MessageA.class );
+	private final static Logger mLog = LoggerFactory.getLogger( Tait1200SELCALMessage.class );
 
 	public static int[] REVS_1 = { 0,1,2,3 };
 	public static int[] SYNC = { 4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19 };
@@ -47,9 +47,9 @@ public class Tait1200MessageA extends Message
 	public static int[] FROM_DIGIT_8 = { 92,93,94,95,96,97,98,99 };
 	public static int[] CHECKSUM_1 = { 100,101,102,103,104,105,106,107,108,109,
 		110,111,112,113,114,115 };
+
 	public static int[] REVS_2 = { 116,117,118,119,120,121,122,123,124,125,126,127,
 		128,129,130,131	};
-	
 	public static int[] SIZE_2 = { 188,189,190,191,192,193,194,195,196,197,198,
 		199,200,201,202,203 };
 	public static int[] TO_DIGIT_1 = { 204,205,206,207,208,209,210,211 };
@@ -60,6 +60,9 @@ public class Tait1200MessageA extends Message
 	public static int[] TO_DIGIT_6 = { 244,245,246,247,248,249,250,251 };
 	public static int[] TO_DIGIT_7 = { 252,253,254,255,256,257,258,259 };
 	public static int[] TO_DIGIT_8 = { 260,261,262,263,264,265,266,267 };
+	public static int[] UNKNOWN_1 = { 268,269,270,271,272,273,274,275 };
+	public static int[] CHECKSUM_2 = { 276,277,278,279,280,281,282,283,284,285,
+		286,287,288,289,290,291 };
 
 	private static SimpleDateFormat mSDF = new SimpleDateFormat( "yyyyMMdd HHmmss" );
 
@@ -67,45 +70,25 @@ public class Tait1200MessageA extends Message
     private AliasList mAliasList;
     private CRC mCRC;
     
-    public Tait1200MessageA( BitSetBuffer message, AliasList list )
+    public Tait1200SELCALMessage( BitSetBuffer message, AliasList list )
     {
     	mMessage = message;
         mAliasList = list;
-    }
-    
-    public boolean isValid()
-    {
-    	//TODO: Override until we figure out the CRC
-    	return true;
-    }
-    
-    public int getMessage1Size()
-    {
-    	return mMessage.getInt( SIZE );
-    }
-    
-    public int getMessage2Size()
-    {
-    	return mMessage.getInt( SIZE_2 );
-    }
-
-    @Override
-    public String toString()
-    {
-    	StringBuilder sb = new StringBuilder();
-
-    	sb.append( "TAIT MESSAGE A FROM:" );
-    	sb.append( getFromID() );
-    	sb.append( " TO:" );
-    	sb.append( getToID() );
-    	sb.append( " SIZES:" );
-    	sb.append( getMessage1Size() );
-    	sb.append( "/" );
-    	sb.append( getMessage2Size() );
-    	sb.append( " " );
-    	sb.append( mMessage.toString() );
-
-    	return sb.toString();
+        
+//        checkCRC();
+//
+//        switch( mCRC )
+//        {
+//			case CORRECTED:
+//	        	mLog.debug( "CORR:" + message.toString() );
+//				break;
+//			case FAILED_CRC:
+//	        	mLog.debug( "FAIL:" + message.toString() );
+//				break;
+//			case PASSED:
+//	        	mLog.debug( "PASS:" + message.toString() );
+//				break;
+//        }
     }
     
 	@Override
@@ -171,6 +154,30 @@ public class Tait1200MessageA extends Message
     	return (char)value;
     }
 
+    private void checkCRC()
+    {
+//    	mCRC = CRCLJ.checkAndCorrect( mMessage );
+    }
+    
+    public boolean isValid()
+    {
+//    	return mCRC == CRC.PASSED || mCRC == CRC.CORRECTED;
+    	return true;
+    }
+    
+    @Override
+    public String toString()
+    {
+    	StringBuilder sb = new StringBuilder();
+
+    	sb.append( "SELCAL FROM:" );
+    	sb.append( getFromID() );
+    	sb.append( " TO:" );
+    	sb.append( getToID() );
+
+    	return sb.toString();
+    }
+
     /**
      * Pads spaces onto the end of the value to make it 'places' long
      */
@@ -222,7 +229,7 @@ public class Tait1200MessageA extends Message
 	@Override
     public String getEventType()
     {
-	    return "Unknown";
+	    return "SELCAL";
     }
 
 	@Override

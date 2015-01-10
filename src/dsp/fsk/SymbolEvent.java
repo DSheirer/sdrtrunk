@@ -57,7 +57,9 @@ public class SymbolEvent
 	public enum Shift
 	{ 
 		LEFT( "<" ), 
+		AGGRESSIVE_LEFT( "<<" ),
 		RIGHT( ">" ), 
+		AGGRESSIVE_RIGHT( ">>" ),
 		NONE( "=" );
 		
 		private String mLabel;

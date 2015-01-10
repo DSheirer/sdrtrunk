@@ -24,7 +24,7 @@ public class Tait1200MessageFilter extends Filter<Message>
 	@Override
     public boolean canProcess( Message message )
     {
-	    return message instanceof Tait1200MessageA;
+	    return message instanceof Tait1200GPSMessage;
     }
 
 	@Override
