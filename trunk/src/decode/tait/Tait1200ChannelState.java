@@ -46,7 +46,7 @@ public class Tait1200ChannelState extends AuxChannelState
 	@Override
     public void receive( Message message )
     {
-		if( message instanceof Tait1200MessageA )
+		if( message instanceof Tait1200GPSMessage )
 		{
 			mActivitySummary.receive( message );
 			

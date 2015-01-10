@@ -150,7 +150,7 @@ public enum SyncPattern
 		false, true, false, true,false, false, true, true, true
 	} ),
 	
-	TAIT_MESSAGE_A( new boolean[]
+	TAIT_CCDI_GPS_MESSAGE( new boolean[]
 	{
 		true,false,true,false,
 		false,false,false,true,
@@ -158,13 +158,18 @@ public enum SyncPattern
 		true,true,false,true,
 		true,true,false,false
 	}),
-	TAIT_MESSAGE_B( new boolean[]
+	TAIT_SELCAL_MESSAGE( new boolean[]
 	{
 //		true,false,true,false,
-		false,false,false,false,
-		true,true,false,false,
-		false,true,true,true,
-		false,true,true,true
+//		false,false,false,false,
+//		true,true,false,false,
+//		false,true,true,true,
+//		false,true,true,true
+		false,true,false,false,
+		false,false,false,true,
+		true,false,false,false,
+		true,true,true,false,
+		true,true,true,false
 	});
 	
 	boolean[] mBits;

@@ -27,16 +27,16 @@ import sample.Listener;
 import alias.AliasList;
 import bits.BitSetBuffer;
 
-public class Tait1200MessageBProcessor implements Listener<BitSetBuffer>
+public class Tait1200SELCALLMessageProcessor implements Listener<BitSetBuffer>
 {
 	private final static Logger mLog = 
-			LoggerFactory.getLogger( Tait1200MessageBProcessor.class );
+			LoggerFactory.getLogger( Tait1200SELCALLMessageProcessor.class );
 
 	private Broadcaster<Message> mBroadcaster = new Broadcaster<Message>();
 	
 	private AliasList mAliasList;
 	
-	public Tait1200MessageBProcessor( AliasList list )
+	public Tait1200SELCALLMessageProcessor( AliasList list )
 	{
 		mAliasList = list;
 	}
@@ -49,7 +49,7 @@ public class Tait1200MessageBProcessor implements Listener<BitSetBuffer>
 	@Override
     public void receive( BitSetBuffer buffer )
     {
-		mBroadcaster.receive( new Tait1200MessageB( buffer, mAliasList ) );
+		mBroadcaster.receive( new Tait1200SELCALMessage( buffer, mAliasList ) );
     }
 	
     public void addMessageListener( Listener<Message> listener )
