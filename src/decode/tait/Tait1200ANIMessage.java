@@ -30,9 +30,9 @@ import alias.AliasList;
 import bits.BitSetBuffer;
 import edac.CRC;
 
-public class Tait1200SELCALMessage extends Message
+public class Tait1200ANIMessage extends Message
 {
-	private final static Logger mLog = LoggerFactory.getLogger( Tait1200SELCALMessage.class );
+	private final static Logger mLog = LoggerFactory.getLogger( Tait1200ANIMessage.class );
 
 	public static int[] REVS_1 = { 0,1,2,3 };
 	public static int[] SYNC = { 4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19 };
@@ -70,7 +70,7 @@ public class Tait1200SELCALMessage extends Message
     private AliasList mAliasList;
     private CRC mCRC;
     
-    public Tait1200SELCALMessage( BitSetBuffer message, AliasList list )
+    public Tait1200ANIMessage( BitSetBuffer message, AliasList list )
     {
     	mMessage = message;
         mAliasList = list;
@@ -170,7 +170,7 @@ public class Tait1200SELCALMessage extends Message
     {
     	StringBuilder sb = new StringBuilder();
 
-    	sb.append( "SELCAL FROM:" );
+    	sb.append( "ANI FROM:" );
     	sb.append( getFromID() );
     	sb.append( " TO:" );
     	sb.append( getToID() );
@@ -229,7 +229,7 @@ public class Tait1200SELCALMessage extends Message
 	@Override
     public String getEventType()
     {
-	    return "SELCAL";
+	    return "ANI";
     }
 
 	@Override

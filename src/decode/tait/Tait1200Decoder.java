@@ -70,7 +70,7 @@ public class Tait1200Decoder extends Decoder implements Instrumentable
     private MessageFramer mMessageFramerSELCALL;
     private Broadcaster<Boolean> mFSKBroadcaster = new Broadcaster<Boolean>();
     private Tait1200GPSMessageProcessor mMessageAProcessor;
-    private Tait1200SELCALLMessageProcessor mMessageBProcessor;
+    private Tait1200ANIMessageProcessor mMessageBProcessor;
     
     public Tait1200Decoder( AliasList aliasList )
 	{
@@ -100,7 +100,7 @@ public class Tait1200Decoder extends Decoder implements Instrumentable
         mFSKBroadcaster.addListener( mMessageFramerSELCALL );
 
         mMessageAProcessor = new Tait1200GPSMessageProcessor( aliasList );
-        mMessageBProcessor = new Tait1200SELCALLMessageProcessor( aliasList );
+        mMessageBProcessor = new Tait1200ANIMessageProcessor( aliasList );
         
         mMessageFramerGPS.addMessageListener( mMessageAProcessor );
         mMessageFramerSELCALL.addMessageListener( mMessageBProcessor );
