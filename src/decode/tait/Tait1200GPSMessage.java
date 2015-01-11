@@ -81,23 +81,25 @@ public class Tait1200GPSMessage extends Message
 	public static int DIVIDER_4 = 316;
 	public static int[] LATITUDE_SIGN = { 317,318 };
 	public static int DIVIDER_5 = 319;
-	public static int[] LATITUDE_TENS = { 320,321,322,323 };
-	public static int[] LATITUDE_ONES = { 324,325,326,327 };
-//	public static int DIVIDER_6 = 328;
-//	public static int[] LATITUDE_FRACTIONAL = { 329,330,331,332,333,334,335,336,
-//		337,338,339,340,341,342,343,344,345,346,347 };
-	public static int[] LATITUDE_FRACTIONAL = { 328,329,330,331,332,333,334,335,
-		336,337,338,339,340,341,342,343,344,345,346,347 };
+	public static int[] LATITUDE_DEGREES_TENS = { 320,321,322,323 };
+	public static int[] LATITUDE_DEGREES_ONES = { 324,325,326,327 };
+	public static int DIVIDER_6 = 328;
+	public static int[] LATITUDE_MINUTES_TENS = { 329,330,331 };
+	public static int[] LATITUDE_MINUTES_ONES = { 332,333,334,335 };
+	public static int[] LATITUDE_SECONDS_HUND = { 336,337,338,339 };
+	public static int[] LATITUDE_SECONDS_TENS = { 340,341,342,344 };
+	public static int[] LATITUDE_SECONDS_ONES = { 344,345,346,347 };
 	public static int DIVIDER_7 = 348;
 	public static int[] LONGITUDE_SIGN = { 349,350 };
-	public static int LONGITUDE_HUNDREDS = 351;
-	public static int[] LONGITUDE_TENS = { 352,353,354,355 };
-	public static int[] LONGITUDE_ONES = { 356,357,358,359 };
-//	public static int DIVIDER_9 = 360;
-//	public static int[] LONGITUDE_FRACTIONAL = { 361,362,363,364,365,366,367,368,
-//		369,370,371,372,373,374,375,376,377,378,379 };
-	public static int[] LONGITUDE_FRACTIONAL = { 360,361,362,363,364,365,366,
-		367,368,369,370,371,372,373,374,375,376,377,378,379 };
+	public static int LONGITUDE_DEGREES_HUNDREDS = 351;
+	public static int[] LONGITUDE_DEGREES_TENS = { 352,353,354,355 };
+	public static int[] LONGITUDE_DEGREES_ONES = { 356,357,358,359 };
+	public static int DIVIDER_9 = 360;
+	public static int[] LONGITUDE_MINUTES_TENS = { 361,362,363 };
+	public static int[] LONGITUDE_MINUTES_ONES = { 364,365,366,367 };
+	public static int[] LONGITUDE_SECONDS_HUND = { 368,369,370,371 };
+	public static int[] LONGITUDE_SECONDS_TENS = { 372,373,374,375 };
+	public static int[] LONGITUDE_SECONDS_ONES = { 376,377,378,379 };
 	public static int DIVIDER_10 = 380;
 	public static int[] UNKNOWN_2 = { 381,382 };
 	public static int[] DATE_DAY = { 383,384,385,386,387 };
@@ -163,37 +165,28 @@ public class Tait1200GPSMessage extends Message
     
     public GeoPosition getGPSLocation()
     {
-    	double latitude = mMessage.getInt( LATITUDE_TENS ) * 10.0d;
-    	
-    	latitude += mMessage.getInt( LATITUDE_ONES );
-
-    	double latitudeFractional = mMessage.getInt( LATITUDE_FRACTIONAL );
-
-    	for( int x = 0; x < 20; x++ )
-    	{
-    		latitudeFractional /= 2.0d;
-    	}
-
-    	latitude += latitudeFractional;
+    	double latitude = mMessage.getInt( LATITUDE_DEGREES_TENS ) * 10.0d;
+    	latitude += mMessage.getInt( LATITUDE_DEGREES_ONES );
+    	latitude += (double)mMessage.getInt( LATITUDE_MINUTES_TENS ) / 6.0d;
+    	latitude += (double)mMessage.getInt( LATITUDE_MINUTES_ONES ) / 60.0d;
+    	latitude += (double)mMessage.getInt( LATITUDE_SECONDS_HUND ) / 600.0d;
+    	latitude += (double)mMessage.getInt( LATITUDE_SECONDS_TENS ) / 6000.0d;
+    	latitude += (double)mMessage.getInt( LATITUDE_SECONDS_ONES ) / 60000.0d;
 
     	if( mMessage.getInt( LATITUDE_SIGN ) == 0 )
     	{
     		latitude *= -1;
     	}
     	
-    	double longitude = mMessage.get( LONGITUDE_HUNDREDS ) ? 100.0d : 0.0d;
+    	double longitude = mMessage.get( LONGITUDE_DEGREES_HUNDREDS ) ? 100.0d : 0.0d;
 
-    	longitude += mMessage.getInt( LONGITUDE_TENS ) * 10.0d;
-    	longitude += mMessage.getInt( LONGITUDE_ONES );
-    	
-    	double longitudeFractional = mMessage.getInt( LONGITUDE_FRACTIONAL );
-    	
-    	for( int x = 0; x < 20; x++ )
-    	{
-    		longitudeFractional /= 2.0d;
-    	}
-    	
-    	longitude += longitudeFractional;
+    	longitude += mMessage.getInt( LONGITUDE_DEGREES_TENS ) * 10.0d;
+    	longitude += mMessage.getInt( LONGITUDE_DEGREES_ONES );
+    	longitude += (double)mMessage.getInt( LONGITUDE_MINUTES_TENS ) / 6.0d;
+    	longitude += (double)mMessage.getInt( LONGITUDE_MINUTES_ONES ) / 60.0d;
+    	longitude += (double)mMessage.getInt( LONGITUDE_SECONDS_HUND ) / 600.0d;
+    	longitude += (double)mMessage.getInt( LONGITUDE_SECONDS_TENS ) / 6000.0d;
+    	longitude += (double)mMessage.getInt( LONGITUDE_SECONDS_ONES ) / 60000.0d;
     	
     	if( mMessage.getInt( LONGITUDE_SIGN ) == 0 )
     	{
