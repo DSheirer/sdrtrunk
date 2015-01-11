@@ -18,7 +18,6 @@
 package decode.tait;
 
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -101,11 +100,16 @@ public class Tait1200GPSMessage extends Message
 	public static int[] LONGITUDE_SECONDS_TENS = { 372,373,374,375 };
 	public static int[] LONGITUDE_SECONDS_ONES = { 376,377,378,379 };
 	public static int DIVIDER_10 = 380;
-	public static int[] UNKNOWN_2 = { 381,382 };
-	public static int[] DATE_DAY = { 383,384,385,386,387 };
+	public static int[] DATE_DAY_TENS = { 381,382,383 };
+	public static int[] DATE_DAY_ONES = { 384,385,386,387 };
+
+	//TODO: not sure if this field is the month field or the speed field
 	public static int[] DATE_MONTH = { 388,389,390,391 };
-	public static int[] HEADING = { 392,393,394,395,396,397,398,399,400 };
-	public static int[] SPEED = { 401,402,403,404,405,406,407,408,409 };
+	public static int[] SPEED_HUNDREDS = { 388,389,390,391 };
+
+	public static int[] SPEED_TENS = { 392,393,394,395 };
+	public static int[] SPEED_ONES = { 396,397,398,399 };
+	public static int[] SPEED_TENTHS = { 400,401,402,403 };
 
 	private static SimpleDateFormat mSDF = new SimpleDateFormat( "yyyyMMdd HHmmss" );
 
@@ -153,6 +157,10 @@ public class Tait1200GPSMessage extends Message
     	sb.append( location.getLatitude() );
     	sb.append( " " );
     	sb.append( location.getLongitude() );
+    	
+    	sb.append( " SPEED:" );
+    	sb.append( getSpeed() );
+    	sb.append( "KPH" );
     	
     	sb.append( " GPS TIME:" );
     	sb.append( mSDF.format( new Date( getGPSTime() ) ) );
@@ -204,9 +212,14 @@ public class Tait1200GPSMessage extends Message
     	
     	/* Use current time to get current year */
     	cal.setTimeInMillis( System.currentTimeMillis() );
-    	
+
+    	//TODO: this field is either the month field, or the speed hundredths field
     	cal.set( Calendar.MONTH, mMessage.getInt( DATE_MONTH ) );
-    	cal.set( Calendar.DAY_OF_MONTH, mMessage.getInt( DATE_DAY ) );
+    	
+    	int day = mMessage.getInt( DATE_DAY_TENS ) * 10 +
+    			  mMessage.getInt( DATE_DAY_ONES );
+    	cal.set( Calendar.DAY_OF_MONTH, day );
+    	
     	cal.set( Calendar.HOUR_OF_DAY, ( mMessage.getInt( HOUR_TENS ) * 10 ) +
     			mMessage.getInt( HOUR_ONES ) );
     	cal.set( Calendar.MINUTE, ( mMessage.getInt( MINUTES_TENS ) * 10 ) +
@@ -216,6 +229,25 @@ public class Tait1200GPSMessage extends Message
     	cal.set( Calendar.MILLISECOND, 0 );
     	
     	return cal.getTimeInMillis();
+    }
+    
+    public String getSpeed()
+    {
+    	StringBuilder sb = new StringBuilder();
+
+    	sb.append( getDigit( SPEED_HUNDREDS ) );
+    	sb.append( getDigit( SPEED_TENS ) );
+    	sb.append( getDigit( SPEED_ONES ) );
+    	sb.append( "." );
+    	sb.append( getDigit( SPEED_TENTHS ) );
+    	
+    	return sb.toString();
+    }
+    
+    private String getDigit( int[] field )
+    {
+    	int value = mMessage.getInt( field );
+    	return ( 0 <= value && value <= 9 ) ? String.valueOf( value ) : "?";
     }
     
 	@Override

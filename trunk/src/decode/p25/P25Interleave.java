@@ -144,7 +144,7 @@ public class P25Interleave
     	
     	int start = 0;
     	int end = 196;
-    	String interleaved = "1000100100100011001000100010110010001000100010010000100010011100100101001000001000100010001011000110010001111011110010001000100010001000100010000011011100101011001000101000100010001000100010110101";
+    	String interleaved = "0010110111100011001010101100001000011110101110000110001000010010111100101101100100100101011101100011000101110010111100101110111100100111101010111011011001010111001011100001011100101000000010100100";
 
     	BitSetBuffer b = new BitSetBuffer( end );
     	
@@ -163,8 +163,8 @@ public class P25Interleave
     		
     	mLog.debug( "Deinterleav:" + b.toString() );
 
-    	halfrate.decode( b, start, end );
-    	
-    	mLog.debug( "Trellis Off:" + b.toString() );
+//    	halfrate.decode( b, start, end );
+//    	
+//    	mLog.debug( "Trellis Off:" + b.toString() );
     }
 }
