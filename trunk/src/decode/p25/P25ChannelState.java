@@ -233,40 +233,47 @@ public class P25ChannelState extends ChannelState
 				//TODO: process call here
 				break;
 			case GROUP_VOICE_CHANNEL_USER:
-				decode.p25.message.tdu.lc.GroupVoiceChannelUser gvcuser = 
-						(decode.p25.message.tdu.lc.GroupVoiceChannelUser)tdulc;
-				
-				if( isActiveCall( CURRENT_CHANNEL, gvcuser.getGroupAddress() ) )
+				if( !( tdulc instanceof decode.p25.message.tdu.lc.GroupVoiceChannelUser ) )
 				{
-					if( gvcuser.getFromID() != null &&
-						!gvcuser.getFromID().contentEquals( "0000" ) &&
-						!gvcuser.getFromID().contentEquals( "000000" ) )
-					{
-						updateCall( CURRENT_CHANNEL, gvcuser.getSourceAddress(), 
-								gvcuser.getGroupAddress() );
-					}
-					else
-					{
-						updateCall( CURRENT_CHANNEL, null, gvcuser.getGroupAddress() );
-					}
+					mLog.error( "TDULC message has opcode of group voice channel user but is not instance " + tdulc.toString() + " " + tdulc.getBinaryMessage().toString() );
 				}
 				else
 				{
-					CallEvent gvcuserEvent = 
-							new P25CallEvent.Builder( CallEventType.CALL )
-								.aliasList( mAliasList )
-								.channel( CURRENT_CHANNEL )
-								.details( ( gvcuser.isEncrypted() ? "ENCRYPTED" : "" ) + 
-										  ( gvcuser.isEmergency() ? " EMERGENCY" : "") )
-							    .from( gvcuser.getSourceAddress() )
-								.to( gvcuser.getGroupAddress() )
-								.build();
+					decode.p25.message.tdu.lc.GroupVoiceChannelUser gvcuser = 
+							(decode.p25.message.tdu.lc.GroupVoiceChannelUser)tdulc;
 					
-					mCallEventModel.add( gvcuserEvent );
-					
-					addCall( gvcuserEvent );
-					
-					setState( State.CALL );
+					if( isActiveCall( CURRENT_CHANNEL, gvcuser.getGroupAddress() ) )
+					{
+						if( gvcuser.getFromID() != null &&
+							!gvcuser.getFromID().contentEquals( "0000" ) &&
+							!gvcuser.getFromID().contentEquals( "000000" ) )
+						{
+							updateCall( CURRENT_CHANNEL, gvcuser.getSourceAddress(), 
+									gvcuser.getGroupAddress() );
+						}
+						else
+						{
+							updateCall( CURRENT_CHANNEL, null, gvcuser.getGroupAddress() );
+						}
+					}
+					else
+					{
+						CallEvent gvcuserEvent = 
+								new P25CallEvent.Builder( CallEventType.CALL )
+									.aliasList( mAliasList )
+									.channel( CURRENT_CHANNEL )
+									.details( ( gvcuser.isEncrypted() ? "ENCRYPTED" : "" ) + 
+											  ( gvcuser.isEmergency() ? " EMERGENCY" : "") )
+								    .from( gvcuser.getSourceAddress() )
+									.to( gvcuser.getGroupAddress() )
+									.build();
+						
+						mCallEventModel.add( gvcuserEvent );
+						
+						addCall( gvcuserEvent );
+						
+						setState( State.CALL );
+					}
 				}
 				break;
 			case MESSAGE_UPDATE:
