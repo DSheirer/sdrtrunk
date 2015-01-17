@@ -14,6 +14,7 @@ import bits.BitSetFullException;
 import bits.SyncPatternMatcher;
 import decode.p25.P25Interleave;
 import decode.p25.Trellis_1_2_Rate;
+import decode.p25.Trellis_3_4_Rate;
 import decode.p25.message.P25Message;
 import decode.p25.message.hdu.HDUMessage;
 import decode.p25.message.ldu.LDU1Message;
@@ -61,6 +62,7 @@ public class P25MessageFramer implements Listener<Dibit>
 	private SyncPatternMatcher mMatcher;
 	private boolean mInverted = false;
 	private Trellis_1_2_Rate mHalfRate = new Trellis_1_2_Rate();
+	private Trellis_3_4_Rate mThreeQuarterRate = new Trellis_3_4_Rate();
 	private BCH_63_16_11 mNIDDecoder = new BCH_63_16_11();
 	
 	/**
@@ -290,7 +292,6 @@ public class P25MessageFramer implements Listener<Dibit>
 							if( confirmed )
 							{
 								setDUID( DataUnitID.PDUC );
-								
 							}
 							else
 							{
@@ -390,14 +391,34 @@ public class P25MessageFramer implements Listener<Dibit>
 					mComplete = true;
 					break;
 				case PDUC:
-					int blocks = mMessage.getInt( PDUMessage.BLOCKS_TO_FOLLOW );
-					
-					int current = ( mMessage.size() - 260 ) / 196;
-					
-					if( current < blocks )
+					/* De-interleave the latest block*/
+					P25Interleave.deinterleaveData( mMessage, 
+							mMessage.size() - 196, mMessage.size() );
+
+					/* Decode 3/4 rate convolutional encoding from latest block */
+					if( mThreeQuarterRate.decode( mMessage, 
+							mMessage.size() - 196, mMessage.size() ) )
 					{
-						mMessageLength += 196;
-						mMessage.setSize( mMessage.size() + 196 );
+						/* Resize the message to account for removing 48 + 4 parity bits */
+						mMessage.setSize( mMessage.size() - 52 );
+						
+						int blocks = mMessage.getInt( PDUMessage.BLOCKS_TO_FOLLOW );
+						
+						int current = ( mMessage.size() - 160 ) / 144;
+						
+						if( current < blocks )
+						{
+							mMessageLength += 196;
+							mMessage.setSize( mMessage.size() + 196 );
+						}
+						else
+						{
+							dispatch( new PDUConfirmedMessage( mMessage.copy(), 
+									mDUID, mAliasList ) );
+							
+							mComplete = true;
+						}
+						break;
 					}
 					else
 					{
