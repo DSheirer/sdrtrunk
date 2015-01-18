@@ -408,8 +408,8 @@ public class P25MessageFramer implements Listener<Dibit>
 						
 						if( current < blocks )
 						{
-							mMessageLength += 196;
 							mMessage.setSize( mMessage.size() + 196 );
+							mMessageLength = mMessage.size();
 						}
 						else
 						{

@@ -114,13 +114,14 @@ public class Trellis_3_4_Rate
 			add( c );
 		}
 
-		/* The final decoded survivor path should be at index 0 */
-		Path path = mSurvivorPaths.get( 0 );
+		/* The final decoded survivor path should be at path metrics tribit 0 */
+		Path path = mPathMetrics.getPath( Tribit.T0 );
 
 		/* We should have a path with 50 nodes, counting the starting 000 node
 		 * and the flushing 000 node, otherwise there was an error */
 		if( path != null && path.getNodes().size() == 50 )
 		{
+			mLog.debug( path.toString() );
 			/* Clear the original message bits */
 			message.clear( start, end );
 
@@ -235,6 +236,11 @@ public class Trellis_3_4_Rate
 			}
 			
 			return 0;
+		}
+		
+		public Path getPath( Tribit tribit )
+		{
+			return mMetrics.get( tribit );
 		}
 		
 		/**
@@ -424,6 +430,8 @@ public class Trellis_3_4_Rate
 			StringBuilder sb = new StringBuilder();
 
 			sb.append( "PATH [" );
+			sb.append( mNodes.size() );
+			sb.append( "-" );
 			sb.append( mPathMetric );
 			sb.append( "] " );
 			
@@ -633,9 +641,8 @@ public class Trellis_3_4_Rate
 	 */
 	public static void main( String[] args )
 	{
-		String raw = "0010001000010110011110101111110101110101110111010110011100000111011001011101111011110111011001000110001000100010001011011110001000100010101101110010001000101101010010100000101000001010000010101010";
-//		String raw = "0010001100010110011110100111110101110101110111110110011100000111011001011101111011110111011001000110001000100010101011011110001000100010101101110010001000101101010010100000101000001010000010101010";
-//                           x                x                     x                                                                 x
+		String raw = "0010001001110110000100100000101000001010000010100000101000001010000010100000101000001010000010100000101000001010000010100000101000001010000010100000001101000100011101011011000001110110000001101111";
+		
 		BitSetBuffer message = BitSetBuffer.load( raw );
 		
 		mLog.debug( "MSG: " + message.toString() );
