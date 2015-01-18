@@ -6,7 +6,8 @@ import org.slf4j.LoggerFactory;
 import alias.AliasList;
 import bits.BitSetBuffer;
 import decode.p25.reference.DataUnitID;
-import decode.p25.reference.Vendor;
+import edac.CRC;
+import edac.CRCP25;
 
 public class PDUConfirmedMessage extends PDUMessage
 {
@@ -17,9 +18,29 @@ public class PDUConfirmedMessage extends PDUMessage
             AliasList aliasList )
     {
 	    super( message, duid, aliasList );
+
+	    checkCRC();
 	    
 	    mLog.debug( toString() );
     }
+	
+	private void checkCRC()
+	{
+		int blocks = getBlocksToFollowCount();
+		
+		/* The NID and Header have already passed CRC */
+        mCRC = new CRC[ 2 + blocks ];
+        mCRC[ 0 ] = CRC.PASSED;
+        mCRC[ 1 ] = CRC.PASSED;
+		
+		for( int x = 0; x < getBlocksToFollowCount(); x++ )
+		{
+			/* Data blocks start at 160 and every 144 thereafter */
+			mCRC[ x + 2 ] = CRCP25.checkCRC9( mMessage, 160 + ( x * 144 ) );
+		}
+		
+		//TODO: check the final 4-byte end of block sequence CRC
+	}
 
 	/* Override for now */
 	public boolean isValid()
@@ -36,6 +57,9 @@ public class PDUConfirmedMessage extends PDUMessage
 		sb.append( getNAC() );
 		sb.append( " " );
 		sb.append( getDUID().getLabel() );
+		
+		sb.append( " CRC " );
+		sb.append( getErrorStatus() );
 
 		sb.append( " LLID:" );
 		sb.append( getLogicalLinkID() );

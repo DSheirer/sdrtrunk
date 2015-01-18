@@ -153,10 +153,17 @@ public class CRCUtil
 	public static void main( String[] args )
 	{
 		mLog.debug( "Starting" );
-
-		long polynomial = 0xC75l;
-
-		long[] table = generate( 12, 11, polynomial, 0x0, true, Parity.NONE );
+		
+//		String raw = "000000001010001000000000100010100000000000000000010000000011001001011100000000000000000011111110001000101001011100101110000101000110011101101001";
+//		BitSetBuffer message = BitSetBuffer.load( raw );
+//		
+//		long polynomial = 0x259l;
+//
+//		decode( message, 0, 135, polynomial, 9 );
+//
+//		mLog.debug( message.toString() );
+		
+		long[] table = generate( 135, 9, 0x259l, 0, false, Parity.NONE );
 		mLog.debug( toCodeArray( table ) );
 		mLog.debug( "Finished" );
 	}

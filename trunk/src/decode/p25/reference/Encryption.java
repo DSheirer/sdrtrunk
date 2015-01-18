@@ -12,7 +12,10 @@ public enum Encryption
 	DES_OFB( 0x81 ),
 	TRIPLE_DES_2_KEY( 0x82 ),
 	TRIPLE_DES_3_KEY( 0x83 ),
-	AES( 0x84 ),
+	AES_256( 0x84 ),
+	DES_XL( 0x9F ), /* Motorola Proprietary */
+	DVI_XL( 0xA0 ), /* Motorola Proprietary */
+	DVP_XL( 0xA1 ), /* Motorola Proprietary */
 	ADP( 0xAA ),
 	UNKNOWN( -1 );
 	
@@ -46,7 +49,13 @@ public enum Encryption
 			case 0x83:
 				return TRIPLE_DES_3_KEY;
 			case 0x84:
-				return AES;
+				return AES_256;
+			case 0x9F:
+				return DES_OFB;
+			case 0xA0:
+				return DVI_XL;
+			case 0xA1:
+				return DVP_XL;
 			default:
 				return UNKNOWN;
 		}
