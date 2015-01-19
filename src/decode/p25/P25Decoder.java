@@ -35,13 +35,13 @@ import source.tuner.FrequencyChangeListener;
 import alias.AliasList;
 import decode.Decoder;
 import decode.DecoderType;
-import dsp.agc.RealAutomaticGainControl;
 import dsp.filter.ComplexFIRFilter;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
 import dsp.fsk.C4FMSlicer;
 import dsp.fsk.C4FMSymbolFilter;
 import dsp.fsk.P25MessageFramer;
+import dsp.gain.DirectGainControl;
 import dsp.nbfm.FMDiscriminator;
 
 public class P25Decoder extends Decoder 
@@ -60,8 +60,9 @@ public class P25Decoder extends Decoder
 			FilterFactory.getLowPass( 48000, 5000, 31, WindowType.HAMMING ), 1.0 );
 
 	private FMDiscriminator mDemodulator = new FMDiscriminator( 1 );
-	private RealAutomaticGainControl mAGC = new RealAutomaticGainControl();
-	private C4FMSymbolFilter mSymbolFilter = new C4FMSymbolFilter();
+	private DirectGainControl mGainControl = 
+						new DirectGainControl( 15.0f, 0.1f, 25.0f, 0.3f );
+	private C4FMSymbolFilter mSymbolFilter;
 	private C4FMSlicer mSlicer = new C4FMSlicer();
 	private P25MessageFramer mNormalFramer;
 	private P25MessageFramer mInvertedFramer;
@@ -74,6 +75,8 @@ public class P25Decoder extends Decoder
 		super( sampleType );
 		
 		mAliasList = aliasList;
+		
+		mSymbolFilter = new C4FMSymbolFilter( mGainControl );
 
 		/**
 		 * Only setup a demod chain if we're receiving complex samples.  If
@@ -94,8 +97,8 @@ public class P25Decoder extends Decoder
 			mDemodulator.setListener( getRealReceiver() );
 		}
 
-		addRealSampleListener( mAGC );
-		mAGC.setListener( mSymbolFilter );
+		addRealSampleListener( mGainControl );
+		mGainControl.setListener( mSymbolFilter );
 		
 		mSymbolFilter.setListener( mSlicer );
 		
@@ -147,13 +150,13 @@ public class P25Decoder extends Decoder
 		{
 			case INSTRUMENT_INPUT_TO_AGC:
 				FloatTap inputAGC = (FloatTap)tap;
-				removeRealListener( mAGC );
+				removeRealListener( mGainControl );
 				addRealSampleListener( inputAGC );
-				inputAGC.setListener( mAGC );
+				inputAGC.setListener( mGainControl );
 				break;
 			case INSTRUMENT_AGC_TO_SYMBOL_FILTER:
 				FloatTap agcSymbol = (FloatTap)tap;
-				mAGC.setListener( agcSymbol );
+				mGainControl.setListener( agcSymbol );
 				agcSymbol.setListener( mSymbolFilter );
 				break;
 			case INSTRUMENT_SYMBOL_FILTER_TO_SLICER:
@@ -178,10 +181,10 @@ public class P25Decoder extends Decoder
 			case INSTRUMENT_INPUT_TO_AGC:
 				FloatTap inputAGC = (FloatTap)tap;
 				removeRealListener( inputAGC );
-				addRealSampleListener( mAGC );
+				addRealSampleListener( mGainControl );
 				break;
 			case INSTRUMENT_AGC_TO_SYMBOL_FILTER:
-				mAGC.setListener( mSymbolFilter );
+				mGainControl.setListener( mSymbolFilter );
 				break;
 			case INSTRUMENT_SYMBOL_FILTER_TO_SLICER:
 				mSymbolFilter.setListener( mSlicer );

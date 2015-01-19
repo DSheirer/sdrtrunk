@@ -29,7 +29,7 @@ import javax.sound.sampled.TargetDataLine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import dsp.agc.RealAutomaticGainControl;
+import dsp.gain.RealAutomaticGainControl;
 import sample.Listener;
 import sample.adapter.SampleAdapter;
 import sample.real.RealBuffer;

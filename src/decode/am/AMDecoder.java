@@ -4,14 +4,14 @@ import sample.real.RealSampleListener;
 import source.Source.SampleType;
 import decode.Decoder;
 import decode.DecoderType;
-import dsp.agc.ComplexAutomaticGainControl;
-import dsp.agc.RealAutomaticGainControl;
 import dsp.am.AMDemodulator;
 import dsp.filter.ComplexFIRFilter;
 import dsp.filter.DCRemovalFilter2;
 import dsp.filter.FilterFactory;
 import dsp.filter.FloatFIRFilter;
 import dsp.filter.Window.WindowType;
+import dsp.gain.ComplexAutomaticGainControl;
+import dsp.gain.RealAutomaticGainControl;
 
 public class AMDecoder extends Decoder
 {
