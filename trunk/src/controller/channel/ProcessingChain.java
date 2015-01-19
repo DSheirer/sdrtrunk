@@ -62,7 +62,7 @@ import controller.state.ChannelState;
 import controller.state.ChannelState.State;
 import decode.Decoder;
 import decode.DecoderFactory;
-import dsp.afc.AutomaticFrequencyControl;
+import dsp.frequency.AutomaticFrequencyControl;
 import eventlog.EventLogType;
 import eventlog.EventLogger;
 

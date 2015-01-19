@@ -1,4 +1,4 @@
-package dsp.afc;
+package dsp.frequency;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

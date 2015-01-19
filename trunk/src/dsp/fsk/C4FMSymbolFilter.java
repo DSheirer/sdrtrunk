@@ -17,6 +17,7 @@ import source.tuner.FrequencyChangeBroadcaster;
 import source.tuner.FrequencyChangeEvent;
 import source.tuner.FrequencyChangeEvent.Attribute;
 import source.tuner.FrequencyChangeListener;
+import dsp.gain.GainController;
 
 public class C4FMSymbolFilter implements FrequencyChangeBroadcaster,
 										 RealSampleListener, 
@@ -201,10 +202,11 @@ public class C4FMSymbolFilter implements FrequencyChangeBroadcaster,
 	
 	private RealSampleListener mListener;
 	
+	public static final long MAX_FREQUENCY_CORRECTION = 7000;
 	private FrequencyChangeListener mFrequencyChangeListener;
 	private long mFrequencyCorrection;
 
-	private float mGain = 15.4f;
+	private GainController mGainController;
 	
 	/**
 	 * C4FM Symbol Filter
@@ -219,13 +221,9 @@ public class C4FMSymbolFilter implements FrequencyChangeBroadcaster,
 	 * setting for this filter is 15.4 and that yields a symbol spread that
 	 * is centered on 2.0, ranging 1.92 to 2.08.
 	 */
-	public C4FMSymbolFilter( float gain )
+	public C4FMSymbolFilter( GainController gainController )
 	{
-		mGain = gain;
-	}
-	
-	public C4FMSymbolFilter()
-	{
+		mGainController = gainController;
 	}
 	
 	public long getFrequencyCorrection()
@@ -238,7 +236,8 @@ public class C4FMSymbolFilter implements FrequencyChangeBroadcaster,
     {
 		mSymbolClock += mSymbolTime;
 		
-		mHistory[ mHistoryLast++ ] = sample * mGain;
+		mHistory[ mHistoryLast++ ] = sample;
+		
 		mHistoryLast %= NUMBER_FILTER_TAPS;
 		
 		if( mSymbolClock > 1.0f )
@@ -317,9 +316,19 @@ public class C4FMSymbolFilter implements FrequencyChangeBroadcaster,
 				mSymbolClock -= symbolError * K_SYMBOL_TIMING;
 			}
 			
-			mSymbolSpread = Math.max( mSymbolSpread, SYMBOL_SPREAD_MIN );
-			mSymbolSpread = Math.min( mSymbolSpread, SYMBOL_SPREAD_MAX );
-			
+			if( mSymbolSpread < SYMBOL_SPREAD_MIN )
+			{
+				mGainController.increase();
+				
+				mSymbolSpread = SYMBOL_SPREAD_MIN;
+			}
+			else if( mSymbolSpread > SYMBOL_SPREAD_MAX )
+			{
+				mGainController.decrease();
+
+				mSymbolSpread = SYMBOL_SPREAD_MAX;
+			}
+
 			mCoarseFrequencyCorrection += ( ( mFineFrequencyCorrection - 
 					mCoarseFrequencyCorrection ) * K_COARSE_FREQUENCY );
 			
@@ -333,14 +342,21 @@ public class C4FMSymbolFilter implements FrequencyChangeBroadcaster,
 					mFrequencyCorrection += ( 
 						500 * ( mCoarseFrequencyCorrection > 0 ? 1 : -1 ) );
 					
+					if( mFrequencyCorrection > MAX_FREQUENCY_CORRECTION )
+					{
+						mFrequencyCorrection = MAX_FREQUENCY_CORRECTION;
+					}
+					else if( -mFrequencyCorrection > MAX_FREQUENCY_CORRECTION )
+					{
+						mFrequencyCorrection = -MAX_FREQUENCY_CORRECTION;
+					}
+					
 					mFrequencyChangeListener.frequencyChanged( 
 						new FrequencyChangeEvent( Attribute.FREQUENCY_ERROR, 
 								mFrequencyCorrection ) );
 
 					/* reset internal frequency error tracker */
 					mCoarseFrequencyCorrection = 0;
-
-					mLog.debug( "Frequency Corrected: " + mFrequencyCorrection );
 				}
 			}
 			

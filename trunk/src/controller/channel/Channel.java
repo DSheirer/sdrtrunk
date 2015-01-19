@@ -59,7 +59,7 @@ import controller.system.System;
 import decode.config.AuxDecodeConfiguration;
 import decode.config.DecodeConfigFactory;
 import decode.config.DecodeConfiguration;
-import dsp.afc.AutomaticFrequencyControl;
+import dsp.frequency.AutomaticFrequencyControl;
 import eventlog.config.EventLogConfiguration;
 
 @XmlSeeAlso( { Configuration.class } )

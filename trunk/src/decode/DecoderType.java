@@ -68,7 +68,7 @@ public enum DecoderType
     					   DecoderType.LTR_STANDARD,
     					   DecoderType.MPT1327,
     					   DecoderType.NBFM,
-//    					   DecoderType.P25_PHASE1,
+    					   DecoderType.P25_PHASE1,
     					   DecoderType.PASSPORT );
     }
 

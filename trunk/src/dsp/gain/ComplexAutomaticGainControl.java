@@ -1,12 +1,12 @@
-package dsp.agc;
+package dsp.gain;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import sample.real.RealBuffer;
-import sample.real.RealSampleListener;
-import sample.real.RealSampleProvider;
+import sample.Listener;
+import sample.Provider;
+import sample.complex.ComplexSample;
+import buffer.ComplexCircularBuffer;
 import buffer.DoubleCircularBuffer;
-import buffer.FloatCircularBuffer;
 
 /*******************************************************************************
  *     SDR Trunk 
@@ -61,14 +61,13 @@ import buffer.FloatCircularBuffer;
  *     those of the authors and should not be interpreted as representing 
  *     official policies, either expressed or implied, of Moe Wheatley.
  ******************************************************************************/
-public class RealAutomaticGainControl implements RealSampleListener,
-												 RealSampleProvider
+public class ComplexAutomaticGainControl implements Listener<ComplexSample>,
+												    Provider<ComplexSample>
 {
 	private static final double SAMPLE_RATE = 48000;
 	
 	/* Signal delay line - time delay in seconds */
-//	private static final double DELAY_TIME_CONSTANT = 0.015;
-	private static final double DELAY_TIME_CONSTANT = 0.01;
+	private static final double DELAY_TIME_CONSTANT = 0.015;
 
 	/* Peak detector window - time delay in seconds */
 	private static final double WINDOW_TIME_CONSTANT = 0.018;
@@ -134,53 +133,30 @@ public class RealAutomaticGainControl implements RealSampleListener,
 	private double mAttackAverage = 0.0;
 	private double mDecayAverage = 0.0;
 	
-	private FloatCircularBuffer mDelayBuffer = 
-		new FloatCircularBuffer( (int)( SAMPLE_RATE * DELAY_TIME_CONSTANT ) );
+	private ComplexCircularBuffer mDelayBuffer = 
+		new ComplexCircularBuffer( (int)( SAMPLE_RATE * DELAY_TIME_CONSTANT ) );
 	private DoubleCircularBuffer mMagnitudeBuffer = 
 		new DoubleCircularBuffer( (int)( SAMPLE_RATE * WINDOW_TIME_CONSTANT ) );
 	
-	private RealSampleListener mListener;
+	private Listener<ComplexSample> mListener;
 	
-	public RealAutomaticGainControl()
+	public ComplexAutomaticGainControl()
 	{
 	}
 
 	@Override
-	public void receive( float currentSample )
-	{
-		float processed = process( currentSample );
-		
-		if( mListener != null )
-		{
-			mListener.receive( processed );
-		}
-	}
-	
-	/**
-	 * Applies AGC to a buffer of real (float) samples
-	 */
-	public RealBuffer process( RealBuffer buffer )
-	{
-		float[] samples = buffer.getSamples();
-
-		for( int x = 0; x < samples.length; x++ )
-		{
-			samples[ x ] = process( samples[ x ] );
-		}
-		
-		return new RealBuffer( samples );
-	}
-	
-    public float process( float currentSample )
+    public void receive( ComplexSample currentSample )
     {
-		float delayedSample = mDelayBuffer.get( currentSample );
+		ComplexSample delayedSample = mDelayBuffer.get( currentSample );
 
 		double gain = MANUAL_AGC_GAIN;
 		
 		if( mAGCEnabled.get() )
 		{
-			double currentMagnitude = Math.log10( Math.abs( currentSample ) +
-					MIN_CONSTANT ) - Math.log10( MAX_AMPLITUDE );
+			float max = currentSample.maximumAbsolute();
+
+			double currentMagnitude = Math.log10( max + MIN_CONSTANT ) - 
+							   Math.log10( MAX_AMPLITUDE );
 
 			double delayedMagnitude = mMagnitudeBuffer.get( currentMagnitude );
 			
@@ -233,9 +209,12 @@ public class RealAutomaticGainControl implements RealSampleListener,
 			
 		}
 
-		delayedSample = (float)( delayedSample * gain );
-
-		return delayedSample;
+		delayedSample.multiply( (float)gain );
+		
+		if( mListener != null )
+		{
+			mListener.receive( delayedSample );
+		}
     }
 	
 	/**
@@ -256,13 +235,13 @@ public class RealAutomaticGainControl implements RealSampleListener,
 	}
 
 	@Override
-    public void setListener( RealSampleListener listener )
+    public void setListener( Listener<ComplexSample> listener )
     {
 		mListener = listener;
     }
 
 	@Override
-    public void removeListener( RealSampleListener listener )
+    public void removeListener( Listener<ComplexSample> listener )
     {
 		mListener = null;
     }

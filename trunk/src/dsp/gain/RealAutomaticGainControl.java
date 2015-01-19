@@ -1,12 +1,12 @@
-package dsp.agc;
+package dsp.gain;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import sample.Listener;
-import sample.Provider;
-import sample.complex.ComplexSample;
-import buffer.ComplexCircularBuffer;
+import sample.real.RealBuffer;
+import sample.real.RealSampleListener;
+import sample.real.RealSampleProvider;
 import buffer.DoubleCircularBuffer;
+import buffer.FloatCircularBuffer;
 
 /*******************************************************************************
  *     SDR Trunk 
@@ -61,13 +61,14 @@ import buffer.DoubleCircularBuffer;
  *     those of the authors and should not be interpreted as representing 
  *     official policies, either expressed or implied, of Moe Wheatley.
  ******************************************************************************/
-public class ComplexAutomaticGainControl implements Listener<ComplexSample>,
-												    Provider<ComplexSample>
+public class RealAutomaticGainControl implements RealSampleListener,
+												 RealSampleProvider
 {
 	private static final double SAMPLE_RATE = 48000;
 	
 	/* Signal delay line - time delay in seconds */
-	private static final double DELAY_TIME_CONSTANT = 0.015;
+//	private static final double DELAY_TIME_CONSTANT = 0.015;
+	private static final double DELAY_TIME_CONSTANT = 0.01;
 
 	/* Peak detector window - time delay in seconds */
 	private static final double WINDOW_TIME_CONSTANT = 0.018;
@@ -133,30 +134,53 @@ public class ComplexAutomaticGainControl implements Listener<ComplexSample>,
 	private double mAttackAverage = 0.0;
 	private double mDecayAverage = 0.0;
 	
-	private ComplexCircularBuffer mDelayBuffer = 
-		new ComplexCircularBuffer( (int)( SAMPLE_RATE * DELAY_TIME_CONSTANT ) );
+	private FloatCircularBuffer mDelayBuffer = 
+		new FloatCircularBuffer( (int)( SAMPLE_RATE * DELAY_TIME_CONSTANT ) );
 	private DoubleCircularBuffer mMagnitudeBuffer = 
 		new DoubleCircularBuffer( (int)( SAMPLE_RATE * WINDOW_TIME_CONSTANT ) );
 	
-	private Listener<ComplexSample> mListener;
+	private RealSampleListener mListener;
 	
-	public ComplexAutomaticGainControl()
+	public RealAutomaticGainControl()
 	{
 	}
 
 	@Override
-    public void receive( ComplexSample currentSample )
+	public void receive( float currentSample )
+	{
+		float processed = process( currentSample );
+		
+		if( mListener != null )
+		{
+			mListener.receive( processed );
+		}
+	}
+	
+	/**
+	 * Applies AGC to a buffer of real (float) samples
+	 */
+	public RealBuffer process( RealBuffer buffer )
+	{
+		float[] samples = buffer.getSamples();
+
+		for( int x = 0; x < samples.length; x++ )
+		{
+			samples[ x ] = process( samples[ x ] );
+		}
+		
+		return new RealBuffer( samples );
+	}
+	
+    public float process( float currentSample )
     {
-		ComplexSample delayedSample = mDelayBuffer.get( currentSample );
+		float delayedSample = mDelayBuffer.get( currentSample );
 
 		double gain = MANUAL_AGC_GAIN;
 		
 		if( mAGCEnabled.get() )
 		{
-			float max = currentSample.maximumAbsolute();
-
-			double currentMagnitude = Math.log10( max + MIN_CONSTANT ) - 
-							   Math.log10( MAX_AMPLITUDE );
+			double currentMagnitude = Math.log10( Math.abs( currentSample ) +
+					MIN_CONSTANT ) - Math.log10( MAX_AMPLITUDE );
 
 			double delayedMagnitude = mMagnitudeBuffer.get( currentMagnitude );
 			
@@ -209,12 +233,9 @@ public class ComplexAutomaticGainControl implements Listener<ComplexSample>,
 			
 		}
 
-		delayedSample.multiply( (float)gain );
-		
-		if( mListener != null )
-		{
-			mListener.receive( delayedSample );
-		}
+		delayedSample = (float)( delayedSample * gain );
+
+		return delayedSample;
     }
 	
 	/**
@@ -235,13 +256,13 @@ public class ComplexAutomaticGainControl implements Listener<ComplexSample>,
 	}
 
 	@Override
-    public void setListener( Listener<ComplexSample> listener )
+    public void setListener( RealSampleListener listener )
     {
 		mListener = listener;
     }
 
 	@Override
-    public void removeListener( Listener<ComplexSample> listener )
+    public void removeListener( RealSampleListener listener )
     {
 		mListener = null;
     }
