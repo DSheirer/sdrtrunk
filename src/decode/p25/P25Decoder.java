@@ -30,6 +30,8 @@ import org.slf4j.LoggerFactory;
 
 import sample.real.RealSampleListener;
 import source.Source.SampleType;
+import source.tuner.DirectFrequencyController;
+import source.tuner.FrequencyChangeListener;
 import alias.AliasList;
 import decode.Decoder;
 import decode.DecoderType;
@@ -42,7 +44,8 @@ import dsp.fsk.C4FMSymbolFilter;
 import dsp.fsk.P25MessageFramer;
 import dsp.nbfm.FMDiscriminator;
 
-public class P25Decoder extends Decoder implements Instrumentable
+public class P25Decoder extends Decoder 
+			implements DirectFrequencyController, Instrumentable
 {
 	private final static Logger mLog = LoggerFactory.getLogger( P25Decoder.class );
 
@@ -196,4 +199,20 @@ public class P25Decoder extends Decoder implements Instrumentable
 	    throw new IllegalArgumentException( "unfiltered real sample provider "
 	    		+ "not implemented in P25 Decoder" );
     }
+
+	/**
+	 * Registers a frequency change listener to receive frequency correction
+	 * events from the symbol filter
+	 */
+	@Override
+	public void setListener( FrequencyChangeListener listener )
+	{
+		mSymbolFilter.addListener( listener );
+	}
+
+	@Override
+	public long getFrequencyCorrection()
+	{
+		return mSymbolFilter.getFrequencyCorrection();
+	}
 }

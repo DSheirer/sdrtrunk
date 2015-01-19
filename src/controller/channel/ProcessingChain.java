@@ -46,6 +46,8 @@ import source.RealSource;
 import source.Source;
 import source.SourceException;
 import source.config.SourceConfigMixer;
+import source.tuner.DirectFrequencyController;
+import source.tuner.FrequencyChangeListener;
 import source.tuner.Tuner;
 import source.tuner.TunerChannelSource;
 import alias.AliasList;
@@ -109,11 +111,28 @@ public class ProcessingChain implements Listener<Message>
 	}
 
 	/**
-	 * Automatic Frequency Control, or null if disabled
+	 * Current frequency correction setting
 	 */
-	public AutomaticFrequencyControl getAFC()
+	public long getFrequencyCorrection()
 	{
-		return mAFC;
+		if( mAFC != null )
+		{
+			return mAFC.getErrorCorrection();
+		}
+		else if( mDecoder != null && 
+				  mDecoder instanceof DirectFrequencyController )
+		{
+			return ( (DirectFrequencyController)mDecoder).getFrequencyCorrection();
+		}
+		
+		return 0;
+	}
+	
+	public boolean hasFrequencyControl()
+	{
+		return mAFC != null || 
+				( mDecoder != null && 
+				  mDecoder instanceof DirectFrequencyController );
 	}
 	
 	public Listener<List<ComplexSample>> getComplexReceiver()
@@ -370,23 +389,31 @@ public class ProcessingChain implements Listener<Message>
 						mAFC = null;
 					}
 					
-					if( mSource instanceof TunerChannelSource &&
-					    mChannel.getDecodeConfiguration().supportsAFC() &&
-						mChannel.getDecodeConfiguration().isAFCEnabled() )
+					if( mSource instanceof TunerChannelSource )
 					{
 						TunerChannelSource tcs = (TunerChannelSource)mSource;
 						
-						int maximumCorrection = mChannel
-							.getDecodeConfiguration().getAFCMaximumCorrection();
-						
-						mAFC = new AutomaticFrequencyControl( tcs, 
-											maximumCorrection );
+						if( mChannel.getDecodeConfiguration().supportsAFC() &&
+							mChannel.getDecodeConfiguration().isAFCEnabled() )
+						{
+							
+							int maximumCorrection = mChannel
+								.getDecodeConfiguration().getAFCMaximumCorrection();
+							
+							mAFC = new AutomaticFrequencyControl( tcs, 
+												maximumCorrection );
 
-						/* Register AFC to receive frequency change events */
-						tcs.addListener( mAFC );
+							/* Register AFC to receive frequency change events */
+							tcs.addListener( mAFC );
 
-						/* Add AFC as listener to the decoder */
-						mDecoder.addUnfilteredRealSampleListener( mAFC );
+							/* Add AFC as listener to the decoder */
+							mDecoder.addUnfilteredRealSampleListener( mAFC );
+						}
+						else if( mDecoder instanceof DirectFrequencyController )
+						{
+							((DirectFrequencyController)mDecoder)
+								.setListener( (FrequencyChangeListener)tcs );
+						}
 					}
 				}
 			}
