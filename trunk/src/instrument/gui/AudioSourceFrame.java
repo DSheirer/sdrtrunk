@@ -55,11 +55,11 @@ import decode.p25.P25Decoder;
 import decode.passport.PassportDecoder;
 import decode.tait.Tait1200Decoder;
 
-public class WaveSourceFrame extends JInternalFrame implements PositionListener
+public class AudioSourceFrame extends JInternalFrame implements PositionListener
 {
     private static final long serialVersionUID = 1L;
 	private final static Logger mLog = 
-			LoggerFactory.getLogger( WaveSourceFrame.class );
+			LoggerFactory.getLogger( AudioSourceFrame.class );
 
 	private WaveSource mSource;
 	private JDesktopPane mDesktop;
@@ -67,7 +67,7 @@ public class WaveSourceFrame extends JInternalFrame implements PositionListener
 	private JLabel mCurrentPosition = new JLabel( "0" );
 	private JComboBox<DecoderType> mComboDecoders;
 	
-	public WaveSourceFrame( WaveSource source, JDesktopPane desktop )
+	public AudioSourceFrame( WaveSource source, JDesktopPane desktop )
 	{
 		mSource = source;
 		mSource.addListener( this );
@@ -79,7 +79,7 @@ public class WaveSourceFrame extends JInternalFrame implements PositionListener
 	
 	private void initGui()
 	{
-		setTitle( "Wave Source [" + mSource.getSampleType().toString() + "]" );
+		setTitle( "Audio Source [" + mSource.getSampleType().toString() + "]" );
 		setPreferredSize( new Dimension( 600, 150 ) );
 		setSize( 600, 150 );
 
@@ -125,6 +125,8 @@ public class WaveSourceFrame extends JInternalFrame implements PositionListener
 	
 	public class AddDecoderButton extends JButton
 	{
+		private static final long serialVersionUID = 1L;
+
 		public AddDecoderButton()
 		{
 			super( "Add" );
@@ -167,6 +169,8 @@ public class WaveSourceFrame extends JInternalFrame implements PositionListener
 						case TAIT_1200:
 							decoder = new Tait1200Decoder( null );
 							break;
+						default:
+							break;
 					}
 
 					if( decoder != null )
@@ -184,6 +188,8 @@ public class WaveSourceFrame extends JInternalFrame implements PositionListener
 	
 	public class NextSampleButton extends JButton
 	{
+		private static final long serialVersionUID = 1L;
+		
 		private WaveSource mSource;
 		private int mCount;
 		
@@ -207,7 +213,7 @@ public class WaveSourceFrame extends JInternalFrame implements PositionListener
                     	mLog.error( "Viewer - error trying to fetch next [" + 
                     			mCount + "] samples", e );
 
-                    	JOptionPane.showMessageDialog( WaveSourceFrame.this,
+                    	JOptionPane.showMessageDialog( AudioSourceFrame.this,
                     		    "Cannot read " + mCount + " more samples [" + 
                     		    		e.getLocalizedMessage() + "]",
                     		    "Wave File Error",
@@ -220,6 +226,8 @@ public class WaveSourceFrame extends JInternalFrame implements PositionListener
 
 	public class JumpToField extends JTextField
 	{
+		private static final long serialVersionUID = 1L;
+		
 		private WaveSource mSource;
 		
 		public JumpToField( WaveSource source )
@@ -248,7 +256,7 @@ public class WaveSourceFrame extends JInternalFrame implements PositionListener
 						mLog.error( "WaveSourceFrame - exception during jump "
 								+ "to", e );
 						
-                    	JOptionPane.showMessageDialog( WaveSourceFrame.this,
+                    	JOptionPane.showMessageDialog( AudioSourceFrame.this,
                     		    "Can't jump to position [" + getText() + "]",
                     		    "Error",
                     		    JOptionPane.ERROR_MESSAGE );                    	

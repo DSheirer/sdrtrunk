@@ -51,21 +51,11 @@ public class Viewer
 	public Viewer()
 	{
 		initGUI();
-
-        EventQueue.invokeLater( new Runnable()
-        {
-            public void run()
-            {
-                try
-                {
-                	mFrame.setVisible( true );
-                }
-                catch( Exception e )
-                {
-                    e.printStackTrace();
-                }
-            }
-        } );
+	}
+	
+	public void setVisible( boolean visible )
+	{
+		mFrame.setVisible( visible );
 	}
 	
     /**
@@ -146,10 +136,15 @@ public class Viewer
     		source = floatSource;
     		
     		mLog.info( "File opened as float wave file" );
+    		
+    		AudioSourceFrame sourcePanel = 
+					new AudioSourceFrame( source, mDesktop );
+    		sourcePanel.setVisible( true );
+    		mDesktop.add( sourcePanel );
     	}
     	catch( Exception e )
     	{
-    		mLog.error( "Couldn't open file as float source", e);
+    		mLog.error( "Couldn't open file as float single-channel source" );
     	}
     	
     	if( source == null )
@@ -163,6 +158,13 @@ public class Viewer
         		source = complex;
 
         		mLog.info( "File opened as complex wave file" );
+        		
+        		BasebandSourceFrame sourcePanel = 
+        				new BasebandSourceFrame( complex, mDesktop );
+        		
+        		sourcePanel.setVisible( true );
+        		
+        		mDesktop.add( sourcePanel );
         	}
         	catch( Exception e )
         	{
@@ -174,20 +176,34 @@ public class Viewer
     	{
     		mSource = source;
 
-    		WaveSourceFrame sourcePanel = 
-    					new WaveSourceFrame( source, mDesktop );
-    		sourcePanel.setVisible( true );
-    		mDesktop.add( sourcePanel );
     	}
     }
 	
 	public static void main( String[] args )
 	{
 		final Viewer viewer = new Viewer();
+		
+        EventQueue.invokeLater( new Runnable()
+        {
+            public void run()
+            {
+                try
+                {
+                	viewer.setVisible( true );
+                }
+                catch( Exception e )
+                {
+                    e.printStackTrace();
+                }
+            }
+        } );
+		
 	}
 	
 	public class SourceFileItem extends JMenuItem
 	{
+		private static final long serialVersionUID = 1L;
+
 		public SourceFileItem()
 		{
 			super( "Open" );

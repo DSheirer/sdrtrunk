@@ -43,8 +43,8 @@ public class ComplexSampleBufferAssembler
 	 */
 	public void put( ComplexSample sample )
 	{
-		mByteBuffer.putShort( (short)sample.left() );
-		mByteBuffer.putShort( (short)sample.right() );
+		mByteBuffer.putShort( (short)( sample.left() * Short.MAX_VALUE ) );
+		mByteBuffer.putShort( (short)( sample.right() * Short.MAX_VALUE ) );
 	}
 
 	/**

@@ -133,12 +133,7 @@ public class PDUMessage extends P25Message
 	
 	public int getPadOctetCount()
 	{
-		if( getFormat() == PDUFormat.UNCONFIRMED_MULTI_BLOCK_TRUNKING_CONTROL )
-		{
-			return mMessage.getInt( PAD_OCTET_COUNT );
-		}
-		
-		return 0;
+		return mMessage.getInt( PAD_OCTET_COUNT );
 	}
 	
 	public Opcode getOpcode()
@@ -153,11 +148,6 @@ public class PDUMessage extends P25Message
 	
 	public int getDataHeaderOffset()
 	{
-		if( getFormat() == PDUFormat.UNCONFIRMED_MULTI_BLOCK_TRUNKING_CONTROL )
-		{
-			return mMessage.getInt( DATA_HEADER_OFFSET );
-		}
-		
-		return 0;
+		return mMessage.getInt( DATA_HEADER_OFFSET );
 	}
 }
