@@ -107,10 +107,23 @@ public class BitSetBuffer extends BitSet
     {
         return mPointer;
     }
-    
+
+    /**
+     * Sets the pointer to a specific value
+     * @param index
+     */
     public void setPointer( int index )
     {
     	mPointer = index;
+    }
+
+    /**
+     * Moves the current pointer position left (negative adjustment) or 
+     * right (positive adjustment)
+     */
+    public void adjustPointer( int adjustment )
+    {
+    	mPointer += adjustment;
     }
 
     /**

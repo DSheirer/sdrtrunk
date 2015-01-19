@@ -332,7 +332,7 @@ public class CRCP25
 	 */
 	public static CRC checkCRC9( BitSetBuffer message, int messageStart )
 	{
-		int calculated = 0x1FF; //Initial fill of all ones
+		int calculated = 0x0; //Initial fill of all ones
 
 		/* Iterate the set bits and XOR running checksum with lookup value */
 		for (int i = message.nextSetBit( messageStart ); 
@@ -353,7 +353,16 @@ public class CRCP25
 		
 		int checksum = message.getInt( messageStart + 7, messageStart + 15 );
 
-		return ( calculated ^ checksum ) == 0 ? CRC.PASSED : CRC.FAILED_CRC;
+		int residual = calculated ^ checksum;
+		
+//		mLog.debug( "CALC:" + calculated + " CHECK:" + checksum + " RESID:" + residual );
+
+		if( residual == 0 || residual == 0x1FF )
+		{
+			return CRC.PASSED;
+		}
+		
+		return CRC.FAILED_CRC;
 	}
 	
 	
@@ -432,7 +441,7 @@ public class CRCP25
     
     public static void main( String[] args )
     {
-    	String raw = "000000010110100101010001000000000100010100000000000000000010000000011001001011100000000000000000011111110001000101001011100101110000101000110011";
+    	String raw = "000000001000001100000001010001111011000100001010010001111100000000000101000000000000000001000000000000110000000000000001101010101010101010101010";
     	
     	BitSetBuffer message = BitSetBuffer.load( raw );
     	

@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 
+import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
@@ -127,10 +128,14 @@ public class ComplexWaveSource extends WaveSource
 
         mBytesPerFrame = mInputStream.getFormat().getFrameSize();
 
-        if( mBytesPerFrame != 2 || mInputStream.getFormat().getChannels() != 2 )
+        AudioFormat format = mInputStream.getFormat();
+        
+        if( format.getChannels() != 2 || format.getSampleSizeInBits() != 16 )
         {
-        	throw new IOException( "Unsupported Wave Format - requires two "
-        			+ "channels with 16-bit samples" );
+        	throw new IOException( "Unsupported Wave Format - EXPECTED: 2 " +
+        		"channels 16-bit samples FOUND: " + 
+    			mInputStream.getFormat().getChannels() + " channels " + 
+        		mInputStream.getFormat().getSampleSizeInBits() + "-bit samples" );
         }
 
         mBuffer = new byte[ mBytesPerFrame * BUFFER_SAMPLE_SIZE ];

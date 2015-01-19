@@ -399,8 +399,10 @@ public class P25MessageFramer implements Listener<Dibit>
 					if( mThreeQuarterRate.decode( mMessage, 
 							mMessage.size() - 196, mMessage.size() ) )
 					{
-						/* Resize the message to account for removing 48 + 4 parity bits */
+						/* Resize the message and adjust the message pointer
+						 * to account for removing 48 + 4 parity bits */
 						mMessage.setSize( mMessage.size() - 52 );
+						mMessage.adjustPointer( -52 );
 						
 						int blocks = mMessage.getInt( PDUMessage.BLOCKS_TO_FOLLOW );
 						
