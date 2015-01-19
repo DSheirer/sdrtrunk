@@ -117,8 +117,24 @@ public class PDUConfirmedMessage extends PDUMessage
 	{
 		/* 16 octets per block, and 12 octets in final block */
 		int count = getBlocksToFollowCount() * 16 - 4;
+
+		int padding = getPadOctetCount();
 		
-		count -= getPadOctetCount();
+		/* Hack: motorola sndcp packet data control - when it says there are 15
+		 * pad octets and only 1 data block of 12 data octets, that means there 
+		 * are more pad octets than available data and they appear to suppress 
+		 * the final padded data block containing the 12 pad octets. The data
+		 * block count should be 2, but it says 1, so they're either not sending
+		 * the final block, or there is an error in the block count */
+		if( padding > count )
+		{
+			count -= ( padding - 12 );
+		}
+		else
+		{
+			count -= padding;
+		}
+		
 		
 		count -= getDataHeaderOffset();
 		

@@ -141,24 +141,21 @@ public class Channel extends Configuration
 	}
 
 	/**
-	 * Indicates if the channel is using Automatic Frequency Control
-	 * @return
+	 * Indicates if the channel has Automatic or Direct Frequency Control
 	 */
-	public boolean hasAFC()
+	public boolean hasFrequencyControl()
 	{
-		return getAFC() != null;
+		return mProcessingChain != null && mProcessingChain.hasFrequencyControl();
 	}
 	
-	public AutomaticFrequencyControl getAFC()
+	public long getFrequencyCorrection()
 	{
-		if( isProcessing() )
+		if( mProcessingChain != null )
 		{
-			return getProcessingChain().getAFC();
+			return mProcessingChain.getFrequencyCorrection();
 		}
-		else
-		{
-			return null;
-		}
+		
+		return 0;
 	}
 
 	/**

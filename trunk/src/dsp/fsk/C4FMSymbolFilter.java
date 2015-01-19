@@ -13,8 +13,13 @@ import org.slf4j.LoggerFactory;
 
 import sample.real.RealSampleListener;
 import sample.real.RealSampleProvider;
+import source.tuner.FrequencyChangeBroadcaster;
+import source.tuner.FrequencyChangeEvent;
+import source.tuner.FrequencyChangeEvent.Attribute;
+import source.tuner.FrequencyChangeListener;
 
-public class C4FMSymbolFilter implements RealSampleListener, 
+public class C4FMSymbolFilter implements FrequencyChangeBroadcaster,
+										 RealSampleListener, 
 										 RealSampleProvider,
 										 Instrumentable
 {
@@ -180,7 +185,8 @@ public class C4FMSymbolFilter implements RealSampleListener,
 	private static final double K_FINE_FREQUENCY = 0.125;
 	
 	/* Frequency correction broadcast threshold */
-	private static final double COARSE_FREQUENCY_DEADBAND = 1.66;
+//	private static final double COARSE_FREQUENCY_DEADBAND = 1.66;
+	private static final double COARSE_FREQUENCY_DEADBAND = 1.20;
 	
 	/* 2.0 symbol spread gives -3, -1, 1, 3 */
 	private float mSymbolSpread = 2.0f;
@@ -194,6 +200,9 @@ public class C4FMSymbolFilter implements RealSampleListener,
 	private int mHistoryLast = 0;
 	
 	private RealSampleListener mListener;
+	
+	private FrequencyChangeListener mFrequencyChangeListener;
+	private long mFrequencyCorrection;
 
 	private float mGain = 15.4f;
 	
@@ -217,6 +226,11 @@ public class C4FMSymbolFilter implements RealSampleListener,
 	
 	public C4FMSymbolFilter()
 	{
+	}
+	
+	public long getFrequencyCorrection()
+	{
+		return mFrequencyCorrection;
 	}
 	
 	@Override
@@ -311,13 +325,24 @@ public class C4FMSymbolFilter implements RealSampleListener,
 			
 			mFineFrequencyCorrection += ( symbolError * K_FINE_FREQUENCY );
 			
-//			/* send frequency correction */
-//			if( Math.abs( mCoarseFrequencyCorrection ) > COARSE_FREQUENCY_DEADBAND )
-//			{
-//				mLog.debug( "Frequency Correction [" + 
-//						( mCoarseFrequencyCorrection > 0 ? "-" : "+" ) + 
-//						mCoarseFrequencyCorrection + "]" );
-//			}
+			/* send frequency correction */
+			if( Math.abs( mCoarseFrequencyCorrection ) > COARSE_FREQUENCY_DEADBAND )
+			{
+				if( mFrequencyChangeListener != null )
+				{
+					mFrequencyCorrection += ( 
+						500 * ( mCoarseFrequencyCorrection > 0 ? 1 : -1 ) );
+					
+					mFrequencyChangeListener.frequencyChanged( 
+						new FrequencyChangeEvent( Attribute.FREQUENCY_ERROR, 
+								mFrequencyCorrection ) );
+
+					/* reset internal frequency error tracker */
+					mCoarseFrequencyCorrection = 0;
+
+					mLog.debug( "Frequency Corrected: " + mFrequencyCorrection );
+				}
+			}
 			
 			if( mSymbolSpreadTap != null )
 			{
@@ -343,7 +368,7 @@ public class C4FMSymbolFilter implements RealSampleListener,
     {
 		mListener = null;
     }
-
+	
 	@Override
     public List<Tap> getTaps()
     {
@@ -379,4 +404,16 @@ public class C4FMSymbolFilter implements RealSampleListener,
 			mSymbolSpreadTap = null;
 		}
     }
+
+	@Override
+	public void addListener( FrequencyChangeListener listener )
+	{
+		mFrequencyChangeListener = listener;
+	}
+
+	@Override
+	public void removeListener( FrequencyChangeListener listener )
+	{
+		mFrequencyChangeListener = null;
+	}
 }

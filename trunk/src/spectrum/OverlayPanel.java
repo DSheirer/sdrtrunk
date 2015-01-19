@@ -500,11 +500,11 @@ public class OverlayPanel extends JPanel
                 }
                 
                 /* Draw Automatic Frequency Control line */
-                if( channel.hasAFC() )
+                if( channel.hasFrequencyControl() )
                 {
-                	int frequency = (int)tunerChannel.getFrequency();
+                	long frequency = tunerChannel.getFrequency();
                 	
-                	int error = frequency + channel.getAFC().getErrorCorrection();
+                	long error = frequency + channel.getFrequencyCorrection();
                 	
                     drawAFC( graphics, getAxisFromFrequency( frequency ), false );
 
