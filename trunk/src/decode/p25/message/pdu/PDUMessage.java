@@ -106,6 +106,11 @@ public class PDUMessage extends P25Message
 		return mMessage.get( PACKET_DIRECTION_INDICATOR ) ? "OSP" : "ISP";
 	}
 	
+	public boolean isOutbound()
+	{
+		return mMessage.get( PACKET_DIRECTION_INDICATOR );
+	}
+	
 	public PDUFormat getFormat()
 	{
 		return PDUFormat.fromValue( mMessage.getInt( FORMAT ) );

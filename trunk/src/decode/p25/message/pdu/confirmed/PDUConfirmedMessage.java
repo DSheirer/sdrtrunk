@@ -1,11 +1,13 @@
-package decode.p25.message.pdu;
+package decode.p25.message.pdu.confirmed;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import alias.AliasList;
 import bits.BitSetBuffer;
+import decode.p25.message.pdu.PDUMessage;
 import decode.p25.reference.DataUnitID;
+import decode.p25.reference.PDUType;
 import decode.p25.reference.Vendor;
 import edac.CRC;
 import edac.CRCP25;
@@ -19,17 +21,28 @@ public class PDUConfirmedMessage extends PDUMessage
 	public static final int[] PACKET_SEQUENCE_NUMBER = { 129,130,131 };
 	public static final int FINAL_FRAGMENT_FLAG = 132;
 	public static final int[] FRAGMENT_SEQUENCE_NUMBER = { 133,134,135 };
-	public static final int PACKET_DATA_START = 176;
+	public static final int[] PDU_TYPE = { 176,177,178,179 };
 	
-	public PDUConfirmedMessage( BitSetBuffer message, DataUnitID duid,
-            AliasList aliasList )
+	public PDUConfirmedMessage( BitSetBuffer message, AliasList aliasList )
     {
-	    super( message, duid, aliasList );
+	    super( message, DataUnitID.PDUC, aliasList );
 
 	    checkCRC();
-	    
-	    mLog.debug( toString() );
     }
+
+	/**
+	 * Constructor to support subclassing of this message.  Initial construction
+	 * of the message enables CRC checks to be calculated and message type to
+	 * be inspected so that we can construct an accurate subclass message,
+	 * without having to recalculate CRC checksums.
+	 */
+	protected PDUConfirmedMessage( PDUConfirmedMessage message )
+	{
+		super( message.getSourceMessage(), DataUnitID.PDUC, message.getAliasList() );
+		mCRC = message.getCRCResults();
+		
+		mLog.debug( toString() );
+	}
 	
 	private void checkCRC()
 	{
@@ -60,6 +73,7 @@ public class PDUConfirmedMessage extends PDUMessage
     {
 		StringBuilder sb = new StringBuilder();
 
+		sb.append( "[" + this.getClass() + "]" );
 		sb.append( "NAC:" );
 		sb.append( getNAC() );
 		sb.append( " " );
@@ -100,15 +114,25 @@ public class PDUConfirmedMessage extends PDUMessage
 			}
 		}
 		
-		sb.append( " " );
-		sb.append( getPacket() );
-		
 		sb.append( " BLOCKS:" );
 		sb.append( getBlocksToFollowCount() );
+		
+		sb.append( " " );
+		sb.append( mMessage.toString() );
 		
 	    return sb.toString();
     }
 
+	/**
+	 * Packet Data Unit Type
+	 */
+	public PDUType getPDUType()
+	{
+		return PDUType.fromValue( mMessage.getInt( PDU_TYPE ), isOutbound() );
+	}
+
+	
+	
 	/**
 	 * Number of bytes/octets contained in the message, exclusive of the data
 	 * header.
@@ -179,66 +203,8 @@ public class PDUConfirmedMessage extends PDUMessage
 		return mMessage.getInt( FRAGMENT_SEQUENCE_NUMBER );
 	}
 	
-	/**
-	 * Hex string representation of the packet data, including packet header
-	 * data if present.
-	 */
-	public String getPacket()
-	{
-		StringBuilder sb = new StringBuilder();
-
-		int dataHeaderOffset = getDataHeaderOffset();
-		
-		if( dataHeaderOffset > 0 )
-		{
-			sb.append( "HDR:" );
-
-			for( int x = 0; x < dataHeaderOffset; x++ )
-			{
-				sb.append( getPacketOctet( x ) );
-			}
-			
-			sb.append( " " );
-		}
-
-		int counter = 0;
-
-		/* Append octets inserting a space between each 32-bit value */
-		for( int x = 0; x < getOctetCount(); x++ )
-		{
-			sb.append( getPacketOctet( x + dataHeaderOffset ) );
-			
-			counter++;
-			
-			if( counter >= 4 )
-			{
-				sb.append( " " );
-				counter = 0;
-			}
-		}
-
-		return sb.toString();
-	}
-
-	/**
-	 * Returns the octet identified by the 0-indexed 'octet' argument location.
-	 * If there is a Data Header Offset, the 0 index points to the first octet
-	 * of the data header.  Otherwise, the 0 index points to the first octet
-	 * of the packet.  You must account for the data header offset when 
-	 * specifying the octet.
-	 */
-	public String getPacketOctet( int octet )
-	{
-		int block = (int)( octet / 16 );
-		int offset = octet % 16;
-
-		int start = PACKET_DATA_START + ( block * 144 ) + ( offset * 8 );
-		
-		return mMessage.getHex( start, start + 7, 2 );
-	}
-
 	public String toString()
 	{
-		return super.toString() + " " + mMessage.toString();
+		return getMessage();
 	}
 }

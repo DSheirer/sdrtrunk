@@ -41,6 +41,11 @@ public class P25Message extends Message
 		mAliasList = aliasList;
 	}
 	
+	public CRC[] getCRCResults()
+	{
+		return mCRC;
+	}
+	
 	public BitSetBuffer getSourceMessage()
 	{
 		return mMessage;

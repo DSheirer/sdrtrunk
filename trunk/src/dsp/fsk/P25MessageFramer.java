@@ -20,9 +20,10 @@ import decode.p25.message.hdu.HDUMessage;
 import decode.p25.message.ldu.LDU1Message;
 import decode.p25.message.ldu.LDU2Message;
 import decode.p25.message.ldu.lc.LDULCMessageFactory;
-import decode.p25.message.pdu.PDUConfirmedMessage;
 import decode.p25.message.pdu.PDUMessage;
 import decode.p25.message.pdu.PDUMessageFactory;
+import decode.p25.message.pdu.confirmed.PDUConfirmedMessage;
+import decode.p25.message.pdu.confirmed.PDUConfirmedMessageFactory;
 import decode.p25.message.tdu.TDUMessage;
 import decode.p25.message.tdu.lc.TDULCMessageFactory;
 import decode.p25.message.tdu.lc.TDULinkControlMessage;
@@ -415,8 +416,12 @@ public class P25MessageFramer implements Listener<Dibit>
 						}
 						else
 						{
-							dispatch( new PDUConfirmedMessage( mMessage.copy(), 
-									mDUID, mAliasList ) );
+							PDUConfirmedMessage pducm = 
+								new PDUConfirmedMessage( mMessage.copy(), 
+									mAliasList );
+
+							/* Translate into correct subclass */
+							dispatch( PDUConfirmedMessageFactory.getMessage( pducm ) );
 							
 							mComplete = true;
 						}
@@ -424,8 +429,12 @@ public class P25MessageFramer implements Listener<Dibit>
 					}
 					else
 					{
-						dispatch( new PDUConfirmedMessage( mMessage.copy(), 
-								mDUID, mAliasList ) );
+						PDUConfirmedMessage pducm = 
+								new PDUConfirmedMessage( mMessage.copy(), 
+									mAliasList );
+
+						/* Translate into correct subclass */
+						dispatch( PDUConfirmedMessageFactory.getMessage( pducm ) );
 						
 						mComplete = true;
 					}
