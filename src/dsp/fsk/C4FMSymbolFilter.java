@@ -202,7 +202,7 @@ public class C4FMSymbolFilter implements FrequencyChangeBroadcaster,
 	
 	private RealSampleListener mListener;
 	
-	public static final long MAX_FREQUENCY_CORRECTION = 7000;
+	public static final long MAX_FREQUENCY_CORRECTION = 3000;
 	private FrequencyChangeListener mFrequencyChangeListener;
 	private long mFrequencyCorrection;
 

@@ -37,12 +37,14 @@ import decode.Decoder;
 import decode.DecoderType;
 import dsp.filter.ComplexFIRFilter;
 import dsp.filter.FilterFactory;
+import dsp.filter.FloatFIRFilter;
 import dsp.filter.Window.WindowType;
 import dsp.fsk.C4FMSlicer;
 import dsp.fsk.C4FMSymbolFilter;
 import dsp.fsk.P25MessageFramer;
 import dsp.gain.DirectGainControl;
 import dsp.nbfm.FMDiscriminator;
+import dsp.nbfm.FilteringNBFMDemodulator;
 
 public class P25Decoder extends Decoder 
 			implements DirectFrequencyController, Instrumentable
@@ -57,9 +59,11 @@ public class P25Decoder extends Decoder
     private List<Tap> mAvailableTaps;
 	
 	private ComplexFIRFilter mBasebandFilter = new ComplexFIRFilter( 
-			FilterFactory.getLowPass( 48000, 5000, 31, WindowType.HAMMING ), 1.0 );
-
+		FilterFactory.getLowPass( 48000, 6000, 7000, 48, WindowType.HANNING, true ), 1.0 );
 	private FMDiscriminator mDemodulator = new FMDiscriminator( 1 );
+	private FloatFIRFilter mAudioFilter = new FloatFIRFilter( 
+		FilterFactory.getLowPass( 48000, 3000, 4000, 48, WindowType.HAMMING, true ), 1.0 );
+	
 	private DirectGainControl mGainControl = 
 						new DirectGainControl( 15.0f, 0.1f, 25.0f, 0.3f );
 	private C4FMSymbolFilter mSymbolFilter;
@@ -97,7 +101,8 @@ public class P25Decoder extends Decoder
 			mDemodulator.setListener( getRealReceiver() );
 		}
 
-		addRealSampleListener( mGainControl );
+		addRealSampleListener( mAudioFilter );
+		mAudioFilter.setListener( mGainControl );
 		mGainControl.setListener( mSymbolFilter );
 		
 		mSymbolFilter.setListener( mSlicer );

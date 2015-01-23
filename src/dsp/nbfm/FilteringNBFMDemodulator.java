@@ -55,7 +55,7 @@ public class FilteringNBFMDemodulator implements Listener<ComplexSample>
 	 */
 	public FilteringNBFMDemodulator()
 	{
-		this( FilterFactory.getLowPass( 48000, 4000, 6000, 48, WindowType.HAMMING, true ), 
+		this( FilterFactory.getLowPass( 48000, 5000, 7000, 48, WindowType.HAMMING, true ), 
 				  1.0002,
 			  FilterFactory.getLowPass( 48000, 3000, 6000, 48, WindowType.HAMMING, true ),
 			  2 );

@@ -71,8 +71,6 @@ public class DirectGainControl implements GainController, RealSampleListener
 		{
 			mGain = mMaximum;
 		}
-		
-		mLog.debug( "Gain Increased: " + mGain );
 	}
 	
 	@Override
@@ -84,8 +82,6 @@ public class DirectGainControl implements GainController, RealSampleListener
 		{
 			mGain = mMinimum;
 		}
-		
-		mLog.debug( "Gain Decreased: " + mGain );
 	}
 	
     public void setListener( RealSampleListener listener )
