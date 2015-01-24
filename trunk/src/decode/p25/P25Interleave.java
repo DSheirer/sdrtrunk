@@ -5,7 +5,7 @@ import java.util.BitSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 
 /**
  * Utility class to process interleave of P25 Voice and Data messages.
@@ -65,19 +65,19 @@ public class P25Interleave
 	 * @param start - starting bit index for the block
 	 * @param end - ending bit index for the block, plus 1
 	 */
-	public static BitSetBuffer deinterleaveData( BitSetBuffer message, 
+	public static BinaryMessage deinterleaveData( BinaryMessage message, 
 			int start, int end )
 	{
 		return deinterleave( DATA_DEINTERLEAVE, message, start, end );
 	}
 	
-	public static BitSetBuffer deinterleaveVoice( BitSetBuffer message, 
+	public static BinaryMessage deinterleaveVoice( BinaryMessage message, 
 			int start, int end )
 	{
 		return deinterleave( VOICE_DEINTERLEAVE, message, start, end );
 	}
 	
-	public static BitSetBuffer deinterleave( int[] pattern, BitSetBuffer message, 
+	public static BinaryMessage deinterleave( int[] pattern, BinaryMessage message, 
 			int start, int end )
 	{
 		BitSet original = message.get( start, end );
@@ -106,19 +106,19 @@ public class P25Interleave
      * @param start - starting bit index for the block
      * @param end - ending bit index for the block, plus 1
      */
-    public static BitSetBuffer interleaveData( BitSetBuffer message, 
+    public static BinaryMessage interleaveData( BinaryMessage message, 
     		int start, int end )
     {
     	return interleave( DATA_INTERLEAVE, message, start, end );
     }
     
-    public static BitSetBuffer interleaveVoice( BitSetBuffer message, 
+    public static BinaryMessage interleaveVoice( BinaryMessage message, 
     		int start, int end )
     {
     	return interleave( VOICE_INTERLEAVE, message, start, end );
     }
     
-    public static BitSetBuffer interleave( int[] pattern, BitSetBuffer message, 
+    public static BinaryMessage interleave( int[] pattern, BinaryMessage message, 
     		int start, int end )
     {
         BitSet original = message.get( start, end );
@@ -146,7 +146,7 @@ public class P25Interleave
     	int end = 196;
     	String interleaved = "0010010100000000000000000000000000000000000010100011001011111010101010101010101010101010010111101010100011010000000000000000000000000000110001011010011010101010101010101010101010101010100101100101";
 
-    	BitSetBuffer b = new BitSetBuffer( end );
+    	BinaryMessage b = new BinaryMessage( end );
     	
     	for( int x = 0; x < end; x++ )
     	{

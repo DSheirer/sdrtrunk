@@ -25,9 +25,9 @@ import org.slf4j.LoggerFactory;
 import sample.Broadcaster;
 import sample.Listener;
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 
-public class LJ1200MessageProcessor implements Listener<BitSetBuffer>
+public class LJ1200MessageProcessor implements Listener<BinaryMessage>
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( LJ1200MessageProcessor.class );
@@ -52,7 +52,7 @@ public class LJ1200MessageProcessor implements Listener<BitSetBuffer>
 	}
 	
 	@Override
-    public void receive( BitSetBuffer buffer )
+    public void receive( BinaryMessage buffer )
     {
 		int sync = buffer.getInt( SYNC );
 

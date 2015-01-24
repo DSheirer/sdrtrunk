@@ -70,7 +70,7 @@ public class SNDCPUserData extends PDUConfirmedMessage
 
 		sb.append( "NAC:" );
 		sb.append( getNAC() );
-		sb.append( " LLID:" );
+		sb.append( " PDUC LLID:" );
 		sb.append( getLogicalLinkID() );
 		sb.append( " SNDCP NSAPI:" );
 		sb.append( getNSAPI() );

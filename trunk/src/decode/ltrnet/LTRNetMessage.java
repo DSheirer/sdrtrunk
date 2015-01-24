@@ -25,7 +25,7 @@ import message.MessageDirection;
 import message.MessageType;
 import alias.Alias;
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.DecoderType;
 import edac.CRC;
 import edac.CRCLTR;
@@ -49,12 +49,12 @@ public abstract class LTRNetMessage extends Message
 	protected static final int[] sSIXTEEN_BITS = { 32,31,30,29,28,27,26,25,24,23,22,21,20,19,18,17 };
 	protected static final int[] sMANUFACTURER_ID = { 23,22,21,20,19,18,17 };
 	
-	protected BitSetBuffer mMessage;
+	protected BinaryMessage mMessage;
 	protected MessageType mMessageType;
 	protected CRC mCRC;
 	protected AliasList mAliasList;
 	
-    public LTRNetMessage( BitSetBuffer message, 
+    public LTRNetMessage( BinaryMessage message, 
     					  MessageDirection direction,
     					  AliasList list )
     {

@@ -1,7 +1,7 @@
 package decode.p25.message.pdu;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.P25Message;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
@@ -26,7 +26,7 @@ public class PDUMessage extends P25Message
 	public static final int[] PDU_CRC = { 144,145,146,147,148,149,150,151,152,
 		153,154,155,156,157,158,159 };
 
-	public PDUMessage( BitSetBuffer message, DataUnitID duid, AliasList aliasList )
+	public PDUMessage( BinaryMessage message, DataUnitID duid, AliasList aliasList )
     {
         super( message, duid, aliasList );
 

@@ -30,7 +30,7 @@ import java.awt.geom.Rectangle2D;
 import java.util.List;
 import java.util.Observable;
 
-import dsp.fsk.Dibit;
+import dsp.symbol.Dibit;
 
 public class DibitTapViewPanel extends TapViewPanel
 {

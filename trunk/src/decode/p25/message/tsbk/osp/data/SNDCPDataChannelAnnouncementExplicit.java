@@ -1,7 +1,7 @@
 package decode.p25.message.tsbk.osp.data;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.IdentifierProvider;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.reference.DataUnitID;
@@ -25,7 +25,7 @@ public class SNDCPDataChannelAnnouncementExplicit extends SNDCPData
     private IdentifierProvider mIdentifierUpdateTransmit;
     private IdentifierProvider mIdentifierUpdateReceive;
 
-    public SNDCPDataChannelAnnouncementExplicit( BitSetBuffer message, 
+    public SNDCPDataChannelAnnouncementExplicit( BinaryMessage message, 
 								  DataUnitID duid,
 								  AliasList aliasList )
     {

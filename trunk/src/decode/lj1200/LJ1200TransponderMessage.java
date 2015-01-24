@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import alias.Alias;
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import edac.CRC;
 import edac.CRCLJ;
 
@@ -41,11 +41,11 @@ public class LJ1200TransponderMessage extends Message
 	
 	private static SimpleDateFormat mSDF = new SimpleDateFormat( "yyyyMMdd HHmmss" );
 
-    private BitSetBuffer mMessage;
+    private BinaryMessage mMessage;
     private AliasList mAliasList;
     private CRC mCRC;
     
-    public LJ1200TransponderMessage( BitSetBuffer message, AliasList list )
+    public LJ1200TransponderMessage( BinaryMessage message, AliasList list )
     {
     	mMessage = message;
         mAliasList = list;

@@ -22,8 +22,8 @@ import java.util.Iterator;
 
 import sample.Broadcaster;
 import sample.Listener;
-import dsp.SyncDetectListener;
-import dsp.SyncDetectProvider;
+import dsp.symbol.SyncDetectListener;
+import dsp.symbol.SyncDetectProvider;
 
 /**
  * MessageFramer - processes bitsets looking for a sync pattern within
@@ -39,15 +39,15 @@ public class MessageFramer implements Listener<Boolean>,
 	private boolean[] mSyncPattern;
 	private int mMessageLength;
 	private SyncDetectListener mSyncDetectListener;
-	private Broadcaster<BitSetBuffer> mBroadcaster = 
-								new Broadcaster<BitSetBuffer>();
+	private Broadcaster<BinaryMessage> mBroadcaster = 
+								new Broadcaster<BinaryMessage>();
 	private ArrayList<MessageAssembler> mMessageAssemblers = 
                             new ArrayList<MessageAssembler>();
 
 	private ArrayList<MessageAssembler> mCompletedMessageAssemblers = 
     								new ArrayList<MessageAssembler>();
     
-	private BitSetBuffer mPreviousBuffer = null;
+	private BinaryMessage mPreviousBuffer = null;
 
 	private SyncPatternMatcher mMatcher;
     
@@ -127,12 +127,12 @@ public class MessageFramer implements Listener<Boolean>,
      * Allow a message listener to register with this framer to receive
      * all framed messages
      */
-    public void addMessageListener( Listener<BitSetBuffer> listener )
+    public void addMessageListener( Listener<BinaryMessage> listener )
     {
         mBroadcaster.addListener( listener );
     }
     
-    public void removeMessageListener( Listener<BitSetBuffer> listener )
+    public void removeMessageListener( Listener<BinaryMessage> listener )
     {
         mBroadcaster.removeListener( listener );
     }
@@ -161,12 +161,12 @@ public class MessageFramer implements Listener<Boolean>,
      */
     private class MessageAssembler implements Listener<Boolean>
     {
-        BitSetBuffer mMessage;
+        BinaryMessage mMessage;
         boolean mComplete = false;
         
         MessageAssembler( int messageLength )
         {
-            mMessage = new BitSetBuffer( messageLength );
+            mMessage = new BinaryMessage( messageLength );
         }
         
         MessageAssembler( int messageLength, boolean[] initialFill )

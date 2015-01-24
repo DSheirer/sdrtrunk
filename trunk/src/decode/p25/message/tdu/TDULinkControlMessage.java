@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.P25Message;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.LinkControlOpcode;
@@ -51,7 +51,7 @@ public class TDULinkControlMessage extends P25Message
 	public static final ReedSolomon_24_12_13 mReedSolomonDecoder = 
 						new ReedSolomon_24_12_13();
 	
-	public TDULinkControlMessage( BitSetBuffer message, DataUnitID duid,
+	public TDULinkControlMessage( BinaryMessage message, DataUnitID duid,
             AliasList aliasList )
     {
 	    super( message, duid, aliasList );
@@ -167,9 +167,9 @@ public class TDULinkControlMessage extends P25Message
 		
 		while( x < mMessage.size() )
 		{
-			boolean passes = Galois24.checkAndCorrect( mMessage, x );
+			mMessage = Galois24.checkAndCorrect( mMessage, x );
 			
-			if( !passes )
+			if( !( mMessage.getCRC() == CRC.PASSED ) )
 			{
 				mCRC[ 1 ] = CRC.FAILED_CRC;
 			}

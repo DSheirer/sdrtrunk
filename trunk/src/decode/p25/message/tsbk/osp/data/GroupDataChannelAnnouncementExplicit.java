@@ -1,14 +1,14 @@
 package decode.p25.message.tsbk.osp.data;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.tsbk.GroupChannelGrantExplicit;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
 
 public class GroupDataChannelAnnouncementExplicit extends GroupChannelGrantExplicit
 {
-    public GroupDataChannelAnnouncementExplicit( BitSetBuffer message, 
+    public GroupDataChannelAnnouncementExplicit( BinaryMessage message, 
                                    DataUnitID duid,
                                    AliasList aliasList ) 
     {

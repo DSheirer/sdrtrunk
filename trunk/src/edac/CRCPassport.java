@@ -19,7 +19,7 @@ package edac;
 
 import java.util.BitSet;
 
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 
 /**
  * Passport CRC checksum utility
@@ -168,7 +168,7 @@ public class CRCPassport
      * used in the decoder.  For right now, correct any messages where the 
      * residual indicates that the final 1 or 2 bits are bad.
      */
-    public static BitSetBuffer correct( BitSetBuffer msg )
+    public static BinaryMessage correct( BinaryMessage msg )
     {
     	int residual = (int)( 0xFF & getResidual( msg ) );
     	
@@ -208,7 +208,7 @@ public class CRCPassport
      * Performs an even parity check on the bitset.  If the number of bits that
      * are set is an even number, then it passes the even parity check
      */
-    public static boolean isEvenParity( BitSetBuffer bits )
+    public static boolean isEvenParity( BinaryMessage bits )
     {
     	return ( bits.cardinality() % 2 == 0 );
     }

@@ -1,9 +1,11 @@
 package edac;
 
+import java.util.Arrays;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 
 /*******************************************************************************
  *     SDR Trunk 
@@ -43,18 +45,20 @@ public class BCH_63_16_11 extends BerlekempMassey_63
 	 * 
 	 * @return - true = success, false = failure
 	 */
-	public CRC correctNID( BitSetBuffer message )
+	public BinaryMessage correctNID( BinaryMessage message )
 	{
 		CRC status = CRC.PASSED;
 		
-		int[] original = message.toReverseIntegerArray();
+		int[] original = message.toReverseIntegerArray( 0, 62 );
 		int[] corrected = new int[ 63 ];
 
 		boolean irrecoverableErrors = decode( original, corrected );
 
 		if( irrecoverableErrors )
 		{
-			return CRC.FAILED_CRC;
+			message.setCRC( CRC.FAILED_CRC );
+			
+			return message;
 		}
 		else
 		{
@@ -78,15 +82,17 @@ public class BCH_63_16_11 extends BerlekempMassey_63
 			}
 		}
 		
-		return status;
+		message.setCRC( status );
+		
+		return message;
 	}
 	
 	public static void main( String[] args )
 	{
-		String orig  = "001001100000110010100101011111010001010101101001111111001010110";
-		String error = "010110000000110010100101011011010001011101101001101111001110110";
-//                       xxxxxx                    x          x          x       x
-		BitSetBuffer errorMessage = BitSetBuffer.load( error );
+		String orig  = "0010011000000011010010100000000110000111110011101010001010110000";
+		String error = "0001010100000011010010100000000110000111100011001010001010110000";
+
+		BinaryMessage errorMessage = BinaryMessage.load( error );
 
 		BCH_63_16_11 bch = new BCH_63_16_11();
 
@@ -94,10 +100,10 @@ public class BCH_63_16_11 extends BerlekempMassey_63
 		mLog.debug( " ERR:" + errorMessage.toString() );
 		mLog.debug( " " );
 
-		CRC status = bch.correctNID( errorMessage );
+		errorMessage = bch.correctNID( errorMessage );
 		
-		mLog.debug( " CRC: " + status.name() );
-		mLog.debug( "CORR:" + errorMessage.toString().substring( 0, 16 ) );
+		mLog.debug( " CRC: " + errorMessage.getCRC().name() );
+		mLog.debug( "CORR:" + errorMessage.toString() );
 		mLog.debug( "ORIG:" + orig );
 	}
 }

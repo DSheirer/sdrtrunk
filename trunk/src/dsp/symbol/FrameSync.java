@@ -1,4 +1,4 @@
-package decode.p25;
+package dsp.symbol;
 
 public enum FrameSync
 {

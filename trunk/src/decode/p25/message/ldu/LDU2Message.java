@@ -1,7 +1,7 @@
 package decode.p25.message.ldu;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Encryption;
 import edac.CRC;
@@ -28,7 +28,7 @@ public class LDU2Message extends LDUMessage
 	public static final int[] KEY_ID = { 916,917,918,919,924,925,926,927,928,
 		929,934,935,936,937,938,939 };
 
-	public LDU2Message( BitSetBuffer message, DataUnitID duid,
+	public LDU2Message( BinaryMessage message, DataUnitID duid,
             AliasList aliasList )
     {
 	    super( message, duid, aliasList );

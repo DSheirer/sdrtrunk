@@ -1,4 +1,4 @@
-package dsp.fsk;
+package decode.p25;
 
 import java.util.ArrayList;
 
@@ -9,12 +9,9 @@ import org.slf4j.LoggerFactory;
 
 import sample.Listener;
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import bits.BitSetFullException;
 import bits.SyncPatternMatcher;
-import decode.p25.P25Interleave;
-import decode.p25.Trellis_1_2_Rate;
-import decode.p25.Trellis_3_4_Rate;
 import decode.p25.message.P25Message;
 import decode.p25.message.hdu.HDUMessage;
 import decode.p25.message.ldu.LDU1Message;
@@ -30,6 +27,7 @@ import decode.p25.message.tdu.lc.TDULinkControlMessage;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.message.tsbk.TSBKMessageFactory;
 import decode.p25.reference.DataUnitID;
+import dsp.symbol.Dibit;
 import edac.BCH_63_16_11;
 import edac.CRC;
 import edac.CRCP25;
@@ -163,7 +161,7 @@ public class P25MessageFramer implements Listener<Dibit>
     	/* Starting position of the status symbol counter is 24 symbols to 
     	 * account for the 48-bit sync pattern which is not included in message */
     	private int mStatusSymbolPointer = 24;
-    	private BitSetBuffer mMessage;
+    	private BinaryMessage mMessage;
         private int mMessageLength;
         private boolean mComplete = false;
         private boolean mActive = false;
@@ -172,7 +170,7 @@ public class P25MessageFramer implements Listener<Dibit>
         public P25MessageAssembler()
         {
         	mMessageLength = mDUID.getMessageLength();
-            mMessage = new BitSetBuffer( mMessageLength );
+            mMessage = new BinaryMessage( mMessageLength );
         	reset();
         }
         
@@ -234,9 +232,9 @@ public class P25MessageFramer implements Listener<Dibit>
         	switch( mDUID )
         	{
 				case NID:
-					CRC crc = mNIDDecoder.correctNID( mMessage );
+					mMessage = mNIDDecoder.correctNID( mMessage );
 					
-					if( crc != CRC.FAILED_CRC )
+					if( mMessage.getCRC() != CRC.FAILED_CRC )
 					{
 						int value = mMessage.getInt( P25Message.DUID );
 						
@@ -281,11 +279,11 @@ public class P25MessageFramer implements Listener<Dibit>
 					 * unsuccessful decode due to excessive errors */
 					if( mHalfRate.decode( mMessage, PDU0_BEGIN, PDU0_END ) )
 					{
-						CRC pduCRC = CRCP25.correctCCITT80( mMessage, 
+						mMessage = CRCP25.correctCCITT80( mMessage, 
 								PDU0_BEGIN, PDU0_CRC_BEGIN );
 						
 
-						if( pduCRC != CRC.FAILED_CRC )
+						if( mMessage.getCRC() != CRC.FAILED_CRC )
 						{
 							boolean confirmed = mMessage.get( 
 									PDUMessage.CONFIRMATION_REQUIRED_INDICATOR );
@@ -462,12 +460,12 @@ public class P25MessageFramer implements Listener<Dibit>
 					
 					if( mHalfRate.decode( mMessage, TSBK_BEGIN, TSBK_END ) )
 					{
-						CRC tsbkCRC = CRCP25.correctCCITT80( mMessage, 
+						mMessage = CRCP25.correctCCITT80( mMessage, 
 								TSBK_BEGIN, TSBK_CRC_START );
 
-						if( tsbkCRC != CRC.FAILED_CRC )
+						if( mMessage.getCRC() != CRC.FAILED_CRC )
 						{
-							BitSetBuffer tsbkBuffer1 = mMessage.copy();
+							BinaryMessage tsbkBuffer1 = mMessage.copy();
 							tsbkBuffer1.setSize( TSBK_DECODED_END );
 							
 		                    TSBKMessage tsbkMessage1 = TSBKMessageFactory.getMessage( 
@@ -503,12 +501,12 @@ public class P25MessageFramer implements Listener<Dibit>
 					 * unsuccessful decode due to excessive errors */
 					if( mHalfRate.decode( mMessage, TSBK_BEGIN, TSBK_END ) )
 					{
-						CRC tsbkCRC = CRCP25.correctCCITT80( mMessage, 
+						mMessage = CRCP25.correctCCITT80( mMessage, 
 								TSBK_BEGIN, TSBK_CRC_START );
 						
-						if( tsbkCRC != CRC.FAILED_CRC )
+						if( mMessage.getCRC() != CRC.FAILED_CRC )
 						{
-							BitSetBuffer tsbkBuffer2 = mMessage.copy();
+							BinaryMessage tsbkBuffer2 = mMessage.copy();
 							tsbkBuffer2.setSize( TSBK_DECODED_END );
 							
 		                    TSBKMessage tsbkMessage2 = TSBKMessageFactory.getMessage( 
@@ -544,12 +542,12 @@ public class P25MessageFramer implements Listener<Dibit>
 					 * unsuccessful decode due to excessive errors */
 					if( mHalfRate.decode( mMessage, TSBK_BEGIN, TSBK_END ) )
 					{
-						CRC tsbkCRC = CRCP25.correctCCITT80( mMessage, 
+						mMessage = CRCP25.correctCCITT80( mMessage, 
 								TSBK_BEGIN, TSBK_CRC_START );
 						
-						if( tsbkCRC != CRC.FAILED_CRC )
+						if( mMessage.getCRC() != CRC.FAILED_CRC )
 						{
-		                    BitSetBuffer tsbkBuffer3 = mMessage.copy();
+		                    BinaryMessage tsbkBuffer3 = mMessage.copy();
 							tsbkBuffer3.setSize( TSBK_DECODED_END );
 		                    
 		                    TSBKMessage tsbkMessage3 = TSBKMessageFactory.getMessage( 

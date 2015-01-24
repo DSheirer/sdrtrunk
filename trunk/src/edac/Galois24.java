@@ -3,7 +3,7 @@ package edac;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 
 /*******************************************************************************
  *     SDR Trunk 
@@ -45,7 +45,7 @@ public class Galois24
 	    0x040, 0x020, 0x010, 0x008, 0x004, 0x002, 0x001 
 	};
 
-	private static int calculateChecksum( BitSetBuffer message, int startIndex )
+	private static int calculateChecksum( BinaryMessage message, int startIndex )
 	{
 		int calculated = 0; //Starting value
 
@@ -60,7 +60,7 @@ public class Galois24
 		return calculated;
 	}
 	
-	public static boolean checkAndCorrect( BitSetBuffer message, int startIndex )
+	public static BinaryMessage checkAndCorrect( BinaryMessage message, int startIndex )
 	{
 		boolean parityError = message.cardinality() % 2 != 0;
 		
@@ -73,8 +73,10 @@ public class Galois24
 			{
 				message.flip( startIndex + 23 );
 			}
+
+			message.setCRC( CRC.PASSED );
 			
-			return true;
+			return message;
 		}
 
 		/* Get original message value */
@@ -123,10 +125,14 @@ public class Galois24
 						
 						if( Integer.bitCount( original ^ corrected ) > 3 )
 						{
-							return false;
+							message.setCRC( CRC.FAILED_CRC );
+							
+							return message;
 						}
 						
-						return true;
+						message.setCRC( CRC.PASSED );
+						
+						return message;
 					}
 					else
 					{
@@ -139,10 +145,12 @@ public class Galois24
 			}
 		}
 
-		return false;
+		message.setCRC( CRC.FAILED_CRC );
+		
+		return message;
 	}
 	
-	private static int getSyndrome( BitSetBuffer message, int startIndex )
+	private static int getSyndrome( BinaryMessage message, int startIndex )
 	{
 		int calculated = calculateChecksum( message, startIndex );
 		
@@ -156,7 +164,7 @@ public class Galois24
 		/* NID + TDULC message */
 		String msg = "0010011000001111100100110011000100111010000111010001000000000000000000000000000000000000000000000100101010010111000000000000000000000000000010010111101111111111000000000000000000000000000000000000000000000000000110001011100001111101010110111001001011010010101111010010000010110011101111111100100000010001111100011010010100001101111001111001100000111000";
 
-		BitSetBuffer message = BitSetBuffer.load( msg );
+		BinaryMessage message = BinaryMessage.load( msg );
 
 		mLog.debug( "MSG: " + message.toString() );
 
@@ -164,9 +172,9 @@ public class Galois24
 		
 		while( x < msg.length() )
 		{
-			boolean passes = checkAndCorrect( message, x );
+			message = checkAndCorrect( message, x );
 
-			mLog.debug( "X:" + x + " Pass:" + passes );
+			mLog.debug( "X:" + x + " Pass:" + ( message.getCRC()== CRC.PASSED ) );
 			x += 24;
 		}
 	}

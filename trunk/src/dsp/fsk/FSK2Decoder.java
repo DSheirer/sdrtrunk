@@ -28,7 +28,8 @@ import java.util.List;
 import sample.Listener;
 import sample.real.RealSampleListener;
 import buffer.BooleanAveragingBuffer;
-import dsp.fsk.SymbolEvent.Shift;
+import dsp.symbol.SymbolEvent;
+import dsp.symbol.SymbolEvent.Shift;
 
 /**
  * Binary Frequency Shift Keying (FSK) decoder.  Implements a BFSK correlation

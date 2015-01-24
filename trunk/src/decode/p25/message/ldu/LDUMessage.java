@@ -1,7 +1,7 @@
 package decode.p25.message.ldu;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.P25Interleave;
 import decode.p25.message.P25Message;
 import decode.p25.reference.DataUnitID;
@@ -22,7 +22,7 @@ public class LDUMessage extends P25Message
 	public static final int[] LOW_SPEED_DATA = { 1456,1457,1458,1459,1460,1461,
 		1462,1463,1472,1473,1474,1475,1476,1477,1478,1479 };
 
-	public LDUMessage( BitSetBuffer message, DataUnitID duid,
+	public LDUMessage( BinaryMessage message, DataUnitID duid,
             AliasList aliasList )
     {
 	    super( message, duid, aliasList );

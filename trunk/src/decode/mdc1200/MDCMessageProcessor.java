@@ -21,9 +21,9 @@ import message.Message;
 import sample.Broadcaster;
 import sample.Listener;
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 
-public class MDCMessageProcessor implements Listener<BitSetBuffer>
+public class MDCMessageProcessor implements Listener<BinaryMessage>
 {
 	private static int sMESSAGE_LENGTH = 112;
 	
@@ -41,7 +41,7 @@ public class MDCMessageProcessor implements Listener<BitSetBuffer>
 	}
 	
 	@Override
-    public void receive( BitSetBuffer buffer )
+    public void receive( BinaryMessage buffer )
     {
 		/**
 		 * De-interleave the 112 bits of message one, starting after the sync
@@ -80,7 +80,7 @@ public class MDCMessageProcessor implements Listener<BitSetBuffer>
 	 * bit will be a 0 after decode, despite what is currently in the buffer,
 	 * in order to maintain correct polarity of the decoded message.
 	 */
-	private void removeNRZIEncoding( BitSetBuffer buffer )
+	private void removeNRZIEncoding( BinaryMessage buffer )
 	{
 		/**
 		 * Clear bit position 0, the first bit of the sync pattern, to start
@@ -111,7 +111,7 @@ public class MDCMessageProcessor implements Listener<BitSetBuffer>
 	/**
 	 * Deinterleaves a 112-bit packet, starting at the offset into the buffer
 	 */
-	private void deinterleave( BitSetBuffer buffer, int offset )
+	private void deinterleave( BinaryMessage buffer, int offset )
 	{
 		if( buffer.size() < sMESSAGE_LENGTH + offset )
 		{
@@ -119,7 +119,7 @@ public class MDCMessageProcessor implements Listener<BitSetBuffer>
 				+ "cannot deinterleave message - message buffer too short" );
 		}
 		
-		BitSetBuffer deinterleaved = new BitSetBuffer( 112 );
+		BinaryMessage deinterleaved = new BinaryMessage( 112 );
 
 		int deinterleavedPointer = 0;
 		

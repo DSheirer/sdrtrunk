@@ -25,9 +25,9 @@ import message.MessageType;
 import sample.Broadcaster;
 import sample.Listener;
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 
-public class LTRNetMessageProcessor implements Listener<BitSetBuffer>
+public class LTRNetMessageProcessor implements Listener<BinaryMessage>
 {
 	private Broadcaster<Message> mBroadcaster = new Broadcaster<Message>();
 
@@ -55,7 +55,7 @@ public class LTRNetMessageProcessor implements Listener<BitSetBuffer>
 	}
 	
 	@Override
-    public void receive( BitSetBuffer buffer )
+    public void receive( BinaryMessage buffer )
     {
 		LTRNetMessage message;
 		

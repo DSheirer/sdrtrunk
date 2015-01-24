@@ -25,7 +25,7 @@ import message.MessageDirection;
 import message.MessageType;
 import alias.Alias;
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 
 public class LTRNetOSWMessage extends LTRNetMessage
 {
@@ -53,7 +53,7 @@ public class LTRNetOSWMessage extends LTRNetMessage
 	
 	private LTRNetOSWMessage mAuxMessage;
 	
-    public LTRNetOSWMessage( BitSetBuffer message, AliasList list )
+    public LTRNetOSWMessage( BinaryMessage message, AliasList list )
     {
     	super( message, MessageDirection.OSW, list );
         mMessageType = getType();

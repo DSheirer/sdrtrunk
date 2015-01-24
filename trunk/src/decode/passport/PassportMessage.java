@@ -26,7 +26,7 @@ import message.Message;
 import message.MessageType;
 import alias.Alias;
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.DecoderType;
 import edac.CRC;
 import edac.CRCPassport;
@@ -53,12 +53,12 @@ public class PassportMessage extends Message
 	private static final int[] sTYPE = { 48,47,46,45 };
 	private static final int[] sFREE = { 59,58,57,56,55,54,53,52,51,50,49 };
 	private static final int[] sCHECKSUM = { 67,66,65,64,63,62,61,60 };
-    private BitSetBuffer mMessage;
+    private BinaryMessage mMessage;
     private CRC mCRC;
 	private AliasList mAliasList;
 	private PassportMessage mIdleMessage;
 	
-    public PassportMessage( BitSetBuffer message, 
+    public PassportMessage( BinaryMessage message, 
     						PassportMessage idleMessage,
     						AliasList list )
     {
@@ -68,12 +68,12 @@ public class PassportMessage extends Message
         mAliasList = list;
     }
     
-    public PassportMessage( BitSetBuffer message, AliasList list )
+    public PassportMessage( BinaryMessage message, AliasList list )
     {
     	this( message, null, list );
     }
     
-    public BitSetBuffer getBitSetBuffer()
+    public BinaryMessage getBitSetBuffer()
     {
     	return mMessage;
     }

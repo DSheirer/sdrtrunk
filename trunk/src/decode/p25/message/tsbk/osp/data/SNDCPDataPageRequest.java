@@ -1,7 +1,7 @@
 package decode.p25.message.tsbk.osp.data;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.reference.DataUnitID;
 
 public class SNDCPDataPageRequest extends SNDCPData
@@ -12,7 +12,7 @@ public class SNDCPDataPageRequest extends SNDCPData
     public static final int[] TARGET_ADDRESS = { 120,121,122,123,124,125,126,
         127,128,129,130,131,132,133,134,135,136,137,138,139,140,141,142,143 };
     
-    public SNDCPDataPageRequest( BitSetBuffer message, 
+    public SNDCPDataPageRequest( BinaryMessage message, 
 								  DataUnitID duid,
 								  AliasList aliasList )
     {

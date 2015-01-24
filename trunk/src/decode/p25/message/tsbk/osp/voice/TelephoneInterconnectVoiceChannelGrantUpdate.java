@@ -1,7 +1,7 @@
 package decode.p25.message.tsbk.osp.voice;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
 
@@ -9,7 +9,7 @@ public class TelephoneInterconnectVoiceChannelGrantUpdate
     extends TelephoneInterconnectVoiceChannelGrant
 {
 
-    public TelephoneInterconnectVoiceChannelGrantUpdate( BitSetBuffer message,
+    public TelephoneInterconnectVoiceChannelGrantUpdate( BinaryMessage message,
             DataUnitID duid, AliasList aliasList ) 
     {
         super( message, duid, aliasList );

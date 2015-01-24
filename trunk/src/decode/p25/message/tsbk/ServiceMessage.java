@@ -1,7 +1,7 @@
 package decode.p25.message.tsbk;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.reference.DataUnitID;
 
 public abstract class ServiceMessage extends TSBKMessage
@@ -12,7 +12,7 @@ public abstract class ServiceMessage extends TSBKMessage
     public static final int DUPLEX_MODE = 82;
     public static final int SESSION_MODE = 83;
     
-    public ServiceMessage( BitSetBuffer message, 
+    public ServiceMessage( BinaryMessage message, 
     					   DataUnitID duid,
     					   AliasList aliasList ) 
     {

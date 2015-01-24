@@ -1,7 +1,7 @@
 package decode.p25.message.tsbk.motorola;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.IdentifierProvider;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.reference.DataUnitID;
@@ -24,7 +24,7 @@ public class ChannelCWIDUpdate extends MotorolaTSBKMessage
     
     private IdentifierProvider mIdentifierUpdate;
     
-    public ChannelCWIDUpdate( BitSetBuffer message, 
+    public ChannelCWIDUpdate( BinaryMessage message, 
                                 DataUnitID duid,
                                 AliasList aliasList ) 
     {

@@ -24,9 +24,9 @@ import org.slf4j.LoggerFactory;
 
 import sample.Broadcaster;
 import sample.Listener;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 
-public class Fleetsync1MessageProcessor implements Listener<BitSetBuffer>
+public class Fleetsync1MessageProcessor implements Listener<BinaryMessage>
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( Fleetsync1MessageProcessor.class );
@@ -34,7 +34,7 @@ public class Fleetsync1MessageProcessor implements Listener<BitSetBuffer>
 	private Broadcaster<Message> mBroadcaster = new Broadcaster<Message>();
 	
 	@Override
-    public void receive( BitSetBuffer buffer )
+    public void receive( BinaryMessage buffer )
     {
 		Fleetsync1Message message = new Fleetsync1Message( buffer );
 

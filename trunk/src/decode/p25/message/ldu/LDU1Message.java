@@ -1,7 +1,7 @@
 package decode.p25.message.ldu;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.P25Interleave;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.LinkControlOpcode;
@@ -25,7 +25,7 @@ public class LDU1Message extends LDUMessage
 //	public static final int[] OCTET_7 = { 732,733,734,735,740,741,742,743 };
 //	public static final int[] OCTET_8 = { 744,745,750,751,752,753,754,755 };
 	
-	public LDU1Message( BitSetBuffer message, DataUnitID duid,
+	public LDU1Message( BinaryMessage message, DataUnitID duid,
             AliasList aliasList )
     {
 	    super( message, duid, aliasList );

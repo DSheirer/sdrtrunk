@@ -1,7 +1,7 @@
 package decode.p25.message.pdu;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.IdentifierProvider;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.reference.DataUnitID;
@@ -42,14 +42,15 @@ public abstract class UnitToUnitChannelGrantExtended extends PDUMessage
 	private IdentifierProvider mTransmitIdentifierUpdate;
 	private IdentifierProvider mReceiveIdentifierUpdate;
 	
-	public UnitToUnitChannelGrantExtended( BitSetBuffer message,
+	public UnitToUnitChannelGrantExtended( BinaryMessage message,
             DataUnitID duid, AliasList aliasList )
     {
 	    super( message, duid, aliasList );
 
 	    /* Header block is already error detected/corrected - perform error
 	     * detection correction on the intermediate and final data blocks */
-	    mCRC[ 1 ] = CRCP25.correctPDU2( mMessage );
+	    mMessage = CRCP25.correctPDU2( mMessage );
+	    mCRC[ 1 ] = mMessage.getCRC();
     }
 
     public String getMessage()

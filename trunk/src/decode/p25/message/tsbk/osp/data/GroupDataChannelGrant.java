@@ -1,7 +1,7 @@
 package decode.p25.message.tsbk.osp.data;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.tsbk.GroupChannelGrant;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
@@ -9,7 +9,7 @@ import decode.p25.reference.Opcode;
 public class GroupDataChannelGrant extends GroupChannelGrant
 
 {
-    public GroupDataChannelGrant( BitSetBuffer message, 
+    public GroupDataChannelGrant( BinaryMessage message, 
                                    DataUnitID duid,
                                    AliasList aliasList ) 
     {

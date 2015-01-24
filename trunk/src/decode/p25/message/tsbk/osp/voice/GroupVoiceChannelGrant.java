@@ -1,14 +1,14 @@
 package decode.p25.message.tsbk.osp.voice;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.tsbk.GroupChannelGrant;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
 
 public class GroupVoiceChannelGrant extends GroupChannelGrant
 {
-    public GroupVoiceChannelGrant( BitSetBuffer message, 
+    public GroupVoiceChannelGrant( BinaryMessage message, 
                                    DataUnitID duid,
                                    AliasList aliasList ) 
     {

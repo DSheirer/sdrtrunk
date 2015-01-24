@@ -1,7 +1,7 @@
 package decode.p25.message.hdu;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.P25Message;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Encryption;
@@ -22,7 +22,7 @@ public class HDUMessage extends P25Message
 	public static final int[] TALKGROUP_ID = { 372,373,374,375,388,389,390,391,
 		392,393,406,407,408,409,410,411 };
 	
-	public HDUMessage( BitSetBuffer message, DataUnitID duid,
+	public HDUMessage( BinaryMessage message, DataUnitID duid,
             AliasList aliasList )
     {
 	    super( message, duid, aliasList );

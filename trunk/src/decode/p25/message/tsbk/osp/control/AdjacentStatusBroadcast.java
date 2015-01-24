@@ -1,7 +1,7 @@
 package decode.p25.message.tsbk.osp.control;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.IdentifierProvider;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.tsbk.TSBKMessage;
@@ -28,7 +28,7 @@ public class AdjacentStatusBroadcast extends TSBKMessage implements IdentifierRe
     
     private IdentifierProvider mIdentifierUpdate;
     
-    public AdjacentStatusBroadcast( BitSetBuffer message, 
+    public AdjacentStatusBroadcast( BinaryMessage message, 
     								DataUnitID duid,
     								AliasList aliasList ) 
     {

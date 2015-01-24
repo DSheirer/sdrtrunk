@@ -1,7 +1,7 @@
 package decode.p25.message.pdu.osp.control;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.pdu.PDUMessage;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Encryption;
@@ -35,14 +35,15 @@ public class ProtectionParameterBroadcast extends PDUMessage
 		326,327,328,329,330,331,332,333,334,335,336,337,338,339,340,341,342,
 		343,344,345,346,347,348,349,350,351 };
 	
-	public ProtectionParameterBroadcast( BitSetBuffer message,
+	public ProtectionParameterBroadcast( BinaryMessage message,
             DataUnitID duid, AliasList aliasList )
     {
 	    super( message, duid, aliasList );
 	    
 	    /* Header block is already error detected/corrected - perform error
 	     * detection correction on the intermediate and final data blocks */
-	    mCRC[ 1 ] = CRCP25.correctPDU2( mMessage );
+	    mMessage = CRCP25.correctPDU1( mMessage );
+	    mCRC[ 1 ] = mMessage.getCRC();
     }
 
     @Override

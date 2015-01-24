@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
 
@@ -14,7 +14,7 @@ public class SecondaryControlChannelBroadcastExplicit
 	private final static Logger mLog = LoggerFactory.getLogger( 
 			SecondaryControlChannelBroadcastExplicit.class );
 
-	public SecondaryControlChannelBroadcastExplicit( BitSetBuffer message,
+	public SecondaryControlChannelBroadcastExplicit( BinaryMessage message,
             DataUnitID duid, AliasList aliasList )
     {
 	    super( message, duid, aliasList );

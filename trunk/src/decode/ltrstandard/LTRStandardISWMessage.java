@@ -24,14 +24,14 @@ import message.MessageDirection;
 import message.MessageType;
 import alias.Alias;
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 
 public class LTRStandardISWMessage extends LTRStandardMessage
 {
 	private static final int sCALL_END = 31;
 	private static final int sIDLE = 255;
 
-	public LTRStandardISWMessage( BitSetBuffer message, AliasList list )
+	public LTRStandardISWMessage( BinaryMessage message, AliasList list )
     {
     	super( message, MessageDirection.OSW, list );
         mMessageType = getType();

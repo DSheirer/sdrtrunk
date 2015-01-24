@@ -29,7 +29,7 @@ import java.awt.geom.Rectangle2D;
 import java.util.List;
 import java.util.Observable;
 
-import dsp.fsk.SymbolEvent;
+import dsp.symbol.SymbolEvent;
 
 public class SymbolEventTapViewPanel extends TapViewPanel
 {

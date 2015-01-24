@@ -1,5 +1,6 @@
-package dsp.fsk;
+package decode.p25;
 
+import dsp.symbol.Dibit;
 import sample.Broadcaster;
 import sample.Listener;
 import sample.real.RealSampleListener;

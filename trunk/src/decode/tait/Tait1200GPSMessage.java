@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import alias.Alias;
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import edac.CRC;
 
 public class Tait1200GPSMessage extends Message
@@ -113,11 +113,11 @@ public class Tait1200GPSMessage extends Message
 
 	private static SimpleDateFormat mSDF = new SimpleDateFormat( "yyyyMMdd HHmmss" );
 
-    private BitSetBuffer mMessage;
+    private BinaryMessage mMessage;
     private AliasList mAliasList;
     private CRC mCRC;
     
-    public Tait1200GPSMessage( BitSetBuffer message, AliasList list )
+    public Tait1200GPSMessage( BinaryMessage message, AliasList list )
     {
     	mMessage = message;
         mAliasList = list;

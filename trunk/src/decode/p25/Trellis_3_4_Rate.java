@@ -8,8 +8,8 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import bits.BitSetBuffer;
-import dsp.fsk.Dibit;
+import bits.BinaryMessage;
+import dsp.symbol.Dibit;
 
 public class Trellis_3_4_Rate
 {
@@ -102,7 +102,7 @@ public class Trellis_3_4_Rate
 	 * 
 	 * @return - original message with decoded message bits..
 	 */
-	public boolean decode( BitSetBuffer message, int start, int end )
+	public boolean decode( BinaryMessage message, int start, int end )
 	{
 		reset();
 		
@@ -190,7 +190,7 @@ public class Trellis_3_4_Rate
 		}
 	}
 	
-	private Con getConstellation( BitSetBuffer message, int index )
+	private Con getConstellation( BinaryMessage message, int index )
 	{
 		int value = message.getInt( index, index + 3 );
 		return Con.fromTransmittedValue( value );
@@ -642,7 +642,7 @@ public class Trellis_3_4_Rate
 	{
 		String raw = "12:58:51.635 DEBUG dsp.fsk.P25MessageFramer - AFTER  DEINTERLEAVE: 00100110000011001010010101111101000101010110100111111100101011000111011011000110000000000000000000000111111101011000001000001111000110000000000010101011110110010000000001011011000000010100011110110001000010100100011111000000000100000000000000000000010000000000001100000000000000011010101010101010101010100010001010000110010111111101101000001010000010100000101000001010000010100000101000001010000010100000101000001010000010100000101000001010000010100000010111001001000011100101011010101010101001010011";
 		
-		BitSetBuffer message = BitSetBuffer.load( raw );
+		BinaryMessage message = BinaryMessage.load( raw );
 		
 		mLog.debug( "MSG: " + message.toString() );
 		

@@ -36,7 +36,7 @@ public class SNDCPActivateTDSContextRequest extends PDUConfirmedMessage
 
 		sb.append( "NAC:" );
 		sb.append( getNAC() );
-		sb.append( " LLID:" );
+		sb.append( " PDUC LLID:" );
 		sb.append( getLogicalLinkID() );
 		sb.append( " REQUEST SNDCP PACKET DATA ACTIVATE " );
 		sb.append( getNetworkAddressType() );

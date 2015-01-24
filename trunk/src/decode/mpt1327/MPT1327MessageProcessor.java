@@ -21,9 +21,9 @@ import message.Message;
 import sample.Broadcaster;
 import sample.Listener;
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 
-public class MPT1327MessageProcessor implements Listener<BitSetBuffer>
+public class MPT1327MessageProcessor implements Listener<BinaryMessage>
 {
 	private Broadcaster<Message> mBroadcaster = new Broadcaster<Message>();
 	
@@ -40,7 +40,7 @@ public class MPT1327MessageProcessor implements Listener<BitSetBuffer>
 	}
 	
 	@Override
-    public void receive( BitSetBuffer buffer )
+    public void receive( BinaryMessage buffer )
     {
 		MPT1327Message message = new MPT1327Message( buffer, mAliasList );
 		

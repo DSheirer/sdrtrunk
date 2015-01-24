@@ -1,7 +1,7 @@
 package decode.p25.message.tsbk;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.tsbk.motorola.ChannelCWIDUpdate;
 import decode.p25.message.tsbk.motorola.MotorolaOpcode;
 import decode.p25.message.tsbk.motorola.MotorolaTSBKMessage;
@@ -54,7 +54,7 @@ import decode.p25.reference.Vendor;
 
 public class TSBKMessageFactory
 {
-	public static TSBKMessage getMessage( BitSetBuffer message, 
+	public static TSBKMessage getMessage( BinaryMessage message, 
 	                                      DataUnitID duid,
 	                                      AliasList aliasList )
 	{
