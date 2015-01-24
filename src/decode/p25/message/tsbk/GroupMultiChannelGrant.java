@@ -1,7 +1,7 @@
 package decode.p25.message.tsbk;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.IdentifierProvider;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.reference.DataUnitID;
@@ -24,7 +24,7 @@ public abstract class GroupMultiChannelGrant extends ChannelGrant
     private IdentifierProvider mIdentifierUpdate1;
     private IdentifierProvider mIdentifierUpdate2;
 
-    public GroupMultiChannelGrant( BitSetBuffer message, 
+    public GroupMultiChannelGrant( BinaryMessage message, 
                               DataUnitID duid,
                               AliasList aliasList ) 
     {

@@ -1,7 +1,7 @@
 package decode.p25.message.pdu.osp.control;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.pdu.PDUMessage;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
@@ -21,14 +21,15 @@ public class StatusQueryExtended extends PDUMessage
 		230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,
 		248,249,250,251,252,253,254,255 };
 	
-	public StatusQueryExtended( BitSetBuffer message,
+	public StatusQueryExtended( BinaryMessage message,
             DataUnitID duid, AliasList aliasList )
     {
 	    super( message, duid, aliasList );
 	    
 	    /* Header block is already error detected/corrected - perform error
 	     * detection correction on the intermediate and final data blocks */
-	    mCRC[ 1 ] = CRCP25.correctPDU1( mMessage );
+	    mMessage = CRCP25.correctPDU1( mMessage );
+	    mCRC[ 1 ] = mMessage.getCRC();
     }
 
     @Override

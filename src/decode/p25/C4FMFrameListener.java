@@ -1,6 +1,6 @@
-package dsp.fsk;
+package decode.p25;
 
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 
 public interface C4FMFrameListener
 {
@@ -10,6 +10,6 @@ public interface C4FMFrameListener
 	 * @param buffer - framed message without the sync pattern
 	 * @param inverted - flag indicating if the message was received inverted
 	 */
-	public void receive( BitSetBuffer buffer, boolean inverted );
+	public void receive( BinaryMessage buffer, boolean inverted );
 
 }

@@ -20,8 +20,8 @@ package instrument.tap.event;
 import instrument.tap.Tap;
 import instrument.tap.TapListener;
 import instrument.tap.TapType;
-import dsp.SyncDetectListener;
-import dsp.SyncDetectProvider;
+import dsp.symbol.SyncDetectListener;
+import dsp.symbol.SyncDetectProvider;
 
 public class SyncDetectTap extends Tap 
 						   implements SyncDetectListener,

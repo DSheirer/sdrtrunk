@@ -1,7 +1,7 @@
 package decode.p25.message.tsbk;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.P25Message;
 import decode.p25.message.tsbk.motorola.MotorolaOpcode;
 import decode.p25.message.tsbk.vendor.VendorOpcode;
@@ -32,7 +32,7 @@ public class TSBKMessage extends P25Message
 	public static final int[] BLOCK12 = { 152,153,154,155,156,157,158,159 };
 	public static final int CRC_START = 144;
 
-    public TSBKMessage( BitSetBuffer message, DataUnitID duid, AliasList aliasList )
+    public TSBKMessage( BinaryMessage message, DataUnitID duid, AliasList aliasList )
     {
 	    super( message, duid, aliasList );
 

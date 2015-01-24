@@ -6,8 +6,8 @@ import java.util.Random;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import bits.BitSetBuffer;
-import dsp.fsk.Dibit;
+import bits.BinaryMessage;
+import dsp.symbol.Dibit;
 
 public class Trellis_1_2_Rate
 {
@@ -97,7 +97,7 @@ public class Trellis_1_2_Rate
 		return sb.toString();
 	}
 
-	public boolean decode( BitSetBuffer message, int start, int end )
+	public boolean decode( BinaryMessage message, int start, int end )
 	{
 		/* load each of the nodes with de-interleaved constellations */
 		for( int index = 0; index < 49; index++ )
@@ -148,7 +148,7 @@ public class Trellis_1_2_Rate
 		return true;
 	}
 	
-	private Constellation getConstellation( BitSetBuffer message, int index )
+	private Constellation getConstellation( BinaryMessage message, int index )
 	{
 		int transmittedValue = 0;
 		
@@ -500,7 +500,7 @@ public class Trellis_1_2_Rate
 	{
 		Random random = new Random();
 		
-		BitSetBuffer buffer = new BitSetBuffer( 196 );
+		BinaryMessage buffer = new BinaryMessage( 196 );
 		
 		try
 		{

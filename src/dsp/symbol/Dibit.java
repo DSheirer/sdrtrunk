@@ -1,4 +1,4 @@
-package dsp.fsk;
+package dsp.symbol;
 
 public enum Dibit
 {

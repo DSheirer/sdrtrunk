@@ -1,7 +1,7 @@
 package decode.p25.message.pdu;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.pdu.osp.control.AdjacentStatusBroadcastExtended;
 import decode.p25.message.pdu.osp.control.CallAlertExtended;
 import decode.p25.message.pdu.osp.control.GroupAffiliationQueryExtended;
@@ -29,7 +29,7 @@ import decode.p25.reference.Vendor;
 
 public class PDUMessageFactory
 {
-	public static PDUMessage getMessage( BitSetBuffer message, 
+	public static PDUMessage getMessage( BinaryMessage message, 
 										 DataUnitID duid,
 										 AliasList aliasList )
 	{

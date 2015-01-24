@@ -7,7 +7,7 @@ import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
@@ -32,7 +32,7 @@ public class TimeAndDateAnnouncement extends TSBKMessage
     private SimpleDateFormat mTimeFormatter = 
     		new SimpleDateFormat( "EEE, d MMM yyyy HH:mm:ss Z" );
 
-	public TimeAndDateAnnouncement( BitSetBuffer message, DataUnitID duid,
+	public TimeAndDateAnnouncement( BinaryMessage message, DataUnitID duid,
 								AliasList aliasList )
     {
 	    super( message, duid, aliasList );

@@ -20,7 +20,7 @@ package edac;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 
 public class CRCUtil
 {
@@ -44,7 +44,7 @@ public class CRCUtil
 
 		for( int x = 0; x < messageSize; x++ )
 		{
-			BitSetBuffer message = new BitSetBuffer( messageSize + crcSize );
+			BinaryMessage message = new BinaryMessage( messageSize + crcSize );
 			
 			message.load( messageSize, crcSize, initialFill );
 			
@@ -130,7 +130,7 @@ public class CRCUtil
 	 * @return message with all message bits zeroed out, and the remainder 
 	 * placed in the crc field which starts at index messageLength
 	 */
-	public static BitSetBuffer decode( BitSetBuffer message,
+	public static BinaryMessage decode( BinaryMessage message,
 									   int messageStart,
 									   int messageSize,
 									   long polynomial,
@@ -140,7 +140,7 @@ public class CRCUtil
 				 i >= messageStart && i < messageSize; 
 				 i = message.nextSetBit( i+1 ) )
 		{
-			BitSetBuffer polySet = new BitSetBuffer( crcSize + i + 1 );
+			BinaryMessage polySet = new BinaryMessage( crcSize + i + 1 );
 			
 			polySet.load( i, crcSize + 1, polynomial );
 			

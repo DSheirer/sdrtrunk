@@ -24,7 +24,7 @@ import message.MessageDirection;
 import message.MessageType;
 import alias.Alias;
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import edac.CRC;
 import edac.CRCLTR;
 
@@ -41,7 +41,7 @@ public class LTRNetISWMessage extends LTRNetMessage
 
 	private LTRNetISWMessage mAuxMessage;
 	
-    public LTRNetISWMessage( BitSetBuffer message, AliasList list )
+    public LTRNetISWMessage( BinaryMessage message, AliasList list )
     {
     	super( message, MessageDirection.ISW, list );
     	

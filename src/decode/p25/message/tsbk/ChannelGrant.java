@@ -1,7 +1,7 @@
 package decode.p25.message.tsbk;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.IdentifierProvider;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.reference.DataUnitID;
@@ -16,7 +16,7 @@ public abstract class ChannelGrant extends ServiceMessage
     
     private IdentifierProvider mIdentifierUpdate;
     
-    public ChannelGrant( BitSetBuffer message, 
+    public ChannelGrant( BinaryMessage message, 
     					 DataUnitID duid,
     					 AliasList aliasList ) 
     {

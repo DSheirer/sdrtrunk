@@ -22,7 +22,7 @@ import java.util.BitSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 
 /**
  * LJ CRC checksum utility
@@ -108,7 +108,7 @@ public class CRCLJ
 	 * Determines if FUNCTION AND ADDRESS bits pass the LJ CRC checksum 
 	 * using a lookup table of CRC checksum values derived from the CRC-16 value
 	 */
-	public static CRC checkAndCorrect( BitSetBuffer message )
+	public static CRC checkAndCorrect( BinaryMessage message )
 	{
 		int calculated = 0; //Starting value
 
@@ -203,7 +203,7 @@ public class CRCLJ
     
     public static void main( String[] args )
     {
-    	BitSetBuffer msg = BitSetBuffer.load( "01010101101010101010000100011000000000100001000110000000001000010001100000000010" );
+    	BinaryMessage msg = BinaryMessage.load( "01010101101010101010000100011000000000100001000110000000001000010001100000000010" );
     	
     	CRC crc = checkAndCorrect( msg );
     	

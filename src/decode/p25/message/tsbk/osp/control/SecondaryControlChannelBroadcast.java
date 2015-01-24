@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.IdentifierProvider;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.tsbk.TSBKMessage;
@@ -33,7 +33,7 @@ public class SecondaryControlChannelBroadcast extends TSBKMessage
     private IdentifierProvider mIdentifierUpdate1;
     private IdentifierProvider mIdentifierUpdate2;
     
-    public SecondaryControlChannelBroadcast( BitSetBuffer message, 
+    public SecondaryControlChannelBroadcast( BinaryMessage message, 
                                 DataUnitID duid,
                                 AliasList aliasList ) 
     {

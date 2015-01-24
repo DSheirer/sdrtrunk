@@ -24,7 +24,7 @@ import map.Plottable;
 import message.Message;
 import alias.Alias;
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 
 public class MDCMessage extends Message
 {
@@ -48,10 +48,10 @@ public class MDCMessage extends Message
 	private static int[] sDIGIT_4 = { 67,66,65,64 };
 	private static int[] sDIGIT_3 = { 71,70,69,68 };
 
-    private BitSetBuffer mMessage;
+    private BinaryMessage mMessage;
     private AliasList mAliasList;
     
-    public MDCMessage( BitSetBuffer message, AliasList list )
+    public MDCMessage( BinaryMessage message, AliasList list )
     {
         mMessage = message;
         mAliasList = list;

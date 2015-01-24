@@ -6,7 +6,7 @@ import map.Plottable;
 import message.Message;
 import alias.Alias;
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.reference.DataUnitID;
 import edac.CRC;
 
@@ -24,13 +24,13 @@ public class P25Message extends Message
 	protected SimpleDateFormat mTimeDurationFormat = 
 							new SimpleDateFormat( "HH:mm:ss.SSS");
 	
-	protected BitSetBuffer mMessage;
+	protected BinaryMessage mMessage;
 	protected DataUnitID mDUID;
 	protected AliasList mAliasList;
 	
 	protected CRC[] mCRC;
 	
-	public P25Message( BitSetBuffer message, 
+	public P25Message( BinaryMessage message, 
 	                   DataUnitID duid,
 	                   AliasList aliasList )
 	{
@@ -46,7 +46,7 @@ public class P25Message extends Message
 		return mCRC;
 	}
 	
-	public BitSetBuffer getSourceMessage()
+	public BinaryMessage getSourceMessage()
 	{
 		return mMessage;
 	}

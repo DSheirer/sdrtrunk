@@ -20,7 +20,7 @@ package instrument.tap.stream;
 import instrument.tap.TapListener;
 import instrument.tap.TapType;
 import sample.Listener;
-import dsp.fsk.SymbolEvent;
+import dsp.symbol.SymbolEvent;
 
 public class SymbolEventTap extends StreamTap implements Listener<SymbolEvent>
 {

@@ -1,7 +1,7 @@
 package decode.p25.message.tsbk.osp.voice;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.tsbk.UnitChannelGrant;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
@@ -11,7 +11,7 @@ public class TelephoneInterconnectVoiceChannelGrant extends UnitChannelGrant
     public static final int[] CALL_TIMER = { 96,97,98,99,100,101,102,103,
         104,105,106,107,108,109,110,111 };
     
-    public TelephoneInterconnectVoiceChannelGrant( BitSetBuffer message, 
+    public TelephoneInterconnectVoiceChannelGrant( BinaryMessage message, 
                                    DataUnitID duid,
                                    AliasList aliasList ) 
     {

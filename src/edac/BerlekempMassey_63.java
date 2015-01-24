@@ -180,7 +180,7 @@ public class BerlekempMassey_63
 	/**
 	 * Decodes 
 	 * @param input
-	 * @param recd
+	 * @param output
 	 * @return
 	 */
     /* assume we have received bits grouped into mm-bit symbols in recd[i],
@@ -201,7 +201,7 @@ public class BerlekempMassey_63
     symbols will be okay and that if we are in luck, the errors are in the
     parity part of the transmitted codeword).  Of course, these insoluble cases
     can be returned as error flags to the calling routine if desired.   */
-    public boolean decode( final int[] input, int[] recd ) //input, output
+    public boolean decode( final int[] input, int[] output ) //input, output
     {
     	int u, q;
         int[][] elp = new int[ NN - KK + 2 ][ NN - KK ];
@@ -222,7 +222,7 @@ public class BerlekempMassey_63
     	/* put recd[i] into index form (ie as powers of alpha) */
         for( int i = 0; i < NN; i++ )
         {
-        	recd[ i ] = index_of[ input[ i ] ]; 
+        	output[ i ] = index_of[ input[ i ] ]; 
         }
         
         /* first form the syndromes */
@@ -232,10 +232,10 @@ public class BerlekempMassey_63
             
             for( int j = 0; j < NN; j++ )
             {
-                if( recd[ j ] != -1 )
+                if( output[ j ] != -1 )
                 {
                 	/* recd[j] in index form */
-                	s[ i ] ^= alpha_to[ ( recd[ j ] + i * j ) % NN ];
+                	s[ i ] ^= alpha_to[ ( output[ j ] + i * j ) % NN ];
                 }
             }
             
@@ -455,13 +455,13 @@ public class BerlekempMassey_63
                     {
                         err[ i ] = 0;
                         
-                        if( recd[ i ] != -1 ) /* convert recd[] to polynomial form */
+                        if( output[ i ] != -1 ) /* convert recd[] to polynomial form */
                         {
-                            recd[ i ] = alpha_to[ recd[ i ] ];
+                            output[ i ] = alpha_to[ output[ i ] ];
                         }
                         else
                         {
-                            recd[ i ] = 0;
+                            output[ i ] = 0;
                         }
                     }
                     
@@ -493,7 +493,7 @@ public class BerlekempMassey_63
                             
                             q = q % NN;
                             err[loc[i]] = alpha_to[(err[loc[i]] - q + NN) % NN];
-                            recd[loc[i]] ^= err[loc[i]]; /*recd[i] must be in polynomial form */
+                            output[loc[i]] ^= err[loc[i]]; /*recd[i] must be in polynomial form */
                         }
                     }
                 } 
@@ -515,13 +515,13 @@ public class BerlekempMassey_63
             /* no non-zero syndromes => no errors: output received codeword */
         	for (int i = 0; i < NN; i++)
         	{
-                if (recd[i] != -1) /* convert recd[] to polynomial form */
+                if (output[i] != -1) /* convert recd[] to polynomial form */
                 {
-                    recd[i] = alpha_to[recd[i]];
+                    output[i] = alpha_to[output[i]];
                 }
                 else
                 {
-                    recd[i] = 0;
+                    output[i] = 0;
                 }
         	}
         }
@@ -530,13 +530,13 @@ public class BerlekempMassey_63
         {
         	for (int i = 0; i < NN; i++) /* could return error flag if desired */
         	{
-                if (recd[i] != -1) /* convert recd[] to polynomial form */
+                if (output[i] != -1) /* convert recd[] to polynomial form */
                 {
-                    recd[i] = alpha_to[recd[i]];
+                    output[i] = alpha_to[output[i]];
                 }
                 else
                 {
-                    recd[i] = 0; /* just output received codeword as is */
+                    output[i] = 0; /* just output received codeword as is */
                 }
         	}
         }

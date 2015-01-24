@@ -31,7 +31,7 @@ import org.jdesktop.swingx.mapviewer.GeoPosition;
 
 import alias.Alias;
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import edac.CRC;
 import edac.CRCFleetsync;
 
@@ -111,11 +111,11 @@ public class FleetsyncMessage extends Message
 	private static int[] sGPSSpeedFractional = { 499,498,497,496,495,494,493,492 };
 	private static int[] sCRC8 = { 532,531,530,529,528,527,526,525,524,523,522,521,520,519,518,517 };
 	
-    private BitSetBuffer mMessage;
+    private BinaryMessage mMessage;
     private CRC[] mCRC = new CRC[ 8 ];
     private AliasList mAliasList;
     
-    public FleetsyncMessage( BitSetBuffer message, AliasList list )
+    public FleetsyncMessage( BinaryMessage message, AliasList list )
     {
         mMessage = message;
         mAliasList = list;

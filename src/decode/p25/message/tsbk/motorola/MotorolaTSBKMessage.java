@@ -1,13 +1,13 @@
 package decode.p25.message.tsbk.motorola;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.reference.DataUnitID;
 
 public class MotorolaTSBKMessage extends TSBKMessage
 {
-	public MotorolaTSBKMessage( BitSetBuffer message, DataUnitID duid,
+	public MotorolaTSBKMessage( BinaryMessage message, DataUnitID duid,
             AliasList aliasList )
     {
 	    super( message, duid, aliasList );

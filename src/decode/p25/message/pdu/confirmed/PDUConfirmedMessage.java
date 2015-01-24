@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.pdu.PDUMessage;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.PDUType;
@@ -23,7 +23,7 @@ public class PDUConfirmedMessage extends PDUMessage
 	public static final int[] FRAGMENT_SEQUENCE_NUMBER = { 133,134,135 };
 	public static final int[] PDU_TYPE = { 176,177,178,179 };
 	
-	public PDUConfirmedMessage( BitSetBuffer message, AliasList aliasList )
+	public PDUConfirmedMessage( BinaryMessage message, AliasList aliasList )
     {
 	    super( message, DataUnitID.PDUC, aliasList );
 

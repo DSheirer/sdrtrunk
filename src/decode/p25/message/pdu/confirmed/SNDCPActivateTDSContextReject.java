@@ -25,7 +25,7 @@ public class SNDCPActivateTDSContextReject extends PDUConfirmedMessage
 
 		sb.append( "NAC:" );
 		sb.append( getNAC() );
-		sb.append( " LLID:" );
+		sb.append( " PDUC LLID:" );
 		sb.append( getLogicalLinkID() );
 		sb.append( " REJECT SNDCP PACKET DATA ACTIVATE - REASON:" );
 		sb.append( getReason().getLabel() );

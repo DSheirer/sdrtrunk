@@ -1,7 +1,7 @@
 package decode.p25.message.tsbk.osp.voice;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.tsbk.UnitChannelGrant;
 import decode.p25.message.tsbk.osp.control.IdentifierUpdate;
 import decode.p25.reference.DataUnitID;
@@ -9,7 +9,7 @@ import decode.p25.reference.Opcode;
 
 public class UnitToUnitVoiceChannelGrant extends UnitChannelGrant
 {
-    public UnitToUnitVoiceChannelGrant( BitSetBuffer message, 
+    public UnitToUnitVoiceChannelGrant( BinaryMessage message, 
                                    DataUnitID duid,
                                    AliasList aliasList ) 
     {

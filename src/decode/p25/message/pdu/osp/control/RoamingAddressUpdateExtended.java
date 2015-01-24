@@ -1,11 +1,11 @@
 package decode.p25.message.pdu.osp.control;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
+import decode.p25.P25MessageFramer;
 import decode.p25.message.pdu.PDUMessage;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
-import dsp.fsk.P25MessageFramer;
 import edac.CRCP25;
 
 public class RoamingAddressUpdateExtended extends PDUMessage 
@@ -62,7 +62,7 @@ public class RoamingAddressUpdateExtended extends PDUMessage
 	
 	private Format mFormat;
 	
-	public RoamingAddressUpdateExtended( BitSetBuffer message,
+	public RoamingAddressUpdateExtended( BinaryMessage message,
             DataUnitID duid, AliasList aliasList )
     {
 	    super( message, duid, aliasList );
@@ -73,7 +73,8 @@ public class RoamingAddressUpdateExtended extends PDUMessage
 		    
 		    /* Header block is already error detected/corrected - perform error
 		     * detection correction on the intermediate and final data blocks */
-		    mCRC[ 1 ] = CRCP25.correctPDU1( mMessage );
+		    mMessage = CRCP25.correctPDU1( mMessage );
+		    mCRC[ 1 ] = mMessage.getCRC();
 	    }
 	    else if( mMessage.size() == P25MessageFramer.PDU3_BEGIN )
 	    {
@@ -81,7 +82,8 @@ public class RoamingAddressUpdateExtended extends PDUMessage
 		    
 		    /* Header block is already error detected/corrected - perform error
 		     * detection correction on the intermediate and final data blocks */
-		    mCRC[ 1 ] = CRCP25.correctPDU2( mMessage );
+		    mMessage = CRCP25.correctPDU2( mMessage );
+		    mCRC[ 1 ] = mMessage.getCRC();
 	    }
 	    else if( mMessage.size() == P25MessageFramer.PDU3_DECODED_END )
 	    {
@@ -89,7 +91,8 @@ public class RoamingAddressUpdateExtended extends PDUMessage
 		    
 		    /* Header block is already error detected/corrected - perform error
 		     * detection correction on the intermediate and final data blocks */
-		    mCRC[ 1 ] = CRCP25.correctPDU3( mMessage );
+		    mMessage = CRCP25.correctPDU3( mMessage );
+		    mCRC[ 1 ] = mMessage.getCRC();
 	    }
 	    else
 	    {
@@ -97,7 +100,8 @@ public class RoamingAddressUpdateExtended extends PDUMessage
 		    
 		    /* Header block is already error detected/corrected - perform error
 		     * detection correction on the intermediate and final data blocks */
-		    mCRC[ 1 ] = CRCP25.correctPDU1( mMessage );
+		    mMessage = CRCP25.correctPDU1( mMessage );
+		    mCRC[ 1 ] = mMessage.getCRC();
 	    }
     }
 

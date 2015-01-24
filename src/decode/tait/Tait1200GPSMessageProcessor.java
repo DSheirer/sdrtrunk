@@ -25,9 +25,9 @@ import org.slf4j.LoggerFactory;
 import sample.Broadcaster;
 import sample.Listener;
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 
-public class Tait1200GPSMessageProcessor implements Listener<BitSetBuffer>
+public class Tait1200GPSMessageProcessor implements Listener<BinaryMessage>
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( Tait1200GPSMessageProcessor.class );
@@ -47,7 +47,7 @@ public class Tait1200GPSMessageProcessor implements Listener<BitSetBuffer>
 	}
 	
 	@Override
-    public void receive( BitSetBuffer buffer )
+    public void receive( BinaryMessage buffer )
     {
 		mBroadcaster.receive( new Tait1200GPSMessage( buffer, mAliasList ) );
     }

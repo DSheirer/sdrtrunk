@@ -23,15 +23,15 @@ import java.util.Date;
 import map.Plottable;
 import message.Message;
 import alias.Alias;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 
 public class Fleetsync1Message extends Message
 {
 	private static SimpleDateFormat mSDF = new SimpleDateFormat( "yyyy-MM-dd HH:mm:ss" );
 
-    private BitSetBuffer mMessage;
+    private BinaryMessage mMessage;
     
-    public Fleetsync1Message( BitSetBuffer message )
+    public Fleetsync1Message( BinaryMessage message )
     {
         mMessage = message;
     }

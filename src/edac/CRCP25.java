@@ -20,7 +20,7 @@ package edac;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 
 /**
  * P25 CRC check/correction methods
@@ -222,7 +222,7 @@ public class CRCP25
 	 * Performs error detection and single-bit error correction against the
 	 * data blocks of a PDU1 message.
 	 */
-	public static CRC correctPDU1( BitSetBuffer message )
+	public static BinaryMessage correctPDU1( BinaryMessage message )
 	{
 		return correctPDU( message, PDU1_CHECKSUMS, 224 );
 	}
@@ -231,7 +231,7 @@ public class CRCP25
 	 * Performs error detection and single-bit error correction against the
 	 * data blocks of a PDU2 message.
 	 */
-	public static CRC correctPDU2( BitSetBuffer message )
+	public static BinaryMessage correctPDU2( BinaryMessage message )
 	{
 		return correctPDU( message, PDU2_CHECKSUMS, 320 );
 	}
@@ -240,12 +240,12 @@ public class CRCP25
 	 * Performs error detection and single-bit error correction against the
 	 * data blocks of a PDU3 message.
 	 */
-	public static CRC correctPDU3( BitSetBuffer message )
+	public static BinaryMessage correctPDU3( BinaryMessage message )
 	{
 		return correctPDU( message, PDU3_CHECKSUMS, 416 );
 	}
 
-	public static CRC correctPDU( BitSetBuffer message, long[] checksums, int crcStart )
+	public static BinaryMessage correctPDU( BinaryMessage message, long[] checksums, int crcStart )
 	{
 		long calculated = 0; //Starting value
 		
@@ -265,7 +265,9 @@ public class CRCP25
 		
 		if( error == 0 || error == 0xFFFFFFFFl )
 		{
-			return CRC.PASSED;
+			message.setCRC( CRC.PASSED );
+			
+			return message;
 		}
 		else
 		{
@@ -274,21 +276,25 @@ public class CRCP25
 			if( errorLocation >= 0 )
 			{
 				message.flip( errorLocation + messageStart );
+
+				message.setCRC( CRC.CORRECTED );
 				
-				return CRC.CORRECTED;
+				return message;
 			}
 		}
 
-		return CRC.FAILED_CRC;
+		message.setCRC( CRC.FAILED_CRC );
+		
+		return message;
 	}
 
 	/**
 	 * Error detection and correction of single-bit errors for CCITT 16-bit
 	 * CRC protected 80-bit messages.
 	 */
-	public static CRC correctCCITT80( BitSetBuffer message, 
-									  int messageStart,
-									  int crcStart )
+	public static BinaryMessage correctCCITT80( BinaryMessage message, 
+												int messageStart,
+												int crcStart )
 	{
 		int calculated = 0; //Starting value
 
@@ -306,7 +312,9 @@ public class CRCP25
 		
 		if( residual == 0 || residual == 0xFFFF )
 		{
-			return CRC.PASSED;
+			message.setCRC( CRC.PASSED );
+			
+			return message;
 		}
 		else
 		{
@@ -316,11 +324,15 @@ public class CRCP25
 			{
 				message.flip( errorLocation + messageStart );
 				
-				return CRC.CORRECTED;
+				message.setCRC( CRC.CORRECTED );
+				
+				return message;
 			}
 		}
 
-		return CRC.FAILED_CRC;
+		message.setCRC( CRC.FAILED_CRC );
+		
+		return message;
 	}
 
 	/**
@@ -330,7 +342,7 @@ public class CRCP25
 	 * were generated assuming that the message is contiguous from 0 - 134 bits.
 	 * No data correction is performed.
 	 */
-	public static CRC checkCRC9( BitSetBuffer message, int messageStart )
+	public static CRC checkCRC9( BinaryMessage message, int messageStart )
 	{
 		int calculated = 0x0; //Initial fill of all ones
 
@@ -372,7 +384,7 @@ public class CRCP25
 	 * 
 	 * @return - true if all 12 segments of the message can be checked/corrected
 	 */
-	public static boolean correctGalois24( BitSetBuffer tdulc )
+	public static boolean correctGalois24( BinaryMessage tdulc )
 	{
 		boolean passes = true;
 		
@@ -380,7 +392,10 @@ public class CRCP25
 		
 		while( x < tdulc.size() && passes )
 		{
-			passes = Galois24.checkAndCorrect( tdulc, x );
+			
+			tdulc = Galois24.checkAndCorrect( tdulc, x );
+			
+			passes = tdulc.getCRC() == CRC.PASSED;
 
 			x += 24;
 		}
@@ -392,7 +407,7 @@ public class CRCP25
 	/**
 	 * Calculates the value of the message checksum as a long
 	 */
-    public static long getLongChecksum( BitSetBuffer message, 
+    public static long getLongChecksum( BinaryMessage message, 
     				int crcStart, int crcLength )
     {
     	return message.getLong( crcStart, crcStart + crcLength - 1 );
@@ -401,7 +416,7 @@ public class CRCP25
 	/**
 	 * Calculates the value of the message checksum as an integer
 	 */
-    public static int getIntChecksum( BitSetBuffer message, 
+    public static int getIntChecksum( BinaryMessage message, 
     				int crcStart, int crcLength )
     {
     	return message.getInt( crcStart, crcStart + crcLength - 1 );
@@ -443,7 +458,7 @@ public class CRCP25
     {
     	String raw = "000000001000001100000001010001111011000100001010010001111100000000000101000000000000000001000000000000110000000000000001101010101010101010101010";
     	
-    	BitSetBuffer message = BitSetBuffer.load( raw );
+    	BinaryMessage message = BinaryMessage.load( raw );
     	
     	mLog.debug( "MSG:" + message.toString() );
 

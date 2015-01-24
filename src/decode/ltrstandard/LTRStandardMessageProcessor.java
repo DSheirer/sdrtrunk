@@ -22,9 +22,9 @@ import message.MessageDirection;
 import sample.Broadcaster;
 import sample.Listener;
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 
-public class LTRStandardMessageProcessor implements Listener<BitSetBuffer>
+public class LTRStandardMessageProcessor implements Listener<BinaryMessage>
 {
 	private MessageDirection mDirection;
 	private Broadcaster<Message> mBroadcaster = new Broadcaster<Message>();
@@ -37,7 +37,7 @@ public class LTRStandardMessageProcessor implements Listener<BitSetBuffer>
 	}
 	
 	@Override
-    public void receive( BitSetBuffer buffer )
+    public void receive( BinaryMessage buffer )
     {
 		LTRStandardMessage message;
 		

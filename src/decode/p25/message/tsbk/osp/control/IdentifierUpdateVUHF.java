@@ -1,7 +1,7 @@
 package decode.p25.message.tsbk.osp.control;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
 
@@ -14,7 +14,7 @@ public class IdentifierUpdateVUHF extends IdentifierUpdate
     public static final int[] TRANSMIT_OFFSET = { 89,90,91,92,93,94,95,96,97,98,
     	99,100,101 };
     
-    public IdentifierUpdateVUHF( BitSetBuffer message, 
+    public IdentifierUpdateVUHF( BinaryMessage message, 
                              DataUnitID duid,
                              AliasList aliasList ) 
     {

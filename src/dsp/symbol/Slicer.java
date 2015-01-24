@@ -1,11 +1,11 @@
-package dsp.fsk;
+package dsp.symbol;
 
 import instrument.tap.stream.SymbolEventTap;
 
 import java.util.BitSet;
 
 import sample.Listener;
-import dsp.fsk.SymbolEvent.Shift;
+import dsp.symbol.SymbolEvent.Shift;
 
 /**
  * Symbol slicer with auto-aligning baud timing

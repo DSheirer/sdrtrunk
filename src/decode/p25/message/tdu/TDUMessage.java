@@ -1,14 +1,14 @@
 package decode.p25.message.tdu;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.P25Message;
 import decode.p25.reference.DataUnitID;
 import edac.CRC;
 
 public class TDUMessage extends P25Message
 {
-	public TDUMessage( BitSetBuffer message, DataUnitID duid,
+	public TDUMessage( BinaryMessage message, DataUnitID duid,
             AliasList aliasList )
     {
 	    super( message, duid, aliasList );

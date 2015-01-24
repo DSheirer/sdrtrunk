@@ -3,7 +3,7 @@ package decode.p25.message.pdu.osp.voice;
 import java.util.Date;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.IdentifierProvider;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.pdu.PDUMessage;
@@ -39,14 +39,15 @@ public class TelephoneInterconnectChannelGrantExplicit extends PDUMessage
 	private IdentifierProvider mTransmitIdentifierUpdate;
 	private IdentifierProvider mReceiveIdentifierUpdate;
 	
-	public TelephoneInterconnectChannelGrantExplicit( BitSetBuffer message,
+	public TelephoneInterconnectChannelGrantExplicit( BinaryMessage message,
             DataUnitID duid, AliasList aliasList )
     {
 	    super( message, duid, aliasList );
 	    
 	    /* Header block is already error detected/corrected - perform error
 	     * detection correction on the intermediate and final data blocks */
-	    mCRC[ 1 ] = CRCP25.correctPDU1( mMessage );
+	    mMessage = CRCP25.correctPDU1( mMessage );
+	    mCRC[ 1 ] = mMessage.getCRC();
     }
 
     @Override

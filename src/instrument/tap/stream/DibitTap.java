@@ -20,7 +20,7 @@ package instrument.tap.stream;
 import instrument.tap.TapListener;
 import instrument.tap.TapType;
 import sample.Listener;
-import dsp.fsk.Dibit;
+import dsp.symbol.Dibit;
 
 public class DibitTap extends StreamTap implements Listener<Dibit>
 												

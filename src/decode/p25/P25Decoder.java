@@ -39,12 +39,10 @@ import dsp.filter.ComplexFIRFilter;
 import dsp.filter.FilterFactory;
 import dsp.filter.FloatFIRFilter;
 import dsp.filter.Window.WindowType;
-import dsp.fsk.C4FMSlicer;
-import dsp.fsk.C4FMSymbolFilter;
-import dsp.fsk.P25MessageFramer;
 import dsp.gain.DirectGainControl;
 import dsp.nbfm.FMDiscriminator;
 import dsp.nbfm.FilteringNBFMDemodulator;
+import dsp.symbol.FrameSync;
 
 public class P25Decoder extends Decoder 
 			implements DirectFrequencyController, Instrumentable

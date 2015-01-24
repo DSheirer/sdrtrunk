@@ -1,4 +1,4 @@
-package dsp.fsk;
+package decode.p25;
 
 import instrument.Instrumentable;
 import instrument.tap.Tap;

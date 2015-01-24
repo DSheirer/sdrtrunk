@@ -25,7 +25,7 @@ import message.MessageDirection;
 import message.MessageType;
 import alias.Alias;
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.DecoderType;
 import edac.CRC;
 import edac.CRCLTR;
@@ -47,12 +47,12 @@ public abstract class LTRStandardMessage extends Message
 	protected static final int[] sFREE = { 32,31,30,29,28 };
 	protected static final int[] sCRC = { 39,38,37,36,35,34,33 };
 	
-	protected BitSetBuffer mMessage;
+	protected BinaryMessage mMessage;
 	protected MessageType mMessageType;
 	protected CRC mCRC;
 	protected AliasList mAliasList;
 	
-    public LTRStandardMessage( BitSetBuffer message, 
+    public LTRStandardMessage( BinaryMessage message, 
     					  MessageDirection direction,
     					  AliasList list )
     {

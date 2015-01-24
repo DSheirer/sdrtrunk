@@ -22,9 +22,11 @@ import java.util.BitSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BitSetBuffer extends BitSet
+import edac.CRC;
+
+public class BinaryMessage extends BitSet
 {
-	private final static Logger mLog = LoggerFactory.getLogger( BitSetBuffer.class );
+	private final static Logger mLog = LoggerFactory.getLogger( BinaryMessage.class );
 
 	private static final long serialVersionUID = 1L;
 
@@ -48,7 +50,14 @@ public class BitSetBuffer extends BitSet
      * that the size parameter specified.
      * @param size
      */
-    public BitSetBuffer( int size )
+    
+    /**
+     * Used for temporary storage of CRC check results when we're passing this
+     * message to an EDAC function.
+     */
+    private CRC mCRC;
+    
+    public BinaryMessage( int size )
     {
         super( size );
         mSize = size;
@@ -62,7 +71,7 @@ public class BitSetBuffer extends BitSet
      * @param size
      * @param bitsToPreload
      */
-    public BitSetBuffer( int size, boolean[] bitsToPreload )
+    public BinaryMessage( int size, boolean[] bitsToPreload )
     {
         this( size );
         
@@ -86,18 +95,28 @@ public class BitSetBuffer extends BitSet
     /**
      * Constructs a new BitSetBuffer from an existing one
      */
-    private BitSetBuffer( BitSetBuffer toCopyFrom )
+    private BinaryMessage( BinaryMessage toCopyFrom )
     {
         this( toCopyFrom.size() );
         this.or( toCopyFrom );
         this.mPointer = toCopyFrom.pointer();
     }
 
-    public BitSetBuffer( BitSet bitset, int size )
+    public BinaryMessage( BitSet bitset, int size )
     {
         this( size );
         this.or( bitset );
         this.mPointer = size - 1;
+    }
+    
+    public CRC getCRC()
+    {
+    	return mCRC;
+    }
+    
+    public void setCRC( CRC crc )
+    {
+    	mCRC = crc;
     }
     
     /**
@@ -136,9 +155,9 @@ public class BitSetBuffer extends BitSet
      * @param bitsetToAppend - full bitset to be appended to the residual bits array 
      * @return - new Bitset preloaded with residual bits and new bitset
      */
-    public static BitSetBuffer merge( boolean[] preloadBits, BitSetBuffer bitsetToAppend )
+    public static BinaryMessage merge( boolean[] preloadBits, BinaryMessage bitsetToAppend )
     {
-        BitSetBuffer returnValue = new BitSetBuffer( preloadBits.length + bitsetToAppend.size(), preloadBits );
+        BinaryMessage returnValue = new BinaryMessage( preloadBits.length + bitsetToAppend.size(), preloadBits );
 
         int pointer = 0;
         
@@ -163,9 +182,9 @@ public class BitSetBuffer extends BitSet
      * Returns a (new) copy of this bitsetbuffer
      * @return
      */
-    public BitSetBuffer copy()
+    public BinaryMessage copy()
     {
-        return new BitSetBuffer( this );
+        return new BinaryMessage( this );
     }
     
     public boolean isFull()
@@ -251,14 +270,15 @@ public class BitSetBuffer extends BitSet
     
     /**
      * Returns this bitset as a reversed bit order array of integer ones and zeros
+     * from the specified index range
      */
-    public int[] toReverseIntegerArray()
+    public int[] toReverseIntegerArray( int start, int end )
     {
-    	int[] values = new int[ mSize ];
+    	int[] values = new int[ end - start + 1 ];
     	
-		for (int i = nextSetBit( 0 ); i >= 0 && i < mSize; i = nextSetBit( i+1 ) ) 
+		for (int i = nextSetBit( start ); i >= start && i <= end; i = nextSetBit( i+1 ) ) 
 		{
-			values[ mSize - i - 1 ] = 1;
+			values[ end - i ] = 1;
 		}
 		
 		return values;
@@ -531,9 +551,9 @@ public class BitSetBuffer extends BitSet
      * @param fill - initial fill value
      * @return - filled buffer
      */
-	public static BitSetBuffer getBuffer( int width, long fill )
+	public static BinaryMessage getBuffer( int width, long fill )
 	{
-		BitSetBuffer buffer = new BitSetBuffer( width );
+		BinaryMessage buffer = new BinaryMessage( width );
 		
 		buffer.load( 0, width, fill );
 		
@@ -596,7 +616,7 @@ public class BitSetBuffer extends BitSet
 	 * @param message - string containing only zeros and ones
 	 * @return - loaded buffer
 	 */
-	public static BitSetBuffer load( String message )
+	public static BinaryMessage load( String message )
 	{
 		if( !message.matches( "[01]*" ) )
 		{
@@ -604,7 +624,7 @@ public class BitSetBuffer extends BitSet
 					"Message must contain only zeros and ones" );
 		}
 		
-		BitSetBuffer buffer = new BitSetBuffer( message.length() );
+		BinaryMessage buffer = new BinaryMessage( message.length() );
 
 		for( int x = 0; x < message.length(); x++ )
 		{
@@ -705,7 +725,7 @@ public class BitSetBuffer extends BitSet
 	 */
 	public void xor( int offset, int width, int value )
 	{
-		BitSetBuffer mask = new BitSetBuffer( this.size() );
+		BinaryMessage mask = new BinaryMessage( this.size() );
 		
 		mask.load( offset, width, value );
 		

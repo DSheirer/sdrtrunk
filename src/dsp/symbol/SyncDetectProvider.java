@@ -15,13 +15,10 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package dsp;
+package dsp.symbol;
 
-/**
- * Interface to allow an external process indicate that it has detected a
- * sync pattern in the bit stream
- */
-public interface SyncDetectListener
+
+public interface SyncDetectProvider
 {
-	public void syncDetected();
+	public void setSyncDetectListener( SyncDetectListener listener );
 }

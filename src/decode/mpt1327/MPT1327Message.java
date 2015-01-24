@@ -29,7 +29,7 @@ import map.Plottable;
 import message.Message;
 import alias.Alias;
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import edac.CRC;
 import edac.CRCFleetsync;
 
@@ -123,12 +123,12 @@ public class MPT1327Message extends Message
 	private static SimpleDateFormat mSDF = new SimpleDateFormat( "yyyyMMdd HHmmss" );
 	Calendar mCalendar = new GregorianCalendar();
 	
-	private BitSetBuffer mMessage;
+	private BinaryMessage mMessage;
     private CRC[] mCRC = new CRC[ 5 ];
     private AliasList mAliasList;
     private MPTMessageType mMessageType;
     
-    public MPT1327Message( BitSetBuffer message, AliasList list )
+    public MPT1327Message( BinaryMessage message, AliasList list )
     {
         mMessage = message;
         mAliasList = list;

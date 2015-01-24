@@ -3,7 +3,7 @@ package decode.p25.message.tsbk.osp.control;
 import java.util.List;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
@@ -18,7 +18,7 @@ public class SystemServiceBroadcast extends TSBKMessage
 	public static final int[] REQUEST_PRIORITY_LEVEL = { 136,137,138,139,140,
 		141,142,143 };
     
-    public SystemServiceBroadcast( BitSetBuffer message, 
+    public SystemServiceBroadcast( BinaryMessage message, 
     							   DataUnitID duid,
     							   AliasList aliasList ) 
     {

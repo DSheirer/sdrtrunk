@@ -21,9 +21,9 @@ import message.Message;
 import sample.Broadcaster;
 import sample.Listener;
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 
-public class Fleetsync2MessageProcessor implements Listener<BitSetBuffer>
+public class Fleetsync2MessageProcessor implements Listener<BinaryMessage>
 {
 	private Broadcaster<Message> mBroadcaster = new Broadcaster<Message>();
 	
@@ -40,7 +40,7 @@ public class Fleetsync2MessageProcessor implements Listener<BitSetBuffer>
 	}
 	
 	@Override
-    public void receive( BitSetBuffer buffer )
+    public void receive( BinaryMessage buffer )
     {
 		FleetsyncMessage message = new FleetsyncMessage( buffer, mAliasList );
 

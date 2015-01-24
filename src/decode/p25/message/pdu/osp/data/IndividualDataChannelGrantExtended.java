@@ -1,7 +1,7 @@
 package decode.p25.message.pdu.osp.data;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.pdu.UnitToUnitChannelGrantExtended;
 import decode.p25.reference.DataUnitID;
@@ -11,7 +11,7 @@ public class IndividualDataChannelGrantExtended
 				extends UnitToUnitChannelGrantExtended 
 				implements IdentifierReceiver
 {
-	public IndividualDataChannelGrantExtended( BitSetBuffer message,
+	public IndividualDataChannelGrantExtended( BinaryMessage message,
             DataUnitID duid, AliasList aliasList )
     {
 	    super( message, duid, aliasList );

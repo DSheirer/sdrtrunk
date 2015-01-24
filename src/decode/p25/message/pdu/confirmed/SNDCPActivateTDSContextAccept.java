@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.pdu.PDUMessage;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.MDPConfigurationOption;
@@ -50,7 +50,7 @@ public class SNDCPActivateTDSContextAccept extends PDUConfirmedMessage
 
 		sb.append( "NAC:" );
 		sb.append( getNAC() );
-		sb.append( " LLID:" );
+		sb.append( " PDUC LLID:" );
 		sb.append( getLogicalLinkID() );
 		sb.append( " ACCEPT  SNDCP PACKET DATA ACTIVATE " );
 		sb.append( getNetworkAddressType() );

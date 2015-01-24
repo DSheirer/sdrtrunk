@@ -1,7 +1,7 @@
 package decode.p25.message.tsbk.osp.control;
 
 import alias.AliasList;
-import bits.BitSetBuffer;
+import bits.BinaryMessage;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
@@ -15,7 +15,7 @@ public class StatusUpdate extends TSBKMessage
     public static final int[] SOURCE_ADDRESS = { 160,161,162,163,164,165,166,
     	167,168,169,170,171,184,185,186,187,188,189,190,190,192,193,194,195 };
     
-    public StatusUpdate( BitSetBuffer message, 
+    public StatusUpdate( BinaryMessage message, 
                                 DataUnitID duid,
                                 AliasList aliasList ) 
     {
