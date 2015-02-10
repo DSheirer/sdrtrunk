@@ -19,8 +19,10 @@ package decode.p25;
 
 import instrument.Instrumentable;
 import instrument.tap.Tap;
+import instrument.tap.stream.ComplexTap;
 import instrument.tap.stream.DibitTap;
 import instrument.tap.stream.FloatTap;
+import instrument.tap.stream.QPSKTap;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,9 +41,10 @@ import dsp.filter.ComplexFIRFilter;
 import dsp.filter.FilterFactory;
 import dsp.filter.FloatFIRFilter;
 import dsp.filter.Window.WindowType;
+import dsp.gain.ComplexAutomaticGainControl;
 import dsp.gain.DirectGainControl;
 import dsp.nbfm.FMDiscriminator;
-import dsp.nbfm.FilteringNBFMDemodulator;
+import dsp.psk.CQPSKDemodulator;
 import dsp.symbol.FrameSync;
 
 public class P25Decoder extends Decoder 
@@ -50,74 +53,122 @@ public class P25Decoder extends Decoder
 	private final static Logger mLog = LoggerFactory.getLogger( P25Decoder.class );
 
     /* Instrumentation Taps */
-	private static final String INSTRUMENT_INPUT_TO_AGC = "Tap Point: Input to AGC";
-	private static final String INSTRUMENT_AGC_TO_SYMBOL_FILTER = "Tap Point: AGC to Symbol Filter";
-	private static final String INSTRUMENT_SYMBOL_FILTER_TO_SLICER = "Tap Point: Symbol Filter to Slicer";
-	private static final String INSTRUMENT_SLICER_OUTPUT = "Tap Point: Slicer Output";
-    private List<Tap> mAvailableTaps;
-	
-	private ComplexFIRFilter mBasebandFilter = new ComplexFIRFilter( 
-		FilterFactory.getLowPass( 48000, 6000, 7000, 48, WindowType.HANNING, true ), 1.0 );
-	private FMDiscriminator mDemodulator = new FMDiscriminator( 1 );
-	private FloatFIRFilter mAudioFilter = new FloatFIRFilter( 
-		FilterFactory.getLowPass( 48000, 3000, 4000, 48, WindowType.HAMMING, true ), 1.0 );
-	
-	private DirectGainControl mGainControl = 
-						new DirectGainControl( 15.0f, 0.1f, 25.0f, 0.3f );
+	private static final String INSTRUMENT_COMPLEX_INPUT = "Tap Point: Complex Input";
+	private static final String INSTRUMENT_BASEBAND_FILTER_OUTPUT = "Tap Point: Baseband Filter Output";
+
+	private static final String INSTRUMENT_AGC_OUTPUT = "Tap Point: AGC Output";
+	private static final String INSTRUMENT_QPSK_DEMODULATOR_OUTPUT = "Tap Point: CQPSK Demodulator Output";
+	private static final String INSTRUMENT_CQPSK_SLICER_OUTPUT = "Tap Point: CQPSK Slicer Output";
+
+	private static final String INSTRUMENT_REAL_INPUT = "Tap Point: Real Input";
+	private static final String INSTRUMENT_DGC_OUTPUT = "Tap Point: DGC Output";
+	private static final String INSTRUMENT_C4FM_SYMBOL_FILTER_OUTPUT = "Tap Point: Symbol Filter Output";
+	private static final String INSTRUMENT_C4FM_SLICER_OUTPUT = "Tap Point: C4FM Slicer Output";
+
+	private List<Tap> mAvailableTaps;
+
+    /* Demods */
+	private FMDiscriminator mFMDemodulator;
+	private CQPSKDemodulator mCQPSKDemodulator;
+    
+    /* Gain */
+	private ComplexAutomaticGainControl mAGC;
+	private DirectGainControl mDGC;
+
+	/* Filters */
+	private ComplexFIRFilter mBasebandFilter;
+	private ComplexFIRFilter mRootRaisedCosineFilter;
+	private FloatFIRFilter mAudioFilter;
 	private C4FMSymbolFilter mSymbolFilter;
-	private C4FMSlicer mSlicer = new C4FMSlicer();
+	
+	/* Slicers */
+	private C4FMSlicer mC4FMSlicer;
+	private CQPSKSlicer mCQPSKSlicer;
+	
+	/* Message framers and handlers */
 	private P25MessageFramer mNormalFramer;
 	private P25MessageFramer mInvertedFramer;
 	private P25MessageProcessor mMessageProcessor;
 
 	private AliasList mAliasList;
+	private Modulation mModulation;
 	
-	public P25Decoder( SampleType sampleType, AliasList aliasList )
+	public P25Decoder( SampleType sampleType, 
+			   		   Modulation modulation, 
+					   AliasList aliasList )
 	{
 		super( sampleType );
+		mModulation = modulation;
 		
 		mAliasList = aliasList;
-		
-		mSymbolFilter = new C4FMSymbolFilter( mGainControl );
-
-		/**
-		 * Only setup a demod chain if we're receiving complex samples.  If
-		 * we're receiving demodulated samples, they'll be handled the same 
-		 * way as we handle the output of the demodulator.
-		 */
-		if( mSourceSampleType == SampleType.COMPLEX )
-		{
-			/**
-			 * The Decoder super class is both a Complex listener and a float
-			 * listener.  So, we add the demod to listen to the incoming 
-			 * quadrature samples, and we wire the output of the demod right
-			 * back to this class, so we can receive the demodulated output
-			 * to process
-			 */
-			this.addComplexListener( mBasebandFilter );
-			mBasebandFilter.setListener( mDemodulator );
-			mDemodulator.setListener( getRealReceiver() );
-		}
-
-		addRealSampleListener( mAudioFilter );
-		mAudioFilter.setListener( mGainControl );
-		mGainControl.setListener( mSymbolFilter );
-		
-		mSymbolFilter.setListener( mSlicer );
 		
 		mMessageProcessor = new P25MessageProcessor( mAliasList );
 		mMessageProcessor.addMessageListener( this );
 
         mNormalFramer = new P25MessageFramer( 
                 FrameSync.P25_PHASE1.getSync(), 64, false, mAliasList );
-        mSlicer.addListener( mNormalFramer );
         mNormalFramer.setListener( mMessageProcessor );
 
         mInvertedFramer = new P25MessageFramer( 
                 FrameSync.P25_PHASE1_INVERTED.getSync(), 64, true, mAliasList );
-        mSlicer.addListener( mInvertedFramer );
         mInvertedFramer.setListener( mMessageProcessor );
-		
+
+        /* Setup demodulation chains based on sample type (real or complex) and 
+         * modulation (C4FM or CQPSK) */
+		if( mSourceSampleType == SampleType.COMPLEX )
+		{
+			mBasebandFilter = new ComplexFIRFilter( FilterFactory.getLowPass( 
+					48000, 6500, 8000, 48, WindowType.HANNING, true ), 1.0 );
+			
+			if( modulation == Modulation.CQPSK )
+			{
+				this.addComplexListener( mBasebandFilter );
+				
+				mAGC = new ComplexAutomaticGainControl();
+				mBasebandFilter.setListener( mAGC );
+				
+				mCQPSKDemodulator = new CQPSKDemodulator();
+				mAGC.setListener( mCQPSKDemodulator );
+				
+				mCQPSKSlicer = new CQPSKSlicer();
+				mCQPSKDemodulator.setListener( mCQPSKSlicer );
+				
+				mCQPSKSlicer.addListener( mNormalFramer );
+				mCQPSKSlicer.addListener( mInvertedFramer );
+			}
+			else /* C4FM */
+			{
+				this.addComplexListener( mBasebandFilter );
+				
+				mFMDemodulator = new FMDiscriminator( 1.0f );
+				mBasebandFilter.setListener( mFMDemodulator );
+				
+				/* Route output of the fm demod back to this channel so that we
+				 * can process the output as if it were coming from any other
+				 * real sample source */
+				mFMDemodulator.setListener( getRealReceiver() );
+			}
+		}
+
+		/* Processing chain for real samples & demodulated complex samples */
+		if( modulation == Modulation.C4FM )
+		{
+			mAudioFilter = new FloatFIRFilter( FilterFactory.getLowPass( 48000, 
+					3000, 4000, 48, WindowType.HAMMING, true ), 1.0 );			
+			addRealSampleListener( mAudioFilter );
+			
+			mDGC = new DirectGainControl( 15.0f, 0.1f, 35.0f, 0.3f );
+			mAudioFilter.setListener( mDGC );
+			
+			mSymbolFilter = new C4FMSymbolFilter( mDGC );
+			mDGC.setListener( mSymbolFilter );
+			
+			mC4FMSlicer = new C4FMSlicer();
+			mSymbolFilter.setListener( mC4FMSlicer );
+			
+	        mC4FMSlicer.addListener( mNormalFramer );
+	        mC4FMSlicer.addListener( mInvertedFramer );
+		}
 	}
 
 	@Override
@@ -133,12 +184,33 @@ public class P25Decoder extends Decoder
 		{
 			mAvailableTaps = new ArrayList<Tap>();
 
-			mAvailableTaps.add( new FloatTap( INSTRUMENT_INPUT_TO_AGC, 0, 1.0f ) );
-			mAvailableTaps.add( new FloatTap( INSTRUMENT_AGC_TO_SYMBOL_FILTER, 0, 1.0f ) );
-			mAvailableTaps.add( new FloatTap( INSTRUMENT_SYMBOL_FILTER_TO_SLICER, 0, 0.1f ) );
-			mAvailableTaps.add( new DibitTap( INSTRUMENT_SLICER_OUTPUT, 0, 0.1f ) );
+			if( mSourceSampleType == SampleType.COMPLEX )
+			{
+				mAvailableTaps.add( new ComplexTap( INSTRUMENT_COMPLEX_INPUT, 0, 1.0f ) );
+				mAvailableTaps.add( new ComplexTap( INSTRUMENT_BASEBAND_FILTER_OUTPUT, 0, 1.0f ) );
+			}
+			else
+			{
+				mAvailableTaps.add( new FloatTap( INSTRUMENT_REAL_INPUT, 0, 1.0f ) );
+			}
 			
-			mAvailableTaps.addAll( mSymbolFilter.getTaps() );
+			if( mModulation == Modulation.C4FM )
+			{
+				mAvailableTaps.add( new FloatTap( INSTRUMENT_DGC_OUTPUT, 0, 1.0f ) );
+				mAvailableTaps.add( new FloatTap( INSTRUMENT_C4FM_SYMBOL_FILTER_OUTPUT, 0, 0.1f ) );
+				mAvailableTaps.add( new DibitTap( INSTRUMENT_C4FM_SLICER_OUTPUT, 0, 0.1f ) );
+
+				if( mSymbolFilter != null )
+				{
+					mAvailableTaps.addAll( mSymbolFilter.getTaps() );
+				}
+			}
+			else
+			{
+				mAvailableTaps.add( new ComplexTap( INSTRUMENT_AGC_OUTPUT, 0, 1.0f ) );
+				mAvailableTaps.add( new QPSKTap( INSTRUMENT_QPSK_DEMODULATOR_OUTPUT, 0, 1.0f ) );
+				mAvailableTaps.add( new DibitTap( INSTRUMENT_CQPSK_SLICER_OUTPUT, 0, 0.1f ) );
+			}
 		}
 		
 		return mAvailableTaps;
@@ -147,29 +219,62 @@ public class P25Decoder extends Decoder
 	@Override
     public void addTap( Tap tap )
     {
-		mSymbolFilter.addTap( tap );
+		if( mSymbolFilter != null )
+		{
+			mSymbolFilter.addTap( tap );
+		}
 		
 		switch( tap.getName() )
 		{
-			case INSTRUMENT_INPUT_TO_AGC:
+			case INSTRUMENT_COMPLEX_INPUT:
+				addComplexListener( (ComplexTap)tap );
+				break;
+			case INSTRUMENT_BASEBAND_FILTER_OUTPUT:
+				ComplexTap baseband = (ComplexTap)tap;
+				mBasebandFilter.setListener( baseband );
+				baseband.setListener( mAGC );
+				break;
+			case INSTRUMENT_AGC_OUTPUT:
+				ComplexTap agcSymbol = (ComplexTap)tap;
+				mAGC.setListener( agcSymbol );
+				agcSymbol.setListener( mCQPSKDemodulator );
+				break;
+			case INSTRUMENT_QPSK_DEMODULATOR_OUTPUT:
+				QPSKTap qpsk = (QPSKTap)tap;
+				mCQPSKDemodulator.setListener( qpsk );
+				qpsk.setListener( mCQPSKSlicer );
+				break;
+			case INSTRUMENT_CQPSK_SLICER_OUTPUT:
+				mCQPSKSlicer.addListener( (DibitTap)tap );
+				break;
+			case INSTRUMENT_REAL_INPUT:
 				FloatTap inputAGC = (FloatTap)tap;
-				removeRealListener( mGainControl );
+				removeRealListener( mDGC );
 				addRealSampleListener( inputAGC );
-				inputAGC.setListener( mGainControl );
+				inputAGC.setListener( mDGC );
 				break;
-			case INSTRUMENT_AGC_TO_SYMBOL_FILTER:
-				FloatTap agcSymbol = (FloatTap)tap;
-				mGainControl.setListener( agcSymbol );
-				agcSymbol.setListener( mSymbolFilter );
+			case INSTRUMENT_DGC_OUTPUT:
+				FloatTap dgcSymbol = (FloatTap)tap;
+				mDGC.setListener( dgcSymbol );
+				dgcSymbol.setListener( mSymbolFilter );
 				break;
-			case INSTRUMENT_SYMBOL_FILTER_TO_SLICER:
+			case INSTRUMENT_C4FM_SYMBOL_FILTER_OUTPUT:
 				FloatTap symbolSlicer = (FloatTap)tap;
 				mSymbolFilter.setListener( symbolSlicer );
-				symbolSlicer.setListener( mSlicer );
+				symbolSlicer.setListener( mC4FMSlicer );
 				break;
-			case INSTRUMENT_SLICER_OUTPUT:
+			case INSTRUMENT_C4FM_SLICER_OUTPUT:
 				DibitTap slicer = (DibitTap)tap;
-				mSlicer.addListener( slicer );
+				
+				if( mC4FMSlicer != null )
+				{
+					mC4FMSlicer.addListener( slicer );
+				}
+				
+				if( mCQPSKSlicer != null )
+				{
+					mCQPSKSlicer.addListener( slicer );
+				}
 				break;
 		}
     }
@@ -177,24 +282,51 @@ public class P25Decoder extends Decoder
 	@Override
     public void removeTap( Tap tap )
     {
-		mSymbolFilter.removeTap( tap );
+		if( mSymbolFilter != null )
+		{
+			mSymbolFilter.removeTap( tap );
+		}
 		
 		switch( tap.getName() )
 		{
-			case INSTRUMENT_INPUT_TO_AGC:
+			case INSTRUMENT_COMPLEX_INPUT:
+				removeComplexListener( (ComplexTap)tap );
+				break;
+			case INSTRUMENT_BASEBAND_FILTER_OUTPUT:
+				mBasebandFilter.setListener( mAGC );
+				break;
+			case INSTRUMENT_AGC_OUTPUT:
+				mAGC.setListener( mCQPSKDemodulator );
+				break;
+			case INSTRUMENT_QPSK_DEMODULATOR_OUTPUT:
+				mCQPSKDemodulator.setListener( mCQPSKSlicer );
+				break;
+			case INSTRUMENT_CQPSK_SLICER_OUTPUT:
+				mCQPSKSlicer.removeListener( (DibitTap)tap );
+				break;
+			case INSTRUMENT_REAL_INPUT:
 				FloatTap inputAGC = (FloatTap)tap;
 				removeRealListener( inputAGC );
-				addRealSampleListener( mGainControl );
+				addRealSampleListener( mDGC );
 				break;
-			case INSTRUMENT_AGC_TO_SYMBOL_FILTER:
-				mGainControl.setListener( mSymbolFilter );
+			case INSTRUMENT_DGC_OUTPUT:
+				mDGC.setListener( mSymbolFilter );
 				break;
-			case INSTRUMENT_SYMBOL_FILTER_TO_SLICER:
-				mSymbolFilter.setListener( mSlicer );
+			case INSTRUMENT_C4FM_SYMBOL_FILTER_OUTPUT:
+				mSymbolFilter.setListener( mC4FMSlicer );
 				break;
-			case INSTRUMENT_SLICER_OUTPUT:
+			case INSTRUMENT_C4FM_SLICER_OUTPUT:
 				DibitTap slicerTap = (DibitTap)tap;
-				mSlicer.removeListener( slicerTap );
+				
+				if( mC4FMSlicer != null )
+				{
+					mC4FMSlicer.removeListener( slicerTap );
+				}
+				
+				if( mCQPSKSlicer != null )
+				{
+					mCQPSKSlicer.removeListener( slicerTap );
+				}
 				break;
 		}
     }
@@ -213,12 +345,44 @@ public class P25Decoder extends Decoder
 	@Override
 	public void setListener( FrequencyChangeListener listener )
 	{
-		mSymbolFilter.addListener( listener );
+		if( mSymbolFilter != null )
+		{
+			mSymbolFilter.addListener( listener );
+		}
 	}
 
 	@Override
 	public long getFrequencyCorrection()
 	{
-		return mSymbolFilter.getFrequencyCorrection();
+		if( mSymbolFilter != null )
+		{
+			return mSymbolFilter.getFrequencyCorrection();
+		}
+		
+		return 0;
 	}
+	
+	public enum Modulation
+	{ 
+		C4FM( "C4FM" ), 
+		CQPSK( "LSM SIMULCAST" );
+		
+		private String mLabel;
+		
+		private Modulation( String label )
+		{
+			mLabel = label;
+		}
+		
+		public String getLabel()
+		{
+			return mLabel;
+		}
+		
+		public String toString()
+		{
+			return getLabel();
+		}
+	};
+	
 }

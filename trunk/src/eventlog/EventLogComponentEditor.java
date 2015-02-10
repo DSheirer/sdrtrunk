@@ -19,12 +19,13 @@ package eventlog;
 
 import java.util.ArrayList;
 
-import javax.swing.BorderFactory;
 import javax.swing.JCheckBox;
 import javax.swing.SwingUtilities;
 
+import controller.Editor;
 import controller.channel.AbstractChannelEditor;
 import controller.channel.ChannelNode;
+import controller.channel.ChannelValidationException;
 import eventlog.config.EventLogConfiguration;
 
 public class EventLogComponentEditor extends AbstractChannelEditor

@@ -33,6 +33,11 @@ public class ComplexTap extends StreamTap
     {
 	    super( TapType.STREAM_COMPLEX, name, delay, sampleRateRatio );
     }
+	
+	public ComplexTap( TapType tapType, String name, int delay, float sampleRateRatio )
+	{
+	    super( tapType, name, delay, sampleRateRatio );
+	}
 
 	@Override
     public void receive( ComplexSample t )

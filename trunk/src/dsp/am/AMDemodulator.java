@@ -18,8 +18,8 @@ public class AMDemodulator implements Listener<ComplexSample>, RealSampleProvide
     {
         float demodulated = (float)Math.sqrt( ( sample.real() * 
 				sample.real() ) +
-			  ( sample.imaginery() * 
-			    sample.imaginery() ) ); 
+			  ( sample.imaginary() * 
+			    sample.imaginary() ) ); 
 
         if( mListener != null )
         {

@@ -19,6 +19,8 @@ package record;
 
 import record.config.RecordConfiguration;
 import controller.Editor;
+import controller.channel.Channel;
+import controller.channel.ChannelValidationException;
 
 public class RecordEditor extends Editor
 {
@@ -39,14 +41,10 @@ public class RecordEditor extends Editor
 	@Override
     public void save()
     {
-	    // TODO Auto-generated method stub
-	    
     }
 
 	@Override
     public void reset()
     {
-	    // TODO Auto-generated method stub
-	    
     }
 }

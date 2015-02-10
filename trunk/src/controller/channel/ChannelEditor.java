@@ -30,11 +30,16 @@ import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 
 import net.miginfocom.swing.MigLayout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import record.RecordComponentEditor;
 import source.SourceComponentEditor;
 import alias.AliasList;
@@ -48,7 +53,9 @@ import eventlog.EventLogComponentEditor;
 
 public class ChannelEditor extends Editor implements ActionListener
 {
-    private static final long serialVersionUID = 1L;
+	private final static Logger mLog = LoggerFactory.getLogger( ChannelEditor.class );
+
+	private static final long serialVersionUID = 1L;
     private DefaultTreeModel mTreeModel;
     private ChannelNode mChannelNode;
     
@@ -171,32 +178,51 @@ public class ChannelEditor extends Editor implements ActionListener
 	@Override
     public void save()
     {
-		boolean expanded = mChannelNode.getModel().getTree()
-				.isExpanded( new TreePath( mChannelNode ) );
-
-		mSourceEditor.save();
-		mDecodeEditor.save();
-		mAuxDecodeEditor.save();
-		mEventLogEditor.save();
-		mRecordEditor.save();
-
-		mChannelNode.getChannel().setName( mChannelName.getText(), false );
-		mChannelNode.getChannel().setEnabled( mChannelEnabled.isSelected(), false );
-
-		AliasList selected = mComboAliasLists.getItemAt( 
-				mComboAliasLists.getSelectedIndex() );
-		if( selected != null )
+		try
 		{
-			mChannelNode.getChannel().setAliasListName( selected.getName(), false );
+			/**
+			 * Validate the source configuration against the other component
+			 * configuration editors
+			 */
+			validate( mSourceEditor.getSourceEditor() );
+
+			boolean expanded = mChannelNode.getModel().getTree()
+					.isExpanded( new TreePath( mChannelNode ) );
+
+			mSourceEditor.save();
+			mDecodeEditor.save();
+			mAuxDecodeEditor.save();
+			mEventLogEditor.save();
+			mRecordEditor.save();
+
+			mChannelNode.getChannel().setName( mChannelName.getText(), false );
+			mChannelNode.getChannel().setEnabled( mChannelEnabled.isSelected(), false );
+
+			AliasList selected = mComboAliasLists.getItemAt( 
+					mComboAliasLists.getSelectedIndex() );
+			if( selected != null )
+			{
+				mChannelNode.getChannel().setAliasListName( selected.getName(), false );
+			}
+
+			
+			mChannelNode.save();
+			mChannelNode.show();
+			
+			if( expanded )
+			{
+				mChannelNode.getModel().getTree().expandPath( new TreePath( mChannelNode ) );
+			}
 		}
-
-		
-		mChannelNode.save();
-		mChannelNode.show();
-		
-		if( expanded )
+		catch ( ChannelValidationException validationException )
 		{
-			mChannelNode.getModel().getTree().expandPath( new TreePath( mChannelNode ) );
+			/* ChannelValidationException can be thrown by any of the component
+			 * editors.  Show the validation error text in a popup menu to the
+			 * user */
+			JOptionPane.showMessageDialog( ChannelEditor.this,
+			    validationException.getMessage(),
+			    "Channel Configuration Error",
+			    JOptionPane.ERROR_MESSAGE );			
 		}
     }
 
@@ -232,4 +258,17 @@ public class ChannelEditor extends Editor implements ActionListener
 		mEventLogEditor.reset();
 		mRecordEditor.reset();
     }
+
+	/**
+	 * Validate the specified editor against each of the component editors
+	 */
+	@Override
+	public void validate( Editor editor ) throws ChannelValidationException
+	{
+		mSourceEditor.validate( editor );
+		mDecodeEditor.validate( editor );
+		mAuxDecodeEditor.validate( editor );
+		mEventLogEditor.validate( editor );
+		mRecordEditor.validate( editor );
+	}
 }

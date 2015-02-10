@@ -28,6 +28,7 @@ import decode.config.AuxDecodeConfiguration;
 import decode.config.DecodeConfigLTRNet;
 import decode.config.DecodeConfigLTRStandard;
 import decode.config.DecodeConfigMPT1327;
+import decode.config.DecodeConfigP25Phase1;
 import decode.config.DecodeConfiguration;
 import decode.fleetsync2.Fleetsync2Decoder;
 import decode.fleetsync2.FleetsyncChannelState;
@@ -99,7 +100,10 @@ public class DecoderFactory
 				retVal = new PassportDecoder( sampleType, aliasList );
 				break;
 			case P25_PHASE1:
-				retVal = new P25Decoder( sampleType, aliasList );
+				DecodeConfigP25Phase1 p25Config = (DecodeConfigP25Phase1)config;
+				
+				retVal = new P25Decoder( sampleType, p25Config.getModulation(), 
+						aliasList );
 				break;
 			default:
 				throw new IllegalArgumentException( 

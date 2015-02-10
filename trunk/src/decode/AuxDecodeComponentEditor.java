@@ -21,12 +21,13 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
-import javax.swing.BorderFactory;
 import javax.swing.JCheckBox;
 import javax.swing.SwingUtilities;
 
+import controller.Editor;
 import controller.channel.AbstractChannelEditor;
 import controller.channel.ChannelNode;
+import controller.channel.ChannelValidationException;
 import decode.config.AuxDecodeConfiguration;
 
 public class AuxDecodeComponentEditor extends AbstractChannelEditor
@@ -93,11 +94,12 @@ public class AuxDecodeComponentEditor extends AbstractChannelEditor
         		}
             }
         });
-
     }
 	
 	public class AuxDecoderCheckBox extends JCheckBox
 	{
+		private static final long serialVersionUID = 1L;
+		
 		private DecoderType mDecoderType;
 		
 		public AuxDecoderCheckBox( DecoderType decoder )

@@ -17,10 +17,16 @@
  ******************************************************************************/
 package decode.config;
 
+import javax.xml.bind.annotation.XmlAttribute;
+
 import decode.DecoderType;
+import decode.p25.P25Decoder;
+import decode.p25.P25Decoder.Modulation;
 
 public class DecodeConfigP25Phase1 extends DecodeConfiguration
 {
+	private P25Decoder.Modulation mModulation = Modulation.C4FM;
+	
 	public DecodeConfigP25Phase1()
     {
 	    super( DecoderType.P25_PHASE1 );
@@ -32,4 +38,15 @@ public class DecodeConfigP25Phase1 extends DecodeConfiguration
     {
         return false;
     }
+    
+	@XmlAttribute( name = "modulation" )
+	public P25Decoder.Modulation getModulation()
+	{
+		return mModulation;
+	}
+	
+	public void setModulation( P25Decoder.Modulation modulation )
+	{
+		mModulation = modulation;
+	}
 }

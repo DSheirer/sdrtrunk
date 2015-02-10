@@ -318,7 +318,7 @@ public class LJ1200Message extends Message
 		F3_SPEED_UP(    0x3, "3-SPEED-UP" ),
 		F4_TEST(        0x4, "4-TEST" ),
 		F5(             0x5, "5-UNKNOWN" ),
-		F6_SET_RATE(    0x6, "6-SET RATE" ),
+		F6_SET_RATE(    0x6, "6-UNKNOWN" ), //Delete
 		F7(             0x7, "7-UNKNOWN" ),
 		F8_SITE_ID(     0x8, "8-SITE ID" ),
 		F9(             0x9, "9-UNKNOWN" ),
@@ -326,7 +326,7 @@ public class LJ1200Message extends Message
 		FB(             0xB, "B-UNKNOWN" ),
 		FC_DEACTIVATE(  0xC, "C-DEACTIVATE" ),
 		FD(             0xD, "D-UNKNOWN" ),
-		FE_TRACK_PULSE( 0xE, "E-TRACK PULSE" ),
+		FE_TRACK_PULSE( 0xE, "E-UNKNOWN" ),
 		FF_TRACK_PULSE( 0xF, "F-TRACK PULSE" ),
 		UNKNOWN(         -1, "UNKNOWN" );
 		

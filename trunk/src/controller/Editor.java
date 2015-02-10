@@ -20,6 +20,7 @@ package controller;
 import javax.swing.JPanel;
 
 import net.miginfocom.swing.MigLayout;
+import controller.channel.ChannelValidationException;
 
 public abstract class Editor extends JPanel
 {
@@ -33,4 +34,18 @@ public abstract class Editor extends JPanel
     public abstract void save();
     
     public abstract void reset();
+
+    /**
+     * Override this method to allow the editor to inspect the argument for
+     * valid configuration
+     * 
+     * @param editor - any editor
+     * 
+     * @throws ChannelValidationException if the configuration is not compatible
+     * with this editor's configuration.  Supplies a validation text value for
+     * display to the user 
+     */
+    public void validate( Editor editor ) throws ChannelValidationException
+    {
+    }
 }

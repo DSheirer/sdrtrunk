@@ -23,20 +23,25 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import sample.Broadcaster;
 import sample.Listener;
 import sample.complex.ComplexSample;
 
 public class ComplexWaveSource extends WaveSource
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( ComplexWaveSource.class );
+
 	private boolean mRunning = false;
     private boolean mLoop = false;
 
@@ -51,8 +56,7 @@ public class ComplexWaveSource extends WaveSource
     
     private static int BUFFER_SAMPLE_SIZE = 2000;
 
-    private ArrayList<Listener<ComplexSample>> mListeners = 
-    							new ArrayList<Listener<ComplexSample>>();
+    private Broadcaster<ComplexSample> mBroadcaster = new Broadcaster<ComplexSample>();
 
     /**
      * Single channel (mono) wave file playback source with optional looping
@@ -223,7 +227,7 @@ public class ComplexWaveSource extends WaveSource
 
     		if( broadcast )
     		{
-        		send( new ComplexSample( (float)i, (float)q ) );
+        		send( new ComplexSample( (float)i / 32767.0f, (float)q / 32767.0f ) );
     		}
     		
     		success = true;
@@ -276,12 +280,7 @@ public class ComplexWaveSource extends WaveSource
      */
     private void send( ComplexSample sample )
     {
-        Iterator<Listener<ComplexSample>> it = mListeners.iterator();
-
-        while( it.hasNext() )
-        {
-            it.next().receive( sample );
-        }
+    	mBroadcaster.broadcast( sample );
     }
 
     /**
@@ -289,12 +288,12 @@ public class ComplexWaveSource extends WaveSource
      */
     public void addListener( Listener<ComplexSample> listener )
     {
-        mListeners.add( listener );
+        mBroadcaster.addListener( listener );
     }
 
     public void removeListener( Listener<ComplexSample> listener )
     {
-		mListeners.remove( listener );
+    	mBroadcaster.removeListener( listener );
     }
 
 	@Override

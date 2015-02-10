@@ -19,13 +19,19 @@ package sample.complex;
 
 import java.io.Serializable;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * ComplexSample for handling left/right channel audio, or inphase/quadrature 
  * samples, etc.  
  */
 public class ComplexSample implements Serializable
 {
-    private static final long serialVersionUID = 1L;
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( ComplexSample.class );
+
+	private static final long serialVersionUID = 1L;
 
     private float mLeft;
 	private float mRight;
@@ -35,6 +41,11 @@ public class ComplexSample implements Serializable
 		mLeft = left;
 		mRight = right;
 	}
+	
+	public ComplexSample()
+	{
+		this( 0.0f, 0.0f );
+	}
 
 	public ComplexSample copy()
 	{
@@ -43,7 +54,14 @@ public class ComplexSample implements Serializable
 	
 	public String toString()
 	{
-		return "I:" + mLeft + " Q:" + mRight;
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append( "I:" );
+		sb.append( mLeft );
+		sb.append( " Q:" );
+		sb.append( mRight );
+		
+		return sb.toString();
 	}
 	
 	/**
@@ -78,6 +96,9 @@ public class ComplexSample implements Serializable
 		mRight = quadrature;
 	}
 	
+	/**
+	 * Multiplies both samples returning a new sample with the results
+	 */
 	public static ComplexSample multiply( ComplexSample sample1, 
 										  ComplexSample sample2 )
 	{
@@ -91,21 +112,39 @@ public class ComplexSample implements Serializable
 	}
 
 	public static ComplexSample multiply( ComplexSample sample, 
-										  Float left, Float right )
+										  Float inphase, Float quadrature )
 	{
-		float l = ( sample.left() * left ) - ( sample.right() * right );
-		float r = ( sample.right() * left ) + ( sample.left() * right );
+		float i = ( sample.inphase() * inphase ) - ( sample.quadrature() * quadrature );
+		float q = ( sample.quadrature() * inphase ) + ( sample.inphase() * quadrature );
 		
-		return new ComplexSample( l, r );
+		return new ComplexSample( i, q );
 	}
 
 	/**
-	 * Adds the adder sample values to this sample
+	 * Adds the adder sample value to this sample
 	 */
 	public void add( ComplexSample adder )
 	{
 		mLeft += adder.left();
 		mRight += adder.right();
+	}
+
+	/**
+	 * Adds the two complex samples returning a new complex sample with the result
+	 */
+	public static ComplexSample add( ComplexSample first, ComplexSample second )
+	{
+		return new ComplexSample( first.left() + second.left(), 
+								  first.right() + second.right() );
+	}
+
+	/**
+	 * Adds the two complex samples returning a new complex sample with the result
+	 */
+	public static ComplexSample subtract( ComplexSample first, ComplexSample second )
+	{
+		return new ComplexSample( first.left() - second.left(), 
+								  first.right() - second.right() );
 	}
 
 	/**
@@ -130,7 +169,12 @@ public class ComplexSample implements Serializable
 	 */
 	public void normalize()
 	{
-		multiply( (float)( 1.0f / magnitude() ) );
+		float magnitude = magnitude();
+		
+		if( magnitude != 0 )
+		{
+			multiply( (float)( 1.0f / magnitude() ) );
+		}
 	}
 
 	/**
@@ -176,10 +220,26 @@ public class ComplexSample implements Serializable
 	{
 		return mLeft;
 	}
-	
-	public float imaginery()
+
+	/**
+	 * Absolute value of real component
+	 */
+	public float realAbsolute()
+	{
+		return Math.abs( mLeft );
+	}
+
+	public float imaginary()
 	{
 		return mRight;
+	}
+
+	/**
+	 * Absolute value of imaginary component
+	 */
+	public float imaginaryAbsolute()
+	{
+		return Math.abs( mRight );
 	}
 
 	/**
@@ -207,5 +267,19 @@ public class ComplexSample implements Serializable
 	{
 		return new ComplexSample( (float)Math.cos( angle ), 
 								  (float)Math.sin( angle ) );
+	}
+	
+	public float angle()
+	{
+		return (float)Math.atan2( y(), x() );
+	}
+	
+	public static void main( String[] args )
+	{
+		ComplexSample sample1 = new ComplexSample( .45f, .45f );
+		ComplexSample sample2 = new ComplexSample( .25f, .25f );
+		ComplexSample sample1_2 = ComplexSample.subtract( sample1, sample2 );
+
+		mLog.debug( sample1_2.toString() );
 	}
 }

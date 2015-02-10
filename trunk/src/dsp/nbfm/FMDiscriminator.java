@@ -74,7 +74,7 @@ public class FMDiscriminator implements Listener<ComplexSample>
 		else
 		{
 			/**
-			 * Use the arcus tangent of imaginary (q) divided by real (i) to
+			 * Use the arc-tangent of imaginary (q) divided by real (i) to
 			 * get the phase angle (+/-) which was directly manipulated by the
 			 * original message waveform during the modulation.  This value now
 			 * serves as the instantaneous amplitude of the demodulated signal
