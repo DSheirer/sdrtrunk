@@ -30,6 +30,8 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import controller.Editor;
+import controller.channel.Channel;
+import controller.channel.ChannelValidationException;
 import decode.config.DecodeConfiguration;
 
 public class DecodeEditor extends Editor
@@ -104,12 +106,10 @@ public class DecodeEditor extends Editor
 	@Override
     public void save()
     {
-	    
     }
 
 	@Override
     public void reset()
     {
-	    
     }
 }

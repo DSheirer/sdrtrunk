@@ -20,6 +20,8 @@ package source;
 import source.config.SourceConfiguration;
 import controller.Editor;
 import controller.ResourceManager;
+import controller.channel.Channel;
+import controller.channel.ChannelValidationException;
 
 public abstract class SourceEditor extends Editor
 {

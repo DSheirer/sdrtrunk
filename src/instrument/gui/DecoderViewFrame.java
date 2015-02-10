@@ -22,10 +22,14 @@ import instrument.tap.Tap;
 import instrument.tap.TapViewPanel;
 import instrument.tap.stream.BinaryTap;
 import instrument.tap.stream.BinaryTapViewPanel;
+import instrument.tap.stream.ComplexTap;
+import instrument.tap.stream.ComplexTapViewPanel;
 import instrument.tap.stream.DibitTap;
 import instrument.tap.stream.DibitTapViewPanel;
 import instrument.tap.stream.FloatTap;
 import instrument.tap.stream.FloatTapViewPanel;
+import instrument.tap.stream.QPSKTap;
+import instrument.tap.stream.QPSKTapPanel;
 import instrument.tap.stream.SymbolEventTap;
 import instrument.tap.stream.SymbolEventTapViewPanel;
 
@@ -52,6 +56,7 @@ import org.slf4j.LoggerFactory;
 
 import sample.Listener;
 import source.Source.SampleType;
+import source.wave.ComplexWaveSource;
 import source.wave.FloatWaveSource;
 import source.wave.WaveSource;
 import source.wave.WaveSource.PositionListener;
@@ -77,7 +82,8 @@ public class DecoderViewFrame extends JInternalFrame
 
 		if( source.getSampleType() == SampleType.COMPLEX )
 		{
-			mLog.error( "Hey, we're not wired up yet for complex" );
+			ComplexWaveSource cws = (ComplexWaveSource)mWaveSource;
+			cws.addListener( mDecoder.getComplexReceiver() );
 		}
 		else if( source.getSampleType() == SampleType.REAL )
 		{
@@ -167,12 +173,16 @@ public class DecoderViewFrame extends JInternalFrame
 				panel = new BinaryTapViewPanel( (BinaryTap)tap );
 				break;
 			case STREAM_COMPLEX:
+				panel = new ComplexTapViewPanel( (ComplexTap)tap );
 				break;
 			case STREAM_DIBIT:
 				panel = new DibitTapViewPanel( (DibitTap)tap );
 				break;
 			case STREAM_FLOAT:
 				panel = new FloatTapViewPanel( (FloatTap)tap );
+				break;
+			case STREAM_QPSK:
+				panel = new QPSKTapPanel( (QPSKTap)tap );
 				break;
 			case STREAM_SYMBOL:
 				panel = new SymbolEventTapViewPanel( (SymbolEventTap)tap );
@@ -211,6 +221,8 @@ public class DecoderViewFrame extends JInternalFrame
 
 	public class AddAllTapsItem extends JMenuItem
 	{
+		private static final long serialVersionUID = 1L;
+		
 		private final List<Tap> mTaps;
 		
 		public AddAllTapsItem( final List<Tap> taps )

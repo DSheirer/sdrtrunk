@@ -21,14 +21,15 @@ package source;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
 
 import source.config.SourceConfigFactory;
 import source.config.SourceConfiguration;
+import controller.Editor;
 import controller.channel.AbstractChannelEditor;
 import controller.channel.ChannelNode;
+import controller.channel.ChannelValidationException;
 
 public class SourceComponentEditor extends AbstractChannelEditor
 {
@@ -89,6 +90,11 @@ public class SourceComponentEditor extends AbstractChannelEditor
 
 		reset();
 	}
+    
+    public SourceEditor getSourceEditor()
+    {
+    	return mEditor;
+    }
 
 	public void reset() 
     {

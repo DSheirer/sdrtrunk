@@ -1,7 +1,12 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
- * 
+ *     Copyright (C) 2014,2015 Dennis Sheirer
+ *
+ *	   Root Raised Cosine filter designer:
+ *	   Copyright 2002,2007,2008,2012,2013 Free Software Foundation, Inc.
+ *	   http://gnuradio.org/redmine/projects/gnuradio/repository/changes/gr-filter
+ *	   /lib/firdes.cc?rev=435b1d166f0c7092bbd5e1f788e75dbb6ade3a4b
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
@@ -726,5 +731,94 @@ public class FilterFactory
 		}
 
 		return cicArray;
+	}
+
+	/**
+	 * Creates root raised cosine filter coefficients.
+	 * 
+	 * Ported to java from gnuradio/filter/firdes.cc
+	 * 
+	 * @param gain - gain value to apply
+	 * @param sampleRate - sample rate in hertz
+	 * @param symbolRate - symbol rate in hertz
+	 * @param alpha - roll-off factor
+	 * @param tapCount - odd number of taps, or will be increased to make odd 
+	 * @return - filter coefficients
+	 */
+	public static double[] getRootRaisedCosine( double gain, 
+												double sampleRate, 
+												double symbolRate, 
+												double alpha, 
+												int tapCount )
+	{
+		/* Ensure odd number of taps */
+		int taps = tapCount | 1;
+		
+		double scale = 0;
+		
+		double samplesPerSymbol = sampleRate / symbolRate;
+
+		double[] coefficients = new double[ taps ];
+		
+		for( int x = 0; x < taps; x++ )
+		{
+			double index = x - ( taps / 2 );
+			
+			double x1 = Math.PI * index / samplesPerSymbol;
+			double x2 = 4.0 * alpha * index / samplesPerSymbol;
+			double x3 = x2 * x2 - 1;
+
+			double numerator, denominator;
+			
+			if( Math.abs( x3 ) >= 0.000001 )
+			{
+				if( x != taps / 2 )
+				{
+					numerator = Math.cos( ( 1.0 + alpha ) * x1 ) + 
+						  Math.sin( ( 1.0 - alpha ) * x1 ) / 
+						  	( 4.0 * alpha * index / samplesPerSymbol );
+				}
+				else
+				{
+					numerator = Math.cos( ( 1.0 + alpha ) * x1 ) +
+						  ( 1.0 - alpha ) * Math.PI / ( 4.0 * alpha );
+				}
+				
+				denominator = x3 * Math.PI;
+			}
+			else
+			{
+				if( alpha == 1.0 )
+				{
+					coefficients[ x ] = -1.0;
+					continue;
+				}
+				
+				x3 = ( 1.0 - alpha ) * x1;
+				x2 = ( 1.0 + alpha ) * x1;
+				
+				numerator = ( Math.sin( x2 ) * ( 1.0 + alpha ) * Math.PI -
+						Math.cos( x3 ) * ( ( 1.0 - alpha ) * Math.PI * samplesPerSymbol ) /
+							( 4 * alpha * index ) +
+						Math.sin( x3 ) * samplesPerSymbol * samplesPerSymbol / 
+							( 4.0 * alpha * index * index ) );
+				
+				denominator = -32.0 * Math.PI * alpha * alpha * index / samplesPerSymbol;
+			}
+			
+			coefficients[ x ] = 4.0 * alpha * numerator / denominator;
+			
+			scale += coefficients[ x ];
+		}
+
+		/**
+		 * Normalize (scale) coefficients to 1.0 sum and apply gain 
+		 */
+		for( int x = 0; x < taps; x++ )
+		{
+			coefficients[ x ] = coefficients[ x ] * gain / scale;
+		}
+
+		return coefficients;
 	}
 }

@@ -137,10 +137,6 @@ public class Viewer
     		
     		mLog.info( "File opened as float wave file" );
     		
-    		AudioSourceFrame sourcePanel = 
-					new AudioSourceFrame( source, mDesktop );
-    		sourcePanel.setVisible( true );
-    		mDesktop.add( sourcePanel );
     	}
     	catch( Exception e )
     	{
@@ -158,13 +154,6 @@ public class Viewer
         		source = complex;
 
         		mLog.info( "File opened as complex wave file" );
-        		
-        		BasebandSourceFrame sourcePanel = 
-        				new BasebandSourceFrame( complex, mDesktop );
-        		
-        		sourcePanel.setVisible( true );
-        		
-        		mDesktop.add( sourcePanel );
         	}
         	catch( Exception e )
         	{
@@ -175,7 +164,11 @@ public class Viewer
     	if( source != null )
     	{
     		mSource = source;
-
+    		
+    		AudioSourceFrame sourcePanel = 
+					new AudioSourceFrame( source, mDesktop );
+    		sourcePanel.setVisible( true );
+    		mDesktop.add( sourcePanel );
     	}
     }
 	

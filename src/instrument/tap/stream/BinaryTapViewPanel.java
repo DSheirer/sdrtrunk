@@ -32,6 +32,8 @@ import java.util.Observable;
 
 public class BinaryTapViewPanel extends TapViewPanel
 {
+	private static final long serialVersionUID = 1L;
+	
 	private Tap mTap;
 	private List<Boolean> mSamples;
 	private int mSampleCount;

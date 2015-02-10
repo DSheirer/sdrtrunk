@@ -25,8 +25,10 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
 import javax.swing.SwingUtilities;
 
+import controller.Editor;
 import controller.channel.AbstractChannelEditor;
 import controller.channel.ChannelNode;
+import controller.channel.ChannelValidationException;
 import decode.config.DecodeConfigFactory;
 import decode.config.DecodeConfiguration;
 
@@ -133,4 +135,15 @@ public class DecodeComponentEditor extends AbstractChannelEditor
 	    mChannelNode.getChannel()
 	    	.setDecodeConfiguration( mEditor.getConfig(), false );
     }
+
+    /**
+     * Validates the editor against the current decode editor 
+     */
+	@Override
+	public void validate( Editor editor ) throws ChannelValidationException
+	{
+		super.validate( editor );
+		
+		mEditor.validate( editor );
+	}
 }

@@ -80,6 +80,8 @@ public class ConstellationViewer extends JPanel
 	{
 		mBuffer.receive( sample );
 		
+		ComplexSample angle = ComplexSample.multiply( sample, mPrevious.conjugate() );
+		
 		repaint();
 	}
 	
@@ -105,7 +107,6 @@ public class ConstellationViewer extends JPanel
     	
     	Graphics2D graphics = (Graphics2D) g;
     	
-//    	graphics.setBackground( Color.BLACK );
     	graphics.setColor( Color.BLUE );
 
     	List<ComplexSample> samples = mBuffer.getElements();
@@ -113,15 +114,12 @@ public class ConstellationViewer extends JPanel
     	double centerX = (double)getHeight() / 2.0d;
     	double centerY = (double)getWidth() / 2.0d;
     	
-//    	double scale = centerX / 2.0d;
-    	
     	double scale = 0.5d;
     	
     	mCounter = 0;
     	
     	for( ComplexSample sample: samples )
     	{
-    		
     		if( mCounter > ( mOffset + mSamplesPerSymbol ) )
     		{
         		/**
@@ -135,7 +133,6 @@ public class ConstellationViewer extends JPanel
         		double q = ( sample.quadrature() * mPrevious.inphase() ) + 
         				( sample.inphase() * -mPrevious.quadrature() );
 
-        		mLog.debug( "i:" + i + " q:" + q );
         		double angle;
 
         		//Check for divide by zero
@@ -165,9 +162,6 @@ public class ConstellationViewer extends JPanel
     		}
 
     		mCounter++;
-    		
-//    		mLog.debug( "Plotting x:" + ( centerX - ( sample.x() * scale ) ) + 
-//    				    " y:" + ( centerY - ( sample.y() * scale ) ) + " for sample " + sample.toString() );
     	}
     }
     

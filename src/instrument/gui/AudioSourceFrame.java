@@ -40,7 +40,6 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import source.Source.SampleType;
 import source.wave.WaveSource;
 import source.wave.WaveSource.PositionListener;
 import decode.Decoder;
@@ -52,6 +51,7 @@ import decode.mdc1200.MDCDecoder;
 import decode.mpt1327.MPT1327Decoder;
 import decode.mpt1327.MPT1327Decoder.Sync;
 import decode.p25.P25Decoder;
+import decode.p25.P25Decoder.Modulation;
 import decode.passport.PassportDecoder;
 import decode.tait.Tait1200Decoder;
 
@@ -66,6 +66,8 @@ public class AudioSourceFrame extends JInternalFrame implements PositionListener
 	
 	private JLabel mCurrentPosition = new JLabel( "0" );
 	private JComboBox<DecoderType> mComboDecoders;
+	private JComboBox<Modulation> mComboModulations;
+	private JLabel mModulationLabel = new JLabel( "Modulation:" );
 	
 	public AudioSourceFrame( WaveSource source, JDesktopPane desktop )
 	{
@@ -115,10 +117,39 @@ public class AudioSourceFrame extends JInternalFrame implements PositionListener
 		}
 		
 		mComboDecoders.setModel( model );
+		
+		mComboDecoders.addActionListener( new ActionListener() 
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				DecoderType selected = (DecoderType)mComboDecoders.getSelectedItem();
+
+				if( selected == DecoderType.P25_PHASE1 )
+				{
+					mComboModulations.setVisible( true );
+					mModulationLabel.setVisible( true );
+				}
+				else
+				{
+					mComboModulations.setVisible( false );
+					mModulationLabel.setVisible( false );
+				}
+			}
+			
+		});
 
 		panel.add( new JLabel( "Decoders:" ) );
 		panel.add( mComboDecoders, "span 3,grow" );
-		panel.add( new AddDecoderButton(), "grow" );
+		panel.add( new AddDecoderButton(), "grow,wrap" );
+		
+		mComboModulations = new JComboBox<Modulation>( 
+				new DefaultComboBoxModel<Modulation>( Modulation.values() ) );
+		mComboModulations.setVisible( false );
+		mModulationLabel.setVisible( false );
+		
+		panel.add( mModulationLabel );
+		panel.add( mComboModulations );
 		
 		add( panel );
 	}
@@ -152,19 +183,20 @@ public class AudioSourceFrame extends JInternalFrame implements PositionListener
 							decoder = new LJ1200Decoder( null );
 							break;
 						case LTR_NET:
-						    decoder = new LTRNetDecoder( SampleType.REAL, null, MessageDirection.OSW );
+						    decoder = new LTRNetDecoder( mSource.getSampleType(), null, MessageDirection.OSW );
 						    break;
 						case MDC1200:
 							decoder = new MDCDecoder( null );
 							break;
 						case MPT1327:
-							decoder = new MPT1327Decoder( SampleType.REAL, null, Sync.NORMAL );
+							decoder = new MPT1327Decoder( mSource.getSampleType(), null, Sync.NORMAL );
 							break;
 						case PASSPORT:
-							decoder = new PassportDecoder( SampleType.REAL, null );
+							decoder = new PassportDecoder( mSource.getSampleType(), null );
 							break;
 						case P25_PHASE1:
-							decoder = new P25Decoder( SampleType.REAL, null );
+							decoder = new P25Decoder( mSource.getSampleType(), 
+								(Modulation)mComboModulations.getSelectedItem(), null );
 							break;
 						case TAIT_1200:
 							decoder = new Tait1200Decoder( null );

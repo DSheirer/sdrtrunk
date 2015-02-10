@@ -88,7 +88,7 @@ public class Oscillator
 	public ComplexSample nextComplex()
 	{
 		rotate();
-		return mCurrentAngle;
+		return mCurrentAngle.copy();
 	}
 
 	/**

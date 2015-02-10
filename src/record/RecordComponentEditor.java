@@ -18,12 +18,13 @@
 package record;
 
 
-import javax.swing.BorderFactory;
 import javax.swing.JCheckBox;
 
 import record.config.RecordConfiguration;
+import controller.Editor;
 import controller.channel.AbstractChannelEditor;
 import controller.channel.ChannelNode;
+import controller.channel.ChannelValidationException;
 
 public class RecordComponentEditor extends AbstractChannelEditor
 {
