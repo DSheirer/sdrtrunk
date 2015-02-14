@@ -29,7 +29,7 @@ Each message and event produced by the decoders contains user and system identif
 
 === Alias Identifier Wildcards ==
 
-Each of the alias identifiers (except LTR-Net unique ID and Status) allow you to specify a single character wildcard (*) or a full java regular expression to use when matching identifiers.
+Each of the alias identifiers (except LTR-Net unique ID and Status) allow you to specify a single character wildcard (asterisk) or a full java regular expression to use when matching identifiers.
 
 Examples:
 
