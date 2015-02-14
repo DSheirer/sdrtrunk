@@ -19,6 +19,7 @@ package controller.channel;
 
 import java.util.ArrayList;
 
+import alias.action.AliasActionManager;
 import message.Message;
 import sample.Listener;
 import controller.ResourceManager;
@@ -31,10 +32,17 @@ public class ChannelManager implements ChannelEventListener
 									new ArrayList<ChannelEventListener>();
 	private ArrayList<Listener<Message>> mMessageListeners =
 									new ArrayList<Listener<Message>>();
+	
+	private AliasActionManager mAliasActionManager;
 
 	public ChannelManager( ResourceManager resourceManager )
 	{
+		mAliasActionManager = new AliasActionManager( resourceManager );
+		
 		mChannelListeners.add( this );
+
+		/* Add alias action manager as listener to all channels/messages */
+		mMessageListeners.add( mAliasActionManager );
 	}
 
 	/**

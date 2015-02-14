@@ -24,6 +24,7 @@ import java.util.BitSet;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.List;
 
 import map.Plottable;
 import message.Message;
@@ -1534,6 +1535,31 @@ public class MPT1327Message extends Message
 		
 		return sb.toString();
 	}
+	
+	/**
+	 * Provides a listing of aliases contained in the message.  
+	 */
+	public List<Alias> getAliases()
+	{
+		List<Alias> aliases = new ArrayList<Alias>();
+		
+		Alias from = getFromIDAlias();
+		
+		if( from != null )
+		{
+			aliases.add( from );
+		}
+
+		Alias to = getToIDAlias();
+		
+		if( to != null )
+		{
+			aliases.add( to );
+		}
+		
+		return aliases;
+	}
+	
 	
 	/**
 	 * SDM Message format ICDs

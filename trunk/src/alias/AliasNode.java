@@ -25,9 +25,15 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
-import javax.swing.JSeparator;
 
 import map.MapIcon;
+import alias.action.AliasAction;
+import alias.action.beep.BeepAction;
+import alias.action.beep.BeepActionNode;
+import alias.action.clip.ClipAction;
+import alias.action.clip.ClipActionNode;
+import alias.action.script.ScriptAction;
+import alias.action.script.ScriptActionNode;
 import alias.esn.ESNNode;
 import alias.esn.Esn;
 import alias.fleetsync.FleetsyncID;
@@ -132,6 +138,25 @@ public class AliasNode extends ConfigurableNode
     		else if( aliasID instanceof UniqueID )
     		{
         		getModel().addNode( new UniqueIDNode( (UniqueID)aliasID ), 
+        				AliasNode.this, getChildCount() );
+    		}
+    	}
+    	
+    	for( AliasAction action: getAlias().getAction() )
+    	{
+    		if( action instanceof BeepAction )
+    		{
+        		getModel().addNode( new BeepActionNode( (BeepAction)action ), 
+        				AliasNode.this, getChildCount() );
+    		}
+    		else if( action instanceof ClipAction )
+    		{
+        		getModel().addNode( new ClipActionNode( (ClipAction)action ), 
+        				AliasNode.this, getChildCount() );
+    		}
+    		else if( action instanceof ScriptAction )
+    		{
+        		getModel().addNode( new ScriptActionNode( (ScriptAction)action ), 
         				AliasNode.this, getChildCount() );
     		}
     	}
@@ -342,7 +367,80 @@ public class AliasNode extends ConfigurableNode
 
 		retVal.add( addIDMenu );
 		
-		retVal.add(  new JSeparator() );
+		JMenu addActionMenu = new JMenu( "Add Action" );
+		
+		JMenuItem addClipItem = new JMenuItem( "Audio Clip" );
+		
+		addClipItem.addActionListener( new ActionListener() 
+		{
+			@Override
+            public void actionPerformed( ActionEvent e )
+            {
+				ClipAction clipAction = new ClipAction();
+
+				getAlias().addAliasAction( clipAction );
+				
+				ClipActionNode node = new ClipActionNode( clipAction );
+				
+				getModel().addNode( node, 
+									AliasNode.this, 
+									AliasNode.this.getChildCount() );
+				
+				node.show();
+            }
+		} );
+		
+		addActionMenu.add( addClipItem );
+
+		JMenuItem addBeepItem = new JMenuItem( "Beep" );
+		
+		addBeepItem.addActionListener( new ActionListener() 
+		{
+			@Override
+            public void actionPerformed( ActionEvent e )
+            {
+				BeepAction beepAction = new BeepAction();
+
+				getAlias().addAliasAction( beepAction );
+				
+				BeepActionNode node = new BeepActionNode( beepAction );
+				
+				getModel().addNode( node, 
+									AliasNode.this, 
+									AliasNode.this.getChildCount() );
+				
+				node.show();
+            }
+		} );
+		
+		addActionMenu.add( addBeepItem );
+		
+		JMenuItem addScriptItem = new JMenuItem( "Script" );
+		
+		addScriptItem.addActionListener( new ActionListener() 
+		{
+			@Override
+            public void actionPerformed( ActionEvent e )
+            {
+				ScriptAction scriptAction = new ScriptAction();
+
+				getAlias().addAliasAction( scriptAction );
+				
+				ScriptActionNode node = new ScriptActionNode( scriptAction );
+				
+				getModel().addNode( node, 
+									AliasNode.this, 
+									AliasNode.this.getChildCount() );
+				
+				node.show();
+            }
+		} );
+		
+		addActionMenu.add( addScriptItem );
+
+		retVal.add( addActionMenu );
+		
+		retVal.addSeparator();
 		
 		JMenuItem deleteItem = new JMenuItem( "Delete" );
 		deleteItem.addActionListener( new ActionListener() 

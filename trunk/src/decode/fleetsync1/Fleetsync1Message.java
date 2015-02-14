@@ -18,7 +18,10 @@
 package decode.fleetsync1;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 import map.Plottable;
 import message.Message;
@@ -172,4 +175,28 @@ public class Fleetsync1Message extends Message
     {
 	    return null;
     }
+	
+	/**
+	 * Provides a listing of aliases contained in the message.  
+	 */
+	public List<Alias> getAliases()
+	{
+		List<Alias> aliases = new ArrayList<Alias>();
+		
+		Alias from = getFromIDAlias();
+		
+		if( from != null )
+		{
+			aliases.add( from );
+		}
+
+		Alias to = getToIDAlias();
+		
+		if( to != null )
+		{
+			aliases.add( to );
+		}
+
+		return aliases;
+	}
 }

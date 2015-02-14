@@ -17,6 +17,7 @@
  ******************************************************************************/
 package controller;
 
+import alias.action.AliasActionManager;
 import map.MapService;
 import playlist.PlaylistManager;
 import record.RecorderManager;

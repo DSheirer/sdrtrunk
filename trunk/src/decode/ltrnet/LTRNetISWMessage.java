@@ -17,7 +17,9 @@
  ******************************************************************************/
 package decode.ltrnet;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import map.Plottable;
 import message.MessageDirection;
@@ -309,4 +311,35 @@ public class LTRNetISWMessage extends LTRNetMessage
 	    // TODO Auto-generated method stub
 	    return null;
     }
+	
+	/**
+	 * Provides a listing of aliases contained in the message.  
+	 */
+	public List<Alias> getAliases()
+	{
+		List<Alias> aliases = new ArrayList<Alias>();
+		
+		Alias from = getFromIDAlias();
+		
+		if( from != null )
+		{
+			aliases.add( from );
+		}
+
+		Alias to = getToIDAlias();
+		
+		if( to != null )
+		{
+			aliases.add( to );
+		}
+		
+		Alias esn = getESNAlias();
+		
+		if( esn != null )
+		{
+			aliases.add( esn );
+		}
+
+		return aliases;
+	}
 }
