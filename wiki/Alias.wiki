@@ -33,9 +33,11 @@ Each of the alias identifiers (except LTR-Net unique ID and Status) allow you to
 
 Examples:
 
- * 0-**-123 - match an LTR talkgroup on any LCN
- * ABCD12** - match any electronic serial numbers beginning with ABCD12
- * (?!FA-40|FA-41|FA-42).* - match any lojack site ID except for FA-40, FA-41, or FA-42 (use '|' to separate each site identifier)
+{{{
+0-**-123                 LTR talkgroup 123 on any LCN
+ABCD12**                 Any electronic serial numbers beginning with ABCD12
+(?!FA-40|FA-41|FA-42).*  Any lojack site ID except for FA-40, FA-41, or FA-42 (use '|' to separate each site identifier)
+}}}
 
 === Create an Alias Identifier ===
 
