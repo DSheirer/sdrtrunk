@@ -66,7 +66,7 @@ public class Group
 		mAliases.remove( alias );
 	}
 	
-	public boolean contians( Alias alias )
+	public boolean contains( Alias alias )
 	{
 		return mAliases.contains( alias );
 	}

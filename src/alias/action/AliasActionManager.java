@@ -33,24 +33,27 @@ public class AliasActionManager implements Listener<Message>
 	@Override
 	public void receive( Message message )
 	{
-		List<Alias> aliases = message.getAliases();
-		
-		if( aliases != null )
+		if( message.isValid() )
 		{
-			for( Alias alias: aliases )
+			List<Alias> aliases = message.getAliases();
+			
+			if( aliases != null )
 			{
-				if( alias.hasActions() )
+				for( Alias alias: aliases )
 				{
-					List<AliasAction> actions = alias.getAction();
-					
-					for( AliasAction action: actions )
+					if( alias.hasActions() )
 					{
-						/* Provide access to the thread pool manager in case the
-						 * action needs to setup a timer, and provide the original
-						 * message to be used as part of the action (e.g. sending
-						 * the message as a text message to a cell phone */
-						action.execute( mResourceManager.getThreadPoolManager(), 
-								alias, message );
+						List<AliasAction> actions = alias.getAction();
+						
+						for( AliasAction action: actions )
+						{
+							/* Provide access to the thread pool manager in case the
+							 * action needs to setup a timer, and provide the original
+							 * message to be used as part of the action (e.g. sending
+							 * the message as a text message to a cell phone */
+							action.execute( mResourceManager.getThreadPoolManager(), 
+									alias, message );
+						}
 					}
 				}
 			}
