@@ -19,9 +19,11 @@ package alias;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.bind.annotation.XmlAttribute;
 
+import alias.action.AliasAction;
 import audio.AudioType;
 
 public class Alias
@@ -30,6 +32,7 @@ public class Alias
 	private int mColor;
 	private String mIconName;
 	private ArrayList<AliasID> mAliasIDs = new ArrayList<AliasID>();
+	private List<AliasAction> mAliasActions = new ArrayList<AliasAction>();
 	
 	public Alias()
 	{
@@ -96,6 +99,31 @@ public class Alias
 	public void removeAliasID( AliasID id )
 	{
 		mAliasIDs.remove( id );
+	}
+	
+	public List<AliasAction> getAction()
+	{
+		return mAliasActions;
+	}
+	
+	public void setAction( List<AliasAction> actions )
+	{
+		mAliasActions = actions;
+	}
+	
+	public void addAliasAction( AliasAction action )
+	{
+		mAliasActions.add( action );
+	}
+	
+	public void removeAliasAction( AliasAction action )
+	{
+		mAliasActions.remove( action );
+	}
+	
+	public boolean hasActions()
+	{
+		return !mAliasActions.isEmpty();
 	}
 	
 	public boolean hasAudioType()

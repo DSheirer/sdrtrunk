@@ -18,6 +18,8 @@
 package decode.lj1200;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 import map.Plottable;
 import message.Message;
@@ -363,5 +365,36 @@ public class LJ1200Message extends Message
 			
 			return UNKNOWN;
 		}
+	}
+	
+	/**
+	 * Provides a listing of aliases contained in the message.  
+	 */
+	public List<Alias> getAliases()
+	{
+		List<Alias> aliases = new ArrayList<Alias>();
+		
+		Alias from = getFromIDAlias();
+		
+		if( from != null )
+		{
+			aliases.add( from );
+		}
+
+		Alias to = getToIDAlias();
+		
+		if( to != null )
+		{
+			aliases.add( to );
+		}
+		
+		Alias site = getSiteIDAlias();
+		
+		if( site != null )
+		{
+			aliases.add( site );
+		}
+
+		return aliases;
 	}
 }

@@ -18,6 +18,8 @@
 package decode.tait;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 import map.Plottable;
 import message.Message;
@@ -250,4 +252,28 @@ public class Tait1200ANIMessage extends Message
     {
 		return null;
     }
+	
+	/**
+	 * Provides a listing of aliases contained in the message.  
+	 */
+	public List<Alias> getAliases()
+	{
+		List<Alias> aliases = new ArrayList<Alias>();
+		
+		Alias from = getFromIDAlias();
+		
+		if( from != null )
+		{
+			aliases.add( from );
+		}
+
+		Alias to = getToIDAlias();
+		
+		if( to != null )
+		{
+			aliases.add( to );
+		}
+		
+		return aliases;
+	}
 }

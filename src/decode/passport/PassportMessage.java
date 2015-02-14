@@ -20,6 +20,8 @@ package decode.passport;
 
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 import map.Plottable;
 import message.Message;
@@ -621,4 +623,27 @@ public class PassportMessage extends Message
 	    return null;
     }
 	
+	/**
+	 * Provides a listing of aliases contained in the message.  
+	 */
+	public List<Alias> getAliases()
+	{
+		List<Alias> aliases = new ArrayList<Alias>();
+		
+		Alias talkgroup = getTalkgroupIDAlias();
+		
+		if( talkgroup != null )
+		{
+			aliases.add( talkgroup );
+		}
+
+		Alias mid = getMobileIDAlias();
+		
+		if( mid != null )
+		{
+			aliases.add( mid );
+		}
+		
+		return aliases;
+	}
 }

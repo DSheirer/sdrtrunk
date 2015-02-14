@@ -18,9 +18,11 @@
 package decode.tait;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.List;
 import java.util.TimeZone;
 
 import map.Plottable;
@@ -386,4 +388,28 @@ public class Tait1200GPSMessage extends Message
 		return new Plottable( getGPSTime(), getGPSLocation(), getFromID(), 
 				getFromIDAlias() );
     }
+	
+	/**
+	 * Provides a listing of aliases contained in the message.  
+	 */
+	public List<Alias> getAliases()
+	{
+		List<Alias> aliases = new ArrayList<Alias>();
+		
+		Alias from = getFromIDAlias();
+		
+		if( from != null )
+		{
+			aliases.add( from );
+		}
+
+		Alias to = getToIDAlias();
+		
+		if( to != null )
+		{
+			aliases.add( to );
+		}
+		
+		return aliases;
+	}
 }

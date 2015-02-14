@@ -27,7 +27,10 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import decode.p25.P25ActivitySummary;
+import alias.action.AliasAction;
+import alias.action.beep.BeepAction;
+import alias.action.clip.ClipAction;
+import alias.action.script.ScriptAction;
 import alias.esn.Esn;
 import alias.fleetsync.FleetsyncID;
 import alias.fleetsync.StatusID;
@@ -49,7 +52,14 @@ import alias.uniqueID.UniqueID;
 			   UniqueID.class,
 			   SiteID.class,
 			   StatusID.class,
-			   TalkgroupID.class } )
+			   TalkgroupID.class,
+			   
+			   /* Alias Actions */
+			   AliasAction.class,
+			   BeepAction.class,
+			   ClipAction.class,
+			   ScriptAction.class } )
+
 @XmlRootElement( name = "alias_list" )
 public class AliasList implements Comparable<AliasList>
 {

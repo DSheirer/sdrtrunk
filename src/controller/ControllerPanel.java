@@ -121,7 +121,7 @@ public class ControllerPanel extends JPanel
 				}
 			}
 		} );
-
+    	
     	/**
     	 * Add mapping services and map panel to a new tab
     	 */

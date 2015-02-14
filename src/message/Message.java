@@ -18,9 +18,12 @@
 package message;
 
 
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 import map.Plottable;
+import alias.Alias;
 import controller.activity.MessageDetailsProvider;
 
 public abstract class Message implements MessageDetailsProvider
@@ -59,5 +62,12 @@ public abstract class Message implements MessageDetailsProvider
 	{
 		return mType;
 	}
-	
+
+	/**
+	 * Provides a listing of aliases contained in the message.  
+	 */
+	public List<Alias> getAliases()
+	{
+		return Collections.EMPTY_LIST;
+	}
 }
