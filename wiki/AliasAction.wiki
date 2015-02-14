@@ -20,6 +20,8 @@ Specifies the time period in seconds for the two interval options that require a
 
 = Available Alias Actions =
 
+http://sdrtrunk.googlecode.com/svn/wiki/images/AliasActions.png
+
 == Audio Clip ==
 
 Plays the audio clip specified by the file name.  The audio clip action provides a file selection button and a test button to allow you to play the selected audio file to ensure that the file is a supported audio type.
@@ -31,6 +33,8 @@ Beeps the computer
 == Script ==
 
 The script action allows you to select a script, batch file, or program to execute when the action occurs.  Select the program from the File button and use the Test button to test the script to ensure that the script operates correctly.
+
+http://sdrtrunk.googlecode.com/svn/wiki/images/ScriptAction.png
 
 = Errors =
 
