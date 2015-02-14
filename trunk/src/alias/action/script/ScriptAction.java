@@ -48,8 +48,6 @@ public class ScriptAction extends RecurringAction
 	{
 		if( mScript != null )
 		{
-			mLog.debug( "Running Script ..." );
-			
 			ProcessBuilder pb = new ProcessBuilder( mScript );
 			
 			pb.redirectErrorStream( true );

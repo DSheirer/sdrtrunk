@@ -144,7 +144,7 @@ public class LJ1200Message extends Message
     
     public Alias getSiteIDAlias()
     {
-    	if( mAliasList != null )
+    	if( mAliasList != null && getFunction() == Function.F8_SITE_ID )
     	{
     		return mAliasList.getSiteID( getSiteID() );
     	}

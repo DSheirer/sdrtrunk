@@ -79,9 +79,11 @@ public class AliasList implements Comparable<AliasList>
 	private HashMap<Integer,Alias> mUniqueID = new HashMap<Integer,Alias>();
 	
 	private boolean mESNWildcard = false;
+	private boolean mMobileIDWildcard = false;
 	private boolean mFleetsyncWildcard = false;
 	private boolean mMDC1200Wildcard = false;
 	private boolean mMPT1327Wildcard = false;
+	private boolean mSiteWildcard = false;
 	private boolean mTalkgroupWildcard = false;
 	
 	public AliasList()
@@ -125,8 +127,7 @@ public class AliasList implements Comparable<AliasList>
 							{
 								mESNWildcard = true;
 
-								//Replace (*) wildcard with regex wildcard (.)
-								mESN.put( esn.getEsn().replace( "*", "." ), alias );
+								mESN.put( fixWildcard( esn.getEsn() ), alias );
 							}
 							else
 							{
@@ -140,8 +141,7 @@ public class AliasList implements Comparable<AliasList>
 							{
 								mFleetsyncWildcard = true;
 								
-								//Replace (*) wildcard with regex wildcard (.)
-								mFleetsync.put( fs.getIdent().replace( "*", "." ), alias );
+								mFleetsync.put( fixWildcard( fs.getIdent() ), alias );
 							}
 							else
 							{
@@ -156,7 +156,7 @@ public class AliasList implements Comparable<AliasList>
 								mMDC1200Wildcard = true;
 								
 								//Replace (*) wildcard with regex wildcard (.)
-								mMDC1200.put( mdc.getIdent().replace( "*", "." ), alias );
+								mMDC1200.put( fixWildcard( mdc.getIdent() ), alias );
 							}
 							else
 							{
@@ -175,7 +175,7 @@ public class AliasList implements Comparable<AliasList>
 									mMPT1327Wildcard = true;
 									
 									//Replace (*) wildcard with regex wildcard (.)
-									mMPT1327.put( ident.replace( "*", "." ), alias );
+									mMPT1327.put( fixWildcard( ident ), alias );
 								}
 								else
 								{
@@ -185,14 +185,35 @@ public class AliasList implements Comparable<AliasList>
 							break;
 						case MIN:
 							Min min = (Min)id;
-							mMobileID.put( min.getMin(), alias );
+							
+							if( min.getMin().contains( "*" ) )
+							{
+								mMobileIDWildcard = true;
+								mMobileID.put( fixWildcard( min.getMin() ), alias );
+							}
+							else
+							{
+								mMobileID.put( min.getMin(), alias );
+							}
 							break;
 						case LTRNetUID:
 							UniqueID uid = (UniqueID)id;
+							
 							mUniqueID.put( uid.getUid(), alias );
 							break;
 						case Site:
-							mSiteID.put( ((SiteID)id).getSite(), alias );
+							SiteID siteID = (SiteID)id;
+
+							if( siteID.getSite().contains( "*" ) )
+							{
+								mSiteWildcard = true;
+								mSiteID.put( fixWildcard( siteID.getSite() ), alias );
+							}
+							else
+							{
+								mSiteID.put( siteID.getSite(), alias );
+							}
+							
 							break;
 						case Status:
 							mStatus.put( ((StatusID)id).getStatus(), alias );
@@ -205,8 +226,7 @@ public class AliasList implements Comparable<AliasList>
 								mTalkgroupWildcard = true;
 								
 								//Replace (*) wildcard with regex wildcard (.)
-								mTalkgroup.put( tgid.getTalkgroup()
-										.replace( "*", "." ), alias );
+								mTalkgroup.put( fixWildcard( tgid.getTalkgroup() ), alias );
 							}
 							else
 							{
@@ -218,10 +238,42 @@ public class AliasList implements Comparable<AliasList>
 			}
 		}
 	}
+
+	/**
+	 * Converts user wildcard character (*) to regex single character wildcard (.)
+	 * but ignores a regex multi-character wildcard (.*)
+	 */
+	private String fixWildcard( String value )
+	{
+		if( value.contains( "*" ) && !value.contains( ".*" ) )
+		{
+			return value.replace( "*", "." );
+		}
+
+		return value;
+	}
 	
 	public Alias getSiteID( String siteID )
 	{
-		return mSiteID.get( siteID );
+		if( siteID != null )
+		{
+			if( mSiteWildcard )
+			{
+				for( String regex: mSiteID.keySet() )
+				{
+					if( siteID.matches( regex ) )
+					{
+						return mSiteID.get( regex );
+					}
+				}
+			}
+			else
+			{
+				return mSiteID.get( siteID );
+			}
+		}
+		
+		return null;
 	}
 	
 	public Alias getStatus( int status )
@@ -242,11 +294,11 @@ public class AliasList implements Comparable<AliasList>
 			
 			if( mESNWildcard )
 			{
-				for( String key: mESN.keySet() )
+				for( String regex: mESN.keySet() )
 				{
-					if( esn.matches( key ) )
+					if( esn.matches( regex ) )
 					{
-						return mESN.get( key );
+						return mESN.get( regex );
 					}
 				}
 			}
@@ -268,11 +320,11 @@ public class AliasList implements Comparable<AliasList>
 			
 			if( mFleetsyncWildcard )
 			{
-				for( String key: mFleetsync.keySet() )
+				for( String regex: mFleetsync.keySet() )
 				{
-					if( ident.matches( key ) )
+					if( ident.matches( regex ) )
 					{
-						return mFleetsync.get( key );
+						return mFleetsync.get( regex );
 					}
 				}
 			}
@@ -293,11 +345,11 @@ public class AliasList implements Comparable<AliasList>
 			
 			if( mMDC1200Wildcard )
 			{
-				for( String key: mMDC1200.keySet() )
+				for( String regex: mMDC1200.keySet() )
 				{
-					if( ident.matches( key ) )
+					if( ident.matches( regex ) )
 					{
-						return mMDC1200.get( key );
+						return mMDC1200.get( regex );
 					}
 				}
 			}
@@ -314,15 +366,13 @@ public class AliasList implements Comparable<AliasList>
 	{
 		if( ident != null )
 		{
-			Alias retVal = null;
-			
 			if( mMPT1327Wildcard )
 			{
-				for( String key: mMPT1327.keySet() )
+				for( String regex: mMPT1327.keySet() )
 				{
-					if( ident.matches( key ) )
+					if( ident.matches( regex ) )
 					{
-						return mMPT1327.get( key );
+						return mMPT1327.get( regex );
 					}
 				}
 			}
@@ -341,7 +391,7 @@ public class AliasList implements Comparable<AliasList>
 		{
 			for( Group group: mGroups )
 			{
-				if( group.contians( alias ) )
+				if( group.contains( alias ) )
 				{
 					return group;
 				}
@@ -353,22 +403,38 @@ public class AliasList implements Comparable<AliasList>
 	
 	public Alias getMobileIDNumberAlias( String ident )
 	{
-		return mMobileID.get( ident );
+		if( ident != null )
+		{
+			if( mMobileIDWildcard )
+			{
+				for( String regex: mMobileID.keySet() )
+				{
+					if( ident.matches( regex ) )
+					{
+						return mMobileID.get( regex );
+					}
+				}
+			}
+			else
+			{
+				return mMobileID.get( ident );
+			}
+		}
+		
+		return null;
 	}
 	
 	public Alias getTalkgroupAlias( String tgid )
 	{
 		if( tgid != null )
 		{
-			Alias retVal = null;
-			
 			if( mTalkgroupWildcard )
 			{
-				for( String key: mTalkgroup.keySet() )
+				for( String regex: mTalkgroup.keySet() )
 				{
-					if( tgid.matches( key ) )
+					if( tgid.matches( regex ) )
 					{
-						return mTalkgroup.get( key );
+						return mTalkgroup.get( regex );
 					}
 				}
 			}
