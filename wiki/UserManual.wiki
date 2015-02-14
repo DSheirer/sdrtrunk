@@ -14,7 +14,7 @@
     # [AliasList Alias List]
     # [AliasGroup Alias Group]
     # [Alias]
-    # [AliasActions Alias Actions]
+    # [AliasAction Alias Actions]
   # Auxiliary Decoders
     # [Fleetsync2 Fleetsync II]
     # [MDC1200] 
