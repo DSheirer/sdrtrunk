@@ -42,9 +42,9 @@ If any errors are encountered playing an audio clip or executing a script, a pop
 
 = How To Assign An Alias Action =
 
-* Right-click on an alias
-* Select the Add Action menu and choose from the list of available actions
-* Ensure the newly added alias action is highlighted in the tree
-* Configure the interval and period settings
-* Optionally select a file and test the action against the file
-* Click the Save button at the bottom of the configuration window
+ * Right-click on an alias
+ * Select the Add Action menu and choose from the list of available  actions
+ * Ensure the newly added alias action is highlighted in the tree
+ * Configure the interval and period settings
+ * Optionally select a file and test the action against the file
+ * Click the Save button at the bottom of the configuration window
