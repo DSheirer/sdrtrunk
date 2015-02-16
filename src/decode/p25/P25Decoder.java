@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014,2015 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -77,7 +77,6 @@ public class P25Decoder extends Decoder
 
 	/* Filters */
 	private ComplexFIRFilter mBasebandFilter;
-	private ComplexFIRFilter mRootRaisedCosineFilter;
 	private FloatFIRFilter mAudioFilter;
 	private C4FMSymbolFilter mSymbolFilter;
 	
@@ -118,7 +117,7 @@ public class P25Decoder extends Decoder
 		if( mSourceSampleType == SampleType.COMPLEX )
 		{
 			mBasebandFilter = new ComplexFIRFilter( FilterFactory.getLowPass( 
-					48000, 6500, 8000, 48, WindowType.HANNING, true ), 1.0 );
+					48000, 6500, 7500, 48, WindowType.HANNING, true ), 4.0 );
 			
 			if( modulation == Modulation.CQPSK )
 			{
@@ -364,19 +363,26 @@ public class P25Decoder extends Decoder
 	
 	public enum Modulation
 	{ 
-		C4FM( "C4FM" ), 
-		CQPSK( "LSM SIMULCAST" );
+		C4FM( "C4FM", "C4FM" ), 
+		CQPSK( "LSM SIMULCAST", "LSM" );
 		
 		private String mLabel;
+		private String mShortLabel;
 		
-		private Modulation( String label )
+		private Modulation( String label, String shortLabel )
 		{
 			mLabel = label;
+			mShortLabel = shortLabel;
 		}
 		
 		public String getLabel()
 		{
 			return mLabel;
+		}
+		
+		public String getShortLabel()
+		{
+			return mShortLabel;
 		}
 		
 		public String toString()

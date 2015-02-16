@@ -201,11 +201,27 @@ public class ComplexSample implements Serializable
 		return mLeft;
 	}
 	
+	/**
+	 * Absolute value of in-phase component
+	 */
+	public float inPhaseAbsolute()
+	{
+		return Math.abs( mLeft );
+	}
+
 	public float quadrature()
 	{
 		return mRight;
 	}
 	
+	/**
+	 * Absolute value of quadrature component
+	 */
+	public float quadratureAbsolute()
+	{
+		return Math.abs( mRight );
+	}
+
 	public float x()
 	{
 		return mLeft;

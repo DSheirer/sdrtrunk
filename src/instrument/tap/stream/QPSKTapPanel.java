@@ -50,7 +50,7 @@ public class QPSKTapPanel extends TapViewPanel
 		mTap = tap;
 		mTap.addListener( getModel() );
 
-		mSampleCount = (int)( 500 * tap.getSampleRateRatio() );
+		mSampleCount = (int)( 100 * tap.getSampleRateRatio() );
 
 		getModel().setSampleCount( mSampleCount );
 		getModel().setDelay( tap.getDelay() );
@@ -78,9 +78,21 @@ public class QPSKTapPanel extends TapViewPanel
 
 		g2.setColor( Color.DARK_GRAY );
 		
+		/* Vertical Line */
 		g2.drawLine( getWidth() / 2, 5, getWidth() / 2, getHeight() - 5 );
+		
+		/* Horizontal Line */
 		g2.drawLine( getWidth() / 2 - (int)( middle ), getHeight() / 2, 
 					 getWidth() / 2 + (int)( middle ), getHeight() / 2 );
+		
+		g2.setColor( Color.CYAN );
+		
+		/* Crossed Lines */
+		g2.drawLine( getWidth() / 2 - (int)( middle ), 5, 
+				     getWidth() / 2 + (int)( middle ), getHeight() - 5 );
+		g2.drawLine( getWidth() / 2 + (int)( middle ), 5, 
+				     getWidth() / 2 - (int)( middle ), getHeight() - 5 );
+		
 
 
 		if( mSamples != null && 
@@ -103,31 +115,35 @@ public class QPSKTapPanel extends TapViewPanel
 					g2.setColor( getForeground() );
 				}
 				
-				float scale;
+//				float scale;
+//				
+//				if( sample.real() != 0 && sample.imaginary() != 0 )
+//				{
+//					scale = 1.0f / sample.magnitude();
+//				}
+//				else if( sample.real() == 0 )
+//				{
+//					scale = 1.0f / sample.imaginary();
+//				}
+//				else
+//				{
+//					scale = 1.0f / sample.real();
+//				}
 				
-				if( sample.real() != 0 && sample.imaginary() != 0 )
-				{
-					scale = 1.0f / sample.magnitude();
-				}
-				else if( sample.real() == 0 )
-				{
-					scale = 1.0f / sample.imaginary();
-				}
-				else
-				{
-					scale = 1.0f / sample.real();
-				}
-				
+//				float x = ( getWidth() / 2 ) + 
+//						  ( scale *  sample.real() * middle * 0.75f * mVerticalZoom );
 				float x = ( getWidth() / 2 ) + 
-						  ( scale *  sample.real() * middle * 0.75f * mVerticalZoom );
+						  ( sample.real() * middle * 0.75f * mVerticalZoom );
 				
 				if( Float.isNaN( x ) )
 				{
 					x = getWidth() / 2;
 				}
 				
+//				float y = ( getHeight() / 2 ) + 
+//						  ( scale * sample.imaginary() * middle * 0.75f * mVerticalZoom );
 				float y = ( getHeight() / 2 ) + 
-						  ( scale * sample.imaginary() * middle * 0.75f * mVerticalZoom );
+						  ( sample.imaginary() * middle * 0.75f * mVerticalZoom );
 				
 				if( Float.isNaN( y ) )
 				{
