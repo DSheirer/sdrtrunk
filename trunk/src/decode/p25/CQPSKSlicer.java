@@ -40,22 +40,22 @@ public class CQPSKSlicer implements Listener<ComplexSample>
 		{
 			if( sample.imaginary() > 0 )
 			{
-				mBroadcaster.broadcast( Dibit.D00_PLUS_1 );
+				mBroadcaster.broadcast( Dibit.D10_MINUS_1 );
 			}
 			else
 			{
-				mBroadcaster.broadcast( Dibit.D10_MINUS_1 );
+				mBroadcaster.broadcast( Dibit.D11_MINUS_3 );
 			}
 		}
 		else
 		{
 			if( sample.imaginary() > 0 )
 			{
-				mBroadcaster.broadcast( Dibit.D01_PLUS_3 );
+				mBroadcaster.broadcast( Dibit.D00_PLUS_1 );
 			}
 			else
 			{
-				mBroadcaster.broadcast( Dibit.D11_MINUS_3 );
+				mBroadcaster.broadcast( Dibit.D01_PLUS_3 );
 			}
 		}
 	}

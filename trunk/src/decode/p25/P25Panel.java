@@ -26,6 +26,7 @@ import settings.Setting;
 import controller.channel.Channel;
 import controller.state.ChannelState.ChangedAttribute;
 import controller.state.ChannelStatePanel;
+import decode.config.DecodeConfigP25Phase1;
 
 public class P25Panel extends ChannelStatePanel
 {
@@ -35,7 +36,7 @@ public class P25Panel extends ChannelStatePanel
     private JLabel mSourceLabel;
     private JLabel mChannelLabel;
 
-    private JLabel mProtocol = new JLabel( "P25" );
+    private JLabel mProtocol;
     private JLabel mFrom = new JLabel( " " );
     private JLabel mFromAlias = new JLabel( " " );
     
@@ -51,6 +52,12 @@ public class P25Panel extends ChannelStatePanel
 	public P25Panel( Channel channel )
 	{
 		super( channel );
+
+		DecodeConfigP25Phase1 p25Config = 
+				(DecodeConfigP25Phase1)channel.getDecodeConfiguration();
+		
+		mProtocol = new JLabel( "P25-1 " + 
+				p25Config.getModulation().getShortLabel() );
 		
 		init();
 	}
