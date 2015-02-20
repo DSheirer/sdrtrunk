@@ -1,0 +1,29 @@
+#summary Details how to checkout the source code and build the sdrtrunk application.
+
+= Introduction =
+
+This page describes several methods for checking out the source code from the SVN server and building the sdrtrunk application on your local computer.
+
+== Eclipse IDE==
+
+If you use the [http://www.eclipse.org/downloads/ Eclipse IDE for Java], you can download and import the sdrtrunk project directly into Eclipse.
+
+ # Install an eclipse svn plugin ( Help > Install New Software, choose the Luna site, Collaboration > Subversive SVN )
+ # Project Explorer > Import > SVN > Project from SVN
+ # Create a new repository location: https://sdrtrunk.googlecode.com/svn
+ or http://sdrtrunk.googlecode.com/svn/trunk/
+ # Open the ant view ( Window > Show View > Ant
+ # Drag the ant build script from the Package Explorer (sdrtrunk/build/build.xml) into the ant view panel 
+ # Click the play button to execute the default build target
+ # Compiled software package is placed in the sdrtrunk/product/xxx.zip folder
+
+== Manually ==
+
+ # Install an SVN client on your computer.
+ # Checkout the source code from https://sdrtrunk.googlecode.com/svn
+ or http://sdrtrunk.googlecode.com/svn/trunk/
+ # Download the latest version of [http://ant.apache.org/ Ant] and add the ant bin folder to your system's path so that you can execute the ant command from any folder
+ # Change to the sdrtrunk build directory ( sdrtrunk/build )
+ # Execute the ant command.
+
+This should run the default build target in the build.xml file and place the compiled software package in the sdrtrunk/product/xxx.zip folder.
