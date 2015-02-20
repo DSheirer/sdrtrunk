@@ -1,6 +1,6 @@
 #summary Details how to checkout the source code and build the sdrtrunk application.
 
-= Introduction =
+= Downloading and Compiling sdrtrunk =
 
 This page describes several methods for checking out the source code from the SVN server and building the sdrtrunk application on your local computer.
 
