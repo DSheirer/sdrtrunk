@@ -5,6 +5,10 @@ import bits.BinaryMessage;
 import decode.p25.message.tsbk.motorola.ChannelCWIDUpdate;
 import decode.p25.message.tsbk.motorola.MotorolaOpcode;
 import decode.p25.message.tsbk.motorola.MotorolaTSBKMessage;
+import decode.p25.message.tsbk.motorola.PatchGroupAdd;
+import decode.p25.message.tsbk.motorola.PatchGroupDelete;
+import decode.p25.message.tsbk.motorola.PatchGroupVoiceChannelGrant;
+import decode.p25.message.tsbk.motorola.PatchGroupVoiceChannelGrantUpdate;
 import decode.p25.message.tsbk.motorola.SystemLoading;
 import decode.p25.message.tsbk.osp.control.AcknowledgeResponse;
 import decode.p25.message.tsbk.osp.control.AdjacentStatusBroadcast;
@@ -199,9 +203,17 @@ public class TSBKMessageFactory
 				
 				switch( motorolaOpcode )
 				{
-					case OP0B:
+					case PATCH_GROUP_ADD:
+						return new PatchGroupAdd( message, duid, aliasList );
+					case PATCH_GROUP_DELETE:
+						return new PatchGroupDelete( message, duid, aliasList );
+					case PATCH_GROUP_CHANNEL_GRANT:
+						return new PatchGroupVoiceChannelGrant( message, duid, aliasList );
+					case PATCH_GROUP_CHANNEL_GRANT_UPDATE:
+						return new PatchGroupVoiceChannelGrantUpdate( message, duid, aliasList );
+					case CWID_UPDATE:
 						return new ChannelCWIDUpdate( message, duid, aliasList );
-					case OP09:
+					case SYSTEM_LOAD:
 						return new SystemLoading( message, duid, aliasList );
 					default:
 				}

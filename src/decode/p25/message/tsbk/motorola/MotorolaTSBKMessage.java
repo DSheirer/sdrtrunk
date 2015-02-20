@@ -29,7 +29,6 @@ public class MotorolaTSBKMessage extends TSBKMessage
 			sb.append( " ENCRYPTED" );
 		}
 		
-		sb.append( " OPCD:" );
 		sb.append( getMotorolaOpcode().getLabel() );
 		
 	    return sb.toString();
