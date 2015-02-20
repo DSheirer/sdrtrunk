@@ -12,7 +12,7 @@ If you use the [http://www.eclipse.org/downloads/ Eclipse IDE for Java], you can
  # Project Explorer > Import > SVN > Project from SVN
  # Create a new repository location: https://sdrtrunk.googlecode.com/svn
  or http://sdrtrunk.googlecode.com/svn/trunk/
- # Open the ant view ( Window > Show View > Ant
+ # Open the ant view ( Window > Show View > Ant )
  # Drag the ant build script from the Package Explorer (sdrtrunk/build/build.xml) into the ant view panel 
  # Click the play button to execute the default build target
  # Compiled software package is placed in the sdrtrunk/product/xxx.zip folder
