@@ -34,7 +34,7 @@ public class ChannelCWIDUpdate extends MotorolaTSBKMessage
     @Override
     public String getEventType()
     {
-        return MotorolaOpcode.OP0B.getDescription();
+        return MotorolaOpcode.CWID_UPDATE.getDescription();
     }
     
     public String getMessage()

@@ -16,7 +16,7 @@ public class SystemLoading extends MotorolaTSBKMessage
 	@Override
     public String getEventType()
     {
-	    return MotorolaOpcode.OP09.getLabel();
+	    return MotorolaOpcode.SYSTEM_LOAD.getLabel();
     }
 	
 	@Override
