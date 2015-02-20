@@ -19,11 +19,12 @@ If you use the [http://www.eclipse.org/downloads/ Eclipse IDE for Java], you can
 
 == Manually ==
 
+ # Install the Java JDK version 1.7 or higher and create a JAVA_HOME environment variable pointing to the JDK installation folder
  # Install an SVN client on your computer: [http://tortoisesvn.net/downloads.html Tortoise SVN] on windows or kdesvn on Linux
  # Checkout the source code from https://sdrtrunk.googlecode.com/svn
  or http://sdrtrunk.googlecode.com/svn/trunk/
- # Download the latest version of [http://ant.apache.org/ Ant] and add the ant bin folder to your system's path so that you can execute the ant command from any folder
+ # Install the latest version of [http://ant.apache.org/ Ant] and follow the installation instructions in the [http://ant.apache.org/manual/index.html manual]
  # Change to the sdrtrunk build directory ( sdrtrunk/build )
  # Execute the ant command.
 
-This should run the default build target in the build.xml file and place the compiled software package in the sdrtrunk/product/xxx.zip folder.
+Ant will look for a file named build.xml in the current folder and will run the the default build target.  The compiled and zipped output program file will be located in the sdrtrunk/product/xxx.zip folder.
