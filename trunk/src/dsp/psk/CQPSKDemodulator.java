@@ -163,7 +163,7 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 				float gardnerError = normalize( errorReal + errorImaginary );
 
 				mOmega = mOmega + mGainOmega * gardnerError;
-				mOmega = mOmegaMid + clip( mOmegaMid, mOmegaRel );
+				mOmega = mOmegaMid + clip( mOmega - mOmegaMid, mOmegaRel );
 
 				mMu += mOmega + mGainMu * gardnerError;
 
@@ -225,7 +225,7 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 		private float mDamping = (float)Math.sqrt( 2.0 ) / 2.0f;
 		
 		/* Use denominator between 100 and 200 to adjust control level */
-		private float mLoopBandwidth = (float)( ( 2.0d * Math.PI ) / 150.0d );
+		private float mLoopBandwidth = (float)( ( 2.0d * Math.PI ) / 100.0d );
 		
 		private float mAlphaGain = ( 4.0f * mDamping * mLoopBandwidth ) / 
 						  ( 1.0f + ( 2.0f * mDamping * mLoopBandwidth ) + 
