@@ -19,7 +19,7 @@ If you use the [http://www.eclipse.org/downloads/ Eclipse IDE for Java], you can
 
 == Manually ==
 
- # Install an SVN client on your computer.
+ # Install an SVN client on your computer [http://tortoisesvn.net/downloads.html windows] or kdesvn on Linux
  # Checkout the source code from https://sdrtrunk.googlecode.com/svn
  or http://sdrtrunk.googlecode.com/svn/trunk/
  # Download the latest version of [http://ant.apache.org/ Ant] and add the ant bin folder to your system's path so that you can execute the ant command from any folder
