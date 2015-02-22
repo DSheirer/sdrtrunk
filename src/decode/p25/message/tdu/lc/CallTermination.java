@@ -30,7 +30,7 @@ public class CallTermination extends TDULinkControlMessage
 		
 		sb.append( getMessageStub() );
 		
-		sb.append( " FROM:" + getSourceAddress() );
+		sb.append( " BY:" + getSourceAddress() );
 		
 		return sb.toString();
 	}

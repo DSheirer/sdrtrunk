@@ -2,7 +2,7 @@ package decode.p25.message.tsbk.osp.control;
 
 import alias.AliasList;
 import bits.BinaryMessage;
-import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.reference.DataUnitID;
@@ -26,7 +26,7 @@ public class AdjacentStatusBroadcast extends TSBKMessage implements IdentifierRe
     public static final int[] SYSTEM_SERVICE_CLASS = { 136,137,138,139,140,141,
         142,143 };
     
-    private IdentifierProvider mIdentifierUpdate;
+    private IBandIdentifier mIdentifierUpdate;
     
     public AdjacentStatusBroadcast( BinaryMessage message, 
     								DataUnitID duid,
@@ -163,7 +163,7 @@ public class AdjacentStatusBroadcast extends TSBKMessage implements IdentifierRe
     }
 
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierProvider message )
+    public void setIdentifierMessage( int identifier, IBandIdentifier message )
     {
 		/* we're only expecting 1 identifier, so use whatever is received */
 		mIdentifierUpdate = message;

@@ -3,7 +3,7 @@ package decode.p25.message.ldu.lc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.ldu.LDU1Message;
 import decode.p25.reference.LinkControlOpcode;
@@ -26,7 +26,7 @@ public class AdjacentSiteStatusBroadcast extends LDU1Message
 	public static final int[] SYSTEM_SERVICE_CLASS = { 744,745,750,751,752,753,
 		754,755 };
 	
-	private IdentifierProvider mIdentifierUpdate;
+	private IBandIdentifier mIdentifierUpdate;
 	
 	public AdjacentSiteStatusBroadcast( LDU1Message message )
 	{
@@ -100,7 +100,7 @@ public class AdjacentSiteStatusBroadcast extends LDU1Message
 	}
 
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierProvider message )
+    public void setIdentifierMessage( int identifier, IBandIdentifier message )
     {
 		mIdentifierUpdate = message;
     }

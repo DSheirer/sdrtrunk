@@ -85,6 +85,7 @@ public class TDULCMessageFactory
 		{
 			switch( message.getVendor() )
 			{
+				case MOTOROLA:
 				default:
 					break;
 			}

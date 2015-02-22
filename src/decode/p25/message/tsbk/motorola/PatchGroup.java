@@ -59,6 +59,4 @@ public abstract class PatchGroup extends MotorolaTSBKMessage
     {
         return mMessage.getHex( GROUP_ADDRESS_3, 4 );
     }
-	
-	
 }

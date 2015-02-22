@@ -2,7 +2,7 @@ package decode.p25.message.tsbk.motorola;
 
 import alias.AliasList;
 import bits.BinaryMessage;
-import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.reference.DataUnitID;
 
@@ -20,8 +20,8 @@ public class PatchGroupVoiceChannelGrantUpdate extends MotorolaTSBKMessage
 	public static final int[] PATCH_GROUP_ADDRESS_2 = { 128,129,130,131,132,133,
 		134,135,136,137,138,139,140,141,142,143 };
 
-    private IdentifierProvider mIdentifierUpdate1;
-    private IdentifierProvider mIdentifierUpdate2;
+    private IBandIdentifier mIdentifierUpdate1;
+    private IBandIdentifier mIdentifierUpdate2;
 
     public PatchGroupVoiceChannelGrantUpdate( BinaryMessage message, 
     		DataUnitID duid, AliasList aliasList )
@@ -100,7 +100,7 @@ public class PatchGroupVoiceChannelGrantUpdate extends MotorolaTSBKMessage
     }
 
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierProvider message )
+    public void setIdentifierMessage( int identifier, IBandIdentifier message )
     {
 		if( identifier == getChannelIdentifier1() )
 		{

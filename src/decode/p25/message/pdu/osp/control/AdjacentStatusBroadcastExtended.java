@@ -2,7 +2,7 @@ package decode.p25.message.pdu.osp.control;
 
 import alias.AliasList;
 import bits.BinaryMessage;
-import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.pdu.PDUMessage;
 import decode.p25.message.tsbk.osp.control.SystemService;
@@ -31,8 +31,8 @@ public class AdjacentStatusBroadcastExtended extends PDUMessage
 		230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,
 		248,249,250,251,252,253,254,255 };
 	
-	private IdentifierProvider mTransmitIdentifierProvider;
-	private IdentifierProvider mReceiveIdentifierProvider;
+	private IBandIdentifier mTransmitIdentifierProvider;
+	private IBandIdentifier mReceiveIdentifierProvider;
 	
 	public AdjacentStatusBroadcastExtended( BinaryMessage message,
             DataUnitID duid, AliasList aliasList )
@@ -136,7 +136,7 @@ public class AdjacentStatusBroadcastExtended extends PDUMessage
     }
 
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierProvider message )
+    public void setIdentifierMessage( int identifier, IBandIdentifier message )
     {
 		if( identifier == getTransmitIdentifier() )
 		{

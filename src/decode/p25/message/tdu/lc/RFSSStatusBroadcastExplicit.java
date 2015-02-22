@@ -3,7 +3,7 @@ package decode.p25.message.tdu.lc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.tsbk.osp.control.SystemService;
 import decode.p25.reference.LinkControlOpcode;
@@ -28,8 +28,8 @@ public class RFSSStatusBroadcastExplicit extends TDULinkControlMessage
 	public static final int[] SYSTEM_SERVICE_CLASS = { 188,189,190,191,192,193,
 		194,195 };
 	
-	private IdentifierProvider mTransmitIdentifierUpdate;
-	private IdentifierProvider mReceiveIdentifierUpdate;
+	private IBandIdentifier mTransmitIdentifierUpdate;
+	private IBandIdentifier mReceiveIdentifierUpdate;
 	
 	public RFSSStatusBroadcastExplicit( TDULinkControlMessage source )
 	{
@@ -115,7 +115,7 @@ public class RFSSStatusBroadcastExplicit extends TDULinkControlMessage
 	}
 
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierProvider message )
+    public void setIdentifierMessage( int identifier, IBandIdentifier message )
     {
 		if( identifier == getTransmitIdentifier() )
 		{

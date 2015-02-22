@@ -2,7 +2,7 @@ package decode.p25.message.tsbk;
 
 import alias.AliasList;
 import bits.BinaryMessage;
-import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.reference.DataUnitID;
 
 public abstract class GroupChannelGrantExplicit extends ChannelGrant
@@ -16,8 +16,8 @@ public abstract class GroupChannelGrantExplicit extends ChannelGrant
     public static final int[] GROUP_ADDRESS = { 128,129,130,131,132,133,134,135,
         136,137,138,139,140,141,142,143 };
     
-    private IdentifierProvider mTransmitIdentifierUpdate;
-    private IdentifierProvider mReceiveIdentifierUpdate;
+    private IBandIdentifier mTransmitIdentifierUpdate;
+    private IBandIdentifier mReceiveIdentifierUpdate;
 
     public GroupChannelGrantExplicit( BinaryMessage message, 
                                    DataUnitID duid,
@@ -85,7 +85,7 @@ public abstract class GroupChannelGrantExplicit extends ChannelGrant
     }
     
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierProvider message )
+    public void setIdentifierMessage( int identifier, IBandIdentifier message )
     {
 		if( identifier == getTransmitChannelIdentifier() )
 		{

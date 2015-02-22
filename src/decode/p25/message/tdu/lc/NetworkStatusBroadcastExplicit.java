@@ -3,7 +3,7 @@ package decode.p25.message.tdu.lc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.reference.LinkControlOpcode;
 import decode.p25.reference.Service;
@@ -13,9 +13,10 @@ public class NetworkStatusBroadcastExplicit extends TDULinkControlMessage
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( NetworkStatusBroadcastExplicit.class );
-	public static final int[] NETWORK_ID = { 72,73,74,75,88,89,90,91,92,93,94,
-		95,96,97,98,99,112,113,114,115 };
-	public static final int[] SYSTEM_ID = { 116,117,118,119,120,121,122,123,136,
+
+	public static final int[] WACN = { 72,73,74,75,88,89,90,91,92,93,94,95,96,
+		97,98,99,112,113,114,115 };
+	public static final int[] SYSTEM = { 116,117,118,119,120,121,122,123,136,
 		137,138,139 };
 	public static final int[] TRANSMIT_IDENTIFIER = { 140,141,142,143 };
 	public static final int[] TRANSMIT_CHANNEL = { 144,145,146,147,160,161,162,
@@ -24,8 +25,8 @@ public class NetworkStatusBroadcastExplicit extends TDULinkControlMessage
 	public static final int[] RECEIVE_CHANNEL = { 184,185,186,187,188,189,190,
 		191,192,193,194,195 };
 	
-	private IdentifierProvider mTransmitIdentifierUpdate;
-	private IdentifierProvider mReceiveIdentifierUpdate;
+	private IBandIdentifier mTransmitIdentifierUpdate;
+	private IBandIdentifier mReceiveIdentifierUpdate;
 	
 	public NetworkStatusBroadcastExplicit( TDULinkControlMessage source )
 	{
@@ -45,22 +46,22 @@ public class NetworkStatusBroadcastExplicit extends TDULinkControlMessage
 		
 		sb.append( getMessageStub() );
 
-		sb.append( " NETWORK:" + getNetworkID() );
-		sb.append( " SYS:" + getSystemID() );
+		sb.append( " NETWORK:" + getWACN() );
+		sb.append( " SYS:" + getSystem() );
 		sb.append( " TRANSMIT:" + getTransmitChannel() );
 		sb.append( " RECEIVE:" + getReceiveChannel() );
 		
 		return sb.toString();
 	}
 	
-	public String getNetworkID()
+	public String getWACN()
 	{
-		return mMessage.getHex( NETWORK_ID, 5 );
+		return mMessage.getHex( WACN, 5 );
 	}
 	
-	public String getSystemID()
+	public String getSystem()
 	{
-		return mMessage.getHex( SYSTEM_ID, 3 );
+		return mMessage.getHex( SYSTEM, 3 );
 	}
 
 	public int getTransmitIdentifier()
@@ -94,7 +95,7 @@ public class NetworkStatusBroadcastExplicit extends TDULinkControlMessage
 	}
 
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierProvider message )
+    public void setIdentifierMessage( int identifier, IBandIdentifier message )
     {
 		if( identifier == getTransmitIdentifier() )
 		{

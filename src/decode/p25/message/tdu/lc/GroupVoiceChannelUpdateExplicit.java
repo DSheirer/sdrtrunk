@@ -3,7 +3,7 @@ package decode.p25.message.tdu.lc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.P25Message.DuplexMode;
 import decode.p25.message.P25Message.SessionMode;
@@ -28,8 +28,8 @@ public class GroupVoiceChannelUpdateExplicit extends TDULinkControlMessage
 	public static final int[] RECEIVE_CHANNEL = { 184,185,186,187,188,189,190,
 		191,192,193,194,195,196,197,198,199 };
 	
-	private IdentifierProvider mTransmitIdentifierUpdate;
-	private IdentifierProvider mReceiveIdentifierUpdate;
+	private IBandIdentifier mTransmitIdentifierUpdate;
+	private IBandIdentifier mReceiveIdentifierUpdate;
 	
 	public GroupVoiceChannelUpdateExplicit( TDULinkControlMessage source )
 	{
@@ -119,7 +119,7 @@ public class GroupVoiceChannelUpdateExplicit extends TDULinkControlMessage
     }
     
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierProvider message )
+    public void setIdentifierMessage( int identifier, IBandIdentifier message )
     {
 		if( identifier == getTransmitChannelIdentifier() )
 		{

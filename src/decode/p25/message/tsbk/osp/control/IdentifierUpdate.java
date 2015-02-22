@@ -2,12 +2,12 @@ package decode.p25.message.tsbk.osp.control;
 
 import alias.AliasList;
 import bits.BinaryMessage;
-import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.reference.DataUnitID;
 
 public abstract class IdentifierUpdate extends TSBKMessage 
-									   implements IdentifierProvider
+									   implements IBandIdentifier
 {
     public static final int[] IDENTIFIER = { 80,81,82,83 };
 

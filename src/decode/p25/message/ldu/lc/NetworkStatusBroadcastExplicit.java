@@ -3,7 +3,7 @@ package decode.p25.message.ldu.lc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.ldu.LDU1Message;
 import decode.p25.reference.LinkControlOpcode;
@@ -24,8 +24,8 @@ public class NetworkStatusBroadcastExplicit extends LDU1Message
 	public static final int[] RECEIVE_CHANNEL = { 740,741,742,743,744,745,750,
 		751,752,753,754,755 };
 	
-	private IdentifierProvider mTransmitIdentifierUpdate;
-	private IdentifierProvider mReceiveIdentifierUpdate;
+	private IBandIdentifier mTransmitIdentifierUpdate;
+	private IBandIdentifier mReceiveIdentifierUpdate;
 	
 	public NetworkStatusBroadcastExplicit( LDU1Message message )
 	{
@@ -46,7 +46,7 @@ public class NetworkStatusBroadcastExplicit extends LDU1Message
 		sb.append( getMessageStub() );
 
 		sb.append( " NETWORK:" + getNetworkID() );
-		sb.append( " SYS:" + getSystemID() );
+		sb.append( " SYS:" + getSystem() );
 		sb.append( " TRANSMIT:" + getTransmitChannel() );
 		sb.append( " RECEIVE:" + getReceiveChannel() );
 		
@@ -58,7 +58,7 @@ public class NetworkStatusBroadcastExplicit extends LDU1Message
 		return mMessage.getHex( NETWORK_ID, 5 );
 	}
 	
-	public String getSystemID()
+	public String getSystem()
 	{
 		return mMessage.getHex( SYSTEM_ID, 3 );
 	}
@@ -94,7 +94,7 @@ public class NetworkStatusBroadcastExplicit extends LDU1Message
 	}
 
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierProvider message )
+    public void setIdentifierMessage( int identifier, IBandIdentifier message )
     {
 		if( identifier == getTransmitIdentifier() )
 		{

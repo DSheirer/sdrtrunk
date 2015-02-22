@@ -3,7 +3,7 @@ package decode.p25.message.tdu.lc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.tsbk.osp.control.SystemService;
 import decode.p25.reference.LinkControlOpcode;
@@ -29,8 +29,8 @@ public class SecondaryControlChannelBroadcast extends TDULinkControlMessage
 	public static final int[] SYSTEM_SERVICE_CLASS_B = { 188,189,190,191,192,
 		193,194,195 };
 	
-	private IdentifierProvider mIdentifierProviderA;
-	private IdentifierProvider mIdentifierProviderB;
+	private IBandIdentifier mIdentifierProviderA;
+	private IBandIdentifier mIdentifierProviderB;
 	
 	public SecondaryControlChannelBroadcast( TDULinkControlMessage source )
 	{
@@ -114,7 +114,7 @@ public class SecondaryControlChannelBroadcast extends TDULinkControlMessage
 	}
 	
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierProvider message )
+    public void setIdentifierMessage( int identifier, IBandIdentifier message )
     {
 		if( identifier == getIdentifierA() )
 		{

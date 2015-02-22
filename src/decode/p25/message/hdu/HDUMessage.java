@@ -1,5 +1,6 @@
 package decode.p25.message.hdu;
 
+import alias.Alias;
 import alias.AliasList;
 import bits.BinaryMessage;
 import decode.p25.message.P25Message;
@@ -58,7 +59,16 @@ public class HDUMessage extends P25Message
 		if( encryption != Encryption.UNENCRYPTED )
 		{
 			sb.append( " ENCRYPTION:" );
-			sb.append( encryption.name() );
+			
+			if( encryption == Encryption.UNKNOWN )
+			{
+				sb.append( "UNK ALGO ID:" );
+				sb.append( mMessage.getInt( ALGORITHM_ID ) );
+			}
+			else
+			{
+				sb.append( encryption.name() );
+			}
 			sb.append( " KEY ID:" + getKeyID() );
 			sb.append( " MSG INDICATOR:" + getMessageIndicator() );
 		}
@@ -96,6 +106,12 @@ public class HDUMessage extends P25Message
 	public String getTalkgroupID()
 	{
 		return mMessage.getHex( TALKGROUP_ID, 4 );
+	}
+	
+	@Override
+	public String getToID()
+	{
+		return getTalkgroupID();
 	}
 	
 	/* Temporary override */
