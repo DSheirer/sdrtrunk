@@ -1,9 +1,12 @@
 package decode.p25.message.tdu.lc;
 
+import java.util.Set;
+import java.util.TreeSet;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.reference.LinkControlOpcode;
 
@@ -23,8 +26,8 @@ public class GroupVoiceChannelUpdate extends TDULinkControlMessage
 	public static final int[] GROUP_ADDRESS_B = { 168,169,170,171,184,185,186,
 		187,188,189,190,191,192,193,194,195 };
 	
-	private IdentifierProvider mIdentifierUpdateA;
-	private IdentifierProvider mIdentifierUpdateB;
+	private IBandIdentifier mIdentifierUpdateA;
+	private IBandIdentifier mIdentifierUpdateB;
 	
 	public GroupVoiceChannelUpdate( TDULinkControlMessage source )
 	{
@@ -103,8 +106,23 @@ public class GroupVoiceChannelUpdate extends TDULinkControlMessage
     	return mMessage.getHex( GROUP_ADDRESS_B, 4 );
     }
 
+	/**
+	 * Returns a sorted list of addresses contained in the A and B fields
+	 * @return
+	 */
+	public Set<String> getAddresses()
+	{
+		Set<String> addresses = new TreeSet<String>();
+
+		addresses.add( getGroupAddressA() );
+		addresses.add( getGroupAddressB() );
+
+		return addresses;
+	}
+
+
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierProvider message )
+    public void setIdentifierMessage( int identifier, IBandIdentifier message )
     {
 		if( identifier == getChannelIdentifierA() )
 		{

@@ -2,7 +2,7 @@ package decode.p25.message.tsbk.osp.data;
 
 import alias.AliasList;
 import bits.BinaryMessage;
-import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.reference.DataUnitID;
 
@@ -22,8 +22,8 @@ public class SNDCPDataChannelAnnouncementExplicit extends SNDCPData
     public static final int[] DATA_ACCESS_CONTROL = { 128,129,130,131,132,133,
     	134,135,136,137,138,139,140,141,142,143 };
     
-    private IdentifierProvider mIdentifierUpdateTransmit;
-    private IdentifierProvider mIdentifierUpdateReceive;
+    private IBandIdentifier mIdentifierUpdateTransmit;
+    private IBandIdentifier mIdentifierUpdateReceive;
 
     public SNDCPDataChannelAnnouncementExplicit( BinaryMessage message, 
 								  DataUnitID duid,
@@ -118,7 +118,7 @@ public class SNDCPDataChannelAnnouncementExplicit extends SNDCPData
     }
     
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierProvider message )
+    public void setIdentifierMessage( int identifier, IBandIdentifier message )
     {
 		if( identifier == getTransmitChannelIdentifier() )
 		{

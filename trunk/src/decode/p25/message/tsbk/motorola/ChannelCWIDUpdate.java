@@ -2,7 +2,7 @@ package decode.p25.message.tsbk.motorola;
 
 import alias.AliasList;
 import bits.BinaryMessage;
-import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.reference.DataUnitID;
 
@@ -22,7 +22,7 @@ public class ChannelCWIDUpdate extends MotorolaTSBKMessage
     public static final int[] CHANNEL = { 132,133,134,135,136,137,138,139,140,
     	141,142,143 };
     
-    private IdentifierProvider mIdentifierUpdate;
+    private IBandIdentifier mIdentifierUpdate;
     
     public ChannelCWIDUpdate( BinaryMessage message, 
                                 DataUnitID duid,
@@ -104,7 +104,7 @@ public class ChannelCWIDUpdate extends MotorolaTSBKMessage
     }
 
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierProvider message )
+    public void setIdentifierMessage( int identifier, IBandIdentifier message )
     {
 		mIdentifierUpdate = message;
     }

@@ -3,11 +3,11 @@ package decode.p25.message.tdu.lc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.reference.LinkControlOpcode;
 
 public class ChannelIdentifierUpdate extends TDULinkControlMessage
-									 implements IdentifierProvider
+									 implements IBandIdentifier
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( ChannelIdentifierUpdate.class );

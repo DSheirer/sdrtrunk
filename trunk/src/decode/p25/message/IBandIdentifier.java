@@ -1,6 +1,6 @@
 package decode.p25.message;
 
-public interface IdentifierProvider
+public interface IBandIdentifier
 {
 
 	/**

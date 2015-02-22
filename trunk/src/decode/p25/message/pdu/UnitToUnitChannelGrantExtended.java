@@ -2,7 +2,7 @@ package decode.p25.message.pdu;
 
 import alias.AliasList;
 import bits.BinaryMessage;
-import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
@@ -39,8 +39,8 @@ public abstract class UnitToUnitChannelGrantExtended extends PDUMessage
 		326,327,328,329,330,331,332,333,334,335,336,337,338,339,340,341,342,
 		343,344,345,346,347,348,349,350,351 };
 	
-	private IdentifierProvider mTransmitIdentifierUpdate;
-	private IdentifierProvider mReceiveIdentifierUpdate;
+	private IBandIdentifier mTransmitIdentifierUpdate;
+	private IBandIdentifier mReceiveIdentifierUpdate;
 	
 	public UnitToUnitChannelGrantExtended( BinaryMessage message,
             DataUnitID duid, AliasList aliasList )
@@ -175,7 +175,7 @@ public abstract class UnitToUnitChannelGrantExtended extends PDUMessage
     }
 
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierProvider message )
+    public void setIdentifierMessage( int identifier, IBandIdentifier message )
     {
 		if( identifier == getTransmitChannelIdentifier() )
 		{

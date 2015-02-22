@@ -98,6 +98,11 @@ public abstract class CallEvent
 		return mFromID;
 	}
 	
+	public boolean hasFromID()
+	{
+		return mFromID != null;
+	}
+	
 	public void setFromID( String id )
 	{
 		mFromID = id;
@@ -106,6 +111,11 @@ public abstract class CallEvent
 	public String getToID()
 	{
 		return mToID;
+	}
+	
+	public boolean hasToID()
+	{
+		return mToID != null;
 	}
 	
 	public void setToID( String id )

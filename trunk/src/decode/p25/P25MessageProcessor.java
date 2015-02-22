@@ -10,8 +10,8 @@ import org.slf4j.LoggerFactory;
 import sample.Broadcaster;
 import sample.Listener;
 import alias.AliasList;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.message.IdentifierReceiver;
-import decode.p25.message.tsbk.osp.control.IdentifierUpdate;
 
 public class P25MessageProcessor implements Listener<Message>
 {
@@ -23,8 +23,8 @@ public class P25MessageProcessor implements Listener<Message>
 	/* Map of up to 16 band identifiers per RFSS.  These identifier update 
 	 * messages are inserted into any message that conveys channel information
 	 * so that the uplink/downlink frequencies can be calculated */
-	private HashMap<Integer,IdentifierUpdate> mIdentifierMap = 
-			new HashMap<Integer,IdentifierUpdate>();
+	private HashMap<Integer,IBandIdentifier> mBandIdentifierMap = 
+			new HashMap<Integer,IBandIdentifier>();
 	
 	private AliasList mAliasList;
 	
@@ -48,17 +48,18 @@ public class P25MessageProcessor implements Listener<Message>
 				for( int identifier: identifiers )
 				{
 					receiver.setIdentifierMessage( identifier, 
-									mIdentifierMap.get( identifier ) );
+									mBandIdentifierMap.get( identifier ) );
 				}
 			}
 
 			/* Store band identifiers so that they can be injected into channel
 			 * type messages */
-			if( message instanceof IdentifierUpdate )
+			if( message instanceof IBandIdentifier )
 			{
-				IdentifierUpdate identifierUpdate = (IdentifierUpdate)message;
+				IBandIdentifier bandIdentifier = (IBandIdentifier)message;
 				
-				mIdentifierMap.put( identifierUpdate.getIdentifier(), identifierUpdate );
+				mBandIdentifierMap.put( bandIdentifier.getIdentifier(), 
+									bandIdentifier );
 			}
 			
 			mBroadcaster.broadcast( message );
@@ -67,7 +68,7 @@ public class P25MessageProcessor implements Listener<Message>
 	
 	public void dispose()
 	{
-		mIdentifierMap.clear();
+		mBandIdentifierMap.clear();
 		mBroadcaster.dispose();
 	}
 	

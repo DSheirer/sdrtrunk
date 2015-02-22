@@ -3,7 +3,7 @@ package decode.p25.message.ldu.lc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.ldu.LDU1Message;
 import decode.p25.message.tsbk.osp.control.SystemService;
@@ -26,8 +26,8 @@ public class RFSSStatusBroadcastExplicit extends LDU1Message
 		735,740,741,742,743 };
 	public static final int[] SYSTEM_SERVICE_CLASS = { 744,745,750,751,752,753,754,755 };
 
-	private IdentifierProvider mTransmitIdentifierUpdate;
-	private IdentifierProvider mReceiveIdentifierUpdate;
+	private IBandIdentifier mTransmitIdentifierUpdate;
+	private IBandIdentifier mReceiveIdentifierUpdate;
 	
 	public RFSSStatusBroadcastExplicit( LDU1Message source )
 	{
@@ -113,7 +113,7 @@ public class RFSSStatusBroadcastExplicit extends LDU1Message
 	}
 
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierProvider message )
+    public void setIdentifierMessage( int identifier, IBandIdentifier message )
     {
 		if( identifier == getTransmitIdentifier() )
 		{

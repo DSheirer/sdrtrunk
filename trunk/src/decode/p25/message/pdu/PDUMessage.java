@@ -3,6 +3,7 @@ package decode.p25.message.pdu;
 import alias.AliasList;
 import bits.BinaryMessage;
 import decode.p25.message.P25Message;
+import decode.p25.message.tsbk.vendor.VendorOpcode;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.Opcode;
 import decode.p25.reference.PDUFormat;
@@ -149,6 +150,16 @@ public class PDUMessage extends P25Message
 		}
 		
 		return Opcode.UNKNOWN;
+	}
+	
+	public VendorOpcode getVendorOpcode()
+	{
+		if( getFormat() == PDUFormat.ALTERNATE_MULTI_BLOCK_TRUNKING_CONTROL )
+		{
+			return VendorOpcode.fromValue( mMessage.getInt( OPCODE ) );
+		}
+		
+		return VendorOpcode.UNKNOWN;
 	}
 	
 	public int getDataHeaderOffset()

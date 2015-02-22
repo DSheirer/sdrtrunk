@@ -179,7 +179,7 @@ public class P25Message extends Message
 	 * @param channel - channel number
 	 * @return - frequency in Hertz
 	 */
-	protected static long calculateUplink( IdentifierProvider iden, int channel )
+	protected static long calculateUplink( IBandIdentifier iden, int channel )
 	{
 		long downlink = calculateDownlink( iden, channel );
 		
@@ -199,7 +199,7 @@ public class P25Message extends Message
 	 * @param channel - channel number
 	 * @return - frequency in Hertz
 	 */
-	protected static long calculateDownlink( IdentifierProvider iden, int channel )
+	protected static long calculateDownlink( IBandIdentifier iden, int channel )
 	{
 		if( iden != null )
 		{

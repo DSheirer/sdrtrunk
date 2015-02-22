@@ -25,6 +25,7 @@ import settings.ColorSetting;
 import settings.Setting;
 import controller.channel.Channel;
 import controller.state.ChannelState.ChangedAttribute;
+import controller.state.ChannelState.State;
 import controller.state.ChannelStatePanel;
 import decode.config.DecodeConfigP25Phase1;
 
@@ -86,7 +87,7 @@ public class P25Panel extends ChannelStatePanel
 		mFromAlias.setFont( mFontDecoder );
 		mFromAlias.setForeground( mColorLabelDecoder );
 
-		mNAC.setFont( mFontDecoder );
+		mNAC.setFont( mFontDetails );
 		mNAC.setForeground( mColorLabelDecoder );
 
 		mTo.setFont( mFontDecoder );
@@ -95,13 +96,13 @@ public class P25Panel extends ChannelStatePanel
 		mToAlias.setFont( mFontDecoder );
 		mToAlias.setForeground( mColorLabelDecoder );
 
-		mSystem.setFont( mFontDecoder );
+		mSystem.setFont( mFontDetails );
 		mSystem.setForeground( mColorLabelDecoder );
 
 		mSiteAlias.setFont( mFontDecoder );
 		mSiteAlias.setForeground( mColorLabelDecoder );
 
-		mSite.setFont( mFontDecoder );
+		mSite.setFont( mFontDetails );
 		mSite.setForeground( mColorLabelDecoder );
 
 		add( mStateLabel );
@@ -135,7 +136,17 @@ public class P25Panel extends ChannelStatePanel
 				switch( changedAttribute )
 				{
 					case CHANNEL_STATE:
-			    		mStateLabel.setText( channelState.getState().getDisplayValue() );
+						State state = channelState.getState();
+						
+			    		mStateLabel.setText( state.getDisplayValue() );
+			    		
+			    		if( state == State.IDLE )
+			    		{
+			    			mFrom.setText( null );
+			    			mFromAlias.setText( null );
+			    			mTo.setText( null );
+			    			mToAlias.setText( null );
+			    		}
 						break;
 					case SOURCE:
 			    		mSourceLabel.setText( mChannel.getSourceConfiguration()

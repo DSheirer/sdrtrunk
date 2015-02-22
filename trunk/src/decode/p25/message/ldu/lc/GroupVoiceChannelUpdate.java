@@ -3,7 +3,7 @@ package decode.p25.message.ldu.lc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.ldu.LDU1Message;
 import decode.p25.reference.LinkControlOpcode;
@@ -25,8 +25,8 @@ public class GroupVoiceChannelUpdate extends LDU1Message
 	public static final int[] GROUP_ADDRESS_B = { 732,733,734,735,740,741,742,
 		743,744,745,750,751,752,753,754,755 };
 	
-	private IdentifierProvider mIdentifierUpdateA;
-	private IdentifierProvider mIdentifierUpdateB;
+	private IBandIdentifier mIdentifierUpdateA;
+	private IBandIdentifier mIdentifierUpdateB;
 	
 	public GroupVoiceChannelUpdate( LDU1Message message )
 	{
@@ -106,7 +106,7 @@ public class GroupVoiceChannelUpdate extends LDU1Message
     }
 
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierProvider message )
+    public void setIdentifierMessage( int identifier, IBandIdentifier message )
     {
 		if( identifier == getChannelIdentifierA() )
 		{

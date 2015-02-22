@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import alias.AliasList;
 import bits.BinaryMessage;
 import decode.p25.message.P25Message;
+import decode.p25.message.tsbk.motorola.MotorolaOpcode;
 import decode.p25.reference.DataUnitID;
 import decode.p25.reference.LinkControlOpcode;
 import decode.p25.reference.Vendor;
@@ -131,15 +132,30 @@ public class TDULinkControlMessage extends P25Message
 	{
 		return mMessage.get( IMPLICIT_VENDOR_FLAG );
 	}
-	
+
+	/**
+	 * Standard opcodes when the Vendor is STANDARD
+	 */
 	public LinkControlOpcode getOpcode()
 	{
 		return LinkControlOpcode.fromValue( mMessage.getInt( OPCODE ) );
 	}
 
+	/**
+	 * Returns a generic vendor-neutral opcode.  Use this when there is a non
+	 * standard vendor code.
+	 */
 	public VendorLinkControlOpcode getVendorOpcode()
 	{
 		return VendorLinkControlOpcode.fromValue( mMessage.getInt( OPCODE ) );
+	}
+
+	/**
+	 * If the vendor is motorola, returns the Motorola OPCODE for this message
+	 */
+	public MotorolaOpcode getMotorolaOpcode()
+	{
+		return MotorolaOpcode.fromValue( mMessage.getInt( OPCODE ) );
 	}
 	
 	public Vendor getVendor()

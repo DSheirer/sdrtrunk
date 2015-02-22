@@ -2,7 +2,7 @@ package decode.p25.message.tsbk;
 
 import alias.AliasList;
 import bits.BinaryMessage;
-import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.reference.DataUnitID;
 
@@ -14,7 +14,7 @@ public abstract class ChannelGrant extends ServiceMessage
     public static final int[] CHANNEL_NUMBER = { 92,93,94,95,96,97,98,99,100,
         101,102,103 };
     
-    private IdentifierProvider mIdentifierUpdate;
+    private IBandIdentifier mIdentifierUpdate;
     
     public ChannelGrant( BinaryMessage message, 
     					 DataUnitID duid,
@@ -47,7 +47,7 @@ public abstract class ChannelGrant extends ServiceMessage
     }
 
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierProvider message )
+    public void setIdentifierMessage( int identifier, IBandIdentifier message )
     {
 		mIdentifierUpdate = message;
     }

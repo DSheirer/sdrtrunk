@@ -3,7 +3,7 @@ package decode.p25.message.ldu.lc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.ldu.LDU1Message;
 import decode.p25.message.tsbk.osp.control.SystemService;
@@ -26,8 +26,8 @@ public class SecondaryControlChannelBroadcastExplicit
 	public static final int[] SYSTEM_SERVICE_CLASS = { 732,733,734,735,740,741,
 		742,743 };
 	
-	private IdentifierProvider mTransmitIdentifierProvider;
-	private IdentifierProvider mReceiveIdentifierProvider;
+	private IBandIdentifier mTransmitIdentifierProvider;
+	private IBandIdentifier mReceiveIdentifierProvider;
 	
 	public SecondaryControlChannelBroadcastExplicit( LDU1Message message )
 	{
@@ -104,7 +104,7 @@ public class SecondaryControlChannelBroadcastExplicit
 	}
 
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierProvider message )
+    public void setIdentifierMessage( int identifier, IBandIdentifier message )
     {
 		if( identifier == getTransmitIdentifier() )
 		{

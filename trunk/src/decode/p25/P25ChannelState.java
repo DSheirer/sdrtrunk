@@ -20,14 +20,17 @@ package decode.p25;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import message.Message;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import source.config.SourceConfigTuner;
+import source.config.SourceConfiguration;
 import alias.Alias;
 import alias.AliasList;
 import audio.SquelchListener;
@@ -41,9 +44,17 @@ import controller.state.ChannelState;
 import decode.p25.message.P25Message;
 import decode.p25.message.hdu.HDUMessage;
 import decode.p25.message.ldu.LDU1Message;
-import decode.p25.message.ldu.LDU2Message;
 import decode.p25.message.ldu.LDUMessage;
+import decode.p25.message.ldu.lc.CallTermination;
+import decode.p25.message.ldu.lc.TelephoneInterconnectVoiceChannelUser;
+import decode.p25.message.ldu.lc.UnitToUnitVoiceChannelUser;
 import decode.p25.message.pdu.PDUMessage;
+import decode.p25.message.pdu.confirmed.PDUConfirmedMessage;
+import decode.p25.message.pdu.confirmed.SNDCPActivateTDSContextAccept;
+import decode.p25.message.pdu.confirmed.SNDCPActivateTDSContextReject;
+import decode.p25.message.pdu.confirmed.SNDCPActivateTDSContextRequest;
+import decode.p25.message.pdu.confirmed.SNDCPDeactivateTDSContext;
+import decode.p25.message.pdu.confirmed.SNDCPUserData;
 import decode.p25.message.pdu.osp.control.CallAlertExtended;
 import decode.p25.message.pdu.osp.control.GroupAffiliationQueryExtended;
 import decode.p25.message.pdu.osp.control.GroupAffiliationResponseExtended;
@@ -60,6 +71,13 @@ import decode.p25.message.pdu.osp.voice.TelephoneInterconnectChannelGrantExplici
 import decode.p25.message.pdu.osp.voice.UnitToUnitAnswerRequestExplicit;
 import decode.p25.message.pdu.osp.voice.UnitToUnitVoiceChannelGrantExtended;
 import decode.p25.message.pdu.osp.voice.UnitToUnitVoiceChannelGrantUpdateExtended;
+import decode.p25.message.tdu.lc.AdjacentSiteStatusBroadcast;
+import decode.p25.message.tdu.lc.GroupVoiceChannelUpdate;
+import decode.p25.message.tdu.lc.GroupVoiceChannelUpdateExplicit;
+import decode.p25.message.tdu.lc.NetworkStatusBroadcast;
+import decode.p25.message.tdu.lc.NetworkStatusBroadcastExplicit;
+import decode.p25.message.tdu.lc.SecondaryControlChannelBroadcast;
+import decode.p25.message.tdu.lc.SecondaryControlChannelBroadcastExplicit;
 import decode.p25.message.tdu.lc.TDULinkControlMessage;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.message.tsbk.osp.control.AcknowledgeResponse;
@@ -96,7 +114,8 @@ import decode.p25.message.tsbk.osp.voice.TelephoneInterconnectVoiceChannelGrantU
 import decode.p25.message.tsbk.osp.voice.UnitToUnitAnswerRequest;
 import decode.p25.message.tsbk.osp.voice.UnitToUnitVoiceChannelGrant;
 import decode.p25.message.tsbk.osp.voice.UnitToUnitVoiceChannelGrantUpdate;
-import decode.p25.reference.Opcode;
+import decode.p25.reference.Encryption;
+import decode.p25.reference.IPProtocol;
 import decode.p25.reference.Response;
 import decode.p25.reference.Vendor;
 
@@ -104,7 +123,6 @@ public class P25ChannelState extends ChannelState
 {
 	private final static Logger mLog = LoggerFactory.getLogger( P25ChannelState.class );
 	
-	private final static String CURRENT_CHANNEL = "CHANNEL";
 
 	private HashMap<String,Long> mRegistrations = new HashMap<String,Long>();
 	private String mLastCommandEventID;
@@ -113,8 +131,8 @@ public class P25ChannelState extends ChannelState
 	private String mLastRegistrationEventID;
 	private String mLastResponseEventID;
 
-	private CopyOnWriteArrayList<ActiveCall> mActiveCalls = 
-							new CopyOnWriteArrayList<ActiveCall>();
+	private ActiveCall mCurrentActiveCall;
+	private Map<String,ActiveCall> mCallDetects = new HashMap<String,ActiveCall>();
 	
 	private P25ActivitySummary mActivitySummary;
 	private String mNAC;
@@ -125,12 +143,24 @@ public class P25ChannelState extends ChannelState
 	private String mFromAlias;
 	private String mToTalkgroup;
 	private String mToAlias;
+
+	/* The currently tuned traffic channel - dynamically updated */
+	private String mCurrentChannel = "CURRENT";
+	private long mCurrentChannelFrequency = 0;
 	
 	public P25ChannelState( ProcessingChain chain, AliasList aliasList )
 	{
 		super( chain, aliasList );
 		
 		mActivitySummary = new P25ActivitySummary( aliasList );
+
+		/* Get the channel frequency from the source config */
+		SourceConfiguration source = chain.getChannel().getSourceConfiguration();
+		
+		if( source instanceof SourceConfigTuner )
+		{
+			mCurrentChannelFrequency = ((SourceConfigTuner)source).getFrequency();
+		}
 	}
 	
 	public void addListener( SquelchListener listener )
@@ -149,6 +179,8 @@ public class P25ChannelState extends ChannelState
 
 		if( message instanceof P25Message )
 		{
+			updateNAC( ( (P25Message) message ).getNAC() );
+			
 			mActivitySummary.receive( (P25Message)message );
 
 			if( message instanceof HDUMessage )
@@ -183,15 +215,62 @@ public class P25ChannelState extends ChannelState
 
 	private void processHDU( HDUMessage hdu )
 	{
-		
+		if( isActiveCall( mCurrentChannel, hdu.getToID() ) )
+		{
+			updateCall( State.CALL, mCurrentChannel, null, hdu.getTalkgroupID() );
+		}
+		else
+		{
+			StringBuilder sb = new StringBuilder();
+			
+			if( hdu.getEncryption() != Encryption.UNENCRYPTED )
+			{
+				sb.append( "ENCRYPTED WITH " );
+				sb.append( hdu.getEncryption().name() );
+				sb.append( " KEY:" );
+				sb.append( hdu.getKeyID() );
+			}
+			
+			P25CallEvent event = new P25CallEvent.Builder( CallEventType.CALL )
+						.aliasList( mAliasList )
+						.channel( mCurrentChannel )
+						.frequency( mCurrentChannelFrequency )
+						.to( hdu.getToID() )
+						.details( sb.toString() )
+						.build();
+			
+			addCall( event );
+		}
 	}
-	
+
+	/**
+	 * Processes Terminator Data Unit with Link Control messages that occur on
+	 * the traffic channel
+	 */
 	private void processTDULC( TDULinkControlMessage tdulc )
 	{
 		switch( tdulc.getOpcode() )
 		{
+			case ADJACENT_SITE_STATUS_BROADCAST:
+				if( tdulc instanceof AdjacentSiteStatusBroadcast )
+				{
+					AdjacentSiteStatusBroadcast assb = 
+								(AdjacentSiteStatusBroadcast)tdulc;
+					
+					updateSystem( assb.getSystemID() );
+				}
+				else
+				{
+					logAlternateVendorMessage( tdulc );
+				}
+				break;
+			case ADJACENT_SITE_STATUS_BROADCAST_EXPLICIT:
+				/* This message doesn't provide anything we need for channel state */
+				break;
 			case CALL_ALERT:
-				decode.p25.message.tdu.lc.CallAlert ca = 
+				if( tdulc instanceof decode.p25.message.tdu.lc.CallAlert )
+				{
+					decode.p25.message.tdu.lc.CallAlert ca = 
 							(decode.p25.message.tdu.lc.CallAlert)tdulc;
 				mCallEventModel.add( 
 						new P25CallEvent.Builder( CallEventType.PAGE )
@@ -200,165 +279,438 @@ public class P25ChannelState extends ChannelState
 							.to( ca.getTargetAddress() )
 							.details( "CALL ALERT" )
 							.build() );
-				break;
-			case CALL_TERMINATION_OR_CANCELLATION:
-				//TODO: terminate all active calls for this channel state
-				break;
-			case EXTENDED_FUNCTION_COMMAND:
-				decode.p25.message.tdu.lc.ExtendedFunctionCommand efc = 
-					(decode.p25.message.tdu.lc.ExtendedFunctionCommand)tdulc;
-				mCallEventModel.add( 
-						new P25CallEvent.Builder( CallEventType.COMMAND )
-							.aliasList( mAliasList )
-							.to( efc.getTargetAddress() )
-							.details( "FUNCTION:" + efc.getExtendedFunction().getLabel() + 
-									  " ARG:" + efc.getArgument() )
-						  .build() );
-				break;
-			case GROUP_AFFILIATION_QUERY:
-				decode.p25.message.tdu.lc.GroupAffiliationQuery gaq = 
-						(decode.p25.message.tdu.lc.GroupAffiliationQuery)tdulc;
-				mCallEventModel.add( 
-					new P25CallEvent.Builder( CallEventType.QUERY )
-						.aliasList( mAliasList )
-						.details( "GROUP AFFILIATION QUERY" )
-						.from( gaq.getSourceAddress() )
-						.to( gaq.getTargetAddress() )
-						.build() );
-				break;
-			case GROUP_VOICE_CHANNEL_UPDATE:
-				//TODO: process call here
-				break;
-			case GROUP_VOICE_CHANNEL_UPDATE_EXPLICIT:
-				//TODO: process call here
-				break;
-			case GROUP_VOICE_CHANNEL_USER:
-				if( !( tdulc instanceof decode.p25.message.tdu.lc.GroupVoiceChannelUser ) )
-				{
-					mLog.error( "TDULC message has opcode of group voice channel user but is not instance " + tdulc.toString() + " " + tdulc.getBinaryMessage().toString() );
 				}
 				else
 				{
-					decode.p25.message.tdu.lc.GroupVoiceChannelUser gvcuser = 
-							(decode.p25.message.tdu.lc.GroupVoiceChannelUser)tdulc;
+					logAlternateVendorMessage( tdulc );
+				}
+				break;
+			case CALL_TERMINATION_OR_CANCELLATION:
+				endAllCalls();
+				break;
+			case CHANNEL_IDENTIFIER_UPDATE:
+				/* This message is handled by the P25MessageProcessor and 
+				 * inserted into any channels needing frequency band info */
+				break;
+			case CHANNEL_IDENTIFIER_UPDATE_EXPLICIT:
+				/* This message is handled by the P25MessageProcessor and 
+				 * inserted into any channels needing frequency band info */
+				break;
+			case EXTENDED_FUNCTION_COMMAND:
+				if( tdulc instanceof decode.p25.message.tdu.lc.ExtendedFunctionCommand )
+				{
+					decode.p25.message.tdu.lc.ExtendedFunctionCommand efc = 
+							(decode.p25.message.tdu.lc.ExtendedFunctionCommand)tdulc;
+						mCallEventModel.add( 
+								new P25CallEvent.Builder( CallEventType.COMMAND )
+									.aliasList( mAliasList )
+									.to( efc.getTargetAddress() )
+									.details( "FUNCTION:" + efc.getExtendedFunction().getLabel() + 
+											  " ARG:" + efc.getArgument() )
+								  .build() );
+				}
+				else
+				{
+					logAlternateVendorMessage( tdulc );
+				}
+				break;
+			case GROUP_AFFILIATION_QUERY:
+				if( tdulc instanceof decode.p25.message.tdu.lc.GroupAffiliationQuery )
+				{
+					decode.p25.message.tdu.lc.GroupAffiliationQuery gaq = 
+							(decode.p25.message.tdu.lc.GroupAffiliationQuery)tdulc;
+					mCallEventModel.add( 
+						new P25CallEvent.Builder( CallEventType.QUERY )
+							.aliasList( mAliasList )
+							.details( "GROUP AFFILIATION QUERY" )
+							.from( gaq.getSourceAddress() )
+							.to( gaq.getTargetAddress() )
+							.build() );
+				}
+				else
+				{
+					logAlternateVendorMessage( tdulc );
+				}
+				break;
+			case GROUP_VOICE_CHANNEL_UPDATE:
+				/* Reflects other call activity on the system: CALL DETECT */
+				if( tdulc instanceof GroupVoiceChannelUpdate )
+				{
+					GroupVoiceChannelUpdate gvcu = (GroupVoiceChannelUpdate)tdulc;
 					
-					if( isActiveCall( CURRENT_CHANNEL, gvcuser.getGroupAddress() ) )
+					if( isActiveCall( gvcu.getChannelA(), 
+									  gvcu.getGroupAddressA() ) )
 					{
-						if( gvcuser.getFromID() != null &&
-							!gvcuser.getFromID().contentEquals( "0000" ) &&
-							!gvcuser.getFromID().contentEquals( "000000" ) )
-						{
-							updateCall( CURRENT_CHANNEL, gvcuser.getSourceAddress(), 
-									gvcuser.getGroupAddress() );
-						}
-						else
-						{
-							updateCall( CURRENT_CHANNEL, null, gvcuser.getGroupAddress() );
-						}
+						updateCall( State.CALL, 
+								    gvcu.getChannelA(), 
+								    gvcu.getGroupAddressA(), 
+								    gvcu.getGroupAddressB() );
 					}
 					else
 					{
-						CallEvent gvcuserEvent = 
+						P25CallEvent gvcuEvent = 
+								new P25CallEvent.Builder( CallEventType.CALL_DETECT )
+									.aliasList( mAliasList )
+									.channel( gvcu.getChannelA() )
+									.details( ( gvcu.isEncrypted() ? "ENCRYPTED" : "" ) )
+									.frequency( gvcu.getDownlinkFrequencyA() )
+								    .from( gvcu.getGroupAddressA() )
+									.to( gvcu.getGroupAddressB() )
+									.build();
+						
+						addCall( gvcuEvent );
+					}
+				}
+				else
+				{
+					logAlternateVendorMessage( tdulc );
+				}
+				break;
+			case GROUP_VOICE_CHANNEL_UPDATE_EXPLICIT:
+				/* Reflects other call activity on the system: CALL DETECT */
+				
+				if( tdulc instanceof GroupVoiceChannelUpdateExplicit )
+				{
+					GroupVoiceChannelUpdateExplicit gvcue = 
+							(GroupVoiceChannelUpdateExplicit)tdulc;
+					if( isActiveCall( gvcue.getTransmitChannel(), 
+							  		  gvcue.getGroupAddress() ) )
+					{
+						updateCall( State.CALL, 
+								    gvcue.getTransmitChannel(), 
+								    null, 
+								    gvcue.getGroupAddress() );
+					}
+					else
+					{
+						P25CallEvent gvcueEvent = 
+							new P25CallEvent.Builder( CallEventType.CALL_DETECT )
+								.aliasList( mAliasList )
+								.channel( gvcue.getTransmitChannel() )
+								.details( ( gvcue.isEncrypted() ? "ENCRYPTED" : "" ) )
+								.frequency( gvcue.getDownlinkFrequency() )
+								.to( gvcue.getGroupAddress() )
+								.build();
+						
+						addCall( gvcueEvent );
+					}
+				}
+				else
+				{
+					logAlternateVendorMessage( tdulc );
+				}
+				break;
+			case GROUP_VOICE_CHANNEL_USER:
+				if( tdulc instanceof decode.p25.message.tdu.lc.GroupVoiceChannelUser )
+				{
+					decode.p25.message.tdu.lc.GroupVoiceChannelUser gvcuser = 
+						(decode.p25.message.tdu.lc.GroupVoiceChannelUser)tdulc;
+					
+					if( isActiveCall( mCurrentChannel, gvcuser.getGroupAddress() ) )
+					{
+						updateCall( State.CALL, 
+									mCurrentChannel, 
+									gvcuser.getSourceAddress(), 
+									gvcuser.getGroupAddress() );
+					}
+					else
+					{
+						P25CallEvent gvcuserEvent = 
 								new P25CallEvent.Builder( CallEventType.CALL )
 									.aliasList( mAliasList )
-									.channel( CURRENT_CHANNEL )
+									.channel( mCurrentChannel )
 									.details( ( gvcuser.isEncrypted() ? "ENCRYPTED" : "" ) + 
 											  ( gvcuser.isEmergency() ? " EMERGENCY" : "") )
+									.frequency( mCurrentChannelFrequency )
 								    .from( gvcuser.getSourceAddress() )
 									.to( gvcuser.getGroupAddress() )
 									.build();
 						
-						mCallEventModel.add( gvcuserEvent );
-						
 						addCall( gvcuserEvent );
-						
-						setState( State.CALL );
 					}
+				}
+				else
+				{
+					logAlternateVendorMessage( tdulc );
 				}
 				break;
 			case MESSAGE_UPDATE:
-				decode.p25.message.tdu.lc.MessageUpdate mu = 
-								(decode.p25.message.tdu.lc.MessageUpdate)tdulc;
-				mCallEventModel.add( 
-						new P25CallEvent.Builder( CallEventType.SDM )
-							.aliasList( mAliasList )
-							.from( mu.getSourceAddress() )
-							.to( mu.getTargetAddress() )
-							.details( "MSG: " + mu.getShortDataMessage() )
-							.build() );
+				if( tdulc instanceof decode.p25.message.tdu.lc.MessageUpdate )
+				{
+					decode.p25.message.tdu.lc.MessageUpdate mu = 
+							(decode.p25.message.tdu.lc.MessageUpdate)tdulc;
+					
+					mCallEventModel.add( 
+							new P25CallEvent.Builder( CallEventType.SDM )
+								.aliasList( mAliasList )
+								.from( mu.getSourceAddress() )
+								.to( mu.getTargetAddress() )
+								.details( "MSG: " + mu.getShortDataMessage() )
+								.build() );
+				}
+				else
+				{
+					logAlternateVendorMessage( tdulc );
+				}
+				break;
+			case NETWORK_STATUS_BROADCAST:
+				if( tdulc instanceof NetworkStatusBroadcast )
+				{
+					updateSystem( ((NetworkStatusBroadcast)tdulc).getSystem() );
+				}
+				else
+				{
+					logAlternateVendorMessage( tdulc );
+				}
+				break;
+			case NETWORK_STATUS_BROADCAST_EXPLICIT:
+				if( tdulc instanceof NetworkStatusBroadcastExplicit )
+				{
+					updateSystem( ((NetworkStatusBroadcastExplicit)tdulc).getSystem() );
+				}
+				else
+				{
+					logAlternateVendorMessage( tdulc );
+				}
 				break;
 			case PROTECTION_PARAMETER_BROADCAST:
-				decode.p25.message.tdu.lc.ProtectionParameterBroadcast ppb = 
-				(decode.p25.message.tdu.lc.ProtectionParameterBroadcast)tdulc;
-				mCallEventModel.add( 
-						new P25CallEvent.Builder( CallEventType.COMMAND )
-							.aliasList( mAliasList )
-							.to( ppb.getTargetAddress() )
-							.details( "ENCRYPTION: " + 
-									ppb.getEncryption().name() + " KEY:" + 
-									ppb.getEncryptionKey() )
-							.build() );
+				if( tdulc instanceof decode.p25.message.tdu.lc.ProtectionParameterBroadcast )
+				{
+					decode.p25.message.tdu.lc.ProtectionParameterBroadcast ppb = 
+							(decode.p25.message.tdu.lc.ProtectionParameterBroadcast)tdulc;
+
+					mCallEventModel.add( 
+							new P25CallEvent.Builder( CallEventType.COMMAND )
+								.aliasList( mAliasList )
+								.to( ppb.getTargetAddress() )
+								.details( "ENCRYPTION: " + 
+										ppb.getEncryption().name() + " KEY:" + 
+										ppb.getEncryptionKey() )
+								.build() );
+				}
+				else
+				{
+					logAlternateVendorMessage( tdulc );
+				}
+				break;
+			case RFSS_STATUS_BROADCAST:
+				if( tdulc instanceof decode.p25.message.tdu.lc.RFSSStatusBroadcast )
+				{
+					decode.p25.message.tdu.lc.RFSSStatusBroadcast rfsssb =
+						(decode.p25.message.tdu.lc.RFSSStatusBroadcast)tdulc;
+					
+					updateSystem( rfsssb.getSystem() );
+
+					String site = rfsssb.getRFSubsystemID() + "-" + 
+							rfsssb.getSiteID();
+
+					updateSite( site );
+					
+//					if( mCurrentChannel == null || 
+//						!mCurrentChannel.contentEquals( rfsssb.getChannel() ) )
+//					{
+//						mCurrentChannel = rfsssb.getChannel();
+//						mCurrentChannelFrequency = rfsssb.getDownlinkFrequency();
+//					}
+				}
+				else
+				{
+					logAlternateVendorMessage( tdulc );
+				}
+				break;
+			case RFSS_STATUS_BROADCAST_EXPLICIT:
+				if( tdulc instanceof decode.p25.message.tdu.lc.RFSSStatusBroadcastExplicit )
+				{
+					decode.p25.message.tdu.lc.RFSSStatusBroadcastExplicit rfsssbe =
+						(decode.p25.message.tdu.lc.RFSSStatusBroadcastExplicit)tdulc;
+					
+					String site = rfsssbe.getRFSubsystemID() + "-" + 
+							rfsssbe.getSiteID();
+
+					updateSite( site );
+					
+//					if( mCurrentChannel == null || 
+//						!mCurrentChannel.contentEquals( rfsssbe.getTransmitChannel() ) )
+//					{
+//						mCurrentChannel = rfsssbe.getTransmitChannel();
+//						mCurrentChannelFrequency = rfsssbe.getDownlinkFrequency();
+//					}
+				}
+				else
+				{
+					logAlternateVendorMessage( tdulc );
+				}
+				break;
+			case SECONDARY_CONTROL_CHANNEL_BROADCAST:
+				if( tdulc instanceof SecondaryControlChannelBroadcast )
+				{
+					SecondaryControlChannelBroadcast sccb = 
+								(SecondaryControlChannelBroadcast)tdulc;
+					
+					String site = sccb.getRFSubsystemID() + "-" + 
+							sccb.getSiteID();
+
+					updateSite( site );
+				}
+				else
+				{
+					logAlternateVendorMessage( tdulc );
+				}
+				break;
+			case SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT:
+				if( tdulc instanceof SecondaryControlChannelBroadcastExplicit )
+				{
+					SecondaryControlChannelBroadcastExplicit sccb = 
+							(SecondaryControlChannelBroadcastExplicit)tdulc;
+					
+					String site = sccb.getRFSubsystemID() + "-" + 
+							sccb.getSiteID();
+
+					updateSite( site );
+				}
+				else
+				{
+					logAlternateVendorMessage( tdulc );
+				}
 				break;
 			case STATUS_QUERY:
-				decode.p25.message.tdu.lc.StatusQuery sq = 
-						(decode.p25.message.tdu.lc.StatusQuery)tdulc;
-				mCallEventModel.add( 
-					new P25CallEvent.Builder( CallEventType.QUERY )
-						.aliasList( mAliasList )
-						.details( "STATUS QUERY" )
-						.from( sq.getSourceAddress() )
-						.to( sq.getTargetAddress() )
-						.build() );
+				if( tdulc instanceof decode.p25.message.tdu.lc.StatusQuery )
+				{
+					decode.p25.message.tdu.lc.StatusQuery sq = 
+							(decode.p25.message.tdu.lc.StatusQuery)tdulc;
+
+					mCallEventModel.add( 
+						new P25CallEvent.Builder( CallEventType.QUERY )
+							.aliasList( mAliasList )
+							.details( "STATUS QUERY" )
+							.from( sq.getSourceAddress() )
+							.to( sq.getTargetAddress() )
+							.build() );
+				}
+				else
+				{
+					logAlternateVendorMessage( tdulc );
+				}
 				break;
 			case STATUS_UPDATE:
-				decode.p25.message.tdu.lc.StatusUpdate su = 
-						(decode.p25.message.tdu.lc.StatusUpdate)tdulc;
-				mCallEventModel.add( 
-					new P25CallEvent.Builder( CallEventType.STATUS )
-						.aliasList( mAliasList )
-						.details( "STATUS UNIT:" + su.getUnitStatus() + 
-								  " USER:" + su.getUserStatus() )
-						.from( su.getSourceAddress() )
-						.to( su.getTargetAddress() )
-						.build() );
+				if( tdulc instanceof decode.p25.message.tdu.lc.StatusUpdate )
+				{
+					decode.p25.message.tdu.lc.StatusUpdate su = 
+							(decode.p25.message.tdu.lc.StatusUpdate)tdulc;
+
+					mCallEventModel.add( 
+						new P25CallEvent.Builder( CallEventType.STATUS )
+							.aliasList( mAliasList )
+							.details( "STATUS UNIT:" + su.getUnitStatus() + 
+									  " USER:" + su.getUserStatus() )
+							.from( su.getSourceAddress() )
+							.to( su.getTargetAddress() )
+							.build() );
+				}
+				else
+				{
+					logAlternateVendorMessage( tdulc );
+				}
+				break;
+			case SYSTEM_SERVICE_BROADCAST:
+				/* This message doesn't provide anything we need for channel state */
 				break;
 			case TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
-				decode.p25.message.tdu.lc.TelephoneInterconnectAnswerRequest tiar = 
-				(decode.p25.message.tdu.lc.TelephoneInterconnectAnswerRequest)tdulc;
-				mCallEventModel.add( 
-					new P25CallEvent.Builder( CallEventType.PAGE )
-						.aliasList( mAliasList )
-						.from( tiar.getTelephoneNumber() )
-						.to( tiar.getTargetAddress() )
-						.details( "TELEPHONE CALL ALERT" )
-						.build() );
+				if( tdulc instanceof decode.p25.message.tdu.lc.TelephoneInterconnectAnswerRequest )
+				{
+					decode.p25.message.tdu.lc.TelephoneInterconnectAnswerRequest tiar = 
+							(decode.p25.message.tdu.lc.TelephoneInterconnectAnswerRequest)tdulc;
+
+					mCallEventModel.add( 
+						new P25CallEvent.Builder( CallEventType.PAGE )
+							.aliasList( mAliasList )
+							.from( tiar.getTelephoneNumber() )
+							.to( tiar.getTargetAddress() )
+							.details( "TELEPHONE CALL ALERT" )
+							.build() );
+				}
+				else
+				{
+					logAlternateVendorMessage( tdulc );
+				}
 				break;
 			case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_USER:
-				//TODO: process call
+				if( tdulc instanceof decode.p25.message.tdu.lc.TelephoneInterconnectVoiceChannelUser )
+				{
+					decode.p25.message.tdu.lc.TelephoneInterconnectVoiceChannelUser tivcu = 
+						(decode.p25.message.tdu.lc.TelephoneInterconnectVoiceChannelUser)tdulc;
+					
+					if( isActiveCall( mCurrentChannel, tivcu.getAddress() ) )
+					{
+						updateCall( State.CALL, 
+									mCurrentChannel, 
+									null, 
+									tivcu.getAddress() );
+					}
+					else
+					{
+						P25CallEvent tivcuEvent = 
+								new P25CallEvent.Builder( CallEventType.CALL )
+									.aliasList( mAliasList )
+									.channel( mCurrentChannel )
+									.details( "TELEPHONE INTERCONNECT " + 
+											  ( tivcu.isEncrypted() ? "ENCRYPTED" : "" ) + 
+											  ( tivcu.isEmergency() ? " EMERGENCY" : "") )
+									.frequency( mCurrentChannelFrequency )
+								    .from( null )
+									.to( tivcu.getAddress() )
+									.build();
+						
+						addCall( tivcuEvent );
+					}
+				}
+				else
+				{
+					logAlternateVendorMessage( tdulc );
+				}
 				break;
 			case UNIT_AUTHENTICATION_COMMAND:
-				decode.p25.message.tdu.lc.UnitAuthenticationCommand uac = 
-					(decode.p25.message.tdu.lc.UnitAuthenticationCommand)tdulc;
-				mCallEventModel.add( 
-					new P25CallEvent.Builder( CallEventType.COMMAND )
-						.aliasList( mAliasList )
-						.to( uac.getCompleteTargetAddress() )
-						.details( "AUTHENTICATE" )
-						.build() );
+				if( tdulc instanceof decode.p25.message.tdu.lc.UnitAuthenticationCommand )
+				{
+					decode.p25.message.tdu.lc.UnitAuthenticationCommand uac = 
+							(decode.p25.message.tdu.lc.UnitAuthenticationCommand)tdulc;
+					
+					mCallEventModel.add( 
+						new P25CallEvent.Builder( CallEventType.COMMAND )
+							.aliasList( mAliasList )
+							.to( uac.getCompleteTargetAddress() )
+							.details( "AUTHENTICATE" )
+							.build() );
+				}
+				else
+				{
+					logAlternateVendorMessage( tdulc );
+				}
 				break;
 			case UNIT_REGISTRATION_COMMAND:
-				decode.p25.message.tdu.lc.UnitRegistrationCommand urc = 
-				(decode.p25.message.tdu.lc.UnitRegistrationCommand)tdulc;
+				if( tdulc instanceof decode.p25.message.tdu.lc.UnitRegistrationCommand )
+				{
+					decode.p25.message.tdu.lc.UnitRegistrationCommand urc = 
+							(decode.p25.message.tdu.lc.UnitRegistrationCommand)tdulc;
+
 					mCallEventModel.add( 
 						new P25CallEvent.Builder( CallEventType.COMMAND )
 							.aliasList( mAliasList )
 							.to( urc.getCompleteTargetAddress() )
 							.details( "REGISTER" )
 							.build() );
+				}
+				else
+				{
+					logAlternateVendorMessage( tdulc );
+				}
 				break;
 			case UNIT_TO_UNIT_ANSWER_REQUEST:
-				decode.p25.message.tdu.lc.UnitToUnitAnswerRequest uuar = 
-				(decode.p25.message.tdu.lc.UnitToUnitAnswerRequest)tdulc;
+				if( tdulc instanceof decode.p25.message.tdu.lc.UnitToUnitAnswerRequest )
+				{
+					decode.p25.message.tdu.lc.UnitToUnitAnswerRequest uuar = 
+							(decode.p25.message.tdu.lc.UnitToUnitAnswerRequest)tdulc;
+
 					mCallEventModel.add( 
 						new P25CallEvent.Builder( CallEventType.PAGE )
 							.aliasList( mAliasList )
@@ -366,23 +718,84 @@ public class P25ChannelState extends ChannelState
 							.to( uuar.getTargetAddress() )
 							.details( "UNIT TO UNIT CALL ALERT" )
 							.build() );
+				}
+				else
+				{
+					logAlternateVendorMessage( tdulc );
+				}
 				break;
 			case UNIT_TO_UNIT_VOICE_CHANNEL_USER:
-				//TODO: process call here
+				if( tdulc instanceof decode.p25.message.tdu.lc.UnitToUnitVoiceChannelUser )
+				{
+					decode.p25.message.tdu.lc.UnitToUnitVoiceChannelUser uuvcu = 
+						(decode.p25.message.tdu.lc.UnitToUnitVoiceChannelUser)tdulc;
+					
+					if( isActiveCall( mCurrentChannel, uuvcu.getTargetAddress() ) )
+					{
+						updateCall( State.CALL, 
+									mCurrentChannel, 
+									uuvcu.getSourceAddress(), 
+									uuvcu.getTargetAddress() );
+					}
+					else
+					{
+						P25CallEvent tivcuEvent = 
+								new P25CallEvent.Builder( CallEventType.CALL )
+									.aliasList( mAliasList )
+									.channel( mCurrentChannel )
+									.details( ( uuvcu.isEncrypted() ? "ENCRYPTED" : "" ) + 
+											  ( uuvcu.isEmergency() ? " EMERGENCY" : "" ) )
+									.frequency( mCurrentChannelFrequency )
+								    .from( uuvcu.getSourceAddress() )
+									.to( uuvcu.getTargetAddress() )
+									.build();
+						
+						addCall( tivcuEvent );
+					}
+				}
+				else
+				{
+					logAlternateVendorMessage( tdulc );
+				}
 				break;
-			case ADJACENT_SITE_STATUS_BROADCAST:
-			case ADJACENT_SITE_STATUS_BROADCAST_EXPLICIT:
-			case CHANNEL_IDENTIFIER_UPDATE:
-			case CHANNEL_IDENTIFIER_UPDATE_EXPLICIT:
-			case NETWORK_STATUS_BROADCAST:
-			case NETWORK_STATUS_BROADCAST_EXPLICIT:
-			case RFSS_STATUS_BROADCAST:
-			case RFSS_STATUS_BROADCAST_EXPLICIT:
-			case SECONDARY_CONTROL_CHANNEL_BROADCAST:
-			case SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT:
-			case SYSTEM_SERVICE_BROADCAST:
 			default:
 				break;
+		}
+	}
+	
+	/**
+	 * Log optional vendor format messages that we don't yet support so that we
+	 * can understand those messages and eventually add support.
+	 */
+	private void logAlternateVendorMessage( P25Message p25 )
+	{
+		if( p25 instanceof TDULinkControlMessage )
+		{
+			TDULinkControlMessage tdulc = (TDULinkControlMessage)p25;
+			
+			mLog.debug( "TDULC - VENDOR [" + tdulc.getVendor() +
+					"] SPECIFIC FORMAT FOR " + tdulc.getVendorOpcode().getLabel() + 
+					" " + tdulc.getBinaryMessage() );
+		}
+		else if( p25 instanceof LDU1Message )
+		{
+			LDU1Message ldu1 = (LDU1Message)p25;
+			
+			mLog.debug( "LDU1 - VENDOR [" + ldu1.getVendor() +
+					"] SPECIFIC FORMAT FOR " + ldu1.getVendorOpcode().getLabel() + 
+					" " + ldu1.getBinaryMessage() );
+		}
+		else if( p25 instanceof PDUMessage )
+		{
+			PDUMessage pdu = (PDUMessage)p25;
+			
+			mLog.debug( "PDU - VENDOR [" + pdu.getVendor() +
+					"] SPECIFIC FORMAT FOR " + pdu.getVendorOpcode().getLabel() + 
+					" " + pdu.getBinaryMessage() );
+		}
+		else
+		{
+			mLog.debug( "P25 - ALTERNATE VENDOR MESSAGE [" + p25.getClass() + "]" );
 		}
 	}
 	
@@ -392,134 +805,509 @@ public class P25ChannelState extends ChannelState
 		{
 			switch( ((LDU1Message)ldu).getOpcode() )
 			{
+				case ADJACENT_SITE_STATUS_BROADCAST:
+					if( ldu instanceof decode.p25.message.ldu.lc.AdjacentSiteStatusBroadcast )
+					{
+						decode.p25.message.ldu.lc.AdjacentSiteStatusBroadcast assb =
+							(decode.p25.message.ldu.lc.AdjacentSiteStatusBroadcast)ldu;
+						
+						updateSystem( assb.getSystemID() );
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
+
+					updateCall( State.CALL, mCurrentChannel, null, null );
+					break;
+				case ADJACENT_SITE_STATUS_BROADCAST_EXPLICIT:
+					/* This message doesn't provide anything we need for channel state */
+					updateCall( State.CALL, mCurrentChannel, null, null );
+					break;
 				case CALL_ALERT:
-					decode.p25.message.ldu.lc.CallAlert ca = 
+					if( ldu instanceof decode.p25.message.ldu.lc.CallAlert )
+					{
+						decode.p25.message.ldu.lc.CallAlert ca = 
 								(decode.p25.message.ldu.lc.CallAlert)ldu;
-					mCallEventModel.add( 
-							new P25CallEvent.Builder( CallEventType.PAGE )
-								.aliasList( mAliasList )
-								.from( ca.getSourceAddress() )
-								.to( ca.getTargetAddress() )
-								.details( "CALL ALERT" )
-								.build() );
+						mCallEventModel.add( 
+								new P25CallEvent.Builder( CallEventType.PAGE )
+									.aliasList( mAliasList )
+									.from( ca.getSourceAddress() )
+									.to( ca.getTargetAddress() )
+									.details( "CALL ALERT" )
+									.build() );
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
+					updateCall( State.CALL, mCurrentChannel, null, null );
 					break;
 				case CALL_TERMINATION_OR_CANCELLATION:
-					//TODO: terminate all active calls for this channel state
+					if( ldu instanceof CallTermination )
+					{
+						endAllCalls();
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
+					break;
+				case CHANNEL_IDENTIFIER_UPDATE:
+					/* This message is handled by the P25MessageProcessor and 
+					 * inserted into any channels needing frequency band info */
+					updateCall( State.CALL, mCurrentChannel, null, null );
+					break;
+				case CHANNEL_IDENTIFIER_UPDATE_EXPLICIT:
+					/* This message is handled by the P25MessageProcessor and 
+					 * inserted into any channels needing frequency band info */
+					updateCall( State.CALL, mCurrentChannel, null, null );
 					break;
 				case EXTENDED_FUNCTION_COMMAND:
-					decode.p25.message.ldu.lc.ExtendedFunctionCommand efc = 
-						(decode.p25.message.ldu.lc.ExtendedFunctionCommand)ldu;
-					mCallEventModel.add( 
-							new P25CallEvent.Builder( CallEventType.COMMAND )
-								.aliasList( mAliasList )
-								.to( efc.getTargetAddress() )
-								.details( "FUNCTION:" + efc.getExtendedFunction().getLabel() + 
-										  " ARG:" + efc.getArgument() )
-							  .build() );
+					if( ldu instanceof decode.p25.message.ldu.lc.ExtendedFunctionCommand )
+					{
+						decode.p25.message.ldu.lc.ExtendedFunctionCommand efc = 
+								(decode.p25.message.ldu.lc.ExtendedFunctionCommand)ldu;
+
+						mCallEventModel.add( 
+								new P25CallEvent.Builder( CallEventType.COMMAND )
+									.aliasList( mAliasList )
+									.to( efc.getTargetAddress() )
+									.details( "FUNCTION:" + efc.getExtendedFunction().getLabel() + 
+											  " ARG:" + efc.getArgument() )
+								  .build() );
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
+					updateCall( State.CALL, mCurrentChannel, null, null );
 					break;
 				case GROUP_AFFILIATION_QUERY:
-					decode.p25.message.ldu.lc.GroupAffiliationQuery gaq = 
-							(decode.p25.message.ldu.lc.GroupAffiliationQuery)ldu;
-					mCallEventModel.add( 
-						new P25CallEvent.Builder( CallEventType.QUERY )
-							.aliasList( mAliasList )
-							.details( "GROUP AFFILIATION QUERY" )
-							.from( gaq.getSourceAddress() )
-							.to( gaq.getTargetAddress() )
-							.build() );
+					if( ldu instanceof decode.p25.message.ldu.lc.GroupAffiliationQuery )
+					{
+						decode.p25.message.ldu.lc.GroupAffiliationQuery gaq = 
+								(decode.p25.message.ldu.lc.GroupAffiliationQuery)ldu;
+						mCallEventModel.add( 
+							new P25CallEvent.Builder( CallEventType.QUERY )
+								.aliasList( mAliasList )
+								.details( "GROUP AFFILIATION QUERY" )
+								.from( gaq.getSourceAddress() )
+								.to( gaq.getTargetAddress() )
+								.build() );
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
+					updateCall( State.CALL, mCurrentChannel, null, null );
 					break;
 				case GROUP_VOICE_CHANNEL_UPDATE:
-					//TODO: process call here
+					if( ldu instanceof decode.p25.message.ldu.lc.GroupVoiceChannelUpdate )
+					{
+						decode.p25.message.ldu.lc.GroupVoiceChannelUpdate gvcu = 
+							(decode.p25.message.ldu.lc.GroupVoiceChannelUpdate)ldu;
+						
+						if( isActiveCall( gvcu.getChannelA(), 
+								  gvcu.getGroupAddressA() ) )
+						{
+							updateCall( State.CALL, 
+									    gvcu.getChannelA(), 
+									    gvcu.getGroupAddressA(), 
+									    gvcu.getGroupAddressB() );
+						}
+						else
+						{
+							P25CallEvent gvcuEvent = 
+									new P25CallEvent.Builder( CallEventType.CALL_DETECT )
+										.aliasList( mAliasList )
+										.channel( gvcu.getChannelA() )
+										.details( ( gvcu.isEncrypted() ? "ENCRYPTED" : "" ) )
+										.frequency( gvcu.getDownlinkFrequencyA() )
+									    .from( gvcu.getGroupAddressA() )
+										.to( gvcu.getGroupAddressB() )
+										.build();
+							
+							addCall( gvcuEvent );
+						}
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
 					break;
 				case GROUP_VOICE_CHANNEL_UPDATE_EXPLICIT:
-					//TODO: process call here
+					if( ldu instanceof decode.p25.message.ldu.lc.GroupVoiceChannelUpdateExplicit )
+					{
+						decode.p25.message.ldu.lc.GroupVoiceChannelUpdateExplicit gvcue = 
+							(decode.p25.message.ldu.lc.GroupVoiceChannelUpdateExplicit)ldu;
+						
+						if( isActiveCall( gvcue.getTransmitChannel(), 
+						  		  gvcue.getGroupAddress() ) )
+						{
+							updateCall( State.CALL, 
+									    gvcue.getTransmitChannel(), 
+									    null, 
+									    gvcue.getGroupAddress() );
+						}
+						else
+						{
+							P25CallEvent gvcueEvent = 
+								new P25CallEvent.Builder( CallEventType.CALL_DETECT )
+									.aliasList( mAliasList )
+									.channel( gvcue.getTransmitChannel() )
+									.details( ( gvcue.isEncrypted() ? "ENCRYPTED" : "" ) )
+									.frequency( gvcue.getDownlinkFrequency() )
+									.to( gvcue.getGroupAddress() )
+									.build();
+							
+							addCall( gvcueEvent );
+						}
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
 					break;
 				case GROUP_VOICE_CHANNEL_USER:
-					//TODO: process call here
+					if( ldu instanceof decode.p25.message.ldu.lc.GroupVoiceChannelUser )
+					{
+						decode.p25.message.ldu.lc.GroupVoiceChannelUser gvcuser = 
+							(decode.p25.message.ldu.lc.GroupVoiceChannelUser)ldu;
+						
+						if( isActiveCall( mCurrentChannel, gvcuser.getGroupAddress() ) )
+						{
+							updateCall( State.CALL, 
+										mCurrentChannel, 
+										gvcuser.getSourceAddress(), 
+										gvcuser.getGroupAddress() );
+						}
+						else
+						{
+							P25CallEvent gvcuserEvent = 
+									new P25CallEvent.Builder( CallEventType.CALL )
+										.aliasList( mAliasList )
+										.channel( mCurrentChannel )
+										.details( ( gvcuser.isEncrypted() ? "ENCRYPTED" : "" ) + 
+												  ( gvcuser.isEmergency() ? " EMERGENCY" : "") )
+										.frequency( mCurrentChannelFrequency )
+									    .from( gvcuser.getSourceAddress() )
+										.to( gvcuser.getGroupAddress() )
+										.build();
+							
+							addCall( gvcuserEvent );
+						}
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
 					break;
 				case MESSAGE_UPDATE:
-					decode.p25.message.ldu.lc.MessageUpdate mu = 
-									(decode.p25.message.ldu.lc.MessageUpdate)ldu;
-					mCallEventModel.add( 
-							new P25CallEvent.Builder( CallEventType.SDM )
-								.aliasList( mAliasList )
-								.from( mu.getSourceAddress() )
-								.to( mu.getTargetAddress() )
-								.details( "MSG: " + mu.getShortDataMessage() )
-								.build() );
+					if( ldu instanceof decode.p25.message.ldu.lc.MessageUpdate )
+					{
+						decode.p25.message.ldu.lc.MessageUpdate mu = 
+								(decode.p25.message.ldu.lc.MessageUpdate)ldu;
+
+						mCallEventModel.add( 
+								new P25CallEvent.Builder( CallEventType.SDM )
+									.aliasList( mAliasList )
+									.from( mu.getSourceAddress() )
+									.to( mu.getTargetAddress() )
+									.details( "MSG: " + mu.getShortDataMessage() )
+									.build() );
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
+					
+					updateCall( State.CALL, mCurrentChannel, null, null );
+					break;
+				case NETWORK_STATUS_BROADCAST:
+					if( ldu instanceof decode.p25.message.ldu.lc.NetworkStatusBroadcast )
+					{
+						updateSystem( ((decode.p25.message.ldu.lc.NetworkStatusBroadcast)ldu).getSystem() );
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
+					
+					updateCall( State.CALL, mCurrentChannel, null, null );
+					break;
+				case NETWORK_STATUS_BROADCAST_EXPLICIT:
+					if( ldu instanceof decode.p25.message.ldu.lc.NetworkStatusBroadcastExplicit )
+					{
+						updateSystem( ((decode.p25.message.ldu.lc.NetworkStatusBroadcastExplicit)ldu).getSystem() );
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
+					
+					updateCall( State.CALL, mCurrentChannel, null, null );
 					break;
 				case PROTECTION_PARAMETER_BROADCAST:
-					decode.p25.message.ldu.lc.ProtectionParameterBroadcast ppb = 
-					(decode.p25.message.ldu.lc.ProtectionParameterBroadcast)ldu;
-					mCallEventModel.add( 
-							new P25CallEvent.Builder( CallEventType.COMMAND )
-								.aliasList( mAliasList )
-								.to( ppb.getTargetAddress() )
-								.details( "ENCRYPTION: " + 
-										ppb.getEncryption().name() + " KEY:" + 
-										ppb.getEncryptionKey() )
-								.build() );
+					if( ldu instanceof decode.p25.message.ldu.lc.ProtectionParameterBroadcast )
+					{
+						decode.p25.message.ldu.lc.ProtectionParameterBroadcast ppb = 
+								(decode.p25.message.ldu.lc.ProtectionParameterBroadcast)ldu;
+
+						mCallEventModel.add( 
+								new P25CallEvent.Builder( CallEventType.COMMAND )
+									.aliasList( mAliasList )
+									.to( ppb.getTargetAddress() )
+									.details( "ENCRYPTION: " + 
+											ppb.getEncryption().name() + " KEY:" + 
+											ppb.getEncryptionKey() )
+									.build() );
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
+					
+					updateCall( State.CALL, mCurrentChannel, null, null );
+					break;
+				case RFSS_STATUS_BROADCAST:
+					if( ldu instanceof decode.p25.message.ldu.lc.RFSSStatusBroadcast )
+					{
+						decode.p25.message.ldu.lc.RFSSStatusBroadcast rfsssb =
+							(decode.p25.message.ldu.lc.RFSSStatusBroadcast)ldu;
+						
+						updateSystem( rfsssb.getSystem() );
+
+						String site = rfsssb.getRFSubsystemID() + "-" + 
+								rfsssb.getSiteID();
+
+						updateSite( site );
+						
+						if( mCurrentChannel == null || 
+							!mCurrentChannel.contentEquals( rfsssb.getChannel() ) )
+						{
+							mCurrentChannel = rfsssb.getChannel();
+							mCurrentChannelFrequency = rfsssb.getDownlinkFrequency();
+						}
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
+					
+					updateCall( State.CALL, mCurrentChannel, null, null );
+					break;
+				case RFSS_STATUS_BROADCAST_EXPLICIT:
+					if( ldu instanceof decode.p25.message.ldu.lc.RFSSStatusBroadcastExplicit )
+					{
+						decode.p25.message.ldu.lc.RFSSStatusBroadcastExplicit rfsssbe =
+							(decode.p25.message.ldu.lc.RFSSStatusBroadcastExplicit)ldu;
+						
+						String site = rfsssbe.getRFSubsystemID() + "-" + 
+								rfsssbe.getSiteID();
+
+						updateSite( site );
+						
+						if( mCurrentChannel == null || 
+							!mCurrentChannel.contentEquals( rfsssbe.getTransmitChannel() ) )
+						{
+							mCurrentChannel = rfsssbe.getTransmitChannel();
+							mCurrentChannelFrequency = rfsssbe.getDownlinkFrequency();
+						}
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
+					
+					updateCall( State.CALL, mCurrentChannel, null, null );
+					break;
+				case SECONDARY_CONTROL_CHANNEL_BROADCAST:
+					if( ldu instanceof decode.p25.message.ldu.lc.SecondaryControlChannelBroadcast )
+					{
+						decode.p25.message.ldu.lc.SecondaryControlChannelBroadcast sccb = 
+						(decode.p25.message.ldu.lc.SecondaryControlChannelBroadcast)ldu;
+						
+						String site = sccb.getRFSubsystemID() + "-" + 
+								sccb.getSiteID();
+
+						updateSite( site );
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
+					
+					updateCall( State.CALL, mCurrentChannel, null, null );
+					break;
+				case SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT:
+					if( ldu instanceof decode.p25.message.ldu.lc.SecondaryControlChannelBroadcastExplicit )
+					{
+						decode.p25.message.ldu.lc.SecondaryControlChannelBroadcastExplicit sccb = 
+						(decode.p25.message.ldu.lc.SecondaryControlChannelBroadcastExplicit)ldu;
+						
+						String site = sccb.getRFSubsystemID() + "-" + 
+								sccb.getSiteID();
+
+						updateSite( site );
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
+					
+					updateCall( State.CALL, mCurrentChannel, null, null );
 					break;
 				case STATUS_QUERY:
-					decode.p25.message.ldu.lc.StatusQuery sq = 
-							(decode.p25.message.ldu.lc.StatusQuery)ldu;
-					mCallEventModel.add( 
-						new P25CallEvent.Builder( CallEventType.QUERY )
-							.aliasList( mAliasList )
-							.details( "STATUS QUERY" )
-							.from( sq.getSourceAddress() )
-							.to( sq.getTargetAddress() )
-							.build() );
+					if( ldu instanceof decode.p25.message.ldu.lc.StatusQuery )
+					{
+						decode.p25.message.ldu.lc.StatusQuery sq = 
+								(decode.p25.message.ldu.lc.StatusQuery)ldu;
+
+						mCallEventModel.add( 
+							new P25CallEvent.Builder( CallEventType.QUERY )
+								.aliasList( mAliasList )
+								.details( "STATUS QUERY" )
+								.from( sq.getSourceAddress() )
+								.to( sq.getTargetAddress() )
+								.build() );
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
+					
+					updateCall( State.CALL, mCurrentChannel, null, null );
 					break;
 				case STATUS_UPDATE:
-					decode.p25.message.ldu.lc.StatusUpdate su = 
-							(decode.p25.message.ldu.lc.StatusUpdate)ldu;
-					mCallEventModel.add( 
-						new P25CallEvent.Builder( CallEventType.STATUS )
-							.aliasList( mAliasList )
-							.details( "STATUS UNIT:" + su.getUnitStatus() + 
-									  " USER:" + su.getUserStatus() )
-							.from( su.getSourceAddress() )
-							.to( su.getTargetAddress() )
-							.build() );
+					if( ldu instanceof decode.p25.message.ldu.lc.StatusUpdate )
+					{
+						decode.p25.message.ldu.lc.StatusUpdate su = 
+								(decode.p25.message.ldu.lc.StatusUpdate)ldu;
+
+						mCallEventModel.add( 
+							new P25CallEvent.Builder( CallEventType.STATUS )
+								.aliasList( mAliasList )
+								.details( "STATUS UNIT:" + su.getUnitStatus() + 
+										  " USER:" + su.getUserStatus() )
+								.from( su.getSourceAddress() )
+								.to( su.getTargetAddress() )
+								.build() );
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
+					
+					updateCall( State.CALL, mCurrentChannel, null, null );
+
+					break;
+				case SYSTEM_SERVICE_BROADCAST:
+					/* This message doesn't provide anything we need for channel state */
+					updateCall( State.CALL, mCurrentChannel, null, null );
 					break;
 				case TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
-					decode.p25.message.ldu.lc.TelephoneInterconnectAnswerRequest tiar = 
-					(decode.p25.message.ldu.lc.TelephoneInterconnectAnswerRequest)ldu;
-					mCallEventModel.add( 
-						new P25CallEvent.Builder( CallEventType.PAGE )
-							.aliasList( mAliasList )
-							.from( tiar.getTelephoneNumber() )
-							.to( tiar.getTargetAddress() )
-							.details( "TELEPHONE CALL ALERT" )
-							.build() );
+					if( ldu instanceof decode.p25.message.ldu.lc.TelephoneInterconnectAnswerRequest )
+					{
+						decode.p25.message.ldu.lc.TelephoneInterconnectAnswerRequest tiar = 
+								(decode.p25.message.ldu.lc.TelephoneInterconnectAnswerRequest)ldu;
+
+						mCallEventModel.add( 
+							new P25CallEvent.Builder( CallEventType.PAGE )
+								.aliasList( mAliasList )
+								.from( tiar.getTelephoneNumber() )
+								.to( tiar.getTargetAddress() )
+								.details( "TELEPHONE CALL ALERT" )
+								.build() );
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
+					
+					updateCall( State.CALL, mCurrentChannel, null, null );
 					break;
 				case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_USER:
-					//TODO: process call
+					if( ldu instanceof TelephoneInterconnectVoiceChannelUser )
+					{
+						TelephoneInterconnectVoiceChannelUser tivcu =
+								(TelephoneInterconnectVoiceChannelUser)ldu;
+						
+						if( isActiveCall( mCurrentChannel, tivcu.getAddress() ) )
+						{
+							updateCall( State.CALL, 
+										mCurrentChannel, 
+										null, 
+										tivcu.getAddress() );
+						}
+						else
+						{
+							P25CallEvent tivcuEvent = 
+								new P25CallEvent.Builder( CallEventType.CALL )
+									.aliasList( mAliasList )
+									.channel( mCurrentChannel )
+									.details( "TELEPHONE INTERCONNECT " + 
+											  ( tivcu.isEncrypted() ? "ENCRYPTED" : "" ) + 
+											  ( tivcu.isEmergency() ? " EMERGENCY" : "") )
+									.frequency( mCurrentChannelFrequency )
+								    .from( null )
+									.to( tivcu.getAddress() )
+									.build();
+							
+							addCall( tivcuEvent );
+						}
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
 					break;
 				case UNIT_AUTHENTICATION_COMMAND:
-					decode.p25.message.ldu.lc.UnitAuthenticationCommand uac = 
-						(decode.p25.message.ldu.lc.UnitAuthenticationCommand)ldu;
-					mCallEventModel.add( 
-						new P25CallEvent.Builder( CallEventType.COMMAND )
-							.aliasList( mAliasList )
-							.to( uac.getCompleteTargetAddress() )
-							.details( "AUTHENTICATE" )
-							.build() );
+					if( ldu instanceof decode.p25.message.ldu.lc.UnitAuthenticationCommand )
+					{
+						decode.p25.message.ldu.lc.UnitAuthenticationCommand uac = 
+								(decode.p25.message.ldu.lc.UnitAuthenticationCommand)ldu;
+
+						mCallEventModel.add( 
+							new P25CallEvent.Builder( CallEventType.COMMAND )
+								.aliasList( mAliasList )
+								.to( uac.getCompleteTargetAddress() )
+								.details( "AUTHENTICATE" )
+								.build() );
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
+					
+					updateCall( State.CALL, mCurrentChannel, null, null );
 					break;
 				case UNIT_REGISTRATION_COMMAND:
-					decode.p25.message.ldu.lc.UnitRegistrationCommand urc = 
-					(decode.p25.message.ldu.lc.UnitRegistrationCommand)ldu;
+					if( ldu instanceof decode.p25.message.ldu.lc.UnitRegistrationCommand )
+					{
+						decode.p25.message.ldu.lc.UnitRegistrationCommand urc = 
+								(decode.p25.message.ldu.lc.UnitRegistrationCommand)ldu;
+
 						mCallEventModel.add( 
 							new P25CallEvent.Builder( CallEventType.COMMAND )
 								.aliasList( mAliasList )
 								.to( urc.getCompleteTargetAddress() )
 								.details( "REGISTER" )
 								.build() );
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
+					
+					updateCall( State.CALL, mCurrentChannel, null, null );
 					break;
 				case UNIT_TO_UNIT_ANSWER_REQUEST:
-					decode.p25.message.ldu.lc.UnitToUnitAnswerRequest uuar = 
-					(decode.p25.message.ldu.lc.UnitToUnitAnswerRequest)ldu;
+					if( ldu instanceof decode.p25.message.ldu.lc.UnitToUnitAnswerRequest )
+					{
+						decode.p25.message.ldu.lc.UnitToUnitAnswerRequest uuar = 
+								(decode.p25.message.ldu.lc.UnitToUnitAnswerRequest)ldu;
+
 						mCallEventModel.add( 
 							new P25CallEvent.Builder( CallEventType.PAGE )
 								.aliasList( mAliasList )
@@ -527,30 +1315,57 @@ public class P25ChannelState extends ChannelState
 								.to( uuar.getTargetAddress() )
 								.details( "UNIT TO UNIT CALL ALERT" )
 								.build() );
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
+					
+					updateCall( State.CALL, mCurrentChannel, null, null );
 					break;
 				case UNIT_TO_UNIT_VOICE_CHANNEL_USER:
-					//TODO: process call here
+					if( ldu instanceof UnitToUnitVoiceChannelUser )
+					{
+						UnitToUnitVoiceChannelUser uuvcu = 
+								(UnitToUnitVoiceChannelUser)ldu;
+						
+						if( isActiveCall( mCurrentChannel, uuvcu.getTargetAddress() ) )
+						{
+							updateCall( State.CALL, 
+										mCurrentChannel, 
+										uuvcu.getSourceAddress(), 
+										uuvcu.getTargetAddress() );
+						}
+						else
+						{
+							P25CallEvent tivcuEvent = 
+								new P25CallEvent.Builder( CallEventType.CALL )
+									.aliasList( mAliasList )
+									.channel( mCurrentChannel )
+									.details( ( uuvcu.isEncrypted() ? "ENCRYPTED" : "" ) + 
+											  ( uuvcu.isEmergency() ? " EMERGENCY" : "" ) )
+									.frequency( mCurrentChannelFrequency )
+								    .from( uuvcu.getSourceAddress() )
+									.to( uuvcu.getTargetAddress() )
+									.build();
+							
+							addCall( tivcuEvent );
+						}
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
 					break;
-				case ADJACENT_SITE_STATUS_BROADCAST:
-				case ADJACENT_SITE_STATUS_BROADCAST_EXPLICIT:
-				case CHANNEL_IDENTIFIER_UPDATE:
-				case CHANNEL_IDENTIFIER_UPDATE_EXPLICIT:
-				case NETWORK_STATUS_BROADCAST:
-				case NETWORK_STATUS_BROADCAST_EXPLICIT:
-				case RFSS_STATUS_BROADCAST:
-				case RFSS_STATUS_BROADCAST_EXPLICIT:
-				case SECONDARY_CONTROL_CHANNEL_BROADCAST:
-				case SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT:
-				case SYSTEM_SERVICE_BROADCAST:
 				default:
 					break;
 			}
 		}
-		else if( ldu instanceof LDU2Message )
+		else
 		{
-			
+			//LDU2
+			updateCall( State.CALL, mCurrentChannel, null, null );
 		}
-		
 	}
 	
 	/**
@@ -646,53 +1461,599 @@ public class P25ChannelState extends ChannelState
 	/**
 	 * Process a Packet Data Unit message 
 	 */
-	private void processPDU( PDUMessage message )
+	private void processPDU( PDUMessage pdu )
 	{
-		switch( message.getOpcode() )
+		if( pdu instanceof PDUConfirmedMessage )
 		{
-			case CALL_ALERT:
-				processPDUCall( message );
-				break;
-			case GROUP_AFFILIATION_QUERY:
-				processQuery( message );
-				break;
-			case GROUP_AFFILIATION_RESPONSE:
-				processResponse( message );
-				break;
-			case GROUP_DATA_CHANNEL_GRANT:
-			case GROUP_VOICE_CHANNEL_GRANT:
-			case INDIVIDUAL_DATA_CHANNEL_GRANT:
-				processPDUCall( message );
-				break;
-			case MESSAGE_UPDATE:
-				processMessage( message );
-				break;
-			case RFSS_STATUS_BROADCAST:
-				processRFSSStatus( (RFSSStatusBroadcastExtended)message );
-				break;
-			case ROAMING_ADDRESS_UPDATE:
-				processResponse( message );
-				break;
-			case STATUS_QUERY:
-				processQuery( message );
-				break;
-			case STATUS_UPDATE:
-				processResponse( message );
-				break;
-			case UNIT_TO_UNIT_ANSWER_REQUEST:
-				processPage( message );
-				break;
-			case UNIT_REGISTRATION_RESPONSE:
-				processResponse( message );
-				break;
-			default:
-				break;
+			PDUConfirmedMessage pduc = (PDUConfirmedMessage)pdu;
+
+			switch( pduc.getPDUType() )
+			{
+				case SN_ACTIVATE_TDS_CONTEXT_ACCEPT:
+					SNDCPActivateTDSContextAccept satca = 
+									(SNDCPActivateTDSContextAccept)pduc;
+					
+					mCallEventModel.add( 
+						new P25CallEvent.Builder( CallEventType.COMMAND )
+							.aliasList( mAliasList )
+							.channel( mCurrentChannel )
+							.details( "ACTIVATE SNDCP USE IP:" + satca.getIPAddress() )
+							.frequency( mCurrentChannelFrequency )
+							.to( satca.getLogicalLinkID() )
+							.build() );
+					break;
+				case SN_ACTIVATE_TDS_CONTEXT_REJECT:
+					SNDCPActivateTDSContextReject satcr = 
+									(SNDCPActivateTDSContextReject)pduc;
+	
+					mCallEventModel.add( 
+						new P25CallEvent.Builder( CallEventType.COMMAND )
+							.aliasList( mAliasList )
+							.channel( mCurrentChannel )
+							.details( "REJECT: SNDCP CONTEXT ACTIVATION "
+								+ "REASON:" + satcr.getReason().getLabel() )
+							.frequency( mCurrentChannelFrequency )
+							.to( satcr.getLogicalLinkID() )
+							.build() );
+					break;
+				case SN_ACTIVATE_TDS_CONTEXT_REQUEST:
+					SNDCPActivateTDSContextRequest satcreq = 
+					(SNDCPActivateTDSContextRequest)pduc;
+	
+					mCallEventModel.add( 
+						new P25CallEvent.Builder( CallEventType.QUERY )
+							.aliasList( mAliasList )
+							.channel( mCurrentChannel )
+							.details( "REQUEST SNDCP USE IP:" + satcreq.getIPAddress() )
+							.frequency( mCurrentChannelFrequency )
+							.from( satcreq.getLogicalLinkID() )
+							.build() );
+					break;
+				case SN_DEACTIVATE_TDS_CONTEXT_ACCEPT:
+					SNDCPDeactivateTDSContext sdtca = 
+								(SNDCPDeactivateTDSContext)pduc;
+
+					mCallEventModel.add( 
+						new P25CallEvent.Builder( CallEventType.QUERY )
+							.aliasList( mAliasList )
+							.channel( mCurrentChannel )
+							.details( "ACCEPT DEACTIVATE SNDCP CONTEXT" )
+							.frequency( mCurrentChannelFrequency )
+							.from( sdtca.getLogicalLinkID() )
+							.build() );
+					break;
+				case SN_DEACTIVATE_TDS_CONTEXT_REQUEST:
+					SNDCPDeactivateTDSContext sdtcreq = 
+							(SNDCPDeactivateTDSContext)pduc;
+	
+					mCallEventModel.add( 
+						new P25CallEvent.Builder( CallEventType.QUERY )
+							.aliasList( mAliasList )
+							.channel( mCurrentChannel )
+							.details( "REQUEST DEACTIVATE SNDCP CONTEXT" )
+							.frequency( mCurrentChannelFrequency )
+							.from( sdtcreq.getLogicalLinkID() )
+							.build() );
+					break;
+				case SN_RF_CONFIRMED_DATA:
+					SNDCPUserData sud = (SNDCPUserData)pduc;
+					
+					StringBuilder sbFrom = new StringBuilder();
+					StringBuilder sbTo = new StringBuilder();
+					
+					sbFrom.append( sud.getSourceIPAddress() );
+					sbTo.append( sud.getDestinationIPAddress() );
+					
+					if( sud.getIPProtocol() == IPProtocol.UDP )
+					{
+						sbFrom.append( ":" );
+						sbFrom.append( sud.getUDPSourcePort() );
+						sbTo.append( ":" );
+						sbTo.append( sud.getUDPDestinationPort() );
+					}
+
+					P25CallEvent dataEvent = new P25CallEvent.Builder( CallEventType.DATA_CALL )
+								.aliasList( mAliasList )
+								.channel( mCurrentChannel )
+								.details( "DATA: " + sud.getPayload() + 
+									" RADIO IP:" + sbTo.toString() )
+								.frequency( mCurrentChannelFrequency )
+								.from( sbFrom.toString() )
+								.to( pduc.getLogicalLinkID() )
+								.build();
+					
+					if( isActiveCall( mCurrentChannel, pduc.getLogicalLinkID() ) )
+					{
+						updateCall( State.DATA, mCurrentChannel, sbFrom.toString(), pduc.getLogicalLinkID() );
+					}
+					else
+					{
+						addCall( dataEvent );
+					}
+					break;
+				default:
+					mLog.debug( "PDUC - Unrecognized Message: " + pduc.toString() );
+					break;
+			}
+		}
+		else
+		{
+			switch( pdu.getOpcode() )
+			{
+				case CALL_ALERT:
+					if( pdu instanceof CallAlertExtended )
+					{
+						CallAlertExtended ca = (CallAlertExtended)pdu;
+						
+						mCallEventModel.add(
+								new P25CallEvent.Builder( CallEventType.PAGE )
+									.aliasList( mAliasList )
+									.from( ca.getWACN() + "-" + ca.getSystemID() + "-" + 
+											ca.getSourceID() )
+									.to( ca.getTargetAddress() )
+									.build() );	
+					}
+					else
+					{
+						logAlternateVendorMessage( pdu );
+					}
+					break;
+				case GROUP_AFFILIATION_QUERY:
+					if( pdu instanceof GroupAffiliationQueryExtended )
+					{
+						GroupAffiliationQueryExtended gaqe = 
+								(GroupAffiliationQueryExtended)pdu;
+					
+						if( mLastQueryEventID == null || !gaqe.getTargetAddress()
+								.contentEquals( mLastQueryEventID ) )
+						{
+							mCallEventModel.add( new P25CallEvent.Builder( CallEventType.QUERY )
+								.aliasList( mAliasList )
+								.details( "GROUP AFFILIATION" )
+								.from( gaqe.getWACN() + "-" + gaqe.getSystemID() + 
+										"-" + gaqe.getSourceID() )
+								.to( gaqe.getTargetAddress() )
+								.build() );	
+
+							mLastQueryEventID = gaqe.getToID();
+						}
+					}
+					break;
+				case GROUP_AFFILIATION_RESPONSE:
+					if( pdu instanceof GroupAffiliationResponseExtended )
+					{
+						GroupAffiliationResponseExtended gar = 
+								(GroupAffiliationResponseExtended)pdu;
+						
+						if( mLastResponseEventID == null || !gar.getTargetAddress()
+								.contentEquals( mLastResponseEventID ) )
+						{
+							mCallEventModel.add( new P25CallEvent.Builder( CallEventType.RESPONSE )
+								.aliasList( mAliasList )
+								.details( "AFFILIATION:" + gar.getResponse().name() + 
+										  " FOR GROUP:" + gar.getGroupWACN() + "-" +
+										  gar.getGroupSystemID() + "-" + 
+										  gar.getGroupID() + " ANNOUNCEMENT GROUP:" + 
+										  gar.getAnnouncementGroupID() )
+							    .from( gar.getSourceWACN() + "-" + 
+									   gar.getSourceSystemID() + "-" + 
+							    	   gar.getSourceID() )
+								.to( gar.getTargetAddress() )
+								.build() );	
+							
+							mLastResponseEventID = gar.getTargetAddress();
+						}
+					}
+					else
+					{
+						logAlternateVendorMessage( pdu );
+					}
+					break;
+				case GROUP_DATA_CHANNEL_GRANT:
+					if( pdu instanceof GroupDataChannelGrantExtended )
+					{
+						GroupDataChannelGrantExtended gdcge = 
+								(GroupDataChannelGrantExtended)pdu;
+
+						if( isActiveCall( gdcge.getTransmitChannel(), gdcge.getGroupAddress() ) )
+						{
+							updateCall( State.DATA, 
+										gdcge.getTransmitChannel(), 
+										gdcge.getSourceAddress(), 
+										gdcge.getGroupAddress() );
+						}
+						else
+						{
+							P25CallEvent event =  
+									new P25CallEvent.Builder( CallEventType.DATA_CALL )
+										.aliasList( mAliasList )
+										.channel( gdcge.getTransmitChannel() )
+										.details( ( gdcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
+												  ( gdcge.isEmergency() ? " EMERGENCY" : "") )
+									    .frequency( gdcge.getDownlinkFrequency() )
+										.from( gdcge.getSourceAddress() )
+										.to( gdcge.getGroupAddress() )
+										.build();
+							
+							addCall( event );
+						}
+					}
+					else
+					{
+						logAlternateVendorMessage( pdu );
+					}
+					break;
+				case GROUP_VOICE_CHANNEL_GRANT:
+					if( pdu instanceof GroupVoiceChannelGrantExplicit )
+					{
+						GroupVoiceChannelGrantExplicit gvcge = 
+								(GroupVoiceChannelGrantExplicit)pdu;
+
+						if( isActiveCall( gvcge.getTransmitChannel(), gvcge.getGroupAddress() ) )
+						{
+							updateCall( State.CALL,
+										gvcge.getTransmitChannel(), 
+										gvcge.getSourceAddress(), 
+										gvcge.getGroupAddress() );
+						}
+						else
+						{
+							P25CallEvent event =  
+									new P25CallEvent.Builder( CallEventType.CALL )
+										.aliasList( mAliasList )
+										.channel( gvcge.getTransmitChannel() )
+										.details( ( gvcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
+												  ( gvcge.isEmergency() ? " EMERGENCY" : "") )
+									    .frequency( gvcge.getDownlinkFrequency() )
+										.from( gvcge.getSourceAddress() )
+										.to( gvcge.getGroupAddress() )
+										.build();
+							
+							addCall( event );
+						}
+					}
+					else
+					{
+						logAlternateVendorMessage( pdu );
+					}
+					break;
+				case INDIVIDUAL_DATA_CHANNEL_GRANT:
+					if( pdu instanceof IndividualDataChannelGrantExtended )
+					{
+						IndividualDataChannelGrantExtended idcge = 
+								(IndividualDataChannelGrantExtended)pdu;
+
+						if( isActiveCall( idcge.getTransmitChannel(), 
+										  idcge.getTargetAddress() ) )
+						{
+							updateCall( State.DATA,
+										idcge.getTransmitChannel(),
+									    idcge.getSourceAddress(), 
+									    idcge.getTargetAddress() );
+						}
+						else
+						{
+							P25CallEvent event =  
+									new P25CallEvent.Builder( CallEventType.DATA_CALL )
+										.aliasList( mAliasList )
+										.channel( idcge.getTransmitChannel() )
+										.details( ( idcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
+												  ( idcge.isEmergency() ? " EMERGENCY" : "") )
+									    .frequency( idcge.getDownlinkFrequency() )
+										.from( idcge.getSourceWACN() + "-" +
+											   idcge.getSourceSystemID() + "-" +
+											   idcge.getSourceAddress() )
+										.to( idcge.getTargetAddress() )
+										.build();
+							
+							addCall( event );
+						}
+					}
+					else
+					{
+						logAlternateVendorMessage( pdu );
+					}
+					break;
+				case MESSAGE_UPDATE:
+					if( pdu instanceof MessageUpdateExtended )
+					{
+						MessageUpdateExtended mu = (MessageUpdateExtended)pdu;
+						
+						P25CallEvent event = 
+								new P25CallEvent.Builder( CallEventType.SDM )
+									.aliasList( mAliasList )
+									.details( "MESSAGE: " + mu.getMessage() )
+									.from( mu.getSourceWACN() + "-" + mu.getSourceSystemID() + 
+											"-" + mu.getSourceID() )
+									.to( mu.getTargetAddress() )
+									.build();	
+
+						mCallEventModel.add( event );
+					}
+					else
+					{
+						logAlternateVendorMessage( pdu );
+					}
+					break;
+				case RFSS_STATUS_BROADCAST:
+					if( pdu instanceof RFSSStatusBroadcastExtended )
+					{
+						RFSSStatusBroadcastExtended rsbe = (RFSSStatusBroadcastExtended)pdu;
+						
+						updateNAC( rsbe.getNAC() );
+						updateSystem( rsbe.getSystemID() );
+						updateSite( rsbe.getRFSubsystemID() + "-" + rsbe.getSiteID() );
+					}
+					else
+					{
+						logAlternateVendorMessage( pdu );
+					}
+					break;
+				case ROAMING_ADDRESS_UPDATE:
+					if( pdu instanceof RoamingAddressUpdateExtended )
+					{
+						RoamingAddressUpdateExtended raue = 
+								(RoamingAddressUpdateExtended)pdu;
+
+						StringBuilder sb = new StringBuilder();
+						sb.append( "ROAMING ADDRESS STACK A:" );
+						sb.append( raue.getWACNA() + "-" + raue.getSystemIDA() );
+						
+						if( raue.isFormat2() )
+						{
+							sb.append( " B:" );
+							sb.append( raue.getWACNB() + "-" + raue.getSystemIDB() );
+							sb.append( " C:" );
+							sb.append( raue.getWACNC() + "-" + raue.getSystemIDC() );
+							sb.append( " D:" );
+							sb.append( raue.getWACND() + "-" + raue.getSystemIDD() );
+						}
+						
+						if( raue.isFormat3() )
+						{
+							sb.append( " E:" );
+							sb.append( raue.getWACNE() + "-" + raue.getSystemIDE() );
+							sb.append( " F:" );
+							sb.append( raue.getWACNF() + "-" + raue.getSystemIDF() );
+							sb.append( " G:" );
+							sb.append( raue.getWACNG() + "-" + raue.getSystemIDG() );
+						}
+						
+						mCallEventModel.add( new P25CallEvent.Builder( CallEventType.RESPONSE )
+									.aliasList( mAliasList )
+									.details( sb.toString() )
+									.from( raue.getSourceID() )
+									.to( raue.getTargetAddress() )
+									.build() );	
+					}
+					else
+					{
+						logAlternateVendorMessage( pdu );
+					}
+					break;
+				case STATUS_QUERY:
+					if( pdu instanceof StatusQueryExtended )
+					{
+						StatusQueryExtended sq = (StatusQueryExtended)pdu;
+						
+						if( mLastQueryEventID == null || !sq.getTargetAddress()
+								.contentEquals( mLastQueryEventID ) )
+						{
+							mCallEventModel.add( new P25CallEvent.Builder( CallEventType.QUERY )
+							.aliasList( mAliasList )
+							.details( "STATUS QUERY" )
+							.from( sq.getSourceWACN() + "-" + 
+								   sq.getSourceSystemID() + "-" + 
+								   sq.getSourceID() )
+							.to( sq.getTargetAddress() )
+							.build() );	
+
+							mLastQueryEventID = sq.getToID();
+						}
+					}
+					else
+					{
+						logAlternateVendorMessage( pdu );
+					}
+					break;
+				case STATUS_UPDATE:
+					if( pdu instanceof StatusUpdateExtended )
+					{
+						StatusUpdateExtended su = (StatusUpdateExtended)pdu;
+
+						if( mLastResponseEventID == null || !mLastResponseEventID
+								.contentEquals( su.getTargetAddress() ) )
+						{
+							mCallEventModel.add( new P25CallEvent.Builder( CallEventType.RESPONSE )
+								.aliasList( mAliasList )
+								.details( "STATUS USER: " + su.getUserStatus() + 
+										  " UNIT: " + su.getUnitStatus() )
+								.from( su.getSourceWACN() + "-" + 
+									   su.getSourceSystemID() + "-" + 
+									   su.getSourceID() )
+								.to( su.getTargetAddress() )
+								.build() );	
+				
+							mLastResponseEventID = su.getTargetAddress();
+						}
+					}
+					else
+					{
+						logAlternateVendorMessage( pdu );
+					}
+					break;
+				case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
+					TelephoneInterconnectChannelGrantExplicit ticge =
+								(TelephoneInterconnectChannelGrantExplicit)pdu;
+					
+					if( isActiveCall( ticge.getTransmitChannel(), ticge.getAddress() ))
+					{
+						updateCall( State.CALL,
+									ticge.getTransmitChannel(), 
+									ticge.getLogicalLinkID(), 
+								    ticge.getAddress() );
+					}
+					else
+					{
+						P25CallEvent event = 
+								new P25CallEvent.Builder( CallEventType.CALL )
+									.aliasList( mAliasList )
+									.channel( ticge.getTransmitChannel() )
+									.details( "TELEPHONE CALL " + 
+											  ( ticge.isEncrypted() ? "ENCRYPTED" : "" ) + 
+											  ( ticge.isEmergency() ? " EMERGENCY" : "") +
+											  " CALL TIMER:" + ticge.getCallTimer() )
+								    .frequency( ticge.getDownlinkFrequency() )
+								    .from( ticge.getAddress() )
+									.build();
+						
+						addCall( event );
+					}
+					break;
+				case UNIT_REGISTRATION_RESPONSE:
+					if( pdu instanceof UnitRegistrationResponseExtended )
+					{
+						UnitRegistrationResponseExtended urr = 
+								(UnitRegistrationResponseExtended)pdu;
+
+						if( urr.getResponse() == Response.ACCEPT )
+						{
+							mRegistrations.put( urr.getAssignedSourceAddress(), 
+												System.currentTimeMillis() );
+						}
+			
+						if( mLastRegistrationEventID == null || !mLastRegistrationEventID
+								.contentEquals( urr.getAssignedSourceAddress() ) )
+						{
+							mCallEventModel.add( new P25CallEvent.Builder( CallEventType.REGISTER )
+										.aliasList( mAliasList )
+										.details( "REGISTRATION:" + urr.getResponse().name() +
+												  " FOR EXTERNAL SYSTEM ADDRESS: " +
+												  urr.getWACN() + "-" + 
+												  urr.getSystemID() + "-" +
+												  urr.getSourceAddress() +
+												  " SOURCE ID: " + urr.getSourceID() )
+										.from( urr.getAssignedSourceAddress() )
+										.build() );
+							
+							mLastRegistrationEventID = urr.getAssignedSourceAddress();
+						}
+					}
+					else
+					{
+						logAlternateVendorMessage( pdu );
+					}
+					break;
+				case UNIT_TO_UNIT_ANSWER_REQUEST:
+					if( pdu instanceof UnitToUnitAnswerRequestExplicit )
+					{
+						UnitToUnitAnswerRequestExplicit utuare = 
+								(UnitToUnitAnswerRequestExplicit)pdu;
+
+						if( mLastPageEventID == null || !mLastPageEventID
+								.contentEquals( utuare.getTargetAddress() ) )
+						{
+							mCallEventModel.add( 
+									new P25CallEvent.Builder( CallEventType.PAGE )
+									.aliasList( mAliasList )
+									.details( ( utuare.isEmergency() ? "EMERGENCY" : "" ) ) 
+									.from( utuare.getWACN() + "-" + 
+										   utuare.getSystemID() + "-" + 
+										   utuare.getSourceID() )
+									.to( utuare.getTargetAddress() )
+									.build() );
+							
+							mLastPageEventID = utuare.getTargetAddress();
+						}
+					}
+					else
+					{
+						logAlternateVendorMessage( pdu );
+					}
+					break;
+				case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
+					if( pdu instanceof UnitToUnitVoiceChannelGrantExtended )
+					{
+						UnitToUnitVoiceChannelGrantExtended uuvcge = 
+								(UnitToUnitVoiceChannelGrantExtended)pdu;
+					
+						if( isActiveCall( uuvcge.getTransmitChannel(), uuvcge.getTargetAddress() ) )
+						{
+							updateCall( State.CALL,
+										uuvcge.getTransmitChannel(), 
+										uuvcge.getSourceAddress(), 
+									    uuvcge.getTargetAddress() );
+						}
+						else
+						{
+							P25CallEvent uuvcgeEvent = 
+									new P25CallEvent.Builder( CallEventType.CALL )
+										.aliasList( mAliasList )
+										.channel( uuvcge.getTransmitChannel() )
+										.details( ( uuvcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
+												  ( uuvcge.isEmergency() ? " EMERGENCY" : "") )
+									    .frequency( uuvcge.getDownlinkFrequency() )
+									    .from( uuvcge.getSourceWACN() + "-" +
+									    	   uuvcge.getSourceSystemID() + "-" +
+									    	   uuvcge.getSourceID() )
+										.to( uuvcge.getTargetAddress() )
+										.build();
+							
+							addCall( uuvcgeEvent );
+						}
+					}
+					else
+					{
+						logAlternateVendorMessage( pdu );
+					}
+					break;
+				case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
+					if( pdu instanceof UnitToUnitVoiceChannelGrantUpdateExtended )
+					{
+						UnitToUnitVoiceChannelGrantUpdateExtended uuvcgue = 
+								(UnitToUnitVoiceChannelGrantUpdateExtended)pdu;
+		
+						if( isActiveCall( uuvcgue.getTransmitChannel(), 
+										  uuvcgue.getTargetAddress() ) )
+						{
+							updateCall( State.CALL,
+										uuvcgue.getTransmitChannel(), 
+										uuvcgue.getSourceAddress(),
+										uuvcgue.getTargetAddress() );
+						}
+						else
+						{
+							P25CallEvent event = 
+									new P25CallEvent.Builder( CallEventType.CALL )
+										.aliasList( mAliasList )
+										.channel( uuvcgue.getTransmitChannel() )
+										.details( ( uuvcgue.isEncrypted() ? "ENCRYPTED" : "" ) + 
+												  ( uuvcgue.isEmergency() ? " EMERGENCY" : "") )
+									    .frequency( uuvcgue.getDownlinkFrequency() )
+									    .from( uuvcgue.getSourceWACN() + "-" +
+									    	   uuvcgue.getSourceSystemID() + "-" +
+									    	   uuvcgue.getSourceID() )
+										.to( uuvcgue.getTargetAddress() )
+										.build();
+							
+							addCall( event );
+						}
+					}
+					else
+					{
+						logAlternateVendorMessage( pdu );
+					}
+					break;
+				default:
+					mLog.debug( "PDU - unrecognized OPCODE message: " + pdu.toString() );
+					break;
+			}
 		}
 	}
 	
 	private void processTSBKCommand( TSBKMessage message )
 	{
-		CallEvent event = null;
+		P25CallEvent event = null;
 		
 		switch( message.getOpcode() )
 		{
@@ -803,22 +2164,6 @@ public class P25ChannelState extends ChannelState
 		mCallEventModel.add( event );
 	}
 	
-	private void processMessage( PDUMessage message )
-	{
-		MessageUpdateExtended mu = (MessageUpdateExtended)message;
-		
-		CallEvent event = 
-				new P25CallEvent.Builder( CallEventType.SDM )
-					.aliasList( mAliasList )
-					.details( "MESSAGE: " + mu.getMessage() )
-					.from( mu.getSourceWACN() + "-" + mu.getSourceSystemID() + 
-							"-" + mu.getSourceID() )
-					.to( mu.getTargetAddress() )
-					.build();	
-
-		mCallEventModel.add( event );
-	}
-	
 	private void processTSBKQuery( TSBKMessage message )
 	{
 		CallEvent event = null;
@@ -858,56 +2203,6 @@ public class P25ChannelState extends ChannelState
 				break;
 		}
 		
-		if( event != null )
-		{
-			mCallEventModel.add( event );
-			
-			mLastQueryEventID = event.getToID();
-		}
-	}
-	
-	private void processQuery( PDUMessage message )
-	{
-		CallEvent event = null;
-		
-		switch( message.getOpcode() )
-		{
-			case GROUP_AFFILIATION_QUERY:
-				GroupAffiliationQueryExtended gaqe = 
-							(GroupAffiliationQueryExtended)message;
-				
-				if( mLastQueryEventID == null || !gaqe.getTargetAddress()
-						.contentEquals( mLastQueryEventID ) )
-				{
-					event = new P25CallEvent.Builder( CallEventType.QUERY )
-					.aliasList( mAliasList )
-					.details( "GROUP AFFILIATION" )
-					.from( gaqe.getWACN() + "-" + gaqe.getSystemID() + 
-							"-" + gaqe.getSourceID() )
-					.to( gaqe.getTargetAddress() )
-					.build();	
-				}
-				break;
-			case STATUS_QUERY:
-				StatusQueryExtended sq = (StatusQueryExtended)message;
-				
-				if( mLastQueryEventID == null || !sq.getTargetAddress()
-						.contentEquals( mLastQueryEventID ) )
-				{
-					event = new P25CallEvent.Builder( CallEventType.QUERY )
-					.aliasList( mAliasList )
-					.details( "STATUS QUERY" )
-					.from( sq.getSourceWACN() + "-" + 
-						   sq.getSourceSystemID() + "-" + 
-						   sq.getSourceID() )
-					.to( sq.getTargetAddress() )
-					.build();	
-				}
-				break;
-			default:
-				break;
-		}
-
 		if( event != null )
 		{
 			mCallEventModel.add( event );
@@ -1131,379 +2426,13 @@ public class P25ChannelState extends ChannelState
 		}
 	}
 	
-	private void processResponse( PDUMessage message )
-	{
-		CallEvent event = null;
-		
-		switch( message.getOpcode() )
-		{
-			case GROUP_AFFILIATION_RESPONSE:
-				GroupAffiliationResponseExtended gar = 
-							(GroupAffiliationResponseExtended)message;
-				
-				if( mLastResponseEventID == null || !gar.getTargetAddress()
-						.contentEquals( mLastResponseEventID ) )
-				{
-					event = new P25CallEvent.Builder( CallEventType.RESPONSE )
-						.aliasList( mAliasList )
-						.details( "AFFILIATION:" + gar.getResponse().name() + 
-								  " FOR GROUP:" + gar.getGroupWACN() + "-" +
-								  gar.getGroupSystemID() + "-" + 
-								  gar.getGroupID() + " ANNOUNCEMENT GROUP:" + 
-								  gar.getAnnouncementGroupID() )
-					    .from( gar.getSourceWACN() + "-" + 
-							   gar.getSourceSystemID() + "-" + 
-					    	   gar.getSourceID() )
-						.to( gar.getTargetAddress() )
-						.build();	
-					
-					mLastResponseEventID = gar.getTargetAddress();
-				}
-				break;
-			case ROAMING_ADDRESS_UPDATE:
-				RoamingAddressUpdateExtended raue = 
-							(RoamingAddressUpdateExtended)message;
-
-				StringBuilder sb = new StringBuilder();
-				sb.append( "ROAMING ADDRESS STACK A:" );
-				sb.append( raue.getWACNA() + "-" + raue.getSystemIDA() );
-				
-				if( raue.isFormat2() )
-				{
-					sb.append( " B:" );
-					sb.append( raue.getWACNB() + "-" + raue.getSystemIDB() );
-					sb.append( " C:" );
-					sb.append( raue.getWACNC() + "-" + raue.getSystemIDC() );
-					sb.append( " D:" );
-					sb.append( raue.getWACND() + "-" + raue.getSystemIDD() );
-				}
-				
-				if( raue.isFormat3() )
-				{
-					sb.append( " E:" );
-					sb.append( raue.getWACNE() + "-" + raue.getSystemIDE() );
-					sb.append( " F:" );
-					sb.append( raue.getWACNF() + "-" + raue.getSystemIDF() );
-					sb.append( " G:" );
-					sb.append( raue.getWACNG() + "-" + raue.getSystemIDG() );
-				}
-				
-				event = new P25CallEvent.Builder( CallEventType.RESPONSE )
-							.aliasList( mAliasList )
-							.details( sb.toString() )
-							.from( raue.getSourceID() )
-							.to( raue.getTargetAddress() )
-							.build();	
-				break;
-			case STATUS_UPDATE:
-				StatusUpdateExtended su = (StatusUpdateExtended)message;
-
-				if( mLastResponseEventID == null || !mLastResponseEventID
-						.contentEquals( su.getTargetAddress() ) )
-				{
-					event = new P25CallEvent.Builder( CallEventType.RESPONSE )
-					.aliasList( mAliasList )
-					.details( "STATUS USER: " + su.getUserStatus() + 
-							  " UNIT: " + su.getUnitStatus() )
-					.from( su.getSourceWACN() + "-" + 
-						   su.getSourceSystemID() + "-" + 
-						   su.getSourceID() )
-					.to( su.getTargetAddress() )
-					.build();	
-		
-					mLastResponseEventID = su.getTargetAddress();
-				}
-				break;
-			case UNIT_REGISTRATION_RESPONSE:
-				UnitRegistrationResponseExtended urr = 
-								(UnitRegistrationResponseExtended)message;
-
-				if( urr.getResponse() == Response.ACCEPT )
-				{
-					mRegistrations.put( urr.getAssignedSourceAddress(), 
-										System.currentTimeMillis() );
-				}
-
-				if( mLastRegistrationEventID == null || !mLastRegistrationEventID
-						.contentEquals( urr.getAssignedSourceAddress() ) )
-				{
-					event = new P25CallEvent.Builder( CallEventType.REGISTER )
-								.aliasList( mAliasList )
-								.details( "REGISTRATION:" + urr.getResponse().name() +
-										  " FOR EXTERNAL SYSTEM ADDRESS: " +
-										  urr.getWACN() + "-" + 
-										  urr.getSystemID() + "-" +
-										  urr.getSourceAddress() +
-										  " SOURCE ID: " + urr.getSourceID() )
-								.from( urr.getAssignedSourceAddress() )
-								.build();
-					
-					mLastRegistrationEventID = urr.getAssignedSourceAddress();
-				}
-				break;
-			default:
-				break;
-		}
-		
-		if( event != null )
-		{
-			mCallEventModel.add( event );
-		}
-	}
-	
 	private void processTSBKRFSSStatus( RFSSStatusBroadcast message )
 	{
-		if( mNAC == null || !mNAC.contentEquals( message.getNAC() ) )
-		{
-			mNAC = message.getNAC();
-			
-			broadcastChange( ChangedAttribute.NAC );
-		}
+		updateNAC( message.getNAC() );
 		
-		if( mSystem == null || !mSystem.contentEquals( message.getSystemID() ) )
-		{
-			mSystem = message.getSystemID();
-			
-			broadcastChange( ChangedAttribute.SYSTEM );
-		}
+		updateSystem( message.getSystemID() );
 		
-		String site = message.getRFSubsystemID() + "-" + message.getSiteID();
-		
-		if( mSite == null || !mSite.contentEquals( site ) )
-		{
-			mSite = site;
-			
-			broadcastChange( ChangedAttribute.SITE );
-		}
-	}
-	
-	private void processRFSSStatus( RFSSStatusBroadcastExtended message )
-	{
-		if( mNAC == null || !mNAC.contentEquals( message.getNAC() ) )
-		{
-			mNAC = message.getNAC();
-			
-			broadcastChange( ChangedAttribute.NAC );
-		}
-		
-		if( mSystem == null || !mSystem.contentEquals( message.getSystemID() ) )
-		{
-			mSystem = message.getSystemID();
-			
-			broadcastChange( ChangedAttribute.SYSTEM );
-		}
-		
-		String site = message.getRFSubsystemID() + "-" + message.getSiteID();
-		
-		if( mSite == null || !mSite.contentEquals( site ) )
-		{
-			mSite = site;
-			
-			if( mAliasList != null )
-			{
-				Alias alias = mAliasList.getSiteID( mSite );
-						
-				if( alias != null )
-				{
-					mSiteAlias = alias.getName();
-				}
-				else
-				{
-					mSiteAlias = null;
-				}
-			}
-
-			broadcastChange( ChangedAttribute.SITE );
-			
-			broadcastChange( ChangedAttribute.SITE_ALIAS );
-		}
-	}
-	
-	private void processPDUCall( PDUMessage message )
-	{
-		switch( message.getOpcode() )
-		{
-			case CALL_ALERT:
-				CallAlertExtended ca = (CallAlertExtended)message;
-				
-				mCallEventModel.add(
-						new P25CallEvent.Builder( CallEventType.PAGE )
-							.aliasList( mAliasList )
-							.from( ca.getWACN() + "-" + ca.getSystemID() + "-" + 
-									ca.getSourceID() )
-							.to( ca.getTargetAddress() )
-							.build() );	
-				break;
-			case GROUP_DATA_CHANNEL_GRANT:
-				GroupDataChannelGrantExtended gdcge = 
-								(GroupDataChannelGrantExtended)message;
-
-				if( isActiveCall( gdcge.getTransmitChannel(), gdcge.getGroupAddress() ) )
-				{
-					updateCall( gdcge.getTransmitChannel(), null, gdcge.getGroupAddress() );
-				}
-				else
-				{
-					CallEvent event =  
-							new P25CallEvent.Builder( CallEventType.DATA_CALL )
-								.aliasList( mAliasList )
-								.channel( gdcge.getTransmitChannel() )
-								.details( ( gdcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
-										  ( gdcge.isEmergency() ? " EMERGENCY" : "") )
-							    .frequency( gdcge.getDownlinkFrequency() )
-								.from( gdcge.getSourceAddress() )
-								.to( gdcge.getGroupAddress() )
-								.build();
-					
-					mCallEventModel.add( event );
-					
-					addCall( event );
-				}
-				break;
-			case GROUP_VOICE_CHANNEL_GRANT:
-				GroupVoiceChannelGrantExplicit gvcge = 
-							(GroupVoiceChannelGrantExplicit)message;
-
-				if( isActiveCall( gvcge.getTransmitChannel(), gvcge.getGroupAddress() ) )
-				{
-					updateCall( gvcge.getTransmitChannel(), null, gvcge.getGroupAddress() );
-				}
-				else
-				{
-					CallEvent event =  
-							new P25CallEvent.Builder( CallEventType.CALL )
-								.aliasList( mAliasList )
-								.channel( gvcge.getTransmitChannel() )
-								.details( ( gvcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
-										  ( gvcge.isEmergency() ? " EMERGENCY" : "") )
-							    .frequency( gvcge.getDownlinkFrequency() )
-								.from( gvcge.getSourceAddress() )
-								.to( gvcge.getGroupAddress() )
-								.build();
-					
-					mCallEventModel.add( event );
-					
-					addCall( event );
-				}
-				break;
-			case INDIVIDUAL_DATA_CHANNEL_GRANT:
-				IndividualDataChannelGrantExtended idcge = 
-								(IndividualDataChannelGrantExtended)message;
-
-				if( isActiveCall( idcge.getTransmitChannel(), idcge.getTargetAddress() ) )
-				{
-					updateCall( idcge.getTransmitChannel(), null, idcge.getTargetAddress() );
-				}
-				else
-				{
-					CallEvent event =  
-							new P25CallEvent.Builder( CallEventType.DATA_CALL )
-								.aliasList( mAliasList )
-								.channel( idcge.getTransmitChannel() )
-								.details( ( idcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
-										  ( idcge.isEmergency() ? " EMERGENCY" : "") )
-							    .frequency( idcge.getDownlinkFrequency() )
-								.from( idcge.getSourceWACN() + "-" +
-									   idcge.getSourceSystemID() + "-" +
-									   idcge.getSourceAddress() )
-								.to( idcge.getTargetAddress() )
-								.build();
-					
-					mCallEventModel.add( event );
-					
-					addCall( event );
-				}
-				break;
-			case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
-				TelephoneInterconnectChannelGrantExplicit ticge =
-							(TelephoneInterconnectChannelGrantExplicit)message;
-				
-				if( isActiveCall( ticge.getTransmitChannel(), ticge.getAddress() ))
-				{
-					updateCall( ticge.getTransmitChannel(), null, ticge.getAddress() );
-				}
-				else
-				{
-					CallEvent event = 
-							new P25CallEvent.Builder( CallEventType.TELEPHONE_CALL )
-								.aliasList( mAliasList )
-								.channel( ticge.getTransmitChannel() )
-								.details( ( ticge.isEncrypted() ? "ENCRYPTED" : "" ) + 
-										  ( ticge.isEmergency() ? " EMERGENCY" : "") +
-										  " CALL TIMER:" + ticge.getCallTimer() )
-							    .frequency( ticge.getDownlinkFrequency() )
-							    .from( ticge.getAddress() )
-								.build();
-					
-					mCallEventModel.add( event );
-					
-					addCall( event );
-				}
-				break;
-			case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
-				UnitToUnitVoiceChannelGrantExtended uuvcge = 
-							(UnitToUnitVoiceChannelGrantExtended)message;
-				
-				if( isActiveCall( uuvcge.getTransmitChannel(), uuvcge.getTargetAddress() ) )
-				{
-					updateCall( uuvcge.getTransmitChannel(), null, uuvcge.getTargetAddress() );
-				}
-				else
-				{
-					CallEvent event = 
-							new P25CallEvent.Builder( CallEventType.CALL )
-								.aliasList( mAliasList )
-								.channel( uuvcge.getTransmitChannel() )
-								.details( ( uuvcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
-										  ( uuvcge.isEmergency() ? " EMERGENCY" : "") )
-							    .frequency( uuvcge.getDownlinkFrequency() )
-							    .from( uuvcge.getSourceWACN() + "-" +
-							    	   uuvcge.getSourceSystemID() + "-" +
-							    	   uuvcge.getSourceID() )
-								.to( uuvcge.getTargetAddress() )
-								.build();
-					
-					mCallEventModel.add( event );
-					
-					addCall( event );
-				}
-				break;
-			case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
-				UnitToUnitVoiceChannelGrantUpdateExtended uuvcgue = 
-							(UnitToUnitVoiceChannelGrantUpdateExtended)message;
-	
-				if( isActiveCall( uuvcgue.getTransmitChannel(), 
-								  uuvcgue.getTargetAddress() ) )
-				{
-					updateCall( uuvcgue.getTransmitChannel(), null,
-								uuvcgue.getTargetAddress() );
-				}
-				else
-				{
-					CallEvent event = 
-							new P25CallEvent.Builder( CallEventType.CALL )
-								.aliasList( mAliasList )
-								.channel( uuvcgue.getTransmitChannel() )
-								.details( ( uuvcgue.isEncrypted() ? "ENCRYPTED" : "" ) + 
-										  ( uuvcgue.isEmergency() ? " EMERGENCY" : "") )
-							    .frequency( uuvcgue.getDownlinkFrequency() )
-							    .from( uuvcgue.getSourceWACN() + "-" +
-							    	   uuvcgue.getSourceSystemID() + "-" +
-							    	   uuvcgue.getSourceID() )
-								.to( uuvcgue.getTargetAddress() )
-								.build();
-					
-					mCallEventModel.add( event );
-					
-					addCall( event );
-				}
-
-				break;
-				
-			default:
-				break;
-		}
-		
+		updateSite( message.getRFSubsystemID() + "-" + message.getSiteID() );
 	}
 	
 	/**
@@ -1528,11 +2457,14 @@ public class P25ChannelState extends ChannelState
 
 				if( isActiveCall( gdca.getChannel1(), gdca.getGroupAddress1() ) )
 				{
-					updateCall( gdca.getChannel1(), null, gdca.getGroupAddress1() );
+					updateCall( State.DATA,
+								gdca.getChannel1(), 
+								gdca.getGroupAddress2(), 
+							    gdca.getGroupAddress1() );
 				}
 				else
 				{
-					CallEvent event =  
+					P25CallEvent event =  
 							new P25CallEvent.Builder( CallEventType.DATA_CALL )
 								.aliasList( mAliasList )
 								.channel( gdca.getChannel1() )
@@ -1551,11 +2483,14 @@ public class P25ChannelState extends ChannelState
 				{
 					if( isActiveCall( gdca.getChannel2(), gdca.getGroupAddress2() ) )
 					{
-						updateCall( gdca.getChannel2(), null, gdca.getGroupAddress2() );
+						updateCall( State.DATA,
+									gdca.getChannel2(), 
+									null, 
+									gdca.getGroupAddress2() );
 					}
 					else
 					{
-						CallEvent event =  
+						P25CallEvent event =  
 								new P25CallEvent.Builder( CallEventType.DATA_CALL )
 									.aliasList( mAliasList )
 									.channel( gdca.getChannel2() )
@@ -1577,11 +2512,14 @@ public class P25ChannelState extends ChannelState
 
 				if( isActiveCall( gdcae.getTransmitChannel(), gdcae.getGroupAddress() ) )
 				{
-					updateCall( gdcae.getTransmitChannel(), null, gdcae.getGroupAddress() );
+					updateCall( State.DATA,
+								gdcae.getTransmitChannel(), 
+								null, 
+							    gdcae.getGroupAddress() );
 				}
 				else
 				{
-					CallEvent event =  
+					P25CallEvent event =  
 							new P25CallEvent.Builder( CallEventType.DATA_CALL )
 								.aliasList( mAliasList )
 								.channel( gdcae.getTransmitChannel() )
@@ -1601,11 +2539,13 @@ public class P25ChannelState extends ChannelState
 
 				if( isActiveCall( gdcg.getChannel(), gdcg.getGroupAddress() ) )
 				{
-					updateCall( gdcg.getChannel(), null, gdcg.getGroupAddress() );
+					updateCall( State.DATA,
+								gdcg.getChannel(), null, 
+								gdcg.getGroupAddress() );
 				}
 				else
 				{
-					CallEvent event =  
+					P25CallEvent event =  
 							new P25CallEvent.Builder( CallEventType.DATA_CALL )
 								.aliasList( mAliasList )
 								.channel( gdcg.getChannel() )
@@ -1626,11 +2566,14 @@ public class P25ChannelState extends ChannelState
 
 				if( isActiveCall( gvcg.getChannel(), gvcg.getGroupAddress() ) )
 				{
-					updateCall( gvcg.getChannel(), null, gvcg.getGroupAddress() );
+					updateCall( State.CALL,
+								gvcg.getChannel(), 
+								gvcg.getSourceAddress(), 
+								gvcg.getGroupAddress() );
 				}
 				else
 				{
-					CallEvent event =  
+					P25CallEvent event =  
 							new P25CallEvent.Builder( CallEventType.CALL )
 								.aliasList( mAliasList )
 								.channel( gvcg.getChannel() )
@@ -1652,11 +2595,14 @@ public class P25ChannelState extends ChannelState
 				
 				if( isActiveCall( gvcgu.getChannel1(), gvcgu.getGroupAddress1() ) )
 				{
-					updateCall( gvcgu.getChannel1(), null, gvcgu.getGroupAddress1() );
+					updateCall( State.CALL,
+								gvcgu.getChannel1(), 
+								gvcgu.getGroupAddress2(), 
+								gvcgu.getGroupAddress1() );
 				}
 				else
 				{
-					CallEvent event =  
+					P25CallEvent event =  
 							new P25CallEvent.Builder( CallEventType.CALL )
 								.aliasList( mAliasList )
 								.channel( gvcgu.getChannel1() )
@@ -1675,11 +2621,13 @@ public class P25ChannelState extends ChannelState
 				{
 					if( isActiveCall( gvcgu.getChannel2(), gvcgu.getGroupAddress2() ) )
 					{
-						updateCall( gvcgu.getChannel2(), null, gvcgu.getGroupAddress2() );
+						updateCall( State.CALL,
+									gvcgu.getChannel2(), null, 
+									gvcgu.getGroupAddress2() );
 					}
 					else
 					{
-						CallEvent event = 
+						P25CallEvent event = 
 								new P25CallEvent.Builder( CallEventType.CALL )
 									.aliasList( mAliasList )
 									.channel( gvcgu.getChannel2() )
@@ -1715,11 +2663,14 @@ public class P25ChannelState extends ChannelState
 
 				if( isActiveCall( idcg.getChannel(), idcg.getTargetAddress() ) )
 				{
-					updateCall( idcg.getChannel(), null, idcg.getTargetAddress() );
+					updateCall( State.DATA,
+								idcg.getChannel(), 
+								idcg.getSourceAddress(), 
+								idcg.getTargetAddress() );
 				}
 				else
 				{
-					CallEvent event =  
+					P25CallEvent event =  
 							new P25CallEvent.Builder( CallEventType.DATA_CALL )
 								.aliasList( mAliasList )
 								.channel( idcg.getChannel() )
@@ -1740,11 +2691,14 @@ public class P25ChannelState extends ChannelState
 				
 				if( isActiveCall( sdcg.getTransmitChannel(), sdcg.getTargetAddress() ) )
 				{
-					updateCall( sdcg.getTransmitChannel(), null, sdcg.getTargetAddress() );
+					updateCall( State.DATA,
+								sdcg.getTransmitChannel(), 
+								null, 
+								sdcg.getTargetAddress() );
 				}
 				else
 				{
-					CallEvent event = 
+					P25CallEvent event = 
 							new P25CallEvent.Builder( CallEventType.DATA_CALL )
 								.aliasList( mAliasList )
 								.channel( sdcg.getTransmitChannel() )
@@ -1764,11 +2718,14 @@ public class P25ChannelState extends ChannelState
 				
 				if( isActiveCall( tivcg.getChannel(), tivcg.getAddress() ))
 				{
-					updateCall( tivcg.getChannel(), null, tivcg.getAddress() );
+					updateCall( State.CALL,
+								tivcg.getChannel(), 
+								tivcg.getSourceAddress(), 
+								tivcg.getAddress() );
 				}
 				else
 				{
-					CallEvent tivcgEvent = 
+					P25CallEvent tivcgEvent = 
 							new P25CallEvent.Builder( CallEventType.TELEPHONE_CALL )
 								.aliasList( mAliasList )
 								.channel( tivcg.getChannel() )
@@ -1790,11 +2747,14 @@ public class P25ChannelState extends ChannelState
 
 				if( isActiveCall( tivcgu.getChannel(), tivcgu.getAddress() ) )
 				{
-					updateCall( tivcgu.getChannel(), null, tivcgu.getAddress() );
+					updateCall( State.CALL,
+								tivcgu.getChannel(), 
+								tivcgu.getSourceAddress(), 
+								tivcgu.getAddress() );
 				}
 				else
 				{
-					CallEvent tivcguEvent = 
+					P25CallEvent tivcguEvent = 
 							new P25CallEvent.Builder( CallEventType.TELEPHONE_CALL )
 								.aliasList( mAliasList )
 								.channel( tivcgu.getChannelIdentifier() + "-" + 
@@ -1816,11 +2776,14 @@ public class P25ChannelState extends ChannelState
 				
 				if( isActiveCall( uuvcg.getChannel(), uuvcg.getTargetAddress() ) )
 				{
-					updateCall( uuvcg.getChannel(), null, uuvcg.getTargetAddress() );
+					updateCall( State.CALL,
+								uuvcg.getChannel(), 
+								uuvcg.getSourceAddress(), 
+								uuvcg.getTargetAddress() );
 				}
 				else
 				{
-					CallEvent uuvcgEvent = 
+					P25CallEvent uuvcgEvent = 
 							new P25CallEvent.Builder( CallEventType.CALL )
 								.aliasList( mAliasList )
 								.channel( uuvcg.getChannelIdentifier() + "-" + 
@@ -1844,11 +2807,14 @@ public class P25ChannelState extends ChannelState
 
 				if( isActiveCall( uuvcgu.getChannel(), uuvcgu.getTargetAddress() ) )
 				{
-					updateCall( uuvcgu.getChannel(), null, uuvcgu.getTargetAddress() );
+					updateCall( State.CALL,
+								uuvcgu.getChannel(), 
+								uuvcgu.getSourceAddress(), 
+								uuvcgu.getTargetAddress() );
 				}
 				else
 				{
-					CallEvent uuvcguEvent = 
+					P25CallEvent uuvcguEvent = 
 							new P25CallEvent.Builder( CallEventType.CALL )
 								.aliasList( mAliasList )
 								.channel( uuvcgu.getChannelIdentifier() + "-" + 
@@ -1871,52 +2837,299 @@ public class P25ChannelState extends ChannelState
 		}
 	}
 	
-	private boolean isActiveCall( String channel, String id )
+	/**
+	 * Indicates if either the current call, or any current call detects contain
+	 * the talkgroup id.  For the current call, only the TO talkgroup is tested
+	 * 
+	 * @param channel
+	 * @param talkgroup
+	 * @return
+	 */
+	private boolean isActiveCall( String channel, String talkgroup )
 	{
-		for( ActiveCall call: mActiveCalls )
+		if( channel != null )
 		{
-			if( call.matches( channel, id ) )
+			if( mCurrentChannel.contentEquals( channel ) )
 			{
-				return true;
+				return mCurrentActiveCall != null && 
+				   ( talkgroup == null || 
+				     mCurrentActiveCall.getCallEvent().getToID().contentEquals( talkgroup ) );
+			}
+			else
+			{
+				ActiveCall call = mCallDetects.get( channel );
+				
+				if( call != null )
+				{
+					return talkgroup != null && call.getTalkgroups().contains( talkgroup );
+				}
 			}
 		}
 		
 		return false;
 	}
-	
-	private void addCall( CallEvent event )
+
+	/**
+	 * Starts a new call event.  For P25 Phase 1, only 1 call event should ever
+	 * have a call event type of CALL.  All other detected call events on other
+	 * channels should use call event type CALL DETECT. 
+	 */
+	private void addCall( P25CallEvent event )
 	{
-		mActiveCalls.add( new ActiveCall( getProcessingChain()
-				.getResourceManager().getThreadPoolManager(), event ) );
+		mCallEventModel.add( event );
+
+		String channel = event.getChannel();
+
+		ActiveCall call = new ActiveCall( getProcessingChain()
+				.getResourceManager().getThreadPoolManager(), event );
+		
+		if( channel.contentEquals( mCurrentChannel ) )
+		{
+			if( mCurrentActiveCall != null )
+			{
+				mCurrentActiveCall.end();
+			}
+
+			mCurrentActiveCall = call;
+
+			switch( event.getCallEventType() )
+			{
+				case CALL:
+					setState( State.CALL );
+					updateFrom( event.getFromID() );
+					updateTo( event.getToID() );
+					break;
+				case DATA_CALL:
+					setState( State.DATA );
+					updateFrom( event.getFromID() );
+					updateTo( event.getToID() );
+					break;
+				case CALL_DETECT:
+					/* don't update call state */
+				default:
+					break;
+			}
+		}
+		else
+		{
+			/* End the current channel call event, if there is one */
+			if( mCallDetects.containsKey( channel ) )
+			{
+				mCallDetects.get( channel ).end();
+			}
+			
+			mCallDetects.put( channel, call );
+		}
+
 	}
 	
-	private void updateCall( String channel, String fromID, String toID )
+	/**
+	 * Ends all calls in the mActiveCalls queue
+	 */
+	private void endAllCalls()
 	{
-		for( ActiveCall call: mActiveCalls )
+		if( mCurrentActiveCall != null )
 		{
-			if( call.matches( channel, toID ) )
+			mCurrentActiveCall.end();
+		}
+		
+		for( ActiveCall call: mCallDetects.values() )
+		{
+			call.end();
+		}
+	}
+
+	/**
+	 * Updates state, channel, from and to for a currently active call.  Use the
+	 * isActiveCall() method to verify that a call is currently active, otherwise
+	 * this invocation is ignored
+	 */
+	private void updateCall( State state, 
+							 String channel, 
+							 String from, 
+							 String to )
+	{
+		if( mCurrentChannel.contentEquals( channel ) )
+		{
+			if( mCurrentActiveCall != null )
 			{
-				call.update( System.currentTimeMillis() );
+				mCurrentActiveCall.update();
+
+				P25CallEvent event = mCurrentActiveCall.getCallEvent();
 				
-				setState( getState() );
-				
-				if( fromID != null && 
-					!call.getCallEvent().getFromID().contentEquals( fromID ) )
+				switch( event.getCallEventType() )
 				{
-					call.getCallEvent().setFromID( fromID );
+					case CALL:
+						setState( State.CALL );
+	
+						/* Broacast call state update */
+						updateFrom( from );
+						updateTo( to );
+	
+						if( from != null &&	
+							!from.contentEquals( "0000" ) && 
+							!from.contentEquals( "000000" ) &&
+							( !event.hasFromID() || !event.getFromID().contentEquals( from ) ) )
+						{
+							event.setFromID( from );
+						}
+						break;
+					case DATA_CALL:
+						setState( State.DATA );
+						
+						updateFrom( from );
+						updateTo( to );
+	
+						if( from != null &&	
+								!from.contentEquals( "0000" ) && 
+								!from.contentEquals( "000000" ) &&
+								( !event.hasFromID() || !event.getFromID().contentEquals( from ) ) )
+							{
+								event.setFromID( from );
+							}
+						break;
+					case CALL_DETECT:
+						/* don't update call state */
+					default:
+						break;
 				}
-				
-				return;
+			}
+			else
+			{
+				mLog.debug( "Request to update non-existent current call with "
+					+ "state:" + state + " channel:" + channel + " from:" + 
+						from + " to:" + to );
+			}
+		}
+		else
+		{
+			ActiveCall call = mCallDetects.get( channel );
+			
+			if( call != null )
+			{
+				/* Update the timestamp to now */
+				call.update();
+			}
+			else
+			{
+				mLog.debug( "Request to update non-existent call detect with "
+						+ "state:" + state + " channel:" + channel + " from:" + 
+							from + " to:" + to );
 			}
 		}
 	}
+	
+	/**
+	 * Broadcasts an update for the TO group or unit address 
+	 */
+	private void updateTo( String to )
+	{
+		if( to != null &&	
+			!to.contentEquals( "0000" ) && 
+			!to.contentEquals( "000000" ) &&
+			( mToTalkgroup == null || !mToTalkgroup.contentEquals( to ) ) )
+		{
+			mToTalkgroup = to;
+			broadcastChange( ChangedAttribute.TO_TALKGROUP );
+			
+			if( mAliasList != null )
+			{
+				Alias toAlias = mAliasList.getTalkgroupAlias( to );
+				
+				if( toAlias != null )
+				{
+					mToAlias = toAlias.getName();
+					broadcastChange( ChangedAttribute.TO_TALKGROUP_ALIAS );
+				}
+			}
+		}
+	}
+
+	/**
+	 * Broadcasts an update for the FROM group or unit address 
+	 */
+	private void updateFrom( String from )
+	{
+		if( from != null &&	
+			!from.contentEquals( "0000" ) && 
+			!from.contentEquals( "000000" ) &&
+			( mFromTalkgroup == null || !mFromTalkgroup.contentEquals( from ) ) )
+		{
+			mFromTalkgroup = from;
+			broadcastChange( ChangedAttribute.FROM_TALKGROUP );
+			
+			if( mAliasList != null )
+			{
+				Alias toAlias = mAliasList.getTalkgroupAlias( from );
+				
+				if( toAlias != null )
+				{
+					mFromAlias = toAlias.getName();
+					broadcastChange( ChangedAttribute.FROM_TALKGROUP_ALIAS );
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Broadcasts an update to the NAC
+	 */
+	private void updateNAC( String nac )
+	{
+		if( mNAC == null && nac != null )
+		{
+			mNAC = nac;
+			
+			broadcastChange( ChangedAttribute.NAC );
+		}
+	}
+	
+	/**
+	 * Updates the site information
+	 */
+	private void updateSite( String site )
+	{
+		if( mSite == null || !mSite.contentEquals( site ) )
+		{
+			mSite = site;
+			
+			broadcastChange( ChangedAttribute.SITE );
+			
+			if( mAliasList != null )
+			{
+				Alias alias = mAliasList.getSiteID( mSite );
+						
+				if( alias != null )
+				{
+					mSiteAlias = alias.getName();
+				}
+				else
+				{
+					mSiteAlias = null;
+				}
+			}
+
+			broadcastChange( ChangedAttribute.SITE_ALIAS );
+		}
+	}
+	
+	private void updateSystem( String system )
+	{
+		if( mSystem == null || !mSystem.contentEquals( system ) )
+		{
+			mSystem = system;
+			
+			broadcastChange( ChangedAttribute.SYSTEM );
+		}
+	}
+	
 
 	/**
 	 * Process a unit paging event message
 	 */
 	private void processTSBKPage( TSBKMessage message )
 	{
-		CallEvent event = null;
+		P25CallEvent event = null;
 		
 		switch( message.getOpcode() )
 		{
@@ -1980,31 +3193,6 @@ public class P25ChannelState extends ChannelState
 		}
 	}
 	
-	private void processPage( PDUMessage message )
-	{
-		if( message.getOpcode() == Opcode.UNIT_TO_UNIT_ANSWER_REQUEST )
-		{
-			UnitToUnitAnswerRequestExplicit utuare = 
-					(UnitToUnitAnswerRequestExplicit)message;
-
-			if( mLastPageEventID == null || !mLastPageEventID
-					.contentEquals( utuare.getTargetAddress() ) )
-			{
-				mCallEventModel.add( 
-						new P25CallEvent.Builder( CallEventType.PAGE )
-						.aliasList( mAliasList )
-						.details( ( utuare.isEmergency() ? "EMERGENCY" : "" ) ) 
-						.from( utuare.getWACN() + "-" + 
-							   utuare.getSystemID() + "-" + 
-							   utuare.getSourceID() )
-						.to( utuare.getTargetAddress() )
-						.build() );
-				
-				mLastPageEventID = utuare.getTargetAddress();
-			}
-		}
-	}
-
 	@Override
     public String getActivitySummary()
     {
@@ -2063,34 +3251,63 @@ public class P25ChannelState extends ChannelState
 	
 	public class ActiveCall
 	{
-		public static final long TIMEOUT = 2000; //milliseconds
+		public static final long CALL_TIMEOUT = 2000; //milliseconds
+		public static final long CALL_DETECT_TIMEOUT = 5000; //milliseconds
 		
-		private CallEvent mEvent;
+		private P25CallEvent mEvent;
 		private long mLastUpdate;
 		private ThreadPoolManager mThreadPoolManager;
+		private AtomicBoolean mEnded = new AtomicBoolean( false );
+		private long mTimeout;
+		private List<String> mTalkgroups = new ArrayList<String>();
 		
-		public ActiveCall( ThreadPoolManager threadManager, CallEvent event )
+		public ActiveCall( ThreadPoolManager threadManager, P25CallEvent event  )
 		{
 			mThreadPoolManager = threadManager;
 			mEvent = event;
+			
+			if( event.getFromID() != null )
+			{
+				mTalkgroups.add( event.getFromID() );
+			}
+			
+			if( event.getToID() != null )
+			{
+				mTalkgroups.add( event.getToID() );
+			}
+			
 			mLastUpdate = System.currentTimeMillis();
+
+			mTimeout = event.getCallEventType() == 
+				CallEventType.CALL_DETECT ? CALL_DETECT_TIMEOUT : CALL_TIMEOUT;
 			
 			mThreadPoolManager.scheduleOnce( new CallExpirationCheck( this ), 
-					TIMEOUT, TimeUnit.MILLISECONDS );
+					mTimeout, TimeUnit.MILLISECONDS );
 		}
 		
-		public CallEvent getCallEvent()
+		public P25CallEvent getCallEvent()
 		{
 			return mEvent;
 		}
 		
+		public List<String> getTalkgroups()
+		{
+			return mTalkgroups;
+		}
+		
 		public boolean matches( String channel, String id )
 		{
-			return mEvent.getChannel().contentEquals( channel ) &&
+			return mEvent.getChannel() != null &&
+				   channel != null &&
+				   mEvent.getChannel().contentEquals( channel ) &&
+				   id != null &&
 				   mEvent.getToID().contentEquals( id );
 		}
 		
-		public void update( long timestamp )
+		/**
+		 * Sets the last update timestamp to now
+		 */
+		public void update()
 		{
 			mLastUpdate = System.currentTimeMillis();
 		}
@@ -2098,21 +3315,46 @@ public class P25ChannelState extends ChannelState
 		public void checkExpiration()
 		{
 			long now = System.currentTimeMillis();
-			
-			if( now > mLastUpdate + TIMEOUT )
+
+			if( !mEnded.get() )
 			{
-				mCallEventModel.setEnd( mEvent );
-				mActiveCalls.remove( this );
-				
-//				if( mEvent.getChannel().contentEquals( CURRENT_CHANNEL ) )
-//				{
-//					setState( State.IDLE );
-//				}
+				if( now > mLastUpdate + mTimeout )
+				{
+					cleanup();
+				}
+				else
+				{
+					mThreadPoolManager.scheduleOnce( new CallExpirationCheck( this ), 
+							mTimeout, TimeUnit.MILLISECONDS );
+				}
+			}
+		}
+		
+		public void end()
+		{
+			/* The expire check timer could fire while we're doing this, so we
+			 * need to safely switch the flag and then run cleanup */
+			if( mEnded.compareAndSet( false, true ) )
+			{
+				cleanup();
+			}
+		}
+		
+		private void cleanup()
+		{
+			setState( State.FADE );
+			mCallEventModel.setEnd( mEvent );
+			
+			if( mEvent.getChannel().contentEquals( mCurrentChannel ) )
+			{
+				if( mCurrentActiveCall == this )
+				{
+					mCurrentActiveCall = null;
+				}
 			}
 			else
 			{
-				mThreadPoolManager.scheduleOnce( new CallExpirationCheck( this ), 
-						TIMEOUT, TimeUnit.MILLISECONDS );
+				mCallDetects.remove( this );
 			}
 		}
 		

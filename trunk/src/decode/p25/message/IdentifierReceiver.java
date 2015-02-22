@@ -8,7 +8,7 @@ package decode.p25.message;
  */
 public interface IdentifierReceiver
 {
-	public void setIdentifierMessage( int identifier, IdentifierProvider message );
+	public void setIdentifierMessage( int identifier, IBandIdentifier message );
 	
 	public int[] getIdentifiers();
 }

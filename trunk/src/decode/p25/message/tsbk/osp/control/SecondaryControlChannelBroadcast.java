@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import alias.AliasList;
 import bits.BinaryMessage;
-import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.reference.DataUnitID;
@@ -30,8 +30,8 @@ public class SecondaryControlChannelBroadcast extends TSBKMessage
     public static final int[] SYSTEM_SERVICE_CLASS_2 = { 136,137,138,139,140,
     	141,142,143 };
     
-    private IdentifierProvider mIdentifierUpdate1;
-    private IdentifierProvider mIdentifierUpdate2;
+    private IBandIdentifier mIdentifierUpdate1;
+    private IBandIdentifier mIdentifierUpdate2;
     
     public SecondaryControlChannelBroadcast( BinaryMessage message, 
                                 DataUnitID duid,
@@ -145,7 +145,7 @@ public class SecondaryControlChannelBroadcast extends TSBKMessage
     }
 
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierProvider message )
+    public void setIdentifierMessage( int identifier, IBandIdentifier message )
     {
 		if( identifier == getIdentifier1() )
 		{

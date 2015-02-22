@@ -4,7 +4,7 @@ import java.util.Date;
 
 import alias.AliasList;
 import bits.BinaryMessage;
-import decode.p25.message.IdentifierProvider;
+import decode.p25.message.IBandIdentifier;
 import decode.p25.message.IdentifierReceiver;
 import decode.p25.message.pdu.PDUMessage;
 import decode.p25.reference.DataUnitID;
@@ -36,8 +36,8 @@ public class TelephoneInterconnectChannelGrantExplicit extends PDUMessage
 		230,231,232,233,234,235,236,237,238,239,240,241,242,243,244,245,246,247,
 		248,249,250,251,252,253,254,255 };
 	
-	private IdentifierProvider mTransmitIdentifierUpdate;
-	private IdentifierProvider mReceiveIdentifierUpdate;
+	private IBandIdentifier mTransmitIdentifierUpdate;
+	private IBandIdentifier mReceiveIdentifierUpdate;
 	
 	public TelephoneInterconnectChannelGrantExplicit( BinaryMessage message,
             DataUnitID duid, AliasList aliasList )
@@ -159,7 +159,7 @@ public class TelephoneInterconnectChannelGrantExplicit extends PDUMessage
     }
 
 	@Override
-    public void setIdentifierMessage( int identifier, IdentifierProvider message )
+    public void setIdentifierMessage( int identifier, IBandIdentifier message )
     {
 		if( identifier == getTransmitChannelIdentifier() )
 		{
