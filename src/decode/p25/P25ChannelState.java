@@ -140,9 +140,9 @@ public class P25ChannelState extends ChannelState
 	private String mSite;
 	private String mSiteAlias;
 	private String mFromTalkgroup;
-	private String mFromAlias;
+	private Alias mFromAlias;
 	private String mToTalkgroup;
-	private String mToAlias;
+	private Alias mToAlias;
 
 	/* The currently tuned traffic channel - dynamically updated */
 	private String mCurrentChannel = "CURRENT";
@@ -169,7 +169,7 @@ public class P25ChannelState extends ChannelState
 		
 		super.setSquelchState( SquelchState.UNSQUELCH );
 	}
-
+	
 	/**
 	 * Message processor.  All messages are received and processed via this method.
 	 */
@@ -1083,12 +1083,12 @@ public class P25ChannelState extends ChannelState
 
 						updateSite( site );
 						
-						if( mCurrentChannel == null || 
-							!mCurrentChannel.contentEquals( rfsssb.getChannel() ) )
-						{
-							mCurrentChannel = rfsssb.getChannel();
-							mCurrentChannelFrequency = rfsssb.getDownlinkFrequency();
-						}
+//						if( mCurrentChannel == null || 
+//							!mCurrentChannel.contentEquals( rfsssb.getChannel() ) )
+//						{
+//							mCurrentChannel = rfsssb.getChannel();
+//							mCurrentChannelFrequency = rfsssb.getDownlinkFrequency();
+//						}
 					}
 					else
 					{
@@ -1108,12 +1108,12 @@ public class P25ChannelState extends ChannelState
 
 						updateSite( site );
 						
-						if( mCurrentChannel == null || 
-							!mCurrentChannel.contentEquals( rfsssbe.getTransmitChannel() ) )
-						{
-							mCurrentChannel = rfsssbe.getTransmitChannel();
-							mCurrentChannelFrequency = rfsssbe.getDownlinkFrequency();
-						}
+//						if( mCurrentChannel == null || 
+//							!mCurrentChannel.contentEquals( rfsssbe.getTransmitChannel() ) )
+//						{
+//							mCurrentChannel = rfsssbe.getTransmitChannel();
+//							mCurrentChannelFrequency = rfsssbe.getDownlinkFrequency();
+//						}
 					}
 					else
 					{
@@ -3034,14 +3034,14 @@ public class P25ChannelState extends ChannelState
 			
 			if( mAliasList != null )
 			{
-				Alias toAlias = mAliasList.getTalkgroupAlias( to );
-				
-				if( toAlias != null )
-				{
-					mToAlias = toAlias.getName();
-					broadcastChange( ChangedAttribute.TO_TALKGROUP_ALIAS );
-				}
+				mToAlias = mAliasList.getTalkgroupAlias( to );
 			}
+			else
+			{
+				mToAlias = null;
+			}
+			
+			broadcastChange( ChangedAttribute.TO_TALKGROUP_ALIAS );
 		}
 	}
 
@@ -3060,14 +3060,14 @@ public class P25ChannelState extends ChannelState
 			
 			if( mAliasList != null )
 			{
-				Alias toAlias = mAliasList.getTalkgroupAlias( from );
-				
-				if( toAlias != null )
-				{
-					mFromAlias = toAlias.getName();
-					broadcastChange( ChangedAttribute.FROM_TALKGROUP_ALIAS );
-				}
+				mFromAlias = mAliasList.getTalkgroupAlias( from );
 			}
+			else
+			{
+				mFromAlias = null;
+			}
+			
+			broadcastChange( ChangedAttribute.FROM_TALKGROUP_ALIAS );
 		}
 	}
 	
@@ -3234,7 +3234,7 @@ public class P25ChannelState extends ChannelState
 		return mFromTalkgroup;
 	}
 	
-	public String getFromAlias()
+	public Alias getFromAlias()
 	{
 		return mFromAlias;
 	}
@@ -3244,7 +3244,7 @@ public class P25ChannelState extends ChannelState
 		return mToTalkgroup;
 	}
 	
-	public String getToAlias()
+	public Alias getToAlias()
 	{
 		return mToAlias;
 	}

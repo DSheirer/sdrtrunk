@@ -23,6 +23,7 @@ import javax.swing.JLabel;
 
 import settings.ColorSetting;
 import settings.Setting;
+import alias.Alias;
 import controller.channel.Channel;
 import controller.state.ChannelState.ChangedAttribute;
 import controller.state.ChannelState.State;
@@ -144,8 +145,10 @@ public class P25Panel extends ChannelStatePanel
 			    		{
 			    			mFrom.setText( null );
 			    			mFromAlias.setText( null );
+			    			mFromAlias.setIcon( null );
 			    			mTo.setText( null );
 			    			mToAlias.setText( null );
+			    			mToAlias.setIcon( null );
 			    		}
 						break;
 					case SOURCE:
@@ -173,15 +176,38 @@ public class P25Panel extends ChannelStatePanel
 						mFrom.setText( channelState.getFromTalkgroup() );
 						break;
 					case FROM_TALKGROUP_ALIAS:
-						mFromAlias.setText( channelState.getFromAlias() );
+						Alias from = channelState.getFromAlias();
+						
+						if( from != null )
+						{
+							mFromAlias.setText( from.getName() );
+							mFromAlias.setIcon( getSettingsManager()
+				    				.getImageIcon( from.getIconName(), 12 )  );
+						}
+						else
+						{
+							mFromAlias.setText( null );
+							mFromAlias.setIcon( null );
+						}
 						break;
 					case TO_TALKGROUP:
 						mTo.setText( channelState.getToTalkgroup() );
 						break;
 					case TO_TALKGROUP_ALIAS:
-						mToAlias.setText( channelState.getToAlias() );
-						break;
+						Alias to = channelState.getToAlias();
 						
+						if( to != null )
+						{
+							mToAlias.setText( to.getName() );
+							mToAlias.setIcon( getSettingsManager()
+				    				.getImageIcon( to.getIconName(), 12 )  );
+						}
+						else
+						{
+							mToAlias.setText( null );
+							mToAlias.setIcon( null );
+						}
+						break;
 				}
 
 				repaint();
