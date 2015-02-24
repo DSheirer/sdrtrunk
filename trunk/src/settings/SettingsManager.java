@@ -260,6 +260,10 @@ public class SettingsManager
 				new MapIcon( "Dump Truck", "images/dump_truck_red.png", false );
 		icons.add( dumpTruck );
 
+		MapIcon fireTruck = 
+				new MapIcon( "Fire Truck", "images/fire_truck.png", false );
+		icons.add( fireTruck );
+
 		MapIcon garbageTruck = 
 				new MapIcon( "Garbage Truck", "images/garbage_truck.png", false );
 		icons.add( garbageTruck );
@@ -274,6 +278,10 @@ public class SettingsManager
 		MapIcon propaneTruck = 
 				new MapIcon( "Propane Truck", "images/propane_truck.png", false );
 		icons.add( propaneTruck );
+
+		MapIcon rescueTruck = 
+				new MapIcon( "Rescue Truck", "images/rescue_truck.png", false );
+		icons.add( rescueTruck );
 
 		MapIcon schoolBus = 
 				new MapIcon( "School Bus", "images/school_bus.png", false );

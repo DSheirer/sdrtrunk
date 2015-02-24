@@ -229,7 +229,7 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 		
 		private float mAlphaGain = ( 4.0f * mDamping * mLoopBandwidth ) / 
 						  ( 1.0f + ( 2.0f * mDamping * mLoopBandwidth ) + 
-								  ( mLoopBandwidth * mLoopBandwidth ) );
+								   ( mLoopBandwidth * mLoopBandwidth ) );
 
 		private float mBetaGain = ( 4.0f * mLoopBandwidth * mLoopBandwidth ) / 
 							   ( 1.0f + ( 2.0f * mDamping * mLoopBandwidth ) + 
@@ -240,7 +240,7 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 		private float mLoopFrequency = 0.0f;
 
 		private float mMaximumFrequency = ( 2.0f * (float)Math.PI * 1200.0f ) / 
-					48000.0f;
+				48000.0f;
 
 		public CostasLoop()
 		{
