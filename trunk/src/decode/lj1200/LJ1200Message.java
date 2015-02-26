@@ -43,19 +43,14 @@ public class LJ1200Message extends Message
 
 	public static int[] SYNC = { 0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15 };
 
-	public static int[] VRC = { 16,17,18,19,20,21,22,23 };
+	public static int[] VRC = { 23,22,21,20,19,18,17,16 };
 	
-	public static int[] LRC = { 24,25,26,27,28,29,30,31 };
+	public static int[] LRC = { 31,30,29,28,27,26,25,24 };
 
-	public static int[] FUNCTION = { 32,33,34,35 };
+	public static int[] FUNCTION = { 35,34,33,32 };
 
-	/* Message 8 Site ID */
-	public static int[] SITE_ID_PREFIX = { 36,37,38,39,40,41,42,43,44,45,46,47 };
-	public static int[] NETWORK_ID = { 48,49,50,51,52,53,54,55 };
-	public static int[] SITE_ID = { 56,57,58,59,60,61,62,63 };
-	
-	public static int[] ADDRESS = { 36,37,38,39,40,41,42,43,44,45,46,47,48,49,
-		50,51,52,53,54,55,56,57,58,59,60,61,62,63 };
+	public static int[] ADDRESS = { 63,62,61,60,59,58,57,56,55,54,53,52,51,50,
+		49,48,47,46,45,44,43,42,41,40,39,38,37,36 };
 
 	public static int[] REPLY_1 = { 39,38,37,36,43 };
 	public static int[] REPLY_2 = { 42,41,40,47,46 };
@@ -63,7 +58,8 @@ public class LJ1200Message extends Message
 	public static int[] REPLY_4 = { 48,55,54,53,52 };
 	public static int[] REPLY_5 = { 59,58,57,56,63 };
 
-	public static int[] MESSAGE_CRC = { 64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79 };
+	public static int[] MESSAGE_CRC = { 79,78,77,76,75,74,73,72,71,70,69,68,67,
+		66,65,64 };
 	
 	private static SimpleDateFormat mSDF = new SimpleDateFormat( "yyyyMMdd HHmmss" );
 
@@ -119,7 +115,8 @@ public class LJ1200Message extends Message
     
     public Function getFunction()
     {
-    	return Function.fromValue( mMessage.getInt( FUNCTION ) );
+    	return Function.fromValue( mMessage.getInt( FUNCTION ), 
+    							   mMessage.getInt( REPLY_3 ) );
     }
     
     public String getAddress()
@@ -127,26 +124,21 @@ public class LJ1200Message extends Message
     	return mMessage.getHex( ADDRESS, 7 );
     }
     
-    public String getNetwork()
+    public Alias getAddressAlias()
     {
-    	return mMessage.getHex( NETWORK_ID, 2 );
-    }
-    
-    public String getSite()
-    {
-    	return mMessage.getHex( SITE_ID, 2 );
-    }
-    
-    public String getSiteID()
-    {
-    	return getNetwork() + "-" + getSite();
-    }
-    
-    public Alias getSiteIDAlias()
-    {
-    	if( mAliasList != null && getFunction() == Function.F8_SITE_ID )
+    	if( mAliasList != null )
     	{
-    		return mAliasList.getSiteID( getSiteID() );
+    		return mAliasList.getESNAlias( getAddress() );
+    	}
+    	
+    	return null;
+    }
+    
+    public Alias getSiteAndReplyCodeAlias()
+    {
+    	if( mAliasList != null && getFunction() == Function.F1_SITE_ID )
+    	{
+    		return mAliasList.getSiteID( getReplyCode() );
     	}
     	
     	return null;
@@ -181,33 +173,31 @@ public class LJ1200Message extends Message
 
     	switch( function )
     	{
-	    	case FE_TRACK_PULSE:
-	    	case FF_TRACK_PULSE:
-	    		sb.append( " REPLY CODE [" );
-	    		sb.append( getReplyCode() );
-	    		break;
-	    	case F8_SITE_ID:
-	    		sb.append( " SITE [" );
-	    		sb.append( getSiteID() );
-
-	    		Alias site = getSiteIDAlias();
-	    		
-	    		if( site != null )
-	    		{
-	    			sb.append( "/" );
-	    			sb.append( site.getName() );
-	    		}
-	    		
-	    		sb.append( "]" );
-	        	sb.append( " ADDRESS [" );
-	        	sb.append( getAddress() );
-	    		break;
-    		default:
-    	    	sb.append( " ADDRESS [" );
-    	    	sb.append( getAddress() );
-    	    	break;
+    	case F1_SITE_ID:
+    		sb.append( " SITE [" );
+    		break;
+    	case F1_TRANSPONDER_REPLY:
+    	case F2_TEST:
+    	case F3_DEACTIVATE:
+    	case F4_ACTIVATE:
+    	case FF_TRACK_PULSE:
+		default:
+    		sb.append( " REPLY CODE [" );
+	    	break;
     	}
     	
+		sb.append( getReplyCode() );
+
+		Alias site = getSiteAndReplyCodeAlias();
+		
+		if( site != null )
+		{
+			sb.append( "/" );
+			sb.append( site.getName() );
+		}
+    	
+    	sb.append( "] ADDRESS [" );
+    	sb.append( getAddress() );
     	sb.append( "] VRC [" + getVRC() );
     	sb.append( "] LRC [" + getLRC() );
     	sb.append( "] CRC [" + getCRC() );
@@ -267,19 +257,24 @@ public class LJ1200Message extends Message
 	@Override
     public String getEventType()
     {
+		if( getFunction() == Function.F1_TRANSPONDER_REPLY )
+		{
+			return "TRANSPONDER";
+		}
+		
 	    return "TOWER";
     }
 
 	@Override
     public String getFromID()
     {
-		return null;
+		return getReplyCode();
     }
 
 	@Override
     public Alias getFromIDAlias()
     {
-		return null;
+		return getSiteAndReplyCodeAlias();
     }
 
 	@Override
@@ -314,36 +309,38 @@ public class LJ1200Message extends Message
 	
 	public enum Function
 	{
-		F0(             0x0, "0-UNKNOWN" ),
-		F1(             0x1, "1-UNKNOWN" ),
-		F2_ACTIVATION(  0x2, "2-ACTIVATION" ),
-		F3_SPEED_UP(    0x3, "3-SPEED-UP" ),
-		F4_TEST(        0x4, "4-TEST" ),
-		F5(             0x5, "5-UNKNOWN" ),
-		F6_SET_RATE(    0x6, "6-UNKNOWN" ), //Delete
-		F7(             0x7, "7-UNKNOWN" ),
-		F8_SITE_ID(     0x8, "8-SITE ID" ),
-		F9(             0x9, "9-UNKNOWN" ),
-		FA(             0xA, "A-UNKNOWN" ),
-		FB(             0xB, "B-UNKNOWN" ),
-		FC_DEACTIVATE(  0xC, "C-DEACTIVATE" ),
-		FD(             0xD, "D-UNKNOWN" ),
-		FE_TRACK_PULSE( 0xE, "E-UNKNOWN" ),
-		FF_TRACK_PULSE( 0xF, "F-TRACK PULSE" ),
-		UNKNOWN(         -1, "UNKNOWN" );
+/* Little Endian Format */
+//		F0(             0x0, "0-UNKNOWN" ),
+//		F1(             0x1, "1-UNKNOWN" ),
+//		F2_ACTIVATION(  0x2, "2-ACTIVATION" ),
+//		F3_SPEED_UP(    0x3, "3-SPEED-UP" ),
+//		F4_TEST(        0x4, "4-TEST" ),
+//		F5(             0x5, "5-UNKNOWN" ),
+//		F6_SET_RATE(    0x6, "6-UNKNOWN" ), //Delete
+//		F7(             0x7, "7-UNKNOWN" ),
+//		F8_SITE_ID(     0x8, "8-SITE ID" ),
+//		F9(             0x9, "9-UNKNOWN" ),
+//		FA(             0xA, "A-UNKNOWN" ),
+//		FB(             0xB, "B-UNKNOWN" ),
+//		FC_DEACTIVATE(  0xC, "C-DEACTIVATE" ),
+//		FD(             0xD, "D-UNKNOWN" ),
+//		FE_TRACK_PULSE( 0xE, "E-UNKNOWN" ),
+//		FF_TRACK_PULSE( 0xF, "F-TRACK PULSE" ),
+
+		/* Big Endian Format */
+		F1_SITE_ID( "1Y-SITE ID" ),
+		F1_TRANSPONDER_REPLY( "1-REPLY CODE" ),
+		F2_TEST( "2-TEST" ),
+		F3_DEACTIVATE( "3-DEACTIVATE" ),
+		F4_ACTIVATE( "4-ACTIVATE" ),
+		FF_TRACK_PULSE( "F-TRACK PULSE" ),
+		UNKNOWN( "UNKNOWN" );
 		
-		private int mValue;
 		private String mLabel;
 		
-		private Function( int value, String label )
+		private Function( String label )
 		{
-			mValue = value;
 			mLabel = label;
-		}
-		
-		public int getValue()
-		{
-			return mValue;
 		}
 		
 		public String getLabel()
@@ -356,14 +353,30 @@ public class LJ1200Message extends Message
 			return getLabel();
 		}
 		
-		public static Function fromValue( int value )
+		public static Function fromValue( int value, int replyCodeDigit3 )
 		{
-			if( 0 <= value && value <= 15 )
+			switch( value )
 			{
-				return Function.values()[ value ];
+				case 1:
+					if( replyCodeDigit3 == 31 ) /* 'Y' middle character */
+					{
+						return Function.F1_SITE_ID;
+					}
+					else
+					{
+						return Function.F1_TRANSPONDER_REPLY;
+					}
+				case 2:
+					return Function.F2_TEST;
+				case 3:
+					return Function.F3_DEACTIVATE;
+				case 4:
+					return Function.F4_ACTIVATE;
+				case 15:
+					return Function.FF_TRACK_PULSE;
+				default:
+					return Function.UNKNOWN;
 			}
-			
-			return UNKNOWN;
 		}
 	}
 	
@@ -374,27 +387,20 @@ public class LJ1200Message extends Message
 	{
 		List<Alias> aliases = new ArrayList<Alias>();
 		
-		Alias from = getFromIDAlias();
+		Alias siteAndReply = getSiteAndReplyCodeAlias();
 		
-		if( from != null )
+		if( siteAndReply != null )
 		{
-			aliases.add( from );
+			aliases.add( siteAndReply );
 		}
 
-		Alias to = getToIDAlias();
+		Alias address = getAddressAlias();
 		
-		if( to != null )
+		if( address != null )
 		{
-			aliases.add( to );
+			aliases.add( address );
 		}
 		
-		Alias site = getSiteIDAlias();
-		
-		if( site != null )
-		{
-			aliases.add( site );
-		}
-
 		return aliases;
 	}
 }
