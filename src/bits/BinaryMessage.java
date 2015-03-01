@@ -17,6 +17,7 @@
  ******************************************************************************/
 package bits;
 
+import java.util.Arrays;
 import java.util.BitSet;
 
 import org.slf4j.Logger;
@@ -359,7 +360,39 @@ public class BinaryMessage extends BitSet
     }
     
     /**
-     * Returns the integer value represented by the bit array
+     * Returns the byte value represented by the bit array
+     * @param bits - an array of bit positions that will be treated as if they
+     * 			were contiguous bits, with index 0 being the MSB and index
+     * 			length - 1 being the LSB
+     * @return - byte value of the bit array
+     */
+    public byte getByte( int[] bits )
+    {
+    	if( bits.length != 8 )
+    	{
+    		throw new IllegalArgumentException( "Invalid - there must be 8"
+    				+ "indexes to form a proper byte" );
+    	}
+
+    	int value = 0;
+
+    	for( int index: bits )
+    	{
+    		value = Integer.rotateLeft( value, 1 );
+    		
+    		if( get( index ) )
+    		{
+    			value++;
+    		}
+    	}
+    	
+    	mLog.debug( "Value is:" + value );
+    	
+    	return (byte)( value & 0xFF );
+    }
+
+    /**
+     * Returns the long value represented by the bit array
      * @param bits - an array of bit positions that will be treated as if they
      * 			were contiguous bits, with index 0 being the MSB and index
      * 			length - 1 being the LSB

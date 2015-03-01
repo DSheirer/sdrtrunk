@@ -39,7 +39,7 @@ public class P25Interleave
 		111,124,125,126,127,140,141,142,143,156,157,158,159,172,173,174,175,188,
 		189,190,191 };
 	
-	private static int[] VOICE_DEINTERLEAVE = new int[] { 0,24,48,72,96,120,25,
+	private static int[] VOICE_INTERLEAVE = new int[] { 0,24,48,72,96,120,25,
 		1,73,49,121,97,2,26,50,74,98,122,27,3,75,51,123,99,4,28,52,76,100,124,
 		29,5,77,53,125,101,6,30,54,78,102,126,31,7,79,55,127,103,8,32,56,80,104,
 		128,33,9,81,57,129,105,10,34,58,82,106,130,35,11,83,59,131,107,12,36,60,
@@ -48,13 +48,13 @@ public class P25Interleave
 		67,139,115,20,44,68,92,116,140,45,21,93,69,141,117,22,46,70,94,119,142,
 		47,23,95,71,143,118 };
 
-	private static int[] VOICE_INTERLEAVE = new int[] { 0,7,12,19,24,31,36,43,
+	private static int[] VOICE_DEINTERLEAVE = new int[] { 0,7,12,19,24,31,36,43,
 		48,55,60,67,72,79,84,91,96,103,108,115,120,127,132,139,1,6,13,18,25,30,
 		37,42,49,54,61,66,73,78,85,90,97,102,109,114,121,126,133,138,2,9,14,21,
 		26,33,38,45,50,57,62,69,74,81,86,93,98,105,110,117,122,129,134,141,3,8,
 		15,20,27,32,39,44,51,56,63,68,75,80,87,92,99,104,111,116,123,128,135,
 		140,4,11,16,23,28,35,40,47,52,59,64,71,76,83,88,95,100,107,112,119,124,
-		131,143,136,5,10,17,22,29,34,41,46,53,58,65,70,77,82,89,94,101,106,113,
+		131,136,143,5,10,17,22,29,34,41,46,53,58,65,70,77,82,89,94,101,106,113,
 		118,125,130,137,142 };
 	/**
 	 * Deinterleaves the 196-bit block in message, identified by start and end
@@ -140,31 +140,22 @@ public class P25Interleave
 
     public static void main( String[] args )
     {
-    	Trellis_1_2_Rate halfrate = new Trellis_1_2_Rate();
-    	
     	int start = 0;
-    	int end = 196;
-    	String interleaved = "0010010100000000000000000000000000000000000010100011001011111010101010101010101010101010010111101010100011010000000000000000000000000000110001011010011010101010101010101010101010101010100101100101";
-
-    	BinaryMessage b = new BinaryMessage( end );
+    	int end = 144;
+    	int set = 50;
     	
-    	for( int x = 0; x < end; x++ )
-    	{
-    		if( interleaved.substring( x, x + 1 ).contentEquals( "1" ) )
-    		{
-    			b.set( x );
-    		}
-    	}
+    	String interleaved = "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+
+    	BinaryMessage b = BinaryMessage.load( interleaved );
     	
-    	mLog.debug( "Interleaved:" + interleaved );
-    	mLog.debug( "     Buffer:" + b.toString() );
+    	b.set( set );
+    	
+    	mLog.debug( "INT:" + b.toString() );
 
-    	P25Interleave.deinterleaveData( b, start, end );
-    		
-    	mLog.debug( "Deinterleav:" + b.toString() );
+    	P25Interleave.deinterleaveVoice( b, start, end );
+    	
+    	mLog.debug( "DEI:" + b.toString() );
 
-//    	halfrate.decode( b, start, end );
-//    	
-//    	mLog.debug( "Trellis Off:" + b.toString() );
+    	mLog.debug( "In: " + set + " Out:" + b.nextSetBit( 0 ) );
     }
 }

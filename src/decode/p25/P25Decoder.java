@@ -322,10 +322,10 @@ public class P25Decoder extends Decoder
 					mC4FMSlicer.removeListener( slicerTap );
 				}
 				
-				if( mCQPSKSlicer != null )
-				{
-					mCQPSKSlicer.removeListener( slicerTap );
-				}
+//				if( mCQPSKSlicer != null )
+//				{
+//					mCQPSKSlicer.removeListener( slicerTap );
+//				}
 				break;
 		}
     }
@@ -347,6 +347,11 @@ public class P25Decoder extends Decoder
 		if( mSymbolFilter != null )
 		{
 			mSymbolFilter.addListener( listener );
+		}
+		
+		if( mCQPSKDemodulator != null )
+		{
+			mCQPSKDemodulator.addListener( listener );
 		}
 	}
 
