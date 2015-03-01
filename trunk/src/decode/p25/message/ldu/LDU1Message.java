@@ -36,6 +36,8 @@ public class LDU1Message extends LDUMessage
 	    mCRC = new CRC[ 2 ];
 	    mCRC[ 0 ] = CRC.PASSED;
 	    
+	    //TODO: edac on link control octets
+	    
 	    checkCRC();
     }
 

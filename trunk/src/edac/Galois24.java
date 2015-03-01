@@ -161,21 +161,16 @@ public class Galois24
 	
 	public static void main( String[] args )
 	{
-		/* NID + TDULC message */
-		String msg = "0010011000001111100100110011000100111010000111010001000000000000000000000000000000000000000000000100101010010111000000000000000000000000000010010111101111111111000000000000000000000000000000000000000000000000000110001011100001111101010110111001001011010010101111010010000010110011101111111100100000010001111100011010010100001101111001111001100000111000";
+		String msg = "01001111011100100011011";
 
 		BinaryMessage message = BinaryMessage.load( msg );
 
 		mLog.debug( "MSG: " + message.toString() );
 
-		int x = 64;
+		int x = 0;
 		
-		while( x < msg.length() )
-		{
-			message = checkAndCorrect( message, x );
+		message = checkAndCorrect( message, x );
 
-			mLog.debug( "X:" + x + " Pass:" + ( message.getCRC()== CRC.PASSED ) );
-			x += 24;
-		}
+		mLog.debug( "MSG: " + message.toString() + " Pass:" + ( message.getCRC()== CRC.PASSED ) );
 	}
 }

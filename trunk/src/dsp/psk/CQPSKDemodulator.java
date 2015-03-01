@@ -36,6 +36,10 @@ import org.slf4j.LoggerFactory;
 import sample.Listener;
 import sample.Provider;
 import sample.complex.ComplexSample;
+import source.tuner.FrequencyChangeEvent;
+import source.tuner.FrequencyChangeEvent.Attribute;
+import source.tuner.FrequencyChangeListener;
+import buffer.FloatAveragingBuffer;
 import dsp.filter.interpolator.QPSKInterpolator;
 
 /**
@@ -51,10 +55,12 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( CQPSKDemodulator.class );
-	
+
 	private Listener<ComplexSample> mListener;
 	
 	private GardnerDetector mGardnerDetector = new GardnerDetector();
+	
+	private FrequencyChangeListener mFrequencyChangeListener;
 	
 	public CQPSKDemodulator()
 	{
@@ -81,6 +87,75 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 		}
 		
 		return value;
+	}
+	
+	public void addListener( FrequencyChangeListener listener )
+	{
+		mFrequencyChangeListener = listener;
+	}
+	
+	public void removeListener( FrequencyChangeListener listener )
+	{
+		mFrequencyChangeListener = null;
+	}
+
+	/**
+	 * Processes the current loop frequency of the costas loop and broadcasts
+	 * tuner frequency offset adjustments 10 times a second as needed to keep
+	 * the frequency offset below half of the maximum frequency
+	 */
+	public class FrequencyControl
+	{	
+		/* Set the trigger threshold at half of the maximum costas loop control
+		 * frequency */
+		private static final float CORRECTION_THRESHOLD_FREQUENCY = 
+			( 2.0f * (float)Math.PI * 600.0f ) / 48000.0f;
+
+		private FloatAveragingBuffer mBuffer = new FloatAveragingBuffer( 40 );
+		
+		private long mFrequencyError = 0;
+		
+		private int mCounter = 0;
+		
+		public void receive( float frequency )
+		{
+//			mCounter++;
+//			
+//			if( mCounter >= 480 )
+//			{
+//				float average = mBuffer.get( frequency );
+//				mLog.debug( "Avg:" + average + " Threshold:" + CORRECTION_THRESHOLD_FREQUENCY);
+//
+//				boolean correctionNeeded = false;
+//				
+//				if( average > CORRECTION_THRESHOLD_FREQUENCY )
+//				{
+//					mFrequencyError--;
+//
+//					correctionNeeded = true;
+//				}
+//				else if( average < -CORRECTION_THRESHOLD_FREQUENCY )
+//				{
+//					mFrequencyError++;
+//					
+//					correctionNeeded = true;
+//				}
+//				
+//				if( correctionNeeded && mFrequencyChangeListener != null )
+//				{
+//					mLog.debug( "Issuing Frequency Correction: " + mFrequencyError );
+//					mFrequencyChangeListener.frequencyChanged( 
+//						new FrequencyChangeEvent( Attribute.FREQUENCY_ERROR, 
+//								mFrequencyError ) );
+//				}
+//				
+//				mCounter = 0;
+//			}
+//			else
+//			{
+//				mBuffer.get( frequency );
+//			}
+		}
 	}
 
 	/**
@@ -209,10 +284,15 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 	}
 	
 	/**
-	 * Costas Loop - phase locked loop synchronized to the incoming signal.
+	 * Costas Loop - phase locked loop synchronized to the frequency offset of
+	 * the incoming signal to enable the signal to be mixed down to zero offset
+	 * for proper synchronization.  The mFrequency value indicates the detected
+	 * frequency offset.  We attempt to keep that value close to zero by issuing
+	 * frequency adjustments to the tuner channel source.
 	 * 
-	 * Ported from gnuradio/control_loop and gnuradio/mpsk_receiver_cc
-	 * using initialization values from KA1RBI's OP25/cqpsk.py
+	 * Most of the costas loop code was ported from gnuradio/control_loop and 
+	 * gnuradio/mpsk_receiver_cc using initialization values from KA1RBI's 
+	 * OP25/cqpsk.py
 	 */
 	public class CostasLoop implements Listener<ComplexSample>
 	{
@@ -221,6 +301,9 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 		/* 45 degree rotation angle */
 		public static final float THETA = (float)( Math.PI / 4.0d ); 
 
+		private static final float MAXIMUM_FREQUENCY = ( 2.0f * (float)Math.PI * 
+				1200.0f ) / 48000.0f;
+		
 		/* http://www.trondeau.com/blog/2011/8/13/control-loop-gain-values.html */
 		private float mDamping = (float)Math.sqrt( 2.0 ) / 2.0f;
 		
@@ -238,9 +321,8 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 		private float mLoopPhase = 0.0f;
 		
 		private float mLoopFrequency = 0.0f;
-
-		private float mMaximumFrequency = ( 2.0f * (float)Math.PI * 1200.0f ) / 
-				48000.0f;
+		
+		private FrequencyControl mFrequencyControl = new FrequencyControl();
 
 		public CostasLoop()
 		{
@@ -289,12 +371,6 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 
 			/* Adjust for phase error */
 			adjust( phaseError );
-
-			/* Maintain phase between +/- 2 * PI */
-			unwrapPhase();
-
-			/* Limit frequency to +/- maximum frequency */
-			limitFrequency();
 		}
 
 		/**
@@ -307,18 +383,27 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 		{
 			mLoopFrequency += mBetaGain * phase_error;
 			mLoopPhase += mLoopFrequency + mAlphaGain * phase_error;
+
+			/* Maintain phase between +/- 2 * PI */
+			unwrapPhase();
+
+			/* Limit frequency to +/- maximum frequency */
+			limitFrequency();
 		}
 		
 		private void limitFrequency()
 		{
-			if( mLoopFrequency > mMaximumFrequency )
+			/* Check for and issue tuner offset correction */
+			mFrequencyControl.receive( mLoopFrequency );
+			
+			if( mLoopFrequency > MAXIMUM_FREQUENCY )
 			{
-				mLoopFrequency = mMaximumFrequency;
+				mLoopFrequency = MAXIMUM_FREQUENCY;
 			}
 			
-			if( mLoopFrequency < -mMaximumFrequency )
+			if( mLoopFrequency < -MAXIMUM_FREQUENCY )
 			{
-				mLoopFrequency = -mMaximumFrequency;
+				mLoopFrequency = -MAXIMUM_FREQUENCY;
 			}
 		}
 

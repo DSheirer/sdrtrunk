@@ -9,7 +9,7 @@ public enum DataUnitID
 	NID  ( -1,   64, false, "NID  ", "Network and Data Unit ID" ),
 	HDU  (  0,  712, false, "HDU  ", "Header Data Unit" ),
 	TDU  (  3,   64, false, "TDU  ", "Simple Terminator Data Unit" ),
-	LDU1 (  5, 1630, true,  "LDU1 ", "Logical Link Data Unit 1" ),
+	LDU1 (  5, 1632, true,  "LDU1 ", "Logical Link Data Unit 1" ),
 	TSBK1(  7,  260, false, "TSBK1", "Trunking Signaling Block" ),
 	TSBK2(  7,  260, false, "TSBK2", "Trunking Signaling Block" ),
 	TSBK3(  7,  260, false, "TSBK3", "Trunking Signaling Block" ),
