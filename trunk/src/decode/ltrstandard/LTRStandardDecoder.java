@@ -21,6 +21,8 @@ import message.MessageDirection;
 import sample.real.RealSampleListener;
 import source.Source.SampleType;
 import alias.AliasList;
+import audio.AudioOutputImpl;
+import audio.IAudioOutput;
 import bits.MessageFramer;
 import bits.SyncPattern;
 import decode.Decoder;
@@ -43,6 +45,7 @@ public class LTRStandardDecoder extends Decoder
 	private LTRFSKDecoder mLTRFSKDecoder;
 	private MessageFramer mLTRMessageFramer;
 	private LTRStandardMessageProcessor mLTRMessageProcessor;
+    private AudioOutputImpl mAudioOutput = new AudioOutputImpl( "LTR Standard Decoder Audio Output" );
 
 	public LTRStandardDecoder( SampleType sampleType, 
 					   AliasList aliasList,
@@ -75,6 +78,8 @@ public class LTRStandardDecoder extends Decoder
 			
 			mDCRemovalFilter.setListener( this.getRealReceiver() );
 		}
+		
+		addRealSampleListener( mAudioOutput );
 
 		mLTRFSKDecoder = new LTRFSKDecoder();
 
@@ -125,4 +130,10 @@ public class LTRStandardDecoder extends Decoder
 			mDemodulator.addListener( listener );
 		}
     }
+
+	@Override
+	public IAudioOutput getAudioOutput()
+	{
+		return mAudioOutput;
+	}
 }

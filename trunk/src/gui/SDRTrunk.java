@@ -29,8 +29,11 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Iterator;
+import java.util.ServiceLoader;
 
 import javax.imageio.ImageIO;
+import javax.sound.sampled.spi.FormatConversionProvider;
 import javax.swing.JFrame;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
@@ -96,6 +99,9 @@ public class SDRTrunk
 		 * properties that were just loaded 
 		 */
 		mResourceManager = new ResourceManager();
+		
+		/* Log any available audio converter plugins */
+		logAvailableAudioPlugins();
 		
 		//Initialize the GUI
         initGUI();
@@ -372,5 +378,18 @@ public class SDRTrunk
 		}
 
 		return homePath;
+    }
+    
+    private void logAvailableAudioPlugins()
+    {
+		ServiceLoader<FormatConversionProvider> loader = 
+				ServiceLoader.load( FormatConversionProvider.class );
+		
+		Iterator<FormatConversionProvider> it = loader.iterator();
+		
+		while( it.hasNext() )
+		{
+			mLog.info( "Available Audio Converter: " + it.next().getClass() );
+		}
     }
 }

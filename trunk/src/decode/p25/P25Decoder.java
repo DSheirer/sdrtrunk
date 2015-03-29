@@ -35,8 +35,10 @@ import source.Source.SampleType;
 import source.tuner.DirectFrequencyController;
 import source.tuner.FrequencyChangeListener;
 import alias.AliasList;
+import controller.ResourceManager;
 import decode.Decoder;
 import decode.DecoderType;
+import decode.p25.audio.P25AudioOutput;
 import dsp.filter.ComplexFIRFilter;
 import dsp.filter.FilterFactory;
 import dsp.filter.FloatFIRFilter;
@@ -88,11 +90,15 @@ public class P25Decoder extends Decoder
 	private P25MessageFramer mNormalFramer;
 	private P25MessageFramer mInvertedFramer;
 	private P25MessageProcessor mMessageProcessor;
+	
+	/* Audio */
+	private P25AudioOutput mAudioOutput;
 
 	private AliasList mAliasList;
 	private Modulation mModulation;
 	
-	public P25Decoder( SampleType sampleType, 
+	public P25Decoder( ResourceManager resourceManager,
+					   SampleType sampleType, 
 			   		   Modulation modulation, 
 					   AliasList aliasList )
 	{
@@ -168,6 +174,14 @@ public class P25Decoder extends Decoder
 	        mC4FMSlicer.addListener( mNormalFramer );
 	        mC4FMSlicer.addListener( mInvertedFramer );
 		}
+		
+		mAudioOutput = new P25AudioOutput( resourceManager );
+		mMessageProcessor.addMessageListener( mAudioOutput );
+	}
+	
+	public P25AudioOutput getAudioOutput()
+	{
+		return mAudioOutput;
 	}
 
 	@Override

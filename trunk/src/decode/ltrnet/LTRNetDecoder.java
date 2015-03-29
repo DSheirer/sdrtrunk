@@ -27,6 +27,8 @@ import message.MessageDirection;
 import sample.real.RealSampleListener;
 import source.Source.SampleType;
 import alias.AliasList;
+import audio.AudioOutputImpl;
+import audio.IAudioOutput;
 import bits.MessageFramer;
 import bits.SyncPattern;
 import decode.Decoder;
@@ -49,6 +51,7 @@ public class LTRNetDecoder extends Decoder implements Instrumentable
 	private LTRFSKDecoder mLTRFSKDecoder;
 	private MessageFramer mLTRMessageFramer;
 	private LTRNetMessageProcessor mLTRMessageProcessor;
+    private AudioOutputImpl mAudioOutput = new AudioOutputImpl( "LTRNet Decoder Audio Output" );
 
     private List<Tap> mAvailableTaps;
 
@@ -83,6 +86,8 @@ public class LTRNetDecoder extends Decoder implements Instrumentable
 			
 			mDCRemovalFilter.setListener( this.getRealReceiver() );
 		}
+		
+		addRealSampleListener( mAudioOutput );
 
 		mLTRFSKDecoder = new LTRFSKDecoder();
 
@@ -159,4 +164,10 @@ public class LTRNetDecoder extends Decoder implements Instrumentable
 		}
 	    // TODO Auto-generated method stub
     }
+
+	@Override
+	public IAudioOutput getAudioOutput()
+	{
+		return mAudioOutput;
+	}
 }

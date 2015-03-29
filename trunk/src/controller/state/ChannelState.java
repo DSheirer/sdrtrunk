@@ -36,7 +36,7 @@ import sample.Broadcaster;
 import sample.Listener;
 import alias.AliasList;
 import audio.AudioType;
-import audio.AudioTypeListener;
+import audio.IAudioTypeListener;
 import audio.SquelchListener;
 import audio.SquelchListener.SquelchState;
 import controller.activity.CallEvent;
@@ -103,7 +103,7 @@ public abstract class ChannelState implements Listener<Message>
 			new ArrayList<AuxChannelState>();
 	protected Broadcaster<ChangedAttribute> mChangeBroadcaster =
 			new Broadcaster<ChangedAttribute>();
-	protected AudioTypeListener mAudioTypeListener;
+	protected IAudioTypeListener mAudioTypeListener;
 	protected AudioType mAudioType = AudioType.NORMAL;
 	
 	protected CallEventModel mCallEventModel = new CallEventModel();
@@ -397,7 +397,7 @@ public abstract class ChannelState implements Listener<Message>
 		setState( State.FADE );
 	}
 	
-	public void setListener( AudioTypeListener listener )
+	public void setListener( IAudioTypeListener listener )
 	{
 		mAudioTypeListener = listener;
 	}

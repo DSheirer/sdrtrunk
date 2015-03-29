@@ -1,5 +1,7 @@
 package decode.am;
 
+import audio.AudioOutputImpl;
+import audio.IAudioOutput;
 import sample.real.RealSampleListener;
 import source.Source.SampleType;
 import decode.Decoder;
@@ -30,6 +32,8 @@ public class AMDecoder extends Decoder
     private RealAutomaticGainControl mAudioAGC = new RealAutomaticGainControl();
 
     private FloatFIRFilter mLowPassFilter;
+    
+    private AudioOutputImpl mAudioOutput = new AudioOutputImpl( "AM Decoder Audio Output" );
     
     public AMDecoder( SampleType sampleType )
     {
@@ -74,9 +78,18 @@ public class AMDecoder extends Decoder
             
             mLowPassFilter.setListener( mAudioAGC );
             mAudioAGC.setListener( this.getRealReceiver() );
+
+            addRealSampleListener( mAudioOutput );
         }
     }
 
+	@Override
+	public IAudioOutput getAudioOutput()
+	{
+		// TODO Auto-generated method stub
+		return null;
+	}
+    
     @Override
     public DecoderType getType()
     {
@@ -89,4 +102,5 @@ public class AMDecoder extends Decoder
     	throw new IllegalArgumentException( "cannot add real sample "
     			+ "listener to AM demodulator - not implemented" );
     }
+
 }

@@ -42,6 +42,7 @@ import org.slf4j.LoggerFactory;
 
 import source.wave.WaveSource;
 import source.wave.WaveSource.PositionListener;
+import controller.ResourceManager;
 import decode.Decoder;
 import decode.DecoderType;
 import decode.fleetsync2.Fleetsync2Decoder;
@@ -195,7 +196,9 @@ public class AudioSourceFrame extends JInternalFrame implements PositionListener
 							decoder = new PassportDecoder( mSource.getSampleType(), null );
 							break;
 						case P25_PHASE1:
-							decoder = new P25Decoder( mSource.getSampleType(), 
+							ResourceManager rm = new ResourceManager();
+							
+							decoder = new P25Decoder( rm, mSource.getSampleType(), 
 								(Modulation)mComboModulations.getSelectedItem(), null );
 							break;
 						case TAIT_1200:

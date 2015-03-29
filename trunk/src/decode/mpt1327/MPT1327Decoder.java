@@ -29,6 +29,8 @@ import sample.Broadcaster;
 import sample.real.RealSampleListener;
 import source.Source.SampleType;
 import alias.AliasList;
+import audio.AudioOutputImpl;
+import audio.IAudioOutput;
 import bits.MessageFramer;
 import bits.SyncPattern;
 import decode.Decoder;
@@ -82,6 +84,7 @@ public class MPT1327Decoder extends Decoder implements Instrumentable
     private MessageFramer mControlMessageFramer;
     private MessageFramer mTrafficMessageFramer;
     private MPT1327MessageProcessor mMessageProcessor;
+    private AudioOutputImpl mAudioOutput = new AudioOutputImpl( "MPT1327 Decoder Audio Output" );
 
     public MPT1327Decoder( SampleType sampleType, 
     					   AliasList aliasList,
@@ -191,6 +194,8 @@ public class MPT1327Decoder extends Decoder implements Instrumentable
 		super.dispose();
 
 		mSymbolBroadcaster.dispose();
+		
+		mAudioOutput.dispose();
 
 		mControlMessageFramer.dispose();
 
@@ -212,7 +217,6 @@ public class MPT1327Decoder extends Decoder implements Instrumentable
 		
 		mMessageProcessor.dispose();
 
-		
 		mTrafficMessageFramer.dispose();
 	}
 
@@ -348,5 +352,11 @@ public class MPT1327Decoder extends Decoder implements Instrumentable
 		{
 			return getLabel();
 		}
+	}
+
+	@Override
+	public IAudioOutput getAudioOutput()
+	{
+		return mAudioOutput;
 	}
 }

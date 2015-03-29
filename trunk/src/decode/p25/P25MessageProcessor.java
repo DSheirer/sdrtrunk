@@ -12,6 +12,7 @@ import sample.Listener;
 import alias.AliasList;
 import decode.p25.message.IBandIdentifier;
 import decode.p25.message.IdentifierReceiver;
+import decode.p25.message.ldu.LDUMessage;
 
 public class P25MessageProcessor implements Listener<Message>
 {
@@ -36,6 +37,14 @@ public class P25MessageProcessor implements Listener<Message>
 	@Override
     public void receive( Message message )
     {
+		/* Debug - prints out the imbe message frames */
+		if( message instanceof LDUMessage )
+		{
+			((LDUMessage)message).getIMBEFrames();
+		}
+		
+		
+		
 		if( message.isValid() )
 		{
 			/* Insert band identifier update messages into channel-type messages */

@@ -393,7 +393,7 @@ public class CRCP25
 		while( x < tdulc.size() && passes )
 		{
 			
-			tdulc = Galois24.checkAndCorrect( tdulc, x );
+			tdulc = Golay24.checkAndCorrect( tdulc, x );
 			
 			passes = tdulc.getCRC() == CRC.PASSED;
 

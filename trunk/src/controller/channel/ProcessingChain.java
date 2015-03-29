@@ -51,8 +51,9 @@ import source.tuner.FrequencyChangeListener;
 import source.tuner.Tuner;
 import source.tuner.TunerChannelSource;
 import alias.AliasList;
-import audio.AudioOutput;
-import audio.AudioTypeListener;
+import audio.AudioOutputImpl;
+import audio.IAudioOutput;
+import audio.IAudioTypeListener;
 import audio.SquelchListener;
 import controller.ResourceManager;
 import controller.ThreadPoolManager.ThreadType;
@@ -80,7 +81,6 @@ public class ProcessingChain implements Listener<Message>
 	protected Decoder mDecoder;
 	protected List<Recorder> mRecorders = new ArrayList<Recorder>();
 	protected ArrayList<EventLogger> mEventLoggers = new ArrayList<EventLogger>();
-	protected AudioOutput mAudioOutput;
 	protected AutomaticFrequencyControl mAFC;
 	protected ChannelState mChannelState;
 	protected ResourceManager mResourceManager;
@@ -108,6 +108,16 @@ public class ProcessingChain implements Listener<Message>
 					.getPlayist().getAliasDirectory().getAliasList(  
 							mChannel.getAliasListName() );
 		}
+	}
+	
+	public IAudioOutput getAudioOutput()
+	{
+		if( mDecoder != null )
+		{
+			return mDecoder.getAudioOutput();
+		}
+		
+		return null;
 	}
 
 	/**
@@ -178,12 +188,6 @@ public class ProcessingChain implements Listener<Message>
 		mEventLoggers.clear();
 		mRecorders.clear();
 		
-
-		if( mAudioOutput != null )
-		{
-			mAudioOutput.dispose();
-		}
-		
 		mResourceManager = null;
 	}
 	
@@ -234,11 +238,6 @@ public class ProcessingChain implements Listener<Message>
 
 			updateEventLogging();
 			
-			if( mAudioOutput != null )
-			{
-				mAudioOutput.setAudioPlaybackEnabled( false );
-			}
-
 			mRunning.set( false );
 		}
 		else
@@ -374,14 +373,6 @@ public class ProcessingChain implements Listener<Message>
 					/* Register to receive decoded messages and auxiliary messages */
 					mDecoder.addMessageListener( ProcessingChain.this );
 
-					/* Setup the audio output processing thread */
-					String threadName = "SDRTrunk Audio - " + 
-										mChannel.getSite().getName() +
-										"-" + mChannel.getName();
-					
-					mAudioOutput = new AudioOutput( threadName );
-					addRealListener( mAudioOutput );
-					
 					/* Automatic frequency control */
 					if( mAFC != null )
 					{
@@ -415,14 +406,12 @@ public class ProcessingChain implements Listener<Message>
 								.setListener( (FrequencyChangeListener)tcs );
 						}
 					}
+					
+					/* Register audio output to be controlled by the channel state */
+					mChannelState.addListener( (SquelchListener)mDecoder.getAudioOutput() );
+					mChannelState.setListener( (IAudioTypeListener)mDecoder.getAudioOutput() );
 				}
-			}
-
-			if( mAudioOutput != null )
-			{
-				/* Register audio output to be controlled by the channel state */
-				mChannelState.addListener( (SquelchListener)mAudioOutput );
-				mChannelState.setListener( (AudioTypeListener)mAudioOutput );
+				
 			}
 		}
 	}
@@ -546,11 +535,6 @@ public class ProcessingChain implements Listener<Message>
 	public Channel getChannel()
 	{
 		return mChannel;
-	}
-	
-	public AudioOutput getAudioOutput()
-	{
-		return mAudioOutput;
 	}
 	
 	public Source getSource()
