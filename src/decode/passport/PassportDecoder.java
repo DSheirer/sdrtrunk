@@ -26,6 +26,8 @@ import java.util.List;
 import sample.real.RealSampleListener;
 import source.Source.SampleType;
 import alias.AliasList;
+import audio.AudioOutputImpl;
+import audio.IAudioOutput;
 import bits.MessageFramer;
 import bits.SyncPattern;
 import decode.Decoder;
@@ -49,6 +51,7 @@ public class PassportDecoder extends Decoder implements Instrumentable
 	private LTRFSKDecoder mPassportFSKDecoder;
 	private MessageFramer mPassportMessageFramer;
 	private PassportMessageProcessor mPassportMessageProcessor;
+    private AudioOutputImpl mAudioOutput = new AudioOutputImpl( "Passport Decoder Audio Output" );
 	
     private List<Tap> mAvailableTaps;
 
@@ -107,6 +110,8 @@ public class PassportDecoder extends Decoder implements Instrumentable
 		mPassportMessageProcessor = new PassportMessageProcessor( aliasList );
 		mPassportMessageFramer.addMessageListener( mPassportMessageProcessor );
 		mPassportMessageProcessor.addMessageListener( this );
+		
+		addRealSampleListener( mAudioOutput );
 	}
 
 	@Override
@@ -148,4 +153,10 @@ public class PassportDecoder extends Decoder implements Instrumentable
 			mNBFMDemodulator.addListener( listener );
 		}
     }
+
+	@Override
+	public IAudioOutput getAudioOutput()
+	{
+		return mAudioOutput;
+	}
 }

@@ -41,6 +41,7 @@ import controller.activity.CallEvent.CallEventType;
 import controller.channel.ProcessingChain;
 import controller.state.AuxChannelState;
 import controller.state.ChannelState;
+import decode.p25.audio.P25AudioOutput;
 import decode.p25.message.P25Message;
 import decode.p25.message.hdu.HDUMessage;
 import decode.p25.message.ldu.LDU1Message;
@@ -148,6 +149,8 @@ public class P25ChannelState extends ChannelState
 	private String mCurrentChannel = "CURRENT";
 	private long mCurrentChannelFrequency = 0;
 	
+	private P25AudioOutput mAudioOutput;
+	
 	public P25ChannelState( ProcessingChain chain, AliasList aliasList )
 	{
 		super( chain, aliasList );
@@ -161,6 +164,11 @@ public class P25ChannelState extends ChannelState
 		{
 			mCurrentChannelFrequency = ((SourceConfigTuner)source).getFrequency();
 		}
+	}
+	
+	public void setAudioOutput( P25AudioOutput audioOutput )
+	{
+		mAudioOutput = audioOutput;
 	}
 	
 	public void addListener( SquelchListener listener )
@@ -801,6 +809,12 @@ public class P25ChannelState extends ChannelState
 	
 	private void processLDU( LDUMessage ldu )
 	{
+		/* Send audio frames to the audio output */
+		if( mAudioOutput != null )
+		{
+			mAudioOutput.receive( ldu );
+		}
+		
 		if( ldu instanceof LDU1Message )
 		{
 			switch( ((LDU1Message)ldu).getOpcode() )

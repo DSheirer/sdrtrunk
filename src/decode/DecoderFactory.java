@@ -102,8 +102,8 @@ public class DecoderFactory
 			case P25_PHASE1:
 				DecodeConfigP25Phase1 p25Config = (DecodeConfigP25Phase1)config;
 				
-				retVal = new P25Decoder( sampleType, p25Config.getModulation(), 
-						aliasList );
+				retVal = new P25Decoder( chain.getResourceManager(), 
+						sampleType, p25Config.getModulation(), aliasList );
 				break;
 			default:
 				throw new IllegalArgumentException( 

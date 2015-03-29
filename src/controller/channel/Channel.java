@@ -215,7 +215,9 @@ public class Channel extends Configuration
 	{
 		mSelected = selected;
 		
-		if( mProcessingChain != null && mProcessingChain.isProcessing() )
+		if( mProcessingChain != null && 
+			mProcessingChain.isProcessing() &&
+			mProcessingChain.getAudioOutput() != null )
 		{
 			mProcessingChain.getAudioOutput().setAudioPlaybackEnabled( selected );
 		}

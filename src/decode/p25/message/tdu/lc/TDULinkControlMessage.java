@@ -12,7 +12,7 @@ import decode.p25.reference.LinkControlOpcode;
 import decode.p25.reference.Vendor;
 import decode.p25.reference.VendorLinkControlOpcode;
 import edac.CRC;
-import edac.Galois24;
+import edac.Golay24;
 import edac.ReedSolomon_24_12_13;
 
 public class TDULinkControlMessage extends P25Message
@@ -183,7 +183,7 @@ public class TDULinkControlMessage extends P25Message
 		
 		while( x < mMessage.size() )
 		{
-			mMessage = Galois24.checkAndCorrect( mMessage, x );
+			mMessage = Golay24.checkAndCorrect( mMessage, x );
 			
 			if( !( mMessage.getCRC() == CRC.PASSED ) )
 			{

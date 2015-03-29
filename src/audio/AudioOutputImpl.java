@@ -30,12 +30,11 @@ import org.slf4j.LoggerFactory;
 import sample.real.RealSampleListener;
 import buffer.FloatSampleBufferAssembler;
 
-public class AudioOutput implements RealSampleListener, 
-									SquelchListener,
-									AudioTypeListener
+public class AudioOutputImpl implements RealSampleListener, 
+	SquelchListener, IAudioTypeListener, IAudioOutput
 {
 	private final static Logger mLog = 
-			LoggerFactory.getLogger( AudioOutput.class );
+			LoggerFactory.getLogger( AudioOutputImpl.class );
 	private static final int sAUDIO_BLOCK_SIZE = 24000;
 	
     private static final AudioFormat sAUDIO_FORMAT = 
@@ -54,7 +53,7 @@ public class AudioOutput implements RealSampleListener,
 	private boolean mEnabled = false;
 	private SquelchState mSquelchState = SquelchState.SQUELCH;
 	
-	public AudioOutput( String channelName )
+	public AudioOutputImpl( String channelName )
 	{
 		try
         {
@@ -75,11 +74,13 @@ public class AudioOutput implements RealSampleListener,
 		mSquelchState = state;
     }
 	
+	@Override
 	public void setAudioPlaybackEnabled( boolean enabled )
 	{
 		mEnabled = enabled;
 	}
 	
+	@Override
 	public void dispose()
 	{
 		mOutput.stop();

@@ -17,6 +17,8 @@
  ******************************************************************************/
 package decode.nbfm;
 
+import audio.AudioOutputImpl;
+import audio.IAudioOutput;
 import sample.real.RealSampleListener;
 import source.Source.SampleType;
 import decode.Decoder;
@@ -34,6 +36,7 @@ public class NBFMDecoder extends Decoder
 
 	private FilteringNBFMDemodulator mDemodulator;
 	private DCRemovalFilter2 mDCRemovalFilter;
+    private AudioOutputImpl mAudioOutput = new AudioOutputImpl( "NBFM Decoder Audio Output" );
 	
 	public NBFMDecoder( SampleType sampleType )
 	{
@@ -68,6 +71,8 @@ public class NBFMDecoder extends Decoder
 			 */
 			mDCRemovalFilter.setListener( this.getRealReceiver() );
 		}
+		
+		addRealSampleListener( mAudioOutput );
 	}
 
 	@Override
@@ -84,4 +89,10 @@ public class NBFMDecoder extends Decoder
 			mDemodulator.addListener( listener );
 		}
     }
+
+	@Override
+	public IAudioOutput getAudioOutput()
+	{
+		return mAudioOutput;
+	}
 }

@@ -40,8 +40,6 @@ public class PDUConfirmedMessage extends PDUMessage
 	{
 		super( message.getSourceMessage(), DataUnitID.PDUC, message.getAliasList() );
 		mCRC = message.getCRCResults();
-		
-		mLog.debug( toString() );
 	}
 	
 	private void checkCRC()

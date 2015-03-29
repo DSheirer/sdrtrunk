@@ -17,7 +17,7 @@
  ******************************************************************************/
 package audio;
 
-public interface AudioTypeListener
+public interface IAudioTypeListener
 {
 	public void setAudioType( AudioType type );
 }

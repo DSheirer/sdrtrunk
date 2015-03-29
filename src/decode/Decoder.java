@@ -27,6 +27,7 @@ import sample.complex.ComplexSample;
 import sample.real.RealSampleBroadcaster;
 import sample.real.RealSampleListener;
 import source.Source.SampleType;
+import audio.IAudioOutput;
 import eventlog.MessageEventLogger;
 
 public abstract class Decoder implements Listener<Message>
@@ -64,6 +65,8 @@ public abstract class Decoder implements Listener<Message>
 	{
 		return mRealBroadcaster;
 	}
+	
+	public abstract IAudioOutput getAudioOutput();
 	
 	/**
 	 * Returns a complex listener interface for connecting this decoder to a 

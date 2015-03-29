@@ -29,6 +29,7 @@ import sample.Broadcaster;
 import sample.real.RealSampleListener;
 import source.Source.SampleType;
 import alias.AliasList;
+import audio.IAudioOutput;
 import bits.MessageFramer;
 import bits.SyncPattern;
 import decode.Decoder;
@@ -196,4 +197,11 @@ public class LJ1200Decoder extends Decoder implements Instrumentable
     {
 		//Not implemented
     }
+
+	@Override
+	public IAudioOutput getAudioOutput()
+	{
+		//Not implemented
+		return null;
+	}
 }

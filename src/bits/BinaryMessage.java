@@ -17,7 +17,6 @@
  ******************************************************************************/
 package bits;
 
-import java.util.Arrays;
 import java.util.BitSet;
 
 import org.slf4j.Logger;
@@ -108,6 +107,21 @@ public class BinaryMessage extends BitSet
         this( size );
         this.or( bitset );
         this.mPointer = size - 1;
+    }
+    
+    /**
+     * Returns a mew binary message containing the bits from (inclusive) to 
+     * end (exclusive).
+     * 
+     * @param start
+     * @param end
+     * @return
+     */
+    public BinaryMessage getSubMessage( int start, int end )
+    {
+    	BitSet subset = this.get( start, end );
+    	
+    	return new BinaryMessage( subset, end - start );
     }
     
     public CRC getCRC()
@@ -386,8 +400,6 @@ public class BinaryMessage extends BitSet
     		}
     	}
     	
-    	mLog.debug( "Value is:" + value );
-    	
     	return (byte)( value & 0xFF );
     }
 
@@ -612,6 +624,10 @@ public class BinaryMessage extends BitSet
 			if( ( mask & value ) == mask )
 			{
 				set( offset + x );
+			}
+			else
+			{
+				clear( offset + x );
 			}
 		}
 	}
