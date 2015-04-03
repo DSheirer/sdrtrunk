@@ -23,7 +23,7 @@ package bits;
  * 
  * Note: works for sync patterns up to 63 bits (integer size - 1 ) long.  
  * If a 64 bit or larger sync pattern is applied, then the wrapping feature
- * of the Integer.rotate methods will wrap the MSB around to the LSB and
+ * of the Long.rotate methods will wrap the MSB around to the LSB and
  * corrupt the matching value.
  *
  */
@@ -32,6 +32,8 @@ public class SyncPatternMatcher
 	private long mBits = 0;
 	private long mMask = 0;
 	private long mSync = 0;
+	private boolean mSoftMode = false;
+	private int mSoftModeErrorThreshold = 0;
 	
 	public SyncPatternMatcher( boolean[] syncPattern )
 	{
@@ -52,6 +54,21 @@ public class SyncPatternMatcher
 	{
 		mSync = sync;
 		mMask = getMask( sync );
+	}
+
+	/**
+	 * Constructs the sync pattern matcher and defines the soft mode maximum
+	 * number of bit errors to allow in the pattern match.
+	 * 
+	 * @param sync pattern
+	 * @param softModeErrorThreshold - maximum bit errors (ie pattern mismatch
+	 * positions) when considering a sync match
+	 */
+	public SyncPatternMatcher( long sync, int softModeErrorThreshold )
+	{
+		this( sync );
+		
+		mSoftModeErrorThreshold = softModeErrorThreshold;
 	}
 
 	/**
@@ -91,6 +108,25 @@ public class SyncPatternMatcher
 	 */
 	public boolean matches()
 	{
-		return ( mBits == mSync );
+		if( mSoftMode )
+		{
+			long difference = mBits ^ mSync;
+			
+			return difference == 0 || 
+					Long.bitCount( difference ) <= mSoftModeErrorThreshold;
+		}
+		else
+		{
+			return ( mBits == mSync );
+		}
+	}
+
+	/**
+	 * Sets the sync pattern matcher in soft mode which allows up to the soft
+	 * mode threshold number of bit errors when considering a sync pattern match
+	 */
+	public void setSoftMode( boolean softMode )
+	{
+		mSoftMode = softMode;
 	}
 }

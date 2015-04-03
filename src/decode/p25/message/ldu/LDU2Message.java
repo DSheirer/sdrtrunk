@@ -44,19 +44,24 @@ public class LDU2Message extends LDUMessage
     {
 		StringBuilder sb = new StringBuilder();
 		
-		sb.append( super.getMessageStub() );
 		
 		Encryption encryption = getEncryption();
 		
 		if( encryption != Encryption.UNENCRYPTED )
 		{
-			sb.append( "ENCRYPTION:" );
+			sb.append( "NAC:" );
+			sb.append( getNAC() );
+			sb.append( " " );
+			sb.append( getDUID().getLabel() );
+			
+			sb.append( " ENCRYPTED VOICE:" );
 			sb.append( encryption.name() );
 			sb.append( " KEY ID:" + getKeyID() );
 			sb.append( " MSG INDICATOR:" + getMessageIndicator() );
 		}
 		else
 		{
+			sb.append( super.getMessageStub() );
 			sb.append( "UNENCRYPTED" );
 		}
 
