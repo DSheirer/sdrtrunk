@@ -34,6 +34,8 @@ import edac.CRCP25;
 
 public class P25MessageFramer implements Listener<Dibit>
 {
+	private static final int SYNC_PATTERN_MISMATCH_THRESHOLD = 2;
+	
 	private final static Logger mLog = 
 							LoggerFactory.getLogger( P25MessageFramer.class );
 	
@@ -80,7 +82,7 @@ public class P25MessageFramer implements Listener<Dibit>
 	                         boolean inverted,
 	                         AliasList aliasList )
 	{
-		mMatcher = new SyncPatternMatcher( sync );
+		mMatcher = new SyncPatternMatcher( sync, SYNC_PATTERN_MISMATCH_THRESHOLD );
 		mInverted = inverted;
 		mAliasList = aliasList;
 
@@ -256,10 +258,12 @@ public class P25MessageFramer implements Listener<Dibit>
 					break;
 				case HDU:
 					mComplete = true;
+					mMatcher.setSoftMode( true );
                     dispatch( new HDUMessage( mMessage.copy(), mDUID, mAliasList ) );
 					break;
 				case LDU1:
 					mComplete = true;
+					mMatcher.setSoftMode( true );
 					
 					LDU1Message ldu1 = new LDU1Message( mMessage.copy(), 
 							mDUID, mAliasList );
@@ -269,9 +273,12 @@ public class P25MessageFramer implements Listener<Dibit>
 					break;
 				case LDU2:
 					mComplete = true;
+					mMatcher.setSoftMode( true );
                     dispatch( new LDU2Message( mMessage.copy(), mDUID, mAliasList ) );
 					break;
 				case PDU0:
+					mMatcher.setSoftMode( false );
+
 					/* Remove interleaving */
 					P25Interleave.deinterleaveData( mMessage, PDU0_BEGIN, PDU0_END );
 	
@@ -390,6 +397,8 @@ public class P25MessageFramer implements Listener<Dibit>
 					mComplete = true;
 					break;
 				case PDUC:
+					mMatcher.setSoftMode( true );
+
 					/* De-interleave the latest block*/
 					P25Interleave.deinterleaveData( mMessage, 
 							mMessage.size() - 196, mMessage.size() );
@@ -438,10 +447,12 @@ public class P25MessageFramer implements Listener<Dibit>
 					}
 					break;
 				case TDU:
+					mMatcher.setSoftMode( true );
                     dispatch( new TDUMessage( mMessage.copy(), mDUID, mAliasList ) );
 					mComplete = true;
 					break;
 				case TDULC:
+					mMatcher.setSoftMode( true );
 					TDULinkControlMessage tdulc =  new TDULinkControlMessage( 
 							mMessage.copy(), mDUID, mAliasList );
 
@@ -452,6 +463,7 @@ public class P25MessageFramer implements Listener<Dibit>
 					mComplete = true;
 					break;
 				case TSBK1:
+					mMatcher.setSoftMode( true );
 					/* Remove interleaving */
 					P25Interleave.deinterleaveData( mMessage, TSBK_BEGIN, TSBK_END );
 	
