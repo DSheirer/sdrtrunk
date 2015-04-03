@@ -13,7 +13,7 @@ import decode.p25.reference.Vendor;
 import decode.p25.reference.VendorLinkControlOpcode;
 import edac.CRC;
 import edac.Golay24;
-import edac.ReedSolomon_24_12_13;
+import edac.ReedSolomon_63_47_17;
 
 public class TDULinkControlMessage extends P25Message
 {
@@ -49,8 +49,8 @@ public class TDULinkControlMessage extends P25Message
 	public static final int[] OPCODE = { 66,67,68,69,70,71 };
 	public static final int[] VENDOR = { 72,73,74,75,88,89,90,91 };
 	
-	public static final ReedSolomon_24_12_13 mReedSolomonDecoder = 
-						new ReedSolomon_24_12_13();
+	public static final ReedSolomon_63_47_17 mReedSolomonDecoder = 
+						new ReedSolomon_63_47_17();
 	
 	public TDULinkControlMessage( BinaryMessage message, DataUnitID duid,
             AliasList aliasList )

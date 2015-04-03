@@ -14,7 +14,7 @@ public class Golay23
 	};
 
 	/**
-	 * Implements Golay(23,11,7) error detection and correction.  Returns the
+	 * Implements Golay(23,12,7) error detection and correction.  Returns the
 	 * number of detected errors.  If the error count is less than or equal to
 	 * the max correctable errors (3), then the error bits are corrected.  
 	 * Otherwise the message is left intact and an error count greater than 3

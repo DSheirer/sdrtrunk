@@ -18,12 +18,12 @@ package edac;
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
 
-public class ReedSolomon_24_12_13 extends BerlekempMassey_63
+public class ReedSolomon_63_47_17 extends BerlekempMassey_63
 {
 	/**
 	 * Reed-Solomon RS(24,12,13) decoder
 	 */
-	public ReedSolomon_24_12_13()
+	public ReedSolomon_63_47_17()
     {
 		/* TT = 6 = maximum correctable bit errors */
 	    super( 6 );
