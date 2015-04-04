@@ -95,9 +95,9 @@ public class BerlekempMassey_63
 	 * 
 	 * alpha_to = 2 is the primitive element of GF( 2**mm )
 	 * 
-	 * @param generator_polinomial
+	 * @param generator_polynomial
 	 */
-	private void generate_gf( int[] generator_polinomial )
+	private void generate_gf( int[] generator_polynomial )
 	{
 		int i;
 		int mask = 1;
@@ -109,7 +109,7 @@ public class BerlekempMassey_63
             alpha_to[ i ] = mask;
             index_of[ alpha_to[ i ] ] = i;
             
-            if( generator_polinomial[ i ] != 0 )
+            if( generator_polynomial[ i ] != 0 )
             {
                 alpha_to[ MM ] ^= mask;
             }

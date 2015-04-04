@@ -37,14 +37,12 @@ public class P25MessageProcessor implements Listener<Message>
 	@Override
     public void receive( Message message )
     {
-		/* Debug - prints out the imbe message frames */
-		if( message instanceof LDUMessage )
-		{
-			((LDUMessage)message).getIMBEFrames();
-		}
-		
-		
-		
+		/**
+		 * Capture frequency band identifier messages and inject them into any
+		 * messages that require band information in order to calculate the 
+		 * up-link and down-link frequencies for any numeric channel references
+		 * contained within the message.
+		 */
 		if( message.isValid() )
 		{
 			/* Insert band identifier update messages into channel-type messages */
@@ -70,7 +68,14 @@ public class P25MessageProcessor implements Listener<Message>
 				mBandIdentifierMap.put( bandIdentifier.getIdentifier(), 
 									bandIdentifier );
 			}
-			
+		}
+
+		/**
+		 * Broadcast all valid messages and any LDU voice messages regardless if
+		 * they are valid or not, so that we don't miss any voice frames
+		 */
+		if( message.isValid() || message instanceof LDUMessage )
+		{
 			mBroadcaster.broadcast( message );
 		}
     }
