@@ -244,6 +244,11 @@ public class HDUMessage extends P25Message
 		return Encryption.fromValue( mMessage.getInt( ALGORITHM_ID ) );
 	}
 	
+	public boolean isEncrypted()
+	{
+		return getEncryption() != Encryption.UNENCRYPTED;
+	}
+	
 	public int getKeyID()
 	{
 		return mMessage.getInt( KEY_ID );

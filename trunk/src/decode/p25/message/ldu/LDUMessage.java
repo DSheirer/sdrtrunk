@@ -10,9 +10,8 @@ import alias.AliasList;
 import bits.BinaryMessage;
 import decode.p25.message.P25Message;
 import decode.p25.reference.DataUnitID;
-import edac.CRC;
 
-public class LDUMessage extends P25Message
+public abstract class LDUMessage extends P25Message
 {
 	private final static Logger mLog = LoggerFactory.getLogger( LDUMessage.class );
 
@@ -33,14 +32,9 @@ public class LDUMessage extends P25Message
             AliasList aliasList )
     {
 	    super( message, duid, aliasList );
-
-	    /* NID CRC is checked in the message framer, thus a constructed message
-	     * means it passed the CRC */	    
-	    
-//TODO: update crc status for voice frames
-	    mCRC = new CRC[ 2 ];
-	    mCRC[ 0 ] = CRC.PASSED;
     }
+	
+	public abstract boolean isEncrypted();
 	
 	@Override
     public String getMessage()

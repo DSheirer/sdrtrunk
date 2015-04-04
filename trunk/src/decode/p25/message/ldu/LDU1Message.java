@@ -17,15 +17,6 @@ public class LDU1Message extends LDUMessage
 	public static final int[] OPCODE = { 354,355,356,357,362,363 };
 	public static final int[] VENDOR = { 364,365,366,367,372,373,374,375 };
 	
-//	public static final int[] OCTET_1 = { 364,365,366,367,372,373,374,375 };
-//	public static final int[] OCTET_2 = { 376,377,382,383,384,385,386,387 };
-//	public static final int[] OCTET_3 = { 536,537,538,539,540,541,546,547 };
-//	public static final int[] OCTET_4 = { 548,549,550,551,556,557,558,559 };
-//	public static final int[] OCTET_5 = { 560,561,566,567,568,569,570,571 };
-//	public static final int[] OCTET_6 = { 720,721,722,723,724,725,730,731 };
-//	public static final int[] OCTET_7 = { 732,733,734,735,740,741,742,743 };
-//	public static final int[] OCTET_8 = { 744,745,750,751,752,753,754,755 };
-	
 	public static final int[] GOLAY_WORD_STARTS = { 
 		352,362,372,382,536,546,556,566,720,730,740,750,904,914,924,934,1088,
 		1098,1108,1118,1272,1282,1292,1302 };
@@ -83,8 +74,13 @@ public class LDU1Message extends LDUMessage
 		
 		mCRC = message.mCRC;
 	}
-	
 
+	@Override
+	public boolean isEncrypted()
+	{
+		return mMessage.get( ENCRYPTION_FLAG );
+	}
+	
 	private void checkCRC()
 	{
     	mCRC[ 1 ] = CRC.PASSED;
@@ -215,11 +211,6 @@ public class LDU1Message extends LDUMessage
 	    return sb.toString();
     }
 
-	public boolean isEncrypted()
-	{
-		return mMessage.get( ENCRYPTION_FLAG );
-	}
-	
 	public boolean isImplicitFormat()
 	{
 		return mMessage.get( IMPLICIT_VENDOR_FLAG );
