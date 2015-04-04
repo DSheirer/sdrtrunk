@@ -230,6 +230,7 @@ public abstract class CallEvent
 		DATA_CALL( "Data Call" ),
 		DEREGISTER( "Deregister" ),
 		EMERGENCY( "EMERGENCY" ),
+		ENCRYPTED_CALL( "Encrypted Call" ),
 		FUNCTION( "Function" ),
 		GPS( "GPS" ),
 		ID_ANI( "ANI" ),

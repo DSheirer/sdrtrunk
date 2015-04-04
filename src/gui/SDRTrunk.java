@@ -25,7 +25,10 @@ import java.awt.Robot;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -65,6 +68,8 @@ public class SDRTrunk
 	private ControllerPanel mControllerPanel;
 	private SpectralDisplayPanel mSpectralPanel;
 	private JFrame mMainGui = new JFrame();
+	
+	private String mTitle;
     
     public SDRTrunk() 
     {
@@ -102,6 +107,8 @@ public class SDRTrunk
 		
 		/* Log any available audio converter plugins */
 		logAvailableAudioPlugins();
+		
+		mTitle = getTitle();
 		
 		//Initialize the GUI
         initGUI();
@@ -159,7 +166,7 @@ public class SDRTrunk
     	/**
     	 * Setup main JFrame window
     	 */
-    	mMainGui.setTitle( "SDRTrunk" );
+    	mMainGui.setTitle( mTitle );
     	mMainGui.setBounds( 100, 100, 1280, 800 );
     	mMainGui.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
     	
@@ -170,11 +177,11 @@ public class SDRTrunk
             {
 				if( tuner != null )
 				{
-					mMainGui.setTitle( "SDRTrunk - " + tuner.getName() );
+					mMainGui.setTitle( mTitle + " - " + tuner.getName() );
 				}
 				else
 				{
-			    	mMainGui.setTitle( "SDRTrunk" );
+			    	mMainGui.setTitle( mTitle );
 				}
             }
     	} );
@@ -391,5 +398,31 @@ public class SDRTrunk
 		{
 			mLog.info( "Available Audio Converter: " + it.next().getClass() );
 		}
+    }
+    
+    private String getTitle()
+    {
+    	StringBuilder sb = new StringBuilder();
+    	
+    	sb.append( "SDRTrunk" );
+    	
+    	try( BufferedReader reader = new BufferedReader( 
+    			new InputStreamReader( this.getClass()
+    					.getResourceAsStream( "/sdrtrunk-version" ) ) ) )
+    	{
+    		String version = reader.readLine();
+
+    		if( version != null )
+    		{
+    			sb.append( " V" );
+    			sb.append( version );
+    		}
+    	}
+    	catch( Exception e )
+    	{
+    		mLog.error( "Couldn't read sdrtrunk version from application jar file" );
+    	}
+    	
+    	return sb.toString();
     }
 }

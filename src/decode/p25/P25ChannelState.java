@@ -223,23 +223,34 @@ public class P25ChannelState extends ChannelState
 
 	private void processHDU( HDUMessage hdu )
 	{
+		State state = State.CALL;
+		
+		if( hdu.isValid() && hdu.isEncrypted() )
+		{
+			state = State.ENCRYPTED;
+		}
+		
 		if( isActiveCall( mCurrentChannel, hdu.getToID() ) )
 		{
-			updateCall( State.CALL, mCurrentChannel, null, hdu.getTalkgroupID() );
+			updateCall( state, mCurrentChannel, null, hdu.getTalkgroupID() );
 		}
 		else
 		{
 			StringBuilder sb = new StringBuilder();
 			
-			if( hdu.getEncryption() != Encryption.UNENCRYPTED )
+			CallEventType type = CallEventType.CALL;
+			
+			if( hdu.isValid() && hdu.isEncrypted() )
 			{
+				type = CallEventType.ENCRYPTED_CALL;
+				
 				sb.append( "ENCRYPTED WITH " );
 				sb.append( hdu.getEncryption().name() );
 				sb.append( " KEY:" );
 				sb.append( hdu.getKeyID() );
 			}
 			
-			P25CallEvent event = new P25CallEvent.Builder( CallEventType.CALL )
+			P25CallEvent event = new P25CallEvent.Builder( type )
 						.aliasList( mAliasList )
 						.channel( mCurrentChannel )
 						.frequency( mCurrentChannelFrequency )
@@ -815,6 +826,14 @@ public class P25ChannelState extends ChannelState
 			mAudioOutput.receive( ldu );
 		}
 		
+		State state = getState();
+
+		/* Only change the state for valid ldus */
+		if( ldu.isValid() )
+		{
+			state = ldu.isEncrypted() ? State.ENCRYPTED : State.CALL;
+		}
+		
 		if( ldu instanceof LDU1Message )
 		{
 			switch( ((LDU1Message)ldu).getOpcode() )
@@ -836,7 +855,7 @@ public class P25ChannelState extends ChannelState
 					break;
 				case ADJACENT_SITE_STATUS_BROADCAST_EXPLICIT:
 					/* This message doesn't provide anything we need for channel state */
-					updateCall( State.CALL, mCurrentChannel, null, null );
+					updateCall( state, mCurrentChannel, null, null );
 					break;
 				case CALL_ALERT:
 					if( ldu instanceof decode.p25.message.ldu.lc.CallAlert )
@@ -870,12 +889,12 @@ public class P25ChannelState extends ChannelState
 				case CHANNEL_IDENTIFIER_UPDATE:
 					/* This message is handled by the P25MessageProcessor and 
 					 * inserted into any channels needing frequency band info */
-					updateCall( State.CALL, mCurrentChannel, null, null );
+					updateCall( state, mCurrentChannel, null, null );
 					break;
 				case CHANNEL_IDENTIFIER_UPDATE_EXPLICIT:
 					/* This message is handled by the P25MessageProcessor and 
 					 * inserted into any channels needing frequency band info */
-					updateCall( State.CALL, mCurrentChannel, null, null );
+					updateCall( state, mCurrentChannel, null, null );
 					break;
 				case EXTENDED_FUNCTION_COMMAND:
 					if( ldu instanceof decode.p25.message.ldu.lc.ExtendedFunctionCommand )
@@ -895,7 +914,7 @@ public class P25ChannelState extends ChannelState
 					{
 						logAlternateVendorMessage( ldu );
 					}
-					updateCall( State.CALL, mCurrentChannel, null, null );
+					updateCall( state, mCurrentChannel, null, null );
 					break;
 				case GROUP_AFFILIATION_QUERY:
 					if( ldu instanceof decode.p25.message.ldu.lc.GroupAffiliationQuery )
@@ -914,7 +933,7 @@ public class P25ChannelState extends ChannelState
 					{
 						logAlternateVendorMessage( ldu );
 					}
-					updateCall( State.CALL, mCurrentChannel, null, null );
+					updateCall( state, mCurrentChannel, null, null );
 					break;
 				case GROUP_VOICE_CHANNEL_UPDATE:
 					if( ldu instanceof decode.p25.message.ldu.lc.GroupVoiceChannelUpdate )
@@ -925,7 +944,7 @@ public class P25ChannelState extends ChannelState
 						if( isActiveCall( gvcu.getChannelA(), 
 								  gvcu.getGroupAddressA() ) )
 						{
-							updateCall( State.CALL, 
+							updateCall( state, 
 									    gvcu.getChannelA(), 
 									    gvcu.getGroupAddressA(), 
 									    gvcu.getGroupAddressB() );
@@ -959,7 +978,7 @@ public class P25ChannelState extends ChannelState
 						if( isActiveCall( gvcue.getTransmitChannel(), 
 						  		  gvcue.getGroupAddress() ) )
 						{
-							updateCall( State.CALL, 
+							updateCall( state, 
 									    gvcue.getTransmitChannel(), 
 									    null, 
 									    gvcue.getGroupAddress() );
@@ -991,7 +1010,7 @@ public class P25ChannelState extends ChannelState
 						
 						if( isActiveCall( mCurrentChannel, gvcuser.getGroupAddress() ) )
 						{
-							updateCall( State.CALL, 
+							updateCall( state, 
 										mCurrentChannel, 
 										gvcuser.getSourceAddress(), 
 										gvcuser.getGroupAddress() );
@@ -1036,7 +1055,7 @@ public class P25ChannelState extends ChannelState
 						logAlternateVendorMessage( ldu );
 					}
 					
-					updateCall( State.CALL, mCurrentChannel, null, null );
+					updateCall( state, mCurrentChannel, null, null );
 					break;
 				case NETWORK_STATUS_BROADCAST:
 					if( ldu instanceof decode.p25.message.ldu.lc.NetworkStatusBroadcast )
@@ -1048,7 +1067,7 @@ public class P25ChannelState extends ChannelState
 						logAlternateVendorMessage( ldu );
 					}
 					
-					updateCall( State.CALL, mCurrentChannel, null, null );
+					updateCall( state, mCurrentChannel, null, null );
 					break;
 				case NETWORK_STATUS_BROADCAST_EXPLICIT:
 					if( ldu instanceof decode.p25.message.ldu.lc.NetworkStatusBroadcastExplicit )
@@ -1060,7 +1079,7 @@ public class P25ChannelState extends ChannelState
 						logAlternateVendorMessage( ldu );
 					}
 					
-					updateCall( State.CALL, mCurrentChannel, null, null );
+					updateCall( state, mCurrentChannel, null, null );
 					break;
 				case PROTECTION_PARAMETER_BROADCAST:
 					if( ldu instanceof decode.p25.message.ldu.lc.ProtectionParameterBroadcast )
@@ -1082,7 +1101,7 @@ public class P25ChannelState extends ChannelState
 						logAlternateVendorMessage( ldu );
 					}
 					
-					updateCall( State.CALL, mCurrentChannel, null, null );
+					updateCall( state, mCurrentChannel, null, null );
 					break;
 				case RFSS_STATUS_BROADCAST:
 					if( ldu instanceof decode.p25.message.ldu.lc.RFSSStatusBroadcast )
@@ -1096,20 +1115,13 @@ public class P25ChannelState extends ChannelState
 								rfsssb.getSiteID();
 
 						updateSite( site );
-						
-//						if( mCurrentChannel == null || 
-//							!mCurrentChannel.contentEquals( rfsssb.getChannel() ) )
-//						{
-//							mCurrentChannel = rfsssb.getChannel();
-//							mCurrentChannelFrequency = rfsssb.getDownlinkFrequency();
-//						}
 					}
 					else
 					{
 						logAlternateVendorMessage( ldu );
 					}
 					
-					updateCall( State.CALL, mCurrentChannel, null, null );
+					updateCall( state, mCurrentChannel, null, null );
 					break;
 				case RFSS_STATUS_BROADCAST_EXPLICIT:
 					if( ldu instanceof decode.p25.message.ldu.lc.RFSSStatusBroadcastExplicit )
@@ -1121,20 +1133,13 @@ public class P25ChannelState extends ChannelState
 								rfsssbe.getSiteID();
 
 						updateSite( site );
-						
-//						if( mCurrentChannel == null || 
-//							!mCurrentChannel.contentEquals( rfsssbe.getTransmitChannel() ) )
-//						{
-//							mCurrentChannel = rfsssbe.getTransmitChannel();
-//							mCurrentChannelFrequency = rfsssbe.getDownlinkFrequency();
-//						}
 					}
 					else
 					{
 						logAlternateVendorMessage( ldu );
 					}
 					
-					updateCall( State.CALL, mCurrentChannel, null, null );
+					updateCall( state, mCurrentChannel, null, null );
 					break;
 				case SECONDARY_CONTROL_CHANNEL_BROADCAST:
 					if( ldu instanceof decode.p25.message.ldu.lc.SecondaryControlChannelBroadcast )
@@ -1152,7 +1157,7 @@ public class P25ChannelState extends ChannelState
 						logAlternateVendorMessage( ldu );
 					}
 					
-					updateCall( State.CALL, mCurrentChannel, null, null );
+					updateCall( state, mCurrentChannel, null, null );
 					break;
 				case SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT:
 					if( ldu instanceof decode.p25.message.ldu.lc.SecondaryControlChannelBroadcastExplicit )
@@ -1170,7 +1175,7 @@ public class P25ChannelState extends ChannelState
 						logAlternateVendorMessage( ldu );
 					}
 					
-					updateCall( State.CALL, mCurrentChannel, null, null );
+					updateCall( state, mCurrentChannel, null, null );
 					break;
 				case STATUS_QUERY:
 					if( ldu instanceof decode.p25.message.ldu.lc.StatusQuery )
@@ -1191,7 +1196,7 @@ public class P25ChannelState extends ChannelState
 						logAlternateVendorMessage( ldu );
 					}
 					
-					updateCall( State.CALL, mCurrentChannel, null, null );
+					updateCall( state, mCurrentChannel, null, null );
 					break;
 				case STATUS_UPDATE:
 					if( ldu instanceof decode.p25.message.ldu.lc.StatusUpdate )
@@ -1213,12 +1218,12 @@ public class P25ChannelState extends ChannelState
 						logAlternateVendorMessage( ldu );
 					}
 					
-					updateCall( State.CALL, mCurrentChannel, null, null );
+					updateCall( state, mCurrentChannel, null, null );
 
 					break;
 				case SYSTEM_SERVICE_BROADCAST:
 					/* This message doesn't provide anything we need for channel state */
-					updateCall( State.CALL, mCurrentChannel, null, null );
+					updateCall( state, mCurrentChannel, null, null );
 					break;
 				case TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
 					if( ldu instanceof decode.p25.message.ldu.lc.TelephoneInterconnectAnswerRequest )
@@ -1239,7 +1244,7 @@ public class P25ChannelState extends ChannelState
 						logAlternateVendorMessage( ldu );
 					}
 					
-					updateCall( State.CALL, mCurrentChannel, null, null );
+					updateCall( state, mCurrentChannel, null, null );
 					break;
 				case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_USER:
 					if( ldu instanceof TelephoneInterconnectVoiceChannelUser )
@@ -1249,7 +1254,7 @@ public class P25ChannelState extends ChannelState
 						
 						if( isActiveCall( mCurrentChannel, tivcu.getAddress() ) )
 						{
-							updateCall( State.CALL, 
+							updateCall( state, 
 										mCurrentChannel, 
 										null, 
 										tivcu.getAddress() );
@@ -1294,7 +1299,7 @@ public class P25ChannelState extends ChannelState
 						logAlternateVendorMessage( ldu );
 					}
 					
-					updateCall( State.CALL, mCurrentChannel, null, null );
+					updateCall( state, mCurrentChannel, null, null );
 					break;
 				case UNIT_REGISTRATION_COMMAND:
 					if( ldu instanceof decode.p25.message.ldu.lc.UnitRegistrationCommand )
@@ -1314,7 +1319,7 @@ public class P25ChannelState extends ChannelState
 						logAlternateVendorMessage( ldu );
 					}
 					
-					updateCall( State.CALL, mCurrentChannel, null, null );
+					updateCall( state, mCurrentChannel, null, null );
 					break;
 				case UNIT_TO_UNIT_ANSWER_REQUEST:
 					if( ldu instanceof decode.p25.message.ldu.lc.UnitToUnitAnswerRequest )
@@ -1335,7 +1340,7 @@ public class P25ChannelState extends ChannelState
 						logAlternateVendorMessage( ldu );
 					}
 					
-					updateCall( State.CALL, mCurrentChannel, null, null );
+					updateCall( state, mCurrentChannel, null, null );
 					break;
 				case UNIT_TO_UNIT_VOICE_CHANNEL_USER:
 					if( ldu instanceof UnitToUnitVoiceChannelUser )
@@ -1345,7 +1350,7 @@ public class P25ChannelState extends ChannelState
 						
 						if( isActiveCall( mCurrentChannel, uuvcu.getTargetAddress() ) )
 						{
-							updateCall( State.CALL, 
+							updateCall( state, 
 										mCurrentChannel, 
 										uuvcu.getSourceAddress(), 
 										uuvcu.getTargetAddress() );
@@ -1378,7 +1383,7 @@ public class P25ChannelState extends ChannelState
 		else
 		{
 			//LDU2
-			updateCall( State.CALL, mCurrentChannel, null, null );
+			updateCall( state, mCurrentChannel, null, null );
 		}
 	}
 	

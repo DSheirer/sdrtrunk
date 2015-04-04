@@ -48,14 +48,15 @@ public class P25AudioOutput implements IAudioOutput, IAudioTypeListener,
 	private AudioInputStream mIMBEToPCMConverter;
 //	private AudioInputStream mUpsampler;
 	private ArrayBlockingQueue<byte[]> mIMBEFrameQueue = 
-			new ArrayBlockingQueue<byte[]>( 100 );
+			new ArrayBlockingQueue<byte[]>( 200 );
 	private ArrayBlockingQueue<byte[]> mProcessedAudioQueue = 
-			new ArrayBlockingQueue<byte[]>( 100 );
+			new ArrayBlockingQueue<byte[]>( 200 );
 	
 	private AtomicBoolean mConverting = new AtomicBoolean();
 	private AtomicBoolean mDispatching = new AtomicBoolean();
 	private AtomicBoolean mEnabled = new AtomicBoolean();
 	private boolean mCanProcessAudio = false;
+	private boolean mEncryptedAudio = false;
 	
 	private ThreadPoolManager mThreadPoolManager;
 	
@@ -85,14 +86,26 @@ public class P25AudioOutput implements IAudioOutput, IAudioTypeListener,
 		{
 			if( message instanceof LDUMessage )
 			{
-				for( byte[] frame: ((LDUMessage)message).getIMBEFrames() )
+				LDUMessage ldu = (LDUMessage)message;
+				
+				/* Check valid ldu frames for encryption.  Set state to encrypted
+				 * so that no encrypted frames are sent to the converter */
+				if( ldu.isValid() )
 				{
-					if( !mIMBEFrameQueue.offer( frame ) )
+					mEncryptedAudio = ldu.isEncrypted();
+				}
+
+				if( !mEncryptedAudio )
+				{
+					for( byte[] frame: ((LDUMessage)message).getIMBEFrames() )
 					{
-						mLog.debug( "IMBE frame queue full - throwing away imbe audio frame" );
+						if( !mIMBEFrameQueue.offer( frame ) )
+						{
+							mLog.debug( "IMBE frame queue full - throwing away "
+									+ "imbe audio frame" );
+						}
 					}
 				}
-				
 			}
 		}
 	}
@@ -128,56 +141,41 @@ public class P25AudioOutput implements IAudioOutput, IAudioTypeListener,
 			if( mIMBEToPCMConverter != null )
 			{
 				mLog.debug( "IMBE audio converter library loaded successfully" );
-//				mUpsampler = AudioSystem
-//					.getAudioInputStream( IMBEAudioFormat.PCM_SIGNED_48KHZ_16BITS, 
-//								mIMBEToPCMConverter );
-//
-//				if( mUpsampler != null )
-//				{
-//					mLog.debug( "Resampler loaded successfully" );
 					
-					try
-			        {
-				        mOutput = AudioSystem.getSourceDataLine( IMBEAudioFormat.PCM_SIGNED_8KHZ_16BITS );
+				try
+		        {
+			        mOutput = AudioSystem.getSourceDataLine( IMBEAudioFormat.PCM_SIGNED_8KHZ_16BITS );
 
-				        if( mOutput != null )
+			        if( mOutput != null )
+		        	{
+						mLog.debug( "Audio output line loaded successfully" );
+						
+			        	/* Open the audio line with room for two buffers */ 
+			        	mOutput.open( IMBEAudioFormat.PCM_SIGNED_8KHZ_16BITS, 
+			        			PROCESSED_AUDIO_FRAME_SIZE * 2 );
+			        	
+			        	Control[] controls = mOutput.getControls();
+
+			        	FloatControl gain = (FloatControl)mOutput
+			        			.getControl( FloatControl.Type.MASTER_GAIN );
+
+			        	if( gain != null )
 			        	{
-							mLog.debug( "Audio output line loaded successfully" );
-							
-				        	/* Open the audio line with room for two buffers */ 
-				        	mOutput.open( IMBEAudioFormat.PCM_SIGNED_8KHZ_16BITS, 
-				        			PROCESSED_AUDIO_FRAME_SIZE * 2 );
-				        	
-				        	Control[] controls = mOutput.getControls();
-
-				        	FloatControl gain = (FloatControl)mOutput
-				        			.getControl( FloatControl.Type.MASTER_GAIN );
-
-				        	if( gain != null )
-				        	{
-//				        		gain.setValue( 4.0f );
-				        	}
-				        	
-							mCanProcessAudio = true;
+			        		gain.setValue( 2.0f );
 			        	}
-				        else
-				        {
-							mLog.debug( "Couldn't create output line" );
-				        }
-			        }
-			        catch ( LineUnavailableException e )
+			        	
+						mCanProcessAudio = true;
+		        	}
+			        else
 			        {
-			        	mLog.error( "AudioOutput - couldn't open audio speakers "
-			        			+ "for playback", e );
+						mLog.debug( "Couldn't create output line" );
 			        }
-					
-//				}
-//				else
-//				{
-//					mIMBEToPCMConverter = null;
-//					
-//					mLog.debug( "couldn't load Resampler" );
-//				}
+		        }
+		        catch ( LineUnavailableException e )
+		        {
+		        	mLog.error( "AudioOutput - couldn't open audio speakers "
+		        			+ "for playback", e );
+		        }
 			}
 			else
 			{
@@ -256,8 +254,6 @@ public class P25AudioOutput implements IAudioOutput, IAudioTypeListener,
 							
 							try
 							{
-//								mLog.debug( "reading converted audio bytes - available: " + mUpsampler.available() );
-//								int read = mUpsampler.read( audio );
 								int read = mIMBEToPCMConverter.read( audio );
 								
 								if( read > 0 )
