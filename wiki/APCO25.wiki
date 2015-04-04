@@ -6,8 +6,22 @@ The APCO-25 decoder will decoder P-25 phase I signals that are using either
 C4FM modulation or LSM Simulcast (CQPSK) modulation.  It will process trunked,
 conventional and packet data messages.
 
-The decoder currently does not produce audio output or follow trunked traffic
-channels.  Both of these features are planned for a future release
+== Audio Vocoder ==
+
+APCO-25 Phase-1 audio calls use the multi-band excitation model vocoder to 
+compress the digitized audio.  SDRTrunk supports the JMBE library for decoding 
+audio, but DOES NOT include the jmbe library in the normal application download.  
+You must download and compile the library and place the jmbe-x.x.x.jar file in 
+the same directory from where you launch the sdrtrunk application.  On startup, 
+sdrtrunk will attempt to discover the library and can then decode imbe audio.
+
+[https://github.com/DSheirer/jmbe JMBE library]
+
+[JMBE How To Setup JMBE]
+
+== Traffic Channel Following ==
+The decoder currently does not automatically follow trunked traffic channels.  
+This feature is planned for a future release
 
 http://sdrtrunk.googlecode.com/svn/wiki/images/P25_Decoding.png
 
