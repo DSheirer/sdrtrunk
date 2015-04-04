@@ -3,6 +3,11 @@
     Ant build script for SDRTrunk Decoder Application
   </description>
 
+  <!-- version properties -->
+  <property name="major" value="0"/>
+  <property name="minor" value="1"/>
+  <property name="build" value="1"/>
+
   <!-- Build properties -->
   <property name="classes" location="../classes"/>
   <property name="configs"  location="../config"/>
@@ -20,6 +25,9 @@
   <target name="init">
     <!-- Create the classes folder to contain the compiled java classes -->
     <mkdir dir="${classes}"/>
+  	
+    <!-- Create version file -->
+  	<echo message="${major}.${minor}.${build}" file="${classes}/sdrtrunk-version"/>
   </target>
 
   <target name="compile" depends="clean,init"
