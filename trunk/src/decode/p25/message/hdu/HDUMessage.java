@@ -33,26 +33,26 @@ public class HDUMessage extends P25Message
 		190,208,226,244,262,280,298,316,334,352,370,388,406,424,442,460,478,
 		496,514,532,550,568,586,604,622,640,658,676,694 };
 
-	public static final int[] LC_HEX_0 = { 64,65,66,67,68,69 };
-	public static final int[] LC_HEX_1 = { 82,83,84,85,86,87 };
-	public static final int[] LC_HEX_2 = { 100,101,102,103,104,105 };
-	public static final int[] LC_HEX_3 = { 118,119,120,121,122,123 };
-	public static final int[] LC_HEX_4 = { 136,137,138,139,140,141 };
-	public static final int[] LC_HEX_5 = { 154,155,156,157,158,159 };
-	public static final int[] LC_HEX_6 = { 172,173,174,175,176,177 };
-	public static final int[] LC_HEX_7 = { 190,191,192,193,194,195 };
-	public static final int[] LC_HEX_8 = { 208,209,210,211,212,213 };
-	public static final int[] LC_HEX_9 = { 226,227,228,229,230,231 };
-	public static final int[] LC_HEX_10 = { 244,245,246,247,248,249 };
-	public static final int[] LC_HEX_11 = { 262,263,264,265,266,267 };
-	public static final int[] LC_HEX_12 = { 280,281,282,283,284,285 };
-	public static final int[] LC_HEX_13 = { 298,299,300,301,302,303 };
-	public static final int[] LC_HEX_14 = { 316,317,318,319,320,321 };
-	public static final int[] LC_HEX_15 = { 334,335,336,337,338,339 };
-	public static final int[] LC_HEX_16 = { 352,353,354,355,356,357 };
-	public static final int[] LC_HEX_17 = { 370,371,372,373,374,375 };
-	public static final int[] LC_HEX_18 = { 388,389,390,391,392,393 };
-	public static final int[] LC_HEX_19 = { 406,407,408,409,410,411 };
+	public static final int[] CW_HEX_0 = { 64,65,66,67,68,69 };
+	public static final int[] CW_HEX_1 = { 82,83,84,85,86,87 };
+	public static final int[] CW_HEX_2 = { 100,101,102,103,104,105 };
+	public static final int[] CW_HEX_3 = { 118,119,120,121,122,123 };
+	public static final int[] CW_HEX_4 = { 136,137,138,139,140,141 };
+	public static final int[] CW_HEX_5 = { 154,155,156,157,158,159 };
+	public static final int[] CW_HEX_6 = { 172,173,174,175,176,177 };
+	public static final int[] CW_HEX_7 = { 190,191,192,193,194,195 };
+	public static final int[] CW_HEX_8 = { 208,209,210,211,212,213 };
+	public static final int[] CW_HEX_9 = { 226,227,228,229,230,231 };
+	public static final int[] CW_HEX_10 = { 244,245,246,247,248,249 };
+	public static final int[] CW_HEX_11 = { 262,263,264,265,266,267 };
+	public static final int[] CW_HEX_12 = { 280,281,282,283,284,285 };
+	public static final int[] CW_HEX_13 = { 298,299,300,301,302,303 };
+	public static final int[] CW_HEX_14 = { 316,317,318,319,320,321 };
+	public static final int[] CW_HEX_15 = { 334,335,336,337,338,339 };
+	public static final int[] CW_HEX_16 = { 352,353,354,355,356,357 };
+	public static final int[] CW_HEX_17 = { 370,371,372,373,374,375 };
+	public static final int[] CW_HEX_18 = { 388,389,390,391,392,393 };
+	public static final int[] CW_HEX_19 = { 406,407,408,409,410,411 };
 	public static final int[] RS_HEX_0 = { 424,425,426,427,428,429 };
 	public static final int[] RS_HEX_1 = { 442,443,444,445,446,447 };
 	public static final int[] RS_HEX_2 = { 460,461,462,463,464,465 };
@@ -70,8 +70,10 @@ public class HDUMessage extends P25Message
 	public static final int[] RS_HEX_14 = { 676,677,678,679,680,681 };
 	public static final int[] RS_HEX_15 = { 694,695,696,697,698,699 };
 	
+	/* Reed-Solomon(36,20,17) code protects the header word.  Maximum
+	 * correctable errors are: Hamming Distance(17) / 2 = 8  */
 	public static final ReedSolomon_63_47_17 mReedSolomonDecoder = 
-			new ReedSolomon_63_47_17();
+			new ReedSolomon_63_47_17( 8 );
 	
 	public HDUMessage( BinaryMessage message, DataUnitID duid,
             AliasList aliasList )
@@ -121,26 +123,26 @@ public class HDUMessage extends P25Message
         input[ 14 ] = mMessage.getInt( RS_HEX_1 );
         input[ 15 ] = mMessage.getInt( RS_HEX_0 );
         
-        input[ 16 ] = mMessage.getInt( LC_HEX_19 );
-        input[ 17 ] = mMessage.getInt( LC_HEX_18 );
-        input[ 18 ] = mMessage.getInt( LC_HEX_17 );
-        input[ 19 ] = mMessage.getInt( LC_HEX_16 );
-        input[ 20 ] = mMessage.getInt( LC_HEX_15 );
-        input[ 21 ] = mMessage.getInt( LC_HEX_14 );
-        input[ 22 ] = mMessage.getInt( LC_HEX_13 );
-        input[ 23 ] = mMessage.getInt( LC_HEX_12 );
-        input[ 24 ] = mMessage.getInt( LC_HEX_11 );
-        input[ 25 ] = mMessage.getInt( LC_HEX_10 );
-        input[ 26 ] = mMessage.getInt( LC_HEX_9 );
-        input[ 27 ] = mMessage.getInt( LC_HEX_8 );
-        input[ 28 ] = mMessage.getInt( LC_HEX_7 );
-        input[ 29 ] = mMessage.getInt( LC_HEX_6 );
-        input[ 30 ] = mMessage.getInt( LC_HEX_5 );
-        input[ 31 ] = mMessage.getInt( LC_HEX_4 );
-        input[ 32 ] = mMessage.getInt( LC_HEX_3 );
-        input[ 33 ] = mMessage.getInt( LC_HEX_2 );
-        input[ 34 ] = mMessage.getInt( LC_HEX_1 );
-        input[ 35 ] = mMessage.getInt( LC_HEX_0 );
+        input[ 16 ] = mMessage.getInt( CW_HEX_19 );
+        input[ 17 ] = mMessage.getInt( CW_HEX_18 );
+        input[ 18 ] = mMessage.getInt( CW_HEX_17 );
+        input[ 19 ] = mMessage.getInt( CW_HEX_16 );
+        input[ 20 ] = mMessage.getInt( CW_HEX_15 );
+        input[ 21 ] = mMessage.getInt( CW_HEX_14 );
+        input[ 22 ] = mMessage.getInt( CW_HEX_13 );
+        input[ 23 ] = mMessage.getInt( CW_HEX_12 );
+        input[ 24 ] = mMessage.getInt( CW_HEX_11 );
+        input[ 25 ] = mMessage.getInt( CW_HEX_10 );
+        input[ 26 ] = mMessage.getInt( CW_HEX_9 );
+        input[ 27 ] = mMessage.getInt( CW_HEX_8 );
+        input[ 28 ] = mMessage.getInt( CW_HEX_7 );
+        input[ 29 ] = mMessage.getInt( CW_HEX_6 );
+        input[ 30 ] = mMessage.getInt( CW_HEX_5 );
+        input[ 31 ] = mMessage.getInt( CW_HEX_4 );
+        input[ 32 ] = mMessage.getInt( CW_HEX_3 );
+        input[ 33 ] = mMessage.getInt( CW_HEX_2 );
+        input[ 34 ] = mMessage.getInt( CW_HEX_1 );
+        input[ 35 ] = mMessage.getInt( CW_HEX_0 );
         /* indexes 36 - 62 are defaulted to zero */
 
         boolean irrecoverableErrors = mReedSolomonDecoder.decode( input, output );
@@ -154,26 +156,26 @@ public class HDUMessage extends P25Message
         	mCRC[ 2 ] = CRC.PASSED;
         	
         	/* Only fix the codeword data hex codewords */
-        	repairHexCodeword( input, output, 16, LC_HEX_19 );
-        	repairHexCodeword( input, output, 17, LC_HEX_18 );
-        	repairHexCodeword( input, output, 18, LC_HEX_17 );
-        	repairHexCodeword( input, output, 19, LC_HEX_16 );
-        	repairHexCodeword( input, output, 20, LC_HEX_15 );
-        	repairHexCodeword( input, output, 21, LC_HEX_14 );
-        	repairHexCodeword( input, output, 22, LC_HEX_13 );
-        	repairHexCodeword( input, output, 23, LC_HEX_12 );
-        	repairHexCodeword( input, output, 24, LC_HEX_11 );
-        	repairHexCodeword( input, output, 25, LC_HEX_10 );
-        	repairHexCodeword( input, output, 26, LC_HEX_9 );
-        	repairHexCodeword( input, output, 27, LC_HEX_8 );
-        	repairHexCodeword( input, output, 28, LC_HEX_7 );
-        	repairHexCodeword( input, output, 29, LC_HEX_6 );
-        	repairHexCodeword( input, output, 30, LC_HEX_5 );
-        	repairHexCodeword( input, output, 31, LC_HEX_4 );
-        	repairHexCodeword( input, output, 32, LC_HEX_3 );
-        	repairHexCodeword( input, output, 33, LC_HEX_2 );
-        	repairHexCodeword( input, output, 34, LC_HEX_1 );
-        	repairHexCodeword( input, output, 35, LC_HEX_0 );
+        	repairHexCodeword( input, output, 16, CW_HEX_19 );
+        	repairHexCodeword( input, output, 17, CW_HEX_18 );
+        	repairHexCodeword( input, output, 18, CW_HEX_17 );
+        	repairHexCodeword( input, output, 19, CW_HEX_16 );
+        	repairHexCodeword( input, output, 20, CW_HEX_15 );
+        	repairHexCodeword( input, output, 21, CW_HEX_14 );
+        	repairHexCodeword( input, output, 22, CW_HEX_13 );
+        	repairHexCodeword( input, output, 23, CW_HEX_12 );
+        	repairHexCodeword( input, output, 24, CW_HEX_11 );
+        	repairHexCodeword( input, output, 25, CW_HEX_10 );
+        	repairHexCodeword( input, output, 26, CW_HEX_9 );
+        	repairHexCodeword( input, output, 27, CW_HEX_8 );
+        	repairHexCodeword( input, output, 28, CW_HEX_7 );
+        	repairHexCodeword( input, output, 29, CW_HEX_6 );
+        	repairHexCodeword( input, output, 30, CW_HEX_5 );
+        	repairHexCodeword( input, output, 31, CW_HEX_4 );
+        	repairHexCodeword( input, output, 32, CW_HEX_3 );
+        	repairHexCodeword( input, output, 33, CW_HEX_2 );
+        	repairHexCodeword( input, output, 34, CW_HEX_1 );
+        	repairHexCodeword( input, output, 35, CW_HEX_0 );
         }
 	}
 	
@@ -181,7 +183,6 @@ public class HDUMessage extends P25Message
 	{
 		if( input[ index ] != output[ index ] )
 		{
-			mLog.debug( "Fixing index: " + index );
 			mMessage.load( indexSet[ 0 ], 6, output[ index ] );
 			mCRC[ 2 ] = CRC.CORRECTED;
 		}

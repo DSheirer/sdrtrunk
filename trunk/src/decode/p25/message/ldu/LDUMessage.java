@@ -68,9 +68,9 @@ public class LDUMessage extends P25Message
 		return mMessage.getHex( LOW_SPEED_DATA, 4 );
 	}
 
-	/* Temporary override */
 	public boolean isValid()
 	{
+//		return mCRC[ 2 ] != null && mCRC[ 2 ] != CRC.FAILED_CRC;
 		return true;
 	}
 

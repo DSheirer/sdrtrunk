@@ -21,11 +21,18 @@ package edac;
 public class ReedSolomon_63_47_17 extends BerlekempMassey_63
 {
 	/**
-	 * Reed-Solomon RS(24,12,13) decoder
+	 * Reed-Solomon RS(63,47,17) decoder.  This can also be used for error detection
+	 * and correction of the following RS codes:
+	 * 
+	 * RS(36,20,17) - max 8 errors
+	 * RS(24,16,9)  - max 4 errors
+	 * RS(24,12,13) - max 6 errors
+	 * 
+	 * The maximum correctable errors is determined by (n-k)/2, or hamming 
+	 * distance divided by 2.
 	 */
-	public ReedSolomon_63_47_17()
+	public ReedSolomon_63_47_17( int maximumCorrectableErrors )
     {
-		/* TT = 6 = maximum correctable bit errors */
-	    super( 6 );
+	    super( maximumCorrectableErrors );
     }
 }

@@ -24,6 +24,6 @@
 	<classpathentry kind="lib" path="imports/logback-classic-1.1.2.jar"/>
 	<classpathentry kind="lib" path="imports/logback-core-1.1.2.jar"/>
 	<classpathentry kind="lib" path="imports/commons-io-2.4.jar"/>
-	<classpathentry kind="lib" path="/jmbe/library/jmbe-0.1.0.jar"/>
+	<classpathentry kind="lib" path="/jmbe/library/jmbe-0.1.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -49,8 +49,10 @@ public class TDULinkControlMessage extends P25Message
 	public static final int[] OPCODE = { 66,67,68,69,70,71 };
 	public static final int[] VENDOR = { 72,73,74,75,88,89,90,91 };
 	
+	/* Reed-Solomon(24,12,13) code protects the link control word.  Maximum
+	 * correctable errors are: Hamming Distance(13) / 2 = 6  */
 	public static final ReedSolomon_63_47_17 mReedSolomonDecoder = 
-						new ReedSolomon_63_47_17();
+						new ReedSolomon_63_47_17( 6 );
 	
 	public TDULinkControlMessage( BinaryMessage message, DataUnitID duid,
             AliasList aliasList )
