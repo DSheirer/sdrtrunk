@@ -29,18 +29,13 @@ public class IMBETargetDataLine implements TargetDataLine
 	 */
 	public IMBETargetDataLine()
 	{
-		mLog.debug( "Constructing instance of TDL" );
 	}
 
 	@Override
 	public void open( AudioFormat format, int bufferSize )
 			throws LineUnavailableException
 	{
-		if( format == IMBEAudioFormat.IMBE_AUDIO_FORMAT )
-		{
-			mLog.debug( "We have now set the state - open:" );
-		}
-		else
+		if( format != IMBEAudioFormat.IMBE_AUDIO_FORMAT )
 		{
 			throw new LineUnavailableException( "Unsupported format" );
  		}
@@ -49,15 +44,12 @@ public class IMBETargetDataLine implements TargetDataLine
 	@Override
 	public void open() throws LineUnavailableException
 	{
-		mLog.debug( "open() invoked" );
-		
 		open( IMBEAudioFormat.IMBE_AUDIO_FORMAT, BUFFER_SIZE );
 	}
 
 	@Override
 	public void close()
 	{
-		mLog.debug( "Closing the IMBE target data line" );
 	}
 
 	@Override

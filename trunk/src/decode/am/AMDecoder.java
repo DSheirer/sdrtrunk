@@ -86,8 +86,7 @@ public class AMDecoder extends Decoder
 	@Override
 	public IAudioOutput getAudioOutput()
 	{
-		// TODO Auto-generated method stub
-		return null;
+		return mAudioOutput;
 	}
     
     @Override

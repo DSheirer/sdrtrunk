@@ -140,7 +140,7 @@ public class P25AudioOutput implements IAudioOutput, IAudioTypeListener,
 			
 			if( mIMBEToPCMConverter != null )
 			{
-				mLog.debug( "IMBE audio converter library loaded successfully" );
+				mLog.info( "IMBE audio converter library loaded successfully" );
 					
 				try
 		        {
@@ -148,8 +148,6 @@ public class P25AudioOutput implements IAudioOutput, IAudioTypeListener,
 
 			        if( mOutput != null )
 		        	{
-						mLog.debug( "Audio output line loaded successfully" );
-						
 			        	/* Open the audio line with room for two buffers */ 
 			        	mOutput.open( IMBEAudioFormat.PCM_SIGNED_8KHZ_16BITS, 
 			        			PROCESSED_AUDIO_FRAME_SIZE * 2 );
@@ -184,7 +182,7 @@ public class P25AudioOutput implements IAudioOutput, IAudioTypeListener,
 		}
 		catch( IllegalArgumentException iae )
 		{
-			mLog.equals( "couldn't find/load IMBE to PCM audio converter" );
+			mLog.info( "could NOT find/load IMBE audio converter library" );
 		}
 	}
 	
