@@ -34,8 +34,8 @@ import dsp.filter.Window.WindowType;
 
 public class FilterFactory
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( FilterFactory.class );
+//	private final static Logger mLog = 
+//			LoggerFactory.getLogger( FilterFactory.class );
 
 	/**
 	 * Generates coefficients for a unity-gain, windowed low-pass filter
@@ -381,99 +381,14 @@ public class FilterFactory
 		return (int)( Math.round( (double)attenuation / ( 22.0d * frequency ) ) );
 	}
 	
-	public static ComplexFilter[] getDecimationFilters( int sampleRate, 
-														int decimatedRate, 
-														long passFrequency, 
-														int attenuation,
-														WindowType windowType )
+	public static ComplexPrimeCICDecimate getDecimationFilter( int sampleRate, 
+		int decimatedRate, int order, int passFrequency, int attenuation,	
+		WindowType windowType )
 	{
-		ComplexFilter[] filters;
-		
-		if( sampleRate == 96000 && decimatedRate == 48000 )
-		{
-			filters = new ComplexFilter[ 1 ];
-			filters[ 0 ] = new ComplexHalfBandFilter( 
-					Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.0002 );
-		}
-		else if( sampleRate == 192000 && decimatedRate == 48000 )
-		{
-			filters = new ComplexFilter[ 2 ];
-			filters[ 0 ] = new ComplexHalfBandFilter( 
-					Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.0002 );
-			filters[ 1 ] = new ComplexHalfBandFilter( 
-					Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.0002 );
-		}
-		else
-		{
-			filters = new ComplexFilter[ 1 ];
+		int decimationRate = (int)( sampleRate / decimatedRate );
 			
-			int decimate = (int)( sampleRate / decimatedRate );
-			
-//			if( decimate < 25 )
-//			{
-				filters[ 0 ] = new ComplexCICDecimate( decimate, 1, decimatedRate );
-//			}
-//			else
-//			{
-//				filters[ 0 ] = new ComplexCICDecimate( decimate, 3, decimatedRate );
-//			}
-			
-
-//			int finalStopFrequency = decimatedRate - passFrequency;
-//			
-//			int[] rates = getPolyphaseDecimationRates( sampleRate, 
-//													   decimatedRate, 
-//													   passFrequency,
-//													   finalStopFrequency );
-//			
-//			filters = new ComplexFilter[ rates.length ];
-//			
-//			int counter = 0;
-//			int currentSampleRate = sampleRate;
-//			int currentDecimatedRate = sampleRate;
-//			
-//			while( counter < rates.length )
-//			{
-//				currentDecimatedRate /= rates[ counter ];
-//				
-//				int stopFrequency = currentDecimatedRate- passFrequency;
-//				
-//				int proposedFilterLength = getTapCount( currentSampleRate, 
-//												passFrequency, 
-//												stopFrequency, 
-//												attenuation );
-//				
-//				/* check filter length is multiple of decimation rate */
-//				int multiplier = (int)( proposedFilterLength / rates[ counter ] );
-//
-//				/* increase filter length to the next multiple, if needed */
-//				if( multiplier * rates[ counter ] < proposedFilterLength )
-//				{
-//					multiplier++;
-//				}
-//
-//				double[] filter = getLowPass( currentSampleRate, 
-//											  passFrequency, 
-//											  rates[counter] * multiplier, 
-//											  windowType );
-//				
-//				filters[ counter ] = 
-//					new ComplexPolyphaseDecimationFilter( filter, rates[ counter ] );
-//				
-//				Log.info( "FilterFactory - PFD filter [" + ( counter + 1 ) + "/" + rates.length +
-//						  "] overall rate [" + sampleRate + 
-//						  "] decimate [" + rates[ counter ] +
-//						  "] filter taps [" + filter.length +
-//						  "] rate [" + currentSampleRate + 
-//						  "] pass [" + passFrequency +
-//						  "]" );
-//
-//				currentSampleRate /= rates[ counter ];
-//				counter++;
-//			}
-		}
-		
-		return filters;
+		return new ComplexPrimeCICDecimate( decimationRate, order, 
+			passFrequency, attenuation, windowType );
 	}
 	
 	/**
@@ -516,10 +431,10 @@ public class FilterFactory
 			
 			int stage1 = findClosest( optimalStage1, factors );
 			
-			mLog.info( "Decimation rate [" + decimation +
-					  "] stage1 optimal [" + optimalStage1 +
-					  "] stage1 actual [" + stage1 +
-					  "]");
+//			mLog.info( "Decimation rate [" + decimation +
+//					  "] stage1 optimal [" + optimalStage1 +
+//					  "] stage1 actual [" + stage1 +
+//					  "]");
 
 			if( stage1 == decimation || stage1 == 1 )
 			{
@@ -627,11 +542,11 @@ public class FilterFactory
 		
 		int retVal = (int)( 2.0d * decimation * ( numerator / denominator ) );
 
-		mLog.info( "Optimal Stage 1 Decimation - rate [" + sampleRate +
-				  "] pass [" + passFrequency +
-				  "] bw ratio [" + ratio +
-				  "] optimal [" + retVal +
-				  "]" );
+//		mLog.info( "Optimal Stage 1 Decimation - rate [" + sampleRate +
+//				  "] pass [" + passFrequency +
+//				  "] bw ratio [" + ratio +
+//				  "] optimal [" + retVal +
+//				  "]" );
 		
 		return retVal;
 	}
@@ -660,15 +575,14 @@ public class FilterFactory
 	 * @return
 	 */
 	public static double[] getCICCleanupFilter( int outputSampleRate, 
-												int stageCount,
+												int order,
+												int passFrequency,
+												int attenuation,
 												WindowType window )
 	{
-		int pass = (int)( outputSampleRate / 4 );
-		int stop = pass + (int)( (double)pass * 0.25d );
-		int attenuation = 60; //db
+		int taps = getTapCount( outputSampleRate, passFrequency, passFrequency + 1500, 
+				attenuation );
 		
-		int taps = getTapCount( outputSampleRate, pass, stop, attenuation );
-
 		/* Make tap count odd */
 		if( taps% 2 == 0 )
 		{
@@ -676,7 +590,7 @@ public class FilterFactory
 		}
 
 		double[] frequencyResponse = 
-				getCICResponseArray( outputSampleRate, pass, taps, stageCount );
+				getCICResponseArray( outputSampleRate, passFrequency, taps, order );
 		
 		//Apply Inverse DFT against frequency response unity values, leaving the
 		//IDFT bin results in the frequency response array
@@ -707,7 +621,7 @@ public class FilterFactory
 	public static double[] getCICResponseArray( int sampleRate, 
 												int frequency, 
 												int length,
-												int stageCount )
+												int order )
 	{
 		double[] cicArray = new double[ length * 2 ];
 		
@@ -717,14 +631,14 @@ public class FilterFactory
 		cicArray[ 0 ] = 1.0d;
 		
 		double unityResponse = Math.pow( Math.sin( 1.0d / (double)length ) / 
-		   ( 1.0d / (double)length ), stageCount );
+		   ( 1.0d / (double)length ), order );
 		
 		for( int x = 1; x <= binCount; x++ )
 		{
 			/* Calculate unity response plus amplification for droop */
 			double compensated = 1.0d + ( unityResponse - 
 					Math.pow( ( Math.sin( (double)x / (double)length ) / 
-							( (double)x / (double)length ) ), stageCount ) );
+							( (double)x / (double)length ) ), order ) );
 			
 			cicArray[ x ] = compensated;
 			cicArray[ length - x ] = compensated;
@@ -820,5 +734,12 @@ public class FilterFactory
 		}
 
 		return coefficients;
+	}
+	
+	public static void main( String[] args )
+	{
+		double[] coefficients = getCICCleanupFilter( 48000, 2, 60, 24000, WindowType.BLACKMAN );
+		
+		System.out.println( Arrays.toString( coefficients ) );
 	}
 }

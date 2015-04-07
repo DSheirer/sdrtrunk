@@ -114,16 +114,12 @@ public class P25Decoder extends Decoder
                 FrameSync.P25_PHASE1.getSync(), 64, false, mAliasList );
         mNormalFramer.setListener( mMessageProcessor );
 
-//        mInvertedFramer = new P25MessageFramer( 
-//                FrameSync.P25_PHASE1_INVERTED.getSync(), 64, true, mAliasList );
-//        mInvertedFramer.setListener( mMessageProcessor );
-
         /* Setup demodulation chains based on sample type (real or complex) and 
          * modulation (C4FM or CQPSK) */
 		if( mSourceSampleType == SampleType.COMPLEX )
 		{
 			mBasebandFilter = new ComplexFIRFilter( FilterFactory.getLowPass( 
-					48000, 6500, 7500, 48, WindowType.HANNING, true ), 4.0 );
+					48000, 7000, 7500, 60, WindowType.HAMMING, true ), 1.0 );
 			
 			if( modulation == Modulation.CQPSK )
 			{
@@ -139,7 +135,6 @@ public class P25Decoder extends Decoder
 				mCQPSKDemodulator.setListener( mCQPSKSlicer );
 				
 				mCQPSKSlicer.addListener( mNormalFramer );
-//				mCQPSKSlicer.addListener( mInvertedFramer );
 			}
 			else /* C4FM */
 			{
@@ -172,7 +167,6 @@ public class P25Decoder extends Decoder
 			mSymbolFilter.setListener( mC4FMSlicer );
 			
 	        mC4FMSlicer.addListener( mNormalFramer );
-//	        mC4FMSlicer.addListener( mInvertedFramer );
 		}
 		
 		mAudioOutput = new P25AudioOutput( resourceManager );

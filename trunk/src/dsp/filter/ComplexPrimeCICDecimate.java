@@ -3,7 +3,9 @@ package dsp.filter;
 import java.util.ArrayList;
 import java.util.List;
 
-import sample.Broadcaster;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import sample.Listener;
 import sample.complex.ComplexBuffer;
 import sample.complex.ComplexSample;
@@ -11,8 +13,11 @@ import sample.complex.ComplexSampleListener;
 import sample.decimator.ComplexDecimator;
 import dsp.filter.Window.WindowType;
 
-public class ComplexPrimeCICDecimate implements Listener<ComplexBuffer>
+public class ComplexPrimeCICDecimate 
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( ComplexPrimeCICDecimate.class );
+
 	public static int[] PRIMES = { 2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,
 		59,61,67,71,73,79,83,89,97,101,103,107,109,113,127,131,137,139,149,151,
 		157,163,167,173,179,181,191,193,197,199,211,223,227,229,233,239,241,251,
@@ -25,11 +30,11 @@ public class ComplexPrimeCICDecimate implements Listener<ComplexBuffer>
 				new ArrayList<DecimatingStage>();
 	
 	private DecimatingStage mFirstDecimatingStage;
-	
-	public Broadcaster<ComplexSample> mBroadcaster = 
-			new Broadcaster<ComplexSample>();
 
-	public Output mOutput;
+	private Output mOutput;
+	
+	private Listener<ComplexSample> mListener;
+	
 	/**
 	 * Non-Recursive Prime-Factor CIC Filter with float sample array inputs and
 	 * decimated, single paired i/q float sample output.
@@ -46,7 +51,8 @@ public class ComplexPrimeCICDecimate implements Listener<ComplexBuffer>
 	 * @param decimation - overall decimation rate
 	 * @param order - filter order
 	 */
-	public ComplexPrimeCICDecimate( int decimation, int order )
+	public ComplexPrimeCICDecimate( int decimation, int order, 
+			int passFrequency, int attenuation, WindowType windowType )
 	{
 		assert( decimation <= 700 );
 		
@@ -69,13 +75,12 @@ public class ComplexPrimeCICDecimate implements Listener<ComplexBuffer>
 				mDecimatingStages.get( x - 1 ).addListener( stage );
 			}
 		}
-
-		mOutput = new Output( 48000, stageSizes.size(), decimation );
+		
+		mOutput = new Output( 48000, order, decimation, passFrequency, 
+				attenuation, windowType );
 		
 		mDecimatingStages.get( mDecimatingStages.size() - 1 )
 							.addListener( mOutput );
-		
-		mOutput.setListener( mBroadcaster );
 	}
 	
 	public void dispose()
@@ -86,26 +91,22 @@ public class ComplexPrimeCICDecimate implements Listener<ComplexBuffer>
 		}
 		
 		mDecimatingStages.clear();
-		
-		mBroadcaster.dispose();
-		
-		mBroadcaster = null;
 	}
 	
 	/**
 	 * Adds a listener to receive the output of this CIC decimation filter
 	 */
-	public void addListener( Listener<ComplexSample> listener )
+	public void setListener( Listener<ComplexSample> listener )
 	{
-		mBroadcaster.addListener( listener );
+		mOutput.setListener( listener );
 	}
-
+	
 	/**
 	 * Removes listener from output of this CIC decimation filter
 	 */
 	public void removeListener( Listener<ComplexSample> listener )
 	{
-		mBroadcaster.removeListener( listener );
+		mOutput.removeListener( listener );
 	}
 
 	/**
@@ -144,11 +145,8 @@ public class ComplexPrimeCICDecimate implements Listener<ComplexBuffer>
 	/**
 	 * Primary input method for receiving sample arrays composed as I,Q,I,Q, etc.
 	 */
-	@Override
-    public void receive( ComplexBuffer sampleArray )
+    public void receive( float[] samples )
     {
-		float[] samples = sampleArray.getSamples();
-		
 		for( int x = 0; x < samples.length; x += 2 )
 		{
 			mFirstDecimatingStage.receive( samples[ x ], samples[ x + 1 ] );
@@ -232,28 +230,27 @@ public class ComplexPrimeCICDecimate implements Listener<ComplexBuffer>
 		private float mISum;
 		private float mQSum;
 		
-		private int mSamplePointer;
+		private int mSamplePointer = 0;
 		private int mSize;
 
 		public Stage( int size )
 		{
-			mSize = size;
-			mISamples = new float[ size ];
-			mQSamples = new float[ size ];
+			mSize = size - 1;
+			
+			mISamples = new float[ mSize ];
+			mQSamples = new float[ mSize ];
 		}
 		
 		public void dispose()
 		{
 			mListener = null;
-			mISamples = null;
-			mQSamples = null;
 		}
 		
 		public void receive( float i, float q )
 		{
 			/* Subtract the oldest sample and add back in the newest */
 			mISum = mISum - mISamples[ mSamplePointer ] + i;
-			mQSum = mQSum - mISamples[ mSamplePointer ] + q;
+			mQSum = mQSum - mQSamples[ mSamplePointer ] + q;
 
 			/* Overwrite the oldest sample with the newest */
 			mISamples[ mSamplePointer ] = i;
@@ -285,19 +282,22 @@ public class ComplexPrimeCICDecimate implements Listener<ComplexBuffer>
 	 */
 	public class Output implements ComplexSampleListener
 	{
-		private int mStageCount;
 		private int mDecimation;
+		private int mOrder;
 		private double mGain = 1.0d;
 		private ComplexFilter mCleanupFilter;
 
-		public Output( int outputSampleRate, int stageCount, int decimation )
+		public Output( int outputSampleRate, int order, int decimation, 
+				int passFrequency, int attenuation, WindowType windowType )
 		{
-			mStageCount = stageCount;
+			mOrder = order;
 			mDecimation = decimation;
 			mCleanupFilter = new ComplexFIRFilter( FilterFactory
 					.getCICCleanupFilter( outputSampleRate, 
-										  stageCount, 
-										  WindowType.BLACKMAN ), 1.0d );
+										  mOrder,
+										  passFrequency,
+										  attenuation,
+										  windowType ), 1.0d );
 			
 			setGain();
 		}
@@ -359,10 +359,9 @@ public class ComplexPrimeCICDecimate implements Listener<ComplexBuffer>
 		private void setGain()
 		{
 			/* decimation is NOT multiplied by delay since delay is 1 */
-			double gain = Math.pow( (double)mDecimation, (double)mStageCount );
+			double gain = Math.pow( (double)mDecimation, (double)mOrder );
 			
-			mGain = 10.0d / gain;
+			mGain = 1.0d / gain;
 		}
 	}
-	
 }

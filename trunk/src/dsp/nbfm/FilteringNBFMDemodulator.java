@@ -17,6 +17,9 @@
  ******************************************************************************/
 package dsp.nbfm;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import sample.Listener;
 import sample.complex.ComplexSample;
 import sample.real.RealSampleBroadcaster;
@@ -28,6 +31,9 @@ import dsp.filter.Window.WindowType;
 
 public class FilteringNBFMDemodulator implements Listener<ComplexSample>
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( FilteringNBFMDemodulator.class );
+
 	private RealSampleBroadcaster mBroadcaster = new RealSampleBroadcaster();
 	private ComplexFIRFilter mIQFilter;
 	private FloatFIRFilter mAudioFilter;
