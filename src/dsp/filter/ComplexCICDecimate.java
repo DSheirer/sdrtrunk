@@ -262,12 +262,14 @@ public class ComplexCICDecimate extends ComplexFilter
 			mDecimation = decimation;
 			mCleanupFilter = new ComplexFIRFilter( FilterFactory
 					.getCICCleanupFilter( outputSampleRate, 
-										  stageCount, 
+										  1,
+										  12000,
+										  60,
 										  WindowType.BLACKMAN ), 1.0d );
 			
 			setGain();
 		}
-
+		
 		/**
 		 * Receiver method for the output adapter to receive a filtered,
 		 * decimated sample, apply gain correction, apply cleanup filtering

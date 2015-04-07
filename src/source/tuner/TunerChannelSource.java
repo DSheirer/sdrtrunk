@@ -37,8 +37,7 @@ import source.tuner.FrequencyChangeEvent.Attribute;
 import util.Oscillator;
 import controller.ThreadPoolManager;
 import controller.ThreadPoolManager.ThreadType;
-import decode.p25.P25Decoder;
-import dsp.filter.ComplexFilter;
+import dsp.filter.ComplexPrimeCICDecimate;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
 
@@ -49,15 +48,15 @@ public class TunerChannelSource extends ComplexSource
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( TunerChannelSource.class );
 	
-	private static int sCHANNEL_RATE = 48000;
-	private static int sCHANNEL_PASS_FREQUENCY = 12500;
+	private static int CHANNEL_RATE = 48000;
+	private static int CHANNEL_PASS_FREQUENCY = 12000;
 	
 	private LinkedTransferQueue<ComplexBuffer> mBuffer =
 							new LinkedTransferQueue<ComplexBuffer>();
 	private Tuner mTuner;
 	private TunerChannel mTunerChannel;
 	private Oscillator mSineWaveGenerator;
-	private ComplexFilter[] mDecimationFilters;
+	private ComplexPrimeCICDecimate mDecimationFilter;
 
 	private ComplexSampleAssembler mBufferAssembler = 
 								new ComplexSampleAssembler( 3000 );
@@ -71,7 +70,7 @@ public class TunerChannelSource extends ComplexSource
 	public TunerChannelSource( ThreadPoolManager threadPoolManager,
 							   Tuner tuner, 
 							   TunerChannel tunerChannel )
-						   throws RejectedExecutionException, SourceException
+				   throws RejectedExecutionException, SourceException
     {
 	    super( "Tuner Channel Source" );
 
@@ -118,11 +117,8 @@ public class TunerChannelSource extends ComplexSource
 		
 		mBuffer.clear();
 		mBuffer = null;
-		
-		for( ComplexFilter filter: mDecimationFilters )
-		{
-			filter.dispose();
-		}
+
+		mDecimationFilter.dispose();
 		
 		mBufferAssembler.dispose();
 		
@@ -160,8 +156,6 @@ public class TunerChannelSource extends ComplexSource
     public void removeListener( Listener<List<ComplexSample>> listener )
     {
 		mBufferAssembler.removeListener( listener );
-		mDecimationFilters[ mDecimationFilters.length - 1 ]
-				.setListener( null );
     }
 	
 	@Override
@@ -184,28 +178,18 @@ public class TunerChannelSource extends ComplexSource
 				{
 					/* Set the oscillator to the new frequency */
 					mSineWaveGenerator.setSampleRate( sampleRate );
-					
-					/* Get new decimation filters */
-					mDecimationFilters = FilterFactory
-							.getDecimationFilters( sampleRate, 
-												   sCHANNEL_RATE, 
-												   sCHANNEL_PASS_FREQUENCY, 
-												   48, //dB attenuation
-												   WindowType.HAMMING );
-					
-					/* wire the filters together */
-					if( mDecimationFilters.length > 1 )
-					{
-						for( int x = 1; x < mDecimationFilters.length; x++ )
-						{
-							mDecimationFilters[ x - 1 ]
-									.setListener( mDecimationFilters[ x ] );
-						}
-					}
+
+					/* Get new decimation filter */
+					mDecimationFilter = FilterFactory
+							.getDecimationFilter( sampleRate, 
+												  CHANNEL_RATE, 
+												  2,   //Order
+												  CHANNEL_PASS_FREQUENCY, 
+												  60, //dB attenuation
+												  WindowType.HAMMING );
 					
 					/* re-add the original output listener */
-					mDecimationFilters[ mDecimationFilters.length - 1 ]
-										.setListener( mBufferAssembler );
+					mDecimationFilter.setListener( mBufferAssembler );
 
 					mTunerSampleRate = sampleRate;
 				}
@@ -265,28 +249,25 @@ public class TunerChannelSource extends ComplexSource
 					 * and process them, causing delays and buffer refill */
 					mBuffer.drainTo( sampleBuffers, 4 );
 			
-					for( ComplexBuffer sampleArray: sampleBuffers )
+					for( ComplexBuffer buffer: sampleBuffers )
 					{
-						float[] samples = sampleArray.getSamples();
-						
+						float[] samples = buffer.getSamples();
+						float[] translated = new float[ samples.length ];
+
+						/* Perform frequency translation */
 						for( int x = 0; x < samples.length; x += 2 )
 						{
-							Float left = samples[ x ];
-							Float right = samples[ x + 1 ];
+							ComplexSample multiplier = 
+									mSineWaveGenerator.nextComplex();
 							
-							if( left != null && right != null )
-							{
-				            	/* perform frequency translation */
-			        			ComplexSample translated = ComplexSample.multiply( 
-			        					mSineWaveGenerator.nextComplex(), left, right ); 
-				            	
-				            	/* decimate the sample rate */
-			        			if( mDecimationFilters[ 0 ] != null )
-			        			{
-					            	mDecimationFilters[ 0 ].receive( translated );
-			        			}
-							}
+							translated[ x ] = ( samples[ x ] * multiplier.inphase() ) - 
+									( samples[ x + 1 ] * multiplier.quadrature() );
+					
+							translated[ x + 1 ] = ( samples[ x + 1 ] * multiplier.inphase() ) + 
+									( samples[ x ] * multiplier.quadrature() );
 						}
+						
+						mDecimationFilter.receive( translated );
 					}
 					
 					sampleBuffers.clear();
