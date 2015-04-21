@@ -2,8 +2,7 @@ package decode.p25.message.tsbk;
 
 import alias.AliasList;
 import bits.BinaryMessage;
-import decode.p25.message.tsbk.motorola.ChannelCWIDUpdate;
-import decode.p25.message.tsbk.motorola.CongestionHoldOffTimer;
+import decode.p25.message.tsbk.motorola.ControlChannelBaseStationIdentification;
 import decode.p25.message.tsbk.motorola.MotorolaOpcode;
 import decode.p25.message.tsbk.motorola.MotorolaTSBKMessage;
 import decode.p25.message.tsbk.motorola.PatchGroupAdd;
@@ -12,6 +11,7 @@ import decode.p25.message.tsbk.motorola.PatchGroupVoiceChannelGrant;
 import decode.p25.message.tsbk.motorola.PatchGroupVoiceChannelGrantUpdate;
 import decode.p25.message.tsbk.motorola.PlannedControlChannnelShutdown;
 import decode.p25.message.tsbk.motorola.SystemLoading;
+import decode.p25.message.tsbk.motorola.TrafficChannelBaseStationIdentification;
 import decode.p25.message.tsbk.osp.control.AcknowledgeResponse;
 import decode.p25.message.tsbk.osp.control.AdjacentStatusBroadcast;
 import decode.p25.message.tsbk.osp.control.AuthenticationCommand;
@@ -207,10 +207,8 @@ public class TSBKMessageFactory
 				{
 					case CCH_PLANNED_SHUTDOWN:
 						return new PlannedControlChannnelShutdown( message, duid, aliasList );
-					case CWID_UPDATE:
-						return new ChannelCWIDUpdate( message, duid, aliasList );
-					case CONGESTION_HOLD_OFF_TIMER:
-						return new CongestionHoldOffTimer( message, duid, aliasList );
+					case CONTROL_CHANNEL_ID:
+						return new ControlChannelBaseStationIdentification( message, duid, aliasList );
 					case PATCH_GROUP_ADD:
 						return new PatchGroupAdd( message, duid, aliasList );
 					case PATCH_GROUP_DELETE:
@@ -221,6 +219,8 @@ public class TSBKMessageFactory
 						return new PatchGroupVoiceChannelGrantUpdate( message, duid, aliasList );
 					case SYSTEM_LOAD:
 						return new SystemLoading( message, duid, aliasList );
+					case TRAFFIC_CHANNEL_ID:
+						return new TrafficChannelBaseStationIdentification( message, duid, aliasList );
 					default:
 				}
 				
