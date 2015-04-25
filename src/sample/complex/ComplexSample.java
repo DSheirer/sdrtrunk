@@ -284,18 +284,42 @@ public class ComplexSample implements Serializable
 		return new ComplexSample( (float)Math.cos( angle ), 
 								  (float)Math.sin( angle ) );
 	}
-	
+
+	/**
+	 * Angle of this sample in radians
+	 */
 	public float angle()
 	{
 		return (float)Math.atan2( y(), x() );
 	}
+
+	/**
+	 * Provides an approximate magnitude value for this sample.
+	 */
+	public float envelope()
+	{
+		float realAbsolute = realAbsolute();
+		float imagAbsolute = imaginaryAbsolute();
+		
+		if( realAbsolute > imagAbsolute )
+		{
+			return realAbsolute + ( 0.4f * imagAbsolute );
+		}
+		else
+		{
+			return imagAbsolute + ( 0.4f * realAbsolute );
+		}
+	}
 	
 	public static void main( String[] args )
 	{
-		ComplexSample sample1 = new ComplexSample( .45f, .45f );
-		ComplexSample sample2 = new ComplexSample( .25f, .25f );
-		ComplexSample sample1_2 = ComplexSample.subtract( sample1, sample2 );
+		ComplexSample s1 = new ComplexSample( 0.24414134f, -0.6026385f );
+		ComplexSample s2 = new ComplexSample( -0.09531293f, -0.7052474f );
+		
+		ComplexSample symbol = ComplexSample.multiply( s1, s2.conjugate() );
 
-		mLog.debug( sample1_2.toString() );
+		mLog.debug( "S1 Mag:" + s1.magnitude() + " S2 Mag:" + s2.magnitude() + " SymMag:" + symbol.magnitude() );
+		mLog.debug( "S1:" + s1 + " S2:" + s2 + " Symbol:" + symbol );
+		
 	}
 }

@@ -118,7 +118,8 @@ public class TunerChannelSource extends ComplexSource
 		mBuffer.clear();
 		mBuffer = null;
 
-		mDecimationFilter.dispose();
+//		mDecimationFilter.dispose();
+		mDecimationFilter = null;
 		
 		mBufferAssembler.dispose();
 		
@@ -183,7 +184,7 @@ public class TunerChannelSource extends ComplexSource
 					mDecimationFilter = FilterFactory
 							.getDecimationFilter( sampleRate, 
 												  CHANNEL_RATE, 
-												  2,   //Order
+												  1,   //Order
 												  CHANNEL_PASS_FREQUENCY, 
 												  60, //dB attenuation
 												  WindowType.HAMMING );

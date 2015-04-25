@@ -83,8 +83,8 @@ public class AudioSourceFrame extends JInternalFrame implements PositionListener
 	private void initGui()
 	{
 		setTitle( "Audio Source [" + mSource.getSampleType().toString() + "]" );
-		setPreferredSize( new Dimension( 600, 150 ) );
-		setSize( 600, 150 );
+		setPreferredSize( new Dimension( 700, 150 ) );
+		setSize( 700, 150 );
 
 		setResizable( true );
 		setClosable( true );
@@ -101,6 +101,7 @@ public class AudioSourceFrame extends JInternalFrame implements PositionListener
 		panel.add( new JLabel( "Jump:" ) );
 		panel.add( new JumpToField( mSource ) );
 		panel.add( new NextSampleButton( mSource, ">", 1 ) );
+		panel.add( new NextSampleButton( mSource, "> 10 >", 10 ) );
 		panel.add( new NextSampleButton( mSource, "> 100 >", 100 ) );
 		panel.add( new NextSampleButton( mSource, "> 1000 >", 1000 ) );
 		panel.add( new JLabel( "Posn:" ) );

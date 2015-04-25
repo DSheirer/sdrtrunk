@@ -39,6 +39,11 @@ public class FloatCircularBuffer
 		
 		Arrays.fill( mBuffer, (float)0.0 );
 	}
+	
+	public float[] getBuffer()
+	{
+		return mBuffer;
+	}
 
 	/**
 	 * Puts the new value into the buffer and returns the oldest buffer value

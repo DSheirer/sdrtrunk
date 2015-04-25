@@ -262,7 +262,6 @@ public class ComplexCICDecimate extends ComplexFilter
 			mDecimation = decimation;
 			mCleanupFilter = new ComplexFIRFilter( FilterFactory
 					.getCICCleanupFilter( outputSampleRate, 
-										  1,
 										  12000,
 										  60,
 										  WindowType.BLACKMAN ), 1.0d );

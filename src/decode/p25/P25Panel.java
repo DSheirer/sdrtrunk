@@ -211,7 +211,7 @@ public class P25Panel extends ChannelStatePanel
 				}
 
 				repaint();
-            }
+			}
 		});
     }
 

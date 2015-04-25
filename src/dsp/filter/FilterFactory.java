@@ -34,8 +34,8 @@ import dsp.filter.Window.WindowType;
 
 public class FilterFactory
 {
-//	private final static Logger mLog = 
-//			LoggerFactory.getLogger( FilterFactory.class );
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( FilterFactory.class );
 
 	/**
 	 * Generates coefficients for a unity-gain, windowed low-pass filter
@@ -575,7 +575,6 @@ public class FilterFactory
 	 * @return
 	 */
 	public static double[] getCICCleanupFilter( int outputSampleRate, 
-												int order,
 												int passFrequency,
 												int attenuation,
 												WindowType window )
@@ -590,7 +589,7 @@ public class FilterFactory
 		}
 
 		double[] frequencyResponse = 
-				getCICResponseArray( outputSampleRate, passFrequency, taps, order );
+				getCICResponseArray( outputSampleRate, passFrequency, taps );
 		
 		//Apply Inverse DFT against frequency response unity values, leaving the
 		//IDFT bin results in the frequency response array
@@ -615,13 +614,14 @@ public class FilterFactory
 		//Apply the window against the coefficients
 		coefficients = Window.apply( window, coefficients );
 		
+		normalize( coefficients );
+		
 		return coefficients;
 	}
 
 	public static double[] getCICResponseArray( int sampleRate, 
 												int frequency, 
-												int length,
-												int order )
+												int length )
 	{
 		double[] cicArray = new double[ length * 2 ];
 		
@@ -630,15 +630,15 @@ public class FilterFactory
 		
 		cicArray[ 0 ] = 1.0d;
 		
-		double unityResponse = Math.pow( Math.sin( 1.0d / (double)length ) / 
-		   ( 1.0d / (double)length ), order );
+		double unityResponse = Math.sin( 1.0d / (double)length ) / 
+		   ( 1.0d / (double)length );
 		
 		for( int x = 1; x <= binCount; x++ )
 		{
 			/* Calculate unity response plus amplification for droop */
 			double compensated = 1.0d + ( unityResponse - 
-					Math.pow( ( Math.sin( (double)x / (double)length ) / 
-							( (double)x / (double)length ) ), order ) );
+					( Math.sin( (double)x / (double)length ) / 
+							( (double)x / (double)length ) ) );
 			
 			cicArray[ x ] = compensated;
 			cicArray[ length - x ] = compensated;
@@ -648,38 +648,40 @@ public class FilterFactory
 	}
 
 	/**
-	 * Creates root raised cosine filter coefficients.
+	 * Creates root raised cosine filter coefficients with a tap count equal
+	 * to the symbols x samplesPerSymbol + 1.
+	 * 
+	 * Symbol count should be an even integer.
 	 * 
 	 * Ported to java from gnuradio/filter/firdes.cc
 	 * 
-	 * @param gain - gain value to apply
-	 * @param sampleRate - sample rate in hertz
-	 * @param symbolRate - symbol rate in hertz
+	 * For 40db attenuation, calculate the number of symbols based on the
+	 * following formula:
+	 * 
+	 * Symbols = -44 * alpha + 33
+	 * 
+	 * @param samplesPerSymbol - number of samples per symbol
+	 * @param symbols - number of symbols - must be even
 	 * @param alpha - roll-off factor
-	 * @param tapCount - odd number of taps, or will be increased to make odd 
+	 * 
 	 * @return - filter coefficients
 	 */
-	public static double[] getRootRaisedCosine( double gain, 
-												double sampleRate, 
-												double symbolRate, 
-												double alpha, 
-												int tapCount )
+	public static double[] getRootRaisedCosine( int samplesPerSymbol,
+												int symbols,
+												double alpha )
 	{
-		/* Ensure odd number of taps */
-		int taps = tapCount | 1;
+		int taps = samplesPerSymbol * symbols + 1;
 		
 		double scale = 0;
 		
-		double samplesPerSymbol = sampleRate / symbolRate;
-
 		double[] coefficients = new double[ taps ];
 		
 		for( int x = 0; x < taps; x++ )
 		{
 			double index = x - ( taps / 2 );
 			
-			double x1 = Math.PI * index / samplesPerSymbol;
-			double x2 = 4.0 * alpha * index / samplesPerSymbol;
+			double x1 = Math.PI * index / (double)samplesPerSymbol;
+			double x2 = 4.0 * alpha * index / (double)samplesPerSymbol;
 			double x3 = x2 * x2 - 1;
 
 			double numerator, denominator;
@@ -690,7 +692,7 @@ public class FilterFactory
 				{
 					numerator = Math.cos( ( 1.0 + alpha ) * x1 ) + 
 						  Math.sin( ( 1.0 - alpha ) * x1 ) / 
-						  	( 4.0 * alpha * index / samplesPerSymbol );
+						  	( 4.0 * alpha * index / (double)samplesPerSymbol );
 				}
 				else
 				{
@@ -712,12 +714,13 @@ public class FilterFactory
 				x2 = ( 1.0 + alpha ) * x1;
 				
 				numerator = ( Math.sin( x2 ) * ( 1.0 + alpha ) * Math.PI -
-						Math.cos( x3 ) * ( ( 1.0 - alpha ) * Math.PI * samplesPerSymbol ) /
-							( 4 * alpha * index ) +
-						Math.sin( x3 ) * samplesPerSymbol * samplesPerSymbol / 
-							( 4.0 * alpha * index * index ) );
+					Math.cos( x3 ) * ( ( 1.0 - alpha ) * Math.PI * 
+						(double)samplesPerSymbol ) / ( 4 * alpha * index ) +
+					Math.sin( x3 ) * (double)samplesPerSymbol * 
+						(double)samplesPerSymbol / ( 4.0 * alpha * index * index ) );
 				
-				denominator = -32.0 * Math.PI * alpha * alpha * index / samplesPerSymbol;
+				denominator = -32.0 * Math.PI * alpha * alpha * index / 
+						(double)samplesPerSymbol;
 			}
 			
 			coefficients[ x ] = 4.0 * alpha * numerator / denominator;
@@ -730,16 +733,18 @@ public class FilterFactory
 		 */
 		for( int x = 0; x < taps; x++ )
 		{
-			coefficients[ x ] = coefficients[ x ] * gain / scale;
+			coefficients[ x ] = coefficients[ x ] / scale;
 		}
 
 		return coefficients;
 	}
-	
+
 	public static void main( String[] args )
 	{
-		double[] coefficients = getCICCleanupFilter( 48000, 2, 60, 24000, WindowType.BLACKMAN );
+		double[] c = FilterFactory.getRootRaisedCosine( 10, 4, 0.2 );
 		
-		System.out.println( Arrays.toString( coefficients ) );
+		mLog.debug( "C:" + Arrays.toString( c ) );
 	}
+	
+	
 }

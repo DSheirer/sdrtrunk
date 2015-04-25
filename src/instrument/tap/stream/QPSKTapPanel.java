@@ -50,7 +50,7 @@ public class QPSKTapPanel extends TapViewPanel
 		mTap = tap;
 		mTap.addListener( getModel() );
 
-		mSampleCount = (int)( 100 * tap.getSampleRateRatio() );
+		mSampleCount = (int)( 60 * tap.getSampleRateRatio() );
 
 		getModel().setSampleCount( mSampleCount );
 		getModel().setDelay( tap.getDelay() );
