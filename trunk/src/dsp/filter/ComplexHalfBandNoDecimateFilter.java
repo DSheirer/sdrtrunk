@@ -177,4 +177,18 @@ public class ComplexHalfBandNoDecimateFilter extends ComplexFilter
 			}
 		}
 	}
+	
+	public static void main( String[] args )
+	{
+		double[] c = Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO.mCoefficients;
+
+		double sum = 0;
+		
+		for( int x = 0; x < c.length; x++ )
+		{
+			sum += c[ x ];
+		}
+		
+		System.out.println( sum );
+	}
 }

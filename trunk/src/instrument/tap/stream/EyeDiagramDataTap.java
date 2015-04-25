@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2015 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -15,40 +15,43 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package sample.adapter;
+package instrument.tap.stream;
 
-public class ByteSampleAdapter extends SampleAdapter
+import instrument.tap.TapListener;
+import instrument.tap.TapType;
+import sample.Listener;
+import dsp.psk.EyeDiagramData;
+
+public class EyeDiagramDataTap extends StreamTap implements Listener<EyeDiagramData>
 {
-	private final static float[] LOOKUP_VALUES;
-
-	/**
-	 * Creates a static lookup table that converts the 8-bit valued range 
-	 * from 0 - 255 into scaled float values of -1.0 to 0 to 1.0
-	 */
-	static
-	{
-		LOOKUP_VALUES = new float[ 256 ];
-		
-		for( int x = 0; x < 256; x++ )
-		{
-			LOOKUP_VALUES[ x ] = (float)( x - 127 ) / 128.0f;
-		}
-//		
-//		LOOKUP_VALUES[ 128 ] = 0.0000001f;
-	}
+	private Listener<EyeDiagramData> mListener;
+	
+	public EyeDiagramDataTap( String name, int delay, float sampleRate )
+    {
+	    super( TapType.STREAM_EYE_DIAGRAM, name, delay, sampleRate );
+    }
 
 	@Override
-    public float[] convert( byte[] samples )
+    public void receive( EyeDiagramData data )
     {
-		float[] convertedSamples = new float[ samples.length ];
-		int pointer = 0;
-		
-		for( byte sample: samples )
+		if( mListener != null )
 		{
-			/* Convert byte value into float from the lookup table */
-			convertedSamples[ pointer++ ] = LOOKUP_VALUES[ ( sample & 0xFF ) ];
+			mListener.receive( data );
 		}
 		
-	    return convertedSamples;
+		for( TapListener listener: mListeners )
+		{
+			listener.receive( data );
+		}
+    }
+	
+    public void setListener( Listener<EyeDiagramData> listener )
+    {
+		mListener = listener;
+    }
+
+    public void removeListener( Listener<EyeDiagramData> listener )
+    {
+		mListener = null;
     }
 }

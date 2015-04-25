@@ -99,4 +99,14 @@ public class Oscillator
 		rotate();
 		return mCurrentAngle.real();
 	}
+	
+	public static void main( String[] args )
+	{
+		Oscillator o = new Oscillator( 1200, 2400 );
+
+		for( int x = 0; x < 20; x++ )
+		{
+			System.out.println( o.nextComplex().toString() );
+		}
+	}
 }

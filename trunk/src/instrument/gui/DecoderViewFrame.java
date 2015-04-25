@@ -26,6 +26,8 @@ import instrument.tap.stream.ComplexTap;
 import instrument.tap.stream.ComplexTapViewPanel;
 import instrument.tap.stream.DibitTap;
 import instrument.tap.stream.DibitTapViewPanel;
+import instrument.tap.stream.EyeDiagramDataTap;
+import instrument.tap.stream.EyeDiagramDataTapPanel;
 import instrument.tap.stream.FloatTap;
 import instrument.tap.stream.FloatTapViewPanel;
 import instrument.tap.stream.QPSKTap;
@@ -177,6 +179,9 @@ public class DecoderViewFrame extends JInternalFrame
 				break;
 			case STREAM_DIBIT:
 				panel = new DibitTapViewPanel( (DibitTap)tap );
+				break;
+			case STREAM_EYE_DIAGRAM:
+				panel = new EyeDiagramDataTapPanel( (EyeDiagramDataTap)tap ) ;
 				break;
 			case STREAM_FLOAT:
 				panel = new FloatTapViewPanel( (FloatTap)tap );

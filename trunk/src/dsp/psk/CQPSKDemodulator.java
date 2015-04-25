@@ -30,14 +30,20 @@ package dsp.psk;
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
 
+import instrument.Instrumentable;
+import instrument.tap.Tap;
+import instrument.tap.stream.EyeDiagramDataTap;
+
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
 import sample.Provider;
 import sample.complex.ComplexSample;
-import source.tuner.FrequencyChangeEvent;
-import source.tuner.FrequencyChangeEvent.Attribute;
 import source.tuner.FrequencyChangeListener;
 import buffer.FloatAveragingBuffer;
 import dsp.filter.interpolator.QPSKInterpolator;
@@ -50,17 +56,29 @@ import dsp.filter.interpolator.QPSKInterpolator;
  * Sample Rate: 48000
  * Symbol Rate: 4800
  */
-public class CQPSKDemodulator implements Listener<ComplexSample>, 
+public class CQPSKDemodulator implements Instrumentable,
+										 Listener<ComplexSample>, 
 										 Provider<ComplexSample>
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( CQPSKDemodulator.class );
+	
+	/* 45 degree rotation angle */
+	public static final float THETA = (float)( Math.PI / 4.0d ); 
+
+	/* 45 degree point */
+	public static final ComplexSample POINT_45_DEGREES = 
+		new ComplexSample( (float)Math.sin( THETA ), (float)Math.cos( THETA ) );
+	
+	private DecimalFormat mDecimalFormat = new DecimalFormat( "0.000000" );
 
 	private Listener<ComplexSample> mListener;
 	
-	private GardnerDetector mGardnerDetector = new GardnerDetector();
+	private GardnerSymbolTiming mGardnerDetector = new GardnerSymbolTiming();
 	
 	private FrequencyChangeListener mFrequencyChangeListener;
+	
+	private EyeDiagramDataTap mEyeDiagramDataTap;
 	
 	public CQPSKDemodulator()
 	{
@@ -87,6 +105,22 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 		}
 		
 		return value;
+	}
+	
+	/**
+	 * Constrains timing error to +/- the maximum value and corrects any
+	 * floating point invalid numbers
+	 */
+	private float normalize( float error, float maximum )
+	{
+		if( Float.isNaN( error ) )
+		{
+			return 0.0f;
+		}
+		else
+		{
+			return clip( error, maximum );
+		}
 	}
 	
 	public void addListener( FrequencyChangeListener listener )
@@ -161,7 +195,7 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 	/**
 	 * Gardner symbol timing detector
 	 */
-	public class GardnerDetector implements Listener<ComplexSample>
+	public class GardnerSymbolTiming implements Listener<ComplexSample>
 	{
 		public static final int HALF_SAMPLES_PER_SYMBOL = 5;
 		public static final int SAMPLES_PER_SYMBOL = 10;
@@ -172,10 +206,10 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 		private int mDelayLinePointer = 0;
 
 		/* Sampling point */
-		private float mMu = 10.5f;
-		private float mGainMu = 0.05f;
+		private float mMu = 10.0f;
+		private float mGainMu = 0.25f;
 		
-		/* samples per symbol */
+		/* Samples per symbol */
 		private float mOmega = 10.0f;
 		private float mGainOmega = 0.1f * mGainMu * mGainMu;
 		private float mOmegaRel = 0.005f;
@@ -183,11 +217,16 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 
 		private CostasLoop mCostasLoop = new CostasLoop();
 		
-		private QPSKInterpolator mInterpolator = new QPSKInterpolator();
+		private QPSKInterpolator mInterpolator = new QPSKInterpolator( 1.0f );
 		
 		private ComplexSample mPreviousSample = new ComplexSample( 0.0f, 0.0f );
+		private ComplexSample mPreviousMiddleSample = new ComplexSample( 0.0f, 0.0f );
+		private ComplexSample mPreviousSymbol = new ComplexSample( 0.0f, 0.0f );
 
-		public GardnerDetector()
+		/**
+		 * Provides symbol sampling timing control
+		 */
+		public GardnerSymbolTiming()
 		{
 			for( int x = 0; x < ( 2 * TWICE_SAMPLES_PER_SYMBOL ); x++ )
 			{
@@ -203,83 +242,92 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 
 			mCostasLoop.increment();
 			
-			/* Mix incoming sample with costas loop to remove any rotation */
-			ComplexSample unrotatedSample = ComplexSample
+			/* Mix incoming sample with costas loop to remove any rotation 
+			 * that is present from a mis-tuned carrier frequency */
+			ComplexSample derotatedSample = ComplexSample
 					.multiply( mCostasLoop.getCurrentVector(), sample );
 
-			/* Fill up the delay line for the interpolator */
-			mDelayLine[ mDelayLinePointer ] = unrotatedSample;
-			mDelayLine[ mDelayLinePointer + TWICE_SAMPLES_PER_SYMBOL ] = unrotatedSample;
-			
-			/* Keep the delay line pointer in bounds */
+			/* Fill up the delay line to use with the interpolator */
+			mDelayLine[ mDelayLinePointer ] = derotatedSample;
+			mDelayLine[ mDelayLinePointer + TWICE_SAMPLES_PER_SYMBOL ] = derotatedSample;
+
+			/* Imcrement pointer and keep pointer in bounds */
 			mDelayLinePointer = ( mDelayLinePointer + 1 ) % TWICE_SAMPLES_PER_SYMBOL;
 			
 			/* Calculate the symbol once we've stored enough samples */
 			if( mMu <= 1.0f )
 			{
+				float half_omega = mOmega / 2.0f;
+				int half_sps = (int)Math.floor( half_omega );
+				float half_mu = mMu + half_omega - (float)half_sps;
+				
+				if( half_mu > 1.0 )
+				{
+					half_mu -= 1.0;
+					half_sps += 1;
+				}
+
+				/* Calculate interpolated middle sample and current sample */
 				ComplexSample middleSample = mInterpolator
 						.filter( mDelayLine, mDelayLinePointer, mMu );
 				
-				middleSample.normalize();
-				
 				ComplexSample currentSample = mInterpolator
-						.filter( mDelayLine, mDelayLinePointer + 
-								HALF_SAMPLES_PER_SYMBOL, mMu );
+						.filter( mDelayLine, mDelayLinePointer + half_sps, half_mu );
+				
+				/* Multiply current and previous samples to get symbols to use
+				 * for gardner error feedback */
+				ComplexSample middleSymbol = ComplexSample.multiply( 
+						middleSample, mPreviousMiddleSample.conjugate() );
 
-				currentSample.normalize();
+				ComplexSample currentSymbol = ComplexSample.multiply( 
+						currentSample, mPreviousSample.conjugate() );
 
+				/* Set gain to unity */
+				middleSymbol.normalize();
+				currentSymbol.normalize();
+
+//				if( mEyeDiagramDataTap != null )
+//				{
+//					mEyeDiagramDataTap.receive( 
+//						new EyeDiagramData( Arrays.copyOfRange( mDelayLine, 
+//							mDelayLinePointer, mDelayLinePointer + 20 ),
+//							mMu, (float)half_sps + half_mu ) );
+//				}
+				
 				/* Gardner timing error calculations */
-				float errorReal = ( mPreviousSample.real() - 
-						currentSample.real() ) * middleSample.real();
+				float errorInphase = ( mPreviousSymbol.inphase() - 
+						currentSymbol.inphase() ) * middleSymbol.inphase();
 
-				float errorImaginary = ( mPreviousSample.imaginary() - 
-						currentSample.imaginary() ) * middleSample.imaginary();
+				float errorQuadrature = ( mPreviousSymbol.quadrature() - 
+						currentSymbol.quadrature() ) * middleSymbol.quadrature();
 
-				float gardnerError = normalize( errorReal + errorImaginary );
+				float gardnerError = normalize( errorInphase + errorQuadrature, 1.0f );
 
+				/* mOmega is samples per symbol and is constrained to floating
+				 * between +/- .005 of the nominal 10.0 samples per symbol */
 				mOmega = mOmega + mGainOmega * gardnerError;
 				mOmega = mOmegaMid + clip( mOmega - mOmegaMid, mOmegaRel );
 
-				mMu += mOmega + mGainMu * gardnerError;
+				/* Adjust sample timing based on error of current sample */
+				mMu += mOmega + ( mGainMu * gardnerError );
 
-				/* Calculate symbol as delta between previous and current samples */
-				ComplexSample symbol = ComplexSample.multiply( 
-						currentSample, mPreviousSample.conjugate() );
-
+				/* Store current samples/symbols to use for the next period */
 				mPreviousSample = currentSample;
+				mPreviousMiddleSample = middleSample;
+				mPreviousSymbol = currentSymbol;
 
-				/* Update costas loop phase error from error in current symbol */
-				mCostasLoop.receive( symbol );
+				/* Update costas loop using phase error present in current 
+				 * symbol.  The symbol is rotated from star orientation to polar
+				 * orientation to simplify error calculation */
+				mCostasLoop.receive( 
+					ComplexSample.multiply( currentSymbol, POINT_45_DEGREES ) );
 				
-				/* Dispatch the symbol to the registered listener */
+				/* Dispatch the differentiated symbol to the registered listener */
 				if( mListener != null )
 				{
-					mListener.receive( symbol );
+					mListener.receive( currentSymbol );
 				}
 			}
-		}
-		
-		/**
-		 * Constrains timing error to +/- 1 
-		 */
-		private float normalize( float error )
-		{
-			if( Float.isNaN( error ) )
-			{
-				return 0.0f;
-			}
-			
-			if( error < -1.0 )
-			{
-				return -1.0f;
-			}
-			
-			if( error > 1.0 )
-			{
-				return 1.0f;
-			}
-			
-			return error;
 		}
 	}
 	
@@ -298,17 +346,15 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 	{
 		public static final double TWO_PI = 2.0 * Math.PI;
 		
-		/* 45 degree rotation angle */
-		public static final float THETA = (float)( Math.PI / 4.0d ); 
-
-		private static final float MAXIMUM_FREQUENCY = ( 2.0f * (float)Math.PI * 
-				1200.0f ) / 48000.0f;
+		private static final float MAXIMUM_FREQUENCY = 
+				( 1200.0f * (float)TWO_PI ) / 48000.0f;
 		
 		/* http://www.trondeau.com/blog/2011/8/13/control-loop-gain-values.html */
 		private float mDamping = (float)Math.sqrt( 2.0 ) / 2.0f;
 		
-		/* Use denominator between 100 and 200 to adjust control level */
-		private float mLoopBandwidth = (float)( ( 2.0d * Math.PI ) / 100.0d );
+		/* Use denominator between 100 (most) and 400 (least) to adjust costas
+		 * loop control level */
+		private float mLoopBandwidth = (float)( TWO_PI / 400.0d );
 		
 		private float mAlphaGain = ( 4.0f * mDamping * mLoopBandwidth ) / 
 						  ( 1.0f + ( 2.0f * mDamping * mLoopBandwidth ) + 
@@ -323,11 +369,11 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 		private float mLoopFrequency = 0.0f;
 		
 		private FrequencyControl mFrequencyControl = new FrequencyControl();
-
+		
 		public CostasLoop()
 		{
 		}
-
+		
 		/**
 		 * Increments the phase of the loop
 		 */
@@ -363,9 +409,6 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 		@Override
 		public void receive( ComplexSample sample )
 		{
-			/* Normalize magnitude of incoming signal to 1.0 */
-			sample.normalize();
-
 			/* Calculate phase error */
 			float phaseError = getPhaseError( sample );
 
@@ -377,7 +420,7 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 		 * Updates the costas loop frequency and phase to adjust for the phase
 		 * error value 
 		 * 
-		 * @param phase_error - (+)= late and (-)= early
+		 * @param phase_error - (-)= late and (+)= early
 		 */
 		private void adjust( float phase_error )
 		{
@@ -387,10 +430,13 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 			/* Maintain phase between +/- 2 * PI */
 			unwrapPhase();
 
-			/* Limit frequency to +/- maximum frequency */
+			/* Limit frequency to +/- maximum loop frequency */
 			limitFrequency();
 		}
-		
+
+		/**
+		 * Constrains the frequency within the bounds of +/- loop frequency
+		 */
 		private void limitFrequency()
 		{
 			/* Check for and issue tuner offset correction */
@@ -408,46 +454,38 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 		}
 
 		/**
-		 * Calculates the phase error as the difference between the real and
-		 * imaginary values of the sample.  When balanced, both absolute values 
-		 * should be equal to ~ 0.707.  The difference between the real and 
-		 * imaginary values is used as the error signal.  Mapping the sample 
-		 * vector to the correct quadrant allows us to change the sign of the 
-		 * error to correctly reflect early (-) or late (+) phase timing. 
-		 * 
-		 * Expects a normalized (to unit circle) sample value.
-		 * 
-		 * The feedback error signal is small when the sample's phase is closely 
-		 * aligned with a perfect constellation and grows larger as the sample's 
-		 * phase diverges from alignment with a perfect constellation.
+		 * Detects rotational error present when the costas loop is not aligned
+		 * with the carrier frequency.  Provides error feedback to adjust 
+		 * mixer frequency.
 		 */
 		public float getPhaseError( ComplexSample sample )
 		{
-			float error = Math.abs( Math.abs( sample.imaginary() ) - 
-								    Math.abs( sample.real() ) );
-			
-			if( sample.realAbsolute() > sample.imaginaryAbsolute() )
-			{
-				if( sample.imaginary() > 0 )
-				{
-					return sample.real() > 0 ? -error : error;
-				}
-				else
-				{
-					return sample.real() > 0 ? error : -error;
-				}
-			}
-			else
-			{
-				if( sample.real() > 0 )
-				{
-					return sample.real() > 0 ? error : -error;
-				}
-				else
-				{
-					return sample.real() > 0 ? -error : error;
-				}
-			}
+			  float phase_error = 0;
+			  
+			  if( Math.abs( sample.real() ) > Math.abs( sample.imaginary() ) ) 
+			  {
+				  if( sample.real() > 0 )
+				  {
+					  phase_error = -sample.imaginary();
+				  }
+				  else
+				  {
+					  phase_error = sample.imaginary();
+				  }
+			  }
+			  else 
+			  {
+				  if( sample.imaginary() > 0 )
+				  {
+					  phase_error = sample.real();
+				  }
+				  else
+				  {
+					  phase_error = -sample.real();
+				  }
+			  }
+			  
+			  return phase_error;
 		}
 	}
 
@@ -461,5 +499,33 @@ public class CQPSKDemodulator implements Listener<ComplexSample>,
 	public void removeListener( Listener<ComplexSample> listener )
 	{
 		mListener = null;
+	}
+
+	@Override
+	public List<Tap> getTaps()
+	{
+		List<Tap> taps = new ArrayList<Tap>();
+		
+		taps.add( new EyeDiagramDataTap( "Eye Diagram", 0, 4800 ) );
+		
+		return taps;
+	}
+
+	@Override
+	public void addTap( Tap tap )
+	{
+		if( tap instanceof EyeDiagramDataTap )
+		{
+			mEyeDiagramDataTap = (EyeDiagramDataTap)tap;
+		}
+	}
+
+	@Override
+	public void removeTap( Tap tap )
+	{
+		if( tap instanceof EyeDiagramDataTap )
+		{
+			mEyeDiagramDataTap = null;
+		}
 	}
 }

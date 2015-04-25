@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
-import sample.complex.ComplexBuffer;
 import sample.complex.ComplexSample;
 import sample.complex.ComplexSampleListener;
 import sample.decimator.ComplexDecimator;
@@ -72,15 +71,14 @@ public class ComplexPrimeCICDecimate
 			else
 			{
 				/* Wire the current stage to the previous stage */
-				mDecimatingStages.get( x - 1 ).addListener( stage );
+				mDecimatingStages.get( x - 1 ).setListener( stage );
 			}
 		}
 		
-		mOutput = new Output( 48000, order, decimation, passFrequency, 
-				attenuation, windowType );
+		mOutput = new Output( 48000, passFrequency, attenuation, windowType );
 		
 		mDecimatingStages.get( mDecimatingStages.size() - 1 )
-							.addListener( mOutput );
+							.setListener( mOutput );
 	}
 	
 	public void dispose()
@@ -170,7 +168,16 @@ public class ComplexPrimeCICDecimate
 		{
 			for( int x = 0; x < order; x++ )
 			{
-				Stage stage = new Stage( size );
+				Stage stage;
+				
+				if( size == 2 )
+				{
+					stage = new TwoStage();
+				}
+				else
+				{
+					stage = new Stage( size );
+				}
 				
 				mStages.add( stage );
 				
@@ -180,13 +187,13 @@ public class ComplexPrimeCICDecimate
 				}
 				else
 				{
-					mStages.get( x - 1 ).addListener( stage );
+					mStages.get( x - 1 ).setListener( stage );
 				}
 			}
 			
 			mDecimator = new ComplexDecimator( size );
 			
-			mStages.get( mStages.size() - 1 ).addListener( mDecimator );
+			mStages.get( mStages.size() - 1 ).setListener( mDecimator );
 		}
 		
 		public void dispose()
@@ -209,29 +216,35 @@ public class ComplexPrimeCICDecimate
 			mFirstStage.receive( i, q );
         }
 		
-		public void addListener( ComplexSampleListener listener )
+		public void setListener( ComplexSampleListener listener )
 		{
 			mDecimator.setListener( listener );
 		}
 	}
 	
 	/**
-	 * Single non-decimating CIC stage component.  Uses a circular buffer 
-	 * internally to implement the stage so that stage size has essentially 
-	 * no impact on the performance of the stage 
+	 * Single non-decimating CIC stage component.  Uses a circular buffer and a
+	 * running average internally to implement the stage so that stage size has 
+	 * essentially no impact on the computational requirements of the stage 
 	 */
 	public class Stage implements ComplexSampleListener
 	{
-		private ComplexSampleListener mListener;
+		protected ComplexSampleListener mListener;
 		
 		private float[] mISamples;
 		private float[] mQSamples;
 		
-		private float mISum;
-		private float mQSum;
+		protected float mISum;
+		protected float mQSum;
 		
 		private int mSamplePointer = 0;
 		private int mSize;
+	
+		protected float mGain;
+		
+		public Stage()
+		{
+		}
 
 		public Stage( int size )
 		{
@@ -239,6 +252,8 @@ public class ComplexPrimeCICDecimate
 			
 			mISamples = new float[ mSize ];
 			mQSamples = new float[ mSize ];
+			
+			mGain = 1.0f / (float)size;
 		}
 		
 		public void dispose()
@@ -265,15 +280,44 @@ public class ComplexPrimeCICDecimate
 
 			if( mListener != null )
 			{
-				mListener.receive( mISum, mQSum );
+				mListener.receive( ( mISum * mGain ), ( mQSum * mGain ) );
 			}
 		}
 		
-		public void addListener( ComplexSampleListener listener )
+		public void setListener( ComplexSampleListener listener )
 		{
 			mListener = listener;
 		}
 	}
+	
+	/**
+	 * Size 2 stage that removes the unnecessary circular buffer management for
+	 * a two-stage.
+	 */
+	public class TwoStage extends Stage
+	{
+		public TwoStage()
+		{
+			super();
+			
+			mGain = 0.5f;
+		}
+		
+		public void receive( float i, float q )
+		{
+			float iSum = mISum + i;
+			float qSum = mQSum + q;
+			
+			mISum = i;
+			mQSum = q;
+			
+			if( mListener != null )
+			{
+				mListener.receive( ( iSum * mGain ), ( qSum * mGain ) );
+			}
+		}
+	}
+	
 
 	/**
 	 * Output adapter - applies gain correction, applies cleanup filter, casts 
@@ -282,24 +326,21 @@ public class ComplexPrimeCICDecimate
 	 */
 	public class Output implements ComplexSampleListener
 	{
-		private int mDecimation;
-		private int mOrder;
-		private double mGain = 1.0d;
 		private ComplexFilter mCleanupFilter;
+		private ComplexHalfBandNoDecimateFilter mHalfBandFilter = 
+				new ComplexHalfBandNoDecimateFilter( 
+						Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 0.4 );
 
-		public Output( int outputSampleRate, int order, int decimation, 
-				int passFrequency, int attenuation, WindowType windowType )
+		public Output( int outputSampleRate, int passFrequency, int attenuation, 
+				WindowType windowType )
 		{
-			mOrder = order;
-			mDecimation = decimation;
 			mCleanupFilter = new ComplexFIRFilter( FilterFactory
 					.getCICCleanupFilter( outputSampleRate, 
-										  mOrder,
 										  passFrequency,
 										  attenuation,
-										  windowType ), 1.0d );
+										  windowType ), 0.4d );
 			
-			setGain();
+			mCleanupFilter.setListener( mHalfBandFilter );
 		}
 
 		/**
@@ -310,26 +351,15 @@ public class ComplexPrimeCICDecimate
 		@Override
         public void receive( float left, float right )
         {
-			mCleanupFilter.receive( 
-					new ComplexSample( (float)( left * mGain ), 
-									   (float)( right * mGain ) ) );
+			mCleanupFilter.receive( new ComplexSample( left, right ) );
         }
 		
-		/**
-		 * Sets a new decimation rate
-		 */
-		public void setDecimationRate( int rate )
-		{
-			mDecimation = rate;
-			setGain();
-		}
-
 		/**
 		 * Adds a listener to receive output samples
 		 */
         public void setListener( Listener<ComplexSample> listener )
         {
-			mCleanupFilter.setListener( listener );
+			mHalfBandFilter.setListener( listener );
         }
 
 		/**
@@ -337,31 +367,12 @@ public class ComplexPrimeCICDecimate
 		 */
         public void removeListener( Listener<ComplexSample> listener )
         {
-			mCleanupFilter.setListener( null );
+			mHalfBandFilter.setListener( null );
         }
 		
 		public Listener<ComplexSample> getListener()
 		{
-			return mCleanupFilter.getListener();
-		}
-		
-		/**
-		 * Adjusts the gain correction factor for output samples.
-		 * 
-		 * The CIC decimation filter induces significant gain as a factor of 
-		 * delay, decimation rate and stage count.  So, we apply a gain reduction 
-		 * to offset the added gain estimate:
-		 * 
-		 * gain = ( decimation * delay ) to power of stageCount
-		 * 
-		 * Delay is ONE for the Comb used in this filter.
-		 */
-		private void setGain()
-		{
-			/* decimation is NOT multiplied by delay since delay is 1 */
-			double gain = Math.pow( (double)mDecimation, (double)mOrder );
-			
-			mGain = 1.0d / gain;
+			return mHalfBandFilter.getListener();
 		}
 	}
 }

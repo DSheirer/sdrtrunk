@@ -7,9 +7,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.Control;
-import javax.sound.sampled.FloatControl;
-import javax.sound.sampled.FloatControl.Type;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 
@@ -72,7 +69,7 @@ public class P25AudioOutput implements IAudioOutput, IAudioTypeListener,
 			 * times a second.  Each LDU message contains 9 frames and the 
 			 * frame rate is 50, so we need to run at least 6 times a second */ 
 			mThreadPoolManager.scheduleFixedRate( ThreadType.SOURCE_SAMPLE_PROCESSING, 
-					new IMBEFrameConverter(), 150, TimeUnit.MILLISECONDS );
+					new IMBEFrameConverter(), 40, TimeUnit.MILLISECONDS );
 		}
 	}
 
@@ -152,16 +149,6 @@ public class P25AudioOutput implements IAudioOutput, IAudioTypeListener,
 			        	mOutput.open( IMBEAudioFormat.PCM_SIGNED_8KHZ_16BITS, 
 			        			PROCESSED_AUDIO_FRAME_SIZE * 2 );
 			        	
-			        	Control[] controls = mOutput.getControls();
-
-			        	FloatControl gain = (FloatControl)mOutput
-			        			.getControl( FloatControl.Type.MASTER_GAIN );
-
-			        	if( gain != null )
-			        	{
-			        		gain.setValue( 2.0f );
-			        	}
-			        	
 						mCanProcessAudio = true;
 		        	}
 			        else
@@ -169,20 +156,28 @@ public class P25AudioOutput implements IAudioOutput, IAudioTypeListener,
 						mLog.debug( "Couldn't create output line" );
 			        }
 		        }
-		        catch ( LineUnavailableException e )
+		        catch ( LineUnavailableException lue )
 		        {
-		        	mLog.error( "AudioOutput - couldn't open audio speakers "
-		        			+ "for playback", e );
+		        	mLog.error( "AudioOutput - couldn't open audio output line "
+		        			+ "for playback", lue );
 		        }
+				catch( IllegalArgumentException iae )
+				{
+					mLog.debug( "Error fetching or opening audio output for 8kHz 16 bit audio", iae );
+				}
+				catch( Exception e )
+				{
+					mLog.error( "Error with audio output", e );
+				}
 			}
 			else
 			{
-				mLog.debug( "could not load IMBE audio converter library" );
+				mLog.info( "could not load IMBE audio converter library" );
 			}
 		}
 		catch( IllegalArgumentException iae )
 		{
-			mLog.info( "could NOT find/load IMBE audio converter library" );
+			mLog.error( "could NOT find/load IMBE audio converter library", iae );
 		}
 	}
 	

@@ -43,10 +43,11 @@ import dsp.filter.ComplexFIRFilter;
 import dsp.filter.FilterFactory;
 import dsp.filter.FloatFIRFilter;
 import dsp.filter.Window.WindowType;
-import dsp.gain.ComplexAutomaticGainControl;
+import dsp.gain.ComplexFeedForwardGainControl;
 import dsp.gain.DirectGainControl;
 import dsp.nbfm.FMDiscriminator;
 import dsp.psk.CQPSKDemodulator;
+import dsp.psk.QPSKStarSlicer;
 import dsp.symbol.FrameSync;
 
 public class P25Decoder extends Decoder 
@@ -74,21 +75,21 @@ public class P25Decoder extends Decoder
 	private CQPSKDemodulator mCQPSKDemodulator;
     
     /* Gain */
-	private ComplexAutomaticGainControl mAGC;
+	private ComplexFeedForwardGainControl mAGC;
 	private DirectGainControl mDGC;
 
 	/* Filters */
 	private ComplexFIRFilter mBasebandFilter;
+	private ComplexFIRFilter mRootRaisedCosineFilter;
 	private FloatFIRFilter mAudioFilter;
 	private C4FMSymbolFilter mSymbolFilter;
 	
 	/* Slicers */
 	private C4FMSlicer mC4FMSlicer;
-	private CQPSKSlicer mCQPSKSlicer;
+	private QPSKStarSlicer mCQPSKSlicer;
 	
 	/* Message framers and handlers */
 	private P25MessageFramer mNormalFramer;
-//	private P25MessageFramer mInvertedFramer;
 	private P25MessageProcessor mMessageProcessor;
 	
 	/* Audio */
@@ -119,31 +120,36 @@ public class P25Decoder extends Decoder
 		if( mSourceSampleType == SampleType.COMPLEX )
 		{
 			mBasebandFilter = new ComplexFIRFilter( FilterFactory.getLowPass( 
-					48000, 7000, 7500, 60, WindowType.HAMMING, true ), 1.0 );
+					48000, 7250, 8000, 60, WindowType.HANNING, true ), 1.0 );
 			
+			this.addComplexListener( mBasebandFilter );
+
 			if( modulation == Modulation.CQPSK )
 			{
-				this.addComplexListener( mBasebandFilter );
-				
-				mAGC = new ComplexAutomaticGainControl();
+				mAGC = new ComplexFeedForwardGainControl( 32 );
 				mBasebandFilter.setListener( mAGC );
-				
+
+				/* Root raised cosine filter using 34 symbol periods and 10
+				 * samples per symbol with a roll-off (alpha) value of 0.2.
+				 * This should produce a filter with 341 coefficients. */
+				mRootRaisedCosineFilter = new ComplexFIRFilter( FilterFactory
+						.getRootRaisedCosine( 10, 34, 0.2 ), 1.0 );
+				mAGC.setListener( mRootRaisedCosineFilter );
+
 				mCQPSKDemodulator = new CQPSKDemodulator();
-				mAGC.setListener( mCQPSKDemodulator );
+				mRootRaisedCosineFilter.setListener( mCQPSKDemodulator );
 				
-				mCQPSKSlicer = new CQPSKSlicer();
+				mCQPSKSlicer = new QPSKStarSlicer();
 				mCQPSKDemodulator.setListener( mCQPSKSlicer );
 				
 				mCQPSKSlicer.addListener( mNormalFramer );
 			}
 			else /* C4FM */
 			{
-				this.addComplexListener( mBasebandFilter );
-				
 				mFMDemodulator = new FMDiscriminator( 1.0f );
 				mBasebandFilter.setListener( mFMDemodulator );
 				
-				/* Route output of the fm demod back to this channel so that we
+				/* Route output of the FM demod back to this channel so that we
 				 * can process the output as if it were coming from any other
 				 * real sample source */
 				mFMDemodulator.setListener( getRealReceiver() );
@@ -217,6 +223,7 @@ public class P25Decoder extends Decoder
 				mAvailableTaps.add( new ComplexTap( INSTRUMENT_AGC_OUTPUT, 0, 1.0f ) );
 				mAvailableTaps.add( new QPSKTap( INSTRUMENT_QPSK_DEMODULATOR_OUTPUT, 0, 1.0f ) );
 				mAvailableTaps.add( new DibitTap( INSTRUMENT_CQPSK_SLICER_OUTPUT, 0, 0.1f ) );
+				mAvailableTaps.addAll( mCQPSKDemodulator.getTaps() );
 			}
 		}
 		
@@ -229,6 +236,11 @@ public class P25Decoder extends Decoder
 		if( mSymbolFilter != null )
 		{
 			mSymbolFilter.addTap( tap );
+		}
+		
+		if( mCQPSKDemodulator != null )
+		{
+			mCQPSKDemodulator.addTap( tap );
 		}
 		
 		switch( tap.getName() )
@@ -292,6 +304,11 @@ public class P25Decoder extends Decoder
 		if( mSymbolFilter != null )
 		{
 			mSymbolFilter.removeTap( tap );
+		}
+		
+		if( mCQPSKDemodulator != null )
+		{
+			mCQPSKDemodulator.addTap( tap );
 		}
 		
 		switch( tap.getName() )
@@ -376,8 +393,8 @@ public class P25Decoder extends Decoder
 	
 	public enum Modulation
 	{ 
-		C4FM( "C4FM", "C4FM" ), 
-		CQPSK( "LSM SIMULCAST", "LSM" );
+		CQPSK( "LSM SIMULCAST", "LSM" ),
+		C4FM( "C4FM", "C4FM" );
 		
 		private String mLabel;
 		private String mShortLabel;
@@ -403,5 +420,4 @@ public class P25Decoder extends Decoder
 			return getLabel();
 		}
 	};
-	
 }

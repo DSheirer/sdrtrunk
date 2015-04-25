@@ -11,6 +11,12 @@ public class QPSKInterpolator extends Interpolator
 {
 	private final static Logger mLog = LoggerFactory.getLogger( QPSKInterpolator.class );
 
+	private float mGain;
+	
+	public QPSKInterpolator( float gain )
+	{
+		mGain = gain;
+	}
 	/**
 	 * Calculates an interpolated value from the 8 samples beginning at the 
 	 * offset index.  Uses the mu value to determine which of 128 filter kernels
@@ -50,6 +56,6 @@ public class QPSKInterpolator extends Interpolator
 		imaginaryAccumulator += ( TAPS[ index ][ 1 ] * samples[ offset + 6 ].imaginary() );
 		imaginaryAccumulator += ( TAPS[ index ][ 0 ] * samples[ offset + 7 ].imaginary() );
 
-		return new ComplexSample( realAccumulator, imaginaryAccumulator );
+		return new ComplexSample( realAccumulator * mGain, imaginaryAccumulator * mGain );
 	}
 }

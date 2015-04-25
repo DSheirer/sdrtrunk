@@ -60,11 +60,6 @@ public class TrafficChannelBaseStationIdentification extends MotorolaTSBKMessage
     {
     	int value = mMessage.getInt( field );
     	
-    	if( value != 0 )
-    	{
-    		return String.valueOf( (char)( value + 43 ) );
-    	}
-    	
-    	return null;
+		return String.valueOf( (char)( value + 43 ) );
     }
 }

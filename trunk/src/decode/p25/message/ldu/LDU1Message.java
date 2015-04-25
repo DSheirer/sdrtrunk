@@ -1,5 +1,8 @@
 package decode.p25.message.ldu;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import alias.AliasList;
 import bits.BinaryMessage;
 import decode.p25.reference.DataUnitID;
@@ -12,6 +15,8 @@ import edac.ReedSolomon_63_47_17;
 
 public class LDU1Message extends LDUMessage
 {
+	private final static Logger mLog = LoggerFactory.getLogger( LDU1Message.class );
+	
 	public static final int ENCRYPTION_FLAG = 352;
 	public static final int IMPLICIT_VENDOR_FLAG = 353;
 	public static final int[] OPCODE = { 354,355,356,357,362,363 };
