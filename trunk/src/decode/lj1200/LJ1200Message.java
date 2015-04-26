@@ -136,7 +136,9 @@ public class LJ1200Message extends Message
     
     public Alias getSiteAndReplyCodeAlias()
     {
-    	if( mAliasList != null && getFunction() == Function.F1_SITE_ID )
+    	if( mAliasList != null && 
+    		( getFunction() == Function.F1_SITE_ID || 
+    		  getFunction() == Function.F1_SPEED_UP ) )
     	{
     		return mAliasList.getSiteID( getReplyCode() );
     	}
@@ -176,7 +178,7 @@ public class LJ1200Message extends Message
     	case F1_SITE_ID:
     		sb.append( " SITE [" );
     		break;
-    	case F1_TRANSPONDER_REPLY:
+    	case F1_SPEED_UP:
     	case F2_TEST:
     	case F3_DEACTIVATE:
     	case F4_ACTIVATE:
@@ -257,7 +259,7 @@ public class LJ1200Message extends Message
 	@Override
     public String getEventType()
     {
-		if( getFunction() == Function.F1_TRANSPONDER_REPLY )
+		if( getFunction() == Function.F1_SPEED_UP )
 		{
 			return "TRANSPONDER";
 		}
@@ -329,11 +331,22 @@ public class LJ1200Message extends Message
 
 		/* Big Endian Format */
 		F1_SITE_ID( "1Y-SITE ID" ),
-		F1_TRANSPONDER_REPLY( "1-REPLY CODE" ),
+		F1_SPEED_UP( "1-SPEED UP" ),
 		F2_TEST( "2-TEST" ),
 		F3_DEACTIVATE( "3-DEACTIVATE" ),
 		F4_ACTIVATE( "4-ACTIVATE" ),
+		F5_UNKNOWN( "5-UNKNOWN" ),
+		F6_UNKNOWN( "6-UNKNOWN" ),
+		F7_UNKNOWN( "7-UNKNOWN" ),
+		F8_UNKNOWN( "8-UNKNOWN" ),
+		F9_UNKNOWN( "9-UNKNOWN" ),
+		FA_UNKNOWN( "A-UNKNOWN" ),
+		FB_UNKNOWN( "B-UNKNOWN" ),
+		FC_UNKNOWN( "C-UNKNOWN" ),
+		FD_UNKNOWN( "D-UNKNOWN" ),
+		FE_UNKNOWN( "E-UNKNOWN" ),
 		FF_TRACK_PULSE( "F-TRACK PULSE" ),
+		
 		UNKNOWN( "UNKNOWN" );
 		
 		private String mLabel;
@@ -364,7 +377,7 @@ public class LJ1200Message extends Message
 					}
 					else
 					{
-						return Function.F1_TRANSPONDER_REPLY;
+						return Function.F1_SPEED_UP;
 					}
 				case 2:
 					return Function.F2_TEST;
@@ -372,6 +385,26 @@ public class LJ1200Message extends Message
 					return Function.F3_DEACTIVATE;
 				case 4:
 					return Function.F4_ACTIVATE;
+				case 5:
+					return Function.F5_UNKNOWN;
+				case 6:
+					return Function.F6_UNKNOWN;
+				case 7:
+					return Function.F7_UNKNOWN;
+				case 8:
+					return Function.F8_UNKNOWN;
+				case 9:
+					return Function.F9_UNKNOWN;
+				case 10:
+					return Function.FA_UNKNOWN;
+				case 11:
+					return Function.FB_UNKNOWN;
+				case 12:
+					return Function.FC_UNKNOWN;
+				case 13:
+					return Function.FD_UNKNOWN;
+				case 14:
+					return Function.FE_UNKNOWN;
 				case 15:
 					return Function.FF_TRACK_PULSE;
 				default:
