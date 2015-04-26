@@ -820,18 +820,18 @@ public class P25ChannelState extends ChannelState
 	
 	private void processLDU( LDUMessage ldu )
 	{
-		/* Send audio frames to the audio output */
-		if( mAudioOutput != null )
-		{
-			mAudioOutput.receive( ldu );
-		}
-		
 		State state = getState();
 
 		/* Only change the state for valid ldus */
 		if( ldu.isValid() )
 		{
 			state = ldu.isEncrypted() ? State.ENCRYPTED : State.CALL;
+		}
+
+		/* Send audio frames to the audio output */
+		if( mAudioOutput != null && state != State.ENCRYPTED )
+		{
+			mAudioOutput.receive( ldu );
 		}
 		
 		if( ldu instanceof LDU1Message )
