@@ -88,8 +88,8 @@ public class P25Decoder extends Decoder
 	private C4FMSlicer mC4FMSlicer;
 	private QPSKStarSlicer mCQPSKSlicer;
 	
-	/* Message framers and handlers */
-	private P25MessageFramer mNormalFramer;
+	/* Message framers and processors */
+	private P25MessageFramer mMessageFramer;
 	private P25MessageProcessor mMessageProcessor;
 	
 	/* Audio */
@@ -111,9 +111,19 @@ public class P25Decoder extends Decoder
 		mMessageProcessor = new P25MessageProcessor( mAliasList );
 		mMessageProcessor.addMessageListener( this );
 
-        mNormalFramer = new P25MessageFramer( 
-                FrameSync.P25_PHASE1.getSync(), 64, false, mAliasList );
-        mNormalFramer.setListener( mMessageProcessor );
+		if( modulation == Modulation.CQPSK )
+		{
+			/* Provide message framer with reference to the demod so that it 
+			 * can detect and issue corrections for costas phase lock errors */
+			mCQPSKDemodulator = new CQPSKDemodulator();
+	        mMessageFramer = new P25MessageFramer( mAliasList, mCQPSKDemodulator );
+		}
+		else
+		{
+	        mMessageFramer = new P25MessageFramer( mAliasList );
+		}
+		
+        mMessageFramer.setListener( mMessageProcessor );
 
         /* Setup demodulation chains based on sample type (real or complex) and 
          * modulation (C4FM or CQPSK) */
@@ -136,13 +146,12 @@ public class P25Decoder extends Decoder
 						.getRootRaisedCosine( 10, 34, 0.2 ), 1.0 );
 				mAGC.setListener( mRootRaisedCosineFilter );
 
-				mCQPSKDemodulator = new CQPSKDemodulator();
 				mRootRaisedCosineFilter.setListener( mCQPSKDemodulator );
 				
 				mCQPSKSlicer = new QPSKStarSlicer();
 				mCQPSKDemodulator.setListener( mCQPSKSlicer );
 				
-				mCQPSKSlicer.addListener( mNormalFramer );
+				mCQPSKSlicer.addListener( mMessageFramer );
 			}
 			else /* C4FM */
 			{
@@ -172,7 +181,7 @@ public class P25Decoder extends Decoder
 			mC4FMSlicer = new C4FMSlicer();
 			mSymbolFilter.setListener( mC4FMSlicer );
 			
-	        mC4FMSlicer.addListener( mNormalFramer );
+	        mC4FMSlicer.addListener( mMessageFramer );
 		}
 		
 		mAudioOutput = new P25AudioOutput( resourceManager );

@@ -13,9 +13,9 @@ public class QPSKStarSlicer implements Listener<ComplexSample>
 	 * Slices a ComplexSample representing a phase shifted symbol according to
 	 * the following constellation pattern:
 	 * 
-	 *    11 | 01
+	 *    00 | 01
 	 *    ---|---
-	 *    10 | 00
+	 *    10 | 11
 	 */
 	public QPSKStarSlicer()
 	{

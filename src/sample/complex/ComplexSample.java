@@ -294,6 +294,14 @@ public class ComplexSample implements Serializable
 	}
 
 	/**
+	 * Angle of this sample in degrees
+	 */
+	public float polarAngle()
+	{
+		return (float)Math.toDegrees( angle() );
+	}
+
+	/**
 	 * Provides an approximate magnitude value for this sample.
 	 */
 	public float envelope()
@@ -313,13 +321,18 @@ public class ComplexSample implements Serializable
 	
 	public static void main( String[] args )
 	{
-		ComplexSample s1 = new ComplexSample( 0.24414134f, -0.6026385f );
-		ComplexSample s2 = new ComplexSample( -0.09531293f, -0.7052474f );
+		double SYMBOL_FREQUENCY = 2.0d * Math.PI * 4800.0d / 48000.0d;
+		double PHASE_CORRECTION_90_DEGREES = SYMBOL_FREQUENCY / 4.0d; 
+		double PHASE_CORRECTION_180_DEGREES = SYMBOL_FREQUENCY / 2.0d; 
+
+		double angle = Math.PI / 4;
+
+		ComplexSample s1 = new ComplexSample( (float)Math.sin( angle ), (float)Math.cos( angle ) );
+		ComplexSample s2 = new ComplexSample( (float)Math.sin( -angle ), (float)Math.cos( -angle ) );
 		
 		ComplexSample symbol = ComplexSample.multiply( s1, s2.conjugate() );
 
-		mLog.debug( "S1 Mag:" + s1.magnitude() + " S2 Mag:" + s2.magnitude() + " SymMag:" + symbol.magnitude() );
-		mLog.debug( "S1:" + s1 + " S2:" + s2 + " Symbol:" + symbol );
+		mLog.debug( "S1:" + s1.polarAngle() + " S2:" + s2.polarAngle() + " Symbol:" + symbol.polarAngle() );
 		
 	}
 }

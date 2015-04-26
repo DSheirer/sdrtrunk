@@ -76,6 +76,8 @@ public class CQPSKDemodulator implements Instrumentable,
 	
 	private GardnerSymbolTiming mGardnerDetector = new GardnerSymbolTiming();
 	
+	private CostasLoop mCostasLoop = new CostasLoop();
+	
 	private FrequencyChangeListener mFrequencyChangeListener;
 	
 	private EyeDiagramDataTap mEyeDiagramDataTap;
@@ -88,6 +90,17 @@ public class CQPSKDemodulator implements Instrumentable,
 	public void receive( ComplexSample sample )
 	{
 		mGardnerDetector.receive( sample );
+	}
+	
+	/**
+	 * Applies a phase correction value to the costas loop to correct when a
+	 * phase lock error is detected in the binary output stream.
+	 * 
+	 * @param correction - value in radians
+	 */
+	public void correctPhaseError( double correction )
+	{
+		mCostasLoop.correctPhaseError( correction );
 	}
 	
 	/**
@@ -207,7 +220,7 @@ public class CQPSKDemodulator implements Instrumentable,
 
 		/* Sampling point */
 		private float mMu = 10.0f;
-		private float mGainMu = 0.25f;
+		private float mGainMu = 0.1f;
 		
 		/* Samples per symbol */
 		private float mOmega = 10.0f;
@@ -215,8 +228,6 @@ public class CQPSKDemodulator implements Instrumentable,
 		private float mOmegaRel = 0.005f;
 		private float mOmegaMid = 10.0f;
 
-		private CostasLoop mCostasLoop = new CostasLoop();
-		
 		private QPSKInterpolator mInterpolator = new QPSKInterpolator( 1.0f );
 		
 		private ComplexSample mPreviousSample = new ComplexSample( 0.0f, 0.0f );
@@ -347,7 +358,7 @@ public class CQPSKDemodulator implements Instrumentable,
 		public static final double TWO_PI = 2.0 * Math.PI;
 		
 		private static final float MAXIMUM_FREQUENCY = 
-				( 1200.0f * (float)TWO_PI ) / 48000.0f;
+				( 2400.0f * (float)TWO_PI ) / 48000.0f;
 		
 		/* http://www.trondeau.com/blog/2011/8/13/control-loop-gain-values.html */
 		private float mDamping = (float)Math.sqrt( 2.0 ) / 2.0f;
@@ -372,6 +383,33 @@ public class CQPSKDemodulator implements Instrumentable,
 		
 		public CostasLoop()
 		{
+		}
+		
+		/**
+		 * Applies a phase correction value to the current phasor.  Use this 
+		 * method to apply correction when a +/- 90, or 180 degree phase error
+		 * is detected in the binary output stream.
+		 * 
+		 * If the supplied correction value places the loop frequency outside
+		 * of the max frequency, then the frequency will be corrected 360
+		 * degrees in the opposite direction to maintain within the max
+		 * frequency bounds.
+		 * 
+		 * @param correction - correction value in radians
+		 */
+		public void correctPhaseError( double correction )
+		{
+			mLoopFrequency += correction;
+		
+			if( mLoopFrequency > MAXIMUM_FREQUENCY )
+			{
+				mLoopFrequency -= 2.0d * MAXIMUM_FREQUENCY;
+			}
+			
+			if( mLoopFrequency < -MAXIMUM_FREQUENCY )
+			{
+				mLoopFrequency += 2.0d * MAXIMUM_FREQUENCY;
+			}
 		}
 		
 		/**
