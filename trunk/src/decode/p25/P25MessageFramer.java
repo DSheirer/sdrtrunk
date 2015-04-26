@@ -11,7 +11,10 @@ import sample.Listener;
 import alias.AliasList;
 import bits.BinaryMessage;
 import bits.BitSetFullException;
-import bits.SyncPatternMatcher;
+import bits.ISyncDetectListener;
+import bits.MultiSyncPatternMatcher;
+import bits.SoftSyncDetector;
+import bits.SyncDetector;
 import decode.p25.message.P25Message;
 import decode.p25.message.hdu.HDUMessage;
 import decode.p25.message.ldu.LDU1Message;
@@ -27,20 +30,32 @@ import decode.p25.message.tdu.lc.TDULinkControlMessage;
 import decode.p25.message.tsbk.TSBKMessage;
 import decode.p25.message.tsbk.TSBKMessageFactory;
 import decode.p25.reference.DataUnitID;
+import dsp.psk.CQPSKDemodulator;
 import dsp.symbol.Dibit;
+import dsp.symbol.FrameSync;
 import edac.BCH_63_16_11;
 import edac.CRC;
 import edac.CRCP25;
 
 public class P25MessageFramer implements Listener<Dibit>
 {
-	private static final int SYNC_PATTERN_MISMATCH_THRESHOLD = 2;
-	
 	private final static Logger mLog = 
-							LoggerFactory.getLogger( P25MessageFramer.class );
+			LoggerFactory.getLogger( P25MessageFramer.class );
+
+	/* Determines the threshold for sync pattern soft matching */
+	private static final int SYNC_PATTERN_SOFT_MATCH_THRESHOLD = 4;
+
+	/* Costas Loop phase lock error correction values.  A phase lock error of
+	 * 90 degrees requires a correction of 1/4 of the symbol rate (1200Hz).  An 
+	 * error of 180 degrees requires a correction of 1/2 of the symbol rate
+	 * (2400Hz) */
+	public static final double SYMBOL_FREQUENCY = 2.0d * Math.PI * 4800.0d / 48000.0d;
+	public static final double PHASE_CORRECTION_90_DEGREES = SYMBOL_FREQUENCY / 4.0d; 
+	public static final double PHASE_CORRECTION_180_DEGREES = SYMBOL_FREQUENCY / 2.0d; 
 	
+	private MultiSyncPatternMatcher mMatcher = new MultiSyncPatternMatcher( 48 ); 
 	private ArrayList<P25MessageAssembler> mAssemblers =
-			new ArrayList<P25MessageAssembler>();
+						new ArrayList<P25MessageAssembler>();
 
 	public static final int TSBK_BEGIN = 64;
 	public static final int TSBK_CRC_START = 144;
@@ -60,31 +75,41 @@ public class P25MessageFramer implements Listener<Dibit>
 	
 	private Listener<Message> mListener;
 	private AliasList mAliasList;
-	private SyncPatternMatcher mMatcher;
-	private boolean mInverted = false;
+
 	private Trellis_1_2_Rate mHalfRate = new Trellis_1_2_Rate();
 	private Trellis_3_4_Rate mThreeQuarterRate = new Trellis_3_4_Rate();
 	private BCH_63_16_11 mNIDDecoder = new BCH_63_16_11();
 	
 	/**
-	 * Constructs a C4FM message framer to receive a stream of C4FM symbols and
+	 * Constructs a P25 message framer to receive a stream of symbols and
 	 * detect the sync pattern then capture the following stream of symbols up
 	 * to the message length, and then broadcast that bit buffer to the registered
 	 * listener.
-	 * 
-	 * @param sync - sync pattern (maximum of 63 bits)
-	 * @param messageLength - in bits
-	 * @param inverted - optional flag to indicate the symbol stream should be
-	 * uninverted prior to processing 
 	 */
-	public P25MessageFramer( long sync, 
-	                         int messageLength, 
-	                         boolean inverted,
-	                         AliasList aliasList )
+	public P25MessageFramer( AliasList aliasList )
 	{
-		mMatcher = new SyncPatternMatcher( sync, SYNC_PATTERN_MISMATCH_THRESHOLD );
-		mInverted = inverted;
 		mAliasList = aliasList;
+		
+		SoftSyncDetector primarySyncDetector = new SoftSyncDetector( 
+			FrameSync.P25_PHASE1_NORMAL.getSync(), SYNC_PATTERN_SOFT_MATCH_THRESHOLD );
+		
+		primarySyncDetector.setListener( new ISyncDetectListener()
+		{
+			@Override
+			public void syncDetected()
+			{
+	        	for( P25MessageAssembler assembler: mAssemblers )
+	        	{
+	        		if( !assembler.isActive() )
+	        		{
+	        			assembler.setActive( true );
+	        			break;
+	        		}
+	        	}
+			}
+		} );
+		
+		mMatcher.add( primarySyncDetector );
 
 		/**
 		 * We use two message assemblers to catch any sync detections, so that
@@ -98,6 +123,22 @@ public class P25MessageFramer implements Listener<Dibit>
 		mAssemblers.add( new P25MessageAssembler() );
 	}
 	
+	public P25MessageFramer( AliasList aliasList, CQPSKDemodulator demodulator )
+	{
+		this( aliasList );
+
+		/* For CQPSK, we include 3 additional sync detectors to watch for and
+		 * correction +/-90 and 180 degree costas loop phase lock errors */
+		mMatcher.add( new CostasPhaseErrorDetector( FrameSync.P25_PHASE1_ERROR_90_CCW, 
+				demodulator, PHASE_CORRECTION_90_DEGREES  ) );
+
+		mMatcher.add( new CostasPhaseErrorDetector( FrameSync.P25_PHASE1_ERROR_90_CW, 
+				demodulator, -PHASE_CORRECTION_90_DEGREES  ) );
+
+		mMatcher.add( new CostasPhaseErrorDetector( FrameSync.P25_PHASE1_ERROR_180, 
+				demodulator, PHASE_CORRECTION_180_DEGREES  ) );
+	}
+	
 	private void dispatch( Message message )
 	{
 		if( mListener != null )
@@ -109,9 +150,6 @@ public class P25MessageFramer implements Listener<Dibit>
 	@Override
     public void receive( Dibit symbol )
     {
-    	mMatcher.receive( symbol.getBit1() );
-    	mMatcher.receive( symbol.getBit2() );
-
     	for( P25MessageAssembler assembler: mAssemblers )
     	{
     		if( assembler.isActive() )
@@ -125,27 +163,7 @@ public class P25MessageFramer implements Listener<Dibit>
     		}
     	}
     	
-        /* Check for sync match and activate a message assembler, if we can
-         * find an inactive assembler.  Otherwise, ignore and log the issue */
-    	if( mMatcher.matches() )
-    	{
-    		boolean found = false;
-    		
-        	for( P25MessageAssembler assembler: mAssemblers )
-        	{
-        		if( !assembler.isActive() )
-        		{
-        			assembler.setActive( true );
-        			found = true;
-        			break;
-        		}
-        	}
-        	
-        	if( !found )
-        	{
-            	mLog.debug( "no inactive P25 message assemblers available" );
-        	}
-    	}
+		mMatcher.receive( symbol.getBit1(), symbol.getBit2() );
     }
 
     public void setListener( Listener<Message> listener )
@@ -258,12 +276,10 @@ public class P25MessageFramer implements Listener<Dibit>
 					break;
 				case HDU:
 					mComplete = true;
-					mMatcher.setSoftMode( true );
                     dispatch( new HDUMessage( mMessage.copy(), mDUID, mAliasList ) );
 					break;
 				case LDU1:
 					mComplete = true;
-					mMatcher.setSoftMode( true );
 					
 					LDU1Message ldu1 = new LDU1Message( mMessage.copy(), 
 							mDUID, mAliasList );
@@ -273,11 +289,9 @@ public class P25MessageFramer implements Listener<Dibit>
 					break;
 				case LDU2:
 					mComplete = true;
-					mMatcher.setSoftMode( true );
                     dispatch( new LDU2Message( mMessage.copy(), mDUID, mAliasList ) );
 					break;
 				case PDU0:
-					mMatcher.setSoftMode( false );
 
 					/* Remove interleaving */
 					P25Interleave.deinterleaveData( mMessage, PDU0_BEGIN, PDU0_END );
@@ -397,8 +411,6 @@ public class P25MessageFramer implements Listener<Dibit>
 					mComplete = true;
 					break;
 				case PDUC:
-					mMatcher.setSoftMode( true );
-
 					/* De-interleave the latest block*/
 					P25Interleave.deinterleaveData( mMessage, 
 							mMessage.size() - 196, mMessage.size() );
@@ -447,12 +459,10 @@ public class P25MessageFramer implements Listener<Dibit>
 					}
 					break;
 				case TDU:
-					mMatcher.setSoftMode( true );
                     dispatch( new TDUMessage( mMessage.copy(), mDUID, mAliasList ) );
 					mComplete = true;
 					break;
 				case TDULC:
-					mMatcher.setSoftMode( true );
 					TDULinkControlMessage tdulc =  new TDULinkControlMessage( 
 							mMessage.copy(), mDUID, mAliasList );
 
@@ -463,7 +473,6 @@ public class P25MessageFramer implements Listener<Dibit>
 					mComplete = true;
 					break;
 				case TSBK1:
-					mMatcher.setSoftMode( true );
 					/* Remove interleaving */
 					P25Interleave.deinterleaveData( mMessage, TSBK_BEGIN, TSBK_END );
 	
@@ -601,5 +610,51 @@ public class P25MessageFramer implements Listener<Dibit>
         {
         	return mActive;
         }
+    }
+    
+    /**
+     * Sync pattern detector to listen for costas loop phase lock errors and 
+     * apply a phase correction to the costas loop so that we don't miss any 
+     * messages.
+     * 
+     * When the costas loop locks with a +/- 90 degree or 180 degree phase 
+     * error, the slicer will incorrectly apply the symbol pattern rotated left
+     * or right by the phase error.  However, we can detect these rotated sync
+     * patterns and apply immediate phase correction so that message processing
+     * can continue. 
+     */
+    public class CostasPhaseErrorDetector extends SyncDetector
+    {
+    	private CQPSKDemodulator mDemodulator;
+    	private double mCorrection;
+    	
+    	public CostasPhaseErrorDetector( FrameSync frameSync, 
+    			CQPSKDemodulator demodulator, double correction )
+    	{
+    		super( frameSync.getSync() );
+
+    		mDemodulator = demodulator;
+    		
+    		mCorrection = correction;
+
+    		setListener( new ISyncDetectListener()
+			{
+				@Override
+				public void syncDetected()
+				{
+					mDemodulator.correctPhaseError( mCorrection );
+
+					/* Since we detected a sync pattern, start a message assembler */
+		        	for( P25MessageAssembler assembler: mAssemblers )
+		        	{
+		        		if( !assembler.isActive() )
+		        		{
+		        			assembler.setActive( true );
+		        			break;
+		        		}
+		        	}
+				}
+			} );
+    	}
     }
 }
