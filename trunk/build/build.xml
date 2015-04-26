@@ -6,7 +6,7 @@
   <!-- version properties -->
   <property name="major" value="0"/>
   <property name="minor" value="1"/>
-  <property name="build" value="1"/>
+  <property name="build" value="2"/>
 
   <!-- Build properties -->
   <property name="classes" location="../classes"/>
