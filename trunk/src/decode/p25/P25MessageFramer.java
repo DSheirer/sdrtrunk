@@ -47,8 +47,7 @@ public class P25MessageFramer implements Listener<Dibit>
 
 	/* Costas Loop phase lock error correction values.  A phase lock error of
 	 * 90 degrees requires a correction of 1/4 of the symbol rate (1200Hz).  An 
-	 * error of 180 degrees requires a correction of 1/2 of the symbol rate
-	 * (2400Hz) */
+	 * error of 180 degrees requires a correction of 1/2 of the symbol rate */
 	public static final double SYMBOL_FREQUENCY = 2.0d * Math.PI * 4800.0d / 48000.0d;
 	public static final double PHASE_CORRECTION_90_DEGREES = SYMBOL_FREQUENCY / 4.0d; 
 	public static final double PHASE_CORRECTION_180_DEGREES = SYMBOL_FREQUENCY / 2.0d; 
