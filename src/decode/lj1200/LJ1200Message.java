@@ -311,25 +311,8 @@ public class LJ1200Message extends Message
 	
 	public enum Function
 	{
-/* Little Endian Format */
-//		F0(             0x0, "0-UNKNOWN" ),
-//		F1(             0x1, "1-UNKNOWN" ),
-//		F2_ACTIVATION(  0x2, "2-ACTIVATION" ),
-//		F3_SPEED_UP(    0x3, "3-SPEED-UP" ),
-//		F4_TEST(        0x4, "4-TEST" ),
-//		F5(             0x5, "5-UNKNOWN" ),
-//		F6_SET_RATE(    0x6, "6-UNKNOWN" ), //Delete
-//		F7(             0x7, "7-UNKNOWN" ),
-//		F8_SITE_ID(     0x8, "8-SITE ID" ),
-//		F9(             0x9, "9-UNKNOWN" ),
-//		FA(             0xA, "A-UNKNOWN" ),
-//		FB(             0xB, "B-UNKNOWN" ),
-//		FC_DEACTIVATE(  0xC, "C-DEACTIVATE" ),
-//		FD(             0xD, "D-UNKNOWN" ),
-//		FE_TRACK_PULSE( 0xE, "E-UNKNOWN" ),
-//		FF_TRACK_PULSE( 0xF, "F-TRACK PULSE" ),
-
 		/* Big Endian Format */
+		F0_UNKNOWN( "0-UNKNOWN" ),
 		F1_SITE_ID( "1Y-SITE ID" ),
 		F1_SPEED_UP( "1-SPEED UP" ),
 		F2_TEST( "2-TEST" ),
@@ -370,6 +353,8 @@ public class LJ1200Message extends Message
 		{
 			switch( value )
 			{
+				case 0:
+					return Function.F0_UNKNOWN;
 				case 1:
 					if( replyCodeDigit3 == 31 ) /* 'Y' middle character */
 					{
