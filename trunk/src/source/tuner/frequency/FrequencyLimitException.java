@@ -1,4 +1,4 @@
-package source.tuner;
+package source.tuner.frequency;
 
 public class FrequencyLimitException extends Exception
 {

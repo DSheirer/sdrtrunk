@@ -33,7 +33,9 @@ import sample.complex.ComplexSample;
 import sample.complex.ComplexSampleAssembler;
 import source.ComplexSource;
 import source.SourceException;
-import source.tuner.FrequencyChangeEvent.Attribute;
+import source.tuner.frequency.FrequencyChangeEvent;
+import source.tuner.frequency.FrequencyChangeListener;
+import source.tuner.frequency.FrequencyChangeEvent.Attribute;
 import util.Oscillator;
 import controller.ThreadPoolManager;
 import controller.ThreadPoolManager.ThreadType;
@@ -173,7 +175,7 @@ public class TunerChannelSource extends ComplexSource
 			case SAMPLE_RATE_ERROR:
 				break;
 			case SAMPLE_RATE:
-				int sampleRate = (int)event.getValue();
+				int sampleRate = event.getValue().intValue();
 				
 				if( mTunerSampleRate != sampleRate )
 				{
@@ -196,7 +198,7 @@ public class TunerChannelSource extends ComplexSource
 				}
 				break;
 			case FREQUENCY_ERROR:
-				mTunerFrequencyError = (int)event.getValue();
+				mTunerFrequencyError = event.getValue().intValue();
 				
 				long frequencyErrorOffset = mTunerFrequency - 
 									   mTunerChannel.getFrequency() -
@@ -205,7 +207,7 @@ public class TunerChannelSource extends ComplexSource
 				mSineWaveGenerator.setFrequency( frequencyErrorOffset );
 				break;
 			case FREQUENCY:
-				int frequency = (int)event.getValue();
+				long frequency = event.getValue().longValue();
 				
 				/* If the frequency is updated, the AFC will also get reset, so
 				 * we don't include the frequency error value here */

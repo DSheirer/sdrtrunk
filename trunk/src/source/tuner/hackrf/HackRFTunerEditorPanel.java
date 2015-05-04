@@ -31,9 +31,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import source.SourceException;
-import source.tuner.FrequencyChangeEvent;
-import source.tuner.FrequencyChangeEvent.Attribute;
-import source.tuner.FrequencyChangeListener;
+import source.tuner.frequency.FrequencyChangeEvent;
+import source.tuner.frequency.FrequencyChangeListener;
+import source.tuner.frequency.FrequencyChangeEvent.Attribute;
 import source.tuner.hackrf.HackRFTunerController.BoardID;
 
 import com.jidesoft.swing.JideTabbedPane;
@@ -114,11 +114,11 @@ public class HackRFTunerEditorPanel extends JPanel
 		{
 			try
 	        {
-		        mController.setFrequency( event.getValue() );
+		        mController.setFrequency( event.getValue().longValue() );
 	        }
 	        catch ( SourceException e )
 	        {
-	        	mLog.error( "error setting frequency [" + event.getValue() + "]", e );
+	        	mLog.error( "error setting frequency [" + event.getValue().longValue() + "]", e );
 	        }
 		}
     }

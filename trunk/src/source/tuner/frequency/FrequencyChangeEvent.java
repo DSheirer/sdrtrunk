@@ -1,4 +1,4 @@
-package source.tuner;
+package source.tuner.frequency;
 
 public class FrequencyChangeEvent
 {
@@ -12,9 +12,9 @@ public class FrequencyChangeEvent
 	}
 
 	private Attribute mAttribute;
-	private long mValue;
+	private Number mValue;
 	
-	public FrequencyChangeEvent( Attribute attribute, long value )
+	public FrequencyChangeEvent( Attribute attribute, Number value )
 	{
 		mAttribute = attribute;
 		mValue = value;
@@ -25,10 +25,8 @@ public class FrequencyChangeEvent
 		return mAttribute;
 	}
 	
-	public long getValue()
+	public Number getValue()
 	{
 		return mValue;
 	}
-	
-	
 }

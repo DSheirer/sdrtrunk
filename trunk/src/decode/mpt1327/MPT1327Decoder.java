@@ -35,6 +35,7 @@ import bits.MessageFramer;
 import bits.SyncPattern;
 import decode.Decoder;
 import decode.DecoderType;
+import decode.config.DecodeConfiguration;
 import dsp.filter.DCRemovalFilter;
 import dsp.filter.FilterFactory;
 import dsp.filter.Filters;
@@ -86,11 +87,12 @@ public class MPT1327Decoder extends Decoder implements Instrumentable
     private MPT1327MessageProcessor mMessageProcessor;
     private AudioOutputImpl mAudioOutput = new AudioOutputImpl( "MPT1327 Decoder Audio Output" );
 
-    public MPT1327Decoder( SampleType sampleType, 
+    public MPT1327Decoder( DecodeConfiguration config, 
+    					   SampleType sampleType, 
     					   AliasList aliasList,
     					   Sync sync )
 	{
-    	super( sampleType );
+    	super( config, sampleType );
 
 		/* If we're receiving complex samples, do FM demodulation and DC removal
 		 * and feed the output back to this decoder */

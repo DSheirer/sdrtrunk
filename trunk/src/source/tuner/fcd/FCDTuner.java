@@ -25,7 +25,6 @@ import sample.Listener;
 import sample.adapter.ShortAdapter;
 import sample.complex.ComplexBuffer;
 import source.SourceException;
-import source.tuner.FrequencyChangeListener;
 import source.tuner.MixerTuner;
 import source.tuner.MixerTunerDataLine;
 import source.tuner.TunerChannel;
@@ -33,6 +32,7 @@ import source.tuner.TunerChannelSource;
 import source.tuner.TunerClass;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
+import source.tuner.frequency.FrequencyChangeListener;
 import controller.ResourceManager;
 import controller.ThreadPoolManager;
 

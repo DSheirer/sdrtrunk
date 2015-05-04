@@ -30,11 +30,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import source.SourceException;
-import source.tuner.FrequencyChangeEvent;
-import source.tuner.FrequencyChangeEvent.Attribute;
-import source.tuner.FrequencyChangeListener;
 import source.tuner.fcd.FCDTuner;
 import source.tuner.fcd.FCDTunerDetailsPanel;
+import source.tuner.frequency.FrequencyChangeEvent;
+import source.tuner.frequency.FrequencyChangeListener;
+import source.tuner.frequency.FrequencyChangeEvent.Attribute;
 
 import com.jidesoft.swing.JideTabbedPane;
 
@@ -99,12 +99,12 @@ public class FCD2TunerEditorPanel extends JPanel implements FrequencyChangeListe
 			//Disregard the bandwidth, which shouldn't be changing
 			try
 	        {
-		        mController.setFrequency( event.getValue() );
+		        mController.setFrequency( event.getValue().longValue() );
 	        }
 	        catch ( SourceException e )
 	        {
 	        	mLog.error( "FCDProController - error setting frequency [" + 
-	        			event.getValue() + "]", e );
+	        			event.getValue().longValue() + "]", e );
 	        }
 		}
     }

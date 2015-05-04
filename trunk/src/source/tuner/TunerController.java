@@ -26,7 +26,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import source.SourceException;
-import source.tuner.FrequencyController.Tunable;
+import source.tuner.frequency.FrequencyChangeListener;
+import source.tuner.frequency.FrequencyController;
+import source.tuner.frequency.FrequencyController.Tunable;
 import controller.ThreadPoolManager;
 
 public abstract class TunerController implements Tunable

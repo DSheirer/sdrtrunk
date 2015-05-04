@@ -48,6 +48,7 @@ import source.config.SourceConfigTuner;
 import source.config.SourceConfiguration;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannel.Type;
+import source.tuner.frequency.AutomaticFrequencyControl;
 import controller.ResourceManager;
 import controller.activity.ActivitySummaryFrame;
 import controller.channel.ChannelEvent.Event;
@@ -59,7 +60,6 @@ import controller.system.System;
 import decode.config.AuxDecodeConfiguration;
 import decode.config.DecodeConfigFactory;
 import decode.config.DecodeConfiguration;
-import dsp.frequency.AutomaticFrequencyControl;
 import eventlog.config.EventLogConfiguration;
 
 @XmlSeeAlso( { Configuration.class } )
@@ -145,14 +145,15 @@ public class Channel extends Configuration
 	 */
 	public boolean hasFrequencyControl()
 	{
-		return mProcessingChain != null && mProcessingChain.hasFrequencyControl();
+		return mProcessingChain != null && 
+			   mProcessingChain.getDecoder().hasFrequencyCorrectionControl();
 	}
 	
 	public long getFrequencyCorrection()
 	{
 		if( mProcessingChain != null )
 		{
-			return mProcessingChain.getFrequencyCorrection();
+			return mProcessingChain.getDecoder().getFrequencyCorrection();
 		}
 		
 		return 0;

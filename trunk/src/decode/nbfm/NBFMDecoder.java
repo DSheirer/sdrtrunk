@@ -17,12 +17,13 @@
  ******************************************************************************/
 package decode.nbfm;
 
-import audio.AudioOutputImpl;
-import audio.IAudioOutput;
 import sample.real.RealSampleListener;
 import source.Source.SampleType;
+import audio.AudioOutputImpl;
+import audio.IAudioOutput;
 import decode.Decoder;
 import decode.DecoderType;
+import decode.config.DecodeConfiguration;
 import dsp.filter.DCRemovalFilter2;
 import dsp.nbfm.FilteringNBFMDemodulator;
 
@@ -38,9 +39,9 @@ public class NBFMDecoder extends Decoder
 	private DCRemovalFilter2 mDCRemovalFilter;
     private AudioOutputImpl mAudioOutput = new AudioOutputImpl( "NBFM Decoder Audio Output" );
 	
-	public NBFMDecoder( SampleType sampleType )
+	public NBFMDecoder( DecodeConfiguration config, SampleType sampleType )
 	{
-		super( sampleType );
+		super( config, sampleType );
 		
 		/**
 		 * Only setup a demod chain if we're receiving complex samples.  If

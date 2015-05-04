@@ -32,6 +32,7 @@ import bits.MessageFramer;
 import bits.SyncPattern;
 import decode.Decoder;
 import decode.DecoderType;
+import decode.config.DecodeConfiguration;
 import dsp.filter.DCRemovalFilter2;
 import dsp.fsk.LTRFSKDecoder;
 import dsp.nbfm.FilteringNBFMDemodulator;
@@ -55,9 +56,11 @@ public class PassportDecoder extends Decoder implements Instrumentable
 	
     private List<Tap> mAvailableTaps;
 
-	public PassportDecoder( SampleType sampleType, AliasList aliasList )
+	public PassportDecoder( DecodeConfiguration config, 
+							SampleType sampleType, 
+							AliasList aliasList )
 	{
-		super( sampleType );
+		super( config, sampleType );
 		
 		/**
 		 * Only setup a demod chain if we're receiving complex samples.  If

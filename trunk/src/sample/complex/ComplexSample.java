@@ -81,6 +81,12 @@ public class ComplexSample implements Serializable
 		mRight *= scalor;
 	}
 	
+	public static ComplexSample multiply( ComplexSample sample, float scalor )
+	{
+		return new ComplexSample( sample.left() * scalor, 
+								  sample.right() * scalor );
+	}
+	
 	/**
 	 * Multiplies this sample by the multiplier sample
 	 */
@@ -160,8 +166,16 @@ public class ComplexSample implements Serializable
 	 */
 	public float magnitudeSquared()
 	{
+		return norm();
+	}
+
+	/**
+	 * Norm of this sample = ( i * i ) + ( q * q )
+	 */
+	public float norm()
+	{
 		return (float)( ( inphase() * inphase() ) + 
-					  ( quadrature() * quadrature() ) );
+				  ( quadrature() * quadrature() ) );
 	}
 	
 	/**
@@ -294,6 +308,32 @@ public class ComplexSample implements Serializable
 	}
 
 	/**
+	 * Constrains the i and q quantities to +/- value. 
+	 * 
+	 * @param value - maximum absolute value
+	 */
+	public void clip( float value )
+	{
+		if( mLeft > value )
+		{
+			mLeft = value;
+		}
+		else if( mLeft < -value )
+		{
+			mLeft = -value;
+		}
+		
+		if( mRight > value )
+		{
+			mRight = value;
+		}
+		else if( mRight < -value )
+		{
+			mRight = -value;
+		}
+	}
+
+	/**
 	 * Angle of this sample in degrees
 	 */
 	public float polarAngle()
@@ -321,18 +361,17 @@ public class ComplexSample implements Serializable
 	
 	public static void main( String[] args )
 	{
-		double SYMBOL_FREQUENCY = 2.0d * Math.PI * 4800.0d / 48000.0d;
-		double PHASE_CORRECTION_90_DEGREES = SYMBOL_FREQUENCY / 4.0d; 
-		double PHASE_CORRECTION_180_DEGREES = SYMBOL_FREQUENCY / 2.0d; 
-
-		double angle = Math.PI / 4;
-
-		ComplexSample s1 = new ComplexSample( (float)Math.sin( angle ), (float)Math.cos( angle ) );
-		ComplexSample s2 = new ComplexSample( (float)Math.sin( -angle ), (float)Math.cos( -angle ) );
+		double angle = Math.PI;  //180 degrees
 		
-		ComplexSample symbol = ComplexSample.multiply( s1, s2.conjugate() );
+		ComplexSample s1 = new ComplexSample( (float)Math.sin( angle ), (float)Math.cos( angle ) );
 
-		mLog.debug( "S1:" + s1.polarAngle() + " S2:" + s2.polarAngle() + " Symbol:" + symbol.polarAngle() );
+		ComplexSample tap = new ComplexSample( 1.0f, -0.1f );
+
+		ComplexSample convolved = ComplexSample.multiply( s1, tap );
+		
+		mLog.debug( "s: " + s1.toString() +
+					" t: " + tap.toString() +
+					" convolved: " + convolved.toString() );
 		
 	}
 }

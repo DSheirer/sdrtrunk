@@ -141,7 +141,8 @@ public class P25AudioOutput implements IAudioOutput, IAudioTypeListener,
 					
 				try
 		        {
-			        mOutput = AudioSystem.getSourceDataLine( IMBEAudioFormat.PCM_SIGNED_8KHZ_16BITS );
+			        mOutput = AudioSystem.getSourceDataLine( 
+			        		IMBEAudioFormat.PCM_SIGNED_8KHZ_16BITS );
 
 			        if( mOutput != null )
 		        	{
@@ -242,7 +243,7 @@ public class P25AudioOutput implements IAudioOutput, IAudioTypeListener,
 							/* Insert an 18-byte imbe frame into the stream */
 							mIMBETargetDataLine.receive( frame );
 							
-							/* Read 1920 bytes of converted upsamped audio from output */
+							/* Read 1920 bytes of converted audio from output */
 							byte[] audio = new byte[ PROCESSED_AUDIO_FRAME_SIZE ];
 							
 							try

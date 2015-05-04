@@ -29,6 +29,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import source.SourceException;
+import source.tuner.frequency.FrequencyChangeEvent;
+import source.tuner.frequency.FrequencyChangeListener;
 import spectrum.SpectrumFrame;
 import controller.BaseNode;
 
@@ -127,7 +129,7 @@ public class TunerNode extends BaseNode implements FrequencyChangeListener
 		switch( event.getAttribute() )
 		{
 			case FREQUENCY:
-				int frequency = (int)event.getValue();
+				long frequency = event.getValue().longValue();
 				
 				if( mFrequency != frequency )
 				{
@@ -136,7 +138,7 @@ public class TunerNode extends BaseNode implements FrequencyChangeListener
 				}
 				break;
 			case SAMPLE_RATE:
-				int sampleRate = (int)event.getValue();
+				int sampleRate = event.getValue().intValue();
 				
 				if( mSampleRate != sampleRate )
 				{

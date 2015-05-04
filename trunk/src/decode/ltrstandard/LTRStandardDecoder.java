@@ -27,6 +27,7 @@ import bits.MessageFramer;
 import bits.SyncPattern;
 import decode.Decoder;
 import decode.DecoderType;
+import decode.config.DecodeConfiguration;
 import dsp.filter.DCRemovalFilter2;
 import dsp.fsk.LTRFSKDecoder;
 import dsp.nbfm.FilteringNBFMDemodulator;
@@ -47,11 +48,12 @@ public class LTRStandardDecoder extends Decoder
 	private LTRStandardMessageProcessor mLTRMessageProcessor;
     private AudioOutputImpl mAudioOutput = new AudioOutputImpl( "LTR Standard Decoder Audio Output" );
 
-	public LTRStandardDecoder( SampleType sampleType, 
-					   AliasList aliasList,
-					   MessageDirection direction )
+	public LTRStandardDecoder( DecodeConfiguration config, 
+							   SampleType sampleType, 
+							   AliasList aliasList,
+							   MessageDirection direction )
 	{
-		super( sampleType );
+		super( config, sampleType );
 		
 		/**
 		 * Only setup a demod chain if we're receiving complex samples.  If

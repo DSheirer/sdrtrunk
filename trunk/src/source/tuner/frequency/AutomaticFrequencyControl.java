@@ -1,16 +1,32 @@
-package dsp.frequency;
+package source.tuner.frequency;
+
+/*******************************************************************************
+ *     SDR Trunk 
+ *     Copyright (C) 2015 Dennis Sheirer
+ * 
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ * 
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ * 
+ *     You should have received a copy of the GNU General Public License
+ *     along with this program.  If not, see <http://www.gnu.org/licenses/>
+ ******************************************************************************/
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.real.RealSampleListener;
-import source.tuner.FrequencyChangeEvent;
-import source.tuner.FrequencyChangeEvent.Attribute;
-import source.tuner.FrequencyChangeListener;
+import source.tuner.frequency.FrequencyChangeEvent.Attribute;
 import buffer.FloatAveragingBuffer;
 
-public class AutomaticFrequencyControl implements RealSampleListener, 
-												  FrequencyChangeListener
+public class AutomaticFrequencyControl extends FrequencyCorrectionControl 
+									   implements RealSampleListener
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( AutomaticFrequencyControl.class );
@@ -35,40 +51,44 @@ public class AutomaticFrequencyControl implements RealSampleListener,
 	private int mSkipCounter = 0;
 	private int mSkipThreshold = 4;
 	private int mErrorCorrection = 0;
-	private long mCurrentFrequency;
-	private int mMaximumCorrection;
-	private FrequencyChangeListener mListener;
 	
 	public enum Mode
 	{
 		NORMAL,FAST;
 	}
 	
-	public AutomaticFrequencyControl( FrequencyChangeListener listener,
-									  int maximumCorrection )
+	/**
+	 * Automatic Frequency Control.  Monitors DC bias present in an FM 
+	 * demodulated audio stream and issues automatic frequency corrections to 
+	 * maintain the DC bias close to zero.
+	 * 
+	 * @param maximum - maximum allowable (+/-) frequency correction value.
+	 */
+	public AutomaticFrequencyControl( int maximum )
 	{
-		mListener = listener;
-		mMaximumCorrection = maximumCorrection;
+		super( maximum );
 	}
 	
 	public void dispose()
 	{
-		mListener = null;
+		super.dispose();
+		
 		mBuffer = null;
 	}
-	
-	public int getErrorCorrection()
-	{
-		return mErrorCorrection;
-	}
-	
+
+	/**
+	 * Resets the error correction value to zero and broadcasts a change event
+	 */
 	public void reset()
 	{
 		mErrorCorrection = 0;
 		mMode = Mode.FAST;
 		dispatch();
 	}
-	
+
+	/**
+	 * Broadcasts a frequency correction change event to the registered listener
+	 */
 	private void dispatch()
 	{
 		if( mListener != null )
@@ -119,86 +139,43 @@ public class AutomaticFrequencyControl implements RealSampleListener,
 	
 	private void update( float average )
 	{
-		int correction = 0;
-		
+		mMode = Mode.NORMAL;
+
 		if( average > LARGE_ERROR )
 		{
-			correction = -LARGE_FREQUENCY_CORRECTION;
+			adjust( -LARGE_FREQUENCY_CORRECTION );
 			mMode = Mode.FAST;
 		}
 		else if( average > MEDIUM_ERROR )
 		{
-			correction = -MEDIUM_FREQUENCY_CORRECTION;
+			adjust( -MEDIUM_FREQUENCY_CORRECTION );
 			mMode = Mode.FAST;
 		}
 		else if( average > SMALL_ERROR )
 		{
-			correction = -SMALL_FREQUENCY_CORRECTION;
-			mMode = Mode.NORMAL;
+			adjust( -SMALL_FREQUENCY_CORRECTION );
 		}
 		else if( average > FINE_ERROR )
 		{
-			correction = -FINE_FREQUENCY_CORRECTION;
-			mMode = Mode.NORMAL;
+			adjust( -FINE_FREQUENCY_CORRECTION );
 		}
 		else if( average < -LARGE_ERROR )
 		{
-			correction = LARGE_FREQUENCY_CORRECTION;
+			adjust( LARGE_FREQUENCY_CORRECTION );
 			mMode = Mode.FAST;
 		}
 		else if( average < -MEDIUM_ERROR )
 		{
-			correction = MEDIUM_FREQUENCY_CORRECTION;
+			adjust( MEDIUM_FREQUENCY_CORRECTION );
 			mMode = Mode.FAST;
 		}
 		else if( average < -SMALL_ERROR )
 		{
-			correction = SMALL_FREQUENCY_CORRECTION;
-			mMode = Mode.NORMAL;
+			adjust( SMALL_FREQUENCY_CORRECTION );
 		}
 		else if( average < -FINE_ERROR )
 		{
-			correction = FINE_FREQUENCY_CORRECTION;
-			mMode = Mode.NORMAL;
-		}
-
-		if( correction != 0 )
-		{
-			mErrorCorrection -= correction;
-			
-			if( Math.abs( mErrorCorrection ) > mMaximumCorrection )
-			{
-				mErrorCorrection = ( mErrorCorrection < 0 ) ? 
-										-mMaximumCorrection : 
-										 mMaximumCorrection;
-			}
-			
-			dispatch();
-		}
-		else
-		{
-			mMode = Mode.NORMAL;
+			adjust( FINE_FREQUENCY_CORRECTION );
 		}
 	}
-
-	@Override
-    public void frequencyChanged( FrequencyChangeEvent event )
-    {
-		switch( event.getAttribute() )
-		{
-			case FREQUENCY:
-				int frequency = (int)event.getValue();
-				
-				if( mCurrentFrequency != frequency )
-				{
-					mCurrentFrequency = frequency;
-					
-					reset();
-				}
-			case SAMPLE_RATE_ERROR:
-				break;
-			default:
-				break;
-		}
-    }
 }
