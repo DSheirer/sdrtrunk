@@ -15,11 +15,18 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package source.tuner;
+package source.tuner.frequency;
 
-public interface FrequencyChangeBroadcaster
+
+/**
+ * Interface for broadcasting changes to frequency, bandwidth, sample rate,
+ * and actual sample rate values to all registered listeners.
+ * 
+ * Note: broadcasted frequency should be the uncorrected, or displayable 
+ * frequency value.  All frequency correction aspects should be handled within
+ * the device that implements the tuning of the frequency.
+ */
+public interface FrequencyChangeListener
 {
-	public abstract void addListener( FrequencyChangeListener listener );
-	
-    public abstract void removeListener( FrequencyChangeListener listener );
+	public void frequencyChanged( FrequencyChangeEvent event );
 }

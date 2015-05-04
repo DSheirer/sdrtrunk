@@ -15,15 +15,20 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package source.tuner;
+package source.tuner.frequency;
 
 import java.util.ArrayList;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import source.SourceException;
-import source.tuner.FrequencyChangeEvent.Attribute;
+import source.tuner.frequency.FrequencyChangeEvent.Attribute;
 
 public class FrequencyController
 {
+	private final static Logger mLog = LoggerFactory.getLogger( FrequencyController.class );
+
 	private Tunable mTunable;
 	private long mFrequency = 101100000;
 	private long mTunedFrequency = 101100000;
@@ -167,6 +172,10 @@ public class FrequencyController
         	/* Reset the frequency, but don't broadcast a change */
         	setFrequency( mFrequency, false );
     	}
+    	
+    	broadcastFrequencyChangeEvent( new FrequencyChangeEvent( 
+    			Attribute.SAMPLE_RATE_ERROR, mFrequencyCorrection ) );
+    	
     }
 	
 	/**

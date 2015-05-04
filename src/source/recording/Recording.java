@@ -5,12 +5,12 @@ import java.util.ArrayList;
 import java.util.concurrent.RejectedExecutionException;
 
 import source.SourceException;
-import source.tuner.FrequencyChangeEvent;
-import source.tuner.FrequencyChangeListener;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannelProvider;
 import source.tuner.TunerChannelSource;
-import source.tuner.FrequencyChangeEvent.Attribute;
+import source.tuner.frequency.FrequencyChangeEvent;
+import source.tuner.frequency.FrequencyChangeListener;
+import source.tuner.frequency.FrequencyChangeEvent.Attribute;
 import controller.ResourceManager;
 import controller.ThreadPoolManager;
 
@@ -92,7 +92,7 @@ public class Recording implements Comparable<Recording>,
     {
 		if( event.getAttribute() == Attribute.FREQUENCY )
 		{
-			int frequency = (int)event.getValue();
+			long frequency = event.getValue().longValue();
 			
 			mConfiguration.setCenterFrequency( frequency );
 			

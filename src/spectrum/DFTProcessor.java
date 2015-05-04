@@ -34,8 +34,8 @@ import sample.Listener;
 import sample.complex.ComplexBuffer;
 import source.Source;
 import source.Source.SampleType;
-import source.tuner.FrequencyChangeEvent;
-import source.tuner.FrequencyChangeListener;
+import source.tuner.frequency.FrequencyChangeEvent;
+import source.tuner.frequency.FrequencyChangeListener;
 import spectrum.converter.DFTResultsConverter;
 import dsp.filter.Window;
 import dsp.filter.Window.WindowType;
@@ -460,7 +460,7 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 			case SAMPLE_RATE_ERROR:
 				break;
 			case SAMPLE_RATE:
-				mSampleRate = (int)event.getValue();
+				mSampleRate = event.getValue().intValue();
 				calculateConsumptionRate();
 				break;
 			default:

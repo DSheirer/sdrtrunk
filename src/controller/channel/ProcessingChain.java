@@ -46,12 +46,11 @@ import source.RealSource;
 import source.Source;
 import source.SourceException;
 import source.config.SourceConfigMixer;
-import source.tuner.DirectFrequencyController;
-import source.tuner.FrequencyChangeListener;
 import source.tuner.Tuner;
 import source.tuner.TunerChannelSource;
+import source.tuner.frequency.AutomaticFrequencyControl;
+import source.tuner.frequency.FrequencyCorrectionControl;
 import alias.AliasList;
-import audio.AudioOutputImpl;
 import audio.IAudioOutput;
 import audio.IAudioTypeListener;
 import audio.SquelchListener;
@@ -63,7 +62,6 @@ import controller.state.ChannelState;
 import controller.state.ChannelState.State;
 import decode.Decoder;
 import decode.DecoderFactory;
-import dsp.frequency.AutomaticFrequencyControl;
 import eventlog.EventLogType;
 import eventlog.EventLogger;
 
@@ -120,31 +118,6 @@ public class ProcessingChain implements Listener<Message>
 		return null;
 	}
 
-	/**
-	 * Current frequency correction setting
-	 */
-	public long getFrequencyCorrection()
-	{
-		if( mAFC != null )
-		{
-			return mAFC.getErrorCorrection();
-		}
-		else if( mDecoder != null && 
-				  mDecoder instanceof DirectFrequencyController )
-		{
-			return ( (DirectFrequencyController)mDecoder).getFrequencyCorrection();
-		}
-		
-		return 0;
-	}
-	
-	public boolean hasFrequencyControl()
-	{
-		return mAFC != null || 
-				( mDecoder != null && 
-				  mDecoder instanceof DirectFrequencyController );
-	}
-	
 	public Listener<List<ComplexSample>> getComplexReceiver()
 	{
 		return mComplexReceiver;
@@ -373,37 +346,20 @@ public class ProcessingChain implements Listener<Message>
 					/* Register to receive decoded messages and auxiliary messages */
 					mDecoder.addMessageListener( ProcessingChain.this );
 
-					/* Automatic frequency control */
-					if( mAFC != null )
-					{
-						mAFC.dispose();
-						mAFC = null;
-					}
-					
-					if( mSource instanceof TunerChannelSource )
+					/* Establish two-way communication between the frequency 
+					 * correction controller and the tuner channel source */
+					if( mSource instanceof TunerChannelSource &&
+						mDecoder.hasFrequencyCorrectionControl() )
 					{
 						TunerChannelSource tcs = (TunerChannelSource)mSource;
 						
-						if( mChannel.getDecodeConfiguration().supportsAFC() &&
-							mChannel.getDecodeConfiguration().isAFCEnabled() )
+						FrequencyCorrectionControl fcc = 
+								mDecoder.getFrequencyCorrectionControl();
+						
+						if( fcc != null )
 						{
-							
-							int maximumCorrection = mChannel
-								.getDecodeConfiguration().getAFCMaximumCorrection();
-							
-							mAFC = new AutomaticFrequencyControl( tcs, 
-												maximumCorrection );
-
-							/* Register AFC to receive frequency change events */
-							tcs.addListener( mAFC );
-
-							/* Add AFC as listener to the decoder */
-							mDecoder.addUnfilteredRealSampleListener( mAFC );
-						}
-						else if( mDecoder instanceof DirectFrequencyController )
-						{
-							((DirectFrequencyController)mDecoder)
-								.setListener( (FrequencyChangeListener)tcs );
+							tcs.addListener( fcc );
+							fcc.setListener( tcs );
 						}
 					}
 					

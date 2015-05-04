@@ -41,9 +41,9 @@ import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
 import settings.Setting;
 import settings.SettingChangeListener;
-import source.tuner.FrequencyChangeEvent;
-import source.tuner.FrequencyChangeListener;
 import source.tuner.TunerChannel;
+import source.tuner.frequency.FrequencyChangeEvent;
+import source.tuner.frequency.FrequencyChangeListener;
 import controller.ResourceManager;
 import controller.channel.Channel;
 import controller.channel.Channel.ChannelType;
@@ -568,7 +568,7 @@ public class OverlayPanel extends JPanel
 		switch( event.getAttribute() )
 		{
 			case SAMPLE_RATE:
-				mBandwidth = (int)event.getValue();
+				mBandwidth = event.getValue().intValue();
 				
 				if( mBandwidth < 200000 )
 				{
@@ -580,7 +580,7 @@ public class OverlayPanel extends JPanel
 				}
 				break;
 			case FREQUENCY:
-				mFrequency = event.getValue();
+				mFrequency = event.getValue().longValue();
 				break;
 			default:
 				break;
@@ -798,8 +798,8 @@ public class OverlayPanel extends JPanel
 			switch( event.getAttribute() )
 			{
 				case FREQUENCY:
-					LabelDisplay display = 
-								LabelDisplay.fromFrequency( event.getValue() );
+					LabelDisplay display = LabelDisplay
+						.fromFrequency( event.getValue().longValue() );
 					
 					if( mLabelDisplay != display )
 					{

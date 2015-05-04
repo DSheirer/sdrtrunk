@@ -74,30 +74,30 @@ public class DecoderFactory
 		        retVal = new AMDecoder( sampleType );
 		        break;
 			case NBFM:
-				retVal = new NBFMDecoder( sampleType );
+				retVal = new NBFMDecoder( config, sampleType );
 				break;
 			case LTR_STANDARD:
 				DecodeConfigLTRStandard ltrStandardConfig = 
 				(DecodeConfigLTRStandard)config;
 
-				retVal = new LTRStandardDecoder( sampleType, aliasList, 
+				retVal = new LTRStandardDecoder( config, sampleType, aliasList, 
 						ltrStandardConfig.getMessageDirection() );
 				break;
 			case LTR_NET:
 				DecodeConfigLTRNet ltrNetConfig = (DecodeConfigLTRNet)config;
 
-				retVal = new LTRNetDecoder( sampleType, aliasList, 
+				retVal = new LTRNetDecoder( config, sampleType, aliasList, 
 						ltrNetConfig.getMessageDirection() );
 				break;
 			case MPT1327:
 				DecodeConfigMPT1327 mptConfig = (DecodeConfigMPT1327)config;
 
 				
-				retVal = new MPT1327Decoder( sampleType, aliasList, 
+				retVal = new MPT1327Decoder( config, sampleType, aliasList, 
 									mptConfig.getSync() );
 				break;
 			case PASSPORT:
-				retVal = new PassportDecoder( sampleType, aliasList );
+				retVal = new PassportDecoder( config, sampleType, aliasList );
 				break;
 			case P25_PHASE1:
 				DecodeConfigP25Phase1 p25Config = (DecodeConfigP25Phase1)config;

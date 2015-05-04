@@ -33,6 +33,7 @@ import bits.MessageFramer;
 import bits.SyncPattern;
 import decode.Decoder;
 import decode.DecoderType;
+import decode.config.DecodeConfiguration;
 import dsp.filter.DCRemovalFilter2;
 import dsp.fsk.LTRFSKDecoder;
 import dsp.nbfm.FilteringNBFMDemodulator;
@@ -55,11 +56,12 @@ public class LTRNetDecoder extends Decoder implements Instrumentable
 
     private List<Tap> mAvailableTaps;
 
-	public LTRNetDecoder( SampleType sampleType, 
+	public LTRNetDecoder( DecodeConfiguration config,
+						  SampleType sampleType, 
 					      AliasList aliasList,
 					      MessageDirection direction )
 	{
-		super( sampleType );
+		super( config, sampleType );
 		
 		/**
 		 * Only setup a demod chain if we're receiving complex samples.  If

@@ -13,13 +13,11 @@ import org.slf4j.LoggerFactory;
 
 import sample.real.RealSampleListener;
 import sample.real.RealSampleProvider;
-import source.tuner.FrequencyChangeBroadcaster;
-import source.tuner.FrequencyChangeEvent;
-import source.tuner.FrequencyChangeEvent.Attribute;
-import source.tuner.FrequencyChangeListener;
+import source.tuner.frequency.FrequencyCorrectionControl;
+import source.tuner.frequency.FrequencyCorrectionControl.FrequencyCorrectionResetListener;
 import dsp.gain.GainController;
 
-public class C4FMSymbolFilter implements FrequencyChangeBroadcaster,
+public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
 										 RealSampleListener, 
 										 RealSampleProvider,
 										 Instrumentable
@@ -200,13 +198,12 @@ public class C4FMSymbolFilter implements FrequencyChangeBroadcaster,
 	private float mHistory[] = new float[ NUMBER_FILTER_TAPS ];
 	private int mHistoryLast = 0;
 	
+	private boolean mReset = false;
+	
 	private RealSampleListener mListener;
 	
-	public static final long MAX_FREQUENCY_CORRECTION = 3000;
-	private FrequencyChangeListener mFrequencyChangeListener;
-	private long mFrequencyCorrection;
-
 	private GainController mGainController;
+	private FrequencyCorrectionControl mFrequencyCorrectionControl;
 	
 	/**
 	 * C4FM Symbol Filter
@@ -221,19 +218,31 @@ public class C4FMSymbolFilter implements FrequencyChangeBroadcaster,
 	 * setting for this filter is 15.4 and that yields a symbol spread that
 	 * is centered on 2.0, ranging 1.92 to 2.08.
 	 */
-	public C4FMSymbolFilter( GainController gainController )
+	public C4FMSymbolFilter( GainController gainController, 
+							 FrequencyCorrectionControl frequencyControl )
 	{
 		mGainController = gainController;
-	}
-	
-	public long getFrequencyCorrection()
-	{
-		return mFrequencyCorrection;
+		
+		mFrequencyCorrectionControl = frequencyControl;
+		
+		/* Register for reset events, so we can reset internal frequency tracking */
+		mFrequencyCorrectionControl.setListener( this );
 	}
 	
 	@Override
     public void receive( float sample )
     {
+		if( mReset )
+		{
+			mCoarseFrequencyCorrection = 0.0f;
+			mFineFrequencyCorrection = 0.0f;
+			mSymbolSpread = 2.0f;
+			mSymbolClock = 0.0f;
+			mSymbolTime = (float)SYMBOL_RATE / (float)SAMPLE_RATE;
+			
+			mReset = false;
+		}
+		
 		mSymbolClock += mSymbolTime;
 		
 		mHistory[ mHistoryLast++ ] = sample;
@@ -337,27 +346,11 @@ public class C4FMSymbolFilter implements FrequencyChangeBroadcaster,
 			/* send frequency correction */
 			if( Math.abs( mCoarseFrequencyCorrection ) > COARSE_FREQUENCY_DEADBAND )
 			{
-				if( mFrequencyChangeListener != null )
-				{
-					mFrequencyCorrection += ( 
+				mFrequencyCorrectionControl.adjust( 
 						500 * ( mCoarseFrequencyCorrection > 0 ? 1 : -1 ) );
 					
-					if( mFrequencyCorrection > MAX_FREQUENCY_CORRECTION )
-					{
-						mFrequencyCorrection = MAX_FREQUENCY_CORRECTION;
-					}
-					else if( -mFrequencyCorrection > MAX_FREQUENCY_CORRECTION )
-					{
-						mFrequencyCorrection = -MAX_FREQUENCY_CORRECTION;
-					}
-					
-					mFrequencyChangeListener.frequencyChanged( 
-						new FrequencyChangeEvent( Attribute.FREQUENCY_ERROR, 
-								mFrequencyCorrection ) );
-
 					/* reset internal frequency error tracker */
 					mCoarseFrequencyCorrection = 0;
-				}
 			}
 			
 			if( mSymbolSpreadTap != null )
@@ -372,6 +365,17 @@ public class C4FMSymbolFilter implements FrequencyChangeBroadcaster,
 			}
 		}
     }
+
+	/**
+	 * Listener interface for frequency correction reset events.  We reset the
+	 * coarse and fine frequency control values when the tuner channel source
+	 * has changed frequency or frequency offset.
+	 */
+	@Override
+	public void resetFrequencyCorrection()
+	{
+		mReset = true;
+	}
 
 	@Override
     public void setListener( RealSampleListener listener )
@@ -420,16 +424,4 @@ public class C4FMSymbolFilter implements FrequencyChangeBroadcaster,
 			mSymbolSpreadTap = null;
 		}
     }
-
-	@Override
-	public void addListener( FrequencyChangeListener listener )
-	{
-		mFrequencyChangeListener = listener;
-	}
-
-	@Override
-	public void removeListener( FrequencyChangeListener listener )
-	{
-		mFrequencyChangeListener = null;
-	}
 }

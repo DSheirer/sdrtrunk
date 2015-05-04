@@ -27,7 +27,10 @@ import sample.complex.ComplexSample;
 import sample.real.RealSampleBroadcaster;
 import sample.real.RealSampleListener;
 import source.Source.SampleType;
+import source.tuner.frequency.AutomaticFrequencyControl;
+import source.tuner.frequency.FrequencyCorrectionControl;
 import audio.IAudioOutput;
+import decode.config.DecodeConfiguration;
 import eventlog.MessageEventLogger;
 
 public abstract class Decoder implements Listener<Message>
@@ -40,6 +43,8 @@ public abstract class Decoder implements Listener<Message>
 
 	protected SampleType mSourceSampleType;
 	protected ArrayList<Decoder> mAuxiliaryDecoders = new ArrayList<Decoder>();
+	
+	protected FrequencyCorrectionControl mFrequencyCorrection;
 
 	/**
 	 * Abstract decoder class.
@@ -55,6 +60,51 @@ public abstract class Decoder implements Listener<Message>
 	public Decoder( SampleType sampleType )
 	{
 		mSourceSampleType = sampleType;
+	}
+	
+	public Decoder( DecodeConfiguration config, SampleType sampleType )
+	{
+		this( sampleType );
+		
+		if( config.supportsAFC() && config.isAFCEnabled() )
+		{
+			mFrequencyCorrection = 
+				new AutomaticFrequencyControl( config.getAFCMaximumCorrection() );
+
+			/* Register AFC to receive non-filtered demodulated audio samples */
+			addUnfilteredRealSampleListener( 
+					(RealSampleListener)mFrequencyCorrection );
+		}
+	}
+
+	/**
+	 * Optional frequency correction control to provide frequency adjustments
+	 * directed by the decoder.
+	 */
+	public FrequencyCorrectionControl getFrequencyCorrectionControl()
+	{
+		return mFrequencyCorrection;
+	}
+
+	/**
+	 * Indicates if a frequency correction controller exists for this decoder
+	 */
+	public boolean hasFrequencyCorrectionControl()
+	{
+		return mFrequencyCorrection != null;
+	}
+
+	/**
+	 * Current frequency correction setting or zero if no controller exists
+	 */
+	public int getFrequencyCorrection()
+	{
+		if( hasFrequencyCorrectionControl() )
+		{
+			return mFrequencyCorrection.getErrorCorrection();
+		}
+		
+		return 0;
 	}
 	
 	/**
@@ -97,6 +147,11 @@ public abstract class Decoder implements Listener<Message>
 		mMessageBroadcaster.clear();
 		mComplexBroadcaster.clear();
 		mRealBroadcaster.clear();
+		
+		if( mFrequencyCorrection != null )
+		{
+			mFrequencyCorrection.dispose();
+		}
 	}
 
 	/**

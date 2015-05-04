@@ -22,10 +22,16 @@ import java.util.concurrent.RejectedExecutionException;
 
 import javax.swing.JPanel;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import sample.Listener;
 import sample.complex.ComplexBuffer;
 import source.SourceException;
-import source.tuner.FrequencyChangeEvent.Attribute;
+import source.tuner.frequency.FrequencyChangeBroadcaster;
+import source.tuner.frequency.FrequencyChangeEvent;
+import source.tuner.frequency.FrequencyChangeListener;
+import source.tuner.frequency.FrequencyChangeEvent.Attribute;
 import controller.ResourceManager;
 import controller.ThreadPoolManager;
 
@@ -36,6 +42,8 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
 									   FrequencyChangeListener,
 									   TunerChannelProvider
 {
+	private final static Logger mLog = LoggerFactory.getLogger( Tuner.class );
+	
 	private String mName;
 
 	/**

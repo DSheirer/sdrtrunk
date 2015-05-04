@@ -56,6 +56,7 @@ import decode.p25.message.pdu.confirmed.SNDCPActivateTDSContextReject;
 import decode.p25.message.pdu.confirmed.SNDCPActivateTDSContextRequest;
 import decode.p25.message.pdu.confirmed.SNDCPDeactivateTDSContext;
 import decode.p25.message.pdu.confirmed.SNDCPUserData;
+import decode.p25.message.pdu.osp.control.AdjacentStatusBroadcastExtended;
 import decode.p25.message.pdu.osp.control.CallAlertExtended;
 import decode.p25.message.pdu.osp.control.GroupAffiliationQueryExtended;
 import decode.p25.message.pdu.osp.control.GroupAffiliationResponseExtended;
@@ -115,7 +116,6 @@ import decode.p25.message.tsbk.osp.voice.TelephoneInterconnectVoiceChannelGrantU
 import decode.p25.message.tsbk.osp.voice.UnitToUnitAnswerRequest;
 import decode.p25.message.tsbk.osp.voice.UnitToUnitVoiceChannelGrant;
 import decode.p25.message.tsbk.osp.voice.UnitToUnitVoiceChannelGrantUpdate;
-import decode.p25.reference.Encryption;
 import decode.p25.reference.IPProtocol;
 import decode.p25.reference.Response;
 import decode.p25.reference.Vendor;
@@ -1599,6 +1599,12 @@ public class P25ChannelState extends ChannelState
 		{
 			switch( pdu.getOpcode() )
 			{
+				case ADJACENT_STATUS_BROADCAST:
+					AdjacentStatusBroadcastExtended asbe = 
+							(AdjacentStatusBroadcastExtended)pdu;
+					
+					updateSystem( asbe.getSystemID() );
+					break;
 				case CALL_ALERT:
 					if( pdu instanceof CallAlertExtended )
 					{
@@ -2064,7 +2070,6 @@ public class P25ChannelState extends ChannelState
 					}
 					break;
 				default:
-					mLog.debug( "PDU - unrecognized OPCODE message: " + pdu.toString() );
 					break;
 			}
 		}

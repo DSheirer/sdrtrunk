@@ -32,8 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import sample.real.RealSampleListener;
 import source.Source.SampleType;
-import source.tuner.DirectFrequencyController;
-import source.tuner.FrequencyChangeListener;
+import source.tuner.frequency.FrequencyCorrectionControl;
 import alias.AliasList;
 import controller.ResourceManager;
 import decode.Decoder;
@@ -48,12 +47,12 @@ import dsp.gain.DirectGainControl;
 import dsp.nbfm.FMDiscriminator;
 import dsp.psk.CQPSKDemodulator;
 import dsp.psk.QPSKStarSlicer;
-import dsp.symbol.FrameSync;
 
-public class P25Decoder extends Decoder 
-			implements DirectFrequencyController, Instrumentable
+public class P25Decoder extends Decoder implements Instrumentable
 {
 	private final static Logger mLog = LoggerFactory.getLogger( P25Decoder.class );
+	
+	private final static int MAXIMUM_FREQUENCY_CORRECTION = 3000; //Hertz, +/-
 
     /* Instrumentation Taps */
 	private static final String INSTRUMENT_COMPLEX_INPUT = "Tap Point: Complex Input";
@@ -73,7 +72,7 @@ public class P25Decoder extends Decoder
     /* Demods */
 	private FMDiscriminator mFMDemodulator;
 	private CQPSKDemodulator mCQPSKDemodulator;
-    
+	
     /* Gain */
 	private ComplexFeedForwardGainControl mAGC;
 	private DirectGainControl mDGC;
@@ -162,6 +161,8 @@ public class P25Decoder extends Decoder
 				 * can process the output as if it were coming from any other
 				 * real sample source */
 				mFMDemodulator.setListener( getRealReceiver() );
+				
+				
 			}
 		}
 
@@ -175,7 +176,10 @@ public class P25Decoder extends Decoder
 			mDGC = new DirectGainControl( 15.0f, 0.1f, 35.0f, 0.3f );
 			mAudioFilter.setListener( mDGC );
 			
-			mSymbolFilter = new C4FMSymbolFilter( mDGC );
+			mFrequencyCorrection = new FrequencyCorrectionControl( 
+					MAXIMUM_FREQUENCY_CORRECTION );
+			
+			mSymbolFilter = new C4FMSymbolFilter( mDGC, mFrequencyCorrection );
 			mDGC.setListener( mSymbolFilter );
 			
 			mC4FMSlicer = new C4FMSlicer();
@@ -371,35 +375,6 @@ public class P25Decoder extends Decoder
 	    		+ "not implemented in P25 Decoder" );
     }
 
-	/**
-	 * Registers a frequency change listener to receive frequency correction
-	 * events from the symbol filter
-	 */
-	@Override
-	public void setListener( FrequencyChangeListener listener )
-	{
-		if( mSymbolFilter != null )
-		{
-			mSymbolFilter.addListener( listener );
-		}
-		
-		if( mCQPSKDemodulator != null )
-		{
-			mCQPSKDemodulator.addListener( listener );
-		}
-	}
-
-	@Override
-	public long getFrequencyCorrection()
-	{
-		if( mSymbolFilter != null )
-		{
-			return mSymbolFilter.getFrequencyCorrection();
-		}
-		
-		return 0;
-	}
-	
 	public enum Modulation
 	{ 
 		CQPSK( "LSM SIMULCAST", "LSM" ),

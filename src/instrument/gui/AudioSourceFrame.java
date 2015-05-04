@@ -45,6 +45,9 @@ import source.wave.WaveSource.PositionListener;
 import controller.ResourceManager;
 import decode.Decoder;
 import decode.DecoderType;
+import decode.config.DecodeConfigLTRNet;
+import decode.config.DecodeConfigMPT1327;
+import decode.config.DecodeConfigPassport;
 import decode.fleetsync2.Fleetsync2Decoder;
 import decode.lj1200.LJ1200Decoder;
 import decode.ltrnet.LTRNetDecoder;
@@ -185,16 +188,19 @@ public class AudioSourceFrame extends JInternalFrame implements PositionListener
 							decoder = new LJ1200Decoder( null );
 							break;
 						case LTR_NET:
-						    decoder = new LTRNetDecoder( mSource.getSampleType(), null, MessageDirection.OSW );
+						    decoder = new LTRNetDecoder( new DecodeConfigLTRNet(), 
+					    		mSource.getSampleType(), null, MessageDirection.OSW );
 						    break;
 						case MDC1200:
 							decoder = new MDCDecoder( null );
 							break;
 						case MPT1327:
-							decoder = new MPT1327Decoder( mSource.getSampleType(), null, Sync.NORMAL );
+							decoder = new MPT1327Decoder( new DecodeConfigMPT1327(),
+									mSource.getSampleType(), null, Sync.NORMAL );
 							break;
 						case PASSPORT:
-							decoder = new PassportDecoder( mSource.getSampleType(), null );
+							decoder = new PassportDecoder( new DecodeConfigPassport(),
+									mSource.getSampleType(), null );
 							break;
 						case P25_PHASE1:
 							ResourceManager rm = new ResourceManager();

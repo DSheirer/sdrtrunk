@@ -31,9 +31,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import source.SourceException;
-import source.tuner.FrequencyChangeEvent;
-import source.tuner.FrequencyChangeListener;
-import source.tuner.FrequencyChangeEvent.Attribute;
+import source.tuner.frequency.FrequencyChangeEvent;
+import source.tuner.frequency.FrequencyChangeListener;
+import source.tuner.frequency.FrequencyChangeEvent.Attribute;
 import source.tuner.rtl.RTL2832InfoPanel;
 
 import com.jidesoft.swing.JideTabbedPane;
@@ -100,7 +100,7 @@ public class E4KTunerEditorPanel extends JPanel implements FrequencyChangeListen
     {
 		if( event.getAttribute() == Attribute.FREQUENCY )
 		{
-			final int frequency = (int)event.getValue();
+			final long frequency = event.getValue().longValue();
 
 			EventQueue.invokeLater( new Runnable() 
 			{

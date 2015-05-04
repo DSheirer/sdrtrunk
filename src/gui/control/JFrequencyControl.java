@@ -43,9 +43,9 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import source.tuner.FrequencyChangeEvent;
-import source.tuner.FrequencyChangeListener;
-import source.tuner.FrequencyChangeEvent.Attribute;
+import source.tuner.frequency.FrequencyChangeEvent;
+import source.tuner.frequency.FrequencyChangeListener;
+import source.tuner.frequency.FrequencyChangeEvent.Attribute;
 
 public class JFrequencyControl extends JPanel implements FrequencyChangeListener
 {
@@ -138,7 +138,7 @@ public class JFrequencyControl extends JPanel implements FrequencyChangeListener
     {
 		if( event.getAttribute() == Attribute.FREQUENCY )
 		{
-			setFrequency( (long)event.getValue(), false );
+			setFrequency( event.getValue().longValue(), false );
 		}
     }
 	

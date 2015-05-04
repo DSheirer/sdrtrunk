@@ -36,6 +36,7 @@ import instrument.tap.stream.EyeDiagramDataTap;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -44,7 +45,7 @@ import org.slf4j.LoggerFactory;
 import sample.Listener;
 import sample.Provider;
 import sample.complex.ComplexSample;
-import source.tuner.FrequencyChangeListener;
+import source.tuner.frequency.FrequencyChangeListener;
 import buffer.FloatAveragingBuffer;
 import dsp.filter.interpolator.QPSKInterpolator;
 
@@ -297,13 +298,13 @@ public class CQPSKDemodulator implements Instrumentable,
 				middleSymbol.normalize();
 				currentSymbol.normalize();
 
-//				if( mEyeDiagramDataTap != null )
-//				{
-//					mEyeDiagramDataTap.receive( 
-//						new EyeDiagramData( Arrays.copyOfRange( mDelayLine, 
-//							mDelayLinePointer, mDelayLinePointer + 20 ),
-//							mMu, (float)half_sps + half_mu ) );
-//				}
+				if( mEyeDiagramDataTap != null )
+				{
+					mEyeDiagramDataTap.receive( 
+						new EyeDiagramData( Arrays.copyOfRange( mDelayLine, 
+							mDelayLinePointer, mDelayLinePointer + 20 ),
+							mMu, (float)half_sps + half_mu ) );
+				}
 				
 				/* Gardner timing error calculations */
 				float errorInphase = ( mPreviousSymbol.inphase() - 
