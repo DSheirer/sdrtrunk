@@ -203,7 +203,7 @@ public class TunerChannelSource extends ComplexSource
 				long frequencyErrorOffset = mTunerFrequency - 
 									   mTunerChannel.getFrequency() -
 									   mTunerFrequencyError;
-				
+
 				mSineWaveGenerator.setFrequency( frequencyErrorOffset );
 				break;
 			case FREQUENCY:
@@ -211,6 +211,8 @@ public class TunerChannelSource extends ComplexSource
 				
 				/* If the frequency is updated, the AFC will also get reset, so
 				 * we don't include the frequency error value here */
+				mTunerFrequencyError = 0;
+				
 				long frequencyOffset = frequency - mTunerChannel.getFrequency(); 
 
 				mSineWaveGenerator.setFrequency( frequencyOffset );

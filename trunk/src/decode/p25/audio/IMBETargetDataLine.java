@@ -77,11 +77,11 @@ public class IMBETargetDataLine implements TargetDataLine
 		return 0;
 	}
 	
-	private int getBytesAvailable()
-	{
-		return 1920;
+//	private int getBytesAvailable()
+//	{
+//		return 1920;
 //		return mFrame.length;
-	}
+//	}
 
 	/**
 	 * Primary inject point for submitting IMBE frame data into the audio

@@ -43,7 +43,11 @@ public class P25MessageFramer implements Listener<Dibit>
 			LoggerFactory.getLogger( P25MessageFramer.class );
 
 	/* Determines the threshold for sync pattern soft matching */
-	private static final int SYNC_PATTERN_SOFT_MATCH_THRESHOLD = 4;
+	private static final int SYNC_MATCH_THRESHOLD = 4;
+	private static final int SYNC_IN_CALL_THRESHOLD = 8;
+
+	private SoftSyncDetector mPrimarySyncDetector = new SoftSyncDetector( 
+			FrameSync.P25_PHASE1_NORMAL.getSync(), SYNC_MATCH_THRESHOLD );
 
 	/* Costas Loop phase lock error correction values.  A phase lock error of
 	 * 90 degrees requires a correction of 1/4 of the symbol rate (1200Hz).  An 
@@ -89,10 +93,7 @@ public class P25MessageFramer implements Listener<Dibit>
 	{
 		mAliasList = aliasList;
 		
-		SoftSyncDetector primarySyncDetector = new SoftSyncDetector( 
-			FrameSync.P25_PHASE1_NORMAL.getSync(), SYNC_PATTERN_SOFT_MATCH_THRESHOLD );
-		
-		primarySyncDetector.setListener( new ISyncDetectListener()
+		mPrimarySyncDetector.setListener( new ISyncDetectListener()
 		{
 			@Override
 			public void syncDetected()
@@ -108,7 +109,7 @@ public class P25MessageFramer implements Listener<Dibit>
 			}
 		} );
 		
-		mMatcher.add( primarySyncDetector );
+		mMatcher.add( mPrimarySyncDetector );
 
 		/**
 		 * We use two message assemblers to catch any sync detections, so that
@@ -276,6 +277,9 @@ public class P25MessageFramer implements Listener<Dibit>
 				case HDU:
 					mComplete = true;
                     dispatch( new HDUMessage( mMessage.copy(), mDUID, mAliasList ) );
+                    
+                    /* We're in a call now, lower the sync match threshold */
+                    mPrimarySyncDetector.setThreshold( SYNC_IN_CALL_THRESHOLD );
 					break;
 				case LDU1:
 					mComplete = true;
@@ -285,10 +289,16 @@ public class P25MessageFramer implements Listener<Dibit>
 
 					/* Convert the LDU1 message into a link control LDU1 message */
                     dispatch( LDULCMessageFactory.getMessage( ldu1 ) );
+
+                    /* We're in a call now, lower the sync match threshold */
+                    mPrimarySyncDetector.setThreshold( SYNC_IN_CALL_THRESHOLD );
 					break;
 				case LDU2:
 					mComplete = true;
                     dispatch( new LDU2Message( mMessage.copy(), mDUID, mAliasList ) );
+
+                    /* We're in a call now, lower the sync match threshold */
+                    mPrimarySyncDetector.setThreshold( SYNC_IN_CALL_THRESHOLD );
 					break;
 				case PDU0:
 
@@ -328,6 +338,10 @@ public class P25MessageFramer implements Listener<Dibit>
 					{
 						mComplete = true;
 					}
+					
+                    /* Set sync match threshold to normal */
+                    mPrimarySyncDetector.setThreshold( SYNC_MATCH_THRESHOLD );
+                    
 					break;
 				case PDU1:
 					/* Remove interleaving */
@@ -390,6 +404,9 @@ public class P25MessageFramer implements Listener<Dibit>
 					{
 						mComplete = true;
 					}
+
+					/* Set sync match threshold to normal */
+                    mPrimarySyncDetector.setThreshold( SYNC_MATCH_THRESHOLD );
 					break;
 				case PDU3:
 					/* Remove interleaving */
@@ -456,10 +473,16 @@ public class P25MessageFramer implements Listener<Dibit>
 						
 						mComplete = true;
 					}
+					
+                    /* Set sync match threshold to normal */
+                    mPrimarySyncDetector.setThreshold( SYNC_MATCH_THRESHOLD );
 					break;
 				case TDU:
                     dispatch( new TDUMessage( mMessage.copy(), mDUID, mAliasList ) );
 					mComplete = true;
+
+					/* Set sync match threshold to normal */
+                    mPrimarySyncDetector.setThreshold( SYNC_MATCH_THRESHOLD );
 					break;
 				case TDULC:
 					TDULinkControlMessage tdulc =  new TDULinkControlMessage( 
@@ -470,6 +493,9 @@ public class P25MessageFramer implements Listener<Dibit>
 
 					dispatch( tdulc );
 					mComplete = true;
+
+					/* Set sync match threshold to normal */
+                    mPrimarySyncDetector.setThreshold( SYNC_MATCH_THRESHOLD );
 					break;
 				case TSBK1:
 					/* Remove interleaving */
@@ -512,6 +538,9 @@ public class P25MessageFramer implements Listener<Dibit>
 					{
 						mComplete = true;
 					}
+
+					/* Set sync match threshold to normal */
+                    mPrimarySyncDetector.setThreshold( SYNC_MATCH_THRESHOLD );
 					break;
 				case TSBK2:
 					/* Remove interleaving */
