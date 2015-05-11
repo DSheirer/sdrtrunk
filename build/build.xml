@@ -6,7 +6,7 @@
   <!-- version properties -->
   <property name="major" value="0"/>
   <property name="minor" value="1"/>
-  <property name="build" value="2"/>
+  <property name="build" value="3"/>
 
   <!-- Build properties -->
   <property name="classes" location="../classes"/>
@@ -94,7 +94,7 @@
   	<tstamp prefix="build" />
 
   	<!-- Bundle the files into .zip -->
-  	<zip destfile="${product}/sdrtrunk_${build.DSTAMP}_${build.TSTAMP}.zip"
+  	<zip destfile="${product}/sdrtrunk_${build.DSTAMP}_${build.TSTAMP}_${major}.${minor}.${build}.zip"
   	     basedir="${product}" />
   </target>
 

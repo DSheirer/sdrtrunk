@@ -27,6 +27,7 @@ public class DirectGainControl implements GainController, RealSampleListener
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( DirectGainControl.class );
 
+	private float mDefaultGain;
 	private float mGain;
 	private float mMinimum;
 	private float mMaximum;
@@ -49,7 +50,8 @@ public class DirectGainControl implements GainController, RealSampleListener
 	public DirectGainControl( float gain, float minimum, float maximum, float increment )
 	{
 		assert( minimum > 0 );
-		
+
+		mDefaultGain = gain;
 		mGain = gain;
 		mMinimum = minimum;
 		mMaximum = maximum;
@@ -61,6 +63,12 @@ public class DirectGainControl implements GainController, RealSampleListener
     {
 		mListener.receive( (float)( sample * mGain ) );
     }
+
+	@Override
+	public void reset()
+	{
+		mGain = mDefaultGain;
+	}
 
 	@Override
 	public void increase()

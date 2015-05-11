@@ -31,6 +31,11 @@ public class SoftSyncDetector implements ISyncProcessor
 		}
 	}
 	
+	public void setThreshold( int threshold )
+	{
+		mThreshold = threshold;
+	}
+	
 	public void setListener( ISyncDetectListener listener )
 	{
 		mListener = listener;

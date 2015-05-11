@@ -1,13 +1,15 @@
 package decode.p25.audio;
 
 import java.io.IOException;
-import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Line;
 import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.Mixer;
 import javax.sound.sampled.SourceDataLine;
 
 import message.Message;
@@ -39,15 +41,17 @@ public class P25AudioOutput implements IAudioOutput, IAudioTypeListener,
 	private final static Logger mLog = LoggerFactory.getLogger( P25AudioOutput.class );
 
 	/* 1 IMBE frame = 160 samples/320 bytes @ 8kHz or 1920 bytes at 48kHz */
-	private static final int PROCESSED_AUDIO_FRAME_SIZE = 320;
+	private static final int PROCESSED_8KHZ_AUDIO_FRAME_SIZE = 320;
+	private static final int PROCESSED_48KHZ_AUDIO_FRAME_SIZE = 1920;
+	private int mFrameSize = 1920;
+	
 	private IMBETargetDataLine mIMBETargetDataLine = new IMBETargetDataLine();
 	private SourceDataLine mOutput;
 	private AudioInputStream mIMBEToPCMConverter;
-//	private AudioInputStream mUpsampler;
-	private ArrayBlockingQueue<byte[]> mIMBEFrameQueue = 
-			new ArrayBlockingQueue<byte[]>( 200 );
-	private ArrayBlockingQueue<byte[]> mProcessedAudioQueue = 
-			new ArrayBlockingQueue<byte[]>( 200 );
+	private LinkedTransferQueue<byte[]> mIMBEFrameQueue = 
+			new LinkedTransferQueue<byte[]>();
+	private LinkedTransferQueue<byte[]> mProcessedAudioQueue = 
+			new LinkedTransferQueue<byte[]>();
 	
 	private AtomicBoolean mConverting = new AtomicBoolean();
 	private AtomicBoolean mDispatching = new AtomicBoolean();
@@ -130,55 +134,110 @@ public class P25AudioOutput implements IAudioOutput, IAudioTypeListener,
 	private void loadConverter()
 	{
 		try
-		{
-			mIMBEToPCMConverter = AudioSystem
-				.getAudioInputStream( IMBEAudioFormat.PCM_SIGNED_8KHZ_16BITS, 
-						new AudioInputStream( mIMBETargetDataLine ) );
-			
-			if( mIMBEToPCMConverter != null )
-			{
-				mLog.info( "IMBE audio converter library loaded successfully" );
-					
-				try
-		        {
-			        mOutput = AudioSystem.getSourceDataLine( 
-			        		IMBEAudioFormat.PCM_SIGNED_8KHZ_16BITS );
+        {
+	        mOutput = AudioSystem.getSourceDataLine( 
+	        		IMBEAudioFormat.PCM_SIGNED_48KHZ_16BITS );
 
-			        if( mOutput != null )
-		        	{
-			        	/* Open the audio line with room for two buffers */ 
-			        	mOutput.open( IMBEAudioFormat.PCM_SIGNED_8KHZ_16BITS, 
-			        			PROCESSED_AUDIO_FRAME_SIZE * 2 );
-			        	
-						mCanProcessAudio = true;
-		        	}
-			        else
-			        {
-						mLog.debug( "Couldn't create output line" );
-			        }
-		        }
-		        catch ( LineUnavailableException lue )
+	        if( mOutput != null )
+        	{
+	        	mFrameSize = PROCESSED_48KHZ_AUDIO_FRAME_SIZE;
+	        	
+	        	/* Open the audio line with room for two buffers */ 
+	        	mOutput.open( IMBEAudioFormat.PCM_SIGNED_48KHZ_16BITS, 
+	        				  mFrameSize * 2 );
+
+				mCanProcessAudio = true;
+        	}
+	        else
+	        {
+				mLog.debug( "Couldn't obtain a 48kHz source data line "
+						+ "- attempting 8kHz rate" );
+				
+		        mOutput = AudioSystem.getSourceDataLine( 
+		        		IMBEAudioFormat.PCM_SIGNED_8KHZ_16BITS );
+
+		        if( mOutput != null )
+	        	{
+		        	mFrameSize = PROCESSED_8KHZ_AUDIO_FRAME_SIZE;
+		        	
+		        	/* Open the audio line with room for two buffers */ 
+		        	mOutput.open( IMBEAudioFormat.PCM_SIGNED_8KHZ_16BITS, 
+		        				  mFrameSize * 2 );
+		        	
+					mCanProcessAudio = true;
+	        	}
+		        else
 		        {
-		        	mLog.error( "AudioOutput - couldn't open audio output line "
-		        			+ "for playback", lue );
+					mLog.error( "Couldn't obtain a 48 kHz or 8 kHz "
+						+ "source data line - no decoded IMBE audio "
+						+ "will be available" );
+					
+					logSourceLines();
 		        }
-				catch( IllegalArgumentException iae )
-				{
-					mLog.debug( "Error fetching or opening audio output for 8kHz 16 bit audio", iae );
-				}
-				catch( Exception e )
-				{
-					mLog.error( "Error with audio output", e );
-				}
-			}
-			else
-			{
-				mLog.info( "could not load IMBE audio converter library" );
-			}
-		}
+	        }
+        }
+        catch ( LineUnavailableException lue )
+        {
+        	mLog.error( "AudioOutput - couldn't open audio output line "
+        			+ "for playback", lue );
+        }
 		catch( IllegalArgumentException iae )
 		{
-			mLog.error( "could NOT find/load IMBE audio converter library", iae );
+			mLog.error( "Error fetching or opening audio output for "
+					+ "48kHz or 8kHz 16 bit audio", iae );
+		}
+		catch( Exception e )
+		{
+			mLog.error( "Error with audio output", e );
+		}
+
+		if( mCanProcessAudio )
+		{
+			try
+			{
+				if( mOutput.getFormat().getSampleRate() == IMBEAudioFormat.PCM_48KHZ_RATE )
+				{
+					mIMBEToPCMConverter = AudioSystem
+							.getAudioInputStream( IMBEAudioFormat.PCM_SIGNED_48KHZ_16BITS, 
+									new AudioInputStream( mIMBETargetDataLine ) );
+				}
+				else
+				{
+					mIMBEToPCMConverter = AudioSystem
+							.getAudioInputStream( IMBEAudioFormat.PCM_SIGNED_8KHZ_16BITS, 
+									new AudioInputStream( mIMBETargetDataLine ) );
+				}
+				
+				if( mIMBEToPCMConverter != null )
+				{
+					mLog.info( "IMBE audio converter library loaded successfully" );
+				}
+				else
+				{
+					mLog.info( "could not load IMBE audio converter library" );
+				}
+			}
+			catch( IllegalArgumentException iae )
+			{
+				mLog.error( "could NOT find/load IMBE audio converter library", iae );
+			}
+		}
+	}
+	
+	private void logSourceLines()
+	{
+		Mixer.Info[] infos = AudioSystem.getMixerInfo();
+		
+		for( Mixer.Info info: AudioSystem.getMixerInfo() )
+		{
+			Mixer mixer = AudioSystem.getMixer( info );
+			
+			Line.Info[] lineInfos = mixer.getSourceLineInfo();
+			
+			for( Line.Info lineInfo: lineInfos )
+			{
+				mLog.debug( "Source Line: " + lineInfo.toString() );
+			}
 		}
 	}
 	
@@ -240,11 +299,13 @@ public class P25AudioOutput implements IAudioOutput, IAudioTypeListener,
 					{
 						if( frame.length == 18 )
 						{
+							long start = System.currentTimeMillis();
+							
 							/* Insert an 18-byte imbe frame into the stream */
 							mIMBETargetDataLine.receive( frame );
 							
-							/* Read 1920 bytes of converted audio from output */
-							byte[] audio = new byte[ PROCESSED_AUDIO_FRAME_SIZE ];
+							/* Read one frame of converted audio from output */
+							byte[] audio = new byte[ mFrameSize ];
 							
 							try
 							{
@@ -252,6 +313,8 @@ public class P25AudioOutput implements IAudioOutput, IAudioTypeListener,
 								
 								if( read > 0 )
 								{
+									mLog.debug( "Conversion Time: " + ( System.currentTimeMillis() - start ) );
+									
 									receive( audio );
 								}
 								else
@@ -292,7 +355,7 @@ public class P25AudioOutput implements IAudioOutput, IAudioTypeListener,
 		{
 			if( mDispatching.compareAndSet( false, true ) )
 			{
-				mOutput.drain();
+//				mOutput.drain();
 
 				/* Write 2 frames of audio and then start the line */
 				writeAudioFrame();
@@ -300,10 +363,12 @@ public class P25AudioOutput implements IAudioOutput, IAudioTypeListener,
 
 				mOutput.start();
 				
-				while( mEmptyFrameCount < 3 )
+				while( mEmptyFrameCount < 4 )
 				{
 					writeAudioFrame();
 				}
+				
+				mLog.debug( "Stopping ..." );
 
 				mOutput.stop();
 				
@@ -318,12 +383,17 @@ public class P25AudioOutput implements IAudioOutput, IAudioTypeListener,
 			if( audio == null )
 			{
 				mEmptyFrameCount++;
+				mLog.debug( " ... inserting empty" );
+			}
+			else
+			{
+				mEmptyFrameCount = 0;
 			}
 
 			/* Send empty audio if we're not currently enabled to playback */
 			if( audio == null || !mEnabled.get() )
 			{
-				audio = new byte[ PROCESSED_AUDIO_FRAME_SIZE ];
+				audio = new byte[ mFrameSize ];
 			}
 			
 			if( mOutput != null )

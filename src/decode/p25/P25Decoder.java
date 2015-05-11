@@ -128,13 +128,13 @@ public class P25Decoder extends Decoder implements Instrumentable
          * modulation (C4FM or CQPSK) */
 		if( mSourceSampleType == SampleType.COMPLEX )
 		{
-			mBasebandFilter = new ComplexFIRFilter( FilterFactory.getLowPass( 
-					48000, 7250, 8000, 60, WindowType.HANNING, true ), 1.0 );
-			
-			this.addComplexListener( mBasebandFilter );
-
 			if( modulation == Modulation.CQPSK )
 			{
+				mBasebandFilter = new ComplexFIRFilter( FilterFactory.getLowPass( 
+						48000, 7250, 8000, 60, WindowType.HANNING, true ), 1.0 );
+				
+				this.addComplexListener( mBasebandFilter );
+
 				mAGC = new ComplexFeedForwardGainControl( 32 );
 				mBasebandFilter.setListener( mAGC );
 
@@ -154,6 +154,11 @@ public class P25Decoder extends Decoder implements Instrumentable
 			}
 			else /* C4FM */
 			{
+				mBasebandFilter = new ComplexFIRFilter( FilterFactory.getLowPass( 
+						48000, 6750, 7500, 60, WindowType.HANNING, true ), 1.0 );
+				
+				this.addComplexListener( mBasebandFilter );
+
 				mFMDemodulator = new FMDiscriminator( 1.0f );
 				mBasebandFilter.setListener( mFMDemodulator );
 				
@@ -161,8 +166,6 @@ public class P25Decoder extends Decoder implements Instrumentable
 				 * can process the output as if it were coming from any other
 				 * real sample source */
 				mFMDemodulator.setListener( getRealReceiver() );
-				
-				
 			}
 		}
 

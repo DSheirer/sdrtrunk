@@ -234,6 +234,8 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
     {
 		if( mReset )
 		{
+			mGainController.reset();
+			
 			mCoarseFrequencyCorrection = 0.0f;
 			mFineFrequencyCorrection = 0.0f;
 			mSymbolSpread = 2.0f;
@@ -346,11 +348,12 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
 			/* send frequency correction */
 			if( Math.abs( mCoarseFrequencyCorrection ) > COARSE_FREQUENCY_DEADBAND )
 			{
-				mFrequencyCorrectionControl.adjust( 
-						500 * ( mCoarseFrequencyCorrection > 0 ? 1 : -1 ) );
+				int adjustment = 500 * ( mCoarseFrequencyCorrection > 0 ? 1 : -1 );
+
+				mFrequencyCorrectionControl.adjust( adjustment );
 					
-					/* reset internal frequency error tracker */
-					mCoarseFrequencyCorrection = 0;
+				/* reset internal frequency error tracker */
+				mCoarseFrequencyCorrection = 0;
 			}
 			
 			if( mSymbolSpreadTap != null )
