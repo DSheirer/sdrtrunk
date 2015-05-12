@@ -299,8 +299,6 @@ public class P25AudioOutput implements IAudioOutput, IAudioTypeListener,
 					{
 						if( frame.length == 18 )
 						{
-							long start = System.currentTimeMillis();
-							
 							/* Insert an 18-byte imbe frame into the stream */
 							mIMBETargetDataLine.receive( frame );
 							
@@ -313,8 +311,6 @@ public class P25AudioOutput implements IAudioOutput, IAudioTypeListener,
 								
 								if( read > 0 )
 								{
-									mLog.debug( "Conversion Time: " + ( System.currentTimeMillis() - start ) );
-									
 									receive( audio );
 								}
 								else
