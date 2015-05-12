@@ -10,7 +10,7 @@ public class CMAEqualizer implements Listener<ComplexSample>
 {
 	private final static Logger mLog = LoggerFactory.getLogger( CMAEqualizer.class );
 
-	public static final int TAP_COUNT = 4;
+	public static final int TAP_COUNT = 11;
 	
 	private float mModulus;
 	private float mMu;
@@ -27,26 +27,34 @@ public class CMAEqualizer implements Listener<ComplexSample>
 	{
 		mModulus = modulus;
 		mMu = mu;
-		
-		mTaps[ 0 ] = new ComplexSample( 1.0f, 1.0f );
-		mBuffer[ 0 ] = new ComplexSample( 1.0f, 1.0f );
+
+		/* Set first tap to 1,0 as a start */
+		mTaps[ 0 ] = new ComplexSample( 1.0f, 0.0f );
 		
 		for( int x = 1; x < TAP_COUNT; x++ )
 		{
 			mTaps[ x ] = new ComplexSample( 0.0f, 0.0f );
-			mBuffer[ x ] = new ComplexSample( 1.0f, 1.0f );
+			mBuffer[ x ] = new ComplexSample( 0.0f, 0.0f );
 		}
 	}
 	
-	private void updateTaps()
+	private void updateTaps( ComplexSample sample )
 	{
+		/* Calculate the error.  The ideal sample magnitude is unity (1.0).  
+		 * When the sample is not at unity, the error vector points in the 
+		 * opposite direction with a magnitude equal to 1 - sample magnitude.*/
+		mError = ComplexSample.multiply( sample, sample.norm() - mModulus );
+
+		/* Ensure we don't exceed unity */
+		mError.clip( 1.0f );
+
 		for( int x = 0; x < TAP_COUNT; x++ )
 		{
 			// tap -= mu * conj(sample) * error
 			
 			mTaps[ x ] = ComplexSample.subtract( mTaps[ x ], 
-						 ComplexSample.multiply( ComplexSample.multiply( 
-								 mBuffer[ x ].conjugate(), mMu ), mError ) );
+					 ComplexSample.multiply( ComplexSample.multiply( 
+							 mBuffer[ x ].conjugate(), mError ), mMu ) );
 		}
 	}
 	
@@ -61,9 +69,7 @@ public class CMAEqualizer implements Listener<ComplexSample>
 		
 		ComplexSample equalized = filter();
 		
-		calculateError( equalized );
-		
-		updateTaps();
+		updateTaps( equalized );
 
 		if( mListener != null )
 		{
@@ -79,8 +85,9 @@ public class CMAEqualizer implements Listener<ComplexSample>
 		
 		for( int x = 0; x < TAP_COUNT; x++ )
 		{
-			sum = ComplexSample.add( sum, 
-				ComplexSample.multiply( mBuffer[ x ], mTaps[ x ] ) );
+			sum = ComplexSample.add( sum, ComplexSample.multiply( 
+				mBuffer[ ( x + mBufferPointer ) % TAP_COUNT ], 
+				mTaps[ TAP_COUNT - x - 1 ] ) );
 		}
 
 		return sum;
@@ -91,9 +98,4 @@ public class CMAEqualizer implements Listener<ComplexSample>
 		mListener = listener;
 	}
 	
-	private void calculateError( ComplexSample sample )
-	{
-		mError = ComplexSample.multiply( sample, sample.norm() - mModulus );
-		mError.clip( 1.0f );
-	}
 }
