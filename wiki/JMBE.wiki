@@ -1,8 +1,6 @@
 =JMBE Library=
 
-The Java Multi-Band Excitation (JMBE) library provides decoder support for 
-converting IMBE encoded audio frames to normal PCM audio that you can hear over 
-your computer speakers.
+The Java Multi-Band Excitation (JMBE) library provides decoder support for converting IMBE encoded audio frames to normal audio so that you can listen to the audio calls over your computer speakers.
 
 Website: [https://github.com/DSheirer/jmbe JMBE]
 
@@ -19,25 +17,22 @@ owners.
 
 ==Adding JMBE to SDRTrunk for decoding MBE audio==
 
-# Follow the instructions contained in the README file on the JMBE website for downloading the source code and using Apache Ant to compile the source.
-# Copy the compiled library (jmbe-x.x.x.jar) file to the same folder where your SDRTrunk application is located.  The correct folder should contain the SDRTrunk.jar file and the windows and linux application run scripts.
-# Start SDRTrunk normally
+# Download the *jmbe_builder.zip* (windows) or the *jmbe_builder.tar.gz* (linux) file to your computer and uncompress the file.  These files are available in the [https://drive.google.com/folderview?id=0B7BHsssXUq8eOHBTNndCczZTd0k&usp=sharing Download] folder
+
+# Run the *make_jmbe_library_windows.bat* (windows) or the *make_jmbe_library_linux.sh* (linux) file.  This will download the source code and create the *jmbe-x.x.x.jar* file.  The file that gets created will have version numbers in place of the x's in the filename.
+
+# Copy the *jmbe-x.x.x.jar* file to the same folder where you run the sdrtrunk scripts to start the sdrtrunk program. 
+
+# Start SDRTrunk normally and the program will automatically discover and use the jmbe library.
 
 ==Troubleshooting==
 
-If you download, compile and copy the JMBE library jar file to the same directory
-as the SDRTrunk application, you should not have any issues.
+If you download, compile and copy the JMBE library jar file to the same directory as the SDRTrunk application, you should not have any issues.
 
-SDRTrunk will generate a log entry to let you know if it discovered the jmbe
-library correctly.
+SDRTrunk will generate a log entry to let you know if it discovered the jmbe library correctly for each P25 channel that you have decoding:
 
-  09:07:03.972 INFO  gui.SDRTrunk - Available Audio Converter: class jmbe.audio.imbe.IMBEAudioConverter
-  
-Each P25 decoding channel that you enable will also log availability of the
-library
-
-  09:07:05.376 INFO d.p.audio.P25AudioOutput - IMBE audio converter library loaded successfully
+  09:38:54.166 INFO  d.p.audio.P25AudioOutput - JMBE audio conversion library successfully loaded - P25 audio will be available
 
 Or, when the library cannot be found, each channel will log:
   
-  09:13:45.941 INFO  d.p.audio.P25AudioOutput - could NOT find/load IMBE audio converter library
+  09:38:54.166 INFO  d.p.audio.P25AudioOutput - JMBE audio conversion  library NOT FOUND
