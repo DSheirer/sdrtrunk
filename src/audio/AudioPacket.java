@@ -1,24 +1,49 @@
 package audio;
 
-import java.nio.ByteBuffer;
-
 public class AudioPacket
 {
-	private ByteBuffer mAudioBuffer;
+	private String mSource;
+	private Type mType;
+	private byte[] mAudioData;
 	private int mPriority;
 	
-	public AudioPacket()
+	public AudioPacket( String source, Type type )
 	{
+		mSource = source;
+		mType = type;
 	}
 	
-	public void setAudioBuffer( ByteBuffer audioBuffer )
+	public AudioPacket( String source, byte[] audio, int priority )
 	{
-		mAudioBuffer = audioBuffer;
+		this( source, Type.AUDIO );
+
+		mAudioData = audio;
+		mPriority = priority;
 	}
 	
-	public ByteBuffer getAudioBuffer()
+	public String getSource()
 	{
-		return mAudioBuffer;
+		return mSource;
+	}
+	
+	public Type getType()
+	{
+		return mType;
+	}
+	
+	public byte[] getAudioData()
+	{
+		return mAudioData;
+	}
+	
+	public int getPriority()
+	{
+		return mPriority;
 	}
 
+	public enum Type
+	{
+		AUDIO,
+		END;
+	}
 }

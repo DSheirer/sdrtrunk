@@ -15,8 +15,9 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package audio;
+package audio.inverted;
 
+import audio.InversionFrequency;
 import sample.real.RealSampleListener;
 import util.Oscillator;
 import dsp.filter.Filters;

@@ -1,8 +1,8 @@
-package decode.p25.audio;
+package audio;
 
 import javax.sound.sampled.AudioFormat;
 
-public class IMBEAudioFormat
+public class AudioFormats
 {
 	public static final AudioFormat.Encoding IMBE_ENCODING = 
 			new AudioFormat.Encoding( "IMBE" );
@@ -47,5 +47,4 @@ public class IMBEAudioFormat
 								 PCM_FRAME_SIZE_BYTES, 
 								 PCM_48KHZ_RATE,
 								 LITTLE_ENDIAN );
-	
 }

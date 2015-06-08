@@ -31,7 +31,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
-import audio.AudioType;
+import audio.inverted.AudioType;
 import controller.ConfigurableNode;
 
 public class TalkgroupIDEditor extends JPanel implements ActionListener

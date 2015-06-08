@@ -17,7 +17,7 @@
  ******************************************************************************/
 package alias;
 
-import audio.AudioType;
+import audio.inverted.AudioType;
 
 public abstract class AliasID
 {

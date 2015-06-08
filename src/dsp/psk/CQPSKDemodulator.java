@@ -48,6 +48,7 @@ import sample.complex.ComplexSample;
 import source.tuner.frequency.FrequencyChangeListener;
 import buffer.FloatAveragingBuffer;
 import dsp.filter.interpolator.QPSKInterpolator;
+import dsp.symbol.Dibit;
 
 /**
  * Implements a CQPSK demodulator using a Gardner Detector to determine optimal
@@ -221,7 +222,7 @@ public class CQPSKDemodulator implements Instrumentable,
 
 		/* Sampling point */
 		private float mMu = 10.0f;
-		private float mGainMu = 0.1f;
+		private float mGainMu = 0.05f;
 		
 		/* Samples per symbol */
 		private float mOmega = 10.0f;
@@ -314,6 +315,9 @@ public class CQPSKDemodulator implements Instrumentable,
 						currentSymbol.quadrature() ) * middleSymbol.quadrature();
 
 				float gardnerError = normalize( errorInphase + errorQuadrature, 1.0f );
+				
+//				/*debug*/
+//				gardnerError = 0.0f;
 
 				/* mOmega is samples per symbol and is constrained to floating
 				 * between +/- .005 of the nominal 10.0 samples per symbol */
@@ -331,8 +335,9 @@ public class CQPSKDemodulator implements Instrumentable,
 				/* Update costas loop using phase error present in current 
 				 * symbol.  The symbol is rotated from star orientation to polar
 				 * orientation to simplify error calculation */
-				mCostasLoop.receive( 
-					ComplexSample.multiply( currentSymbol, POINT_45_DEGREES ) );
+				mCostasLoop.receive( currentSymbol );
+//				mCostasLoop.receive( 
+//						ComplexSample.multiply( currentSymbol, POINT_45_DEGREES ) );
 				
 				/* Dispatch the differentiated symbol to the registered listener */
 				if( mListener != null )
@@ -442,7 +447,8 @@ public class CQPSKDemodulator implements Instrumentable,
 		 */
 		public ComplexSample getCurrentVector()
 		{
-			return ComplexSample.fromAngle( mLoopPhase + THETA );
+//			return ComplexSample.fromAngle( mLoopPhase + THETA );
+			return ComplexSample.fromAngle( mLoopPhase );
 		}
 		
 		@Override
@@ -450,6 +456,9 @@ public class CQPSKDemodulator implements Instrumentable,
 		{
 			/* Calculate phase error */
 			float phaseError = getPhaseError( sample );
+			
+			Dibit d = QPSKPolarSlicer.decide( sample );
+//			mLog.debug( "Dibit: " + d.name() + " Error: " + phaseError );
 
 			/* Adjust for phase error */
 			adjust( phaseError );

@@ -24,7 +24,7 @@ import java.util.List;
 import javax.xml.bind.annotation.XmlAttribute;
 
 import alias.action.AliasAction;
-import audio.AudioType;
+import audio.inverted.AudioType;
 
 public class Alias
 {

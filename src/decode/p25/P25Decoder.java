@@ -42,10 +42,12 @@ import dsp.filter.ComplexFIRFilter;
 import dsp.filter.FilterFactory;
 import dsp.filter.FloatFIRFilter;
 import dsp.filter.Window.WindowType;
+import dsp.filter.equalizer.CMAEqualizer;
 import dsp.gain.ComplexFeedForwardGainControl;
 import dsp.gain.DirectGainControl;
 import dsp.nbfm.FMDiscriminator;
 import dsp.psk.CQPSKDemodulator;
+import dsp.psk.QPSKPolarSlicer;
 import dsp.psk.QPSKStarSlicer;
 
 public class P25Decoder extends Decoder implements Instrumentable
@@ -76,16 +78,16 @@ public class P25Decoder extends Decoder implements Instrumentable
     /* Gain */
 	private ComplexFeedForwardGainControl mAGC;
 	private DirectGainControl mDGC;
+	private CMAEqualizer mEqualizer;
 
 	/* Filters */
 	private ComplexFIRFilter mBasebandFilter;
-	private ComplexFIRFilter mRootRaisedCosineFilter;
 	private FloatFIRFilter mAudioFilter;
 	private C4FMSymbolFilter mSymbolFilter;
 	
 	/* Slicers */
 	private C4FMSlicer mC4FMSlicer;
-	private QPSKStarSlicer mCQPSKSlicer;
+	private QPSKPolarSlicer mCQPSKSlicer;
 	
 	/* Message framers and processors */
 	private P25MessageFramer mMessageFramer;
@@ -134,20 +136,17 @@ public class P25Decoder extends Decoder implements Instrumentable
 						48000, 7250, 8000, 60, WindowType.HANNING, true ), 1.0 );
 				
 				this.addComplexListener( mBasebandFilter );
+				
+//				mEqualizer = new CMAEqualizer( 1.0f, 0.005f );
+//				mBasebandFilter.setListener( mEqualizer );
 
 				mAGC = new ComplexFeedForwardGainControl( 32 );
+//				mEqualizer.setListener( mAGC );
 				mBasebandFilter.setListener( mAGC );
 
-				/* Root raised cosine filter using 34 symbol periods and 10
-				 * samples per symbol with a roll-off (alpha) value of 0.2.
-				 * This should produce a filter with 341 coefficients. */
-				mRootRaisedCosineFilter = new ComplexFIRFilter( FilterFactory
-						.getRootRaisedCosine( 10, 34, 0.2 ), 1.0 );
-				mAGC.setListener( mRootRaisedCosineFilter );
-
-				mRootRaisedCosineFilter.setListener( mCQPSKDemodulator );
+				mAGC.setListener( mCQPSKDemodulator );
 				
-				mCQPSKSlicer = new QPSKStarSlicer();
+				mCQPSKSlicer = new QPSKPolarSlicer();
 				mCQPSKDemodulator.setListener( mCQPSKSlicer );
 				
 				mCQPSKSlicer.addListener( mMessageFramer );
@@ -267,7 +266,7 @@ public class P25Decoder extends Decoder implements Instrumentable
 			case INSTRUMENT_BASEBAND_FILTER_OUTPUT:
 				ComplexTap baseband = (ComplexTap)tap;
 				mBasebandFilter.setListener( baseband );
-				baseband.setListener( mAGC );
+				baseband.setListener( mEqualizer );
 				break;
 			case INSTRUMENT_AGC_OUTPUT:
 				ComplexTap agcSymbol = (ComplexTap)tap;
