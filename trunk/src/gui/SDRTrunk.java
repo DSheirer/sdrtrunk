@@ -105,9 +105,6 @@ public class SDRTrunk
 		 */
 		mResourceManager = new ResourceManager();
 		
-		/* Log any available audio converter plugins */
-		logAvailableAudioPlugins();
-		
 		mTitle = getTitle();
 		
 		//Initialize the GUI
@@ -385,19 +382,6 @@ public class SDRTrunk
 		}
 
 		return homePath;
-    }
-    
-    private void logAvailableAudioPlugins()
-    {
-		ServiceLoader<FormatConversionProvider> loader = 
-				ServiceLoader.load( FormatConversionProvider.class );
-		
-		Iterator<FormatConversionProvider> it = loader.iterator();
-		
-		while( it.hasNext() )
-		{
-			mLog.info( "Available Audio Converter: " + it.next().getClass() );
-		}
     }
     
     private String getTitle()

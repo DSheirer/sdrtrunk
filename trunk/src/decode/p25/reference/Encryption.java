@@ -13,6 +13,7 @@ public enum Encryption
 	TRIPLE_DES_2_KEY( 0x82 ),
 	TRIPLE_DES_3_KEY( 0x83 ),
 	AES_256( 0x84 ),
+	AES_CBC( 0x85 ),
 	DES_XL( 0x9F ), /* Motorola Proprietary */
 	DVI_XL( 0xA0 ), /* Motorola Proprietary */
 	DVP_XL( 0xA1 ), /* Motorola Proprietary */

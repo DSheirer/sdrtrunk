@@ -35,10 +35,10 @@ import properties.SystemProperties;
 import sample.Broadcaster;
 import sample.Listener;
 import alias.AliasList;
-import audio.AudioType;
-import audio.IAudioTypeListener;
 import audio.SquelchListener;
 import audio.SquelchListener.SquelchState;
+import audio.inverted.AudioType;
+import audio.inverted.IAudioTypeListener;
 import controller.activity.CallEvent;
 import controller.activity.CallEvent.CallEventType;
 import controller.activity.CallEventAliasCellRenderer;
@@ -294,7 +294,7 @@ public abstract class ChannelState implements Listener<Message>
 	{
 		/* Let all CALL state changes go through in order to update the fade
 		 * timer, otherwise, don't update the state if it hasn't changed */
-		if( mState != state || state == State.CALL )
+		if( mState != state || state == State.CALL || state == State.DATA || state == State.ENCRYPTED )
 		{
 			if( mState.canChangeTo( state ) )
 			{
@@ -314,6 +314,10 @@ public abstract class ChannelState implements Listener<Message>
 						mTimerService.stopResetTimer();
 						mTimerService.startFadeTimer();
 						break;
+					case ENCRYPTED:
+						setSquelchState( SquelchState.SQUELCH );
+						mTimerService.stopResetTimer();
+						mTimerService.startFadeTimer();
 					case NO_TUNER:
 						mTimerService.stopResetTimer();
 						if( getProcessingChain().getChannel()
@@ -569,12 +573,7 @@ public abstract class ChannelState implements Listener<Message>
 	        @Override
 	        public boolean canChangeTo( State state )
 	        {
-		        return state == IDLE ||
-		        	   state == CALL ||
-		        	   state == CONTROL ||
-		        	   state == DATA ||
-		        	   state == FADE ||
-		        	   state == NO_TUNER;
+		        return true;
 	        }
         }, 
 		CALL( "CALL" ) {
@@ -584,6 +583,7 @@ public abstract class ChannelState implements Listener<Message>
 		        return state == CALL ||
 		        	   state == CONTROL ||
 		        	   state == DATA ||
+		        	   state == ENCRYPTED ||
 		        	   state == FADE;
 	        }
         }, 
@@ -594,6 +594,7 @@ public abstract class ChannelState implements Listener<Message>
 		        return state == CALL ||
 		        	   state == CONTROL ||
 			           state == DATA ||
+			           state == State.ENCRYPTED ||
 			           state == FADE;
 	        }
         },

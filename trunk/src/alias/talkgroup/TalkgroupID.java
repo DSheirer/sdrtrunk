@@ -21,7 +21,7 @@ import javax.xml.bind.annotation.XmlAttribute;
 
 import alias.AliasID;
 import alias.AliasIDType;
-import audio.AudioType;
+import audio.inverted.AudioType;
 
 
 public class TalkgroupID extends AliasID

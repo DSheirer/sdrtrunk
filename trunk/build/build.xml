@@ -6,7 +6,7 @@
   <!-- version properties -->
   <property name="major" value="0"/>
   <property name="minor" value="1"/>
-  <property name="build" value="3"/>
+  <property name="build" value="4"/>
 
   <!-- Build properties -->
   <property name="classes" location="../classes"/>
@@ -89,18 +89,27 @@
     </copy>
 
     <!-- Set linux permissions on start script -->
-  	<chmod file="${product}/run_sdrtrunk_linux" perm="777" />
+  	<chmod file="${product}/run_sdrtrunk_linux.sh" perm="777" />
   	
   	<tstamp prefix="build" />
 
+    <property name="filename" value="sdrtrunk_${build.DSTAMP}_${build.TSTAMP}_${major}.${minor}.${build}"/>
+
   	<!-- Bundle the files into .zip -->
-  	<zip destfile="${product}/sdrtrunk_${build.DSTAMP}_${build.TSTAMP}_${major}.${minor}.${build}.zip"
-  	     basedir="${product}" />
+  	<zip destfile="${product}/${filename}.zip" basedir="${product}" />
+  	
+  	<!-- Bundle the files into .tar.gz to preserve linux script permissions -->
+  	<tar destfile="${product}/${filename}.tar.gz" compression="gzip">
+ 	  <tarfileset dir="${product}" filemode="777">
+  	    <include name="*.sh"/>
+  	  </tarfileset>
+   	  <tarfileset dir="${product}">
+  	    <exclude name="*.sh"/>
+  	  </tarfileset>
+  	</tar>  	
   </target>
 
-  <target name="clean"
-        description="Clean previous build artifacts" >
-    <!-- Delete the ${classes} and ${product} directory trees -->
+  <target name="clean" description="Clean previous build artifacts" >
     <delete dir="${classes}"/>
     <delete dir="${product}"/>
   </target>

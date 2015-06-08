@@ -1,6 +1,7 @@
 package audio;
 
 import audio.SquelchListener.SquelchState;
+import audio.inverted.AudioType;
 
 public interface IAudioOutput
 {

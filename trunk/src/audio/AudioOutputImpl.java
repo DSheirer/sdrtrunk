@@ -28,6 +28,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.real.RealSampleListener;
+import audio.inverted.AudioAdapter;
+import audio.inverted.AudioType;
+import audio.inverted.IAudioTypeListener;
 import buffer.FloatSampleBufferAssembler;
 
 public class AudioOutputImpl implements RealSampleListener, 

@@ -12,6 +12,8 @@ import javax.sound.sampled.TargetDataLine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import audio.AudioFormats;
+
 public class IMBETargetDataLine implements TargetDataLine
 {
 	private final static Logger mLog = 
@@ -35,7 +37,7 @@ public class IMBETargetDataLine implements TargetDataLine
 	public void open( AudioFormat format, int bufferSize )
 			throws LineUnavailableException
 	{
-		if( format != IMBEAudioFormat.IMBE_AUDIO_FORMAT )
+		if( format != AudioFormats.IMBE_AUDIO_FORMAT )
 		{
 			throw new LineUnavailableException( "Unsupported format" );
  		}
@@ -44,7 +46,7 @@ public class IMBETargetDataLine implements TargetDataLine
 	@Override
 	public void open() throws LineUnavailableException
 	{
-		open( IMBEAudioFormat.IMBE_AUDIO_FORMAT, BUFFER_SIZE );
+		open( AudioFormats.IMBE_AUDIO_FORMAT, BUFFER_SIZE );
 	}
 
 	@Override
@@ -161,7 +163,7 @@ public class IMBETargetDataLine implements TargetDataLine
 	@Override
 	public AudioFormat getFormat()
 	{
-		return IMBEAudioFormat.IMBE_AUDIO_FORMAT;
+		return AudioFormats.IMBE_AUDIO_FORMAT;
 	}
 
 	/**
@@ -227,7 +229,7 @@ public class IMBETargetDataLine implements TargetDataLine
 	public javax.sound.sampled.Line.Info getLineInfo()
 	{
 		return new DataLine.Info( IMBETargetDataLine.class, 
-								  IMBEAudioFormat.IMBE_AUDIO_FORMAT );
+								  AudioFormats.IMBE_AUDIO_FORMAT );
 	}
 
 	/**

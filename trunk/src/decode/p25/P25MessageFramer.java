@@ -43,8 +43,8 @@ public class P25MessageFramer implements Listener<Dibit>
 			LoggerFactory.getLogger( P25MessageFramer.class );
 
 	/* Determines the threshold for sync pattern soft matching */
-	private static final int SYNC_MATCH_THRESHOLD = 4;
-	private static final int SYNC_IN_CALL_THRESHOLD = 8;
+	private static final int SYNC_MATCH_THRESHOLD = 2;
+	private static final int SYNC_IN_CALL_THRESHOLD = 4;
 
 	private SoftSyncDetector mPrimarySyncDetector = new SoftSyncDetector( 
 			FrameSync.P25_PHASE1_NORMAL.getSync(), SYNC_MATCH_THRESHOLD );
