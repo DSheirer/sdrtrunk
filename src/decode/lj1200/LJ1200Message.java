@@ -315,11 +315,11 @@ public class LJ1200Message extends Message
 		F0_UNKNOWN( "0-UNKNOWN" ),
 		F1_SITE_ID( "1Y-SITE ID" ),
 		F1_SPEED_UP( "1-SPEED UP" ),
-		F2_TEST( "2-TEST" ),
+		F2_TEST( "2-TOWER TEST" ),
 		F3_DEACTIVATE( "3-DEACTIVATE" ),
 		F4_ACTIVATE( "4-ACTIVATE" ),
-		F5_UNKNOWN( "5-UNKNOWN" ),
-		F6_UNKNOWN( "6-UNKNOWN" ),
+		F5_TRANSPONDER_TEST_REPLY( "5-TRANSPONDER TEST REPLY" ),
+		F6_TRANSPONDER_TEST_COMMAND( "6-TRANSPONDER TEST COMMAND" ),
 		F7_UNKNOWN( "7-UNKNOWN" ),
 		F8_UNKNOWN( "8-UNKNOWN" ),
 		F9_UNKNOWN( "9-UNKNOWN" ),
@@ -371,9 +371,9 @@ public class LJ1200Message extends Message
 				case 4:
 					return Function.F4_ACTIVATE;
 				case 5:
-					return Function.F5_UNKNOWN;
+					return Function.F5_TRANSPONDER_TEST_REPLY;
 				case 6:
-					return Function.F6_UNKNOWN;
+					return Function.F6_TRANSPONDER_TEST_COMMAND;
 				case 7:
 					return Function.F7_UNKNOWN;
 				case 8:
