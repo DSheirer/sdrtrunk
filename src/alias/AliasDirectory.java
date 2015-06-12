@@ -50,6 +50,11 @@ public class AliasDirectory
 	public void setAliasList( ArrayList<AliasList> lists )
 	{
 		mAliasList = lists;
+		
+		if( mAliasList == null )
+		{
+			mAliasList = new ArrayList<AliasList>();
+		}
 	}
 	
 	public void addAliasList( AliasList list )
