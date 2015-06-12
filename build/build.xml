@@ -6,7 +6,7 @@
   <!-- version properties -->
   <property name="major" value="0"/>
   <property name="minor" value="1"/>
-  <property name="build" value="4"/>
+  <property name="build" value="5"/>
 
   <!-- Build properties -->
   <property name="classes" location="../classes"/>
@@ -105,6 +105,7 @@
   	  </tarfileset>
    	  <tarfileset dir="${product}">
   	    <exclude name="*.sh"/>
+  	    <exclude name="${filename}.zip"/>
   	  </tarfileset>
   	</tar>  	
   </target>
