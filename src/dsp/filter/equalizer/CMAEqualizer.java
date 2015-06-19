@@ -28,7 +28,9 @@ public class CMAEqualizer implements Listener<ComplexSample>
 		mModulus = modulus;
 		mMu = mu;
 
-		/* Set first tap to 1,0 as a start */
+		/* Set first tap to 1,0 and all other taps to 0,0 as a starting point.
+		 * This means that the output is solely determined by the last sample
+		 * entering the filter, initially. */
 		mTaps[ 0 ] = new ComplexSample( 1.0f, 0.0f );
 		
 		for( int x = 1; x < TAP_COUNT; x++ )
