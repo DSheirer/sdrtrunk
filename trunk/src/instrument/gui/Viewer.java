@@ -17,11 +17,18 @@
  ******************************************************************************/
 package instrument.gui;
 
+import java.awt.AWTException;
 import java.awt.EventQueue;
+import java.awt.Robot;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
+import javax.imageio.ImageIO;
 import javax.swing.JDesktopPane;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -34,10 +41,12 @@ import javax.swing.filechooser.FileFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import properties.SystemProperties;
 import source.Source;
 import source.wave.ComplexWaveSource;
 import source.wave.FloatWaveSource;
 import source.wave.WaveSource;
+import util.TimeStamp;
 
 public class Viewer
 {
@@ -101,24 +110,67 @@ public class Viewer
         
         fileMenu.add( exitMenu );
         
-//        JMenuItem windowItem = new JMenuItem( "New Window" );
-//        windowItem.addActionListener( new ActionListener() 
-//		{
-//			@Override
-//			public void actionPerformed( ActionEvent arg0 )
-//			{
-//				JInternalFrame frame = 
-//		        		new JInternalFrame( "New", true, true, true, true );
-//
-//		        frame.add( new JLabel( "This is a test" ) );
-//		        frame.pack();
-//		        
-//		        mDesktop.add( frame );
-//		        
-//		        frame.setVisible( true );
-//			}
-//		} );
-//        menuBar.add( windowItem );
+        JMenuItem screenCaptureItem = new JMenuItem( "Screen Capture" );
+        screenCaptureItem.addActionListener( new ActionListener()
+        {
+			@Override
+            public void actionPerformed( ActionEvent arg0 )
+            {
+				try
+                {
+	                Robot robot = new Robot();
+	                
+	                final BufferedImage image = 
+	                		robot.createScreenCapture( mFrame.getBounds() );
+	                
+	            	SystemProperties props = SystemProperties.getInstance();
+	            	
+	            	Path capturePath = props.getApplicationFolder( "screen_captures" );
+	            	
+	            	if( !Files.exists( capturePath ) )
+	            	{
+	            		try
+	                    {
+	        	            Files.createDirectory( capturePath );
+	                    }
+	                    catch ( IOException e )
+	                    {
+	                    	mLog.error( "Couldn't create 'screen_captures' "
+	                    			+ "subdirectory in the " +
+	                    			"SDRTrunk application directory", e );
+	                    }
+	            	}
+	            	
+	            	String filename = TimeStamp.getTimeStamp( "_" ) + 
+	            			"_screen_capture.png";
+
+	            	final Path captureFile = capturePath.resolve( filename );
+
+	            	EventQueue.invokeLater( new Runnable() 
+	                {
+						@Override
+                        public void run()
+                        {
+							try
+                            {
+	                            ImageIO.write( image, "png", 
+	                            		captureFile.toFile() );
+                            }
+                            catch ( IOException e )
+                            {
+                            	mLog.error( "Couldn't write screen capture to "
+                    			+ "file [" + captureFile.toString() + "]", e );
+                            }
+                        }} );
+                }
+                catch ( AWTException e )
+                {
+                	mLog.error( "Exception while taking screen capture", e );
+                }
+            }
+        } );
+        
+        menuBar.add( screenCaptureItem );
     }
     
     private void setSourceFile( File file )

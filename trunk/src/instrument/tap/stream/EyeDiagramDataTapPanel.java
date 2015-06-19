@@ -33,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.complex.ComplexSample;
-import dsp.psk.EyeDiagramData;
 
 public class EyeDiagramDataTapPanel extends TapViewPanel
 {
@@ -69,135 +68,158 @@ public class EyeDiagramDataTapPanel extends TapViewPanel
 		
 		Graphics2D g2 = (Graphics2D)g;
 		
-
-		int min = ( getHeight() < getWidth() ? getHeight() : getWidth() );
-		
-
-		float halfWidth = getWidth() / 2.0f;
+		float third = getWidth() / 3.0f;
+		float two_thirds = 2.0f * third;
 		float halfHeight = getHeight() / 2.0f;
-		float xAxisIncrement = getWidth() / 19.0f / 4.0f;
-		float middle = 6.0f * xAxisIncrement;
-
-		g2.setColor( Color.BLUE );
-		g2.drawString( "Eye Diagram - I Leg", 5 , 15 );
-		g2.drawString( "Eye Diagram - Q Leg", halfWidth , 15 );
 		
+		float xAxisIncrement = third / 20.0f;
 
-		/* Vertical Line */
-		g2.drawLine( getWidth() / 8, 5, getWidth() / 8, getHeight() - 5 );
-		g2.drawLine( (int)( halfWidth + ( getWidth() / 8 ) ), 5, 
-				(int)( halfWidth + ( getWidth() / 8 ) ), getHeight() - 5 );
-
-		g2.setColor( Color.LIGHT_GRAY );
-
-		g2.drawLine( (int)( getWidth() / 8 - xAxisIncrement ), 5, (int)( getWidth() / 8 - xAxisIncrement ), getHeight() - 5 );
-		g2.drawLine( (int)( halfWidth + ( getWidth() / 8 ) - xAxisIncrement ), 5, 
-				(int)( halfWidth + ( getWidth() / 8 ) - xAxisIncrement ), getHeight() - 5 );
-
-		g2.drawLine( (int)( getWidth() / 8 + xAxisIncrement ), 5, (int)( getWidth() / 8 + xAxisIncrement ), getHeight() - 5 );
-		g2.drawLine( (int)( halfWidth + ( getWidth() / 8 ) + xAxisIncrement ), 5, 
-				(int)( halfWidth + ( getWidth() / 8 ) + xAxisIncrement ), getHeight() - 5 );
-		
-		/* Horizontal Line */
-		g2.drawLine( 0, getHeight() / 2, getWidth() / 4, getHeight() / 2 );
-		g2.drawLine( (int)halfWidth, getHeight() / 2, (int)(getWidth() * .75), 
-				getHeight() / 2 );
-		
-		if( mSamples != null && 
-			mSamples.size() > 0  )
+		if( mSamples != null && mSamples.size() > 0  )
 		{
-
-			g2.setColor( Color.BLUE );
-
+			/* Draw each of the sample sets */
 			for( int z = 0; z < mSamples.size(); z++ )
 			{
-				EyeDiagramData data = mSamples.get( z );
-
-				if( z < mSamples.size() * .75 )
-				{
-					g2.setColor( Color.LIGHT_GRAY );
-				}
-				else if( z == mSamples.size() - 1 )
+				if( z == mSamples.size() - 1 )
 				{
 					g2.setColor( Color.BLUE );
 				}
+				else if( z > ( mSamples.size() * .75 ) )
+				{
+					g2.setColor( Color.DARK_GRAY );
+				}
 				else
 				{
-					g2.setColor( Color.GRAY );
+					g2.setColor( Color.LIGHT_GRAY );
 				}
+				
+				EyeDiagramData data = mSamples.get( z );
 
 				ComplexSample[] samples = data.getSamples();
 				
-				Path2D.Float iLine = new Path2D.Float( GeneralPath.WIND_EVEN_ODD, 20 );
-				Path2D.Float qLine = new Path2D.Float( GeneralPath.WIND_EVEN_ODD, 20 );
-				
-				float xAxis = middle - ( data.getMiddlePoint() * xAxisIncrement );
-				
-				iLine.moveTo( xAxis, halfHeight );
-				qLine.moveTo( xAxis + halfWidth, halfHeight );
-				
-				for( int x = 0; x < samples.length; x++ )
+				/* Draw the sample set containing two symbol periods of data */
+				if( samples.length >= 1 )
 				{
-					float i = samples[ x ].inphase();
+					Path2D.Float iLine = new Path2D.Float( GeneralPath.WIND_EVEN_ODD, 20 );
+					Path2D.Float qLine = new Path2D.Float( GeneralPath.WIND_EVEN_ODD, 20 );
+					Path2D.Float mLine = new Path2D.Float( GeneralPath.WIND_EVEN_ODD, 20 );
 					
-					if( i > 1.0 )
+					float xAxis = 0;
+					
+					iLine.moveTo( xAxis, getSampleHeight( halfHeight, samples[ 0 ].inphase() ) );
+					qLine.moveTo( xAxis + third, getSampleHeight( halfHeight, samples[ 0 ].quadrature() ) );
+					mLine.moveTo( xAxis + ( two_thirds ), getMagnitudeHeight( samples[ 0 ].magnitude() ) );
+
+					for( int x = 1; x < samples.length; x++ )
 					{
-						i = 1.0f;
-					}
-					if( i < -1.0 )
-					{
-						i = -1.0f;
-					}
-					
-					float iy = halfHeight + ( .85f * ( halfHeight * i ) );
-					
-					iLine.lineTo( xAxis, iy );
-					
-					float q = samples[ x ].quadrature();
-					
-					if( q > 1.0 )
-					{
-						q = 1.0f;
-					}
-					if( q < -1.0 )
-					{
-						q = -1.0f;
+						xAxis += xAxisIncrement;
+						
+						iLine.lineTo( xAxis, getSampleHeight( halfHeight, samples[ x ].inphase() ) );
+						qLine.lineTo( xAxis + third, getSampleHeight( halfHeight, samples[ x ].quadrature() ) );
+						mLine.lineTo( xAxis + two_thirds, getMagnitudeHeight( samples[ x ].magnitude() ) );
 					}
 					
-					float qy = halfHeight + ( .85f * ( halfHeight * q ) );
+					g2.draw( iLine );
+					g2.draw( qLine );
+					g2.draw( mLine );
 					
-					qLine.lineTo( xAxis + halfWidth, qy );
+					/* Left Sample line */
+					if( z == mSamples.size() - 1 )
+					{
+						g2.setColor( Color.GREEN );
+					}
+					else
+					{
+						g2.setColor( Color.LIGHT_GRAY );
+					}
+					xAxis = xAxisIncrement * data.getLeftPoint();
+					g2.drawLine( (int)xAxis, 5, (int)xAxis, getHeight() - 5 );
+					g2.drawLine( (int)( xAxis + third ), 5, (int)( xAxis + third ), getHeight() - 5 );
+					g2.drawLine( (int)( xAxis + two_thirds ), 5, (int)( xAxis + two_thirds ), getHeight() - 5 );
 					
-					xAxis += xAxisIncrement;
+					/* Right Sample line */
+					if( z == mSamples.size() - 1 )
+					{
+						g2.setColor( Color.GREEN );
+					}
+					else
+					{
+						g2.setColor( Color.LIGHT_GRAY );
+					}
+					xAxis = xAxisIncrement * data.getRightPoint();
+					g2.drawLine( (int)xAxis, 5, (int)xAxis, getHeight() - 5 );
+					g2.drawLine( (int)( xAxis + third ), 5, (int)( xAxis + third ), getHeight() - 5 );
+					g2.drawLine( (int)( xAxis + two_thirds ), 5, (int)( xAxis + two_thirds ), getHeight() - 5 );
+
+					/* Error indicator */
+					float error = data.getError();
+					
+					if( z == mSamples.size() - 1 )
+					{
+						g2.setColor( Color.BLACK );
+
+						float xFrom;
+						float xTo;
+						
+						if( error < 0.0f )
+						{
+							xFrom = (int)( xAxisIncrement * data.getLeftPoint() );
+							xTo = xFrom - 25.0f;
+						}
+						else
+						{
+							xFrom = (int)( xAxisIncrement * data.getRightPoint() );
+							xTo = xFrom + 25.0f;
+						}
+						
+						g2.drawLine( (int)xFrom, (int)halfHeight - 15, (int)xTo, (int)halfHeight );
+						g2.drawLine( (int)xFrom, (int)halfHeight + 15, (int)xTo, (int)halfHeight );
+						g2.drawLine( (int)( xFrom + third ), (int)halfHeight - 15, (int)( xTo + third ), (int)halfHeight );
+						g2.drawLine( (int)( xFrom + third ), (int)halfHeight + 15, (int)( xTo + third ), (int)halfHeight );
+						g2.drawLine( (int)( xFrom + two_thirds ), (int)halfHeight - 15, (int)( xTo + two_thirds ), (int)halfHeight );
+						g2.drawLine( (int)( xFrom + two_thirds ), (int)halfHeight + 15, (int)( xTo + two_thirds ), (int)halfHeight );
+					}
+
+					
+					
+					
 				}
-				
-				g2.draw( iLine );
-				g2.draw( qLine );
 			}
 		}
 
-		if( mSamples.size() > 0 )
-		{
-			EyeDiagramData data = mSamples.get( mSamples.size() - 1 );
+		g2.setColor( Color.BLUE );
+		g2.drawString( "Eye Diagram - I Leg", 5, 15 );
+		g2.drawString( "Eye Diagram - Q Leg", third, 15 );
+		g2.drawString( "Eye Diagram - Magnitude", two_thirds, 15 );
 
-			g2.setColor( Color.GREEN );
-			
-			float xAxis = middle - ( data.getMiddlePoint() * xAxisIncrement );
 
-			Path2D.Float magnitude = new Path2D.Float( GeneralPath.WIND_EVEN_ODD, 20 );
-			magnitude.moveTo( xAxis, halfHeight );
-			
-			for( ComplexSample sample: data.getSamples() )
-			{
-				magnitude.lineTo( xAxis, getHeight() - ( getHeight() * sample.magnitude() ) );
-				
-				xAxis += xAxisIncrement;
-			}
-
-			g2.setStroke( new BasicStroke( 3 ) );
-			g2.draw( magnitude );
-		}
+		/* Horizontal middle line */
+		g2.setColor( Color.CYAN );
+		g2.drawLine( 0, (int)halfHeight, getWidth(), (int)halfHeight );
 		
 		g2.dispose();
+	}
+	
+	private float getSampleHeight( float halfHeight, float value )
+	{
+		if( value > 1.0 )
+		{
+			value = 1.0f;
+		}
+		if( value < -1.0 )
+		{
+			value = -1.0f;
+		}
+		
+		return halfHeight + ( .95f * ( halfHeight * value ) );
+	}
+
+	private float getMagnitudeHeight( float magnitude )
+	{
+		if( magnitude > 1.0 )
+		{
+			magnitude = 1.0f;
+		}
+		
+		return getHeight() - ( getHeight() * magnitude );
 	}
 }

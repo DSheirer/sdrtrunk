@@ -17,13 +17,18 @@
  ******************************************************************************/
 package instrument.tap.stream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import decode.p25.P25Decoder;
 import instrument.tap.TapListener;
 import instrument.tap.TapType;
 import sample.Listener;
-import dsp.psk.EyeDiagramData;
 
 public class EyeDiagramDataTap extends StreamTap implements Listener<EyeDiagramData>
 {
+	private final static Logger mLog = LoggerFactory.getLogger( EyeDiagramDataTap.class );
+
 	private Listener<EyeDiagramData> mListener;
 	
 	public EyeDiagramDataTap( String name, int delay, float sampleRate )

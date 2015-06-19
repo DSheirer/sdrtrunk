@@ -48,7 +48,6 @@ import dsp.gain.DirectGainControl;
 import dsp.nbfm.FMDiscriminator;
 import dsp.psk.CQPSKDemodulator;
 import dsp.psk.QPSKPolarSlicer;
-import dsp.psk.QPSKStarSlicer;
 
 public class P25Decoder extends Decoder implements Instrumentable
 {
@@ -214,8 +213,12 @@ public class P25Decoder extends Decoder implements Instrumentable
 
 			if( mSourceSampleType == SampleType.COMPLEX )
 			{
-				mAvailableTaps.add( new ComplexTap( INSTRUMENT_COMPLEX_INPUT, 0, 1.0f ) );
-				mAvailableTaps.add( new ComplexTap( INSTRUMENT_BASEBAND_FILTER_OUTPUT, 0, 1.0f ) );
+				if( mCQPSKDemodulator != null )
+				{
+					mAvailableTaps.addAll( mCQPSKDemodulator.getTaps() );
+				}
+//				mAvailableTaps.add( new ComplexTap( INSTRUMENT_COMPLEX_INPUT, 0, 1.0f ) );
+//				mAvailableTaps.add( new ComplexTap( INSTRUMENT_BASEBAND_FILTER_OUTPUT, 0, 1.0f ) );
 			}
 			else
 			{
@@ -238,7 +241,6 @@ public class P25Decoder extends Decoder implements Instrumentable
 				mAvailableTaps.add( new ComplexTap( INSTRUMENT_AGC_OUTPUT, 0, 1.0f ) );
 				mAvailableTaps.add( new QPSKTap( INSTRUMENT_QPSK_DEMODULATOR_OUTPUT, 0, 1.0f ) );
 				mAvailableTaps.add( new DibitTap( INSTRUMENT_CQPSK_SLICER_OUTPUT, 0, 0.1f ) );
-				mAvailableTaps.addAll( mCQPSKDemodulator.getTaps() );
 			}
 		}
 		
@@ -266,7 +268,7 @@ public class P25Decoder extends Decoder implements Instrumentable
 			case INSTRUMENT_BASEBAND_FILTER_OUTPUT:
 				ComplexTap baseband = (ComplexTap)tap;
 				mBasebandFilter.setListener( baseband );
-				baseband.setListener( mEqualizer );
+				baseband.setListener( mAGC );
 				break;
 			case INSTRUMENT_AGC_OUTPUT:
 				ComplexTap agcSymbol = (ComplexTap)tap;
@@ -323,7 +325,7 @@ public class P25Decoder extends Decoder implements Instrumentable
 		
 		if( mCQPSKDemodulator != null )
 		{
-			mCQPSKDemodulator.addTap( tap );
+			mCQPSKDemodulator.removeTap( tap );
 		}
 		
 		switch( tap.getName() )
@@ -361,11 +363,6 @@ public class P25Decoder extends Decoder implements Instrumentable
 				{
 					mC4FMSlicer.removeListener( slicerTap );
 				}
-				
-//				if( mCQPSKSlicer != null )
-//				{
-//					mCQPSKSlicer.removeListener( slicerTap );
-//				}
 				break;
 		}
     }

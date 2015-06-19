@@ -115,7 +115,7 @@ public class P25AudioOutput implements IAudioOutput, Listener<Message>,
 		} 
 		catch ( ClassNotFoundException e1 )
 		{
-			mLog.error( "Couldn't find/load JMBE audio conversion library", e1 );
+			mLog.error( "Couldn't find/load JMBE audio conversion library" );
 		}
 		catch ( InstantiationException e1 )
 		{

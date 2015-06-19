@@ -52,19 +52,19 @@ import dsp.filter.interpolator.QPSKInterpolator;
 import dsp.symbol.Dibit;
 
 /**
- * Implements a CQPSK demodulator using a Gardner Detector to determine optimal
- * sampling timing and a Costas Loop as a phase locked loop synchronized with 
- * the incoming signal carrier frequency.
+ * Implements a CQPSK demodulator using an early/late symbol timing error detector
+ * and a Costas Loop as a phase locked loop synchronized with the incoming 
+ * signal carrier frequency.
  * 
  * Sample Rate: 48000
  * Symbol Rate: 4800
  */
-public class CQPSKDemodulator implements Instrumentable,
+public class CQPSKDemodulator2 implements Instrumentable,
 										 Listener<ComplexSample>, 
 										 Provider<ComplexSample>
 {
 	private final static Logger mLog = 
-			LoggerFactory.getLogger( CQPSKDemodulator.class );
+			LoggerFactory.getLogger( CQPSKDemodulator2.class );
 	
 	/* 45 degree rotation angle */
 	public static final float THETA = (float)( Math.PI / 4.0d ); 
@@ -77,7 +77,7 @@ public class CQPSKDemodulator implements Instrumentable,
 
 	private Listener<ComplexSample> mListener;
 	
-	private GardnerSymbolTiming mGardnerDetector = new GardnerSymbolTiming();
+	private EarlyLateSymbolTiming mGardnerDetector = new EarlyLateSymbolTiming();
 	
 	private CostasLoop mCostasLoop = new CostasLoop();
 	
@@ -85,7 +85,7 @@ public class CQPSKDemodulator implements Instrumentable,
 	
 	private EyeDiagramDataTap mEyeDiagramDataTap;
 	
-	public CQPSKDemodulator()
+	public CQPSKDemodulator2()
 	{
 	}
 	
@@ -209,11 +209,17 @@ public class CQPSKDemodulator implements Instrumentable,
 	}
 
 	/**
-	 * Gardner symbol timing detector
+	 * Early/Late symbol timing error detector.  Linear Simulcast Modulation (LSM)
+	 * uses a Raised Cosine Filter at the transmitter which causes the 
+	 * signal magnitude to rise to unity at the optimal sampling point and drop
+	 * to zero or a midpoint between unity and zero between each symbol period.
+	 * 
+	 * This error detector continually adjusts symbol timing by continuously 
+	 * attempting to find the largest magnitude value between two interpolated
+	 * sample points during each symbol period. 
 	 */
-	public class GardnerSymbolTiming implements Listener<ComplexSample>
+	public class EarlyLateSymbolTiming implements Listener<ComplexSample>
 	{
-		public static final int HALF_SAMPLES_PER_SYMBOL = 5;
 		public static final int SAMPLES_PER_SYMBOL = 10;
 		public static final int TWICE_SAMPLES_PER_SYMBOL = 20;
 		
@@ -223,7 +229,7 @@ public class CQPSKDemodulator implements Instrumentable,
 
 		/* Sampling point */
 		private float mMu = 10.0f;
-		private float mGainMu = 0.05f;
+		private float mGainMu = 0.5f;
 		
 		/* Samples per symbol */
 		private float mOmega = 10.0f;
@@ -234,13 +240,11 @@ public class CQPSKDemodulator implements Instrumentable,
 		private QPSKInterpolator mInterpolator = new QPSKInterpolator( 1.0f );
 		
 		private ComplexSample mPreviousSample = new ComplexSample( 0.0f, 0.0f );
-		private ComplexSample mPreviousMiddleSample = new ComplexSample( 0.0f, 0.0f );
-		private ComplexSample mPreviousSymbol = new ComplexSample( 0.0f, 0.0f );
 
 		/**
 		 * Provides symbol sampling timing control
 		 */
-		public GardnerSymbolTiming()
+		public EarlyLateSymbolTiming()
 		{
 			for( int x = 0; x < ( 2 * TWICE_SAMPLES_PER_SYMBOL ); x++ )
 			{
@@ -271,63 +275,44 @@ public class CQPSKDemodulator implements Instrumentable,
 			/* Calculate the symbol once we've stored enough samples */
 			if( mMu <= 1.0f )
 			{
-				float half_omega = mOmega / 2.0f;
-				int half_sps = (int)Math.floor( half_omega );
-				float half_mu = mMu + half_omega - (float)half_sps;
-				
-				if( half_mu > 1.0 )
-				{
-					half_mu -= 1.0;
-					half_sps += 1;
-				}
-
-				/* Calculate interpolated middle sample and current sample */
-				ComplexSample middleSample = mInterpolator
+				ComplexSample earlySample = mInterpolator
 						.filter( mDelayLine, mDelayLinePointer, mMu );
 				
-				ComplexSample currentSample = mInterpolator
-						.filter( mDelayLine, mDelayLinePointer + half_sps, half_mu );
+				ComplexSample middleSample = mInterpolator
+						.filter( mDelayLine, mDelayLinePointer + 1, mMu );
+
+				ComplexSample lateSample = mInterpolator
+						.filter( mDelayLine, mDelayLinePointer + 2, mMu );
 				
-				/* Multiply current and previous samples to get symbols to use
-				 * for gardner error feedback */
-				ComplexSample middleSymbol = ComplexSample.multiply( 
-						middleSample, mPreviousMiddleSample.conjugate() );
-
 				ComplexSample currentSymbol = ComplexSample.multiply( 
-						currentSample, mPreviousSample.conjugate() );
+						middleSample, mPreviousSample.conjugate() );
 
-				/* Set gain to unity */
-				middleSymbol.normalize();
+				/* Set symbol gain to unity */
 				currentSymbol.normalize();
 
-				/* Gardner timing error calculations */
-				float errorInphase = ( mPreviousSymbol.inphase() - 
-						currentSymbol.inphase() ) * middleSymbol.inphase();
-
-				float errorQuadrature = ( mPreviousSymbol.quadrature() - 
-						currentSymbol.quadrature() ) * middleSymbol.quadrature();
-
-				float gardnerError = normalize( errorInphase + errorQuadrature, 1.0f );
+				float earlyLateError = 
+						lateSample.magnitude() - earlySample.magnitude();
 				
 				if( mEyeDiagramDataTap != null )
 				{
 					mEyeDiagramDataTap.receive( 
-						new EyeDiagramData( Arrays.copyOfRange( mDelayLine, 
-							0, 20 ), mMu, (float)half_sps + half_mu, gardnerError ) );
+						new EyeDiagramData( Arrays.copyOfRange( mDelayLine, 0, 20 ), 
+							(float)mDelayLinePointer + 4.0f + mMu, 
+							(float)mDelayLinePointer + 4.0f + mMu + 0.25f, earlyLateError ) );
 				}
-				
+
 				/* mOmega is samples per symbol and is constrained to floating
 				 * between +/- .005 of the nominal 10.0 samples per symbol */
-				mOmega = mOmega + mGainOmega * gardnerError;
+				mOmega = mOmega + mGainOmega * earlyLateError;
 				mOmega = mOmegaMid + clip( mOmega - mOmegaMid, mOmegaRel );
 
+
 				/* Adjust sample timing based on error of current sample */
-				mMu += mOmega + ( mGainMu * gardnerError );
+				mMu += mOmega + ( mGainMu * earlyLateError );
+				
 
 				/* Store current samples/symbols to use for the next period */
-				mPreviousSample = currentSample;
-				mPreviousMiddleSample = middleSample;
-				mPreviousSymbol = currentSymbol;
+				mPreviousSample = middleSample;
 
 				/* Update costas loop using phase error present in current 
 				 * symbol.  The symbol is rotated from star orientation to polar
