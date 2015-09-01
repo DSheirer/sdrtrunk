@@ -22,7 +22,7 @@ package sample.complex;
  * ComplexSample objects, send this class to the thread as a sentinal value 
  * to kill the processing thread.
  */
-public class ThreadKiller extends ComplexSample
+public class ThreadKiller extends Complex
 {
     private static final long serialVersionUID = 1L;
 

@@ -20,14 +20,14 @@ package buffer;
 import java.nio.ByteBuffer;
 import java.util.Enumeration;
 
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 
 /**
  * Provides a complex sample enumeration wrapper around a byte array containing
  * interleaved byte-length I & Q sample values in the range of 0 - 255, converting
  * those samples into complex samples with value range of -128 to 0 to 127.  
  */
-public class ComplexByteBuffer implements Enumeration<ComplexSample>
+public class ComplexByteBuffer implements Enumeration<Complex>
 {
 	private static float[] mValues;
 
@@ -81,11 +81,11 @@ public class ComplexByteBuffer implements Enumeration<ComplexSample>
 	 * method to ensure you do not read past the end of the buffer.
 	 */
 	@Override
-    public ComplexSample nextElement()
+    public Complex nextElement()
     {
 //		return new ComplexSample( mValues[ ( mBytes[ mPointer++ ] & 0xFF ) ], 
 //				  mValues[ ( mBytes[ mPointer++ ] & 0xFF ) ] );
-		return new ComplexSample( mValues[ ( mBytes.get() & 0xFF ) ], 
+		return new Complex( mValues[ ( mBytes.get() & 0xFF ) ], 
 				  mValues[ ( mBytes.get() & 0xFF ) ] );
     }
 }

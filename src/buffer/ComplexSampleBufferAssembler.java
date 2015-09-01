@@ -21,7 +21,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 
 public class ComplexSampleBufferAssembler
 {
@@ -41,7 +41,7 @@ public class ComplexSampleBufferAssembler
 	 * Load the sample's bytes, left then right, little endian, into the 
 	 * backing byte array
 	 */
-	public void put( ComplexSample sample )
+	public void put( Complex sample )
 	{
 		mByteBuffer.putShort( (short)( sample.left() * Short.MAX_VALUE ) );
 		mByteBuffer.putShort( (short)( sample.right() * Short.MAX_VALUE ) );

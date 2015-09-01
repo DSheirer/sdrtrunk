@@ -156,9 +156,8 @@ public abstract class TunerController implements Tunable
 	}
 	
 	public TunerChannelSource getChannel( ThreadPoolManager threadPoolManager,
-							Tuner tuner, TunerChannel tunerChannel )
-									throws RejectedExecutionException,
-										   SourceException
+		Tuner tuner, TunerChannel tunerChannel )
+				throws RejectedExecutionException, SourceException
 	{
 		TunerChannelSource source = null;
 		

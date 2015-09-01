@@ -17,7 +17,7 @@
  ******************************************************************************/
 package source;
 
-import source.Source.SampleType;
+import sample.SampleType;
 
 public interface SampleProvider
 {

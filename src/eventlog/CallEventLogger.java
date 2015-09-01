@@ -19,8 +19,8 @@ package eventlog;
 
 import java.nio.file.Path;
 
+import module.decode.event.CallEvent;
 import sample.Listener;
-import controller.activity.CallEvent;
 
 public class CallEventLogger extends EventLogger implements Listener<CallEvent>
 {

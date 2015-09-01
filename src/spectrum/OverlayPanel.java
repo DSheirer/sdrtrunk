@@ -466,16 +466,20 @@ public class OverlayPanel extends JPanel
                     double yAxis = 0;
                     
                     //Draw the system label and adjust the y-axis position
+                    String system = channel.hasSystem() ? channel.getSystem().getName() : " ";
+                    	
                     yAxis += drawLabel( graphics, 
-                    				   	channel.getSystem().getName(),
+                    				   	system,
                     				   	this.getFont(),
                     				   	xAxis,
                     				   	yAxis,
                     				   	width );
 
                     //Draw the site label and adjust the y-axis position
+                    String site = channel.hasSite() ? channel.getSite().getName() : " ";
+
                     yAxis += drawLabel( graphics, 
-                    					channel.getSite().getName(),
+                    					site,
                     					this.getFont(),
                     					xAxis,
                     					yAxis,
@@ -615,6 +619,7 @@ public class OverlayPanel extends JPanel
 		switch( event.getEvent() )
 		{
 			case CHANNEL_ADDED:
+			case CHANNEL_ENABLED:
 				if( !mChannels.contains( channel ) )
 				{
 					mChannels.add( channel );
@@ -630,7 +635,7 @@ public class OverlayPanel extends JPanel
 				mChannels.remove( channel );
 				mVisibleChannels.remove( channel );
 				break;
-			case PROCESSING_STOPPED:
+			case CHANNEL_PROCESSING_STOPPED:
 				if( channel.getChannelType() == ChannelType.TRAFFIC )
 				{
 					mChannels.remove( channel );

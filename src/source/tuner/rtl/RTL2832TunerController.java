@@ -29,9 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -51,16 +49,20 @@ import org.usb4java.LibUsbException;
 import org.usb4java.Transfer;
 import org.usb4java.TransferCallback;
 
+import sample.Broadcaster;
 import sample.Listener;
 import sample.adapter.ByteSampleAdapter;
 import sample.complex.ComplexBuffer;
+import sample.complex.Complex;
 import source.SourceException;
-import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeEvent.Attribute;
 import source.tuner.TunerController;
 import source.tuner.TunerType;
+import source.tuner.frequency.FrequencyChangeEvent;
+import source.tuner.frequency.FrequencyChangeEvent.Attribute;
 import buffer.FloatAveragingBuffer;
 import controller.ResourceManager;
+import controller.ThreadPoolManager;
+import controller.ThreadPoolManager.ThreadType;
 
 public abstract class RTL2832TunerController extends TunerController
 {
@@ -104,12 +106,11 @@ public abstract class RTL2832TunerController extends TunerController
 	
 	private SampleRate mSampleRate = DEFAULT_SAMPLE_RATE;
 	
-	private BufferProcessor mBufferProcessor = new BufferProcessor();
+	private BufferProcessor mBufferProcessor;
 	
 	private ByteSampleAdapter mSampleAdapter = new ByteSampleAdapter();
 
-	private CopyOnWriteArrayList<Listener<ComplexBuffer>> mSampleListeners =
-			new CopyOnWriteArrayList<Listener<ComplexBuffer>>();
+	private Broadcaster<ComplexBuffer> mComplexBufferBroadcaster = new Broadcaster<>();
 	
 	private LinkedTransferQueue<byte[]> mFilledBuffers = 
 									new LinkedTransferQueue<byte[]>();
@@ -127,6 +128,7 @@ public abstract class RTL2832TunerController extends TunerController
 	public int mBufferSize = 131072;
 
 	protected Descriptor mDescriptor;
+	private ThreadPoolManager mThreadPoolManager;
 	
 	/**
 	 * Abstract tuner controller device.  Use the static getTunerClass() method
@@ -135,11 +137,14 @@ public abstract class RTL2832TunerController extends TunerController
 	 */
 	public RTL2832TunerController( Device device,
 								   DeviceDescriptor deviceDescriptor,
+								   ThreadPoolManager threadPoolManager,
 								   long minTunableFrequency, 
 								   long maxTunableFrequency ) throws SourceException
 	{
 		super( minTunableFrequency, maxTunableFrequency );
 		
+		mThreadPoolManager = threadPoolManager;
+
 		mDevice = device;
 		mDeviceDescriptor = deviceDescriptor;
 	}
@@ -1345,12 +1350,15 @@ public abstract class RTL2832TunerController extends TunerController
 	 */
     public void addListener( Listener<ComplexBuffer> listener )
     {
-		mSampleListeners.add( listener );
+		mComplexBufferBroadcaster.addListener( listener );
 
-		if( mBufferProcessor == null || !mBufferProcessor.isRunning() )
+		if( mBufferProcessor == null )
 		{
-			mBufferProcessor = new BufferProcessor();
-
+			mBufferProcessor = new BufferProcessor( mThreadPoolManager );
+		}
+		
+		if( !mBufferProcessor.isRunning() )
+		{
 			Thread thread = new Thread( mBufferProcessor );
 			thread.setDaemon( true );
 			thread.setName( "RTL2832 Sample Processor" );
@@ -1365,35 +1373,11 @@ public abstract class RTL2832TunerController extends TunerController
 	 */
     public void removeListener( Listener<ComplexBuffer> listener )
     {
-		mSampleListeners.remove( listener );
-		
-		if( mSampleListeners.isEmpty() )
+    	mComplexBufferBroadcaster.removeListener( listener );
+
+		if( !mComplexBufferBroadcaster.hasListeners() )
 		{
 			mBufferProcessor.stop();
-		}
-    }
-
-	/**
-	 * Dispatches float sample buffers to all registered listeners
-	 */
-    public void broadcast( ComplexBuffer buffer )
-    {
-		Iterator<Listener<ComplexBuffer>> it = mSampleListeners.iterator();
-		
-		while( it.hasNext() )
-		{
-			Listener<ComplexBuffer> next = it.next();
-			
-			/* if this is the last (or only) listener, send him the original 
-			 * buffer, otherwise send him a copy of the buffer */
-			if( it.hasNext() )
-			{
-				next.receive( buffer.copyOf() );
-			}
-			else
-			{
-				next.receive( buffer );
-			}
 		}
     }
 
@@ -1403,21 +1387,21 @@ public abstract class RTL2832TunerController extends TunerController
 	 */
 	public class BufferProcessor implements Runnable, TransferCallback
 	{
-		private ScheduledExecutorService mExecutor = 
-							Executors.newScheduledThreadPool( 2 );
 		private ScheduledFuture<?> mSampleDispatcherTask;
-        private ScheduledFuture<?> mSampleRateCounterTask;
         private CopyOnWriteArrayList<Transfer> mTransfers;
 		private AtomicBoolean mRunning = new AtomicBoolean();
+		private ThreadPoolManager mThreadPoolManager;
 
+		public BufferProcessor( ThreadPoolManager manager )
+		{
+			mThreadPoolManager = manager;
+		}
+		
 		@Override
         public void run()
         {
 			if( mRunning.compareAndSet( false, true ) )
 			{
-				mLog.debug( "rtl2832 [" + getUniqueID() + 
-						"] - starting sample fetch thread" );
-
 				try
 				{
 					setSampleRate( mSampleRate );
@@ -1445,16 +1429,17 @@ public abstract class RTL2832TunerController extends TunerController
 					}
 				}
 
-	            mSampleDispatcherTask = mExecutor
-	            		.scheduleAtFixedRate( new BufferDispatcher(), 
-								  0, 20, TimeUnit.MILLISECONDS );
-
-	            mSampleRateMonitor = 
-	                        new SampleRateMonitor( mSampleRate.getRate() );
-	                    
-	            mSampleRateCounterTask = mExecutor
-	                                .scheduleAtFixedRate( mSampleRateMonitor, 
-	                                          10, 10, TimeUnit.SECONDS );
+				try
+				{
+					mSampleDispatcherTask = mThreadPoolManager.scheduleFixedRate( 
+							ThreadType.SOURCE_SAMPLE_PROCESSING, new BufferDispatcher(), 
+							20, TimeUnit.MILLISECONDS );
+				}
+				catch( NullPointerException npe )
+				{
+					mLog.error( "NPE! = tpm null: " + ( mThreadPoolManager == null ), npe );
+				}
+				
 
             	while( mRunning.get() )
 				{
@@ -1478,15 +1463,12 @@ public abstract class RTL2832TunerController extends TunerController
 		{
 			if( mRunning.compareAndSet( true, false ) )
 			{
-				mLog.debug( "rtl2832 [" + getUniqueID() + 
-						"] - stopping sample fetch thread" );
-
 				cancel();
 				
 				if( mSampleDispatcherTask != null )
 				{
-					mSampleDispatcherTask.cancel( true );
-					mSampleRateCounterTask.cancel( true );					
+					mThreadPoolManager.cancel( mSampleDispatcherTask );
+					mSampleDispatcherTask = null;
 					mFilledBuffers.clear();
 				}
 			}
@@ -1621,7 +1603,7 @@ public abstract class RTL2832TunerController extends TunerController
 				{
 					float[] samples = mSampleAdapter.convert( buffer );
 					
-					broadcast( new ComplexBuffer( samples ) );
+			    	mComplexBufferBroadcaster.broadcast( new ComplexBuffer( samples ) );
 				}
 			}
 			catch( Exception e )

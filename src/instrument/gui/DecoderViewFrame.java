@@ -22,6 +22,8 @@ import instrument.tap.Tap;
 import instrument.tap.TapViewPanel;
 import instrument.tap.stream.BinaryTap;
 import instrument.tap.stream.BinaryTapViewPanel;
+import instrument.tap.stream.ComplexSampleTap;
+import instrument.tap.stream.ComplexSampleTapViewPanel;
 import instrument.tap.stream.ComplexTap;
 import instrument.tap.stream.ComplexTapViewPanel;
 import instrument.tap.stream.DibitTap;
@@ -51,18 +53,18 @@ import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 
 import message.Message;
+import module.decode.Decoder;
 import net.miginfocom.swing.MigLayout;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
-import source.Source.SampleType;
+import sample.SampleType;
 import source.wave.ComplexWaveSource;
 import source.wave.FloatWaveSource;
 import source.wave.WaveSource;
 import source.wave.WaveSource.PositionListener;
-import decode.Decoder;
 
 public class DecoderViewFrame extends JInternalFrame 
 							  implements PositionListener, Listener<Message>
@@ -85,12 +87,12 @@ public class DecoderViewFrame extends JInternalFrame
 		if( source.getSampleType() == SampleType.COMPLEX )
 		{
 			ComplexWaveSource cws = (ComplexWaveSource)mWaveSource;
-			cws.addListener( mDecoder.getComplexReceiver() );
+//			cws.addListener( mDecoder.getComplexReceiver() );
 		}
 		else if( source.getSampleType() == SampleType.REAL )
 		{
 			FloatWaveSource fws = (FloatWaveSource)mWaveSource;
-			fws.setListener( mDecoder.getRealReceiver() );
+//			fws.setListener( mDecoder.getRealReceiver() );
 		}
 		
 		mDecoder.addMessageListener( this );
@@ -102,7 +104,7 @@ public class DecoderViewFrame extends JInternalFrame
 	{
         setLayout( new MigLayout( "insets 0 0 0 0 ", "[grow,fill]", "[grow,fill]" ) );
 
-		setTitle( "Decoder [" + mDecoder.getType().getDisplayString() + "]" );
+		setTitle( "Decoder [" + mDecoder.getDecoderType().getDisplayString() + "]" );
 		setPreferredSize( new Dimension( 450, 250 ) );
 		setSize( 450, 250 );
 
@@ -176,6 +178,9 @@ public class DecoderViewFrame extends JInternalFrame
 				break;
 			case STREAM_COMPLEX:
 				panel = new ComplexTapViewPanel( (ComplexTap)tap );
+				break;
+			case STREAM_COMPLEX_SAMPLE:
+				panel = new ComplexSampleTapViewPanel( (ComplexSampleTap)tap );
 				break;
 			case STREAM_DIBIT:
 				panel = new DibitTapViewPanel( (DibitTap)tap );

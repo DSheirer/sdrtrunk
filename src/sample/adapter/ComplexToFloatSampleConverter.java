@@ -20,14 +20,14 @@ package sample.adapter;
 import java.util.List;
 
 import sample.Listener;
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 import source.mixer.MixerChannel;
 
 /**
  * Receives complex samples and send either the left channel or the right 
  * channel to the short sample listener
  */
-public class ComplexToFloatSampleConverter implements Listener<List<ComplexSample>>
+public class ComplexToFloatSampleConverter implements Listener<List<Complex>>
 {
 	private MixerChannel mChannel;
 	private Listener<Float> mListener;
@@ -40,9 +40,9 @@ public class ComplexToFloatSampleConverter implements Listener<List<ComplexSampl
 	}
 
 	@Override
-    public void receive( List<ComplexSample> samples )
+    public void receive( List<Complex> samples )
     {
-		for( ComplexSample sample: samples )
+		for( Complex sample: samples )
 		{
 			mListener.receive( mChannel == MixerChannel.LEFT ? 
 										   sample.left() : 

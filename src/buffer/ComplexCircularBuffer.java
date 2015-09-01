@@ -19,7 +19,7 @@ package buffer;
 
 import java.util.Arrays;
 
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 
 /**
  * Circular sample buffer - allocates a buffer and stores samples in a circular
@@ -30,14 +30,14 @@ import sample.complex.ComplexSample;
  */
 public class ComplexCircularBuffer
 {
-	ComplexSample[] mBuffer;
+	Complex[] mBuffer;
 	int mBufferPointer = 0;
 	
 	public ComplexCircularBuffer( int size )
 	{
-		mBuffer = new ComplexSample[ size ];
+		mBuffer = new Complex[ size ];
 		
-		Arrays.fill( mBuffer, new ComplexSample( 1.0f, 1.0f ) );
+		Arrays.fill( mBuffer, new Complex( 1.0f, 1.0f ) );
 	}
 
 	/**
@@ -46,16 +46,16 @@ public class ComplexCircularBuffer
 	 * @param sample
 	 * @return
 	 */
-	public ComplexSample get( ComplexSample sample )
+	public Complex get( Complex sample )
 	{
-		ComplexSample retVal = mBuffer[ mBufferPointer ];
+		Complex retVal = mBuffer[ mBufferPointer ];
 
 		put( sample );
 
 		return retVal;
 	}
 	
-	public void put( ComplexSample sample )
+	public void put( Complex sample )
 	{
 		mBuffer[ mBufferPointer ] = sample;
 
@@ -67,9 +67,9 @@ public class ComplexCircularBuffer
 		}
 	}
 	
-	public ComplexSample[] get( int count )
+	public Complex[] get( int count )
 	{
-		ComplexSample[] samples = new ComplexSample[ count ];
+		Complex[] samples = new Complex[ count ];
 		
 		int tempCounter = mBufferPointer;
 

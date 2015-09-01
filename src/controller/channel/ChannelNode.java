@@ -78,17 +78,17 @@ public class ChannelNode extends ConfigurableNode implements ChannelEventListene
 		{
 			/* Refresh the node for each of these events */
 			case CHANGE_DECODER:
-			case CHANGE_ENABLED:
 			case CHANGE_NAME:
 			case CHANGE_SELECTED:
 			case CHANGE_SITE:
 			case CHANGE_SYSTEM:
-			case PROCESSING_STARTED:
-			case PROCESSING_STOPPED:
+			case CHANNEL_ENABLED:
+			case CHANNEL_PROCESSING_STARTED:
+			case CHANNEL_PROCESSING_STOPPED:
 				this.refresh();
 				break;
 			/* We're being deleted, so cleanup */
-			case CHANNEL_DELETED:
+			case CHANNEL_DISABLED:
 				delete();
 				break;
 			default:
@@ -154,7 +154,7 @@ public class ChannelNode extends ConfigurableNode implements ChannelEventListene
 	public JPopupMenu getContextMenu()
 	{
 		JPopupMenu popupMenu = new JPopupMenu( "Channel Menu" );
-		popupMenu.add( getChannel().getContextMenu() );
+//		popupMenu.add( getChannel().getContextMenu() );
 		
 		return popupMenu;
 	}

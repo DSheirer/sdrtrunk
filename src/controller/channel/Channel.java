@@ -17,17 +17,13 @@
  ******************************************************************************/
 package controller.channel;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.swing.JMenu;
-import javax.swing.JMenuItem;
-import javax.swing.JSeparator;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -35,12 +31,23 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 import javax.xml.bind.annotation.XmlTransient;
 
 import message.Message;
+import module.Module;
+import module.ProcessingChain;
+import module.decode.DecoderFactory;
+import module.decode.config.AuxDecodeConfiguration;
+import module.decode.config.DecodeConfigFactory;
+import module.decode.config.DecodeConfiguration;
+import module.decode.event.CallEventModel;
+import module.decode.event.MessageActivityModel;
+import module.decode.state.ChannelState;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import record.config.RecordConfiguration;
 import sample.Listener;
+import source.Source;
+import source.SourceException;
 import source.SourceType;
 import source.config.SourceConfigFactory;
 import source.config.SourceConfigRecording;
@@ -48,19 +55,15 @@ import source.config.SourceConfigTuner;
 import source.config.SourceConfiguration;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannel.Type;
-import source.tuner.frequency.AutomaticFrequencyControl;
+import alias.AliasList;
 import controller.ResourceManager;
-import controller.activity.ActivitySummaryFrame;
 import controller.channel.ChannelEvent.Event;
 import controller.config.Configuration;
 import controller.site.Site;
-import controller.state.ChannelState;
-import controller.state.ChannelState.State;
 import controller.system.System;
-import decode.config.AuxDecodeConfiguration;
-import decode.config.DecodeConfigFactory;
-import decode.config.DecodeConfiguration;
+import eventlog.MessageEventLogger;
 import eventlog.config.EventLogConfiguration;
+import filter.FilterSet;
 
 @XmlSeeAlso( { Configuration.class } )
 @XmlRootElement( name = "channel" )
@@ -68,15 +71,16 @@ public class Channel extends Configuration
 {
 	private final static Logger mLog = LoggerFactory.getLogger( Channel.class );
 
+	private static final boolean ENABLED = true;
+	private static final boolean DISABLED = false;
+	private static final boolean BROADCAST_CHANGE = true;
+
 	public enum ChannelType 
 	{ 
 		STANDARD,
 		TRAFFIC 
 	};
 	
-	private static final boolean ENABLED = true;
-	private static final boolean DISABLED = false;
-	private static final boolean BROADCAST_CHANGE = true;
 	
 	private CopyOnWriteArrayList<ChannelEventListener> mChannelListeners =
 				new CopyOnWriteArrayList<ChannelEventListener>();
@@ -84,8 +88,7 @@ public class Channel extends Configuration
 	private CopyOnWriteArrayList<Listener<Message>> mMessageListeners =
 			new CopyOnWriteArrayList<Listener<Message>>();
 	
-	private HashMap<Integer,Channel> mTrafficChannels = 
-						new HashMap<Integer,Channel>();
+	private Map<String,Channel> mTrafficChannels = new HashMap<>();
 	
 	private DecodeConfiguration mDecodeConfiguration = 
 				DecodeConfigFactory.getDefaultDecodeConfiguration();
@@ -105,7 +108,15 @@ public class Channel extends Configuration
 	private boolean mEnabled;
 	private boolean mSelected;
 	private ChannelType mChannelType;
+
+	private CallEventModel mCallEventModel;
+	private MessageActivityModel mMessageActivityModel;
+	private MessageEventLogger mEventLogger;
 	private ProcessingChain mProcessingChain;
+	
+	private ChannelState mChannelState;
+	private long mTrafficChannelTimeout = 
+			DecodeConfiguration.DEFAULT_CALL_TIMEOUT_SECONDS;
 
 	/**
 	 * Constructs a new standard channel with a default name of "New Channel"
@@ -135,34 +146,46 @@ public class Channel extends Configuration
 		mChannelType = channelType;
 	}
 	
-	public ChannelType getChannelType()
-	{
-		return mChannelType;
-	}
-
 	/**
 	 * Indicates if the channel has Automatic or Direct Frequency Control
 	 */
 	public boolean hasFrequencyControl()
 	{
 		return mProcessingChain != null && 
-			   mProcessingChain.getDecoder().hasFrequencyCorrectionControl();
+			   mProcessingChain.hasFrequencyCorrectionControl();
 	}
 	
 	public long getFrequencyCorrection()
 	{
-		if( mProcessingChain != null )
+		if( hasFrequencyControl() )
 		{
-			return mProcessingChain.getDecoder().getFrequencyCorrection();
+			return mProcessingChain.getFrequencyCorrectionControl().getErrorCorrection();
 		}
 		
 		return 0;
 	}
 
 	/**
+	 * Sets the channel state traffic channel call end timer to the specified 
+	 * value.
+	 */
+	public void setTrafficChannelTimeout( long milliseconds )
+	{
+		mTrafficChannelTimeout = milliseconds;
+		
+		if( mChannelState != null )
+		{
+			mChannelState.setTrafficChannelTimeout( milliseconds );
+		}
+	}
+
+	/**
 	 * Sets the resource manager responsible for this channel and registers
 	 * the channel manager as a listener to this channel.  Fires channel add
 	 * channel event to the newly added channel manager channel listener.
+	 * 
+	 * Note: resource manager instance is applied after object construction
+	 * since we construct the channel objects from the xml playlist
 	 */
 	public void setResourceManager( ResourceManager resourceManager )
 	{
@@ -170,7 +193,7 @@ public class Channel extends Configuration
 
 		/* Add system-wide channel listeners onto this channel */
 		addListeners( mResourceManager.getChannelManager().getChannelListeners() );
-
+		
 		/* If we're enabled, fire enable changed event to get processing started */
 		if( mEnabled )
 		{
@@ -200,7 +223,7 @@ public class Channel extends Configuration
 	 */
 	public boolean isProcessing()
 	{
-		return mProcessingChain != null && mProcessingChain.isProcessing();
+		return mProcessingChain != null && mProcessingChain.processing();
 	}
 
 	/**
@@ -216,99 +239,50 @@ public class Channel extends Configuration
 	{
 		mSelected = selected;
 		
-		if( mProcessingChain != null && 
-			mProcessingChain.isProcessing() &&
-			mProcessingChain.getAudioOutput() != null )
-		{
-			mProcessingChain.getAudioOutput().setAudioPlaybackEnabled( selected );
-		}
-		
 		fireChannelEvent( Event.CHANGE_SELECTED );
 	}
 	
-	public JMenu getContextMenu()
+	@XmlTransient
+	public CallEventModel getCallEventModel()
 	{
-		JMenu menu = new JMenu( mSite + "-" + mName );
-		
-		if( mEnabled )
-		{
-			JMenuItem disable = new JMenuItem( "Disable" );
-			disable.addActionListener( new ActionListener() 
-			{
-				@Override
-                public void actionPerformed( ActionEvent e )
-                {
-					setEnabled( DISABLED, BROADCAST_CHANGE );
-					getResourceManager().getPlaylistManager().save();					
-                }
-			} );
-			
-			menu.add( disable );
-			
-			menu.add( new JSeparator() );
-
-			JMenuItem actySummaryItem = 
-					new JMenuItem( "Activity Summary" );
-
-			actySummaryItem.addActionListener( new ActionListener() 
-			{
-				@Override
-	            public void actionPerformed( ActionEvent e )
-	            {
-					if( mResourceManager != null )
-					{
-						ProcessingChain chain = getProcessingChain();
-						
-						if( chain != null )
-						{
-							ChannelState state = chain.getChannelState();
-									
-							if( state != null )
-							{
-								String summary = state.getActivitySummary();
-								
-								new ActivitySummaryFrame( summary,
-									mResourceManager.getController().getTree() );
-							}
-						}
-					}
-	            }
-			} );
-				
-			menu.add( actySummaryItem );
-		}
-		else
-		{
-			JMenuItem enable = new JMenuItem( "Enable" );
-			enable.addActionListener( new ActionListener() 
-			{
-				@Override
-                public void actionPerformed( ActionEvent e )
-                {
-					setEnabled( ENABLED, BROADCAST_CHANGE );
-					getResourceManager().getPlaylistManager().save();                }
-			} );
-			
-			menu.add( enable );
-		}
-		
-		menu.add( new JSeparator() );
-		
-		JMenuItem deleteItem = new JMenuItem( "Delete" );
-		deleteItem.addActionListener( new ActionListener() 
-		{
-			@Override
-            public void actionPerformed( ActionEvent e )
-            {
-				dispose();
-				getResourceManager().getPlaylistManager().save();            }
-		} );
-		
-		menu.add( deleteItem );
-		
-		
-		return menu;
+		return mCallEventModel;
 	}
+	
+	/**
+	 * Returns the MessageEventLogger for this processing chain
+	 */
+	@XmlTransient
+	public MessageEventLogger getEventLogger()
+	{
+		return mEventLogger;
+	}
+
+	/**
+	 * Sets the MessageEventLogger for this processing chain
+	 */
+	public void setEventLogger( MessageEventLogger eventLogger )
+	{
+		mEventLogger = eventLogger;
+	}
+	
+	@XmlTransient
+	public MessageActivityModel getMessageActivityModel()
+	{
+		return mMessageActivityModel;
+	}
+	
+	@XmlTransient
+	public ChannelState getChannelState()
+	{
+		return mChannelState;
+	}
+	
+	@XmlTransient
+	public ChannelType getChannelType()
+	{
+		return mChannelType;
+	}
+
 	
 	/**
 	 * Orderly shutdown method when this channel is going to be deleted.
@@ -393,6 +367,11 @@ public class Channel extends Configuration
 	    return mSystem;
 	}
 
+	public boolean hasSystem()
+	{
+		return mSystem != null;
+	}
+	
 	/**
 	 * Sets the owning system for this channel and optionally broadcasts a
 	 * system change channel event.
@@ -415,6 +394,11 @@ public class Channel extends Configuration
 	    return mSite;
 	}
 
+	public boolean hasSite()
+	{
+		return mSite != null;
+	}
+	
 	/**
 	 * Sets the owning site for this channel and optionally broadcasts a site
 	 * change channel event.
@@ -468,7 +452,14 @@ public class Channel extends Configuration
 		
 		if( fireChannelEvent )
 		{
-			fireChannelEvent( Event.CHANGE_ENABLED );
+			if( enabled )
+			{
+				fireChannelEvent( Event.CHANNEL_ENABLED );
+			}
+			else
+			{
+				fireChannelEvent( Event.CHANNEL_DISABLED );
+			}
 		}
 	}
 
@@ -522,11 +513,6 @@ public class Channel extends Configuration
 	public void setDecodeConfiguration( DecodeConfiguration config )
 	{
 		mDecodeConfiguration = config;
-
-		if( mProcessingChain != null && mProcessingChain.isRunning() )
-		{
-			mProcessingChain.updateDecoder();
-		}
 	}
 
 	/**
@@ -544,11 +530,6 @@ public class Channel extends Configuration
 	public void setAuxDecodeConfiguration( AuxDecodeConfiguration config )
 	{
 		mAuxDecodeConfiguration = config;
-
-		if( mProcessingChain != null && mProcessingChain.isRunning() )
-		{
-			mProcessingChain.updateDecoder();
-		}
 	}
 
 	/**
@@ -581,11 +562,6 @@ public class Channel extends Configuration
 	public void setSourceConfiguration( SourceConfiguration config )
 	{
 		mSourceConfiguration = config;
-		
-		if( mProcessingChain != null && mProcessingChain.isRunning() )
-		{
-			mProcessingChain.updateSource();
-		}
 	}
 
 	/**
@@ -618,11 +594,6 @@ public class Channel extends Configuration
 	public void setEventLogConfiguration( EventLogConfiguration config )
 	{
 		mEventLogConfiguration = config;
-
-		if( mProcessingChain != null && mProcessingChain.isRunning() )
-		{
-			mProcessingChain.updateEventLogging();
-		}
 	}
 
 	/**
@@ -655,11 +626,6 @@ public class Channel extends Configuration
 	public void setRecordConfiguration( RecordConfiguration config )
 	{
 		mRecordConfiguration = config;
-
-		if( mProcessingChain != null && mProcessingChain.isRunning() )
-		{
-			mProcessingChain.updateRecording();
-		}
 	}
 
 	/**
@@ -730,38 +696,124 @@ public class Channel extends Configuration
 	 */
 	private void start()
 	{
-		if( mEnabled && mProcessingChain == null && mResourceManager != null )
+		if( mEnabled && mResourceManager != null )
 		{
-			mProcessingChain = new ProcessingChain( this, mResourceManager );
+			setupChannelState();
+			
+			try
+			{
+				setup();
+				
+				mProcessingChain.start();
+				
+				fireChannelEvent( Event.CHANNEL_PROCESSING_STARTED );
+			}
+			catch( SourceException se )
+			{
+				mLog.error( "Error obtaining source for channel" );
+			}
+		}
+	}
+	
+	private void setupChannelState()
+	{
+		if( mChannelState == null )
+		{
+			mChannelState = new ChannelState( mResourceManager
+					.getThreadPoolManager(), mChannelType );
+			
+			mChannelState.setTrafficChannelTimeout( mTrafficChannelTimeout );
+		}
+	}
+
+	/**
+	 * Sets up the channel and prepares to commense processing.  Sets up the 
+	 * processing chain and requests a source.
+	 * 
+	 * @throws SourceException - if no source is available or if there is an 
+	 * error obtaining a source
+	 */
+	public void setup() throws SourceException
+	{
+		setupProcessingChain();
+		
+		setupSource();
+		
+		//TODO: Add logging
+		//TODO: Add recorder(s)
+	}
+	
+	private void setupProcessingChain()
+	{
+		if( mProcessingChain == null )
+		{
+			mProcessingChain = new ProcessingChain( 
+					mResourceManager.getThreadPoolManager() );
+			
+			/* Get the optional alias list for the decode modules to use */
+			AliasList aliasList = mResourceManager.getPlaylistManager()
+					.getPlayist().getAliasDirectory().getAliasList( mAliasListName );
+			
+			/* Add the channel state as a module */
+			mProcessingChain.addModule( mChannelState );
+			
+			/* Processing Modules */
+			List<Module> modules = DecoderFactory.getModules( mChannelType, 
+				mResourceManager, mDecodeConfiguration, mAuxDecodeConfiguration, 
+				aliasList );
+			mProcessingChain.addModules( modules );
+
+			/* Get message filters for the set of processing modules */
+			FilterSet messageFilter = DecoderFactory.getMessageFilters( modules ); 
+			
+			/* Setup the message activity model and add message listeners */
+			mMessageActivityModel = new MessageActivityModel( messageFilter );
+			mProcessingChain.addMessageListener( mMessageActivityModel );
+			
+			/* Add audio manager as listener for audio packets */
+			mProcessingChain.addAudioPacketListener( 
+					mResourceManager.getAudioManager() );
 
 			/* Add system-wide message listeners */
-			mProcessingChain.addListeners( 
+			mProcessingChain.addMessageListeners( 
 					mResourceManager.getChannelManager().getMessageListeners() );
-
-			/* Add individual message listeners */
-			mProcessingChain.addListeners( mMessageListeners );
-
-			mProcessingChain.start();
 			
-			fireChannelEvent( Event.PROCESSING_STARTED );
-		}
+			/* Add individual message listeners */
+			mProcessingChain.addMessageListeners( mMessageListeners );
 
-		/* If this is a traffic channel, override the call fade timeout before
-		 * we set the state to call, so that it will auto-expire after the 
-		 * fade timeout and be auto deleted */
-		if( mChannelType == ChannelType.TRAFFIC )
+			/* Create the call event model to receive call events */
+			mCallEventModel = new CallEventModel();
+			mProcessingChain.addCallEventListener( mCallEventModel );
+		}
+	}
+
+	/**
+	 * Attempts to obtain a source and apply it to the processing chain.
+	 * 
+	 * @throws SourceException - if the processing chain is not setup or if
+	 * there is an error produced while obtaining the source
+	 */
+	private void setupSource() throws SourceException
+	{
+		if( mProcessingChain != null )
 		{
-			if( mProcessingChain.isProcessing() )
+			Source source = mResourceManager.getSourceManager()
+			.getSource( getSourceConfiguration(), getDecodeConfiguration()
+					.getDecoderType().getChannelBandwidth() );
+			
+			if( source != null )
 			{
-				mProcessingChain.getChannelState().setCallFadeTimeout( 40000 );
-				mProcessingChain.getChannelState().setState( State.CALL );
+				mProcessingChain.setSource( source );
 			}
 			else
 			{
-				mProcessingChain.getChannelState().setCallFadeTimeout( 5000 );
-				/* Channel state should already be no_tuner */
+				throw new SourceException( "Couldn't obtain tuner channel source" );
 			}
-			
+		}
+		else
+		{
+			throw new SourceException( "Cannot obtain source for a null "
+				+ "processing chain - setup the processing chain first" );
 		}
 	}
 	
@@ -770,27 +822,14 @@ public class Channel extends Configuration
 	 */
 	private void stop()
 	{
-		/* Stop and remove any traffic channels */
-		for( Channel traffic: mTrafficChannels.values() )
-		{
-			traffic.stop();
-			traffic.dispose();
-		}
-		
-		mTrafficChannels.clear();
-
 		if( !mEnabled && mProcessingChain != null )
 		{
 			mProcessingChain.stop();
 
-			mProcessingChain.dispose();
-
-			mProcessingChain = null;
-			
 			mSelected = false;
 		}
 
-		fireChannelEvent( Event.PROCESSING_STOPPED );
+		fireChannelEvent( Event.CHANNEL_PROCESSING_STOPPED );
 	}
 	
 	/**
@@ -798,9 +837,18 @@ public class Channel extends Configuration
 	 */
 	public void fireChannelEvent( Event event )
 	{
+		ChannelEvent channelEvent = new ChannelEvent( this, event );
+		
 		for( ChannelEventListener listener: mChannelListeners )
 		{
-			listener.channelChanged( new ChannelEvent( this, event ) );
+			listener.channelChanged( channelEvent );
+		}
+		
+		/* Send event to processing chain so modules can respond to channel
+		 * selection events */
+		if( mProcessingChain != null )
+		{
+			mProcessingChain.getChannelEventListener().receive( channelEvent );
 		}
 	}
 	
@@ -813,7 +861,7 @@ public class Channel extends Configuration
 		if( !mChannelListeners.contains( listener ) )
 		{
 			mChannelListeners.add( listener );
-			
+
 			listener.channelChanged( 
 					new ChannelEvent( this, Event.CHANNEL_ADDED ) );
 		}
@@ -850,7 +898,7 @@ public class Channel extends Configuration
 		
 		if( isProcessing() )
 		{
-			mProcessingChain.addListener( listener );
+			mProcessingChain.addMessageListener( listener );
 		}
 	}
 	
@@ -858,9 +906,9 @@ public class Channel extends Configuration
 	{
 		mMessageListeners.remove( listener );
 		
-		if( isProcessing() )
+		if( mProcessingChain != null )
 		{
-			mProcessingChain.removeListener( listener );
+			mProcessingChain.removeMessageListener( listener );
 		}
 	}
 	
@@ -870,13 +918,15 @@ public class Channel extends Configuration
 	 */
 	public boolean isWithin( long minimum, long maximum )
 	{
-		return getTunerChannel() != null &&
-			   getTunerChannel().isWithin( minimum, maximum );
+		TunerChannel tunerChannel = getTunerChannel();
+		
+		return tunerChannel != null &&
+			   tunerChannel.isWithin( minimum, maximum );
 	}
 	
-	public void addTrafficChannel( int channelNumber, Channel channel )
+	public void addTrafficChannel( String channelID, Channel channel )
 	{
-		mTrafficChannels.put( channelNumber, channel );
+		mTrafficChannels.put( channelID, channel );
 	}
 	
 	public boolean hasTrafficChannel( Channel channel )
@@ -886,22 +936,11 @@ public class Channel extends Configuration
 	
 	public void removeTrafficChannel( Channel channel )
 	{
-		int keyToRemove = -1;
+		String name = channel.getChannelDisplayName();
 		
-		if( mTrafficChannels.values().contains( channel ) )
+		if( mTrafficChannels.containsKey( name ) )
 		{
-			for( Integer channelNumber: mTrafficChannels.keySet() )
-			{
-				if( mTrafficChannels.get( channelNumber ).equals( channel ) )
-				{
-					keyToRemove = channelNumber;
-				}
-			}
-		}
-
-		if( keyToRemove != -1 )
-		{
-			mTrafficChannels.remove( keyToRemove );
+			mTrafficChannels.remove( name );
 		}
 	}
 	
@@ -910,8 +949,9 @@ public class Channel extends Configuration
 		return Collections.unmodifiableCollection( mTrafficChannels.values() );
 	}
 	
-	public boolean hasTrafficChannel( int channelNumber )
+	public boolean hasTrafficChannel( String name )
 	{
-		return mTrafficChannels.containsKey( channelNumber );
+		return mTrafficChannels.containsKey( name );
 	}
+	
 }

@@ -1,6 +1,7 @@
 package source;
 
 import sample.Provider;
+import sample.SampleType;
 import sample.real.RealBuffer;
 
 

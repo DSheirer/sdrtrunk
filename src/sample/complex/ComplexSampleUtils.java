@@ -21,26 +21,26 @@ package sample.complex;
 public class ComplexSampleUtils
 {
 
-	public static ComplexSample multiply( ComplexSample a,
-										  ComplexSample b )
+	public static Complex multiply( Complex a,
+										  Complex b )
 	{
-		return new ComplexSample( 
+		return new Complex( 
 			( a.inphase() * b.inphase() ) - ( a.quadrature() * b.quadrature() ),
 			( ( a.quadrature() * b.inphase() ) + ( a.inphase() * b.quadrature() ) ) );
 	}
 
-	public static ComplexSample minus( ComplexSample a, ComplexSample b )
+	public static Complex minus( Complex a, Complex b )
 	{
-		return new ComplexSample( a.inphase() - b.inphase(), 
+		return new Complex( a.inphase() - b.inphase(), 
 				 				  a.quadrature() - b.quadrature() );
 	}
 
-	public static double magnitude( ComplexSample sample )
+	public static double magnitude( Complex sample )
 	{
 		return Math.sqrt( magnitudeSquared( sample ) );
 	}
 	
-	public static int magnitudeSquared( ComplexSample sample )
+	public static int magnitudeSquared( Complex sample )
 	{
 		return (int)( ( sample.inphase() * sample.inphase() ) +
 				 ( sample.quadrature() * sample.quadrature() ) );

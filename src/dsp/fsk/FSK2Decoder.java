@@ -26,7 +26,7 @@ import java.util.BitSet;
 import java.util.List;
 
 import sample.Listener;
-import sample.real.RealSampleListener;
+import sample.real.RealBuffer;
 import buffer.BooleanAveragingBuffer;
 import dsp.symbol.SymbolEvent;
 import dsp.symbol.SymbolEvent.Shift;
@@ -51,7 +51,7 @@ import dsp.symbol.SymbolEvent.Shift;
  * Implements instrumentable interface, so that slice events can be received
  * externally to analyze decoder performance.
  */
-public class FSK2Decoder implements Instrumentable, RealSampleListener
+public class FSK2Decoder implements Instrumentable, Listener<RealBuffer>
 {
 	public enum Output{ NORMAL, INVERTED };
 
@@ -95,23 +95,26 @@ public class FSK2Decoder implements Instrumentable, RealSampleListener
 	 * Primary sample input
 	 */
 	@Override
-	public void receive( float floatSample ) 
+	public void receive( RealBuffer buffer ) 
 	{
-		/* Square the sample.  Greater than zero is a 1 (true) and less than 
-		 * zero is a 0 (false) */
-		boolean bitSample = ( floatSample >= 0.0f );
+		for( float sample: buffer.getSamples() )
+		{
+			/* Square the sample.  Greater than zero is a 1 (true) and less than 
+			 * zero is a 0 (false) */
+			boolean bitSample = ( sample >= 0.0f );
 
-		/* Feed the delay buffer and fetch the one-baud delayed sample */
-		boolean delayedBitSample = mDelayBuffer.get( bitSample );
+			/* Feed the delay buffer and fetch the one-baud delayed sample */
+			boolean delayedBitSample = mDelayBuffer.get( bitSample );
 
-		/* Correlation: xor current bit with delayed bit */
-		boolean softBit = bitSample ^ delayedBitSample;
+			/* Correlation: xor current bit with delayed bit */
+			boolean softBit = bitSample ^ delayedBitSample;
 
-		/* Low pass filter to smooth the correlated values */
-		boolean filteredSoftBit = mLowPassFilter.getAverage( softBit );
+			/* Low pass filter to smooth the correlated values */
+			boolean filteredSoftBit = mLowPassFilter.getAverage( softBit );
 
-		/* Send the filtered correlated bit to the slicer */
-		mSlicer.receive( filteredSoftBit );
+			/* Send the filtered correlated bit to the slicer */
+			mSlicer.receive( filteredSoftBit );
+		}
 	}
 
 	/**

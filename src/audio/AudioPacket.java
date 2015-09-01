@@ -1,29 +1,34 @@
 package audio;
 
+import audio.metadata.AudioMetadata;
+
 public class AudioPacket
 {
-	private String mSource;
 	private Type mType;
-	private byte[] mAudioData;
-	private int mPriority;
+	private float[] mAudioData;
+	private AudioMetadata mAudioMetadata;
 	
-	public AudioPacket( String source, Type type )
+	public AudioPacket( Type type )
 	{
-		mSource = source;
 		mType = type;
 	}
 	
-	public AudioPacket( String source, byte[] audio, int priority )
+	public AudioPacket( float[] audio, AudioMetadata metadata )
 	{
-		this( source, Type.AUDIO );
+		this( Type.AUDIO );
 
 		mAudioData = audio;
-		mPriority = priority;
+		mAudioMetadata = metadata;
 	}
 	
-	public String getSource()
+	public AudioMetadata getMetadata()
 	{
-		return mSource;
+		return mAudioMetadata;
+	}
+	
+	public void setMetadata( AudioMetadata metadata )
+	{
+		mAudioMetadata = metadata;
 	}
 	
 	public Type getType()
@@ -31,16 +36,11 @@ public class AudioPacket
 		return mType;
 	}
 	
-	public byte[] getAudioData()
+	public float[] getAudioData()
 	{
 		return mAudioData;
 	}
 	
-	public int getPriority()
-	{
-		return mPriority;
-	}
-
 	public enum Type
 	{
 		AUDIO,

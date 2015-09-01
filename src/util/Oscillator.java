@@ -17,15 +17,15 @@
  ******************************************************************************/
 package util;
 
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 
 public class Oscillator
 {
 	private double mFrequency;
 	private double mSampleRate;
 
-	private ComplexSample mAnglePerSample;
-	private ComplexSample mCurrentAngle = new ComplexSample( 0.0f, -1.0f );
+	private Complex mAnglePerSample;
+	private Complex mCurrentAngle = new Complex( 0.0f, -1.0f );
 
 	/**
 	 * Oscillator produces complex or float samples corresponding to a sine wave 
@@ -42,17 +42,15 @@ public class Oscillator
 		update();
 	}
 	
-	public ComplexSample getCurrentAngle()
-	{
-		return mCurrentAngle;
-	}
-
+	/**
+	 * Updates the internal values after a frequency or sample rate change
+	 */
 	private void update()
 	{
 		float anglePerSample = 
 				(float)( 2.0d * Math.PI * mFrequency / mSampleRate );
 
-		mAnglePerSample = ComplexSample.fromAngle( anglePerSample );
+		mAnglePerSample = Complex.fromAngle( anglePerSample );
 	}
 
 	/**
@@ -76,37 +74,35 @@ public class Oscillator
 	/**
 	 * Steps the current angle by the angle per sample amount
 	 */
-	private void rotate()
+	public void rotate()
 	{
 		mCurrentAngle.multiply( mAnglePerSample );
 		mCurrentAngle.fastNormalize();
 	}
 
+	public float inphase()
+	{
+		return mCurrentAngle.inphase();
+	}
+	
+	public float quadrature()
+	{
+		return mCurrentAngle.quadrature();
+	}
+	
 	/**
 	 * Get next complex sample
 	 */
-	public ComplexSample nextComplex()
+	public Complex getComplex()
 	{
-		rotate();
 		return mCurrentAngle.copy();
 	}
 
 	/**
 	 * Get the next float sample
 	 */
-	public float nextFloat()
+	public float getFloat()
 	{
-		rotate();
 		return mCurrentAngle.real();
-	}
-	
-	public static void main( String[] args )
-	{
-		Oscillator o = new Oscillator( 1200, 2400 );
-
-		for( int x = 0; x < 20; x++ )
-		{
-			System.out.println( o.nextComplex().toString() );
-		}
 	}
 }

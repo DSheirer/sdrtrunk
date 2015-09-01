@@ -18,13 +18,14 @@
 package dsp.filter;
 
 import sample.Listener;
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 
-public abstract class ComplexFilter implements Listener<ComplexSample>
+@Deprecated
+public abstract class ComplexFilter implements Listener<Complex>
 {
-	private Listener<ComplexSample> mListener;
+	private Listener<Complex> mListener;
 	
-	public void setListener( Listener<ComplexSample> listener )
+	public void setListener( Listener<Complex> listener )
 	{
 		mListener = listener;
 	}
@@ -34,7 +35,7 @@ public abstract class ComplexFilter implements Listener<ComplexSample>
 		mListener = null;
 	}
 	
-	public Listener<ComplexSample> getListener()
+	public Listener<Complex> getListener()
 	{
 		return mListener;
 	}
@@ -44,7 +45,7 @@ public abstract class ComplexFilter implements Listener<ComplexSample>
 		return mListener != null;
 	}
 	
-	protected void send( ComplexSample sample )
+	protected void send( Complex sample )
 	{
 		if( mListener != null )
 		{

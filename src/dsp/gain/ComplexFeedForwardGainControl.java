@@ -4,8 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
-import sample.Provider;
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
+import sample.complex.ComplexSampleListener;
 import buffer.FloatCircularBuffer;
 
 /*******************************************************************************
@@ -31,8 +31,7 @@ import buffer.FloatCircularBuffer;
  *     feedforward_agc_cc_impl.cc
  *     
  ******************************************************************************/
-public class ComplexFeedForwardGainControl 
-		implements Listener<ComplexSample>, Provider<ComplexSample>
+public class ComplexFeedForwardGainControl implements ComplexSampleListener
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( ComplexFeedForwardGainControl.class );
@@ -40,7 +39,7 @@ public class ComplexFeedForwardGainControl
 	public static final float OBJECTIVE_ENVELOPE = 1.0f;
 	public static final float MINIMUM_ENVELOPE = 0.0001f;
 
-	private Listener<ComplexSample> mListener;
+	private ComplexSampleListener mListener;
 
 	private FloatCircularBuffer mEnvelopeHistory;
 	
@@ -65,9 +64,9 @@ public class ComplexFeedForwardGainControl
 	}
 
 	@Override
-	public void receive( ComplexSample sample )
+	public void receive( float inphase, float quadrature )
 	{
-		float envelope = sample.envelope();
+		float envelope = Complex.envelope( inphase, quadrature );
 
 		if( envelope > mMaxEnvelope )
 		{
@@ -99,9 +98,7 @@ public class ComplexFeedForwardGainControl
 		/* Apply current gain value to the sample and send to the listener */
 		if( mListener != null )
 		{
-			sample.multiply( mGain );
-			
-			mListener.receive( sample );
+			mListener.receive( inphase *= mGain, quadrature *= mGain );
 		}
 	}
 	
@@ -110,15 +107,8 @@ public class ComplexFeedForwardGainControl
 		mGain = OBJECTIVE_ENVELOPE / mMaxEnvelope;
 	}
 
-	@Override
-	public void setListener( Listener<ComplexSample> listener )
+	public void setListener( ComplexSampleListener listener )
 	{
 		mListener = listener;
-	}
-
-	@Override
-	public void removeListener( Listener<ComplexSample> listener )
-	{
-		mListener = null;
 	}
 }

@@ -210,7 +210,7 @@ public abstract class AbstractTileFactory extends TileFactory
 				@Override
 				public Thread newThread(Runnable r)
 				{
-					Thread t = new Thread(r, "tile-pool-" + count++);
+					Thread t = new Thread(r, "map tile fetcher-pool-" + count++);
 					t.setPriority(Thread.MIN_PRIORITY);
 					t.setDaemon(true);
 					return t;

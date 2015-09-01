@@ -34,7 +34,7 @@ import java.util.Observable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 
 public class ComplexTapViewPanel extends TapViewPanel
 {
@@ -42,7 +42,7 @@ public class ComplexTapViewPanel extends TapViewPanel
 	private final static Logger mLog = LoggerFactory.getLogger( SDRTrunk.class );
 
 	private Tap mTap;
-	private List<ComplexSample> mSamples;
+	private List<Complex> mSamples;
 	private int mSampleCount;
 
 	public ComplexTapViewPanel( ComplexTap tap )
@@ -66,7 +66,7 @@ public class ComplexTapViewPanel extends TapViewPanel
 	@Override
     public void update( Observable arg0, Object arg1 )
     {
-		mSamples = (List<ComplexSample>)getModel().getSamples();
+		mSamples = (List<Complex>)getModel().getSamples();
 		repaint();
     }
 	
@@ -124,7 +124,7 @@ public class ComplexTapViewPanel extends TapViewPanel
 	}
 	
 	
-	private Point2D.Float resolve( int index, ComplexSample sample, Type type )
+	private Point2D.Float resolve( int index, Complex sample, Type type )
 	{
 		int middle = (int)( getHeight() / 4 );
 

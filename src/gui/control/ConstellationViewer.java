@@ -20,11 +20,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 import buffer.CircularBuffer;
 
 public class ConstellationViewer extends JPanel 
-								 implements Listener<ComplexSample>
+								 implements Listener<Complex>
 {
 	private static final long serialVersionUID = 1L;
 	
@@ -36,9 +36,9 @@ public class ConstellationViewer extends JPanel
 	private float mSamplesPerSymbol;
 	private float mCounter = 0;
 	private float mOffset = 0;
-	private CircularBuffer<ComplexSample> mBuffer =
-						new CircularBuffer<ComplexSample>( 5000 );
-	private ComplexSample mPrevious = new ComplexSample( 1, 1 );
+	private CircularBuffer<Complex> mBuffer =
+						new CircularBuffer<Complex>( 5000 );
+	private Complex mPrevious = new Complex( 1, 1 );
 	
 	public ConstellationViewer( int sampleRate, int symbolRate )
 	{
@@ -76,11 +76,11 @@ public class ConstellationViewer extends JPanel
 	}
 
 	@Override
-	public void receive( ComplexSample sample )
+	public void receive( Complex sample )
 	{
 		mBuffer.receive( sample );
 		
-		ComplexSample angle = ComplexSample.multiply( sample, mPrevious.conjugate() );
+		Complex angle = Complex.multiply( sample, mPrevious.conjugate() );
 		
 		repaint();
 	}
@@ -109,7 +109,7 @@ public class ConstellationViewer extends JPanel
     	
     	graphics.setColor( Color.BLUE );
 
-    	List<ComplexSample> samples = mBuffer.getElements();
+    	List<Complex> samples = mBuffer.getElements();
     	
     	double centerX = (double)getHeight() / 2.0d;
     	double centerY = (double)getWidth() / 2.0d;
@@ -118,7 +118,7 @@ public class ConstellationViewer extends JPanel
     	
     	mCounter = 0;
     	
-    	for( ComplexSample sample: samples )
+    	for( Complex sample: samples )
     	{
     		if( mCounter > ( mOffset + mSamplesPerSymbol ) )
     		{

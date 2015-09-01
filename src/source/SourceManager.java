@@ -17,9 +17,9 @@
  ******************************************************************************/
 package source;
 
+import source.config.SourceConfiguration;
 import source.mixer.MixerManager;
 import controller.ResourceManager;
-import controller.channel.ProcessingChain;
 
 public class SourceManager {
 	/**
@@ -40,28 +40,25 @@ public class SourceManager {
 		mResourceManager = resourceManager;
 	}
 	
-	public Source getSource( ProcessingChain channel ) throws SourceException
+	public Source getSource( SourceConfiguration config, int bandwidth ) 
+							throws SourceException
 	{
 		Source retVal = null;
 
-		if( channel != null )
+		switch( config.getSourceType() )
 		{
-			switch( channel.getChannel()
-					.getSourceConfiguration().getSourceType() )
-			{
-				case MIXER:
-					retVal = MixerManager.getInstance().getSource( channel ); 
-					break;
-				case TUNER:
-					retVal = mResourceManager.getTunerManager().getSource( channel );
-					break;
-				case RECORDING:
-					retVal = mResourceManager.getRecordingSourceManager()
-									.getSource( channel );
-				case NONE:
-				default:
-					break;
-			}
+			case MIXER:
+				retVal = MixerManager.getInstance().getSource( config ); 
+				break;
+			case TUNER:
+				retVal = mResourceManager.getTunerManager().getSource( config, bandwidth );
+				break;
+			case RECORDING:
+				retVal = mResourceManager.getRecordingSourceManager()
+								.getSource( config, bandwidth );
+			case NONE:
+			default:
+				break;
 		}
 		
 		return retVal;

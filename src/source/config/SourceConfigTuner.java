@@ -22,17 +22,28 @@ import java.text.DecimalFormat;
 import javax.xml.bind.annotation.XmlAttribute;
 
 import source.SourceType;
+import source.tuner.TunerChannel;
+import source.tuner.TunerChannel.Type;
 
 public class SourceConfigTuner extends SourceConfiguration
 {
 	private static DecimalFormat sFORMAT = new DecimalFormat( "0.00000" );
 
 	private long mFrequency = 0;
+	private int mBandwidth = 15000;
 	
 	public SourceConfigTuner()
     {
 	    super( SourceType.TUNER );
     }
+	
+	public SourceConfigTuner( TunerChannel tunerChannel )
+	{
+		this();
+		
+		mFrequency = tunerChannel.getFrequency();
+		mBandwidth = tunerChannel.getBandwidth();
+	}
 	
 	@XmlAttribute( name = "frequency" )
 	public long getFrequency()
@@ -50,4 +61,9 @@ public class SourceConfigTuner extends SourceConfiguration
     {
 	    return sFORMAT.format( (double)mFrequency / 1000000.0d ) + " MHz";
     }
+	
+	public TunerChannel getTunerChannel()
+	{
+		return new TunerChannel( Type.LOCKED, mFrequency, mBandwidth );
+	}
 }

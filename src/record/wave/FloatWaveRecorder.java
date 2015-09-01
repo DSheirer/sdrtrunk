@@ -19,6 +19,7 @@ package record.wave;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.sound.sampled.AudioFormat;
@@ -28,6 +29,9 @@ import org.slf4j.LoggerFactory;
 
 import record.Recorder;
 import record.RecorderType;
+import sample.Listener;
+import sample.complex.ComplexBuffer;
+import sample.real.RealBuffer;
 import sample.real.RealSampleListener;
 import util.waveaudio.WaveWriter;
 import buffer.FloatSampleBufferAssembler;
@@ -35,7 +39,8 @@ import buffer.FloatSampleBufferAssembler;
 /**
  * Threaded WAVE audio recorder for recording mono float samples to a wave file
  */
-public class FloatWaveRecorder extends Recorder implements RealSampleListener
+public class FloatWaveRecorder extends Recorder implements RealSampleListener,
+		Listener<RealBuffer>
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( FloatWaveRecorder.class );
@@ -52,6 +57,8 @@ public class FloatWaveRecorder extends Recorder implements RealSampleListener
 								new LinkedBlockingQueue<ByteBuffer>( 512 );
 	private FloatSampleBufferAssembler mCurrentBuffer;
 	
+	private Listener<RealBuffer> mListener;
+	
 	public FloatWaveRecorder( int sampleRate, String filename )
 	{
 		super( RecorderType.AUDIO );
@@ -65,6 +72,11 @@ public class FloatWaveRecorder extends Recorder implements RealSampleListener
 		mCurrentBuffer = new FloatSampleBufferAssembler( sampleRate );
 				
 		mFileName = filename;
+	}
+	
+	public void setListener( Listener<RealBuffer> listener )
+	{
+		mListener = listener;
 	}
 	
 	@Override
@@ -127,7 +139,42 @@ public class FloatWaveRecorder extends Recorder implements RealSampleListener
     		}
     	}
     }
-    
+
+	@Override
+	public void receive( RealBuffer buffer )
+	{
+		//Dispatch the buffer to be written to disk
+		if( !mToWriteBufferQueue.offer( convert( buffer ) ) )
+		{
+			//We had an overflow ... log it
+			mLog.error( "buffer overflow - throwing away a buffer of sample data" );
+		}
+		
+		if( mListener != null )
+		{
+			mListener.receive( buffer );
+		}
+	}
+
+	/**
+	 * Converts the float samples in a complex buffer to a little endian 16-bit
+	 * buffer
+	 */
+	public static ByteBuffer convert( RealBuffer buffer )
+	{
+		float[] samples = buffer.getSamples();
+		
+		ByteBuffer converted = ByteBuffer.allocate( samples.length * 2 );
+		converted.order( ByteOrder.LITTLE_ENDIAN );
+
+		for( float sample: samples )
+		{
+			converted.putShort( (short)( sample * Short.MAX_VALUE ) );
+		}
+		
+		return converted;
+	}
+	
 	@Override
     public void receive( float sample )
     {
@@ -173,5 +220,4 @@ public class FloatWaveRecorder extends Recorder implements RealSampleListener
 			}
     	}
     }
-
 }

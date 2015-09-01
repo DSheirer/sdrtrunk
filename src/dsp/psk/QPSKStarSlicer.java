@@ -2,10 +2,10 @@ package dsp.psk;
 
 import sample.Broadcaster;
 import sample.Listener;
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 import dsp.symbol.Dibit;
 
-public class QPSKStarSlicer implements Listener<ComplexSample>
+public class QPSKStarSlicer implements Listener<Complex>
 {
 	private Broadcaster<Dibit> mBroadcaster = new Broadcaster<Dibit>();
 
@@ -38,12 +38,12 @@ public class QPSKStarSlicer implements Listener<ComplexSample>
 	}
 
 	@Override
-	public void receive( ComplexSample sample )
+	public void receive( Complex sample )
 	{
 		mBroadcaster.broadcast( decide( sample ) );
 	}
 	
-	public static Dibit decide( ComplexSample sample )
+	public static Dibit decide( Complex sample )
 	{
 		if( sample.inphase() > 0 )
 		{

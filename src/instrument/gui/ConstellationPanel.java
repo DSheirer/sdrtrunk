@@ -29,11 +29,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 import source.wave.WaveSource.PositionListener;
 
 public class ConstellationPanel extends JInternalFrame 
-					  implements PositionListener, Listener<ComplexSample>
+					  implements PositionListener, Listener<Complex>
 {
     private static final long serialVersionUID = 1L;
 	private final static Logger mLog = 
@@ -69,7 +69,7 @@ public class ConstellationPanel extends JInternalFrame
     }
 
 	@Override
-	public void receive( ComplexSample sample )
+	public void receive( Complex sample )
 	{
 		mConstellation.receive( sample );
 	}

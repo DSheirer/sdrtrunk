@@ -27,13 +27,13 @@ public class FloatFIRFilter implements RealSampleListener
 	private ArrayList<Float> mBuffer;
     private int mBufferSize = 1; //Temporary initial value
 	private int mBufferPointer = 0;
-	private double[] mCoefficients;
+	private float[] mCoefficients;
 	private int[][] mIndexMap;
 	private int mCenterCoefficient;
 	private int mCenterCoefficientMapIndex;
-	private double mGain;
+	private float mGain;
 
-	public FloatFIRFilter( double[] coefficients, double gain )
+	public FloatFIRFilter( float[] coefficients, float gain )
 	{
 		mCoefficients = coefficients;
 		mBuffer = new ArrayList<Float>();
@@ -86,7 +86,7 @@ public class FloatFIRFilter implements RealSampleListener
 
 		//Convolution - multiply filter coefficients by the circular buffer 
 		//samples to calculate a new filtered value
-		double accumulator = 0.0d;
+		float accumulator = 0.0f;
 
 		//Start with the center tap value
 		accumulator += mCoefficients[ mCenterCoefficient ] * 
@@ -103,7 +103,7 @@ public class FloatFIRFilter implements RealSampleListener
 
 		//We're almost finished ... apply gain, cast the doubles to shorts and
 		//return the value
-		return (float)( accumulator * mGain );
+		return accumulator * mGain;
 	}
 
 	/**

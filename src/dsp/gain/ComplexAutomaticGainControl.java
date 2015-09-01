@@ -4,7 +4,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import sample.Listener;
 import sample.Provider;
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 import buffer.ComplexCircularBuffer;
 import buffer.DoubleCircularBuffer;
 
@@ -61,8 +61,8 @@ import buffer.DoubleCircularBuffer;
  *     those of the authors and should not be interpreted as representing 
  *     official policies, either expressed or implied, of Moe Wheatley.
  ******************************************************************************/
-public class ComplexAutomaticGainControl implements Listener<ComplexSample>,
-												    Provider<ComplexSample>
+public class ComplexAutomaticGainControl implements Listener<Complex>,
+												    Provider<Complex>
 {
 	private static final double SAMPLE_RATE = 48000;
 	
@@ -138,16 +138,16 @@ public class ComplexAutomaticGainControl implements Listener<ComplexSample>,
 	private DoubleCircularBuffer mMagnitudeBuffer = 
 		new DoubleCircularBuffer( (int)( SAMPLE_RATE * WINDOW_TIME_CONSTANT ) );
 	
-	private Listener<ComplexSample> mListener;
+	private Listener<Complex> mListener;
 	
 	public ComplexAutomaticGainControl()
 	{
 	}
 
 	@Override
-    public void receive( ComplexSample currentSample )
+    public void receive( Complex currentSample )
     {
-		ComplexSample delayedSample = mDelayBuffer.get( currentSample );
+		Complex delayedSample = mDelayBuffer.get( currentSample );
 
 		double gain = MANUAL_AGC_GAIN;
 		
@@ -235,13 +235,13 @@ public class ComplexAutomaticGainControl implements Listener<ComplexSample>,
 	}
 
 	@Override
-    public void setListener( Listener<ComplexSample> listener )
+    public void setListener( Listener<Complex> listener )
     {
 		mListener = listener;
     }
 
 	@Override
-    public void removeListener( Listener<ComplexSample> listener )
+    public void removeListener( Listener<Complex> listener )
     {
 		mListener = null;
     }

@@ -41,12 +41,14 @@ import javax.swing.JSeparator;
 import javax.swing.JSplitPane;
 import javax.swing.SwingUtilities;
 
+import module.decode.DecoderType;
 import net.miginfocom.swing.MigLayout;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
+import sample.SampleType;
 import sample.complex.ComplexBuffer;
 import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
@@ -54,13 +56,12 @@ import settings.ColorSettingMenuItem;
 import settings.Setting;
 import settings.SettingChangeListener;
 import settings.SettingsManager;
-import source.Source.SampleType;
 import source.SourceException;
-import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeListener;
-import source.tuner.frequency.FrequencyChangeEvent.Attribute;
 import source.tuner.Tuner;
 import source.tuner.TunerSelectionListener;
+import source.tuner.frequency.FrequencyChangeEvent;
+import source.tuner.frequency.FrequencyChangeEvent.Attribute;
+import source.tuner.frequency.FrequencyChangeListener;
 import spectrum.OverlayPanel.ChannelDisplay;
 import spectrum.converter.ComplexDecibelConverter;
 import spectrum.converter.DFTResultsConverter;
@@ -76,7 +77,6 @@ import controller.ResourceManager;
 import controller.channel.Channel;
 import controller.channel.ChannelEvent;
 import controller.channel.ChannelEventListener;
-import decode.DecoderType;
 import dsp.filter.Window.WindowType;
 
 /**
@@ -515,15 +515,15 @@ public class SpectralDisplayPanel extends JPanel
 					ArrayList<Channel> channels = 
 							mOverlayPanel.getChannelsAtFrequency( frequency );
 
-					for( Channel channel: channels )
-					{
-						JMenu menu = channel.getContextMenu();
-						
-						if( menu != null )
-						{
-							contextMenu.add( menu );
-						}
-					}
+//					for( Channel channel: channels )
+//					{
+//						JMenu menu = channel.getContextMenu();
+//						
+//						if( menu != null )
+//						{
+//							contextMenu.add( menu );
+//						}
+//					}
 
 					if( !channels.isEmpty() )
 					{
@@ -537,7 +537,7 @@ public class SpectralDisplayPanel extends JPanel
 
 				JMenu decoderMenu = new JMenu( "Add Decoder" );
 
-				for( DecoderType type: DecoderType.getAvailableDecoders() )
+				for( DecoderType type: DecoderType.getPrimaryDecoders() )
 				{
 					decoderMenu.add( new DecoderItem( mResourceManager, 
 													  frequency, 

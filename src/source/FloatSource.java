@@ -1,6 +1,7 @@
 package source;
 
 import sample.Provider;
+import sample.SampleType;
 
 public abstract class FloatSource extends Source implements Provider<Float>
 {

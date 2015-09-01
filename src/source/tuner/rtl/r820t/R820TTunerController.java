@@ -38,6 +38,7 @@ import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
 import source.tuner.rtl.RTL2832TunerController;
 import controller.ResourceManager;
+import controller.ThreadPoolManager;
 
 public class R820TTunerController extends RTL2832TunerController
 {
@@ -73,10 +74,12 @@ public class R820TTunerController extends RTL2832TunerController
 	private JPanel mEditor;
 	
 	public R820TTunerController( Device device, 
-								 DeviceDescriptor deviceDescriptor ) 
-										 throws SourceException
+								 DeviceDescriptor deviceDescriptor, 
+								 ThreadPoolManager threadPoolManager )
+								 		 throws SourceException
 	{
-	    super( device, deviceDescriptor, MIN_FREQUENCY, MAX_FREQUENCY );
+	    super( device, deviceDescriptor, threadPoolManager, 
+	    		MIN_FREQUENCY, MAX_FREQUENCY );
 	}
 
 	@Override
@@ -250,21 +253,15 @@ public class R820TTunerController extends RTL2832TunerController
 		
 		try
 		{
-			mLog.debug( "initializing RTL2832 tuner baseband" );
 			initBaseband( mDeviceHandle );
 
-			mLog.debug( "enabling I2C repeater" );
 			enableI2CRepeater( mDeviceHandle, true );
 			
 			boolean i2CRepeaterControl = false;
 			
-			mLog.debug( "initializing R820T tuner" );
 			initTuner( i2CRepeaterControl );
 
-			mLog.debug( "disabling I2C repeater" );
 			enableI2CRepeater( mDeviceHandle, false );
-			
-			mLog.debug( "initializing RTL2832 tuner controller super class" );
 		}
 		catch( UsbException e )
 		{

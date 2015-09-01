@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 import sample.Listener;
 import sample.adapter.SampleAdapter;
 import sample.complex.ComplexBuffer;
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 import source.SourceException;
 
 public class ComplexMixer
@@ -102,15 +102,15 @@ public class ComplexMixer
 		mBufferReader.stop();
     }
 
-    private List<ComplexSample> convert( ComplexBuffer sampleBuffer )
+    private List<Complex> convert( ComplexBuffer sampleBuffer )
     {
     	float[] samples = sampleBuffer.getSamples();
 
-    	ArrayList<ComplexSample> converted = new ArrayList<ComplexSample>();
+    	ArrayList<Complex> converted = new ArrayList<Complex>();
     	
     	for( int x = 0; x < samples.length; x += 2 )
     	{
-    		converted.add( new ComplexSample( samples[ x ], samples[ x + 1 ] ) );
+    		converted.add( new Complex( samples[ x ], samples[ x + 1 ] ) );
     	}
 
     	sampleBuffer.dispose();

@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014,2015 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -29,6 +29,8 @@ import javax.swing.tree.MutableTreeNode;
 import javax.swing.tree.TreePath;
 
 import map.IconManager;
+import module.decode.DecoderType;
+import module.decode.config.DecodeConfigFactory;
 import playlist.PlaylistNode;
 import source.config.SourceConfigTuner;
 import source.recording.RecordingGroupNode;
@@ -37,14 +39,11 @@ import source.tuner.TunerGroupNode;
 import source.tuner.TunerNode;
 import source.tuner.TunerSelectionListener;
 import controller.channel.Channel;
-import controller.channel.ChannelEventListener;
 import controller.channel.ChannelNode;
 import controller.site.Site;
 import controller.system.System;
 import controller.system.SystemListNode;
 import controller.system.SystemNode;
-import decode.DecoderType;
-import decode.config.DecodeConfigFactory;
 
 public class ConfigurationControllerModel extends DefaultTreeModel
 {
@@ -54,12 +53,8 @@ public class ConfigurationControllerModel extends DefaultTreeModel
 
     private ResourceManager mResourceManager;
 
-    private ArrayList<ChannelEventListener> mChannelConfigChangeListeners =
-			new ArrayList<ChannelEventListener>();
-
     private ArrayList<TunerSelectionListener> mTunerSelectionListeners =
 			new ArrayList<TunerSelectionListener>();
-
     
     private PlaylistNode mPlaylistNode;
     private TunerGroupNode mTunerGroupNode;

@@ -20,6 +20,7 @@ package source.wave;
 import java.io.File;
 import java.io.IOException;
 
+import sample.SampleType;
 import source.Source;
 
 public abstract class WaveSource extends Source

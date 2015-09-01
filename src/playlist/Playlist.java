@@ -22,7 +22,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
 import alias.AliasDirectory;
-import controller.channel.ChannelMapList;
+import controller.channel.map.ChannelMapList;
 import controller.system.SystemList;
 
 @XmlSeeAlso( { AliasDirectory.class,

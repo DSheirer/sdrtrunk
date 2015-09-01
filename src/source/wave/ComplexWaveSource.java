@@ -35,7 +35,8 @@ import org.slf4j.LoggerFactory;
 
 import sample.Broadcaster;
 import sample.Listener;
-import sample.complex.ComplexSample;
+import sample.SampleType;
+import sample.complex.Complex;
 
 public class ComplexWaveSource extends WaveSource
 {
@@ -56,7 +57,7 @@ public class ComplexWaveSource extends WaveSource
     
     private static int BUFFER_SAMPLE_SIZE = 2000;
 
-    private Broadcaster<ComplexSample> mBroadcaster = new Broadcaster<ComplexSample>();
+    private Broadcaster<Complex> mBroadcaster = new Broadcaster<Complex>();
 
     /**
      * Single channel (mono) wave file playback source with optional looping
@@ -227,7 +228,7 @@ public class ComplexWaveSource extends WaveSource
 
     		if( broadcast )
     		{
-        		send( new ComplexSample( (float)i / 32767.0f, (float)q / 32767.0f ) );
+        		send( new Complex( (float)i / 32767.0f, (float)q / 32767.0f ) );
     		}
     		
     		success = true;
@@ -278,7 +279,7 @@ public class ComplexWaveSource extends WaveSource
 	/**
      * Broadcasts a sample to the registered listeners
      */
-    private void send( ComplexSample sample )
+    private void send( Complex sample )
     {
     	mBroadcaster.broadcast( sample );
     }
@@ -286,12 +287,12 @@ public class ComplexWaveSource extends WaveSource
     /**
      * Adds a new listener to receive samples as they are read from the wave file
      */
-    public void addListener( Listener<ComplexSample> listener )
+    public void addListener( Listener<Complex> listener )
     {
         mBroadcaster.addListener( listener );
     }
 
-    public void removeListener( Listener<ComplexSample> listener )
+    public void removeListener( Listener<Complex> listener )
     {
     	mBroadcaster.removeListener( listener );
     }

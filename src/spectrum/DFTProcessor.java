@@ -30,10 +30,10 @@ import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import controller.NamingThreadFactory;
 import sample.Listener;
+import sample.SampleType;
 import sample.complex.ComplexBuffer;
-import source.Source;
-import source.Source.SampleType;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeListener;
 import spectrum.converter.DFTResultsConverter;
@@ -56,8 +56,8 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 	private ArrayBlockingQueue<ComplexBuffer> mQueue = 
 							new ArrayBlockingQueue<ComplexBuffer>( 200 );
 							
-	private ScheduledExecutorService mScheduler = 
-							Executors.newScheduledThreadPool(1);	
+	private ScheduledExecutorService mScheduler = Executors
+			.newScheduledThreadPool( 1, new NamingThreadFactory( "spectrum dft" ) );	
 	
 	private FFTWidth mFFTWidth = FFTWidth.FFT04096;
 	private FFTWidth mNewFFTWidth = FFTWidth.FFT04096;
@@ -129,7 +129,7 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 		setWindowType( mWindowType );
 	}
 	
-	public Source.SampleType getSampleType()
+	public SampleType getSampleType()
 	{
 		return mSampleType;
 	}
@@ -177,7 +177,7 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 		/**
          * Reset the scheduler
          */
-		mScheduler = Executors.newScheduledThreadPool(1);
+		mScheduler = Executors.newScheduledThreadPool( 1, new NamingThreadFactory( "spectrum dft" ) );
 
 		/**
 		 * Schedule the DFT to run calculations at a fixed rate
@@ -293,16 +293,25 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 				getNextBuffer();
 			}
 
-			int samplesAvailable = mCurrentBuffer.length - mCurrentBufferPointer;
-
-			while( remaining > 0 && samplesAvailable > 0 )
+			/* If we don't have new samples to use, send the current frame with
+			 * the remaining values as zero */
+			if( mCurrentBuffer == null )
 			{
-				currentFrame[ currentFramePointer++ ] = 
-						(float)mCurrentBuffer[ mCurrentBufferPointer++ ];
-				
-				samplesAvailable--;
-				remaining--;
-				newFloatsToConsumeThisFrame--;
+				remaining = 0;
+			}
+			else
+			{
+				int samplesAvailable = mCurrentBuffer.length - mCurrentBufferPointer;
+
+				while( remaining > 0 && samplesAvailable > 0 )
+				{
+					currentFrame[ currentFramePointer++ ] = 
+							(float)mCurrentBuffer[ mCurrentBufferPointer++ ];
+					
+					samplesAvailable--;
+					remaining--;
+					newFloatsToConsumeThisFrame--;
+				}
 			}
 		}
 		
@@ -355,18 +364,25 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 			{
 				getNextBuffer();
 			}
-			
-			int samplesAvailable = mCurrentBuffer.length - mCurrentBufferPointer;
-			
-			if( samplesAvailable >= samplesToPurge )
+
+			if( mCurrentBuffer != null )
 			{
-				mCurrentBufferPointer += samplesToPurge;
-				samplesToPurge = 0;
+				int samplesAvailable = mCurrentBuffer.length - mCurrentBufferPointer;
+				
+				if( samplesAvailable >= samplesToPurge )
+				{
+					mCurrentBufferPointer += samplesToPurge;
+					samplesToPurge = 0;
+				}
+				else
+				{
+					samplesToPurge -= samplesAvailable;
+					mCurrentBufferPointer = mCurrentBuffer.length;
+				}
 			}
 			else
 			{
-				samplesToPurge -= samplesAvailable;
-				mCurrentBufferPointer = mCurrentBuffer.length;
+				samplesToPurge = 0;
 			}
 		}
 	}

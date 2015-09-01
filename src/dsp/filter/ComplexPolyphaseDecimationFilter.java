@@ -18,7 +18,7 @@
 package dsp.filter;
 
 import sample.Listener;
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 import buffer.ComplexTappedCircularBuffer;
 
 public class ComplexPolyphaseDecimationFilter extends ComplexFilter
@@ -68,7 +68,7 @@ public class ComplexPolyphaseDecimationFilter extends ComplexFilter
 	 * Inputs a new sample into the filter at the non-decimated rate
 	 */
 	@Override
-    public void receive( ComplexSample sample )
+    public void receive( Complex sample )
     {
 		mFilterPhases[ mPhasePointer++ ].receive( sample );
 		
@@ -97,13 +97,13 @@ public class ComplexPolyphaseDecimationFilter extends ComplexFilter
 		
 			for( int x = 0; x < mPhaseCount; x++ )
 			{
-				ComplexSample phaseSample = mFilterPhases[ x ].calculate();
+				Complex phaseSample = mFilterPhases[ x ].calculate();
 				
 				left += phaseSample.left();
 				right += phaseSample.right();
 			}
 		
-			send( new ComplexSample( left, right ) );	
+			send( new Complex( left, right ) );	
 		}
 	}
 
@@ -130,7 +130,7 @@ public class ComplexPolyphaseDecimationFilter extends ComplexFilter
 	/**
 	 * Implements a single phase of a poly-phase filter bank
 	 */
-	public class FilterPhase implements Listener<ComplexSample>
+	public class FilterPhase implements Listener<Complex>
 	{
 		private int mLength;
 		private double[] mCoefficients;
@@ -150,7 +150,7 @@ public class ComplexPolyphaseDecimationFilter extends ComplexFilter
 		}
 		
 		@Override
-        public void receive( ComplexSample sample )
+        public void receive( Complex sample )
         {
 			mBuffer.add( sample );
         }
@@ -159,7 +159,7 @@ public class ComplexPolyphaseDecimationFilter extends ComplexFilter
 		 * Performs convolution by multiplying the buffer samples by their 
 		 * corresponding filter coefficients and returns the sum
 		 */
-		public ComplexSample calculate()
+		public Complex calculate()
 		{
 			/* Accumulators */
 			double left = 0.0d;
@@ -171,7 +171,7 @@ public class ComplexPolyphaseDecimationFilter extends ComplexFilter
 				right += ( mBuffer.get( x ).right() * mCoefficients[ x ] );
 			}
 			
-			return new ComplexSample( (float)left, (float)right );
+			return new Complex( (float)left, (float)right );
 		}
 	}
 }

@@ -1,26 +1,32 @@
 package instrument.tap.stream;
 
-import sample.complex.ComplexSample;
 
 public class EyeDiagramData
 {
-	private ComplexSample[] mSamples;
+	private float[] mSamplesInphase;
+	private float[] mSamplesQuadrature;
 	private float mLeftPoint;
 	private float mRightPoint;
 	private float mError;
 	
-	public EyeDiagramData( ComplexSample[] samples, float leftPoint, 
-			float rightPoint, float error )
+	public EyeDiagramData( float[] samplesInphase, float[] samplesQuadrature, 
+			float leftPoint, float rightPoint, float error )
 	{
-		mSamples = samples;
+		mSamplesInphase = samplesInphase;
+		mSamplesQuadrature = samplesQuadrature;
 		mLeftPoint = leftPoint;
 		mRightPoint = rightPoint;
 		mError = error;
 	}
 	
-	public ComplexSample[] getSamples()
+	public float[] getInphaseSamples()
 	{
-		return mSamples;
+		return mSamplesInphase;
+	}
+
+	public float[] getQuadratureSamples()
+	{
+		return mSamplesQuadrature;
 	}
 
 	public float getLeftPoint()

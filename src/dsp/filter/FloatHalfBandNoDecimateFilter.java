@@ -27,8 +27,8 @@ public class FloatHalfBandNoDecimateFilter implements RealSampleListener
 	private ArrayList<Float> mBuffer;
     private int mBufferSize = 1; //Temporary initial value
 	private int mBufferPointer = 0;
-	private double mGain;
-	private double[] mCoefficients;
+	private float mGain;
+	private float[] mCoefficients;
 	private int[][] mIndexMap;
 	private int mCenterCoefficient;
 	private int mCenterCoefficientMapIndex;
@@ -48,7 +48,7 @@ public class FloatHalfBandNoDecimateFilter implements RealSampleListener
 	 * @param filter - filter coefficients
 	 * @param gain - gain multiplier.  Use 1.0 for unity/no gain
 	 */
-	public FloatHalfBandNoDecimateFilter( Filters filter, double gain )
+	public FloatHalfBandNoDecimateFilter( Filters filter, float gain )
 	{
 		mCoefficients = filter.getCoefficients();
 		mBuffer = new ArrayList<Float>();
@@ -88,7 +88,7 @@ public class FloatHalfBandNoDecimateFilter implements RealSampleListener
 
 		//Convolution - multiply filter coefficients by the circular buffer 
 		//samples to calculate a new filtered value
-		double accumulator = 0;
+		float accumulator = 0;
 
 		//Start with the center tap value
 		accumulator += mCoefficients[ mCenterCoefficient ] * 
@@ -103,7 +103,7 @@ public class FloatHalfBandNoDecimateFilter implements RealSampleListener
 				  mBuffer.get( mIndexMap[ mBufferPointer ][ x + 1 ] ) );
 		}
 
-		//We're almost finished ... apply gain, cast the doubles to floats and
+		//We're almost finished ... apply gain, cast the floats to floats and
 		//send it on it's merry way
 		if( mListener != null )
 		{

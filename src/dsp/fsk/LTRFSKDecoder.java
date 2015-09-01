@@ -27,17 +27,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 import sample.Listener;
-import sample.real.RealSampleListener;
-import dsp.filter.DCRemovalFilter3;
+import sample.real.RealBuffer;
 import dsp.filter.Filters;
 import dsp.filter.FloatHalfBandFilter;
 import dsp.filter.FloatHalfBandNoDecimateFilter;
 import dsp.filter.LTRPulseShapingFilter;
 import dsp.filter.SquaringFilter;
+import dsp.filter.dc.IIRSinglePoleDCRemovalFilter;
 import dsp.symbol.Slicer;
 import dsp.symbol.Slicer.Output;
 
-public class LTRFSKDecoder implements RealSampleListener, Instrumentable
+public class LTRFSKDecoder implements Listener<RealBuffer>, Instrumentable
 {
 	private FloatHalfBandFilter mHBFilter1;
 	private FloatHalfBandFilter mHBFilter2;
@@ -45,7 +45,7 @@ public class LTRFSKDecoder implements RealSampleListener, Instrumentable
 	private FloatHalfBandFilter mHBFilter4;
 	private FloatHalfBandFilter mHBFilter5;
 	private FloatHalfBandNoDecimateFilter mHBFilter6;
-	private DCRemovalFilter3 mDCFilter;
+	private IIRSinglePoleDCRemovalFilter mDCFilter;
 	private SquaringFilter mSquaringFilter;
 	private LTRPulseShapingFilter mPulseShaper;
 	private Slicer mSlicer;
@@ -69,29 +69,29 @@ public class LTRFSKDecoder implements RealSampleListener, Instrumentable
 	public LTRFSKDecoder()
 	{
 		mHBFilter1 = new FloatHalfBandFilter( 
-				Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.1002 );
+				Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.1002f );
 		
 		mHBFilter2 = new FloatHalfBandFilter( 
-				Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.1002 );
+				Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.1002f );
 		mHBFilter1.setListener( mHBFilter2 );
 		
 		mHBFilter3 = new FloatHalfBandFilter( 
-				Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.1002 );
+				Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.1002f );
 		mHBFilter2.setListener( mHBFilter3 );
 		
 		mHBFilter4 = new FloatHalfBandFilter( 
-				Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.1002 );
+				Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.1002f );
 		mHBFilter3.setListener( mHBFilter4 );
 
 		mHBFilter5 = new FloatHalfBandFilter( 
-				Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.1002 );
+				Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.1002f );
 		mHBFilter4.setListener( mHBFilter5 );
 		
 		mHBFilter6 = new FloatHalfBandNoDecimateFilter( 
-				Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.1002 );
+				Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.1002f );
 		mHBFilter5.setListener( mHBFilter6 );
 
-		mDCFilter = new DCRemovalFilter3( 0.9946f );
+		mDCFilter = new IIRSinglePoleDCRemovalFilter( 0.9946f );
 		mHBFilter6.setListener( mDCFilter );
 		
 		mSquaringFilter = new SquaringFilter();
@@ -105,9 +105,12 @@ public class LTRFSKDecoder implements RealSampleListener, Instrumentable
 	}
 
 	@Override
-    public void receive( float sample )
+    public void receive( RealBuffer buffer )
     {
-		mHBFilter1.receive( sample );
+		for( float sample: buffer.getSamples() )
+		{
+			mHBFilter1.receive( sample );
+		}
     }
 
     public void addListener( Listener<Boolean> listener )

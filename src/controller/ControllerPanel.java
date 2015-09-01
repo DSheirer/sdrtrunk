@@ -21,7 +21,6 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 
-import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -30,23 +29,24 @@ import javax.swing.event.ChangeListener;
 
 import map.MapPanel;
 import message.Message;
+import module.decode.event.CallEventPanel;
+import module.decode.event.MessageActivityPanel;
+import module.decode.state.ChannelList;
 import net.miginfocom.swing.MigLayout;
 import sample.Listener;
 import spectrum.ChannelSpectrumPanel;
+import audio.AudioPanel;
 
 import com.jidesoft.swing.JideSplitPane;
 import com.jidesoft.swing.JideTabbedPane;
 
-import controller.activity.CallEventPanel;
-import controller.activity.MessageActivityPanel;
 import controller.channel.ChannelManager;
-import controller.state.ChannelStateList;
 
 public class ControllerPanel extends JPanel
 {
     private static final long serialVersionUID = 1L;
 
-    private ChannelStateList mChannelStateList;
+    private ChannelList mChannelStateList;
 
     private CallEventPanel mCallEventPanel = new CallEventPanel();
     
@@ -135,7 +135,8 @@ public class ControllerPanel extends JPanel
     	
     	
 		/* Channel state list */
-    	mChannelStateList = new ChannelStateList( mResourceManager.getSettingsManager() );
+    	mChannelStateList = new ChannelList( mResourceManager.getPlaylistManager(),
+    			mResourceManager.getSettingsManager() );
 
     	/* Register each of the components to receive channel events when the
     	 * channels are selected or change */
@@ -147,12 +148,20 @@ public class ControllerPanel extends JPanel
 		
 		JScrollPane channelStateListScroll = new JScrollPane();
     	channelStateListScroll.getViewport().setView( mChannelStateList );
-    	channelStateListScroll.setPreferredSize( new Dimension( 150, 
-    			(int)channelStateListScroll.getPreferredSize().getHeight() ) );
+    	channelStateListScroll.setPreferredSize( new Dimension( 200, 300 ) ); 
 
+    	AudioPanel audioPanel = new AudioPanel( mResourceManager.getSettingsManager(),
+							  mResourceManager.getAudioManager() );
+    	audioPanel.setPreferredSize( new Dimension( 200, audioPanel.getPreferredHeight() ) );
+
+    	JideSplitPane audioChannelListSplit = new JideSplitPane( JideSplitPane.VERTICAL_SPLIT );
+    	audioChannelListSplit.setDividerSize( 5 );
+    	audioChannelListSplit.add( audioPanel );
+    	audioChannelListSplit.add( channelStateListScroll );
+    	
     	JideSplitPane channelSplit = new JideSplitPane( JideSplitPane.HORIZONTAL_SPLIT );
     	channelSplit.setDividerSize( 5 );
-    	channelSplit.add( channelStateListScroll );
+    	channelSplit.add( audioChannelListSplit );
     	channelSplit.add( mTabbedPane );
     	
     	add( channelSplit );

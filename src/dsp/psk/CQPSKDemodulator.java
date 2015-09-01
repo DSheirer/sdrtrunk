@@ -35,7 +35,6 @@ import instrument.tap.Tap;
 import instrument.tap.stream.EyeDiagramData;
 import instrument.tap.stream.EyeDiagramDataTap;
 
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -44,24 +43,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
-import sample.Provider;
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
+import sample.complex.ComplexSampleListener;
 import source.tuner.frequency.FrequencyChangeListener;
 import buffer.FloatAveragingBuffer;
-import dsp.filter.interpolator.QPSKInterpolator;
+import dsp.filter.interpolator.RealInterpolator;
 import dsp.symbol.Dibit;
 
 /**
- * Implements a CQPSK demodulator using a Gardner Detector to determine optimal
- * sampling timing and a Costas Loop as a phase locked loop synchronized with 
- * the incoming signal carrier frequency.
+ * Implements a LSM (CQPSK) demodulator using a Gardner Detector to determine 
+ * optimal sampling timing and a Costas Loop as a phase locked loop synchronized 
+ * with the incoming signal carrier frequency.
  * 
  * Sample Rate: 48000
  * Symbol Rate: 4800
  */
-public class CQPSKDemodulator implements Instrumentable,
-										 Listener<ComplexSample>, 
-										 Provider<ComplexSample>
+public class CQPSKDemodulator implements Instrumentable, ComplexSampleListener
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( CQPSKDemodulator.class );
@@ -70,12 +67,10 @@ public class CQPSKDemodulator implements Instrumentable,
 	public static final float THETA = (float)( Math.PI / 4.0d ); 
 
 	/* 45 degree point */
-	public static final ComplexSample POINT_45_DEGREES = 
-		new ComplexSample( (float)Math.sin( THETA ), (float)Math.cos( THETA ) );
+	public static final Complex POINT_45_DEGREES = 
+		new Complex( (float)Math.sin( THETA ), (float)Math.cos( THETA ) );
 	
-	private DecimalFormat mDecimalFormat = new DecimalFormat( "0.000000" );
-
-	private Listener<ComplexSample> mListener;
+	private Listener<Complex> mSymbolListener;
 	
 	private GardnerSymbolTiming mGardnerDetector = new GardnerSymbolTiming();
 	
@@ -89,10 +84,20 @@ public class CQPSKDemodulator implements Instrumentable,
 	{
 	}
 	
-	@Override
-	public void receive( ComplexSample sample )
+	public void setSymbolListener( Listener<Complex> listener )
 	{
-		mGardnerDetector.receive( sample );
+		mSymbolListener = listener;
+	}
+	
+	public void removeSymbolListener()
+	{
+		mSymbolListener = null;
+	}
+	
+	@Override
+	public void receive( float inphase, float quadrature )
+	{
+		mGardnerDetector.receive( inphase, quadrature );
 	}
 	
 	/**
@@ -211,14 +216,15 @@ public class CQPSKDemodulator implements Instrumentable,
 	/**
 	 * Gardner symbol timing detector
 	 */
-	public class GardnerSymbolTiming implements Listener<ComplexSample>
+	public class GardnerSymbolTiming implements ComplexSampleListener
 	{
 		public static final int HALF_SAMPLES_PER_SYMBOL = 5;
 		public static final int SAMPLES_PER_SYMBOL = 10;
 		public static final int TWICE_SAMPLES_PER_SYMBOL = 20;
-		
-		private ComplexSample[] mDelayLine = 
-				new ComplexSample[ 2 * TWICE_SAMPLES_PER_SYMBOL ];
+
+		private float[] mDelayLineInphase = new float[ 2 * TWICE_SAMPLES_PER_SYMBOL ];
+		private float[] mDelayLineQuadrature = new float[ 2 * TWICE_SAMPLES_PER_SYMBOL ];
+
 		private int mDelayLinePointer = 0;
 
 		/* Sampling point */
@@ -231,25 +237,21 @@ public class CQPSKDemodulator implements Instrumentable,
 		private float mOmegaRel = 0.005f;
 		private float mOmegaMid = 10.0f;
 
-		private QPSKInterpolator mInterpolator = new QPSKInterpolator( 1.0f );
+		private RealInterpolator mInterpolator = new RealInterpolator( 1.0f );
 		
-		private ComplexSample mPreviousSample = new ComplexSample( 0.0f, 0.0f );
-		private ComplexSample mPreviousMiddleSample = new ComplexSample( 0.0f, 0.0f );
-		private ComplexSample mPreviousSymbol = new ComplexSample( 0.0f, 0.0f );
-
+		private Complex mPreviousSample;
+		private Complex mPreviousMiddleSample;
+		private Complex mPreviousSymbol;
+		
 		/**
 		 * Provides symbol sampling timing control
 		 */
 		public GardnerSymbolTiming()
 		{
-			for( int x = 0; x < ( 2 * TWICE_SAMPLES_PER_SYMBOL ); x++ )
-			{
-				mDelayLine[ x ] = new ComplexSample( 0.0f, 0.0f );
-			}
 		}
 
 		@Override
-		public void receive( ComplexSample sample )
+		public void receive( float inphase, float quadrature )
 		{
 			/* Count down samples per symbol until we calculate the symbol */
 			mMu--;
@@ -258,14 +260,20 @@ public class CQPSKDemodulator implements Instrumentable,
 			
 			/* Mix incoming sample with costas loop to remove any rotation 
 			 * that is present from a mis-tuned carrier frequency */
-			ComplexSample derotatedSample = ComplexSample
-					.multiply( mCostasLoop.getCurrentVector(), sample );
-
+			
+			Complex costas = mCostasLoop.getCurrentVector();
+			
+			float derotatedInphase = Complex.multiplyInphase( inphase, quadrature, costas.inphase(), costas.quadrature() );
+			float derotatedQuadrature = Complex.multiplyQuadrature( inphase, quadrature, costas.inphase(), costas.quadrature() );
+			
 			/* Fill up the delay line to use with the interpolator */
-			mDelayLine[ mDelayLinePointer ] = derotatedSample;
-			mDelayLine[ mDelayLinePointer + TWICE_SAMPLES_PER_SYMBOL ] = derotatedSample;
+			mDelayLineInphase[ mDelayLinePointer ] = derotatedInphase;
+			mDelayLineInphase[ mDelayLinePointer + TWICE_SAMPLES_PER_SYMBOL ] = derotatedInphase;
 
-			/* Imcrement pointer and keep pointer in bounds */
+			mDelayLineQuadrature[ mDelayLinePointer ] = derotatedQuadrature;
+			mDelayLineQuadrature[ mDelayLinePointer + TWICE_SAMPLES_PER_SYMBOL ] = derotatedQuadrature;
+
+			/* Increment pointer and keep pointer in bounds */
 			mDelayLinePointer = ( mDelayLinePointer + 1 ) % TWICE_SAMPLES_PER_SYMBOL;
 			
 			/* Calculate the symbol once we've stored enough samples */
@@ -282,19 +290,24 @@ public class CQPSKDemodulator implements Instrumentable,
 				}
 
 				/* Calculate interpolated middle sample and current sample */
-				ComplexSample middleSample = mInterpolator
-						.filter( mDelayLine, mDelayLinePointer, mMu );
-				
-				ComplexSample currentSample = mInterpolator
-						.filter( mDelayLine, mDelayLinePointer + half_sps, half_mu );
-				
-				/* Multiply current and previous samples to get symbols to use
-				 * for gardner error feedback */
-				ComplexSample middleSymbol = ComplexSample.multiply( 
-						middleSample, mPreviousMiddleSample.conjugate() );
+				float middleSampleInphase = mInterpolator.filter( 
+						mDelayLineInphase, mDelayLinePointer, mMu );
+				float middleSampleQuadrature = mInterpolator.filter( 
+						mDelayLineQuadrature, mDelayLinePointer, mMu );
 
-				ComplexSample currentSymbol = ComplexSample.multiply( 
-						currentSample, mPreviousSample.conjugate() );
+				int index = mDelayLinePointer + half_sps;
+				
+				float currentSampleInphase = mInterpolator.filter( 
+						mDelayLineInphase, index, half_mu );
+				float currentSampleQuadrature = mInterpolator.filter( 
+						mDelayLineQuadrature, index, half_mu );
+
+				/* Multiply current sample and conjugate (negated quadrature) of 
+				 * previous sample to get symbols to use for gardner error feedback */
+				Complex middleSymbol = Complex.multiply( middleSampleInphase, 
+						middleSampleQuadrature, mPreviousMiddleSample.conjugate() );
+				Complex currentSymbol = Complex.multiply( currentSampleInphase, 
+						currentSampleQuadrature, mPreviousSample.conjugate() );
 
 				/* Set gain to unity */
 				middleSymbol.normalize();
@@ -312,8 +325,10 @@ public class CQPSKDemodulator implements Instrumentable,
 				if( mEyeDiagramDataTap != null )
 				{
 					mEyeDiagramDataTap.receive( 
-						new EyeDiagramData( Arrays.copyOfRange( mDelayLine, 
-							0, 20 ), mMu, (float)half_sps + half_mu, gardnerError ) );
+						new EyeDiagramData( 
+								Arrays.copyOfRange( mDelayLineInphase, 0, 20 ), 
+								Arrays.copyOfRange( mDelayLineQuadrature, 0, 20 ), 
+							mMu, (float)half_sps + half_mu, gardnerError ) );
 				}
 				
 				/* mOmega is samples per symbol and is constrained to floating
@@ -325,8 +340,8 @@ public class CQPSKDemodulator implements Instrumentable,
 				mMu += mOmega + ( mGainMu * gardnerError );
 
 				/* Store current samples/symbols to use for the next period */
-				mPreviousSample = currentSample;
-				mPreviousMiddleSample = middleSample;
+				mPreviousSample.setValues( currentSampleInphase, currentSampleQuadrature );
+				mPreviousMiddleSample.setValues( middleSampleInphase, middleSampleQuadrature );
 				mPreviousSymbol = currentSymbol;
 
 				/* Update costas loop using phase error present in current 
@@ -337,9 +352,9 @@ public class CQPSKDemodulator implements Instrumentable,
 //						ComplexSample.multiply( currentSymbol, POINT_45_DEGREES ) );
 				
 				/* Dispatch the differentiated symbol to the registered listener */
-				if( mListener != null )
+				if( mSymbolListener != null )
 				{
-					mListener.receive( currentSymbol );
+					mSymbolListener.receive( currentSymbol );
 				}
 			}
 		}
@@ -356,7 +371,7 @@ public class CQPSKDemodulator implements Instrumentable,
 	 * gnuradio/mpsk_receiver_cc using initialization values from KA1RBI's 
 	 * OP25/cqpsk.py
 	 */
-	public class CostasLoop implements Listener<ComplexSample>
+	public class CostasLoop implements Listener<Complex>
 	{
 		public static final double TWO_PI = 2.0 * Math.PI;
 		
@@ -442,19 +457,19 @@ public class CQPSKDemodulator implements Instrumentable,
 		/**
 		 * Current vector of the loop rotated by THETA degrees.
 		 */
-		public ComplexSample getCurrentVector()
+		public Complex getCurrentVector()
 		{
 //			return ComplexSample.fromAngle( mLoopPhase + THETA );
-			return ComplexSample.fromAngle( mLoopPhase );
+			return Complex.fromAngle( mLoopPhase );
 		}
 		
 		@Override
-		public void receive( ComplexSample sample )
+		public void receive( Complex complex )
 		{
 			/* Calculate phase error */
-			float phaseError = getPhaseError( sample );
+			float phaseError = getPhaseError( complex );
 			
-			Dibit d = QPSKPolarSlicer.decide( sample );
+			Dibit d = QPSKPolarSlicer.decide( complex );
 //			mLog.debug( "Dibit: " + d.name() + " Error: " + phaseError );
 
 			/* Adjust for phase error */
@@ -503,47 +518,35 @@ public class CQPSKDemodulator implements Instrumentable,
 		 * with the carrier frequency.  Provides error feedback to adjust 
 		 * mixer frequency.
 		 */
-		public float getPhaseError( ComplexSample sample )
+		public float getPhaseError( Complex complex )
 		{
 			  float phase_error = 0;
 			  
-			  if( Math.abs( sample.real() ) > Math.abs( sample.imaginary() ) ) 
+			  if( Math.abs( complex.inphase() ) > Math.abs( complex.quadrature() ) ) 
 			  {
-				  if( sample.real() > 0 )
+				  if( complex.inphase() > 0 )
 				  {
-					  phase_error = -sample.imaginary();
+					  phase_error = -complex.quadrature();
 				  }
 				  else
 				  {
-					  phase_error = sample.imaginary();
+					  phase_error = complex.quadrature();
 				  }
 			  }
 			  else 
 			  {
-				  if( sample.imaginary() > 0 )
+				  if( complex.quadrature() > 0 )
 				  {
-					  phase_error = sample.real();
+					  phase_error = complex.inphase();
 				  }
 				  else
 				  {
-					  phase_error = -sample.real();
+					  phase_error = -complex.inphase();
 				  }
 			  }
 			  
 			  return phase_error;
 		}
-	}
-
-	@Override
-	public void setListener( Listener<ComplexSample> listener )
-	{
-		mListener = listener;
-	}
-
-	@Override
-	public void removeListener( Listener<ComplexSample> listener )
-	{
-		mListener = null;
 	}
 
 	@Override

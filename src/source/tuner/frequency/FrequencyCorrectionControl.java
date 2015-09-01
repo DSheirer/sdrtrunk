@@ -59,7 +59,7 @@ public class FrequencyCorrectionControl implements FrequencyChangeListener
 	/**
 	 * Registers a listener to receive frequency correction events
 	 */
-	public void setListener( FrequencyChangeListener listener )
+	public void setFrequencyChangeListener( FrequencyChangeListener listener )
 	{
 		mListener = listener;
 	}
@@ -92,7 +92,7 @@ public class FrequencyCorrectionControl implements FrequencyChangeListener
 	 * Resets frequency correction value to zero and notifies any reset 
 	 * listeners
 	 */
-	protected void reset()
+	public void reset()
 	{
 		setErrorCorrection( 0, false );
 		

@@ -1,0 +1,65 @@
+package module.decode.p25;
+
+import instrument.Instrumentable;
+import module.decode.Decoder;
+import module.decode.DecoderType;
+import source.tuner.frequency.IFrequencyCorrectionController;
+import alias.AliasList;
+import controller.channel.Channel.ChannelType;
+
+public abstract class P25Decoder extends Decoder 
+	implements IFrequencyCorrectionController, Instrumentable
+{
+	private P25MessageProcessor mMessageProcessor;
+	
+	public P25Decoder( AliasList aliasList, ChannelType channelType )
+	{
+		super( new P25DecoderState( aliasList, channelType ) );
+		
+        mMessageProcessor = new P25MessageProcessor( aliasList );
+        mMessageProcessor.setMessageListener( mMessageBroadcaster );
+	}
+
+	@Override
+    public DecoderType getDecoderType()
+    {
+	    return DecoderType.P25_PHASE1;
+    }
+
+	protected P25MessageProcessor getMessageProcessor()
+	{
+		return mMessageProcessor;
+	}
+	
+	public abstract Modulation getModulation();
+	
+	public enum Modulation
+	{ 
+		CQPSK( "Simulcast (LSM)", "LSM" ),
+		C4FM( "Normal (C4FM)", "C4FM" );
+		
+		private String mLabel;
+		private String mShortLabel;
+		
+		private Modulation( String label, String shortLabel )
+		{
+			mLabel = label;
+			mShortLabel = shortLabel;
+		}
+		
+		public String getLabel()
+		{
+			return mLabel;
+		}
+		
+		public String getShortLabel()
+		{
+			return mShortLabel;
+		}
+		
+		public String toString()
+		{
+			return getLabel();
+		}
+	}
+}

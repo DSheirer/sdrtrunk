@@ -29,7 +29,7 @@ import javax.sound.sampled.TargetDataLine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import dsp.gain.RealAutomaticGainControl;
+import dsp.gain.AutomaticGainControl;
 import sample.Listener;
 import sample.adapter.SampleAdapter;
 import sample.real.RealBuffer;
@@ -50,7 +50,7 @@ public class RealMixerSource extends RealSource
 	private String mDisplayName;
 	private int mBytesPerFrame = 0;
 	private SampleAdapter mSampleAdapter;
-	private RealAutomaticGainControl mAGC = new RealAutomaticGainControl();
+	private AutomaticGainControl mAGC = new AutomaticGainControl();
 	
 	CopyOnWriteArrayList<Listener<RealBuffer>> mSampleListeners = 
 					new CopyOnWriteArrayList<Listener<RealBuffer>>();

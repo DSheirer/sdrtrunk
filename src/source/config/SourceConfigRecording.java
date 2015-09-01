@@ -20,6 +20,8 @@ package source.config;
 import javax.xml.bind.annotation.XmlAttribute;
 
 import source.SourceType;
+import source.tuner.TunerChannel;
+import source.tuner.TunerChannel.Type;
 
 public class SourceConfigRecording extends SourceConfiguration
 {
@@ -58,4 +60,11 @@ public class SourceConfigRecording extends SourceConfiguration
     {
 	    return getRecordingAlias();
     }
+	
+	public TunerChannel getTunerChannel()
+	{
+		/* Create a tuner channel with a default bandwidth of 15 kHz */
+		return new TunerChannel( Type.LOCKED, mFrequency, 15000 );
+	}
+	
 }

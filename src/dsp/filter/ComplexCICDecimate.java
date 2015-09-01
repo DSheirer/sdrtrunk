@@ -19,7 +19,7 @@ package dsp.filter;
 
 import sample.Listener;
 import sample.Provider;
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 import dsp.filter.Window.WindowType;
 
 /**
@@ -30,7 +30,7 @@ import dsp.filter.Window.WindowType;
  * Note: comb delay is fixed at 1 for this filter.
  */
 public class ComplexCICDecimate extends ComplexFilter 
-								implements Provider<ComplexSample>
+								implements Provider<Complex>
 {
 	private Integrator[] mIntegrator;
 	private Comb[] mComb;
@@ -99,7 +99,7 @@ public class ComplexCICDecimate extends ComplexFilter
 	 * Input method for this filter to receive complex samples.
 	 */
 	@Override
-    public void receive( ComplexSample sample )
+    public void receive( Complex sample )
     {
 		mIntegrator[ 0 ].receive( (double)sample.left(), (double)sample.right() );
     }
@@ -108,7 +108,7 @@ public class ComplexCICDecimate extends ComplexFilter
 	 * Sets the listener to receive the output of this CIC filter
 	 */
 	@Override
-    public void setListener( Listener<ComplexSample> listener )
+    public void setListener( Listener<Complex> listener )
     {
 		mOutput.setListener( listener );
     }
@@ -117,13 +117,13 @@ public class ComplexCICDecimate extends ComplexFilter
 	 * Removes the listener from receiving the output of this CIC filter
 	 */
 	@Override
-    public void removeListener( Listener<ComplexSample> listener )
+    public void removeListener( Listener<Complex> listener )
     {
 		mOutput.removeListener( listener );
     }
 	
 	@Override
-	public Listener<ComplexSample> getListener()
+	public Listener<Complex> getListener()
 	{
 		return mOutput.getListener();
 	}
@@ -260,11 +260,11 @@ public class ComplexCICDecimate extends ComplexFilter
 		{
 			mStageCount = stageCount;
 			mDecimation = decimation;
-			mCleanupFilter = new ComplexFIRFilter( FilterFactory
+			mCleanupFilter = new ComplexFIRFilterOld( FilterFactory
 					.getCICCleanupFilter( outputSampleRate, 
 										  12000,
 										  60,
-										  WindowType.BLACKMAN ), 1.0d );
+										  WindowType.BLACKMAN ), 1.0f );
 			
 			setGain();
 		}
@@ -278,7 +278,7 @@ public class ComplexCICDecimate extends ComplexFilter
         public void receive( double left, double right )
         {
 			mCleanupFilter.receive( 
-					new ComplexSample( (float)( left * mGain ), 
+					new Complex( (float)( left * mGain ), 
 									   (float)( right * mGain ) ) );
         }
 		
@@ -294,7 +294,7 @@ public class ComplexCICDecimate extends ComplexFilter
 		/**
 		 * Adds a listener to receive output samples
 		 */
-        public void setListener( Listener<ComplexSample> listener )
+        public void setListener( Listener<Complex> listener )
         {
 			mCleanupFilter.setListener( listener );
         }
@@ -302,12 +302,12 @@ public class ComplexCICDecimate extends ComplexFilter
 		/**
 		 * Removes the listener from receiving output samples
 		 */
-        public void removeListener( Listener<ComplexSample> listener )
+        public void removeListener( Listener<Complex> listener )
         {
 			mCleanupFilter.setListener( null );
         }
 		
-		public Listener<ComplexSample> getListener()
+		public Listener<Complex> getListener()
 		{
 			return mCleanupFilter.getListener();
 		}

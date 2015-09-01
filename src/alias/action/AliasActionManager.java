@@ -6,10 +6,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import message.Message;
+import module.decode.p25.P25_LSMDecoder;
 import sample.Listener;
 import alias.Alias;
 import controller.ResourceManager;
-import decode.p25.P25Decoder;
 
 /**
  * Manages all alias action events.  Each received message is interrogated for

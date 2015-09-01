@@ -2,10 +2,27 @@ package dsp.psk;
 
 import sample.Broadcaster;
 import sample.Listener;
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 import dsp.symbol.Dibit;
 
-public class QPSKPolarSlicer implements Listener<ComplexSample>
+/*******************************************************************************
+ *     SDR Trunk 
+ *     Copyright (C) 2014,2015 Dennis Sheirer
+ * 
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ * 
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ * 
+ *     You should have received a copy of the GNU General Public License
+ *     along with this program.  If not, see <http://www.gnu.org/licenses/>
+ ******************************************************************************/
+public class QPSKPolarSlicer implements Listener<Complex>
 {
 	private Broadcaster<Dibit> mBroadcaster = new Broadcaster<Dibit>();
 	
@@ -15,7 +32,7 @@ public class QPSKPolarSlicer implements Listener<ComplexSample>
 	 * 
 	 *    \ 00 /
 	 *     \  /
-	 *   11 \/ 10
+	 *   01 \/ 10
 	 *      /\
 	 *     /  \
 	 *    / 11 \
@@ -41,16 +58,16 @@ public class QPSKPolarSlicer implements Listener<ComplexSample>
 	}
 
 	@Override
-	public void receive( ComplexSample sample )
+	public void receive( Complex complex )
 	{
-		mBroadcaster.broadcast( decide( sample ) );
+		mBroadcaster.broadcast( decide( complex ) );
 	}
 	
-	public static Dibit decide( ComplexSample sample )
+	public static Dibit decide( Complex complex )
 	{
-		if( sample.inPhaseAbsolute() > sample.quadratureAbsolute() )
+		if( Math.abs( complex.inphase() ) > Math.abs( complex.quadrature() ) )
 		{
-			if( sample.inphase() > 0 )
+			if( complex.inphase() > 0 )
 			{
 				return Dibit.D10_MINUS_1;
 			}
@@ -61,7 +78,7 @@ public class QPSKPolarSlicer implements Listener<ComplexSample>
 		}
 		else
 		{
-			if( sample.quadrature() > 0 )
+			if( complex.quadrature() > 0 )
 			{
 				return Dibit.D00_PLUS_1;
 			}

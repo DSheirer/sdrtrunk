@@ -58,9 +58,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -78,12 +76,15 @@ import org.usb4java.LibUsbException;
 import org.usb4java.Transfer;
 import org.usb4java.TransferCallback;
 
+import sample.Broadcaster;
 import sample.Listener;
 import sample.adapter.ByteSampleAdapter;
 import sample.complex.ComplexBuffer;
 import source.SourceException;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerController;
+import controller.ThreadPoolManager;
+import controller.ThreadPoolManager.ThreadType;
 
 
 public class HackRFTunerController extends TunerController
@@ -114,8 +115,7 @@ public class HackRFTunerController extends TunerController
 	private LinkedTransferQueue<byte[]> mFilledBuffers = 
 			new LinkedTransferQueue<byte[]>();
 	
-	private CopyOnWriteArrayList<Listener<ComplexBuffer>> mSampleListeners =
-					new CopyOnWriteArrayList<Listener<ComplexBuffer>>();
+    private Broadcaster<ComplexBuffer> mComplexBufferBroadcaster = new Broadcaster<>();
 	
 	private ByteSampleAdapter mSampleAdapter = new ByteSampleAdapter();
 	private BufferProcessor mBufferProcessor = new BufferProcessor();
@@ -127,14 +127,16 @@ public class HackRFTunerController extends TunerController
 	private Device mDevice;
 	private DeviceDescriptor mDeviceDescriptor;
 	private DeviceHandle mDeviceHandle;
+	private ThreadPoolManager mThreadPoolManager;
 	
-	public HackRFTunerController( Device device, DeviceDescriptor descriptor ) 
-						throws SourceException
+	public HackRFTunerController( Device device, DeviceDescriptor descriptor, 
+			ThreadPoolManager threadPoolManager ) throws SourceException
 	{
 	    super( MIN_FREQUENCY, MAX_FREQUENCY );
 
 	    mDevice = device;
 	    mDeviceDescriptor = descriptor;
+	    mThreadPoolManager = threadPoolManager;
 	}
 	
 	public void init() throws SourceException
@@ -870,7 +872,7 @@ public class HackRFTunerController extends TunerController
 	 */
     public void addListener( Listener<ComplexBuffer> listener )
     {
-		mSampleListeners.add( listener );
+    	mComplexBufferBroadcaster.addListener( listener );
 
 		if( mBufferProcessor == null || !mBufferProcessor.isRunning() )
 		{
@@ -890,41 +892,12 @@ public class HackRFTunerController extends TunerController
 	 */
     public void removeListener( Listener<ComplexBuffer> listener )
     {
-		mSampleListeners.remove( listener );
-		
-		if( mSampleListeners.isEmpty() )
+    	mComplexBufferBroadcaster.removeListener( listener );
+    	
+		if( !mComplexBufferBroadcaster.hasListeners() )
 		{
 			mBufferProcessor.stop();
 		}
-    }
-
-	/**
-	 * Dispatches the sample array to each registered listener. If there is more
-	 * than one listener, they receive a copy of the samples.  If there is only
-	 * one listener, or the last listener, they receive the original sample array.
-	 * 
-	 * This is to facilitate garbage collection of the array when the listener
-	 * is done processing the samples.
-	 */
-    public void broadcast( ComplexBuffer samples )
-    {
-    	Iterator<Listener<ComplexBuffer>> it = mSampleListeners.iterator();
-
-    	while( it.hasNext() )
-    	{
-        	Listener<ComplexBuffer> next = it.next();
-			
-			/* if this is the last (or only) listener, send the original 
-			 * buffer, otherwise send a copy of the buffer */
-			if( it.hasNext() )
-			{
-				next.receive( samples.copyOf() );
-			}
-			else
-			{
-				next.receive( samples );
-			}
-    	}
     }
 
 	/**
@@ -933,8 +906,6 @@ public class HackRFTunerController extends TunerController
 	 */
 	public class BufferProcessor implements Runnable, TransferCallback
 	{
-		private ScheduledExecutorService mExecutor = 
-							Executors.newScheduledThreadPool( 1 );
 		private ScheduledFuture<?> mSampleDispatcherTask;
         private CopyOnWriteArrayList<Transfer> mTransfers;
 		private AtomicBoolean mRunning = new AtomicBoolean();
@@ -960,9 +931,9 @@ public class HackRFTunerController extends TunerController
 					}
 				}
 
-	            mSampleDispatcherTask = mExecutor
-	            		.scheduleAtFixedRate( new BufferDispatcher(), 
-								  0, 20, TimeUnit.MILLISECONDS );
+				mSampleDispatcherTask = mThreadPoolManager.scheduleFixedRate( 
+					ThreadType.SOURCE_SAMPLE_PROCESSING, new BufferDispatcher(),
+					20, TimeUnit.MILLISECONDS );
 
             	while( mRunning.get() )
 				{
@@ -1125,7 +1096,7 @@ public class HackRFTunerController extends TunerController
 				{
 					float[] samples = mSampleAdapter.convert( buffer );
 					
-					broadcast( new ComplexBuffer( samples ) );
+					mComplexBufferBroadcaster.broadcast( new ComplexBuffer( samples ) );
 				}
 			}
 			catch( Exception e )

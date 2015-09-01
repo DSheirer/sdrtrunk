@@ -1,12 +1,12 @@
 package dsp.gain;
 
 import sample.Listener;
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 
-public class ComplexGain implements Listener<ComplexSample>
+public class ComplexGain implements Listener<Complex>
 {
 	private float mGain;
-	private Listener<ComplexSample> mListener;
+	private Listener<Complex> mListener;
 
 	public ComplexGain( float gain )
 	{
@@ -14,7 +14,7 @@ public class ComplexGain implements Listener<ComplexSample>
 	}
 	
 	@Override
-	public void receive( ComplexSample sample )
+	public void receive( Complex sample )
 	{
 		if( mListener != null )
 		{
@@ -24,7 +24,7 @@ public class ComplexGain implements Listener<ComplexSample>
 		}
 	}
 
-	public void setListener( Listener<ComplexSample> listener )
+	public void setListener( Listener<Complex> listener )
 	{
 		mListener = listener;
 	}

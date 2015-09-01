@@ -23,13 +23,13 @@ import java.awt.event.ActionListener;
 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
+import javax.swing.JLabel;
 
+import net.miginfocom.swing.MigLayout;
 import source.config.SourceConfigFactory;
 import source.config.SourceConfiguration;
-import controller.Editor;
 import controller.channel.AbstractChannelEditor;
 import controller.channel.ChannelNode;
-import controller.channel.ChannelValidationException;
 
 public class SourceComponentEditor extends AbstractChannelEditor
 {
@@ -42,7 +42,9 @@ public class SourceComponentEditor extends AbstractChannelEditor
 	{
     	super( channelNode );
     	
-		mComboSources = new JComboBox<SourceType>();
+		setLayout( new MigLayout( "fill,wrap 2", "[right,grow][grow]", "[][][grow]" ) );
+
+    	mComboSources = new JComboBox<SourceType>();
 		mComboSources.setModel( new DefaultComboBoxModel<SourceType>( SourceType.values() ) );
 		mComboSources.addActionListener( new ActionListener()
 		{
@@ -86,6 +88,7 @@ public class SourceComponentEditor extends AbstractChannelEditor
            }
 		});
 		
+		add( new JLabel( "Source:" ) );
 		add( mComboSources, "wrap" );
 
 		reset();

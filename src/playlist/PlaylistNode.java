@@ -23,8 +23,8 @@ import alias.AliasDirectory;
 import alias.AliasDirectoryNode;
 import controller.BaseNode;
 import controller.EmptyEditor;
-import controller.channel.ChannelMapList;
-import controller.channel.ChannelMapListNode;
+import controller.channel.map.ChannelMapList;
+import controller.channel.map.ChannelMapListNode;
 import controller.system.SystemList;
 import controller.system.SystemListNode;
 

@@ -21,5 +21,5 @@ import java.util.List;
 
 public interface ComplexSampleListListener
 {
-	public void receive( List<ComplexSample> samples );
+	public void receive( List<Complex> samples );
 }

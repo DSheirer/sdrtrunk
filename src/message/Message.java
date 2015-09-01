@@ -23,8 +23,8 @@ import java.util.Date;
 import java.util.List;
 
 import map.Plottable;
+import module.decode.event.MessageDetailsProvider;
 import alias.Alias;
-import controller.activity.MessageDetailsProvider;
 
 public abstract class Message implements MessageDetailsProvider
 {

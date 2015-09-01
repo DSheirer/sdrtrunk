@@ -19,15 +19,15 @@ package dsp.filter;
 
 import java.util.ArrayList;
 
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 
 public class ComplexHalfBandFilter extends ComplexFilter
 {
-	private ArrayList<ComplexSample> mBuffer;
+	private ArrayList<Complex> mBuffer;
     private int mBufferSize = 1; //Temporary initial value
 	private int mBufferPointer = 0;
-	private double mGain;
-	private double[] mCoefficients;
+	private float mGain;
+	private float[] mCoefficients;
 	private int[][] mIndexMap;
 	private int mCenterCoefficient;
 	private int mCenterCoefficientMapIndex;
@@ -49,16 +49,16 @@ public class ComplexHalfBandFilter extends ComplexFilter
 	 * @param filter - filter coefficients
 	 * @param gain - gain multiplier.  Use 1.0 for unity/no gain
 	 */
-	public ComplexHalfBandFilter( Filters filter, double gain )
+	public ComplexHalfBandFilter( Filters filter, float gain )
 	{
 		mCoefficients = filter.getCoefficients();
-		mBuffer = new ArrayList<ComplexSample>();
+		mBuffer = new ArrayList<Complex>();
 		mBufferSize = mCoefficients.length;
 		
 		//Fill the buffer with zero valued samples
 		for( int x = 0; x < mCoefficients.length; x++ )
 		{
-			mBuffer.add( new ComplexSample( (float)0.0, (float)0.0 ) );
+			mBuffer.add( new Complex( (float)0.0, (float)0.0 ) );
 		}
 		
 		generateIndexMap( mCoefficients.length );
@@ -69,7 +69,7 @@ public class ComplexHalfBandFilter extends ComplexFilter
 	 * Calculate the filtered value by applying the coefficients against
 	 * the complex samples in mBuffer
 	 */
-	public void receive( ComplexSample newSample )
+	public void receive( Complex newSample )
 	{
 		//Add the new sample to the buffer
 		mBuffer.set( mBufferPointer, newSample );
@@ -115,7 +115,7 @@ public class ComplexHalfBandFilter extends ComplexFilter
 
 			//We're almost finished ... apply gain, cast the doubles to floats and
 			//send it on it's merry way
-				send( new ComplexSample( (float)( leftAccumulator * mGain ),
+				send( new Complex( (float)( leftAccumulator * mGain ),
 										 (float)( rightAccumulator * mGain ) ) );
 		}
 	}

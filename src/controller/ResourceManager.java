@@ -17,7 +17,6 @@
  ******************************************************************************/
 package controller;
 
-import alias.action.AliasActionManager;
 import map.MapService;
 import playlist.PlaylistManager;
 import record.RecorderManager;
@@ -25,6 +24,7 @@ import settings.SettingsManager;
 import source.SourceManager;
 import source.recording.RecordingSourceManager;
 import source.tuner.TunerManager;
+import audio.AudioManager;
 import controller.channel.ChannelManager;
 import eventlog.EventLogManager;
 
@@ -33,6 +33,7 @@ import eventlog.EventLogManager;
  */
 public class ResourceManager
 {
+	private AudioManager mAudioManager;
     private ChannelManager mChannelManager;
     private EventLogManager mEventLogManager;
     private PlaylistManager mPlaylistManager;
@@ -67,13 +68,24 @@ public class ResourceManager
     	 * ChannelManager requires a reference to the ResourceManager so that
     	 * channel processing chains can access system wide resources
     	 */
+    	mThreadPoolManager = new ThreadPoolManager();
+    	mAudioManager = new AudioManager( mThreadPoolManager );
     	mChannelManager = new ChannelManager( this );
     	mSourceManager = new SourceManager( this );
     	mRecordingSourceManager = new RecordingSourceManager( this );
     	mTunerManager = new TunerManager( this );
     	mController = new ConfigurationControllerModel( this );
     	mMapService = new MapService( this );    
-    	mThreadPoolManager = new ThreadPoolManager();
+    }
+    
+    public AudioManager getAudioManager()
+    {
+    	return mAudioManager;
+    }
+    
+    public void setAudioManager( AudioManager audioManager )
+    {
+    	mAudioManager = audioManager;
     }
 
     public ConfigurationControllerModel getController()

@@ -32,7 +32,7 @@ import java.util.Observable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 
 public class EyeDiagramDataTapPanel extends TapViewPanel
 {
@@ -94,10 +94,11 @@ public class EyeDiagramDataTapPanel extends TapViewPanel
 				
 				EyeDiagramData data = mSamples.get( z );
 
-				ComplexSample[] samples = data.getSamples();
+				float[] inphaseSamples = data.getInphaseSamples();
+				float[] quadratureSamples = data.getQuadratureSamples();
 				
 				/* Draw the sample set containing two symbol periods of data */
-				if( samples.length >= 1 )
+				if( inphaseSamples.length >= 1 )
 				{
 					Path2D.Float iLine = new Path2D.Float( GeneralPath.WIND_EVEN_ODD, 20 );
 					Path2D.Float qLine = new Path2D.Float( GeneralPath.WIND_EVEN_ODD, 20 );
@@ -105,17 +106,17 @@ public class EyeDiagramDataTapPanel extends TapViewPanel
 					
 					float xAxis = 0;
 					
-					iLine.moveTo( xAxis, getSampleHeight( halfHeight, samples[ 0 ].inphase() ) );
-					qLine.moveTo( xAxis + third, getSampleHeight( halfHeight, samples[ 0 ].quadrature() ) );
-					mLine.moveTo( xAxis + ( two_thirds ), getMagnitudeHeight( samples[ 0 ].magnitude() ) );
+					iLine.moveTo( xAxis, getSampleHeight( halfHeight, inphaseSamples[ 0 ] ) );
+					qLine.moveTo( xAxis + third, getSampleHeight( halfHeight, quadratureSamples[ 0 ] ) );
+					mLine.moveTo( xAxis + ( two_thirds ), getMagnitudeHeight( Complex.magnitude( inphaseSamples[ 0 ], quadratureSamples[ 0 ] ) ) );
 
-					for( int x = 1; x < samples.length; x++ )
+					for( int x = 1; x < inphaseSamples.length; x++ )
 					{
 						xAxis += xAxisIncrement;
 						
-						iLine.lineTo( xAxis, getSampleHeight( halfHeight, samples[ x ].inphase() ) );
-						qLine.lineTo( xAxis + third, getSampleHeight( halfHeight, samples[ x ].quadrature() ) );
-						mLine.lineTo( xAxis + two_thirds, getMagnitudeHeight( samples[ x ].magnitude() ) );
+						iLine.lineTo( xAxis, getSampleHeight( halfHeight, inphaseSamples[ x ] ) );
+						qLine.lineTo( xAxis + third, getSampleHeight( halfHeight, quadratureSamples[ x ] ) );
+						mLine.lineTo( xAxis + two_thirds, getMagnitudeHeight( Complex.magnitude( inphaseSamples[ x ], quadratureSamples[ x ] ) ) );
 					}
 					
 					g2.draw( iLine );

@@ -27,10 +27,12 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.jtransforms.fft.DoubleFFT_1D;
+import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import dsp.filter.Window.WindowType;
+import dsp.filter.cic.ComplexPrimeCICDecimate;
 
 public class FilterFactory
 {
@@ -45,24 +47,24 @@ public class FilterFactory
 	 * @param window - to apply against the coefficients
 	 * @return
 	 */
-	public static double[] getSinc( int sampleRate, 
-								    long frequency, 
-								    int length,
-								    WindowType window )
+	public static float[] getSinc( int sampleRate, 
+								   long frequency, 
+								   int length,
+								   WindowType window )
 	{
 		//Ensure we have an odd length
 		assert( length % 2 == 0 );
 
 		//Get unity response array (one element longer to align with IDFT size)
-		double[] frequencyResponse = getUnityResponseArray( sampleRate, frequency, length + 1 );
+		float[] frequencyResponse = getUnityResponseArray( sampleRate, frequency, length + 1 );
 
 		//Apply Inverse DFT against frequency response unity values, leaving the
 		//IDFT bin results in the frequency response array
-		DoubleFFT_1D idft = new DoubleFFT_1D( length + 1 );
+		FloatFFT_1D idft = new FloatFFT_1D( length + 1 );
 		idft.realInverseFull( frequencyResponse, false );
 
 		//Transfer the IDFT results to the return array
-		double[] coefficients = new double[ length ];
+		float[] coefficients = new float[ length ];
 		int middleCoefficient = (int)( length / 2 );
 
 		//Bin 0 of the idft is our center coefficient
@@ -91,9 +93,9 @@ public class FilterFactory
 	 * @param coefficients
 	 * @return
 	 */
-	private static double[] normalize( double[] coefficients )
+	private static float[] normalize( float[] coefficients )
 	{
-		double accumulator = 0;
+		float accumulator = 0;
 		
 		for( int x = 0; x < coefficients.length; x++ )
 		{
@@ -124,51 +126,48 @@ public class FilterFactory
 	 * @param length
 	 * @return
 	 */
-	public static double[] getUnityResponseArray( int sampleRate, 
-												  long frequency, 
-												  int length )
+	public static float[] getUnityResponseArray( int sampleRate, 
+												 long frequency, 
+												 int length )
 	{
-		double[] unityArray = new double[ length * 2 ];
+		float[] unityArray = new float[ length * 2 ];
 
 		int binCount = (int)( ( Math.round( 
-				(double)frequency / (double)sampleRate * (double)length ) ) );
+				(float)frequency / (float)sampleRate * (float)length ) ) );
 
-//		if( length % 2 == 0 ) //even length
-//		{
-//			for( int x = 0; x < binCount; x++ )
-//			{
-//				unityArray[ x ] = 1.0d;
-//				unityArray[ length - 1 - x ] = 1.0d;
-//			}
-//		}
-//		else //odd length
-//		{
-			unityArray[ 0 ] = 1.0d;
+		if( length % 2 == 0 ) //even length
+		{
+			for( int x = 0; x < binCount; x++ )
+			{
+				unityArray[ x ] = 1.0f;
+				unityArray[ length - 1 - x ] = 1.0f;
+			}
+		}
+		else //odd length
+		{
+			unityArray[ 0 ] = 1.0f;
 
 			for( int x = 1; x <= binCount; x++ )
 			{
-				unityArray[ x ] = 1.0d;
-				unityArray[ length - x ] = 1.0d;
+				unityArray[ x ] = 1.0f;
+				unityArray[ length - x ] = 1.0f;
 			}
-//		}
+		}
 
 		return unityArray;
 	}
 	
-	public static double[] getSine( double sampleRate, double frequency, int length )
+	public static float[] getSine( float sampleRate, float frequency, int length )
 	{
-		//Ensure we have an odd length
-		assert( length % 2 == 0 );
+		float[] retVal = new float[ length ];
 		
-		double[] retVal = new double[ length ];
-		
-		double radianFrequency = 2.0D * Math.PI * ( frequency / sampleRate );
+		float radianFrequency = (float)( 2.0d * Math.PI * ( frequency / sampleRate ) );
 
 		int middle = (int)( length / 2 );
 
 		for( int x = 0; x < middle; x++ )
 		{
-			double val = Math.sin( radianFrequency * x );
+			float val = (float)Math.sin( radianFrequency * x );
 			
 			retVal[ middle + x ] = val;
 			retVal[ middle - x ] = -val;
@@ -190,7 +189,7 @@ public class FilterFactory
 	 *   ...
 	 *   Index length - 1: same
 	 */
-	public static double[] invert( double[] coefficients )
+	public static float[] invert( float[] coefficients )
 	{
 		for( int x = 1; x < coefficients.length; x += 2 )
 		{
@@ -210,21 +209,21 @@ public class FilterFactory
 	 * @param windowType - window to apply against the generated coefficients
 	 * @return
 	 */
-	public static double[] getLowPass( int sampleRate, 
-									   long cutoff, 
-									   int filterLength, 
-									   WindowType windowType )
+	public static float[] getLowPass( int sampleRate, 
+									  long cutoff, 
+									  int filterLength, 
+									  WindowType windowType )
 	{
 		if( filterLength % 2 == 0 ) //even length
 		{
-			double[] values = getSinc( sampleRate, cutoff, filterLength + 2, windowType );
+			float[] values = getSinc( sampleRate, cutoff, filterLength + 2, windowType );
 			
 			//throw away the 0 index and the last index
 			return Arrays.copyOfRange( values, 1, values.length - 2 );
 		}
 		else
 		{
-			double[] values = getSinc( sampleRate, cutoff, filterLength + 1, windowType );
+			float[] values = getSinc( sampleRate, cutoff, filterLength + 1, windowType );
 			
 			//throw away the 0 index
 			return Arrays.copyOfRange( values, 1, values.length );
@@ -245,12 +244,12 @@ public class FilterFactory
 	 *   - passFrequency < stopFrequency
 	 *   - stopFrequency <= sampleRate/2
 	 */
-	public static double[] getLowPass( int sampleRate,
-									   int passFrequency,
-									   int stopFrequency,
-									   int attenuation,
-									   WindowType windowType,
-									   boolean forceOddLength )
+	public static float[] getLowPass( int sampleRate,
+									  int passFrequency,
+									  int stopFrequency,
+									  int attenuation,
+									  WindowType windowType,
+									  boolean forceOddLength )
 	{
 		if( stopFrequency < passFrequency || stopFrequency > ( sampleRate / 2 ) )
 		{
@@ -288,10 +287,10 @@ public class FilterFactory
 	 * @param windowType - window to apply against the generated coefficients
 	 * @return
 	 */
-	public static double[] getHighPass( int sampleRate, 
-										long cutoff, 
-										int filterLength, 
-										WindowType windowType )
+	public static float[] getHighPass( int sampleRate, 
+									   long cutoff, 
+									   int filterLength, 
+									   WindowType windowType )
 	{
 		//Convert the high frequency cutoff to its low frequency cutoff 
 		//equivalent, so that when we generate the low pass filter, prior to 
@@ -304,12 +303,12 @@ public class FilterFactory
 								windowType ) );
 	}
 	
-	public static double[] getHighPass( int sampleRate,
-										long stopFrequency,
-										long passFrequency,
-										int attenuation,
-										WindowType windowType,
-										boolean forceOddLength )
+	public static float[] getHighPass( int sampleRate,
+									   long stopFrequency,
+									   long passFrequency,
+									   int attenuation,
+									   WindowType windowType,
+									   boolean forceOddLength )
 	{
 		/* reverse the stop and pass frequency to get the low pass variant */
 		int tapCount = getTapCount( sampleRate, 
@@ -331,7 +330,7 @@ public class FilterFactory
 	/**
 	 * Utility to log the arrays of doubles with line breaks
 	 */
-	public static String arrayToString( double[] array, boolean breaks )
+	public static String arrayToString( float[] array, boolean breaks )
 	{
 		StringBuilder sb = new StringBuilder();
 		for( int x = 0; x < array.length; x++ )
@@ -574,10 +573,10 @@ public class FilterFactory
 	 * @param stageCount
 	 * @return
 	 */
-	public static double[] getCICCleanupFilter( int outputSampleRate, 
-												int passFrequency,
-												int attenuation,
-												WindowType window )
+	public static float[] getCICCleanupFilter( int outputSampleRate, 
+											   int passFrequency,
+											   int attenuation,
+											   WindowType window )
 	{
 		int taps = getTapCount( outputSampleRate, passFrequency, passFrequency + 1500, 
 				attenuation );
@@ -588,16 +587,16 @@ public class FilterFactory
 			taps ++;
 		}
 
-		double[] frequencyResponse = 
+		float[] frequencyResponse = 
 				getCICResponseArray( outputSampleRate, passFrequency, taps );
 		
 		//Apply Inverse DFT against frequency response unity values, leaving the
 		//IDFT bin results in the frequency response array
-		DoubleFFT_1D idft = new DoubleFFT_1D( taps );
+		FloatFFT_1D idft = new FloatFFT_1D( taps );
 		idft.realInverseFull( frequencyResponse, false );
 
 		//Transfer the IDFT results to the odd length return array
-		double[] coefficients = new double[ taps ];
+		float[] coefficients = new float[ taps ];
 		int middleCoefficient = (int)( taps / 2 );
 
 		//Bin 0 of the idft is our center coefficient
@@ -612,32 +611,32 @@ public class FilterFactory
 		}
 
 		//Apply the window against the coefficients
-		coefficients = Window.apply( window, coefficients );
+//		coefficients = Window.apply( window, coefficients );
 		
 		normalize( coefficients );
 		
 		return coefficients;
 	}
 
-	public static double[] getCICResponseArray( int sampleRate, 
+	public static float[] getCICResponseArray( int sampleRate, 
 												int frequency, 
 												int length )
 	{
-		double[] cicArray = new double[ length * 2 ];
+		float[] cicArray = new float[ length * 2 ];
 		
 		int binCount = (int)( ( Math.round( 
-		(double)frequency / (double)sampleRate * (double)length ) ) );
+		(double)frequency / (double)sampleRate * 2.0d * (double)length ) ) );
 		
-		cicArray[ 0 ] = 1.0d;
+		cicArray[ 0 ] = 1.0f;
 		
-		double unityResponse = Math.sin( 1.0d / (double)length ) / 
-		   ( 1.0d / (double)length );
+		float unityResponse = (float)( Math.sin( 1.0d / (double)length ) / 
+		   ( 1.0d / (double)length ) );
 		
 		for( int x = 1; x <= binCount; x++ )
 		{
 			/* Calculate unity response plus amplification for droop */
-			double compensated = 1.0d + ( unityResponse - 
-					( Math.sin( (double)x / (double)length ) / 
+			float compensated = 1.0f + ( unityResponse - 
+					(float)( Math.sin( (double)x / (double)length ) / 
 							( (double)x / (double)length ) ) );
 			
 			cicArray[ x ] = compensated;
@@ -666,64 +665,64 @@ public class FilterFactory
 	 * 
 	 * @return - filter coefficients
 	 */
-	public static double[] getRootRaisedCosine( int samplesPerSymbol,
-												int symbols,
-												double alpha )
+	public static float[] getRootRaisedCosine( int samplesPerSymbol,
+											   int symbols,
+											   float alpha )
 	{
 		int taps = samplesPerSymbol * symbols + 1;
 		
-		double scale = 0;
+		float scale = 0;
 		
-		double[] coefficients = new double[ taps ];
+		float[] coefficients = new float[ taps ];
 		
 		for( int x = 0; x < taps; x++ )
 		{
-			double index = x - ( taps / 2 );
+			float index = (float)x - ( (float)taps / 2.0f );
 			
-			double x1 = Math.PI * index / (double)samplesPerSymbol;
-			double x2 = 4.0 * alpha * index / (double)samplesPerSymbol;
-			double x3 = x2 * x2 - 1;
+			float x1 = (float)Math.PI * index / (float)samplesPerSymbol;
+			float x2 = 4.0f * alpha * index / (float)samplesPerSymbol;
+			float x3 = x2 * x2 - 1.0f;
 
-			double numerator, denominator;
+			float numerator, denominator;
 			
 			if( Math.abs( x3 ) >= 0.000001 )
 			{
 				if( x != taps / 2 )
 				{
-					numerator = Math.cos( ( 1.0 + alpha ) * x1 ) + 
-						  Math.sin( ( 1.0 - alpha ) * x1 ) / 
-						  	( 4.0 * alpha * index / (double)samplesPerSymbol );
+					numerator = (float)Math.cos( ( 1.0 + alpha ) * x1 ) + 
+							(float)Math.sin( ( 1.0f - alpha ) * x1 ) / 
+						  	( 4.0f * alpha * index / (float)samplesPerSymbol );
 				}
 				else
 				{
-					numerator = Math.cos( ( 1.0 + alpha ) * x1 ) +
-						  ( 1.0 - alpha ) * Math.PI / ( 4.0 * alpha );
+					numerator = (float)Math.cos( ( 1.0f + alpha ) * x1 ) +
+						  ( 1.0f - alpha ) * (float)Math.PI / ( 4.0f * alpha );
 				}
 				
-				denominator = x3 * Math.PI;
+				denominator = x3 * (float)Math.PI;
 			}
 			else
 			{
-				if( alpha == 1.0 )
+				if( alpha == 1.0f )
 				{
-					coefficients[ x ] = -1.0;
+					coefficients[ x ] = -1.0f;
 					continue;
 				}
 				
-				x3 = ( 1.0 - alpha ) * x1;
-				x2 = ( 1.0 + alpha ) * x1;
+				x3 = ( 1.0f - alpha ) * x1;
+				x2 = ( 1.0f + alpha ) * x1;
 				
-				numerator = ( Math.sin( x2 ) * ( 1.0 + alpha ) * Math.PI -
+				numerator = (float)( Math.sin( x2 ) * ( 1.0f + alpha ) * Math.PI -
 					Math.cos( x3 ) * ( ( 1.0 - alpha ) * Math.PI * 
 						(double)samplesPerSymbol ) / ( 4 * alpha * index ) +
 					Math.sin( x3 ) * (double)samplesPerSymbol * 
 						(double)samplesPerSymbol / ( 4.0 * alpha * index * index ) );
 				
-				denominator = -32.0 * Math.PI * alpha * alpha * index / 
-						(double)samplesPerSymbol;
+				denominator = (float)( -32.0 * Math.PI * alpha * alpha * index / 
+						(double)samplesPerSymbol );
 			}
 			
-			coefficients[ x ] = 4.0 * alpha * numerator / denominator;
+			coefficients[ x ] = 4.0f * alpha * numerator / denominator;
 			
 			scale += coefficients[ x ];
 		}
@@ -738,13 +737,4 @@ public class FilterFactory
 
 		return coefficients;
 	}
-
-	public static void main( String[] args )
-	{
-		double[] c = FilterFactory.getRootRaisedCosine( 10, 4, 0.2 );
-		
-		mLog.debug( "C:" + Arrays.toString( c ) );
-	}
-	
-	
 }

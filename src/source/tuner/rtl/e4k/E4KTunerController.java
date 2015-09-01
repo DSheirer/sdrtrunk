@@ -34,8 +34,8 @@ import source.SourceException;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
 import source.tuner.rtl.RTL2832TunerController;
-import source.tuner.rtl.RTL2832TunerController.Descriptor;
 import controller.ResourceManager;
+import controller.ThreadPoolManager;
 
 public class E4KTunerController extends RTL2832TunerController
 {
@@ -111,10 +111,12 @@ public class E4KTunerController extends RTL2832TunerController
 	private E4KTunerEditorPanel mEditor;
 	
 	public E4KTunerController( Device device, 
-							   DeviceDescriptor deviceDescriptor ) 
+							   DeviceDescriptor deviceDescriptor,
+							   ThreadPoolManager threadPoolManager ) 
 									   throws SourceException
 	{
-		super( device, deviceDescriptor, MIN_FREQUENCY, MAX_FREQUENCY );
+		super( device, deviceDescriptor, threadPoolManager,
+					MIN_FREQUENCY, MAX_FREQUENCY );
 	}
 
 	@Override

@@ -17,7 +17,12 @@
  ******************************************************************************/
 package controller.channel;
 
+import gui.SDRTrunk;
+
 import java.util.ArrayList;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import alias.action.AliasActionManager;
 import message.Message;
@@ -26,6 +31,8 @@ import controller.ResourceManager;
 
 public class ChannelManager implements ChannelEventListener
 {
+	private final static Logger mLog = LoggerFactory.getLogger( ChannelManager.class );
+	
 	private ArrayList<Channel> mChannels = new ArrayList<Channel>();
 	
 	private ArrayList<ChannelEventListener> mChannelListeners =
@@ -56,13 +63,13 @@ public class ChannelManager implements ChannelEventListener
     {
 		switch( event.getEvent() )
 		{
-			case CHANNEL_ADDED:
+			case CHANNEL_ENABLED:
 				if( !mChannels.contains( event.getChannel() ) )
 				{
 					mChannels.add( event.getChannel() );
 				}
 				break;
-			case CHANNEL_DELETED:
+			case CHANNEL_DISABLED:
 				mChannels.remove( event.getChannel() );
 				break;
 		}

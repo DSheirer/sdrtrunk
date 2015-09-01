@@ -18,11 +18,11 @@
 package sample.adapter;
 
 import sample.Listener;
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 
 public class FloatArrayToComplexAdapter implements Listener<Float[]>
 {
-	private Listener<ComplexSample> mListener;
+	private Listener<Complex> mListener;
 
 	@Override
     public void receive( Float[] samples )
@@ -35,7 +35,7 @@ public class FloatArrayToComplexAdapter implements Listener<Float[]>
 					samples[ x ] != null && 
 					samples[ x + 1 ] != null )
 				{
-					mListener.receive( new ComplexSample( samples[ x ], 
+					mListener.receive( new Complex( samples[ x ], 
 											  			  samples[ x + 1 ] ) );
 				}
 			}
@@ -44,12 +44,12 @@ public class FloatArrayToComplexAdapter implements Listener<Float[]>
 		}
     }
 
-	public void setListener( Listener<ComplexSample> listener )
+	public void setListener( Listener<Complex> listener )
 	{
 		mListener = listener;
 	}
 	
-	public void removeListener( Listener<ComplexSample> listener )
+	public void removeListener( Listener<Complex> listener )
 	{
 		mListener = null;
 	}

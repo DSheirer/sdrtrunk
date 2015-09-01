@@ -35,6 +35,8 @@ import javax.swing.JTextField;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
 
+import module.decode.AuxDecodeComponentEditor;
+import module.decode.DecodeComponentEditor;
 import net.miginfocom.swing.MigLayout;
 
 import org.slf4j.Logger;
@@ -47,8 +49,6 @@ import alias.AliasList;
 import com.jidesoft.swing.JideTabbedPane;
 
 import controller.Editor;
-import decode.AuxDecodeComponentEditor;
-import decode.DecodeComponentEditor;
 import eventlog.EventLogComponentEditor;
 
 public class ChannelEditor extends Editor implements ActionListener
@@ -99,7 +99,7 @@ public class ChannelEditor extends Editor implements ActionListener
 		/**
 		 * ComboBox: Alias Lists
 		 */
-		add( new JLabel( "Aliases:" ) );
+		add( new JLabel( "Alias List:" ) );
 
 		mComboAliasLists = new JComboBox<AliasList>();
 

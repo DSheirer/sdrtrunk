@@ -19,6 +19,7 @@ package record.wave;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.sound.sampled.AudioFormat;
@@ -29,15 +30,14 @@ import org.slf4j.LoggerFactory;
 import record.Recorder;
 import record.RecorderType;
 import sample.Listener;
-import sample.complex.ComplexSample;
+import sample.complex.ComplexBuffer;
 import util.waveaudio.WaveWriter;
-import buffer.ComplexSampleBufferAssembler;
 
 /**
  * Threaded WAVE audio recorder for recording complex (I&Q) samples to a wave
  * file
  */
-public class ComplexWaveRecorder extends Recorder implements Listener<ComplexSample>
+public class ComplexWaveRecorder extends Recorder implements Listener<ComplexBuffer>
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( ComplexWaveRecorder.class );
@@ -48,11 +48,12 @@ public class ComplexWaveRecorder extends Recorder implements Listener<ComplexSam
     private WaveWriter mWriter;
     private String mFileName;
     private BufferProcessor mBufferProcessor;
+    
+    private Listener<ComplexBuffer> mListener;
 
     //Sample buffer queue ... constrained to 512 sample buffers (arbitrary size)
 	private LinkedBlockingQueue<ByteBuffer> mToWriteBufferQueue = 
 								new LinkedBlockingQueue<ByteBuffer>( 512 );
-	private ComplexSampleBufferAssembler mCurrentBuffer;
 	
 	public ComplexWaveRecorder( int sampleRate, String filename )
 	{
@@ -64,9 +65,26 @@ public class ComplexWaveRecorder extends Recorder implements Listener<ComplexSam
 										 true,   //Signed
 										 false ); //Little Endian
 
-		mCurrentBuffer = new ComplexSampleBufferAssembler( sampleRate );
-				
 		mFileName = filename;
+	}
+
+	/**
+	 * Converts the float samples in a complex buffer to a little endian 16-bit
+	 * buffer
+	 */
+	public static ByteBuffer convert( ComplexBuffer buffer )
+	{
+		float[] samples = buffer.getSamples();
+		
+		ByteBuffer converted = ByteBuffer.allocate( samples.length * 2 );
+		converted.order( ByteOrder.LITTLE_ENDIAN );
+
+		for( float sample: samples )
+		{
+			converted.putShort( (short)( sample * Short.MAX_VALUE ) );
+		}
+		
+		return converted;
 	}
 
 	@Override
@@ -131,23 +149,26 @@ public class ComplexWaveRecorder extends Recorder implements Listener<ComplexSam
     }
     
 	@Override
-    public void receive( ComplexSample sample )
+    public void receive( ComplexBuffer buffer )
     {
-		mCurrentBuffer.put( sample );
-		
-		if( !mCurrentBuffer.hasRemaining() )
+		//Dispatch the buffer to be written to disk
+		if( !mToWriteBufferQueue.offer( convert( buffer ) ) )
 		{
-			//Dispatch the buffer to be written to disk
-			if( !mToWriteBufferQueue.offer( mCurrentBuffer.get() ) )
-			{
-				//We had an overflow ... log it
-				mLog.error( "ComplexWaveRecorder: buffer overflow - throwing "
-						+ "away 1 second of sample data" );
-			}
-			
-			mCurrentBuffer.clear();
+			//We had an overflow ... log it
+			mLog.error( "ComplexWaveRecorder: buffer overflow - throwing "
+					+ "away a buffer of sample data" );
+		}
+		
+		if( mListener != null )
+		{
+			mListener.receive( buffer );
 		}
     }
+	
+	public void setListener( Listener<ComplexBuffer> listener )
+	{
+		mListener = listener;
+	}
 
 	public class BufferProcessor extends Thread
     {
@@ -175,5 +196,4 @@ public class ComplexWaveRecorder extends Recorder implements Listener<ComplexSam
 			}
     	}
     }
-
 }

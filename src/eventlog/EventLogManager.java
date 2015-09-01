@@ -19,8 +19,8 @@ package eventlog;
 
 import java.nio.file.Path;
 
+import module.ProcessingChainOld;
 import properties.SystemProperties;
-import controller.channel.ProcessingChain;
 import eventlog.MessageEventLogger.Type;
 
 public class EventLogManager
@@ -33,7 +33,7 @@ public class EventLogManager
 				.getApplicationFolder( "event_logs" );
 	}
 	
-	public EventLogger getLogger( ProcessingChain chain, EventLogType eventLogType )
+	public EventLogger getLogger( ProcessingChainOld chain, EventLogType eventLogType )
 	{
 		StringBuilder sb = new StringBuilder();
 

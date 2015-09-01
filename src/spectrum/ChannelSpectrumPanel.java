@@ -17,14 +17,15 @@ import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
 import sample.Listener;
+import sample.SampleType;
 import sample.complex.ComplexBuffer;
+import sample.real.RealBuffer;
 import sample.real.RealSampleListener;
 import settings.ColorSetting.ColorSettingName;
 import settings.ColorSettingMenuItem;
 import settings.Setting;
 import settings.SettingChangeListener;
 import settings.SettingsManager;
-import source.Source.SampleType;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeEvent.Attribute;
 import spectrum.converter.DFTResultsConverter;
@@ -44,7 +45,7 @@ import dsp.filter.Window.WindowType;
 
 public class ChannelSpectrumPanel extends JPanel 
 								  implements ChannelEventListener,
-								  			 RealSampleListener,
+								  			 Listener<RealBuffer>,
 								  			 SettingChangeListener,
 								  			 SpectralDisplayAdjuster
 {
@@ -179,7 +180,7 @@ public class ChannelSpectrumPanel extends JPanel
 					start();
 				}
 				break;
-			case CHANNEL_DELETED:
+			case CHANNEL_DISABLED:
 				if( event.getChannel() == mCurrentChannel )
 				{
 					if( mEnabled.get() )
@@ -190,7 +191,7 @@ public class ChannelSpectrumPanel extends JPanel
 					mCurrentChannel = null;
 				}
 				break;
-			case CHANGE_ENABLED:
+			case CHANNEL_ENABLED:
 				if( event.getChannel() == mCurrentChannel &&
 					!event.getChannel().isProcessing() )
 				{
@@ -205,7 +206,7 @@ public class ChannelSpectrumPanel extends JPanel
 	{
 		if( mEnabled.get() && mCurrentChannel != null && mCurrentChannel.isProcessing() )
 		{
-			mCurrentChannel.getProcessingChain().addRealListener( (RealSampleListener)this );
+			mCurrentChannel.getProcessingChain().addRealBufferListener( this );
 			mDFTProcessor.start();
 		}
 	}
@@ -215,7 +216,7 @@ public class ChannelSpectrumPanel extends JPanel
 		
 		if( mCurrentChannel != null && mCurrentChannel.isProcessing() )
 		{
-			mCurrentChannel.getProcessingChain().removeRealListener( (RealSampleListener)this );
+			mCurrentChannel.getProcessingChain().removeRealBufferListener( this );
 		}
 
 		mDFTProcessor.stop();
@@ -251,9 +252,12 @@ public class ChannelSpectrumPanel extends JPanel
     }
 
 	@Override
-    public void receive( float sample )
+    public void receive( RealBuffer buffer )
     {
-		mDecimatingSampleAssembler.receive( sample );
+		for( float sample: buffer.getSamples() )
+		{
+			mDecimatingSampleAssembler.receive( sample );
+		}
     }
 
 	/**
@@ -454,7 +458,7 @@ public class ChannelSpectrumPanel extends JPanel
 	public class DecimatingSampleAssembler
 	{
 		private FloatHalfBandFilter mDecimationFilter = new FloatHalfBandFilter( 
-				Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.0002 );
+				Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.0002f );
 		
 		private SampleAssembler mSampleAssembler;
 

@@ -21,12 +21,12 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import module.ProcessingChainOld;
 import properties.SystemProperties;
 import record.config.RecordConfiguration;
 import record.wave.ComplexWaveRecorder;
 import record.wave.FloatWaveRecorder;
 import util.TimeStamp;
-import controller.channel.ProcessingChain;
 
 public class RecorderManager
 {
@@ -36,7 +36,7 @@ public class RecorderManager
 	{
 	}
 	
-	public List<Recorder> getRecorder( ProcessingChain channel )
+	public List<Recorder> getRecorder( ProcessingChainOld channel )
 	{
 		/* Note: the file suffix (ie .wav) gets added by the recorder */
 

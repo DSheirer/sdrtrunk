@@ -32,7 +32,7 @@ import java.util.Observable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 
 public class QPSKTapPanel extends TapViewPanel
 {
@@ -40,7 +40,7 @@ public class QPSKTapPanel extends TapViewPanel
 	private final static Logger mLog = LoggerFactory.getLogger( SDRTrunk.class );
 
 	private Tap mTap;
-	private List<ComplexSample> mSamples;
+	private List<Complex> mSamples;
 	private int mSampleCount;
 
 	public QPSKTapPanel( ComplexTap tap )
@@ -62,7 +62,7 @@ public class QPSKTapPanel extends TapViewPanel
 	@Override
     public void update( Observable arg0, Object arg1 )
     {
-		mSamples = (List<ComplexSample>)getModel().getSamples();
+		mSamples = (List<Complex>)getModel().getSamples();
 		repaint();
     }
 	
@@ -107,7 +107,7 @@ public class QPSKTapPanel extends TapViewPanel
 
 			int threshold = (int)( mSamples.size() * 0.9f );
 
-			for( ComplexSample sample: mSamples )
+			for( Complex sample: mSamples )
 			{
 				/* Set color to foreground for newest 10% of constellations */
 				if( counter == threshold )

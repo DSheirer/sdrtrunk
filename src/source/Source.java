@@ -17,6 +17,8 @@
  ******************************************************************************/
 package source;
 
+import sample.SampleType;
+
 /**
  * Abstract class to define the minimum functionality of a sample data provider.
  */
@@ -24,8 +26,6 @@ public abstract class Source
 {
     protected String mName;
     protected SampleType mSampleType;
-
-    public enum SampleType { COMPLEX, REAL }
 
     public Source( String name, SampleType sampleType )
     {

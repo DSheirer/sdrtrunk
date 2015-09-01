@@ -1,6 +1,8 @@
 package sample.complex;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class ComplexBuffer
 {
@@ -30,6 +32,21 @@ public class ComplexBuffer
 	public float[] getSamples()
 	{
 		return mSamples;
+	}
+
+	/**
+	 * Converts this sample buffer into a list of complex samples
+	 */
+	public List<Complex> getComplexSamples()
+	{
+		List<Complex> samples = new ArrayList<Complex>();
+		
+		for( int x = 0; x < mSamples.length; x += 2 )
+		{
+			samples.add( new Complex( mSamples[ x ], mSamples[ x + 1 ] ) );
+		}
+		
+		return samples;
 	}
 
 	/**

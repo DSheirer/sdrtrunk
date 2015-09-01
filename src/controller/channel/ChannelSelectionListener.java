@@ -17,7 +17,9 @@
  ******************************************************************************/
 package controller.channel;
 
+import module.ProcessingChainOld;
+
 public interface ChannelSelectionListener
 {
-	public void channelSelected( ProcessingChain channel );
+	public void channelSelected( ProcessingChainOld channel );
 }

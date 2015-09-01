@@ -31,6 +31,8 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.Mixer;
 import javax.sound.sampled.TargetDataLine;
 
+import module.ProcessingChainOld;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +42,6 @@ import source.config.SourceConfigMixer;
 import source.config.SourceConfiguration;
 import source.tuner.MixerTunerDataLine;
 import source.tuner.MixerTunerType;
-import controller.channel.ProcessingChain;
 
 public class MixerManager
 {
@@ -82,13 +83,10 @@ public class MixerManager
     	return sInstance;
     }
     
-    public RealMixerSource getSource( ProcessingChain processingChain )
+    public RealMixerSource getSource( SourceConfiguration config )
     {
 		RealMixerSource retVal = null;
 		
-		SourceConfiguration config = 
-				processingChain.getChannel().getSourceConfiguration();
-
     	if( config instanceof SourceConfigMixer )
     	{
 			SourceConfigMixer mixerConfig = (SourceConfigMixer)config;

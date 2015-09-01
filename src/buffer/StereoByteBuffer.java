@@ -21,10 +21,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Enumeration;
 
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 import source.mixer.MixerChannel;
 
-public class StereoByteBuffer implements Enumeration<ComplexSample>
+public class StereoByteBuffer implements Enumeration<Complex>
 {
 	private ByteBuffer mByteBuffer;
 	
@@ -51,9 +51,9 @@ public class StereoByteBuffer implements Enumeration<ComplexSample>
 	}
 
 	@Override
-    public ComplexSample nextElement()
+    public Complex nextElement()
     {
-		return new ComplexSample( (float)mByteBuffer.getShort(),
+		return new Complex( (float)mByteBuffer.getShort(),
 								  (float)mByteBuffer.getShort() );
     }
 }

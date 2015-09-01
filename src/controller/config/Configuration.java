@@ -20,10 +20,10 @@ package controller.config;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
+import module.decode.config.AuxDecodeConfiguration;
+import module.decode.config.DecodeConfiguration;
 import record.config.RecordConfiguration;
 import source.config.SourceConfiguration;
-import decode.config.AuxDecodeConfiguration;
-import decode.config.DecodeConfiguration;
 import eventlog.config.EventLogConfiguration;
 
 @XmlSeeAlso( { AuxDecodeConfiguration.class,

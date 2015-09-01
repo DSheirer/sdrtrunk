@@ -29,6 +29,7 @@ import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
+import sample.SampleType;
 import sample.adapter.ShortToFloatMap;
 import sample.real.RealSampleListener;
 

@@ -17,8 +17,6 @@
  ******************************************************************************/
 package source.recording;
 
-import gui.SDRTrunk;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -30,10 +28,10 @@ import settings.SettingsManager;
 import source.Source;
 import source.SourceException;
 import source.config.SourceConfigRecording;
+import source.config.SourceConfiguration;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannelSource;
 import controller.ResourceManager;
-import controller.channel.ProcessingChain;
 
 public class RecordingSourceManager
 {
@@ -55,21 +53,21 @@ public class RecordingSourceManager
      * Iterates current recordings to get a tuner channel source for the frequency
      * specified in the channel config's source config object
      */
-    public Source getSource( ProcessingChain processingChain ) 
+    public Source getSource( SourceConfiguration config, int bandwidth ) 
     					throws SourceException
     {
     	TunerChannelSource retVal = null;
 
-    	if( processingChain.getChannel().getSourceConfiguration()
-    						instanceof SourceConfigRecording )
+    	if( config instanceof SourceConfigRecording )
     	{
-        	TunerChannel tunerChannel = 
-        			processingChain.getChannel().getTunerChannel();
+    		SourceConfigRecording configRecording = (SourceConfigRecording)config;
+    		
+        	TunerChannel tunerChannel = configRecording.getTunerChannel();
+        	
+        	tunerChannel.setBandwidth( bandwidth );
 
-    		SourceConfigRecording config = (SourceConfigRecording)processingChain
-    				.getChannel().getSourceConfiguration();
-
-    		Recording recording = getRecordingFromAlias( config.getRecordingAlias() );
+    		Recording recording = getRecordingFromAlias( 
+    				configRecording.getRecordingAlias() );
     		
     		if( recording != null )
     		{
@@ -80,7 +78,7 @@ public class RecordingSourceManager
     		else
     		{
     			throw new SourceException( "Recording with alias name [" + 
-					config.getRecordingAlias() + "] is not currently available" );
+					configRecording.getRecordingAlias() + "] is not currently available" );
     		}
     	}
     	

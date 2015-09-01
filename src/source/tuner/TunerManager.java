@@ -33,6 +33,7 @@ import org.usb4java.LibUsb;
 import source.Source;
 import source.SourceException;
 import source.config.SourceConfigTuner;
+import source.config.SourceConfiguration;
 import source.mixer.MixerManager;
 import source.tuner.fcd.FCDTuner;
 import source.tuner.fcd.proV1.FCD1TunerController;
@@ -44,7 +45,6 @@ import source.tuner.rtl.RTL2832TunerController;
 import source.tuner.rtl.e4k.E4KTunerController;
 import source.tuner.rtl.r820t.R820TTunerController;
 import controller.ResourceManager;
-import controller.channel.ProcessingChain;
 
 public class TunerManager
 {
@@ -76,15 +76,17 @@ public class TunerManager
      * Iterates current tuners to get a tuner channel source for the frequency
      * specified in the channel config's source config object
      */
-    public Source getSource( ProcessingChain processingChain )
+    public Source getSource( SourceConfiguration config, int bandwidth )
     {
     	TunerChannelSource retVal = null;
-
     	
-    	if( processingChain.getChannel().getSourceConfiguration()
-    						instanceof SourceConfigTuner )
+    	if( config instanceof SourceConfigTuner )
     	{
-    		TunerChannel tunerChannel = processingChain.getChannel().getTunerChannel();
+    		SourceConfigTuner tunerConfig = (SourceConfigTuner)config;
+    		
+    		TunerChannel tunerChannel = tunerConfig.getTunerChannel();
+    		
+    		tunerChannel.setBandwidth( bandwidth );
 			
 			Iterator<Tuner> it = mTuners.iterator();
 			
@@ -358,7 +360,8 @@ public class TunerManager
 		try
 	    {
 			HackRFTunerController hackRFController = 
-						new HackRFTunerController( device, descriptor );
+						new HackRFTunerController( device, descriptor, 
+								mResourceManager.getThreadPoolManager() );
 			
 			hackRFController.init();
 			
@@ -409,7 +412,8 @@ public class TunerManager
 				try
 				{
 					E4KTunerController controller = 
-						new E4KTunerController( device, deviceDescriptor );
+						new E4KTunerController( device, deviceDescriptor, 
+								mResourceManager.getThreadPoolManager() );
 					
 					controller.init();
 					
@@ -432,14 +436,12 @@ public class TunerManager
 						+ "controller - " + se.getLocalizedMessage() );
 				}
 			case RAFAELMICRO_R820T:
-				mLog.debug( "attempting to construct R820T "
-						+ "tuner controller" );
 				try
 				{
 					R820TTunerController controller = 
-						new R820TTunerController( device, deviceDescriptor );
+						new R820TTunerController( device, deviceDescriptor, 
+								mResourceManager.getThreadPoolManager() );
 					
-					mLog.debug( "initializing R820T tuner controller" );
 					controller.init();
 					
 					RTL2832Tuner rtlTuner = 
@@ -450,14 +452,8 @@ public class TunerManager
 
 					if( config != null )
 	                {
-						mLog.debug( "applying tuner config to R820T tuner" );
 						rtlTuner.apply( config );
 	                }					
-					else
-					{
-						mLog.debug( "R820T tuner config was "
-								+ "null - not applied" );
-					}
 					
 					return new TunerInitStatus( rtlTuner, "LOADED" );
 				}

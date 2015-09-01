@@ -17,7 +17,7 @@
  ******************************************************************************/
 package buffer;
 
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 
 /**
  * Implements a FIFO circular buffer for complex samples that provides access
@@ -26,17 +26,17 @@ import sample.complex.ComplexSample;
  */
 public class ComplexTappedCircularBuffer
 {
-	private ComplexSample[] mBuffer;
+	private Complex[] mBuffer;
 	private int mBufferPointer = 0;
 	
 	public ComplexTappedCircularBuffer( int length )
 	{
-		mBuffer = new ComplexSample[ length ];
+		mBuffer = new Complex[ length ];
 
 		//Pre-load the buffer with 0-valued samples
 		for( int x = 0; x < length; x++ )
 		{
-			mBuffer[ x ] = new ComplexSample( 0, 0 );
+			mBuffer[ x ] = new Complex( 0, 0 );
 		}
 	}
 
@@ -44,7 +44,7 @@ public class ComplexTappedCircularBuffer
 	 * Adds the sample to the buffer and removes the oldest sample
 	 * @param sample
 	 */
-    public void add( ComplexSample sample )
+    public void add( Complex sample )
     {
 		mBuffer[ mBufferPointer++ ] = sample;
 
@@ -68,7 +68,7 @@ public class ComplexTappedCircularBuffer
 	 * @throws ArrayIndexOutOfBoundsException if you attempt to access a sample
 	 * outside of the buffer size
 	 */
-	public ComplexSample get( int index )
+	public Complex get( int index )
 	{
 		/* Since the samples are stored in a forward fashion, we have to access
 		 * the samples in reverse to comply with the access contract, where

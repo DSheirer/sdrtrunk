@@ -34,7 +34,13 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-import message.MessageDirection;
+import module.decode.Decoder;
+import module.decode.DecoderType;
+import module.decode.fleetsync2.Fleetsync2Decoder;
+import module.decode.lj1200.LJ1200Decoder;
+import module.decode.mdc1200.MDCDecoder;
+import module.decode.p25.P25Decoder.Modulation;
+import module.decode.tait.Tait1200Decoder;
 import net.miginfocom.swing.MigLayout;
 
 import org.slf4j.Logger;
@@ -43,21 +49,6 @@ import org.slf4j.LoggerFactory;
 import source.wave.WaveSource;
 import source.wave.WaveSource.PositionListener;
 import controller.ResourceManager;
-import decode.Decoder;
-import decode.DecoderType;
-import decode.config.DecodeConfigLTRNet;
-import decode.config.DecodeConfigMPT1327;
-import decode.config.DecodeConfigPassport;
-import decode.fleetsync2.Fleetsync2Decoder;
-import decode.lj1200.LJ1200Decoder;
-import decode.ltrnet.LTRNetDecoder;
-import decode.mdc1200.MDCDecoder;
-import decode.mpt1327.MPT1327Decoder;
-import decode.mpt1327.MPT1327Decoder.Sync;
-import decode.p25.P25Decoder;
-import decode.p25.P25Decoder.Modulation;
-import decode.passport.PassportDecoder;
-import decode.tait.Tait1200Decoder;
 
 public class AudioSourceFrame extends JInternalFrame implements PositionListener
 {
@@ -188,25 +179,25 @@ public class AudioSourceFrame extends JInternalFrame implements PositionListener
 							decoder = new LJ1200Decoder( null );
 							break;
 						case LTR_NET:
-						    decoder = new LTRNetDecoder( new DecodeConfigLTRNet(), 
-					    		mSource.getSampleType(), null, MessageDirection.OSW );
+//						    decoder = new LTRNetDecoder( new DecodeConfigLTRNet(), 
+//					    		mSource.getSampleType(), null, MessageDirection.OSW );
 						    break;
 						case MDC1200:
 							decoder = new MDCDecoder( null );
 							break;
 						case MPT1327:
-							decoder = new MPT1327Decoder( new DecodeConfigMPT1327(),
-									mSource.getSampleType(), null, Sync.NORMAL );
+//							decoder = new MPT1327Decoder( new DecodeConfigMPT1327(),
+//									mSource.getSampleType(), null, Sync.NORMAL );
 							break;
 						case PASSPORT:
-							decoder = new PassportDecoder( new DecodeConfigPassport(),
-									mSource.getSampleType(), null );
+//							decoder = new PassportDecoder( new DecodeConfigPassport(),
+//									mSource.getSampleType(), null );
 							break;
 						case P25_PHASE1:
 							ResourceManager rm = new ResourceManager();
 							
-							decoder = new P25Decoder( rm, mSource.getSampleType(), 
-								(Modulation)mComboModulations.getSelectedItem(), null );
+//							decoder = new P25Decoder( rm, mSource.getSampleType(), 
+//								(Modulation)mComboModulations.getSelectedItem(), null );
 							break;
 						case TAIT_1200:
 							decoder = new Tait1200Decoder( null );

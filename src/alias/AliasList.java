@@ -23,6 +23,7 @@ import java.util.HashMap;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
+import javax.xml.bind.annotation.XmlTransient;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -488,4 +489,57 @@ public class AliasList implements Comparable<AliasList>
     {
 	    return getName().compareTo( otherAliasList.getName() );
     }
+
+	public Alias getAlias( String value, MetadataType type )
+	{
+		switch( type )
+		{
+			case ESN:
+				return getESNAlias( value );
+			case FLEETSYNC:
+				return getFleetsyncAlias( value );
+			case MDC1200:
+				return getMDC1200Alias( value );
+			case MOBILE_ID:
+				return getMobileIDNumberAlias( value );
+			case MPT1327:
+				return getMPT1327Alias( value );
+			case SITE_ID:
+				return getSiteID( value );
+			case STATUS:
+				if( value != null )
+				{
+					try
+					{
+						return getStatus( Integer.valueOf( value ) );
+					}
+					catch( Exception e )
+					{
+						//do nothing, we couldn't parse the int value
+					}
+				}
+				break;
+			case FROM_TALKGROUP:
+			case TO:
+				return getTalkgroupAlias( value );
+			case UNIQUE_ID:
+				if( value != null )
+				{
+					try
+					{
+						return getUniqueID( Integer.valueOf( value ) );
+					}
+					catch( Exception e )
+					{
+						//do nothing, we couldn't parse the int value
+					}
+				}
+				break;
+			default:
+				break;
+		}
+		
+		return null;
+	}
+	
 }

@@ -88,7 +88,9 @@ public class AudioAdapter
 			default:
 				retVal = (float)( mPostInversionFilter.get( 
 						mAudioHighPassFilter.get( sample ) * 
-						mSineWaveGenerator.nextFloat() ) );
+						mSineWaveGenerator.getFloat() ) );
+				
+				mSineWaveGenerator.rotate();
 				break;
 		}
 		

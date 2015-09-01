@@ -20,16 +20,15 @@ package instrument.tap.stream;
 import instrument.tap.TapListener;
 import instrument.tap.TapType;
 import sample.Listener;
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 
-public class ComplexTap extends StreamTap 
-							  implements Listener<ComplexSample>
+public class ComplexTap extends StreamTap implements Listener<Complex>
 {
-	private Listener<ComplexSample> mListener;
+	private Listener<Complex> mListener;
 	
 	public ComplexTap( String name, 
-						   int delay, 
-						   float sampleRateRatio )
+					   int delay, 
+					   float sampleRateRatio )
     {
 	    super( TapType.STREAM_COMPLEX, name, delay, sampleRateRatio );
     }
@@ -40,25 +39,25 @@ public class ComplexTap extends StreamTap
 	}
 
 	@Override
-    public void receive( ComplexSample t )
+    public void receive( Complex sample )
     {
 		if( mListener != null )
 		{
-			mListener.receive( t );
+			mListener.receive( sample );
 		}
 		
 		for( TapListener listener: mListeners )
 		{
-			listener.receive( t );
+			listener.receive( sample );
 		}
     }
 
-    public void setListener( Listener<ComplexSample> listener )
+    public void setListener( Listener<Complex> listener )
     {
 		mListener = listener;
     }
 
-    public void removeListener( Listener<ComplexSample> listener )
+    public void removeListener( Listener<Complex> listener )
     {
 		mListener = null;
     }

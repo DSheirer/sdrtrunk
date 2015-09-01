@@ -40,7 +40,7 @@
  */
 package util;
 
-import sample.complex.ComplexSample;
+import sample.complex.Complex;
 
 public class ArcTangent
 {
@@ -124,7 +124,7 @@ public class ArcTangent
 	 * @param sample representing polar coordinates
 	 * @return - angle in radians
 	 */
-	public static double getAngle( ComplexSample sample )
+	public static double getAngle( Complex sample )
 	{
 		return getAngle( ( (double) sample.inphase() ), 
 					     ( (double) sample.quadrature() ) );

@@ -29,6 +29,7 @@ import message.Message;
 import sample.Listener;
 import settings.SettingsManager;
 import alias.Alias;
+import controller.NamingThreadFactory;
 import controller.ResourceManager;
 
 public class MapService implements Listener<Message>
@@ -39,7 +40,8 @@ public class MapService implements Listener<Message>
 	private static final Color sDEFAULT_COLOR = Color.BLACK;
 	
 	private final ScheduledExecutorService scheduler =
-		     Executors.newScheduledThreadPool(1);
+		     Executors.newScheduledThreadPool(1, 
+		    		 new NamingThreadFactory( "map tile fetcher" ) );
 	
 	private ArrayList<PlottableUpdateListener> mListeners = 
 				new ArrayList<PlottableUpdateListener>();

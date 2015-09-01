@@ -19,13 +19,22 @@ package controller;
 
 import java.util.HashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ThreadPoolManager
 {
+	private final static Logger mLog = LoggerFactory.getLogger( ThreadPoolManager.class );
+
 	private int THREAD_POOL_SIZE = 2;
 	private int MAX_TASK_COUNT = 24;
 
@@ -46,7 +55,8 @@ public class ThreadPoolManager
 	{
 		if( mExecutor == null )
 		{
-			mExecutor = Executors.newScheduledThreadPool( THREAD_POOL_SIZE );
+			mExecutor = Executors.newScheduledThreadPool( THREAD_POOL_SIZE, 
+					new NamingThreadFactory( "sdrtrunk" ) );
 		}
 
 		if( mTasks.size() <= MAX_TASK_COUNT )
@@ -71,7 +81,8 @@ public class ThreadPoolManager
 	{
 		if( mExecutor == null )
 		{
-			mExecutor = Executors.newScheduledThreadPool( THREAD_POOL_SIZE );
+			mExecutor = Executors.newScheduledThreadPool( THREAD_POOL_SIZE, 
+					new NamingThreadFactory( "sdrtrunk" ) );
 		}
 		
 		if( mTasks.size() <= MAX_TASK_COUNT )
@@ -109,6 +120,7 @@ public class ThreadPoolManager
 
 	public enum ThreadType
 	{
+		AUDIO_PROCESSING,
 		SOURCE_SAMPLE_PROCESSING,
 		DECIMATION,
 		DECODER;

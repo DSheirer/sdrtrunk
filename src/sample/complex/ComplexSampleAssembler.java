@@ -23,17 +23,17 @@ import java.util.List;
 import sample.Listener;
 import sample.Provider;
 
-public class ComplexSampleAssembler implements Listener<ComplexSample>,
-											   Provider<List<ComplexSample>>
+public class ComplexSampleAssembler implements Listener<Complex>,
+											   Provider<List<Complex>>
 {
 	private ArrayList mBuffer;
 	private int mBufferSize;
-	private Listener<List<ComplexSample>> mListener;
+	private Listener<List<Complex>> mListener;
 	
 	public ComplexSampleAssembler( int bufferSize )
 	{
 		mBufferSize = bufferSize;
-		mBuffer = new ArrayList<ComplexSample>();
+		mBuffer = new ArrayList<Complex>();
 	}
 	
 	public void dispose()
@@ -43,7 +43,7 @@ public class ComplexSampleAssembler implements Listener<ComplexSample>,
 	}
 
 	@Override
-    public void receive( ComplexSample sample )
+    public void receive( Complex sample )
     {
 		mBuffer.add( sample );
 		
@@ -59,13 +59,13 @@ public class ComplexSampleAssembler implements Listener<ComplexSample>,
     }
 
 	@Override
-    public void setListener( Listener<List<ComplexSample>> listener )
+    public void setListener( Listener<List<Complex>> listener )
     {
 		mListener = listener;
     }
 
 	@Override
-    public void removeListener( Listener<List<ComplexSample>> listener )
+    public void removeListener( Listener<List<Complex>> listener )
     {
 		mListener = null;
     }

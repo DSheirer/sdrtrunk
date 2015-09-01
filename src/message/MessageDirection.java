@@ -19,6 +19,18 @@ package message;
 
 public enum MessageDirection
 {
-	ISW, //Inbound Status Word
-	OSW; //Outbound Status Word
+	ISW( "Mobile (ISW)" ), //Inbound Status Word
+	OSW( "Tower (OSW)" ); //Outbound Status Word
+	
+	private String mLabel;
+	
+	private MessageDirection( String label )
+	{
+		mLabel = label;
+	}
+	
+	public String toString()
+	{
+		return mLabel;
+	}
 }

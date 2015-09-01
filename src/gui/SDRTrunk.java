@@ -73,9 +73,6 @@ public class SDRTrunk
     
     public SDRTrunk() 
     {
-//    	LoggerContext lc = (LoggerContext)LoggerFactory.getILoggerFactory();
-//    	StatusPrinter.print( lc );
-    	
     	mLog.info( "" );
     	mLog.info( "" );
     	mLog.info( "*******************************************************************" );

@@ -14,6 +14,11 @@ public class FilterSet<T> implements IFilter<T>
     	mName = name;
     }
     
+    public FilterSet()
+    {
+    	mName = "Message Filter";
+    }
+    
     public String getName()
     {
     	return mName;
