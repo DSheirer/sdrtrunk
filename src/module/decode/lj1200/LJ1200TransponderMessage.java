@@ -29,7 +29,6 @@ import alias.Alias;
 import alias.AliasList;
 import bits.BinaryMessage;
 import edac.CRC;
-import edac.CRCLJ;
 
 public class LJ1200TransponderMessage extends Message
 {
@@ -65,6 +64,8 @@ public class LJ1200TransponderMessage extends Message
 				break;
 			case UNKNOWN:
 	        	mLog.debug( "UNKNOWN:" + message.toString() );
+				break;
+			default:
 				break;
         }
     }

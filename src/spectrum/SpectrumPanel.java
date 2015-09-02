@@ -167,6 +167,8 @@ public class SpectrumPanel extends JPanel
 				case SPECTRUM_LINE:
 					mColorSpectrumLine = colorSetting.getColor();
 					break;
+				default:
+					break;
 			}
 		}
     }

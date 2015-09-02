@@ -127,6 +127,7 @@ public class CQPSKDemodulator2 implements Instrumentable, ComplexSampleListener,
 	 * Constrains timing error to +/- the maximum value and corrects any
 	 * floating point invalid numbers
 	 */
+	@SuppressWarnings("unused")
 	private float normalize( float error, float maximum )
 	{
 		if( Float.isNaN( error ) )

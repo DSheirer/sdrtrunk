@@ -110,6 +110,33 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
         /* Process and broadcast messages */
         mMessageFramer.setListener( getMessageProcessor() );
 	}
+
+	@Override
+	public void dispose()
+	{
+		super.dispose();
+		
+		mC4FMPreFilter.dispose();
+		mC4FMPreFilter = null;
+		
+		mDGC.dispose();
+		mDGC = null;
+		
+		mStreamConverter.dispose();
+		mStreamConverter = null;
+		
+		mFrequencyCorrectionControl.dispose();
+		mFrequencyCorrectionControl = null;
+		
+		mSymbolFilter.dispose();
+		mSymbolFilter = null;
+		
+		mMessageFramer.dispose();
+		mMessageFramer = null;
+
+		mC4FMSlicer.dispose();
+		mC4FMSlicer = null;
+	}
 	
 	public Modulation getModulation()
 	{

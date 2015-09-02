@@ -18,6 +18,12 @@ public class C4FMSlicer implements RealSampleListener
 
 	private Broadcaster<Dibit> mBroadcaster = new Broadcaster<Dibit>();
 	
+	public void dispose()
+	{
+		mBroadcaster.dispose();
+		mBroadcaster = null;
+	}
+	
 	/**
 	 * Primary method for receiving output from the C4FMSymbolFilter.  Slices
 	 * (converts) the filtered sample value into a C4FMSymbol decision. 

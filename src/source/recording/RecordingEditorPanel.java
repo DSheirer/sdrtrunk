@@ -15,7 +15,6 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
-import source.tuner.frequency.FrequencyChangeListener;
 import net.miginfocom.swing.MigLayout;
 
 public class RecordingEditorPanel extends JPanel

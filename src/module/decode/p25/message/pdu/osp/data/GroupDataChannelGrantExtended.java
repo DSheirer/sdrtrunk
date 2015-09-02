@@ -1,7 +1,5 @@
 package module.decode.p25.message.pdu.osp.data;
 
-import java.util.Date;
-
 import module.decode.p25.message.IBandIdentifier;
 import module.decode.p25.message.IdentifierReceiver;
 import module.decode.p25.message.pdu.PDUMessage;

@@ -167,6 +167,8 @@ public class FleetsyncCallEvent extends CallEvent
                     sbDetails.append( message.getStatusAlias().getName() );
                 }
                 break;
+			default:
+				break;
         }
  
         if( type == CallEventType.ID_ANI ||

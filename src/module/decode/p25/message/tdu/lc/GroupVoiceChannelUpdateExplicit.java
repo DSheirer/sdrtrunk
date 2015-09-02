@@ -2,8 +2,6 @@ package module.decode.p25.message.tdu.lc;
 
 import module.decode.p25.message.IBandIdentifier;
 import module.decode.p25.message.IdentifierReceiver;
-import module.decode.p25.message.P25Message.DuplexMode;
-import module.decode.p25.message.P25Message.SessionMode;
 import module.decode.p25.reference.LinkControlOpcode;
 
 import org.slf4j.Logger;

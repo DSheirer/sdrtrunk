@@ -258,6 +258,9 @@ public class DecoderFactory
 				case TAIT_1200:
 					decoders.add( new Tait1200Decoder( aliasList ) );
 					break;
+				default:
+					throw new IllegalArgumentException( "Unrecognized auxiliary "
+							+ "decoder type [" + auxDecoder + "]" );
 			}
 		}
 		

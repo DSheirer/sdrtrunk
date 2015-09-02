@@ -17,7 +17,6 @@
  ******************************************************************************/
 package instrument.tap.stream;
 
-import gui.SDRTrunk;
 import instrument.gui.SampleModel;
 import instrument.tap.Tap;
 import instrument.tap.TapViewPanel;

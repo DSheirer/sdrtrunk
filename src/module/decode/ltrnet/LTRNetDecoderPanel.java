@@ -160,6 +160,8 @@ public class LTRNetDecoderPanel extends DecoderPanel
 						mDescription.setForeground( mColorLabelDecoder );
 					}
 					break;
+				default:
+					break;
 			}
 		}
     }

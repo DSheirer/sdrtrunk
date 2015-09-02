@@ -17,8 +17,6 @@
  ******************************************************************************/
 package source.mixer;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.sound.sampled.AudioFormat;
@@ -32,7 +30,6 @@ import org.slf4j.LoggerFactory;
 import sample.Listener;
 import sample.adapter.SampleAdapter;
 import sample.complex.ComplexBuffer;
-import sample.complex.Complex;
 import source.SourceException;
 
 public class ComplexMixer
@@ -102,22 +99,6 @@ public class ComplexMixer
 		mBufferReader.stop();
     }
 
-    private List<Complex> convert( ComplexBuffer sampleBuffer )
-    {
-    	float[] samples = sampleBuffer.getSamples();
-
-    	ArrayList<Complex> converted = new ArrayList<Complex>();
-    	
-    	for( int x = 0; x < samples.length; x += 2 )
-    	{
-    		converted.add( new Complex( samples[ x ], samples[ x + 1 ] ) );
-    	}
-
-    	sampleBuffer.dispose();
-    	
-    	return converted;
-    }
-    
 	@Override
 	public String toString()
 	{

@@ -22,9 +22,9 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 
 import module.decode.config.AuxDecodeConfiguration;
 import module.decode.config.DecodeConfiguration;
+import module.log.config.EventLogConfiguration;
 import record.config.RecordConfiguration;
 import source.config.SourceConfiguration;
-import eventlog.config.EventLogConfiguration;
 
 @XmlSeeAlso( { AuxDecodeConfiguration.class,
 			   DecodeConfiguration.class,

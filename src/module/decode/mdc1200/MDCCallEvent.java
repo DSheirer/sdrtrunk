@@ -148,6 +148,8 @@ public class MDCCallEvent extends CallEvent
             case PAGING:
                 type = CallEventType.PAGE;
                 break;
+			default:
+				break;
         }
  
         return new MDCCallEvent.Builder( type )

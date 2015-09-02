@@ -84,6 +84,12 @@ public class CQPSKDemodulator implements Instrumentable, ComplexSampleListener
 	{
 	}
 	
+	public void dispose()
+	{
+		mSymbolListener = null;
+		mFrequencyChangeListener = null;
+	}
+	
 	public void setSymbolListener( Listener<Complex> listener )
 	{
 		mSymbolListener = listener;

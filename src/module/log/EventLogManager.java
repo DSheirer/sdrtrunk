@@ -15,13 +15,16 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package eventlog;
+package module.log;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
-import module.ProcessingChainOld;
+import module.Module;
+import module.log.MessageEventLogger.Type;
+import module.log.config.EventLogConfiguration;
 import properties.SystemProperties;
-import eventlog.MessageEventLogger.Type;
 
 public class EventLogManager
 {
@@ -32,16 +35,24 @@ public class EventLogManager
 		mDirectory = SystemProperties.getInstance()
 				.getApplicationFolder( "event_logs" );
 	}
+
+	public List<Module> getLoggers( EventLogConfiguration config, String prefix )
+	{
+		List<Module> loggers = new ArrayList<Module>();
+
+		for( EventLogType type: config.getLoggers() )
+		{
+			loggers.add( getLogger( type, prefix ) );
+		}
+
+		return loggers;
+	}
 	
-	public EventLogger getLogger( ProcessingChainOld chain, EventLogType eventLogType )
+	public EventLogger getLogger( EventLogType eventLogType, String prefix )
 	{
 		StringBuilder sb = new StringBuilder();
 
-		sb.append( chain.getChannel().getSystem() );
-		sb.append( "_" );
-		sb.append( chain.getChannel().getSite() );
-		sb.append( "_" );
-		sb.append( chain.getChannel().getName() );
+		sb.append( prefix );
 		sb.append( eventLogType.getFileSuffix() );
 		sb.append( ".log" );
 

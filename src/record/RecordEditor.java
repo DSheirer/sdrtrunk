@@ -19,8 +19,6 @@ package record;
 
 import record.config.RecordConfiguration;
 import controller.Editor;
-import controller.channel.Channel;
-import controller.channel.ChannelValidationException;
 
 public class RecordEditor extends Editor
 {

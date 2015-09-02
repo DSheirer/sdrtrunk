@@ -3,7 +3,6 @@ package dsp.gain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sample.Listener;
 import sample.complex.Complex;
 import sample.complex.ComplexSampleListener;
 import buffer.FloatCircularBuffer;
@@ -61,6 +60,11 @@ public class ComplexFeedForwardGainControl implements ComplexSampleListener
 	public ComplexFeedForwardGainControl( int window )
 	{
 		mEnvelopeHistory = new FloatCircularBuffer( window );
+	}
+	
+	public void dispose()
+	{
+		mListener = null;
 	}
 
 	@Override

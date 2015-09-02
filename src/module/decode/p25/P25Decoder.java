@@ -19,6 +19,14 @@ public abstract class P25Decoder extends Decoder
         mMessageProcessor = new P25MessageProcessor( aliasList );
         mMessageProcessor.setMessageListener( mMessageBroadcaster );
 	}
+	
+	public void dispose()
+	{
+		super.dispose();
+		
+		mMessageProcessor.dispose();
+		mMessageProcessor = null;
+	}
 
 	@Override
     public DecoderType getDecoderType()

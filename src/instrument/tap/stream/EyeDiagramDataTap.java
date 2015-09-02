@@ -17,13 +17,12 @@
  ******************************************************************************/
 package instrument.tap.stream;
 
-import module.decode.p25.P25_LSMDecoder;
+import instrument.tap.TapListener;
+import instrument.tap.TapType;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import instrument.tap.TapListener;
-import instrument.tap.TapType;
 import sample.Listener;
 
 public class EyeDiagramDataTap extends StreamTap implements Listener<EyeDiagramData>

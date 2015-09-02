@@ -15,7 +15,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package eventlog;
+package module.log;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -25,12 +25,14 @@ import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.file.Path;
 
+import module.Module;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import util.TimeStamp;
 
-public abstract class EventLogger
+public abstract class EventLogger extends Module
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( EventLogger.class );
@@ -67,27 +69,30 @@ public abstract class EventLogger
 	
     public void start()
     {
-    	try 
+    	if( mLogFile == null )
     	{
-    		StringBuilder sb = new StringBuilder();
-    		sb.append( mLogDirectory );
-    		sb.append( File.separator );
-    		sb.append( TimeStamp.getTimeStamp( "_" ) );
-    		sb.append( "_" );
-    		sb.append( replaceIllegalCharacters( mFileNameSuffix ) );
+        	try 
+        	{
+        		StringBuilder sb = new StringBuilder();
+        		sb.append( mLogDirectory );
+        		sb.append( File.separator );
+        		sb.append( TimeStamp.getTimeStamp( "_" ) );
+        		sb.append( "_" );
+        		sb.append( replaceIllegalCharacters( mFileNameSuffix ) );
 
-    		mLogFileName = sb.toString();
-    		
-    		mLog.info( "Creating log file:" + mLogFileName );
-    		
-			mLogFile = new OutputStreamWriter(new FileOutputStream( mLogFileName ) );
-			
-			write( getHeader() );
-		} 
-    	catch (FileNotFoundException e) 
-    	{
-    		mLog.error("Couldn't create log file in directory:" + mLogDirectory );
-		}    	
+        		mLogFileName = sb.toString();
+        		
+        		mLog.info( "Creating log file:" + mLogFileName );
+        		
+    			mLogFile = new OutputStreamWriter(new FileOutputStream( mLogFileName ) );
+    			
+    			write( getHeader() );
+    		} 
+        	catch (FileNotFoundException e) 
+        	{
+        		mLog.error("Couldn't create log file in directory:" + mLogDirectory );
+    		}    	
+    	}
     }
 
     /**
@@ -111,6 +116,7 @@ public abstract class EventLogger
     		{
     	    	mLogFile.flush();
     	    	mLogFile.close();
+    	    	mLogFile = null;
     		}
     		catch( Exception e )
     		{

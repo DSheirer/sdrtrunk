@@ -29,11 +29,9 @@ import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import net.miginfocom.swing.MigLayout;
 import module.decode.config.DecodeConfiguration;
+import net.miginfocom.swing.MigLayout;
 import controller.Editor;
-import controller.channel.Channel;
-import controller.channel.ChannelValidationException;
 
 public class DecodeEditor extends Editor
 {

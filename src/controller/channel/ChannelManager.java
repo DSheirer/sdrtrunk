@@ -17,16 +17,15 @@
  ******************************************************************************/
 package controller.channel;
 
-import gui.SDRTrunk;
-
 import java.util.ArrayList;
+
+import message.Message;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import alias.action.AliasActionManager;
-import message.Message;
 import sample.Listener;
+import alias.action.AliasActionManager;
 import controller.ResourceManager;
 
 public class ChannelManager implements ChannelEventListener

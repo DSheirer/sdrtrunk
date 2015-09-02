@@ -1,6 +1,5 @@
 package module.decode.p25.message.tdu.lc;
 
-import module.decode.p25.message.tsbk.osp.control.SystemService;
 import module.decode.p25.reference.LinkControlOpcode;
 
 import org.slf4j.Logger;

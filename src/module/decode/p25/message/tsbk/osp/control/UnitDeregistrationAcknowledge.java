@@ -3,7 +3,6 @@ package module.decode.p25.message.tsbk.osp.control;
 import module.decode.p25.message.tsbk.TSBKMessage;
 import module.decode.p25.reference.DataUnitID;
 import module.decode.p25.reference.Opcode;
-import module.decode.p25.reference.Response;
 import alias.AliasList;
 import bits.BinaryMessage;
 

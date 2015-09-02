@@ -21,8 +21,6 @@ import javax.swing.JLabel;
 
 import source.config.SourceConfiguration;
 import controller.ResourceManager;
-import controller.channel.Channel;
-import controller.channel.ChannelValidationException;
 
 public class EmptySourceEditor extends SourceEditor
 {

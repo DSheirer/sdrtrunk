@@ -40,6 +40,8 @@ import module.decode.config.DecodeConfiguration;
 import module.decode.event.CallEventModel;
 import module.decode.event.MessageActivityModel;
 import module.decode.state.ChannelState;
+import module.log.MessageEventLogger;
+import module.log.config.EventLogConfiguration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,8 +63,6 @@ import controller.channel.ChannelEvent.Event;
 import controller.config.Configuration;
 import controller.site.Site;
 import controller.system.System;
-import eventlog.MessageEventLogger;
-import eventlog.config.EventLogConfiguration;
 import filter.FilterSet;
 
 @XmlSeeAlso( { Configuration.class } )
@@ -739,8 +739,32 @@ public class Channel extends Configuration
 		
 		setupSource();
 		
-		//TODO: Add logging
+		setupLogging();
 		//TODO: Add recorder(s)
+	}
+	
+	private void setupLogging()
+	{
+		mLog.debug( "Setting up logging ..." );
+		if( mProcessingChain != null )
+		{
+			StringBuilder sb = new StringBuilder();
+			sb.append( mSystem );
+			sb.append( "_" );
+			sb.append( mSite );
+			sb.append( "_" );
+			sb.append( mName );
+
+			List<Module> loggers = mResourceManager.getEventLogManager()
+					.getLoggers( mEventLogConfiguration, sb.toString() );
+			
+			mLog.debug( "Created [" + loggers.size() + "] loggers for [" + sb.toString() + "]" );
+
+			if( !loggers.isEmpty() )
+			{
+				mProcessingChain.addModules( loggers );
+			}
+		}
 	}
 	
 	private void setupProcessingChain()
@@ -764,7 +788,7 @@ public class Channel extends Configuration
 			mProcessingChain.addModules( modules );
 
 			/* Get message filters for the set of processing modules */
-			FilterSet messageFilter = DecoderFactory.getMessageFilters( modules ); 
+			FilterSet<Message> messageFilter = DecoderFactory.getMessageFilters( modules ); 
 			
 			/* Setup the message activity model and add message listeners */
 			mMessageActivityModel = new MessageActivityModel( messageFilter );

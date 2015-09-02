@@ -285,17 +285,6 @@ public class PassportMessage extends Message
 		return mMessage.toString();
     }
 
-	/**
-	 * Returns a value formatted in hex notation.
-	 * 
-	 * @param value - integer value
-	 * @return - hex digits returned
-	 */
-	private static String getHex( int value, int digits )
-	{
-		return String.format( "%0" + digits + "X", value );
-	}
-	
     private int getInt( int[] bits )
     {
     	int retVal = 0;

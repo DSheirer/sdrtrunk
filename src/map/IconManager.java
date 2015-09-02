@@ -17,8 +17,6 @@
  ******************************************************************************/
 package map;
 
-import gui.SDRTrunk;
-
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
@@ -45,10 +43,11 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.filechooser.FileFilter;
 
+import net.miginfocom.swing.MigLayout;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.miginfocom.swing.MigLayout;
 import settings.Setting;
 import settings.SettingChangeListener;
 import controller.ResourceManager;
@@ -420,6 +419,8 @@ public class IconManager extends JFrame
 						    JOptionPane.ERROR_MESSAGE );	
 				}
 
+				break;
+			default:
 				break;
 		}
 		

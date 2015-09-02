@@ -1,19 +1,9 @@
 package module.decode.p25.message.pdu.confirmed;
 
-import module.decode.p25.message.pdu.PDUMessage;
-import module.decode.p25.reference.DataUnitID;
 import module.decode.p25.reference.MDPConfigurationOption;
-import module.decode.p25.reference.PDUType;
-import module.decode.p25.reference.SNDCPActivationRejectReason;
-import module.decode.p25.reference.Vendor;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import alias.AliasList;
-import bits.BinaryMessage;
-import edac.CRC;
-import edac.CRCP25;
 
 public class SNDCPActivateTDSContextAccept extends PDUConfirmedMessage
 {

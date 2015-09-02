@@ -17,8 +17,6 @@
  ******************************************************************************/
 package org.jdesktop.swingx.mapviewer;
 
-import gui.SDRTrunk;
-
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

@@ -2,7 +2,6 @@ package module.decode.p25.message.tdu.lc;
 
 import module.decode.p25.message.IBandIdentifier;
 import module.decode.p25.message.IdentifierReceiver;
-import module.decode.p25.message.tsbk.osp.control.SystemService;
 import module.decode.p25.reference.LinkControlOpcode;
 import module.decode.p25.reference.Service;
 

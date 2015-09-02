@@ -17,11 +17,11 @@
  ******************************************************************************/
 package module.decode.mpt1327;
 
+import message.Message;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import message.Message;
-import module.decode.DecoderFactory;
 import sample.Listener;
 import alias.AliasList;
 import bits.BinaryMessage;

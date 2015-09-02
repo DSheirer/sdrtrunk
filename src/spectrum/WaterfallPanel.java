@@ -37,7 +37,6 @@ import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
 import settings.Setting;
 import settings.SettingChangeListener;
-import buffer.FloatAveragingBuffer;
 import controller.ResourceManager;
 
 /**

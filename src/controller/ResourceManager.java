@@ -18,6 +18,7 @@
 package controller;
 
 import map.MapService;
+import module.log.EventLogManager;
 import playlist.PlaylistManager;
 import record.RecorderManager;
 import settings.SettingsManager;
@@ -26,7 +27,6 @@ import source.recording.RecordingSourceManager;
 import source.tuner.TunerManager;
 import audio.AudioManager;
 import controller.channel.ChannelManager;
-import eventlog.EventLogManager;
 
 /**
  * Manager for system wide resources

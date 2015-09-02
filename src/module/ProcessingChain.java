@@ -24,10 +24,12 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import message.IMessageListener;
 import message.IMessageProvider;
 import message.Message;
 import module.decode.Decoder;
 import module.decode.event.CallEvent;
+import module.decode.event.ICallEventListener;
 import module.decode.event.ICallEventProvider;
 import module.decode.state.DecoderStateEvent;
 import module.decode.state.DecoderStateEvent.Event;
@@ -82,7 +84,7 @@ import controller.channel.IChannelEventProvider;
  * 5) Invoke the stop() method to stop processing.
  * 
  * Optional: if you want to reuse the processing chain with a new sample source,
- * invoke the following method sequence:  stop(), reset(), setSource(), start()
+ * invoke the following method sequence:  stop(), setSource(), start()
  */
 public class ProcessingChain implements IChannelEventListener
 {
@@ -271,11 +273,11 @@ public class ProcessingChain implements IChannelEventListener
 	{
 		mModules.add( module );
 
-		/* Listeners */
-		if( module instanceof IMetadataListener )
+		/* >>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Listeners <<<<<<<<<<<<<<<<<<<<<<<<<<< */
+		if( module instanceof ICallEventListener )
 		{
-			mMetadataBroadcaster.addListener( 
-				((IMetadataListener)module).getMetadataListener() );
+			mCallEventBroadcaster.addListener( 
+					((ICallEventListener)module).getCallEventListener() );
 		}
 		
 		if( module instanceof IChannelEventListener )
@@ -295,6 +297,18 @@ public class ProcessingChain implements IChannelEventListener
 			mDecoderStateEventBroadcaster.addListener( 
 				((IDecoderStateEventListener)module).getDecoderStateListener() );
 		}
+
+		if( module instanceof IMessageListener )
+		{
+			mMessageBroadcaster.addListener( 
+					((IMessageListener)module).getMessageListener() );
+		}
+		
+		if( module instanceof IMetadataListener )
+		{
+			mMetadataBroadcaster.addListener( 
+				((IMetadataListener)module).getMetadataListener() );
+		}
 		
 		if( module instanceof IRealBufferListener )
 		{
@@ -308,13 +322,7 @@ public class ProcessingChain implements IChannelEventListener
 				((ISquelchStateListener)module).getSquelchStateListener() );
 		}
 		
-		/* Providers */
-		if( module instanceof IMetadataProvider )
-		{
-			((IMetadataProvider)module).setMetadataListener( 
-					mMetadataBroadcaster );
-		}
-
+		/* >>>>>>>>>>>>>>>>>>> Providers <<<<<<<<<<<<<<<<<<<<<<<<< */
 		if( module instanceof IAudioPacketProvider )
 		{
 			((IAudioPacketProvider)module).setAudioPacketListener( 
@@ -348,6 +356,12 @@ public class ProcessingChain implements IChannelEventListener
 			((IMessageProvider)module).addMessageListener( mMessageBroadcaster );
 		}
 		
+		if( module instanceof IMetadataProvider )
+		{
+			((IMetadataProvider)module).setMetadataListener( 
+					mMetadataBroadcaster );
+		}
+
 		if( module instanceof IRealBufferProvider )
 		{
 			((IRealBufferProvider)module).setRealBufferListener( mRealBufferBroadcaster );

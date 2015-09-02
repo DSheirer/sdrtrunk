@@ -85,6 +85,8 @@ public class LJ1200Message extends Message
 			case PASSED:
 	        	mLog.debug( "PASS:" + message.toString() );
 				break;
+			default:
+				break;
         }
     }
     

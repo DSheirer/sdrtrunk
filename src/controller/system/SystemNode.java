@@ -30,7 +30,6 @@ import javax.swing.JSeparator;
 import javax.swing.tree.DefaultMutableTreeNode;
 
 import controller.ConfigurableNode;
-import controller.channel.ChannelNode;
 import controller.site.Site;
 import controller.site.SiteNode;
 

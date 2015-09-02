@@ -42,7 +42,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import alias.action.RecurringAction.Interval;
-import alias.action.script.ScriptActionEditor;
 
 public class ClipActionEditor extends JPanel implements ActionListener
 {
@@ -52,7 +51,6 @@ public class ClipActionEditor extends JPanel implements ActionListener
 							LoggerFactory.getLogger( ClipActionEditor.class );
 	
     private ClipActionNode mClipActionNode;
-    private JTextField mTextSiteID;
     private JComboBox<Interval> mComboInterval;
     private JSpinner mSpinnerPeriod;
     private JTextField mTextFilePath;

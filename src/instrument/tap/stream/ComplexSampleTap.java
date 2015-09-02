@@ -19,7 +19,6 @@ package instrument.tap.stream;
 
 import instrument.tap.TapListener;
 import instrument.tap.TapType;
-import sample.Listener;
 import sample.complex.Complex;
 import sample.complex.ComplexSampleListener;
 

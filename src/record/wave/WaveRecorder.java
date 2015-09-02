@@ -17,8 +17,6 @@
  ******************************************************************************/
 package record.wave;
 
-import gui.SDRTrunk;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.LinkedBlockingQueue;

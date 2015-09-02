@@ -1,7 +1,6 @@
 package module.decode.p25.message.pdu.confirmed;
 
 import module.decode.p25.reference.PDUType;
-import module.decode.p25.reference.SNDCPActivationRejectReason;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

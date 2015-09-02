@@ -17,12 +17,11 @@
  ******************************************************************************/
 package module.decode.state;
 
+import message.Message;
+import module.decode.state.DecoderStateEvent.Event;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import message.Message;
-import module.ProcessingChain;
-import module.decode.state.DecoderStateEvent.Event;
 
 /**
  * Basic decoder channel state - provides the minimum channel state functionality

@@ -18,6 +18,11 @@ public class SoftSyncDetector implements ISyncProcessor
 		mPattern = pattern;
 		mThreshold = threshold;
 	}
+	
+	public void dispose()
+	{
+		mListener = null;
+	}
 
 	@Override
 	public void checkSync( long value )

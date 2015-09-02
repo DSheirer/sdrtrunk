@@ -2264,43 +2264,45 @@ public class P25DecoderState extends DecoderState
 	{
 		switch( message.getOpcode() )
 		{
-		case GROUP_DATA_CHANNEL_ANNOUNCEMENT:
-			GroupDataChannelAnnouncement gdca = (GroupDataChannelAnnouncement)message;
-
-			broadcast( new P25CallEvent.Builder( CallEventType.ANNOUNCEMENT )
-						.aliasList( getAliasList() )
-						.channel( gdca.getChannel1() )
-						.details( ( gdca.isEncrypted() ? "ENCRYPTED" : "" ) + 
-								  ( gdca.isEmergency() ? " EMERGENCY" : "") )
-					    .frequency( gdca.getDownlinkFrequency1() )
-						.to( gdca.getGroupAddress1() )
-						.build() );
-
-			if( gdca.hasChannelNumber2() )
-			{
+			case GROUP_DATA_CHANNEL_ANNOUNCEMENT:
+				GroupDataChannelAnnouncement gdca = (GroupDataChannelAnnouncement)message;
+	
 				broadcast( new P25CallEvent.Builder( CallEventType.ANNOUNCEMENT )
 							.aliasList( getAliasList() )
-							.channel( gdca.getChannel2() )
+							.channel( gdca.getChannel1() )
 							.details( ( gdca.isEncrypted() ? "ENCRYPTED" : "" ) + 
 									  ( gdca.isEmergency() ? " EMERGENCY" : "") )
-						    .frequency( gdca.getDownlinkFrequency2() )
-							.to( gdca.getGroupAddress2() )
+						    .frequency( gdca.getDownlinkFrequency1() )
+							.to( gdca.getGroupAddress1() )
 							.build() );
-			}
-			break;
-		case GROUP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT:
-			GroupDataChannelAnnouncementExplicit gdcae = 
-							(GroupDataChannelAnnouncementExplicit)message;
-
-			broadcast( new P25CallEvent.Builder( CallEventType.DATA_CALL )
-						.aliasList( getAliasList() )
-						.channel( gdcae.getTransmitChannel() )
-						.details( ( gdcae.isEncrypted() ? "ENCRYPTED" : "" ) + 
-								  ( gdcae.isEmergency() ? " EMERGENCY" : "") )
-					    .frequency( gdcae.getDownlinkFrequency() )
-						.to( gdcae.getGroupAddress() )
-						.build() );
-			break;
+	
+				if( gdca.hasChannelNumber2() )
+				{
+					broadcast( new P25CallEvent.Builder( CallEventType.ANNOUNCEMENT )
+								.aliasList( getAliasList() )
+								.channel( gdca.getChannel2() )
+								.details( ( gdca.isEncrypted() ? "ENCRYPTED" : "" ) + 
+										  ( gdca.isEmergency() ? " EMERGENCY" : "") )
+							    .frequency( gdca.getDownlinkFrequency2() )
+								.to( gdca.getGroupAddress2() )
+								.build() );
+				}
+				break;
+			case GROUP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT:
+				GroupDataChannelAnnouncementExplicit gdcae = 
+								(GroupDataChannelAnnouncementExplicit)message;
+	
+				broadcast( new P25CallEvent.Builder( CallEventType.DATA_CALL )
+							.aliasList( getAliasList() )
+							.channel( gdcae.getTransmitChannel() )
+							.details( ( gdcae.isEncrypted() ? "ENCRYPTED" : "" ) + 
+									  ( gdcae.isEmergency() ? " EMERGENCY" : "") )
+						    .frequency( gdcae.getDownlinkFrequency() )
+							.to( gdcae.getGroupAddress() )
+							.build() );
+				break;
+			default:
+				break;
 		}
 	}
 	

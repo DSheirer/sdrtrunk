@@ -31,7 +31,6 @@ import bits.MultiSyncPatternMatcher;
 import bits.SoftSyncDetector;
 import bits.SyncDetector;
 import dsp.psk.CQPSKDemodulator;
-import dsp.psk.CQPSKDemodulator2;
 import dsp.symbol.Dibit;
 import dsp.symbol.FrameSync;
 import edac.BCH_63_16_11;
@@ -47,20 +46,12 @@ public class P25MessageFramer implements Listener<Dibit>
 	private static final int SYNC_MATCH_THRESHOLD = 2;
 	private static final int SYNC_IN_CALL_THRESHOLD = 4;
 
-	private SoftSyncDetector mPrimarySyncDetector = new SoftSyncDetector( 
-			FrameSync.P25_PHASE1_NORMAL.getSync(), SYNC_MATCH_THRESHOLD );
-
 	/* Costas Loop phase lock error correction values.  A phase lock error of
 	 * 90 degrees requires a correction of 1/4 of the symbol rate (1200Hz).  An 
 	 * error of 180 degrees requires a correction of 1/2 of the symbol rate */
 	public static final double SYMBOL_FREQUENCY = 2.0d * Math.PI * 4800.0d / 48000.0d;
 	public static final double PHASE_CORRECTION_90_DEGREES = SYMBOL_FREQUENCY / 4.0d; 
 	public static final double PHASE_CORRECTION_180_DEGREES = SYMBOL_FREQUENCY / 2.0d; 
-	
-	private MultiSyncPatternMatcher mMatcher = new MultiSyncPatternMatcher( 48 ); 
-	private ArrayList<P25MessageAssembler> mAssemblers =
-						new ArrayList<P25MessageAssembler>();
-
 	public static final int TSBK_BEGIN = 64;
 	public static final int TSBK_CRC_START = 144;
 	public static final int TSBK_END = 260;
@@ -77,6 +68,13 @@ public class P25MessageFramer implements Listener<Dibit>
 	public static final int PDU3_END = 548;
 	public static final int PDU3_DECODED_END = 448;
 	
+	private SoftSyncDetector mPrimarySyncDetector = new SoftSyncDetector( 
+			FrameSync.P25_PHASE1_NORMAL.getSync(), SYNC_MATCH_THRESHOLD );
+
+	private MultiSyncPatternMatcher mMatcher = new MultiSyncPatternMatcher( 48 ); 
+	private ArrayList<P25MessageAssembler> mAssemblers =
+						new ArrayList<P25MessageAssembler>();
+
 	private Listener<Message> mListener;
 	private AliasList mAliasList;
 
@@ -141,6 +139,26 @@ public class P25MessageFramer implements Listener<Dibit>
 			mMatcher.add( new CostasPhaseErrorDetector( FrameSync.P25_PHASE1_ERROR_180, 
 					demodulator, PHASE_CORRECTION_180_DEGREES  ) );
 		}
+	}
+	
+	public void dispose()
+	{
+		for( P25MessageAssembler a: mAssemblers )
+		{
+			a.dispose();
+		}
+		
+		mAssemblers.clear();
+
+		mListener = null;
+		mAliasList = null;
+		
+		mMatcher.dispose();
+		mMatcher = null;
+		
+		mPrimarySyncDetector.dispose();
+		mPrimarySyncDetector = null;
+		
 	}
 	
 	private void dispatch( Message message )

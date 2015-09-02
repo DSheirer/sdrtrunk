@@ -141,6 +141,8 @@ public class ChannelOverlayPanel extends JPanel implements SettingChangeListener
 				case SPECTRUM_LINE:
 					mColorSpectrumLine = colorSetting.getColor();
 					break;
+				default:
+					break;
 			}
 		}
     }

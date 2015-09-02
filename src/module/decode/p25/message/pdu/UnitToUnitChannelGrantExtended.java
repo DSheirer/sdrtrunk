@@ -3,7 +3,6 @@ package module.decode.p25.message.pdu;
 import module.decode.p25.message.IBandIdentifier;
 import module.decode.p25.message.IdentifierReceiver;
 import module.decode.p25.reference.DataUnitID;
-import module.decode.p25.reference.Opcode;
 import alias.AliasList;
 import bits.BinaryMessage;
 import edac.CRCP25;

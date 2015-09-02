@@ -15,51 +15,49 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package eventlog;
+package module.log;
 
 import java.nio.file.Path;
 
-import message.Message;
+import module.decode.event.CallEvent;
+import module.decode.event.ICallEventListener;
 import sample.Listener;
-import util.TimeStamp;
 
-public class MessageEventLogger extends EventLogger implements Listener<Message>
+public class CallEventLogger extends EventLogger implements ICallEventListener,
+					Listener<CallEvent>
 {
-	public enum Type { BINARY, DECODED };
-
-	private Type mType;
-	
-	public MessageEventLogger( Path logDirectory, String fileNameSuffix, Type type )
+	public CallEventLogger( Path logDirectory, String fileNameSuffix )
 	{
 		super( logDirectory, fileNameSuffix );
-		
-		mType = type;
 	}
 	
 	@Override
-    public void receive( Message message )
+    public void receive( CallEvent callEvent )
     {
-		StringBuilder sb = new StringBuilder();
-		sb.append( TimeStamp.getTimeStamp( " " ) );
-		sb.append( "," );
-		sb.append( ( message.isValid() ? "PASSED" : "FAILED" ) );
-		sb.append( "," );
-		
-		if( mType == Type.BINARY )
-		{
-			sb.append( message.getBinaryMessage() );
-		}
-		else
-		{
-			sb.append( message.getMessage() );
-		}
-		
-		write( sb.toString() );
+		write( callEvent.toCSV() );
     }
 
 	@Override
     public String getHeader()
     {
-	    return mType.toString() + " Message Logger\n";
+		return CallEvent.getCSVHeader();
     }
+
+	@Override
+	public Listener<CallEvent> getCallEventListener()
+	{
+		return this;
+	}
+
+	@Override
+	public void dispose()
+	{
+		super.stop();
+	}
+
+	@Override
+	public void init()
+	{
+		super.start();
+	}
 }

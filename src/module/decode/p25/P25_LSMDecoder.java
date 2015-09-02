@@ -21,7 +21,6 @@ import instrument.tap.Tap;
 import instrument.tap.stream.ComplexSampleTap;
 import instrument.tap.stream.ComplexTap;
 import instrument.tap.stream.DibitTap;
-import instrument.tap.stream.FloatTap;
 import instrument.tap.stream.QPSKTap;
 
 import java.util.ArrayList;
@@ -30,13 +29,13 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import controller.channel.Channel.ChannelType;
 import sample.Listener;
 import sample.complex.ComplexBuffer;
 import sample.complex.ComplexBufferToStreamConverter;
 import sample.complex.IComplexBufferListener;
 import source.tuner.frequency.FrequencyCorrectionControl;
 import alias.AliasList;
+import controller.channel.Channel.ChannelType;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
 import dsp.filter.fir.complex.ComplexFIRFilter_CB_CB;
@@ -86,6 +85,29 @@ public class P25_LSMDecoder extends P25Decoder implements IComplexBufferListener
 		mCQPSKSlicer.addListener( mMessageFramer );
 		
         mMessageFramer.setListener( getMessageProcessor() );
+	}
+	
+	public void dispose()
+	{
+		super.dispose();
+		
+		mBasebandFilter.dispose();
+		mBasebandFilter = null;
+		
+		mStreamConverter.dispose();
+		mStreamConverter = null;
+		
+		mAGC.dispose();
+		mAGC = null;
+
+		mCQPSKDemodulator.dispose();
+		mCQPSKDemodulator = null;
+		
+		mCQPSKSlicer.dispose();
+		mCQPSKSlicer = null;
+		
+		mMessageFramer.dispose();
+		mMessageFramer = null;
 	}
 	
 	@Override

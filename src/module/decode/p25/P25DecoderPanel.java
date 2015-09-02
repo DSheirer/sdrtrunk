@@ -21,10 +21,9 @@ import java.awt.EventQueue;
 
 import javax.swing.JLabel;
 
-import net.miginfocom.swing.MigLayout;
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderPanel;
-import module.decode.state.State;
+import net.miginfocom.swing.MigLayout;
 import settings.ColorSetting;
 import settings.Setting;
 import settings.SettingsManager;
@@ -167,6 +166,8 @@ public class P25DecoderPanel extends DecoderPanel
 							mToAlias.setText( null );
 							mToAlias.setIcon( null );
 						}
+						break;
+					default:
 						break;
 				}
 

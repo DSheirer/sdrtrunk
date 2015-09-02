@@ -149,22 +149,22 @@ public abstract class GroupMultiChannelGrant extends ChannelGrant
     
     public long getDownlinkFrequency1()
     {
-    	return calculateDownlink( mIdentifierUpdate1, getChannelNumber() );
+    	return calculateDownlink( mIdentifierUpdate1, getChannelNumber1() );
     }
     
     public long getUplinkFrequency1()
     {
-    	return calculateUplink( mIdentifierUpdate1, getChannelNumber() );
+    	return calculateUplink( mIdentifierUpdate1, getChannelNumber1() );
     }
     
     public long getDownlinkFrequency2()
     {
-    	return calculateDownlink( mIdentifierUpdate2, getChannelNumber() );
+    	return calculateDownlink( mIdentifierUpdate2, getChannelNumber2() );
     }
     
     public long getUplinkFrequency2()
     {
-    	return calculateUplink( mIdentifierUpdate2, getChannelNumber() );
+    	return calculateUplink( mIdentifierUpdate2, getChannelNumber2() );
     }
     
 }

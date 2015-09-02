@@ -156,11 +156,6 @@ public class Tait1200ANIMessage extends Message
     	return (char)value;
     }
 
-    private void checkCRC()
-    {
-//    	mCRC = CRCLJ.checkAndCorrect( mMessage );
-    }
-    
     public boolean isValid()
     {
 //    	return mCRC == CRC.PASSED || mCRC == CRC.CORRECTED;

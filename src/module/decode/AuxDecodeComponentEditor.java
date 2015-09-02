@@ -25,10 +25,8 @@ import javax.swing.JCheckBox;
 import javax.swing.SwingUtilities;
 
 import module.decode.config.AuxDecodeConfiguration;
-import controller.Editor;
 import controller.channel.AbstractChannelEditor;
 import controller.channel.ChannelNode;
-import controller.channel.ChannelValidationException;
 
 public class AuxDecodeComponentEditor extends AbstractChannelEditor
 {

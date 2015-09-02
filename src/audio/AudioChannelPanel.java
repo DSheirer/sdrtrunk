@@ -347,6 +347,8 @@ public class AudioChannelPanel extends JPanel
 						mToLabel.setForeground( mDetailsColor );
 					}
 					break;
+				default:
+					break;
 			}
 		}
     }

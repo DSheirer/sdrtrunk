@@ -216,6 +216,8 @@ public class MPT1327DecoderPanel extends DecoderPanel
 						mToTalkgroupLabel.setForeground( mColorLabelDetails );
 					}
 					break;
+				default:
+					break;
 			}
 		}
     }

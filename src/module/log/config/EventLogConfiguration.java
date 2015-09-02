@@ -15,11 +15,44 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package controller.channel;
+package module.log.config;
 
-import module.ProcessingChainOld;
+import java.util.ArrayList;
+import java.util.List;
 
-public interface ChannelSelectionListener
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
+import module.log.EventLogType;
+import controller.config.Configuration;
+
+@XmlRootElement( name = "event_log_configuration" )
+public class EventLogConfiguration extends Configuration
 {
-	public void channelSelected( ProcessingChainOld channel );
+	protected List<EventLogType> mLoggers = new ArrayList<EventLogType>();
+
+	public EventLogConfiguration()
+	{
+	}
+
+	@XmlElement( name = "logger" )
+	public List<EventLogType> getLoggers()
+	{
+		return mLoggers;
+	}
+	
+	public void setLoggers( ArrayList<EventLogType> loggers )
+	{
+		mLoggers = loggers;
+	}
+
+	public void addLogger( EventLogType logger )
+	{
+		mLoggers.add( logger );
+	}
+	
+	public void clear()
+	{
+		mLoggers.clear();
+	}
 }

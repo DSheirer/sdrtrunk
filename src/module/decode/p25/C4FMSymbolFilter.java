@@ -229,6 +229,13 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
 		mFrequencyCorrectionControl.setListener( this );
 	}
 	
+	public void dispose()
+	{
+		mGainController = null;
+		mFrequencyCorrectionControl = null;
+		mListener = null;
+	}
+	
 	@Override
     public void receive( float sample )
     {

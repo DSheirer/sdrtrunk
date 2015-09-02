@@ -534,6 +534,7 @@ public class E4KTunerController extends RTL2832TunerController
 		}
 	}
 	
+	@SuppressWarnings("unused")
 	private void generateDCOffsetTables( boolean controlI2CRepeater ) 
 							throws UsbException
 	{

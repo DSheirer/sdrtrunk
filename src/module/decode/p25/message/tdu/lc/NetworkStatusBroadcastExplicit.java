@@ -3,7 +3,6 @@ package module.decode.p25.message.tdu.lc;
 import module.decode.p25.message.IBandIdentifier;
 import module.decode.p25.message.IdentifierReceiver;
 import module.decode.p25.reference.LinkControlOpcode;
-import module.decode.p25.reference.Service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

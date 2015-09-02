@@ -2,8 +2,6 @@ package module.decode.p25.message.ldu.lc;
 
 import module.decode.p25.message.IBandIdentifier;
 import module.decode.p25.message.IdentifierReceiver;
-import module.decode.p25.message.P25Message.DuplexMode;
-import module.decode.p25.message.P25Message.SessionMode;
 import module.decode.p25.message.ldu.LDU1Message;
 import module.decode.p25.reference.LinkControlOpcode;
 

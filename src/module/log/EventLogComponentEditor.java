@@ -15,18 +15,16 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package eventlog;
+package module.log;
 
-import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JCheckBox;
 import javax.swing.SwingUtilities;
 
-import controller.Editor;
+import module.log.config.EventLogConfiguration;
 import controller.channel.AbstractChannelEditor;
 import controller.channel.ChannelNode;
-import controller.channel.ChannelValidationException;
-import eventlog.config.EventLogConfiguration;
 
 public class EventLogComponentEditor extends AbstractChannelEditor
 {
@@ -55,7 +53,7 @@ public class EventLogComponentEditor extends AbstractChannelEditor
     {
         SwingUtilities.invokeLater(new Runnable() 
         {
-        	final ArrayList<EventLogType> mLoggers = mChannelNode.getChannel()
+        	final List<EventLogType> mLoggers = mChannelNode.getChannel()
         			.getEventLogConfiguration().getLoggers();
         	
             @Override

@@ -21,7 +21,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import module.ProcessingChainOld;
 import properties.SystemProperties;
 import record.config.RecordConfiguration;
 import record.wave.ComplexWaveRecorder;
@@ -35,8 +34,9 @@ public class RecorderManager
 	public RecorderManager()
 	{
 	}
-	
-	public List<Recorder> getRecorder( ProcessingChainOld channel )
+
+	//TODO: make this return modules
+	public List<Recorder> getRecorders( RecordConfiguration config )
 	{
 		/* Note: the file suffix (ie .wav) gets added by the recorder */
 
@@ -47,12 +47,10 @@ public class RecorderManager
         sb.append( File.separator );
         sb.append( TimeStamp.getTimeStamp( "_" ) );
         sb.append(  "_" );
-        sb.append( channel.getChannel().getName() );
+//        sb.append( channel.getChannel().getName() );
         
 		ArrayList<Recorder> retVal = new ArrayList<Recorder>();
 
-		RecordConfiguration config = channel.getChannel().getRecordConfiguration();
-		
 		for( RecorderType recorder: config.getRecorders() )
 		{
 			switch( recorder )

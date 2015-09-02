@@ -39,8 +39,6 @@ import org.jdesktop.swingx.painter.Painter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import source.tuner.hackrf.HackRFTunerController;
-
 /**
  * A tile oriented map component that can easily be used with tile sources
  * on the web like Google and Yahoo maps, satellite data such as NASA imagery,

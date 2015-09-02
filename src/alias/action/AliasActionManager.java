@@ -2,11 +2,11 @@ package alias.action;
 
 import java.util.List;
 
+import message.Message;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import message.Message;
-import module.decode.p25.P25_LSMDecoder;
 import sample.Listener;
 import alias.Alias;
 import controller.ResourceManager;

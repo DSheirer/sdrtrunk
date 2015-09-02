@@ -45,6 +45,11 @@ public class MultiSyncPatternMatcher
 		mMask = (long)( ( Math.pow( 2, syncSize ) ) - 1 );
 	}
 	
+	public void dispose()
+	{
+		mSyncProcessors.clear();
+	}
+	
 	/**
 	 * Processes two bits before checking sync processors for a match.
 	 */

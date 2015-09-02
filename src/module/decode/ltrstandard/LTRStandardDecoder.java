@@ -17,13 +17,12 @@
  ******************************************************************************/
 package module.decode.ltrstandard;
 
-import sample.Listener;
-import sample.real.IRealBufferListener;
-import sample.real.RealBuffer;
 import message.MessageDirection;
 import module.decode.Decoder;
 import module.decode.DecoderType;
-import module.decode.config.DecodeConfiguration;
+import sample.Listener;
+import sample.real.IRealBufferListener;
+import sample.real.RealBuffer;
 import alias.AliasList;
 import bits.MessageFramer;
 import bits.SyncPattern;

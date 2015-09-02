@@ -57,6 +57,11 @@ public class DirectGainControl implements GainController, RealSampleListener
 		mMaximum = maximum;
 		mIncrement = increment;
 	}
+	
+	public void dispose()
+	{
+		mListener = null;
+	}
 
 	@Override
     public void receive( float sample )

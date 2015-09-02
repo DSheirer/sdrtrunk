@@ -17,8 +17,6 @@
  ******************************************************************************/
 package source.mixer;
 
-import java.util.List;
-
 import javax.sound.sampled.Mixer;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;

@@ -37,6 +37,7 @@ import javax.swing.tree.TreePath;
 
 import module.decode.AuxDecodeComponentEditor;
 import module.decode.DecodeComponentEditor;
+import module.log.EventLogComponentEditor;
 import net.miginfocom.swing.MigLayout;
 
 import org.slf4j.Logger;
@@ -49,7 +50,6 @@ import alias.AliasList;
 import com.jidesoft.swing.JideTabbedPane;
 
 import controller.Editor;
-import eventlog.EventLogComponentEditor;
 
 public class ChannelEditor extends Editor implements ActionListener
 {

@@ -26,14 +26,14 @@ import sample.Provider;
 public class ComplexSampleAssembler implements Listener<Complex>,
 											   Provider<List<Complex>>
 {
-	private ArrayList mBuffer;
+	private ArrayList<Complex> mBuffer;
 	private int mBufferSize;
 	private Listener<List<Complex>> mListener;
 	
 	public ComplexSampleAssembler( int bufferSize )
 	{
 		mBufferSize = bufferSize;
-		mBuffer = new ArrayList<Complex>();
+		mBuffer = new ArrayList<>();
 	}
 	
 	public void dispose()
@@ -54,7 +54,7 @@ public class ComplexSampleAssembler implements Listener<Complex>,
 				mListener.receive( mBuffer );
 			}
 			
-			mBuffer = new ArrayList();
+			mBuffer = new ArrayList<>();
 		}
     }
 

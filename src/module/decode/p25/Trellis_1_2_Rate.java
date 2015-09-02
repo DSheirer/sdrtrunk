@@ -67,35 +67,35 @@ public class Trellis_1_2_Rate
 		mConstellationNodes.clear();
 	}
 	
-	private String constellationsToString( String label )
-	{
-		StringBuilder sb = new StringBuilder();
-		
-		sb.append( label );
-
-		for( ConstellationNode node: mConstellationNodes )
-		{
-			sb.append( "  " + node.getConstellation().name() );
-		}
-		
-		return sb.toString();
-	}
-
-	private String inputsToString()
-	{
-		StringBuilder sb = new StringBuilder();
-		
-		sb.append( "  INPUTS: " );
-
-		for( ConstellationNode node: mConstellationNodes )
-		{
-			sb.append( "  " );
-			sb.append( ( node.getConstellation().getInput().getBit1() ? "1" : "0" ) );
-			sb.append( ( node.getConstellation().getInput().getBit2() ? "1" : "0" ) );
-		}
-		
-		return sb.toString();
-	}
+//	private String constellationsToString( String label )
+//	{
+//		StringBuilder sb = new StringBuilder();
+//		
+//		sb.append( label );
+//
+//		for( ConstellationNode node: mConstellationNodes )
+//		{
+//			sb.append( "  " + node.getConstellation().name() );
+//		}
+//		
+//		return sb.toString();
+//	}
+//
+//	private String inputsToString()
+//	{
+//		StringBuilder sb = new StringBuilder();
+//		
+//		sb.append( "  INPUTS: " );
+//
+//		for( ConstellationNode node: mConstellationNodes )
+//		{
+//			sb.append( "  " );
+//			sb.append( ( node.getConstellation().getInput().getBit1() ? "1" : "0" ) );
+//			sb.append( ( node.getConstellation().getInput().getBit2() ? "1" : "0" ) );
+//		}
+//		
+//		return sb.toString();
+//	}
 
 	public boolean decode( BinaryMessage message, int start, int end )
 	{

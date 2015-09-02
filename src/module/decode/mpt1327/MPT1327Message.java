@@ -581,6 +581,7 @@ public class MPT1327Message extends Message
 						sb.append( " " );
 						sb.append( type.getLabel() );
 						sb.append( " REQUEST" );
+						break;
     			}
     			break;
     		case ACKI:
@@ -726,8 +727,6 @@ public class MPT1327Message extends Message
 	    				sb.append( getChannel() );
 	    				sb.append( " SER:" );
 	    				sb.append( getAdjacentSiteSerialNumber() );
-	    				//debug
-	    				sb.append( " *************************" );
 	    				break;
     				case SPECIFY_CALL_MAINTENANCE_PARAMETERS:
     					sb.append( " PERIODIC MAINT MSG REQD:" );
@@ -738,6 +737,8 @@ public class MPT1327Message extends Message
     					sb.append( getPresselOnRequired() );
     					sb.append( " IDENT1 VALUE:" );
     					sb.append( getMaintMessageIDENT1Value() );
+    				default:
+    					break;
     			}
     			break;
     		case CLEAR:
@@ -777,6 +778,8 @@ public class MPT1327Message extends Message
     			sb.append( " " );
     			sb.append( getSDM() );
     			break;
+			default:
+				break;
     	}
     	
 	    return sb.toString();
@@ -848,6 +851,8 @@ public class MPT1327Message extends Message
 				case SDMI:
 					sb.append( "SEND SHORT DATA MESSAGE USING " );
 					sb.append( slots.getLabel() );
+					break;
+				default:
 					break;
 			}
 		}
@@ -1253,6 +1258,8 @@ public class MPT1327Message extends Message
 												12 ) );
 				}
 				break;
+			default:
+				break;
 		}
 		
 		return sb.toString();
@@ -1277,6 +1284,8 @@ public class MPT1327Message extends Message
 				break;
 			case HEAD_PLUS4:
 				blocks = 4;
+				break;
+			default:
 				break;
 		}
 		
@@ -1346,6 +1355,8 @@ public class MPT1327Message extends Message
 				break;
 			case HEAD_PLUS4:
 				blocks = 4;
+				break;
+			default:
 				break;
 		}
 		
@@ -1445,6 +1456,8 @@ public class MPT1327Message extends Message
 				break;
 			case HEAD_PLUS4:
 				blocks = 4;
+				break;
+			default:
 				break;
 		}
 		

@@ -171,6 +171,8 @@ public class MPT1327TrafficPanel extends DecoderPanel
 				case CHANNEL_STATE_LABEL_DETAILS:
 					mToLabel.setForeground( mColorLabelDetails );
 					break;
+				default:
+					break;
 			}
 		}
     }

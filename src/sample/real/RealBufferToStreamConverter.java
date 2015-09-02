@@ -20,6 +20,11 @@ public class RealBufferToStreamConverter implements Listener<RealBuffer>
 			}
 		}
 	}
+	
+	public void dispose()
+	{
+		mListener = null;
+	}
 
 	public void setListener( RealSampleListener listener )
 	{

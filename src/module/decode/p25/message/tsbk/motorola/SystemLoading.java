@@ -1,6 +1,5 @@
 package module.decode.p25.message.tsbk.motorola;
 
-import module.decode.p25.message.tsbk.TSBKMessage;
 import module.decode.p25.reference.DataUnitID;
 import alias.AliasList;
 import bits.BinaryMessage;

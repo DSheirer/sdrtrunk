@@ -27,7 +27,6 @@ import settings.ColorSetting;
 import settings.Setting;
 import settings.SettingsManager;
 import alias.Alias;
-import controller.channel.Channel;
 
 public class PassportDecoderPanel extends DecoderPanel
 {

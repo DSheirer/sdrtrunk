@@ -238,6 +238,8 @@ public class MPT1327DecoderState extends DecoderState
 					case MAINT:
 						broadcast( new DecoderStateEvent( this, Event.END, State.END ) );
 						break;
+					default:
+						break;
 				}
 			}
 		}

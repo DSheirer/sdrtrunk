@@ -320,7 +320,7 @@ public class PassportDecoderState extends DecoderState
 		}
 		else
 		{
-			ArrayList<Integer> channels = new ArrayList( mSiteLCNs.keySet() );
+			ArrayList<Integer> channels = new ArrayList<>( mSiteLCNs.keySet() );
 			Collections.sort( channels );
 			
 			for( Integer channel: channels )
@@ -339,7 +339,7 @@ public class PassportDecoderState extends DecoderState
 		}
 		else
 		{
-			ArrayList<Integer> channels = new ArrayList( mNeighborLCNs.keySet() );
+			ArrayList<Integer> channels = new ArrayList<>( mNeighborLCNs.keySet() );
 			Collections.sort( channels );
 			
 			for( Integer channel: channels )

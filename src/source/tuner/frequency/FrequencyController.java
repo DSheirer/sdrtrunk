@@ -151,7 +151,8 @@ public class FrequencyController
      * from the tuned frequency.
      * @param tunedFrequency
      */
-    private long getCorrectedFrequency( long tunedFrequency )
+    @SuppressWarnings("unused")
+	private long getCorrectedFrequency( long tunedFrequency )
     {
 		return (long)( (double)tunedFrequency / 
 				( 1.0 - ( mFrequencyCorrection / 1000000.0 ) ) );
