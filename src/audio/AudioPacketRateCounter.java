@@ -34,7 +34,7 @@ public class AudioPacketRateCounter implements Listener<AudioPacket>
 			mStartTime = System.currentTimeMillis();
 		}
 		
-		mCount += packet.getAudioData().length;
+		mCount += packet.getAudioBuffer().getSamples().length;
 
 		long elapsed = System.currentTimeMillis() - mStartTime;
 		

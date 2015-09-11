@@ -26,6 +26,9 @@ import instrument.tap.stream.FloatTap;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import module.decode.Decoder;
 import module.decode.DecoderType;
 import sample.Broadcaster;
@@ -35,6 +38,7 @@ import sample.real.RealBuffer;
 import alias.AliasList;
 import bits.MessageFramer;
 import bits.SyncPattern;
+import controller.channel.Channel;
 import controller.channel.Channel.ChannelType;
 import controller.channel.map.ChannelMap;
 import dsp.filter.FilterFactory;
@@ -54,6 +58,8 @@ import dsp.fsk.FSK2Decoder.Output;
 public class MPT1327Decoder extends Decoder 
 					implements IRealBufferListener, Instrumentable
 {
+	private final static Logger mLog = LoggerFactory.getLogger( MPT1327Decoder.class );
+	
 	/* Decimated sample rate ( 48,000 / 2 = 24,000 ) feeding the decoder */
 	private static final int sDECIMATED_SAMPLE_RATE = 24000;
 	

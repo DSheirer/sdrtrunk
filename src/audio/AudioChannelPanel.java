@@ -27,10 +27,10 @@ import settings.SettingChangeListener;
 import settings.SettingsManager;
 import settings.ColorSetting.ColorSettingName;
 import alias.Alias;
-import alias.Metadata;
-import alias.MetadataType;
 import audio.AudioEvent.Type;
 import audio.metadata.AudioMetadata;
+import audio.metadata.Metadata;
+import audio.metadata.MetadataType;
 
 public class AudioChannelPanel extends JPanel 
 				implements Listener<AudioEvent>, SettingChangeListener
@@ -51,13 +51,13 @@ public class AudioChannelPanel extends JPanel
 	private JLabel mChannelName;
 	private JLabel mMutedLabel;
 	
-	private JLabel mFromLabel = new JLabel( "From:" );
-	private JLabel mFrom = new JLabel( "" );
-	private JLabel mFromAlias = new JLabel( "" );
-	
 	private JLabel mToLabel = new JLabel( "To:" );
 	private JLabel mTo = new JLabel( "" );
 	private JLabel mToAlias = new JLabel( "" );
+	
+	private JLabel mFromLabel = new JLabel( "From:" );
+	private JLabel mFrom = new JLabel( "" );
+	private JLabel mFromAlias = new JLabel( "" );
 	
 	private boolean mConfigured = false;
 	
@@ -138,6 +138,18 @@ public class AudioChannelPanel extends JPanel
 		mMutedLabel.setForeground( Color.RED );
 		
 		add( mMutedLabel, "wrap" );
+		
+		mToLabel.setFont( mFont );
+		mToLabel.setForeground( mLabelColor );
+		add( mToLabel );
+
+		mTo.setFont( mFont );
+		mTo.setForeground( mLabelColor );
+		add( mTo );
+		
+		mToAlias.setFont( mFont );
+		mToAlias.setForeground( mLabelColor );
+		add( mToAlias,"wrap" );
 
 		mFromLabel.setFont( mFont );
 		mFromLabel.setForeground( mLabelColor );
@@ -150,18 +162,6 @@ public class AudioChannelPanel extends JPanel
 		mFromAlias.setFont( mFont );
 		mFromAlias.setForeground( mLabelColor );
 		add( mFromAlias,"wrap" );
-		
-		mToLabel.setFont( mFont );
-		mToLabel.setForeground( mLabelColor );
-		add( mToLabel );
-
-		mTo.setFont( mFont );
-		mTo.setForeground( mLabelColor );
-		add( mTo );
-		
-		mToAlias.setFont( mFont );
-		mToAlias.setForeground( mLabelColor );
-		add( mToAlias );
 	}
 	
 	private void updateMuteState()
@@ -287,7 +287,7 @@ public class AudioChannelPanel extends JPanel
 		{
 			if( !mConfigured || audioMetadata.isUpdated() )
 			{
-				final Metadata from = audioMetadata.getMetadata( MetadataType.FROM_TALKGROUP );
+				final Metadata from = audioMetadata.getMetadata( MetadataType.FROM );
 
 				final Metadata to = audioMetadata.getMetadata( MetadataType.TO );
 				
@@ -296,11 +296,17 @@ public class AudioChannelPanel extends JPanel
 					@Override
 					public void run()
 					{
-						mFrom.setText( from.getValue() );
-						updateAlias( mFromAlias, from.getAlias() );
+						if( from != null )
+						{
+							mFrom.setText( from.getValue() );
+							updateAlias( mFromAlias, from.getAlias() );
+						}
 						
-						mTo.setText( to.getValue() );
-						updateAlias( mToAlias, to.getAlias() );
+						if( to != null )
+						{
+							mTo.setText( to.getValue() );
+							updateAlias( mToAlias, to.getAlias() );
+						}
 					}
 				} );
 				

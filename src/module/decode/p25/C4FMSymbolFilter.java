@@ -11,14 +11,17 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import sample.Listener;
+import sample.real.RealBuffer;
 import sample.real.RealSampleListener;
 import sample.real.RealSampleProvider;
 import source.tuner.frequency.FrequencyCorrectionControl;
 import source.tuner.frequency.FrequencyCorrectionControl.FrequencyCorrectionResetListener;
+import dsp.gain.DirectGainControl;
 import dsp.gain.GainController;
 
 public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
-										 RealSampleListener, 
+										 Listener<RealBuffer>, 
 										 RealSampleProvider,
 										 Instrumentable
 {
@@ -202,8 +205,11 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
 	
 	private RealSampleListener mListener;
 	
-	private GainController mGainController;
+	private DirectGainControl mGainController = 
+			new DirectGainControl( 15.0f, 0.1f, 35.0f, 0.3f );
+
 	private FrequencyCorrectionControl mFrequencyCorrectionControl;
+	private int mFrequencyAdjustmentRequested = 0;
 	
 	/**
 	 * C4FM Symbol Filter
@@ -218,11 +224,8 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
 	 * setting for this filter is 15.4 and that yields a symbol spread that
 	 * is centered on 2.0, ranging 1.92 to 2.08.
 	 */
-	public C4FMSymbolFilter( GainController gainController, 
-							 FrequencyCorrectionControl frequencyControl )
+	public C4FMSymbolFilter( FrequencyCorrectionControl frequencyControl )
 	{
-		mGainController = gainController;
-		
 		mFrequencyCorrectionControl = frequencyControl;
 		
 		/* Register for reset events, so we can reset internal frequency tracking */
@@ -237,9 +240,36 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
 	}
 	
 	@Override
+	public void receive( RealBuffer buffer )
+	{
+		for( float sample: buffer.getSamples() )
+		{
+			receive( sample );
+		}
+
+		/* If a frequency correction was requested during the processing of this
+		 * buffer, we'll apply the change and it will be reflected in the next 
+		 * arriving buffer.  Reset the lock on frequency correction and reset 
+		 * the internal frequency correction tracker */
+		if( mFrequencyAdjustmentRequested != 0 )
+		{
+			mFrequencyCorrectionControl.adjust( mFrequencyAdjustmentRequested );
+			
+			mLog.debug( "Adjusting frequency [" + mFrequencyAdjustmentRequested + 
+				"] correction is now: " + mFrequencyCorrectionControl
+						.getErrorCorrection() );
+
+			mFrequencyAdjustmentRequested = 0;
+
+			/* reset internal frequency error tracker */
+			mCoarseFrequencyCorrection = 0;
+		}
+	}
+
     public void receive( float sample )
     {
-		//TODO: limit frequency corrections to once per buffer !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
+    	sample = mGainController.correct( sample );
+    	
 		if( mReset )
 		{
 			mGainController.reset();
@@ -353,15 +383,11 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
 			
 			mFineFrequencyCorrection += ( symbolError * K_FINE_FREQUENCY );
 			
-			/* send frequency correction */
+			/* Queue a frequency adjustment (once per buffer) as needed */
 			if( Math.abs( mCoarseFrequencyCorrection ) > COARSE_FREQUENCY_DEADBAND )
 			{
-				int adjustment = 500 * ( mCoarseFrequencyCorrection > 0 ? 1 : -1 );
-
-				mFrequencyCorrectionControl.adjust( adjustment );
-					
-				/* reset internal frequency error tracker */
-				mCoarseFrequencyCorrection = 0;
+				mFrequencyAdjustmentRequested = 
+						500 * ( mCoarseFrequencyCorrection > 0 ? 1 : -1 );
 			}
 			
 			if( mSymbolSpreadTap != null )

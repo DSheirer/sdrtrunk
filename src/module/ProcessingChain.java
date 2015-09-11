@@ -54,11 +54,12 @@ import source.SourceException;
 import source.tuner.TunerChannelSource;
 import source.tuner.frequency.FrequencyCorrectionControl;
 import source.tuner.frequency.IFrequencyCorrectionController;
-import alias.Metadata;
 import audio.AudioPacket;
+import audio.IAudioPacketListener;
 import audio.IAudioPacketProvider;
 import audio.metadata.IMetadataListener;
 import audio.metadata.IMetadataProvider;
+import audio.metadata.Metadata;
 import audio.squelch.ISquelchStateListener;
 import audio.squelch.ISquelchStateProvider;
 import audio.squelch.SquelchState;
@@ -150,6 +151,17 @@ public class ProcessingChain implements IChannelEventListener
 		mMessageBroadcaster.dispose();
 		mRealBufferBroadcaster.dispose();
 		mSquelchStateBroadcaster.dispose();
+	}
+
+	/**
+	 * Broadcasts the metadata to any registered listeners
+	 */
+	public void broadcast( Metadata metadata )
+	{
+		if( mMetadataBroadcaster != null )
+		{
+			mMetadataBroadcaster.broadcast( metadata );
+		}
 	}
 	
 	/**
@@ -274,6 +286,12 @@ public class ProcessingChain implements IChannelEventListener
 		mModules.add( module );
 
 		/* >>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Listeners <<<<<<<<<<<<<<<<<<<<<<<<<<< */
+		if( module instanceof IAudioPacketListener )
+		{
+			mAudioPacketBroadcaster.addListener( 
+					((IAudioPacketListener)module).getAudioPacketListener() );
+		}
+		
 		if( module instanceof ICallEventListener )
 		{
 			mCallEventBroadcaster.addListener( 
@@ -396,10 +414,16 @@ public class ProcessingChain implements IChannelEventListener
 		{
 			if( mSource != null )
 			{
-				/* Initialize each of the modules */
+				/* Reset each of the modules */
 				for( Module module: mModules )
 				{
-					module.init();
+					module.reset();
+				}
+				
+				/* Start each of the modules */
+				for( Module module: mModules )
+				{
+					module.start();
 				}
 
 				/* Register with the source to receive sample data.  Setup a 
@@ -474,6 +498,12 @@ public class ProcessingChain implements IChannelEventListener
 			{
 				mThreadPoolManager.cancel( mBufferProcessingTask );
 				mBufferProcessingTask = null;
+			}
+			
+			/* Stop each of the modules */
+			for( Module module: mModules )
+			{
+				module.stop();
 			}
 		}
 	}

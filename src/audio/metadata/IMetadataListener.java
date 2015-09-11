@@ -1,7 +1,6 @@
 package audio.metadata;
 
 import sample.Listener;
-import alias.Metadata;
 
 public interface IMetadataListener
 {

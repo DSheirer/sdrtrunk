@@ -73,11 +73,27 @@ public abstract class Decoder extends Module
 	 * external modules can be correctly configured.  This method is invoked
 	 * prior to processing start.
 	 */
-	public void init()
+	public void reset()
 	{
 		mDecoderState.init();
 	}
-	
+
+	/**
+	 * Start the decoder
+	 */
+	@Override
+	public void start()
+	{
+	}
+
+	/**
+	 * Stop the decoder
+	 */
+	@Override
+	public void stop()
+	{
+	}
+
 	/**
 	 * Identifies the decoder type (ie protocol) 
 	 */

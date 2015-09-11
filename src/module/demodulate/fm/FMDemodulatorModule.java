@@ -151,7 +151,7 @@ public class FMDemodulatorModule extends Module implements IComplexBufferListene
 	}
 
 	@Override
-	public void init()
+	public void reset()
 	{
 		mDemodulator.reset();
 		
@@ -192,5 +192,15 @@ public class FMDemodulatorModule extends Module implements IComplexBufferListene
 		{
 			mUnfilteredBufferBroadcaster.removeListener( mListener );
 		}
+	}
+
+	@Override
+	public void start()
+	{
+	}
+
+	@Override
+	public void stop()
+	{
 	}
 }

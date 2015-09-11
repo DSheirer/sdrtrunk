@@ -46,6 +46,8 @@ import module.log.config.EventLogConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import record.RecorderManager;
+import record.RecorderType;
 import record.config.RecordConfiguration;
 import sample.Listener;
 import source.Source;
@@ -58,6 +60,8 @@ import source.config.SourceConfiguration;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannel.Type;
 import alias.AliasList;
+import audio.metadata.Metadata;
+import audio.metadata.MetadataType;
 import controller.ResourceManager;
 import controller.channel.ChannelEvent.Event;
 import controller.config.Configuration;
@@ -727,7 +731,7 @@ public class Channel extends Configuration
 	}
 
 	/**
-	 * Sets up the channel and prepares to commense processing.  Sets up the 
+	 * Sets up the channel and prepares to start processing.  Sets up the 
 	 * processing chain and requests a source.
 	 * 
 	 * @throws SourceException - if no source is available or if there is an 
@@ -738,9 +742,52 @@ public class Channel extends Configuration
 		setupProcessingChain();
 		
 		setupSource();
+	}
+
+	/**
+	 * Setup recording options.  Adds RecorderManager as a audio packet listener
+	 * to receive and record decoded audio.
+	 */
+	private void setupRecording()
+	{
+		List<RecorderType> recorders = mRecordConfiguration.getRecorders();
+
+		if( !recorders.isEmpty() )
+		{
+			if( recorders.contains( RecorderType.AUDIO ) )
+			{
+				mProcessingChain.addAudioPacketListener( 
+						mResourceManager.getRecorderManager() );
+			}
+
+			/* Add baseband recorder */
+			if( ( recorders.contains( RecorderType.BASEBAND ) &&
+				  mChannelType == ChannelType.STANDARD ) )
+			{
+				mProcessingChain.addModule( RecorderManager.getBasebandRecorder( 
+					mResourceManager.getThreadPoolManager(), getChannelName() ) );
+			}
+			
+			/* Add traffic channel baseband recorder */
+			if( recorders.contains( RecorderType.TRAFFIC_BASEBAND ) &&
+				mChannelType == ChannelType.TRAFFIC )
+			{
+				mProcessingChain.addModule( RecorderManager.getBasebandRecorder( 
+					mResourceManager.getThreadPoolManager(), getChannelName() ) );
+			}
+		}
+	}
+	
+	private String getChannelName()
+	{
+		StringBuilder sb = new StringBuilder();
+		sb.append( mSystem );
+		sb.append( "_" );
+		sb.append( mSite );
+		sb.append( "_" );
+		sb.append( mName );
 		
-		setupLogging();
-		//TODO: Add recorder(s)
+		return sb.toString();
 	}
 	
 	private void setupLogging()
@@ -748,17 +795,13 @@ public class Channel extends Configuration
 		mLog.debug( "Setting up logging ..." );
 		if( mProcessingChain != null )
 		{
-			StringBuilder sb = new StringBuilder();
-			sb.append( mSystem );
-			sb.append( "_" );
-			sb.append( mSite );
-			sb.append( "_" );
-			sb.append( mName );
-
-			List<Module> loggers = mResourceManager.getEventLogManager()
-					.getLoggers( mEventLogConfiguration, sb.toString() );
+			String channelName = getChannelName();
 			
-			mLog.debug( "Created [" + loggers.size() + "] loggers for [" + sb.toString() + "]" );
+			List<Module> loggers = mResourceManager.getEventLogManager()
+					.getLoggers( mEventLogConfiguration, channelName );
+			
+			mLog.debug( "Created [" + loggers.size() + "] loggers for [" + 
+					channelName + "]" );
 
 			if( !loggers.isEmpty() )
 			{
@@ -783,8 +826,10 @@ public class Channel extends Configuration
 			
 			/* Processing Modules */
 			List<Module> modules = DecoderFactory.getModules( mChannelType, 
-				mResourceManager, mDecodeConfiguration, mAuxDecodeConfiguration, 
-				aliasList );
+				mResourceManager, mDecodeConfiguration, mRecordConfiguration,
+				mAuxDecodeConfiguration, aliasList, mSystem, 
+				mSite );
+			
 			mProcessingChain.addModules( modules );
 
 			/* Get message filters for the set of processing modules */
@@ -808,6 +853,19 @@ public class Channel extends Configuration
 			/* Create the call event model to receive call events */
 			mCallEventModel = new CallEventModel();
 			mProcessingChain.addCallEventListener( mCallEventModel );
+			
+			setupLogging();
+			
+			setupRecording();
+			
+			/* Inject channel metadata that will be inserted into audio packets
+			 * for the recorder manager and streaming */
+			mProcessingChain.broadcast( 
+					new Metadata( MetadataType.SYSTEM, mSystem.getName() ) );
+			mProcessingChain.broadcast( 
+					new Metadata( MetadataType.SITE_ID, mSite.getName() ) );
+			mProcessingChain.broadcast( 
+					new Metadata( MetadataType.CHANNEL_NAME, mName ) );
 		}
 	}
 

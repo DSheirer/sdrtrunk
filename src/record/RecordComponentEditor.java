@@ -30,6 +30,7 @@ public class RecordComponentEditor extends AbstractChannelEditor
     
     private JCheckBox mAudioRecorder = new JCheckBox( "Audio" );
     private JCheckBox mBasebandRecorder = new JCheckBox( "Baseband I/Q" );
+    private JCheckBox mTrafficBasebandRecorder = new JCheckBox( "Traffic Channel Baseband I/Q" );
 
     public RecordComponentEditor( ChannelNode channelNode )
 	{
@@ -37,6 +38,7 @@ public class RecordComponentEditor extends AbstractChannelEditor
 		
 		add( mAudioRecorder, "span" );
 		add( mBasebandRecorder, "span" );
+		add( mTrafficBasebandRecorder, "span" );
     	
 		reset();
 	}
@@ -58,6 +60,12 @@ public class RecordComponentEditor extends AbstractChannelEditor
 		{
 			config.addRecorder( RecorderType.BASEBAND );
 		}
+		
+		if( mTrafficBasebandRecorder.isSelected() )
+		{
+			config.addRecorder( RecorderType.BASEBAND );
+		}
+		
     }
 
 	@Override
@@ -76,6 +84,9 @@ public class RecordComponentEditor extends AbstractChannelEditor
 
     			mBasebandRecorder.setSelected( config.getRecorders()
     					.contains( RecorderType.BASEBAND ) );
+    			
+    			mTrafficBasebandRecorder.setSelected( config.getRecorders()
+    					.contains( RecorderType.TRAFFIC_BASEBAND ) );
             }
         });
     }

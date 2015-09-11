@@ -56,7 +56,7 @@ public class MessageEventLogger extends EventLogger implements
 	}
 
 	@Override
-	public void init()
+	public void reset()
 	{
 		super.start();
 	}

@@ -31,10 +31,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
-import alias.Metadata;
-import alias.MetadataReset;
-import alias.MetadataType;
 import audio.metadata.IMetadataProvider;
+import audio.metadata.Metadata;
+import audio.metadata.MetadataReset;
+import audio.metadata.MetadataType;
 import audio.squelch.ISquelchStateProvider;
 import audio.squelch.SquelchState;
 import controller.ThreadPoolManager;
@@ -117,9 +117,18 @@ public class ChannelState extends Module implements ICallEventProvider,
 	}
 	
 	@Override
-	public void init()
+	public void reset()
 	{
-		
+	}
+
+	@Override
+	public void start()
+	{
+	}
+
+	@Override
+	public void stop()
+	{
 	}
 
 	public void dispose()
@@ -500,7 +509,7 @@ public class ChannelState extends Module implements ICallEventProvider,
 		
 		if( channel != null )
 		{
-			broadcast( new Metadata( MetadataType.CHANNEL, channel, true ) );
+			broadcast( new Metadata( MetadataType.CHANNEL_NUMBER, channel, true ) );
 		}
 
 		broadcast( new Metadata( MetadataType.PROTOCOL,  

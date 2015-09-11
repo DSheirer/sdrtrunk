@@ -15,12 +15,12 @@ import org.slf4j.LoggerFactory;
 import controller.channel.ChannelEvent;
 import controller.channel.IChannelEventListener;
 import sample.Listener;
-import alias.Metadata;
 import audio.AudioFormats;
 import audio.AudioPacket;
 import audio.IAudioPacketProvider;
 import audio.metadata.AudioMetadata;
 import audio.metadata.IMetadataListener;
+import audio.metadata.Metadata;
 
 public class P25AudioModule extends Module implements Listener<Message>, 
 	IAudioPacketProvider, IMessageListener, IChannelEventListener, IMetadataListener
@@ -41,10 +41,12 @@ public class P25AudioModule extends Module implements Listener<Message>,
 	private AudioMetadata mAudioMetadata;
 	private ChannelEventListener mChannelEventListener = new ChannelEventListener();
 
-	public P25AudioModule()
+	public P25AudioModule( boolean record )
 	{
 		mSourceID = ++UNIQUE_ID;
-		mAudioMetadata = new AudioMetadata( mSourceID );
+		mAudioMetadata = new AudioMetadata( mSourceID, record );
+		
+		loadConverter();
 	}
 	
 	@Override
@@ -60,9 +62,21 @@ public class P25AudioModule extends Module implements Listener<Message>,
 	}
 
 	@Override
-	public void init()
+	public void reset()
 	{
-		loadConverter();
+		mAudioMetadata.reset();
+	}
+
+	@Override
+	public void start()
+	{
+		
+	}
+
+	@Override
+	public void stop()
+	{
+		
 	}
 
 	/**

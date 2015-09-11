@@ -19,6 +19,7 @@ package module.decode.p25;
 
 import instrument.tap.Tap;
 import instrument.tap.stream.DibitTap;
+import instrument.tap.stream.FloatBufferTap;
 import instrument.tap.stream.FloatTap;
 
 import java.util.ArrayList;
@@ -30,14 +31,12 @@ import org.slf4j.LoggerFactory;
 import sample.Listener;
 import sample.real.IRealBufferListener;
 import sample.real.RealBuffer;
-import sample.real.RealBufferToStreamConverter;
 import source.tuner.frequency.FrequencyCorrectionControl;
 import alias.AliasList;
 import controller.channel.Channel.ChannelType;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
 import dsp.filter.fir.real.RealFIRFilter_RB_RB;
-import dsp.gain.DirectGainControl;
 
 public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 {
@@ -45,7 +44,6 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 	
     /* Instrumentation Taps */
 	private static final String INSTRUMENT_FILTER_OUTPUT = "Tap Point: Pre-Filter Output";
-	private static final String INSTRUMENT_DGC_OUTPUT = "Tap Point: DGC Output";
 	private static final String INSTRUMENT_C4FM_SYMBOL_FILTER_OUTPUT = "Tap Point: Symbol Filter Output";
 	private static final String INSTRUMENT_C4FM_SLICER_OUTPUT = "Tap Point: C4FM Slicer Output";
 
@@ -53,9 +51,6 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 
 	private List<Tap> mAvailableTaps;
 	private RealFIRFilter_RB_RB mC4FMPreFilter;
-	private DirectGainControl mDGC;
-	private RealBufferToStreamConverter mStreamConverter = 
-									new RealBufferToStreamConverter();
 	private FrequencyCorrectionControl mFrequencyCorrectionControl;
 	private C4FMSymbolFilter mSymbolFilter;
 	private C4FMSlicer mC4FMSlicer;
@@ -82,22 +77,14 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 		mC4FMPreFilter = new RealFIRFilter_RB_RB( FilterFactory.getLowPass( 
 				48000, 6750, 7500, 60, WindowType.HANNING, true ), 1.0f );
 
-		/* Convert buffers to a sample stream so that the symbol filter can
-		 * provide fine-grained gain control over individual samples */
-		mC4FMPreFilter.setListener( mStreamConverter );
-		
-		/* Apply gain remotely controlled by the downstream symbol filter */
-		mDGC = new DirectGainControl( 15.0f, 0.1f, 35.0f, 0.3f );
-		mStreamConverter.setListener( mDGC );
-
 		/* Issue tuned frequency correction commands, remotely controlled by the 
 		 * downstream symbol filter */
 		mFrequencyCorrectionControl = new FrequencyCorrectionControl( 
 				MAXIMUM_FREQUENCY_CORRECTION );
-
+		
 		/* Shape gain and frequency offsets to optimize sample stream */
-		mSymbolFilter = new C4FMSymbolFilter( mDGC, mFrequencyCorrectionControl );
-		mDGC.setListener( mSymbolFilter );
+		mSymbolFilter = new C4FMSymbolFilter( mFrequencyCorrectionControl );
+		mC4FMPreFilter.setListener( mSymbolFilter );
 		
 		/* Convert samples to symbols */
 		mC4FMSlicer = new C4FMSlicer();
@@ -118,12 +105,6 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 		
 		mC4FMPreFilter.dispose();
 		mC4FMPreFilter = null;
-		
-		mDGC.dispose();
-		mDGC = null;
-		
-		mStreamConverter.dispose();
-		mStreamConverter = null;
 		
 		mFrequencyCorrectionControl.dispose();
 		mFrequencyCorrectionControl = null;
@@ -172,7 +153,6 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 			mAvailableTaps = new ArrayList<Tap>();
 
 			mAvailableTaps.add( new FloatTap( INSTRUMENT_FILTER_OUTPUT, 0, 1.0f ) );
-			mAvailableTaps.add( new FloatTap( INSTRUMENT_DGC_OUTPUT, 0, 1.0f ) );
 			
 			if( mSymbolFilter != null )
 			{
@@ -200,14 +180,9 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 		switch( tap.getName() )
 		{
 			case INSTRUMENT_FILTER_OUTPUT:
-				FloatTap filterOutput = (FloatTap)tap;
-				mStreamConverter.setListener( filterOutput );
-				filterOutput.setListener( mDGC );
-				break;
-			case INSTRUMENT_DGC_OUTPUT:
-				FloatTap dgcTap = (FloatTap)tap;
-				mDGC.setListener( dgcTap );
-				dgcTap.setListener( mSymbolFilter );
+				FloatBufferTap filterOutput = (FloatBufferTap)tap;
+				mC4FMPreFilter.setListener( filterOutput );
+				filterOutput.setListener( mSymbolFilter );
 				break;
 			case INSTRUMENT_C4FM_SYMBOL_FILTER_OUTPUT:
 				FloatTap symbolTap = (FloatTap)tap;
@@ -242,10 +217,7 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 		switch( tap.getName() )
 		{
 			case INSTRUMENT_FILTER_OUTPUT:
-				mStreamConverter.setListener( mDGC );
-				break;
-			case INSTRUMENT_DGC_OUTPUT:
-				mDGC.setListener( mSymbolFilter );
+				mC4FMPreFilter.setListener( mSymbolFilter );
 				break;
 			case INSTRUMENT_C4FM_SYMBOL_FILTER_OUTPUT:
 				mSymbolFilter.setListener( mC4FMSlicer );

@@ -94,7 +94,7 @@ public class AMDemodulatorModule extends Module
 	}
 
 	@Override
-	public void init()
+	public void reset()
 	{
 	}
 
@@ -108,5 +108,15 @@ public class AMDemodulatorModule extends Module
 	public void removeRealBufferListener()
 	{
 		mAGC.removeListener();
+	}
+
+	@Override
+	public void start()
+	{
+	}
+
+	@Override
+	public void stop()
+	{
 	}
 }

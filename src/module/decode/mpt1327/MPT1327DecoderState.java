@@ -245,42 +245,6 @@ public class MPT1327DecoderState extends DecoderState
 		}
     }
 	
-//	/**
-//	 * Intercept the fade event so that we can generate a call end event
-//	 */
-//	@Override
-//	public void fade( final CallEventType type )
-//	{
-//		/*
-//		 * We can receive multiple call tear-down messages -- only post a call
-//		 * end event for the one that can change the state to fade
-//		 */
-//		if( getState().canChangeTo( State.FADE ) )
-//		{
-//			CallEvent current = getCurrentCallEvent();
-//
-//			if( current != null )
-//			{
-//				mCallEventModel.setEnd( current );
-//			}
-//			else
-//			{
-//				mCallEventModel.add( 
-//						new MPT1327CallEvent.Builder( type )
-//							.aliasList( getAliasList() )
-//							.channel( String.valueOf( mChannelNumber ) )
-//							.frequency( mChannelMap.getFrequency( mChannelNumber ) )
-//							.from( mFromTalkgroup )
-//							.to( mToTalkgroup )
-//							.build() );
-//			}
-//			
-//			setCurrentCall( null );
-//		}
-//		
-//		super.fade( type );
-//	}
-	
 	public void reset()
 	{
 		mIdents.clear();
@@ -343,7 +307,7 @@ public class MPT1327DecoderState extends DecoderState
 	{
 		if( hasAliasList() )
 		{
-			return getAliasList().getTalkgroupAlias( mFromTalkgroup );
+			return getAliasList().getMPT1327Alias( mFromTalkgroup );
 		}
 		
 		return null;
@@ -370,7 +334,7 @@ public class MPT1327DecoderState extends DecoderState
 	{
 		if( hasAliasList() )
 		{
-			return getAliasList().getTalkgroupAlias( mToTalkgroup );
+			return getAliasList().getMPT1327Alias( mToTalkgroup );
 		}
 		
 		return null;

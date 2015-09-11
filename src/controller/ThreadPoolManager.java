@@ -117,6 +117,8 @@ public class ThreadPoolManager
 	public enum ThreadType
 	{
 		AUDIO_PROCESSING,
+		AUDIO_RECORDING,
+		BASEBAND_RECORDING,
 		SOURCE_SAMPLE_PROCESSING,
 		DECIMATION,
 		DECODER;

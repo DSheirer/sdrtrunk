@@ -20,7 +20,8 @@ package record;
 public enum RecorderType
 {
 	AUDIO( "Audio (.wav)"),
-	BASEBAND( "Baseband I/Q (.wav)");
+	BASEBAND( "Baseband I/Q (.wav)"),
+	TRAFFIC_BASEBAND( "Traffic Channel Baseband I/Q (.wav)" );
 	
     private String mDisplayString;
     

@@ -24,6 +24,7 @@ import java.util.List;
 import javax.xml.bind.annotation.XmlAttribute;
 
 import alias.action.AliasAction;
+import alias.priority.Priority;
 import audio.inverted.AudioType;
 
 public class Alias
@@ -40,7 +41,7 @@ public class Alias
 	
 	public String toString()
 	{
-		return "Alias: " + mName;
+		return getName();
 	}
 
 	@XmlAttribute
@@ -150,5 +151,37 @@ public class Alias
 		}
 		
 		return AudioType.NORMAL;
+	}
+
+	/**
+	 * Returns the priority level of this alias, if defined, or the default priority
+	 */
+	public int getCallPriority()
+	{
+		for( AliasID id: mAliasIDs )
+		{
+			if( id.getType() == AliasIDType.Priority )
+			{
+				return ((Priority)id).getPriority();
+			}
+		}
+		
+		return Priority.DEFAULT_PRIORITY;
+	}
+	
+	/**
+	 * Inspects the alias for a non-recordable alias id.  Default is true;
+	 */
+	public boolean isRecordable()
+	{
+		for( AliasID id: getId() )
+		{
+			if( id.getType() == AliasIDType.NonRecordable )
+			{
+				return false;
+			}
+		}
+		
+		return true;
 	}
 }

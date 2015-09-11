@@ -35,12 +35,12 @@ public class MPT1327DecoderPanel extends DecoderPanel
     private static final long serialVersionUID = 1L;
 
     private JLabel mProtocol = new JLabel( "" );
-    private JLabel mSiteOrFromTalkgroup = new JLabel( "" );
-    private JLabel mSiteOrFromTalkgroupAlias = new JLabel( "" );
+    private JLabel mSiteOrToTalkgroup = new JLabel( "" );
+    private JLabel mSiteOrToTalkgroupAlias = new JLabel( "" );
     
-    private JLabel mToTalkgroupLabel = new JLabel( "" );
-    private JLabel mToTalkgroup = new JLabel( "" );
-    private JLabel mToTalkgroupAliasLabel = new JLabel( "" );
+    private JLabel mFromTalkgroupLabel = new JLabel( "" );
+    private JLabel mFromTalkgroup = new JLabel( "" );
+    private JLabel mFromTalkgroupAliasLabel = new JLabel( "" );
 	
     public MPT1327DecoderPanel( SettingsManager settingsManager, MPT1327Decoder decoder )
 	{
@@ -71,35 +71,35 @@ public class MPT1327DecoderPanel extends DecoderPanel
 
 		MPT1327DecoderState mptState = getDecoderState();
 
-		mSiteOrFromTalkgroup.setFont( mFontDecoder );
-		mSiteOrFromTalkgroup.setForeground( mColorLabelDecoder );
+		mSiteOrToTalkgroup.setFont( mFontDecoder );
+		mSiteOrToTalkgroup.setForeground( mColorLabelDecoder );
 
-		mSiteOrFromTalkgroupAlias.setFont( mFontDecoder );
-		mSiteOrFromTalkgroupAlias.setForeground( mColorLabelDecoder );
+		mSiteOrToTalkgroupAlias.setFont( mFontDecoder );
+		mSiteOrToTalkgroupAlias.setForeground( mColorLabelDecoder );
 
-		mToTalkgroupLabel.setFont( mFontDetails );
-		mToTalkgroupLabel.setForeground( mColorLabelDetails );
+		mFromTalkgroupLabel.setFont( mFontDetails );
+		mFromTalkgroupLabel.setForeground( mColorLabelDetails );
 
-		mToTalkgroup.setFont( mFontDecoder );
-		mToTalkgroup.setForeground( mColorLabelDecoder );
+		mFromTalkgroup.setFont( mFontDecoder );
+		mFromTalkgroup.setForeground( mColorLabelDecoder );
 
-		mToTalkgroupAliasLabel.setFont( mFontDecoder );
-		mToTalkgroupAliasLabel.setForeground( mColorLabelDecoder );
+		mFromTalkgroupAliasLabel.setFont( mFontDecoder );
+		mFromTalkgroupAliasLabel.setForeground( mColorLabelDecoder );
 
 		
 		switch( mptState.getChannelType() )
 		{
 			case STANDARD:
-				mSiteOrFromTalkgroup.setText( mptState.getSite() );
-				setAliasLabel( mSiteOrFromTalkgroupAlias, mptState.getSiteAlias() );
+				mSiteOrToTalkgroup.setText( mptState.getSite() );
+				setAliasLabel( mSiteOrToTalkgroupAlias, mptState.getSiteAlias() );
 				break;
 			case TRAFFIC:
-				mSiteOrFromTalkgroup.setText( mptState.getFromTalkgroup() );
-				setAliasLabel( mSiteOrFromTalkgroupAlias, mptState.getFromTalkgroupAlias() );
+				mSiteOrToTalkgroup.setText( mptState.getToTalkgroup() );
+				setAliasLabel( mSiteOrToTalkgroupAlias, mptState.getToTalkgroupAlias() );
 
-				mToTalkgroupLabel.setText( "To:" );
-				mToTalkgroup.setText( getDecoderState().getToTalkgroup() );
-				setAliasLabel( mToTalkgroupAliasLabel, mptState.getToTalkgroupAlias() );
+				mFromTalkgroupLabel.setText( "From:" );
+				mFromTalkgroup.setText( getDecoderState().getFromTalkgroup() );
+				setAliasLabel( mFromTalkgroupAliasLabel, mptState.getFromTalkgroupAlias() );
 				break;
 			default:
 				throw new IllegalArgumentException( "Unrecognized channel "
@@ -108,14 +108,14 @@ public class MPT1327DecoderPanel extends DecoderPanel
 		}
 		
 		add( mProtocol );
-		add( mSiteOrFromTalkgroup );
-		add( mSiteOrFromTalkgroupAlias, "wrap" );
+		add( mSiteOrToTalkgroup );
+		add( mSiteOrToTalkgroupAlias, "wrap" );
 
 		if( mptState.getChannelType() == ChannelType.TRAFFIC )
 		{
-			add( mToTalkgroupLabel );
-			add( mToTalkgroup );
-			add( mToTalkgroupAliasLabel, "wrap" );
+			add( mFromTalkgroupLabel );
+			add( mFromTalkgroup );
+			add( mFromTalkgroupAliasLabel, "wrap" );
 		}
 	}
 	
@@ -156,18 +156,18 @@ public class MPT1327DecoderPanel extends DecoderPanel
 				switch( changedAttribute )
 				{
 					case CHANNEL_SITE_NUMBER:
-						mSiteOrFromTalkgroup.setText( String.valueOf( state.getSite() ) );
-						setAliasLabel( mSiteOrFromTalkgroupAlias, state.getSiteAlias() );
-						repaint();
-						break;
-					case FROM_TALKGROUP:
-						mSiteOrFromTalkgroup.setText( state.getFromTalkgroup() );
-						setAliasLabel( mSiteOrFromTalkgroupAlias, state.getFromTalkgroupAlias() );
+						mSiteOrToTalkgroup.setText( String.valueOf( state.getSite() ) );
+						setAliasLabel( mSiteOrToTalkgroupAlias, state.getSiteAlias() );
 						repaint();
 						break;
 					case TO_TALKGROUP:
-						mToTalkgroup.setText( state.getToTalkgroup() );
-						setAliasLabel( mToTalkgroupAliasLabel, state.getToTalkgroupAlias() );
+						mSiteOrToTalkgroup.setText( state.getToTalkgroup() );
+						setAliasLabel( mSiteOrToTalkgroupAlias, state.getToTalkgroupAlias() );
+						repaint();
+						break;
+					case FROM_TALKGROUP:
+						mFromTalkgroup.setText( state.getFromTalkgroup() );
+						setAliasLabel( mFromTalkgroupAliasLabel, state.getFromTalkgroupAlias() );
 						repaint();
 						break;
 					default:
@@ -193,27 +193,27 @@ public class MPT1327DecoderPanel extends DecoderPanel
 					{
 						mProtocol.setForeground( mColorLabelDecoder );
 					}
-					if( mSiteOrFromTalkgroup != null )
+					if( mSiteOrToTalkgroup != null )
 					{
-						mSiteOrFromTalkgroup.setForeground( mColorLabelDecoder );
+						mSiteOrToTalkgroup.setForeground( mColorLabelDecoder );
 					}
-					if( mSiteOrFromTalkgroupAlias != null )
+					if( mSiteOrToTalkgroupAlias != null )
 					{
-						mSiteOrFromTalkgroupAlias.setForeground( mColorLabelDecoder );
+						mSiteOrToTalkgroupAlias.setForeground( mColorLabelDecoder );
 					}
-					if( mToTalkgroup != null )
+					if( mFromTalkgroup != null )
 					{
-						mToTalkgroup.setForeground( mColorLabelDecoder );
+						mFromTalkgroup.setForeground( mColorLabelDecoder );
 					}
-					if( mToTalkgroupAliasLabel != null )
+					if( mFromTalkgroupAliasLabel != null )
 					{
-						mToTalkgroupAliasLabel.setForeground( mColorLabelDecoder );
+						mFromTalkgroupAliasLabel.setForeground( mColorLabelDecoder );
 					}
 					break;
 				case CHANNEL_STATE_LABEL_DETAILS:
-					if( mToTalkgroupLabel != null )
+					if( mFromTalkgroupLabel != null )
 					{
-						mToTalkgroupLabel.setForeground( mColorLabelDetails );
+						mFromTalkgroupLabel.setForeground( mColorLabelDetails );
 					}
 					break;
 				default:

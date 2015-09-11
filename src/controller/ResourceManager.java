@@ -50,27 +50,25 @@ public class ResourceManager
 	{
     	this( new SettingsManager(),
     		  new PlaylistManager(),
-    		  new EventLogManager(),
-    		  new RecorderManager() );
+    		  new EventLogManager() );
 	}
     
     public ResourceManager( SettingsManager settingsManager,
     						PlaylistManager playlistManager,
-    						EventLogManager eventLogManager,
-    						RecorderManager recorderManager )
+    						EventLogManager eventLogManager )
     {
     	mSettingsManager = settingsManager;
     	mPlaylistManager = playlistManager;
     	mEventLogManager = eventLogManager;
-    	mRecorderManager = recorderManager;
-
+ 
     	/** 
     	 * ChannelManager requires a reference to the ResourceManager so that
     	 * channel processing chains can access system wide resources
     	 */
     	mThreadPoolManager = new ThreadPoolManager();
     	mAudioManager = new AudioManager( mThreadPoolManager );
-    	mChannelManager = new ChannelManager( this );
+       	mRecorderManager = new RecorderManager( mThreadPoolManager );
+       	mChannelManager = new ChannelManager( this );
     	mSourceManager = new SourceManager( this );
     	mRecordingSourceManager = new RecordingSourceManager( this );
     	mTunerManager = new TunerManager( this );

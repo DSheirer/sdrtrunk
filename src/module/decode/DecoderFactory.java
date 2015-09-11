@@ -71,6 +71,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import properties.SystemProperties;
+import record.RecorderType;
+import record.config.RecordConfiguration;
 import settings.SettingsManager;
 import util.TimeStamp;
 import alias.AliasList;
@@ -79,6 +81,8 @@ import controller.ResourceManager;
 import controller.channel.Channel.ChannelType;
 import controller.channel.ChannelNode;
 import controller.channel.map.ChannelMap;
+import controller.site.Site;
+import controller.system.System;
 import filter.AllPassFilter;
 import filter.FilterSet;
 import filter.IFilter;
@@ -87,7 +91,7 @@ public class DecoderFactory
 {
 	private final static Logger mLog = LoggerFactory.getLogger( DecoderFactory.class );
 	
-	public static final boolean NO_DC_REMOVAL = false;
+	public static final boolean NO_REMOVE_DC = false;
 	public static final boolean REMOVE_DC = true;
 	
 	public static final int NO_FREQUENCY_CORRECTION = 0;
@@ -96,80 +100,98 @@ public class DecoderFactory
 	 * Returns a list of one primary decoder and any auxiliary decoders, as
 	 * specified in the configurations.
 	 * 
-	 * @param config - primary decoder configuration
+	 * @param channelType - standard or traffic channel type
+	 * @param resourceManager 
+	 * @param decodeConfig - primary decoder configuration
+	 * @param recordConfig - recording configuration used by traffic channel manager
 	 * @param auxConfig - auxiliary decoder(s) configuration
+	 * @param optional alias list - (null is ok)
 	 * 
 	 * @return list of configured decoders
 	 */
 	public static List<Module> getModules( ChannelType channelType,
 										   ResourceManager resourceManager,
-										   DecodeConfiguration config, 
+										   DecodeConfiguration decodeConfig,
+										   RecordConfiguration recordConfig,
 										   AuxDecodeConfiguration auxConfig, 
-										   AliasList aliasList )
-	{
-		List<Module> modules = getPrimaryModules( channelType, config, 
-				aliasList, resourceManager );
+										   AliasList aliasList,
+										   System system,
+										   Site site )
+		{
+		List<Module> modules = getPrimaryModules( channelType, decodeConfig, 
+				recordConfig, aliasList, system, site, resourceManager );
 		
 		modules.addAll( getAuxiliaryDecoders( auxConfig, aliasList ) );
 		
 		return modules;
 	}
 	
-	public static FMDemodulatorModule getFMDemodulator( DecodeConfiguration config, int pass, int stop, boolean removeDC )
+	public static FMDemodulatorModule getFMDemodulator( 
+		DecodeConfiguration config, int pass, int stop, boolean removeDC )
 	{
 		if( config.isAFCEnabled() )
 		{
-			return new FMDemodulatorModule( pass, stop, config.getAFCMaximumCorrection(), removeDC );
+			return new FMDemodulatorModule( pass, stop, 
+					config.getAFCMaximumCorrection(), removeDC );
 		}
 		else
 		{
-			return new FMDemodulatorModule( pass, stop, NO_FREQUENCY_CORRECTION, removeDC );
+			return new FMDemodulatorModule( pass, stop, 
+					NO_FREQUENCY_CORRECTION, removeDC );
 		}
 	}
 
 	/**
 	 * Constructs a primary decoder as specified in the decode configuration
-	 * @param config - primary decoder configuration
+	 * 
+	 * @param channelType - traffic or standard decode channel
+	 * @param decodeConfig - primary decoder configuration
+	 * @param recordConfig - recording options
 	 * @param aliasList - optional alias list
+	 * @param resourceManager - shared resource manager
 	 * @return configured decoder or null
 	 */
 	public static List<Module> getPrimaryModules( ChannelType channelType,
-												  DecodeConfiguration config, 
-												  AliasList aliasList, 
+												  DecodeConfiguration decodeConfig,
+												  RecordConfiguration recordConfig,
+												  AliasList aliasList,
+												  System system,
+												  Site site,
 												  ResourceManager resourceManager )
 	{
 		List<Module> modules = new ArrayList<Module>();
 
 		/* Baseband low-pass filter pass and stop frequencies */
-		int pass = config.getDecoderType().getChannelBandwidth() / 2;
+		int pass = decodeConfig.getDecoderType().getChannelBandwidth() / 2;
 		int stop = pass + 1250;
 		
-		switch( config.getDecoderType() )
+		boolean recordAudio = recordConfig.getRecorders().contains( RecorderType.AUDIO );
+		
+		switch( decodeConfig.getDecoderType() )
 		{
 		    case AM:
 //		    	decoder = new AMDecoder();
 		        break;
 			case NBFM:
-				modules.add( new AudioModule() );
-				modules.add( new NBFMDecoder( config ) );
-				modules.add( getFMDemodulator( config, pass, stop, REMOVE_DC ) );
+				modules.add( new AudioModule( recordAudio, NO_REMOVE_DC ) );
+				modules.add( new NBFMDecoder( decodeConfig ) );
+				modules.add( getFMDemodulator( decodeConfig, pass, stop, REMOVE_DC ) );
 				break;
 			case LTR_STANDARD:
-				modules.add( new AudioModule( REMOVE_DC ) );
-				MessageDirection direction = ((DecodeConfigLTRStandard)config).getMessageDirection();
+				modules.add( new AudioModule( recordAudio, REMOVE_DC ) );
+				MessageDirection direction = ((DecodeConfigLTRStandard)decodeConfig).getMessageDirection();
 				modules.add( new LTRStandardDecoder( aliasList, direction ) );
-				modules.add( getFMDemodulator( config, pass, stop, NO_DC_REMOVAL ) );
+				modules.add( getFMDemodulator( decodeConfig, pass, stop, NO_REMOVE_DC ) );
 				break;
 			case LTR_NET:
-				modules.add( new AudioModule( REMOVE_DC ) );
-				modules.add( new LTRNetDecoder( (DecodeConfigLTRNet)config, aliasList ) );
-//				modules.add( new ComplexBufferRecorderModule( getRecordingFilename( "decimated_baseband" ) ) );
-				modules.add( getFMDemodulator( config, pass, stop, NO_DC_REMOVAL ) );
+				modules.add( new AudioModule( recordAudio, REMOVE_DC ) );
+				modules.add( new LTRNetDecoder( (DecodeConfigLTRNet)decodeConfig, aliasList ) );
+				modules.add( getFMDemodulator( decodeConfig, pass, stop, NO_REMOVE_DC ) );
 				break;
 			case MPT1327:
-				DecodeConfigMPT1327 mptConfig = (DecodeConfigMPT1327)config;
+				DecodeConfigMPT1327 mptConfig = (DecodeConfigMPT1327)decodeConfig;
 				
-				modules.add( new AudioModule() );
+				modules.add( new AudioModule( recordAudio, NO_REMOVE_DC ) );
 
 				ChannelMap channelMap = resourceManager.getPlaylistManager().getPlayist()
 					.getChannelMapList().getChannelMap( mptConfig.getChannelMapName() );
@@ -181,25 +203,25 @@ public class DecoderFactory
 					long timeout = mptConfig.getCallTimeout() * 1000; //convert to milliseconds
 
 					modules.add( new TrafficChannelManager( resourceManager, 
-							config, timeout, 
+							decodeConfig, recordConfig, system, site, 
+							aliasList.getName(), timeout, 
 							mptConfig.getTrafficChannelPoolSize() ) );
 				}
 				
-//				modules.add( new RealBufferRecorderModule( getRecordingFilename( "demodulated_mpt1327" ) ) );
-				modules.add( getFMDemodulator( config, pass, stop, REMOVE_DC ) );
+				modules.add( getFMDemodulator( decodeConfig, pass, stop, REMOVE_DC ) );
 				break;
 			case PASSPORT:
 //				decoder = new PassportDecoder( config, aliasList );
 				break;
 			case P25_PHASE1:
-				DecodeConfigP25Phase1 p25Config = (DecodeConfigP25Phase1)config;
+				DecodeConfigP25Phase1 p25Config = (DecodeConfigP25Phase1)decodeConfig;
 
 				Modulation modulation = p25Config.getModulation();
 				
 				switch( modulation )
 				{
 					case C4FM:
-						modules.add( getFMDemodulator( config, 6750, 7500, REMOVE_DC ) );
+						modules.add( getFMDemodulator( decodeConfig, 6750, 7500, REMOVE_DC ) );
 						modules.add( new P25_C4FMDecoder( aliasList, channelType ) );
 						break;
 					case CQPSK:
@@ -215,16 +237,17 @@ public class DecoderFactory
 					long timeout = p25Config.getCallTimeout() * 1000; //convert to milliseconds
 
 					modules.add( new TrafficChannelManager( resourceManager, 
-							config, timeout, 
+							decodeConfig, recordConfig, system, site, 
+							aliasList.getName(), timeout, 
 							p25Config.getTrafficChannelPoolSize() ) );
 				}
 				
-				modules.add( new P25AudioModule() );
+				modules.add( new P25AudioModule( recordAudio ) );
 				break;
 			default:
 				throw new IllegalArgumentException( 
 					"Unknown decoder type [" + 
-							config.getDecoderType().toString() + "]" );
+							decodeConfig.getDecoderType().toString() + "]" );
 		}
 		
 		return modules;

@@ -8,38 +8,92 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
-import alias.Metadata;
-import alias.MetadataType;
+import alias.Alias;
+import alias.priority.Priority;
 
+/*******************************************************************************
+ *     SDR Trunk 
+ *     Copyright (C) 2014,2015 Dennis Sheirer
+ * 
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ * 
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ * 
+ *     You should have received a copy of the GNU General Public License
+ *     along with this program.  If not, see <http://www.gnu.org/licenses/>
+ ******************************************************************************/
 public class AudioMetadata implements Listener<Metadata>
 {
 	protected static final Logger mLog = LoggerFactory.getLogger( AudioMetadata.class );
 
 	private int mSource;
-	private int mPriority = 99;
-	private boolean mSelected = false;
 	private List<Metadata> mMetadata = new ArrayList<>();
 	private boolean mUpdated = false;
+
+	/* Channel Selectect == highest priority */
+	private boolean mSelected = false;
+
+	/* Call Priority */
+	private int mPriority = Priority.DEFAULT_PRIORITY;
+
+	/* Indicates if the overall source is recordable */
+	private boolean mSourceRecordable = false;
 	
-	public AudioMetadata( int source )
+	/* Indicates the current recordable state */
+	private boolean mRecordable = false;
+	
+	/* A unique identifier for this metadata */
+	private String mIdentifier;
+	
+	public AudioMetadata( int source, boolean recordable )
 	{
 		mSource = source;
+		
+		setIdentifier( mSource );
+		
+		mSourceRecordable = recordable;
+		
+		setRecordable( mSourceRecordable );
+	}
+
+	/**
+	 * Returns a unique identifier for this audio metadata that contains the 
+	 * source id and optionally the TO metadata string.
+	 */
+	public String getIdentifier()
+	{
+		return mIdentifier;
 	}
 	
+	public void setIdentifier( int source )
+	{
+		setIdentifier( source, null );
+	}
+	
+	public void setIdentifier( int source, String id )
+	{
+		mIdentifier = "SRC:" + source + " ID:" + ( id == null ? "UNKNOWN" : id );
+		mUpdated = true;
+	}
+	
+	/**
+	 * Returns a copy of the current audio metadata.
+	 */
 	public AudioMetadata copyOf()
 	{
-		AudioMetadata copy = new AudioMetadata( mSource );
+		AudioMetadata copy = new AudioMetadata( mSource, mSourceRecordable );
 		
 		copy.mPriority = mPriority;
 		copy.mSelected = mSelected;
+		copy.mRecordable = mRecordable;
 		copy.mMetadata.addAll( mMetadata );
-		
-		if( mUpdated )
-		{
-			copy.mUpdated = true;
-			
-			mUpdated = false;
-		}
+		copy.mUpdated = mUpdated;
 		
 		return copy;
 	}
@@ -58,10 +112,42 @@ public class AudioMetadata implements Listener<Metadata>
 				it.remove();
 			}
 		}
+
+		/* Update the recordable state, identifier and audio call priority levels */
+		mRecordable = mSourceRecordable;
+		setIdentifier( mSource );
+		mPriority = Priority.DEFAULT_PRIORITY;
+		
+		for( Metadata metadata: mMetadata )
+		{
+			if( metadata.hasAlias() )
+			{
+				Alias alias = metadata.getAlias();
+				
+				if( metadata.getMetadataType() == MetadataType.FROM ||
+					metadata.getMetadataType() == MetadataType.TO )
+				{
+					if( !alias.isRecordable() )
+					{
+						mRecordable = false;
+					}
+				}
+
+				if( metadata.getMetadataType() == MetadataType.TO )
+				{
+					setIdentifier( mSource, metadata.getValue() );
+				}
+
+				if( alias != null && alias.getCallPriority() < mPriority )
+				{
+					mPriority = alias.getCallPriority();
+				}
+			}
+		}
 		
 		mUpdated = true;
 	}
-
+	
 	/**
 	 * Indicates if this audio metadata contains updated information.  The flag
 	 * will only be set when new data is added and will be reset by a copyOf()
@@ -70,6 +156,11 @@ public class AudioMetadata implements Listener<Metadata>
 	public boolean isUpdated()
 	{
 		return mUpdated;
+	}
+	
+	public void setUpdated( boolean updated )
+	{
+		mUpdated = updated;
 	}
 
 	/**
@@ -89,7 +180,23 @@ public class AudioMetadata implements Listener<Metadata>
 			
 			if( metadata.hasAlias() )
 			{
-				//TODO: assign priority from alias here
+				Alias alias = metadata.getAlias();
+				
+				/* Capture non-recordable aliases */
+				if( metadata.getMetadataType() == MetadataType.FROM ||
+					metadata.getMetadataType() == MetadataType.TO )
+				{
+					if( !alias.isRecordable() )
+					{
+						mRecordable = false;
+					}
+				}
+				
+				/* Capture call priority levels from aliases */
+				if( alias.getCallPriority() < mPriority )
+				{
+					mPriority = alias.getCallPriority();
+				}
 			}
 		}
 		
@@ -137,13 +244,10 @@ public class AudioMetadata implements Listener<Metadata>
 	}
 
 	/**
-	 * Sets the priority of this audio packet in the range of 1 - Max Integer value
-	 * 
-	 * @param priority (1 - Max Int)
-	 */
+	 * Sets the priority of this audio packet within the defined min/max priority range */
 	public void setPriority( int priority )
 	{
-		assert( 1 <= priority && priority <= Integer.MAX_VALUE );
+		assert( Priority.MIN_PRIORITY <= priority && priority <= Priority.MAX_PRIORITY );
 		
 		mPriority = priority;
 		
@@ -176,5 +280,19 @@ public class AudioMetadata implements Listener<Metadata>
 	public boolean isSelected()
 	{
 		return mSelected;
+	}
+	
+	/**
+	 * Indicates if audio associated with this metadata is recordable.
+	 */
+	public boolean isRecordable()
+	{
+		return mRecordable;
+	}
+	
+	public void setRecordable( boolean recordable )
+	{
+		mRecordable = recordable;
+		mUpdated = true;
 	}
 }

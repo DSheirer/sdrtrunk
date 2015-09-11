@@ -34,24 +34,26 @@ import alias.action.clip.ClipAction;
 import alias.action.clip.ClipActionNode;
 import alias.action.script.ScriptAction;
 import alias.action.script.ScriptActionNode;
-import alias.esn.ESNNode;
-import alias.esn.Esn;
-import alias.fleetsync.FleetsyncID;
-import alias.fleetsync.FleetsyncIDNode;
-import alias.fleetsync.StatusID;
-import alias.fleetsync.StatusIDNode;
-import alias.mdc.MDC1200ID;
-import alias.mdc.MDC1200IDNode;
-import alias.mobileID.MINNode;
-import alias.mobileID.Min;
-import alias.mpt1327.MPT1327ID;
-import alias.mpt1327.MPT1327IDNode;
-import alias.siteID.SiteID;
-import alias.siteID.SiteIDNode;
-import alias.talkgroup.TalkgroupID;
-import alias.talkgroup.TalkgroupIDNode;
-import alias.uniqueID.UniqueID;
-import alias.uniqueID.UniqueIDNode;
+import alias.id.esn.ESNNode;
+import alias.id.esn.Esn;
+import alias.id.fleetsync.FleetsyncID;
+import alias.id.fleetsync.FleetsyncIDNode;
+import alias.id.fleetsync.StatusID;
+import alias.id.fleetsync.StatusIDNode;
+import alias.id.mdc.MDC1200ID;
+import alias.id.mdc.MDC1200IDNode;
+import alias.id.mobileID.MINNode;
+import alias.id.mobileID.Min;
+import alias.id.mpt1327.MPT1327ID;
+import alias.id.mpt1327.MPT1327IDNode;
+import alias.id.siteID.SiteID;
+import alias.id.siteID.SiteIDNode;
+import alias.id.talkgroup.TalkgroupID;
+import alias.id.talkgroup.TalkgroupIDNode;
+import alias.id.uniqueID.UniqueID;
+import alias.id.uniqueID.UniqueIDNode;
+import alias.record.NonRecordable;
+import alias.record.NonRecordableNode;
 import controller.ConfigurableNode;
 
 public class AliasNode extends ConfigurableNode 
@@ -95,50 +97,51 @@ public class AliasNode extends ConfigurableNode
     {
     	for( AliasID aliasID: getAlias().getId() )
     	{
-    		if( aliasID instanceof Esn )
+    		switch( aliasID.getType() )
     		{
-        		getModel().addNode( new ESNNode( (Esn)aliasID ), 
-        				AliasNode.this, getChildCount() );
-    		}
-    		else if( aliasID instanceof FleetsyncID )
-    		{
-        		getModel().addNode( new FleetsyncIDNode( (FleetsyncID)aliasID ), 
-        				AliasNode.this, getChildCount() );
-    		}
-    		else if( aliasID instanceof MDC1200ID )
-    		{
-        		getModel().addNode( new MDC1200IDNode( (MDC1200ID)aliasID ), 
-        				AliasNode.this, getChildCount() );
-    		}
-    		else if( aliasID instanceof Min )
-    		{
-        		getModel().addNode( new MINNode( (Min)aliasID ), 
-        				AliasNode.this, getChildCount() );
-    		}
-    		else if( aliasID instanceof MPT1327ID )
-    		{
-        		getModel().addNode( new MPT1327IDNode( (MPT1327ID)aliasID ), 
-        				AliasNode.this, getChildCount() );
-    		}
-    		else if( aliasID instanceof SiteID )
-    		{
-        		getModel().addNode( new SiteIDNode( (SiteID)aliasID ), 
-        				AliasNode.this, getChildCount() );
-    		}
-    		else if( aliasID instanceof StatusID )
-    		{
-        		getModel().addNode( new StatusIDNode( (StatusID)aliasID ), 
-        				AliasNode.this, getChildCount() );
-    		}
-    		else if( aliasID instanceof TalkgroupID )
-    		{
-        		getModel().addNode( new TalkgroupIDNode( (TalkgroupID)aliasID ), 
-        				AliasNode.this, getChildCount() );
-    		}
-    		else if( aliasID instanceof UniqueID )
-    		{
-        		getModel().addNode( new UniqueIDNode( (UniqueID)aliasID ), 
-        				AliasNode.this, getChildCount() );
+    			case ESN:
+            		getModel().addNode( new ESNNode( (Esn)aliasID ), 
+            				AliasNode.this, getChildCount() );
+    				break;
+				case Fleetsync:
+	        		getModel().addNode( new FleetsyncIDNode( (FleetsyncID)aliasID ), 
+	        				AliasNode.this, getChildCount() );
+					break;
+				case LTRNetUID:
+	        		getModel().addNode( new UniqueIDNode( (UniqueID)aliasID ), 
+	        				AliasNode.this, getChildCount() );
+					break;
+				case MDC1200:
+	        		getModel().addNode( new MDC1200IDNode( (MDC1200ID)aliasID ), 
+	        				AliasNode.this, getChildCount() );
+					break;
+				case MIN:
+	        		getModel().addNode( new MINNode( (Min)aliasID ), 
+	        				AliasNode.this, getChildCount() );
+					break;
+				case MPT1327:
+	        		getModel().addNode( new MPT1327IDNode( (MPT1327ID)aliasID ), 
+	        				AliasNode.this, getChildCount() );
+					break;
+				case NonRecordable:
+	        		getModel().addNode( new NonRecordableNode( (NonRecordable)aliasID ), 
+	        				AliasNode.this, getChildCount() );
+					break;
+				case Site:
+	        		getModel().addNode( new SiteIDNode( (SiteID)aliasID ), 
+	        				AliasNode.this, getChildCount() );
+					break;
+				case Status:
+	        		getModel().addNode( new StatusIDNode( (StatusID)aliasID ), 
+	        				AliasNode.this, getChildCount() );
+					break;
+				case Talkgroup:
+	        		getModel().addNode( new TalkgroupIDNode( (TalkgroupID)aliasID ), 
+	        				AliasNode.this, getChildCount() );
+					break;
+				default:
+					throw new IllegalArgumentException( "Unrecognized alias ID [" + 
+							aliasID.getType() + "]");
     		}
     	}
     	
@@ -279,6 +282,27 @@ public class AliasNode extends ConfigurableNode
             }
 		} );
 		addIDMenu.add( addMPTItem );
+
+		JMenuItem nonRecordableItem = new JMenuItem( "Non-Recordable" );
+		nonRecordableItem.addActionListener( new ActionListener() 
+		{
+			@Override
+            public void actionPerformed( ActionEvent e )
+            {
+				NonRecordable non = new NonRecordable();
+				
+				getAlias().addAliasID( non );
+
+				NonRecordableNode node = new NonRecordableNode( non );
+				
+				getModel().addNode( node, 
+									AliasNode.this, 
+									AliasNode.this.getChildCount() );
+				
+				node.show();
+            }
+		} );
+		addIDMenu.add( nonRecordableItem );
 
 		JMenuItem addSiteItem = new JMenuItem( "Site" );
 		addSiteItem.addActionListener( new ActionListener() 

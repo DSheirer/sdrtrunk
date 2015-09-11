@@ -8,9 +8,9 @@ import org.slf4j.LoggerFactory;
 import sample.Listener;
 import sample.real.IRealBufferListener;
 import sample.real.RealBuffer;
-import alias.Metadata;
 import audio.metadata.AudioMetadata;
 import audio.metadata.IMetadataListener;
+import audio.metadata.Metadata;
 import audio.squelch.ISquelchStateListener;
 import audio.squelch.SquelchState;
 import controller.channel.ChannelEvent;
@@ -61,16 +61,11 @@ public class AudioModule extends Module implements IAudioPacketProvider,
 	
 	private boolean mRemoveDC = false;
 	
-	public AudioModule()
-	{
-		this( false );
-	}
-	
-	public AudioModule( boolean removeDC )
+	public AudioModule( boolean record, boolean removeDC )
 	{
 		mSourceID = ++UNIQUE_ID;
 		
-		mAudioMetadata = new AudioMetadata( mSourceID );
+		mAudioMetadata = new AudioMetadata( mSourceID, record );
 		
 		mRemoveDC = removeDC;
 		
@@ -89,9 +84,27 @@ public class AudioModule extends Module implements IAudioPacketProvider,
 	}
 
 	@Override
-	public void init()
+	public void reset()
 	{
 		mAudioMetadata.reset();
+	}
+	
+	@Override
+	public void start()
+	{
+		/* No start operations provided */
+	}
+
+	@Override
+	public void stop()
+	{
+//		/* Issue an end audio packet in case a recorder is still rolling */
+//		if( mAudioPacketListener != null )
+//		{
+//			mLog.debug( "Sending end audio packet - stop() invoked" );
+//			mAudioPacketListener.receive( new AudioPacket( AudioPacket.Type.END, 
+//					mAudioMetadata.copyOf() ) );
+//		}
 	}
 
 	/**
@@ -108,6 +121,9 @@ public class AudioModule extends Module implements IAudioPacketProvider,
 			mAudioFilter.filter( audio );
 			
 			AudioPacket packet = new AudioPacket( audio, mAudioMetadata.copyOf() );
+
+			/* Reset the updated flag on the metadata */
+			mAudioMetadata.setUpdated( false );
 			
 			mAudioPacketListener.receive( packet );
 		}
@@ -185,6 +201,12 @@ public class AudioModule extends Module implements IAudioPacketProvider,
 		@Override
 		public void receive( SquelchState state )
 		{
+			if( state == SquelchState.SQUELCH && mAudioPacketListener != null )
+			{
+				mAudioPacketListener.receive( new AudioPacket( AudioPacket.Type.END, 
+						mAudioMetadata.copyOf() ) );
+			}
+			
 			mSquelchState = state;
 		}
 	}

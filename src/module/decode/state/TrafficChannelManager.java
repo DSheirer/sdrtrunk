@@ -14,10 +14,12 @@ import module.decode.event.ICallEventProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import record.config.RecordConfiguration;
 import sample.Listener;
 import source.config.SourceConfigTuner;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannel.Type;
+import alias.AliasList;
 import controller.ResourceManager;
 import controller.channel.Channel;
 import controller.channel.Channel.ChannelType;
@@ -38,7 +40,11 @@ public class TrafficChannelManager extends Module
 	private Listener<CallEvent> mCallEventListener;
 
 	private DecodeConfiguration mDecodeConfiguration;
+	private RecordConfiguration mRecordConfiguration;
 	private ResourceManager mResourceManager;
+	private System mSystem;
+	private Site mSite;
+	private String mAliasListName;
 	private long mTrafficChannelTimeout;
 
 	/**
@@ -51,6 +57,8 @@ public class TrafficChannelManager extends Module
 	 * @param decodeConfiguration - decoder configuration to use for each 
 	 * traffic channel allocation.
 	 * 
+	 * @param recordConfiguration - recording options for each traffic channel
+	 * 
 	 * @param trafficChannelTimeout - millisecond call timer limit used when an
 	 * end of call signalling event is not decoded.
 	 *  
@@ -59,11 +67,19 @@ public class TrafficChannelManager extends Module
 	 */
 	public TrafficChannelManager( ResourceManager resourceManager,
 								  DecodeConfiguration decodeConfiguration,
+								  RecordConfiguration recordConfiguration,
+								  System system,
+								  Site site,
+								  String aliasListName,
 								  long trafficChannelTimeout,
 								  int trafficChannelPoolSize ) 
 	{
 		mResourceManager = resourceManager;
 		mDecodeConfiguration = decodeConfiguration;
+		mRecordConfiguration = recordConfiguration;
+		mSystem = system;
+		mSite = site;
+		mAliasListName = aliasListName;
 		mTrafficChannelTimeout = trafficChannelTimeout;
 		mTrafficChannelPoolMaximumSize = trafficChannelPoolSize;
 	}
@@ -97,9 +113,13 @@ public class TrafficChannelManager extends Module
 				
 				channel.setDecodeConfiguration( mDecodeConfiguration );
 				
+				channel.setRecordConfiguration( mRecordConfiguration );
+				
 				channel.setResourceManager( mResourceManager );
 				
 				channel.setTrafficChannelTimeout( mTrafficChannelTimeout );
+				
+				channel.setAliasListName( mAliasListName );
 				
 				mTrafficChannelPool.add( channel );
 			}
@@ -109,8 +129,8 @@ public class TrafficChannelManager extends Module
 			{
 				channel.setSourceConfiguration( new SourceConfigTuner( tunerChannel ) );
 				
-				channel.setSystem( new System( "Traffic" ), false );
-				channel.setSite( new Site( "Channel" ), false );
+				channel.setSystem( mSystem, false );
+				channel.setSite( mSite, false );
 				channel.setName( channelNumber );
 
 				channel.setEnabled( true );
@@ -124,8 +144,8 @@ public class TrafficChannelManager extends Module
 				{
 					channel.setEnabled( false );
 					
-					channel.setSystem( null, false );
-					channel.setSite( null, false );
+					channel.setSystem( mSystem, false );
+					channel.setSite( mSite, false );
 					channel.setName( "Traffic" );
 				}
 			}
@@ -208,9 +228,30 @@ public class TrafficChannelManager extends Module
 	}
 
 	@Override
-	public void init()
+	public void reset()
 	{
-		
+	}
+	
+	@Override
+	public void start()
+	{
+	}
+
+	@Override
+	public void stop()
+	{
+		if( !mTrafficChannelsInUse.isEmpty() )
+		{
+			List<String> channels = new ArrayList<>();
+
+			/* Copy the keyset so we don't get concurrent modification of the map */
+			channels.addAll( mTrafficChannelsInUse.keySet() );
+			
+			for( String channel: channels )
+			{
+				callEnd( channel );
+			}
+		}
 	}
 
 	/**

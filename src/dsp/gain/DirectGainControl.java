@@ -62,11 +62,16 @@ public class DirectGainControl implements GainController, RealSampleListener
 	{
 		mListener = null;
 	}
+	
+	public float correct( float sample )
+	{
+		return sample * mGain;
+	}
 
 	@Override
     public void receive( float sample )
     {
-		mListener.receive( (float)( sample * mGain ) );
+		mListener.receive( correct( sample ) );
     }
 
 	@Override

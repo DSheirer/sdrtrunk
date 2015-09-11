@@ -225,7 +225,7 @@ public class ChannelStatePanel extends JPanel
         g2.drawLine( 0, getHeight() - 1, getWidth(), getHeight() - 1 );
 
         /* Draw channel selected box */
-        if( getChannel().isSelected() )
+        if( getChannel() != null && getChannel().isSelected() )
         {
             g2.setColor( mColorChannelSelected );
             g2.drawRect( 1, 1, getWidth() - 2, getHeight() - 2 );

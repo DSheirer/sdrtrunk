@@ -1501,6 +1501,7 @@ public class P25DecoderState extends DecoderState
 		}
 		else
 		{
+			/* These are alternate trunking control blocks in PDU format */
 			switch( pdu.getOpcode() )
 			{
 				case ADJACENT_STATUS_BROADCAST:
@@ -1583,7 +1584,7 @@ public class P25DecoderState extends DecoderState
 						GroupDataChannelGrantExtended gdcge = 
 								(GroupDataChannelGrantExtended)pdu;
 
-						broadcast( new P25CallEvent.Builder( CallEventType.DATA_CALL )
+						CallEvent callEvent = new P25CallEvent.Builder( CallEventType.DATA_CALL )
 							.aliasList( getAliasList() )
 							.channel( gdcge.getTransmitChannel() )
 							.details( ( gdcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
@@ -1591,7 +1592,9 @@ public class P25DecoderState extends DecoderState
 						    .frequency( gdcge.getDownlinkFrequency() )
 							.from( gdcge.getSourceAddress() )
 							.to( gdcge.getGroupAddress() )
-							.build() );
+							.build();
+
+						broadcast( new TrafficChannelAllocationEvent( this, callEvent ) );
 					}
 					else
 					{
@@ -1604,16 +1607,17 @@ public class P25DecoderState extends DecoderState
 						GroupVoiceChannelGrantExplicit gvcge = 
 								(GroupVoiceChannelGrantExplicit)pdu;
 
-						broadcast( new P25CallEvent.Builder( CallEventType.CALL )
+						CallEvent callEvent = new P25CallEvent.Builder( CallEventType.CALL )
 							.aliasList( getAliasList() )
 							.channel( gvcge.getTransmitChannel() )
-							.details( "Trigger: PDU-GRP_V_CHAN_USER" + 
-									  ( gvcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
+							.details( ( gvcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
 									  ( gvcge.isEmergency() ? " EMERGENCY" : "") )
 						    .frequency( gvcge.getDownlinkFrequency() )
 							.from( gvcge.getSourceAddress() )
 							.to( gvcge.getGroupAddress() )
-							.build() );
+							.build();
+						
+						broadcast( new TrafficChannelAllocationEvent( this, callEvent ) );
 					}
 					else
 					{
@@ -1626,18 +1630,19 @@ public class P25DecoderState extends DecoderState
 						IndividualDataChannelGrantExtended idcge = 
 								(IndividualDataChannelGrantExtended)pdu;
 
-						broadcast( new P25CallEvent.Builder( CallEventType.DATA_CALL )
+						CallEvent callEvent = new P25CallEvent.Builder( CallEventType.DATA_CALL )
 							.aliasList( getAliasList() )
 							.channel( idcge.getTransmitChannel() )
-							.details( "Trigger:PDU-IND_DATA_CHAN_GRNT " +
-									  ( idcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
+							.details( ( idcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
 									  ( idcge.isEmergency() ? " EMERGENCY" : "") )
 						    .frequency( idcge.getDownlinkFrequency() )
 							.from( idcge.getSourceWACN() + "-" +
 								   idcge.getSourceSystemID() + "-" +
 								   idcge.getSourceAddress() )
 							.to( idcge.getTargetAddress() )
-							.build() );
+							.build();
+						
+						broadcast( new TrafficChannelAllocationEvent( this, callEvent ) );
 					}
 					else
 					{
@@ -1773,7 +1778,7 @@ public class P25DecoderState extends DecoderState
 					TelephoneInterconnectChannelGrantExplicit ticge =
 								(TelephoneInterconnectChannelGrantExplicit)pdu;
 					
-					broadcast( new P25CallEvent.Builder( CallEventType.CALL )
+					CallEvent callEvent = new P25CallEvent.Builder( CallEventType.CALL )
 						.aliasList( getAliasList() )
 						.channel( ticge.getTransmitChannel() )
 						.details( "Trigger: PDU-TEL_INT_V_CH_GRNT " + 
@@ -1783,7 +1788,9 @@ public class P25DecoderState extends DecoderState
 								  " CALL TIMER:" + ticge.getCallTimer() )
 					    .frequency( ticge.getDownlinkFrequency() )
 					    .from( ticge.getAddress() )
-						.build() );
+						.build();
+					
+					broadcast( new TrafficChannelAllocationEvent( this, callEvent ) );
 					break;
 				case UNIT_REGISTRATION_RESPONSE:
 					if( pdu instanceof UnitRegistrationResponseExtended )
@@ -1851,7 +1858,7 @@ public class P25DecoderState extends DecoderState
 						UnitToUnitVoiceChannelGrantExtended uuvcge = 
 								(UnitToUnitVoiceChannelGrantExtended)pdu;
 					
-						broadcast( new P25CallEvent.Builder( CallEventType.CALL )
+						CallEvent uuCallEvent = new P25CallEvent.Builder( CallEventType.CALL )
 										.aliasList( getAliasList() )
 										.channel( uuvcge.getTransmitChannel() )
 										.details( "Trigger:PDU-U2U_V-CH_GRNT " +
@@ -1862,7 +1869,9 @@ public class P25DecoderState extends DecoderState
 									    	   uuvcge.getSourceSystemID() + "-" +
 									    	   uuvcge.getSourceID() )
 										.to( uuvcge.getTargetAddress() )
-										.build() );
+										.build();
+
+						broadcast( new TrafficChannelAllocationEvent( this, uuCallEvent ) );
 					}
 					else
 					{

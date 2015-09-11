@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014,2015 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,56 +17,174 @@
  ******************************************************************************/
 package record;
 
+
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import properties.SystemProperties;
-import record.config.RecordConfiguration;
-import record.wave.ComplexWaveRecorder;
-import record.wave.FloatWaveRecorder;
-import util.TimeStamp;
+import record.wave.ComplexBufferWaveRecorder;
+import record.wave.RealBufferWaveRecorder;
+import sample.Listener;
+import audio.AudioPacket;
+import audio.metadata.Metadata;
+import audio.metadata.MetadataType;
+import controller.ThreadPoolManager;
 
-public class RecorderManager
+public class RecorderManager implements Listener<AudioPacket>
 {
-	public static final int sSAMPLE_RATE = 48000;
+	private static final Logger mLog = LoggerFactory.getLogger( RecorderManager.class );
 
-	public RecorderManager()
+	public static final int AUDIO_SAMPLE_RATE = 48000;
+	
+	private static final long RECORDER_INACTIVITY_THRESHOLD = 10000; //1 minute in millis
+	
+//	private static final RealBuffer AUDIO_SEPARATOR = new AudioSeparator();
+	
+	private Map<String,RealBufferWaveRecorder> mRecorders = new HashMap<>();
+	
+	private ThreadPoolManager mThreadPoolManager;
+
+	public RecorderManager( ThreadPoolManager threadPoolManager )
 	{
+		mThreadPoolManager = threadPoolManager;
+	}
+	
+	@Override
+	public void receive( AudioPacket audioPacket )
+	{
+		if( audioPacket.hasAudioMetadata() && 
+			audioPacket.getAudioMetadata().isRecordable() )
+		{
+			String identifier = audioPacket.getAudioMetadata().getIdentifier();
+			
+			if( mRecorders.containsKey( identifier ) )
+			{
+				RealBufferWaveRecorder recorder = mRecorders.get( identifier );
+
+				if( audioPacket.getType() == AudioPacket.Type.AUDIO )
+				{
+					recorder.receive( audioPacket.getAudioBuffer() );
+				}
+				else if( audioPacket.getType() == AudioPacket.Type.END )
+				{
+					recorder.stop();
+					mRecorders.remove( identifier );
+				}
+			}
+			else
+			{
+				if( audioPacket.getType() == AudioPacket.Type.AUDIO )
+				{
+					String filePrefix = getFilePrefix( audioPacket );
+					
+					RealBufferWaveRecorder recorder = 
+						new RealBufferWaveRecorder( mThreadPoolManager, 
+								AUDIO_SAMPLE_RATE, filePrefix );
+					
+					recorder.start();
+
+					recorder.receive( audioPacket.getAudioBuffer() );
+					mRecorders.put( identifier, recorder );
+				}
+			}
+		}
+	}
+	
+	/**
+	 * Constructs a file name and path for an audio recording
+	 */
+	private String getFilePrefix( AudioPacket packet )
+	{
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append( SystemProperties.getInstance()
+				.getApplicationFolder( "recordings" ) );
+		
+		sb.append( File.separator );
+		
+		Metadata systemMetadata = packet.getAudioMetadata()
+				.getMetadata( MetadataType.SYSTEM );
+
+		sb.append( systemMetadata != null ? 
+				systemMetadata.getValue() : "UNKNOWN_SYSTEM" );
+		
+		Metadata toMetadata = packet.getAudioMetadata()
+				.getMetadata( MetadataType.TO );
+		
+		if( toMetadata != null )
+		{
+			sb.append( "_TO_" );
+			sb.append( toMetadata.getValue() );
+		}
+
+		Metadata fromMetadata = packet.getAudioMetadata()
+				.getMetadata( MetadataType.FROM );
+		
+		if( fromMetadata != null )
+		{
+			sb.append( "_FROM_" );
+			sb.append( fromMetadata.getValue() );
+		}
+
+		return sb.toString();
 	}
 
-	//TODO: make this return modules
-	public List<Recorder> getRecorders( RecordConfiguration config )
+	/**
+	 * Returns a list of recorder modules for use in a processing chain.
+	 * Note: currently this only returns a baseband recorder.  
+	 * 
+	 * Create an instance of this RecorderManager class to listen to and centrally
+	 * record all decoded audio. 
+	 */
+	public static ComplexBufferWaveRecorder getBasebandRecorder( 
+			ThreadPoolManager threadPoolManager, String channelName )
 	{
-		/* Note: the file suffix (ie .wav) gets added by the recorder */
-
-    	//Get the base recording filename
-        StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder();
         sb.append( SystemProperties.getInstance()
         					.getApplicationFolder( "recordings" ) );
         sb.append( File.separator );
-        sb.append( TimeStamp.getTimeStamp( "_" ) );
-        sb.append(  "_" );
-//        sb.append( channel.getChannel().getName() );
-        
-		ArrayList<Recorder> retVal = new ArrayList<Recorder>();
+        sb.append( channelName );
+        sb.append(  "_baseband" );
 
-		for( RecorderType recorder: config.getRecorders() )
+        return new ComplexBufferWaveRecorder( threadPoolManager, 
+        		AUDIO_SAMPLE_RATE, sb.toString() );
+	}
+	
+	/**
+	 * Removes any recorders where the recent activity timestamp has exceeded
+	 * the retention threshold.
+	 */
+	public class RecorderProcessor implements Runnable
+	{
+		@Override
+		public void run()
 		{
-			switch( recorder )
+			if( !mRecorders.isEmpty() )
 			{
-				case AUDIO:
-					retVal.add( new FloatWaveRecorder( sSAMPLE_RATE, 
-							sb.toString() + "_audio" ) );
-					break;
-				case BASEBAND:
-					retVal.add( new ComplexWaveRecorder( sSAMPLE_RATE, 
-							sb.toString() + "_baseband" ) );
-					break;
+				List<String> keysToRemove = new ArrayList<>();
+
+				for( Entry<String,RealBufferWaveRecorder> entry: mRecorders.entrySet() )
+				{
+					if( entry.getValue().getLastBufferReceived() + 
+						RECORDER_INACTIVITY_THRESHOLD < System.currentTimeMillis() )
+					{
+						keysToRemove.add( entry.getKey() );
+					}
+				}
+				
+				for( String key: keysToRemove )
+				{
+					RealBufferWaveRecorder recorder = mRecorders.remove( key );
+					recorder.dispose();
+				}
 			}
 		}
-
-		
-		return retVal;
 	}
 }

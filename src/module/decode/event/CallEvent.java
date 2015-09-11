@@ -23,7 +23,7 @@ import java.util.Date;
 import module.decode.DecoderType;
 import alias.Alias;
 import alias.AliasList;
-import alias.MetadataType;
+import audio.metadata.MetadataType;
 
 public abstract class CallEvent implements Comparable<CallEvent>
 {
@@ -133,7 +133,7 @@ public abstract class CallEvent implements Comparable<CallEvent>
 	
 	public MetadataType getFromIDType()
 	{
-		return MetadataType.FROM_TALKGROUP;
+		return MetadataType.FROM;
 	}
 	
 	public void setFromID( String id )

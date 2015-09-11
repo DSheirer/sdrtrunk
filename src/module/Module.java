@@ -26,9 +26,12 @@ public abstract class Module
 	 * 
 	 * Modules can optionally implement any of the following interfaces:
 	 * 
+	 * IAudioPacketListener				consumes audio packets
 	 * IAudioPacketProvider				produces audio packets
-	 * ICallEventProvider				call events
-	 * IChannelEventProvider			channel events (reset, selection, start, etc)
+	 * ICallEventListener				consumes call events
+	 * ICallEventProvider				provides call events
+	 * IChannelEventListener			consumes channel events
+	 * IChannelEventProvider			provides channel events (reset, selection, start, etc)
 	 * IComplexBufferListener			consumes complex samples and normally 
 	 * 									produces demodulated real sample buffers
 	 * IFrequencyCorrectionController	provides tuned frequency error corrections
@@ -43,15 +46,29 @@ public abstract class Module
 	}
 
 	/**
+	 * Initialize or reset all internal states to default - prepare to start
+	 * processing or resume processing, potentially with a different source.  
+	 * 
+	 * This method is invoked after constructing a module, and following any stop()
+	 * calls and before any start() calls.  This allows the module to prior to 
+	 * starting a module and starting it again processing a newly tuned channel, 
+	 * like a traffic channel.
+	 */
+	public abstract void reset();
+
+	/**
+	 * Start processing.
+	 */
+	public abstract void start();
+
+	/**
+	 * Stop processing
+	 */
+	public abstract void stop();
+	
+	/**
 	 * Dispose of all resources and listeners and prepare for garbage collection
 	 */
 	public abstract void dispose();
-
-	/**
-	 * Initializes or reset all internal states to default - prepare to process 
-	 * again.  This method is usually invoked between stopping a module and 
-	 * starting it again processing a newly tuned channel, like a traffic 
-	 * channel.
-	 */
-	public abstract void init();
+	
 }

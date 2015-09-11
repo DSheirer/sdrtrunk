@@ -13,6 +13,19 @@ public class RealBuffer
 	{
 		mSamples = samples;
 	}
+
+	/**
+	 * Package private to allow subclass construction and subsequent definition
+	 * of the sample data
+	 */
+	RealBuffer()
+	{
+	}
+	
+	protected void setSamples( float[] samples )
+	{
+		mSamples = samples;
+	}
 	
 	/**
 	 * Creates a deep copy of the buffer 

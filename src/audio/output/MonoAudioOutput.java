@@ -176,7 +176,7 @@ public class MonoAudioOutput extends AudioOutput
 							}
 							else if( packet.getType() == Type.AUDIO )
 							{
-								float[] samples = packet.getAudioData();
+								float[] samples = packet.getAudioBuffer().getSamples();
 								
 								/* Little-endian byte buffer */
 								ByteBuffer buffer = 
@@ -195,7 +195,7 @@ public class MonoAudioOutput extends AudioOutput
 								
 								checkStart();
 								
-								broadcast( packet.getMetadata() );
+								broadcast( packet.getAudioMetadata() );
 							}
 						}
 					}

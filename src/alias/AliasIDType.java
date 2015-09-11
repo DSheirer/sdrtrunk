@@ -25,6 +25,8 @@ public enum AliasIDType
 	MDC1200,
 	MIN,
 	MPT1327,
+	NonRecordable,
+	Priority,
 	Site,
 	Status,
 	Talkgroup;
