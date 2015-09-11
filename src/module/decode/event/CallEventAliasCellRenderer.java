@@ -20,6 +20,9 @@ package module.decode.event;
 import javax.swing.ImageIcon;
 import javax.swing.table.DefaultTableCellRenderer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import settings.SettingsManager;
 import alias.Alias;
 
@@ -30,6 +33,11 @@ import alias.Alias;
  */
 public class CallEventAliasCellRenderer extends DefaultTableCellRenderer
 {
+	private static final long serialVersionUID = 1L;
+
+	private final static Logger mLog = LoggerFactory
+			.getLogger( CallEventAliasCellRenderer.class );
+
 	private SettingsManager mSettingsManager;
 	
 	public CallEventAliasCellRenderer( SettingsManager settingsManager )

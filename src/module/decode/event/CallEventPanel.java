@@ -22,6 +22,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 
 import net.miginfocom.swing.MigLayout;
+import settings.SettingsManager;
 import controller.channel.Channel;
 import controller.channel.ChannelEvent;
 import controller.channel.ChannelEvent.Event;
@@ -33,36 +34,28 @@ public class CallEventPanel extends JPanel implements ChannelEventListener
 
     private JScrollPane mEmptyScroller;
     private Channel mDisplayedChannel;
+    private CallEventAliasCellRenderer mRenderer;
 
-	public CallEventPanel()
+	public CallEventPanel( SettingsManager settingsManager )
 	{
     	setLayout( new MigLayout("insets 0 0 0 0 ", "[grow,fill]", "[grow,fill]") );
 
     	JTable table = new JTable( new CallEventModel() );
     	table.setAutoCreateRowSorter( true );
     	table.setAutoResizeMode( JTable.AUTO_RESIZE_LAST_COLUMN );
-    	mEmptyScroller = new JScrollPane( table );
     	
-    	add( mEmptyScroller );
+    	mRenderer = new CallEventAliasCellRenderer( settingsManager );
+		
+		table.getColumnModel().getColumn( CallEventModel.FROM_ALIAS )
+				.setCellRenderer( mRenderer );
+
+		table.getColumnModel().getColumn( CallEventModel.TO_ALIAS )
+				.setCellRenderer( mRenderer );
+
+    	mEmptyScroller = new JScrollPane( table );
+
+		add( mEmptyScroller );
 	}
-//	if( mCallEventTable == null )
-//	{
-//		mCallEventTable = new JTable( mCallEventModel );
-//		mCallEventTable.setAutoCreateRowSorter( true );
-//		mCallEventTable.setAutoResizeMode( JTable.AUTO_RESIZE_LAST_COLUMN );
-//
-//		CallEventAliasCellRenderer renderer = 
-//				new CallEventAliasCellRenderer( mProcessingChain
-//						.getResourceManager().getSettingsManager() );
-//		
-//		mCallEventTable.getColumnModel().getColumn( 3 )
-//						.setCellRenderer( renderer );
-//
-//		mCallEventTable.getColumnModel().getColumn( 5 )
-//						.setCellRenderer( renderer );
-//	}
-//	
-//	return mCallEventTable;
 
 	@Override
     public void channelChanged( ChannelEvent event )
@@ -76,10 +69,16 @@ public class CallEventPanel extends JPanel implements ChannelEventListener
 			{
 				removeAll();
 				
-				JScrollPane scroller = new JScrollPane( new JTable(
-						event.getChannel().getCallEventModel() ) );
+				JTable table = new JTable(
+						event.getChannel().getCallEventModel() );
+				
+				table.getColumnModel().getColumn( CallEventModel.FROM_ALIAS )
+				.setCellRenderer( mRenderer );
 
-				add( scroller );
+				table.getColumnModel().getColumn( CallEventModel.TO_ALIAS )
+				.setCellRenderer( mRenderer );
+				
+				add( new JScrollPane( table ) );
 				
 				mDisplayedChannel = event.getChannel();
 				

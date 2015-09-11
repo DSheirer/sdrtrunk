@@ -48,7 +48,7 @@ public class ControllerPanel extends JPanel
 
     private ChannelList mChannelStateList;
 
-    private CallEventPanel mCallEventPanel = new CallEventPanel();
+    private CallEventPanel mCallEventPanel;
     
     private MessageActivityPanel mMessageActivityPanel = 
     		new MessageActivityPanel();
@@ -67,6 +67,8 @@ public class ControllerPanel extends JPanel
 	public ControllerPanel( ResourceManager resourceManager )
 	{
 	    mResourceManager = resourceManager;
+	    
+	    mCallEventPanel = new CallEventPanel( resourceManager.getSettingsManager() );	    
 		init();
 	}
 	
