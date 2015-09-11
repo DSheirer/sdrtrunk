@@ -792,7 +792,6 @@ public class Channel extends Configuration
 	
 	private void setupLogging()
 	{
-		mLog.debug( "Setting up logging ..." );
 		if( mProcessingChain != null )
 		{
 			String channelName = getChannelName();
@@ -800,9 +799,6 @@ public class Channel extends Configuration
 			List<Module> loggers = mResourceManager.getEventLogManager()
 					.getLoggers( mEventLogConfiguration, channelName );
 			
-			mLog.debug( "Created [" + loggers.size() + "] loggers for [" + 
-					channelName + "]" );
-
 			if( !loggers.isEmpty() )
 			{
 				mProcessingChain.addModules( loggers );

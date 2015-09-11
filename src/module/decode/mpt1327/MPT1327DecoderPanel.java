@@ -118,18 +118,30 @@ public class MPT1327DecoderPanel extends DecoderPanel
 			add( mFromTalkgroupAliasLabel, "wrap" );
 		}
 	}
-	
+
 	private void setAliasLabel( final JLabel label, final Alias alias )
+	{
+		setAliasLabel( label, alias, true );
+	}
+	
+	private void setAliasLabel( final JLabel label, final Alias alias, boolean includeIcon )
 	{
 		if( alias != null )
 		{
 			label.setText( alias.getName() );
-			
-			String iconName = alias.getIconName();
-			
-			if( iconName != null )
+
+			if( includeIcon )
 			{
-				label.setIcon( mSettingsManager.getImageIcon( iconName, 12 ) );
+				String iconName = alias.getIconName();
+				
+				if( iconName != null )
+				{
+					label.setIcon( mSettingsManager.getImageIcon( iconName, 12 ) );
+				}
+				else
+				{
+					label.setIcon( null );
+				}
 			}
 			else
 			{
@@ -157,7 +169,7 @@ public class MPT1327DecoderPanel extends DecoderPanel
 				{
 					case CHANNEL_SITE_NUMBER:
 						mSiteOrToTalkgroup.setText( String.valueOf( state.getSite() ) );
-						setAliasLabel( mSiteOrToTalkgroupAlias, state.getSiteAlias() );
+						setAliasLabel( mSiteOrToTalkgroupAlias, state.getSiteAlias(), false );
 						repaint();
 						break;
 					case TO_TALKGROUP:

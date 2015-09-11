@@ -27,6 +27,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import playlist.PlaylistManager;
+import record.RecorderType;
+import record.config.RecordConfiguration;
 import sample.Listener;
 import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
@@ -69,6 +71,10 @@ public class ChannelStatePanel extends JPanel
 
     private JLabel mStateLabel;
     private JLabel mSourceLabel;
+    private JLabel mOptionsLabel;
+    
+    private JLabel mSystemLabel;
+    private JLabel mSiteLabel;
     private JLabel mChannelLabel;
 
     private PlaylistManager mPlaylistManager;
@@ -109,7 +115,22 @@ public class ChannelStatePanel extends JPanel
 	{
     	getColors();
 
-    	setLayout( new MigLayout( "insets 3 2 2 2", "[grow,fill]", "[]0[]0[]") );
+    	setLayout( new MigLayout( "insets 1 1 1 1", "[grow,fill]", "[]0[]0[]") );
+		
+		mSystemLabel = new JLabel( mChannel.getSystem().getName() );
+		mSystemLabel.setFont( mFontDetails );
+		mSystemLabel.setForeground( mColorLabelDetails );
+		add( mSystemLabel );
+		
+		mSiteLabel = new JLabel( mChannel.getSite().getName() );
+		mSiteLabel.setFont( mFontDetails );
+		mSiteLabel.setForeground( mColorLabelDetails );
+		add( mSiteLabel );
+
+		mChannelLabel = new JLabel( mChannel.getName() );
+		mChannelLabel.setFont( mFontDetails );
+		mChannelLabel.setForeground( mColorLabelDetails );
+		add( mChannelLabel, "wrap" );
 		
 		mStateLabel = new JLabel( mChannel.getChannelState().getState()
 				.getDisplayValue() );
@@ -122,10 +143,32 @@ public class ChannelStatePanel extends JPanel
 		mSourceLabel.setForeground( mColorLabelDetails );
 		add( mSourceLabel );
 		
-		mChannelLabel = new JLabel( mChannel.getChannelDisplayName() );
-		mChannelLabel.setFont( mFontDetails );
-		mChannelLabel.setForeground( mColorLabelDetails );
-		add( mChannelLabel, "wrap" );
+		StringBuilder sb = new StringBuilder();
+
+		if( !mChannel.getEventLogConfiguration().getLoggers().isEmpty() )
+		{
+			sb.append( "LOG " );
+		}
+		
+		RecordConfiguration recordConfig = mChannel.getRecordConfiguration();
+		
+		if( recordConfig.getRecorders().contains( RecorderType.AUDIO ) )
+		{
+			sb.append( "AUDIO " );
+		}
+		
+		if( recordConfig.getRecorders().contains( RecorderType.BASEBAND ) ||
+			recordConfig.getRecorders().contains( RecorderType.TRAFFIC_BASEBAND ) )
+		{
+			sb.append( "BASEBAND" );
+		}
+		
+		mOptionsLabel = new JLabel( sb.toString() );
+		mOptionsLabel.setFont( mFontDetails );
+		mOptionsLabel.setForeground( mColorLabelAuxDecoder );
+		add( mOptionsLabel, "wrap" );
+
+//		add( new JSeparator( JSeparator.HORIZONTAL ), "span,growx" );
 	}
 	
 	public Channel getChannel()
