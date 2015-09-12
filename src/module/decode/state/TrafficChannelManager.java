@@ -10,7 +10,6 @@ import module.decode.config.DecodeConfiguration;
 import module.decode.event.CallEvent;
 import module.decode.event.CallEvent.CallEventType;
 import module.decode.event.ICallEventProvider;
-import module.decode.mpt1327.MPT1327CallEvent;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -175,6 +174,8 @@ public class TrafficChannelManager extends Module
 			/* Check the from/to aliases for do not monitor priority */
 			if( isDoNotMonitor( callEvent ) )
 			{
+				callEvent.setCallEventType( CallEventType.CALL_DO_NOT_MONITOR );
+
 				if( isSameCallEvent( mPreviousDoNotMonitorCallEvent, callEvent ) )
 				{
 					return;
@@ -182,7 +183,6 @@ public class TrafficChannelManager extends Module
 				else
 				{
 					mPreviousDoNotMonitorCallEvent = callEvent;
-					callEvent.setCallEventType( CallEventType.CALL_DO_NOT_MONITOR );
 				}
 			}
 			else if( frequency > 0 )
@@ -236,9 +236,12 @@ public class TrafficChannelManager extends Module
 	 */
 	public static boolean isSameCallEvent( CallEvent e1, CallEvent e2 )
 	{
-		if( e1 == null || 
-			e2 == null || 
-			e1.getCallEventType() != e2.getCallEventType() )
+		if( e1 == null || e2 == null )
+		{
+			return false;
+		}
+
+		if( e1.getCallEventType() != e2.getCallEventType() )
 		{
 			return false;
 		}
