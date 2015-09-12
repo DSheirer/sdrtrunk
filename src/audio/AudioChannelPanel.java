@@ -47,10 +47,6 @@ public class AudioChannelPanel extends JPanel
 	private IAudioController mController;
 	private String mChannel;
 
-	private JLabel mChannelLabel;
-	private JLabel mChannelName;
-	private JLabel mMutedLabel;
-	
 	private JLabel mToLabel = new JLabel( "To:" );
 	private JLabel mTo = new JLabel( "" );
 	private JLabel mToAlias = new JLabel( "" );
@@ -58,6 +54,10 @@ public class AudioChannelPanel extends JPanel
 	private JLabel mFromLabel = new JLabel( "From:" );
 	private JLabel mFrom = new JLabel( "" );
 	private JLabel mFromAlias = new JLabel( "" );
+	
+	private JLabel mChannelLabel;
+	private JLabel mChannelName;
+	private JLabel mMutedLabel;
 	
 	private boolean mConfigured = false;
 	
@@ -121,24 +121,6 @@ public class AudioChannelPanel extends JPanel
 		
 		addMouseListener( new MouseSelectionListener() );
 		
-		mChannelLabel = new JLabel( "Channel:" );
-		mChannelLabel.setFont( mFont );
-		mChannelLabel.setForeground( mDetailsColor );
-		
-		add( mChannelLabel );
-
-		mChannelName = new JLabel( mChannel );
-		mChannelName.setFont( mFont );
-		mChannelName.setForeground( mDetailsColor );
-		
-		add( mChannelName );
-
-		mMutedLabel = new JLabel( "" );
-		mMutedLabel.setFont( mFont );
-		mMutedLabel.setForeground( Color.RED );
-		
-		add( mMutedLabel, "wrap" );
-		
 		mToLabel.setFont( mFont );
 		mToLabel.setForeground( mLabelColor );
 		add( mToLabel );
@@ -162,6 +144,24 @@ public class AudioChannelPanel extends JPanel
 		mFromAlias.setFont( mFont );
 		mFromAlias.setForeground( mLabelColor );
 		add( mFromAlias,"wrap" );
+
+		mChannelLabel = new JLabel( "Channel:" );
+		mChannelLabel.setFont( mFont );
+		mChannelLabel.setForeground( mDetailsColor );
+		
+		add( mChannelLabel );
+
+		mChannelName = new JLabel( mChannel );
+		mChannelName.setFont( mFont );
+		mChannelName.setForeground( mDetailsColor );
+		
+		add( mChannelName );
+
+		mMutedLabel = new JLabel( "" );
+		mMutedLabel.setFont( mFont );
+		mMutedLabel.setForeground( Color.RED );
+		
+		add( mMutedLabel, "wrap" );
 	}
 	
 	private void updateMuteState()
@@ -225,7 +225,8 @@ public class AudioChannelPanel extends JPanel
 			
 			if( icon != null )
 			{
-				label.setIcon( mSettingsManager.getImageIcon( icon, 12 ) );
+				label.setIcon( mSettingsManager.getImageIcon( icon, 
+						SettingsManager.DEFAULT_ICON_SIZE ) );
 			}
 			else
 			{

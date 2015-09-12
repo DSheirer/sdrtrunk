@@ -47,7 +47,7 @@ public class NonRecordableNode extends AliasIDNode
     @Override
 	public String getIconPath()
 	{
-		return "images/non_recordable.png";
+		return "images/no_record.png";
 	}
 
 	public String toString()

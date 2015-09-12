@@ -10,6 +10,7 @@ import module.decode.config.DecodeConfiguration;
 import module.decode.event.CallEvent;
 import module.decode.event.CallEvent.CallEventType;
 import module.decode.event.ICallEventProvider;
+import module.decode.mpt1327.MPT1327CallEvent;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +20,8 @@ import sample.Listener;
 import source.config.SourceConfigTuner;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannel.Type;
-import alias.AliasList;
+import alias.Alias;
+import alias.priority.Priority;
 import controller.ResourceManager;
 import controller.channel.Channel;
 import controller.channel.Channel.ChannelType;
@@ -46,6 +48,7 @@ public class TrafficChannelManager extends Module
 	private Site mSite;
 	private String mAliasListName;
 	private long mTrafficChannelTimeout;
+	private CallEvent mPreviousDoNotMonitorCallEvent;
 
 	/**
 	 * Monitors call events and allocates traffic decoder channels in response
@@ -90,6 +93,7 @@ public class TrafficChannelManager extends Module
 		mCallEventListener = null;
 		mResourceManager = null;
 		mDecodeConfiguration = null;
+		mPreviousDoNotMonitorCallEvent = null;
 	}
 
 	private Channel getChannel( String channelNumber, TunerChannel tunerChannel )
@@ -168,7 +172,20 @@ public class TrafficChannelManager extends Module
 
 			long frequency = callEvent.getFrequency();
 			
-			if( frequency > 0 )
+			/* Check the from/to aliases for do not monitor priority */
+			if( isDoNotMonitor( callEvent ) )
+			{
+				if( isSameCallEvent( mPreviousDoNotMonitorCallEvent, callEvent ) )
+				{
+					return;
+				}
+				else
+				{
+					mPreviousDoNotMonitorCallEvent = callEvent;
+					callEvent.setCallEventType( CallEventType.CALL_DO_NOT_MONITOR );
+				}
+			}
+			else if( frequency > 0 )
 			{
 				Channel channel = getChannel( callEvent.getChannel(), 
 					new TunerChannel( Type.TRAFFIC, frequency, 
@@ -207,6 +224,85 @@ public class TrafficChannelManager extends Module
 			
 			mCallEventListener.receive( callEvent );
 		}
+	}
+
+	/**
+	 * Compares the call type, channel and to fields for equivalence and the 
+	 * from field for either both null, or equivalence.
+	 * 
+	 * @param e1
+	 * @param e2
+	 * @return
+	 */
+	public static boolean isSameCallEvent( CallEvent e1, CallEvent e2 )
+	{
+		if( e1 == null || 
+			e2 == null || 
+			e1.getCallEventType() != e2.getCallEventType() )
+		{
+			return false;
+		}
+
+		if( e1.getChannel() == null || 
+			e2.getChannel() == null || 
+			!e1.getChannel().contentEquals( e2.getChannel() ) )
+		{
+			return false;
+		}
+		
+		if( e1.getToID() == null ||
+			e2.getToID() == null ||
+			!e1.getToID().contentEquals( e2.getToID() ) )
+		{
+			return false;
+		}
+
+		if( e1.getFromID() == null || e2.getFromID() == null )
+		{
+			if( e1.getFromID() == null && e2.getFromID() == null )
+			{
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else if( e1.getFromID().contentEquals( e2.getFromID() ) )
+		{
+			return true;
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Checks for aliases that contain a do not follow/process priority.  
+	 * 
+	 * @param event
+	 * @return - true if there is an alias that has a do not process alias id
+	 */
+	private boolean isDoNotMonitor( CallEvent event )
+	{
+		Alias to = event.getToIDAlias();
+
+		if( to != null && 
+			to.hasPriority() && 
+			to.getCallPriority() == Priority.DO_NOT_MONITOR )
+		{
+			return true;
+		}
+		
+		Alias from = event.getFromIDAlias();
+
+		if( from != null && 
+			from.hasPriority() && 
+			from.getCallPriority() == Priority.DO_NOT_MONITOR )
+		{
+			return true;
+		}
+		
+		return false;
 	}
 
 	@Override

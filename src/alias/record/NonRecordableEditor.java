@@ -43,7 +43,7 @@ public class NonRecordableEditor extends JPanel implements ActionListener
 		setLayout( new MigLayout( "fill", "[left]", "[grow]" ) );
 
 		JTextArea description = new JTextArea( "Non-Recordable.  Any audio where"
-			+ "this alias is a participant in the call will not be recorded." );
+			+ " this alias is a participant in the call will not be recorded." );
 		
 		description.setLineWrap( true );
 		description.setBackground( getBackground() );

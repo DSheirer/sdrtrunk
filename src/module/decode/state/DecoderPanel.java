@@ -35,9 +35,10 @@ public abstract class DecoderPanel extends JPanel
 {
 	private static final long serialVersionUID = 1L;
 
-    protected Font mFontDetails = new Font( Font.MONOSPACED, Font.PLAIN, 10 );
-    protected Font mFontDecoder = new Font( Font.MONOSPACED, Font.PLAIN, 10 );
-    protected Font mFontAuxDecoder = new Font( Font.MONOSPACED, Font.PLAIN, 10 );
+    protected Font mFontDetails = new Font( Font.MONOSPACED, Font.PLAIN, 12 );
+    protected Font mFontDecoder = new Font( Font.MONOSPACED, Font.PLAIN, 12 );
+    protected Font mFontAuxDecoder = new Font( Font.MONOSPACED, Font.PLAIN, 12 );
+    public static final int ICON_SIZE = 12;
     
     protected Color mColorLabelDetails;
     protected Color mColorLabelDecoder;

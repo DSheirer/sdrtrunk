@@ -48,8 +48,8 @@ public class ChannelStatePanel extends JPanel
 	private static final boolean DISABLED = false;
 	private static final boolean BROADCAST_CHANGE = true;
 
-    private Font mFontDetails = new Font( Font.MONOSPACED, Font.PLAIN, 10 );
-    private Font mFontDecoder = new Font( Font.MONOSPACED, Font.PLAIN, 10 );
+    private Font mFontDetails = new Font( Font.MONOSPACED, Font.PLAIN, 12 );
+    private Font mFontDecoder = new Font( Font.MONOSPACED, Font.PLAIN, 12 );
 
     protected Color mColorChannelBackground;
     protected Color mColorChannelSelected;
@@ -208,7 +208,10 @@ public class ChannelStatePanel extends JPanel
 				switch( changedAttribute )
 				{
 					case CHANNEL_STATE:
-			    		mStateLabel.setText( state.getState().getDisplayValue() );
+						if( state.getState() != null )
+						{
+				    		mStateLabel.setText( state.getState().getDisplayValue() );
+						}
 						break;
 					case SOURCE:
 			    		mSourceLabel.setText( mChannel.getSourceConfiguration()

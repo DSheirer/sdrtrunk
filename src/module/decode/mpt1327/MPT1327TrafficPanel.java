@@ -118,7 +118,7 @@ public class MPT1327TrafficPanel extends DecoderPanel
 							String icon = alias.getIconName();
 							
 							mFromTalkgroupAliasLabel.setIcon( mSettingsManager
-								.getImageIcon( icon, 12 ) );
+								.getImageIcon( icon, SettingsManager.DEFAULT_ICON_SIZE ) );
 						}
 						break;
 					case TO_TALKGROUP:

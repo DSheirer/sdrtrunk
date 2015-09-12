@@ -50,7 +50,7 @@ public class PriorityNode extends AliasIDNode
     
     public String toString()
     {
-    	return "Priority: " + getPriority().getPriority();
+    	return getPriority().toString();
     }
 
 	public JPopupMenu getContextMenu()

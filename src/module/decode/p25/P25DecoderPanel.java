@@ -141,7 +141,7 @@ public class P25DecoderPanel extends DecoderPanel
 						{
 							mFromAlias.setText( from.getName() );
 							mFromAlias.setIcon( mSettingsManager
-				    				.getImageIcon( from.getIconName(), 12 )  );
+				    				.getImageIcon( from.getIconName(), SettingsManager.DEFAULT_ICON_SIZE )  );
 						}
 						else
 						{
@@ -159,7 +159,7 @@ public class P25DecoderPanel extends DecoderPanel
 						{
 							mToAlias.setText( to.getName() );
 							mToAlias.setIcon( mSettingsManager
-				    				.getImageIcon( to.getIconName(), 12 )  );
+				    				.getImageIcon( to.getIconName(), SettingsManager.DEFAULT_ICON_SIZE )  );
 						}
 						else
 						{

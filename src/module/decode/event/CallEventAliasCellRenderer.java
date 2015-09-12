@@ -54,7 +54,7 @@ public class CallEventAliasCellRenderer extends DefaultTableCellRenderer
 			
 			setText( alias.getName() );
 			
-			ImageIcon icon = getIcon( alias, 12 );
+			ImageIcon icon = getIcon( alias, SettingsManager.DEFAULT_ICON_SIZE );
 			
 			if( icon != null )
 			{

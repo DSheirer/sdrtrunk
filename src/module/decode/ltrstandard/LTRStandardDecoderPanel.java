@@ -104,7 +104,7 @@ public class LTRStandardDecoderPanel extends DecoderPanel
 	    	    		{
 	    					mTalkgroupAlias.setText( alias.getName() );
 	    					mTalkgroupAlias.setIcon( mSettingsManager
-    							.getImageIcon( alias.getIconName(), 12 ) );
+    							.getImageIcon( alias.getIconName(), SettingsManager.DEFAULT_ICON_SIZE ) );
 	    	    		}
 	    	    		else
 	    	    		{

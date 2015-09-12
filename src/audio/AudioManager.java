@@ -99,61 +99,61 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 				
 				for( AudioPacket packet: packets )
 				{
-					int source = packet.getAudioMetadata().getSource();
+					/* Don't process any packet's marked as do not monitor */
+					if( !packet.getAudioMetadata().isDoNotMonitor() )
+					{
+						int source = packet.getAudioMetadata().getSource();
 
-					if( packet.getType() == AudioPacket.Type.END )
-					{
-						
-					}
-					else
-					{
-						/* Existing channel assignment */
-						if( mChannelAssignments.containsKey( source ) )
+						if( packet.getType() != AudioPacket.Type.END )
 						{
-							mChannelAssignments.get( source ).getAudioOutput()
-										.receive( packet );
-						}
-						/* Start a new channel assignment */
-						else if( !mAvailableAudioOutputs.isEmpty() )
-						{
-							AudioOutput channel = mAvailableAudioOutputs.remove( 0 );
-							
-							mChannelAssignments.put( packet.getAudioMetadata().getSource(), 
-								new AudioChannelAssignment( channel, packet.getAudioMetadata().getPriority() ) );
-							
-							updateLowestPriorityAssignment();
-							
-							channel.receive( packet );
-						}
-						/* Override the lowest priority assignment */
-						else
-						{
-							if( mLowestPrioritySource > -1 )
+							/* Existing channel assignment */
+							if( mChannelAssignments.containsKey( source ) )
 							{
-								int priority = packet.getAudioMetadata().getPriority();
-
-								if( packet.getAudioMetadata().isSelected() || 
-									priority < mChannelAssignments
-										.get( mLowestPrioritySource ).getPriority() )
+								mChannelAssignments.get( source ).getAudioOutput()
+											.receive( packet );
+							}
+							/* Start a new channel assignment */
+							else if( !mAvailableAudioOutputs.isEmpty() )
+							{
+								AudioOutput channel = mAvailableAudioOutputs.remove( 0 );
+								
+								mChannelAssignments.put( packet.getAudioMetadata().getSource(), 
+									new AudioChannelAssignment( channel, packet.getAudioMetadata().getPriority() ) );
+								
+								updateLowestPriorityAssignment();
+								
+								channel.receive( packet );
+							}
+							/* Override the lowest priority assignment */
+							else
+							{
+								if( mLowestPrioritySource > -1 )
 								{
-									AudioChannelAssignment assignment = 
-										mChannelAssignments.remove( mLowestPrioritySource );
-									
-									if( assignment != null )
-									{
-										assignment.setPriority( priority );
+									int priority = packet.getAudioMetadata().getPriority();
 
-										int overrideSource = packet.getAudioMetadata().getSource();
-										
-										mChannelAssignments.put( overrideSource, assignment );
-										
-										mLowestPrioritySource = overrideSource;
-										
-										assignment.getAudioOutput().receive( packet );
-									}
-									else
+									if( packet.getAudioMetadata().isSelected() || 
+										priority < mChannelAssignments
+											.get( mLowestPrioritySource ).getPriority() )
 									{
-										mLowestPrioritySource = -1;
+										AudioChannelAssignment assignment = 
+											mChannelAssignments.remove( mLowestPrioritySource );
+										
+										if( assignment != null )
+										{
+											assignment.setPriority( priority );
+
+											int overrideSource = packet.getAudioMetadata().getSource();
+											
+											mChannelAssignments.put( overrideSource, assignment );
+											
+											mLowestPrioritySource = overrideSource;
+											
+											assignment.getAudioOutput().receive( packet );
+										}
+										else
+										{
+											mLowestPrioritySource = -1;
+										}
 									}
 								}
 							}

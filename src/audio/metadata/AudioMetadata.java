@@ -113,39 +113,45 @@ public class AudioMetadata implements Listener<Metadata>
 			}
 		}
 
-		/* Update the recordable state, identifier and audio call priority levels */
+		/* Reset recordable state, identifier and audio call priority levels
+		 * and reprocess the metadata */
 		mRecordable = mSourceRecordable;
 		setIdentifier( mSource );
 		mPriority = Priority.DEFAULT_PRIORITY;
 		
 		for( Metadata metadata: mMetadata )
 		{
-			if( metadata.hasAlias() )
-			{
-				Alias alias = metadata.getAlias();
-				
-				if( metadata.getMetadataType() == MetadataType.FROM ||
-					metadata.getMetadataType() == MetadataType.TO )
-				{
-					if( !alias.isRecordable() )
-					{
-						mRecordable = false;
-					}
-				}
-
-				if( metadata.getMetadataType() == MetadataType.TO )
-				{
-					setIdentifier( mSource, metadata.getValue() );
-				}
-
-				if( alias != null && alias.getCallPriority() < mPriority )
-				{
-					mPriority = alias.getCallPriority();
-				}
-			}
+			processMetadata( metadata );
 		}
 		
 		mUpdated = true;
+	}
+	
+	private void processMetadata( Metadata metadata )
+	{
+		if( metadata.hasAlias() )
+		{
+			Alias alias = metadata.getAlias();
+			
+			if( metadata.getMetadataType() == MetadataType.FROM ||
+				metadata.getMetadataType() == MetadataType.TO )
+			{
+				if( !alias.isRecordable() )
+				{
+					mRecordable = false;
+				}
+			}
+
+			if( metadata.getMetadataType() == MetadataType.TO )
+			{
+				setIdentifier( mSource, metadata.getValue() );
+			}
+
+			if( alias != null && alias.getCallPriority() < mPriority )
+			{
+				mPriority = alias.getCallPriority();
+			}
+		}
 	}
 	
 	/**
@@ -177,27 +183,7 @@ public class AudioMetadata implements Listener<Metadata>
 		else
 		{
 			mMetadata.add( metadata );
-			
-			if( metadata.hasAlias() )
-			{
-				Alias alias = metadata.getAlias();
-				
-				/* Capture non-recordable aliases */
-				if( metadata.getMetadataType() == MetadataType.FROM ||
-					metadata.getMetadataType() == MetadataType.TO )
-				{
-					if( !alias.isRecordable() )
-					{
-						mRecordable = false;
-					}
-				}
-				
-				/* Capture call priority levels from aliases */
-				if( alias.getCallPriority() < mPriority )
-				{
-					mPriority = alias.getCallPriority();
-				}
-			}
+			processMetadata( metadata );
 		}
 		
 		mUpdated = true;
@@ -247,23 +233,24 @@ public class AudioMetadata implements Listener<Metadata>
 	 * Sets the priority of this audio packet within the defined min/max priority range */
 	public void setPriority( int priority )
 	{
-		assert( Priority.MIN_PRIORITY <= priority && priority <= Priority.MAX_PRIORITY );
-		
 		mPriority = priority;
 		
 		mUpdated = true;
 	}
 
 	/**
-	 * Returns the priority of this audio packet or a priority of -1 if the
-	 * audio source is currently selected, so that the priority of this packet
-	 * is higher (lower?) than any other audio source
+	 * Returns the priority of this audio metadata
 	 * 
 	 * @return - priority of audio packet where lower numbers are higher priority
 	 */
 	public int getPriority()
 	{
-		return mSelected ? -1 : mPriority;
+		return mPriority;
+	}
+	
+	public boolean isDoNotMonitor()
+	{
+		return mPriority == Priority.DO_NOT_MONITOR;
 	}
 
 	/**

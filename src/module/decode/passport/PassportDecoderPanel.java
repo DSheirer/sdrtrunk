@@ -118,7 +118,7 @@ public class PassportDecoderPanel extends DecoderPanel
 							mToTalkgroupAlias.setText( toAlias.getName() );
 							
 							mToTalkgroupAlias.setIcon( mSettingsManager
-								.getImageIcon( toAlias.getIconName(), 12 ) );
+								.getImageIcon( toAlias.getIconName(), SettingsManager.DEFAULT_ICON_SIZE ) );
 			    		}
 			    		else
 			    		{
@@ -146,7 +146,7 @@ public class PassportDecoderPanel extends DecoderPanel
 				    		mFromTalkgroupAlias.setText( fromAlias.getName() );
 				    		
 				    		mFromTalkgroupAlias.setIcon( mSettingsManager
-				    			.getImageIcon( fromAlias.getIconName(), 12 ) );
+				    			.getImageIcon( fromAlias.getIconName(), SettingsManager.DEFAULT_ICON_SIZE ) );
 			    		}
 			    		else
 			    		{

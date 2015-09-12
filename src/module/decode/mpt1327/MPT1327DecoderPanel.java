@@ -136,7 +136,8 @@ public class MPT1327DecoderPanel extends DecoderPanel
 				
 				if( iconName != null )
 				{
-					label.setIcon( mSettingsManager.getImageIcon( iconName, 12 ) );
+					label.setIcon( mSettingsManager
+						.getImageIcon( iconName, SettingsManager.DEFAULT_ICON_SIZE ) );
 				}
 				else
 				{

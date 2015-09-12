@@ -21,6 +21,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
@@ -28,14 +29,24 @@ import javax.swing.JTextArea;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import module.decode.config.DecodeConfiguration;
 import net.miginfocom.swing.MigLayout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import controller.ConfigurableNode;
 
 public class PriorityEditor extends JPanel implements ActionListener
 {
+	private final static Logger mLog = LoggerFactory.getLogger( PriorityEditor.class );
+
+	public static final String DO_NOT_MONITOR = "Do Not Monitor";
+	public static final String SAVE = "Save";
+	public static final String RESET = "Reset";
+	
     private static final long serialVersionUID = 1L;
     private PriorityNode mPriorityNode;
+    private JCheckBox mDoNotMonitorCheckBox = new JCheckBox( DO_NOT_MONITOR );
     private JSlider mPrioritySlider;
     private JLabel mPrioritySliderLabel;
 
@@ -52,11 +63,37 @@ public class PriorityEditor extends JPanel implements ActionListener
 
 		add( new JLabel( "Priority" ), "span,align center" );
 
-		mPrioritySlider = new JSlider( JSlider.HORIZONTAL,
-										Priority.MIN_PRIORITY,
-										Priority.MAX_PRIORITY,
-										Priority.DEFAULT_PRIORITY );
+		boolean doNotMonitor = mPriorityNode.getPriority().isDoNotMonitor();
 
+		mDoNotMonitorCheckBox.addActionListener( this );
+		
+		if( doNotMonitor )
+		{
+			mDoNotMonitorCheckBox.setSelected( true );
+		}
+		
+		add( mDoNotMonitorCheckBox, "span,align center" );
+
+		int priority = mPriorityNode.getPriority().getPriority();
+
+		/* Adjust the displayable priority value to within the min/max bounds 
+		 * so we don't get an error in the jslider control.  If the actual 
+		 * priority is -1 (ie do not follow), the controls will be updated
+		 * to reflect that state */
+		if( priority < Priority.MIN_PRIORITY )
+		{
+			priority = Priority.DEFAULT_PRIORITY;
+		}
+		else if( priority > Priority.MAX_PRIORITY )
+		{
+			priority = Priority.DEFAULT_PRIORITY;
+		}
+		
+		mPrioritySlider = new JSlider( JSlider.HORIZONTAL,
+					Priority.MIN_PRIORITY,
+					Priority.MAX_PRIORITY,
+					priority );
+		
 		mPrioritySlider.setMajorTickSpacing( 20 );
 		mPrioritySlider.setMinorTickSpacing( 5 );
 		mPrioritySlider.setPaintTicks( true );
@@ -75,14 +112,20 @@ public class PriorityEditor extends JPanel implements ActionListener
 			}
 		} );
 		
+		if( doNotMonitor )
+		{
+			mPrioritySlider.setEnabled( false );
+			mPrioritySliderLabel.setEnabled( false );
+		}
+		
 		add( mPrioritySliderLabel );
 		add( mPrioritySlider, "wrap,grow" );
 		
-		JButton btnSave = new JButton( "Save" );
+		JButton btnSave = new JButton( SAVE );
 		btnSave.addActionListener( PriorityEditor.this );
 		add( btnSave, "growx,push" );
 
-		JButton btnReset = new JButton( "Reset" );
+		JButton btnReset = new JButton( RESET );
 		btnReset.addActionListener( PriorityEditor.this );
 		add( btnReset, "growx,push" );
 		
@@ -103,9 +146,16 @@ public class PriorityEditor extends JPanel implements ActionListener
     {
 		String command = e.getActionCommand();
 		
-		if( command.contentEquals( "Save" ) )
+		if( command.contentEquals( SAVE ) )
 		{
-			mPriorityNode.getPriority().setPriority( mPrioritySlider.getValue() );
+			if( mDoNotMonitorCheckBox.isSelected() )
+			{
+				mPriorityNode.getPriority().setPriority( Priority.DO_NOT_MONITOR );
+			}
+			else
+			{
+				mPriorityNode.getPriority().setPriority( mPrioritySlider.getValue() );
+			}
 
 			((ConfigurableNode)mPriorityNode.getParent()).sort();
 
@@ -113,9 +163,27 @@ public class PriorityEditor extends JPanel implements ActionListener
 			
 			mPriorityNode.show();
 		}
-		else if( command.contentEquals( "Reset" ) )
+		else if( command.contentEquals( RESET ) )
 		{
 			mPrioritySlider.setValue( mPriorityNode.getPriority().getPriority() );
+		}
+		else if( command.contentEquals( DO_NOT_MONITOR ) )
+		{
+			if( mDoNotMonitorCheckBox.isSelected() )
+			{
+				mPriorityNode.getPriority().setPriority( Priority.DO_NOT_MONITOR );
+				mPrioritySlider.setEnabled( false );
+				mPrioritySliderLabel.setEnabled( false );
+			}
+			else
+			{
+				mPriorityNode.getPriority().setPriority( Priority.DEFAULT_PRIORITY );
+				mPrioritySlider.setEnabled( true );
+				mPrioritySliderLabel.setEnabled( true );
+			}
+			
+			mPriorityNode.save();
+			mPriorityNode.show();
 		}
 		
 		mPriorityNode.refresh();

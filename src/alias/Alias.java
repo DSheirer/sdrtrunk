@@ -169,6 +169,19 @@ public class Alias
 		return Priority.DEFAULT_PRIORITY;
 	}
 	
+	public boolean hasPriority()
+	{
+		for( AliasID id: mAliasIDs )
+		{
+			if( id.getType() == AliasIDType.Priority )
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+	
 	/**
 	 * Inspects the alias for a non-recordable alias id.  Default is true;
 	 */

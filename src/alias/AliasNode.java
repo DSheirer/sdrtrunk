@@ -52,6 +52,8 @@ import alias.id.talkgroup.TalkgroupID;
 import alias.id.talkgroup.TalkgroupIDNode;
 import alias.id.uniqueID.UniqueID;
 import alias.id.uniqueID.UniqueIDNode;
+import alias.priority.Priority;
+import alias.priority.PriorityNode;
 import alias.record.NonRecordable;
 import alias.record.NonRecordableNode;
 import controller.ConfigurableNode;
@@ -127,6 +129,10 @@ public class AliasNode extends ConfigurableNode
 	        		getModel().addNode( new NonRecordableNode( (NonRecordable)aliasID ), 
 	        				AliasNode.this, getChildCount() );
 					break;
+				case Priority:
+	        		getModel().addNode( new PriorityNode( (Priority)aliasID ), 
+	        				AliasNode.this, getChildCount() );
+	        		break;
 				case Site:
 	        		getModel().addNode( new SiteIDNode( (SiteID)aliasID ), 
 	        				AliasNode.this, getChildCount() );
@@ -282,27 +288,6 @@ public class AliasNode extends ConfigurableNode
             }
 		} );
 		addIDMenu.add( addMPTItem );
-
-		JMenuItem nonRecordableItem = new JMenuItem( "Non-Recordable" );
-		nonRecordableItem.addActionListener( new ActionListener() 
-		{
-			@Override
-            public void actionPerformed( ActionEvent e )
-            {
-				NonRecordable non = new NonRecordable();
-				
-				getAlias().addAliasID( non );
-
-				NonRecordableNode node = new NonRecordableNode( non );
-				
-				getModel().addNode( node, 
-									AliasNode.this, 
-									AliasNode.this.getChildCount() );
-				
-				node.show();
-            }
-		} );
-		addIDMenu.add( nonRecordableItem );
 
 		JMenuItem addSiteItem = new JMenuItem( "Site" );
 		addSiteItem.addActionListener( new ActionListener() 
@@ -465,7 +450,62 @@ public class AliasNode extends ConfigurableNode
 		retVal.add( addActionMenu );
 		
 		retVal.addSeparator();
-		
+
+		if( getAlias().isRecordable() )
+		{
+			JMenuItem nonRecordableItem = new JMenuItem( "Set Non-Recordable" );
+			
+			nonRecordableItem.addActionListener( new ActionListener() 
+			{
+				@Override
+			    public void actionPerformed( ActionEvent e )
+			    {
+					NonRecordable non = new NonRecordable();
+					
+					getAlias().addAliasID( non );
+
+					NonRecordableNode node = new NonRecordableNode( non );
+					
+					getModel().addNode( node, 
+										AliasNode.this, 
+										AliasNode.this.getChildCount() );
+					
+					node.show();
+			    }
+			} );
+			
+			retVal.add( nonRecordableItem );
+			retVal.addSeparator();
+		}
+
+		if( !getAlias().hasPriority() )
+		{
+			JMenuItem priorityItem = new JMenuItem( "Set Call Priority" );
+			
+			priorityItem.addActionListener( new ActionListener() 
+			{
+				@Override
+			    public void actionPerformed( ActionEvent e )
+			    {
+					Priority priority = new Priority();
+					
+					getAlias().addAliasID( priority );
+
+					PriorityNode node = new PriorityNode( priority );
+					
+					getModel().addNode( node, 
+										AliasNode.this, 
+										AliasNode.this.getChildCount() );
+					
+					node.show();
+			    }
+			} );
+			
+			retVal.add( priorityItem );
+			retVal.addSeparator();
+		}
+
+
 		JMenuItem deleteItem = new JMenuItem( "Delete" );
 		deleteItem.addActionListener( new ActionListener() 
 		{

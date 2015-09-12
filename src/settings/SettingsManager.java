@@ -68,6 +68,7 @@ public class SettingsManager
 
 	public static final String DEFAULT_ICON = "No Icon";
 	public String mCurrentDefaultIconName = DEFAULT_ICON;
+	public static final int DEFAULT_ICON_SIZE = 12;
 
 	private HashMap<String,MapIcon> mIcons = new HashMap<String,MapIcon>();
 

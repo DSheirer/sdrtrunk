@@ -27,14 +27,24 @@ import alias.AliasIDType;
  */
 public class Priority extends AliasID
 {
+	public static final int DO_NOT_MONITOR = -1;
+	public static final int SELECTED_PRIORITY = 0;
 	public static final int MIN_PRIORITY = 1;
 	public static final int MAX_PRIORITY = 100;
 	public static final int DEFAULT_PRIORITY = 100;
 	
-	private int mPriority;
+	private int mPriority = DEFAULT_PRIORITY;
 	
 	public Priority()
 	{
+	}
+
+	/**
+	 * Indicates the associated alias should not be monitored or tracked.
+	 */
+	public boolean isDoNotMonitor()
+	{
+		return mPriority == DO_NOT_MONITOR;
 	}
 
 	@XmlAttribute
@@ -50,7 +60,7 @@ public class Priority extends AliasID
 	
 	public String toString()
 	{
-		return "Priority: " + mPriority;
+		return "Priority: " + ( isDoNotMonitor() ? "Do Not Monitor" : mPriority );
 	}
 
 	@Override
