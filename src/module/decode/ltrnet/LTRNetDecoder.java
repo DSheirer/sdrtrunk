@@ -19,6 +19,7 @@ package module.decode.ltrnet;
 
 import instrument.Instrumentable;
 import instrument.tap.Tap;
+import instrument.tap.TapGroup;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,7 +43,7 @@ public class LTRNetDecoder extends Decoder
 	private MessageFramer mLTRMessageFramer;
 	private LTRNetMessageProcessor mLTRMessageProcessor;
 
-    private List<Tap> mAvailableTaps;
+    private List<TapGroup> mAvailableTaps;
     
 	public LTRNetDecoder( DecodeConfigLTRNet config, AliasList aliasList )
 	{
@@ -87,27 +88,27 @@ public class LTRNetDecoder extends Decoder
 	}
 
     @Override
-    public List<Tap> getTaps()
+    public List<TapGroup> getTapGroups()
     {
         if( mAvailableTaps == null )
         {
-            mAvailableTaps = new ArrayList<Tap>();
+            mAvailableTaps = new ArrayList<TapGroup>();
             
-            mAvailableTaps.addAll( mLTRFSKDecoder.getTaps() );
+            mAvailableTaps.addAll( mLTRFSKDecoder.getTapGroups() );
         }
 
         return mAvailableTaps;
     }
 
     @Override
-    public void addTap( Tap tap )
+    public void registerTap( Tap tap )
     {
-        mLTRFSKDecoder.addTap( tap );
+        mLTRFSKDecoder.registerTap( tap );
     }
 
     @Override
-    public void removeTap( Tap tap )
+    public void unregisterTap( Tap tap )
     {
-        mLTRFSKDecoder.removeTap( tap );
+        mLTRFSKDecoder.unregisterTap( tap );
     }
 }

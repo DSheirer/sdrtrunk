@@ -19,6 +19,7 @@ package module.decode.passport;
 
 import instrument.Instrumentable;
 import instrument.tap.Tap;
+import instrument.tap.TapGroup;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +45,7 @@ public class PassportDecoder extends Decoder
 	private MessageFramer mPassportMessageFramer;
 	private PassportMessageProcessor mPassportMessageProcessor;
 
-    private List<Tap> mAvailableTaps;
+    private List<TapGroup> mAvailableTaps;
 
 	public PassportDecoder( DecodeConfiguration config, 
 							AliasList aliasList )
@@ -77,27 +78,27 @@ public class PassportDecoder extends Decoder
 	}
 
 	@Override
-    public List<Tap> getTaps()
+    public List<TapGroup> getTapGroups()
     {
 		if( mAvailableTaps == null )
 		{
-			mAvailableTaps = new ArrayList<Tap>();
+			mAvailableTaps = new ArrayList<>();
 			
-			mAvailableTaps.addAll( mPassportFSKDecoder.getTaps() );
+			mAvailableTaps.addAll( mPassportFSKDecoder.getTapGroups() );
 		}
 
 		return mAvailableTaps;
     }
 
 	@Override
-    public void addTap( Tap tap )
+    public void registerTap( Tap tap )
     {
-		mPassportFSKDecoder.addTap( tap );
+		mPassportFSKDecoder.registerTap( tap );
     }
 
 	@Override
-    public void removeTap( Tap tap )
+    public void unregisterTap( Tap tap )
     {
-		mPassportFSKDecoder.removeTap( tap );
+		mPassportFSKDecoder.unregisterTap( tap );
     }
 }

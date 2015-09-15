@@ -42,10 +42,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import properties.SystemProperties;
-import source.Source;
+import source.IControllableFileSource;
 import source.wave.ComplexWaveSource;
-import source.wave.FloatWaveSource;
-import source.wave.WaveSource;
+import source.wave.RealWaveSource;
 import util.TimeStamp;
 
 public class Viewer
@@ -55,7 +54,7 @@ public class Viewer
 	private JFrame mFrame;
 	private JDesktopPane mDesktop;
 	
-	private Source mSource;
+	private IControllableFileSource mSource;
 	
 	public Viewer()
 	{
@@ -82,13 +81,6 @@ public class Viewer
         mDesktop = new JDesktopPane();
         mFrame.add( mDesktop );
         
-//		JInternalFrame frame = 
-//		new JInternalFrame( "New", true, true, true, true );
-//		frame.add( new JLabel( "This is a test" ) );
-//		frame.pack();
-//		mDesktop.add( frame );
-//		frame.setVisible( true );
-
 		/* Menu items */
         JMenuBar menuBar = new JMenuBar();
         mFrame.setJMenuBar( menuBar );
@@ -110,79 +102,19 @@ public class Viewer
         
         fileMenu.add( exitMenu );
         
-        JMenuItem screenCaptureItem = new JMenuItem( "Screen Capture" );
-        screenCaptureItem.addActionListener( new ActionListener()
-        {
-			@Override
-            public void actionPerformed( ActionEvent arg0 )
-            {
-				try
-                {
-	                Robot robot = new Robot();
-	                
-	                final BufferedImage image = 
-	                		robot.createScreenCapture( mFrame.getBounds() );
-	                
-	            	SystemProperties props = SystemProperties.getInstance();
-	            	
-	            	Path capturePath = props.getApplicationFolder( "screen_captures" );
-	            	
-	            	if( !Files.exists( capturePath ) )
-	            	{
-	            		try
-	                    {
-	        	            Files.createDirectory( capturePath );
-	                    }
-	                    catch ( IOException e )
-	                    {
-	                    	mLog.error( "Couldn't create 'screen_captures' "
-	                    			+ "subdirectory in the " +
-	                    			"SDRTrunk application directory", e );
-	                    }
-	            	}
-	            	
-	            	String filename = TimeStamp.getTimeStamp( "_" ) + 
-	            			"_screen_capture.png";
-
-	            	final Path captureFile = capturePath.resolve( filename );
-
-	            	EventQueue.invokeLater( new Runnable() 
-	                {
-						@Override
-                        public void run()
-                        {
-							try
-                            {
-	                            ImageIO.write( image, "png", 
-	                            		captureFile.toFile() );
-                            }
-                            catch ( IOException e )
-                            {
-                            	mLog.error( "Couldn't write screen capture to "
-                    			+ "file [" + captureFile.toString() + "]", e );
-                            }
-                        }} );
-                }
-                catch ( AWTException e )
-                {
-                	mLog.error( "Exception while taking screen capture", e );
-                }
-            }
-        } );
-        
-        menuBar.add( screenCaptureItem );
+        menuBar.add( new ScreenCaptureItem() );
     }
     
     private void setSourceFile( File file )
     {
     	mLog.info( "File selected [" + file.getAbsolutePath() + "]");
 
-    	WaveSource source = null;
+    	IControllableFileSource source = null;
     	
     	/* Attempt to open file as a 1-channel float source */
     	try
     	{
-    		FloatWaveSource floatSource = new FloatWaveSource( file, false );
+    		RealWaveSource floatSource = new RealWaveSource( file );
     		floatSource.open();
     		
     		source = floatSource;
@@ -200,7 +132,7 @@ public class Viewer
         	/* Attempt to open file as a 2-channel complex source */
         	try
         	{
-        		ComplexWaveSource complex = new ComplexWaveSource( file, false );
+        		ComplexWaveSource complex = new ComplexWaveSource( file );
         		complex.open();
         		
         		source = complex;
@@ -217,8 +149,8 @@ public class Viewer
     	{
     		mSource = source;
     		
-    		AudioSourceFrame sourcePanel = 
-					new AudioSourceFrame( source, mDesktop );
+    		SourceControllerFrame sourcePanel = 
+					new SourceControllerFrame( source, mDesktop );
     		sourcePanel.setVisible( true );
     		mDesktop.add( sourcePanel );
     	}
@@ -292,6 +224,82 @@ public class Viewer
 					}
 				}
 			} );
+		}
+	}
+	
+	public class ScreenCaptureItem extends JMenuItem
+	{
+		private static final long serialVersionUID = 1L;
+		
+		public ScreenCaptureItem()
+		{
+			super( "Screen Capture" );
+			
+	        addActionListener( new ActionListener()
+	        {
+				@Override
+	            public void actionPerformed( ActionEvent arg0 )
+	            {
+					EventQueue.invokeLater( new Runnable()
+					{
+						@Override
+						public void run()
+						{
+							try
+			                {
+				                Robot robot = new Robot();
+				                
+				                final BufferedImage image = 
+				                		robot.createScreenCapture( mFrame.getBounds() );
+				                
+				            	SystemProperties props = SystemProperties.getInstance();
+				            	
+				            	Path capturePath = props.getApplicationFolder( "screen_captures" );
+				            	
+				            	if( !Files.exists( capturePath ) )
+				            	{
+				            		try
+				                    {
+				        	            Files.createDirectory( capturePath );
+				                    }
+				                    catch ( IOException e )
+				                    {
+				                    	mLog.error( "Couldn't create 'screen_captures' "
+				                    			+ "subdirectory in the " +
+				                    			"SDRTrunk application directory", e );
+				                    }
+				            	}
+				            	
+				            	String filename = TimeStamp.getTimeStamp( "_" ) + 
+				            			"_screen_capture.png";
+
+				            	final Path captureFile = capturePath.resolve( filename );
+
+				            	EventQueue.invokeLater( new Runnable() 
+				                {
+									@Override
+			                        public void run()
+			                        {
+										try
+			                            {
+				                            ImageIO.write( image, "png", 
+				                            		captureFile.toFile() );
+			                            }
+			                            catch ( IOException e )
+			                            {
+			                            	mLog.error( "Couldn't write screen capture to "
+			                    			+ "file [" + captureFile.toString() + "]", e );
+			                            }
+			                        }} );
+			                }
+			                catch ( AWTException e )
+			                {
+			                	mLog.error( "Exception while taking screen capture", e );
+			                }
+						}
+					} );
+	            }
+	        } );
 		}
 	}
 }

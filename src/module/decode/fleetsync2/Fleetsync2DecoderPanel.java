@@ -20,8 +20,13 @@ package module.decode.fleetsync2;
 import java.awt.EventQueue;
 
 import javax.swing.JLabel;
+import javax.swing.JSeparator;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import alias.Alias;
+import module.decode.DecoderFactory;
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderPanel;
 import net.miginfocom.swing.MigLayout;
@@ -32,23 +37,25 @@ import settings.SettingsManager;
 
 public class Fleetsync2DecoderPanel extends DecoderPanel
 {
-    private static final long serialVersionUID = 1L;
+	private final static Logger mLog = LoggerFactory.getLogger( Fleetsync2DecoderPanel.class );
+
+	private static final long serialVersionUID = 1L;
     private static final String PROTOCOL = "FSync II";
 
-    private JLabel mFromLabel = new JLabel( " " );
-    private JLabel mFrom = new JLabel();
-    private JLabel mFromAlias = new JLabel();
-    
-    private JLabel mToLabel = new JLabel();
+    private JLabel mToLabel = new JLabel( " " );
     private JLabel mTo = new JLabel( " " );
-    private JLabel mToAlias = new JLabel();
+    private JLabel mToAlias = new JLabel( " " );
 
+    private JLabel mFromLabel = new JLabel( " " );
+    private JLabel mFrom = new JLabel( " " );
+    private JLabel mFromAlias = new JLabel( " " );
+    
     private JLabel mProtocol = new JLabel( PROTOCOL );
-    private JLabel mMessage = new JLabel();
-	private JLabel mMessageType = new JLabel();
+    private JLabel mMessage = new JLabel( " " );
+	private JLabel mMessageType = new JLabel( " " );
 	
 	public Fleetsync2DecoderPanel( SettingsManager settingsManager, 
-							Fleetsync2Decoder decoder )
+								   Fleetsync2Decoder decoder )
 	{
 		super( settingsManager, decoder );
 		
@@ -73,25 +80,40 @@ public class Fleetsync2DecoderPanel extends DecoderPanel
 		
 		setLayout( new MigLayout( "insets 1 0 0 0", "[grow,fill]", "[]0[]0[]") );
 
-		mFromLabel.setFont( mFontAuxDecoder );
-		add( mFromLabel );
-		mFrom.setFont( mFontAuxDecoder );
-		add( mFrom );
-		mFromAlias.setFont( mFontAuxDecoder );
-		add( mFromAlias, "wrap" );
-
 		mToLabel.setFont( mFontAuxDecoder );
+		mToLabel.setForeground( mColorLabelAuxDecoder );
 		add( mToLabel );
+		
 		mTo.setFont( mFontAuxDecoder );
+		mTo.setForeground( mColorLabelAuxDecoder );
 		add( mTo );
+		
 		mToAlias.setFont( mFontAuxDecoder );
+		mToAlias.setForeground( mColorLabelAuxDecoder );
 		add( mToAlias, "wrap" );
 
+		mFromLabel.setFont( mFontAuxDecoder );
+		mFromLabel.setForeground( mColorLabelAuxDecoder );
+		add( mFromLabel );
+
+		mFrom.setFont( mFontAuxDecoder );
+		mFrom.setForeground( mColorLabelAuxDecoder );
+		add( mFrom );
+		
+		mFromAlias.setFont( mFontAuxDecoder );
+		mFromAlias.setForeground( mColorLabelAuxDecoder );
+		add( mFromAlias, "wrap" );
+
 		mProtocol.setFont( mFontAuxDecoder );
+		mProtocol.setForeground( mColorLabelAuxDecoder );
 		add( mProtocol );
+
 		mMessageType.setFont( mFontAuxDecoder );
+		mMessageType.setForeground( mColorLabelAuxDecoder );
 		add( mMessageType );
+
 		mMessage.setFont( mFontAuxDecoder );
+		mMessage.setForeground( mColorLabelAuxDecoder );
 		add( mMessage, "wrap" );
 	}
 
@@ -110,21 +132,23 @@ public class Fleetsync2DecoderPanel extends DecoderPanel
 						
 						if( from != null )
 						{
-							mFromLabel.setText( "FM:" );
+							mFromLabel.setText( "FROM:" );
+							mFrom.setText( from );
 						}
 						else
 						{
 							mFromLabel.setText( " " );
+							mFrom.setText( " " );
 						}
-						mFrom.setText( from );
 						break;
 					case FROM_TALKGROUP_ALIAS:
-						Alias fromAlias = getState().getFromIDAlias();
-						
-						if( fromAlias != null )
-						{
-							mFromAlias.setText( fromAlias.getName() );
-						}
+						setAliasLabel( mFromAlias, getState().getFromIDAlias() );
+						break;
+					case MESSAGE:
+						mMessage.setText( getState().getMessage() );
+						break;
+					case MESSAGE_TYPE:
+						mMessageType.setText( getState().getMessageType() );
 						break;
 					case TO_TALKGROUP:
 						String to = getState().getToID();
@@ -132,26 +156,16 @@ public class Fleetsync2DecoderPanel extends DecoderPanel
 						if( to != null )
 						{
 							mToLabel.setText( "TO:" );
+							mTo.setText( to );
 						}
 						else
 						{
 							mToLabel.setText( " " );
+							mTo.setText( " " );
 						}
-						mTo.setText( to );
 						break;
 					case TO_TALKGROUP_ALIAS:
-						Alias toAlias = getState().getToIDAlias();
-				
-						if( toAlias != null )
-						{
-							mToAlias.setText( toAlias.getName() );
-						}
-						break;
-					case MESSAGE:
-						mMessage.setText( getState().getMessage() );
-						break;
-					case MESSAGE_TYPE:
-						mMessageType.setText( getState().getMessageType() );
+						setAliasLabel( mToAlias, getState().getToIDAlias() );
 						break;
 					default:
 						break;

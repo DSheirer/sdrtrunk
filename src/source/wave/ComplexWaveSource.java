@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014,2015 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -18,11 +18,7 @@
 package source.wave;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.ShortBuffer;
 import java.util.Arrays;
 
 import javax.sound.sampled.AudioFormat;
@@ -33,59 +29,49 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sample.Broadcaster;
+import sample.ConversionUtils;
 import sample.Listener;
-import sample.SampleType;
-import sample.complex.Complex;
+import sample.complex.ComplexBuffer;
+import source.ComplexSource;
+import source.IControllableFileSource;
+import source.IFrameLocationListener;
 
-public class ComplexWaveSource extends WaveSource
+public class ComplexWaveSource extends ComplexSource implements IControllableFileSource
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( ComplexWaveSource.class );
 
-	private boolean mRunning = false;
-    private boolean mLoop = false;
-
-    private AudioInputStream mInputStream = null;
-    private int mBytesPerFrame = 0;
+	private IFrameLocationListener mFrameLocationListener;
+	private int mBytesPerFrame;
+	private int mFrameCounter = 0;
     private long mFrequency = 0;
+    private Listener<ComplexBuffer> mListener;
+    private AudioInputStream mInputStream;
+    private File mFile;
     
-    private byte[] mBuffer;
-    private int mBufferPointer = 0;
-    private int mBufferLength;
-    private ShortBuffer mBufferWrapper;
-    
-    private static int BUFFER_SAMPLE_SIZE = 2000;
-
-    private Broadcaster<Complex> mBroadcaster = new Broadcaster<Complex>();
-
-    /**
-     * Single channel (mono) wave file playback source with optional looping
-     * for continous playback.  
-     * 
-     * Playback can be invoked manually with the next() and next(x) methods to 
-     * get sample(s).
-     * 
-     * Plaback can be run automatically by invoking the start() and stop()
-     * methods.
-     * 
-     * Registered float sample listener(s) will receive any samples produced
-     * by the manual or automatic methods.
-     * 
-     * @param loop - true for looping
-     * 
-     * @throws FileNotFoundException if filename is not found
-     */
-    public ComplexWaveSource( File file, boolean loop ) throws IOException 
+    public ComplexWaveSource( File file ) throws IOException 
     {
-    	super( file, SampleType.COMPLEX );
-        mLoop = loop;
+    	super( file.getAbsolutePath() );
+    	
+    	mFile = file;
     }
+    
+	@Override
+	public long getFrameCount() throws IOException
+	{
+		// TODO Auto-generated method stub
+		return 0;
+	}
 
 	@Override
     public int getSampleRate()
     {
-	    return (int)mInputStream.getFormat().getSampleRate();
+		if( mInputStream != null )
+		{
+			return (int)mInputStream.getFormat().getSampleRate();
+		}
+		
+		return 0;
     }
 
 	/**
@@ -106,35 +92,41 @@ public class ComplexWaveSource extends WaveSource
     }
     
     /**
-     * Closes the audio input stream
-     * @throws IOException
+     * Closes the source file
      */
     public void close() throws IOException
     {
-        if( mInputStream != null )
-        {
-            mInputStream.close();
-        }
-        
-        mInputStream = null;
+    	if( mInputStream != null )
+    	{
+        	mInputStream.close();
+    	}
+    	else
+    	{
+    		throw new IOException( "Can't close wave source - was not opened" );
+    	}
+    	
+    	mInputStream = null;
     }
 
-    public void open() throws IOException
+    /**
+     * Opens the source file for reading
+     */
+    public void open() throws IOException, UnsupportedAudioFileException
     {
-        try
-        {
-            mInputStream = AudioSystem.getAudioInputStream( getFile() );
-        }
-        catch( UnsupportedAudioFileException e )
-        {
-        	throw new IOException( "MonoWaveSource - unsupported audio file "
-        			+ "exception - ", e );
-        }
+    	if( mInputStream == null )
+    	{
+        	mInputStream = AudioSystem.getAudioInputStream( mFile );
+    	}
+    	else
+    	{
+    		throw new IOException( "Can't open wave source - is already opened" );
+    	}
 
-        mBytesPerFrame = mInputStream.getFormat().getFrameSize();
 
         AudioFormat format = mInputStream.getFormat();
         
+        mBytesPerFrame = format.getFrameSize();
+
         if( format.getChannels() != 2 || format.getSampleSizeInBits() != 16 )
         {
         	throw new IOException( "Unsupported Wave Format - EXPECTED: 2 " +
@@ -143,163 +135,99 @@ public class ComplexWaveSource extends WaveSource
         		mInputStream.getFormat().getSampleSizeInBits() + "-bit samples" );
         }
 
-        mBuffer = new byte[ mBytesPerFrame * BUFFER_SAMPLE_SIZE ];
-        
-        readBuffer();
+        /* Broadcast that we're at frame location 0 */
+        broadcast( 0 );
     }
 
+    /**
+     * Reads the number of frames and sends a buffer to the listener
+     */
+	@Override
+	public void next( int frames ) throws IOException
+	{
+		next( frames, true );
+	}
 
-    /**
-     * Reads a sample from the wave file and broadcasts the sample to all
-     * registered float listeners.
-     * 
-     * @return - true if data was read or false if no more data.  If loop is
-     * set to true, then this method will continue to produce samples as long
-     * as there are not IO exceptions.
-     * 
-     * @throws IOException if unable to read data from the wave file
-     */
-    /**
-     * Reads the next buffer from the wave file.
-     * @throws IOException
-     */
-    public void readBuffer() throws IOException
+	/**
+	 * Reads the number of frames and optionally sends the buffer to the listener
+	 */
+    public void next( int frames, boolean broadcast ) throws IOException
     {
         if( mInputStream != null )
         {
-        	/* reset the buffer pointer and fill the buffer with zeros */
-        	mBufferPointer = 0;
-        	mBufferLength = 0;
-        	Arrays.fill( mBuffer, (byte)0 );
-
-        	while( mBufferLength == 0 )
-        	{
-        		boolean reset = false;
-        		
-            	/* Fill the buffer with samples from the file */
-            	mBufferLength = (int)( mInputStream.read( mBuffer ) / 
-            						   mBytesPerFrame );
-            	
-            	if( reset && mBufferLength == 0 )
-            	{
-            		return;
-            	}
-
-            	/* If we get a partial buffer, reset the file for the next read */
-            	if( mBufferLength < mBuffer.length && mLoop )
-            	{
-            		close();
-            		open();
-            		
-            		reset = true;
-            	}
-        	}
+        	byte[] buffer = new byte[ mBytesPerFrame * frames ];
         	
-        	if( mBufferLength > 0 )
+        	/* Fill the buffer with samples from the file */
+        	int samplesRead = mInputStream.read( buffer );
+
+        	mFrameCounter += samplesRead;
+        	
+        	broadcast( mFrameCounter );
+        	
+        	if( broadcast && mListener != null )
         	{
-            	mBufferWrapper = ByteBuffer.wrap( mBuffer ).order(
-            					ByteOrder.LITTLE_ENDIAN ).asShortBuffer();
-        	}
-        	else
-        	{
-        		mBufferWrapper = null;
+            	if( samplesRead < buffer.length )
+            	{
+            		buffer = Arrays.copyOf( buffer, samplesRead );
+            	}
+
+            	float[] samples = ConversionUtils
+            			.convertFromSigned16BitSamples( buffer );
+            	
+            	mListener.receive( new ComplexBuffer( samples ) );
         	}
         }
     }
     
-    private boolean next( boolean broadcast ) throws IOException
-    {
-    	boolean success = false;
-    	
-    	if( mBufferPointer >= mBufferLength )
-    	{
-    		readBuffer();
-    	}
-    	
-    	if( mBufferLength != 0 && 
-    		mBufferWrapper != null &&
-    		mBufferWrapper.hasRemaining() )
-    	{
-    		short i = mBufferWrapper.get();
-    		short q = mBufferWrapper.get();
-
-    		mBufferPointer++;
-    		incrementCurrentLocation( 1, false );
-
-    		if( broadcast )
-    		{
-        		send( new Complex( (float)i / 32767.0f, (float)q / 32767.0f ) );
-    		}
-    		
-    		success = true;
-    	}
-    	
-    	return success;
-    }
-    
-    public boolean next() throws IOException
-    {
-    	return next( true );
-    }
-    
     /**
-     * Reads the next (count) samples from the wave file and broadcasts them
-     * to the registered listeners.
-     * @param count - number of samples to broadcast
-     * @return - true if successful
-     * @throws IOException for any IO issues
+     * Registers the listener to receive sample buffers as they are read from 
+     * the wave file
      */
-    public boolean next( int count ) throws IOException
-    {
-    	for( int x = 0; x < count; x++ )
-    	{
-    		next();
-    	}
-    	
-    	return true;
-    }
-
 	@Override
-    public void jumpTo( long index ) throws IOException
-    {
-		if( index < mCurrentPosition )
-		{
-			close();
-			open();
-		}
-		
-		while( mCurrentPosition < index )
-		{
-			next( false );
-		}
-		
-		incrementCurrentLocation( 0, true );
-    }
+	public void setListener( Listener<ComplexBuffer> listener )
+	{
+        mListener = listener;
+	}
 
 	/**
-     * Broadcasts a sample to the registered listeners
-     */
-    private void send( Complex sample )
+	 * Unregisters the listener from receiving sample buffers
+	 */
+    public void removeListener( Listener<ComplexBuffer> listener )
     {
-    	mBroadcaster.broadcast( sample );
-    }
-
-    /**
-     * Adds a new listener to receive samples as they are read from the wave file
-     */
-    public void addListener( Listener<Complex> listener )
-    {
-        mBroadcaster.addListener( listener );
-    }
-
-    public void removeListener( Listener<Complex> listener )
-    {
-    	mBroadcaster.removeListener( listener );
+    	mListener = null;
     }
 
 	@Override
     public void dispose()
     {
-		/* Method not implemented */
+		mListener = null;
     }
+
+	@Override
+	public File getFile()
+	{
+		return mFile;
+	}
+
+	private void broadcast( int byteLocation )
+	{
+		int frameLocation = (int)( byteLocation / mBytesPerFrame );
+		
+		if( mFrameLocationListener != null )
+		{
+			mFrameLocationListener.frameLocationUpdated( frameLocation );
+		}
+	}
+	
+	@Override
+	public void setListener( IFrameLocationListener listener )
+	{
+		mFrameLocationListener = listener;
+	}
+
+	@Override
+	public void removeListener( IFrameLocationListener listener )
+	{
+		mFrameLocationListener = null;
+	}
 }

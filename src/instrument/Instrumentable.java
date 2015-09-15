@@ -18,6 +18,7 @@
 package instrument;
 
 import instrument.tap.Tap;
+import instrument.tap.TapGroup;
 
 import java.util.List;
 
@@ -28,11 +29,11 @@ import java.util.List;
 public interface Instrumentable
 {
 	/**
-	 * Returns the list of available tap points.  Use the addTap() and
+	 * Returns the list of available tap point groups.  Use the addTap() and
 	 * removeTap() to register a tap on the instrumentable class and then add
 	 * your TapListener(s) to the registered tap.
 	 */
-	public List<Tap> getTaps();
+	public List<TapGroup> getTapGroups();
 
 	/**
 	 * Registers a tap on the instrumentable object.
@@ -40,7 +41,7 @@ public interface Instrumentable
 	 * @param tap - one of the tap(s) obtained from getTaps() from the 
 	 * instrumentable source
 	 */
-	public void addTap( Tap tap );
+	public void registerTap( Tap tap );
 
 	/**
 	 * Unregisters a tap on the instrumentable object, if the tap is currently
@@ -49,5 +50,5 @@ public interface Instrumentable
 	 * @param tap - one of the tap(s) obtained from getTaps() from the 
 	 * instrumentable source
 	 */
-	public void removeTap( Tap tap );
+	public void unregisterTap( Tap tap );
 }

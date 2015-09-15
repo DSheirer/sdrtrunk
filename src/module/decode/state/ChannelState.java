@@ -224,13 +224,19 @@ public class ChannelState extends Module implements ICallEventProvider,
 		 * don't have signaling on the traffic channel that can be used to
 		 * update the fade timeout, so we set the timeout value larger to ensure
 		 * the channel doesn't fade before the end of the call. */ 
-		long timeout = System.currentTimeMillis() + 
+		long current = System.currentTimeMillis();
+		
+		long timeout = current + 
 				( mChannelType == ChannelType.STANDARD ? FADE_TIMEOUT_DELAY : 
 					mTrafficChannelTimeout );
-		
+
+		mLog.debug( "Updating Fade Timeout - previous [" + mFadeTimeout + "] new [" + timeout + "] current [" + current + "] delay [" + ( mChannelType == ChannelType.STANDARD ? FADE_TIMEOUT_DELAY : 
+			mTrafficChannelTimeout ) + "]" );
+
 		if( timeout > mFadeTimeout )
 		{
 			mFadeTimeout = timeout;
+			mLog.debug( "Timeout updated to: " + mFadeTimeout );
 		}
 	}
 
@@ -301,6 +307,7 @@ public class ChannelState extends Module implements ICallEventProvider,
 				case CONTROL:
 				case DATA:
 				case ENCRYPTED:
+					mLog.debug( "Squelching for [" + state + "]" );
 					broadcast( SquelchState.SQUELCH );
 					updateFadeTimeout();
 					startMonitor();
@@ -311,16 +318,19 @@ public class ChannelState extends Module implements ICallEventProvider,
 					startMonitor();
 					break;
 				case FADE:
+					mLog.debug( "Squelching for [" + state + "]" );
 					broadcast( SquelchState.SQUELCH );
 					updateResetTimeout();
 					startMonitor();
 					break;
 				case END:
+					mLog.debug( "Squelching for [" + state + "]" );
 					broadcast( SquelchState.SQUELCH );
 					broadcast( new DecoderStateEvent( this, Event.RESET, State.IDLE ) );
 					broadcast( new MetadataReset() );
 					break;
 				case IDLE:
+					mLog.debug( "Squelching for [" + state + "]" );
 					broadcast( SquelchState.SQUELCH );
 					stopMonitor();
 					
@@ -371,6 +381,7 @@ public class ChannelState extends Module implements ICallEventProvider,
 			{
 				if( mFadeTimeout <= System.currentTimeMillis() )
 				{
+					mLog.debug( "Fading for timeout [" + mFadeTimeout + "] current [" + System.currentTimeMillis() + "]" );
 					setState( State.FADE );
 				}
 			}

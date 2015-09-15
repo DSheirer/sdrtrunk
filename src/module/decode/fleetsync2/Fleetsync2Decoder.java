@@ -19,6 +19,7 @@ package module.decode.fleetsync2;
 
 import instrument.Instrumentable;
 import instrument.tap.Tap;
+import instrument.tap.TapGroup;
 import instrument.tap.stream.BinaryTap;
 import instrument.tap.stream.FloatBufferTap;
 
@@ -56,7 +57,7 @@ public class Fleetsync2Decoder extends Decoder implements IRealBufferListener,
     private static final int sMESSAGE_LENGTH = 537;
     
     /* Instrumentation Taps */
-    private ArrayList<Tap> mAvailableTaps;
+    private ArrayList<TapGroup> mAvailableTaps;
 	private static final String INSTRUMENT_BANDPASS_FILTER_TO_FSK2_DEMOD = 
 			"Tap Point: Bandpass Filter > < FSK2 Decoder";
 	private static final String INSTRUMENT_FSK2_DECODER_TO_MESSAGE_FRAMER = 
@@ -113,26 +114,31 @@ public class Fleetsync2Decoder extends Decoder implements IRealBufferListener,
 	}
 
 	@Override
-    public List<Tap> getTaps()
+    public List<TapGroup> getTapGroups()
     {
 		if( mAvailableTaps == null )
 		{
-			mAvailableTaps = new ArrayList<Tap>();
+			mAvailableTaps = new ArrayList<TapGroup>();
+
+			TapGroup group = new TapGroup( "Fleetsync 2 Decoder" );
 			
-			mAvailableTaps.add( new FloatBufferTap( 
+			group.add( new FloatBufferTap( 
 					INSTRUMENT_BANDPASS_FILTER_TO_FSK2_DEMOD, 0, 0.5f ) );
-			mAvailableTaps.addAll( mFSKDecoder.getTaps() );
-			mAvailableTaps.add( new BinaryTap( 
+			group.add( new BinaryTap( 
 					INSTRUMENT_FSK2_DECODER_TO_MESSAGE_FRAMER, 0, 0.025f ) );
+
+			mAvailableTaps.add( group );
+			
+			mAvailableTaps.addAll( mFSKDecoder.getTapGroups() );
 		}
 		
 	    return mAvailableTaps;
     }
 
 	@Override
-    public void addTap( Tap tap )
+    public void registerTap( Tap tap )
     {
-		mFSKDecoder.addTap( tap );
+		mFSKDecoder.registerTap( tap );
 
 		switch( tap.getName() )
 		{
@@ -150,9 +156,9 @@ public class Fleetsync2Decoder extends Decoder implements IRealBufferListener,
     }
 
 	@Override
-    public void removeTap( Tap tap )
+    public void unregisterTap( Tap tap )
     {
-		mFSKDecoder.removeTap( tap );
+		mFSKDecoder.unregisterTap( tap );
 
 		switch( tap.getName() )
 		{

@@ -18,13 +18,12 @@
 package record.wave;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.sound.sampled.AudioFormat;
 
@@ -33,6 +32,7 @@ import module.Module;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import sample.ConversionUtils;
 import sample.Listener;
 import sample.real.IRealBufferListener;
 import sample.real.RealBuffer;
@@ -61,6 +61,8 @@ public class RealBufferWaveRecorder extends Module
 			new LinkedBlockingQueue<>( 500 );
 	private long mLastBufferReceived;
 	
+	private AtomicBoolean mRunning = new AtomicBoolean();
+	
 	public RealBufferWaveRecorder( ThreadPoolManager threadPoolManager, 
 			int sampleRate, String filePrefix )
 	{
@@ -83,25 +85,6 @@ public class RealBufferWaveRecorder extends Module
 		return mLastBufferReceived;
 	}
 
-	/**
-	 * Converts the float samples in a complex buffer to a little endian 16-bit
-	 * buffer
-	 */
-	public static ByteBuffer convert( RealBuffer buffer )
-	{
-		float[] samples = buffer.getSamples();
-		
-		ByteBuffer converted = ByteBuffer.allocate( samples.length * 2 );
-		converted.order( ByteOrder.LITTLE_ENDIAN );
-
-		for( float sample: samples )
-		{
-			converted.putShort( (short)( sample * Short.MAX_VALUE ) );
-		}
-		
-		return converted;
-	}
-
 	public Path getFile()
 	{
 		return mFile;
@@ -109,7 +92,7 @@ public class RealBufferWaveRecorder extends Module
 	
 	public void start()
 	{
-		if( !running() )
+		if( mRunning.compareAndSet( false, true ) )
 		{
 			if( mBufferProcessor == null )
 			{
@@ -140,14 +123,9 @@ public class RealBufferWaveRecorder extends Module
 		}
 	}
 	
-	public boolean running()
-	{
-		return mProcessorHandle != null;
-	}
-	
 	public void stop()
 	{
-		if( running() )
+		if( mRunning.compareAndSet( true, false ) )
 		{
 			mThreadPoolManager.cancel( mProcessorHandle );
 			
@@ -157,6 +135,8 @@ public class RealBufferWaveRecorder extends Module
 			{
 				try
 				{
+					/* Flush remaining buffers */
+					writeAudio();
 					mWriter.close();
 				}
 				catch( IOException io )
@@ -176,7 +156,7 @@ public class RealBufferWaveRecorder extends Module
 	@Override
     public void receive( RealBuffer buffer )
     {
-		if( running() )
+		if( mRunning.get() )
 		{
 			boolean success = mBuffers.offer( buffer );
 			
@@ -210,19 +190,24 @@ public class RealBufferWaveRecorder extends Module
 	{
 	}
 	
+	private void writeAudio() throws IOException
+	{
+		RealBuffer buffer = mBuffers.poll();
+		
+		while( buffer != null )
+		{
+			mWriter.write( ConversionUtils.convertToSigned16BitSamples( buffer ) );
+			buffer = mBuffers.poll();
+		}
+	}
+	
 	public class BufferProcessor implements Runnable
     {
     	public void run()
     	{
 			try
             {
-				RealBuffer buffer = mBuffers.poll();
-				
-				while( buffer != null )
-				{
-					mWriter.write( convert( buffer ) );
-					buffer = mBuffers.poll();
-				}
+				writeAudio();
             }
 			catch ( IOException ioe )
 			{

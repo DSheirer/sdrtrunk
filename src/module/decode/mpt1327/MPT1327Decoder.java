@@ -19,6 +19,7 @@ package module.decode.mpt1327;
 
 import instrument.Instrumentable;
 import instrument.tap.Tap;
+import instrument.tap.TapGroup;
 import instrument.tap.stream.BinaryTap;
 import instrument.tap.stream.FloatBufferTap;
 import instrument.tap.stream.FloatTap;
@@ -26,11 +27,12 @@ import instrument.tap.stream.FloatTap;
 import java.util.ArrayList;
 import java.util.List;
 
+import module.decode.Decoder;
+import module.decode.DecoderType;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import module.decode.Decoder;
-import module.decode.DecoderType;
 import sample.Broadcaster;
 import sample.Listener;
 import sample.real.IRealBufferListener;
@@ -38,7 +40,6 @@ import sample.real.RealBuffer;
 import alias.AliasList;
 import bits.MessageFramer;
 import bits.SyncPattern;
-import controller.channel.Channel;
 import controller.channel.Channel.ChannelType;
 import controller.channel.map.ChannelMap;
 import dsp.filter.FilterFactory;
@@ -77,7 +78,7 @@ public class MPT1327Decoder extends Decoder
 			"Tap Point: Low Pass Filter > < Decoder";
 	private static final String INSTRUMENT_DECODER_TO_FRAMER = 
 			"Tap Point: Decoder > < Sync Detect/Message Framer";
-    private List<Tap> mAvailableTaps;
+    private List<TapGroup> mAvailableTaps;
     
 	private HalfBandFilter_RB_RB mDecimationFilter;
 	private RealFIRFilter_RB_RB mLowPassFilter;
@@ -191,31 +192,35 @@ public class MPT1327Decoder extends Decoder
 
 	/* Instrumentation Taps */
 	@Override
-    public List<Tap> getTaps()
+    public List<TapGroup> getTapGroups()
     {
 		if( mAvailableTaps == null )
 		{
-			mAvailableTaps = new ArrayList<Tap>();
+			mAvailableTaps = new ArrayList<TapGroup>();
+
+			TapGroup group = new TapGroup( "MPT-1327 Decoder" );
 			
-			mAvailableTaps.add( 
+			group.add( 
 					new FloatTap( INSTRUMENT_HB1_FILTER_TO_LOW_PASS, 0, 0.5f ) );
-			mAvailableTaps.add( 
+			group.add( 
 					new FloatTap( INSTRUMENT_LOW_PASS_TO_DECODER, 0, 0.5f ) );
-			mAvailableTaps.add( 
+			group.add( 
 					new BinaryTap( INSTRUMENT_DECODER_TO_FRAMER, 0, 0.025f ) );
 
+			mAvailableTaps.add( group );
+
 			/* Add the taps from the FSK decoder */
-			mAvailableTaps.addAll( mFSKDecoder.getTaps() );
+			mAvailableTaps.addAll( mFSKDecoder.getTapGroups() );
 		}
 		
 	    return mAvailableTaps;
     }
 
 	@Override
-    public void addTap( Tap tap )
+    public void registerTap( Tap tap )
     {
 		/* Send request to decoder */
-		mFSKDecoder.addTap( tap );
+		mFSKDecoder.registerTap( tap );
 		
 		switch( tap.getName() )
 		{
@@ -238,9 +243,9 @@ public class MPT1327Decoder extends Decoder
     }
 
 	@Override
-    public void removeTap( Tap tap )
+    public void unregisterTap( Tap tap )
     {
-		mFSKDecoder.removeTap( tap );
+		mFSKDecoder.unregisterTap( tap );
 		
 		switch( tap.getName() )
 		{

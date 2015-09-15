@@ -109,7 +109,7 @@ public class ProcessingChain implements IChannelEventListener
 	private ScheduledFuture<?> mBufferProcessingTask;
 	private AtomicBoolean mRunning = new AtomicBoolean();
 	
-	private Source mSource;
+	protected Source mSource;
 	private List<Module> mModules = new ArrayList<>();
 	private IFrequencyCorrectionController mFrequencyCorrectionController;
 	

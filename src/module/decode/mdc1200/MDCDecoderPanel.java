@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
+ *     Copyright (C) 2014 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package module.decode.tait;
+package module.decode.mdc1200;
 
 import java.awt.EventQueue;
 
@@ -30,38 +30,33 @@ import settings.ColorSetting.ColorSettingName;
 import settings.Setting;
 import settings.SettingsManager;
 
-public class Tait1200Panel extends DecoderPanel
+public class MDCDecoderPanel extends DecoderPanel
 {
     private static final long serialVersionUID = 1L;
-    private static final String PROTOCOL = "TAIT-1200";
+    private static final String sPROTOCOL = "MDC-1200";
 
     private JLabel mFromLabel = new JLabel( " " );
     private JLabel mFrom = new JLabel();
     private JLabel mFromAlias = new JLabel();
     
-    private JLabel mToLabel = new JLabel();
-    private JLabel mTo = new JLabel( " " );
+    private JLabel mToLabel = new JLabel( " " );
+    private JLabel mTo = new JLabel();
     private JLabel mToAlias = new JLabel();
 
-    private JLabel mProtocol = new JLabel( PROTOCOL );
+    private JLabel mProtocol = new JLabel( sPROTOCOL );
     private JLabel mMessage = new JLabel();
 	private JLabel mMessageType = new JLabel();
 	
-	public Tait1200Panel( SettingsManager settingsManager, Tait1200Decoder decoder )
+	public MDCDecoderPanel( SettingsManager settingsManager, MDCDecoder decoder )
 	{
 		super( settingsManager, decoder );
 		
 		init();
 	}
 	
-	public void dispose()
+	public MDCDecoderState getState()
 	{
-		super.dispose();
-	}
-	
-	public Tait1200DecoderState getState()
-	{
-		return (Tait1200DecoderState)getDecoder().getDecoderState();
+		return (MDCDecoderState)getDecoder().getDecoderState();
 	}
 	
 	protected void init()
@@ -96,7 +91,7 @@ public class Tait1200Panel extends DecoderPanel
 				switch( changedAttribute )
 				{
 					case FROM_TALKGROUP:
-						String from = getState().getFromID();
+						String from = getState().getFrom();
 						
 						if( from != null )
 						{
@@ -109,15 +104,19 @@ public class Tait1200Panel extends DecoderPanel
 						mFrom.setText( from );
 						break;
 					case FROM_TALKGROUP_ALIAS:
-						Alias fromAlias = getState().getFromIDAlias();
+						Alias fromAlias = getState().getFromAlias();
 						
 						if( fromAlias != null )
 						{
 							mFromAlias.setText( fromAlias.getName() );
 						}
+						else
+						{
+							mFromAlias.setText( null );
+						}
 						break;
 					case TO_TALKGROUP:
-						String to = getState().getToID();
+						String to = getState().getTo();
 						
 						if( to != null )
 						{
@@ -130,11 +129,15 @@ public class Tait1200Panel extends DecoderPanel
 						mTo.setText( to );
 						break;
 					case TO_TALKGROUP_ALIAS:
-						Alias toAlias = getState().getToIDAlias();
-				
+						Alias toAlias = getState().getToAlias();
+						
 						if( toAlias != null )
 						{
 							mToAlias.setText( toAlias.getName() );
+						}
+						else
+						{
+							mToAlias.setText( null );
 						}
 						break;
 					case MESSAGE:
@@ -151,7 +154,7 @@ public class Tait1200Panel extends DecoderPanel
             }
 		} );
     }
-	
+
 	@Override
     public void settingChanged( Setting setting )
     {

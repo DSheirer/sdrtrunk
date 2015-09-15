@@ -201,6 +201,8 @@ public class AudioModule extends Module implements IAudioPacketProvider,
 		@Override
 		public void receive( SquelchState state )
 		{
+			mLog.debug( "Squelch State:" + state );
+			
 			if( state == SquelchState.SQUELCH && mAudioPacketListener != null )
 			{
 				mAudioPacketListener.receive( new AudioPacket( AudioPacket.Type.END, 

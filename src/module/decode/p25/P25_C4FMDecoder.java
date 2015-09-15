@@ -18,6 +18,7 @@
 package module.decode.p25;
 
 import instrument.tap.Tap;
+import instrument.tap.TapGroup;
 import instrument.tap.stream.DibitTap;
 import instrument.tap.stream.FloatBufferTap;
 import instrument.tap.stream.FloatTap;
@@ -49,7 +50,7 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 
 	private final static int MAXIMUM_FREQUENCY_CORRECTION = 3000; //Hertz, +/-
 
-	private List<Tap> mAvailableTaps;
+	private List<TapGroup> mAvailableTaps;
 	private RealFIRFilter_RB_RB mC4FMPreFilter;
 	private FrequencyCorrectionControl mFrequencyCorrectionControl;
 	private C4FMSymbolFilter mSymbolFilter;
@@ -146,21 +147,25 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 	 * Instrumentation taps for monitoring internal processing
 	 */
 	@Override
-    public List<Tap> getTaps()
+    public List<TapGroup> getTapGroups()
     {
 		if( mAvailableTaps == null )
 		{
-			mAvailableTaps = new ArrayList<Tap>();
+			mAvailableTaps = new ArrayList<>();
 
-			mAvailableTaps.add( new FloatTap( INSTRUMENT_FILTER_OUTPUT, 0, 1.0f ) );
+			TapGroup group = new TapGroup( "P25 C4FM Decoder" );
+			
+			group.add( new FloatTap( INSTRUMENT_FILTER_OUTPUT, 0, 1.0f ) );
+			
+			group.add( new FloatTap( INSTRUMENT_C4FM_SYMBOL_FILTER_OUTPUT, 0, 0.1f ) );
+			group.add( new DibitTap( INSTRUMENT_C4FM_SLICER_OUTPUT, 0, 0.1f ) );
+
+			mAvailableTaps.add( group );
 			
 			if( mSymbolFilter != null )
 			{
-				mAvailableTaps.addAll( mSymbolFilter.getTaps() );
+				mAvailableTaps.addAll( mSymbolFilter.getTapGroups() );
 			}
-			
-			mAvailableTaps.add( new FloatTap( INSTRUMENT_C4FM_SYMBOL_FILTER_OUTPUT, 0, 0.1f ) );
-			mAvailableTaps.add( new DibitTap( INSTRUMENT_C4FM_SLICER_OUTPUT, 0, 0.1f ) );
 		}
 		
 		return mAvailableTaps;
@@ -170,11 +175,11 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 	 * Adds an instrumentation tap to monitor internal processing.  
 	 */
 	@Override
-    public void addTap( Tap tap )
+    public void registerTap( Tap tap )
     {
 		if( mSymbolFilter != null )
 		{
-			mSymbolFilter.addTap( tap );
+			mSymbolFilter.registerTap( tap );
 		}
 		
 		switch( tap.getName() )
@@ -207,11 +212,11 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 	 * Removes the instrumentation tap.
 	 */
 	@Override
-    public void removeTap( Tap tap )
+    public void unregisterTap( Tap tap )
     {
 		if( mSymbolFilter != null )
 		{
-			mSymbolFilter.removeTap( tap );
+			mSymbolFilter.unregisterTap( tap );
 		}
 		
 		switch( tap.getName() )

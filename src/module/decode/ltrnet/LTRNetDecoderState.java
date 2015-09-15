@@ -22,8 +22,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.TreeSet;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import message.Message;
 import module.decode.event.CallEvent.CallEventType;
+import module.decode.mpt1327.MPT1327DecoderState;
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderState;
 import module.decode.state.DecoderStateEvent;
@@ -34,6 +38,8 @@ import alias.AliasList;
 
 public class LTRNetDecoderState extends DecoderState
 {
+	private final static Logger mLog = LoggerFactory.getLogger( LTRNetDecoderState.class );
+
 	private DecimalFormat mDecimalFormatter = new DecimalFormat( "0.00000" );
 
 	private TreeSet<String> mTalkgroups = new TreeSet<String>();
@@ -530,6 +536,7 @@ public class LTRNetDecoderState extends DecoderState
 
 	private void processCallMessage( LTRNetMessage message )
 	{
+		mLog.debug( "Processing Call Message [" + message.getMessage() + "]" );
 		LTRCallEvent current = getCurrentLTRCallEvent();
 		
 		int group = message.getGroup();
@@ -589,11 +596,15 @@ public class LTRNetDecoderState extends DecoderState
 		
 			broadcast( mCurrentCallEvent );
 			
+			mLog.debug( "Decoder State: Call Start" );
+			
 			broadcast( new DecoderStateEvent( this, Event.START, 
 					( type == CallEventType.CALL ) ? State.CALL : State.DATA ) );
 		}
 		else
 		{
+			mLog.debug( "Decoder State: Call Continuation Group:" + group );
+			
 			broadcast( new DecoderStateEvent( this, Event.CONTINUATION, 
 				( group == 253 || group == 254 ) ? State.DATA : State.CALL ) );
 		}
@@ -611,6 +622,7 @@ public class LTRNetDecoderState extends DecoderState
 
 		mCurrentCallEvent = null;
 		
+		mLog.debug( "Decoder State: Call End" );
 		broadcast( new DecoderStateEvent( this, Event.END, State.FADE ) );
 	}
 

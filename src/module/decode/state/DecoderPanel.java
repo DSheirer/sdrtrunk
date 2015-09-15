@@ -20,8 +20,10 @@ package module.decode.state;
 import java.awt.Color;
 import java.awt.Font;
 
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 
+import alias.Alias;
 import module.decode.Decoder;
 import sample.Listener;
 import settings.ColorSetting;
@@ -37,7 +39,7 @@ public abstract class DecoderPanel extends JPanel
 
     protected Font mFontDetails = new Font( Font.MONOSPACED, Font.PLAIN, 12 );
     protected Font mFontDecoder = new Font( Font.MONOSPACED, Font.PLAIN, 12 );
-    protected Font mFontAuxDecoder = new Font( Font.MONOSPACED, Font.PLAIN, 12 );
+    protected Font mFontAuxDecoder = new Font( Font.MONOSPACED, Font.PLAIN, 10 );
     public static final int ICON_SIZE = 12;
     
     protected Color mColorLabelDetails;
@@ -118,4 +120,42 @@ public abstract class DecoderPanel extends JPanel
 
 	@Override
     public void settingDeleted( Setting setting ) {}
+	
+	protected void setAliasLabel( final JLabel label, final Alias alias )
+	{
+		setAliasLabel( label, alias, true );
+	}
+	
+	protected void setAliasLabel( final JLabel label, final Alias alias, boolean includeIcon )
+	{
+		if( alias != null )
+		{
+			label.setText( alias.getName() );
+
+			if( includeIcon )
+			{
+				String iconName = alias.getIconName();
+				
+				if( iconName != null )
+				{
+					label.setIcon( mSettingsManager
+						.getImageIcon( iconName, SettingsManager.DEFAULT_ICON_SIZE ) );
+				}
+				else
+				{
+					label.setIcon( null );
+				}
+			}
+			else
+			{
+				label.setIcon( null );
+			}
+		}
+		else
+		{
+			label.setText( "" );
+			label.setIcon( null );
+		}
+	}
+	
 }

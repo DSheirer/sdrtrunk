@@ -27,7 +27,6 @@ import net.miginfocom.swing.MigLayout;
 import settings.ColorSetting;
 import settings.Setting;
 import settings.SettingsManager;
-import alias.Alias;
 import controller.channel.Channel.ChannelType;
 
 public class MPT1327DecoderPanel extends DecoderPanel
@@ -116,43 +115,6 @@ public class MPT1327DecoderPanel extends DecoderPanel
 			add( mFromTalkgroupLabel );
 			add( mFromTalkgroup );
 			add( mFromTalkgroupAliasLabel, "wrap" );
-		}
-	}
-
-	private void setAliasLabel( final JLabel label, final Alias alias )
-	{
-		setAliasLabel( label, alias, true );
-	}
-	
-	private void setAliasLabel( final JLabel label, final Alias alias, boolean includeIcon )
-	{
-		if( alias != null )
-		{
-			label.setText( alias.getName() );
-
-			if( includeIcon )
-			{
-				String iconName = alias.getIconName();
-				
-				if( iconName != null )
-				{
-					label.setIcon( mSettingsManager
-						.getImageIcon( iconName, SettingsManager.DEFAULT_ICON_SIZE ) );
-				}
-				else
-				{
-					label.setIcon( null );
-				}
-			}
-			else
-			{
-				label.setIcon( null );
-			}
-		}
-		else
-		{
-			label.setText( "" );
-			label.setIcon( null );
 		}
 	}
 

@@ -18,8 +18,6 @@
 package record.wave;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -33,6 +31,7 @@ import module.Module;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import sample.ConversionUtils;
 import sample.Listener;
 import sample.complex.ComplexBuffer;
 import sample.complex.IComplexBufferListener;
@@ -71,25 +70,6 @@ public class ComplexBufferWaveRecorder extends Module
 										 false ); //Little Endian
 
 		mFilePrefix = filePrefix;
-	}
-
-	/**
-	 * Converts the float samples in a complex buffer to a little endian 16-bit
-	 * buffer
-	 */
-	public static ByteBuffer convert( ComplexBuffer buffer )
-	{
-		float[] samples = buffer.getSamples();
-		
-		ByteBuffer converted = ByteBuffer.allocate( samples.length * 2 );
-		converted.order( ByteOrder.LITTLE_ENDIAN );
-
-		for( float sample: samples )
-		{
-			converted.putShort( (short)( sample * Short.MAX_VALUE ) );
-		}
-		
-		return converted;
 	}
 
 	public Path getFile()
@@ -208,7 +188,7 @@ public class ComplexBufferWaveRecorder extends Module
 				
 				while( buffer != null )
 				{
-					mWriter.write( convert( buffer ) );
+					mWriter.write( ConversionUtils.convertToSigned16BitSamples( buffer ) );
 					buffer = mBuffers.poll();
 				}
             }

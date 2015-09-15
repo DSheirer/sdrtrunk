@@ -19,6 +19,7 @@ package dsp.fsk;
 
 import instrument.Instrumentable;
 import instrument.tap.Tap;
+import instrument.tap.TapGroup;
 import instrument.tap.stream.BinaryTap;
 import instrument.tap.stream.FloatTap;
 import instrument.tap.stream.SymbolEventTap;
@@ -50,7 +51,7 @@ public class LTRFSKDecoder implements Listener<RealBuffer>, Instrumentable
 	private LTRPulseShapingFilter mPulseShaper;
 	private Slicer mSlicer;
 	
-	private List<Tap> mAvailableTaps;
+	private List<TapGroup> mAvailableTaps;
 	private final String TAP_F1_F2 = "LTR FSK Demod Filter1 >< Filter2";
 	private final String TAP_F2_F3 = "LTR FSK Demod Filter2 >< Filter3";
 	private final String TAP_F3_F4 = "LTR FSK Demod Filter3 >< Filter4";
@@ -124,28 +125,33 @@ public class LTRFSKDecoder implements Listener<RealBuffer>, Instrumentable
     }
 
 	@Override
-    public List<Tap> getTaps()
+    public List<TapGroup> getTapGroups()
     {
 	    if( mAvailableTaps == null )
 	    {
-	    	mAvailableTaps = new ArrayList<Tap>();
-	    	mAvailableTaps.add( new FloatTap( TAP_F1_F2, 0, 1.0f ) );
-	    	mAvailableTaps.add( new FloatTap( TAP_F2_F3, 8, 0.5f ) );
-	    	mAvailableTaps.add( new FloatTap( TAP_F3_F4, 12, 0.25f ) );
-	    	mAvailableTaps.add( new FloatTap( TAP_F4_F5, 14, 0.125f ) );
-	    	mAvailableTaps.add( new FloatTap( TAP_F5_F6, 15, 0.0625f ) );
-	    	mAvailableTaps.add( new FloatTap( TAP_F6_DT, 31, 0.0625f ) );
-	    	mAvailableTaps.add( new FloatTap( TAP_DT_SF1, 31, 0.0625f ) );
-	    	mAvailableTaps.add( new BinaryTap( TAP_SF1_PS, 33, 0.0625f ) );
-	    	mAvailableTaps.add( new BinaryTap( TAP_PS_SLICER, 33, 0.0625f ) );
-	    	mAvailableTaps.add( new SymbolEventTap( TAP_SYMBOL_EVENT, 7, 0.0125f ) );
+	    	mAvailableTaps = new ArrayList<TapGroup>();
+	    	
+	    	TapGroup group = new TapGroup( "LTR FSK Decoder" );
+	    	
+	    	group.add( new FloatTap( TAP_F1_F2, 0, 1.0f ) );
+	    	group.add( new FloatTap( TAP_F2_F3, 8, 0.5f ) );
+	    	group.add( new FloatTap( TAP_F3_F4, 12, 0.25f ) );
+	    	group.add( new FloatTap( TAP_F4_F5, 14, 0.125f ) );
+	    	group.add( new FloatTap( TAP_F5_F6, 15, 0.0625f ) );
+	    	group.add( new FloatTap( TAP_F6_DT, 31, 0.0625f ) );
+	    	group.add( new FloatTap( TAP_DT_SF1, 31, 0.0625f ) );
+	    	group.add( new BinaryTap( TAP_SF1_PS, 33, 0.0625f ) );
+	    	group.add( new BinaryTap( TAP_PS_SLICER, 33, 0.0625f ) );
+	    	group.add( new SymbolEventTap( TAP_SYMBOL_EVENT, 7, 0.0125f ) );
+	    	
+	    	mAvailableTaps.add( group );
 	    }
 	    
 	    return mAvailableTaps;
     }
 
 	@Override
-    public void addTap( Tap tap )
+    public void registerTap( Tap tap )
     {
 		switch( tap.getName() )
 		{
@@ -192,7 +198,7 @@ public class LTRFSKDecoder implements Listener<RealBuffer>, Instrumentable
     }
 
 	@Override
-    public void removeTap( Tap tap )
+    public void unregisterTap( Tap tap )
     {
 		switch( tap.getName() )
 		{

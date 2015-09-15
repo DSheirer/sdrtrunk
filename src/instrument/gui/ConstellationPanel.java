@@ -30,10 +30,10 @@ import org.slf4j.LoggerFactory;
 
 import sample.Listener;
 import sample.complex.Complex;
-import source.wave.WaveSource.PositionListener;
+import source.IFrameLocationListener;
 
 public class ConstellationPanel extends JInternalFrame 
-					  implements PositionListener, Listener<Complex>
+					  implements IFrameLocationListener, Listener<Complex>
 {
     private static final long serialVersionUID = 1L;
 	private final static Logger mLog = 
@@ -63,10 +63,20 @@ public class ConstellationPanel extends JInternalFrame
 		add( mConstellation );
 	}
 	
+
 	@Override
-    public void positionUpdated( long position, boolean reset )
-    {
-    }
+	public void frameLocationUpdated( int location )
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void frameLocationReset()
+	{
+		// TODO Auto-generated method stub
+		
+	}
 
 	@Override
 	public void receive( Complex sample )

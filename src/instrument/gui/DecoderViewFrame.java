@@ -18,7 +18,9 @@
 package instrument.gui;
 
 import instrument.Instrumentable;
+import instrument.InstrumentableProcessingChain;
 import instrument.tap.Tap;
+import instrument.tap.TapGroup;
 import instrument.tap.TapViewPanel;
 import instrument.tap.stream.BinaryTap;
 import instrument.tap.stream.BinaryTapViewPanel;
@@ -53,49 +55,67 @@ import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 
 import message.Message;
-import module.decode.Decoder;
+import module.Module;
+import module.decode.DecoderFactory;
+import module.decode.config.AuxDecodeConfiguration;
+import module.decode.config.DecodeConfiguration;
 import net.miginfocom.swing.MigLayout;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import record.config.RecordConfiguration;
 import sample.Listener;
-import sample.SampleType;
-import source.wave.ComplexWaveSource;
-import source.wave.FloatWaveSource;
-import source.wave.WaveSource;
-import source.wave.WaveSource.PositionListener;
+import source.IControllableFileSource;
+import source.Source;
+import alias.AliasList;
+import controller.ResourceManager;
+import controller.channel.Channel.ChannelType;
+import controller.site.Site;
+import controller.system.System;
 
 public class DecoderViewFrame extends JInternalFrame 
-							  implements PositionListener, Listener<Message>
+							  implements Listener<Message>
 {
     private static final long serialVersionUID = 1L;
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( DecoderViewFrame.class );
 
-    private Decoder mDecoder;
-	private WaveSource mWaveSource;
+	private DecodeConfiguration mDecodeConfig;
+    private InstrumentableProcessingChain mProcessingChain;
+	private IControllableFileSource mSource;
 	
 	private HashMap<Tap,TapViewPanel> mPanelMap = 
 				new HashMap<Tap,TapViewPanel>();
 	
-	public DecoderViewFrame( Decoder decoder, WaveSource source )
+	public DecoderViewFrame( ResourceManager resourceManager,
+							 DecodeConfiguration decodeConfig,
+							 RecordConfiguration recordConfig,
+							 AuxDecodeConfiguration auxConfig,
+							 AliasList aliasList,
+							 IControllableFileSource source )
 	{
-		mDecoder = decoder;
-		mWaveSource = source;
+		mSource = source;
 
-		if( source.getSampleType() == SampleType.COMPLEX )
-		{
-			ComplexWaveSource cws = (ComplexWaveSource)mWaveSource;
-//			cws.addListener( mDecoder.getComplexReceiver() );
-		}
-		else if( source.getSampleType() == SampleType.REAL )
-		{
-			FloatWaveSource fws = (FloatWaveSource)mWaveSource;
-//			fws.setListener( mDecoder.getRealReceiver() );
-		}
+		mDecodeConfig = decodeConfig;
 		
-		mDecoder.addMessageListener( this );
+		mProcessingChain = new InstrumentableProcessingChain();
+		
+		List<Module> modules = DecoderFactory
+			.getModules( ChannelType.STANDARD, 
+					     resourceManager, 
+					     decodeConfig, 
+					     recordConfig, 
+					     auxConfig, 
+					     aliasList, 
+					     new System( "Instrumented" ), 
+					     new Site( "Instrumented" ) );
+
+		mProcessingChain.addModules( modules );
+
+		mProcessingChain.addMessageListener( this );
+		
+		mProcessingChain.setSource( (Source)mSource );
 		
 		initGui();
 	}
@@ -104,7 +124,7 @@ public class DecoderViewFrame extends JInternalFrame
 	{
         setLayout( new MigLayout( "insets 0 0 0 0 ", "[grow,fill]", "[grow,fill]" ) );
 
-		setTitle( "Decoder [" + mDecoder.getDecoderType().getDisplayString() + "]" );
+		setTitle( "Decoder [" + mDecodeConfig.getDecoderType().getDisplayString() + "]" );
 		setPreferredSize( new Dimension( 450, 250 ) );
 		setSize( 450, 250 );
 
@@ -121,23 +141,8 @@ public class DecoderViewFrame extends JInternalFrame
 				if( me.getButton() == MouseEvent.BUTTON3 )
 				{
 					JPopupMenu popup = new JPopupMenu();
-					
-					if( mDecoder instanceof Instrumentable )
-					{
-						JMenu tapMenu = new JMenu( "Taps" );
-						popup.add( tapMenu );
-						
-						Instrumentable i = (Instrumentable)mDecoder;
 
-						tapMenu.add( new AddAllTapsItem( i.getTaps() ) );
-						
-						tapMenu.add( new JSeparator() );
-						
-						for( Tap tap: i.getTaps() )
-						{
-							tapMenu.add( new TapSelectionItem( tap ) );
-						}
-					}
+					popup.add( getTapContextMenu() );
 
 					if( !mPanelMap.values().isEmpty() )
 					{
@@ -163,6 +168,41 @@ public class DecoderViewFrame extends JInternalFrame
             public void mouseReleased( MouseEvent arg0 ) {}
 			
 		} );
+	}
+	
+	private JMenu getTapContextMenu()
+	{
+		JMenu menu = new JMenu( "Modules" );
+
+		if( mProcessingChain != null )
+		{
+			for( Module module: mProcessingChain.getModules() )
+			{
+				if( module instanceof Instrumentable )
+				{
+					List<TapGroup> groups = ((Instrumentable)module).getTapGroups();
+					
+					for( TapGroup group: groups )
+					{
+						List<Tap> taps = group.getTaps();
+						
+						if( !taps.isEmpty() )
+						{
+							JMenu groupMenu = new JMenu( group.getName() );
+							
+							for( Tap tap: taps )
+							{
+								groupMenu.add( new TapSelectionItem( tap ) );
+							}
+							
+							menu.add( groupMenu );
+						}
+					}
+				}
+			}
+		}
+
+		return menu;
 	}
 	
 	public void add( Tap tap )
@@ -207,7 +247,13 @@ public class DecoderViewFrame extends JInternalFrame
 			
 			mPanelMap.put( tap, panel );
 
-			((Instrumentable)mDecoder).addTap( tap );
+			for( Module module: mProcessingChain.getModules() )
+			{
+				if( module instanceof Instrumentable )
+				{
+					((Instrumentable)module).registerTap( tap );
+				}
+			}
 		}
 		else
 		{
@@ -218,7 +264,13 @@ public class DecoderViewFrame extends JInternalFrame
 	
 	public void remove( Tap tap )
 	{
-		((Instrumentable)mDecoder).removeTap( tap );
+		for( Module module: mProcessingChain.getModules() )
+		{
+			if( module instanceof Instrumentable )
+			{
+				((Instrumentable)module).unregisterTap( tap );
+			}
+		}
 		
 		TapViewPanel panel = mPanelMap.get( tap );
 		
@@ -288,18 +340,6 @@ public class DecoderViewFrame extends JInternalFrame
 			} );
 		}
 	}
-
-	@Override
-    public void positionUpdated( long position, boolean reset )
-    {
-		if( reset )
-		{
-			for( TapViewPanel panel: mPanelMap.values() )
-			{
-				panel.reset();
-			}
-		}
-    }
 
 	@Override
     public void receive( Message message )

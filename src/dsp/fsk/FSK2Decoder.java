@@ -19,6 +19,7 @@ package dsp.fsk;
 
 import instrument.Instrumentable;
 import instrument.tap.Tap;
+import instrument.tap.TapGroup;
 import instrument.tap.stream.SymbolEventTap;
 
 import java.util.ArrayList;
@@ -58,7 +59,7 @@ public class FSK2Decoder implements Instrumentable, Listener<RealBuffer>
 	/* Instrumentation taps */
 	private static final String INSTRUMENT_DECISION = 
 						"Tap Point: FSK2 Symbol Decision";
-	private ArrayList<Tap> mAvailableTaps;
+	private List<TapGroup> mAvailableTaps;
 	private ArrayList<SymbolEventTap> mTaps = new ArrayList<SymbolEventTap>();
 	
 	private Listener<Boolean> mListener;
@@ -257,13 +258,16 @@ public class FSK2Decoder implements Instrumentable, Listener<RealBuffer>
 	 * Get instrumentation taps
 	 */
 	@Override
-    public List<Tap> getTaps()
+    public List<TapGroup> getTapGroups()
     {
 		if( mAvailableTaps == null )
 		{
-			mAvailableTaps = new ArrayList<Tap>();
-			mAvailableTaps.add( 
-					new SymbolEventTap( INSTRUMENT_DECISION, 0, .025f ) );
+			mAvailableTaps = new ArrayList<TapGroup>();
+			
+			TapGroup tapGroup = new TapGroup( "FSK2 Decoder" );
+			tapGroup.add( new SymbolEventTap( INSTRUMENT_DECISION, 0, .025f ) );
+			
+			mAvailableTaps.add( tapGroup );
 		}
 		
 		return mAvailableTaps;
@@ -273,7 +277,7 @@ public class FSK2Decoder implements Instrumentable, Listener<RealBuffer>
 	 * Add instrumentation tap
 	 */
 	@Override
-    public void addTap( Tap tap )
+    public void registerTap( Tap tap )
     {
 		if( tap instanceof SymbolEventTap && !mTaps.contains( tap ) )
 		{
@@ -285,7 +289,7 @@ public class FSK2Decoder implements Instrumentable, Listener<RealBuffer>
 	 * Remove instrumentation tap 
 	 */
 	@Override
-    public void removeTap( Tap tap )
+    public void unregisterTap( Tap tap )
     {
 		mTaps.remove( tap );
     }

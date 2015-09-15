@@ -32,6 +32,7 @@ package dsp.psk;
 
 import instrument.Instrumentable;
 import instrument.tap.Tap;
+import instrument.tap.TapGroup;
 import instrument.tap.stream.EyeDiagramData;
 import instrument.tap.stream.EyeDiagramDataTap;
 
@@ -51,17 +52,19 @@ import dsp.filter.interpolator.RealInterpolator;
 import dsp.symbol.Dibit;
 
 /**
- * Implements a LSM (CQPSK) demodulator using a Gardner Detector to determine 
+ * Implements a LSM (Pi/4) demodulator using a Gardner Detector to determine 
  * optimal sampling timing and a Costas Loop as a phase locked loop synchronized 
  * with the incoming signal carrier frequency.
  * 
  * Sample Rate: 48000
  * Symbol Rate: 4800
  */
-public class CQPSKDemodulator implements Instrumentable, ComplexSampleListener
+public class LSMDemodulator implements Instrumentable, ComplexSampleListener
 {
 	private final static Logger mLog = 
-			LoggerFactory.getLogger( CQPSKDemodulator.class );
+			LoggerFactory.getLogger( LSMDemodulator.class );
+
+	private List<TapGroup> mAvailableTaps;
 	
 	/* 45 degree rotation angle */
 	public static final float THETA = (float)( Math.PI / 4.0d ); 
@@ -80,7 +83,7 @@ public class CQPSKDemodulator implements Instrumentable, ComplexSampleListener
 	
 	private EyeDiagramDataTap mEyeDiagramDataTap;
 	
-	public CQPSKDemodulator()
+	public LSMDemodulator()
 	{
 	}
 	
@@ -556,17 +559,24 @@ public class CQPSKDemodulator implements Instrumentable, ComplexSampleListener
 	}
 
 	@Override
-	public List<Tap> getTaps()
+	public List<TapGroup> getTapGroups()
 	{
-		List<Tap> taps = new ArrayList<Tap>();
+		if( mAvailableTaps == null )
+		{
+			mAvailableTaps = new ArrayList<>();
+			
+			TapGroup group = new TapGroup( "LSM Demodulator" );
+			
+			group.add( new EyeDiagramDataTap( "Eye Diagram", 0, 4800 ) );
+
+			mAvailableTaps.add( group );
+		}
 		
-		taps.add( new EyeDiagramDataTap( "Eye Diagram", 0, 4800 ) );
-		
-		return taps;
+		return mAvailableTaps;
 	}
 
 	@Override
-	public void addTap( Tap tap )
+	public void registerTap( Tap tap )
 	{
 		if( tap instanceof EyeDiagramDataTap )
 		{
@@ -575,7 +585,7 @@ public class CQPSKDemodulator implements Instrumentable, ComplexSampleListener
 	}
 
 	@Override
-	public void removeTap( Tap tap )
+	public void unregisterTap( Tap tap )
 	{
 		if( tap instanceof EyeDiagramDataTap )
 		{

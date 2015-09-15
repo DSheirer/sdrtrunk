@@ -47,11 +47,11 @@ public class AudioChannelPanel extends JPanel
 	private IAudioController mController;
 	private String mChannel;
 
-	private JLabel mToLabel = new JLabel( "To:" );
+	private JLabel mToLabel = new JLabel( "TO:" );
 	private JLabel mTo = new JLabel( "" );
 	private JLabel mToAlias = new JLabel( "" );
 	
-	private JLabel mFromLabel = new JLabel( "From:" );
+	private JLabel mFromLabel = new JLabel( "FROM:" );
 	private JLabel mFrom = new JLabel( "" );
 	private JLabel mFromAlias = new JLabel( "" );
 	

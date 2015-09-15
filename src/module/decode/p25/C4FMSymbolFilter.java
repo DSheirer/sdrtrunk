@@ -2,6 +2,7 @@ package module.decode.p25;
 
 import instrument.Instrumentable;
 import instrument.tap.Tap;
+import instrument.tap.TapGroup;
 import instrument.tap.stream.AdditiveFloatTap;
 import instrument.tap.stream.FloatTap;
 
@@ -18,7 +19,6 @@ import sample.real.RealSampleProvider;
 import source.tuner.frequency.FrequencyCorrectionControl;
 import source.tuner.frequency.FrequencyCorrectionControl.FrequencyCorrectionResetListener;
 import dsp.gain.DirectGainControl;
-import dsp.gain.GainController;
 
 public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
 										 Listener<RealBuffer>, 
@@ -164,7 +164,7 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
     /* Instrumentation Taps */
 	private static final String INSTRUMENT_SYMBOL_SPREAD = "Tap Point: Symbol Spread (Goal=2.0)";
 	private FloatTap mSymbolSpreadTap;
-    private List<Tap> mAvailableTaps;
+    private List<TapGroup> mAvailableTaps;
 	
 	private static final int NUMBER_FILTER_TAPS = 8;
 	private static final int NUMBER_FILTER_STEPS = 128;
@@ -427,25 +427,29 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
     }
 	
 	@Override
-    public List<Tap> getTaps()
+    public List<TapGroup> getTapGroups()
     {
 		if( mAvailableTaps == null )
 		{
-			mAvailableTaps = new ArrayList<Tap>();
+			mAvailableTaps = new ArrayList<>();
 			
 			/*
 			 * Since the target is 2.0, we subtract 2.0 from the value so that
 			 * a good value is plotted right on the zero center line
 			 */
-			mAvailableTaps.add( 
+			TapGroup group = new TapGroup( "C4FM Symbol Filter" );
+			
+			group.add( 
 					new AdditiveFloatTap( INSTRUMENT_SYMBOL_SPREAD, 0, 0.1f, -2.0f ) );
+			
+			mAvailableTaps.add( group );
 		}
 		
 		return mAvailableTaps;
     }
 
 	@Override
-    public void addTap( Tap tap )
+    public void registerTap( Tap tap )
     {
 		if( tap.getName().contentEquals( INSTRUMENT_SYMBOL_SPREAD ) )
 		{
@@ -454,7 +458,7 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
     }
 
 	@Override
-    public void removeTap( Tap tap )
+    public void unregisterTap( Tap tap )
     {
 		if( tap.getName().contentEquals( INSTRUMENT_SYMBOL_SPREAD ) )
 		{

@@ -52,8 +52,6 @@ public class FleetsyncDecoderState extends DecoderState
 	public void dispose()
 	{
 		super.dispose();
-		
-		
 	}
 	
 	@Override
@@ -96,6 +94,8 @@ public class FleetsyncDecoderState extends DecoderState
 			
 			if( fleetsync.isValid() )
 			{
+				State state = State.CALL;
+				
 				setFromID( fleetsync.getFromID() );
 				setFromIDAlias( fleetsync.getFromIDAlias() );
 				mIdents.add( fleetsync.getFromID() );
@@ -115,6 +115,7 @@ public class FleetsyncDecoderState extends DecoderState
 				{
 					case GPS:
 						setMessage( fleetsync.getGPSLocation() );
+						state = State.DATA;
 						break;
 					case STATUS:
 						StringBuilder sb = new StringBuilder();
@@ -129,10 +130,12 @@ public class FleetsyncDecoderState extends DecoderState
 						}
 
 						setMessage( sb.toString() );
+						state = State.DATA;
 						break;
 					case EMERGENCY:
 					case LONE_WORKER_EMERGENCY:
 						mEmergencyIdents.add( fleetsync.getFromID() );
+						state = State.DATA;
 						break;
 					default:
 						break;
@@ -145,9 +148,9 @@ public class FleetsyncDecoderState extends DecoderState
 
 			    broadcast( fsCallEvent );
 
-			    /* Broadcast decode event.  If the primary state is not already
-			     * in a call state, then we'll use a default decoded data state */
-			    broadcast( new DecoderStateEvent( this, Event.DECODE, State.DATA ) );
+			    /* Broadcast decode event so that the channel state will 
+			     * kick in and reset everything */
+			    broadcast( new DecoderStateEvent( this, Event.DECODE, state ) );
 			}
 		}
     }

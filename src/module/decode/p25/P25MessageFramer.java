@@ -30,7 +30,7 @@ import bits.ISyncDetectListener;
 import bits.MultiSyncPatternMatcher;
 import bits.SoftSyncDetector;
 import bits.SyncDetector;
-import dsp.psk.CQPSKDemodulator;
+import dsp.psk.LSMDemodulator;
 import dsp.symbol.Dibit;
 import dsp.symbol.FrameSync;
 import edac.BCH_63_16_11;
@@ -122,7 +122,7 @@ public class P25MessageFramer implements Listener<Dibit>
 		mAssemblers.add( new P25MessageAssembler() );
 	}
 	
-	public P25MessageFramer( AliasList aliasList, CQPSKDemodulator demodulator )
+	public P25MessageFramer( AliasList aliasList, LSMDemodulator demodulator )
 	{
 		this( aliasList );
 
@@ -675,11 +675,11 @@ public class P25MessageFramer implements Listener<Dibit>
      */
     public class CostasPhaseErrorDetector extends SyncDetector
     {
-    	private CQPSKDemodulator mDemodulator;
+    	private LSMDemodulator mDemodulator;
     	private double mCorrection;
     	
     	public CostasPhaseErrorDetector( FrameSync frameSync, 
-    			CQPSKDemodulator demodulator, double correction )
+    			LSMDemodulator demodulator, double correction )
     	{
     		super( frameSync.getSync() );
 

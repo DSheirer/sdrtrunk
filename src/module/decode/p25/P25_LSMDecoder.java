@@ -18,6 +18,7 @@
 package module.decode.p25;
 
 import instrument.tap.Tap;
+import instrument.tap.TapGroup;
 import instrument.tap.stream.ComplexSampleTap;
 import instrument.tap.stream.ComplexTap;
 import instrument.tap.stream.DibitTap;
@@ -40,7 +41,7 @@ import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
 import dsp.filter.fir.complex.ComplexFIRFilter_CB_CB;
 import dsp.gain.ComplexFeedForwardGainControl;
-import dsp.psk.CQPSKDemodulator;
+import dsp.psk.LSMDemodulator;
 import dsp.psk.QPSKPolarSlicer;
 
 public class P25_LSMDecoder extends P25Decoder implements IComplexBufferListener
@@ -53,14 +54,14 @@ public class P25_LSMDecoder extends P25Decoder implements IComplexBufferListener
 	private static final String INSTRUMENT_QPSK_DEMODULATOR_OUTPUT = "Tap Point: CQPSK Demodulator Output";
 	private static final String INSTRUMENT_CQPSK_SLICER_OUTPUT = "Tap Point: CQPSK Slicer Output";
 
-	private List<Tap> mAvailableTaps;
-
+	private List<TapGroup> mAvailableTaps;
+	
 	private ComplexFIRFilter_CB_CB mBasebandFilter;
 	private ComplexBufferToStreamConverter mStreamConverter = 
 							new ComplexBufferToStreamConverter();
 	private ComplexFeedForwardGainControl mAGC = 
 							new ComplexFeedForwardGainControl( 32 );
-	private CQPSKDemodulator mCQPSKDemodulator = new CQPSKDemodulator();
+	private LSMDemodulator mCQPSKDemodulator = new LSMDemodulator();
 	private QPSKPolarSlicer mCQPSKSlicer = new QPSKPolarSlicer();
 	private P25MessageFramer mMessageFramer;
 	
@@ -137,20 +138,24 @@ public class P25_LSMDecoder extends P25Decoder implements IComplexBufferListener
 	 * Provides a list of instrumentation taps for monitoring internal processing
 	 */
 	@Override
-    public List<Tap> getTaps()
+    public List<TapGroup> getTapGroups()
     {
 		if( mAvailableTaps == null )
 		{
-			mAvailableTaps = new ArrayList<Tap>();
+			mAvailableTaps = new ArrayList<>();
 
-			mAvailableTaps.add( new ComplexTap( INSTRUMENT_BASEBAND_FILTER_OUTPUT, 0, 1.0f ) );
-			mAvailableTaps.add( new ComplexTap( INSTRUMENT_AGC_OUTPUT, 0, 1.0f ) );
-			mAvailableTaps.add( new QPSKTap( INSTRUMENT_QPSK_DEMODULATOR_OUTPUT, 0, 1.0f ) );
-			mAvailableTaps.add( new DibitTap( INSTRUMENT_CQPSK_SLICER_OUTPUT, 0, 0.1f ) );
+			TapGroup group = new TapGroup( "P25 LSM Decoder" );
+			
+			group.add( new ComplexTap( INSTRUMENT_BASEBAND_FILTER_OUTPUT, 0, 1.0f ) );
+			group.add( new ComplexTap( INSTRUMENT_AGC_OUTPUT, 0, 1.0f ) );
+			group.add( new QPSKTap( INSTRUMENT_QPSK_DEMODULATOR_OUTPUT, 0, 1.0f ) );
+			group.add( new DibitTap( INSTRUMENT_CQPSK_SLICER_OUTPUT, 0, 0.1f ) );
 
+			mAvailableTaps.add( group );
+			
 			if( mCQPSKDemodulator != null )
 			{
-				mAvailableTaps.addAll( mCQPSKDemodulator.getTaps() );
+				mAvailableTaps.addAll( mCQPSKDemodulator.getTapGroups() );
 			}
 		}
 		
@@ -161,11 +166,11 @@ public class P25_LSMDecoder extends P25Decoder implements IComplexBufferListener
 	 * Adds the instrumentation tap
 	 */
 	@Override
-    public void addTap( Tap tap )
+    public void registerTap( Tap tap )
     {
 		if( mCQPSKDemodulator != null )
 		{
-			mCQPSKDemodulator.addTap( tap );
+			mCQPSKDemodulator.registerTap( tap );
 		}
 		
 		switch( tap.getName() )
@@ -198,11 +203,11 @@ public class P25_LSMDecoder extends P25Decoder implements IComplexBufferListener
 	 * Removes the instrumentation tap
 	 */
 	@Override
-    public void removeTap( Tap tap )
+    public void unregisterTap( Tap tap )
     {
 		if( mCQPSKDemodulator != null )
 		{
-			mCQPSKDemodulator.removeTap( tap );
+			mCQPSKDemodulator.unregisterTap( tap );
 		}
 		
 		switch( tap.getName() )

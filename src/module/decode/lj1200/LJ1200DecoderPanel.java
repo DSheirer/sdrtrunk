@@ -28,7 +28,7 @@ import settings.ColorSetting.ColorSettingName;
 import settings.Setting;
 import settings.SettingsManager;
 
-public class LJ1200Panel extends DecoderPanel
+public class LJ1200DecoderPanel extends DecoderPanel
 {
     private static final long serialVersionUID = 1L;
     private static final String PROTOCOL = "LJ-1200";
@@ -37,7 +37,7 @@ public class LJ1200Panel extends DecoderPanel
     private JLabel mTo = new JLabel();
     private JLabel mToAlias = new JLabel();
 	
-	public LJ1200Panel( SettingsManager settingsManager, LJ1200Decoder decoder )
+	public LJ1200DecoderPanel( SettingsManager settingsManager, LJ1200Decoder decoder )
 	{
 		super( settingsManager, decoder );
 		

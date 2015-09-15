@@ -98,19 +98,7 @@ public class LTRNetDecoderPanel extends DecoderPanel
 			    		break;
 					case TO_TALKGROUP_ALIAS:
 						Alias tgAlias = state.getToTalkgroupAlias();
-						
-						if( tgAlias != null )
-						{
-							mTalkgroupAlias.setText( tgAlias.getName() );
-							String iconNameString = tgAlias.getIconName();
-				    		mTalkgroupAlias.setIcon( mSettingsManager
-				    				.getImageIcon( iconNameString, SettingsManager.DEFAULT_ICON_SIZE ) );
-						}
-						else
-						{
-							mTalkgroupAlias.setText( null );
-							mTalkgroupAlias.setIcon( null );
-						}
+						setAliasLabel( mTalkgroupAlias, tgAlias );
 						break;
 					case DESCRIPTION:
 						mDescription.setText( state.getDescription() );

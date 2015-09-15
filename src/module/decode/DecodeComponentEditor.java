@@ -26,11 +26,12 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.SwingUtilities;
 
-import net.miginfocom.swing.MigLayout;
 import module.decode.config.DecodeConfigFactory;
 import module.decode.config.DecodeConfiguration;
+import net.miginfocom.swing.MigLayout;
 import controller.Editor;
 import controller.channel.AbstractChannelEditor;
+import controller.channel.Channel;
 import controller.channel.ChannelNode;
 import controller.channel.ChannelValidationException;
 
@@ -41,6 +42,11 @@ public class DecodeComponentEditor extends AbstractChannelEditor
     private JComboBox<DecoderType> mComboDecoders;
 
     private DecodeEditor mEditor;
+    
+    public DecodeComponentEditor()
+    {
+    	this( new ChannelNode( new Channel() ) );
+    }
 
     public DecodeComponentEditor( ChannelNode channelNode )
 	{
@@ -95,7 +101,7 @@ public class DecodeComponentEditor extends AbstractChannelEditor
 					}
 					
 					//Change to the new one
-					mEditor = DecoderFactory.getPanel( config, mChannelNode );
+					mEditor = DecoderFactory.getEditorPanel( config, mChannelNode );
 					
 					add( mEditor, "span 2,center" );
 					
@@ -126,6 +132,11 @@ public class DecodeComponentEditor extends AbstractChannelEditor
                 mComboDecoders.requestFocusInWindow();
             }
         });
+    }
+    
+    public DecodeConfiguration getDecodeConfig()
+    {
+    	return mEditor.getConfig();
     }
 
     @Override
