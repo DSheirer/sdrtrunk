@@ -1,11 +1,11 @@
 package sample.decimator;
 
-import sample.complex.ComplexSampleListener;
+import sample.real.RealSampleListener;
 
 
-public class RealDecimator implements ComplexSampleListener
+public class RealDecimator implements RealSampleListener
 {
-	private ComplexSampleListener mListener;
+	private RealSampleListener mListener;
 	private int mCounter = 0;
 	private int mDecimationRate;
 
@@ -36,13 +36,13 @@ public class RealDecimator implements ComplexSampleListener
 	 * to the registered listener
 	 */
 	@Override
-    public void receive( float i, float q )
+    public void receive( float sample )
     {
 		mCounter++;
 		
 		if( mCounter >= mDecimationRate )
 		{
-			mListener.receive( i, q );
+			mListener.receive( sample );
 
 			mCounter = 0;
 		}
@@ -51,7 +51,7 @@ public class RealDecimator implements ComplexSampleListener
 	/**
 	 * Sets the decimated output listener
 	 */
-	public void setListener( ComplexSampleListener listener )
+	public void setListener( RealSampleListener listener )
 	{
 		mListener = listener;
 	}

@@ -17,29 +17,33 @@
  ******************************************************************************/
 package dsp.fsk;
 
-import instrument.Instrumentable;
-import instrument.tap.Tap;
-import instrument.tap.TapGroup;
-import instrument.tap.stream.BinaryTap;
-import instrument.tap.stream.FloatTap;
-import instrument.tap.stream.SymbolEventTap;
-
 import java.util.ArrayList;
 import java.util.List;
 
-import sample.Listener;
-import sample.real.RealBuffer;
 import dsp.filter.Filters;
 import dsp.filter.FloatHalfBandFilter;
 import dsp.filter.FloatHalfBandNoDecimateFilter;
 import dsp.filter.LTRPulseShapingFilter;
 import dsp.filter.SquaringFilter;
+import dsp.filter.Window.WindowType;
+import dsp.filter.cic.RealPrimeCICDecimate;
 import dsp.filter.dc.IIRSinglePoleDCRemovalFilter;
 import dsp.symbol.Slicer;
 import dsp.symbol.Slicer.Output;
+import instrument.Instrumentable;
+import instrument.tap.Tap;
+import instrument.tap.TapGroup;
+import instrument.tap.stream.BinaryTap;
+import instrument.tap.stream.FloatBufferTap;
+import instrument.tap.stream.FloatTap;
+import instrument.tap.stream.SymbolEventTap;
+import sample.Listener;
+import sample.real.RealBuffer;
 
 public class LTRFSKDecoder implements Listener<RealBuffer>, Instrumentable
 {
+	private RealPrimeCICDecimate mCICDecimator;
+	
 	private FloatHalfBandFilter mHBFilter1;
 	private FloatHalfBandFilter mHBFilter2;
 	private FloatHalfBandFilter mHBFilter3;
@@ -58,6 +62,7 @@ public class LTRFSKDecoder implements Listener<RealBuffer>, Instrumentable
 	private final String TAP_F4_F5 = "LTR FSK Demod Filter4 >< Filter5";
 	private final String TAP_F5_F6 = "LTR FSK Demod Filter5 >< Filter6";
 	private final String TAP_F6_DT = "LTR FSK Demod Filter6 >< DC Filter";
+	private final String TAP_CIC = "LTR FSK Demod CIC Decimator";
 	private final String TAP_DT_SF1 = "LTR FSK Demod DC Filter >< Squaring Filter";
 	private final String TAP_SF1_PS = "LTR FSK Demod Squaring Filter >< Pulse Shaper";
 	private final String TAP_PS_SLICER = "LTR FSK Demod Pulse Shaper >< Slicer";
@@ -69,6 +74,8 @@ public class LTRFSKDecoder implements Listener<RealBuffer>, Instrumentable
 	 */
 	public LTRFSKDecoder()
 	{
+		mCICDecimator = new RealPrimeCICDecimate( 32, 1, 375, 60, WindowType.HAMMING, 2 );
+		
 		mHBFilter1 = new FloatHalfBandFilter( 
 				Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.1002f );
 		
@@ -112,6 +119,8 @@ public class LTRFSKDecoder implements Listener<RealBuffer>, Instrumentable
 		{
 			mHBFilter1.receive( sample );
 		}
+		
+		mCICDecimator.receive(buffer);
     }
 
     public void addListener( Listener<Boolean> listener )
@@ -139,6 +148,7 @@ public class LTRFSKDecoder implements Listener<RealBuffer>, Instrumentable
 	    	group.add( new FloatTap( TAP_F4_F5, 14, 0.125f ) );
 	    	group.add( new FloatTap( TAP_F5_F6, 15, 0.0625f ) );
 	    	group.add( new FloatTap( TAP_F6_DT, 31, 0.0625f ) );
+	    	group.add( new FloatBufferTap( TAP_CIC, 31, 0.0625f ) );
 	    	group.add( new FloatTap( TAP_DT_SF1, 31, 0.0625f ) );
 	    	group.add( new BinaryTap( TAP_SF1_PS, 33, 0.0625f ) );
 	    	group.add( new BinaryTap( TAP_PS_SLICER, 33, 0.0625f ) );
@@ -155,6 +165,9 @@ public class LTRFSKDecoder implements Listener<RealBuffer>, Instrumentable
     {
 		switch( tap.getName() )
 		{
+			case TAP_CIC:
+				mCICDecimator.setListener( (FloatBufferTap)tap );
+				break;
 			case TAP_F1_F2:
 				mHBFilter1.setListener( (FloatTap)tap );
 				((FloatTap)tap).setListener( mHBFilter2 );
@@ -202,6 +215,9 @@ public class LTRFSKDecoder implements Listener<RealBuffer>, Instrumentable
     {
 		switch( tap.getName() )
 		{
+			case TAP_CIC:
+				mCICDecimator.removeListener();
+				break;
 			case TAP_F1_F2:
 				mHBFilter1.setListener( mHBFilter2 );
 				break;

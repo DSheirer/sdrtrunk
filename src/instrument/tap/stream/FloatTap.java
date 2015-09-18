@@ -23,7 +23,7 @@ import sample.real.RealSampleListener;
 
 public class FloatTap extends StreamTap implements RealSampleListener
 {
-	private RealSampleListener mListener;
+	private RealSampleListener mFloatTapListener;
 	
 	public FloatTap( String name, 
 						   int delay, 
@@ -35,9 +35,9 @@ public class FloatTap extends StreamTap implements RealSampleListener
 	@Override
     public void receive( float sample )
     {
-		if( mListener != null )
+		if( mFloatTapListener != null )
 		{
-			mListener.receive( sample );
+			mFloatTapListener.receive( sample );
 		}
 		
 		for( TapListener listener: mListeners )
@@ -48,11 +48,11 @@ public class FloatTap extends StreamTap implements RealSampleListener
 
 	public void setListener( RealSampleListener listener )
     {
-		mListener = listener;
+		mFloatTapListener = listener;
     }
 
     public void removeListener( RealSampleListener listener )
     {
-		mListener = null;
+		mFloatTapListener = null;
     }
 }

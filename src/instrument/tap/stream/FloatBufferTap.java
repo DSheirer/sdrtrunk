@@ -1,11 +1,17 @@
 package instrument.tap.stream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import sample.Listener;
 import sample.real.RealBuffer;
 
 public class FloatBufferTap extends FloatTap implements Listener<RealBuffer>
 {
-	private Listener<RealBuffer> mListener;
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( FloatBufferTap.class );
+
+	private Listener<RealBuffer> mRealBufferListener;
 	
 	public FloatBufferTap( String name, int delay, float sampleRateRatio )
 	{
@@ -15,24 +21,26 @@ public class FloatBufferTap extends FloatTap implements Listener<RealBuffer>
 	@Override
 	public void receive( RealBuffer buffer )
 	{
-		if( mListener != null )
+		mLog.debug("Got a buffer!");
+		if( mRealBufferListener != null )
 		{
-			mListener.receive( buffer );
+			mRealBufferListener.receive( buffer );
 		}
 
 		for( float sample: buffer.getSamples() )
 		{
-			receive( sample );
+			mLog.debug("Sending a sample to the tap");
+			super.receive( sample );
 		}
 	}
 	
 	public void setListener( Listener<RealBuffer> listener )
     {
-		mListener = listener;
+		mRealBufferListener = listener;
     }
 
     public void removeListener( Listener<RealBuffer> listener )
     {
-		mListener = null;
+		mRealBufferListener = null;
     }
 }
