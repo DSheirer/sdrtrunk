@@ -19,7 +19,7 @@ public class DecoderSelectionFrame extends JInternalFrame
 {
 	private static final long serialVersionUID = 1L;
 
-	private DecodeComponentEditor mDecodeEditor = new DecodeComponentEditor();
+	private DecodeComponentEditor mDecodeEditor = new DecodeComponentEditor( null );
 	private ResourceManager mResourceManager = new ResourceManager();
 	
 	private IControllableFileSource mSource;
@@ -36,16 +36,21 @@ public class DecoderSelectionFrame extends JInternalFrame
 	
 	private void initGUI()
 	{
+        setLayout( new MigLayout( "", "[grow,fill]", "[][][grow,fill]" ) );
+
 		setTitle( "Decoders" );
-		setPreferredSize( new Dimension( 700, 150 ) );
-		setSize( 700, 150 );
+		setPreferredSize( new Dimension( 700, 450 ) );
+		setSize( 700, 450 );
 
 		setResizable( true );
 		setClosable( true ); 
 		setIconifiable( true );
 		setMaximizable( false );
 
-		add( mDecodeEditor );
+		add( mDecodeEditor, "wrap" );
+		
+		add( new AddDecoderButton(), "span" );
+		
 	}
 	
 	public class AddDecoderButton extends JButton

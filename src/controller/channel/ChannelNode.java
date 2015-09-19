@@ -124,7 +124,9 @@ public class ChannelNode extends ConfigurableNode implements ChannelEventListene
     @Override
     public JPanel getEditor()
     {
-        return new ChannelEditor( this );
+        return new ChannelEditor( this, 
+    		getChannel().getResourceManager() == null ? null : 
+    			getChannel().getResourceManager().getPlaylistManager() );
     }
     
 	public Channel getChannel()

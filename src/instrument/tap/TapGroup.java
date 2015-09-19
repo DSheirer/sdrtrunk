@@ -10,6 +10,7 @@ public class TapGroup
 	
 	public TapGroup( String name )
 	{
+		mName = name;
 	}
 	
 	public String getName()

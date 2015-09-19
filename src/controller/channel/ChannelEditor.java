@@ -43,6 +43,7 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import playlist.PlaylistManager;
 import record.RecordComponentEditor;
 import source.SourceComponentEditor;
 import alias.AliasList;
@@ -69,11 +70,15 @@ public class ChannelEditor extends Editor implements ActionListener
 	private JCheckBox mChannelEnabled = new JCheckBox();
     private JComboBox<AliasList> mComboAliasLists;
     
-	public ChannelEditor( ChannelNode channel )
+    private PlaylistManager mPlaylistManager;
+    
+	public ChannelEditor( ChannelNode channel, PlaylistManager playlistManager )
 	{
 		super();
 		
 		mChannelNode = channel;
+		
+		mPlaylistManager = playlistManager;
 		
 		initGUI();
 	}
@@ -132,7 +137,7 @@ public class ChannelEditor extends Editor implements ActionListener
 		mSourceEditor = new SourceComponentEditor( mChannelNode );
 		tabs.addTab( "Source", mSourceEditor );
 		
-		mDecodeEditor = new DecodeComponentEditor( mChannelNode );
+		mDecodeEditor = new DecodeComponentEditor( mChannelNode, mPlaylistManager );
 		tabs.addTab( "Decoder", mDecodeEditor );
 
 		mAuxDecodeEditor = new AuxDecodeComponentEditor( mChannelNode );

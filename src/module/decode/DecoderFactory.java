@@ -78,6 +78,7 @@ import module.demodulate.fm.FMDemodulatorModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import playlist.PlaylistManager;
 import properties.SystemProperties;
 import record.RecorderType;
 import record.config.RecordConfiguration;
@@ -173,7 +174,8 @@ public class DecoderFactory
 		int pass = decodeConfig.getDecoderType().getChannelBandwidth() / 2;
 		int stop = pass + 1250;
 		
-		boolean recordAudio = recordConfig.getRecorders().contains( RecorderType.AUDIO );
+		boolean recordAudio = recordConfig == null ? false : 
+			recordConfig.getRecorders().contains( RecorderType.AUDIO );
 		
 		switch( decodeConfig.getDecoderType() )
 		{
@@ -273,25 +275,28 @@ public class DecoderFactory
 	{
 		List<Decoder> decoders = new ArrayList<Decoder>();
 
-		for( DecoderType auxDecoder: config.getAuxDecoders() )
+		if( config != null )
 		{
-			switch( auxDecoder )
+			for( DecoderType auxDecoder: config.getAuxDecoders() )
 			{
-				case FLEETSYNC2:
-					decoders.add( new Fleetsync2Decoder( aliasList ) );
-					break;
-				case MDC1200:
-					decoders.add( new MDCDecoder( aliasList ) );
-					break;
-				case LJ_1200:
-					decoders.add( new LJ1200Decoder( aliasList ) );
-					break;
-				case TAIT_1200:
-					decoders.add( new Tait1200Decoder( aliasList ) );
-					break;
-				default:
-					throw new IllegalArgumentException( "Unrecognized auxiliary "
-							+ "decoder type [" + auxDecoder + "]" );
+				switch( auxDecoder )
+				{
+					case FLEETSYNC2:
+						decoders.add( new Fleetsync2Decoder( aliasList ) );
+						break;
+					case MDC1200:
+						decoders.add( new MDCDecoder( aliasList ) );
+						break;
+					case LJ_1200:
+						decoders.add( new LJ1200Decoder( aliasList ) );
+						break;
+					case TAIT_1200:
+						decoders.add( new Tait1200Decoder( aliasList ) );
+						break;
+					default:
+						throw new IllegalArgumentException( "Unrecognized auxiliary "
+								+ "decoder type [" + auxDecoder + "]" );
+				}
 			}
 		}
 		
@@ -400,7 +405,7 @@ public class DecoderFactory
 	}
 	
 	public static DecodeEditor getEditorPanel( DecodeConfiguration config, 
-			 ChannelNode channelNode )
+			 ChannelNode channelNode, PlaylistManager playlistManager )
 	{
 		DecodeEditor configuredPanel;
 		
@@ -416,7 +421,8 @@ public class DecoderFactory
 				configuredPanel = new LTRNetEditor( config );
 				break;
 			case MPT1327:
-				configuredPanel = new MPT1327ConfigEditor( config, channelNode );
+				configuredPanel = new MPT1327ConfigEditor( config, 
+						channelNode, playlistManager );
 				break;
 			case PASSPORT:
 				configuredPanel = new PassportEditor( config );

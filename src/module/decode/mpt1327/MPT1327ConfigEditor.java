@@ -18,6 +18,7 @@
 package module.decode.mpt1327;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
@@ -29,6 +30,7 @@ import javax.swing.event.ChangeListener;
 import module.decode.DecodeEditor;
 import module.decode.config.DecodeConfiguration;
 import module.decode.mpt1327.MPT1327Decoder.Sync;
+import playlist.PlaylistManager;
 import controller.channel.ChannelNode;
 import controller.channel.map.ChannelMap;
 
@@ -43,12 +45,16 @@ public class MPT1327ConfigEditor extends DecodeEditor
     private JLabel mTrafficChannelPoolSizeLabel;
     private JSlider mTrafficChannelPoolSize;
     private ChannelNode mChannelNode;
+    private PlaylistManager mPlaylistManager;
 
-	public MPT1327ConfigEditor( DecodeConfiguration config, ChannelNode channelNode )
+	public MPT1327ConfigEditor( DecodeConfiguration config, 
+								ChannelNode channelNode,
+								PlaylistManager playlistManager )
 	{
 		super( config );
 		
 		mChannelNode = channelNode;
+		mPlaylistManager = playlistManager;
 		
 		initGUI();
 	}
@@ -63,8 +69,9 @@ public class MPT1327ConfigEditor extends DecodeEditor
 		/**
 		 * ComboBox: Alias Lists
 		 */
-		ArrayList<ChannelMap> maps = mChannelNode.getModel().getResourceManager()
-			.getPlaylistManager().getPlayist().getChannelMapList().getChannelMap();
+		List<ChannelMap> maps = ( mPlaylistManager == null ? 
+				new ArrayList<ChannelMap>() : mPlaylistManager.getPlayist()
+				.getChannelMapList().getChannelMap() );
 		
 		ChannelMap[] mapArray = maps.toArray( new ChannelMap[ maps.size() ] );
 		

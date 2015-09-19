@@ -117,6 +117,8 @@ public class DecoderViewFrame extends JInternalFrame
 		
 		mProcessingChain.setSource( (Source)mSource );
 		
+		mProcessingChain.start();
+		
 		initGui();
 	}
 	
@@ -184,19 +186,7 @@ public class DecoderViewFrame extends JInternalFrame
 					
 					for( TapGroup group: groups )
 					{
-						List<Tap> taps = group.getTaps();
-						
-						if( !taps.isEmpty() )
-						{
-							JMenu groupMenu = new JMenu( group.getName() );
-							
-							for( Tap tap: taps )
-							{
-								groupMenu.add( new TapSelectionItem( tap ) );
-							}
-							
-							menu.add( groupMenu );
-						}
+						menu.add( new TapGroupMenu( group ) );
 					}
 				}
 			}
@@ -346,4 +336,26 @@ public class DecoderViewFrame extends JInternalFrame
     {
 		mLog.info( message.toString() );
     }
+	
+	public class TapGroupMenu extends JMenu
+	{
+		private static final long serialVersionUID = 1L;
+		private TapGroup mTapGroup;
+		
+		public TapGroupMenu( TapGroup tapGroup )
+		{
+			super( tapGroup.getName() );
+			
+			mTapGroup = tapGroup;
+		
+			add( new AddAllTapsItem( mTapGroup.getTaps() ) );
+			
+			add( new JSeparator() );
+			
+			for( Tap tap: mTapGroup.getTaps() )
+			{
+				add( new TapSelectionItem( tap ) );
+			}
+		}
+	}
 }

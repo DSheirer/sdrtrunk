@@ -29,6 +29,7 @@ import javax.swing.SwingUtilities;
 import module.decode.config.DecodeConfigFactory;
 import module.decode.config.DecodeConfiguration;
 import net.miginfocom.swing.MigLayout;
+import playlist.PlaylistManager;
 import controller.Editor;
 import controller.channel.AbstractChannelEditor;
 import controller.channel.Channel;
@@ -43,14 +44,19 @@ public class DecodeComponentEditor extends AbstractChannelEditor
 
     private DecodeEditor mEditor;
     
-    public DecodeComponentEditor()
+    private PlaylistManager mPlaylistManager;
+    
+    public DecodeComponentEditor( PlaylistManager playlistManager )
     {
-    	this( new ChannelNode( new Channel() ) );
+    	this( new ChannelNode( new Channel() ), playlistManager );
     }
 
-    public DecodeComponentEditor( ChannelNode channelNode )
+    public DecodeComponentEditor( ChannelNode channelNode, 
+    							  PlaylistManager playlistMangager )
 	{
     	super( channelNode );
+    	
+    	mPlaylistManager = playlistMangager;
 
 		setLayout( new MigLayout( "fill,wrap 2", "[right,grow][grow]", "[][][grow]" ) );
 
@@ -101,7 +107,8 @@ public class DecodeComponentEditor extends AbstractChannelEditor
 					}
 					
 					//Change to the new one
-					mEditor = DecoderFactory.getEditorPanel( config, mChannelNode );
+					mEditor = DecoderFactory.getEditorPanel( config,
+							mChannelNode, mPlaylistManager );
 					
 					add( mEditor, "span 2,center" );
 					
