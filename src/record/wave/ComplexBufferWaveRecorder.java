@@ -23,6 +23,7 @@ import java.nio.file.Paths;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.sound.sampled.AudioFormat;
 
@@ -58,6 +59,8 @@ public class ComplexBufferWaveRecorder extends Module
 	private ScheduledFuture<?> mProcessorHandle;
 	private LinkedBlockingQueue<ComplexBuffer> mBuffers = new LinkedBlockingQueue<>( 500 );
 	
+	private AtomicBoolean mRunning = new AtomicBoolean();
+	
 	public ComplexBufferWaveRecorder( ThreadPoolManager threadPoolManager, 
 			int sampleRate, String filePrefix )
 	{
@@ -79,7 +82,7 @@ public class ComplexBufferWaveRecorder extends Module
 	
 	public void start()
 	{
-		if( !running() )
+		if( mRunning.compareAndSet( false, true ) )
 		{
 			if( mBufferProcessor == null )
 			{
@@ -110,51 +113,27 @@ public class ComplexBufferWaveRecorder extends Module
 		}
 	}
 	
-	public boolean running()
-	{
-		return mProcessorHandle != null;
-	}
-	
 	public void stop()
 	{
-		if( running() )
+		if( mRunning.compareAndSet( true, false ) )
 		{
-			mThreadPoolManager.cancel( mProcessorHandle );
-			
-			mProcessorHandle = null;
-			
-			if( mWriter != null )
-			{
-				try
-				{
-					mWriter.close();
-				}
-				catch( IOException io )
-				{
-					mLog.error( "Error stopping complex wave recorder [" + 
-								getFile() + "]", io );
-				}
-			}
-
+			receive( new PoisonPill() );
 		}
-		
-		mBuffers.clear();
-		mWriter = null;
-		mFile = null;
 	}
 	
 	@Override
     public void receive( ComplexBuffer buffer )
     {
-		if( running() )
+		if( mRunning.get() )
 		{
 			boolean success = mBuffers.offer( buffer );
 			
 			if( !success )
 			{
-				mLog.error( "ComplexWaveRecorder: buffer overflow or error - throwing "
-						+ "away a buffer of sample data" );
-				stop();
+				mLog.error( "recorder buffer overflow - purging [" + 
+						mFile.toFile().getAbsolutePath() + "]" );
+				
+				mBuffers.clear();
 			}
 		}
     }
@@ -188,13 +167,43 @@ public class ComplexBufferWaveRecorder extends Module
 				
 				while( buffer != null )
 				{
-					mWriter.write( ConversionUtils.convertToSigned16BitSamples( buffer ) );
-					buffer = mBuffers.poll();
+					if( buffer instanceof PoisonPill )
+					{
+						buffer = null;
+						
+						mBuffers.clear();
+						
+						if( mWriter != null )
+						{
+							try
+							{
+								mWriter.close();
+								mWriter = null;
+							}
+							catch( IOException io )
+							{
+								mLog.error( "Error stopping complex wave recorder [" + 
+											getFile() + "]", io );
+							}
+						}
+						
+						mFile = null;
+
+						mThreadPoolManager.cancel( mProcessorHandle );
+						
+						mProcessorHandle = null;
+					}
+					else
+					{
+						mWriter.write( ConversionUtils.convertToSigned16BitSamples( buffer ) );
+						buffer = mBuffers.poll();
+					}
 				}
             }
 			catch ( IOException ioe )
 			{
 				/* Stop this module if/when we get an IO exception */
+				mBuffers.clear();
 				stop();
 				
 				mLog.error( "IOException while trying to write to the wave "
@@ -202,4 +211,15 @@ public class ComplexBufferWaveRecorder extends Module
 			}
     	}
     }
+
+	/**
+	 * This is used as a sentinel value to signal the buffer processor to end
+	 */
+	public class PoisonPill extends ComplexBuffer
+	{
+		public PoisonPill()
+		{
+			super( new float[ 1 ] );
+		}
+	}
 }

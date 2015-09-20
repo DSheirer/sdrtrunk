@@ -21,7 +21,6 @@ public class FloatBufferTap extends FloatTap implements Listener<RealBuffer>
 	@Override
 	public void receive( RealBuffer buffer )
 	{
-		mLog.debug("Got a buffer!");
 		if( mRealBufferListener != null )
 		{
 			mRealBufferListener.receive( buffer );
@@ -29,7 +28,6 @@ public class FloatBufferTap extends FloatTap implements Listener<RealBuffer>
 
 		for( float sample: buffer.getSamples() )
 		{
-			mLog.debug("Sending a sample to the tap");
 			super.receive( sample );
 		}
 	}

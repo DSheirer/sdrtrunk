@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 
 public class WaveWriter implements AutoCloseable 
 {
-	private final static Logger mLog = LoggerFactory.getLogger( WaveWriter.class );
+//	private final static Logger mLog = LoggerFactory.getLogger( WaveWriter.class );
 
 	private static final Pattern FILENAME_PATTERN = 
 			Pattern.compile( "(.*_)(\\d+)(\\.wav)" );
@@ -118,6 +118,7 @@ public class WaveWriter implements AutoCloseable
 	 */
 	public void close() throws IOException
 	{
+		mFileChannel.force( true );
 		mFileChannel.close();
 	}
 	
@@ -194,10 +195,13 @@ public class WaveWriter implements AutoCloseable
 	private void updateWaveFileSize() throws IOException
 	{
 		/* Update overall wave size (total size - 8 bytes) */
-		mFileChannel.write( getUnsignedIntegerBuffer( mFileChannel.size() - 8 ), 4 );
+		ByteBuffer buffer = getUnsignedIntegerBuffer( mFileChannel.size() - 8 );
 
-		/* Update chunk 2 size (total size - 44 bytes) */
-		mFileChannel.write( getUnsignedIntegerBuffer( mFileChannel.size() - 44 ), 40 );
+		mFileChannel.write( buffer, 4 );
+
+		ByteBuffer buffer2 = getUnsignedIntegerBuffer( mFileChannel.size() - 44 );
+		
+		mFileChannel.write( buffer2, 40 );
 	}
 
 	/**
@@ -206,18 +210,37 @@ public class WaveWriter implements AutoCloseable
 	 * 
 	 * The buffer's position is set to 0 to prepare it for writing to a channel.
 	 */
-	private static ByteBuffer getUnsignedIntegerBuffer( long size )
+	protected static ByteBuffer getUnsignedIntegerBuffer( long size )
 	{
 		ByteBuffer buffer = ByteBuffer.allocate( 4 );
 		
 		buffer.put( (byte)( size & 0xFFl ) );
-		buffer.put( (byte)( ( size & 0xFF00l ) >> 8 ) );
-		buffer.put( (byte)( ( size & 0xFF0000l ) >> 16 ) );
-		buffer.put( (byte)( ( size & 0xFF000000l ) >> 32 ) );
+		buffer.put( (byte)( Long.rotateRight( size & 0xFF00l, 8 ) ) );
+		buffer.put( (byte)( Long.rotateRight( size & 0xFF0000l, 16 ) ) );
+		
+		/* This side-steps an issue with right shifting a signed long by 32 
+		 * where it produces an error value.  Instead, we right shift in two steps. */
+		buffer.put( (byte)Long.rotateRight( 
+				Long.rotateRight( size & 0xFF000000l, 16 ), 8 ) );
 		
 		buffer.position( 0 );
 		
 		return buffer;
+	}
+	
+	public static String toString( ByteBuffer buffer )
+	{
+		StringBuilder sb = new StringBuilder();
+		
+		byte[] bytes = buffer.array();
+		
+		for( byte b: bytes )
+		{
+			sb.append(String.format("%02X ", b));
+			sb.append( " " );
+		}
+		
+		return sb.toString();
 	}
 	
 	/**

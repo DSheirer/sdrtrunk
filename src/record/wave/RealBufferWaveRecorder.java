@@ -20,6 +20,7 @@ package record.wave;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -32,8 +33,10 @@ import module.Module;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import record.wave.ComplexBufferWaveRecorder.PoisonPill;
 import sample.ConversionUtils;
 import sample.Listener;
+import sample.complex.ComplexBuffer;
 import sample.real.IRealBufferListener;
 import sample.real.RealBuffer;
 import util.TimeStamp;
@@ -127,30 +130,9 @@ public class RealBufferWaveRecorder extends Module
 	{
 		if( mRunning.compareAndSet( true, false ) )
 		{
-			mThreadPoolManager.cancel( mProcessorHandle );
-			
-			mProcessorHandle = null;
-			
-			if( mWriter != null )
-			{
-				try
-				{
-					/* Flush remaining buffers */
-					writeAudio();
-					mWriter.close();
-				}
-				catch( IOException io )
-				{
-					mLog.error( "Error stopping real wave recorder [" + 
-								getFile() + "]", io );
-				}
-			}
-
+			/* Signal the buffer processor to end with a poison pill */
+			receive( new PoisonPill() );
 		}
-		
-		mBuffers.clear();
-		mWriter = null;
-		mFile = null;
 	}
 	
 	@Override
@@ -162,9 +144,10 @@ public class RealBufferWaveRecorder extends Module
 			
 			if( !success )
 			{
-				mLog.error( "recorder buffer overflow or error - throwing "
-						+ "away a buffer of sample data" );
-				stop();
+				mLog.error( "recorder buffer overflow - purging [" + 
+						mFile.toFile().getAbsolutePath() + "]" );
+				
+				mBuffers.clear();
 			}
 			
 			mLastBufferReceived = System.currentTimeMillis();
@@ -190,28 +173,53 @@ public class RealBufferWaveRecorder extends Module
 	{
 	}
 	
-	private void writeAudio() throws IOException
-	{
-		RealBuffer buffer = mBuffers.poll();
-		
-		while( buffer != null )
-		{
-			mWriter.write( ConversionUtils.convertToSigned16BitSamples( buffer ) );
-			buffer = mBuffers.poll();
-		}
-	}
-	
 	public class BufferProcessor implements Runnable
     {
     	public void run()
     	{
 			try
             {
-				writeAudio();
+				RealBuffer buffer = mBuffers.poll();
+				
+				while( buffer != null )
+				{
+					if( buffer instanceof PoisonPill )
+					{
+						buffer = null;
+						
+						mBuffers.clear();
+						
+						if( mWriter != null )
+						{
+							try
+							{
+								mWriter.close();
+								mWriter = null;
+							}
+							catch( IOException io )
+							{
+								mLog.error( "Error stopping complex wave recorder [" + 
+											getFile() + "]", io );
+							}
+						}
+						
+						mFile = null;
+
+						mThreadPoolManager.cancel( mProcessorHandle );
+						
+						mProcessorHandle = null;
+					}
+					else
+					{
+						mWriter.write( ConversionUtils.convertToSigned16BitSamples( buffer ) );
+						buffer = mBuffers.poll();
+					}
+				}
             }
 			catch ( IOException ioe )
 			{
 				/* Stop this module if/when we get an IO exception */
+				mBuffers.clear();
 				stop();
 				
 				mLog.error( "IOException while trying to write to the wave "
@@ -219,4 +227,15 @@ public class RealBufferWaveRecorder extends Module
 			}
     	}
     }
+	
+	/**
+	 * This is used as a sentinel value to signal the buffer processor to end
+	 */
+	public class PoisonPill extends RealBuffer
+	{
+		public PoisonPill()
+		{
+			super( new float[ 1 ] );
+		}
+	}
 }
