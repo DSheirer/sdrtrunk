@@ -130,6 +130,7 @@ public abstract class EventLogger extends Module
 		try
         {
 	        mLogFile.write( eventLogEntry + "\n" );
+	        mLogFile.flush();
         }
         catch ( IOException e )
         {

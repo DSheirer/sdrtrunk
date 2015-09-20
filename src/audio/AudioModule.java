@@ -98,13 +98,12 @@ public class AudioModule extends Module implements IAudioPacketProvider,
 	@Override
 	public void stop()
 	{
-//		/* Issue an end audio packet in case a recorder is still rolling */
-//		if( mAudioPacketListener != null )
-//		{
-//			mLog.debug( "Sending end audio packet - stop() invoked" );
-//			mAudioPacketListener.receive( new AudioPacket( AudioPacket.Type.END, 
-//					mAudioMetadata.copyOf() ) );
-//		}
+		/* Issue an end audio packet in case a recorder is still rolling */
+		if( mAudioPacketListener != null )
+		{
+			mAudioPacketListener.receive( new AudioPacket( AudioPacket.Type.END, 
+					mAudioMetadata.copyOf() ) );
+		}
 	}
 
 	/**
@@ -201,8 +200,6 @@ public class AudioModule extends Module implements IAudioPacketProvider,
 		@Override
 		public void receive( SquelchState state )
 		{
-			mLog.debug( "Squelch State:" + state );
-			
 			if( state == SquelchState.SQUELCH && mAudioPacketListener != null )
 			{
 				mAudioPacketListener.receive( new AudioPacket( AudioPacket.Type.END, 

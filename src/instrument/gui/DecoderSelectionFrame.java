@@ -7,7 +7,6 @@ import java.awt.event.ActionListener;
 import javax.swing.JButton;
 import javax.swing.JDesktopPane;
 import javax.swing.JInternalFrame;
-import javax.swing.JPanel;
 
 import module.decode.DecodeComponentEditor;
 import module.decode.config.DecodeConfiguration;
