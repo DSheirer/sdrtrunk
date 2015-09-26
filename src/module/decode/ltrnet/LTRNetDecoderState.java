@@ -675,7 +675,7 @@ public class LTRNetDecoderState extends DecoderState
 	}
 
 	/**
-	 * Resets the decoder state for re-use on another channel
+	 * Performs a full reset
 	 */
 	public void reset()
 	{
@@ -694,7 +694,7 @@ public class LTRNetDecoderState extends DecoderState
 	}
 
 	/**
-	 * Resets the decoder state after a call event
+	 * Resets the decoder state after a call or other decode event
 	 */
 	private void resetState()
 	{

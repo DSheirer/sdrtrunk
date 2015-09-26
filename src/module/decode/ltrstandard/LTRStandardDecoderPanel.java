@@ -21,6 +21,7 @@ import java.awt.EventQueue;
 
 import javax.swing.JLabel;
 
+import net.miginfocom.swing.MigLayout;
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderPanel;
 import settings.ColorSetting;
@@ -53,7 +54,11 @@ public class LTRStandardDecoderPanel extends DecoderPanel
 	
 	public void init()
 	{
-		mProtocol.setFont( mFontDecoder );
+		super.init();
+		
+    	setLayout( new MigLayout( "insets 0 0 0 0", "[grow,fill]", "[]0[]0[]") );
+
+    	mProtocol.setFont( mFontDecoder );
 		mProtocol.setForeground( mColorLabelDecoder );
 
 		mTalkgroup.setFont( mFontDecoder );

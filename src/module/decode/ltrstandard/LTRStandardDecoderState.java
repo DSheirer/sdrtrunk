@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014,2015 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
  ******************************************************************************/
 package module.decode.ltrstandard;
 
-import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,22 +34,19 @@ import module.decode.state.DecoderStateEvent.Event;
 import module.decode.state.State;
 import alias.Alias;
 import alias.AliasList;
+import audio.metadata.Metadata;
+import audio.metadata.MetadataType;
 
 public class LTRStandardDecoderState extends DecoderState
 {
-	private static final int sINT_NULL_VALUE = -1;
-	private DecimalFormat mDecimalFormatter = new DecimalFormat("0.00000");
-
     private HashMap<Integer,String> mActiveCalls = new HashMap<Integer,String>();
 	private HashSet<String> mTalkgroupsFirstHeard = new HashSet<String>();
 	private TreeSet<String> mTalkgroups = new TreeSet<String>();
 	private TreeSet<Integer> mActiveLCNs = new TreeSet<Integer>();
-	private int mMonitoredLCN;
 	
 	private String mTalkgroup;
 	private Alias mTalkgroupAlias;
     private int mChannelNumber;
-    
     private long mFrequency;
 	
 	public LTRStandardDecoderState( AliasList aliasList )
@@ -111,14 +107,13 @@ public class LTRStandardDecoderState extends DecoderState
 	                            broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
 	                            
 	                        	LTRCallEvent current = getCurrentCallEvent();
-	                        	
-	                        	/* If we have an ongoing call, then add this message
-	                        	 * to the current event - if addMessage returns 
-	                        	 * false, then we have a different talkgroup and a
-	                        	 * new call event, so close out the old one. */
-	                        	if( current != null && !current.addMessage( ltr ) )
+
+	                        	/* Detect when we haven't reset from the previous
+	                        	 * call and now have a new call coming in with
+	                        	 * a different talkgroup */
+	                        	if( current != null && isDifferentTalkgroup( mTalkgroup ) )
 	                        	{
-	                        		mCurrentCallEvent.setEnd( System.currentTimeMillis() );
+	                        		mCurrentCallEvent.end();
 	                        		broadcast( mCurrentCallEvent );
 	                        		mCurrentCallEvent = null;
 	                        	}
@@ -136,30 +131,35 @@ public class LTRStandardDecoderState extends DecoderState
 
 	                    			broadcast( mCurrentCallEvent );
 	                    			
-		                    		broadcast( new DecoderStateEvent( this, Event.START, State.CALL ) );
+	                				broadcast( new Metadata( MetadataType.TO, 
+	                						mTalkgroup, mTalkgroupAlias, true ) );
+
+		                    		broadcast( new DecoderStateEvent( this, 
+		                    				Event.START, State.CALL ) );
 	                    		}
 	                    		else
 	                    		{
-		                    		broadcast( new DecoderStateEvent( this, Event.CONTINUATION, State.CALL ) );
+		                    		broadcast( new DecoderStateEvent( this, 
+		                    				Event.CONTINUATION, State.CALL ) );
 	                    		}
 	                        }
 					    }
 						break;
 					case CA_ENDD:
 	                    mTalkgroup = ltr.getTalkgroupID();
-	                    broadcast( ChangedAttribute.FROM_TALKGROUP );
+	                    broadcast( ChangedAttribute.TO_TALKGROUP );
 
 	                    mTalkgroupAlias = ltr.getTalkgroupIDAlias();
-	                    broadcast( ChangedAttribute.FROM_TALKGROUP_ALIAS );
+	                    broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
 
 	                    if( mCurrentCallEvent != null )
 	                    {
-	                    	mCurrentCallEvent.setEnd( System.currentTimeMillis() );
+	                    	mCurrentCallEvent.end();
 	                    	broadcast( mCurrentCallEvent );
                     		broadcast( new DecoderStateEvent( this, Event.END, State.FADE ) );
                     		mCurrentCallEvent = null;
 	                    }
-
+	                    
 						int home = ltr.getHomeRepeater();
 					    
 					    if( 0 < home && home <= 20 )
@@ -182,9 +182,9 @@ public class LTRStandardDecoderState extends DecoderState
 					    {
 	                        if( channel == home )
 	                        {
-	                        	if( mMonitoredLCN != channel )
+	                        	if( mChannelNumber != channel )
 	                        	{
-		                            mMonitoredLCN = channel;
+		                            mChannelNumber = channel;
 		                            broadcast( ChangedAttribute.CHANNEL_NUMBER );
 	                        	}
 	                        	
@@ -206,15 +206,16 @@ public class LTRStandardDecoderState extends DecoderState
 					    if( idleChannel == ltr.getHomeRepeater() &&
 					        idleChannel == ltr.getFree() )
 					    {
-                        	if( mMonitoredLCN != idleChannel )
+                        	if( mChannelNumber != idleChannel )
                         	{
-	                            mMonitoredLCN = idleChannel;
+	                            mChannelNumber = idleChannel;
 	                            broadcast( ChangedAttribute.CHANNEL_NUMBER );
                         	}
                         	
 	                        mActiveLCNs.add( idleChannel );
 					    }
-					    broadcast( new DecoderStateEvent( this, Event.CONTINUATION, State.IDLE ) );
+					    broadcast( new DecoderStateEvent( this, 
+					    		Event.CONTINUATION, State.IDLE ) );
 						break;
 					case UN_KNWN:
 					default:
@@ -224,60 +225,49 @@ public class LTRStandardDecoderState extends DecoderState
 		}
     }
 	
-//    /**
-//     * Intercept the fade event so that we can generate a call end event
-//     */
-//    @Override
-//    public void fade( final CallEventType type )
-//    {
-//        /* We can receive multiple call tear-down messages -- only respond to
-//         * the message that can change the state to fade */
-//        if( getState().canChangeTo( State.FADE ) )
-//        {
-//            mActiveCalls.clear();
-//            
-//            LTRCallEvent current = getCurrentLTRCallEvent();
-//            
-//            if( current != null )
-//            {
-//            	/* Close out the call event.  If we only received 1 call 
-//            	 * message, then flag it as noise and remove the call event */
-//            	if( current.isValid() )
-//            	{
-//            		mCallEventModel.setEnd( current );
-//            	}
-//            	else
-//            	{
-//            		mCallEventModel.remove( current );
-//            	}
-//            }
-//            
-//    		setCurrentCallEvent( null );
-//        }
-//        
-//        super.fade( type );
-//    }
-    
+	/**
+	 * Indicates if the talkgroup is different than the talkgroup specified in
+	 * the current call event
+	 */
+	private boolean isDifferentTalkgroup( String talkgroup )
+	{
+		return talkgroup != null &&
+			   mCurrentCallEvent != null &&
+			   mCurrentCallEvent.getToID() != null &&
+			   !mCurrentCallEvent.getToID().contentEquals( talkgroup );
+	}
+	
+	/**
+	 * Performs a full reset 
+	 */
 	public void reset()
 	{
+	    mActiveCalls.clear();
+	    mTalkgroupsFirstHeard.clear();
+	    mTalkgroups.clear();
+	    mActiveLCNs.clear();
+	    mChannelNumber = 0;
+
 		resetState();
-		
+	}
+	
+	/**
+	 * Performs a temporal reset following a call or other decode event
+	 */
+	private void resetState()
+	{
 		if( mCurrentCallEvent != null )
 		{
 			mCurrentCallEvent.setEnd( System.currentTimeMillis() );
 			broadcast( mCurrentCallEvent );
 			mCurrentCallEvent = null;
 		}
-		
-	}
-	
-	private void resetState()
-	{
+
 		mTalkgroup = null;
-		broadcast( ChangedAttribute.FROM_TALKGROUP );
+		broadcast( ChangedAttribute.TO_TALKGROUP );
 
 		mTalkgroupAlias = null;
-        broadcast( ChangedAttribute.FROM_TALKGROUP_ALIAS );
+        broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
 	}
 	
 	public String getTalkgroup()
@@ -303,7 +293,6 @@ public class LTRStandardDecoderState extends DecoderState
 	@Override
 	public void init()
 	{
-		
 	}
 
 	@Override
@@ -333,9 +322,9 @@ public class LTRStandardDecoderState extends DecoderState
 		
 		sb.append( "Monitored LCN: " );
 		
-		if( mMonitoredLCN > 0 )
+		if( mChannelNumber > 0 )
 		{
-	        sb.append( mMonitoredLCN );
+	        sb.append( mChannelNumber );
 		}
 		else
 		{

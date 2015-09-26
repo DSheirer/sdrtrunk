@@ -24,6 +24,7 @@ public class TimeStamp
 {
 	private static SimpleDateFormat mSDFDate = new SimpleDateFormat( "yyyyMMdd" );
 	private static SimpleDateFormat mSDFTime = new SimpleDateFormat( "HHmmss" );
+	private static SimpleDateFormat mSDFTimeWithMilliseconds = new SimpleDateFormat( "HHmmss.SSS" );
 
 	/**
 	 * Returns the current system date formatted as yyyy-MM-dd
@@ -58,6 +59,14 @@ public class TimeStamp
 	}
 
 	/**
+	 * Returns the timestamp formatted as a time of HH:mm:ss
+	 */
+	public static String getFormattedTimeWithMilliseconds( long timestamp )
+	{
+		return mSDFTime.format( new Date( timestamp ) );
+	}
+
+	/**
 	 * Returns current system time formatted as yyyy-MM-dd*HH:mm:ss
 	 * with the * representing the separator attribute
 	 */
@@ -80,5 +89,30 @@ public class TimeStamp
 
 		return sb.toString();
 	}
+	
+	/**
+	 * Returns current system time formatted as yyyy-MM-dd*HH:mm:ss.SSS
+	 * with the * representing the separator attribute
+	 */
+	public static String getLongTimeStamp( String separator )
+	{
+		return getLongTimeStamp( System.currentTimeMillis(), separator );
+	}
+	
+	/**
+	 * Returns timestamp formatted as yyyy-MM-dd*HH:mm:ss.SSS
+	 * with the * representing the separator attribute
+	 */
+	public static String getLongTimeStamp( long timestamp, String separator )
+	{
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append( getFormattedDate( timestamp ) );
+		sb.append( separator );
+		sb.append( getFormattedTimeWithMilliseconds( timestamp ) );
+
+		return sb.toString();
+	}
+	
 }
 

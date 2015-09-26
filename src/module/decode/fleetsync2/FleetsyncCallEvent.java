@@ -24,14 +24,19 @@ import alias.AliasList;
 
 public class FleetsyncCallEvent extends CallEvent
 {
+	private long mFrequency = 0;
+	
     public FleetsyncCallEvent( CallEventType callEventType,
                                AliasList aliasList, 
                                String fromID, 
                                String toID, 
-                               String details ) 
+                               String details,
+                               long frequency ) 
     {
         super( DecoderType.FLEETSYNC2, callEventType, 
         		aliasList, fromID, toID, details );
+        
+        mFrequency = frequency;
     }
 
     private Alias getAlias( String ident )
@@ -65,7 +70,7 @@ public class FleetsyncCallEvent extends CallEvent
     @Override
     public long getFrequency()
     {
-        return 0;
+        return mFrequency;
     }
 
     public static class Builder
@@ -78,6 +83,7 @@ public class FleetsyncCallEvent extends CallEvent
         private String mFromID;
         private String mToID;
         private String mDetails;
+        private long mFrequency;
 
         public Builder( CallEventType callEventType )
         {
@@ -88,6 +94,12 @@ public class FleetsyncCallEvent extends CallEvent
         {
             mAliasList = aliasList;
             return this;
+        }
+
+        public Builder frequency( long frequency )
+        {
+        	mFrequency = frequency;
+        	return this;
         }
         
         public Builder from( String val )
@@ -123,11 +135,12 @@ public class FleetsyncCallEvent extends CallEvent
               builder.mAliasList, 
               builder.mFromID,
               builder.mToID,
-              builder.mDetails );
+              builder.mDetails,
+              builder.mFrequency );
     }
     
-    public static FleetsyncCallEvent 
-                        getFleetsync2Event( FleetsyncMessage message )
+    public static FleetsyncCallEvent getFleetsync2Event( 
+    		FleetsyncMessage message, long frequency )
     {
         CallEventType type = CallEventType.UNKNOWN;
         StringBuilder sbDetails = new StringBuilder();
@@ -176,6 +189,7 @@ public class FleetsyncCallEvent extends CallEvent
         {
             return new FleetsyncCallEvent.Builder( type )
 			            .details( sbDetails.toString() )
+			            .frequency( frequency )
 			            .from( message.getFromID() )
 			            .build();
         }
@@ -183,6 +197,7 @@ public class FleetsyncCallEvent extends CallEvent
         {
             return new FleetsyncCallEvent.Builder( type )
 	           	.details( sbDetails.toString() )
+	           	.frequency( frequency )
 	            .from( message.getFromID() )
 	            .to( message.getToID() )
 	            .build();

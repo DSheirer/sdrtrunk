@@ -568,7 +568,6 @@ public class ChannelState extends Module implements ICallEventProvider,
 						mSquelchLocked = true;
 						break;
 					case CONTINUATION:
-					case DECODE:
 						if( isEndingState() )
 						{
 							setState( event.getState() );
@@ -576,6 +575,12 @@ public class ChannelState extends Module implements ICallEventProvider,
 						else
 						{
 							updateFadeTimeout();
+						}
+						break;
+					case DECODE:
+						if( getState() == State.IDLE )
+						{
+							setState( event.getState() );
 						}
 						break;
 					case END:

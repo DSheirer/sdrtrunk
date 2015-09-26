@@ -32,7 +32,6 @@ public class ThreadPoolManager
 	private final static Logger mLog = LoggerFactory.getLogger( ThreadPoolManager.class );
 
 	private int THREAD_POOL_SIZE = 2;
-	private int MAX_TASK_COUNT = 24;
 
 	private HashMap<ScheduledFuture<?>,ThreadType> mTasks = 
 				new HashMap<ScheduledFuture<?>,ThreadType>();
@@ -55,21 +54,12 @@ public class ThreadPoolManager
 					new NamingThreadFactory( "sdrtrunk" ) );
 		}
 
-		if( mTasks.size() <= MAX_TASK_COUNT )
-		{
-			ScheduledFuture<?> task = 
-					mExecutor.scheduleAtFixedRate( command, 0, period, unit );
-			
-			mTasks.put( task, type );
-			
-			return task;
-		}
-		else
-		{
-			throw new RejectedExecutionException( "Cannot schedule task - at "
-					+ "max task count [" + mTasks.size() + "]" );
-		}
+		ScheduledFuture<?> task = 
+				mExecutor.scheduleAtFixedRate( command, 0, period, unit );
 		
+		mTasks.put( task, type );
+		
+		return task;
 	}
 	
 	public void scheduleOnce( Runnable command, long delay, TimeUnit unit )	
@@ -81,22 +71,14 @@ public class ThreadPoolManager
 					new NamingThreadFactory( "sdrtrunk" ) );
 		}
 		
-		if( mTasks.size() <= MAX_TASK_COUNT )
-		{
-			mExecutor.schedule( command, delay, unit );
-		}
-		else
-		{
-			throw new RejectedExecutionException( "Cannot schedule task - at "
-			+ "max task count [" + mTasks.size() + "]" );
-		}
+		mExecutor.schedule( command, delay, unit );
 	}
 
 	public void cancel( ScheduledFuture<?> task )
 	{
 		task.cancel( true );
 		
-		ThreadType type = mTasks.remove( task );
+		mTasks.remove( task );
 	}
 	
 	public int getTaskCount( ThreadType type )

@@ -104,7 +104,7 @@ public class RealBufferWaveRecorder extends Module
 				StringBuilder sb = new StringBuilder();
 				sb.append( mFilePrefix );
 				sb.append( "_" );
-				sb.append( TimeStamp.getTimeStamp( "_" ) );
+				sb.append( TimeStamp.getLongTimeStamp( "_" ) );
 				sb.append( ".wav" );
 				
 				mFile = Paths.get( sb.toString() );

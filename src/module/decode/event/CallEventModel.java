@@ -66,8 +66,6 @@ public class CallEventModel extends AbstractTableModel implements Listener<CallE
 
 	private SimpleDateFormat mSDFTime = new SimpleDateFormat( "HH:mm:ss" );
 	
-	private boolean mNewMessagesFirst = true;
-	
 	public CallEventModel()
 	{
 	}
@@ -102,10 +100,6 @@ public class CallEventModel extends AbstractTableModel implements Listener<CallE
 	 */
 	public void receive( final CallEvent event )
 	{
-	//TODO: reverse this so that the new events go to the end and the oldest
-		//events are at the beginning ... use the getObjectAt() to control 
-		//correct access to the ordering imposed.
-		
 		if( event.isValid() )
 		{
 			if( !mEvents.contains( event ) )

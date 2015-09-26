@@ -43,6 +43,8 @@ public class Fleetsync2DecoderState extends DecoderState
 
 	private String mMessage;
 	private String mMessageType;
+	
+	private long mFrequency;
 
 	public Fleetsync2DecoderState( AliasList aliasList )
 	{
@@ -158,14 +160,14 @@ public class Fleetsync2DecoderState extends DecoderState
 				}
 
 			    FleetsyncCallEvent fsCallEvent = 
-			            FleetsyncCallEvent.getFleetsync2Event( fleetsync );
+			            FleetsyncCallEvent.getFleetsync2Event( fleetsync, mFrequency );
 
 			    fsCallEvent.setAliasList( getAliasList() );
 
 			    broadcast( fsCallEvent );
 
 			    /* Broadcast decode event so that the channel state will 
-			     * kick in and reset everything */
+			     * kick in and reset everything after a short delay */
 			    broadcast( new DecoderStateEvent( this, Event.DECODE, state ) );
 			}
 		}
@@ -247,6 +249,9 @@ public class Fleetsync2DecoderState extends DecoderState
 		{
 			case RESET:
 				resetState();
+				break;
+			case SOURCE_FREQUENCY:
+				mFrequency = event.getFrequency();
 				break;
 			default:
 				break;
