@@ -17,9 +17,9 @@ import settings.SettingsManager;
 import controller.channel.Channel;
 
 /**
- * Channel Collection assembles a primary channel panel and any related traffic
- * channel panels, provides contextual access to the primary channel and
- * supports channel selection for the primary or any traffic channels.
+ * Channel Collection assembles a primary channel panel and any related decoder
+ * state panels, provides contextual access to the channel and supports channel 
+ * selection.
  */
 public class ChannelCollectionPanel extends JPanel
 {

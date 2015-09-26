@@ -19,14 +19,14 @@ package module.decode.nbfm;
 
 import javax.swing.JLabel;
 
-import net.miginfocom.swing.MigLayout;
-import module.decode.Decoder;
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderPanel;
+import module.decode.state.DecoderState;
+import net.miginfocom.swing.MigLayout;
 import settings.ColorSetting;
+import settings.ColorSetting.ColorSettingName;
 import settings.Setting;
 import settings.SettingsManager;
-import settings.ColorSetting.ColorSettingName;
 
 public class NBFMDecoderPanel extends DecoderPanel
 {
@@ -34,9 +34,10 @@ public class NBFMDecoderPanel extends DecoderPanel
 
     private JLabel mProtocol = new JLabel( "NBFM" );
 	
-	public NBFMDecoderPanel( SettingsManager settingsManager, Decoder decoder )
+	public NBFMDecoderPanel( SettingsManager settingsManager, 
+							 DecoderState decoderState )
 	{
-		super( settingsManager, decoder );
+		super( settingsManager, decoderState );
 		
 		init();
 	}

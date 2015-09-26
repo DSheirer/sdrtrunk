@@ -34,7 +34,6 @@ import sample.real.IRealBufferListener;
 import sample.real.RealBuffer;
 import source.tuner.frequency.FrequencyCorrectionControl;
 import alias.AliasList;
-import controller.channel.Channel.ChannelType;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
 import dsp.filter.fir.real.RealFIRFilter_RB_RB;
@@ -70,9 +69,9 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 	 * infrastructure and subscriber identities that will be included in each
 	 * decoded message
 	 */
-	public P25_C4FMDecoder( AliasList aliasList, ChannelType channelType )
+	public P25_C4FMDecoder( AliasList aliasList )
 	{
-		super( aliasList, channelType );
+		super( aliasList );
 		
 		/* Filter demodulated sample buffers */
 		mC4FMPreFilter = new RealFIRFilter_RB_RB( FilterFactory.getLowPass( 
@@ -240,4 +239,25 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 							tap.getName() );
 		}
     }
+
+	@Override
+	public void reset()
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void start()
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void stop()
+	{
+		// TODO Auto-generated method stub
+		
+	}
 }

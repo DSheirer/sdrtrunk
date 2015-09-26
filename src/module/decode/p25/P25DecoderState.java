@@ -26,8 +26,10 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import message.Message;
+import module.decode.DecoderType;
 import module.decode.event.CallEvent;
 import module.decode.event.CallEvent.CallEventType;
+import module.decode.p25.P25Decoder.Modulation;
 import module.decode.p25.message.IBandIdentifier;
 import module.decode.p25.message.P25Message;
 import module.decode.p25.message.hdu.HDUMessage;
@@ -169,14 +171,38 @@ public class P25DecoderState extends DecoderState
 
 	private P25CallEvent mCurrentCallEvent;
 	private ChannelType mChannelType;
+	private Modulation mModulation;
 	
-	public P25DecoderState( AliasList aliasList, ChannelType channelType )
+	public P25DecoderState( AliasList aliasList, 
+							ChannelType channelType,
+							Modulation modulation )
 	{
 		super( aliasList );
-		
 		mChannelType = channelType;
+		mModulation = modulation;
 	}
 	
+	public Modulation getModulation()
+	{
+		return mModulation;
+	}
+	
+	@Override
+	public DecoderType getDecoderType()
+	{
+		return DecoderType.P25_PHASE1;
+	}
+
+	@Override
+	public void start()
+	{
+	}
+
+	@Override
+	public void stop()
+	{
+	}
+
 	/**
 	 * Performs a full reset to prepare this object for reuse on a new channel
 	 */

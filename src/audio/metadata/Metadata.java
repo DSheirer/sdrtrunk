@@ -94,6 +94,8 @@ public class Metadata
 		sb.append( mMetadataType.getLabel() );
 		sb.append( ":" );
 		sb.append( mValue );
+		sb.append( " Alias:" );
+		sb.append( mValueAlias == null ? "null" : getAlias().getName() );
 		sb.append( " [" );
 		sb.append( mMetadataType.name() );
 		sb.append( "] temporal:" );

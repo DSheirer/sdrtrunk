@@ -9,7 +9,7 @@
       <maxHistory>10</maxHistory>
 	</rollingPolicy>
     <encoder>
-      <pattern>%-25(%d{yyyyMMdd HHmmss} [%thread]) %-5level %logger{30} - %msg%n</pattern>
+      <pattern>%-25(%d{yyyyMMdd HHmmss.SSS} [%thread]) %-5level %logger{30} - %msg%n</pattern>
     </encoder>
   </appender>
 

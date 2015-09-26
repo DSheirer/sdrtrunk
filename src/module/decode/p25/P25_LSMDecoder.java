@@ -65,9 +65,9 @@ public class P25_LSMDecoder extends P25Decoder implements IComplexBufferListener
 	private QPSKPolarSlicer mCQPSKSlicer = new QPSKPolarSlicer();
 	private P25MessageFramer mMessageFramer;
 	
-	public P25_LSMDecoder( AliasList aliasList, ChannelType channelType )
+	public P25_LSMDecoder( AliasList aliasList )
 	{
-		super( aliasList, channelType );
+		super( aliasList );
 		
 		mBasebandFilter = new ComplexFIRFilter_CB_CB( FilterFactory.getLowPass( 
 				48000, 7250, 8000, 60, WindowType.HANNING, true ), 1.0f );
@@ -229,4 +229,25 @@ public class P25_LSMDecoder extends P25Decoder implements IComplexBufferListener
 							tap.getName() );
 		}
     }
+
+	@Override
+	public void reset()
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void start()
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void stop()
+	{
+		// TODO Auto-generated method stub
+		
+	}
 }

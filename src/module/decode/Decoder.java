@@ -20,45 +20,19 @@ package module.decode;
 import message.IMessageProvider;
 import message.Message;
 import module.Module;
-import module.decode.event.CallEvent;
-import module.decode.event.ICallEventProvider;
-import module.decode.state.DecoderState;
-import module.decode.state.DecoderStateEvent;
-import module.decode.state.IDecoderStateEventListener;
-import module.decode.state.IDecoderStateEventProvider;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import sample.Broadcaster;
 import sample.Listener;
 
-public abstract class Decoder extends Module 
-							  implements ICallEventProvider, 
-										 IDecoderStateEventListener, 
-										 IDecoderStateEventProvider, 
-										 IMessageProvider
+public abstract class Decoder extends Module implements IMessageProvider
 {
-	private final static Logger mLog = LoggerFactory.getLogger( Decoder.class );
+	/* This has to be a broadcaster in order for references to persist */
+	protected Broadcaster<Message> mMessageBroadcaster = new Broadcaster<>();
 
-	/**
-	 * Broadcasts decoded messages both to the internal decoder state and any
-	 * external registered message listeners
-	 */
-	protected Broadcaster<Message> mMessageBroadcaster = 
-			new Broadcaster<Message>();
-
-	protected DecoderState mDecoderState;
-	
 	/**
 	 * Decoder - parent class for all decoders, demodulators and components.  
 	 */
-	public Decoder( DecoderState decoderState )
+	public Decoder()
 	{
-		assert( decoderState != null );
-		
-		mDecoderState = decoderState;
-		mMessageBroadcaster.addListener( mDecoderState );
 	}
 
 	@Override
@@ -66,32 +40,6 @@ public abstract class Decoder extends Module
 	{
 		mMessageBroadcaster.dispose();
 		mMessageBroadcaster = null;
-	}
-
-	/**
-	 * Allows decoder to broadcast initialization messages/events so that 
-	 * external modules can be correctly configured.  This method is invoked
-	 * prior to processing start.
-	 */
-	public void reset()
-	{
-		mDecoderState.init();
-	}
-
-	/**
-	 * Start the decoder
-	 */
-	@Override
-	public void start()
-	{
-	}
-
-	/**
-	 * Stop the decoder
-	 */
-	@Override
-	public void stop()
-	{
 	}
 
 	/**
@@ -107,7 +55,7 @@ public abstract class Decoder extends Module
     public void addMessageListener( Listener<Message> listener )
     {
 		mMessageBroadcaster.addListener( listener );
-    }
+	}
 
     /**
      * Removes the listener from receiving decoded messages from all attached
@@ -118,42 +66,4 @@ public abstract class Decoder extends Module
     {
 		mMessageBroadcaster.removeListener( listener );
     }
-    
-	/**
-	 * Decoder State - tracks the state of the decoder
-	 */
-	public DecoderState getDecoderState()
-	{
-		return mDecoderState;
-	}
-	
-	@Override
-	public Listener<DecoderStateEvent> getDecoderStateListener()
-	{
-		return mDecoderState.getDecoderStateListener();
-	}
-
-	@Override
-	public void setDecoderStateListener( Listener<DecoderStateEvent> listener )
-	{
-		mDecoderState.setDecoderStateListener( listener );
-	}
-
-	@Override
-	public void removeDecoderStateListener()
-	{
-		mDecoderState.removeDecoderStateListener();
-	}
-
-	@Override
-	public void setCallEventListener( Listener<CallEvent> listener )
-	{
-		mDecoderState.setCallEventListener( listener );
-	}
-
-	@Override
-	public void removeCallEventListener()
-	{
-		mDecoderState.removeCallEventListener();
-	}
 }

@@ -63,7 +63,10 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 	private FFTWidth mNewFFTWidth = FFTWidth.FFT04096;
 	
 	private double[] mWindow;
-	private WindowType mWindowType = Window.WindowType.HAMMING;
+	
+	/* The Cosine and Hanning windows seem to offer the best spectral display
+	 * with minimal bin leakage/smearing */
+	private WindowType mWindowType = Window.WindowType.HANNING;
 
 	private FloatFFT_1D mFFT = new FloatFFT_1D( mFFTWidth.getWidth() );
 	

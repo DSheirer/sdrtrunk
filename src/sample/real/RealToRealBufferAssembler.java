@@ -51,10 +51,6 @@ public class RealToRealBufferAssembler implements RealSampleListener
 	@Override
 	public void receive( float sample )
 	{
-		mBuffer[ mBufferPointer ] = sample;
-
-		mBufferPointer++;
-		
 		if( mBufferPointer >= mBufferSize )
 		{
 			if( mListener != null )
@@ -65,6 +61,10 @@ public class RealToRealBufferAssembler implements RealSampleListener
 			mBuffer = new float[ mBufferSize ];
 			mBufferPointer = 0;
 		}
+
+		mBuffer[ mBufferPointer ] = sample;
+
+		mBufferPointer++;
 	}
 
 	public void setListener( Listener<RealBuffer> listener )

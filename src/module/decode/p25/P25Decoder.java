@@ -5,17 +5,14 @@ import module.decode.Decoder;
 import module.decode.DecoderType;
 import source.tuner.frequency.IFrequencyCorrectionController;
 import alias.AliasList;
-import controller.channel.Channel.ChannelType;
 
 public abstract class P25Decoder extends Decoder 
 	implements IFrequencyCorrectionController, Instrumentable
 {
 	private P25MessageProcessor mMessageProcessor;
 	
-	public P25Decoder( AliasList aliasList, ChannelType channelType )
+	public P25Decoder( AliasList aliasList )
 	{
-		super( new P25DecoderState( aliasList, channelType ) );
-		
         mMessageProcessor = new P25MessageProcessor( aliasList );
         mMessageProcessor.setMessageListener( mMessageBroadcaster );
 	}

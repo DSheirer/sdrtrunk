@@ -20,7 +20,6 @@ package record.wave;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -33,10 +32,8 @@ import module.Module;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import record.wave.ComplexBufferWaveRecorder.PoisonPill;
 import sample.ConversionUtils;
 import sample.Listener;
-import sample.complex.ComplexBuffer;
 import sample.real.IRealBufferListener;
 import sample.real.RealBuffer;
 import util.TimeStamp;

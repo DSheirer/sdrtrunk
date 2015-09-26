@@ -18,6 +18,7 @@
 package module.decode.state;
 
 import message.Message;
+import module.decode.DecoderType;
 import module.decode.state.DecoderStateEvent.Event;
 
 import org.slf4j.Logger;
@@ -32,21 +33,18 @@ public class AlwaysUnsquelchedDecoderState extends DecoderState
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( AlwaysUnsquelchedDecoderState.class );
 	
-	private String mProtocol;
+	private DecoderType mDecoderType;
 	
-	public AlwaysUnsquelchedDecoderState( String protocol )
+	public AlwaysUnsquelchedDecoderState( DecoderType decoderType )
 	{
 		super( null );
 		
-		mProtocol = protocol;
+		mDecoderType = decoderType;
 	}
 	
 	@Override
 	public void init()
 	{
-		mLog.debug( "init() - broadcasting unsquelch event" );
-		
-		broadcast( new DecoderStateEvent( this, Event.ALWAYS_UNSQUELCH, State.IDLE ) );
 	}
 	
 	@Override
@@ -62,7 +60,7 @@ public class AlwaysUnsquelchedDecoderState extends DecoderState
 		
 		sb.append( "Activity Summary\n" );
 		sb.append( "\tDecoder:\t" );
-		sb.append( mProtocol );
+		sb.append( mDecoderType );
 		sb.append( "\n\n" );
 		
 		return sb.toString();
@@ -78,5 +76,22 @@ public class AlwaysUnsquelchedDecoderState extends DecoderState
 	public void receiveDecoderStateEvent( DecoderStateEvent event )
 	{
 		/* Not implemented */
+	}
+
+	@Override
+	public DecoderType getDecoderType()
+	{
+		return mDecoderType;
+	}
+
+	@Override
+	public void start()
+	{
+		broadcast( new DecoderStateEvent( this, Event.ALWAYS_UNSQUELCH, State.IDLE ) );
+	}
+
+	@Override
+	public void stop()
+	{
 	}
 }

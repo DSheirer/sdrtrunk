@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.TreeSet;
 
 import message.Message;
+import module.decode.DecoderType;
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderState;
 import module.decode.state.DecoderStateEvent;
@@ -46,6 +47,22 @@ public class MDCDecoderState extends DecoderState
 		super( aliasList );
 	}
 	
+	@Override
+	public DecoderType getDecoderType()
+	{
+		return DecoderType.MDC1200;
+	}
+
+	@Override
+	public void start()
+	{
+	}
+
+	@Override
+	public void stop()
+	{
+	}
+
 	@Override
 	public void reset()
 	{

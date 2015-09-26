@@ -39,8 +39,6 @@ public class LTRStandardDecoder extends Decoder implements IRealBufferListener
 	public LTRStandardDecoder( AliasList aliasList,
 							   MessageDirection direction )
 	{
-		super( new LTRStandardDecoderState( aliasList ) );
-
 		mLTRFSKDecoder = new LTRFSKDecoder();
 
 		if( direction == MessageDirection.OSW )
@@ -73,5 +71,20 @@ public class LTRStandardDecoder extends Decoder implements IRealBufferListener
 	public Listener<RealBuffer> getRealBufferListener()
 	{
 		return mLTRFSKDecoder;
+	}
+
+	@Override
+	public void reset()
+	{
+	}
+
+	@Override
+	public void start()
+	{
+	}
+
+	@Override
+	public void stop()
+	{
 	}
 }

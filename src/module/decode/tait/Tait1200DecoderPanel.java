@@ -47,9 +47,10 @@ public class Tait1200DecoderPanel extends DecoderPanel
     private JLabel mMessage = new JLabel();
 	private JLabel mMessageType = new JLabel();
 	
-	public Tait1200DecoderPanel( SettingsManager settingsManager, Tait1200Decoder decoder )
+	public Tait1200DecoderPanel( SettingsManager settingsManager, 
+								 Tait1200DecoderState decoderState )
 	{
-		super( settingsManager, decoder );
+		super( settingsManager, decoderState );
 		
 		init();
 	}
@@ -59,9 +60,9 @@ public class Tait1200DecoderPanel extends DecoderPanel
 		super.dispose();
 	}
 	
-	public Tait1200DecoderState getState()
+	public Tait1200DecoderState getDecoderState()
 	{
-		return (Tait1200DecoderState)getDecoder().getDecoderState();
+		return (Tait1200DecoderState)super.getDecoderState();
 	}
 	
 	protected void init()
@@ -96,7 +97,7 @@ public class Tait1200DecoderPanel extends DecoderPanel
 				switch( changedAttribute )
 				{
 					case FROM_TALKGROUP:
-						String from = getState().getFromID();
+						String from = getDecoderState().getFromID();
 						
 						if( from != null )
 						{
@@ -109,7 +110,7 @@ public class Tait1200DecoderPanel extends DecoderPanel
 						mFrom.setText( from );
 						break;
 					case FROM_TALKGROUP_ALIAS:
-						Alias fromAlias = getState().getFromIDAlias();
+						Alias fromAlias = getDecoderState().getFromIDAlias();
 						
 						if( fromAlias != null )
 						{
@@ -117,7 +118,7 @@ public class Tait1200DecoderPanel extends DecoderPanel
 						}
 						break;
 					case TO_TALKGROUP:
-						String to = getState().getToID();
+						String to = getDecoderState().getToID();
 						
 						if( to != null )
 						{
@@ -130,7 +131,7 @@ public class Tait1200DecoderPanel extends DecoderPanel
 						mTo.setText( to );
 						break;
 					case TO_TALKGROUP_ALIAS:
-						Alias toAlias = getState().getToIDAlias();
+						Alias toAlias = getDecoderState().getToIDAlias();
 				
 						if( toAlias != null )
 						{
@@ -138,10 +139,10 @@ public class Tait1200DecoderPanel extends DecoderPanel
 						}
 						break;
 					case MESSAGE:
-						mMessage.setText( getState().getMessage() );
+						mMessage.setText( getDecoderState().getMessage() );
 						break;
 					case MESSAGE_TYPE:
-						mMessageType.setText( getState().getMessageType() );
+						mMessageType.setText( getDecoderState().getMessageType() );
 						break;
 					default:
 						break;

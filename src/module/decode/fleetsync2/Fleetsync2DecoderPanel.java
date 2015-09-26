@@ -20,16 +20,14 @@ package module.decode.fleetsync2;
 import java.awt.EventQueue;
 
 import javax.swing.JLabel;
-import javax.swing.JSeparator;
+
+import module.decode.state.ChangedAttribute;
+import module.decode.state.DecoderPanel;
+import net.miginfocom.swing.MigLayout;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import alias.Alias;
-import module.decode.DecoderFactory;
-import module.decode.state.ChangedAttribute;
-import module.decode.state.DecoderPanel;
-import net.miginfocom.swing.MigLayout;
 import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
 import settings.Setting;
@@ -55,16 +53,17 @@ public class Fleetsync2DecoderPanel extends DecoderPanel
 	private JLabel mMessageType = new JLabel( " " );
 	
 	public Fleetsync2DecoderPanel( SettingsManager settingsManager, 
-								   Fleetsync2Decoder decoder )
+								   Fleetsync2DecoderState decoderState )
 	{
-		super( settingsManager, decoder );
+		super( settingsManager, decoderState );
 		
 		init();
 	}
-	
-	private FleetsyncDecoderState getState()
+
+	@Override
+	public Fleetsync2DecoderState getDecoderState()
 	{
-		return (FleetsyncDecoderState)mDecoder.getDecoderState();
+		return (Fleetsync2DecoderState)super.getDecoderState();
 	}
 	
 	public void dispose()
@@ -128,7 +127,7 @@ public class Fleetsync2DecoderPanel extends DecoderPanel
 				switch( changedAttribute )
 				{
 					case FROM_TALKGROUP:
-						String from = getState().getFromID();
+						String from = getDecoderState().getFromID();
 						
 						if( from != null )
 						{
@@ -142,16 +141,16 @@ public class Fleetsync2DecoderPanel extends DecoderPanel
 						}
 						break;
 					case FROM_TALKGROUP_ALIAS:
-						setAliasLabel( mFromAlias, getState().getFromIDAlias() );
+						setAliasLabel( mFromAlias, getDecoderState().getFromIDAlias() );
 						break;
 					case MESSAGE:
-						mMessage.setText( getState().getMessage() );
+						mMessage.setText( getDecoderState().getMessage() );
 						break;
 					case MESSAGE_TYPE:
-						mMessageType.setText( getState().getMessageType() );
+						mMessageType.setText( getDecoderState().getMessageType() );
 						break;
 					case TO_TALKGROUP:
-						String to = getState().getToID();
+						String to = getDecoderState().getToID();
 						
 						if( to != null )
 						{
@@ -165,7 +164,7 @@ public class Fleetsync2DecoderPanel extends DecoderPanel
 						}
 						break;
 					case TO_TALKGROUP_ALIAS:
-						setAliasLabel( mToAlias, getState().getToIDAlias() );
+						setAliasLabel( mToAlias, getDecoderState().getToIDAlias() );
 						break;
 					default:
 						break;

@@ -103,9 +103,9 @@ public class ChannelStatePanel extends JPanel
 		
 		init();
 
-		for( Decoder decoder: getChannel().getProcessingChain().getDecoders() )
+		for( DecoderState decoderState: getChannel().getProcessingChain().getDecoderStates() )
     	{
-			DecoderPanel panel = DecoderFactory.getDecoderPanel( mSettingsManager, decoder );
+			DecoderPanel panel = DecoderFactory.getDecoderPanel( mSettingsManager, decoderState );
 			mDecoderPanels.add( panel );
     		add( panel, "grow,span" );
     	}
@@ -447,9 +447,9 @@ public class ChannelStatePanel extends JPanel
 	            {
 					StringBuilder sb = new StringBuilder();
 					
-					for( Decoder decoder: mChannel.getProcessingChain().getDecoders() )
+					for( DecoderState decoderState: mChannel.getProcessingChain().getDecoderStates() )
 					{
-						sb.append( decoder.getDecoderState().getActivitySummary() );
+						sb.append( decoderState.getActivitySummary() );
 					}
 					
 					new ActivitySummaryFrame( sb.toString(), ChannelStatePanel.this );

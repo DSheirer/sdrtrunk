@@ -47,16 +47,17 @@ public class MDCDecoderPanel extends DecoderPanel
     private JLabel mMessage = new JLabel();
 	private JLabel mMessageType = new JLabel();
 	
-	public MDCDecoderPanel( SettingsManager settingsManager, MDCDecoder decoder )
+	public MDCDecoderPanel( SettingsManager settingsManager, 
+							MDCDecoderState decoderState )
 	{
-		super( settingsManager, decoder );
+		super( settingsManager, decoderState );
 		
 		init();
 	}
 	
-	public MDCDecoderState getState()
+	public MDCDecoderState getDecoderState()
 	{
-		return (MDCDecoderState)getDecoder().getDecoderState();
+		return (MDCDecoderState)super.getDecoderState();
 	}
 	
 	protected void init()
@@ -91,7 +92,7 @@ public class MDCDecoderPanel extends DecoderPanel
 				switch( changedAttribute )
 				{
 					case FROM_TALKGROUP:
-						String from = getState().getFrom();
+						String from = getDecoderState().getFrom();
 						
 						if( from != null )
 						{
@@ -104,7 +105,7 @@ public class MDCDecoderPanel extends DecoderPanel
 						mFrom.setText( from );
 						break;
 					case FROM_TALKGROUP_ALIAS:
-						Alias fromAlias = getState().getFromAlias();
+						Alias fromAlias = getDecoderState().getFromAlias();
 						
 						if( fromAlias != null )
 						{
@@ -116,7 +117,7 @@ public class MDCDecoderPanel extends DecoderPanel
 						}
 						break;
 					case TO_TALKGROUP:
-						String to = getState().getTo();
+						String to = getDecoderState().getTo();
 						
 						if( to != null )
 						{
@@ -129,7 +130,7 @@ public class MDCDecoderPanel extends DecoderPanel
 						mTo.setText( to );
 						break;
 					case TO_TALKGROUP_ALIAS:
-						Alias toAlias = getState().getToAlias();
+						Alias toAlias = getDecoderState().getToAlias();
 						
 						if( toAlias != null )
 						{
@@ -141,10 +142,10 @@ public class MDCDecoderPanel extends DecoderPanel
 						}
 						break;
 					case MESSAGE:
-						mMessage.setText( getState().getMessage() );
+						mMessage.setText( getDecoderState().getMessage() );
 						break;
 					case MESSAGE_TYPE:
-						mMessageType.setText( getState().getMessageType() );
+						mMessageType.setText( getDecoderState().getMessageType() );
 						break;
 					default:
 						break;

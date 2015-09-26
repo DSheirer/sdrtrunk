@@ -4,6 +4,6 @@ import sample.Listener;
 
 public interface ICallEventProvider
 {
-	public void setCallEventListener( Listener<CallEvent> listener );
-	public void removeCallEventListener();
+	public void addCallEventListener( Listener<CallEvent> listener );
+	public void removeCallEventListener( Listener<CallEvent> listener );
 }

@@ -20,13 +20,12 @@ package module.decode.nbfm;
 import module.decode.DecoderType;
 import module.decode.PrimaryDecoder;
 import module.decode.config.DecodeConfiguration;
-import module.decode.state.AlwaysUnsquelchedDecoderState;
 
 public class NBFMDecoder extends PrimaryDecoder
 {
 	public NBFMDecoder( DecodeConfiguration config )
 	{
-		super( config, new AlwaysUnsquelchedDecoderState( "NBFM" ) );
+		super( config );
 	}
 
 	@Override
@@ -34,4 +33,19 @@ public class NBFMDecoder extends PrimaryDecoder
     {
 	    return DecoderType.NBFM;
     }
+
+	@Override
+	public void reset()
+	{
+	}
+
+	@Override
+	public void start()
+	{
+	}
+
+	@Override
+	public void stop()
+	{
+	}
 }

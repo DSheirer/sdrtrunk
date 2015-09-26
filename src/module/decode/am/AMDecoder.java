@@ -21,18 +21,34 @@ package module.decode.am;
 import module.decode.DecoderType;
 import module.decode.PrimaryDecoder;
 import module.decode.config.DecodeConfiguration;
-import module.decode.state.AlwaysUnsquelchedDecoderState;
 
 public class AMDecoder extends PrimaryDecoder
 {
 	public AMDecoder( DecodeConfiguration config )
 	{
-		super( config, new AlwaysUnsquelchedDecoderState( "AM" ) );
+		super( config );
+		
+		//TODO: wire in the am decoder pieces
 	}
 
 	@Override
     public DecoderType getDecoderType()
     {
-	    return DecoderType.NBFM;
+	    return DecoderType.AM;
     }
+
+	@Override
+	public void reset()
+	{
+	}
+
+	@Override
+	public void start()
+	{
+	}
+
+	@Override
+	public void stop()
+	{
+	}
 }

@@ -31,6 +31,7 @@ import module.decode.Decoder;
 import module.decode.event.CallEvent;
 import module.decode.event.ICallEventListener;
 import module.decode.event.ICallEventProvider;
+import module.decode.state.DecoderState;
 import module.decode.state.DecoderStateEvent;
 import module.decode.state.DecoderStateEvent.Event;
 import module.decode.state.IDecoderStateEventListener;
@@ -251,21 +252,21 @@ public class ProcessingChain implements IChannelEventListener
 	}
 
 	/**
-	 * List of decoders for this processing chain
+	 * List of decoder states for this processing chain
 	 */
-	public List<Decoder> getDecoders()
+	public List<DecoderState> getDecoderStates()
 	{
-		List<Decoder> decoders = new ArrayList<>();
+		List<DecoderState> decoderStates = new ArrayList<>();
 		
 		for( Module module: mModules )
 		{
-			if( module instanceof Decoder )
+			if( module instanceof DecoderState )
 			{
-				decoders.add( (Decoder)module );
+				decoderStates.add( (DecoderState)module );
 			}
 		}
 		
-		return decoders;
+		return decoderStates;
 	}
 	
 	/**
@@ -349,7 +350,7 @@ public class ProcessingChain implements IChannelEventListener
 		
 		if( module instanceof ICallEventProvider )
 		{
-			((ICallEventProvider)module).setCallEventListener( mCallEventBroadcaster );
+			((ICallEventProvider)module).addCallEventListener( mCallEventBroadcaster );
 		}
 
 		if( module instanceof IChannelEventProvider )

@@ -21,6 +21,18 @@ public class DecoderStateEvent
 		mFrequency = frequency;
 	}
 	
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append( "Decoder State Event - source[" + mSource.getClass() + 
+				"] event[" + mEvent.toString() + 
+				"] state[" + mState.toString() +
+				"] frequency [" + mFrequency + "]" );
+		
+		return sb.toString();
+	}
+	
 	public Object getSource()
 	{
 		return mSource;

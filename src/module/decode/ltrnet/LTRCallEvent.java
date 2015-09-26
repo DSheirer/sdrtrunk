@@ -29,16 +29,16 @@ public class LTRCallEvent extends CallEvent
 	private long mFrequency;
 	private int mValidCallMessages = 1;
 	
-	public LTRCallEvent( CallEventType callEventType, 
-							 AliasList aliasList,
-							 String fromID,
-							 String toID,
-							 String channel,
-							 long frequency,
-							 String details )
+	public LTRCallEvent( DecoderType type,
+						 CallEventType callEventType, 
+						 AliasList aliasList,
+						 String fromID,
+						 String toID,
+						 String channel,
+						 long frequency,
+						 String details )
     {
-	    super( DecoderType.LTR_STANDARD, callEventType, 
-	    		aliasList, fromID, toID, details );
+	    super( type, callEventType, aliasList, fromID, toID, details );
 	    
 	    mChannel = channel;
 	    mFrequency = frequency;
@@ -163,6 +163,7 @@ public class LTRCallEvent extends CallEvent
 	public static class Builder
 	{
 		/* Required parameters */
+		private DecoderType mDecoderType;
 		private CallEventType mCallEventType;
 
 		/* Optional parameters */
@@ -173,8 +174,9 @@ public class LTRCallEvent extends CallEvent
 		private String mChannel;
 		private long mFrequency;
 
-		public Builder( CallEventType callEventType )
+		public Builder( DecoderType decoderType, CallEventType callEventType )
 		{
+			mDecoderType = decoderType;
 			mCallEventType = callEventType;
 		}
 		
@@ -226,7 +228,8 @@ public class LTRCallEvent extends CallEvent
 	 */
 	private LTRCallEvent( Builder builder )
 	{
-		this( builder.mCallEventType,
+		this( builder.mDecoderType,
+			  builder.mCallEventType,
 			  builder.mAliasList, 
 			  builder.mFromID,
 			  builder.mToID,

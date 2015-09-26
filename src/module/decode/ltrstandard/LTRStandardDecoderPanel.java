@@ -38,9 +38,10 @@ public class LTRStandardDecoderPanel extends DecoderPanel
 
     private JLabel mLCN = new JLabel( "LCN:" );
     
-	public LTRStandardDecoderPanel( SettingsManager settingsManager, LTRStandardDecoder decoder )
+	public LTRStandardDecoderPanel( SettingsManager settingsManager, 
+									LTRStandardDecoderState decoderState )
 	{
-		super( settingsManager, decoder );
+		super( settingsManager, decoderState );
 		
 		init();
 	}
@@ -71,9 +72,9 @@ public class LTRStandardDecoderPanel extends DecoderPanel
 		add( mLCN, "wrap" );
 	}
 	
-	private LTRStandardDecoderState getDecoderState()
+	public LTRStandardDecoderState getDecoderState()
 	{
-		return (LTRStandardDecoderState)getDecoder().getDecoderState();
+		return (LTRStandardDecoderState)super.getDecoderState();
 	}
 
     @Override

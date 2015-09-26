@@ -23,14 +23,13 @@ import java.awt.Font;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import alias.Alias;
-import module.decode.Decoder;
 import sample.Listener;
 import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
 import settings.Setting;
 import settings.SettingChangeListener;
 import settings.SettingsManager;
+import alias.Alias;
 
 public abstract class DecoderPanel extends JPanel 
 		implements Listener<ChangedAttribute>, SettingChangeListener
@@ -47,16 +46,16 @@ public abstract class DecoderPanel extends JPanel
     protected Color mColorLabelAuxDecoder;
 	
     protected SettingsManager mSettingsManager; 
-    protected Decoder mDecoder;
+    protected DecoderState mDecoderState;
 	
-	public DecoderPanel( SettingsManager settingsManager, Decoder decoder )
+	public DecoderPanel( SettingsManager settingsManager, DecoderState decoderState )
 	{
 		mSettingsManager = settingsManager;
 		mSettingsManager.addListener( this );
 		
-		mDecoder = decoder;
+		mDecoderState = decoderState;
 		
-		mDecoder.getDecoderState().setChangedAttributeListener( this );
+		mDecoderState.setChangedAttributeListener( this );
 	}
 	
 	public void dispose()
@@ -64,13 +63,13 @@ public abstract class DecoderPanel extends JPanel
 		mSettingsManager.removeListener( this );
 		mSettingsManager = null;
 		
-		mDecoder.getDecoderState().removeChangedAttributeListener();
-		mDecoder = null;
+		mDecoderState.removeChangedAttributeListener();
+		mDecoderState = null;
 	}
 	
-	public Decoder getDecoder()
+	public DecoderState getDecoderState()
 	{
-		return mDecoder;
+		return mDecoderState;
 	}
 	
 	protected void init()

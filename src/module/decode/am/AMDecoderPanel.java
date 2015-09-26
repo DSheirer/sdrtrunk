@@ -21,6 +21,7 @@ import javax.swing.JLabel;
 
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderPanel;
+import module.decode.state.DecoderState;
 import settings.ColorSetting;
 import settings.Setting;
 import settings.SettingsManager;
@@ -31,9 +32,9 @@ public class AMDecoderPanel extends DecoderPanel
 
     private JLabel mProtocol = new JLabel( "AM" );
 	
-	public AMDecoderPanel( SettingsManager settingsManager, AMDecoder decoder )
+	public AMDecoderPanel( SettingsManager settingsManager, DecoderState decoderState )
 	{
-		super( settingsManager, decoder );
+		super( settingsManager, decoderState );
 		
 		init();
 	}

@@ -79,7 +79,7 @@ public class ChannelState extends Module implements ICallEventProvider,
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( ChannelState.class );
 
-	public static final long FADE_TIMEOUT_DELAY = 1000;
+	public static final long FADE_TIMEOUT_DELAY = 1200;
 	public static final long RESET_TIMEOUT_DELAY = 2000;
 	
 	private State mState = State.IDLE;
@@ -165,9 +165,7 @@ public class ChannelState extends Module implements ICallEventProvider,
 	
 	private boolean isEndingState()
 	{
-		return mState == State.IDLE ||
-			   mState == State.FADE ||
-			   mState == State.END;
+		return mState == State.FADE || mState == State.END;
 	}
 	
 
@@ -391,13 +389,13 @@ public class ChannelState extends Module implements ICallEventProvider,
 	}
 
 	@Override
-	public void setCallEventListener( Listener<CallEvent> listener )
+	public void addCallEventListener( Listener<CallEvent> listener )
 	{
 		mCallEventListener = listener;
 	}
 
 	@Override
-	public void removeCallEventListener()
+	public void removeCallEventListener( Listener<CallEvent> listener )
 	{
 		mCallEventListener = null;
 	}

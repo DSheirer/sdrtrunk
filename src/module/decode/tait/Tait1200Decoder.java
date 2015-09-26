@@ -76,8 +76,6 @@ public class Tait1200Decoder extends Decoder implements IRealBufferListener,
     
     public Tait1200Decoder( AliasList aliasList )
 	{
-    	super( new Tait1200DecoderState( aliasList ) );
-    	
         mDecimationFilter = new HalfBandFilter_RB_RB( 
     		Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO.getCoefficients(), 1.0002f, true );
 
@@ -190,5 +188,26 @@ public class Tait1200Decoder extends Decoder implements IRealBufferListener,
 	public DecoderType getDecoderType()
 	{
 		return DecoderType.TAIT_1200;
+	}
+
+	@Override
+	public void reset()
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void start()
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void stop()
+	{
+		// TODO Auto-generated method stub
+		
 	}
 }

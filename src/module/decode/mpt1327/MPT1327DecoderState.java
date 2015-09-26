@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.TreeSet;
 
 import message.Message;
+import module.decode.DecoderType;
 import module.decode.event.CallEvent;
 import module.decode.event.CallEvent.CallEventType;
 import module.decode.mpt1327.MPT1327Message.IdentType;
@@ -70,6 +71,22 @@ public class MPT1327DecoderState extends DecoderState
 		mChannelType = channelType;
 	}
 	
+	@Override
+	public DecoderType getDecoderType()
+	{
+		return DecoderType.MPT1327;
+	}
+
+	@Override
+	public void start()
+	{
+	}
+
+	@Override
+	public void stop()
+	{
+	}
+
 	public ChannelType getChannelType()
 	{
 		return mChannelType;

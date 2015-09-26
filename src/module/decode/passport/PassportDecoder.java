@@ -50,8 +50,6 @@ public class PassportDecoder extends Decoder
 	public PassportDecoder( DecodeConfiguration config, 
 							AliasList aliasList )
 	{
-		super( new PassportDecoderState( aliasList ) );
-
 		mPassportFSKDecoder = new LTRFSKDecoder();
 
 		mPassportMessageFramer = 
@@ -101,4 +99,25 @@ public class PassportDecoder extends Decoder
     {
 		mPassportFSKDecoder.unregisterTap( tap );
     }
+
+	@Override
+	public void reset()
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void start()
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void stop()
+	{
+		// TODO Auto-generated method stub
+		
+	}
 }

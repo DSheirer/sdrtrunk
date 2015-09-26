@@ -40,16 +40,16 @@ public class MPT1327TrafficPanel extends DecoderPanel
     private JLabel mToTalkgroupLabel;
     private JLabel mToTalkgroupAliasLabel;
     
-    public MPT1327TrafficPanel( SettingsManager settingsManager, MPT1327Decoder decoder )
+    public MPT1327TrafficPanel( SettingsManager settingsManager, MPT1327DecoderState decoderState )
 	{
-		super( settingsManager, decoder );
+		super( settingsManager, decoderState );
 		
 		init();
 	}
     
-    private MPT1327DecoderState getDecoderState()
+    public MPT1327DecoderState getDecoderState()
     {
-    	return (MPT1327DecoderState)getDecoder().getDecoderState();
+    	return (MPT1327DecoderState)super.getDecoderState();
     }
     
     public void dispose()

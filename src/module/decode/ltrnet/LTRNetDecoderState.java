@@ -22,19 +22,23 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.TreeSet;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import message.Message;
+import module.decode.DecoderType;
+import module.decode.event.CallEvent;
 import module.decode.event.CallEvent.CallEventType;
-import module.decode.mpt1327.MPT1327DecoderState;
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderState;
 import module.decode.state.DecoderStateEvent;
 import module.decode.state.DecoderStateEvent.Event;
 import module.decode.state.State;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import alias.Alias;
 import alias.AliasList;
+import audio.metadata.Metadata;
+import audio.metadata.MetadataType;
 
 public class LTRNetDecoderState extends DecoderState
 {
@@ -64,31 +68,74 @@ public class LTRNetDecoderState extends DecoderState
 	{
 		super( aliasList );
 	}
+	
+	@Override
+	public DecoderType getDecoderType()
+	{
+		return DecoderType.LTR_NET;
+	}
 
 	@Override
     public void receive( Message message )
     {
 		if( message.isValid() )
 		{
+			State state = State.IDLE;
+
 			if( message instanceof LTRNetOSWMessage )
 			{
 				LTRNetOSWMessage ltr = (LTRNetOSWMessage)message;
 				
 				switch( ltr.getMessageType() )
 				{
-					case CA_STRT:
 					case CA_ENDD:
 						if( mChannelNumber == 0 )
 						{
 							mChannelNumber = ltr.getChannel();
 							broadcast( ChangedAttribute.CHANNEL_NUMBER );
 						}
-						
-						if( ltr.getChannel() == 31 )
+
+						/* Process FCC Station ID Events */
+						if( ltr.getGroup() == 254 )
+						{
+							if( mCurrentCallEvent == null || 
+								mCurrentCallEvent.getCallEventType() != 
+									  		CallEventType.STATION_ID )
+							{
+								mCurrentCallEvent = new LTRCallEvent.Builder( 
+									DecoderType.LTR_NET, CallEventType.STATION_ID )
+									.aliasList( getAliasList() )
+									.channel( String.valueOf( mChannelNumber ) )
+									.frequency( mFrequency )
+									.to( ltr.getTalkgroupID() )
+									.build();
+
+								broadcast( mCurrentCallEvent );
+								
+								broadcast( new DecoderStateEvent( this, 
+										Event.START, State.DATA ) ); 
+							}
+							else
+							{
+								broadcast( new DecoderStateEvent( this, 
+										Event.CONTINUATION, State.DATA ) ); 
+							}
+						}
+						else
 						{
 							processCallEndMessage( ltr );
 						}
-						else if( ltr.getChannel() == mChannelNumber )
+						break;
+					case CA_STRT:
+						if( mChannelNumber == 0 )
+						{
+							mChannelNumber = ltr.getChannel();
+							broadcast( ChangedAttribute.CHANNEL_NUMBER );
+						}
+
+						/* If the call event channel matches our current channel
+						 * then it's a call, otherwise it's a call detect. */
+						if( ltr.getChannel() == mChannelNumber )
 						{
 							processCallMessage( ltr );
 						}
@@ -96,6 +143,7 @@ public class LTRNetDecoderState extends DecoderState
 						{
 							processCallDetectMessage( ltr );
 						}
+						
 						break;
 					case SY_IDLE:
 						if( mChannelNumber != ltr.getChannel() )
@@ -133,6 +181,8 @@ public class LTRNetDecoderState extends DecoderState
 						}
 						break;
 					case ID_UNIQ:
+						state = State.DATA;
+						
 						int uniqueID = ltr.getRadioUniqueID();
 						
 						if( uniqueID != LTRNetOSWMessage.INT_NULL_VALUE )
@@ -142,7 +192,8 @@ public class LTRNetDecoderState extends DecoderState
 						
 						if( getCurrentLTRCallEvent() == null )
 						{
-							mCurrentCallEvent = new LTRCallEvent.Builder( CallEventType.REGISTER )
+							mCurrentCallEvent = new LTRCallEvent.Builder( 
+									DecoderType.LTR_NET, CallEventType.REGISTER )
 								.aliasList( getAliasList() )
 								.channel( String.valueOf( mChannelNumber ) )
 								.frequency( mFrequency )
@@ -190,6 +241,8 @@ public class LTRNetDecoderState extends DecoderState
 						break;
 					case ID_ESNH:
 					case ID_ESNL:
+						state = State.DATA;
+						
 						String esn = ltr.getESN();
 						
 						if( !esn.contains( "xxxx" ) )
@@ -210,7 +263,8 @@ public class LTRNetDecoderState extends DecoderState
 
 						if( mCurrentCallEvent == null )
 						{
-							mCurrentCallEvent = new LTRCallEvent.Builder( CallEventType.REGISTER_ESN )
+							mCurrentCallEvent = new LTRCallEvent.Builder( 
+									DecoderType.LTR_NET, CallEventType.REGISTER_ESN )
 							.aliasList( getAliasList() )
 							.details( "ESN:" + ltr.getESN() )
 							.frequency( mFrequency )
@@ -222,6 +276,8 @@ public class LTRNetDecoderState extends DecoderState
 						
  						break;
 					case ID_UNIQ:
+						state = State.DATA;
+						
 						int uniqueid = ltr.getRadioUniqueID();
 						
 						if( uniqueid != LTRNetISWMessage.INT_NULL_VALUE )
@@ -239,7 +295,8 @@ public class LTRNetDecoderState extends DecoderState
 							
 							if( getCurrentLTRCallEvent() == null )
 							{
-								mCurrentCallEvent = new LTRCallEvent.Builder( CallEventType.REGISTER )
+								mCurrentCallEvent = new LTRCallEvent.Builder( 
+										DecoderType.LTR_NET, CallEventType.REGISTER )
 									.aliasList( getAliasList() )
 									.channel( String.valueOf( mChannelNumber ) )
 									.frequency( mFrequency )
@@ -525,88 +582,81 @@ public class LTRNetDecoderState extends DecoderState
 				frequency = mTransmitFrequencies.get( channel );
 			}
 
-			broadcast( new LTRCallEvent.Builder( CallEventType.CALL_DETECT )
+			broadcast( new LTRCallEvent.Builder( DecoderType.LTR_NET, CallEventType.CALL_DETECT )
 				.aliasList( getAliasList() )
 				.channel( String.valueOf( message.getChannel() ) )
 				.frequency( frequency )
 				.to( message.getTalkgroupID() )
 				.build() );
 		}
+		
+		broadcast( new DecoderStateEvent( this, Event.CONTINUATION, State.IDLE ) );
 	}
 
 	private void processCallMessage( LTRNetMessage message )
 	{
-		mLog.debug( "Processing Call Message [" + message.getMessage() + "]" );
-		LTRCallEvent current = getCurrentLTRCallEvent();
-		
 		int group = message.getGroup();
 
-		/* If this is a new call or the talkgroup is different from the current
-		 * call, create a new call event */
-		if( current == null || !current.isMatchingTalkgroup( message ) )
+		/* Process call registration */
+		if( group == 253 )
 		{
-			/* Invalidate the current call */
-			if( current != null )
-			{
-				current.setValid( false );
-				broadcast( current );
-			}
-			
-			mTalkgroup = message.getTalkgroupID();
-			broadcast( ChangedAttribute.TO_TALKGROUP );
-
-			/* A talkgroup must be seen at least once before it will be added
-			 * to the mTalkgroups list that is used in the activity summary,
-			 * so that we don't pollute the summary with one-off error talkgroups */
-			if( mTalkgroupsFirstHeard.contains( mTalkgroup ) )
-			{
-				mTalkgroups.add( mTalkgroup );
-			}
-			else
-			{
-				mTalkgroupsFirstHeard.add( mTalkgroup );
-			}
-			
-			mTalkgroupAlias = message.getTalkgroupIDAlias();
-			broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
-
-			CallEventType type = CallEventType.CALL;
-
-			if( group == 253 )
-			{
-				type = CallEventType.REGISTER;
-				
-				mDescription = "REGISTER";
-				broadcast( ChangedAttribute.DESCRIPTION );
-			}
-			else if( group == 254 )
-			{
-				type = CallEventType.STATION_ID;
-
-				mDescription = "STATION ID";
-				broadcast( ChangedAttribute.DESCRIPTION );
-			}
-			
-			mCurrentCallEvent = new LTRCallEvent.Builder( type )
-				.aliasList( getAliasList() )
-				.channel( String.valueOf( message.getChannel() ) )
-				.frequency( mFrequency )
-				.to( message.getTalkgroupID() )
-				.build();
-		
-			broadcast( mCurrentCallEvent );
-			
-			mLog.debug( "Decoder State: Call Start" );
-			
-			broadcast( new DecoderStateEvent( this, Event.START, 
-					( type == CallEventType.CALL ) ? State.CALL : State.DATA ) );
+			broadcast( new DecoderStateEvent( this, Event.START, State.DATA ) ); 
+			mDescription = "REGISTER";
+			broadcast( ChangedAttribute.DESCRIPTION );
 		}
+		/* Process call */
 		else
 		{
-			mLog.debug( "Decoder State: Call Continuation Group:" + group );
+			String talkgroup = message.getTalkgroupID();
+
+			LTRCallEvent current = getCurrentLTRCallEvent();
 			
-			broadcast( new DecoderStateEvent( this, Event.CONTINUATION, 
-				( group == 253 || group == 254 ) ? State.DATA : State.CALL ) );
+			/* If this is a new call or the talkgroup is different from the current
+			 * call, create a new call event */
+			if( current == null || !current.getToID().contentEquals( talkgroup ) )
+			{
+				/* Invalidate the current call */
+				if( current != null )
+				{
+					current.setValid( false );
+					broadcast( current );
+				}
+				
+				mTalkgroup = message.getTalkgroupID();
+				broadcast( ChangedAttribute.TO_TALKGROUP );
+
+				/* A talkgroup must be seen at least once before it will be added
+				 * to the mTalkgroups list that is used in the activity summary,
+				 * so that we don't pollute the summary with one-off error talkgroups */
+				if( mTalkgroupsFirstHeard.contains( mTalkgroup ) )
+				{
+					mTalkgroups.add( mTalkgroup );
+				}
+				else
+				{
+					mTalkgroupsFirstHeard.add( mTalkgroup );
+				}
+				
+				mTalkgroupAlias = message.getTalkgroupIDAlias();
+				broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
+
+				CallEvent callEvent = new LTRCallEvent.Builder( DecoderType.LTR_NET, CallEventType.CALL )
+					.aliasList( getAliasList() )
+					.channel( String.valueOf( message.getChannel() ) )
+					.frequency( mFrequency )
+					.to( message.getTalkgroupID() )
+					.build();
+				
+				broadcast( callEvent );
+				
+				mCurrentCallEvent = callEvent;
+				
+				broadcast( new Metadata( MetadataType.TO, mTalkgroup, mTalkgroupAlias, true ) );
+
+				broadcast( new DecoderStateEvent( this, Event.START, State.CALL ) );
+			}
+
+			broadcast( new DecoderStateEvent( this, Event.CONTINUATION, State.CALL ) );
 		}
 	}
 	
@@ -617,12 +667,10 @@ public class LTRNetDecoderState extends DecoderState
 		{
 			mCurrentCallEvent.setEnd( System.currentTimeMillis() );
 			broadcast( mCurrentCallEvent );
-			
 		}
 
 		mCurrentCallEvent = null;
 		
-		mLog.debug( "Decoder State: Call End" );
 		broadcast( new DecoderStateEvent( this, Event.END, State.FADE ) );
 	}
 
@@ -653,7 +701,7 @@ public class LTRNetDecoderState extends DecoderState
 		if( mCurrentCallEvent != null && mCurrentCallEvent
 				.getCallEventType() == CallEventType.CALL )
 		{
-			mCurrentCallEvent.setEnd( System.currentTimeMillis() );
+			mCurrentCallEvent.end();
 			broadcast( mCurrentCallEvent );
 		}
 			
@@ -714,5 +762,15 @@ public class LTRNetDecoderState extends DecoderState
 			default:
 				break;
 		}
+	}
+
+	@Override
+	public void start()
+	{
+	}
+
+	@Override
+	public void stop()
+	{
 	}
 }

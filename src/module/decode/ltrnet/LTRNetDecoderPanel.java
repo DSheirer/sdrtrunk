@@ -21,9 +21,9 @@ import java.awt.EventQueue;
 
 import javax.swing.JLabel;
 
-import net.miginfocom.swing.MigLayout;
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderPanel;
+import net.miginfocom.swing.MigLayout;
 import settings.ColorSetting;
 import settings.Setting;
 import settings.SettingsManager;
@@ -40,9 +40,10 @@ public class LTRNetDecoderPanel extends DecoderPanel
     private JLabel mLCN = new JLabel( "LCN:" );
     private JLabel mDescription = new JLabel();
     
-	public LTRNetDecoderPanel( SettingsManager settingsManager, LTRNetDecoder decoder )
+	public LTRNetDecoderPanel( SettingsManager settingsManager, 
+							   LTRNetDecoderState decoderState )
 	{
-		super( settingsManager, decoder );
+		super( settingsManager, decoderState );
 		
 		init();
 	}
@@ -73,12 +74,12 @@ public class LTRNetDecoderPanel extends DecoderPanel
 		add( mTalkgroupAlias, "wrap" );
 		
 		add( mLCN );
-		add( mDescription, "span,wrap" );
+		add( mDescription, "span" );
 	}
 	
-	private LTRNetDecoderState getDecoderState()
+	public LTRNetDecoderState getDecoderState()
 	{
-		return (LTRNetDecoderState)getDecoder().getDecoderState();
+		return (LTRNetDecoderState)super.getDecoderState();
 	}
 
 	@Override

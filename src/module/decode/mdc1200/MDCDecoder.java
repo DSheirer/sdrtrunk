@@ -76,8 +76,6 @@ public class MDCDecoder extends Decoder implements IRealBufferListener,
     
     public MDCDecoder( AliasList aliasList )
 	{
-    	super( new MDCDecoderState( aliasList ) );
-    	
     	/* Decimation filter: 48000 / 2 = 24000 */
     	mDecimationFilter = new HalfBandFilter_RB_RB( 
     		Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO.getCoefficients(), 1.0f, true );
@@ -202,5 +200,26 @@ public class MDCDecoder extends Decoder implements IRealBufferListener,
 	public Listener<RealBuffer> getRealBufferListener()
 	{
 		return mDecimationFilter;
+	}
+
+	@Override
+	public void reset()
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void start()
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void stop()
+	{
+		// TODO Auto-generated method stub
+		
 	}
 }

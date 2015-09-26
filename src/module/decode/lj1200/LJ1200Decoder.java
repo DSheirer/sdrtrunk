@@ -77,8 +77,6 @@ public class LJ1200Decoder extends Decoder implements IRealBufferListener,
     
     public LJ1200Decoder( AliasList aliasList )
 	{
-    	super( new LJ1200DecoderState( aliasList ) );
-    	
         mDecimationFilter = new HalfBandFilter_RB_RB( 
     		Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO.getCoefficients(), 1.0f, true );
 
@@ -192,5 +190,20 @@ public class LJ1200Decoder extends Decoder implements IRealBufferListener,
 	public Listener<RealBuffer> getRealBufferListener()
 	{
 		return mDecimationFilter;
+	}
+
+	@Override
+	public void reset()
+	{
+	}
+
+	@Override
+	public void start()
+	{
+	}
+
+	@Override
+	public void stop()
+	{
 	}
 }

@@ -37,9 +37,9 @@ public class LJ1200DecoderPanel extends DecoderPanel
     private JLabel mTo = new JLabel();
     private JLabel mToAlias = new JLabel();
 	
-	public LJ1200DecoderPanel( SettingsManager settingsManager, LJ1200Decoder decoder )
+	public LJ1200DecoderPanel( SettingsManager settingsManager, LJ1200DecoderState decoderState )
 	{
-		super( settingsManager, decoder );
+		super( settingsManager, decoderState );
 		
 		init();
 	}
@@ -62,9 +62,9 @@ public class LJ1200DecoderPanel extends DecoderPanel
 		add( mToAlias, "wrap" );
 	}
 	
-	private LJ1200DecoderState getState()
+	public LJ1200DecoderState getDecoderState()
 	{
-		return (LJ1200DecoderState)getDecoder().getDecoderState();
+		return (LJ1200DecoderState)super.getDecoderState();
 	}
 
 	@Override
@@ -73,11 +73,11 @@ public class LJ1200DecoderPanel extends DecoderPanel
 		switch( changedAttribute )
 		{
 			case TO_TALKGROUP:
-				mTo.setText( getState().getAddress() );
+				mTo.setText( getDecoderState().getAddress() );
 				repaint();
 				break;
 			case FROM_TALKGROUP_ALIAS:
-				Alias alias = getState().getAddressAlias();
+				Alias alias = getDecoderState().getAddressAlias();
 				
 				if( alias != null )
 				{

@@ -21,6 +21,7 @@ import java.util.Iterator;
 import java.util.TreeSet;
 
 import message.Message;
+import module.decode.DecoderType;
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderState;
 import module.decode.state.DecoderStateEvent;
@@ -29,7 +30,7 @@ import module.decode.state.State;
 import alias.Alias;
 import alias.AliasList;
 
-public class FleetsyncDecoderState extends DecoderState
+public class Fleetsync2DecoderState extends DecoderState
 {
 	private TreeSet<String> mIdents = new TreeSet<String>();
 	private TreeSet<String> mEmergencyIdents = new TreeSet<String>();
@@ -43,11 +44,27 @@ public class FleetsyncDecoderState extends DecoderState
 	private String mMessage;
 	private String mMessageType;
 
-	public FleetsyncDecoderState( AliasList aliasList )
+	public Fleetsync2DecoderState( AliasList aliasList )
 	{
 		super( aliasList );
 	}
 	
+	@Override
+	public DecoderType getDecoderType()
+	{
+		return DecoderType.FLEETSYNC2;
+	}
+
+	@Override
+	public void start()
+	{
+	}
+
+	@Override
+	public void stop()
+	{
+	}
+
 	@Override
 	public void dispose()
 	{
@@ -57,7 +74,6 @@ public class FleetsyncDecoderState extends DecoderState
 	@Override
 	public void init()
 	{
-		
 	}
 
 	/**

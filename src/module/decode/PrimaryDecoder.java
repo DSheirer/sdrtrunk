@@ -19,7 +19,6 @@
 package module.decode;
 
 import module.decode.config.DecodeConfiguration;
-import module.decode.state.DecoderState;
 import sample.Listener;
 import audio.squelch.ISquelchStateProvider;
 import audio.squelch.SquelchState;
@@ -36,10 +35,8 @@ public abstract class PrimaryDecoder extends Decoder implements ISquelchStatePro
 	
 	protected DecodeConfiguration mDecodeConfiguration;
 	
-	public PrimaryDecoder( DecodeConfiguration config, DecoderState decoderState )
+	public PrimaryDecoder( DecodeConfiguration config )
 	{
-		super( decoderState );
-		
 		mDecodeConfiguration = config;
 	}
 	

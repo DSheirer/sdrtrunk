@@ -1,11 +1,21 @@
 package module.decode.state;
 
+import message.IMessageListener;
 import message.Message;
+import module.Module;
+import module.decode.DecoderType;
 import module.decode.event.ActivitySummaryProvider;
 import module.decode.event.CallEvent;
 import module.decode.event.ICallEventProvider;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import sample.Broadcaster;
 import sample.Listener;
 import alias.AliasList;
+import audio.metadata.IMetadataProvider;
+import audio.metadata.Metadata;
 
 /**
  * Channel state monitors the stream of decoded messages produced by the 
@@ -13,16 +23,23 @@ import alias.AliasList;
  * 
  * Provides access to a textual activity summary of events observed.
  */
-public abstract class DecoderState implements ActivitySummaryProvider,
-								   			  Listener<Message>,
-								   			  ICallEventProvider,
-								   			  IChangedAttributeProvider, 
-								   			  IDecoderStateEventListener,
-								   			  IDecoderStateEventProvider
+public abstract class DecoderState extends Module 
+			implements ActivitySummaryProvider,
+					   Listener<Message>,
+					   ICallEventProvider,
+					   IChangedAttributeProvider, 
+					   IDecoderStateEventListener,
+					   IDecoderStateEventProvider,
+					   IMessageListener,
+					   IMetadataProvider
 {
-	private Listener<CallEvent> mCallEventListener;
+	private final static Logger mLog = LoggerFactory.getLogger( DecoderState.class );
+
+	/* This has to be a broadcaster in order for references to persist */
+	private Broadcaster<CallEvent> mCallEventBroadcaster = new Broadcaster<>();
 	private Listener<ChangedAttribute> mChangedAttributeListener;
 	private Listener<DecoderStateEvent> mDecoderStateListener;
+	private Listener<Metadata> mMetadataListener;
 	
 	private DecoderStateEventListener mDecoderStateEventListener = 
 										new DecoderStateEventListener();
@@ -35,6 +52,8 @@ public abstract class DecoderState implements ActivitySummaryProvider,
 	{
 		mAliasList = aliasList;
 	}
+	
+	public abstract DecoderType getDecoderType();
 	
 	public AliasList getAliasList()
 	{
@@ -69,9 +88,11 @@ public abstract class DecoderState implements ActivitySummaryProvider,
 	 */
 	public void dispose()
 	{
-		mCallEventListener = null;
+		mCallEventBroadcaster.dispose();
+		mCallEventBroadcaster = null;
 		mChangedAttributeListener = null;
 		mDecoderStateListener = null;
+		mMetadataListener = null;
 
 		mAliasList = null;
 	}
@@ -86,28 +107,25 @@ public abstract class DecoderState implements ActivitySummaryProvider,
 	 */
 	protected void broadcast( CallEvent event )
 	{
-		if( mCallEventListener != null )
-		{
-			mCallEventListener.receive( event );
-		}
+		mCallEventBroadcaster.broadcast( event );
 	}
 
 	/**
 	 * Adds a call event listener
 	 */
 	@Override
-	public void setCallEventListener( Listener<CallEvent> listener )
+	public void addCallEventListener( Listener<CallEvent> listener )
 	{
-		mCallEventListener = listener;
+		mCallEventBroadcaster.addListener( listener );
 	}
 
 	/**
 	 * Removes the call event listener
 	 */
 	@Override
-	public void removeCallEventListener()
+	public void removeCallEventListener( Listener<CallEvent> listener )
 	{
-		mCallEventListener = null;
+		mCallEventBroadcaster.removeListener( listener );
 	}
 
 	@Override
@@ -182,5 +200,34 @@ public abstract class DecoderState implements ActivitySummaryProvider,
 	public void removeDecoderStateListener()
 	{
 		mDecoderStateListener = null;
+	}
+
+	/**
+	 * Broadcasts metadata to a registered listener
+	 */
+	protected void broadcast( Metadata metadata )
+	{
+		if( mMetadataListener != null )
+		{
+			mMetadataListener.receive( metadata );
+		}
+	}
+
+	@Override
+	public void setMetadataListener( Listener<Metadata> listener )
+	{
+		mMetadataListener = listener;
+	}
+
+	@Override
+	public void removeMetadataListener()
+	{
+		mMetadataListener = null;
+	}
+
+	@Override
+	public Listener<Message> getMessageListener()
+	{
+		return this;
 	}
 }

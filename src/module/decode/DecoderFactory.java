@@ -30,36 +30,42 @@ import module.decode.config.AuxDecodeConfiguration;
 import module.decode.config.DecodeConfiguration;
 import module.decode.fleetsync2.Fleetsync2Decoder;
 import module.decode.fleetsync2.Fleetsync2DecoderPanel;
+import module.decode.fleetsync2.Fleetsync2DecoderState;
 import module.decode.fleetsync2.FleetsyncMessageFilter;
 import module.decode.lj1200.LJ1200Decoder;
 import module.decode.lj1200.LJ1200DecoderPanel;
+import module.decode.lj1200.LJ1200DecoderState;
 import module.decode.lj1200.LJ1200MessageFilter;
 import module.decode.ltrnet.DecodeConfigLTRNet;
 import module.decode.ltrnet.LTRNetDecoder;
 import module.decode.ltrnet.LTRNetDecoderPanel;
+import module.decode.ltrnet.LTRNetDecoderState;
 import module.decode.ltrnet.LTRNetEditor;
 import module.decode.ltrnet.LTRNetMessageFilter;
 import module.decode.ltrstandard.DecodeConfigLTRStandard;
 import module.decode.ltrstandard.LTRStandardDecoder;
 import module.decode.ltrstandard.LTRStandardDecoderPanel;
+import module.decode.ltrstandard.LTRStandardDecoderState;
 import module.decode.ltrstandard.LTRStandardEditor;
 import module.decode.ltrstandard.LTRStandardMessageFilter;
 import module.decode.mdc1200.MDCDecoder;
 import module.decode.mdc1200.MDCDecoderPanel;
+import module.decode.mdc1200.MDCDecoderState;
 import module.decode.mdc1200.MDCMessageFilter;
 import module.decode.mpt1327.DecodeConfigMPT1327;
 import module.decode.mpt1327.MPT1327ConfigEditor;
 import module.decode.mpt1327.MPT1327Decoder;
 import module.decode.mpt1327.MPT1327Decoder.Sync;
 import module.decode.mpt1327.MPT1327DecoderPanel;
+import module.decode.mpt1327.MPT1327DecoderState;
 import module.decode.mpt1327.MPT1327MessageFilter;
 import module.decode.nbfm.NBFMDecoder;
 import module.decode.nbfm.NBFMDecoderPanel;
 import module.decode.nbfm.NBFMEditor;
 import module.decode.p25.DecodeConfigP25Phase1;
-import module.decode.p25.P25Decoder;
 import module.decode.p25.P25Decoder.Modulation;
 import module.decode.p25.P25DecoderPanel;
+import module.decode.p25.P25DecoderState;
 import module.decode.p25.P25Editor;
 import module.decode.p25.P25_C4FMDecoder;
 import module.decode.p25.P25_LSMDecoder;
@@ -67,12 +73,16 @@ import module.decode.p25.audio.P25AudioModule;
 import module.decode.p25.message.filter.P25MessageFilterSet;
 import module.decode.passport.PassportDecoder;
 import module.decode.passport.PassportDecoderPanel;
+import module.decode.passport.PassportDecoderState;
 import module.decode.passport.PassportEditor;
 import module.decode.passport.PassportMessageFilter;
+import module.decode.state.AlwaysUnsquelchedDecoderState;
 import module.decode.state.DecoderPanel;
+import module.decode.state.DecoderState;
 import module.decode.state.TrafficChannelManager;
 import module.decode.tait.Tait1200Decoder;
 import module.decode.tait.Tait1200DecoderPanel;
+import module.decode.tait.Tait1200DecoderState;
 import module.demodulate.fm.FMDemodulatorModule;
 
 import org.slf4j.Logger;
@@ -180,22 +190,26 @@ public class DecoderFactory
 		switch( decodeConfig.getDecoderType() )
 		{
 		    case AM:
-//		    	decoder = new AMDecoder();
+		    	modules.add( new AMDecoder( decodeConfig ) );
+		    	modules.add( new AlwaysUnsquelchedDecoderState( DecoderType.AM ) );
 		        break;
 			case NBFM:
 				modules.add( new AudioModule( recordAudio, NO_REMOVE_DC ) );
 				modules.add( new NBFMDecoder( decodeConfig ) );
+		    	modules.add( new AlwaysUnsquelchedDecoderState( DecoderType.NBFM ) );
 				modules.add( getFMDemodulator( decodeConfig, pass, stop, REMOVE_DC ) );
 				break;
 			case LTR_STANDARD:
 				modules.add( new AudioModule( recordAudio, REMOVE_DC ) );
 				MessageDirection direction = ((DecodeConfigLTRStandard)decodeConfig).getMessageDirection();
 				modules.add( new LTRStandardDecoder( aliasList, direction ) );
+				modules.add( new LTRStandardDecoderState( aliasList ) );
 				modules.add( getFMDemodulator( decodeConfig, pass, stop, NO_REMOVE_DC ) );
 				break;
 			case LTR_NET:
 				modules.add( new AudioModule( recordAudio, REMOVE_DC ) );
 				modules.add( new LTRNetDecoder( (DecodeConfigLTRNet)decodeConfig, aliasList ) );
+				modules.add( new LTRNetDecoderState( aliasList ) );
 				modules.add( getFMDemodulator( decodeConfig, pass, stop, NO_REMOVE_DC ) );
 				break;
 			case MPT1327:
@@ -205,8 +219,11 @@ public class DecoderFactory
 
 				ChannelMap channelMap = resourceManager.getPlaylistManager().getPlayist()
 					.getChannelMapList().getChannelMap( mptConfig.getChannelMapName() );
+				
 				Sync sync = mptConfig.getSync();
-				modules.add( new MPT1327Decoder( channelMap, channelType, aliasList, sync ) );
+				
+				modules.add( new MPT1327Decoder( aliasList, sync ) );
+				modules.add( new MPT1327DecoderState( aliasList, channelMap, channelType ) );
 
 				if( channelType == ChannelType.STANDARD )
 				{
@@ -221,7 +238,8 @@ public class DecoderFactory
 				modules.add( getFMDemodulator( decodeConfig, pass, stop, REMOVE_DC ) );
 				break;
 			case PASSPORT:
-//				decoder = new PassportDecoder( config, aliasList );
+				modules.add( new PassportDecoder( decodeConfig, aliasList ) );
+				modules.add( new PassportDecoderState( aliasList ) );
 				break;
 			case P25_PHASE1:
 				DecodeConfigP25Phase1 p25Config = (DecodeConfigP25Phase1)decodeConfig;
@@ -232,10 +250,12 @@ public class DecoderFactory
 				{
 					case C4FM:
 						modules.add( getFMDemodulator( decodeConfig, 6750, 7500, REMOVE_DC ) );
-						modules.add( new P25_C4FMDecoder( aliasList, channelType ) );
+						modules.add( new P25_C4FMDecoder( aliasList ) );
+						modules.add( new P25DecoderState( aliasList, channelType, Modulation.C4FM ) );
 						break;
 					case CQPSK:
-						modules.add( new P25_LSMDecoder( aliasList, channelType ) );
+						modules.add( new P25_LSMDecoder( aliasList ) );
+						modules.add( new P25DecoderState( aliasList, channelType, Modulation.CQPSK ) );
 						break;
 					default:
 						throw new IllegalArgumentException( "Unrecognized P25 "
@@ -270,10 +290,10 @@ public class DecoderFactory
 	 * @param aliasList - optional alias list
 	 * @return - list of auxiliary decoders
 	 */
-	public static List<Decoder> getAuxiliaryDecoders( AuxDecodeConfiguration config,
+	public static List<Module> getAuxiliaryDecoders( AuxDecodeConfiguration config,
 			AliasList aliasList )
 	{
-		List<Decoder> decoders = new ArrayList<Decoder>();
+		List<Module> modules = new ArrayList<>();
 
 		if( config != null )
 		{
@@ -282,16 +302,20 @@ public class DecoderFactory
 				switch( auxDecoder )
 				{
 					case FLEETSYNC2:
-						decoders.add( new Fleetsync2Decoder( aliasList ) );
+						modules.add( new Fleetsync2Decoder( aliasList ) );
+						modules.add( new Fleetsync2DecoderState( aliasList ) );
 						break;
 					case MDC1200:
-						decoders.add( new MDCDecoder( aliasList ) );
+						modules.add( new MDCDecoder( aliasList ) );
+						modules.add( new MDCDecoderState( aliasList ) );
 						break;
 					case LJ_1200:
-						decoders.add( new LJ1200Decoder( aliasList ) );
+						modules.add( new LJ1200Decoder( aliasList ) );
+						modules.add( new LJ1200DecoderState( aliasList ) );
 						break;
 					case TAIT_1200:
-						decoders.add( new Tait1200Decoder( aliasList ) );
+						modules.add( new Tait1200Decoder( aliasList ) );
+						modules.add( new Tait1200DecoderState( aliasList ) );
 						break;
 					default:
 						throw new IllegalArgumentException( "Unrecognized auxiliary "
@@ -300,39 +324,48 @@ public class DecoderFactory
 			}
 		}
 		
-		return decoders;
+		return modules;
 	}
 
 	public static DecoderPanel getDecoderPanel( SettingsManager settingsManager,
-			Decoder decoder )
+			DecoderState decoderState )
 	{
-		switch( decoder.getDecoderType() )
+		switch( decoderState.getDecoderType() )
 		{
 			case AM:
-				return new AMDecoderPanel( settingsManager, (AMDecoder)decoder );
+				return new AMDecoderPanel( settingsManager, decoderState );
 			case FLEETSYNC2:
-				return new Fleetsync2DecoderPanel( settingsManager, (Fleetsync2Decoder)decoder );
+				return new Fleetsync2DecoderPanel( settingsManager, 
+						(Fleetsync2DecoderState)decoderState );
 			case LJ_1200:
-				return new LJ1200DecoderPanel( settingsManager, (LJ1200Decoder)decoder );
+				return new LJ1200DecoderPanel( settingsManager, 
+						(LJ1200DecoderState)decoderState );
 			case LTR_NET:
-				return new LTRNetDecoderPanel( settingsManager, (LTRNetDecoder)decoder );
+				return new LTRNetDecoderPanel( settingsManager, 
+						(LTRNetDecoderState)decoderState );
 			case LTR_STANDARD:
-				return new LTRStandardDecoderPanel( settingsManager, (LTRStandardDecoder)decoder );
+				return new LTRStandardDecoderPanel( settingsManager, 
+						(LTRStandardDecoderState)decoderState );
 			case MDC1200:
-				return new MDCDecoderPanel( settingsManager, (MDCDecoder)decoder );
+				return new MDCDecoderPanel( settingsManager, 
+						(MDCDecoderState)decoderState );
 			case MPT1327:
-				return new MPT1327DecoderPanel( settingsManager, (MPT1327Decoder)decoder );
+				return new MPT1327DecoderPanel( settingsManager, 
+						(MPT1327DecoderState)decoderState );
 			case NBFM:
-				return new NBFMDecoderPanel( settingsManager, decoder );
+				return new NBFMDecoderPanel( settingsManager, decoderState );
 			case P25_PHASE1:
-				return new P25DecoderPanel( settingsManager, (P25Decoder)decoder );
+				return new P25DecoderPanel( settingsManager, 
+						(P25DecoderState)decoderState );
 			case PASSPORT:
-				return new PassportDecoderPanel( settingsManager, (PassportDecoder)decoder );
+				return new PassportDecoderPanel( settingsManager, 
+						(PassportDecoderState)decoderState );
 			case TAIT_1200:
-				return new Tait1200DecoderPanel( settingsManager, (Tait1200Decoder)decoder );
+				return new Tait1200DecoderPanel( settingsManager, 
+						(Tait1200DecoderState)decoderState );
 			default:
 				throw new IllegalArgumentException( "Unrecognized decoder: " + 
-						decoder.getDecoderType().getDisplayString() );
+						decoderState.getDecoderType().getDisplayString() );
 		}
 	}
 	

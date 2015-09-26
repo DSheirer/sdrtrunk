@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import message.Message;
+import module.decode.DecoderType;
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderState;
 import module.decode.state.DecoderStateEvent;
@@ -44,6 +45,22 @@ public class LJ1200DecoderState extends DecoderState
 		super( aliasList );
 	}
 	
+	@Override
+	public DecoderType getDecoderType()
+	{
+		return DecoderType.LJ_1200;
+	}
+
+	@Override
+	public void start()
+	{
+	}
+
+	@Override
+	public void stop()
+	{
+	}
+
 	public String getAddress()
 	{
 		return mAddress;

@@ -1,5 +1,7 @@
 package audio;
 
+import java.util.Arrays;
+
 import module.Module;
 
 import org.slf4j.Logger;
@@ -115,7 +117,9 @@ public class AudioModule extends Module implements IAudioPacketProvider,
 	{
 		if( mAudioPacketListener != null && mSquelchState == SquelchState.UNSQUELCH )
 		{
-			float[] audio = buffer.getSamples();
+			/* We make a copy of the samples, so that we don't affect any other
+			 * processes that might be concurrently processing the same buffer */
+			float[] audio = Arrays.copyOf( buffer.getSamples(), buffer.getSamples().length );
 			
 			mAudioFilter.filter( audio );
 			

@@ -19,11 +19,8 @@ package record;
 
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,10 +40,6 @@ public class RecorderManager implements Listener<AudioPacket>
 
 	public static final int AUDIO_SAMPLE_RATE = 48000;
 	
-	private static final long RECORDER_INACTIVITY_THRESHOLD = 10000; //1 minute in millis
-	
-//	private static final RealBuffer AUDIO_SEPARATOR = new AudioSeparator();
-	
 	private Map<String,RealBufferWaveRecorder> mRecorders = new HashMap<>();
 	
 	private ThreadPoolManager mThreadPoolManager;
@@ -56,31 +49,34 @@ public class RecorderManager implements Listener<AudioPacket>
 		mThreadPoolManager = threadPoolManager;
 	}
 	
+	public void dispose()
+	{
+		mThreadPoolManager = null;
+	}
+	
 	@Override
 	public void receive( AudioPacket audioPacket )
 	{
 		if( audioPacket.hasAudioMetadata() && 
-			audioPacket.getAudioMetadata().isRecordable() )
-		{
-			String identifier = audioPacket.getAudioMetadata().getIdentifier();
-			
-			if( mRecorders.containsKey( identifier ) )
+				audioPacket.getAudioMetadata().isRecordable() )
 			{
-				RealBufferWaveRecorder recorder = mRecorders.get( identifier );
+				String identifier = audioPacket.getAudioMetadata().getIdentifier();
 
-				if( audioPacket.getType() == AudioPacket.Type.AUDIO )
+				if( mRecorders.containsKey( identifier ) )
 				{
-					recorder.receive( audioPacket.getAudioBuffer() );
+					RealBufferWaveRecorder recorder = mRecorders.get( identifier );
+
+					if( audioPacket.getType() == AudioPacket.Type.AUDIO )
+					{
+						recorder.receive( audioPacket.getAudioBuffer() );
+					}
+					else if( audioPacket.getType() == AudioPacket.Type.END )
+					{
+						mRecorders.remove( identifier );
+						recorder.stop();
+					}
 				}
-				else if( audioPacket.getType() == AudioPacket.Type.END )
-				{
-					mRecorders.remove( identifier );
-					recorder.stop();
-				}
-			}
-			else
-			{
-				if( audioPacket.getType() == AudioPacket.Type.AUDIO )
+				else if( audioPacket.getType() == AudioPacket.Type.AUDIO )
 				{
 					String filePrefix = getFilePrefix( audioPacket );
 					
@@ -94,7 +90,6 @@ public class RecorderManager implements Listener<AudioPacket>
 					mRecorders.put( identifier, recorder );
 				}
 			}
-		}
 	}
 	
 	/**
@@ -122,26 +117,42 @@ public class RecorderManager implements Listener<AudioPacket>
 		{
 			sb.append( "_TO_" );
 			sb.append( toMetadata.getValue() );
+			
+			Metadata fromMetadata = packet.getAudioMetadata()
+					.getMetadata( MetadataType.FROM );
+			
+			if( fromMetadata != null )
+			{
+				sb.append( "_FROM_" );
+				sb.append( fromMetadata.getValue() );
+			}
 		}
-
-		Metadata fromMetadata = packet.getAudioMetadata()
-				.getMetadata( MetadataType.FROM );
-		
-		if( fromMetadata != null )
+		else
 		{
-			sb.append( "_FROM_" );
-			sb.append( fromMetadata.getValue() );
+			Metadata siteMetadata = packet.getAudioMetadata()
+					.getMetadata( MetadataType.SITE_ID );
+			
+			if( siteMetadata != null )
+			{
+				sb.append( "_" );
+				sb.append( siteMetadata.getValue() );
+			}
+			
+			Metadata channelMetadata = packet.getAudioMetadata()
+					.getMetadata( MetadataType.CHANNEL_NAME );
+			
+			if( channelMetadata != null )
+			{
+				sb.append( "_" );
+				sb.append( channelMetadata.getValue() );
+			}
 		}
 
 		return sb.toString();
 	}
 
 	/**
-	 * Returns a list of recorder modules for use in a processing chain.
-	 * Note: currently this only returns a baseband recorder.  
-	 * 
-	 * Create an instance of this RecorderManager class to listen to and centrally
-	 * record all decoded audio. 
+	 * Constructs a baseband recorder for use in a processing chain. 
 	 */
 	public static ComplexBufferWaveRecorder getBasebandRecorder( 
 			ThreadPoolManager threadPoolManager, String channelName )
@@ -155,36 +166,5 @@ public class RecorderManager implements Listener<AudioPacket>
 
         return new ComplexBufferWaveRecorder( threadPoolManager, 
         		AUDIO_SAMPLE_RATE, sb.toString() );
-	}
-	
-	/**
-	 * Removes any recorders where the recent activity timestamp has exceeded
-	 * the retention threshold.
-	 */
-	public class RecorderProcessor implements Runnable
-	{
-		@Override
-		public void run()
-		{
-			if( !mRecorders.isEmpty() )
-			{
-				List<String> keysToRemove = new ArrayList<>();
-
-				for( Entry<String,RealBufferWaveRecorder> entry: mRecorders.entrySet() )
-				{
-					if( entry.getValue().getLastBufferReceived() + 
-						RECORDER_INACTIVITY_THRESHOLD < System.currentTimeMillis() )
-					{
-						keysToRemove.add( entry.getKey() );
-					}
-				}
-				
-				for( String key: keysToRemove )
-				{
-					RealBufferWaveRecorder recorder = mRecorders.remove( key );
-					recorder.dispose();
-				}
-			}
-		}
 	}
 }

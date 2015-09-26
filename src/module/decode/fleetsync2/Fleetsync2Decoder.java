@@ -71,8 +71,6 @@ public class Fleetsync2Decoder extends Decoder implements IRealBufferListener,
     
     public Fleetsync2Decoder( AliasList aliasList )
 	{
-    	super( new FleetsyncDecoderState( aliasList ) );
-
         mDecimationFilter = new HalfBandFilter_RB_RB( 
     		Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO.getCoefficients(), 1.0f, true );
         
@@ -101,7 +99,6 @@ public class Fleetsync2Decoder extends Decoder implements IRealBufferListener,
     	
     	mBandPassFilter.dispose();
     	mDecimationFilter.dispose();
-    	mDecoderState.dispose();
     	mFSKDecoder.dispose();
     	mMessageFramer.dispose();
     	mMessageProcessor.dispose();
@@ -175,5 +172,20 @@ public class Fleetsync2Decoder extends Decoder implements IRealBufferListener,
 	public Listener<RealBuffer> getRealBufferListener()
 	{
 		return mDecimationFilter;
+	}
+
+	@Override
+	public void reset()
+	{
+	}
+
+	@Override
+	public void start()
+	{
+	}
+
+	@Override
+	public void stop()
+	{
 	}
 }

@@ -53,14 +53,6 @@ public class ComplexToComplexBufferAssembler implements ComplexSampleListener
 	@Override
 	public void receive( float i, float q )
 	{
-		mBuffer[ mBufferPointer ] = i;
-		
-		mBufferPointer++;
-		
-		mBuffer[ mBufferPointer ] = q;
-
-		mBufferPointer++;
-		
 		if( mBufferPointer >= mBufferSize )
 		{
 			if( mListener != null )
@@ -71,6 +63,14 @@ public class ComplexToComplexBufferAssembler implements ComplexSampleListener
 			mBuffer = new float[ mBufferSize ];
 			mBufferPointer = 0;
 		}
+
+		mBuffer[ mBufferPointer ] = i;
+		
+		mBufferPointer++;
+		
+		mBuffer[ mBufferPointer ] = q;
+
+		mBufferPointer++;
 	}
 
 	public void setListener( Listener<ComplexBuffer> listener )

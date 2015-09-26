@@ -315,13 +315,13 @@ public class TrafficChannelManager extends Module
 	}
 
 	@Override
-	public void setCallEventListener( Listener<CallEvent> listener )
+	public void addCallEventListener( Listener<CallEvent> listener )
 	{
 		mCallEventListener = listener;
 	}
 
 	@Override
-	public void removeCallEventListener()
+	public void removeCallEventListener( Listener<CallEvent> listener )
 	{
 		mCallEventListener = null;
 	}

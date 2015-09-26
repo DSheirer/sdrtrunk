@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.TreeSet;
 
 import message.Message;
+import module.decode.DecoderType;
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderState;
 import module.decode.state.DecoderStateEvent;
@@ -65,6 +66,22 @@ public class PassportDecoderState extends DecoderState
 	}
 	
     @Override
+	public DecoderType getDecoderType()
+	{
+		return DecoderType.PASSPORT;
+	}
+
+	@Override
+	public void start()
+	{
+	}
+
+	@Override
+	public void stop()
+	{
+	}
+
+	@Override
 	@SuppressWarnings( "incomplete-switch" )
     public void receive( Message message )
     {

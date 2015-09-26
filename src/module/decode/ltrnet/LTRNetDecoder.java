@@ -35,8 +35,7 @@ import bits.MessageFramer;
 import bits.SyncPattern;
 import dsp.fsk.LTRFSKDecoder;
 
-public class LTRNetDecoder extends Decoder 
-			implements IRealBufferListener, Instrumentable
+public class LTRNetDecoder extends Decoder implements IRealBufferListener, Instrumentable
 {
 	public static final int LTR_STANDARD_MESSAGE_LENGTH = 40;
 	private LTRFSKDecoder mLTRFSKDecoder;
@@ -47,8 +46,6 @@ public class LTRNetDecoder extends Decoder
     
 	public LTRNetDecoder( DecodeConfigLTRNet config, AliasList aliasList )
 	{
-		super( new LTRNetDecoderState( aliasList ) );
-
 		mLTRFSKDecoder = new LTRFSKDecoder();
 
 		
@@ -111,4 +108,19 @@ public class LTRNetDecoder extends Decoder
     {
         mLTRFSKDecoder.unregisterTap( tap );
     }
+
+	@Override
+	public void reset()
+	{
+	}
+
+	@Override
+	public void start()
+	{
+	}
+
+	@Override
+	public void stop()
+	{
+	}
 }

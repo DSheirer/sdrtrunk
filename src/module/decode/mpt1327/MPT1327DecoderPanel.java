@@ -41,16 +41,17 @@ public class MPT1327DecoderPanel extends DecoderPanel
     private JLabel mFromTalkgroup = new JLabel( "" );
     private JLabel mFromTalkgroupAliasLabel = new JLabel( "" );
 	
-    public MPT1327DecoderPanel( SettingsManager settingsManager, MPT1327Decoder decoder )
+    public MPT1327DecoderPanel( SettingsManager settingsManager, 
+    							MPT1327DecoderState decoderState )
 	{
-		super( settingsManager, decoder );
+		super( settingsManager, decoderState );
 		
 		init();
 	}
     
-    private MPT1327DecoderState getDecoderState()
+    public MPT1327DecoderState getDecoderState()
     {
-    	return (MPT1327DecoderState)getDecoder().getDecoderState();
+    	return (MPT1327DecoderState)super.getDecoderState();
     }
     
     public void dispose()

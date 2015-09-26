@@ -21,6 +21,7 @@ import java.awt.EventQueue;
 
 import javax.swing.JLabel;
 
+import module.decode.p25.P25Decoder.Modulation;
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderPanel;
 import net.miginfocom.swing.MigLayout;
@@ -46,11 +47,12 @@ public class P25DecoderPanel extends DecoderPanel
     private JLabel mSiteAlias = new JLabel( "" );
     
 	
-	public P25DecoderPanel( SettingsManager settingsManager, P25Decoder decoder )
+	public P25DecoderPanel( SettingsManager settingsManager, 
+						    P25DecoderState decoderState )
 	{
-		super( settingsManager, decoder );
+		super( settingsManager, decoderState );
 
-		mProtocol = new JLabel( "P25-1 " + decoder.getModulation().getShortLabel() );
+		mProtocol = new JLabel( "P25-1 " + decoderState.getModulation().getShortLabel() );
 		
 		init();
 	}
@@ -101,9 +103,9 @@ public class P25DecoderPanel extends DecoderPanel
 		add( mSiteAlias, "wrap" );
 	}
 	
-	private P25DecoderState getDecoderState()
+	public P25DecoderState getDecoderState()
 	{
-		return (P25DecoderState)getDecoder().getDecoderState();
+		return (P25DecoderState)super.getDecoderState();
 	}
 
 	@Override

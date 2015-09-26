@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.TreeSet;
 
 import message.Message;
+import module.decode.DecoderType;
 import module.decode.event.CallEvent.CallEventType;
 import module.decode.ltrnet.LTRCallEvent;
 import module.decode.state.ChangedAttribute;
@@ -56,7 +57,23 @@ public class LTRStandardDecoderState extends DecoderState
 	{
 		super( aliasList );
 	}
-	
+
+	@Override
+	public DecoderType getDecoderType()
+	{
+		return DecoderType.LTR_STANDARD;
+	}
+
+	@Override
+	public void start()
+	{
+	}
+
+	@Override
+	public void stop()
+	{
+	}
+
 	private LTRCallEvent getCurrentCallEvent()
 	{
 		return (LTRCallEvent)mCurrentCallEvent;
@@ -109,7 +126,8 @@ public class LTRStandardDecoderState extends DecoderState
 	                    		if( current == null )
 	                    		{
 	                    			mCurrentCallEvent = 
-    	                        		new LTRCallEvent.Builder( CallEventType.CALL )
+    	                        		new LTRCallEvent.Builder( 
+    	                        				DecoderType.LTR_STANDARD, CallEventType.CALL )
         	                            .to( ltr.getTalkgroupID() )
         	                            .aliasList( getAliasList() )
         	                            .channel( String.valueOf( ltr.getChannel() ) )

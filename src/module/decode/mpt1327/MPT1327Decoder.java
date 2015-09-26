@@ -41,7 +41,6 @@ import alias.AliasList;
 import bits.MessageFramer;
 import bits.SyncPattern;
 import controller.channel.Channel.ChannelType;
-import controller.channel.map.ChannelMap;
 import dsp.filter.FilterFactory;
 import dsp.filter.Filters;
 import dsp.filter.Window.WindowType;
@@ -89,12 +88,8 @@ public class MPT1327Decoder extends Decoder
     private MessageFramer mTrafficMessageFramer;
     private MPT1327MessageProcessor mMessageProcessor;
 
-    public MPT1327Decoder( ChannelMap channelMap,
-    					   ChannelType channelType,
-    					   AliasList aliasList,
-    					   Sync sync )
+    public MPT1327Decoder( AliasList aliasList, Sync sync )
 	{
-    	super( new MPT1327DecoderState( aliasList, channelMap, channelType ) );
 
 		/* Decimation filter - 48000 / 2 = 24000 output */
 		mDecimationFilter = new HalfBandFilter_RB_RB( 
@@ -302,5 +297,26 @@ public class MPT1327Decoder extends Decoder
 		{
 			return getLabel();
 		}
+	}
+
+	@Override
+	public void reset()
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void start()
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void stop()
+	{
+		// TODO Auto-generated method stub
+		
 	}
 }

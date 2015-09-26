@@ -40,9 +40,10 @@ public class PassportDecoderPanel extends DecoderPanel
     private JLabel mFromTalkgroup = new JLabel();
     private JLabel mFromTalkgroupAlias = new JLabel();
     
-	public PassportDecoderPanel( SettingsManager settingsManager, PassportDecoder decoder )
+	public PassportDecoderPanel( SettingsManager settingsManager, 
+								 PassportDecoderState decoderState )
 	{
-		super( settingsManager, decoder );
+		super( settingsManager, decoderState );
 		
 		init();
 	}
@@ -81,9 +82,9 @@ public class PassportDecoderPanel extends DecoderPanel
 		add( mFromTalkgroupAlias, "wrap" );
 	}
 	
-	private PassportDecoderState getDecoderState()
+	public PassportDecoderState getDecoderState()
 	{
-		return (PassportDecoderState)getDecoder().getDecoderState();
+		return (PassportDecoderState)super.getDecoderState();
 	}
 
 	@Override

@@ -94,6 +94,7 @@ public class AudioMetadata implements Listener<Metadata>
 		copy.mRecordable = mRecordable;
 		copy.mMetadata.addAll( mMetadata );
 		copy.mUpdated = mUpdated;
+		copy.mIdentifier = mIdentifier;
 		
 		return copy;
 	}
