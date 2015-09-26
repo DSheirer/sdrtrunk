@@ -77,6 +77,7 @@ import controller.ResourceManager;
 import controller.channel.Channel;
 import controller.channel.ChannelEvent;
 import controller.channel.ChannelEventListener;
+import controller.channel.ChannelUtils;
 import dsp.filter.Window.WindowType;
 
 /**
@@ -517,15 +518,17 @@ public class SpectralDisplayPanel extends JPanel
 					ArrayList<Channel> channels = 
 							mOverlayPanel.getChannelsAtFrequency( frequency );
 
-//					for( Channel channel: channels )
-//					{
-//						JMenu menu = channel.getContextMenu();
-//						
-//						if( menu != null )
-//						{
-//							contextMenu.add( menu );
-//						}
-//					}
+					for( Channel channel: channels )
+					{
+						JMenu channelMenu = ChannelUtils.getContextMenu( 
+							mResourceManager.getPlaylistManager(), 
+								channel, SpectralDisplayPanel.this );
+
+						if( channelMenu != null )
+						{
+							contextMenu.add( channelMenu );
+						}
+					}
 
 					if( !channels.isEmpty() )
 					{

@@ -592,7 +592,19 @@ public class LTRNetDecoderState extends DecoderState
 		
 		broadcast( new DecoderStateEvent( this, Event.CONTINUATION, State.IDLE ) );
 	}
-
+	
+	/**
+	 * Indicates if the talkgroup is different than the talkgroup specified in
+	 * the current call event
+	 */
+	private boolean isDifferentTalkgroup( String talkgroup )
+	{
+		return talkgroup != null &&
+			   mCurrentCallEvent != null &&
+			   mCurrentCallEvent.getToID() != null &&
+			   !mCurrentCallEvent.getToID().contentEquals( talkgroup );
+	}
+	
 	private void processCallMessage( LTRNetMessage message )
 	{
 		int group = message.getGroup();
@@ -609,11 +621,11 @@ public class LTRNetDecoderState extends DecoderState
 		{
 			String talkgroup = message.getTalkgroupID();
 
-			LTRCallEvent current = getCurrentLTRCallEvent();
+			final LTRCallEvent current = getCurrentLTRCallEvent();
 			
 			/* If this is a new call or the talkgroup is different from the current
 			 * call, create a new call event */
-			if( current == null || !current.getToID().contentEquals( talkgroup ) )
+			if( current == null || isDifferentTalkgroup( talkgroup ) )
 			{
 				/* Invalidate the current call */
 				if( current != null )

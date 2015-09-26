@@ -8,10 +8,11 @@ import java.util.List;
 import javax.swing.JMenu;
 import javax.swing.JPanel;
 
+import net.miginfocom.swing.MigLayout;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.miginfocom.swing.MigLayout;
 import playlist.PlaylistManager;
 import settings.SettingsManager;
 import controller.channel.Channel;
@@ -141,10 +142,5 @@ public class ChannelCollectionPanel extends JPanel
 		}
 		
 		return null;
-	}
-	
-	public void addTrafficChannel( Channel channel )
-	{
-		//TODO: add logic to handle traffic channels.
 	}
 }

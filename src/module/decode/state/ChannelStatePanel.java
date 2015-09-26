@@ -36,6 +36,7 @@ import settings.Setting;
 import settings.SettingChangeListener;
 import settings.SettingsManager;
 import controller.channel.Channel;
+import controller.channel.ChannelUtils;
 
 public class ChannelStatePanel extends JPanel 
 				implements Listener<ChangedAttribute>, SettingChangeListener
@@ -414,90 +415,7 @@ public class ChannelStatePanel extends JPanel
 
 	public JMenu getContextMenu()
 	{
-		JMenu menu = new JMenu( "Channel: " + mChannel.getName() );
-		
-		if( mChannel.getEnabled() )
-		{
-			JMenuItem disable = new JMenuItem( "Disable" );
-			disable.addActionListener( new ActionListener() 
-			{
-				@Override
-                public void actionPerformed( ActionEvent e )
-                {
-					mChannel.setEnabled( DISABLED, BROADCAST_CHANGE );
-					
-					if( mPlaylistManager != null )
-					{
-						mPlaylistManager.save();					
-					}
-                }
-			} );
-			
-			menu.add( disable );
-			
-			menu.add( new JSeparator() );
-
-			JMenuItem actySummaryItem = 
-					new JMenuItem( "Activity Summary" );
-
-			actySummaryItem.addActionListener( new ActionListener() 
-			{
-				@Override
-	            public void actionPerformed( ActionEvent e )
-	            {
-					StringBuilder sb = new StringBuilder();
-					
-					for( DecoderState decoderState: mChannel.getProcessingChain().getDecoderStates() )
-					{
-						sb.append( decoderState.getActivitySummary() );
-					}
-					
-					new ActivitySummaryFrame( sb.toString(), ChannelStatePanel.this );
-	            }
-			} );
-				
-			menu.add( actySummaryItem );
-		}
-		else
-		{
-			JMenuItem enable = new JMenuItem( "Enable" );
-			enable.addActionListener( new ActionListener() 
-			{
-				@Override
-                public void actionPerformed( ActionEvent e )
-                {
-					mChannel.setEnabled( ENABLED, BROADCAST_CHANGE );
-					
-					if( mPlaylistManager != null )
-					{
-						mPlaylistManager.save();
-					}
-    			}	
-			} );
-			
-			menu.add( enable );
-		}
-		
-		menu.add( new JSeparator() );
-		
-		JMenuItem deleteItem = new JMenuItem( "Delete" );
-		deleteItem.addActionListener( new ActionListener() 
-		{
-			@Override
-            public void actionPerformed( ActionEvent e )
-            {
-				dispose();
-				
-				if( mPlaylistManager != null )
-				{
-					mPlaylistManager.save();           
-				}
-			}
-		} );
-		
-		menu.add( deleteItem );
-		
-		return menu;
+		return ChannelUtils.getContextMenu( mPlaylistManager, mChannel, 
+				ChannelStatePanel.this );
 	}
-	
 }

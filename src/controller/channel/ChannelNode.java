@@ -20,6 +20,7 @@ package controller.channel;
 import java.awt.Color;
 import java.text.DecimalFormat;
 
+import javax.swing.JMenu;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 
@@ -155,8 +156,16 @@ public class ChannelNode extends ConfigurableNode implements ChannelEventListene
 	
 	public JPopupMenu getContextMenu()
 	{
-		JPopupMenu popupMenu = new JPopupMenu( "Channel Menu" );
-//		popupMenu.add( getChannel().getContextMenu() );
+		JPopupMenu popupMenu = new JPopupMenu();
+
+		JMenu channelMenu = ChannelUtils.getContextMenu( 
+			getModel().getResourceManager().getPlaylistManager(), 
+				getChannel(), getModel().getTree() );
+
+		if( channelMenu != null )
+		{
+			popupMenu.add( channelMenu );
+		}
 		
 		return popupMenu;
 	}
