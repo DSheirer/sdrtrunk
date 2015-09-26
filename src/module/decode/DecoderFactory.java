@@ -238,8 +238,10 @@ public class DecoderFactory
 				modules.add( getFMDemodulator( decodeConfig, pass, stop, REMOVE_DC ) );
 				break;
 			case PASSPORT:
+				modules.add( new AudioModule( recordAudio, REMOVE_DC ) );
 				modules.add( new PassportDecoder( decodeConfig, aliasList ) );
 				modules.add( new PassportDecoderState( aliasList ) );
+				modules.add( getFMDemodulator( decodeConfig, pass, stop, NO_REMOVE_DC ) );
 				break;
 			case P25_PHASE1:
 				DecodeConfigP25Phase1 p25Config = (DecodeConfigP25Phase1)decodeConfig;
