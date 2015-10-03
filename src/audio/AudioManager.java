@@ -326,6 +326,7 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 
 			endAllAudioAssignments();
 			
+			mChannelAssignments.clear();
 			mAvailableAudioOutputs.clear();
 			mChannelNames.clear();
 			mAudioOutputMap.clear();

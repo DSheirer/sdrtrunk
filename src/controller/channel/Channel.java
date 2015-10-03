@@ -714,7 +714,7 @@ public class Channel extends Configuration
 			}
 			catch( SourceException se )
 			{
-				mLog.error( "Error obtaining source for channel" );
+				mLog.info( "Couldn't obtain source for channel [" + mName + "]" );
 			}
 		}
 	}
