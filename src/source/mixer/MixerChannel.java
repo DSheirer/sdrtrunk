@@ -17,7 +17,40 @@
  ******************************************************************************/
 package source.mixer;
 
+import java.util.EnumSet;
+
 public enum MixerChannel
 {
-	LEFT,RIGHT,MONO;
+	LEFT( "L" ),
+	RIGHT( "R" ),
+	MONO( "M" ),
+	STEREO( "S" );
+	
+	private String mLabel;
+	
+	private MixerChannel( String label )
+	{
+		mLabel = label;
+	}
+	
+	public String getLabel()
+	{
+		return mLabel;
+	}
+
+	/**
+	 * Mixer Target Data Line (ie sample source) channel options
+	 */
+	public static EnumSet<MixerChannel> getTargetChannels()
+	{
+		return EnumSet.of( LEFT,RIGHT,MONO );
+	}
+
+	/**
+	 * Mixer Source Data Line (ie sound card output) channel options
+	 */
+	public static EnumSet<MixerChannel> getSourceChannels()
+	{
+		return EnumSet.of( MONO,STEREO );
+	}
 }

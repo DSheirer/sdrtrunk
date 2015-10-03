@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
@@ -28,6 +29,8 @@ import javax.sound.sampled.DataLine;
 import javax.sound.sampled.Line;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.Mixer;
+import javax.sound.sampled.Port;
+import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.TargetDataLine;
 
 import org.slf4j.Logger;
@@ -39,6 +42,7 @@ import source.config.SourceConfigMixer;
 import source.config.SourceConfiguration;
 import source.tuner.MixerTunerDataLine;
 import source.tuner.MixerTunerType;
+import audio.AudioFormats;
 
 public class MixerManager
 {
@@ -47,23 +51,9 @@ public class MixerManager
 
 	private static MixerManager sInstance = null;
 	
-	private ArrayList<DiscoveredMixer> mDiscoveredMixers = 
-				new ArrayList<DiscoveredMixer>();
-	
-	private HashMap<String,MixerTunerDataLine> mMixerTuners = 
-						new HashMap<String,MixerTunerDataLine>();
-
-    public static AudioFormat MONO = new AudioFormat( 48000,  //SampleRate
-    												  16,     //Sample Size
-    												  1,      //Channels
-    												  true,   //Signed
-    												  false ); //Little Endian
-
-    public static AudioFormat STEREO = new AudioFormat( 48000,  //SampleRate
-													  16,     //Sample Size
-													  2,      //Channels
-													  true,   //Signed
-													  false ); //Little Endian
+	private List<InputMixerConfiguration> mInputMixers = new ArrayList<>();
+	private List<MixerChannelConfiguration> mOutputMixers = new ArrayList<>();
+	private HashMap<String,MixerTunerDataLine> mMixerTuners = new HashMap<>();
 
     private MixerManager()
 	{
@@ -92,7 +82,7 @@ public class MixerManager
 
 			if( mixerName != null )
 			{
-				DiscoveredMixer mixer = getDiscoveredMixer( mixerName );
+				InputMixerConfiguration mixer = getInputMixer( mixerName );
 
 				if( mixer != null )
 				{
@@ -104,7 +94,8 @@ public class MixerManager
 						if( channel == MixerChannel.MONO )
 						{
 							DataLine.Info info = 
-								new DataLine.Info(TargetDataLine.class, MONO );
+								new DataLine.Info(TargetDataLine.class, 
+									AudioFormats.PCM_SIGNED_48KHZ_16BITS_MONO );
 
 							TargetDataLine dataLine;
 							
@@ -116,7 +107,7 @@ public class MixerManager
 	                            if( dataLine != null )
 	                            {
 									return new RealMixerSource( dataLine,
-						    				 MONO,
+						    				 AudioFormats.PCM_SIGNED_48KHZ_16BITS_MONO,
 											 mixerName,
 											 new ShortAdapter() );
 	                            }
@@ -132,7 +123,8 @@ public class MixerManager
 						else
 						{
 							DataLine.Info info = 
-								new DataLine.Info(TargetDataLine.class, STEREO );
+								new DataLine.Info(TargetDataLine.class, 
+									AudioFormats.PCM_SIGNED_48KHZ_16BITS_STEREO );
 
 							TargetDataLine dataLine;
 
@@ -143,7 +135,8 @@ public class MixerManager
 
 	                            if( dataLine != null )
 								{
-									return new RealMixerSource( dataLine, STEREO,
+									return new RealMixerSource( dataLine, 
+										AudioFormats.PCM_SIGNED_48KHZ_16BITS_STEREO,
 										mixerName, new ChannelShortAdapter( 
 												mixerConfig.getChannel() ) );
 								}
@@ -163,15 +156,14 @@ public class MixerManager
     	return null;
     }
     
-    public DiscoveredMixer[] getMixers()
+    public InputMixerConfiguration[] getInputMixers()
     {
-    	return mDiscoveredMixers.toArray( 
-    			new DiscoveredMixer[ mDiscoveredMixers.size() ] );
+    	return mInputMixers.toArray( new InputMixerConfiguration[ mInputMixers.size() ] );
     }
     
-    public DiscoveredMixer getDiscoveredMixer( String name )
+    public InputMixerConfiguration getInputMixer( String name )
     {
-    	for( DiscoveredMixer mixer: mDiscoveredMixers )
+    	for( InputMixerConfiguration mixer: mInputMixers )
     	{
     		if( mixer.getMixerName().contentEquals( name ) )
     		{
@@ -180,6 +172,11 @@ public class MixerManager
     	}
     	
     	return null;
+    }
+
+    public MixerChannelConfiguration[] getOutputMixers()
+    {
+    	return mOutputMixers.toArray( new MixerChannelConfiguration[ mOutputMixers.size() ] );
     }
     
     public Collection<MixerTunerDataLine> getMixerTunerDataLines()
@@ -204,21 +201,28 @@ public class MixerManager
 
                 if( mixer != null )
                 {
-                	EnumSet<MixerChannel> channels = getSupportedChannels( mixer );
+                	EnumSet<MixerChannel> inputChannels = getSupportedTargetChannels( mixer );
                 	
-                	if( channels != null )
+                	if( inputChannels != null )
                 	{
-                		mDiscoveredMixers.add( 
-                				new DiscoveredMixer( mixer, channels ) );
+                		mInputMixers.add( 
+                				new InputMixerConfiguration( mixer, inputChannels ) );
                 		
-                        sb.append( "\t[LOADED]     Mixer:" + mixerInfo.getName() + 
-                        		" CHANNELS: " + channels + "\n"  );
+                        sb.append( "\t[LOADED]     Input:  " + mixerInfo.getName() + 
+                        		" CHANNELS: " + inputChannels + "\n"  );
                 	}
-                	else
+                	
+                	EnumSet<MixerChannel> outputChannels = getSupportedSourceChannels( mixer );
+                	
+                	if( outputChannels != null )
                 	{
-                        sb.append( "\t[NOT LOADED] Mixer:" + 
-		                			mixerInfo.getName() + 
-		                			" - audio format not supported\n" );
+                    	for( MixerChannel channel: outputChannels )
+                    	{
+                    		mOutputMixers.add( new MixerChannelConfiguration( mixer, channel ) );
+                    	}
+
+                    	sb.append( "\t[LOADED]     Output: " + mixerInfo.getName() + 
+                        		" CHANNELS: " + outputChannels + "\n"  );
                 	}
                 }
                 else
@@ -249,10 +253,6 @@ public class MixerManager
         					break;
             		}
             	}
-                else
-                {
-                    sb.append( "\t[NOT LOADED] Tuner:" + mixerInfo.getName() + " - couldn't get target data line\n" );
-                }
         	}
         }
         
@@ -288,15 +288,17 @@ public class MixerManager
         return retVal;
 	}
 	
-	private EnumSet<MixerChannel> getSupportedChannels( Mixer mixer )
+	private EnumSet<MixerChannel> getSupportedTargetChannels( Mixer mixer )
 	{
         DataLine.Info stereoInfo=
-        		new DataLine.Info(TargetDataLine.class, STEREO );
+        		new DataLine.Info(TargetDataLine.class, 
+        				AudioFormats.PCM_SIGNED_48KHZ_16BITS_STEREO );
 
         boolean stereoSupported = mixer.isLineSupported( stereoInfo );
         
         DataLine.Info monoInfo=
-        		new DataLine.Info(TargetDataLine.class, MONO );
+        		new DataLine.Info(TargetDataLine.class, 
+        				AudioFormats.PCM_SIGNED_48KHZ_16BITS_MONO );
 
         boolean monoSupported = mixer.isLineSupported( monoInfo );
         
@@ -311,6 +313,42 @@ public class MixerManager
         	return EnumSet.of( MixerChannel.LEFT,
 					   MixerChannel.RIGHT,
 					   MixerChannel.MONO );
+        }
+        else if( monoSupported )
+        {
+        	return EnumSet.of( MixerChannel.MONO );
+        }
+        
+        return null;
+	}
+
+	/**
+	 * Returns enumset of SourceDataLine (audio output) channels 
+	 * (MONO and/or STEREO) supported by the mixer, or null if the mixer doesn't 
+	 * have any source data lines.
+	 */
+	private EnumSet<MixerChannel> getSupportedSourceChannels( Mixer mixer )
+	{
+        DataLine.Info stereoInfo=
+        		new DataLine.Info(SourceDataLine.class, 
+        				AudioFormats.PCM_SIGNED_48KHZ_16BITS_STEREO );
+
+        boolean stereoSupported = mixer.isLineSupported( stereoInfo );
+        
+        DataLine.Info monoInfo=
+        		new DataLine.Info(SourceDataLine.class, 
+        				AudioFormats.PCM_SIGNED_48KHZ_16BITS_MONO );
+
+        boolean monoSupported = mixer.isLineSupported( monoInfo );
+        
+        if( stereoSupported && monoSupported )
+        {
+        	return EnumSet.of( MixerChannel.MONO,
+        					   MixerChannel.STEREO );
+        }
+        else if( stereoSupported )
+        {
+        	return EnumSet.of( MixerChannel.STEREO );
         }
         else if( monoSupported )
         {
@@ -354,17 +392,24 @@ public class MixerManager
 						   "\n                lineclass:" + lineInfo.getLineClass() +
 						   "\n" );
 			}
+			
+			Line.Info portInfo = new Line.Info( Port.class );
+			
+			if( mixer.isLineSupported( portInfo ) )
+			{
+				sb.append( "**PORT LINE IS SUPPORTED BY THIS MIXER***\n" );
+			}
 		}
 		
 		return sb.toString();
 	}
 	
-	public class DiscoveredMixer
+	public class InputMixerConfiguration
 	{
 		private Mixer mMixer;
 		private EnumSet<MixerChannel> mChannels;
 		
-		public DiscoveredMixer( Mixer mixer, EnumSet<MixerChannel> channels )
+		public InputMixerConfiguration( Mixer mixer, EnumSet<MixerChannel> channels )
 		{
 			mMixer = mixer;
 			mChannels = channels;
@@ -389,10 +434,14 @@ public class MixerManager
 		{
 			return mChannels.contains( channel );
 		}
+	}
+	
+	public static void main( String[] args )
+	{
+		mLog.debug( "Starting ..." );
 		
-		public String toString()
-		{
-			return getMixerName();
-		}
+		MixerManager.getInstance();
+		
+		mLog.debug( "Finished!" );
 	}
 }

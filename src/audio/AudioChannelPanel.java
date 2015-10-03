@@ -3,17 +3,10 @@ package audio;
 import java.awt.Color;
 import java.awt.EventQueue;
 import java.awt.Font;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 
-import javax.sound.sampled.BooleanControl;
-import javax.sound.sampled.FloatControl;
 import javax.swing.JLabel;
-import javax.swing.JMenuItem;
 import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
+import javax.swing.JSeparator;
 
 import net.miginfocom.swing.MigLayout;
 
@@ -22,15 +15,16 @@ import org.slf4j.LoggerFactory;
 
 import sample.Listener;
 import settings.ColorSetting;
+import settings.ColorSetting.ColorSettingName;
 import settings.Setting;
 import settings.SettingChangeListener;
 import settings.SettingsManager;
-import settings.ColorSetting.ColorSettingName;
 import alias.Alias;
 import audio.AudioEvent.Type;
 import audio.metadata.AudioMetadata;
 import audio.metadata.Metadata;
 import audio.metadata.MetadataType;
+import audio.output.AudioOutput;
 
 public class AudioChannelPanel extends JPanel 
 				implements Listener<AudioEvent>, SettingChangeListener
@@ -44,85 +38,60 @@ public class AudioChannelPanel extends JPanel
     private Color mDetailsColor;
 
     private SettingsManager mSettingsManager;
-	private IAudioController mController;
-	private String mChannel;
+	private AudioOutput mAudioOutput;
 
+	private JLabel mChannelName = new JLabel( " " );
 	private JLabel mToLabel = new JLabel( "TO:" );
 	private JLabel mTo = new JLabel( "" );
 	private JLabel mToAlias = new JLabel( "" );
 	
+	private JLabel mMutedLabel = new JLabel( " " );
 	private JLabel mFromLabel = new JLabel( "FROM:" );
 	private JLabel mFrom = new JLabel( "" );
 	private JLabel mFromAlias = new JLabel( "" );
 	
-	private JLabel mChannelLabel;
-	private JLabel mChannelName;
-	private JLabel mMutedLabel;
-	
 	private boolean mConfigured = false;
 	
-	private BooleanControl mMuteControl;
-	private FloatControl mGainControl;
-	
-	public AudioChannelPanel( SettingsManager settingsManager,
-			  				  IAudioController controller, 
-							  String channel )
+	public AudioChannelPanel( SettingsManager settingsManager, AudioOutput audioOutput )
 	{
 		mSettingsManager = settingsManager;
 		mSettingsManager.addListener( this );
+
+		mAudioOutput = audioOutput;
+		
+		if( mAudioOutput != null )
+		{
+			mAudioOutput.addAudioEventListener( this );
+			mAudioOutput.setAudioMetadataListener( new AudioMetadataProcessor() );
+		}
 
 		mLabelColor = mSettingsManager.getColorSetting( 
     			ColorSettingName.CHANNEL_STATE_LABEL_DECODER ).getColor();
 		mDetailsColor = mSettingsManager.getColorSetting( 
     			ColorSettingName.CHANNEL_STATE_LABEL_DETAILS ).getColor();
 		
-		mController = controller;
-		mChannel = channel;
-		
-		try
-		{
-			mMuteControl = mController.getMuteControl( mChannel );
-		} 
-		catch ( AudioException e )
-		{
-			mLog.error( "Couldn't obtain mute control from audio channel [" + 
-				mChannel + "]", e );
-		}
-
-		try
-		{
-			mGainControl = mController.getGainControl( mChannel );
-		} 
-		catch ( AudioException e )
-		{
-			mLog.error( "Couldn't obtain gain control from audio channel [" + 
-				mChannel + "]", e );
-		}
-		
-		try
-		{
-			mController.addAudioEventListener( mChannel, this );
-		}
-		catch( AudioException e )
-		{
-			mLog.error( "Couldn't register as audio event listener on channel [" + 
-				mChannel + "]", e );
-		}
-		
-		mController.setAudioMetadataListener( mChannel, new AudioMetadataProcessor() );
-		
 		init();
 	}
 	
 	private void init()
 	{
-		setLayout( new MigLayout( "insets 0 0 0 0", "[right][][grow,fill]", "[grow,fill]0[]0[]" ) );
+		setLayout( new MigLayout( "insets 0 0 0 0", "[][right][][grow,fill]", "[]0[]0[grow,fill]" ) );
 		setBackground( Color.BLACK );
 		
-		addMouseListener( new MouseSelectionListener() );
+		mChannelName = new JLabel( mAudioOutput != null ? mAudioOutput.getChannelName() : " " );
+		mChannelName.setFont( mFont );
+		mChannelName.setForeground( mDetailsColor );
+		add( mChannelName );
 		
 		mToLabel.setFont( mFont );
-		mToLabel.setForeground( mLabelColor );
+		if( mAudioOutput != null )
+		{
+			mToLabel.setForeground( mLabelColor );
+		}
+		else
+		{
+			mToLabel.setForeground( getBackground() );
+		}
 		add( mToLabel );
 
 		mTo.setFont( mFont );
@@ -133,8 +102,19 @@ public class AudioChannelPanel extends JPanel
 		mToAlias.setForeground( mLabelColor );
 		add( mToAlias,"wrap" );
 
+		mMutedLabel.setFont( mFont );
+		mMutedLabel.setForeground( Color.RED );
+		add( mMutedLabel );
+
 		mFromLabel.setFont( mFont );
-		mFromLabel.setForeground( mLabelColor );
+		if( mAudioOutput != null )
+		{
+			mFromLabel.setForeground( mLabelColor );
+		}
+		else
+		{
+			mFromLabel.setForeground( getBackground() );
+		}
 		add( mFromLabel );
 		
 		mFrom.setFont( mFont );
@@ -144,54 +124,40 @@ public class AudioChannelPanel extends JPanel
 		mFromAlias.setFont( mFont );
 		mFromAlias.setForeground( mLabelColor );
 		add( mFromAlias,"wrap" );
-
-		mChannelLabel = new JLabel( "Channel:" );
-		mChannelLabel.setFont( mFont );
-		mChannelLabel.setForeground( mDetailsColor );
 		
-		add( mChannelLabel );
-
-		mChannelName = new JLabel( mChannel );
-		mChannelName.setFont( mFont );
-		mChannelName.setForeground( mDetailsColor );
-		
-		add( mChannelName );
-
-		mMutedLabel = new JLabel( "" );
-		mMutedLabel.setFont( mFont );
-		mMutedLabel.setForeground( Color.RED );
-		
-		add( mMutedLabel, "wrap" );
+		JSeparator separator = new JSeparator( JSeparator.HORIZONTAL );
+		separator.setBackground( Color.DARK_GRAY );
+		add( separator, "span,growx" );
 	}
 	
-	private void updateMuteState()
-	{
-		if( mMuteControl != null )
-		{
-			EventQueue.invokeLater( new Runnable()
-			{
-				@Override
-				public void run()
-				{
-					mMutedLabel.setText( mMuteControl.getValue() ? "Muted" : "" );
-				}
-			} );
-		}
-	}
-
 	@Override
 	public void receive( final AudioEvent audioEvent )
 	{
-		if( audioEvent.getType() == Type.AUDIO_STOPPED )
+		switch( audioEvent.getType() )
 		{
-			EventQueue.invokeLater( new Runnable()
-			{
-				@Override
-				public void run()
+			case AUDIO_STOPPED:
+				EventQueue.invokeLater( new Runnable()
 				{
-					resetLabels();
-				}
-			} );
+					@Override
+					public void run()
+					{
+						resetLabels();
+					}
+				} );
+				break;
+			case AUDIO_MUTED:
+			case AUDIO_UNMUTED:
+				EventQueue.invokeLater( new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						mMutedLabel.setText( mAudioOutput.isMuted() ? "M" : " " );
+					}
+				} );
+				break;
+			default:
+				break;
 		}
 	}
 
@@ -238,43 +204,6 @@ public class AudioChannelPanel extends JPanel
 			label.setText( "" );
 			label.setIcon( null );
 		}
-	}
-	
-	public class MouseSelectionListener implements MouseListener
-	{
-		@Override
-		public void mouseClicked( MouseEvent event )
-		{
-			JPopupMenu popup = new JPopupMenu();
-
-			if( mMuteControl != null )
-			{
-				JMenuItem mute = new JMenuItem( mMuteControl.getValue() ? 
-					"Unmute Channel: " + mChannel : "Mute Channel: " + mChannel );
-				
-				mute.addActionListener( new ActionListener()
-				{
-					@Override
-					public void actionPerformed( ActionEvent e )
-					{
-						mMuteControl.setValue( !mMuteControl.getValue() );
-						updateMuteState();
-					}
-				} );
-				popup.add( mute );
-			}
-			
-			popup.show( event.getComponent(), event.getX(), event.getY() );
-		}
-
-		@Override
-		public void mousePressed( MouseEvent e ) {}
-		@Override
-		public void mouseReleased( MouseEvent e ) {}
-		@Override
-		public void mouseEntered( MouseEvent e ) {}
-		@Override
-		public void mouseExited( MouseEvent e ) {}
 	}
 	
 

@@ -63,7 +63,7 @@ public class TimeStamp
 	 */
 	public static String getFormattedTimeWithMilliseconds( long timestamp )
 	{
-		return mSDFTime.format( new Date( timestamp ) );
+		return mSDFTimeWithMilliseconds.format( new Date( timestamp ) );
 	}
 
 	/**

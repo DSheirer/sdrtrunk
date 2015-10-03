@@ -180,7 +180,7 @@ public class MPT1327DecoderState extends DecoderState
 						}
 						mSite = mpt.getSiteID();
 						
-						broadcast( new DecoderStateEvent( this, Event.CONTINUATION, State.CONTROL ) );
+						broadcast( new DecoderStateEvent( this, Event.START, State.CONTROL ) );
 						break;
 					case GTC:
 						String from = mpt.getFromID();

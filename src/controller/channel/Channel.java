@@ -824,7 +824,7 @@ public class Channel extends Configuration
 			List<Module> modules = DecoderFactory.getModules( mChannelType, 
 				mResourceManager, mDecodeConfiguration, mRecordConfiguration,
 				mAuxDecodeConfiguration, aliasList, mSystem, 
-				mSite );
+				mSite, mName );
 			
 			mProcessingChain.addModules( modules );
 

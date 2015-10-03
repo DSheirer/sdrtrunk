@@ -154,7 +154,6 @@ public class ControllerPanel extends JPanel
 
     	AudioPanel audioPanel = new AudioPanel( mResourceManager.getSettingsManager(),
 							  mResourceManager.getAudioManager() );
-    	audioPanel.setPreferredSize( new Dimension( 200, audioPanel.getPreferredHeight() ) );
 
     	JideSplitPane audioChannelListSplit = new JideSplitPane( JideSplitPane.VERTICAL_SPLIT );
     	audioChannelListSplit.setDividerSize( 5 );

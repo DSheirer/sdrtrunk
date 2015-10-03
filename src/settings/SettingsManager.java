@@ -434,7 +434,7 @@ public class SettingsManager
 		return null;
 	}
 	
-	private ImageIcon getScaledIcon( ImageIcon original, int height )
+	public static ImageIcon getScaledIcon( ImageIcon original, int height )
 	{
 		double scale = (double)original.getIconHeight() / (double)height;
 		

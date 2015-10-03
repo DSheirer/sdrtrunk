@@ -133,29 +133,37 @@ public class P25AudioModule extends Module implements Listener<Message>,
 			Class temp = Class.forName( "jmbe.JMBEAudioLibrary" );
 			
 			library = (AudioConversionLibrary)temp.newInstance();
-
-			mAudioConverter = library.getAudioConverter( IMBE_CODEC, 
-					AudioFormats.PCM_SIGNED_48KHZ_16BITS );
 			
-			if( mAudioConverter != null )
+			if( ( library.getMajorVersion() == 0 && library.getMinorVersion() >= 3 ) ||
+				  library.getMajorVersion() > 0 )
 			{
-				mCanConvertAudio = true;
+				mAudioConverter = library.getAudioConverter( IMBE_CODEC, 
+						AudioFormats.PCM_SIGNED_48KHZ_16BITS_MONO );
 				
-				if( !mLibraryLoadStatusLogged )
+				if( mAudioConverter != null )
 				{
-					mLog.info( "JMBE audio conversion library successfully loaded"
-							+ " - P25 audio will be available" );
+					mCanConvertAudio = true;
 					
-					mLibraryLoadStatusLogged = true;
+					if( !mLibraryLoadStatusLogged )
+					{
+						mLog.info( "JMBE audio conversion library successfully loaded"
+								+ " - P25 audio will be available" );
+						
+						mLibraryLoadStatusLogged = true;
+					}
+				}
+				else
+				{
+					if( !mLibraryLoadStatusLogged )
+					{
+						mLog.info( "JMBE audio conversion library NOT FOUND" );
+						mLibraryLoadStatusLogged = true;
+					}
 				}
 			}
 			else
 			{
-				if( !mLibraryLoadStatusLogged )
-				{
-					mLog.info( "JMBE audio conversion library NOT FOUND" );
-					mLibraryLoadStatusLogged = true;
-				}
+				mLog.debug( "JMBE library version 0.3.x or higher is required" );
 			}
 		} 
 		catch ( ClassNotFoundException e1 )

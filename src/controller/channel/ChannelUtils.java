@@ -6,6 +6,7 @@ import java.awt.event.ActionListener;
 
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JSeparator;
 
 import module.decode.event.ActivitySummaryFrame;
@@ -101,15 +102,22 @@ public class ChannelUtils
 				@Override
 	            public void actionPerformed( ActionEvent e )
 	            {
-					/* Disable the channel */
-					channel.setEnabled( DISABLED, BROADCAST_CHANGE );	
-
-	                /* Broadcast channel deleted event */
-					channel.fireChannelEvent( Event.CHANNEL_DELETED );					
-	                
-					if( playlistManager != null )
+					int response = JOptionPane.showConfirmDialog( anchor, 
+						"Do you want to delete channel " + channel.getName() + "?",
+						"Are you sure?", JOptionPane.YES_NO_CANCEL_OPTION );
+					
+					if( response == JOptionPane.YES_OPTION )
 					{
-						playlistManager.save();           
+						/* Disable the channel */
+						channel.setEnabled( DISABLED, BROADCAST_CHANGE );	
+
+		                /* Broadcast channel deleted event */
+						channel.fireChannelEvent( Event.CHANNEL_DELETED );					
+		                
+						if( playlistManager != null )
+						{
+							playlistManager.save();           
+						}
 					}
 				}
 			} );

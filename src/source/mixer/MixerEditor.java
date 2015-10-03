@@ -17,6 +17,8 @@
  ******************************************************************************/
 package source.mixer;
 
+import java.util.EnumSet;
+
 import javax.sound.sampled.Mixer;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
@@ -25,13 +27,13 @@ import javax.swing.JLabel;
 import source.SourceEditor;
 import source.config.SourceConfigMixer;
 import source.config.SourceConfiguration;
-import source.mixer.MixerManager.DiscoveredMixer;
+import source.mixer.MixerManager.InputMixerConfiguration;
 import controller.ResourceManager;
 
 public class MixerEditor extends SourceEditor
 {
     private static final long serialVersionUID = 1L;
-    private JComboBox<DiscoveredMixer> mComboMixers;
+    private JComboBox<InputMixerConfiguration> mComboMixers;
     private JComboBox<MixerChannel>mComboChannels;
     protected Mixer.Info mSelectedMixer = null;
     
@@ -49,7 +51,7 @@ public class MixerEditor extends SourceEditor
 		JLabel mixerLabel = new JLabel( "Mixer:" );
 		add( mixerLabel, "align right" );
 		
-		mComboMixers = new JComboBox<DiscoveredMixer>();
+		mComboMixers = new JComboBox<InputMixerConfiguration>();
 
 		add( mComboMixers, "wrap" );
 
@@ -75,7 +77,7 @@ public class MixerEditor extends SourceEditor
 	{
 		SourceConfigMixer config = (SourceConfigMixer)mConfig;
 
-		DiscoveredMixer selectedMixer = 
+		InputMixerConfiguration selectedMixer = 
 				mComboMixers.getItemAt( mComboMixers.getSelectedIndex() );
 		
 		if( selectedMixer != null )
@@ -103,10 +105,10 @@ public class MixerEditor extends SourceEditor
             @Override
             public void run() 
             {
-            	DiscoveredMixer[] mixers = MixerManager.getInstance().getMixers();
+            	InputMixerConfiguration[] mixers = MixerManager.getInstance().getInputMixers();
 
         		mComboMixers.setModel( 
-        				new DefaultComboBoxModel<DiscoveredMixer>( mixers ) );
+        				new DefaultComboBoxModel<InputMixerConfiguration>( mixers ) );
         		
         		SourceConfigMixer config = (SourceConfigMixer)mConfig;
         		
@@ -125,8 +127,8 @@ public class MixerEditor extends SourceEditor
         			{
         				mComboMixers.setSelectedIndex( 0 );
         				
-        				DiscoveredMixer selectedMixer = 
-        						(DiscoveredMixer)mComboMixers.getSelectedItem();
+        				InputMixerConfiguration selectedMixer = 
+        						(InputMixerConfiguration)mComboMixers.getSelectedItem();
         				
         				config.setMixer( selectedMixer.getMixerName() );
         			}
@@ -142,8 +144,10 @@ public class MixerEditor extends SourceEditor
             @Override
             public void run() 
             {
-        		mComboChannels.setModel( 
-	        				new DefaultComboBoxModel<MixerChannel>( MixerChannel.values() ) );
+            	EnumSet<MixerChannel> channels = MixerChannel.getTargetChannels();
+            	
+        		mComboChannels.setModel( new DefaultComboBoxModel<MixerChannel>( 
+    				channels.toArray( new MixerChannel[ channels.size() ] ) ) );
         		
         		MixerChannel channel = ((SourceConfigMixer)mConfig).getChannel();
 

@@ -109,7 +109,8 @@ public class DecoderViewFrame extends JInternalFrame
 					     auxConfig, 
 					     aliasList, 
 					     new System( "Instrumented" ), 
-					     new Site( "Instrumented" ) );
+					     new Site( "Instrumented" ),
+					     "Channel Name" );
 
 		mProcessingChain.addModules( modules );
 

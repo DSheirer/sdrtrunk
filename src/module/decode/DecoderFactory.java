@@ -135,10 +135,11 @@ public class DecoderFactory
 										   AuxDecodeConfiguration auxConfig, 
 										   AliasList aliasList,
 										   System system,
-										   Site site )
+										   Site site,
+										   String channelName )
 		{
 		List<Module> modules = getPrimaryModules( channelType, decodeConfig, 
-				recordConfig, aliasList, system, site, resourceManager );
+			recordConfig, aliasList, system, site, channelName, resourceManager );
 		
 		modules.addAll( getAuxiliaryDecoders( auxConfig, aliasList ) );
 		
@@ -176,6 +177,7 @@ public class DecoderFactory
 												  AliasList aliasList,
 												  System system,
 												  Site site,
+												  String channelName,
 												  ResourceManager resourceManager )
 	{
 		List<Module> modules = new ArrayList<Module>();
@@ -191,12 +193,12 @@ public class DecoderFactory
 		{
 		    case AM:
 		    	modules.add( new AMDecoder( decodeConfig ) );
-		    	modules.add( new AlwaysUnsquelchedDecoderState( DecoderType.AM ) );
+		    	modules.add( new AlwaysUnsquelchedDecoderState( DecoderType.AM, channelName ) );
 		        break;
 			case NBFM:
 				modules.add( new AudioModule( recordAudio, NO_REMOVE_DC ) );
 				modules.add( new NBFMDecoder( decodeConfig ) );
-		    	modules.add( new AlwaysUnsquelchedDecoderState( DecoderType.NBFM ) );
+		    	modules.add( new AlwaysUnsquelchedDecoderState( DecoderType.NBFM, channelName ) );
 				modules.add( getFMDemodulator( decodeConfig, pass, stop, REMOVE_DC ) );
 				break;
 			case LTR_STANDARD:

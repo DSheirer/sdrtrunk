@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.sound.sampled.BooleanControl;
+import javax.sound.sampled.Control;
 import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.Mixer;
@@ -26,16 +27,16 @@ import audio.AudioPacket.Type;
 import controller.NamingThreadFactory;
 
 /**
- * Mono Audio output with automatic flow control based on the availability of 
- * audio data packets.  
+ * Mono Audio output in stereo format with automatic flow control based on the 
+ * availability of audio data packets.  
  */
-public class MonoAudioOutput extends AudioOutput
+public class StereoAudioOutput extends AudioOutput
 {
-	private final static Logger mLog = LoggerFactory.getLogger( MonoAudioOutput.class );
+	private final static Logger mLog = LoggerFactory.getLogger( StereoAudioOutput.class );
 
 	/* Output line buffer size is set at one half second of audio at 48 kHz and
-	 * two bytes per sample */
-	private final static int BUFFER_SIZE = 48000;
+	 * two bytes per sample for two channels */
+	private final static int BUFFER_SIZE = 96000;
 	
 	/* The queue processor will run every 20 milliseconds checking for inbound
 	 * audio and automatically starting or stopping audio playback.  We set the 
@@ -52,9 +53,15 @@ public class MonoAudioOutput extends AudioOutput
 	private AudioEvent mAudioStartEvent;
 	private AudioEvent mAudioStopEvent;
 	
-	public MonoAudioOutput( Mixer mixer )
+	private MixerChannel mMixerChannel;
+	
+	public StereoAudioOutput( Mixer mixer, MixerChannel channel )
 	{
 		super();
+		
+		assert( channel == MixerChannel.LEFT || channel == MixerChannel.RIGHT );
+		
+		mMixerChannel = channel;
 
 		mAudioStartEvent = new AudioEvent( AudioEvent.Type.AUDIO_STARTED, 
 				getChannelName() );
@@ -64,11 +71,11 @@ public class MonoAudioOutput extends AudioOutput
 		try
 		{
 			mOutput = (SourceDataLine)mixer.getLine( 
-					AudioFormats.MONO_SOURCE_DATALINE_INFO );
+					AudioFormats.STEREO_SOURCE_DATALINE_INFO );
 			
 			if( mOutput != null )
 			{
-				mOutput.open( AudioFormats.PCM_SIGNED_48KHZ_16BITS_MONO, BUFFER_SIZE );
+				mOutput.open( AudioFormats.PCM_SIGNED_48KHZ_16BITS_STEREO, BUFFER_SIZE );
 				
 				mCanProcessAudio = true;
 				
@@ -79,7 +86,7 @@ public class MonoAudioOutput extends AudioOutput
 						BooleanControl.Type.MUTE );
 				
 				mExecutorService = Executors.newSingleThreadScheduledExecutor( 
-						new NamingThreadFactory( "audio (mono) output" ) );
+						new NamingThreadFactory( "audio (stereo) output" ) );
 
 				/* Run the queue processor task every 40 milliseconds */
 				mExecutorService.scheduleAtFixedRate( new QueueProcessor(), 
@@ -88,7 +95,7 @@ public class MonoAudioOutput extends AudioOutput
 		} 
         catch ( LineUnavailableException e )
 		{
-        	mLog.error( "Couldn't obtain source data line for 48kHz PCM mono "
+        	mLog.error( "Couldn't obtain source data line for 48kHz PCM stereo "
         			+ "audio output" );
 		}
 	}
@@ -96,7 +103,7 @@ public class MonoAudioOutput extends AudioOutput
 	@Override
 	public String getChannelName()
 	{
-		return MixerChannel.MONO.getLabel();
+		return mMixerChannel.getLabel();
 	}
 
 	public void dispose()
@@ -107,6 +114,35 @@ public class MonoAudioOutput extends AudioOutput
 		{
 			mOutput.close();
 		}
+	}
+	
+	private ByteBuffer convert( float[] samples )
+	{
+		/* Little-endian byte buffer */
+		ByteBuffer buffer = 
+			ByteBuffer.allocate( samples.length * 4 )
+					.order( ByteOrder.LITTLE_ENDIAN );
+		
+		ShortBuffer shortBuffer = buffer.asShortBuffer();
+
+		if( mMixerChannel == MixerChannel.LEFT )
+		{
+			for( float sample: samples )
+			{
+				shortBuffer.put( (short)( sample * Short.MAX_VALUE ) );
+				shortBuffer.put( (short)0 );
+			}
+		}
+		else
+		{
+			for( float sample: samples )
+			{
+				shortBuffer.put( (short)0 );
+				shortBuffer.put( (short)( sample * Short.MAX_VALUE ) );
+			}
+		}
+		
+		return buffer;
 	}
 	
 	public class QueueProcessor implements Runnable
@@ -140,19 +176,8 @@ public class MonoAudioOutput extends AudioOutput
 							}
 							else if( packet.getType() == Type.AUDIO )
 							{
-								float[] samples = packet.getAudioBuffer().getSamples();
-								
-								/* Little-endian byte buffer */
-								ByteBuffer buffer = 
-									ByteBuffer.allocate( samples.length * 2 )
-											.order( ByteOrder.LITTLE_ENDIAN );
-								
-								ShortBuffer shortBuffer = buffer.asShortBuffer();
-
-								for( float sample: samples )
-								{
-									shortBuffer.put( (short)( sample * Short.MAX_VALUE ) );
-								}
+								ByteBuffer buffer = convert( 
+										packet.getAudioBuffer().getSamples() );
 								
 								mOutput.write( buffer.array(), 0, 
 										buffer.array().length );

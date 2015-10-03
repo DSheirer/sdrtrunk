@@ -24,6 +24,9 @@ import module.decode.state.DecoderStateEvent.Event;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import audio.metadata.Metadata;
+import audio.metadata.MetadataType;
+
 /**
  * Basic decoder channel state - provides the minimum channel state functionality
  * to support an always un-squelched audio decoder.
@@ -34,12 +37,14 @@ public class AlwaysUnsquelchedDecoderState extends DecoderState
 			LoggerFactory.getLogger( AlwaysUnsquelchedDecoderState.class );
 	
 	private DecoderType mDecoderType;
+	private String mChannelName;
 	
-	public AlwaysUnsquelchedDecoderState( DecoderType decoderType )
+	public AlwaysUnsquelchedDecoderState( DecoderType decoderType, String channelName )
 	{
 		super( null );
 		
 		mDecoderType = decoderType;
+		mChannelName = channelName;
 	}
 	
 	@Override
@@ -87,6 +92,7 @@ public class AlwaysUnsquelchedDecoderState extends DecoderState
 	@Override
 	public void start()
 	{
+		broadcast( new Metadata( MetadataType.TO, mChannelName, false ) );
 		broadcast( new DecoderStateEvent( this, Event.ALWAYS_UNSQUELCH, State.IDLE ) );
 	}
 

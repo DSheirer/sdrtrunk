@@ -1,5 +1,7 @@
 package audio.output;
 
+import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.sound.sampled.BooleanControl;
@@ -11,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import sample.Broadcaster;
 import sample.Listener;
 import audio.AudioEvent;
+import audio.AudioEvent.Type;
 import audio.AudioPacket;
 import audio.metadata.AudioMetadata;
 
@@ -20,10 +23,24 @@ public abstract class AudioOutput implements Listener<AudioPacket>
 	
 	private AtomicBoolean mSquelched = new AtomicBoolean( false );
 	private Listener<AudioMetadata> mAudioMetadataListener;
+
 	protected Broadcaster<AudioEvent> mAudioEventBroadcaster = new Broadcaster<>();
+	protected LinkedTransferQueue<AudioPacket> mBuffer = new LinkedTransferQueue<>();
+	protected ScheduledExecutorService mExecutorService;
+	protected boolean mCanProcessAudio;
+	protected long mLastBufferReceived;
 
 	public void dispose()
 	{
+		mCanProcessAudio = false;
+
+		mBuffer.clear();
+
+		if( mExecutorService != null )
+		{
+			mExecutorService.shutdown();
+		}
+
 		mAudioEventBroadcaster.dispose();
 		mAudioEventBroadcaster = null;
 		mAudioMetadataListener = null;
@@ -31,8 +48,8 @@ public abstract class AudioOutput implements Listener<AudioPacket>
 	
 	public abstract String getChannelName();
 	
-	public abstract BooleanControl getMuteControl();
-	public abstract boolean hasMuteControl();
+	public abstract void setMuted( boolean muted );
+	public abstract boolean isMuted();
 	
 	public abstract FloatControl getGainControl();
 	public abstract boolean hasGainControl();
@@ -45,9 +62,17 @@ public abstract class AudioOutput implements Listener<AudioPacket>
 		}
 	}
 	
+	protected void broadcast( AudioEvent audioEvent )
+	{
+		mAudioEventBroadcaster.broadcast( audioEvent );
+	}
+	
 	public void setSquelched( boolean squelched )
 	{
 		mSquelched.set( squelched );
+		
+		broadcast( new AudioEvent( squelched ? Type.AUDIO_SQUELCHED : 
+			Type.AUDIO_UNSQUELCHED, getChannelName() ) );
 	}
 	
 	public boolean isSquelched()
@@ -80,5 +105,24 @@ public abstract class AudioOutput implements Listener<AudioPacket>
 	public void removeAudioMetadataListener()
 	{
 		mAudioMetadataListener = null;
+	}
+
+	/**
+	 * Timestamp when most recent buffer was received
+	 */
+	public long getLastBufferReceived()
+	{
+		return mLastBufferReceived;
+	}
+
+	@Override
+	public void receive( AudioPacket packet )
+	{
+		if( mCanProcessAudio )
+		{
+			mLastBufferReceived = System.currentTimeMillis();
+			
+			mBuffer.add( packet );
+		}
 	}
 }

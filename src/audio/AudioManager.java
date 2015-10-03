@@ -1,6 +1,8 @@
 package audio;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -10,16 +12,20 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import javax.sound.sampled.BooleanControl;
-import javax.sound.sampled.FloatControl;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Mixer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import sample.Broadcaster;
 import sample.Listener;
-import audio.metadata.AudioMetadata;
+import source.mixer.MixerChannel;
+import source.mixer.MixerChannelConfiguration;
+import audio.AudioEvent.Type;
 import audio.output.AudioOutput;
 import audio.output.MonoAudioOutput;
+import audio.output.StereoAudioOutput;
 import controller.ThreadPoolManager;
 import controller.ThreadPoolManager.ThreadType;
 
@@ -29,23 +35,30 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 
 	public static final int AUDIO_TIMEOUT = 2000; //2 seconds
 	public static final int NO_SOURCE = 0;
+	
+	public static final AudioEvent CONFIGURATION_CHANGE_STARTED = 
+			new AudioEvent( Type.AUDIO_CONFIGURATION_CHANGE_STARTED, null );
+	
+	public static final AudioEvent CONFIGURATION_CHANGE_COMPLETE = 
+			new AudioEvent( Type.AUDIO_CONFIGURATION_CHANGE_COMPLETE, null );
 
 	private LinkedTransferQueue<AudioPacket> mAudioPacketQueue = new LinkedTransferQueue<>();
 	private Map<Integer,AudioChannelAssignment> mChannelAssignments = new HashMap<>();
 	private int mLowestPrioritySource;
 
 	private List<AudioOutput> mAvailableAudioOutputs = new ArrayList<>();
-	private Map<String,AudioOutput> mChannelMap = new HashMap<>();
+	private Map<String,AudioOutput> mAudioOutputMap = new HashMap<>();
 	private List<String> mChannelNames = new ArrayList<>();
-	private AudioOutput mAudioOutput;
 	
-	private Listener<AudioEvent> mConfigurationChangeListener;
+	private Broadcaster<AudioEvent> mControllerBroadcaster = new Broadcaster<>();
 	
 	private ThreadPoolManager mThreadPoolManager;
 	private ScheduledFuture<?> mProcessingTask;
+	
+	private MixerChannelConfiguration mMixerChannel;
 
 	/**
-	 * Handles all audio produced by the decoding channels and routes audio 
+	 * Processes all audio produced by the decoding channels and routes audio 
 	 * packets to any combination of outputs based on any alias audio routing
 	 * options specified by the user.
 	 */
@@ -53,14 +66,24 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 	{
 		mThreadPoolManager = manager;
 
-		mAudioOutput = new MonoAudioOutput();
-		mAvailableAudioOutputs.add( mAudioOutput );
-		mChannelNames.add( mAudioOutput.getChannelName() );
-		mChannelMap.put( mAudioOutput.getChannelName(), mAudioOutput );
+		//TODO: save audio system preferences to the settings manager
 		
-		mProcessingTask = mThreadPoolManager.scheduleFixedRate( 
-			ThreadType.AUDIO_PROCESSING, new AudioPacketProcessor(), 15, 
-				TimeUnit.MILLISECONDS );
+		/* Use the system default mixer and mono channel as default startup */
+		Mixer mixer = AudioSystem.getMixer( null );
+		
+		if( mixer != null )
+		{
+			mMixerChannel = new MixerChannelConfiguration( mixer, MixerChannel.MONO );
+			
+			try
+			{
+				setMixerChannelConfiguration( mMixerChannel );
+			} 
+			catch ( AudioException e )
+			{
+				mLog.error( "Couldn't create an audio output device", e );
+			}
+		}
 	}
 	
 	public void dispose()
@@ -74,8 +97,6 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 		
 		mThreadPoolManager = null;
 		mProcessingTask = null;
-		
-		mAudioOutput.dispose();
 	}
 
 	@Override
@@ -221,6 +242,14 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 		}
 	}
 	
+	public void endAllAudioAssignments()
+	{
+		for( AudioOutput output: mAudioOutputMap.values() )
+		{
+			output.receive( new AudioPacket( AudioPacket.Type.END, null ) );
+		}
+	}
+	
 	public class AudioChannelAssignment implements Listener<AudioEvent>
 	{
 		private static final long CALL_END_DELAY = 2000; //2 seconds
@@ -280,102 +309,91 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 			}
 		}
 	}
-
+	
 	@Override
-	public List<String> getAudioChannels()
+	public void setMixerChannelConfiguration( MixerChannelConfiguration entry ) throws AudioException
 	{
-		return mChannelNames;
-	}
-
-	@Override
-	public BooleanControl getMuteControl( String channel )
-			throws AudioException
-	{
-		if( mChannelMap.containsKey( channel ) )
+		if( entry != null &&
+			( entry.getMixerChannel() == MixerChannel.MONO || 
+			  entry.getMixerChannel() == MixerChannel.STEREO ) )
 		{
-			return mChannelMap.get( channel ).getMuteControl();
-		}
+			mControllerBroadcaster.broadcast( CONFIGURATION_CHANGE_STARTED );
+			
+			if( mThreadPoolManager != null && mProcessingTask != null )
+			{
+				mThreadPoolManager.cancel( mProcessingTask );
+			}
 
-		throw new AudioException( "Channel [" + channel + "] is not a valid channel" );
-	}
+			endAllAudioAssignments();
+			
+			mAvailableAudioOutputs.clear();
+			mChannelNames.clear();
+			mAudioOutputMap.clear();
 
-	@Override
-	public boolean hasMuteControl( String channel )
-	{
-		return mChannelMap.containsKey( channel ) &&
-			   mChannelMap.get( channel ) != null &&
-			   mChannelMap.get( channel ).getMuteControl() != null;
-	}
+			switch( entry.getMixerChannel() )
+			{
+				case MONO:
+					AudioOutput mono = new MonoAudioOutput( entry.getMixer() );
+					mAvailableAudioOutputs.add( mono );
+					mChannelNames.add( mono.getChannelName() );
+					mAudioOutputMap.put( mono.getChannelName(), mono );
+					break;
+				case STEREO:
+					AudioOutput left = new StereoAudioOutput( entry.getMixer(), MixerChannel.LEFT );
+					mAvailableAudioOutputs.add( left );
+					mChannelNames.add( left.getChannelName() );
+					mAudioOutputMap.put( left.getChannelName(), left );
+					
+					AudioOutput right = new StereoAudioOutput( entry.getMixer(), MixerChannel.RIGHT );
+					mAvailableAudioOutputs.add( right );
+					mChannelNames.add( right.getChannelName() );
+					mAudioOutputMap.put( right.getChannelName(), right );
+					break;
+				default:
+					throw new AudioException( "Unsupported mixer channel "
+							+ "configuration: " + entry.getMixerChannel() );
+			}
 
-	@Override
-	public FloatControl getGainControl( String channel ) throws AudioException
-	{
-		if( mChannelMap.containsKey( channel ) )
-		{
-			return mChannelMap.get( channel ).getGainControl();
-		}
+			mProcessingTask = mThreadPoolManager.scheduleFixedRate( 
+					ThreadType.AUDIO_PROCESSING, new AudioPacketProcessor(), 15, 
+						TimeUnit.MILLISECONDS );
 
-		throw new AudioException( "Channel [" + channel + "] is not a valid channel" );
-	}
-
-	@Override
-	public boolean hasGainControl( String channel )
-	{
-		return mChannelMap.containsKey( channel ) &&
-			   mChannelMap.get( channel ) != null &&
-			   mChannelMap.get( channel ).getGainControl() != null;
-	}
-
-	/**
-	 * Sets the listener to receive audio events, specifically, audio
-	 * configuration change events
-	 */
-	@Override
-	public void setConfigurationChangeListener( Listener<AudioEvent> listener )
-	{
-		mConfigurationChangeListener = listener;
-	}
-
-	@Override
-	public void addAudioEventListener( String channel, Listener<AudioEvent> listener ) 
-			throws AudioException
-	{
-		if( mChannelMap.containsKey( channel ) )
-		{
-			mChannelMap.get( channel ).addAudioEventListener( listener );
-		}
-		else
-		{
-			throw new AudioException( "Channel [" + channel + "] is not a valid "
-					+ "channel.  Audio event listener was not registered" );
+			mControllerBroadcaster.broadcast( CONFIGURATION_CHANGE_COMPLETE );
 		}
 	}
 
 	@Override
-	public void removeAudioEventListener( String channel, Listener<AudioEvent> listener )
+	public MixerChannelConfiguration getMixerChannelConfiguration() throws AudioException
 	{
-		if( mChannelMap.containsKey( channel ) )
-		{
-			mChannelMap.get( channel ).removeAudioEventListener( listener );
-		}
+		return mMixerChannel;
 	}
 
 	@Override
-	public void setAudioMetadataListener( String channel,
-			Listener<AudioMetadata> listener )
+	public List<AudioOutput> getAudioOutputs()
 	{
-		if( mChannelMap.containsKey( channel ) )
+		List<AudioOutput> outputs = new ArrayList<>( mAudioOutputMap.values() );
+
+		Collections.sort( outputs, new Comparator<AudioOutput>()
 		{
-			mChannelMap.get( channel ).setAudioMetadataListener( listener );
-		}
+			@Override
+			public int compare( AudioOutput first, AudioOutput second )
+			{
+				return first.getChannelName().compareTo( second.getChannelName() );
+			}
+		}  );
+		
+		return outputs;
 	}
 
 	@Override
-	public void removeAudioMetadataListener( String channel )
+	public void addControllerListener( Listener<AudioEvent> listener )
 	{
-		if( mChannelMap.containsKey( channel ) )
-		{
-			mChannelMap.get( channel ).removeAudioMetadataListener();
-		}
+		mControllerBroadcaster.addListener( listener );
+	}
+
+	@Override
+	public void removeControllerListener( Listener<AudioEvent> listener )
+	{
+		mControllerBroadcaster.removeListener( listener );
 	}
 }
