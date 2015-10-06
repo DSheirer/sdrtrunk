@@ -1,12 +1,12 @@
 # sdrtrunk
 A cross-platform java application for decoding, monitoring, recording and streaming trunked mobile and related radio protocols using Software Defined Radios (SDR).
 
-* [Getting Started](GettingStarted)
-* [User's Manual](UserManual)
+* [Getting Started](https://github.com/DSheirer/sdrtrunk/wiki/GettingStarted)
+* [User's Manual](https://github.com/DSheirer/sdrtrunk/wiki/UserManual)
 * [Download](https://drive.google.com/folderview?id=0B7BHsssXUq8eOHBTNndCczZTd0k&usp=sharing)
 * [Support](https://groups.google.com/forum/#!forum/sdrtrunk)
 
-![](images/SDRTRunk_application.png)
+![](https://github.com/DSheirer/sdrtrunk/wiki/images/Overview.png)
 <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
