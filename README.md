@@ -6,6 +6,7 @@ A cross-platform java application for decoding, monitoring, recording and stream
 * [Download](https://drive.google.com/folderview?id=0B7BHsssXUq8eOHBTNndCczZTd0k&usp=sharing)
 * [Support](https://groups.google.com/forum/#!forum/sdrtrunk)
 
+![](images/SDRTRunk_application.png)
 <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
