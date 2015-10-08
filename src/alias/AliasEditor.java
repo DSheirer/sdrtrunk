@@ -64,18 +64,18 @@ public class AliasEditor extends JPanel implements ActionListener
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout() );
+		setLayout( new MigLayout( "", "[right][grow,fill]", "[][][][][][grow][]" ) );
 		
 		setBorder( BorderFactory.createTitledBorder( "Alias" ) );
 
 		mLabelName = new JLabel( "Name:" );
-		add( mLabelName, "align right" );
+		add( mLabelName );
 		
 		mTextAlias = new JTextField( mAliasNode.getAlias().getName() );
-		add( mTextAlias, "grow, wrap" );
+		add( mTextAlias, "wrap" );
 
 		mLabelMapColor = new JLabel( "Map Color:" );
-		add( mLabelMapColor, "align right" );
+		add( mLabelMapColor );
 
 		mButtonColor = new JButton( "Map Color" );
 		mButtonColor.setBackground( mAliasNode.getAlias().getMapColor() );
@@ -96,7 +96,7 @@ public class AliasEditor extends JPanel implements ActionListener
 		} );
 		add( mButtonColor, "wrap" );
 		
-		add( new JLabel( "Map Icon:" ), "align right" );
+		add( new JLabel( "Icon:" ) );
 
 		mComboMapIcon = new JComboBox<MapIcon>( 
 				mResourceManager.getSettingsManager().getMapIcons() );

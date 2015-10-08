@@ -48,7 +48,7 @@ public class GroupEditor extends JPanel implements ActionListener
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout() );
+		setLayout( new MigLayout( "", "[right][grow,fill]", "[][][grow]" ) );
 		
 		setBorder( BorderFactory.createTitledBorder( "Group" ) );
 
@@ -56,7 +56,7 @@ public class GroupEditor extends JPanel implements ActionListener
 		add( mLabelName, "align right" );
 		
 		mTextGroup = new JTextField( mGroupNode.getGroup().getName() );
-		add( mTextGroup, "grow, wrap" );
+		add( mTextGroup, "wrap" );
 		
 		JButton btnSave = new JButton( "Save" );
 		btnSave.addActionListener( GroupEditor.this );

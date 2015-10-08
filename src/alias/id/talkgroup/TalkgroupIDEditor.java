@@ -97,6 +97,7 @@ public class TalkgroupIDEditor extends JPanel implements ActionListener
 		add( btnReset, "growx,push" );
 		
 		JTextArea helpText = new JTextArea( mHelpText );
+		helpText.setBackground( getBackground() );
 		helpText.setLineWrap( true );
 		add( helpText, "span,grow,push" );
 	}

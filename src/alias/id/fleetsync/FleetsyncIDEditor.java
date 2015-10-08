@@ -70,6 +70,7 @@ public class FleetsyncIDEditor extends JPanel implements ActionListener
 		
 		JTextArea helpText = new JTextArea( mHelpText );
 		helpText.setLineWrap( true );
+		helpText.setBackground( getBackground() );
 		add( helpText, "span,grow,push" );
 	}
 

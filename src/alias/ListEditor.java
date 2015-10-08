@@ -48,7 +48,7 @@ public class ListEditor extends JPanel implements ActionListener
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout() );
+		setLayout( new MigLayout( "", "[right][grow,fill]", "[][][grow]" ) );
 		
 		setBorder( BorderFactory.createTitledBorder( "List" ) );
 
