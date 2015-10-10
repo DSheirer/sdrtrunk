@@ -434,14 +434,10 @@ public class MixerManager
 		{
 			return mChannels.contains( channel );
 		}
-	}
-	
-	public static void main( String[] args )
-	{
-		mLog.debug( "Starting ..." );
 		
-		MixerManager.getInstance();
-		
-		mLog.debug( "Finished!" );
+		public String toString()
+		{
+			return mMixer.getMixerInfo().getName();
+		}
 	}
 }

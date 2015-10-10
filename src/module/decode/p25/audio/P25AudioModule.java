@@ -104,7 +104,7 @@ public class P25AudioModule extends Module implements Listener<Message>,
 				{
 					for( byte[] frame: ((LDUMessage)message).getIMBEFrames() )
 					{
-						float[] audio = mAudioConverter.convert( frame );
+						float[] audio = mAudioConverter.decode( frame );
 
 						mAudioPacketListener.receive( 
 								new AudioPacket( audio, mAudioMetadata ) );
