@@ -18,7 +18,6 @@ import audio.squelch.SquelchState;
 import controller.channel.ChannelEvent;
 import controller.channel.IChannelEventListener;
 import dsp.filter.Filters;
-import dsp.filter.dc.AveragingDCRemovalFilter_RB;
 import dsp.filter.dc.DCRemovalFilter_RB;
 import dsp.filter.fir.real.RealFIRFilter_R_R;
 
@@ -73,7 +72,7 @@ public class AudioModule extends Module implements IAudioPacketProvider,
 		
 		if( mRemoveDC )
 		{
-			mDCRemovalFilter = new AveragingDCRemovalFilter_RB( DC_REMOVAL_RATIO );
+			mDCRemovalFilter = new DCRemovalFilter_RB( DC_REMOVAL_RATIO );
 			mDCRemovalFilter.setListener( this );
 		}
 	}

@@ -87,6 +87,12 @@ public class B100Tuner extends Tuner
     }
 
 	@Override
+	public double getSampleSize()
+	{
+		return 16.0;
+	}
+
+	@Override
     public long getFrequency() throws SourceException
     {
 	    return 0;

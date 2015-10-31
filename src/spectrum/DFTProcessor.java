@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014,2015 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -30,13 +30,14 @@ import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import controller.NamingThreadFactory;
+import sample.Buffer;
 import sample.Listener;
 import sample.SampleType;
 import sample.complex.ComplexBuffer;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeListener;
 import spectrum.converter.DFTResultsConverter;
+import controller.NamingThreadFactory;
 import dsp.filter.Window;
 import dsp.filter.Window.WindowType;
 
@@ -44,8 +45,7 @@ import dsp.filter.Window.WindowType;
  * Processes both complex samples or float samples and dispatches a float array
  * of DFT results, using configurable fft size and output dispatch timelines.  
  */
-public class DFTProcessor implements Listener<ComplexBuffer>,
-									 FrequencyChangeListener
+public class DFTProcessor implements Listener<ComplexBuffer>, FrequencyChangeListener
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( DFTProcessor.class );
@@ -54,7 +54,7 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 			new CopyOnWriteArrayList<DFTResultsConverter>();
 
 	private ArrayBlockingQueue<ComplexBuffer> mQueue = 
-							new ArrayBlockingQueue<ComplexBuffer>( 200 );
+			new ArrayBlockingQueue<ComplexBuffer>( 200 );
 							
 	private ScheduledExecutorService mScheduler = Executors
 			.newScheduledThreadPool( 1, new NamingThreadFactory( "spectrum dft" ) );	
@@ -74,7 +74,6 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 	private int mSampleRate;
 	private int mFFTFloatsPerFrame;
 	private float mNewFloatsPerFrame;
-	private float mNewFloatsPerFrameToConsume;
 	private float mNewFloatResidual;
 	private float[] mPreviousFrame = new float[ 8192 ];
 	
@@ -231,7 +230,7 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 		if( !mQueue.offer( sampleBuffer ) )
 		{
 			mLog.error( "DFTProcessor - [" + mSampleType.toString()
-						+ "]queue is full, purging queue, "
+						+ "] queue is full, purging queue, "
 						+ "samples[" + sampleBuffer + "]" );
 
 			mQueue.clear();
@@ -245,7 +244,7 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 
 		try
         {
-			ComplexBuffer buffer = mQueue.take();
+			Buffer buffer = mQueue.take();
             mCurrentBuffer = buffer.getSamples();
         }
         catch ( InterruptedException e )
@@ -500,14 +499,5 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 		mFFTFloatsPerFrame = ( mSampleType == SampleType.COMPLEX ? 
 					mFFTWidth.getWidth() * 2 : 
 					mFFTWidth.getWidth() );
-
-		if( mFFTFloatsPerFrame < mNewFloatsPerFrame )
-		{
-			mNewFloatsPerFrameToConsume = mFFTFloatsPerFrame;
-		}
-		else
-		{
-			mNewFloatsPerFrameToConsume = mNewFloatsPerFrame;
-		}
 	}
 }

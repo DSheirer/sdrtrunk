@@ -36,7 +36,6 @@ import sample.complex.ComplexBufferToStreamConverter;
 import sample.complex.IComplexBufferListener;
 import source.tuner.frequency.FrequencyCorrectionControl;
 import alias.AliasList;
-import controller.channel.Channel.ChannelType;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
 import dsp.filter.fir.complex.ComplexFIRFilter_CB_CB;

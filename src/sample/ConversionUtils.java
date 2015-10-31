@@ -4,7 +4,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
 
-import sample.complex.ComplexBuffer;
 import sample.real.RealBuffer;
 
 /**
@@ -57,7 +56,7 @@ public class ConversionUtils
 	 * Converts the float samples in a complex buffer to a little endian 16-bit
 	 * buffer
 	 */
-	public static ByteBuffer convertToSigned16BitSamples( ComplexBuffer buffer )
+	public static ByteBuffer convertToSigned16BitSamples( Buffer buffer )
 	{
 		return convertToSigned16BitSamples( buffer.getSamples() );
 	}

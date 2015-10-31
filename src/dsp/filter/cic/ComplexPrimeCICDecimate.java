@@ -31,7 +31,7 @@ import dsp.filter.Window.WindowType;
 import dsp.filter.fir.complex.ComplexFIRFilter_CB_CB;
 import dsp.filter.halfband.complex.HalfBandFilter_CB_CB;
 
-public class ComplexPrimeCICDecimate 
+public class ComplexPrimeCICDecimate implements Listener<ComplexBuffer>
 {
 	public static int[] PRIMES = { 2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,
 		59,61,67,71,73,79,83,89,97,101,103,107,109,113,127,131,137,139,149,151,
@@ -163,6 +163,7 @@ public class ComplexPrimeCICDecimate
 	/**
 	 * Primary input method for receiving sample arrays composed as I,Q,I,Q, etc.
 	 */
+	@Override
     public void receive( ComplexBuffer buffer )
     {
     	if( mFirstDecimatingStage != null )
@@ -343,9 +344,8 @@ public class ComplexPrimeCICDecimate
 	
 
 	/**
-	 * Output adapter - applies gain correction, applies cleanup filter, casts 
-	 * double-valued samples into float-valued complex sample and sends the 
-	 * result to the registered listener.
+	 * Output adapter - applies gain correction and cleanup filter and broadcast
+	 * to registered listener.	 
 	 */
 	public class Output implements ComplexSampleListener
 	{

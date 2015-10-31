@@ -36,8 +36,13 @@ import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
 import settings.Setting;
 import settings.SettingChangeListener;
-import buffer.FloatArrayCircularAveragingBuffer;
 import controller.ResourceManager;
+import dsp.filter.smoothing.GaussianSmoothingFilter;
+import dsp.filter.smoothing.NoSmoothingFilter;
+import dsp.filter.smoothing.RectangularSmoothingFilter;
+import dsp.filter.smoothing.SmoothingFilter;
+import dsp.filter.smoothing.SmoothingFilter.SmoothingType;
+import dsp.filter.smoothing.TriangularSmoothingFilter;
 
 public class SpectrumPanel extends JPanel
 							implements DFTResultsListener,
@@ -51,9 +56,9 @@ public class SpectrumPanel extends JPanel
 	/* Set display bins size to 1, so that we're guaranteed a reset to the 
 	 * correct width once the first sample set arrives */
 	private float[] mDisplayFFTBins = new float[ 1 ];
-	private FloatArrayCircularAveragingBuffer mFFTAveragingBuffer;
 	private int mAveraging = 4;
-	private int mDBScale = -100; //dBm
+	
+	private float mDBScale; 
 
 	/**
 	 * Spectral Display Color Settings
@@ -65,6 +70,11 @@ public class SpectrumPanel extends JPanel
 	private static final String SPECTRUM_AVERAGING_SIZE = "spectrum_averaging_size";
 	private static final int SPECTRUM_TRANSLUCENCY = 128;
 	
+	private static final RenderingHints RENDERING_HINTS = 
+    		new RenderingHints( RenderingHints.KEY_ANTIALIASING, 
+    							RenderingHints.VALUE_ANTIALIAS_ON );
+
+
 
 	private Color mColorSpectrumBackground;
 	private Color mColorSpectrumGradientTop;
@@ -73,11 +83,20 @@ public class SpectrumPanel extends JPanel
 
 	private float mSpectrumInset = 20.0f;
 	
+	private SmoothingFilter mSmoothingFilter = new GaussianSmoothingFilter();
+	
 	private ResourceManager mResourceManager;
 	
 	public SpectrumPanel( ResourceManager resourceManager )
     {
 		mResourceManager = resourceManager;
+		
+		RENDERING_HINTS.put( RenderingHints.KEY_RENDERING, 
+							 RenderingHints.VALUE_RENDER_QUALITY );
+		
+		setSampleSize( 16.0 );
+		
+		mSmoothingFilter.setPointSize( SmoothingFilter.SMOOTHING_DEFAULT );
 
 		getSettings();
 
@@ -89,30 +108,21 @@ public class SpectrumPanel extends JPanel
 		mResourceManager = null;
 	}
 	
+	public void setSampleSize( double sampleSize )
+	{
+		assert( 2.0 <= sampleSize && sampleSize <= 32.0 );
+		
+		mDBScale = -(float)( 20.0 * Math.log10( Math.pow( 2.0, sampleSize ) ) );
+	}
+	
 	public void setAveraging( int size )
 	{
 		mAveraging = size;
-		
-		mFFTAveragingBuffer = 
-				new FloatArrayCircularAveragingBuffer( mAveraging );		
 	}
 	
 	public int getAveraging()
 	{
 		return mAveraging;
-	}
-	
-	/**
-	 * Sets the lowest decibel scale value to show on the display
-	 */
-	public void setDBScale( int dbScale )
-	{
-		mDBScale = dbScale;
-	}
-	
-	public int getDBScale()
-	{
-		return mDBScale;
 	}
 	
 	public void clearSpectrum()
@@ -180,18 +190,36 @@ public class SpectrumPanel extends JPanel
      */
     public void receive( float[] currentFFTBins )
     {
+    	if( Float.isInfinite( currentFFTBins[ 0 ] ) || Float.isNaN( currentFFTBins[ 0 ] ) )
+		{
+			currentFFTBins = new float[ currentFFTBins.length ];
+		}
+
     	//Construct and/or resize our fft results variables
     	if( mDisplayFFTBins == null || 
     		mDisplayFFTBins.length != currentFFTBins.length )
     	{
-    		mDisplayFFTBins = new float[ currentFFTBins.length ];
+    		mDisplayFFTBins = currentFFTBins;
     	}
 
-    	/**
-    	 * Store the new FFT bins in the buffer and get the average of the FFT
-    	 * bin buffer contents into the display fft bins variable
-    	 */
-    	mDisplayFFTBins = mFFTAveragingBuffer.get( currentFFTBins );
+    	//Smooth across the bins
+    	float[] smoothedBins = mSmoothingFilter.filter( currentFFTBins );
+
+    	//Average bins over multiple frames
+    	if( mAveraging > 1 )
+    	{
+    		float gain = 1.0f / (float)mAveraging;
+    		
+    		for( int x = 0; x < mDisplayFFTBins.length; x++ )
+    		{
+    			mDisplayFFTBins[ x ] += ( smoothedBins[ x ] - mDisplayFFTBins[ x ] ) * gain;
+    		}
+    	}
+    	else
+    	{
+    		mDisplayFFTBins = smoothedBins;
+    	}
+    	
     	
 		repaint();
     }
@@ -204,14 +232,8 @@ public class SpectrumPanel extends JPanel
     	Graphics2D graphics = (Graphics2D) g;
     	graphics.setBackground( mColorSpectrumBackground );
 
-        RenderingHints renderHints = 
-        		new RenderingHints( RenderingHints.KEY_ANTIALIASING, 
-        							RenderingHints.VALUE_ANTIALIAS_ON );
 
-        renderHints.put( RenderingHints.KEY_RENDERING, 
-        				 RenderingHints.VALUE_RENDER_QUALITY );
-
-        graphics.setRenderingHints( renderHints );
+        graphics.setRenderingHints( RENDERING_HINTS );
         
     	drawSpectrum( graphics );
     }
@@ -231,7 +253,7 @@ public class SpectrumPanel extends JPanel
 
     	//Define the gradient
     	GradientPaint gradient = new GradientPaint( 0, 
-    												0, 
+    												getSize().height / 4, 
     												mColorSpectrumGradientTop,
     												0,
     												getSize().height, 
@@ -253,7 +275,7 @@ public class SpectrumPanel extends JPanel
     	{
     		float insideHeight = size.height - mSpectrumInset;
 
-    		float scalor = insideHeight / ( -mDBScale );
+    		float scalor = insideHeight / mDBScale;
 			
     		float insideWidth = size.width;
 
@@ -271,7 +293,7 @@ public class SpectrumPanel extends JPanel
     			}
     			else
     			{
-    				height = (float)( Math.abs( mDisplayFFTBins[ x ] ) * scalor );
+    				height = mDisplayFFTBins[ x ] * scalor;
     				
         			if( height > insideHeight )
         			{
@@ -316,5 +338,54 @@ public class SpectrumPanel extends JPanel
     }
 
 	@Override
-    public void settingDeleted( Setting setting ) {}
+    public void settingDeleted( Setting setting ) {  /* not implemented */ }
+
+	@Override
+	public int getSmoothing()
+	{
+		return mSmoothingFilter.getPointSize();
+	}
+
+	@Override
+	public void setSmoothing( int smoothing )
+	{
+		mSmoothingFilter.setPointSize( smoothing );
+	}
+
+	@Override
+	public SmoothingType getSmoothingType()
+	{
+		return mSmoothingFilter.getSmoothingType();
+	}
+
+	@Override
+	public void setSmoothingType( SmoothingType type )
+	{
+		if( mSmoothingFilter.getSmoothingType() != type )
+		{
+			int pointSize = getSmoothing();
+
+			synchronized ( mSmoothingFilter )
+			{
+				switch( type )
+				{
+					case GAUSSIAN:
+						mSmoothingFilter = new GaussianSmoothingFilter();
+						break;
+					case RECTANGLE:
+						mSmoothingFilter = new RectangularSmoothingFilter();
+						break;
+					case TRIANGLE:
+						mSmoothingFilter = new TriangularSmoothingFilter();
+						break;
+					case NONE:
+					default:
+						mSmoothingFilter = new NoSmoothingFilter();
+						break;
+				}
+			}
+			
+			setSmoothing( pointSize );
+		}
+	}
 }

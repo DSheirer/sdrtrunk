@@ -31,6 +31,7 @@ import source.recording.RecordingConfiguration;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerConfigurationAssignment;
 import source.tuner.TunerType;
+import source.tuner.airspy.AirspyTunerConfiguration;
 import source.tuner.fcd.proV1.FCD1TunerConfiguration;
 import source.tuner.fcd.proplusV2.FCD2TunerConfiguration;
 import source.tuner.hackrf.HackRFTunerConfiguration;
@@ -40,7 +41,8 @@ import source.tuner.rtl.r820t.R820TTunerConfiguration;
 /**
  * Support for persisting via JAXB all configured SDRTrunk settings
  */
-@XmlSeeAlso( { ColorSetting.class,
+@XmlSeeAlso( { AirspyTunerConfiguration.class,
+			   ColorSetting.class,
 			   DefaultIcon.class,
 			   E4KTunerConfiguration.class,
 			   FCD1TunerConfiguration.class,

@@ -25,7 +25,7 @@ import source.mixer.MixerChannel;
 /**
  * Converts 16-bit little endian byte data into an array of floats 
  */
-public class ChannelShortAdapter extends SampleAdapter
+public class ChannelShortAdapter implements ISampleAdapter
 {
 	private ShortToFloatMap mMap = new ShortToFloatMap();
 	private ByteOrder mByteOrder = ByteOrder.LITTLE_ENDIAN;

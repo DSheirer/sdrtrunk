@@ -30,10 +30,11 @@ import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 import javax.swing.SwingUtilities;
 
+import net.miginfocom.swing.MigLayout;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.miginfocom.swing.MigLayout;
 import playlist.PlaylistManager;
 import settings.ColorSetting.ColorSettingName;
 import settings.ColorSettingMenuItem;

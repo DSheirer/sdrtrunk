@@ -1,12 +1,14 @@
 package dsp.filter.dc;
 
+import sample.Listener;
 import sample.real.RealBuffer;
 
-public class IIRSinglePoleDCRemovalFilter_RB extends DCRemovalFilter_RB
+public class IIRSinglePoleDCRemovalFilter_RB implements Listener<RealBuffer>
 {
 	private float mAlpha;
 	private float mPreviousInput = 0.0f;
 	private float mPreviousOutput = 0.0f;
+	private Listener<RealBuffer> mListener;
 
 	/**
 	 * IIR single-pole DC removal filter, as described by J M de Freitas in
@@ -25,17 +27,22 @@ public class IIRSinglePoleDCRemovalFilter_RB extends DCRemovalFilter_RB
 	@Override
 	public void receive( RealBuffer buffer )
 	{
+		if( mListener != null )
+		{
+			mListener.receive( filter( buffer ) );
+		}
+	}
+	
+	public RealBuffer filter( RealBuffer buffer )
+	{
 		float[] samples = buffer.getSamples();
 		
 		for( int x = 0; x < samples.length; x++ )
 		{
 			samples[ x ] = filter( samples[ x ] );
 		}
-		
-		if( mListener != null )
-		{
-			mListener.receive( buffer );
-		}
+
+		return buffer;
 	}
 
     public float filter( float sample )
@@ -49,10 +56,14 @@ public class IIRSinglePoleDCRemovalFilter_RB extends DCRemovalFilter_RB
 		return currentOutput;
     }
 
-	@Override
 	public void reset()
 	{
 		mPreviousInput = 0.0f;
 		mPreviousOutput = 0.0f;
+	}
+	
+	public void setListener( Listener<RealBuffer> listener )
+	{
+		mListener = listener;
 	}
 }

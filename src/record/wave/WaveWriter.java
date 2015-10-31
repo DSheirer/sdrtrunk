@@ -30,9 +30,6 @@ import java.util.regex.Pattern;
 
 import javax.sound.sampled.AudioFormat;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class WaveWriter implements AutoCloseable 
 {
 //	private final static Logger mLog = LoggerFactory.getLogger( WaveWriter.class );

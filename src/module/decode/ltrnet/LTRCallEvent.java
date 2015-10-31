@@ -19,7 +19,6 @@ package module.decode.ltrnet;
 
 import module.decode.DecoderType;
 import module.decode.event.CallEvent;
-import module.decode.ltrstandard.LTRStandardMessage;
 import alias.Alias;
 import alias.AliasList;
 

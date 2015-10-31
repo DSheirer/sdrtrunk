@@ -19,6 +19,7 @@ package source.tuner;
 
 public enum TunerType
 {
+	AIRSPY_R820T( "R820T" ),
 	ELONICS_E4000( "E4000" ),
 	ETTUS_WBX( "WBX" ),
 	ETTUS_VARIOUS( "Ettus Tuner" ),

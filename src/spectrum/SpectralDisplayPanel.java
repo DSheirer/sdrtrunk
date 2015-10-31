@@ -66,10 +66,11 @@ import spectrum.OverlayPanel.ChannelDisplay;
 import spectrum.converter.ComplexDecibelConverter;
 import spectrum.converter.DFTResultsConverter;
 import spectrum.menu.AveragingItem;
-import spectrum.menu.DBScaleItem;
 import spectrum.menu.FFTWidthItem;
 import spectrum.menu.FFTWindowTypeItem;
 import spectrum.menu.FrameRateItem;
+import spectrum.menu.SmoothingItem;
+import spectrum.menu.SmoothingTypeItem;
 
 import com.jidesoft.swing.JideSplitPane;
 
@@ -79,6 +80,7 @@ import controller.channel.ChannelEvent;
 import controller.channel.ChannelEventListener;
 import controller.channel.ChannelUtils;
 import dsp.filter.Window.WindowType;
+import dsp.filter.smoothing.SmoothingFilter.SmoothingType;
 
 /**
  * Spectral Display Panel - comprises a DFTProcessor coupled with a waterfall
@@ -387,6 +389,9 @@ public class SpectralDisplayPanel extends JPanel
 			//Register the dft processor to receive samples from the tuner
 			mTuner.addListener( (Listener<ComplexBuffer>)mDFTProcessor );
 			
+			mDFTConverter.setSampleSize( mTuner.getSampleSize() );
+			mSpectrumPanel.setSampleSize( mTuner.getSampleSize() );
+			
 			//Fire frequency and sample rate change events so that everyone 
 			//can init
 			try
@@ -598,14 +603,6 @@ public class SpectralDisplayPanel extends JPanel
 				if( event.getComponent() != mWaterfallPanel )
 				{
 					/**
-					 * DB Scale menu
-					 */
-					JMenu dbScaleMenu = new JMenu( "Scale: 0 to dBm" );
-					dbScaleMenu.add( 
-							new DBScaleItem( mSpectrumPanel, -100 ) );
-					displayMenu.add( dbScaleMenu );
-					
-					/**
 					 * Averaging menu
 					 */
 					JMenu averagingMenu = new JMenu( "Averaging" );
@@ -665,6 +662,26 @@ public class SpectralDisplayPanel extends JPanel
 				{
 					fftWindowType.add( 
 							new FFTWindowTypeItem( mDFTProcessor, type ) );
+				}
+				
+				if( event.getComponent() != mWaterfallPanel )
+				{
+					/**
+					 * Smoothing menu
+					 */
+					JMenu smoothingMenu = new JMenu( "Smoothing" );
+
+					if( mSpectrumPanel.getSmoothingType() != SmoothingType.NONE )
+					{
+						smoothingMenu.add( new SmoothingItem( mSpectrumPanel, 5 ) );
+						smoothingMenu.add( new JSeparator() );
+					}
+					smoothingMenu.add( new SmoothingTypeItem( mSpectrumPanel, SmoothingType.GAUSSIAN ) );
+					smoothingMenu.add( new SmoothingTypeItem( mSpectrumPanel, SmoothingType.TRIANGLE ) );
+					smoothingMenu.add( new SmoothingTypeItem( mSpectrumPanel, SmoothingType.RECTANGLE ) );
+					smoothingMenu.add( new SmoothingTypeItem( mSpectrumPanel, SmoothingType.NONE ) );
+					
+					displayMenu.add( smoothingMenu );
 				}
 
 				if( contextMenu != null )

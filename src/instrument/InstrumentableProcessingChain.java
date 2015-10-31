@@ -6,11 +6,9 @@ import instrument.tap.TapGroup;
 import java.util.ArrayList;
 import java.util.List;
 
-import source.Source;
-import source.tuner.TunerChannelSource;
-import source.tuner.frequency.FrequencyCorrectionControl;
 import module.Module;
 import module.ProcessingChain;
+import source.Source;
 
 public class InstrumentableProcessingChain extends ProcessingChain implements Instrumentable
 {

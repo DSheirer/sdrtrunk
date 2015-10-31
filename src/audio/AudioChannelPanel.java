@@ -20,7 +20,6 @@ import settings.Setting;
 import settings.SettingChangeListener;
 import settings.SettingsManager;
 import alias.Alias;
-import audio.AudioEvent.Type;
 import audio.metadata.AudioMetadata;
 import audio.metadata.Metadata;
 import audio.metadata.MetadataType;

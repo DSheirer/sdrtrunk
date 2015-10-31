@@ -19,9 +19,9 @@ package audio.inverted;
 
 import audio.InversionFrequency;
 import sample.real.RealSampleListener;
-import util.Oscillator;
 import dsp.filter.Filters;
 import dsp.filter.FloatFIRFilter;
+import dsp.mixer.Oscillator;
 
 /**
  * Applies audio inversion (or un-inversion) to a stream of float audio samples

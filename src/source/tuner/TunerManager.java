@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014,2015 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -35,6 +35,8 @@ import source.SourceException;
 import source.config.SourceConfigTuner;
 import source.config.SourceConfiguration;
 import source.mixer.MixerManager;
+import source.tuner.airspy.AirspyTuner;
+import source.tuner.airspy.AirspyTunerController;
 import source.tuner.fcd.FCDTuner;
 import source.tuner.fcd.proV1.FCD1TunerController;
 import source.tuner.fcd.proplusV2.FCD2TunerController;
@@ -208,6 +210,8 @@ public class TunerManager
 			
 			switch( tunerClass )
 			{
+				case AIRSPY:
+					return initAirspyTuner( device, descriptor );
 				case ETTUS_USRP_B100:
 					return initEttusB100Tuner( device, descriptor );
 				case FUNCUBE_DONGLE_PRO:
@@ -250,6 +254,38 @@ public class TunerManager
 		
 		return new TunerInitStatus( null, "Unknown Device" );
 	}
+
+	private TunerInitStatus initAirspyTuner( Device device, 
+											 DeviceDescriptor descriptor )
+	{
+		try
+		{
+			AirspyTunerController airspyController = 
+				new AirspyTunerController( device, mResourceManager.getThreadPoolManager() );
+			
+			airspyController.init();
+			
+			AirspyTuner tuner = new AirspyTuner( airspyController );
+			
+			TunerConfiguration config = getTunerConfiguration( tuner );
+			
+			if( config != null )
+			{
+				tuner.apply( config );
+			}				
+			
+			return new TunerInitStatus( tuner, "LOADED" );
+		}
+		catch( SourceException se )
+		{
+			mLog.error( "couldn't construct Airspy controller/tuner", se );
+			
+			return new TunerInitStatus( null, 
+						"error constructing Airspy tuner controller" );
+		}
+	}
+
+
 	
 	private TunerInitStatus initEttusB100Tuner( Device device, 
 												DeviceDescriptor descriptor )

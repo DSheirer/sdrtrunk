@@ -17,7 +17,7 @@
  ******************************************************************************/
 package sample.adapter;
 
-public class ByteSampleAdapter extends SampleAdapter
+public class ByteSampleAdapter implements ISampleAdapter
 {
 	private final static float[] LOOKUP_VALUES;
 
@@ -33,8 +33,6 @@ public class ByteSampleAdapter extends SampleAdapter
 		{
 			LOOKUP_VALUES[ x ] = (float)( x - 127 ) / 128.0f;
 		}
-//		
-//		LOOKUP_VALUES[ 128 ] = 0.0000001f;
 	}
 
 	@Override

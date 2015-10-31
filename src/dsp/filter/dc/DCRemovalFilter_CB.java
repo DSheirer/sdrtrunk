@@ -18,17 +18,18 @@
 package dsp.filter.dc;
 
 import sample.Listener;
-import sample.real.RealBuffer;
+import sample.complex.ComplexBuffer;
 
-public class AveragingDCRemovalFilter_RB extends DCRemovalFilter_RB 
-				implements Listener<RealBuffer>
+public class DCRemovalFilter_CB implements Listener<ComplexBuffer>
 {
-	private float mAverage;
-	private float mRatio;
-
-	public AveragingDCRemovalFilter_RB( float ratio )
+	private Listener<ComplexBuffer> mListener;
+	private DCRemovalFilter mIFilter;
+	private DCRemovalFilter mQFilter;
+	
+	public DCRemovalFilter_CB( float ratio )
 	{
-		mRatio = ratio;
+		mIFilter = new DCRemovalFilter( ratio );
+		mQFilter = new DCRemovalFilter( ratio );
 	}
 	
 	public void dispose()
@@ -36,31 +37,35 @@ public class AveragingDCRemovalFilter_RB extends DCRemovalFilter_RB
 		mListener = null;
 	}
 	
-	public void reset()
+	public float[] filter( float[] samples )
 	{
-		mAverage = 0.0f;
-	}
+		for( int x = 0; x < samples.length; x += 2 )
+		{
+			samples[ x ] = mIFilter.filter( samples[ x ] );
+			samples[ x + 1 ] = mQFilter.filter( samples[ x + 1 ] );
+		}
 
-	public float filter( float sample )
-	{
-		mAverage += mRatio * ( sample - mAverage );
+		return samples;
+	}
 	
-		return sample - mAverage;
+	public ComplexBuffer filter( ComplexBuffer buffer )
+	{
+		filter( buffer.getSamples() );
+		
+		return buffer;
 	}
-
+	
 	@Override
-	public void receive( RealBuffer buffer )
+	public void receive( ComplexBuffer buffer )
 	{
 		if( mListener != null )
 		{
-			float[] samples = buffer.getSamples();
-			
-			for( int x = 0; x < samples.length; x++ )
-			{
-				samples[ x ] = filter( samples[ x ] );
-			}
-			
-			mListener.receive( buffer );
+			mListener.receive( filter( buffer ) );
 		}
+	}
+	
+	public void setListener( Listener<ComplexBuffer> listener )
+	{
+		mListener = listener;
 	}
 }

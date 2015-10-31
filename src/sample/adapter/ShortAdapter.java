@@ -23,7 +23,7 @@ import java.nio.ByteOrder;
 /**
  * Converts 16-bit little endian byte data into an array of floats 
  */
-public class ShortAdapter extends SampleAdapter
+public class ShortAdapter implements ISampleAdapter
 {
 	private ShortToFloatMap mMap = new ShortToFloatMap();
 	private ByteOrder mByteOrder = ByteOrder.LITTLE_ENDIAN;

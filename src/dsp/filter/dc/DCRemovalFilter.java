@@ -17,17 +17,15 @@
  ******************************************************************************/
 package dsp.filter.dc;
 
-public abstract class DCRemovalFilter
+public class DCRemovalFilter
 {
-	private float mAverage;
-	private float mRatio;
+	protected float mAverage;
+	protected float mRatio;
 
 	public DCRemovalFilter( float ratio )
 	{
 		mRatio = ratio;
 	}
-
-	public abstract void dispose();
 
 	public void reset()
 	{
@@ -36,8 +34,8 @@ public abstract class DCRemovalFilter
 
 	public float filter( float sample )
 	{
-		mAverage += mRatio * ( sample - mAverage );
-	
-		return sample - mAverage;
+		float filtered = sample - mAverage;
+		mAverage += mRatio * filtered;
+		return filtered;
 	}
 }

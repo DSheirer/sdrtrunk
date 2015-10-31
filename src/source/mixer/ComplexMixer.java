@@ -28,7 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
-import sample.adapter.SampleAdapter;
+import sample.adapter.ISampleAdapter;
 import sample.complex.ComplexBuffer;
 import source.SourceException;
 
@@ -45,7 +45,7 @@ public class ComplexMixer
 	private AudioFormat mAudioFormat;
 	private String mName;
 	private int mBytesPerFrame = 0;
-	private SampleAdapter mSampleAdapter;
+	private ISampleAdapter mSampleAdapter;
 	private Listener<ComplexBuffer> mListener;
     
 	/**
@@ -68,7 +68,7 @@ public class ComplexMixer
     public ComplexMixer( TargetDataLine targetDataLine, 
     					 AudioFormat format,
     					 String name,
-    					 SampleAdapter sampleAdapter,
+    					 ISampleAdapter sampleAdapter,
     					 Listener<ComplexBuffer> listener )
     {
     	mTargetDataLine = targetDataLine;

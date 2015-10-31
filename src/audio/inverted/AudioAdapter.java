@@ -17,10 +17,10 @@
  ******************************************************************************/
 package audio.inverted;
 
-import util.Oscillator;
 import dsp.filter.FilterFactory;
 import dsp.filter.FloatFIRFilter;
 import dsp.filter.Window.WindowType;
+import dsp.mixer.Oscillator;
 
 /**
  * Based on the AudioType applied, produces normal, muted, or audio inverted

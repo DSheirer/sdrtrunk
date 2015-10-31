@@ -127,6 +127,12 @@ public class RTL2832Tuner extends Tuner
 					+ "sample rate", e );
 		}
 	}
+	
+	@Override
+	public double getSampleSize()
+	{
+		return 8.0;
+	}
 
 	@Override
     public long getFrequency() throws SourceException

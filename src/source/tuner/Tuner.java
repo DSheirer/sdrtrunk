@@ -124,6 +124,11 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
 	 * @return
 	 */
 	public abstract int getSampleRate();
+
+	/**
+	 * Sample size in bits
+	 */
+	public abstract double getSampleSize();
 	
 	/**
 	 * Tuner Local Oscillator Frequency

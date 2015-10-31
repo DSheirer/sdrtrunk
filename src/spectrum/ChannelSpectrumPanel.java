@@ -13,7 +13,11 @@ import javax.swing.JLayeredPane;
 import javax.swing.JMenu;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.JSeparator;
 import javax.swing.SwingUtilities;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.miginfocom.swing.MigLayout;
 import sample.Listener;
@@ -31,10 +35,11 @@ import source.tuner.frequency.FrequencyChangeEvent.Attribute;
 import spectrum.converter.DFTResultsConverter;
 import spectrum.converter.RealDecibelConverter;
 import spectrum.menu.AveragingItem;
-import spectrum.menu.DBScaleItem;
 import spectrum.menu.FFTWidthItem;
 import spectrum.menu.FFTWindowTypeItem;
 import spectrum.menu.FrameRateItem;
+import spectrum.menu.SmoothingItem;
+import spectrum.menu.SmoothingTypeItem;
 import controller.ResourceManager;
 import controller.channel.Channel;
 import controller.channel.ChannelEvent;
@@ -42,6 +47,9 @@ import controller.channel.ChannelEventListener;
 import dsp.filter.Filters;
 import dsp.filter.FloatHalfBandFilter;
 import dsp.filter.Window.WindowType;
+import dsp.filter.halfband.real.HalfBandFilter_RB_RB;
+import dsp.filter.hilbert.HilbertTransform;
+import dsp.filter.smoothing.SmoothingFilter.SmoothingType;
 
 public class ChannelSpectrumPanel extends JPanel 
 								  implements ChannelEventListener,
@@ -49,9 +57,9 @@ public class ChannelSpectrumPanel extends JPanel
 								  			 SettingChangeListener,
 								  			 SpectralDisplayAdjuster
 {
-    private static final long serialVersionUID = 1L;
-    private static final String CHANNEL_SPECTRUM_AVERAGING_SIZE = 
-    		"channel_spectrum_averaging_size";
+	private static final Logger mLog = LoggerFactory.getLogger( ChannelSpectrumPanel.class );
+
+	private static final long serialVersionUID = 1L;
 
     private ResourceManager mResourceManager;
     private DFTProcessor mDFTProcessor = new DFTProcessor( SampleType.REAL );    
@@ -62,13 +70,13 @@ public class ChannelSpectrumPanel extends JPanel
     
     private Channel mCurrentChannel;
     
-    private int mSpectrumAveragingSize;
     private int mSampleBufferSize = 2400;
     private float[] mSamples = new float[ mSampleBufferSize ];
     private int mSamplePointer = 0;
 
-    private DecimatingSampleAssembler mDecimatingSampleAssembler;
-   
+    private HalfBandFilter_RB_RB mDecimatingFilter = new HalfBandFilter_RB_RB( 
+		Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO.getCoefficients(), 1.0f, true );
+    
     private AtomicBoolean mEnabled = new AtomicBoolean();
 
     public ChannelSpectrumPanel( ResourceManager resourceManager )
@@ -76,20 +84,12 @@ public class ChannelSpectrumPanel extends JPanel
     	mResourceManager = resourceManager;
     	mResourceManager.getSettingsManager().addListener( this );
     	mSpectrumPanel = new SpectrumPanel( mResourceManager );
+    	mSpectrumPanel.setAveraging( 1 );
+
     	mOverlayPanel = new ChannelOverlayPanel( mResourceManager );
-    	
-    	
-    	mSpectrumAveragingSize = 10;
-//    	mSpectrumAveragingSize = mResourceManager.getSettingsManager()
-//			.getIntegerSetting( CHANNEL_SPECTRUM_AVERAGING_SIZE, 10 ).getValue();
-    	
-    	mSpectrumPanel.setAveraging( mSpectrumAveragingSize );
- 
     	mDFTProcessor.addConverter( mDFTConverter );
     	mDFTConverter.addListener( mSpectrumPanel );
 
-    	mDecimatingSampleAssembler = new DecimatingSampleAssembler( mDFTProcessor );
-    	
     	/* Set the DFTProcessor to the decimated 24kHz sample rate */
     	mDFTProcessor.frequencyChanged( 
     			new FrequencyChangeEvent( Attribute.SAMPLE_RATE, 24000 ) );
@@ -254,10 +254,11 @@ public class ChannelSpectrumPanel extends JPanel
 	@Override
     public void receive( RealBuffer buffer )
     {
-		for( float sample: buffer.getSamples() )
-		{
-			mDecimatingSampleAssembler.receive( sample );
-		}
+		RealBuffer decimated = mDecimatingFilter.filter( buffer );
+
+		//Hack: we're placing real samples in a complex buffer that the DFT
+		//processor is expecting.
+		mDFTProcessor.receive( new ComplexBuffer( decimated.getSamples() ) );
     }
 
 	/**
@@ -367,16 +368,8 @@ public class ChannelSpectrumPanel extends JPanel
 				 */
 				JMenu averagingMenu = new JMenu( "Averaging" );
 				averagingMenu.add( 
-						new AveragingItem( ChannelSpectrumPanel.this, 4 ) );
+						new AveragingItem( ChannelSpectrumPanel.this, 2 ) );
 				displayMenu.add( averagingMenu );
-				
-				/**
-				 * Baseline menu
-				 */
-				JMenu baselineMenu = new JMenu( "Baseline" );
-				baselineMenu.add( 
-						new DBScaleItem( ChannelSpectrumPanel.this, 50 ) );
-				displayMenu.add( baselineMenu );
 				
 				/**
 				 * FFT width
@@ -416,6 +409,24 @@ public class ChannelSpectrumPanel extends JPanel
 							new FFTWindowTypeItem( mDFTProcessor, type ) );
 				}
 
+				/**
+				 * Smoothing menu
+				 */
+				JMenu smoothingMenu = new JMenu( "Smoothing" );
+
+				if( mSpectrumPanel.getSmoothingType() != SmoothingType.NONE )
+				{
+					smoothingMenu.add( new SmoothingItem( ChannelSpectrumPanel.this, 5 ) );
+					smoothingMenu.add( new JSeparator() );
+				}
+				
+				smoothingMenu.add( new SmoothingTypeItem( ChannelSpectrumPanel.this, SmoothingType.GAUSSIAN ) );
+				smoothingMenu.add( new SmoothingTypeItem( ChannelSpectrumPanel.this, SmoothingType.TRIANGLE ) );
+				smoothingMenu.add( new SmoothingTypeItem( ChannelSpectrumPanel.this, SmoothingType.RECTANGLE ) );
+				smoothingMenu.add( new SmoothingTypeItem( ChannelSpectrumPanel.this, SmoothingType.NONE ) );
+				
+				displayMenu.add( smoothingMenu );
+
 				if( contextMenu != null )
 				{
 					contextMenu.show( mOverlayPanel, 
@@ -443,37 +454,35 @@ public class ChannelSpectrumPanel extends JPanel
 		mSpectrumPanel.setAveraging( averaging );
     }
 
-	@Override
-    public int getDBScale()
-    {
-	    return mSpectrumPanel.getDBScale();
-    }
-
-	@Override
-    public void setDBScale( int baseline )
-    {
-		mSpectrumPanel.setDBScale( baseline );
-    }
-	
-	public class DecimatingSampleAssembler
+	public void setSampleSize( double sampleSize )
 	{
-		private FloatHalfBandFilter mDecimationFilter = new FloatHalfBandFilter( 
-				Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO, 1.0002f );
-		
-		private SampleAssembler mSampleAssembler;
-
-		public DecimatingSampleAssembler( Listener<ComplexBuffer> listener )
-		{
-			mSampleAssembler = new SampleAssembler( listener );
-			mDecimationFilter.setListener( mSampleAssembler );
-		}
-
-        public void receive( float sample )
-        {
-			mDecimationFilter.receive( sample );
-        }
+		mSpectrumPanel.setSampleSize( sampleSize );
 	}
-	
+
+	@Override
+	public int getSmoothing()
+	{
+		return mSpectrumPanel.getSmoothing();
+	}
+
+	@Override
+	public void setSmoothing( int smoothing )
+	{
+		mSpectrumPanel.setSmoothing( smoothing );
+	}
+
+	@Override
+	public SmoothingType getSmoothingType()
+	{
+		return mSpectrumPanel.getSmoothingType();
+	}
+
+	@Override
+	public void setSmoothingType( SmoothingType type )
+	{
+		mSpectrumPanel.setSmoothingType( type );
+	}
+
 	public class SampleAssembler implements RealSampleListener
 	{
 	    private Listener<ComplexBuffer> mListener;

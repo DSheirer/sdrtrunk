@@ -50,6 +50,7 @@ import source.recording.RecordingConfiguration;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerConfigurationAssignment;
 import source.tuner.TunerType;
+import source.tuner.airspy.AirspyTunerConfiguration;
 import source.tuner.fcd.proV1.FCD1TunerConfiguration;
 import source.tuner.fcd.proplusV2.FCD2TunerConfiguration;
 import source.tuner.hackrf.HackRFTunerConfiguration;
@@ -573,6 +574,14 @@ public class SettingsManager
 	{
 		switch( type )
 		{
+			case AIRSPY_R820T:
+				AirspyTunerConfiguration airspyConfig = 
+						new AirspyTunerConfiguration( name );
+				
+				getSettings().addTunerConfiguration( airspyConfig );
+				
+				save();
+				return airspyConfig;
 			case ELONICS_E4000:
 				E4KTunerConfiguration e4KConfig = 
 							new E4KTunerConfiguration( name );

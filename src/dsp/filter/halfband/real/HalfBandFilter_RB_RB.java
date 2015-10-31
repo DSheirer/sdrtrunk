@@ -10,10 +10,21 @@ public class HalfBandFilter_RB_RB extends HalfBandFilter implements Listener<Rea
 	private Listener<RealBuffer> mListener;
 	
 	/**
+	 * Halfband filter for real buffers with optional decimation by two.  
 	 * 
-	 * @param coefficients
-	 * @param gain
-	 * @param decimate
+	 * If this filter is used in non-decimating mode, the filter will overwrite 
+	 * the inbound sample buffer with the filtered samples.  This will cause 
+	 * issues if the buffers are being used across several processes are sharing 
+	 * the buffer, since this filter will modify the contents of the object, so 
+	 * consider making a copy of the buffer prior to feeding the buffer to this 
+	 * filter.
+	 * 
+	 * If used in decimating mode, a new (half-length) buffer will be created 
+	 * for the filtered samples.  
+	 * 
+	 * @param coefficients - filter kernel
+	 * @param gain - gain to apply to the outputs
+	 * @param decimate - true for decimate by 2, or false for no decimation
 	 */
 	public HalfBandFilter_RB_RB( float[] coefficients, float gain, boolean decimate )
 	{
@@ -28,12 +39,18 @@ public class HalfBandFilter_RB_RB extends HalfBandFilter implements Listener<Rea
 		
 		mListener = null;
 	}
-
+	
 	@Override
 	public void receive( RealBuffer buffer )
 	{
 		if( mListener != null )
 		{
+			mListener.receive( filter( buffer ) );
+		}
+	}
+
+	public RealBuffer filter( RealBuffer buffer )
+	{
 			if( mDecimate )
 			{
 				float[] samples = buffer.getSamples();
@@ -72,7 +89,7 @@ public class HalfBandFilter_RB_RB extends HalfBandFilter implements Listener<Rea
 					mDecimateFlag = !mDecimateFlag;
 				}
 				
-				mListener.receive( new RealBuffer( decimated ) );
+				return new RealBuffer( decimated );
 			}
 			else
 			{
@@ -84,9 +101,8 @@ public class HalfBandFilter_RB_RB extends HalfBandFilter implements Listener<Rea
 					samples[ x ] = filter( samples[ x ] );
 				}
 				
-				mListener.receive( buffer );
+				return buffer;
 			}
-		}
 	}
 
 	public void setListener( Listener<RealBuffer> listener )

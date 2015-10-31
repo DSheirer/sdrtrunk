@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014,2015 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import sample.Buffer;
 import sample.Listener;
 import sample.complex.Complex;
 import sample.complex.ComplexBuffer;
@@ -36,12 +37,12 @@ import source.SourceException;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeEvent.Attribute;
 import source.tuner.frequency.FrequencyChangeListener;
-import util.Oscillator;
 import controller.ThreadPoolManager;
 import controller.ThreadPoolManager.ThreadType;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
 import dsp.filter.cic.ComplexPrimeCICDecimate;
+import dsp.mixer.Oscillator;
 
 public class TunerChannelSource extends ComplexSource
 							 implements FrequencyChangeListener,
@@ -292,7 +293,7 @@ public class TunerChannelSource extends ComplexSource
 					{
 						mBuffer.drainTo( sampleBuffers, 4 );
 				
-						for( ComplexBuffer buffer: sampleBuffers )
+						for( Buffer buffer: sampleBuffers )
 						{
 							/* Check to see if we've been shutdown */
 							if( mDispose.get() )

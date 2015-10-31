@@ -1,7 +1,31 @@
 package spectrum.converter;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class RealDecibelConverter extends DFTResultsConverter
 {
+	private static final Logger mLog = LoggerFactory.getLogger( RealDecibelConverter.class );
+
+	private float mDynamicRangeReference;
+
+	public RealDecibelConverter()
+	{
+		setSampleSize( 24.0 );
+	}
+	
+	/**
+	 * Specifies the bit depth to establish the maximum dynamic range.  All
+	 * FFT bin values will be scaled according to this value.
+	 */
+	@Override
+	public void setSampleSize( double size )
+	{
+		assert( 2.0 <= size && size <= 32.0 );
+		
+		mDynamicRangeReference = (float)Math.pow( 2.0d, size );
+	}
+
 	/**
 	 * Converts the output of the JTransforms FloatFFT_1D.realForward()
 	 * calculation into a normalized power spectrum in decibels, per description
@@ -10,29 +34,22 @@ public class RealDecibelConverter extends DFTResultsConverter
 	@Override
     public void receive( float[] results )
     {
-		float dc = Math.abs( results[ 0 ] );
+		float[] processed = new float[ results.length / 4 ];
 
-		/* Ensure we have power in the DC power bin (bin 0), otherwise don't
-		 * dispatch the results */
-		if( dc != 0 )
+		int index = 0;
+		
+		for( int x = 0; x < processed.length; x ++ )
 		{
-			/* Note: we're only processing 1/4 of the output samples */
-			float[] processed = new float[ results.length / 4 + 1 ];
+			index = x * 2;
 			
-			for( int x = 0; x < processed.length - 2; x ++ )
-			{
-				int index = ( x + 1 ) * 2;
+			float normalizedMagnitude = 10.0f * (float)Math.log10( 
+				( ( results[ index ] * results[ index ] ) + 
+				  ( results[ index + 1 ] * results[ index + 1 ] ) ) / 
+				  		mDynamicRangeReference );
 
-				double magnitude = ( ( results[ index ] * results[ index ] ) +
-						   ( results[ index + 1 ] * results[ index + 1 ] ) );
-				
-				processed[ x ] = 10.0f * 
-						(float)( Math.log10( magnitude / dc ) );
-			}
-
-			processed[ processed.length - 1 ] = processed[ 0 ];
-
-			dispatch( processed );
+			processed[ x ] = normalizedMagnitude;
 		}
+
+		dispatch( processed );
     }
 }

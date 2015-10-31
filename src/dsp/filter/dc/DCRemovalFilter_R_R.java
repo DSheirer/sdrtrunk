@@ -28,7 +28,6 @@ public class DCRemovalFilter_R_R extends DCRemovalFilter implements RealSampleLi
 		super( ratio );
 	}
 	
-	@Override
 	public void dispose()
 	{
 		mListener = null;

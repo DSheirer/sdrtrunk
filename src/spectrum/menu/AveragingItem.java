@@ -18,14 +18,15 @@ public class AveragingItem extends JSlider implements ChangeListener
     
     public AveragingItem( SpectralDisplayAdjuster adjuster, int defaultValue )
     {
-    	super( JSlider.HORIZONTAL, 2, 50, adjuster.getAveraging() );
+    	super( JSlider.HORIZONTAL, 1, 20, adjuster.getAveraging() );
     	mDefaultValue = defaultValue;
     	
     	mAdjuster = adjuster;
     	
-    	setMajorTickSpacing( 10 );
-    	setMinorTickSpacing( 5 );
+    	setMajorTickSpacing( 5 );
+    	setMinorTickSpacing( 1 );
     	setPaintTicks( true );
+    	setPaintLabels( true );
     	
     	addChangeListener( this );
 

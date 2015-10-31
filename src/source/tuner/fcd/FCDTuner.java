@@ -100,6 +100,12 @@ public class FCDTuner extends MixerTuner
     }
 	
 	@Override
+	public double getSampleSize()
+	{
+		return 16.0;
+	}
+
+	@Override
     public long getFrequency() throws SourceException
     {
 		return mController.getFrequency();

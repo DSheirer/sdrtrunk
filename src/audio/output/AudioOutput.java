@@ -4,7 +4,6 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.sound.sampled.BooleanControl;
 import javax.sound.sampled.FloatControl;
 
 import org.slf4j.Logger;

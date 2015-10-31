@@ -135,7 +135,7 @@ public class P25AudioModule extends Module implements Listener<Message>,
 			library = (AudioConversionLibrary)temp.newInstance();
 			
 			if( ( library.getMajorVersion() == 0 && library.getMinorVersion() >= 3 ) ||
-				  library.getMajorVersion() > 0 )
+				  library.getMajorVersion() >= 1 )
 			{
 				mAudioConverter = library.getAudioConverter( IMBE_CODEC, 
 						AudioFormats.PCM_SIGNED_48KHZ_16BITS_MONO );

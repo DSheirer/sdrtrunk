@@ -33,7 +33,6 @@ import source.tuner.frequency.FrequencyCorrectionControl;
 import source.tuner.frequency.IFrequencyCorrectionController;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
-import dsp.filter.dc.AveragingDCRemovalFilter_RB;
 import dsp.filter.dc.DCRemovalFilter_RB;
 import dsp.filter.fir.complex.ComplexFIRFilter_CB_CB;
 import dsp.fm.FMDemodulator_CB;
@@ -102,7 +101,7 @@ public class FMDemodulatorModule extends Module implements IComplexBufferListene
 		
 		if( mRemoveDC )
 		{
-			mDCRemovalFilter = new AveragingDCRemovalFilter_RB( DC_REMOVAL_RATIO );
+			mDCRemovalFilter = new DCRemovalFilter_RB( DC_REMOVAL_RATIO );
 			mUnfilteredBufferBroadcaster.addListener( mDCRemovalFilter );
 		}
 	}

@@ -21,7 +21,6 @@ import java.awt.EventQueue;
 
 import javax.swing.JLabel;
 
-import module.decode.p25.P25Decoder.Modulation;
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderPanel;
 import net.miginfocom.swing.MigLayout;

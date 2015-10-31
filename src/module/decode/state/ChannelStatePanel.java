@@ -7,20 +7,14 @@ import java.awt.GradientPaint;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Paint;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JLabel;
 import javax.swing.JMenu;
-import javax.swing.JMenuItem;
 import javax.swing.JPanel;
-import javax.swing.JSeparator;
 
-import module.decode.Decoder;
 import module.decode.DecoderFactory;
-import module.decode.event.ActivitySummaryFrame;
 import net.miginfocom.swing.MigLayout;
 
 import org.slf4j.Logger;

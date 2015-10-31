@@ -21,13 +21,13 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import controller.channel.Channel;
 import module.Module;
 import module.log.MessageEventLogger.Type;
 import module.log.config.EventLogConfiguration;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import properties.SystemProperties;
 
 public class EventLogManager

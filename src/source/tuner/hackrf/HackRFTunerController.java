@@ -142,8 +142,21 @@ public class HackRFTunerController extends TunerController
 	{
 		mDeviceHandle = new DeviceHandle();
 		
-		LibUsb.open( mDevice, mDeviceHandle );
+		int result = LibUsb.open( mDevice, mDeviceHandle );
 		
+		if( result != 0 )
+		{
+			if( result == LibUsb.ERROR_ACCESS )
+			{
+				mLog.error( "Unable to access HackRF - insufficient permissions.  "
+					+ "If you are running a Linux OS, have you installed the "
+					+ "hackRF rules file in \\etc\\udev\\rules.d ??" );
+			}
+			
+			throw new SourceException( "Couldn't open hackrf device - " +
+				LibUsb.strError( result ) );
+		}
+
 		try
 		{
 			claimInterface();
@@ -298,7 +311,7 @@ public class HackRFTunerController extends TunerController
 	 */
     public long getTunedFrequency() throws SourceException
     {
-		return 0;
+		return mFrequencyController.getTunedFrequency();
     }
 
 	@Override

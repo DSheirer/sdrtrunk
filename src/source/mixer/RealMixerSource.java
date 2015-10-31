@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import dsp.gain.AutomaticGainControl;
 import sample.Listener;
-import sample.adapter.SampleAdapter;
+import sample.adapter.ISampleAdapter;
 import sample.real.RealBuffer;
 import source.RealSource;
 import source.SourceException;
@@ -49,7 +49,7 @@ public class RealMixerSource extends RealSource
 	private AudioFormat mAudioFormat;
 	private String mDisplayName;
 	private int mBytesPerFrame = 0;
-	private SampleAdapter mSampleAdapter;
+	private ISampleAdapter mSampleAdapter;
 	private AutomaticGainControl mAGC = new AutomaticGainControl();
 	
 	CopyOnWriteArrayList<Listener<RealBuffer>> mSampleListeners = 
@@ -74,7 +74,7 @@ public class RealMixerSource extends RealSource
     public RealMixerSource( TargetDataLine targetDataLine, 
     						   AudioFormat format,
     						   String name,
-    						   SampleAdapter sampleAdapter )
+    						   ISampleAdapter sampleAdapter )
     {
     	super( name );
     	

@@ -20,7 +20,6 @@ package source.tuner.hackrf;
 import java.util.concurrent.RejectedExecutionException;
 
 import javax.swing.JPanel;
-import javax.usb.UsbException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +34,6 @@ import source.tuner.TunerClass;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
 import source.tuner.hackrf.HackRFTunerController.BoardID;
-import source.tuner.hackrf.HackRFTunerController.Serial;
 import controller.ResourceManager;
 import controller.ThreadPoolManager;
 
@@ -53,23 +51,6 @@ public class HackRFTuner extends Tuner
 		
 		/* Register for frequency/sample rate changes */
 		mController.addListener( this );
-		
-		try
-		{
-			BoardID id = mController.getBoardID();
-			super.setName( id.getLabel() );
-			
-			String version = mController.getFirmwareVersion();
-			mLog.info( "HackRF firmware: " + version );
-			
-			Serial serial = mController.getSerial();
-			mLog.info( "HackRF Part ID: " + serial.getPartID() );
-			mLog.info( "HackRF Serial Number: " + serial.getSerialNumber() );
-		}
-		catch( UsbException e )
-		{
-			mLog.error( "couldn't read HackRF board id", e  );
-		}
 	}
 
 	public void dispose()
@@ -111,6 +92,12 @@ public class HackRFTuner extends Tuner
     {
 	    return mController.getSampleRate();
     }
+
+	@Override
+	public double getSampleSize()
+	{
+		return 8.0;
+	}
 
 	@Override
     public long getFrequency() throws SourceException

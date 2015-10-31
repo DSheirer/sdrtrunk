@@ -32,6 +32,7 @@ import module.Module;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import sample.Buffer;
 import sample.ConversionUtils;
 import sample.Listener;
 import sample.complex.ComplexBuffer;
@@ -163,7 +164,7 @@ public class ComplexBufferWaveRecorder extends Module
     	{
 			try
             {
-				ComplexBuffer buffer = mBuffers.poll();
+				Buffer buffer = mBuffers.poll();
 				
 				while( buffer != null )
 				{

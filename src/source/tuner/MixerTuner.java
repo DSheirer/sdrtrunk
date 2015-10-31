@@ -25,7 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
-import sample.adapter.SampleAdapter;
+import sample.adapter.ISampleAdapter;
 import sample.complex.ComplexBuffer;
 import sample.complex.ComplexSampleListListener;
 import source.mixer.ComplexMixer;
@@ -48,7 +48,7 @@ public abstract class MixerTuner extends Tuner implements Listener<ComplexBuffer
 	public MixerTuner( String name,
 					   MixerTunerType mixerTunerType,
 					   TargetDataLine targetDataLine,
-					   SampleAdapter sampleAdapter )
+					   ISampleAdapter sampleAdapter )
 	{
 		super( name );
 		
@@ -63,7 +63,7 @@ public abstract class MixerTuner extends Tuner implements Listener<ComplexBuffer
 	
 	public MixerTuner( String name, 
 					   MixerTunerDataLine mixerTuner,
-					   SampleAdapter sampleAdapter )
+					   ISampleAdapter sampleAdapter )
 	{
 		this( name, 
 			  mixerTuner.getMixerTunerType(), 

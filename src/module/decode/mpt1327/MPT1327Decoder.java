@@ -40,7 +40,6 @@ import sample.real.RealBuffer;
 import alias.AliasList;
 import bits.MessageFramer;
 import bits.SyncPattern;
-import controller.channel.Channel.ChannelType;
 import dsp.filter.FilterFactory;
 import dsp.filter.Filters;
 import dsp.filter.Window.WindowType;
