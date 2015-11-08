@@ -146,8 +146,7 @@ public class HilbertTransform implements Listener<RealBuffer>
 			if( mInvertFlag )
 			{
 				//inphase
-				samples[ y ] = -( mCenterCoefficent * 
-						mBuffer[ mIndexMap[ index ][ mCenterTapIndex ] ] );
+				samples[ y ] = -( mBuffer[ mIndexMap[ index ][ mCenterTapIndex ] ] );
 
 				//quadrature
 				samples[ y + 1 ] = -accumulator;
@@ -155,8 +154,7 @@ public class HilbertTransform implements Listener<RealBuffer>
 			else
 			{
 				//inphase
-				samples[ y ] = mCenterCoefficent * 
-						mBuffer[ mIndexMap[ index ][ mCenterTapIndex ] ];
+				samples[ y ] = mBuffer[ mIndexMap[ index ][ mCenterTapIndex ] ];
 
 				//quadrature
 				samples[ y + 1 ] = accumulator;
@@ -255,6 +253,9 @@ public class HilbertTransform implements Listener<RealBuffer>
 	 * a folded FIR structure to exploit the symmetric nature of the half-band
 	 * filter coefficients.  The polarity difference between the upper and lower
 	 * halves is accounted for in the filter() method.
+	 * 
+	 * Note: we apply a 2.0 gain to the coefficients to compensate for the loss 
+	 * of splitting the signal via two filters.
 	 */
 	private void convertHalfBandToHilbert( float[] coefficients )
 	{
@@ -266,15 +267,15 @@ public class HilbertTransform implements Listener<RealBuffer>
 		{
 			if( x < middle )
 			{
-				mHilbertFilter[ x ] = -Math.abs( coefficients[ x ] );
+				mHilbertFilter[ x ] = 2.0f * -Math.abs( coefficients[ x ] );
 			}
 			else if( x > middle )
 			{
-				mHilbertFilter[ x ] = Math.abs( coefficients[ x ] );
+				mHilbertFilter[ x ] = 2.0f * Math.abs( coefficients[ x ] );
 			}
 			else
 			{
-				mHilbertFilter[ x ] = coefficients[ x ];
+				mHilbertFilter[ x ] = 2.0f * coefficients[ x ];
 			}
 		}
 	}

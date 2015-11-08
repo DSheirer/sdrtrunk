@@ -26,6 +26,7 @@ import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Line2D;
+import java.util.Arrays;
 
 import javax.swing.JPanel;
 
@@ -111,8 +112,8 @@ public class SpectrumPanel extends JPanel
 	public void setSampleSize( double sampleSize )
 	{
 		assert( 2.0 <= sampleSize && sampleSize <= 32.0 );
-		
-		mDBScale = -(float)( 20.0 * Math.log10( Math.pow( 2.0, sampleSize ) ) );
+
+		mDBScale = (float)( 20.0 * Math.log10( 1  / Math.pow( 2.0, sampleSize - 1 ) ) );
 	}
 	
 	public void setAveraging( int size )

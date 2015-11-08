@@ -9,7 +9,7 @@
         an alias identifier having the lowest priority.
       - Audio recording by call with new 'Non-Recordable' alias action
       - (planned)Added Ettus UHD support for B100 with WBX tuner
-      - (planned)Added Airspy tuner support
+      - Added Airspy tuner support
       
 0.1.5 20150612 Added initial P25 Decoder support with integrated audio decoding
       using the JMBE library   

@@ -19,12 +19,6 @@ public abstract class DFTResultsConverter
 	{
 	}
 
-	/**
-	 * Specifies the sample size in bits to establish the maximum dynamic range.  
-	 * All FFT bin values will be scaled according to this value.
-	 */
-	public abstract void setSampleSize( double size );
-	
 	public void dispose()
 	{
 		mListeners.clear();

@@ -389,7 +389,6 @@ public class SpectralDisplayPanel extends JPanel
 			//Register the dft processor to receive samples from the tuner
 			mTuner.addListener( (Listener<ComplexBuffer>)mDFTProcessor );
 			
-			mDFTConverter.setSampleSize( mTuner.getSampleSize() );
 			mSpectrumPanel.setSampleSize( mTuner.getSampleSize() );
 			
 			//Fire frequency and sample rate change events so that everyone 

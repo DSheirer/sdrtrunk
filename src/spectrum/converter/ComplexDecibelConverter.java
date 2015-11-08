@@ -20,13 +20,50 @@ package spectrum.converter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Converts complex DFT output to scaled dB values with a maximum amplitude of
+ * 0 dB and all values scaled to the minimum dB value which is:
+ * 
+ * Max: 0dB
+ * Min: 20 * log10( 1.0 / ( 2.0 ^ ( bit depth - 1) ) = scaling factor
+ * 
+ * Notes:
+ * 
+ * The magnitude of each DFT output bin must be scaled by the number of DFT 
+ * points to normalize the output to a range of ( 0 to 1.0 ).  DFT bin magnitude
+ * can be calculated as:
+ * 
+ * 1) sqrt( bin[ x ] * bin[ x ] + bin[ x + 1 ] * bin[ x + 1] ) / DFTSize or,
+ * 2) ( bin[ x ] * bin[ x ] + bin[ x + 1 ] * bin[ x + 1] ) / ( DFTSize * DFTSize )
+ * 
+ * Convert each scaled DFT bin magnitude to decibels using this formula:
+ * 
+ * 20 * log10( scaledBinValue )
+ * 
+ * Max Value: 20 * log10( 1.0 ) = 0 dB
+ * 
+ * When plotting, these dB bin values should be scaled according to the maximum
+ * dynamic range supported by the source.  Maximum dynamic range for bit depth
+ * is calculated as:
+ * 
+ * 20 * log10( 1 / ( 2 ^ ( bit depth - 1 ) )
+ * 
+ * A source that provides 12-bit samples can produce values in the range of 
+ * ( 0 to 4096 ) or -2048 to 2047.  The smallest observable value would then
+ * be 1 / 2048.
+ * 
+ * So, the smallest decibel value of a source producing 12 bit samples is:
+ * 
+ * 20 * log10( 1 / 2048 ) = -66.23 dB
+ * 
+ * and the dynamic range is:  (-66.23 to 0.0 dB)
+ * 
+ */
 public class ComplexDecibelConverter extends DFTResultsConverter
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( ComplexDecibelConverter.class );
 	
-	private float mDynamicRangeReference = (float)Math.pow( 2.0, 16.0 );
-
 	/**
 	 * Converts the output of the JTransforms FloatFFT_1D.complexForward()
 	 * calculation into the power spectrum in decibels, normalized to the 
@@ -36,44 +73,35 @@ public class ComplexDecibelConverter extends DFTResultsConverter
 	{
 	}
 	
-	/**
-	 * Specifies the bit depth to establish the maximum dynamic range.  All
-	 * FFT bin values will be scaled according to this value.
-	 */
-	@Override
-	public void setSampleSize( double size )
-	{
-		assert( 2.0 <= size && size <= 32.0 );
-		
-		mDynamicRangeReference = (float)Math.pow( 2.0d, size );
-	}
-
 	@Override
     public void receive( float[] results )
     {
-		float[] processed = new float[ results.length / 2 ];
+		int halfResults = results.length / 2;
+		
+		float dftScalor = 1.0f / (float)( halfResults ^ 2 );
+		
+		float[] processed = new float[ halfResults ];
 
-		int half = processed.length / 2;
-
+		int middle = processed.length / 2;
+		
 		for( int x = 0; x < results.length; x += 2 )
 		{
-			//Calculate the magnitude squared value from each bin's real and
-			//imaginary value, scale it to the available dynamic range and 
-			//convert to dB.
-			float normalizedMagnitude = 10.0f * (float)Math.log10( 
+			//Calculate the magnitude squared (power) value from each bin's real 
+			//and imaginary value and scale it to the DFT bin size squared.
+			//Convert the scaled value to decibels.
+			float decibels = 10.0f * (float)Math.log10( 
 				( ( results[ x ] * results[ x ] ) + 
-				  ( results[ x + 1 ] * results[ x + 1 ] ) ) / 
-				  		mDynamicRangeReference );
+				  ( results[ x + 1 ] * results[ x + 1 ] ) ) * dftScalor ); 
 
 			// We have to swap the upper and lower halves of the JTransforms
 			// DFT results for correct display
-			if( x / 2 >= half )
+			if( x / 2 >= middle )
 			{
-				processed[ x / 2 - half ] = normalizedMagnitude;
+				processed[ x / 2 - middle ] = decibels;
 			}
 			else
 			{
-				processed[ x / 2 + half ] = normalizedMagnitude;
+				processed[ x / 2 + middle ] = decibels;
 			}
 		}
 		

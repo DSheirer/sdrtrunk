@@ -33,6 +33,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.JPanel;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
 import settings.Setting;
@@ -48,7 +51,10 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 													  Pausable,
 													  SettingChangeListener
 {
-    private static final long serialVersionUID = 1L;
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( WaterfallPanel.class );
+
+	private static final long serialVersionUID = 1L;
 	private static DecimalFormat CURSOR_FORMAT = new DecimalFormat( "0.00000" );
 	private static final String SPECTRUM_CURSOR = "spectrum_cursor";
 	private static final String PAUSED = "PAUSED";
@@ -202,9 +208,9 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
     public void receive( float[] update )
     {
 		//If our FFT size changes, reset our pixel map and image source
-		if( mFFTSize != update.length - 1 )
+		if( mFFTSize != update.length )
 		{
-			mFFTSize = update.length - 1;
+			mFFTSize = update.length;
 
 			reset();
 		}

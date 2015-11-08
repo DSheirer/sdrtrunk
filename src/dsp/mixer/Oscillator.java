@@ -17,10 +17,21 @@
  ******************************************************************************/
 package dsp.mixer;
 
+import java.util.Arrays;
+
+import org.jtransforms.fft.FloatFFT_1D;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import dsp.filter.Filters;
+import dsp.filter.hilbert.HilbertTransform;
 import sample.complex.Complex;
 
 public class Oscillator
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( Oscillator.class );
+
 	private double mFrequency;
 	private double mSampleRate;
 
@@ -104,5 +115,110 @@ public class Oscillator
 	public float getFloat()
 	{
 		return mCurrentAngle.real();
+	}
+	
+	public static void main( String[] args )
+	{
+		Oscillator o = new Oscillator( 1536, 4096 );
+
+		o.rotate();
+		
+		float[] samples = new float[ 8192 ];
+		
+		for( int x = 0; x < 8192; x++ )
+		{
+			samples[ x ] = o.inphase();
+			
+			o.rotate();
+		}
+		
+		logLargest( "Real: ", samples, false );
+		
+		HilbertTransform ht = new HilbertTransform();
+		
+		float[] transformed = ht.filter( samples );
+
+		logLargest( "Hilbert: ", transformed, true );
+		
+		FloatFFT_1D fft = new FloatFFT_1D( 4096 );
+
+		fft.complexForward( transformed );
+
+		logLargest( "DFT:", transformed, true );
+	}
+	
+	private static void logLargest( String label, float[] samples, boolean complex )
+	{
+		float largestI = 0.0f;
+		int indexLargestI = 0;
+		float largestQ = 0.0f;
+		int indexLargestQ = 0;
+
+		float smallestI = 0.0f;
+		int indexsmallestI = 0;
+		float smallestQ = 0.0f;
+		int indexsmallestQ = 0;
+
+		for( int x = 0; x < samples.length; x++ )
+		{
+			if( complex )
+			{
+				if( x % 2 == 0 )
+				{
+					if( samples[ x ] > largestI )
+					{
+						largestI = samples[ x ];
+						indexLargestI = x;
+					}
+					if( samples[ x ] < smallestI )
+					{
+						smallestI = samples[ x ];
+						indexsmallestI = x;
+					}
+				}
+				else
+				{
+					if( samples[ x ] > largestQ )
+					{
+						largestQ = samples[ x ];
+						indexLargestQ = x;
+					}
+					if( samples[ x ] < smallestQ )
+					{
+						smallestQ = samples[ x ];
+						indexsmallestQ = x;
+					}
+				}
+			}
+			else
+			{
+				if( samples[ x ] > largestI )
+				{
+					largestI = samples[ x ];
+					indexLargestI = x;
+				}
+				if( samples[ x ] < smallestI )
+				{
+					smallestI = samples[ x ];
+					indexsmallestI = x;
+				}
+			}
+		}
+
+
+		if( complex )
+		{
+			mLog.debug( label + 
+					" largestI (" + indexLargestI + "): " + largestI + 
+					" smallestI (" + indexsmallestI + "): " + smallestI +
+					" largestQ (" + indexLargestQ + "): " + largestQ + 
+					" smallestQ (" + indexsmallestQ + "): " + smallestQ );
+		}
+		else
+		{
+			mLog.debug( label + 
+					" largest (" + indexLargestI + "): " + largestI + 
+					" smallest (" + indexsmallestI + "): " + smallestI );
+		}
 	}
 }
