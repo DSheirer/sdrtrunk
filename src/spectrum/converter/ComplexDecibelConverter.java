@@ -95,13 +95,16 @@ public class ComplexDecibelConverter extends DFTResultsConverter
 
 			// We have to swap the upper and lower halves of the JTransforms
 			// DFT results for correct display
-			if( x / 2 >= middle )
+			
+			int index = x / 2;
+			
+			if( index >= middle )
 			{
-				processed[ x / 2 - middle ] = decibels;
+				processed[ index - middle ] = decibels;
 			}
 			else
 			{
-				processed[ x / 2 + middle ] = decibels;
+				processed[ index + middle ] = decibels;
 			}
 		}
 		

@@ -96,7 +96,7 @@ public class HackRFTuner extends Tuner
 	@Override
 	public double getSampleSize()
 	{
-		return 8.0;
+		return 11.0;
 	}
 
 	@Override

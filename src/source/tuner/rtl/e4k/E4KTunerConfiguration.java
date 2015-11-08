@@ -34,7 +34,7 @@ public class E4KTunerConfiguration extends TunerConfiguration
 	private E4KLNAGain mLNAGain = E4KLNAGain.AUTOMATIC;
 	private E4KEnhanceGain mEnhanceGain = E4KEnhanceGain.AUTOMATIC;
 	private double mFrequencyCorrection = 8.9d;
-	private SampleRate mSampleRate = SampleRate.RATE_1_200MHZ;
+	private SampleRate mSampleRate = SampleRate.RATE_1_920MHZ;
 
 	/**
 	 * Default constructor for JAXB

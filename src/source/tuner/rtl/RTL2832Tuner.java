@@ -131,7 +131,9 @@ public class RTL2832Tuner extends Tuner
 	@Override
 	public double getSampleSize()
 	{
-		return 8.0;
+		//Note: although sample size is 8, we set it to 11 to align with the
+		//actual noise floor.
+		return 11.0;
 	}
 
 	@Override

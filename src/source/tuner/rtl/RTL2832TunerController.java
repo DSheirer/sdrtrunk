@@ -1010,9 +1010,10 @@ public abstract class RTL2832TunerController extends TunerController
 		writeDemodRegister( mDeviceHandle, Page.ONE, (short)0x9F, 
 				sampleRate.getRatioHighBits(), 2 );
 		
-		/* Write low-order 16-bits of sample rate ratio to demod register */
-		writeDemodRegister( mDeviceHandle, Page.ONE, (short)0xA1, 
-				sampleRate.getRatioLowBits(), 2 );
+		/* Write low-order 16-bits of sample rate ratio to demod register.
+		 * Note: none of the defined rates have a low order ratio value, so we
+		 * simply write a zero to the register */
+		writeDemodRegister( mDeviceHandle, Page.ONE, (short)0xA1, 0, 2 );
 		
 		/* Set sample rate correction to 0 */
 		setSampleRateFrequencyCorrection( 0 );
@@ -1267,32 +1268,25 @@ public abstract class RTL2832TunerController extends TunerController
 	public enum SampleRate
 	{
 		/* Note: sample rates below 1.0MHz are subject to aliasing */
-		RATE_0_240MHZ( 0x0DFC, 0x0000,  240000, "0.240 MHz" ),
-		RATE_0_288MHZ( 0x08FC, 0x0000,  288000, "0.288 MHz" ),
-		RATE_0_912MHZ( 0x07E4, 0x0000,  912000, "0.912 MHz" ),
-		RATE_0_960MHZ( 0x0778, 0x0000,  960000, "0.960 MHz" ),
-		RATE_1_200MHZ( 0x05F4, 0x0000, 1200000, "1.200 MHz" ),
-		RATE_1_440MHZ( 0x04FC, 0x0000, 1440000, "1.440 MHz" ),
-		RATE_1_680MHZ( 0x0448, 0x0000, 1680000, "1.680 MHz" ),
-		RATE_1_824MHZ( 0x03F0, 0x0000, 1824000, "1.824 MHz" ),
-		RATE_2_016MHZ( 0x038C, 0x0000, 2016000, "2.016 MHz" ),
-		RATE_2_208MHZ( 0x0340, 0x0000, 2208000, "2.208 MHz" ),
-		RATE_2_400MHZ( 0x02FC, 0x0000, 2400000, "2.400 MHz" ),
-		RATE_2_640MHZ( 0x02B4, 0x8000, 2640000, "2.640 MHz" ),
-		RATE_2_880MHZ( 0x027C, 0x0000, 2880000, "2.880 MHz" );
+		RATE_0_240MHZ( 0x1E00,  240000, "0.240 MHz" ),
+		RATE_0_288MHZ( 0x1900,  288000, "0.288 MHz" ),
+		RATE_0_960MHZ( 0x0780,  960000, "0.960 MHz" ),
+		RATE_1_200MHZ( 0x0600, 1200000, "1.200 MHz" ),
+		RATE_1_440MHZ( 0x0500, 1440000, "1.440 MHz" ),
+		RATE_1_920MHZ( 0x03C0, 2016000, "2.016 MHz" ),
+		RATE_2_304MHZ( 0x0320, 2208000, "2.208 MHz" ),
+		RATE_2_400MHZ( 0x0300, 2400000, "2.400 MHz" ),
+		RATE_2_880MHZ( 0x0280, 2880000, "2.880 MHz" );
 		
 		private int mRatioHigh;
-		private int mRatioLow;
 		private int mRate;
 		private String mLabel;
 		
 		private SampleRate( int ratioHigh, 
-							int ratioLow, 
 							int rate, 
 							String label )
 		{
 			mRatioHigh = ratioHigh;
-			mRatioLow = ratioLow;
 			mRate = rate;
 			mLabel = label;
 		}
@@ -1300,11 +1294,6 @@ public abstract class RTL2832TunerController extends TunerController
 		public int getRatioHighBits()
 		{
 			return mRatioHigh;
-		}
-		
-		public int getRatioLowBits()
-		{
-			return mRatioLow;
 		}
 		
 		public int getRate()

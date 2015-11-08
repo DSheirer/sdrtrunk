@@ -29,9 +29,9 @@ import source.tuner.hackrf.HackRFTunerController.HackRFVGAGain;
 public class HackRFTunerConfiguration extends TunerConfiguration
 {
 	private HackRFSampleRate mSampleRate = HackRFSampleRate.RATE2_016MHZ;
-	private HackRFLNAGain mLNAGain = HackRFLNAGain.GAIN_0;
+	private HackRFLNAGain mLNAGain = HackRFLNAGain.GAIN_16;
 	private HackRFVGAGain mVGAGain = HackRFVGAGain.GAIN_10;
-	private boolean mAmplifierEnabled = false;
+	private boolean mAmplifierEnabled = true;
 	private double mFrequencyCorrection = 0.0d;
 
 	/**
