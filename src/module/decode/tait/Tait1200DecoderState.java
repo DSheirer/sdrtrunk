@@ -26,9 +26,12 @@ import org.jdesktop.swingx.mapviewer.GeoPosition;
 
 import message.Message;
 import module.decode.DecoderType;
+import module.decode.event.CallEvent.CallEventType;
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderState;
 import module.decode.state.DecoderStateEvent;
+import module.decode.state.State;
+import module.decode.state.DecoderStateEvent.Event;
 import alias.Alias;
 import alias.AliasList;
 
@@ -106,7 +109,13 @@ public class Tait1200DecoderState extends DecoderState
 				setMessage( gps.getGPSLocation().toString().replace( "[", "" )
 						.replace( "]", "" ) );
 			}
+			
 			setMessageType( "GPS" );
+			
+			broadcast( new Tait1200CallEvent( CallEventType.GPS, getAliasList(), 
+				gps.getFromID(), gps.getToID(), gps.getGPSLocation().toString() ) );
+
+			broadcast( new DecoderStateEvent( this, Event.DECODE, State.DATA ) );
 		}
 		else if( message instanceof Tait1200ANIMessage )
 		{
@@ -122,6 +131,11 @@ public class Tait1200DecoderState extends DecoderState
 			
 			setMessage( null );
 			setMessageType( "ANI" );
+
+			broadcast( new Tait1200CallEvent( CallEventType.ID_ANI, getAliasList(), 
+				ani.getFromID(), ani.getToID(), "ANI" ) );
+			
+			broadcast( new DecoderStateEvent( this, Event.DECODE, State.CALL ) );
 		}
     }
 	
