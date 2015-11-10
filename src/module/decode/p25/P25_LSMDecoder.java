@@ -79,8 +79,6 @@ public class P25_LSMDecoder extends P25Decoder implements IComplexBufferListener
 		
 		mCQPSKDemodulator.setSymbolListener( mCQPSKSlicer );
 		
-		mCQPSKSlicer.addListener( mMessageFramer );
-
 		mMessageFramer = new P25MessageFramer( aliasList, mCQPSKDemodulator );
 		mCQPSKSlicer.addListener( mMessageFramer );
 		

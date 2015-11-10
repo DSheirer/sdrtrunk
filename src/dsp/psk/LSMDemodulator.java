@@ -248,9 +248,9 @@ public class LSMDemodulator implements Instrumentable, ComplexSampleListener
 
 		private RealInterpolator mInterpolator = new RealInterpolator( 1.0f );
 		
-		private Complex mPreviousSample;
-		private Complex mPreviousMiddleSample;
-		private Complex mPreviousSymbol;
+		private Complex mPreviousSample = new Complex( 0, 0 );
+		private Complex mPreviousMiddleSample = new Complex( 0, 0 );
+		private Complex mPreviousSymbol = new Complex( 0, 0 );
 		
 		/**
 		 * Provides symbol sampling timing control
