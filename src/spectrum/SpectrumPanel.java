@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014,2015 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -51,40 +51,42 @@ public class SpectrumPanel extends JPanel
 									   SpectralDisplayAdjuster
 {
 	private static final long serialVersionUID = 1L;
+
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( SpectrumPanel.class );
-	
-	/* Set display bins size to 1, so that we're guaranteed a reset to the 
-	 * correct width once the first sample set arrives */
-	private float[] mDisplayFFTBins = new float[ 1 ];
-	private int mAveraging = 4;
-	
-	private float mDBScale; 
-
-	/**
-	 * Spectral Display Color Settings
-	 */
-	private static final String SPECTRUM_BACKGROUND = "spectrum_background";
-	private static final String SPECTRUM_GRADIENT_TOP = "spectrum_gradient_top";
-	private static final String SPECTRUM_GRADIENT_BOTTOM = "spectrum_gradient_bottom";
-	private static final String SPECTRUM_LINE = "spectrum_line";
-	private static final String SPECTRUM_AVERAGING_SIZE = "spectrum_averaging_size";
-	private static final int SPECTRUM_TRANSLUCENCY = 128;
 	
 	private static final RenderingHints RENDERING_HINTS = 
     		new RenderingHints( RenderingHints.KEY_ANTIALIASING, 
     							RenderingHints.VALUE_ANTIALIAS_ON );
 
-
-
+	//Color settings
+	private static final String SPECTRUM_BACKGROUND = "spectrum_background";
+	private static final String SPECTRUM_GRADIENT_TOP = "spectrum_gradient_top";
+	private static final String SPECTRUM_GRADIENT_BOTTOM = "spectrum_gradient_bottom";
+	private static final String SPECTRUM_LINE = "spectrum_line";
+	
 	private Color mColorSpectrumBackground;
 	private Color mColorSpectrumGradientTop;
 	private Color mColorSpectrumGradientBottom;
 	private Color mColorSpectrumLine;
 
+	//Defines the panel inset along the bottom for frequency display
 	private float mSpectrumInset = 20.0f;
+
+	//Current DFT output bins in dB
+	private float[] mDisplayFFTBins = new float[ 1 ];
+
+	//Averaging across multiple DFT result sets
+	private int mAveraging = 4;
 	
+	//Smoothing across bins in the same DFT result set
 	private SmoothingFilter mSmoothingFilter = new GaussianSmoothingFilter();
+
+	//Reference dB value set according to the source sample size
+	private float mDBScale; 
+
+	private int mZoom = 0;
+	private int mZoomBinOffset = 0;;
 	
 	private ResourceManager mResourceManager;
 	
@@ -109,104 +111,30 @@ public class SpectrumPanel extends JPanel
 		mResourceManager = null;
 	}
 	
-	public void setSampleSize( double sampleSize )
-	{
-		assert( 2.0 <= sampleSize && sampleSize <= 32.0 );
-
-		mDBScale = (float)( 20.0 * Math.log10( 1  / Math.pow( 2.0, sampleSize - 1 ) ) );
-	}
-	
-	public void setAveraging( int size )
-	{
-		mAveraging = size;
-	}
-	
-	public int getAveraging()
-	{
-		return mAveraging;
-	}
-	
-	public void clearSpectrum()
-	{
-		mDisplayFFTBins = null;
-		
-		repaint();
-	}
-	
-	private void getSettings()
-	{
-		mColorSpectrumBackground = 
-				getColor( ColorSettingName.SPECTRUM_BACKGROUND );
-
-		mColorSpectrumGradientBottom = 
-				getColor( ColorSettingName.SPECTRUM_GRADIENT_BOTTOM );
-
-		mColorSpectrumGradientTop = 
-				getColor( ColorSettingName.SPECTRUM_GRADIENT_TOP );
-
-		mColorSpectrumLine = getColor( ColorSettingName.SPECTRUM_LINE );
-
-		mAveraging = 4;
-	}
-	
-	private Color getColor( ColorSettingName name )
-	{
-		ColorSetting setting = 
-				mResourceManager.getSettingsManager().getColorSetting( name );
-		
-		return setting.getColor();
-	}
-	
-	@Override
-    public void settingChanged( Setting setting )
-    {
-		if( setting instanceof ColorSetting )
-		{
-			ColorSetting colorSetting = (ColorSetting)setting;
-			
-			switch( ( (ColorSetting) setting ).getColorSettingName() )
-			{
-				case SPECTRUM_BACKGROUND:
-					mColorSpectrumBackground = colorSetting.getColor();
-					break;
-				case SPECTRUM_GRADIENT_BOTTOM:
-					mColorSpectrumGradientBottom = colorSetting.getColor();
-					break;
-				case SPECTRUM_GRADIENT_TOP:
-					mColorSpectrumGradientTop = colorSetting.getColor();
-					break;
-				case SPECTRUM_LINE:
-					mColorSpectrumLine = colorSetting.getColor();
-					break;
-				default:
-					break;
-			}
-		}
-    }
-	
-	
     /**
-     * DFTResultsListener interface method - for receiving the processed data
+     * DFTResultsListener interface for receiving the processed data
      * to display
      */
     public void receive( float[] currentFFTBins )
     {
+    	//Prevent arrays of NaN values from being rendered.  The first few
+    	//DFT result sets on startup will contain NaN values
     	if( Float.isInfinite( currentFFTBins[ 0 ] ) || Float.isNaN( currentFFTBins[ 0 ] ) )
 		{
 			currentFFTBins = new float[ currentFFTBins.length ];
 		}
 
-    	//Construct and/or resize our fft results variables
+    	//Construct and/or resize our DFT results variables
     	if( mDisplayFFTBins == null || 
     		mDisplayFFTBins.length != currentFFTBins.length )
     	{
     		mDisplayFFTBins = currentFFTBins;
     	}
 
-    	//Smooth across the bins
+    	//Apply smoothing across the bins of the DFT results
     	float[] smoothedBins = mSmoothingFilter.filter( currentFFTBins );
 
-    	//Average bins over multiple frames
+    	//Apply averaging over multiple DFT output frames
     	if( mAveraging > 1 )
     	{
     		float gain = 1.0f / (float)mAveraging;
@@ -220,7 +148,6 @@ public class SpectrumPanel extends JPanel
     	{
     		mDisplayFFTBins = smoothedBins;
     	}
-    	
     	
 		repaint();
     }
@@ -270,17 +197,19 @@ public class SpectrumPanel extends JPanel
     	
     	//Draw to the lower left
     	spectrumShape.lineTo( 0, size.getHeight() - mSpectrumInset );
+
+    	float[] bins = getBins();
     	
     	//If we have FFT data to display ...
-    	if( mDisplayFFTBins != null )
+    	if( bins != null )
     	{
     		float insideHeight = size.height - mSpectrumInset;
 
-    		float scalor = insideHeight / mDBScale;
+    		float scalor = insideHeight / -mDBScale;
 			
     		float insideWidth = size.width;
 
-    		int binCount = mDisplayFFTBins.length;
+    		int binCount = bins.length;
 
     		float binSize = insideWidth / ( binCount );
     		
@@ -288,23 +217,16 @@ public class SpectrumPanel extends JPanel
     		{
     			float height;
     			
-    			if( mDisplayFFTBins[ x ] > 0 )
+				height = bins[ x ] * scalor;
+				
+    			if( height > insideHeight )
+    			{
+    				height = insideHeight;
+    			}
+    			
+    			if( height < 0 )
     			{
     				height = 0;
-    			}
-    			else
-    			{
-    				height = mDisplayFFTBins[ x ] * scalor;
-    				
-        			if( height > insideHeight )
-        			{
-        				height = insideHeight;
-        			}
-        			
-        			if( height < 0 )
-        			{
-        				height = 0;
-        			}
     			}
 
         		spectrumShape.lineTo( ( x * binSize ), height );
@@ -338,27 +260,188 @@ public class SpectrumPanel extends JPanel
     					   size.height - mSpectrumInset ) );
     }
 
+    /**
+     * Sets the current zoom level
+     * 
+     * 0 	No Zoom
+     * 1	2x Zoom
+     * 2	4x Zoom
+     * 3	8x Zoom
+     * 4	16x Zoom
+     * 5	32x Zoom
+     * 
+     * @param zoom level, 0 - 5.
+     */
+    public void setZoom( int zoom, int offset )
+    {
+    	assert( 0 <= zoom && zoom <= 5 );
+    	
+    	mZoom = zoom;
+    	
+    	setZoomBinOffset( offset );
+    }
+
+    /**
+     * Sets the offset to define which subset of zoomed bins to display
+     * 
+     * @param offset
+     */
+    public void setZoomBinOffset( int offset )
+    {
+    	mZoomBinOffset = offset;
+    }
+
+	/**
+	 * Sets the source sample size in bits which defines the lowest dB value to
+	 * display in the spectrum
+	 * 
+	 * @param sampleSize in bits
+	 */
+	public void setSampleSize( double sampleSize )
+	{
+		assert( 2.0 <= sampleSize && sampleSize <= 32.0 );
+
+		mDBScale = (float)( 20.0 * Math.log10( Math.pow( 2.0, sampleSize - 1 ) ) );
+	}
+
+	/**
+	 * Defines the number of DFT result sets to average across
+	 */
+	public void setAveraging( int size )
+	{
+		mAveraging = size;
+	}
+
+	/**
+	 * DFT result sets averaging value
+	 */
+	public int getAveraging()
+	{
+		return mAveraging;
+	}
+
+	/**
+	 * Clears the spectral display
+	 */
+	public void clearSpectrum()
+	{
+		mDisplayFFTBins = null;
+		
+		repaint();
+	}
+	
+	private void getSettings()
+	{
+		mColorSpectrumBackground = 
+				getColor( ColorSettingName.SPECTRUM_BACKGROUND );
+
+		mColorSpectrumGradientBottom = 
+				getColor( ColorSettingName.SPECTRUM_GRADIENT_BOTTOM );
+
+		mColorSpectrumGradientTop = 
+				getColor( ColorSettingName.SPECTRUM_GRADIENT_TOP );
+
+		mColorSpectrumLine = getColor( ColorSettingName.SPECTRUM_LINE );
+	}
+
+	/**
+	 * Retrieves the current setting for the named color setting
+	 */
+	private Color getColor( ColorSettingName name )
+	{
+		ColorSetting setting = 
+				mResourceManager.getSettingsManager().getColorSetting( name );
+		
+		return setting.getColor();
+	}
+
+	/**
+	 * Listener interface to receive setting change notifications
+	 */
+	@Override
+    public void settingChanged( Setting setting )
+    {
+		if( setting instanceof ColorSetting )
+		{
+			ColorSetting colorSetting = (ColorSetting)setting;
+			
+			switch( ( (ColorSetting) setting ).getColorSettingName() )
+			{
+				case SPECTRUM_BACKGROUND:
+					mColorSpectrumBackground = colorSetting.getColor();
+					break;
+				case SPECTRUM_GRADIENT_BOTTOM:
+					mColorSpectrumGradientBottom = colorSetting.getColor();
+					break;
+				case SPECTRUM_GRADIENT_TOP:
+					mColorSpectrumGradientTop = colorSetting.getColor();
+					break;
+				case SPECTRUM_LINE:
+					mColorSpectrumLine = colorSetting.getColor();
+					break;
+				default:
+					break;
+			}
+		}
+    }
+	
+    private float[] getBins()
+    {
+    	if( mZoom == 0 )
+    	{
+        	return mDisplayFFTBins;
+    	}
+    	else
+    	{
+    		int zoom = (int)Math.pow( 2.0, mZoom );
+    		
+    		int length = mDisplayFFTBins.length / zoom;
+    		
+    		int offset = mZoomBinOffset;
+    		
+    		if( ( offset + length ) > mDisplayFFTBins.length )
+    		{
+    			offset = mDisplayFFTBins.length - length;
+    		}
+
+    		return Arrays.copyOfRange( mDisplayFFTBins, offset, offset + length );
+    	}
+    }
+
 	@Override
     public void settingDeleted( Setting setting ) {  /* not implemented */ }
 
+	/**
+	 * Returns the current inter-bin smoothing setting
+	 */
 	@Override
 	public int getSmoothing()
 	{
 		return mSmoothingFilter.getPointSize();
 	}
 
+	/**
+	 * Sets the bin smoothing value to define how wide the smoothing window is
+	 * when averaging across DFT bins
+	 */
 	@Override
 	public void setSmoothing( int smoothing )
 	{
 		mSmoothingFilter.setPointSize( smoothing );
 	}
 
+	/**
+	 * Returns the current smoothing filter type
+	 */
 	@Override
 	public SmoothingType getSmoothingType()
 	{
 		return mSmoothingFilter.getSmoothingType();
 	}
 
+	/**
+	 * Sets the smoothing filter type
+	 */
 	@Override
 	public void setSmoothingType( SmoothingType type )
 	{

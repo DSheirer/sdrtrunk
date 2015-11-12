@@ -45,7 +45,9 @@ import dsp.filter.Window.WindowType;
  * Processes both complex samples or float samples and dispatches a float array
  * of DFT results, using configurable fft size and output dispatch timelines.  
  */
-public class DFTProcessor implements Listener<ComplexBuffer>, FrequencyChangeListener
+public class DFTProcessor implements Listener<ComplexBuffer>, 
+									 FrequencyChangeListener,
+									 IDFTWidthChangeProcessor
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( DFTProcessor.class );
@@ -59,8 +61,8 @@ public class DFTProcessor implements Listener<ComplexBuffer>, FrequencyChangeLis
 	private ScheduledExecutorService mScheduler = Executors
 			.newScheduledThreadPool( 1, new NamingThreadFactory( "spectrum dft" ) );	
 	
-	private FFTWidth mFFTWidth = FFTWidth.FFT04096;
-	private FFTWidth mNewFFTWidth = FFTWidth.FFT04096;
+	private DFTSize mDFTSize = DFTSize.FFT04096;
+	private DFTSize mNewDFTSize = DFTSize.FFT04096;
 	
 	private double[] mWindow;
 	
@@ -68,7 +70,7 @@ public class DFTProcessor implements Listener<ComplexBuffer>, FrequencyChangeLis
 	 * with minimal bin leakage/smearing */
 	private WindowType mWindowType = Window.WindowType.HANNING;
 
-	private FloatFFT_1D mFFT = new FloatFFT_1D( mFFTWidth.getWidth() );
+	private FloatFFT_1D mFFT = new FloatFFT_1D( mDFTSize.getSize() );
 	
 	private int mFrameRate;
 	private int mSampleRate;
@@ -112,12 +114,12 @@ public class DFTProcessor implements Listener<ComplexBuffer>, FrequencyChangeLis
 		if( mSampleType == SampleType.COMPLEX )
 		{
 			mWindow = Window.getWindow( mWindowType, 
-										mFFTWidth.getWidth() * 2 );		
+										mDFTSize.getSize() * 2 );		
 		}
 		else
 		{
 			mWindow = Window.getWindow( mWindowType,
-										mFFTWidth.getWidth() );		
+										mDFTSize.getSize() );		
 		}
 	}
 	
@@ -140,14 +142,14 @@ public class DFTProcessor implements Listener<ComplexBuffer>, FrequencyChangeLis
 	 * Queues an FFT size change request.  The scheduled executor will apply 
 	 * the change when it runs.
 	 */
-	public void setFFTSize( FFTWidth width )
+	public void setDFTSize( DFTSize size )
 	{
-		mNewFFTWidth = width;
+		mNewDFTSize = size;
 	}
 	
-	public FFTWidth getFFTWidth()
+	public DFTSize getDFTSize()
 	{
-		return mFFTWidth;
+		return mDFTSize;
 	}
 	
 	public int getFrameRate()
@@ -444,9 +446,9 @@ public class DFTProcessor implements Listener<ComplexBuffer>, FrequencyChangeLis
 	 */
 	private void checkFFTSize()
 	{
-		if( mNewFFTWidth.getWidth() != mFFTWidth.getWidth() )
+		if( mNewDFTSize.getSize() != mDFTSize.getSize() )
 		{
-			mFFTWidth = mNewFFTWidth;
+			mDFTSize = mNewDFTSize;
 			
 			calculateConsumptionRate();
 
@@ -454,14 +456,14 @@ public class DFTProcessor implements Listener<ComplexBuffer>, FrequencyChangeLis
 
 			if( mSampleType == SampleType.COMPLEX )
 			{
-				mPreviousFrame = new float[ mFFTWidth.getWidth() * 2 ];
+				mPreviousFrame = new float[ mDFTSize.getSize() * 2 ];
 			}
 			else
 			{
-				mPreviousFrame = new float[ mFFTWidth.getWidth() ];
+				mPreviousFrame = new float[ mDFTSize.getSize() ];
 			}
 
-			mFFT = new FloatFFT_1D( mFFTWidth.getWidth() );
+			mFFT = new FloatFFT_1D( mDFTSize.getSize() );
 		}
 	}
 	
@@ -497,7 +499,7 @@ public class DFTProcessor implements Listener<ComplexBuffer>, FrequencyChangeLis
 				( mSampleType == SampleType.COMPLEX ? 2.0f : 1.0f );
 		
 		mFFTFloatsPerFrame = ( mSampleType == SampleType.COMPLEX ? 
-					mFFTWidth.getWidth() * 2 : 
-					mFFTWidth.getWidth() );
+					mDFTSize.getSize() * 2 : 
+					mDFTSize.getSize() );
 	}
 }

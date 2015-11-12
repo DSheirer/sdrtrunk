@@ -78,7 +78,8 @@ public class ComplexDecibelConverter extends DFTResultsConverter
     {
 		int halfResults = results.length / 2;
 		
-		float dftScalor = 1.0f / (float)( halfResults ^ 2 );
+//		float dftBinSizeScalor = 1.0f / (float)Math.pow( halfResults, 2.0 );
+		float dftBinSizeScalor = 1.0f / (float)halfResults;
 		
 		float[] processed = new float[ halfResults ];
 
@@ -91,7 +92,7 @@ public class ComplexDecibelConverter extends DFTResultsConverter
 			//Convert the scaled value to decibels.
 			float decibels = 10.0f * (float)Math.log10( 
 				( ( results[ x ] * results[ x ] ) + 
-				  ( results[ x + 1 ] * results[ x + 1 ] ) ) * dftScalor ); 
+				  ( results[ x + 1 ] * results[ x + 1 ] ) ) * dftBinSizeScalor ); 
 
 			// We have to swap the upper and lower halves of the JTransforms
 			// DFT results for correct display

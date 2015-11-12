@@ -60,7 +60,7 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 	private static final String PAUSED = "PAUSED";
 
 	private byte[] mPixels;
-    private int mFFTSize = 1024;
+    private int mDFTSize = 4096;
     private int mImageHeight = 700;
     private MemoryImageSource mMemoryImageSource;
     private ColorModel mColorModel = WaterfallColorModel.getDefaultColorModel();
@@ -71,6 +71,8 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 	private boolean mCursorVisible = false;
 	private long mCursorFrequency = 0;
 	private AtomicBoolean mPaused = new AtomicBoolean();
+	private int mZoom = 0;
+	private int mDFTZoomOffset = 0;
 	
 	private ResourceManager mResourceManager;
     
@@ -93,14 +95,14 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 	
 	private void reset()
 	{
-		mPixels = new byte[ mFFTSize * mImageHeight ];
+		mPixels = new byte[ mDFTSize * mImageHeight ];
 
-		mMemoryImageSource = new MemoryImageSource( mFFTSize, 
+		mMemoryImageSource = new MemoryImageSource( mDFTSize, 
 				mImageHeight,
 				mColorModel,
 				mPixels,
 				0,
-				mFFTSize );
+				mDFTSize );
 		
         mMemoryImageSource.setAnimated( true );
 
@@ -120,6 +122,25 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 	public boolean isPaused()
 	{
 		return mPaused.get();
+	}
+	
+    /**
+     * Sets the current zoom level (2^zoom)
+     * 
+     * 0 	No Zoom
+     * 1	2x Zoom
+     * 2	4x Zoom
+     * 3	8x Zoom
+     * 4	16x Zoom
+     * 5	32x Zoom
+     * 
+     * @param zoom level, 0 - 5.
+     * @param offset into the DFT bins for display
+     */
+	public void setZoom( int zoom, int offset )
+	{
+		mZoom = zoom;
+		mDFTZoomOffset = offset;
 	}
 	
 	/**
@@ -171,10 +192,31 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 		
 		repaint();
 	}
+	
+	private int getPixelOffset( int multiplier )
+	{
+		if( mZoom != 0 )
+		{
+			return -(int)( (double)getWidth() * multiplier / 
+					   	   (double)mDFTSize * 
+					   	   (double)( mDFTZoomOffset ) );
+		}
+		
+		return 0;
+	}
 
 	public void paintComponent( Graphics g )
 	{
-		g.drawImage( mWaterfallImage, 0, 0, getWidth(), mImageHeight, this );
+		int multiplier = (int)Math.pow( 2.0, mZoom );
+
+		int offset = getPixelOffset( multiplier );
+		
+		g.drawImage( mWaterfallImage, 
+					 offset, 
+					 0, 
+					 getWidth() * multiplier, 
+					 mImageHeight, 
+					 this );
 		
     	Graphics2D graphics = (Graphics2D) g;
 
@@ -194,6 +236,11 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
     							 mCursorLocation.x + 5, 
     							 mCursorLocation.y );
     		
+        	if( mZoom != 0 )
+        	{
+        		graphics.drawString( "Zoom: " + (int)Math.pow( 2.0, mZoom ) + "x", 
+    				mCursorLocation.x + 17, mCursorLocation.y + 11 ); 
+        	}
     	}
     	
     	if( mPaused.get() )
@@ -208,16 +255,16 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
     public void receive( float[] update )
     {
 		//If our FFT size changes, reset our pixel map and image source
-		if( mFFTSize != update.length )
+		if( mDFTSize != update.length )
 		{
-			mFFTSize = update.length;
+			mDFTSize = update.length;
 
 			reset();
 		}
 
 		//Move the pixels down a row to make room for the new results
 		System.arraycopy( mPixels, 0, 
-				mPixels, mFFTSize, mPixels.length - mFFTSize );
+				mPixels, mDFTSize, mPixels.length - mDFTSize );
 		
 		/**
 		 * Find the average value and scale the display to it
@@ -260,7 +307,7 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 	            {
 					if( mMemoryImageSource != null )
 					{
-						mMemoryImageSource.newPixels( mPixels, mColorModel, 0, mFFTSize );
+						mMemoryImageSource.newPixels( mPixels, mColorModel, 0, mDFTSize );
 					}
 	            }
 			} );

@@ -17,7 +17,7 @@
  ******************************************************************************/
 package spectrum;
 
-public enum FFTWidth
+public enum DFTSize
 {
 	FFT00512( 512 ),
 	FFT01024( 1024 ),
@@ -29,12 +29,12 @@ public enum FFTWidth
 	
 	private int mWidth;
 	
-	private FFTWidth( int width )
+	private DFTSize( int width )
 	{
 		mWidth = width;
 	}
 	
-	public int getWidth()
+	public int getSize()
 	{
 		return mWidth;
 	}

@@ -5,24 +5,24 @@ import java.awt.event.ActionListener;
 
 import javax.swing.JCheckBoxMenuItem;
 
-import spectrum.DFTProcessor;
-import spectrum.FFTWidth;
+import spectrum.DFTSize;
+import spectrum.IDFTWidthChangeProcessor;
 
-public class FFTWidthItem extends JCheckBoxMenuItem
+public class DFTSizeItem extends JCheckBoxMenuItem
 {
     private static final long serialVersionUID = 1L;
 
-    private DFTProcessor mDFTProcessor;
-    private FFTWidth mFFTWidth;
+    private IDFTWidthChangeProcessor mDFTProcessor;
+    private DFTSize mDFTSize;
     
-    public FFTWidthItem( DFTProcessor processor, FFTWidth width )
+    public DFTSizeItem( IDFTWidthChangeProcessor processor, DFTSize size )
     {
-    	super( width.getLabel() );
+    	super( size.getLabel() );
     	
     	mDFTProcessor = processor;
-    	mFFTWidth = width;
+    	mDFTSize = size;
 
-    	if( processor.getFFTWidth() == mFFTWidth )
+    	if( processor.getDFTSize() == mDFTSize )
     	{
     		setSelected( true );
     	}
@@ -32,7 +32,7 @@ public class FFTWidthItem extends JCheckBoxMenuItem
 			@Override
             public void actionPerformed( ActionEvent arg0 )
             {
-				mDFTProcessor.setFFTSize( mFFTWidth );
+				mDFTProcessor.setDFTSize( mDFTSize );
             }
 		} );
     }

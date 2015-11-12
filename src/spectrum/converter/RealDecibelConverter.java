@@ -21,7 +21,7 @@ public class RealDecibelConverter extends DFTResultsConverter
 	@Override
     public void receive( float[] results )
     {
-		float dftScalor = 1.0f / (float)( results.length ^ 2 );
+		float dftBinSizeScalor = 1.0f / (float)results.length;
 		
 		float[] processed = new float[ results.length / 4 ];
 
@@ -33,7 +33,7 @@ public class RealDecibelConverter extends DFTResultsConverter
 			
 			processed[ x ] = 20.0f * (float)Math.log10( 
 				( ( results[ index ] * results[ index ] ) + 
-				  ( results[ index + 1 ] * results[ index + 1 ] ) ) * dftScalor );
+				  ( results[ index + 1 ] * results[ index + 1 ] ) ) * dftBinSizeScalor );
 		}
 
 		dispatch( processed );

@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014,2015 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
  ******************************************************************************/
 package spectrum;
 
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.EventQueue;
@@ -28,18 +27,27 @@ import java.awt.event.ComponentListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Hashtable;
 
 import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
 import javax.swing.JLayeredPane;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
+import javax.swing.JSlider;
 import javax.swing.JSplitPane;
 import javax.swing.SwingUtilities;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import module.decode.DecoderType;
 import net.miginfocom.swing.MigLayout;
@@ -50,7 +58,6 @@ import org.slf4j.LoggerFactory;
 import sample.Listener;
 import sample.SampleType;
 import sample.complex.ComplexBuffer;
-import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
 import settings.ColorSettingMenuItem;
 import settings.Setting;
@@ -66,7 +73,7 @@ import spectrum.OverlayPanel.ChannelDisplay;
 import spectrum.converter.ComplexDecibelConverter;
 import spectrum.converter.DFTResultsConverter;
 import spectrum.menu.AveragingItem;
-import spectrum.menu.FFTWidthItem;
+import spectrum.menu.DFTSizeItem;
 import spectrum.menu.FFTWindowTypeItem;
 import spectrum.menu.FrameRateItem;
 import spectrum.menu.SmoothingItem;
@@ -94,27 +101,25 @@ public class SpectralDisplayPanel extends JPanel
 								  implements ChannelEventListener,
 								  			 Listener<ComplexBuffer>,
 								  			 FrequencyChangeListener,
+								  			 IDFTWidthChangeProcessor,
 								  			 SettingChangeListener,
 								  			 TunerSelectionListener
  {
     private static final long serialVersionUID = 1L;
+    
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( SpectralDisplayPanel.class );
 
+	public static final int NO_ZOOM = 0;
+	public static final int MAX_ZOOM = 6;
+	
 	private static DecimalFormat sCURSOR_FORMAT = new DecimalFormat( "000.00000" );
 
-	/**
-	 * Colors used by this component
-	 */
-	private Color mColorChannelConfig;
-	private Color mColorChannelConfigProcessing;
-	private Color mColorChannelConfigSelected;
-	private Color mColorSpectrumBackground;
-	private Color mColorSpectrumCursor;
-	private Color mColorSpectrumGradientBottom;
-	private Color mColorSpectrumGradientTop;
-	private Color mColorSpectrumLine;
-    
+	private DFTSize mDFTSize = DFTSize.FFT04096;
+	private int mZoom = 0;
+	private int mDFTZoomWindowOffset = 0;
+
+	private JScrollPane mScrollPane;
     private JLayeredPane mLayeredPanel;
     private SpectrumPanel mSpectrumPanel;
     private WaterfallPanel mWaterfallPanel;
@@ -127,8 +132,6 @@ public class SpectralDisplayPanel extends JPanel
     public SpectralDisplayPanel( ResourceManager resourceManager )
     {
     	mResourceManager = resourceManager;
-
-		setColors();
 
 		init();
     }
@@ -159,56 +162,84 @@ public class SpectralDisplayPanel extends JPanel
     	
     	mTuner = null;
     }
-
+    
 	/**
-	 * Fetches the color settings from the settings manager
+	 * Queues an FFT size change request.  The scheduled executor will apply 
+	 * the change when it runs.
 	 */
-	private void setColors()
+	public void setDFTSize( DFTSize size )
 	{
-		mColorChannelConfig = getColor( ColorSettingName.CHANNEL_CONFIG );
+		mDFTProcessor.setDFTSize( size );
+		mOverlayPanel.setDFTSize( size );
+		mDFTSize = size;
 
-		mColorChannelConfigProcessing = 
-				getColor( ColorSettingName.CHANNEL_CONFIG_PROCESSING );
-
-		mColorChannelConfigSelected = 
-				getColor( ColorSettingName.CHANNEL_CONFIG_SELECTED );
-
-		mColorSpectrumCursor = getColor( ColorSettingName.SPECTRUM_CURSOR );
-
-		mColorSpectrumLine = getColor( ColorSettingName.SPECTRUM_LINE );
-
-		mColorSpectrumBackground = 
-				getColor( ColorSettingName.SPECTRUM_BACKGROUND );
-
-		mColorSpectrumGradientBottom = 
-				getColor( ColorSettingName.SPECTRUM_GRADIENT_BOTTOM );
-
-		mColorSpectrumGradientTop = 
-				getColor( ColorSettingName.SPECTRUM_GRADIENT_TOP );
+		setZoom( 0, 0, 0 );
+	}
+	
+    @Override
+	public DFTSize getDFTSize()
+	{
+		return mDFTSize;
 	}
 
-	/**
-	 * Fetches a named color setting from the settings manager.  If the setting
-	 * doesn't exist, creates the setting using the defaultColor
-	 */
-	private Color getColor( ColorSettingName name )
-	{
-		ColorSetting setting = mResourceManager.getSettingsManager()
-				.getColorSetting( name );
-		
-		return setting.getColor();
-	}
+	public int getZoom()
+    {
+    	return mZoom;
+    }
+    
+    /**
+     * Sets the current zoom level (2^zoom)
+     * 
+     * 0 	No Zoom
+     * 1	2x Zoom
+     * 2	4x Zoom
+     * 3	8x Zoom
+     * 4	16x Zoom
+     * 5	32x Zoom
+     * 6    64x Zoom
+     * 
+     * @param zoom level, 0 - 5.
+     * @param frequency under the mouse to maintain while zooming
+     * @param xAxisOffset where to maintain the frequency under the mouse
+     */
+    public void setZoom( int zoom, long frequency, double windowOffset )
+    {
+    	if( zoom != mZoom )
+    	{
+        	mZoom = zoom;
+        	
+        	double zoomTotal = Math.pow( 2.0, mZoom );
 
-	/**
-	 * Stores the named color setting
-	 */
-	private void setColor( ColorSettingName name, Color color, int translucency )
-	{
-		Color adjustedColor = ColorSetting.getTranslucent( color, translucency );
-		
-		mResourceManager.getSettingsManager()
-					.setColorSetting( name, adjustedColor );
-	}
+        	double overallOffset = getBinOffset( frequency );
+        	double windowBinOffset = ( (double)mDFTSize.getSize() / 
+        							   (double)zoomTotal ) * 
+        							   windowOffset;
+        	
+        	mDFTZoomWindowOffset = (int)( overallOffset - windowBinOffset );
+
+        	mSpectrumPanel.setZoom( mZoom, mDFTZoomWindowOffset );
+        	mOverlayPanel.setZoom( mZoom, mDFTZoomWindowOffset );
+        	mWaterfallPanel.setZoom( mZoom, mDFTZoomWindowOffset );
+    	}
+    }
+    
+    /**
+     * Calculates the overall offset of the frequency from the current minimum
+     * frequency in terms of total FFT width
+     * @param frequency
+     * @return
+     */
+    private double getBinOffset( long frequency )
+    {
+    	if( mOverlayPanel.containsFrequency( frequency ) )
+    	{
+    		return (double)mDFTSize.getSize() * 
+				( (double)( frequency - mOverlayPanel.getMinFrequency() ) / 
+					(double)mOverlayPanel.getBandwidth() );
+    	}
+    	
+    	return 0.0;
+    }
 
 	/**
 	 * Monitors for setting changes.  Colors can be changed by external actions
@@ -230,41 +261,6 @@ public class SpectralDisplayPanel extends JPanel
 		if( mSpectrumPanel != null )
 		{
 			mSpectrumPanel.settingChanged( setting );
-		}
-
-		if( setting instanceof ColorSetting )
-		{
-			ColorSetting colorSetting = (ColorSetting)setting;
-			
-			switch( ((ColorSetting)setting).getColorSettingName() )
-			{
-				case CHANNEL_CONFIG:
-					mColorChannelConfig = colorSetting.getColor();
-					break;
-				case CHANNEL_CONFIG_PROCESSING:
-					mColorChannelConfigProcessing = colorSetting.getColor();
-					break;
-				case CHANNEL_CONFIG_SELECTED:
-					mColorChannelConfigSelected = colorSetting.getColor();
-					break;
-				case SPECTRUM_BACKGROUND:
-					mColorSpectrumBackground = colorSetting.getColor();
-					break;
-				case SPECTRUM_CURSOR:
-					mColorSpectrumCursor = colorSetting.getColor();
-					break;
-				case SPECTRUM_GRADIENT_BOTTOM:
-					mColorSpectrumGradientBottom = colorSetting.getColor();
-					break;
-				case SPECTRUM_GRADIENT_TOP:
-					mColorSpectrumGradientTop = colorSetting.getColor();
-					break;
-				case SPECTRUM_LINE:
-					mColorSpectrumLine = colorSetting.getColor();
-					break;
-				default:
-					break;
-			}
 		}
     }
 	
@@ -304,6 +300,7 @@ public class SpectralDisplayPanel extends JPanel
     	mOverlayPanel = new OverlayPanel( mResourceManager );
     	mOverlayPanel.addMouseListener( mouser );
     	mOverlayPanel.addMouseMotionListener( mouser );
+    	mOverlayPanel.addMouseWheelListener( mouser );
 
     	//Add the spectrum and channel panels to the layered panel
     	mLayeredPanel.add( mSpectrumPanel, new Integer( 0 ), 0 );
@@ -313,6 +310,7 @@ public class SpectralDisplayPanel extends JPanel
     	mWaterfallPanel = new WaterfallPanel( mResourceManager );
     	mWaterfallPanel.addMouseListener( mouser );
     	mWaterfallPanel.addMouseMotionListener( mouser );
+    	mWaterfallPanel.addMouseWheelListener( mouser );
 
     	/* Attempt to set a 50/50 split preferred size for the split pane */
     	double totalHeight = mLayeredPanel.getPreferredSize().getHeight() +
@@ -330,7 +328,9 @@ public class SpectralDisplayPanel extends JPanel
     	splitPane.add( mLayeredPanel );
     	splitPane.add( mWaterfallPanel );
     	
-        add( splitPane, "grow" );
+    	mScrollPane = new JScrollPane( splitPane );
+    	
+        add( mScrollPane, "grow" );
         
     	/**
     	 * Setup DFTProcessor to process samples and register the waterfall and
@@ -451,8 +451,30 @@ public class SpectralDisplayPanel extends JPanel
 	/**
 	 * Mouse event handler for the channel panel.
 	 */
-	public class MouseEventProcessor implements MouseMotionListener, MouseListener
+	public class MouseEventProcessor implements MouseMotionListener, 
+												MouseListener, 
+												MouseWheelListener
 	{
+		@Override
+		public void mouseWheelMoved( MouseWheelEvent e )
+		{
+			int zoom = mZoom - e.getWheelRotation();
+
+			if( zoom < NO_ZOOM )
+			{
+				zoom = NO_ZOOM;
+			}
+			else if( zoom > MAX_ZOOM )
+			{
+				zoom = MAX_ZOOM;
+			}
+
+			long frequency = mOverlayPanel.getFrequencyFromAxis( e.getX() );
+
+			double windowOffset = (double)e.getX() / (double)getWidth();
+
+			setZoom( zoom, frequency, windowOffset );
+		}
 		
 		@Override
         public void mouseMoved( MouseEvent event )
@@ -631,9 +653,9 @@ public class SpectralDisplayPanel extends JPanel
 				JMenu fftWidthMenu = new JMenu( "FFT Width" );
 				displayMenu.add( fftWidthMenu );
 				
-				for( FFTWidth width: FFTWidth.values() )
+				for( DFTSize width: DFTSize.values() )
 				{
-					fftWidthMenu.add( new FFTWidthItem( mDFTProcessor, width ) );
+					fftWidthMenu.add( new DFTSizeItem( SpectralDisplayPanel.this, width ) );
 				}
 
 				/**
@@ -682,6 +704,18 @@ public class SpectralDisplayPanel extends JPanel
 					
 					displayMenu.add( smoothingMenu );
 				}
+
+				/*
+				 * Zoom menu 
+				 */
+				JMenuItem zoomMenu = new JMenu( "Zoom" );
+
+				double windowOffset = (double)event.getX() / (double)getWidth();
+				
+				zoomMenu.add( new ZoomItem( frequency, windowOffset ) );
+				
+				contextMenu.add( zoomMenu );
+				
 
 				if( contextMenu != null )
 				{
@@ -739,6 +773,47 @@ public class SpectralDisplayPanel extends JPanel
                 }
         	} );
         }
+	}
+	
+	public class ZoomItem extends JSlider
+	{
+		private static final long serialVersionUID = 1L;
+
+		private long mFrequency;
+		private double mWindowOffset;
+		
+		public ZoomItem( long frequency, double windowOffset )
+		{
+			super( NO_ZOOM, MAX_ZOOM, mZoom );
+			
+			mFrequency = frequency;
+			mWindowOffset = windowOffset;
+
+			Hashtable<Integer,JComponent> labels = new Hashtable<>();
+			labels.put( new Integer( 0 ), new JLabel( "1x" ) );
+			labels.put( new Integer( 1 ), new JLabel( "2x" ) );
+			labels.put( new Integer( 2 ), new JLabel( "4x" ) );
+			labels.put( new Integer( 3 ), new JLabel( "8x" ) );
+			labels.put( new Integer( 4 ), new JLabel( "16x" ) );
+			labels.put( new Integer( 5 ), new JLabel( "32x" ) );
+			labels.put( new Integer( 6 ), new JLabel( "64x" ) );
+			
+			setLabelTable( labels );
+			
+			setMajorTickSpacing( 1 );
+			setMinorTickSpacing( 1 );
+			setPaintTicks( true );
+			setPaintLabels( true );
+			
+			this.addChangeListener( new ChangeListener() 
+			{
+				@Override
+				public void stateChanged( ChangeEvent e )
+				{
+					setZoom( getValue(), mFrequency, mWindowOffset );
+				}
+			} );
+		}
 	}
 	
 	public class ChannelDisplayItem extends JCheckBoxMenuItem

@@ -67,6 +67,10 @@ public class OverlayPanel extends JPanel
 	private Point mCursorLocation = new Point( 0, 0 );
 	private boolean mCursorVisible = false;
 
+	private DFTSize mDFTSize = DFTSize.FFT04096;
+	private int mZoom = 0;
+	private int mDFTZoomWindowOffset = 0;
+
 	/**
 	 * Colors used by this component
 	 */
@@ -118,6 +122,11 @@ public class OverlayPanel extends JPanel
 		mResourceManager = null;
 	}
 	
+	public void setDFTSize( DFTSize size )
+	{
+		mDFTSize = size;
+	}
+	
 	public ChannelDisplay getChannelDisplay()
 	{
 		return mChannelDisplay;
@@ -140,6 +149,25 @@ public class OverlayPanel extends JPanel
 		mCursorVisible = visible;
 		
 		repaint();
+	}
+	
+    /**
+     * Sets the current zoom level (2^zoom)
+     * 
+     * 0 	No Zoom
+     * 1	2x Zoom
+     * 2	4x Zoom
+     * 3	8x Zoom
+     * 4	16x Zoom
+     * 5	32x Zoom
+     * 
+     * @param zoom level, 0 - 5.
+     * @param offset into the FFT bins for start zoom window
+     */
+	public void setZoom( int zoom, int offset )
+	{
+		mZoom = zoom;
+		mDFTZoomWindowOffset = offset;
 	}
 	
 	/**
@@ -237,7 +265,7 @@ public class OverlayPanel extends JPanel
     	drawChannels( graphics );
     	drawCursor( graphics );
     }
-    
+
     /**
      * Draws a cursor on the panel, whenever the mouse is hovering over the 
      * panel
@@ -256,6 +284,12 @@ public class OverlayPanel extends JPanel
     		graphics.drawString( frequency , 
     							 mCursorLocation.x + 5, 
     							 mCursorLocation.y );
+
+    		if( mZoom != 0 )
+        	{
+        		graphics.drawString( "Zoom: " + (int)Math.pow( 2.0, mZoom ) + "x", 
+    				mCursorLocation.x + 17, mCursorLocation.y + 11 ); 
+        	}
     	}
     }
     
@@ -264,8 +298,8 @@ public class OverlayPanel extends JPanel
      */
     private void drawFrequencies( Graphics2D graphics )
     {
-    	long minFrequency = getMinFrequency();
-    	long maxFrequency = getMaxFrequency();
+    	long minFrequency = getMinDisplayFrequency();
+    	long maxFrequency = getMaxDisplayFrequency();
 
     	int major = mLabelSizeMonitor.getMajorTickIncrement( graphics );
     	int minor = mLabelSizeMonitor.getMinorTickIncrement( graphics );
@@ -365,21 +399,18 @@ public class OverlayPanel extends JPanel
     /**
      * Returns the x-axis value corresponding to the frequency
      */
-    public double getAxisFromFrequency( long frequency )
+    private double getAxisFromFrequency( long frequency )
     {
-    	double canvasMiddle = getSize().getWidth() / 2.0d;
-
     	//Determine frequency offset from middle
-    	double frequencyOffset = mFrequency - frequency;
+    	double frequencyOffset = frequency - getMinDisplayFrequency();
 
     	//Determine ratio of offset to bandwidth
-    	double ratio = frequencyOffset / (double)mBandwidth;
+    	double ratio = frequencyOffset / (double)getDisplayBandwidth();
 
     	//Calculate offset against the total width
-    	double xOffset = getSize().getWidth() * ratio;
-
-    	//Apply the offset against the canvas middle
-    	return canvasMiddle - xOffset;
+    	double xOffset = (double)getSize().getWidth() * ratio;
+    	
+    	return xOffset;
     }
 
     /**
@@ -448,7 +479,7 @@ public class OverlayPanel extends JPanel
                 	double xAxis = getAxisFromFrequency( tunerChannel.getFrequency() );
 
                 	double width = (double)( tunerChannel.getBandwidth() ) / 
-                                (double)mBandwidth * getSize().getWidth(); 
+                        (double)getDisplayBandwidth() * getSize().getWidth(); 
                     
                     Rectangle2D.Double box = 
                         new Rectangle2D.Double( xAxis - ( width / 2.0d ),
@@ -646,11 +677,16 @@ public class OverlayPanel extends JPanel
 		
 		repaint();
 	}
+    
+    public int getBandwidth()
+    {
+    	return mBandwidth;
+    }
 
 	/**
 	 * Currently displayed minimum frequency
 	 */
-	private long getMinFrequency()
+	public long getMinFrequency()
 	{
 		return mFrequency - ( mBandwidth / 2 );
 	}
@@ -658,11 +694,38 @@ public class OverlayPanel extends JPanel
 	/**
 	 * Currently displayed maximum frequency
 	 */
-	private long getMaxFrequency()
+	public long getMaxFrequency()
 	{
 		return mFrequency + ( mBandwidth / 2 );
 	}
+	
+	public boolean containsFrequency( long frequency )
+	{
+		return Math.abs( mFrequency - frequency ) <= ( mBandwidth / 2 );
+	}
+	
+	private long getMinDisplayFrequency()
+	{
+		double bandwidthPerBin = (double)mBandwidth / (double)( mDFTSize.getSize() - 1 );
 
+		return getMinFrequency() + (int)( mDFTZoomWindowOffset * bandwidthPerBin );
+	}
+
+	private long getMaxDisplayFrequency()
+	{
+		return getMinDisplayFrequency() + getDisplayBandwidth();
+	}
+	
+	private int getDisplayBandwidth()
+	{
+		if( mZoom != 0 )
+		{
+			return mBandwidth / (int)Math.pow( 2.0, mZoom );
+		}
+		
+		return mBandwidth;
+	}
+	
 	/**
 	 * Returns a list of channel configs that contain the frequency within their
 	 * min/max frequency settings.

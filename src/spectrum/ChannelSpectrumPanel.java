@@ -35,7 +35,7 @@ import source.tuner.frequency.FrequencyChangeEvent.Attribute;
 import spectrum.converter.DFTResultsConverter;
 import spectrum.converter.RealDecibelConverter;
 import spectrum.menu.AveragingItem;
-import spectrum.menu.FFTWidthItem;
+import spectrum.menu.DFTSizeItem;
 import spectrum.menu.FFTWindowTypeItem;
 import spectrum.menu.FrameRateItem;
 import spectrum.menu.SmoothingItem;
@@ -377,9 +377,9 @@ public class ChannelSpectrumPanel extends JPanel
 				JMenu fftWidthMenu = new JMenu( "FFT Width" );
 				displayMenu.add( fftWidthMenu );
 				
-				for( FFTWidth width: FFTWidth.values() )
+				for( DFTSize width: DFTSize.values() )
 				{
-					fftWidthMenu.add( new FFTWidthItem( mDFTProcessor, width ) );
+					fftWidthMenu.add( new DFTSizeItem( mDFTProcessor, width ) );
 				}
 
 				/**
