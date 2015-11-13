@@ -25,10 +25,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
-import java.awt.event.MouseWheelListener;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Hashtable;
@@ -48,6 +45,7 @@ import javax.swing.JSplitPane;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import javax.swing.event.MouseInputAdapter;
 
 import module.decode.DecoderType;
 import net.miginfocom.swing.MigLayout;
@@ -55,13 +53,12 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import playlist.PlaylistManager;
 import sample.Listener;
 import sample.SampleType;
 import sample.complex.ComplexBuffer;
 import settings.ColorSetting.ColorSettingName;
 import settings.ColorSettingMenuItem;
-import settings.Setting;
-import settings.SettingChangeListener;
 import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.Tuner;
@@ -81,28 +78,17 @@ import spectrum.menu.SmoothingTypeItem;
 
 import com.jidesoft.swing.JideSplitPane;
 
-import controller.ResourceManager;
+import controller.ConfigurationControllerModel;
 import controller.channel.Channel;
-import controller.channel.ChannelEvent;
-import controller.channel.ChannelEventListener;
+import controller.channel.ChannelManager;
 import controller.channel.ChannelUtils;
 import dsp.filter.Window.WindowType;
 import dsp.filter.smoothing.SmoothingFilter.SmoothingType;
 
-/**
- * Spectral Display Panel - comprises a DFTProcessor coupled with a waterfall
- * display and a spectrum display, with an overlay of frequency data and channel
- * data.
- * 
- * Processes float or complex sample data and displays the frequency content
- * in the spectral and waterfall displays.
- */
 public class SpectralDisplayPanel extends JPanel 
-								  implements ChannelEventListener,
-								  			 Listener<ComplexBuffer>,
+								  implements Listener<ComplexBuffer>,
 								  			 FrequencyChangeListener,
 								  			 IDFTWidthChangeProcessor,
-								  			 SettingChangeListener,
 								  			 TunerSelectionListener
  {
     private static final long serialVersionUID = 1L;
@@ -110,10 +96,10 @@ public class SpectralDisplayPanel extends JPanel
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( SpectralDisplayPanel.class );
 
+	private static DecimalFormat sCURSOR_FORMAT = new DecimalFormat( "000.00000" );
+
 	public static final int NO_ZOOM = 0;
 	public static final int MAX_ZOOM = 6;
-	
-	private static DecimalFormat sCURSOR_FORMAT = new DecimalFormat( "000.00000" );
 
 	private DFTSize mDFTSize = DFTSize.FFT04096;
 	private int mZoom = 0;
@@ -126,13 +112,42 @@ public class SpectralDisplayPanel extends JPanel
     private OverlayPanel mOverlayPanel;
     private DFTProcessor mDFTProcessor;
     private DFTResultsConverter mDFTConverter;
-    private ResourceManager mResourceManager;
+    private PlaylistManager mPlaylistManager;
+    private SettingsManager mSettingsManager;
+    private ConfigurationControllerModel mController;
 	private Tuner mTuner;
     
-    public SpectralDisplayPanel( ResourceManager resourceManager )
+	/**
+	 * Spectral Display Panel provides a frequency component display with a
+	 * historical waterfall display and a transparent overlay to show frequency,
+	 * cursor and channel information.
+	 * 
+	 * Mouse scrolling and zooming are supported and the waterfall display can
+	 * be paused.
+	 * 
+	 * Complex sample buffers are processed by a DFTProcessor and the output of
+	 * the DFT is translated to decibels for display in the spectrum and
+	 * waterfall components.
+	 */
+    public SpectralDisplayPanel( ChannelManager channelManager,
+    							 ConfigurationControllerModel controller,
+    							 PlaylistManager playlistManager,
+    							 SettingsManager settingsManager )
     {
-    	mResourceManager = resourceManager;
+    	mController = controller;
+    	mPlaylistManager = playlistManager;
+    	mSettingsManager = settingsManager;
 
+    	mSpectrumPanel = new SpectrumPanel( mSettingsManager );
+    	mOverlayPanel = new OverlayPanel( mSettingsManager, channelManager );
+    	mWaterfallPanel = new WaterfallPanel( mSettingsManager );
+    	
+    	//Register to receive tuner selection events
+    	if( mController != null )
+    	{
+        	mController.addListener( (TunerSelectionListener)this );
+    	}
+    	
 		init();
     }
     
@@ -140,8 +155,15 @@ public class SpectralDisplayPanel extends JPanel
     {
 		/* De-register from receiving samples when the window closes */
     	clearTuner();
-    	
-    	mResourceManager.getChannelManager().removeListener( this );
+
+    	if( mController != null )
+    	{
+        	mController.removeListener( (TunerSelectionListener)this );
+    	}
+
+    	mController = null;
+    	mPlaylistManager = null;
+    	mSettingsManager = null;
     	
     	mDFTProcessor.dispose();
     	mDFTProcessor = null;
@@ -158,7 +180,6 @@ public class SpectralDisplayPanel extends JPanel
     	mOverlayPanel.dispose();
     	mOverlayPanel = null;
     	
-    	mResourceManager = null;
     	
     	mTuner = null;
     }
@@ -188,7 +209,7 @@ public class SpectralDisplayPanel extends JPanel
     }
     
     /**
-     * Sets the current zoom level (2^zoom)
+     * Sets the current zoom level which will be 2 to the power of zoom (2^zoom)
      * 
      * 0 	No Zoom
      * 1	2x Zoom
@@ -198,29 +219,80 @@ public class SpectralDisplayPanel extends JPanel
      * 5	32x Zoom
      * 6    64x Zoom
      * 
-     * @param zoom level, 0 - 5.
+     * @param zoom level, 0 - 6.
      * @param frequency under the mouse to maintain while zooming
      * @param xAxisOffset where to maintain the frequency under the mouse
      */
     public void setZoom( int zoom, long frequency, double windowOffset )
     {
+		if( zoom < NO_ZOOM )
+		{
+			zoom = NO_ZOOM;
+		}
+		else if( zoom > MAX_ZOOM )
+		{
+			zoom = MAX_ZOOM;
+		}
+
     	if( zoom != mZoom )
     	{
         	mZoom = zoom;
         	
-        	double zoomTotal = Math.pow( 2.0, mZoom );
+        	//Calculate the bin offset that would place the reference frequency
+        	//at the left edge of the zoom window.
+        	double binOffsetToFrequency = getBinOffset( frequency );
 
-        	double overallOffset = getBinOffset( frequency );
-        	double windowBinOffset = ( (double)mDFTSize.getSize() / 
-        							   (double)zoomTotal ) * 
-        							   windowOffset;
+        	//Calculate the bin offset into the newly sized zoom window that 
+        	//would place the frequency in the same proportional window location 
+        	//that it was in the previous zoom size
+        	double windowBinOffset = (double)getZoomWindowSizeInBins() * windowOffset;
+
+        	//Set the overall offset to place the reference frequency in the 
+        	//same location in the newly zoomed window
+        	double offset = binOffsetToFrequency - windowBinOffset;
         	
-        	mDFTZoomWindowOffset = (int)( overallOffset - windowBinOffset );
+        	mSpectrumPanel.setZoom( mZoom );
+        	mOverlayPanel.setZoom( mZoom );
+        	mWaterfallPanel.setZoom( mZoom );
 
-        	mSpectrumPanel.setZoom( mZoom, mDFTZoomWindowOffset );
-        	mOverlayPanel.setZoom( mZoom, mDFTZoomWindowOffset );
-        	mWaterfallPanel.setZoom( mZoom, mDFTZoomWindowOffset );
+        	setZoomWindowOffset( offset );
     	}
+    }
+    
+    /**
+     * Sets the offset (in DFT bins) to the first bin that the zoom window displays
+     */
+    public void setZoomWindowOffset( double offset )
+    {
+    	if( offset < 0 )
+    	{
+    		offset = 0;
+    	}
+    	
+    	if( offset > ( mDFTSize.getSize() - getZoomWindowSizeInBins() ) )
+		{
+    		offset = mDFTSize.getSize() - getZoomWindowSizeInBins();
+		}
+    	
+    	mDFTZoomWindowOffset = (int)offset;
+    	
+    	mSpectrumPanel.setZoomWindowOffset( mDFTZoomWindowOffset );
+    	mOverlayPanel.setZoomWindowOffset( mDFTZoomWindowOffset );
+    	mWaterfallPanel.setZoomWindowOffset( mDFTZoomWindowOffset );
+    }
+    
+    /**
+     * Calculates the size of the current zoom window in DFT bins
+     */
+    private int getZoomWindowSizeInBins()
+    {
+    	return mDFTSize.getSize() / getZoomMultiplier();
+    }
+    
+    
+    public int getZoomMultiplier()
+    {
+    	return (int)Math.pow( 2.0, mZoom );
     }
     
     /**
@@ -231,39 +303,18 @@ public class SpectralDisplayPanel extends JPanel
      */
     private double getBinOffset( long frequency )
     {
+    	double offset = 0.0;
+    	
     	if( mOverlayPanel.containsFrequency( frequency ) )
     	{
-    		return (double)mDFTSize.getSize() * 
+    		offset = (double)mDFTSize.getSize() * 
 				( (double)( frequency - mOverlayPanel.getMinFrequency() ) / 
 					(double)mOverlayPanel.getBandwidth() );
     	}
     	
-    	return 0.0;
+    	return offset;
     }
 
-	/**
-	 * Monitors for setting changes.  Colors can be changed by external actions
-	 * and will automatically update in this class
-	 */
-	@Override
-    public void settingChanged( Setting setting )
-    {
-		if( mOverlayPanel != null )
-		{
-			mOverlayPanel.settingChanged( setting );
-		}
-		
-		if( mWaterfallPanel != null )
-		{
-			mWaterfallPanel.settingChanged( setting );
-		}
-		
-		if( mSpectrumPanel != null )
-		{
-			mSpectrumPanel.settingChanged( setting );
-		}
-    }
-	
     /**
      * Overrides JComponent method to return false, since we have overlapping
      * panels with the spectrum and channel panels
@@ -277,9 +328,6 @@ public class SpectralDisplayPanel extends JPanel
     {
     	setLayout( new MigLayout( "insets 0 0 0 0", "[grow]", "[grow]") );
 
-		//Register for any future settings (ie color) changes
-		mResourceManager.getSettingsManager().addListener( this );
-		
     	/**
     	 * The layered pane holds the overlapping spectrum and channel panels
     	 * and manages the sizing of each panel with the resize listener
@@ -293,11 +341,6 @@ public class SpectralDisplayPanel extends JPanel
     	 */
     	MouseEventProcessor mouser = new MouseEventProcessor();
     	
-    	//Create the spectrum panel
-    	mSpectrumPanel = new SpectrumPanel( mResourceManager );
-
-    	//Create the overlay panel
-    	mOverlayPanel = new OverlayPanel( mResourceManager );
     	mOverlayPanel.addMouseListener( mouser );
     	mOverlayPanel.addMouseMotionListener( mouser );
     	mOverlayPanel.addMouseWheelListener( mouser );
@@ -307,7 +350,6 @@ public class SpectralDisplayPanel extends JPanel
     	mLayeredPanel.add( mOverlayPanel, new Integer( 1 ), 0 );
 
     	//Create the waterfall
-    	mWaterfallPanel = new WaterfallPanel( mResourceManager );
     	mWaterfallPanel.addMouseListener( mouser );
     	mWaterfallPanel.addMouseMotionListener( mouser );
     	mWaterfallPanel.addMouseWheelListener( mouser );
@@ -355,14 +397,8 @@ public class SpectralDisplayPanel extends JPanel
     }
 
 	/**
-	 * Channel change events
+	 * Complex sample buffer receive method
 	 */
-	@Override
-    public void channelChanged( ChannelEvent event )
-    {
-		mOverlayPanel.channelChanged( event );
-    }
-
 	@Override
     public void receive( ComplexBuffer sampleBuffer )
     {
@@ -370,7 +406,8 @@ public class SpectralDisplayPanel extends JPanel
     }
 
 	/**
-	 * Tuner selected events
+	 * Responds to tuner selection event by deregistering from the current
+	 * complex sample buffer source and registering with the tuner argument.
 	 */
 	@Override
 	public void tunerSelected( Tuner tuner )
@@ -391,8 +428,8 @@ public class SpectralDisplayPanel extends JPanel
 			
 			mSpectrumPanel.setSampleSize( mTuner.getSampleSize() );
 			
-			//Fire frequency and sample rate change events so that everyone 
-			//can init
+			//Fire frequency and sample rate change events so that the spectrum
+			//and overlay panels can synchronize
 			try
             {
 				frequencyChanged( new FrequencyChangeEvent( 
@@ -449,25 +486,22 @@ public class SpectralDisplayPanel extends JPanel
 	}
 	
 	/**
-	 * Mouse event handler for the channel panel.
+	 * Mouse event handler for the spectral display panel.
 	 */
-	public class MouseEventProcessor implements MouseMotionListener, 
-												MouseListener, 
-												MouseWheelListener
+	public class MouseEventProcessor extends MouseInputAdapter
 	{
+		private int mDFTZoomWindowOffsetAtDragStart = 0;
+		private int mDragStartX = 0;
+		private double mPixelsPerBin;
+		
+		public MouseEventProcessor()
+		{
+		}
+
 		@Override
 		public void mouseWheelMoved( MouseWheelEvent e )
 		{
 			int zoom = mZoom - e.getWheelRotation();
-
-			if( zoom < NO_ZOOM )
-			{
-				zoom = NO_ZOOM;
-			}
-			else if( zoom > MAX_ZOOM )
-			{
-				zoom = MAX_ZOOM;
-			}
 
 			long frequency = mOverlayPanel.getFrequencyFromAxis( e.getX() );
 
@@ -481,12 +515,47 @@ public class SpectralDisplayPanel extends JPanel
         {
 			update( event );
         }
+		
 		@Override
         public void mouseDragged( MouseEvent event ) 
-		{
+		{			
 			update( event );
+
+			int dragDistance = mDragStartX - event.getX();
+			
+			double binDistance = (double)dragDistance / mPixelsPerBin;
+
+			int offset = (int)( mDFTZoomWindowOffsetAtDragStart + binDistance );
+			
+			if( offset < 0 )
+			{
+				offset = 0;
+			}
+			
+			int maxOffset = mDFTSize.getSize() - ( mDFTSize.getSize() / getZoomMultiplier() );
+			
+			if( offset > maxOffset )
+			{
+				offset = maxOffset;
+			}
+
+			setZoomWindowOffset( offset );
+		}
+		@Override
+        public void mousePressed( MouseEvent e ) 
+		{
+			mDragStartX = e.getX();
+			
+			mDFTZoomWindowOffsetAtDragStart = mDFTZoomWindowOffset;
+			
+			mPixelsPerBin = (double)getWidth() / 
+							( (double)( mDFTSize.getSize() ) / 
+							  (double)getZoomMultiplier() );
 		}
 		
+		/**
+		 * Updates the cursor display while the mouse is performing actions
+		 */
 		private void update( MouseEvent event )
 		{
 			if( event.getComponent() == mOverlayPanel )
@@ -547,8 +616,7 @@ public class SpectralDisplayPanel extends JPanel
 					for( Channel channel: channels )
 					{
 						JMenu channelMenu = ChannelUtils.getContextMenu( 
-							mResourceManager.getPlaylistManager(), 
-								channel, SpectralDisplayPanel.this );
+							mPlaylistManager, channel, SpectralDisplayPanel.this );
 
 						if( channelMenu != null )
 						{
@@ -570,7 +638,7 @@ public class SpectralDisplayPanel extends JPanel
 
 				for( DecoderType type: DecoderType.getPrimaryDecoders() )
 				{
-					decoderMenu.add( new DecoderItem( mResourceManager, 
+					decoderMenu.add( new DecoderItem( mController, 
 													  frequency, 
 													  type ) );
 					
@@ -587,30 +655,28 @@ public class SpectralDisplayPanel extends JPanel
 				 */
 				JMenu colorMenu = new JMenu( "Color" );
 
-				SettingsManager sm = mResourceManager.getSettingsManager();
-
-				colorMenu.add( new ColorSettingMenuItem( sm, 
+				colorMenu.add( new ColorSettingMenuItem( mSettingsManager, 
 						ColorSettingName.CHANNEL_CONFIG ) );
 
-				colorMenu.add( new ColorSettingMenuItem( sm, 
+				colorMenu.add( new ColorSettingMenuItem( mSettingsManager, 
 						ColorSettingName.CHANNEL_CONFIG_PROCESSING ) );
 
-				colorMenu.add( new ColorSettingMenuItem( sm, 
+				colorMenu.add( new ColorSettingMenuItem( mSettingsManager, 
 						ColorSettingName.CHANNEL_CONFIG_SELECTED ) );
 
-				colorMenu.add( new ColorSettingMenuItem( sm, 
+				colorMenu.add( new ColorSettingMenuItem( mSettingsManager, 
 						ColorSettingName.SPECTRUM_CURSOR ) );
 
-				colorMenu.add( new ColorSettingMenuItem( sm, 
+				colorMenu.add( new ColorSettingMenuItem( mSettingsManager, 
 						ColorSettingName.SPECTRUM_LINE ) );
 
-				colorMenu.add( new ColorSettingMenuItem( sm, 
+				colorMenu.add( new ColorSettingMenuItem( mSettingsManager, 
 						ColorSettingName.SPECTRUM_BACKGROUND ) );
 
-				colorMenu.add( new ColorSettingMenuItem( sm, 
+				colorMenu.add( new ColorSettingMenuItem( mSettingsManager, 
 						ColorSettingName.SPECTRUM_GRADIENT_BOTTOM ) );
 
-				colorMenu.add( new ColorSettingMenuItem( sm, 
+				colorMenu.add( new ColorSettingMenuItem( mSettingsManager, 
 						ColorSettingName.SPECTRUM_GRADIENT_TOP ) );
 
 				contextMenu.add( colorMenu );
@@ -734,11 +800,6 @@ public class SpectralDisplayPanel extends JPanel
 				}				
 			}
         }
-
-		@Override
-        public void mousePressed( MouseEvent e ) {}
-		@Override
-        public void mouseReleased( MouseEvent e ) {}
 	}
 	
 	public class PauseItem extends JCheckBoxMenuItem
@@ -859,15 +920,17 @@ public class SpectralDisplayPanel extends JPanel
 	{
         private static final long serialVersionUID = 1L;
 
-        private ResourceManager mResourceManager;
+        private ConfigurationControllerModel mController;
         private long mFrequency;
         private DecoderType mDecoder;
         
-        public DecoderItem( ResourceManager manager, long frequency, DecoderType type )
+        public DecoderItem( ConfigurationControllerModel controller, 
+        					long frequency, 
+        					DecoderType type )
         {
         	super( type.getDisplayString() );
         	
-        	mResourceManager = manager;
+        	mController = controller;
         	mFrequency = frequency;
         	mDecoder = type;
         	
@@ -876,13 +939,9 @@ public class SpectralDisplayPanel extends JPanel
 				@Override
                 public void actionPerformed( ActionEvent e )
                 {
-					mResourceManager.getController()
-							.createChannel( mFrequency, mDecoder );
+					mController.createChannel( mFrequency, mDecoder );
                 }
         	} );
         }
 	}
-
-	@Override
-    public void settingDeleted( Setting setting ) {}
 }

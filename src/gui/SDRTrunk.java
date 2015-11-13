@@ -38,30 +38,34 @@ import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
-import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 
+import map.MapService;
 import net.miginfocom.swing.MigLayout;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import playlist.PlaylistManager;
 import properties.SystemProperties;
+import settings.SettingsManager;
 import source.tuner.Tuner;
 import source.tuner.TunerSelectionListener;
 import spectrum.SpectralDisplayPanel;
 import util.TimeStamp;
+import audio.AudioManager;
 
 import com.jidesoft.swing.JideSplitPane;
 
+import controller.ConfigurationControllerModel;
 import controller.ControllerPanel;
 import controller.ResourceManager;
+import controller.channel.ChannelManager;
 
 public class SDRTrunk
 {
 	private final static Logger mLog = LoggerFactory.getLogger( SDRTrunk.class );
 
-	private ResourceManager mResourceManager;
 	private ControllerPanel mControllerPanel;
 	private SpectralDisplayPanel mSpectralPanel;
 	private JFrame mMainGui = new JFrame();
@@ -73,8 +77,8 @@ public class SDRTrunk
     	mLog.info( "" );
     	mLog.info( "" );
     	mLog.info( "*******************************************************************" );
-    	mLog.info( "**** SDRTrunk: a trunked radio and digital decoding application ***" );
-    	mLog.info( "****  website: https://code.google.com/p/sdrtrunk               ***" );
+    	mLog.info( "**** sdrtrunk: a trunked radio and digital decoding application ***" );
+    	mLog.info( "****  website: https://github.com/dsheirer/sdrtrunk             ***" );
     	mLog.info( "*******************************************************************" );
     	mLog.info( "" );
     	mLog.info( "" );
@@ -97,8 +101,24 @@ public class SDRTrunk
 		 * Construct the resource manager now, so that it can use the system
 		 * properties that were just loaded 
 		 */
-		mResourceManager = new ResourceManager();
+		ResourceManager resource = new ResourceManager();
 		
+		//TODO: get rid of resource manager ... below is start of breaking out
+		//the encapsulated pieces from the resource manager
+		
+		AudioManager audio = resource.getAudioManager();
+		ChannelManager channel = resource.getChannelManager();
+		ConfigurationControllerModel controller = resource.getController();
+		MapService map = resource.getMapService();
+		PlaylistManager playlist = resource.getPlaylistManager();
+		SettingsManager settings = resource.getSettingsManager();
+
+		mControllerPanel = new ControllerPanel( audio, controller, channel,
+								map, playlist, settings );
+
+    	mSpectralPanel = new SpectralDisplayPanel( channel, controller, 
+    			playlist, settings );
+
 		mTitle = getTitle();
 		
 		//Initialize the GUI
@@ -140,17 +160,6 @@ public class SDRTrunk
     									   "[grow,fill]", 
     									   "[grow,fill]") );
     	
-    	mControllerPanel = new ControllerPanel( mResourceManager );
-    	
-    	mSpectralPanel = new SpectralDisplayPanel( mResourceManager );
-    	
-    	//Register spectral panel to receive tuner selection events
-    	mControllerPanel.getController()
-    		.addListener( (TunerSelectionListener)mSpectralPanel );
-
-    	//Add spectrum panel to receive channel change events
-    	mResourceManager.getChannelManager().addListener( mSpectralPanel );
-
     	//init() the controller to load tuners and playlists
     	mControllerPanel.getController().init();
 
@@ -382,7 +391,7 @@ public class SDRTrunk
     {
     	StringBuilder sb = new StringBuilder();
     	
-    	sb.append( "SDRTrunk" );
+    	sb.append( "sdrtrunk" );
     	
     	try( BufferedReader reader = new BufferedReader( 
     			new InputStreamReader( this.getClass()

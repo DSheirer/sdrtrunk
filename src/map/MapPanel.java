@@ -21,6 +21,7 @@ import java.awt.EventQueue;
 
 import javax.swing.JPanel;
 
+import message.Message;
 import net.miginfocom.swing.MigLayout;
 
 import org.jdesktop.swingx.JXMapViewer;
@@ -31,9 +32,10 @@ import org.jdesktop.swingx.mapviewer.DefaultTileFactory;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 import org.jdesktop.swingx.mapviewer.TileFactoryInfo;
 
+import sample.Listener;
 import settings.MapViewSetting;
 import settings.SettingsManager;
-import controller.ResourceManager;
+import controller.channel.ChannelManager;
 
 public class MapPanel extends JPanel implements PlottableUpdateListener
 {
@@ -44,11 +46,17 @@ public class MapPanel extends JPanel implements PlottableUpdateListener
     private JXMapViewer mMapViewer = new JXMapViewer();
     private PlottableEntityPainter mMapPainter;
     
-    public MapPanel( ResourceManager resourceManager )
+    public MapPanel( MapService mapService, 
+    				 SettingsManager settingsManager,
+    				 ChannelManager channelManager )
     {
-    	mSettingsManager = resourceManager.getSettingsManager();
-    	mMapService = resourceManager.getMapService();
+    	mSettingsManager = settingsManager;
+    	mMapService = mapService;
     	mMapPainter = new PlottableEntityPainter( mSettingsManager );    	
+    	
+    	/* Add Map Service as message listener to receive all messages */
+    	channelManager.addListener( (Listener<Message>)mMapService );
+    	
     	init();
     }
     

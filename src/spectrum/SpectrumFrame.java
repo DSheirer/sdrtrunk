@@ -23,9 +23,13 @@ import java.awt.event.WindowListener;
 
 import javax.swing.JFrame;
 
+import playlist.PlaylistManager;
 import net.miginfocom.swing.MigLayout;
+import settings.SettingsManager;
 import source.tuner.Tuner;
+import controller.ConfigurationControllerModel;
 import controller.ResourceManager;
+import controller.channel.ChannelManager;
 
 public class SpectrumFrame extends JFrame implements WindowListener
 {
@@ -34,23 +38,24 @@ public class SpectrumFrame extends JFrame implements WindowListener
     private ResourceManager mResourceManager;
     private SpectralDisplayPanel mSpectralDisplayPanel;
 	
-	public SpectrumFrame( ResourceManager resourceManager, Tuner tuner )
+	public SpectrumFrame( ChannelManager channelManager,
+						  ConfigurationControllerModel controller,
+						  PlaylistManager playlistManager,
+						  SettingsManager settingsManager,
+						  Tuner tuner )
 	{
-		mResourceManager = resourceManager;
-		
     	setTitle( "SDRTRunk [" + tuner.getName() + "]" );
     	setBounds( 100, 100, 1280, 600 );
     	setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
 
     	setLayout( new MigLayout( "insets 0 0 0 0", "[grow]", "[grow]") );
     	
-		mSpectralDisplayPanel = new SpectralDisplayPanel( resourceManager );
+		mSpectralDisplayPanel = new SpectralDisplayPanel( channelManager, 
+				controller, playlistManager, settingsManager );
+		
 		mSpectralDisplayPanel.tunerSelected( tuner );
 		add( mSpectralDisplayPanel, "grow" );
 
-		/* Register spectral display on channel manager to get channel updates */
-		mResourceManager.getChannelManager().addListener( mSpectralDisplayPanel );
-		
 		/* Register a shutdown listener */
 		this.addWindowListener( this );
 		

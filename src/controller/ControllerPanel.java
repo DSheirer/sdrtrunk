@@ -28,13 +28,15 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import map.MapPanel;
-import message.Message;
+import map.MapService;
 import module.decode.event.CallEventPanel;
 import module.decode.event.MessageActivityPanel;
 import module.decode.state.ChannelList;
 import net.miginfocom.swing.MigLayout;
-import sample.Listener;
+import playlist.PlaylistManager;
+import settings.SettingsManager;
 import spectrum.ChannelSpectrumPanel;
+import audio.AudioManager;
 import audio.AudioPanel;
 
 import com.jidesoft.swing.JideSplitPane;
@@ -62,13 +64,32 @@ public class ControllerPanel extends JPanel
     protected JideSplitPane mSystemControlSplitPane;
 
 	protected JTable mChannelActivityTable = new JTable();
-	protected ResourceManager mResourceManager;
+	private AudioPanel mAudioPanel;
+	private MapPanel mMapPanel;
 
-	public ControllerPanel( ResourceManager resourceManager )
+	private ChannelManager mChannelManager;
+	private ConfigurationControllerModel mController;
+	protected SettingsManager mSettingsManager;
+
+	public ControllerPanel( AudioManager audioManager,
+							ConfigurationControllerModel controller,
+							ChannelManager channelManager,
+							MapService mapService,
+							PlaylistManager playlistManager,
+							SettingsManager settingsManager )
 	{
-	    mResourceManager = resourceManager;
+		mChannelManager = channelManager;
+		mController = controller;
+	    mSettingsManager = settingsManager;
+
+    	mAudioPanel = new AudioPanel( mSettingsManager, audioManager );
+
+    	mMapPanel = new MapPanel( mapService, mSettingsManager, mChannelManager );
 	    
-	    mCallEventPanel = new CallEventPanel( resourceManager.getSettingsManager() );	    
+	    mCallEventPanel = new CallEventPanel( mSettingsManager );	
+	    
+    	mChannelStateList = new ChannelList( playlistManager, mSettingsManager );
+	    
 		init();
 	}
 	
@@ -80,8 +101,8 @@ public class ControllerPanel extends JPanel
     	
     	//System Configuration View and Editor
     	mConfigurationEditor = new ConfigurationEditor();
-    	mSystemControlViewPanel = 
-    			new ConfigurationTreePanel( mResourceManager.getController() );
+
+    	mSystemControlViewPanel = new ConfigurationTreePanel( mController );
     	mSystemControlViewPanel.addTreeSelectionListener( mConfigurationEditor );
 
     	mSystemControlSplitPane = new JideSplitPane( JideSplitPane.HORIZONTAL_SPLIT );
@@ -89,7 +110,7 @@ public class ControllerPanel extends JPanel
     	mSystemControlSplitPane.add( mSystemControlViewPanel );
     	mSystemControlSplitPane.add( mConfigurationEditor );
     	
-    	mChannelSpectrumPanel = new ChannelSpectrumPanel( mResourceManager );
+    	mChannelSpectrumPanel = new ChannelSpectrumPanel( mSettingsManager );
     	
     	//Tabbed View - configuration, calls, messages, map
     	mTabbedPane = new JideTabbedPane();
@@ -127,37 +148,23 @@ public class ControllerPanel extends JPanel
     	/**
     	 * Add mapping services and map panel to a new tab
     	 */
-
-    	/* Add Map Service as message listener to receive all messages */
-    	mResourceManager.getChannelManager().addListener( 
-    			(Listener<Message>)mResourceManager.getMapService() );
+    	mTabbedPane.addTab( "Map", mMapPanel );
     	
-    	MapPanel mapPanel = new MapPanel( mResourceManager );
-    	mTabbedPane.addTab( "Map", mapPanel );
-    	
-    	
-		/* Channel state list */
-    	mChannelStateList = new ChannelList( mResourceManager.getPlaylistManager(),
-    			mResourceManager.getSettingsManager() );
-
     	/* Register each of the components to receive channel events when the
     	 * channels are selected or change */
-    	ChannelManager channelManager = mResourceManager.getChannelManager();
-    	channelManager.addListener( mCallEventPanel );
-    	channelManager.addListener( mChannelStateList );
-    	channelManager.addListener( mChannelSpectrumPanel );
-    	channelManager.addListener( mMessageActivityPanel );
+    	mChannelManager.addListener( mCallEventPanel );
+    	mChannelManager.addListener( mChannelStateList );
+    	mChannelManager.addListener( mChannelSpectrumPanel );
+    	mChannelManager.addListener( mMessageActivityPanel );
 		
 		JScrollPane channelStateListScroll = new JScrollPane();
     	channelStateListScroll.getViewport().setView( mChannelStateList );
     	channelStateListScroll.setPreferredSize( new Dimension( 200, 300 ) ); 
 
-    	AudioPanel audioPanel = new AudioPanel( mResourceManager.getSettingsManager(),
-							  mResourceManager.getAudioManager() );
 
     	JideSplitPane audioChannelListSplit = new JideSplitPane( JideSplitPane.VERTICAL_SPLIT );
     	audioChannelListSplit.setDividerSize( 5 );
-    	audioChannelListSplit.add( audioPanel );
+    	audioChannelListSplit.add( mAudioPanel );
     	audioChannelListSplit.add( channelStateListScroll );
     	
     	JideSplitPane channelSplit = new JideSplitPane( JideSplitPane.HORIZONTAL_SPLIT );
@@ -170,6 +177,6 @@ public class ControllerPanel extends JPanel
 
 	public ConfigurationControllerModel getController()
 	{
-		return mResourceManager.getController();
+		return mController;
 	}
 }

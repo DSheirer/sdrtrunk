@@ -33,6 +33,7 @@ import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeListener;
 import spectrum.SpectrumFrame;
 import controller.BaseNode;
+import controller.ResourceManager;
 
 public class TunerNode extends BaseNode implements FrequencyChangeListener
 {
@@ -112,9 +113,11 @@ public class TunerNode extends BaseNode implements FrequencyChangeListener
 			@Override
             public void actionPerformed( ActionEvent e )
             {
-				SpectrumFrame frame = 
-						new SpectrumFrame( getModel().getResourceManager(), 
-										   getTuner() );
+				ResourceManager rm = getModel().getResourceManager();
+				
+				SpectrumFrame frame = new SpectrumFrame( rm.getChannelManager(), 
+						rm.getController(), rm.getPlaylistManager(), 
+						rm.getSettingsManager(), getTuner() );
             }
 		} );
 		

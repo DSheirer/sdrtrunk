@@ -61,7 +61,7 @@ public class ChannelSpectrumPanel extends JPanel
 
 	private static final long serialVersionUID = 1L;
 
-    private ResourceManager mResourceManager;
+//    private ResourceManager mResourceManager;
     private DFTProcessor mDFTProcessor = new DFTProcessor( SampleType.REAL );    
     private DFTResultsConverter mDFTConverter = new RealDecibelConverter();
     private JLayeredPane mLayeredPane;
@@ -78,15 +78,22 @@ public class ChannelSpectrumPanel extends JPanel
 		Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO.getCoefficients(), 1.0f, true );
     
     private AtomicBoolean mEnabled = new AtomicBoolean();
+    
+    private SettingsManager mSettingsManager;
 
-    public ChannelSpectrumPanel( ResourceManager resourceManager )
+    public ChannelSpectrumPanel( SettingsManager settingsManager )
     {
-    	mResourceManager = resourceManager;
-    	mResourceManager.getSettingsManager().addListener( this );
-    	mSpectrumPanel = new SpectrumPanel( mResourceManager );
+    	mSettingsManager = settingsManager;
+    	
+    	if( mSettingsManager != null )
+    	{
+    		mSettingsManager.addListener( this );
+    	}
+    	
+    	mSpectrumPanel = new SpectrumPanel( mSettingsManager );
     	mSpectrumPanel.setAveraging( 1 );
 
-    	mOverlayPanel = new ChannelOverlayPanel( mResourceManager );
+    	mOverlayPanel = new ChannelOverlayPanel( mSettingsManager );
     	mDFTProcessor.addConverter( mDFTConverter );
     	mDFTConverter.addListener( mSpectrumPanel );
 
@@ -103,7 +110,12 @@ public class ChannelSpectrumPanel extends JPanel
     	
     	mDFTProcessor.dispose();
 
-    	mResourceManager = null;
+    	if( mSettingsManager != null )
+    	{
+    		mSettingsManager.removeListener( this );
+    	}
+    	
+    	mSettingsManager = null;
     	mCurrentChannel = null;
     	mDFTProcessor = null;
     	mSpectrumPanel = null;
@@ -338,21 +350,19 @@ public class ChannelSpectrumPanel extends JPanel
 				 */
 				JMenu colorMenu = new JMenu( "Color" );
 
-				SettingsManager sm = mResourceManager.getSettingsManager();
-
-				colorMenu.add( new ColorSettingMenuItem( sm, 
+				colorMenu.add( new ColorSettingMenuItem( mSettingsManager, 
 						ColorSettingName.SPECTRUM_CURSOR ) );
 
-				colorMenu.add( new ColorSettingMenuItem( sm, 
+				colorMenu.add( new ColorSettingMenuItem( mSettingsManager, 
 						ColorSettingName.SPECTRUM_LINE ) );
 
-				colorMenu.add( new ColorSettingMenuItem( sm, 
+				colorMenu.add( new ColorSettingMenuItem( mSettingsManager, 
 						ColorSettingName.SPECTRUM_BACKGROUND ) );
 
-				colorMenu.add( new ColorSettingMenuItem( sm, 
+				colorMenu.add( new ColorSettingMenuItem( mSettingsManager, 
 						ColorSettingName.SPECTRUM_GRADIENT_BOTTOM ) );
 
-				colorMenu.add( new ColorSettingMenuItem( sm, 
+				colorMenu.add( new ColorSettingMenuItem( mSettingsManager, 
 						ColorSettingName.SPECTRUM_GRADIENT_TOP ) );
 
 				contextMenu.add( colorMenu );

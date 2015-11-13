@@ -33,7 +33,7 @@ import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
 import settings.Setting;
 import settings.SettingChangeListener;
-import controller.ResourceManager;
+import settings.SettingsManager;
 
 public class ChannelOverlayPanel extends JPanel implements SettingChangeListener
 {
@@ -56,16 +56,21 @@ public class ChannelOverlayPanel extends JPanel implements SettingChangeListener
 	//the frequency labels
 	private float mSpectrumInset = 20.0f;
 
-	private ResourceManager mResourceManager;
+	private SettingsManager mSettingsManager;
 	
 	/**
 	 * Translucent overlay panel for displaying channel configurations,
 	 * processing channels, selected channels, frequency labels and lines, and 
 	 * a cursor with a frequency readout.
 	 */
-	public ChannelOverlayPanel( ResourceManager resourceManager )
+	public ChannelOverlayPanel( SettingsManager settingsManager )
     {
-		mResourceManager = resourceManager;
+		mSettingsManager = settingsManager;
+		
+		if( mSettingsManager != null )
+		{
+			mSettingsManager.addListener( this );
+		}
 		
 		//Set the background transparent, so the spectrum display can be seen
 		setOpaque( false );
@@ -76,7 +81,12 @@ public class ChannelOverlayPanel extends JPanel implements SettingChangeListener
 	
 	public void dispose()
 	{
-		mResourceManager = null;
+		if( mSettingsManager != null )
+		{
+			mSettingsManager.removeListener( this );
+		}
+		
+		mSettingsManager = null;
 	}
 	
 	public void setCursorLocation( Point point )
@@ -112,9 +122,7 @@ public class ChannelOverlayPanel extends JPanel implements SettingChangeListener
 	 */
 	private Color getColor( ColorSettingName name )
 	{
-		ColorSetting setting = 
-				mResourceManager.getSettingsManager()
-				.getColorSetting( name );
+		ColorSetting setting = mSettingsManager.getColorSetting( name );
 		
 		return setting.getColor();
 	}

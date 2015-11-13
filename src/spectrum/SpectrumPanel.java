@@ -37,7 +37,7 @@ import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
 import settings.Setting;
 import settings.SettingChangeListener;
-import controller.ResourceManager;
+import settings.SettingsManager;
 import dsp.filter.smoothing.GaussianSmoothingFilter;
 import dsp.filter.smoothing.NoSmoothingFilter;
 import dsp.filter.smoothing.RectangularSmoothingFilter;
@@ -59,11 +59,11 @@ public class SpectrumPanel extends JPanel
     		new RenderingHints( RenderingHints.KEY_ANTIALIASING, 
     							RenderingHints.VALUE_ANTIALIAS_ON );
 
-	//Color settings
-	private static final String SPECTRUM_BACKGROUND = "spectrum_background";
-	private static final String SPECTRUM_GRADIENT_TOP = "spectrum_gradient_top";
-	private static final String SPECTRUM_GRADIENT_BOTTOM = "spectrum_gradient_bottom";
-	private static final String SPECTRUM_LINE = "spectrum_line";
+	static
+	{
+		RENDERING_HINTS.put( RenderingHints.KEY_RENDERING, 
+							 RenderingHints.VALUE_RENDER_QUALITY );
+	}
 	
 	private Color mColorSpectrumBackground;
 	private Color mColorSpectrumGradientTop;
@@ -86,29 +86,36 @@ public class SpectrumPanel extends JPanel
 	private float mDBScale; 
 
 	private int mZoom = 0;
-	private int mZoomBinOffset = 0;;
+	private int mZoomWindowOffset = 0;;
+
+	private SettingsManager mSettingsManager;
 	
-	private ResourceManager mResourceManager;
-	
-	public SpectrumPanel( ResourceManager resourceManager )
+	public SpectrumPanel( SettingsManager settingsManager )
     {
-		mResourceManager = resourceManager;
+		mSettingsManager = settingsManager;
 		
-		RENDERING_HINTS.put( RenderingHints.KEY_RENDERING, 
-							 RenderingHints.VALUE_RENDER_QUALITY );
+		if( mSettingsManager != null )
+		{
+			mSettingsManager.addListener( this );
+		}
 		
 		setSampleSize( 16.0 );
 		
 		mSmoothingFilter.setPointSize( SmoothingFilter.SMOOTHING_DEFAULT );
 
-		getSettings();
+		getColors();
 
 		setAveraging( mAveraging );
     }
 	
 	public void dispose()
 	{
-		mResourceManager = null;
+		if( mSettingsManager != null )
+		{
+			mSettingsManager.removeListener( this );
+		}
+		
+		mSettingsManager = null;
 	}
 	
     /**
@@ -141,7 +148,8 @@ public class SpectrumPanel extends JPanel
     		
     		for( int x = 0; x < mDisplayFFTBins.length; x++ )
     		{
-    			mDisplayFFTBins[ x ] += ( smoothedBins[ x ] - mDisplayFFTBins[ x ] ) * gain;
+    			mDisplayFFTBins[ x ] += 
+    					( smoothedBins[ x ] - mDisplayFFTBins[ x ] ) * gain;
     		}
     	}
     	else
@@ -158,8 +166,8 @@ public class SpectrumPanel extends JPanel
     	super.paintComponent( g );
     	
     	Graphics2D graphics = (Graphics2D) g;
-    	graphics.setBackground( mColorSpectrumBackground );
 
+    	graphics.setBackground( mColorSpectrumBackground );
 
         graphics.setRenderingHints( RENDERING_HINTS );
         
@@ -272,13 +280,11 @@ public class SpectrumPanel extends JPanel
      * 
      * @param zoom level, 0 - 5.
      */
-    public void setZoom( int zoom, int offset )
+    public void setZoom( int zoom )
     {
     	assert( 0 <= zoom && zoom <= 5 );
     	
     	mZoom = zoom;
-    	
-    	setZoomBinOffset( offset );
     }
 
     /**
@@ -286,9 +292,9 @@ public class SpectrumPanel extends JPanel
      * 
      * @param offset
      */
-    public void setZoomBinOffset( int offset )
+    public void setZoomWindowOffset( int offset )
     {
-    	mZoomBinOffset = offset;
+    	mZoomWindowOffset = offset;
     }
 
 	/**
@@ -330,7 +336,7 @@ public class SpectrumPanel extends JPanel
 		repaint();
 	}
 	
-	private void getSettings()
+	private void getColors()
 	{
 		mColorSpectrumBackground = 
 				getColor( ColorSettingName.SPECTRUM_BACKGROUND );
@@ -349,8 +355,7 @@ public class SpectrumPanel extends JPanel
 	 */
 	private Color getColor( ColorSettingName name )
 	{
-		ColorSetting setting = 
-				mResourceManager.getSettingsManager().getColorSetting( name );
+		ColorSetting setting = mSettingsManager.getColorSetting( name );
 		
 		return setting.getColor();
 	}
@@ -385,6 +390,15 @@ public class SpectrumPanel extends JPanel
 		}
     }
 	
+	private int getZoomMultiplier()
+	{
+		return (int)Math.pow( 2.0, mZoom );
+	}
+	
+	/**
+	 * Returns the DFT result bins, or a zoomed and offset version of the bins
+	 * when the display is zoomed.
+	 */
     private float[] getBins()
     {
     	if( mZoom == 0 )
@@ -393,15 +407,18 @@ public class SpectrumPanel extends JPanel
     	}
     	else
     	{
-    		int zoom = (int)Math.pow( 2.0, mZoom );
+    		int length = mDisplayFFTBins.length / getZoomMultiplier();
     		
-    		int length = mDisplayFFTBins.length / zoom;
+    		int offset = mZoomWindowOffset;
     		
-    		int offset = mZoomBinOffset;
-    		
-    		if( ( offset + length ) > mDisplayFFTBins.length )
+    		if( ( offset + length ) >= mDisplayFFTBins.length )
     		{
     			offset = mDisplayFFTBins.length - length;
+    		}
+    		
+    		if( offset < 0 )
+    		{
+    			offset = 0;
     		}
 
     		return Arrays.copyOfRange( mDisplayFFTBins, offset, offset + length );

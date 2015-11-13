@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014,2015 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
  ******************************************************************************/
 package spectrum;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -24,6 +25,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.RenderingHints;
+import java.awt.Stroke;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.geom.Line2D;
@@ -41,14 +43,15 @@ import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
 import settings.Setting;
 import settings.SettingChangeListener;
+import settings.SettingsManager;
 import source.tuner.TunerChannel;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeListener;
-import controller.ResourceManager;
 import controller.channel.Channel;
 import controller.channel.Channel.ChannelType;
 import controller.channel.ChannelEvent;
 import controller.channel.ChannelEventListener;
+import controller.channel.ChannelManager;
 
 public class OverlayPanel extends JPanel 
 						   implements ChannelEventListener,
@@ -60,8 +63,20 @@ public class OverlayPanel extends JPanel
 	private final static Logger mLog = 
 						LoggerFactory.getLogger( OverlayPanel.class );
 
+	private final static RenderingHints RENDERING_HINTS = 
+    		new RenderingHints( RenderingHints.KEY_ANTIALIASING, 
+    							RenderingHints.VALUE_ANTIALIAS_ON );
+
+	static
+	{
+		RENDERING_HINTS.put( RenderingHints.KEY_RENDERING, 
+							 RenderingHints.VALUE_RENDER_QUALITY );
+	}
+	
+	private final static BasicStroke DASHED_STROKE = new BasicStroke(0.8f, 
+		BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 5.0f, new float[] {5.0f}, 0.0f);	
+	
 	private static DecimalFormat CURSOR_FORMAT = new DecimalFormat( "000.00000" );
-	private DecimalFormat mFrequencyFormat = new DecimalFormat( "0.0" );
 	private long mFrequency = 0;
 	private int mBandwidth = 0;
 	private Point mCursorLocation = new Point( 0, 0 );
@@ -92,18 +107,31 @@ public class OverlayPanel extends JPanel
 	//Defines the offset at the bottom of the spectral display to account for
 	//the frequency labels
 	private double mSpectrumInset = 20.0d;
-	private LabelSizeMonitor mLabelSizeMonitor = new LabelSizeMonitor();
+	private LabelSizeManager mLabelSizeMonitor = new LabelSizeManager();
 
-	private ResourceManager mResourceManager;
-	
+	private SettingsManager mSettingsManager;
+	private ChannelManager mChannelManager;
 	/**
 	 * Translucent overlay panel for displaying channel configurations,
 	 * processing channels, selected channels, frequency labels and lines, and 
 	 * a cursor with a frequency readout.
 	 */
-	public OverlayPanel( ResourceManager resourceManager )
+	public OverlayPanel( SettingsManager settingsManager, 
+						 ChannelManager channelManager )
     {
-		mResourceManager = resourceManager;
+		mSettingsManager = settingsManager;
+
+		if( mSettingsManager != null )
+		{
+			mSettingsManager.addListener( this );
+		}
+		
+		mChannelManager = channelManager;
+		
+		if( mChannelManager != null )
+		{
+			mChannelManager.addListener( this );
+		}
 		
 		addComponentListener( mLabelSizeMonitor );
 		
@@ -116,12 +144,27 @@ public class OverlayPanel extends JPanel
 	
 	public void dispose()
 	{
+		if( mChannelManager != null )
+		{
+			mChannelManager.removeListener( this );
+		}
+		
+		mChannelManager = null;
+		
 		mChannels.clear();
 		mVisibleChannels.clear();
 		
-		mResourceManager = null;
+		if( mSettingsManager != null )
+		{
+			mSettingsManager.removeListener( this );
+		}
+		
+		mSettingsManager = null;
 	}
 	
+	/**
+	 * Sets/changes the DFT bin size
+	 */
 	public void setDFTSize( DFTSize size )
 	{
 		mDFTSize = size;
@@ -160,13 +203,20 @@ public class OverlayPanel extends JPanel
      * 3	8x Zoom
      * 4	16x Zoom
      * 5	32x Zoom
+     * 6	64x Zoom
      * 
-     * @param zoom level, 0 - 5.
+     * @param zoom level, 0 - 6.
      * @param offset into the FFT bins for start zoom window
      */
-	public void setZoom( int zoom, int offset )
+	public void setZoom( int zoom )
 	{
 		mZoom = zoom;
+		
+		mLabelSizeMonitor.update();
+	}
+	
+	public void setZoomWindowOffset( int offset )
+	{
 		mDFTZoomWindowOffset = offset;
 	}
 	
@@ -197,9 +247,7 @@ public class OverlayPanel extends JPanel
 	 */
 	private Color getColor( ColorSettingName name )
 	{
-		ColorSetting setting = 
-				mResourceManager.getSettingsManager()
-				.getColorSetting( name );
+		ColorSetting setting = mSettingsManager.getColorSetting( name );
 		
 		return setting.getColor();
 	}
@@ -252,14 +300,7 @@ public class OverlayPanel extends JPanel
     	Graphics2D graphics = (Graphics2D) g;
     	graphics.setBackground( mColorSpectrumBackground );
 
-        RenderingHints renderHints = 
-        		new RenderingHints( RenderingHints.KEY_ANTIALIASING, 
-        							RenderingHints.VALUE_ANTIALIAS_ON );
-
-        renderHints.put( RenderingHints.KEY_RENDERING, 
-        				 RenderingHints.VALUE_RENDER_QUALITY );
-
-        graphics.setRenderingHints( renderHints );
+        graphics.setRenderingHints( RENDERING_HINTS );
         
     	drawFrequencies( graphics );
     	drawChannels( graphics );
@@ -279,7 +320,7 @@ public class OverlayPanel extends JPanel
     						   mColorSpectrumCursor );
 
     		String frequency = CURSOR_FORMAT.format( 
-				getFrequencyFromAxis( mCursorLocation.getX() ) / 1000000.0D );
+				getFrequencyFromAxis( mCursorLocation.getX() ) / 1E6D );
 
     		graphics.drawString( frequency , 
     							 mCursorLocation.x + 5, 
@@ -298,26 +339,28 @@ public class OverlayPanel extends JPanel
      */
     private void drawFrequencies( Graphics2D graphics )
     {
+    	Stroke currentStroke = graphics.getStroke();
+    	
+    	graphics.setStroke( DASHED_STROKE );
+
     	long minFrequency = getMinDisplayFrequency();
     	long maxFrequency = getMaxDisplayFrequency();
 
+    	//Frequency increments for label and tick spacing
+    	int label = mLabelSizeMonitor.getLabelIncrement( graphics );
     	int major = mLabelSizeMonitor.getMajorTickIncrement( graphics );
     	int minor = mLabelSizeMonitor.getMinorTickIncrement( graphics );
-    	int label = mLabelSizeMonitor.getLabelIncrement( graphics );
-    	
-    	long start = minFrequency - ( minFrequency % label );
-    	
-    	long frequency = start;
+
+    	//Adjust the start frequency to a multiple of the minor tick spacing 
+    	long frequency = minFrequency - ( minFrequency % minor );
     	
     	while( frequency < maxFrequency )
     	{
-    		int offset = (int)( frequency - start );
-    		
-    		if( offset % label == 0  )
+    		if( frequency % label == 0  )
     		{
         		drawFrequencyLineAndLabel( graphics, frequency );
     		}
-    		else if( offset % major == 0 )
+    		else if( frequency % major == 0 )
     		{
     			drawTickLine( graphics, frequency, true );
     		}
@@ -328,6 +371,8 @@ public class OverlayPanel extends JPanel
     		
     		frequency += minor;
     	}
+    	
+    	graphics.setStroke( currentStroke );
     }
     
     /**
@@ -356,7 +401,7 @@ public class OverlayPanel extends JPanel
     	double xAxis = getAxisFromFrequency( frequency );
 
     	double start = getSize().getHeight() - mSpectrumInset;
-    	double end = start + ( major ? 6.0d : 3.0d );
+    	double end = start + ( major ? 9.0d : 3.0d );
     	
     	graphics.draw( new Line2D.Double( xAxis, start, xAxis, end ) ); 
     }
@@ -414,7 +459,8 @@ public class OverlayPanel extends JPanel
     }
 
     /**
-     * Returns the frequency corresponding to the x-axis value
+     * Returns the frequency corresponding to the x-axis value using the current
+     * zoom level.
      */
     public long getFrequencyFromAxis( double xAxis )
     {
@@ -422,7 +468,15 @@ public class OverlayPanel extends JPanel
     	
     	double offset = xAxis / width;
     	
-    	return getMinFrequency() + Math.round( (double)mBandwidth * offset ); 
+    	long frequency = getMinDisplayFrequency() + 
+    			Math.round( (double)getDisplayBandwidth() * offset ); 
+    	
+    	if( frequency > ( getMaxFrequency() ) )
+    	{
+    		frequency = getMaxFrequency();
+    	}
+    	
+    	return frequency;
     }
 
     /**
@@ -432,16 +486,14 @@ public class OverlayPanel extends JPanel
     								 double xaxis,
     								 long frequency )
     {
-    	String label = mFrequencyFormat.format( (float)frequency / 1000000.0f );
+    	String label = mLabelSizeMonitor.format( frequency );
     	
-    	FontMetrics fontMetrics   = graphics.getFontMetrics( this.getFont() );
+    	FontMetrics fontMetrics = graphics.getFontMetrics( this.getFont() );
 
     	Rectangle2D rect = fontMetrics.getStringBounds( label, graphics );
 
     	float xOffset  = (float)rect.getWidth() / 2;
 
-//    	graphics.drawString( label, (float)( xaxis - xOffset ), 
-//			(float)( getSize().getHeight() - ( mSpectrumInset * 0.2d ) ) );
     	graphics.drawString( label, (float)( xaxis - xOffset ), 
 			(float)( getSize().getHeight() - 2.0f ) );
     }
@@ -598,24 +650,15 @@ public class OverlayPanel extends JPanel
 	@Override
     public void frequencyChanged( FrequencyChangeEvent event )
     {
-		mLabelSizeMonitor.frequencyChanged( event );
-		
 		switch( event.getAttribute() )
 		{
 			case SAMPLE_RATE:
 				mBandwidth = event.getValue().intValue();
-				
-				if( mBandwidth < 200000 )
-				{
-					mFrequencyFormat = new DecimalFormat( "0.00" );					
-				}
-				else
-				{
-					mFrequencyFormat = new DecimalFormat( "0.0" );
-				}
+				mLabelSizeMonitor.update();
 				break;
 			case FREQUENCY:
 				mFrequency = event.getValue().longValue();
+				mLabelSizeMonitor.update();
 				break;
 			default:
 				break;
@@ -750,186 +793,134 @@ public class OverlayPanel extends JPanel
 	}
 
 	@Override
-    public void settingDeleted( Setting setting )
-    {
-	    // TODO Auto-generated method stub
-    }
+    public void settingDeleted( Setting setting ) { /* not implemented */ }
 
 	/**
-	 * Monitors the display for resize events so that we can calculate how many
-	 * frequency labels will fit within the current screen real estate
+	 * Calculates correct spacing and format for frequency labels and major/minor 
+	 * tick lines based on current frequency, bandwidth, zoom and screen size.
 	 */
-	public class LabelSizeMonitor implements ComponentListener, 
-											 FrequencyChangeListener
+	public class LabelSizeManager implements ComponentListener
 	{
-		private static final int MAJOR_TICK_MINIMUM = 10000; //10 kHz
-		private static final int MINOR_TICK_MINIMUM = 1000; //1 kHz
-		private static final int TICK_SPACING_MINIMUM = 10; //pixels
+		private static final double LABEL_FILL_THRESHOLD = 0.5d;
 		
-		private boolean mUpdateRequired = true;
-		private LabelDisplay mLabelDisplay = LabelDisplay.DIGIT_3;
-		private int mMajorTickIncrement;
-		private int mMinorTickIncrement;
-		private int mLabelIncrement;
+		private DecimalFormat mFrequencyFormat = new DecimalFormat( "0.0" );
 
+		private boolean mUpdateRequired = true;
+		private int mLabelIncrement = 1;
+		private int mMajorTickIncrement = 1;
+		private int mMinorTickIncrement = 1;
+
+		public String format( long frequency )
+		{
+			return mFrequencyFormat.format( (double)frequency / 1E6D );
+		}
+		
+		private void setPrecision( int precision )
+		{
+			if( precision < 1 )
+			{
+				precision = 1;
+			}
+			
+			if( precision > 5 )
+			{
+				precision = 5;
+			}
+			
+			mFrequencyFormat.setMinimumFractionDigits( precision );
+			mFrequencyFormat.setMaximumFractionDigits( precision );
+		}
+		
 		private void update( Graphics2D graphics )
 		{
 			if( mUpdateRequired )
 			{
-				double width = OverlayPanel.this.getSize().getWidth();
-
-				int major = MAJOR_TICK_MINIMUM;
-
-				while( width / ( (double)mBandwidth / 
-						(double)major ) < TICK_SPACING_MINIMUM )
-				{
-					major *= 10;
-				}
-				
-				mMajorTickIncrement = major;
-				
-				int minor = MINOR_TICK_MINIMUM;
-
-				while( width / ( (double)mBandwidth / 
-						(double)minor ) < TICK_SPACING_MINIMUM )
-				{
-					minor *= 10;
-				}
-				
-				if( minor == major )
-				{
-					minor = (int)( major / 2 );
-				}
-				
-				mMinorTickIncrement = minor;
+				//Set maximum precision as a starting point
+				setPrecision( 5 );
 				
 		        FontMetrics fontMetrics = 
 		        		graphics.getFontMetrics( OverlayPanel.this.getFont() );
 		        
-		        Rectangle2D labelDimension = fontMetrics.getStringBounds( 
-		        		mLabelDisplay.getExample(), graphics );
-				
-		        int maxLabelCount = (int)( width / labelDimension.getWidth() );
+		        int maxLabelWidth = fontMetrics.stringWidth( format( getMaxDisplayFrequency() ) );
+
+		        double maxLabels = ( (double)OverlayPanel.this.getWidth() * 
+		        		LABEL_FILL_THRESHOLD ) / 
+		        		(double)maxLabelWidth;
+
+		        //Calculate the next smallest base 10 value for the major increment
+		        int power = (int)Math.log10( (double)getDisplayBandwidth() / maxLabels );
+
+		        //Set the number of decimal places to display in frequency labels
+		        int precision = 5 - power;
 		        
-		        int label = major;
+		        int start = (int)Math.pow( 10.0, power + 1 );
 		        
-				while( ( (double)mBandwidth / (double)label ) > maxLabelCount )
-				{
-					label += major;
-				}
+		        int minimum = (int)Math.pow( 10.0, power );
+
+		        int labelIncrement = start;
+
+		        while( ( (double)getDisplayBandwidth() / 
+		        		 (double)labelIncrement ) < maxLabels && 
+		        		 labelIncrement >= minimum )
+		        {
+		        	labelIncrement /= 2;
+		        	precision++;
+		        }
 		        
-				mLabelIncrement = label;
-				
-		        mUpdateRequired = false;
+		        if( labelIncrement == minimum )
+		        {
+		        	precision = 5 - power;
+		        }
+		        
+		        setPrecision( precision );
+		        
+				mLabelIncrement = labelIncrement;
+				mMajorTickIncrement = labelIncrement / 2;
+				mMinorTickIncrement = labelIncrement / 10;
+
+				mUpdateRequired = false;
 			}
+		}
+
+		/**
+		 * Forces the display to update the label and frequency display 
+		 * calculations
+		 */
+		public void update()
+		{
+			mUpdateRequired = true;
 		}
 
 		public int getMajorTickIncrement( Graphics2D graphics )
 		{
+			//Check to see if a calculation update is scheduled
 			update( graphics );
 			
 			return mMajorTickIncrement;
 		}
-		
+
 		public int getMinorTickIncrement( Graphics2D graphics )
 		{
-			update( graphics );
-			
 			return mMinorTickIncrement;
 		}
 		
 		public int getLabelIncrement( Graphics2D graphics )
 		{
-			update( graphics );
-			
 			return mLabelIncrement;
-		}
-		
-		public LabelDisplay getLabelDisplay()
-		{
-			return mLabelDisplay;
 		}
 		
 		@Override
         public void componentResized( ComponentEvent arg0 )
         {
-			mUpdateRequired = true;
+			update();
         }
 
 		public void componentHidden( ComponentEvent arg0 ) {}
         public void componentMoved( ComponentEvent arg0 ) {}
         public void componentShown( ComponentEvent arg0 ) {}
 
-		@Override
-        public void frequencyChanged( FrequencyChangeEvent event )
-        {
-			switch( event.getAttribute() )
-			{
-				case FREQUENCY:
-					LabelDisplay display = LabelDisplay
-						.fromFrequency( event.getValue().longValue() );
-					
-					if( mLabelDisplay != display )
-					{
-						mLabelDisplay = display;
-						mUpdateRequired = true;
-					}
-					break;
-				case SAMPLE_RATE:
-					mUpdateRequired = true;
-					break;
-				default:
-					break;
-			}
-        }
 	}
 
-	/**
-	 * Frequency display formats for determining label sizing and value formatting
-	 */
-	public enum LabelDisplay
-	{
-		DIGIT_1( " 9.9 " ),
-		DIGIT_2( " 99.9 " ),
-		DIGIT_3( " 999.9 " ),
-		DIGIT_4( " 9999.9 " ),
-		DIGIT_5( " 99999.9 " );
-		
-		private String mExample;
-		
-		private LabelDisplay( String example )
-		{
-			mExample = example;
-		}
-		
-		public String getExample()
-		{
-			return mExample;
-		}
-		
-		public static LabelDisplay fromFrequency( long frequency )
-		{
-			if( frequency < 10000000l ) //10 MHz
-			{
-				return LabelDisplay.DIGIT_1;
-			}
-			else if( frequency < 100000000l ) //100 MHz
-			{
-				return LabelDisplay.DIGIT_2;
-			}
-			else if( frequency < 1000000000l ) //1,000 MHz
-			{
-				return LabelDisplay.DIGIT_3;
-			}
-			else if( frequency < 10000000000l ) //10,000 MHz
-			{
-				return LabelDisplay.DIGIT_4;
-			}
-
-			return LabelDisplay.DIGIT_5;
-		}
-	}
-	
 	public enum ChannelDisplay
 	{
 		ALL, ENABLED, NONE;

@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014,2015 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -40,26 +40,22 @@ import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
 import settings.Setting;
 import settings.SettingChangeListener;
-import controller.ResourceManager;
+import settings.SettingsManager;
 
-/**
- * Produces a JPanel filled with a waterfall image derived from a continuous
- * stream of received Discrete Fourier Transform (DFT) results from the
- * DFTProcessor class.
- */
 public class WaterfallPanel extends JPanel implements DFTResultsListener,
 													  Pausable,
 													  SettingChangeListener
 {
+	private static final long serialVersionUID = 1L;
+
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( WaterfallPanel.class );
 
-	private static final long serialVersionUID = 1L;
 	private static DecimalFormat CURSOR_FORMAT = new DecimalFormat( "0.00000" );
-	private static final String SPECTRUM_CURSOR = "spectrum_cursor";
 	private static final String PAUSED = "PAUSED";
 
 	private byte[] mPixels;
+	private byte[] mPausedPixels;
     private int mDFTSize = 4096;
     private int mImageHeight = 700;
     private MemoryImageSource mMemoryImageSource;
@@ -70,29 +66,50 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 	private Point mCursorLocation = new Point( 0, 0 );
 	private boolean mCursorVisible = false;
 	private long mCursorFrequency = 0;
-	private AtomicBoolean mPaused = new AtomicBoolean();
+	private boolean mPaused = false;
 	private int mZoom = 0;
-	private int mDFTZoomOffset = 0;
+	private int mDFTZoomWindowOffset = 0;
 	
-	private ResourceManager mResourceManager;
-    
-	public WaterfallPanel( ResourceManager resourceManager )
+	private SettingsManager mSettingsManager;
+
+	/**
+	 * Displays a scrolling window of multiple DFT frequency bin outputs over
+	 * time.  Maps DFT frequency bin decibel values into a 256 bucket color map 
+	 * for display.
+	 * 
+	 * @param settingsManager
+	 */
+	public WaterfallPanel( SettingsManager settingsManager )
 	{
 		super();
 
-		mResourceManager = resourceManager;
+		mSettingsManager = settingsManager;
+		
+		mSettingsManager.addListener( this );
 		
 		mColorSpectrumCursor = getColor( ColorSettingName.SPECTRUM_CURSOR );
 
 		reset();
 	}
-	
+
+	/**
+	 * Prepares this instance for disposal
+	 */
 	public void dispose()
 	{
-		mResourceManager = null;
+		if( mSettingsManager != null )
+		{
+			mSettingsManager.removeListener( this );
+		}
+		
+		mSettingsManager = null;
 		mMemoryImageSource = null;
 	}
-	
+
+	/**
+	 * Resets the memory image source and byte backing array when the DFT point
+	 * size has changed
+	 */
 	private void reset()
 	{
 		mPixels = new byte[ mDFTSize * mImageHeight ];
@@ -110,18 +127,27 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 	}
 	
 	/**
-	 * Pausable interface - pauses updates to the screen
+	 * Pausable interface - pauses updates to the waterfall
 	 */
 	public void setPaused( boolean paused )
 	{
-		mPaused.set( paused );
+		if( paused )
+		{
+			mPausedPixels = mPixels.clone();
+		}
+
+		mPaused = paused;
 		
 		repaint();
 	}
 	
+	/**
+	 * Returns current pause state
+	 * @return true if paused, false otherwise
+	 */
 	public boolean isPaused()
 	{
-		return mPaused.get();
+		return mPaused;
 	}
 	
     /**
@@ -133,14 +159,31 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
      * 3	8x Zoom
      * 4	16x Zoom
      * 5	32x Zoom
+     * 6	64x Zoom
      * 
-     * @param zoom level, 0 - 5.
+     * @param zoom level, 0 - 6.
      * @param offset into the DFT bins for display
      */
-	public void setZoom( int zoom, int offset )
+	public void setZoom( int zoom )
 	{
 		mZoom = zoom;
-		mDFTZoomOffset = offset;
+	}
+
+	/**
+	 * Multiplier for the current zoom level
+	 */
+	private int getZoomMultiplier()
+	{
+		return (int)Math.pow( 2.0, mZoom );
+	}
+	
+	/**
+	 * Sets the zoom window offset from zero
+	 * @param offset in DFT bins
+	 */
+	public void setZoomWindowOffset( int offset )
+	{
+		mDFTZoomWindowOffset = offset;
 	}
 	
 	/**
@@ -149,8 +192,7 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 	 */
 	private Color getColor( ColorSettingName name )
 	{
-		ColorSetting setting = mResourceManager.getSettingsManager()
-				.getColorSetting( name );
+		ColorSetting setting = mSettingsManager.getColorSetting( name );
 		
 		return setting.getColor();
 	}
@@ -174,18 +216,37 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 		}
     }
 
+	@Override
+    public void settingDeleted( Setting setting ) { /* Not implemented */ }
+
+	/**
+	 * Sets the display location of the cursor.  Cursor location monitoring is
+	 * handled external to this class.
+	 * 
+	 * @param point
+	 */
 	public void setCursorLocation( Point point )
 	{
 		mCursorLocation = point;
 		
 		repaint();
 	}
-	
+
+	/**
+	 * Sets the current cursor display frequency.  Cursor location frequency
+	 * monitoring is handled external to this class.
+	 * 
+	 * @param frequency
+	 */
 	public void setCursorFrequency( long frequency )
 	{
 		mCursorFrequency = frequency;
 	}
-	
+
+	/**
+	 * Toggles the visibility of the cursor 
+	 * @param visible
+	 */
 	public void setCursorVisible( boolean visible )
 	{
 		mCursorVisible = visible;
@@ -193,21 +254,34 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 		repaint();
 	}
 	
+	/**
+	 * Calculates the x-axis pixel offset from zero where to start rendering the
+	 * waterfall image
+	 * 
+	 * @param multiplier - current zoom multiplier
+	 * @return x-axis pixel offset
+	 */
 	private int getPixelOffset( int multiplier )
 	{
+		int offset = 0;
+		
 		if( mZoom != 0 )
 		{
-			return -(int)( (double)getWidth() * multiplier / 
-					   	   (double)mDFTSize * 
-					   	   (double)( mDFTZoomOffset ) );
+			int zoomWidth = getWidth() * multiplier;
+			
+			offset = -(int)( (double)zoomWidth / (double)mDFTSize * 
+					   	   (double)( mDFTZoomWindowOffset ) );
 		}
-		
-		return 0;
+
+		return offset;
 	}
 
+	/**
+	 * Renders the screen at each refresh
+	 */
 	public void paintComponent( Graphics g )
 	{
-		int multiplier = (int)Math.pow( 2.0, mZoom );
+		int multiplier = getZoomMultiplier();
 
 		int offset = getPixelOffset( multiplier );
 		
@@ -220,10 +294,11 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 		
     	Graphics2D graphics = (Graphics2D) g;
 
+    	graphics.setColor( mColorSpectrumCursor );
+
     	if( mCursorVisible )
     	{
     		
-        	graphics.setColor( mColorSpectrumCursor );
         	
         	graphics.draw( new Line2D.Float( mCursorLocation.x, 
         									 0, 
@@ -235,22 +310,57 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
     		graphics.drawString( frequency , 
     							 mCursorLocation.x + 5, 
     							 mCursorLocation.y );
-    		
-        	if( mZoom != 0 )
-        	{
-        		graphics.drawString( "Zoom: " + (int)Math.pow( 2.0, mZoom ) + "x", 
-    				mCursorLocation.x + 17, mCursorLocation.y + 11 ); 
-        	}
     	}
     	
-    	if( mPaused.get() )
+    	if( mPaused )
     	{
     		graphics.drawString( PAUSED, 20, 20 ); 
     	}
     	
+		paintZoomIndicator( graphics );
+    	
 		graphics.dispose();
 	}
 
+	/**
+	 * When zoom level is greater than zero, paints a small indicator at the 
+	 * bottom center of the screen showing the location of the zoom window 
+	 * within the overall DFT results window
+	 */
+	private void paintZoomIndicator( Graphics2D graphics )
+	{
+		if( mZoom != 0 )
+		{
+			int width = getWidth() / 4;
+			
+			int x = ( getWidth() / 2 ) - ( width / 2 );
+			
+			//Draw the outer window
+			graphics.drawRect( x, getHeight() - 12, width, 10 );
+			
+			int zoomWidth = width / getZoomMultiplier();
+			
+			int windowOffset = 0;
+			
+			if( mDFTZoomWindowOffset != 0 )
+			{
+				windowOffset = (int)( ( (double)mDFTZoomWindowOffset / 
+						(double)mDFTSize ) * width );
+			}
+
+			//Draw the zoom window
+			graphics.fillRect( x + windowOffset, getHeight() - 12, zoomWidth, 10 );
+
+			//Draw the zoom text
+			graphics.drawString( "Zoom: " + getZoomMultiplier() + "x", 
+				x + width + 3, getHeight() - 2 ); 
+		}
+	}
+
+	/**
+	 * Implements the DFT results listener interface method.  This is the
+	 * primary method for receiving new frequency bin results.
+	 */
 	@Override
     public void receive( float[] update )
     {
@@ -297,37 +407,25 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 				mPixels[ x ] = (byte)value;
 			}
 		}
-		
-		if( !mPaused.get() )
+
+		//Task the swing event thread to update the display
+		EventQueue.invokeLater( new Runnable() 
 		{
-			EventQueue.invokeLater( new Runnable() 
-			{
-				@Override
-	            public void run()
-	            {
-					if( mMemoryImageSource != null )
+			@Override
+            public void run()
+            {
+				if( mMemoryImageSource != null )
+				{
+					if( mPaused )
+					{
+						mMemoryImageSource.newPixels( mPausedPixels, mColorModel, 0, mDFTSize );
+					}
+					else
 					{
 						mMemoryImageSource.newPixels( mPixels, mColorModel, 0, mDFTSize );
 					}
-	            }
-			} );
-		}
+				}
+            }
+		} );
     }
-	
-	public class Handler implements MouseListener
-	{
-		@Override
-        public void mouseClicked( MouseEvent e )
-        {
-			//Display context menu to reset the display reset();
-        }
-
-        public void mousePressed( MouseEvent e ) {}
-        public void mouseReleased( MouseEvent e ) {}
-        public void mouseEntered( MouseEvent e ) {}
-        public void mouseExited( MouseEvent e ){}
-	}
-
-	@Override
-    public void settingDeleted( Setting setting ) {}
 }
