@@ -113,6 +113,7 @@ import module.decode.p25.message.tsbk.osp.voice.UnitToUnitAnswerRequest;
 import module.decode.p25.message.tsbk.osp.voice.UnitToUnitVoiceChannelGrant;
 import module.decode.p25.message.tsbk.osp.voice.UnitToUnitVoiceChannelGrantUpdate;
 import module.decode.p25.reference.IPProtocol;
+import module.decode.p25.reference.LinkControlOpcode;
 import module.decode.p25.reference.Response;
 import module.decode.p25.reference.Service;
 import module.decode.p25.reference.Vendor;
@@ -128,6 +129,8 @@ import org.slf4j.LoggerFactory;
 
 import alias.Alias;
 import alias.AliasList;
+import audio.metadata.Metadata;
+import audio.metadata.MetadataType;
 import controller.channel.Channel.ChannelType;
 
 public class P25DecoderState extends DecoderState
@@ -169,9 +172,11 @@ public class P25DecoderState extends DecoderState
 	private String mCurrentChannel = "CURRENT";
 	private long mCurrentChannelFrequency = 0;
 
-	private P25CallEvent mCurrentCallEvent;
 	private ChannelType mChannelType;
 	private Modulation mModulation;
+
+	private P25CallEvent mCurrentCallEvent;
+	private List<String> mCallDetectTalkgroups = new ArrayList<>();
 	
 	public P25DecoderState( AliasList aliasList, 
 							ChannelType channelType,
@@ -221,8 +226,26 @@ public class P25DecoderState extends DecoderState
 	 */
 	private void resetState()
 	{
-		updateFrom( null );
-		updateTo( null );
+		mFromTalkgroup = null;
+		broadcast( ChangedAttribute.FROM_TALKGROUP );
+		
+		mFromAlias = null;
+		broadcast( ChangedAttribute.FROM_TALKGROUP_ALIAS );
+		
+		mToTalkgroup = null;
+		broadcast( ChangedAttribute.TO_TALKGROUP );
+		
+		mToAlias = null;
+		broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
+
+		mCallDetectTalkgroups.clear();
+		
+		if( mCurrentCallEvent != null )
+		{
+			mCurrentCallEvent.end();
+		}
+		
+		mCurrentCallEvent = null;
 	}
 
 	/**
@@ -248,28 +271,28 @@ public class P25DecoderState extends DecoderState
 				processLDU( (LDUMessage)message );
 			}
 
-			/* Terminator Data Unit with Link Control Message */
-			else if( message instanceof TDULinkControlMessage )
-			{
-				processTDULC( (TDULinkControlMessage)message );
-			}
-
 			/* Trunking Signalling Messages */
 			else if( message instanceof TSBKMessage )
 			{
 				processTSBK( (TSBKMessage)message );
 			}
 
-			/* Header Data Unit Message - preceeds voice LDUs */
-			else if( message instanceof HDUMessage )
+			/* Terminator Data Unit with Link Control Message */
+			else if( message instanceof TDULinkControlMessage )
 			{
-				processHDU( (HDUMessage)message );
+				processTDULC( (TDULinkControlMessage)message );
 			}
 
 			/* Packet Data Unit Messages */
 			else if( message instanceof PDUMessage )
 			{
 				processPDU( (PDUMessage)message );
+			}
+
+			/* Header Data Unit Message - preceeds voice LDUs */
+			else if( message instanceof HDUMessage )
+			{
+				processHDU( (HDUMessage)message );
 			}
 
 			/* Terminator Data Unit, or default message if CRC failed */
@@ -286,7 +309,10 @@ public class P25DecoderState extends DecoderState
 	 */
 	private void processTDU( TDUMessage tdu )
 	{
-		broadcast( new DecoderStateEvent( this, Event.CONTINUATION, State.CONTROL ) );
+//		if( mCurrentCallEvent == null )
+//		{
+//			broadcast( new DecoderStateEvent( this, Event.CONTINUATION, State.CONTROL ) );
+//		}
 	}
 
 	/**
@@ -296,56 +322,49 @@ public class P25DecoderState extends DecoderState
 	{
 		if( hdu.isValid() )
 		{
-			State state = State.CALL;
-			
-			if( hdu.isEncrypted() )
-			{
-				state = State.ENCRYPTED;
-			}
+			State state = hdu.isEncrypted() ? State.ENCRYPTED : State.CALL;
 
 			broadcast( new DecoderStateEvent( this, Event.START, state ) );
 
-			updateTo( hdu.getToID() );
+			String to = hdu.getToID();
 
-			if( mChannelType == ChannelType.STANDARD )
+			if( mCurrentCallEvent == null )
 			{
-				StringBuilder sb = new StringBuilder();
-				
-				CallEventType type = CallEventType.CALL;
-				
-				if( hdu.isEncrypted() )
-				{
-					type = CallEventType.ENCRYPTED_CALL;
-					
-					sb.append( "ENCRYPTED WITH " );
-					sb.append( hdu.getEncryption().name() );
-					sb.append( " KEY:" );
-					sb.append( hdu.getKeyID() );
-				}
-				
-				P25CallEvent event = new P25CallEvent.Builder( type )
+				mCurrentCallEvent = new P25CallEvent.Builder( CallEventType.CALL )
 					.aliasList( getAliasList() )
 					.channel( mCurrentChannel )
-					.details( "Trigger:HDU" )
+					.details( ( hdu.isEncrypted() ? "ENCRYPTED " : "" ) )
 					.frequency( mCurrentChannelFrequency )
-					.to( hdu.getToID() )
-					.details( sb.toString() )
+					.to( to )
 					.build();
-				
-				mCurrentCallEvent = event;
-				
-				broadcast( event );
+			
+				broadcast( mCurrentCallEvent );
 			}
+			
+			updateTo( to );
 		}
 	}
 
 	/**
-	 * Terminator Data Unit with Link Control - indicates an end of the call
-	 * sequences with embedded link control messages
+	 * Terminator Data Unit with Link Control - transmitted multiple times at
+	 * beginning or end of call sequence and includes embedded link control messages
 	 */
 	private void processTDULC( TDULinkControlMessage tdulc )
 	{
-		broadcast( new DecoderStateEvent( this, Event.END, State.END ) );
+		if( tdulc.getOpcode() == LinkControlOpcode.CALL_TERMINATION_OR_CANCELLATION )
+		{
+			broadcast( new DecoderStateEvent( this, Event.END, State.END ) );
+			
+			if( mCurrentCallEvent != null )
+			{
+				mCurrentCallEvent.end();
+				mCurrentCallEvent = null;
+			}
+		}
+		else
+		{
+			broadcast( new DecoderStateEvent( this, Event.CONTINUATION, State.CALL ) );
+		}
 		
 		switch( tdulc.getOpcode() )
 		{
@@ -384,6 +403,7 @@ public class P25DecoderState extends DecoderState
 				}
 				break;
 			case CALL_TERMINATION_OR_CANCELLATION:
+				/* This opcode as handled at the beginning of the method */
 				break;
 			case CHANNEL_IDENTIFIER_UPDATE:
 				//TODO: does the activity summary need this message?
@@ -434,20 +454,42 @@ public class P25DecoderState extends DecoderState
 				}
 				break;
 			case GROUP_VOICE_CHANNEL_UPDATE:
-				/* Reflects other call activity on the system: CALL DETECT */
-				if( mChannelType == ChannelType.STANDARD &&
-				    tdulc instanceof GroupVoiceChannelUpdate )
+				/* Used only on trunked systems on the outbound channel, to 
+				 * reflect user activity on other channels.  We process this 
+				 * as a call detect */
+				if( tdulc instanceof GroupVoiceChannelUpdate )
 				{
 					GroupVoiceChannelUpdate gvcu = (GroupVoiceChannelUpdate)tdulc;
+
+					String groupA = gvcu.getGroupAddressA();
+
+					if( !mCallDetectTalkgroups.contains( groupA ) )
+					{
+						broadcast( new P25CallEvent.Builder( CallEventType.CALL_DETECT )
+							.aliasList( getAliasList() )
+							.channel( gvcu.getChannelA() )
+							.details( ( gvcu.isEncrypted() ? "ENCRYPTED" : "" ) )
+							.frequency( gvcu.getDownlinkFrequencyA() )
+							.to( groupA )
+							.build() );
+						
+						mCallDetectTalkgroups.add( groupA );
+					}
 					
-					broadcast( new P25CallEvent.Builder( CallEventType.CALL_DETECT )
-					.aliasList( getAliasList() )
-					.channel( gvcu.getChannelA() )
-					.details( ( gvcu.isEncrypted() ? "ENCRYPTED" : "" ) )
-					.frequency( gvcu.getDownlinkFrequencyA() )
-				    .from( gvcu.getGroupAddressA() )
-					.to( gvcu.getGroupAddressB() )
-					.build() );
+					String groupB = gvcu.getGroupAddressB();
+
+					if( !mCallDetectTalkgroups.contains( groupB ) )
+					{
+						broadcast( new P25CallEvent.Builder( CallEventType.CALL_DETECT )
+							.aliasList( getAliasList() )
+							.channel( gvcu.getChannelB() )
+							.details( ( gvcu.isEncrypted() ? "ENCRYPTED" : "" ) )
+							.frequency( gvcu.getDownlinkFrequencyB() )
+							.to( groupB )
+							.build() );
+						
+						mCallDetectTalkgroups.add( groupB );
+					}
 				}
 				break;
 			case GROUP_VOICE_CHANNEL_UPDATE_EXPLICIT:
@@ -458,31 +500,52 @@ public class P25DecoderState extends DecoderState
 					GroupVoiceChannelUpdateExplicit gvcue = 
 							(GroupVoiceChannelUpdateExplicit)tdulc;
 					
-					broadcast( new P25CallEvent.Builder( CallEventType.CALL_DETECT )
-						.aliasList( getAliasList() )
-						.channel( gvcue.getTransmitChannel() )
-						.details( ( gvcue.isEncrypted() ? "ENCRYPTED" : "" ) )
-						.frequency( gvcue.getDownlinkFrequency() )
-						.to( gvcue.getGroupAddress() )
-						.build() );
+					String group = gvcue.getGroupAddress();
+					
+					if( !mCallDetectTalkgroups.contains( group ) )
+					{
+						broadcast( new P25CallEvent.Builder( CallEventType.CALL_DETECT )
+							.aliasList( getAliasList() )
+							.channel( gvcue.getTransmitChannel() )
+							.details( ( gvcue.isEncrypted() ? "ENCRYPTED" : "" ) )
+							.frequency( gvcue.getDownlinkFrequency() )
+							.to( group )
+							.build() );
+						
+						mCallDetectTalkgroups.add( group );
+					}
 				}
 				break;
 			case GROUP_VOICE_CHANNEL_USER:
-				if( mChannelType == ChannelType.STANDARD &&
-				    tdulc instanceof module.decode.p25.message.tdu.lc.GroupVoiceChannelUser )
+				/* Used on a traffic channel to reflect current call entities */
+				if( tdulc instanceof module.decode.p25.message.tdu.lc.GroupVoiceChannelUser )
 				{
 					module.decode.p25.message.tdu.lc.GroupVoiceChannelUser gvcuser = 
 						(module.decode.p25.message.tdu.lc.GroupVoiceChannelUser)tdulc;
+
+					broadcast( new DecoderStateEvent( this, Event.CONTINUATION, 
+						( gvcuser.isEncrypted() ? State.ENCRYPTED : State.CALL ) ) );
 					
-					broadcast( new P25CallEvent.Builder( CallEventType.CALL_DETECT )
-						.aliasList( getAliasList() )
-						.channel( mCurrentChannel )
-						.details( ( gvcuser.isEncrypted() ? "ENCRYPTED" : "" ) + 
-								  ( gvcuser.isEmergency() ? " EMERGENCY" : "") )
-						.frequency( mCurrentChannelFrequency )
-					    .from( gvcuser.getSourceAddress() )
-						.to( gvcuser.getGroupAddress() )
-						.build() );
+					String from = gvcuser.getSourceAddress();
+					String to = gvcuser.getGroupAddress();
+					
+					if( mCurrentCallEvent == null )
+					{
+						mCurrentCallEvent = new P25CallEvent.Builder( CallEventType.GROUP_CALL )
+							.aliasList( getAliasList() )
+							.channel( mCurrentChannel )
+							.details( ( gvcuser.isEncrypted() ? "ENCRYPTED " : "" ) + 
+									  ( gvcuser.isEmergency() ? "EMERGENCY " : "") )
+							.frequency( mCurrentChannelFrequency )
+						    .from( from )
+							.to( to )
+							.build();
+						
+						broadcast( mCurrentCallEvent );
+					}
+					
+					updateFrom( from );
+					updateTo( to );
 				}
 				break;
 			case MESSAGE_UPDATE:
@@ -687,16 +750,23 @@ public class P25DecoderState extends DecoderState
 					module.decode.p25.message.tdu.lc.TelephoneInterconnectVoiceChannelUser tivcu = 
 						(module.decode.p25.message.tdu.lc.TelephoneInterconnectVoiceChannelUser)tdulc;
 					
-					broadcast( new P25CallEvent.Builder( CallEventType.CALL_DETECT )
-						.aliasList( getAliasList() )
-						.channel( mCurrentChannel )
-						.details( "TELEPHONE INTERCONNECT " + 
-								  ( tivcu.isEncrypted() ? "ENCRYPTED" : "" ) + 
-								  ( tivcu.isEmergency() ? " EMERGENCY" : "") )
-						.frequency( mCurrentChannelFrequency )
-					    .from( null )
-						.to( tivcu.getAddress() )
-						.build() );
+					String to = tivcu.getAddress();
+					
+					if( mCurrentCallEvent == null )
+					{
+						mCurrentCallEvent = new P25CallEvent.Builder( CallEventType.TELEPHONE_INTERCONNECT )
+							.aliasList( getAliasList() )
+							.channel( mCurrentChannel )
+							.details( ( tivcu.isEncrypted() ? "ENCRYPTED" : "" ) + 
+									  ( tivcu.isEmergency() ? " EMERGENCY" : "") )
+							.frequency( mCurrentChannelFrequency )
+							.to( to )
+							.build();
+						
+						broadcast( mCurrentCallEvent );
+					}
+					
+					updateTo( to );
 				}
 				break;
 			case UNIT_AUTHENTICATION_COMMAND:
@@ -752,21 +822,30 @@ public class P25DecoderState extends DecoderState
 				}
 				break;
 			case UNIT_TO_UNIT_VOICE_CHANNEL_USER:
-				if( mChannelType == ChannelType.STANDARD &&
-				    tdulc instanceof module.decode.p25.message.tdu.lc.UnitToUnitVoiceChannelUser )
+				/* Used on traffic channels to indicate the current call entities */
+				if( tdulc instanceof module.decode.p25.message.tdu.lc.UnitToUnitVoiceChannelUser )
 				{
 					module.decode.p25.message.tdu.lc.UnitToUnitVoiceChannelUser uuvcu = 
 						(module.decode.p25.message.tdu.lc.UnitToUnitVoiceChannelUser)tdulc;
+
+					String from = uuvcu.getSourceAddress();
+					String to = uuvcu.getTargetAddress();
 					
-					broadcast( new P25CallEvent.Builder( CallEventType.CALL_DETECT )
-						.aliasList( getAliasList() )
-						.channel( mCurrentChannel )
-						.details( ( uuvcu.isEncrypted() ? "ENCRYPTED" : "" ) + 
-								  ( uuvcu.isEmergency() ? " EMERGENCY" : "" ) )
-						.frequency( mCurrentChannelFrequency )
-					    .from( uuvcu.getSourceAddress() )
-						.to( uuvcu.getTargetAddress() )
-						.build() );
+					if( mCurrentCallEvent != null )
+					{
+						mCurrentCallEvent = new P25CallEvent.Builder( CallEventType.UNIT_TO_UNIT_CALL )
+							.aliasList( getAliasList() )
+							.channel( mCurrentChannel )
+							.details( ( uuvcu.isEncrypted() ? "ENCRYPTED " : "" ) + 
+									  ( uuvcu.isEmergency() ? "EMERGENCY " : "" ) ) 
+							.frequency( mCurrentChannelFrequency )
+						    .from( from )
+							.to( to )
+							.build();
+					}
+					
+					updateFrom( from );
+					updateTo( to );
 				}
 				break;
 			default:
@@ -780,42 +859,59 @@ public class P25DecoderState extends DecoderState
 	 */
 	private void logAlternateVendorMessage( P25Message p25 )
 	{
-		if( p25 instanceof TDULinkControlMessage )
-		{
-			TDULinkControlMessage tdulc = (TDULinkControlMessage)p25;
-			
-			mLog.debug( "TDULC - VENDOR [" + tdulc.getVendor() +
-					"] SPECIFIC FORMAT FOR " + tdulc.getVendorOpcode().getLabel() + 
-					" " + tdulc.getBinaryMessage() );
-		}
-		else if( p25 instanceof LDU1Message )
-		{
-			LDU1Message ldu1 = (LDU1Message)p25;
-			
-			mLog.debug( "LDU1 - VENDOR [" + ldu1.getVendor() +
-					"] SPECIFIC FORMAT FOR " + ldu1.getVendorOpcode().getLabel() + 
-					" " + ldu1.getBinaryMessage() );
-		}
-		else if( p25 instanceof PDUMessage )
-		{
-			PDUMessage pdu = (PDUMessage)p25;
-			
-			mLog.debug( "PDU - VENDOR [" + pdu.getVendor() +
-					"] SPECIFIC FORMAT FOR " + pdu.getVendorOpcode().getLabel() + 
-					" " + pdu.getBinaryMessage() );
-		}
-		else
-		{
-			mLog.debug( "P25 - ALTERNATE VENDOR MESSAGE [" + p25.getClass() + "]" );
-		}
+//		if( p25 instanceof TDULinkControlMessage )
+//		{
+//			TDULinkControlMessage tdulc = (TDULinkControlMessage)p25;
+//			
+//			mLog.debug( "TDULC - VENDOR [" + tdulc.getVendor() +
+//					"] SPECIFIC FORMAT FOR " + tdulc.getVendorOpcode().getLabel() + 
+//					" " + tdulc.getBinaryMessage() );
+//		}
+//		else if( p25 instanceof LDU1Message )
+//		{
+//			LDU1Message ldu1 = (LDU1Message)p25;
+//			
+//			mLog.debug( "LDU1 - VENDOR [" + ldu1.getVendor() +
+//					"] SPECIFIC FORMAT FOR " + ldu1.getVendorOpcode().getLabel() + 
+//					" " + ldu1.getBinaryMessage() );
+//		}
+//		else if( p25 instanceof PDUMessage )
+//		{
+//			PDUMessage pdu = (PDUMessage)p25;
+//			
+//			mLog.debug( "PDU - VENDOR [" + pdu.getVendor() +
+//					"] SPECIFIC FORMAT FOR " + pdu.getVendorOpcode().getLabel() + 
+//					" " + pdu.getBinaryMessage() );
+//		}
+//		else
+//		{
+//			mLog.debug( "P25 - ALTERNATE VENDOR MESSAGE [" + p25.getClass() + "]" );
+//		}
 	}
 	
+	/**
+	 * Processes LDU voice frame messages.  Sends continuation events to keep
+	 * the channel state synchronized and processes the embedded link control
+	 * messages to capture/broadcast peripheral events like paging.
+	 */
 	private void processLDU( LDUMessage ldu )
 	{
 		State state = ( ldu.isValid() && ldu.isEncrypted() ) ? 
 				State.ENCRYPTED : State.CALL;
 
 		broadcast( new DecoderStateEvent( this, Event.CONTINUATION, state ) );
+		
+		if( mCurrentCallEvent == null )
+		{
+			mCurrentCallEvent = new P25CallEvent.Builder( 
+				( state == State.CALL ) ? CallEventType.CALL : CallEventType.ENCRYPTED_CALL )
+					.aliasList( getAliasList() )
+					.channel( mCurrentChannel )
+					.frequency( mCurrentChannelFrequency )
+					.build();
+			
+			broadcast( mCurrentCallEvent );
+		}
 		
 		if( ldu instanceof LDU1Message )
 		{
@@ -919,18 +1015,27 @@ public class P25DecoderState extends DecoderState
 					{
 						module.decode.p25.message.ldu.lc.GroupVoiceChannelUpdate gvcu = 
 								(module.decode.p25.message.ldu.lc.GroupVoiceChannelUpdate)ldu;
-							
-						broadcast( new P25CallEvent.Builder( CallEventType.CALL_DETECT )
+
+						String userA = gvcu.getGroupAddressA();
+						
+						if( !mCallDetectTalkgroups.contains( userA ) )
+						{
+							broadcast( new P25CallEvent.Builder( CallEventType.CALL_DETECT )
 							.aliasList( getAliasList() )
 							.channel( gvcu.getChannelA() )
 							.details( ( gvcu.isEncrypted() ? "ENCRYPTED" : "" ) )
 							.frequency( gvcu.getDownlinkFrequencyA() )
-							.to( gvcu.getGroupAddressA() )
+							.to( userA )
 							.build() );
+							
+							mCallDetectTalkgroups.add( userA );
+						}
 						
 						String userB = gvcu.getGroupAddressB();
 						
-						if( userB != null && !userB.contentEquals( "0000" ) )
+						if( userB != null && 
+							!userB.contentEquals( "0000" ) &&
+							!mCallDetectTalkgroups.contains( userB ) )
 						{
 							broadcast( new P25CallEvent.Builder( CallEventType.CALL_DETECT )
 							.aliasList( getAliasList() )
@@ -939,6 +1044,8 @@ public class P25DecoderState extends DecoderState
 							.frequency( gvcu.getDownlinkFrequencyB() )
 							.to( userB )
 							.build() );
+							
+							mCallDetectTalkgroups.add( userB );
 						}
 					}
 					else
@@ -953,13 +1060,20 @@ public class P25DecoderState extends DecoderState
 						module.decode.p25.message.ldu.lc.GroupVoiceChannelUpdateExplicit gvcue = 
 								(module.decode.p25.message.ldu.lc.GroupVoiceChannelUpdateExplicit)ldu;
 							
-						broadcast( new P25CallEvent.Builder( CallEventType.CALL_DETECT )
+						String group = gvcue.getGroupAddress();
+
+						if( !mCallDetectTalkgroups.contains( group ) )
+						{
+							broadcast( new P25CallEvent.Builder( CallEventType.CALL_DETECT )
 							.aliasList( getAliasList() )
 							.channel( gvcue.getTransmitChannel() )
 							.details( ( gvcue.isEncrypted() ? "ENCRYPTED" : "" ) )
 							.frequency( gvcue.getDownlinkFrequency() )
-							.to( gvcue.getGroupAddress() )
+							.to( group )
 							.build() );
+							
+							mCallDetectTalkgroups.add( group );
+						}
 					}
 					else
 					{
@@ -973,17 +1087,24 @@ public class P25DecoderState extends DecoderState
 					{
 						module.decode.p25.message.ldu.lc.GroupVoiceChannelUser gvcuser = 
 							(module.decode.p25.message.ldu.lc.GroupVoiceChannelUser)ldu;
-						
-						broadcast( new P25CallEvent.Builder( CallEventType.CALL )
-							.aliasList( getAliasList() )
-							.channel( mCurrentChannel )
-							.details( "Trigger:LDU-GROUP_VOICE_CHANNEL_USER " +
-									  ( gvcuser.isEncrypted() ? "ENCRYPTED" : "" ) + 
-									  ( gvcuser.isEmergency() ? " EMERGENCY" : "") )
-							.frequency( mCurrentChannelFrequency )
-						    .from( gvcuser.getSourceAddress() )
-							.to( gvcuser.getGroupAddress() )
-							.build() );
+
+						if( mCurrentCallEvent.getCallEventType() != CallEventType.GROUP_CALL )
+						{
+							mCurrentCallEvent.setCallEventType( CallEventType.GROUP_CALL );
+							broadcast( mCurrentCallEvent );
+						}
+
+						if( mCurrentCallEvent.getDetails() == null )
+						{
+							mCurrentCallEvent.setDetails( 
+									( gvcuser.isEncrypted() ? "ENCRYPTED " : "" ) +
+									( gvcuser.isEmergency() ? "EMERGENCY " : "" ) );
+
+							broadcast( mCurrentCallEvent );
+						}
+
+						updateFrom( gvcuser.getSourceAddress() );
+						updateTo( gvcuser.getGroupAddress() );
 					}
 					else
 					{
@@ -1178,18 +1299,23 @@ public class P25DecoderState extends DecoderState
 					{
 						TelephoneInterconnectVoiceChannelUser tivcu =
 								(TelephoneInterconnectVoiceChannelUser)ldu;
-						
-						broadcast( new P25CallEvent.Builder( CallEventType.CALL )
-							.aliasList( getAliasList() )
-							.channel( mCurrentChannel )
-							.details( "Trigger: LDU-TEL_INT_VOIC_CHAN_USER " +
-							          "TELEPHONE INTERCONNECT " + 
-									  ( tivcu.isEncrypted() ? "ENCRYPTED" : "" ) + 
-									  ( tivcu.isEmergency() ? " EMERGENCY" : "") )
-							.frequency( mCurrentChannelFrequency )
-						    .from( null )
-							.to( tivcu.getAddress() )
-							.build() );
+
+						if( mCurrentCallEvent.getCallEventType() != CallEventType.TELEPHONE_INTERCONNECT )
+						{
+							mCurrentCallEvent.setCallEventType( CallEventType.TELEPHONE_INTERCONNECT );
+							broadcast( mCurrentCallEvent );
+						}
+
+						if( mCurrentCallEvent.getDetails() == null )
+						{
+							mCurrentCallEvent.setDetails( 
+								( tivcu.isEncrypted() ? "ENCRYPTED " : "" ) +
+								( tivcu.isEmergency() ? "EMERGENCY " : "" ) );
+
+							broadcast( mCurrentCallEvent );
+						}
+
+						updateTo( tivcu.getAddress() );
 					}
 					else
 					{
@@ -1254,17 +1380,24 @@ public class P25DecoderState extends DecoderState
 					{
 						UnitToUnitVoiceChannelUser uuvcu = 
 								(UnitToUnitVoiceChannelUser)ldu;
-						
-						broadcast( new P25CallEvent.Builder( CallEventType.CALL )
-							.aliasList( getAliasList() )
-							.channel( mCurrentChannel )
-							.details( "Trigger:LDU-U2U_VOICE_CHAN_USER " +
-									  ( uuvcu.isEncrypted() ? "ENCRYPTED" : "" ) + 
-									  ( uuvcu.isEmergency() ? " EMERGENCY" : "" ) )
-							.frequency( mCurrentChannelFrequency )
-						    .from( uuvcu.getSourceAddress() )
-							.to( uuvcu.getTargetAddress() )
-							.build() );
+
+						if( mCurrentCallEvent.getCallEventType() != CallEventType.UNIT_TO_UNIT_CALL )
+						{
+							mCurrentCallEvent.setCallEventType( CallEventType.UNIT_TO_UNIT_CALL );
+							broadcast( mCurrentCallEvent );
+						}
+
+						if( mCurrentCallEvent.getDetails() == null )
+						{
+							mCurrentCallEvent.setDetails( 
+								( uuvcu.isEncrypted() ? "ENCRYPTED " : "" ) +
+								( uuvcu.isEmergency() ? "EMERGENCY " : "" ) );
+
+							broadcast( mCurrentCallEvent );
+						}
+
+						updateFrom( uuvcu.getSourceAddress() );
+						updateTo( uuvcu.getTargetAddress() );
 					}
 					else
 					{
@@ -2366,7 +2499,7 @@ public class P25DecoderState extends DecoderState
 			case GROUP_VOICE_CHANNEL_GRANT:
 				GroupVoiceChannelGrant gvcg = (GroupVoiceChannelGrant)message;
 
-				event = new P25CallEvent.Builder( CallEventType.CALL )
+				event = new P25CallEvent.Builder( CallEventType.GROUP_CALL )
 					.aliasList( getAliasList() )
 					.channel( gvcg.getChannel() )
 					.details( "Trigger: TSBK-G_V_CH_GRNT " +
@@ -2381,7 +2514,7 @@ public class P25DecoderState extends DecoderState
 				GroupVoiceChannelGrantUpdate gvcgu =
 						(GroupVoiceChannelGrantUpdate)message;
 				
-				event = new P25CallEvent.Builder( CallEventType.CALL )
+				event = new P25CallEvent.Builder( CallEventType.GROUP_CALL )
 					.aliasList( getAliasList() )
 					.channel( gvcgu.getChannel1() )
 					.details( "Trigger: TSBK-G_V_CH_GRNT_UP " +
@@ -2394,7 +2527,7 @@ public class P25DecoderState extends DecoderState
 				if( gvcgu.hasChannelNumber2() )
 				{
 					/* We handle this channel grant independent of the first event */
-					P25CallEvent event2 = new P25CallEvent.Builder( CallEventType.CALL )
+					P25CallEvent event2 = new P25CallEvent.Builder( CallEventType.GROUP_CALL )
 						.aliasList( getAliasList() )
 						.channel( gvcgu.getChannel2() )
 						.details( "Trigger: TSBK-G_V_CH_GRNT_UP#2 " +
@@ -2411,7 +2544,7 @@ public class P25DecoderState extends DecoderState
 				GroupVoiceChannelGrantUpdateExplicit gvcgue = 
 					(GroupVoiceChannelGrantUpdateExplicit)message;
 
-				event = new P25CallEvent.Builder( CallEventType.CALL )
+				event = new P25CallEvent.Builder( CallEventType.GROUP_CALL )
 					.aliasList( getAliasList() )
 					.channel( gvcgue.getTransmitChannelIdentifier() + "-" + 
 							  gvcgue.getTransmitChannelNumber() )
@@ -2452,7 +2585,7 @@ public class P25DecoderState extends DecoderState
 				TelephoneInterconnectVoiceChannelGrant tivcg =
 							(TelephoneInterconnectVoiceChannelGrant)message;
 				
-				event = new P25CallEvent.Builder( CallEventType.TELEPHONE_CALL )
+				event = new P25CallEvent.Builder( CallEventType.TELEPHONE_INTERCONNECT )
 					.aliasList( getAliasList() )
 					.channel( tivcg.getChannel() )
 					.details( "Trigger: TSBK-T_INT_V_CH_GRNT " +
@@ -2467,7 +2600,7 @@ public class P25DecoderState extends DecoderState
 				TelephoneInterconnectVoiceChannelGrantUpdate tivcgu =
 							(TelephoneInterconnectVoiceChannelGrantUpdate)message;
 
-				event = new P25CallEvent.Builder( CallEventType.TELEPHONE_CALL )
+				event = new P25CallEvent.Builder( CallEventType.TELEPHONE_INTERCONNECT )
 					.aliasList( getAliasList() )
 					.channel( tivcgu.getChannelIdentifier() + "-" + 
 							tivcgu.getChannelNumber() )
@@ -2482,7 +2615,7 @@ public class P25DecoderState extends DecoderState
 				UnitToUnitVoiceChannelGrant uuvcg = 
 							(UnitToUnitVoiceChannelGrant)message;
 				
-				event = new P25CallEvent.Builder( CallEventType.CALL )
+				event = new P25CallEvent.Builder( CallEventType.UNIT_TO_UNIT_CALL )
 					.aliasList( getAliasList() )
 					.channel( uuvcg.getChannelIdentifier() + "-" + 
 							uuvcg.getChannelNumber() )
@@ -2498,7 +2631,7 @@ public class P25DecoderState extends DecoderState
 				UnitToUnitVoiceChannelGrantUpdate uuvcgu = 
 							(UnitToUnitVoiceChannelGrantUpdate)message;
 
-				event = new P25CallEvent.Builder( CallEventType.CALL )
+				event = new P25CallEvent.Builder( CallEventType.UNIT_TO_UNIT_CALL )
 					.aliasList( getAliasList() )
 					.channel( uuvcgu.getChannelIdentifier() + "-" + 
 							uuvcgu.getChannelNumber() )
@@ -2514,7 +2647,7 @@ public class P25DecoderState extends DecoderState
 				break;
 		}
 		
-		if( event != null )
+		if( event != null && event.getCallEventType() != CallEventType.DATA_CALL )
 		{
 			broadcast( new TrafficChannelAllocationEvent( this, event ) );
 		}
@@ -2525,24 +2658,38 @@ public class P25DecoderState extends DecoderState
 	 */
 	private void updateTo( String to )
 	{
-		if( to != null &&	
+		mLog.debug( "Updating to [" + to + "]" );
+		if( to != null &&
 			!to.contentEquals( "0000" ) && 
 			!to.contentEquals( "000000" ) &&
 			( mToTalkgroup == null || !mToTalkgroup.contentEquals( to ) ) )
 		{
 			mToTalkgroup = to;
 			broadcast( ChangedAttribute.TO_TALKGROUP );
-			
+
+			if( mCurrentCallEvent != null &&
+				( mCurrentCallEvent.getToID() == null ||
+				  !mCurrentCallEvent.getToID().contentEquals( to ) ) )
+			{
+				mCurrentCallEvent.setToID( to );
+				broadcast( mCurrentCallEvent );
+			}
+
 			if( hasAliasList() )
 			{
-				mToAlias = getAliasList().getTalkgroupAlias( to );
+				mToAlias = getAliasList().getTalkgroupAlias( mToTalkgroup );
+				mLog.debug( "To Alias: " + mToAlias );
 			}
 			else
 			{
+				mLog.debug( "To Alias: no alias list" );
 				mToAlias = null;
 			}
 			
 			broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
+
+			/* Send audio metadata update */
+			broadcast( new Metadata( MetadataType.TO, to, mToAlias, true ) );
 		}
 	}
 
@@ -2551,18 +2698,25 @@ public class P25DecoderState extends DecoderState
 	 */
 	private void updateFrom( String from )
 	{
-		if( from != null &&	
+		if( from != null && 
 			!from.contentEquals( "0000" ) && 
 			!from.contentEquals( "000000" ) &&
 			( mFromTalkgroup == null || !mFromTalkgroup.contentEquals( from ) ) )
 		{
 			mFromTalkgroup = from;
-			
 			broadcast( ChangedAttribute.FROM_TALKGROUP );
+			
+			if( mCurrentCallEvent != null &&
+				mCurrentCallEvent.getFromID() == null ||
+				!mCurrentCallEvent.getFromID().contentEquals( from ) )
+			{
+				mCurrentCallEvent.setFromID( from );
+				broadcast( mCurrentCallEvent );
+			}
 			
 			if( hasAliasList() )
 			{
-				mFromAlias = getAliasList().getTalkgroupAlias( from );
+				mFromAlias = getAliasList().getTalkgroupAlias( mFromTalkgroup );
 			}
 			else
 			{
@@ -2570,6 +2724,9 @@ public class P25DecoderState extends DecoderState
 			}
 			
 			broadcast( ChangedAttribute.FROM_TALKGROUP_ALIAS );
+
+			/* Send audio metadata update */
+			broadcast( new Metadata( MetadataType.FROM, from, mFromAlias, true ) );
 		}
 	}
 	
@@ -2959,6 +3116,17 @@ public class P25DecoderState extends DecoderState
 						
 						mToTalkgroup = allocationEvent.getCallEvent().getToID();
 						broadcast( ChangedAttribute.TO_TALKGROUP );
+
+						if( allocationEvent.getCallEvent().hasAliasList() )
+						{
+							AliasList aliasList = allocationEvent.getCallEvent().getAliasList();
+							
+							mFromAlias = aliasList.getTalkgroupAlias( mFromTalkgroup );
+							broadcast( ChangedAttribute.FROM_TALKGROUP_ALIAS );
+							
+							mToAlias = aliasList.getTalkgroupAlias( mToTalkgroup );
+							broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
+						}
 					}
 				}
 				break;

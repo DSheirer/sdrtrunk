@@ -34,12 +34,12 @@ public class P25DecoderPanel extends DecoderPanel
     private static final long serialVersionUID = 1L;
 
     private JLabel mProtocol;
-    private JLabel mFrom = new JLabel( " " );
-    private JLabel mFromAlias = new JLabel( " " );
-    
-    private JLabel mNAC = new JLabel( "NAC:" );
     private JLabel mTo = new JLabel( " " );
     private JLabel mToAlias = new JLabel( " " );
+    
+    private JLabel mNAC = new JLabel( "NAC:" );
+    private JLabel mFrom = new JLabel( " " );
+    private JLabel mFromAlias = new JLabel( " " );
     
     private JLabel mSystem = new JLabel( "SYS:" );
     private JLabel mSite = new JLabel( "Site:" );
@@ -65,20 +65,20 @@ public class P25DecoderPanel extends DecoderPanel
     	mProtocol.setFont( mFontDecoder );
 		mProtocol.setForeground( mColorLabelDecoder );
 
-		mFrom.setFont( mFontDecoder );
-		mFrom.setForeground( mColorLabelDecoder );
-		
-		mFromAlias.setFont( mFontDecoder );
-		mFromAlias.setForeground( mColorLabelDecoder );
-
-		mNAC.setFont( mFontDetails );
-		mNAC.setForeground( mColorLabelDecoder );
-
 		mTo.setFont( mFontDecoder );
 		mTo.setForeground( mColorLabelDecoder );
 		
 		mToAlias.setFont( mFontDecoder );
 		mToAlias.setForeground( mColorLabelDecoder );
+
+		mNAC.setFont( mFontDetails );
+		mNAC.setForeground( mColorLabelDecoder );
+
+		mFrom.setFont( mFontDecoder );
+		mFrom.setForeground( mColorLabelDecoder );
+		
+		mFromAlias.setFont( mFontDecoder );
+		mFromAlias.setForeground( mColorLabelDecoder );
 
 		mSystem.setFont( mFontDetails );
 		mSystem.setForeground( mColorLabelDecoder );
@@ -90,12 +90,12 @@ public class P25DecoderPanel extends DecoderPanel
 		mSite.setForeground( mColorLabelDecoder );
 
 		add( mProtocol );
-		add( mFrom );
-		add( mFromAlias, "wrap" );
-		
-		add( mNAC );
 		add( mTo );
 		add( mToAlias, "wrap" );
+		
+		add( mNAC );
+		add( mFrom );
+		add( mFromAlias, "wrap" );
 		
 		add( mSystem );
 		add( mSite );
@@ -133,7 +133,14 @@ public class P25DecoderPanel extends DecoderPanel
 						mSiteAlias.setText( state.getSiteAlias() );
 						break;
 					case FROM_TALKGROUP:
-						mFrom.setText( state.getFromTalkgroup() );
+						if( state.getFromTalkgroup() == null )
+						{
+							mFrom.setText( " " );
+						}
+						else
+						{
+							mFrom.setText( state.getFromTalkgroup() );
+						}
 						break;
 					case FROM_TALKGROUP_ALIAS:
 						Alias from = state.getFromAlias();
@@ -146,12 +153,19 @@ public class P25DecoderPanel extends DecoderPanel
 						}
 						else
 						{
-							mFromAlias.setText( null );
+							mFromAlias.setText( " " );
 							mFromAlias.setIcon( null );
 						}
 						break;
 					case TO_TALKGROUP:
-						mTo.setText( state.getToTalkgroup() );
+						if( state.getToTalkgroup() == null )
+						{
+							mTo.setText( " " );
+						}
+						else
+						{
+							mTo.setText( state.getToTalkgroup() );
+						}
 						break;
 					case TO_TALKGROUP_ALIAS:
 						Alias to = state.getToAlias();
@@ -164,7 +178,7 @@ public class P25DecoderPanel extends DecoderPanel
 						}
 						else
 						{
-							mToAlias.setText( null );
+							mToAlias.setText( " " );
 							mToAlias.setIcon( null );
 						}
 						break;

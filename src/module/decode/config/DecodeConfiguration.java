@@ -42,7 +42,7 @@ import controller.config.Configuration;
 public abstract class DecodeConfiguration extends Configuration
 {
 	public static final int DEFAULT_CALL_TIMEOUT_SECONDS = 45;
-	public static final int CALL_TIMEOUT_MINIMUM = 10;
+	public static final int CALL_TIMEOUT_MINIMUM = 1;
 	public static final int CALL_TIMEOUT_MAXIMUM = 300; //5 minutes
 	
 	public static final int TRAFFIC_CHANNEL_LIMIT_DEFAULT = 3;

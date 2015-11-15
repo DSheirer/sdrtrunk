@@ -59,37 +59,37 @@ public class RecorderManager implements Listener<AudioPacket>
 	{
 		if( audioPacket.hasAudioMetadata() && 
 				audioPacket.getAudioMetadata().isRecordable() )
+		{
+			String identifier = audioPacket.getAudioMetadata().getIdentifier();
+
+			if( mRecorders.containsKey( identifier ) )
 			{
-				String identifier = audioPacket.getAudioMetadata().getIdentifier();
+				RealBufferWaveRecorder recorder = mRecorders.get( identifier );
 
-				if( mRecorders.containsKey( identifier ) )
+				if( audioPacket.getType() == AudioPacket.Type.AUDIO )
 				{
-					RealBufferWaveRecorder recorder = mRecorders.get( identifier );
-
-					if( audioPacket.getType() == AudioPacket.Type.AUDIO )
-					{
-						recorder.receive( audioPacket.getAudioBuffer() );
-					}
-					else if( audioPacket.getType() == AudioPacket.Type.END )
-					{
-						mRecorders.remove( identifier );
-						recorder.stop();
-					}
-				}
-				else if( audioPacket.getType() == AudioPacket.Type.AUDIO )
-				{
-					String filePrefix = getFilePrefix( audioPacket );
-					
-					RealBufferWaveRecorder recorder = 
-						new RealBufferWaveRecorder( mThreadPoolManager, 
-								AUDIO_SAMPLE_RATE, filePrefix );
-					
-					recorder.start();
-
 					recorder.receive( audioPacket.getAudioBuffer() );
-					mRecorders.put( identifier, recorder );
+				}
+				else if( audioPacket.getType() == AudioPacket.Type.END )
+				{
+					mRecorders.remove( identifier );
+					recorder.stop();
 				}
 			}
+			else if( audioPacket.getType() == AudioPacket.Type.AUDIO )
+			{
+				String filePrefix = getFilePrefix( audioPacket );
+				
+				RealBufferWaveRecorder recorder = 
+					new RealBufferWaveRecorder( mThreadPoolManager, 
+							AUDIO_SAMPLE_RATE, filePrefix );
+				
+				recorder.start();
+
+				recorder.receive( audioPacket.getAudioBuffer() );
+				mRecorders.put( identifier, recorder );
+			}
+		}
 	}
 	
 	/**

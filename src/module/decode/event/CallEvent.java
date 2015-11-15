@@ -273,6 +273,7 @@ public abstract class CallEvent implements Comparable<CallEvent>
 		ENCRYPTED_CALL( "Encrypted Call" ),
 		FUNCTION( "Function" ),
 		GPS( "GPS" ),
+		GROUP_CALL( "Group Call" ),
 		ID_ANI( "ANI" ),
 		ID_UNIQUE( "Unique ID" ),
 		PAGE( "Page" ),
@@ -283,7 +284,8 @@ public abstract class CallEvent implements Comparable<CallEvent>
 		SDM( "Short Data Message" ),
 		STATION_ID( "Station ID" ),
 		STATUS( "Status" ),
-		TELEPHONE_CALL( "Telephone Call" ),
+		TELEPHONE_INTERCONNECT( "Telephone Interconnect" ),
+		UNIT_TO_UNIT_CALL( "Unit To Unit Call" ),
 		UNKNOWN( "Unknown" ),
 		INVALID( "Invalid" );
 		

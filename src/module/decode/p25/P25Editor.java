@@ -17,12 +17,12 @@
  ******************************************************************************/
 package module.decode.p25;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
+import javax.swing.JSlider;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import module.decode.DecodeEditor;
 import module.decode.config.DecodeConfiguration;
@@ -43,6 +43,10 @@ public class P25Editor extends DecodeEditor
 	private static final long serialVersionUID = 1L;
     
     private JComboBox<P25_LSMDecoder.Modulation> mComboModulation;
+    private JLabel mCallTimeoutLabel;
+    private JSlider mCallTimeout;
+    private JLabel mTrafficChannelPoolSizeLabel;
+    private JSlider mTrafficChannelPoolSize;
 
     public P25Editor( DecodeConfiguration config )
 	{
@@ -60,23 +64,62 @@ public class P25Editor extends DecodeEditor
 		
 		mComboModulation.setSelectedItem( ((DecodeConfigP25Phase1)mConfig).getModulation() );
 		
-		mComboModulation.addActionListener( new ActionListener() 
-		{
-			@Override
-            public void actionPerformed( ActionEvent e )
-            {
-				P25_LSMDecoder.Modulation selected = mComboModulation
-						.getItemAt( mComboModulation.getSelectedIndex() );
-				
-				if( selected != null )
-				{
-					((DecodeConfigP25Phase1)mConfig).setModulation( selected );
-				}
-            }
-		} );
-		
 		add( new JLabel( "Modulation:" ) );
 		add( mComboModulation, "wrap" );
+		
+		mCallTimeout = new JSlider( JSlider.HORIZONTAL,
+				DecodeConfiguration.CALL_TIMEOUT_MINIMUM,
+				DecodeConfiguration.CALL_TIMEOUT_MAXIMUM,
+				DecodeConfiguration.DEFAULT_CALL_TIMEOUT_SECONDS );
+
+		mCallTimeout.setMajorTickSpacing( 90 );
+		mCallTimeout.setMinorTickSpacing( 10 );
+		mCallTimeout.setPaintTicks( true );
+		
+		mCallTimeout.setLabelTable( mCallTimeout.createStandardLabels( 100, 100 ) );
+		mCallTimeout.setPaintLabels( true );
+		
+		mCallTimeoutLabel = new JLabel( "Call Timeout: " + mCallTimeout.getValue() + " " );
+		
+		mCallTimeout.addChangeListener( new ChangeListener()
+		{
+			@Override
+			public void stateChanged( ChangeEvent e )
+			{
+				mCallTimeoutLabel.setText( "Call Timeout: " + mCallTimeout.getValue() );
+			}
+		} );
+		
+		add( mCallTimeoutLabel );
+		add( mCallTimeout, "wrap,grow" );
+		
+		mTrafficChannelPoolSize = new JSlider( JSlider.HORIZONTAL,
+				DecodeConfiguration.TRAFFIC_CHANNEL_LIMIT_MINIMUM,
+				DecodeConfiguration.TRAFFIC_CHANNEL_LIMIT_MAXIMUM,
+				DecodeConfiguration.TRAFFIC_CHANNEL_LIMIT_DEFAULT );
+		
+		mTrafficChannelPoolSize.setMajorTickSpacing( 10 );
+		mTrafficChannelPoolSize.setMinorTickSpacing( 1 );
+		mTrafficChannelPoolSize.setPaintTicks( true );
+		
+		mTrafficChannelPoolSize.setLabelTable( mTrafficChannelPoolSize.createStandardLabels( 10, 10 ) );
+		mTrafficChannelPoolSize.setPaintLabels( true );
+		
+		mTrafficChannelPoolSizeLabel = new JLabel( "Traffic Channel Pool Size: " + mTrafficChannelPoolSize.getValue() + " " );
+		
+		mTrafficChannelPoolSize.addChangeListener( new ChangeListener()
+		{
+			@Override
+			public void stateChanged( ChangeEvent e )
+			{
+				mTrafficChannelPoolSizeLabel.setText( "Traffic Channel Pool Size: " + mTrafficChannelPoolSize.getValue() );
+			}
+		} );
+		
+		add( mTrafficChannelPoolSizeLabel );
+		add( mTrafficChannelPoolSize, "wrap,grow" );
+		
+		reset();
 	}
 
 	/**
@@ -98,5 +141,29 @@ public class P25Editor extends DecodeEditor
 				
 			}
 		}
+    }
+	
+	@Override
+    public void save()
+	{
+		DecodeConfigP25Phase1 config = (DecodeConfigP25Phase1)mConfig;
+
+		config.setModulation( (Modulation)mComboModulation.getSelectedItem() );
+		
+		config.setCallTimeout( mCallTimeout.getValue() );
+		
+		config.setTrafficChannelPoolSize( mTrafficChannelPoolSize.getValue() );
+    }
+
+	@Override
+    public void reset()
+    {
+		DecodeConfigP25Phase1 config = (DecodeConfigP25Phase1)mConfig;
+
+		mComboModulation.setSelectedItem( config.getModulation() );
+
+		mCallTimeout.setValue( config.getCallTimeout() );
+		
+		mTrafficChannelPoolSize.setValue( config.getTrafficChannelPoolSize() );
     }
 }

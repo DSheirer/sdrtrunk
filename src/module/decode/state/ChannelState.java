@@ -163,9 +163,11 @@ public class ChannelState extends Module implements ICallEventProvider,
 		return mState;
 	}
 	
-	private boolean isEndingState()
+	private boolean isIdleOrEndingState()
 	{
-		return mState == State.FADE || mState == State.END;
+		return mState == State.FADE || 
+			   mState == State.END ||
+			   mState == State.IDLE;
 	}
 	
 
@@ -568,7 +570,7 @@ public class ChannelState extends Module implements ICallEventProvider,
 						mSquelchLocked = true;
 						break;
 					case CONTINUATION:
-						if( isEndingState() )
+						if( isIdleOrEndingState() )
 						{
 							setState( event.getState() );
 						}

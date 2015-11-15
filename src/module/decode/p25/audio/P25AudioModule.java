@@ -12,8 +12,6 @@ import module.decode.p25.message.tdu.lc.TDULinkControlMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import controller.channel.ChannelEvent;
-import controller.channel.IChannelEventListener;
 import sample.Listener;
 import audio.AudioFormats;
 import audio.AudioPacket;
@@ -21,9 +19,14 @@ import audio.IAudioPacketProvider;
 import audio.metadata.AudioMetadata;
 import audio.metadata.IMetadataListener;
 import audio.metadata.Metadata;
+import audio.squelch.ISquelchStateListener;
+import audio.squelch.SquelchState;
+import controller.channel.ChannelEvent;
+import controller.channel.IChannelEventListener;
 
 public class P25AudioModule extends Module implements Listener<Message>, 
-	IAudioPacketProvider, IMessageListener, IChannelEventListener, IMetadataListener
+	IAudioPacketProvider, IMessageListener, IChannelEventListener, 
+	IMetadataListener, ISquelchStateListener
 {
 	private final static Logger mLog = LoggerFactory.getLogger( P25AudioModule.class );
 
@@ -40,6 +43,7 @@ public class P25AudioModule extends Module implements Listener<Message>,
 	private Listener<AudioPacket> mAudioPacketListener;
 	private AudioMetadata mAudioMetadata;
 	private ChannelEventListener mChannelEventListener = new ChannelEventListener();
+	private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
 
 	public P25AudioModule( boolean record )
 	{
@@ -53,6 +57,12 @@ public class P25AudioModule extends Module implements Listener<Message>,
 	public Listener<Message> getMessageListener()
 	{
 		return this;
+	}
+
+	@Override
+	public Listener<SquelchState> getSquelchStateListener()
+	{
+		return mSquelchStateListener;
 	}
 
 	@Override
@@ -105,7 +115,7 @@ public class P25AudioModule extends Module implements Listener<Message>,
 					for( byte[] frame: ((LDUMessage)message).getIMBEFrames() )
 					{
 						float[] audio = mAudioConverter.decode( frame );
-
+						
 						mAudioPacketListener.receive( 
 								new AudioPacket( audio, mAudioMetadata ) );
 					}
@@ -134,8 +144,10 @@ public class P25AudioModule extends Module implements Listener<Message>,
 			
 			library = (AudioConversionLibrary)temp.newInstance();
 			
-			if( ( library.getMajorVersion() == 0 && library.getMinorVersion() >= 3 ) ||
-				  library.getMajorVersion() >= 1 )
+			if( ( library.getMajorVersion() == 0 && 
+				  library.getMinorVersion() >= 3 && 
+				  library.getBuildVersion() >= 1 ) ||
+				library.getMajorVersion() >= 1 )
 			{
 				mAudioConverter = library.getAudioConverter( IMBE_CODEC, 
 						AudioFormats.PCM_SIGNED_48KHZ_16BITS_MONO );
@@ -163,7 +175,7 @@ public class P25AudioModule extends Module implements Listener<Message>,
 			}
 			else
 			{
-				mLog.debug( "JMBE library version 0.3.x or higher is required" );
+				mLog.debug( "JMBE library version 0.3.1 or higher is required - found: " + library.getVersion() );
 			}
 		} 
 		catch ( ClassNotFoundException e1 )
@@ -236,6 +248,27 @@ public class P25AudioModule extends Module implements Listener<Message>,
 					break;
 				default:
 					break;
+			}
+		}
+	}
+	
+	/**
+	 * Wrapper for squelch state listener.  Internally, the P25 audio module
+	 * doesn't have a squelch state.  If there are IMBE audio frames, we have 
+	 * audio.  We use this listener to signal to the recorder manager that the
+	 * channel state is resetting and it should end the recording.
+	 */
+	public class SquelchStateListener implements Listener<SquelchState>
+	{
+		@Override
+		public void receive( SquelchState state )
+		{
+			if( state == SquelchState.SQUELCH && mAudioPacketListener != null )
+			{
+				mAudioPacketListener.receive( new AudioPacket( AudioPacket.Type.END, 
+						mAudioMetadata.copyOf() ) );
+
+				mAudioMetadata.reset();
 			}
 		}
 	}
