@@ -241,7 +241,14 @@ public class ChannelState extends Module implements ICallEventProvider,
 	 */
 	private void updateResetTimeout()
 	{
-		mResetTimeout = System.currentTimeMillis() + RESET_TIMEOUT_DELAY;
+		if( mChannelType == ChannelType.TRAFFIC )
+		{
+			mResetTimeout = System.currentTimeMillis();
+		}
+		else
+		{
+			mResetTimeout = System.currentTimeMillis() + RESET_TIMEOUT_DELAY;
+		}
 	}
 	
 	/**

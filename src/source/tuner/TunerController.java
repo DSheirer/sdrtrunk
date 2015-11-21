@@ -111,6 +111,18 @@ public abstract class TunerController implements Tunable
 	{
 		return mFrequencyController.getMaximumFrequency();
 	}
+	
+	public long getMinTunedFrequency()
+	{
+		return mFrequencyController.getFrequency() - 
+			   ( mFrequencyController.getBandwidth() / 2 );
+	}
+
+	public long getMaxTunedFrequency()
+	{
+		return mFrequencyController.getFrequency() + 
+			   ( mFrequencyController.getBandwidth() / 2 );
+	}
 
 	/**
 	 * Indicates if the tuner can accomodate this new channel frequency and

@@ -38,7 +38,6 @@ public class P25AudioModule extends Module implements Listener<Message>,
 	private int mSourceID;
 	private static boolean mLibraryLoadStatusLogged = false;
 	private boolean mCanConvertAudio = false;
-	private boolean mEncryptedAudio = false;
 	private AudioConverter mAudioConverter;
 	private Listener<AudioPacket> mAudioPacketListener;
 	private AudioMetadata mAudioMetadata;
@@ -105,25 +104,16 @@ public class P25AudioModule extends Module implements Listener<Message>,
 				/* If we detect a valid LDU message with the encryption flag
 				 * set to true, we toggle the encrypted audio state until we 
 				 * receive the first TDU or TDULC message, then reset it. */
-				if( ldu.isValid() && ldu.isEncrypted() )
-				{
-					mEncryptedAudio = true;
-				}
-
-				if( !mEncryptedAudio && mAudioConverter != null )
+				if( !( ldu.isValid() && ldu.isEncrypted() ) )
 				{
 					for( byte[] frame: ((LDUMessage)message).getIMBEFrames() )
 					{
 						float[] audio = mAudioConverter.decode( frame );
-						
+
 						mAudioPacketListener.receive( 
-								new AudioPacket( audio, mAudioMetadata ) );
+								new AudioPacket( audio, mAudioMetadata.copyOf() ) );
 					}
 				}
-			}
-			else if( message instanceof TDUMessage || message instanceof TDULinkControlMessage )
-			{
-				mEncryptedAudio = false;
 			}
 		}
 	}

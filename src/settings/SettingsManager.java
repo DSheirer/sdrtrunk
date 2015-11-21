@@ -376,61 +376,64 @@ public class SettingsManager
 	 */
 	public ImageIcon getImageIcon( String name, int height )
 	{
-		String mergedName = name + height;
-		
-		if( mResizedIcons.containsKey( mergedName ) )
+		if( name != null )
 		{
-			return mResizedIcons.get( mergedName );
-		}
-		
-		MapIcon mapIcon = mIcons.get( name );
-
-		if( mapIcon != null )
-		{
-			if( mapIcon.getImageIcon().getIconHeight() > height )
+			String mergedName = name + height;
+			
+			if( mResizedIcons.containsKey( mergedName ) )
 			{
-				ImageIcon scaled = getScaledIcon( mapIcon.getImageIcon(), height );
-
-        		mResizedIcons.put( mergedName, scaled );
-        		
-        		return scaled;
+				return mResizedIcons.get( mergedName );
 			}
-			else
-			{
-				mResizedIcons.put( mergedName, mapIcon.getImageIcon() );
-			}
-		}
+			
+			MapIcon mapIcon = mIcons.get( name );
 
-		/* Use the default Icon */
-		String mergedDefault = mCurrentDefaultIconName + height;
-		
-		if( mResizedIcons.containsKey( mergedDefault ) )
-		{
-			return mResizedIcons.get( mergedDefault );
-		}
-		else
-		{
-			MapIcon defaultIcon = mIcons.get( mCurrentDefaultIconName );
-
-			if( defaultIcon != null )
+			if( mapIcon != null )
 			{
-				if( defaultIcon.getImageIcon().getIconHeight() > height )
+				if( mapIcon.getImageIcon().getIconHeight() > height )
 				{
-					ImageIcon scaledDefault = getScaledIcon( defaultIcon.getImageIcon(), height );
-					mResizedIcons.put( mergedDefault, scaledDefault );
-					return scaledDefault;
+					ImageIcon scaled = getScaledIcon( mapIcon.getImageIcon(), height );
+
+	        		mResizedIcons.put( mergedName, scaled );
+	        		
+	        		return scaled;
 				}
 				else
 				{
-					mResizedIcons.put( mergedDefault, defaultIcon.getImageIcon() );
-					return defaultIcon.getImageIcon();
+					mResizedIcons.put( mergedName, mapIcon.getImageIcon() );
 				}
 			}
-		}
 
-		/* Something happened ... the above should always return an icon */
-		mLog.error( "SettingsManager - couldn't return an icon named [" + 
-				name + "] of heigh [" + height + "]" );
+			/* Use the default Icon */
+			String mergedDefault = mCurrentDefaultIconName + height;
+			
+			if( mResizedIcons.containsKey( mergedDefault ) )
+			{
+				return mResizedIcons.get( mergedDefault );
+			}
+			else
+			{
+				MapIcon defaultIcon = mIcons.get( mCurrentDefaultIconName );
+
+				if( defaultIcon != null )
+				{
+					if( defaultIcon.getImageIcon().getIconHeight() > height )
+					{
+						ImageIcon scaledDefault = getScaledIcon( defaultIcon.getImageIcon(), height );
+						mResizedIcons.put( mergedDefault, scaledDefault );
+						return scaledDefault;
+					}
+					else
+					{
+						mResizedIcons.put( mergedDefault, defaultIcon.getImageIcon() );
+						return defaultIcon.getImageIcon();
+					}
+				}
+			}
+
+			/* Something happened ... the above should always return an icon */
+			mLog.error( "SettingsManager - couldn't return an icon named [" + 
+					name + "] of heigh [" + height + "]" );
+		}
 
 		return null;
 	}

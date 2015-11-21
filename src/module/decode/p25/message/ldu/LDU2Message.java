@@ -76,7 +76,10 @@ public class LDU2Message extends LDUMessage
 	@Override
 	public boolean isEncrypted()
 	{
-		return getEncryption() != Encryption.UNENCRYPTED;
+		Encryption encryption = getEncryption();
+		
+		return encryption != Encryption.UNENCRYPTED &&
+			   encryption != Encryption.UNKNOWN;
 	}
 	
 	private void checkCRC()

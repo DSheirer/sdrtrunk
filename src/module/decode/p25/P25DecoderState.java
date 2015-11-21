@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -177,6 +178,7 @@ public class P25DecoderState extends DecoderState
 
 	private P25CallEvent mCurrentCallEvent;
 	private List<String> mCallDetectTalkgroups = new ArrayList<>();
+	private Map<String,P25CallEvent> mChannelCallMap = new HashMap<>();
 	
 	public P25DecoderState( AliasList aliasList, 
 							ChannelType channelType,
@@ -254,6 +256,90 @@ public class P25DecoderState extends DecoderState
 	@Override
 	public void init()
 	{
+	}
+
+	/**
+	 * Indicates if there a call event exists for the specified channel and
+	 * from and to talkgroup identifiers.
+	 * 
+	 * @param channel - channel number
+	 * @param from user id
+	 * @param to talkgroup or user id
+	 * @param time current in millis
+	 * @return true if there is a call event
+	 */
+	public boolean hasCallEvent( String channel, String from, String to )
+	{
+		boolean hasEvent = false;
+		
+		if( mChannelCallMap.containsKey( channel ) )
+		{
+			P25CallEvent event = mChannelCallMap.get( channel );
+			
+			if( to != null && 
+				event.getToID() != null && 
+				to.contentEquals( event.getToID() ) )
+			{
+				if( from != null )
+				{
+					if( event.getFromID() == null )
+					{
+						hasEvent = true;
+					}
+					else if( from.contentEquals( event.getFromID() ) )
+					{
+						hasEvent = true;
+					}
+				}
+				else if( event.getFromID() == null )
+				{
+					hasEvent = true;
+				}
+			}
+		}
+		
+		return hasEvent;
+	}
+
+	/**
+	 * Adds the channel and event to the current channel call map.  If an entry
+	 * already exists, terminates the event and broadcasts the update.
+	 * 
+	 * @param channel for the call
+	 * @param event to place in the map
+	 */
+	public void registerCallEvent( P25CallEvent event )
+	{
+		if( mChannelCallMap.containsKey( event.getChannel() ) )
+		{
+			P25CallEvent previousEvent = mChannelCallMap.remove( event.getChannel() );
+			
+			previousEvent.end();
+			
+			broadcast( previousEvent );
+		}
+		
+		mChannelCallMap.put( event.getChannel(), event );
+	}
+	
+	public void updateCallEvent( String channel, String from, String to )
+	{
+		P25CallEvent event = mChannelCallMap.get( channel );
+		
+		if( event != null && 
+			to != null && 
+			event.getToID() != null && 
+			event.getToID().contentEquals( to ) )
+		{
+			if( event.getFromID() == null &&
+				from != null &&
+				!from.contentEquals( "0000" ) &&
+				!from.contentEquals( "000000" ) )
+			{
+				event.setFromID( from );
+				broadcast( event );
+			}
+		}
 	}
 
 	/**
@@ -1937,12 +2023,10 @@ public class P25DecoderState extends DecoderState
 					TelephoneInterconnectChannelGrantExplicit ticge =
 								(TelephoneInterconnectChannelGrantExplicit)pdu;
 					
-					CallEvent callEvent = new P25CallEvent.Builder( CallEventType.CALL )
+					CallEvent callEvent = new P25CallEvent.Builder( CallEventType.TELEPHONE_INTERCONNECT )
 						.aliasList( getAliasList() )
 						.channel( ticge.getTransmitChannel() )
-						.details( "Trigger: PDU-TEL_INT_V_CH_GRNT " + 
-								  "TELEPHONE CALL " + 
-								  ( ticge.isEncrypted() ? "ENCRYPTED" : "" ) + 
+						.details( ( ticge.isEncrypted() ? "ENCRYPTED" : "" ) + 
 								  ( ticge.isEmergency() ? " EMERGENCY" : "") +
 								  " CALL TIMER:" + ticge.getCallTimer() )
 					    .frequency( ticge.getDownlinkFrequency() )
@@ -2017,11 +2101,10 @@ public class P25DecoderState extends DecoderState
 						UnitToUnitVoiceChannelGrantExtended uuvcge = 
 								(UnitToUnitVoiceChannelGrantExtended)pdu;
 					
-						CallEvent uuCallEvent = new P25CallEvent.Builder( CallEventType.CALL )
+						CallEvent uuCallEvent = new P25CallEvent.Builder( CallEventType.UNIT_TO_UNIT_CALL )
 										.aliasList( getAliasList() )
 										.channel( uuvcge.getTransmitChannel() )
-										.details( "Trigger:PDU-U2U_V-CH_GRNT " +
-												  ( uuvcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
+										.details( ( uuvcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
 												  ( uuvcge.isEmergency() ? " EMERGENCY" : "") )
 									    .frequency( uuvcge.getDownlinkFrequency() )
 									    .from( uuvcge.getSourceWACN() + "-" +
@@ -2043,11 +2126,10 @@ public class P25DecoderState extends DecoderState
 						UnitToUnitVoiceChannelGrantUpdateExtended uuvcgue = 
 								(UnitToUnitVoiceChannelGrantUpdateExtended)pdu;
 		
-						broadcast( new P25CallEvent.Builder( CallEventType.CALL )
+						broadcast( new P25CallEvent.Builder( CallEventType.UNIT_TO_UNIT_CALL )
 										.aliasList( getAliasList() )
 										.channel( uuvcgue.getTransmitChannel() )
-										.details( "Trigger: PDU-U2U_V_CH_G_U " +
-												  ( uuvcgue.isEncrypted() ? "ENCRYPTED" : "" ) + 
+										.details( ( uuvcgue.isEncrypted() ? "ENCRYPTED" : "" ) + 
 												  ( uuvcgue.isEmergency() ? " EMERGENCY" : "") )
 									    .frequency( uuvcgue.getDownlinkFrequency() )
 									    .from( uuvcgue.getSourceWACN() + "-" +
@@ -2479,177 +2561,361 @@ public class P25DecoderState extends DecoderState
 	 */
 	private void processTSBKChannelGrant( TSBKMessage message )
 	{
-		P25CallEvent event = null;
+		String channel = null;
+		String from = null;
+		String to = null;
 		
 		switch( message.getOpcode() )
 		{
 			case GROUP_DATA_CHANNEL_GRANT:
 				GroupDataChannelGrant gdcg = (GroupDataChannelGrant)message;
 
-				event =	new P25CallEvent.Builder( CallEventType.DATA_CALL )
-					.aliasList( getAliasList() )
-					.channel( gdcg.getChannel() )
-					.details( ( gdcg.isEncrypted() ? "ENCRYPTED" : "" ) + 
-							  ( gdcg.isEmergency() ? " EMERGENCY" : "") )
-				    .frequency( gdcg.getDownlinkFrequency() )
-					.from( gdcg.getSourceAddress() )
-					.to( gdcg.getGroupAddress() )
-					.build();
+				channel = gdcg.getChannel();
+				from = gdcg.getSourceAddress();
+				to = gdcg.getGroupAddress();
+				
+				if( hasCallEvent( channel, from, to ) )
+				{
+					updateCallEvent( channel, from, to );
+				}
+				else
+				{
+					P25CallEvent event = new P25CallEvent.Builder( CallEventType.DATA_CALL )
+						.aliasList( getAliasList() )
+						.channel( channel )
+						.details( ( gdcg.isEncrypted() ? "ENCRYPTED" : "" ) + 
+								  ( gdcg.isEmergency() ? " EMERGENCY" : "") )
+					    .frequency( gdcg.getDownlinkFrequency() )
+						.from( from )
+						.to( to )
+						.build();
+
+					registerCallEvent( event );
+					broadcast( event );
+				}
+
+				/* We don't allocate traffic channels for data */
 				break;
 			case GROUP_VOICE_CHANNEL_GRANT:
 				GroupVoiceChannelGrant gvcg = (GroupVoiceChannelGrant)message;
 
-				event = new P25CallEvent.Builder( CallEventType.GROUP_CALL )
-					.aliasList( getAliasList() )
-					.channel( gvcg.getChannel() )
-					.details( "Trigger: TSBK-G_V_CH_GRNT " +
-							  ( gvcg.isEncrypted() ? "ENCRYPTED" : "" ) + 
-							  ( gvcg.isEmergency() ? " EMERGENCY" : "") )
-				    .frequency( gvcg.getDownlinkFrequency() )
-					.from( gvcg.getSourceAddress() )
-					.to( gvcg.getGroupAddress() )
-					.build();
+				channel = gvcg.getChannel();
+				from = gvcg.getSourceAddress();
+				to = gvcg.getGroupAddress();
+				
+				if( hasCallEvent( channel, from, to ) )
+				{
+					updateCallEvent( channel, from, to );
+				}
+				else
+				{
+					P25CallEvent event = new P25CallEvent.Builder( CallEventType.GROUP_CALL )
+						.aliasList( getAliasList() )
+						.channel( channel )
+						.details( ( gvcg.isEncrypted() ? "ENCRYPTED" : "" ) + 
+								  ( gvcg.isEmergency() ? " EMERGENCY" : "") )
+					    .frequency( gvcg.getDownlinkFrequency() )
+						.from( from )
+						.to( to )
+						.build();
+					
+					registerCallEvent( event );
+					broadcast( event );
+				}
+
+				broadcast( new TrafficChannelAllocationEvent( this,
+						mChannelCallMap.get( channel ) ) );
 				break;
 			case GROUP_VOICE_CHANNEL_GRANT_UPDATE:
 				GroupVoiceChannelGrantUpdate gvcgu =
 						(GroupVoiceChannelGrantUpdate)message;
+
+				channel = gvcgu.getChannel1();
+				from = null;
+				to = gvcgu.getGroupAddress1();
 				
-				event = new P25CallEvent.Builder( CallEventType.GROUP_CALL )
-					.aliasList( getAliasList() )
-					.channel( gvcgu.getChannel1() )
-					.details( "Trigger: TSBK-G_V_CH_GRNT_UP " +
-							  ( gvcgu.isEncrypted() ? "ENCRYPTED" : "" ) + 
-							  ( gvcgu.isEmergency() ? " EMERGENCY" : "") )
-					.frequency( gvcgu.getDownlinkFrequency1() )
-					.to( gvcgu.getGroupAddress1() )
-					.build();
+				if( hasCallEvent( channel, from, to ) )
+				{
+					updateCallEvent( channel, from, to );
+				}
+				else
+				{
+					P25CallEvent event = new P25CallEvent.Builder( CallEventType.GROUP_CALL )
+						.aliasList( getAliasList() )
+						.channel( channel )
+						.channel( gvcgu.getChannel1() )
+						.details( ( gvcgu.isEncrypted() ? "ENCRYPTED" : "" ) + 
+								  ( gvcgu.isEmergency() ? " EMERGENCY" : "") )
+						.frequency( gvcgu.getDownlinkFrequency1() )
+						.from( from )
+						.to( to )
+						.build();
+					
+					registerCallEvent( event );
+					broadcast( event );
+				}
+				
+				broadcast( new TrafficChannelAllocationEvent( this,
+						mChannelCallMap.get( channel ) ) );
 
 				if( gvcgu.hasChannelNumber2() )
 				{
-					/* We handle this channel grant independent of the first event */
-					P25CallEvent event2 = new P25CallEvent.Builder( CallEventType.GROUP_CALL )
-						.aliasList( getAliasList() )
-						.channel( gvcgu.getChannel2() )
-						.details( "Trigger: TSBK-G_V_CH_GRNT_UP#2 " +
-								  ( gvcgu.isEncrypted() ? "ENCRYPTED" : "" ) + 
-								  ( gvcgu.isEmergency() ? " EMERGENCY" : "") )
-						.frequency( gvcgu.getDownlinkFrequency2() )
-						.to( gvcgu.getGroupAddress2() )
-						.build();
-
-					broadcast( new TrafficChannelAllocationEvent( this, event2 ) );
+					channel = gvcgu.getChannel2();
+					to = gvcgu.getGroupAddress2();
+					
+					if( hasCallEvent( channel, from, to ) )
+					{
+						updateCallEvent( channel, from, to );
+					}
+					else
+					{
+						P25CallEvent event2 = new P25CallEvent.Builder( CallEventType.GROUP_CALL )
+							.aliasList( getAliasList() )
+							.channel( gvcgu.getChannel2() )
+							.details( ( gvcgu.isEncrypted() ? "ENCRYPTED" : "" ) + 
+									  ( gvcgu.isEmergency() ? " EMERGENCY" : "") )
+							.frequency( gvcgu.getDownlinkFrequency2() )
+							.to( gvcgu.getGroupAddress2() )
+							.build();
+					
+						registerCallEvent( event2 );
+						broadcast( event2 );
+					}
+					
+					broadcast( new TrafficChannelAllocationEvent( this,
+							mChannelCallMap.get( channel ) ) );
 				}
 				break;
 			case GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:
 				GroupVoiceChannelGrantUpdateExplicit gvcgue = 
 					(GroupVoiceChannelGrantUpdateExplicit)message;
 
-				event = new P25CallEvent.Builder( CallEventType.GROUP_CALL )
-					.aliasList( getAliasList() )
-					.channel( gvcgue.getTransmitChannelIdentifier() + "-" + 
-							  gvcgue.getTransmitChannelNumber() )
-					.details( "Trigger: TSBK-G_V_CH_GRNT_U_E " +
-							  ( gvcgue.isEncrypted() ? "ENCRYPTED" : "" ) + 
-							  ( gvcgue.isEmergency() ? " EMERGENCY" : "") )
-				    .frequency( gvcgue.getDownlinkFrequency() )
-					.to( gvcgue.getGroupAddress() )
-					.build();
+				channel = gvcgue.getTransmitChannelIdentifier() + "-" + 
+						  gvcgue.getTransmitChannelNumber();
+				from = null;
+				to = gvcgue.getGroupAddress();
+				
+				if( hasCallEvent( channel, from, to ) )
+				{
+					updateCallEvent( channel, from, to );
+				}
+				else
+				{
+					P25CallEvent event = new P25CallEvent.Builder( CallEventType.GROUP_CALL )
+						.aliasList( getAliasList() )
+						.channel( channel )
+						.details( ( gvcgue.isEncrypted() ? "ENCRYPTED" : "" ) + 
+								  ( gvcgue.isEmergency() ? " EMERGENCY" : "") )
+					    .frequency( gvcgue.getDownlinkFrequency() )
+						.from( from )
+						.to( to )
+						.build();
+					
+					registerCallEvent( event );
+					broadcast( event );
+				}
+
+				broadcast( new TrafficChannelAllocationEvent( this,
+						mChannelCallMap.get( channel ) ) );
 				break;
 			case INDIVIDUAL_DATA_CHANNEL_GRANT:
 				IndividualDataChannelGrant idcg = (IndividualDataChannelGrant)message;
 
-				event =  new P25CallEvent.Builder( CallEventType.DATA_CALL )
-					.aliasList( getAliasList() )
-					.channel( idcg.getChannel() )
-					.details( "Trigger: TSBK-IND_D_CH_GRNT " +
-							  ( idcg.isEncrypted() ? "ENCRYPTED" : "" ) + 
-							  ( idcg.isEmergency() ? " EMERGENCY" : "") )
-				    .frequency( idcg.getDownlinkFrequency() )
-					.from( idcg.getSourceAddress() )
-					.to( idcg.getTargetAddress() )
-					.build();
+				channel = idcg.getChannel();
+				from = idcg.getSourceAddress();
+				to = idcg.getTargetAddress();
+				
+				if( hasCallEvent( channel, from, to ) )
+				{
+					updateCallEvent( channel, from, to );
+				}
+				else
+				{
+					P25CallEvent event = new P25CallEvent.Builder( CallEventType.DATA_CALL )
+						.aliasList( getAliasList() )
+						.channel( channel )
+						.details( ( idcg.isEncrypted() ? "ENCRYPTED" : "" ) + 
+								  ( idcg.isEmergency() ? " EMERGENCY" : "") )
+					    .frequency( idcg.getDownlinkFrequency() )
+						.from( from )
+						.to( to )
+						.build();
+					
+					registerCallEvent( event );
+					broadcast( event );
+				}
+				
+				/* We don't allocate a traffic channel for data */
 				break;
 			case SNDCP_DATA_CHANNEL_GRANT:
 				SNDCPDataChannelGrant sdcg = (SNDCPDataChannelGrant)message;
 				
-				event = new P25CallEvent.Builder( CallEventType.DATA_CALL )
-					.aliasList( getAliasList() )
-					.channel( sdcg.getTransmitChannel() )
-					.details( "Trigger: TSBK-SN_D_CH_GRNT " + 
-							  "SNDCP DATA NSAPI:" + sdcg.getNSAPI() )
-				    .frequency( sdcg.getDownlinkFrequency() )
-				    .to( sdcg.getTargetAddress() )
-					.build();
+				channel = sdcg.getTransmitChannel();
+				from = null;
+				to = sdcg.getTargetAddress();
+				
+				if( hasCallEvent( channel, from, to ) )
+				{
+					updateCallEvent( channel, from, to );
+				}
+				else
+				{
+					P25CallEvent event = new P25CallEvent.Builder( CallEventType.DATA_CALL )
+						.aliasList( getAliasList() )
+						.channel( channel )
+						.details( ( sdcg.isEncrypted() ? "ENCRYPTED" : "" ) + 
+								  ( sdcg.isEmergency() ? " EMERGENCY" : "") )
+					    .frequency( sdcg.getDownlinkFrequency() )
+						.from( from )
+						.to( to )
+						.build();
+					
+					registerCallEvent( event );
+					broadcast( event );
+				}
+				
+				/* We don't allocate a traffic channel for data */
 				break;
 			case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
 				TelephoneInterconnectVoiceChannelGrant tivcg =
 							(TelephoneInterconnectVoiceChannelGrant)message;
 				
-				event = new P25CallEvent.Builder( CallEventType.TELEPHONE_INTERCONNECT )
-					.aliasList( getAliasList() )
-					.channel( tivcg.getChannel() )
-					.details( "Trigger: TSBK-T_INT_V_CH_GRNT " +
-							  ( tivcg.isEncrypted() ? "ENCRYPTED" : "" ) + 
-							  ( tivcg.isEmergency() ? " EMERGENCY" : "") +
-							  " CALL TIMER:" + tivcg.getCallTimer() )
-				    .frequency( tivcg.getDownlinkFrequency() )
-				    .from( tivcg.getAddress() )
-					.build();
+				channel = tivcg.getChannel();
+				from = null;
+				/* Address is ambiguous and could mean either source or target,
+				 * so we'll place the value in the to field */
+				to = tivcg.getAddress();
+				
+				if( hasCallEvent( channel, from, to ) )
+				{
+					updateCallEvent( channel, from, to );
+				}
+				else
+				{
+					P25CallEvent event = new P25CallEvent.Builder( 
+						CallEventType.TELEPHONE_INTERCONNECT )
+						.aliasList( getAliasList() )
+						.channel( channel )
+						.details( ( tivcg.isEncrypted() ? "ENCRYPTED " : "" ) + 
+								  ( tivcg.isEmergency() ? "EMERGENCY " : "") +
+								  "CALL TIMER:" + tivcg.getCallTimer() )
+					    .frequency( tivcg.getDownlinkFrequency() )
+						.from( from )
+						.to( to )
+						.build();
+					
+					registerCallEvent( event );
+					broadcast( event );
+				}
+
+				broadcast( new TrafficChannelAllocationEvent( this,
+						mChannelCallMap.get( channel ) ) );
 				break;
 			case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT_UPDATE:
 				TelephoneInterconnectVoiceChannelGrantUpdate tivcgu =
 							(TelephoneInterconnectVoiceChannelGrantUpdate)message;
 
-				event = new P25CallEvent.Builder( CallEventType.TELEPHONE_INTERCONNECT )
-					.aliasList( getAliasList() )
-					.channel( tivcgu.getChannelIdentifier() + "-" + 
-							tivcgu.getChannelNumber() )
-					.details( "Trigger: TSBK-T_INT_V_CH_G_UP " +
-							  ( tivcgu.isEncrypted() ? "ENCRYPTED" : "" ) + 
-							  ( tivcgu.isEmergency() ? " EMERGENCY" : "") )
-				    .frequency( tivcgu.getDownlinkFrequency() )
-				    .from( tivcgu.getAddress() )
-					.build();
+				channel = tivcgu.getChannelIdentifier() + "-" + 
+							tivcgu.getChannelNumber();
+				from = null;
+				
+				/* Address is ambiguous and could mean either source or target,
+				 * so we'll place the value in the to field */
+				to = tivcgu.getAddress();
+				
+				if( hasCallEvent( channel, from, to ) )
+				{
+					updateCallEvent( channel, from, to );
+				}
+				else
+				{
+					P25CallEvent event = new P25CallEvent.Builder( 
+						CallEventType.TELEPHONE_INTERCONNECT )
+						.aliasList( getAliasList() )
+						.channel( channel )
+						.details( ( tivcgu.isEncrypted() ? "ENCRYPTED " : "" ) + 
+								  ( tivcgu.isEmergency() ? "EMERGENCY " : "") +
+								  "CALL TIMER:" + tivcgu.getCallTimer() )
+					    .frequency( tivcgu.getDownlinkFrequency() )
+						.from( from )
+						.to( to )
+						.build();
+					
+					registerCallEvent( event );
+					broadcast( event );
+				}
+
+				broadcast( new TrafficChannelAllocationEvent( this,
+						mChannelCallMap.get( channel ) ) );
 				break;
 			case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
 				UnitToUnitVoiceChannelGrant uuvcg = 
 							(UnitToUnitVoiceChannelGrant)message;
+
+				channel = uuvcg.getChannelIdentifier() + "-" + 
+						  uuvcg.getChannelNumber();
+				from = uuvcg.getSourceAddress();
+				to = uuvcg.getTargetAddress();
 				
-				event = new P25CallEvent.Builder( CallEventType.UNIT_TO_UNIT_CALL )
-					.aliasList( getAliasList() )
-					.channel( uuvcg.getChannelIdentifier() + "-" + 
-							uuvcg.getChannelNumber() )
-					.details( "Trigger: TSBK-U2U_V_CH_GRNT " +
-							  ( uuvcg.isEncrypted() ? "ENCRYPTED" : "" ) + 
-							  ( uuvcg.isEmergency() ? " EMERGENCY" : "") )
-				    .frequency( uuvcg.getDownlinkFrequency() )
-				    .from( uuvcg.getSourceAddress() )
-					.to( uuvcg.getTargetAddress() )
-					.build();
+				if( hasCallEvent( channel, from, to ) )
+				{
+					updateCallEvent( channel, from, to );
+				}
+				else
+				{
+					P25CallEvent event = new P25CallEvent.Builder( 
+						CallEventType.UNIT_TO_UNIT_CALL )
+						.aliasList( getAliasList() )
+						.channel( channel )
+						.details( ( uuvcg.isEncrypted() ? "ENCRYPTED " : "" ) + 
+								  ( uuvcg.isEmergency() ? "EMERGENCY " : "") )
+					    .frequency( uuvcg.getDownlinkFrequency() )
+						.from( from )
+						.to( to )
+						.build();
+					
+					registerCallEvent( event );
+					broadcast( event );
+				}
+	
+				broadcast( new TrafficChannelAllocationEvent( this,
+						mChannelCallMap.get( channel ) ) );
 				break;
 			case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
 				UnitToUnitVoiceChannelGrantUpdate uuvcgu = 
 							(UnitToUnitVoiceChannelGrantUpdate)message;
 
-				event = new P25CallEvent.Builder( CallEventType.UNIT_TO_UNIT_CALL )
-					.aliasList( getAliasList() )
-					.channel( uuvcgu.getChannelIdentifier() + "-" + 
-							uuvcgu.getChannelNumber() )
-					.details( "Trigger: TSBK-U2U_V_CH_G_UP " +
-							  ( uuvcgu.isEncrypted() ? "ENCRYPTED" : "" ) + 
-							  ( uuvcgu.isEmergency() ? " EMERGENCY" : "") )
-				    .frequency( uuvcgu.getDownlinkFrequency() )
-				    .from( uuvcgu.getSourceAddress() )
-					.to( uuvcgu.getTargetAddress() )
-					.build();
+				channel = uuvcgu.getChannelIdentifier() + "-" + 
+						  uuvcgu.getChannelNumber();
+				from = uuvcgu.getSourceAddress();
+				to = uuvcgu.getTargetAddress();
+				
+				if( hasCallEvent( channel, from, to ) )
+				{
+					updateCallEvent( channel, from, to );
+				}
+				else
+				{
+					P25CallEvent event = new P25CallEvent.Builder( 
+						CallEventType.UNIT_TO_UNIT_CALL )
+						.aliasList( getAliasList() )
+						.channel( channel )
+						.details( ( uuvcgu.isEncrypted() ? "ENCRYPTED " : "" ) + 
+								  ( uuvcgu.isEmergency() ? "EMERGENCY " : "") )
+					    .frequency( uuvcgu.getDownlinkFrequency() )
+						.from( from )
+						.to( to )
+						.build();
+					
+					registerCallEvent( event );
+					broadcast( event );
+				}
+	
+				broadcast( new TrafficChannelAllocationEvent( this,
+						mChannelCallMap.get( channel ) ) );
 				break;
 			default:
 				break;
-		}
-		
-		if( event != null && event.getCallEventType() != CallEventType.DATA_CALL )
-		{
-			broadcast( new TrafficChannelAllocationEvent( this, event ) );
 		}
 	}
 	
@@ -2658,38 +2924,35 @@ public class P25DecoderState extends DecoderState
 	 */
 	private void updateTo( String to )
 	{
-		mLog.debug( "Updating to [" + to + "]" );
-		if( to != null &&
-			!to.contentEquals( "0000" ) && 
-			!to.contentEquals( "000000" ) &&
-			( mToTalkgroup == null || !mToTalkgroup.contentEquals( to ) ) )
+		if( to != null && !to.contentEquals( "0000" ) && !to.contentEquals( "000000" ) )
 		{
-			mToTalkgroup = to;
-			broadcast( ChangedAttribute.TO_TALKGROUP );
+			if( mToTalkgroup == null || !mToTalkgroup.contentEquals( to ) )
+			{
+				mToTalkgroup = to;
+				broadcast( ChangedAttribute.TO_TALKGROUP );
 
-			if( mCurrentCallEvent != null &&
-				( mCurrentCallEvent.getToID() == null ||
-				  !mCurrentCallEvent.getToID().contentEquals( to ) ) )
-			{
-				mCurrentCallEvent.setToID( to );
-				broadcast( mCurrentCallEvent );
-			}
+				if( mCurrentCallEvent != null &&
+					( mCurrentCallEvent.getToID() == null ||
+					  !mCurrentCallEvent.getToID().contentEquals( to ) ) )
+				{
+					mCurrentCallEvent.setToID( to );
+					broadcast( mCurrentCallEvent );
+				}
 
-			if( hasAliasList() )
-			{
-				mToAlias = getAliasList().getTalkgroupAlias( mToTalkgroup );
-				mLog.debug( "To Alias: " + mToAlias );
+				if( hasAliasList() )
+				{
+					mToAlias = getAliasList().getTalkgroupAlias( mToTalkgroup );
+				}
+				else
+				{
+					mToAlias = null;
+				}
+				
+				broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
 			}
-			else
-			{
-				mLog.debug( "To Alias: no alias list" );
-				mToAlias = null;
-			}
-			
-			broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
 
 			/* Send audio metadata update */
-			broadcast( new Metadata( MetadataType.TO, to, mToAlias, true ) );
+			broadcast( new Metadata( MetadataType.TO, mToTalkgroup, mToAlias, true ) );
 		}
 	}
 
@@ -2698,35 +2961,35 @@ public class P25DecoderState extends DecoderState
 	 */
 	private void updateFrom( String from )
 	{
-		if( from != null && 
-			!from.contentEquals( "0000" ) && 
-			!from.contentEquals( "000000" ) &&
-			( mFromTalkgroup == null || !mFromTalkgroup.contentEquals( from ) ) )
+		if( from != null && !from.contentEquals( "0000" ) && !from.contentEquals( "000000" ) )
 		{
-			mFromTalkgroup = from;
-			broadcast( ChangedAttribute.FROM_TALKGROUP );
-			
-			if( mCurrentCallEvent != null &&
-				mCurrentCallEvent.getFromID() == null ||
-				!mCurrentCallEvent.getFromID().contentEquals( from ) )
+			if( mFromTalkgroup == null || !mFromTalkgroup.contentEquals( from ))
 			{
-				mCurrentCallEvent.setFromID( from );
-				broadcast( mCurrentCallEvent );
+				mFromTalkgroup = from;
+				broadcast( ChangedAttribute.FROM_TALKGROUP );
+				
+				if( mCurrentCallEvent != null &&
+					mCurrentCallEvent.getFromID() == null ||
+					!mCurrentCallEvent.getFromID().contentEquals( from ) )
+				{
+					mCurrentCallEvent.setFromID( from );
+					broadcast( mCurrentCallEvent );
+				}
+				
+				if( hasAliasList() )
+				{
+					mFromAlias = getAliasList().getTalkgroupAlias( mFromTalkgroup );
+				}
+				else
+				{
+					mFromAlias = null;
+				}
+				
+				broadcast( ChangedAttribute.FROM_TALKGROUP_ALIAS );
 			}
-			
-			if( hasAliasList() )
-			{
-				mFromAlias = getAliasList().getTalkgroupAlias( mFromTalkgroup );
-			}
-			else
-			{
-				mFromAlias = null;
-			}
-			
-			broadcast( ChangedAttribute.FROM_TALKGROUP_ALIAS );
 
 			/* Send audio metadata update */
-			broadcast( new Metadata( MetadataType.FROM, from, mFromAlias, true ) );
+			broadcast( new Metadata( MetadataType.FROM, mFromTalkgroup, mFromAlias, true ) );
 		}
 	}
 	

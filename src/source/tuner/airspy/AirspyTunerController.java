@@ -4,9 +4,11 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,6 +29,9 @@ import sample.Broadcaster;
 import sample.Listener;
 import sample.complex.ComplexBuffer;
 import source.SourceException;
+import source.tuner.Tuner;
+import source.tuner.TunerChannel;
+import source.tuner.TunerChannelSource;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerController;
 import controller.ThreadPoolManager;
@@ -825,6 +830,91 @@ public class AirspyTunerController extends TunerController
 							LibUsb.ERROR_NO_DEVICE );
 		}
 	}
+	
+	/**
+	 * Indicates if the tuner can accomodate this new channel frequency and
+	 * bandwidth, along with all of the existing tuned channels currently in 
+	 * place.
+	 */
+	public boolean canTuneChannel( TunerChannel channel )
+	{
+		//If this is the first lock, then we're good
+		if( mTunedChannels.isEmpty() )
+		{
+			return true;
+		}
+		else
+		{
+			//Sort the existing locks and get the min/max locked frequencies
+			Collections.sort( mTunedChannels );
+
+			long minLockedFrequency = mTunedChannels.get( 0 ).getMinFrequency();
+			long maxLockedFrequency = mTunedChannels
+					.get( mTunedChannels.size() - 1 ).getMaxFrequency();
+			
+			if( channel.getMinFrequency() >= minLockedFrequency &&
+				channel.getMaxFrequency() <= maxLockedFrequency )
+			{
+				return true;
+			}
+
+			if( channel.getMinFrequency() < minLockedFrequency )
+			{
+				return ( maxLockedFrequency - channel.getMinFrequency() ) < getBandwidth() - 1E5;
+			}
+			
+			if( channel.getMaxFrequency() > maxLockedFrequency )
+			{
+				return ( channel.getMaxFrequency() - minLockedFrequency ) <= getBandwidth() - 1E5;
+			}
+		}
+		
+		return false;
+	}
+	
+	public TunerChannelSource getChannel( ThreadPoolManager threadPoolManager,
+		Tuner tuner, TunerChannel tunerChannel )
+				throws RejectedExecutionException, SourceException
+	{
+		TunerChannelSource source = null;
+		
+		if( canTuneChannel( tunerChannel ) )
+		{
+			mTunedChannels.add( tunerChannel );
+			
+			Collections.sort( mTunedChannels );
+			
+			long min = mTunedChannels.get( 0 ).getMinFrequency();
+			long max = mTunedChannels.get( mTunedChannels.size() - 1 ).getMaxFrequency();
+			
+			if( !( getMinTunedFrequency() <= min && 
+				   max <= getMaxTunedFrequency() ) )
+			{
+				long freq = min + ( mFrequencyController.getBandwidth() / 2 ) + 50000;
+				
+				mFrequencyController.setFrequency( freq );
+			}
+			
+			source = new TunerChannelSource( threadPoolManager, 
+					tuner, tunerChannel );
+		}
+
+		return source;
+	}
+	
+	public void releaseChannel( TunerChannelSource tunerChannelSource )
+	{
+		if( tunerChannelSource != null )
+		{
+			mTunedChannels.remove( tunerChannelSource.getTunerChannel() );
+		}
+		else
+		{
+			mLog.error( "Tuner Controller - couldn't find the tuned channel "
+					+ "to release it" );
+		}
+	}
+	
 	
 	/**
 	 * Airspy Board Identifier

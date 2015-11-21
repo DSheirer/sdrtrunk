@@ -94,7 +94,9 @@ public class AudioMetadata implements Listener<Metadata>
 		copy.mRecordable = mRecordable;
 		copy.mMetadata.addAll( mMetadata );
 		copy.mUpdated = mUpdated;
-		copy.mIdentifier = mIdentifier;
+		copy.mIdentifier = new String( mIdentifier );
+		
+		mUpdated = false;
 		
 		return copy;
 	}
@@ -282,5 +284,26 @@ public class AudioMetadata implements Listener<Metadata>
 	{
 		mRecordable = recordable;
 		mUpdated = true;
+	}
+	
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append( "Audio Metadata - source:" );
+		sb.append( getSource() );
+		sb.append( " priority:" );
+		sb.append( getPriority() );
+		sb.append( " updated:" + isUpdated() );
+		sb.append( " " );
+		for( Metadata m: getMetadata() )
+		{
+			sb.append( m.getKey() );
+			sb.append( ":" );
+			sb.append( m.getValue() );
+			sb.append( " " );
+		}
+
+		return sb.toString();
 	}
 }

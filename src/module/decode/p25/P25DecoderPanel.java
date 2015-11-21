@@ -168,7 +168,7 @@ public class P25DecoderPanel extends DecoderPanel
 						}
 						break;
 					case TO_TALKGROUP_ALIAS:
-						Alias to = state.getToAlias();
+						final Alias to = state.getToAlias();
 						
 						if( to != null )
 						{

@@ -22,11 +22,11 @@ public class MotorolaTSBKMessage extends TSBKMessage
 		sb.append( " " );
 		sb.append( getDUID().getLabel() );
 
-		sb.append( " MOTOROLA" );
+		sb.append( " MOTOROLA " );
 
 		if( isEncrypted() )
 		{
-			sb.append( " ENCRYPTED" );
+			sb.append( " ENCRYPTED " );
 		}
 		
 		sb.append( getMotorolaOpcode().getLabel() );
