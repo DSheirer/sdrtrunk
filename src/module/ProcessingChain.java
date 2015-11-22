@@ -41,7 +41,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Broadcaster;
-import sample.Buffer;
 import sample.Listener;
 import sample.complex.ComplexBuffer;
 import sample.complex.IComplexBufferListener;

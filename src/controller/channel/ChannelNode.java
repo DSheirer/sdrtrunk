@@ -24,6 +24,9 @@ import javax.swing.JMenu;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import source.tuner.TunerChannel;
 import controller.ConfigurableNode;
 import controller.site.SiteNode;
@@ -36,6 +39,8 @@ import controller.system.SystemNode;
 public class ChannelNode extends ConfigurableNode implements ChannelEventListener
 {
     private static final long serialVersionUID = 1L;
+
+	private final static Logger mLog = LoggerFactory.getLogger( ChannelNode.class );
     
 	private static DecimalFormat sFORMAT = new DecimalFormat( "0.0000" );
 
@@ -84,12 +89,13 @@ public class ChannelNode extends ConfigurableNode implements ChannelEventListene
 			case CHANGE_SITE:
 			case CHANGE_SYSTEM:
 			case CHANNEL_ENABLED:
+			case CHANNEL_DISABLED:
 			case CHANNEL_PROCESSING_STARTED:
 			case CHANNEL_PROCESSING_STOPPED:
 				this.refresh();
 				break;
 			/* We're being deleted, so cleanup */
-			case CHANNEL_DISABLED:
+			case CHANNEL_DELETED:
 				delete();
 				break;
 			default:

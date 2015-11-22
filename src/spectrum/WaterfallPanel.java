@@ -23,13 +23,10 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.Point;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.awt.geom.Line2D;
 import java.awt.image.ColorModel;
 import java.awt.image.MemoryImageSource;
 import java.text.DecimalFormat;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.JPanel;
 
@@ -290,8 +287,6 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 		double binPixelWidth = getBinPixelWidth( multiplier );
 
 		int offset = (int)( getPixelOffset( multiplier ) - binPixelWidth );
-		
-//		mLog.debug( "Offset:" + offset + " Pixel Offset:" + getPixelOffset( multiplier ) + " bin pixel width:" + binPixelWidth );
 		
 		g.drawImage( mWaterfallImage, 
 					 offset, 
