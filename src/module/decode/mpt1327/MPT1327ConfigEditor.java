@@ -126,14 +126,14 @@ public class MPT1327ConfigEditor extends DecodeEditor
 		mTrafficChannelPoolSize.setLabelTable( mTrafficChannelPoolSize.createStandardLabels( 10, 10 ) );
 		mTrafficChannelPoolSize.setPaintLabels( true );
 		
-		mTrafficChannelPoolSizeLabel = new JLabel( "Traffic Channel Pool Size: " + mTrafficChannelPoolSize.getValue() + " " );
+		mTrafficChannelPoolSizeLabel = new JLabel( "Traffic Channel Pool: " + mTrafficChannelPoolSize.getValue() + " " );
 		
 		mTrafficChannelPoolSize.addChangeListener( new ChangeListener()
 		{
 		@Override
 		public void stateChanged( ChangeEvent e )
 		{
-			mTrafficChannelPoolSizeLabel.setText( "Traffic Channel Pool Size: " + mTrafficChannelPoolSize.getValue() );
+			mTrafficChannelPoolSizeLabel.setText( "Traffic Channel Pool: " + mTrafficChannelPoolSize.getValue() );
 		}
 		} );
 		

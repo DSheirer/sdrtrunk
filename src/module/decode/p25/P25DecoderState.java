@@ -2922,7 +2922,7 @@ public class P25DecoderState extends DecoderState
 	/**
 	 * Broadcasts an update for the TO group or unit address 
 	 */
-	private void updateTo( String to )
+	private void updateTo( final String to )
 	{
 		if( to != null && !to.contentEquals( "0000" ) && !to.contentEquals( "000000" ) )
 		{
@@ -2959,7 +2959,7 @@ public class P25DecoderState extends DecoderState
 	/**
 	 * Broadcasts an update for the FROM group or unit address 
 	 */
-	private void updateFrom( String from )
+	private void updateFrom( final String from )
 	{
 		if( from != null && !from.contentEquals( "0000" ) && !from.contentEquals( "000000" ) )
 		{

@@ -261,19 +261,23 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 	 * @param multiplier - current zoom multiplier
 	 * @return x-axis pixel offset
 	 */
-	private int getPixelOffset( int multiplier )
+	private double getPixelOffset( int multiplier )
 	{
-		int offset = 0;
+		double offset = 0;
 		
 		if( mZoom != 0 )
 		{
-			int zoomWidth = getWidth() * multiplier;
+			double binPixelWidth = getBinPixelWidth( multiplier );
 			
-			offset = -(int)( (double)zoomWidth / (double)mDFTSize * 
-					   	   (double)( mDFTZoomWindowOffset ) );
+			offset = -binPixelWidth * (double)( mDFTZoomWindowOffset );
 		}
 
 		return offset;
+	}
+	
+	private double getBinPixelWidth( int multiplier )
+	{
+		return ( (double)getWidth() * (double)multiplier ) / (double)mDFTSize;
 	}
 
 	/**
@@ -283,15 +287,20 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 	{
 		int multiplier = getZoomMultiplier();
 
-		int offset = getPixelOffset( multiplier );
+		double binPixelWidth = getBinPixelWidth( multiplier );
+
+		int offset = (int)( getPixelOffset( multiplier ) - binPixelWidth );
+		
+//		mLog.debug( "Offset:" + offset + " Pixel Offset:" + getPixelOffset( multiplier ) + " bin pixel width:" + binPixelWidth );
 		
 		g.drawImage( mWaterfallImage, 
 					 offset, 
 					 0, 
-					 getWidth() * multiplier, 
+					 ( getWidth() * multiplier ) + (int)binPixelWidth, 
 					 mImageHeight, 
 					 this );
-		
+
+
     	Graphics2D graphics = (Graphics2D) g;
 
     	graphics.setColor( mColorSpectrumCursor );

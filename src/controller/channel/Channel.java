@@ -904,10 +904,16 @@ public class Channel extends Configuration
 		{
 			mProcessingChain.stop();
 
-			mSelected = false;
-		}
+			if( mChannelType == ChannelType.STANDARD )
+			{
+				mProcessingChain.dispose();
+				mProcessingChain = null;
+			}
 
-		fireChannelEvent( Event.CHANNEL_PROCESSING_STOPPED );
+			mSelected = false;
+			
+			fireChannelEvent( Event.CHANNEL_PROCESSING_STOPPED );
+		}
 	}
 	
 	/**

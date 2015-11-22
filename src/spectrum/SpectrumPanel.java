@@ -214,14 +214,12 @@ public class SpectrumPanel extends JPanel
     		float insideHeight = size.height - mSpectrumInset;
 
     		float scalor = insideHeight / -mDBScale;
-			
-    		float insideWidth = size.width;
 
-    		int binCount = bins.length;
+    		/* Calculate based on bin size - 1, since bin 0 is rendered at zero
+    		 * and the last bin is rendered at the width */
+    		float binSize = (float)size.width / ( (float)( bins.length ) );
 
-    		float binSize = insideWidth / ( binCount );
-    		
-    		for( int x = 0; x < binCount; x++ )
+    		for( int x = 0; x < bins.length; x++ )
     		{
     			float height;
     			
@@ -236,8 +234,10 @@ public class SpectrumPanel extends JPanel
     			{
     				height = 0;
     			}
+    			
+    			float xAxis = (float)x * binSize;
 
-        		spectrumShape.lineTo( ( x * binSize ), height );
+        		spectrumShape.lineTo( xAxis, height );
     		}
     	}
     	//Otherwise show an empty spectrum

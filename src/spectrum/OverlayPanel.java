@@ -446,16 +446,22 @@ public class OverlayPanel extends JPanel
      */
     private double getAxisFromFrequency( long frequency )
     {
-    	//Determine frequency offset from middle
-    	double frequencyOffset = frequency - getMinDisplayFrequency();
+    	double screenWidth = (double)getSize().getWidth();
 
-    	//Determine ratio of offset to bandwidth
+    	double pixelsPerBin = screenWidth / (double)mDFTSize.getSize();
+    	
+    	double pixelOffsetToMinDisplayFrequency = pixelsPerBin * 2.0d;
+
+    	//Calculate frequency offset from the min frequency
+    	double frequencyOffset = (double)( frequency - getMinDisplayFrequency() );
+
+    	//Determine ratio of frequency offset to overall bandwidth
     	double ratio = frequencyOffset / (double)getDisplayBandwidth();
 
-    	//Calculate offset against the total width
-    	double xOffset = (double)getSize().getWidth() * ratio;
+    	//Apply the ratio to the screen width minus 1 bin width
+    	double screenOffset = screenWidth * ratio;
     	
-    	return xOffset;
+    	return pixelOffsetToMinDisplayFrequency + screenOffset;
     }
 
     /**
@@ -749,9 +755,9 @@ public class OverlayPanel extends JPanel
 	
 	private long getMinDisplayFrequency()
 	{
-		double bandwidthPerBin = (double)mBandwidth / (double)( mDFTSize.getSize() - 1 );
+		double bandwidthPerBin = (double)mBandwidth / (double)( mDFTSize.getSize() );
 
-		return getMinFrequency() + (int)( mDFTZoomWindowOffset * bandwidthPerBin );
+		return getMinFrequency() + (int)( ( mDFTZoomWindowOffset ) * bandwidthPerBin );
 	}
 
 	private long getMaxDisplayFrequency()
