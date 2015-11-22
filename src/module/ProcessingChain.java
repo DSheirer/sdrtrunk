@@ -19,9 +19,7 @@ package module;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import message.IMessageListener;
@@ -64,7 +62,6 @@ import audio.squelch.ISquelchStateListener;
 import audio.squelch.ISquelchStateProvider;
 import audio.squelch.SquelchState;
 import controller.ThreadPoolManager;
-import controller.ThreadPoolManager.ThreadType;
 import controller.channel.ChannelEvent;
 import controller.channel.IChannelEventListener;
 import controller.channel.IChannelEventProvider;
@@ -92,9 +89,6 @@ public class ProcessingChain implements IChannelEventListener
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( ProcessingChain.class );
 
-	private BufferReceiver<ComplexBuffer> mComplexReceiver = new BufferReceiver<>( 5 );
-	private BufferReceiver<RealBuffer> mRealReceiver = new BufferReceiver<>( 5 );
-	
 	private Broadcaster<AudioPacket> mAudioPacketBroadcaster = new Broadcaster<>();
 	private Broadcaster<Metadata> mMetadataBroadcaster = new Broadcaster<>();
 	private Broadcaster<CallEvent> mCallEventBroadcaster = new Broadcaster<>();
@@ -134,11 +128,11 @@ public class ProcessingChain implements IChannelEventListener
 		
 		mModules.clear();
 		
-		mComplexReceiver.dispose();
-		mComplexReceiver = null;
-		
-		mRealReceiver.dispose();
-		mRealReceiver = null;
+//		mComplexReceiver.dispose();
+//		mComplexReceiver = null;
+//		
+//		mRealReceiver.dispose();
+//		mRealReceiver = null;
 		
 		mThreadPoolManager = null;
 		mBufferProcessingTask = null;
@@ -429,9 +423,6 @@ public class ProcessingChain implements IChannelEventListener
 				/* Register with the source to receive sample data.  Setup a 
 				 * timer task to process the buffer queues 50 times a second 
 				 * (every 20 ms) */
-				mBufferProcessingTask = mThreadPoolManager.scheduleFixedRate( 
-					ThreadType.DECODER, new BufferProcessor(), 20, TimeUnit.MILLISECONDS );
-
 				switch( mSource.getSampleType() )
 				{
 					case COMPLEX:
@@ -462,6 +453,10 @@ public class ProcessingChain implements IChannelEventListener
 						mLog.error( "Error getting frequency from tuner channel source", e );
 					}
 				}
+			}
+			else
+			{
+				mLog.debug( "Source is null on start()" );
 			}
 		}
 	}
@@ -612,91 +607,6 @@ public class ProcessingChain implements IChannelEventListener
 		mRealBufferBroadcaster.removeListener( listener );
 	}
 	
-	
-    /**
-     * Processes complex and real sample buffers and broadcasts buffers to any
-     * registered listeners.
-     */
-	private class BufferProcessor implements Runnable
-	{
-		private AtomicBoolean mProcessing = new AtomicBoolean();
-		
-		@Override
-        public void run()
-        {
-			/* Allow only one instance of this processor to run to ensure 
-			 * correct serial processing of incoming buffers.  Overlapping 
-			 * invocations of this processor by the timer service will end 
-			 * immediately without doing anything for cases where a single 
-			 * iteration runs longer than the scheduled processing interval */
-			if( mProcessing.compareAndSet( false, true ) )
-			{
-				try
-				{
-					for( ComplexBuffer buffer: mComplexReceiver.get() )
-					{
-						mComplexBufferBroadcaster.broadcast( buffer );
-					}
-				}
-				catch( Exception e )
-				{
-					mLog.error( "Error processing complex sample buffers", e );
-				}
-				
-				try
-				{
-					for( RealBuffer buffer: mRealReceiver.get() )
-					{
-						mRealBufferBroadcaster.broadcast( buffer );
-					}
-				}
-				catch( Exception e )
-				{
-					mLog.error( "Error processing real sample buffers", e );
-				}
-				
-				mProcessing.set( false );
-			}
-        }
-	}
-	
-	/**
-	 * Buffer receiver - non-blocking receiver to allow calling thread to return 
-	 * without blocking on any internal processing.  This ensures that we don't
-	 * impair any receiver sample processing.
-	 */
-	private class BufferReceiver<T> implements Listener<T>
-	{
-		private LinkedTransferQueue<T> mQueue = new LinkedTransferQueue<>();
-		private int mMaxFetchSize;
-		
-		public BufferReceiver( int maxFetchSize )
-		{
-			mMaxFetchSize = maxFetchSize;
-		}
-		
-		@Override
-        public void receive( T t )
-        {
-			mQueue.add( t );
-        }
-		
-		public List<T> get()
-		{
-			List<T> buffers = new ArrayList<>();
-
-			mQueue.drainTo( buffers, mMaxFetchSize );
-
-			return buffers;
-		}
-		
-		public void dispose()
-		{
-			mQueue.clear();
-			mQueue = null;
-		}
-	}
-
 	@Override
 	public Listener<ChannelEvent> getChannelEventListener()
 	{

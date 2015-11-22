@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014,2015 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 package controller.channel;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import message.Message;
 
@@ -32,12 +33,9 @@ public class ChannelManager implements ChannelEventListener
 {
 	private final static Logger mLog = LoggerFactory.getLogger( ChannelManager.class );
 	
-	private ArrayList<Channel> mChannels = new ArrayList<Channel>();
-	
-	private ArrayList<ChannelEventListener> mChannelListeners =
-									new ArrayList<ChannelEventListener>();
-	private ArrayList<Listener<Message>> mMessageListeners =
-									new ArrayList<Listener<Message>>();
+	private List<Channel> mChannels = new ArrayList<>();
+	private List<ChannelEventListener> mChannelListeners = new ArrayList<>();
+	private List<Listener<Message>> mMessageListeners =	new ArrayList<>();
 	
 	private AliasActionManager mAliasActionManager;
 
@@ -62,13 +60,13 @@ public class ChannelManager implements ChannelEventListener
     {
 		switch( event.getEvent() )
 		{
-			case CHANNEL_ENABLED:
+			case CHANNEL_ADDED:
 				if( !mChannels.contains( event.getChannel() ) )
 				{
 					mChannels.add( event.getChannel() );
 				}
 				break;
-			case CHANNEL_DISABLED:
+			case CHANNEL_DELETED:
 				mChannels.remove( event.getChannel() );
 				break;
 		}
@@ -87,6 +85,11 @@ public class ChannelManager implements ChannelEventListener
 	    {
 	    	channel.addListener( listener );
 	    }
+	}
+	
+	public List<Channel> getChannels()
+	{
+		return mChannels;
 	}
 
 	/**
@@ -107,7 +110,7 @@ public class ChannelManager implements ChannelEventListener
 	 * Returns the list of channel change listeners that will be automatically
 	 * added to all channels to receive channel change events
 	 */
-	public ArrayList<ChannelEventListener> getChannelListeners()
+	public List<ChannelEventListener> getChannelListeners()
 	{
 	    return mChannelListeners;
 	}
@@ -116,7 +119,7 @@ public class ChannelManager implements ChannelEventListener
 	 * Returns the list of channel change listeners that will be automatically
 	 * added to all channels to receive channel change events
 	 */
-	public ArrayList<Listener<Message>> getMessageListeners()
+	public List<Listener<Message>> getMessageListeners()
 	{
 	    return mMessageListeners;
 	}

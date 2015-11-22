@@ -597,7 +597,7 @@ public class AirspyTunerController extends TunerController
 			{
 				int count = EndianUtils.readSwappedInteger( rawCount, 0 );
 				
-				mLog.debug( "There are [" + count + "] sample rates available" );
+				mLog.info( "There are [" + count + "] sample rates available" );
 
 				byte[] rawRates = readArray( Command.GET_SAMPLE_RATES, 0, 
 						count, ( count * 4 ) );
@@ -898,7 +898,7 @@ public class AirspyTunerController extends TunerController
 			source = new TunerChannelSource( threadPoolManager, 
 					tuner, tunerChannel );
 		}
-
+		
 		return source;
 	}
 	

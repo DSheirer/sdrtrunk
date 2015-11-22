@@ -740,7 +740,6 @@ public class Channel extends Configuration
 	public void setup() throws SourceException
 	{
 		setupProcessingChain();
-		
 		setupSource();
 	}
 

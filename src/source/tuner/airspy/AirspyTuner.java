@@ -109,7 +109,7 @@ public class AirspyTuner extends Tuner
 		} 
 		catch ( SourceException e )
 		{
-			mLog.debug( "Error while getting sample rate from controller", e );
+			mLog.error( "Error while getting sample rate from controller", e );
 		}
 		
 		return rate;

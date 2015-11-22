@@ -129,6 +129,7 @@ public class ChannelState extends Module implements ICallEventProvider,
 	@Override
 	public void stop()
 	{
+		mSquelchLocked = false;
 	}
 
 	public void dispose()

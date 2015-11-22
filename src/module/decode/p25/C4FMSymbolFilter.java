@@ -255,9 +255,9 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
 		{
 			mFrequencyCorrectionControl.adjust( mFrequencyAdjustmentRequested );
 			
-			mLog.debug( "Adjusting frequency [" + mFrequencyAdjustmentRequested + 
-				"] correction is now: " + mFrequencyCorrectionControl
-						.getErrorCorrection() );
+//			mLog.debug( "Adjusting frequency [" + mFrequencyAdjustmentRequested + 
+//				"] correction is now: " + mFrequencyCorrectionControl
+//						.getErrorCorrection() );
 
 			mFrequencyAdjustmentRequested = 0;
 

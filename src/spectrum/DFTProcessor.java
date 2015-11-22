@@ -207,8 +207,9 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
         }
         catch ( InterruptedException e )
         {
-	        mLog.error( "DFTProcessor - exception while awaiting shutdown of "
-	        		+ "calculation scheduler for reset", e );
+        	/* Do nothing ... we're shutting down */
+//	        mLog.error( "DFTProcessor - exception while awaiting shutdown of "
+//	        		+ "calculation scheduler for reset", e );
         }
 	}
 	

@@ -32,6 +32,7 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.JPanel;
@@ -96,9 +97,9 @@ public class OverlayPanel extends JPanel
 	private Color mColorSpectrumCursor;
 	private Color mColorSpectrumLine;
 
-	//All channels
-	private ArrayList<Channel> mChannels = new ArrayList<Channel>();
-
+//	//All channels
+//	private List<Channel> mChannels = new ArrayList<Channel>();
+//
 	//Currently visible/displayable channels
 	private CopyOnWriteArrayList<Channel> mVisibleChannels = 
 								new CopyOnWriteArrayList<Channel>();
@@ -151,7 +152,7 @@ public class OverlayPanel extends JPanel
 		
 		mChannelManager = null;
 		
-		mChannels.clear();
+//		mChannels.clear();
 		mVisibleChannels.clear();
 		
 		if( mSettingsManager != null )
@@ -678,7 +679,7 @@ public class OverlayPanel extends JPanel
 		long minimum = getMinFrequency();
 		long maximum = getMaxFrequency();
 		
-		for( Channel channel: mChannels )
+		for( Channel channel: mChannelManager.getChannels() )
 		{
 			if( channel.isWithin( minimum, maximum ) )
 			{
@@ -698,12 +699,12 @@ public class OverlayPanel extends JPanel
     	
 		switch( event.getEvent() )
 		{
-			case CHANNEL_ADDED:
+//			case CHANNEL_ADDED:
 			case CHANNEL_ENABLED:
-				if( !mChannels.contains( channel ) )
-				{
-					mChannels.add( channel );
-				}
+//				if( !mChannels.contains( channel ) )
+//				{
+//					mChannels.add( channel );
+//				}
 				
 				if( channel.isWithin( getMinFrequency(), getMaxFrequency() ) && 
 					!mVisibleChannels.contains( channel ) )
@@ -712,13 +713,13 @@ public class OverlayPanel extends JPanel
 				}
 				break;
 			case CHANNEL_DELETED:
-				mChannels.remove( channel );
+//				mChannels.remove( channel );
 				mVisibleChannels.remove( channel );
 				break;
 			case CHANNEL_PROCESSING_STOPPED:
 				if( channel.getChannelType() == ChannelType.TRAFFIC )
 				{
-					mChannels.remove( channel );
+//					mChannels.remove( channel );
 					mVisibleChannels.remove( channel );
 				}
 				break;

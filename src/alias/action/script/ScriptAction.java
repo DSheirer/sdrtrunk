@@ -40,7 +40,7 @@ public class ScriptAction extends RecurringAction
 		}
 		catch( Exception e )
 		{
-			mLog.debug( "Couldn't execute script [" + mScript + "]", e );
+			mLog.error( "Couldn't execute script [" + mScript + "]", e );
 		}
 	}
 	

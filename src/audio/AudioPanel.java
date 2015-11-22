@@ -165,7 +165,7 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
 					}
 					catch( AudioException e )
 					{
-						mLog.debug( "Error while detecting current mixer "
+						mLog.error( "Error while detecting current mixer "
 								+ "channel configuration", e );
 					}
 					

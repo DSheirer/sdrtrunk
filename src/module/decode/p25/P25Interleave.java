@@ -137,25 +137,4 @@ public class P25Interleave
         
         return message;
     }
-
-    public static void main( String[] args )
-    {
-    	int start = 0;
-    	int end = 144;
-    	int set = 50;
-    	
-    	String interleaved = "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
-
-    	BinaryMessage b = BinaryMessage.load( interleaved );
-    	
-    	b.set( set );
-    	
-    	mLog.debug( "INT:" + b.toString() );
-
-    	P25Interleave.deinterleaveVoice( b, start, end );
-    	
-    	mLog.debug( "DEI:" + b.toString() );
-
-    	mLog.debug( "In: " + set + " Out:" + b.nextSetBit( 0 ) );
-    }
 }

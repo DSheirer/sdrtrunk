@@ -165,7 +165,7 @@ public class P25AudioModule extends Module implements Listener<Message>,
 			}
 			else
 			{
-				mLog.debug( "JMBE library version 0.3.1 or higher is required - found: " + library.getVersion() );
+				mLog.warn( "JMBE library version 0.3.1 or higher is required - found: " + library.getVersion() );
 			}
 		} 
 		catch ( ClassNotFoundException e1 )

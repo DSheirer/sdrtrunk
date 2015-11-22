@@ -927,7 +927,7 @@ public class HackRFTunerController extends TunerController
         {
 			if( mRunning.compareAndSet( false, true ) )
 			{
-				mLog.debug( "starting sample fetch thread" );
+				mLog.info( "starting HackRF sample fetch thread" );
 
 	            prepareTransfers();
 	            
@@ -969,7 +969,7 @@ public class HackRFTunerController extends TunerController
 		{
 			if( mRunning.compareAndSet( true, false ) )
 			{
-				mLog.debug( "stopping sample fetch thread" );
+				mLog.info( "stopping HackRF sample fetch thread" );
 
 				cancel();
 				

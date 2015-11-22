@@ -124,7 +124,10 @@ public class AudioModule extends Module implements IAudioPacketProvider,
 			
 			AudioPacket packet = new AudioPacket( audio, mAudioMetadata.copyOf() );
 
-			mAudioPacketListener.receive( packet );
+			if( mAudioPacketListener != null )
+			{
+				mAudioPacketListener.receive( packet );
+			}
 		}
 	}
 

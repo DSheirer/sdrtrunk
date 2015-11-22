@@ -19,11 +19,19 @@ package sample;
 
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import module.decode.state.ChannelState;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Broadcasts a received float sample to multiple listeners
  */
 public class Broadcaster<T> implements Listener<T>
 {
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( Broadcaster.class );
+
 	private CopyOnWriteArrayList<Listener<T>> mListeners = 
 			new CopyOnWriteArrayList<Listener<T>>();
 

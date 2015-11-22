@@ -48,7 +48,7 @@ public class ClipAction extends RecurringAction
 		}
 		catch( Exception e )
 		{
-			mLog.debug( "Couldn't play audio clip", e );
+			mLog.error( "Couldn't play audio clip", e );
 		}
 	}
 	
