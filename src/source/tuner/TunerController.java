@@ -114,7 +114,7 @@ public abstract class TunerController implements Tunable
 	
 	public long getMinTunedFrequency()
 	{
-		return mFrequencyController.getFrequency() - 
+		return mFrequencyController.getFrequency() -
 			   ( mFrequencyController.getBandwidth() / 2 );
 	}
 

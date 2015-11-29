@@ -832,7 +832,7 @@ public class AirspyTunerController extends TunerController
 	}
 	
 	/**
-	 * Indicates if the tuner can accomodate this new channel frequency and
+	 * Indicates if the tuner can accommodate this new channel frequency and
 	 * bandwidth, along with all of the existing tuned channels currently in 
 	 * place.
 	 */
@@ -857,19 +857,48 @@ public class AirspyTunerController extends TunerController
 			{
 				return true;
 			}
+			
+			int usable = getUsableBandwidth();
 
 			if( channel.getMinFrequency() < minLockedFrequency )
 			{
-				return ( maxLockedFrequency - channel.getMinFrequency() ) < getBandwidth() - 1E5;
+				return ( maxLockedFrequency - channel.getMinFrequency() ) <= usable;
 			}
 			
 			if( channel.getMaxFrequency() > maxLockedFrequency )
 			{
-				return ( channel.getMaxFrequency() - minLockedFrequency ) <= getBandwidth() - 1E5;
+				return ( channel.getMaxFrequency() - minLockedFrequency ) <= usable;
 			}
 		}
 		
 		return false;
+	}
+
+	/**
+	 * Limits the usable bandwidth of the tuner to 90% of the bandwidth to
+	 * account for roll-off at the band edges
+	 */
+	private int getUsableBandwidth()
+	{
+		return (int)( (double)getBandwidth() * 0.9d );
+	}
+
+	/**
+	 * Overrides the default tuner controller method to limit the total bandwidth
+	 * of the tuner to 90% and adjust the min tuned frequency accordingly
+	 */
+	public long getMinTunedFrequency()
+	{
+		return mFrequencyController.getFrequency() - ( getUsableBandwidth() / 2 );
+	}
+
+	/**
+	 * Overrides the default tuner controller method to limit the total bandwidth
+	 * of the tuner to 90% and adjust the max tuned frequency accordingly
+	 */
+	public long getMaxTunedFrequency()
+	{
+		return mFrequencyController.getFrequency() + ( getUsableBandwidth() / 2 );
 	}
 	
 	public TunerChannelSource getChannel( ThreadPoolManager threadPoolManager,
@@ -886,11 +915,12 @@ public class AirspyTunerController extends TunerController
 			
 			long min = mTunedChannels.get( 0 ).getMinFrequency();
 			long max = mTunedChannels.get( mTunedChannels.size() - 1 ).getMaxFrequency();
-			
-			if( !( getMinTunedFrequency() <= min && 
-				   max <= getMaxTunedFrequency() ) )
+
+			/* Adjust the center frequency if the set of tuner channels don't
+			 * currently fit within the usable bandwidth and current center frequency */
+			if( !( getMinTunedFrequency() <= min && max <= getMaxTunedFrequency() ) )
 			{
-				long freq = min + ( mFrequencyController.getBandwidth() / 2 ) + 50000;
+				long freq = min + ( ( max - min ) / 2 );
 				
 				mFrequencyController.setFrequency( freq );
 			}
