@@ -58,7 +58,7 @@ public class AMDemodulatorModule extends Module
 	public AMDemodulatorModule()
 	{
 		mIQFilter = new ComplexFIRFilter_CB_CB( FilterFactory.getLowPass( 
-			SAMPLE_RATE, 6500, 73, WindowType.HAMMING ), 1.0f );
+			SAMPLE_RATE, 5000, 73, WindowType.HAMMING ), 1.0f );
 		
 		mDemodulator = new AMDemodulator_CB( 500.0f );
 		mIQFilter.setListener( mDemodulator );
