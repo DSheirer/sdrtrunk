@@ -492,37 +492,4 @@ public class ChannelSpectrumPanel extends JPanel
 	{
 		mSpectrumPanel.setSmoothingType( type );
 	}
-
-	public class SampleAssembler implements RealSampleListener
-	{
-	    private Listener<ComplexBuffer> mListener;
-
-	    public SampleAssembler( Listener<ComplexBuffer> listener )
-		{
-	    	mListener = listener;
-		}
-
-		@Override
-	    public void receive( float sample )
-	    {
-			mSamples[ mSamplePointer++ ] = sample;
-
-			if( mSamplePointer >= mSamples.length )
-			{
-				if( mEnabled.get() )
-				{
-					float[] copy = Arrays.copyOf( mSamples, mSamples.length );
-					
-					mListener.receive( new ComplexBuffer( copy ) );
-				}
-				
-				mSamplePointer = 0;
-				
-				if( mSamples.length != mSampleBufferSize )
-				{
-					mSamples = new float[ mSampleBufferSize ];
-				}
-			}
-	    }
-	}
 }

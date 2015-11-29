@@ -189,7 +189,7 @@ public class SpectrumPanel extends JPanel
 
     	//Define the gradient
     	GradientPaint gradient = new GradientPaint( 0, 
-    												getSize().height / 4, 
+    												( getSize().height - mSpectrumInset ) / 2, 
     												mColorSpectrumGradientTop,
     												0,
     												getSize().height, 

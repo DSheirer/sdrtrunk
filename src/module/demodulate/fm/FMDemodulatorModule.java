@@ -133,7 +133,10 @@ public class FMDemodulatorModule extends Module implements IComplexBufferListene
 		mDemodulator.dispose();
 		mDemodulator = null;
 		
-		mDCRemovalFilter.dispose();
+		if( mDCRemovalFilter != null )
+		{
+			mDCRemovalFilter.dispose();
+		}
 		mDCRemovalFilter = null;
 		
 		if( mAutomaticFrequencyControl != null )

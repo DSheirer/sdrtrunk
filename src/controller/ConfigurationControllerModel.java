@@ -39,6 +39,8 @@ import source.tuner.TunerGroupNode;
 import source.tuner.TunerNode;
 import source.tuner.TunerSelectionListener;
 import controller.channel.Channel;
+import controller.channel.ChannelEvent;
+import controller.channel.ChannelEvent.Event;
 import controller.channel.ChannelNode;
 import controller.site.Site;
 import controller.system.System;
@@ -183,6 +185,7 @@ public class ConfigurationControllerModel extends DefaultTreeModel
     	SourceConfigTuner sourceConfig = new SourceConfigTuner();
     	sourceConfig.setFrequency( frequency );
     	channel.setSourceConfiguration( sourceConfig );
+    	mResourceManager.getChannelManager().channelChanged( new ChannelEvent( channel, Event.CHANNEL_ADDED ) );
     	channel.setEnabled( true, true );
     	site.addChannel( channel );
 
