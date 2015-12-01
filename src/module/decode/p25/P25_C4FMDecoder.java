@@ -24,6 +24,7 @@ import instrument.tap.stream.FloatBufferTap;
 import instrument.tap.stream.FloatTap;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -74,8 +75,10 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 		super( aliasList );
 		
 		/* Filter demodulated sample buffers */
-		mC4FMPreFilter = new RealFIRFilter_RB_RB( FilterFactory.getLowPass( 
-				48000, 6750, 7500, 60, WindowType.HANNING, true ), 1.0f );
+		float[] filter = FilterFactory.getLowPass( 48000, 2500, 4000, 80, WindowType.HANNING, true );
+
+		mLog.debug( "Filter taps:" + filter.length + " co:" + Arrays.toString( filter ) );
+		mC4FMPreFilter = new RealFIRFilter_RB_RB( filter, 1.0f );
 
 		/* Issue tuned frequency correction commands, remotely controlled by the 
 		 * downstream symbol filter */
