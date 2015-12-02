@@ -24,6 +24,7 @@ import java.awt.EventQueue;
 import java.awt.Robot;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -39,6 +40,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JSeparator;
+import javax.swing.KeyStroke;
 
 import map.MapService;
 import net.miginfocom.swing.MigLayout;
@@ -258,6 +260,11 @@ public class SDRTrunk
         fileMenu.add( exitMenu );
 
         JMenuItem screenCaptureItem = new JMenuItem( "Screen Capture" );
+        
+        screenCaptureItem.setMnemonic( KeyEvent.VK_C );
+        screenCaptureItem.setAccelerator( 
+        		KeyStroke.getKeyStroke( KeyEvent.VK_C, ActionEvent.ALT_MASK ) );
+        
         screenCaptureItem.addActionListener( new ActionListener()
         {
 			@Override
