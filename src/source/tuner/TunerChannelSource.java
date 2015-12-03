@@ -264,6 +264,7 @@ public class TunerChannelSource extends ComplexSource
 	public class DecimationProcessor implements Runnable 
 	{
 		private AtomicBoolean mDispose = new AtomicBoolean( false );
+		private List<ComplexBuffer> mSampleBuffers = new ArrayList<ComplexBuffer>();
 
 		public void dispose()
 		{
@@ -278,64 +279,64 @@ public class TunerChannelSource extends ComplexSource
 			 * run the program out of memory */
 			try
 			{
-				/* Check to see if we've been shutdown */
-				if( mDispose.get() )
+				if( mBuffer != null )
 				{
-					cleanup();
-					return;
-				}
-				else
-				{
-					List<ComplexBuffer> sampleBuffers = 
-							new ArrayList<ComplexBuffer>();
-		
-					if( mBuffer != null )
+					mBuffer.drainTo( mSampleBuffers, 4 );
+			
+					for( Buffer buffer: mSampleBuffers )
 					{
-						mBuffer.drainTo( sampleBuffers, 4 );
-				
-						for( Buffer buffer: sampleBuffers )
+						/* Check to see if we've been shutdown */
+						if( mDispose.get() )
 						{
-							/* Check to see if we've been shutdown */
-							if( mDispose.get() )
-							{
-								cleanup();
-								return;
-							}
-							else
-							{
-								float[] samples = buffer.getSamples();
+							cleanup();
+							return;
+						}
+						else
+						{
+							float[] samples = buffer.getSamples();
 
-								/* We make a copy of the buffer so that we don't affect
-								 * anyone else that is using the same buffer, like other
-								 * channels or the spectral display */
-								float[] translated = new float[ samples.length ];
+							/* We make a copy of the buffer so that we don't affect
+							 * anyone else that is using the same buffer, like other
+							 * channels or the spectral display */
+							float[] translated = new float[ samples.length ];
+							
+							/* Perform frequency translation */
+							for( int x = 0; x < samples.length; x += 2 )
+							{
+								mMixer.rotate();
 								
-								/* Perform frequency translation */
-								for( int x = 0; x < samples.length; x += 2 )
-								{
-									mMixer.rotate();
-									
-									translated[ x ] = Complex.multiplyInphase( 
+								translated[ x ] = Complex.multiplyInphase( 
+									samples[ x ], samples[ x + 1 ], mMixer.inphase(), mMixer.quadrature() );
+
+								translated[ x + 1 ] = Complex.multiplyQuadrature( 
 										samples[ x ], samples[ x + 1 ], mMixer.inphase(), mMixer.quadrature() );
-
-									translated[ x + 1 ] = Complex.multiplyQuadrature( 
-											samples[ x ], samples[ x + 1 ], mMixer.inphase(), mMixer.quadrature() );
-								}
-								
-								if( mDecimationFilter != null )
-								{
-									mDecimationFilter.receive( new ComplexBuffer( translated ) );
-								}
+							}
+							
+							if( mDecimationFilter != null )
+							{
+								mDecimationFilter.receive( new ComplexBuffer( translated ) );
 							}
 						}
-						
-						sampleBuffers.clear();
 					}
+					
+					mSampleBuffers.clear();
 				}
 			}
 			catch( Exception e )
 			{
-				mLog.error( "encountered an error during decimation process", e );
+				/* Only log the stack trace if we've haven't been shutdown and
+				 * this is a true error */
+				if( !mDispose.get() )
+				{
+					mLog.error( "Error encountered during decimation process", e );
+				}
+			}
+
+			/* Check to see if we've been shutdown */
+			if( mDispose.get() )
+			{
+				mSampleBuffers.clear();
+				cleanup();
 			}
         }
 	}
