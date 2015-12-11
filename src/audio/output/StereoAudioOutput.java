@@ -95,7 +95,8 @@ public class StereoAudioOutput extends AudioOutput
         catch ( LineUnavailableException e )
 		{
         	mLog.error( "Couldn't obtain source data line for 48kHz PCM stereo "
-        			+ "audio output" );
+        			+ "audio output - mixer [" + mixer.getMixerInfo().getName() + 
+        			"] channel [" + mMixerChannel.name() + "]" );
 		}
 	}
 

@@ -149,7 +149,7 @@ public class P25DecoderPanel extends DecoderPanel
 						{
 							mFromAlias.setText( from.getName() );
 							
-							String icon = from.getIconName();
+							final String icon = from.getIconName();
 							
 							if( icon != null )
 							{
@@ -180,7 +180,7 @@ public class P25DecoderPanel extends DecoderPanel
 						{
 							mToAlias.setText( to.getName() );
 
-							String icon = to.getIconName();
+							final String icon = to.getIconName();
 							
 							if( icon != null )
 							{

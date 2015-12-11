@@ -40,6 +40,11 @@ public class FloatCircularBuffer
 		Arrays.fill( mBuffer, (float)0.0 );
 	}
 	
+	public int getSize()
+	{
+		return mBuffer.length;
+	}
+	
 	public float[] getBuffer()
 	{
 		return mBuffer;

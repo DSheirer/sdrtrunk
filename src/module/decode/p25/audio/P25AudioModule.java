@@ -6,8 +6,6 @@ import message.IMessageListener;
 import message.Message;
 import module.Module;
 import module.decode.p25.message.ldu.LDUMessage;
-import module.decode.p25.message.tdu.TDUMessage;
-import module.decode.p25.message.tdu.lc.TDULinkControlMessage;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +21,8 @@ import audio.squelch.ISquelchStateListener;
 import audio.squelch.SquelchState;
 import controller.channel.ChannelEvent;
 import controller.channel.IChannelEventListener;
+import dsp.audio.P25AGC;
+import dsp.filter.iir.DeemphasisFilter;
 
 public class P25AudioModule extends Module implements Listener<Message>, 
 	IAudioPacketProvider, IMessageListener, IChannelEventListener, 
@@ -43,6 +43,8 @@ public class P25AudioModule extends Module implements Listener<Message>,
 	private AudioMetadata mAudioMetadata;
 	private ChannelEventListener mChannelEventListener = new ChannelEventListener();
 	private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
+//	private P25AGC mAGC = new P25AGC( 2.0, 10.0 );
+	private DeemphasisFilter mDeemphasis = new DeemphasisFilter( 48000.0f, 300.0f, 0.6f );
 
 	public P25AudioModule( boolean record )
 	{
@@ -89,9 +91,10 @@ public class P25AudioModule extends Module implements Listener<Message>,
 	}
 
 	/**
-	 * Primary inject point for p25 imbe audio frame messages.  Each LDU audio 
-	 * message contains 9 imbe voice frames.  If the audio is not encrypted,
-	 * we insert each audio frame asynchronously into the audio converter.
+	 * Primary processing method for p25 imbe audio frame messages.  Each LDU 
+	 * audio message contains 9 imbe voice frames.  Each frame is converted to
+	 * audio when the JMBE library is loaded, processed by auto-gain, and 
+	 * broadcast to the audio packet listener.
 	 */
 	public void receive( Message message )
 	{
@@ -101,14 +104,14 @@ public class P25AudioModule extends Module implements Listener<Message>,
 			{
 				LDUMessage ldu = (LDUMessage)message;
 				
-				/* If we detect a valid LDU message with the encryption flag
-				 * set to true, we toggle the encrypted audio state until we 
-				 * receive the first TDU or TDULC message, then reset it. */
+				/* Only process unencrypted audio frames */
 				if( !( ldu.isValid() && ldu.isEncrypted() ) )
 				{
-					for( byte[] frame: ((LDUMessage)message).getIMBEFrames() )
+					for( byte[] frame: ldu.getIMBEFrames() )
 					{
 						float[] audio = mAudioConverter.decode( frame );
+
+						audio = mDeemphasis.filter( audio );
 
 						mAudioPacketListener.receive( 
 								new AudioPacket( audio, mAudioMetadata.copyOf() ) );
