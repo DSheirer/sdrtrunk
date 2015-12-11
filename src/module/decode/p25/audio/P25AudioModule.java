@@ -21,7 +21,6 @@ import audio.squelch.ISquelchStateListener;
 import audio.squelch.SquelchState;
 import controller.channel.ChannelEvent;
 import controller.channel.IChannelEventListener;
-import dsp.audio.P25AGC;
 import dsp.filter.iir.DeemphasisFilter;
 
 public class P25AudioModule extends Module implements Listener<Message>, 
@@ -43,7 +42,6 @@ public class P25AudioModule extends Module implements Listener<Message>,
 	private AudioMetadata mAudioMetadata;
 	private ChannelEventListener mChannelEventListener = new ChannelEventListener();
 	private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
-//	private P25AGC mAGC = new P25AGC( 2.0, 10.0 );
 	private DeemphasisFilter mDeemphasis = new DeemphasisFilter( 48000.0f, 300.0f, 0.6f );
 
 	public P25AudioModule( boolean record )
