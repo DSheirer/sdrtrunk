@@ -93,6 +93,7 @@ public class AirspyTunerController extends TunerController
 	public static final long FREQUENCY_MIN = 24000000l;
 	public static final long FREQUENCY_MAX = 1800000000l;
 	public static final long FREQUENCY_DEFAULT = 101100000;
+	public static final double USABLE_BANDWIDTH_PERCENT = 0.90;
 	public static final AirspySampleRate DEFAULT_SAMPLE_RATE =
 			new AirspySampleRate( 0, 10000000, "10.00 MHz" );
 
@@ -136,7 +137,7 @@ public class AirspyTunerController extends TunerController
 	public AirspyTunerController( Device device, ThreadPoolManager threadPoolManager ) 
 										  throws SourceException 
 	{
-		super( FREQUENCY_MIN, FREQUENCY_MAX );
+		super( FREQUENCY_MIN, FREQUENCY_MAX, 0, USABLE_BANDWIDTH_PERCENT );
 		
 		mDevice = device;
 		mThreadPoolManager = threadPoolManager;
@@ -828,121 +829,6 @@ public class AirspyTunerController extends TunerController
 							LibUsb.ERROR_NO_DEVICE );
 		}
 	}
-	
-	/**
-	 * Indicates if the tuner can accommodate this new channel frequency and
-	 * bandwidth, along with all of the existing tuned channels currently in 
-	 * place.
-	 */
-	public boolean canTuneChannel( TunerChannel channel )
-	{
-		//If this is the first lock, then we're good
-		if( mTunedChannels.isEmpty() )
-		{
-			return true;
-		}
-		else
-		{
-			//Sort the existing locks and get the min/max locked frequencies
-			Collections.sort( mTunedChannels );
-
-			long minLockedFrequency = mTunedChannels.get( 0 ).getMinFrequency();
-			long maxLockedFrequency = mTunedChannels
-					.get( mTunedChannels.size() - 1 ).getMaxFrequency();
-			
-			if( channel.getMinFrequency() >= minLockedFrequency &&
-				channel.getMaxFrequency() <= maxLockedFrequency )
-			{
-				return true;
-			}
-			
-			int usable = getUsableBandwidth();
-
-			if( channel.getMinFrequency() < minLockedFrequency )
-			{
-				return ( maxLockedFrequency - channel.getMinFrequency() ) <= usable;
-			}
-			
-			if( channel.getMaxFrequency() > maxLockedFrequency )
-			{
-				return ( channel.getMaxFrequency() - minLockedFrequency ) <= usable;
-			}
-		}
-		
-		return false;
-	}
-
-	/**
-	 * Limits the usable bandwidth of the tuner to 90% of the bandwidth to
-	 * account for roll-off at the band edges
-	 */
-	private int getUsableBandwidth()
-	{
-		return (int)( (double)getBandwidth() * 0.9d );
-	}
-
-	/**
-	 * Overrides the default tuner controller method to limit the total bandwidth
-	 * of the tuner to 90% and adjust the min tuned frequency accordingly
-	 */
-	public long getMinTunedFrequency()
-	{
-		return mFrequencyController.getFrequency() - ( getUsableBandwidth() / 2 );
-	}
-
-	/**
-	 * Overrides the default tuner controller method to limit the total bandwidth
-	 * of the tuner to 90% and adjust the max tuned frequency accordingly
-	 */
-	public long getMaxTunedFrequency()
-	{
-		return mFrequencyController.getFrequency() + ( getUsableBandwidth() / 2 );
-	}
-	
-	public TunerChannelSource getChannel( ThreadPoolManager threadPoolManager,
-		Tuner tuner, TunerChannel tunerChannel )
-				throws RejectedExecutionException, SourceException
-	{
-		TunerChannelSource source = null;
-		
-		if( canTuneChannel( tunerChannel ) )
-		{
-			mTunedChannels.add( tunerChannel );
-			
-			Collections.sort( mTunedChannels );
-			
-			long min = mTunedChannels.get( 0 ).getMinFrequency();
-			long max = mTunedChannels.get( mTunedChannels.size() - 1 ).getMaxFrequency();
-
-			/* Adjust the center frequency if the set of tuner channels don't
-			 * currently fit within the usable bandwidth and current center frequency */
-			if( !( getMinTunedFrequency() <= min && max <= getMaxTunedFrequency() ) )
-			{
-				long freq = min + ( ( max - min ) / 2 );
-				
-				mFrequencyController.setFrequency( freq );
-			}
-			
-			source = new TunerChannelSource( threadPoolManager, 
-					tuner, tunerChannel );
-		}
-		
-		return source;
-	}
-	
-	public void releaseChannel( TunerChannelSource tunerChannelSource )
-	{
-		if( tunerChannelSource != null )
-		{
-			mTunedChannels.remove( tunerChannelSource.getTunerChannel() );
-		}
-		else
-		{
-			mLog.error( "Tuner Controller - couldn't find the tuned channel "
-					+ "to release it" );
-		}
-	}
-	
 	
 	/**
 	 * Airspy Board Identifier

@@ -1004,7 +1004,7 @@ public class Channel extends Configuration
 		TunerChannel tunerChannel = getTunerChannel();
 		
 		return tunerChannel != null &&
-			   tunerChannel.isWithin( minimum, maximum );
+			   tunerChannel.overlaps( minimum, maximum );
 	}
 	
 	public void addTrafficChannel( String channelID, Channel channel )

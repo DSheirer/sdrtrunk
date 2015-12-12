@@ -44,6 +44,8 @@ public class E4KTunerController extends RTL2832TunerController
 
 	public static final long MIN_FREQUENCY = 52000000;
 	public static final long MAX_FREQUENCY = 2200000000l;
+	public static final double USABLE_BANDWIDTH_PERCENT = 0.95;
+	public static final int DC_SPIKE_AVOID_BUFFER = 15000;
 
 	/* The local oscillator is defined by whole (integer) units of the oscillator
 	 * frequency and fractional units representing 1/65536th of the oscillator
@@ -115,8 +117,8 @@ public class E4KTunerController extends RTL2832TunerController
 							   ThreadPoolManager threadPoolManager ) 
 									   throws SourceException
 	{
-		super( device, deviceDescriptor, threadPoolManager,
-					MIN_FREQUENCY, MAX_FREQUENCY );
+		super( device, deviceDescriptor, threadPoolManager, MIN_FREQUENCY, 
+				MAX_FREQUENCY, DC_SPIKE_AVOID_BUFFER, USABLE_BANDWIDTH_PERCENT );
 	}
 
 	@Override
