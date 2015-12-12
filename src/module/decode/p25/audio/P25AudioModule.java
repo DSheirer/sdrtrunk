@@ -22,6 +22,7 @@ import audio.squelch.SquelchState;
 import controller.channel.ChannelEvent;
 import controller.channel.IChannelEventListener;
 import dsp.filter.iir.DeemphasisFilter;
+import dsp.gain.NonClippingGain;
 
 public class P25AudioModule extends Module implements Listener<Message>, 
 	IAudioPacketProvider, IMessageListener, IChannelEventListener, 
@@ -42,7 +43,7 @@ public class P25AudioModule extends Module implements Listener<Message>,
 	private AudioMetadata mAudioMetadata;
 	private ChannelEventListener mChannelEventListener = new ChannelEventListener();
 	private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
-	private DeemphasisFilter mDeemphasis = new DeemphasisFilter( 48000.0f, 300.0f, 0.6f );
+	private NonClippingGain mGain = new NonClippingGain( 5.0f, 0.95f );
 
 	public P25AudioModule( boolean record )
 	{
@@ -109,7 +110,7 @@ public class P25AudioModule extends Module implements Listener<Message>,
 					{
 						float[] audio = mAudioConverter.decode( frame );
 
-						audio = mDeemphasis.filter( audio );
+						audio = mGain.apply( audio );
 
 						mAudioPacketListener.receive( 
 								new AudioPacket( audio, mAudioMetadata.copyOf() ) );
