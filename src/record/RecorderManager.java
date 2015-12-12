@@ -72,8 +72,8 @@ public class RecorderManager implements Listener<AudioPacket>
 				}
 				else if( audioPacket.getType() == AudioPacket.Type.END )
 				{
-					mRecorders.remove( identifier );
-					recorder.stop();
+					RealBufferWaveRecorder finished = mRecorders.remove( identifier );
+					finished.stop();
 				}
 			}
 			else if( audioPacket.getType() == AudioPacket.Type.AUDIO )
