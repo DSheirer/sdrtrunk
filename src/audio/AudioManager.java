@@ -319,6 +319,7 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 			{
 				case AUDIO_STARTED:
 				case AUDIO_STOPPED:
+				case AUDIO_CONTINUATION:
 					mAudioStoppedTime = System.currentTimeMillis();
 					break;
 				default:
