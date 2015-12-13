@@ -4,11 +4,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -29,9 +28,6 @@ import sample.Broadcaster;
 import sample.Listener;
 import sample.complex.ComplexBuffer;
 import source.SourceException;
-import source.tuner.Tuner;
-import source.tuner.TunerChannel;
-import source.tuner.TunerChannelSource;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerController;
 import controller.ThreadPoolManager;
@@ -81,15 +77,19 @@ import dsp.filter.hilbert.HilbertTransform;
 
 public class AirspyTunerController extends TunerController
 {
+	public static final Gain LINEARITY_GAIN_DEFAULT = Gain.LINEARITY_14;
+	public static final Gain SENSITIVITY_GAIN_DEFAULT = Gain.SENSITIVITY_10;
+	public static final int GAIN_MIN = 1;
+	public static final int GAIN_MAX = 22;
 	public static final int LNA_GAIN_MIN = 0;
 	public static final int LNA_GAIN_MAX = 14;
-	public static final int LNA_GAIN_DEFAULT = 1;
+	public static final int LNA_GAIN_DEFAULT = 7;
 	public static final int MIXER_GAIN_MIN = 0;
 	public static final int MIXER_GAIN_MAX = 15;
-	public static final int MIXER_GAIN_DEFAULT = 5;
+	public static final int MIXER_GAIN_DEFAULT = 9;
 	public static final int IF_GAIN_MIN = 0;
 	public static final int IF_GAIN_MAX = 15;
-	public static final int IF_GAIN_DEFAULT = 5;
+	public static final int IF_GAIN_DEFAULT = 9;
 	public static final long FREQUENCY_MIN = 24000000l;
 	public static final long FREQUENCY_MAX = 1800000000l;
 	public static final long FREQUENCY_DEFAULT = 101100000;
@@ -296,6 +296,11 @@ public class AirspyTunerController extends TunerController
 				
 				setMixerAGC( airspy.isMixerAGC() );
 				setLNAAGC( airspy.isLNAAGC() );
+
+				//Set the gain mode last, so custom values are already set, and
+				//linearity and sensitivity modes will automatically override
+				//the custom values.
+				setGain( airspy.getGain() );
 			}
 			catch( Exception e )
 			{
@@ -480,6 +485,18 @@ public class AirspyTunerController extends TunerController
 		if( result != LibUsb.SUCCESS )
 		{
 			throw new UsbException( "Couldnt set LNA AGC enabled: " + enabled  );
+		}
+	}
+	
+	public void setGain( Gain gain ) throws UsbException
+	{
+		if( gain != Gain.CUSTOM )
+		{
+			setMixerAGC( false );
+			setLNAAGC( false );
+			setLNAGain( gain.getLNA() );
+			setMixerGain( gain.getMixer() );
+			setIFGain( gain.getIF() );
 		}
 	}
 
@@ -829,6 +846,155 @@ public class AirspyTunerController extends TunerController
 							LibUsb.ERROR_NO_DEVICE );
 		}
 	}
+
+	public enum GainMode
+	{
+		LINEARITY,
+		SENSITIVITY,
+		CUSTOM;
+	}
+	
+	public enum Gain
+	{
+		LINEARITY_1( 1, 4, 0, 0 ),
+		LINEARITY_2( 2, 5, 0, 0 ),
+		LINEARITY_3( 3, 6, 1, 0 ),
+		LINEARITY_4( 4, 7, 1, 0 ),
+		LINEARITY_5( 5, 8, 1, 0 ),
+		LINEARITY_6( 6, 9, 1, 0 ),
+		LINEARITY_7( 7, 10, 2, 0 ),
+		LINEARITY_8( 8, 10, 2, 1 ),
+		LINEARITY_9( 9, 10, 0, 3 ),
+		LINEARITY_10( 10, 10, 0, 5 ),
+		LINEARITY_11( 11, 10, 1, 6 ),
+		LINEARITY_12( 12, 10, 0, 8 ),
+		LINEARITY_13( 13, 10, 0, 9 ),
+		LINEARITY_14( 14, 10, 5, 8 ),
+		LINEARITY_15( 15, 10, 6, 9 ),
+		LINEARITY_16( 16, 11, 6, 9 ),
+		LINEARITY_17( 17, 11, 7, 10 ),
+		LINEARITY_18( 18, 11, 8, 12 ),
+		LINEARITY_19( 19, 11, 9, 13 ),
+		LINEARITY_20( 20, 11, 11, 14 ),
+		LINEARITY_21( 21, 12, 12, 14 ),
+		LINEARITY_22( 22, 13, 12, 14 ),
+		SENSITIVITY_1( 1, 4, 0, 0 ),
+		SENSITIVITY_2( 2, 4, 0, 1 ),
+		SENSITIVITY_3( 3, 4, 0, 2 ),
+		SENSITIVITY_4( 4, 4, 0, 3 ),
+		SENSITIVITY_5( 5, 4, 1, 5 ),
+		SENSITIVITY_6( 6, 4, 2, 6 ),
+		SENSITIVITY_7( 7, 4, 2, 7 ),
+		SENSITIVITY_8( 8, 4, 3, 8 ),
+		SENSITIVITY_9( 9, 4, 4, 9 ),
+		SENSITIVITY_10( 10, 5, 4, 9 ),
+		SENSITIVITY_11( 11, 5, 4, 12 ),
+		SENSITIVITY_12( 12, 5, 7, 12 ),
+		SENSITIVITY_13( 13, 5, 8, 13 ),
+		SENSITIVITY_14( 14, 5, 9, 14 ),
+		SENSITIVITY_15( 15, 6, 9, 14 ),
+		SENSITIVITY_16( 16, 7, 10, 14 ),
+		SENSITIVITY_17( 17, 8, 10, 14 ),
+		SENSITIVITY_18( 18, 9, 11, 14 ),
+		SENSITIVITY_19( 19, 10, 12, 14 ),
+		SENSITIVITY_20( 20, 11, 12, 14 ),
+		SENSITIVITY_21( 21, 12, 12, 14 ),
+		SENSITIVITY_22( 22, 13, 12, 14 ),
+		CUSTOM( 1, 0, 0, 0 );
+
+		private int mValue;
+		private int mIF;
+		private int mMixer;
+		private int mLNA;
+
+		private Gain( int value, int ifGain, int mixer, int lna )
+		{
+			mValue = value;
+			mIF = ifGain;
+			mMixer = mixer;
+			mLNA = lna;
+		}
+		
+		public int getValue()
+		{
+			return mValue;
+		}
+		
+		public int getIF()
+		{
+			return mIF;
+		}
+		
+		public int getMixer()
+		{
+			return mMixer;
+		}
+		
+		public int getLNA()
+		{
+			return mLNA;
+		}
+		
+		public static Gain getGain( GainMode mode, int value )
+		{
+			assert( GAIN_MIN <= value && value <= GAIN_MAX );
+			
+			switch( mode )
+			{
+				case LINEARITY:
+					for( Gain gain: getLinearityGains() )
+					{
+						if( gain.getValue() == value )
+						{
+							return gain;
+						}
+					}
+					return LINEARITY_GAIN_DEFAULT;
+				case SENSITIVITY:
+					for( Gain gain: getSensitivityGains() )
+					{
+						if( gain.getValue() == value )
+						{
+							return gain;
+						}
+					}
+					return SENSITIVITY_GAIN_DEFAULT;
+				case CUSTOM:
+				default:
+					return Gain.CUSTOM;
+			}
+		}
+		
+		public static GainMode getGainMode( Gain gain )
+		{
+			if( gain == CUSTOM )
+			{
+				return GainMode.CUSTOM;
+			}
+			else if( getLinearityGains().contains( gain ) )
+			{
+				return GainMode.LINEARITY;
+			}
+			else if( getSensitivityGains().contains( gain ) )
+			{
+				return GainMode.SENSITIVITY;
+			}
+			
+			return GainMode.CUSTOM;
+		}
+		
+		public static EnumSet<Gain> getLinearityGains()
+		{
+			return EnumSet.range( LINEARITY_1, LINEARITY_22 );
+		}
+		
+		public static EnumSet<Gain> getSensitivityGains()
+		{
+			return EnumSet.range( SENSITIVITY_1, SENSITIVITY_22 );
+		}
+	}
+	
+	
 	
 	/**
 	 * Airspy Board Identifier

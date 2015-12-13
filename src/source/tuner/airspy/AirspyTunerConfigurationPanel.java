@@ -49,6 +49,8 @@ import source.SourceException;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerConfigurationAssignment;
 import source.tuner.TunerType;
+import source.tuner.airspy.AirspyTunerController.Gain;
+import source.tuner.airspy.AirspyTunerController.GainMode;
 import controller.ResourceManager;
 
 public class AirspyTunerConfigurationPanel extends JPanel
@@ -69,18 +71,28 @@ public class AirspyTunerConfigurationPanel extends JPanel
     private JTextField mName;
 
     private JComboBox<AirspySampleRate> mSampleRateCombo;
-    private JComboBox mDecimationCombo;
-    private JLabel mEffectiveRate;
     
+    private JComboBox<GainMode> mGainModeCombo;
+    private JLabel mGainLabel;
+    private JLabel mGainFillerLabel;
+    private JLabel mGainValueLabel;
+    private JSlider mGain;
+
     private JLabel mIFGainLabel;
+    private JLabel mIFGainFillerLabel;
+    private JLabel mIFGainValueLabel;
     private JSlider mIFGain;
+
     private JLabel mLNAGainLabel;
+    private JCheckBox mLNAAGC;
+    private JLabel mLNAGainValueLabel;
     private JSlider mLNAGain;
+
+    private JLabel mMixerGainValueLabel;
+    private JCheckBox mMixerAGC;
     private JLabel mMixerGainLabel;
     private JSlider mMixerGain;
     
-    private JCheckBox mMixerAGC;
-    private JCheckBox mLNAAGC;
     
     public AirspyTunerConfigurationPanel( ResourceManager resourceManager,
     								      AirspyTunerController controller )
@@ -210,8 +222,6 @@ public class AirspyTunerConfigurationPanel extends JPanel
 					mController.setSampleRate( rate );
 					mSelectedConfig.setSampleRate( rate.getRate() );
 					save();
-					
-					mEffectiveRate.setText( rate.getLabel() );
 				} 
 				catch ( LibUsbException | UsbException e1 )
 				{
@@ -225,31 +235,102 @@ public class AirspyTunerConfigurationPanel extends JPanel
 		
 		add( mSampleRateCombo, "span 3,growx" );
 
-		/**
-		 * Decimation
-		 */
-		add( new JLabel( "Decimation:" ) );
-		mDecimationCombo = new JComboBox();
-		add( mDecimationCombo, "span 3,growx" );
-		mDecimationCombo.setEnabled( false );
-		
-		/**
-		 * Effective Rate
-		 */
-		add( new JLabel( "Effective Rate:" ) );
-		mEffectiveRate = new JLabel( "10,000,000" );
-		add( mEffectiveRate, "span 3,growx" );
-		
 		add( new JSeparator(), "span,growx,push" );
 
 		/**
+		 * Gain Mode
+		 */
+		add( new JLabel( "Gain Mode:" ) );
+		mGainModeCombo = new JComboBox<AirspyTunerController.GainMode>( GainMode.values() );
+		mGainModeCombo.setSelectedItem( Gain.getGainMode( mSelectedConfig.getGain() ) );
+		mGainModeCombo.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				GainMode mode = (GainMode)mGainModeCombo.getSelectedItem();
+				updateGainComponents( mode );
+				
+				switch( mode )
+				{
+					case LINEARITY:
+						mGain.setValue( AirspyTunerController.LINEARITY_GAIN_DEFAULT.getValue() );
+						mSelectedConfig.setGain( AirspyTunerController.LINEARITY_GAIN_DEFAULT );
+						break;
+					case SENSITIVITY:
+						mGain.setValue( AirspyTunerController.SENSITIVITY_GAIN_DEFAULT.getValue() );
+						mSelectedConfig.setGain( AirspyTunerController.SENSITIVITY_GAIN_DEFAULT );
+						break;
+					case CUSTOM:
+					default:
+						mLNAGain.setValue( mSelectedConfig.getLNAGain() );
+						mMixerGain.setValue( mSelectedConfig.getMixerGain() );
+						mIFGain.setValue( mSelectedConfig.getIFGain() );
+						mSelectedConfig.setGain( Gain.CUSTOM );
+						break;
+				}
+				
+				save();
+			}
+		} );
+		
+		add( mGainModeCombo, "wrap" );
+
+		/**
+		 * Gain
+		 */
+		mGainLabel = new JLabel( "Gain" );
+		add( mGainLabel );
+		mGainFillerLabel = new JLabel( "" );
+		add( mGainFillerLabel, "span 2" );
+		mGainValueLabel = new JLabel( String.valueOf( mSelectedConfig.getGain().getValue() ) );
+		add( mGainValueLabel, "wrap" );
+		mGain = new JSlider( JSlider.HORIZONTAL, 
+				AirspyTunerController.GAIN_MIN, 
+				AirspyTunerController.GAIN_MAX,
+				mSelectedConfig.getGain().getValue() );
+		mGain.setMajorTickSpacing( 1 );
+		mGain.setPaintTicks( true );
+		
+		mGain.addChangeListener( new ChangeListener()
+		{
+			@Override
+			public void stateChanged( ChangeEvent event )
+			{
+				GainMode mode = (GainMode)mGainModeCombo.getSelectedItem();
+				int value = mGain.getValue();
+				Gain gain = Gain.getGain( mode, value );
+
+				try
+				{
+					mController.setGain( gain );
+					mSelectedConfig.setGain( gain );
+					save();
+					mGainValueLabel.setText( String.valueOf( gain.getValue() ) );
+				} 
+				catch ( Exception e )
+				{
+					mLog.error( "Couldn't set airspy gain to:" + gain.name(), e );
+					
+					JOptionPane.showMessageDialog( mGain, 
+							"Couldn't set gain value to " + gain.getValue() );
+					
+					mGain.setValue( mSelectedConfig.getGain().getValue() );
+				}
+			}
+		} );
+
+		add( mGain, "span,grow" );
+		
+		/**
 		 *  IF/VGA Gain 
 		 */
-		add( new JLabel( "IF Gain" ) );
-		add( new JLabel( "" ), "span 2" );
-		
-		mIFGainLabel = new JLabel( String.valueOf( mSelectedConfig.getIFGain() ) );
-		add( mIFGainLabel, "wrap" );
+		mIFGainLabel = new JLabel( "IF Gain" );
+		add( mIFGainLabel );
+		mIFGainFillerLabel = new JLabel( "" );
+		add( mIFGainFillerLabel, "span 2" );
+		mIFGainValueLabel = new JLabel( String.valueOf( mSelectedConfig.getIFGain() ) );
+		add( mIFGainValueLabel, "wrap" );
 		
 		mIFGain = new JSlider( JSlider.HORIZONTAL, 
 								AirspyTunerController.IF_GAIN_MIN, 
@@ -271,7 +352,7 @@ public class AirspyTunerConfigurationPanel extends JPanel
 					mController.setIFGain( gain );
 					mSelectedConfig.setIFGain( gain );
 					save();
-					mIFGainLabel.setText( String.valueOf( gain ) );
+					mIFGainValueLabel.setText( String.valueOf( gain ) );
 				} 
 				catch ( Exception e )
 				{
@@ -287,12 +368,14 @@ public class AirspyTunerConfigurationPanel extends JPanel
 
 		add( mIFGain, "span,grow" );
 		
-		add( new JLabel( "Mixer Gain" ) );
+		/**
+		 *  Mixer Gain 
+		 */
+		mMixerGainLabel = new JLabel( "Mixer Gain" );
+		add( mMixerGainLabel );
 		
 		mMixerAGC = new JCheckBox( "AGC" );
-		
 		mMixerAGC.setSelected( mSelectedConfig.isMixerAGC() );
-		
 		mMixerAGC.addActionListener( new ActionListener()
 		{
 			@Override
@@ -315,8 +398,8 @@ public class AirspyTunerConfigurationPanel extends JPanel
 		
 		add( mMixerAGC, "span 2,center" );
 		
-		mMixerGainLabel = new JLabel( String.valueOf( mSelectedConfig.getMixerGain() ) );
-		add( mMixerGainLabel, "wrap" );
+		mMixerGainValueLabel = new JLabel( String.valueOf( mSelectedConfig.getMixerGain() ) );
+		add( mMixerGainValueLabel, "wrap" );
 		
 		mMixerGain = new JSlider( JSlider.HORIZONTAL, 
 								AirspyTunerController.MIXER_GAIN_MIN, 
@@ -338,7 +421,7 @@ public class AirspyTunerConfigurationPanel extends JPanel
 					mController.setMixerGain( gain );
 					mSelectedConfig.setMixerGain( gain );
 					save();
-					mMixerGainLabel.setText( String.valueOf( gain ) );
+					mMixerGainValueLabel.setText( String.valueOf( gain ) );
 				} 
 				catch ( Exception e )
 				{
@@ -352,13 +435,15 @@ public class AirspyTunerConfigurationPanel extends JPanel
 		} );
 
 		add( mMixerGain, "span,grow" );
-		
-		add( new JLabel( "LNA Gain" ) );
+
+		/**
+		 *  LNA Gain 
+		 */
+		mLNAGainLabel = new JLabel( "LNA Gain" );
+		add( mLNAGainLabel );
 		
 		mLNAAGC = new JCheckBox( "AGC" );
-
 		mLNAAGC.setSelected( mSelectedConfig.isLNAAGC() );
-
 		mLNAAGC.addActionListener( new ActionListener()
 		{
 			@Override
@@ -381,8 +466,8 @@ public class AirspyTunerConfigurationPanel extends JPanel
 		
 		add( mLNAAGC, "span 2,center" );
 		
-		mLNAGainLabel = new JLabel( String.valueOf( mSelectedConfig.getLNAGain() ) );
-		add( mLNAGainLabel, "wrap" );
+		mLNAGainValueLabel = new JLabel( String.valueOf( mSelectedConfig.getLNAGain() ) );
+		add( mLNAGainValueLabel, "wrap" );
 		
 		mLNAGain = new JSlider( JSlider.HORIZONTAL, 
 								AirspyTunerController.LNA_GAIN_MIN, 
@@ -404,7 +489,7 @@ public class AirspyTunerConfigurationPanel extends JPanel
 					mController.setLNAGain( gain );
 					mSelectedConfig.setLNAGain( gain );
 					save();
-					mLNAGainLabel.setText( String.valueOf( gain ) );
+					mLNAGainValueLabel.setText( String.valueOf( gain ) );
 				} 
 				catch ( Exception e )
 				{
@@ -418,6 +503,9 @@ public class AirspyTunerConfigurationPanel extends JPanel
 		} );
 
 		add( mLNAGain, "span,grow" );
+
+		//Set the enabled state of each of the gain controls
+		updateGainComponents( (GainMode)mGainModeCombo.getSelectedItem() );
 		
         /**
          * Create a new configuration
@@ -485,6 +573,34 @@ public class AirspyTunerConfigurationPanel extends JPanel
 
 		add( mDeleteConfiguration, "span 2,growx,push" );
     }
+    
+    /**
+     * Updates the enabled state of each of the gain controls according to the
+     * specified gain mode.  The overall gain controls are enabled for linearity
+     * and sensitivity and the individual gain controls are disabled, and 
+     * vice-versa for custom mode.
+     */
+    private void updateGainComponents( GainMode mode )
+    {
+    	boolean isCustom = ( mode == GainMode.CUSTOM );
+    	
+		mGainLabel.setEnabled( !isCustom );
+		mGainFillerLabel.setEnabled( !isCustom );
+		mGainValueLabel.setEnabled( !isCustom );
+		mGain.setEnabled( !isCustom );
+		mIFGainLabel.setEnabled( isCustom );
+	    mIFGainFillerLabel.setEnabled( isCustom );
+	    mIFGainValueLabel.setEnabled( isCustom );
+	    mIFGain.setEnabled( isCustom );
+	    mLNAGainLabel.setEnabled( isCustom );
+	    mLNAAGC.setEnabled( isCustom );
+	    mLNAGainValueLabel.setEnabled( isCustom );
+	    mLNAGain.setEnabled( isCustom );
+	    mMixerGainValueLabel.setEnabled( isCustom );
+	    mMixerAGC.setEnabled( isCustom );
+	    mMixerGainLabel.setEnabled( isCustom );
+	    mMixerGain.setEnabled( isCustom );
+    }
 
     /**
      * Updates gui controls with the values from the tuner configuration
@@ -507,15 +623,17 @@ public class AirspyTunerConfigurationPanel extends JPanel
 	        {
 	        	mSampleRateCombo.setSelectedItem( rate );
 	        }
-	        
-	        //TODO: set decimation and effective rate here
-	        
+
 	        mIFGain.setValue( mSelectedConfig.getIFGain() );
 	        mMixerGain.setValue( mSelectedConfig.getMixerGain() );
 	        mLNAGain.setValue( mSelectedConfig.getLNAGain() );
 	        
 	        mMixerAGC.setSelected( mSelectedConfig.isMixerAGC() );
 	        mLNAAGC.setSelected( mSelectedConfig.isLNAAGC() );
+	        
+	        Gain gain = mSelectedConfig.getGain();
+        	mGainModeCombo.setSelectedItem( Gain.getGainMode( gain ) );
+	        mGain.setValue( gain.getValue() );
 	        
 	        mResourceManager.getSettingsManager().setSelectedTunerConfiguration( 
 			TunerType.AIRSPY_R820T, mController.getDeviceInfo().getSerialNumber(), config );
