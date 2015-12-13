@@ -151,7 +151,7 @@ public class P25DecoderPanel extends DecoderPanel
 							
 							final String icon = from.getIconName();
 							
-							if( icon != null )
+							if( icon != null && mSettingsManager != null )
 							{
 								mFromAlias.setIcon( mSettingsManager.getImageIcon( 
 									icon, SettingsManager.DEFAULT_ICON_SIZE )  );
@@ -182,7 +182,7 @@ public class P25DecoderPanel extends DecoderPanel
 
 							final String icon = to.getIconName();
 							
-							if( icon != null )
+							if( icon != null && mSettingsManager != null )
 							{
 								mToAlias.setIcon( mSettingsManager.getImageIcon( 
 									icon, SettingsManager.DEFAULT_ICON_SIZE )  );
