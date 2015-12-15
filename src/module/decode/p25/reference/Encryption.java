@@ -45,18 +45,24 @@ public enum Encryption
 				return BATON_AUTO_ODD;
 			case 0x80:
 				return UNENCRYPTED;
+			case 0x81:
+				return DES_OFB;
 			case 0x82:
 				return TRIPLE_DES_2_KEY;
 			case 0x83:
 				return TRIPLE_DES_3_KEY;
 			case 0x84:
 				return AES_256;
+			case 0x85:
+				return AES_CBC;
 			case 0x9F:
-				return DES_OFB;
+				return DES_XL;
 			case 0xA0:
 				return DVI_XL;
 			case 0xA1:
 				return DVP_XL;
+			case 0xAA:
+				return ADP;
 			default:
 				return UNKNOWN;
 		}
