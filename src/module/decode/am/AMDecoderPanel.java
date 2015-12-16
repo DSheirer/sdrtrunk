@@ -19,6 +19,7 @@ package module.decode.am;
 
 import javax.swing.JLabel;
 
+import net.miginfocom.swing.MigLayout;
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderPanel;
 import module.decode.state.DecoderState;
@@ -41,7 +42,12 @@ public class AMDecoderPanel extends DecoderPanel
 	
 	public void init()
 	{
+		super.init();
+		
+    	setLayout( new MigLayout( "insets 0 0 0 0", "[grow,fill]", "[]0[]0[]") );
+		
 		mProtocol.setFont( mFontDecoder );
+		mProtocol.setForeground( mColorLabelDecoder );
 
 		add( mProtocol, "wrap" );
 	}

@@ -1,15 +1,22 @@
 
-0.2.0 2015xxxx Major overhaul of underlying processing chain and extensive 
-      updates to all decoders and filters
-      - Resolved issue with memory leaks and crashes
-      - New audio playback interface with global mute and support for one or two
-        audio channels
-      - Audio playback is prioritized using a new Call Priority alias action
-        with selected channels having the highest priority and any audio without
-        an alias identifier having the lowest priority.
-      - Audio recording by call with new 'Non-Recordable' alias action
-      - (planned)Added Ettus UHD support for B100 with WBX tuner
-      - Added Airspy tuner support
+0.2.0 2015xxxx 
+ - Major overhaul of underlying processing chain and extensive updates to all 
+   decoders and filters
+ - New audio playback interface with global mute and support for one or two
+   audio channels
+ - Audio playback is prioritized using a new Call Priority alias action
+   with selected channels having the highest priority and any audio without
+   an alias identifier having the lowest priority.
+ - Updated Audio recording per call with new 'Non-Recordable' alias action
+ - Updated Baseband (I/Q) recording at 48 kHz
+ - Added Airspy tuner support
+ - New traffic channel pool manager for trunked call following
+ - P25 Decoder for C4FM and LSM with trunked call following and audio 
+   decoding via the JMBE library
+ - Updated MPT1327 decoder and trunked call following.
+ - Updated spectral and waterfall display with zoom (2-64x) and pan and automatic
+   noise floor (dB) adjusted to tuner sample size
+ - Resolved some issues with memory leaks and crashes
       
 0.1.5 20150612 Added initial P25 Decoder support with integrated audio decoding
       using the JMBE library   

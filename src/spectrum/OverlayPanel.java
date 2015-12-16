@@ -75,7 +75,7 @@ public class OverlayPanel extends JPanel
 	}
 	
 	private final static BasicStroke DASHED_STROKE = new BasicStroke(0.8f, 
-		BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 5.0f, new float[] {5.0f}, 0.0f);	
+		BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 5.0f, new float[] {2.0f, 4.0f}, 0.0f);	
 	
 	private static DecimalFormat CURSOR_FORMAT = new DecimalFormat( "000.00000" );
 	private long mFrequency = 0;
@@ -342,7 +342,7 @@ public class OverlayPanel extends JPanel
     {
     	Stroke currentStroke = graphics.getStroke();
     	
-    	graphics.setStroke( DASHED_STROKE );
+//    	graphics.setStroke( DASHED_STROKE );
 
     	long minFrequency = getMinDisplayFrequency();
     	long maxFrequency = getMaxDisplayFrequency();
@@ -352,6 +352,12 @@ public class OverlayPanel extends JPanel
     	int major = mLabelSizeMonitor.getMajorTickIncrement( graphics );
     	int minor = mLabelSizeMonitor.getMinorTickIncrement( graphics );
 
+    	//Avoid divide by zero error
+    	if( minor == 0 )
+    	{
+    		minor = 1;
+    	}
+    	
     	//Adjust the start frequency to a multiple of the minor tick spacing 
     	long frequency = minFrequency - ( minFrequency % minor );
     	
@@ -373,7 +379,7 @@ public class OverlayPanel extends JPanel
     		frequency += minor;
     	}
     	
-    	graphics.setStroke( currentStroke );
+//    	graphics.setStroke( currentStroke );
     }
     
     /**

@@ -21,10 +21,12 @@ import javax.xml.bind.annotation.XmlAttribute;
 
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
+import source.tuner.airspy.AirspyTunerController.Gain;
 
 public class AirspyTunerConfiguration extends TunerConfiguration
 {
 	private int mSampleRate = AirspyTunerController.DEFAULT_SAMPLE_RATE.getRate();
+	private Gain mGain = AirspyTunerController.LINEARITY_GAIN_DEFAULT;
 	private int mIFGain = AirspyTunerController.IF_GAIN_DEFAULT;
 	private int mMixerGain = AirspyTunerController.MIXER_GAIN_DEFAULT;
 	private int mLNAGain = AirspyTunerController.LNA_GAIN_DEFAULT;
@@ -60,6 +62,17 @@ public class AirspyTunerConfiguration extends TunerConfiguration
 	public void setSampleRate( int sampleRate )
 	{
 		mSampleRate = sampleRate;
+	}
+	
+	@XmlAttribute( name = "gain" )
+	public Gain getGain()
+	{
+		return mGain;
+	}
+	
+	public void setGain( Gain gain )
+	{
+		mGain = gain;
 	}
 	
 	@XmlAttribute( name = "if_gain" )

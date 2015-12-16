@@ -714,7 +714,7 @@ public class Channel extends Configuration
 			}
 			catch( SourceException se )
 			{
-				mLog.info( "Couldn't obtain source for channel [" + mName + "]" );
+				//Do nothing, we couldn't get a source for the channel
 			}
 		}
 	}
@@ -1004,7 +1004,7 @@ public class Channel extends Configuration
 		TunerChannel tunerChannel = getTunerChannel();
 		
 		return tunerChannel != null &&
-			   tunerChannel.isWithin( minimum, maximum );
+			   tunerChannel.overlaps( minimum, maximum );
 	}
 	
 	public void addTrafficChannel( String channelID, Channel channel )

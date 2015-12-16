@@ -17,10 +17,10 @@
  ******************************************************************************/
 package record;
 
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +33,7 @@ import audio.AudioPacket;
 import audio.metadata.Metadata;
 import audio.metadata.MetadataType;
 import controller.ThreadPoolManager;
+import controller.ThreadPoolManager.ThreadType;
 
 public class RecorderManager implements Listener<AudioPacket>
 {
@@ -43,6 +44,8 @@ public class RecorderManager implements Listener<AudioPacket>
 	private Map<String,RealBufferWaveRecorder> mRecorders = new HashMap<>();
 	
 	private ThreadPoolManager mThreadPoolManager;
+	
+	private boolean mCanStartNewRecorders = true;
 
 	public RecorderManager( ThreadPoolManager threadPoolManager )
 	{
@@ -72,22 +75,35 @@ public class RecorderManager implements Listener<AudioPacket>
 				}
 				else if( audioPacket.getType() == AudioPacket.Type.END )
 				{
-					mRecorders.remove( identifier );
-					recorder.stop();
+					RealBufferWaveRecorder finished = mRecorders.remove( identifier );
+					finished.stop();
 				}
 			}
 			else if( audioPacket.getType() == AudioPacket.Type.AUDIO )
 			{
-				String filePrefix = getFilePrefix( audioPacket );
-				
-				RealBufferWaveRecorder recorder = 
-					new RealBufferWaveRecorder( mThreadPoolManager, 
-							AUDIO_SAMPLE_RATE, filePrefix );
-				
-				recorder.start();
+				if( mCanStartNewRecorders )
+				{
+					String filePrefix = getFilePrefix( audioPacket );
 
-				recorder.receive( audioPacket.getAudioBuffer() );
-				mRecorders.put( identifier, recorder );
+					try
+					{
+						RealBufferWaveRecorder recorder = 
+								new RealBufferWaveRecorder( mThreadPoolManager, 
+										AUDIO_SAMPLE_RATE, filePrefix );
+							
+						recorder.start();
+
+						recorder.receive( audioPacket.getAudioBuffer() );
+						mRecorders.put( identifier, recorder );
+					}
+					catch( Exception ioe )
+					{
+						mCanStartNewRecorders = false;
+						
+						mLog.error( "Error attempting to start new audio wave recorder."
+							+ "  All (future) audio recording is disabled", ioe ); 
+					}
+				}
 			}
 		}
 	}

@@ -83,6 +83,7 @@ import module.decode.state.TrafficChannelManager;
 import module.decode.tait.Tait1200Decoder;
 import module.decode.tait.Tait1200DecoderPanel;
 import module.decode.tait.Tait1200DecoderState;
+import module.demodulate.am.AMDemodulatorModule;
 import module.demodulate.fm.FMDemodulatorModule;
 
 import org.slf4j.Logger;
@@ -192,8 +193,10 @@ public class DecoderFactory
 		switch( decodeConfig.getDecoderType() )
 		{
 		    case AM:
+		    	modules.add( new AMDemodulatorModule() );
 		    	modules.add( new AMDecoder( decodeConfig ) );
 		    	modules.add( new AlwaysUnsquelchedDecoderState( DecoderType.AM, channelName ) );
+				modules.add( new AudioModule( recordAudio, REMOVE_DC ) );
 		        break;
 			case NBFM:
 				modules.add( new AudioModule( recordAudio, NO_REMOVE_DC ) );

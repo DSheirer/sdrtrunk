@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014,2015 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@ package source.tuner;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.concurrent.RejectedExecutionException;
 
 import org.slf4j.Logger;
@@ -39,25 +38,34 @@ public abstract class TunerController implements Tunable
 	/* List of currently tuned channels being served to demod channels */
 	protected ArrayList<TunerChannel> mTunedChannels = 
 					new ArrayList<TunerChannel>();
-	
 	protected FrequencyController mFrequencyController;
+	private int mMiddleUnusable;
+	private double mUsableBandwidthPercentage;
 	
 	/**
 	 * Abstract tuner controller class.  The tuner controller manages frequency
 	 * bandwidth and currently tuned channels that are being fed samples from
 	 * the tuner.
 	 * 
-	 * @param minimumFrequency - minimum uncorrected tunable frequency
-	 * @param maximumFrequency - maximum uncorrected tunable frequency
+	 * @param minimumFrequency minimum uncorrected tunable frequency
+	 * @param maximumFrequency maximum uncorrected tunable frequency
+	 * @param middleUnusable is the +/- value center DC spike to avoid for channels
+	 * @param extantUnusable is the unusable space at the extreme ends of the spectrum
+	 * 
 	 * @throws SourceException - for any issues related to constructing the 
 	 * class, tuning a frequency, or setting the bandwidth
 	 */
-	public TunerController( long minimumFrequency, long maximumFrequency ) 
+	public TunerController( long minimumFrequency, 
+							long maximumFrequency,
+							int middleUnusable,
+							double usableBandwidthPercentage ) 
 	{
 		mFrequencyController = new FrequencyController( this, 
 														minimumFrequency, 
 														maximumFrequency, 
 														0.0d );
+		mMiddleUnusable = middleUnusable;
+		mUsableBandwidthPercentage = usableBandwidthPercentage;
 	}
 	
 	/**
@@ -112,24 +120,21 @@ public abstract class TunerController implements Tunable
 		return mFrequencyController.getMaximumFrequency();
 	}
 	
-	public long getMinTunedFrequency()
+	private long getMinTunedFrequency() throws SourceException
 	{
-		return mFrequencyController.getFrequency() - 
-			   ( mFrequencyController.getBandwidth() / 2 );
+		return mFrequencyController.getFrequency() - ( getUsableBandwidth() / 2 );
 	}
 
-	public long getMaxTunedFrequency()
+	private long getMaxTunedFrequency() throws SourceException
 	{
-		return mFrequencyController.getFrequency() + 
-			   ( mFrequencyController.getBandwidth() / 2 );
+		return mFrequencyController.getFrequency() + ( getUsableBandwidth() / 2 );
 	}
 
 	/**
-	 * Indicates if the tuner can accomodate this new channel frequency and
-	 * bandwidth, along with all of the existing tuned channels currently in 
-	 * place.
+	 * Indicates if channel along with all of the other currently sourced 
+	 * channels can fit within the tunable bandwidth.
 	 */
-	public boolean canTuneChannel( TunerChannel channel )
+	private boolean canTune( TunerChannel channel )
 	{
 		//Make sure we're within the tunable frequency range of this tuner
 		if( getMinFrequency() < channel.getMinFrequency() &&
@@ -145,19 +150,27 @@ public abstract class TunerController implements Tunable
 				//Sort the existing locks and get the min/max locked frequencies
 				Collections.sort( mTunedChannels );
 
+				int usableBandwidth = getUsableBandwidth();
 				long minLockedFrequency = mTunedChannels.get( 0 ).getMinFrequency();
 				long maxLockedFrequency = mTunedChannels
 						.get( mTunedChannels.size() - 1 ).getMaxFrequency();
 
-				//Requested channel is higher than min locked frequency
+				//Requested channel is within current locked channel frequency range
 				if( minLockedFrequency <= channel.getMinFrequency() &&
-					( channel.getMaxFrequency() - minLockedFrequency ) <= getBandwidth()  )
+					channel.getMaxFrequency() <= maxLockedFrequency )
+				{
+					return true;
+				}
+				
+				//Requested channel is higher than min locked frequency
+				if( channel.getMaxFrequency() > minLockedFrequency &&
+					channel.getMaxFrequency() - minLockedFrequency <= usableBandwidth )
 				{
 					return true;
 				}
 				//Requested channel is lower than the max locked frequency
-				else if( channel.getMaxFrequency() <= maxLockedFrequency && 
-					( maxLockedFrequency - channel.getMinFrequency() ) <= getBandwidth() )
+				if( channel.getMinFrequency() <= maxLockedFrequency && 
+					maxLockedFrequency - channel.getMinFrequency() <= usableBandwidth )
 				{
 					return true;
 				}
@@ -166,26 +179,72 @@ public abstract class TunerController implements Tunable
 		
 		return false;
 	}
-	
+
+	/**
+	 * Constructs a digital drop channel (DDC) as a tuner channel from from 
+	 * the tuner, or returns null if the channel cannot be sourced from the 
+	 * tuner.  
+	 * 
+	 * This controller can't provide a channel if the channel, along with the
+	 * current set of sourced channels, can't be accomodated within the current
+	 * tuner bandwidth, or if a center frequency cannot be calculated that will
+	 * ensure all of the channels can be accomodated and any defined central DC 
+	 * spike avoided.
+	 * 
+	 * @param threadPoolManager for the channel to use for runnables
+	 * @param tuner to source the channel from
+	 * @param channel with defined center frequency and bandwidth
+	 * 
+	 * @return fully constructed tuner channel or null
+	 * 
+	 * @throws RejectedExecutionException if the decimation processor has an error
+	 */
 	public TunerChannelSource getChannel( ThreadPoolManager threadPoolManager,
-		Tuner tuner, TunerChannel tunerChannel )
-				throws RejectedExecutionException, SourceException
+		Tuner tuner, TunerChannel channel ) throws RejectedExecutionException
 	{
 		TunerChannelSource source = null;
 		
-		if( canTuneChannel( tunerChannel ) )
+		if( canTune( channel ) )
 		{
-			mTunedChannels.add( tunerChannel );
-			
-			updateLOFrequency();
-			
-			source = new TunerChannelSource( threadPoolManager, 
-					tuner, tunerChannel );
+			try
+			{
+				mTunedChannels.add( channel );
+
+				if( requiresLOUpdate( channel ) )
+				{
+					updateLOFrequency();
+				}
+				
+				source = new TunerChannelSource( threadPoolManager, 
+						tuner, channel );
+			}
+			catch( SourceException se )
+			{
+				mTunedChannels.remove( channel );
+				source = null;
+			}
 		}
 
 		return source;
 	}
-	
+
+	/**
+	 * Indicates if the tuner's LO frequency must be updated in order to 
+	 * accomodate the tuner channel
+	 */
+	private boolean requiresLOUpdate( TunerChannel channel ) throws SourceException
+	{
+		return !( getMinTunedFrequency() <= channel.getMinFrequency() &&
+				  channel.getMaxFrequency() <= getMaxTunedFrequency() &&
+				  ( ( mMiddleUnusable == 0 ) ||
+				    ( !channel.overlaps( getTunedFrequency() - mMiddleUnusable, 
+				    					 getTunedFrequency() + mMiddleUnusable ) ) ) );
+	}
+
+	/**
+	 * Releases the currently sourced tuner channel from this tuner and shuts
+	 * down the tuner if no other sources exist.
+	 */
 	public void releaseChannel( TunerChannelSource tunerChannelSource )
 	{
 		if( tunerChannelSource != null )
@@ -194,56 +253,115 @@ public abstract class TunerController implements Tunable
 		}
 		else
 		{
-			mLog.error( "Tuner Controller - couldn't find the tuned channel "
-					+ "to release it" );
+			mLog.error( "Request to release channel that is not in current tuned channels set" );
 		}
 	}
 	
 	/**
-	 * Sets the Local Oscillator frequency to the middle of the currently
-	 * locked frequency range, adjusting the left/right of a channel, if the
-	 * middle falls within the locked range of any of the channels.  Note: this
-	 * will fail to set the correct frequency if multiple overlapping channel
-	 * bandwidths are locked in the exact middle of the total locked channel 
-	 * frequency range.
+	 * Sets the Local Oscillator frequency accomodate the current set of tuned
+	 * channels.  
+	 * 
+	 * If there is only a single tuned channel, it is placed immediately to the
+	 * right of the usable bandwidth right of the central DC spike.
+	 * 
+	 * Otherwise, it places the highest channel frequency at the upper end of
+	 * the tuner bandwidth, and then iteratively moves the center frequency 
+	 * higher until all channels fit within the bandwidth and none of the
+	 * channels overlap any defined central DC spike unusable region.  If a 
+	 * center tune frequency cannot be calculated, throw an exception so that 
+	 * the most recently added channel can be removed.
+	 * 
+	 * Note: the tuned frequency is not changed until a legitimate new frequency
+	 * can be calculated.  If an exception is thrown, the current frequency is
+	 * retained, so that the recently added channel can be removed and all other
+	 * channels can continue as previously arranged.
 	 *  
-	 * @throws SourceException
+	 * @throws SourceException if the set of tuner channels, including a recently
+	 * added channel, cannot be tuned within the current tuner bandwidth and any
+	 * central DC spike unusable region.
 	 */
-	public void updateLOFrequency() throws SourceException
+	private void updateLOFrequency() throws SourceException
 	{
 		Collections.sort( mTunedChannels );
 
-		long minLockedFrequency = mTunedChannels.get( 0 ).getMinFrequency();
-		long maxLockedFrequency = mTunedChannels
-				.get( mTunedChannels.size() - 1 ).getMaxFrequency();
+		long frequency = getFrequency();
+		
+		boolean frequencyValid = true;
 
-		long middle = minLockedFrequency + 
-				( ( maxLockedFrequency - minLockedFrequency ) / 2 );
-		long middleMin = middle - 10000;
-		long middleMax = middle + 10000;
-		
-		Iterator<TunerChannel> it = mTunedChannels.iterator();
-		
-		while( it.hasNext() )
+		//If there is only 1 channel, position it to the right of center
+		if( mTunedChannels.size() == 1 )
 		{
-			TunerChannel lock = it.next();
+			frequency = mTunedChannels.get( 0 ).getMinFrequency() - mMiddleUnusable;
+		}
+		else
+		{
+			long minLockedFrequency = mTunedChannels.get( 0 ).getMinFrequency();
+			long maxLockedFrequency = mTunedChannels
+					.get( mTunedChannels.size() - 1 ).getMaxFrequency();
 
-			//If a locked channel overlaps our middle frequency lockout, adjust to
-			//the left or the right of that channel, whichever is closer
-			if( lock.getMinFrequency() < middleMax && middleMin < lock.getMaxFrequency() )
+			//Start by placing the highest frequency channel at the high end of
+			//the spectrum
+			frequency = maxLockedFrequency - ( getUsableBandwidth() / 2 );
+
+			//Iterate the channels and make sure that none of them overlap the
+			//center DC spike buffer, if one exists
+			if( mMiddleUnusable > 0 )
 			{
-				if( middleMax - lock.getMinFrequency() < lock.getMaxFrequency() - middleMin )
+				boolean processingRequired = true;
+				
+				while( frequencyValid && processingRequired )
 				{
-					middle = lock.getMinFrequency() - 10000;
-				}
-				else
-				{
-					middle = lock.getMaxFrequency() + 10000;
+					processingRequired = false;
+					
+					long minAvoid = frequency - mMiddleUnusable;
+					long maxAvoid = frequency + mMiddleUnusable;
+
+					for( TunerChannel channel: mTunedChannels )
+					{
+						if( channel.overlaps( minAvoid, maxAvoid ) )
+						{
+							//Can we move the frequency lower so that the
+							//channel sits to the right of center?
+							long adjustment = channel.getMaxFrequency() - minAvoid;
+
+							if( frequency + adjustment - 
+								( getUsableBandwidth() / 2 ) <= minLockedFrequency )
+							{
+								frequency += adjustment;
+								processingRequired = true;
+							}
+							else
+							{
+								frequencyValid = false;
+							}
+							
+							//break out of the for/each loop, so that we can 
+							//start over again with all of the channels
+							break;
+						}
+					}
 				}
 			}
 		}
-		
-		mFrequencyController.setFrequency( middle );
+
+		if( frequencyValid )
+		{
+			mFrequencyController.setFrequency( frequency );
+		}
+		else
+		{
+			throw new SourceException( "Couldn't calculate viable center "
+					+ "frequency from set of tuner channels" );
+		}
+	}
+
+	/**
+	 * Usable bandwidth - total bandwidth minus the unusable space at either end
+	 * of the spectrum.
+	 */
+	private int getUsableBandwidth()
+	{
+		return (int)( getBandwidth() * mUsableBandwidthPercentage );
 	}
 
 	/**

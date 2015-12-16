@@ -51,6 +51,7 @@ public class MonoAudioOutput extends AudioOutput
 	
 	private AudioEvent mAudioStartEvent;
 	private AudioEvent mAudioStopEvent;
+	private AudioEvent mAudioContinuationEvent;
 	
 	public MonoAudioOutput( Mixer mixer )
 	{
@@ -59,6 +60,8 @@ public class MonoAudioOutput extends AudioOutput
 		mAudioStartEvent = new AudioEvent( AudioEvent.Type.AUDIO_STARTED, 
 				getChannelName() );
 		mAudioStopEvent = new AudioEvent( AudioEvent.Type.AUDIO_STOPPED, 
+				getChannelName() );
+		mAudioContinuationEvent = new AudioEvent( AudioEvent.Type.AUDIO_CONTINUATION, 
 				getChannelName() );
 
 		try
@@ -130,6 +133,8 @@ public class MonoAudioOutput extends AudioOutput
 				
 				if( packets.size() > 0 )
 				{
+					broadcast( mAudioContinuationEvent );
+					
 					for( AudioPacket packet: packets )
 					{
 						if( mCanProcessAudio )

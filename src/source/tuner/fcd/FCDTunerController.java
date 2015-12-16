@@ -46,6 +46,9 @@ public abstract class FCDTunerController extends TunerController
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( FCDTunerController.class );
 
+	public static final double USABLE_BANDWIDTH_PERCENT = 1.0;
+	public static final int DC_SPIKE_AVOID_BUFFER = 2000;
+	
 	public final static byte FCD_INTERFACE = (byte)0x2;
 	public final static byte FCD_ENDPOINT_IN = (byte)0x82;
 	public final static byte FCD_ENDPOINT_OUT = (byte)0x2;
@@ -70,7 +73,10 @@ public abstract class FCDTunerController extends TunerController
 							   int minTunableFrequency,
 							   int maxTunableFrequency )
 	{
-		super( minTunableFrequency, maxTunableFrequency );
+		super( minTunableFrequency, 
+			   maxTunableFrequency, 
+			   DC_SPIKE_AVOID_BUFFER, 
+			   USABLE_BANDWIDTH_PERCENT );
 
 		mDevice = device;
 		mDeviceDescriptor = descriptor;

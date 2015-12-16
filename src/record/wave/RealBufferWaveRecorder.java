@@ -125,11 +125,10 @@ public class RealBufferWaveRecorder extends Module
 	
 	public void stop()
 	{
-		if( mRunning.compareAndSet( true, false ) )
-		{
-			/* Signal the buffer processor to end with a poison pill */
-			receive( new PoisonPill() );
-		}
+		/* Signal the buffer processor to end with a poison pill */
+		receive( new PoisonPill() );
+		
+		mRunning.set( false );
 	}
 	
 	@Override
@@ -191,7 +190,6 @@ public class RealBufferWaveRecorder extends Module
 							try
 							{
 								mWriter.close();
-								mWriter = null;
 							}
 							catch( IOException io )
 							{
@@ -200,11 +198,12 @@ public class RealBufferWaveRecorder extends Module
 							}
 						}
 						
-						mFile = null;
-
 						mThreadPoolManager.cancel( mProcessorHandle );
 						
+						mWriter = null;
+						mFile = null;
 						mProcessorHandle = null;
+						mThreadPoolManager = null;
 					}
 					else
 					{

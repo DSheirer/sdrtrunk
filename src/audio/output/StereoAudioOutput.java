@@ -51,6 +51,7 @@ public class StereoAudioOutput extends AudioOutput
 	
 	private AudioEvent mAudioStartEvent;
 	private AudioEvent mAudioStopEvent;
+	private AudioEvent mAudioContinuationEvent;
 	
 	private MixerChannel mMixerChannel;
 	
@@ -65,6 +66,8 @@ public class StereoAudioOutput extends AudioOutput
 		mAudioStartEvent = new AudioEvent( AudioEvent.Type.AUDIO_STARTED, 
 				getChannelName() );
 		mAudioStopEvent = new AudioEvent( AudioEvent.Type.AUDIO_STOPPED, 
+				getChannelName() );
+		mAudioContinuationEvent = new AudioEvent( AudioEvent.Type.AUDIO_CONTINUATION, 
 				getChannelName() );
 
 		try
@@ -95,7 +98,8 @@ public class StereoAudioOutput extends AudioOutput
         catch ( LineUnavailableException e )
 		{
         	mLog.error( "Couldn't obtain source data line for 48kHz PCM stereo "
-        			+ "audio output" );
+        			+ "audio output - mixer [" + mixer.getMixerInfo().getName() + 
+        			"] channel [" + mMixerChannel.name() + "]" );
 		}
 	}
 
@@ -165,6 +169,8 @@ public class StereoAudioOutput extends AudioOutput
 				
 				if( packets.size() > 0 )
 				{
+					broadcast( mAudioContinuationEvent );
+					
 					for( AudioPacket packet: packets )
 					{
 						if( mCanProcessAudio )

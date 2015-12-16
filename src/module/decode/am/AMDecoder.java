@@ -27,8 +27,6 @@ public class AMDecoder extends PrimaryDecoder
 	public AMDecoder( DecodeConfiguration config )
 	{
 		super( config );
-		
-		//TODO: wire in the am decoder pieces
 	}
 
 	@Override

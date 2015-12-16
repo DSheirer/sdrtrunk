@@ -275,7 +275,7 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 		
 		private AudioOutput mAudioOutput;
 		private int mPriority;
-		private long mAudioStoppedTime = Long.MAX_VALUE;
+		private long mAudioStoppedTime = System.currentTimeMillis();
 		
 		public AudioChannelAssignment( AudioOutput audioOutput, int priority )
 		{
@@ -318,9 +318,8 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 			switch( event.getType() )
 			{
 				case AUDIO_STARTED:
-					mAudioStoppedTime = Long.MAX_VALUE;
-					break;
 				case AUDIO_STOPPED:
+				case AUDIO_CONTINUATION:
 					mAudioStoppedTime = System.currentTimeMillis();
 					break;
 				default:
@@ -345,8 +344,18 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 
 			endAllAudioAssignments();
 			
+			for( Entry<Integer,AudioChannelAssignment> e: mChannelAssignments.entrySet() )
+			{
+				e.getValue().getAudioOutput().dispose();
+			}
 			mChannelAssignments.clear();
+			
+			for( AudioOutput output: mAvailableAudioOutputs )
+			{
+				output.dispose();
+			}
 			mAvailableAudioOutputs.clear();
+
 			mChannelNames.clear();
 			mAudioOutputMap.clear();
 

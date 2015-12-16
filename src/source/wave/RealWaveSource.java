@@ -36,7 +36,8 @@ import source.IControllableFileSource;
 import source.IFrameLocationListener;
 import source.RealSource;
 
-public class RealWaveSource extends RealSource implements IControllableFileSource
+public class RealWaveSource extends RealSource 
+	implements IControllableFileSource, AutoCloseable
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( RealWaveSource.class );
@@ -168,6 +169,11 @@ public class RealWaveSource extends RealSource implements IControllableFileSourc
         	{
             	if( samplesRead < buffer.length )
             	{
+            		if( samplesRead == -1 )
+            		{
+            			throw new IOException( "End of recording" );
+            		}
+            		
             		buffer = Arrays.copyOf( buffer, samplesRead );
             	}
 

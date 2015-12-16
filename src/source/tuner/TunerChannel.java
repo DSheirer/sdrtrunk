@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014,2015 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -71,13 +71,17 @@ public class TunerChannel implements Comparable<TunerChannel>
 	}
 
 	/**
-	 * Indicates if any part of this tuner channel is contained within the
-	 * minimum and maximum frequency values.
+	 * Indicates if any part of this tuner channel overlaps the specified range
 	 */
-	public boolean isWithin( long minimum, long maximum )
+	public boolean overlaps( long minimum, long maximum )
 	{
-		return ( ( minimum <= getMinFrequency() && getMinFrequency() <= maximum ) ||
-				 ( minimum <= getMaxFrequency() && getMaxFrequency() <= maximum ) );
+		long channelMin = getMinFrequency();
+		long channelMax = getMaxFrequency();
+		
+		return ( ( minimum <= channelMin && channelMin <= maximum ) ||
+				 ( minimum <= channelMax && channelMax <= maximum ) ||
+				 ( minimum <= channelMin && channelMax <= maximum ) ||
+				 ( channelMin <= minimum && maximum <= channelMax ) );
 	}
 	
 	public String toString()
@@ -85,9 +89,9 @@ public class TunerChannel implements Comparable<TunerChannel>
 		StringBuilder sb = new StringBuilder();
 		
 		sb.append( "Channel: " );
-		sb.append( ( mFrequency - ( mBandwidth / 2 ) ) );
+		sb.append( getMinFrequency() );
 		sb.append( "-" );
-		sb.append( ( mFrequency + ( mBandwidth / 2 ) ) );
+		sb.append( getMaxFrequency() );
 
 		return sb.toString();
 	}

@@ -105,8 +105,8 @@ public class ComplexAutomaticGainControl implements Listener<Complex>,
 	private static final double AGC_OUT_SCALE = 0.7;
 
 	/* Keep max input and output the same */
-	private static final double MAX_AMPLITUDE = 32767.0; //1.0;
-	private static final double MAX_MANUAL_AMPLITUDE = 32767.0; //1.0;
+	private static final double MAX_AMPLITUDE = 1.0;
+	private static final double MAX_MANUAL_AMPLITUDE = 1.0;
 	
 	/* Specifies AGC manual gain in dB if AGC is not active ( 0 to 100 dB) */
 	private static final double MANUAL_GAIN = 0.0;

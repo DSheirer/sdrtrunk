@@ -260,9 +260,6 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
 //						.getErrorCorrection() );
 
 			mFrequencyAdjustmentRequested = 0;
-
-			/* reset internal frequency error tracker */
-			mCoarseFrequencyCorrection = 0;
 		}
 	}
 

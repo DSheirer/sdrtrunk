@@ -118,7 +118,7 @@ public class AirspyTuner extends Tuner
 	@Override
 	public double getSampleSize()
 	{
-		return 12.0;
+		return 13.0;
 	}
 
 	@Override

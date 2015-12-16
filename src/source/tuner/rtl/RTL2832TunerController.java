@@ -137,9 +137,14 @@ public abstract class RTL2832TunerController extends TunerController
 								   DeviceDescriptor deviceDescriptor,
 								   ThreadPoolManager threadPoolManager,
 								   long minTunableFrequency, 
-								   long maxTunableFrequency ) throws SourceException
+								   long maxTunableFrequency,
+								   int centerUnusableBandwidth,
+								   double usableBandwidthPercentage ) throws SourceException
 	{
-		super( minTunableFrequency, maxTunableFrequency );
+		super( minTunableFrequency, 
+			   maxTunableFrequency, 
+			   centerUnusableBandwidth, 
+			   usableBandwidthPercentage );
 		
 		mThreadPoolManager = threadPoolManager;
 

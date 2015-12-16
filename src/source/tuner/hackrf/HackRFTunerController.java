@@ -108,6 +108,8 @@ public class HackRFTunerController extends TunerController
 	public static final long MIN_FREQUENCY = 10000000l;
 	public static final long MAX_FREQUENCY = 6000000000l;
 	public static final long DEFAULT_FREQUENCY = 101100000;
+	public static final double USABLE_BANDWIDTH_PERCENT = 0.95;
+	public static final int DC_SPIKE_AVOID_BUFFER = 5000;
 
 	public final static int TRANSFER_BUFFER_POOL_SIZE = 16;
 	
@@ -131,7 +133,7 @@ public class HackRFTunerController extends TunerController
 	public HackRFTunerController( Device device, DeviceDescriptor descriptor, 
 			ThreadPoolManager threadPoolManager ) throws SourceException
 	{
-	    super( MIN_FREQUENCY, MAX_FREQUENCY );
+	    super( MIN_FREQUENCY, MAX_FREQUENCY, DC_SPIKE_AVOID_BUFFER, USABLE_BANDWIDTH_PERCENT );
 
 	    mDevice = device;
 	    mDeviceDescriptor = descriptor;
