@@ -1,16 +1,17 @@
 package module.decode.p25.message.ldu.lc;
 
+import module.decode.p25.message.IAdjacentSite;
 import module.decode.p25.message.IBandIdentifier;
 import module.decode.p25.message.IdentifierReceiver;
 import module.decode.p25.message.ldu.LDU1Message;
+import module.decode.p25.message.tsbk.osp.control.SystemService;
 import module.decode.p25.reference.LinkControlOpcode;
-import module.decode.p25.reference.Service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class AdjacentSiteStatusBroadcast extends LDU1Message
-										 implements IdentifierReceiver
+					 implements IdentifierReceiver, IAdjacentSite
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( AdjacentSiteStatusBroadcast.class );
@@ -46,20 +47,33 @@ public class AdjacentSiteStatusBroadcast extends LDU1Message
 		
 		sb.append( getMessageStub() );
 		
-		sb.append( " LRA:" + getLocationRegistrationArea() );
+		sb.append( " LRA:" + getLRA() );
 
 		sb.append( " SYS:" + getSystemID() );
 		
-		sb.append( " SITE:" + getRFSubsystemID() + "-" + getSiteID() );
+		sb.append( " SITE:" + getRFSS() + "-" + getSiteID() );
 		
 		sb.append( " CHAN:" + getChannel() );
 
-		sb.append( " " + Service.getServices( getSystemServiceClass() ).toString() );
+		sb.append( " " + getSystemServiceClass() );
 		
 		return sb.toString();
 	}
 	
-	public String getLocationRegistrationArea()
+    public String getUniqueID()
+    {
+    	StringBuilder sb = new StringBuilder();
+    	
+    	sb.append( getSystemID() );
+    	sb.append( ":" );
+    	sb.append( getRFSS() );
+    	sb.append( ":" );
+    	sb.append( getSiteID() );
+    	
+    	return sb.toString();
+    }
+    
+	public String getLRA()
 	{
 		return mMessage.getHex( LRA, 2 );
 	}
@@ -69,7 +83,7 @@ public class AdjacentSiteStatusBroadcast extends LDU1Message
 		return mMessage.getHex( SYSTEM_ID, 3 );
 	}
 	
-	public String getRFSubsystemID()
+	public String getRFSS()
 	{
 		return mMessage.getHex( RFSS_ID, 2 );
 	}
@@ -94,9 +108,9 @@ public class AdjacentSiteStatusBroadcast extends LDU1Message
 		return mMessage.getInt( CHANNEL );
 	}
 	
-	public int getSystemServiceClass()
+	public String getSystemServiceClass()
 	{
-		return mMessage.getInt( SYSTEM_SERVICE_CLASS );
+		return SystemService.toString( mMessage.getInt( SYSTEM_SERVICE_CLASS ) );
 	}
 
 	@Override
@@ -114,13 +128,26 @@ public class AdjacentSiteStatusBroadcast extends LDU1Message
 	    
 	    return identifiers;
     }
+
 	
-    public long getDownlinkFrequency()
+    @Override
+	public String getDownlinkChannel()
+	{
+		return getChannel();
+	}
+
+	@Override
+	public String getUplinkChannel()
+	{
+		return getChannel();
+	}
+
+	public long getDownlinkFrequency()
     {
     	return calculateDownlink( mIdentifierUpdate, getChannelNumber() );
     }
     
-    public long getUplinkFrequencyB()
+    public long getUplinkFrequency()
     {
     	return calculateUplink( mIdentifierUpdate, getChannelNumber() );
     }

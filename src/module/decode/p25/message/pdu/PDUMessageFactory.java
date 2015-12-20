@@ -66,6 +66,7 @@ public class PDUMessageFactory
 								return new GroupDataChannelGrantExtended( 
 										message, duid, aliasList );
 							case GROUP_VOICE_CHANNEL_GRANT:
+								
 								return new GroupVoiceChannelGrantExplicit( 
 										message, duid, aliasList );
 							case INDIVIDUAL_DATA_CHANNEL_GRANT:
@@ -123,7 +124,6 @@ public class PDUMessageFactory
 				
 			case UNCONFIRMED_MULTI_BLOCK_TRUNKING_CONTROL:
 				return new PDUMessage( message, duid, aliasList );
-				
 			default:
 				return new PDUMessage( message, duid, aliasList );
 		}

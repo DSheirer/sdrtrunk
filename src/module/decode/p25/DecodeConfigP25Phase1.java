@@ -18,6 +18,7 @@
 package module.decode.p25;
 
 import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlTransient;
 
 import module.decode.DecoderType;
 import module.decode.config.DecodeConfiguration;
@@ -27,7 +28,7 @@ public class DecodeConfigP25Phase1 extends DecodeConfiguration
 {
 	private P25_LSMDecoder.Modulation mModulation = Modulation.C4FM;
 	
-	private int mCallTimeout = DEFAULT_CALL_TIMEOUT_SECONDS;
+	private int mCallTimeout = 1;
 	private int mTrafficChannelPoolSize = TRAFFIC_CHANNEL_LIMIT_DEFAULT;
 	
 	public DecodeConfigP25Phase1()
@@ -52,8 +53,13 @@ public class DecodeConfigP25Phase1 extends DecodeConfiguration
 	{
 		mModulation = modulation;
 	}
-	
-	@XmlAttribute( name="call_timeout" )
+
+	/**
+	 * Note: this field is now deprecated.
+	 * @return
+	 */
+	@XmlTransient
+	@Deprecated
 	public int getCallTimeout()
 	{
 		return mCallTimeout;
@@ -63,16 +69,9 @@ public class DecodeConfigP25Phase1 extends DecodeConfiguration
 	 * Sets the call timeout value in seconds ( 10 - 600 );
 	 * @param timeout
 	 */
+	@Deprecated
 	public void setCallTimeout( int timeout )
 	{
-		if( CALL_TIMEOUT_MINIMUM <= timeout && timeout <= CALL_TIMEOUT_MAXIMUM )
-		{
-			mCallTimeout = timeout;
-		}
-		else
-		{
-			mCallTimeout = DEFAULT_CALL_TIMEOUT_SECONDS;
-		}
 	}
 
 	

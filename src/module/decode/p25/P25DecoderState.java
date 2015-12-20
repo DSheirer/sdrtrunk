@@ -31,6 +31,7 @@ import module.decode.DecoderType;
 import module.decode.event.CallEvent;
 import module.decode.event.CallEvent.CallEventType;
 import module.decode.p25.P25Decoder.Modulation;
+import module.decode.p25.message.IAdjacentSite;
 import module.decode.p25.message.IBandIdentifier;
 import module.decode.p25.message.P25Message;
 import module.decode.p25.message.hdu.HDUMessage;
@@ -67,6 +68,7 @@ import module.decode.p25.message.pdu.osp.voice.UnitToUnitVoiceChannelGrantExtend
 import module.decode.p25.message.pdu.osp.voice.UnitToUnitVoiceChannelGrantUpdateExtended;
 import module.decode.p25.message.tdu.TDUMessage;
 import module.decode.p25.message.tdu.lc.AdjacentSiteStatusBroadcast;
+import module.decode.p25.message.tdu.lc.AdjacentSiteStatusBroadcastExplicit;
 import module.decode.p25.message.tdu.lc.GroupVoiceChannelUpdate;
 import module.decode.p25.message.tdu.lc.GroupVoiceChannelUpdateExplicit;
 import module.decode.p25.message.tdu.lc.NetworkStatusBroadcast;
@@ -146,16 +148,14 @@ public class P25DecoderState extends DecoderState
 	private RFSSStatusBroadcast mRFSSStatusMessage;
 	private RFSSStatusBroadcastExtended mRFSSStatusMessageExtended;
 	private SNDCPDataChannelAnnouncementExplicit mSNDCPDataChannel;
-	private HashMap<String,AdjacentStatusBroadcast> mNeighborMap = 
-						new HashMap<String,AdjacentStatusBroadcast>();
 
 	private Set<module.decode.p25.message.tsbk.osp.control.SecondaryControlChannelBroadcast> mSecondaryControlChannels = 
 			new TreeSet<>();
 	
-	private HashMap<Integer,IdentifierUpdate> mBands = 
-							new HashMap<Integer,IdentifierUpdate>();
+	private Map<Integer,IdentifierUpdate> mBands = new HashMap<>();
+	private Map<String,Long> mRegistrations = new HashMap<>();
+	private Map<String,IAdjacentSite> mNeighborMap = new HashMap<>();
 
-	private HashMap<String,Long> mRegistrations = new HashMap<String,Long>();
 	private String mLastCommandEventID;
 	private String mLastPageEventID;
 	private String mLastQueryEventID;
@@ -291,7 +291,7 @@ public class P25DecoderState extends DecoderState
 						hasEvent = true;
 					}
 				}
-				else if( event.getFromID() == null )
+				else
 				{
 					hasEvent = true;
 				}
@@ -390,15 +390,10 @@ public class P25DecoderState extends DecoderState
 	}
 
 	/**
-	 * Terminator Data Unit, or default message if the CRC failed for a longer
-	 * message.  We process these as continuation events.
+	 * Terminator Data Unit
 	 */
 	private void processTDU( TDUMessage tdu )
 	{
-//		if( mCurrentCallEvent == null )
-//		{
-//			broadcast( new DecoderStateEvent( this, Event.CONTINUATION, State.CONTROL ) );
-//		}
 	}
 
 	/**
@@ -457,10 +452,11 @@ public class P25DecoderState extends DecoderState
 			case ADJACENT_SITE_STATUS_BROADCAST:
 				if( tdulc instanceof AdjacentSiteStatusBroadcast )
 				{
-					AdjacentSiteStatusBroadcast assb = 
-								(AdjacentSiteStatusBroadcast)tdulc;
+					IAdjacentSite ias = (IAdjacentSite)tdulc;
 					
-					updateSystem( assb.getSystemID() );
+					mNeighborMap.put( ias.getUniqueID(), ias );
+					
+					updateSystem( ias.getSystemID() );
 				}
 				else
 				{
@@ -468,7 +464,14 @@ public class P25DecoderState extends DecoderState
 				}
 				break;
 			case ADJACENT_SITE_STATUS_BROADCAST_EXPLICIT:
-				/* This message doesn't provide anything we need for channel state */
+				if( tdulc instanceof AdjacentSiteStatusBroadcastExplicit )
+				{
+					IAdjacentSite ias = (IAdjacentSite)tdulc;
+					
+					mNeighborMap.put( ias.getUniqueID(), ias );
+					
+					updateSystem( ias.getSystemID() );
+				}
 				break;
 			case CALL_ALERT:
 				if( tdulc instanceof module.decode.p25.message.tdu.lc.CallAlert )
@@ -620,7 +623,8 @@ public class P25DecoderState extends DecoderState
 						mCurrentCallEvent = new P25CallEvent.Builder( CallEventType.GROUP_CALL )
 							.aliasList( getAliasList() )
 							.channel( mCurrentChannel )
-							.details( ( gvcuser.isEncrypted() ? "ENCRYPTED " : "" ) + 
+							.details( "TDULC GROUP VOICE CHANNEL USER" + 
+									  ( gvcuser.isEncrypted() ? "ENCRYPTED " : "" ) + 
 									  ( gvcuser.isEmergency() ? "EMERGENCY " : "") )
 							.frequency( mCurrentChannelFrequency )
 						    .from( from )
@@ -1006,10 +1010,11 @@ public class P25DecoderState extends DecoderState
 				case ADJACENT_SITE_STATUS_BROADCAST:
 					if( ldu instanceof module.decode.p25.message.ldu.lc.AdjacentSiteStatusBroadcast )
 					{
-						module.decode.p25.message.ldu.lc.AdjacentSiteStatusBroadcast assb =
-							(module.decode.p25.message.ldu.lc.AdjacentSiteStatusBroadcast)ldu;
+						IAdjacentSite ias = (IAdjacentSite)ldu;
 						
-						updateSystem( assb.getSystemID() );
+						mNeighborMap.put( ias.getUniqueID(), ias );
+						
+						updateSystem( ias.getSystemID() );
 					}
 					else
 					{
@@ -1018,7 +1023,18 @@ public class P25DecoderState extends DecoderState
 
 					break;
 				case ADJACENT_SITE_STATUS_BROADCAST_EXPLICIT:
-					/* This message doesn't provide anything we need for channel state */
+					if( ldu instanceof module.decode.p25.message.ldu.lc.AdjacentSiteStatusBroadcastExplicit )
+					{
+						IAdjacentSite ias = (IAdjacentSite)ldu;
+						
+						mNeighborMap.put( ias.getUniqueID(), ias );
+						
+						updateSystem( ias.getSystemID() );
+					}
+					else
+					{
+						logAlternateVendorMessage( ldu );
+					}
 					break;
 				case CALL_ALERT:
 					if( ldu instanceof module.decode.p25.message.ldu.lc.CallAlert )
@@ -1509,10 +1525,14 @@ public class P25DecoderState extends DecoderState
 			switch( tsbk.getOpcode() )
 			{
 				case ADJACENT_STATUS_BROADCAST:
-					AdjacentStatusBroadcast neighborMessage = 
-						(AdjacentStatusBroadcast)tsbk;
-					
-					mNeighborMap.put( neighborMessage.getUniqueID(), neighborMessage );
+					if( tsbk instanceof AdjacentStatusBroadcast )
+					{
+						IAdjacentSite ias = (IAdjacentSite)tsbk;
+						
+						mNeighborMap.put( ias.getUniqueID(), ias );
+						
+						updateSystem( ias.getSystemID() );
+					}
 					break;
 				case ACKNOWLEDGE_RESPONSE:
 					processTSBKResponse( tsbk );
@@ -1627,24 +1647,10 @@ public class P25DecoderState extends DecoderState
 	 */
 	private void processPDU( PDUMessage pdu )
 	{
-		broadcast( new DecoderStateEvent( this, Event.CONTINUATION, State.DATA ) );
-		
-		if( pdu instanceof NetworkStatusBroadcastExtended )
-		{
-			mNetworkStatusExtended = (NetworkStatusBroadcastExtended)pdu;
-		}
-		else if( pdu instanceof ProtectionParameterBroadcast )
-		{
-			mProtectionParameterBroadcast = 
-						(ProtectionParameterBroadcast)pdu;
-		}
-		else if( pdu instanceof RFSSStatusBroadcastExtended )
-		{
-			mRFSSStatusMessageExtended = (RFSSStatusBroadcastExtended)pdu;
-		}
-		
 		if( pdu instanceof PDUConfirmedMessage )
 		{
+			broadcast( new DecoderStateEvent( this, Event.CONTINUATION, State.DATA ) );
+			
 			PDUConfirmedMessage pduc = (PDUConfirmedMessage)pdu;
 
 			switch( pduc.getPDUType() )
@@ -1747,13 +1753,27 @@ public class P25DecoderState extends DecoderState
 		else
 		{
 			/* These are alternate trunking control blocks in PDU format */
+			broadcast( new DecoderStateEvent( this, Event.CONTINUATION, State.CONTROL ) );
+			
 			switch( pdu.getOpcode() )
 			{
+				case GROUP_DATA_CHANNEL_GRANT:
+				case GROUP_VOICE_CHANNEL_GRANT:
+				case INDIVIDUAL_DATA_CHANNEL_GRANT:
+				case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
+				case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
+				case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
+					processPDUChannelGrant( pdu );
+					break;
 				case ADJACENT_STATUS_BROADCAST:
-					AdjacentStatusBroadcastExtended asbe = 
-							(AdjacentStatusBroadcastExtended)pdu;
-					
-					updateSystem( asbe.getSystemID() );
+					if( pdu instanceof AdjacentStatusBroadcastExtended )
+					{
+						IAdjacentSite ias = (IAdjacentSite)pdu;
+						
+						mNeighborMap.put( ias.getUniqueID(), ias );
+						
+						updateSystem( ias.getSystemID() );
+					}
 					break;
 				case CALL_ALERT:
 					if( pdu instanceof CallAlertExtended )
@@ -1823,77 +1843,6 @@ public class P25DecoderState extends DecoderState
 						logAlternateVendorMessage( pdu );
 					}
 					break;
-				case GROUP_DATA_CHANNEL_GRANT:
-					if( pdu instanceof GroupDataChannelGrantExtended )
-					{
-						GroupDataChannelGrantExtended gdcge = 
-								(GroupDataChannelGrantExtended)pdu;
-
-						CallEvent callEvent = new P25CallEvent.Builder( CallEventType.DATA_CALL )
-							.aliasList( getAliasList() )
-							.channel( gdcge.getTransmitChannel() )
-							.details( ( gdcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
-									  ( gdcge.isEmergency() ? " EMERGENCY" : "") )
-						    .frequency( gdcge.getDownlinkFrequency() )
-							.from( gdcge.getSourceAddress() )
-							.to( gdcge.getGroupAddress() )
-							.build();
-
-						broadcast( new TrafficChannelAllocationEvent( this, callEvent ) );
-					}
-					else
-					{
-						logAlternateVendorMessage( pdu );
-					}
-					break;
-				case GROUP_VOICE_CHANNEL_GRANT:
-					if( pdu instanceof GroupVoiceChannelGrantExplicit )
-					{
-						GroupVoiceChannelGrantExplicit gvcge = 
-								(GroupVoiceChannelGrantExplicit)pdu;
-
-						CallEvent callEvent = new P25CallEvent.Builder( CallEventType.CALL )
-							.aliasList( getAliasList() )
-							.channel( gvcge.getTransmitChannel() )
-							.details( ( gvcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
-									  ( gvcge.isEmergency() ? " EMERGENCY" : "") )
-						    .frequency( gvcge.getDownlinkFrequency() )
-							.from( gvcge.getSourceAddress() )
-							.to( gvcge.getGroupAddress() )
-							.build();
-						
-						broadcast( new TrafficChannelAllocationEvent( this, callEvent ) );
-					}
-					else
-					{
-						logAlternateVendorMessage( pdu );
-					}
-					break;
-				case INDIVIDUAL_DATA_CHANNEL_GRANT:
-					if( pdu instanceof IndividualDataChannelGrantExtended )
-					{
-						IndividualDataChannelGrantExtended idcge = 
-								(IndividualDataChannelGrantExtended)pdu;
-
-						CallEvent callEvent = new P25CallEvent.Builder( CallEventType.DATA_CALL )
-							.aliasList( getAliasList() )
-							.channel( idcge.getTransmitChannel() )
-							.details( ( idcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
-									  ( idcge.isEmergency() ? " EMERGENCY" : "") )
-						    .frequency( idcge.getDownlinkFrequency() )
-							.from( idcge.getSourceWACN() + "-" +
-								   idcge.getSourceSystemID() + "-" +
-								   idcge.getSourceAddress() )
-							.to( idcge.getTargetAddress() )
-							.build();
-						
-						broadcast( new TrafficChannelAllocationEvent( this, callEvent ) );
-					}
-					else
-					{
-						logAlternateVendorMessage( pdu );
-					}
-					break;
 				case MESSAGE_UPDATE:
 					if( pdu instanceof MessageUpdateExtended )
 					{
@@ -1912,14 +1861,36 @@ public class P25DecoderState extends DecoderState
 						logAlternateVendorMessage( pdu );
 					}
 					break;
+				case NETWORK_STATUS_BROADCAST:
+					if( pdu instanceof NetworkStatusBroadcastExtended )
+					{
+						mNetworkStatusExtended = (NetworkStatusBroadcastExtended)pdu;
+					}
+					else
+					{
+						logAlternateVendorMessage( pdu );
+					}
+					break;
+				case PROTECTION_PARAMETER_BROADCAST:
+					if( pdu instanceof ProtectionParameterBroadcast )
+					{
+						mProtectionParameterBroadcast = 
+									(ProtectionParameterBroadcast)pdu;
+					}
+					else
+					{
+						logAlternateVendorMessage( pdu );
+					}
+					break;
 				case RFSS_STATUS_BROADCAST:
 					if( pdu instanceof RFSSStatusBroadcastExtended )
 					{
-						RFSSStatusBroadcastExtended rsbe = (RFSSStatusBroadcastExtended)pdu;
+						mRFSSStatusMessageExtended = (RFSSStatusBroadcastExtended)pdu;
 						
-						updateNAC( rsbe.getNAC() );
-						updateSystem( rsbe.getSystemID() );
-						updateSite( rsbe.getRFSubsystemID() + "-" + rsbe.getSiteID() );
+						updateNAC( mRFSSStatusMessageExtended.getNAC() );
+						updateSystem( mRFSSStatusMessageExtended.getSystemID() );
+						updateSite( mRFSSStatusMessageExtended.getRFSubsystemID() + 
+								"-" + mRFSSStatusMessageExtended.getSiteID() );
 					}
 					else
 					{
@@ -2019,22 +1990,6 @@ public class P25DecoderState extends DecoderState
 						logAlternateVendorMessage( pdu );
 					}
 					break;
-				case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
-					TelephoneInterconnectChannelGrantExplicit ticge =
-								(TelephoneInterconnectChannelGrantExplicit)pdu;
-					
-					CallEvent callEvent = new P25CallEvent.Builder( CallEventType.TELEPHONE_INTERCONNECT )
-						.aliasList( getAliasList() )
-						.channel( ticge.getTransmitChannel() )
-						.details( ( ticge.isEncrypted() ? "ENCRYPTED" : "" ) + 
-								  ( ticge.isEmergency() ? " EMERGENCY" : "") +
-								  " CALL TIMER:" + ticge.getCallTimer() )
-					    .frequency( ticge.getDownlinkFrequency() )
-					    .from( ticge.getAddress() )
-						.build();
-					
-					broadcast( new TrafficChannelAllocationEvent( this, callEvent ) );
-					break;
 				case UNIT_REGISTRATION_RESPONSE:
 					if( pdu instanceof UnitRegistrationResponseExtended )
 					{
@@ -2095,57 +2050,250 @@ public class P25DecoderState extends DecoderState
 						logAlternateVendorMessage( pdu );
 					}
 					break;
-				case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
-					if( pdu instanceof UnitToUnitVoiceChannelGrantExtended )
-					{
-						UnitToUnitVoiceChannelGrantExtended uuvcge = 
-								(UnitToUnitVoiceChannelGrantExtended)pdu;
-					
-						CallEvent uuCallEvent = new P25CallEvent.Builder( CallEventType.UNIT_TO_UNIT_CALL )
-										.aliasList( getAliasList() )
-										.channel( uuvcge.getTransmitChannel() )
-										.details( ( uuvcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
-												  ( uuvcge.isEmergency() ? " EMERGENCY" : "") )
-									    .frequency( uuvcge.getDownlinkFrequency() )
-									    .from( uuvcge.getSourceWACN() + "-" +
-									    	   uuvcge.getSourceSystemID() + "-" +
-									    	   uuvcge.getSourceID() )
-										.to( uuvcge.getTargetAddress() )
-										.build();
-
-						broadcast( new TrafficChannelAllocationEvent( this, uuCallEvent ) );
-					}
-					else
-					{
-						logAlternateVendorMessage( pdu );
-					}
-					break;
-				case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
-					if( pdu instanceof UnitToUnitVoiceChannelGrantUpdateExtended )
-					{
-						UnitToUnitVoiceChannelGrantUpdateExtended uuvcgue = 
-								(UnitToUnitVoiceChannelGrantUpdateExtended)pdu;
-		
-						broadcast( new P25CallEvent.Builder( CallEventType.UNIT_TO_UNIT_CALL )
-										.aliasList( getAliasList() )
-										.channel( uuvcgue.getTransmitChannel() )
-										.details( ( uuvcgue.isEncrypted() ? "ENCRYPTED" : "" ) + 
-												  ( uuvcgue.isEmergency() ? " EMERGENCY" : "") )
-									    .frequency( uuvcgue.getDownlinkFrequency() )
-									    .from( uuvcgue.getSourceWACN() + "-" +
-									    	   uuvcgue.getSourceSystemID() + "-" +
-									    	   uuvcgue.getSourceID() )
-										.to( uuvcgue.getTargetAddress() )
-										.build() );
-					}
-					else
-					{
-						logAlternateVendorMessage( pdu );
-					}
-					break;
 				default:
 					break;
 			}
+		}
+	}
+	
+	private void processPDUChannelGrant( PDUMessage pdu )
+	{
+		String channel = null;
+		String from = null;
+		String to = null;
+		
+		switch( pdu.getOpcode() )
+		{
+			case GROUP_DATA_CHANNEL_GRANT:
+				if( pdu instanceof GroupDataChannelGrantExtended )
+				{
+					GroupDataChannelGrantExtended gdcge = 
+							(GroupDataChannelGrantExtended)pdu;
+
+					channel = gdcge.getTransmitChannel();
+					from = gdcge.getSourceAddress();
+					to = gdcge.getGroupAddress();
+					
+					if( hasCallEvent( channel, from, to ) )
+					{
+						updateCallEvent( channel, from, to );
+					}
+					else
+					{
+						P25CallEvent callEvent = new P25CallEvent.Builder( CallEventType.DATA_CALL )
+							.aliasList( getAliasList() )
+							.channel( channel )
+							.details( ( gdcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
+									  ( gdcge.isEmergency() ? " EMERGENCY" : "") )
+						    .frequency( gdcge.getDownlinkFrequency() )
+							.from( from )
+							.to( to )
+							.build();
+						
+						registerCallEvent( callEvent );
+						broadcast( callEvent );
+					}
+				}
+				else
+				{
+					logAlternateVendorMessage( pdu );
+				}
+				
+				/* We don't allocate traffic channels for data */
+				break;
+			case GROUP_VOICE_CHANNEL_GRANT:
+				if( pdu instanceof GroupVoiceChannelGrantExplicit )
+				{
+					GroupVoiceChannelGrantExplicit gvcge = 
+							(GroupVoiceChannelGrantExplicit)pdu;
+
+					channel = gvcge.getTransmitChannel();
+					from = gvcge.getSourceAddress();
+					to = gvcge.getGroupAddress();
+					
+					if( hasCallEvent( channel, from, to ) )
+					{
+						updateCallEvent( channel, from, to );
+					}
+					else
+					{
+						P25CallEvent callEvent = new P25CallEvent.Builder( CallEventType.GROUP_CALL )
+							.aliasList( getAliasList() )
+							.channel( channel )
+							.details( ( gvcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
+									  ( gvcge.isEmergency() ? " EMERGENCY" : "") )
+						    .frequency( gvcge.getDownlinkFrequency() )
+							.from( from )
+							.to( to )
+							.build();
+						
+						registerCallEvent( callEvent );
+						broadcast( callEvent );
+					}
+					
+					broadcast( new TrafficChannelAllocationEvent( this,
+							mChannelCallMap.get( channel ) ) );
+				}
+				else
+				{
+					logAlternateVendorMessage( pdu );
+				}
+				break;
+			case INDIVIDUAL_DATA_CHANNEL_GRANT:
+				if( pdu instanceof IndividualDataChannelGrantExtended )
+				{
+					IndividualDataChannelGrantExtended idcge = 
+							(IndividualDataChannelGrantExtended)pdu;
+					
+					channel = idcge.getTransmitChannel();
+					from = idcge.getSourceWACN() + "-" +
+							   idcge.getSourceSystemID() + "-" +
+							   idcge.getSourceAddress();
+					to = idcge.getTargetAddress();
+					
+					if( hasCallEvent( channel, from, to ) )
+					{
+						updateCallEvent( channel, from, to );
+					}
+					else
+					{
+						P25CallEvent callEvent = new P25CallEvent.Builder( CallEventType.DATA_CALL )
+							.aliasList( getAliasList() )
+							.channel( channel )
+							.details( ( idcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
+									  ( idcge.isEmergency() ? " EMERGENCY" : "") )
+						    .frequency( idcge.getDownlinkFrequency() )
+							.from( from )
+							.to( to )
+							.build();
+						
+						registerCallEvent( callEvent );
+						broadcast( callEvent );
+					}
+
+					//We don't allocate traffic channels for data
+				}
+				else
+				{
+					logAlternateVendorMessage( pdu );
+				}
+				break;
+			case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
+				TelephoneInterconnectChannelGrantExplicit ticge =
+							(TelephoneInterconnectChannelGrantExplicit)pdu;
+
+				channel = ticge.getTransmitChannel();
+				
+				//We don't know if the subscriber is calling or being called, so
+				//we use the same address in both from/to fields
+				from = ticge.getAddress();
+				to = ticge.getAddress();
+				
+				if( hasCallEvent( channel, from, to ) )
+				{
+					updateCallEvent( channel, from, to );
+				}
+				else
+				{
+					P25CallEvent callEvent = new P25CallEvent.Builder( CallEventType.TELEPHONE_INTERCONNECT )
+						.aliasList( getAliasList() )
+						.channel( channel )
+						.details( ( ticge.isEncrypted() ? "ENCRYPTED" : "" ) + 
+								  ( ticge.isEmergency() ? " EMERGENCY" : "") +
+								  " CALL TIMER:" + ticge.getCallTimer() )
+					    .frequency( ticge.getDownlinkFrequency() )
+					    .from( from )
+					    .to( to )
+						.build();
+					
+					registerCallEvent( callEvent );
+					broadcast( callEvent );
+				}
+				
+				broadcast( new TrafficChannelAllocationEvent( this,
+						mChannelCallMap.get( channel ) ) );
+				break;
+			case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
+				if( pdu instanceof UnitToUnitVoiceChannelGrantExtended )
+				{
+					UnitToUnitVoiceChannelGrantExtended uuvcge = 
+							(UnitToUnitVoiceChannelGrantExtended)pdu;
+				
+					channel = uuvcge.getTransmitChannel();
+					from = uuvcge.getSourceWACN() + "-" +
+					    	   uuvcge.getSourceSystemID() + "-" +
+					    	   uuvcge.getSourceID();
+					to = uuvcge.getTargetAddress();
+					
+					if( hasCallEvent( channel, from, to ) )
+					{
+						updateCallEvent( channel, from, to );
+					}
+					else
+					{
+						P25CallEvent callEvent = new P25CallEvent.Builder( CallEventType.UNIT_TO_UNIT_CALL )
+							.aliasList( getAliasList() )
+							.channel( channel )
+							.details( ( uuvcge.isEncrypted() ? "ENCRYPTED" : "" ) + 
+									  ( uuvcge.isEmergency() ? " EMERGENCY" : "") )
+						    .frequency( uuvcge.getDownlinkFrequency() )
+						    .from( from )
+							.to( to )
+							.build();
+						
+						registerCallEvent( callEvent );
+						broadcast( callEvent );
+					}
+					
+					broadcast( new TrafficChannelAllocationEvent( this,
+							mChannelCallMap.get( channel ) ) );
+				}
+				else
+				{
+					logAlternateVendorMessage( pdu );
+				}
+				break;
+			case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
+				if( pdu instanceof UnitToUnitVoiceChannelGrantUpdateExtended )
+				{
+					UnitToUnitVoiceChannelGrantUpdateExtended uuvcgue = 
+							(UnitToUnitVoiceChannelGrantUpdateExtended)pdu;
+
+					channel = uuvcgue.getTransmitChannel();
+					from = uuvcgue.getSourceWACN() + "-" +
+					    	   uuvcgue.getSourceSystemID() + "-" +
+					    	   uuvcgue.getSourceID();
+					to = uuvcgue.getTargetAddress();
+					
+					if( hasCallEvent( channel, from, to ) )
+					{
+						updateCallEvent( channel, from, to );
+					}
+					else
+					{
+						P25CallEvent callEvent = new P25CallEvent.Builder( CallEventType.UNIT_TO_UNIT_CALL )
+							.aliasList( getAliasList() )
+							.channel( channel )
+							.details( ( uuvcgue.isEncrypted() ? "ENCRYPTED" : "" ) + 
+									  ( uuvcgue.isEmergency() ? " EMERGENCY" : "") )
+						    .frequency( uuvcgue.getDownlinkFrequency() )
+						    .from( from )
+							.to( to )
+							.build();
+						
+						registerCallEvent( callEvent );
+						broadcast( callEvent );
+					}
+					
+					broadcast( new TrafficChannelAllocationEvent( this,
+							mChannelCallMap.get( channel ) ) );
+					
+				}
+				else
+				{
+					logAlternateVendorMessage( pdu );
+				}
+				break;
 		}
 	}
 	
@@ -2573,7 +2721,7 @@ public class P25DecoderState extends DecoderState
 				channel = gdcg.getChannel();
 				from = gdcg.getSourceAddress();
 				to = gdcg.getGroupAddress();
-				
+
 				if( hasCallEvent( channel, from, to ) )
 				{
 					updateCallEvent( channel, from, to );
@@ -3277,11 +3425,11 @@ public class P25DecoderState extends DecoderState
 		}
 		else
 		{
-			for( AdjacentStatusBroadcast neighbor: mNeighborMap.values() )
+			for( IAdjacentSite neighbor: mNeighborMap.values() )
 			{
-				sb.append( "\nNAC:\t" + neighbor.getNAC() );
+				sb.append( "\nNAC:\t" + ((P25Message)neighbor).getNAC() );
 				sb.append( "\nSYSTEM:\t" + neighbor.getSystemID()  );
-				sb.append( "\nLRA:\t" + neighbor.getLocationRegistrationArea() );
+				sb.append( "\nLRA:\t" + neighbor.getLRA() );
 				
 				String neighborID = neighbor.getRFSS() + "-" + neighbor.getSiteID();
 				sb.append( "\nRFSS-SITE:\t" + neighborID  );
@@ -3298,10 +3446,11 @@ public class P25DecoderState extends DecoderState
 				
 				sb.append( "\nPCCH:\tDNLINK " + mFrequencyFormatter.format( 
 						(double)neighbor.getDownlinkFrequency() / 1E6d ) +
-						" [" + neighbor.getIdentifier() + "-" + neighbor.getChannel() + "]" );
+						" [" + neighbor.getDownlinkChannel() + "]" );
 				sb.append( "\n\tUPLINK:" + mFrequencyFormatter.format(  
-						(double)neighbor.getUplinkFrequency() / 1E6d ) + "\n" );
-				sb.append( "\nSERVICES:\t" + Service.getServices( neighbor.getSystemServiceClass() ) );
+						(double)neighbor.getUplinkFrequency() / 1E6d ) + 
+						" [" + neighbor.getDownlinkChannel() + "]\n" );
+				sb.append( "\nSERVICES:\t" + neighbor.getSystemServiceClass() );
 				sb.append( "\n----------------------------------------------------" );
 			}
 		}
@@ -3367,6 +3516,8 @@ public class P25DecoderState extends DecoderState
 					{
 						TrafficChannelAllocationEvent allocationEvent = 
 								(TrafficChannelAllocationEvent)event;
+						
+						mCurrentCallEvent = (P25CallEvent)allocationEvent.getCallEvent();
 
 						mCurrentChannel = allocationEvent.getCallEvent().getChannel();
 						broadcast( ChangedAttribute.CHANNEL_NUMBER );

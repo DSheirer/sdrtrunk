@@ -77,6 +77,9 @@ public class GroupVoiceChannelGrantExplicit extends PDUMessage
         sb.append( " CHAN UP:" + getReceiveChannelIdentifier() + "-" + getReceiveChannelNumber() );
         sb.append( " " + getUplinkFrequency() );
         
+        sb.append( " " );
+        sb.append( mMessage.toString() );
+        
         return sb.toString();
     }
     

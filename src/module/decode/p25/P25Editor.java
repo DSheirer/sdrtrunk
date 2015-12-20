@@ -43,8 +43,6 @@ public class P25Editor extends DecodeEditor
 	private static final long serialVersionUID = 1L;
     
     private JComboBox<P25_LSMDecoder.Modulation> mComboModulation;
-    private JLabel mCallTimeoutLabel;
-    private JSlider mCallTimeout;
     private JLabel mTrafficChannelPoolSizeLabel;
     private JSlider mTrafficChannelPoolSize;
 
@@ -66,32 +64,6 @@ public class P25Editor extends DecodeEditor
 		
 		add( new JLabel( "Modulation:" ) );
 		add( mComboModulation, "wrap" );
-		
-		mCallTimeout = new JSlider( JSlider.HORIZONTAL,
-				DecodeConfiguration.CALL_TIMEOUT_MINIMUM,
-				DecodeConfiguration.CALL_TIMEOUT_MAXIMUM,
-				DecodeConfiguration.DEFAULT_CALL_TIMEOUT_SECONDS );
-
-		mCallTimeout.setMajorTickSpacing( 90 );
-		mCallTimeout.setMinorTickSpacing( 10 );
-		mCallTimeout.setPaintTicks( true );
-		
-		mCallTimeout.setLabelTable( mCallTimeout.createStandardLabels( 100, 100 ) );
-		mCallTimeout.setPaintLabels( true );
-		
-		mCallTimeoutLabel = new JLabel( "Call Timeout: " + mCallTimeout.getValue() + " " );
-		
-		mCallTimeout.addChangeListener( new ChangeListener()
-		{
-			@Override
-			public void stateChanged( ChangeEvent e )
-			{
-				mCallTimeoutLabel.setText( "Call Timeout: " + mCallTimeout.getValue() );
-			}
-		} );
-		
-		add( mCallTimeoutLabel );
-		add( mCallTimeout, "wrap,grow" );
 		
 		mTrafficChannelPoolSize = new JSlider( JSlider.HORIZONTAL,
 				DecodeConfiguration.TRAFFIC_CHANNEL_LIMIT_MINIMUM,
@@ -150,8 +122,6 @@ public class P25Editor extends DecodeEditor
 
 		config.setModulation( (Modulation)mComboModulation.getSelectedItem() );
 		
-		config.setCallTimeout( mCallTimeout.getValue() );
-		
 		config.setTrafficChannelPoolSize( mTrafficChannelPoolSize.getValue() );
     }
 
@@ -162,8 +132,6 @@ public class P25Editor extends DecodeEditor
 
 		mComboModulation.setSelectedItem( config.getModulation() );
 
-		mCallTimeout.setValue( config.getCallTimeout() );
-		
 		mTrafficChannelPoolSize.setValue( config.getTrafficChannelPoolSize() );
     }
 }

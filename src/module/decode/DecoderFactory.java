@@ -271,7 +271,8 @@ public class DecoderFactory
 
 				if( channelType == ChannelType.STANDARD )
 				{
-					long timeout = p25Config.getCallTimeout() * 1000; //convert to milliseconds
+					//Set call timeout to 3 seconds for P25 traffic channels
+					long timeout = 3000;
 
 					modules.add( new TrafficChannelManager( resourceManager, 
 							decodeConfig, recordConfig, system, site, 

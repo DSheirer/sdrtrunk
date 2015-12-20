@@ -1,5 +1,6 @@
 package module.decode.p25.message.tsbk.osp.control;
 
+import module.decode.p25.message.IAdjacentSite;
 import module.decode.p25.message.IBandIdentifier;
 import module.decode.p25.message.IdentifierReceiver;
 import module.decode.p25.message.tsbk.TSBKMessage;
@@ -8,7 +9,8 @@ import module.decode.p25.reference.Opcode;
 import alias.AliasList;
 import bits.BinaryMessage;
 
-public class AdjacentStatusBroadcast extends TSBKMessage implements IdentifierReceiver
+public class AdjacentStatusBroadcast extends TSBKMessage 
+		implements IdentifierReceiver, IAdjacentSite
 {
     public static final int[] LOCATION_REGISTRATION_AREA = { 80,81,82,83,84,85,
         86,87 };
@@ -47,7 +49,7 @@ public class AdjacentStatusBroadcast extends TSBKMessage implements IdentifierRe
         
         sb.append( getMessageStub() );
         
-        sb.append( " LRA:" + getLocationRegistrationArea() );
+        sb.append( " LRA:" + getLRA() );
 
         sb.append( " SYS:" + getSystemID() );
 
@@ -79,12 +81,24 @@ public class AdjacentStatusBroadcast extends TSBKMessage implements IdentifierRe
             sb.append( " ACTIVE-NETWORK-CONN" );
         }
         
-        sb.append( SystemService.toString( getSystemServiceClass() ) );
+        sb.append( getSystemServiceClass() );
         
         return sb.toString();
     }
     
-    public String getLocationRegistrationArea()
+    @Override
+	public String getDownlinkChannel()
+	{
+    	return getIdentifier() + "-" + getChannel();
+	}
+
+	@Override
+	public String getUplinkChannel()
+	{
+    	return getIdentifier() + "-" + getChannel();
+	}
+
+	public String getLRA()
     {
         return mMessage.getHex( LOCATION_REGISTRATION_AREA, 2 );
     }
@@ -147,9 +161,9 @@ public class AdjacentStatusBroadcast extends TSBKMessage implements IdentifierRe
     	return mMessage.getInt( IDENTIFIER );
     }
     
-    public int getSystemServiceClass()
+    public String getSystemServiceClass()
     {
-        return mMessage.getInt( SYSTEM_SERVICE_CLASS );
+        return SystemService.toString( mMessage.getInt( SYSTEM_SERVICE_CLASS ) );
     }
     
     public long getDownlinkFrequency()
@@ -161,6 +175,7 @@ public class AdjacentStatusBroadcast extends TSBKMessage implements IdentifierRe
     {
     	return calculateUplink( mIdentifierUpdate, getChannel() );
     }
+    
 
 	@Override
     public void setIdentifierMessage( int identifier, IBandIdentifier message )

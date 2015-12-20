@@ -45,7 +45,19 @@ public class PDUMessage extends P25Message
 		sb.append( "NAC:" );
 		sb.append( getNAC() );
 		sb.append( " " );
-		sb.append( getDUID().getLabel() );
+
+		switch( getFormat() )
+		{
+			case ALTERNATE_MULTI_BLOCK_TRUNKING_CONTROL:
+				sb.append( "ATSBK" );
+				break;
+			case UNCONFIRMED_MULTI_BLOCK_TRUNKING_CONTROL:
+				sb.append( "**** UNCONFIRMED MULTI-BLOCK TRUNKING CONTROL" );
+				break;
+			default:
+				sb.append( getDUID().getLabel() );
+				break;
+		}
 
 		if( vendor == Vendor.STANDARD )
 		{

@@ -1,5 +1,6 @@
 package module.decode.p25.message.pdu.osp.control;
 
+import module.decode.p25.message.IAdjacentSite;
 import module.decode.p25.message.IBandIdentifier;
 import module.decode.p25.message.IdentifierReceiver;
 import module.decode.p25.message.pdu.PDUMessage;
@@ -11,7 +12,7 @@ import bits.BinaryMessage;
 import edac.CRCP25;
 
 public class AdjacentStatusBroadcastExtended extends PDUMessage 
-								implements IdentifierReceiver
+								implements IdentifierReceiver, IAdjacentSite
 {
 	public static final int[] LRA = { 88,89,90,91,92,93,94,95 };
 	public static final int[] SYSTEM_ID = { 100,101,102,103,104,105,106,107,108,
@@ -57,11 +58,11 @@ public class AdjacentStatusBroadcastExtended extends PDUMessage
         
         sb.append( getMessageStub() );
 
-        sb.append( " LRA:" + getLocationRegistrationArea() );
+        sb.append( " LRA:" + getLRA() );
         
         sb.append( " SYS:" + getSystemID() );
         
-        sb.append( " RFSS:" + getRFSubsystemID() );
+        sb.append( " RFSS:" + getRFSS() );
         
         sb.append( " SITE:" + getSiteID() );
         
@@ -73,26 +74,27 @@ public class AdjacentStatusBroadcastExtended extends PDUMessage
         
         sb.append( " UP:" + getUplinkFrequency() );
         
-        sb.append( " SYS SVC CLASS:" + 
-                SystemService.toString( getSystemServiceClass() ) );
+        sb.append( " SYS SVC CLASS:" + getSystemServiceClass() );
         
         return sb.toString();
     }
     
-	
-	public String getLocationRegistrationArea()
-	{
-		return mMessage.getHex( LRA, 2 );
-	}
-	
+    public String getUniqueID()
+    {
+    	StringBuilder sb = new StringBuilder();
+    	
+    	sb.append( getSystemID() );
+    	sb.append( ":" );
+    	sb.append( getRFSS() );
+    	sb.append( ":" );
+    	sb.append( getSiteID() );
+    	
+    	return sb.toString();
+    }
+    
 	public String getSystemID()
 	{
 		return mMessage.getHex( SYSTEM_ID, 3 );
-	}
-	
-	public String getRFSubsystemID()
-	{
-		return mMessage.getHex( RF_SUBSYSTEM_ID, 2 );
 	}
 	
 	public String getSiteID()
@@ -120,11 +122,6 @@ public class AdjacentStatusBroadcastExtended extends PDUMessage
 		return mMessage.getInt( RECEIVE_CHANNEL );
 	}
 	
-    public int getSystemServiceClass()
-    {
-        return mMessage.getInt( SYSTEM_SERVICE_CLASS );
-    }
-    
     public long getDownlinkFrequency()
     {
     	return calculateDownlink( mTransmitIdentifierProvider, getTransmitChannel() );
@@ -157,5 +154,35 @@ public class AdjacentStatusBroadcastExtended extends PDUMessage
 		idens[ 1 ] = getReceiveIdentifier();
 		
 		return idens;
+	}
+
+	@Override
+	public String getRFSS()
+	{
+		return mMessage.getHex( RF_SUBSYSTEM_ID, 2 );
+	}
+
+	@Override
+	public String getLRA()
+	{
+		return mMessage.getHex( LRA, 2 );
+	}
+
+	@Override
+	public String getSystemServiceClass()
+	{
+		return SystemService.toString( mMessage.getInt( SYSTEM_SERVICE_CLASS ) );
+	}
+
+	@Override
+	public String getDownlinkChannel()
+	{
+		return getTransmitIdentifier() + "-" + getTransmitChannel();
+	}
+
+	@Override
+	public String getUplinkChannel()
+	{
+		return getReceiveIdentifier() + "-" + getReceiveChannel();
 	}
 }

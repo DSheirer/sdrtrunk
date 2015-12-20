@@ -75,6 +75,22 @@ public class P25CallEvent extends CallEvent
     {
 	    return mFrequency;
     }
+	
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+		
+		sb.append( "P25 " );
+		sb.append( getCallEventType().name() );
+		sb.append( " CHAN[" );
+		sb.append( getChannel() );
+		sb.append( "] TO[" );
+		sb.append( getToID() );
+		sb.append( "] FROM[" );
+		sb.append( getFromID() );
+		
+		return sb.toString();
+	}
 
 	public static class Builder
 	{

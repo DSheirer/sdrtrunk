@@ -309,26 +309,45 @@ public class ChannelState extends Module implements ICallEventProvider,
 			switch( state )
 			{
 				case CONTROL:
+					//Don't allow traffic channels to be control channels, 
+					//otherwise they won't get call tear down
+					if( mChannelType != ChannelType.TRAFFIC )
+					{
+						broadcast( SquelchState.SQUELCH );
+						updateFadeTimeout();
+						startMonitor();
+						mState = state;
+						broadcast( ChangedAttribute.CHANNEL_STATE );
+					}
+					break;
 				case DATA:
 				case ENCRYPTED:
 					broadcast( SquelchState.SQUELCH );
 					updateFadeTimeout();
 					startMonitor();
+					mState = state;
+					broadcast( ChangedAttribute.CHANNEL_STATE );
 					break;
 				case CALL:
 					broadcast( SquelchState.UNSQUELCH );
 					updateFadeTimeout();
 					startMonitor();
+					mState = state;
+					broadcast( ChangedAttribute.CHANNEL_STATE );
 					break;
 				case FADE:
 					broadcast( SquelchState.SQUELCH );
 					updateResetTimeout();
 					startMonitor();
+					mState = state;
+					broadcast( ChangedAttribute.CHANNEL_STATE );
 					break;
 				case END:
 					broadcast( SquelchState.SQUELCH );
 					broadcast( new DecoderStateEvent( this, Event.RESET, State.IDLE ) );
 					broadcast( new MetadataReset() );
+					mState = state;
+					broadcast( ChangedAttribute.CHANNEL_STATE );
 					break;
 				case IDLE:
 					broadcast( SquelchState.SQUELCH );
@@ -350,14 +369,13 @@ public class ChannelState extends Module implements ICallEventProvider,
 							mTrafficChannelCallEvent = null;
 						}
 					}
+					
+					mState = state;
+					broadcast( ChangedAttribute.CHANNEL_STATE );
 					break;
 				default:
 					break;
 			}
-
-			mState = state;
-			
-			broadcast( ChangedAttribute.CHANNEL_STATE );
 		}
 	}
 
