@@ -32,6 +32,7 @@ import module.decode.p25.message.tsbk.osp.control.SecondaryControlChannelBroadca
 import module.decode.p25.message.tsbk.osp.control.SecondaryControlChannelBroadcastExplicit;
 import module.decode.p25.message.tsbk.osp.control.StatusQuery;
 import module.decode.p25.message.tsbk.osp.control.StatusUpdate;
+import module.decode.p25.message.tsbk.osp.control.SyncBroadcast;
 import module.decode.p25.message.tsbk.osp.control.SystemServiceBroadcast;
 import module.decode.p25.message.tsbk.osp.control.TimeAndDateAnnouncement;
 import module.decode.p25.message.tsbk.osp.control.UnitDeregistrationAcknowledge;
@@ -165,6 +166,8 @@ public class TSBKMessageFactory
                     	return new StatusQuery( message, duid, aliasList );
                     case STATUS_UPDATE:
                     	return new StatusUpdate( message, duid, aliasList );
+                    case TDMA_SYNC_BROADCAST:
+                    	return new SyncBroadcast( message, duid, aliasList );
                     case SYSTEM_SERVICE_BROADCAST:
                     	return new SystemServiceBroadcast( message, duid, 
                     			aliasList );
