@@ -57,6 +57,15 @@ public class LJ1200DecoderPanel extends DecoderPanel
 		
 		setLayout( new MigLayout( "insets 1 0 0 0", "[grow,fill]", "" ) );
 
+		mProtocol.setFont( mFontDecoder );
+		mProtocol.setForeground( mColorLabelDecoder );
+
+		mTo.setFont( mFontDecoder );
+		mTo.setForeground( mColorLabelDecoder );
+
+		mToAlias.setFont( mFontDecoder );
+		mToAlias.setForeground( mColorLabelDecoder );
+
 		add( mProtocol );
 		add( mTo );
 		add( mToAlias, "wrap" );
@@ -76,14 +85,19 @@ public class LJ1200DecoderPanel extends DecoderPanel
 				mTo.setText( getDecoderState().getAddress() );
 				repaint();
 				break;
-			case FROM_TALKGROUP_ALIAS:
+			case TO_TALKGROUP_ALIAS:
 				Alias alias = getDecoderState().getAddressAlias();
 				
 				if( alias != null )
 				{
 					mToAlias.setText( alias.getName() );
-					repaint();
 				}
+				else
+				{
+					mToAlias.setText( "" );
+				}
+				
+				repaint();
 				break;
 			default:
 				break;

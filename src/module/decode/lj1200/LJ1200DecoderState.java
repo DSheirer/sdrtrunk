@@ -23,8 +23,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import message.Message;
 import module.decode.DecoderType;
+import module.decode.p25.P25DecoderState;
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderState;
 import module.decode.state.DecoderStateEvent;
@@ -35,6 +39,8 @@ import alias.AliasList;
 
 public class LJ1200DecoderState extends DecoderState
 {
+	private final static Logger mLog = LoggerFactory.getLogger( LJ1200DecoderState.class );
+
 	private Set<String> mAddresses = new TreeSet<String>();
 	
 	private String mAddress;
@@ -146,16 +152,22 @@ public class LJ1200DecoderState extends DecoderState
 	{
 		if( event.getEvent() == Event.RESET )
 		{
-			
+			resetState();
 		}
+	}
+	
+	private void resetState()
+	{
+		setAddress( null );
+		broadcast( ChangedAttribute.TO_TALKGROUP );
+		setAddressAlias( null );
+		broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
 	}
 
 	@Override
 	public void reset()
 	{
 		mAddresses.clear();
-		
-		setAddress( null );
-		setAddressAlias( null );
+		resetState();
 	}
 }

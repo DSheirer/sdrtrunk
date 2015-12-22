@@ -138,11 +138,19 @@ public class LJ1200Message extends Message
     
     public Alias getSiteAndReplyCodeAlias()
     {
-    	if( mAliasList != null && 
-    		( getFunction() == Function.F1_SITE_ID || 
-    		  getFunction() == Function.F1_SPEED_UP ) )
+    	Function function = getFunction();
+    	
+    	if( mAliasList != null )
     	{
-    		return mAliasList.getSiteID( getReplyCode() );
+    		if( function == Function.F1_SITE_ID ||
+    			function == Function.F1_SPEED_UP ||
+    			function == Function.F2_TEST ||
+    			function == Function.F3_DEACTIVATE ||
+    			function == Function.F4_ACTIVATE ||
+    			function == Function.FF_TRACK_PULSE )
+    		{
+        		return mAliasList.getSiteID( getReplyCode() );
+    		}
     	}
     	
     	return null;
