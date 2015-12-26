@@ -77,7 +77,7 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 		/* Filter demodulated sample buffers */
 		float[] filter = FilterFactory.getLowPass( 48000, 2500, 4000, 80, WindowType.HANNING, true );
 
-		mLog.debug( "Filter taps:" + filter.length + " co:" + Arrays.toString( filter ) );
+		mLog.debug( "Demod Filter tap count:" + filter.length + " coefficients:" + Arrays.toString( filter ) );
 		mC4FMPreFilter = new RealFIRFilter_RB_RB( filter, 1.0f );
 
 		/* Issue tuned frequency correction commands, remotely controlled by the 
@@ -157,7 +157,7 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 
 			TapGroup group = new TapGroup( "P25 C4FM Decoder" );
 			
-			group.add( new FloatTap( INSTRUMENT_FILTER_OUTPUT, 0, 1.0f ) );
+			group.add( new FloatBufferTap( INSTRUMENT_FILTER_OUTPUT, 0, 1.0f ) );
 			
 			group.add( new FloatTap( INSTRUMENT_C4FM_SYMBOL_FILTER_OUTPUT, 0, 0.1f ) );
 			group.add( new DibitTap( INSTRUMENT_C4FM_SLICER_OUTPUT, 0, 0.1f ) );
@@ -205,8 +205,7 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 				}
 				break;
 			default:
-				throw new IllegalArgumentException( "Unrecognized tap: " + 
-							tap.getName() );
+				break;
 		}
     }
 
