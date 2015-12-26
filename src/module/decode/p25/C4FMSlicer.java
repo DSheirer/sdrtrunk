@@ -31,21 +31,28 @@ public class C4FMSlicer implements RealSampleListener
 	@Override
     public void receive( float sample )
     {
-		if( sample > THRESHOLD )
+		if( sample > 0.0 )
 		{
-			dispatch( Dibit.D01_PLUS_3 );
-		}
-		else if( sample > 0 )
-		{
-			dispatch( Dibit.D00_PLUS_1 );
-		}
-		else if( sample > -THRESHOLD )
-		{
-			dispatch( Dibit.D10_MINUS_1 );
+			if( sample >= THRESHOLD )
+			{
+				dispatch( Dibit.D01_PLUS_3 );
+			}
+			else
+			{
+				dispatch( Dibit.D00_PLUS_1 );
+				
+			}
 		}
 		else
 		{
-			dispatch( Dibit.D11_MINUS_3 );
+			if( sample > -THRESHOLD )
+			{
+				dispatch( Dibit.D10_MINUS_1 );
+			}
+			else
+			{
+				dispatch( Dibit.D11_MINUS_3 );
+			}
 		}
     }
 
