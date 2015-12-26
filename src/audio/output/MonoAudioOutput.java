@@ -165,6 +165,8 @@ public class MonoAudioOutput extends AudioOutput
 								checkStart();
 								
 								broadcast( packet.getAudioMetadata() );
+
+								mLastActivity = System.currentTimeMillis();
 							}
 						}
 					}

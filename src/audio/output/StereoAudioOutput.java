@@ -190,6 +190,8 @@ public class StereoAudioOutput extends AudioOutput
 								checkStart();
 								
 								broadcast( packet.getAudioMetadata() );
+								
+								mLastActivity = System.currentTimeMillis();
 							}
 						}
 					}

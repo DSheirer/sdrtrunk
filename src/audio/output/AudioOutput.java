@@ -27,7 +27,7 @@ public abstract class AudioOutput implements Listener<AudioPacket>
 	protected LinkedTransferQueue<AudioPacket> mBuffer = new LinkedTransferQueue<>();
 	protected ScheduledExecutorService mExecutorService;
 	protected boolean mCanProcessAudio;
-	protected long mLastBufferReceived;
+	protected long mLastActivity;
 
 	public void dispose()
 	{
@@ -111,7 +111,7 @@ public abstract class AudioOutput implements Listener<AudioPacket>
 	 */
 	public long getLastBufferReceived()
 	{
-		return mLastBufferReceived;
+		return mLastActivity;
 	}
 
 	@Override
@@ -119,7 +119,7 @@ public abstract class AudioOutput implements Listener<AudioPacket>
 	{
 		if( mCanProcessAudio )
 		{
-			mLastBufferReceived = System.currentTimeMillis();
+			mLastActivity = System.currentTimeMillis();
 			
 			mBuffer.add( packet );
 		}
