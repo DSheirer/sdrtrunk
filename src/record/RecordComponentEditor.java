@@ -63,7 +63,7 @@ public class RecordComponentEditor extends AbstractChannelEditor
 		
 		if( mTrafficBasebandRecorder.isSelected() )
 		{
-			config.addRecorder( RecorderType.BASEBAND );
+			config.addRecorder( RecorderType.TRAFFIC_BASEBAND );
 		}
 		
     }
