@@ -66,7 +66,7 @@ import module.decode.p25.DecodeConfigP25Phase1;
 import module.decode.p25.P25Decoder.Modulation;
 import module.decode.p25.P25DecoderPanel;
 import module.decode.p25.P25DecoderState;
-import module.decode.p25.P25Editor;
+import module.decode.p25.P25DecodeEditor;
 import module.decode.p25.P25_C4FMDecoder;
 import module.decode.p25.P25_LSMDecoder;
 import module.decode.p25.audio.P25AudioModule;
@@ -236,7 +236,7 @@ public class DecoderFactory
 
 					modules.add( new TrafficChannelManager( resourceManager, 
 							decodeConfig, recordConfig, system, site, 
-							aliasList.getName(), timeout, 
+							( aliasList != null ? aliasList.getName() : null ), timeout, 
 							mptConfig.getTrafficChannelPoolSize() ) );
 				}
 				
@@ -258,11 +258,13 @@ public class DecoderFactory
 					case C4FM:
 						modules.add( getFMDemodulator( decodeConfig, 6750, 7500, REMOVE_DC ) );
 						modules.add( new P25_C4FMDecoder( aliasList ) );
-						modules.add( new P25DecoderState( aliasList, channelType, Modulation.C4FM ) );
+						modules.add( new P25DecoderState( aliasList, channelType, 
+								Modulation.C4FM, p25Config.getIgnoreDataCalls() ) );
 						break;
 					case CQPSK:
 						modules.add( new P25_LSMDecoder( aliasList ) );
-						modules.add( new P25DecoderState( aliasList, channelType, Modulation.CQPSK ) );
+						modules.add( new P25DecoderState( aliasList, channelType, 
+								Modulation.CQPSK, p25Config.getIgnoreDataCalls() ) );
 						break;
 					default:
 						throw new IllegalArgumentException( "Unrecognized P25 "
@@ -276,7 +278,7 @@ public class DecoderFactory
 
 					modules.add( new TrafficChannelManager( resourceManager, 
 							decodeConfig, recordConfig, system, site, 
-							aliasList.getName(), timeout, 
+							( aliasList != null ? aliasList.getName() : null ), timeout, 
 							p25Config.getTrafficChannelPoolSize() ) );
 				}
 				
@@ -469,7 +471,7 @@ public class DecoderFactory
 				configuredPanel = new PassportEditor( config );
 				break;
 			case P25_PHASE1:
-				configuredPanel = new P25Editor( config );
+				configuredPanel = new P25DecodeEditor( config );
 				break;
 			default:
 				configuredPanel = new DecodeEditor( config );

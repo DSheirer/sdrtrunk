@@ -175,6 +175,7 @@ public class P25DecoderState extends DecoderState
 
 	private ChannelType mChannelType;
 	private Modulation mModulation;
+	private boolean mIgnoreDataCalls;
 
 	private P25CallEvent mCurrentCallEvent;
 	private List<String> mCallDetectTalkgroups = new ArrayList<>();
@@ -182,11 +183,13 @@ public class P25DecoderState extends DecoderState
 	
 	public P25DecoderState( AliasList aliasList, 
 							ChannelType channelType,
-							Modulation modulation )
+							Modulation modulation,
+							boolean ignoreDataCalls )
 	{
 		super( aliasList );
 		mChannelType = channelType;
 		mModulation = modulation;
+		mIgnoreDataCalls = ignoreDataCalls;
 	}
 	
 	public Modulation getModulation()
@@ -2099,7 +2102,11 @@ public class P25DecoderState extends DecoderState
 					logAlternateVendorMessage( pdu );
 				}
 				
-				/* We don't allocate traffic channels for data */
+				if( !mIgnoreDataCalls )
+				{
+					broadcast( new TrafficChannelAllocationEvent( this,
+							mChannelCallMap.get( channel ) ) );
+				}
 				break;
 			case GROUP_VOICE_CHANNEL_GRANT:
 				if( pdu instanceof GroupVoiceChannelGrantExplicit )
@@ -2170,8 +2177,12 @@ public class P25DecoderState extends DecoderState
 						registerCallEvent( callEvent );
 						broadcast( callEvent );
 					}
-
-					//We don't allocate traffic channels for data
+					
+					if( !mIgnoreDataCalls )
+					{
+						broadcast( new TrafficChannelAllocationEvent( this,
+								mChannelCallMap.get( channel ) ) );
+					}
 				}
 				else
 				{
@@ -2741,8 +2752,12 @@ public class P25DecoderState extends DecoderState
 					registerCallEvent( event );
 					broadcast( event );
 				}
-
-				/* We don't allocate traffic channels for data */
+				
+				if( !mIgnoreDataCalls )
+				{
+					broadcast( new TrafficChannelAllocationEvent( this,
+							mChannelCallMap.get( channel ) ) );
+				}
 				break;
 			case GROUP_VOICE_CHANNEL_GRANT:
 				GroupVoiceChannelGrant gvcg = (GroupVoiceChannelGrant)message;
@@ -2893,7 +2908,11 @@ public class P25DecoderState extends DecoderState
 					broadcast( event );
 				}
 				
-				/* We don't allocate a traffic channel for data */
+				if( !mIgnoreDataCalls )
+				{
+					broadcast( new TrafficChannelAllocationEvent( this,
+							mChannelCallMap.get( channel ) ) );
+				}
 				break;
 			case SNDCP_DATA_CHANNEL_GRANT:
 				SNDCPDataChannelGrant sdcg = (SNDCPDataChannelGrant)message;
@@ -2922,7 +2941,11 @@ public class P25DecoderState extends DecoderState
 					broadcast( event );
 				}
 				
-				/* We don't allocate a traffic channel for data */
+				if( !mIgnoreDataCalls )
+				{
+					broadcast( new TrafficChannelAllocationEvent( this,
+							mChannelCallMap.get( channel ) ) );
+				}
 				break;
 			case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
 				TelephoneInterconnectVoiceChannelGrant tivcg =

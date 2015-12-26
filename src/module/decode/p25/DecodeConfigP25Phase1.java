@@ -30,6 +30,7 @@ public class DecodeConfigP25Phase1 extends DecodeConfiguration
 	
 	private int mCallTimeout = 1;
 	private int mTrafficChannelPoolSize = TRAFFIC_CHANNEL_LIMIT_DEFAULT;
+	private boolean mIgnoreDataCalls = true;
 	
 	public DecodeConfigP25Phase1()
     {
@@ -52,6 +53,17 @@ public class DecodeConfigP25Phase1 extends DecodeConfiguration
 	public void setModulation( P25_LSMDecoder.Modulation modulation )
 	{
 		mModulation = modulation;
+	}
+	
+	@XmlAttribute( name = "ignore_data_calls" )
+	public boolean getIgnoreDataCalls()
+	{
+		return mIgnoreDataCalls;
+	}
+	
+	public void setIgnoreDataCalls( boolean ignore )
+	{
+		mIgnoreDataCalls = ignore;
 	}
 
 	/**

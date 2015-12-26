@@ -18,6 +18,7 @@
 package module.decode.p25;
 
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JSlider;
@@ -36,17 +37,18 @@ import source.tuner.TunerEditor;
 import controller.Editor;
 import controller.channel.ChannelValidationException;
 
-public class P25Editor extends DecodeEditor
+public class P25DecodeEditor extends DecodeEditor
 {
-	private final static Logger mLog = LoggerFactory.getLogger( P25Editor.class );
+	private final static Logger mLog = LoggerFactory.getLogger( P25DecodeEditor.class );
 
 	private static final long serialVersionUID = 1L;
     
     private JComboBox<P25_LSMDecoder.Modulation> mComboModulation;
+    private JCheckBox mIgnoreDataCalls;
     private JLabel mTrafficChannelPoolSizeLabel;
     private JSlider mTrafficChannelPoolSize;
 
-    public P25Editor( DecodeConfiguration config )
+    public P25DecodeEditor( DecodeConfiguration config )
 	{
 		super( config );
 		
@@ -55,12 +57,14 @@ public class P25Editor extends DecodeEditor
 
 	private void initGUI()
 	{
+		final DecodeConfigP25Phase1 config = (DecodeConfigP25Phase1)mConfig;
+		
 		mComboModulation = new JComboBox<P25_LSMDecoder.Modulation>();
 
 		mComboModulation.setModel( new DefaultComboBoxModel<P25_LSMDecoder.Modulation>( 
 				P25_LSMDecoder.Modulation.values() ) );
 		
-		mComboModulation.setSelectedItem( ((DecodeConfigP25Phase1)mConfig).getModulation() );
+		mComboModulation.setSelectedItem( config.getModulation() );
 		
 		add( new JLabel( "Modulation:" ) );
 		add( mComboModulation, "wrap" );
@@ -68,7 +72,7 @@ public class P25Editor extends DecodeEditor
 		mTrafficChannelPoolSize = new JSlider( JSlider.HORIZONTAL,
 				DecodeConfiguration.TRAFFIC_CHANNEL_LIMIT_MINIMUM,
 				DecodeConfiguration.TRAFFIC_CHANNEL_LIMIT_MAXIMUM,
-				DecodeConfiguration.TRAFFIC_CHANNEL_LIMIT_DEFAULT );
+				config.getTrafficChannelPoolSize() );
 		
 		mTrafficChannelPoolSize.setMajorTickSpacing( 10 );
 		mTrafficChannelPoolSize.setMinorTickSpacing( 1 );
@@ -90,6 +94,12 @@ public class P25Editor extends DecodeEditor
 		
 		add( mTrafficChannelPoolSizeLabel );
 		add( mTrafficChannelPoolSize, "wrap,grow" );
+
+		mIgnoreDataCalls = new JCheckBox();
+		mIgnoreDataCalls.setSelected( config.getIgnoreDataCalls() );
+		
+		add( new JLabel( "Ignore Data Calls" ) );
+		add( mIgnoreDataCalls, "wrap,grow" );
 		
 		reset();
 	}
@@ -121,7 +131,7 @@ public class P25Editor extends DecodeEditor
 		DecodeConfigP25Phase1 config = (DecodeConfigP25Phase1)mConfig;
 
 		config.setModulation( (Modulation)mComboModulation.getSelectedItem() );
-		
+		config.setIgnoreDataCalls( mIgnoreDataCalls.isSelected() );
 		config.setTrafficChannelPoolSize( mTrafficChannelPoolSize.getValue() );
     }
 
@@ -131,7 +141,7 @@ public class P25Editor extends DecodeEditor
 		DecodeConfigP25Phase1 config = (DecodeConfigP25Phase1)mConfig;
 
 		mComboModulation.setSelectedItem( config.getModulation() );
-
+		mIgnoreDataCalls.setSelected( config.getIgnoreDataCalls() );
 		mTrafficChannelPoolSize.setValue( config.getTrafficChannelPoolSize() );
     }
 }
