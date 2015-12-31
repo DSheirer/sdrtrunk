@@ -417,7 +417,14 @@ public class ProcessingChain implements IChannelEventListener
 				/* Start each of the modules */
 				for( Module module: mModules )
 				{
-					module.start();
+					try
+					{
+						module.start();
+					}
+					catch( Exception e )
+					{
+						mLog.error( "Error starting module", e );
+					}
 				}
 
 				/* Register with the source to receive sample data.  Setup a 

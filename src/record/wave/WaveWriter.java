@@ -96,6 +96,16 @@ public class WaveWriter implements AutoCloseable
 	 */
 	private void open() throws IOException
 	{
+		int version = 2;
+		
+		while( Files.exists( mFile ) )
+		{
+			mFile = Paths.get( mFile.toFile().getAbsolutePath()
+					.replace( ".wav", "_" + version + ".wav" ) );
+			
+			version++;
+		}
+		
 		Files.createFile( mFile );
 		
 		mFileChannel = (FileChannel.open( mFile, StandardOpenOption.WRITE ) );
