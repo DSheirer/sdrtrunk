@@ -180,7 +180,7 @@ public class ChannelState extends Module implements ICallEventProvider,
 	{
 		if( mMonitoring.compareAndSet( false, true ) )
 		{
-			if( mRunningMonitor == null )
+			if( mRunningMonitor == null && mStateMonitor != null )
 			{
 				mRunningMonitor = mThreadPoolManager.scheduleFixedRate( 
 						ThreadType.DECODER, mStateMonitor, 20, TimeUnit.MILLISECONDS );
@@ -204,11 +204,6 @@ public class ChannelState extends Module implements ICallEventProvider,
 			if( mRunningMonitor != null )
 			{
 				mThreadPoolManager.cancel( mRunningMonitor );
-			}
-			else
-			{
-				throw new RuntimeException( "Channel state monitor's scheduled "
-						+ "future pointer was null when trying to stop the monitor" );
 			}
 			
 			mRunningMonitor = null;
