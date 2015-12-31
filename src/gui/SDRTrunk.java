@@ -32,6 +32,7 @@ import java.io.InputStreamReader;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.TimeUnit;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
@@ -62,6 +63,8 @@ import com.jidesoft.swing.JideSplitPane;
 import controller.ConfigurationControllerModel;
 import controller.ControllerPanel;
 import controller.ResourceManager;
+import controller.ThreadPoolManager.ThreadType;
+import controller.channel.ChannelEventListener;
 import controller.channel.ChannelManager;
 
 public class SDRTrunk
@@ -73,6 +76,8 @@ public class SDRTrunk
 	private JFrame mMainGui = new JFrame();
 	
 	private String mTitle;
+	
+	private boolean mLogChannelAndMemoryUsage = false;
     
     public SDRTrunk() 
     {
@@ -127,6 +132,14 @@ public class SDRTrunk
         initGUI();
 
     	mLog.info( "starting main application gui" );
+    	
+    	if( mLogChannelAndMemoryUsage )
+    	{
+    		Runnable cml = new ChannelMemoryLogger();
+    		resource.getChannelManager().addListener( (ChannelEventListener)cml );
+    		resource.getThreadPoolManager().scheduleFixedRate( 
+    				ThreadType.DECODER, cml, 5, TimeUnit.SECONDS );
+    	}
 
         //Start the gui
         EventQueue.invokeLater( new Runnable()
@@ -419,4 +432,5 @@ public class SDRTrunk
     	
     	return sb.toString();
     }
+    
 }
