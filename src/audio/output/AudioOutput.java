@@ -29,6 +29,12 @@ public abstract class AudioOutput implements Listener<AudioPacket>
 	protected boolean mCanProcessAudio;
 	protected long mLastActivity;
 
+	public void reset()
+	{
+		broadcast( new AudioEvent( AudioEvent.Type.AUDIO_STOPPED, 
+				getChannelName() ) );
+	}
+	
 	public void dispose()
 	{
 		mCanProcessAudio = false;

@@ -294,6 +294,7 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 		public void dispose()
 		{
 			mAudioOutput.removeAudioEventListener( this );
+			mAudioOutput.reset();
 			mAudioOutput = null;
 		}
 		
