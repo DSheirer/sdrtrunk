@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.sound.sampled.BooleanControl;
+import javax.sound.sampled.Control;
 import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.Mixer;
@@ -23,6 +24,7 @@ import audio.AudioEvent;
 import audio.AudioFormats;
 import audio.AudioPacket;
 import audio.AudioPacket.Type;
+import audio.output.StereoAudioOutput.QueueProcessor;
 import controller.NamingThreadFactory;
 
 /**
@@ -75,12 +77,6 @@ public class MonoAudioOutput extends AudioOutput
 				
 				mCanProcessAudio = true;
 				
-				mGainControl = (FloatControl)mOutput.getControl( 
-						FloatControl.Type.MASTER_GAIN );
-				
-				mMuteControl = (BooleanControl)mOutput.getControl( 
-						BooleanControl.Type.MUTE );
-				
 				mExecutorService = Executors.newSingleThreadScheduledExecutor( 
 						new NamingThreadFactory( "audio (mono) output" ) );
 
@@ -93,6 +89,38 @@ public class MonoAudioOutput extends AudioOutput
 		{
         	mLog.error( "Couldn't obtain source data line for 48kHz PCM mono "
         			+ "audio output" );
+		}
+		
+		if( mOutput != null )
+		{
+			try
+			{
+				Control gain = mOutput.getControl( FloatControl.Type.MASTER_GAIN );
+				mGainControl = (FloatControl)gain;
+			}
+			catch( IllegalArgumentException iae )
+			{
+				mLog.warn( "Couldn't obtain MASTER GAIN control for mono line [" + 
+					mixer.getMixerInfo().getName() + "]" );
+			}
+			
+			try
+			{
+				Control mute = mOutput.getControl( BooleanControl.Type.MUTE );
+				mMuteControl = (BooleanControl)mute;
+			}
+			catch( IllegalArgumentException iae )
+			{
+				mLog.warn( "Couldn't obtain MUTE control for mono line [" + 
+					mixer.getMixerInfo().getName() + "]" );
+			}
+			
+			mExecutorService = Executors.newSingleThreadScheduledExecutor( 
+					new NamingThreadFactory( "audio (mono) output" ) );
+
+			/* Run the queue processor task every 40 milliseconds */
+			mExecutorService.scheduleAtFixedRate( new QueueProcessor(), 
+					0, 40, TimeUnit.MILLISECONDS );
 		}
 	}
 

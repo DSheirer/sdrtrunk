@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.sound.sampled.BooleanControl;
+import javax.sound.sampled.Control;
 import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.Mixer;
@@ -78,21 +79,7 @@ public class StereoAudioOutput extends AudioOutput
 			if( mOutput != null )
 			{
 				mOutput.open( AudioFormats.PCM_SIGNED_48KHZ_16BITS_STEREO, BUFFER_SIZE );
-				
 				mCanProcessAudio = true;
-				
-				mGainControl = (FloatControl)mOutput.getControl( 
-						FloatControl.Type.MASTER_GAIN );
-				
-				mMuteControl = (BooleanControl)mOutput.getControl( 
-						BooleanControl.Type.MUTE );
-				
-				mExecutorService = Executors.newSingleThreadScheduledExecutor( 
-						new NamingThreadFactory( "audio (stereo) output" ) );
-
-				/* Run the queue processor task every 40 milliseconds */
-				mExecutorService.scheduleAtFixedRate( new QueueProcessor(), 
-						0, 40, TimeUnit.MILLISECONDS );
 			}
 		} 
         catch ( LineUnavailableException e )
@@ -100,6 +87,38 @@ public class StereoAudioOutput extends AudioOutput
         	mLog.error( "Couldn't obtain source data line for 48kHz PCM stereo "
         			+ "audio output - mixer [" + mixer.getMixerInfo().getName() + 
         			"] channel [" + mMixerChannel.name() + "]" );
+		}
+		
+		if( mOutput != null )
+		{
+			try
+			{
+				Control gain = mOutput.getControl( FloatControl.Type.MASTER_GAIN );
+				mGainControl = (FloatControl)gain;
+			}
+			catch( IllegalArgumentException iae )
+			{
+				mLog.warn( "Couldn't obtain MASTER GAIN control for stereo line [" + 
+					mixer.getMixerInfo().getName() + " | " + channel.name() + "]" );
+			}
+			
+			try
+			{
+				Control mute = mOutput.getControl( BooleanControl.Type.MUTE );
+				mMuteControl = (BooleanControl)mute;
+			}
+			catch( IllegalArgumentException iae )
+			{
+				mLog.warn( "Couldn't obtain MUTE control for stereo line [" + 
+					mixer.getMixerInfo().getName() + " | " + channel.name() + "]" );
+			}
+			
+			mExecutorService = Executors.newSingleThreadScheduledExecutor( 
+					new NamingThreadFactory( "audio (stereo) output" ) );
+
+			/* Run the queue processor task every 40 milliseconds */
+			mExecutorService.scheduleAtFixedRate( new QueueProcessor(), 
+					0, 40, TimeUnit.MILLISECONDS );
 		}
 	}
 
