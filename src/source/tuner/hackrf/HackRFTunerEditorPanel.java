@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 import source.SourceException;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeListener;
-import source.tuner.frequency.FrequencyChangeEvent.Attribute;
+import source.tuner.frequency.FrequencyChangeEvent.Event;
 import source.tuner.hackrf.HackRFTunerController.BoardID;
 
 import com.jidesoft.swing.JideTabbedPane;
@@ -110,7 +110,7 @@ public class HackRFTunerEditorPanel extends JPanel
 	@Override
     public void frequencyChanged( FrequencyChangeEvent event )
     {
-		if( event.getAttribute() == Attribute.FREQUENCY )
+		if( event.getEvent() == Event.FREQUENCY_CHANGE_NOTIFICATION )
 		{
 			try
 	        {

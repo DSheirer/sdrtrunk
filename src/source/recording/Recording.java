@@ -10,7 +10,7 @@ import source.tuner.TunerChannelProvider;
 import source.tuner.TunerChannelSource;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeListener;
-import source.tuner.frequency.FrequencyChangeEvent.Attribute;
+import source.tuner.frequency.FrequencyChangeEvent.Event;
 import controller.ResourceManager;
 import controller.ThreadPoolManager;
 
@@ -90,7 +90,7 @@ public class Recording implements Comparable<Recording>,
 	@Override
     public void frequencyChanged( FrequencyChangeEvent event )
     {
-		if( event.getAttribute() == Attribute.FREQUENCY )
+		if( event.getEvent() == Event.FREQUENCY_CHANGE_NOTIFICATION )
 		{
 			long frequency = event.getValue().longValue();
 			

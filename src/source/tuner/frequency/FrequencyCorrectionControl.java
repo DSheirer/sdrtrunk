@@ -20,10 +20,10 @@ package source.tuner.frequency;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import source.tuner.frequency.FrequencyChangeEvent.Attribute;
+import source.tuner.frequency.FrequencyChangeEvent.Event;
 
 /**
- * Frequency control for providing frequency error correction to a tuner channel
+ * Frequency control for providing frequency error correction to a tuned channel
  */
 public class FrequencyCorrectionControl implements FrequencyChangeListener
 {
@@ -33,7 +33,7 @@ public class FrequencyCorrectionControl implements FrequencyChangeListener
 	protected FrequencyChangeListener mListener;
 	protected FrequencyCorrectionResetListener mResetListener;
 	
-	protected int mErrorCorrection = 0;
+	protected int mChannelFrequencyCorrection = 0;
 	private int mMaximumCorrection = 3000;
 
 	/**
@@ -79,12 +79,18 @@ public class FrequencyCorrectionControl implements FrequencyChangeListener
 	@Override
 	public void frequencyChanged( FrequencyChangeEvent event )
 	{
-		Attribute attribute = event.getAttribute();
+		Event attribute = event.getEvent();
 		
-		if( attribute == Attribute.FREQUENCY || 
-			attribute == Attribute.SAMPLE_RATE_ERROR )
+		switch( attribute )
 		{
-			reset();
+			//Direct the listener to reset when frequency correction (PPM) or 
+			//sample rate changes
+			case FREQUENCY_CORRECTION_CHANGE_NOTIFICATION:
+			case SAMPLE_RATE_CHANGE_NOTIFICATION:
+				reset();
+				break;
+			default:
+				break;
 		}
 	}
 	
@@ -94,8 +100,6 @@ public class FrequencyCorrectionControl implements FrequencyChangeListener
 	 */
 	public void reset()
 	{
-		setErrorCorrection( 0, false );
-		
 		if( mResetListener != null )
 		{
 			mResetListener.resetFrequencyCorrection();
@@ -104,35 +108,28 @@ public class FrequencyCorrectionControl implements FrequencyChangeListener
 
 	/**
 	 * Sets frequency correction to the specified value and broadcasts a change
+	 * request
 	 */
-	public void setErrorCorrection( int correction )
+	public void setFrequencyCorrection( int correction )
 	{
-		setErrorCorrection( correction, true );
-	}
-	
-	/**
-	 * Sets frequency correction to the specified value
-	 */
-	public void setErrorCorrection( int correction, boolean broadcast )
-	{
-		mErrorCorrection = correction;
+		mChannelFrequencyCorrection = correction;
 
 		/* Limit frequency correction to +/- max correction value */
-		if( mErrorCorrection > mMaximumCorrection )
+		if( mChannelFrequencyCorrection > mMaximumCorrection )
 		{
-			mErrorCorrection = mMaximumCorrection;
+			mChannelFrequencyCorrection = mMaximumCorrection;
 		}
-		else if( mErrorCorrection < -mMaximumCorrection )
+		else if( mChannelFrequencyCorrection < -mMaximumCorrection )
 		{
-			mErrorCorrection = -mMaximumCorrection;
+			mChannelFrequencyCorrection = -mMaximumCorrection;
 		}
 		
-		/* Broadcast a change event */
-		if( broadcast && mListener != null )
+		/* Broadcast a change request */
+		if( mListener != null )
 		{
-			mListener.frequencyChanged( 
-				new FrequencyChangeEvent( Attribute.FREQUENCY_ERROR, 
-										  mErrorCorrection ) );
+			mListener.frequencyChanged( new FrequencyChangeEvent( 
+				Event.CHANNEL_FREQUENCY_CORRECTION_CHANGE_REQUEST, 
+					mChannelFrequencyCorrection ) );
 		}
 	}
 	
@@ -141,7 +138,7 @@ public class FrequencyCorrectionControl implements FrequencyChangeListener
 	 */
 	public void adjust( int adjustment )
 	{
-		setErrorCorrection( getErrorCorrection() + adjustment ); 
+		setFrequencyCorrection( getErrorCorrection() + adjustment ); 
 	}
 
 	/**
@@ -150,7 +147,7 @@ public class FrequencyCorrectionControl implements FrequencyChangeListener
 	 */
 	public int getErrorCorrection()
 	{
-		return mErrorCorrection;
+		return mChannelFrequencyCorrection;
 	}
 
 	/**

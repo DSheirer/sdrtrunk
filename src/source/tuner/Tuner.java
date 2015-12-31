@@ -31,7 +31,7 @@ import source.SourceException;
 import source.tuner.frequency.FrequencyChangeBroadcaster;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeListener;
-import source.tuner.frequency.FrequencyChangeEvent.Attribute;
+import source.tuner.frequency.FrequencyChangeEvent.Event;
 import controller.ResourceManager;
 import controller.ThreadPoolManager;
 
@@ -210,7 +210,7 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
     public void broadcastFrequencyChange( long frequency )
     {
     	broadcastFrequencyChangeEvent( 
-				new FrequencyChangeEvent( Attribute.FREQUENCY, frequency ) );
+				new FrequencyChangeEvent( Event.FREQUENCY_CHANGE_NOTIFICATION, frequency ) );
     }
 
     /**
@@ -219,7 +219,7 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
     public void broadcastSampleRateChange( int sampleRate )
     {
     	broadcastFrequencyChangeEvent( 
-				new FrequencyChangeEvent( Attribute.SAMPLE_RATE, sampleRate ) );
+				new FrequencyChangeEvent( Event.SAMPLE_RATE_CHANGE_NOTIFICATION, sampleRate ) );
     }
     
     /**
@@ -228,7 +228,7 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
     public void broadcastActualSampleRateChange( int actualSampleRate )
     {
     	broadcastFrequencyChangeEvent( 
-			new FrequencyChangeEvent( Attribute.SAMPLE_RATE, actualSampleRate ) );
+			new FrequencyChangeEvent( Event.SAMPLE_RATE_CHANGE_NOTIFICATION, actualSampleRate ) );
     }
 
     /**

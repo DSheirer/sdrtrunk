@@ -35,7 +35,7 @@ import sample.complex.ComplexBuffer;
 import source.ComplexSource;
 import source.SourceException;
 import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeEvent.Attribute;
+import source.tuner.frequency.FrequencyChangeEvent.Event;
 import source.tuner.frequency.FrequencyChangeListener;
 import controller.ThreadPoolManager;
 import controller.ThreadPoolManager.ThreadType;
@@ -66,8 +66,8 @@ public class TunerChannelSource extends ComplexSource
 	private ScheduledFuture<?> mTaskHandle;
 
 	private long mTunerFrequency = 0;
-	private int mTunerFrequencyError = 0;
 	private int mTunerSampleRate;
+	private int mChannelFrequencyCorrection = 0;
 	
 	private DecimationProcessor mDecimationProcessor = new DecimationProcessor();
 	
@@ -92,11 +92,11 @@ public class TunerChannelSource extends ComplexSource
 		
 		mMixer = new Oscillator( frequencyOffset, mTuner.getSampleRate() );
 
-		/* Fire a sample rate change event to get the decimation chain setup */
+		/* Fire a sample rate change event to setup the decimation chain */
 		frequencyChanged( new FrequencyChangeEvent( 
-					Attribute.SAMPLE_RATE, mTuner.getSampleRate() ) );
+			Event.SAMPLE_RATE_CHANGE_NOTIFICATION, mTuner.getSampleRate() ) );
 	    
-		/* Schedule the decimation task to run 50 times a second */
+		/* Schedule the decimation task to run every 20 ms (50 iterations/second) */
 	    mTaskHandle = mThreadPoolManager.scheduleFixedRate( ThreadType.DECIMATION, 
 	    		mDecimationProcessor, 20, TimeUnit.MILLISECONDS );
 
@@ -183,26 +183,44 @@ public class TunerChannelSource extends ComplexSource
 	{
 		mDecimationFilter.removeListener();
 	}
-	
+
+	/**
+	 * Handler for frequency change events received from the tuner and channel
+	 * frequency correction events received from the channel consumer/listener
+	 */
 	@Override
     public void frequencyChanged( FrequencyChangeEvent event )
     {
-		/* Send change to Automatic Frequency Control if it exists */
+		// Echo the event to the registered event listener
 		if( mFrequencyChangeListener != null )
 		{
 			mFrequencyChangeListener.frequencyChanged( event );
 		}
 
-		switch( event.getAttribute() )
+		switch( event.getEvent() )
 		{
-			case SAMPLE_RATE_ERROR:
+			case FREQUENCY_CHANGE_NOTIFICATION:
+				mTunerFrequency = event.getValue().longValue();
+				updateMixerFrequencyOffset();
 				break;
-			case SAMPLE_RATE:
+			case CHANNEL_FREQUENCY_CORRECTION_CHANGE_REQUEST:
+				mChannelFrequencyCorrection = event.getValue().intValue();
+
+				updateMixerFrequencyOffset();
+				
+				if( mFrequencyChangeListener != null )
+				{
+					mFrequencyChangeListener.frequencyChanged( 
+						new FrequencyChangeEvent( 
+							Event.CHANNEL_FREQUENCY_CORRECTION_CHANGE_NOTIFICATION, 
+							mChannelFrequencyCorrection ) );
+				}
+				break;
+			case SAMPLE_RATE_CHANGE_NOTIFICATION:
 				int sampleRate = event.getValue().intValue();
 				
 				if( mTunerSampleRate != sampleRate )
 				{
-					/* Set the oscillator to the new frequency */
 					mMixer.setSampleRate( sampleRate );
 
 					/* Get new decimation filter */
@@ -220,32 +238,29 @@ public class TunerChannelSource extends ComplexSource
 					mTunerSampleRate = sampleRate;
 				}
 				break;
-			case FREQUENCY_ERROR:
-				mTunerFrequencyError = event.getValue().intValue();
-				
-				long frequencyErrorOffset = mTunerFrequency - 
-									   mTunerChannel.getFrequency() -
-									   mTunerFrequencyError;
-
-				mMixer.setFrequency( frequencyErrorOffset );
-				break;
-			case FREQUENCY:
-				long frequency = event.getValue().longValue();
-				
-				/* If the frequency is updated, the AFC will also get reset, so
-				 * we don't include the frequency error value here */
-				mTunerFrequencyError = 0;
-				
-				long frequencyOffset = frequency - mTunerChannel.getFrequency(); 
-
-				mMixer.setFrequency( frequencyOffset );
-				
-				mTunerFrequency = frequency;
-				break;
 			default:
 				break;
 		}
     }
+
+	/**
+	 * Calculates the local mixer frequency offset from the tuned frequency,
+	 * channel's requested frequency, and channel frequency correction.
+	 */
+	private void updateMixerFrequencyOffset()
+	{
+		long offset = mTunerFrequency - 
+				   mTunerChannel.getFrequency() -
+				   mChannelFrequencyCorrection;
+
+		mMixer.setFrequency( offset );
+		
+		mLog.debug( "VCO Updated -"
+			+ " Tuner:" + mTunerFrequency
+			+ " Channel:" + mTunerChannel.getFrequency()
+			+ " Correction:" + mChannelFrequencyCorrection
+			+ " Mixer: " + offset );
+	}
 
     public int getSampleRate() throws SourceException
     {

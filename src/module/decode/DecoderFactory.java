@@ -256,7 +256,7 @@ public class DecoderFactory
 				switch( modulation )
 				{
 					case C4FM:
-						modules.add( getFMDemodulator( decodeConfig, 6750, 7500, REMOVE_DC ) );
+						modules.add( getFMDemodulator( decodeConfig, 6750, 7500, NO_REMOVE_DC ) );
 						modules.add( new P25_C4FMDecoder( aliasList ) );
 						modules.add( new P25DecoderState( aliasList, channelType, 
 								Modulation.C4FM, p25Config.getIgnoreDataCalls() ) );

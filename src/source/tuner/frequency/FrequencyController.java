@@ -23,7 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import source.SourceException;
-import source.tuner.frequency.FrequencyChangeEvent.Attribute;
+import source.tuner.frequency.FrequencyChangeEvent.Event;
 
 public class FrequencyController
 {
@@ -101,6 +101,8 @@ public class FrequencyController
 		if( tunedFrequency < mMinimumFrequency || 
 			tunedFrequency > mMaximumFrequency )
 		{
+//TODO: this should throw a frequency limit exception so that the frequency
+//controller can update its display to the last tuned frequency
 			throw new SourceException( "Cannot tune frequency ( requested: " + 
 					frequency + " actual:" + tunedFrequency + "]" ); 
 		}
@@ -170,13 +172,10 @@ public class FrequencyController
 
     	if( mFrequency > 0 )
     	{
-        	/* Reset the frequency, but don't broadcast a change */
-        	setFrequency( mFrequency, false );
+        	setFrequency( mFrequency, true );
     	}
-    	
-    	broadcastFrequencyChangeEvent( new FrequencyChangeEvent( 
-    			Attribute.SAMPLE_RATE_ERROR, mFrequencyCorrection ) );
-    	
+
+    	broadcastFrequencyErrorChange();
     }
 	
 	/**
@@ -206,16 +205,25 @@ public class FrequencyController
     protected void broadcastFrequencyChange()
     {
     	broadcastFrequencyChangeEvent( 
-    			new FrequencyChangeEvent( Attribute.FREQUENCY, mFrequency ) );
+    			new FrequencyChangeEvent( Event.FREQUENCY_CHANGE_NOTIFICATION, mFrequency ) );
     }
 	
+    /**
+     * Broadcast a frequency error/correction value change
+     */
+    protected void broadcastFrequencyErrorChange()
+    {
+    	broadcastFrequencyChangeEvent( 
+			new FrequencyChangeEvent( Event.FREQUENCY_CORRECTION_CHANGE_NOTIFICATION, mFrequencyCorrection ) );
+    }
+    
     /**
      * Broadcasts a sample rate change
      */
     protected void broadcastSampleRateChange()
     {
     	broadcastFrequencyChangeEvent( 
-			new FrequencyChangeEvent( Attribute.SAMPLE_RATE, mSampleRate ) );
+			new FrequencyChangeEvent( Event.SAMPLE_RATE_CHANGE_NOTIFICATION, mSampleRate ) );
     }
     
     public void broadcastFrequencyChangeEvent( FrequencyChangeEvent event )

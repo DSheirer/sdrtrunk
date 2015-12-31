@@ -47,7 +47,7 @@ public abstract class FCDTunerController extends TunerController
 			LoggerFactory.getLogger( FCDTunerController.class );
 
 	public static final double USABLE_BANDWIDTH_PERCENT = 1.0;
-	public static final int DC_SPIKE_AVOID_BUFFER = 2000;
+	public static final int DC_SPIKE_AVOID_BUFFER = 5000;
 	
 	public final static byte FCD_INTERFACE = (byte)0x2;
 	public final static byte FCD_ENDPOINT_IN = (byte)0x82;

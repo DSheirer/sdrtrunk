@@ -2,27 +2,27 @@ package source.tuner.frequency;
 
 public class FrequencyChangeEvent
 {
-	public enum Attribute
+	public enum Event
 	{
-		SAMPLE_RATE_ERROR,
-		BANDWIDTH,
-		FREQUENCY,
-		FREQUENCY_ERROR,
-		SAMPLE_RATE;
+		FREQUENCY_CHANGE_NOTIFICATION,
+		FREQUENCY_CORRECTION_CHANGE_NOTIFICATION,
+		CHANNEL_FREQUENCY_CORRECTION_CHANGE_NOTIFICATION,
+		CHANNEL_FREQUENCY_CORRECTION_CHANGE_REQUEST,
+		SAMPLE_RATE_CHANGE_NOTIFICATION;
 	}
 
-	private Attribute mAttribute;
+	private Event mEvent;
 	private Number mValue;
 	
-	public FrequencyChangeEvent( Attribute attribute, Number value )
+	public FrequencyChangeEvent( Event event, Number value )
 	{
-		mAttribute = attribute;
+		mEvent = event;
 		mValue = value;
 	}
 	
-	public Attribute getAttribute()
+	public Event getEvent()
 	{
-		return mAttribute;
+		return mEvent;
 	}
 	
 	public Number getValue()

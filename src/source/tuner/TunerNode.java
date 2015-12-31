@@ -129,9 +129,9 @@ public class TunerNode extends BaseNode implements FrequencyChangeListener
 	@Override
     public void frequencyChanged( FrequencyChangeEvent event )
     {
-		switch( event.getAttribute() )
+		switch( event.getEvent() )
 		{
-			case FREQUENCY:
+			case FREQUENCY_CHANGE_NOTIFICATION:
 				long frequency = event.getValue().longValue();
 				
 				if( mFrequency != frequency )
@@ -140,7 +140,7 @@ public class TunerNode extends BaseNode implements FrequencyChangeListener
 					getModel().nodeChanged( TunerNode.this );
 				}
 				break;
-			case SAMPLE_RATE:
+			case SAMPLE_RATE_CHANGE_NOTIFICATION:
 				int sampleRate = event.getValue().intValue();
 				
 				if( mSampleRate != sampleRate )

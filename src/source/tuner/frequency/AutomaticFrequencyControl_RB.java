@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import sample.Listener;
 import sample.real.RealBuffer;
-import source.tuner.frequency.FrequencyChangeEvent.Attribute;
+import source.tuner.frequency.FrequencyChangeEvent.Event;
 import buffer.FloatAveragingBuffer;
 
 public class AutomaticFrequencyControl_RB extends FrequencyCorrectionControl 
@@ -96,7 +96,7 @@ public class AutomaticFrequencyControl_RB extends FrequencyCorrectionControl
 		if( mListener != null )
 		{
 			mListener.frequencyChanged( 
-				new FrequencyChangeEvent( Attribute.FREQUENCY_ERROR, 
+				new FrequencyChangeEvent( Event.CHANNEL_FREQUENCY_CORRECTION_CHANGE_NOTIFICATION, 
 										  mErrorCorrection ) );
 		}
 	}

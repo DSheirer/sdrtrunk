@@ -56,7 +56,7 @@ import source.SourceException;
 import source.tuner.TunerController;
 import source.tuner.TunerType;
 import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeEvent.Attribute;
+import source.tuner.frequency.FrequencyChangeEvent.Event;
 import buffer.FloatAveragingBuffer;
 import controller.ResourceManager;
 import controller.ThreadPoolManager;
@@ -1693,14 +1693,6 @@ public abstract class RTL2832TunerController extends TunerController
 				if( mSampleRateMinimum < current && current < mSampleRateMaximum )
 				{
 					average = mRateErrorBuffer.get( (float)mTargetSampleRate - current );
-
-					/* broadcast an actual sample rate update */
-					if( mFrequencyController != null )
-					{
-						mFrequencyController.broadcastFrequencyChangeEvent( 
-							new FrequencyChangeEvent( 
-								Attribute.SAMPLE_RATE_ERROR, (int)average ) );
-					}
 				}
 				else
 				{

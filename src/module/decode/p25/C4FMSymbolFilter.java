@@ -188,7 +188,7 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
 	
 	/* Frequency correction broadcast threshold */
 //	private static final double COARSE_FREQUENCY_DEADBAND = 1.66;
-	private static final double COARSE_FREQUENCY_DEADBAND = 1.20;
+	private static final double COARSE_FREQUENCY_THRESHOLD = 1.20;
 	
 	/* 2.0 symbol spread gives -3, -1, 1, 3 */
 	private float mSymbolSpread = 2.0f;
@@ -201,7 +201,7 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
 	private float mHistory[] = new float[ NUMBER_FILTER_TAPS ];
 	private int mHistoryLast = 0;
 	
-	private boolean mReset = false;
+	private boolean mResetFrequencyTracker = false;
 	
 	private RealSampleListener mListener;
 	
@@ -255,11 +255,16 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
 		{
 			mFrequencyCorrectionControl.adjust( mFrequencyAdjustmentRequested );
 			
-//			mLog.debug( "Adjusting frequency [" + mFrequencyAdjustmentRequested + 
-//				"] correction is now: " + mFrequencyCorrectionControl
-//						.getErrorCorrection() );
+			mLog.debug( "Adjusted frequency [" + mFrequencyAdjustmentRequested + 
+				"] correction is now: " + mFrequencyCorrectionControl
+						.getErrorCorrection() );
 
 			mFrequencyAdjustmentRequested = 0;
+
+			//Reset internal frequency tracking
+			mLog.debug( "Resetting internal frequency tracking following adjustment" );
+			mCoarseFrequencyCorrection = 0.0f;
+			mFineFrequencyCorrection = 0.0f;
 		}
 	}
 
@@ -267,17 +272,16 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
     {
     	sample = mGainController.correct( sample );
     	
-		if( mReset )
+		if( mResetFrequencyTracker )
 		{
-			mGainController.reset();
+			mLog.debug( "Resetting internal frequency tracking" );
 			
 			mCoarseFrequencyCorrection = 0.0f;
 			mFineFrequencyCorrection = 0.0f;
-			mSymbolSpread = 2.0f;
-			mSymbolClock = 0.0f;
-			mSymbolTime = (float)SYMBOL_RATE / (float)SAMPLE_RATE;
 			
-			mReset = false;
+			mFrequencyCorrectionControl.setFrequencyCorrection( 0 );
+			
+			mResetFrequencyTracker = false;
 		}
 		
 		mSymbolClock += mSymbolTime;
@@ -381,7 +385,7 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
 			mFineFrequencyCorrection += ( symbolError * K_FINE_FREQUENCY );
 			
 			/* Queue a frequency adjustment (once per buffer) as needed */
-			if( Math.abs( mCoarseFrequencyCorrection ) > COARSE_FREQUENCY_DEADBAND )
+			if( Math.abs( mCoarseFrequencyCorrection ) > COARSE_FREQUENCY_THRESHOLD )
 			{
 				mFrequencyAdjustmentRequested = 
 						500 * ( mCoarseFrequencyCorrection > 0 ? 1 : -1 );
@@ -403,12 +407,12 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
 	/**
 	 * Listener interface for frequency correction reset events.  We reset the
 	 * coarse and fine frequency control values when the tuner channel source
-	 * has changed frequency or frequency offset.
+	 * has changed frequency (PPM) or sample rate
 	 */
 	@Override
 	public void resetFrequencyCorrection()
 	{
-		mReset = true;
+		mResetFrequencyTracker = true;
 	}
 
 	@Override

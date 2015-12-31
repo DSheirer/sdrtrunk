@@ -34,7 +34,7 @@ import source.tuner.fcd.FCDTuner;
 import source.tuner.fcd.FCDTunerDetailsPanel;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeListener;
-import source.tuner.frequency.FrequencyChangeEvent.Attribute;
+import source.tuner.frequency.FrequencyChangeEvent.Event;
 
 import com.jidesoft.swing.JideTabbedPane;
 
@@ -95,7 +95,7 @@ public class FCD1TunerEditorPanel extends JPanel implements FrequencyChangeListe
 	@Override
     public void frequencyChanged( FrequencyChangeEvent event )
     {
-		if( event.getAttribute() == Attribute.FREQUENCY )
+		if( event.getEvent() == Event.FREQUENCY_CHANGE_NOTIFICATION )
 		{
 			try
 	        {

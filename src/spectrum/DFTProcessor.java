@@ -476,11 +476,9 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 	@Override
     public void frequencyChanged( FrequencyChangeEvent event )
     {
-		switch( event.getAttribute() )
+		switch( event.getEvent() )
 		{
-			case SAMPLE_RATE_ERROR:
-				break;
-			case SAMPLE_RATE:
+			case SAMPLE_RATE_CHANGE_NOTIFICATION:
 				mSampleRate = event.getValue().intValue();
 				calculateConsumptionRate();
 				break;

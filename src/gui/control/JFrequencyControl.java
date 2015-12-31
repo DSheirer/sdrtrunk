@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
 
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeListener;
-import source.tuner.frequency.FrequencyChangeEvent.Attribute;
+import source.tuner.frequency.FrequencyChangeEvent.Event;
 
 public class JFrequencyControl extends JPanel implements FrequencyChangeListener
 {
@@ -136,7 +136,7 @@ public class JFrequencyControl extends JPanel implements FrequencyChangeListener
 	@Override
     public void frequencyChanged( FrequencyChangeEvent event )
     {
-		if( event.getAttribute() == Attribute.FREQUENCY )
+		if( event.getEvent() == Event.FREQUENCY_CHANGE_NOTIFICATION )
 		{
 			setFrequency( event.getValue().longValue(), false );
 		}
@@ -180,7 +180,7 @@ public class JFrequencyControl extends JPanel implements FrequencyChangeListener
 		Iterator<FrequencyChangeListener> it = mListeners.iterator();
 		
 		FrequencyChangeEvent event = 
-				new FrequencyChangeEvent( Attribute.FREQUENCY, mFrequency );
+				new FrequencyChangeEvent( Event.FREQUENCY_CHANGE_NOTIFICATION, mFrequency );
 		
 		while( it.hasNext() )
 		{

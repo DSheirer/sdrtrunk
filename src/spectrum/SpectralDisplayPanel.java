@@ -65,7 +65,7 @@ import source.SourceException;
 import source.tuner.Tuner;
 import source.tuner.TunerSelectionListener;
 import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeEvent.Attribute;
+import source.tuner.frequency.FrequencyChangeEvent.Event;
 import source.tuner.frequency.FrequencyChangeListener;
 import spectrum.OverlayPanel.ChannelDisplay;
 import spectrum.converter.ComplexDecibelConverter;
@@ -434,10 +434,10 @@ public class SpectralDisplayPanel extends JPanel
 			try
             {
 				frequencyChanged( new FrequencyChangeEvent( 
-						Attribute.FREQUENCY, mTuner.getFrequency() ) );
+						Event.FREQUENCY_CHANGE_NOTIFICATION, mTuner.getFrequency() ) );
 				
 				frequencyChanged( new FrequencyChangeEvent( 
-						Attribute.SAMPLE_RATE, mTuner.getSampleRate() ) );
+						Event.SAMPLE_RATE_CHANGE_NOTIFICATION, mTuner.getSampleRate() ) );
             }
             catch ( SourceException e )
             {

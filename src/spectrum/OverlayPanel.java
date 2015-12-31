@@ -428,24 +428,33 @@ public class OverlayPanel extends JPanel
     /**
      * Draws a vertical line at the xaxis
      */
-    private void drawAFC( Graphics2D graphics, double xaxis, boolean isError )
+    private void drawChannelCenterLine( Graphics2D graphics, double xaxis )
     {
     	double height = getSize().getHeight() - mSpectrumInset;
 
-    	if( isError )
-    	{
-        	graphics.setColor( Color.YELLOW );
+    	graphics.setColor( Color.LIGHT_GRAY );
 
-        	graphics.draw( new Line2D.Double( xaxis, height * 0.75d, 
-					 xaxis, height - 1.0d ) );
-    	}
-    	else
-    	{
-        	graphics.setColor( Color.LIGHT_GRAY );
+    	graphics.draw( new Line2D.Double( xaxis, height * 0.65d, 
+				 xaxis, height - 1.0d ) );
+    }
+    
+    /**
+     * Draws a vertical line at the xaxis
+     */
+    private void drawAFC( Graphics2D graphics, double frequencyAxis, double errorAxis )
+    {
+    	double height = getSize().getHeight() - mSpectrumInset;
+    	double lineHeight = height * 0.75d;
 
-        	graphics.draw( new Line2D.Double( xaxis, height * 0.65d, 
-					 xaxis, height - 1.0d ) );
-    	}
+    	graphics.setColor( Color.YELLOW );
+
+    	//Vertical frequency error line
+    	graphics.draw( new Line2D.Double( errorAxis, lineHeight, 
+				 errorAxis, height - 1.0d ) );
+
+    	//Horizontal line connecting frequency and error lines
+    	graphics.draw( new Line2D.Double( frequencyAxis, lineHeight, 
+    									  errorAxis, lineHeight ) );
     }
     
     /**
@@ -599,16 +608,18 @@ public class OverlayPanel extends JPanel
                     		   width );
                 }
                 
+            	long frequency = tunerChannel.getFrequency();
+            	
+                double frequencyAxis = getAxisFromFrequency( frequency );
+                
+                drawChannelCenterLine( graphics, frequencyAxis );
+                
                 /* Draw Automatic Frequency Control line */
                 if( channel.hasFrequencyControl() )
                 {
-                	long frequency = tunerChannel.getFrequency();
-                	
                 	long error = frequency + channel.getFrequencyCorrection();
                 	
-                    drawAFC( graphics, getAxisFromFrequency( frequency ), false );
-
-                    drawAFC( graphics, getAxisFromFrequency( error ), true );
+                    drawAFC( graphics, frequencyAxis, getAxisFromFrequency( error ) );
                 }
     		}
     	}
@@ -663,13 +674,13 @@ public class OverlayPanel extends JPanel
 	@Override
     public void frequencyChanged( FrequencyChangeEvent event )
     {
-		switch( event.getAttribute() )
+		switch( event.getEvent() )
 		{
-			case SAMPLE_RATE:
+			case SAMPLE_RATE_CHANGE_NOTIFICATION:
 				mBandwidth = event.getValue().intValue();
 				mLabelSizeMonitor.update();
 				break;
-			case FREQUENCY:
+			case FREQUENCY_CHANGE_NOTIFICATION:
 				mFrequency = event.getValue().longValue();
 				mLabelSizeMonitor.update();
 				break;
