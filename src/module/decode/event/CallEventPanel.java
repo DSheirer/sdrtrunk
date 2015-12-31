@@ -71,6 +71,9 @@ public class CallEventPanel extends JPanel implements ChannelEventListener
 				
 				JTable table = new JTable(
 						event.getChannel().getCallEventModel() );
+
+				table.setAutoCreateRowSorter( true );
+		    	table.setAutoResizeMode( JTable.AUTO_RESIZE_LAST_COLUMN );
 				
 				table.getColumnModel().getColumn( CallEventModel.FROM_ALIAS )
 				.setCellRenderer( mRenderer );
