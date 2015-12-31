@@ -255,14 +255,9 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
 		{
 			mFrequencyCorrectionControl.adjust( mFrequencyAdjustmentRequested );
 			
-			mLog.debug( "Adjusted frequency [" + mFrequencyAdjustmentRequested + 
-				"] correction is now: " + mFrequencyCorrectionControl
-						.getErrorCorrection() );
-
 			mFrequencyAdjustmentRequested = 0;
 
 			//Reset internal frequency tracking
-			mLog.debug( "Resetting internal frequency tracking following adjustment" );
 			mCoarseFrequencyCorrection = 0.0f;
 			mFineFrequencyCorrection = 0.0f;
 		}
@@ -274,8 +269,6 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
     	
 		if( mResetFrequencyTracker )
 		{
-			mLog.debug( "Resetting internal frequency tracking" );
-			
 			mCoarseFrequencyCorrection = 0.0f;
 			mFineFrequencyCorrection = 0.0f;
 			

@@ -254,12 +254,6 @@ public class TunerChannelSource extends ComplexSource
 				   mChannelFrequencyCorrection;
 
 		mMixer.setFrequency( offset );
-		
-		mLog.debug( "VCO Updated -"
-			+ " Tuner:" + mTunerFrequency
-			+ " Channel:" + mTunerChannel.getFrequency()
-			+ " Correction:" + mChannelFrequencyCorrection
-			+ " Mixer: " + offset );
 	}
 
     public int getSampleRate() throws SourceException
