@@ -48,7 +48,7 @@ public class R820TTunerController extends RTL2832TunerController
 	public static final long MIN_FREQUENCY =  3180000;
 	public static final long MAX_FREQUENCY = 1782030000;
 	public static final double USABLE_BANDWIDTH_PERCENT = 1.0;
-	public static final int DC_SPIKE_AVOID_BUFFER = 2500;
+	public static final int DC_SPIKE_AVOID_BUFFER = 5000;
 
 	public static final int R820T_IF_FREQUENCY = 3570000;
 	public static final byte VERSION = (byte)49;
