@@ -42,9 +42,14 @@ public class LoJackIDEditor extends JPanel implements ActionListener
     private JTextField mTextIdent;
 
     private String mHelpText = "Select a LoJack message function code and enter"
-    		+ " a five character reply code or identifier in the ID field.\n\n"
+    		+ " a five character reply code/identifier in the ID field.\n\n"
             + "Wildcard: use an asterisk (*) to wildcard any character in the "
-            + "five character reply code (e.g. AB*CD or ***12 or *****)\n\n";
+            + "five character reply code (e.g. AB*CD or ***12 or *****)\n\n"
+            + "Reply codes are five characters where the middle character"
+            + " identifies the entity (tower/site or transponder) as follows:\n"
+            + "X,Y\t\tTower\n"
+            + "0-9,A,C-H,J-N,P-W\tTransponder\n"
+            + "B,I,O,Z\t\tNot Used";
 
 	public LoJackIDEditor( LoJackIDNode lojackNode )
 	{
