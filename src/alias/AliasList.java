@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014,2015 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -19,10 +19,13 @@ package alias;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
+
+import module.decode.lj1200.LJ1200Message.Function;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +37,7 @@ import alias.action.script.ScriptAction;
 import alias.id.esn.Esn;
 import alias.id.fleetsync.FleetsyncID;
 import alias.id.fleetsync.StatusID;
+import alias.id.lojack.LoJackFunctionAndID;
 import alias.id.mdc.MDC1200ID;
 import alias.id.mobileID.Min;
 import alias.id.mpt1327.MPT1327ID;
@@ -51,6 +55,7 @@ import audio.metadata.MetadataType;
 			   FleetsyncID.class,
 			   Esn.class,
 			   Group.class,
+			   LoJackFunctionAndID.class,
 			   MDC1200ID.class,
 			   Min.class,
 			   MPT1327ID.class,
@@ -77,15 +82,16 @@ public class AliasList implements Comparable<AliasList>
 	private String mName;
 	private ArrayList<Group> mGroups = new ArrayList<Group>();
 	
-	private HashMap<String,Alias> mESN = new HashMap<String,Alias>();
-	private HashMap<String,Alias> mFleetsync = new HashMap<String,Alias>();
-	private HashMap<String,Alias> mMDC1200 = new HashMap<String,Alias>();
-	private HashMap<String,Alias> mMobileID = new HashMap<String,Alias>();
-	private HashMap<String,Alias> mMPT1327 = new HashMap<String,Alias>();
-	private HashMap<String, Alias> mSiteID = new HashMap<String,Alias>();
-	private HashMap<Integer, Alias> mStatus = new HashMap<Integer,Alias>();
-	private HashMap<String,Alias> mTalkgroup = new HashMap<String,Alias>();
-	private HashMap<Integer,Alias> mUniqueID = new HashMap<Integer,Alias>();
+	private Map<String,Alias> mESN = new HashMap<>();
+	private Map<String,Alias> mFleetsync = new HashMap<>();
+	private Map<LoJackFunctionAndID,Alias> mLoJack = new HashMap<>();
+	private Map<String,Alias> mMDC1200 = new HashMap<>();
+	private Map<String,Alias> mMobileID = new HashMap<>();
+	private Map<String,Alias> mMPT1327 = new HashMap<>();
+	private Map<String, Alias> mSiteID = new HashMap<>();
+	private Map<Integer, Alias> mStatus = new HashMap<>();
+	private Map<String,Alias> mTalkgroup = new HashMap<>();
+	private Map<Integer,Alias> mUniqueID = new HashMap<>();
 	
 	private boolean mESNWildcard = false;
 	private boolean mMobileIDWildcard = false;
@@ -114,6 +120,7 @@ public class AliasList implements Comparable<AliasList>
 		//Clear hashmaps
 		mESN.clear();
 		mFleetsync.clear();
+		mLoJack.clear();
 		mMDC1200.clear();
 		mMobileID.clear();
 		mMPT1327.clear();
@@ -156,6 +163,9 @@ public class AliasList implements Comparable<AliasList>
 							{
 								mFleetsync.put( fs.getIdent(), alias );
 							}
+							break;
+						case LoJack:
+							mLoJack.put( (LoJackFunctionAndID)id, alias );
 							break;
 						case MDC1200:
 							MDC1200ID mdc = (MDC1200ID)id;
@@ -242,6 +252,13 @@ public class AliasList implements Comparable<AliasList>
 								mTalkgroup.put( tgid.getTalkgroup(), alias );
 							}
 							break;
+						case NonRecordable:
+						case Priority:
+							//We don't maintain lookups for these items
+							break;
+						default:
+							mLog.warn( "Unrecognized Alias ID Type:" + id.getType().name() );
+							break;
 					}
 				}
 			}
@@ -299,8 +316,6 @@ public class AliasList implements Comparable<AliasList>
 	{
 		if( esn != null )
 		{
-			Alias retVal = null;
-			
 			if( mESNWildcard )
 			{
 				for( String regex: mESN.keySet() )
@@ -325,8 +340,6 @@ public class AliasList implements Comparable<AliasList>
 	{
 		if( ident != null )
 		{
-			Alias retVal = null;
-			
 			if( mFleetsyncWildcard )
 			{
 				for( String regex: mFleetsync.keySet() )
@@ -346,12 +359,26 @@ public class AliasList implements Comparable<AliasList>
 		return null;
 	}
 	
+	public Alias getLoJackAlias( Function function, String id )
+	{
+		if( id != null )
+		{
+			for( LoJackFunctionAndID lojack: mLoJack.keySet() )
+			{
+				if( lojack.matches( function, id ) )
+				{
+					return mLoJack.get( lojack );
+				}
+			}
+		}
+		
+		return null;
+	}
+	
 	public Alias getMDC1200Alias( String ident )
 	{
 		if( ident != null )
 		{
-			Alias retVal = null;
-			
 			if( mMDC1200Wildcard )
 			{
 				for( String regex: mMDC1200.keySet() )

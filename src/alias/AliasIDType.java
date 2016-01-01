@@ -21,6 +21,7 @@ public enum AliasIDType
 {
 	ESN,
 	Fleetsync,
+	LoJack,
 	LTRNetUID,
 	MDC1200,
 	MIN,

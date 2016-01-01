@@ -17,6 +17,8 @@
  ******************************************************************************/
 package module.decode.event;
 
+import java.awt.EventQueue;
+
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -58,7 +60,7 @@ public class CallEventPanel extends JPanel implements ChannelEventListener
 	}
 
 	@Override
-    public void channelChanged( ChannelEvent event )
+    public void channelChanged( final ChannelEvent event )
     {
 		if( event.getEvent() == Event.CHANGE_SELECTED && 
 			event.getChannel().isSelected() )
@@ -67,26 +69,34 @@ public class CallEventPanel extends JPanel implements ChannelEventListener
 				( mDisplayedChannel != null && 
 				  mDisplayedChannel != event.getChannel() ) )
 			{
-				removeAll();
-				
-				JTable table = new JTable(
-						event.getChannel().getCallEventModel() );
+				EventQueue.invokeLater( new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						removeAll();
+						
+						JTable table = new JTable(
+								event.getChannel().getCallEventModel() );
 
-				table.setAutoCreateRowSorter( true );
-		    	table.setAutoResizeMode( JTable.AUTO_RESIZE_LAST_COLUMN );
-				
-				table.getColumnModel().getColumn( CallEventModel.FROM_ALIAS )
-				.setCellRenderer( mRenderer );
+						table.setAutoCreateRowSorter( true );
+				    	table.setAutoResizeMode( JTable.AUTO_RESIZE_LAST_COLUMN );
+						
+						table.getColumnModel().getColumn( CallEventModel.FROM_ALIAS )
+						.setCellRenderer( mRenderer );
 
-				table.getColumnModel().getColumn( CallEventModel.TO_ALIAS )
-				.setCellRenderer( mRenderer );
+						table.getColumnModel().getColumn( CallEventModel.TO_ALIAS )
+						.setCellRenderer( mRenderer );
+						
+						add( new JScrollPane( table ) );
+						
+						mDisplayedChannel = event.getChannel();
+						
+						revalidate();
+						repaint();
+					}
+				} );
 				
-				add( new JScrollPane( table ) );
-				
-				mDisplayedChannel = event.getChannel();
-				
-				revalidate();
-				repaint();
 			}
 		}
 		else if( event.getEvent() == Event.CHANNEL_PROCESSING_STOPPED ||
@@ -96,11 +106,19 @@ public class CallEventPanel extends JPanel implements ChannelEventListener
 				mDisplayedChannel == event.getChannel() )
 			{
 				mDisplayedChannel = null;
-				removeAll();
-				add( mEmptyScroller );
+				
+				EventQueue.invokeLater( new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						removeAll();
+						add( mEmptyScroller );
 
-				revalidate();
-				repaint();
+						revalidate();
+						repaint();
+					}
+				} );
 			}
 		}
     }

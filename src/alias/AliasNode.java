@@ -40,6 +40,8 @@ import alias.id.fleetsync.FleetsyncID;
 import alias.id.fleetsync.FleetsyncIDNode;
 import alias.id.fleetsync.StatusID;
 import alias.id.fleetsync.StatusIDNode;
+import alias.id.lojack.LoJackFunctionAndID;
+import alias.id.lojack.LoJackIDNode;
 import alias.id.mdc.MDC1200ID;
 import alias.id.mdc.MDC1200IDNode;
 import alias.id.mobileID.MINNode;
@@ -107,6 +109,10 @@ public class AliasNode extends ConfigurableNode
     				break;
 				case Fleetsync:
 	        		getModel().addNode( new FleetsyncIDNode( (FleetsyncID)aliasID ), 
+	        				AliasNode.this, getChildCount() );
+					break;
+				case LoJack:
+	        		getModel().addNode( new LoJackIDNode( (LoJackFunctionAndID)aliasID ), 
 	        				AliasNode.this, getChildCount() );
 					break;
 				case LTRNetUID:
@@ -225,6 +231,27 @@ public class AliasNode extends ConfigurableNode
             }
 		} );
 		addIDMenu.add( addFleetsyncItem );
+
+		JMenuItem addLoJackItem = new JMenuItem( "LoJack" );
+		addLoJackItem.addActionListener( new ActionListener() 
+		{
+			@Override
+            public void actionPerformed( ActionEvent e )
+            {
+				LoJackFunctionAndID lj = new LoJackFunctionAndID();
+				
+				getAlias().addAliasID( lj );
+				
+				LoJackIDNode node = new LoJackIDNode( lj );
+				
+				getModel().addNode( node, 
+									AliasNode.this, 
+									AliasNode.this.getChildCount() );
+				
+				node.show();
+            }
+		} );
+		addIDMenu.add( addLoJackItem );
 
 		JMenuItem addMDCItem = new JMenuItem( "MDC-1200" );
 		addMDCItem.addActionListener( new ActionListener() 

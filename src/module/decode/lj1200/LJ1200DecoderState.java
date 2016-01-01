@@ -87,7 +87,7 @@ public class LJ1200DecoderState extends DecoderState
 			if( lj.isValid() )
 			{
 				setAddress( lj.getAddress() );
-				setAddressAlias( lj.getAddressAlias() );
+				setAddressAlias( lj.getTransponderAlias() );
 				
 				mAddresses.add( mAddress );
 

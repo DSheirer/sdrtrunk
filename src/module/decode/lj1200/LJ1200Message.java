@@ -17,7 +17,6 @@
  ******************************************************************************/
 package module.decode.lj1200;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -61,8 +60,6 @@ public class LJ1200Message extends Message
 	public static int[] MESSAGE_CRC = { 79,78,77,76,75,74,73,72,71,70,69,68,67,
 		66,65,64 };
 	
-	private static SimpleDateFormat mSDF = new SimpleDateFormat( "yyyyMMdd HHmmss" );
-
     private BinaryMessage mMessage;
     private AliasList mAliasList;
     private CRC mCRC;
@@ -126,7 +123,7 @@ public class LJ1200Message extends Message
     	return mMessage.getHex( ADDRESS, 7 );
     }
     
-    public Alias getAddressAlias()
+    public Alias getTransponderAlias()
     {
     	if( mAliasList != null )
     	{
@@ -136,21 +133,11 @@ public class LJ1200Message extends Message
     	return null;
     }
     
-    public Alias getSiteAndReplyCodeAlias()
+    public Alias getFunctionAndIDAlias()
     {
-    	Function function = getFunction();
-    	
     	if( mAliasList != null )
     	{
-    		if( function == Function.F1_SITE_ID ||
-    			function == Function.F1_SPEED_UP ||
-    			function == Function.F2_TEST ||
-    			function == Function.F3_DEACTIVATE ||
-    			function == Function.F4_ACTIVATE ||
-    			function == Function.FF_TRACK_PULSE )
-    		{
-        		return mAliasList.getSiteID( getReplyCode() );
-    		}
+    		return mAliasList.getLoJackAlias( getFunction(), getReplyCode() );
     	}
     	
     	return null;
@@ -200,7 +187,7 @@ public class LJ1200Message extends Message
     	
 		sb.append( getReplyCode() );
 
-		Alias site = getSiteAndReplyCodeAlias();
+		Alias site = getFunctionAndIDAlias();
 		
 		if( site != null )
 		{
@@ -286,7 +273,7 @@ public class LJ1200Message extends Message
 	@Override
     public Alias getFromIDAlias()
     {
-		return getSiteAndReplyCodeAlias();
+		return getFunctionAndIDAlias();
     }
 
 	@Override
@@ -415,18 +402,18 @@ public class LJ1200Message extends Message
 	{
 		List<Alias> aliases = new ArrayList<Alias>();
 		
-		Alias siteAndReply = getSiteAndReplyCodeAlias();
+		Alias functionAndID = getFunctionAndIDAlias();
 		
-		if( siteAndReply != null )
+		if( functionAndID != null )
 		{
-			aliases.add( siteAndReply );
+			aliases.add( functionAndID );
 		}
 
-		Alias address = getAddressAlias();
+		Alias transponder = getTransponderAlias();
 		
-		if( address != null )
+		if( transponder != null )
 		{
-			aliases.add( address );
+			aliases.add( transponder );
 		}
 		
 		return aliases;
