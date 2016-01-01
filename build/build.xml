@@ -7,6 +7,7 @@
   <property name="major" value="0"/>
   <property name="minor" value="2"/>
   <property name="build" value="0"/>
+  <property name="release" value="beta2"/>
 
   <!-- Build properties -->
   <property name="classes" location="../classes"/>
@@ -27,7 +28,7 @@
     <mkdir dir="${classes}"/>
   	
     <!-- Create version file -->
-  	<echo message="${major}.${minor}.${build}" file="${classes}/sdrtrunk-version"/>
+  	<echo message="${major}.${minor}.${build}.${release}" file="${classes}/sdrtrunk-version"/>
   </target>
 
   <target name="compile" depends="clean,init"
@@ -93,7 +94,7 @@
   	
   	<tstamp prefix="build" />
 
-    <property name="filename" value="sdrtrunk_${build.DSTAMP}_${build.TSTAMP}_${major}.${minor}.${build}"/>
+    <property name="filename" value="sdrtrunk_${build.DSTAMP}_${build.TSTAMP}_${major}.${minor}.${build}.${release}"/>
 
   	<!-- Bundle the files into .zip -->
   	<zip destfile="${product}/${filename}.zip" basedir="${product}" />
