@@ -108,8 +108,8 @@ public class DecoderViewFrame extends JInternalFrame
 					     recordConfig, 
 					     auxConfig, 
 					     aliasList, 
-					     new System( "Instrumented" ), 
-					     new Site( "Instrumented" ),
+					     "Instrumented", 
+					     "Instrumented",
 					     "Channel Name" );
 
 		mProcessingChain.addModules( modules );

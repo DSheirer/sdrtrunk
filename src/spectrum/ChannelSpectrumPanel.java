@@ -166,7 +166,7 @@ public class ChannelSpectrumPanel extends JPanel
     {
 		switch( event.getEvent() )
 		{
-			case CHANGE_SELECTED:
+			case NOTIFICATION_SELECTION_CHANGE:
 				if( !event.getChannel().isSelected() )
 				{
 					stop();
@@ -192,7 +192,7 @@ public class ChannelSpectrumPanel extends JPanel
 					start();
 				}
 				break;
-			case CHANNEL_DISABLED:
+			case REQUEST_DISABLE:
 				if( event.getChannel() == mCurrentChannel )
 				{
 					if( mEnabled.get() )
@@ -203,7 +203,7 @@ public class ChannelSpectrumPanel extends JPanel
 					mCurrentChannel = null;
 				}
 				break;
-			case CHANNEL_ENABLED:
+			case REQUEST_ENABLE:
 				if( event.getChannel() == mCurrentChannel &&
 					!event.getChannel().isProcessing() )
 				{

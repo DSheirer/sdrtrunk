@@ -135,8 +135,8 @@ public class DecoderFactory
 										   RecordConfiguration recordConfig,
 										   AuxDecodeConfiguration auxConfig, 
 										   AliasList aliasList,
-										   System system,
-										   Site site,
+										   String system,
+										   String site,
 										   String channelName )
 		{
 		List<Module> modules = getPrimaryModules( channelType, decodeConfig, 
@@ -176,8 +176,8 @@ public class DecoderFactory
 												  DecodeConfiguration decodeConfig,
 												  RecordConfiguration recordConfig,
 												  AliasList aliasList,
-												  System system,
-												  Site site,
+												  String system,
+												  String site,
 												  String channelName,
 												  ResourceManager resourceManager )
 	{

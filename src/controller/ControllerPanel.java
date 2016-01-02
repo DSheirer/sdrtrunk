@@ -42,7 +42,8 @@ import audio.AudioPanel;
 import com.jidesoft.swing.JideSplitPane;
 import com.jidesoft.swing.JideTabbedPane;
 
-import controller.channel.ChannelManager;
+import controller.channel.ChannelModel;
+import controller.channel.ChannelProcessingManager;
 
 public class ControllerPanel extends JPanel
 {
@@ -67,24 +68,25 @@ public class ControllerPanel extends JPanel
 	private AudioPanel mAudioPanel;
 	private MapPanel mMapPanel;
 
-	private ChannelManager mChannelManager;
+	private ChannelModel mChannelModel;
 	private ConfigurationControllerModel mController;
 	protected SettingsManager mSettingsManager;
 
 	public ControllerPanel( AudioManager audioManager,
 							ConfigurationControllerModel controller,
-							ChannelManager channelManager,
+							ChannelModel channelModel,
+							ChannelProcessingManager channelProcessingManager,
 							MapService mapService,
 							PlaylistManager playlistManager,
 							SettingsManager settingsManager )
 	{
-		mChannelManager = channelManager;
+		mChannelModel = channelModel;
 		mController = controller;
 	    mSettingsManager = settingsManager;
 
     	mAudioPanel = new AudioPanel( mSettingsManager, audioManager );
 
-    	mMapPanel = new MapPanel( mapService, mSettingsManager, mChannelManager );
+    	mMapPanel = new MapPanel( mapService, mSettingsManager, channelProcessingManager );
 	    
 	    mCallEventPanel = new CallEventPanel( mSettingsManager );	
 	    
@@ -120,6 +122,10 @@ public class ControllerPanel extends JPanel
     	mTabbedPane.addTab( "Channel Spectrum", mChannelSpectrumPanel );
     	mTabbedPane.addTab( "Events", mCallEventPanel );
     	mTabbedPane.addTab( "Messages", mMessageActivityPanel );
+    	
+    	JTable channelsTable = new JTable( mChannelModel );
+    	JScrollPane channelsScroller = new JScrollPane( channelsTable );
+    	mTabbedPane.addTab(  "Channels", channelsScroller );
 
     	/**
     	 * Change listener to enable/disable the channel spectrum display
@@ -152,10 +158,10 @@ public class ControllerPanel extends JPanel
     	
     	/* Register each of the components to receive channel events when the
     	 * channels are selected or change */
-    	mChannelManager.addListener( mCallEventPanel );
-    	mChannelManager.addListener( mChannelStateList );
-    	mChannelManager.addListener( mChannelSpectrumPanel );
-    	mChannelManager.addListener( mMessageActivityPanel );
+    	mChannelModel.addListener( mCallEventPanel );
+    	mChannelModel.addListener( mChannelStateList );
+    	mChannelModel.addListener( mChannelSpectrumPanel );
+    	mChannelModel.addListener( mMessageActivityPanel );
 		
 		JScrollPane channelStateListScroll = new JScrollPane();
     	channelStateListScroll.getViewport().setView( mChannelStateList );

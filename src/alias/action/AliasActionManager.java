@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import sample.Listener;
 import alias.Alias;
-import controller.ResourceManager;
+import controller.ThreadPoolManager;
 
 /**
  * Manages all alias action events.  Each received message is interrogated for
@@ -23,11 +23,11 @@ public class AliasActionManager implements Listener<Message>
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( AliasActionManager.class );
 
-	private ResourceManager mResourceManager;
+	private ThreadPoolManager mThreadPoolManager;
 	
-	public AliasActionManager( ResourceManager resourceManager )
+	public AliasActionManager( ThreadPoolManager threadPoolManager )
 	{
-		mResourceManager = resourceManager;
+		mThreadPoolManager = threadPoolManager;
 	}
 	
 	@Override
@@ -51,8 +51,7 @@ public class AliasActionManager implements Listener<Message>
 							 * action needs to setup a timer, and provide the original
 							 * message to be used as part of the action (e.g. sending
 							 * the message as a text message to a cell phone */
-							action.execute( mResourceManager.getThreadPoolManager(), 
-									alias, message );
+							action.execute( mThreadPoolManager,	alias, message );
 						}
 					}
 				}

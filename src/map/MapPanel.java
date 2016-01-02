@@ -35,7 +35,7 @@ import org.jdesktop.swingx.mapviewer.TileFactoryInfo;
 import sample.Listener;
 import settings.MapViewSetting;
 import settings.SettingsManager;
-import controller.channel.ChannelManager;
+import controller.channel.ChannelProcessingManager;
 
 public class MapPanel extends JPanel implements PlottableUpdateListener
 {
@@ -48,14 +48,14 @@ public class MapPanel extends JPanel implements PlottableUpdateListener
     
     public MapPanel( MapService mapService, 
     				 SettingsManager settingsManager,
-    				 ChannelManager channelManager )
+    				 ChannelProcessingManager channelProcessingManager )
     {
     	mSettingsManager = settingsManager;
     	mMapService = mapService;
     	mMapPainter = new PlottableEntityPainter( mSettingsManager );    	
     	
     	/* Add Map Service as message listener to receive all messages */
-    	channelManager.addListener( (Listener<Message>)mMapService );
+    	channelProcessingManager.addListener( (Listener<Message>)mMapService );
     	
     	init();
     }

@@ -34,6 +34,7 @@ import source.tuner.frequency.FrequencyChangeListener;
 import spectrum.SpectrumFrame;
 import controller.BaseNode;
 import controller.ResourceManager;
+import controller.channel.ChannelModel;
 
 public class TunerNode extends BaseNode implements FrequencyChangeListener
 {
@@ -46,10 +47,13 @@ public class TunerNode extends BaseNode implements FrequencyChangeListener
     
     private long mFrequency;
     private int mSampleRate;
+    private ChannelModel mChannelModel;
 
-	public TunerNode( Tuner tuner )
+	public TunerNode( ChannelModel channelModel, Tuner tuner )
 	{
 		super( tuner );  //does this make it a super tuner?
+		
+		mChannelModel = channelModel;
 		
 		tuner.addListener( this );
 		
@@ -115,7 +119,7 @@ public class TunerNode extends BaseNode implements FrequencyChangeListener
             {
 				ResourceManager rm = getModel().getResourceManager();
 				
-				SpectrumFrame frame = new SpectrumFrame( rm.getChannelManager(), 
+				SpectrumFrame frame = new SpectrumFrame( mChannelModel, 
 						rm.getController(), rm.getPlaylistManager(), 
 						rm.getSettingsManager(), getTuner() );
             }

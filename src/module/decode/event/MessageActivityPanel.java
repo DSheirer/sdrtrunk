@@ -82,7 +82,7 @@ public class MessageActivityPanel extends JPanel implements ChannelEventListener
     {
 		boolean changed = false;
 		
-		if( event.getEvent() == Event.CHANGE_SELECTED && 
+		if( event.getEvent() == Event.NOTIFICATION_SELECTION_CHANGE && 
 			event.getChannel().isSelected() )
 		{
 			if( mDisplayedChannel == null || 
@@ -105,8 +105,8 @@ public class MessageActivityPanel extends JPanel implements ChannelEventListener
 				changed = true;
 			}
 		}
-		else if( event.getEvent() == Event.CHANNEL_PROCESSING_STOPPED ||
-				 event.getEvent() == Event.CHANNEL_DISABLED )
+		else if( event.getEvent() == Event.NOTIFICATION_PROCESSING_STOP ||
+				 event.getEvent() == Event.REQUEST_DISABLE )
 		{
 			if( mDisplayedChannel != null && 
 				mDisplayedChannel == event.getChannel() )

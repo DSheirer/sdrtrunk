@@ -42,6 +42,7 @@ public class SourceConfigMixer extends SourceConfiguration
 	{
 		StringBuilder sb = new StringBuilder();
 		
+		sb.append( "Mixer: " );
 		sb.append( mMixer );
 		sb.append( "-" );
 		sb.append( mChannel.toString() );

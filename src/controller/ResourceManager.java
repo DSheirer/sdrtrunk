@@ -26,7 +26,7 @@ import source.SourceManager;
 import source.recording.RecordingSourceManager;
 import source.tuner.TunerManager;
 import audio.AudioManager;
-import controller.channel.ChannelManager;
+import controller.channel.ChannelModel;
 
 /**
  * Manager for system wide resources
@@ -34,7 +34,6 @@ import controller.channel.ChannelManager;
 public class ResourceManager
 {
 	private AudioManager mAudioManager;
-    private ChannelManager mChannelManager;
     private EventLogManager mEventLogManager;
     private PlaylistManager mPlaylistManager;
     private RecorderManager mRecorderManager;
@@ -46,17 +45,24 @@ public class ResourceManager
     private MapService mMapService;
     private ThreadPoolManager mThreadPoolManager;
 
-    public ResourceManager()
+    public ResourceManager( PlaylistManager playlistManager,
+    						ThreadPoolManager threadPoolManager,
+    						ChannelModel channelModel )
 	{
-    	this( new SettingsManager(),
-    		  new PlaylistManager(),
-    		  new EventLogManager() );
+    	this( threadPoolManager,
+    		  new SettingsManager(),
+    		  playlistManager,
+    		  new EventLogManager(),
+    		  channelModel );
 	}
     
-    public ResourceManager( SettingsManager settingsManager,
+    public ResourceManager( ThreadPoolManager threadPoolManager,
+    						SettingsManager settingsManager,
     						PlaylistManager playlistManager,
-    						EventLogManager eventLogManager )
+    						EventLogManager eventLogManager,
+    						ChannelModel channelModel )
     {
+    	mThreadPoolManager = threadPoolManager;
     	mSettingsManager = settingsManager;
     	mPlaylistManager = playlistManager;
     	mEventLogManager = eventLogManager;
@@ -65,14 +71,12 @@ public class ResourceManager
     	 * ChannelManager requires a reference to the ResourceManager so that
     	 * channel processing chains can access system wide resources
     	 */
-    	mThreadPoolManager = new ThreadPoolManager();
     	mAudioManager = new AudioManager( mThreadPoolManager );
        	mRecorderManager = new RecorderManager( mThreadPoolManager );
-       	mChannelManager = new ChannelManager( this );
     	mSourceManager = new SourceManager( this );
     	mRecordingSourceManager = new RecordingSourceManager( this );
     	mTunerManager = new TunerManager( this );
-    	mController = new ConfigurationControllerModel( this );
+    	mController = new ConfigurationControllerModel( channelModel, this );
     	mMapService = new MapService( this );    
     }
     
@@ -169,15 +173,5 @@ public class ResourceManager
     public void setRecordingSourceManager( RecordingSourceManager manager )
     {
     	mRecordingSourceManager = manager;
-    }
-
-    public ChannelManager getChannelManager()
-    {
-    	return mChannelManager;
-    }
-    
-    public void setChannelManager( ChannelManager channelManager )
-    {
-    	mChannelManager = channelManager;
     }
 }

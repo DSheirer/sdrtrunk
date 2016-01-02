@@ -111,12 +111,12 @@ public class ChannelStatePanel extends JPanel
 
     	setLayout( new MigLayout( "insets 1 1 1 1", "[grow,fill]", "[]0[]0[]") );
 		
-		mSystemLabel = new JLabel( mChannel.getSystem().getName() );
+		mSystemLabel = new JLabel( mChannel.getSystem() );
 		mSystemLabel.setFont( mFontDetails );
 		mSystemLabel.setForeground( mColorLabelDetails );
 		add( mSystemLabel );
 		
-		mSiteLabel = new JLabel( mChannel.getSite().getName() );
+		mSiteLabel = new JLabel( mChannel.getSite() );
 		mSiteLabel.setFont( mFontDetails );
 		mSiteLabel.setForeground( mColorLabelDetails );
 		add( mSiteLabel );

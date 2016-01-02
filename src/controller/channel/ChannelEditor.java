@@ -200,14 +200,14 @@ public class ChannelEditor extends Editor implements ActionListener
 			mEventLogEditor.save();
 			mRecordEditor.save();
 
-			mChannelNode.getChannel().setName( mChannelName.getText(), false );
-			mChannelNode.getChannel().setEnabled( mChannelEnabled.isSelected(), false );
+			mChannelNode.getChannel().setName( mChannelName.getText() );
+			mChannelNode.getChannel().setEnabled( mChannelEnabled.isSelected() );
 
 			AliasList selected = mComboAliasLists.getItemAt( 
 					mComboAliasLists.getSelectedIndex() );
 			if( selected != null )
 			{
-				mChannelNode.getChannel().setAliasListName( selected.getName(), false );
+				mChannelNode.getChannel().setAliasListName( selected.getName() );
 			}
 
 			

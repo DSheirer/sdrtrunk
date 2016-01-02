@@ -232,10 +232,10 @@ public class P25AudioModule extends Module implements Listener<Message>,
 		{
 			switch( event.getEvent() )
 			{
-				case CHANNEL_STATE_RESET:
+				case NOTIFICATION_STATE_RESET:
 					mAudioMetadata.reset();
 					break;
-				case CHANGE_SELECTED:
+				case NOTIFICATION_SELECTION_CHANGE:
 					mAudioMetadata.setSelected( event.getChannel().isSelected() );
 					break;
 				default:

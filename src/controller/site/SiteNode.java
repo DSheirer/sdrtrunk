@@ -125,8 +125,8 @@ public class SiteNode extends ConfigurableNode
 			    System system = ((SystemNode)getParent()).getSystem();
 
 			    Channel channel = new Channel();
-			    channel.setSystem( system, false );
-			    channel.setSite( getSite(), false );
+			    channel.setSystem( system.getName() );
+			    channel.setSite( getSite().getName() );
 			    
 			    getSite().addChannel( channel );
 			    

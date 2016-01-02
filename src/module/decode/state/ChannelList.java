@@ -81,10 +81,10 @@ public class ChannelList extends JPanel implements ChannelEventListener
     {
 		switch( event.getEvent() )
 		{
-			case CHANNEL_PROCESSING_STARTED:
+			case NOTIFICATION_PROCESSING_START:
 				addChannelPanel( event.getChannel() );
 				break;
-			case CHANNEL_PROCESSING_STOPPED:
+			case NOTIFICATION_PROCESSING_STOP:
 				removeChannelPanel( event.getChannel() );
 				break;
 			default:

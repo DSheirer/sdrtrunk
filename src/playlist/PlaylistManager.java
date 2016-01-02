@@ -35,6 +35,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import properties.SystemProperties;
+import controller.channel.Channel;
+import controller.channel.ChannelModel;
+import controller.site.Site;
+import controller.system.SystemList;
 
 public class PlaylistManager
 {
@@ -43,14 +47,26 @@ public class PlaylistManager
 
 	private Playlist mPlaylist = new Playlist();
 	
-	public PlaylistManager()
+	private ChannelModel mChannelModel;
+	
+	public PlaylistManager( ChannelModel channelModel )
 	{
+		mChannelModel = channelModel;
 		init();
 	}
 
 	public Playlist getPlayist()
 	{
 		return mPlaylist;
+	}
+	
+	/**
+	 * Transfers data from persisted playlist into system models
+	 */
+	private void transferPlaylistToModels()
+	{
+		//Load channels
+		mChannelModel.addChannels( mPlaylist.getChannels() );
 	}
 
 	/**
@@ -70,6 +86,8 @@ public class PlaylistManager
 				props.get( "playlist.currentfilename", defaultPlaylistFile );
 		
 		load( playlistFolder.resolve( playlistFile ) );
+		
+		transferPlaylistToModels();
 	}
 	
 
@@ -205,5 +223,44 @@ public class PlaylistManager
 		{
 			mPlaylist = new Playlist();
 		}
+
+		//Check for and convert from legacy play list format
+		if( mPlaylist.hasSystemList() )
+		{
+			convertPlaylistFormat();
+		}
+	}
+
+	/**
+	 * Converts playlist data over to new format
+	 */
+	private void convertPlaylistFormat()
+	{
+		mLog.info( "Legacy playlist format detected - converting ..." );
+
+		//Playlist version 1 to version 2 format conversion.  In order to keep
+		//backwards compatibility, transfer all of the System-Site-Channel 
+		//objects over to the new channel list format
+		SystemList systemList = mPlaylist.getSystemList();
+		
+		for( controller.system.System system: systemList.getSystem() )
+		{
+			for( Site site: system.getSite() )
+			{
+				for( Channel channel: site.getChannel() )
+				{
+					channel.setSystem( system.getName() );
+					channel.setSite( site.getName() );
+					
+					mPlaylist.getChannels().add( channel );
+				}
+			}
+		}
+		
+		mPlaylist.getSystemList().clearSystems();
+		
+		mLog.info( "Converted [" + mPlaylist.getChannels().size() + "] channels to new playlist format" );
+		
+		save();
 	}
 }

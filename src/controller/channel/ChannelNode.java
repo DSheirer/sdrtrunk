@@ -56,18 +56,18 @@ public class ChannelNode extends ConfigurableNode implements ChannelEventListene
 		
 		if( siteNode != null )
 		{
-			getChannel().setSite( siteNode.getSite(), false );
+			getChannel().setSite( siteNode.getSite().getName() );
 			
 			SystemNode systemNode = (SystemNode)siteNode.getParent();
 			
 			if( systemNode != null )
 			{
-				getChannel().setSystem( systemNode.getSystem(),  false );
+				getChannel().setSystem( systemNode.getSystem().getName() );
 			}
 		}
 		
 		/* Add this node as listener to receive changes from underlying channel */
-		getChannel().addListener( this );
+//		getChannel().addListener( this );
 
 		/* Add the resource manager to the channel so that the channel
 		 * can provide channel change events to all system resources */
@@ -83,19 +83,13 @@ public class ChannelNode extends ConfigurableNode implements ChannelEventListene
 		switch( event.getEvent() )
 		{
 			/* Refresh the node for each of these events */
-			case CHANGE_DECODER:
-			case CHANGE_NAME:
-			case CHANGE_SELECTED:
-			case CHANGE_SITE:
-			case CHANGE_SYSTEM:
-			case CHANNEL_ENABLED:
-			case CHANNEL_DISABLED:
-			case CHANNEL_PROCESSING_STARTED:
-			case CHANNEL_PROCESSING_STOPPED:
+			case NOTIFICATION_SELECTION_CHANGE:
+			case NOTIFICATION_PROCESSING_START:
+			case NOTIFICATION_PROCESSING_STOP:
 				this.refresh();
 				break;
 			/* We're being deleted, so cleanup */
-			case CHANNEL_DELETED:
+			case NOTIFICATION_DELETE:
 				delete();
 				break;
 			default:

@@ -17,12 +17,7 @@
  ******************************************************************************/
 package controller.channel;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
@@ -49,7 +44,6 @@ import org.slf4j.LoggerFactory;
 import record.RecorderManager;
 import record.RecorderType;
 import record.config.RecordConfiguration;
-import sample.Listener;
 import source.Source;
 import source.SourceException;
 import source.SourceType;
@@ -63,10 +57,7 @@ import alias.AliasList;
 import audio.metadata.Metadata;
 import audio.metadata.MetadataType;
 import controller.ResourceManager;
-import controller.channel.ChannelEvent.Event;
 import controller.config.Configuration;
-import controller.site.Site;
-import controller.system.System;
 import filter.FilterSet;
 
 @XmlSeeAlso( { Configuration.class } )
@@ -75,24 +66,13 @@ public class Channel extends Configuration
 {
 	private final static Logger mLog = LoggerFactory.getLogger( Channel.class );
 
-	private static final boolean ENABLED = true;
 	private static final boolean DISABLED = false;
-	private static final boolean BROADCAST_CHANGE = true;
 
 	public enum ChannelType 
 	{ 
 		STANDARD,
 		TRAFFIC 
 	};
-	
-	
-	private CopyOnWriteArrayList<ChannelEventListener> mChannelListeners =
-				new CopyOnWriteArrayList<ChannelEventListener>();
-
-	private CopyOnWriteArrayList<Listener<Message>> mMessageListeners =
-			new CopyOnWriteArrayList<Listener<Message>>();
-	
-	private Map<String,Channel> mTrafficChannels = new HashMap<>();
 	
 	private DecodeConfiguration mDecodeConfiguration = 
 				DecodeConfigFactory.getDefaultDecodeConfiguration();
@@ -106,19 +86,19 @@ public class Channel extends Configuration
 
 	private ResourceManager mResourceManager;
 	private String mAliasListName;
-	private System mSystem;
-    private Site mSite;
+	private String mSystem;
+    private String mSite;
     private String mName;
 	private boolean mEnabled;
 	private boolean mSelected;
 	private ChannelType mChannelType;
 
+	private ChannelState mChannelState;
 	private CallEventModel mCallEventModel;
 	private MessageActivityModel mMessageActivityModel;
 	private MessageEventLogger mEventLogger;
 	private ProcessingChain mProcessingChain;
 	
-	private ChannelState mChannelState;
 	private long mTrafficChannelTimeout = 
 			DecodeConfiguration.DEFAULT_CALL_TIMEOUT_SECONDS;
 
@@ -191,13 +171,12 @@ public class Channel extends Configuration
 	 * Note: resource manager instance is applied after object construction
 	 * since we construct the channel objects from the xml playlist
 	 */
+	
+	//TODO: remove this
 	public void setResourceManager( ResourceManager resourceManager )
 	{
 		mResourceManager = resourceManager;
 
-		/* Add system-wide channel listeners onto this channel */
-		addListeners( mResourceManager.getChannelManager().getChannelListeners() );
-		
 		/* If we're enabled, fire enable changed event to get processing started */
 		if( mEnabled )
 		{
@@ -205,6 +184,7 @@ public class Channel extends Configuration
 		}
 	}
 	
+//TODO: remove this
 	@XmlTransient
 	public ResourceManager getResourceManager()
 	{
@@ -242,8 +222,6 @@ public class Channel extends Configuration
 	public void setSelected( boolean selected )
 	{
 		mSelected = selected;
-		
-		fireChannelEvent( Event.CHANGE_SELECTED );
 	}
 	
 	@XmlTransient
@@ -293,10 +271,7 @@ public class Channel extends Configuration
 	 */
 	public void dispose()
 	{
-		setEnabled( DISABLED, BROADCAST_CHANGE );
-
-		/* Broadcast channel deleted event */
-		fireChannelEvent( Event.CHANNEL_DELETED );
+		setEnabled( DISABLED );
 	}
 	
 	/**
@@ -306,28 +281,8 @@ public class Channel extends Configuration
 	{
 		StringBuilder sb = new StringBuilder();
 		
-		if( mSystem != null )
-		{
-			sb.append( mSystem.getName() );
-		}
-		else
-		{
-			sb.append( "-" );
-		}
-		
-		sb.append( "/" );
-		
-		if( mSite != null )
-		{
-			sb.append( mSite.getName() );
-		}
-		else
-		{
-			sb.append( "-" );
-		}
-		
-		sb.append( "/" );
-
+		sb.append( ( mSystem == null ? "-" : mSystem ) );
+		sb.append( ( mSite == null ? "-" : mSite ) );
 		sb.append( mName );
 		
 		return sb.toString();
@@ -366,9 +321,15 @@ public class Channel extends Configuration
     /**
      * Returns the owning system for this channel.
      */
-	public System getSystem()
+	@XmlAttribute( name = "system" )
+	public String getSystem()
 	{
 	    return mSystem;
+	}
+	
+	public void setSystem( String system )
+	{
+		mSystem = system;
 	}
 
 	public boolean hasSystem()
@@ -377,25 +338,17 @@ public class Channel extends Configuration
 	}
 	
 	/**
-	 * Sets the owning system for this channel and optionally broadcasts a
-	 * system change channel event.
-	 */
-	public void setSystem( System system, boolean fireChangeEvent )
-	{
-	    mSystem = system;
-	    
-	    if( fireChangeEvent )
-	    {
-	        fireChannelEvent( Event.CHANGE_SYSTEM );
-	    }
-	}
-
-	/**
 	 * Returns the owning site for this channel.
 	 */
-	public Site getSite()
+	@XmlAttribute( name = "site" )
+	public String getSite()
 	{
 	    return mSite;
+	}
+	
+	public void setSite( String site )
+	{
+		mSite = site;
 	}
 
 	public boolean hasSite()
@@ -403,20 +356,6 @@ public class Channel extends Configuration
 		return mSite != null;
 	}
 	
-	/**
-	 * Sets the owning site for this channel and optionally broadcasts a site
-	 * change channel event.
-	 */
-    public void setSite( Site site, boolean fireChangeEvent )
-    {
-        mSite = site;
-        
-        if( fireChangeEvent )
-        {
-            fireChannelEvent( Event.CHANGE_SITE );
-        }
-    }
-
     /**
      * Default display string for this channel -- the channel name.
      */
@@ -444,28 +383,6 @@ public class Channel extends Configuration
 		
 		enableChanged();
 	}
-	
-	/**
-	 * Enables/disables this channel for processing.  Automatically starts or
-	 * stops channel processing in response to this change.  Optionally
-	 * broadcasts a enabled change channel event.
-	 */
-	public void setEnabled( boolean enabled, boolean fireChannelEvent )
-	{
-		setEnabled( enabled );
-		
-		if( fireChannelEvent )
-		{
-			if( enabled )
-			{
-				fireChannelEvent( Event.CHANNEL_ENABLED );
-			}
-			else
-			{
-				fireChannelEvent( Event.CHANNEL_DISABLED );
-			}
-		}
-	}
 
 	/**
 	 * Returns the alias list that is used by this channel for looking up alias
@@ -484,22 +401,6 @@ public class Channel extends Configuration
 	public void setAliasListName( String name )
 	{
 		mAliasListName = name;
-	}
-	
-	/**
-	 * Sets the alias list to be used for looking up the alias values for the 
-	 * various identifiers produced by the decoder.  This method is the same
-	 * as setAliasName(name) and optionally broadcasts an alias list change
-	 * channel event.
-	 */
-	public void setAliasListName( String name, boolean fireChangeEvent )
-	{
-		mAliasListName = name;
-		
-		if( fireChangeEvent )
-		{
-			fireChannelEvent( Event.CHANGE_ALIAS_LIST );
-		}
 	}
 
 	/**
@@ -537,21 +438,6 @@ public class Channel extends Configuration
 	}
 
 	/**
-	 * Sets the decoder configuration used by this channel and optionally
-	 * broadcasts a decoder change channel event.
-	 */
-	public void setDecodeConfiguration( DecodeConfiguration config, 
-										boolean fireChangeEvent )
-	{
-		setDecodeConfiguration( config );
-		
-		if( fireChangeEvent )
-		{
-			fireChannelEvent( Event.CHANGE_DECODER );
-		}
-	}
-
-	/**
 	 * Returns the source configuration for this channel.
 	 */
 	@XmlElement( name = "source_configuration" )
@@ -569,21 +455,6 @@ public class Channel extends Configuration
 	}
 
 	/**
-	 * Sets the source configuration for this channel and optionally broadcasts
-	 * a source change channel event.
-	 */
-	public void setSourceConfiguration( SourceConfiguration config, 
-										boolean fireChangeEvent )
-	{
-		setSourceConfiguration( config );
-		
-		if( fireChangeEvent )
-		{
-			fireChannelEvent( Event.CHANGE_SOURCE );
-		}
-	}
-	
-	/**
 	 * Returns the event logger configuration for this channel.
 	 */
 	@XmlElement( name = "event_log_configuration" )
@@ -598,21 +469,6 @@ public class Channel extends Configuration
 	public void setEventLogConfiguration( EventLogConfiguration config )
 	{
 		mEventLogConfiguration = config;
-	}
-
-	/**
-	 * Sets the event logger configuration for this channel and optionally
-	 * broadcasts an event logger change channel event.
-	 */
-	public void setEventLogConfiguration( EventLogConfiguration config, 
-										  boolean fireChangeEvent )
-	{
-		setEventLogConfiguration( config );
-		
-		if( fireChangeEvent )
-		{
-			fireChannelEvent( Event.CHANGE_EVENT_LOGGER );
-		}
 	}
 
 	/**
@@ -633,21 +489,6 @@ public class Channel extends Configuration
 	}
 
 	/**
-	 * Sets the recorder configuration for this channel and optionally broadcasts
-	 * a recorder configuration change channel event.
-	 */
-	public void setRecordConfiguration( RecordConfiguration config,
-										boolean fireChangeEvent )
-	{
-		setRecordConfiguration( config );
-		
-		if( fireChangeEvent )
-		{
-			fireChannelEvent( Event.CHANGE_RECORDER );
-		}
-	}
-
-	/**
 	 * Returns the name of this channel.
 	 */
 	@XmlAttribute
@@ -662,20 +503,6 @@ public class Channel extends Configuration
 	public void setName( String name )
 	{
 		mName = name;
-	}
-
-	/**
-	 * Sets the name of this channel and optionally broadcasts a name change
-	 * channel event.
-	 */
-	public void setName( String name, boolean fireChangeEvent )
-	{
-		mName = name;
-		
-		if( fireChangeEvent )
-		{
-			fireChannelEvent( Event.CHANGE_NAME );
-		}
 	}
 
 	/**
@@ -709,8 +536,6 @@ public class Channel extends Configuration
 				setup();
 				
 				mProcessingChain.start();
-				
-				fireChannelEvent( Event.CHANNEL_PROCESSING_STARTED );
 			}
 			catch( SourceException se )
 			{
@@ -837,13 +662,6 @@ public class Channel extends Configuration
 			mProcessingChain.addAudioPacketListener( 
 					mResourceManager.getAudioManager() );
 
-			/* Add system-wide message listeners */
-			mProcessingChain.addMessageListeners( 
-					mResourceManager.getChannelManager().getMessageListeners() );
-			
-			/* Add individual message listeners */
-			mProcessingChain.addMessageListeners( mMessageListeners );
-
 			/* Create the call event model to receive call events */
 			mCallEventModel = new CallEventModel();
 			mProcessingChain.addCallEventListener( mCallEventModel );
@@ -855,9 +673,9 @@ public class Channel extends Configuration
 			/* Inject channel metadata that will be inserted into audio packets
 			 * for the recorder manager and streaming */
 			mProcessingChain.broadcast( 
-					new Metadata( MetadataType.SYSTEM, mSystem.getName() ) );
+					new Metadata( MetadataType.SYSTEM, mSystem ) );
 			mProcessingChain.broadcast( 
-					new Metadata( MetadataType.SITE_ID, mSite.getName() ) );
+					new Metadata( MetadataType.SITE_ID, mSite ) );
 			mProcessingChain.broadcast( 
 					new Metadata( MetadataType.CHANNEL_NAME, mName ) );
 		}
@@ -915,86 +733,6 @@ public class Channel extends Configuration
 	}
 	
 	/**
-	 * Broadcasts a channel change event to all registered listeners
-	 */
-	public void fireChannelEvent( Event event )
-	{
-		ChannelEvent channelEvent = new ChannelEvent( this, event );
-		
-		for( ChannelEventListener listener: mChannelListeners )
-		{
-			listener.channelChanged( channelEvent );
-		}
-		
-		/* Send event to processing chain so modules can respond to channel
-		 * selection events */
-		if( mProcessingChain != null )
-		{
-			mProcessingChain.getChannelEventListener().receive( channelEvent );
-		}
-	}
-	
-	/**
-	 * Adds a channel listener to receive all channel events from this channel
-	 * and automatically sends the listener a channel add event.
-	 */
-	public void addListener( ChannelEventListener listener )
-	{
-		if( !mChannelListeners.contains( listener ) )
-		{
-			mChannelListeners.add( listener );
-
-			listener.channelChanged( 
-					new ChannelEvent( this, Event.CHANNEL_ADDED ) );
-		}
-		else
-		{
-			mLog.error( "Channel - attempt to add already existing channel "
-					+ "listener [" + listener.getClass() + "]" );
-		}
-	}
-
-	/**
-	 * Adds a list of channel listeners to receive all channel events from this
-	 * channel and automatically sends each one a channel add event.
-	 */
-	public void addListeners( List<ChannelEventListener> listeners )
-	{
-		for( ChannelEventListener listener: listeners )
-		{
-			addListener( listener );
-		}
-	}
-	
-	/**
-	 * Removes a channel listener from receiving channel events from this channel
-	 */
-	public void removeListener( ChannelEventListener listener )
-	{
-		mChannelListeners.remove( listener );
-	}
-	
-	public void addListener( Listener<Message> listener )
-	{
-		mMessageListeners.add( listener );
-		
-		if( isProcessing() )
-		{
-			mProcessingChain.addMessageListener( listener );
-		}
-	}
-	
-	public void removeListener( Listener<Message> listener )
-	{
-		mMessageListeners.remove( listener );
-		
-		if( mProcessingChain != null )
-		{
-			mProcessingChain.removeMessageListener( listener );
-		}
-	}
-	
-	/**
 	 * Indicates if any part of this channel is contained within the
 	 * minimum and maximum frequency values.
 	 */
@@ -1005,35 +743,4 @@ public class Channel extends Configuration
 		return tunerChannel != null &&
 			   tunerChannel.overlaps( minimum, maximum );
 	}
-	
-	public void addTrafficChannel( String channelID, Channel channel )
-	{
-		mTrafficChannels.put( channelID, channel );
-	}
-	
-	public boolean hasTrafficChannel( Channel channel )
-	{
-		return mTrafficChannels.containsValue( channel );
-	}
-	
-	public void removeTrafficChannel( Channel channel )
-	{
-		String name = channel.getChannelDisplayName();
-		
-		if( mTrafficChannels.containsKey( name ) )
-		{
-			mTrafficChannels.remove( name );
-		}
-	}
-	
-	public Collection<Channel> getTrafficChannels()
-	{
-		return Collections.unmodifiableCollection( mTrafficChannels.values() );
-	}
-	
-	public boolean hasTrafficChannel( String name )
-	{
-		return mTrafficChannels.containsKey( name );
-	}
-	
 }

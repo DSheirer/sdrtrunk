@@ -17,15 +17,20 @@
  ******************************************************************************/
 package playlist;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
 import alias.AliasDirectory;
+import controller.channel.Channel;
 import controller.channel.map.ChannelMapList;
 import controller.system.SystemList;
 
 @XmlSeeAlso( { AliasDirectory.class,
+			   Channel.class,
 			   ChannelMapList.class,
 			   SystemList.class } )
 
@@ -35,9 +40,21 @@ public class Playlist
 	private AliasDirectory mAliasDirectory = new AliasDirectory();
 	private ChannelMapList mChannelMapList = new ChannelMapList();
 	private SystemList mSystemList = new SystemList();
+	private List<Channel> mChannels = new ArrayList<>();
 	
 	public Playlist()
 	{
+	}
+	
+	@XmlElement( name = "channel" )
+	public List<Channel> getChannels()
+	{
+		return mChannels;
+	}
+	
+	public void setChannels( List<Channel> channels )
+	{
+		mChannels = channels;
 	}
 	
 	@XmlElement( name = "alias_directory" )
@@ -62,6 +79,13 @@ public class Playlist
 	public void setSystemList( SystemList list )
 	{
 		mSystemList = list;
+	}
+	
+	public boolean hasSystemList()
+	{
+		return mSystemList != null && 
+			   mSystemList.getSystem() != null && 
+			   !mSystemList.getSystem().isEmpty();
 	}
 	
 	@XmlElement( name = "channel_maps" )

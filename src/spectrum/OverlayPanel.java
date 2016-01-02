@@ -32,7 +32,6 @@ import java.awt.geom.Line2D;
 import java.awt.geom.Rectangle2D;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.JPanel;
@@ -52,7 +51,7 @@ import controller.channel.Channel;
 import controller.channel.Channel.ChannelType;
 import controller.channel.ChannelEvent;
 import controller.channel.ChannelEventListener;
-import controller.channel.ChannelManager;
+import controller.channel.ChannelModel;
 
 public class OverlayPanel extends JPanel 
 						   implements ChannelEventListener,
@@ -111,14 +110,14 @@ public class OverlayPanel extends JPanel
 	private LabelSizeManager mLabelSizeMonitor = new LabelSizeManager();
 
 	private SettingsManager mSettingsManager;
-	private ChannelManager mChannelManager;
+	private ChannelModel mChannelModel;
 	/**
 	 * Translucent overlay panel for displaying channel configurations,
 	 * processing channels, selected channels, frequency labels and lines, and 
 	 * a cursor with a frequency readout.
 	 */
 	public OverlayPanel( SettingsManager settingsManager, 
-						 ChannelManager channelManager )
+						 ChannelModel channelModel )
     {
 		mSettingsManager = settingsManager;
 
@@ -127,11 +126,11 @@ public class OverlayPanel extends JPanel
 			mSettingsManager.addListener( this );
 		}
 		
-		mChannelManager = channelManager;
+		mChannelModel = channelModel;
 		
-		if( mChannelManager != null )
+		if( mChannelModel != null )
 		{
-			mChannelManager.addListener( this );
+			mChannelModel.addListener( this );
 		}
 		
 		addComponentListener( mLabelSizeMonitor );
@@ -145,14 +144,13 @@ public class OverlayPanel extends JPanel
 	
 	public void dispose()
 	{
-		if( mChannelManager != null )
+		if( mChannelModel != null )
 		{
-			mChannelManager.removeListener( this );
+			mChannelModel.removeListener( this );
 		}
 		
-		mChannelManager = null;
+		mChannelModel = null;
 		
-//		mChannels.clear();
 		mVisibleChannels.clear();
 		
 		if( mSettingsManager != null )
@@ -571,7 +569,7 @@ public class OverlayPanel extends JPanel
                     double yAxis = 0;
                     
                     //Draw the system label and adjust the y-axis position
-                    String system = channel.hasSystem() ? channel.getSystem().getName() : " ";
+                    String system = channel.hasSystem() ? channel.getSystem() : " ";
                     	
                     yAxis += drawLabel( graphics, 
                     				   	system,
@@ -581,7 +579,7 @@ public class OverlayPanel extends JPanel
                     				   	width );
 
                     //Draw the site label and adjust the y-axis position
-                    String site = channel.hasSite() ? channel.getSite().getName() : " ";
+                    String site = channel.hasSite() ? channel.getSite() : " ";
 
                     yAxis += drawLabel( graphics, 
                     					site,
@@ -689,20 +687,12 @@ public class OverlayPanel extends JPanel
 		}
 		
 		/**
-		 * Reset the visible channel configs list
+		 * Reset the visible channels list
 		 */
 		mVisibleChannels.clear();
-
-		long minimum = getMinFrequency();
-		long maximum = getMaxFrequency();
-		
-		for( Channel channel: mChannelManager.getChannels() )
-		{
-			if( channel.isWithin( minimum, maximum ) )
-			{
-				mVisibleChannels.add( channel );
-			}
-		}
+		mVisibleChannels.addAll( 
+				mChannelModel.getChannelsInFrequencyRange( getMinFrequency(), 
+						getMaxFrequency() ) );
     }
 
 	/**
@@ -716,27 +706,20 @@ public class OverlayPanel extends JPanel
     	
 		switch( event.getEvent() )
 		{
-//			case CHANNEL_ADDED:
-			case CHANNEL_ENABLED:
-//				if( !mChannels.contains( channel ) )
-//				{
-//					mChannels.add( channel );
-//				}
-				
-				if( channel.isWithin( getMinFrequency(), getMaxFrequency() ) && 
-					!mVisibleChannels.contains( channel ) )
+			case NOTIFICATION_ADD:
+			case NOTIFICATION_PROCESSING_START:
+				if( !mVisibleChannels.contains( channel ) &&
+					channel.isWithin( getMinFrequency(), getMaxFrequency() ) )
 				{
 					mVisibleChannels.add( channel );
 				}
 				break;
-			case CHANNEL_DELETED:
-//				mChannels.remove( channel );
+			case NOTIFICATION_DELETE:
 				mVisibleChannels.remove( channel );
 				break;
-			case CHANNEL_PROCESSING_STOPPED:
+			case NOTIFICATION_PROCESSING_STOP:
 				if( channel.getChannelType() == ChannelType.TRAFFIC )
 				{
-//					mChannels.remove( channel );
 					mVisibleChannels.remove( channel );
 				}
 				break;

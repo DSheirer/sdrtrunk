@@ -15,7 +15,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import record.config.RecordConfiguration;
-import sample.Broadcaster;
 import sample.Listener;
 import source.config.SourceConfigTuner;
 import source.tuner.TunerChannel;
@@ -44,8 +43,8 @@ public class TrafficChannelManager extends Module
 	private DecodeConfiguration mDecodeConfiguration;
 	private RecordConfiguration mRecordConfiguration;
 	private ResourceManager mResourceManager;
-	private System mSystem;
-	private Site mSite;
+	private String mSystem;
+	private String mSite;
 	private String mAliasListName;
 	private long mTrafficChannelTimeout;
 	private CallEvent mPreviousDoNotMonitorCallEvent;
@@ -72,8 +71,8 @@ public class TrafficChannelManager extends Module
 	public TrafficChannelManager( ResourceManager resourceManager,
 								  DecodeConfiguration decodeConfiguration,
 								  RecordConfiguration recordConfiguration,
-								  System system,
-								  Site site,
+								  String system,
+								  String site,
 								  String aliasListName,
 								  long trafficChannelTimeout,
 								  int trafficChannelPoolSize ) 
@@ -145,8 +144,8 @@ public class TrafficChannelManager extends Module
 			{
 				channel.setSourceConfiguration( new SourceConfigTuner( tunerChannel ) );
 				
-				channel.setSystem( mSystem, false );
-				channel.setSite( mSite, false );
+				channel.setSystem( mSystem );
+				channel.setSite( mSite );
 				channel.setName( channelNumber );
 
 				channel.setEnabled( true );
@@ -160,8 +159,8 @@ public class TrafficChannelManager extends Module
 				{
 					channel.setEnabled( false );
 					
-					channel.setSystem( mSystem, false );
-					channel.setSite( mSite, false );
+					channel.setSystem( mSystem );
+					channel.setSite( mSite );
 					channel.setName( "Traffic" );
 				}
 			}
@@ -399,7 +398,7 @@ public class TrafficChannelManager extends Module
 				mTrafficChannelsInUse.remove( channelNumber );
 
 				/* Disable the channel and broadcast a notification */
-				channel.setEnabled( false, true );
+				channel.setEnabled( false );
 			}
 		}
 	}

@@ -39,7 +39,7 @@ public class ChannelUtils
 					@Override
 	                public void actionPerformed( ActionEvent e )
 	                {
-						channel.setEnabled( DISABLED, BROADCAST_CHANGE );
+						channel.setEnabled( DISABLED );
 						
 						if( playlistManager != null )
 						{
@@ -82,7 +82,7 @@ public class ChannelUtils
 					@Override
 	                public void actionPerformed( ActionEvent e )
 	                {
-						channel.setEnabled( ENABLED, BROADCAST_CHANGE );
+						channel.setEnabled( ENABLED );
 						
 						if( playlistManager != null )
 						{
@@ -109,10 +109,10 @@ public class ChannelUtils
 					if( response == JOptionPane.YES_OPTION )
 					{
 						/* Disable the channel */
-						channel.setEnabled( DISABLED, BROADCAST_CHANGE );	
+						channel.setEnabled( DISABLED );	
 
 		                /* Broadcast channel deleted event */
-						channel.fireChannelEvent( Event.CHANNEL_DELETED );					
+//						channel.fireChannelEvent( Event.NOTIFICATION_DELETE );					
 		                
 						if( playlistManager != null )
 						{

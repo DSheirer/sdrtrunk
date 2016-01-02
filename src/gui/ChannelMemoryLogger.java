@@ -5,6 +5,7 @@ import java.text.NumberFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import controller.channel.Channel.ChannelType;
 import controller.channel.ChannelEvent;
 import controller.channel.ChannelEventListener;
 
@@ -46,33 +47,40 @@ public class ChannelMemoryLogger implements Runnable, ChannelEventListener
 	{
 		switch( event.getEvent() )
 		{
-			case CHANNEL_ADDED:
-				mChannelCount++;
+			case NOTIFICATION_ADD:
+				if( event.getChannel().getChannelType() == ChannelType.TRAFFIC )
+				{
+					mTrafficChannelCount++;
+				}
+				else
+				{
+					mChannelCount++;
+				}
 				break;
-			case CHANNEL_DELETED:
-				mChannelCount--;
+			case NOTIFICATION_DELETE:
+				if( event.getChannel().getChannelType() == ChannelType.TRAFFIC )
+				{
+					mTrafficChannelCount--;
+				}
+				else
+				{
+					mChannelCount--;
+				}
 				break;
-			case CHANNEL_DISABLED:
+			case REQUEST_DISABLE:
 				break;
-			case CHANNEL_ENABLED:
+			case REQUEST_ENABLE:
 				break;
-			case CHANNEL_PROCESSING_STARTED:
+			case NOTIFICATION_PROCESSING_START:
 				mChannelProcessingCount++;
 				break;
-			case CHANNEL_PROCESSING_STOPPED:
+			case NOTIFICATION_PROCESSING_STOP:
 				mChannelProcessingCount--;
 				break;
-			case CHANNEL_STATE_RESET:
-				break;
-			case TRAFFIC_CHANNEL_ADDED:
-				mTrafficChannelCount++;
-				break;
-			case TRAFFIC_CHANNEL_DELETED:
-				mTrafficChannelCount--;
+			case NOTIFICATION_STATE_RESET:
 				break;
 			default:
 				break;
-		
 		}
 	}
 }

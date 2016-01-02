@@ -30,21 +30,14 @@ import javax.swing.tree.TreePath;
 
 import map.IconManager;
 import module.decode.DecoderType;
-import module.decode.config.DecodeConfigFactory;
 import playlist.PlaylistNode;
-import source.config.SourceConfigTuner;
 import source.tuner.Tuner;
 import source.tuner.TunerGroupNode;
 import source.tuner.TunerNode;
 import source.tuner.TunerSelectionListener;
 import controller.channel.Channel;
-import controller.channel.ChannelEvent;
-import controller.channel.ChannelEvent.Event;
+import controller.channel.ChannelModel;
 import controller.channel.ChannelNode;
-import controller.site.Site;
-import controller.system.System;
-import controller.system.SystemListNode;
-import controller.system.SystemNode;
 
 public class ConfigurationControllerModel extends DefaultTreeModel
 {
@@ -62,6 +55,7 @@ public class ConfigurationControllerModel extends DefaultTreeModel
 //    private RecordingGroupNode mRecordingGroupNode;
     
     private IconManager mIconManagerFrame;
+    private ChannelModel mChannelModel;
 
 	/**
 	 * Implements a merged system controller and (tree) model.  The user will 
@@ -69,9 +63,12 @@ public class ConfigurationControllerModel extends DefaultTreeModel
 	 * design perspective, the model and the control are necessarily merged to
 	 * work well with the JTree as the system view.
 	 */
-	public ConfigurationControllerModel( ResourceManager resourceManager )
+	public ConfigurationControllerModel( ChannelModel channelModel, 
+										 ResourceManager resourceManager )
     {
     	super( new BaseNode( null ) );
+
+    	mChannelModel = channelModel;
     	
     	mResourceManager = resourceManager;
 
@@ -156,7 +153,7 @@ public class ConfigurationControllerModel extends DefaultTreeModel
 		
 		for( Tuner tuner: tuners )
 		{
-			TunerNode child = new TunerNode( tuner );
+			TunerNode child = new TunerNode( mChannelModel, tuner );
 			
 			insertNodeInto( child, parent, parent.getChildCount() );
 			
@@ -173,29 +170,30 @@ public class ConfigurationControllerModel extends DefaultTreeModel
      */
     public void createChannel( long frequency, DecoderType decoder )
     {
-    	System system = new System();
-
-    	Site site = new Site();
-    	system.addSite( site );
-    	
-    	Channel channel = new Channel();
-    	channel.setDecodeConfiguration( 
-    				DecodeConfigFactory.getDecodeConfiguration( decoder ) );
-    	SourceConfigTuner sourceConfig = new SourceConfigTuner();
-    	sourceConfig.setFrequency( frequency );
-    	channel.setSourceConfiguration( sourceConfig );
-    	mResourceManager.getChannelManager().channelChanged( new ChannelEvent( channel, Event.CHANNEL_ADDED ) );
-    	channel.setEnabled( true, true );
-    	site.addChannel( channel );
-
-    	mPlaylistNode.getPlaylist().getSystemList().addSystem( system );
-    	
-    	SystemNode systemNode = new SystemNode( system );
-    	SystemListNode systemListNode = mPlaylistNode.getSystemListNode();
-    	addNode( systemNode, systemListNode, systemListNode.getChildCount() );
-    	systemNode.init();
-
-    	systemNode.save();
+    	throw new UnsupportedOperationException( "This has to be updated to new channel model format" );
+//    	System system = new System();
+//
+//    	Site site = new Site();
+//    	system.addSite( site );
+//    	
+//    	Channel channel = new Channel();
+//    	channel.setDecodeConfiguration( 
+//    				DecodeConfigFactory.getDecodeConfiguration( decoder ) );
+//    	SourceConfigTuner sourceConfig = new SourceConfigTuner();
+//    	sourceConfig.setFrequency( frequency );
+//    	channel.setSourceConfiguration( sourceConfig );
+//    	mResourceManager.getChannelManager().channelChanged( new ChannelEvent( channel, Event.NOTIFICATION_ADD ) );
+//    	channel.setEnabled( true, true );
+//    	site.addChannel( channel );
+//
+//    	mPlaylistNode.getPlaylist().getSystemList().addSystem( system );
+//    	
+//    	SystemNode systemNode = new SystemNode( system );
+//    	SystemListNode systemListNode = mPlaylistNode.getSystemListNode();
+//    	addNode( systemNode, systemListNode, systemListNode.getChildCount() );
+//    	systemNode.init();
+//
+//    	systemNode.save();
     }
 
     public void addNode( BaseNode child, BaseNode parent, int index )

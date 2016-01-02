@@ -28,7 +28,6 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Hashtable;
 
 import javax.swing.JCheckBoxMenuItem;
@@ -82,7 +81,7 @@ import com.jidesoft.swing.JideSplitPane;
 
 import controller.ConfigurationControllerModel;
 import controller.channel.Channel;
-import controller.channel.ChannelManager;
+import controller.channel.ChannelModel;
 import controller.channel.ChannelUtils;
 import dsp.filter.Window.WindowType;
 import dsp.filter.smoothing.SmoothingFilter.SmoothingType;
@@ -133,7 +132,7 @@ public class SpectralDisplayPanel extends JPanel
 	 * the DFT is translated to decibels for display in the spectrum and
 	 * waterfall components.
 	 */
-    public SpectralDisplayPanel( ChannelManager channelManager,
+    public SpectralDisplayPanel( ChannelModel channelModel,
     							 ConfigurationControllerModel controller,
     							 PlaylistManager playlistManager,
     							 SettingsManager settingsManager )
@@ -143,7 +142,7 @@ public class SpectralDisplayPanel extends JPanel
     	mSettingsManager = settingsManager;
 
     	mSpectrumPanel = new SpectrumPanel( mSettingsManager );
-    	mOverlayPanel = new OverlayPanel( mSettingsManager, channelManager );
+    	mOverlayPanel = new OverlayPanel( mSettingsManager, channelModel );
     	mWaterfallPanel = new WaterfallPanel( mSettingsManager );
     	
     	//Register to receive tuner selection events

@@ -124,6 +124,6 @@ public class SourceComponentEditor extends AbstractChannelEditor
 		
 		//Let the calling save method send the config change event
 		mChannelNode.getChannel()
-					.setSourceConfiguration( mEditor.getConfig(), false );
+					.setSourceConfiguration( mEditor.getConfig() );
     }
 }
