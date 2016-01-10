@@ -18,9 +18,11 @@
 package record;
 
 import record.config.RecordConfiguration;
-import controller.Editor;
+import controller.channel.Channel;
+import controller.channel.ChannelConfigurationEditor;
+import controller.channel.ConfigurationValidationException;
 
-public class RecordEditor extends Editor
+public class RecordEditor extends ChannelConfigurationEditor
 {
     private static final long serialVersionUID = 1L;
     
@@ -42,7 +44,16 @@ public class RecordEditor extends Editor
     }
 
 	@Override
-    public void reset()
-    {
-    }
+	public void setConfiguration( Channel channel )
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void validateConfiguration() throws ConfigurationValidationException
+	{
+		// TODO Auto-generated method stub
+		
+	}
 }

@@ -27,6 +27,7 @@ import org.usb4java.LibUsbException;
 
 import sample.Listener;
 import sample.complex.ComplexBuffer;
+import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.Tuner;
 import source.tuner.TunerChannel;
@@ -34,9 +35,8 @@ import source.tuner.TunerChannelSource;
 import source.tuner.TunerClass;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
-import source.tuner.frequency.FrequencyChangeListener;
+import source.tuner.frequency.IFrequencyChangeListener;
 import source.tuner.rtl.RTL2832TunerController.SampleRate;
-import controller.ResourceManager;
 import controller.ThreadPoolManager;
 
 public class RTL2832Tuner extends Tuner
@@ -57,7 +57,7 @@ public class RTL2832Tuner extends Tuner
 		
 		mTunerClass = tunerClass;
 		mController = controller;
-		mController.addListener( (FrequencyChangeListener)this );
+		mController.addListener( this );
 	}
 	
 	public void dispose()
@@ -89,9 +89,9 @@ public class RTL2832Tuner extends Tuner
     }
 	
 	@Override
-    public JPanel getEditor( ResourceManager resourceManager )
+    public JPanel getEditor( SettingsManager settingsManager )
     {
-	    return mController.getEditor( resourceManager );
+	    return mController.getEditor( settingsManager );
     }
 
 	@Override

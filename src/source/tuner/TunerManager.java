@@ -30,6 +30,7 @@ import org.usb4java.DeviceDescriptor;
 import org.usb4java.DeviceList;
 import org.usb4java.LibUsb;
 
+import settings.SettingsManager;
 import source.Source;
 import source.SourceException;
 import source.config.SourceConfigTuner;
@@ -46,22 +47,25 @@ import source.tuner.rtl.RTL2832Tuner;
 import source.tuner.rtl.RTL2832TunerController;
 import source.tuner.rtl.e4k.E4KTunerController;
 import source.tuner.rtl.r820t.R820TTunerController;
-import controller.ResourceManager;
+import controller.ThreadPoolManager;
 
 public class TunerManager
 {
 	private final static Logger mLog = 
 							LoggerFactory.getLogger( TunerManager.class );
 
-	private ResourceManager mResourceManager;
 	private ArrayList<Tuner> mTuners = new ArrayList<Tuner>();
+
+	private MixerManager mMixerManager;
+	private SettingsManager mSettingsManager;
+	private ThreadPoolManager mThreadPoolManager;
 	
-    public TunerManager( ResourceManager resourceManager )
+    public TunerManager( MixerManager mixerManager,
+    					 SettingsManager settingsManager, 
+    					 ThreadPoolManager threadPoolManager )
 	{
-    	mResourceManager = resourceManager;
-    	
-    	/* initialize mixers */
-    	MixerManager.getInstance();
+    	mSettingsManager = settingsManager;
+    	mThreadPoolManager = threadPoolManager;
     	
     	initTuners();
 	}
@@ -100,8 +104,7 @@ public class TunerManager
 				
 				try
                 {
-                    retVal = tuner.getChannel( 
-                		mResourceManager.getThreadPoolManager(), tunerChannel );
+                    retVal = tuner.getChannel( mThreadPoolManager, tunerChannel );
                 }
 				catch ( RejectedExecutionException ree )
 				{
@@ -261,7 +264,7 @@ public class TunerManager
 		try
 		{
 			AirspyTunerController airspyController = 
-				new AirspyTunerController( device, mResourceManager.getThreadPoolManager() );
+				new AirspyTunerController( device, mThreadPoolManager );
 			
 			airspyController.init();
 			
@@ -397,7 +400,7 @@ public class TunerManager
 	    {
 			HackRFTunerController hackRFController = 
 						new HackRFTunerController( device, descriptor, 
-								mResourceManager.getThreadPoolManager() );
+								mThreadPoolManager );
 			
 			hackRFController.init();
 			
@@ -449,7 +452,7 @@ public class TunerManager
 				{
 					E4KTunerController controller = 
 						new E4KTunerController( device, deviceDescriptor, 
-								mResourceManager.getThreadPoolManager() );
+								mThreadPoolManager );
 					
 					controller.init();
 					
@@ -476,7 +479,7 @@ public class TunerManager
 				{
 					R820TTunerController controller = 
 						new R820TTunerController( device, deviceDescriptor, 
-								mResourceManager.getThreadPoolManager() );
+								mThreadPoolManager );
 					
 					controller.init();
 					
@@ -526,12 +529,11 @@ public class TunerManager
      */
     private TunerConfiguration getTunerConfiguration( Tuner tuner )
     {
-    	TunerConfigurationAssignment selected = mResourceManager
-			.getSettingsManager().getSelectedTunerConfiguration( 
-					tuner.getTunerType(), tuner.getUniqueID() );
+    	TunerConfigurationAssignment selected = mSettingsManager
+			.getSelectedTunerConfiguration( tuner.getTunerType(), tuner.getUniqueID() );
 
-    	ArrayList<TunerConfiguration> configs = mResourceManager
-			.getSettingsManager().getTunerConfigurations( tuner.getTunerType() );
+    	ArrayList<TunerConfiguration> configs = mSettingsManager
+    			.getTunerConfigurations( tuner.getTunerType() );
 
     	TunerConfiguration config = null;
     	
@@ -553,13 +555,13 @@ public class TunerManager
     	//If we're still null at this point, create a default config
     	if( config == null )
     	{
-    		config = mResourceManager.getSettingsManager()
-				.addNewTunerConfiguration( tuner.getTunerType(), "Default" );
+    		config = mSettingsManager.addNewTunerConfiguration( 
+    				tuner.getTunerType(), "Default" );
     	}
     	
     	//Persist the config as the selected tuner configuration.  The method
     	//auto-saves the setting
-    	mResourceManager.getSettingsManager().setSelectedTunerConfiguration( 
+    	mSettingsManager.setSelectedTunerConfiguration( 
     			tuner.getTunerType(), tuner.getUniqueID(), config );
     	
     	return config;
@@ -579,7 +581,7 @@ public class TunerManager
     private MixerTunerDataLine getMixerTunerDataLine( TunerType tunerClass )
     {
     	Collection<MixerTunerDataLine> datalines = 
-    			MixerManager.getInstance().getMixerTunerDataLines();
+    			mMixerManager.getMixerTunerDataLines();
 
     	for( MixerTunerDataLine mixerTDL: datalines  )
 		{

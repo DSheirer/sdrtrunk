@@ -51,11 +51,42 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     
     public ComplexWaveSource( File file ) throws IOException 
     {
-    	super( file.getAbsolutePath() );
-    	
     	mFile = file;
     }
     
+	@Override
+	public void reset()
+	{
+		stop();
+		start();
+	}
+
+	@Override
+	public void start()
+	{
+		try
+		{
+			open();
+		} 
+		catch ( IOException | UnsupportedAudioFileException e )
+		{
+			mLog.error( "Error starting complex wave source" );
+		}
+	}
+
+	@Override
+	public void stop()
+	{
+		try
+		{
+			close();
+		} 
+		catch ( IOException e )
+		{
+			mLog.error( "Error stopping complex wave source" );
+		}
+	}
+
 	@Override
 	public long getFrameCount() throws IOException
 	{

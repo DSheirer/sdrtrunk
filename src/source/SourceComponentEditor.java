@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -29,7 +29,8 @@ import net.miginfocom.swing.MigLayout;
 import source.config.SourceConfigFactory;
 import source.config.SourceConfiguration;
 import controller.channel.AbstractChannelEditor;
-import controller.channel.ChannelNode;
+import controller.channel.Channel;
+import controller.channel.ConfigurationValidationException;
 
 public class SourceComponentEditor extends AbstractChannelEditor
 {
@@ -37,10 +38,13 @@ public class SourceComponentEditor extends AbstractChannelEditor
 
     private JComboBox<SourceType> mComboSources;
     private SourceEditor mEditor;
+    private SourceManager mSourceManager;
 
-    public SourceComponentEditor( ChannelNode channelNode )
+    public SourceComponentEditor( SourceManager sourceManager, Channel channel )
 	{
-    	super( channelNode );
+    	super( channel );
+    	
+    	mSourceManager = sourceManager;
     	
 		setLayout( new MigLayout( "fill,wrap 2", "[right,grow][grow]", "[][][grow]" ) );
 
@@ -57,11 +61,9 @@ public class SourceComponentEditor extends AbstractChannelEditor
 				{
 					SourceConfiguration config;
 					
-					if( selected == mChannelNode.getChannel()
-							.getSourceConfiguration().getSourceType() )
+					if( selected == mChannel.getSourceConfiguration().getSourceType() )
 					{
-						config = mChannelNode.getChannel()
-								.getSourceConfiguration();
+						config = mChannel.getSourceConfiguration();
 					}
 					else
 					{
@@ -76,8 +78,7 @@ public class SourceComponentEditor extends AbstractChannelEditor
 					}
 					
 					//Change to the new one
-					mEditor = SourceEditorFactory.getPanel( 
-						mChannelNode.getModel().getResourceManager(), config );
+					mEditor = mSourceManager.getPanel( config );
 					
 					//Add it to the jpanel
 					add( mEditor, "span 2" );
@@ -105,10 +106,10 @@ public class SourceComponentEditor extends AbstractChannelEditor
         {
 
             @Override
-            public void run() {
+            public void run() 
+            {
     			mComboSources.setSelectedItem( 
-    					mChannelNode.getChannel()
-    					.getSourceConfiguration().getSourceType() );
+    					mChannel.getSourceConfiguration().getSourceType() );
 
     			mComboSources.requestFocus();
 
@@ -123,7 +124,20 @@ public class SourceComponentEditor extends AbstractChannelEditor
 		mEditor.save();
 		
 		//Let the calling save method send the config change event
-		mChannelNode.getChannel()
-					.setSourceConfiguration( mEditor.getConfig() );
+		mChannel.setSourceConfiguration( mEditor.getConfig() );
     }
+
+	@Override
+	public void setConfiguration( Channel channel )
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void validateConfiguration() throws ConfigurationValidationException
+	{
+		// TODO Auto-generated method stub
+		
+	}
 }

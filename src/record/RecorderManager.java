@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@ package record;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +32,6 @@ import audio.AudioPacket;
 import audio.metadata.Metadata;
 import audio.metadata.MetadataType;
 import controller.ThreadPoolManager;
-import controller.ThreadPoolManager.ThreadType;
 
 public class RecorderManager implements Listener<AudioPacket>
 {
@@ -170,8 +168,7 @@ public class RecorderManager implements Listener<AudioPacket>
 	/**
 	 * Constructs a baseband recorder for use in a processing chain. 
 	 */
-	public static ComplexBufferWaveRecorder getBasebandRecorder( 
-			ThreadPoolManager threadPoolManager, String channelName )
+	public ComplexBufferWaveRecorder getBasebandRecorder( String channelName )
 	{
 		StringBuilder sb = new StringBuilder();
         sb.append( SystemProperties.getInstance()
@@ -180,7 +177,7 @@ public class RecorderManager implements Listener<AudioPacket>
         sb.append( channelName );
         sb.append(  "_baseband" );
 
-        return new ComplexBufferWaveRecorder( threadPoolManager, 
+        return new ComplexBufferWaveRecorder( mThreadPoolManager, 
         		AUDIO_SAMPLE_RATE, sb.toString() );
 	}
 }

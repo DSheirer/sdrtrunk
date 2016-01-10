@@ -46,16 +46,11 @@ public class MapPanel extends JPanel implements PlottableUpdateListener
     private JXMapViewer mMapViewer = new JXMapViewer();
     private PlottableEntityPainter mMapPainter;
     
-    public MapPanel( MapService mapService, 
-    				 SettingsManager settingsManager,
-    				 ChannelProcessingManager channelProcessingManager )
+    public MapPanel( MapService mapService, SettingsManager settingsManager )
     {
     	mSettingsManager = settingsManager;
     	mMapService = mapService;
     	mMapPainter = new PlottableEntityPainter( mSettingsManager );    	
-    	
-    	/* Add Map Service as message listener to receive all messages */
-    	channelProcessingManager.addListener( (Listener<Message>)mMapService );
     	
     	init();
     }

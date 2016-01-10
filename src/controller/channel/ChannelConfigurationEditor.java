@@ -1,6 +1,7 @@
 /*******************************************************************************
+
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -15,39 +16,29 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package buffer;
+package controller.channel;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.Enumeration;
+import javax.swing.JPanel;
 
-import sample.complex.Complex;
-
-public class ShortComplexByteBuffer implements Enumeration<Complex>
+public abstract class ChannelConfigurationEditor extends JPanel
 {
-	private ByteBuffer mByteBuffer;
-	
-	public ShortComplexByteBuffer( byte[] bytes, ByteOrder endianness )
-	{
-		mByteBuffer = ByteBuffer.wrap( bytes );
-		mByteBuffer.order( endianness );
-	}
-	
-	public byte[] array()
-	{
-		return mByteBuffer.array();
-	}
+    private static final long serialVersionUID = 1L;
 
-	@Override
-	public boolean hasMoreElements()
-	{
-		return mByteBuffer.hasRemaining();
-	}
-
-	@Override
-    public Complex nextElement()
-    {
-		return new Complex( (float)mByteBuffer.getShort(),
-								  (float)mByteBuffer.getShort() );
-    }
+    /**
+     * Sets or resets the configuration editor components
+     */
+    public abstract void setConfiguration( Channel channel );
+    
+    /**
+     * Saves the contents of the editor components to the configuration
+     */
+    public abstract void save();
+    
+    /**
+     * Validates the contents of the editor components prior to saving the 
+     * content to the configuration.
+     * 
+     * @throws ConfigurationValidationException if the content is invalid
+     */
+    public abstract void validateConfiguration() throws ConfigurationValidationException;
 }

@@ -34,7 +34,6 @@ import sample.Listener;
 import sample.complex.ComplexBuffer;
 import sample.complex.ComplexBufferToStreamConverter;
 import sample.complex.IComplexBufferListener;
-import source.tuner.frequency.FrequencyCorrectionControl;
 import alias.AliasList;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
@@ -119,18 +118,6 @@ public class P25_LSMDecoder extends P25Decoder implements IComplexBufferListener
 		return Modulation.CQPSK;
 	}
 	
-	@Override
-	public boolean hasFrequencyCorrectionControl()
-	{
-		return false;
-	}
-
-	@Override
-	public FrequencyCorrectionControl getFrequencyCorrectionControl()
-	{
-		return null;
-	}
-
 	/**
 	 * Provides a list of instrumentation taps for monitoring internal processing
 	 */

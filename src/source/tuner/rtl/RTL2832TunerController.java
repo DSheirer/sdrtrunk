@@ -52,13 +52,11 @@ import sample.Broadcaster;
 import sample.Listener;
 import sample.adapter.ByteSampleAdapter;
 import sample.complex.ComplexBuffer;
+import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.TunerController;
 import source.tuner.TunerType;
-import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeEvent.Event;
 import buffer.FloatAveragingBuffer;
-import controller.ResourceManager;
 import controller.ThreadPoolManager;
 import controller.ThreadPoolManager.ThreadType;
 
@@ -364,7 +362,7 @@ public abstract class RTL2832TunerController extends TunerController
 		}
 	}
 	
-	public abstract JPanel getEditor( ResourceManager resourceManager );
+	public abstract JPanel getEditor( SettingsManager settingsManager );
 	
 	public abstract void setSampleRateFilters( int sampleRate ) 
 						throws SourceException;

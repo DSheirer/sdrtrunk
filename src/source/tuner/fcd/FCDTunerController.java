@@ -33,13 +33,13 @@ import org.usb4java.DeviceHandle;
 import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 
+import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.TunerClass;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerController;
 import source.tuner.TunerType;
 import source.tuner.fcd.proV1.FCD1TunerController.Block;
-import controller.ResourceManager;
 
 public abstract class FCDTunerController extends TunerController
 {
@@ -150,7 +150,7 @@ public abstract class FCDTunerController extends TunerController
 	 * Editor panel (GUI) component.
 	 */
 	public abstract JPanel getEditor( FCDTuner tuner, 
-								ResourceManager resourceManager );
+									  SettingsManager settingsManager );
 
 	/**
 	 * Applies the settings in the tuner configuration

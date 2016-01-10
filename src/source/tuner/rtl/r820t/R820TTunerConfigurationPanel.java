@@ -48,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.LibUsbException;
 
+import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerConfigurationAssignment;
@@ -57,7 +58,6 @@ import source.tuner.rtl.r820t.R820TTunerController.R820TGain;
 import source.tuner.rtl.r820t.R820TTunerController.R820TLNAGain;
 import source.tuner.rtl.r820t.R820TTunerController.R820TMixerGain;
 import source.tuner.rtl.r820t.R820TTunerController.R820TVGAGain;
-import controller.ResourceManager;
 
 public class R820TTunerConfigurationPanel extends JPanel
 {
@@ -67,7 +67,7 @@ public class R820TTunerConfigurationPanel extends JPanel
 	private static final long serialVersionUID = 1L;
     private static final R820TGain DEFAULT_GAIN = R820TGain.GAIN_279;
     
-    private ResourceManager mResourceManager;
+    private SettingsManager mSettingsManager;
     private R820TTunerController mController;
     private R820TTunerConfiguration mSelectedConfig;
 
@@ -86,10 +86,10 @@ public class R820TTunerConfigurationPanel extends JPanel
     
     private JComboBox<SampleRate> mComboSampleRate;
     
-    public R820TTunerConfigurationPanel( ResourceManager resourceManager,
+    public R820TTunerConfigurationPanel( SettingsManager settingsManager,
     								  	 R820TTunerController controller )
     {
-    	mResourceManager = resourceManager;
+    	mSettingsManager = settingsManager;
     	mController = controller;
     	
     	init();
@@ -110,8 +110,8 @@ public class R820TTunerConfigurationPanel extends JPanel
         mComboConfigurations.setModel( getModel() );
 
         /* Determine which tuner configuration should be selected/displayed */
-        TunerConfigurationAssignment savedConfig = mResourceManager
-        		.getSettingsManager().getSelectedTunerConfiguration( 
+        TunerConfigurationAssignment savedConfig = mSettingsManager
+        		.getSelectedTunerConfiguration( 
         				TunerType.RAFAELMICRO_R820T, mController.getUniqueID() );
         
         if( savedConfig != null )
@@ -126,7 +126,7 @@ public class R820TTunerConfigurationPanel extends JPanel
         	mSelectedConfig = mComboConfigurations.getItemAt( 0 );
 
         	//Store this config as the default for this tuner at this address
-        	mResourceManager.getSettingsManager()
+        	mSettingsManager
         		.setSelectedTunerConfiguration( 
         				TunerType.RAFAELMICRO_R820T, 
         				mController.getUniqueID(), mSelectedConfig );
@@ -549,7 +549,7 @@ public class R820TTunerConfigurationPanel extends JPanel
             public void actionPerformed( ActionEvent e )
             {
 				TunerConfiguration config = 
-						mResourceManager.getSettingsManager()
+						mSettingsManager
 							.addNewTunerConfiguration( 
 									TunerType.RAFAELMICRO_R820T, 
 									"New Configuration" );
@@ -589,7 +589,7 @@ public class R820TTunerConfigurationPanel extends JPanel
 
 					if( n == JOptionPane.YES_OPTION )
 					{
-						mResourceManager.getSettingsManager()
+						mSettingsManager
 							.deleteTunerConfiguration( selected );
 
 						mComboConfigurations.setModel( getModel() );
@@ -630,7 +630,7 @@ public class R820TTunerConfigurationPanel extends JPanel
 
 	        mComboSampleRate.setSelectedItem( mSelectedConfig.getSampleRate() );
 
-	        mResourceManager.getSettingsManager().setSelectedTunerConfiguration( 
+	        mSettingsManager.setSelectedTunerConfiguration( 
     			TunerType.RAFAELMICRO_R820T, mController.getUniqueID(), config );
         }
         catch ( SourceException e1 )
@@ -654,7 +654,7 @@ public class R820TTunerConfigurationPanel extends JPanel
     private ComboBoxModel<R820TTunerConfiguration> getModel()
     {
     	ArrayList<TunerConfiguration> configs = 
-    			mResourceManager.getSettingsManager()
+    			mSettingsManager
     			.getTunerConfigurations( TunerType.RAFAELMICRO_R820T );
     	
     	DefaultComboBoxModel<R820TTunerConfiguration> model = 
@@ -674,7 +674,7 @@ public class R820TTunerConfigurationPanel extends JPanel
     private R820TTunerConfiguration getNamedConfiguration( String name )
     {
     	ArrayList<TunerConfiguration> configs = 
-    			mResourceManager.getSettingsManager()
+    			mSettingsManager
     			.getTunerConfigurations( TunerType.RAFAELMICRO_R820T );
     	
     	for( TunerConfiguration config: configs )
@@ -693,6 +693,6 @@ public class R820TTunerConfigurationPanel extends JPanel
      */
     private void save()
     {
-    	mResourceManager.getSettingsManager().save();
+    	mSettingsManager.save();
     }
 }

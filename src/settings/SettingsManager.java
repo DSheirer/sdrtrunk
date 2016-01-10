@@ -386,6 +386,12 @@ public class SettingsManager
 			}
 			
 			MapIcon mapIcon = mIcons.get( name );
+			
+			if( mapIcon == null )
+			{
+				mapIcon = new MapIcon( name, name );
+				mIcons.put( name, mapIcon );
+			}
 
 			if( mapIcon != null )
 			{
@@ -399,7 +405,7 @@ public class SettingsManager
 				}
 				else
 				{
-					mResizedIcons.put( mergedName, mapIcon.getImageIcon() );
+					return mapIcon.getImageIcon();
 				}
 			}
 

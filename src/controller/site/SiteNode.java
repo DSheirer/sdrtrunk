@@ -29,26 +29,43 @@ import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 import javax.swing.tree.DefaultMutableTreeNode;
 
+import playlist.PlaylistManager;
+import source.SourceManager;
 import controller.ConfigurableNode;
 import controller.channel.Channel;
+import controller.channel.ChannelModel;
 import controller.channel.ChannelNode;
+import controller.channel.ChannelProcessingManager;
 import controller.system.System;
 import controller.system.SystemNode;
 
 public class SiteNode extends ConfigurableNode
 {
     private static final long serialVersionUID = 1L;
+    
+	private ChannelModel mChannelModel;
+	private ChannelProcessingManager mChannelProcessingManager;
+	private SourceManager mSourceManager;
 
-	public SiteNode( Site site )
+	public SiteNode( Site site,
+					 ChannelModel channelModel,
+					 ChannelProcessingManager channelProcessingManager,
+					 PlaylistManager playlistManager,
+					 SourceManager sourceManager )
 	{
-	    super( site );
+	    super( playlistManager, site );
+	
+		mChannelModel = channelModel;
+		mChannelProcessingManager = channelProcessingManager;
+		mSourceManager = sourceManager;
 	}
 	
 	public void init()
 	{
 		for( Channel channel: getSite().getChannel() )
 		{
-			ChannelNode node = new ChannelNode( channel );
+			ChannelNode node = new ChannelNode( channel, mChannelModel, 
+				mChannelProcessingManager, getPlaylistManager(), mSourceManager );
 			
 			getModel().insertNodeInto( node, SiteNode.this, getChildCount() );
 			
@@ -130,7 +147,8 @@ public class SiteNode extends ConfigurableNode
 			    
 			    getSite().addChannel( channel );
 			    
-			    ChannelNode node = new ChannelNode( channel );
+			    ChannelNode node = new ChannelNode( channel, mChannelModel, 
+		    		mChannelProcessingManager, getPlaylistManager(), mSourceManager );
 
 				getModel().addNode( node, 
 									SiteNode.this, 
@@ -139,11 +157,6 @@ public class SiteNode extends ConfigurableNode
 				sort();
 				save();
 				node.show();
-
-				/* Give channel reference to the resource manager and the 
-				 * channel will register the listeners and send a channel 
-				 * add event */
-				channel.setResourceManager( getModel().getResourceManager() );
             }
 		} );
 		

@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -26,7 +26,8 @@ import javax.swing.SwingUtilities;
 
 import module.decode.config.AuxDecodeConfiguration;
 import controller.channel.AbstractChannelEditor;
-import controller.channel.ChannelNode;
+import controller.channel.Channel;
+import controller.channel.ConfigurationValidationException;
 
 public class AuxDecodeComponentEditor extends AbstractChannelEditor
 {
@@ -35,9 +36,9 @@ public class AuxDecodeComponentEditor extends AbstractChannelEditor
     private HashMap<DecoderType,AuxDecoderCheckBox> mControls = 
     		new HashMap<DecoderType,AuxDecoderCheckBox>();
     
-	public AuxDecodeComponentEditor( ChannelNode channelNode )
+	public AuxDecodeComponentEditor( Channel channel )
 	{
-		super( channelNode );
+		super( channel );
 		
 		List<DecoderType> decoders = DecoderType.getAuxDecoders();
 		
@@ -60,7 +61,7 @@ public class AuxDecodeComponentEditor extends AbstractChannelEditor
 
 	public AuxDecodeConfiguration getConfig()
 	{
-		return getChannelNode().getChannel().getAuxDecodeConfiguration();
+		return getChannel().getAuxDecodeConfiguration();
 	}
 
 	@Override
@@ -106,5 +107,19 @@ public class AuxDecodeComponentEditor extends AbstractChannelEditor
 			
 			mDecoderType = decoder;
 		}
+	}
+
+	@Override
+	public void setConfiguration( Channel channel )
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void validateConfiguration() throws ConfigurationValidationException
+	{
+		// TODO Auto-generated method stub
+		
 	}
 }

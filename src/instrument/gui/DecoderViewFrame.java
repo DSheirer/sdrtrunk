@@ -57,22 +57,20 @@ import javax.swing.JSeparator;
 import message.Message;
 import module.Module;
 import module.decode.DecoderFactory;
-import module.decode.config.AuxDecodeConfiguration;
 import module.decode.config.DecodeConfiguration;
 import net.miginfocom.swing.MigLayout;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import record.config.RecordConfiguration;
+import playlist.PlaylistManager;
 import sample.Listener;
 import source.IControllableFileSource;
 import source.Source;
-import alias.AliasList;
-import controller.ResourceManager;
-import controller.channel.Channel.ChannelType;
-import controller.site.Site;
-import controller.system.System;
+import controller.ThreadPoolManager;
+import controller.channel.Channel;
+import controller.channel.ChannelModel;
+import controller.channel.ChannelProcessingManager;
 
 public class DecoderViewFrame extends JInternalFrame 
 							  implements Listener<Message>
@@ -88,29 +86,23 @@ public class DecoderViewFrame extends JInternalFrame
 	private HashMap<Tap,TapViewPanel> mPanelMap = 
 				new HashMap<Tap,TapViewPanel>();
 	
-	public DecoderViewFrame( ResourceManager resourceManager,
-							 DecodeConfiguration decodeConfig,
-							 RecordConfiguration recordConfig,
-							 AuxDecodeConfiguration auxConfig,
-							 AliasList aliasList,
+	public DecoderViewFrame( PlaylistManager playlistManager,
+							 Channel channel,
 							 IControllableFileSource source )
 	{
 		mSource = source;
 
-		mDecodeConfig = decodeConfig;
+		mDecodeConfig = channel.getDecodeConfiguration();
 		
 		mProcessingChain = new InstrumentableProcessingChain();
+
+		ChannelModel channelModel = new ChannelModel();
+		ChannelProcessingManager channelProcessingManager = 
+			new ChannelProcessingManager( channelModel, null, 
+				playlistManager, null, null, new ThreadPoolManager() );
 		
-		List<Module> modules = DecoderFactory
-			.getModules( ChannelType.STANDARD, 
-					     resourceManager, 
-					     decodeConfig, 
-					     recordConfig, 
-					     auxConfig, 
-					     aliasList, 
-					     "Instrumented", 
-					     "Instrumented",
-					     "Channel Name" );
+		List<Module> modules = DecoderFactory.getModules( channelModel, 
+				channelProcessingManager, playlistManager, channel );
 
 		mProcessingChain.addModules( modules );
 

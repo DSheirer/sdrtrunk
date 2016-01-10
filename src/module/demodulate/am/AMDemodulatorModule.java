@@ -21,7 +21,7 @@ import module.Module;
 import sample.Listener;
 import sample.complex.ComplexBuffer;
 import sample.complex.IComplexBufferListener;
-import sample.real.IRealBufferProvider;
+import sample.real.IFilteredRealBufferProvider;
 import sample.real.RealBuffer;
 import dsp.am.AMDemodulator_CB;
 import dsp.filter.FilterFactory;
@@ -31,7 +31,7 @@ import dsp.filter.fir.real.RealFIRFilter_RB_RB;
 import dsp.gain.AutomaticGainControl_RB;
 
 public class AMDemodulatorModule extends Module 
-					implements IComplexBufferListener, IRealBufferProvider
+					implements IComplexBufferListener, IFilteredRealBufferProvider
 {
 	private static final int SAMPLE_RATE = 48000;
 	
@@ -99,13 +99,13 @@ public class AMDemodulatorModule extends Module
 	}
 
 	@Override
-	public void setRealBufferListener( Listener<RealBuffer> listener )
+	public void setFilteredRealBufferListener( Listener<RealBuffer> listener )
 	{
 		mAGC.setListener( listener );
 	}
 
 	@Override
-	public void removeRealBufferListener()
+	public void removeFilteredRealBufferListener()
 	{
 		mAGC.removeListener();
 	}

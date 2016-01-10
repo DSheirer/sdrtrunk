@@ -66,7 +66,7 @@ import source.tuner.Tuner;
 import source.tuner.TunerSelectionListener;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeEvent.Event;
-import source.tuner.frequency.FrequencyChangeListener;
+import source.tuner.frequency.IFrequencyChangeProcessor;
 import spectrum.OverlayPanel.ChannelDisplay;
 import spectrum.converter.ComplexDecibelConverter;
 import spectrum.converter.DFTResultsConverter;
@@ -82,13 +82,14 @@ import com.jidesoft.swing.JideSplitPane;
 import controller.ConfigurationControllerModel;
 import controller.channel.Channel;
 import controller.channel.ChannelModel;
+import controller.channel.ChannelProcessingManager;
 import controller.channel.ChannelUtils;
 import dsp.filter.Window.WindowType;
 import dsp.filter.smoothing.SmoothingFilter.SmoothingType;
 
 public class SpectralDisplayPanel extends JPanel 
 								  implements Listener<ComplexBuffer>,
-								  			 FrequencyChangeListener,
+								  			 IFrequencyChangeProcessor,
 								  			 IDFTWidthChangeProcessor,
 								  			 TunerSelectionListener
  {
@@ -115,9 +116,11 @@ public class SpectralDisplayPanel extends JPanel
     private OverlayPanel mOverlayPanel;
     private DFTProcessor mDFTProcessor;
     private DFTResultsConverter mDFTConverter;
+    private ConfigurationControllerModel mControllerModel;
+    private ChannelModel mChannelModel;
+    private ChannelProcessingManager mChannelProcessingManager;
     private PlaylistManager mPlaylistManager;
     private SettingsManager mSettingsManager;
-    private ConfigurationControllerModel mController;
 	private Tuner mTuner;
     
 	/**
@@ -132,23 +135,26 @@ public class SpectralDisplayPanel extends JPanel
 	 * the DFT is translated to decibels for display in the spectrum and
 	 * waterfall components.
 	 */
-    public SpectralDisplayPanel( ChannelModel channelModel,
-    							 ConfigurationControllerModel controller,
+    public SpectralDisplayPanel( ConfigurationControllerModel controllerModel,
+    							 ChannelModel channelModel,
+    							 ChannelProcessingManager channelProcessingManager,
     							 PlaylistManager playlistManager,
     							 SettingsManager settingsManager )
     {
-    	mController = controller;
+    	mControllerModel = controllerModel;
+    	mChannelModel = channelModel;
+    	mChannelProcessingManager = channelProcessingManager;
     	mPlaylistManager = playlistManager;
     	mSettingsManager = settingsManager;
 
     	mSpectrumPanel = new SpectrumPanel( mSettingsManager );
-    	mOverlayPanel = new OverlayPanel( mSettingsManager, channelModel );
+    	mOverlayPanel = new OverlayPanel( mSettingsManager, mChannelModel );
     	mWaterfallPanel = new WaterfallPanel( mSettingsManager );
     	
     	//Register to receive tuner selection events
-    	if( mController != null )
+    	if( mControllerModel != null )
     	{
-        	mController.addListener( (TunerSelectionListener)this );
+        	mControllerModel.addListener( (TunerSelectionListener)this );
     	}
     	
 		init();
@@ -189,12 +195,12 @@ public class SpectralDisplayPanel extends JPanel
 		/* De-register from receiving samples when the window closes */
     	clearTuner();
 
-    	if( mController != null )
+    	if( mControllerModel != null )
     	{
-        	mController.removeListener( (TunerSelectionListener)this );
+        	mControllerModel.removeListener( (TunerSelectionListener)this );
     	}
 
-    	mController = null;
+    	mControllerModel = null;
     	mPlaylistManager = null;
     	mSettingsManager = null;
     	
@@ -426,7 +432,6 @@ public class SpectralDisplayPanel extends JPanel
 	/**
 	 * Receives frequency change events -- primarily from tuner components.
 	 */
-	@Override
     public void frequencyChanged( FrequencyChangeEvent event )
     {
 		mOverlayPanel.frequencyChanged( event );
@@ -458,7 +463,7 @@ public class SpectralDisplayPanel extends JPanel
 		if( mTuner != null )
 		{
 			//Register to receive frequency change events
-			mTuner.addListener( (FrequencyChangeListener)this );
+			mTuner.addFrequencyChangeProcessor( this );
 
 			//Register the dft processor to receive samples from the tuner
 			mTuner.addListener( (Listener<ComplexBuffer>)mDFTProcessor );
@@ -470,10 +475,10 @@ public class SpectralDisplayPanel extends JPanel
 			try
             {
 				frequencyChanged( new FrequencyChangeEvent( 
-						Event.FREQUENCY_CHANGE_NOTIFICATION, mTuner.getFrequency() ) );
+						Event.NOTIFICATION_FREQUENCY_CHANGE, mTuner.getFrequency() ) );
 				
 				frequencyChanged( new FrequencyChangeEvent( 
-						Event.SAMPLE_RATE_CHANGE_NOTIFICATION, mTuner.getSampleRate() ) );
+						Event.NOTIFICATION_SAMPLE_RATE_CHANGE, mTuner.getSampleRate() ) );
             }
             catch ( SourceException e )
             {
@@ -491,7 +496,7 @@ public class SpectralDisplayPanel extends JPanel
 		if( mTuner != null )
 		{
 			//Deregister for frequency change events from the tuner
-			mTuner.removeListener( (FrequencyChangeListener)this );
+			mTuner.removeFrequencyChangeProcessor( this );
 			
 			//Deregister the dft processor from receiving samples
 			mTuner.removeListener( (Listener<ComplexBuffer>)mDFTProcessor );
@@ -652,8 +657,9 @@ public class SpectralDisplayPanel extends JPanel
 
 					for( Channel channel: channels )
 					{
-						JMenu channelMenu = ChannelUtils.getContextMenu( 
-							mPlaylistManager, channel, SpectralDisplayPanel.this );
+						JMenu channelMenu = ChannelUtils.getContextMenu( mChannelModel, 
+							mChannelProcessingManager, mPlaylistManager, channel, 
+							SpectralDisplayPanel.this );
 
 						if( channelMenu != null )
 						{
@@ -675,10 +681,7 @@ public class SpectralDisplayPanel extends JPanel
 
 				for( DecoderType type: DecoderType.getPrimaryDecoders() )
 				{
-					decoderMenu.add( new DecoderItem( mController, 
-													  frequency, 
-													  type ) );
-					
+					decoderMenu.add( new DecoderItem( type, frequency ) );
 				}
 				
 				frequencyMenu.add( decoderMenu );
@@ -957,17 +960,14 @@ public class SpectralDisplayPanel extends JPanel
 	{
         private static final long serialVersionUID = 1L;
 
-        private ConfigurationControllerModel mController;
+        private ChannelModel mChannelModel;
         private long mFrequency;
         private DecoderType mDecoder;
         
-        public DecoderItem( ConfigurationControllerModel controller, 
-        					long frequency, 
-        					DecoderType type )
+        public DecoderItem( DecoderType type, long frequency )
         {
         	super( type.getDisplayString() );
         	
-        	mController = controller;
         	mFrequency = frequency;
         	mDecoder = type;
         	
@@ -976,7 +976,7 @@ public class SpectralDisplayPanel extends JPanel
 				@Override
                 public void actionPerformed( ActionEvent e )
                 {
-					mController.createChannel( mFrequency, mDecoder );
+					mChannelModel.createChannel( mDecoder, mFrequency );
                 }
         	} );
         }

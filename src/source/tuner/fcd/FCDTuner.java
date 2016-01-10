@@ -24,6 +24,7 @@ import javax.swing.JPanel;
 import sample.Listener;
 import sample.adapter.ShortAdapter;
 import sample.complex.ComplexBuffer;
+import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.MixerTuner;
 import source.tuner.MixerTunerDataLine;
@@ -32,8 +33,6 @@ import source.tuner.TunerChannelSource;
 import source.tuner.TunerClass;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
-import source.tuner.frequency.FrequencyChangeListener;
-import controller.ResourceManager;
 import controller.ThreadPoolManager;
 
 public class FCDTuner extends MixerTuner
@@ -48,7 +47,7 @@ public class FCDTuner extends MixerTuner
 			   new ShortAdapter() );
 		
 		mController = controller;
-		mController.addListener( (FrequencyChangeListener)this );
+		mController.addListener( this );
 	}
 	
 	public void dispose()
@@ -82,9 +81,9 @@ public class FCDTuner extends MixerTuner
     }
 
 	@Override
-	public JPanel getEditor( ResourceManager resourceManager )
+	public JPanel getEditor( SettingsManager settingsManager )
 	{
-		return mController.getEditor( this, resourceManager );
+		return mController.getEditor( this, settingsManager );
 	}
 	
 	@Override

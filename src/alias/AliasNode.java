@@ -27,6 +27,8 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 
 import map.MapIcon;
+import playlist.PlaylistManager;
+import settings.SettingsManager;
 import alias.action.AliasAction;
 import alias.action.beep.BeepAction;
 import alias.action.beep.BeepActionNode;
@@ -64,15 +66,22 @@ public class AliasNode extends ConfigurableNode
 {
     private static final long serialVersionUID = 1L;
     
-    public AliasNode( Alias alias )
+    private SettingsManager mSettingsManager;
+    private PlaylistManager mPlaylistManager;
+    
+    public AliasNode( PlaylistManager playlistManager, 
+    				  SettingsManager settingsManager, 
+    				  Alias alias )
 	{
-    	super( alias );
+    	super( playlistManager, alias );
+    	
+    	mSettingsManager = settingsManager;
 	}
     
     @Override
     public JPanel getEditor()
     {
-        return new AliasEditor( this, getModel().getResourceManager() );
+        return new AliasEditor( this, mSettingsManager );
     }
     
     public Alias getAlias()
@@ -84,8 +93,7 @@ public class AliasNode extends ConfigurableNode
     {
     	String icon = getAlias().getIconName();
 
-    	MapIcon mapIcon = getModel().getResourceManager()
-    			.getSettingsManager().getMapIcon( icon );
+    	MapIcon mapIcon = mSettingsManager.getMapIcon( icon );
 
     	if( mapIcon != null )
     	{
@@ -104,51 +112,51 @@ public class AliasNode extends ConfigurableNode
     		switch( aliasID.getType() )
     		{
     			case ESN:
-            		getModel().addNode( new ESNNode( (Esn)aliasID ), 
+            		getModel().addNode( new ESNNode( mPlaylistManager, (Esn)aliasID ), 
             				AliasNode.this, getChildCount() );
     				break;
 				case Fleetsync:
-	        		getModel().addNode( new FleetsyncIDNode( (FleetsyncID)aliasID ), 
+	        		getModel().addNode( new FleetsyncIDNode( mPlaylistManager, (FleetsyncID)aliasID ), 
 	        				AliasNode.this, getChildCount() );
 					break;
 				case LoJack:
-	        		getModel().addNode( new LoJackIDNode( (LoJackFunctionAndID)aliasID ), 
+	        		getModel().addNode( new LoJackIDNode( mPlaylistManager, (LoJackFunctionAndID)aliasID ), 
 	        				AliasNode.this, getChildCount() );
 					break;
 				case LTRNetUID:
-	        		getModel().addNode( new UniqueIDNode( (UniqueID)aliasID ), 
+	        		getModel().addNode( new UniqueIDNode( mPlaylistManager, (UniqueID)aliasID ), 
 	        				AliasNode.this, getChildCount() );
 					break;
 				case MDC1200:
-	        		getModel().addNode( new MDC1200IDNode( (MDC1200ID)aliasID ), 
+	        		getModel().addNode( new MDC1200IDNode( mPlaylistManager, (MDC1200ID)aliasID ), 
 	        				AliasNode.this, getChildCount() );
 					break;
 				case MIN:
-	        		getModel().addNode( new MINNode( (Min)aliasID ), 
+	        		getModel().addNode( new MINNode( mPlaylistManager, (Min)aliasID ), 
 	        				AliasNode.this, getChildCount() );
 					break;
 				case MPT1327:
-	        		getModel().addNode( new MPT1327IDNode( (MPT1327ID)aliasID ), 
+	        		getModel().addNode( new MPT1327IDNode( mPlaylistManager, (MPT1327ID)aliasID ), 
 	        				AliasNode.this, getChildCount() );
 					break;
 				case NonRecordable:
-	        		getModel().addNode( new NonRecordableNode( (NonRecordable)aliasID ), 
+	        		getModel().addNode( new NonRecordableNode( mPlaylistManager, (NonRecordable)aliasID ), 
 	        				AliasNode.this, getChildCount() );
 					break;
 				case Priority:
-	        		getModel().addNode( new PriorityNode( (Priority)aliasID ), 
+	        		getModel().addNode( new PriorityNode( mPlaylistManager, (Priority)aliasID ), 
 	        				AliasNode.this, getChildCount() );
 	        		break;
 				case Site:
-	        		getModel().addNode( new SiteIDNode( (SiteID)aliasID ), 
+	        		getModel().addNode( new SiteIDNode( mPlaylistManager, (SiteID)aliasID ), 
 	        				AliasNode.this, getChildCount() );
 					break;
 				case Status:
-	        		getModel().addNode( new StatusIDNode( (StatusID)aliasID ), 
+	        		getModel().addNode( new StatusIDNode( mPlaylistManager, (StatusID)aliasID ), 
 	        				AliasNode.this, getChildCount() );
 					break;
 				case Talkgroup:
-	        		getModel().addNode( new TalkgroupIDNode( (TalkgroupID)aliasID ), 
+	        		getModel().addNode( new TalkgroupIDNode( mPlaylistManager, (TalkgroupID)aliasID ), 
 	        				AliasNode.this, getChildCount() );
 					break;
 				default:
@@ -161,17 +169,17 @@ public class AliasNode extends ConfigurableNode
     	{
     		if( action instanceof BeepAction )
     		{
-        		getModel().addNode( new BeepActionNode( (BeepAction)action ), 
+        		getModel().addNode( new BeepActionNode( mPlaylistManager, (BeepAction)action ), 
         				AliasNode.this, getChildCount() );
     		}
     		else if( action instanceof ClipAction )
     		{
-        		getModel().addNode( new ClipActionNode( (ClipAction)action ), 
+        		getModel().addNode( new ClipActionNode( mPlaylistManager, (ClipAction)action ), 
         				AliasNode.this, getChildCount() );
     		}
     		else if( action instanceof ScriptAction )
     		{
-        		getModel().addNode( new ScriptActionNode( (ScriptAction)action ), 
+        		getModel().addNode( new ScriptActionNode( mPlaylistManager, (ScriptAction)action ), 
         				AliasNode.this, getChildCount() );
     		}
     	}
@@ -200,7 +208,7 @@ public class AliasNode extends ConfigurableNode
 				
 				getAlias().addAliasID( esn );
 				
-				ESNNode node = new ESNNode( esn );
+				ESNNode node = new ESNNode( mPlaylistManager, esn );
 				
 				getModel().addNode( node, 
 									AliasNode.this, 
@@ -221,7 +229,7 @@ public class AliasNode extends ConfigurableNode
 				
 				getAlias().addAliasID( fs );
 				
-				FleetsyncIDNode node = new FleetsyncIDNode( fs );
+				FleetsyncIDNode node = new FleetsyncIDNode( mPlaylistManager, fs );
 				
 				getModel().addNode( node, 
 									AliasNode.this, 
@@ -242,7 +250,7 @@ public class AliasNode extends ConfigurableNode
 				
 				getAlias().addAliasID( lj );
 				
-				LoJackIDNode node = new LoJackIDNode( lj );
+				LoJackIDNode node = new LoJackIDNode( mPlaylistManager, lj );
 				
 				getModel().addNode( node, 
 									AliasNode.this, 
@@ -263,7 +271,7 @@ public class AliasNode extends ConfigurableNode
 				
 				getAlias().addAliasID( mdc );
 				
-				MDC1200IDNode node = new MDC1200IDNode( mdc );
+				MDC1200IDNode node = new MDC1200IDNode( mPlaylistManager, mdc );
 				
 				getModel().addNode( node, 
 									AliasNode.this, 
@@ -284,7 +292,7 @@ public class AliasNode extends ConfigurableNode
 				
 				getAlias().addAliasID( min );
 				
-				MINNode node = new MINNode( min );
+				MINNode node = new MINNode( mPlaylistManager, min );
 				
 				getModel().addNode( node, 
 									AliasNode.this, 
@@ -305,7 +313,7 @@ public class AliasNode extends ConfigurableNode
 				
 				getAlias().addAliasID( mpt );
 				
-				MPT1327IDNode node = new MPT1327IDNode( mpt );
+				MPT1327IDNode node = new MPT1327IDNode( mPlaylistManager, mpt );
 				
 				getModel().addNode( node, 
 									AliasNode.this, 
@@ -326,7 +334,7 @@ public class AliasNode extends ConfigurableNode
 				
 				getAlias().addAliasID( siteID );
 				
-				SiteIDNode node = new SiteIDNode( siteID );
+				SiteIDNode node = new SiteIDNode( mPlaylistManager, siteID );
 				
 				getModel().addNode( node, 
 									AliasNode.this, 
@@ -347,7 +355,7 @@ public class AliasNode extends ConfigurableNode
 				
 				getAlias().addAliasID( statusID );
 				
-				StatusIDNode node = new StatusIDNode( statusID );
+				StatusIDNode node = new StatusIDNode( mPlaylistManager, statusID );
 				
 				getModel().addNode( node, 
 									AliasNode.this, 
@@ -369,7 +377,7 @@ public class AliasNode extends ConfigurableNode
 				
 				getAlias().addAliasID( tg );
 				
-				TalkgroupIDNode node = new TalkgroupIDNode( tg );
+				TalkgroupIDNode node = new TalkgroupIDNode( mPlaylistManager, tg );
 				
 				getModel().addNode( node, 
 									AliasNode.this, 
@@ -390,7 +398,7 @@ public class AliasNode extends ConfigurableNode
 				
 				getAlias().addAliasID( uid );
 				
-				UniqueIDNode node = new UniqueIDNode( uid );
+				UniqueIDNode node = new UniqueIDNode( mPlaylistManager, uid );
 				
 				getModel().addNode( node, 
 									AliasNode.this, 
@@ -416,7 +424,7 @@ public class AliasNode extends ConfigurableNode
 
 				getAlias().addAliasAction( clipAction );
 				
-				ClipActionNode node = new ClipActionNode( clipAction );
+				ClipActionNode node = new ClipActionNode( mPlaylistManager, clipAction );
 				
 				getModel().addNode( node, 
 									AliasNode.this, 
@@ -439,7 +447,7 @@ public class AliasNode extends ConfigurableNode
 
 				getAlias().addAliasAction( beepAction );
 				
-				BeepActionNode node = new BeepActionNode( beepAction );
+				BeepActionNode node = new BeepActionNode( mPlaylistManager, beepAction );
 				
 				getModel().addNode( node, 
 									AliasNode.this, 
@@ -462,7 +470,7 @@ public class AliasNode extends ConfigurableNode
 
 				getAlias().addAliasAction( scriptAction );
 				
-				ScriptActionNode node = new ScriptActionNode( scriptAction );
+				ScriptActionNode node = new ScriptActionNode( mPlaylistManager, scriptAction );
 				
 				getModel().addNode( node, 
 									AliasNode.this, 
@@ -491,7 +499,7 @@ public class AliasNode extends ConfigurableNode
 					
 					getAlias().addAliasID( non );
 
-					NonRecordableNode node = new NonRecordableNode( non );
+					NonRecordableNode node = new NonRecordableNode( mPlaylistManager, non );
 					
 					getModel().addNode( node, 
 										AliasNode.this, 
@@ -518,7 +526,7 @@ public class AliasNode extends ConfigurableNode
 					
 					getAlias().addAliasID( priority );
 
-					PriorityNode node = new PriorityNode( priority );
+					PriorityNode node = new PriorityNode( mPlaylistManager, priority );
 					
 					getModel().addNode( node, 
 										AliasNode.this, 

@@ -29,7 +29,11 @@ import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 import javax.swing.tree.DefaultMutableTreeNode;
 
+import playlist.PlaylistManager;
+import source.SourceManager;
 import controller.ConfigurableNode;
+import controller.channel.ChannelModel;
+import controller.channel.ChannelProcessingManager;
 import controller.site.Site;
 import controller.site.SiteNode;
 
@@ -37,16 +41,29 @@ public class SystemNode extends ConfigurableNode
 {
     private static final long serialVersionUID = 1L;
 
-	public SystemNode( System system )
+	private ChannelModel mChannelModel;
+	private ChannelProcessingManager mChannelProcessingManager;
+	private SourceManager mSourceManager;
+
+	public SystemNode( System system,
+					   ChannelModel channelModel,
+					   ChannelProcessingManager channelProcessingManager,
+					   PlaylistManager playlistManager,
+					   SourceManager sourceManager )
 	{
-		super( system );
+		super( playlistManager, system );
+		
+		mChannelModel = channelModel;
+		mChannelProcessingManager = channelProcessingManager;
+		mSourceManager = sourceManager;
 	}
 	
 	public void init()
 	{
 		for( Site site: getSystem().getSite() )
 		{
-			SiteNode node = new SiteNode( site );
+			SiteNode node = new SiteNode( site, mChannelModel, 
+				mChannelProcessingManager, getPlaylistManager(), mSourceManager );
 			
 			getModel().insertNodeInto( node, SystemNode.this, getChildCount() );
 			
@@ -133,7 +150,8 @@ public class SystemNode extends ConfigurableNode
 			    Site site = new Site();
 			    getSystem().addSite( site );
 			    
-			    SiteNode node = new SiteNode( site );
+			    SiteNode node = new SiteNode( site, mChannelModel, 
+		    		mChannelProcessingManager, getPlaylistManager(), mSourceManager );
 			    
 				getModel().addNode( node, 
 									SystemNode.this, 

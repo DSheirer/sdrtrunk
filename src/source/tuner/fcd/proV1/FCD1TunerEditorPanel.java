@@ -29,18 +29,17 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.fcd.FCDTuner;
 import source.tuner.fcd.FCDTunerDetailsPanel;
 import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeListener;
 import source.tuner.frequency.FrequencyChangeEvent.Event;
+import source.tuner.frequency.IFrequencyChangeProcessor;
 
 import com.jidesoft.swing.JideTabbedPane;
 
-import controller.ResourceManager;
-
-public class FCD1TunerEditorPanel extends JPanel implements FrequencyChangeListener
+public class FCD1TunerEditorPanel extends JPanel implements IFrequencyChangeProcessor
 {
     private static final long serialVersionUID = 1L;
 	private final static Logger mLog = 
@@ -48,15 +47,15 @@ public class FCD1TunerEditorPanel extends JPanel implements FrequencyChangeListe
     
     private FCDTuner mTuner;
     private FCD1TunerController mController;
-    private ResourceManager mResourceManager;
+    private SettingsManager mSettingsManager;
 
     private JFrequencyControl mFrequencyControl;
 
-    public FCD1TunerEditorPanel( FCDTuner tuner, ResourceManager resourceManager )
+    public FCD1TunerEditorPanel( FCDTuner tuner, SettingsManager settingsManager )
     {
     	mTuner = tuner;
         mController = (FCD1TunerController)mTuner.getController();
-        mResourceManager = resourceManager;
+        mSettingsManager = settingsManager;
         
         initGUI();
     }
@@ -74,7 +73,7 @@ public class FCD1TunerEditorPanel extends JPanel implements FrequencyChangeListe
         /* Add frequency control as listener to tuner to get frequency changes
          * that are invoked elsewhere, to keep the control in sync with the
          * frequency */
-        mTuner.addListener( mFrequencyControl );
+        mTuner.addFrequencyChangeProcessor( mFrequencyControl );
         
         mFrequencyControl.setFrequency( mController.getFrequency(), false );
 
@@ -85,7 +84,7 @@ public class FCD1TunerEditorPanel extends JPanel implements FrequencyChangeListe
     	tabs.setForeground( Color.BLACK );
 
         tabs.add( "Configuration", new FCD1TunerConfigurationPanel( 
-        				mResourceManager, mController ) );
+        				mSettingsManager, mController ) );
         
         tabs.add( "Info", new FCDTunerDetailsPanel( mController ) );       
 
@@ -95,7 +94,7 @@ public class FCD1TunerEditorPanel extends JPanel implements FrequencyChangeListe
 	@Override
     public void frequencyChanged( FrequencyChangeEvent event )
     {
-		if( event.getEvent() == Event.FREQUENCY_CHANGE_NOTIFICATION )
+		if( event.getEvent() == Event.NOTIFICATION_FREQUENCY_CHANGE )
 		{
 			try
 	        {

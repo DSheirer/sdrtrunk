@@ -37,8 +37,7 @@ public class FrequencyController
 	private double mFrequencyCorrection = 0d;
 	private int mSampleRate = 0;
 	
-	private ArrayList<FrequencyChangeListener> mListeners =
-								new ArrayList<FrequencyChangeListener>();
+	private ArrayList<IFrequencyChangeProcessor> mProcessors =	new ArrayList<>();
 	
 	public FrequencyController( Tunable tunable,
 								long minFrequency,
@@ -181,20 +180,21 @@ public class FrequencyController
 	/**
 	 * Adds listener to receive frequency change events
 	 */
-	public void addListener( FrequencyChangeListener listener )
+//TODO: rename this to addFrequencyChangeProcessor()
+	public void addListener( IFrequencyChangeProcessor processor )
 	{
-		if( !mListeners.contains( listener ) )
+		if( !mProcessors.contains( processor ) )
 		{
-			mListeners.add( listener );
+			mProcessors.add( processor );
 		}
 	}
 
 	/**
 	 * Removes listener from receiving frequency change events
 	 */
-	public void removeListener( FrequencyChangeListener listener )
+	public void removeFrequencyChangeProcessor( IFrequencyChangeProcessor processor )
 	{
-		mListeners.remove( listener );
+		mProcessors.remove( processor );
 	}
 	
 	
@@ -205,7 +205,7 @@ public class FrequencyController
     protected void broadcastFrequencyChange()
     {
     	broadcastFrequencyChangeEvent( 
-    			new FrequencyChangeEvent( Event.FREQUENCY_CHANGE_NOTIFICATION, mFrequency ) );
+    			new FrequencyChangeEvent( Event.NOTIFICATION_FREQUENCY_CHANGE, mFrequency ) );
     }
 	
     /**
@@ -214,7 +214,7 @@ public class FrequencyController
     protected void broadcastFrequencyErrorChange()
     {
     	broadcastFrequencyChangeEvent( 
-			new FrequencyChangeEvent( Event.FREQUENCY_CORRECTION_CHANGE_NOTIFICATION, mFrequencyCorrection ) );
+			new FrequencyChangeEvent( Event.NOTIFICATION_FREQUENCY_CORRECTION_CHANGE, mFrequencyCorrection ) );
     }
     
     /**
@@ -223,14 +223,14 @@ public class FrequencyController
     protected void broadcastSampleRateChange()
     {
     	broadcastFrequencyChangeEvent( 
-			new FrequencyChangeEvent( Event.SAMPLE_RATE_CHANGE_NOTIFICATION, mSampleRate ) );
+			new FrequencyChangeEvent( Event.NOTIFICATION_SAMPLE_RATE_CHANGE, mSampleRate ) );
     }
     
     public void broadcastFrequencyChangeEvent( FrequencyChangeEvent event )
     {
-    	for( FrequencyChangeListener listener: mListeners )
+    	for( IFrequencyChangeProcessor processor: mProcessors )
     	{
-    		listener.frequencyChanged( event );
+    		processor.frequencyChanged( event );
     	}
     }
     

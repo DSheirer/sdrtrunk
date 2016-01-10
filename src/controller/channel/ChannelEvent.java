@@ -64,6 +64,8 @@ public class ChannelEvent
 		NOTIFICATION_SELECTION_CHANGE,
 		//Channel's channel-state has been reset
 		NOTIFICATION_STATE_RESET,
+		//Request to delete the channel
+		REQUEST_DELETE,
 		//Request to deselect the channel
 		REQUEST_DESELECT,
 		//Request to disable a channel - response will be a PROCESSING_STOP_NOTIFICATION

@@ -19,10 +19,14 @@ package playlist;
 
 import javax.swing.JPanel;
 
+import settings.SettingsManager;
+import source.SourceManager;
 import alias.AliasDirectory;
 import alias.AliasDirectoryNode;
 import controller.BaseNode;
 import controller.EmptyEditor;
+import controller.channel.ChannelModel;
+import controller.channel.ChannelProcessingManager;
 import controller.channel.map.ChannelMapList;
 import controller.channel.map.ChannelMapListNode;
 import controller.system.SystemList;
@@ -35,11 +39,27 @@ public class PlaylistNode extends BaseNode
     private ChannelMapListNode mChannelMapListNode;
     private SystemListNode mSystemListNode;
     
-    public PlaylistNode()
-    {
+	private ChannelModel mChannelModel;
+	private ChannelProcessingManager mChannelProcessingManager;
+	private PlaylistManager mPlaylistManager;
+	private SettingsManager mSettingsManager;
+	private SourceManager mSourceManager;
+
+	public PlaylistNode( ChannelModel channelModel,
+						 ChannelProcessingManager channelProcessingManager,
+						 PlaylistManager playlistManager,
+						 SettingsManager settingsManager,
+						 SourceManager sourceManager )
+	{
     	super( null );
-    }
-    
+		
+		mChannelModel = channelModel;
+		mChannelProcessingManager = channelProcessingManager;
+		mPlaylistManager = playlistManager;
+		mSettingsManager = settingsManager;
+		mSourceManager = sourceManager;
+	}
+
     private void init()
     {
     	/**
@@ -58,7 +78,8 @@ public class PlaylistNode extends BaseNode
     		getPlaylist().setAliasDirectory( directory );
     	}
     	
-    	mAliasDirectoryNode = new AliasDirectoryNode( directory );
+    	mAliasDirectoryNode = new AliasDirectoryNode( mPlaylistManager, 
+    			mSettingsManager, directory );
 
     	getModel().insertNodeInto( mAliasDirectoryNode, this, 0 );
 
@@ -74,7 +95,7 @@ public class PlaylistNode extends BaseNode
     		channelMapList = new ChannelMapList();
     	}
     	
-    	mChannelMapListNode = new ChannelMapListNode( channelMapList );
+    	mChannelMapListNode = new ChannelMapListNode( mPlaylistManager, channelMapList );
     	
     	getModel().insertNodeInto( mChannelMapListNode, this, 1 );
     	
@@ -91,7 +112,8 @@ public class PlaylistNode extends BaseNode
     		getPlaylist().setSystemList( list );
     	}
     	
-    	mSystemListNode = new SystemListNode( list );
+    	mSystemListNode = new SystemListNode( list, mChannelModel, 
+			mChannelProcessingManager, mPlaylistManager, mSourceManager );
     	
     	getModel().insertNodeInto( mSystemListNode, this, 2 );
     	
@@ -112,8 +134,7 @@ public class PlaylistNode extends BaseNode
     
 	public void loadPlaylist()
 	{
-		Playlist playlist = 
-				getModel().getResourceManager().getPlaylistManager().getPlayist();
+		Playlist playlist = mPlaylistManager.getPlayist();
 
 		setUserObject( playlist );
 		

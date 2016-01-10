@@ -1,6 +1,7 @@
 /*******************************************************************************
+
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,7 +18,6 @@
  ******************************************************************************/
 package module.decode;
 
-
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -30,11 +30,10 @@ import module.decode.config.DecodeConfigFactory;
 import module.decode.config.DecodeConfiguration;
 import net.miginfocom.swing.MigLayout;
 import playlist.PlaylistManager;
-import controller.Editor;
 import controller.channel.AbstractChannelEditor;
 import controller.channel.Channel;
-import controller.channel.ChannelNode;
-import controller.channel.ChannelValidationException;
+import controller.channel.ChannelConfigurationEditor;
+import controller.channel.ConfigurationValidationException;
 
 public class DecodeComponentEditor extends AbstractChannelEditor
 {
@@ -48,13 +47,12 @@ public class DecodeComponentEditor extends AbstractChannelEditor
     
     public DecodeComponentEditor( PlaylistManager playlistManager )
     {
-    	this( new ChannelNode( new Channel() ), playlistManager );
+    	this( playlistManager, new Channel() );
     }
 
-    public DecodeComponentEditor( ChannelNode channelNode, 
-    							  PlaylistManager playlistMangager )
+    public DecodeComponentEditor( PlaylistManager playlistMangager, Channel channel )
 	{
-    	super( channelNode );
+    	super( channel );
     	
     	mPlaylistManager = playlistMangager;
 
@@ -87,17 +85,13 @@ public class DecodeComponentEditor extends AbstractChannelEditor
 				{
 					DecodeConfiguration config;
 					
-					if( mChannelNode.getChannel()
-							.getDecodeConfiguration().getDecoderType() == 
-												selected )
+					if( mChannel.getDecodeConfiguration().getDecoderType() == selected )
 					{
-						config = mChannelNode.getChannel()
-								.getDecodeConfiguration();
+						config = mChannel.getDecodeConfiguration();
 					}
 					else
 					{
-						config = DecodeConfigFactory
-								.getDecodeConfiguration( selected );
+						config = DecodeConfigFactory.getDecodeConfiguration( selected );
 					}
 					
 					//Remove the existing one
@@ -108,7 +102,7 @@ public class DecodeComponentEditor extends AbstractChannelEditor
 					
 					//Change to the new one
 					mEditor = DecoderFactory.getEditorPanel( config,
-							mChannelNode, mPlaylistManager );
+							mChannel, mPlaylistManager );
 					
 					add( mEditor, "span 2,center" );
 					
@@ -125,8 +119,7 @@ public class DecodeComponentEditor extends AbstractChannelEditor
 
     public void reset() 
     {
-    	final DecoderType decoder = mChannelNode.getChannel()
-    			.getDecodeConfiguration().getDecoderType();
+    	final DecoderType decoder = mChannel.getDecodeConfiguration().getDecoderType();
     	
         SwingUtilities.invokeLater(new Runnable() 
         {
@@ -155,18 +148,31 @@ public class DecodeComponentEditor extends AbstractChannelEditor
     	}
     	
     	//The component that calls save will invoke the change broadcast
-	    mChannelNode.getChannel()
-	    	.setDecodeConfiguration( mEditor.getConfig() );
+	    mChannel.setDecodeConfiguration( mEditor.getConfig() );
     }
 
-    /**
-     * Validates the editor against the current decode editor 
-     */
+//    /**
+//     * Validates the editor against the current decode editor 
+//     */
+//	@Override
+//	public void validate( ChannelConfigurationEditor editor ) throws ConfigurationValidationException
+//	{
+//		super.validate( editor );
+//		
+//		mEditor.validate( editor );
+//	}
+
 	@Override
-	public void validate( Editor editor ) throws ChannelValidationException
+	public void setConfiguration( Channel channel )
 	{
-		super.validate( editor );
+		// TODO Auto-generated method stub
 		
-		mEditor.validate( editor );
+	}
+
+	@Override
+	public void validateConfiguration() throws ConfigurationValidationException
+	{
+		// TODO Auto-generated method stub
+		
 	}
 }

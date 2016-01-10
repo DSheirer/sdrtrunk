@@ -31,21 +31,23 @@ import source.config.SourceConfigRecording;
 import source.config.SourceConfiguration;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannelSource;
-import controller.ResourceManager;
+import controller.ThreadPoolManager;
 
 public class RecordingSourceManager
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( RecordingSourceManager.class );
 
-	private ResourceManager mResourceManager;
-	
 	private ArrayList<Recording> mRecordings = new ArrayList<Recording>();
 
-    public RecordingSourceManager( ResourceManager resourceManager )
+	private SettingsManager mSettingsManager;
+	private ThreadPoolManager mThreadPoolManager;
+
+    public RecordingSourceManager( SettingsManager settingsManager,
+    							   ThreadPoolManager threadPoolManager )
 	{
-    	mResourceManager = resourceManager;
-    	
+    	mSettingsManager = settingsManager;
+    	mThreadPoolManager = threadPoolManager;
     	loadRecordings();
 	}
 
@@ -71,9 +73,7 @@ public class RecordingSourceManager
     		
     		if( recording != null )
     		{
-    			retVal = recording.getChannel( 
-    					mResourceManager.getThreadPoolManager(),
-    					tunerChannel );
+    			retVal = recording.getChannel( mThreadPoolManager, tunerChannel );
     		}
     		else
     		{
@@ -116,7 +116,7 @@ public class RecordingSourceManager
     
     public Recording addRecording( RecordingConfiguration config )
     {
-    	Recording recording = new Recording( mResourceManager, config );
+    	Recording recording = new Recording( mSettingsManager, config );
 
     	mRecordings.add( recording );
     	
@@ -126,7 +126,7 @@ public class RecordingSourceManager
     public void removeRecording( Recording recording )
     {
     	/* Remove the config from the settings manager */
-    	mResourceManager.getSettingsManager().removeRecordingConfiguration( 
+    	mSettingsManager.removeRecordingConfiguration( 
     			recording.getRecordingConfiguration() );
     	
     	mRecordings.remove( recording );
@@ -134,24 +134,17 @@ public class RecordingSourceManager
 
     private void loadRecordings()
     {
-    	if( mResourceManager != null )
-    	{
-    		SettingsManager settingsManager = mResourceManager.getSettingsManager();
-    		
-    		if( settingsManager != null )
-    		{
-    			ArrayList<RecordingConfiguration> recordingConfigurations = 
-    					settingsManager.getRecordingConfigurations();
+		ArrayList<RecordingConfiguration> recordingConfigurations = 
+				mSettingsManager.getRecordingConfigurations();
 
-    			mLog.info( "discovered [" + recordingConfigurations.size() + "] recording configurations" );
-    			
-    			for( RecordingConfiguration config: recordingConfigurations )
-    			{
-    				Recording recording = new Recording( mResourceManager, config );
-    				
-    				mRecordings.add( recording );
-    			}
-    		}
-    	}
-    }
+		mLog.info( "RecordingSourceManager - discovered [" + 
+		recordingConfigurations.size() + "] recording configurations" );
+		
+		for( RecordingConfiguration config: recordingConfigurations )
+		{
+			Recording recording = new Recording( mSettingsManager, config );
+			
+			mRecordings.add( recording );
+		}
+	}
 }

@@ -72,18 +72,30 @@ public class RealMixerSource extends RealSource
 	 * the left/right stereo channels are inverted.
 	 */
     public RealMixerSource( TargetDataLine targetDataLine, 
-    						   AudioFormat format,
-    						   String name,
-    						   ISampleAdapter sampleAdapter )
+    						AudioFormat format,
+    						ISampleAdapter sampleAdapter )
     {
-    	super( name );
-    	
     	mTargetDataLine = targetDataLine;
         mAudioFormat = format;
         mSampleAdapter = sampleAdapter;
     }
     
-    public void setListener( Listener<RealBuffer> listener )
+    @Override
+	public void reset()
+	{
+	}
+
+	@Override
+	public void start()
+	{
+	}
+
+	@Override
+	public void stop()
+	{
+	}
+
+	public void setListener( Listener<RealBuffer> listener )
     {
 		mSampleListeners.add( listener );
 		
@@ -92,7 +104,7 @@ public class RealMixerSource extends RealSource
 		{
 			Thread thread = new Thread( mBufferReader );
 			thread.setDaemon( true );
-			thread.setName( getName() + " Sample Reader" );
+			thread.setName( "Sample Reader" );
 			thread.start();
 		}
     }

@@ -17,19 +17,20 @@
  ******************************************************************************/
 package alias;
 
+import playlist.PlaylistManager;
 import controller.ConfigurableNode;
 
 public class AliasIDNode extends ConfigurableNode
 {
     private static final long serialVersionUID = 1L;
 
-    public AliasIDNode( AliasID id )
+    public AliasIDNode( PlaylistManager playlistManager, AliasID id )
 	{
-    	super( id );
+    	super( playlistManager, id );
 	}
     
     public void save()
     {
-        getModel().getResourceManager().getPlaylistManager().save();
+    	getPlaylistManager().save();
     }
 }

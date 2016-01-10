@@ -25,6 +25,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 
+import playlist.PlaylistManager;
 import alias.AliasIDNode;
 import alias.AliasNode;
 
@@ -32,9 +33,9 @@ public class SiteIDNode extends AliasIDNode
 {
     private static final long serialVersionUID = 1L;
     
-    public SiteIDNode( SiteID id )
+    public SiteIDNode( PlaylistManager playlistManager, SiteID id )
 	{
-    	super( id );
+    	super( playlistManager, id );
 	}
     
     @Override

@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -36,7 +36,7 @@ import source.ComplexSource;
 import source.SourceException;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeEvent.Event;
-import source.tuner.frequency.FrequencyChangeListener;
+import source.tuner.frequency.IFrequencyChangeProcessor;
 import controller.ThreadPoolManager;
 import controller.ThreadPoolManager.ThreadType;
 import dsp.filter.FilterFactory;
@@ -45,8 +45,7 @@ import dsp.filter.cic.ComplexPrimeCICDecimate;
 import dsp.mixer.Oscillator;
 
 public class TunerChannelSource extends ComplexSource
-							 implements FrequencyChangeListener,
-							 			Listener<ComplexBuffer>
+		 implements IFrequencyChangeProcessor, Listener<ComplexBuffer>
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( TunerChannelSource.class );
@@ -61,7 +60,7 @@ public class TunerChannelSource extends ComplexSource
 	private Oscillator mMixer;
 	private ComplexPrimeCICDecimate mDecimationFilter;
 	private Listener<ComplexBuffer> mListener;
-	private FrequencyChangeListener mFrequencyChangeListener;
+	private IFrequencyChangeProcessor mFrequencyChangeProcessor;
 	private ThreadPoolManager mThreadPoolManager;
 	private ScheduledFuture<?> mTaskHandle;
 
@@ -71,17 +70,35 @@ public class TunerChannelSource extends ComplexSource
 	
 	private DecimationProcessor mDecimationProcessor = new DecimationProcessor();
 	
-	public TunerChannelSource( ThreadPoolManager threadPoolManager,
-							   Tuner tuner, 
+	private AtomicBoolean mRunning = new AtomicBoolean();
+	private boolean mExpended = false;
+	
+	/**
+	 * Provides a Digital Drop Channel (DDC) to decimate the IQ output from a 
+	 * tuner down to a 48 kHz IQ channel rate.
+	 * 
+	 * Note: this class can only be used once (started and stopped) and a new
+	 * tuner channel source must be requested from the tuner once this object
+	 * has been stopped.  This is because channels are managed dynamically and
+	 * center tuned frequency may have changed since this source was obtained 
+	 * and thus the tuner might no longer be able to source this channel once it
+	 * has been stopped.
+	 * 
+	 * @param threadPoolManager to use for decimation processing task
+	 * @param tuner to obtain wideband IQ samples from
+	 * @param tunerChannel specifying the center frequency for the DDC
+	 * @throws RejectedExecutionException if the thread pool manager cannot 
+	 * 		  accept the decimation processing task
+	 * @throws SourceException if the tuner has an issue providing IQ samples
+	 */
+	public TunerChannelSource( ThreadPoolManager threadPoolManager, Tuner tuner, 
 							   TunerChannel tunerChannel )
 				   throws RejectedExecutionException, SourceException
     {
-	    super( "Tuner Channel Source" );
-
 	    mThreadPoolManager = threadPoolManager;
 	    
 	    mTuner = tuner;
-	    mTuner.addListener( (FrequencyChangeListener)this );
+	    mTuner.addListener( this );
 	    
 	    mTunerChannel = tunerChannel;
 
@@ -94,59 +111,87 @@ public class TunerChannelSource extends ComplexSource
 
 		/* Fire a sample rate change event to setup the decimation chain */
 		frequencyChanged( new FrequencyChangeEvent( 
-			Event.SAMPLE_RATE_CHANGE_NOTIFICATION, mTuner.getSampleRate() ) );
-	    
-		/* Schedule the decimation task to run every 20 ms (50 iterations/second) */
-	    mTaskHandle = mThreadPoolManager.scheduleFixedRate( ThreadType.DECIMATION, 
-	    		mDecimationProcessor, 20, TimeUnit.MILLISECONDS );
-
-	    /* Finally, register to receive samples from the tuner */
-		mTuner.addListener( (Listener<ComplexBuffer>)this );
+			Event.NOTIFICATION_SAMPLE_RATE_CHANGE, mTuner.getSampleRate() ) );
     }
 	
+	
     @Override
+	public void reset()
+	{
+	}
+
+
+	@Override
+	public void start()
+	{
+		if( mExpended )
+		{
+			throw new IllegalStateException( "Attempt to re-start an expended "
+				+ "tuner channel source.  TunerChannelSource objects can only "
+				+ "be used once. " );
+		}
+		
+		if( mRunning.compareAndSet( false, true ))
+		{
+			/* Schedule the decimation task to run every 20 ms (50 iterations/second) */
+		    mTaskHandle = mThreadPoolManager.scheduleFixedRate( ThreadType.DECIMATION, 
+		    		mDecimationProcessor, 20, TimeUnit.MILLISECONDS );
+
+		    /* Finally, register to receive samples from the tuner */
+			mTuner.addListener( (Listener<ComplexBuffer>)this );
+		}
+		else
+		{
+			mLog.warn( "Attempt to start() and already running tuner channel "
+					+ "source was ignored" );
+		}
+	}
+
+
+	@Override
+	public void stop()
+	{
+		if( mRunning.compareAndSet( true, false ))
+		{
+			mTuner.releaseChannel( this );
+			mDecimationProcessor.shutdown();
+			
+			if( mThreadPoolManager != null && mTaskHandle != null )
+			{
+				mThreadPoolManager.cancel( mTaskHandle );
+				mTaskHandle = null;
+			}
+			
+			mBuffer.clear();
+			
+			mExpended = true;
+		}
+		else
+		{
+			mLog.warn( "Attempt to stop() and already stopped tuner channel "
+					+ "source was ignored" );
+		}
+	}
+
+
+	@Override
     public void dispose()
     {
-    	/* Tell the tuner to release/unregister our resources */
-		mTuner.removeListener( (FrequencyChangeListener)this );
-		mTuner.releaseChannel( this );
-		mTuner = null;
-		mTunerChannel = null;
-
-		/* Flag the decimation processor to shutdown */
-		if( mDecimationProcessor != null )
-    	{
-    		mDecimationProcessor.dispose();
-    	}
-		
+		if( !mRunning.get() )
+		{
+	    	/* Tell the tuner to release/unregister our resources */
+	    	mTuner.removeFrequencyChangeProcessor( this );
+			mTuner = null;
+			mTunerChannel = null;
+			mBuffer = null;
+			mFrequencyChangeProcessor = null;
+			mListener = null;
+			mMixer = null;
+			mDecimationFilter.dispose();
+			mDecimationFilter = null;
+		}
     }
     
-    /**
-     * Cleanup method to allow the decimation processor to perform final cleanup
-     * once it gracefully shuts itself down
-     */
-    private void cleanup()
-    {
-		if( mTaskHandle != null )
-		{
-			mThreadPoolManager.cancel( mTaskHandle );
-			mThreadPoolManager = null;
-			mTaskHandle = null;
-		}
-
-
-		mBuffer.clear();
-		mBuffer = null;
-
-		mFrequencyChangeListener = null;
-		mListener = null;
-
-		mMixer = null;
-		
-		mDecimationFilter.dispose();
-		mDecimationFilter = null;
-    }
-
 	public Tuner getTuner()
 	{
 		return mTuner;
@@ -160,18 +205,21 @@ public class TunerChannelSource extends ComplexSource
 	@Override
     public void receive( ComplexBuffer buffer )
     {
-		mBuffer.add( buffer );
+		if( mRunning.get() )
+		{
+			mBuffer.add( buffer );
+		}
     }
 
-    public void setFrequencyChangeListener( FrequencyChangeListener listener )
+    public void setFrequencyChangeListener( IFrequencyChangeProcessor processor )
     {
-		mFrequencyChangeListener = listener;
+		mFrequencyChangeProcessor = processor;
     }
 
 	@Override
 	public void setListener( Listener<ComplexBuffer> listener )
 	{
-		/* Get a pointer to the listener so that if we have to change the 
+		/* Save a pointer to the listener so that if we have to change the 
 		 * decimation filter, we can re-add the listener */
 		mListener = listener;
 		
@@ -192,31 +240,31 @@ public class TunerChannelSource extends ComplexSource
     public void frequencyChanged( FrequencyChangeEvent event )
     {
 		// Echo the event to the registered event listener
-		if( mFrequencyChangeListener != null )
+		if( mFrequencyChangeProcessor != null )
 		{
-			mFrequencyChangeListener.frequencyChanged( event );
+			mFrequencyChangeProcessor.frequencyChanged( event );
 		}
 
 		switch( event.getEvent() )
 		{
-			case FREQUENCY_CHANGE_NOTIFICATION:
+			case NOTIFICATION_FREQUENCY_CHANGE:
 				mTunerFrequency = event.getValue().longValue();
 				updateMixerFrequencyOffset();
 				break;
-			case CHANNEL_FREQUENCY_CORRECTION_CHANGE_REQUEST:
+			case REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
 				mChannelFrequencyCorrection = event.getValue().intValue();
 
 				updateMixerFrequencyOffset();
 				
-				if( mFrequencyChangeListener != null )
+				if( mFrequencyChangeProcessor != null )
 				{
-					mFrequencyChangeListener.frequencyChanged( 
+					mFrequencyChangeProcessor.frequencyChanged( 
 						new FrequencyChangeEvent( 
-							Event.CHANNEL_FREQUENCY_CORRECTION_CHANGE_NOTIFICATION, 
+							Event.NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE, 
 							mChannelFrequencyCorrection ) );
 				}
 				break;
-			case SAMPLE_RATE_CHANGE_NOTIFICATION:
+			case NOTIFICATION_SAMPLE_RATE_CHANGE:
 				int sampleRate = event.getValue().intValue();
 				
 				if( mTunerSampleRate != sampleRate )
@@ -272,12 +320,12 @@ public class TunerChannelSource extends ComplexSource
      */
 	public class DecimationProcessor implements Runnable 
 	{
-		private AtomicBoolean mDispose = new AtomicBoolean( false );
+		private boolean mProcessing = true;
 		private List<ComplexBuffer> mSampleBuffers = new ArrayList<ComplexBuffer>();
 
-		public void dispose()
+		public void shutdown()
 		{
-			mDispose.set( true );
+			mProcessing = false;
 		}
 		
 		@Override
@@ -288,64 +336,66 @@ public class TunerChannelSource extends ComplexSource
 			 * run the program out of memory */
 			try
 			{
-				if( mBuffer != null )
+				if( mProcessing )
 				{
-					mBuffer.drainTo( mSampleBuffers, 4 );
-			
-					for( Buffer buffer: mSampleBuffers )
+					if( mBuffer != null )
 					{
-						/* Check to see if we've been shutdown */
-						if( mDispose.get() )
+						mBuffer.drainTo( mSampleBuffers, 4 );
+				
+						for( Buffer buffer: mSampleBuffers )
 						{
-							cleanup();
-							return;
-						}
-						else
-						{
-							float[] samples = buffer.getSamples();
-
-							/* We make a copy of the buffer so that we don't affect
-							 * anyone else that is using the same buffer, like other
-							 * channels or the spectral display */
-							float[] translated = new float[ samples.length ];
-							
-							/* Perform frequency translation */
-							for( int x = 0; x < samples.length; x += 2 )
+							/* Check to see if we've been shutdown */
+							if( !mProcessing )
 							{
-								mMixer.rotate();
+								mBuffer.clear();
+								return;
+							}
+							else
+							{
+								float[] samples = buffer.getSamples();
+
+								/* We make a copy of the buffer so that we don't affect
+								 * anyone else that is using the same buffer, like other
+								 * channels or the spectral display */
+								float[] translated = new float[ samples.length ];
 								
-								translated[ x ] = Complex.multiplyInphase( 
-									samples[ x ], samples[ x + 1 ], mMixer.inphase(), mMixer.quadrature() );
-
-								translated[ x + 1 ] = Complex.multiplyQuadrature( 
+								/* Perform frequency translation */
+								for( int x = 0; x < samples.length; x += 2 )
+								{
+									mMixer.rotate();
+									
+									translated[ x ] = Complex.multiplyInphase( 
 										samples[ x ], samples[ x + 1 ], mMixer.inphase(), mMixer.quadrature() );
-							}
-							
-							if( mDecimationFilter != null )
-							{
-								mDecimationFilter.receive( new ComplexBuffer( translated ) );
+
+									translated[ x + 1 ] = Complex.multiplyQuadrature( 
+											samples[ x ], samples[ x + 1 ], mMixer.inphase(), mMixer.quadrature() );
+								}
+								
+								if( mProcessing && mDecimationFilter != null )
+								{
+									mDecimationFilter.receive( new ComplexBuffer( translated ) );
+								}
 							}
 						}
+						
+						mSampleBuffers.clear();
 					}
-					
-					mSampleBuffers.clear();
 				}
 			}
 			catch( Exception e )
 			{
-				/* Only log the stack trace if we've haven't been shutdown and
-				 * this is a true error */
-				if( !mDispose.get() )
+				/* Only log the stack trace if we're still processing */
+				if( mProcessing )
 				{
 					mLog.error( "Error encountered during decimation process", e );
 				}
 			}
 
 			/* Check to see if we've been shutdown */
-			if( mDispose.get() )
+			if( !mProcessing )
 			{
+				mBuffer.clear();
 				mSampleBuffers.clear();
-				cleanup();
 			}
         }
 	}

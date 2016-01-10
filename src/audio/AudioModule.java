@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
-import sample.real.IRealBufferListener;
+import sample.real.IFilteredRealBufferListener;
 import sample.real.RealBuffer;
 import audio.metadata.AudioMetadata;
 import audio.metadata.IMetadataListener;
@@ -18,7 +18,6 @@ import audio.squelch.SquelchState;
 import controller.channel.ChannelEvent;
 import controller.channel.IChannelEventListener;
 import dsp.filter.Filters;
-import dsp.filter.dc.DCRemovalFilter_RB;
 import dsp.filter.fir.real.RealFIRFilter_R_R;
 
 /**
@@ -32,49 +31,31 @@ import dsp.filter.fir.real.RealFIRFilter_R_R;
 public class AudioModule extends Module implements IAudioPacketProvider, 
 												   IChannelEventListener,
 												   IMetadataListener, 
-												   IRealBufferListener, 
+												   IFilteredRealBufferListener, 
 												   ISquelchStateListener,
 												   Listener<RealBuffer>
 {
 	protected static final Logger mLog = LoggerFactory.getLogger( AudioModule.class );
 	
-	/* Determines responsiveness of DC filter to frequency changes */
-	private static final float DC_REMOVAL_RATIO = 0.000003f;
-
 	/* Provides a unique identifier for this audio module instance to use as a
 	 * source identifier for all audio packets */
 	private static int UNIQUE_ID = 0;
 	private int mSourceID;
 	
 	private AudioMetadata mAudioMetadata;
-
 	private ChannelEventListener mChannelEventListener = new ChannelEventListener();
-	
 	private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
 	private SquelchState mSquelchState = SquelchState.SQUELCH;
-	
-	private RealFIRFilter_R_R mAudioFilter = new RealFIRFilter_R_R( 
-					Filters.FIR_BANDPASS_AUDIO_48KHZ.getCoefficients(), 2.0f );
-
-	private DCRemovalFilter_RB mDCRemovalFilter;
-	
 	private Listener<AudioPacket> mAudioPacketListener;
+
+//TODO: remove this -- is being replaced by the DemodulatedAudioFilterModule
+	private RealFIRFilter_R_R mAudioFilter = new RealFIRFilter_R_R( 
+			Filters.FIR_BANDPASS_AUDIO_48KHZ.getCoefficients(), 2.0f );
 	
-	private boolean mRemoveDC = false;
-	
-	public AudioModule( boolean record, boolean removeDC )
+	public AudioModule( boolean record )
 	{
 		mSourceID = ++UNIQUE_ID;
-		
 		mAudioMetadata = new AudioMetadata( mSourceID, record );
-		
-		mRemoveDC = removeDC;
-		
-		if( mRemoveDC )
-		{
-			mDCRemovalFilter = new DCRemovalFilter_RB( DC_REMOVAL_RATIO );
-			mDCRemovalFilter.setListener( this );
-		}
 	}
 	
 	@Override
@@ -132,13 +113,8 @@ public class AudioModule extends Module implements IAudioPacketProvider,
 	}
 
 	@Override
-	public Listener<RealBuffer> getRealBufferListener()
+	public Listener<RealBuffer> getFilteredRealBufferListener()
 	{
-		if( mRemoveDC )
-		{
-			return mDCRemovalFilter;
-		}
-		
 		return this;
 	}
 

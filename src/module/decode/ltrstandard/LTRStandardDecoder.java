@@ -21,14 +21,14 @@ import message.MessageDirection;
 import module.decode.Decoder;
 import module.decode.DecoderType;
 import sample.Listener;
-import sample.real.IRealBufferListener;
+import sample.real.IUnFilteredRealBufferListener;
 import sample.real.RealBuffer;
 import alias.AliasList;
 import bits.MessageFramer;
 import bits.SyncPattern;
 import dsp.fsk.LTRFSKDecoder;
 
-public class LTRStandardDecoder extends Decoder implements IRealBufferListener
+public class LTRStandardDecoder extends Decoder implements IUnFilteredRealBufferListener
 {
 	public static final int LTR_STANDARD_MESSAGE_LENGTH = 40;
 
@@ -36,6 +36,10 @@ public class LTRStandardDecoder extends Decoder implements IRealBufferListener
 	private MessageFramer mLTRMessageFramer;
 	private LTRStandardMessageProcessor mLTRMessageProcessor;
     
+    /**
+     * LTR Decoder.  Decodes unfiltered (e.g. demodulated but with no DC or
+     * audio filtering) samples and produces LTR Standard messages.
+     */
 	public LTRStandardDecoder( AliasList aliasList,
 							   MessageDirection direction )
 	{
@@ -68,7 +72,7 @@ public class LTRStandardDecoder extends Decoder implements IRealBufferListener
 	}
 
 	@Override
-	public Listener<RealBuffer> getRealBufferListener()
+	public Listener<RealBuffer> getUnFilteredRealBufferListener()
 	{
 		return mLTRFSKDecoder;
 	}

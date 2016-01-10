@@ -43,7 +43,9 @@ import javax.swing.JOptionPane;
 import javax.swing.JSeparator;
 import javax.swing.KeyStroke;
 
+import map.IconManager;
 import map.MapService;
+import module.log.EventLogManager;
 import net.miginfocom.swing.MigLayout;
 
 import org.slf4j.Logger;
@@ -51,7 +53,9 @@ import org.slf4j.LoggerFactory;
 
 import playlist.PlaylistManager;
 import properties.SystemProperties;
+import record.RecorderManager;
 import settings.SettingsManager;
+import source.SourceManager;
 import source.tuner.Tuner;
 import source.tuner.TunerSelectionListener;
 import spectrum.SpectralDisplayPanel;
@@ -63,7 +67,6 @@ import com.jidesoft.swing.JideSplitPane;
 
 import controller.ConfigurationControllerModel;
 import controller.ControllerPanel;
-import controller.ResourceManager;
 import controller.ThreadPoolManager;
 import controller.ThreadPoolManager.ThreadType;
 import controller.channel.ChannelEventListener;
@@ -76,6 +79,7 @@ public class SDRTrunk
 	private final static Logger mLog = LoggerFactory.getLogger( SDRTrunk.class );
 
 	private ControllerPanel mControllerPanel;
+	private SettingsManager mSettingsManager;
 	private SpectralDisplayPanel mSpectralPanel;
 	private JFrame mMainGui = new JFrame();
 	
@@ -107,49 +111,54 @@ public class SDRTrunk
 		
 		//Log current properties setting
 		SystemProperties.getInstance().logCurrentSettings();
+		
+		mSettingsManager = new SettingsManager();
+
+		ThreadPoolManager threadPoolManager = new ThreadPoolManager();
+		
+		SourceManager sourceManager = new SourceManager( mSettingsManager, threadPoolManager );
 
 		ChannelModel channelModel = new ChannelModel();
 
+		PlaylistManager playlistManager = new PlaylistManager( channelModel );
+
+		RecorderManager recorderManager = new RecorderManager( threadPoolManager );
+
+		EventLogManager eventLogManager = new EventLogManager();
+		
 		ChannelProcessingManager channelProcessingManager = 
-				new ChannelProcessingManager( channelModel );
+			new ChannelProcessingManager( channelModel, eventLogManager,
+				playlistManager, recorderManager, sourceManager, threadPoolManager );
 		channelModel.addListener( channelProcessingManager );
 		
-		ThreadPoolManager threadPoolManager = new ThreadPoolManager();
+		channelProcessingManager.addAudioPacketListener( recorderManager );
 		
 		AliasActionManager aliasActionManager = new AliasActionManager( threadPoolManager );
-		channelProcessingManager.addListener( aliasActionManager );
+		channelProcessingManager.addMessageListener( aliasActionManager );
+		
+		AudioManager audioManager = new AudioManager( threadPoolManager );
+		channelProcessingManager.addAudioPacketListener( audioManager );
+
+		MapService mapService = new MapService( mSettingsManager );
+		channelProcessingManager.addMessageListener( mapService );
 		
 		ChannelSelectionManager channelSelectionManager = 
 				new ChannelSelectionManager( channelModel );
 		channelModel.addListener( channelSelectionManager );
 
-		
-		/** 
-		 * Construct the resource manager now, so that it can use the system
-		 * properties that were just loaded 
-		 */
-		//TODO: get rid of resource manager ... below is start of breaking out
-		//the encapsulated pieces from the resource manager
-		PlaylistManager playlistManager = new PlaylistManager( channelModel );
-		ResourceManager resource = 
-			new ResourceManager( playlistManager, threadPoolManager, channelModel );
-		
-		AudioManager audio = resource.getAudioManager();
-		ConfigurationControllerModel configurationControllerModel = resource.getController();
-		MapService map = resource.getMapService();
-		SettingsManager settings = resource.getSettingsManager();
+		//Initialize the playlist manager to load the saved playlist
+		playlistManager.init();
 
-		mControllerPanel = 
-				new ControllerPanel( audio, 
-									configurationControllerModel, 
-									channelModel,
-									channelProcessingManager,
-									map, 
-									playlistManager, 
-									settings );
+		ConfigurationControllerModel configurationControllerModel = 
+			new ConfigurationControllerModel( channelModel, channelProcessingManager, 
+					playlistManager, mSettingsManager, sourceManager );
 
-    	mSpectralPanel = new SpectralDisplayPanel( channelModel, 
-    			configurationControllerModel, playlistManager, settings );
+		mControllerPanel = new ControllerPanel( audioManager, configurationControllerModel, 
+			channelModel, channelProcessingManager, mapService, playlistManager, 
+			mSettingsManager, sourceManager );
+
+    	mSpectralPanel = new SpectralDisplayPanel( configurationControllerModel,
+			channelModel, channelProcessingManager,	playlistManager, mSettingsManager );
 
 		mTitle = getTitle();
 		
@@ -162,7 +171,7 @@ public class SDRTrunk
     	{
     		Runnable cml = new ChannelMemoryLogger();
     		channelModel.addListener( (ChannelEventListener)cml );
-    		resource.getThreadPoolManager().scheduleFixedRate( 
+    		threadPoolManager.scheduleFixedRate( 
     				ThreadType.DECODER, cml, 5, TimeUnit.SECONDS );
     	}
 
@@ -277,7 +286,16 @@ public class SDRTrunk
 			@Override
             public void actionPerformed( ActionEvent arg0 )
             {
-				mControllerPanel.getController().showIconManager();
+				final IconManager iconManager = new IconManager( mSettingsManager, mMainGui );
+				
+				EventQueue.invokeLater( new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						iconManager.setVisible( true );
+					}
+				} );
             }
         } );
         fileMenu.add( settingsMenu );

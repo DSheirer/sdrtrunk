@@ -23,12 +23,14 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 
+import module.ProcessingChain;
 import net.miginfocom.swing.MigLayout;
 import settings.SettingsManager;
 import controller.channel.Channel;
 import controller.channel.ChannelEvent;
 import controller.channel.ChannelEvent.Event;
 import controller.channel.ChannelEventListener;
+import controller.channel.ChannelProcessingManager;
 
 public class CallEventPanel extends JPanel implements ChannelEventListener
 {
@@ -37,9 +39,13 @@ public class CallEventPanel extends JPanel implements ChannelEventListener
     private JScrollPane mEmptyScroller;
     private Channel mDisplayedChannel;
     private CallEventAliasCellRenderer mRenderer;
+    private ChannelProcessingManager mChannelProcessingManager;
 
-	public CallEventPanel( SettingsManager settingsManager )
+	public CallEventPanel( SettingsManager settingsManager, 
+						   ChannelProcessingManager channelProcessingManager )
 	{
+		mChannelProcessingManager = channelProcessingManager;
+		
     	setLayout( new MigLayout("insets 0 0 0 0 ", "[grow,fill]", "[grow,fill]") );
 
     	JTable table = new JTable( new CallEventModel() );
@@ -69,34 +75,43 @@ public class CallEventPanel extends JPanel implements ChannelEventListener
 				( mDisplayedChannel != null && 
 				  mDisplayedChannel != event.getChannel() ) )
 			{
-				EventQueue.invokeLater( new Runnable()
-				{
-					@Override
-					public void run()
-					{
-						removeAll();
-						
-						JTable table = new JTable(
-								event.getChannel().getCallEventModel() );
-
-						table.setAutoCreateRowSorter( true );
-				    	table.setAutoResizeMode( JTable.AUTO_RESIZE_LAST_COLUMN );
-						
-						table.getColumnModel().getColumn( CallEventModel.FROM_ALIAS )
-						.setCellRenderer( mRenderer );
-
-						table.getColumnModel().getColumn( CallEventModel.TO_ALIAS )
-						.setCellRenderer( mRenderer );
-						
-						add( new JScrollPane( table ) );
-						
-						mDisplayedChannel = event.getChannel();
-						
-						revalidate();
-						repaint();
-					}
-				} );
+				ProcessingChain chain = mChannelProcessingManager
+						.getProcessingChain( event.getChannel() );
 				
+				if( chain != null )
+				{
+					final CallEventModel model = chain.getCallEventModel();
+					
+					if( model != null )
+					{
+						EventQueue.invokeLater( new Runnable()
+						{
+							@Override
+							public void run()
+							{
+								removeAll();
+								
+								JTable table = new JTable( model );
+
+								table.setAutoCreateRowSorter( true );
+						    	table.setAutoResizeMode( JTable.AUTO_RESIZE_LAST_COLUMN );
+								
+								table.getColumnModel().getColumn( CallEventModel.FROM_ALIAS )
+								.setCellRenderer( mRenderer );
+
+								table.getColumnModel().getColumn( CallEventModel.TO_ALIAS )
+								.setCellRenderer( mRenderer );
+								
+								add( new JScrollPane( table ) );
+								
+								mDisplayedChannel = event.getChannel();
+								
+								revalidate();
+								repaint();
+							}
+						} );
+					}
+				}
 			}
 		}
 		else if( event.getEvent() == Event.NOTIFICATION_PROCESSING_STOP ||

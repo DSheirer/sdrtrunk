@@ -48,6 +48,7 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerConfigurationAssignment;
@@ -55,7 +56,6 @@ import source.tuner.TunerType;
 import source.tuner.hackrf.HackRFTunerController.HackRFLNAGain;
 import source.tuner.hackrf.HackRFTunerController.HackRFSampleRate;
 import source.tuner.hackrf.HackRFTunerController.HackRFVGAGain;
-import controller.ResourceManager;
 
 public class HackRFTunerConfigurationPanel extends JPanel
 {
@@ -64,7 +64,7 @@ public class HackRFTunerConfigurationPanel extends JPanel
 
 	private static final long serialVersionUID = 1L;
     
-    private ResourceManager mResourceManager;
+    private SettingsManager mSettingsManager;
     private HackRFTunerController mController;
     private HackRFTunerConfiguration mSelectedConfig;
 
@@ -81,10 +81,10 @@ public class HackRFTunerConfigurationPanel extends JPanel
     
     private JComboBox<HackRFSampleRate> mComboSampleRate;
     
-    public HackRFTunerConfigurationPanel( ResourceManager resourceManager,
+    public HackRFTunerConfigurationPanel( SettingsManager settingsManager,
     							 		  HackRFTunerController controller )
     {
-    	mResourceManager = resourceManager;
+    	mSettingsManager = settingsManager;
     	mController = controller;
     	
     	init();
@@ -119,8 +119,7 @@ public class HackRFTunerConfigurationPanel extends JPanel
         
         if( serial != null )
         {
-            savedConfig = mResourceManager
-            		.getSettingsManager().getSelectedTunerConfiguration( 
+            savedConfig = mSettingsManager.getSelectedTunerConfiguration( 
     				TunerType.HACKRF, serial );
         }
         
@@ -139,7 +138,7 @@ public class HackRFTunerConfigurationPanel extends JPanel
         	
         	if( serial != null )
         	{
-            	mResourceManager.getSettingsManager()
+            	mSettingsManager
         		.setSelectedTunerConfiguration( TunerType.HACKRF, 
     				serial, mSelectedConfig );
         	}
@@ -418,7 +417,7 @@ public class HackRFTunerConfigurationPanel extends JPanel
             public void actionPerformed( ActionEvent e )
             {
 				TunerConfiguration config = 
-						mResourceManager.getSettingsManager()
+						mSettingsManager
 							.addNewTunerConfiguration( 
 									TunerType.HACKRF, 
 									"New Configuration" );
@@ -458,7 +457,7 @@ public class HackRFTunerConfigurationPanel extends JPanel
 
 					if( n == JOptionPane.YES_OPTION )
 					{
-						mResourceManager.getSettingsManager()
+						mSettingsManager
 							.deleteTunerConfiguration( selected );
 
 						mComboConfigurations.setModel( getModel() );
@@ -494,7 +493,7 @@ public class HackRFTunerConfigurationPanel extends JPanel
 
 	        mComboSampleRate.setSelectedItem( mSelectedConfig.getSampleRate() );
 
-	        mResourceManager.getSettingsManager().setSelectedTunerConfiguration( 
+	        mSettingsManager.setSelectedTunerConfiguration( 
 			TunerType.HACKRF, mController.getSerial().getSerialNumber(), config );
         }
         catch ( UsbException | SourceException e1 )
@@ -518,7 +517,7 @@ public class HackRFTunerConfigurationPanel extends JPanel
     private ComboBoxModel<HackRFTunerConfiguration> getModel()
     {
     	ArrayList<TunerConfiguration> configs = 
-    			mResourceManager.getSettingsManager()
+    			mSettingsManager
     			.getTunerConfigurations( TunerType.HACKRF );
     	
     	DefaultComboBoxModel<HackRFTunerConfiguration> model = 
@@ -538,7 +537,7 @@ public class HackRFTunerConfigurationPanel extends JPanel
     private HackRFTunerConfiguration getNamedConfiguration( String name )
     {
     	ArrayList<TunerConfiguration> configs = 
-    			mResourceManager.getSettingsManager()
+    			mSettingsManager
     			.getTunerConfigurations( TunerType.HACKRF );
     	
     	for( TunerConfiguration config: configs )
@@ -557,6 +556,6 @@ public class HackRFTunerConfigurationPanel extends JPanel
      */
     private void save()
     {
-    	mResourceManager.getSettingsManager().save();
+    	mSettingsManager.save();
     }
 }

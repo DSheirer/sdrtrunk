@@ -23,15 +23,31 @@ import java.awt.event.ActionListener;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 
+import playlist.PlaylistManager;
+import source.SourceManager;
 import controller.ConfigurableNode;
+import controller.channel.ChannelModel;
+import controller.channel.ChannelProcessingManager;
 
 public class SystemListNode extends ConfigurableNode
 {
     private static final long serialVersionUID = 1L;
 
-    public SystemListNode( SystemList list )
+	private ChannelModel mChannelModel;
+	private ChannelProcessingManager mChannelProcessingManager;
+	private SourceManager mSourceManager;
+
+	public SystemListNode( SystemList list,
+						   ChannelModel channelModel,
+						   ChannelProcessingManager channelProcessingManager,
+						   PlaylistManager playlistManager,
+						   SourceManager sourceManager )
 	{
-        super( list );
+        super( playlistManager, list );
+		
+		mChannelModel = channelModel;
+		mChannelProcessingManager = channelProcessingManager;
+		mSourceManager = sourceManager;
 	}
 
     public SystemList getSystemList()
@@ -43,7 +59,8 @@ public class SystemListNode extends ConfigurableNode
     {
     	for( System system: getSystemList().getSystem() )
     	{
-    		SystemNode node = new SystemNode( system );
+    		SystemNode node = new SystemNode( system, mChannelModel, 
+				mChannelProcessingManager, getPlaylistManager(), mSourceManager );
     		
     		getModel().addNode( node, SystemListNode.this, getChildCount() );
     		
@@ -72,9 +89,9 @@ public class SystemListNode extends ConfigurableNode
 
 			    getSystemList().addSystem( system );
 			    
-				getModel().addNode( new SystemNode( system ), 
-									SystemListNode.this, 
-									SystemListNode.this.getChildCount() );
+				getModel().addNode( new SystemNode( system, mChannelModel, 
+					mChannelProcessingManager, getPlaylistManager(), mSourceManager ), 
+						SystemListNode.this, SystemListNode.this.getChildCount() );
             }
 		} );
 		

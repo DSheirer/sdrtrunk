@@ -17,21 +17,23 @@
  ******************************************************************************/
 package source.tuner;
 
+import controller.channel.Channel;
+import controller.channel.ConfigurationValidationException;
 import gui.control.JFrequencyControl;
 import source.SourceEditor;
+import source.SourceManager;
 import source.config.SourceConfigTuner;
 import source.config.SourceConfiguration;
-import controller.ResourceManager;
 
 public class TunerEditor extends SourceEditor
 {
     private static final long serialVersionUID = 1L;
     private JFrequencyControl mFrequencyControl;
     
-	public TunerEditor( ResourceManager resourceManager, 
+	public TunerEditor( SourceManager sourceManager, 
 						SourceConfiguration config )
 	{
-		super( resourceManager, config );
+		super( sourceManager, config );
 		
 		initGUI();
 	}
@@ -55,5 +57,19 @@ public class TunerEditor extends SourceEditor
 				((SourceConfigTuner)mConfig).getFrequency(), false );
 		
 		add( mFrequencyControl );
+	}
+
+	@Override
+	public void setConfiguration( Channel channel )
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void validateConfiguration() throws ConfigurationValidationException
+	{
+		// TODO Auto-generated method stub
+		
 	}
 }

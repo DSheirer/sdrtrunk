@@ -19,21 +19,17 @@ package controller.channel;
 
 
 import java.awt.Color;
-import java.awt.ComponentOrientation;
+import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.Collections;
-import java.util.List;
 
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JTextField;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreePath;
 
 import module.decode.AuxDecodeComponentEditor;
 import module.decode.DecodeComponentEditor;
@@ -46,20 +42,21 @@ import org.slf4j.LoggerFactory;
 import playlist.PlaylistManager;
 import record.RecordComponentEditor;
 import source.SourceComponentEditor;
+import source.SourceManager;
 import alias.AliasList;
 
 import com.jidesoft.swing.JideTabbedPane;
 
-import controller.Editor;
+import controller.channel.ChannelEvent.Event;
 
-public class ChannelEditor extends Editor implements ActionListener
+public class ChannelEditor extends JPanel 
+					implements ActionListener, ChannelEventListener
 {
+	private static final long serialVersionUID = 1L;
+
 	private final static Logger mLog = LoggerFactory.getLogger( ChannelEditor.class );
 
-	private static final long serialVersionUID = 1L;
-    private DefaultTreeModel mTreeModel;
-    private ChannelNode mChannelNode;
-    
+	private ChannelConfigurationEditor mNameConfigurationEditor;
     private DecodeComponentEditor mDecodeEditor;
     private AuxDecodeComponentEditor mAuxDecodeEditor;
     private EventLogComponentEditor mEventLogEditor;
@@ -70,17 +67,32 @@ public class ChannelEditor extends Editor implements ActionListener
 	private JCheckBox mChannelEnabled = new JCheckBox();
     private JComboBox<AliasList> mComboAliasLists;
     
+	private Channel mChannel;
+	private ChannelModel mChannelModel;
     private PlaylistManager mPlaylistManager;
+    private SourceManager mSourceManager;
     
-	public ChannelEditor( ChannelNode channel, PlaylistManager playlistManager )
+	public ChannelEditor( ChannelModel channelModel,
+						  PlaylistManager playlistManager,
+						  SourceManager sourceManager )
 	{
 		super();
 		
-		mChannelNode = channel;
-		
+		mChannelModel = channelModel;
 		mPlaylistManager = playlistManager;
+		mSourceManager = sourceManager;
+
+		mNameConfigurationEditor = new NameConfigurationEditor( 
+				mChannelModel, mPlaylistManager );
 		
 		initGUI();
+	}
+	
+	public void setChannel( Channel channel )
+	{
+		mNameConfigurationEditor.setConfiguration( channel );
+		
+		mChannel = channel;
 	}
 
 	private void initGUI()
@@ -89,65 +101,29 @@ public class ChannelEditor extends Editor implements ActionListener
 		
 		add( new JLabel( "Channel Configuration" ), "span, align center" );
 
-		add( new JLabel( "Enabled:" ) );
+		add( new JLabel( "Enabled:" ), "wrap" );
 
-		mChannelEnabled.setSelected( 
-				mChannelNode.getChannel().getEnabled() );
-		mChannelEnabled.setComponentOrientation( ComponentOrientation.RIGHT_TO_LEFT );
-		add( mChannelEnabled );
-
-		add( new JLabel( "Name:" ) );
-
-		mChannelName = new JTextField( mChannelNode.getChannel().getName() );
-		add( mChannelName, "growx,push" );
-
-		/**
-		 * ComboBox: Alias Lists
-		 */
-		add( new JLabel( "Alias List:" ) );
-
-		mComboAliasLists = new JComboBox<AliasList>();
-
-		List<AliasList> lists = mChannelNode.getModel().getResourceManager()
-			.getPlaylistManager().getPlayist().getAliasDirectory().getAliasList();
-
-		Collections.sort( lists );
-		
-		mComboAliasLists.setModel( new DefaultComboBoxModel<AliasList>( 
-				lists.toArray( new AliasList[ lists.size() ] ) ) );
-
-		String aliasListName = 
-				mChannelNode.getChannel().getAliasListName();
-
-    	if( aliasListName != null )
-    	{
-    		AliasList selected = mChannelNode.getModel().getResourceManager()
-    			.getPlaylistManager().getPlayist().getAliasDirectory()
-    			.getAliasList( aliasListName );
-
-    		mComboAliasLists.setSelectedItem( selected );
-    	}
-		
-		add( mComboAliasLists, "growx,push" );
+		add( mNameConfigurationEditor );
 
 		JideTabbedPane tabs = new JideTabbedPane();
 		tabs.setFont( this.getFont() );
     	tabs.setForeground( Color.BLACK );
 
-		mSourceEditor = new SourceComponentEditor( mChannelNode );
-		tabs.addTab( "Source", mSourceEditor );
-		
-		mDecodeEditor = new DecodeComponentEditor( mChannelNode, mPlaylistManager );
-		tabs.addTab( "Decoder", mDecodeEditor );
-
-		mAuxDecodeEditor = new AuxDecodeComponentEditor( mChannelNode );
-		tabs.addTab( "Aux", mAuxDecodeEditor );
-
-		mEventLogEditor = new EventLogComponentEditor( mChannelNode );
-		tabs.addTab( "Event Log", mEventLogEditor );
-		
-		mRecordEditor = new RecordComponentEditor( mChannelNode );
-		tabs.addTab( "Record", mRecordEditor );
+    	tabs.addTab( "Name/Alias", mNameConfigurationEditor );
+//		mSourceEditor = new SourceComponentEditor( mSourceManager, mChannel );
+//		tabs.addTab( "Source", mSourceEditor );
+//		
+//		mDecodeEditor = new DecodeComponentEditor( mPlaylistManager, mChannel );
+//		tabs.addTab( "Decoder", mDecodeEditor );
+//
+//		mAuxDecodeEditor = new AuxDecodeComponentEditor( mChannel );
+//		tabs.addTab( "Aux", mAuxDecodeEditor );
+//
+//		mEventLogEditor = new EventLogComponentEditor( mChannel );
+//		tabs.addTab( "Event Log", mEventLogEditor );
+//		
+//		mRecordEditor = new RecordComponentEditor( mChannel );
+//		tabs.addTab( "Record", mRecordEditor );
 
 		add( tabs, "span,grow,push" );
 		
@@ -158,6 +134,12 @@ public class ChannelEditor extends Editor implements ActionListener
 		JButton btnReset = new JButton( "Reset" );
 		btnReset.addActionListener( ChannelEditor.this );
 		add( btnReset, "growx,push" );
+	}
+	
+	@Override
+	public void channelChanged( ChannelEvent event )
+	{
+		
 	}
 
 	@Override
@@ -171,109 +153,105 @@ public class ChannelEditor extends Editor implements ActionListener
 		}
 		else if( command.contentEquals( "Reset" ) )
 		{
-			reset();
-		}
-
-		if( mTreeModel != null )
-		{
-			mTreeModel.nodeChanged( mChannelNode );
+			setChannel( mChannel );
 		}
     }
 
-	@Override
     public void save()
     {
 		try
 		{
-			/**
-			 * Validate the source configuration against the other component
-			 * configuration editors
-			 */
-			validate( mSourceEditor.getSourceEditor() );
-
-			boolean expanded = mChannelNode.getModel().getTree()
-					.isExpanded( new TreePath( mChannelNode ) );
-
-			mSourceEditor.save();
-			mDecodeEditor.save();
-			mAuxDecodeEditor.save();
-			mEventLogEditor.save();
-			mRecordEditor.save();
-
-			mChannelNode.getChannel().setName( mChannelName.getText() );
-			mChannelNode.getChannel().setEnabled( mChannelEnabled.isSelected() );
-
-			AliasList selected = mComboAliasLists.getItemAt( 
-					mComboAliasLists.getSelectedIndex() );
-			if( selected != null )
-			{
-				mChannelNode.getChannel().setAliasListName( selected.getName() );
-			}
-
-			
-			mChannelNode.save();
-			mChannelNode.show();
-			
-			if( expanded )
-			{
-				mChannelNode.getModel().getTree().expandPath( new TreePath( mChannelNode ) );
-			}
+			//Validate each of the configuration editors to check for errors
+			mNameConfigurationEditor.validateConfiguration();
+//			/**
+//			 * Validate the source configuration against the other component
+//			 * configuration editors
+//			 */
+//			validate( mSourceEditor.getSourceEditor() );
+//
+//			mSourceEditor.save();
+//			mDecodeEditor.save();
+//			mAuxDecodeEditor.save();
+//			mEventLogEditor.save();
+//			mRecordEditor.save();
+//
+//			mChannel.setName( mChannelName.getText() );
+//			mChannel.setEnabled( mChannelEnabled.isSelected() );
+//
+//			AliasList selected = mComboAliasLists.getItemAt( 
+//					mComboAliasLists.getSelectedIndex() );
+//			if( selected != null )
+//			{
+//				mChannel.setAliasListName( selected.getName() );
+//			}
 		}
-		catch ( ChannelValidationException validationException )
+		catch ( ConfigurationValidationException validationException )
 		{
 			/* ChannelValidationException can be thrown by any of the component
 			 * editors.  Show the validation error text in a popup menu to the
-			 * user */
+			 * user and set the focus on the error component */
 			JOptionPane.showMessageDialog( ChannelEditor.this,
 			    validationException.getMessage(),
 			    "Channel Configuration Error",
 			    JOptionPane.ERROR_MESSAGE );			
+
+			Component component = validationException.getComponent();
+			
+			if( component != null )
+			{
+				component.requestFocus();
+			}
+			
+			return;
 		}
-    }
 
-	@Override
-    public void reset()
-    {
-		mChannelName.setText( 
-				mChannelNode.getChannel().getName() );
-		mChannelName.requestFocus();
-		mChannelName.requestFocusInWindow();
+		//Save the contents of each editor to the channel configuration
+		mNameConfigurationEditor.save();
 		
-		mChannelEnabled.setSelected( 
-				mChannelNode.getChannel().getEnabled() );
-		mChannelEnabled.requestFocus();
-		mChannelEnabled.requestFocusInWindow();
-
-		String aliasListName = 
-				mChannelNode.getChannel().getAliasListName();
-
-    	if( aliasListName != null )
-    	{
-    		AliasList selected = mChannelNode.getModel().getResourceManager()
-    			.getPlaylistManager().getPlayist().getAliasDirectory()
-    			.getAliasList( aliasListName );
-
-    		mComboAliasLists.setSelectedItem( selected );
-    	}
-
-
-		mSourceEditor.reset();
-		mDecodeEditor.reset();
-		mAuxDecodeEditor.reset();
-		mEventLogEditor.reset();
-		mRecordEditor.reset();
+		//Broadcast a channel configuration change event
+		mChannelModel.broadcast( new ChannelEvent( mChannel, 
+				Event.NOTIFICATION_CONFIGURATION_CHANGE ) );
     }
 
-	/**
-	 * Validate the specified editor against each of the component editors
-	 */
-	@Override
-	public void validate( Editor editor ) throws ChannelValidationException
-	{
-		mSourceEditor.validate( editor );
-		mDecodeEditor.validate( editor );
-		mAuxDecodeEditor.validate( editor );
-		mEventLogEditor.validate( editor );
-		mRecordEditor.validate( editor );
-	}
+//	@Override
+//    public void reset()
+//    {
+//		mChannelName.setText( mChannel.getName() );
+//		mChannelName.requestFocus();
+//		mChannelName.requestFocusInWindow();
+//		
+//		mChannelEnabled.setSelected( mChannel.getEnabled() );
+//		mChannelEnabled.requestFocus();
+//		mChannelEnabled.requestFocusInWindow();
+//
+//		String aliasListName = mChannel.getAliasListName();
+//
+//    	if( aliasListName != null )
+//    	{
+//    		AliasList selected = mPlaylistManager.getPlayist().getAliasDirectory()
+//    			.getAliasList( aliasListName );
+//
+//    		mComboAliasLists.setSelectedItem( selected );
+//    	}
+//
+//
+//		mSourceEditor.reset();
+//		mDecodeEditor.reset();
+//		mAuxDecodeEditor.reset();
+//		mEventLogEditor.reset();
+//		mRecordEditor.reset();
+//    }
+
+//	/**
+//	 * Validate the specified editor against each of the component editors
+//	 */
+//	@Override
+//	public void validate( ChannelConfigurationEditor editor ) throws ConfigurationValidationException
+//	{
+//		mSourceEditor.validate( editor );
+//		mDecodeEditor.validate( editor );
+//		mAuxDecodeEditor.validate( editor );
+//		mEventLogEditor.validate( editor );
+//		mRecordEditor.validate( editor );
+//	}
 }

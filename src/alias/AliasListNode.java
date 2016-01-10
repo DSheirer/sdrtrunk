@@ -26,15 +26,25 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 
+import playlist.PlaylistManager;
+import settings.SettingsManager;
 import controller.ConfigurableNode;
 
 public class AliasListNode extends ConfigurableNode
 {
     private static final long serialVersionUID = 1L;
+
+    private PlaylistManager mPlaylistManager;
+    private SettingsManager mSettingsManager;
     
-    public AliasListNode( AliasList list )
+    public AliasListNode( PlaylistManager playlistManager, 
+    					  SettingsManager settingsManager, 
+    					  AliasList list )
 	{
-    	super( list );
+    	super( playlistManager, list );
+
+    	mPlaylistManager = playlistManager;
+    	mSettingsManager = settingsManager;
 	}
     
     @Override
@@ -52,7 +62,7 @@ public class AliasListNode extends ConfigurableNode
     {
     	for( Group group: getList().getGroup() )
     	{
-    		GroupNode node = new GroupNode( group );
+    		GroupNode node = new GroupNode( mPlaylistManager, mSettingsManager, group );
 
     		getModel().addNode( node, AliasListNode.this, getChildCount() );
     		
@@ -81,7 +91,7 @@ public class AliasListNode extends ConfigurableNode
 				
 				getList().addGroup( group );
 				
-				GroupNode node = new GroupNode( group );
+				GroupNode node = new GroupNode( mPlaylistManager, mSettingsManager, group );
 				
 				getModel().addNode( node, 
 									AliasListNode.this, 

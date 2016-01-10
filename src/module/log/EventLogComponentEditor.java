@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -24,7 +24,8 @@ import javax.swing.SwingUtilities;
 
 import module.log.config.EventLogConfiguration;
 import controller.channel.AbstractChannelEditor;
-import controller.channel.ChannelNode;
+import controller.channel.Channel;
+import controller.channel.ConfigurationValidationException;
 
 public class EventLogComponentEditor extends AbstractChannelEditor
 {
@@ -34,9 +35,9 @@ public class EventLogComponentEditor extends AbstractChannelEditor
     private JCheckBox mDecodedLogger = new JCheckBox( "Decoded Messages" );
     private JCheckBox mCallEventLogger = new JCheckBox( "Call Events" );
 
-    public EventLogComponentEditor( ChannelNode channelNode )
+    public EventLogComponentEditor( Channel channel )
 	{
-		super( channelNode );
+		super( channel );
 		
 		add( mBinaryLogger, "span" );
 		add( mDecodedLogger, "span" );
@@ -53,7 +54,7 @@ public class EventLogComponentEditor extends AbstractChannelEditor
     {
         SwingUtilities.invokeLater(new Runnable() 
         {
-        	final List<EventLogType> mLoggers = mChannelNode.getChannel()
+        	final List<EventLogType> mLoggers = mChannel
         			.getEventLogConfiguration().getLoggers();
         	
             @Override
@@ -75,8 +76,7 @@ public class EventLogComponentEditor extends AbstractChannelEditor
 	@Override
     public void save()
     {
-		EventLogConfiguration config = mChannelNode.getChannel()
-				.getEventLogConfiguration();
+		EventLogConfiguration config = mChannel.getEventLogConfiguration();
 
 		config.clear();
 		
@@ -94,4 +94,18 @@ public class EventLogComponentEditor extends AbstractChannelEditor
 			config.addLogger( EventLogType.CALL_EVENT );
 		}
     }
+
+	@Override
+	public void setConfiguration( Channel channel )
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void validateConfiguration() throws ConfigurationValidationException
+	{
+		// TODO Auto-generated method stub
+		
+	}
 }

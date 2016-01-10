@@ -17,20 +17,25 @@
  ******************************************************************************/
 package alias.action;
 
+import playlist.PlaylistManager;
 import controller.ConfigurableNode;
 
 public class AliasActionNode extends ConfigurableNode
 {
     private static final long serialVersionUID = 1L;
+    
+    private PlaylistManager mPlaylistManager;
 
-    public AliasActionNode( AliasAction action )
+    public AliasActionNode( PlaylistManager playlistManager, AliasAction action )
 	{
-    	super( action );
+    	super( playlistManager, action );
+    	
+    	mPlaylistManager = playlistManager;
 	}
     
     public void save()
     {
-        getModel().getResourceManager().getPlaylistManager().save();
+    	mPlaylistManager.save();
     }
     
     public String getIconPath()

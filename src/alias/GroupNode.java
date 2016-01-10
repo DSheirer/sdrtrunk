@@ -26,15 +26,24 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 
+import playlist.PlaylistManager;
+import settings.SettingsManager;
 import controller.ConfigurableNode;
 
 public class GroupNode extends ConfigurableNode 
 {
     private static final long serialVersionUID = 1L;
+
+    private PlaylistManager mPlaylistManager;
+    private SettingsManager mSettingsManager;
     
-    public GroupNode( Group group )
+    public GroupNode( PlaylistManager playlistManager, 
+    				  SettingsManager settingsManager, 
+    				  Group group )
 	{
-    	super( group );
+    	super( playlistManager, group );
+    	
+    	mSettingsManager = settingsManager;
 	}
     
     @Override
@@ -52,7 +61,7 @@ public class GroupNode extends ConfigurableNode
     {
     	for( Alias alias: getGroup().getAlias() )
     	{
-    		AliasNode node = new AliasNode( alias );
+    		AliasNode node = new AliasNode( mPlaylistManager, mSettingsManager, alias );
     		
     		getModel().addNode( node, GroupNode.this, getChildCount() );
     		
@@ -81,7 +90,7 @@ public class GroupNode extends ConfigurableNode
 				
 				getGroup().addAlias( alias );
 				
-				AliasNode node = new AliasNode( alias );
+				AliasNode node = new AliasNode( mPlaylistManager, mSettingsManager, alias );
 				
 				getModel().addNode( node, 
 									GroupNode.this, 

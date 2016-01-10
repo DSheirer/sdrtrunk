@@ -25,6 +25,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 
+import playlist.PlaylistManager;
 import alias.AliasID;
 import alias.AliasIDNode;
 import alias.AliasNode;
@@ -33,9 +34,9 @@ public class NonRecordableNode extends AliasIDNode
 {
     private static final long serialVersionUID = 1L;
     
-    public NonRecordableNode( NonRecordable id )
+    public NonRecordableNode( PlaylistManager playlistManager, NonRecordable id )
 	{
-    	super( id );
+    	super( playlistManager, id );
 	}
     
     @Override

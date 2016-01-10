@@ -30,18 +30,16 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeListener;
 import source.tuner.frequency.FrequencyChangeEvent.Event;
+import source.tuner.frequency.IFrequencyChangeProcessor;
 import source.tuner.hackrf.HackRFTunerController.BoardID;
 
 import com.jidesoft.swing.JideTabbedPane;
 
-import controller.ResourceManager;
-
-public class HackRFTunerEditorPanel extends JPanel 
-						implements FrequencyChangeListener
+public class HackRFTunerEditorPanel extends JPanel implements IFrequencyChangeProcessor
 {
     private static final long serialVersionUID = 1L;
 
@@ -52,14 +50,14 @@ public class HackRFTunerEditorPanel extends JPanel
     
     private HackRFTuner mTuner;
     private HackRFTunerController mController;
-    private ResourceManager mResourceManager;
+    private SettingsManager mSettingsManager;
 
 	public HackRFTunerEditorPanel( HackRFTuner tuner, 
-								   ResourceManager resourceManager )
+								   SettingsManager resourceManager )
 	{
 		mTuner = tuner;
 		mController = mTuner.getController();
-		mResourceManager = resourceManager;
+		mSettingsManager = resourceManager;
 		
 		initGUI();
 	}
@@ -89,7 +87,7 @@ public class HackRFTunerEditorPanel extends JPanel
         
         /* Add frequency control as frequency change listener.  This creates a
          * feedback loop, so the control does not rebroadcast the event */
-        mTuner.addListener( mFrequencyControl );
+        mTuner.addFrequencyChangeProcessor( mFrequencyControl );
         
         mFrequencyControl.setFrequency( mController.getFrequency(), false );
 
@@ -102,7 +100,7 @@ public class HackRFTunerEditorPanel extends JPanel
         add( tabs, "span,grow,push" );
         
         tabs.add( "Config", new HackRFTunerConfigurationPanel( 
-        		mResourceManager, mTuner.getController() ) );
+        		mSettingsManager, mTuner.getController() ) );
         
         tabs.add( "Info", new HackRFInformationPanel( mTuner.getController() ) ); 
     }
@@ -110,7 +108,7 @@ public class HackRFTunerEditorPanel extends JPanel
 	@Override
     public void frequencyChanged( FrequencyChangeEvent event )
     {
-		if( event.getEvent() == Event.FREQUENCY_CHANGE_NOTIFICATION )
+		if( event.getEvent() == Event.NOTIFICATION_FREQUENCY_CHANGE )
 		{
 			try
 	        {

@@ -47,6 +47,7 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
@@ -56,15 +57,13 @@ import source.tuner.fcd.proV1.FCD1TunerController.MixerGain;
 
 import com.jidesoft.swing.JideTabbedPane;
 
-import controller.ResourceManager;
-
 public class FCD1TunerConfigurationPanel extends JPanel
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( FCD1TunerConfigurationPanel.class );
 
 	private static final long serialVersionUID = 1L;
-    private ResourceManager mResourceManager;
+    private SettingsManager mSettingsManager;
     private FCD1TunerController mController;
 
     private FCD1TunerConfiguration mSelectedConfig;
@@ -81,10 +80,10 @@ public class FCD1TunerConfigurationPanel extends JPanel
     private CorrectionSpinner mCorrectionGain;
     private CorrectionSpinner mCorrectionPhase;
     
-    public FCD1TunerConfigurationPanel( ResourceManager resourceManager,
+    public FCD1TunerConfigurationPanel( SettingsManager settingsManager,
     									FCD1TunerController controller )
     {
-    	mResourceManager = resourceManager;
+    	mSettingsManager = settingsManager;
     	mController = controller;
     	mSelectedConfig = controller.getTunerConfiguration();
     	
@@ -428,8 +427,7 @@ public class FCD1TunerConfigurationPanel extends JPanel
             public void actionPerformed( ActionEvent e )
             {
 				TunerConfiguration config = 
-						mResourceManager.getSettingsManager()
-							.addNewTunerConfiguration( 
+						mSettingsManager.addNewTunerConfiguration( 
 									TunerType.FUNCUBE_DONGLE_PRO, 
 									"New Configuration" );
 				
@@ -472,8 +470,7 @@ public class FCD1TunerConfigurationPanel extends JPanel
 
 					if( n == JOptionPane.YES_OPTION )
 					{
-						mResourceManager.getSettingsManager()
-							.deleteTunerConfiguration( selected );
+						mSettingsManager.deleteTunerConfiguration( selected );
 
 						mComboConfigurations.setModel( getModel() );
 						
@@ -508,8 +505,7 @@ public class FCD1TunerConfigurationPanel extends JPanel
 	        mCorrectionGain.setValue( config.getGainCorrection() );
 	        mCorrectionPhase.setValue( config.getPhaseCorrection() );
 	        
-	        mResourceManager.getSettingsManager()
-	        	.setSelectedTunerConfiguration( 
+	        mSettingsManager.setSelectedTunerConfiguration( 
 	        			TunerType.FUNCUBE_DONGLE_PRO, 
 	        			mController.getUSBAddress(), config );
         }
@@ -529,8 +525,7 @@ public class FCD1TunerConfigurationPanel extends JPanel
     private ComboBoxModel<FCD1TunerConfiguration> getModel()
     {
     	ArrayList<TunerConfiguration> configs = 
-    			mResourceManager.getSettingsManager()
-    			.getTunerConfigurations( TunerType.FUNCUBE_DONGLE_PRO );
+    			mSettingsManager.getTunerConfigurations( TunerType.FUNCUBE_DONGLE_PRO );
     	
     	DefaultComboBoxModel<FCD1TunerConfiguration> model = 
     			new DefaultComboBoxModel<FCD1TunerConfiguration>();
@@ -547,8 +542,7 @@ public class FCD1TunerConfigurationPanel extends JPanel
     private FCD1TunerConfiguration getNamedConfiguration( String name )
     {
     	ArrayList<TunerConfiguration> configs = 
-    			mResourceManager.getSettingsManager()
-    			.getTunerConfigurations( TunerType.FUNCUBE_DONGLE_PRO );
+    			mSettingsManager.getTunerConfigurations( TunerType.FUNCUBE_DONGLE_PRO );
     	
     	for( TunerConfiguration config: configs )
     	{
@@ -563,7 +557,7 @@ public class FCD1TunerConfigurationPanel extends JPanel
     
     private void save()
     {
-    	mResourceManager.getSettingsManager().save();
+    	mSettingsManager.save();
     }
     
     public enum Correction { GAIN, PHASE, DC_INPHASE, DC_QUADRATURE };

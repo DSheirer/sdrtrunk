@@ -33,8 +33,10 @@ import module.decode.event.CallEventPanel;
 import module.decode.event.MessageActivityPanel;
 import module.decode.state.ChannelList;
 import net.miginfocom.swing.MigLayout;
+import playlist.PlaylistEditor;
 import playlist.PlaylistManager;
 import settings.SettingsManager;
+import source.SourceManager;
 import spectrum.ChannelSpectrumPanel;
 import audio.AudioManager;
 import audio.AudioPanel;
@@ -53,15 +55,16 @@ public class ControllerPanel extends JPanel
 
     private CallEventPanel mCallEventPanel;
     
-    private MessageActivityPanel mMessageActivityPanel = 
-    		new MessageActivityPanel();
+    private MessageActivityPanel mMessageActivityPanel;
     
     private ChannelSpectrumPanel mChannelSpectrumPanel;
     
-    private JideTabbedPane mTabbedPane;
+	private PlaylistEditor mPlaylistEditor;
+
+	private JideTabbedPane mTabbedPane;
 
     protected ConfigurationTreePanel mSystemControlViewPanel;
-	protected ConfigurationEditor mConfigurationEditor;
+	protected OldConfigurationEditor mConfigurationEditor;
     protected JideSplitPane mSystemControlSplitPane;
 
 	protected JTable mChannelActivityTable = new JTable();
@@ -78,20 +81,30 @@ public class ControllerPanel extends JPanel
 							ChannelProcessingManager channelProcessingManager,
 							MapService mapService,
 							PlaylistManager playlistManager,
-							SettingsManager settingsManager )
+							SettingsManager settingsManager,
+							SourceManager sourceManager )
 	{
 		mChannelModel = channelModel;
 		mController = controller;
 	    mSettingsManager = settingsManager;
 
-    	mAudioPanel = new AudioPanel( mSettingsManager, audioManager );
+    	mAudioPanel = new AudioPanel( mSettingsManager, sourceManager, audioManager );
 
-    	mMapPanel = new MapPanel( mapService, mSettingsManager, channelProcessingManager );
+    	mMapPanel = new MapPanel( mapService, mSettingsManager );
 	    
-	    mCallEventPanel = new CallEventPanel( mSettingsManager );	
+    	mMessageActivityPanel = new MessageActivityPanel( channelProcessingManager );
+
+    	mCallEventPanel = new CallEventPanel( mSettingsManager, 
+    			channelProcessingManager );	
 	    
-    	mChannelStateList = new ChannelList( playlistManager, mSettingsManager );
-	    
+    	mChannelSpectrumPanel = new ChannelSpectrumPanel( mSettingsManager, 
+    			channelProcessingManager );
+
+    	mChannelStateList = new ChannelList( channelModel, channelProcessingManager, 
+    			playlistManager, mSettingsManager );
+
+    	mPlaylistEditor = new PlaylistEditor( channelModel, playlistManager, sourceManager );
+
 		init();
 	}
 	
@@ -102,7 +115,7 @@ public class ControllerPanel extends JPanel
     							  "[grow,fill]") );
     	
     	//System Configuration View and Editor
-    	mConfigurationEditor = new ConfigurationEditor();
+    	mConfigurationEditor = new OldConfigurationEditor();
 
     	mSystemControlViewPanel = new ConfigurationTreePanel( mController );
     	mSystemControlViewPanel.addTreeSelectionListener( mConfigurationEditor );
@@ -112,8 +125,6 @@ public class ControllerPanel extends JPanel
     	mSystemControlSplitPane.add( mSystemControlViewPanel );
     	mSystemControlSplitPane.add( mConfigurationEditor );
     	
-    	mChannelSpectrumPanel = new ChannelSpectrumPanel( mSettingsManager );
-    	
     	//Tabbed View - configuration, calls, messages, map
     	mTabbedPane = new JideTabbedPane();
     	mTabbedPane.setFont( this.getFont() );
@@ -122,10 +133,8 @@ public class ControllerPanel extends JPanel
     	mTabbedPane.addTab( "Channel Spectrum", mChannelSpectrumPanel );
     	mTabbedPane.addTab( "Events", mCallEventPanel );
     	mTabbedPane.addTab( "Messages", mMessageActivityPanel );
-    	
-    	JTable channelsTable = new JTable( mChannelModel );
-    	JScrollPane channelsScroller = new JScrollPane( channelsTable );
-    	mTabbedPane.addTab(  "Channels", channelsScroller );
+
+    	mTabbedPane.addTab(  "Playlist", mPlaylistEditor );
 
     	/**
     	 * Change listener to enable/disable the channel spectrum display

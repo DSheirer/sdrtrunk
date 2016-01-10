@@ -25,6 +25,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 
+import playlist.PlaylistManager;
 import alias.AliasNode;
 import alias.action.AliasActionNode;
 
@@ -32,9 +33,9 @@ public class ClipActionNode extends AliasActionNode
 {
     private static final long serialVersionUID = 1L;
     
-    public ClipActionNode( ClipAction clipAction )
+    public ClipActionNode( PlaylistManager playlistManager, ClipAction clipAction )
 	{
-    	super( clipAction );
+    	super( playlistManager, clipAction );
 	}
     
     @Override

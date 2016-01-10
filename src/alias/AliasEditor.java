@@ -19,6 +19,7 @@ package alias;
 
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -32,19 +33,19 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.tree.TreePath;
 
+import map.IconManager;
 import map.MapIcon;
 import map.MapIconListCellRenderer;
 import net.miginfocom.swing.MigLayout;
 import settings.SettingsManager;
 import controller.ConfigurableNode;
-import controller.ResourceManager;
 
 public class AliasEditor extends JPanel implements ActionListener
 {
     private static final long serialVersionUID = 1L;
     
     private AliasNode mAliasNode;
-    private ResourceManager mResourceManager;
+    private SettingsManager mSettingsManager;
     
     private JLabel mLabelName;
     private JTextField mTextAlias;
@@ -54,10 +55,11 @@ public class AliasEditor extends JPanel implements ActionListener
     private JComboBox<MapIcon> mComboMapIcon;
     private JButton mBtnIconManager;
     
-    public AliasEditor( AliasNode aliasNode, ResourceManager resourceManager )
+    public AliasEditor( AliasNode aliasNode, 
+    					SettingsManager settingsManager )
 	{
 		mAliasNode = aliasNode;
-		mResourceManager = resourceManager;
+		mSettingsManager = settingsManager;
 		
 		initGUI();
 	}
@@ -98,8 +100,7 @@ public class AliasEditor extends JPanel implements ActionListener
 		
 		add( new JLabel( "Icon:" ) );
 
-		mComboMapIcon = new JComboBox<MapIcon>( 
-				mResourceManager.getSettingsManager().getMapIcons() );
+		mComboMapIcon = new JComboBox<MapIcon>( mSettingsManager.getMapIcons() );
 
 		MapIconListCellRenderer renderer = new MapIconListCellRenderer();
 		renderer.setPreferredSize( new Dimension( 200, 30 ) );
@@ -112,8 +113,7 @@ public class AliasEditor extends JPanel implements ActionListener
 			iconName = SettingsManager.DEFAULT_ICON;
 		}
 		
-		MapIcon savedIcon = mResourceManager.getSettingsManager()
-				.getMapIcon( iconName );
+		MapIcon savedIcon = mSettingsManager.getMapIcon( iconName );
 
 		if( savedIcon != null )
 		{
@@ -131,7 +131,17 @@ public class AliasEditor extends JPanel implements ActionListener
 			@Override
             public void actionPerformed( ActionEvent arg0 )
             {
-				mResourceManager.getController().showIconManager();
+				final IconManager iconManager = 
+						new IconManager( mSettingsManager, AliasEditor.this );
+				
+				EventQueue.invokeLater( new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						iconManager.setVisible( true );
+					}
+				} );
             }
 		} );
 		add( mBtnIconManager, "span 2,wrap" );
@@ -194,7 +204,7 @@ public class AliasEditor extends JPanel implements ActionListener
 			mButtonColor.setBackground( mAliasNode.getAlias().getMapColor() );
 			mButtonColor.setForeground( mAliasNode.getAlias().getMapColor() );
 
-			MapIcon savedIcon = mResourceManager.getSettingsManager()
+			MapIcon savedIcon = mSettingsManager
 					.getMapIcon( mAliasNode.getAlias().getIconName() );
 			
 			mComboMapIcon.setSelectedItem( savedIcon );

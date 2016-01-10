@@ -33,6 +33,7 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -44,17 +45,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeListener;
 import source.tuner.frequency.FrequencyChangeEvent.Event;
+import source.tuner.frequency.IFrequencyChangeListener;
+import source.tuner.frequency.IFrequencyChangeProcessor;
 
-public class JFrequencyControl extends JPanel implements FrequencyChangeListener
+public class JFrequencyControl extends JPanel implements IFrequencyChangeProcessor
 {
     private static final long serialVersionUID = 1L;
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( JFrequencyControl.class );
 
-	private ArrayList<FrequencyChangeListener> mListeners =
-    		new ArrayList<FrequencyChangeListener>();
+	private List<IFrequencyChangeProcessor> mProcessors = new ArrayList<>();
     
     private Color mHighlightColor = Color.YELLOW;
     
@@ -136,7 +137,7 @@ public class JFrequencyControl extends JPanel implements FrequencyChangeListener
 	@Override
     public void frequencyChanged( FrequencyChangeEvent event )
     {
-		if( event.getEvent() == Event.FREQUENCY_CHANGE_NOTIFICATION )
+		if( event.getEvent() == Event.NOTIFICATION_FREQUENCY_CHANGE )
 		{
 			setFrequency( event.getValue().longValue(), false );
 		}
@@ -177,10 +178,10 @@ public class JFrequencyControl extends JPanel implements FrequencyChangeListener
 	{
 		updateFrequency();
 		
-		Iterator<FrequencyChangeListener> it = mListeners.iterator();
+		Iterator<IFrequencyChangeProcessor> it = mProcessors.iterator();
 		
 		FrequencyChangeEvent event = 
-				new FrequencyChangeEvent( Event.FREQUENCY_CHANGE_NOTIFICATION, mFrequency );
+				new FrequencyChangeEvent( Event.NOTIFICATION_FREQUENCY_CHANGE, mFrequency );
 		
 		while( it.hasNext() )
 		{
@@ -188,14 +189,14 @@ public class JFrequencyControl extends JPanel implements FrequencyChangeListener
 		}
 	}
 	
-	public void addListener( FrequencyChangeListener listener )
+	public void addListener( IFrequencyChangeProcessor processor )
 	{
-		mListeners.add( listener );
+		mProcessors.add( processor );
 	}
 	
-	public void removeListener( FrequencyChangeListener listener )
+	public void removeListener( IFrequencyChangeProcessor processor )
 	{
-		mListeners.remove( listener );
+		mProcessors.remove( processor );
 	}
 	
     public class Digit extends JTextField

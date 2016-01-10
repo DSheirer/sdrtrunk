@@ -31,7 +31,7 @@ import module.decode.DecodeEditor;
 import module.decode.config.DecodeConfiguration;
 import module.decode.mpt1327.MPT1327Decoder.Sync;
 import playlist.PlaylistManager;
-import controller.channel.ChannelNode;
+import controller.channel.Channel;
 import controller.channel.map.ChannelMap;
 
 public class MPT1327ConfigEditor extends DecodeEditor
@@ -44,16 +44,16 @@ public class MPT1327ConfigEditor extends DecodeEditor
     private JSlider mCallTimeout;
     private JLabel mTrafficChannelPoolSizeLabel;
     private JSlider mTrafficChannelPoolSize;
-    private ChannelNode mChannelNode;
+    private Channel mChannel;
     private PlaylistManager mPlaylistManager;
 
 	public MPT1327ConfigEditor( DecodeConfiguration config, 
-								ChannelNode channelNode,
+								Channel channel,
 								PlaylistManager playlistManager )
 	{
 		super( config );
 		
-		mChannelNode = channelNode;
+		mChannel = channel;
 		mPlaylistManager = playlistManager;
 		
 		initGUI();
@@ -140,7 +140,7 @@ public class MPT1327ConfigEditor extends DecodeEditor
 		add( mTrafficChannelPoolSizeLabel );
 		add( mTrafficChannelPoolSize, "wrap,grow" );
 		
-		reset();
+//		reset();
 	}
 	
 	@Override
@@ -167,36 +167,35 @@ public class MPT1327ConfigEditor extends DecodeEditor
 		config.setTrafficChannelPoolSize( mTrafficChannelPoolSize.getValue() );
     }
 
-	@Override
-    public void reset()
-    {
-		DecodeConfigMPT1327 config = (DecodeConfigMPT1327)mConfig;
-		
-		String name = config.getChannelMapName();
-
-		ChannelMap selected = null;
-
-		if( name != null )
-    	{
-			for( ChannelMap map: mChannelNode.getModel().getResourceManager()
-					.getPlaylistManager().getPlayist().getChannelMapList()
-						.getChannelMap() )
-        	{
-				if( map.getName().equalsIgnoreCase( name ) )
-        		{
-        			selected = map;
-        		}
-        	}
-    	}
-
-		mComboChannelMaps.setSelectedItem( selected );
-		mComboChannelMaps.requestFocus();
-		mComboChannelMaps.requestFocusInWindow();
-		
-		mComboSync.setSelectedItem( config.getSync() );
-		
-		mCallTimeout.setValue( config.getCallTimeout() );
-		
-		mTrafficChannelPoolSize.setValue( config.getTrafficChannelPoolSize() );
-    }
+//	@Override
+//    public void reset()
+//    {
+//		DecodeConfigMPT1327 config = (DecodeConfigMPT1327)mConfig;
+//		
+//		String name = config.getChannelMapName();
+//
+//		ChannelMap selected = null;
+//
+//		if( name != null )
+//    	{
+//			for( ChannelMap map: mPlaylistManager.getPlayist().getChannelMapList()
+//						.getChannelMap() )
+//        	{
+//				if( map.getName().equalsIgnoreCase( name ) )
+//        		{
+//        			selected = map;
+//        		}
+//        	}
+//    	}
+//
+//		mComboChannelMaps.setSelectedItem( selected );
+//		mComboChannelMaps.requestFocus();
+//		mComboChannelMaps.requestFocusInWindow();
+//		
+//		mComboSync.setSelectedItem( config.getSync() );
+//		
+//		mCallTimeout.setValue( config.getCallTimeout() );
+//		
+//		mTrafficChannelPoolSize.setValue( config.getTrafficChannelPoolSize() );
+//    }
 }

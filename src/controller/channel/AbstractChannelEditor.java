@@ -17,23 +17,22 @@
  ******************************************************************************/
 package controller.channel;
 
-import controller.Editor;
 
-public abstract class AbstractChannelEditor extends Editor
+public abstract class AbstractChannelEditor extends ChannelConfigurationEditor
 {
     private static final long serialVersionUID = 1L;
     
-	protected ChannelNode mChannelNode;
+	protected Channel mChannel;
 	
-	public AbstractChannelEditor( ChannelNode channel )
+	public AbstractChannelEditor( Channel channel )
 	{
 		super();
-		mChannelNode = channel;
+		mChannel = channel;
 	}
 	
-	public ChannelNode getChannelNode()
+	public Channel getChannel()
 	{
-		return mChannelNode;
+		return mChannel;
 	}
 
 	public abstract void save();

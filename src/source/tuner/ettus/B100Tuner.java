@@ -24,6 +24,7 @@ import javax.swing.JPanel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.Tuner;
 import source.tuner.TunerChannel;
@@ -32,7 +33,6 @@ import source.tuner.TunerClass;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
 import source.tuner.usb.USBTunerDevice;
-import controller.ResourceManager;
 import controller.ThreadPoolManager;
 
 public class B100Tuner extends Tuner
@@ -69,9 +69,9 @@ public class B100Tuner extends Tuner
     }
 
 	@Override
-    public JPanel getEditor( ResourceManager resourceManager )
+    public JPanel getEditor( SettingsManager settingsManager )
     {
-	    return new B100TunerEditorPanel( this, resourceManager );
+	    return new B100TunerEditorPanel( this, settingsManager );
     }
 
 	@Override

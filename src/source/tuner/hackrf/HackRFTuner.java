@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import sample.Listener;
 import sample.complex.ComplexBuffer;
+import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.Tuner;
 import source.tuner.TunerChannel;
@@ -34,7 +35,6 @@ import source.tuner.TunerClass;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
 import source.tuner.hackrf.HackRFTunerController.BoardID;
-import controller.ResourceManager;
 import controller.ThreadPoolManager;
 
 public class HackRFTuner extends Tuner
@@ -76,9 +76,9 @@ public class HackRFTuner extends Tuner
     }
 
 	@Override
-    public JPanel getEditor( ResourceManager resourceManager )
+    public JPanel getEditor( SettingsManager settingsManager )
     {
-	    return new HackRFTunerEditorPanel( this, resourceManager );
+	    return new HackRFTunerEditorPanel( this, settingsManager );
     }
 
 	@Override

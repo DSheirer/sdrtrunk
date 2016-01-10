@@ -8,6 +8,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 
+import source.SourceManager;
 import controller.BaseNode;
 
 public class RecordingNode extends BaseNode
@@ -15,8 +16,10 @@ public class RecordingNode extends BaseNode
     private static final long serialVersionUID = 1L;
     
     private JPanel mEditor;
+    
+    private SourceManager mSourceManager;
 
-    public RecordingNode( Recording recording )
+    public RecordingNode( SourceManager sourceManager, Recording recording )
     {
     	super( recording );
     }
@@ -64,7 +67,7 @@ public class RecordingNode extends BaseNode
 				}
 				else
 				{
-					getModel().getResourceManager().getRecordingSourceManager()
+					mSourceManager.getRecordingSourceManager()
 						.removeRecording( getRecording() );
 					
 					getModel().removeNodeFromParent( RecordingNode.this );

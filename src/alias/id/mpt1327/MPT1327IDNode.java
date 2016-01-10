@@ -25,6 +25,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 
+import playlist.PlaylistManager;
 import alias.AliasIDNode;
 import alias.AliasNode;
 
@@ -32,9 +33,9 @@ public class MPT1327IDNode extends AliasIDNode
 {
     private static final long serialVersionUID = 1L;
     
-    public MPT1327IDNode( MPT1327ID id )
+    public MPT1327IDNode( PlaylistManager playlistManager, MPT1327ID id )
 	{
-        super( id );
+        super( playlistManager, id );
 	}
     
     @Override

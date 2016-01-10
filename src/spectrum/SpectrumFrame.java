@@ -28,18 +28,18 @@ import playlist.PlaylistManager;
 import settings.SettingsManager;
 import source.tuner.Tuner;
 import controller.ConfigurationControllerModel;
-import controller.ResourceManager;
 import controller.channel.ChannelModel;
+import controller.channel.ChannelProcessingManager;
 
 public class SpectrumFrame extends JFrame implements WindowListener
 {
     private static final long serialVersionUID = 1L;
 
-    private ResourceManager mResourceManager;
     private SpectralDisplayPanel mSpectralDisplayPanel;
 	
-	public SpectrumFrame( ChannelModel channelModel,
-						  ConfigurationControllerModel controller,
+	public SpectrumFrame( ConfigurationControllerModel controllerModel,
+						  ChannelModel channelModel,
+						  ChannelProcessingManager channelProcessingManager,
 						  PlaylistManager playlistManager,
 						  SettingsManager settingsManager,
 						  Tuner tuner )
@@ -50,8 +50,8 @@ public class SpectrumFrame extends JFrame implements WindowListener
 
     	setLayout( new MigLayout( "insets 0 0 0 0", "[grow]", "[grow]") );
     	
-		mSpectralDisplayPanel = new SpectralDisplayPanel( channelModel, 
-				controller, playlistManager, settingsManager );
+		mSpectralDisplayPanel = new SpectralDisplayPanel( controllerModel, 
+			channelModel, channelProcessingManager, playlistManager, settingsManager );
 		
 		mSpectralDisplayPanel.tunerSelected( tuner );
 		add( mSpectralDisplayPanel, "grow" );

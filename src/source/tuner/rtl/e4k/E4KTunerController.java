@@ -30,11 +30,11 @@ import org.usb4java.DeviceHandle;
 import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 
+import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
 import source.tuner.rtl.RTL2832TunerController;
-import controller.ResourceManager;
 import controller.ThreadPoolManager;
 
 public class E4KTunerController extends RTL2832TunerController
@@ -252,11 +252,11 @@ public class E4KTunerController extends RTL2832TunerController
 		}
 	}
 	
-	public JPanel getEditor( ResourceManager resourceManager )
+	public JPanel getEditor( SettingsManager settingsManager )
 	{
 		if( mEditor == null )
 		{
-			mEditor = new E4KTunerEditorPanel( this, resourceManager );
+			mEditor = new E4KTunerEditorPanel( this, settingsManager );
 		}
 		
 		return mEditor;

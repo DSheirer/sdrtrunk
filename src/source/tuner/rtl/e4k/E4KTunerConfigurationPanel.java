@@ -48,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.LibUsbException;
 
+import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerConfigurationAssignment;
@@ -57,7 +58,6 @@ import source.tuner.rtl.e4k.E4KTunerController.E4KEnhanceGain;
 import source.tuner.rtl.e4k.E4KTunerController.E4KGain;
 import source.tuner.rtl.e4k.E4KTunerController.E4KLNAGain;
 import source.tuner.rtl.e4k.E4KTunerController.E4KMixerGain;
-import controller.ResourceManager;
 
 public class E4KTunerConfigurationPanel extends JPanel
 {
@@ -65,7 +65,7 @@ public class E4KTunerConfigurationPanel extends JPanel
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( E4KTunerConfigurationPanel.class );
 
-	private ResourceManager mResourceManager;
+	private SettingsManager mSettingsManager;
     private E4KTunerController mController;
     private E4KTunerConfiguration mSelectedConfig;
 
@@ -84,10 +84,10 @@ public class E4KTunerConfigurationPanel extends JPanel
     
     private JComboBox<SampleRate> mComboSampleRate;
     
-    public E4KTunerConfigurationPanel( ResourceManager resourceManager,
+    public E4KTunerConfigurationPanel( SettingsManager settingsManager,
     								   E4KTunerController controller )
     {
-    	mResourceManager = resourceManager;
+    	mSettingsManager = settingsManager;
     	mController = controller;
     	
     	init();
@@ -108,8 +108,8 @@ public class E4KTunerConfigurationPanel extends JPanel
         mComboConfigurations.setModel( getModel() );
 
         /* Determine which tuner configuration should be selected/displayed */
-        TunerConfigurationAssignment savedConfig = mResourceManager
-        		.getSettingsManager().getSelectedTunerConfiguration( 
+        TunerConfigurationAssignment savedConfig = mSettingsManager
+        		.getSelectedTunerConfiguration( 
         				TunerType.ELONICS_E4000, mController.getUniqueID() );
         
         if( savedConfig != null )
@@ -124,7 +124,7 @@ public class E4KTunerConfigurationPanel extends JPanel
         	mSelectedConfig = mComboConfigurations.getItemAt( 0 );
 
         	//Store this config as the default for this tuner at this address
-        	mResourceManager.getSettingsManager()
+        	mSettingsManager
         		.setSelectedTunerConfiguration( 
         				TunerType.ELONICS_E4000, 
         				mController.getUniqueID(), mSelectedConfig );
@@ -168,7 +168,7 @@ public class E4KTunerConfigurationPanel extends JPanel
 
 				/* Reset this named config as the assigned config for this
 				 * tuner */
-	        	mResourceManager.getSettingsManager()
+	        	mSettingsManager
         		.setSelectedTunerConfiguration( 
         				TunerType.ELONICS_E4000, 
         				mController.getUniqueID(), mSelectedConfig );
@@ -542,7 +542,7 @@ public class E4KTunerConfigurationPanel extends JPanel
             public void actionPerformed( ActionEvent e )
             {
 				TunerConfiguration config = 
-						mResourceManager.getSettingsManager()
+						mSettingsManager
 							.addNewTunerConfiguration( 
 									TunerType.ELONICS_E4000, 
 									"New Configuration" );
@@ -582,7 +582,7 @@ public class E4KTunerConfigurationPanel extends JPanel
 
 					if( n == JOptionPane.YES_OPTION )
 					{
-						mResourceManager.getSettingsManager()
+						mSettingsManager
 							.deleteTunerConfiguration( selected );
 
 						mComboConfigurations.setModel( getModel() );
@@ -623,7 +623,7 @@ public class E4KTunerConfigurationPanel extends JPanel
 
 	        mComboSampleRate.setSelectedItem( mSelectedConfig.getSampleRate() );
 
-	        mResourceManager.getSettingsManager().setSelectedTunerConfiguration( 
+	        mSettingsManager.setSelectedTunerConfiguration( 
     			TunerType.ELONICS_E4000, mController.getUniqueID(), config );
         }
         catch ( SourceException e1 )
@@ -647,7 +647,7 @@ public class E4KTunerConfigurationPanel extends JPanel
     private ComboBoxModel<E4KTunerConfiguration> getModel()
     {
     	ArrayList<TunerConfiguration> configs = 
-    			mResourceManager.getSettingsManager()
+    			mSettingsManager
     			.getTunerConfigurations( TunerType.ELONICS_E4000 );
     	
     	DefaultComboBoxModel<E4KTunerConfiguration> model = 
@@ -667,7 +667,7 @@ public class E4KTunerConfigurationPanel extends JPanel
     private E4KTunerConfiguration getNamedConfiguration( String name )
     {
     	ArrayList<TunerConfiguration> configs = 
-    			mResourceManager.getSettingsManager()
+    			mSettingsManager
     			.getTunerConfigurations( TunerType.ELONICS_E4000 );
     	
     	for( TunerConfiguration config: configs )
@@ -686,6 +686,6 @@ public class E4KTunerConfigurationPanel extends JPanel
      */
     private void save()
     {
-    	mResourceManager.getSettingsManager().save();
+    	mSettingsManager.save();
     }
 }

@@ -22,19 +22,19 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import net.miginfocom.swing.MigLayout;
-import controller.ResourceManager;
+import settings.SettingsManager;
 
 public class B100TunerEditorPanel extends JPanel
 {
     private static final long serialVersionUID = 1L;
     
     private B100Tuner mTuner;
-    private ResourceManager mResourceManager;
+    private SettingsManager mSettingsManager;
 
-	public B100TunerEditorPanel( B100Tuner tuner, ResourceManager resourceManager )
+	public B100TunerEditorPanel( B100Tuner tuner, SettingsManager settingsManager )
 	{
 		mTuner = tuner;
-		mResourceManager = resourceManager;
+		mSettingsManager = settingsManager;
 		
 		init();
 	}

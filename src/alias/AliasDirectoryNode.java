@@ -23,15 +23,27 @@ import java.awt.event.ActionListener;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 
+import playlist.PlaylistManager;
+import settings.SettingsManager;
 import controller.ConfigurableNode;
 
 public class AliasDirectoryNode extends ConfigurableNode
 {
     private static final long serialVersionUID = 1L;
+
+    private PlaylistManager mPlaylistManager;
     
-    public AliasDirectoryNode( AliasDirectory directory )
+    private SettingsManager mSettingsManager;
+    
+    public AliasDirectoryNode( PlaylistManager playlistManager,
+    						   SettingsManager settingsManager, 
+    						   AliasDirectory directory )
 	{
-        super( directory );
+        super( playlistManager, directory );
+
+        mPlaylistManager = playlistManager;
+        
+        mSettingsManager = settingsManager;
 	}
     
     public AliasDirectory getAliasDirectory()
@@ -43,7 +55,7 @@ public class AliasDirectoryNode extends ConfigurableNode
     {
     	for( AliasList list: getAliasDirectory().getAliasList() )
     	{
-    		AliasListNode node = new AliasListNode( list );
+    		AliasListNode node = new AliasListNode( mPlaylistManager, mSettingsManager, list );
     		
     		getModel().addNode( node, AliasDirectoryNode.this, getChildCount() );
     		
@@ -72,7 +84,7 @@ public class AliasDirectoryNode extends ConfigurableNode
 				
 				getAliasDirectory().addAliasList( list );
 				
-				AliasListNode node = new AliasListNode( list );
+				AliasListNode node = new AliasListNode( mPlaylistManager, mSettingsManager, list );
 				
 				getModel().addNode( node, 
 									AliasDirectoryNode.this, 

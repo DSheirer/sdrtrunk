@@ -27,20 +27,18 @@ import org.slf4j.LoggerFactory;
 
 import sample.Listener;
 import sample.complex.ComplexBuffer;
+import settings.SettingsManager;
 import source.SourceException;
-import source.tuner.frequency.FrequencyChangeBroadcaster;
 import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeListener;
 import source.tuner.frequency.FrequencyChangeEvent.Event;
-import controller.ResourceManager;
+import source.tuner.frequency.IFrequencyChangeProcessor;
 import controller.ThreadPoolManager;
 
 /**
  * Tuner - provides tuner channel sources, representing a channel frequency
  */
-public abstract class Tuner implements FrequencyChangeBroadcaster,
-									   FrequencyChangeListener,
-									   TunerChannelProvider
+public abstract class Tuner implements IFrequencyChangeProcessor,
+									   ITunerChannelProvider
 {
 	private final static Logger mLog = LoggerFactory.getLogger( Tuner.class );
 	
@@ -53,8 +51,8 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
 	protected CopyOnWriteArrayList<Listener<ComplexBuffer>> 
 		mSampleListeners = new CopyOnWriteArrayList<Listener<ComplexBuffer>>();
 	
-	protected CopyOnWriteArrayList<FrequencyChangeListener> 
-		mFrequencyChangeListeners = new CopyOnWriteArrayList<FrequencyChangeListener>();
+	protected CopyOnWriteArrayList<IFrequencyChangeProcessor> 
+		mFrequencyChangeProcessors = new CopyOnWriteArrayList<IFrequencyChangeProcessor>();
 
 	public Tuner( String name )
 	{
@@ -69,7 +67,7 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
 	public void dispose()
 	{
 		mSampleListeners.clear();
-		mFrequencyChangeListeners.clear();
+		mFrequencyChangeProcessors.clear();
 	}
 	
 	public void setName( String name )
@@ -80,7 +78,7 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
 	/**
 	 * Return an editor panel for the tuner
 	 */
-	public abstract JPanel getEditor( ResourceManager resourceManager );
+	public abstract JPanel getEditor( SettingsManager settingsManager );
 
 
 	/**
@@ -191,17 +189,17 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
      * Adds the frequency change listener to receive frequency and/or bandwidth
      * change events
      */
-	public void addListener( FrequencyChangeListener listener )
+	public void addFrequencyChangeProcessor( IFrequencyChangeProcessor processor )
 	{
-		mFrequencyChangeListeners.add( listener );
+		mFrequencyChangeProcessors.add( processor );
 	}
 
 	/**
 	 * Removes the frequency change listener
 	 */
-    public void removeListener( FrequencyChangeListener listener )
+    public void removeFrequencyChangeProcessor( IFrequencyChangeProcessor processor )
     {
-    	mFrequencyChangeListeners.remove( listener );
+    	mFrequencyChangeProcessors.remove( processor );
     }
 
     /**
@@ -210,7 +208,7 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
     public void broadcastFrequencyChange( long frequency )
     {
     	broadcastFrequencyChangeEvent( 
-				new FrequencyChangeEvent( Event.FREQUENCY_CHANGE_NOTIFICATION, frequency ) );
+				new FrequencyChangeEvent( Event.NOTIFICATION_FREQUENCY_CHANGE, frequency ) );
     }
 
     /**
@@ -219,7 +217,7 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
     public void broadcastSampleRateChange( int sampleRate )
     {
     	broadcastFrequencyChangeEvent( 
-				new FrequencyChangeEvent( Event.SAMPLE_RATE_CHANGE_NOTIFICATION, sampleRate ) );
+				new FrequencyChangeEvent( Event.NOTIFICATION_SAMPLE_RATE_CHANGE, sampleRate ) );
     }
     
     /**
@@ -228,7 +226,7 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
     public void broadcastActualSampleRateChange( int actualSampleRate )
     {
     	broadcastFrequencyChangeEvent( 
-			new FrequencyChangeEvent( Event.SAMPLE_RATE_CHANGE_NOTIFICATION, actualSampleRate ) );
+			new FrequencyChangeEvent( Event.NOTIFICATION_SAMPLE_RATE_CHANGE, actualSampleRate ) );
     }
 
     /**
@@ -236,9 +234,9 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
      */
     public void broadcastFrequencyChangeEvent( FrequencyChangeEvent event )
     {
-    	for( FrequencyChangeListener listener: mFrequencyChangeListeners )
+    	for( IFrequencyChangeProcessor processor: mFrequencyChangeProcessors )
     	{
-    		listener.frequencyChanged( event );
+    		processor.frequencyChanged( event );
     	}
     }
 

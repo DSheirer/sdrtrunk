@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import sample.ConversionUtils;
 import sample.Listener;
-import sample.real.IRealBufferListener;
+import sample.real.IFilteredRealBufferListener;
 import sample.real.RealBuffer;
 import util.TimeStamp;
 import controller.ThreadPoolManager;
@@ -44,7 +44,7 @@ import controller.ThreadPoolManager.ThreadType;
  * WAVE audio recorder module for recording real sample buffers to a wave file
  */
 public class RealBufferWaveRecorder extends Module 
-				implements IRealBufferListener, Listener<RealBuffer>
+				implements IFilteredRealBufferListener, Listener<RealBuffer>
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( RealBufferWaveRecorder.class );
@@ -151,7 +151,7 @@ public class RealBufferWaveRecorder extends Module
     }
 	
 	@Override
-	public Listener<RealBuffer> getRealBufferListener()
+	public Listener<RealBuffer> getFilteredRealBufferListener()
 	{
 		return this;
 	}

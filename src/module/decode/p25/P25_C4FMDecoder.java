@@ -24,22 +24,24 @@ import instrument.tap.stream.FloatBufferTap;
 import instrument.tap.stream.FloatTap;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
-import sample.real.IRealBufferListener;
+import sample.real.IFilteredRealBufferListener;
 import sample.real.RealBuffer;
-import source.tuner.frequency.FrequencyCorrectionControl;
+import source.tuner.frequency.FrequencyChangeEvent;
+import source.tuner.frequency.IFrequencyChangeListener;
+import source.tuner.frequency.IFrequencyChangeProvider;
 import alias.AliasList;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
 import dsp.filter.fir.real.RealFIRFilter_RB_RB;
 
-public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
+public class P25_C4FMDecoder extends P25Decoder 
+	implements IFrequencyChangeListener, IFrequencyChangeProvider,IFilteredRealBufferListener
 {
 	private final static Logger mLog = LoggerFactory.getLogger( P25_C4FMDecoder.class );
 	
@@ -48,11 +50,8 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 	private static final String INSTRUMENT_C4FM_SYMBOL_FILTER_OUTPUT = "Tap Point: Symbol Filter Output";
 	private static final String INSTRUMENT_C4FM_SLICER_OUTPUT = "Tap Point: C4FM Slicer Output";
 
-	private final static int MAXIMUM_FREQUENCY_CORRECTION = 3000; //Hertz, +/-
-
 	private List<TapGroup> mAvailableTaps;
 	private RealFIRFilter_RB_RB mC4FMPreFilter;
-	private FrequencyCorrectionControl mFrequencyCorrectionControl;
 	private C4FMSymbolFilter mSymbolFilter;
 	private C4FMSlicer mC4FMSlicer;
 	private P25MessageFramer mMessageFramer;
@@ -70,23 +69,18 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 	 * infrastructure and subscriber identities that will be included in each
 	 * decoded message
 	 */
-	public P25_C4FMDecoder( AliasList aliasList )
+	public P25_C4FMDecoder( AliasList aliasList, int frequencyCorrectionMaximum )
 	{
 		super( aliasList );
 		
 		/* Filter demodulated sample buffers */
 		float[] filter = FilterFactory.getLowPass( 48000, 2500, 4000, 80, WindowType.HANNING, true );
 
-		mLog.debug( "Demod Filter tap count:" + filter.length + " coefficients:" + Arrays.toString( filter ) );
+//		mLog.debug( "Demod Filter tap count:" + filter.length + " coefficients:" + Arrays.toString( filter ) );
 		mC4FMPreFilter = new RealFIRFilter_RB_RB( filter, 1.0f );
 
-		/* Issue tuned frequency correction commands, remotely controlled by the 
-		 * downstream symbol filter */
-		mFrequencyCorrectionControl = new FrequencyCorrectionControl( 
-				MAXIMUM_FREQUENCY_CORRECTION );
-		
 		/* Shape gain and frequency offsets to optimize sample stream */
-		mSymbolFilter = new C4FMSymbolFilter( mFrequencyCorrectionControl );
+		mSymbolFilter = new C4FMSymbolFilter( frequencyCorrectionMaximum );
 		mC4FMPreFilter.setListener( mSymbolFilter );
 		
 		/* Convert samples to symbols */
@@ -109,9 +103,6 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 		mC4FMPreFilter.dispose();
 		mC4FMPreFilter = null;
 		
-		mFrequencyCorrectionControl.dispose();
-		mFrequencyCorrectionControl = null;
-		
 		mSymbolFilter.dispose();
 		mSymbolFilter = null;
 		
@@ -128,19 +119,7 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 	}
 	
 	@Override
-	public boolean hasFrequencyCorrectionControl()
-	{
-		return mFrequencyCorrectionControl != null;
-	}
-
-	@Override
-	public FrequencyCorrectionControl getFrequencyCorrectionControl()
-	{
-		return mFrequencyCorrectionControl;
-	}
-
-	@Override
-	public Listener<RealBuffer> getRealBufferListener()
+	public Listener<RealBuffer> getFilteredRealBufferListener()
 	{
 		return mC4FMPreFilter;
 	}
@@ -261,5 +240,34 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 	{
 		// TODO Auto-generated method stub
 		
+	}
+
+	@Override
+	public void setFrequencyChangeListener(	Listener<FrequencyChangeEvent> listener )
+	{
+		if( mSymbolFilter != null )
+		{
+			mSymbolFilter.setFrequencyChangeListener( listener );
+		}
+	}
+
+	@Override
+	public void removeFrequencyChangeListener()
+	{
+		if( mSymbolFilter != null )
+		{
+			mSymbolFilter.setFrequencyChangeListener( null );
+		}
+	}
+
+	@Override
+	public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
+	{
+		if( mSymbolFilter != null )
+		{
+			return mSymbolFilter.getFrequencyChangeListener();
+		}
+		
+		return null;
 	}
 }

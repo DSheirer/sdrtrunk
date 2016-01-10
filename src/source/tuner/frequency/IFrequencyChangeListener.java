@@ -15,53 +15,20 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package buffer;
+package source.tuner.frequency;
 
 import sample.Listener;
 
+
 /**
- * Delay Buffer - implements a circular delay buffer backed by an object array
+ * Interface for broadcasting changes to frequency, bandwidth, sample rate,
+ * and actual sample rate values to all registered listeners.
+ * 
+ * Note: broadcasted frequency should be the uncorrected, or displayable 
+ * frequency value.  All frequency correction aspects should be handled within
+ * the device that implements the tuning of the frequency.
  */
-public class DelayBuffer<T> implements Listener<T>
+public interface IFrequencyChangeListener
 {
-	private Object[] mBuffer;
-	private int mBufferPointer = 0;
-	private Listener<T> mListener;
-	
-	public DelayBuffer( int length )
-	{
-		mBuffer = new Object[ length ];
-	}
-	
-    @Override
-	@SuppressWarnings( "unchecked" )
-    public void receive( T value )
-    {
-		Object delayed = mBuffer[ mBufferPointer ];
-		
-		mBuffer[ mBufferPointer ] = value;
-		
-		mBufferPointer++;
-
-		/* Wrap the buffer pointer around to 0 when necessary */
-		if( mBufferPointer >= mBuffer.length )
-		{
-			mBufferPointer = 0;
-		}
-
-		if( mListener != null && delayed != null )
-		{
-			mListener.receive( (T)delayed );
-		}
-    }
-	
-	public void setListener( Listener<T> listener )
-	{
-		mListener = listener;
-	}
-	
-	public void removeListener( Listener<T> listener )
-	{
-		mListener = null;
-	}
+	public Listener<FrequencyChangeEvent> getFrequencyChangeListener();
 }

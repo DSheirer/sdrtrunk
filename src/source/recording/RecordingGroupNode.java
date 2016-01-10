@@ -24,16 +24,27 @@ import java.util.List;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 
+import settings.SettingsManager;
+import source.SourceManager;
 import controller.BaseNode;
 
 public class RecordingGroupNode extends BaseNode
 {
     private static final long serialVersionUID = 1L;
-
-    public RecordingGroupNode()
+    
+    private SettingsManager mSettingsManager;
+    
+    public RecordingGroupNode( SourceManager sourceManager, SettingsManager settingsManager )
 	{
-        super( null );
+        super( sourceManager );
+        
+        mSettingsManager = settingsManager;
 	}
+    
+    private SourceManager getSourceManager()
+    {
+    	return (SourceManager)getUserObject();
+    }
     
     public String toString()
     {
@@ -53,13 +64,12 @@ public class RecordingGroupNode extends BaseNode
             {
 				RecordingConfiguration config = new RecordingConfiguration();
 				
-				getModel().getResourceManager().getSettingsManager()
-								.addRecordingConfiguration( config );
+				mSettingsManager.addRecordingConfiguration( config );
 				
-				Recording recording = getModel().getResourceManager()
+				Recording recording = getSourceManager()
 						.getRecordingSourceManager().addRecording( config );
 				
-				RecordingNode node = new RecordingNode( recording );
+				RecordingNode node = new RecordingNode( getSourceManager(), recording );
 				
 				getModel().addNode( node, RecordingGroupNode.this, 0 );
 				
@@ -76,12 +86,12 @@ public class RecordingGroupNode extends BaseNode
 	
 	public void loadRecordings()
 	{
-		List<Recording> recordings = getModel().getResourceManager()
+		List<Recording> recordings = getSourceManager()
 				.getRecordingSourceManager().getRecordings();
 		
 		for( Recording recording: recordings )
 		{
-			RecordingNode node = new RecordingNode( recording );
+			RecordingNode node = new RecordingNode( getSourceManager(), recording );
 			
 			getModel().addNode( node, this, 0 );
 		}

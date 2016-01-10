@@ -25,15 +25,16 @@ import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 
+import playlist.PlaylistManager;
 import controller.ConfigurableNode;
 
 public class ChannelMapNode extends ConfigurableNode
 {
     private static final long serialVersionUID = 1L;
 
-	public ChannelMapNode( ChannelMap ChannelMap )
+	public ChannelMapNode( PlaylistManager playlistManager, ChannelMap ChannelMap )
 	{
-		super( ChannelMap );
+		super( playlistManager, ChannelMap );
 	}
 	
 	public void init()

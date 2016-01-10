@@ -23,15 +23,16 @@ import java.awt.event.ActionListener;
 import javax.swing.JMenuItem;
 import javax.swing.JPopupMenu;
 
+import playlist.PlaylistManager;
 import controller.ConfigurableNode;
 
 public class ChannelMapListNode extends ConfigurableNode
 {
     private static final long serialVersionUID = 1L;
 
-    public ChannelMapListNode( ChannelMapList list )
+    public ChannelMapListNode( PlaylistManager playlistManager, ChannelMapList list )
 	{
-        super( list );
+        super( playlistManager, list );
 	}
 
     public ChannelMapList getChannelMapList()
@@ -43,7 +44,7 @@ public class ChannelMapListNode extends ConfigurableNode
     {
     	for( ChannelMap channelMap: getChannelMapList().getChannelMap() )
     	{
-    		ChannelMapNode node = new ChannelMapNode( channelMap );
+    		ChannelMapNode node = new ChannelMapNode( getPlaylistManager(), channelMap );
     		
     		getModel().addNode( node, ChannelMapListNode.this, getChildCount() );
 
@@ -72,7 +73,7 @@ public class ChannelMapListNode extends ConfigurableNode
 
 			    getChannelMapList().addChannelMap( channelMap );
 			    
-				getModel().addNode( new ChannelMapNode( channelMap ), 
+				getModel().addNode( new ChannelMapNode( getPlaylistManager(), channelMap ), 
 									ChannelMapListNode.this, 
 									ChannelMapListNode.this.getChildCount() );
 				

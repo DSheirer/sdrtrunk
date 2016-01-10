@@ -52,7 +52,6 @@ public class PlaylistManager
 	public PlaylistManager( ChannelModel channelModel )
 	{
 		mChannelModel = channelModel;
-		init();
 	}
 
 	public Playlist getPlayist()
@@ -73,7 +72,7 @@ public class PlaylistManager
 	 * Loads playlist from the current playlist file, or the default playlist file,
 	 * as specified in the current SDRTRunk system settings
 	 */
-	private void init()
+	public void init()
 	{
 		SystemProperties props = SystemProperties.getInstance();
 		
@@ -163,6 +162,75 @@ public class PlaylistManager
 		}
 	}
 	
+	private void createBackupPlaylist()
+	{
+		SystemProperties props = SystemProperties.getInstance();
+
+		Path playlistPath = props.getApplicationFolder( "playlist" );
+		
+		String playlistDefault = props.get( "playlist.defaultfilename", 
+										 "playlist.xml" );
+
+		String playlistCurrent = props.get( "playlist.currentfilename", 
+				 playlistDefault );
+
+		Path current = playlistPath.resolve( playlistCurrent );
+
+		if( Files.exists( current ) )
+		{
+			int revision = 1;
+
+			String playlistBackup = playlistCurrent.replace( ".xml", "_backup_" + revision + ".xml" );
+
+			Path filePath = playlistPath.resolve( playlistBackup );
+
+			while( Files.exists( filePath ) )
+			{
+				revision++;
+
+				playlistBackup = playlistCurrent.replace( ".xml", "_backup_" + revision + ".xml" );
+
+				filePath = playlistPath.resolve( playlistBackup );
+				
+				if( revision > 10 )
+				{
+					mLog.error( "Couldn't create playlist backup - maximum revisions exceeded" );
+					return;
+				}
+			}
+			
+			File outputFile = new File( filePath.toString() );
+
+			try
+			{
+				if( !outputFile.exists() )
+				{
+					outputFile.createNewFile();
+				}
+			}
+			catch( Exception e )
+			{
+				mLog.error( "PlaylistManager - couldn't create file to save "
+						+ "playlist backup [" + filePath.toString() + "]" );
+			}
+
+			try( OutputStream out = new FileOutputStream( outputFile ) )
+			{
+				Files.copy( current, out );
+				
+				mLog.info( "Playlist backed up to:" + filePath );
+			}
+			catch( IOException ioe )
+			{
+				mLog.error( "Error copying playlist to backup file [" + filePath + "]" );
+			}
+		}
+		else
+		{
+			mLog.error( "Couldn't create backup playlist - original playlist does not exist" );
+		}
+	}
+	
 	/**
 	 * Erases current playlist and loads playlist from the playlistPath filename,
 	 * if it exists.
@@ -238,6 +306,8 @@ public class PlaylistManager
 	{
 		mLog.info( "Legacy playlist format detected - converting ..." );
 
+		createBackupPlaylist();
+		
 		//Playlist version 1 to version 2 format conversion.  In order to keep
 		//backwards compatibility, transfer all of the System-Site-Channel 
 		//objects over to the new channel list format

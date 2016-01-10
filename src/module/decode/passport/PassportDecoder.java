@@ -28,7 +28,7 @@ import module.decode.Decoder;
 import module.decode.DecoderType;
 import module.decode.config.DecodeConfiguration;
 import sample.Listener;
-import sample.real.IRealBufferListener;
+import sample.real.IUnFilteredRealBufferListener;
 import sample.real.RealBuffer;
 import alias.AliasList;
 import bits.MessageFramer;
@@ -36,7 +36,7 @@ import bits.SyncPattern;
 import dsp.fsk.LTRFSKDecoder;
 
 public class PassportDecoder extends Decoder 
-						implements IRealBufferListener, Instrumentable
+	implements IUnFilteredRealBufferListener, Instrumentable
 {
 	public static final int PASSPORT_MESSAGE_LENGTH = 68;
 	public static final int PASSPORT_SYNC_LENGTH = 9;
@@ -47,8 +47,11 @@ public class PassportDecoder extends Decoder
 
     private List<TapGroup> mAvailableTaps;
 
-	public PassportDecoder( DecodeConfiguration config, 
-							AliasList aliasList )
+    /**
+     * Passport Decoder.  Decodes unfiltered (e.g. demodulated but with no DC or
+     * audio filtering) samples and produces Passport messages.
+     */
+	public PassportDecoder( DecodeConfiguration config, AliasList aliasList )
 	{
 		mPassportFSKDecoder = new LTRFSKDecoder();
 
@@ -64,7 +67,7 @@ public class PassportDecoder extends Decoder
 	}
 
 	@Override
-	public Listener<RealBuffer> getRealBufferListener()
+	public Listener<RealBuffer> getUnFilteredRealBufferListener()
 	{
 		return mPassportFSKDecoder;
 	}

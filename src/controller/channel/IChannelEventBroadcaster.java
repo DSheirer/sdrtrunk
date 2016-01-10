@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -15,9 +15,15 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package buffer;
+package controller.channel;
 
-public interface BufferOverflowListener
+/**
+ * Provides channel event broadcasting capability.
+ */
+public interface IChannelEventBroadcaster
 {
-	public void overflow( Object source, String message );
+	/**
+	 * Broadcasts the channel event
+	 */
+	public void broadcast( ChannelEvent event );
 }

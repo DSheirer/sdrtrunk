@@ -28,9 +28,14 @@ import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.MutableTreeNode;
 import javax.swing.tree.TreePath;
 
-import map.IconManager;
 import module.decode.DecoderType;
+
+import playlist.PlaylistManager;
 import playlist.PlaylistNode;
+
+import settings.SettingsManager;
+import source.SourceManager;
+import source.recording.RecordingGroupNode;
 import source.tuner.Tuner;
 import source.tuner.TunerGroupNode;
 import source.tuner.TunerNode;
@@ -39,13 +44,13 @@ import controller.channel.Channel;
 import controller.channel.ChannelModel;
 import controller.channel.ChannelNode;
 
+import controller.channel.ChannelProcessingManager;
+
 public class ConfigurationControllerModel extends DefaultTreeModel
 {
     private static final long serialVersionUID = 1L;
     
     private JTree mTree;
-
-    private ResourceManager mResourceManager;
 
     private ArrayList<TunerSelectionListener> mTunerSelectionListeners =
 			new ArrayList<TunerSelectionListener>();
@@ -54,7 +59,11 @@ public class ConfigurationControllerModel extends DefaultTreeModel
     private TunerGroupNode mTunerGroupNode;
 //    private RecordingGroupNode mRecordingGroupNode;
     
-    private IconManager mIconManagerFrame;
+    private ChannelModel mChannelModel;
+    private ChannelProcessingManager mChannelProcessingManager;
+    private PlaylistManager mPlaylistManager;
+    private SettingsManager mSettingsManager;
+    private SourceManager mSourceManager;
     private ChannelModel mChannelModel;
 
 	/**
@@ -63,14 +72,21 @@ public class ConfigurationControllerModel extends DefaultTreeModel
 	 * design perspective, the model and the control are necessarily merged to
 	 * work well with the JTree as the system view.
 	 */
-	public ConfigurationControllerModel( ChannelModel channelModel, 
-										 ResourceManager resourceManager )
+	public ConfigurationControllerModel( ChannelModel channelModel,
+										 ChannelProcessingManager channelProcessingManager,
+										 PlaylistManager playlistManager,
+										 SettingsManager settingsManager,
+										 SourceManager sourceManager )
     {
     	super( new BaseNode( null ) );
 
     	mChannelModel = channelModel;
-    	
-    	mResourceManager = resourceManager;
+
+    	mChannelModel = channelModel;
+    	mChannelProcessingManager = channelProcessingManager;
+    	mPlaylistManager = playlistManager;
+    	mSettingsManager = settingsManager;
+    	mSourceManager = sourceManager;
 
     	/**
     	 * Give the root node a reference to this model, so that all nodes can
@@ -84,23 +100,6 @@ public class ConfigurationControllerModel extends DefaultTreeModel
 		return mTree;
 	}
 	
-	public void showIconManager()
-	{
-		if( mIconManagerFrame == null )
-		{
-			mIconManagerFrame = new IconManager( mResourceManager, mTree );
-			
-			mResourceManager.getSettingsManager().addListener( mIconManagerFrame );
-		}
-		
-		if( !mIconManagerFrame.isVisible() )
-		{
-			mIconManagerFrame.setVisible( true );
-		}
-		
-		mIconManagerFrame.toFront();
-	}
-
 	/**
 	 * init() gets invoked manually/externally, after all of the references 
 	 * are established in the constructor
@@ -124,7 +123,8 @@ public class ConfigurationControllerModel extends DefaultTreeModel
 		/**
 		 * Add the playlist node
 		 */
-    	mPlaylistNode = new PlaylistNode();
+    	mPlaylistNode = new PlaylistNode( mChannelModel, mChannelProcessingManager, 
+    			mPlaylistManager, mSettingsManager, mSourceManager );
     	insertNodeInto( mPlaylistNode, (MutableTreeNode)root, 1 );
     	mPlaylistNode.loadPlaylist();
 	}
@@ -137,11 +137,6 @@ public class ConfigurationControllerModel extends DefaultTreeModel
     	}
 	}
 	
-	public ResourceManager getResourceManager()
-	{
-		return mResourceManager;
-	}
-	
 	public void setTree( JTree tree )
 	{
 		mTree = tree;
@@ -149,11 +144,13 @@ public class ConfigurationControllerModel extends DefaultTreeModel
 	
 	private void addTuners( TunerGroupNode parent )
 	{
-		List<Tuner> tuners = mResourceManager.getTunerManager().getTuners();
+		List<Tuner> tuners = mSourceManager.getTunerManager().getTuners();
 		
 		for( Tuner tuner: tuners )
 		{
-			TunerNode child = new TunerNode( mChannelModel, tuner );
+			TunerNode child = new TunerNode( mChannelModel, 
+				mChannelProcessingManager, mPlaylistManager, mSettingsManager, 
+				tuner );
 			
 			insertNodeInto( child, parent, parent.getChildCount() );
 			

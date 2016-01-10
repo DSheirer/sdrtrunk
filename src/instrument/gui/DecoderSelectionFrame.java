@@ -13,8 +13,6 @@ import module.decode.config.DecodeConfiguration;
 import net.miginfocom.swing.MigLayout;
 import playlist.PlaylistManager;
 import source.IControllableFileSource;
-import controller.ResourceManager;
-import controller.ThreadPoolManager;
 import controller.channel.ChannelModel;
 
 public class DecoderSelectionFrame extends JInternalFrame
@@ -22,7 +20,7 @@ public class DecoderSelectionFrame extends JInternalFrame
 	private static final long serialVersionUID = 1L;
 
 	private DecodeComponentEditor mDecodeEditor = new DecodeComponentEditor( null );
-	private ResourceManager mResourceManager;
+	private PlaylistManager mPlaylistManager;
 	
 	private IControllableFileSource mSource;
 	private JDesktopPane mDesktop;
@@ -31,9 +29,7 @@ public class DecoderSelectionFrame extends JInternalFrame
 								  IControllableFileSource source )
 	{
 		ChannelModel channelModel = new ChannelModel();
-		
-		mResourceManager = new ResourceManager( new PlaylistManager( channelModel ), 
-				new ThreadPoolManager(), channelModel );
+		mPlaylistManager = new PlaylistManager( channelModel );
 
 		mDesktop = desktop;
 		mSource = source;
@@ -78,12 +74,7 @@ public class DecoderSelectionFrame extends JInternalFrame
 					if( config != null )
 					{
 						DecoderViewFrame decoderFrame = new DecoderViewFrame( 
-								mResourceManager, 
-								config,
-								null,
-								null,
-								null,
-								mSource );
+								mPlaylistManager, null, mSource );
 
 						decoderFrame.setVisible( true );
 						

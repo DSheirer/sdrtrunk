@@ -43,6 +43,8 @@ import settings.SettingsManager;
 import controller.channel.Channel;
 import controller.channel.ChannelEvent;
 import controller.channel.ChannelEventListener;
+import controller.channel.ChannelModel;
+import controller.channel.ChannelProcessingManager;
 
 /**
  * Gui wrapper for the list of currently processing primary channels 
@@ -56,12 +58,18 @@ public class ChannelList extends JPanel implements ChannelEventListener
     private HashMap<Channel,ChannelCollectionPanel> mDisplayedPanels = 
     			new HashMap<Channel,ChannelCollectionPanel>();
 
+    private ChannelModel mChannelModel;
+    private ChannelProcessingManager mChannelProcessingManager;
     private PlaylistManager mPlaylistManager;
     private SettingsManager mSettingsManager;
     
-    public ChannelList( PlaylistManager playlistManager, 
+    public ChannelList( ChannelModel channelModel,
+    					ChannelProcessingManager channelProcessingManager,
+    					PlaylistManager playlistManager, 
     					SettingsManager settingsManager )
     {
+    	mChannelModel = channelModel;
+    	mChannelProcessingManager = channelProcessingManager;
     	mPlaylistManager = playlistManager;
     	mSettingsManager = settingsManager;
 
@@ -96,8 +104,8 @@ public class ChannelList extends JPanel implements ChannelEventListener
     {
     	if( !mDisplayedPanels.containsKey( channel ) )
     	{
-    		ChannelCollectionPanel panel = new ChannelCollectionPanel( 
-    				mPlaylistManager, mSettingsManager, channel );
+    		ChannelCollectionPanel panel = new ChannelCollectionPanel( mChannelModel,
+				mChannelProcessingManager, mPlaylistManager, mSettingsManager, channel );
     		
 			add( panel, "wrap" );
 			

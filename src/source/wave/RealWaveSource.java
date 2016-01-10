@@ -52,11 +52,46 @@ public class RealWaveSource extends RealSource
     
     public RealWaveSource( File file ) throws IOException 
     {
-    	super( file.getAbsolutePath() );
-    	
     	mFile = file;
     }
     
+    
+	@Override
+	public void reset()
+	{
+		stop();
+		start();
+	}
+
+
+	@Override
+	public void start()
+	{
+		try
+		{
+			open();
+		} 
+		catch ( IOException | UnsupportedAudioFileException e )
+		{
+			mLog.error( "Error starting real wave source", e );
+		}
+	}
+
+
+	@Override
+	public void stop()
+	{
+		try
+		{
+			close();
+		} 
+		catch ( IOException e )
+		{
+			mLog.error( "Error stopping real wave source", e );
+		}
+	}
+
+
 	@Override
 	public long getFrameCount() throws IOException
 	{

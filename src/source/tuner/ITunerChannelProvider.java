@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -15,9 +15,31 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package buffer;
+package source.tuner;
 
-public interface ByteArrayListener
+import java.util.concurrent.RejectedExecutionException;
+
+import source.SourceException;
+import controller.ThreadPoolManager;
+
+public interface ITunerChannelProvider
 {
-	public void receive( byte[] data );
+	/**
+	 * Returns a tuner frequency channel source, tuned to the correct frequency
+	 * 
+	 * @param frequency - desired frequency
+	 * 
+	 * @return - source for 48k sample rate
+	 */
+	public abstract TunerChannelSource getChannel( ThreadPoolManager threadPoolManager,
+		TunerChannel channel ) throws RejectedExecutionException, SourceException;
+
+	/**
+	 * Releases the tuned channel resources
+	 * 
+	 * @param channel - previously obtained tuner channel
+	 */
+	public abstract void releaseChannel( TunerChannelSource source );
+	
+	
 }

@@ -34,8 +34,8 @@ import org.slf4j.LoggerFactory;
 
 import source.SourceEditor;
 import source.tuner.TunerEditor;
-import controller.Editor;
-import controller.channel.ChannelValidationException;
+import controller.channel.ChannelConfigurationEditor;
+import controller.channel.ConfigurationValidationException;
 
 public class P25DecodeEditor extends DecodeEditor
 {
@@ -101,29 +101,29 @@ public class P25DecodeEditor extends DecodeEditor
 		add( new JLabel( "Ignore Data Calls" ) );
 		add( mIgnoreDataCalls, "wrap,grow" );
 		
-		reset();
+//		reset();
 	}
 
-	/**
-	 * Enforce source=tuner for CQPSK modulation
-	 */
-	@Override
-    public void validate( Editor editor ) throws ChannelValidationException
-    {
-		if( editor instanceof SourceEditor && 
-			((DecodeConfigP25Phase1)mConfig).getModulation() == Modulation.CQPSK )
-		{
-			if( !( editor instanceof TunerEditor ) )
-			{
-				throw new ChannelValidationException( 
-						"<html><body width='175'><h1>LSM Simulcast</h1>"
-						+ "<p>P25 LSM Simulcast decoder can only be used with "
-						+ "a tuner source.  Please change the Source to use a tuner"
-						+ " or change the P25 Decoder to C4FM modulation" );
-				
-			}
-		}
-    }
+//	/**
+//	 * Enforce source=tuner for CQPSK modulation
+//	 */
+//	@Override
+//    public void validate( ChannelConfigurationEditor editor ) throws ConfigurationValidationException
+//    {
+//		if( editor instanceof SourceEditor && 
+//			((DecodeConfigP25Phase1)mConfig).getModulation() == Modulation.CQPSK )
+//		{
+//			if( !( editor instanceof TunerEditor ) )
+//			{
+//				throw new ConfigurationValidationException( 
+//						"<html><body width='175'><h1>LSM Simulcast</h1>"
+//						+ "<p>P25 LSM Simulcast decoder can only be used with "
+//						+ "a tuner source.  Please change the Source to use a tuner"
+//						+ " or change the P25 Decoder to C4FM modulation" );
+//				
+//			}
+//		}
+//    }
 	
 	@Override
     public void save()
@@ -135,13 +135,13 @@ public class P25DecodeEditor extends DecodeEditor
 		config.setTrafficChannelPoolSize( mTrafficChannelPoolSize.getValue() );
     }
 
-	@Override
-    public void reset()
-    {
-		DecodeConfigP25Phase1 config = (DecodeConfigP25Phase1)mConfig;
-
-		mComboModulation.setSelectedItem( config.getModulation() );
-		mIgnoreDataCalls.setSelected( config.getIgnoreDataCalls() );
-		mTrafficChannelPoolSize.setValue( config.getTrafficChannelPoolSize() );
-    }
+//	@Override
+//    public void reset()
+//    {
+//		DecodeConfigP25Phase1 config = (DecodeConfigP25Phase1)mConfig;
+//
+//		mComboModulation.setSelectedItem( config.getModulation() );
+//		mIgnoreDataCalls.setSelected( config.getIgnoreDataCalls() );
+//		mTrafficChannelPoolSize.setValue( config.getTrafficChannelPoolSize() );
+//    }
 }

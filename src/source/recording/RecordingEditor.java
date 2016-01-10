@@ -26,11 +26,13 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.SwingUtilities;
 
+import controller.channel.Channel;
+import controller.channel.ConfigurationValidationException;
 import source.SourceEditor;
+import source.SourceManager;
 import source.config.SourceConfigRecording;
 import source.config.SourceConfigTuner;
 import source.config.SourceConfiguration;
-import controller.ResourceManager;
 
 public class RecordingEditor extends SourceEditor
 {
@@ -38,10 +40,9 @@ public class RecordingEditor extends SourceEditor
     private JComboBox<Recording> mComboRecordings;
     private JFrequencyControl mFrequencyControl;
     
-	public RecordingEditor( ResourceManager resourceManager, 
-							SourceConfiguration config )
+	public RecordingEditor( SourceManager sourceManager, SourceConfiguration config )
 	{
-		super( resourceManager, config );
+		super( sourceManager, config );
 		
 		initGUI();
 	}
@@ -92,7 +93,7 @@ public class RecordingEditor extends SourceEditor
             @Override
             public void run() 
             {
-            	List<Recording> recordings = getResourceManager()
+            	List<Recording> recordings = getSourceManager()
             			.getRecordingSourceManager().getRecordings();
 
         		mComboRecordings.setModel( 
@@ -105,7 +106,7 @@ public class RecordingEditor extends SourceEditor
         		
         		if( recordingAlias != null )
         		{
-        			Recording selected = mResourceManager
+        			Recording selected = mSourceManager
     					.getRecordingSourceManager()
     					.getRecordingFromAlias( recordingAlias );
 
@@ -116,5 +117,19 @@ public class RecordingEditor extends SourceEditor
         		}
             }
         });
+	}
+
+	@Override
+	public void setConfiguration( Channel channel )
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void validateConfiguration() throws ConfigurationValidationException
+	{
+		// TODO Auto-generated method stub
+		
 	}
 }

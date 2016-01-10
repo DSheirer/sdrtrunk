@@ -36,6 +36,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import message.Message;
+import module.ProcessingChain;
 import net.miginfocom.swing.MigLayout;
 
 import org.slf4j.Logger;
@@ -48,6 +49,7 @@ import controller.channel.Channel;
 import controller.channel.ChannelEvent;
 import controller.channel.ChannelEvent.Event;
 import controller.channel.ChannelEventListener;
+import controller.channel.ChannelProcessingManager;
 import filter.FilterEditorPanel;
 import filter.FilterSet;
 
@@ -63,16 +65,21 @@ public class MessageActivityPanel extends JPanel implements ChannelEventListener
     private JTable mMessageTable;
     
     private Channel mDisplayedChannel;
+    private MessageActivityModel mDisplayedModel = EMPTY_MODEL;
     
     private MessageManagementPanel mManagementPanel = new MessageManagementPanel();
+    
+    private ChannelProcessingManager mChannelProcessingManager;
 
-	public MessageActivityPanel()
+	public MessageActivityPanel( ChannelProcessingManager channelProcessingManager )
 	{
+		mChannelProcessingManager = channelProcessingManager;
+		
     	setLayout( new MigLayout("insets 0 0 0 0", "[][grow,fill]", "[]0[grow,fill]") );
 
     	add( mManagementPanel, "span,growx" );
 
-    	mMessageTable = new JTable( EMPTY_MODEL );
+    	mMessageTable = new JTable( mDisplayedModel );
     	
     	add( new JScrollPane( mMessageTable ), "span,grow" );
 	}
@@ -91,7 +98,19 @@ public class MessageActivityPanel extends JPanel implements ChannelEventListener
 			{
 				mDisplayedChannel = event.getChannel();
 
-				mMessageTable.setModel( event.getChannel().getMessageActivityModel() );
+				ProcessingChain chain = mChannelProcessingManager
+						.getProcessingChain( mDisplayedChannel );
+
+				if( chain != null )
+				{
+					mDisplayedModel = chain.getMessageActivityModel();
+				}
+				else
+				{
+					mDisplayedModel = EMPTY_MODEL;
+				}
+
+				mMessageTable.setModel( mDisplayedModel );
 
 				if( mDisplayedChannel != null )
 				{
@@ -195,10 +214,9 @@ public class MessageActivityPanel extends JPanel implements ChannelEventListener
                 public void mouseReleased( MouseEvent arg0 ) {}
         	} );
         	
-        	if( mDisplayedChannel != null )
+        	if( mDisplayedModel != null )
         	{
-            	slider.setValue( mDisplayedChannel.getMessageActivityModel()
-            			.getMaxMessageCount() );
+            	slider.setValue( mDisplayedModel.getMaxMessageCount() );
         	}
         	else
         	{
@@ -210,10 +228,9 @@ public class MessageActivityPanel extends JPanel implements ChannelEventListener
 				@Override
                 public void stateChanged( ChangeEvent arg0 )
                 {
-					if( mDisplayedChannel != null )
+					if( mDisplayedModel != null )
 					{
-						mDisplayedChannel.getMessageActivityModel()
-						.setMaxMessageCount( slider.getValue() );
+						mDisplayedModel.setMaxMessageCount( slider.getValue() );
 					}
                 }
         	});
@@ -228,9 +245,9 @@ public class MessageActivityPanel extends JPanel implements ChannelEventListener
 				@Override
 				public void actionPerformed( ActionEvent e )
 				{
-					if( mDisplayedChannel != null )
+					if( mDisplayedModel != null )
 					{
-						mDisplayedChannel.getMessageActivityModel().clear();
+						mDisplayedModel.clear();
 					}
 				}
 			} );
@@ -258,50 +275,52 @@ public class MessageActivityPanel extends JPanel implements ChannelEventListener
 					}
 					else
 					{
-						final JFrame editor = new JFrame();
-						
-						editor.setTitle( "Message Filter Editor" );
-						editor.setSize( 600, 400 );
-						editor.setLocationRelativeTo( MessageFilterButton.this );
-						editor.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
-						editor.setLayout( new MigLayout( "", "[grow,fill]", 
-								"[grow,fill][][]" ) );
-
-						@SuppressWarnings( "unchecked" )
-                        FilterSet<Message> filter = (FilterSet<Message>)
-								mDisplayedChannel.getMessageActivityModel()
-									.getMessageFilter();
-						
-						FilterEditorPanel<Message> panel = 
-								new FilterEditorPanel<Message>( filter );
-						
-						JScrollPane scroller = new JScrollPane( panel );
-						scroller.setViewportView( panel );
-						
-						editor.add( scroller, "wrap" );
-						
-						editor.add( new JLabel( "Right-click to select/deselect "
-								+ "all nodes" ), "wrap" );
-						
-						JButton close = new JButton( "Close" );
-						close.addActionListener( new ActionListener() 
+						if( mDisplayedModel != null )
 						{
-							@Override
-				            public void actionPerformed( ActionEvent e )
-				            {
-								editor.dispose();
-				            }
-						} );
-						
-						editor.add( close );
+							final JFrame editor = new JFrame();
+							
+							editor.setTitle( "Message Filter Editor" );
+							editor.setSize( 600, 400 );
+							editor.setLocationRelativeTo( MessageFilterButton.this );
+							editor.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
+							editor.setLayout( new MigLayout( "", "[grow,fill]", 
+									"[grow,fill][][]" ) );
 
-						EventQueue.invokeLater( new Runnable() 
-				        {
-				            public void run()
-				            {
-				            	editor.setVisible( true );
-				            }
-				        } );
+							@SuppressWarnings( "unchecked" )
+	                        FilterSet<Message> filter = (FilterSet<Message>)
+									mDisplayedModel.getMessageFilter();
+							
+							FilterEditorPanel<Message> panel = 
+									new FilterEditorPanel<Message>( filter );
+							
+							JScrollPane scroller = new JScrollPane( panel );
+							scroller.setViewportView( panel );
+							
+							editor.add( scroller, "wrap" );
+							
+							editor.add( new JLabel( "Right-click to select/deselect "
+									+ "all nodes" ), "wrap" );
+							
+							JButton close = new JButton( "Close" );
+							close.addActionListener( new ActionListener() 
+							{
+								@Override
+					            public void actionPerformed( ActionEvent e )
+					            {
+									editor.dispose();
+					            }
+							} );
+							
+							editor.add( close );
+
+							EventQueue.invokeLater( new Runnable() 
+					        {
+					            public void run()
+					            {
+					            	editor.setVisible( true );
+					            }
+					        } );
+						}
 					}
 				}
 			} );

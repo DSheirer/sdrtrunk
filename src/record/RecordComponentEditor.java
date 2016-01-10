@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -22,7 +22,8 @@ import javax.swing.JCheckBox;
 
 import record.config.RecordConfiguration;
 import controller.channel.AbstractChannelEditor;
-import controller.channel.ChannelNode;
+import controller.channel.Channel;
+import controller.channel.ConfigurationValidationException;
 
 public class RecordComponentEditor extends AbstractChannelEditor
 {
@@ -32,9 +33,9 @@ public class RecordComponentEditor extends AbstractChannelEditor
     private JCheckBox mBasebandRecorder = new JCheckBox( "Baseband I/Q" );
     private JCheckBox mTrafficBasebandRecorder = new JCheckBox( "Traffic Channel Baseband I/Q" );
 
-    public RecordComponentEditor( ChannelNode channelNode )
+    public RecordComponentEditor( Channel channel )
 	{
-		super( channelNode );
+		super( channel );
 		
 		add( mAudioRecorder, "span" );
 		add( mBasebandRecorder, "span" );
@@ -46,8 +47,7 @@ public class RecordComponentEditor extends AbstractChannelEditor
 	@Override
     public void save()
     {
-		RecordConfiguration config = 
-				getChannelNode().getChannel().getRecordConfiguration();
+		RecordConfiguration config = getChannel().getRecordConfiguration();
 		
 		config.clearRecorders();
 		
@@ -76,8 +76,7 @@ public class RecordComponentEditor extends AbstractChannelEditor
             @Override
             public void run() 
             {
-        		RecordConfiguration config = 
-        				getChannelNode().getChannel().getRecordConfiguration();
+        		RecordConfiguration config = getChannel().getRecordConfiguration();
 
     			mAudioRecorder.setSelected( config.getRecorders()
         					.contains( RecorderType.AUDIO ) );
@@ -90,4 +89,18 @@ public class RecordComponentEditor extends AbstractChannelEditor
             }
         });
     }
+
+	@Override
+	public void setConfiguration( Channel channel )
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void validateConfiguration() throws ConfigurationValidationException
+	{
+		// TODO Auto-generated method stub
+		
+	}
 }

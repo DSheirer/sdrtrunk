@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.usb4java.Device;
 import org.usb4java.DeviceDescriptor;
 
+import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.TunerClass;
 import source.tuner.TunerConfiguration;
@@ -34,7 +35,6 @@ import source.tuner.TunerType;
 import source.tuner.fcd.FCDCommand;
 import source.tuner.fcd.FCDTuner;
 import source.tuner.fcd.FCDTunerController;
-import controller.ResourceManager;
 
 public class FCD2TunerController extends FCDTunerController
 {
@@ -89,11 +89,11 @@ public class FCD2TunerController extends FCDTunerController
 	    return TunerType.FUNCUBE_DONGLE_PRO_PLUS;
     }
 
-	public JPanel getEditor( FCDTuner tuner, ResourceManager resourceManager )
+	public JPanel getEditor( FCDTuner tuner, SettingsManager settingsManager )
 	{
 		if( mEditor == null )
 		{
-			mEditor = new FCD2TunerEditorPanel( tuner, resourceManager );
+			mEditor = new FCD2TunerEditorPanel( tuner, settingsManager );
 		}
 		
 		return mEditor;

@@ -19,14 +19,15 @@ package source;
 
 import javax.swing.JLabel;
 
+import controller.channel.Channel;
+import controller.channel.ConfigurationValidationException;
 import source.config.SourceConfiguration;
-import controller.ResourceManager;
 
 public class EmptySourceEditor extends SourceEditor
 {
     private static final long serialVersionUID = 1L;
 
-	public EmptySourceEditor( ResourceManager resourceManager, 
+	public EmptySourceEditor( SourceManager resourceManager, 
 							  SourceConfiguration config )
 	{
 		super( resourceManager, config );
@@ -42,5 +43,19 @@ public class EmptySourceEditor extends SourceEditor
 	{
 		JLabel selectLabel = new JLabel( "Please select a source" );
 		add( selectLabel );
+	}
+
+	@Override
+	public void setConfiguration( Channel channel )
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void validateConfiguration() throws ConfigurationValidationException
+	{
+		// TODO Auto-generated method stub
+		
 	}
 }

@@ -30,7 +30,6 @@ import sample.Listener;
 import settings.SettingsManager;
 import alias.Alias;
 import controller.NamingThreadFactory;
-import controller.ResourceManager;
 
 public class MapService implements Listener<Message>
 {
@@ -49,11 +48,11 @@ public class MapService implements Listener<Message>
 	private HashMap<String,PlottableEntity> mEntities = 
 						new HashMap<String,PlottableEntity>();
 
-	private ResourceManager mResourceManager;
+	private SettingsManager mSettingsManager;
 	
-	public MapService( ResourceManager resourceManager )
+	public MapService( SettingsManager resourceManager )
 	{
-		mResourceManager = resourceManager;
+		mSettingsManager = resourceManager;
 		
 //		scheduler.scheduleAtFixedRate( new CullThread(), 5, 5, TimeUnit.MINUTES );		
 	}
@@ -111,8 +110,7 @@ public class MapService implements Listener<Message>
 						iconName = SettingsManager.DEFAULT_ICON;
 					}
 
-					icon = mResourceManager.getSettingsManager()
-							.getMapIcon( iconName );
+					icon = mSettingsManager.getMapIcon( iconName );
 				}
 				
 				if( color == null )

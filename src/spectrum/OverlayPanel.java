@@ -46,7 +46,7 @@ import settings.SettingChangeListener;
 import settings.SettingsManager;
 import source.tuner.TunerChannel;
 import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeListener;
+import source.tuner.frequency.IFrequencyChangeProcessor;
 import controller.channel.Channel;
 import controller.channel.Channel.ChannelType;
 import controller.channel.ChannelEvent;
@@ -55,7 +55,7 @@ import controller.channel.ChannelModel;
 
 public class OverlayPanel extends JPanel 
 						   implements ChannelEventListener,
-						   			  FrequencyChangeListener,
+						   			  IFrequencyChangeProcessor,
 						   			  SettingChangeListener
 {
 	private static final long serialVersionUID = 1L;
@@ -528,14 +528,14 @@ public class OverlayPanel extends JPanel
     	{
     		if( mChannelDisplay == ChannelDisplay.ALL ||
     			( mChannelDisplay == ChannelDisplay.ENABLED && 
-    			  channel.isProcessing() ) )
+    			  channel.getEnabled() ) )
     		{
         		//Choose the correct background color to use
         		if( channel.isSelected() )
         		{
                 	graphics.setColor( mColorChannelConfigSelected );
         		}
-        		else if( channel.isProcessing() )
+        		else if( channel.getEnabled() )
         		{
                 	graphics.setColor( mColorChannelConfigProcessing );
         		}
@@ -613,9 +613,11 @@ public class OverlayPanel extends JPanel
                 drawChannelCenterLine( graphics, frequencyAxis );
                 
                 /* Draw Automatic Frequency Control line */
-                if( channel.hasFrequencyControl() )
+                int correction = channel.getChannelFrequencyCorrection();
+                
+                if( correction != 0 )
                 {
-                	long error = frequency + channel.getFrequencyCorrection();
+                	long error = frequency + correction;
                 	
                     drawAFC( graphics, frequencyAxis, getAxisFromFrequency( error ) );
                 }
@@ -674,11 +676,11 @@ public class OverlayPanel extends JPanel
     {
 		switch( event.getEvent() )
 		{
-			case SAMPLE_RATE_CHANGE_NOTIFICATION:
+			case NOTIFICATION_SAMPLE_RATE_CHANGE:
 				mBandwidth = event.getValue().intValue();
 				mLabelSizeMonitor.update();
 				break;
-			case FREQUENCY_CHANGE_NOTIFICATION:
+			case NOTIFICATION_FREQUENCY_CHANGE:
 				mFrequency = event.getValue().longValue();
 				mLabelSizeMonitor.update();
 				break;

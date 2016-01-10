@@ -25,6 +25,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 
+import playlist.PlaylistManager;
 import alias.AliasNode;
 import alias.action.AliasActionNode;
 
@@ -32,9 +33,9 @@ public class BeepActionNode extends AliasActionNode
 {
     private static final long serialVersionUID = 1L;
     
-    public BeepActionNode( BeepAction beepAction )
+    public BeepActionNode( PlaylistManager playlistManager, BeepAction beepAction )
 	{
-    	super( beepAction );
+    	super( playlistManager, beepAction );
 	}
     
     @Override

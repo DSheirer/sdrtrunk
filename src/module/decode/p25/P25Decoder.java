@@ -3,11 +3,9 @@ package module.decode.p25;
 import instrument.Instrumentable;
 import module.decode.Decoder;
 import module.decode.DecoderType;
-import source.tuner.frequency.IFrequencyCorrectionController;
 import alias.AliasList;
 
-public abstract class P25Decoder extends Decoder 
-	implements IFrequencyCorrectionController, Instrumentable
+public abstract class P25Decoder extends Decoder implements Instrumentable
 {
 	private P25MessageProcessor mMessageProcessor;
 	

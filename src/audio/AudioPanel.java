@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import sample.Listener;
 import settings.SettingsManager;
+import source.SourceManager;
 import source.mixer.MixerChannelConfiguration;
 import source.mixer.MixerManager;
 import audio.output.AudioOutput;
@@ -43,14 +44,18 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
 			new ImageIcon( "images/audio_unmuted.png" ), 38 );
 
 	private SettingsManager mSettingsManager;
+	private SourceManager mSourceManager;
 	private IAudioController mController;
 
 	private JButton mMuteButton;
 	private AudioChannelsPanel mAudioChannelsPanel;
 	
-	public AudioPanel( SettingsManager settingsManager, IAudioController controller )
+	public AudioPanel( SettingsManager settingsManager, 
+					   SourceManager sourceManager,
+					   IAudioController controller )
 	{
 		mSettingsManager = settingsManager;
+		mSourceManager = sourceManager;
 		mController = controller;
 		
 		mController.addControllerListener( this );
@@ -148,7 +153,7 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
 				JMenu outputMenu = new JMenu( "Audio Output" );
 
 				MixerChannelConfiguration[] mixerConfigurations = 
-						MixerManager.getInstance().getOutputMixers();
+						mSourceManager.getMixerManager().getOutputMixers();
 
 				for( MixerChannelConfiguration mixerConfig: mixerConfigurations )
 				{

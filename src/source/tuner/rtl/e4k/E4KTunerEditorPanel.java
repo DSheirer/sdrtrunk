@@ -30,17 +30,16 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeListener;
 import source.tuner.frequency.FrequencyChangeEvent.Event;
+import source.tuner.frequency.IFrequencyChangeProcessor;
 import source.tuner.rtl.RTL2832InfoPanel;
 
 import com.jidesoft.swing.JideTabbedPane;
 
-import controller.ResourceManager;
-
-public class E4KTunerEditorPanel extends JPanel implements FrequencyChangeListener
+public class E4KTunerEditorPanel extends JPanel implements IFrequencyChangeProcessor
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( E4KTunerEditorPanel.class );
@@ -48,15 +47,15 @@ public class E4KTunerEditorPanel extends JPanel implements FrequencyChangeListen
     private static final long serialVersionUID = 1L;
     
     private E4KTunerController mController;
-    private ResourceManager mResourceManager;
+    private SettingsManager mSettingsManager;
 
     private JFrequencyControl mFrequencyControl;
 
     public E4KTunerEditorPanel( E4KTunerController controller, 
-    							ResourceManager resourceManager )
+    							SettingsManager settingsManager )
     {
     	mController = controller;
-        mResourceManager = resourceManager;
+        mSettingsManager = settingsManager;
         
         initGUI();
     }
@@ -84,7 +83,7 @@ public class E4KTunerEditorPanel extends JPanel implements FrequencyChangeListen
     	tabs.setForeground( Color.BLACK );
 		
 		tabs.addTab( "Configuration", 
-			new E4KTunerConfigurationPanel( mResourceManager, mController ) );
+			new E4KTunerConfigurationPanel( mSettingsManager, mController ) );
 
 		tabs.addTab( "Info", new RTL2832InfoPanel( mController ) );
 		
@@ -98,7 +97,7 @@ public class E4KTunerEditorPanel extends JPanel implements FrequencyChangeListen
 	@Override
     public void frequencyChanged( FrequencyChangeEvent event )
     {
-		if( event.getEvent() == Event.FREQUENCY_CHANGE_NOTIFICATION )
+		if( event.getEvent() == Event.NOTIFICATION_FREQUENCY_CHANGE )
 		{
 			final long frequency = event.getValue().longValue();
 

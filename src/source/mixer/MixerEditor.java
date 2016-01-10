@@ -24,11 +24,13 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 
+import controller.channel.Channel;
+import controller.channel.ConfigurationValidationException;
 import source.SourceEditor;
+import source.SourceManager;
 import source.config.SourceConfigMixer;
 import source.config.SourceConfiguration;
 import source.mixer.MixerManager.InputMixerConfiguration;
-import controller.ResourceManager;
 
 public class MixerEditor extends SourceEditor
 {
@@ -38,10 +40,10 @@ public class MixerEditor extends SourceEditor
     protected Mixer.Info mSelectedMixer = null;
     
 
-	public MixerEditor( ResourceManager resourceManager, 
+	public MixerEditor( SourceManager sourceManager, 
 						SourceConfiguration config )
 	{
-		super( resourceManager, config );
+		super( sourceManager, config );
 		
 		initGUI();
 	}
@@ -105,7 +107,8 @@ public class MixerEditor extends SourceEditor
             @Override
             public void run() 
             {
-            	InputMixerConfiguration[] mixers = MixerManager.getInstance().getInputMixers();
+            	InputMixerConfiguration[] mixers = mSourceManager
+            			.getMixerManager().getInputMixers();
 
         		mComboMixers.setModel( 
         				new DefaultComboBoxModel<InputMixerConfiguration>( mixers ) );
@@ -154,5 +157,19 @@ public class MixerEditor extends SourceEditor
         		mComboChannels.setSelectedItem( channel	);
             }
         });
+	}
+
+	@Override
+	public void setConfiguration( Channel channel )
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void validateConfiguration() throws ConfigurationValidationException
+	{
+		// TODO Auto-generated method stub
+		
 	}
 }

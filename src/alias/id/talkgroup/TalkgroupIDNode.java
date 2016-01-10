@@ -25,6 +25,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 
+import playlist.PlaylistManager;
 import alias.AliasIDNode;
 import alias.AliasNode;
 
@@ -32,9 +33,9 @@ public class TalkgroupIDNode extends AliasIDNode
 {
     private static final long serialVersionUID = 1L;
     
-    public TalkgroupIDNode( TalkgroupID id )
+    public TalkgroupIDNode( PlaylistManager playlistManager, TalkgroupID id )
 	{
-    	super( id );
+    	super( playlistManager,id );
 	}
     
     @Override

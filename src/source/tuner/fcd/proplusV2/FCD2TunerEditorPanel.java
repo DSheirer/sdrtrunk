@@ -29,18 +29,17 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.fcd.FCDTuner;
 import source.tuner.fcd.FCDTunerDetailsPanel;
 import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeListener;
 import source.tuner.frequency.FrequencyChangeEvent.Event;
+import source.tuner.frequency.IFrequencyChangeProcessor;
 
 import com.jidesoft.swing.JideTabbedPane;
 
-import controller.ResourceManager;
-
-public class FCD2TunerEditorPanel extends JPanel implements FrequencyChangeListener
+public class FCD2TunerEditorPanel extends JPanel implements IFrequencyChangeProcessor
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( FCD2TunerEditorPanel.class );
@@ -48,15 +47,15 @@ public class FCD2TunerEditorPanel extends JPanel implements FrequencyChangeListe
     
     private FCDTuner mTuner;
     private FCD2TunerController mController;
-    private ResourceManager mResourceManager;
+    private SettingsManager mSettingsManager;
 
     private JFrequencyControl mFrequencyControl;
 
-    public FCD2TunerEditorPanel( FCDTuner tuner, ResourceManager resourceManager )
+    public FCD2TunerEditorPanel( FCDTuner tuner, SettingsManager settingsManager )
     {
     	mTuner = tuner;
         mController = (FCD2TunerController)mTuner.getController();
-        mResourceManager = resourceManager;
+        mSettingsManager = settingsManager;
         
         initGUI();
     }
@@ -73,7 +72,7 @@ public class FCD2TunerEditorPanel extends JPanel implements FrequencyChangeListe
         
         /* Add frequency control as frequency change listener.  This creates a
          * feedback loop, so the control does not rebroadcast the event */
-        mTuner.addListener( mFrequencyControl );
+        mTuner.addFrequencyChangeProcessor( mFrequencyControl );
         
         mFrequencyControl.setFrequency( mController.getFrequency(), false );
 
@@ -84,7 +83,7 @@ public class FCD2TunerEditorPanel extends JPanel implements FrequencyChangeListe
     	tabs.setForeground( Color.BLACK );
         
         tabs.add( "Configuration", new FCD2TunerConfigurationPanel( 
-				mResourceManager, mController ) );
+				mSettingsManager, mController ) );
         
         tabs.add( "Info", new FCDTunerDetailsPanel( mController ) );       
 
@@ -94,7 +93,7 @@ public class FCD2TunerEditorPanel extends JPanel implements FrequencyChangeListe
 	@Override
     public void frequencyChanged( FrequencyChangeEvent event )
     {
-		if( event.getEvent() == Event.FREQUENCY_CHANGE_NOTIFICATION )
+		if( event.getEvent() == Event.NOTIFICATION_FREQUENCY_CHANGE )
 		{
 			//Disregard the bandwidth, which shouldn't be changing
 			try

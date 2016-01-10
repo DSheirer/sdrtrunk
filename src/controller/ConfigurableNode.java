@@ -17,14 +17,24 @@
  ******************************************************************************/
 package controller;
 
+import playlist.PlaylistManager;
 
 public abstract class ConfigurableNode extends BaseNode
 {
     private static final long serialVersionUID = 1L;
+    
+    private PlaylistManager mPlaylistManager;
 
-    public ConfigurableNode( Object object )
+    public ConfigurableNode( PlaylistManager playlistManager, Object object )
     {
         super( object );
+        
+        mPlaylistManager = playlistManager;
+    }
+    
+    protected PlaylistManager getPlaylistManager()
+    {
+    	return mPlaylistManager;
     }
     
     /**
@@ -32,7 +42,7 @@ public abstract class ConfigurableNode extends BaseNode
      */
     public void save()
     {
-        getModel().getResourceManager().getPlaylistManager().save();
+    	mPlaylistManager.save();
 
         BaseNode parent = (BaseNode)getParent();
 

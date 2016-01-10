@@ -18,19 +18,18 @@
 package source;
 
 import source.config.SourceConfiguration;
-import controller.Editor;
-import controller.ResourceManager;
+import controller.channel.ChannelConfigurationEditor;
 
-public abstract class SourceEditor extends Editor
+public abstract class SourceEditor extends ChannelConfigurationEditor
 {
     private static final long serialVersionUID = 1L;
 
-    protected ResourceManager mResourceManager;
+    protected SourceManager mSourceManager;
     protected SourceConfiguration mConfig;
 	
-	public SourceEditor( ResourceManager resourceManager, SourceConfiguration config )
+	public SourceEditor( SourceManager sourceManager, SourceConfiguration config )
 	{
-		mResourceManager = resourceManager;
+		mSourceManager = sourceManager;
 		mConfig = config;
 	}
 
@@ -38,9 +37,9 @@ public abstract class SourceEditor extends Editor
 	{
 		return mConfig;
 	}
-	
-	public ResourceManager getResourceManager()
+
+	protected SourceManager getSourceManager()
 	{
-		return mResourceManager;
+		return mSourceManager;
 	}
 }

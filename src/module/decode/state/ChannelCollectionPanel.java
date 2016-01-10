@@ -16,6 +16,8 @@ import org.slf4j.LoggerFactory;
 import playlist.PlaylistManager;
 import settings.SettingsManager;
 import controller.channel.Channel;
+import controller.channel.ChannelModel;
+import controller.channel.ChannelProcessingManager;
 
 /**
  * Channel Collection assembles a primary channel panel and any related decoder
@@ -28,15 +30,21 @@ public class ChannelCollectionPanel extends JPanel
 	
 	private final static Logger mLog = LoggerFactory.getLogger( ChannelCollectionPanel.class );
 
+	private ChannelModel mChannelModel;
+	private ChannelProcessingManager mChannelProcessingManager;
 	private PlaylistManager mPlaylistManager;
 	private SettingsManager mSettingsManager;
 	
 	private List<ChannelStatePanel> mChannelPanels = new ArrayList<ChannelStatePanel>();
 	
-	public ChannelCollectionPanel( PlaylistManager playlistManager,
+	public ChannelCollectionPanel( ChannelModel channelModel,
+								   ChannelProcessingManager channelProcessingManager,
+								   PlaylistManager playlistManager,
 								   SettingsManager settingsManager, 
 								   Channel channel )
 	{
+		mChannelModel = channelModel;
+		mChannelProcessingManager = channelProcessingManager;
 		mPlaylistManager = playlistManager;
 		mSettingsManager = settingsManager;
 		
@@ -49,8 +57,8 @@ public class ChannelCollectionPanel extends JPanel
     	
     	setOpaque( false );
 
-    	ChannelStatePanel csp = new ChannelStatePanel( mPlaylistManager, 
-    			mSettingsManager, channel );
+    	ChannelStatePanel csp = new ChannelStatePanel( mChannelModel, 
+			mChannelProcessingManager, mPlaylistManager, mSettingsManager, channel );
     	
     	mChannelPanels.add( csp );
     	

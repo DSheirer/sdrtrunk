@@ -36,7 +36,7 @@ import sample.Listener;
 import sample.SampleType;
 import sample.complex.ComplexBuffer;
 import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeListener;
+import source.tuner.frequency.IFrequencyChangeProcessor;
 import spectrum.converter.DFTResultsConverter;
 import controller.NamingThreadFactory;
 import dsp.filter.Window;
@@ -47,7 +47,7 @@ import dsp.filter.Window.WindowType;
  * of DFT results, using configurable fft size and output dispatch timelines.  
  */
 public class DFTProcessor implements Listener<ComplexBuffer>, 
-									 FrequencyChangeListener,
+									 IFrequencyChangeProcessor,
 									 IDFTWidthChangeProcessor
 {
 	private final static Logger mLog = 
@@ -494,7 +494,7 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
     {
 		switch( event.getEvent() )
 		{
-			case SAMPLE_RATE_CHANGE_NOTIFICATION:
+			case NOTIFICATION_SAMPLE_RATE_CHANGE:
 				mSampleRate = event.getValue().intValue();
 				calculateConsumptionRate();
 				break;

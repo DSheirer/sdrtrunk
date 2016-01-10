@@ -31,9 +31,11 @@ import javax.swing.event.ChangeListener;
 
 import module.decode.config.DecodeConfiguration;
 import net.miginfocom.swing.MigLayout;
-import controller.Editor;
+import controller.channel.Channel;
+import controller.channel.ChannelConfigurationEditor;
+import controller.channel.ConfigurationValidationException;
 
-public class DecodeEditor extends Editor
+public class DecodeEditor extends ChannelConfigurationEditor
 {
     private static final long serialVersionUID = 1L;
 
@@ -110,7 +112,16 @@ public class DecodeEditor extends Editor
     }
 
 	@Override
-    public void reset()
-    {
-    }
+	public void setConfiguration( Channel channel )
+	{
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void validateConfiguration() throws ConfigurationValidationException
+	{
+		// TODO Auto-generated method stub
+		
+	}
 }

@@ -27,6 +27,8 @@ import javax.swing.JPopupMenu;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import playlist.PlaylistManager;
+import source.SourceManager;
 import source.tuner.TunerChannel;
 import controller.ConfigurableNode;
 import controller.site.SiteNode;
@@ -43,10 +45,22 @@ public class ChannelNode extends ConfigurableNode implements ChannelEventListene
 	private final static Logger mLog = LoggerFactory.getLogger( ChannelNode.class );
     
 	private static DecimalFormat sFORMAT = new DecimalFormat( "0.0000" );
+	
+	private ChannelModel mChannelModel;
+	private ChannelProcessingManager mChannelProcessingManager;
+	private SourceManager mSourceManager;
 
-	public ChannelNode( Channel channel )
+	public ChannelNode( Channel channel,
+						ChannelModel channelModel,
+						ChannelProcessingManager channelProcessingManager,
+						PlaylistManager playlistManager,
+						SourceManager sourceManager )
 	{
-		super( channel );
+		super( playlistManager, channel );
+		
+		mChannelModel = channelModel;
+		mChannelProcessingManager = channelProcessingManager;
+		mSourceManager = sourceManager;
 	}
 	
 	public void init()
@@ -69,9 +83,6 @@ public class ChannelNode extends ConfigurableNode implements ChannelEventListene
 		/* Add this node as listener to receive changes from underlying channel */
 //		getChannel().addListener( this );
 
-		/* Add the resource manager to the channel so that the channel
-		 * can provide channel change events to all system resources */
-	    getChannel().setResourceManager( getModel().getResourceManager() );
 	}
 
 	/**
@@ -109,7 +120,7 @@ public class ChannelNode extends ConfigurableNode implements ChannelEventListene
 	{
 		if( getChannel().getEnabled() )
 		{
-			if( getChannel().isProcessing() )
+			if( getChannel().getEnabled() )
 			{
 				return Color.GREEN;
 			}
@@ -125,9 +136,7 @@ public class ChannelNode extends ConfigurableNode implements ChannelEventListene
     @Override
     public JPanel getEditor()
     {
-        return new ChannelEditor( this, 
-    		getChannel().getResourceManager() == null ? null : 
-    			getChannel().getResourceManager().getPlaylistManager() );
+        return new OldChannelEditor( getChannel(), mChannelModel, getPlaylistManager(), mSourceManager );
     }
     
 	public Channel getChannel()
@@ -158,9 +167,9 @@ public class ChannelNode extends ConfigurableNode implements ChannelEventListene
 	{
 		JPopupMenu popupMenu = new JPopupMenu();
 
-		JMenu channelMenu = ChannelUtils.getContextMenu( 
-			getModel().getResourceManager().getPlaylistManager(), 
-				getChannel(), getModel().getTree() );
+		JMenu channelMenu = ChannelUtils.getContextMenu( mChannelModel, 
+			mChannelProcessingManager, getPlaylistManager(), getChannel(), 
+			getModel().getTree() );
 
 		if( channelMenu != null )
 		{

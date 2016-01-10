@@ -17,35 +17,58 @@
  ******************************************************************************/
 package controller;
 
+
+import java.awt.BorderLayout;
+
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTree;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
 
-import net.miginfocom.swing.MigLayout;
-import controller.channel.ChannelValidationException;
-
-public abstract class Editor extends JPanel
+public class OldConfigurationEditor extends JPanel 
+											implements TreeSelectionListener
 {
     private static final long serialVersionUID = 1L;
-
-    public Editor()
-	{
-    	setLayout( new MigLayout() );
-	}
     
-    public abstract void save();
-    
-    public abstract void reset();
-
     /**
-     * Override this method to allow the editor to inspect the argument for
-     * valid configuration
-     * 
-     * @param editor - any editor
-     * 
-     * @throws ChannelValidationException if the configuration is not compatible
-     * with this editor's configuration.  Supplies a validation text value for
-     * display to the user 
+     * Host for configuration editor display panels
      */
-    public void validate( Editor editor ) throws ChannelValidationException
+	public OldConfigurationEditor()
+	{
+		init();
+	}
+
+	public void init()
+	{
+		setPanel( new EmptyEditor() );
+	}
+	
+	public void setPanel( JPanel display )
+	{
+		removeAll();
+		
+        setLayout( new BorderLayout() );
+		
+		JScrollPane scroll = new JScrollPane( display );
+		
+		add( scroll, BorderLayout.CENTER );
+
+		revalidate();
+		repaint();
+	}
+
+	@Override
+    public void valueChanged( TreeSelectionEvent e )
     {
+		JTree tree = (JTree)e.getSource();
+		
+		BaseNode node = 
+				(BaseNode)tree.getLastSelectedPathComponent();
+
+    	if( node != null )
+    	{
+    	    setPanel( node.getEditor() );
+    	}
     }
 }

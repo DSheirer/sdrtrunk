@@ -28,15 +28,17 @@ import javax.swing.JPopupMenu;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import playlist.PlaylistManager;
+import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeListener;
+import source.tuner.frequency.IFrequencyChangeProcessor;
 import spectrum.SpectrumFrame;
 import controller.BaseNode;
-import controller.ResourceManager;
 import controller.channel.ChannelModel;
+import controller.channel.ChannelProcessingManager;
 
-public class TunerNode extends BaseNode implements FrequencyChangeListener
+public class TunerNode extends BaseNode implements IFrequencyChangeProcessor
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( TunerNode.class );
@@ -48,14 +50,24 @@ public class TunerNode extends BaseNode implements FrequencyChangeListener
     private long mFrequency;
     private int mSampleRate;
     private ChannelModel mChannelModel;
+    private ChannelProcessingManager mChannelProcessingManager;
+    private PlaylistManager mPlaylistManager;
+    private SettingsManager mSettingsManager;
 
-	public TunerNode( ChannelModel channelModel, Tuner tuner )
+	public TunerNode( ChannelModel channelModel,
+					  ChannelProcessingManager channelProcessingManager,
+					  PlaylistManager playlistManager,
+					  SettingsManager settingsManager,
+					  Tuner tuner )
 	{
 		super( tuner );  //does this make it a super tuner?
 		
 		mChannelModel = channelModel;
+		mChannelProcessingManager = channelProcessingManager;
+		mPlaylistManager = playlistManager;
+		mSettingsManager = settingsManager;
 		
-		tuner.addListener( this );
+		tuner.addFrequencyChangeProcessor( this );
 		
 		try
         {
@@ -72,7 +84,7 @@ public class TunerNode extends BaseNode implements FrequencyChangeListener
 	@Override
 	public JPanel getEditor()
 	{
-	    return getTuner().getEditor( getModel().getResourceManager() );
+	    return getTuner().getEditor( mSettingsManager );
 	}
 
 	public Tuner getTuner()
@@ -117,11 +129,9 @@ public class TunerNode extends BaseNode implements FrequencyChangeListener
 			@Override
             public void actionPerformed( ActionEvent e )
             {
-				ResourceManager rm = getModel().getResourceManager();
-				
-				SpectrumFrame frame = new SpectrumFrame( mChannelModel, 
-						rm.getController(), rm.getPlaylistManager(), 
-						rm.getSettingsManager(), getTuner() );
+				SpectrumFrame frame = new SpectrumFrame( getModel(), mChannelModel, 
+					mChannelProcessingManager, mPlaylistManager, 
+					mSettingsManager, getTuner() );
             }
 		} );
 		
@@ -135,7 +145,7 @@ public class TunerNode extends BaseNode implements FrequencyChangeListener
     {
 		switch( event.getEvent() )
 		{
-			case FREQUENCY_CHANGE_NOTIFICATION:
+			case NOTIFICATION_FREQUENCY_CHANGE:
 				long frequency = event.getValue().longValue();
 				
 				if( mFrequency != frequency )
@@ -144,7 +154,7 @@ public class TunerNode extends BaseNode implements FrequencyChangeListener
 					getModel().nodeChanged( TunerNode.this );
 				}
 				break;
-			case SAMPLE_RATE_CHANGE_NOTIFICATION:
+			case NOTIFICATION_SAMPLE_RATE_CHANGE:
 				int sampleRate = event.getValue().intValue();
 				
 				if( mSampleRate != sampleRate )

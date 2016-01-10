@@ -25,6 +25,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 
+import playlist.PlaylistManager;
 import alias.AliasNode;
 import alias.action.AliasActionNode;
 
@@ -32,9 +33,9 @@ public class ScriptActionNode extends AliasActionNode
 {
     private static final long serialVersionUID = 1L;
     
-    public ScriptActionNode( ScriptAction scriptAction )
+    public ScriptActionNode( PlaylistManager playlistManager, ScriptAction scriptAction )
 	{
-    	super( scriptAction );
+    	super( playlistManager, scriptAction );
 	}
     
     @Override

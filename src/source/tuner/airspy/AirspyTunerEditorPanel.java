@@ -29,17 +29,16 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeEvent.Event;
-import source.tuner.frequency.FrequencyChangeListener;
+import source.tuner.frequency.IFrequencyChangeProcessor;
 
 import com.jidesoft.swing.JideTabbedPane;
 
-import controller.ResourceManager;
-
 public class AirspyTunerEditorPanel extends JPanel 
-						implements FrequencyChangeListener
+						implements IFrequencyChangeProcessor
 {
     private static final long serialVersionUID = 1L;
 
@@ -50,14 +49,14 @@ public class AirspyTunerEditorPanel extends JPanel
     
     private AirspyTuner mTuner;
     private AirspyTunerController mController;
-    private ResourceManager mResourceManager;
+    private SettingsManager mSettingsManager;
 
 	public AirspyTunerEditorPanel( AirspyTuner tuner, 
-								   ResourceManager resourceManager )
+								   SettingsManager settingsManager )
 	{
 		mTuner = tuner;
 		mController = mTuner.getController();
-		mResourceManager = resourceManager;
+		mSettingsManager = settingsManager;
 		
 		initGUI();
 	}
@@ -76,7 +75,7 @@ public class AirspyTunerEditorPanel extends JPanel
         
         /* Add frequency control as frequency change listener.  This creates a
          * feedback loop, so the control does not rebroadcast the event */
-        mTuner.addListener( mFrequencyControl );
+        mTuner.addFrequencyChangeProcessor( mFrequencyControl );
         
         mFrequencyControl.setFrequency( mController.getFrequency(), false );
 
@@ -89,7 +88,7 @@ public class AirspyTunerEditorPanel extends JPanel
         add( tabs, "span,grow,push" );
         
         tabs.add( "Config", new AirspyTunerConfigurationPanel( 
-        		mResourceManager, mTuner.getController() ) );
+        		mSettingsManager, mTuner.getController() ) );
         
         tabs.add( "Info", new AirspyInformationPanel( mTuner.getController() ) ); 
     }
@@ -97,7 +96,7 @@ public class AirspyTunerEditorPanel extends JPanel
 	@Override
     public void frequencyChanged( FrequencyChangeEvent event )
     {
-		if( event.getEvent() == Event.FREQUENCY_CHANGE_NOTIFICATION )
+		if( event.getEvent() == Event.NOTIFICATION_FREQUENCY_CHANGE )
 		{
 			try
 	        {

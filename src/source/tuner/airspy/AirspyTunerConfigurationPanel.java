@@ -45,13 +45,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.LibUsbException;
 
+import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerConfigurationAssignment;
 import source.tuner.TunerType;
 import source.tuner.airspy.AirspyTunerController.Gain;
 import source.tuner.airspy.AirspyTunerController.GainMode;
-import controller.ResourceManager;
 
 public class AirspyTunerConfigurationPanel extends JPanel
 {
@@ -60,7 +60,7 @@ public class AirspyTunerConfigurationPanel extends JPanel
 
 	private static final long serialVersionUID = 1L;
     
-    private ResourceManager mResourceManager;
+    private SettingsManager mSettingsManager;
     private AirspyTunerController mController;
     private AirspyTunerConfiguration mSelectedConfig;
 
@@ -94,10 +94,10 @@ public class AirspyTunerConfigurationPanel extends JPanel
     private JSlider mMixerGain;
     
     
-    public AirspyTunerConfigurationPanel( ResourceManager resourceManager,
+    public AirspyTunerConfigurationPanel( SettingsManager settingsManager,
     								      AirspyTunerController controller )
     {
-    	mResourceManager = resourceManager;
+    	mSettingsManager = settingsManager;
     	mController = controller;
     	
     	init();
@@ -126,8 +126,7 @@ public class AirspyTunerConfigurationPanel extends JPanel
         
         if( serial != null )
         {
-            savedConfig = mResourceManager
-            		.getSettingsManager().getSelectedTunerConfiguration( 
+            savedConfig = mSettingsManager.getSelectedTunerConfiguration( 
     				TunerType.AIRSPY_R820T, serial );
         }
         
@@ -146,8 +145,7 @@ public class AirspyTunerConfigurationPanel extends JPanel
         	
         	if( serial != null )
         	{
-            	mResourceManager.getSettingsManager()
-        		.setSelectedTunerConfiguration( TunerType.AIRSPY_R820T, 
+            	mSettingsManager.setSelectedTunerConfiguration( TunerType.AIRSPY_R820T, 
     				serial, mSelectedConfig );
         	}
         }
@@ -518,8 +516,7 @@ public class AirspyTunerConfigurationPanel extends JPanel
             public void actionPerformed( ActionEvent e )
             {
 				TunerConfiguration config = 
-						mResourceManager.getSettingsManager()
-							.addNewTunerConfiguration( 
+						mSettingsManager.addNewTunerConfiguration( 
 									TunerType.AIRSPY_R820T, 
 									"New Configuration" );
 				
@@ -558,8 +555,7 @@ public class AirspyTunerConfigurationPanel extends JPanel
 
 					if( n == JOptionPane.YES_OPTION )
 					{
-						mResourceManager.getSettingsManager()
-							.deleteTunerConfiguration( selected );
+						mSettingsManager.deleteTunerConfiguration( selected );
 
 						mComboConfigurations.setModel( getModel() );
 						
@@ -635,7 +631,7 @@ public class AirspyTunerConfigurationPanel extends JPanel
         	mGainModeCombo.setSelectedItem( Gain.getGainMode( gain ) );
 	        mGain.setValue( gain.getValue() );
 	        
-	        mResourceManager.getSettingsManager().setSelectedTunerConfiguration( 
+	        mSettingsManager.setSelectedTunerConfiguration( 
 			TunerType.AIRSPY_R820T, mController.getDeviceInfo().getSerialNumber(), config );
 	        
 	        save();
@@ -661,8 +657,7 @@ public class AirspyTunerConfigurationPanel extends JPanel
     private ComboBoxModel<AirspyTunerConfiguration> getModel()
     {
     	ArrayList<TunerConfiguration> configs = 
-    			mResourceManager.getSettingsManager()
-    			.getTunerConfigurations( TunerType.AIRSPY_R820T );
+			mSettingsManager.getTunerConfigurations( TunerType.AIRSPY_R820T );
     	
     	DefaultComboBoxModel<AirspyTunerConfiguration> model = 
     			new DefaultComboBoxModel<AirspyTunerConfiguration>();
@@ -681,8 +676,7 @@ public class AirspyTunerConfigurationPanel extends JPanel
     private AirspyTunerConfiguration getNamedConfiguration( String name )
     {
     	ArrayList<TunerConfiguration> configs = 
-    			mResourceManager.getSettingsManager()
-    			.getTunerConfigurations( TunerType.AIRSPY_R820T );
+    			mSettingsManager.getTunerConfigurations( TunerType.AIRSPY_R820T );
     	
     	for( TunerConfiguration config: configs )
     	{
@@ -700,6 +694,6 @@ public class AirspyTunerConfigurationPanel extends JPanel
      */
     private void save()
     {
-    	mResourceManager.getSettingsManager().save();
+    	mSettingsManager.save();
     }
 }

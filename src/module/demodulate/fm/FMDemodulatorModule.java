@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -22,43 +22,27 @@ import module.Module;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sample.Broadcaster;
 import sample.Listener;
 import sample.complex.ComplexBuffer;
 import sample.complex.IComplexBufferListener;
-import sample.real.IRealBufferProvider;
+import sample.real.IUnFilteredRealBufferProvider;
 import sample.real.RealBuffer;
-import source.tuner.frequency.AutomaticFrequencyControl_RB;
-import source.tuner.frequency.FrequencyCorrectionControl;
-import source.tuner.frequency.IFrequencyCorrectionController;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
-import dsp.filter.dc.DCRemovalFilter_RB;
 import dsp.filter.fir.complex.ComplexFIRFilter_CB_CB;
 import dsp.fm.FMDemodulator_CB;
 
-public class FMDemodulatorModule extends Module implements IComplexBufferListener, 
-				IFrequencyCorrectionController,	IRealBufferProvider
+public class FMDemodulatorModule extends Module 
+		implements IComplexBufferListener, IUnFilteredRealBufferProvider
 {
-	private final static Logger mLog = LoggerFactory.getLogger( FMDemodulatorModule.class );
-	
-	/* Determines responsiveness of DC filter to frequency changes */
-	private static final float DC_REMOVAL_RATIO = 0.000003f;
-
 	private static final int SAMPLE_RATE = 48000;
 	
 	private ComplexFIRFilter_CB_CB mIQFilter;
 	private FMDemodulator_CB mDemodulator;
-	private Broadcaster<RealBuffer> mUnfilteredBufferBroadcaster = new Broadcaster<RealBuffer>();
-	private DCRemovalFilter_RB mDCRemovalFilter;
-	private AutomaticFrequencyControl_RB mAutomaticFrequencyControl;
-	private boolean mRemoveDC = true;
-
-	private Listener<RealBuffer> mListener;
 	
 	/**
-	 * FM Demodulator with integrated DC removal and automatic frequency
-	 * correction control.
+	 * FM Demodulator with I/Q filter.  Demodulated output is unfiltered and
+	 * may contain a DC component.
 	 * 
 	 * @param pass - pass frequency for IQ filtering prior to demodulation.  This
 	 * frequency should be half of the signal bandwidth since the filter will
@@ -66,56 +50,16 @@ public class FMDemodulatorModule extends Module implements IComplexBufferListene
 	 * combined pass bandwidth will be twice this value.
 	 * 
 	 * @param stop - stop frequency for IQ filtering prior to demodulation.
-	 * 
-	 * @param maxFrequencyCorrection - defines the maximum frequency +/- that 
-	 * the correction controller can adjust from the center tuned frequency.
-	 * Set this value to 0 for no frequency correction control.
 	 */
-	public FMDemodulatorModule( int pass, int stop, int maxFrequencyCorrection )
-	{
-		this( pass, stop, maxFrequencyCorrection, true );
-	}
-
-	public FMDemodulatorModule( int pass, int stop, int maxFrequencyCorrection, boolean removeDC )
+	public FMDemodulatorModule( int pass, int stop )
 	{
 		assert( stop > pass );
 
-		mRemoveDC = removeDC;
-		
 		mIQFilter = new ComplexFIRFilter_CB_CB( FilterFactory.getLowPass( 
 				SAMPLE_RATE, pass, stop, 60, WindowType.HAMMING, true ), 1.0f );
 		
 		mDemodulator = new FMDemodulator_CB( 1.0f );
 		mIQFilter.setListener( mDemodulator );
-
-		mUnfilteredBufferBroadcaster = new Broadcaster<RealBuffer>();			
-		mDemodulator.setListener( mUnfilteredBufferBroadcaster );
-
-		if( maxFrequencyCorrection > 0 )
-		{
-			/* Frequency correction requires unfiltered samples in order to detect
-			 * the DC component present in a mistuned FM demodulated sample stream */
-			mAutomaticFrequencyControl = new AutomaticFrequencyControl_RB( maxFrequencyCorrection );
-			mUnfilteredBufferBroadcaster.addListener( mAutomaticFrequencyControl );
-		}
-		
-		if( mRemoveDC )
-		{
-			mDCRemovalFilter = new DCRemovalFilter_RB( DC_REMOVAL_RATIO );
-			mUnfilteredBufferBroadcaster.addListener( mDCRemovalFilter );
-		}
-	}
-
-	@Override
-	public boolean hasFrequencyCorrectionControl()
-	{
-		return mAutomaticFrequencyControl != null;
-	}
-
-	@Override
-	public FrequencyCorrectionControl getFrequencyCorrectionControl()
-	{
-		return mAutomaticFrequencyControl;
 	}
 
 	@Override
@@ -132,68 +76,24 @@ public class FMDemodulatorModule extends Module implements IComplexBufferListene
 		
 		mDemodulator.dispose();
 		mDemodulator = null;
-		
-		if( mDCRemovalFilter != null )
-		{
-			mDCRemovalFilter.dispose();
-		}
-		mDCRemovalFilter = null;
-		
-		if( mAutomaticFrequencyControl != null )
-		{
-			mAutomaticFrequencyControl.dispose();
-			mAutomaticFrequencyControl = null;
-		}
-		
-		if( mUnfilteredBufferBroadcaster != null )
-		{
-			mUnfilteredBufferBroadcaster.dispose();
-			mUnfilteredBufferBroadcaster = null;
-		}
 	}
 
 	@Override
 	public void reset()
 	{
 		mDemodulator.reset();
-		
-		if( mDCRemovalFilter != null )
-		{
-			mDCRemovalFilter.reset();
-		}
-		
-		if( mAutomaticFrequencyControl != null )
-		{
-			mAutomaticFrequencyControl.reset();
-		}
 	}
 
 	@Override
-	public void setRealBufferListener( Listener<RealBuffer> listener )
+	public void setUnFilteredRealBufferListener( Listener<RealBuffer> listener )
 	{
-		mListener = listener;
-		
-		if( mRemoveDC )
-		{
-			mDCRemovalFilter.setListener( listener );
-		}
-		else
-		{
-			mUnfilteredBufferBroadcaster.addListener( listener );
-		}
+		mDemodulator.setListener( listener );
 	}
 
 	@Override
-	public void removeRealBufferListener()
+	public void removeUnFilteredRealBufferListener()
 	{
-		if( mRemoveDC )
-		{
-			mDCRemovalFilter.removeListener();
-		}
-		else
-		{
-			mUnfilteredBufferBroadcaster.removeListener( mListener );
-		}
+		mDemodulator.removeListener();
 	}
 
 	@Override

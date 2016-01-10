@@ -33,11 +33,11 @@ import org.usb4java.Device;
 import org.usb4java.DeviceDescriptor;
 import org.usb4java.LibUsbException;
 
+import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
 import source.tuner.rtl.RTL2832TunerController;
-import controller.ResourceManager;
 import controller.ThreadPoolManager;
 
 public class R820TTunerController extends RTL2832TunerController
@@ -139,11 +139,11 @@ public class R820TTunerController extends RTL2832TunerController
 	/**
 	 * Controller gui editor component for this tuner
 	 */
-	public JPanel getEditor( ResourceManager resourceManager )
+	public JPanel getEditor( SettingsManager settingsManager )
 	{
 		if( mEditor == null )
 		{
-			mEditor = new R820TTunerEditorPanel( this, resourceManager );
+			mEditor = new R820TTunerEditorPanel( this, settingsManager );
 		}
 		
 		return mEditor;
