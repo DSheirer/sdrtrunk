@@ -1,5 +1,4 @@
 /*******************************************************************************
-
  *     SDR Trunk 
  *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
@@ -24,43 +23,38 @@ import java.awt.event.ActionListener;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.SwingUtilities;
 
 import module.decode.config.DecodeConfigFactory;
 import module.decode.config.DecodeConfiguration;
 import net.miginfocom.swing.MigLayout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import playlist.PlaylistManager;
-import controller.channel.AbstractChannelEditor;
 import controller.channel.Channel;
 import controller.channel.ChannelConfigurationEditor;
 import controller.channel.ConfigurationValidationException;
 
-public class DecodeComponentEditor extends AbstractChannelEditor
+public class DecodeComponentEditor extends ChannelConfigurationEditor
 {
-    private static final long serialVersionUID = 1L;
+	private final static Logger mLog = LoggerFactory.getLogger( DecodeComponentEditor.class );
 
+	private static final long serialVersionUID = 1L;
+
+    private PlaylistManager mPlaylistManager;
     private JComboBox<DecoderType> mComboDecoders;
 
     private DecodeEditor mEditor;
-    
-    private PlaylistManager mPlaylistManager;
+
+    private Channel mChannel;
     
     public DecodeComponentEditor( PlaylistManager playlistManager )
-    {
-    	this( playlistManager, new Channel() );
-    }
-
-    public DecodeComponentEditor( PlaylistManager playlistMangager, Channel channel )
 	{
-    	super( channel );
+    	mPlaylistManager = playlistManager;
     	
-    	mPlaylistManager = playlistMangager;
-
 		setLayout( new MigLayout( "fill,wrap 2", "[right,grow][grow]", "[][][grow]" ) );
 
-		/**
-		 * ComboBox: Decoders
-		 */
 		mComboDecoders = new JComboBox<DecoderType>();
 
 		DefaultComboBoxModel<DecoderType> model = 
@@ -84,14 +78,15 @@ public class DecodeComponentEditor extends AbstractChannelEditor
 				if( selected != null )
 				{
 					DecodeConfiguration config;
-					
-					if( mChannel.getDecodeConfiguration().getDecoderType() == selected )
+
+					if( mChannel == null || 
+						mChannel.getDecodeConfiguration().getDecoderType() != selected )
 					{
-						config = mChannel.getDecodeConfiguration();
+						config = DecodeConfigFactory.getDecodeConfiguration( selected );
 					}
 					else
 					{
-						config = DecodeConfigFactory.getDecodeConfiguration( selected );
+						config = mChannel.getDecodeConfiguration();
 					}
 					
 					//Remove the existing one
@@ -111,29 +106,11 @@ public class DecodeComponentEditor extends AbstractChannelEditor
 				}
            }
 		});
+		
     	add( new JLabel( "Decoder:" ) );
 		add( mComboDecoders, "wrap" );
-		
-		reset();
 	}
 
-    public void reset() 
-    {
-    	final DecoderType decoder = mChannel.getDecodeConfiguration().getDecoderType();
-    	
-        SwingUtilities.invokeLater(new Runnable() 
-        {
-            @Override
-            public void run() {
-    			mComboDecoders.setSelectedItem( decoder );
-    			
-                mComboDecoders.requestFocus();
-
-                mComboDecoders.requestFocusInWindow();
-            }
-        });
-    }
-    
     public DecodeConfiguration getDecodeConfig()
     {
     	return mEditor.getConfig();
@@ -147,7 +124,6 @@ public class DecodeComponentEditor extends AbstractChannelEditor
         	mEditor.save();
     	}
     	
-    	//The component that calls save will invoke the change broadcast
 	    mChannel.setDecodeConfiguration( mEditor.getConfig() );
     }
 
@@ -165,14 +141,23 @@ public class DecodeComponentEditor extends AbstractChannelEditor
 	@Override
 	public void setConfiguration( Channel channel )
 	{
-		// TODO Auto-generated method stub
-		
+		mChannel = channel;
+
+		if( mChannel != null )
+		{
+	    	final DecoderType decoder = mChannel.getDecodeConfiguration().getDecoderType();
+
+			mComboDecoders.setSelectedItem( decoder );
+			
+	        mComboDecoders.requestFocus();
+
+	        mComboDecoders.requestFocusInWindow();
+		}
 	}
 
 	@Override
 	public void validateConfiguration() throws ConfigurationValidationException
 	{
 		// TODO Auto-generated method stub
-		
 	}
 }

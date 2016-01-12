@@ -106,18 +106,25 @@ public class ChannelStatePanel extends JPanel
 		ProcessingChain processingChain = 
 				channelProcessingManager.getProcessingChain( mChannel );
 
-		mChannelState = processingChain.getChannelState();
-		
-		mChannelState.setChangedAttributeListener( this );
-		
-		init();
+		if( processingChain != null )
+		{
+			mChannelState = processingChain.getChannelState();
+			
+			mChannelState.setChangedAttributeListener( this );
+			
+			init();
 
-		for( DecoderState decoderState: processingChain.getDecoderStates() )
-    	{
-			DecoderPanel panel = DecoderFactory.getDecoderPanel( mSettingsManager, decoderState );
-			mDecoderPanels.add( panel );
-    		add( panel, "grow,span" );
-    	}
+			for( DecoderState decoderState: processingChain.getDecoderStates() )
+	    	{
+				DecoderPanel panel = DecoderFactory.getDecoderPanel( mSettingsManager, decoderState );
+				mDecoderPanels.add( panel );
+	    		add( panel, "grow,span" );
+	    	}
+		}
+		else
+		{
+			mLog.error( "Processing Chain was null!" );
+		}
 	}
 	
 	private void init()

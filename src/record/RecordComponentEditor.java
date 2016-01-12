@@ -17,15 +17,16 @@
  ******************************************************************************/
 package record;
 
+import java.util.List;
 
 import javax.swing.JCheckBox;
 
 import record.config.RecordConfiguration;
-import controller.channel.AbstractChannelEditor;
 import controller.channel.Channel;
+import controller.channel.ChannelConfigurationEditor;
 import controller.channel.ConfigurationValidationException;
 
-public class RecordComponentEditor extends AbstractChannelEditor
+public class RecordComponentEditor extends ChannelConfigurationEditor
 {
     private static final long serialVersionUID = 1L;
     
@@ -33,74 +34,63 @@ public class RecordComponentEditor extends AbstractChannelEditor
     private JCheckBox mBasebandRecorder = new JCheckBox( "Baseband I/Q" );
     private JCheckBox mTrafficBasebandRecorder = new JCheckBox( "Traffic Channel Baseband I/Q" );
 
-    public RecordComponentEditor( Channel channel )
+    private Channel mChannel;
+    
+    public RecordComponentEditor()
 	{
-		super( channel );
-		
 		add( mAudioRecorder, "span" );
 		add( mBasebandRecorder, "span" );
 		add( mTrafficBasebandRecorder, "span" );
-    	
-		reset();
 	}
 
 	@Override
     public void save()
     {
-		RecordConfiguration config = getChannel().getRecordConfiguration();
-		
-		config.clearRecorders();
-		
-		if( mAudioRecorder.isSelected() )
+		if( mChannel != null )
 		{
-			config.addRecorder( RecorderType.AUDIO );
+			RecordConfiguration config = mChannel.getRecordConfiguration();
+			
+			config.clearRecorders();
+			
+			if( mAudioRecorder.isSelected() )
+			{
+				config.addRecorder( RecorderType.AUDIO );
+			}
+			
+			if( mBasebandRecorder.isSelected() )
+			{
+				config.addRecorder( RecorderType.BASEBAND );
+			}
+			
+			if( mTrafficBasebandRecorder.isSelected() )
+			{
+				config.addRecorder( RecorderType.TRAFFIC_BASEBAND );
+			}
 		}
-		
-		if( mBasebandRecorder.isSelected() )
-		{
-			config.addRecorder( RecorderType.BASEBAND );
-		}
-		
-		if( mTrafficBasebandRecorder.isSelected() )
-		{
-			config.addRecorder( RecorderType.TRAFFIC_BASEBAND );
-		}
-		
     }
-
-	@Override
-    public void reset() 
-    {
-        javax.swing.SwingUtilities.invokeLater(new Runnable() 
-        {
-            @Override
-            public void run() 
-            {
-        		RecordConfiguration config = getChannel().getRecordConfiguration();
-
-    			mAudioRecorder.setSelected( config.getRecorders()
-        					.contains( RecorderType.AUDIO ) );
-
-    			mBasebandRecorder.setSelected( config.getRecorders()
-    					.contains( RecorderType.BASEBAND ) );
-    			
-    			mTrafficBasebandRecorder.setSelected( config.getRecorders()
-    					.contains( RecorderType.TRAFFIC_BASEBAND ) );
-            }
-        });
-    }
-
 	@Override
 	public void setConfiguration( Channel channel )
 	{
-		// TODO Auto-generated method stub
+		mChannel = channel;
 		
+		if( mChannel != null )
+		{
+			List<RecorderType> recorders = mChannel.getRecordConfiguration().getRecorders();
+
+			mAudioRecorder.setSelected( recorders.contains( RecorderType.AUDIO ) );
+			mBasebandRecorder.setSelected( recorders.contains( RecorderType.BASEBAND ) );
+			mTrafficBasebandRecorder.setSelected( recorders.contains( RecorderType.TRAFFIC_BASEBAND ) );
+		}
+		else
+		{
+			mAudioRecorder.setSelected( false );
+			mBasebandRecorder.setSelected( false );
+			mTrafficBasebandRecorder.setSelected( false );
+		}
 	}
 
 	@Override
 	public void validateConfiguration() throws ConfigurationValidationException
 	{
-		// TODO Auto-generated method stub
-		
 	}
 }

@@ -255,14 +255,32 @@ public class ChannelProcessingManager implements ChannelEventListener
 
 		channel.setEnabled( true );
 		
+		mProcessingChains.put( channel.getChannelID(), processingChain );
+		
 		mChannelModel.broadcast( 
 			new ChannelEvent( channel, Event.NOTIFICATION_PROCESSING_START ) );
 	}
 	
 	private void stopProcessing( Channel channel, boolean remove )
 	{
-		mChannelModel.broadcast( 
-				new ChannelEvent( channel, Event.NOTIFICATION_PROCESSING_STOP ) );
+		if( mProcessingChains.containsKey( channel.getChannelID() ) )
+		{
+			ProcessingChain chain = mProcessingChains.get( channel.getChannelID() );
+			
+			chain.stop();
+
+			mChannelModel.broadcast( 
+					new ChannelEvent( channel, Event.NOTIFICATION_PROCESSING_STOP ) );
+			
+			if( remove )
+			{
+				mProcessingChains.remove( channel.getChannelID() );
+				
+				chain.dispose();
+			}
+		}
+		
+		channel.setEnabled( false );
 	}
 	
 	/**

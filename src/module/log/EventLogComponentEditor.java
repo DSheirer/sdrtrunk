@@ -20,55 +20,28 @@ package module.log;
 import java.util.List;
 
 import javax.swing.JCheckBox;
-import javax.swing.SwingUtilities;
 
 import module.log.config.EventLogConfiguration;
-import controller.channel.AbstractChannelEditor;
 import controller.channel.Channel;
+import controller.channel.ChannelConfigurationEditor;
 import controller.channel.ConfigurationValidationException;
 
-public class EventLogComponentEditor extends AbstractChannelEditor
+public class EventLogComponentEditor extends ChannelConfigurationEditor
 {
     private static final long serialVersionUID = 1L;
     
     private JCheckBox mBinaryLogger = new JCheckBox( "Binary Messages" );
     private JCheckBox mDecodedLogger = new JCheckBox( "Decoded Messages" );
     private JCheckBox mCallEventLogger = new JCheckBox( "Call Events" );
+    
+    private Channel mChannel;
 
-    public EventLogComponentEditor( Channel channel )
+    public EventLogComponentEditor()
 	{
-		super( channel );
-		
 		add( mBinaryLogger, "span" );
 		add( mDecodedLogger, "span" );
 		add( mCallEventLogger, "span" );
-    	
-		reset();
 	}
-
-    /**
-     * Sets the combo box to the type stored in the config object, causing the
-     * editor panel to reset with the stored config
-     */
-    public void reset() 
-    {
-        SwingUtilities.invokeLater(new Runnable() 
-        {
-        	final List<EventLogType> mLoggers = mChannel
-        			.getEventLogConfiguration().getLoggers();
-        	
-            @Override
-            public void run() 
-            {
-        		mBinaryLogger.setSelected(
-        				mLoggers.contains( EventLogType.BINARY_MESSAGE ) );
-        		mDecodedLogger.setSelected(
-        				mLoggers.contains( EventLogType.DECODED_MESSAGE ) );
-        		mCallEventLogger.setSelected(
-        				mLoggers.contains( EventLogType.CALL_EVENT ) );
-            }
-        });
-    }
 
     /**
      * Saves the current configuration as the stored configuration
@@ -76,36 +49,50 @@ public class EventLogComponentEditor extends AbstractChannelEditor
 	@Override
     public void save()
     {
-		EventLogConfiguration config = mChannel.getEventLogConfiguration();
+		if( mChannel != null )
+		{
+			EventLogConfiguration config = mChannel.getEventLogConfiguration();
 
-		config.clear();
-		
-		if( mBinaryLogger.isSelected() )
-		{
-			config.addLogger( EventLogType.BINARY_MESSAGE );
-		}
-
-		if( mDecodedLogger.isSelected() )
-		{
-			config.addLogger( EventLogType.DECODED_MESSAGE );
-		}
-		if( mCallEventLogger.isSelected() )
-		{
-			config.addLogger( EventLogType.CALL_EVENT );
+			config.clear();
+			
+			if( mBinaryLogger.isSelected() )
+			{
+				config.addLogger( EventLogType.BINARY_MESSAGE );
+			}
+			if( mDecodedLogger.isSelected() )
+			{
+				config.addLogger( EventLogType.DECODED_MESSAGE );
+			}
+			if( mCallEventLogger.isSelected() )
+			{
+				config.addLogger( EventLogType.CALL_EVENT );
+			}
 		}
     }
 
 	@Override
 	public void setConfiguration( Channel channel )
 	{
-		// TODO Auto-generated method stub
-		
+		mChannel = channel;
+
+		if( mChannel != null )
+		{
+			List<EventLogType> loggers = mChannel.getEventLogConfiguration().getLoggers();
+	    	
+    		mBinaryLogger.setSelected( loggers.contains( EventLogType.BINARY_MESSAGE ) );
+    		mDecodedLogger.setSelected(	loggers.contains( EventLogType.DECODED_MESSAGE ) );
+    		mCallEventLogger.setSelected( loggers.contains( EventLogType.CALL_EVENT ) );
+		}
+		else
+		{
+    		mBinaryLogger.setSelected( false );
+    		mDecodedLogger.setSelected( false );
+    		mCallEventLogger.setSelected( false );
+		}
 	}
 
 	@Override
 	public void validateConfiguration() throws ConfigurationValidationException
 	{
-		// TODO Auto-generated method stub
-		
 	}
 }

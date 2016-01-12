@@ -132,19 +132,19 @@ public class OldChannelEditor extends ChannelConfigurationEditor implements Acti
 		tabs.setFont( this.getFont() );
     	tabs.setForeground( Color.BLACK );
 
-		mSourceEditor = new SourceComponentEditor( mSourceManager, mChannel );
+		mSourceEditor = new SourceComponentEditor( mSourceManager );
 		tabs.addTab( "Source", mSourceEditor );
 		
-		mDecodeEditor = new DecodeComponentEditor( mPlaylistManager, mChannel );
+		mDecodeEditor = new DecodeComponentEditor( mPlaylistManager );
 		tabs.addTab( "Decoder", mDecodeEditor );
 
-		mAuxDecodeEditor = new AuxDecodeComponentEditor( mChannel );
+		mAuxDecodeEditor = new AuxDecodeComponentEditor();
 		tabs.addTab( "Aux", mAuxDecodeEditor );
 
-		mEventLogEditor = new EventLogComponentEditor( mChannel );
+		mEventLogEditor = new EventLogComponentEditor();
 		tabs.addTab( "Event Log", mEventLogEditor );
 		
-		mRecordEditor = new RecordComponentEditor( mChannel );
+		mRecordEditor = new RecordComponentEditor();
 		tabs.addTab( "Record", mRecordEditor );
 
 		add( tabs, "span,grow,push" );

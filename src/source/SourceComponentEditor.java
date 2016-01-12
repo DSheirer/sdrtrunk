@@ -28,22 +28,21 @@ import javax.swing.JLabel;
 import net.miginfocom.swing.MigLayout;
 import source.config.SourceConfigFactory;
 import source.config.SourceConfiguration;
-import controller.channel.AbstractChannelEditor;
 import controller.channel.Channel;
+import controller.channel.ChannelConfigurationEditor;
 import controller.channel.ConfigurationValidationException;
 
-public class SourceComponentEditor extends AbstractChannelEditor
+public class SourceComponentEditor extends ChannelConfigurationEditor
 {
     private static final long serialVersionUID = 1L;
 
     private JComboBox<SourceType> mComboSources;
     private SourceEditor mEditor;
     private SourceManager mSourceManager;
+    private Channel mChannel = null;
 
-    public SourceComponentEditor( SourceManager sourceManager, Channel channel )
+    public SourceComponentEditor( SourceManager sourceManager )
 	{
-    	super( channel );
-    	
     	mSourceManager = sourceManager;
     	
 		setLayout( new MigLayout( "fill,wrap 2", "[right,grow][grow]", "[][][grow]" ) );
@@ -60,15 +59,15 @@ public class SourceComponentEditor extends AbstractChannelEditor
 				if( selected != null )
 				{
 					SourceConfiguration config;
-					
-					if( selected == mChannel.getSourceConfiguration().getSourceType() )
+
+					if( mChannel == null ||
+						mChannel.getSourceConfiguration().getSourceType() != selected )
 					{
-						config = mChannel.getSourceConfiguration();
+						config = SourceConfigFactory.getSourceConfiguration( selected );
 					}
 					else
 					{
-						config = SourceConfigFactory
-									.getSourceConfiguration( selected );
+						config = mChannel.getSourceConfiguration();
 					}
 					
 					//Remove the existing one
@@ -91,31 +90,11 @@ public class SourceComponentEditor extends AbstractChannelEditor
 		
 		add( new JLabel( "Source:" ) );
 		add( mComboSources, "wrap" );
-
-		reset();
 	}
     
     public SourceEditor getSourceEditor()
     {
     	return mEditor;
-    }
-
-	public void reset() 
-    {
-        javax.swing.SwingUtilities.invokeLater(new Runnable() 
-        {
-
-            @Override
-            public void run() 
-            {
-    			mComboSources.setSelectedItem( 
-    					mChannel.getSourceConfiguration().getSourceType() );
-
-    			mComboSources.requestFocus();
-
-    			mComboSources.requestFocusInWindow();
-            }
-        });
     }
 
 	@Override
@@ -127,17 +106,29 @@ public class SourceComponentEditor extends AbstractChannelEditor
 		mChannel.setSourceConfiguration( mEditor.getConfig() );
     }
 
+	/**
+	 * Sets the channel configuration.  Note: this method must be invoked from
+	 * the swing event dispatch thread.
+	 */
 	@Override
 	public void setConfiguration( Channel channel )
 	{
-		// TODO Auto-generated method stub
-		
+		mChannel = channel;
+
+		if( mChannel != null )
+		{
+			mComboSources.setSelectedItem( 
+					mChannel.getSourceConfiguration().getSourceType() );
+
+			mComboSources.requestFocus();
+
+			mComboSources.requestFocusInWindow();
+		}
 	}
 
 	@Override
 	public void validateConfiguration() throws ConfigurationValidationException
 	{
-		// TODO Auto-generated method stub
 		
 	}
 }

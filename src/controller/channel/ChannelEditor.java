@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ package controller.channel;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -63,11 +64,10 @@ public class ChannelEditor extends JPanel
     private RecordComponentEditor mRecordEditor;
     private SourceComponentEditor mSourceEditor;
     
-	private JTextField mChannelName;
-	private JCheckBox mChannelEnabled = new JCheckBox();
-    private JComboBox<AliasList> mComboAliasLists;
-    
 	private Channel mChannel;
+
+	private JCheckBox mChannelEnabled = new JCheckBox();
+    
 	private ChannelModel mChannelModel;
     private PlaylistManager mPlaylistManager;
     private SourceManager mSourceManager;
@@ -88,9 +88,18 @@ public class ChannelEditor extends JPanel
 		initGUI();
 	}
 	
-	public void setChannel( Channel channel )
+	/**
+	 * Sets the channel configuration in each of the channel editor components
+	 * Note: this method must be invoked on the swing event dispatch thread
+	 */
+	public void setChannel( final Channel channel )
 	{
 		mNameConfigurationEditor.setConfiguration( channel );
+		mSourceEditor.setConfiguration( channel );
+		mDecodeEditor.setConfiguration( channel );
+		mAuxDecodeEditor.setConfiguration( channel );
+		mEventLogEditor.setConfiguration( channel );
+		mRecordEditor.setConfiguration( channel );
 		
 		mChannel = channel;
 	}
@@ -103,27 +112,28 @@ public class ChannelEditor extends JPanel
 
 		add( new JLabel( "Enabled:" ), "wrap" );
 
-		add( mNameConfigurationEditor );
+		add( mNameConfigurationEditor, "growx" );
 
 		JideTabbedPane tabs = new JideTabbedPane();
 		tabs.setFont( this.getFont() );
     	tabs.setForeground( Color.BLACK );
 
     	tabs.addTab( "Name/Alias", mNameConfigurationEditor );
-//		mSourceEditor = new SourceComponentEditor( mSourceManager, mChannel );
-//		tabs.addTab( "Source", mSourceEditor );
-//		
-//		mDecodeEditor = new DecodeComponentEditor( mPlaylistManager, mChannel );
-//		tabs.addTab( "Decoder", mDecodeEditor );
-//
-//		mAuxDecodeEditor = new AuxDecodeComponentEditor( mChannel );
-//		tabs.addTab( "Aux", mAuxDecodeEditor );
-//
-//		mEventLogEditor = new EventLogComponentEditor( mChannel );
-//		tabs.addTab( "Event Log", mEventLogEditor );
-//		
-//		mRecordEditor = new RecordComponentEditor( mChannel );
-//		tabs.addTab( "Record", mRecordEditor );
+    	
+		mSourceEditor = new SourceComponentEditor( mSourceManager );
+		tabs.addTab( "Source", mSourceEditor );
+		
+		mDecodeEditor = new DecodeComponentEditor( mPlaylistManager );
+		tabs.addTab( "Decoder", mDecodeEditor );
+
+		mAuxDecodeEditor = new AuxDecodeComponentEditor();
+		tabs.addTab( "Aux Decoders", mAuxDecodeEditor );
+
+		mEventLogEditor = new EventLogComponentEditor();
+		tabs.addTab( "Logging", mEventLogEditor );
+		
+		mRecordEditor = new RecordComponentEditor();
+		tabs.addTab( "Recording", mRecordEditor );
 
 		add( tabs, "span,grow,push" );
 		
@@ -139,7 +149,28 @@ public class ChannelEditor extends JPanel
 	@Override
 	public void channelChanged( ChannelEvent event )
 	{
+		if( !EventQueue.isDispatchThread() )
+		{
+			mLog.debug( "Not on the swing thread!!!!" );
+		}
 		
+		if( mChannel != null && mChannel == event.getChannel() )
+		{
+			switch( event.getEvent() )
+			{
+				case NOTIFICATION_CONFIGURATION_CHANGE:
+				case NOTIFICATION_PROCESSING_START:
+				case NOTIFICATION_PROCESSING_STOP:
+					setChannel( mChannel );
+					break;
+				case NOTIFICATION_DELETE:
+					mChannel = null;
+					setChannel( mChannel );
+					break;
+				default:
+					break;
+			}
+		}
 	}
 
 	@Override
@@ -163,6 +194,17 @@ public class ChannelEditor extends JPanel
 		{
 			//Validate each of the configuration editors to check for errors
 			mNameConfigurationEditor.validateConfiguration();
+			mSourceEditor.validateConfiguration();
+			mDecodeEditor.validateConfiguration();
+			mAuxDecodeEditor.validateConfiguration();
+			mEventLogEditor.validateConfiguration();
+			
+			//Validate the source configuration against the decode editor to 
+			//ensure that the source type is compatible with the decode type
+			
+			//Validate the aux decoders against the primary decoder
+//TODO: make sure that no aux decoders are running with P25
+			
 //			/**
 //			 * Validate the source configuration against the other component
 //			 * configuration editors
@@ -207,6 +249,10 @@ public class ChannelEditor extends JPanel
 
 		//Save the contents of each editor to the channel configuration
 		mNameConfigurationEditor.save();
+		mSourceEditor.save();
+		mDecodeEditor.save();
+		mAuxDecodeEditor.save();
+		mEventLogEditor.save();
 		
 		//Broadcast a channel configuration change event
 		mChannelModel.broadcast( new ChannelEvent( mChannel, 

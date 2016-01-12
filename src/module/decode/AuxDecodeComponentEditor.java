@@ -17,84 +17,70 @@
  ******************************************************************************/
 package module.decode;
 
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 
 import javax.swing.JCheckBox;
-import javax.swing.SwingUtilities;
 
 import module.decode.config.AuxDecodeConfiguration;
-import controller.channel.AbstractChannelEditor;
 import controller.channel.Channel;
+import controller.channel.ChannelConfigurationEditor;
 import controller.channel.ConfigurationValidationException;
 
-public class AuxDecodeComponentEditor extends AbstractChannelEditor
+public class AuxDecodeComponentEditor extends ChannelConfigurationEditor
 {
     private static final long serialVersionUID = 1L;
 
-    private HashMap<DecoderType,AuxDecoderCheckBox> mControls = 
-    		new HashMap<DecoderType,AuxDecoderCheckBox>();
+    private List<AuxDecoderCheckBox> mControls = new ArrayList<>();
     
-	public AuxDecodeComponentEditor( Channel channel )
+    private Channel mChannel;
+    
+	public AuxDecodeComponentEditor()
 	{
-		super( channel );
-		
 		List<DecoderType> decoders = DecoderType.getAuxDecoders();
 		
 		Collections.sort( decoders );
-		
+
 		for( DecoderType decoder: decoders )
 		{
 			AuxDecoderCheckBox control = new AuxDecoderCheckBox( decoder );
 			
-			if( getConfig().getAuxDecoders().contains( decoder ) )
-			{
-				control.setSelected( true );
-			}
-			
 			add( control, "wrap" );
 
-			mControls.put( decoder, control );
+			mControls.add( control );
 		}
 	}
 
 	public AuxDecodeConfiguration getConfig()
 	{
-		return getChannel().getAuxDecodeConfiguration();
+		if( mChannel != null )
+		{
+			return mChannel.getAuxDecodeConfiguration();
+		}
+		
+		return new AuxDecodeConfiguration();
 	}
 
 	@Override
     public void save()
     {
-		getConfig().clearAuxDecoders();
-		
-		for( DecoderType decoder: mControls.keySet() )
+		if( mChannel != null )
 		{
-			if( mControls.get( decoder ) .isSelected() )
+			AuxDecodeConfiguration config = mChannel.getAuxDecodeConfiguration();
+			
+			config.clearAuxDecoders();
+			
+			for( AuxDecoderCheckBox checkBox: mControls )
 			{
-				getConfig().addAuxDecoder( decoder );
+				if( checkBox.isSelected() )
+				{
+					config.addAuxDecoder( checkBox.getDecoderType() );
+				}
 			}
 		}
     }
 
-	@Override
-    public void reset()
-    {
-        SwingUtilities.invokeLater(new Runnable() 
-        {
-            @Override
-            public void run() 
-            {
-                for( DecoderType decoder: mControls.keySet() )
-        		{
-        			mControls.get( decoder ).setSelected( 
-        					getConfig().getAuxDecoders().contains( decoder ) );
-        		}
-            }
-        });
-    }
-	
 	public class AuxDecoderCheckBox extends JCheckBox
 	{
 		private static final long serialVersionUID = 1L;
@@ -107,19 +93,35 @@ public class AuxDecodeComponentEditor extends AbstractChannelEditor
 			
 			mDecoderType = decoder;
 		}
+		
+		public DecoderType getDecoderType()
+		{
+			return mDecoderType;
+		}
 	}
 
 	@Override
 	public void setConfiguration( Channel channel )
 	{
-		// TODO Auto-generated method stub
-		
+		mChannel = channel;
+
+		for( AuxDecoderCheckBox checkBox: mControls )
+		{
+        	if( mChannel != null &&
+    			mChannel.getAuxDecodeConfiguration().getAuxDecoders()
+    				.contains( checkBox.getDecoderType() ) )
+        	{
+        		checkBox.setSelected( true );
+        	}
+        	else
+        	{
+        		checkBox.setSelected( false );
+        	}
+		}
 	}
 
 	@Override
 	public void validateConfiguration() throws ConfigurationValidationException
 	{
-		// TODO Auto-generated method stub
-		
 	}
 }

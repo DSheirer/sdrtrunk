@@ -129,12 +129,12 @@ public class ControllerPanel extends JPanel
     	mTabbedPane = new JideTabbedPane();
     	mTabbedPane.setFont( this.getFont() );
     	mTabbedPane.setForeground( Color.BLACK );
+    	mTabbedPane.addTab( "Channels", mPlaylistEditor );
     	mTabbedPane.addTab( "Configuration", mSystemControlSplitPane  );
     	mTabbedPane.addTab( "Channel Spectrum", mChannelSpectrumPanel );
     	mTabbedPane.addTab( "Events", mCallEventPanel );
     	mTabbedPane.addTab( "Messages", mMessageActivityPanel );
-
-    	mTabbedPane.addTab(  "Playlist", mPlaylistEditor );
+    	mTabbedPane.addTab( "Map", mMapPanel );
 
     	/**
     	 * Change listener to enable/disable the channel spectrum display
@@ -160,11 +160,6 @@ public class ControllerPanel extends JPanel
 			}
 		} );
     	
-    	/**
-    	 * Add mapping services and map panel to a new tab
-    	 */
-    	mTabbedPane.addTab( "Map", mMapPanel );
-    	
     	/* Register each of the components to receive channel events when the
     	 * channels are selected or change */
     	mChannelModel.addListener( mCallEventPanel );
@@ -175,7 +170,6 @@ public class ControllerPanel extends JPanel
 		JScrollPane channelStateListScroll = new JScrollPane();
     	channelStateListScroll.getViewport().setView( mChannelStateList );
     	channelStateListScroll.setPreferredSize( new Dimension( 200, 300 ) ); 
-
 
     	JideSplitPane audioChannelListSplit = new JideSplitPane( JideSplitPane.VERTICAL_SPLIT );
     	audioChannelListSplit.setDividerSize( 5 );

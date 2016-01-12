@@ -54,13 +54,15 @@ public class PlaylistEditor extends JPanel implements ListSelectionListener
     	mChannelTable.getSelectionModel().addListSelectionListener( this );
     	mChannelTable.setAutoCreateRowSorter( true );
     	
-    	TableFilterHeader channelHeaderFilter = new TableFilterHeader( mChannelTable );
-    	channelHeaderFilter.setAutoChoices( AutoChoices.ENABLED );
+    	TableFilterHeader channelHeaderFilter = 
+    			new TableFilterHeader( mChannelTable, AutoChoices.ENABLED );
+    	channelHeaderFilter.setFilterOnUpdates( true );
     	
     	JScrollPane channelScroller = new JScrollPane( mChannelTable );
 		
 		JideSplitPane splitPane = new JideSplitPane( JideSplitPane.HORIZONTAL_SPLIT );
 		splitPane.setDividerSize( 5 );
+		splitPane.setShowGripper( true );
 		splitPane.add( channelScroller );
 		splitPane.add( mEditor );
 
@@ -73,15 +75,22 @@ public class PlaylistEditor extends JPanel implements ListSelectionListener
 		//This limits event firing to only when selection is complete 
 		if( !event.getValueIsAdjusting() )
 		{
-			int index = mChannelTable.convertRowIndexToModel( mChannelTable.getSelectedRow() );
-
-			mLog.debug( "Index:" + index );
+			int selectedRow = mChannelTable.getSelectedRow();
 			
-			Channel channel = mChannelModel.getChannels().get( index );
-			
-			if( channel != null )
+			if( selectedRow != -1 )
 			{
-				mEditor.setChannel( channel );
+				int index = mChannelTable.convertRowIndexToModel( mChannelTable.getSelectedRow() );
+				
+				Channel channel = mChannelModel.getChannels().get( index );
+				
+				if( channel != null )
+				{
+					mEditor.setChannel( channel );
+				}
+			}
+			else
+			{
+				mEditor.setChannel( null );
 			}
 		}
 	}

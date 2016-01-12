@@ -1,3 +1,20 @@
+/*******************************************************************************
+ *     SDR Trunk 
+ *     Copyright (C) 2014-2016 Dennis Sheirer
+ * 
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ * 
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ * 
+ *     You should have received a copy of the GNU General Public License
+ *     along with this program.  If not, see <http://www.gnu.org/licenses/>
+ ******************************************************************************/
 package controller.channel;
 
 import java.awt.event.ActionEvent;
@@ -13,9 +30,6 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import net.miginfocom.swing.MigLayout;
 import playlist.PlaylistManager;
 import alias.AliasList;
@@ -24,14 +38,14 @@ public class NameConfigurationEditor extends ChannelConfigurationEditor
 {
 	private static final long serialVersionUID = 1L;
 
-	private final static Logger mLog = LoggerFactory.getLogger( NameConfigurationEditor.class );
+	private static final String DEFAULT_NAME = "Please select a channel to view/edit";
 	
 	private static ComboBoxModel<String> EMPTY_MODEL = new DefaultComboBoxModel<>();
 
 	private ChannelModel mChannelModel;
 	private PlaylistManager mPlaylistManager;
 	
-	private JTextField mChannelName = new JTextField( "Please select a channel to edit" );
+	private JTextField mChannelName = new JTextField( DEFAULT_NAME );
 	private JComboBox<String> mSystemNameCombo = new JComboBox<>( EMPTY_MODEL );
 	private JComboBox<String> mSiteNameCombo = new JComboBox<>( EMPTY_MODEL );
 	private JComboBox<AliasList> mAliasListCombo;
@@ -44,7 +58,7 @@ public class NameConfigurationEditor extends ChannelConfigurationEditor
 		mChannelModel = model;
 		mPlaylistManager = playlistManager;
 		
-		setLayout( new MigLayout( "fill,wrap 2", "[right][]", "[][][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][]", "[][][][][][grow]" ) );
 
 		add( new JLabel( "Name:" ) );
 		add( mChannelName, "growx" );
@@ -156,7 +170,11 @@ public class NameConfigurationEditor extends ChannelConfigurationEditor
 			mChannel.setSystem( ( system == null ? null : (String)system ) );
 
 			Object site = mSiteNameCombo.getSelectedItem();
-			mChannel.setSystem( ( site == null ? null : (String)site ) );
+			mChannel.setSite( ( site == null ? null : (String)site ) );
+
+			Object aliasList = mAliasListCombo.getSelectedItem();
+			mChannel.setAliasListName( aliasList == null ? null : 
+							((AliasList)aliasList).getName() );
 		}
 	}
 
@@ -178,44 +196,54 @@ public class NameConfigurationEditor extends ChannelConfigurationEditor
 	{
 		mChannel = channel;
 		
-		mChannelName.setText( channel.getName() );
-
-		List<String> systems = mChannelModel.getSystems();
-		
-		if( systems.isEmpty() )
+		if( mChannel != null )
 		{
+			mChannelName.setText( channel.getName() );
+
+			List<String> systems = mChannelModel.getSystems();
+			
+			if( systems.isEmpty() )
+			{
+				mSystemNameCombo.setModel( EMPTY_MODEL );
+			}
+			else
+			{
+				mSystemNameCombo.setModel( new DefaultComboBoxModel<String>( 
+						systems.toArray( new String[ systems.size() ] ) ) );;
+			}
+			
+			mSystemNameCombo.setSelectedItem( channel.getSystem() );
+
+			List<String> sites = mChannelModel.getSites( channel.getSystem() );
+
+			if( sites.isEmpty() )
+			{
+				mSiteNameCombo.setModel( EMPTY_MODEL );
+			}
+			else
+			{
+				mSiteNameCombo.setModel( new DefaultComboBoxModel<String>( 
+						sites.toArray( new String[ sites.size() ] ) ) );;
+			}
+					
+			mSiteNameCombo.setSelectedItem( channel.getSite() );
+			
+			String aliasListName = mChannel.getAliasListName();
+
+		   	if( aliasListName != null )
+		   	{
+		   		AliasList selected = mPlaylistManager.getPlayist().getAliasDirectory()
+		   			.getAliasList( aliasListName );
+		
+		   		mAliasListCombo.setSelectedItem( selected );
+		   	}
+		}
+		else
+		{
+			mChannelName.setText( DEFAULT_NAME );
 			mSystemNameCombo.setModel( EMPTY_MODEL );
-		}
-		else
-		{
-			mSystemNameCombo.setModel( new DefaultComboBoxModel<String>( 
-					systems.toArray( new String[ systems.size() ] ) ) );;
-		}
-		
-		mSystemNameCombo.setSelectedItem( channel.getSystem() );
-
-		List<String> sites = mChannelModel.getSites( channel.getSystem() );
-
-		if( sites.isEmpty() )
-		{
 			mSiteNameCombo.setModel( EMPTY_MODEL );
+			mAliasListCombo.setSelectedIndex( 0 );
 		}
-		else
-		{
-			mSiteNameCombo.setModel( new DefaultComboBoxModel<String>( 
-					sites.toArray( new String[ sites.size() ] ) ) );;
-		}
-				
-		mSiteNameCombo.setSelectedItem( channel.getSite() );
-		
-		String aliasListName = mChannel.getAliasListName();
-
-	   	if( aliasListName != null )
-	   	{
-	   		AliasList selected = mPlaylistManager.getPlayist().getAliasDirectory()
-	   			.getAliasList( aliasListName );
-	
-	   		mAliasListCombo.setSelectedItem( selected );
-	   	}
 	}
 }
