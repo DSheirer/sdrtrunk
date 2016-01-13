@@ -30,6 +30,7 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JSeparator;
 import javax.swing.JTextField;
 
 import module.decode.AuxDecodeComponentEditor;
@@ -66,7 +67,8 @@ public class ChannelEditor extends JPanel
     
 	private Channel mChannel;
 
-	private JCheckBox mChannelEnabled = new JCheckBox();
+	private JButton mEnableButton = new JButton( "Enable" );
+	private JLabel mChannelName = new JLabel( "Channel:" );
     
 	private ChannelModel mChannelModel;
     private PlaylistManager mPlaylistManager;
@@ -101,6 +103,22 @@ public class ChannelEditor extends JPanel
 		mEventLogEditor.setConfiguration( channel );
 		mRecordEditor.setConfiguration( channel );
 		
+		if( channel != null )
+		{
+			mChannelName.setText( "Channel: " + channel.getName() );
+			mEnableButton.setText( channel.getEnabled() ? "Disable" : "Enable" );
+			mEnableButton.setEnabled( true );
+			mEnableButton.setBackground( channel.getEnabled() ? Color.RED : Color.GREEN );
+		}
+		else
+		{
+			mChannelName.setText( "Channel: " );
+			mEnableButton.setText( "Enable" );
+			mEnableButton.setEnabled( false );
+			mEnableButton.setBackground( getBackground() );
+		}
+		
+		
 		mChannel = channel;
 	}
 
@@ -108,12 +126,11 @@ public class ChannelEditor extends JPanel
 	{
 		setLayout( new MigLayout( "fill,wrap 2", "[right,grow][grow]", "[][][][][grow][]" ) );
 		
-		add( new JLabel( "Channel Configuration" ), "span, align center" );
+		mEnableButton.setEnabled( false );
+		add( mEnableButton, "growx,push" );
+		add( mChannelName, "growx,push" );
 
-		add( new JLabel( "Enabled:" ), "wrap" );
-
-		add( mNameConfigurationEditor, "growx" );
-
+		add( new JSeparator( JSeparator.HORIZONTAL ), "span,growx,push" );
 		JideTabbedPane tabs = new JideTabbedPane();
 		tabs.setFont( this.getFont() );
     	tabs.setForeground( Color.BLACK );
@@ -149,11 +166,7 @@ public class ChannelEditor extends JPanel
 	@Override
 	public void channelChanged( ChannelEvent event )
 	{
-		if( !EventQueue.isDispatchThread() )
-		{
-			mLog.debug( "Not on the swing thread!!!!" );
-		}
-		
+		mLog.debug( "Received channel event: " + event.getEvent() );
 		if( mChannel != null && mChannel == event.getChannel() )
 		{
 			switch( event.getEvent() )

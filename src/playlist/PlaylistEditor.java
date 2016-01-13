@@ -38,6 +38,7 @@ public class PlaylistEditor extends JPanel implements ListSelectionListener
 		mChannelModel = channelModel;
 
     	mEditor = new ChannelEditor( channelModel, playlistManager, sourceManager );
+    	mChannelModel.addListener( mEditor );
 
     	init();
 	}
