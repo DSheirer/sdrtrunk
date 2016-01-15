@@ -421,7 +421,7 @@ public class SDRTrunk
 
     		if( version != null )
     		{
-    			sb.append( " V" );
+    			sb.append( " v" );
     			sb.append( version );
     		}
     	}
