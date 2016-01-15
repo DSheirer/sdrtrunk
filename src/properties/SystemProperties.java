@@ -87,13 +87,11 @@ public class SystemProperties
 			
 			mProperties.store( out, comments );
 			
-			mLog.info( "SystemProperties - saved current properties [" + 
-							propsPath.toString() + "]" );
+			mLog.info( "saved current properties [" + propsPath.toString() + "]" );
 		}
 		catch( Exception e )
 		{
-			mLog.error( "SystemProperties - exception while saving " +
-					"application properties", e );
+			mLog.error( "exception while saving application properties", e );
 		}
 		finally
 		{
@@ -146,8 +144,7 @@ public class SystemProperties
             }
             catch ( IOException e )
             {
-            	mLog.error( "SystemProperties - exception while creating " +
-            			"app folder [" + folder + "]", e );
+            	mLog.error( "exception while creating app folder [" + folder + "]", e );
             }
 		}
 		
@@ -158,11 +155,11 @@ public class SystemProperties
 	{
 		if( mPropertiesPath == null )
 		{
-			mLog.info( "SystemProperties - no properties file loaded - using defaults" );
+			mLog.info( "no properties file loaded - using defaults" );
 		}
 		else
 		{
-			mLog.info( "SystemProperties - application properties loaded [" + mPropertiesPath.toString() + "]" );
+			mLog.info( "application properties loaded [" + mPropertiesPath.toString() + "]" );
 		}
 	}
 	
@@ -184,7 +181,7 @@ public class SystemProperties
             }
             catch ( FileNotFoundException e )
             {
-            	mLog.error( "SDRTrunk - exception while opening inputstream on " +
+            	mLog.error( "exception while opening inputstream on " +
     			"application properties file", e  );
             }
 
@@ -196,7 +193,7 @@ public class SystemProperties
                 }
                 catch ( IOException e )
                 {
-                	mLog.error( "SDRTrunk - exception while loading properties " +
+                	mLog.error( "exception while loading properties " +
                 			"inputstream into SystemProperties", e );
                 }
 				finally
@@ -212,8 +209,7 @@ public class SystemProperties
 			}
 		}
 		
-		mLog.info( "SystemProperties - loaded [" + 
-						propertiesPath.toString() + "]" );
+		mLog.info( "loaded [" + propertiesPath.toString() + "]" );
 	}
 
 	/**

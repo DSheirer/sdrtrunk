@@ -100,7 +100,7 @@ public class PlaylistManager
 		}
 		catch( Exception e )
 		{
-			mLog.error( "PlaylistManager - couldn't create file to save "
+			mLog.error( "couldn't create file to save "
 					+ "playlist [" + filePath.toString() + "]" );
 		}
 		
@@ -122,14 +122,12 @@ public class PlaylistManager
 	        }
 	        catch ( JAXBException e )
 	        {
-	        	mLog.error( "PlaylistManager - jaxb exception while saving " +
-		        		"playlist: ", e );
+	        	mLog.error( "jaxb exception while saving playlist: ", e );
 	        }
         }
         catch ( Exception e )
         {
-        	mLog.error( "PlaylistManager - coulcn't open outputstream to " +
-        			"save playlist [" + filePath.toString() + "]", e );
+        	mLog.error( "coulcn't open outputstream to save playlist [" + filePath.toString() + "]", e );
         }
 		finally
 		{
@@ -155,8 +153,7 @@ public class PlaylistManager
 	{
 		if( Files.exists( playlistPath ) )
 		{
-			mLog.info( "PlaylistManager - loading playlist file [" + 
-							playlistPath.toString() + "]" );
+			mLog.info( "loading playlist file [" + playlistPath.toString() + "]" );
 			
 			JAXBContext context = null;
 			
@@ -176,14 +173,12 @@ public class PlaylistManager
 		        }
 		        catch ( JAXBException e )
 		        {
-		        	mLog.error( "PlaylistManager - jaxb exception while loading " +
-			        		"playlist: ", e );
+		        	mLog.error( "jaxb exception while loading playlist: ", e );
 		        }
 	        }
 	        catch ( Exception e )
 	        {
-	        	mLog.error( "PlaylistManager - coulcn't open inputstream to " +
-	        			"load playlist [" + playlistPath.toString() + "]", e );
+	        	mLog.error( "coulcn't open inputstream to load playlist [" + playlistPath.toString() + "]", e );
 	        }
 			finally
 			{
@@ -195,7 +190,7 @@ public class PlaylistManager
 	                }
 	                catch ( IOException e )
 	                {
-	                	mLog.error( "PlaylistManager - exception while closing " +
+	                	mLog.error( "exception while closing " +
 	                			"the playlist file inputstream reader", e );
 	                }
 				}
@@ -203,8 +198,7 @@ public class PlaylistManager
 		}
 		else
 		{
-			mLog.info( "PlaylistManager - playlist does not exist [" + 
-							playlistPath.toString() + "]" );
+			mLog.info( "playlist does not exist [" + playlistPath.toString() + "]" );
 		}
 		
 		if( mPlaylist == null )

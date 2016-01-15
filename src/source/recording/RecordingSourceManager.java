@@ -143,8 +143,7 @@ public class RecordingSourceManager
     			ArrayList<RecordingConfiguration> recordingConfigurations = 
     					settingsManager.getRecordingConfigurations();
 
-    			mLog.info( "RecordingSourceManager - discovered [" + 
-    			recordingConfigurations.size() + "] recording configurations" );
+    			mLog.info( "discovered [" + recordingConfigurations.size() + "] recording configurations" );
     			
     			for( RecordingConfiguration config: recordingConfigurations )
     			{
