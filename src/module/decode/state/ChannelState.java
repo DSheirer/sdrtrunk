@@ -17,6 +17,7 @@
  ******************************************************************************/
 package module.decode.state;
 
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -182,8 +183,16 @@ public class ChannelState extends Module implements ICallEventProvider,
 		{
 			if( mRunningMonitor == null && mStateMonitor != null )
 			{
-				mRunningMonitor = mThreadPoolManager.scheduleFixedRate( 
-						ThreadType.DECODER, mStateMonitor, 20, TimeUnit.MILLISECONDS );
+				try
+				{
+					mRunningMonitor = mThreadPoolManager.scheduleFixedRate( 
+							ThreadType.DECODER, mStateMonitor, 20, TimeUnit.MILLISECONDS );
+				}
+				catch( RejectedExecutionException ree )
+				{
+					mLog.error( "state monitor scheduled task rejected", ree );
+					mMonitoring.set( false );
+				}
 			}
 			else
 			{
@@ -372,6 +381,10 @@ public class ChannelState extends Module implements ICallEventProvider,
 					break;
 			}
 		}
+		else
+		{
+			mLog.debug( "Can't change from [" + mState + "] to [" + state + "]" );
+		}
 	}
 
 	public class StateMonitor implements Runnable
@@ -379,23 +392,35 @@ public class ChannelState extends Module implements ICallEventProvider,
 		@Override
 		public void run()
 		{
-			if( getState() == State.FADE )
+			try
 			{
-				if( mResetTimeout <= System.currentTimeMillis() )
+				if( getState() == State.FADE )
 				{
-					setState( State.END );
+					if( mResetTimeout <= System.currentTimeMillis() )
+					{
+						setState( State.END );
+					}
+				}
+				else if( getState() == State.END )
+				{
+					setState( State.IDLE );
+				}
+				else
+				{
+					if( mFadeTimeout <= System.currentTimeMillis() )
+					{
+						setState( State.FADE );
+					}
 				}
 			}
-			else if( getState() == State.END )
+			catch( Exception e )
 			{
-				setState( State.IDLE );
-			}
-			else
-			{
-				if( mFadeTimeout <= System.currentTimeMillis() )
-				{
-					setState( State.FADE );
-				}
+				mLog.error( "Exception thrown while state monitor is running " +
+						"- state [" + getState() + 
+						"] current [" + System.currentTimeMillis() +
+						"] mResetTimeout [" + mResetTimeout +
+						"] mFadeTimeout [" + mFadeTimeout + 
+						"]", e );
 			}
 		}
 	}

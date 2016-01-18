@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,52 +17,94 @@
  ******************************************************************************/
 package message;
 
-
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
 import map.Plottable;
-import module.decode.event.MessageDetailsProvider;
 import alias.Alias;
 
-public abstract class Message implements MessageDetailsProvider
+public abstract class Message
 {
 	protected long mTimeReceived;
-	protected MessageType mType;
 	
 	public Message()
 	{
-		this( MessageType.UN_KNWN );
-	}
-
-	public Message( MessageType type )
-	{
 		mTimeReceived = System.currentTimeMillis();
-		mType = type;
 	}
-	
-	public abstract Plottable getPlottable();
 
-	public abstract String toString();
-	
-	public abstract boolean isValid();
-	
 	public long getTimeReceived()
 	{
 		return mTimeReceived;
 	}
-	
-	public Date getDateReceived()
+
+	/**
+	 * Map plottable
+	 */
+	public Plottable getPlottable()
 	{
-		return new Date( mTimeReceived );
-	}
-	
-	public MessageType getType()
-	{
-		return mType;
+//TODO: move this to an IPlottable interface that only gets implemented as needed
+		return null;
 	}
 
+	/**
+	 * Decoded textual representation of the message
+	 */
+	public abstract String toString();
+	
+	/**
+	 * Indicates if the message is valid and has passed crc/integrity checks
+	 */
+	public abstract boolean isValid();
+
+	/**
+	 * Status of the CRC check of the message
+	 */
+	public abstract String getErrorStatus();
+
+	/**
+	 * Parsed Message
+	 * @return
+	 */
+	public abstract String getMessage();
+
+	/**
+	 * Raw ( 0 & 1 ) message bits
+	 */
+	public abstract String getBinaryMessage();
+	
+
+	/**
+	 * Decoded protocol
+	 */
+	public abstract String getProtocol();
+	
+	/**
+	 * Event - call, data, idle, etc.
+	 */
+	public abstract String getEventType();
+	
+	/**
+	 * Formatted from identifier
+	 */
+	public abstract String getFromID();
+
+	/**
+	 * From identifier alias (from AliasManager)
+	 */
+	public abstract Alias getFromIDAlias();
+	
+	/**
+	 * Formatted to identifier
+	 */
+	public abstract String getToID();
+	
+	/**
+	 * To identifier alias (from AliasManager)
+	 * @return
+	 */
+	public abstract Alias getToIDAlias();
+	
+	
 	/**
 	 * Provides a listing of aliases contained in the message.  
 	 */

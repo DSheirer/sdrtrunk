@@ -19,6 +19,7 @@ package module.decode.event;
 
 import java.awt.EventQueue;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.LinkedList;
 
 import javax.swing.table.AbstractTableModel;
@@ -174,7 +175,7 @@ public class MessageActivityModel extends AbstractTableModel
 		switch( columnIndex )
 		{
 			case sTIME:
-				return mSDFTime.format( message.getDateReceived() );
+				return mSDFTime.format( new Date( message.getTimeReceived() ) );
 			case sPROTOCOL:
 				return message.getProtocol();
 			case sERROR_STATUS:

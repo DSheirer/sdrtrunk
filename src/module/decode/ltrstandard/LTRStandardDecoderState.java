@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,21 +17,31 @@
  ******************************************************************************/
 package module.decode.ltrstandard;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 
 import message.Message;
 import module.decode.DecoderType;
 import module.decode.event.CallEvent.CallEventType;
 import module.decode.ltrnet.LTRCallEvent;
+import module.decode.ltrstandard.message.CallEndMessage;
+import module.decode.ltrstandard.message.CallMessage;
+import module.decode.ltrstandard.message.IdleMessage;
+import module.decode.ltrstandard.message.LTRStandardMessage;
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderState;
 import module.decode.state.DecoderStateEvent;
 import module.decode.state.DecoderStateEvent.Event;
 import module.decode.state.State;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import alias.Alias;
 import alias.AliasList;
 import audio.metadata.Metadata;
@@ -39,15 +49,17 @@ import audio.metadata.MetadataType;
 
 public class LTRStandardDecoderState extends DecoderState
 {
-    private HashMap<Integer,String> mActiveCalls = new HashMap<Integer,String>();
-	private HashSet<String> mTalkgroupsFirstHeard = new HashSet<String>();
-	private TreeSet<String> mTalkgroups = new TreeSet<String>();
-	private TreeSet<Integer> mActiveLCNs = new TreeSet<Integer>();
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( LTRStandardDecoderState.class );
+
+	private Map<Integer,LTRCallEvent> mActiveCalls = new HashMap<>();
+	private Set<String> mTalkgroupsFirstHeard = new HashSet<>();
+	private Set<String> mTalkgroups = new TreeSet<>();
 	
 	private String mTalkgroup;
 	private Alias mTalkgroupAlias;
-    private int mChannelNumber;
     private long mFrequency;
+    private LCNTracker mLCNTracker = new LCNTracker();
 	
 	public LTRStandardDecoderState( AliasList aliasList )
 	{
@@ -70,171 +82,126 @@ public class LTRStandardDecoderState extends DecoderState
 	{
 	}
 
-	private LTRCallEvent getCurrentCallEvent()
-	{
-		return (LTRCallEvent)mCurrentCallEvent;
-	}
-
 	@Override
     public void receive( Message message )
     {
-		if( message.isValid() )
+		if( message.isValid() && message instanceof LTRStandardMessage )
 		{
-			if( message instanceof LTRStandardOSWMessage )
+			switch( ((LTRStandardMessage)message).getMessageType() )
 			{
-				LTRStandardOSWMessage ltr = ((LTRStandardOSWMessage)message);
-				
-				switch( ltr.getMessageType() )
-				{
-					case CA_STRT:
-					    if( 0 < ltr.getChannel() && ltr.getChannel() <=20 )
-					    {
-					    	/* If we haven't captured the LCN yet ... */
-					    	if( mChannelNumber == 0 )
-					    	{
-	                            mChannelNumber = ltr.getChannel();
-	                            broadcast( ChangedAttribute.CHANNEL_NUMBER );
-					    	}
+				case CA_STRT:
+					CallMessage start = (CallMessage)message;
+					
+					int channel = start.getChannel();
+					
+					mLCNTracker.processCallChannel( channel );
+					
+					mLCNTracker.processFreeChannel( start.getFree() );
 
-	                        /* If this call event is for this channel, then update
-	                         * talkgroup and alias */
-	                        if( ltr.getChannel() == mChannelNumber )
-	                        {
-	                            mTalkgroup = ltr.getTalkgroupID();
-	                            broadcast( ChangedAttribute.TO_TALKGROUP );
-	                            
-	                            mTalkgroupAlias = ltr.getTalkgroupIDAlias();
-	                            broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
-	                            
-	                        	LTRCallEvent current = getCurrentCallEvent();
+					//Only process calls on this LCN, or call detects for 
+					//talkgroups that are homed on this LCN
+					if( mLCNTracker.isValidChannel( channel ) &&
+						( mLCNTracker.isCurrentChannel( channel ) ||
+						  mLCNTracker.isCurrentChannel( start.getHomeRepeater() ) ) )
+					{
+						LTRCallEvent event = mActiveCalls.get( channel );
+						
+						if( event == null || 
+							!event.isMatchingTalkgroup( start.getToID() ) )
+						{
+							//Check for different talkgroup
+							if( event != null )
+							{
+								event.end();
+								mActiveCalls.remove( channel );
+							}
 
-	                        	/* Detect when we haven't reset from the previous
-	                        	 * call and now have a new call coming in with
-	                        	 * a different talkgroup */
-	                        	if( current != null && isDifferentTalkgroup( mTalkgroup ) )
-	                        	{
-	                        		mCurrentCallEvent.end();
-	                        		broadcast( mCurrentCallEvent );
-	                        		mCurrentCallEvent = null;
-	                        	}
-	                        	
-	                    		if( current == null )
-	                    		{
-	                    			mCurrentCallEvent = 
-    	                        		new LTRCallEvent.Builder( 
-    	                        				DecoderType.LTR_STANDARD, CallEventType.CALL )
-        	                            .to( ltr.getTalkgroupID() )
-        	                            .aliasList( getAliasList() )
-        	                            .channel( String.valueOf( ltr.getChannel() ) )
-        	                            .frequency( mFrequency )
-        	                            .build();
+							boolean current = mLCNTracker.isCurrentChannel( channel );
+							
+							event = new LTRCallEvent.Builder( 
+                				DecoderType.LTR_STANDARD, 
+                				current ? CallEventType.CALL : CallEventType.CALL_DETECT )
+									.to( start.getToID() )
+		                            .aliasList( getAliasList() )
+		                            .channel( start.getChannelFormatted() )
+		                            .frequency( current ? mFrequency : 0 )
+		                            .build();
+							
+							mActiveCalls.put( channel, event );
+							
+							broadcast( event );
+							
+							if( mLCNTracker.isCurrentChannel( channel ) )
+							{
+		                        mTalkgroup = start.getToID();
+		                        broadcast( ChangedAttribute.TO_TALKGROUP );
+		                        
+		                        processTalkgroup( mTalkgroup );
+		                        
+		                        mTalkgroupAlias = start.getToIDAlias();
+		                        broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
 
-	                    			broadcast( mCurrentCallEvent );
-	                    			
-	                				broadcast( new Metadata( MetadataType.TO, 
-	                						mTalkgroup, mTalkgroupAlias, true ) );
+		                        broadcast( new Metadata( MetadataType.TO, 
+	            						mTalkgroup, mTalkgroupAlias, true ) );
+							}
+						}
+						
+	            		broadcast( new DecoderStateEvent( this, 
+	            				Event.CONTINUATION, State.CALL ) );
+				    }
+					break;
+				case CA_ENDD:
+					CallEndMessage end = (CallEndMessage)message;
 
-		                    		broadcast( new DecoderStateEvent( this, 
-		                    				Event.START, State.CALL ) );
-	                    		}
-	                    		else
-	                    		{
-		                    		broadcast( new DecoderStateEvent( this, 
-		                    				Event.CONTINUATION, State.CALL ) );
-	                    		}
-	                        }
-					    }
-						break;
-					case CA_ENDD:
-	                    mTalkgroup = ltr.getTalkgroupID();
-	                    broadcast( ChangedAttribute.TO_TALKGROUP );
+					int repeater = end.getHomeRepeater();
+					
+					mLCNTracker.processCallChannel( repeater );
+					
+					if( mLCNTracker.isCurrentChannel( repeater ) )
+					{
+		                mTalkgroup = end.getToID();
+		                broadcast( ChangedAttribute.TO_TALKGROUP );
+		                
+		                processTalkgroup( mTalkgroup );
+		
+		                mTalkgroupAlias = end.getToIDAlias();
+		                broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
 
-	                    mTalkgroupAlias = ltr.getTalkgroupIDAlias();
-	                    broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
+		                LTRCallEvent event = mActiveCalls.remove( repeater );
+		                
+		                if( event != null )
+		                {
+		                	event.end();
+		                	broadcast( event );
+		            		broadcast( new DecoderStateEvent( this, Event.END, State.FADE ) );
+		                }
+					}
+					break;
+				case SY_IDLE:
+					IdleMessage idle = (IdleMessage)message;
 
-	                    if( mCurrentCallEvent != null )
-	                    {
-	                    	mCurrentCallEvent.end();
-	                    	broadcast( mCurrentCallEvent );
-                    		broadcast( new DecoderStateEvent( this, Event.END, State.FADE ) );
-                    		mCurrentCallEvent = null;
-	                    }
-	                    
-						int home = ltr.getHomeRepeater();
-					    
-					    if( 0 < home && home <= 20 )
-					    {
-	                        String talkgroup = ltr.getTalkgroupID( false );
-	                        
-	                        if( mTalkgroupsFirstHeard.contains( talkgroup ) )
-	                        {
-	                            mTalkgroups.add( talkgroup );
-	                        }
-	                        else
-	                        {
-	                            mTalkgroupsFirstHeard.add( talkgroup );
-	                        }
-					    }
+					int lcn = idle.getChannel();
 
-					    int channel = ltr.getChannel();
-					    
-					    if( 0 < channel && channel <= 20 )
-					    {
-	                        if( channel == home )
-	                        {
-	                        	if( mChannelNumber != channel )
-	                        	{
-		                            mChannelNumber = channel;
-		                            broadcast( ChangedAttribute.CHANNEL_NUMBER );
-	                        	}
-	                        	
-	                            mActiveLCNs.add( channel );
-	                        }
-	                        
-	                        int free = ltr.getFree();
-	                        
-	                        if( 0 < free && free <= 20 )
-	                        {
-	                            mActiveLCNs.add( free );
-	                        }
-					    }
-
-						break;
-					case SY_IDLE:
-					    int idleChannel = ltr.getChannel();
-					    
-					    if( idleChannel == ltr.getHomeRepeater() &&
-					        idleChannel == ltr.getFree() )
-					    {
-                        	if( mChannelNumber != idleChannel )
-                        	{
-	                            mChannelNumber = idleChannel;
-	                            broadcast( ChangedAttribute.CHANNEL_NUMBER );
-                        	}
-                        	
-	                        mActiveLCNs.add( idleChannel );
-					    }
-					    broadcast( new DecoderStateEvent( this, 
-					    		Event.CONTINUATION, State.IDLE ) );
-						break;
-					case UN_KNWN:
-					default:
-						break;
-				}
+					mLCNTracker.processCallChannel( lcn );
+					
+					break;
+				case UN_KNWN:
+				default:
+					break;
 			}
 		}
     }
-	
-	/**
-	 * Indicates if the talkgroup is different than the talkgroup specified in
-	 * the current call event
-	 */
-	private boolean isDifferentTalkgroup( String talkgroup )
+
+	private void processTalkgroup( String talkgroup )
 	{
-		return talkgroup != null &&
-			   mCurrentCallEvent != null &&
-			   mCurrentCallEvent.getToID() != null &&
-			   !mCurrentCallEvent.getToID().contentEquals( talkgroup );
+        if( mTalkgroupsFirstHeard.contains( talkgroup ) )
+        {
+            mTalkgroups.add( talkgroup );
+        }
+        else
+        {
+            mTalkgroupsFirstHeard.add( talkgroup );
+        }
 	}
 	
 	/**
@@ -245,8 +212,7 @@ public class LTRStandardDecoderState extends DecoderState
 	    mActiveCalls.clear();
 	    mTalkgroupsFirstHeard.clear();
 	    mTalkgroups.clear();
-	    mActiveLCNs.clear();
-	    mChannelNumber = 0;
+	    mLCNTracker.reset();
 
 		resetState();
 	}
@@ -256,13 +222,20 @@ public class LTRStandardDecoderState extends DecoderState
 	 */
 	private void resetState()
 	{
-		if( mCurrentCallEvent != null )
+		for( Integer key: mActiveCalls.keySet() )
 		{
-			mCurrentCallEvent.setEnd( System.currentTimeMillis() );
-			broadcast( mCurrentCallEvent );
-			mCurrentCallEvent = null;
+			LTRCallEvent event = mActiveCalls.get( key );
+			
+			if( event != null )
+			{
+				event.end();
+				
+				broadcast( event );
+			}
 		}
-
+		
+		mActiveCalls.clear();
+		
 		mTalkgroup = null;
 		broadcast( ChangedAttribute.TO_TALKGROUP );
 
@@ -282,12 +255,12 @@ public class LTRStandardDecoderState extends DecoderState
 	
     public boolean hasChannelNumber()
     {
-        return mChannelNumber != 0;
+        return mLCNTracker.getCurrentChannel() != 0;
     }
     
     public int getChannelNumber()
     {
-        return mChannelNumber;
+        return mLCNTracker.getCurrentChannel();
     }
 
 	@Override
@@ -322,28 +295,28 @@ public class LTRStandardDecoderState extends DecoderState
 		
 		sb.append( "Monitored LCN: " );
 		
-		if( mChannelNumber > 0 )
+		if( hasChannelNumber() )
 		{
-	        sb.append( mChannelNumber );
+	        sb.append( getChannelNumber() );
 		}
 		else
 		{
-		    sb.append( "unknown" );
+		    sb.append( "*Insufficient Data*" );
 		}
 		
 		sb.append( "\n" );
 		
-		Integer[] lcns = mActiveLCNs.toArray( new Integer[0] );
-		
 		sb.append( "Active LCNs:\t" );
+
+		List<Integer> lcns = mLCNTracker.getActiveLCNs();
 		
-		if( lcns.length > 0 )
+		if( lcns.size() > 0 )
 		{
-	        sb.append(  Arrays.toString( lcns ) );
+	        sb.append( mLCNTracker.getActiveLCNs() );
 		}
 		else
 		{
-		    sb.append( "none" );
+		    sb.append( "*Insufficient Data*" );
 		}
 		sb.append( "\n\n" );
 
@@ -355,19 +328,15 @@ public class LTRStandardDecoderState extends DecoderState
 		}
 		else
 		{
-			Iterator<String> it = mTalkgroups.iterator();
-			
-			while( it.hasNext() )
+			for( String talkgroup: mTalkgroups )
 			{
-				String tgid = it.next();
-				
 				sb.append( "  " );
-				sb.append( formatTalkgroup( tgid ) );
+				sb.append( talkgroup );
 				sb.append( " " );
 				
 				if( hasAliasList() )
 				{
-					Alias alias = getAliasList().getTalkgroupAlias( tgid );
+					Alias alias = getAliasList().getTalkgroupAlias( talkgroup );
 					
 					if( alias != null )
 					{
@@ -376,30 +345,147 @@ public class LTRStandardDecoderState extends DecoderState
 				}
 				
 				sb.append( "\n" );
+				
 			}
 		}
 		
 	    return sb.toString();
     }
 	
-	public static String formatTalkgroup( String talkgroup )
+	/**
+	 * Tracks the set of call and free channels for a system in order to 
+	 * dynamically determine the current LCN and minimize false triggers from
+	 * bogus decoded LTR messages.  Tracks the number of occurances of each
+	 * LCN and uses a dynamic threshold to determine LCN validity.
+	 */
+	public class LCNTracker
 	{
-		StringBuilder sb = new StringBuilder();
+		private static final int DEFAULT_COUNT = 10;
+		private int[] mCallLCNCounts;
+		private int[] mFreeLCNCounts;
+		private int mCallHighestCount;
+		private int mFreeHighestCount;
+		private int mCurrentLCN;
 		
-		if( talkgroup.length() == 6 )
+		public LCNTracker()
 		{
-			sb.append( talkgroup.substring( 0, 1 ) );
-			sb.append( "-" );
-			sb.append( talkgroup.substring( 1, 3 ) );
-			sb.append( "-" );
-			sb.append( talkgroup.substring( 3, 6 ) );
-
-			return sb.toString();
+			reset();
 		}
-		else
+		
+		public void logStatistics()
 		{
-			return talkgroup;
+			for( int x = 1; x <= 20; x++ )
+			{
+				mLog.debug( "Call " + x + ": " + mCallLCNCounts[ x ] );
+			}
+			mLog.debug( "Call Highest Count: " + mCallHighestCount );
+			for( int x = 1; x <= 20; x++ )
+			{
+				mLog.debug( "Free " + x + ": " + mFreeLCNCounts[ x ] );
+			}
+			mLog.debug( "Free Highest Count: " + mFreeHighestCount );
+
+			mLog.debug( "Current LCN: " + mCurrentLCN );
+		}
+		
+		public void reset()
+		{
+			//Dim channel arrays to 21 -- ignore the 0 index
+			mCallLCNCounts = new int[ 21 ];
+			mFreeLCNCounts = new int[ 21 ];
+			mCallHighestCount = 3;
+			mFreeHighestCount = DEFAULT_COUNT;
+			mCurrentLCN = 0;
+		}
+		
+		public boolean isCurrentChannel( int channel )
+		{
+			if( mCurrentLCN == 0 )
+			{
+				return true;
+			}
+			else
+			{
+				return channel == mCurrentLCN;
+			}
+		}
+		
+		public int getCurrentChannel()
+		{
+			return mCurrentLCN;
+		}
+		
+		/**
+		 * Indicates if the channel is valid based on the observed current and
+		 * free channels reported by the system.  Tracks the count of each
+		 * reported free channel the highest free channel count is used as a 
+		 * threshold where a channel is valid when its count exceeds 20% of the
+		 * highest free channel count.  A channel is also valid when it is 
+		 * the currently monitored channel.
+		 */
+		public boolean isValidChannel( int channel )
+		{
+			if( isCurrentChannel( channel ) )
+			{
+				return true;
+			}
+
+			int count = mFreeLCNCounts[ channel ];
+			
+			int threshold = (int)( (double)mFreeHighestCount * 0.2 ); 
+
+			return count >= threshold;
+		}
+
+		public void processCallChannel( int channel )
+		{
+			if( 1 <= channel && channel <= 20 )
+			{
+				mCallLCNCounts[ channel ]++;
+				
+				if( mCallLCNCounts[ channel ] > mCallHighestCount )
+				{
+					mCallHighestCount = mCallLCNCounts[ channel ];
+					mCurrentLCN = channel;
+					
+	                broadcast( ChangedAttribute.CHANNEL_NUMBER );
+				}
+			}
+		}
+		
+		public void processFreeChannel( int channel )
+		{
+			if( 1 <= channel && channel <= 20 )
+			{
+				mFreeLCNCounts[ channel ]++;
+				
+				if( mFreeLCNCounts[ channel ] > mFreeHighestCount )
+				{
+					mFreeHighestCount = mFreeLCNCounts[ channel ];
+				}
+			}
+		}
+		
+		public List<Integer> getActiveLCNs()
+		{
+			List<Integer> active = new ArrayList<>();
+			
+			if( mFreeHighestCount > DEFAULT_COUNT )
+			{
+				for( int x = 1; x <= 20; x++ )
+				{
+					if( mCurrentLCN != 0 && isCurrentChannel( x ) )
+					{
+						active.add( x );
+					}
+					else if( isValidChannel( x ) )
+					{
+						active.add( x );
+					}
+				}
+			}
+			
+			return active;
 		}
 	}
-	
 }
