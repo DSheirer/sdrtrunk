@@ -141,9 +141,8 @@ public class StereoAudioOutput extends AudioOutput
 	private ByteBuffer convert( float[] samples )
 	{
 		/* Little-endian byte buffer */
-		ByteBuffer buffer = 
-			ByteBuffer.allocate( samples.length * 4 )
-					.order( ByteOrder.LITTLE_ENDIAN );
+		ByteBuffer buffer = ByteBuffer.allocate( samples.length * 4 )
+				.order( ByteOrder.LITTLE_ENDIAN );
 		
 		ShortBuffer shortBuffer = buffer.asShortBuffer();
 
@@ -203,10 +202,39 @@ public class StereoAudioOutput extends AudioOutput
 								ByteBuffer buffer = convert( 
 										packet.getAudioBuffer().getSamples() );
 								
-								mOutput.write( buffer.array(), 0, 
-										buffer.array().length );
-								
-								checkStart();
+								if( mOutput.available() >= buffer.array().length )
+								{
+									mOutput.write( buffer.array(), 0, 
+											buffer.array().length );
+
+									checkStart();
+								}
+								else
+								{
+									int wrote = 0;
+
+									int toWrite = buffer.array().length;
+									
+									while( toWrite > 0 )
+									{
+										int available = mOutput.available();
+
+										if( available < toWrite )
+										{
+											wrote += mOutput.write( buffer.array(), wrote, 
+													available );
+										}
+										else
+										{
+											wrote += mOutput.write( buffer.array(), wrote, 
+													toWrite );
+										}
+
+										checkStart();
+										
+										toWrite = buffer.array().length - wrote;
+									}
+								}
 								
 								broadcast( packet.getAudioMetadata() );
 								
