@@ -53,7 +53,7 @@ public enum Opcode
 	TDMA_SYNC_BROADCAST( "TDMA_SYNC_BCST  ", "FDMA-TDMA Sync Broadcast", 48 ),
 	RESERVED_31( "RESERVED_31     ", "Reserved", 49 ),
 	RESERVED_32( "RESERVED_32     ", "Reserved", 50 ),
-	RESERVED_33( "RESERVED_33     ", "Reserved", 51 ),
+	IDENTIFIER_UPDATE_TDMA( "IDEN_UPDATE_TDMA", "Identifier Update for TDMA", 51 ),
 	IDENTIFIER_UPDATE_VHF_UHF_BANDS( "IDEN_UPDATE_VUHF", "Identifier Update for VHF/UHF Bands", 52 ),
 	TIME_DATE_ANNOUNCEMENT( "TIME_DATE_ANNOUN", "Time and Date Announcement", 53 ),
 	ROAMING_ADDRESS_COMMAND( "ROAM_ADDR_CMD   ", "Roaming Address Command", 54 ),

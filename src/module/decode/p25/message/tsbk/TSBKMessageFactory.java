@@ -1,5 +1,7 @@
 package module.decode.p25.message.tsbk;
 
+import alias.AliasList;
+import bits.BinaryMessage;
 import module.decode.p25.message.tsbk.motorola.ControlChannelBaseStationIdentification;
 import module.decode.p25.message.tsbk.motorola.MotorolaOpcode;
 import module.decode.p25.message.tsbk.motorola.MotorolaTSBKMessage;
@@ -19,6 +21,7 @@ import module.decode.p25.message.tsbk.osp.control.ExtendedFunctionCommand;
 import module.decode.p25.message.tsbk.osp.control.GroupAffiliationQuery;
 import module.decode.p25.message.tsbk.osp.control.GroupAffiliationResponse;
 import module.decode.p25.message.tsbk.osp.control.IdentifierUpdateNonVUHF;
+import module.decode.p25.message.tsbk.osp.control.IdentifierUpdateTDMA;
 import module.decode.p25.message.tsbk.osp.control.IdentifierUpdateVUHF;
 import module.decode.p25.message.tsbk.osp.control.LocationRegistrationResponse;
 import module.decode.p25.message.tsbk.osp.control.MessageUpdate;
@@ -56,8 +59,6 @@ import module.decode.p25.message.tsbk.osp.voice.UnitToUnitVoiceChannelGrantUpdat
 import module.decode.p25.reference.DataUnitID;
 import module.decode.p25.reference.Opcode;
 import module.decode.p25.reference.Vendor;
-import alias.AliasList;
-import bits.BinaryMessage;
 
 public class TSBKMessageFactory
 {
@@ -119,6 +120,8 @@ public class TSBKMessageFactory
                     case IDENTIFIER_UPDATE_NON_VUHF:
                         return new IdentifierUpdateNonVUHF( message, duid, 
                         		aliasList );
+                    case IDENTIFIER_UPDATE_TDMA:
+                    	return new IdentifierUpdateTDMA( message, duid, aliasList );
                     case IDENTIFIER_UPDATE_VHF_UHF_BANDS:
                         return new IdentifierUpdateVUHF( message, duid, 
                         		aliasList );
