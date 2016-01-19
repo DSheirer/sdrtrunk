@@ -45,7 +45,7 @@ public class IdentifierUpdateTDMA extends IdentifierUpdate
     {
     	return ChannelType.fromValue( mMessage.getInt( CHANNEL_TYPE) );
     }
-
+    
     /**
      * Channel bandwidth in hertz
      */
@@ -102,6 +102,12 @@ public class IdentifierUpdateTDMA extends IdentifierUpdate
     	public String toString()
     	{
     		StringBuilder sb = new StringBuilder();
+    		
+    		if( this.equals( TYPE_5 ) )
+    		{
+    			sb.append("H-D8PSK SIMULCAST " );
+    		}
+    		
     		sb.append( mAccessType.name() );
     		sb.append( " BW:" + mBandwidth );
     		sb.append( " SLOT/CARRIER:" + mSlotsPerCarrier );
