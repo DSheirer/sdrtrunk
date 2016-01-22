@@ -24,7 +24,6 @@ import audio.AudioEvent;
 import audio.AudioFormats;
 import audio.AudioPacket;
 import audio.AudioPacket.Type;
-import audio.output.StereoAudioOutput.QueueProcessor;
 import controller.NamingThreadFactory;
 
 /**
@@ -144,96 +143,115 @@ public class MonoAudioOutput extends AudioOutput
 	{
 		private AtomicBoolean mProcessing = new AtomicBoolean();
 		
-		public QueueProcessor()
-		{
-		}
-
 		@Override
 		public void run()
 		{
-			/* The mProcessing flag ensures that only one instance of the
-			 * processor can run at any given time */
-			if( mProcessing.compareAndSet( false, true ) )
+			try
 			{
-				List<AudioPacket> packets = new ArrayList<AudioPacket>();
-				
-				mBuffer.drainTo( packets );
-				
-				if( packets.size() > 0 )
+				/* The mProcessing flag ensures that only one instance of the
+				 * processor can run at any given time */
+				if( mProcessing.compareAndSet( false, true ) )
 				{
-					broadcast( mAudioContinuationEvent );
+					List<AudioPacket> packets = new ArrayList<AudioPacket>();
 					
-					for( AudioPacket packet: packets )
+					mBuffer.drainTo( packets );
+					
+					if( packets.size() > 0 )
 					{
-						if( mCanProcessAudio )
+						broadcast( mAudioContinuationEvent );
+						
+						for( AudioPacket packet: packets )
 						{
-							if( isSquelched() )
+							if( mCanProcessAudio )
 							{
-								checkStop();
-							}
-							else if( packet.getType() == Type.AUDIO )
-							{
-								float[] samples = packet.getAudioBuffer().getSamples();
-								
-								/* Little-endian byte buffer */
-								ByteBuffer buffer = 
-									ByteBuffer.allocate( samples.length * 2 )
-											.order( ByteOrder.LITTLE_ENDIAN );
-								
-								ShortBuffer shortBuffer = buffer.asShortBuffer();
-
-								for( float sample: samples )
+								if( isSquelched() )
 								{
-									shortBuffer.put( (short)( sample * Short.MAX_VALUE ) );
+									checkStop();
 								}
-
-								if( mOutput.available() >= buffer.array().length )
+								else if( packet.getType() == Type.AUDIO )
 								{
-									mOutput.write( buffer.array(), 0, 
-											buffer.array().length );
-
-									checkStart();
-								}
-								else
-								{
-									int wrote = 0;
-
-									int toWrite = buffer.array().length;
+									float[] samples = packet.getAudioBuffer().getSamples();
 									
-									while( toWrite > 0 )
-									{
-										int available = mOutput.available();
+									/* Little-endian byte buffer */
+									ByteBuffer buffer = 
+										ByteBuffer.allocate( samples.length * 2 )
+												.order( ByteOrder.LITTLE_ENDIAN );
+									
+									ShortBuffer shortBuffer = buffer.asShortBuffer();
 
-										if( available < toWrite )
-										{
-											wrote += mOutput.write( buffer.array(), wrote, 
-													available );
-										}
-										else
-										{
-											wrote += mOutput.write( buffer.array(), wrote, 
-													toWrite );
-										}
+									for( float sample: samples )
+									{
+										shortBuffer.put( (short)( sample * Short.MAX_VALUE ) );
+									}
+
+									if( mOutput.available() >= buffer.array().length )
+									{
+										mOutput.write( buffer.array(), 0, 
+												buffer.array().length );
 
 										checkStart();
-										
-										toWrite = buffer.array().length - wrote;
 									}
-								}
-								
-								broadcast( packet.getAudioMetadata() );
+									else
+									{
+										int wrote = 0;
 
-								mLastActivity = System.currentTimeMillis();
+										int toWrite = buffer.array().length;
+										
+										while( toWrite > 0 )
+										{
+											int available = mOutput.available();
+
+											if( available < toWrite )
+											{
+												if( available > 0 )
+												{
+													wrote += mOutput.write( buffer.array(), 
+														wrote, available );
+
+													checkStart();
+												}
+												else
+												{
+													try
+													{
+														Thread.sleep( 100 );
+													} 
+													catch ( InterruptedException e )
+													{
+														mLog.debug( "Mono Audio Output - interrupted while sleeping awaiting buffer drain" );
+													}
+												}
+											}
+											else
+											{
+												wrote += mOutput.write( buffer.array(), wrote, 
+														toWrite );
+												
+												checkStart();
+											}
+											
+											toWrite = buffer.array().length - wrote;
+										}
+									}
+									
+									broadcast( packet.getAudioMetadata() );
+
+									mLastActivity = System.currentTimeMillis();
+								}
 							}
 						}
 					}
+					else
+					{
+						checkStop();
+					}
+					
+					mProcessing.set( false );
 				}
-				else
-				{
-					checkStop();
-				}
-				
-				mProcessing.set( false );
+			}
+			catch( Exception e )
+			{
+				mLog.error( "Error while processing audio buffers", e );
 			}
 		}
 		

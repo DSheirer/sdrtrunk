@@ -177,78 +177,90 @@ public class StereoAudioOutput extends AudioOutput
 		@Override
 		public void run()
 		{
-			/* The mProcessing flag ensures that only one instance of the
-			 * processor can run at any given time */
-			if( mProcessing.compareAndSet( false, true ) )
+			try
 			{
-				List<AudioPacket> packets = new ArrayList<AudioPacket>();
-				
-				mBuffer.drainTo( packets );
-				
-				if( packets.size() > 0 )
+				/* The mProcessing flag ensures that only one instance of the
+				 * processor can run at any given time */
+				if( mProcessing.compareAndSet( false, true ) )
 				{
-					broadcast( mAudioContinuationEvent );
+					List<AudioPacket> packets = new ArrayList<AudioPacket>();
 					
-					for( AudioPacket packet: packets )
+					mBuffer.drainTo( packets );
+					
+					if( packets.size() > 0 )
 					{
-						if( mCanProcessAudio )
+						broadcast( mAudioContinuationEvent );
+						
+						for( AudioPacket packet: packets )
 						{
-							if( isSquelched() )
+							if( mCanProcessAudio )
 							{
-								checkStop();
-							}
-							else if( packet.getType() == Type.AUDIO )
-							{
-								ByteBuffer buffer = convert( 
-										packet.getAudioBuffer().getSamples() );
-								
-								if( mOutput.available() >= buffer.array().length )
+								if( isSquelched() )
 								{
-									mOutput.write( buffer.array(), 0, 
-											buffer.array().length );
-
-									checkStart();
+									checkStop();
 								}
-								else
+								else if( packet.getType() == Type.AUDIO )
 								{
-									int wrote = 0;
-
-									int toWrite = buffer.array().length;
+									ByteBuffer buffer = convert( 
+											packet.getAudioBuffer().getSamples() );
 									
-									while( toWrite > 0 )
+									if( mOutput.available() >= buffer.array().length )
 									{
-										int available = mOutput.available();
-
-										if( available < toWrite )
-										{
-											wrote += mOutput.write( buffer.array(), wrote, 
-													available );
-										}
-										else
-										{
-											wrote += mOutput.write( buffer.array(), wrote, 
-													toWrite );
-										}
+										mOutput.write( buffer.array(), 0, 
+												buffer.array().length );
 
 										checkStart();
-										
-										toWrite = buffer.array().length - wrote;
 									}
+									else
+									{
+										int wrote = 0;
+
+										int toWrite = buffer.array().length;
+										
+										while( toWrite > 0 )
+										{
+											int available = mOutput.available();
+
+											if( available < toWrite )
+											{
+												if( available > 0 )
+												{
+													wrote += mOutput.write( buffer.array(), 
+															wrote, available );
+
+													checkStart();
+												}
+											}
+											else
+											{
+												wrote += mOutput.write( buffer.array(), wrote, 
+														toWrite );
+
+												checkStart();
+											}
+
+											toWrite = buffer.array().length - wrote;
+										}
+									}
+									
+									broadcast( packet.getAudioMetadata() );
+									
+									mLastActivity = System.currentTimeMillis();
 								}
-								
-								broadcast( packet.getAudioMetadata() );
-								
-								mLastActivity = System.currentTimeMillis();
 							}
 						}
 					}
+					else
+					{
+						checkStop();
+					}
+					
+					mProcessing.set( false );
 				}
-				else
-				{
-					checkStop();
-				}
-				
-				mProcessing.set( false );
+			}
+			catch( Exception e )
+			{
+				mLog.error( "Error while processing audio buffers", e );
 			}
 		}
 		
