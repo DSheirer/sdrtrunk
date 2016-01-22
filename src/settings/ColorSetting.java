@@ -123,7 +123,7 @@ public class ColorSetting extends Setting
 				"Control Gradient Middle", "Channel Control State Gradient Middle" ),
 		CHANNEL_STATE_GRADIENT_TOP_DATA( Color.BLACK, 
 				"Data Gradient Top", "Channel Data State Gradient Top" ),
-		CHANNEL_STATE_GRADIENT_MIDDLE_DATA( Color.BLUE, 
+		CHANNEL_STATE_GRADIENT_MIDDLE_DATA( new Color( 0xCC00CC ), 
 				"Data Gradient Middle", "Channel Data State Gradient Middle" ),
 		CHANNEL_STATE_GRADIENT_TOP_FADE( Color.BLACK, 
 				"Fade Gradient Top", "Channel Fade State Gradient Top" ),
