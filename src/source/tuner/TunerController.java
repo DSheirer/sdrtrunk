@@ -17,8 +17,8 @@
  ******************************************************************************/
 package source.tuner;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.SortedSet;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.RejectedExecutionException;
 
 import org.slf4j.Logger;
@@ -36,8 +36,7 @@ public abstract class TunerController implements Tunable
 			LoggerFactory.getLogger( TunerController.class );
 
 	/* List of currently tuned channels being served to demod channels */
-	protected ArrayList<TunerChannel> mTunedChannels = 
-					new ArrayList<TunerChannel>();
+	private SortedSet<TunerChannel> mTunedChannels = new ConcurrentSkipListSet<>();
 	protected FrequencyController mFrequencyController;
 	private int mMiddleUnusable;
 	private double mUsableBandwidthPercentage;
@@ -147,13 +146,9 @@ public abstract class TunerController implements Tunable
 			}
 			else
 			{
-				//Sort the existing locks and get the min/max locked frequencies
-				Collections.sort( mTunedChannels );
-
 				int usableBandwidth = getUsableBandwidth();
-				long minLockedFrequency = mTunedChannels.get( 0 ).getMinFrequency();
-				long maxLockedFrequency = mTunedChannels
-						.get( mTunedChannels.size() - 1 ).getMaxFrequency();
+				long minLockedFrequency = mTunedChannels.first().getMinFrequency();
+				long maxLockedFrequency = mTunedChannels.last().getMaxFrequency();
 
 				//Requested channel is within current locked channel frequency range
 				if( minLockedFrequency <= channel.getMinFrequency() &&
@@ -282,8 +277,6 @@ public abstract class TunerController implements Tunable
 	 */
 	private void updateLOFrequency() throws SourceException
 	{
-		Collections.sort( mTunedChannels );
-
 		long frequency = getFrequency();
 		
 		boolean frequencyValid = true;
@@ -291,13 +284,12 @@ public abstract class TunerController implements Tunable
 		//If there is only 1 channel, position it to the right of center
 		if( mTunedChannels.size() == 1 )
 		{
-			frequency = mTunedChannels.get( 0 ).getMinFrequency() - mMiddleUnusable;
+			frequency = mTunedChannels.first().getMinFrequency() - mMiddleUnusable;
 		}
 		else
 		{
-			long minLockedFrequency = mTunedChannels.get( 0 ).getMinFrequency();
-			long maxLockedFrequency = mTunedChannels
-					.get( mTunedChannels.size() - 1 ).getMaxFrequency();
+			long minLockedFrequency = mTunedChannels.first().getMinFrequency();
+			long maxLockedFrequency = mTunedChannels.last().getMaxFrequency();
 
 			//Start by placing the highest frequency channel at the high end of
 			//the spectrum

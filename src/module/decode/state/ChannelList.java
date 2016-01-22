@@ -128,10 +128,13 @@ public class ChannelList extends JPanel implements ChannelEventListener
 	
 	public void setSelectedChannel( Channel channel )
 	{
-		/* Send channel selection to each channel panel */
-		for( ChannelCollectionPanel panel: mDisplayedPanels.values() )
+		synchronized( mDisplayedPanels )
 		{
-			panel.setSelectedChannel( channel );
+			/* Send channel selection to each channel panel */
+			for( ChannelCollectionPanel panel: mDisplayedPanels.values() )
+			{
+				panel.setSelectedChannel( channel );
+			}
 		}
 	}
 	
