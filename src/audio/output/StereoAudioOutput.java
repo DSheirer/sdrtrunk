@@ -5,7 +5,7 @@ import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -24,7 +24,8 @@ import audio.AudioEvent;
 import audio.AudioFormats;
 import audio.AudioPacket;
 import audio.AudioPacket.Type;
-import controller.NamingThreadFactory;
+import controller.ThreadPoolManager;
+import controller.ThreadPoolManager.ThreadType;
 
 /**
  * Mono Audio output in stereo format with automatic flow control based on the 
@@ -56,9 +57,12 @@ public class StereoAudioOutput extends AudioOutput
 	
 	private MixerChannel mMixerChannel;
 	
-	public StereoAudioOutput( Mixer mixer, MixerChannel channel )
+	private ScheduledFuture<?> mProcessorTask;
+	
+	public StereoAudioOutput( ThreadPoolManager threadPoolManager, 
+			Mixer mixer, MixerChannel channel )
 	{
-		super();
+		super( threadPoolManager );
 		
 		assert( channel == MixerChannel.LEFT || channel == MixerChannel.RIGHT );
 		
@@ -113,12 +117,10 @@ public class StereoAudioOutput extends AudioOutput
 					mixer.getMixerInfo().getName() + " | " + channel.name() + "]" );
 			}
 			
-			mExecutorService = Executors.newSingleThreadScheduledExecutor( 
-					new NamingThreadFactory( "audio (stereo) output" ) );
-
 			/* Run the queue processor task every 40 milliseconds */
-			mExecutorService.scheduleAtFixedRate( new QueueProcessor(), 
-					0, 40, TimeUnit.MILLISECONDS );
+			mProcessorTask = mThreadPoolManager.scheduleFixedRate( 
+				ThreadType.AUDIO_PROCESSING, new QueueProcessor(), 
+				40, TimeUnit.MILLISECONDS );
 		}
 	}
 
@@ -130,12 +132,23 @@ public class StereoAudioOutput extends AudioOutput
 
 	public void dispose()
 	{
+		if( mProcessorTask != null && mThreadPoolManager != null )
+		{
+			mThreadPoolManager.cancel( mProcessorTask );
+		}
+		
+		mProcessorTask = null;
+
 		super.dispose();
 		
 		if( mOutput != null )
 		{
 			mOutput.close();
 		}
+		
+		mOutput = null;
+		mGainControl = null;
+		mMuteControl = null;
 	}
 	
 	private ByteBuffer convert( float[] samples )
@@ -204,44 +217,10 @@ public class StereoAudioOutput extends AudioOutput
 									ByteBuffer buffer = convert( 
 											packet.getAudioBuffer().getSamples() );
 									
-									if( mOutput.available() >= buffer.array().length )
-									{
-										mOutput.write( buffer.array(), 0, 
-												buffer.array().length );
+									mOutput.write( buffer.array(), 0, 
+											buffer.array().length );
 
-										checkStart();
-									}
-									else
-									{
-										int wrote = 0;
-
-										int toWrite = buffer.array().length;
-										
-										while( toWrite > 0 )
-										{
-											int available = mOutput.available();
-
-											if( available < toWrite )
-											{
-												if( available > 0 )
-												{
-													wrote += mOutput.write( buffer.array(), 
-															wrote, available );
-
-													checkStart();
-												}
-											}
-											else
-											{
-												wrote += mOutput.write( buffer.array(), wrote, 
-														toWrite );
-
-												checkStart();
-											}
-
-											toWrite = buffer.array().length - wrote;
-										}
-									}
+									checkStart();
 									
 									broadcast( packet.getAudioMetadata() );
 									

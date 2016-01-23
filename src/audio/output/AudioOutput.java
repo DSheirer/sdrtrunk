@@ -1,7 +1,6 @@
 package audio.output;
 
 import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.sound.sampled.FloatControl;
@@ -15,6 +14,7 @@ import audio.AudioEvent;
 import audio.AudioEvent.Type;
 import audio.AudioPacket;
 import audio.metadata.AudioMetadata;
+import controller.ThreadPoolManager;
 
 public abstract class AudioOutput implements Listener<AudioPacket>
 {
@@ -25,10 +25,15 @@ public abstract class AudioOutput implements Listener<AudioPacket>
 
 	protected Broadcaster<AudioEvent> mAudioEventBroadcaster = new Broadcaster<>();
 	protected LinkedTransferQueue<AudioPacket> mBuffer = new LinkedTransferQueue<>();
-	protected ScheduledExecutorService mExecutorService;
+	protected ThreadPoolManager mThreadPoolManager;
 	protected boolean mCanProcessAudio;
 	protected long mLastActivity;
 
+	public AudioOutput( ThreadPoolManager threadPoolManager )
+	{
+		mThreadPoolManager = threadPoolManager;
+	}
+	
 	public void reset()
 	{
 		broadcast( new AudioEvent( AudioEvent.Type.AUDIO_STOPPED, 
@@ -41,14 +46,11 @@ public abstract class AudioOutput implements Listener<AudioPacket>
 
 		mBuffer.clear();
 
-		if( mExecutorService != null )
-		{
-			mExecutorService.shutdown();
-		}
-
 		mAudioEventBroadcaster.dispose();
 		mAudioEventBroadcaster = null;
 		mAudioMetadataListener = null;
+		
+		mThreadPoolManager = null;
 	}
 	
 	public abstract String getChannelName();

@@ -36,24 +36,20 @@ public class ThreadPoolManager
 	private HashMap<ScheduledFuture<?>,ThreadType> mTasks = 
 				new HashMap<ScheduledFuture<?>,ThreadType>();
 	
-	private ScheduledExecutorService mExecutor;
+	private ScheduledExecutorService mExecutor = 
+			Executors.newScheduledThreadPool( THREAD_POOL_SIZE, 
+					new NamingThreadFactory( "sdrtrunk" ) );
 	
 	public ThreadPoolManager()
 	{
 	}
-
+	
 	public ScheduledFuture<?> scheduleFixedRate( ThreadType type, 
 										Runnable command, 
 										long period, 
 										TimeUnit unit )
 										throws RejectedExecutionException
 	{
-		if( mExecutor == null )
-		{
-			mExecutor = Executors.newScheduledThreadPool( THREAD_POOL_SIZE, 
-					new NamingThreadFactory( "sdrtrunk" ) );
-		}
-
 		ScheduledFuture<?> task = 
 				mExecutor.scheduleAtFixedRate( command, 0, period, unit );
 		
@@ -65,12 +61,6 @@ public class ThreadPoolManager
 	public void scheduleOnce( Runnable command, long delay, TimeUnit unit )	
 			throws RejectedExecutionException
 	{
-		if( mExecutor == null )
-		{
-			mExecutor = Executors.newScheduledThreadPool( THREAD_POOL_SIZE, 
-					new NamingThreadFactory( "sdrtrunk" ) );
-		}
-		
 		mExecutor.schedule( command, delay, unit );
 	}
 

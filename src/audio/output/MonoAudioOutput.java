@@ -5,7 +5,7 @@ import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -24,7 +24,8 @@ import audio.AudioEvent;
 import audio.AudioFormats;
 import audio.AudioPacket;
 import audio.AudioPacket.Type;
-import controller.NamingThreadFactory;
+import controller.ThreadPoolManager;
+import controller.ThreadPoolManager.ThreadType;
 
 /**
  * Mono Audio output with automatic flow control based on the availability of 
@@ -54,9 +55,11 @@ public class MonoAudioOutput extends AudioOutput
 	private AudioEvent mAudioStopEvent;
 	private AudioEvent mAudioContinuationEvent;
 	
-	public MonoAudioOutput( Mixer mixer )
+	private ScheduledFuture<?> mProcessorTask;
+	
+	public MonoAudioOutput( ThreadPoolManager threadPoolManager, Mixer mixer )
 	{
-		super();
+		super( threadPoolManager );
 
 		mAudioStartEvent = new AudioEvent( AudioEvent.Type.AUDIO_STARTED, 
 				getChannelName() );
@@ -73,15 +76,7 @@ public class MonoAudioOutput extends AudioOutput
 			if( mOutput != null )
 			{
 				mOutput.open( AudioFormats.PCM_SIGNED_48KHZ_16BITS_MONO, BUFFER_SIZE );
-				
 				mCanProcessAudio = true;
-				
-				mExecutorService = Executors.newSingleThreadScheduledExecutor( 
-						new NamingThreadFactory( "audio (mono) output" ) );
-
-				/* Run the queue processor task every 40 milliseconds */
-				mExecutorService.scheduleAtFixedRate( new QueueProcessor(), 
-						0, 40, TimeUnit.MILLISECONDS );
 			}
 		} 
         catch ( LineUnavailableException e )
@@ -114,12 +109,10 @@ public class MonoAudioOutput extends AudioOutput
 					mixer.getMixerInfo().getName() + "]" );
 			}
 			
-			mExecutorService = Executors.newSingleThreadScheduledExecutor( 
-					new NamingThreadFactory( "audio (mono) output" ) );
-
 			/* Run the queue processor task every 40 milliseconds */
-			mExecutorService.scheduleAtFixedRate( new QueueProcessor(), 
-					0, 40, TimeUnit.MILLISECONDS );
+			mProcessorTask = mThreadPoolManager.scheduleFixedRate( 
+				ThreadType.AUDIO_PROCESSING, new QueueProcessor(), 
+				40, TimeUnit.MILLISECONDS );
 		}
 	}
 
@@ -131,12 +124,23 @@ public class MonoAudioOutput extends AudioOutput
 
 	public void dispose()
 	{
+		if( mProcessorTask != null && mThreadPoolManager != null )
+		{
+			mThreadPoolManager.cancel( mProcessorTask );
+		}
+		
+		mProcessorTask = null;
+		
 		super.dispose();
 		
 		if( mOutput != null )
 		{
 			mOutput.close();
 		}
+		
+		mOutput = null;
+		mGainControl = null;
+		mMuteControl = null;
 	}
 	
 	public class QueueProcessor implements Runnable
@@ -183,57 +187,12 @@ public class MonoAudioOutput extends AudioOutput
 									{
 										shortBuffer.put( (short)( sample * Short.MAX_VALUE ) );
 									}
-
-									if( mOutput.available() >= buffer.array().length )
-									{
-										mOutput.write( buffer.array(), 0, 
-												buffer.array().length );
-
-										checkStart();
-									}
-									else
-									{
-										int wrote = 0;
-
-										int toWrite = buffer.array().length;
-										
-										while( toWrite > 0 )
-										{
-											int available = mOutput.available();
-
-											if( available < toWrite )
-											{
-												if( available > 0 )
-												{
-													wrote += mOutput.write( buffer.array(), 
-														wrote, available );
-
-													checkStart();
-												}
-												else
-												{
-													try
-													{
-														Thread.sleep( 100 );
-													} 
-													catch ( InterruptedException e )
-													{
-														mLog.debug( "Mono Audio Output - interrupted while sleeping awaiting buffer drain" );
-													}
-												}
-											}
-											else
-											{
-												wrote += mOutput.write( buffer.array(), wrote, 
-														toWrite );
-												
-												checkStart();
-											}
-											
-											toWrite = buffer.array().length - wrote;
-										}
-									}
 									
+									//This is a blocking write
+									mOutput.write( buffer.array(), 0, buffer.array().length );
+
+									checkStart();
+
 									broadcast( packet.getAudioMetadata() );
 
 									mLastActivity = System.currentTimeMillis();
