@@ -23,6 +23,14 @@ public class MixerChannelConfiguration
 		return mMixerChannel;
 	}
 	
+	public boolean matches( String mixer, String channels )
+	{
+		return mixer != null && 
+			   channels != null &&
+			   mMixer.getMixerInfo().getName().contentEquals( mixer ) &&
+			   mMixerChannel.name().contentEquals( channels );
+	}
+	
 	public String toString()
 	{
 		StringBuilder sb = new StringBuilder();

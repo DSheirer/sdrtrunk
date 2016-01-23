@@ -34,11 +34,14 @@ import javax.sound.sampled.Mixer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import properties.SystemProperties;
 import sample.Broadcaster;
 import sample.Listener;
 import source.mixer.MixerChannel;
 import source.mixer.MixerChannelConfiguration;
+import source.mixer.MixerManager;
 import audio.AudioEvent.Type;
+import audio.AudioPanel.MixerSelectionItem;
 import audio.output.AudioOutput;
 import audio.output.MonoAudioOutput;
 import audio.output.StereoAudioOutput;
@@ -50,6 +53,9 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 	private static final Logger mLog = LoggerFactory.getLogger( AudioManager.class );
 
 	public static final int AUDIO_TIMEOUT = 2000; //2 seconds
+	
+	public static final String AUDIO_CHANNELS_PROPERTY = "audio.manager.channels";
+	public static final String AUDIO_MIXER_PROPERTY = "audio.manager.mixer";
 	
 	public static final AudioEvent CONFIGURATION_CHANGE_STARTED = 
 			new AudioEvent( Type.AUDIO_CONFIGURATION_CHANGE_STARTED, null );
@@ -81,24 +87,64 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 	{
 		mThreadPoolManager = manager;
 
-		//TODO: save audio system preferences to the settings manager
+		loadSettings();
+	}
+	
+	private void loadSettings()
+	{
+		MixerChannelConfiguration configuration = null;
 		
-		/* Use the system default mixer and mono channel as default startup */
-		Mixer mixer = AudioSystem.getMixer( null );
+		SystemProperties properties = SystemProperties.getInstance();
 		
-		if( mixer != null )
+		Mixer defaultMixer = AudioSystem.getMixer( null );
+
+		String mixer = properties.get( AUDIO_MIXER_PROPERTY, defaultMixer.getMixerInfo().getName() );
+		
+		String channels = properties.get( AUDIO_CHANNELS_PROPERTY, MixerChannel.MONO.name() );
+		
+		MixerChannelConfiguration[] mixerConfigurations = 
+				MixerManager.getInstance().getOutputMixers();
+
+		for( MixerChannelConfiguration mixerConfig: mixerConfigurations )
 		{
-			mMixerChannelConfiguration = new MixerChannelConfiguration( mixer, MixerChannel.MONO );
+			if( mixerConfig.matches( mixer, channels ) )
+			{
+				configuration = mixerConfig;
+			}
+		}
+		
+		if( configuration == null )
+		{
+			configuration = getDefaultConfiguration();
+		}
+
+		try
+		{
+			setMixerChannelConfiguration( configuration );
+		}
+		catch( Exception e )
+		{
+			mLog.error( "Couldn't set stored audio mixer/channel configuration"
+					+ " - using default", e );
 			
 			try
 			{
-				setMixerChannelConfiguration( mMixerChannelConfiguration );
-			} 
-			catch ( AudioException e )
+				setMixerChannelConfiguration( getDefaultConfiguration() );
+			}
+			catch( Exception e2 )
 			{
-				mLog.error( "Couldn't create an audio output device", e );
+				mLog.error( "Couldn't set default audio mixer/channel "
+						+ "configuration - no audio will be available", e2 );
 			}
 		}
+	}
+	
+	private MixerChannelConfiguration getDefaultConfiguration()
+	{
+		/* Use the system default mixer and mono channel as default startup */
+		Mixer defaultMixer = AudioSystem.getMixer( null );
+		
+		return new MixerChannelConfiguration( defaultMixer, MixerChannel.MONO );
 	}
 	
 	public void dispose()
@@ -170,7 +216,6 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 		}
 	}
 	
-	
 	@Override
 	public void setMixerChannelConfiguration( MixerChannelConfiguration entry ) throws AudioException
 	{
@@ -219,6 +264,12 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 						TimeUnit.MILLISECONDS );
 
 			mControllerBroadcaster.broadcast( CONFIGURATION_CHANGE_COMPLETE );
+			
+			SystemProperties properties = SystemProperties.getInstance();
+			
+			properties.set( AUDIO_MIXER_PROPERTY, entry.getMixer().getMixerInfo().getName() );
+			properties.set( AUDIO_CHANNELS_PROPERTY, entry.getMixerChannel().name() );
+			properties.save();
 		}
 	}
 
