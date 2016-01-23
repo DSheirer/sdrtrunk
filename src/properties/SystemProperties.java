@@ -82,12 +82,9 @@ public class SystemProperties
 		{
 			out = new FileOutputStream( propsPath.toString() );
 
-			String comments = 
-					"SDRTrunk - SDR Trunking Decoder Application Settings";
+			String comments = "SDRTrunk - SDR Trunking Decoder Application Settings";
 			
 			mProperties.store( out, comments );
-			
-			mLog.info( "saved current properties [" + propsPath.toString() + "]" );
 		}
 		catch( Exception e )
 		{
