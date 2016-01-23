@@ -33,7 +33,6 @@ import module.decode.DecoderType;
 import module.decode.config.DecodeConfigFactory;
 import playlist.PlaylistNode;
 import source.config.SourceConfigTuner;
-import source.recording.RecordingGroupNode;
 import source.tuner.Tuner;
 import source.tuner.TunerGroupNode;
 import source.tuner.TunerNode;

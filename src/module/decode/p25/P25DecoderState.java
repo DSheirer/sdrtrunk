@@ -118,7 +118,6 @@ import module.decode.p25.message.tsbk.osp.voice.UnitToUnitVoiceChannelGrantUpdat
 import module.decode.p25.reference.IPProtocol;
 import module.decode.p25.reference.LinkControlOpcode;
 import module.decode.p25.reference.Response;
-import module.decode.p25.reference.Service;
 import module.decode.p25.reference.Vendor;
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderState;
@@ -1747,6 +1746,8 @@ public class P25DecoderState extends DecoderState
 						.from( sbFrom.toString() )
 						.to( pduc.getLogicalLinkID() )
 						.build() );
+					break;
+				case SN_RF_UNCONFIRMED_DATA:
 					break;
 				default:
 					mLog.debug( "PDUC - Unrecognized Message: " + pduc.toString() );
