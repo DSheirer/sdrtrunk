@@ -60,7 +60,7 @@ public class ConfigurationControllerModel extends DefaultTreeModel
     
     private PlaylistNode mPlaylistNode;
     private TunerGroupNode mTunerGroupNode;
-    private RecordingGroupNode mRecordingGroupNode;
+//    private RecordingGroupNode mRecordingGroupNode;
     
     private IconManager mIconManagerFrame;
 
@@ -121,15 +121,15 @@ public class ConfigurationControllerModel extends DefaultTreeModel
     	/**
     	 * Add the recording group node
     	 */
-    	mRecordingGroupNode = new RecordingGroupNode();
-    	insertNodeInto( mRecordingGroupNode, (MutableTreeNode)root, 1 );
-    	mRecordingGroupNode.loadRecordings();
+//    	mRecordingGroupNode = new RecordingGroupNode();
+//    	insertNodeInto( mRecordingGroupNode, (MutableTreeNode)root, 1 );
+//    	mRecordingGroupNode.loadRecordings();
     	
 		/**
 		 * Add the playlist node
 		 */
     	mPlaylistNode = new PlaylistNode();
-    	insertNodeInto( mPlaylistNode, (MutableTreeNode)root, 2 );
+    	insertNodeInto( mPlaylistNode, (MutableTreeNode)root, 1 );
     	mPlaylistNode.loadPlaylist();
 	}
 	
