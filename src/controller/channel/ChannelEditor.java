@@ -74,6 +74,8 @@ public class ChannelEditor extends JPanel
     private PlaylistManager mPlaylistManager;
     private SourceManager mSourceManager;
     
+    private boolean mChannelEnableRequested = false;
+    
 	public ChannelEditor( ChannelModel channelModel,
 						  PlaylistManager playlistManager,
 						  SourceManager sourceManager )
@@ -108,7 +110,7 @@ public class ChannelEditor extends JPanel
 			mChannelName.setText( "Channel: " + channel.getName() );
 			mEnableButton.setText( channel.getEnabled() ? "Disable" : "Enable" );
 			mEnableButton.setEnabled( true );
-			mEnableButton.setBackground( channel.getEnabled() ? Color.RED : Color.GREEN );
+			mEnableButton.setBackground( channel.getEnabled() ? Color.GREEN : getBackground() );
 		}
 		else
 		{
@@ -126,6 +128,7 @@ public class ChannelEditor extends JPanel
 	{
 		setLayout( new MigLayout( "fill,wrap 2", "[right,grow][grow]", "[][][][][grow][]" ) );
 		
+		mEnableButton.addActionListener( this );
 		mEnableButton.setEnabled( false );
 		add( mEnableButton, "growx,push" );
 		add( mChannelName, "growx,push" );
@@ -175,15 +178,28 @@ public class ChannelEditor extends JPanel
 				case NOTIFICATION_PROCESSING_START:
 				case NOTIFICATION_PROCESSING_STOP:
 					setChannel( mChannel );
+					mChannelEnableRequested = false;
 					break;
 				case NOTIFICATION_DELETE:
 					mChannel = null;
 					setChannel( mChannel );
 					break;
+				case NOTIFICATION_ENABLE_REJECTED:
+					if( mChannelEnableRequested )
+					{
+						JOptionPane.showMessageDialog( ChannelEditor.this, 
+								"Channel could not be enabled.  This is likely because "
+								+ "there are no tuner channels available", "Couldn't "
+								+ "enable channel", JOptionPane.INFORMATION_MESSAGE );
+							
+						mChannelEnableRequested = false;
+					}
+					break;
 				default:
 					break;
 			}
 		}
+		
 	}
 
 	@Override
@@ -191,7 +207,22 @@ public class ChannelEditor extends JPanel
     {
 		String command = e.getActionCommand();
 		
-		if( command.contentEquals( "Save" ) )
+		if( command.contentEquals( "Enable" ) )
+		{
+			if( mChannel != null )
+			{
+				mChannelEnableRequested = true;
+				mChannelModel.broadcast( new ChannelEvent( mChannel, Event.REQUEST_ENABLE ) );
+			}
+		}
+		else if( command.contentEquals( "Disable" ) )
+		{
+			if( mChannel != null )
+			{
+				mChannelModel.broadcast( new ChannelEvent( mChannel, Event.REQUEST_DISABLE ) );
+			}
+		}
+		else if( command.contentEquals( "Save" ) )
 		{
 			save();
 		}

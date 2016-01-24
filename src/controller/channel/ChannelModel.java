@@ -170,6 +170,11 @@ public class ChannelModel implements IChannelEventBroadcaster, TableModel
 		}
 		
 		broadcast( new ChannelEvent( channel, Event.NOTIFICATION_ADD ) );
+		
+		if( channel.getEnabled() )
+		{
+			broadcast( new ChannelEvent( channel, Event.REQUEST_ENABLE ) );
+		}
 	}
 	
 	/**

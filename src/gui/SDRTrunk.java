@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -120,7 +120,7 @@ public class SDRTrunk
 
 		ChannelModel channelModel = new ChannelModel();
 
-		PlaylistManager playlistManager = new PlaylistManager( channelModel );
+		PlaylistManager playlistManager = new PlaylistManager( threadPoolManager, channelModel );
 
 		RecorderManager recorderManager = new RecorderManager( threadPoolManager );
 
@@ -145,6 +145,9 @@ public class SDRTrunk
 		ChannelSelectionManager channelSelectionManager = 
 				new ChannelSelectionManager( channelModel );
 		channelModel.addListener( channelSelectionManager );
+
+//TODO: move this to the end once we add the alias model, otherwise the
+//configuration tree won't load correctly
 
 		//Initialize the playlist manager to load the saved playlist
 		playlistManager.init();

@@ -140,6 +140,13 @@ public class ChannelProcessingManager implements ChannelEventListener
 					stopProcessing( channel, true );
 				}
 				break;
+			case NOTIFICATION_CONFIGURATION_CHANGE:
+				if( isProcessing( channel ) )
+				{
+					stopProcessing( channel, false );
+					startProcessing( channel );
+				}
+				break;
 			default:
 				break;
 		}
