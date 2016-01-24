@@ -161,7 +161,7 @@ public class SDRTrunk
 					playlistManager, mSettingsManager, sourceManager );
 
 		mControllerPanel = new ControllerPanel( audioManager, configurationControllerModel, 
-			channelModel, channelProcessingManager, mapService, playlistManager, 
+			aliasModel, channelModel, channelProcessingManager, mapService, playlistManager, 
 			mSettingsManager, sourceManager );
 
     	mSpectralPanel = new SpectralDisplayPanel( configurationControllerModel,

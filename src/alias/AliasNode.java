@@ -81,7 +81,8 @@ public class AliasNode extends ConfigurableNode
     @Override
     public JPanel getEditor()
     {
-        return new AliasEditor( this, mSettingsManager );
+    	return null;
+//        return new AliasEditor( this, mSettingsManager );
     }
     
     public Alias getAlias()

@@ -120,7 +120,7 @@ public class ChannelEditor extends JPanel
 
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right,grow][grow]", "[][][][][grow][]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right,grow][grow]", "[][][][][grow]" ) );
 		
 		mEnableButton.addActionListener( this );
 		mEnableButton.setEnabled( false );

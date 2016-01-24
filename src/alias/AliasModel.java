@@ -39,6 +39,12 @@ import sample.Listener;
 public class AliasModel implements TableModel
 {
 	private final static Logger mLog = LoggerFactory.getLogger( AliasModel.class );
+	
+	public static final int COLUMN_LIST = 0;
+	public static final int COLUMN_GROUP = 1;
+	public static final int COLUMN_NAME = 2;
+	public static final int COLUMN_ICON = 3;
+	public static final int COLUMN_COLOR = 4;
 
 	private List<Alias> mAliases = new ArrayList<>();
 	private List<TableModelListener> mTableModelListeners = new CopyOnWriteArrayList<>();
@@ -181,15 +187,15 @@ public class AliasModel implements TableModel
 	{
 		switch( columnIndex )
 		{
-			case 0:
+			case COLUMN_LIST:
 				return "List";
-			case 1:
+			case COLUMN_GROUP:
 				return "Group";
-			case 2:
+			case COLUMN_NAME:
 				return "Name";
-			case 3:
+			case COLUMN_ICON:
 				return "Icon";
-			case 4:
+			case COLUMN_COLOR:
 				return "Color";
 		}
 		
@@ -199,6 +205,11 @@ public class AliasModel implements TableModel
 	@Override
 	public Class<?> getColumnClass( int columnIndex )
 	{
+		if( columnIndex == COLUMN_COLOR )
+		{
+			return Integer.class;
+		}
+		
 		return String.class;
 	}
 
@@ -215,15 +226,15 @@ public class AliasModel implements TableModel
 		
 		switch( columnIndex )
 		{
-			case 0:
+			case COLUMN_LIST:
 				return alias.getList();
-			case 1:
+			case COLUMN_GROUP:
 				return alias.getGroup();
-			case 2:
+			case COLUMN_NAME:
 				return alias.getName();
-			case 3:
+			case COLUMN_ICON:
 				return alias.getIconName();
-			case 4:
+			case COLUMN_COLOR:
 				return alias.getColor();
 		}
 		

@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -18,133 +18,76 @@
 package alias;
 
 import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import javax.swing.BorderFactory;
 import javax.swing.JButton;
-import javax.swing.JColorChooser;
-import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JTextField;
-import javax.swing.tree.TreePath;
+import javax.swing.JSeparator;
 
-import map.IconManager;
-import map.MapIcon;
-import map.MapIconListCellRenderer;
 import net.miginfocom.swing.MigLayout;
+import sample.Listener;
 import settings.SettingsManager;
-import controller.ConfigurableNode;
+import alias.AliasEvent.Event;
 
-public class AliasEditor extends JPanel implements ActionListener
+import com.jidesoft.swing.JideTabbedPane;
+
+public class AliasEditor extends JPanel implements ActionListener, Listener<AliasEvent>
 {
     private static final long serialVersionUID = 1L;
     
-    private AliasNode mAliasNode;
-    private SettingsManager mSettingsManager;
-    
-    private JLabel mLabelName;
-    private JTextField mTextAlias;
+	private static final String DEFAULT_NAME = "select an alias";
 
-    private JLabel mLabelMapColor;
-    private JButton mButtonColor;
-    private JComboBox<MapIcon> mComboMapIcon;
-    private JButton mBtnIconManager;
+	private AliasModel mAliasModel;
+	
+	private JLabel mAliasLabel;
+    private AliasNameEditor mAliasNameEditor;
     
-    public AliasEditor( AliasNode aliasNode, 
-    					SettingsManager settingsManager )
+    private Alias mAlias;
+
+    
+    public AliasEditor( AliasModel aliasModel, SettingsManager settingsManager )
 	{
-		mAliasNode = aliasNode;
-		mSettingsManager = settingsManager;
+    	mAliasModel = aliasModel;
+    	mAliasNameEditor = new AliasNameEditor( mAliasModel, settingsManager );
 		
 		initGUI();
 	}
+    
+    public void setAlias( Alias alias )
+    {
+    	mAlias = alias;
+
+    	if( mAlias != null )
+    	{
+    		mAliasLabel.setText( alias.getName() );
+    	}
+    	else
+    	{
+    		mAliasLabel.setText( DEFAULT_NAME );
+    	}
+    	
+		mAliasNameEditor.setAlias( alias );
+    	
+    }
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "", "[right][grow,fill]", "[][][][][][grow][]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][grow,fill]", "[][][][][grow,fill]" ) );
 		
-		setBorder( BorderFactory.createTitledBorder( "Alias" ) );
-
-		mLabelName = new JLabel( "Name:" );
-		add( mLabelName );
+		add( new JLabel( "Alias:" ) );
+		mAliasLabel = new JLabel( DEFAULT_NAME );
+		add( mAliasLabel );
 		
-		mTextAlias = new JTextField( mAliasNode.getAlias().getName() );
-		add( mTextAlias, "wrap" );
-
-		mLabelMapColor = new JLabel( "Map Color:" );
-		add( mLabelMapColor );
-
-		mButtonColor = new JButton( "Map Color" );
-		mButtonColor.setBackground( mAliasNode.getAlias().getMapColor() );
-		mButtonColor.setForeground( mAliasNode.getAlias().getMapColor() );
-		mButtonColor.addActionListener( new ActionListener() 
-		{
-			@Override
-            public void actionPerformed( ActionEvent e )
-            {
-				Color newColor = JColorChooser.showDialog(
-	                     AliasEditor.this,
-	                     "Choose color for map labels and routes",
-	                     mAliasNode.getAlias().getMapColor() );
-
-				mButtonColor.setForeground( newColor );
-				mButtonColor.setBackground( newColor );
-            }
-		} );
-		add( mButtonColor, "wrap" );
+		add( new JSeparator( JSeparator.HORIZONTAL ), "span,growx,push" );
 		
-		add( new JLabel( "Icon:" ) );
+		JideTabbedPane tabs = new JideTabbedPane();
+		tabs.setFont( this.getFont() );
+    	tabs.setForeground( Color.BLACK );
 
-		mComboMapIcon = new JComboBox<MapIcon>( mSettingsManager.getMapIcons() );
-
-		MapIconListCellRenderer renderer = new MapIconListCellRenderer();
-		renderer.setPreferredSize( new Dimension( 200, 30 ) );
-		mComboMapIcon.setRenderer( renderer );
-
-		String iconName = mAliasNode.getAlias().getIconName();
-		
-		if( iconName == null )
-		{
-			iconName = SettingsManager.DEFAULT_ICON;
-		}
-		
-		MapIcon savedIcon = mSettingsManager.getMapIcon( iconName );
-
-		if( savedIcon != null )
-		{
-			mComboMapIcon.setSelectedItem( savedIcon );
-		}
-
-		add( mComboMapIcon, "wrap" );
-
-		//Dummy place holder
-		add( new JLabel() );
-		
-		mBtnIconManager = new JButton( "Icon Manager" );
-		mBtnIconManager.addActionListener( new ActionListener() 
-		{
-			@Override
-            public void actionPerformed( ActionEvent arg0 )
-            {
-				final IconManager iconManager = 
-						new IconManager( mSettingsManager, AliasEditor.this );
-				
-				EventQueue.invokeLater( new Runnable()
-				{
-					@Override
-					public void run()
-					{
-						iconManager.setVisible( true );
-					}
-				} );
-            }
-		} );
-		add( mBtnIconManager, "span 2,wrap" );
+		tabs.addTab( "Alias", mAliasNameEditor );
+		add( tabs, "span,grow" );		
 		
 		JButton btnSave = new JButton( "Save" );
 		btnSave.addActionListener( AliasEditor.this );
@@ -156,60 +99,30 @@ public class AliasEditor extends JPanel implements ActionListener
 	}
 
 	@Override
+	public void receive( AliasEvent event )
+	{
+		//If this is the currently displayed alias, reload it
+		if( mAlias != null && mAlias == event.getAlias() )
+		{
+			setAlias( event.getAlias() );
+		}
+	}
+
+	@Override
     public void actionPerformed( ActionEvent e )
     {
 		String command = e.getActionCommand();
 		
 		if( command.contentEquals( "Save" ) )
 		{
-			String alias = mTextAlias.getText();
+			mAliasNameEditor.save();
 			
-			if( alias != null )
-			{
-				boolean expanded = mAliasNode.getModel().getTree()
-						.isExpanded( new TreePath( mAliasNode ) );
-
-				mAliasNode.getAlias().setName( alias );
-				((ConfigurableNode)mAliasNode.getParent()).sort();
-				
-				mAliasNode.getAlias().setColor( 
-						mButtonColor.getBackground().getRGB() );
-
-				MapIcon selectedIcon = (MapIcon)mComboMapIcon.getSelectedItem();
-				
-				if( selectedIcon != null )
-				{
-					mAliasNode.getAlias().setIconName( selectedIcon.getName() );
-				}
-				
-				mAliasNode.save();
-				
-				mAliasNode.show();
-
-				if( expanded )
-				{
-					mAliasNode.getModel().getTree()
-						.expandPath( new TreePath( mAliasNode ) );
-				}
-			}
-			else
-			{
-				JOptionPane.showMessageDialog( AliasEditor.this, "Please enter an alias name" );
-			}
+			//Broadcast an alias change event to save the updates
+			mAliasModel.broadcast( new AliasEvent( mAlias, Event.CHANGE ) ); 
 		}
 		else if( command.contentEquals( "Reset" ) )
 		{
-			mTextAlias.setText( mAliasNode.getAlias().getName() );
-			
-			mButtonColor.setBackground( mAliasNode.getAlias().getMapColor() );
-			mButtonColor.setForeground( mAliasNode.getAlias().getMapColor() );
-
-			MapIcon savedIcon = mSettingsManager
-					.getMapIcon( mAliasNode.getAlias().getIconName() );
-			
-			mComboMapIcon.setSelectedItem( savedIcon );
+			setAlias( mAlias );
 		}
-		
-		mAliasNode.refresh();
     }
 }

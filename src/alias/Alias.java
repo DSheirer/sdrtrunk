@@ -41,6 +41,11 @@ public class Alias
 	{
 	}
 	
+	public Alias( String name )
+	{
+		mName = name;
+	}
+	
 	public String toString()
 	{
 		return getName();

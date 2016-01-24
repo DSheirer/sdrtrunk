@@ -37,6 +37,8 @@ import playlist.PlaylistManager;
 import settings.SettingsManager;
 import source.SourceManager;
 import spectrum.ChannelSpectrumPanel;
+import alias.AliasController;
+import alias.AliasModel;
 import audio.AudioManager;
 import audio.AudioPanel;
 
@@ -58,8 +60,10 @@ public class ControllerPanel extends JPanel
     private MessageActivityPanel mMessageActivityPanel;
     
     private ChannelSpectrumPanel mChannelSpectrumPanel;
+
+    private AliasController mAliasController;
     
-	private ChannelController mPlaylistEditor;
+	private ChannelController mChannelController;
 
 	private JideTabbedPane mTabbedPane;
 
@@ -77,6 +81,7 @@ public class ControllerPanel extends JPanel
 
 	public ControllerPanel( AudioManager audioManager,
 							ConfigurationControllerModel controller,
+							AliasModel aliasModel,
 							ChannelModel channelModel,
 							ChannelProcessingManager channelProcessingManager,
 							MapService mapService,
@@ -103,7 +108,9 @@ public class ControllerPanel extends JPanel
     	mChannelStateList = new ChannelList( channelModel, channelProcessingManager, 
     			playlistManager, mSettingsManager );
 
-    	mPlaylistEditor = new ChannelController( channelModel, playlistManager, sourceManager );
+    	mChannelController = new ChannelController( channelModel, playlistManager, sourceManager );
+    	
+    	mAliasController = new AliasController( aliasModel, mSettingsManager );
 
 		init();
 	}
@@ -129,7 +136,8 @@ public class ControllerPanel extends JPanel
     	mTabbedPane = new JideTabbedPane();
     	mTabbedPane.setFont( this.getFont() );
     	mTabbedPane.setForeground( Color.BLACK );
-    	mTabbedPane.addTab( "Channels", mPlaylistEditor );
+    	mTabbedPane.addTab( "Channels", mChannelController );
+    	mTabbedPane.addTab( "Aliases", mAliasController );
     	mTabbedPane.addTab( "Configuration", mSystemControlSplitPane  );
     	mTabbedPane.addTab( "Channel Spectrum", mChannelSpectrumPanel );
     	mTabbedPane.addTab( "Events", mCallEventPanel );

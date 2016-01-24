@@ -140,7 +140,7 @@ public class ChannelController extends JPanel
 	}
 
 	/**
-	 * Selects the channel's table row and scrolls the table's viewport to show it
+	 * Adds the channel to the channel model/table and scrolls to view it
 	 */
 	private void addChannel( Channel channel )
 	{
