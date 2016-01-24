@@ -36,6 +36,10 @@ public class TalkgroupIDEditor extends JPanel implements ActionListener
     private TalkgroupIDNode mTalkgroupIDNode;
     
     private JTextField mTextTalkgroupID;
+<<<<<<< Upstream, based on origin/master
+=======
+    private JLabel mLabelAudio;
+>>>>>>> 92e63f7 Adds AliasModel and AliasEvent and support for conversion from legacy playlist format.
     
     private String mHelpText = "Enter a formatted talkgroup identifier.\n\n"
     		+ "P25 Talkgroup Format: hexadecimal value, 4 characters for "

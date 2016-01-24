@@ -40,6 +40,11 @@ public class AliasDirectory
 			list.update();
 		}
 	}
+	
+	public void clearAliasLists()
+	{
+		mAliasList.clear();
+	}
 
 	@XmlElement( name = "alias_list" )
 	public ArrayList<AliasList> getAliasList()

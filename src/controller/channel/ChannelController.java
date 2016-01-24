@@ -1,4 +1,4 @@
-package playlist;
+package controller.channel;
 
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
@@ -20,19 +20,16 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import playlist.PlaylistManager;
 import source.SourceManager;
 
 import com.jidesoft.swing.JideSplitPane;
 
-import controller.channel.Channel;
-import controller.channel.ChannelEditor;
-import controller.channel.ChannelModel;
-
-public class PlaylistEditor extends JPanel 
+public class ChannelController extends JPanel 
 				implements ActionListener, ListSelectionListener
 {
 	private static final long serialVersionUID = 1L;
-	private final static Logger mLog = LoggerFactory.getLogger( PlaylistEditor.class );
+	private final static Logger mLog = LoggerFactory.getLogger( ChannelController.class );
 
 	private ChannelModel mChannelModel;
 	private JTable mChannelTable;
@@ -47,7 +44,7 @@ public class PlaylistEditor extends JPanel
 	private JButton mCopyChannelButton = new JButton( COPY_CHANNEL );
 	private JButton mDeleteChannelButton = new JButton( DELETE_CHANNEL );
 
-	public PlaylistEditor( ChannelModel channelModel, 
+	public ChannelController( ChannelModel channelModel, 
 						   PlaylistManager playlistManager, 
 						   SourceManager sourceManager )
 	{
@@ -205,7 +202,7 @@ public class PlaylistEditor extends JPanel
 
 				if( toDelete != null )
 				{
-					int choice = JOptionPane.showConfirmDialog( PlaylistEditor.this, 
+					int choice = JOptionPane.showConfirmDialog( ChannelController.this, 
 						"Do you want to delete this channel?", "Delete Channel?", 
 						JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE );
 					

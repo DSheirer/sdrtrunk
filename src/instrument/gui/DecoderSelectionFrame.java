@@ -13,6 +13,7 @@ import module.decode.config.DecodeConfiguration;
 import net.miginfocom.swing.MigLayout;
 import playlist.PlaylistManager;
 import source.IControllableFileSource;
+import alias.AliasModel;
 import controller.ThreadPoolManager;
 import controller.channel.ChannelModel;
 
@@ -29,11 +30,12 @@ public class DecoderSelectionFrame extends JInternalFrame
 	public DecoderSelectionFrame( JDesktopPane desktop, 
 								  IControllableFileSource source )
 	{
+		AliasModel aliasModel = new AliasModel();
 		ChannelModel channelModel = new ChannelModel();
 		
 		ThreadPoolManager tpm = new ThreadPoolManager();
 		
-		mPlaylistManager = new PlaylistManager( tpm, channelModel );
+		mPlaylistManager = new PlaylistManager( tpm, aliasModel, channelModel );
 
 		mDesktop = desktop;
 		mSource = source;

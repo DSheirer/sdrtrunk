@@ -43,11 +43,6 @@ public class TalkgroupID extends AliasID
 		mTalkgroup = talkgroup;
 	}
 
-	public boolean hasAudioType()
-	{
-		return false;
-	}
-	
 	public String toString()
 	{
 		StringBuilder sb = new StringBuilder();

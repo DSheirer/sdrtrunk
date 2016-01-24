@@ -24,12 +24,14 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
+import alias.Alias;
 import alias.AliasDirectory;
 import controller.channel.Channel;
 import controller.channel.map.ChannelMapList;
 import controller.system.SystemList;
 
 @XmlSeeAlso( { AliasDirectory.class,
+			   Alias.class,
 			   Channel.class,
 			   ChannelMapList.class,
 			   SystemList.class } )
@@ -40,10 +42,22 @@ public class Playlist
 	private AliasDirectory mAliasDirectory = new AliasDirectory();
 	private ChannelMapList mChannelMapList = new ChannelMapList();
 	private SystemList mSystemList = new SystemList();
+	private List<Alias> mAliases = new ArrayList<>();
 	private List<Channel> mChannels = new ArrayList<>();
 	
 	public Playlist()
 	{
+	}
+	
+	@XmlElement( name = "alias" )
+	public List<Alias> getAliases()
+	{
+		return mAliases;
+	}
+	
+	public void setAliases( List<Alias> aliases )
+	{
+		mAliases = aliases;
 	}
 	
 	@XmlElement( name = "channel" )
@@ -70,6 +84,13 @@ public class Playlist
 		mAliasDirectory = directory;
 	}
 
+	public boolean hasAliasDirectory()
+	{
+		return mAliasDirectory != null && 
+			   mAliasDirectory.getAliasList() != null && 
+			   !mAliasDirectory.getAliasList().isEmpty();
+	}
+	
 	@XmlElement( name = "system_list" )
 	public SystemList getSystemList()
 	{

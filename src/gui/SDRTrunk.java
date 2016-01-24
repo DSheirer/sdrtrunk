@@ -60,6 +60,7 @@ import source.tuner.Tuner;
 import source.tuner.TunerSelectionListener;
 import spectrum.SpectralDisplayPanel;
 import util.TimeStamp;
+import alias.AliasModel;
 import alias.action.AliasActionManager;
 import audio.AudioManager;
 
@@ -118,9 +119,12 @@ public class SDRTrunk
 		
 		SourceManager sourceManager = new SourceManager( mSettingsManager, threadPoolManager );
 
+		AliasModel aliasModel = new AliasModel();
+		
 		ChannelModel channelModel = new ChannelModel();
 
-		PlaylistManager playlistManager = new PlaylistManager( threadPoolManager, channelModel );
+		PlaylistManager playlistManager = new PlaylistManager( threadPoolManager, 
+				aliasModel, channelModel );
 
 		RecorderManager recorderManager = new RecorderManager( threadPoolManager );
 

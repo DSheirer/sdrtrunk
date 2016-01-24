@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2015 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -26,11 +26,11 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
 
+import module.decode.DecoderType;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import playlist.PlaylistEditor;
-import module.decode.DecoderType;
 import controller.channel.Channel.ChannelType;
 import controller.channel.ChannelEvent.Event;
 

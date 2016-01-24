@@ -29,6 +29,8 @@ import audio.inverted.AudioType;
 
 public class Alias
 {
+	private String mList;
+	private String mGroup;
 	private String mName;
 	private int mColor;
 	private String mIconName;
@@ -44,7 +46,7 @@ public class Alias
 		return getName();
 	}
 
-	@XmlAttribute
+	@XmlAttribute( name="name" )
 	public String getName()
 	{
 		return mName;
@@ -53,6 +55,38 @@ public class Alias
 	public void setName( String name )
 	{
 		mName = name;
+	}
+
+	@XmlAttribute( name="list" )
+	public String getList()
+	{
+		return mList;
+	}
+	
+	public void setList( String list )
+	{
+		mList = list;
+	}
+	
+	public boolean hasList()
+	{
+		return mList != null;
+	}
+
+	@XmlAttribute( name="group" )
+	public String getGroup()
+	{
+		return mGroup;
+	}
+	
+	public void setGroup( String group )
+	{
+		mGroup = group;
+	}
+	
+	public boolean hasGroup()
+	{
+		return mGroup != null;
 	}
 
 	@XmlAttribute

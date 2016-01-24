@@ -33,7 +33,6 @@ import module.decode.event.CallEventPanel;
 import module.decode.event.MessageActivityPanel;
 import module.decode.state.ChannelList;
 import net.miginfocom.swing.MigLayout;
-import playlist.PlaylistEditor;
 import playlist.PlaylistManager;
 import settings.SettingsManager;
 import source.SourceManager;
@@ -44,6 +43,7 @@ import audio.AudioPanel;
 import com.jidesoft.swing.JideSplitPane;
 import com.jidesoft.swing.JideTabbedPane;
 
+import controller.channel.ChannelController;
 import controller.channel.ChannelModel;
 import controller.channel.ChannelProcessingManager;
 
@@ -59,7 +59,7 @@ public class ControllerPanel extends JPanel
     
     private ChannelSpectrumPanel mChannelSpectrumPanel;
     
-	private PlaylistEditor mPlaylistEditor;
+	private ChannelController mPlaylistEditor;
 
 	private JideTabbedPane mTabbedPane;
 
@@ -103,7 +103,7 @@ public class ControllerPanel extends JPanel
     	mChannelStateList = new ChannelList( channelModel, channelProcessingManager, 
     			playlistManager, mSettingsManager );
 
-    	mPlaylistEditor = new PlaylistEditor( channelModel, playlistManager, sourceManager );
+    	mPlaylistEditor = new ChannelController( channelModel, playlistManager, sourceManager );
 
 		init();
 	}

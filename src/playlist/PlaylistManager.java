@@ -37,10 +37,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import properties.SystemProperties;
-import controller.channel.Channel;
-import controller.channel.ChannelModel;
-import controller.site.Site;
-import controller.system.SystemList;
+import alias.Alias;
+import alias.AliasDirectory;
+import alias.AliasList;
+import alias.AliasModel;
+import alias.Group;
 import controller.ThreadPoolManager;
 import controller.channel.Channel;
 import controller.channel.Channel.ChannelType;
@@ -57,10 +58,8 @@ public class PlaylistManager implements ChannelEventListener
 
 	private Playlist mPlaylist = new Playlist();
 	
-	private ChannelModel mChannelModel;
-	
-	public PlaylistManager( ChannelModel channelModel )
 	private ThreadPoolManager mThreadPoolManager;
+	private AliasModel mAliasModel;
 	private ChannelModel mChannelModel;
 	
 	private AtomicBoolean mPlaylistSavePending = new AtomicBoolean();
@@ -76,10 +75,12 @@ public class PlaylistManager implements ChannelEventListener
 	 * @param threadPoolManager
 	 * @param channelModel
 	 */
-	public PlaylistManager( ThreadPoolManager threadPoolManager, 
+	public PlaylistManager( ThreadPoolManager threadPoolManager,
+							AliasModel aliasModel,
 							ChannelModel channelModel )
 	{
 		mThreadPoolManager = threadPoolManager;
+		mAliasModel = aliasModel;
 		mChannelModel = channelModel;
 
 		//Register for channel events so that we can save the playlist when
@@ -101,7 +102,8 @@ public class PlaylistManager implements ChannelEventListener
 //all of the data
 
 		mPlaylistLoading = true;
-		
+
+		mAliasModel.addAliases( mPlaylist.getAliases() );
 		mChannelModel.addChannels( mPlaylist.getChannels() );
 		
 		mPlaylistLoading = false;
@@ -168,11 +170,57 @@ public class PlaylistManager implements ChannelEventListener
 		}
 	}
 
+	/**
+	 * Channel event listener method.  Monitors channel events for events that
+	 * indicate that the playlist has changed and queues automatic playlist
+	 * saving.
+	 */
+	@Override
+	public void channelChanged( ChannelEvent event )
+	{
+		//Only save playlist for changes to standard channels (not traffic)
+		if( event.getChannel().getChannelType() == ChannelType.STANDARD )
+		{
+			switch( event.getEvent() )
+			{
+				case NOTIFICATION_ADD:
+				case NOTIFICATION_CONFIGURATION_CHANGE:
+				case NOTIFICATION_DELETE:
+				case NOTIFICATION_PROCESSING_START:
+				case NOTIFICATION_PROCESSING_STOP:
+					schedulePlaylistSave();
+					break;
+				case NOTIFICATION_ENABLE_REJECTED:
+				case NOTIFICATION_SELECTION_CHANGE:
+				case NOTIFICATION_STATE_RESET:
+				case REQUEST_DELETE:
+				case REQUEST_DESELECT:
+				case REQUEST_DISABLE:
+				case REQUEST_ENABLE:
+				case REQUEST_SELECT:
+					//Do nothing for these event types
+					break;
+				default:
+					//When a new event enum entry is added and received, throw an
+					//exception here to ensure developer adds support for the 
+					//use case
+					throw new IllegalArgumentException( "Unrecognized Channel "
+							+ "Event [" + event.getEvent().name() + "]" );
+			}
+		}
+	}
+
 	public void save()
 	{
 //TODO: recreate the playlist and load values from each of the models
 		
+		mLog.debug( "Aliases in model:" + mAliasModel.getAliases().size() );
+		mPlaylist.setAliases( mAliasModel.getAliases() );
+		mLog.debug( "Aliases in playlist:" + mPlaylist.getAliases().size() );
+
+		mLog.debug( "Channels in model:" + mChannelModel.getChannels().size() );
 		mPlaylist.setChannels( mChannelModel.getChannels() );
+		mLog.debug( "Channels in playlist:" + mPlaylist.getChannels().size() );
 		
 		JAXBContext context = null;
 		
@@ -370,16 +418,27 @@ public class PlaylistManager implements ChannelEventListener
 							playlistPath.toString() + "]" );
 		}
 		
+		boolean saveRequired = false;
+
 		if( mPlaylist == null )
 		{
 			mPlaylist = new Playlist();
-			save();
+			saveRequired = true;
 		}
 
+		
 		//Check for and convert from legacy play list format
-		if( mPlaylist.hasSystemList() )
+		if( mPlaylist.hasSystemList() || mPlaylist.hasAliasDirectory() )
 		{
 			convertPlaylistFormat();
+			saveRequired = true;
+		}
+		
+		transferPlaylistToModels();
+
+		if( saveRequired )
+		{
+			save();
 		}
 	}
 
@@ -388,35 +447,60 @@ public class PlaylistManager implements ChannelEventListener
 	 */
 	private void convertPlaylistFormat()
 	{
-		mLog.info( "Legacy playlist format detected - converting ..." );
+		mLog.info( "Legacy playlist format detected - converting" );
 
 		createBackupPlaylist();
 		
 		//Playlist version 1 to version 2 format conversion.  In order to keep
 		//backwards compatibility, transfer all of the System-Site-Channel 
 		//objects over to the new channel list format
-		SystemList systemList = mPlaylist.getSystemList();
-		
-		for( controller.system.System system: systemList.getSystem() )
+		if( mPlaylist.hasSystemList() )
 		{
-			for( Site site: system.getSite() )
+			SystemList systemList = mPlaylist.getSystemList();
+			
+			for( controller.system.System system: systemList.getSystem() )
 			{
-				for( Channel channel: site.getChannel() )
+				for( Site site: system.getSite() )
 				{
-					channel.setSystem( system.getName() );
-					channel.setSite( site.getName() );
-					
-					mPlaylist.getChannels().add( channel );
+					for( Channel channel: site.getChannel() )
+					{
+						channel.setSystem( system.getName() );
+						channel.setSite( site.getName() );
+						
+						mPlaylist.getChannels().add( channel );
+					}
 				}
 			}
+
+			mPlaylist.getSystemList().clearSystems();
+			
+			mLog.info( "Converted [" + mPlaylist.getChannels().size() + 
+					"] channels to new playlist format" );
 		}
-		
-		mPlaylist.getSystemList().clearSystems();
-		
-		mLog.info( "Converted [" + mPlaylist.getChannels().size() + 
-				"] channels to new playlist format" );
-		
-		save();
+
+		if( mPlaylist.hasAliasDirectory() )
+		{
+			AliasDirectory aliasDirectory = mPlaylist.getAliasDirectory();
+			
+			for( AliasList list: aliasDirectory.getAliasList() )
+			{
+				for( Group group: list.getGroup() )
+				{
+					for( Alias alias: group.getAlias() )
+					{
+						alias.setList( list.getName() );
+						alias.setGroup( group.getName() );
+						
+						mPlaylist.getAliases().add( alias );
+					}
+				}
+			}
+			
+			mPlaylist.getAliasDirectory().clearAliasLists();
+			
+			mLog.info( "Converted [" + mPlaylist.getAliases().size() + 
+					"] aliases to new playlist format" );
+		}
 	}
 	
 	/**
@@ -448,46 +532,5 @@ public class PlaylistManager implements ChannelEventListener
 
 			mPlaylistSavePending.set( false );
 		}
-
-		//Check for and convert from legacy play list format
-		if( mPlaylist.hasSystemList() )
-		{
-			convertPlaylistFormat();
-		}
-	}
-
-	/**
-	 * Converts playlist data over to new format
-	 */
-	private void convertPlaylistFormat()
-	{
-		mLog.info( "Legacy playlist format detected - converting ..." );
-
-		createBackupPlaylist();
-		
-		//Playlist version 1 to version 2 format conversion.  In order to keep
-		//backwards compatibility, transfer all of the System-Site-Channel 
-		//objects over to the new channel list format
-		SystemList systemList = mPlaylist.getSystemList();
-		
-		for( controller.system.System system: systemList.getSystem() )
-		{
-			for( Site site: system.getSite() )
-			{
-				for( Channel channel: site.getChannel() )
-				{
-					channel.setSystem( system.getName() );
-					channel.setSite( site.getName() );
-					
-					mPlaylist.getChannels().add( channel );
-				}
-			}
-		}
-		
-		mPlaylist.getSystemList().clearSystems();
-		
-		mLog.info( "Converted [" + mPlaylist.getChannels().size() + "] channels to new playlist format" );
-		
-		save();
 	}
 }
