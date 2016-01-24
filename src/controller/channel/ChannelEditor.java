@@ -17,21 +17,16 @@
  ******************************************************************************/
 package controller.channel;
 
-
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JSeparator;
-import javax.swing.JTextField;
 
 import module.decode.AuxDecodeComponentEditor;
 import module.decode.DecodeComponentEditor;
@@ -45,7 +40,6 @@ import playlist.PlaylistManager;
 import record.RecordComponentEditor;
 import source.SourceComponentEditor;
 import source.SourceManager;
-import alias.AliasList;
 
 import com.jidesoft.swing.JideTabbedPane;
 
@@ -169,7 +163,6 @@ public class ChannelEditor extends JPanel
 	@Override
 	public void channelChanged( ChannelEvent event )
 	{
-		mLog.debug( "Received channel event: " + event.getEvent() );
 		if( mChannel != null && mChannel == event.getChannel() )
 		{
 			switch( event.getEvent() )
@@ -302,36 +295,6 @@ public class ChannelEditor extends JPanel
 		mChannelModel.broadcast( new ChannelEvent( mChannel, 
 				Event.NOTIFICATION_CONFIGURATION_CHANGE ) );
     }
-
-//	@Override
-//    public void reset()
-//    {
-//		mChannelName.setText( mChannel.getName() );
-//		mChannelName.requestFocus();
-//		mChannelName.requestFocusInWindow();
-//		
-//		mChannelEnabled.setSelected( mChannel.getEnabled() );
-//		mChannelEnabled.requestFocus();
-//		mChannelEnabled.requestFocusInWindow();
-//
-//		String aliasListName = mChannel.getAliasListName();
-//
-//    	if( aliasListName != null )
-//    	{
-//    		AliasList selected = mPlaylistManager.getPlayist().getAliasDirectory()
-//    			.getAliasList( aliasListName );
-//
-//    		mComboAliasLists.setSelectedItem( selected );
-//    	}
-//
-//
-//		mSourceEditor.reset();
-//		mDecodeEditor.reset();
-//		mAuxDecodeEditor.reset();
-//		mEventLogEditor.reset();
-//		mRecordEditor.reset();
-//    }
-
 //	/**
 //	 * Validate the specified editor against each of the component editors
 //	 */

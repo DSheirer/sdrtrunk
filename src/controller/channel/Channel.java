@@ -23,14 +23,17 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 import javax.xml.bind.annotation.XmlTransient;
 
+import module.decode.DecoderType;
 import module.decode.config.AuxDecodeConfiguration;
 import module.decode.config.DecodeConfigFactory;
 import module.decode.config.DecodeConfiguration;
+import module.log.EventLogType;
 import module.log.config.EventLogConfiguration;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import record.RecorderType;
 import record.config.RecordConfiguration;
 import source.SourceType;
 import source.config.SourceConfigFactory;
@@ -114,6 +117,50 @@ public class Channel extends Configuration implements IFrequencyChangeProcessor
 	public Channel()
 	{
 		mChannelID = UNIQUE_ID++;
+	}
+
+	/**
+	 * Creates a (new) deep copy of this channel
+	 */
+	public Channel copyOf()
+	{
+		Channel channel = new Channel( mName );
+		channel.setSystem( mSystem );
+		channel.setSite( mSite );
+		channel.setAliasListName( mAliasListName );
+
+		AuxDecodeConfiguration aux = new AuxDecodeConfiguration();
+		
+		for( DecoderType auxType: aux.getAuxDecoders() )
+		{
+			aux.addAuxDecoder( auxType );
+		}
+		
+		channel.setAuxDecodeConfiguration( aux );
+		
+		channel.setDecodeConfiguration( DecodeConfigFactory.copy( mDecodeConfiguration ) );
+		
+		EventLogConfiguration log = new EventLogConfiguration();
+		
+		for( EventLogType logType: mEventLogConfiguration.getLoggers() )
+		{
+			log.addLogger( logType );
+		}
+		
+		channel.setEventLogConfiguration( log );
+
+		RecordConfiguration record = new RecordConfiguration();
+		
+		for( RecorderType recordType: mRecordConfiguration.getRecorders() )
+		{
+			record.addRecorder( recordType );
+		}
+		
+		channel.setRecordConfiguration( record );
+
+		channel.setSourceConfiguration( SourceConfigFactory.copy( mSourceConfiguration ) );
+		
+		return channel;
 	}
 	
 //TODO: remove this

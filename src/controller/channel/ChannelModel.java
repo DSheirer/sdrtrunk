@@ -26,6 +26,10 @@ import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableModel;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import playlist.PlaylistEditor;
 import module.decode.DecoderType;
 import controller.channel.Channel.ChannelType;
 import controller.channel.ChannelEvent.Event;
@@ -35,6 +39,8 @@ import controller.channel.ChannelEvent.Event;
  */
 public class ChannelModel implements IChannelEventBroadcaster, TableModel
 {
+	private final static Logger mLog = LoggerFactory.getLogger( ChannelModel.class );
+
 	private ChannelSelectionManager mChannelSelectionManager;
 	private List<Channel> mChannels = new ArrayList<>();
 	private List<Channel> mTrafficChannels = new ArrayList<>();
@@ -53,6 +59,16 @@ public class ChannelModel implements IChannelEventBroadcaster, TableModel
 	public List<Channel> getChannels()
 	{
 		return Collections.unmodifiableList( mChannels );
+	}
+	
+	public Channel getChannelAtIndex( int row )
+	{
+		if( mChannels.size() >= row )
+		{
+			return mChannels.get( row );
+		}
+		
+		return null;
 	}
 	
 	/**
@@ -150,20 +166,23 @@ public class ChannelModel implements IChannelEventBroadcaster, TableModel
 	/**
 	 * Adds the channel to the model and broadcasts a channel add event
 	 */
-	public void addChannel( Channel channel )
+	public int addChannel( Channel channel )
 	{
+		int index = -1;
+		
 		switch( channel.getChannelType() )
 		{
 			case STANDARD:
 				mChannels.add( channel );
 				
-				int index = mChannels.size() - 1;
+				index = mChannels.size() - 1;
 				
 				broadcast( new TableModelEvent( this, index, index, 
 						TableModelEvent.ALL_COLUMNS, TableModelEvent.INSERT ) );
 				break;
 			case TRAFFIC:
 				mTrafficChannels.add( channel );
+				index = mChannels.size() - 1;
 				break;
 			default:
 				break;
@@ -175,6 +194,8 @@ public class ChannelModel implements IChannelEventBroadcaster, TableModel
 		{
 			broadcast( new ChannelEvent( channel, Event.REQUEST_ENABLE ) );
 		}
+		
+		return index;
 	}
 	
 	/**
@@ -182,27 +203,30 @@ public class ChannelModel implements IChannelEventBroadcaster, TableModel
 	 */
 	public void removeChannel( Channel channel )
 	{
-		switch( channel.getChannelType() )
+		if( channel != null )
 		{
-			case STANDARD:
-				int index = mChannels.indexOf( channel );
-				
-				mChannels.remove( channel );
+			switch( channel.getChannelType() )
+			{
+				case STANDARD:
+					int index = mChannels.indexOf( channel );
+					
+					mChannels.remove( channel );
 
-				if( index >= 0 )
-				{
-					broadcast( new TableModelEvent( this, index, index, 
-							TableModelEvent.ALL_COLUMNS, TableModelEvent.DELETE ) );
-				}
-				break;
-			case TRAFFIC:
-				mTrafficChannels.remove( channel );
-				break;
-			default:
-				break;
+					if( index >= 0 )
+					{
+						broadcast( new TableModelEvent( this, index, index, 
+								TableModelEvent.ALL_COLUMNS, TableModelEvent.DELETE ) );
+					}
+					break;
+				case TRAFFIC:
+					mTrafficChannels.remove( channel );
+					break;
+				default:
+					break;
+			}
+			
+			broadcast( new ChannelEvent( channel, Event.NOTIFICATION_DELETE ) );
 		}
-		
-		broadcast( new ChannelEvent( channel, Event.NOTIFICATION_DELETE ) );
 	}
 
 	/**
