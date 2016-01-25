@@ -166,32 +166,6 @@ public class Alias
 		return !mAliasActions.isEmpty();
 	}
 	
-	public boolean hasAudioType()
-	{
-		for( AliasID id: mAliasIDs )
-		{
-			if( id.hasAudioType() )
-			{
-				return true;
-			}
-		}
-		
-		return false;
-	}
-	
-	public AudioType getAudioType()
-	{
-		for( AliasID id: mAliasIDs )
-		{
-			if( id.hasAudioType() )
-			{
-				return id.getAudioType();
-			}
-		}
-		
-		return AudioType.NORMAL;
-	}
-
 	/**
 	 * Returns the priority level of this alias, if defined, or the default priority
 	 */

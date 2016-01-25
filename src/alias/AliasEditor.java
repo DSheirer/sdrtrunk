@@ -43,6 +43,7 @@ public class AliasEditor extends JPanel implements ActionListener, Listener<Alia
 	
 	private JLabel mAliasLabel;
     private AliasNameEditor mAliasNameEditor;
+    private AliasIdentifierEditor mAliasIdentifierEditor;
     
     private Alias mAlias;
 
@@ -51,6 +52,9 @@ public class AliasEditor extends JPanel implements ActionListener, Listener<Alia
 	{
     	mAliasModel = aliasModel;
     	mAliasNameEditor = new AliasNameEditor( mAliasModel, settingsManager );
+    	mAliasIdentifierEditor = new AliasIdentifierEditor();
+    	
+    	mAliasModel.addAliasEventListener( this );
 		
 		initGUI();
 	}
@@ -69,16 +73,16 @@ public class AliasEditor extends JPanel implements ActionListener, Listener<Alia
     	}
     	
 		mAliasNameEditor.setAlias( alias );
-    	
+		mAliasIdentifierEditor.setAlias( alias );
     }
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][grow,fill]", "[][][][][grow,fill]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[grow,fill][grow,fill]", "[][][][][grow,fill]" ) );
 		
-		add( new JLabel( "Alias:" ) );
+		add( new JLabel( "Alias:" ), "align right" );
 		mAliasLabel = new JLabel( DEFAULT_NAME );
-		add( mAliasLabel );
+		add( mAliasLabel, "align left" );
 		
 		add( new JSeparator( JSeparator.HORIZONTAL ), "span,growx,push" );
 		
@@ -87,6 +91,7 @@ public class AliasEditor extends JPanel implements ActionListener, Listener<Alia
     	tabs.setForeground( Color.BLACK );
 
 		tabs.addTab( "Alias", mAliasNameEditor );
+		tabs.addTab( "IDs", mAliasIdentifierEditor );
 		add( tabs, "span,grow" );		
 		
 		JButton btnSave = new JButton( "Save" );
@@ -116,6 +121,7 @@ public class AliasEditor extends JPanel implements ActionListener, Listener<Alia
 		if( command.contentEquals( "Save" ) )
 		{
 			mAliasNameEditor.save();
+			mAliasIdentifierEditor.save();
 			
 			//Broadcast an alias change event to save the updates
 			mAliasModel.broadcast( new AliasEvent( mAlias, Event.CHANGE ) ); 

@@ -206,7 +206,7 @@ public class AliasController extends JPanel
 				
 				if( selected != null )
 				{
-//					addAlias( selected.copyOf() );
+					addAlias( AliasFactory.copyOf( selected ) );
 				}
 				break;
 			case DELETE_ALIAS:

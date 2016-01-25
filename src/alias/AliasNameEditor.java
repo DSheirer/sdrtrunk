@@ -13,7 +13,6 @@ import javax.swing.JButton;
 import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 
 import map.IconManager;
@@ -30,11 +29,9 @@ public class AliasNameEditor extends AliasConfigurationEditor
 
 	private JComboBox<String> mListCombo = new JComboBox<>( EMPTY_MODEL );
 	private JComboBox<String> mGroupCombo = new JComboBox<>( EMPTY_MODEL );
+    private JComboBox<MapIcon> mMapIconCombo;
     private JTextField mName;
-
-    private JLabel mLabelMapColor;
     private JButton mButtonColor;
-    private JComboBox<MapIcon> mComboMapIcon;
     private JButton mBtnIconManager;
     
     private Alias mAlias;
@@ -50,10 +47,33 @@ public class AliasNameEditor extends AliasConfigurationEditor
 	
 	private void init()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][grow,fill]", "[][][][][][grow][]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][grow,fill]", 
+				"[][][][][][][grow]" ) );
 
 		add( new JLabel( "List:" ) );
 		mListCombo.setEditable( true );
+		mListCombo.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				if( mListCombo.getSelectedItem() != null )
+				{
+					List<String> groups = mAliasModel
+						.getGroupNames( (String)mListCombo.getSelectedItem() );
+					
+					if( groups.isEmpty() )
+					{
+						mGroupCombo.setModel( EMPTY_MODEL );
+					}
+					else
+					{
+						mGroupCombo.setModel( new DefaultComboBoxModel<String>( 
+							groups.toArray( new String[ groups.size() ] ) ) );;
+					}
+				}
+			}
+		} );
 		add( mListCombo, "wrap" );
 
 		add( new JLabel( "Group:" ) );
@@ -88,13 +108,13 @@ public class AliasNameEditor extends AliasConfigurationEditor
 		
 		add( new JLabel( "Icon:" ) );
 		
-		mComboMapIcon = new JComboBox<MapIcon>( mSettingsManager.getMapIcons() );
+		mMapIconCombo = new JComboBox<MapIcon>( mSettingsManager.getMapIcons() );
 
 		MapIconListCellRenderer renderer = new MapIconListCellRenderer();
 		renderer.setPreferredSize( new Dimension( 200, 30 ) );
-		mComboMapIcon.setRenderer( renderer );
+		mMapIconCombo.setRenderer( renderer );
 
-		add( mComboMapIcon, "wrap" );
+		add( mMapIconCombo, "wrap" );
 
 		//Dummy place holder
 		add( new JLabel() );
@@ -175,7 +195,7 @@ public class AliasNameEditor extends AliasConfigurationEditor
 	
 			if( savedIcon != null )
 			{
-				mComboMapIcon.setSelectedItem( savedIcon );
+				mMapIconCombo.setSelectedItem( savedIcon );
 			}
     	}
     	else
@@ -192,41 +212,26 @@ public class AliasNameEditor extends AliasConfigurationEditor
 	@Override
 	public void save()
 	{
-		// TODO Auto-generated method stub
-		String alias = mName.getText();
-		
-		if( alias != null )
+		if( mAlias != null )
 		{
-//			boolean expanded = mAliasNode.getModel().getTree()
-//					.isExpanded( new TreePath( mAliasNode ) );
-//
-//			mAliasNode.getAlias().setName( alias );
-//			((ConfigurableNode)mAliasNode.getParent()).sort();
-//			
-//			mAliasNode.getAlias().setColor( 
-//					mButtonColor.getBackground().getRGB() );
-
-			MapIcon selectedIcon = (MapIcon)mComboMapIcon.getSelectedItem();
+			if( mListCombo.getSelectedItem() != null )
+			{
+				mAlias.setList( (String)mListCombo.getSelectedItem() );
+			}
 			
-//			if( selectedIcon != null )
-//			{
-//				mAliasNode.getAlias().setIconName( selectedIcon.getName() );
-//			}
-//			
-//			mAliasNode.save();
-//			
-//			mAliasNode.show();
-//
-//			if( expanded )
-//			{
-//				mAliasNode.getModel().getTree()
-//					.expandPath( new TreePath( mAliasNode ) );
-//			}
+			if( mGroupCombo.getSelectedItem() != null )
+			{
+				mAlias.setGroup( (String)mGroupCombo.getSelectedItem() );
+			}
+
+			mAlias.setName( mName.getText() );
+
+			mAlias.setColor( mButtonColor.getBackground().getRGB() );
+
+			if( mMapIconCombo.getSelectedItem() != null )
+			{
+				mAlias.setIconName( ((MapIcon)mMapIconCombo.getSelectedItem()).getName() );
+			}
 		}
-		else
-		{
-			JOptionPane.showMessageDialog( AliasNameEditor.this, "Please enter an alias name" );
-		}
-		
 	}
 }

@@ -270,6 +270,13 @@ public class AliasModel implements TableModel
 	public void broadcast( AliasEvent event )
 	{
 		mAliasEventBroadcaster.broadcast( event );
+		
+		if( event.getEvent() == Event.CHANGE )
+		{
+			int index = mAliases.indexOf( event.getAlias() );
+			
+			broadcast( new TableModelEvent( this, index ) );
+		}
 	}
 	
 	public void addAliasEventListener( Listener<AliasEvent> listener )

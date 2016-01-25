@@ -17,8 +17,6 @@
  ******************************************************************************/
 package alias;
 
-import audio.inverted.AudioType;
-
 public abstract class AliasID
 {
 	public AliasID()
@@ -26,16 +24,6 @@ public abstract class AliasID
 	}
 	
 	public abstract AliasIDType getType();
-	
-	public boolean hasAudioType()
-	{
-		return false;
-	}
-	
-	public AudioType getAudioType()
-	{
-		return AudioType.NORMAL;
-	}
 	
 	public abstract boolean matches( AliasID id );
 }
