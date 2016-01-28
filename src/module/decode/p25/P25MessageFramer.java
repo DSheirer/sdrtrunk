@@ -17,6 +17,8 @@ import module.decode.p25.message.tdu.lc.TDULCMessageFactory;
 import module.decode.p25.message.tdu.lc.TDULinkControlMessage;
 import module.decode.p25.message.tsbk.TSBKMessage;
 import module.decode.p25.message.tsbk.TSBKMessageFactory;
+import module.decode.p25.message.vselp.VSELP1Message;
+import module.decode.p25.message.vselp.VSELP2Message;
 import module.decode.p25.reference.DataUnitID;
 
 import org.slf4j.Logger;
@@ -629,6 +631,14 @@ public class P25MessageFramer implements Listener<Dibit>
 					}
 
 					mComplete = true;
+					break;
+				case VSELP1:
+					mComplete = true;
+                    dispatch( new VSELP1Message( mMessage.copy(), mDUID, mAliasList ) );
+					break;
+				case VSELP2:
+					mComplete = true;
+                    dispatch( new VSELP2Message( mMessage.copy(), mDUID, mAliasList ) );
 					break;
 				case UNKN:
 					mComplete = true;
