@@ -97,9 +97,13 @@ public class TunerChannel implements Comparable<TunerChannel>
 	}
 
 	@Override
-    public int compareTo( TunerChannel otherLock )
+    public int compareTo( TunerChannel otherTunerChannel )
     {
-		if( mFrequency < otherLock.getFrequency() )
+		if( this.equals( otherTunerChannel ) )
+		{
+			return 0;
+		}
+		else if( mFrequency < otherTunerChannel.getFrequency() )
 		{
 			return -1;
 		}
