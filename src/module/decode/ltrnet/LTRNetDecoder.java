@@ -112,6 +112,7 @@ public class LTRNetDecoder extends Decoder implements IRealBufferListener, Instr
 	@Override
 	public void reset()
 	{
+		mLTRMessageFramer.reset();
 	}
 
 	@Override

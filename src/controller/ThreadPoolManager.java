@@ -64,11 +64,13 @@ public class ThreadPoolManager
 		mExecutor.schedule( command, delay, unit );
 	}
 
-	public void cancel( ScheduledFuture<?> task )
+	public boolean cancel( ScheduledFuture<?> task )
 	{
-		task.cancel( true );
+		boolean success = task.cancel( true );
 		
 		mTasks.remove( task );
+		
+		return success;
 	}
 	
 	public int getTaskCount( ThreadType type )

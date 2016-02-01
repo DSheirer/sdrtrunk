@@ -436,7 +436,7 @@ public class P25DecoderState extends DecoderState
 	{
 		if( tdulc.getOpcode() == LinkControlOpcode.CALL_TERMINATION_OR_CANCELLATION )
 		{
-			broadcast( new DecoderStateEvent( this, Event.END, State.END ) );
+			broadcast( new DecoderStateEvent( this, Event.END, State.FADE ) );
 			
 			if( mCurrentCallEvent != null )
 			{
@@ -1056,7 +1056,7 @@ public class P25DecoderState extends DecoderState
 					}
 					break;
 				case CALL_TERMINATION_OR_CANCELLATION:
-					broadcast( new DecoderStateEvent( this, Event.END, State.END ) );
+					broadcast( new DecoderStateEvent( this, Event.END, State.FADE ) );
 					mCurrentCallEvent = null;
 
 					if( !( ldu instanceof CallTermination ) )
@@ -1520,7 +1520,7 @@ public class P25DecoderState extends DecoderState
 	private void processTSBK( TSBKMessage tsbk )
 	{
 		/* Trunking Signalling Block Messages - indicates Control Channel */
-		broadcast( new DecoderStateEvent( this, Event.START, State.CONTROL ) );
+		broadcast( new DecoderStateEvent( this, Event.CONTINUATION, State.CONTROL ) );
 
 		if( tsbk.getVendor() == Vendor.STANDARD )
 		{

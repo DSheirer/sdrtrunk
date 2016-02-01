@@ -301,8 +301,8 @@ public class MPT1327Decoder extends Decoder
 	@Override
 	public void reset()
 	{
-		// TODO Auto-generated method stub
-		
+		mControlMessageFramer.reset();
+		mTrafficMessageFramer.reset();
 	}
 
 	@Override

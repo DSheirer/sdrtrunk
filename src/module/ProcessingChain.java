@@ -99,8 +99,7 @@ public class ProcessingChain implements IChannelEventListener
 	private Broadcaster<RealBuffer> mRealBufferBroadcaster = new Broadcaster<>();
 	private Broadcaster<SquelchState> mSquelchStateBroadcaster = new Broadcaster<>();
 	
-	private ThreadPoolManager mThreadPoolManager;
-	private ScheduledFuture<?> mBufferProcessingTask;
+//	private ThreadPoolManager mThreadPoolManager;
 	private AtomicBoolean mRunning = new AtomicBoolean();
 	
 	protected Source mSource;
@@ -109,14 +108,8 @@ public class ProcessingChain implements IChannelEventListener
 	
 	public ProcessingChain()
 	{
-		this( new ThreadPoolManager() );
 	}
 
-	public ProcessingChain( ThreadPoolManager threadManager )
-	{
-		mThreadPoolManager = threadManager;
-	}
-	
 	public void dispose()
 	{
 		stop();
@@ -128,14 +121,6 @@ public class ProcessingChain implements IChannelEventListener
 		
 		mModules.clear();
 		
-//		mComplexReceiver.dispose();
-//		mComplexReceiver = null;
-//		
-//		mRealReceiver.dispose();
-//		mRealReceiver = null;
-		
-		mThreadPoolManager = null;
-		mBufferProcessingTask = null;
 		mFrequencyCorrectionController = null;
 		
 		mAudioPacketBroadcaster.dispose();
@@ -494,12 +479,6 @@ public class ProcessingChain implements IChannelEventListener
 				/* Release the source */
 				mSource.dispose();
 				mSource = null;
-			}
-			
-			if( mBufferProcessingTask != null )
-			{
-				mThreadPoolManager.cancel( mBufferProcessingTask );
-				mBufferProcessingTask = null;
 			}
 			
 			/* Stop each of the modules */

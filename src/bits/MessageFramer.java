@@ -58,6 +58,16 @@ public class MessageFramer implements Listener<Boolean>,
         mMessageLength = messageLength;
     }
     
+    public void reset()
+    {
+    	for( MessageAssembler assembler: mMessageAssemblers )
+    	{
+    		assembler.dispose();
+    	}
+    	
+    	mMessageAssemblers.clear();
+    }
+    
     public void dispose()
     {
     	mBroadcaster.dispose();

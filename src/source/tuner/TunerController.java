@@ -246,10 +246,6 @@ public abstract class TunerController implements Tunable
 		{
 			mTunedChannels.remove( tunerChannelSource.getTunerChannel() );
 		}
-		else
-		{
-			mLog.error( "Request to release channel that is not in current tuned channels set" );
-		}
 	}
 	
 	/**

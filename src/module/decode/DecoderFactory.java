@@ -228,7 +228,8 @@ public class DecoderFactory
 				Sync sync = mptConfig.getSync();
 				
 				modules.add( new MPT1327Decoder( aliasList, sync ) );
-				modules.add( new MPT1327DecoderState( aliasList, channelMap, channelType ) );
+				modules.add( new MPT1327DecoderState( aliasList, channelMap, 
+						channelType, mptConfig.getCallTimeout() * 1000 ) );
 
 				if( channelType == ChannelType.STANDARD )
 				{

@@ -809,8 +809,7 @@ public class Channel extends Configuration
 	{
 		if( mProcessingChain == null )
 		{
-			mProcessingChain = new ProcessingChain( 
-					mResourceManager.getThreadPoolManager() );
+			mProcessingChain = new ProcessingChain();
 			
 			/* Get the optional alias list for the decode modules to use */
 			AliasList aliasList = mResourceManager.getPlaylistManager()
@@ -901,6 +900,8 @@ public class Channel extends Configuration
 	{
 		if( !mEnabled && mProcessingChain != null )
 		{
+			fireChannelEvent( Event.CHANNEL_PROCESSING_STOPPED );
+
 			mProcessingChain.stop();
 
 			if( mChannelType == ChannelType.STANDARD )
@@ -910,8 +911,6 @@ public class Channel extends Configuration
 			}
 
 			mSelected = false;
-			
-			fireChannelEvent( Event.CHANNEL_PROCESSING_STOPPED );
 		}
 	}
 	

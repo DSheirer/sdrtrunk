@@ -76,6 +76,7 @@ public class LTRStandardDecoder extends Decoder implements IRealBufferListener
 	@Override
 	public void reset()
 	{
+		mLTRMessageFramer.reset();
 	}
 
 	@Override

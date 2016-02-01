@@ -14,12 +14,13 @@ import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JPanel;
 
-import module.decode.DecoderFactory;
-import net.miginfocom.swing.MigLayout;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import controller.channel.Channel;
+import controller.channel.ChannelUtils;
+import module.decode.DecoderFactory;
+import net.miginfocom.swing.MigLayout;
 import playlist.PlaylistManager;
 import record.RecorderType;
 import record.config.RecordConfiguration;
@@ -29,8 +30,6 @@ import settings.ColorSetting.ColorSettingName;
 import settings.Setting;
 import settings.SettingChangeListener;
 import settings.SettingsManager;
-import controller.channel.Channel;
-import controller.channel.ChannelUtils;
 
 public class ChannelStatePanel extends JPanel 
 				implements Listener<ChangedAttribute>, SettingChangeListener
@@ -236,26 +235,37 @@ public class ChannelStatePanel extends JPanel
         Graphics2D g2 = (Graphics2D)g.create();
 
         Paint p = null;
+
+        final Channel channel = mChannel;
         
-        switch( mChannel.getChannelState().getState() )
+        final ChannelState channelState = ( channel == null ? null : channel.getChannelState() );
+
+        if( channelState != null )
         {
-			case CALL:
-				p = getGradient( mColorTopCall, mColorMiddleCall );
-				break;
-			case CONTROL:
-				p = getGradient( mColorTopControl, mColorMiddleControl );
-				break;
-			case DATA:
-				p = getGradient( mColorTopData, mColorMiddleData );
-				break;
-			case FADE:
-				p = getGradient( mColorTopFade, mColorMiddleFade );
-				break;
-			case END:
-			case IDLE:
-			default:
-				p = getGradient( mColorTopIdle, mColorMiddleIdle );
-				break;
+            switch( channelState.getState() )
+            {
+    			case CALL:
+    				p = getGradient( mColorTopCall, mColorMiddleCall );
+    				break;
+    			case CONTROL:
+    				p = getGradient( mColorTopControl, mColorMiddleControl );
+    				break;
+    			case DATA:
+    				p = getGradient( mColorTopData, mColorMiddleData );
+    				break;
+    			case FADE:
+    				p = getGradient( mColorTopFade, mColorMiddleFade );
+    				break;
+    			case IDLE:
+    			default:
+    				p = getGradient( mColorTopIdle, mColorMiddleIdle );
+    				break;
+            }
+        }
+        
+        if( p == null )
+        {
+			p = getGradient( mColorTopIdle, mColorMiddleIdle );
         }
         
         g2.setPaint( p );

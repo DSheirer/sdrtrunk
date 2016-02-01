@@ -230,11 +230,19 @@ public class AudioChannelPanel extends JPanel
 							mFrom.setText( from.getValue() );
 							updateAlias( mFromAlias, from.getAlias() );
 						}
+						else
+						{
+							mFrom.setText( "-----" );
+						}
 						
 						if( to != null )
 						{
 							mTo.setText( to.getValue() );
 							updateAlias( mToAlias, to.getAlias() );
+						}
+						else
+						{
+							mTo.setText( "-----" );
 						}
 					}
 				} );

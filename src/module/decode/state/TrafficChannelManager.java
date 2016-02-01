@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import record.config.RecordConfiguration;
+import sample.Broadcaster;
 import sample.Listener;
 import source.config.SourceConfigTuner;
 import source.tuner.TunerChannel;
@@ -96,10 +97,21 @@ public class TrafficChannelManager extends Module
 		mPreviousDoNotMonitorCallEvent = null;
 	}
 
+	/**
+	 * Provides a channel by either reusing an existing channel or constructing
+	 * a new one, limited by the total number of constructed channels allowed.
+	 * 
+	 * Note: you must enforce thread safety on the mTrafficChannelsInUse 
+	 * external to this method.
+	 * 
+	 * @param channelNumber
+	 * @param tunerChannel
+	 * @return
+	 */
 	private Channel getChannel( String channelNumber, TunerChannel tunerChannel )
 	{
 		Channel channel = null;
-
+		
 		if( !mTrafficChannelsInUse.containsKey( channelNumber ) )
 		{
 			for( Channel configuredChannel: mTrafficChannelPool )
@@ -151,10 +163,11 @@ public class TrafficChannelManager extends Module
 					channel.setSystem( mSystem, false );
 					channel.setSite( mSite, false );
 					channel.setName( "Traffic" );
+					mLog.debug("Channel not processing after setting enabled to true - why" );
 				}
 			}
 		}
-		
+
 		return channel;
 	}
 	
@@ -164,72 +177,79 @@ public class TrafficChannelManager extends Module
 	 */
 	private void process( TrafficChannelAllocationEvent event )
 	{
-		if( mCallEventListener != null )
-		{
-			synchronized( mCallEventListener )
-			{
-				CallEvent callEvent = event.getCallEvent();
+		CallEvent callEvent = event.getCallEvent();
 
-				/* Check for duplicate events and suppress */
-				if( mTrafficChannelsInUse.containsKey( callEvent.getChannel() ) )
+		/* Check for duplicate events and suppress */
+		synchronized( mTrafficChannelsInUse )
+		{
+			if( mTrafficChannelsInUse.containsKey( callEvent.getChannel() ) )
+			{
+				return;
+			}
+
+			long frequency = callEvent.getFrequency();
+			
+			/* Check the from/to aliases for do not monitor priority */
+			if( isDoNotMonitor( callEvent ) )
+			{
+				callEvent.setCallEventType( CallEventType.CALL_DO_NOT_MONITOR );
+
+				if( isSameCallEvent( mPreviousDoNotMonitorCallEvent, callEvent ) )
 				{
 					return;
 				}
-
-				long frequency = callEvent.getFrequency();
-				
-				/* Check the from/to aliases for do not monitor priority */
-				if( isDoNotMonitor( callEvent ) )
+				else
 				{
-					callEvent.setCallEventType( CallEventType.CALL_DO_NOT_MONITOR );
-
-					if( isSameCallEvent( mPreviousDoNotMonitorCallEvent, callEvent ) )
-					{
-						return;
-					}
-					else
-					{
-						mPreviousDoNotMonitorCallEvent = callEvent;
-					}
+					mPreviousDoNotMonitorCallEvent = callEvent;
 				}
-				else if( frequency > 0 )
-				{
-					Channel channel = getChannel( callEvent.getChannel(), 
-						new TunerChannel( Type.TRAFFIC, frequency, 
-								mDecodeConfiguration.getDecoderType()
-										.getChannelBandwidth() ) );
+			}
+			else if( frequency > 0 )
+			{
+				Channel channel = getChannel( callEvent.getChannel(), 
+					new TunerChannel( Type.TRAFFIC, frequency, 
+							mDecodeConfiguration.getDecoderType()
+									.getChannelBandwidth() ) );
 
-					if( channel != null )
+				if( channel != null )
+				{
+					if( channel.isProcessing() )
 					{
-						if( channel.isProcessing() )
-						{
-							ChannelState state = channel.getChannelState();
-							
-							/* Register as a listener to be notified when the call
-							 * is completed */
-							state.configureAsTrafficChannel( 
-								new TrafficChannelStatusListener( this, 
-									callEvent.getChannel() ), event );
-							
-							/* Set state to call so that audio squelch state is correct */
-							state.setState( State.CALL );
-						}
-						else
-						{
-							callEvent.setCallEventType( CallEventType.CALL_DETECT );
-						}
+						callEvent.setDetails( "TRAFFIC CHANNEL ALLOCATED" );
+						
+						ChannelState state = channel.getChannelState();
+						
+						/* Register as a listener to be notified when the call
+						 * is completed */
+						state.configureAsTrafficChannel( 
+							new TrafficChannelStatusListener( this, 
+								callEvent.getChannel() ), event );
+						
+						/* Set state to call so that audio squelch state is correct */
+						state.setState( State.CALL );
 					}
 					else
 					{
 						callEvent.setCallEventType( CallEventType.CALL_DETECT );
+						callEvent.setDetails( "CHANNEL PROCESSING ERROR" );
 					}
 				}
 				else
 				{
 					callEvent.setCallEventType( CallEventType.CALL_DETECT );
+					callEvent.setDetails( "NO TUNER AVAILABLE" );
 				}
-				
-				mCallEventListener.receive( callEvent );
+			}
+			else
+			{
+				callEvent.setCallEventType( CallEventType.CALL_DETECT );
+				callEvent.setDetails( "UNKNOWN FREQUENCY" );
+			}
+
+			final Listener<CallEvent> listener = mCallEventListener;
+			
+			if( listener != null )
+			{
+				listener.receive( callEvent );
 			}
 		}
 	}
@@ -370,14 +390,18 @@ public class TrafficChannelManager extends Module
 	 */
 	public void callEnd( String channelNumber )
 	{
-		if( channelNumber != null && mTrafficChannelsInUse.containsKey( channelNumber ) )
+		synchronized( mTrafficChannelsInUse )
 		{
-			Channel channel = mTrafficChannelsInUse.get( channelNumber );
-			
-			mTrafficChannelsInUse.remove( channelNumber );
+			if( channelNumber != null && 
+				mTrafficChannelsInUse.containsKey( channelNumber ) )
+			{
+				Channel channel = mTrafficChannelsInUse.get( channelNumber );
+				
+				mTrafficChannelsInUse.remove( channelNumber );
 
-			/* Disable the channel and broadcast a notification */
-			channel.setEnabled( false, true );
+				/* Disable the channel and broadcast a notification */
+				channel.setEnabled( false, true );
+			}
 		}
 	}
 	
