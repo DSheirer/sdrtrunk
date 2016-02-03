@@ -352,7 +352,7 @@ public class ChannelState extends Module implements ICallEventProvider,
 			}
 			else
 			{
-				mLog.debug( "Can't change from [" + mState + "] to [" + state + "]" );
+//				mLog.debug( "Can't change from [" + mState + "] to [" + state + "]" );
 			}
 		}
 	}
