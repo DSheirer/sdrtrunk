@@ -82,7 +82,8 @@ public class ChannelState extends Module implements ICallEventProvider,
 	
 	/**
 	 * Channel state tracks the overall state of all processing modules and decoders
-	 * configured for the channel and provides squelch control events.
+	 * configured for the channel and provides squelch control and decoder state
+	 * reset events.
 	 * 
 	 * Uses a state enumeration that defines allowable channel state transitions in
 	 * order to track a call or data decode event from start to finish.  Uses a 
@@ -127,19 +128,54 @@ public class ChannelState extends Module implements ICallEventProvider,
 	@Override
 	public void start()
 	{
+		//Start a monitoring task to check for FADE and END event timeouts
+		if( mMonitoring.compareAndSet( false, true ) )
+		{
+			if( mStateMonitorFuture == null && mStateMonitor != null )
+			{
+				try
+				{
+					mStateMonitorFuture = mThreadPoolManager.scheduleFixedRate( 
+						ThreadType.DECODER, mStateMonitor, 20, TimeUnit.MILLISECONDS );
+				}
+				catch( RejectedExecutionException ree )
+				{
+					mLog.error( "state monitor scheduled task rejected", ree );
+					mMonitoring.set( false );
+				}
+			}
+			else
+			{
+				throw new RuntimeException( "Channel state monitor's scheduled "
+						+ "future pointer was not null" );
+			}
+		}
 	}
 
 	@Override
 	public void stop()
 	{
 		mSquelchLocked = false;
-		stopMonitor();
+
+		//Shutdown the state montoring task
+		if( mMonitoring.compareAndSet( true, false ) )
+		{
+			if( mStateMonitorFuture != null )
+			{
+				boolean success = mThreadPoolManager.cancel( mStateMonitorFuture );
+				
+				if( !success )
+				{
+					mLog.error("Couldn't stop monitoring scheduled future" );
+				}
+			}
+			
+			mStateMonitorFuture = null;
+		}
 	}
 
 	public void dispose()
 	{
-		stopMonitor();
-		
 		mCallEventListener = null;
 		mChangedAttributeListener = null;
 		mDecoderStateListener = null;
@@ -191,57 +227,6 @@ public class ChannelState extends Module implements ICallEventProvider,
 	public State getState()
 	{
 		return mState;
-	}
-	
-	/**
-	 * Starts the state monitor running when we're not in IDLE state.  Calls to
-	 * start an already started monitor are ignored.
-	 */
-	private void startMonitor()
-	{
-		if( mMonitoring.compareAndSet( false, true ) )
-		{
-			if( mStateMonitorFuture == null && mStateMonitor != null )
-			{
-				try
-				{
-					mStateMonitorFuture = mThreadPoolManager.scheduleFixedRate( 
-						ThreadType.DECODER, mStateMonitor, 20, TimeUnit.MILLISECONDS );
-				}
-				catch( RejectedExecutionException ree )
-				{
-					mLog.error( "state monitor scheduled task rejected", ree );
-					mMonitoring.set( false );
-				}
-			}
-			else
-			{
-				throw new RuntimeException( "Channel state monitor's scheduled "
-						+ "future pointer was not null" );
-			}
-		}
-	}
-
-	/**
-	 * Stops the state monitor when we're in an IDLE state.  Calls to stop an
-	 * already stopped monitor are ignored.
-	 */
-	private void stopMonitor()
-	{
-		if( mMonitoring.compareAndSet( true, false ) )
-		{
-			if( mStateMonitorFuture != null )
-			{
-				boolean success = mThreadPoolManager.cancel( mStateMonitorFuture );
-				
-				if( !success )
-				{
-					mLog.error("Couldn't stop monitoring scheduled future" );
-				}
-			}
-			
-			mStateMonitorFuture = null;
-		}
 	}
 	
 	/**
@@ -332,7 +317,6 @@ public class ChannelState extends Module implements ICallEventProvider,
 						{
 							broadcast( SquelchState.SQUELCH );
 							updateFadeTimeout();
-							startMonitor();
 							mState = state;
 							broadcast( ChangedAttribute.CHANNEL_STATE );
 						}
@@ -341,14 +325,12 @@ public class ChannelState extends Module implements ICallEventProvider,
 					case ENCRYPTED:
 						broadcast( SquelchState.SQUELCH );
 						updateFadeTimeout();
-						startMonitor();
 						mState = state;
 						broadcast( ChangedAttribute.CHANNEL_STATE );
 						break;
 					case CALL:
 						broadcast( SquelchState.UNSQUELCH );
 						updateFadeTimeout();
-						startMonitor();
 						mState = state;
 						broadcast( ChangedAttribute.CHANNEL_STATE );
 						break;
@@ -368,10 +350,6 @@ public class ChannelState extends Module implements ICallEventProvider,
 						break;
 				}
 			}
-			else if( mState == State.ENCRYPTED && state == State.CALL )
-			{
-				updateFadeTimeout();
-			}
 			else
 			{
 				mLog.debug( "Can't change from [" + mState + "] to [" + state + "]" );
@@ -386,7 +364,6 @@ public class ChannelState extends Module implements ICallEventProvider,
 	{
 		updateResetTimeout();
 		mState = State.FADE;
-		startMonitor();
 		
 		broadcast( SquelchState.SQUELCH );
 		broadcast( ChangedAttribute.CHANNEL_STATE );
@@ -402,7 +379,6 @@ public class ChannelState extends Module implements ICallEventProvider,
 			broadcast( new MetadataReset() );
 		}
 		
-		stopMonitor();
 		mState = State.IDLE;
 		
 		broadcast( ChangedAttribute.CHANNEL_STATE );
@@ -412,8 +388,6 @@ public class ChannelState extends Module implements ICallEventProvider,
 	{
 		broadcast( SquelchState.SQUELCH );
 
-		stopMonitor();
-		
 		mState = State.TEARDOWN;
 		
 		broadcast( ChangedAttribute.CHANNEL_STATE );

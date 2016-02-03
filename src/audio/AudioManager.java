@@ -17,7 +17,6 @@ package audio;
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -41,7 +40,6 @@ import source.mixer.MixerChannel;
 import source.mixer.MixerChannelConfiguration;
 import source.mixer.MixerManager;
 import audio.AudioEvent.Type;
-import audio.AudioPanel.MixerSelectionItem;
 import audio.output.AudioOutput;
 import audio.output.MonoAudioOutput;
 import audio.output.StereoAudioOutput;
@@ -392,28 +390,35 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 		@Override
 		public void run()
 		{
-			disconnectInactiveChannelAssignments();
-			
-			if( mAudioPacketQueue != null )
+			try
 			{
-				List<AudioPacket> packets = new ArrayList<AudioPacket>();
-
-				mAudioPacketQueue.drainTo( packets );
+				disconnectInactiveChannelAssignments();
 				
-				for( AudioPacket packet: packets )
+				if( mAudioPacketQueue != null )
 				{
-					/* Don't process any packet's marked as do not monitor */
-					if( !packet.getAudioMetadata().isDoNotMonitor() &&
-						packet.getType() == AudioPacket.Type.AUDIO )
-					{
-						AudioOutputConnection connection = getConnection( packet );
+					List<AudioPacket> packets = new ArrayList<AudioPacket>();
 
-						if( connection != null )
+					mAudioPacketQueue.drainTo( packets );
+					
+					for( AudioPacket packet: packets )
+					{
+						/* Don't process any packet's marked as do not monitor */
+						if( !packet.getAudioMetadata().isDoNotMonitor() &&
+							packet.getType() == AudioPacket.Type.AUDIO )
 						{
-							connection.receive( packet );
+							AudioOutputConnection connection = getConnection( packet );
+
+							if( connection != null )
+							{
+								connection.receive( packet );
+							}
 						}
 					}
 				}
+			}
+			catch( Exception e )
+			{
+				mLog.error( "Encountered error while processing audio packets", e );
 			}
 		}
 	}
