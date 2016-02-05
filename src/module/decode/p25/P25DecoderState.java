@@ -42,6 +42,7 @@ import module.decode.p25.message.ldu.lc.TelephoneInterconnectVoiceChannelUser;
 import module.decode.p25.message.ldu.lc.UnitToUnitVoiceChannelUser;
 import module.decode.p25.message.pdu.PDUMessage;
 import module.decode.p25.message.pdu.confirmed.PDUConfirmedMessage;
+import module.decode.p25.message.pdu.confirmed.PDUTypeUnknown;
 import module.decode.p25.message.pdu.confirmed.PacketData;
 import module.decode.p25.message.pdu.confirmed.SNDCPActivateTDSContextAccept;
 import module.decode.p25.message.pdu.confirmed.SNDCPActivateTDSContextReject;
@@ -1630,7 +1631,7 @@ public class P25DecoderState extends DecoderState
 	 */
 	private void processPDU( PDUMessage pdu )
 	{
-		if( pdu instanceof PacketData )
+		if( pdu instanceof PacketData || pdu instanceof PDUTypeUnknown )
 		{
 			broadcast( new DecoderStateEvent( this, Event.CONTINUATION, State.DATA ) );
 		}
@@ -1735,7 +1736,7 @@ public class P25DecoderState extends DecoderState
 				case SNDCP_RF_UNCONFIRMED_DATA:
 					break;
 				default:
-					mLog.debug( "PDUC - Unrecognized Message: " + pduc.toString() );
+//					mLog.debug( "PDUC - Unrecognized Message: " + pduc.toString() );
 					break;
 			}
 		}

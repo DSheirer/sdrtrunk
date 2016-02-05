@@ -42,7 +42,7 @@ public enum PDUType
 	
 	public static PDUType fromValue( int value, boolean outbound )
 	{
-		if( outbound && 0 <= value && value <= 5 )
+		if( outbound && 0 <= value && value <= 11 )
 		{
 			return values()[ value ];
 		}
