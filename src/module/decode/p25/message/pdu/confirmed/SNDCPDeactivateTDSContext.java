@@ -49,7 +49,7 @@ public class SNDCPDeactivateTDSContext extends PDUConfirmedMessage
 	
 	public String getDeactivationType()
 	{
-		if( getPDUType() == PDUType.SN_DEACTIVATE_TDS_CONTEXT_REQUEST )
+		if( getPDUType() == PDUType.SNDCP_DEACTIVATE_TDS_CONTEXT_REQUEST )
 		{
 			return mMessage.getInt( DEACTIVATION_TYPE ) == 0 ?
 					"ALL NSAPIS" : "THIS NSAPI";

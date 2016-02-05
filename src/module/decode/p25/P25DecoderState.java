@@ -1642,7 +1642,7 @@ public class P25DecoderState extends DecoderState
 
 			switch( pduc.getPDUType() )
 			{
-				case SN_ACTIVATE_TDS_CONTEXT_ACCEPT:
+				case SNDCP_ACTIVATE_TDS_CONTEXT_ACCEPT:
 					SNDCPActivateTDSContextAccept satca = 
 									(SNDCPActivateTDSContextAccept)pduc;
 					
@@ -1654,7 +1654,7 @@ public class P25DecoderState extends DecoderState
 							.to( satca.getLogicalLinkID() )
 							.build() );
 					break;
-				case SN_ACTIVATE_TDS_CONTEXT_REJECT:
+				case SNDCP_ACTIVATE_TDS_CONTEXT_REJECT:
 					SNDCPActivateTDSContextReject satcr = 
 								(SNDCPActivateTDSContextReject)pduc;
 	
@@ -1679,7 +1679,7 @@ public class P25DecoderState extends DecoderState
 						.from( satcreq.getLogicalLinkID() )
 						.build() );
 					break;
-				case SN_DEACTIVATE_TDS_CONTEXT_ACCEPT:
+				case SNDCP_DEACTIVATE_TDS_CONTEXT_ACCEPT:
 					SNDCPDeactivateTDSContext sdtca = 
 								(SNDCPDeactivateTDSContext)pduc;
 
@@ -1691,7 +1691,7 @@ public class P25DecoderState extends DecoderState
 						.from( sdtca.getLogicalLinkID() )
 						.build() );
 					break;
-				case SN_DEACTIVATE_TDS_CONTEXT_REQUEST:
+				case SNDCP_DEACTIVATE_TDS_CONTEXT_REQUEST:
 					SNDCPDeactivateTDSContext sdtcreq = 
 							(SNDCPDeactivateTDSContext)pduc;
 	
@@ -1703,7 +1703,7 @@ public class P25DecoderState extends DecoderState
 						.from( sdtcreq.getLogicalLinkID() )
 						.build() );
 					break;
-				case SN_RF_CONFIRMED_DATA:
+				case SNDCP_RF_CONFIRMED_DATA:
 					SNDCPUserData sud = (SNDCPUserData)pduc;
 					
 					StringBuilder sbFrom = new StringBuilder();
@@ -1732,7 +1732,7 @@ public class P25DecoderState extends DecoderState
 						.to( pduc.getLogicalLinkID() )
 						.build() );
 					break;
-				case SN_RF_UNCONFIRMED_DATA:
+				case SNDCP_RF_UNCONFIRMED_DATA:
 					break;
 				default:
 					mLog.debug( "PDUC - Unrecognized Message: " + pduc.toString() );
