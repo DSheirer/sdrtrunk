@@ -42,6 +42,7 @@ import module.decode.p25.message.ldu.lc.TelephoneInterconnectVoiceChannelUser;
 import module.decode.p25.message.ldu.lc.UnitToUnitVoiceChannelUser;
 import module.decode.p25.message.pdu.PDUMessage;
 import module.decode.p25.message.pdu.confirmed.PDUConfirmedMessage;
+import module.decode.p25.message.pdu.confirmed.PacketData;
 import module.decode.p25.message.pdu.confirmed.SNDCPActivateTDSContextAccept;
 import module.decode.p25.message.pdu.confirmed.SNDCPActivateTDSContextReject;
 import module.decode.p25.message.pdu.confirmed.SNDCPActivateTDSContextRequest;
@@ -1629,7 +1630,11 @@ public class P25DecoderState extends DecoderState
 	 */
 	private void processPDU( PDUMessage pdu )
 	{
-		if( pdu instanceof PDUConfirmedMessage )
+		if( pdu instanceof PacketData )
+		{
+			broadcast( new DecoderStateEvent( this, Event.CONTINUATION, State.DATA ) );
+		}
+		else if( pdu instanceof PDUConfirmedMessage )
 		{
 			broadcast( new DecoderStateEvent( this, Event.CONTINUATION, State.DATA ) );
 			
