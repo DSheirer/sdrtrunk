@@ -48,8 +48,11 @@ public class AudioChannelPanel extends JPanel
 	private JLabel mFromLabel = new JLabel( "FROM:" );
 	private JLabel mFrom = new JLabel( "" );
 	private JLabel mFromAlias = new JLabel( "" );
+
+	private enum AudioStatus { STARTED,STOPPED };
+	private AudioStatus mAudioStatus = AudioStatus.STOPPED;
 	
-	private boolean mConfigured = false;
+	private AudioMetadata mAudioMetadata;
 	
 	public AudioChannelPanel( SettingsManager settingsManager, AudioOutput audioOutput )
 	{
@@ -134,15 +137,19 @@ public class AudioChannelPanel extends JPanel
 	{
 		switch( audioEvent.getType() )
 		{
-			case AUDIO_STOPPED:
-				EventQueue.invokeLater( new Runnable()
+			case AUDIO_STARTED:
+				synchronized( mAudioStatus )
 				{
-					@Override
-					public void run()
-					{
-						resetLabels();
-					}
-				} );
+					mAudioStatus = AudioStatus.STARTED;
+					updateLabels();
+				}
+				break;
+			case AUDIO_STOPPED:
+				synchronized( mAudioStatus )
+				{
+					mAudioStatus = AudioStatus.STOPPED;
+					resetLabels();
+				}
 				break;
 			case AUDIO_MUTED:
 			case AUDIO_UNMUTED:
@@ -166,13 +173,55 @@ public class AudioChannelPanel extends JPanel
 	 */
 	private void resetLabels()
 	{
-		mFrom.setText( "" );
-		updateAlias( mFromAlias, null );
-		
-		mTo.setText( "" );
-		updateAlias( mToAlias, null );
-		
-		mConfigured = false;
+		EventQueue.invokeLater( new Runnable() 
+		{
+			@Override
+			public void run()
+			{
+				mFrom.setText( "" );
+				updateAlias( mFromAlias, null );
+				
+				mTo.setText( "" );
+				updateAlias( mToAlias, null );
+			}
+		} );
+	}
+	
+	private void updateLabels()
+	{
+		if( mAudioMetadata != null )
+		{
+			final Metadata from = mAudioMetadata.getMetadata( MetadataType.FROM );
+
+			final Metadata to = mAudioMetadata.getMetadata( MetadataType.TO );
+			
+			EventQueue.invokeLater( new Runnable() 
+			{
+				@Override
+				public void run()
+				{
+					if( from != null )
+					{
+						mFrom.setText( from.getValue() );
+						updateAlias( mFromAlias, from.getAlias() );
+					}
+					else
+					{
+						mFrom.setText( "-----" );
+					}
+					
+					if( to != null )
+					{
+						mTo.setText( to.getValue() );
+						updateAlias( mToAlias, to.getAlias() );
+					}
+					else
+					{
+						mTo.setText( "-----" );
+					}
+				}
+			} );
+		}
 	}
 
 	/**
@@ -214,40 +263,17 @@ public class AudioChannelPanel extends JPanel
 		@Override
 		public void receive( AudioMetadata audioMetadata )
 		{
-			if( !mConfigured || audioMetadata.isUpdated() )
+			mAudioMetadata = audioMetadata;
+			
+			if( audioMetadata.isUpdated() )
 			{
-				final Metadata from = audioMetadata.getMetadata( MetadataType.FROM );
-
-				final Metadata to = audioMetadata.getMetadata( MetadataType.TO );
-				
-				EventQueue.invokeLater( new Runnable() 
+				synchronized( mAudioStatus )
 				{
-					@Override
-					public void run()
+					if( mAudioStatus == AudioStatus.STARTED )
 					{
-						if( from != null )
-						{
-							mFrom.setText( from.getValue() );
-							updateAlias( mFromAlias, from.getAlias() );
-						}
-						else
-						{
-							mFrom.setText( "-----" );
-						}
-						
-						if( to != null )
-						{
-							mTo.setText( to.getValue() );
-							updateAlias( mToAlias, to.getAlias() );
-						}
-						else
-						{
-							mTo.setText( "-----" );
-						}
+						updateLabels();
 					}
-				} );
-				
-				mConfigured = true;
+				}
 			}
 		}
 	}
