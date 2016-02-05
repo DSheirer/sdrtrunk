@@ -163,7 +163,6 @@ public class TrafficChannelManager extends Module
 					channel.setSystem( mSystem, false );
 					channel.setSite( mSite, false );
 					channel.setName( "Traffic" );
-					mLog.debug("Channel not processing after setting enabled to true - why" );
 				}
 			}
 		}
