@@ -27,7 +27,6 @@ import audio.inverted.AudioType;
 public class TalkgroupID extends AliasID
 {
 	private String mTalkgroup;
-	private AudioType mAudioType;
 	
 	public TalkgroupID()
 	{
@@ -44,20 +43,9 @@ public class TalkgroupID extends AliasID
 		mTalkgroup = talkgroup;
 	}
 
-	@XmlAttribute
-	public AudioType getAudioType()
-	{
-		return mAudioType;
-	}
-	
-	public void setAudioType( AudioType type )
-	{
-		mAudioType = type;
-	}
-	
 	public boolean hasAudioType()
 	{
-		return mAudioType != null;
+		return false;
 	}
 	
 	public String toString()
@@ -65,13 +53,6 @@ public class TalkgroupID extends AliasID
 		StringBuilder sb = new StringBuilder();
 		
 		sb.append( "Talkgroup: " + mTalkgroup );
-		
-		if( mAudioType != null )
-		{
-			sb.append( " [Audio " );
-			sb.append( mAudioType.getShortDisplayString() );
-			sb.append( "]" );
-		}
 		
 		return sb.toString();
 	}

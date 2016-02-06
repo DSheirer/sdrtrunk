@@ -40,17 +40,12 @@ public class TalkgroupIDEditor extends JPanel implements ActionListener
     
     private JLabel mLabelName;
     private JTextField mTextTalkgroupID;
-    private JLabel mLabelAudio;
-    private JComboBox<AudioType> mComboAudioTypes;
     
     private String mHelpText = "Enter a formatted talkgroup identifier.\n\n"
     		+ "LTR Talkgroup Format: A-HH-TTT (A=Area, H=Home Repeater, "
     		+ "T=Talkgroup)\n\n"
     		+ "Passport Talkgroup Format: xxxxx (up to 5-digit number)\n\n"
-            + "Wildcard: use one or more asterisks (*) for any talkgroup digits.\n\n"
-            + "Audio: if the talkgroup uses simple frequency inversion, specify"
-            + " the inversion frequency from the dropdown list to automatically"
-            + " un-invert audio for this specific talkgroup";
+            + "Wildcard: use one or more asterisks (*) for any talkgroup digits.";
 
 	public TalkgroupIDEditor( TalkgroupIDNode talkgroupIDNode )
 	{
@@ -72,22 +67,6 @@ public class TalkgroupIDEditor extends JPanel implements ActionListener
 
 		add( mTextTalkgroupID, "growx,push" );
 
-		add( new JLabel( "Audio:" ) );
-
-		mComboAudioTypes = new JComboBox<AudioType>();
-
-		mComboAudioTypes.setModel( 
-				new DefaultComboBoxModel<AudioType>( AudioType.values() ) );
-		
-		AudioType audioType = mTalkgroupIDNode.getTalkgroupID().getAudioType();
-		
-		if( audioType != null )
-		{
-			mComboAudioTypes.setSelectedItem( audioType );
-		}
-		
-		add( mComboAudioTypes, "growx,push" );
-		
 		JButton btnSave = new JButton( "Save" );
 		btnSave.addActionListener( TalkgroupIDEditor.this );
 		add( btnSave, "growx,push" );
@@ -117,14 +96,6 @@ public class TalkgroupIDEditor extends JPanel implements ActionListener
 				
 				((ConfigurableNode)mTalkgroupIDNode.getParent()).sort();
 
-				AudioType selected = mComboAudioTypes
-						.getItemAt( mComboAudioTypes.getSelectedIndex() );
-				
-				if( selected != null )
-				{
-					mTalkgroupIDNode.getTalkgroupID().setAudioType( selected );
-				}
-
 				mTalkgroupIDNode.save();
 				
 				mTalkgroupIDNode.show();
@@ -139,9 +110,6 @@ public class TalkgroupIDEditor extends JPanel implements ActionListener
 		{
 			mTextTalkgroupID.setText( 
 					mTalkgroupIDNode.getTalkgroupID().getTalkgroup() );
-
-			mComboAudioTypes.setSelectedItem( 
-					mTalkgroupIDNode.getTalkgroupID().getAudioType() );
 		}
 		
 		mTalkgroupIDNode.refresh();
