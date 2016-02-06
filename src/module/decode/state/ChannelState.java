@@ -144,11 +144,6 @@ public class ChannelState extends Module implements ICallEventProvider,
 					mMonitoring.set( false );
 				}
 			}
-			else
-			{
-				throw new RuntimeException( "Channel state monitor's scheduled "
-						+ "future pointer was not null" );
-			}
 		}
 	}
 
