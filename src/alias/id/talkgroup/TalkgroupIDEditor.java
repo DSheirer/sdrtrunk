@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -20,9 +20,7 @@ package alias.id.talkgroup;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
-import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -30,7 +28,6 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
-import audio.inverted.AudioType;
 import controller.ConfigurableNode;
 
 public class TalkgroupIDEditor extends JPanel implements ActionListener
@@ -38,10 +35,11 @@ public class TalkgroupIDEditor extends JPanel implements ActionListener
     private static final long serialVersionUID = 1L;
     private TalkgroupIDNode mTalkgroupIDNode;
     
-    private JLabel mLabelName;
     private JTextField mTextTalkgroupID;
     
     private String mHelpText = "Enter a formatted talkgroup identifier.\n\n"
+    		+ "P25 Talkgroup Format: hexadecimal value, 4 characters for "
+    		+ "talkgroup or 6 characters for a mobile radio\n\n"
     		+ "LTR Talkgroup Format: A-HH-TTT (A=Area, H=Home Repeater, "
     		+ "T=Talkgroup)\n\n"
     		+ "Passport Talkgroup Format: xxxxx (up to 5-digit number)\n\n"
