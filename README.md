@@ -5,6 +5,7 @@ mobile and related radio protocols using Software Defined Radios (SDR).
 # Documentation #
 * [Getting Started](https://github.com/DSheirer/sdrtrunk/wiki/GettingStarted)
 * [User's Manual (Version 0.2.0)](https://github.com/DSheirer/sdrtrunk/wiki/UserManual)
+* [Wiki](https://github.com/DSheirer/sdrtrunk/wiki)
 
 # Support Group and Error Reporting #
 You can get help with setting up the sdrtrunk application or report any errors
