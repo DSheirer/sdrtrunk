@@ -73,6 +73,7 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 	
 	private ThreadPoolManager mThreadPoolManager;
 	private ScheduledFuture<?> mProcessingTask;
+	private MixerManager mMixerManager;
 	
 	private MixerChannelConfiguration mMixerChannelConfiguration;
 
@@ -81,9 +82,10 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 	 * packets to any combination of outputs based on any alias audio routing
 	 * options specified by the user.
 	 */
-	public AudioManager( ThreadPoolManager manager )
+	public AudioManager( ThreadPoolManager manager, MixerManager mixerManager )
 	{
 		mThreadPoolManager = manager;
+		mMixerManager = mixerManager;
 
 		loadSettings();
 	}
@@ -100,8 +102,7 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 		
 		String channels = properties.get( AUDIO_CHANNELS_PROPERTY, MixerChannel.MONO.name() );
 		
-		MixerChannelConfiguration[] mixerConfigurations = 
-				MixerManager.getInstance().getOutputMixers();
+		MixerChannelConfiguration[] mixerConfigurations = mMixerManager.getOutputMixers();
 
 		for( MixerChannelConfiguration mixerConfig: mixerConfigurations )
 		{
@@ -270,6 +271,29 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 			properties.set( AUDIO_CHANNELS_PROPERTY, entry.getMixerChannel().name() );
 			properties.save();
 		}
+	}
+
+	/**
+	 * Clears all channel assignments and terminates all audio outputs in 
+	 * preparation for complete shutdown or change to another mixer/channel
+	 * configuration
+	 */
+	private void disposeCurrentConfiguration()
+	{
+		mChannelConnectionMap.clear();
+
+		for( AudioOutputConnection connection : mAudioOutputConnections )
+		{
+			connection.dispose();
+		}
+		
+		mAvailableConnectionCount = 0;
+
+		mAudioOutputConnections.clear();
+		
+		mAudioOutputMap.clear();
+		
+		mLowestPriorityConnection = null;
 	}
 
 	/**
