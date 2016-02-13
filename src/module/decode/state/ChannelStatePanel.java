@@ -298,6 +298,7 @@ public class ChannelStatePanel extends JPanel
 			case FADE:
 				p = getGradient( mColorTopFade, mColorMiddleFade );
 				break;
+			case END:
 			case IDLE:
 			default:
 				p = getGradient( mColorTopIdle, mColorMiddleIdle );

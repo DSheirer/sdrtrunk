@@ -205,6 +205,7 @@ public class DecoderFactory
 				
 				modules.add( new MPT1327Decoder( aliasList, sync ) );
 				
+				
 				modules.add( new MPT1327DecoderState( aliasList, channelMap, 
 						channelType, mptConfig.getCallTimeout() * 1000 ) );
 
