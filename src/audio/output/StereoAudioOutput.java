@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.sound.sampled.BooleanControl;
 import javax.sound.sampled.Control;
 import javax.sound.sampled.FloatControl;
+import javax.sound.sampled.LineEvent;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.Mixer;
 import javax.sound.sampled.SourceDataLine;
@@ -40,9 +41,9 @@ public class StereoAudioOutput extends AudioOutput
 	private final static int BUFFER_SIZE = 96000;
 	
 	/* The queue processor will run every 20 milliseconds checking for inbound
-	 * audio and automatically starting or stopping audio playback.  We set the 
+	 * audio and automatically start or stop audio playback.  We set the 
 	 * data line available space threshold to start when we're 20 ms away from 
-	 * being full, and the stop threshold when 20 ms away from being empty */
+	 * being full and the stop threshold when 20 ms away from being empty */
 	private final static int SAMPLE_SIZE_40_MS = BUFFER_SIZE / 25;
 	private final static int START_THRESHOLD = SAMPLE_SIZE_40_MS;
 	private final static int STOP_THRESHOLD = BUFFER_SIZE - SAMPLE_SIZE_40_MS;
@@ -50,13 +51,10 @@ public class StereoAudioOutput extends AudioOutput
 	private SourceDataLine mOutput;
 	private FloatControl mGainControl;
 	private BooleanControl mMuteControl;
-	
 	private AudioEvent mAudioStartEvent;
 	private AudioEvent mAudioStopEvent;
 	private AudioEvent mAudioContinuationEvent;
-	
 	private MixerChannel mMixerChannel;
-	
 	private ScheduledFuture<?> mProcessorTask;
 	
 	public StereoAudioOutput( ThreadPoolManager threadPoolManager, 
@@ -83,6 +81,7 @@ public class StereoAudioOutput extends AudioOutput
 			if( mOutput != null )
 			{
 				mOutput.open( AudioFormats.PCM_SIGNED_48KHZ_16BITS_STEREO, BUFFER_SIZE );
+				mOutput.addLineListener( this );
 				mCanProcessAudio = true;
 			}
 		} 
@@ -202,17 +201,14 @@ public class StereoAudioOutput extends AudioOutput
 					
 					if( packets.size() > 0 )
 					{
-						broadcast( mAudioContinuationEvent );
 						
 						for( AudioPacket packet: packets )
 						{
+							broadcast( mAudioContinuationEvent );
+							
 							if( mCanProcessAudio )
 							{
-								if( isSquelched() )
-								{
-									checkStop();
-								}
-								else if( packet.getType() == Type.AUDIO )
+								if( packet.getType() == Type.AUDIO )
 								{
 									ByteBuffer buffer = convert( 
 											packet.getAudioBuffer().getSamples() );
@@ -245,24 +241,20 @@ public class StereoAudioOutput extends AudioOutput
 		
 		private void checkStart()
 		{
-			if( mCanProcessAudio && !isSquelched() && 
+			if( mCanProcessAudio && 
 				!mOutput.isRunning() && mOutput.available() <= START_THRESHOLD )
 			{
 				mOutput.start();
-				
-				mAudioEventBroadcaster.broadcast( mAudioStartEvent );
 			}
 		}
 		
 		private void checkStop()
 		{
 			if( mCanProcessAudio && mOutput.isRunning() &&
-				( mOutput.available() >= STOP_THRESHOLD || isSquelched() ) )
+				mOutput.available() >= STOP_THRESHOLD )
 			{
 				mOutput.drain();
 				mOutput.stop();
-
-				mAudioEventBroadcaster.broadcast( mAudioStopEvent );
 			}
 		}
 	}
@@ -300,5 +292,21 @@ public class StereoAudioOutput extends AudioOutput
 	public boolean hasGainControl()
 	{
 		return mGainControl != null;
+	}
+	
+
+	@Override
+	public void update( LineEvent event )
+	{
+		LineEvent.Type type = event.getType();
+
+		if( type == LineEvent.Type.START )
+		{
+			mAudioEventBroadcaster.broadcast( mAudioStartEvent );
+		}
+		else if( type == LineEvent.Type.STOP )
+		{
+			mAudioEventBroadcaster.broadcast( mAudioStopEvent );
+		}
 	}
 }

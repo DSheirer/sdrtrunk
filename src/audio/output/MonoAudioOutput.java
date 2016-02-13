@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.sound.sampled.BooleanControl;
 import javax.sound.sampled.Control;
 import javax.sound.sampled.FloatControl;
+import javax.sound.sampled.LineEvent;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.Mixer;
 import javax.sound.sampled.SourceDataLine;
@@ -50,11 +51,9 @@ public class MonoAudioOutput extends AudioOutput
 	private SourceDataLine mOutput;
 	private FloatControl mGainControl;
 	private BooleanControl mMuteControl;
-	
 	private AudioEvent mAudioStartEvent;
 	private AudioEvent mAudioStopEvent;
 	private AudioEvent mAudioContinuationEvent;
-	
 	private ScheduledFuture<?> mProcessorTask;
 	
 	public MonoAudioOutput( ThreadPoolManager threadPoolManager, Mixer mixer )
@@ -76,6 +75,7 @@ public class MonoAudioOutput extends AudioOutput
 			if( mOutput != null )
 			{
 				mOutput.open( AudioFormats.PCM_SIGNED_48KHZ_16BITS_MONO, BUFFER_SIZE );
+				mOutput.addLineListener( this );
 				mCanProcessAudio = true;
 			}
 		} 
@@ -162,17 +162,13 @@ public class MonoAudioOutput extends AudioOutput
 					
 					if( packets.size() > 0 )
 					{
-						broadcast( mAudioContinuationEvent );
-						
 						for( AudioPacket packet: packets )
 						{
+							broadcast( mAudioContinuationEvent );
+							
 							if( mCanProcessAudio )
 							{
-								if( isSquelched() )
-								{
-									checkStop();
-								}
-								else if( packet.getType() == Type.AUDIO )
+								if( packet.getType() == Type.AUDIO )
 								{
 									float[] samples = packet.getAudioBuffer().getSamples();
 									
@@ -216,24 +212,20 @@ public class MonoAudioOutput extends AudioOutput
 		
 		private void checkStart()
 		{
-			if( mCanProcessAudio && !isSquelched() && 
+			if( mCanProcessAudio && 
 				!mOutput.isRunning() && mOutput.available() <= START_THRESHOLD )
 			{
 				mOutput.start();
-				
-				mAudioEventBroadcaster.broadcast( mAudioStartEvent );
 			}
 		}
 		
 		private void checkStop()
 		{
 			if( mCanProcessAudio && mOutput.isRunning() &&
-				( mOutput.available() >= STOP_THRESHOLD || isSquelched() ) )
+				mOutput.available() >= STOP_THRESHOLD )
 			{
 				mOutput.drain();
 				mOutput.stop();
-
-				mAudioEventBroadcaster.broadcast( mAudioStopEvent );
 			}
 		}
 	}
@@ -271,5 +263,20 @@ public class MonoAudioOutput extends AudioOutput
 	public boolean hasGainControl()
 	{
 		return mGainControl != null;
+	}
+
+	@Override
+	public void update( LineEvent event )
+	{
+		LineEvent.Type type = event.getType();
+
+		if( type == LineEvent.Type.START )
+		{
+			mAudioEventBroadcaster.broadcast( mAudioStartEvent );
+		}
+		else if( type == LineEvent.Type.STOP )
+		{
+			mAudioEventBroadcaster.broadcast( mAudioStopEvent );
+		}
 	}
 }

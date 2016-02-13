@@ -182,7 +182,8 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 		
 		for( AudioOutputConnection connection: mAudioOutputConnections )
 		{
-			if( connection.isConnected() && connection.isInactive() )
+			if( connection.isInactive() && 
+				mChannelConnectionMap.containsKey( connection.getSource() ) )
 			{
 				mChannelConnectionMap.remove( connection.getSource() );
 				connection.disconnect();
@@ -424,7 +425,7 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 	}
 	
 	/**
-	 * Audio output connection manages a connection between a soure and an audio
+	 * Audio output connection manages a connection between a source and an audio
 	 * output and maintains current state information about the audio activity 
 	 * received form the source.
 	 */
