@@ -153,7 +153,9 @@ public class LTRStandardDecoderState extends DecoderState
 				case CA_ENDD:
 					CallEndMessage end = (CallEndMessage)message;
 
-					int repeater = end.getHomeRepeater();
+					//Home channel is 31 for call end -- use the free channel
+					//as the call end channel
+					int repeater = end.getFree();
 					
 					mLCNTracker.processCallChannel( repeater );
 					
