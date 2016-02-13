@@ -56,7 +56,6 @@ public class DecoderStateEvent
 	public enum Event
 	{
 		ALWAYS_UNSQUELCH,
-		CHANGE_CALL_TIMEOUT,
 		CONTINUATION,
 		DECODE,
 		END,

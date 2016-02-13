@@ -54,7 +54,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import playlist.PlaylistManager;
-import properties.SystemProperties;
 import sample.Listener;
 import sample.SampleType;
 import sample.complex.ComplexBuffer;
@@ -100,10 +99,8 @@ public class SpectralDisplayPanel extends JPanel
 
 	private static DecimalFormat sCURSOR_FORMAT = new DecimalFormat( "000.00000" );
 
-	public static final String FFT_SIZE_PROPERTY = "spectral.display.dft.size";
 	public static final int NO_ZOOM = 0;
 	public static final int MAX_ZOOM = 6;
-	
 
 	private DFTSize mDFTSize = DFTSize.FFT04096;
 	private int mZoom = 0;
@@ -158,36 +155,6 @@ public class SpectralDisplayPanel extends JPanel
     	}
     	
 		init();
-		
-		loadSettings();
-    }
-    
-    private void loadSettings()
-    {
-    	SystemProperties properties = SystemProperties.getInstance();
-    	
-    	String rawSize = properties.get( FFT_SIZE_PROPERTY, DFTSize.FFT04096.name() );
-    	
-		DFTSize size = null;
-
-		if( rawSize != null )
-    	{
-    		try
-    		{
-    			size = DFTSize.valueOf( rawSize );
-    		}
-    		catch( Exception e )
-    		{
-    			//Do nothing, we couldn't parse the stored value
-    		}
-    	}
-		
-		if( size == null )
-		{
-			size = DFTSize.FFT04096;
-		}
-		
-		setDFTSize( size );
     }
     
     public void dispose()
@@ -232,10 +199,6 @@ public class SpectralDisplayPanel extends JPanel
 		mDFTProcessor.setDFTSize( size );
 		mOverlayPanel.setDFTSize( size );
 		mDFTSize = size;
-		
-		SystemProperties properties = SystemProperties.getInstance();
-		properties.set( FFT_SIZE_PROPERTY, size.name() );
-		properties.save();
 
 		setZoom( 0, 0, 0 );
 	}

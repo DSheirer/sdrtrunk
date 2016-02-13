@@ -1,1 +1,1 @@
-java -XX:+UseG1GC -cp "sdrtrunk.jar;*;libs/*;config/*;images/*" gui.SDRTrunk
+java -XX:+UseG1GC -cp "SDRTrunk.jar;*;libs/*;config/*;images/*" gui.SDRTrunk

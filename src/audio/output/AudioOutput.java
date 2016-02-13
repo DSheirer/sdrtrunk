@@ -1,9 +1,10 @@
 package audio.output;
 
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.sound.sampled.FloatControl;
-import javax.sound.sampled.LineListener;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,26 +12,23 @@ import org.slf4j.LoggerFactory;
 import sample.Broadcaster;
 import sample.Listener;
 import audio.AudioEvent;
+import audio.AudioEvent.Type;
 import audio.AudioPacket;
 import audio.metadata.AudioMetadata;
-import controller.ThreadPoolManager;
 
-public abstract class AudioOutput implements Listener<AudioPacket>, LineListener
+public abstract class AudioOutput implements Listener<AudioPacket>
 {
 	private final static Logger mLog = LoggerFactory.getLogger( AudioOutput.class );
 	
+	private AtomicBoolean mSquelched = new AtomicBoolean( false );
 	private Listener<AudioMetadata> mAudioMetadataListener;
+
 	protected Broadcaster<AudioEvent> mAudioEventBroadcaster = new Broadcaster<>();
 	protected LinkedTransferQueue<AudioPacket> mBuffer = new LinkedTransferQueue<>();
-	protected ThreadPoolManager mThreadPoolManager;
+	protected ScheduledExecutorService mExecutorService;
 	protected boolean mCanProcessAudio;
 	protected long mLastActivity;
 
-	public AudioOutput( ThreadPoolManager threadPoolManager )
-	{
-		mThreadPoolManager = threadPoolManager;
-	}
-	
 	public void reset()
 	{
 		broadcast( new AudioEvent( AudioEvent.Type.AUDIO_STOPPED, 
@@ -43,11 +41,14 @@ public abstract class AudioOutput implements Listener<AudioPacket>, LineListener
 
 		mBuffer.clear();
 
+		if( mExecutorService != null )
+		{
+			mExecutorService.shutdown();
+		}
+
 		mAudioEventBroadcaster.dispose();
 		mAudioEventBroadcaster = null;
 		mAudioMetadataListener = null;
-		
-		mThreadPoolManager = null;
 	}
 	
 	public abstract String getChannelName();
@@ -69,6 +70,19 @@ public abstract class AudioOutput implements Listener<AudioPacket>, LineListener
 	protected void broadcast( AudioEvent audioEvent )
 	{
 		mAudioEventBroadcaster.broadcast( audioEvent );
+	}
+	
+	public void setSquelched( boolean squelched )
+	{
+		mSquelched.set( squelched );
+		
+		broadcast( new AudioEvent( squelched ? Type.AUDIO_SQUELCHED : 
+			Type.AUDIO_UNSQUELCHED, getChannelName() ) );
+	}
+	
+	public boolean isSquelched()
+	{
+		return mSquelched.get();
 	}
 	
 	/**

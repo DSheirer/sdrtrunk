@@ -26,11 +26,9 @@ import java.util.TreeSet;
 
 import message.Message;
 import module.decode.DecoderType;
-import module.decode.config.DecodeConfiguration;
 import module.decode.event.CallEvent;
 import module.decode.event.CallEvent.CallEventType;
 import module.decode.mpt1327.MPT1327Message.IdentType;
-import module.decode.state.ChangeChannelTimeoutEvent;
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderState;
 import module.decode.state.DecoderStateEvent;
@@ -43,8 +41,6 @@ import org.slf4j.LoggerFactory;
 
 import alias.Alias;
 import alias.AliasList;
-import audio.metadata.Metadata;
-import audio.metadata.MetadataType;
 import controller.channel.Channel.ChannelType;
 import controller.channel.map.ChannelMap;
 
@@ -64,18 +60,15 @@ public class MPT1327DecoderState extends DecoderState
 	private ChannelMap mChannelMap;
 	
 	private long mFrequency = 0;
-	private long mCallTimeout;
 	
-	public MPT1327DecoderState( AliasList aliasList, 
-								ChannelMap channelMap, 
-								ChannelType channelType,
-								long callTimeout )
+	public MPT1327DecoderState( AliasList aliasList, ChannelMap channelMap, 
+			ChannelType channelType )
 	{
 		super( aliasList );
 		
 		mChannelMap = channelMap;
+
 		mChannelType = channelType;
-		mCallTimeout = callTimeout;
 	}
 	
 	@Override
@@ -259,42 +252,8 @@ public class MPT1327DecoderState extends DecoderState
 
 					/* Traffic Channel Events */
 					case CLEAR:
-						mChannelNumber = mpt.getChannel();
-						
-						broadcast( new DecoderStateEvent( this, Event.END, State.FADE ) );
-						break;
 					case MAINT:
-						if( mChannelType == ChannelType.STANDARD )
-						{
-							/**
-							 * When we receive a MAINT message and we're configured
-							 * as a standard channel, we need to apply the call
-							 * timeout specified by the user.  Otherwise we'll
-							 * be using the shorter default call timeout
-							 */
-							broadcast( new ChangeChannelTimeoutEvent( this, 
-									mChannelType, mCallTimeout ) );
-
-							if( mCurrentCallEvent == null )
-							{
-								mCurrentCallEvent = new MPT1327CallEvent.Builder( CallEventType.CALL )
-										.aliasList( getAliasList() )
-										.channel( String.valueOf( mChannelNumber ) )
-										.details( "MONITORED TRAFFIC CHANNEL" )
-										.frequency( mFrequency )
-										.to( mpt.getToID() )
-										.build();
-								
-								broadcast( mCurrentCallEvent );
-							}
-							
-							broadcast(new Metadata(MetadataType.TO, 
-									mpt.getToID(), mpt.getToIDAlias(), true));
-							
-							broadcast( new DecoderStateEvent( this, Event.START, State.CALL ) );
-
-							setToTalkgroup( mpt.getToID() );
-						}
+						broadcast( new DecoderStateEvent( this, Event.END, State.END ) );
 						break;
 					default:
 						break;
@@ -317,25 +276,6 @@ public class MPT1327DecoderState extends DecoderState
 
 		mToTalkgroup = null;
 		broadcast( ChangedAttribute.TO_TALKGROUP );
-
-		/**
-		 * If this is a standard channel, reset the fade timeout to the default
-		 * timeout.  Once processing is underway, if we get a MAINT message,
-		 * this indicates we're processing a traffic channel as a standard 
-		 * channel, so we'll issue a different call timeout then.
-		 */
-		if( mChannelType == ChannelType.STANDARD )
-		{
-			broadcast( new ChangeChannelTimeoutEvent( this, mChannelType, 
-					DecodeConfiguration.DEFAULT_CALL_TIMEOUT_SECONDS * 1000 ) );
-
-			if( mCurrentCallEvent != null )
-			{
-				mCurrentCallEvent.end();
-				broadcast( mCurrentCallEvent );
-				mCurrentCallEvent = null;
-			}
-		}
 	}
 	
 	public String getSite()

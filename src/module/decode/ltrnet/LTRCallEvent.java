@@ -51,16 +51,17 @@ public class LTRCallEvent extends CallEvent
 	 */
 	public boolean isMatchingTalkgroup( LTRNetMessage message )
 	{
-		return isMatchingTalkgroup( message.getTalkgroupID() );
+		String talkgroup = message.getTalkgroupID();
+		
+		if( talkgroup != null && getToID() != null &&
+			talkgroup.contentEquals( getToID() ) )
+		{
+			return true;
+		}
+		
+		return false;
 	}
 	
-	public boolean isMatchingTalkgroup( String talkgroup )
-	{
-		return talkgroup != null && 
-			   getToID() != null &&
-			   talkgroup.contentEquals( getToID() );
-	}
-
 	private Alias getAlias( String talkgroup )
 	{
 		if( hasAliasList() )

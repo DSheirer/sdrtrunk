@@ -7,115 +7,113 @@
   <property name="major" value="0"/>
   <property name="minor" value="2"/>
   <property name="patch" value="0"/>
-  <property name="release" value="beta.5"/>
-  <property name="filename" value="sdrtrunk_${major}.${minor}.${patch}-${release}"/>
-	
-  <!-- Build properties -->
-  <property name="repo" location=".."/>
-  <property name="source.code" location="${repo}/src"/>
-  <property name="source.configs"  location="${repo}/config"/>
-  <property name="source.images"  location="${repo}/images"/>
-  <property name="source.libs"  location="${repo}/imports"/>
-  <property name="source.license"  location="${repo}/license"/>
-  <property name="source.scripts"  location="${repo}/scripts"/>
+  <property name="release" value="beta.2"/>
 
-  <property name="output"  location="${repo}/product"/>
-  <property name="output.classes" location="${repo}/classes"/>
-  <property name="output.folder"  location="${output}/sdrtrunk"/>
-  <property name="output.config" location="${output.folder}/config"/>
-  <property name="output.images" location="${output.folder}/images"/>
-  <property name="output.libs" location="${output.folder}/libs"/>
+  <!-- Build properties -->
+  <property name="classes" location="../classes"/>
+  <property name="configs"  location="../config"/>
+  <property name="images"  location="../images"/>
+  <property name="libs"  location="../imports"/>
+  <property name="license"  location="../license"/>
+  <property name="product"  location="../product"/>
+  <property name="scripts"  location="../scripts"/>
+  <property name="src" location="../src"/>
 
   <path id="classpath">
-    <fileset dir="${source.libs}" includes="*.jar" />
+    <fileset dir="${libs}" includes="*.jar" />
   </path>
   
   <target name="init">
     <!-- Create the classes folder to contain the compiled java classes -->
-    <mkdir dir="${output.classes}"/>
+    <mkdir dir="${classes}"/>
   	
     <!-- Create version file -->
-  	<echo message="${major}.${minor}.${patch}-${release}" file="${output.classes}/sdrtrunk-version"/>
+  	<echo message="${major}.${minor}.${patch}-${release}" file="${classes}/sdrtrunk-version"/>
   </target>
 
-  <target name="compile" depends="clean,init" description="Compile java classes" >
-    <javac srcdir="${source.code}" destdir="${output.classes}" classpathref="classpath" includeantruntime="false" />
+  <target name="compile" depends="clean,init"
+        description="Compile java classes" >
+    <!-- Compile the java code from ${src} into ${classes} -->
+    <javac srcdir="${src}" 
+           destdir="${classes}" 
+           classpathref="classpath"
+           includeantruntime="false" />
   </target>
 
   <target name="SDRTrunk" depends="compile" description="Create SDRTrunk application" >
     <!-- Create the distribution directory -->
-    <mkdir dir="${output.folder}"/>
+    <mkdir dir="${product}"/>
 
     <!-- Create jar file -->
-    <jar jarfile="${output.folder}/sdrtrunk.jar" basedir="${output.classes}">
+    <jar jarfile="${product}/SDRTrunk.jar" basedir="${classes}">
 	  <manifest>
-        <attribute name="Title" value="sdrtrunk"/>
         <attribute name="Main-Class" value="gui.SDRTrunk"/>
-        <attribute name="Version" value="${major}.${minor}.${patch}-${release}"/>
       </manifest>
-	  <fileset dir="${source.configs}">
+	  <fileset dir="${configs}">
   	  	<exclude name="*.rules"/>
   	  </fileset>
 	  
-  	  <fileset dir="${source.license}">
+  	  <fileset dir="${license}">
   	  	<include name="license.txt"/>
   	  </fileset>
     </jar>
     
     <!-- Copy third-party libraries -->
-    <mkdir dir="${output.libs}"/>
-    <copy todir="${output.libs}">
-	  <fileset dir="${source.libs}" includes="*.jar" />
+    <mkdir dir="${product}/libs"/>
+    <copy todir="${product}/libs">
+	  <fileset dir="${libs}" includes="*.jar" />
     </copy>
     
     <!-- Copy config files -->
-    <mkdir dir="${output.config}"/>
+    <mkdir dir="${product}/config"/>
 
-    <copy todir="${output.config}">
-	  <fileset dir="${source.configs}">
+    <copy todir="${product}/config">
+	  <fileset dir="${configs}">
   	  	<include name="*.rules"/>
   	  </fileset>
     </copy>
     
     <!-- Copy image files -->
-    <mkdir dir="${output.images}"/>
-    <copy todir="${output.images}">
-	  <fileset dir="${source.images}" />
+    <mkdir dir="${product}/images"/>
+    <copy todir="${product}/images">
+	  <fileset dir="${images}" />
     </copy>
     
     <!-- Copy license file -->
-    <copy todir="${output.folder}">
-	  <fileset dir="${source.license}">
-  	  	<include name="license.txt"/>
-	  </fileset>
+    <copy todir="${product}">
+	  <fileset dir="${license}" />
     </copy>
     
     <!-- Copy program scripts -->
-    <copy todir="${output.folder}">
-	  <fileset dir="${source.scripts}" />
+    <copy todir="${product}">
+	  <fileset dir="${scripts}" />
     </copy>
 
+    <!-- Set linux permissions on start script -->
+  	<chmod file="${product}/run_sdrtrunk_linux.sh" perm="777" />
+  	
+  	<tstamp prefix="build" />
+
+    <property name="filename" value="sdrtrunk_${build.DSTAMP}_${build.TSTAMP}_${major}.${minor}.${patch}-${release}"/>
 
   	<!-- Bundle the files into .zip -->
-  	<zip destfile="${output}/${filename}.zip" basedir="${output}" />
-
-  	<!-- Remove linux start script before tar task -->
-    <delete file="${output.folder}/run_sdrtrunk_linux.sh"/>
-
-  	<!-- Bundle files into .tar.gz and copy/set permissions on linux start script -->
-	<tar destfile="${output}/${filename}.tar.gz" compression="gzip">
-	    <tarfileset dir="${output.folder}" prefix="sdrtrunk" />
-		<tarfileset dir="${source.scripts}" prefix="sdrtrunk" filemode="777">
-	  	  	<include name="run_sdrtrunk_linux.sh"/>
-    	</tarfileset>
-	</tar>
+  	<zip destfile="${product}/${filename}.zip" basedir="${product}" />
   	
-    <delete dir="${output.folder}"/>
+  	<!-- Bundle the files into .tar.gz to preserve linux script permissions -->
+  	<tar destfile="${product}/${filename}.tar.gz" compression="gzip">
+ 	  <tarfileset dir="${product}" filemode="777">
+  	    <include name="*.sh"/>
+  	  </tarfileset>
+   	  <tarfileset dir="${product}">
+  	    <exclude name="*.sh"/>
+  	    <exclude name="${filename}.zip"/>
+  	  </tarfileset>
+  	</tar>  	
   </target>
 
   <target name="clean" description="Clean previous build artifacts" >
-    <delete dir="${output.classes}"/>
-    <delete dir="${output}"/>
+    <delete dir="${classes}"/>
+    <delete dir="${product}"/>
   </target>
 
 </project>

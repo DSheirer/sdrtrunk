@@ -437,7 +437,8 @@ public class SettingsManager
 			}
 
 			/* Something happened ... the above should always return an icon */
-			mLog.error( "couldn't return an icon named [" + name + "] of heigh [" + height + "]" );
+			mLog.error( "SettingsManager - couldn't return an icon named [" + 
+					name + "] of heigh [" + height + "]" );
 		}
 
 		return null;
@@ -635,7 +636,8 @@ public class SettingsManager
 				
 				return r820TConfig;
 			default:
-				throw new IllegalArgumentException( "tuner type is unrecognized [" + 
+				throw new IllegalArgumentException( "TunerConfiguration"
+						+ "Directory - tuner type is unrecognized [" + 
 						type.toString() + "]" );
 		}
 	}
@@ -709,7 +711,8 @@ public class SettingsManager
 		}
 		catch( Exception e )
 		{
-			mLog.error( "couldn't create file to save settings [" + filePath.toString() + "]", e );
+			mLog.error( "SettingsManager - couldn't create file to save "
+					+ "settings [" + filePath.toString() + "]", e );
 		}
 		
 		OutputStream out = null;
@@ -730,12 +733,14 @@ public class SettingsManager
 	        }
 	        catch ( JAXBException e )
 	        {
-	        	mLog.error( "jaxb exception while saving settings", e );
+	        	mLog.error( "SettingsManager - jaxb exception while saving " +
+		        		"settings", e );
 	        }
         }
         catch ( Exception e )
         {
-        	mLog.error( "couldn't open outputstream to save settings [" + filePath.toString() + "]" );
+        	mLog.error( "SettingsManager - coulcn't open outputstream to " +
+        			"save settings [" + filePath.toString() + "]" );
         }
 		finally
 		{
@@ -761,7 +766,8 @@ public class SettingsManager
 	{
 		if( Files.exists( settingsPath ) )
 		{
-			mLog.info( "loading settings file [" + settingsPath.toString() + "]" );
+			mLog.info( "SettingsManager - loading settings file [" + 
+							settingsPath.toString() + "]" );
 			
 			JAXBContext context = null;
 			
@@ -781,13 +787,13 @@ public class SettingsManager
 		        }
 		        catch ( JAXBException e )
 		        {
-		        	mLog.error( "jaxb exception while loading " +
+		        	mLog.error( "SettingsManager - jaxb exception while loading " +
 			        		"settings", e );
 		        }
 	        }
 	        catch ( Exception e )
 	        {
-	        	mLog.error( "coulcn't open inputstream to " +
+	        	mLog.error( "SettingsManager - coulcn't open inputstream to " +
 	        			"load settings [" + settingsPath.toString() + "]", e );
 	        }
 			finally
@@ -800,7 +806,7 @@ public class SettingsManager
 	                }
 	                catch ( IOException e )
 	                {
-	                	mLog.error( "exception while closing " +
+	                	mLog.error( "SettingsManager - exception while closing " +
 	                			"the settings file inputstream reader", e );
 	                }
 				}
@@ -808,7 +814,8 @@ public class SettingsManager
 		}
 		else
 		{
-			mLog.info( "settings does not exist [" + settingsPath.toString() + "]" );
+			mLog.info( "SettingsManager - settings does not exist [" + 
+							settingsPath.toString() + "]" );
 		}
 		
 		if( mSettings == null )

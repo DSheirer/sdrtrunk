@@ -136,13 +136,10 @@ public class ChannelList extends JPanel implements ChannelEventListener
 	
 	public void setSelectedChannel( Channel channel )
 	{
-		synchronized( mDisplayedPanels )
+		/* Send channel selection to each channel panel */
+		for( ChannelCollectionPanel panel: mDisplayedPanels.values() )
 		{
-			/* Send channel selection to each channel panel */
-			for( ChannelCollectionPanel panel: mDisplayedPanels.values() )
-			{
-				panel.setSelectedChannel( channel );
-			}
+			panel.setSelectedChannel( channel );
 		}
 	}
 	
@@ -260,6 +257,20 @@ public class ChannelList extends JPanel implements ChannelEventListener
 							ColorSettingName.CHANNEL_STATE_GRADIENT_TOP_IDLE ) );
 					idleMenu.add( new ColorSettingResetMenuItem( mSettingsManager, 
 						ColorSettingName.CHANNEL_STATE_GRADIENT_TOP_IDLE ) );
+					
+					JMenu noTunerMenu = new JMenu( "No Tuner" );
+					channelsMenu.add( noTunerMenu );
+					
+					noTunerMenu.add( new ColorSettingMenuItem( mSettingsManager, 
+							ColorSettingName.CHANNEL_STATE_GRADIENT_MIDDLE_NO_TUNER ) );
+					noTunerMenu.add( new ColorSettingResetMenuItem( mSettingsManager, 
+						ColorSettingName.CHANNEL_STATE_GRADIENT_MIDDLE_NO_TUNER ) );
+					noTunerMenu.add( new JSeparator() );	
+					
+					noTunerMenu.add( new ColorSettingMenuItem( mSettingsManager, 
+							ColorSettingName.CHANNEL_STATE_GRADIENT_TOP_NO_TUNER ) );
+					noTunerMenu.add( new ColorSettingResetMenuItem( mSettingsManager, 
+						ColorSettingName.CHANNEL_STATE_GRADIENT_TOP_NO_TUNER ) );
 					
 					JMenu labelMenu = new JMenu( "Labels" );
 					colorMenu.add( labelMenu );

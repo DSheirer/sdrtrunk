@@ -48,27 +48,19 @@ public class PDUConfirmedMessageFactory
 			case UNENCRYPTED_USER_DATA:
 				switch( message.getPDUType() )
 				{
-					case SNDCP_ACTIVATE_TDS_CONTEXT_ACCEPT:
+					case SN_ACTIVATE_TDS_CONTEXT_ACCEPT:
 						return new SNDCPActivateTDSContextAccept( message );
-					case SNDCP_ACTIVATE_TDS_CONTEXT_REJECT:
+					case SN_ACTIVATE_TDS_CONTEXT_REJECT:
 						return new SNDCPActivateTDSContextReject( message );
 					case SN_ACTIVATE_TDS_CONTEXT_REQUEST:
 						return new SNDCPActivateTDSContextRequest( message );
-					case SNDCP_DEACTIVATE_TDS_CONTEXT_ACCEPT:
-					case SNDCP_DEACTIVATE_TDS_CONTEXT_REQUEST:
+					case SN_DEACTIVATE_TDS_CONTEXT_ACCEPT:
+					case SN_DEACTIVATE_TDS_CONTEXT_REQUEST:
 						return new SNDCPDeactivateTDSContext( message );
-					case SNDCP_RF_CONFIRMED_DATA:
+					case SN_RF_CONFIRMED_DATA:
 						return new SNDCPUserData( message );
-					case SNDCP_RF_UNCONFIRMED_DATA:
+					case SN_RF_UNCONFIRMED_DATA:
 						break;
-					case PDU_TYPE_6:
-					case PDU_TYPE_7:
-					case PDU_TYPE_8:
-					case PDU_TYPE_9:
-					case PDU_TYPE_10:
-					case PDU_TYPE_11:
-						return new PDUTypeUnknown( message );
-					case UNKNOWN:
 					default:
 						break;
 				}

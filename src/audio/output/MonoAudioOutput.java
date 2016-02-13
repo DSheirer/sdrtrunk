@@ -5,14 +5,13 @@ import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.sound.sampled.BooleanControl;
 import javax.sound.sampled.Control;
 import javax.sound.sampled.FloatControl;
-import javax.sound.sampled.LineEvent;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.Mixer;
 import javax.sound.sampled.SourceDataLine;
@@ -25,8 +24,8 @@ import audio.AudioEvent;
 import audio.AudioFormats;
 import audio.AudioPacket;
 import audio.AudioPacket.Type;
-import controller.ThreadPoolManager;
-import controller.ThreadPoolManager.ThreadType;
+import audio.output.StereoAudioOutput.QueueProcessor;
+import controller.NamingThreadFactory;
 
 /**
  * Mono Audio output with automatic flow control based on the availability of 
@@ -51,14 +50,14 @@ public class MonoAudioOutput extends AudioOutput
 	private SourceDataLine mOutput;
 	private FloatControl mGainControl;
 	private BooleanControl mMuteControl;
+	
 	private AudioEvent mAudioStartEvent;
 	private AudioEvent mAudioStopEvent;
 	private AudioEvent mAudioContinuationEvent;
-	private ScheduledFuture<?> mProcessorTask;
 	
-	public MonoAudioOutput( ThreadPoolManager threadPoolManager, Mixer mixer )
+	public MonoAudioOutput( Mixer mixer )
 	{
-		super( threadPoolManager );
+		super();
 
 		mAudioStartEvent = new AudioEvent( AudioEvent.Type.AUDIO_STARTED, 
 				getChannelName() );
@@ -75,8 +74,15 @@ public class MonoAudioOutput extends AudioOutput
 			if( mOutput != null )
 			{
 				mOutput.open( AudioFormats.PCM_SIGNED_48KHZ_16BITS_MONO, BUFFER_SIZE );
-				mOutput.addLineListener( this );
+				
 				mCanProcessAudio = true;
+				
+				mExecutorService = Executors.newSingleThreadScheduledExecutor( 
+						new NamingThreadFactory( "audio (mono) output" ) );
+
+				/* Run the queue processor task every 40 milliseconds */
+				mExecutorService.scheduleAtFixedRate( new QueueProcessor(), 
+						0, 40, TimeUnit.MILLISECONDS );
 			}
 		} 
         catch ( LineUnavailableException e )
@@ -109,10 +115,12 @@ public class MonoAudioOutput extends AudioOutput
 					mixer.getMixerInfo().getName() + "]" );
 			}
 			
+			mExecutorService = Executors.newSingleThreadScheduledExecutor( 
+					new NamingThreadFactory( "audio (mono) output" ) );
+
 			/* Run the queue processor task every 40 milliseconds */
-			mProcessorTask = mThreadPoolManager.scheduleFixedRate( 
-				ThreadType.AUDIO_PROCESSING, new QueueProcessor(), 
-				40, TimeUnit.MILLISECONDS );
+			mExecutorService.scheduleAtFixedRate( new QueueProcessor(), 
+					0, 40, TimeUnit.MILLISECONDS );
 		}
 	}
 
@@ -124,108 +132,102 @@ public class MonoAudioOutput extends AudioOutput
 
 	public void dispose()
 	{
-		if( mProcessorTask != null && mThreadPoolManager != null )
-		{
-			mThreadPoolManager.cancel( mProcessorTask );
-		}
-		
-		mProcessorTask = null;
-		
 		super.dispose();
 		
 		if( mOutput != null )
 		{
 			mOutput.close();
 		}
-		
-		mOutput = null;
-		mGainControl = null;
-		mMuteControl = null;
 	}
 	
 	public class QueueProcessor implements Runnable
 	{
 		private AtomicBoolean mProcessing = new AtomicBoolean();
 		
+		public QueueProcessor()
+		{
+		}
+
 		@Override
 		public void run()
 		{
-			try
+			/* The mProcessing flag ensures that only one instance of the
+			 * processor can run at any given time */
+			if( mProcessing.compareAndSet( false, true ) )
 			{
-				/* The mProcessing flag ensures that only one instance of the
-				 * processor can run at any given time */
-				if( mProcessing.compareAndSet( false, true ) )
+				List<AudioPacket> packets = new ArrayList<AudioPacket>();
+				
+				mBuffer.drainTo( packets );
+				
+				if( packets.size() > 0 )
 				{
-					List<AudioPacket> packets = new ArrayList<AudioPacket>();
+					broadcast( mAudioContinuationEvent );
 					
-					mBuffer.drainTo( packets );
-					
-					if( packets.size() > 0 )
+					for( AudioPacket packet: packets )
 					{
-						for( AudioPacket packet: packets )
+						if( mCanProcessAudio )
 						{
-							broadcast( mAudioContinuationEvent );
-							
-							if( mCanProcessAudio )
+							if( isSquelched() )
 							{
-								if( packet.getType() == Type.AUDIO )
+								checkStop();
+							}
+							else if( packet.getType() == Type.AUDIO )
+							{
+								float[] samples = packet.getAudioBuffer().getSamples();
+								
+								/* Little-endian byte buffer */
+								ByteBuffer buffer = 
+									ByteBuffer.allocate( samples.length * 2 )
+											.order( ByteOrder.LITTLE_ENDIAN );
+								
+								ShortBuffer shortBuffer = buffer.asShortBuffer();
+
+								for( float sample: samples )
 								{
-									float[] samples = packet.getAudioBuffer().getSamples();
-									
-									/* Little-endian byte buffer */
-									ByteBuffer buffer = 
-										ByteBuffer.allocate( samples.length * 2 )
-												.order( ByteOrder.LITTLE_ENDIAN );
-									
-									ShortBuffer shortBuffer = buffer.asShortBuffer();
-
-									for( float sample: samples )
-									{
-										shortBuffer.put( (short)( sample * Short.MAX_VALUE ) );
-									}
-									
-									//This is a blocking write
-									mOutput.write( buffer.array(), 0, buffer.array().length );
-
-									checkStart();
-
-									broadcast( packet.getAudioMetadata() );
-
-									mLastActivity = System.currentTimeMillis();
+									shortBuffer.put( (short)( sample * Short.MAX_VALUE ) );
 								}
+								
+								mOutput.write( buffer.array(), 0, 
+										buffer.array().length );
+								
+								checkStart();
+								
+								broadcast( packet.getAudioMetadata() );
+
+								mLastActivity = System.currentTimeMillis();
 							}
 						}
 					}
-					else
-					{
-						checkStop();
-					}
-					
-					mProcessing.set( false );
 				}
-			}
-			catch( Exception e )
-			{
-				mLog.error( "Error while processing audio buffers", e );
+				else
+				{
+					checkStop();
+				}
+				
+				mProcessing.set( false );
 			}
 		}
 		
 		private void checkStart()
 		{
-			if( mCanProcessAudio && 
+			if( mCanProcessAudio && !isSquelched() && 
 				!mOutput.isRunning() && mOutput.available() <= START_THRESHOLD )
 			{
 				mOutput.start();
+				
+				mAudioEventBroadcaster.broadcast( mAudioStartEvent );
 			}
 		}
 		
 		private void checkStop()
 		{
 			if( mCanProcessAudio && mOutput.isRunning() &&
-				mOutput.available() >= STOP_THRESHOLD )
+				( mOutput.available() >= STOP_THRESHOLD || isSquelched() ) )
 			{
 				mOutput.drain();
 				mOutput.stop();
+
+				mAudioEventBroadcaster.broadcast( mAudioStopEvent );
 			}
 		}
 	}
@@ -263,20 +265,5 @@ public class MonoAudioOutput extends AudioOutput
 	public boolean hasGainControl()
 	{
 		return mGainControl != null;
-	}
-
-	@Override
-	public void update( LineEvent event )
-	{
-		LineEvent.Type type = event.getType();
-
-		if( type == LineEvent.Type.START )
-		{
-			mAudioEventBroadcaster.broadcast( mAudioStartEvent );
-		}
-		else if( type == LineEvent.Type.STOP )
-		{
-			mAudioEventBroadcaster.broadcast( mAudioStopEvent );
-		}
 	}
 }

@@ -30,7 +30,6 @@ import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import properties.SystemProperties;
 import sample.Buffer;
 import sample.Listener;
 import sample.SampleType;
@@ -62,8 +61,6 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 	private ScheduledExecutorService mScheduler = Executors
 			.newScheduledThreadPool( 1, new NamingThreadFactory( "spectrum dft" ) );	
 	
-	public static final String FRAME_RATE_PROPERTY = "spectral.display.frame.rate";
-	
 	private DFTSize mDFTSize = DFTSize.FFT04096;
 	private DFTSize mNewDFTSize = DFTSize.FFT04096;
 	
@@ -92,16 +89,7 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 	public DFTProcessor( SampleType sampleType )
 	{
 		setSampleType( sampleType );
-		
-		loadSettings();
-	}
-	
-	private void loadSettings()
-	{
-		int frameRate = SystemProperties.getInstance()
-				.get( DFTProcessor.FRAME_RATE_PROPERTY, 20 );
-
-		setFrameRate( frameRate );
+		setFrameRate( 20 );
 	}
 	
 	public void dispose()
@@ -182,10 +170,6 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 		}
 
 		mFrameRate = framesPerSecond;
-
-		SystemProperties properties = SystemProperties.getInstance();
-		properties.set( FRAME_RATE_PROPERTY, String.valueOf( mFrameRate ) );
-		properties.save();
 
 		calculateConsumptionRate();
 

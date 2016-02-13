@@ -1,10 +1,5 @@
 package module.decode.state;
 
-import java.util.EnumSet;
-
-/**
- * Details the set of states for a channel and the allowable transition states
- */
 public enum State
 { 
 	IDLE( "IDLE" ) 
@@ -12,8 +7,7 @@ public enum State
         @Override
         public boolean canChangeTo( State state )
         {
-	        return state != TEARDOWN && 
-	        	   state != RESET;
+	        return true;
         }
     }, 
 	CALL( "CALL" ) 
@@ -21,11 +15,11 @@ public enum State
         @Override
         public boolean canChangeTo( State state )
         {
-	        return state == CONTROL ||
+	        return state == CALL ||
+	        	   state == CONTROL ||
 	        	   state == DATA ||
 	        	   state == ENCRYPTED ||
-	        	   state == FADE ||
-	        	   state == TEARDOWN;
+	        	   state == FADE;
         }
     }, 
 	DATA( "DATA" ) 
@@ -35,9 +29,9 @@ public enum State
         {
 	        return state == CALL ||
 	        	   state == CONTROL ||
-		           state == ENCRYPTED ||
-		           state == FADE ||
-		           state == TEARDOWN;
+		           state == DATA ||
+		           state == State.ENCRYPTED ||
+		           state == FADE;
         }
     },
     ENCRYPTED( "ENCRYPTED" )
@@ -45,7 +39,7 @@ public enum State
         @Override
         public boolean canChangeTo( State state )
         {
-        	return state == FADE || state == TEARDOWN;
+	        return state == FADE;
         }
     },
     CONTROL( "CONTROL" )
@@ -53,8 +47,7 @@ public enum State
 		@Override
         public boolean canChangeTo( State state )
         {
-            return state == IDLE || 
-            	   state == FADE;
+            return true;
         }
     },
 	FADE( "FADE" ) 
@@ -62,35 +55,19 @@ public enum State
         @Override
         public boolean canChangeTo( State state )
         {
-	        return state != FADE && 
-	        	   state != RESET; 
-	    }
+	        return state != FADE; //All states except fade allowed
+        }
     },
-	RESET( "RESET" ) 
+	END( "END" ) 
 	{
-		@Override
-		public boolean canChangeTo(State state)
-		{
-			return state == IDLE;
-		}
-	},
-	
-	TEARDOWN( "TEARDOWN" ) 
-	{
-		@Override
-		public boolean canChangeTo(State state) 
-		{
-			return state == RESET;
-		}
-	};
+        @Override
+        public boolean canChangeTo( State state )
+        {
+	        return state != FADE;  //Fade is only disallowed state
+        }
+    };
 	
 	private String mDisplayValue;
-	
-	public static final EnumSet<State> CALL_STATES = 
-			EnumSet.of( CALL, CONTROL, DATA, ENCRYPTED );
-	
-	public static final EnumSet<State> IDLE_STATES = 
-			EnumSet.of( IDLE, FADE );
 	
 	private State( String displayValue )
 	{

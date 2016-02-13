@@ -310,11 +310,6 @@ public abstract class CallEvent implements Comparable<CallEvent>
 	@Override
 	public int compareTo( CallEvent other )
 	{
-		if( other != null && other == this )
-		{
-			return 0;
-		}
-		
 		return Long.compare( mEventStart, other.getEventStartTime() );
 	}
 }

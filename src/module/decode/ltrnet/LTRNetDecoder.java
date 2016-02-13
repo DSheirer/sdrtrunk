@@ -117,7 +117,6 @@ public class LTRNetDecoder extends Decoder
 	@Override
 	public void reset()
 	{
-		mLTRMessageFramer.reset();
 	}
 
 	@Override

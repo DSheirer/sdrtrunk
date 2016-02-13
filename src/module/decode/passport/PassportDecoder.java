@@ -106,7 +106,6 @@ public class PassportDecoder extends Decoder
 	@Override
 	public void reset()
 	{
-		mPassportMessageFramer.reset();
 	}
 
 	@Override

@@ -22,9 +22,10 @@ import java.awt.image.BufferedImage;
 import java.beans.DesignMode;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.net.URL;
 import java.util.Set;
 
-import javax.swing.ImageIcon;
+import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 
 import org.jdesktop.swingx.mapviewer.GeoPosition;
@@ -125,13 +126,13 @@ public class JXMapViewer extends JPanel implements DesignMode
 		// make a dummy loading image
 		try
 		{
-			ImageIcon imageIcon = new ImageIcon( "images/loading.png" );
-			this.setLoadingImage( imageIcon.getImage() );
+			URL url = JXMapViewer.class.getResource("mapviewer/resources/loading.png");
+			this.setLoadingImage(ImageIO.read(url));
 		}
 		catch (Throwable ex)
 		{
 			
-			mLog.error( "could not load 'loading.png'" );
+			mLog.error( "JXMapViewer could not load 'loading.png'" );
 			
 			BufferedImage img = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
 			Graphics2D g2 = img.createGraphics();

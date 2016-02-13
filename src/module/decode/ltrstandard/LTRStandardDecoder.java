@@ -80,7 +80,6 @@ public class LTRStandardDecoder extends Decoder implements IUnFilteredRealBuffer
 	@Override
 	public void reset()
 	{
-		mLTRMessageFramer.reset();
 	}
 
 	@Override
