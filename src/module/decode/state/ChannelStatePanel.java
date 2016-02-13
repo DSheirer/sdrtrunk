@@ -260,6 +260,7 @@ public class ChannelStatePanel extends JPanel
 
         if( channelState != null )
         {
+<<<<<<< Upstream, based on origin/master
             switch( channelState.getState() )
             {
     			case CALL:
@@ -284,6 +285,24 @@ public class ChannelStatePanel extends JPanel
         if( p == null )
         {
 			p = getGradient( mColorTopIdle, mColorMiddleIdle );
+=======
+			case CALL:
+				p = getGradient( mColorTopCall, mColorMiddleCall );
+				break;
+			case CONTROL:
+				p = getGradient( mColorTopControl, mColorMiddleControl );
+				break;
+			case DATA:
+				p = getGradient( mColorTopData, mColorMiddleData );
+				break;
+			case FADE:
+				p = getGradient( mColorTopFade, mColorMiddleFade );
+				break;
+			case IDLE:
+			default:
+				p = getGradient( mColorTopIdle, mColorMiddleIdle );
+				break;
+>>>>>>> 0e01381 Updates.
         }
         
         g2.setPaint( p );

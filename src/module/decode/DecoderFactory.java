@@ -210,7 +210,6 @@ public class DecoderFactory
 
 				if( channelType == ChannelType.STANDARD )
 				{
-					long timeout = mptConfig.getCallTimeout() * 1000; //convert to milliseconds
 
 					modules.add( new TrafficChannelManager( channelModel, channelProcessingManager,
 							decodeConfig, recordConfig, channel.getSystem(), 
@@ -256,7 +255,7 @@ public class DecoderFactory
 				if( channelType == ChannelType.STANDARD )
 				{
 					//Set call timeout to 3 seconds for P25 traffic channels
-					long timeout = 3000;
+					timeout = 3000;
 
 					modules.add( new TrafficChannelManager( channelModel, 
 							channelProcessingManager, decodeConfig, 
