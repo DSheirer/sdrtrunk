@@ -5,9 +5,9 @@
 
   <!-- version properties -->
   <property name="major" value="0"/>
-  <property name="minor" value="2"/>
+  <property name="minor" value="3"/>
   <property name="patch" value="0"/>
-  <property name="release" value="beta.2"/>
+  <property name="release" value="alpha.1"/>
 
   <!-- Build properties -->
   <property name="classes" location="../classes"/>

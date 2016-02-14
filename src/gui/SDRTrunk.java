@@ -140,7 +140,7 @@ public class SDRTrunk
 		AliasActionManager aliasActionManager = new AliasActionManager( threadPoolManager );
 		channelProcessingManager.addMessageListener( aliasActionManager );
 		
-		AudioManager audioManager = new AudioManager( threadPoolManager );
+		AudioManager audioManager = new AudioManager( threadPoolManager, sourceManager.getMixerManager() );
 		channelProcessingManager.addAudioPacketListener( audioManager );
 
 		MapService mapService = new MapService( mSettingsManager );

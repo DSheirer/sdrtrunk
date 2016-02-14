@@ -64,7 +64,6 @@ public class ConfigurationControllerModel extends DefaultTreeModel
     private PlaylistManager mPlaylistManager;
     private SettingsManager mSettingsManager;
     private SourceManager mSourceManager;
-    private ChannelModel mChannelModel;
 
 	/**
 	 * Implements a merged system controller and (tree) model.  The user will 
@@ -79,8 +78,6 @@ public class ConfigurationControllerModel extends DefaultTreeModel
 										 SourceManager sourceManager )
     {
     	super( new BaseNode( null ) );
-
-    	mChannelModel = channelModel;
 
     	mChannelModel = channelModel;
     	mChannelProcessingManager = channelProcessingManager;

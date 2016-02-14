@@ -78,14 +78,13 @@ public class Channel extends Configuration implements IFrequencyChangeProcessor
     
 	private boolean mEnabled;
 	private boolean mSelected;
-
 	private TunerChannel mTunerChannel = null;
 	
 	private ChannelType mChannelType = ChannelType.STANDARD;
 
 	private int mChannelID;
 	private int mChannelFrequencyCorrection = 0;
-
+	
 	/**
 	 * Channel represents a complete set of configurations needed to setup and
 	 * manage a processing chain and/or manage as a set of business objects that
@@ -112,8 +111,6 @@ public class Channel extends Configuration implements IFrequencyChangeProcessor
 	/**
 	 * Constructs a new standard channel with a default name of "Channel"
 	 */
-	
-	//TODO: remove this
 	public Channel()
 	{
 		mChannelID = UNIQUE_ID++;
@@ -163,7 +160,6 @@ public class Channel extends Configuration implements IFrequencyChangeProcessor
 		return channel;
 	}
 	
-//TODO: remove this
 	/**
 	 * Unique identifier for this channel.  Value is transient (not persisted).
 	 */
@@ -441,5 +437,26 @@ public class Channel extends Configuration implements IFrequencyChangeProcessor
 		
 		return tunerChannel != null &&
 			   tunerChannel.overlaps( minimum, maximum );
+	}
+	
+	/**
+	 * Convenience method to make the current channel frequency correction value
+	 * available for use outside of a constructed processing chain while maintaining
+	 * linkage to the source channel.  This hack allows the correction value to
+	 * be used to visually show in the spectral display.
+	 */
+	@Override
+	public void frequencyChanged( FrequencyChangeEvent event )
+	{
+		if( event.getEvent() == Event.NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE )
+		{
+			mChannelFrequencyCorrection = event.getValue().intValue();
+		}
+	}
+
+	@XmlTransient
+	public int getChannelFrequencyCorrection()
+	{
+		return mChannelFrequencyCorrection;
 	}
 }

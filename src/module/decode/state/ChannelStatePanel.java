@@ -254,38 +254,8 @@ public class ChannelStatePanel extends JPanel
 
         Paint p = null;
 
-        final Channel channel = mChannel;
-        
-        final ChannelState channelState = ( channel == null ? null : channel.getChannelState() );
-
-        if( channelState != null )
+        switch( mChannelState.getState() )
         {
-<<<<<<< Upstream, based on origin/master
-            switch( channelState.getState() )
-            {
-    			case CALL:
-    				p = getGradient( mColorTopCall, mColorMiddleCall );
-    				break;
-    			case CONTROL:
-    				p = getGradient( mColorTopControl, mColorMiddleControl );
-    				break;
-    			case DATA:
-    				p = getGradient( mColorTopData, mColorMiddleData );
-    				break;
-    			case FADE:
-    				p = getGradient( mColorTopFade, mColorMiddleFade );
-    				break;
-    			case IDLE:
-    			default:
-    				p = getGradient( mColorTopIdle, mColorMiddleIdle );
-    				break;
-            }
-        }
-        
-        if( p == null )
-        {
-			p = getGradient( mColorTopIdle, mColorMiddleIdle );
-=======
 			case CALL:
 				p = getGradient( mColorTopCall, mColorMiddleCall );
 				break;
@@ -298,13 +268,11 @@ public class ChannelStatePanel extends JPanel
 			case FADE:
 				p = getGradient( mColorTopFade, mColorMiddleFade );
 				break;
-			case END:
 			case IDLE:
 			default:
 				p = getGradient( mColorTopIdle, mColorMiddleIdle );
 				break;
->>>>>>> 0e01381 Updates.
-        }
+       }
         
         g2.setPaint( p );
         g2.fillRect( 0, 0, getWidth(), getHeight() );

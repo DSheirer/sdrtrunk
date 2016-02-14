@@ -34,7 +34,7 @@ public class Alias
 	private String mName;
 	private int mColor;
 	private String mIconName;
-	private ArrayList<AliasID> mAliasIDs = new ArrayList<AliasID>();
+	private List<AliasID> mAliasIDs = new ArrayList<AliasID>();
 	private List<AliasAction> mAliasActions = new ArrayList<AliasAction>();
 	
 	public Alias()
@@ -121,7 +121,7 @@ public class Alias
 		mIconName = iconName;
 	}
 	
-	public ArrayList<AliasID> getId()
+	public List<AliasID> getId()
 	{
 		return mAliasIDs;
 	}

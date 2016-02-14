@@ -66,7 +66,7 @@ public class PlaylistManager implements ChannelEventListener
 	private boolean mPlaylistLoading = false;
 	
 	/**
-	 * Playlist manager - manages all channel configurationc, channel maps, and
+	 * Playlist manager - manages all channel configurations, channel maps, and
 	 * alias lists and handles loading or persisting to a playlist.xml file
 	 * 
 	 * Monitors playlist changes to automatically save configuration changes 
@@ -103,8 +103,11 @@ public class PlaylistManager implements ChannelEventListener
 
 		mPlaylistLoading = true;
 
+		mLog.debug( "Transferring aliases to model" );
 		mAliasModel.addAliases( mPlaylist.getAliases() );
+		mLog.debug( "Transferring channels to model" );
 		mChannelModel.addChannels( mPlaylist.getChannels() );
+		mLog.debug( "Transfer to models is complete" );
 		
 		mPlaylistLoading = false;
 	}
@@ -126,48 +129,6 @@ public class PlaylistManager implements ChannelEventListener
 				props.get( "playlist.currentfilename", defaultPlaylistFile );
 		
 		load( playlistFolder.resolve( playlistFile ) );
-		
-		transferPlaylistToModels();
-	}
-
-	/**
-	 * Channel event listener method.  Monitors channel events for events that
-	 * indicate that the playlist has changed and queues automatic playlist
-	 * saving.
-	 */
-	@Override
-	public void channelChanged( ChannelEvent event )
-	{
-		//Only save playlist for changes to standard channels (not traffic)
-		if( event.getChannel().getChannelType() == ChannelType.STANDARD )
-		{
-			switch( event.getEvent() )
-			{
-				case NOTIFICATION_ADD:
-				case NOTIFICATION_CONFIGURATION_CHANGE:
-				case NOTIFICATION_DELETE:
-				case NOTIFICATION_PROCESSING_START:
-				case NOTIFICATION_PROCESSING_STOP:
-					schedulePlaylistSave();
-					break;
-				case NOTIFICATION_ENABLE_REJECTED:
-				case NOTIFICATION_SELECTION_CHANGE:
-				case NOTIFICATION_STATE_RESET:
-				case REQUEST_DELETE:
-				case REQUEST_DESELECT:
-				case REQUEST_DISABLE:
-				case REQUEST_ENABLE:
-				case REQUEST_SELECT:
-					//Do nothing for these event types
-					break;
-				default:
-					//When a new event enum entry is added and received, throw an
-					//exception here to ensure developer adds support for the 
-					//use case
-					throw new IllegalArgumentException( "Unrecognized Channel "
-							+ "Event [" + event.getEvent().name() + "]" );
-			}
-		}
 	}
 
 	/**
@@ -426,7 +387,6 @@ public class PlaylistManager implements ChannelEventListener
 			saveRequired = true;
 		}
 
-		
 		//Check for and convert from legacy play list format
 		if( mPlaylist.hasSystemList() || mPlaylist.hasAliasDirectory() )
 		{

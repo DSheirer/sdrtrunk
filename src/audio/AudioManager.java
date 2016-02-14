@@ -19,14 +19,11 @@ package audio;
  ******************************************************************************/
 
 import java.util.ArrayList;
-
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -37,10 +34,12 @@ import javax.sound.sampled.Mixer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import properties.SystemProperties;
 import sample.Broadcaster;
 import sample.Listener;
 import source.mixer.MixerChannel;
 import source.mixer.MixerChannelConfiguration;
+import source.mixer.MixerManager;
 import audio.AudioEvent.Type;
 import audio.output.AudioOutput;
 import audio.output.MonoAudioOutput;
@@ -53,7 +52,9 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 	private static final Logger mLog = LoggerFactory.getLogger( AudioManager.class );
 
 	public static final int AUDIO_TIMEOUT = 2000; //2 seconds
-	public static final int NO_SOURCE = 0;
+	
+	public static final String AUDIO_CHANNELS_PROPERTY = "audio.manager.channels";
+	public static final String AUDIO_MIXER_PROPERTY = "audio.manager.mixer";
 	
 	public static final AudioEvent CONFIGURATION_CHANGE_STARTED = 
 			new AudioEvent( Type.AUDIO_CONFIGURATION_CHANGE_STARTED, null );
@@ -62,47 +63,88 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 			new AudioEvent( Type.AUDIO_CONFIGURATION_CHANGE_COMPLETE, null );
 
 	private LinkedTransferQueue<AudioPacket> mAudioPacketQueue = new LinkedTransferQueue<>();
-	private Map<Integer,AudioChannelAssignment> mChannelAssignments = new HashMap<>();
-	private int mLowestPrioritySource;
+	private Map<Integer,AudioOutputConnection> mChannelConnectionMap = new HashMap<>();
+	private List<AudioOutputConnection> mAudioOutputConnections = new ArrayList<>();
+	private AudioOutputConnection mLowestPriorityConnection;
+	private int mAvailableConnectionCount;
 
-	private List<AudioOutput> mAvailableAudioOutputs = new ArrayList<>();
 	private Map<String,AudioOutput> mAudioOutputMap = new HashMap<>();
-	private List<String> mChannelNames = new ArrayList<>();
 	
 	private Broadcaster<AudioEvent> mControllerBroadcaster = new Broadcaster<>();
 	
 	private ThreadPoolManager mThreadPoolManager;
 	private ScheduledFuture<?> mProcessingTask;
+	private MixerManager mMixerManager;
+	private MixerChannelConfiguration mMixerChannelConfiguration;
 	
-	private MixerChannelConfiguration mMixerChannel;
 
 	/**
 	 * Processes all audio produced by the decoding channels and routes audio 
 	 * packets to any combination of outputs based on any alias audio routing
 	 * options specified by the user.
 	 */
-	public AudioManager( ThreadPoolManager manager )
+	public AudioManager( ThreadPoolManager manager, MixerManager mixerManager )
 	{
 		mThreadPoolManager = manager;
+		mMixerManager = mixerManager;
 
-		//TODO: save audio system preferences to the settings manager
+		loadSettings();
+	}
+	
+	private void loadSettings()
+	{
+		MixerChannelConfiguration configuration = null;
 		
-		/* Use the system default mixer and mono channel as default startup */
-		Mixer mixer = AudioSystem.getMixer( null );
+		SystemProperties properties = SystemProperties.getInstance();
 		
-		if( mixer != null )
+		Mixer defaultMixer = AudioSystem.getMixer( null );
+
+		String mixer = properties.get( AUDIO_MIXER_PROPERTY, defaultMixer.getMixerInfo().getName() );
+		
+		String channels = properties.get( AUDIO_CHANNELS_PROPERTY, MixerChannel.MONO.name() );
+		
+		MixerChannelConfiguration[] mixerConfigurations = mMixerManager.getOutputMixers();
+
+		for( MixerChannelConfiguration mixerConfig: mixerConfigurations )
 		{
-			mMixerChannel = new MixerChannelConfiguration( mixer, MixerChannel.MONO );
+			if( mixerConfig.matches( mixer, channels ) )
+			{
+				configuration = mixerConfig;
+			}
+		}
+		
+		if( configuration == null )
+		{
+			configuration = getDefaultConfiguration();
+		}
+
+		try
+		{
+			setMixerChannelConfiguration( configuration );
+		}
+		catch( Exception e )
+		{
+			mLog.error( "Couldn't set stored audio mixer/channel configuration"
+					+ " - using default", e );
 			
 			try
 			{
-				setMixerChannelConfiguration( mMixerChannel );
-			} 
-			catch ( AudioException e )
+				setMixerChannelConfiguration( getDefaultConfiguration() );
+			}
+			catch( Exception e2 )
 			{
-				mLog.error( "Couldn't create an audio output device", e );
+				mLog.error( "Couldn't set default audio mixer/channel "
+						+ "configuration - no audio will be available", e2 );
 			}
 		}
+	}
+	
+	private MixerChannelConfiguration getDefaultConfiguration()
+	{
+		/* Use the system default mixer and mono channel as default startup */
+		Mixer defaultMixer = AudioSystem.getMixer( null );
+		
+		return new MixerChannelConfiguration( defaultMixer, MixerChannel.MONO );
 	}
 	
 	public void dispose()
@@ -116,6 +158,15 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 		
 		mThreadPoolManager = null;
 		mProcessingTask = null;
+
+		mChannelConnectionMap.clear();
+		
+		for( AudioOutputConnection connection: mAudioOutputConnections )
+		{
+			connection.dispose();
+		}
+		
+		mAudioOutputConnections.clear();
 	}
 
 	@Override
@@ -124,207 +175,44 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 		mAudioPacketQueue.add( packet );
 	}
 	
-	public class AudioPacketProcessor implements Runnable
-	{
-		@Override
-		public void run()
-		{
-			removeCompletedChannelAssignments();
-			
-			if( mAudioPacketQueue != null )
-			{
-				List<AudioPacket> packets = new ArrayList<AudioPacket>();
-
-				mAudioPacketQueue.drainTo( packets );
-				
-				for( AudioPacket packet: packets )
-				{
-					/* Don't process any packet's marked as do not monitor */
-					if( !packet.getAudioMetadata().isDoNotMonitor() )
-					{
-						int source = packet.getAudioMetadata().getSource();
-
-						if( packet.getType() != AudioPacket.Type.END )
-						{
-							/* Existing channel assignment */
-							if( mChannelAssignments.containsKey( source ) )
-							{
-								mChannelAssignments.get( source ).getAudioOutput()
-											.receive( packet );
-							}
-							/* Start a new channel assignment */
-							else if( !mAvailableAudioOutputs.isEmpty() )
-							{
-								AudioOutput channel = mAvailableAudioOutputs.remove( 0 );
-								
-								mChannelAssignments.put( packet.getAudioMetadata().getSource(), 
-									new AudioChannelAssignment( channel, packet.getAudioMetadata().getPriority() ) );
-								
-								updateLowestPriorityAssignment();
-								
-								channel.receive( packet );
-							}
-							/* Override the lowest priority assignment */
-							else
-							{
-								if( mLowestPrioritySource > -1 )
-								{
-									int priority = packet.getAudioMetadata().getPriority();
-
-									if( packet.getAudioMetadata().isSelected() || 
-										priority < mChannelAssignments
-											.get( mLowestPrioritySource ).getPriority() )
-									{
-										AudioChannelAssignment assignment = 
-											mChannelAssignments.remove( mLowestPrioritySource );
-										
-										if( assignment != null )
-										{
-											assignment.setPriority( priority );
-
-											int overrideSource = packet.getAudioMetadata().getSource();
-											
-											mChannelAssignments.put( overrideSource, assignment );
-											
-											mLowestPrioritySource = overrideSource;
-											
-											assignment.getAudioOutput().receive( packet );
-										}
-										else
-										{
-											mLowestPrioritySource = -1;
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	
 	/**
-	 * Checks each audio channel assignment and removes any completed channels.
+	 * Checks each audio channel assignment and disconnects any inactive connections
 	 */
-	private void removeCompletedChannelAssignments()
+	private void disconnectInactiveChannelAssignments()
 	{
-		if( !mChannelAssignments.isEmpty() )
+		boolean changed = false;
+		
+		for( AudioOutputConnection connection: mAudioOutputConnections )
 		{
-			Iterator<Entry<Integer,AudioChannelAssignment>> it = 
-					mChannelAssignments.entrySet().iterator();
-
-			Entry<Integer,AudioChannelAssignment> entry;
-
-			boolean removed = false;
-			
-			while( it.hasNext() )
+			if( connection.isInactive() && 
+				mChannelConnectionMap.containsKey( connection.getSource() ) )
 			{
-				entry = it.next();
-				
-				if( entry.getValue().isComplete() )
-				{
-					mAvailableAudioOutputs.add( entry.getValue().getAudioOutput() );
-					entry.getValue().dispose();
-					it.remove();
-					removed = true;
-				}
+				mChannelConnectionMap.remove( connection.getSource() );
+				connection.disconnect();
+				changed = true;
 			}
-			
-			if( removed )
-			{
-				updateLowestPriorityAssignment();
-			}
+		}
+		
+		if( changed )
+		{
+			updateLowestPriorityAssignment();
 		}
 	}
 
 	/**
-	 * Identifies the lowest priority channel assignment ... the one that can
-	 * be overridden with a higher priority call
+	 * Identifies the lowest priority channel connection
 	 */
 	private void updateLowestPriorityAssignment()
 	{
-		int lowestPriority = -1;
+		mLowestPriorityConnection = null;
 		
-		mLowestPrioritySource = -1;
-		
-		for( int source: mChannelAssignments.keySet() )
+		for( AudioOutputConnection connection: mAudioOutputConnections )
 		{
-			AudioChannelAssignment assignment = mChannelAssignments.get( source );
-			
-			if( assignment.getPriority() > lowestPriority )
+			if( connection.isConnected() && 
+				( mLowestPriorityConnection == null ||
+				  mLowestPriorityConnection.getPriority() > connection.getPriority() ) )
 			{
-				lowestPriority = assignment.getPriority();
-				
-				mLowestPrioritySource = source;
-			}
-		}
-	}
-	
-	public void endAllAudioAssignments()
-	{
-		for( AudioOutput output: mAudioOutputMap.values() )
-		{
-			output.receive( new AudioPacket( AudioPacket.Type.END, null ) );
-		}
-	}
-	
-	public class AudioChannelAssignment implements Listener<AudioEvent>
-	{
-		private static final long CALL_END_DELAY = 2000; //2 seconds
-		
-		private AudioOutput mAudioOutput;
-		private int mPriority;
-		private long mAudioStoppedTime = System.currentTimeMillis();
-		
-		public AudioChannelAssignment( AudioOutput audioOutput, int priority )
-		{
-			mAudioOutput = audioOutput;
-			mPriority = priority;
-
-			mAudioOutput.addAudioEventListener( this );
-		}
-		
-		public boolean isComplete()
-		{
-			return mAudioStoppedTime != Long.MAX_VALUE &&
-				   mAudioStoppedTime + CALL_END_DELAY < System.currentTimeMillis();
-		}
-		
-		public void dispose()
-		{
-			mAudioOutput.removeAudioEventListener( this );
-			mAudioOutput.reset();
-			mAudioOutput = null;
-		}
-		
-		public AudioOutput getAudioOutput()
-		{
-			return mAudioOutput;
-		}
-
-		public int getPriority()
-		{
-			return mPriority;
-		}
-		
-		public void setPriority( int priority )
-		{
-			mPriority = priority;
-		}
-
-		@Override
-		public void receive( AudioEvent event )
-		{
-			switch( event.getType() )
-			{
-				case AUDIO_STARTED:
-				case AUDIO_STOPPED:
-				case AUDIO_CONTINUATION:
-					mAudioStoppedTime = System.currentTimeMillis();
-					break;
-				default:
-					break;
+				mLowestPriorityConnection = connection;
 			}
 		}
 	}
@@ -342,41 +230,29 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 			{
 				mThreadPoolManager.cancel( mProcessingTask );
 			}
-
-			endAllAudioAssignments();
 			
-			for( Entry<Integer,AudioChannelAssignment> e: mChannelAssignments.entrySet() )
-			{
-				e.getValue().getAudioOutput().dispose();
-			}
-			mChannelAssignments.clear();
+			disposeCurrentConfiguration();
 			
-			for( AudioOutput output: mAvailableAudioOutputs )
-			{
-				output.dispose();
-			}
-			mAvailableAudioOutputs.clear();
-
-			mChannelNames.clear();
-			mAudioOutputMap.clear();
-
 			switch( entry.getMixerChannel() )
 			{
 				case MONO:
-					AudioOutput mono = new MonoAudioOutput( entry.getMixer() );
-					mAvailableAudioOutputs.add( mono );
-					mChannelNames.add( mono.getChannelName() );
+					AudioOutput mono = new MonoAudioOutput( mThreadPoolManager,
+							entry.getMixer() );
+					mAudioOutputConnections.add( new AudioOutputConnection( mono ) );
+					mAvailableConnectionCount++;
 					mAudioOutputMap.put( mono.getChannelName(), mono );
 					break;
 				case STEREO:
-					AudioOutput left = new StereoAudioOutput( entry.getMixer(), MixerChannel.LEFT );
-					mAvailableAudioOutputs.add( left );
-					mChannelNames.add( left.getChannelName() );
+					AudioOutput left = new StereoAudioOutput( mThreadPoolManager,
+							entry.getMixer(), MixerChannel.LEFT );
+					mAudioOutputConnections.add( new AudioOutputConnection( left ) );
+					mAvailableConnectionCount++;
 					mAudioOutputMap.put( left.getChannelName(), left );
 					
-					AudioOutput right = new StereoAudioOutput( entry.getMixer(), MixerChannel.RIGHT );
-					mAvailableAudioOutputs.add( right );
-					mChannelNames.add( right.getChannelName() );
+					AudioOutput right = new StereoAudioOutput( mThreadPoolManager,
+							entry.getMixer(), MixerChannel.RIGHT );
+					mAudioOutputConnections.add( new AudioOutputConnection( right ) );
+					mAvailableConnectionCount++;
 					mAudioOutputMap.put( right.getChannelName(), right );
 					break;
 				default:
@@ -389,6 +265,12 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 						TimeUnit.MILLISECONDS );
 
 			mControllerBroadcaster.broadcast( CONFIGURATION_CHANGE_COMPLETE );
+			
+			SystemProperties properties = SystemProperties.getInstance();
+			
+			properties.set( AUDIO_MIXER_PROPERTY, entry.getMixer().getMixerInfo().getName() );
+			properties.set( AUDIO_CHANNELS_PROPERTY, entry.getMixerChannel().name() );
+			properties.save();
 		}
 	}
 
@@ -418,7 +300,7 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 	@Override
 	public MixerChannelConfiguration getMixerChannelConfiguration() throws AudioException
 	{
-		return mMixerChannel;
+		return mMixerChannelConfiguration;
 	}
 
 	@Override
@@ -448,5 +330,245 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 	public void removeControllerListener( Listener<AudioEvent> listener )
 	{
 		mControllerBroadcaster.removeListener( listener );
+	}
+	
+	/**
+	 * Returns an audio output connection for the packet if one is 
+	 * available, or overrides an existing lower priority connection.  
+	 * Returns null if no connection is available for the audio packet.  
+	 * 
+	 * @param packet from a source
+	 * @return an audio output connection or null
+	 */
+	private AudioOutputConnection getConnection( AudioPacket packet )
+	{
+		int source = packet.getAudioMetadata().getSource();
+		
+		//Use an existing connection
+		if( mChannelConnectionMap.containsKey( source ) )
+		{
+			return mChannelConnectionMap.get( source );
+		}
+
+		//Connect to and use an available connection
+		if( mAvailableConnectionCount > 0 )
+		{
+			for( AudioOutputConnection connection: mAudioOutputConnections )
+			{
+				if( connection.isDisconnected() )
+				{
+					connection.connect( source );
+					mChannelConnectionMap.put( source, connection );
+					return connection;
+				}
+			}
+		}
+		//Preempt an existing connection and connect it to this higher priority source
+		else //Check for a channel priority override
+		{
+			int priority = packet.getAudioMetadata().getPriority();
+
+			if( mLowestPriorityConnection != null &&
+				priority < mLowestPriorityConnection.getPriority() )
+			{
+				AudioOutputConnection connection = mLowestPriorityConnection;
+
+				mChannelConnectionMap.remove( connection.getSource() );
+				
+				connection.connect( source );
+				
+				mChannelConnectionMap.put( source, connection );
+				
+				updateLowestPriorityAssignment();
+				
+				return connection;
+			}
+		}
+			
+		return null;
+	}
+	
+	public class AudioPacketProcessor implements Runnable
+	{
+		@Override
+		public void run()
+		{
+			try
+			{
+				disconnectInactiveChannelAssignments();
+				
+				if( mAudioPacketQueue != null )
+				{
+					List<AudioPacket> packets = new ArrayList<AudioPacket>();
+
+					mAudioPacketQueue.drainTo( packets );
+					
+					for( AudioPacket packet: packets )
+					{
+						/* Don't process any packet's marked as do not monitor */
+						if( !packet.getAudioMetadata().isDoNotMonitor() &&
+							packet.getType() == AudioPacket.Type.AUDIO )
+						{
+							AudioOutputConnection connection = getConnection( packet );
+
+							if( connection != null )
+							{
+								connection.receive( packet );
+							}
+						}
+					}
+				}
+			}
+			catch( Exception e )
+			{
+				mLog.error( "Encountered error while processing audio packets", e );
+			}
+		}
+	}
+	
+	/**
+	 * Audio output connection manages a connection between a source and an audio
+	 * output and maintains current state information about the audio activity 
+	 * received form the source.
+	 */
+	public class AudioOutputConnection implements Listener<AudioEvent>
+	{
+		private static final long CALL_END_DELAY = 2000; //2 seconds
+		private static final int DISCONNECTED = -1;
+		
+		private AudioOutput mAudioOutput;
+		private int mPriority = 0;
+		private long mLastActivity = System.currentTimeMillis();
+		private int mSource = DISCONNECTED;
+		
+		public AudioOutputConnection( AudioOutput audioOutput )
+		{
+			mAudioOutput = audioOutput;
+			mAudioOutput.addAudioEventListener( this );
+		}
+		
+		public void receive( AudioPacket packet )
+		{
+			if( packet.hasAudioMetadata() && 
+				packet.getAudioMetadata().getSource() == mSource )
+			{
+				int priority = packet.getAudioMetadata().getPriority();
+
+				if( mPriority != priority )
+				{
+					mPriority = priority;
+					updateLowestPriorityAssignment();
+				}
+				
+				updateTimestamp();
+				
+				if( mAudioOutput != null )
+				{
+					mAudioOutput.receive( packet );
+				}
+			}
+			else
+			{
+				if( packet.hasAudioMetadata() )
+				{
+					mLog.error( "Received audio packet from channel source [" + 
+							packet.getAudioMetadata().getSource() + 
+							"] however this assignment is currently connected "
+							+ "to channel source [" + mSource + "]" );
+				}
+				else
+				{
+					mLog.error( "Received audio packet with no metadata - "
+							+ "cannot route audio packet" );
+				}
+			}
+		}
+		
+		private void updateTimestamp()
+		{
+			mLastActivity = System.currentTimeMillis();
+		}
+
+		/**
+		 * Terminates the audio output and prepares this connection for disposal
+		 */
+		public void dispose()
+		{
+			mAudioOutput.dispose();
+			mAudioOutput = null;
+		}
+
+		/**
+		 * Indicates if this assignment is currently disconnected from a channel source
+		 */
+		public boolean isDisconnected()
+		{
+			return mSource == DISCONNECTED;
+		}
+		
+		/**
+		 * Indicates if this assignment is currently connected to a channel source
+		 */
+		public boolean isConnected()
+		{
+			return !isDisconnected();
+		}
+
+		/**
+		 * Connects this assignment to the indicated source so that audio 
+		 * packets from this source can be sent to the audio output
+		 */
+		public void connect( int source )
+		{
+			mSource = source;
+			updateTimestamp();
+		}
+
+		/**
+		 * Currently connected source or -1 if disconnected
+		 */
+		public int getSource()
+		{
+			return mSource;
+		}
+
+		/**
+		 * Disconnects this assignment from the source and prevents any audio
+		 * from being routed to the audio output until another source is assigned
+		 */
+		public void disconnect()
+		{
+			mSource = DISCONNECTED;
+		}
+
+		/**
+		 * Indicates if audio output is current inactive, meaning that the 
+		 * audio output hasn't recently processed any audio packets.
+		 */
+		public boolean isInactive()
+		{
+			return mLastActivity != Long.MAX_VALUE &&
+				   mLastActivity + CALL_END_DELAY < System.currentTimeMillis();
+		}
+		
+		public int getPriority()
+		{
+			return mPriority;
+		}
+		
+		@Override
+		public void receive( AudioEvent event )
+		{
+			switch( event.getType() )
+			{
+				case AUDIO_STARTED:
+				case AUDIO_STOPPED:
+				case AUDIO_CONTINUATION:
+					updateTimestamp();
+					break;
+				default:
+					break;
+			}
+		}
 	}
 }

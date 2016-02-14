@@ -437,7 +437,7 @@ public class P25DecoderState extends DecoderState
 	{
 		if( tdulc.getOpcode() == LinkControlOpcode.CALL_TERMINATION_OR_CANCELLATION )
 		{
-			broadcast( new DecoderStateEvent( this, Event.END, State.END ) );
+			broadcast( new DecoderStateEvent( this, Event.END, State.FADE ) );
 			
 			if( mCurrentCallEvent != null )
 			{
@@ -1057,7 +1057,7 @@ public class P25DecoderState extends DecoderState
 					}
 					break;
 				case CALL_TERMINATION_OR_CANCELLATION:
-					broadcast( new DecoderStateEvent( this, Event.END, State.END ) );
+					broadcast( new DecoderStateEvent( this, Event.END, State.FADE ) );
 					mCurrentCallEvent = null;
 
 					if( !( ldu instanceof CallTermination ) )

@@ -108,7 +108,8 @@ public class ProcessingChain implements IChannelEventListener
 	private Broadcaster<RealBuffer> mUnFilteredRealBufferBroadcaster = new Broadcaster<>();
 	private Broadcaster<SquelchState> mSquelchStateBroadcaster = new Broadcaster<>();
 	
-//	private ThreadPoolManager mThreadPoolManager;
+	private ThreadPoolManager mThreadPoolManager;
+	private ScheduledFuture<?> mBufferProcessingTask;
 	private AtomicBoolean mRunning = new AtomicBoolean();
 	
 	protected Source mSource;
@@ -135,11 +136,6 @@ public class ProcessingChain implements IChannelEventListener
 		addCallEventListener( mCallEventModel );
 	}
 	
-	public MessageActivityModel getMessageActivityModel()
-	{
-		return mMessageActivityModel;
-	}
-	
 	public CallEventModel getCallEventModel()
 	{
 		return mCallEventModel;
@@ -148,6 +144,11 @@ public class ProcessingChain implements IChannelEventListener
 	public ChannelState getChannelState()
 	{
 		return mChannelState;
+	}
+	
+	public MessageActivityModel getMessageActivityModel()
+	{
+		return mMessageActivityModel;
 	}
 	
 	public void setMessageActivityModel( MessageActivityModel model )
@@ -524,6 +525,12 @@ public class ProcessingChain implements IChannelEventListener
 				/* Release the source */
 				mSource.dispose();
 				mSource = null;
+			}
+			
+			if( mBufferProcessingTask != null )
+			{
+				mThreadPoolManager.cancel( mBufferProcessingTask );
+				mBufferProcessingTask = null;
 			}
 			
 			/* Stop each of the modules */
