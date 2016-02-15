@@ -17,6 +17,8 @@
  ******************************************************************************/
 package module.demodulate.audio;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import module.Module;
 
 import org.slf4j.Logger;
@@ -84,7 +86,7 @@ public class DemodulatedAudioFilterModule extends Module
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 	}
 

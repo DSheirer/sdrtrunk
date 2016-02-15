@@ -15,7 +15,7 @@ public class InstrumentableProcessingChain extends ProcessingChain implements In
 {
 	public InstrumentableProcessingChain()
 	{
-		super( ChannelType.STANDARD );
+		super( "instrumented", ChannelType.STANDARD );
 	}
 
 	public void setSource( Source source ) throws IllegalStateException

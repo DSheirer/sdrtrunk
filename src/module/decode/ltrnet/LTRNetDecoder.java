@@ -23,6 +23,7 @@ import instrument.tap.TapGroup;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 import message.MessageDirection;
 import module.decode.Decoder;
@@ -120,7 +121,7 @@ public class LTRNetDecoder extends Decoder
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 	}
 

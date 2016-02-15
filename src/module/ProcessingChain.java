@@ -19,7 +19,8 @@ package module;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import message.IMessageListener;
@@ -67,6 +68,7 @@ import audio.metadata.Metadata;
 import audio.squelch.ISquelchStateListener;
 import audio.squelch.ISquelchStateProvider;
 import audio.squelch.SquelchState;
+import controller.NamingThreadFactory;
 import controller.ThreadPoolManager;
 import controller.channel.Channel.ChannelType;
 import controller.channel.ChannelEvent;
@@ -108,8 +110,8 @@ public class ProcessingChain implements IChannelEventListener
 	private Broadcaster<RealBuffer> mUnFilteredRealBufferBroadcaster = new Broadcaster<>();
 	private Broadcaster<SquelchState> mSquelchStateBroadcaster = new Broadcaster<>();
 	
-	private ThreadPoolManager mThreadPoolManager;
-	private ScheduledFuture<?> mBufferProcessingTask;
+	private ScheduledExecutorService mScheduledExecutorService;
+	private String mName;
 	private AtomicBoolean mRunning = new AtomicBoolean();
 	
 	protected Source mSource;
@@ -117,19 +119,18 @@ public class ProcessingChain implements IChannelEventListener
 	private CallEventModel mCallEventModel;
 	private ChannelState mChannelState;
 	private MessageActivityModel mMessageActivityModel;
-	
-	public ProcessingChain( ChannelType channelType )
+
+	/**
+	 * Creates a processing chain for managing a set of modules
+	 * 
+	 * @param name for thread pool naming each thread
+	 * @param channelType 
+	 */
+	public ProcessingChain( String name, ChannelType channelType )
 	{
-		this( new ThreadPoolManager(), channelType );
-	}
-
-
-	public ProcessingChain( ThreadPoolManager threadManager, 
-							ChannelType channelType )
-	{
-		mThreadPoolManager = threadManager;
-
-		mChannelState = new ChannelState( mThreadPoolManager, channelType );
+		mName = name;
+		
+		mChannelState = new ChannelState( channelType );
 		addModule( mChannelState );
 
 		mCallEventModel = new CallEventModel();
@@ -168,10 +169,6 @@ public class ProcessingChain implements IChannelEventListener
 		}
 		
 		mModules.clear();
-		
-
-		mThreadPoolManager = null;
-		mBufferProcessingTask = null;
 		
 		mAudioPacketBroadcaster.dispose();
 		mCallEventBroadcaster.dispose();
@@ -445,19 +442,6 @@ public class ProcessingChain implements IChannelEventListener
 					module.reset();
 				}
 				
-				/* Start each of the modules */
-				for( Module module: mModules )
-				{
-					try
-					{
-						module.start();
-					}
-					catch( Exception e )
-					{
-						mLog.error( "Error starting module", e );
-					}
-				}
-
 				/* Register with the source to receive sample data.  Setup a 
 				 * timer task to process the buffer queues 50 times a second 
 				 * (every 20 ms) */
@@ -492,8 +476,22 @@ public class ProcessingChain implements IChannelEventListener
 					{
 						mLog.error( "Error getting frequency from tuner channel source", e );
 					}
-					
-					tcs.start();
+				}
+				
+				mScheduledExecutorService = Executors.newScheduledThreadPool( 
+						1, new NamingThreadFactory( "channel " + mName ) );
+				
+				/* Start each of the modules */
+				for( Module module: mModules )
+				{
+					try
+					{
+						module.start( mScheduledExecutorService );
+					}
+					catch( Exception e )
+					{
+						mLog.error( "Error starting module", e );
+					}
 				}
 				
 				for( Listener<RealBuffer> listener: mUnFilteredRealBufferBroadcaster.getListeners() )
@@ -534,12 +532,6 @@ public class ProcessingChain implements IChannelEventListener
 				/* Release the source */
 				mSource.dispose();
 				mSource = null;
-			}
-			
-			if( mBufferProcessingTask != null )
-			{
-				mThreadPoolManager.cancel( mBufferProcessingTask );
-				mBufferProcessingTask = null;
 			}
 			
 			/* Stop each of the modules */

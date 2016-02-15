@@ -18,6 +18,8 @@ package source.tuner.frequency;
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import module.Module;
 
 import org.slf4j.Logger;
@@ -118,7 +120,7 @@ public class DCTrackingFrequencyControl extends Module
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 	}
 

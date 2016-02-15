@@ -86,10 +86,9 @@ public class RecorderManager implements Listener<AudioPacket>
 					try
 					{
 						RealBufferWaveRecorder recorder = 
-								new RealBufferWaveRecorder( mThreadPoolManager, 
-										AUDIO_SAMPLE_RATE, filePrefix );
+							new RealBufferWaveRecorder( AUDIO_SAMPLE_RATE, filePrefix );
 							
-						recorder.start();
+						recorder.start( mThreadPoolManager.getScheduledExecutorService() );
 
 						recorder.receive( audioPacket.getAudioBuffer() );
 						mRecorders.put( identifier, recorder );
@@ -177,7 +176,6 @@ public class RecorderManager implements Listener<AudioPacket>
         sb.append( channelName );
         sb.append(  "_baseband" );
 
-        return new ComplexBufferWaveRecorder( mThreadPoolManager, 
-        		AUDIO_SAMPLE_RATE, sb.toString() );
+        return new ComplexBufferWaveRecorder( AUDIO_SAMPLE_RATE, sb.toString() );
 	}
 }

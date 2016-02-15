@@ -25,6 +25,7 @@ import instrument.tap.stream.FloatBufferTap;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 import module.decode.Decoder;
 import module.decode.DecoderType;
@@ -180,7 +181,7 @@ public class Fleetsync2Decoder extends Decoder implements IFilteredRealBufferLis
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 	}
 

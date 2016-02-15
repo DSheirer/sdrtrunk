@@ -185,7 +185,7 @@ public class ChannelProcessingManager implements ChannelEventListener
 		
 		if( processingChain == null )
 		{
-			processingChain = new ProcessingChain( mThreadPoolManager, 
+			processingChain = new ProcessingChain( channel.getName(), 
 					channel.getChannelType() );
 			
 			/* Register global listeners */

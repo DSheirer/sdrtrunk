@@ -1,5 +1,7 @@
 package module.decode.p25.audio;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import jmbe.iface.AudioConversionLibrary;
 import jmbe.iface.AudioConverter;
 import message.IMessageListener;
@@ -78,7 +80,7 @@ public class P25AudioModule extends Module implements Listener<Message>,
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 		
 	}

@@ -18,6 +18,8 @@
 
 package module;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 public abstract class Module
 {
 	/**
@@ -57,9 +59,9 @@ public abstract class Module
 	public abstract void reset();
 
 	/**
-	 * Start processing.
+	 * Start processing.  Provides an executor to use for scheduling tasks
 	 */
-	public abstract void start();
+	public abstract void start( ScheduledExecutorService executor );
 
 	/**
 	 * Stop processing

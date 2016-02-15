@@ -23,6 +23,7 @@ import instrument.tap.TapGroup;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 import module.decode.Decoder;
 import module.decode.DecoderType;
@@ -109,7 +110,7 @@ public class PassportDecoder extends Decoder
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 	}
 

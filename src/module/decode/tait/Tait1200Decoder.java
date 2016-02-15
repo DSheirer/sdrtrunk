@@ -26,6 +26,7 @@ import instrument.tap.stream.FloatTap;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 import module.decode.Decoder;
 import module.decode.DecoderType;
@@ -198,7 +199,7 @@ public class Tait1200Decoder extends Decoder implements IFilteredRealBufferListe
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 		// TODO Auto-generated method stub
 		

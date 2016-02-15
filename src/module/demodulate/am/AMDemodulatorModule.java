@@ -17,6 +17,8 @@
  ******************************************************************************/
 package module.demodulate.am;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import module.Module;
 import sample.Listener;
 import sample.complex.ComplexBuffer;
@@ -111,7 +113,7 @@ public class AMDemodulatorModule extends Module
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 	}
 

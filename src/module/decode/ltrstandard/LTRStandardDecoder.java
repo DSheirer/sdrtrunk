@@ -17,6 +17,8 @@
  ******************************************************************************/
 package module.decode.ltrstandard;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import message.MessageDirection;
 import module.decode.Decoder;
 import module.decode.DecoderType;
@@ -83,7 +85,7 @@ public class LTRStandardDecoder extends Decoder implements IUnFilteredRealBuffer
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 	}
 

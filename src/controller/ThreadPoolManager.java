@@ -41,6 +41,11 @@ public class ThreadPoolManager
 	public ThreadPoolManager()
 	{
 	}
+	
+	public ScheduledExecutorService getScheduledExecutorService()
+	{
+		return mExecutor;
+	}
 
 	public ScheduledFuture<?> scheduleFixedRate( ThreadType type, 
 										Runnable command, 

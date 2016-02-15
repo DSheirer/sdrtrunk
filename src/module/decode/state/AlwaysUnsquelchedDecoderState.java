@@ -17,6 +17,8 @@
  ******************************************************************************/
 package module.decode.state;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import message.Message;
 import module.decode.DecoderType;
 import module.decode.state.DecoderStateEvent.Event;
@@ -90,7 +92,7 @@ public class AlwaysUnsquelchedDecoderState extends DecoderState
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 		broadcast( new Metadata( MetadataType.TO, mChannelName, false ) );
 		broadcast( new DecoderStateEvent( this, Event.ALWAYS_UNSQUELCH, State.IDLE ) );

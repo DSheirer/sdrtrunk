@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
 
 import module.Module;
 import module.ProcessingChain;
@@ -86,13 +87,21 @@ public class TrafficChannelManager extends Module
 		mSystem = system;
 		mSite = site;
 		mAliasListName = aliasListName;
-//		mTrafficChannelTimeout = trafficChannelTimeout;
 		mTrafficChannelPoolMaximumSize = trafficChannelPoolSize;
 	}
 	
 	@Override
 	public void dispose()
 	{
+		for( Channel trafficChannel: mTrafficChannelPool )
+		{
+			mChannelModel.broadcast( new ChannelEvent( trafficChannel, Event.REQUEST_DISABLE ) );
+		}
+
+		mTrafficChannelPool.clear();
+		
+		mTrafficChannelsInUse.clear();
+		
 		mCallEventListener = null;
 		mDecodeConfiguration = null;
 		mPreviousDoNotMonitorCallEvent = null;
@@ -350,7 +359,7 @@ public class TrafficChannelManager extends Module
 	}
 	
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 	}
 

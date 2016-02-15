@@ -1,6 +1,7 @@
 package audio;
 
 import java.util.Arrays;
+import java.util.concurrent.ScheduledExecutorService;
 
 import module.Module;
 
@@ -72,7 +73,7 @@ public class AudioModule extends Module implements IAudioPacketProvider,
 	}
 	
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 		/* No start operations provided */
 	}

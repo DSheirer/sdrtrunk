@@ -20,6 +20,7 @@ package source.wave;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.ScheduledExecutorService;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -60,12 +61,12 @@ public class RealWaveSource extends RealSource
 	public void reset()
 	{
 		stop();
-		start();
+		start( null );
 	}
 
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 		try
 		{

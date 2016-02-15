@@ -18,6 +18,7 @@
 package module.decode.state;
 
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -74,7 +75,6 @@ public class ChannelState extends Module implements ICallEventProvider,
 	private AtomicBoolean mMonitoring = new AtomicBoolean();
 	private ScheduledFuture<?> mStateMonitorFuture;
 
-	private ThreadPoolManager mThreadPoolManager;
 	private ChannelType mChannelType;
 	
 	private TrafficChannelStatusListener mTrafficChannelStatusListener;
@@ -106,9 +106,8 @@ public class ChannelState extends Module implements ICallEventProvider,
 	 *  			ended, while continuing to display the call details for the user
 	 *  TEARDOWN	Indicates a traffic channel that will be torn down for reuse.
 	 */
-	public ChannelState( ThreadPoolManager manager, ChannelType channelType )
+	public ChannelState( ChannelType channelType )
 	{
-		mThreadPoolManager = manager;
 		mChannelType = channelType;
 	}
 	
@@ -126,7 +125,7 @@ public class ChannelState extends Module implements ICallEventProvider,
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 		//Start a monitoring task to check for FADE and END event timeouts
 		if( mMonitoring.compareAndSet( false, true ) )
@@ -135,8 +134,8 @@ public class ChannelState extends Module implements ICallEventProvider,
 			{
 				try
 				{
-					mStateMonitorFuture = mThreadPoolManager.scheduleFixedRate( 
-						ThreadType.DECODER, mStateMonitor, 20, TimeUnit.MILLISECONDS );
+					mStateMonitorFuture = executor.scheduleAtFixedRate(  
+						mStateMonitor, 0, 20, TimeUnit.MILLISECONDS );
 				}
 				catch( RejectedExecutionException ree )
 				{
@@ -157,7 +156,7 @@ public class ChannelState extends Module implements ICallEventProvider,
 		{
 			if( mStateMonitorFuture != null )
 			{
-				boolean success = mThreadPoolManager.cancel( mStateMonitorFuture );
+				boolean success = mStateMonitorFuture.cancel( true );
 				
 				if( !success )
 				{
@@ -175,7 +174,6 @@ public class ChannelState extends Module implements ICallEventProvider,
 		mChangedAttributeListener = null;
 		mDecoderStateListener = null;
 		mSquelchStateListener = null;
-		mThreadPoolManager = null;
 		mStateMonitor = null;
 	}
 	
