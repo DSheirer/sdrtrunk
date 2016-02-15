@@ -102,7 +102,7 @@ public class MDCDecoder extends Decoder implements IFilteredRealBufferListener,
         /* Message Processor */
         mMessageProcessor = new MDCMessageProcessor( aliasList );
         mMessageFramer.addMessageListener( mMessageProcessor );
-        mMessageProcessor.addMessageListener( mMessageBroadcaster );
+        mMessageProcessor.addMessageListener( this );
 	}
     
     public void dispose()

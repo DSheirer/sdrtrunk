@@ -12,7 +12,7 @@ public abstract class P25Decoder extends Decoder implements Instrumentable
 	public P25Decoder( AliasList aliasList )
 	{
         mMessageProcessor = new P25MessageProcessor( aliasList );
-        mMessageProcessor.setMessageListener( mMessageBroadcaster );
+        mMessageProcessor.setMessageListener( this );
 	}
 	
 	public void dispose()

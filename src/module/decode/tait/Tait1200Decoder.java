@@ -104,8 +104,8 @@ public class Tait1200Decoder extends Decoder implements IFilteredRealBufferListe
         mMessageFramerGPS.addMessageListener( mMessageAProcessor );
         mMessageFramerANI.addMessageListener( mMessageBProcessor );
         
-        mMessageAProcessor.setMessageListener( mMessageBroadcaster );
-        mMessageBProcessor.setMessageListener( mMessageBroadcaster );
+        mMessageAProcessor.setMessageListener( this );
+        mMessageBProcessor.setMessageListener( this );
 	}
     
     public void dispose()

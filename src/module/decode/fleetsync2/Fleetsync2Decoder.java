@@ -90,7 +90,7 @@ public class Fleetsync2Decoder extends Decoder implements IFilteredRealBufferLis
         mMessageProcessor = new Fleetsync2MessageProcessor( aliasList );
         mMessageFramer.addMessageListener( mMessageProcessor );
         
-        mMessageProcessor.setMessageListener( mMessageBroadcaster );
+        mMessageProcessor.setMessageListener( this );
 	}
     
     public void dispose()

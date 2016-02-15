@@ -100,7 +100,7 @@ public class LJ1200Decoder extends Decoder implements IFilteredRealBufferListene
         mMessageProcessor = new LJ1200MessageProcessor( aliasList );
         mTowerMessageFramer.addMessageListener( mMessageProcessor );
         mTransponderMessageFramer.addMessageListener( mMessageProcessor );
-        mMessageProcessor.setMessageListener( mMessageBroadcaster );
+        mMessageProcessor.setMessageListener( this );
 	}
     
 	@Override

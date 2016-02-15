@@ -401,7 +401,7 @@ public class ProcessingChain implements IChannelEventListener
 		
 		if( module instanceof IMessageProvider )
 		{
-			((IMessageProvider)module).addMessageListener( mMessageBroadcaster );
+			((IMessageProvider)module).setMessageListener( mMessageBroadcaster );
 		}
 		
 		if( module instanceof IMetadataProvider )

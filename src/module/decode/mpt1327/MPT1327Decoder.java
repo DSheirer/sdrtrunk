@@ -140,7 +140,7 @@ public class MPT1327Decoder extends Decoder
 
         /* Fully decoded and framed messages processor */
         mMessageProcessor = new MPT1327MessageProcessor( aliasList );
-        mMessageProcessor.setMessageListener( mMessageBroadcaster );
+        mMessageProcessor.setMessageListener( this );
         mControlMessageFramer.addMessageListener( mMessageProcessor );
         mTrafficMessageFramer.addMessageListener( mMessageProcessor );
 	}
