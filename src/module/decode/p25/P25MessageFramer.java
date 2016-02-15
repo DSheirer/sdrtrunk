@@ -289,6 +289,7 @@ public class P25MessageFramer implements Listener<Dibit>
 						else
 						{
 							mComplete = true;
+							dispatch( new P25Message( mMessage.copy(), duid, mAliasList ) );
 						}
 					}
 					else
