@@ -50,7 +50,7 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 {
 	private static final Logger mLog = LoggerFactory.getLogger( AudioManager.class );
 
-	public static final int AUDIO_TIMEOUT = 2000; //2 seconds
+	public static final int AUDIO_TIMEOUT = 1000; //1 second
 	
 	public static final String AUDIO_CHANNELS_PROPERTY = "audio.manager.channels";
 	public static final String AUDIO_MIXER_PROPERTY = "audio.manager.mixer";
@@ -431,7 +431,6 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 	 */
 	public class AudioOutputConnection implements Listener<AudioEvent>
 	{
-		private static final long CALL_END_DELAY = 2000; //2 seconds
 		private static final int DISCONNECTED = -1;
 		
 		private AudioOutput mAudioOutput;
@@ -546,7 +545,7 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 		public boolean isInactive()
 		{
 			return mLastActivity != Long.MAX_VALUE &&
-				   mLastActivity + CALL_END_DELAY < System.currentTimeMillis();
+				   mLastActivity + AUDIO_TIMEOUT < System.currentTimeMillis();
 		}
 		
 		public int getPriority()
