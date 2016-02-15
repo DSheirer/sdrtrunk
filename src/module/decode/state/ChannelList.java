@@ -22,7 +22,8 @@ import java.awt.Component;
 import java.awt.Point;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.swing.JMenu;
 import javax.swing.JPanel;
@@ -53,8 +54,8 @@ public class ChannelList extends JPanel implements ChannelEventListener
 
 	private final static Logger mLog = LoggerFactory.getLogger( ChannelList.class );
 
-    private HashMap<Channel,ChannelCollectionPanel> mDisplayedPanels = 
-    			new HashMap<Channel,ChannelCollectionPanel>();
+    private Map<Channel,ChannelCollectionPanel> mDisplayedPanels = 
+    			new ConcurrentHashMap<Channel,ChannelCollectionPanel>();
 
     private PlaylistManager mPlaylistManager;
     private SettingsManager mSettingsManager;
