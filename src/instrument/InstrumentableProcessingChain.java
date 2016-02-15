@@ -12,8 +12,9 @@ import source.Source;
 
 public class InstrumentableProcessingChain extends ProcessingChain implements Instrumentable
 {
-	public InstrumentableProcessingChain()
+	public InstrumentableProcessingChain( String name )
 	{
+		super( name );
 	}
 
 	public void setSource( Source source ) throws IllegalStateException

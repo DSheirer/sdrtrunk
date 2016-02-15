@@ -71,9 +71,7 @@ public class RecordingSourceManager
     		
     		if( recording != null )
     		{
-    			retVal = recording.getChannel( 
-    					mResourceManager.getThreadPoolManager(),
-    					tunerChannel );
+    			retVal = recording.getChannel( tunerChannel );
     		}
     		else
     		{

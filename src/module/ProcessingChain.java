@@ -19,7 +19,8 @@ package module;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import message.IMessageListener;
@@ -61,7 +62,7 @@ import audio.metadata.Metadata;
 import audio.squelch.ISquelchStateListener;
 import audio.squelch.ISquelchStateProvider;
 import audio.squelch.SquelchState;
-import controller.ThreadPoolManager;
+import controller.NamingThreadFactory;
 import controller.channel.ChannelEvent;
 import controller.channel.IChannelEventListener;
 import controller.channel.IChannelEventProvider;
@@ -99,15 +100,17 @@ public class ProcessingChain implements IChannelEventListener
 	private Broadcaster<RealBuffer> mRealBufferBroadcaster = new Broadcaster<>();
 	private Broadcaster<SquelchState> mSquelchStateBroadcaster = new Broadcaster<>();
 	
-//	private ThreadPoolManager mThreadPoolManager;
+	private ScheduledExecutorService mScheduledExecutorService;
 	private AtomicBoolean mRunning = new AtomicBoolean();
 	
 	protected Source mSource;
 	private List<Module> mModules = new ArrayList<>();
 	private IFrequencyCorrectionController mFrequencyCorrectionController;
 	
-	public ProcessingChain()
+	public ProcessingChain( String name )
 	{
+		mScheduledExecutorService = Executors.newScheduledThreadPool( 1, 
+				new NamingThreadFactory( "channel " + name ) );
 	}
 
 	public void dispose()
@@ -120,6 +123,9 @@ public class ProcessingChain implements IChannelEventListener
 		}
 		
 		mModules.clear();
+		
+		mScheduledExecutorService.shutdownNow();
+		mScheduledExecutorService = null;
 		
 		mFrequencyCorrectionController = null;
 		
@@ -432,9 +438,11 @@ public class ProcessingChain implements IChannelEventListener
 				 * of the decoder state's */
 				if( mSource instanceof TunerChannelSource )
 				{
+					TunerChannelSource tunerChannelSource = (TunerChannelSource)mSource;
+					
 					try
 					{
-						long frequency = ((TunerChannelSource)mSource).getFrequency();
+						long frequency = tunerChannelSource.getFrequency();
 						
 						mDecoderStateEventBroadcaster.broadcast( 
 							new DecoderStateEvent( this, Event.SOURCE_FREQUENCY, 
@@ -444,6 +452,8 @@ public class ProcessingChain implements IChannelEventListener
 					{
 						mLog.error( "Error getting frequency from tuner channel source", e );
 					}
+					
+					tunerChannelSource.start( mScheduledExecutorService );
 				}
 			}
 			else

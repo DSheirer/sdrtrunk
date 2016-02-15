@@ -297,6 +297,9 @@ public class Channel extends Configuration
 
 		/* Broadcast channel deleted event */
 		fireChannelEvent( Event.CHANNEL_DELETED );
+		
+		mProcessingChain.dispose();
+		mProcessingChain = null;
 	}
 	
 	/**
@@ -809,7 +812,7 @@ public class Channel extends Configuration
 	{
 		if( mProcessingChain == null )
 		{
-			mProcessingChain = new ProcessingChain();
+			mProcessingChain = new ProcessingChain( getName() );
 			
 			/* Get the optional alias list for the decode modules to use */
 			AliasList aliasList = mResourceManager.getPlaylistManager()

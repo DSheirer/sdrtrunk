@@ -37,7 +37,6 @@ import source.tuner.TunerType;
 import source.tuner.frequency.FrequencyChangeListener;
 import source.tuner.rtl.RTL2832TunerController.SampleRate;
 import controller.ResourceManager;
-import controller.ThreadPoolManager;
 
 public class RTL2832Tuner extends Tuner
 {
@@ -148,16 +147,14 @@ public class RTL2832Tuner extends Tuner
 	}
 
 	@Override
-    public TunerChannelSource getChannel( ThreadPoolManager threadPoolManager,
-    									  TunerChannel channel )
-    									    throws RejectedExecutionException,
-    									    	   SourceException
+    public TunerChannelSource getChannel( TunerChannel channel )
+    		throws RejectedExecutionException, SourceException
 	{
 		TunerChannelSource source = null;
 		
 		try
 		{
-			source = mController.getChannel( threadPoolManager, this, channel );
+			source = mController.getChannel( this, channel );
 		}
 		catch( Exception e )
 		{

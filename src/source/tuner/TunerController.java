@@ -194,8 +194,8 @@ public abstract class TunerController implements Tunable
 	 * 
 	 * @throws RejectedExecutionException if the decimation processor has an error
 	 */
-	public TunerChannelSource getChannel( ThreadPoolManager threadPoolManager,
-		Tuner tuner, TunerChannel channel ) throws RejectedExecutionException
+	public TunerChannelSource getChannel( Tuner tuner, TunerChannel channel ) 
+			throws RejectedExecutionException
 	{
 		TunerChannelSource source = null;
 		
@@ -210,8 +210,7 @@ public abstract class TunerController implements Tunable
 					updateLOFrequency();
 				}
 				
-				source = new TunerChannelSource( threadPoolManager, 
-						tuner, channel );
+				source = new TunerChannelSource( tuner, channel );
 			}
 			catch( SourceException se )
 			{

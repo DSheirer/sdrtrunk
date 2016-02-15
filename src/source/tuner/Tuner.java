@@ -30,10 +30,9 @@ import sample.complex.ComplexBuffer;
 import source.SourceException;
 import source.tuner.frequency.FrequencyChangeBroadcaster;
 import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeListener;
 import source.tuner.frequency.FrequencyChangeEvent.Event;
+import source.tuner.frequency.FrequencyChangeListener;
 import controller.ResourceManager;
-import controller.ThreadPoolManager;
 
 /**
  * Tuner - provides tuner channel sources, representing a channel frequency
@@ -147,8 +146,8 @@ public abstract class Tuner implements FrequencyChangeBroadcaster,
 	 * 
 	 * @return - source for 48k sample rate
 	 */
-	public abstract TunerChannelSource getChannel( ThreadPoolManager threadPoolManager,
-		TunerChannel channel ) throws RejectedExecutionException, SourceException;
+	public abstract TunerChannelSource getChannel( TunerChannel channel ) 
+			throws RejectedExecutionException, SourceException;
 	
 	/**
 	 * Releases the tuned channel resources

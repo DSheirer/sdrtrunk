@@ -112,11 +112,10 @@ public class FCDTuner extends MixerTuner
     }
 
 	@Override
-    public TunerChannelSource getChannel( ThreadPoolManager threadPoolManager,
-    	TunerChannel tunerChannel )	throws RejectedExecutionException, 
-    									   SourceException
+    public TunerChannelSource getChannel( TunerChannel tunerChannel )	
+    		throws RejectedExecutionException, SourceException
     {
-		return mController.getChannel( threadPoolManager, this, tunerChannel );
+		return mController.getChannel( this, tunerChannel );
     }
 
 	/**

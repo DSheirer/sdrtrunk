@@ -99,7 +99,7 @@ public class DecoderViewFrame extends JInternalFrame
 
 		mDecodeConfig = decodeConfig;
 		
-		mProcessingChain = new InstrumentableProcessingChain();
+		mProcessingChain = new InstrumentableProcessingChain( "instrumented" );
 		
 		List<Module> modules = DecoderFactory
 			.getModules( ChannelType.STANDARD, 

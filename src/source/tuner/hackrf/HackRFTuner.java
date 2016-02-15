@@ -106,10 +106,10 @@ public class HackRFTuner extends Tuner
     }
 
 	@Override
-    public TunerChannelSource getChannel( ThreadPoolManager threadPoolManager,
-		TunerChannel channel ) throws RejectedExecutionException, SourceException
+    public TunerChannelSource getChannel( TunerChannel channel ) 
+    		throws RejectedExecutionException, SourceException
     {
-	    return mController.getChannel( threadPoolManager, this, channel );
+	    return mController.getChannel( this, channel );
     }
 
 	@Override
