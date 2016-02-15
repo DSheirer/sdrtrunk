@@ -1,8 +1,6 @@
-package audio;
-
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,6 +15,7 @@ package audio;
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
+package audio;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -51,7 +50,7 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 {
 	private static final Logger mLog = LoggerFactory.getLogger( AudioManager.class );
 
-	public static final int AUDIO_TIMEOUT = 2000; //2 seconds
+	public static final int AUDIO_TIMEOUT = 1000; //1 second
 	
 	public static final String AUDIO_CHANNELS_PROPERTY = "audio.manager.channels";
 	public static final String AUDIO_MIXER_PROPERTY = "audio.manager.mixer";
@@ -433,7 +432,6 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 	 */
 	public class AudioOutputConnection implements Listener<AudioEvent>
 	{
-		private static final long CALL_END_DELAY = 2000; //2 seconds
 		private static final int DISCONNECTED = -1;
 		
 		private AudioOutput mAudioOutput;
@@ -548,7 +546,7 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 		public boolean isInactive()
 		{
 			return mLastActivity != Long.MAX_VALUE &&
-				   mLastActivity + CALL_END_DELAY < System.currentTimeMillis();
+				   mLastActivity + AUDIO_TIMEOUT < System.currentTimeMillis();
 		}
 		
 		public int getPriority()
