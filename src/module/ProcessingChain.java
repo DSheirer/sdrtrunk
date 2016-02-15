@@ -495,6 +495,11 @@ public class ProcessingChain implements IChannelEventListener
 					
 					tcs.start();
 				}
+				
+				for( Listener<RealBuffer> listener: mUnFilteredRealBufferBroadcaster.getListeners() )
+				{
+					mLog.debug( "*** Listener:" + listener.getClass() );
+				}
 			}
 			else
 			{

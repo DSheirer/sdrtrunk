@@ -37,7 +37,7 @@ public class SourceManager
 						  ThreadPoolManager threadPoolManager )
 	{
 		mMixerManager = new MixerManager();
-		mRecordingSourceManager = new RecordingSourceManager( settingsManager, threadPoolManager );
+		mRecordingSourceManager = new RecordingSourceManager( settingsManager );
 		mTunerManager = new TunerManager( mMixerManager, settingsManager, threadPoolManager );
 	}
 	

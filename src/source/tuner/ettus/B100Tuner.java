@@ -99,8 +99,8 @@ public class B100Tuner extends Tuner
     }
 
 	@Override
-    public TunerChannelSource getChannel( ThreadPoolManager threadPoolManager,
-		TunerChannel channel ) throws RejectedExecutionException, SourceException
+    public TunerChannelSource getChannel( TunerChannel channel ) 
+    		throws RejectedExecutionException, SourceException
     {
 		//TODO: pass this call to the tuner controller
 	    return null;

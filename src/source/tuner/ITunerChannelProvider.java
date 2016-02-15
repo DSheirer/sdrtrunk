@@ -20,7 +20,6 @@ package source.tuner;
 import java.util.concurrent.RejectedExecutionException;
 
 import source.SourceException;
-import controller.ThreadPoolManager;
 
 public interface ITunerChannelProvider
 {
@@ -31,8 +30,8 @@ public interface ITunerChannelProvider
 	 * 
 	 * @return - source for 48k sample rate
 	 */
-	public abstract TunerChannelSource getChannel( ThreadPoolManager threadPoolManager,
-		TunerChannel channel ) throws RejectedExecutionException, SourceException;
+	public abstract TunerChannelSource getChannel( TunerChannel channel ) 
+			throws RejectedExecutionException, SourceException;
 
 	/**
 	 * Releases the tuned channel resources

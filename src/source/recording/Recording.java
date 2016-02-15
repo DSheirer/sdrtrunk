@@ -64,9 +64,8 @@ public class Recording implements Comparable<Recording>,
 	}
 	
 	@Override
-    public TunerChannelSource getChannel( ThreadPoolManager threadPoolManager,
-            TunerChannel channel ) throws RejectedExecutionException,
-            SourceException
+    public TunerChannelSource getChannel( TunerChannel channel ) 
+    		throws RejectedExecutionException, SourceException
     {
 	    // TODO Auto-generated method stub
 	    return null;

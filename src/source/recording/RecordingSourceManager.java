@@ -41,13 +41,10 @@ public class RecordingSourceManager
 	private ArrayList<Recording> mRecordings = new ArrayList<Recording>();
 
 	private SettingsManager mSettingsManager;
-	private ThreadPoolManager mThreadPoolManager;
 
-    public RecordingSourceManager( SettingsManager settingsManager,
-    							   ThreadPoolManager threadPoolManager )
+    public RecordingSourceManager( SettingsManager settingsManager )
 	{
     	mSettingsManager = settingsManager;
-    	mThreadPoolManager = threadPoolManager;
     	loadRecordings();
 	}
 
@@ -73,7 +70,7 @@ public class RecordingSourceManager
     		
     		if( recording != null )
     		{
-    			retVal = recording.getChannel( mThreadPoolManager, tunerChannel );
+    			retVal = recording.getChannel( tunerChannel );
     		}
     		else
     		{

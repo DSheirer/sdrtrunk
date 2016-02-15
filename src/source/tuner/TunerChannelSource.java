@@ -19,8 +19,10 @@ package source.tuner;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -37,7 +39,7 @@ import source.SourceException;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeEvent.Event;
 import source.tuner.frequency.IFrequencyChangeProcessor;
-import controller.ThreadPoolManager;
+import controller.NamingThreadFactory;
 import controller.ThreadPoolManager.ThreadType;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
@@ -61,7 +63,7 @@ public class TunerChannelSource extends ComplexSource
 	private ComplexPrimeCICDecimate mDecimationFilter;
 	private Listener<ComplexBuffer> mListener;
 	private IFrequencyChangeProcessor mFrequencyChangeProcessor;
-	private ThreadPoolManager mThreadPoolManager;
+	private ScheduledExecutorService mScheduledExecutorService;
 	private ScheduledFuture<?> mTaskHandle;
 
 	private long mTunerFrequency = 0;
@@ -91,12 +93,9 @@ public class TunerChannelSource extends ComplexSource
 	 * 		  accept the decimation processing task
 	 * @throws SourceException if the tuner has an issue providing IQ samples
 	 */
-	public TunerChannelSource( ThreadPoolManager threadPoolManager, Tuner tuner, 
-							   TunerChannel tunerChannel )
+	public TunerChannelSource( Tuner tuner, TunerChannel tunerChannel )
 				   throws RejectedExecutionException, SourceException
     {
-	    mThreadPoolManager = threadPoolManager;
-	    
 	    mTuner = tuner;
 	    mTuner.addListener( this );
 	    
@@ -133,9 +132,12 @@ public class TunerChannelSource extends ComplexSource
 		
 		if( mRunning.compareAndSet( false, true ))
 		{
-			/* Schedule the decimation task to run every 20 ms (50 iterations/second) */
-		    mTaskHandle = mThreadPoolManager.scheduleFixedRate( ThreadType.DECIMATION, 
-		    		mDecimationProcessor, 20, TimeUnit.MILLISECONDS );
+			mScheduledExecutorService = Executors.newScheduledThreadPool( 1, 
+					new NamingThreadFactory( "tuner channel source" ) );
+
+			/* Schedule the decimation task to run every 10 ms (100 iterations/second) */
+		    mTaskHandle = mScheduledExecutorService.scheduleAtFixedRate( 
+		    		mDecimationProcessor, 0, 10, TimeUnit.MILLISECONDS );
 
 		    /* Finally, register to receive samples from the tuner */
 			mTuner.addListener( (Listener<ComplexBuffer>)this );
@@ -156,10 +158,15 @@ public class TunerChannelSource extends ComplexSource
 			mTuner.releaseChannel( this );
 			mDecimationProcessor.shutdown();
 			
-			if( mThreadPoolManager != null && mTaskHandle != null )
+			if( mScheduledExecutorService != null && mTaskHandle != null )
 			{
-				mThreadPoolManager.cancel( mTaskHandle );
-				mTaskHandle = null;
+				if( mTaskHandle != null )
+				{
+					mTaskHandle.cancel( true );
+					mTaskHandle = null;
+				}
+
+				mScheduledExecutorService.shutdownNow();
 			}
 			
 			mBuffer.clear();
@@ -340,7 +347,9 @@ public class TunerChannelSource extends ComplexSource
 				{
 					if( mBuffer != null )
 					{
-						mBuffer.drainTo( mSampleBuffers, 4 );
+						long start = System.currentTimeMillis();
+						
+						mBuffer.drainTo( mSampleBuffers );
 				
 						for( Buffer buffer: mSampleBuffers )
 						{
@@ -377,6 +386,8 @@ public class TunerChannelSource extends ComplexSource
 								}
 							}
 						}
+						
+						mLog.debug( "Processed [" + mSampleBuffers.size() + "] in " + ( System.currentTimeMillis() - start  ) );
 						
 						mSampleBuffers.clear();
 					}

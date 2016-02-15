@@ -145,8 +145,8 @@ public abstract class Tuner implements IFrequencyChangeProcessor,
 	 * 
 	 * @return - source for 48k sample rate
 	 */
-	public abstract TunerChannelSource getChannel( ThreadPoolManager threadPoolManager,
-		TunerChannel channel ) throws RejectedExecutionException, SourceException;
+	public abstract TunerChannelSource getChannel( TunerChannel channel ) 
+			throws RejectedExecutionException, SourceException;
 	
 	/**
 	 * Releases the tuned channel resources

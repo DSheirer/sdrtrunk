@@ -35,7 +35,6 @@ import source.tuner.TunerClass;
 import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
 import source.tuner.airspy.AirspyTunerController.BoardID;
-import controller.ThreadPoolManager;
 
 public class AirspyTuner extends Tuner
 {
@@ -128,8 +127,8 @@ public class AirspyTuner extends Tuner
 	}
 
 	@Override
-    public TunerChannelSource getChannel( ThreadPoolManager threadPoolManager,
-		TunerChannel channel ) throws RejectedExecutionException, SourceException
+    public TunerChannelSource getChannel( TunerChannel channel ) 
+    		throws RejectedExecutionException, SourceException
     {
 		//TODO: this channel has a decimated sample rate of:
 		// 10.0 MSps = 10,000,000 / 208 = 48076.923
@@ -138,7 +137,7 @@ public class AirspyTuner extends Tuner
 		//Consider implementing a fractional resampler to get a correct 48 kHz
 		//output sample rate
 		
-	    return mController.getChannel( threadPoolManager, this, channel );
+	    return mController.getChannel( this, channel );
     }
 
 	@Override

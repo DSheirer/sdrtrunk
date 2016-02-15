@@ -17,9 +17,8 @@
  ******************************************************************************/
 package sample;
 
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import module.decode.state.ChannelState;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,11 +28,7 @@ import org.slf4j.LoggerFactory;
  */
 public class Broadcaster<T> implements Listener<T>
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( Broadcaster.class );
-
-	private CopyOnWriteArrayList<Listener<T>> mListeners = 
-			new CopyOnWriteArrayList<Listener<T>>();
+	private List<Listener<T>> mListeners = new CopyOnWriteArrayList<>();
 
 	@Override
     public void receive( T t )
@@ -57,6 +52,11 @@ public class Broadcaster<T> implements Listener<T>
 	public int getListenerCount()
 	{
 		return mListeners.size();
+	}
+	
+	public List<Listener<T>> getListeners()
+	{
+		return mListeners;
 	}
 	
 	public void addListener( Listener<T> listener )

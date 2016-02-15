@@ -243,7 +243,6 @@ public class NameConfigurationEditor extends ChannelConfigurationEditor
 			mChannelName.setText( DEFAULT_NAME );
 			mSystemNameCombo.setModel( EMPTY_MODEL );
 			mSiteNameCombo.setModel( EMPTY_MODEL );
-			mAliasListCombo.setSelectedIndex( 0 );
 		}
 	}
 }

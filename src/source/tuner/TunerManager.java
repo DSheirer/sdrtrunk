@@ -104,7 +104,7 @@ public class TunerManager
 				
 				try
                 {
-                    retVal = tuner.getChannel( mThreadPoolManager, tunerChannel );
+                    retVal = tuner.getChannel( tunerChannel );
                 }
 				catch ( RejectedExecutionException ree )
 				{

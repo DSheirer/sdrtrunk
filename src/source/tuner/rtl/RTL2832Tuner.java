@@ -148,8 +148,7 @@ public class RTL2832Tuner extends Tuner
 	}
 
 	@Override
-    public TunerChannelSource getChannel( ThreadPoolManager threadPoolManager,
-    									  TunerChannel channel )
+    public TunerChannelSource getChannel( TunerChannel channel )
     									    throws RejectedExecutionException,
     									    	   SourceException
 	{
@@ -157,7 +156,7 @@ public class RTL2832Tuner extends Tuner
 		
 		try
 		{
-			source = mController.getChannel( threadPoolManager, this, channel );
+			source = mController.getChannel( this, channel );
 		}
 		catch( Exception e )
 		{
