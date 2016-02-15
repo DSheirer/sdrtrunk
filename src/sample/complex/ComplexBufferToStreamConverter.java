@@ -1,5 +1,10 @@
 package sample.complex;
 
+import module.decode.p25.P25_LSMDecoder;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import sample.Listener;
 
 /**
@@ -7,8 +12,9 @@ import sample.Listener;
  */
 public class ComplexBufferToStreamConverter implements Listener<ComplexBuffer>
 {
+	private final static Logger mLog = LoggerFactory.getLogger( ComplexBufferToStreamConverter.class );
+
 	private ComplexSampleListener mListener;
-	
 	
 	public void dispose()
 	{

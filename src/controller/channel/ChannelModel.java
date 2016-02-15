@@ -22,9 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
-import javax.swing.table.TableModel;
+import javax.swing.table.AbstractTableModel;
 
 import module.decode.DecoderType;
 
@@ -37,20 +35,18 @@ import controller.channel.ChannelEvent.Event;
 /**
  * Channel Model
  */
-public class ChannelModel implements IChannelEventBroadcaster, TableModel
+public class ChannelModel extends AbstractTableModel implements IChannelEventBroadcaster
 {
+	private static final long serialVersionUID = 1L;
+
 	private final static Logger mLog = LoggerFactory.getLogger( ChannelModel.class );
 
-	private ChannelSelectionManager mChannelSelectionManager;
-	private List<Channel> mChannels = new ArrayList<>();
-	private List<Channel> mTrafficChannels = new ArrayList<>();
+	private List<Channel> mChannels = new CopyOnWriteArrayList<>();
+	private List<Channel> mTrafficChannels = new CopyOnWriteArrayList<>();
 	private List<ChannelEventListener> mListeners = new CopyOnWriteArrayList<>();
-	private List<TableModelListener> mTableModelListeners = new CopyOnWriteArrayList<>();
 
 	public ChannelModel()
 	{
-		mChannelSelectionManager = new ChannelSelectionManager( this );
-		addListener( mChannelSelectionManager );
 	}
 
 	/**
@@ -138,7 +134,7 @@ public class ChannelModel implements IChannelEventBroadcaster, TableModel
 				case NOTIFICATION_PROCESSING_STOP:
 				case NOTIFICATION_SELECTION_CHANGE:
 					int index = mChannels.indexOf( event.getChannel() );
-					broadcast( new TableModelEvent( this, index ) );
+					fireTableRowsUpdated( index, index );
 					break;
 				default:
 					break;
@@ -177,8 +173,7 @@ public class ChannelModel implements IChannelEventBroadcaster, TableModel
 				
 				index = mChannels.size() - 1;
 				
-				broadcast( new TableModelEvent( this, index, index, 
-						TableModelEvent.ALL_COLUMNS, TableModelEvent.INSERT ) );
+				fireTableRowsInserted( index, index );
 				break;
 			case TRAFFIC:
 				mTrafficChannels.add( channel );
@@ -214,8 +209,7 @@ public class ChannelModel implements IChannelEventBroadcaster, TableModel
 
 					if( index >= 0 )
 					{
-						broadcast( new TableModelEvent( this, index, index, 
-								TableModelEvent.ALL_COLUMNS, TableModelEvent.DELETE ) );
+						fireTableRowsDeleted( index, index );
 					}
 					break;
 				case TRAFFIC:
@@ -346,26 +340,6 @@ public class ChannelModel implements IChannelEventBroadcaster, TableModel
 	public void setValueAt( Object aValue, int rowIndex, int columnIndex )
 	{
 		throw new IllegalArgumentException( "Not yet implemented" );
-	}
-	
-	private void broadcast( TableModelEvent event )
-	{
-		for( TableModelListener listener: mTableModelListeners )
-		{
-			listener.tableChanged( event );
-		}
-	}
-
-	@Override
-	public void addTableModelListener( TableModelListener listener )
-	{
-		mTableModelListeners.add( listener );
-	}
-
-	@Override
-	public void removeTableModelListener( TableModelListener listener )
-	{
-		mTableModelListeners.remove( listener );
 	}
 	
 	public void createChannel( DecoderType decoderType, long frequency )

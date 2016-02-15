@@ -119,9 +119,9 @@ public class SDRTrunk
 		
 		SourceManager sourceManager = new SourceManager( mSettingsManager, threadPoolManager );
 
-		AliasModel aliasModel = new AliasModel();
-		
 		ChannelModel channelModel = new ChannelModel();
+
+		AliasModel aliasModel = new AliasModel();
 
 		PlaylistManager playlistManager = new PlaylistManager( threadPoolManager, 
 				aliasModel, channelModel );
@@ -137,7 +137,11 @@ public class SDRTrunk
 		
 		channelProcessingManager.addAudioPacketListener( recorderManager );
 		
-		AliasActionManager aliasActionManager = new AliasActionManager( threadPoolManager );
+		ChannelSelectionManager channelSelectionManager = 
+				new ChannelSelectionManager( channelModel );
+		channelModel.addListener( channelSelectionManager );
+		
+  		AliasActionManager aliasActionManager = new AliasActionManager( threadPoolManager );
 		channelProcessingManager.addMessageListener( aliasActionManager );
 		
 		AudioManager audioManager = new AudioManager( threadPoolManager, sourceManager.getMixerManager() );
@@ -145,16 +149,6 @@ public class SDRTrunk
 
 		MapService mapService = new MapService( mSettingsManager );
 		channelProcessingManager.addMessageListener( mapService );
-		
-		ChannelSelectionManager channelSelectionManager = 
-				new ChannelSelectionManager( channelModel );
-		channelModel.addListener( channelSelectionManager );
-
-//TODO: move this to the end once we add the alias model, otherwise the
-//configuration tree won't load correctly
-
-		//Initialize the playlist manager to load the saved playlist
-		playlistManager.init();
 
 		ConfigurationControllerModel configurationControllerModel = 
 			new ConfigurationControllerModel( channelModel, channelProcessingManager, 
@@ -169,11 +163,16 @@ public class SDRTrunk
 
 		mTitle = getTitle();
 		
-		//Initialize the GUI
+	      //TODO: move this to the end once we add the alias model, otherwise the
+	      //configuration tree won't load correctly
+		//Initialize the playlist manager to load the saved playlist
+		playlistManager.init();
+
+		mLog.info( "starting main application gui" );
+
+    	//Initialize the GUI
         initGUI();
 
-    	mLog.info( "starting main application gui" );
-    	
     	if( mLogChannelAndMemoryUsage )
     	{
     		Runnable cml = new ChannelMemoryLogger();

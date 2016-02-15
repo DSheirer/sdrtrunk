@@ -99,8 +99,7 @@ public class ControllerPanel extends JPanel
 	    
     	mMessageActivityPanel = new MessageActivityPanel( channelProcessingManager );
 
-    	mCallEventPanel = new CallEventPanel( mSettingsManager, 
-    			channelProcessingManager );	
+    	mCallEventPanel = new CallEventPanel( mSettingsManager, channelProcessingManager );	
 	    
     	mChannelSpectrumPanel = new ChannelSpectrumPanel( mSettingsManager, 
     			channelProcessingManager );

@@ -24,20 +24,22 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
-import javax.swing.table.TableModel;
+import javax.swing.table.AbstractTableModel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import alias.AliasEvent.Event;
 import sample.Broadcaster;
 import sample.Listener;
+import alias.AliasEvent.Event;
 
 /**
  * Alias Model
  */
-public class AliasModel implements TableModel
+public class AliasModel extends AbstractTableModel
 {
+	private static final long serialVersionUID = 1L;
+
 	private final static Logger mLog = LoggerFactory.getLogger( AliasModel.class );
 	
 	public static final int COLUMN_LIST = 0;
@@ -47,7 +49,6 @@ public class AliasModel implements TableModel
 	public static final int COLUMN_COLOR = 4;
 
 	private List<Alias> mAliases = new ArrayList<>();
-	private List<TableModelListener> mTableModelListeners = new CopyOnWriteArrayList<>();
 	private Broadcaster<AliasEvent> mAliasEventBroadcaster = new Broadcaster<>();
 
 	public AliasModel()
@@ -141,8 +142,7 @@ public class AliasModel implements TableModel
 
 			int index = mAliases.size() - 1;
 
-			broadcast( new TableModelEvent( this, index, index, 
-				TableModelEvent.ALL_COLUMNS, TableModelEvent.INSERT ) );
+			fireTableRowsInserted( index, index );
 			
 			broadcast( new AliasEvent( alias, Event.ADD ) );
 
@@ -163,8 +163,7 @@ public class AliasModel implements TableModel
 			
 			mAliases.remove( alias );
 			
-			broadcast( new TableModelEvent( this, index, index, 
-				TableModelEvent.ALL_COLUMNS, TableModelEvent.DELETE ) );
+			fireTableRowsDeleted( index, index );
 			
 			broadcast( new AliasEvent( alias, Event.DELETE ) );
 		}
@@ -247,26 +246,6 @@ public class AliasModel implements TableModel
 		throw new IllegalArgumentException( "Not yet implemented" );
 	}
 	
-	private void broadcast( TableModelEvent event )
-	{
-		for( TableModelListener listener: mTableModelListeners )
-		{
-			listener.tableChanged( event );
-		}
-	}
-
-	@Override
-	public void addTableModelListener( TableModelListener listener )
-	{
-		mTableModelListeners.add( listener );
-	}
-
-	@Override
-	public void removeTableModelListener( TableModelListener listener )
-	{
-		mTableModelListeners.remove( listener );
-	}
-	
 	public void broadcast( AliasEvent event )
 	{
 		mAliasEventBroadcaster.broadcast( event );
@@ -275,7 +254,7 @@ public class AliasModel implements TableModel
 		{
 			int index = mAliases.indexOf( event.getAlias() );
 			
-			broadcast( new TableModelEvent( this, index ) );
+			fireTableRowsUpdated( index, index );
 		}
 	}
 	

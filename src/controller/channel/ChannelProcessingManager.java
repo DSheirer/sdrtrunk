@@ -77,8 +77,6 @@ public class ChannelProcessingManager implements ChannelEventListener
 		mRecorderManager = recorderManager;
 		mSourceManager = sourceManager;
 		mThreadPoolManager = threadPoolManager;
-		
-		mChannelModel.addListener( this );
 	}
 
 	/**
@@ -184,7 +182,7 @@ public class ChannelProcessingManager implements ChannelEventListener
 			
 			return;
 		}
-
+		
 		if( processingChain == null )
 		{
 			processingChain = new ProcessingChain( mThreadPoolManager, 
@@ -258,6 +256,7 @@ public class ChannelProcessingManager implements ChannelEventListener
 		}
 		
 		processingChain.setSource( source );
+
 		processingChain.start();
 
 		channel.setEnabled( true );

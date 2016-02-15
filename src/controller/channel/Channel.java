@@ -179,7 +179,16 @@ public class Channel extends Configuration implements IFrequencyChangeProcessor
 		return mSelected;
 	}
 	
-	public void setSelected( boolean selected )
+	/**
+	 * Sets selection status of the channel.  
+	 * 
+	 * NOTE: this method is package private so that only the ChannelSelectionManager
+	 * can toggle the selection state.  Use the channel model to broadcast a
+	 * request select/deselect channel event.
+	 * 
+	 * @param selected
+	 */
+	void setSelected( boolean selected )
 	{
 		mSelected = selected;
 	}

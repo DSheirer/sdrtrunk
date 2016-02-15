@@ -23,6 +23,7 @@ import java.awt.Point;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.JMenu;
 import javax.swing.JPanel;
@@ -42,6 +43,7 @@ import settings.ColorSettingResetMenuItem;
 import settings.SettingsManager;
 import controller.channel.Channel;
 import controller.channel.ChannelEvent;
+import controller.channel.ChannelEvent.Event;
 import controller.channel.ChannelEventListener;
 import controller.channel.ChannelModel;
 import controller.channel.ChannelProcessingManager;
@@ -55,8 +57,7 @@ public class ChannelList extends JPanel implements ChannelEventListener
 
 	private final static Logger mLog = LoggerFactory.getLogger( ChannelList.class );
 
-    private HashMap<Channel,ChannelCollectionPanel> mDisplayedPanels = 
-    			new HashMap<Channel,ChannelCollectionPanel>();
+    private Map<Channel,ChannelPanel> mDisplayedPanels = new HashMap<Channel,ChannelPanel>();
 
     private ChannelModel mChannelModel;
     private ChannelProcessingManager mChannelProcessingManager;
@@ -104,12 +105,12 @@ public class ChannelList extends JPanel implements ChannelEventListener
     {
     	if( !mDisplayedPanels.containsKey( channel ) )
     	{
-    		ChannelCollectionPanel panel = new ChannelCollectionPanel( mChannelModel,
-				mChannelProcessingManager, mPlaylistManager, mSettingsManager, channel );
+    		ChannelPanel channelPanel = new ChannelPanel( mChannelModel, 
+    			mChannelProcessingManager, mPlaylistManager, mSettingsManager, channel );
     		
-			add( panel, "wrap" );
+			add( channelPanel, "wrap" );
 			
-			mDisplayedPanels.put( channel, panel );
+			mDisplayedPanels.put( channel, channelPanel );
 
 			revalidate();
 			repaint();
@@ -120,7 +121,7 @@ public class ChannelList extends JPanel implements ChannelEventListener
     {
 		if( mDisplayedPanels.containsKey( channel ) )
 		{
-			ChannelCollectionPanel panel = mDisplayedPanels.remove( channel );
+			ChannelPanel panel = mDisplayedPanels.remove( channel );
 			
 			if( panel != null )
 			{
@@ -134,15 +135,6 @@ public class ChannelList extends JPanel implements ChannelEventListener
 		}
     }
 	
-	public void setSelectedChannel( Channel channel )
-	{
-		/* Send channel selection to each channel panel */
-		for( ChannelCollectionPanel panel: mDisplayedPanels.values() )
-		{
-			panel.setSelectedChannel( channel );
-		}
-	}
-	
 	public class ListSelectionListener implements MouseListener
 	{
 		@Override
@@ -150,18 +142,22 @@ public class ChannelList extends JPanel implements ChannelEventListener
         {
 			Component component = getComponentAt( e.getPoint() );
 
-			if( component instanceof ChannelCollectionPanel )
+			if( component instanceof ChannelPanel )
 			{
-				ChannelCollectionPanel panel = (ChannelCollectionPanel)component;
+				ChannelPanel panel = (ChannelPanel)component;
 
-				Point translatedPoint = SwingUtilities
-						.convertPoint( e.getComponent(), e.getPoint(), panel );
-				
-				Channel channel = panel.getChannelAt( translatedPoint );
+				Channel channel = panel.getChannel();
 
 				if( e.getButton() == MouseEvent.BUTTON1 )
 				{
-					setSelectedChannel( channel );
+					if( channel.isSelected() )
+					{
+						mChannelModel.broadcast( new ChannelEvent( channel, Event.REQUEST_DESELECT ) );
+					}
+					else
+					{
+						mChannelModel.broadcast( new ChannelEvent( channel, Event.REQUEST_SELECT ) );
+					}
 				}
 				else if( e.getButton() == MouseEvent.BUTTON3 )
 				{

@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -24,13 +24,19 @@ import java.util.LinkedList;
 import javax.swing.table.AbstractTableModel;
 
 import message.Message;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import sample.Listener;
 import filter.FilterSet;
 
 public class MessageActivityModel extends AbstractTableModel
 								  implements Listener<Message>
 {
-    private static final long serialVersionUID = 1L;
+	private final static Logger mLog = LoggerFactory.getLogger( MessageActivityModel.class );
+
+	private static final long serialVersionUID = 1L;
     private static final int sTIME = 0;
     private static final int sPROTOCOL = 1;
     private static final int sERROR_STATUS = 2;

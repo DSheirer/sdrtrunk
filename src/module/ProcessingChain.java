@@ -475,13 +475,15 @@ public class ProcessingChain implements IChannelEventListener
 				}
 				
 				/* If this is a tuner source, broadcast the frequency to all 
-				 * of the decoder state's */
+				 * of the decoder state's and start the samples flowing */
 				if( mSource instanceof TunerChannelSource )
 				{
+					TunerChannelSource tcs = (TunerChannelSource)mSource;
+
 					try
 					{
-						long frequency = ((TunerChannelSource)mSource).getFrequency();
-						
+						long frequency = tcs.getFrequency();
+
 						mDecoderStateEventBroadcaster.broadcast( 
 							new DecoderStateEvent( this, Event.SOURCE_FREQUENCY, 
 									State.IDLE, frequency ) );
@@ -490,6 +492,8 @@ public class ProcessingChain implements IChannelEventListener
 					{
 						mLog.error( "Error getting frequency from tuner channel source", e );
 					}
+					
+					tcs.start();
 				}
 			}
 			else
@@ -603,6 +607,7 @@ public class ProcessingChain implements IChannelEventListener
 	 */
 	public void addMessageListener( Listener<Message> listener )
 	{
+		mLog.debug( "Registering Message Listener:" + listener.getClass() );
 		mMessageBroadcaster.addListener( listener );
 	}
 	

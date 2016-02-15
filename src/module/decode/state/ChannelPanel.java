@@ -15,13 +15,12 @@ import javax.swing.JMenu;
 import javax.swing.JPanel;
 
 import module.ProcessingChain;
+import module.decode.DecoderFactory;
+import net.miginfocom.swing.MigLayout;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import controller.channel.Channel;
-import controller.channel.ChannelUtils;
-import module.decode.DecoderFactory;
-import net.miginfocom.swing.MigLayout;
 import playlist.PlaylistManager;
 import record.RecorderType;
 import record.config.RecordConfiguration;
@@ -31,18 +30,22 @@ import settings.ColorSetting.ColorSettingName;
 import settings.Setting;
 import settings.SettingChangeListener;
 import settings.SettingsManager;
-
 import controller.channel.Channel;
+import controller.channel.ChannelEvent;
+import controller.channel.ChannelEvent.Event;
+import controller.channel.ChannelEventListener;
 import controller.channel.ChannelModel;
 import controller.channel.ChannelProcessingManager;
 import controller.channel.ChannelUtils;
 
-public class ChannelStatePanel extends JPanel 
-				implements Listener<ChangedAttribute>, SettingChangeListener
+public class ChannelPanel extends JPanel 
+						  implements Listener<ChangedAttribute>, 
+						  			 SettingChangeListener,
+						  			 ChannelEventListener
 {
 	private static final long serialVersionUID = 1L;
 
-	private final static Logger mLog = LoggerFactory.getLogger( ChannelStatePanel.class );
+	private final static Logger mLog = LoggerFactory.getLogger( ChannelPanel.class );
 
     private Font mFontDetails = new Font( Font.MONOSPACED, Font.PLAIN, 12 );
     private Font mFontDecoder = new Font( Font.MONOSPACED, Font.PLAIN, 12 );
@@ -88,19 +91,16 @@ public class ChannelStatePanel extends JPanel
 	 * 
 	 * Updates color background according to current channel state.
 	 */
-	public ChannelStatePanel( ChannelModel channelModel,
-							  ChannelProcessingManager channelProcessingManager,
-							  PlaylistManager playlistManager, 
-							  SettingsManager settingsManager, 
-							  Channel channel )
+	public ChannelPanel( ChannelModel channelModel,
+						 ChannelProcessingManager channelProcessingManager,
+						 PlaylistManager playlistManager, 
+						 SettingsManager settingsManager, 
+						 Channel channel )
 	{
 		mChannelModel = channelModel;
 		mChannelProcessingManager = channelProcessingManager;
 		mPlaylistManager = playlistManager;
-		
 		mSettingsManager = settingsManager;
-		mSettingsManager.addListener( this );
-		
 		mChannel = channel;
 		
 		ProcessingChain processingChain = 
@@ -109,9 +109,7 @@ public class ChannelStatePanel extends JPanel
 		if( processingChain != null )
 		{
 			mChannelState = processingChain.getChannelState();
-			
-			mChannelState.setChangedAttributeListener( this );
-			
+
 			init();
 
 			for( DecoderState decoderState: processingChain.getDecoderStates() )
@@ -120,6 +118,10 @@ public class ChannelStatePanel extends JPanel
 				mDecoderPanels.add( panel );
 	    		add( panel, "grow,span" );
 	    	}
+
+			mChannelState.setChangedAttributeListener( this );
+			mChannelModel.addListener( this );
+			mSettingsManager.addListener( this );
 		}
 		else
 		{
@@ -191,6 +193,11 @@ public class ChannelStatePanel extends JPanel
 	
 	public void dispose()
 	{
+		mChannelModel.removeListener( this );
+		mChannelModel = null;
+		
+		mChannelProcessingManager = null;
+
 		mPlaylistManager = null;
 		
 		mSettingsManager.removeListener( this );
@@ -426,6 +433,16 @@ public class ChannelStatePanel extends JPanel
 	public JMenu getContextMenu()
 	{
 		return ChannelUtils.getContextMenu( mChannelModel, mChannelProcessingManager, 
-				mPlaylistManager, mChannel, ChannelStatePanel.this );
+				mPlaylistManager, mChannel, ChannelPanel.this );
+	}
+
+	@Override
+	public void channelChanged( ChannelEvent event )
+	{
+		if( event.getEvent() == Event.NOTIFICATION_SELECTION_CHANGE &&
+			event.getChannel() == mChannel )
+		{
+			repaint();
+		}
 	}
 }

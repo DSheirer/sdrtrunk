@@ -103,11 +103,8 @@ public class PlaylistManager implements ChannelEventListener
 
 		mPlaylistLoading = true;
 
-		mLog.debug( "Transferring aliases to model" );
 		mAliasModel.addAliases( mPlaylist.getAliases() );
-		mLog.debug( "Transferring channels to model" );
 		mChannelModel.addChannels( mPlaylist.getChannels() );
-		mLog.debug( "Transfer to models is complete" );
 		
 		mPlaylistLoading = false;
 	}
@@ -175,13 +172,9 @@ public class PlaylistManager implements ChannelEventListener
 	{
 //TODO: recreate the playlist and load values from each of the models
 		
-		mLog.debug( "Aliases in model:" + mAliasModel.getAliases().size() );
 		mPlaylist.setAliases( mAliasModel.getAliases() );
-		mLog.debug( "Aliases in playlist:" + mPlaylist.getAliases().size() );
 
-		mLog.debug( "Channels in model:" + mChannelModel.getChannels().size() );
 		mPlaylist.setChannels( mChannelModel.getChannels() );
-		mLog.debug( "Channels in playlist:" + mPlaylist.getChannels().size() );
 		
 		JAXBContext context = null;
 		

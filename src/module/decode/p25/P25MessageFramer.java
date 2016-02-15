@@ -131,7 +131,7 @@ public class P25MessageFramer implements Listener<Dibit>
 		if( demodulator != null )
 		{
 			/* For CQPSK, we include 3 additional sync detectors to watch for and
-			 * correction +/-90 and 180 degree costas loop phase lock errors */
+			 * correct +/-90 and 180 degree costas loop phase lock errors */
 			mMatcher.add( new CostasPhaseErrorDetector( FrameSync.P25_PHASE1_ERROR_90_CCW, 
 					demodulator, PHASE_CORRECTION_90_DEGREES  ) );
 
@@ -291,6 +291,7 @@ public class P25MessageFramer implements Listener<Dibit>
 						else
 						{
 							mComplete = true;
+		                    dispatch( new P25Message( mMessage.copy(), mDUID, mAliasList ) );
 						}
 					}
 					else

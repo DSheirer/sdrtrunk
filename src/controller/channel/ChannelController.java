@@ -1,5 +1,7 @@
 package controller.channel;
 
+import java.awt.Color;
+import java.awt.Component;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -12,6 +14,7 @@ import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.table.DefaultTableCellRenderer;
 
 import net.coderazzi.filters.gui.AutoChoices;
 import net.coderazzi.filters.gui.TableFilterHeader;
@@ -64,6 +67,7 @@ public class ChannelController extends JPanel
 
 		//System Configuration View and Editor
     	mChannelTable = new JTable( mChannelModel );
+    	mChannelTable.setDefaultRenderer( String.class, new ChannelTableCellRenderer() );
     	mChannelTable.setSelectionMode( ListSelectionModel.SINGLE_SELECTION );
     	mChannelTable.getSelectionModel().addListSelectionListener( this );
     	mChannelTable.setAutoCreateRowSorter( true );
@@ -215,5 +219,53 @@ public class ChannelController extends JPanel
 			default:
 				break;
 		}
+	}
+	
+	public class ChannelTableCellRenderer extends DefaultTableCellRenderer
+	{
+		private static final long serialVersionUID = 1L;
+
+		@Override
+		public Component getTableCellRendererComponent( JTable table,
+				Object value, boolean isSelected, boolean hasFocus, int row,
+				int column )
+		{
+			Component component = super.getTableCellRendererComponent( 
+					table, value, isSelected, hasFocus, row, column );
+
+			ChannelModel model = (ChannelModel)table.getModel();
+
+			int index = table.convertRowIndexToModel( row );
+			
+			Channel channel = model.getChannelAtIndex( index );
+			
+			boolean enabled = channel.getEnabled();
+			
+			if( isSelected )
+			{
+				if( enabled )
+				{
+					component.setBackground( Color.YELLOW );
+				}
+				else
+				{
+					component.setBackground( table.getSelectionBackground() );
+				}
+			}
+			else
+			{
+				if( enabled )
+				{
+					component.setBackground( Color.GREEN );
+				}
+				else
+				{
+					component.setBackground( table.getBackground() );
+				}
+			}
+			
+			return component;
+		}
+		
 	}
 }
