@@ -21,6 +21,7 @@ import java.util.List;
 
 import javax.swing.JCheckBox;
 
+import net.miginfocom.swing.MigLayout;
 import module.log.config.EventLogConfiguration;
 import controller.channel.Channel;
 import controller.channel.ChannelConfigurationEditor;
@@ -38,9 +39,11 @@ public class EventLogComponentEditor extends ChannelConfigurationEditor
 
     public EventLogComponentEditor()
 	{
-		add( mBinaryLogger, "span" );
-		add( mDecodedLogger, "span" );
-		add( mCallEventLogger, "span" );
+		setLayout( new MigLayout( "fill,wrap 1", "[]", "[][][][grow]" ) );
+
+		add( mBinaryLogger );
+		add( mDecodedLogger );
+		add( mCallEventLogger );
 	}
 
     /**

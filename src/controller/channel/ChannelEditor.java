@@ -52,7 +52,7 @@ public class ChannelEditor extends JPanel
 
 	private final static Logger mLog = LoggerFactory.getLogger( ChannelEditor.class );
 
-	private ChannelConfigurationEditor mNameConfigurationEditor;
+	private NameConfigurationEditor mNameConfigurationEditor;
     private DecodeComponentEditor mDecodeEditor;
     private AuxDecodeComponentEditor mAuxDecodeEditor;
     private EventLogComponentEditor mEventLogEditor;

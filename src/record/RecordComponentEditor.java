@@ -21,6 +21,7 @@ import java.util.List;
 
 import javax.swing.JCheckBox;
 
+import net.miginfocom.swing.MigLayout;
 import record.config.RecordConfiguration;
 import controller.channel.Channel;
 import controller.channel.ChannelConfigurationEditor;
@@ -38,9 +39,11 @@ public class RecordComponentEditor extends ChannelConfigurationEditor
     
     public RecordComponentEditor()
 	{
-		add( mAudioRecorder, "span" );
-		add( mBasebandRecorder, "span" );
-		add( mTrafficBasebandRecorder, "span" );
+		setLayout( new MigLayout( "fill,wrap 1", "[]", "[][][][grow]" ) );
+		
+		add( mAudioRecorder );
+		add( mBasebandRecorder );
+		add( mTrafficBasebandRecorder );
 	}
 
 	@Override

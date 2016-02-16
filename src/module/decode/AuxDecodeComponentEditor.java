@@ -23,6 +23,7 @@ import java.util.List;
 
 import javax.swing.JCheckBox;
 
+import net.miginfocom.swing.MigLayout;
 import module.decode.config.AuxDecodeConfiguration;
 import controller.channel.Channel;
 import controller.channel.ChannelConfigurationEditor;
@@ -38,6 +39,8 @@ public class AuxDecodeComponentEditor extends ChannelConfigurationEditor
     
 	public AuxDecodeComponentEditor()
 	{
+		setLayout( new MigLayout( "fill,wrap 1", "[]", "[][][][][grow]" ) );
+
 		List<DecoderType> decoders = DecoderType.getAuxDecoders();
 		
 		Collections.sort( decoders );
@@ -46,7 +49,7 @@ public class AuxDecodeComponentEditor extends ChannelConfigurationEditor
 		{
 			AuxDecoderCheckBox control = new AuxDecoderCheckBox( decoder );
 			
-			add( control, "wrap" );
+			add( control );
 
 			mControls.add( control );
 		}
