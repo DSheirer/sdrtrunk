@@ -121,6 +121,8 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
         mMemoryImageSource.setAnimated( true );
 
         mWaterfallImage = createImage( mMemoryImageSource );
+        
+        repaint();
 	}
 	
 	/**
