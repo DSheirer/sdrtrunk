@@ -87,8 +87,8 @@ public class SystemProperties
 			
 			mProperties.store( out, comments );
 			
-			mLog.info( "SystemProperties - saved current properties [" + 
-							propsPath.toString() + "]" );
+//			mLog.info( "SystemProperties - saved current properties [" + 
+//							propsPath.toString() + "]" );
 		}
 		catch( Exception e )
 		{

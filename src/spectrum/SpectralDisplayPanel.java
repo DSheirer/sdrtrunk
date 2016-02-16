@@ -235,7 +235,6 @@ public class SpectralDisplayPanel extends JPanel
 		SystemProperties properties = SystemProperties.getInstance();
 		
 		properties.set( FFT_SIZE_PROPERTY, size.name() );
-		properties.save();
 
 		setZoom( 0, 0, 0 );
 	}

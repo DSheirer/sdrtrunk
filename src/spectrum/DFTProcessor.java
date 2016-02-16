@@ -186,7 +186,6 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 		SystemProperties properties = SystemProperties.getInstance();
 		
 		properties.set( FRAME_RATE_PROPERTY, String.valueOf( mFrameRate ) );
-		properties.save();
 
 		calculateConsumptionRate();
 

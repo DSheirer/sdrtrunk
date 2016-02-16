@@ -493,11 +493,6 @@ public class ProcessingChain implements IChannelEventListener
 						mLog.error( "Error starting module", e );
 					}
 				}
-				
-				for( Listener<RealBuffer> listener: mUnFilteredRealBufferBroadcaster.getListeners() )
-				{
-					mLog.debug( "*** Listener:" + listener.getClass() );
-				}
 			}
 			else
 			{
