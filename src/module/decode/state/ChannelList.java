@@ -19,17 +19,15 @@ package module.decode.state;
 
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Point;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.swing.JMenu;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
-import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
 
@@ -57,7 +55,8 @@ public class ChannelList extends JPanel implements ChannelEventListener
 
 	private final static Logger mLog = LoggerFactory.getLogger( ChannelList.class );
 
-    private Map<Channel,ChannelPanel> mDisplayedPanels = new HashMap<Channel,ChannelPanel>();
+    private Map<Channel,ChannelPanel> mDisplayedPanels = 
+    		new ConcurrentHashMap<Channel,ChannelPanel>();
 
     private ChannelModel mChannelModel;
     private ChannelProcessingManager mChannelProcessingManager;
