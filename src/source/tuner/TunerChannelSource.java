@@ -130,8 +130,11 @@ public class TunerChannelSource extends ComplexSource
 			mTaskHandle = null;
 		}
 
-		mBuffer.clear();
-		mBuffer = null;
+		synchronized( mBuffer )
+		{
+			mBuffer.clear();
+			mBuffer = null;
+		}
 
 		mFrequencyChangeListener = null;
 		mListener = null;
@@ -155,7 +158,13 @@ public class TunerChannelSource extends ComplexSource
 	@Override
     public void receive( ComplexBuffer buffer )
     {
-		mBuffer.add( buffer );
+		synchronized( mBuffer )
+		{
+			if( mBuffer != null )
+			{
+				mBuffer.add( buffer );
+			}
+		}
     }
 
     public void setFrequencyChangeListener( FrequencyChangeListener listener )
