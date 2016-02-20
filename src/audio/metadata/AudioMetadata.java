@@ -1,19 +1,6 @@
-package audio.metadata;
-
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import sample.Listener;
-import alias.Alias;
-import alias.priority.Priority;
-
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -28,15 +15,30 @@ import alias.priority.Priority;
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
+package audio.metadata;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import sample.Listener;
+import alias.Alias;
+import alias.priority.Priority;
+
 public class AudioMetadata implements Listener<Metadata>
 {
 	protected static final Logger mLog = LoggerFactory.getLogger( AudioMetadata.class );
 
 	private int mSource;
-	private List<Metadata> mMetadata = new ArrayList<>();
+	private Map<MetadataType,Metadata> mMetadata = new HashMap<>();
 	private boolean mUpdated = false;
 
-	/* Channel Selectect == highest priority */
+	/* Channel Selected == highest priority */
 	private boolean mSelected = false;
 
 	/* Call Priority */
@@ -92,7 +94,8 @@ public class AudioMetadata implements Listener<Metadata>
 		copy.mPriority = mPriority;
 		copy.mSelected = mSelected;
 		copy.mRecordable = mRecordable;
-		copy.mMetadata.addAll( mMetadata );
+
+		copy.mMetadata.putAll( mMetadata );
 		copy.mUpdated = mUpdated;
 		copy.mIdentifier = new String( mIdentifier );
 		
@@ -106,27 +109,36 @@ public class AudioMetadata implements Listener<Metadata>
 	 */
 	public void reset()
 	{
-		Iterator<Metadata> it = mMetadata.iterator();
-		
-		while( it.hasNext() )
-		{
-			if( it.next().isTemporal() )
-			{
-				it.remove();
-			}
-		}
-
 		/* Reset recordable state, identifier and audio call priority levels
 		 * and reprocess the metadata */
 		mRecordable = mSourceRecordable;
 		setIdentifier( mSource );
 		mPriority = Priority.DEFAULT_PRIORITY;
 		
-		for( Metadata metadata: mMetadata )
+		List<MetadataType> toRemove = new ArrayList<>();
+
+		for( MetadataType type: mMetadata.keySet() )
 		{
-			processMetadata( metadata );
+			Metadata metadata = mMetadata.get( type );
+
+			if( metadata != null )
+			{
+				if( metadata.isTemporal() )
+				{
+					toRemove.add( type );
+				}
+				else
+				{
+					processMetadata( metadata );
+				}
+			}
 		}
 		
+		for( MetadataType type: toRemove )
+		{
+			mMetadata.remove( type );
+		}
+
 		mUpdated = true;
 	}
 	
@@ -185,8 +197,14 @@ public class AudioMetadata implements Listener<Metadata>
 		}
 		else
 		{
-			mMetadata.add( metadata );
-			processMetadata( metadata );
+			Metadata existing = mMetadata.get( metadata.getMetadataType() );
+
+			if( existing == null || !existing.equals( metadata ) )
+			{
+				mMetadata.put( metadata.getMetadataType(), metadata );
+				processMetadata( metadata );
+				setUpdated( true );
+			}
 		}
 		
 		mUpdated = true;
@@ -195,26 +213,17 @@ public class AudioMetadata implements Listener<Metadata>
 	/**
 	 * Returns the complete set of metadata
 	 */
-	public List<Metadata> getMetadata()
+	public Map<MetadataType,Metadata> getMetadata()
 	{
 		return mMetadata;
 	}
 
 	/**
-	 * Returns the first metadata object matching the type, or null if the 
-	 * metadata type is not found.
+	 * Returns the metadata object matching the type or null
 	 */
 	public Metadata getMetadata( MetadataType type )
 	{
-		for( Metadata metadata: mMetadata )
-		{
-			if( metadata.getMetadataType() == type )
-			{
-				return metadata;
-			}
-		}
-		
-		return null;
+		return mMetadata.get( type );
 	}
 
 	/**
@@ -296,11 +305,11 @@ public class AudioMetadata implements Listener<Metadata>
 		sb.append( getPriority() );
 		sb.append( " updated:" + isUpdated() );
 		sb.append( " " );
-		for( Metadata m: getMetadata() )
+		for( Entry<MetadataType,Metadata> entry: getMetadata().entrySet() )
 		{
-			sb.append( m.getKey() );
+			sb.append( entry.getValue().getKey() );
 			sb.append( ":" );
-			sb.append( m.getValue() );
+			sb.append( entry.getValue().getValue() );
 			sb.append( " " );
 		}
 
