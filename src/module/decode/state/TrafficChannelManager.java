@@ -91,7 +91,6 @@ public class TrafficChannelManager extends Module
 	@Override
 	public void dispose()
 	{
-		mLog.debug( "dispose() on traffic channel manager" );
 		for( Channel trafficChannel: mTrafficChannelPool )
 		{
 			trafficChannel.setEnabled( false );
