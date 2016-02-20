@@ -77,7 +77,6 @@ public class P25_C4FMDecoder extends P25Decoder implements IRealBufferListener
 		/* Filter demodulated sample buffers */
 		float[] filter = FilterFactory.getLowPass( 48000, 2500, 4000, 80, WindowType.HANNING, true );
 
-		mLog.debug( "Demod Filter tap count:" + filter.length + " coefficients:" + Arrays.toString( filter ) );
 		mC4FMPreFilter = new RealFIRFilter_RB_RB( filter, 1.0f );
 
 		/* Issue tuned frequency correction commands, remotely controlled by the 
