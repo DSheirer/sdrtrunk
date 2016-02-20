@@ -21,7 +21,7 @@ public class Metadata
 		mValueAlias = alias;
 		mTemporal = temporal;
 	}
-
+	
 	/**
 	 * Constucts a metadata object with the temporal settings.  Temporal 
 	 * indicates that this metadata will be removed at the end of a reset 
@@ -103,4 +103,44 @@ public class Metadata
 		
 		return sb.toString();
 	}
+	
+	public boolean equals( Metadata other )
+	{
+		if( mMetadataType != other.getMetadataType() )
+		{
+			return false;
+		}
+
+		if( mTemporal != other.isTemporal() )
+		{
+			return false;
+		}
+		
+		if( mValue != null && other.getValue() != null && 
+			!mValue.contentEquals( other.getValue() ))
+		{
+			return false;
+		}
+		
+		if( ( mValue == null && other.getValue() != null ) ||
+			( mValue != null && other.getValue() == null ) )
+		{
+			return false;
+		}
+		
+		if( mValueAlias != null && other.getAlias() != null && 
+			!mValueAlias.getName().contentEquals( other.getAlias().getName() ))
+		{
+			return false;
+		}
+		
+		if( ( mValueAlias == null && other.getAlias() != null ) ||
+			( mValueAlias != null && other.getAlias() == null ) )
+		{
+			return false;
+		}
+
+		return true;
+	}
+
 }
