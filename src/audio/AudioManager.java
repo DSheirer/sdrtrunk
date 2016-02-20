@@ -430,19 +430,17 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 	 * output and maintains current state information about the audio activity 
 	 * received form the source.
 	 */
-	public class AudioOutputConnection implements Listener<AudioEvent>
+	public class AudioOutputConnection
 	{
 		private static final int DISCONNECTED = -1;
 		
 		private AudioOutput mAudioOutput;
 		private int mPriority = 0;
-		private long mLastActivity = System.currentTimeMillis();
 		private int mSource = DISCONNECTED;
 		
 		public AudioOutputConnection( AudioOutput audioOutput )
 		{
 			mAudioOutput = audioOutput;
-			mAudioOutput.addAudioEventListener( this );
 		}
 		
 		public void receive( AudioPacket packet )
@@ -457,8 +455,6 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 					mPriority = priority;
 					updateLowestPriorityAssignment();
 				}
-				
-				updateTimestamp();
 				
 				if( mAudioOutput != null )
 				{
@@ -482,11 +478,6 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 			}
 		}
 		
-		private void updateTimestamp()
-		{
-			mLastActivity = System.currentTimeMillis();
-		}
-
 		/**
 		 * Terminates the audio output and prepares this connection for disposal
 		 */
@@ -519,7 +510,8 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 		public void connect( int source )
 		{
 			mSource = source;
-			updateTimestamp();
+			
+			mAudioOutput.updateTimestamp();
 		}
 
 		/**
@@ -537,6 +529,7 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 		public void disconnect()
 		{
 			mSource = DISCONNECTED;
+			mPriority = 0;
 		}
 
 		/**
@@ -545,28 +538,12 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 		 */
 		public boolean isInactive()
 		{
-			return mLastActivity != Long.MAX_VALUE &&
-				   mLastActivity + AUDIO_TIMEOUT < System.currentTimeMillis();
+			return ( mAudioOutput.getLastActivityTimestamp() + AUDIO_TIMEOUT ) < System.currentTimeMillis();
 		}
 		
 		public int getPriority()
 		{
 			return mPriority;
-		}
-		
-		@Override
-		public void receive( AudioEvent event )
-		{
-			switch( event.getType() )
-			{
-				case AUDIO_STARTED:
-				case AUDIO_STOPPED:
-				case AUDIO_CONTINUATION:
-					updateTimestamp();
-					break;
-				default:
-					break;
-			}
 		}
 	}
 }

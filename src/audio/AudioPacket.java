@@ -64,6 +64,11 @@ public class AudioPacket
 		return mAudioData;
 	}
 	
+	public boolean hasAudioBuffer()
+	{
+		return mAudioData != null;
+	}
+	
 	public enum Type
 	{
 		AUDIO,
