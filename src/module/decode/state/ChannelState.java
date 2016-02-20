@@ -381,6 +381,8 @@ public class ChannelState extends Module implements ICallEventProvider,
 	{
 		broadcast( SquelchState.SQUELCH );
 
+		broadcast( new MetadataReset() );
+		
 		mState = State.TEARDOWN;
 		
 		broadcast( ChangedAttribute.CHANNEL_STATE );
