@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -22,11 +22,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlSeeAlso;
 
 import alias.action.AliasAction;
 import alias.priority.Priority;
-import audio.inverted.AudioType;
 
+@XmlSeeAlso( { AliasID.class, AliasAction.class } )
+@XmlRootElement( name = "alias" )
 public class Alias
 {
 	private String mList;
@@ -121,6 +125,7 @@ public class Alias
 		mIconName = iconName;
 	}
 	
+	@XmlElement( name="id" )
 	public List<AliasID> getId()
 	{
 		return mAliasIDs;
@@ -141,6 +146,7 @@ public class Alias
 		mAliasIDs.remove( id );
 	}
 	
+	@XmlElement( name="action" )
 	public List<AliasAction> getAction()
 	{
 		return mAliasActions;

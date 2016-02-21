@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,6 +17,27 @@
  ******************************************************************************/
 package alias;
 
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlSeeAlso;
+
+import alias.id.esn.Esn;
+import alias.id.fleetsync.FleetsyncID;
+import alias.id.fleetsync.StatusID;
+import alias.id.lojack.LoJackFunctionAndID;
+import alias.id.mdc.MDC1200ID;
+import alias.id.mobileID.Min;
+import alias.id.mpt1327.MPT1327ID;
+import alias.id.siteID.SiteID;
+import alias.id.talkgroup.TalkgroupID;
+import alias.id.uniqueID.UniqueID;
+import alias.priority.Priority;
+import alias.record.NonRecordable;
+
+@XmlSeeAlso( { Esn.class, FleetsyncID.class, Group.class, LoJackFunctionAndID.class,
+			   MDC1200ID.class, Min.class, MPT1327ID.class, NonRecordable.class,
+			   Priority.class, SiteID.class, StatusID.class, TalkgroupID.class,
+			   UniqueID.class } )
+@XmlRootElement( name = "id" )
 public abstract class AliasID
 {
 	public AliasID()

@@ -1,12 +1,37 @@
+/*******************************************************************************
+ *     SDR Trunk 
+ *     Copyright (C) 2014-2016 Dennis Sheirer
+ * 
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ * 
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ * 
+ *     You should have received a copy of the GNU General Public License
+ *     along with this program.  If not, see <http://www.gnu.org/licenses/>
+ ******************************************************************************/
 package alias.action;
+
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlSeeAlso;
 
 import message.Message;
 import alias.Alias;
+import alias.action.beep.BeepAction;
+import alias.action.clip.ClipAction;
+import alias.action.script.ScriptAction;
 import controller.ThreadPoolManager;
 
 /**
  * Alias action defines an action to execute when an alias is detected active.
  */
+@XmlSeeAlso( { BeepAction.class, ClipAction.class, ScriptAction.class } )
+@XmlRootElement( name = "action" )
 public abstract class AliasAction
 {
 	public AliasAction()
