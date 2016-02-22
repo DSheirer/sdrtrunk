@@ -41,7 +41,7 @@ public class ESNNode extends AliasIDNode
     @Override
     public JPanel getEditor()
     {
-        return new ESNEditor( this );
+    	return null;
     }
     
     public Esn getESN()

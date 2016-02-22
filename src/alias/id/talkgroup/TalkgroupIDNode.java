@@ -41,7 +41,7 @@ public class TalkgroupIDNode extends AliasIDNode
     @Override
     public JPanel getEditor()
     {
-        return new TalkgroupIDEditor( this );
+        return null;
     }
     
     public TalkgroupID getTalkgroupID()

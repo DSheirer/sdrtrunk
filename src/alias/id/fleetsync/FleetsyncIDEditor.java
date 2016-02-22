@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -20,89 +20,107 @@ package alias.id.fleetsync;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import javax.swing.JButton;
+import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.text.MaskFormatter;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import controller.channel.Channel;
 import net.miginfocom.swing.MigLayout;
-import controller.ConfigurableNode;
+import alias.AliasID;
+import alias.ComponentEditor;
 
-public class FleetsyncIDEditor extends JPanel implements ActionListener
+public class FleetsyncIDEditor extends ComponentEditor<AliasID>
 {
-    private static final long serialVersionUID = 1L;
-    private FleetsyncIDNode mFleetsyncIDNode;
-    
-    private JLabel mLabelName;
-    private JTextField mTextIdent;
+	private final static Logger mLog = LoggerFactory.getLogger( FleetsyncIDEditor.class );
 
-    private String mHelpText = "Enter a formatted fleetsync identifier.\n\n"
-    		+ "Format: PPP-IIII (P=Prefix, I=Identifier)\n\n"
-            + "Wildcard: use one or more asterisks (*) for any talkgroup "
-            + "digits.\n\n";
+	private static final long serialVersionUID = 1L;
 
-	public FleetsyncIDEditor( FleetsyncIDNode fsNode )
+    private static final String HELP_TEXT = "A Fleetsync identifier is a"
+    		+ " composite decimal [0-9] value formatted as ggg-uuuu where"
+    		+ " g=Group and u=Unit.";
+
+    private JTextField mTextField;
+
+	public FleetsyncIDEditor( AliasID aliasID )
 	{
-		mFleetsyncIDNode = fsNode;
+		super( aliasID );
+		
 		initGUI();
+		
+		setComponent( aliasID );
 	}
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][grow]" ) );
 
-		add( new JLabel( "Fleetsync ID" ), "span,align center" );
+		add( new JLabel( "Fleetsync ID:" ) );
 
-		add( new JLabel( "Ident:" ) );
-		mTextIdent = new JTextField( mFleetsyncIDNode.getFleetsyncID().getIdent() );
+		MaskFormatter formatter = null;
 
-		add( mTextIdent, "grow, wrap" );
+		try
+		{
+			//Mask: 3 digits - 4 digits
+			formatter = new MaskFormatter( "###-####" );
+		}
+		catch( Exception e )
+		{
+			//Do nothing, the mask was invalid
+		}
 		
-		JButton btnSave = new JButton( "Save" );
-		btnSave.addActionListener( FleetsyncIDEditor.this );
-		add( btnSave, "growx,push" );
+		mTextField = new JFormattedTextField( formatter );
+		mTextField.getDocument().addDocumentListener( this );
 
-		JButton btnReset = new JButton( "Reset" );
-		btnReset.addActionListener( FleetsyncIDEditor.this );
-		add( btnReset, "growx,push" );
+		add( mTextField, "growx,push" );
 		
-		JTextArea helpText = new JTextArea( mHelpText );
+		JTextArea helpText = new JTextArea( HELP_TEXT );
 		helpText.setLineWrap( true );
 		helpText.setBackground( getBackground() );
 		add( helpText, "span,grow,push" );
 	}
+	
+	public FleetsyncID getFleetsyncID()
+	{
+		if( getComponent() instanceof FleetsyncID )
+		{
+			return (FleetsyncID)getComponent();
+		}
+		
+		return null;
+	}
 
 	@Override
-    public void actionPerformed( ActionEvent e )
-    {
-		String command = e.getActionCommand();
+	public void setComponent( AliasID aliasID )
+	{
+		mComponent = aliasID;
 		
-		if( command.contentEquals( "Save" ) )
+		FleetsyncID fleetsync = getFleetsyncID();
+		
+		if( fleetsync != null )
 		{
-			String ident = mTextIdent.getText();
-			
-			if( ident != null )
-			{
-				mFleetsyncIDNode.getFleetsyncID().setIdent( ident );
+			mTextField.setText( fleetsync.getIdent() );
+		}
+		
+		setModified( false );
+		
+		repaint();
+	}
 
-				((ConfigurableNode)mFleetsyncIDNode.getParent()).sort();
-				
-				mFleetsyncIDNode.save();
-				
-				mFleetsyncIDNode.show();
-			}
-			else
-			{
-				JOptionPane.showMessageDialog( FleetsyncIDEditor.this, "Please enter an ident" );
-			}
-		}
-		else if( command.contentEquals( "Reset" ) )
+	@Override
+	public void save()
+	{
+		FleetsyncID fleetsync = getFleetsyncID();
+		
+		if( fleetsync != null )
 		{
-			mTextIdent.setText( mFleetsyncIDNode.getFleetsyncID().getIdent() );
+			fleetsync.setIdent( mTextField.getText() );
 		}
 		
-		mFleetsyncIDNode.refresh();
-    }
+		setModified( false );
+	}
 }

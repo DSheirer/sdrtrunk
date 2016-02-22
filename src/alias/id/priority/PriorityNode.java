@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2015 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package alias.id.fleetsync;
+package alias.id.priority;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -29,31 +29,31 @@ import playlist.PlaylistManager;
 import alias.AliasIDNode;
 import alias.AliasNode;
 
-public class StatusIDNode extends AliasIDNode
+public class PriorityNode extends AliasIDNode
 {
     private static final long serialVersionUID = 1L;
-    
-    public StatusIDNode( PlaylistManager playlistManager, StatusID id )
+
+    public PriorityNode( PlaylistManager playlistManager, Priority priority )
 	{
-    	super( playlistManager, id );
-	}
+        super( playlistManager, priority );
+ 	}
     
     @Override
     public JPanel getEditor()
     {
-        return new StatusIDEditor( this );
+        return null;
     }
     
-    public StatusID getStatusID()
+    public Priority getPriority()
     {
-        return (StatusID)getUserObject();
+    	return (Priority)getUserObject();
     }
-
+    
     public String toString()
     {
-    	return "Status Code " + getStatusID().getStatus();
+    	return getPriority().toString();
     }
-    
+
 	public JPopupMenu getContextMenu()
 	{
 		JPopupMenu retVal = new JPopupMenu();
@@ -71,11 +71,11 @@ public class StatusIDNode extends AliasIDNode
 				{
 					AliasNode parent = (AliasNode)getParent();
 					
-					parent.getAlias().removeAliasID( getStatusID() );
+					parent.getAlias().removeAliasID( getPriority() );
 
 					save();
 
-					getModel().removeNodeFromParent( StatusIDNode.this );
+					getModel().removeNodeFromParent( PriorityNode.this );
 				}
             }
 		} );

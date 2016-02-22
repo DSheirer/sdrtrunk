@@ -41,7 +41,7 @@ public class MPT1327IDNode extends AliasIDNode
     @Override
     public JPanel getEditor()
     {
-        return new MPT1327IDEditor( this );
+        return null;
     }
     
     public MPT1327ID getMPT1327ID()

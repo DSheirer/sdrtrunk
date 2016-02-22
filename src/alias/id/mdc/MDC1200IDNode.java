@@ -41,7 +41,7 @@ public class MDC1200IDNode extends AliasIDNode
     @Override
     public JPanel getEditor()
     {
-        return new MDC1200IDEditor( this );
+        return null;
     }
     
     public MDC1200ID getMDC1200ID()

@@ -91,7 +91,7 @@ public class AliasEditor extends JPanel implements ActionListener, Listener<Alia
     	tabs.setForeground( Color.BLACK );
 
 		tabs.addTab( "Alias", mAliasNameEditor );
-		tabs.addTab( "IDs", mAliasIdentifierEditor );
+		tabs.addTab( "Identifiers", mAliasIdentifierEditor );
 		add( tabs, "span,grow" );		
 		
 		JButton btnSave = new JButton( "Save" );

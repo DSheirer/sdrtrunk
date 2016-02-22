@@ -50,6 +50,10 @@ public class AliasNameEditor extends AliasConfigurationEditor
 		setLayout( new MigLayout( "fill,wrap 2", "[right][grow,fill]", 
 				"[][][][][][][grow]" ) );
 
+    	add( new JLabel( "Name:" ) );
+    	mName = new JTextField();
+    	add( mName, "wrap" );
+
 		add( new JLabel( "List:" ) );
 		mListCombo.setEditable( true );
 		mListCombo.addActionListener( new ActionListener()
@@ -79,10 +83,6 @@ public class AliasNameEditor extends AliasConfigurationEditor
 		add( new JLabel( "Group:" ) );
 		mGroupCombo.setEditable( true );
     	add( mGroupCombo, "wrap" );
-
-    	add( new JLabel( "Name:" ) );
-    	mName = new JTextField();
-    	add( mName, "wrap" );
 
     	add( new JLabel( "Color:" ) );
 

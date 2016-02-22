@@ -15,7 +15,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package alias.record;
+package alias.id.status;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -26,15 +26,14 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 
 import playlist.PlaylistManager;
-import alias.AliasID;
 import alias.AliasIDNode;
 import alias.AliasNode;
 
-public class NonRecordableNode extends AliasIDNode
+public class StatusIDNode extends AliasIDNode
 {
     private static final long serialVersionUID = 1L;
     
-    public NonRecordableNode( PlaylistManager playlistManager, NonRecordable id )
+    public StatusIDNode( PlaylistManager playlistManager, StatusID id )
 	{
     	super( playlistManager, id );
 	}
@@ -42,18 +41,17 @@ public class NonRecordableNode extends AliasIDNode
     @Override
     public JPanel getEditor()
     {
-        return new NonRecordableEditor( this );
+        return null;
     }
     
-    @Override
-	public String getIconPath()
-	{
-		return "images/no_record.png";
-	}
-
-	public String toString()
+    public StatusID getStatusID()
     {
-    	return "Non-Recordable";
+        return (StatusID)getUserObject();
+    }
+
+    public String toString()
+    {
+    	return "Status Code " + getStatusID().getStatus();
     }
     
 	public JPopupMenu getContextMenu()
@@ -73,11 +71,11 @@ public class NonRecordableNode extends AliasIDNode
 				{
 					AliasNode parent = (AliasNode)getParent();
 					
-					parent.getAlias().removeAliasID( (AliasID)getUserObject() );
+					parent.getAlias().removeAliasID( getStatusID() );
 
 					save();
 
-					getModel().removeNodeFromParent( NonRecordableNode.this );
+					getModel().removeNodeFromParent( StatusIDNode.this );
 				}
             }
 		} );

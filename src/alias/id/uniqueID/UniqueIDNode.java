@@ -41,7 +41,7 @@ public class UniqueIDNode extends AliasIDNode
     @Override
     public JPanel getEditor()
     {
-        return new UniqueIDEditor( this );
+        return null;
     }
     
     public UniqueID getUniqueID()

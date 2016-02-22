@@ -4,17 +4,29 @@ import alias.action.AliasAction;
 import alias.action.beep.BeepAction;
 import alias.action.clip.ClipAction;
 import alias.action.script.ScriptAction;
+import alias.id.esn.ESNEditor;
 import alias.id.esn.Esn;
 import alias.id.fleetsync.FleetsyncID;
+import alias.id.fleetsync.FleetsyncIDEditor;
+import alias.id.lojack.LoJackIDEditor;
 import alias.id.lojack.LoJackFunctionAndID;
+import alias.id.mdc.MDC1200IDEditor;
 import alias.id.mdc.MDC1200ID;
+import alias.id.mobileID.MINEditor;
 import alias.id.mobileID.Min;
 import alias.id.mpt1327.MPT1327ID;
+import alias.id.mpt1327.MPT1327IDEditor;
+import alias.id.nonrecordable.NonRecordable;
+import alias.id.nonrecordable.NonRecordableEditor;
+import alias.id.priority.Priority;
+import alias.id.priority.PriorityEditor;
+import alias.id.siteID.SiteIDEditor;
 import alias.id.siteID.SiteID;
+import alias.id.status.StatusIDEditor;
 import alias.id.talkgroup.TalkgroupID;
+import alias.id.talkgroup.TalkgroupIDEditor;
 import alias.id.uniqueID.UniqueID;
-import alias.priority.Priority;
-import alias.record.NonRecordable;
+import alias.id.uniqueID.UniqueIDEditor;
 
 public class AliasFactory
 {
@@ -135,4 +147,62 @@ public class AliasFactory
 		return copy;
 	}
 
+	public static ComponentEditor<AliasID> getEditor( AliasID aliasID )
+	{
+		if( aliasID != null )
+		{
+			switch( aliasID.getType() )
+			{
+				case ESN:
+					return new ESNEditor( aliasID );
+				case Fleetsync:
+					return new FleetsyncIDEditor( aliasID );
+				case LTRNetUID:
+					return new UniqueIDEditor( aliasID );
+				case LoJack:
+					return new LoJackIDEditor( aliasID );
+				case MDC1200:
+					return new MDC1200IDEditor( aliasID );
+				case MIN:
+					return new MINEditor( aliasID );
+				case MPT1327:
+					return new MPT1327IDEditor( aliasID );
+				case NonRecordable:
+					return new NonRecordableEditor( aliasID );
+				case Priority:
+					return new PriorityEditor( aliasID );
+				case Site:
+					return new SiteIDEditor( aliasID );
+				case Status:
+					return new StatusIDEditor( aliasID );
+				case Talkgroup:
+					return new TalkgroupIDEditor( aliasID );
+				default:
+					break;
+			}
+		}
+		
+		return new EmptyAliasIDEditor();
+	}
+	
+	public static ComponentEditor<AliasAction> getEditor( AliasAction aliasAction )
+	{
+		if( aliasAction != null )
+		{
+			if( aliasAction instanceof BeepAction )
+			{
+				
+			}
+			else if( aliasAction instanceof ClipAction )
+			{
+				
+			}
+			else if( aliasAction instanceof ScriptAction )
+			{
+				
+			}
+		}
+		
+		return new EmptyAliasActionEditor();
+	}
 }

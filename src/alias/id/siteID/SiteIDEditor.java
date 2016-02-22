@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,95 +17,86 @@
  ******************************************************************************/
 package alias.id.siteID;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-
-import javax.swing.JButton;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
+import alias.AliasID;
+import alias.ComponentEditor;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-public class SiteIDEditor extends JPanel implements ActionListener
+public class SiteIDEditor extends ComponentEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
-	private final static Logger mLog = 
-							LoggerFactory.getLogger( SiteIDEditor.class );
-    private SiteIDNode mSiteIDNode;
-    private JTextField mTextSiteID;
 
-	public SiteIDEditor( SiteIDNode siteIDNode )
+    private static final String HELP_TEXT = "Site number for P25 systems uses"
+			+ " the format RR-SS, where RR = RF Subsystem and SS = Site Number. "
+    		+ " (e.g. RFSS 1 Site 3: 01-03).  For other protocols, simply use"
+    		+ " a decimal value for the site ID";
+
+    private JTextField mTextField;
+
+	public SiteIDEditor( AliasID aliasID )
 	{
-		mSiteIDNode = siteIDNode;
+		super( aliasID );
 		
 		initGUI();
+		
+		setComponent( aliasID );
 	}
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][grow]" ) );
 
-		add( new JLabel( "Site ID" ), "span,align center" );
+		add( new JLabel( "Site ID:" ) );
+		mTextField = new JTextField();
+		mTextField.getDocument().addDocumentListener( this );
+		add( mTextField, "growx,push" );
 
-		add( new JLabel( "Site:" ) );
+		JTextArea helpText = new JTextArea( HELP_TEXT );
+		helpText.setLineWrap( true );
+		helpText.setBackground( getBackground() );
+		add( helpText, "span,grow,push" );
+	}
+	
+	public SiteID getSiteID()
+	{
+		if( getComponent() instanceof SiteID )
+		{
+			return (SiteID)getComponent();
+		}
 		
-		mTextSiteID = new JTextField( 
-				String.valueOf( mSiteIDNode.getSiteID().getSite() ) );
-		add( mTextSiteID, "growx,push" );
-
-		JTextArea description = new JTextArea( "Enter a site number.  "
-				+ "For P25 systems, use the format RR-SS, where RR = RF "
-				+ "Subsystem and SS = Site Number.  For example, RFSS 1 and "
-				+ "Site 3 would be: 01-03");
-		
-		description.setLineWrap( true );
-		description.setBackground( getBackground() );
-		
-		add( description, "growx,span" );
-		
-		JButton btnSave = new JButton( "Save" );
-		btnSave.addActionListener( SiteIDEditor.this );
-		add( btnSave, "growx,push" );
-
-		JButton btnReset = new JButton( "Reset" );
-		btnReset.addActionListener( SiteIDEditor.this );
-		add( btnReset, "growx,push" );
+		return null;
 	}
 
 	@Override
-    public void actionPerformed( ActionEvent e )
-    {
-		String command = e.getActionCommand();
+	public void setComponent( AliasID aliasID )
+	{
+		mComponent = aliasID;
 		
-		if( command.contentEquals( "Save" ) )
+		SiteID siteID = getSiteID();
+		
+		if( siteID != null )
 		{
-			String siteIDString = mTextSiteID.getText();
-			
-			if( siteIDString != null )
-			{
-				mSiteIDNode.getSiteID().setSite( siteIDString );
+			mTextField.setText( siteID.getSite() );
+		}
+		
+		setModified( false );
+		
+		repaint();
+	}
 
-				mSiteIDNode.save();
-				
-				mSiteIDNode.show();
-			}
-			else
-			{
-				JOptionPane.showMessageDialog( SiteIDEditor.this, 
-						"Please enter a site ID" );
-			}
-		}
-		else if( command.contentEquals( "Reset" ) )
+	@Override
+	public void save()
+	{
+		SiteID siteID = getSiteID();
+		
+		if( siteID != null )
 		{
-			mTextSiteID.setText( mSiteIDNode.getSiteID().getSite() );
+			siteID.setSite( mTextField.getText() );
 		}
 		
-		mSiteIDNode.refresh();
-    }
+		setModified( false );
+	}
 }

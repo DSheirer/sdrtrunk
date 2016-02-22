@@ -15,31 +15,30 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package alias.id.esn;
+package alias.id.status;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-
+import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.text.MaskFormatter;
 
 import net.miginfocom.swing.MigLayout;
 import alias.AliasID;
 import alias.ComponentEditor;
 
-public class ESNEditor extends ComponentEditor<AliasID>
+public class StatusIDEditor extends ComponentEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
 
-    private static final String HELP_TEXT = "An Electronic Serial Number (ESN)"
-    		+ " is a unique radio hardware identifier normally composed of"
-    		+ " hexadecimal (0-9,A-F) characters.  Use an asterisk (*) to wildcard" 
-    		+ " individual digits (e.g. ABCD123* or AB**1**4)";
+    private static final String HELP_TEXT = "Status numbers are used in some"
+			+ " protocols like Fleetsync.  The status number is assigned a meaning"
+    		+ " in the radio.  You can assign a 3 digit status code (use leading zeros) to an"
+    		+ " alias where the alias contains the status meaning.";
 
     private JTextField mTextField;
 
-	public ESNEditor( AliasID aliasID )
+	public StatusIDEditor( AliasID aliasID )
 	{
 		super( aliasID );
 		
@@ -52,8 +51,21 @@ public class ESNEditor extends ComponentEditor<AliasID>
 	{
 		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][grow]" ) );
 
-		add( new JLabel( "ESN:" ) );
-		mTextField = new JTextField();
+		add( new JLabel( "Status:" ) );
+
+		MaskFormatter formatter = null;
+
+		try
+		{
+			//Mask: 3 digits
+			formatter = new MaskFormatter( "###" );
+		}
+		catch( Exception e )
+		{
+			//Do nothing, the mask was invalid
+		}
+		
+		mTextField = new JFormattedTextField( formatter );
 		mTextField.getDocument().addDocumentListener( this );
 		add( mTextField, "growx,push" );
 
@@ -63,11 +75,11 @@ public class ESNEditor extends ComponentEditor<AliasID>
 		add( helpText, "span,grow,push" );
 	}
 	
-	public Esn getEsn()
+	public StatusID getStatusID()
 	{
-		if( getComponent() instanceof Esn )
+		if( getComponent() instanceof StatusID )
 		{
-			return (Esn)getComponent();
+			return (StatusID)getComponent();
 		}
 		
 		return null;
@@ -78,11 +90,11 @@ public class ESNEditor extends ComponentEditor<AliasID>
 	{
 		mComponent = aliasID;
 		
-		Esn esn = getEsn();
+		StatusID statusID = getStatusID();
 		
-		if( esn != null )
+		if( statusID != null )
 		{
-			mTextField.setText( esn.getEsn() );
+			mTextField.setText( String.valueOf( statusID.getStatus() ) );
 		}
 		
 		setModified( false );
@@ -93,11 +105,22 @@ public class ESNEditor extends ComponentEditor<AliasID>
 	@Override
 	public void save()
 	{
-		Esn esn = getEsn();
+		StatusID statusID = getStatusID();
 		
-		if( esn != null )
+		if( statusID != null )
 		{
-			esn.setEsn( mTextField.getText() );
+			int status = 0;
+			
+			try
+			{
+				status = Integer.valueOf( mTextField.getText() );
+			}
+			catch( Exception e )
+			{
+				//Do nothing, we couldn't parse the value
+			}
+			
+			statusID.setStatus( status );
 		}
 		
 		setModified( false );

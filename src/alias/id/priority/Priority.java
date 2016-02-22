@@ -15,55 +15,63 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package alias.id.fleetsync;
+package alias.id.priority;
 
 import javax.xml.bind.annotation.XmlAttribute;
 
 import alias.AliasID;
 import alias.AliasIDType;
 
-public class StatusID extends AliasID
+/**
+ * Specifies an (audio) priority level for this alias.
+ */
+public class Priority extends AliasID
 {
-	private int mStatus;
+	public static final int DO_NOT_MONITOR = -1;
+	public static final int SELECTED_PRIORITY = 0;
+	public static final int MIN_PRIORITY = 1;
+	public static final int MAX_PRIORITY = 100;
+	public static final int DEFAULT_PRIORITY = 100;
 	
-	public StatusID()
+	private int mPriority = DEFAULT_PRIORITY;
+	
+	public Priority()
 	{
+	}
+
+	/**
+	 * Indicates the associated alias should not be monitored or tracked.
+	 */
+	public boolean isDoNotMonitor()
+	{
+		return mPriority == DO_NOT_MONITOR;
 	}
 
 	@XmlAttribute
-	public int getStatus()
+	public int getPriority()
 	{
-		return mStatus;
+		return mPriority;
 	}
 
-	public void setStatus( int status )
+	public void setPriority( int priority )
 	{
-		this.mStatus = status;
+		mPriority = priority;
 	}
 	
 	public String toString()
 	{
-		return "Status: " + mStatus;
+		return "Priority: " + ( isDoNotMonitor() ? "Do Not Monitor" : mPriority );
 	}
 
 	@Override
     public boolean matches( AliasID id )
     {
-		boolean retVal = false;
-		
-		if( id instanceof StatusID )
-		{
-			StatusID statusId = (StatusID)id;
-			
-			retVal = ( mStatus == statusId.getStatus() );
-		}
-		
-	    return retVal;
+	    return false;
     }
 
 	@Override
     public AliasIDType getType()
     {
-	    return AliasIDType.Status;
+	    return AliasIDType.Priority;
     }
 }

@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import sample.Listener;
 import alias.Alias;
-import alias.priority.Priority;
+import alias.id.priority.Priority;
 
 public class AudioMetadata implements Listener<Metadata>
 {

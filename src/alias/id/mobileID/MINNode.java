@@ -41,7 +41,7 @@ public class MINNode extends AliasIDNode
     @Override
     public JPanel getEditor()
     {
-        return new MINEditor( this );
+        return null;
     }
     
     public Min getMIN()

@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2015 Dennis Sheirer
+ *     Copyright (C) 2014 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package alias.priority;
+package alias.id.nonrecordable;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -26,34 +26,36 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 
 import playlist.PlaylistManager;
+import alias.AliasID;
 import alias.AliasIDNode;
 import alias.AliasNode;
 
-public class PriorityNode extends AliasIDNode
+public class NonRecordableNode extends AliasIDNode
 {
     private static final long serialVersionUID = 1L;
-
-    public PriorityNode( PlaylistManager playlistManager, Priority priority )
+    
+    public NonRecordableNode( PlaylistManager playlistManager, NonRecordable id )
 	{
-        super( playlistManager, priority );
- 	}
+    	super( playlistManager, id );
+	}
     
     @Override
     public JPanel getEditor()
     {
-        return new PriorityEditor( this );
+        return null;
     }
     
-    public Priority getPriority()
-    {
-    	return (Priority)getUserObject();
-    }
-    
-    public String toString()
-    {
-    	return getPriority().toString();
-    }
+    @Override
+	public String getIconPath()
+	{
+		return "images/no_record.png";
+	}
 
+	public String toString()
+    {
+    	return "Non-Recordable";
+    }
+    
 	public JPopupMenu getContextMenu()
 	{
 		JPopupMenu retVal = new JPopupMenu();
@@ -71,11 +73,11 @@ public class PriorityNode extends AliasIDNode
 				{
 					AliasNode parent = (AliasNode)getParent();
 					
-					parent.getAlias().removeAliasID( getPriority() );
+					parent.getAlias().removeAliasID( (AliasID)getUserObject() );
 
 					save();
 
-					getModel().removeNodeFromParent( PriorityNode.this );
+					getModel().removeNodeFromParent( NonRecordableNode.this );
 				}
             }
 		} );

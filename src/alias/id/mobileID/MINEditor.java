@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -20,79 +20,99 @@ package alias.id.mobileID;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import javax.swing.JButton;
+import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.text.MaskFormatter;
 
 import net.miginfocom.swing.MigLayout;
-import controller.ConfigurableNode;
+import alias.AliasID;
+import alias.ComponentEditor;
 
-public class MINEditor extends JPanel implements ActionListener
+public class MINEditor extends ComponentEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
-    private MINNode mMINNode;
-    
-    private JLabel mLabelName;
-    private JTextField mTextMIN;
 
-	public MINEditor( MINNode minNode )
+    private static final String HELP_TEXT = "A Passport Mobile Identifier (MIN) is a"
+    		+ " six character hexadecimal value";
+
+    private JTextField mTextField;
+
+	public MINEditor( AliasID aliasID )
 	{
-		mMINNode = minNode;
+		super( aliasID );
 		
 		initGUI();
+		
+		setComponent( aliasID );
 	}
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][grow]" ) );
-
-		add( new JLabel( "Mobile ID Number (MIN)" ), "span,align center" );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][grow]" ) );
 
 		add( new JLabel( "MIN:" ) );
-		
-		mTextMIN = new JTextField( mMINNode.getMIN().getMin() );
-		add( mTextMIN, "growx,push" );
-		
-		JButton btnSave = new JButton( "Save" );
-		btnSave.addActionListener( MINEditor.this );
-		add( btnSave, "growx,push" );
 
-		JButton btnReset = new JButton( "Reset" );
-		btnReset.addActionListener( MINEditor.this );
-		add( btnReset, "growx,push" );
+		MaskFormatter formatter = null;
+
+		try
+		{
+			//Mask: 6 hex characters
+			formatter = new MaskFormatter( "HHHHHH" );
+		}
+		catch( Exception e )
+		{
+			//Do nothing, the mask was invalid
+		}
+		
+		mTextField = new JFormattedTextField( formatter );
+		mTextField.getDocument().addDocumentListener( this );
+		add( mTextField, "growx,push" );
+		
+		JTextArea helpText = new JTextArea( HELP_TEXT );
+		helpText.setLineWrap( true );
+		helpText.setBackground( getBackground() );
+		add( helpText, "span,grow,push" );
+	}
+	
+	public Min getMin()
+	{
+		if( getComponent() instanceof Min )
+		{
+			return (Min)getComponent();
+		}
+		
+		return null;
 	}
 
 	@Override
-    public void actionPerformed( ActionEvent e )
-    {
-		String command = e.getActionCommand();
+	public void setComponent( AliasID aliasID )
+	{
+		mComponent = aliasID;
 		
-		if( command.contentEquals( "Save" ) )
+		Min min = getMin();
+		
+		if( min != null )
 		{
-			String esn = mTextMIN.getText();
-			
-			if( esn != null )
-			{
-				mMINNode.getMIN().setMin( esn );
-
-				((ConfigurableNode)mMINNode.getParent()).sort();
-
-				mMINNode.save();
-				
-				mMINNode.show();
-			}
-			else
-			{
-				JOptionPane.showMessageDialog( MINEditor.this, "Please enter an ESN" );
-			}
-		}
-		else if( command.contentEquals( "Reset" ) )
-		{
-			mTextMIN.setText( mMINNode.getMIN().getMin() );
+			mTextField.setText( min.getMin() );
 		}
 		
-		mMINNode.refresh();
-    }
+		setModified( false );
+		
+		repaint();
+	}
+
+	@Override
+	public void save()
+	{
+		Min min = getMin();
+		
+		if( min != null )
+		{
+			min.setMin( mTextField.getText() );
+		}
+		
+		setModified( false );
+	}
 }

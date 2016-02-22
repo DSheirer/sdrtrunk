@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,79 +17,100 @@
  ******************************************************************************/
 package alias.id.mdc;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-
-import javax.swing.JButton;
+import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.text.MaskFormatter;
 
 import net.miginfocom.swing.MigLayout;
-import controller.ConfigurableNode;
+import alias.AliasID;
+import alias.ComponentEditor;
 
-public class MDC1200IDEditor extends JPanel implements ActionListener
+public class MDC1200IDEditor extends ComponentEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
-    private MDC1200IDNode mMDC1200IDNode;
-    
-    private JTextField mTextIdent;
 
-	public MDC1200IDEditor( MDC1200IDNode fsNode )
+    private static final String HELP_TEXT = "An MDC-1200 identifier is a"
+    		+ " four digit [0-9] value.  Use an asterisk (*) to wildcard" 
+    		+ " individual digits (e.g. 123* or **34)";
+
+    private JTextField mTextField;
+
+	public MDC1200IDEditor( AliasID aliasID )
 	{
-		mMDC1200IDNode = fsNode;
+		super( aliasID );
+		
 		initGUI();
+		
+		setComponent( aliasID );
 	}
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][grow]" ) );
 
-		add( new JLabel( "MDC-1200 " ), "span,align center" );
+		add( new JLabel( "MDC-1200 ID:" ) );
 
-		add( new JLabel( "Unit ID:" ) );
-		mTextIdent = new JTextField( mMDC1200IDNode.getMDC1200ID().getIdent() );
-		add( mTextIdent, "growx,push" );
+		MaskFormatter formatter = null;
+
+		try
+		{
+			//Mask: 4 digits
+			formatter = new MaskFormatter( "####" );
+		}
+		catch( Exception e )
+		{
+			//Do nothing, the mask was invalid
+		}
 		
-		JButton btnSave = new JButton( "Save" );
-		btnSave.addActionListener( MDC1200IDEditor.this );
-		add( btnSave, "growx,push" );
-
-		JButton btnReset = new JButton( "Reset" );
-		btnReset.addActionListener( MDC1200IDEditor.this );
-		add( btnReset, "growx,push" );
+		mTextField = new JFormattedTextField( formatter );
+		mTextField.getDocument().addDocumentListener( this );
+		add( mTextField, "growx,push" );
+		
+		JTextArea helpText = new JTextArea( HELP_TEXT );
+		helpText.setLineWrap( true );
+		helpText.setBackground( getBackground() );
+		add( helpText, "span,grow,push" );
+	}
+	
+	public MDC1200ID getMDC1200ID()
+	{
+		if( getComponent() instanceof MDC1200ID )
+		{
+			return (MDC1200ID)getComponent();
+		}
+		
+		return null;
 	}
 
 	@Override
-    public void actionPerformed( ActionEvent e )
-    {
-		String command = e.getActionCommand();
+	public void setComponent( AliasID aliasID )
+	{
+		mComponent = aliasID;
 		
-		if( command.contentEquals( "Save" ) )
+		MDC1200ID mdc = getMDC1200ID();
+		
+		if( mdc != null )
 		{
-			String ident = mTextIdent.getText();
-			
-			if( ident != null )
-			{
-				mMDC1200IDNode.getMDC1200ID().setIdent( ident );
+			mTextField.setText( mdc.getIdent() );
+		}
+		
+		setModified( false );
+		
+		repaint();
+	}
 
-				((ConfigurableNode)mMDC1200IDNode.getParent()).sort();
-				
-				mMDC1200IDNode.save();
-				
-				mMDC1200IDNode.show();
-			}
-			else
-			{
-				JOptionPane.showMessageDialog( MDC1200IDEditor.this, "Please enter a unit ID" );
-			}
-		}
-		else if( command.contentEquals( "Reset" ) )
+	@Override
+	public void save()
+	{
+		MDC1200ID mdc = getMDC1200ID();
+		
+		if( mdc != null )
 		{
-			mTextIdent.setText( mMDC1200IDNode.getMDC1200ID().getIdent() );
+			mdc.setIdent( mTextField.getText() );
 		}
 		
-		mMDC1200IDNode.refresh();
-    }
+		setModified( false );
+	}
 }

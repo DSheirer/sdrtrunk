@@ -41,7 +41,7 @@ public class SiteIDNode extends AliasIDNode
     @Override
     public JPanel getEditor()
     {
-        return new SiteIDEditor( this );
+        return null;
     }
     
     public SiteID getSiteID()

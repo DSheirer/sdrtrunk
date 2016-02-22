@@ -41,7 +41,7 @@ public class FleetsyncIDNode extends AliasIDNode
     @Override
     public JPanel getEditor()
     {
-        return new FleetsyncIDEditor( this );
+        return null;
     }
     
     public FleetsyncID getFleetsyncID()

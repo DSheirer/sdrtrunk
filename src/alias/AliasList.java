@@ -36,16 +36,16 @@ import alias.action.clip.ClipAction;
 import alias.action.script.ScriptAction;
 import alias.id.esn.Esn;
 import alias.id.fleetsync.FleetsyncID;
-import alias.id.fleetsync.StatusID;
 import alias.id.lojack.LoJackFunctionAndID;
 import alias.id.mdc.MDC1200ID;
 import alias.id.mobileID.Min;
 import alias.id.mpt1327.MPT1327ID;
+import alias.id.nonrecordable.NonRecordable;
+import alias.id.priority.Priority;
 import alias.id.siteID.SiteID;
+import alias.id.status.StatusID;
 import alias.id.talkgroup.TalkgroupID;
 import alias.id.uniqueID.UniqueID;
-import alias.priority.Priority;
-import alias.record.NonRecordable;
 import audio.metadata.MetadataType;
 
 @XmlSeeAlso( { Alias.class,

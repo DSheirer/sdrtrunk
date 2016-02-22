@@ -17,99 +17,87 @@
  ******************************************************************************/
 package alias.id.talkgroup;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-
-import javax.swing.JButton;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
-import controller.ConfigurableNode;
+import alias.AliasID;
+import alias.ComponentEditor;
 
-public class TalkgroupIDEditor extends JPanel implements ActionListener
+public class TalkgroupIDEditor extends ComponentEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
-    private TalkgroupIDNode mTalkgroupIDNode;
-    
-    private JTextField mTextTalkgroupID;
-    
-    private String mHelpText = "Enter a formatted talkgroup identifier.\n\n"
-    		+ "P25 Talkgroup Format: hexadecimal value, 4 characters for "
-    		+ "talkgroup or 6 characters for a mobile radio\n\n"
-    		+ "LTR Talkgroup Format: A-HH-TTT (A=Area, H=Home Repeater, "
-    		+ "T=Talkgroup)\n\n"
-    		+ "Passport Talkgroup Format: xxxxx (up to 5-digit number)\n\n"
-            + "Wildcard: use one or more asterisks (*) for any talkgroup digits.";
 
-	public TalkgroupIDEditor( TalkgroupIDNode talkgroupIDNode )
+    private static final String HELP_TEXT = "Enter a formatted talkgroup identifier.\n"
+    		+ "P25: 4 or 6 hex characters (e.g. AB12 or ABC123)\n"
+    		+ "LTR: A-HH-TTT (A=Area H=Home T=Talkgroup)\n"
+    		+ "Passport: xxxxx (up to 5-digit number)\n\n"
+            + "Wildcard: use an asterisk (*) in place of each talkgroup digit";
+
+    private JTextField mTextField;
+
+	public TalkgroupIDEditor( AliasID aliasID )
 	{
-		mTalkgroupIDNode = talkgroupIDNode;
+		super( aliasID );
 		
 		initGUI();
+		
+		setComponent( aliasID );
 	}
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][][grow]" ) );
-		
-		add( new JLabel( "Talkgroup ID" ), "span,align center" );
-		
-		add( new JLabel( "TGID:" ) );
-        mTextTalkgroupID = new JTextField();
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][grow]" ) );
 
-		mTextTalkgroupID.setText( mTalkgroupIDNode.getTalkgroupID().getTalkgroup() );
+		add( new JLabel( "Talkgroup:" ) );
+		mTextField = new JTextField();
+		mTextField.getDocument().addDocumentListener( this );
+		add( mTextField, "growx,push" );
 
-		add( mTextTalkgroupID, "growx,push" );
-
-		JButton btnSave = new JButton( "Save" );
-		btnSave.addActionListener( TalkgroupIDEditor.this );
-		add( btnSave, "growx,push" );
-
-		JButton btnReset = new JButton( "Reset" );
-		btnReset.addActionListener( TalkgroupIDEditor.this );
-		add( btnReset, "growx,push" );
-		
-		JTextArea helpText = new JTextArea( mHelpText );
-		helpText.setBackground( getBackground() );
+		JTextArea helpText = new JTextArea( HELP_TEXT );
 		helpText.setLineWrap( true );
+		helpText.setBackground( getBackground() );
 		add( helpText, "span,grow,push" );
+	}
+	
+	public TalkgroupID getTalkgroupID()
+	{
+		if( getComponent() instanceof TalkgroupID )
+		{
+			return (TalkgroupID)getComponent();
+		}
+		
+		return null;
 	}
 
 	@Override
-    public void actionPerformed( ActionEvent e )
-    {
-		String command = e.getActionCommand();
+	public void setComponent( AliasID aliasID )
+	{
+		mComponent = aliasID;
 		
-		if( command.contentEquals( "Save" ) )
+		TalkgroupID talkgroup = getTalkgroupID();
+		
+		if( talkgroup != null )
 		{
-			String tgid = mTextTalkgroupID.getText();
-			
-			if( tgid != null )
-			{
-				mTalkgroupIDNode.getTalkgroupID().setTalkgroup( tgid );
-				
-				((ConfigurableNode)mTalkgroupIDNode.getParent()).sort();
+			mTextField.setText( talkgroup.getTalkgroup() );
+		}
+		
+		setModified( false );
+		
+		repaint();
+	}
 
-				mTalkgroupIDNode.save();
-				
-				mTalkgroupIDNode.show();
-			}
-			else
-			{
-				JOptionPane.showMessageDialog( TalkgroupIDEditor.this, 
-						"Please enter a talkgroup ID" );
-			}
-		}
-		else if( command.contentEquals( "Reset" ) )
+	@Override
+	public void save()
+	{
+		TalkgroupID talkgroup = getTalkgroupID();
+		
+		if( talkgroup != null )
 		{
-			mTextTalkgroupID.setText( 
-					mTalkgroupIDNode.getTalkgroupID().getTalkgroup() );
+			talkgroup.setTalkgroup( mTextField.getText() );
 		}
 		
-		mTalkgroupIDNode.refresh();
-    }
+		setModified( false );
+	}
 }

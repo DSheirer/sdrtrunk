@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,80 +17,101 @@
  ******************************************************************************/
 package alias.id.mpt1327;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-
-import javax.swing.JButton;
+import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.text.MaskFormatter;
 
 import net.miginfocom.swing.MigLayout;
-import controller.ConfigurableNode;
+import alias.AliasID;
+import alias.ComponentEditor;
 
-public class MPT1327IDEditor extends JPanel implements ActionListener
+public class MPT1327IDEditor extends ComponentEditor<AliasID>
 {
-    private static final long serialVersionUID = 1L;
-    private MPT1327IDNode mMPT1327IDNode;
-    
-    private JTextField mTextIdent;
+	private static final long serialVersionUID = 1L;
 
-	public MPT1327IDEditor( MPT1327IDNode fsNode )
+    private static final String HELP_TEXT = "An MPT-1327 identifier is a"
+    		+ " composite decimal [0-9] value formatted as ppp-iiii where"
+    		+ " p=Prefix and i=Ident.";
+
+    private JTextField mTextField;
+
+	public MPT1327IDEditor( AliasID aliasID )
 	{
-		mMPT1327IDNode = fsNode;
+		super( aliasID );
+		
 		initGUI();
+		
+		setComponent( aliasID );
 	}
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][grow]" ) );
 
-		add( new JLabel( "MPT-1327 Radio or Group ID" ), "span,align center" );
+		add( new JLabel( "MPT-1327 ID:" ) );
 
-		add( new JLabel( "ID:" ) );
+		MaskFormatter formatter = null;
+
+		try
+		{
+			//Mask: 3 digits - 4 digits
+			formatter = new MaskFormatter( "###-####" );
+		}
+		catch( Exception e )
+		{
+			//Do nothing, the mask was invalid
+		}
 		
-		mTextIdent = new JTextField( mMPT1327IDNode.getMPT1327ID().getIdent() );
-		add( mTextIdent, "growx,push" );
-		
-		JButton btnSave = new JButton( "Save" );
-		btnSave.addActionListener( MPT1327IDEditor.this );
-		add( btnSave, "growx,push" );
+		mTextField = new JFormattedTextField( formatter );
+		mTextField.getDocument().addDocumentListener( this );
 
-		JButton btnReset = new JButton( "Reset" );
-		btnReset.addActionListener( MPT1327IDEditor.this );
-		add( btnReset, "growx,push" );
+		add( mTextField, "growx,push" );
+		
+		JTextArea helpText = new JTextArea( HELP_TEXT );
+		helpText.setLineWrap( true );
+		helpText.setBackground( getBackground() );
+		add( helpText, "span,grow,push" );
+	}
+	
+	public MPT1327ID getMPT1327ID()
+	{
+		if( getComponent() instanceof MPT1327ID )
+		{
+			return (MPT1327ID)getComponent();
+		}
+		
+		return null;
 	}
 
 	@Override
-    public void actionPerformed( ActionEvent e )
-    {
-		String command = e.getActionCommand();
+	public void setComponent( AliasID aliasID )
+	{
+		mComponent = aliasID;
 		
-		if( command.contentEquals( "Save" ) )
+		MPT1327ID mpt = getMPT1327ID();
+		
+		if( mpt != null )
 		{
-			String ident = mTextIdent.getText();
-			
-			if( ident != null )
-			{
-				mMPT1327IDNode.getMPT1327ID().setIdent( ident );
+			mTextField.setText( mpt.getIdent() );
+		}
+		
+		setModified( false );
+		
+		repaint();
+	}
 
-				((ConfigurableNode)mMPT1327IDNode.getParent()).sort();
-				
-				mMPT1327IDNode.save();
-				
-				mMPT1327IDNode.show();
-			}
-			else
-			{
-				JOptionPane.showMessageDialog( MPT1327IDEditor.this, "Please enter a MPT1327 unit ID" );
-			}
-		}
-		else if( command.contentEquals( "Reset" ) )
+	@Override
+	public void save()
+	{
+		MPT1327ID mpt = getMPT1327ID();
+		
+		if( mpt != null )
 		{
-			mTextIdent.setText( mMPT1327IDNode.getMPT1327ID().getIdent() );
+			mpt.setIdent( mTextField.getText() );
 		}
 		
-		mMPT1327IDNode.refresh();
-    }
+		setModified( false );
+	}
 }

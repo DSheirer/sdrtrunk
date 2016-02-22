@@ -7,18 +7,28 @@ import java.util.List;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JList;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ListModel;
 import javax.swing.ListSelectionModel;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
 import net.miginfocom.swing.MigLayout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AliasIdentifierEditor extends AliasConfigurationEditor
 {
 	private static final long serialVersionUID = 1L;
 
+	private final static Logger mLog = LoggerFactory.getLogger( AliasIdentifierEditor.class );
+
 	private static ListModel<AliasID> EMPTY_MODEL = new DefaultListModel<>();
 	private JList<AliasID> mAliasIDList = new JList<>( EMPTY_MODEL );
+	private EditorContainer mEditorContainer = new EditorContainer();
 
 	private Alias mAlias;
 	
@@ -30,14 +40,36 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 	private void init()
 	{
 		setLayout( new MigLayout( "fill,wrap 3", 
-			"[grow,fill][grow,fill][grow,fill]", "[grow,fill][][grow,fill]" ) );
+			"[grow,fill][grow,fill][grow,fill]", "[][grow,fill][]" ) );
 
-		mAliasIDList.setVisibleRowCount( 6 );
+		mAliasIDList.setVisibleRowCount( 4 );
 		mAliasIDList.setSelectionMode( ListSelectionModel.SINGLE_SELECTION );
 		mAliasIDList.setLayoutOrientation( JList.VERTICAL );
+		mAliasIDList.addListSelectionListener( new ListSelectionListener()
+		{
+			@Override
+			public void valueChanged( ListSelectionEvent event )
+			{
+				if( !event.getValueIsAdjusting() )
+				{
+					JList<?> list = (JList<?>)event.getSource();
+					
+					Object selectedItem = list.getSelectedValue();
+					
+					if( selectedItem != null && selectedItem instanceof AliasID )
+					{
+						AliasID selected = (AliasID)selectedItem;
+
+						mEditorContainer.setAliasID( selected );
+					}
+				}
+			}
+		} );
 		
 		JScrollPane scroller = new JScrollPane( mAliasIDList );
 		add( scroller, "span,grow" );
+		
+		add( mEditorContainer, "span,grow" );
 
 		add( new JButton( "New" ) );
 		add( new JButton( "Copy" ) );
@@ -75,6 +107,8 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 			
 			mAliasIDList.setModel( model );
 		}
+		
+		mEditorContainer.setAliasID( null );
 	}
 
 	@Override
@@ -82,5 +116,47 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 	{
 		// TODO Auto-generated method stub
 		
+	}
+	
+	public class EditorContainer extends JPanel
+	{
+		private static final long serialVersionUID = 1L;
+
+		private ComponentEditor<AliasID> mEditor = new EmptyAliasIDEditor();
+
+		public EditorContainer()
+		{
+			setLayout( new MigLayout( "","[grow,fill]", "[grow,fill]" ) );
+
+			add( mEditor );
+		}
+		
+		public void setAliasID( AliasID aliasID )
+		{
+			if( mEditor != null )
+			{
+				if( mEditor.isModified() )
+				{
+					int option = JOptionPane.showConfirmDialog( 
+							EditorContainer.this, 
+							"Identifier settings have changed.  Do you want to save these changes?", 
+							"Save Changes?",
+							JOptionPane.YES_NO_OPTION,
+							JOptionPane.QUESTION_MESSAGE );
+					
+					if( option == JOptionPane.YES_OPTION )
+					{
+						mEditor.save();
+					}
+				}
+			}
+			removeAll();
+			
+			mEditor = AliasFactory.getEditor( aliasID );
+			
+			add( mEditor );
+
+			revalidate();
+		}
 	}
 }

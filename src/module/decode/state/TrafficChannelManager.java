@@ -22,7 +22,7 @@ import source.config.SourceConfigTuner;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannel.Type;
 import alias.Alias;
-import alias.priority.Priority;
+import alias.id.priority.Priority;
 import controller.channel.Channel;
 import controller.channel.Channel.ChannelType;
 import controller.channel.ChannelEvent;

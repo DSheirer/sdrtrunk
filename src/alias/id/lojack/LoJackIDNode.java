@@ -41,7 +41,7 @@ public class LoJackIDNode extends AliasIDNode
     @Override
     public JPanel getEditor()
     {
-        return new LoJackIDEditor( this );
+        return null;
     }
     
     public LoJackFunctionAndID getLoJackID()
