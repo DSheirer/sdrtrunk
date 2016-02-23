@@ -1527,7 +1527,14 @@ public abstract class RTL2832TunerController extends TunerController
 		{
 			for( Transfer transfer: mTransfers )
 			{
-				LibUsb.cancelTransfer( transfer );
+				try
+				{
+					LibUsb.cancelTransfer( transfer );
+				}
+				catch( IllegalStateException ise )
+				{
+					//Do nothing, the transfer pointer wasn't initialized
+				}
 			}
 
 			ByteBuffer completed = ByteBuffer.allocateDirect( 4 );
