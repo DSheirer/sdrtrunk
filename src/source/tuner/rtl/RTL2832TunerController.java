@@ -1475,45 +1475,40 @@ public abstract class RTL2832TunerController extends TunerController
 		@Override
 	    public void processTransfer( Transfer transfer )
 	    {
-			if( transfer.status() == LibUsb.TRANSFER_COMPLETED )
-			{
-				ByteBuffer buffer = transfer.buffer();
-				
-				byte[] data = new byte[ transfer.actualLength() ];
-				
-				buffer.get( data );
-
-				buffer.rewind();
-				
-				if( mRunning.get() )
-				{
-					mFilledBuffers.add( data );
-				}
-				
-				mSampleCounter.addAndGet( transfer.actualLength() );
-				
-				if( !isRunning() )
-				{
-					LibUsb.cancelTransfer( transfer );
-				}
-			}
-			
 			switch( transfer.status() )
 			{
 				case LibUsb.TRANSFER_COMPLETED:
-					/* resubmit the transfer */
+				case LibUsb.TRANSFER_STALL:
+					if( transfer.actualLength() > 0 )
+					{
+						ByteBuffer buffer = transfer.buffer();
+						
+						byte[] data = new byte[ transfer.actualLength() ];
+						
+						buffer.get( data );
+
+						buffer.rewind();
+
+						if( isRunning() )
+						{
+							mFilledBuffers.add( data );
+						}
+					}
+
+					boolean error = false;
+					
 					if( isRunning() )
 					{
 						int result = LibUsb.submitTransfer( transfer );
 						
 						if( result != LibUsb.SUCCESS )
 						{
+							error = true;
 							mLog.error( "couldn't resubmit buffer transfer to tuner" );
-							LibUsb.freeTransfer( transfer );
-							mTransfers.remove( transfer );
 						}
 					}
-					else
+
+					if( error )
 					{
 						LibUsb.freeTransfer( transfer );
 						mTransfers.remove( transfer );
@@ -1542,7 +1537,10 @@ public abstract class RTL2832TunerController extends TunerController
 				}
 				catch( IllegalStateException ise )
 				{
-					//Do nothing, the transfer pointer wasn't initialized
+					//Do nothing. We get this exception if the transfer is not
+					//currently submitted for transfer and is likely being 
+					//handled as a completed transfer.  We'll rely on the mRunning
+					//variable to prevent this transfer from being resubmitted.
 				}
 			}
 
@@ -1556,6 +1554,8 @@ public abstract class RTL2832TunerController extends TunerController
 				mLog.error( "error handling usb events during cancel [" + 
 						LibUsb.errorName( result ) + "]" );
 			}
+			
+			mLog.debug( "RTL2832 Stopped" );
 		}
 		
 	    /**
