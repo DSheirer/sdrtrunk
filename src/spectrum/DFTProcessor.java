@@ -20,6 +20,7 @@ package spectrum;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -56,8 +57,12 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 	private CopyOnWriteArrayList<DFTResultsConverter> mListeners =
 			new CopyOnWriteArrayList<DFTResultsConverter>();
 
-	private ArrayBlockingQueue<ComplexBuffer> mQueue = 
-			new ArrayBlockingQueue<ComplexBuffer>( 200 );
+	//Fixed size sample queue.  We set the size at 12 based on the highest
+	//sample rate tuner (10 MHz) producing 153 frames per second and the lowest
+	//DFT processing frame rate of 12 frames per second.  This means that the 
+	//maximum size needed is 153 / 12 = 11 frames per DFT processing iteration
+	//so we set it at 12.
+	private BlockingQueue<ComplexBuffer> mQueue = new ArrayBlockingQueue<>( 12 );
 							
 	private ScheduledExecutorService mScheduler = Executors
 			.newScheduledThreadPool( 1, new NamingThreadFactory( "spectrum dft" ) );	
