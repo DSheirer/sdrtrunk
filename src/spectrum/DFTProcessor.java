@@ -251,15 +251,7 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 	@Override
     public void receive( ComplexBuffer sampleBuffer )
     {
-		if( !mQueue.offer( sampleBuffer ) )
-		{
-			mLog.error( "DFTProcessor - [" + mSampleType.toString()
-						+ "] queue is full, purging queue, "
-						+ "samples[" + sampleBuffer + "]" );
-
-			mQueue.clear();
-			mQueue.offer( sampleBuffer );
-		}
+		mQueue.offer( sampleBuffer );
     }
 	
 	private void getNextBuffer()
