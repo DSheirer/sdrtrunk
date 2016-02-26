@@ -27,6 +27,7 @@ import java.nio.charset.Charset;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
@@ -1378,9 +1379,13 @@ public abstract class RTL2832TunerController extends TunerController
 	public class BufferProcessor implements Runnable, TransferCallback
 	{
 		private ScheduledFuture<?> mSampleDispatcherTask;
+		private LinkedTransferQueue<Transfer> mAvailableTransfers;
+		private LinkedTransferQueue<Transfer> mTransfersInProgress = new LinkedTransferQueue<>();
         private CopyOnWriteArrayList<Transfer> mTransfers;
 		private AtomicBoolean mRunning = new AtomicBoolean();
 		private ThreadPoolManager mThreadPoolManager;
+		private ByteBuffer mLibUsbHandlerStatus;
+		private boolean mCancel = false;
 
 		public BufferProcessor( ThreadPoolManager manager )
 		{
@@ -1407,18 +1412,6 @@ public abstract class RTL2832TunerController extends TunerController
 
 	            prepareTransfers();
 	            
-				for( Transfer transfer: mTransfers )
-				{
-					int result = LibUsb.submitTransfer( transfer );
-					
-					if( result != LibUsb.SUCCESS )
-					{
-						mLog.error( "error submitting transfer [" + 
-								LibUsb.errorName( result ) + "]" );
-						break;
-					}
-				}
-
 				try
 				{
 					mSampleDispatcherTask = mThreadPoolManager.scheduleFixedRate( 
@@ -1429,20 +1422,62 @@ public abstract class RTL2832TunerController extends TunerController
 				{
 					mLog.error( "NPE! = tpm null: " + ( mThreadPoolManager == null ), npe );
 				}
-				
 
-            	while( mRunning.get() )
+				mLibUsbHandlerStatus = ByteBuffer.allocateDirect( 4 );
+				
+				List<Transfer> transfers = new ArrayList<>();
+
+				mCancel = false;
+				
+				while( mRunning.get() )
 				{
-					ByteBuffer completed = ByteBuffer.allocateDirect( 4 );
-					
+            		mAvailableTransfers.drainTo( transfers );
+
+            		for( Transfer transfer: transfers )
+            		{
+            			int result = LibUsb.submitTransfer( transfer );
+            			
+            			if( result == LibUsb.SUCCESS )
+            			{
+            				mTransfersInProgress.add( transfer );
+            			}
+            			else
+            			{
+            				mLog.error( "Error submitting transfer [" + 
+            						LibUsb.errorName( result ) + "]" );
+            			}
+            		}
+            		
 					int result = LibUsb.handleEventsTimeoutCompleted( 
-							null, TIMEOUT_US, completed.asIntBuffer() );
+							null, TIMEOUT_US, mLibUsbHandlerStatus.asIntBuffer() );
 					
 					if( result != LibUsb.SUCCESS )
 					{
 						mLog.error( "error handling events for libusb" );
 					}
+					
+					transfers.clear();
+					
+					mLibUsbHandlerStatus.rewind();
 				}
+            	
+            	if( mCancel )
+            	{
+            		for( Transfer transfer: mTransfersInProgress )
+            		{
+            			LibUsb.cancelTransfer( transfer );
+            		}
+            		
+					int result = LibUsb.handleEventsTimeoutCompleted( 
+							null, TIMEOUT_US, mLibUsbHandlerStatus.asIntBuffer() );
+					
+					if( result != LibUsb.SUCCESS )
+					{
+						mLog.error( "error handling events for libusb" );
+					}
+					
+					mLibUsbHandlerStatus.rewind();
+            	}
 			}
         }
 
@@ -1451,10 +1486,10 @@ public abstract class RTL2832TunerController extends TunerController
 		 */
 		public void stop()
 		{
+			mCancel = true;
+			
 			if( mRunning.compareAndSet( true, false ) )
 			{
-				cancel();
-				
 				if( mSampleDispatcherTask != null )
 				{
 					mThreadPoolManager.cancel( mSampleDispatcherTask );
@@ -1475,6 +1510,8 @@ public abstract class RTL2832TunerController extends TunerController
 		@Override
 	    public void processTransfer( Transfer transfer )
 	    {
+			mTransfersInProgress.remove( transfer );
+			
 			switch( transfer.status() )
 			{
 				case LibUsb.TRANSFER_COMPLETED:
@@ -1564,30 +1601,31 @@ public abstract class RTL2832TunerController extends TunerController
 	     */
 	    private void prepareTransfers() throws LibUsbException
 	    {
-	    	mTransfers = new CopyOnWriteArrayList<Transfer>();
-
-	    	for( int x = 0; x < TRANSFER_BUFFER_POOL_SIZE; x++ )
+	    	if( mAvailableTransfers == null )
 	    	{
-	    		Transfer transfer = LibUsb.allocTransfer();
-
-	    		if( transfer == null )
-	    		{
-	    			throw new LibUsbException( "couldn't allocate transfer", 
-	    						LibUsb.ERROR_NO_MEM );
-	    		}
+	    		mAvailableTransfers = new LinkedTransferQueue<>();
 	    		
+		    	for( int x = 0; x < TRANSFER_BUFFER_POOL_SIZE; x++ )
+		    	{
+		    		Transfer transfer = LibUsb.allocTransfer();
+
+		    		if( transfer == null )
+		    		{
+		    			throw new LibUsbException( "couldn't allocate transfer", 
+		    						LibUsb.ERROR_NO_MEM );
+		    		}
+		    		
+		    		mAvailableTransfers.add( transfer );
+		    	}
+	    	}
+	    	
+	    	for( Transfer transfer: mAvailableTransfers )
+	    	{
 	    		final ByteBuffer buffer = 
 	    				ByteBuffer.allocateDirect( mBufferSize );
 	    		
-	    		LibUsb.fillBulkTransfer( transfer, 
-	    								 mDeviceHandle, 
-	    								 BULK_ENDPOINT_IN, 
-	    								 buffer, 
-	    								 BufferProcessor.this, 
-	    								 "Buffer #" + x,
-	    								 TIMEOUT_US );
-	    		
-	    		mTransfers.add( transfer );
+	    		LibUsb.fillBulkTransfer( transfer, mDeviceHandle, BULK_ENDPOINT_IN, 
+	    				buffer, BufferProcessor.this, "Buffer", TIMEOUT_US );
 	    	}
 	    }
 	}
