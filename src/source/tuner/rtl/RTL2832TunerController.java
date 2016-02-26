@@ -55,8 +55,6 @@ import sample.complex.ComplexBuffer;
 import source.SourceException;
 import source.tuner.TunerController;
 import source.tuner.TunerType;
-import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeEvent.Event;
 import buffer.FloatAveragingBuffer;
 import controller.ResourceManager;
 import controller.ThreadPoolManager;
@@ -1486,8 +1484,11 @@ public abstract class RTL2832TunerController extends TunerController
 				buffer.get( data );
 
 				buffer.rewind();
-
-				mFilledBuffers.add( data );
+				
+				if( mRunning.get() )
+				{
+					mFilledBuffers.add( data );
+				}
 				
 				mSampleCounter.addAndGet( transfer.actualLength() );
 				
@@ -1501,11 +1502,19 @@ public abstract class RTL2832TunerController extends TunerController
 			{
 				case LibUsb.TRANSFER_COMPLETED:
 					/* resubmit the transfer */
-					int result = LibUsb.submitTransfer( transfer );
-					
-					if( result != LibUsb.SUCCESS )
+					if( isRunning() )
 					{
-						mLog.error( "couldn't resubmit buffer transfer to tuner" );
+						int result = LibUsb.submitTransfer( transfer );
+						
+						if( result != LibUsb.SUCCESS )
+						{
+							mLog.error( "couldn't resubmit buffer transfer to tuner" );
+							LibUsb.freeTransfer( transfer );
+							mTransfers.remove( transfer );
+						}
+					}
+					else
+					{
 						LibUsb.freeTransfer( transfer );
 						mTransfers.remove( transfer );
 					}

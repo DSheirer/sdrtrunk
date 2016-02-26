@@ -34,7 +34,7 @@ public class R820TTunerConfiguration extends TunerConfiguration
 	private R820TLNAGain mLNAGain = R820TLNAGain.GAIN_222;
 	private R820TVGAGain mVGAGain = R820TVGAGain.GAIN_210;
 	private double mFrequencyCorrection = 0.0d;
-	private SampleRate mSampleRate = SampleRate.RATE_1_920MHZ;
+	private SampleRate mSampleRate = SampleRate.RATE_2_400MHZ;
 
 	/**
 	 * Default constructor for JAXB
