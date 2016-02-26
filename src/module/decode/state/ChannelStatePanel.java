@@ -202,7 +202,7 @@ public class ChannelStatePanel extends JPanel
 				switch( changedAttribute )
 				{
 					case CHANNEL_STATE:
-						if( state.getState() != null )
+						if( state != null && state.getState() != null )
 						{
 				    		mStateLabel.setText( state.getState().getDisplayValue() );
 						}
