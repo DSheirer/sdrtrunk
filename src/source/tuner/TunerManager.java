@@ -547,16 +547,14 @@ public class TunerManager
     			}
     		}
     	}
-    	else
-    	{
-    		config = configs.get( 0 );
-    	}
     	
     	//If we're still null at this point, create a default config
     	if( config == null )
     	{
+    		String name = "Default-" + tuner.getUniqueID();
+    		
     		config = mSettingsManager.addNewTunerConfiguration( 
-    				tuner.getTunerType(), "Default" );
+    				tuner.getTunerType(), name );
     	}
     	
     	//Persist the config as the selected tuner configuration.  The method

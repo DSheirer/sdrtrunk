@@ -564,11 +564,6 @@ public class SettingsManager
 		ArrayList<TunerConfiguration> configs = getSettings()
 				.getTunerConfigurations( type );
 
-		if( configs.isEmpty() )
-		{
-			configs.add( addNewTunerConfiguration( type, "Default" ) );
-		}
-		
 		return configs;
 	}
 	
