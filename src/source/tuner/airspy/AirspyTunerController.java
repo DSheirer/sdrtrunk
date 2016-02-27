@@ -262,7 +262,30 @@ public class AirspyTunerController extends TunerController
 		}
 	}
 	
-	@Override
+    public static String getTransferStatus( int status )
+	{
+		switch( status )
+		{
+			case 0:
+				return "TRANSFER COMPLETED (0)";
+			case 1:
+				return "TRANSFER ERROR (1)";
+			case 2:
+				return "TRANSFER TIMED OUT (2)";
+			case 3:
+				return "TRANSFER CANCELLED (3)";
+			case 4:
+				return "TRANSFER STALL (4)";
+			case 5:
+				return "TRANSFER NO DEVICE (5)";
+			case 6:
+				return "TRANSFER OVERFLOW (6)";
+			default:
+				return "UNKNOWN TRANSFER STATUS (" + status + ")";
+		}
+	}
+
+    @Override
 	public void apply( TunerConfiguration config ) throws SourceException
 	{
 		if( config instanceof AirspyTunerConfiguration )
@@ -1192,18 +1215,21 @@ public class AirspyTunerController extends TunerController
 	 */
     public void addListener( Listener<ComplexBuffer> listener )
     {
-    	mComplexBufferBroadcaster.addListener( listener );
+    	synchronized( mComplexBufferBroadcaster )
+    	{
+        	mComplexBufferBroadcaster.addListener( listener );
 
-		if( mBufferProcessor == null || !mBufferProcessor.isRunning() )
-		{
-			mBufferProcessor = new BufferProcessor();
+    		if( mBufferProcessor == null || !mBufferProcessor.isRunning() )
+    		{
+    			mBufferProcessor = new BufferProcessor();
 
-			Thread thread = new Thread( mBufferProcessor );
-			thread.setDaemon( true );
-			thread.setName( "Airspy Buffer Processor" );
+    			Thread thread = new Thread( mBufferProcessor );
+    			thread.setDaemon( true );
+    			thread.setName( "Airspy Buffer Processor" );
 
-			thread.start();
-		}
+    			thread.start();
+    		}
+    	}
     }
 
 	/**
@@ -1212,12 +1238,15 @@ public class AirspyTunerController extends TunerController
 	 */
     public void removeListener( Listener<ComplexBuffer> listener )
     {
-    	mComplexBufferBroadcaster.removeListener( listener );
-    	
-		if( !mComplexBufferBroadcaster.hasListeners() )
-		{
-			mBufferProcessor.stop();
-		}
+    	synchronized( mComplexBufferBroadcaster )
+    	{
+        	mComplexBufferBroadcaster.removeListener( listener );
+        	
+    		if( !mComplexBufferBroadcaster.hasListeners() )
+    		{
+    			mBufferProcessor.stop();
+    		}
+    	}
     }
 	
 	/**
@@ -1227,8 +1256,11 @@ public class AirspyTunerController extends TunerController
 	public class BufferProcessor implements Runnable, TransferCallback
 	{
 		private ScheduledFuture<?> mSampleDispatcherTask;
-        private CopyOnWriteArrayList<Transfer> mTransfers;
+		private LinkedTransferQueue<Transfer> mAvailableTransfers;
+		private LinkedTransferQueue<Transfer> mTransfersInProgress = new LinkedTransferQueue<>();
 		private AtomicBoolean mRunning = new AtomicBoolean();
+		private ByteBuffer mLibUsbHandlerStatus;
+		private boolean mCancel = false;
 
 		@Override
         public void run()
@@ -1237,33 +1269,64 @@ public class AirspyTunerController extends TunerController
 			{
 	            prepareTransfers();
 	            
-				for( Transfer transfer: mTransfers )
-				{
-					int result = LibUsb.submitTransfer( transfer );
-					
-					if( result != LibUsb.SUCCESS )
-					{
-						mLog.error( "error submitting transfer [" + 
-								LibUsb.errorName( result ) + "]" );
-						break;
-					}
-				}
-
 				mSampleDispatcherTask = mThreadPoolManager.scheduleFixedRate( 
 					ThreadType.SOURCE_SAMPLE_PROCESSING, new BufferDispatcher(),
 					20, TimeUnit.MILLISECONDS );
 
+	            mLibUsbHandlerStatus = ByteBuffer.allocateDirect( 4 );
+	            
+				List<Transfer> transfers = new ArrayList<>();
+				
+				mCancel = false;
+				
             	while( mRunning.get() )
 				{
-					ByteBuffer completed = ByteBuffer.allocateDirect( 4 );
-					
+            		mAvailableTransfers.drainTo( transfers );
+            		
+            		for( Transfer transfer: transfers )
+            		{
+    					int result = LibUsb.submitTransfer( transfer );
+    					
+    					if( result == LibUsb.SUCCESS )
+    					{
+    						mTransfersInProgress.add( transfer );
+    					}
+						else
+						{
+    						mLog.error( "error submitting transfer [" + 
+    								LibUsb.errorName( result ) + "]" );
+    					}
+            		}
+            		
 					int result = LibUsb.handleEventsTimeoutCompleted( 
-							null, USB_TIMEOUT_MS, completed.asIntBuffer() );
+						null, USB_TIMEOUT_MS, mLibUsbHandlerStatus.asIntBuffer() );
 					
 					if( result != LibUsb.SUCCESS )
 					{
 						mLog.error( "error handling events for libusb" );
 					}
+					
+					transfers.clear();
+					
+					mLibUsbHandlerStatus.rewind();
+				}
+            	
+            	if( mCancel )
+            	{
+            		for( Transfer transfer: mTransfersInProgress )
+            		{
+            			LibUsb.cancelTransfer( transfer );
+            		}
+            		
+            		int result = LibUsb.handleEventsTimeoutCompleted( null,
+        				USB_TIMEOUT_MS, mLibUsbHandlerStatus.asIntBuffer() );
+					
+					if( result != LibUsb.SUCCESS )
+					{
+						mLog.error( "error handling events for libusb" );
+					}
+					
+					mLibUsbHandlerStatus.rewind();
 				}
 			}
         }
@@ -1273,10 +1336,10 @@ public class AirspyTunerController extends TunerController
 		 */
 		public void stop()
 		{
+			mCancel = true;
+			
 			if( mRunning.compareAndSet( true, false ) )
 			{
-				cancel();
-				
 				if( mSampleDispatcherTask != null )
 				{
 					mSampleDispatcherTask.cancel( true );
@@ -1296,66 +1359,39 @@ public class AirspyTunerController extends TunerController
 		@Override
 	    public void processTransfer( Transfer transfer )
 	    {
-			if( transfer.status() == LibUsb.TRANSFER_COMPLETED )
-			{
-				ByteBuffer buffer = transfer.buffer();
-				
-				byte[] data = new byte[ transfer.actualLength() ];
-				
-				buffer.get( data );
-
-				buffer.rewind();
-
-				mFilledBuffers.add( data );
-				
-				if( !isRunning() )
-				{
-					LibUsb.cancelTransfer( transfer );
-				}
-			}
+			mTransfersInProgress.remove( transfer );
 			
 			switch( transfer.status() )
 			{
 				case LibUsb.TRANSFER_COMPLETED:
-					/* resubmit the transfer */
-					int result = LibUsb.submitTransfer( transfer );
-					
-					if( result != LibUsb.SUCCESS )
+				case LibUsb.TRANSFER_STALL:
+					if( transfer.actualLength() > 0 )
 					{
-						mLog.error( "couldn't resubmit buffer transfer to tuner" );
-						LibUsb.freeTransfer( transfer );
-						mTransfers.remove( transfer );
+						ByteBuffer buffer = transfer.buffer();
+						
+						byte[] data = new byte[ transfer.actualLength() ];
+						
+						buffer.get( data );
+		
+						buffer.rewind();
+		
+						if( isRunning() )
+						{
+							mFilledBuffers.add( data );
+						}
 					}
 					break;
 				case LibUsb.TRANSFER_CANCELLED:
-					/* free the transfer and remove it */
-					LibUsb.freeTransfer( transfer );
-					mTransfers.remove( transfer );
 					break;
 				default:
 					/* unexpected error */
-					mLog.error( "transfer error" );
+					mLog.error( "transfer error [" + 
+						getTransferStatus( transfer.status() ) + 
+						"] transferred actual: " + transfer.actualLength() );
 			}
-	    }
-		
-		private void cancel()
-		{
-			for( Transfer transfer: mTransfers )
-			{
-				LibUsb.cancelTransfer( transfer );
-			}
-
-			ByteBuffer completed = ByteBuffer.allocateDirect( 4 );
-
-			int result = LibUsb.handleEventsTimeoutCompleted( 
-					null, USB_TIMEOUT_MS, completed.asIntBuffer() );
 			
-			if( result != LibUsb.SUCCESS )
-			{
-				mLog.error( "error handling usb events during cancel [" + 
-						LibUsb.errorName( result ) + "]" );
-			}
-		}
+			mAvailableTransfers.add( transfer );
+	    }
 		
 	    /**
 	     * Prepares (allocates) a set of transfer buffers for use in 
@@ -1363,30 +1399,28 @@ public class AirspyTunerController extends TunerController
 	     */
 	    private void prepareTransfers() throws LibUsbException
 	    {
-	    	mTransfers = new CopyOnWriteArrayList<Transfer>();
-
-	    	for( int x = 0; x < TRANSFER_BUFFER_POOL_SIZE; x++ )
+	    	if( mAvailableTransfers == null )
 	    	{
-	    		Transfer transfer = LibUsb.allocTransfer();
+	    		mAvailableTransfers = new LinkedTransferQueue<>();
+	    		
+		    	for( int x = 0; x < TRANSFER_BUFFER_POOL_SIZE; x++ )
+		    	{
+		    		Transfer transfer = LibUsb.allocTransfer();
 
-	    		if( transfer == null )
-	    		{
-	    			throw new LibUsbException( "couldn't allocate transfer", 
-	    						LibUsb.ERROR_NO_MEM );
-	    		}
-	    		
-	    		final ByteBuffer buffer = 
-	    				ByteBuffer.allocateDirect( mBufferSize );
-	    		
-	    		LibUsb.fillBulkTransfer( transfer, 
-	    								 mDeviceHandle, 
-	    								 USB_ENDPOINT, 
-	    								 buffer, 
-	    								 BufferProcessor.this, 
-	    								 "Buffer #" + x,
-	    								 USB_TIMEOUT_MS );
-	    		
-	    		mTransfers.add( transfer );
+		    		if( transfer == null )
+		    		{
+		    			throw new LibUsbException( "couldn't allocate transfer", 
+		    						LibUsb.ERROR_NO_MEM );
+		    		}
+		    		
+		    		final ByteBuffer buffer = 
+		    				ByteBuffer.allocateDirect( mBufferSize );
+		    		
+		    		LibUsb.fillBulkTransfer( transfer, mDeviceHandle, USB_ENDPOINT, 
+	    				buffer, BufferProcessor.this, "Buffer", USB_TIMEOUT_MS );
+
+		    		mAvailableTransfers.add( transfer );
+		    	}
 	    	}
 	    }
 	}

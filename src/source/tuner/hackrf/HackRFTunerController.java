@@ -56,6 +56,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
@@ -91,7 +92,7 @@ public class HackRFTunerController extends TunerController
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( HackRFTunerController.class );
 
-	public final static long TIMEOUT_US = 1000000l; //uSeconds
+	public final static long USB_TIMEOUT_MS = 1000000l; //uSeconds
 	public static final byte USB_ENDPOINT = (byte)0x81;
 	public static final byte USB_INTERFACE = (byte)0x0;
 	
@@ -394,7 +395,7 @@ public class HackRFTunerController extends TunerController
 													  (short)value,
 													  (short)index,
 													  buffer, 
-													  TIMEOUT_US );
+													  USB_TIMEOUT_MS );
 
 			if( transferred < 0 )
 			{
@@ -467,7 +468,7 @@ public class HackRFTunerController extends TunerController
 													  (short)value, 
 													  (short)index, 
 													  buffer, 
-													  TIMEOUT_US );
+													  USB_TIMEOUT_MS );
 
 			if( transferred < 0 )
 			{
@@ -886,18 +887,21 @@ public class HackRFTunerController extends TunerController
 	 */
     public void addListener( Listener<ComplexBuffer> listener )
     {
-    	mComplexBufferBroadcaster.addListener( listener );
+    	synchronized( mComplexBufferBroadcaster )
+    	{
+        	mComplexBufferBroadcaster.addListener( listener );
 
-		if( mBufferProcessor == null || !mBufferProcessor.isRunning() )
-		{
-			mBufferProcessor = new BufferProcessor();
+    		if( mBufferProcessor == null || !mBufferProcessor.isRunning() )
+    		{
+    			mBufferProcessor = new BufferProcessor();
 
-			Thread thread = new Thread( mBufferProcessor );
-			thread.setDaemon( true );
-			thread.setName( "HackRF Sample Processor" );
+    			Thread thread = new Thread( mBufferProcessor );
+    			thread.setDaemon( true );
+    			thread.setName( "HackRF Sample Processor" );
 
-			thread.start();
-		}
+    			thread.start();
+    		}
+    	}
     }
 
 	/**
@@ -906,12 +910,15 @@ public class HackRFTunerController extends TunerController
 	 */
     public void removeListener( Listener<ComplexBuffer> listener )
     {
-    	mComplexBufferBroadcaster.removeListener( listener );
-    	
-		if( !mComplexBufferBroadcaster.hasListeners() )
-		{
-			mBufferProcessor.stop();
-		}
+    	synchronized( mComplexBufferBroadcaster )
+    	{
+        	mComplexBufferBroadcaster.removeListener( listener );
+        	
+    		if( !mComplexBufferBroadcaster.hasListeners() )
+    		{
+    			mBufferProcessor.stop();
+    		}
+    	}
     }
 
 	/**
@@ -921,45 +928,77 @@ public class HackRFTunerController extends TunerController
 	public class BufferProcessor implements Runnable, TransferCallback
 	{
 		private ScheduledFuture<?> mSampleDispatcherTask;
-        private CopyOnWriteArrayList<Transfer> mTransfers;
+		private LinkedTransferQueue<Transfer> mAvailableTransfers;
+		private LinkedTransferQueue<Transfer> mTransfersInProgress = new LinkedTransferQueue<>();
 		private AtomicBoolean mRunning = new AtomicBoolean();
+		private ByteBuffer mLibUsbHandlerStatus;
+		private boolean mCancel = false;
 
 		@Override
         public void run()
         {
 			if( mRunning.compareAndSet( false, true ) )
 			{
-				mLog.info( "starting HackRF sample fetch thread" );
-
 	            prepareTransfers();
 	            
-				for( Transfer transfer: mTransfers )
-				{
-					int result = LibUsb.submitTransfer( transfer );
-					
-					if( result != LibUsb.SUCCESS )
-					{
-						mLog.error( "error submitting transfer [" + 
-								LibUsb.errorName( result ) + "]" );
-						break;
-					}
-				}
-
 				mSampleDispatcherTask = mThreadPoolManager.scheduleFixedRate( 
 					ThreadType.SOURCE_SAMPLE_PROCESSING, new BufferDispatcher(),
 					20, TimeUnit.MILLISECONDS );
 
+				mLibUsbHandlerStatus = ByteBuffer.allocateDirect( 4 );
+				
+				List<Transfer> transfers = new ArrayList<>();
+				
+				mCancel = false;
+				
             	while( mRunning.get() )
 				{
-					ByteBuffer completed = ByteBuffer.allocateDirect( 4 );
+            		mAvailableTransfers.drainTo( transfers );
+            		
+    				for( Transfer transfer: transfers )
+    				{
+    					int result = LibUsb.submitTransfer( transfer );
+    					
+    					if( result == LibUsb.SUCCESS )
+    					{
+    						mTransfersInProgress.add( transfer );
+    					}
+    					else
+    					{
+    						mLog.error( "error submitting transfer [" + 
+    								LibUsb.errorName( result ) + "]" );
+    					}
+    				}
 					
 					int result = LibUsb.handleEventsTimeoutCompleted( 
-							null, TIMEOUT_US, completed.asIntBuffer() );
+							null, USB_TIMEOUT_MS, mLibUsbHandlerStatus.asIntBuffer() );
 					
 					if( result != LibUsb.SUCCESS )
 					{
 						mLog.error( "error handling events for libusb" );
 					}
+					
+					transfers.clear();
+					
+					mLibUsbHandlerStatus.rewind();
+				}
+            	
+            	if( mCancel )
+            	{
+            		for( Transfer transfer: mTransfersInProgress )
+            		{
+            			LibUsb.cancelTransfer( transfer );
+            		}
+            		
+					int result = LibUsb.handleEventsTimeoutCompleted( 
+						null, USB_TIMEOUT_MS, mLibUsbHandlerStatus.asIntBuffer() );
+            		
+            		if( result != LibUsb.SUCCESS )
+					{
+						mLog.error( "error cancelling transfers in progress" );
+					}
+					
+					mLibUsbHandlerStatus.rewind();
 				}
 			}
         }
@@ -969,12 +1008,10 @@ public class HackRFTunerController extends TunerController
 		 */
 		public void stop()
 		{
+			mCancel = true;
+			
 			if( mRunning.compareAndSet( true, false ) )
 			{
-				mLog.info( "stopping HackRF sample fetch thread" );
-
-				cancel();
-				
 				if( mSampleDispatcherTask != null )
 				{
 					mSampleDispatcherTask.cancel( true );
@@ -994,41 +1031,29 @@ public class HackRFTunerController extends TunerController
 		@Override
 	    public void processTransfer( Transfer transfer )
 	    {
-			if( transfer.status() == LibUsb.TRANSFER_COMPLETED )
-			{
-				ByteBuffer buffer = transfer.buffer();
-				
-				byte[] data = new byte[ transfer.actualLength() ];
-				
-				buffer.get( data );
-
-				buffer.rewind();
-
-				mFilledBuffers.add( data );
-				
-				if( !isRunning() )
-				{
-					LibUsb.cancelTransfer( transfer );
-				}
-			}
+			mTransfersInProgress.remove( transfer );
 			
 			switch( transfer.status() )
 			{
 				case LibUsb.TRANSFER_COMPLETED:
-					/* resubmit the transfer */
-					int result = LibUsb.submitTransfer( transfer );
-					
-					if( result != LibUsb.SUCCESS )
+				case LibUsb.TRANSFER_STALL:
+					if( transfer.actualLength() > 0 )
 					{
-						mLog.error( "couldn't resubmit buffer transfer to tuner" );
-						LibUsb.freeTransfer( transfer );
-						mTransfers.remove( transfer );
+						ByteBuffer buffer = transfer.buffer();
+						
+						byte[] data = new byte[ transfer.actualLength() ];
+						
+						buffer.get( data );
+
+						buffer.rewind();
+
+						if( isRunning() )
+						{
+							mFilledBuffers.add( data );
+						}
 					}
 					break;
 				case LibUsb.TRANSFER_CANCELLED:
-					/* free the transfer and remove it */
-					LibUsb.freeTransfer( transfer );
-					mTransfers.remove( transfer );
 					break;
 				default:
 					/* unexpected error */
@@ -1036,26 +1061,9 @@ public class HackRFTunerController extends TunerController
 						getTransferStatus( transfer.status() ) + 
 						"] transferred actual: " + transfer.actualLength() );
 			}
-	    }
-		
-		private void cancel()
-		{
-			for( Transfer transfer: mTransfers )
-			{
-				LibUsb.cancelTransfer( transfer );
-			}
-
-			ByteBuffer completed = ByteBuffer.allocateDirect( 4 );
-
-			int result = LibUsb.handleEventsTimeoutCompleted( 
-					null, TIMEOUT_US, completed.asIntBuffer() );
 			
-			if( result != LibUsb.SUCCESS )
-			{
-				mLog.error( "error handling usb events during cancel [" + 
-						LibUsb.errorName( result ) + "]" );
-			}
-		}
+			mAvailableTransfers.add( transfer );
+	    }
 		
 	    /**
 	     * Prepares (allocates) a set of transfer buffers for use in 
@@ -1063,30 +1071,28 @@ public class HackRFTunerController extends TunerController
 	     */
 	    private void prepareTransfers() throws LibUsbException
 	    {
-	    	mTransfers = new CopyOnWriteArrayList<Transfer>();
-
-	    	for( int x = 0; x < TRANSFER_BUFFER_POOL_SIZE; x++ )
+	    	if( mAvailableTransfers == null )
 	    	{
-	    		Transfer transfer = LibUsb.allocTransfer();
+	    		mAvailableTransfers = new LinkedTransferQueue<>();
+	    		
+		    	for( int x = 0; x < TRANSFER_BUFFER_POOL_SIZE; x++ )
+		    	{
+		    		Transfer transfer = LibUsb.allocTransfer();
 
-	    		if( transfer == null )
-	    		{
-	    			throw new LibUsbException( "couldn't allocate transfer", 
-	    						LibUsb.ERROR_NO_MEM );
-	    		}
-	    		
-	    		final ByteBuffer buffer = 
-	    				ByteBuffer.allocateDirect( mBufferSize );
-	    		
-	    		LibUsb.fillBulkTransfer( transfer, 
-	    								 mDeviceHandle, 
-	    								 USB_ENDPOINT, 
-	    								 buffer, 
-	    								 BufferProcessor.this, 
-	    								 "Buffer #" + x,
-	    								 TIMEOUT_US );
-	    		
-	    		mTransfers.add( transfer );
+		    		if( transfer == null )
+		    		{
+		    			throw new LibUsbException( "couldn't allocate transfer", 
+		    						LibUsb.ERROR_NO_MEM );
+		    		}
+		    		
+		    		final ByteBuffer buffer = 
+		    				ByteBuffer.allocateDirect( mBufferSize );
+		    		
+		    		LibUsb.fillBulkTransfer( transfer, mDeviceHandle,USB_ENDPOINT, 
+	    				buffer, BufferProcessor.this, "Buffer", USB_TIMEOUT_MS );
+
+		    		mAvailableTransfers.add( transfer );
+		    	}
 	    	}
 	    }
 	}

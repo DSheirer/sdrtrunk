@@ -28,7 +28,6 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -72,7 +71,7 @@ public abstract class RTL2832TunerController extends TunerController
 	public final static int TWO_TO_22_POWER = 4194304;
 	
 	public final static byte USB_INTERFACE = (byte)0x0;
-	public final static byte BULK_ENDPOINT_IN = (byte)0x81;
+	public final static byte USB_BULK_ENDPOINT = (byte)0x81;
 	public final static byte CONTROL_ENDPOINT_IN = 
 			(byte)( LibUsb.ENDPOINT_IN | LibUsb.REQUEST_TYPE_VENDOR );
 	public final static byte CONTROL_ENDPOINT_OUT = 
@@ -1387,7 +1386,6 @@ public abstract class RTL2832TunerController extends TunerController
 		private ScheduledFuture<?> mSampleDispatcherTask;
 		private LinkedTransferQueue<Transfer> mAvailableTransfers;
 		private LinkedTransferQueue<Transfer> mTransfersInProgress = new LinkedTransferQueue<>();
-        private CopyOnWriteArrayList<Transfer> mTransfers;
 		private AtomicBoolean mRunning = new AtomicBoolean();
 		private ThreadPoolManager mThreadPoolManager;
 		private ByteBuffer mLibUsbHandlerStatus;
@@ -1577,7 +1575,7 @@ public abstract class RTL2832TunerController extends TunerController
 		    		final ByteBuffer buffer = 
 		    				ByteBuffer.allocateDirect( mBufferSize );
 		    		
-		    		LibUsb.fillBulkTransfer( transfer, mDeviceHandle, BULK_ENDPOINT_IN, 
+		    		LibUsb.fillBulkTransfer( transfer, mDeviceHandle, USB_BULK_ENDPOINT, 
 		    				buffer, BufferProcessor.this, "Buffer", TIMEOUT_US );
 
 		    		mAvailableTransfers.add( transfer );
