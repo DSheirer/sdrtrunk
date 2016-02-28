@@ -17,11 +17,14 @@
  ******************************************************************************/
 package alias.id.mobileID;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.text.MaskFormatter;
@@ -29,13 +32,18 @@ import javax.swing.text.MaskFormatter;
 import net.miginfocom.swing.MigLayout;
 import alias.AliasID;
 import alias.ComponentEditor;
+import alias.id.esn.ESNEditor;
 
 public class MINEditor extends ComponentEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
 
-    private static final String HELP_TEXT = "A Passport Mobile Identifier (MIN) is a"
-    		+ " six character hexadecimal value";
+    private static final String HELP_TEXT = "<html>"
+    		+ "<h3>Passport Mobile ID (MIN) Example</h3>"
+    		+ "<b>MIN:</b> six character hex value (e.g. <u>AB12CD</u>)<br>"
+    		+ "<b>Wildcard:</b> use an asterisk (*) to wildcard individual<br>"
+    		+ "digits (e.g. <u>AB**CD</u> or <u>AB12**</u>)"
+    		+ "</html>";
 
     private JTextField mTextField;
 
@@ -50,7 +58,7 @@ public class MINEditor extends ComponentEditor<AliasID>
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][]" ) );
 
 		add( new JLabel( "MIN:" ) );
 
@@ -68,12 +76,22 @@ public class MINEditor extends ComponentEditor<AliasID>
 		
 		mTextField = new JFormattedTextField( formatter );
 		mTextField.getDocument().addDocumentListener( this );
+		mTextField.setToolTipText( HELP_TEXT );
 		add( mTextField, "growx,push" );
 		
-		JTextArea helpText = new JTextArea( HELP_TEXT );
-		helpText.setLineWrap( true );
-		helpText.setBackground( getBackground() );
-		add( helpText, "span,grow,push" );
+		JLabel example = new JLabel( "Example ..." );
+		example.setForeground( Color.BLUE.brighter() );
+		example.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		example.addMouseListener( new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked( MouseEvent e )
+			{
+				JOptionPane.showMessageDialog( MINEditor.this, 
+					HELP_TEXT, "Example", JOptionPane.INFORMATION_MESSAGE );
+			}
+		} );
+		add( example );
 	}
 	
 	public Min getMin()

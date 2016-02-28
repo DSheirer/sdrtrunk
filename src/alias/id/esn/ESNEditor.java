@@ -17,25 +17,31 @@
  ******************************************************************************/
 package alias.id.esn;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
 import alias.AliasID;
 import alias.ComponentEditor;
+import alias.id.talkgroup.TalkgroupIDEditor;
 
 public class ESNEditor extends ComponentEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
 
-    private static final String HELP_TEXT = "An Electronic Serial Number (ESN)"
-    		+ " is a unique radio hardware identifier normally composed of"
-    		+ " hexadecimal (0-9,A-F) characters.  Use an asterisk (*) to wildcard" 
-    		+ " individual digits (e.g. ABCD123* or AB**1**4)";
+    private static final String HELP_TEXT = 
+    		"<html><h3>Electronic Serial Number (ESN) Example</h3>"
+    		+ "<b>ESN:</b> hexadecimal 0-9, A-F (e.g. <u>ABCD1234</u> )<br>"
+    		+ "<b>Wildcard:</b> use an asterisk (*) to wildcard individual<br>"
+    		+ "digits (e.g. <u>ABCD123*</u> or <u>AB**1**4</u>)"
+    		+ "</html>";
 
     private JTextField mTextField;
 
@@ -50,17 +56,27 @@ public class ESNEditor extends ComponentEditor<AliasID>
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][]" ) );
 
 		add( new JLabel( "ESN:" ) );
 		mTextField = new JTextField();
 		mTextField.getDocument().addDocumentListener( this );
+		mTextField.setToolTipText( HELP_TEXT );
 		add( mTextField, "growx,push" );
 
-		JTextArea helpText = new JTextArea( HELP_TEXT );
-		helpText.setLineWrap( true );
-		helpText.setBackground( getBackground() );
-		add( helpText, "span,grow,push" );
+		JLabel example = new JLabel( "Example ..." );
+		example.setForeground( Color.BLUE.brighter() );
+		example.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		example.addMouseListener( new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked( MouseEvent e )
+			{
+				JOptionPane.showMessageDialog( ESNEditor.this, 
+					HELP_TEXT, "Example", JOptionPane.INFORMATION_MESSAGE );
+			}
+		} );
+		add( example );
 	}
 	
 	public Esn getEsn()

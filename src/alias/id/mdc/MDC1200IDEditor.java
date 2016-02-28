@@ -17,9 +17,14 @@
  ******************************************************************************/
 package alias.id.mdc;
 
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
-import javax.swing.JTextArea;
+import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import javax.swing.text.MaskFormatter;
 
@@ -31,9 +36,12 @@ public class MDC1200IDEditor extends ComponentEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
 
-    private static final String HELP_TEXT = "An MDC-1200 identifier is a"
-    		+ " four digit [0-9] value.  Use an asterisk (*) to wildcard" 
-    		+ " individual digits (e.g. 123* or **34)";
+    private static final String HELP_TEXT = "<html>"
+    		+ "<h3>MDC-1200 Identifier Example</h3>"
+    		+ "<b>MDC-1200:</b> four digit [0-9] value (e.g. <u>1234</u>)<br>"
+    		+ "<b>Wildcard:</b> use an asterisk (*) to wildcard individual<br>" 
+    		+ "digits (e.g. <u>123*</u> or <u>**34</u>)"
+    		+ "</html>";
 
     private JTextField mTextField;
 
@@ -48,7 +56,7 @@ public class MDC1200IDEditor extends ComponentEditor<AliasID>
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][]" ) );
 
 		add( new JLabel( "MDC-1200 ID:" ) );
 
@@ -66,12 +74,22 @@ public class MDC1200IDEditor extends ComponentEditor<AliasID>
 		
 		mTextField = new JFormattedTextField( formatter );
 		mTextField.getDocument().addDocumentListener( this );
+		mTextField.setToolTipText( HELP_TEXT );
 		add( mTextField, "growx,push" );
 		
-		JTextArea helpText = new JTextArea( HELP_TEXT );
-		helpText.setLineWrap( true );
-		helpText.setBackground( getBackground() );
-		add( helpText, "span,grow,push" );
+		JLabel example = new JLabel( "Example ..." );
+		example.setForeground( Color.BLUE.brighter() );
+		example.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		example.addMouseListener( new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked( MouseEvent e )
+			{
+				JOptionPane.showMessageDialog( MDC1200IDEditor.this, 
+					HELP_TEXT, "Example", JOptionPane.INFORMATION_MESSAGE );
+			}
+		} );
+		add( example );
 	}
 	
 	public MDC1200ID getMDC1200ID()

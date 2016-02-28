@@ -17,8 +17,13 @@
  ******************************************************************************/
 package alias.id.siteID;
 
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
 import javax.swing.JLabel;
-import javax.swing.JTextArea;
+import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
@@ -29,10 +34,14 @@ public class SiteIDEditor extends ComponentEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
 
-    private static final String HELP_TEXT = "Site number for P25 systems uses"
-			+ " the format RR-SS, where RR = RF Subsystem and SS = Site Number. "
-    		+ " (e.g. RFSS 1 Site 3: 01-03).  For other protocols, simply use"
-    		+ " a decimal value for the site ID";
+    private static final String HELP_TEXT = "<html>"
+    		+ "<h3>Site ID Example</h3>"
+    		+ "<b>LTR-Net:</b> decimal (0-9) (e.g. <u>019</u>)<br>"
+    		+ "<b>MPT-1327:</b> 5 digits (0-9) (e.g. <u>23619</u>)<br>"
+    		+ "<b>Passport:</b> 3 digits (0-9) (e.g. <u>019</u>)<br>"
+    		+ "<b>P25:</b> hex (0-9, A-F) format RR-SS where RR = RF Subsystem<br>"
+    		+ "and SS = Site Number (e.g. RFSS 1 Site 1F: <u>01-1F</u>)"
+    		+ "</html>";
 
     private JTextField mTextField;
 
@@ -47,17 +56,28 @@ public class SiteIDEditor extends ComponentEditor<AliasID>
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][]" ) );
 
 		add( new JLabel( "Site ID:" ) );
 		mTextField = new JTextField();
 		mTextField.getDocument().addDocumentListener( this );
+		mTextField.setToolTipText( HELP_TEXT );
 		add( mTextField, "growx,push" );
 
-		JTextArea helpText = new JTextArea( HELP_TEXT );
-		helpText.setLineWrap( true );
-		helpText.setBackground( getBackground() );
-		add( helpText, "span,grow,push" );
+		JLabel example = new JLabel( "Example ..." );
+		example.setForeground( Color.BLUE.brighter() );
+		example.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		example.addMouseListener( new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked( MouseEvent e )
+			{
+				JOptionPane.showMessageDialog( SiteIDEditor.this, 
+					HELP_TEXT, "Example", JOptionPane.INFORMATION_MESSAGE );
+			}
+		} );
+		
+		add( example );
 	}
 	
 	public SiteID getSiteID()

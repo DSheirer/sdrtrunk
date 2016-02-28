@@ -17,9 +17,14 @@
  ******************************************************************************/
 package alias.id.mpt1327;
 
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
-import javax.swing.JTextArea;
+import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import javax.swing.text.MaskFormatter;
 
@@ -31,9 +36,13 @@ public class MPT1327IDEditor extends ComponentEditor<AliasID>
 {
 	private static final long serialVersionUID = 1L;
 
-    private static final String HELP_TEXT = "An MPT-1327 identifier is a"
-    		+ " composite decimal [0-9] value formatted as ppp-iiii where"
-    		+ " p=Prefix and i=Ident.";
+    private static final String HELP_TEXT = "<html>"
+    		+ "<h3>MPT-1327 Identifier Example</h3>"
+    		+ "<b>MPT-1327:</b> decimal (0-9) format ppp-iiii where<br>"
+    		+ "p=Prefix and i=Ident (e.g. <u>123-0001</u>)<br>"
+    		+ "<b>Wildcard:</b> use an asterisk (*) to wildcard individual<br>"
+    		+ "digits (e.g. <u>ABCD123*</u> or <u>AB**1**4</u>)"
+    		+ "</html>";
 
     private JTextField mTextField;
 
@@ -48,7 +57,7 @@ public class MPT1327IDEditor extends ComponentEditor<AliasID>
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][]" ) );
 
 		add( new JLabel( "MPT-1327 ID:" ) );
 
@@ -66,13 +75,23 @@ public class MPT1327IDEditor extends ComponentEditor<AliasID>
 		
 		mTextField = new JFormattedTextField( formatter );
 		mTextField.getDocument().addDocumentListener( this );
+		mTextField.setToolTipText( HELP_TEXT );
 
 		add( mTextField, "growx,push" );
 		
-		JTextArea helpText = new JTextArea( HELP_TEXT );
-		helpText.setLineWrap( true );
-		helpText.setBackground( getBackground() );
-		add( helpText, "span,grow,push" );
+		JLabel example = new JLabel( "Example ..." );
+		example.setForeground( Color.BLUE.brighter() );
+		example.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		example.addMouseListener( new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked( MouseEvent e )
+			{
+				JOptionPane.showMessageDialog( MPT1327IDEditor.this, 
+					HELP_TEXT, "Example", JOptionPane.INFORMATION_MESSAGE );
+			}
+		} );
+		add( example );
 	}
 	
 	public MPT1327ID getMPT1327ID()

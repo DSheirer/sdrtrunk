@@ -17,11 +17,16 @@
  ******************************************************************************/
 package alias.id.fleetsync;
 
+import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.text.MaskFormatter;
@@ -33,6 +38,7 @@ import controller.channel.Channel;
 import net.miginfocom.swing.MigLayout;
 import alias.AliasID;
 import alias.ComponentEditor;
+import alias.id.esn.ESNEditor;
 
 public class FleetsyncIDEditor extends ComponentEditor<AliasID>
 {
@@ -40,9 +46,11 @@ public class FleetsyncIDEditor extends ComponentEditor<AliasID>
 
 	private static final long serialVersionUID = 1L;
 
-    private static final String HELP_TEXT = "A Fleetsync identifier is a"
-    		+ " composite decimal [0-9] value formatted as ggg-uuuu where"
-    		+ " g=Group and u=Unit.";
+    private static final String HELP_TEXT = "<html>"
+    		+ "<h3>Fleetsync Identifier Example</h3>"
+    		+ "<b>Fleetsync:</b> ggg-uuuu where g=Group and u=Unit (e.g. <u>001-0001</u>)<br>"
+    		+ "<b>Wildcard:</b> use an asterisk (*) for each digit (e.g. <u>001-****</u>)"
+    		+ "</html>";
 
     private JTextField mTextField;
 
@@ -57,7 +65,7 @@ public class FleetsyncIDEditor extends ComponentEditor<AliasID>
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][]" ) );
 
 		add( new JLabel( "Fleetsync ID:" ) );
 
@@ -75,13 +83,23 @@ public class FleetsyncIDEditor extends ComponentEditor<AliasID>
 		
 		mTextField = new JFormattedTextField( formatter );
 		mTextField.getDocument().addDocumentListener( this );
+		mTextField.setToolTipText( HELP_TEXT );
 
 		add( mTextField, "growx,push" );
 		
-		JTextArea helpText = new JTextArea( HELP_TEXT );
-		helpText.setLineWrap( true );
-		helpText.setBackground( getBackground() );
-		add( helpText, "span,grow,push" );
+		JLabel example = new JLabel( "Example ..." );
+		example.setForeground( Color.BLUE.brighter() );
+		example.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		example.addMouseListener( new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked( MouseEvent e )
+			{
+				JOptionPane.showMessageDialog( FleetsyncIDEditor.this, 
+					HELP_TEXT, "Example", JOptionPane.INFORMATION_MESSAGE );
+			}
+		} );
+		add( example );
 	}
 	
 	public FleetsyncID getFleetsyncID()

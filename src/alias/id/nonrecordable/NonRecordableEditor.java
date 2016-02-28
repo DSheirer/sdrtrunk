@@ -17,7 +17,13 @@
  ******************************************************************************/
 package alias.id.nonrecordable;
 
-import javax.swing.JTextArea;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 
 import net.miginfocom.swing.MigLayout;
 import alias.AliasID;
@@ -27,9 +33,11 @@ public class NonRecordableEditor extends ComponentEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
 
-    private static final String HELP_TEXT = "This identifies an alias as "
-    		+ "non-recordable.  The alias can still be monitored but it will "
-    		+ "not be recorded when recording is enabled for the decoding channel.";
+    private static final String HELP_TEXT = "<html>"
+    		+ "<h3>Non-Recordable Example</h3>"
+    		+ "This identifies an alias as non-recordable.<br><br>"
+    		+ "The alias can still be monitored but it will not be recorded<br>"
+    		+ "when recording is enabled for the decoding channel.";
 
 	public NonRecordableEditor( AliasID aliasID )
 	{
@@ -42,12 +50,23 @@ public class NonRecordableEditor extends ComponentEditor<AliasID>
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 1", "[]", "[][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 1", "[]", "[][]" ) );
 
-		JTextArea helpText = new JTextArea( HELP_TEXT );
-		helpText.setLineWrap( true );
-		helpText.setBackground( getBackground() );
-		add( helpText, "span,grow,push" );
+		add( new JLabel( "Non-Recordable" ), "wrap" );
+		
+		JLabel example = new JLabel( "Example ..." );
+		example.setForeground( Color.BLUE.brighter() );
+		example.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		example.addMouseListener( new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked( MouseEvent e )
+			{
+				JOptionPane.showMessageDialog( NonRecordableEditor.this, 
+					HELP_TEXT, "Examples", JOptionPane.INFORMATION_MESSAGE );
+			}
+		} );
+		add( example );
 	}
 	
 	@Override

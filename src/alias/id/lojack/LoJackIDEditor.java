@@ -17,13 +17,17 @@
  ******************************************************************************/
 package alias.id.lojack;
 
+import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 import javax.swing.JComboBox;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
-import javax.swing.JTextArea;
+import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import javax.swing.text.MaskFormatter;
 
@@ -41,10 +45,19 @@ public class LoJackIDEditor extends ComponentEditor<AliasID>
     
     private JComboBox<LJ1200Message.Function> mFunctionCombo;
 
-    private static final String HELP_TEXT = "LoJack function code and five character ID."
-            + " The middle character in a reply ID code identifies the entity:"
-            + " Tower[X,Y] Transponder[0-9,A,C-H,J-N,P-W] Not Used[B,I,O,Z]."
-    		+ " Use an asterisk (*) to wildcard ID characters (e.g. AB*CD or ***12 or *****)";
+    private static final String HELP_TEXT = "<html>"
+    		+ "<h3>LoJack Example</h3>"
+    		+ "<b>Function Code:</b> <u>1Y-SITE ID</u><br>"
+    		+ "<b>ID:</b> 5 numbers or characters (e.g. <u>1BN47</u>)<br>"
+            + "<br>"
+            + "<b>Wildcard:</b> use an asterisk (*) to wildcard ID<br>"
+            + "characters (e.g. <u>AB*CD</u> or <u>***12</u> or <u>*****</u>)<br><br>"
+            + "The middle character in a reply ID code identifies the<br>"
+            + "entity.  Valid ID middle characters are:<br>"
+            + "<li><b>Tower:</b> X,Y</li>"
+            + "<li><b>Transponder:</b> 0-9,A,C-H,J-N,P-W</li>"
+            + "<li><b>Not Used:</b> B,I,O,Z</li>"
+    		+ "</html>";
 
     public LoJackIDEditor( AliasID aliasID )
 	{
@@ -57,7 +70,7 @@ public class LoJackIDEditor extends ComponentEditor<AliasID>
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][]" ) );
 
 		add( new JLabel( "Function:" ) );
 		mFunctionCombo = new JComboBox<LJ1200Message.Function>( Function.values() );
@@ -69,6 +82,7 @@ public class LoJackIDEditor extends ComponentEditor<AliasID>
 				setModified( true );
 			}
 		} );
+		mFunctionCombo.setToolTipText( HELP_TEXT );
 		add( mFunctionCombo, "growx, push" );
 		
 		add( new JLabel( "ID:" ) );
@@ -87,12 +101,22 @@ public class LoJackIDEditor extends ComponentEditor<AliasID>
 		
 		mTextField = new JFormattedTextField( formatter );
 		mTextField.getDocument().addDocumentListener( this );
+		mTextField.setToolTipText( HELP_TEXT );
 		add( mTextField, "growx,push" );
 		
-		JTextArea helpText = new JTextArea( HELP_TEXT );
-		helpText.setLineWrap( true );
-		helpText.setBackground( getBackground() );
-		add( helpText, "span,grow,push" );
+		JLabel example = new JLabel( "Example ..." );
+		example.setForeground( Color.BLUE.brighter() );
+		example.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		example.addMouseListener( new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked( MouseEvent e )
+			{
+				JOptionPane.showMessageDialog( LoJackIDEditor.this, 
+					HELP_TEXT, "Example", JOptionPane.INFORMATION_MESSAGE );
+			}
+		} );
+		add( example );
 	}
 	
 	public LoJackFunctionAndID getLoJackID()

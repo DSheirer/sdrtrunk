@@ -17,9 +17,14 @@
  ******************************************************************************/
 package alias.id.status;
 
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
-import javax.swing.JTextArea;
+import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import javax.swing.text.MaskFormatter;
 
@@ -31,10 +36,14 @@ public class StatusIDEditor extends ComponentEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
 
-    private static final String HELP_TEXT = "Status numbers are used in some"
-			+ " protocols like Fleetsync.  The status number is assigned a meaning"
-    		+ " in the radio.  You can assign a 3 digit status code (use leading zeros) to an"
-    		+ " alias where the alias contains the status meaning.";
+    private static final String HELP_TEXT = "<html>"
+    		+ "<h3>Status Example</h3>"
+    		+ "Status numbers are used in some protocols like Fleetsync.<br><br>"
+    		+ "The status number is assigned a meaning in the radio.  You<br>"
+    		+ "can assign a 3 digit status code (use leading zeros) to an<br>"
+    		+ "alias where the alias contains the status meaning.<br><br>"
+    		+ "<b>Status:</b> <u>001</u> engine start"
+    		+ "</html>";
 
     private JTextField mTextField;
 
@@ -49,7 +58,7 @@ public class StatusIDEditor extends ComponentEditor<AliasID>
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][]" ) );
 
 		add( new JLabel( "Status:" ) );
 
@@ -67,12 +76,22 @@ public class StatusIDEditor extends ComponentEditor<AliasID>
 		
 		mTextField = new JFormattedTextField( formatter );
 		mTextField.getDocument().addDocumentListener( this );
+		mTextField.setToolTipText( HELP_TEXT );
 		add( mTextField, "growx,push" );
 
-		JTextArea helpText = new JTextArea( HELP_TEXT );
-		helpText.setLineWrap( true );
-		helpText.setBackground( getBackground() );
-		add( helpText, "span,grow,push" );
+		JLabel example = new JLabel( "Example ..." );
+		example.setForeground( Color.BLUE.brighter() );
+		example.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		example.addMouseListener( new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked( MouseEvent e )
+			{
+				JOptionPane.showMessageDialog( StatusIDEditor.this, 
+					HELP_TEXT, "Example", JOptionPane.INFORMATION_MESSAGE );
+			}
+		} );
+		add( example );
 	}
 	
 	public StatusID getStatusID()

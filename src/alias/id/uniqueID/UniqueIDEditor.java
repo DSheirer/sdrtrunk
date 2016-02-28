@@ -17,8 +17,13 @@
  ******************************************************************************/
 package alias.id.uniqueID;
 
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
 import javax.swing.JLabel;
-import javax.swing.JTextArea;
+import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
@@ -29,8 +34,11 @@ public class UniqueIDEditor extends ComponentEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
 
-    private static final String HELP_TEXT = "LTR-Net Unique ID (UID) is a system"
-		+ " identifier assigned to each radio in the range 1 - 2097152";
+    private static final String HELP_TEXT = "<html>"
+    		+ "<h3>LTR-Net Unique ID (UID) Example</h3>"
+    		+ "<b>UID:</b> identifier assigned to each radio in<br>"
+    		+ "the range <u>1 - 2097152</u>"
+    		+ "</html>";
 
     private JTextField mTextField;
 
@@ -45,17 +53,27 @@ public class UniqueIDEditor extends ComponentEditor<AliasID>
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][]" ) );
 
 		add( new JLabel( "Unique ID:" ) );
 		mTextField = new JTextField();
 		mTextField.getDocument().addDocumentListener( this );
+		mTextField.setToolTipText( HELP_TEXT );
 		add( mTextField, "growx,push" );
 
-		JTextArea helpText = new JTextArea( HELP_TEXT );
-		helpText.setLineWrap( true );
-		helpText.setBackground( getBackground() );
-		add( helpText, "span,grow,push" );
+		JLabel example = new JLabel( "Example ..." );
+		example.setForeground( Color.BLUE.brighter() );
+		example.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		example.addMouseListener( new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked( MouseEvent e )
+			{
+				JOptionPane.showMessageDialog( UniqueIDEditor.this, 
+					HELP_TEXT, "Example", JOptionPane.INFORMATION_MESSAGE );
+			}
+		} );
+		add( example );
 	}
 	
 	public UniqueID getUniqueID()

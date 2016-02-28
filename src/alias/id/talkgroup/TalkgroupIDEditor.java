@@ -17,8 +17,13 @@
  ******************************************************************************/
 package alias.id.talkgroup;
 
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
 import javax.swing.JLabel;
-import javax.swing.JTextArea;
+import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
@@ -29,11 +34,14 @@ public class TalkgroupIDEditor extends ComponentEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
 
-    private static final String HELP_TEXT = "Enter a formatted talkgroup identifier.\n"
-    		+ "P25: 4 or 6 hex characters (e.g. AB12 or ABC123)\n"
-    		+ "LTR: A-HH-TTT (A=Area H=Home T=Talkgroup)\n"
-    		+ "Passport: xxxxx (up to 5-digit number)\n\n"
-            + "Wildcard: use an asterisk (*) in place of each talkgroup digit";
+    private static final String HELP_TEXT = 
+    		"<html><h3>Talkgroup Identifier Examples</h3>"
+    		+ "<b>P25:</b> 4 or 6 hex characters (e.g. <u>AB12</u> or <u>ABC123</u>)<br>"
+    		+ "<b>LTR:</b> A-HH-TTT where A=Area H=Home T=Talkgroup (<u>0-01-128</u>)<br>"
+    		+ "<b>Passport</b>: 5-digit number (<u>12345</u> or <u>00023</u>)<br>"
+    		+ "<br>"
+            + "<b>Wildcard:</b> use an asterisk (*) in place of each talkgroup digit (e.g. <u>0*1*5</u>)"
+    		+ "</html>";
 
     private JTextField mTextField;
 
@@ -48,17 +56,28 @@ public class TalkgroupIDEditor extends ComponentEditor<AliasID>
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][]" ) );
 
 		add( new JLabel( "Talkgroup:" ) );
+		
 		mTextField = new JTextField();
 		mTextField.getDocument().addDocumentListener( this );
+		mTextField.setToolTipText( HELP_TEXT );
 		add( mTextField, "growx,push" );
 
-		JTextArea helpText = new JTextArea( HELP_TEXT );
-		helpText.setLineWrap( true );
-		helpText.setBackground( getBackground() );
-		add( helpText, "span,grow,push" );
+		JLabel example = new JLabel( "Example ..." );
+		example.setForeground( Color.BLUE.brighter() );
+		example.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		example.addMouseListener( new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked( MouseEvent e )
+			{
+				JOptionPane.showMessageDialog( TalkgroupIDEditor.this, 
+					HELP_TEXT, "Examples", JOptionPane.INFORMATION_MESSAGE );
+			}
+		} );
+		add( example );
 	}
 	
 	public TalkgroupID getTalkgroupID()

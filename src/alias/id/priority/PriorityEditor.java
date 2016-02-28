@@ -17,10 +17,15 @@
  ******************************************************************************/
 package alias.id.priority;
 
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JSlider;
-import javax.swing.JTextArea;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
@@ -34,10 +39,13 @@ public class PriorityEditor extends ComponentEditor<AliasID>
 
 	public static final String DO_NOT_MONITOR = "Do Not Monitor";
 
-	private static final String HELP_TEXT = "Priority determines which calls"
-    		+ " have priority for playback over your computer speakers, or designates"
-    		+ " an alias for non-monitoring if you don't want to hear calls"
-    		+ " from an alias.  Lower values indicate higher priority levels.";
+	private static final String HELP_TEXT = "<html>"
+			+ "<h3>Call Priority Example</h3>"
+			+ "Priority determines which calls have priority for playback<br>"
+			+ "over your computer speakers, or designates an alias for<br>"
+			+ "no-monitoring if you don't want to hear calls from an alias.<br><br>"
+			+ "Lower values indicate higher priority levels."
+    		+ "</html>";
 
     private JCheckBox mDoNotMonitorCheckBox = new JCheckBox( DO_NOT_MONITOR );
     private JSlider mPrioritySlider;
@@ -54,8 +62,9 @@ public class PriorityEditor extends ComponentEditor<AliasID>
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][]" ) );
 
+		mDoNotMonitorCheckBox.setToolTipText( HELP_TEXT );
 		add( mDoNotMonitorCheckBox, "span,align center" );
 
 		mPrioritySlider = new JSlider( JSlider.HORIZONTAL,
@@ -76,15 +85,25 @@ public class PriorityEditor extends ComponentEditor<AliasID>
 				mPrioritySliderLabel.setText( "Priority: " + mPrioritySlider.getValue() );
 			}
 		} );
+		mPrioritySlider.setToolTipText( HELP_TEXT );
 		
 		mPrioritySliderLabel = new JLabel( "Priority: " + mPrioritySlider.getValue() + " " );
 		add( mPrioritySliderLabel );
 		add( mPrioritySlider, "wrap,grow" );
 		
-		JTextArea helpText = new JTextArea( HELP_TEXT );
-		helpText.setLineWrap( true );
-		helpText.setBackground( getBackground() );
-		add( helpText, "span,grow,push" );
+		JLabel example = new JLabel( "Example ..." );
+		example.setForeground( Color.BLUE.brighter() );
+		example.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		example.addMouseListener( new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked( MouseEvent e )
+			{
+				JOptionPane.showMessageDialog( PriorityEditor.this, 
+					HELP_TEXT, "Example", JOptionPane.INFORMATION_MESSAGE );
+			}
+		} );
+		add( example );
 	}
 	
 	public Priority getPriority()
