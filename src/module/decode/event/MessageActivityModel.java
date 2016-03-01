@@ -80,10 +80,13 @@ public class MessageActivityModel extends AbstractTableModel
             public void run()
             {
 				int messageCount = mMessages.size();
-				
-				mMessages.clear();
 
-				fireTableRowsDeleted( 0, messageCount - 1 );
+				if( messageCount > 0 )
+				{
+					mMessages.clear();
+
+					fireTableRowsDeleted( 0, messageCount - 1 );
+				}
             }
 		});
 	}
