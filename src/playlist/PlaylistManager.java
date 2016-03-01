@@ -37,8 +37,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import properties.SystemProperties;
+import sample.Listener;
 import alias.Alias;
 import alias.AliasDirectory;
+import alias.AliasEvent;
 import alias.AliasList;
 import alias.AliasModel;
 import alias.Group;
@@ -51,7 +53,7 @@ import controller.channel.ChannelModel;
 import controller.site.Site;
 import controller.system.SystemList;
 
-public class PlaylistManager implements ChannelEventListener
+public class PlaylistManager implements ChannelEventListener, Listener<AliasEvent>
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( PlaylistManager.class );
@@ -83,8 +85,9 @@ public class PlaylistManager implements ChannelEventListener
 		mAliasModel = aliasModel;
 		mChannelModel = channelModel;
 
-		//Register for channel events so that we can save the playlist when
-		//any channels change
+		//Register for alias and channel events so that we can save the 
+		//playlist with changes
+		mAliasModel.addListener( this );
 		mChannelModel.addListener( this );
 	}
 
@@ -126,6 +129,33 @@ public class PlaylistManager implements ChannelEventListener
 				props.get( "playlist.currentfilename", defaultPlaylistFile );
 		
 		load( playlistFolder.resolve( playlistFile ) );
+	}
+
+	/**
+	 * Alias event listener method.  Monitors alias events for events that
+	 * indicate that the playlist has changed and queues automatic playlist
+	 * saving.
+	 */
+	@Override
+	public void receive( AliasEvent event )
+	{
+		if( !mPlaylistLoading )
+		{
+			switch( event.getEvent() )
+			{
+				case ADD:
+				case DELETE:
+				case CHANGE:
+					schedulePlaylistSave();
+					break;
+				default:
+					//When a new event enum entry is added and received, throw an
+					//exception here to ensure developer adds support for the 
+					//use case
+					throw new IllegalArgumentException( "Unrecognized Alias "
+							+ "Event [" + event.getEvent().toString() + "]" );
+			}
+		}
 	}
 
 	/**

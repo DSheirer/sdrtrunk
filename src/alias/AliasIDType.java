@@ -19,16 +19,28 @@ package alias;
 
 public enum AliasIDType
 {
-	ESN,
-	Fleetsync,
-	LoJack,
-	LTRNetUID,
-	MDC1200,
-	MIN,
-	MPT1327,
-	NonRecordable,
-	Priority,
-	Site,
-	Status,
-	Talkgroup;
+	ESN( "ESN" ),
+	Fleetsync( "Fleetsync" ),
+	LoJack( "LoJack" ),
+	LTRNetUID( "LTR-Net UID" ),
+	MDC1200( "MDC-1200" ),
+	MIN( "Passport MIN" ),
+	MPT1327( "MPT-1327" ),
+	NonRecordable( "Non-Recordable" ),
+	Priority( "Audio Priority" ),
+	Site( "Site" ),
+	Status( "Status" ),
+	Talkgroup( "Talkgroup" );
+	
+	private String mLabel;
+	
+	private AliasIDType( String label )
+	{
+		mLabel = label;
+	}
+	
+	public String toString()
+	{
+		return mLabel;
+	}
 }

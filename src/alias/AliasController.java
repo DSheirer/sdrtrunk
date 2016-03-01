@@ -55,7 +55,7 @@ public class AliasController extends JPanel
 		mAliasModel = aliasModel;
 
     	mEditor = new AliasEditor( mAliasModel, settingsManager );
-    	mAliasModel.addAliasEventListener( mEditor );
+    	mAliasModel.addListener( mEditor );
 
     	mIconCellRenderer = new IconCellRenderer( settingsManager );
     	

@@ -52,9 +52,9 @@ public class AliasEditor extends JPanel implements ActionListener, Listener<Alia
 	{
     	mAliasModel = aliasModel;
     	mAliasNameEditor = new AliasNameEditor( mAliasModel, settingsManager );
-    	mAliasIdentifierEditor = new AliasIdentifierEditor();
+    	mAliasIdentifierEditor = new AliasIdentifierEditor( aliasModel );
     	
-    	mAliasModel.addAliasEventListener( this );
+    	mAliasModel.addListener( this );
 		
 		initGUI();
 	}

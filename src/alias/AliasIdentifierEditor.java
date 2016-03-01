@@ -1,5 +1,10 @@
 package alias;
 
+import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -7,8 +12,10 @@ import java.util.List;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JList;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.ListModel;
 import javax.swing.ListSelectionModel;
@@ -19,6 +26,9 @@ import net.miginfocom.swing.MigLayout;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import sample.Listener;
+import alias.AliasEvent.Event;
 
 public class AliasIdentifierEditor extends AliasConfigurationEditor
 {
@@ -31,9 +41,11 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 	private EditorContainer mEditorContainer = new EditorContainer();
 
 	private Alias mAlias;
+	private AliasModel mAliasModel;
 	
-	public AliasIdentifierEditor()
+	public AliasIdentifierEditor( AliasModel model )
 	{
+		mAliasModel = model;
 		init();
 	}
 
@@ -71,7 +83,35 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 		
 		add( mEditorContainer, "span,grow" );
 
-		add( new JButton( "New" ) );
+		final JButton newButton = new JButton( "New ..." );
+		
+		newButton.addMouseListener( new MouseAdapter()
+		{
+			@Override
+			public void mouseClicked( MouseEvent e )
+			{
+				JPopupMenu menu = new JPopupMenu();
+
+				menu.add( new AddAliasIdentifierItem( AliasIDType.ESN ) );
+				menu.add( new AddAliasIdentifierItem( AliasIDType.Fleetsync ) );
+				menu.add( new AddAliasIdentifierItem( AliasIDType.LoJack ) );
+				menu.add( new AddAliasIdentifierItem( AliasIDType.LTRNetUID ) );
+				menu.add( new AddAliasIdentifierItem( AliasIDType.MDC1200 ) );
+				menu.add( new AddAliasIdentifierItem( AliasIDType.MPT1327 ) );
+				menu.add( new AddAliasIdentifierItem( AliasIDType.MIN ) );
+				menu.add( new AddAliasIdentifierItem( AliasIDType.Site ) );
+				menu.add( new AddAliasIdentifierItem( AliasIDType.Status ) );
+				menu.add( new AddAliasIdentifierItem( AliasIDType.Talkgroup ) );
+				menu.addSeparator();
+				menu.add( new AddAliasIdentifierItem( AliasIDType.Priority ) );
+				menu.addSeparator();
+				menu.add( new AddAliasIdentifierItem( AliasIDType.NonRecordable ) );
+				
+				menu.show( e.getComponent(), e.getX(), e.getY() );
+			}
+		} );
+		
+		add( newButton );
 		add( new JButton( "Copy" ) );
 		add( new JButton( "Delete" ), "wrap" );
 	}
@@ -110,12 +150,11 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 		
 		mEditorContainer.setAliasID( null );
 	}
-
+	
 	@Override
 	public void save()
 	{
-		// TODO Auto-generated method stub
-		
+		mAliasModel.broadcast( new AliasEvent( mAlias, Event.CHANGE ) );
 	}
 	
 	public class EditorContainer extends JPanel
@@ -157,6 +196,45 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 			add( mEditor );
 
 			revalidate();
+		}
+	}
+	
+	public class AddAliasIdentifierItem extends JMenuItem
+	{
+		private static final long serialVersionUID = 1L;
+		
+		private AliasIDType mAliasIDType;
+
+		public AddAliasIdentifierItem( AliasIDType type )
+		{
+			super( type.toString() );
+			
+			mAliasIDType = type;
+			
+			addActionListener( new ActionListener()
+			{
+				@Override
+				public void actionPerformed( ActionEvent e )
+				{
+					final AliasID id = AliasFactory.getAliasID( mAliasIDType );
+					
+					if( id != null && mAlias != null )
+					{
+						mAlias.addAliasID( id );
+						
+						EventQueue.invokeLater( new Runnable()
+						{
+							@Override
+							public void run()
+							{
+								setAlias( mAlias );
+								
+								mAliasIDList.setSelectedValue( id, true );
+							}
+						} );
+					}
+				}
+			} );
 		}
 	}
 }

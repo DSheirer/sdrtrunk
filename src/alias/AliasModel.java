@@ -258,12 +258,12 @@ public class AliasModel extends AbstractTableModel
 		}
 	}
 	
-	public void addAliasEventListener( Listener<AliasEvent> listener )
+	public void addListener( Listener<AliasEvent> listener )
 	{
 		mAliasEventBroadcaster.addListener( listener );
 	}
 	
-	public void removeAliasEventListener( Listener<AliasEvent> listener )
+	public void removeListener( Listener<AliasEvent> listener )
 	{
 		mAliasEventBroadcaster.removeListener( listener );
 	}

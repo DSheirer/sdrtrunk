@@ -22,6 +22,7 @@ import alias.id.priority.Priority;
 import alias.id.priority.PriorityEditor;
 import alias.id.siteID.SiteIDEditor;
 import alias.id.siteID.SiteID;
+import alias.id.status.StatusID;
 import alias.id.status.StatusIDEditor;
 import alias.id.talkgroup.TalkgroupID;
 import alias.id.talkgroup.TalkgroupIDEditor;
@@ -204,5 +205,38 @@ public class AliasFactory
 		}
 		
 		return new EmptyAliasActionEditor();
+	}
+	
+	public static AliasID getAliasID( AliasIDType type )
+	{
+		switch( type )
+		{
+			case ESN:
+				return new Esn();
+			case Fleetsync:
+				return new FleetsyncID();
+			case LTRNetUID:
+				return new UniqueID();
+			case LoJack:
+				return new LoJackFunctionAndID();
+			case MDC1200:
+				return new MDC1200ID();
+			case MIN:
+				return new Min();
+			case MPT1327:
+				return new MPT1327ID();
+			case NonRecordable:
+				return new NonRecordable();
+			case Priority:
+				return new Priority();
+			case Site:
+				return new SiteID();
+			case Status:
+				return new StatusID();
+			case Talkgroup:
+				return new TalkgroupID();
+			default:
+				throw new IllegalArgumentException( "Unrecognized Alias ID type: " + type );
+		}
 	}
 }
