@@ -31,6 +31,102 @@ import alias.id.uniqueID.UniqueIDEditor;
 
 public class AliasFactory
 {
+	public static AliasID copyOf( AliasID id )
+	{
+		switch( id.getType() )
+		{
+			case ESN:
+				Esn originalESN = (Esn)id;
+				Esn copyESN = new Esn();
+				copyESN.setEsn( originalESN.getEsn() );
+				return copyESN;
+			case Fleetsync:
+				FleetsyncID originalFleetsyncID = (FleetsyncID)id;
+				FleetsyncID copyFleetsyncID = new FleetsyncID();
+				copyFleetsyncID.setIdent( originalFleetsyncID.getIdent() );
+				return copyFleetsyncID;
+			case LTRNetUID:
+				UniqueID originalUniqueID = (UniqueID)id;
+				UniqueID copyUniqueID = new UniqueID();
+				copyUniqueID.setUid( originalUniqueID.getUid() );
+				return copyUniqueID;
+			case LoJack:
+				LoJackFunctionAndID originalLoJackFunctionAndID = (LoJackFunctionAndID)id;
+				LoJackFunctionAndID copyLoJackFunctionAndID = new LoJackFunctionAndID();
+				copyLoJackFunctionAndID.setFunction( originalLoJackFunctionAndID.getFunction() );
+				copyLoJackFunctionAndID.setID( originalLoJackFunctionAndID.getID() );
+				return copyLoJackFunctionAndID;
+			case MDC1200:
+				MDC1200ID originalMDC1200ID = (MDC1200ID)id;
+				MDC1200ID copyMDC1200ID = new MDC1200ID();
+				copyMDC1200ID.setIdent( originalMDC1200ID.getIdent() );
+				return copyMDC1200ID;
+			case MIN:
+				Min originalMin = (Min)id;
+				Min copyMin = new Min();
+				copyMin.setMin( originalMin.getMin() );
+				return copyMin;
+			case MPT1327:
+				MPT1327ID originalMPT1327ID = (MPT1327ID)id;
+				MPT1327ID copyMPT1327ID = new MPT1327ID();
+				copyMPT1327ID.setIdent( originalMPT1327ID.getIdent() );
+				return copyMPT1327ID;
+			case NonRecordable:
+				return new NonRecordable();
+			case Priority:
+				Priority originalPriority = (Priority)id;
+				Priority copyPriority = new Priority();
+				copyPriority.setPriority( originalPriority.getPriority() );
+				return copyPriority;
+			case Site:
+				SiteID originalSiteID = (SiteID)id;
+				SiteID copySiteID = new SiteID();
+				copySiteID.setSite( originalSiteID.getSite() );
+				return copySiteID;
+			case Talkgroup:
+				TalkgroupID originalTalkgroupID = (TalkgroupID)id;
+				TalkgroupID copyTalkgroupID = new TalkgroupID();
+				copyTalkgroupID.setTalkgroup( originalTalkgroupID.getTalkgroup() );
+				return copyTalkgroupID;
+			case Status:
+				StatusID originalStatusID = (StatusID)id;
+				StatusID copyStatusID = new StatusID();
+				copyStatusID.setStatus( originalStatusID.getStatus() );
+				return copyStatusID;
+			default:
+		}
+
+		return null;
+	}
+	
+	public static AliasAction copyOf( AliasAction action )
+	{
+		if( action instanceof BeepAction )
+		{
+			return new BeepAction();
+		}
+		else if( action instanceof ClipAction )
+		{
+			ClipAction originalClip = (ClipAction)action;
+			ClipAction copyClip = new ClipAction();
+			copyClip.setInterval( originalClip.getInterval() );
+			copyClip.setPath( originalClip.getPath() );
+			copyClip.setPeriod( originalClip.getPeriod() );
+			return copyClip;
+		}
+		else if( action instanceof ScriptAction )
+		{
+			ScriptAction originalScript = (ScriptAction)action;
+			ScriptAction copyScript = new ScriptAction();
+			copyScript.setInterval( originalScript.getInterval() );
+			copyScript.setPeriod( originalScript.getPeriod() );
+			copyScript.setScript( originalScript.getScript() );
+			return copyScript;
+		}
+		
+		return null;
+	}
+	
 	public static Alias copyOf( Alias original )
 	{
 		Alias copy = new Alias( original.getName() );
@@ -41,107 +137,21 @@ public class AliasFactory
 		
 		for( AliasID id: original.getId() )
 		{
-			switch( id.getType() )
+			AliasID copyID = copyOf( id );
+			
+			if( copyID != null )
 			{
-				case ESN:
-					Esn originalESN = (Esn)id;
-					Esn copyESN = new Esn();
-					copyESN.setEsn( originalESN.getEsn() );
-					copy.addAliasID( copyESN );
-					break;
-				case Fleetsync:
-					FleetsyncID originalFleetsyncID = (FleetsyncID)id;
-					FleetsyncID copyFleetsyncID = new FleetsyncID();
-					copyFleetsyncID.setIdent( originalFleetsyncID.getIdent() );
-					copy.addAliasID( copyFleetsyncID );
-					break;
-				case LTRNetUID:
-					UniqueID originalUniqueID = (UniqueID)id;
-					UniqueID copyUniqueID = new UniqueID();
-					copyUniqueID.setUid( originalUniqueID.getUid() );
-					copy.addAliasID( copyUniqueID );
-					break;
-				case LoJack:
-					LoJackFunctionAndID originalLoJackFunctionAndID = (LoJackFunctionAndID)id;
-					LoJackFunctionAndID copyLoJackFunctionAndID = new LoJackFunctionAndID();
-					copyLoJackFunctionAndID.setFunction( originalLoJackFunctionAndID.getFunction() );
-					copyLoJackFunctionAndID.setID( originalLoJackFunctionAndID.getID() );
-					copy.addAliasID( copyLoJackFunctionAndID );
-					break;
-				case MDC1200:
-					MDC1200ID originalMDC1200ID = (MDC1200ID)id;
-					MDC1200ID copyMDC1200ID = new MDC1200ID();
-					copyMDC1200ID.setIdent( originalMDC1200ID.getIdent() );
-					copy.addAliasID( copyMDC1200ID );
-					break;
-				case MIN:
-					Min originalMin = (Min)id;
-					Min copyMin = new Min();
-					copyMin.setMin( originalMin.getMin() );
-					copy.addAliasID( copyMin );
-					break;
-				case MPT1327:
-					MPT1327ID originalMPT1327ID = (MPT1327ID)id;
-					MPT1327ID copyMPT1327ID = new MPT1327ID();
-					copyMPT1327ID.setIdent( originalMPT1327ID.getIdent() );
-					copy.addAliasID( copyMPT1327ID );
-					break;
-				case NonRecordable:
-					copy.addAliasID( new NonRecordable() );
-					break;
-				case Priority:
-					Priority originalPriority = (Priority)id;
-					Priority copyPriority = new Priority();
-					copyPriority.setPriority( originalPriority.getPriority() );
-					copy.addAliasID( copyPriority );
-					break;
-				case Site:
-					SiteID originalSiteID = (SiteID)id;
-					SiteID copySiteID = new SiteID();
-					copySiteID.setSite( originalSiteID.getSite() );
-					copy.addAliasID( copySiteID );
-					break;
-				case Talkgroup:
-					TalkgroupID originalTalkgroupID = (TalkgroupID)id;
-					TalkgroupID copyTalkgroupID = new TalkgroupID();
-					copyTalkgroupID.setTalkgroup( originalTalkgroupID.getTalkgroup() );
-					copy.addAliasID( copyTalkgroupID );
-					break;
-				case Status:
-				default:
-					throw new IllegalArgumentException( "Unrecognized alias "
-							+ "ID type: " + id.getType() );
+				copy.addAliasID( copyID );
 			}
 		}
 
 		for( AliasAction action: original.getAction() )
 		{
-			if( action instanceof BeepAction )
+			AliasAction copyAction = copyOf( action );
+			
+			if( copyAction != null )
 			{
-				copy.addAliasAction( new BeepAction() );
-			}
-			else if( action instanceof ClipAction )
-			{
-				ClipAction originalClip = (ClipAction)action;
-				ClipAction copyClip = new ClipAction();
-				copyClip.setInterval( originalClip.getInterval() );
-				copyClip.setPath( originalClip.getPath() );
-				copyClip.setPeriod( originalClip.getPeriod() );
-				copy.addAliasAction( copyClip );
-			}
-			else if( action instanceof ScriptAction )
-			{
-				ScriptAction originalScript = (ScriptAction)action;
-				ScriptAction copyScript = new ScriptAction();
-				copyScript.setInterval( originalScript.getInterval() );
-				copyScript.setPeriod( originalScript.getPeriod() );
-				copyScript.setScript( originalScript.getScript() );
-				copy.addAliasAction( copyScript );
-			}
-			else
-			{
-				throw new IllegalArgumentException( "Unrecognized alias "
-						+ "action: " + action.getClass() );
+				copy.addAliasAction( copyAction );
 			}
 		}
 		

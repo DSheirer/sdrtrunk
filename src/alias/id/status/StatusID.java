@@ -43,7 +43,7 @@ public class StatusID extends AliasID
 	
 	public String toString()
 	{
-		return "Status: " + mStatus;
+		return "Status: " + String.format( "%03d", mStatus );
 	}
 
 	@Override

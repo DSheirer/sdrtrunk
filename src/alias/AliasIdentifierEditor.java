@@ -27,7 +27,6 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sample.Listener;
 import alias.AliasEvent.Event;
 
 public class AliasIdentifierEditor extends AliasConfigurationEditor
@@ -38,6 +37,10 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 
 	private static ListModel<AliasID> EMPTY_MODEL = new DefaultListModel<>();
 	private JList<AliasID> mAliasIDList = new JList<>( EMPTY_MODEL );
+	private JButton mNewIDButton;
+	private JButton mCloneIDButton;
+	private JButton mDeleteIDButton;
+	
 	private EditorContainer mEditorContainer = new EditorContainer();
 
 	private Alias mAlias;
@@ -73,6 +76,14 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 						AliasID selected = (AliasID)selectedItem;
 
 						mEditorContainer.setAliasID( selected );
+						
+						mCloneIDButton.setEnabled( true );
+						mDeleteIDButton.setEnabled( true );
+					}
+					else
+					{
+						mCloneIDButton.setEnabled( false );
+						mDeleteIDButton.setEnabled( false );
 					}
 				}
 			}
@@ -83,9 +94,9 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 		
 		add( mEditorContainer, "span,grow" );
 
-		final JButton newButton = new JButton( "New ..." );
+		mNewIDButton = new JButton( "New ..." );
 		
-		newButton.addMouseListener( new MouseAdapter()
+		mNewIDButton.addMouseListener( new MouseAdapter()
 		{
 			@Override
 			public void mouseClicked( MouseEvent e )
@@ -111,9 +122,57 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 			}
 		} );
 		
-		add( newButton );
-		add( new JButton( "Copy" ) );
-		add( new JButton( "Delete" ), "wrap" );
+		add( mNewIDButton );
+		
+		mCloneIDButton = new JButton( "Clone" );
+		mCloneIDButton.setEnabled( false );
+		mCloneIDButton.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				AliasID selected = mAliasIDList.getSelectedValue();
+				
+				if( selected != null )
+				{
+					AliasID clone = AliasFactory.copyOf( selected );
+
+					if( clone != null )
+					{
+						addAliasIDToList( clone );
+					}
+				}
+			}
+		} );
+		add( mCloneIDButton );
+		
+		mDeleteIDButton = new JButton( "Delete" );
+		mDeleteIDButton.setEnabled( false );
+		mDeleteIDButton.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				final AliasID selected = mAliasIDList.getSelectedValue();
+				
+				if( selected != null )
+				{
+					int choice = JOptionPane.showConfirmDialog( mDeleteIDButton, 
+						"Do you want to delete [" + selected.toString() + "]", 
+						"Are you sure?", JOptionPane.YES_NO_OPTION );
+					
+					if( choice == JOptionPane.YES_OPTION )
+					{
+						mAlias.removeAliasID( selected );
+						
+						mAliasModel.broadcast( new AliasEvent( mAlias, Event.CHANGE ) );
+
+						setAlias( mAlias );
+					}
+				}
+			}
+		} );
+		add( mDeleteIDButton, "wrap" );
 	}
 	
 	@Override
@@ -154,6 +213,11 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 	@Override
 	public void save()
 	{
+		if( mEditorContainer.isModified() )
+		{
+			mEditorContainer.save();
+		}
+		
 		mAliasModel.broadcast( new AliasEvent( mAlias, Event.CHANGE ) );
 	}
 	
@@ -168,6 +232,24 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 			setLayout( new MigLayout( "","[grow,fill]", "[grow,fill]" ) );
 
 			add( mEditor );
+		}
+		
+		public boolean isModified()
+		{
+			if( mEditor != null )
+			{
+				return mEditor.isModified();
+			}
+			
+			return false;
+		}
+		
+		public void save()
+		{
+			if( mEditor != null )
+			{
+				mEditor.save();
+			}
 		}
 		
 		public void setAliasID( AliasID aliasID )
@@ -199,6 +281,25 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 		}
 	}
 	
+	private void addAliasIDToList( final AliasID id )
+	{
+		if( id != null && mAlias != null )
+		{
+			mAlias.addAliasID( id );
+			
+			EventQueue.invokeLater( new Runnable()
+			{
+				@Override
+				public void run()
+				{
+					setAlias( mAlias );
+					
+					mAliasIDList.setSelectedValue( id, true );
+				}
+			} );
+		}
+	}
+	
 	public class AddAliasIdentifierItem extends JMenuItem
 	{
 		private static final long serialVersionUID = 1L;
@@ -218,21 +319,7 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 				{
 					final AliasID id = AliasFactory.getAliasID( mAliasIDType );
 					
-					if( id != null && mAlias != null )
-					{
-						mAlias.addAliasID( id );
-						
-						EventQueue.invokeLater( new Runnable()
-						{
-							@Override
-							public void run()
-							{
-								setAlias( mAlias );
-								
-								mAliasIDList.setSelectedValue( id, true );
-							}
-						} );
-					}
+					addAliasIDToList( id );
 				}
 			} );
 		}

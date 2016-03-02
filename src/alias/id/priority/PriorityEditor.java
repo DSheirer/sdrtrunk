@@ -19,6 +19,8 @@ package alias.id.priority;
 
 import java.awt.Color;
 import java.awt.Cursor;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
@@ -65,6 +67,14 @@ public class PriorityEditor extends ComponentEditor<AliasID>
 		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][]" ) );
 
 		mDoNotMonitorCheckBox.setToolTipText( HELP_TEXT );
+		mDoNotMonitorCheckBox.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				setModified( true );
+			}
+		} );
 		add( mDoNotMonitorCheckBox, "span,align center" );
 
 		mPrioritySlider = new JSlider( JSlider.HORIZONTAL,
@@ -83,6 +93,7 @@ public class PriorityEditor extends ComponentEditor<AliasID>
 			public void stateChanged( ChangeEvent e )
 			{
 				mPrioritySliderLabel.setText( "Priority: " + mPrioritySlider.getValue() );
+				setModified( true );
 			}
 		} );
 		mPrioritySlider.setToolTipText( HELP_TEXT );

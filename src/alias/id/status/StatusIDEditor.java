@@ -113,7 +113,7 @@ public class StatusIDEditor extends ComponentEditor<AliasID>
 		
 		if( statusID != null )
 		{
-			mTextField.setText( String.valueOf( statusID.getStatus() ) );
+			mTextField.setText( String.format( "%03d", statusID.getStatus() ) );
 		}
 		
 		setModified( false );
