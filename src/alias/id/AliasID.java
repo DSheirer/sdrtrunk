@@ -15,11 +15,12 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package alias;
+package alias.id;
 
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
+import alias.Group;
 import alias.id.esn.Esn;
 import alias.id.fleetsync.FleetsyncID;
 import alias.id.lojack.LoJackFunctionAndID;

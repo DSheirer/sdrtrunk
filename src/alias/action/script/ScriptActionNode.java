@@ -41,7 +41,7 @@ public class ScriptActionNode extends AliasActionNode
     @Override
     public JPanel getEditor()
     {
-        return new ScriptActionEditor( this );
+        return null;
     }
     
     public ScriptAction getScriptAction()

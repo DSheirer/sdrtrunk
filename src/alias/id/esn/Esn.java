@@ -19,8 +19,8 @@ package alias.id.esn;
 
 import javax.xml.bind.annotation.XmlAttribute;
 
-import alias.AliasID;
-import alias.AliasIDType;
+import alias.id.AliasID;
+import alias.id.AliasIDType;
 
 public class Esn extends AliasID
 {

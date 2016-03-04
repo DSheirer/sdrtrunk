@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -15,22 +15,18 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package alias;
+package alias.action;
 
-import playlist.PlaylistManager;
-import controller.ConfigurableNode;
+import alias.AliasEvent;
 
-public class AliasIDNode extends ConfigurableNode
+/**
+ * Interface for receiving alias events.  Each listener will receive
+ * notification of all alias events.
+ */
+public interface AliasActionListener
 {
-    private static final long serialVersionUID = 1L;
-
-    public AliasIDNode( PlaylistManager playlistManager, AliasID id )
-	{
-    	super( playlistManager, id );
-	}
-    
-    public void save()
-    {
-    	getPlaylistManager().save();
-    }
+	/**
+	 * Notifies the listener that an alias event has occurred
+	 */
+	public void aliasChanged( AliasEvent event );
 }

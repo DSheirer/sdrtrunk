@@ -17,6 +17,8 @@
  ******************************************************************************/
 package alias.id.nonrecordable;
 
+import gui.editor.DocumentListenerEditor;
+
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.event.MouseAdapter;
@@ -26,26 +28,23 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 
 import net.miginfocom.swing.MigLayout;
-import alias.AliasID;
-import alias.ComponentEditor;
+import alias.id.AliasID;
 
-public class NonRecordableEditor extends ComponentEditor<AliasID>
+public class NonRecordableEditor extends DocumentListenerEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
 
     private static final String HELP_TEXT = "<html>"
-    		+ "<h3>Non-Recordable Example</h3>"
+    		+ "<h3>Audio Non-Recordable Example</h3>"
     		+ "This identifies an alias as non-recordable.<br><br>"
-    		+ "The alias can still be monitored but it will not be recorded<br>"
+    		+ "The alias can still be monitored but associated audio will not be recorded<br>"
     		+ "when recording is enabled for the decoding channel.";
 
 	public NonRecordableEditor( AliasID aliasID )
 	{
-		super( aliasID );
-		
 		initGUI();
 		
-		setComponent( aliasID );
+		setItem( aliasID );
 	}
 	
 	private void initGUI()
@@ -63,17 +62,12 @@ public class NonRecordableEditor extends ComponentEditor<AliasID>
 			public void mouseClicked( MouseEvent e )
 			{
 				JOptionPane.showMessageDialog( NonRecordableEditor.this, 
-					HELP_TEXT, "Examples", JOptionPane.INFORMATION_MESSAGE );
+					HELP_TEXT, "Example", JOptionPane.INFORMATION_MESSAGE );
 			}
 		} );
 		add( example );
 	}
 	
-	@Override
-	public void setComponent( AliasID aliasID )
-	{
-	}
-
 	@Override
 	public void save()
 	{

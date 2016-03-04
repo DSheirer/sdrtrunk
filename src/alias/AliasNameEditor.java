@@ -1,5 +1,7 @@
 package alias;
 
+import gui.editor.Editor;
+
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.EventQueue;
@@ -14,17 +16,24 @@ import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import alias.AliasEvent.Event;
 import map.IconManager;
 import map.MapIcon;
 import map.MapIconListCellRenderer;
 import net.miginfocom.swing.MigLayout;
 import settings.SettingsManager;
 
-public class AliasNameEditor extends AliasConfigurationEditor
+public class AliasNameEditor extends Editor<Alias>
 {
 	private static final long serialVersionUID = 1L;
-	
+	private final static Logger mLog = LoggerFactory.getLogger( AliasNameEditor.class );
+
 	private static ComboBoxModel<String> EMPTY_MODEL = new DefaultComboBoxModel<>();
 
 	private JComboBox<String> mListCombo = new JComboBox<>( EMPTY_MODEL );
@@ -34,7 +43,6 @@ public class AliasNameEditor extends AliasConfigurationEditor
     private JButton mButtonColor;
     private JButton mBtnIconManager;
     
-    private Alias mAlias;
     private AliasModel mAliasModel;
     private SettingsManager mSettingsManager;
     
@@ -52,6 +60,23 @@ public class AliasNameEditor extends AliasConfigurationEditor
 
     	add( new JLabel( "Name:" ) );
     	mName = new JTextField();
+    	mName.getDocument().addDocumentListener( new DocumentListener()
+		{
+			@Override
+			public void removeUpdate( DocumentEvent e )
+			{
+				setModified( true );
+			}
+			
+			@Override
+			public void insertUpdate( DocumentEvent e )
+			{
+				setModified( true );
+			}
+			
+			@Override
+			public void changedUpdate( DocumentEvent e ){}
+		} );
     	add( mName, "wrap" );
 
 		add( new JLabel( "List:" ) );
@@ -76,12 +101,22 @@ public class AliasNameEditor extends AliasConfigurationEditor
 							groups.toArray( new String[ groups.size() ] ) ) );;
 					}
 				}
+				
+				setModified( true );
 			}
 		} );
 		add( mListCombo, "wrap" );
 
 		add( new JLabel( "Group:" ) );
 		mGroupCombo.setEditable( true );
+		mGroupCombo.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				setModified( true );
+			}
+		} );
     	add( mGroupCombo, "wrap" );
 
     	add( new JLabel( "Color:" ) );
@@ -95,12 +130,14 @@ public class AliasNameEditor extends AliasConfigurationEditor
 				Color newColor = JColorChooser.showDialog(
 	                     AliasNameEditor.this,
 	                     "Choose color for this alias",
-	                     ( mAlias != null ? mAlias.getMapColor() : null ) );
+	                     ( hasItem() ? getItem().getMapColor() : null ) );
 
 				if( newColor != null )
 				{
 					mButtonColor.setForeground( newColor );
 					mButtonColor.setBackground( newColor );
+					
+					setModified( true );
 				}
             }
 		} );
@@ -113,6 +150,14 @@ public class AliasNameEditor extends AliasConfigurationEditor
 		MapIconListCellRenderer renderer = new MapIconListCellRenderer();
 		renderer.setPreferredSize( new Dimension( 200, 30 ) );
 		mMapIconCombo.setRenderer( renderer );
+		mMapIconCombo.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				setModified( true );
+			}
+		} );
 
 		add( mMapIconCombo, "wrap" );
 
@@ -138,16 +183,18 @@ public class AliasNameEditor extends AliasConfigurationEditor
 				} );
             }
 		} );
-		add( mBtnIconManager, "span 2,wrap" );
 		
+		add( mBtnIconManager, "span 2,wrap" );
+
+		setModified( false );
 	}
 
 	@Override
-	public void setAlias( Alias alias )
+	public void setItem( Alias alias )
 	{
-    	mAlias = alias;
-
-    	if( mAlias != null )
+		super.setItem( alias );
+		
+    	if( hasItem() )
     	{
     		mName.setText( alias.getName() );
     		
@@ -163,9 +210,9 @@ public class AliasNameEditor extends AliasConfigurationEditor
 						listNames.toArray( new String[ listNames.size() ] ) ) );;
 			}
 			
-			mListCombo.setSelectedItem( mAlias.getList() );
+			mListCombo.setSelectedItem( alias.getList() );
 			
-			List<String> groupNames = mAliasModel.getGroupNames( mAlias.getList() );
+			List<String> groupNames = mAliasModel.getGroupNames( alias.getList() );
 			
 			if( groupNames.isEmpty() )
 			{
@@ -177,14 +224,14 @@ public class AliasNameEditor extends AliasConfigurationEditor
 						groupNames.toArray( new String[ groupNames.size() ] ) ) );;
 			}
 			
-			mGroupCombo.setSelectedItem( mAlias.getGroup() );
+			mGroupCombo.setSelectedItem( alias.getGroup() );
 			
-			Color color = mAlias.getMapColor();
+			Color color = alias.getMapColor();
 			
 			mButtonColor.setBackground( color );
 			mButtonColor.setForeground( color );
 			
-			String iconName = mAlias.getIconName();
+			String iconName = alias.getIconName();
 			
 			if( iconName == null )
 			{
@@ -207,31 +254,40 @@ public class AliasNameEditor extends AliasConfigurationEditor
 			mButtonColor.setBackground( getBackground() );
 			mButtonColor.setForeground( getForeground() );
     	}
+    	
+    	setModified( false );
 	}
 
 	@Override
 	public void save()
 	{
-		if( mAlias != null )
+		if( hasItem() && isModified() )
 		{
+			Alias alias = getItem();
+			
 			if( mListCombo.getSelectedItem() != null )
 			{
-				mAlias.setList( (String)mListCombo.getSelectedItem() );
+				alias.setList( (String)mListCombo.getSelectedItem() );
 			}
 			
 			if( mGroupCombo.getSelectedItem() != null )
 			{
-				mAlias.setGroup( (String)mGroupCombo.getSelectedItem() );
+				alias.setGroup( (String)mGroupCombo.getSelectedItem() );
 			}
 
-			mAlias.setName( mName.getText() );
+			alias.setName( mName.getText() );
 
-			mAlias.setColor( mButtonColor.getBackground().getRGB() );
+			alias.setColor( mButtonColor.getBackground().getRGB() );
 
 			if( mMapIconCombo.getSelectedItem() != null )
 			{
-				mAlias.setIconName( ((MapIcon)mMapIconCombo.getSelectedItem()).getName() );
+				alias.setIconName( ((MapIcon)mMapIconCombo.getSelectedItem()).getName() );
 			}
+			
+			//Broadcast an alias change event to save the updates
+			mAliasModel.broadcast( new AliasEvent( getItem(), Event.CHANGE ) ); 
 		}
+		
+		setModified( false );
 	}
 }

@@ -19,6 +19,7 @@ package alias.action;
 
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
+import javax.xml.bind.annotation.XmlTransient;
 
 import message.Message;
 import alias.Alias;
@@ -37,6 +38,9 @@ public abstract class AliasAction
 	public AliasAction()
 	{
 	}
+
+	@XmlTransient
+	public abstract AliasActionType getType();
 	
 	/**
 	 * Task to execute when an alias action is defined.  The message argument is

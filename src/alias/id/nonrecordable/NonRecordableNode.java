@@ -26,9 +26,9 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 
 import playlist.PlaylistManager;
-import alias.AliasID;
-import alias.AliasIDNode;
 import alias.AliasNode;
+import alias.id.AliasID;
+import alias.id.AliasIDNode;
 
 public class NonRecordableNode extends AliasIDNode
 {

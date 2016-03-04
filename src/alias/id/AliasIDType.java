@@ -1,5 +1,4 @@
 /*******************************************************************************
-
  *     SDR Trunk 
  *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
@@ -16,21 +15,35 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package alias;
+package alias.id;
 
-import javax.swing.JPanel;
-
-public abstract class AliasConfigurationEditor extends JPanel
+public enum AliasIDType
 {
-    private static final long serialVersionUID = 1L;
+	ESN( "ESN" ),
+	Fleetsync( "Fleetsync" ),
+	LoJack( "LoJack" ),
+	LTRNetUID( "LTR-Net UID" ),
+	MDC1200( "MDC-1200" ),
+	MIN( "Passport MIN" ),
+	MPT1327( "MPT-1327" ),
+	Site( "Site" ),
+	Status( "Status" ),
+	Talkgroup( "Talkgroup" ),
 
-    /**
-     * Sets or resets the configuration editor components
-     */
-    public abstract void setAlias( Alias alias );
-    
-    /**
-     * Saves the contents of the editor components to the configuration
-     */
-    public abstract void save();
+	Invert( "Audio Inversion" ),
+	Priority( "Audio Priority" ),
+	NonRecordable( "Audio Non-Recordable" ),
+	Streaming( "Audio Streaming" );
+	
+	private String mLabel;
+	
+	private AliasIDType( String label )
+	{
+		mLabel = label;
+	}
+	
+	public String toString()
+	{
+		return mLabel;
+	}
 }

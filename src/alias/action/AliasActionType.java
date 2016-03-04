@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -15,26 +15,17 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package alias;
+package alias.action;
 
-public enum AliasIDType
+public enum AliasActionType
 {
-	ESN( "ESN" ),
-	Fleetsync( "Fleetsync" ),
-	LoJack( "LoJack" ),
-	LTRNetUID( "LTR-Net UID" ),
-	MDC1200( "MDC-1200" ),
-	MIN( "Passport MIN" ),
-	MPT1327( "MPT-1327" ),
-	NonRecordable( "Non-Recordable" ),
-	Priority( "Audio Priority" ),
-	Site( "Site" ),
-	Status( "Status" ),
-	Talkgroup( "Talkgroup" );
+	BEEP( "Beep" ),
+	CLIP( "Play Clip" ),
+	SCRIPT( "Run Script" );
 	
 	private String mLabel;
 	
-	private AliasIDType( String label )
+	private AliasActionType( String label )
 	{
 		mLabel = label;
 	}

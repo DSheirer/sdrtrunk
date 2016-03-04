@@ -17,6 +17,8 @@
  ******************************************************************************/
 package alias.id.mpt1327;
 
+import gui.editor.DocumentListenerEditor;
+
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.event.MouseAdapter;
@@ -29,10 +31,9 @@ import javax.swing.JTextField;
 import javax.swing.text.MaskFormatter;
 
 import net.miginfocom.swing.MigLayout;
-import alias.AliasID;
-import alias.ComponentEditor;
+import alias.id.AliasID;
 
-public class MPT1327IDEditor extends ComponentEditor<AliasID>
+public class MPT1327IDEditor extends DocumentListenerEditor<AliasID>
 {
 	private static final long serialVersionUID = 1L;
 
@@ -48,11 +49,9 @@ public class MPT1327IDEditor extends ComponentEditor<AliasID>
 
 	public MPT1327IDEditor( AliasID aliasID )
 	{
-		super( aliasID );
-		
 		initGUI();
 		
-		setComponent( aliasID );
+		setItem( aliasID );
 	}
 	
 	private void initGUI()
@@ -96,18 +95,18 @@ public class MPT1327IDEditor extends ComponentEditor<AliasID>
 	
 	public MPT1327ID getMPT1327ID()
 	{
-		if( getComponent() instanceof MPT1327ID )
+		if( getItem() instanceof MPT1327ID )
 		{
-			return (MPT1327ID)getComponent();
+			return (MPT1327ID)getItem();
 		}
 		
 		return null;
 	}
 
 	@Override
-	public void setComponent( AliasID aliasID )
+	public void setItem( AliasID aliasID )
 	{
-		mComponent = aliasID;
+		super.setItem( aliasID );
 		
 		MPT1327ID mpt = getMPT1327ID();
 		

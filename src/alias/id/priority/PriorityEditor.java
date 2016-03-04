@@ -17,6 +17,8 @@
  ******************************************************************************/
 package alias.id.priority;
 
+import gui.editor.DocumentListenerEditor;
+
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.event.ActionEvent;
@@ -32,17 +34,16 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import net.miginfocom.swing.MigLayout;
-import alias.AliasID;
-import alias.ComponentEditor;
+import alias.id.AliasID;
 
-public class PriorityEditor extends ComponentEditor<AliasID>
+public class PriorityEditor extends DocumentListenerEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
 
 	public static final String DO_NOT_MONITOR = "Do Not Monitor";
 
 	private static final String HELP_TEXT = "<html>"
-			+ "<h3>Call Priority Example</h3>"
+			+ "<h3>Call Audio Priority Example</h3>"
 			+ "Priority determines which calls have priority for playback<br>"
 			+ "over your computer speakers, or designates an alias for<br>"
 			+ "no-monitoring if you don't want to hear calls from an alias.<br><br>"
@@ -55,11 +56,9 @@ public class PriorityEditor extends ComponentEditor<AliasID>
 
 	public PriorityEditor( AliasID aliasID )
 	{
-		super( aliasID );
-		
 		initGUI();
 		
-		setComponent( aliasID );
+		setItem( aliasID );
 	}
 	
 	private void initGUI()
@@ -119,18 +118,18 @@ public class PriorityEditor extends ComponentEditor<AliasID>
 	
 	public Priority getPriority()
 	{
-		if( getComponent() instanceof Priority )
+		if( getItem() instanceof Priority )
 		{
-			return (Priority)getComponent();
+			return (Priority)getItem();
 		}
 		
 		return null;
 	}
 
 	@Override
-	public void setComponent( AliasID aliasID )
+	public void setItem( AliasID aliasID )
 	{
-		mComponent = aliasID;
+		super.setItem( aliasID );
 
 		Priority priority = getPriority();
 		

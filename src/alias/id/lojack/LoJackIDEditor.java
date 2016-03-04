@@ -17,6 +17,8 @@
  ******************************************************************************/
 package alias.id.lojack;
 
+import gui.editor.DocumentListenerEditor;
+
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.event.ActionEvent;
@@ -34,10 +36,9 @@ import javax.swing.text.MaskFormatter;
 import module.decode.lj1200.LJ1200Message;
 import module.decode.lj1200.LJ1200Message.Function;
 import net.miginfocom.swing.MigLayout;
-import alias.AliasID;
-import alias.ComponentEditor;
+import alias.id.AliasID;
 
-public class LoJackIDEditor extends ComponentEditor<AliasID>
+public class LoJackIDEditor extends DocumentListenerEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
     
@@ -61,11 +62,9 @@ public class LoJackIDEditor extends ComponentEditor<AliasID>
 
     public LoJackIDEditor( AliasID aliasID )
 	{
-		super( aliasID );
-		
 		initGUI();
 		
-		setComponent( aliasID );
+		setItem( aliasID );
 	}
 	
 	private void initGUI()
@@ -121,18 +120,18 @@ public class LoJackIDEditor extends ComponentEditor<AliasID>
 	
 	public LoJackFunctionAndID getLoJackID()
 	{
-		if( getComponent() instanceof LoJackFunctionAndID )
+		if( getItem() instanceof LoJackFunctionAndID )
 		{
-			return (LoJackFunctionAndID)getComponent();
+			return (LoJackFunctionAndID)getItem();
 		}
 		
 		return null;
 	}
 
 	@Override
-	public void setComponent( AliasID aliasID )
+	public void setItem( AliasID aliasID )
 	{
-		mComponent = aliasID;
+		super.setItem( aliasID );
 		
 		LoJackFunctionAndID lojack = getLoJackID();
 		

@@ -17,6 +17,8 @@
  ******************************************************************************/
 package alias.id.status;
 
+import gui.editor.DocumentListenerEditor;
+
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.event.MouseAdapter;
@@ -29,10 +31,9 @@ import javax.swing.JTextField;
 import javax.swing.text.MaskFormatter;
 
 import net.miginfocom.swing.MigLayout;
-import alias.AliasID;
-import alias.ComponentEditor;
+import alias.id.AliasID;
 
-public class StatusIDEditor extends ComponentEditor<AliasID>
+public class StatusIDEditor extends DocumentListenerEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
 
@@ -49,11 +50,9 @@ public class StatusIDEditor extends ComponentEditor<AliasID>
 
 	public StatusIDEditor( AliasID aliasID )
 	{
-		super( aliasID );
-		
 		initGUI();
 		
-		setComponent( aliasID );
+		setItem( aliasID );
 	}
 	
 	private void initGUI()
@@ -96,18 +95,18 @@ public class StatusIDEditor extends ComponentEditor<AliasID>
 	
 	public StatusID getStatusID()
 	{
-		if( getComponent() instanceof StatusID )
+		if( getItem() instanceof StatusID )
 		{
-			return (StatusID)getComponent();
+			return (StatusID)getItem();
 		}
 		
 		return null;
 	}
 
 	@Override
-	public void setComponent( AliasID aliasID )
+	public void setItem( AliasID aliasID )
 	{
-		mComponent = aliasID;
+		super.setItem( aliasID );
 		
 		StatusID statusID = getStatusID();
 		

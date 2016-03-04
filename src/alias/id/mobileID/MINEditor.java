@@ -17,6 +17,8 @@
  ******************************************************************************/
 package alias.id.mobileID;
 
+import gui.editor.DocumentListenerEditor;
+
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.event.MouseAdapter;
@@ -25,16 +27,13 @@ import java.awt.event.MouseEvent;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.text.MaskFormatter;
 
 import net.miginfocom.swing.MigLayout;
-import alias.AliasID;
-import alias.ComponentEditor;
-import alias.id.esn.ESNEditor;
+import alias.id.AliasID;
 
-public class MINEditor extends ComponentEditor<AliasID>
+public class MINEditor extends DocumentListenerEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
 
@@ -49,11 +48,9 @@ public class MINEditor extends ComponentEditor<AliasID>
 
 	public MINEditor( AliasID aliasID )
 	{
-		super( aliasID );
-		
 		initGUI();
 		
-		setComponent( aliasID );
+		setItem( aliasID );
 	}
 	
 	private void initGUI()
@@ -96,18 +93,18 @@ public class MINEditor extends ComponentEditor<AliasID>
 	
 	public Min getMin()
 	{
-		if( getComponent() instanceof Min )
+		if( getItem() instanceof Min )
 		{
-			return (Min)getComponent();
+			return (Min)getItem();
 		}
 		
 		return null;
 	}
 
 	@Override
-	public void setComponent( AliasID aliasID )
+	public void setItem( AliasID aliasID )
 	{
-		mComponent = aliasID;
+		super.setItem( aliasID );
 		
 		Min min = getMin();
 		

@@ -17,30 +17,27 @@
  ******************************************************************************/
 package alias.id.fleetsync;
 
+import gui.editor.DocumentListenerEditor;
+
 import java.awt.Color;
 import java.awt.Cursor;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.text.MaskFormatter;
+
+import net.miginfocom.swing.MigLayout;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import controller.channel.Channel;
-import net.miginfocom.swing.MigLayout;
-import alias.AliasID;
-import alias.ComponentEditor;
-import alias.id.esn.ESNEditor;
+import alias.id.AliasID;
 
-public class FleetsyncIDEditor extends ComponentEditor<AliasID>
+public class FleetsyncIDEditor extends DocumentListenerEditor<AliasID>
 {
 	private final static Logger mLog = LoggerFactory.getLogger( FleetsyncIDEditor.class );
 
@@ -56,11 +53,9 @@ public class FleetsyncIDEditor extends ComponentEditor<AliasID>
 
 	public FleetsyncIDEditor( AliasID aliasID )
 	{
-		super( aliasID );
-		
 		initGUI();
 		
-		setComponent( aliasID );
+		setItem( aliasID );
 	}
 	
 	private void initGUI()
@@ -104,18 +99,18 @@ public class FleetsyncIDEditor extends ComponentEditor<AliasID>
 	
 	public FleetsyncID getFleetsyncID()
 	{
-		if( getComponent() instanceof FleetsyncID )
+		if( getItem() instanceof FleetsyncID )
 		{
-			return (FleetsyncID)getComponent();
+			return (FleetsyncID)getItem();
 		}
 		
 		return null;
 	}
 
 	@Override
-	public void setComponent( AliasID aliasID )
+	public void setItem( AliasID aliasID )
 	{
-		mComponent = aliasID;
+		super.setItem( aliasID );
 		
 		FleetsyncID fleetsync = getFleetsyncID();
 		

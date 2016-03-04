@@ -1,7 +1,7 @@
 package alias.id.nonrecordable;
 
-import alias.AliasID;
-import alias.AliasIDType;
+import alias.id.AliasID;
+import alias.id.AliasIDType;
 
 public class NonRecordable extends AliasID
 {
@@ -20,6 +20,6 @@ public class NonRecordable extends AliasID
 	@Override
 	public String toString()
 	{
-		return "Non-Recordable";
+		return "Audio Non-Recordable";
 	}
 }

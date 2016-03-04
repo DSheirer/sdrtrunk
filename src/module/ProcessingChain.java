@@ -599,7 +599,6 @@ public class ProcessingChain implements IChannelEventListener
 	 */
 	public void addMessageListener( Listener<Message> listener )
 	{
-		mLog.debug( "Registering Message Listener:" + listener.getClass() );
 		mMessageBroadcaster.addListener( listener );
 	}
 	

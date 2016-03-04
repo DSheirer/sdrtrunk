@@ -19,8 +19,8 @@ package alias.id.priority;
 
 import javax.xml.bind.annotation.XmlAttribute;
 
-import alias.AliasID;
-import alias.AliasIDType;
+import alias.id.AliasID;
+import alias.id.AliasIDType;
 
 /**
  * Specifies an (audio) priority level for this alias.
@@ -60,7 +60,7 @@ public class Priority extends AliasID
 	
 	public String toString()
 	{
-		return "Priority: " + ( isDoNotMonitor() ? "Do Not Monitor" : mPriority );
+		return "Audio Priority: " + ( isDoNotMonitor() ? "Do Not Monitor" : mPriority );
 	}
 
 	@Override

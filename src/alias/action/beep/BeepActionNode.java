@@ -41,7 +41,7 @@ public class BeepActionNode extends AliasActionNode
     @Override
     public JPanel getEditor()
     {
-        return new BeepActionEditor( this );
+        return null;
     }
     
     public BeepAction getBeepAction()

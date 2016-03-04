@@ -18,7 +18,6 @@
 package alias;
 
 import javax.swing.JPanel;
-import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
 public abstract class ComponentEditor<T> extends JPanel implements DocumentListener
@@ -71,21 +70,6 @@ public abstract class ComponentEditor<T> extends JPanel implements DocumentListe
     	return mModified;
     }
     
-    @Override
-	public void insertUpdate( DocumentEvent e )
-	{
-		setModified( true );
-	}
-
-	@Override
-	public void removeUpdate( DocumentEvent e )
-	{
-		setModified( true );
-	}
-
-	@Override
-	public void changedUpdate( DocumentEvent e ) { }
-
 	public void setComponentModificationListener( ComponentModificationListener listener )
     {
     	mListener = listener;

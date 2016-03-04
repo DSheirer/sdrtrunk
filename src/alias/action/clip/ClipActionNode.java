@@ -41,7 +41,7 @@ public class ClipActionNode extends AliasActionNode
     @Override
     public JPanel getEditor()
     {
-        return new ClipActionEditor( this );
+        return null;
     }
     
     public ClipAction getClipAction()

@@ -48,7 +48,7 @@ public class AliasModel extends AbstractTableModel
 	public static final int COLUMN_ICON = 3;
 	public static final int COLUMN_COLOR = 4;
 
-	private List<Alias> mAliases = new ArrayList<>();
+	private List<Alias> mAliases = new CopyOnWriteArrayList<>();
 	private Broadcaster<AliasEvent> mAliasEventBroadcaster = new Broadcaster<>();
 
 	public AliasModel()

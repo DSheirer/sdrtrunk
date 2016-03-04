@@ -27,6 +27,8 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
 import alias.action.AliasAction;
+import alias.id.AliasID;
+import alias.id.AliasIDType;
 import alias.id.priority.Priority;
 
 @XmlSeeAlso( { AliasID.class, AliasAction.class } )

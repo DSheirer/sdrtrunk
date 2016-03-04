@@ -34,6 +34,7 @@ import alias.action.AliasAction;
 import alias.action.beep.BeepAction;
 import alias.action.clip.ClipAction;
 import alias.action.script.ScriptAction;
+import alias.id.AliasID;
 import alias.id.esn.Esn;
 import alias.id.fleetsync.FleetsyncID;
 import alias.id.lojack.LoJackFunctionAndID;

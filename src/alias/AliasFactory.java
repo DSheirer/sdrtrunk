@@ -1,17 +1,42 @@
+/*******************************************************************************
+ *     SDR Trunk 
+ *     Copyright (C) 2014-2016 Dennis Sheirer
+ * 
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ * 
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ * 
+ *     You should have received a copy of the GNU General Public License
+ *     along with this program.  If not, see <http://www.gnu.org/licenses/>
+ ******************************************************************************/
 package alias;
 
+import gui.editor.Editor;
+import gui.editor.EmptyEditor;
 import alias.action.AliasAction;
+import alias.action.AliasActionType;
 import alias.action.beep.BeepAction;
+import alias.action.beep.BeepActionEditor;
 import alias.action.clip.ClipAction;
+import alias.action.clip.ClipActionEditor;
 import alias.action.script.ScriptAction;
+import alias.action.script.ScriptActionEditor;
+import alias.id.AliasID;
+import alias.id.AliasIDType;
 import alias.id.esn.ESNEditor;
 import alias.id.esn.Esn;
 import alias.id.fleetsync.FleetsyncID;
 import alias.id.fleetsync.FleetsyncIDEditor;
-import alias.id.lojack.LoJackIDEditor;
 import alias.id.lojack.LoJackFunctionAndID;
-import alias.id.mdc.MDC1200IDEditor;
+import alias.id.lojack.LoJackIDEditor;
 import alias.id.mdc.MDC1200ID;
+import alias.id.mdc.MDC1200IDEditor;
 import alias.id.mobileID.MINEditor;
 import alias.id.mobileID.Min;
 import alias.id.mpt1327.MPT1327ID;
@@ -20,8 +45,8 @@ import alias.id.nonrecordable.NonRecordable;
 import alias.id.nonrecordable.NonRecordableEditor;
 import alias.id.priority.Priority;
 import alias.id.priority.PriorityEditor;
-import alias.id.siteID.SiteIDEditor;
 import alias.id.siteID.SiteID;
+import alias.id.siteID.SiteIDEditor;
 import alias.id.status.StatusID;
 import alias.id.status.StatusIDEditor;
 import alias.id.talkgroup.TalkgroupID;
@@ -158,7 +183,7 @@ public class AliasFactory
 		return copy;
 	}
 
-	public static ComponentEditor<AliasID> getEditor( AliasID aliasID )
+	public static Editor<AliasID> getEditor( AliasID aliasID )
 	{
 		if( aliasID != null )
 		{
@@ -193,28 +218,27 @@ public class AliasFactory
 			}
 		}
 		
-		return new EmptyAliasIDEditor();
+		return new EmptyEditor<AliasID>();
 	}
 	
-	public static ComponentEditor<AliasAction> getEditor( AliasAction aliasAction )
+	public static Editor<AliasAction> getEditor( AliasAction aliasAction )
 	{
 		if( aliasAction != null )
 		{
-			if( aliasAction instanceof BeepAction )
+			switch( aliasAction.getType() )
 			{
-				
-			}
-			else if( aliasAction instanceof ClipAction )
-			{
-				
-			}
-			else if( aliasAction instanceof ScriptAction )
-			{
-				
+				case BEEP:
+					return new BeepActionEditor( aliasAction );
+				case CLIP:
+					return new ClipActionEditor( aliasAction );
+				case SCRIPT:
+					return new ScriptActionEditor( aliasAction );
+				default:
+					break;
 			}
 		}
 		
-		return new EmptyAliasActionEditor();
+		return new EmptyEditor<AliasAction>();
 	}
 	
 	public static AliasID getAliasID( AliasIDType type )
@@ -249,4 +273,20 @@ public class AliasFactory
 				throw new IllegalArgumentException( "Unrecognized Alias ID type: " + type );
 		}
 	}
+	
+	public static AliasAction getAliasAction( AliasActionType type )
+	{
+		switch( type )
+		{
+			case BEEP:
+				return new BeepAction();
+			case CLIP:
+				return new ClipAction();
+			case SCRIPT:
+				return new ScriptAction();
+			default:
+				throw new IllegalArgumentException( "Unrecognized Alias Action type: " + type );
+		}
+	}
+	
 }

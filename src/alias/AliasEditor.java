@@ -17,25 +17,34 @@
  ******************************************************************************/
 package alias;
 
+import gui.editor.Editor;
+
 import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
-import javax.swing.JPanel;
 import javax.swing.JSeparator;
 
 import net.miginfocom.swing.MigLayout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import sample.Listener;
 import settings.SettingsManager;
 import alias.AliasEvent.Event;
+import alias.action.AliasActionEditor;
+import alias.id.AliasIdentifierEditor;
 
 import com.jidesoft.swing.JideTabbedPane;
 
-public class AliasEditor extends JPanel implements ActionListener, Listener<AliasEvent>
+public class AliasEditor extends Editor<Alias> implements ActionListener, Listener<AliasEvent>
 {
     private static final long serialVersionUID = 1L;
+
+    private final static Logger mLog = LoggerFactory.getLogger( AliasEditor.class );
     
 	private static final String DEFAULT_NAME = "select an alias";
 
@@ -44,41 +53,44 @@ public class AliasEditor extends JPanel implements ActionListener, Listener<Alia
 	private JLabel mAliasLabel;
     private AliasNameEditor mAliasNameEditor;
     private AliasIdentifierEditor mAliasIdentifierEditor;
-    
-    private Alias mAlias;
-
+    private AliasActionEditor mAliasActionEditor;
     
     public AliasEditor( AliasModel aliasModel, SettingsManager settingsManager )
 	{
     	mAliasModel = aliasModel;
     	mAliasNameEditor = new AliasNameEditor( mAliasModel, settingsManager );
     	mAliasIdentifierEditor = new AliasIdentifierEditor( aliasModel );
+    	mAliasActionEditor = new AliasActionEditor( aliasModel );
     	
     	mAliasModel.addListener( this );
 		
 		initGUI();
 	}
-    
-    public void setAlias( Alias alias )
-    {
-    	mAlias = alias;
 
-    	if( mAlias != null )
-    	{
-    		mAliasLabel.setText( alias.getName() );
-    	}
-    	else
-    	{
+    
+    @Override
+	public void setItem( Alias alias )
+	{
+		super.setItem( alias );
+		
+		if( hasItem() )
+		{
+    		mAliasLabel.setText( getItem().getName() );
+		}
+		else
+		{
     		mAliasLabel.setText( DEFAULT_NAME );
-    	}
-    	
-		mAliasNameEditor.setAlias( alias );
-		mAliasIdentifierEditor.setAlias( alias );
-    }
-	
+		}
+		
+		mAliasNameEditor.setItem( alias );
+		mAliasIdentifierEditor.setItem( alias );
+		mAliasActionEditor.setItem( alias );
+	}
+
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[grow,fill][grow,fill]", "[][][][][grow,fill]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[grow,fill][grow,fill]", 
+				"[][][][][][grow,fill]" ) );
 		
 		add( new JLabel( "Alias:" ), "align right" );
 		mAliasLabel = new JLabel( DEFAULT_NAME );
@@ -91,14 +103,18 @@ public class AliasEditor extends JPanel implements ActionListener, Listener<Alia
     	tabs.setForeground( Color.BLACK );
 
 		tabs.addTab( "Alias", mAliasNameEditor );
-		tabs.addTab( "Identifiers", mAliasIdentifierEditor );
-		add( tabs, "span,grow" );		
+		tabs.addTab( "Audio / Identifier", mAliasIdentifierEditor );
+		tabs.addTab( "Action", mAliasActionEditor );
+		add( tabs, "span,grow" );
 		
+		//Playlist management buttons
 		JButton btnSave = new JButton( "Save" );
+		btnSave.setToolTipText( "Save alias changes to the playlist" );
 		btnSave.addActionListener( AliasEditor.this );
 		add( btnSave );
 
 		JButton btnReset = new JButton( "Reset" );
+		btnReset.setToolTipText( "Reset alias changes since last save" );
 		btnReset.addActionListener( AliasEditor.this );
 		add( btnReset, "wrap" );
 	}
@@ -107,28 +123,46 @@ public class AliasEditor extends JPanel implements ActionListener, Listener<Alia
 	public void receive( AliasEvent event )
 	{
 		//If this is the currently displayed alias, reload it
-		if( mAlias != null && mAlias == event.getAlias() )
+		if( hasItem() && getItem() == event.getAlias() )
 		{
-			setAlias( event.getAlias() );
+			switch( event.getEvent() )
+			{
+				case CHANGE:
+					//Alias changed - reset the editor with changed alias
+					setItem( event.getAlias() );
+					break;
+				case DELETE:
+					setItem( null );
+					break;
+				default:
+					break;
+			}
 		}
 	}
 
 	@Override
     public void actionPerformed( ActionEvent e )
     {
-		String command = e.getActionCommand();
-		
-		if( command.contentEquals( "Save" ) )
+		if( hasItem() )
 		{
-			mAliasNameEditor.save();
-			mAliasIdentifierEditor.save();
+			String command = e.getActionCommand();
 			
-			//Broadcast an alias change event to save the updates
-			mAliasModel.broadcast( new AliasEvent( mAlias, Event.CHANGE ) ); 
-		}
-		else if( command.contentEquals( "Reset" ) )
-		{
-			setAlias( mAlias );
+			if( command.contentEquals( "Save" ) )
+			{
+				save();
+			}
+			else if( command.contentEquals( "Reset" ) )
+			{
+				reset();
+			}
 		}
     }
+
+	@Override
+	public void save()
+	{
+		mAliasNameEditor.save();
+		mAliasIdentifierEditor.save();
+		mAliasActionEditor.save();
+	}
 }

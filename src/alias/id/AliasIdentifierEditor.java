@@ -1,4 +1,24 @@
-package alias;
+/*******************************************************************************
+ *     SDR Trunk 
+ *     Copyright (C) 2014-2016 Dennis Sheirer
+ * 
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ * 
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ * 
+ *     You should have received a copy of the GNU General Public License
+ *     along with this program.  If not, see <http://www.gnu.org/licenses/>
+ ******************************************************************************/
+package alias.id;
+
+import gui.editor.Editor;
+import gui.editor.EmptyEditor;
 
 import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
@@ -27,9 +47,13 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import alias.Alias;
+import alias.AliasEvent;
 import alias.AliasEvent.Event;
+import alias.AliasFactory;
+import alias.AliasModel;
 
-public class AliasIdentifierEditor extends AliasConfigurationEditor
+public class AliasIdentifierEditor extends Editor<Alias>
 {
 	private static final long serialVersionUID = 1L;
 
@@ -40,10 +64,8 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 	private JButton mNewIDButton;
 	private JButton mCloneIDButton;
 	private JButton mDeleteIDButton;
-	
 	private EditorContainer mEditorContainer = new EditorContainer();
 
-	private Alias mAlias;
 	private AliasModel mAliasModel;
 	
 	public AliasIdentifierEditor( AliasModel model )
@@ -57,7 +79,7 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 		setLayout( new MigLayout( "fill,wrap 3", 
 			"[grow,fill][grow,fill][grow,fill]", "[][grow,fill][]" ) );
 
-		mAliasIDList.setVisibleRowCount( 4 );
+		mAliasIDList.setVisibleRowCount( 6 );
 		mAliasIDList.setSelectionMode( ListSelectionModel.SINGLE_SELECTION );
 		mAliasIDList.setLayoutOrientation( JList.VERTICAL );
 		mAliasIDList.addListSelectionListener( new ListSelectionListener()
@@ -95,7 +117,7 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 		add( mEditorContainer, "span,grow" );
 
 		mNewIDButton = new JButton( "New ..." );
-		
+		mNewIDButton.setToolTipText( "Create a new Alias Identifier" );
 		mNewIDButton.addMouseListener( new MouseAdapter()
 		{
 			@Override
@@ -115,7 +137,6 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 				menu.add( new AddAliasIdentifierItem( AliasIDType.Talkgroup ) );
 				menu.addSeparator();
 				menu.add( new AddAliasIdentifierItem( AliasIDType.Priority ) );
-				menu.addSeparator();
 				menu.add( new AddAliasIdentifierItem( AliasIDType.NonRecordable ) );
 				
 				menu.show( e.getComponent(), e.getX(), e.getY() );
@@ -125,6 +146,7 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 		add( mNewIDButton );
 		
 		mCloneIDButton = new JButton( "Clone" );
+		mCloneIDButton.setToolTipText( "Create a copy of the currently selected identifier" );
 		mCloneIDButton.setEnabled( false );
 		mCloneIDButton.addActionListener( new ActionListener()
 		{
@@ -147,6 +169,7 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 		add( mCloneIDButton );
 		
 		mDeleteIDButton = new JButton( "Delete" );
+		mDeleteIDButton.setToolTipText( "Delete the currently selected identifier" );
 		mDeleteIDButton.setEnabled( false );
 		mDeleteIDButton.addActionListener( new ActionListener()
 		{
@@ -161,13 +184,15 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 						"Do you want to delete [" + selected.toString() + "]", 
 						"Are you sure?", JOptionPane.YES_NO_OPTION );
 					
-					if( choice == JOptionPane.YES_OPTION )
+					if( choice == JOptionPane.YES_OPTION && hasItem() )
 					{
-						mAlias.removeAliasID( selected );
+						Alias alias = getItem();
 						
-						mAliasModel.broadcast( new AliasEvent( mAlias, Event.CHANGE ) );
+						alias.removeAliasID( selected );
+						
+						mAliasModel.broadcast( new AliasEvent( alias, Event.CHANGE ) );
 
-						setAlias( mAlias );
+						setItem( alias );
 					}
 				}
 			}
@@ -176,11 +201,11 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 	}
 	
 	@Override
-	public void setAlias( Alias alias )
+	public void setItem( Alias alias )
 	{
-		mAlias = alias;
+		super.setItem( alias );
 		
-		if( mAlias == null || mAlias.getId().isEmpty() )
+		if( alias == null || alias.getId().isEmpty() )
 		{
 			mAliasIDList.setModel( EMPTY_MODEL );
 		}
@@ -188,7 +213,7 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 		{
 			DefaultListModel<AliasID> model = new DefaultListModel<AliasID>();
 
-			List<AliasID> ids = mAlias.getId();
+			List<AliasID> ids = alias.getId();
 			
 			Collections.sort( ids, new Comparator<AliasID>()
 			{
@@ -216,16 +241,19 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 		if( mEditorContainer.isModified() )
 		{
 			mEditorContainer.save();
+			
+			if( hasItem() )
+			{
+				mAliasModel.broadcast( new AliasEvent( getItem(), Event.CHANGE ) );
+			}
 		}
-		
-		mAliasModel.broadcast( new AliasEvent( mAlias, Event.CHANGE ) );
 	}
 	
 	public class EditorContainer extends JPanel
 	{
 		private static final long serialVersionUID = 1L;
 
-		private ComponentEditor<AliasID> mEditor = new EmptyAliasIDEditor();
+		private Editor<AliasID> mEditor = new EmptyEditor<>();
 
 		public EditorContainer()
 		{
@@ -273,6 +301,7 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 			}
 			removeAll();
 			
+			//This will always give us an editor
 			mEditor = AliasFactory.getEditor( aliasID );
 			
 			add( mEditor );
@@ -283,16 +312,18 @@ public class AliasIdentifierEditor extends AliasConfigurationEditor
 	
 	private void addAliasIDToList( final AliasID id )
 	{
-		if( id != null && mAlias != null )
+		if( id != null && hasItem() )
 		{
-			mAlias.addAliasID( id );
+			final Alias alias = getItem();
+			
+			alias.addAliasID( id );
 			
 			EventQueue.invokeLater( new Runnable()
 			{
 				@Override
 				public void run()
 				{
-					setAlias( mAlias );
+					setItem( alias );
 					
 					mAliasIDList.setSelectedValue( id, true );
 				}

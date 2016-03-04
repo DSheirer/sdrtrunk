@@ -17,6 +17,8 @@
  ******************************************************************************/
 package alias.id.uniqueID;
 
+import gui.editor.DocumentListenerEditor;
+
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.event.MouseAdapter;
@@ -27,10 +29,9 @@ import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
-import alias.AliasID;
-import alias.ComponentEditor;
+import alias.id.AliasID;
 
-public class UniqueIDEditor extends ComponentEditor<AliasID>
+public class UniqueIDEditor extends DocumentListenerEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
 
@@ -44,11 +45,9 @@ public class UniqueIDEditor extends ComponentEditor<AliasID>
 
 	public UniqueIDEditor( AliasID aliasID )
 	{
-		super( aliasID );
-		
 		initGUI();
 		
-		setComponent( aliasID );
+		setItem( aliasID );
 	}
 	
 	private void initGUI()
@@ -78,18 +77,18 @@ public class UniqueIDEditor extends ComponentEditor<AliasID>
 	
 	public UniqueID getUniqueID()
 	{
-		if( getComponent() instanceof UniqueID )
+		if( getItem() instanceof UniqueID )
 		{
-			return (UniqueID)getComponent();
+			return (UniqueID)getItem();
 		}
 		
 		return null;
 	}
 
 	@Override
-	public void setComponent( AliasID aliasID )
+	public void setItem( AliasID aliasID )
 	{
-		mComponent = aliasID;
+		super.setItem( aliasID );
 		
 		UniqueID uid = getUniqueID();
 		

@@ -21,8 +21,8 @@ import javax.xml.bind.annotation.XmlAttribute;
 
 import module.decode.lj1200.LJ1200Message;
 import module.decode.lj1200.LJ1200Message.Function;
-import alias.AliasID;
-import alias.AliasIDType;
+import alias.id.AliasID;
+import alias.id.AliasIDType;
 
 public class LoJackFunctionAndID extends AliasID
 {

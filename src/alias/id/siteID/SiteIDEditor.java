@@ -17,6 +17,8 @@
  ******************************************************************************/
 package alias.id.siteID;
 
+import gui.editor.DocumentListenerEditor;
+
 import java.awt.Color;
 import java.awt.Cursor;
 import java.awt.event.MouseAdapter;
@@ -27,10 +29,9 @@ import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
-import alias.AliasID;
-import alias.ComponentEditor;
+import alias.id.AliasID;
 
-public class SiteIDEditor extends ComponentEditor<AliasID>
+public class SiteIDEditor extends DocumentListenerEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
 
@@ -47,11 +48,9 @@ public class SiteIDEditor extends ComponentEditor<AliasID>
 
 	public SiteIDEditor( AliasID aliasID )
 	{
-		super( aliasID );
-		
 		initGUI();
 		
-		setComponent( aliasID );
+		setItem( aliasID );
 	}
 	
 	private void initGUI()
@@ -82,18 +81,18 @@ public class SiteIDEditor extends ComponentEditor<AliasID>
 	
 	public SiteID getSiteID()
 	{
-		if( getComponent() instanceof SiteID )
+		if( getItem() instanceof SiteID )
 		{
-			return (SiteID)getComponent();
+			return (SiteID)getItem();
 		}
 		
 		return null;
 	}
 
 	@Override
-	public void setComponent( AliasID aliasID )
+	public void setItem( AliasID aliasID )
 	{
-		mComponent = aliasID;
+		super.setItem( aliasID );
 		
 		SiteID siteID = getSiteID();
 		

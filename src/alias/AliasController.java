@@ -55,11 +55,12 @@ public class AliasController extends JPanel
 		mAliasModel = aliasModel;
 
     	mEditor = new AliasEditor( mAliasModel, settingsManager );
-    	mAliasModel.addListener( mEditor );
 
     	mIconCellRenderer = new IconCellRenderer( settingsManager );
     	
     	init();
+    	
+    	mAliasModel.addListener( mEditor );
 	}
 	
 	private void init()
@@ -124,7 +125,7 @@ public class AliasController extends JPanel
 	@Override
 	public void valueChanged( ListSelectionEvent event )
 	{
-		//This limits event firing to only when selection is complete 
+		//Limits event firing to only when selection is complete 
 		if( !event.getValueIsAdjusting() )
 		{
 			int selectedRow = mAliasTable.getSelectedRow();
@@ -137,14 +138,14 @@ public class AliasController extends JPanel
 				
 				if( alias != null )
 				{
-					mEditor.setAlias( alias );
+					mEditor.setItem( alias );
 					mCopyButton.setEnabled( true );
 					mDeleteButton.setEnabled( true );
 				}
 			}
 			else
 			{
-				mEditor.setAlias( null );
+				mEditor.setItem( null );
 				mCopyButton.setEnabled( false );
 				mDeleteButton.setEnabled( false );
 			}

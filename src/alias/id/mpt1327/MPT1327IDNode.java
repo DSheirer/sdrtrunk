@@ -26,8 +26,8 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 
 import playlist.PlaylistManager;
-import alias.AliasIDNode;
 import alias.AliasNode;
+import alias.id.AliasIDNode;
 
 public class MPT1327IDNode extends AliasIDNode
 {
