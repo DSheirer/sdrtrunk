@@ -504,16 +504,17 @@ public class PlaylistManager implements ChannelEventListener, Listener<AliasEven
 	}
 
 	/**
-	 * Saves the playlist and resets the playlist save pending flag to false
+	 * Resets the playlist save pending flag to false and proceeds to save the
+	 * playlist.  
 	 */
 	public class PlaylistSaveTask implements Runnable
 	{
 		@Override
 		public void run()
 		{
-			save();
-
 			mPlaylistSavePending.set( false );
+			
+			save();
 		}
 	}
 }

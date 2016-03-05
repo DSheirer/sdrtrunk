@@ -18,12 +18,16 @@ import javax.swing.JColorChooser;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JSeparator;
+import javax.swing.JSlider;
 import javax.swing.JTextField;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import alias.AliasEvent.Event;
+import alias.id.priority.Priority;
 import map.IconManager;
 import map.MapIcon;
 import map.MapIconListCellRenderer;
@@ -52,6 +56,11 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
 	private JCheckBox mColorCheckBox = new JCheckBox( "Color" );
     private JButton mButtonColor;
     private JButton mBtnIconManager;
+	private JCheckBox mRecordCheckBox = new JCheckBox( "Record" );
+    private JComboBox<Record> mRecordActionCombo = new JComboBox<>( Record.values() );
+	private JCheckBox mPriorityCheckBox = new JCheckBox( "Priority" );
+    private JSlider mPrioritySlider;
+    private JLabel mPrioritySliderLabel;
 	
 	private AliasModel mAliasModel;
 	private SettingsManager mSettingsManager;
@@ -79,7 +88,7 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
 	public void init()
 	{
 		setLayout( new MigLayout( "fill,wrap 2", "[grow,fill][grow,fill]", 
-				"[][][][][][][][][][grow,fill]" ) );
+				"[][][][][][][][][][][][][grow,fill]" ) );
 		
 		mAliasCountLabel = new JLabel( "Alias:" );
 		add( mAliasCountLabel );
@@ -94,27 +103,11 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
 		add( mListCheckBox );
 
 		mListCombo.setEditable( true );
-		mListCombo.addActionListener( new ActionListener()
-		{
-			@Override
-			public void actionPerformed( ActionEvent e )
-			{
-				setModified( true );
-			}
-		} );
 		add( mListCombo, "wrap" );
 
 		add( mGroupCheckBox );
 
 		mGroupCombo.setEditable( true );
-		mGroupCombo.addActionListener( new ActionListener()
-		{
-			@Override
-			public void actionPerformed( ActionEvent e )
-			{
-				setModified( true );
-			}
-		} );
     	add( mGroupCombo, "wrap" );
 
     	add( mColorCheckBox );
@@ -133,8 +126,6 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
 				{
 					mButtonColor.setForeground( newColor );
 					mButtonColor.setBackground( newColor );
-					
-					setModified( true );
 				}
             }
 		} );
@@ -147,15 +138,6 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
 		MapIconListCellRenderer renderer = new MapIconListCellRenderer();
 		renderer.setPreferredSize( new Dimension( 200, 30 ) );
 		mMapIconCombo.setRenderer( renderer );
-		mMapIconCombo.addActionListener( new ActionListener()
-		{
-			@Override
-			public void actionPerformed( ActionEvent e )
-			{
-				setModified( true );
-			}
-		} );
-
 		add( mMapIconCombo, "wrap" );
 
 		//Dummy place holder
@@ -183,6 +165,47 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
 		
 		add( mBtnIconManager, "span,wrap" );
 		
+		add( mRecordCheckBox );
+		add( mRecordActionCombo );
+
+		//Placeholder
+		add( new JLabel( " " ) );
+		mPrioritySliderLabel = new JLabel( "Priority: " + Priority.MIN_PRIORITY );
+		add( mPrioritySliderLabel );
+		
+		add( mPriorityCheckBox );
+		
+		mPrioritySlider = new JSlider( JSlider.HORIZONTAL,
+									   Priority.MIN_PRIORITY,
+									   Priority.MAX_PRIORITY + 1,
+									   Priority.MIN_PRIORITY );
+
+		mPrioritySlider.setMajorTickSpacing( 20 );
+		mPrioritySlider.setMinorTickSpacing( 5 );
+		mPrioritySlider.setPaintTicks( true );
+		mPrioritySlider.setLabelTable( mPrioritySlider.createStandardLabels( 20, 20 ) );
+		mPrioritySlider.setPaintLabels( true );
+		mPrioritySlider.addChangeListener( new ChangeListener()
+		{
+			@Override
+			public void stateChanged( ChangeEvent e )
+			{
+				int priority = mPrioritySlider.getValue();
+
+				if( priority > Priority.MAX_PRIORITY )
+				{
+					mPrioritySliderLabel.setText( "Priority: Do Not Monitor" );
+				}
+				else
+				{
+					mPrioritySliderLabel.setText( "Priority: " + mPrioritySlider.getValue() );
+				}
+			}
+		} );
+		mPrioritySlider.setToolTipText( HELP_TEXT );
+		
+		add( mPrioritySlider );
+		
 		JButton saveButton = new JButton( "Save" );
 		saveButton.addActionListener( new ActionListener()
 		{
@@ -200,8 +223,7 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
 			@Override
 			public void actionPerformed( ActionEvent e )
 			{
-				setModified( false );
-				setItem( getAliases() );
+				reset();
 			}
 		} );
 		add( resetButton );
@@ -212,45 +234,79 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
 	@Override
 	public void setItem( List<Alias> item )
 	{
-		mLog.debug( "setItem invoked" );
 		super.setItem( item );
 
 		StringBuilder sb = new StringBuilder();
-		sb.append( "Multiple [" );
+		sb.append( "Multiple Selected [ " );
 		
 		if( hasItem() )
 		{
 			sb.append( String.valueOf( getAliases().size() ) );
-
-			List<String> listNames = mAliasModel.getListNames();
-			listNames.add( 0, "" );
-			mListCombo.setModel( new DefaultComboBoxModel<String>( 
-					listNames.toArray( new String[ listNames.size() ] ) ) );
-					
-			List<String> groupNames = mAliasModel.getGroupNames();
-			groupNames.add( 0, "" );
-			mGroupCombo.setModel( new DefaultComboBoxModel<String>( 
-					groupNames.toArray( new String[ groupNames.size() ] ) ) );
 		}
 		else
 		{
 			sb.append( "0" );
 		}
 
-		sb.append( "]" );
+		sb.append( " ]" );
 		
 		mAliasCount.setText( sb.toString() );
 
+		List<String> listNames = mAliasModel.getListNames();
+		listNames.add( 0, "" );
+		mListCombo.setModel( new DefaultComboBoxModel<String>( 
+				listNames.toArray( new String[ listNames.size() ] ) ) );
+				
+		List<String> groupNames = mAliasModel.getGroupNames();
+		groupNames.add( 0, "" );
+		mGroupCombo.setModel( new DefaultComboBoxModel<String>( 
+				groupNames.toArray( new String[ groupNames.size() ] ) ) );
+		
 		setModified( false );
+	}
+
+	@Override
+	public void reset()
+	{
+		//Reset multi-editor controls
+		mListCheckBox.setSelected( false );
+		mGroupCheckBox.setSelected( false );
+		mColorCheckBox.setSelected( false );
+		mIconCheckBox.setSelected( false );
+		mRecordCheckBox.setSelected( false );
+		mPriorityCheckBox.setSelected( false );
+		
+		List<String> listNames = mAliasModel.getListNames();
+		listNames.add( 0, "" );
+		mListCombo.setModel( new DefaultComboBoxModel<String>( 
+				listNames.toArray( new String[ listNames.size() ] ) ) );
+				
+		List<String> groupNames = mAliasModel.getGroupNames();
+		groupNames.add( 0, "" );
+		mGroupCombo.setModel( new DefaultComboBoxModel<String>( 
+				groupNames.toArray( new String[ groupNames.size() ] ) ) );
+		
+		mButtonColor.setForeground( getForeground() );
+		mButtonColor.setBackground( getBackground() );
+		
+		super.reset();
+	}
+	
+	private boolean hasRequestedChanges()
+	{
+		return  mListCheckBox.isSelected() ||
+				mGroupCheckBox.isSelected() ||
+				mColorCheckBox.isSelected() ||
+				mIconCheckBox.isSelected() ||
+				mRecordCheckBox.isSelected() ||
+				mPriorityCheckBox.isSelected();
 	}
 
 	@Override
 	public void save()
 	{
-		if( isModified() && hasItem() )
+		if( hasRequestedChanges() && hasItem() )
 		{
-			setModified( false );
-			
 			List<Alias> aliases = getAliases();
 			
 			for( Alias alias: aliases )
@@ -276,7 +332,6 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
 						group = (String)mGroupCombo.getSelectedItem();
 					}
 					
-					mLog.debug( "Group is:" + group );
 					alias.setGroup( group );
 				}
 				
@@ -296,21 +351,34 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
 						alias.setIconName( null );
 					}
 				}
+				
+				if( mRecordCheckBox.isSelected() )
+				{
+					Record action = 
+						(Record)mRecordActionCombo.getSelectedItem();
+
+					alias.setRecordable( action == Record.RECORDABLE );
+				}
+				
+				if( mPriorityCheckBox.isSelected() )
+				{
+					int priority = mPrioritySlider.getValue();
+
+					//This is a work-around -- we use max priority + 1 in the 
+					//gui to indicate do not monitor, and change the value here
+					if( priority == Priority.MAX_PRIORITY + 1 )
+					{
+						priority = Priority.DO_NOT_MONITOR;
+					}
+					
+					alias.setCallPriority( priority );
+				}
 			}
 
-			if( mListCheckBox.isSelected() ||
-					mGroupCheckBox.isSelected() ||
-					mColorCheckBox.isSelected() ||
-					mIconCheckBox.isSelected() )
+			for( Alias alias: aliases )
 			{
-				mLog.debug( "Broadcasting change event" );
-
-				for( Alias alias: aliases )
-				{
-					mLog.debug( "Group:" + alias.getGroup() );
-					//Broadcast an alias change event to save the updates
-					mAliasModel.broadcast( new AliasEvent( alias, Event.CHANGE ) ); 
-				}
+				//Broadcast an alias change event to save the updates
+				mAliasModel.broadcast( new AliasEvent( alias, Event.CHANGE ) ); 
 			}
 		}
 	}
@@ -324,6 +392,24 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
 		{
 			getAliases().remove( event.getAlias() );
 			setItem( getAliases() );
+		}
+	}
+	
+	public enum Record
+	{
+		NON_RECORDABLE( "Non-Recordable" ),
+		RECORDABLE( "Recordable" );
+		
+		private String mLabel;
+		
+		private Record( String label )
+		{
+			mLabel = label;
+		}
+		
+		public String toString()
+		{
+			return mLabel;
 		}
 	}
 }

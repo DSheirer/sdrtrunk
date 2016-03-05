@@ -161,7 +161,7 @@ public class AliasController extends JPanel
 	{
 		if( selectedRow >= 0 )
 		{
-			int index = mAliasTable.convertRowIndexToModel( mAliasTable.getSelectedRow() );
+			int index = mAliasTable.convertRowIndexToModel( selectedRow );
 			
 			return mAliasModel.getAliasAtIndex( index );
 		}
@@ -207,10 +207,11 @@ public class AliasController extends JPanel
 				
 				for( int selectedRow: selectedRows )
 				{
-					selectedAliases.add( getAlias( selectedRow ) );
+					Alias alias = getAlias( selectedRow );
+
+					selectedAliases.add( alias );
 				}
 				
-				mLog.debug( "Selection changed - setting selected aliases" );
 				mMultipleAliasEditor.setItem( selectedAliases );
 			}
 		}

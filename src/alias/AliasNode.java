@@ -515,7 +515,7 @@ public class AliasNode extends ConfigurableNode
 			retVal.addSeparator();
 		}
 
-		if( !getAlias().hasPriority() )
+		if( !getAlias().hasCallPriority() )
 		{
 			JMenuItem priorityItem = new JMenuItem( "Set Call Priority" );
 			

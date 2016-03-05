@@ -29,6 +29,7 @@ import javax.xml.bind.annotation.XmlSeeAlso;
 import alias.action.AliasAction;
 import alias.id.AliasID;
 import alias.id.AliasIDType;
+import alias.id.nonrecordable.NonRecordable;
 import alias.id.priority.Priority;
 
 @XmlSeeAlso( { AliasID.class, AliasAction.class } )
@@ -190,7 +191,7 @@ public class Alias
 		return Priority.DEFAULT_PRIORITY;
 	}
 	
-	public boolean hasPriority()
+	public boolean hasCallPriority()
 	{
 		for( AliasID id: mAliasIDs )
 		{
@@ -201,6 +202,30 @@ public class Alias
 		}
 
 		return false;
+	}
+
+	/**
+	 * Sets or updates the call priority
+	 */
+	public void setCallPriority( int priority )
+	{
+		if( priority == Priority.DO_NOT_MONITOR ||
+			( Priority.MIN_PRIORITY <= priority && priority <= Priority.MAX_PRIORITY ) )
+		{
+			for( AliasID id: mAliasIDs )
+			{
+				if( id.getType() == AliasIDType.Priority )
+				{
+					((Priority)id).setPriority( priority );
+					return;
+				}
+			}
+			
+			//If we don't find a priority id, create one
+			Priority p = new Priority();
+			p.setPriority( priority );
+			addAliasID( p );
+		}
 	}
 	
 	/**
@@ -217,5 +242,42 @@ public class Alias
 		}
 		
 		return true;
+	}
+
+	/**
+	 * Sets or removes the non-recordable alias ID for this alias.
+	 */
+	public void setRecordable( boolean recordable )
+	{
+		if( recordable )
+		{
+			AliasID toRemove = null;
+			
+			for( AliasID id: getId() )
+			{
+				if( id.getType() == AliasIDType.NonRecordable )
+				{
+					toRemove = id;
+					break;
+				}
+			}
+			
+			if( toRemove != null )
+			{
+				removeAliasID( toRemove );
+			}
+		}
+		else
+		{
+			for( AliasID id: getId() )
+			{
+				if( id.getType() == AliasIDType.NonRecordable )
+				{
+					return;
+				}
+			}
+			
+			addAliasID( new NonRecordable() );
+		}
 	}
 }

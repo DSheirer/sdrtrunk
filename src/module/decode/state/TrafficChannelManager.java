@@ -317,7 +317,7 @@ public class TrafficChannelManager extends Module
 		Alias to = event.getToIDAlias();
 
 		if( to != null && 
-			to.hasPriority() && 
+			to.hasCallPriority() && 
 			to.getCallPriority() == Priority.DO_NOT_MONITOR )
 		{
 			return true;
@@ -326,7 +326,7 @@ public class TrafficChannelManager extends Module
 		Alias from = event.getFromIDAlias();
 
 		if( from != null && 
-			from.hasPriority() && 
+			from.hasCallPriority() && 
 			from.getCallPriority() == Priority.DO_NOT_MONITOR )
 		{
 			return true;

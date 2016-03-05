@@ -266,14 +266,14 @@ public class AliasModel extends AbstractTableModel
 	
 	public void broadcast( AliasEvent event )
 	{
-		mAliasEventBroadcaster.broadcast( event );
-		
 		if( event.getEvent() == Event.CHANGE )
 		{
 			int index = mAliases.indexOf( event.getAlias() );
 			
 			fireTableRowsUpdated( index, index );
 		}
+		
+		mAliasEventBroadcaster.broadcast( event );
 	}
 	
 	public void addListener( Listener<AliasEvent> listener )
