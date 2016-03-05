@@ -38,7 +38,7 @@ public class MPT1327IDEditor extends DocumentListenerEditor<AliasID>
 	private static final long serialVersionUID = 1L;
 
     private static final String HELP_TEXT = "<html>"
-    		+ "<h3>MPT-1327 Identifier Example</h3>"
+    		+ "<h3>MPT-1327 Identifier</h3>"
     		+ "<b>MPT-1327:</b> decimal (0-9) format ppp-iiii where<br>"
     		+ "p=Prefix and i=Ident (e.g. <u>123-0001</u>)<br>"
     		+ "<b>Wildcard:</b> use an asterisk (*) to wildcard individual<br>"
@@ -78,19 +78,19 @@ public class MPT1327IDEditor extends DocumentListenerEditor<AliasID>
 
 		add( mTextField, "growx,push" );
 		
-		JLabel example = new JLabel( "Example ..." );
-		example.setForeground( Color.BLUE.brighter() );
-		example.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
-		example.addMouseListener( new MouseAdapter() 
+		JLabel help = new JLabel( "Help ..." );
+		help.setForeground( Color.BLUE.brighter() );
+		help.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		help.addMouseListener( new MouseAdapter() 
 		{
 			@Override
 			public void mouseClicked( MouseEvent e )
 			{
 				JOptionPane.showMessageDialog( MPT1327IDEditor.this, 
-					HELP_TEXT, "Example", JOptionPane.INFORMATION_MESSAGE );
+					HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE );
 			}
 		} );
-		add( example );
+		add( help, "align left" );
 	}
 	
 	public MPT1327ID getMPT1327ID()

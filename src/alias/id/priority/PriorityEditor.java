@@ -43,14 +43,14 @@ public class PriorityEditor extends DocumentListenerEditor<AliasID>
 	public static final String DO_NOT_MONITOR = "Do Not Monitor";
 
 	private static final String HELP_TEXT = "<html>"
-			+ "<h3>Call Audio Priority Example</h3>"
+			+ "<h3>Call Audio Priority</h3>"
 			+ "Priority determines which calls have priority for playback<br>"
 			+ "over your computer speakers, or designates an alias for<br>"
 			+ "no-monitoring if you don't want to hear calls from an alias.<br><br>"
-			+ "Lower values indicate higher priority levels."
+			+ "Lower values indicate higher priority levels.<br><br>"
+			+ "<b>Do Not Monitor: </b> slide priority all the way to the right"
     		+ "</html>";
 
-    private JCheckBox mDoNotMonitorCheckBox = new JCheckBox( DO_NOT_MONITOR );
     private JSlider mPrioritySlider;
     private JLabel mPrioritySliderLabel;
 
@@ -65,20 +65,9 @@ public class PriorityEditor extends DocumentListenerEditor<AliasID>
 	{
 		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][]" ) );
 
-		mDoNotMonitorCheckBox.setToolTipText( HELP_TEXT );
-		mDoNotMonitorCheckBox.addActionListener( new ActionListener()
-		{
-			@Override
-			public void actionPerformed( ActionEvent e )
-			{
-				setModified( true );
-			}
-		} );
-		add( mDoNotMonitorCheckBox, "span,align center" );
-
 		mPrioritySlider = new JSlider( JSlider.HORIZONTAL,
 										Priority.MIN_PRIORITY,
-										Priority.MAX_PRIORITY,
+										Priority.MAX_PRIORITY + 1,
 										Priority.MIN_PRIORITY );
 		
 		mPrioritySlider.setMajorTickSpacing( 20 );
@@ -91,29 +80,39 @@ public class PriorityEditor extends DocumentListenerEditor<AliasID>
 			@Override
 			public void stateChanged( ChangeEvent e )
 			{
-				mPrioritySliderLabel.setText( "Priority: " + mPrioritySlider.getValue() );
+				int priority = mPrioritySlider.getValue();
+				
+				if( priority == Priority.MAX_PRIORITY + 1 )
+				{
+					mPrioritySliderLabel.setText( "Priority: Do Not Monitor" );
+				}
+				else
+				{
+					mPrioritySliderLabel.setText( "Priority: " + priority );
+				}
+				
 				setModified( true );
 			}
 		} );
 		mPrioritySlider.setToolTipText( HELP_TEXT );
 		
 		mPrioritySliderLabel = new JLabel( "Priority: " + mPrioritySlider.getValue() + " " );
-		add( mPrioritySliderLabel );
-		add( mPrioritySlider, "wrap,grow" );
+		add( mPrioritySliderLabel, "span,align center" );
+		add( mPrioritySlider, "span,grow" );
 		
-		JLabel example = new JLabel( "Example ..." );
-		example.setForeground( Color.BLUE.brighter() );
-		example.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
-		example.addMouseListener( new MouseAdapter() 
+		JLabel help = new JLabel( "Help ..." );
+		help.setForeground( Color.BLUE.brighter() );
+		help.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		help.addMouseListener( new MouseAdapter() 
 		{
 			@Override
 			public void mouseClicked( MouseEvent e )
 			{
 				JOptionPane.showMessageDialog( PriorityEditor.this, 
-					HELP_TEXT, "Example", JOptionPane.INFORMATION_MESSAGE );
+					HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE );
 			}
 		} );
-		add( example );
+		add( help, "align left" );
 	}
 	
 	public Priority getPriority()
@@ -135,8 +134,14 @@ public class PriorityEditor extends DocumentListenerEditor<AliasID>
 		
 		if( priority != null )
 		{
-			mPrioritySlider.setValue( priority.getPriority() );
-			mDoNotMonitorCheckBox.setSelected( priority.isDoNotMonitor() );
+			int value = priority.getPriority();
+			
+			if( value == Priority.DO_NOT_MONITOR )
+			{
+				value = Priority.MAX_PRIORITY + 1;
+			}
+			
+			mPrioritySlider.setValue( value );
 		}
 		
 		setModified( false );
@@ -151,14 +156,14 @@ public class PriorityEditor extends DocumentListenerEditor<AliasID>
 		
 		if( priority != null )
 		{
-			if( mDoNotMonitorCheckBox.isSelected() )
+			int value = mPrioritySlider.getValue();
+
+			if( value == Priority.MAX_PRIORITY + 1 )
 			{
-				priority.setPriority( Priority.DO_NOT_MONITOR );
+				value = Priority.DO_NOT_MONITOR;
 			}
-			else
-			{
-				priority.setPriority( mPrioritySlider.getValue() );
-			}
+
+			priority.setPriority( value );
 		}
 		
 		setModified( false );

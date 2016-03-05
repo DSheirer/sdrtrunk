@@ -36,7 +36,7 @@ public class ESNEditor extends DocumentListenerEditor<AliasID>
     private static final long serialVersionUID = 1L;
 
     private static final String HELP_TEXT = 
-    		"<html><h3>Electronic Serial Number (ESN) Example</h3>"
+    		"<html><h3>Electronic Serial Number (ESN)</h3>"
     		+ "<b>ESN:</b> hexadecimal 0-9, A-F (e.g. <u>ABCD1234</u> )<br>"
     		+ "<b>Wildcard:</b> use an asterisk (*) to wildcard individual<br>"
     		+ "digits (e.g. <u>ABCD123*</u> or <u>AB**1**4</u>)"
@@ -61,19 +61,19 @@ public class ESNEditor extends DocumentListenerEditor<AliasID>
 		mTextField.setToolTipText( HELP_TEXT );
 		add( mTextField, "growx,push" );
 
-		JLabel example = new JLabel( "Example ..." );
-		example.setForeground( Color.BLUE.brighter() );
-		example.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
-		example.addMouseListener( new MouseAdapter() 
+		JLabel help = new JLabel( "Help ..." );
+		help.setForeground( Color.BLUE.brighter() );
+		help.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		help.addMouseListener( new MouseAdapter() 
 		{
 			@Override
 			public void mouseClicked( MouseEvent e )
 			{
 				JOptionPane.showMessageDialog( ESNEditor.this, 
-					HELP_TEXT, "Example", JOptionPane.INFORMATION_MESSAGE );
+					HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE );
 			}
 		} );
-		add( example );
+		add( help, "align left" );
 	}
 	
 	public Esn getEsn()

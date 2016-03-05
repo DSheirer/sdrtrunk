@@ -36,7 +36,7 @@ public class TalkgroupIDEditor extends DocumentListenerEditor<AliasID>
     private static final long serialVersionUID = 1L;
 
     private static final String HELP_TEXT = 
-    		"<html><h3>Talkgroup Identifier Examples</h3>"
+    		"<html><h3>Talkgroup Identifier</h3>"
     		+ "<b>P25:</b> 4 or 6 hex characters (e.g. <u>AB12</u> or <u>ABC123</u>)<br>"
     		+ "<b>LTR:</b> A-HH-TTT where A=Area H=Home T=Talkgroup (<u>0-01-128</u>)<br>"
     		+ "<b>Passport</b>: 5-digit number (<u>12345</u> or <u>00023</u>)<br>"
@@ -64,19 +64,19 @@ public class TalkgroupIDEditor extends DocumentListenerEditor<AliasID>
 		mTextField.setToolTipText( HELP_TEXT );
 		add( mTextField, "growx,push" );
 
-		JLabel example = new JLabel( "Example ..." );
-		example.setForeground( Color.BLUE.brighter() );
-		example.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
-		example.addMouseListener( new MouseAdapter() 
+		JLabel help = new JLabel( "Help ..." );
+		help.setForeground( Color.BLUE.brighter() );
+		help.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		help.addMouseListener( new MouseAdapter() 
 		{
 			@Override
 			public void mouseClicked( MouseEvent e )
 			{
 				JOptionPane.showMessageDialog( TalkgroupIDEditor.this, 
-					HELP_TEXT, "Examples", JOptionPane.INFORMATION_MESSAGE );
+					HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE );
 			}
 		} );
-		add( example );
+		add( help, "align left" );
 	}
 	
 	public TalkgroupID getTalkgroupID()

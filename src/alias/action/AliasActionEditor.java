@@ -228,9 +228,14 @@ public class AliasActionEditor extends Editor<Alias>
 	@Override
 	public void save()
 	{
-		if( mEditorContainer.isModified() )
+		if( isModified() || mEditorContainer.isModified() )
 		{
-			mEditorContainer.save();
+			if( mEditorContainer.isModified() )
+			{
+				mEditorContainer.save();
+			}
+			
+			setModified( false );
 			
 			if( hasItem() )
 			{
@@ -316,6 +321,8 @@ public class AliasActionEditor extends Editor<Alias>
 					setItem( alias );
 					
 					mAliasActionList.setSelectedValue( action, true );
+					
+					AliasActionEditor.this.setModified( true );
 				}
 			} );
 		}

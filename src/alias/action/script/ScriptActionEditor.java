@@ -229,10 +229,10 @@ public class ScriptActionEditor extends DocumentListenerEditor<AliasAction>
 		
 		add( testButton, "grow,wrap" );
 		
-		JLabel example = new JLabel( "Help ..." );
-		example.setForeground( Color.BLUE.brighter() );
-		example.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
-		example.addMouseListener( new MouseAdapter() 
+		JLabel help = new JLabel( "Help ..." );
+		help.setForeground( Color.BLUE.brighter() );
+		help.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		help.addMouseListener( new MouseAdapter() 
 		{
 			@Override
 			public void mouseClicked( MouseEvent e )
@@ -241,7 +241,7 @@ public class ScriptActionEditor extends DocumentListenerEditor<AliasAction>
 					HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE );
 			}
 		} );
-		add( example );
+		add( help, "align left" );
 	}
 	
 	@Override

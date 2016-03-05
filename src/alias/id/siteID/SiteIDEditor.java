@@ -36,7 +36,7 @@ public class SiteIDEditor extends DocumentListenerEditor<AliasID>
     private static final long serialVersionUID = 1L;
 
     private static final String HELP_TEXT = "<html>"
-    		+ "<h3>Site ID Example</h3>"
+    		+ "<h3>Site Identifier</h3>"
     		+ "<b>LTR-Net:</b> decimal (0-9) (e.g. <u>019</u>)<br>"
     		+ "<b>MPT-1327:</b> 5 digits (0-9) (e.g. <u>23619</u>)<br>"
     		+ "<b>Passport:</b> 3 digits (0-9) (e.g. <u>019</u>)<br>"
@@ -63,20 +63,20 @@ public class SiteIDEditor extends DocumentListenerEditor<AliasID>
 		mTextField.setToolTipText( HELP_TEXT );
 		add( mTextField, "growx,push" );
 
-		JLabel example = new JLabel( "Example ..." );
-		example.setForeground( Color.BLUE.brighter() );
-		example.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
-		example.addMouseListener( new MouseAdapter() 
+		JLabel help = new JLabel( "Help ..." );
+		help.setForeground( Color.BLUE.brighter() );
+		help.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		help.addMouseListener( new MouseAdapter() 
 		{
 			@Override
 			public void mouseClicked( MouseEvent e )
 			{
 				JOptionPane.showMessageDialog( SiteIDEditor.this, 
-					HELP_TEXT, "Example", JOptionPane.INFORMATION_MESSAGE );
+					HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE );
 			}
 		} );
 		
-		add( example );
+		add( help, "align left" );
 	}
 	
 	public SiteID getSiteID()

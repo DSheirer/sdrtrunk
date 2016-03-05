@@ -36,7 +36,7 @@ public class UniqueIDEditor extends DocumentListenerEditor<AliasID>
     private static final long serialVersionUID = 1L;
 
     private static final String HELP_TEXT = "<html>"
-    		+ "<h3>LTR-Net Unique ID (UID) Example</h3>"
+    		+ "<h3>LTR-Net Unique ID (UID)</h3>"
     		+ "<b>UID:</b> identifier assigned to each radio in<br>"
     		+ "the range <u>1 - 2097152</u>"
     		+ "</html>";
@@ -60,19 +60,19 @@ public class UniqueIDEditor extends DocumentListenerEditor<AliasID>
 		mTextField.setToolTipText( HELP_TEXT );
 		add( mTextField, "growx,push" );
 
-		JLabel example = new JLabel( "Example ..." );
-		example.setForeground( Color.BLUE.brighter() );
-		example.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
-		example.addMouseListener( new MouseAdapter() 
+		JLabel help = new JLabel( "Help ..." );
+		help.setForeground( Color.BLUE.brighter() );
+		help.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		help.addMouseListener( new MouseAdapter() 
 		{
 			@Override
 			public void mouseClicked( MouseEvent e )
 			{
 				JOptionPane.showMessageDialog( UniqueIDEditor.this, 
-					HELP_TEXT, "Example", JOptionPane.INFORMATION_MESSAGE );
+					HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE );
 			}
 		} );
-		add( example );
+		add( help, "align left" );
 	}
 	
 	public UniqueID getUniqueID()

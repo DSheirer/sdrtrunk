@@ -25,6 +25,7 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
+import javax.xml.bind.annotation.XmlTransient;
 
 import alias.action.AliasAction;
 import alias.id.AliasID;
@@ -178,6 +179,7 @@ public class Alias
 	/**
 	 * Returns the priority level of this alias, if defined, or the default priority
 	 */
+	@XmlTransient
 	public int getCallPriority()
 	{
 		for( AliasID id: mAliasIDs )
@@ -231,6 +233,7 @@ public class Alias
 	/**
 	 * Inspects the alias for a non-recordable alias id.  Default is true;
 	 */
+	@XmlTransient
 	public boolean isRecordable()
 	{
 		for( AliasID id: getId() )

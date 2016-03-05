@@ -44,7 +44,7 @@ public class FleetsyncIDEditor extends DocumentListenerEditor<AliasID>
 	private static final long serialVersionUID = 1L;
 
     private static final String HELP_TEXT = "<html>"
-    		+ "<h3>Fleetsync Identifier Example</h3>"
+    		+ "<h3>Fleetsync Identifier</h3>"
     		+ "<b>Fleetsync:</b> ggg-uuuu where g=Group and u=Unit (e.g. <u>001-0001</u>)<br>"
     		+ "<b>Wildcard:</b> use an asterisk (*) for each digit (e.g. <u>001-****</u>)"
     		+ "</html>";
@@ -82,19 +82,19 @@ public class FleetsyncIDEditor extends DocumentListenerEditor<AliasID>
 
 		add( mTextField, "growx,push" );
 		
-		JLabel example = new JLabel( "Example ..." );
-		example.setForeground( Color.BLUE.brighter() );
-		example.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
-		example.addMouseListener( new MouseAdapter() 
+		JLabel help = new JLabel( "Help ..." );
+		help.setForeground( Color.BLUE.brighter() );
+		help.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		help.addMouseListener( new MouseAdapter() 
 		{
 			@Override
 			public void mouseClicked( MouseEvent e )
 			{
 				JOptionPane.showMessageDialog( FleetsyncIDEditor.this, 
-					HELP_TEXT, "Example", JOptionPane.INFORMATION_MESSAGE );
+					HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE );
 			}
 		} );
-		add( example );
+		add( help, "align left" );
 	}
 	
 	public FleetsyncID getFleetsyncID()

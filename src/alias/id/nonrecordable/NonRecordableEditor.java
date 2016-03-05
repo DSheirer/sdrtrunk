@@ -35,10 +35,13 @@ public class NonRecordableEditor extends DocumentListenerEditor<AliasID>
     private static final long serialVersionUID = 1L;
 
     private static final String HELP_TEXT = "<html>"
-    		+ "<h3>Audio Non-Recordable Example</h3>"
+    		+ "<h3>Audio Non-Recordable</h3>"
     		+ "This identifies an alias as non-recordable.<br><br>"
-    		+ "The alias can still be monitored but associated audio will not be recorded<br>"
-    		+ "when recording is enabled for the decoding channel.";
+    		+ "The alias can still be monitored but associated audio will<br>"
+    		+ "not be recorded.<br><br>"
+    		+ "The default behavior when audio recording is enabled for a<br>"
+    		+ "channel is to record all aliases except any alias with a<br>"
+    		+ "non-recordable identifier";
 
 	public NonRecordableEditor( AliasID aliasID )
 	{
@@ -53,19 +56,19 @@ public class NonRecordableEditor extends DocumentListenerEditor<AliasID>
 
 		add( new JLabel( "Non-Recordable" ), "wrap" );
 		
-		JLabel example = new JLabel( "Example ..." );
-		example.setForeground( Color.BLUE.brighter() );
-		example.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
-		example.addMouseListener( new MouseAdapter() 
+		JLabel help = new JLabel( "Help ..." );
+		help.setForeground( Color.BLUE.brighter() );
+		help.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		help.addMouseListener( new MouseAdapter() 
 		{
 			@Override
 			public void mouseClicked( MouseEvent e )
 			{
 				JOptionPane.showMessageDialog( NonRecordableEditor.this, 
-					HELP_TEXT, "Example", JOptionPane.INFORMATION_MESSAGE );
+					HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE );
 			}
 		} );
-		add( example );
+		add( help, "align left" );
 	}
 	
 	@Override

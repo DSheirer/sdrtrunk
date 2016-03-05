@@ -135,9 +135,35 @@ public class AliasIdentifierEditor extends Editor<Alias>
 				menu.add( new AddAliasIdentifierItem( AliasIDType.Site ) );
 				menu.add( new AddAliasIdentifierItem( AliasIDType.Status ) );
 				menu.add( new AddAliasIdentifierItem( AliasIDType.Talkgroup ) );
-				menu.addSeparator();
-				menu.add( new AddAliasIdentifierItem( AliasIDType.Priority ) );
-				menu.add( new AddAliasIdentifierItem( AliasIDType.NonRecordable ) );
+
+				boolean separatorAdded = false;
+				
+				if( hasItem() )
+				{
+					Alias alias = getItem();
+					
+					if( !alias.hasCallPriority() )
+					{
+						if( !separatorAdded )
+						{
+							menu.addSeparator();
+							separatorAdded = true;
+						}
+						
+						menu.add( new AddAliasIdentifierItem( AliasIDType.Priority ) );
+					}
+					
+					if( alias.isRecordable() )
+					{
+						if( !separatorAdded )
+						{
+							menu.addSeparator();
+							separatorAdded = true;
+						}
+						
+						menu.add( new AddAliasIdentifierItem( AliasIDType.NonRecordable ) );
+					}
+				}
 				
 				menu.show( e.getComponent(), e.getX(), e.getY() );
 			}
@@ -238,9 +264,14 @@ public class AliasIdentifierEditor extends Editor<Alias>
 	@Override
 	public void save()
 	{
-		if( mEditorContainer.isModified() )
+		if( isModified() || mEditorContainer.isModified() )
 		{
-			mEditorContainer.save();
+			if( mEditorContainer.isModified() )
+			{
+				mEditorContainer.save();
+			}
+			
+			setModified( false );
 			
 			if( hasItem() )
 			{
@@ -326,6 +357,8 @@ public class AliasIdentifierEditor extends Editor<Alias>
 					setItem( alias );
 					
 					mAliasIDList.setSelectedValue( id, true );
+					
+					AliasIdentifierEditor.this.setModified( true );
 				}
 			} );
 		}

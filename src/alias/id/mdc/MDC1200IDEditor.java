@@ -38,7 +38,7 @@ public class MDC1200IDEditor extends DocumentListenerEditor<AliasID>
     private static final long serialVersionUID = 1L;
 
     private static final String HELP_TEXT = "<html>"
-    		+ "<h3>MDC-1200 Identifier Example</h3>"
+    		+ "<h3>MDC-1200 Identifier</h3>"
     		+ "<b>MDC-1200:</b> four digit [0-9] value (e.g. <u>1234</u>)<br>"
     		+ "<b>Wildcard:</b> use an asterisk (*) to wildcard individual<br>" 
     		+ "digits (e.g. <u>123*</u> or <u>**34</u>)"
@@ -76,19 +76,19 @@ public class MDC1200IDEditor extends DocumentListenerEditor<AliasID>
 		mTextField.setToolTipText( HELP_TEXT );
 		add( mTextField, "growx,push" );
 		
-		JLabel example = new JLabel( "Example ..." );
-		example.setForeground( Color.BLUE.brighter() );
-		example.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
-		example.addMouseListener( new MouseAdapter() 
+		JLabel help = new JLabel( "Help ..." );
+		help.setForeground( Color.BLUE.brighter() );
+		help.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		help.addMouseListener( new MouseAdapter() 
 		{
 			@Override
 			public void mouseClicked( MouseEvent e )
 			{
 				JOptionPane.showMessageDialog( MDC1200IDEditor.this, 
-					HELP_TEXT, "Example", JOptionPane.INFORMATION_MESSAGE );
+					HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE );
 			}
 		} );
-		add( example );
+		add( help, "align left" );
 	}
 	
 	public MDC1200ID getMDC1200ID()
