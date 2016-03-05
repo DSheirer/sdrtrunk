@@ -23,7 +23,7 @@ public class SourceConfigFactory
 {
 	public static SourceConfiguration getDefaultSourceConfiguration()
 	{
-		return getSourceConfiguration( SourceType.NONE );
+		return getSourceConfiguration( SourceType.TUNER );
 	}
 	
 	public static SourceConfiguration 
