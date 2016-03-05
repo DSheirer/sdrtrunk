@@ -34,13 +34,13 @@ import org.slf4j.LoggerFactory;
 
 import sample.Listener;
 import settings.SettingsManager;
-import alias.AliasEvent.Event;
 import alias.action.AliasActionEditor;
 import alias.id.AliasIdentifierEditor;
 
 import com.jidesoft.swing.JideTabbedPane;
 
-public class AliasEditor extends Editor<Alias> implements ActionListener, Listener<AliasEvent>
+public class AliasEditor extends Editor<Alias> 
+			implements ActionListener, Listener<AliasEvent>
 {
     private static final long serialVersionUID = 1L;
 
@@ -64,7 +64,7 @@ public class AliasEditor extends Editor<Alias> implements ActionListener, Listen
     	
     	mAliasModel.addListener( this );
 		
-		initGUI();
+		init();
 	}
 
     
@@ -87,7 +87,7 @@ public class AliasEditor extends Editor<Alias> implements ActionListener, Listen
 		mAliasActionEditor.setItem( alias );
 	}
 
-	private void initGUI()
+	private void init()
 	{
 		setLayout( new MigLayout( "fill,wrap 2", "[grow,fill][grow,fill]", 
 				"[][][][][][grow,fill]" ) );

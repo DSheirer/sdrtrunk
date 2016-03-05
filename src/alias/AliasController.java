@@ -1,10 +1,15 @@
 package alias;
 
+import gui.editor.Editor;
+
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -38,7 +43,9 @@ public class AliasController extends JPanel
 	private AliasModel mAliasModel;
 	private JTable mAliasTable;
 	private TableFilterHeader mTableFilterHeader;
-	private AliasEditor mEditor;
+	private AliasEditor mAliasEditor;
+	private MultipleAliasEditor mMultipleAliasEditor;
+	private JideSplitPane mSplitPane;
 	
 	private static final String NEW_ALIAS = "New";
 	private static final String COPY_ALIAS = "Copy";
@@ -54,13 +61,14 @@ public class AliasController extends JPanel
 	{
 		mAliasModel = aliasModel;
 
-    	mEditor = new AliasEditor( mAliasModel, settingsManager );
+    	mAliasEditor = new AliasEditor( mAliasModel, settingsManager );
+    	mMultipleAliasEditor = new MultipleAliasEditor( mAliasModel, settingsManager );
 
     	mIconCellRenderer = new IconCellRenderer( settingsManager );
     	
     	init();
     	
-    	mAliasModel.addListener( mEditor );
+    	mAliasModel.addListener( mAliasEditor );
 	}
 	
 	private void init()
@@ -71,7 +79,7 @@ public class AliasController extends JPanel
 
 		//System Configuration View and Editor
     	mAliasTable = new JTable( mAliasModel );
-    	mAliasTable.setSelectionMode( ListSelectionModel.SINGLE_SELECTION );
+    	mAliasTable.setSelectionMode( ListSelectionModel.MULTIPLE_INTERVAL_SELECTION );
     	mAliasTable.getSelectionModel().addListSelectionListener( this );
     	mAliasTable.setAutoCreateRowSorter( true );
     	
@@ -113,13 +121,52 @@ public class AliasController extends JPanel
     	listAndButtonsPanel.add( tableScroller, "wrap" );
     	listAndButtonsPanel.add( buttonsPanel );
 		
-		JideSplitPane splitPane = new JideSplitPane( JideSplitPane.HORIZONTAL_SPLIT );
-		splitPane.setDividerSize( 5 );
-		splitPane.setShowGripper( true );
-		splitPane.add( listAndButtonsPanel );
-		splitPane.add( mEditor );
+		mSplitPane = new JideSplitPane( JideSplitPane.HORIZONTAL_SPLIT );
+		mSplitPane.setDividerSize( 5 );
+		mSplitPane.setShowGripper( true );
+		mSplitPane.add( listAndButtonsPanel );
+		mSplitPane.add( mAliasEditor );
 
-		add( splitPane );
+		add( mSplitPane );
+	}
+
+	/**
+	 * Sets the editor argument as the currently visible alias editor
+	 */
+	private void setEditor( Editor<?> editor )
+	{
+		if( mSplitPane.getComponentCount() == 3 )
+		{
+			Component component = mSplitPane.getComponent( 2 );
+			
+			if( component instanceof Editor<?> && component != editor )
+			{
+				//Get current divider location so that we can reapply it after
+				//changing out the editors, so that the interface doesn't move
+				int location = mSplitPane.getDividerLocation( 0 );
+				
+				((Editor<?>)component).setItem( null );
+				
+				mSplitPane.remove( component );
+				mSplitPane.add( editor );
+				
+				mSplitPane.validate();
+				mSplitPane.setDividerLocation( 0, location );
+				mSplitPane.repaint();
+			}
+		}
+	}
+	
+	private Alias getAlias( int selectedRow )
+	{
+		if( selectedRow >= 0 )
+		{
+			int index = mAliasTable.convertRowIndexToModel( mAliasTable.getSelectedRow() );
+			
+			return mAliasModel.getAliasAtIndex( index );
+		}
+		
+		return null;
 	}
 
 	@Override
@@ -128,26 +175,43 @@ public class AliasController extends JPanel
 		//Limits event firing to only when selection is complete 
 		if( !event.getValueIsAdjusting() )
 		{
-			int selectedRow = mAliasTable.getSelectedRow();
+			int[] selectedRows = mAliasTable.getSelectedRows();
 			
-			if( selectedRow != -1 )
+			if( selectedRows.length <= 1 )
 			{
-				int index = mAliasTable.convertRowIndexToModel( mAliasTable.getSelectedRow() );
+				setEditor( mAliasEditor );
 				
-				Alias alias = mAliasModel.getAliasAtIndex( index );
+				Alias selectedAlias = getAlias( selectedRows[ 0 ] );
 				
-				if( alias != null )
+				mAliasEditor.setItem( selectedAlias );
+				
+				if( selectedAlias != null )
 				{
-					mEditor.setItem( alias );
 					mCopyButton.setEnabled( true );
 					mDeleteButton.setEnabled( true );
+				}
+				else
+				{
+					mCopyButton.setEnabled( false );
+					mDeleteButton.setEnabled( false );
 				}
 			}
 			else
 			{
-				mEditor.setItem( null );
-				mCopyButton.setEnabled( false );
-				mDeleteButton.setEnabled( false );
+				setEditor( mMultipleAliasEditor );
+				
+				mCopyButton.setEnabled( true );
+				mDeleteButton.setEnabled( true );
+
+				List<Alias> selectedAliases = new ArrayList<Alias>();
+				
+				for( int selectedRow: selectedRows )
+				{
+					selectedAliases.add( getAlias( selectedRow ) );
+				}
+				
+				mLog.debug( "Selection changed - setting selected aliases" );
+				mMultipleAliasEditor.setItem( selectedAliases );
 			}
 		}
 	}

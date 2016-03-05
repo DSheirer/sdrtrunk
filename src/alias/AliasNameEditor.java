@@ -284,10 +284,10 @@ public class AliasNameEditor extends Editor<Alias>
 				alias.setIconName( ((MapIcon)mMapIconCombo.getSelectedItem()).getName() );
 			}
 			
+			setModified( false );
+
 			//Broadcast an alias change event to save the updates
 			mAliasModel.broadcast( new AliasEvent( getItem(), Event.CHANGE ) ); 
 		}
-		
-		setModified( false );
 	}
 }

@@ -22,8 +22,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import javax.swing.event.TableModelEvent;
-import javax.swing.event.TableModelListener;
 import javax.swing.table.AbstractTableModel;
 
 import org.slf4j.Logger;
@@ -93,6 +91,26 @@ public class AliasModel extends AbstractTableModel
 		return listNames;
 	}
 	
+	/**
+	 * Returns a list of alias group names for all aliases
+	 */
+	public List<String> getGroupNames()
+	{
+		List<String> groupNames = new ArrayList<>();
+
+		for( Alias alias: mAliases )
+		{
+			if( alias.hasGroup() &&	!groupNames.contains( alias.getGroup() ) )
+			{
+				groupNames.add( alias.getGroup() );
+			}
+		}
+
+		Collections.sort( groupNames );
+		
+		return groupNames;
+	}
+
 	/**
 	 * Returns a list of alias group names for all aliases that have a matching
 	 * list name value

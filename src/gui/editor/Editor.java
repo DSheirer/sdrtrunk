@@ -31,6 +31,7 @@ public abstract class Editor<T> extends JPanel
 	{
 		if( isModified() )
 		{
+			mLog.debug( "Editor that is modified: " + getClass() );
 			int option = JOptionPane.showConfirmDialog( 
 				Editor.this, 
 				"This item has changed.  Do you want to save these changes?", 
