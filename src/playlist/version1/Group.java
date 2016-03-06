@@ -15,12 +15,15 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package alias;
+package playlist.version1;
 
 import java.util.ArrayList;
 
 import javax.xml.bind.annotation.XmlAttribute;
 
+import alias.Alias;
+
+@Deprecated
 public class Group
 {
 	private String mName;

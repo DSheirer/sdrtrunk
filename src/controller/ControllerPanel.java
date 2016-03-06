@@ -33,7 +33,6 @@ import module.decode.event.CallEventPanel;
 import module.decode.event.MessageActivityPanel;
 import module.decode.state.ChannelList;
 import net.miginfocom.swing.MigLayout;
-import playlist.PlaylistManager;
 import settings.SettingsManager;
 import source.SourceManager;
 import spectrum.ChannelSpectrumPanel;
@@ -48,6 +47,7 @@ import com.jidesoft.swing.JideTabbedPane;
 import controller.channel.ChannelController;
 import controller.channel.ChannelModel;
 import controller.channel.ChannelProcessingManager;
+import controller.channel.map.ChannelMapModel;
 
 public class ControllerPanel extends JPanel
 {
@@ -83,9 +83,9 @@ public class ControllerPanel extends JPanel
 							ConfigurationControllerModel controller,
 							AliasModel aliasModel,
 							ChannelModel channelModel,
+							ChannelMapModel channelMapModel,
 							ChannelProcessingManager channelProcessingManager,
 							MapService mapService,
-							PlaylistManager playlistManager,
 							SettingsManager settingsManager,
 							SourceManager sourceManager )
 	{
@@ -105,9 +105,10 @@ public class ControllerPanel extends JPanel
     			channelProcessingManager );
 
     	mChannelStateList = new ChannelList( channelModel, channelProcessingManager, 
-    			playlistManager, mSettingsManager );
+    			mSettingsManager );
 
-    	mChannelController = new ChannelController( channelModel, playlistManager, sourceManager );
+    	mChannelController = new ChannelController( channelModel, channelMapModel, 
+    			sourceManager, aliasModel );
     	
     	mAliasController = new AliasController( aliasModel, mSettingsManager );
 

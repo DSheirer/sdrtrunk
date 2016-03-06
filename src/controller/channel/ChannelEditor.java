@@ -40,10 +40,12 @@ import playlist.PlaylistManager;
 import record.RecordComponentEditor;
 import source.SourceComponentEditor;
 import source.SourceManager;
+import alias.AliasModel;
 
 import com.jidesoft.swing.JideTabbedPane;
 
 import controller.channel.ChannelEvent.Event;
+import controller.channel.map.ChannelMapModel;
 
 public class ChannelEditor extends JPanel 
 					implements ActionListener, ChannelEventListener
@@ -65,23 +67,24 @@ public class ChannelEditor extends JPanel
 	private JLabel mChannelName = new JLabel( "Channel:" );
     
 	private ChannelModel mChannelModel;
-    private PlaylistManager mPlaylistManager;
+	private ChannelMapModel mChannelMapModel;
     private SourceManager mSourceManager;
     
     private boolean mChannelEnableRequested = false;
     
 	public ChannelEditor( ChannelModel channelModel,
-						  PlaylistManager playlistManager,
-						  SourceManager sourceManager )
+						  ChannelMapModel channelMapModel,
+						  SourceManager sourceManager,
+						  AliasModel aliasModel )
 	{
 		super();
 		
 		mChannelModel = channelModel;
-		mPlaylistManager = playlistManager;
+		mChannelMapModel = channelMapModel;
 		mSourceManager = sourceManager;
 
-		mNameConfigurationEditor = new NameConfigurationEditor( 
-				mChannelModel, mPlaylistManager );
+		mNameConfigurationEditor = new NameConfigurationEditor( aliasModel,
+				mChannelModel );
 		
 		initGUI();
 	}
@@ -137,7 +140,7 @@ public class ChannelEditor extends JPanel
 		mSourceEditor = new SourceComponentEditor( mSourceManager );
 		tabs.addTab( "Source", mSourceEditor );
 		
-		mDecodeEditor = new DecodeComponentEditor( mPlaylistManager );
+		mDecodeEditor = new DecodeComponentEditor( mChannelMapModel );
 		tabs.addTab( "Decoder", mDecodeEditor );
 
 		mAuxDecodeEditor = new AuxDecodeComponentEditor();

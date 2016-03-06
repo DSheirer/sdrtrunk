@@ -9,26 +9,20 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JSeparator;
 
-import controller.channel.ChannelEvent.Event;
 import module.ProcessingChain;
 import module.decode.event.ActivitySummaryFrame;
 import module.decode.state.DecoderState;
-import playlist.PlaylistManager;
+import controller.channel.ChannelEvent.Event;
 
 public class ChannelUtils
 {
-	private static final boolean ENABLED = true;
-	private static final boolean DISABLED = false;
-	private static final boolean BROADCAST_CHANGE = true;
-
 	/**
 	 * Creates a context menu for the channel argument
 	 */
 	public static JMenu getContextMenu( final ChannelModel channelModel,
-										final ChannelProcessingManager channelProcessingManager,
-										final PlaylistManager playlistManager, 
-										final Channel channel,
-										final Component anchor )
+			final ChannelProcessingManager channelProcessingManager,
+			final Channel channel,
+			final Component anchor )
 	{
 		if( channel != null )
 		{

@@ -25,8 +25,11 @@ import org.slf4j.LoggerFactory;
 
 import playlist.PlaylistManager;
 import source.SourceManager;
+import alias.AliasModel;
 
 import com.jidesoft.swing.JideSplitPane;
+
+import controller.channel.map.ChannelMapModel;
 
 public class ChannelController extends JPanel 
 				implements ActionListener, ListSelectionListener
@@ -47,13 +50,15 @@ public class ChannelController extends JPanel
 	private JButton mCopyChannelButton = new JButton( COPY_CHANNEL );
 	private JButton mDeleteChannelButton = new JButton( DELETE_CHANNEL );
 
-	public ChannelController( ChannelModel channelModel, 
-						   PlaylistManager playlistManager, 
-						   SourceManager sourceManager )
+	public ChannelController( ChannelModel channelModel,
+							  ChannelMapModel channelMapModel,
+							  SourceManager sourceManager,
+							  AliasModel aliasModel )
 	{
 		mChannelModel = channelModel;
 
-    	mEditor = new ChannelEditor( channelModel, playlistManager, sourceManager );
+    	mEditor = new ChannelEditor( channelModel, channelMapModel, 
+    			sourceManager, aliasModel );
     	mChannelModel.addListener( mEditor );
 
     	init();

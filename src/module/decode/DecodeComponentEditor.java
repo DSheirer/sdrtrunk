@@ -31,10 +31,10 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import playlist.PlaylistManager;
 import controller.channel.Channel;
 import controller.channel.ChannelConfigurationEditor;
 import controller.channel.ConfigurationValidationException;
+import controller.channel.map.ChannelMapModel;
 
 public class DecodeComponentEditor extends ChannelConfigurationEditor
 {
@@ -42,17 +42,14 @@ public class DecodeComponentEditor extends ChannelConfigurationEditor
 
 	private static final long serialVersionUID = 1L;
 
-    private PlaylistManager mPlaylistManager;
     private JComboBox<DecoderType> mComboDecoders;
 
     private DecodeEditor mEditor;
 
     private Channel mChannel;
     
-    public DecodeComponentEditor( PlaylistManager playlistManager )
+    public DecodeComponentEditor( final ChannelMapModel channelMapModel )
 	{
-    	mPlaylistManager = playlistManager;
-    	
 		setLayout( new MigLayout( "fill,wrap 2", "[right,grow][grow]", "[][][grow]" ) );
 
 		mComboDecoders = new JComboBox<DecoderType>();
@@ -96,8 +93,7 @@ public class DecodeComponentEditor extends ChannelConfigurationEditor
 					}
 					
 					//Change to the new one
-					mEditor = DecoderFactory.getEditorPanel( config,
-							mChannel, mPlaylistManager );
+					mEditor = DecoderFactory.getEditorPanel( config, channelMapModel );
 					
 					add( mEditor, "span 2,center" );
 					

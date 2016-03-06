@@ -24,7 +24,6 @@ import java.awt.event.WindowListener;
 import javax.swing.JFrame;
 
 import net.miginfocom.swing.MigLayout;
-import playlist.PlaylistManager;
 import settings.SettingsManager;
 import source.tuner.Tuner;
 import controller.ConfigurationControllerModel;
@@ -40,7 +39,6 @@ public class SpectrumFrame extends JFrame implements WindowListener
 	public SpectrumFrame( ConfigurationControllerModel controllerModel,
 						  ChannelModel channelModel,
 						  ChannelProcessingManager channelProcessingManager,
-						  PlaylistManager playlistManager,
 						  SettingsManager settingsManager,
 						  Tuner tuner )
 	{
@@ -51,7 +49,7 @@ public class SpectrumFrame extends JFrame implements WindowListener
     	setLayout( new MigLayout( "insets 0 0 0 0", "[grow]", "[grow]") );
     	
 		mSpectralDisplayPanel = new SpectralDisplayPanel( controllerModel, 
-			channelModel, channelProcessingManager, playlistManager, settingsManager );
+			channelModel, channelProcessingManager, settingsManager );
 		
 		mSpectralDisplayPanel.tunerSelected( tuner );
 		add( mSpectralDisplayPanel, "grow" );

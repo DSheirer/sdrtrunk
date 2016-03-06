@@ -1,9 +1,9 @@
 package module.decode.p25;
 
+import alias.AliasList;
 import instrument.Instrumentable;
 import module.decode.Decoder;
 import module.decode.DecoderType;
-import alias.AliasList;
 
 public abstract class P25Decoder extends Decoder implements Instrumentable
 {

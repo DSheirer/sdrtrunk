@@ -15,46 +15,73 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package controller.system;
+package playlist.version1;
 
 import java.util.ArrayList;
 
+import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
-@XmlSeeAlso( { controller.system.System.class } )
+import controller.channel.Channel;
 
-@XmlRootElement( name = "system_list" )
-public class SystemList
+@XmlSeeAlso( { Channel.class } )
+@XmlRootElement( name = "site" )
+@Deprecated
+public class Site
 {
-    private ArrayList<System> mSystem = new ArrayList<System>();
+    private String mName;
+    
+    private ArrayList<Channel> mChannel = new ArrayList<Channel>();
 
-    public SystemList()
+    public Site()
     {
+        this( "New Site" );
     }
     
-    public ArrayList<System> getSystem()
+    public Site( String name )
     {
-        return mSystem;
+        mName = name;
     }
     
-    public void setSystem( ArrayList<System> systems )
+    public String toString()
     {
-    	mSystem = systems;
+        return mName;
+    }
+
+	@XmlAttribute
+    public String getName()
+    {
+        return mName;
     }
     
-    public void addSystem( System system )
+    public void setName( String name )
     {
-        mSystem.add( system );
+        mName = name;
+    }
+
+    public ArrayList<Channel> getChannel()
+    {
+        return mChannel;
     }
     
-    public void removeSystem( System system )
+    public void setChannel( ArrayList<Channel> configs )
     {
-        mSystem.remove( system );
+    	mChannel = configs;
     }
     
-    public void clearSystems()
+    public void addChannel( Channel channel )
     {
-        mSystem.clear();
+        mChannel.add( channel );
+    }
+    
+    public void removeChannel( Channel channel )
+    {
+        mChannel.remove( channel );
+    }
+    
+    public void removeAllChannels()
+    {
+        mChannel.clear();
     }
 }

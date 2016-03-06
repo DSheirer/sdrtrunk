@@ -34,7 +34,6 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import playlist.PlaylistManager;
 import settings.ColorSetting.ColorSettingName;
 import settings.ColorSettingMenuItem;
 import settings.ColorSettingResetMenuItem;
@@ -60,17 +59,14 @@ public class ChannelList extends JPanel implements ChannelEventListener
 
     private ChannelModel mChannelModel;
     private ChannelProcessingManager mChannelProcessingManager;
-    private PlaylistManager mPlaylistManager;
     private SettingsManager mSettingsManager;
     
     public ChannelList( ChannelModel channelModel,
     					ChannelProcessingManager channelProcessingManager,
-    					PlaylistManager playlistManager, 
     					SettingsManager settingsManager )
     {
     	mChannelModel = channelModel;
     	mChannelProcessingManager = channelProcessingManager;
-    	mPlaylistManager = playlistManager;
     	mSettingsManager = settingsManager;
 
     	init();
@@ -105,7 +101,7 @@ public class ChannelList extends JPanel implements ChannelEventListener
     	if( !mDisplayedPanels.containsKey( channel ) )
     	{
     		ChannelPanel channelPanel = new ChannelPanel( mChannelModel, 
-    			mChannelProcessingManager, mPlaylistManager, mSettingsManager, channel );
+    			mChannelProcessingManager, mSettingsManager, channel );
     		
 			add( channelPanel, "wrap" );
 			

@@ -1,171 +1,155 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
- * 
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- * 
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- * 
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
 package controller.channel.map;
 
-import javax.swing.table.AbstractTableModel;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import javax.swing.AbstractListModel;
 
-public class ChannelMapModel extends AbstractTableModel
+import controller.channel.map.ChannelMapEvent.Event;
+import sample.Broadcaster;
+import sample.Listener;
+
+public class ChannelMapModel extends AbstractListModel<ChannelMap>
 {
-    private static final long serialVersionUID = 1L;
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( ChannelMapModel.class );
+	private static final long serialVersionUID = 1L;
+	
+	private List<ChannelMap> mChannelMaps = new ArrayList<>();
+	private Broadcaster<ChannelMapEvent> mEventBroadcaster = new Broadcaster<>();
 
-	private static final int sSTART = 0;
-    private static final int sSTOP = 1;
-    private static final int sBASE = 2;
-    private static final int sSIZE = 3;
+	public ChannelMapModel()
+	{
+	}
 
-	protected int[] mColumnWidths = { 110, 110, 110, -1 };
+	/**
+	 * Returns an unmodifiable list of channel maps currently in the model
+	 */
+	public List<ChannelMap> getChannelMaps()
+	{
+		return Collections.unmodifiableList( mChannelMaps );
+	}
 
-	protected String[] mHeaders = new String[] { "Begin",
-												 "End",
-												 "Base",
-												 "Size" };
-
-	private ChannelMap mChannelMap;
-	
-	public ChannelMapModel( ChannelMap map )
+	/**
+	 * Returns the channel map with a matching name or null
+	 */
+	public ChannelMap getChannelMap( String name )
 	{
-		mChannelMap = map;
-	}
-	
-	public ChannelMap getChannelMap()
-	{
-		return mChannelMap;
-	}
-	
-	public void setChannelMap( ChannelMap map )
-	{
-		mChannelMap = map;
-		
-		fireTableDataChanged();
-	}
-	
-	public void addRange( ChannelRange range )
-	{
-		mChannelMap.addRange( range );
-		
-		int index = mChannelMap.getRanges().size() - 1;
-		
-		fireTableRowsInserted( index, index );
-	}
-	
-	public void removeRange( int rangeIndex )
-	{
-		if( rangeIndex < mChannelMap.getRanges().size() )
+		for( ChannelMap channelMap: mChannelMaps )
 		{
-			mChannelMap.getRanges().remove( rangeIndex );
-		}
-		
-		fireTableRowsDeleted( rangeIndex, rangeIndex );
-	}
-	
-	public int[] getColumnWidths()
-	{
-		return mColumnWidths;
-	}
-	
-	public void setColumnWidths( int[] widths )
-	{
-		if( widths.length != 4 )
-		{
-			throw new IllegalArgumentException( "ChannelMapRangeModel - "
-					+ "column widths array should have 5 elements" );
-		}
-		else
-		{
-			mColumnWidths = widths;
-		}
-	}
-	
-	@Override
-    public int getRowCount()
-    {
-		return mChannelMap.getRanges().size();
-    }
-
-	@Override
-    public int getColumnCount()
-    {
-	    return mHeaders.length;
-    }
-
-	public String getColumnName( int column ) 
-	{
-        return mHeaders[ column ];
-    }
-	
-	@Override
-    public Object getValueAt( int rowIndex, int columnIndex )
-    {
-		ChannelRange range = mChannelMap.getRanges().get( rowIndex );
-		
-		switch( columnIndex )
-		{
-			case sSTART:
-				return range.getFirstChannelNumber();
-			case sSTOP:
-				return range.getLastChannelNumber();
-			case sBASE:
-				return range.getBase();
-			case sSIZE:
-				return range.getSize();
+			if( channelMap.getName().equalsIgnoreCase( name ) )
+			{
+				return channelMap;
+			}
 		}
 		
 		return null;
-    }
-	
-	public boolean isCellEditable( int row, int column )
-	{
-		return true;
 	}
-	
-	public void setValueAt( Object value, int row, int column )
+
+	/**
+	 * Adds a listener to receive notifications when channel map updates occur
+	 */
+	public void addListener( Listener<ChannelMapEvent> listener )
 	{
-		try
+		mEventBroadcaster.addListener( listener );
+	}
+
+	/**
+	 * Removes the channel map update notification listener
+	 */
+	public void removeListener( Listener<ChannelMapEvent> listener )
+	{
+		mEventBroadcaster.removeListener( listener );
+	}
+
+	/**
+	 * Broadcasts a channel map change.
+	 * 
+	 * Note: use the add/remove methods to add or remove channel maps from this
+	 * model.  When using those methods, an add or delete event will automatically
+	 * be generated.  
+	 */
+	public void broadcast( ChannelMapEvent event )
+	{
+		if( event.getEvent() == ChannelMapEvent.Event.CHANGE ||
+			event.getEvent() == ChannelMapEvent.Event.RENAME )
 		{
-			int parsedValue = Integer.parseInt( (String)value );
+			int index = mChannelMaps.indexOf( event.getChannelMap() );
 			
-			ChannelRange range = mChannelMap.getRanges().get( row );
-			
-			switch( column )
+			if( index >= 0 )
 			{
-				case sSTART:
-					range.setFirstChannelNumber( parsedValue );
-					break;
-				case sSTOP:
-					range.setLastChannelNumber( parsedValue );
-					break;
-				case sBASE:
-					range.setBase( parsedValue );
-					break;
-				case sSIZE:
-					range.setSize( parsedValue );
-					break;
+				fireContentsChanged( this, index, index );
 			}
 		}
-		catch( Exception e )
+		
+		mEventBroadcaster.broadcast( event );
+	}
+	
+	/**
+	 * Adds a list of channel maps to this model
+	 */
+	public void addChannelMaps( List<ChannelMap> channelMaps )
+	{
+		for( ChannelMap channelMap: channelMaps )
 		{
-			mLog.error( "ChannelMapModel - couldn't parse integer value "
-					+ "for [" + value + "]", e );
+			addChannelMap( channelMap );
 		}
+	}
+
+	/**
+	 * Adds the channel map to this model 
+	 */
+	public void addChannelMap( ChannelMap channelMap )
+	{
+		if( !mChannelMaps.contains( channelMap ) )
+		{
+			mChannelMaps.add( channelMap );
+			
+			int index = mChannelMaps.indexOf( channelMap );
+			
+			fireIntervalAdded( this, index, index );
+			
+			broadcast( new ChannelMapEvent( channelMap, Event.ADD ) );
+		}
+		
+	}
+
+	/**
+	 * Removes the channel map from this model
+	 */
+	public void removeChannelMap( ChannelMap channelMap )
+	{
+		if( mChannelMaps.contains( channelMap ) )
+		{
+			int index = mChannelMaps.indexOf( channelMap );
+			
+			mChannelMaps.remove( channelMap );
+			
+			fireIntervalRemoved( this, index, index );
+
+			broadcast( new ChannelMapEvent( channelMap, Event.DELETE ) );
+		}
+	}
+
+	/**
+	 * Size/Number of channel maps in this model
+	 */
+	@Override
+	public int getSize()
+	{
+		return mChannelMaps.size();
+	}
+
+	/**
+	 * Returns the channel map at the specified index
+	 */
+	@Override
+	public ChannelMap getElementAt( int index )
+	{
+		if( index <= mChannelMaps.size() )
+		{
+			return mChannelMaps.get( index );
+		}
+		
+		return null;
 	}
 }

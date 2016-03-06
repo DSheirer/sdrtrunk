@@ -74,6 +74,7 @@ import controller.channel.ChannelEventListener;
 import controller.channel.ChannelModel;
 import controller.channel.ChannelProcessingManager;
 import controller.channel.ChannelSelectionManager;
+import controller.channel.map.ChannelMapModel;
 
 public class SDRTrunk
 {
@@ -117,25 +118,26 @@ public class SDRTrunk
 
 		ThreadPoolManager threadPoolManager = new ThreadPoolManager();
 		
-		SourceManager sourceManager = new SourceManager( mSettingsManager, threadPoolManager );
-
-		ChannelModel channelModel = new ChannelModel();
-
 		AliasModel aliasModel = new AliasModel();
 
-		PlaylistManager playlistManager = new PlaylistManager( threadPoolManager, 
-				aliasModel, channelModel );
-
-		RecorderManager recorderManager = new RecorderManager( threadPoolManager );
+		ChannelModel channelModel = new ChannelModel();
+		
+		ChannelMapModel channelMapModel = new ChannelMapModel();
 
 		EventLogManager eventLogManager = new EventLogManager();
+
+		RecorderManager recorderManager = new RecorderManager( threadPoolManager );
 		
+		SourceManager sourceManager = new SourceManager( mSettingsManager, 
+				threadPoolManager );
+
 		ChannelProcessingManager channelProcessingManager = 
-			new ChannelProcessingManager( channelModel, eventLogManager,
-				playlistManager, recorderManager, sourceManager, threadPoolManager );
-		channelModel.addListener( channelProcessingManager );
-		
+			new ChannelProcessingManager( channelModel, channelMapModel, 
+				aliasModel, eventLogManager, recorderManager, 
+				sourceManager, threadPoolManager );
 		channelProcessingManager.addAudioPacketListener( recorderManager );
+		
+		channelModel.addListener( channelProcessingManager );
 		
 		ChannelSelectionManager channelSelectionManager = 
 				new ChannelSelectionManager( channelModel );
@@ -152,26 +154,21 @@ public class SDRTrunk
 
 		ConfigurationControllerModel configurationControllerModel = 
 			new ConfigurationControllerModel( channelModel, channelProcessingManager, 
-					playlistManager, mSettingsManager, sourceManager );
+					mSettingsManager, sourceManager );
 
 		mControllerPanel = new ControllerPanel( audioManager, configurationControllerModel, 
-			aliasModel, channelModel, channelProcessingManager, mapService, playlistManager, 
-			mSettingsManager, sourceManager );
+			aliasModel, channelModel, channelMapModel, channelProcessingManager, 
+			mapService, mSettingsManager, sourceManager );
 
     	mSpectralPanel = new SpectralDisplayPanel( configurationControllerModel,
-			channelModel, channelProcessingManager,	playlistManager, mSettingsManager );
+			channelModel, channelProcessingManager,	mSettingsManager );
 
 		mTitle = getTitle();
 		
-	      //TODO: move this to the end once we add the alias model, otherwise the
-	      //configuration tree won't load correctly
-		//Initialize the playlist manager to load the saved playlist
+		PlaylistManager playlistManager = new PlaylistManager( threadPoolManager, 
+				aliasModel, channelModel, channelMapModel );
+
 		playlistManager.init();
-
-		mLog.info( "starting main application gui" );
-
-    	//Initialize the GUI
-        initGUI();
 
     	if( mLogChannelAndMemoryUsage )
     	{
@@ -180,6 +177,11 @@ public class SDRTrunk
     		threadPoolManager.scheduleFixedRate( 
     				ThreadType.DECODER, cml, 5, TimeUnit.SECONDS );
     	}
+
+		mLog.info( "starting main application gui" );
+		
+    	//Initialize the GUI
+        initGUI();
 
         //Start the gui
         EventQueue.invokeLater( new Runnable()

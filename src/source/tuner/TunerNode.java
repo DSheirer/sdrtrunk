@@ -51,12 +51,10 @@ public class TunerNode extends BaseNode implements IFrequencyChangeProcessor
     private int mSampleRate;
     private ChannelModel mChannelModel;
     private ChannelProcessingManager mChannelProcessingManager;
-    private PlaylistManager mPlaylistManager;
     private SettingsManager mSettingsManager;
 
 	public TunerNode( ChannelModel channelModel,
 					  ChannelProcessingManager channelProcessingManager,
-					  PlaylistManager playlistManager,
 					  SettingsManager settingsManager,
 					  Tuner tuner )
 	{
@@ -64,7 +62,6 @@ public class TunerNode extends BaseNode implements IFrequencyChangeProcessor
 		
 		mChannelModel = channelModel;
 		mChannelProcessingManager = channelProcessingManager;
-		mPlaylistManager = playlistManager;
 		mSettingsManager = settingsManager;
 		
 		tuner.addFrequencyChangeProcessor( this );
@@ -130,8 +127,7 @@ public class TunerNode extends BaseNode implements IFrequencyChangeProcessor
             public void actionPerformed( ActionEvent e )
             {
 				SpectrumFrame frame = new SpectrumFrame( getModel(), mChannelModel, 
-					mChannelProcessingManager, mPlaylistManager, 
-					mSettingsManager, getTuner() );
+					mChannelProcessingManager, mSettingsManager, getTuner() );
             }
 		} );
 		

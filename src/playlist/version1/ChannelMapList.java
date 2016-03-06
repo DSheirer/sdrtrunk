@@ -15,14 +15,17 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package controller.channel.map;
+package playlist.version1;
 
 import java.util.ArrayList;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
+import controller.channel.map.ChannelMap;
+
 @XmlSeeAlso( ChannelMap.class )
+@Deprecated
 public class ChannelMapList
 {
     private ArrayList<ChannelMap> mChannelMap = new ArrayList<ChannelMap>();

@@ -97,12 +97,14 @@ import record.config.RecordConfiguration;
 import settings.SettingsManager;
 import util.TimeStamp;
 import alias.AliasList;
+import alias.AliasModel;
 import audio.AudioModule;
 import controller.channel.Channel;
 import controller.channel.Channel.ChannelType;
 import controller.channel.ChannelModel;
 import controller.channel.ChannelProcessingManager;
 import controller.channel.map.ChannelMap;
+import controller.channel.map.ChannelMapModel;
 import filter.AllPassFilter;
 import filter.FilterSet;
 import filter.IFilter;
@@ -123,17 +125,17 @@ public class DecoderFactory
 	 * @return list of configured decoders
 	 */
 	public static List<Module> getModules( ChannelModel channelModel,
+										   ChannelMapModel channelMapModel,
 										   ChannelProcessingManager channelProcessingManager,
-										   PlaylistManager playlistManager,
+										   AliasModel aliasModel,
 										   Channel channel )
 		{
 		
 		/* Get the optional alias list for the decode modules to use */
-		AliasList aliasList = playlistManager.getPlayist()
-			.getAliasDirectory().getAliasList( channel.getAliasListName() );
+		AliasList aliasList = aliasModel.getAliasList( channel.getAliasListName() );
 		
-		List<Module> modules = getPrimaryModules( channelModel, channelProcessingManager, 
-				playlistManager, aliasList, channel );
+		List<Module> modules = getPrimaryModules( channelModel, channelMapModel, 
+				channelProcessingManager, aliasList, channel );
 		
 		modules.addAll( getAuxiliaryDecoders( channel.getAuxDecodeConfiguration(), aliasList ) );
 		
@@ -144,8 +146,8 @@ public class DecoderFactory
 	 * Constructs a primary decoder as specified in the decode configuration
 	 */
 	public static List<Module> getPrimaryModules( ChannelModel channelModel,
+												  ChannelMapModel channelMapModel,
 												  ChannelProcessingManager channelProcessingManager,
-												  PlaylistManager playlistManager,
 												  AliasList aliasList,
 												  Channel channel )
 	{
@@ -198,8 +200,8 @@ public class DecoderFactory
 			case MPT1327:
 				DecodeConfigMPT1327 mptConfig = (DecodeConfigMPT1327)decodeConfig;
 				
-				ChannelMap channelMap = playlistManager.getPlayist()
-					.getChannelMapList().getChannelMap( mptConfig.getChannelMapName() );
+				ChannelMap channelMap = channelMapModel
+						.getChannelMap( mptConfig.getChannelMapName() );
 				
 				Sync sync = mptConfig.getSync();
 				
@@ -432,7 +434,7 @@ public class DecoderFactory
 	}
 	
 	public static DecodeEditor getEditorPanel( DecodeConfiguration config, 
-			 Channel channel, PlaylistManager playlistManager )
+											   ChannelMapModel channelMapModel )
 	{
 		DecodeEditor configuredPanel;
 		
@@ -449,7 +451,7 @@ public class DecoderFactory
 				break;
 			case MPT1327:
 				configuredPanel = new MPT1327ConfigEditor( config, 
-						channel, playlistManager );
+						channelMapModel );
 				break;
 			case PASSPORT:
 				configuredPanel = new PassportEditor( config );

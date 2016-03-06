@@ -18,7 +18,6 @@
 package controller;
 
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
 
@@ -29,21 +28,14 @@ import javax.swing.tree.MutableTreeNode;
 import javax.swing.tree.TreePath;
 
 import module.decode.DecoderType;
-
-import playlist.PlaylistManager;
-import playlist.PlaylistNode;
-
 import settings.SettingsManager;
 import source.SourceManager;
-import source.recording.RecordingGroupNode;
 import source.tuner.Tuner;
 import source.tuner.TunerGroupNode;
 import source.tuner.TunerNode;
 import source.tuner.TunerSelectionListener;
 import controller.channel.Channel;
 import controller.channel.ChannelModel;
-import controller.channel.ChannelNode;
-
 import controller.channel.ChannelProcessingManager;
 
 public class ConfigurationControllerModel extends DefaultTreeModel
@@ -55,13 +47,10 @@ public class ConfigurationControllerModel extends DefaultTreeModel
     private ArrayList<TunerSelectionListener> mTunerSelectionListeners =
 			new ArrayList<TunerSelectionListener>();
     
-    private PlaylistNode mPlaylistNode;
     private TunerGroupNode mTunerGroupNode;
-//    private RecordingGroupNode mRecordingGroupNode;
     
     private ChannelModel mChannelModel;
     private ChannelProcessingManager mChannelProcessingManager;
-    private PlaylistManager mPlaylistManager;
     private SettingsManager mSettingsManager;
     private SourceManager mSourceManager;
 
@@ -73,7 +62,6 @@ public class ConfigurationControllerModel extends DefaultTreeModel
 	 */
 	public ConfigurationControllerModel( ChannelModel channelModel,
 										 ChannelProcessingManager channelProcessingManager,
-										 PlaylistManager playlistManager,
 										 SettingsManager settingsManager,
 										 SourceManager sourceManager )
     {
@@ -81,7 +69,6 @@ public class ConfigurationControllerModel extends DefaultTreeModel
 
     	mChannelModel = channelModel;
     	mChannelProcessingManager = channelProcessingManager;
-    	mPlaylistManager = playlistManager;
     	mSettingsManager = settingsManager;
     	mSourceManager = sourceManager;
 
@@ -117,13 +104,13 @@ public class ConfigurationControllerModel extends DefaultTreeModel
 //    	insertNodeInto( mRecordingGroupNode, (MutableTreeNode)root, 1 );
 //    	mRecordingGroupNode.loadRecordings();
     	
-		/**
-		 * Add the playlist node
-		 */
-    	mPlaylistNode = new PlaylistNode( mChannelModel, mChannelProcessingManager, 
-    			mPlaylistManager, mSettingsManager, mSourceManager );
-    	insertNodeInto( mPlaylistNode, (MutableTreeNode)root, 1 );
-    	mPlaylistNode.loadPlaylist();
+//		/**
+//		 * Add the playlist node
+//		 */
+//    	mPlaylistNode = new PlaylistNode( mChannelModel, mChannelProcessingManager, 
+//    			mPlaylistManager, mSettingsManager, mSourceManager );
+//    	insertNodeInto( mPlaylistNode, (MutableTreeNode)root, 1 );
+//    	mPlaylistNode.loadPlaylist();
 	}
 	
 	public void showNode( DefaultMutableTreeNode node )
@@ -146,8 +133,7 @@ public class ConfigurationControllerModel extends DefaultTreeModel
 		for( Tuner tuner: tuners )
 		{
 			TunerNode child = new TunerNode( mChannelModel, 
-				mChannelProcessingManager, mPlaylistManager, mSettingsManager, 
-				tuner );
+				mChannelProcessingManager, mSettingsManager, tuner );
 			
 			insertNodeInto( child, parent, parent.getChildCount() );
 			
@@ -250,28 +236,11 @@ public class ConfigurationControllerModel extends DefaultTreeModel
     
     public ArrayList<Channel> getCurrentChannelConfigs()
     {
-    	return getChannelConfigs( mPlaylistNode );
+    	return null;
     }
     
     private ArrayList<Channel> getChannelConfigs( DefaultMutableTreeNode parent )
     {
-    	ArrayList<Channel> configs = new ArrayList<Channel>();
-
-    	Enumeration<DefaultMutableTreeNode> nodes = parent.children();
-    	
-    	while( nodes.hasMoreElements() )
-    	{
-    		DefaultMutableTreeNode node = nodes.nextElement();
-    		
-    		if( node instanceof ChannelNode )
-    		{
-    			configs.add( ((ChannelNode)node).getChannel() );
-    		}
-
-    		//Recursive call
-    		configs.addAll( getChannelConfigs( node ) );
-    	}
-    	
-    	return configs;
+    	return null;
     }
 }

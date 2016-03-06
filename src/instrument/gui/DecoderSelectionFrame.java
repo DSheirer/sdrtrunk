@@ -16,6 +16,7 @@ import source.IControllableFileSource;
 import alias.AliasModel;
 import controller.ThreadPoolManager;
 import controller.channel.ChannelModel;
+import controller.channel.map.ChannelMapModel;
 
 public class DecoderSelectionFrame extends JInternalFrame
 {
@@ -32,10 +33,11 @@ public class DecoderSelectionFrame extends JInternalFrame
 	{
 		AliasModel aliasModel = new AliasModel();
 		ChannelModel channelModel = new ChannelModel();
+		ChannelMapModel channelMapModel = new ChannelMapModel();
 		
 		ThreadPoolManager tpm = new ThreadPoolManager();
 		
-		mPlaylistManager = new PlaylistManager( tpm, aliasModel, channelModel );
+		mPlaylistManager = new PlaylistManager( tpm, aliasModel, channelModel, channelMapModel );
 
 		mDesktop = desktop;
 		mSource = source;

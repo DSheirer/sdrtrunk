@@ -36,34 +36,29 @@ import javax.xml.bind.Unmarshaller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import playlist.version1.PlaylistConverterV1ToV2;
 import properties.SystemProperties;
 import sample.Listener;
-import alias.Alias;
-import alias.AliasDirectory;
 import alias.AliasEvent;
-import alias.AliasList;
 import alias.AliasModel;
-import alias.Group;
 import controller.ThreadPoolManager;
-import controller.channel.Channel;
 import controller.channel.Channel.ChannelType;
 import controller.channel.ChannelEvent;
 import controller.channel.ChannelEventListener;
 import controller.channel.ChannelModel;
-import controller.site.Site;
-import controller.system.SystemList;
+import controller.channel.map.ChannelMapEvent;
+import controller.channel.map.ChannelMapModel;
 
-public class PlaylistManager implements ChannelEventListener, Listener<AliasEvent>
+public class PlaylistManager implements ChannelEventListener
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( PlaylistManager.class );
 
-	private Playlist mPlaylist = new Playlist();
-	
 	private ThreadPoolManager mThreadPoolManager;
 	private AliasModel mAliasModel;
 	private ChannelModel mChannelModel;
-	
+	private ChannelMapModel mChannelMapModel;
+	private Path mCurrentPlaylistPath;
 	private AtomicBoolean mPlaylistSavePending = new AtomicBoolean();
 	private boolean mPlaylistLoading = false;
 	
@@ -79,37 +74,35 @@ public class PlaylistManager implements ChannelEventListener, Listener<AliasEven
 	 */
 	public PlaylistManager( ThreadPoolManager threadPoolManager,
 							AliasModel aliasModel,
-							ChannelModel channelModel )
+							ChannelModel channelModel,
+							ChannelMapModel channelMapModel )
 	{
 		mThreadPoolManager = threadPoolManager;
 		mAliasModel = aliasModel;
 		mChannelModel = channelModel;
+		mChannelMapModel = channelMapModel;
 
-		//Register for alias and channel events so that we can save the 
-		//playlist with changes
-		mAliasModel.addListener( this );
+		//Register for alias, channel and channel map events so that we can 
+		//save the playlist when there are any changes
 		mChannelModel.addListener( this );
-	}
-
-	public Playlist getPlayist()
-	{
-		return mPlaylist;
-	}
-	
-	/**
-	 * Transfers data from persisted playlist into system models
-	 */
-	private void transferPlaylistToModels()
-	{
-//TODO: delete the playlist after we've loaded it, since the models will have
-//all of the data
-
-		mPlaylistLoading = true;
-
-		mAliasModel.addAliases( mPlaylist.getAliases() );
-		mChannelModel.addChannels( mPlaylist.getChannels() );
 		
-		mPlaylistLoading = false;
+		mAliasModel.addListener( new Listener<AliasEvent>()
+		{
+			@Override
+			public void receive( AliasEvent t )
+			{
+				schedulePlaylistSave();
+			}
+		} );
+		
+		mChannelMapModel.addListener( new Listener<ChannelMapEvent>()
+		{
+			@Override
+			public void receive( ChannelMapEvent t )
+			{
+				schedulePlaylistSave();
+			}
+		} );
 	}
 
 	/**
@@ -123,41 +116,64 @@ public class PlaylistManager implements ChannelEventListener, Listener<AliasEven
 		Path playlistFolder = props.getApplicationFolder( "playlist" );
 		
 		String defaultPlaylistFile = 
-				props.get( "playlist.defaultfilename", "playlist.xml" );
+				props.get( "playlist.v2.defaultfilename", "playlist_v2.xml" );
 		
 		String playlistFile = 
-				props.get( "playlist.currentfilename", defaultPlaylistFile );
-		
-		load( playlistFolder.resolve( playlistFile ) );
-	}
+				props.get( "playlist.v2.currentfilename", defaultPlaylistFile );
 
-	/**
-	 * Alias event listener method.  Monitors alias events for events that
-	 * indicate that the playlist has changed and queues automatic playlist
-	 * saving.
-	 */
-	@Override
-	public void receive( AliasEvent event )
-	{
-		if( !mPlaylistLoading )
+		mCurrentPlaylistPath = playlistFolder.resolve( playlistFile );
+
+		PlaylistV2 playlist = load( mCurrentPlaylistPath );
+
+		boolean saveRequired = false;
+		
+		if( playlist == null )
 		{
-			switch( event.getEvent() )
+			mLog.info( "Couldn't find version 2 playlist - looking for "
+					+ "version 1 playlist to convert"  );
+			
+			Path playlistV1Path = playlistFolder.resolve( "playlist.xml" );
+			
+			PlaylistConverterV1ToV2 converter = 
+					new PlaylistConverterV1ToV2( playlistV1Path );
+			
+			if( converter.hasErrorMessages() )
 			{
-				case ADD:
-				case DELETE:
-				case CHANGE:
-					schedulePlaylistSave();
-					break;
-				default:
-					//When a new event enum entry is added and received, throw an
-					//exception here to ensure developer adds support for the 
-					//use case
-					throw new IllegalArgumentException( "Unrecognized Alias "
-							+ "Event [" + event.getEvent().toString() + "]" );
+				mLog.error( "Playlist version 1 conversion errors: " + 
+							converter.getErrorMessages() );
 			}
+			
+			playlist = converter.getConvertedPlaylist();
+			
+			saveRequired = true;
+		}
+		
+		transferPlaylistToModels( playlist );
+		
+		if( saveRequired )
+		{
+			schedulePlaylistSave();
 		}
 	}
 
+	/**
+	 * Transfers data from persisted playlist into system models
+	 */
+	private void transferPlaylistToModels( PlaylistV2 playlist )
+	{
+		if( playlist != null )
+		{
+			mPlaylistLoading = true;
+
+			mAliasModel.addAliases( playlist.getAliases() );
+			mChannelModel.addChannels( playlist.getChannels() );
+			mChannelMapModel.addChannelMaps( playlist.getChannelMaps() );
+			
+			mPlaylistLoading = false;
+		}
+	}
+
+	
 	/**
 	 * Channel event listener method.  Monitors channel events for events that
 	 * indicate that the playlist has changed and queues automatic playlist
@@ -200,27 +216,30 @@ public class PlaylistManager implements ChannelEventListener, Listener<AliasEven
 
 	public void save()
 	{
-//TODO: recreate the playlist and load values from each of the models
+		PlaylistV2 playlist = new PlaylistV2();
 		
-		mPlaylist.setAliases( mAliasModel.getAliases() );
-
-		mPlaylist.setChannels( mChannelModel.getChannels() );
+		playlist.setAliases( mAliasModel.getAliases() );
+		playlist.setChannels( mChannelModel.getChannels() );
+		playlist.setChannelMaps( mChannelMapModel.getChannelMaps() );
 		
 		JAXBContext context = null;
-		
-		SystemProperties props = SystemProperties.getInstance();
 
-		Path playlistPath = props.getApplicationFolder( "playlist" );
-		
-		String playlistDefault = props.get( "playlist.defaultfilename", 
-										 "playlist.xml" );
+		if( mCurrentPlaylistPath == null )
+		{
+			SystemProperties props = SystemProperties.getInstance();
 
-		String playlistCurrent = props.get( "playlist.currentfilename", 
-										 playlistDefault );
+			Path playlistPath = props.getApplicationFolder( "playlist" );
+			
+			String playlistDefault = props.get( "playlist.defaultfilename", 
+											 "playlist_v2.xml" );
+
+			String playlistCurrent = props.get( "playlist.currentfilename", 
+											 playlistDefault );
+			
+			mCurrentPlaylistPath = playlistPath.resolve( playlistCurrent );
+		}
 		
-		Path filePath = playlistPath.resolve( playlistCurrent );
-		
-		File outputFile = new File( filePath.toString() );
+		File outputFile = new File( mCurrentPlaylistPath.toString() );
 
 		try
 		{
@@ -232,7 +251,7 @@ public class PlaylistManager implements ChannelEventListener, Listener<AliasEven
 		catch( Exception e )
 		{
 			mLog.error( "couldn't create file to save "
-					+ "playlist [" + filePath.toString() + "]" );
+					+ "playlist [" + mCurrentPlaylistPath.toString() + "]" );
 		}
 		
 		OutputStream out = null;
@@ -243,13 +262,13 @@ public class PlaylistManager implements ChannelEventListener, Listener<AliasEven
 	        
 			try
 	        {
-		        context = JAXBContext.newInstance( Playlist.class );
+		        context = JAXBContext.newInstance( PlaylistV2.class );
 
 		        Marshaller m = context.createMarshaller();
 
 		        m.setProperty( Marshaller.JAXB_FORMATTED_OUTPUT, true );
 	        
-		        m.marshal( mPlaylist, out );
+		        m.marshal( playlist, out );
 	        }
 	        catch ( JAXBException e )
 	        {
@@ -258,7 +277,8 @@ public class PlaylistManager implements ChannelEventListener, Listener<AliasEven
         }
         catch ( Exception e )
         {
-        	mLog.error( "coulcn't open outputstream to save playlist [" + filePath.toString() + "]", e );
+        	mLog.error( "coulcn't open outputstream to save playlist [" + 
+        			mCurrentPlaylistPath.toString() + "]", e );
         }
 		finally
 		{
@@ -276,85 +296,17 @@ public class PlaylistManager implements ChannelEventListener, Listener<AliasEven
 		}
 	}
 	
-	private void createBackupPlaylist()
-	{
-		SystemProperties props = SystemProperties.getInstance();
-
-		Path playlistPath = props.getApplicationFolder( "playlist" );
-		
-		String playlistDefault = props.get( "playlist.defaultfilename", 
-										 "playlist.xml" );
-
-		String playlistCurrent = props.get( "playlist.currentfilename", 
-				 playlistDefault );
-
-		Path current = playlistPath.resolve( playlistCurrent );
-
-		if( Files.exists( current ) )
-		{
-			int revision = 1;
-
-			String playlistBackup = playlistCurrent.replace( ".xml", "_backup_" + revision + ".xml" );
-
-			Path filePath = playlistPath.resolve( playlistBackup );
-
-			while( Files.exists( filePath ) )
-			{
-				revision++;
-
-				playlistBackup = playlistCurrent.replace( ".xml", "_backup_" + revision + ".xml" );
-
-				filePath = playlistPath.resolve( playlistBackup );
-				
-				if( revision > 10 )
-				{
-					mLog.error( "Couldn't create playlist backup - maximum revisions exceeded" );
-					return;
-				}
-			}
-			
-			File outputFile = new File( filePath.toString() );
-
-			try
-			{
-				if( !outputFile.exists() )
-				{
-					outputFile.createNewFile();
-				}
-			}
-			catch( Exception e )
-			{
-				mLog.error( "PlaylistManager - couldn't create file to save "
-						+ "playlist backup [" + filePath.toString() + "]" );
-			}
-
-			try( OutputStream out = new FileOutputStream( outputFile ) )
-			{
-				Files.copy( current, out );
-				
-				mLog.info( "Playlist backed up to:" + filePath );
-			}
-			catch( IOException ioe )
-			{
-				mLog.error( "Error copying playlist to backup file [" + filePath + "]" );
-			}
-		}
-		else
-		{
-			mLog.error( "Couldn't create backup playlist - original playlist does not exist" );
-		}
-	}
-	
 	/**
-	 * Erases current playlist and loads playlist from the playlistPath filename,
-	 * if it exists.
+	 * Loads a version 2 playlist
 	 */
-	public void load( Path playlistPath )
+	public PlaylistV2 load( Path playlistPath )
 	{
+		mLog.info( "loading version 2 playlist file [" + playlistPath.toString() + "]" );
+
+		PlaylistV2 playlist = null;
+
 		if( Files.exists( playlistPath ) )
 		{
-			mLog.info( "loading playlist file [" + playlistPath.toString() + "]" );
-			
 			JAXBContext context = null;
 			
 			InputStream in = null;
@@ -365,11 +317,11 @@ public class PlaylistManager implements ChannelEventListener, Listener<AliasEven
 		        
 				try
 		        {
-			        context = JAXBContext.newInstance( Playlist.class );
+			        context = JAXBContext.newInstance( PlaylistV2.class );
 
 			        Unmarshaller m = context.createUnmarshaller();
 
-			        mPlaylist = (Playlist)m.unmarshal( in );
+			        playlist = (PlaylistV2)m.unmarshal( in );
 		        }
 		        catch ( JAXBException e )
 		        {
@@ -401,91 +353,10 @@ public class PlaylistManager implements ChannelEventListener, Listener<AliasEven
 			mLog.info( "PlaylistManager - playlist not found at [" + 
 							playlistPath.toString() + "]" );
 		}
-		
-		boolean saveRequired = false;
 
-		if( mPlaylist == null )
-		{
-			mPlaylist = new Playlist();
-			saveRequired = true;
-		}
-
-		//Check for and convert from legacy play list format
-		if( mPlaylist.hasSystemList() || mPlaylist.hasAliasDirectory() )
-		{
-			convertPlaylistFormat();
-			saveRequired = true;
-		}
-		
-		transferPlaylistToModels();
-
-		if( saveRequired )
-		{
-			save();
-		}
+		return playlist;
 	}
 
-	/**
-	 * Converts playlist data over to new format
-	 */
-	private void convertPlaylistFormat()
-	{
-		mLog.info( "Legacy playlist format detected - converting" );
-
-		createBackupPlaylist();
-		
-		//Playlist version 1 to version 2 format conversion.  In order to keep
-		//backwards compatibility, transfer all of the System-Site-Channel 
-		//objects over to the new channel list format
-		if( mPlaylist.hasSystemList() )
-		{
-			SystemList systemList = mPlaylist.getSystemList();
-			
-			for( controller.system.System system: systemList.getSystem() )
-			{
-				for( Site site: system.getSite() )
-				{
-					for( Channel channel: site.getChannel() )
-					{
-						channel.setSystem( system.getName() );
-						channel.setSite( site.getName() );
-						
-						mPlaylist.getChannels().add( channel );
-					}
-				}
-			}
-
-			mPlaylist.getSystemList().clearSystems();
-			
-			mLog.info( "Converted [" + mPlaylist.getChannels().size() + 
-					"] channels to new playlist format" );
-		}
-
-		if( mPlaylist.hasAliasDirectory() )
-		{
-			AliasDirectory aliasDirectory = mPlaylist.getAliasDirectory();
-			
-			for( AliasList list: aliasDirectory.getAliasList() )
-			{
-				for( Group group: list.getGroup() )
-				{
-					for( Alias alias: group.getAlias() )
-					{
-						alias.setList( list.getName() );
-						alias.setGroup( group.getName() );
-						
-						mPlaylist.getAliases().add( alias );
-					}
-				}
-			}
-			
-			mPlaylist.getAliasDirectory().clearAliasLists();
-			
-			mLog.info( "Converted [" + mPlaylist.getAliases().size() + 
-					"] aliases to new playlist format" );
-		}
-	}
-	
 	/**
 	 * Schedules a playlist save task.  Subsequent calls to this method will be 
 	 * ignored until the save event occurs, thus limiting repetitive playlist 

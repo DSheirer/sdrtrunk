@@ -15,7 +15,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package controller.site;
+package playlist.version1;
 
 import java.util.ArrayList;
 
@@ -23,31 +23,24 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
-import controller.channel.Channel;
-
-@XmlSeeAlso( { Channel.class } )
-@XmlRootElement( name = "site" )
-public class Site
+@XmlSeeAlso( { Site.class } )
+@XmlRootElement( name = "system" )
+@Deprecated
+public class System
 {
     private String mName;
-    
-    private ArrayList<Channel> mChannel = new ArrayList<Channel>();
+    private ArrayList<Site> mSite = new ArrayList<Site>();
 
-    public Site()
+    public System()
     {
-        this( "New Site" );
+        this( "New System" );
     }
     
-    public Site( String name )
+    public System( String name )
     {
         mName = name;
     }
     
-    public String toString()
-    {
-        return mName;
-    }
-
 	@XmlAttribute
     public String getName()
     {
@@ -58,29 +51,34 @@ public class Site
     {
         mName = name;
     }
-
-    public ArrayList<Channel> getChannel()
+    
+    public ArrayList<Site> getSite()
     {
-        return mChannel;
+        return mSite;
     }
     
-    public void setChannel( ArrayList<Channel> configs )
+    public void setSite( ArrayList<Site> sites )
     {
-    	mChannel = configs;
+    	mSite = sites;
     }
     
-    public void addChannel( Channel channel )
+    public void addSite( Site site )
     {
-        mChannel.add( channel );
+        mSite.add( site );
     }
     
-    public void removeChannel( Channel channel )
+    public void removeSite( Site site )
     {
-        mChannel.remove( channel );
+        mSite.remove( site );
     }
     
-    public void removeAllChannels()
+    public void clearSites()
     {
-        mChannel.clear();
+        mSite.clear();
+    }
+    
+    public String toString()
+    {
+        return mName;
     }
 }

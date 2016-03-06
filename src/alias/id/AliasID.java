@@ -20,7 +20,7 @@ package alias.id;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
-import alias.Group;
+import playlist.version1.Group;
 import alias.id.esn.Esn;
 import alias.id.fleetsync.FleetsyncID;
 import alias.id.lojack.LoJackFunctionAndID;

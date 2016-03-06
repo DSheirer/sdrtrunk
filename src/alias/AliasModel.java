@@ -19,7 +19,9 @@ package alias;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.table.AbstractTableModel;
@@ -48,6 +50,7 @@ public class AliasModel extends AbstractTableModel
 
 	private List<Alias> mAliases = new CopyOnWriteArrayList<>();
 	private Broadcaster<AliasEvent> mAliasEventBroadcaster = new Broadcaster<>();
+	private Map<String,AliasList> mAliasListMap = new HashMap<>();
 
 	public AliasModel()
 	{
@@ -69,6 +72,31 @@ public class AliasModel extends AbstractTableModel
 		}
 		
 		return null;
+	}
+	
+	public AliasList getAliasList( String name )
+	{
+		if( mAliasListMap.containsKey( name ) )
+		{
+			return mAliasListMap.get( name );
+		}
+		
+		AliasList aliasList = new AliasList( name );
+		
+		for( Alias alias: mAliases )
+		{
+			if( alias.getList().equalsIgnoreCase( name ) )
+			{
+				aliasList.addAlias( alias );
+			}
+		}
+
+		mAliasListMap.put( name, aliasList );
+
+		//Register the new alias list to receive updates from this model
+		addListener( aliasList );
+		
+		return aliasList;
 	}
 	
 	/**

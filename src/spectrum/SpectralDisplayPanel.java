@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -53,7 +53,6 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import playlist.PlaylistManager;
 import properties.SystemProperties;
 import sample.Listener;
 import sample.SampleType;
@@ -118,7 +117,6 @@ public class SpectralDisplayPanel extends JPanel
     private ConfigurationControllerModel mControllerModel;
     private ChannelModel mChannelModel;
     private ChannelProcessingManager mChannelProcessingManager;
-    private PlaylistManager mPlaylistManager;
     private SettingsManager mSettingsManager;
 	private Tuner mTuner;
     
@@ -137,13 +135,11 @@ public class SpectralDisplayPanel extends JPanel
     public SpectralDisplayPanel( ConfigurationControllerModel controllerModel,
     							 ChannelModel channelModel,
     							 ChannelProcessingManager channelProcessingManager,
-    							 PlaylistManager playlistManager,
     							 SettingsManager settingsManager )
     {
     	mControllerModel = controllerModel;
     	mChannelModel = channelModel;
     	mChannelProcessingManager = channelProcessingManager;
-    	mPlaylistManager = playlistManager;
     	mSettingsManager = settingsManager;
 
     	mSpectrumPanel = new SpectrumPanel( mSettingsManager );
@@ -200,7 +196,6 @@ public class SpectralDisplayPanel extends JPanel
     	}
 
     	mControllerModel = null;
-    	mPlaylistManager = null;
     	mSettingsManager = null;
     	
     	mDFTProcessor.dispose();
@@ -657,7 +652,7 @@ public class SpectralDisplayPanel extends JPanel
 					for( Channel channel: channels )
 					{
 						JMenu channelMenu = ChannelUtils.getContextMenu( mChannelModel, 
-							mChannelProcessingManager, mPlaylistManager, channel, 
+							mChannelProcessingManager, channel, 
 							SpectralDisplayPanel.this );
 
 						if( channelMenu != null )

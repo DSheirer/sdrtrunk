@@ -76,7 +76,6 @@ public class ChannelPanel extends JPanel
     private JLabel mSiteLabel;
     private JLabel mChannelLabel;
 
-    private PlaylistManager mPlaylistManager;
 	protected SettingsManager mSettingsManager;
 
 	private Channel mChannel;
@@ -93,13 +92,11 @@ public class ChannelPanel extends JPanel
 	 */
 	public ChannelPanel( ChannelModel channelModel,
 						 ChannelProcessingManager channelProcessingManager,
-						 PlaylistManager playlistManager, 
 						 SettingsManager settingsManager, 
 						 Channel channel )
 	{
 		mChannelModel = channelModel;
 		mChannelProcessingManager = channelProcessingManager;
-		mPlaylistManager = playlistManager;
 		mSettingsManager = settingsManager;
 		mChannel = channel;
 		
@@ -198,8 +195,6 @@ public class ChannelPanel extends JPanel
 		
 		mChannelProcessingManager = null;
 
-		mPlaylistManager = null;
-		
 		mSettingsManager.removeListener( this );
 		mSettingsManager = null;
 		
@@ -434,7 +429,7 @@ public class ChannelPanel extends JPanel
 	public JMenu getContextMenu()
 	{
 		return ChannelUtils.getContextMenu( mChannelModel, mChannelProcessingManager, 
-				mPlaylistManager, mChannel, ChannelPanel.this );
+				mChannel, ChannelPanel.this );
 	}
 
 	@Override

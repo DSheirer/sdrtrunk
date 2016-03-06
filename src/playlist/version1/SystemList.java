@@ -15,31 +15,47 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package alias.action;
+package playlist.version1;
 
-import playlist.PlaylistManager;
-import controller.ConfigurableNode;
+import java.util.ArrayList;
 
-public class AliasActionNode extends ConfigurableNode
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlSeeAlso;
+
+@XmlSeeAlso( { playlist.version1.System.class } )
+
+@XmlRootElement( name = "system_list" )
+@Deprecated
+public class SystemList
 {
-    private static final long serialVersionUID = 1L;
-    
-    private PlaylistManager mPlaylistManager;
+    private ArrayList<System> mSystem = new ArrayList<System>();
 
-    public AliasActionNode( PlaylistManager playlistManager, AliasAction action )
-	{
-    	super( playlistManager, action );
-    	
-    	mPlaylistManager = playlistManager;
-	}
-    
-    public void save()
+    public SystemList()
     {
-    	mPlaylistManager.save();
     }
     
-    public String getIconPath()
+    public ArrayList<System> getSystem()
     {
-    	return "images/action.png";
+        return mSystem;
+    }
+    
+    public void setSystem( ArrayList<System> systems )
+    {
+    	mSystem = systems;
+    }
+    
+    public void addSystem( System system )
+    {
+        mSystem.add( system );
+    }
+    
+    public void removeSystem( System system )
+    {
+        mSystem.remove( system );
+    }
+    
+    public void clearSystems()
+    {
+        mSystem.clear();
     }
 }

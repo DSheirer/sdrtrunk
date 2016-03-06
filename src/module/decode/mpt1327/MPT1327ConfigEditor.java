@@ -17,10 +17,13 @@
  ******************************************************************************/
 package module.decode.mpt1327;
 
-import java.util.ArrayList;
+import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.List;
 
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JSlider;
@@ -30,9 +33,9 @@ import javax.swing.event.ChangeListener;
 import module.decode.DecodeEditor;
 import module.decode.config.DecodeConfiguration;
 import module.decode.mpt1327.MPT1327Decoder.Sync;
-import playlist.PlaylistManager;
-import controller.channel.Channel;
 import controller.channel.map.ChannelMap;
+import controller.channel.map.ChannelMapManagerFrame;
+import controller.channel.map.ChannelMapModel;
 
 public class MPT1327ConfigEditor extends DecodeEditor
 {
@@ -44,17 +47,14 @@ public class MPT1327ConfigEditor extends DecodeEditor
     private JSlider mCallTimeout;
     private JLabel mTrafficChannelPoolSizeLabel;
     private JSlider mTrafficChannelPoolSize;
-    private Channel mChannel;
-    private PlaylistManager mPlaylistManager;
+    private ChannelMapModel mChannelMapModel;
 
 	public MPT1327ConfigEditor( DecodeConfiguration config, 
-								Channel channel,
-								PlaylistManager playlistManager )
+								ChannelMapModel channelMapModel )
 	{
 		super( config );
 		
-		mChannel = channel;
-		mPlaylistManager = playlistManager;
+		mChannelMapModel = channelMapModel;
 		
 		initGUI();
 	}
@@ -69,10 +69,7 @@ public class MPT1327ConfigEditor extends DecodeEditor
 		/**
 		 * ComboBox: Alias Lists
 		 */
-		List<ChannelMap> maps = ( mPlaylistManager == null ? 
-				new ArrayList<ChannelMap>() : mPlaylistManager.getPlayist()
-				.getChannelMapList().getChannelMap() );
-		
+		List<ChannelMap> maps = mChannelMapModel.getChannelMaps();
 		ChannelMap[] mapArray = maps.toArray( new ChannelMap[ maps.size() ] );
 		
 		mComboChannelMaps = new JComboBox<ChannelMap>();
@@ -81,6 +78,27 @@ public class MPT1327ConfigEditor extends DecodeEditor
 		
 		add( new JLabel( "Channel Map:" ) );
 		add( mComboChannelMaps, "wrap" );
+		
+		JButton channelMapManager = new JButton( "Channel Map Manager ..." );
+		channelMapManager.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				final ChannelMapManagerFrame manager = 
+						new ChannelMapManagerFrame( mChannelMapModel );
+				
+				EventQueue.invokeLater( new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						manager.setVisible( true );
+					}
+				} );
+			}
+		} );
+		add( channelMapManager, "wrap" );
 		
 		mComboSync = new JComboBox<Sync>();
 		mComboSync.setModel( new DefaultComboBoxModel<Sync>( Sync.values() ) );

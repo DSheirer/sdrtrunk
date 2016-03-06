@@ -27,12 +27,11 @@ import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
 import playlist.PlaylistManager;
-import alias.AliasList;
+import alias.AliasModel;
 
 public class NameConfigurationEditor extends ChannelConfigurationEditor
 {
@@ -42,21 +41,20 @@ public class NameConfigurationEditor extends ChannelConfigurationEditor
 	
 	private static ComboBoxModel<String> EMPTY_MODEL = new DefaultComboBoxModel<>();
 
+	private AliasModel mAliasModel;
 	private ChannelModel mChannelModel;
-	private PlaylistManager mPlaylistManager;
 	
 	private JTextField mChannelName = new JTextField( DEFAULT_NAME );
 	private JComboBox<String> mSystemNameCombo = new JComboBox<>( EMPTY_MODEL );
 	private JComboBox<String> mSiteNameCombo = new JComboBox<>( EMPTY_MODEL );
-	private JComboBox<AliasList> mAliasListCombo;
+	private JComboBox<String> mAliasListCombo;
 	
 	private Channel mChannel;
 
-	public NameConfigurationEditor( ChannelModel model, 
-									PlaylistManager playlistManager )
+	public NameConfigurationEditor( AliasModel aliasModel, ChannelModel model )
 	{
+		mAliasModel = aliasModel;
 		mChannelModel = model;
-		mPlaylistManager = playlistManager;
 		
 		setLayout( new MigLayout( "fill,wrap 2", "[right][]", "[][][][][][grow]" ) );
 
@@ -110,15 +108,14 @@ public class NameConfigurationEditor extends ChannelConfigurationEditor
 		 */
 		add( new JLabel( "Alias List:" ) );
 
-		mAliasListCombo = new JComboBox<AliasList>();
+		mAliasListCombo = new JComboBox<String>();
 
-		List<AliasList> lists = mPlaylistManager.getPlayist()
-				.getAliasDirectory().getAliasList();
+		List<String> lists = mAliasModel.getListNames();
 
 		Collections.sort( lists );
 		
-		mAliasListCombo.setModel( new DefaultComboBoxModel<AliasList>( 
-				lists.toArray( new AliasList[ lists.size() ] ) ) );
+		mAliasListCombo.setModel( new DefaultComboBoxModel<String>( 
+				lists.toArray( new String[ lists.size() ] ) ) );
 		
 		add( mAliasListCombo, "growx" );
 		
@@ -126,35 +123,35 @@ public class NameConfigurationEditor extends ChannelConfigurationEditor
 		
 		final JButton aliasListButton = new JButton( "New Alias List ..." );
 		
-		aliasListButton.addActionListener( new ActionListener()
-		{
-			@Override
-			public void actionPerformed( ActionEvent e )
-			{
-				String name = JOptionPane.showInputDialog( aliasListButton, 
-						"Please enter an Alias List name:" );
-
-				if( name != null && !name.isEmpty() )
-				{
-					AliasList aliasList = new AliasList( name );
-					
-					mPlaylistManager.getPlayist().getAliasDirectory()
-							.addAliasList( aliasList );
-					
-					mPlaylistManager.save();
-					
-					List<AliasList> lists = mPlaylistManager.getPlayist()
-							.getAliasDirectory().getAliasList();
-					
-					Collections.sort( lists );
-
-					mAliasListCombo.setModel( new DefaultComboBoxModel<AliasList>( 
-							lists.toArray( new AliasList[ lists.size() ] ) ) );
-					
-					mAliasListCombo.setSelectedItem( aliasList );
-				}
-			}
-		} );
+//		aliasListButton.addActionListener( new ActionListener()
+//		{
+//			@Override
+//			public void actionPerformed( ActionEvent e )
+//			{
+//				String name = JOptionPane.showInputDialog( aliasListButton, 
+//						"Please enter an Alias List name:" );
+//
+//				if( name != null && !name.isEmpty() )
+//				{
+//					AliasListOld aliasList = new AliasListOld( name );
+//					
+//					mPlaylistManager.getPlayist().getAliasDirectory()
+//							.addAliasList( aliasList );
+//					
+//					mPlaylistManager.save();
+//					
+//					List<AliasListOld> lists = mPlaylistManager.getPlayist()
+//							.getAliasDirectory().getAliasList();
+//					
+//					Collections.sort( lists );
+//
+//					mAliasListCombo.setModel( new DefaultComboBoxModel<AliasListOld>( 
+//							lists.toArray( new AliasListOld[ lists.size() ] ) ) );
+//					
+//					mAliasListCombo.setSelectedItem( aliasList );
+//				}
+//			}
+//		} );
 		
 		add( aliasListButton, "growx" );
 	}
@@ -173,8 +170,7 @@ public class NameConfigurationEditor extends ChannelConfigurationEditor
 			mChannel.setSite( ( site == null ? null : (String)site ) );
 
 			Object aliasList = mAliasListCombo.getSelectedItem();
-			mChannel.setAliasListName( aliasList == null ? null : 
-							((AliasList)aliasList).getName() );
+			mChannel.setAliasListName( aliasList == null ? null : (String)aliasList );
 		}
 	}
 
@@ -232,10 +228,7 @@ public class NameConfigurationEditor extends ChannelConfigurationEditor
 
 		   	if( aliasListName != null )
 		   	{
-		   		AliasList selected = mPlaylistManager.getPlayist().getAliasDirectory()
-		   			.getAliasList( aliasListName );
-		
-		   		mAliasListCombo.setSelectedItem( selected );
+		   		mAliasListCombo.setSelectedItem( aliasListName );
 		   	}
 		}
 		else

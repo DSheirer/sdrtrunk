@@ -40,12 +40,14 @@ import sample.Listener;
 import source.Source;
 import source.SourceException;
 import source.SourceManager;
+import alias.AliasModel;
 import audio.AudioPacket;
 import audio.metadata.Metadata;
 import audio.metadata.MetadataType;
 import controller.ThreadPoolManager;
 import controller.channel.Channel.ChannelType;
 import controller.channel.ChannelEvent.Event;
+import controller.channel.map.ChannelMapModel;
 import filter.FilterSet;
 
 public class ChannelProcessingManager implements ChannelEventListener
@@ -58,22 +60,25 @@ public class ChannelProcessingManager implements ChannelEventListener
 	private List<Listener<Message>> mMessageListeners = new CopyOnWriteArrayList<>();
 
 	private ChannelModel mChannelModel;
+	private ChannelMapModel mChannelMapModel;
+	private AliasModel mAliasModel;
 	private EventLogManager mEventLogManager;
-	private PlaylistManager mPlaylistManager;
 	private RecorderManager mRecorderManager;
 	private SourceManager mSourceManager;
 	private ThreadPoolManager mThreadPoolManager;
 	
 	public ChannelProcessingManager( ChannelModel channelModel,
+									 ChannelMapModel channelMapModel,
+									 AliasModel aliasModel,
 									 EventLogManager eventLogManager,
-									 PlaylistManager playlistManager,
 									 RecorderManager recorderManager,
 									 SourceManager sourceManager,
 									 ThreadPoolManager threadPoolManager )
 	{
 		mChannelModel = channelModel;
+		mChannelMapModel = channelMapModel;
+		mAliasModel = aliasModel;
 		mEventLogManager = eventLogManager;
-		mPlaylistManager = playlistManager;
 		mRecorderManager = recorderManager;
 		mSourceManager = sourceManager;
 		mThreadPoolManager = threadPoolManager;
@@ -201,7 +206,7 @@ public class ChannelProcessingManager implements ChannelEventListener
 
 			/* Processing Modules */
 			List<Module> modules = DecoderFactory.getModules( mChannelModel, 
-								this, mPlaylistManager, channel );
+					mChannelMapModel, this, mAliasModel, channel );
 			processingChain.addModules( modules );
 
 			/* Setup message activity model with filtering */

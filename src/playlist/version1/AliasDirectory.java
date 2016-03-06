@@ -15,7 +15,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package alias;
+package playlist.version1;
 
 import java.util.ArrayList;
 
@@ -23,11 +23,14 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
+import alias.AliasList;
+
 @XmlSeeAlso( { AliasList.class} )
 @XmlRootElement( name = "alias_directory" )
+@Deprecated
 public class AliasDirectory
 {
-	private ArrayList<AliasList> mAliasList = new ArrayList<AliasList>();
+	private ArrayList<AliasListOld> mAliasList = new ArrayList<>();
 	
 	public AliasDirectory()
 	{
@@ -35,10 +38,6 @@ public class AliasDirectory
 	
 	public void refresh()
 	{
-		for( AliasList list: mAliasList )
-		{
-			list.update();
-		}
 	}
 	
 	public void clearAliasLists()
@@ -47,27 +46,27 @@ public class AliasDirectory
 	}
 
 	@XmlElement( name = "alias_list" )
-	public ArrayList<AliasList> getAliasList()
+	public ArrayList<AliasListOld> getAliasList()
 	{
 		return mAliasList;
 	}
 	
-	public void setAliasList( ArrayList<AliasList> lists )
+	public void setAliasList( ArrayList<AliasListOld> lists )
 	{
 		mAliasList = lists;
 		
 		if( mAliasList == null )
 		{
-			mAliasList = new ArrayList<AliasList>();
+			mAliasList = new ArrayList<AliasListOld>();
 		}
 	}
 	
-	public void addAliasList( AliasList list )
+	public void addAliasList( AliasListOld list )
 	{
 		mAliasList.add( list );
 	}
 	
-	public void removeAliasList( AliasList list )
+	public void removeAliasList( AliasListOld list )
 	{
 		mAliasList.remove( list );
 	}
@@ -75,11 +74,11 @@ public class AliasDirectory
 	/**
 	 * Gets the named alias list, or returns an empty alias list
 	 */
-	public AliasList getAliasList( String name )
+	public AliasListOld getAliasList( String name )
 	{
-		AliasList retVal = new AliasList();
+		AliasListOld retVal = new AliasListOld( name );
 		
-		for( AliasList list: mAliasList )
+		for( AliasListOld list: mAliasList )
 		{
 			if( list.getName().equalsIgnoreCase( name ) )
 			{

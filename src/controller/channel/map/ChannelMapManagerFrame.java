@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -15,22 +15,28 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package alias.id;
+package controller.channel.map;
 
-import playlist.PlaylistManager;
-import controller.ConfigurableNode;
+import javax.swing.JFrame;
 
-public class AliasIDNode extends ConfigurableNode
+import net.miginfocom.swing.MigLayout;
+
+public class ChannelMapManagerFrame extends JFrame
 {
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    public AliasIDNode( PlaylistManager playlistManager, AliasID id )
+	public ChannelMapManagerFrame( ChannelMapModel channelMapModel )
 	{
-    	super( playlistManager, id );
+		init( new ChannelMapManager( channelMapModel ) );
 	}
-    
-    public void save()
-    {
-    	getPlaylistManager().save();
-    }
+	
+	private void init( ChannelMapManager channelMapManager )
+	{
+		setTitle( "Channel Map Manager" );
+		setSize( 800, 400 );
+    	setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
+    	setLayout( new MigLayout( "", "[grow,fill]", "[grow,fill]" ) );
+    	add( channelMapManager );
+		setLocationRelativeTo( null );
+	}
 }

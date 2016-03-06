@@ -58,6 +58,7 @@ import message.Message;
 import module.Module;
 import module.decode.DecoderFactory;
 import module.decode.config.DecodeConfiguration;
+import module.log.EventLogManager;
 import net.miginfocom.swing.MigLayout;
 
 import org.slf4j.Logger;
@@ -67,10 +68,12 @@ import playlist.PlaylistManager;
 import sample.Listener;
 import source.IControllableFileSource;
 import source.Source;
+import alias.AliasModel;
 import controller.ThreadPoolManager;
 import controller.channel.Channel;
 import controller.channel.ChannelModel;
 import controller.channel.ChannelProcessingManager;
+import controller.channel.map.ChannelMapModel;
 
 public class DecoderViewFrame extends JInternalFrame 
 							  implements Listener<Message>
@@ -97,12 +100,14 @@ public class DecoderViewFrame extends JInternalFrame
 		mProcessingChain = new InstrumentableProcessingChain();
 
 		ChannelModel channelModel = new ChannelModel();
+		ChannelMapModel channelMapModel = new ChannelMapModel();
+		
 		ChannelProcessingManager channelProcessingManager = 
-			new ChannelProcessingManager( channelModel, null, 
-				playlistManager, null, null, new ThreadPoolManager() );
+			new ChannelProcessingManager( channelModel, channelMapModel, 
+			new AliasModel(), new EventLogManager(), null, null, new ThreadPoolManager() );
 		
 		List<Module> modules = DecoderFactory.getModules( channelModel, 
-				channelProcessingManager, playlistManager, channel );
+			channelMapModel, channelProcessingManager, new AliasModel(), channel );
 
 		mProcessingChain.addModules( modules );
 
