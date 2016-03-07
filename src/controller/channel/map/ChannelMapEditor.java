@@ -28,6 +28,8 @@ import javax.swing.AbstractCellEditor;
 import javax.swing.JButton;
 import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JOptionPane;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
@@ -41,8 +43,11 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import controller.channel.map.ChannelMapEvent.Event;
+import controller.channel.map.ChannelRangeModel.ChannelRangeEventListener;
+
 public class ChannelMapEditor extends DocumentListenerEditor<ChannelMap>
-			implements ListSelectionListener
+		implements ListSelectionListener, ChannelRangeEventListener
 {
     private static final long serialVersionUID = 1L;
 	private final static Logger mLog =
@@ -52,14 +57,19 @@ public class ChannelMapEditor extends DocumentListenerEditor<ChannelMap>
     private JTextField mNameText;
     private ChannelRangeModel mRangeModel;
     private JTable mRangeTable;
-    private JButton mDelete;
+    private JButton mNewButton;
+    private JButton mDeleteButton;
+    private JButton mSaveButton;
+    private JLabel mRangeDescription;
+    private ChannelMapModel mChannelMapModel;
 
-	public ChannelMapEditor()
+	public ChannelMapEditor( ChannelMapModel channelMapModel )
 	{
-		initGUI();
+		mChannelMapModel = channelMapModel;
+		init();
 	}
 	
-	private ChannelMap getChannelMap()
+	public ChannelMap getChannelMap()
 	{
 		if( hasItem() )
 		{
@@ -76,24 +86,49 @@ public class ChannelMapEditor extends DocumentListenerEditor<ChannelMap>
 		
 		if( hasItem() )
 		{
+			ChannelMap map = getChannelMap();
 			
+			mNameText.setText( map.getName() );
+			
+			mRangeModel.clear();
+			mRangeModel.addRanges( map.getRanges() );
+			
+			mNewButton.setEnabled( true );
 		}
+		else
+		{
+			mNameText.setText( "" );
+			
+			mRangeModel.clear();
+			
+			mNewButton.setEnabled( false );
+		}
+		
+		setModified( false );
 	}
 
-	private void initGUI()
+	@Override
+	public void setModified( boolean modified )
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][grow]", "[][][grow][][]" ) );
+		super.setModified( modified );
+
+		mSaveButton.setEnabled( modified );
+	}
+
+	private void init()
+	{
+		setLayout( new MigLayout( "fill,wrap 3", 
+				"[grow,fill][grow,fill][grow,fill]", "[][grow][][]" ) );
 		
-		add( new JLabel( "Channel Map" ), "span, align center" );
-		
-		mNameLabel = new JLabel( "Name:" );
+		mNameLabel = new JLabel( "Channel Map:" );
 		add( mNameLabel );
 		
 		mNameText = new JTextField();
 		mNameText.getDocument().addDocumentListener( this );
-		add( mNameText, "growx, push" );
+		add( mNameText, "span" );
 
 		mRangeModel = new ChannelRangeModel();
+		mRangeModel.setListener( this );
 		
 		mRangeTable = new JTable( mRangeModel );
 		mRangeTable.setPreferredScrollableViewportSize( new Dimension( 300, 150 ) );
@@ -104,143 +139,201 @@ public class ChannelMapEditor extends DocumentListenerEditor<ChannelMap>
 			mRangeTable.getColumnModel().getColumn( x )
 				.setCellEditor( new RangeTableEditor() );
 		}
+		
+		mRangeTable.getSelectionModel().addListSelectionListener( new ListSelectionListener()
+		{
+			@Override
+			public void valueChanged( ListSelectionEvent event )
+			{
+				if( !event.getValueIsAdjusting() )
+				{
+					int index = event.getFirstIndex();
+					
+					mDeleteButton.setEnabled( index >= 0 );
+
+					if( index >= 0 )
+					{
+						int modelIndex = mRangeTable.convertRowIndexToModel( index );
+						
+						if( modelIndex >= 0 )
+						{
+							ChannelRange selected = mRangeModel.getChannelRange( modelIndex );
+							
+							if( selected != null )
+							{
+								mRangeDescription.setText( selected.getDescription() );
+							}
+							else
+							{
+								mRangeDescription.setText( "" );
+							}
+						}
+					}
+				}
+			}
+		} );
 
 		JScrollPane scrollPane = new JScrollPane( mRangeTable );
 		add( scrollPane, "span,grow,push");
 		
-		JButton btnNew = new JButton( "New Range" );
-//		btnNew.addActionListener( ChannelMapEditor.this );
-		add( btnNew );
-
-		mDelete = new JButton( "Delete" );
-//		mDelete.addActionListener( ChannelMapEditor.this );
-		add( mDelete, "wrap" );
-
-		JButton btnSave = new JButton( "Save" );
-//		btnSave.addActionListener( ChannelMapEditor.this );
-		add( btnSave, "growx" );
-
-		JButton btnReset = new JButton( "Reset " );
-//		btnReset.addActionListener( ChannelMapEditor.this );
-		add( btnReset, "wrap" );
-	}
-	
-	private boolean checkForValidRanges()
-	{
-		mLog.error( "Fix Me!" );
-//		int invalidRow = mChannelMapCopy.getInvalidRange();
-//
-//		if( invalidRow != -1 && invalidRow <= mRangeTable.getRowCount() )
-//		{
-//			mRangeTable.setRowSelectionInterval( invalidRow, invalidRow );
-//			
-//			JOptionPane.showMessageDialog( this,
-//					"Starting channel number must be less than ending channel number",
-//				    "Channel number range error",
-//				    JOptionPane.WARNING_MESSAGE );
-//			
-//			return false;
-//		}
+		mRangeDescription = new JLabel( " " );
+		add( mRangeDescription, "span" );
 		
-		return true;
-	}
-	
-//	@Override
-//    public void actionPerformed( ActionEvent e )
-//    {
-//		String command = e.getActionCommand();
-//
-//		switch( command )
-//		{
-//			case "New Range":
-//				mRangeModel.addRange( new ChannelRange() );
-//				break;
-//			case "Save":
-//				if( checkForValidRanges() )
-//				{
-//					mChannelMapNode.getChannelMap()
-//								.setName( mChannelMapCopy.getName() );
-//					mChannelMapNode.getChannelMap()
-//								.setRanges( mChannelMapCopy.getRanges() );
-//					
-//					mChannelMapNode.save();
-//					
-//					mChannelMapNode.refresh();
-//					
-//					mChannelMapNode.show();
-//				}
-//			case "Reset":
-//				mChannelMapCopy = mChannelMapNode.getChannelMap();
-//				mRangeModel.setChannelMap( mChannelMapCopy );
-//				mNameText.setText( mChannelMapCopy.getName() );
-//				break;
-//			case "Delete":
-//				int row = mRangeTable.getSelectedRow();
-//				
-//				if( row < 0 )
-//				{
-//					JOptionPane.showMessageDialog( this,
-//							"Please select a channel range to delete",
-//						    "Select a range",
-//						    JOptionPane.WARNING_MESSAGE );
-//				}
-//				else
-//				{
-//					mRangeModel.removeRange( 
-//							mRangeTable.convertRowIndexToModel( row ) );
-//				}
-//				break;
-//		}
-//    }
-	
-	public class RangeTableEditor extends AbstractCellEditor
-								  implements TableCellEditor, ActionListener
-	{
-		JFormattedTextField mEditor;
-
-		public RangeTableEditor()
+		mSaveButton = new JButton( "Save" );
+		mSaveButton.setEnabled( false );
+		mSaveButton.addActionListener( new ActionListener()
 		{
-			InternationalFormatter nf = new InternationalFormatter();
-			nf.setMinimum( 1 );
-			nf.setAllowsInvalid( false );
-			
-			mEditor = new JFormattedTextField( nf );
-		}
-		
-		@Override
-        public Object getCellEditorValue()
-        {
-	        return mEditor.getText();
-        }
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				save();
+			}
+		} );
+		add( mSaveButton );
 
-		@Override
-        public void actionPerformed( ActionEvent e )
-        {
-        }
+		mNewButton = new JButton( "New Range" );
+		mNewButton.setEnabled( false );
+		mNewButton.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				mRangeModel.addRange( new ChannelRange() );
+			}
+		} );
+		add( mNewButton );
 
-		@Override
-        public Component getTableCellEditorComponent( JTable table, 
-        											  Object value,
-        											  boolean isSelected, 
-        											  int row, 
-        											  int column )
-        {
-			mEditor.setValue( value );
-			
-			return mEditor;
-        }
-    }
+		mDeleteButton = new JButton( "DeleteRange" );
+		mDeleteButton.setEnabled( false );
+		mDeleteButton.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				int selectedRow = mRangeTable.getSelectedRow();
+				
+				if( selectedRow >= 0 )
+				{
+					int modelRow = mRangeTable.convertRowIndexToModel( selectedRow );
 
+					ChannelRange selectedRange = mRangeModel.getChannelRange( modelRow );
+					
+					if( selectedRange != null )
+					{
+						int choice = JOptionPane.showConfirmDialog( mRangeTable, 
+								"Do you want to delete this channel range?", 
+								"Delete Channel Range?", JOptionPane.YES_NO_OPTION );
+							
+						if( choice == JOptionPane.YES_OPTION )
+						{
+							mRangeModel.removeRange( selectedRange );
+							mDeleteButton.setEnabled( false );
+						}
+					}
+				}
+			}
+		} );
+		add( mDeleteButton, "wrap" );
+	}
+	
 	@Override
 	public void save()
 	{
-		// TODO Auto-generated method stub
-		
+		if( isModified() && hasItem() )
+		{
+			ChannelMap channelMap = getChannelMap();
+			
+			channelMap.setName( mNameText.getText() );
+			channelMap.setRanges( mRangeModel.getChannelRanges() );
+
+			mChannelMapModel.broadcast( new ChannelMapEvent( getChannelMap(), Event.CHANGE ) );
+			setModified( false );
+		}
 	}
 
 	@Override
 	public void valueChanged( ListSelectionEvent e )
 	{
-		mLog.debug( "List Select Event from: " + e.getSource().getClass() );
+		if( !e.getValueIsAdjusting() )
+		{
+			if( e.getSource() instanceof JList )
+			{
+				JList<?> list = (JList<?>)e.getSource();
+
+				if( list.getSelectedValue() instanceof ChannelMap )
+				{
+					setItem( (ChannelMap)list.getSelectedValue() );
+				}
+				else
+				{
+					setItem( null );
+				}
+			}
+		}
 	}
+
+	@Override
+	public void channelRangesChanged()
+	{
+		setModified( true );
+
+		//Update description
+		int index = mRangeTable.getSelectedRow();
+		
+		if( index >= 0 )
+		{
+			ChannelRange selected = mRangeModel.getChannelRange( 
+					mRangeTable.convertRowIndexToModel( index ) );
+			
+			if( selected != null )
+			{
+				mRangeDescription.setText( selected.getDescription() );
+			}
+			else
+			{
+				mRangeDescription.setText( "" );
+			}
+		}
+	}
+	
+	public class RangeTableEditor extends AbstractCellEditor
+	  implements TableCellEditor, ActionListener
+	{
+		private static final long serialVersionUID = 1L;
+		
+		JFormattedTextField mEditor;
+		
+		public RangeTableEditor()
+		{
+			InternationalFormatter nf = new InternationalFormatter();
+			nf.setMinimum( 1 );
+			nf.setAllowsInvalid( true );
+			
+			mEditor = new JFormattedTextField( nf );
+		}
+		
+		@Override
+		public Object getCellEditorValue()
+		{
+			return mEditor.getText();
+		}
+		
+		@Override
+		public void actionPerformed( ActionEvent e )
+		{
+		}
+		
+		@Override
+		public Component getTableCellEditorComponent( JTable table, 
+								  Object value,
+								  boolean isSelected, 
+								  int row, 
+								  int column )
+		{
+			mEditor.setValue( value );
+			
+			return mEditor;
+		}
+	}
+	
 }

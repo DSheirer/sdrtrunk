@@ -17,6 +17,11 @@
  ******************************************************************************/
 package controller.channel.map;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+
 import javax.swing.table.AbstractTableModel;
 
 import org.slf4j.Logger;
@@ -32,49 +37,91 @@ public class ChannelRangeModel extends AbstractTableModel
     private static final int STOP = 1;
     private static final int BASE = 2;
     private static final int SIZE = 3;
+    private static final int ERROR = 4;
 
-	protected int[] mColumnWidths = { 110, 110, 110, -1 };
+	protected int[] mColumnWidths = { 110, 110, 110, -1, 80 };
 
 	protected String[] mHeaders = new String[] { "Begin",
 												 "End",
 												 "Base",
-												 "Size" };
+												 "Size",
+												 "Error" };
 
-	private ChannelMap mChannelMap;
+	private List<ChannelRange> mRanges = new CopyOnWriteArrayList<>();
+	private ChannelRangeEventListener mListener;
 	
 	public ChannelRangeModel()
 	{
 	}
 	
-	public void setChannelMap( ChannelMap channelMap )
+	public void setListener( ChannelRangeEventListener listener )
 	{
-		mChannelMap = channelMap;
-		fireTableDataChanged();
+		mListener = listener;
+	}
+	
+	private void broadcastChange()
+	{
+		if( mListener != null )
+		{
+			mListener.channelRangesChanged();
+		}
+	}
+
+	public void clear()
+	{
+		for( ChannelRange range: mRanges )
+		{
+			removeRange( range );
+		}
+		
+		broadcastChange();
+	}
+	
+	public List<ChannelRange> getChannelRanges()
+	{
+		return Collections.unmodifiableList( mRanges );
+	}
+	
+	public void addRanges( List<ChannelRange> ranges )
+	{
+		for( ChannelRange range: ranges )
+		{
+			addRange( range );
+		}
+		
+		broadcastChange();
 	}
 	
 	public void addRange( ChannelRange range )
 	{
-		if( mChannelMap != null )
+		if( range != null && !mRanges.contains( range ) )
 		{
-			mChannelMap.addRange( range );
-			
-			int index = mChannelMap.getRanges().size() - 1;
-			
+			mRanges.add( range );
+
+			int index = mRanges.indexOf( range );
+
 			fireTableRowsInserted( index, index );
 		}
+		
+		validate();
+		
+		broadcastChange();
 	}
 	
-	public void removeRange( int rangeIndex )
+	public void removeRange( ChannelRange range )
 	{
-		if( mChannelMap != null )
+		if( range != null && mRanges.contains( range ) )
 		{
-			if( rangeIndex < mChannelMap.getRanges().size() )
-			{
-				mChannelMap.getRanges().remove( rangeIndex );
-			}
+			int index = mRanges.indexOf( range );
 			
-			fireTableRowsDeleted( rangeIndex, rangeIndex );
+			mRanges.remove( range );
+			
+			fireTableRowsDeleted( index, index );
 		}
+		
+		validate();
+
+		broadcastChange();
 	}
 	
 	public int[] getColumnWidths()
@@ -84,10 +131,11 @@ public class ChannelRangeModel extends AbstractTableModel
 	
 	public void setColumnWidths( int[] widths )
 	{
-		if( widths.length != 4 )
+		if( widths.length != mHeaders.length )
 		{
 			throw new IllegalArgumentException( "ChannelMapRangeModel - "
-					+ "column widths array should have 5 elements" );
+					+ "column widths array should have " + 
+					mHeaders.length + " elements" );
 		}
 		else
 		{
@@ -98,12 +146,7 @@ public class ChannelRangeModel extends AbstractTableModel
 	@Override
     public int getRowCount()
     {
-		if( mChannelMap != null )
-		{
-			return mChannelMap.getRanges().size();
-		}
-		
-		return 0;
+		return mRanges.size();
     }
 
 	@Override
@@ -117,13 +160,23 @@ public class ChannelRangeModel extends AbstractTableModel
         return mHeaders[ column ];
     }
 	
+	public ChannelRange getChannelRange( int index )
+	{
+		if( index < mRanges.size() )
+		{
+			return mRanges.get( index );
+		}
+		
+		return null;
+	}
+	
 	@Override
     public Object getValueAt( int rowIndex, int columnIndex )
     {
-		if( mChannelMap != null )
+		ChannelRange range = getChannelRange( rowIndex );
+
+		if( range != null )
 		{
-			ChannelRange range = mChannelMap.getRanges().get( rowIndex );
-			
 			switch( columnIndex )
 			{
 				case START:
@@ -134,27 +187,84 @@ public class ChannelRangeModel extends AbstractTableModel
 					return range.getBase();
 				case SIZE:
 					return range.getSize();
+				case ERROR:
+					StringBuilder sb = new StringBuilder();
+					
+					if( !range.isValid() )
+					{
+						sb.append( "Sequence" );
+					}
+					
+					if( range.isOverlapping() )
+					{
+						if( sb.length() > 0 )
+						{
+							sb.append( "," );
+						}
+						
+						sb.append( "Overlap" );
+					}
+					
+					return sb.toString();
+				default:
+					break;
 			}
 		}
 		
 		return null;
     }
+
+	/**
+	 * Validates each of the channel ranges for overlap
+	 */
+	private void validate()
+	{
+		for( int x = 0; x < mRanges.size(); x++ )
+		{
+			mRanges.get( x ).setOverlapping( false );
+			fireTableCellUpdated( x, ERROR );
+		}
+		
+		for( int x = 0; x < mRanges.size(); x++ )
+		{
+			for( int y = x + 1; y <  mRanges.size(); y++ )
+			{
+				if( mRanges.get( x ).overlaps( mRanges.get( y ) ) )
+				{
+					mRanges.get( x ).setOverlapping( true );
+					fireTableCellUpdated( x, ERROR );
+					
+					mRanges.get( y ).setOverlapping( true );
+					fireTableCellUpdated( y, ERROR );
+				}
+			}
+		}
+	}
 	
 	public boolean isCellEditable( int row, int column )
 	{
-		return mChannelMap != null;
+		return row < mRanges.size() && column != ERROR;
 	}
 	
 	public void setValueAt( Object value, int row, int column )
 	{
-		if( mChannelMap != null )
+		int parsedValue = -1;
+		
+		try
 		{
-			try
+			parsedValue = Integer.parseInt( (String)value );
+		}
+		catch( Exception e )
+		{
+			//Do nothing ... we'll use 0
+		}
+
+		if( parsedValue >= 0 )
+		{
+			ChannelRange range = getChannelRange( row );
+			
+			if( range != null )
 			{
-				int parsedValue = Integer.parseInt( (String)value );
-				
-				ChannelRange range = mChannelMap.getRanges().get( row );
-				
 				switch( column )
 				{
 					case START:
@@ -170,12 +280,20 @@ public class ChannelRangeModel extends AbstractTableModel
 						range.setSize( parsedValue );
 						break;
 				}
+				
+				validate();
+
+				broadcastChange();
 			}
-			catch( Exception e )
+			else
 			{
-				mLog.error( "ChannelMapModel - couldn't parse integer value "
-						+ "for [" + value + "]", e );
+				throw new IllegalArgumentException( "Invalid channel range row index" );
 			}
 		}
+	}
+	
+	public interface ChannelRangeEventListener
+	{
+		public void channelRangesChanged();
 	}
 }

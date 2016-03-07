@@ -17,21 +17,35 @@
  ******************************************************************************/
 package controller.channel.map;
 
+import java.text.DecimalFormat;
+
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.XmlType;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @XmlRootElement
 @XmlType( name = "range" )
 public class ChannelRange
 {
+	private final static Logger mLog = LoggerFactory.getLogger( ChannelRange.class );
+	
+	private static final DecimalFormat FREQUENCY_FORMATTER = 
+			new DecimalFormat( "#.0000" ); 
+
 	private int mFirst = 1;
 	private int mLast = 1023;
 	private int mBase = 450000000;
 	private int mSize = 12500;
+	
+	private boolean mOverlapping = false;
 
-	/* JAXB requirement - do not remove */
-	public ChannelRange() {}
+	public ChannelRange() 
+	{
+	}
 	
 	public ChannelRange( int first, int last, int base, int size )
 	{
@@ -46,9 +60,65 @@ public class ChannelRange
 		return new ChannelRange( mFirst, mLast, mBase, mSize );
 	}
 	
+	public String getDescription()
+	{
+		StringBuilder sb = new StringBuilder();
+		
+		if( isValid() )
+		{
+			sb.append( "First: " );
+			sb.append( mFirst + "=" );
+			
+			long frequency = getFrequency( mFirst );
+			
+			sb.append( FREQUENCY_FORMATTER.format( (double)frequency / 1E6D ) );
+			sb.append( "  Last: " );
+			sb.append( mLast + "=" );
+			
+			frequency = getFrequency( mLast );
+			sb.append( FREQUENCY_FORMATTER.format( (double)frequency / 1E6D ) );
+			sb.append( " MHz" );
+		}
+		else
+		{
+			sb.append( "First channel must be smaller than last channel" );
+		}
+		
+		if( isOverlapping() )
+		{
+			if( sb.length() > 0 )
+			{
+				sb.append( ", " );
+			}
+			
+			sb.append( "Overlap!" );
+		}
+
+		return sb.toString();
+	}
+	
 	public boolean isValid()
 	{
 		return mFirst < mLast;
+	}
+	
+	public boolean overlaps( ChannelRange other )
+	{
+		return ( mFirst <= other.mFirst && other.mFirst <= mLast ) ||
+			   ( mFirst <= other.mLast && other.mLast <= mLast ) ||
+			   ( mFirst <= other.mFirst && other.mLast <= mLast ) ||
+			   ( other.mFirst <= mFirst && mLast <= other.mLast );
+	}
+
+	@XmlTransient
+	public boolean isOverlapping()
+	{
+		return mOverlapping;
+	}
+	
+	public void setOverlapping( boolean overlapping )
+	{
+		mOverlapping = overlapping;
 	}
 	
 	public boolean hasChannel( int channel )

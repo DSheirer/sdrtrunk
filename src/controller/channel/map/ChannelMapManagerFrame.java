@@ -17,6 +17,8 @@
  ******************************************************************************/
 package controller.channel.map;
 
+import java.awt.EventQueue;
+
 import javax.swing.JFrame;
 
 import net.miginfocom.swing.MigLayout;
@@ -38,5 +40,22 @@ public class ChannelMapManagerFrame extends JFrame
     	setLayout( new MigLayout( "", "[grow,fill]", "[grow,fill]" ) );
     	add( channelMapManager );
 		setLocationRelativeTo( null );
+	}
+	
+	public static void main( String[] args )
+	{
+		ChannelMapModel channelMapModel = new ChannelMapModel();
+		
+		final ChannelMapManagerFrame frame = 
+				new ChannelMapManagerFrame( channelMapModel );
+		
+		EventQueue.invokeLater( new Runnable()
+		{
+			@Override
+			public void run()
+			{
+				frame.setVisible( true );
+			}
+		} );
 	}
 }

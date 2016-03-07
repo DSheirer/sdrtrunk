@@ -18,17 +18,20 @@
 package controller.channel.map;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
+import javax.xml.bind.annotation.XmlTransient;
 
 @XmlSeeAlso( { ChannelRange.class } )
 public class ChannelMap
 {
 	private String mName;
+	private boolean mInvalid = false;
 	
-	private ArrayList<ChannelRange> mRanges = new ArrayList<ChannelRange>();
+	private List<ChannelRange> mRanges = new ArrayList<ChannelRange>();
 	
 	public ChannelMap()
 	{
@@ -39,17 +42,10 @@ public class ChannelMap
 	{
 		mName = name;
 	}
-
-	public String toString()
-	{
-		return mName;
-	}
-	/**
-	 * Creates a copy of this channel map
-	 */
+	
 	public ChannelMap copyOf()
 	{
-		ChannelMap map = new ChannelMap( mName );
+		ChannelMap map = new ChannelMap( new String( mName ) );
 		
 		for( ChannelRange range: mRanges )
 		{
@@ -58,29 +54,34 @@ public class ChannelMap
 		
 		return map;
 	}
-	
-	public int getInvalidRange()
+
+	@XmlTransient
+	public boolean isInvalid()
 	{
-		for( int x = 0; x < mRanges.size(); x++ )
-		{
-			if( !mRanges.get( x ).isValid() )
-			{
-				return x;
-			}
-		}
-		
-		return -1;
+		return mInvalid;
+	}
+
+	public String toString()
+	{
+		return mName + ( mInvalid ? " - Error" : "" );
 	}
 	
-	public ArrayList<ChannelRange> getRanges()
+	public List<ChannelRange> getRanges()
 	{
 		return mRanges;
 	}
 
 	@XmlElement( name = "range" )
-	public void setRanges( ArrayList<ChannelRange> ranges )
+	public void setRanges( List<ChannelRange> ranges )
 	{
-		mRanges = ranges;
+		mRanges.clear();
+		
+		for( ChannelRange range: ranges )
+		{
+			mRanges.add( range );
+		}
+		
+		validate();
 	}
 	
 	@XmlAttribute
@@ -106,15 +107,44 @@ public class ChannelMap
 		
 		return 0;
 	}
+
+	/**
+	 * Validates each of the channel ranges for overlap
+	 */
+	private void validate()
+	{
+		mInvalid = false;
+		
+		for( int x = 0; x < mRanges.size(); x++ )
+		{
+			if( !mRanges.get( x ).isValid() )
+			{
+				mInvalid = true;
+			}
+			
+			for( int y = x + 1; y <  mRanges.size(); y++ )
+			{
+				if( mRanges.get( x ).overlaps( mRanges.get( y ) ) )
+				{
+					mInvalid = true;
+				}
+			}
+		}
+	}
+	
 	
 	public void addRange( ChannelRange range )
 	{
 		mRanges.add( range );
+		
+		validate();
 	}
 	
 	public void deleteRange( ChannelRange range )
 	{
 		mRanges.remove( range );
+		
+		validate();
 	}
 
 }
