@@ -79,7 +79,7 @@ public class ChannelRangeModel extends AbstractTableModel
 	
 	public List<ChannelRange> getChannelRanges()
 	{
-		return Collections.unmodifiableList( mRanges );
+		return mRanges;
 	}
 	
 	public void addRanges( List<ChannelRange> ranges )

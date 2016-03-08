@@ -66,20 +66,15 @@ public class ChannelMap
 		return mName + ( mInvalid ? " - Error" : "" );
 	}
 	
+	@XmlElement( name = "range" )
 	public List<ChannelRange> getRanges()
 	{
 		return mRanges;
 	}
 
-	@XmlElement( name = "range" )
 	public void setRanges( List<ChannelRange> ranges )
 	{
-		mRanges.clear();
-		
-		for( ChannelRange range: ranges )
-		{
-			mRanges.add( range );
-		}
+		mRanges = ranges;
 		
 		validate();
 	}
@@ -140,7 +135,7 @@ public class ChannelMap
 		validate();
 	}
 	
-	public void deleteRange( ChannelRange range )
+	public void removeRange( ChannelRange range )
 	{
 		mRanges.remove( range );
 		
