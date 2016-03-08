@@ -17,11 +17,15 @@
  ******************************************************************************/
 package source.tuner;
 
+import gui.editor.EmptyEditor;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
+
+import javax.swing.JPanel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +42,7 @@ import source.config.SourceConfiguration;
 import source.mixer.MixerManager;
 import source.tuner.airspy.AirspyTuner;
 import source.tuner.airspy.AirspyTunerController;
+import source.tuner.airspy.AirspyTunerEditorPanel;
 import source.tuner.fcd.FCDTuner;
 import source.tuner.fcd.proV1.FCD1TunerController;
 import source.tuner.fcd.proplusV2.FCD2TunerController;
@@ -46,6 +51,7 @@ import source.tuner.hackrf.HackRFTunerController;
 import source.tuner.rtl.RTL2832Tuner;
 import source.tuner.rtl.RTL2832TunerController;
 import source.tuner.rtl.e4k.E4KTunerController;
+import source.tuner.rtl.e4k.E4KTunerEditorPanel;
 import source.tuner.rtl.r820t.R820TTunerController;
 import controller.ThreadPoolManager;
 
@@ -617,5 +623,17 @@ public class TunerManager
     	{
     		return mTuner != null;
     	}
+    }
+    
+    public static JPanel getEditor( SettingsManager settingsManager, Tuner tuner )
+    {
+    	JPanel editor = tuner.getEditor( settingsManager );
+    	
+    	if( editor != null )
+    	{
+    		return editor;
+    	}
+    	
+    	return new EmptyEditor<Tuner>();
     }
 }

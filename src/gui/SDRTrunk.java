@@ -56,6 +56,7 @@ import properties.SystemProperties;
 import record.RecorderManager;
 import settings.SettingsManager;
 import source.SourceManager;
+import source.TunerModel;
 import source.tuner.Tuner;
 import source.tuner.TunerSelectionListener;
 import spectrum.SpectralDisplayPanel;
@@ -130,6 +131,9 @@ public class SDRTrunk
 		
 		SourceManager sourceManager = new SourceManager( mSettingsManager, 
 				threadPoolManager );
+		
+		TunerModel tunerModel = new TunerModel();
+		tunerModel.addTuners( sourceManager.getTunerManager().getTuners() );
 
 		ChannelProcessingManager channelProcessingManager = 
 			new ChannelProcessingManager( channelModel, channelMapModel, 
@@ -158,7 +162,7 @@ public class SDRTrunk
 
 		mControllerPanel = new ControllerPanel( audioManager, configurationControllerModel, 
 			aliasModel, channelModel, channelMapModel, channelProcessingManager, 
-			mapService, mSettingsManager, sourceManager );
+			mapService, mSettingsManager, sourceManager, tunerModel );
 
     	mSpectralPanel = new SpectralDisplayPanel( configurationControllerModel,
 			channelModel, channelProcessingManager,	mSettingsManager );

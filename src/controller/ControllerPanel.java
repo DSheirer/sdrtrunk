@@ -35,6 +35,8 @@ import module.decode.state.ChannelList;
 import net.miginfocom.swing.MigLayout;
 import settings.SettingsManager;
 import source.SourceManager;
+import source.TunerViewPanel;
+import source.TunerModel;
 import spectrum.ChannelSpectrumPanel;
 import alias.AliasController;
 import alias.AliasModel;
@@ -55,6 +57,8 @@ public class ControllerPanel extends JPanel
 
     private ChannelList mChannelStateList;
 
+    private TunerViewPanel mTunerManagerPanel;
+    
     private CallEventPanel mCallEventPanel;
     
     private MessageActivityPanel mMessageActivityPanel;
@@ -87,7 +91,8 @@ public class ControllerPanel extends JPanel
 							ChannelProcessingManager channelProcessingManager,
 							MapService mapService,
 							SettingsManager settingsManager,
-							SourceManager sourceManager )
+							SourceManager sourceManager,
+							TunerModel tunerModel )
 	{
 		mChannelModel = channelModel;
 		mController = controller;
@@ -111,6 +116,8 @@ public class ControllerPanel extends JPanel
     			sourceManager, aliasModel );
     	
     	mAliasController = new AliasController( aliasModel, mSettingsManager );
+    	
+    	mTunerManagerPanel = new TunerViewPanel( tunerModel, mSettingsManager );
 
 		init();
 	}
@@ -138,6 +145,7 @@ public class ControllerPanel extends JPanel
     	mTabbedPane.setForeground( Color.BLACK );
     	mTabbedPane.addTab( "Channels", mChannelController );
     	mTabbedPane.addTab( "Aliases", mAliasController );
+    	mTabbedPane.addTab( "Tuners", mTunerManagerPanel );
     	mTabbedPane.addTab( "Configuration", mSystemControlSplitPane  );
     	mTabbedPane.addTab( "Channel Spectrum", mChannelSpectrumPanel );
     	mTabbedPane.addTab( "Events", mCallEventPanel );
