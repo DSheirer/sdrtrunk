@@ -17,6 +17,8 @@
  ******************************************************************************/
 package source.tuner;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.RejectedExecutionException;
 
@@ -32,7 +34,6 @@ import source.SourceException;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeEvent.Event;
 import source.tuner.frequency.IFrequencyChangeProcessor;
-import controller.ThreadPoolManager;
 
 /**
  * Tuner - provides tuner channel sources, representing a channel frequency
@@ -48,12 +49,15 @@ public abstract class Tuner implements IFrequencyChangeProcessor,
 	 * Sample Listeners - these will typically be the DFT processor for spectral
 	 * display, or it will be one or more tuner channel sources
 	 */
-	protected CopyOnWriteArrayList<Listener<ComplexBuffer>> 
-		mSampleListeners = new CopyOnWriteArrayList<Listener<ComplexBuffer>>();
+	protected List<Listener<ComplexBuffer>> mSampleListeners = 
+			new CopyOnWriteArrayList<>();
 	
-	protected CopyOnWriteArrayList<IFrequencyChangeProcessor> 
-		mFrequencyChangeProcessors = new CopyOnWriteArrayList<IFrequencyChangeProcessor>();
+	protected List<IFrequencyChangeProcessor> mFrequencyChangeProcessors = 
+			new CopyOnWriteArrayList<>();
 
+	protected List<Listener<TunerChangeEvent>> mTunerChangeListeners =
+			new ArrayList<>();
+	
 	public Tuner( String name )
 	{
 		mName = name;
@@ -149,6 +153,11 @@ public abstract class Tuner implements IFrequencyChangeProcessor,
 			throws RejectedExecutionException, SourceException;
 	
 	/**
+	 * Count of currently sourced channels (TunerChannel).
+	 */
+	public abstract int getChannelCount();
+	
+	/**
 	 * Releases the tuned channel resources
 	 * 
 	 * Note: ensure the concrete implementation unregisters the tuner channel
@@ -211,6 +220,33 @@ public abstract class Tuner implements IFrequencyChangeProcessor,
 				new FrequencyChangeEvent( Event.NOTIFICATION_FREQUENCY_CHANGE, frequency ) );
     }
 
+	/**
+	 * Registers the listener
+	 */
+    public void addTunerChangeListener( Listener<TunerChangeEvent> listener )
+    {
+		mTunerChangeListeners.add( listener );
+    }
+
+	/**
+	 * Removes the registered listener
+	 */
+    public void removeTunerChangeListener( Listener<TunerChangeEvent> listener )
+    {
+	    mTunerChangeListeners.remove( listener );
+    }
+
+    /**
+     * Broadcasts the tuner change event
+     */
+    public void broadcast( TunerChangeEvent event )
+    {
+    	for( Listener<TunerChangeEvent> listener: mTunerChangeListeners )
+    	{
+    		listener.receive( event );
+    	}
+    }
+    
     /**
      * Broadcasts a sample rate change event to all registered listeners
      */
@@ -237,6 +273,15 @@ public abstract class Tuner implements IFrequencyChangeProcessor,
     	for( IFrequencyChangeProcessor processor: mFrequencyChangeProcessors )
     	{
     		processor.frequencyChanged( event );
+    	}
+    	
+    	if( event.getEvent() == Event.NOTIFICATION_FREQUENCY_CHANGE )
+    	{
+        	broadcast( new TunerChangeEvent( this, TunerChangeEvent.Event.FREQUENCY ) );
+    	}
+    	else if( event.getEvent() == Event.NOTIFICATION_SAMPLE_RATE_CHANGE )
+    	{
+        	broadcast( new TunerChangeEvent( this, TunerChangeEvent.Event.SAMPLE_RATE ) );
     	}
     }
 

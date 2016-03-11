@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -71,9 +71,9 @@ public class ControllerPanel extends JPanel
 
 	private JideTabbedPane mTabbedPane;
 
-    protected ConfigurationTreePanel mSystemControlViewPanel;
-	protected OldConfigurationEditor mConfigurationEditor;
-    protected JideSplitPane mSystemControlSplitPane;
+//    protected ConfigurationTreePanel mSystemControlViewPanel;
+//	protected OldConfigurationEditor mConfigurationEditor;
+//    protected JideSplitPane mSystemControlSplitPane;
 
 	protected JTable mChannelActivityTable = new JTable();
 	private AudioPanel mAudioPanel;
@@ -128,25 +128,25 @@ public class ControllerPanel extends JPanel
     							  "[grow,fill]", 
     							  "[grow,fill]") );
     	
-    	//System Configuration View and Editor
-    	mConfigurationEditor = new OldConfigurationEditor();
+//    	//System Configuration View and Editor
+//    	mConfigurationEditor = new OldConfigurationEditor();
+//
+//    	mSystemControlViewPanel = new ConfigurationTreePanel( mController );
+//    	mSystemControlViewPanel.addTreeSelectionListener( mConfigurationEditor );
 
-    	mSystemControlViewPanel = new ConfigurationTreePanel( mController );
-    	mSystemControlViewPanel.addTreeSelectionListener( mConfigurationEditor );
-
-    	mSystemControlSplitPane = new JideSplitPane( JideSplitPane.HORIZONTAL_SPLIT );
-    	mSystemControlSplitPane.setDividerSize( 5 );
-    	mSystemControlSplitPane.add( mSystemControlViewPanel );
-    	mSystemControlSplitPane.add( mConfigurationEditor );
+//    	mSystemControlSplitPane = new JideSplitPane( JideSplitPane.HORIZONTAL_SPLIT );
+//    	mSystemControlSplitPane.setDividerSize( 5 );
+//    	mSystemControlSplitPane.add( mSystemControlViewPanel );
+//    	mSystemControlSplitPane.add( mConfigurationEditor );
     	
     	//Tabbed View - configuration, calls, messages, map
     	mTabbedPane = new JideTabbedPane();
     	mTabbedPane.setFont( this.getFont() );
     	mTabbedPane.setForeground( Color.BLACK );
+    	mTabbedPane.addTab( "Tuners", mTunerManagerPanel );
     	mTabbedPane.addTab( "Channels", mChannelController );
     	mTabbedPane.addTab( "Aliases", mAliasController );
-    	mTabbedPane.addTab( "Tuners", mTunerManagerPanel );
-    	mTabbedPane.addTab( "Configuration", mSystemControlSplitPane  );
+//    	mTabbedPane.addTab( "Configuration", mSystemControlSplitPane  );
     	mTabbedPane.addTab( "Channel Spectrum", mChannelSpectrumPanel );
     	mTabbedPane.addTab( "Events", mCallEventPanel );
     	mTabbedPane.addTab( "Messages", mMessageActivityPanel );

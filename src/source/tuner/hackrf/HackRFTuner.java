@@ -29,6 +29,7 @@ import sample.complex.ComplexBuffer;
 import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.Tuner;
+import source.tuner.TunerChangeEvent;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannelSource;
 import source.tuner.TunerClass;
@@ -108,8 +109,21 @@ public class HackRFTuner extends Tuner
     public TunerChannelSource getChannel( TunerChannel channel ) 
     		throws RejectedExecutionException, SourceException
     {
-	    return mController.getChannel( this, channel );
+		TunerChannelSource source = mController.getChannel( this, channel );
+
+		if( source != null )
+		{
+			broadcast( new TunerChangeEvent( this, TunerChangeEvent.Event.CHANNEL_COUNT ) );
+		}
+		
+		return source;
     }
+
+	@Override
+	public int getChannelCount()
+	{
+		return mController.getChannelCount();
+	}
 
 	@Override
     public void releaseChannel( TunerChannelSource source )

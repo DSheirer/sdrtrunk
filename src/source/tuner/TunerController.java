@@ -221,6 +221,11 @@ public abstract class TunerController implements Tunable
 
 		return source;
 	}
+	
+	public int getChannelCount()
+	{
+		return mTunedChannels.size();
+	}
 
 	/**
 	 * Indicates if the tuner's LO frequency must be updated in order to 

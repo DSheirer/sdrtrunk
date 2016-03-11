@@ -3,10 +3,11 @@ package source;
 import gui.editor.EmptyEditor;
 
 import java.awt.Component;
+import java.awt.Dimension;
 
-import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
@@ -30,7 +31,7 @@ public class TunerViewPanel extends JPanel
 	private TunerModel mTunerModel;
 	private SettingsManager mSettingsManager;
 	private JideSplitPane mSplitPane;
-	private JList<Tuner> mTunerList;
+	private JTable mTunerTable;
 	
 	public TunerViewPanel( TunerModel tunerModel, SettingsManager settingsManager )
 	{
@@ -44,17 +45,19 @@ public class TunerViewPanel extends JPanel
 	{
 		setLayout( new MigLayout( "insets 1 1 1 1", "[fill,grow]", "[fill,grow]" ) );
 
-		mTunerList = new JList<>( mTunerModel );
-		mTunerList.setLayoutOrientation( JList.VERTICAL );
-		mTunerList.setSelectionMode( ListSelectionModel.SINGLE_SELECTION );
-		mTunerList.addListSelectionListener( new ListSelectionListener()
+		mTunerTable = new JTable( mTunerModel );
+		mTunerTable.setSelectionMode( ListSelectionModel.SINGLE_SELECTION );
+		mTunerTable.getSelectionModel().addListSelectionListener( new ListSelectionListener()
 		{
 			@Override
 			public void valueChanged( ListSelectionEvent event )
 			{
 				if( !event.getValueIsAdjusting() )
 				{
-					Tuner selected = mTunerList.getSelectedValue();
+					int row = mTunerTable.getSelectedRow();
+					int modelRow = mTunerTable.convertRowIndexToModel( row );
+					
+					Tuner selected = mTunerModel.getTuner( modelRow );
 					
 					Component component = null;
 					
@@ -80,12 +83,14 @@ public class TunerViewPanel extends JPanel
 			}
 		} );
 		
-		JScrollPane listScroller = new JScrollPane( mTunerList );
+		JScrollPane listScroller = new JScrollPane( mTunerTable );
+		listScroller.setPreferredSize( new Dimension( 400, 20 ) );
 
 		JScrollPane editorScroller = new JScrollPane( new EmptyEditor<Tuner>() );
+		editorScroller.setPreferredSize( new Dimension( 400, 80 ) );
 		
 		mSplitPane = new JideSplitPane();
-		mSplitPane.setOrientation( JideSplitPane.HORIZONTAL_SPLIT );
+		mSplitPane.setOrientation( JideSplitPane.VERTICAL_SPLIT );
 		mSplitPane.add( listScroller );
 		mSplitPane.add( editorScroller );
 		

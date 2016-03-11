@@ -28,6 +28,7 @@ import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.MixerTuner;
 import source.tuner.MixerTunerDataLine;
+import source.tuner.TunerChangeEvent;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannelSource;
 import source.tuner.TunerClass;
@@ -113,8 +114,21 @@ public class FCDTuner extends MixerTuner
     public TunerChannelSource getChannel( TunerChannel tunerChannel )
     		throws RejectedExecutionException, SourceException
     {
-		return mController.getChannel( this, tunerChannel );
+		TunerChannelSource source = mController.getChannel( this, tunerChannel );
+
+		if( source != null )
+		{
+			broadcast( new TunerChangeEvent( this, TunerChangeEvent.Event.CHANNEL_COUNT ) );
+		}
+		
+		return source;
     }
+
+	@Override
+	public int getChannelCount()
+	{
+		return mController.getChannelCount();
+	}
 
 	/**
 	 * Releases the tuned channel so that the tuner controller can tune to

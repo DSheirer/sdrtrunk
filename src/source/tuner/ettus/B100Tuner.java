@@ -105,6 +105,13 @@ public class B100Tuner extends Tuner
 		//TODO: pass this call to the tuner controller
 	    return null;
     }
+	
+	@Override
+	public int getChannelCount()
+	{
+		// TODO Auto-generated method stub
+		return 0;
+	}
 
 	@Override
     public void releaseChannel( TunerChannelSource source )
