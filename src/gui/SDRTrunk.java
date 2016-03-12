@@ -59,6 +59,7 @@ import settings.SettingsManager;
 import source.SourceManager;
 import source.tuner.TunerEvent;
 import source.tuner.TunerModel;
+import source.tuner.TunerSpectralDisplayManager;
 import source.tuner.configuration.TunerConfigurationModel;
 import spectrum.SpectralDisplayPanel;
 import util.TimeStamp;
@@ -162,8 +163,11 @@ public class SDRTrunk implements Listener<TunerEvent>
 
     	mSpectralPanel = new SpectralDisplayPanel( channelModel, 
     			channelProcessingManager,	mSettingsManager );
-    	
-		tunerModel.addListener( mSpectralPanel.getTunerEventListener() );
+
+    	TunerSpectralDisplayManager tunerSpectralDisplayManager = 
+    			new TunerSpectralDisplayManager( mSpectralPanel, 
+					channelModel, channelProcessingManager, mSettingsManager );
+    	tunerModel.addListener( tunerSpectralDisplayManager );
     	tunerModel.addListener( this );
 		
 		PlaylistManager playlistManager = new PlaylistManager( threadPoolManager, 

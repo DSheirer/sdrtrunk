@@ -62,7 +62,6 @@ import settings.ColorSettingMenuItem;
 import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.Tuner;
-import source.tuner.TunerEvent;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeEvent.Event;
 import source.tuner.frequency.IFrequencyChangeProcessor;
@@ -198,11 +197,6 @@ public class SpectralDisplayPanel extends JPanel
     	
     	
     	mTuner = null;
-    }
-    
-    public Listener<TunerEvent> getTunerEventListener()
-    {
-    	return new TunerSelectionListener( this );
     }
     
 	/**
@@ -961,27 +955,5 @@ public class SpectralDisplayPanel extends JPanel
                 }
         	} );
         }
-	}
-	
-	/**
-	 * Provides tuner event listener interface for showing tuners in this display
-	 */
-	public class TunerSelectionListener implements Listener<TunerEvent>
-	{
-		private SpectralDisplayPanel mSpectralDisplayPanel;
-		
-		public TunerSelectionListener( SpectralDisplayPanel spectralDisplayPanel )
-		{
-			mSpectralDisplayPanel = spectralDisplayPanel;
-		}
-		
-		@Override
-		public void receive( TunerEvent event )
-		{
-			if( event.getEvent() == TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY )
-			{
-				mSpectralDisplayPanel.showTuner( event.getTuner() );
-			}
-		}
 	}
 }
