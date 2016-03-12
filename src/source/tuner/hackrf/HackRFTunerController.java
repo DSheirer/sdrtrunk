@@ -81,8 +81,8 @@ import sample.Listener;
 import sample.adapter.ByteSampleAdapter;
 import sample.complex.ComplexBuffer;
 import source.SourceException;
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerController;
+import source.tuner.configuration.TunerConfiguration;
 import controller.ThreadPoolManager;
 import controller.ThreadPoolManager.ThreadType;
 

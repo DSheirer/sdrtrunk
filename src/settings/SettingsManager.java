@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 
 import javax.swing.ImageIcon;
 import javax.xml.bind.JAXBContext;
@@ -45,19 +46,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import properties.SystemProperties;
+import sample.Listener;
 import settings.ColorSetting.ColorSettingName;
 import source.recording.RecordingConfiguration;
-import source.tuner.TunerConfiguration;
-import source.tuner.TunerConfigurationAssignment;
-import source.tuner.TunerType;
-import source.tuner.airspy.AirspyTunerConfiguration;
-import source.tuner.fcd.proV1.FCD1TunerConfiguration;
-import source.tuner.fcd.proplusV2.FCD2TunerConfiguration;
-import source.tuner.hackrf.HackRFTunerConfiguration;
-import source.tuner.rtl.e4k.E4KTunerConfiguration;
-import source.tuner.rtl.r820t.R820TTunerConfiguration;
+import source.tuner.configuration.TunerConfigurationEvent;
+import source.tuner.configuration.TunerConfigurationModel;
 
-public class SettingsManager
+public class SettingsManager implements Listener<TunerConfigurationEvent>
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( SettingsManager.class );
@@ -76,8 +71,20 @@ public class SettingsManager
 	private HashMap<String,ImageIcon> mResizedIcons = 
 							new HashMap<String,ImageIcon>();
 	
-	public SettingsManager()
+	private TunerConfigurationModel mTunerConfigurationModel;
+	private boolean mLoading = false;
+	
+	public SettingsManager( TunerConfigurationModel tunerConfigurationModel )
 	{
+		//TODO: move settings and icons into a SettingsModel and an IconModel
+		//and update this class to only provide loading, saving, and model
+		//change detection producing a save.
+		
+		mTunerConfigurationModel = tunerConfigurationModel;
+
+		//Register for tuner config events so that we can save the settings
+		mTunerConfigurationModel.addListener( this );
+		
 		init();
 	}
 
@@ -100,6 +107,15 @@ public class SettingsManager
 		load( settingsFolder.resolve( settingsFile ) );
 		
 		refreshIcons();
+	}
+	
+	@Override
+	public void receive( TunerConfigurationEvent t )
+	{
+		if( !mLoading )
+		{
+			save();
+		}
 	}
 
 	/**
@@ -542,7 +558,7 @@ public class SettingsManager
 		broadcastSettingChange( setting );
 	}
 	
-	public ArrayList<RecordingConfiguration> getRecordingConfigurations()
+	public List<RecordingConfiguration> getRecordingConfigurations()
 	{
 		return mSettings.getRecordingConfigurations();
 	}
@@ -559,98 +575,6 @@ public class SettingsManager
 		save();
 	}
 	
-	public ArrayList<TunerConfiguration> getTunerConfigurations( TunerType type )
-	{
-		ArrayList<TunerConfiguration> configs = getSettings()
-				.getTunerConfigurations( type );
-
-		return configs;
-	}
-	
-	public void deleteTunerConfiguration( TunerConfiguration config )
-	{
-		getSettings().removeTunerConfiguration( config );
-		save();
-	}
-	
-	public TunerConfiguration addNewTunerConfiguration( TunerType type, 
-														String name )
-	{
-		switch( type )
-		{
-			case AIRSPY_R820T:
-				AirspyTunerConfiguration airspyConfig = 
-						new AirspyTunerConfiguration( name );
-				
-				getSettings().addTunerConfiguration( airspyConfig );
-				
-				save();
-				return airspyConfig;
-			case ELONICS_E4000:
-				E4KTunerConfiguration e4KConfig = 
-							new E4KTunerConfiguration( name );
-
-				getSettings().addTunerConfiguration( e4KConfig );
-				
-				save();
-				return e4KConfig;
-			case FUNCUBE_DONGLE_PRO:
-				FCD1TunerConfiguration config = 
-					new FCD1TunerConfiguration( name );
-				
-				getSettings().addTunerConfiguration( config );
-				
-				save();
-				
-				return config;
-			case FUNCUBE_DONGLE_PRO_PLUS:
-				FCD2TunerConfiguration configPlus = 
-					new FCD2TunerConfiguration( name );
-				
-				getSettings().addTunerConfiguration( configPlus );
-				
-				save();
-				
-				return configPlus;
-			case HACKRF:
-				HackRFTunerConfiguration hackConfig = 
-							new HackRFTunerConfiguration( name );
-				
-				getSettings().addTunerConfiguration( hackConfig );
-				
-				save();
-				
-				return hackConfig;
-			case RAFAELMICRO_R820T:
-				R820TTunerConfiguration r820TConfig = 
-							new R820TTunerConfiguration( name );
-
-				getSettings().addTunerConfiguration( r820TConfig );
-				
-				save();
-				
-				return r820TConfig;
-			default:
-				throw new IllegalArgumentException( "TunerConfiguration"
-						+ "Directory - tuner type is unrecognized [" + 
-						type.toString() + "]" );
-		}
-	}
-
-    public TunerConfigurationAssignment getSelectedTunerConfiguration( 
-    							TunerType type, String address )
-	{
-    	return mSettings.getConfigurationAssignment( type, address );
-	}
-    
-    public void setSelectedTunerConfiguration( TunerType type, 
-    			String address, TunerConfiguration config )
-    {
-    	mSettings.setConfigurationAssignment( type, address, config.getName() );
-    	
-    	save();
-    }
-    
     public MapViewSetting getMapViewSetting( String name, GeoPosition position, int zoom )
     {
     	MapViewSetting loc = mSettings.getMapViewSetting( name );
@@ -681,6 +605,8 @@ public class SettingsManager
 
     public void save()
 	{
+    	saveTunerConfigurationModel();
+    	
 		JAXBContext context = null;
 		
 		SystemProperties props = SystemProperties.getInstance();
@@ -759,6 +685,8 @@ public class SettingsManager
 	 */
 	public void load( Path settingsPath )
 	{
+		mLoading = true;
+		
 		if( Files.exists( settingsPath ) )
 		{
 			mLog.info( "SettingsManager - loading settings file [" + 
@@ -816,6 +744,36 @@ public class SettingsManager
 		if( mSettings == null )
 		{
 			mSettings = new Settings();
+		}
+		
+		loadTunerConfigurationModel();
+		
+		mLoading = false;
+	}
+	
+	private void loadTunerConfigurationModel()
+	{
+		if( mSettings != null )
+		{
+			mTunerConfigurationModel.clear();
+			
+			mTunerConfigurationModel.addTunerConfigurations( 
+					mSettings.getTunerConfigurations() );
+			
+			mTunerConfigurationModel.addTunerConfigurationAssignments( 
+					mSettings.getSelectedTunerConfiguration() );
+		}
+	}
+	
+	private void saveTunerConfigurationModel()
+	{
+		if( mSettings != null )
+		{
+			mSettings.setTunerConfigurations( 
+					mTunerConfigurationModel.getTunerConfigurations() );
+			
+			mSettings.setSelectedTunerConfiguration( 
+					mTunerConfigurationModel.getTunerConfigurationAssignments() );
 		}
 	}
 	

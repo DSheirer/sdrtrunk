@@ -47,11 +47,11 @@ import org.usb4java.LibUsbException;
 
 import settings.SettingsManager;
 import source.SourceException;
-import source.tuner.TunerConfiguration;
-import source.tuner.TunerConfigurationAssignment;
 import source.tuner.TunerType;
 import source.tuner.airspy.AirspyTunerController.Gain;
 import source.tuner.airspy.AirspyTunerController.GainMode;
+import source.tuner.configuration.TunerConfiguration;
+import source.tuner.configuration.TunerConfigurationAssignment;
 
 public class AirspyTunerConfigurationPanel extends JPanel
 {
@@ -126,8 +126,8 @@ public class AirspyTunerConfigurationPanel extends JPanel
         
         if( serial != null )
         {
-            savedConfig = mSettingsManager.getSelectedTunerConfiguration( 
-    				TunerType.AIRSPY_R820T, serial );
+//            savedConfig = mSettingsManager.getSelectedTunerConfiguration( 
+//    				TunerType.AIRSPY_R820T, serial );
         }
         
         if( savedConfig != null )
@@ -145,8 +145,8 @@ public class AirspyTunerConfigurationPanel extends JPanel
         	
         	if( serial != null )
         	{
-            	mSettingsManager.setSelectedTunerConfiguration( TunerType.AIRSPY_R820T, 
-    				serial, mSelectedConfig );
+//            	mSettingsManager.setSelectedTunerConfiguration( TunerType.AIRSPY_R820T, 
+//    				serial, mSelectedConfig );
         	}
         }
 
@@ -515,16 +515,16 @@ public class AirspyTunerConfigurationPanel extends JPanel
 			@Override
             public void actionPerformed( ActionEvent e )
             {
-				TunerConfiguration config = 
-						mSettingsManager.addNewTunerConfiguration( 
-									TunerType.AIRSPY_R820T, 
-									"New Configuration" );
-				
-				mComboConfigurations.setModel( getModel() );
-				
-				mComboConfigurations.setSelectedItem( config );
-
-				repaint();
+//				TunerConfiguration config = 
+//						mSettingsManager.addNewTunerConfiguration( 
+//									TunerType.AIRSPY_R820T, 
+//									"New Configuration" );
+//				
+//				mComboConfigurations.setModel( getModel() );
+//				
+//				mComboConfigurations.setSelectedItem( config );
+//
+//				repaint();
             }
 		} );
 		
@@ -555,7 +555,7 @@ public class AirspyTunerConfigurationPanel extends JPanel
 
 					if( n == JOptionPane.YES_OPTION )
 					{
-						mSettingsManager.deleteTunerConfiguration( selected );
+//						mSettingsManager.deleteTunerConfiguration( selected );
 
 						mComboConfigurations.setModel( getModel() );
 						
@@ -631,8 +631,8 @@ public class AirspyTunerConfigurationPanel extends JPanel
         	mGainModeCombo.setSelectedItem( Gain.getGainMode( gain ) );
 	        mGain.setValue( gain.getValue() );
 	        
-	        mSettingsManager.setSelectedTunerConfiguration( 
-			TunerType.AIRSPY_R820T, mController.getDeviceInfo().getSerialNumber(), config );
+//	        mSettingsManager.setSelectedTunerConfiguration( 
+//			TunerType.AIRSPY_R820T, mController.getDeviceInfo().getSerialNumber(), config );
 	        
 	        save();
         }
@@ -656,16 +656,16 @@ public class AirspyTunerConfigurationPanel extends JPanel
      */
     private ComboBoxModel<AirspyTunerConfiguration> getModel()
     {
-    	ArrayList<TunerConfiguration> configs = 
-			mSettingsManager.getTunerConfigurations( TunerType.AIRSPY_R820T );
+//    	ArrayList<TunerConfiguration> configs = 
+//			mSettingsManager.getTunerConfigurations( TunerType.AIRSPY_R820T );
     	
     	DefaultComboBoxModel<AirspyTunerConfiguration> model = 
     			new DefaultComboBoxModel<AirspyTunerConfiguration>();
     	
-    	for( TunerConfiguration config: configs )
-    	{
-    		model.addElement( (AirspyTunerConfiguration)config );
-    	}
+//    	for( TunerConfiguration config: configs )
+//    	{
+//    		model.addElement( (AirspyTunerConfiguration)config );
+//    	}
     	
     	return model;
     }
@@ -675,16 +675,16 @@ public class AirspyTunerConfigurationPanel extends JPanel
      */
     private AirspyTunerConfiguration getNamedConfiguration( String name )
     {
-    	ArrayList<TunerConfiguration> configs = 
-    			mSettingsManager.getTunerConfigurations( TunerType.AIRSPY_R820T );
+//    	ArrayList<TunerConfiguration> configs = 
+//    			mSettingsManager.getTunerConfigurations( TunerType.AIRSPY_R820T );
     	
-    	for( TunerConfiguration config: configs )
-    	{
-    		if( config.getName().contentEquals( name ) )
-    		{
-    			return (AirspyTunerConfiguration)config;
-    		}
-    	}
+//    	for( TunerConfiguration config: configs )
+//    	{
+//    		if( config.getName().contentEquals( name ) )
+//    		{
+//    			return (AirspyTunerConfiguration)config;
+//    		}
+//    	}
 
     	return null;
     }

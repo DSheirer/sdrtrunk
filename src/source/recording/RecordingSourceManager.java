@@ -131,7 +131,7 @@ public class RecordingSourceManager
 
     private void loadRecordings()
     {
-		ArrayList<RecordingConfiguration> recordingConfigurations = 
+		List<RecordingConfiguration> recordingConfigurations = 
 				mSettingsManager.getRecordingConfigurations();
 
 		mLog.info( "RecordingSourceManager - discovered [" + 

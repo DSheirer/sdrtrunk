@@ -19,8 +19,8 @@ package source.tuner.rtl.r820t;
 
 import javax.xml.bind.annotation.XmlAttribute;
 
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
+import source.tuner.configuration.TunerConfiguration;
 import source.tuner.rtl.RTL2832TunerController.SampleRate;
 import source.tuner.rtl.r820t.R820TTunerController.R820TGain;
 import source.tuner.rtl.r820t.R820TTunerController.R820TLNAGain;

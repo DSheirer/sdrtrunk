@@ -28,10 +28,10 @@ import map.DefaultIcon;
 import map.MapIcon;
 import settings.ColorSetting.ColorSettingName;
 import source.recording.RecordingConfiguration;
-import source.tuner.TunerConfiguration;
-import source.tuner.TunerConfigurationAssignment;
 import source.tuner.TunerType;
 import source.tuner.airspy.AirspyTunerConfiguration;
+import source.tuner.configuration.TunerConfiguration;
+import source.tuner.configuration.TunerConfigurationAssignment;
 import source.tuner.fcd.proV1.FCD1TunerConfiguration;
 import source.tuner.fcd.proplusV2.FCD2TunerConfiguration;
 import source.tuner.hackrf.HackRFTunerConfiguration;
@@ -60,15 +60,15 @@ import source.tuner.rtl.r820t.R820TTunerConfiguration;
 @XmlRootElement( name = "SDRTrunk_settings" )
 public class Settings
 {
-	private ArrayList<Setting> mSettings = new ArrayList<Setting>();
+	private List<Setting> mSettings = new ArrayList<Setting>();
 
-	private ArrayList<TunerConfiguration> mTunerConfiguration =
+	private List<TunerConfiguration> mTunerConfiguration =
 			new ArrayList<TunerConfiguration>();
 	
-	private ArrayList<TunerConfigurationAssignment> mConfigurationAssignments =
+	private List<TunerConfigurationAssignment> mConfigurationAssignments =
 			new ArrayList<TunerConfigurationAssignment>();
 	
-	private ArrayList<RecordingConfiguration> mRecordingConfigurations =
+	private List<RecordingConfiguration> mRecordingConfigurations =
 			new ArrayList<RecordingConfiguration>();
 
 	public Settings()
@@ -76,7 +76,7 @@ public class Settings
 	}
 
 	@XmlElement( name="recording_configuration" )
-	public ArrayList<RecordingConfiguration> getRecordingConfigurations()
+	public List<RecordingConfiguration> getRecordingConfigurations()
 	{
 		return mRecordingConfigurations;
 	}
@@ -98,12 +98,12 @@ public class Settings
 	}
 	
 	@XmlElement( name="tuner_configuration" )
-	public ArrayList<TunerConfiguration> getTunerConfigurations()
+	public List<TunerConfiguration> getTunerConfigurations()
 	{
 		return mTunerConfiguration;
 	}
 	
-	public void setTunerConfigurations( ArrayList<TunerConfiguration> configs )
+	public void setTunerConfigurations( List<TunerConfiguration> configs )
 	{
 		mTunerConfiguration = configs;
 	}
@@ -136,7 +136,7 @@ public class Settings
 	}
     
 	@XmlElement( name="setting" )
-	public ArrayList<Setting> getSettings()
+	public List<Setting> getSettings()
 	{
 		return mSettings;
 	}
@@ -255,12 +255,12 @@ public class Settings
 	}
 
 	@XmlElement( name="tuner_configuration_assignment" )
-	public ArrayList<TunerConfigurationAssignment> getSelectedTunerConfiguration()
+	public List<TunerConfigurationAssignment> getSelectedTunerConfiguration()
 	{
 		return mConfigurationAssignments;
 	}
 	
-	public void setSelectedTunerConfiguration( ArrayList<TunerConfigurationAssignment> configs )
+	public void setSelectedTunerConfiguration( List<TunerConfigurationAssignment> configs )
 	{
 		mConfigurationAssignments = configs;
 	}

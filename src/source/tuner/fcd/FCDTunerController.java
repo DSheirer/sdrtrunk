@@ -36,9 +36,9 @@ import org.usb4java.LibUsbException;
 import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.TunerClass;
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerController;
 import source.tuner.TunerType;
+import source.tuner.configuration.TunerConfiguration;
 import source.tuner.fcd.proV1.FCD1TunerController.Block;
 
 public abstract class FCDTunerController extends TunerController

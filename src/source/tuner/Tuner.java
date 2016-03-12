@@ -31,6 +31,7 @@ import sample.Listener;
 import sample.complex.ComplexBuffer;
 import settings.SettingsManager;
 import source.SourceException;
+import source.tuner.configuration.TunerConfiguration;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeEvent.Event;
 import source.tuner.frequency.IFrequencyChangeProcessor;
@@ -55,7 +56,7 @@ public abstract class Tuner implements IFrequencyChangeProcessor,
 	protected List<IFrequencyChangeProcessor> mFrequencyChangeProcessors = 
 			new CopyOnWriteArrayList<>();
 
-	protected List<Listener<TunerChangeEvent>> mTunerChangeListeners =
+	protected List<Listener<TunerEvent>> mTunerChangeListeners =
 			new ArrayList<>();
 	
 	public Tuner( String name )
@@ -79,12 +80,6 @@ public abstract class Tuner implements IFrequencyChangeProcessor,
 		mName = name;
 	}
 	
-	/**
-	 * Return an editor panel for the tuner
-	 */
-	public abstract JPanel getEditor( SettingsManager settingsManager );
-
-
 	/**
 	 * Applies the settings from a saved tuner configuration setting object
 	 */
@@ -223,7 +218,7 @@ public abstract class Tuner implements IFrequencyChangeProcessor,
 	/**
 	 * Registers the listener
 	 */
-    public void addTunerChangeListener( Listener<TunerChangeEvent> listener )
+    public void addTunerChangeListener( Listener<TunerEvent> listener )
     {
 		mTunerChangeListeners.add( listener );
     }
@@ -231,7 +226,7 @@ public abstract class Tuner implements IFrequencyChangeProcessor,
 	/**
 	 * Removes the registered listener
 	 */
-    public void removeTunerChangeListener( Listener<TunerChangeEvent> listener )
+    public void removeTunerChangeListener( Listener<TunerEvent> listener )
     {
 	    mTunerChangeListeners.remove( listener );
     }
@@ -239,9 +234,9 @@ public abstract class Tuner implements IFrequencyChangeProcessor,
     /**
      * Broadcasts the tuner change event
      */
-    public void broadcast( TunerChangeEvent event )
+    public void broadcast( TunerEvent event )
     {
-    	for( Listener<TunerChangeEvent> listener: mTunerChangeListeners )
+    	for( Listener<TunerEvent> listener: mTunerChangeListeners )
     	{
     		listener.receive( event );
     	}
@@ -277,11 +272,11 @@ public abstract class Tuner implements IFrequencyChangeProcessor,
     	
     	if( event.getEvent() == Event.NOTIFICATION_FREQUENCY_CHANGE )
     	{
-        	broadcast( new TunerChangeEvent( this, TunerChangeEvent.Event.FREQUENCY ) );
+        	broadcast( new TunerEvent( this, TunerEvent.Event.FREQUENCY ) );
     	}
     	else if( event.getEvent() == Event.NOTIFICATION_SAMPLE_RATE_CHANGE )
     	{
-        	broadcast( new TunerChangeEvent( this, TunerChangeEvent.Event.SAMPLE_RATE ) );
+        	broadcast( new TunerEvent( this, TunerEvent.Event.SAMPLE_RATE ) );
     	}
     }
 

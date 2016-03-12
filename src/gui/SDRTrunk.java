@@ -54,11 +54,12 @@ import org.slf4j.LoggerFactory;
 import playlist.PlaylistManager;
 import properties.SystemProperties;
 import record.RecorderManager;
+import sample.Listener;
 import settings.SettingsManager;
 import source.SourceManager;
-import source.TunerModel;
-import source.tuner.Tuner;
-import source.tuner.TunerSelectionListener;
+import source.tuner.TunerEvent;
+import source.tuner.TunerModel;
+import source.tuner.configuration.TunerConfigurationModel;
 import spectrum.SpectralDisplayPanel;
 import util.TimeStamp;
 import alias.AliasModel;
@@ -67,7 +68,6 @@ import audio.AudioManager;
 
 import com.jidesoft.swing.JideSplitPane;
 
-import controller.ConfigurationControllerModel;
 import controller.ControllerPanel;
 import controller.ThreadPoolManager;
 import controller.ThreadPoolManager.ThreadType;
@@ -77,7 +77,7 @@ import controller.channel.ChannelProcessingManager;
 import controller.channel.ChannelSelectionManager;
 import controller.channel.map.ChannelMapModel;
 
-public class SDRTrunk
+public class SDRTrunk implements Listener<TunerEvent>
 {
 	private final static Logger mLog = LoggerFactory.getLogger( SDRTrunk.class );
 
@@ -115,7 +115,10 @@ public class SDRTrunk
 		//Log current properties setting
 		SystemProperties.getInstance().logCurrentSettings();
 		
-		mSettingsManager = new SettingsManager();
+		TunerConfigurationModel tunerConfigurationModel = new TunerConfigurationModel();
+		TunerModel tunerModel = new TunerModel( tunerConfigurationModel );
+		
+		mSettingsManager = new SettingsManager( tunerConfigurationModel );
 
 		ThreadPoolManager threadPoolManager = new ThreadPoolManager();
 		
@@ -129,12 +132,9 @@ public class SDRTrunk
 
 		RecorderManager recorderManager = new RecorderManager( threadPoolManager );
 		
-		SourceManager sourceManager = new SourceManager( mSettingsManager, 
-				threadPoolManager );
+		SourceManager sourceManager = new SourceManager( tunerModel, 
+				mSettingsManager,  threadPoolManager );
 		
-		TunerModel tunerModel = new TunerModel();
-		tunerModel.addTuners( sourceManager.getTunerManager().getTuners() );
-
 		ChannelProcessingManager channelProcessingManager = 
 			new ChannelProcessingManager( channelModel, channelMapModel, 
 				aliasModel, eventLogManager, recorderManager, 
@@ -156,18 +156,15 @@ public class SDRTrunk
 		MapService mapService = new MapService( mSettingsManager );
 		channelProcessingManager.addMessageListener( mapService );
 
-		ConfigurationControllerModel configurationControllerModel = 
-			new ConfigurationControllerModel( channelModel, channelProcessingManager, 
-					mSettingsManager, sourceManager );
-
-		mControllerPanel = new ControllerPanel( audioManager, configurationControllerModel, 
-			aliasModel, channelModel, channelMapModel, channelProcessingManager, 
+		mControllerPanel = new ControllerPanel( audioManager, aliasModel, 
+			channelModel, channelMapModel, channelProcessingManager, 
 			mapService, mSettingsManager, sourceManager, tunerModel );
 
-    	mSpectralPanel = new SpectralDisplayPanel( configurationControllerModel,
-			channelModel, channelProcessingManager,	mSettingsManager );
-
-		mTitle = getTitle();
+    	mSpectralPanel = new SpectralDisplayPanel( channelModel, 
+    			channelProcessingManager,	mSettingsManager );
+    	
+		tunerModel.addListener( mSpectralPanel.getTunerEventListener() );
+    	tunerModel.addListener( this );
 		
 		PlaylistManager playlistManager = new PlaylistManager( threadPoolManager, 
 				aliasModel, channelModel, channelMapModel );
@@ -186,6 +183,8 @@ public class SDRTrunk
 		
     	//Initialize the GUI
         initGUI();
+        
+    	tunerModel.requestFirstTunerDisplay();
 
         //Start the gui
         EventQueue.invokeLater( new Runnable()
@@ -221,36 +220,17 @@ public class SDRTrunk
     									   "[grow,fill]", 
     									   "[grow,fill]") );
     	
-    	//init() the controller to load tuners and playlists
-    	mControllerPanel.getController().init();
-
     	/**
     	 * Setup main JFrame window
     	 */
+		mTitle = getTitle();
     	mMainGui.setTitle( mTitle );
     	mMainGui.setBounds( 100, 100, 1280, 800 );
     	mMainGui.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
-    	
-    	mControllerPanel.getController().addListener( new TunerSelectionListener() 
-    	{
-			@Override
-            public void tunerSelected( Tuner tuner )
-            {
-				if( tuner != null )
-				{
-					mMainGui.setTitle( mTitle + " - " + tuner.getName() );
-				}
-				else
-				{
-			    	mMainGui.setTitle( mTitle );
-				}
-            }
-    	} );
 
-    	//Fire first tuner selection so it is displayed in the spectrum/waterfall
-    	mControllerPanel.getController().fireFirstTunerSelected();
-
-    	mSpectralPanel.setPreferredSize( new Dimension( 1280, 400 ) );
+    	//Set preferred sizes to influence the split
+    	mSpectralPanel.setPreferredSize( new Dimension( 1280, 300 ) );
+    	mControllerPanel.setPreferredSize( new Dimension( 1280, 500 ) );
     	
     	JideSplitPane splitPane = new JideSplitPane( JideSplitPane.VERTICAL_SPLIT );
     	splitPane.setDividerSize( 5 );
@@ -487,5 +467,13 @@ public class SDRTrunk
     	
     	return sb.toString();
     }
-    
+
+	@Override
+	public void receive( TunerEvent event )
+	{
+		if( event.getEvent() == TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY )
+		{
+			mMainGui.setTitle( mTitle + " - " + event.getTuner().getName() );
+		}
+	}
 }

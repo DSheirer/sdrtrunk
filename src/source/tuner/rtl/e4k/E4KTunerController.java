@@ -32,8 +32,8 @@ import org.usb4java.LibUsbException;
 
 import settings.SettingsManager;
 import source.SourceException;
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
+import source.tuner.configuration.TunerConfiguration;
 import source.tuner.rtl.RTL2832TunerController;
 import controller.ThreadPoolManager;
 

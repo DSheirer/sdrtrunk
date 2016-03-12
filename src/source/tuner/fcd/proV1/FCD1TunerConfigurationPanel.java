@@ -49,8 +49,8 @@ import org.slf4j.LoggerFactory;
 
 import settings.SettingsManager;
 import source.SourceException;
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
+import source.tuner.configuration.TunerConfiguration;
 import source.tuner.fcd.proV1.FCD1TunerController.LNAEnhance;
 import source.tuner.fcd.proV1.FCD1TunerController.LNAGain;
 import source.tuner.fcd.proV1.FCD1TunerController.MixerGain;
@@ -426,14 +426,14 @@ public class FCD1TunerConfigurationPanel extends JPanel
 			@Override
             public void actionPerformed( ActionEvent e )
             {
-				TunerConfiguration config = 
-						mSettingsManager.addNewTunerConfiguration( 
-									TunerType.FUNCUBE_DONGLE_PRO, 
-									"New Configuration" );
+//				TunerConfiguration config = 
+//						mSettingsManager.addNewTunerConfiguration( 
+//									TunerType.FUNCUBE_DONGLE_PRO, 
+//									"New Configuration" );
 				
 				mComboConfigurations.setModel( getModel() );
 				
-				mComboConfigurations.setSelectedItem( config );
+//				mComboConfigurations.setSelectedItem( config );
 
 				repaint();
             }
@@ -470,7 +470,7 @@ public class FCD1TunerConfigurationPanel extends JPanel
 
 					if( n == JOptionPane.YES_OPTION )
 					{
-						mSettingsManager.deleteTunerConfiguration( selected );
+//						mSettingsManager.deleteTunerConfiguration( selected );
 
 						mComboConfigurations.setModel( getModel() );
 						
@@ -505,9 +505,9 @@ public class FCD1TunerConfigurationPanel extends JPanel
 	        mCorrectionGain.setValue( config.getGainCorrection() );
 	        mCorrectionPhase.setValue( config.getPhaseCorrection() );
 	        
-	        mSettingsManager.setSelectedTunerConfiguration( 
-	        			TunerType.FUNCUBE_DONGLE_PRO, 
-	        			mController.getUSBAddress(), config );
+//	        mSettingsManager.setSelectedTunerConfiguration( 
+//	        			TunerType.FUNCUBE_DONGLE_PRO, 
+//	        			mController.getUSBAddress(), config );
         }
         catch ( SourceException e1 )
         {
@@ -524,16 +524,16 @@ public class FCD1TunerConfigurationPanel extends JPanel
     
     private ComboBoxModel<FCD1TunerConfiguration> getModel()
     {
-    	ArrayList<TunerConfiguration> configs = 
-    			mSettingsManager.getTunerConfigurations( TunerType.FUNCUBE_DONGLE_PRO );
+//    	ArrayList<TunerConfiguration> configs = 
+//    			mSettingsManager.getTunerConfigurations( TunerType.FUNCUBE_DONGLE_PRO );
     	
     	DefaultComboBoxModel<FCD1TunerConfiguration> model = 
     			new DefaultComboBoxModel<FCD1TunerConfiguration>();
     	
-    	for( TunerConfiguration config: configs )
-    	{
-    		model.addElement( (FCD1TunerConfiguration)config );
-    	}
+//    	for( TunerConfiguration config: configs )
+//    	{
+//    		model.addElement( (FCD1TunerConfiguration)config );
+//    	}
     	
     	return model;
     }
@@ -541,16 +541,16 @@ public class FCD1TunerConfigurationPanel extends JPanel
     @SuppressWarnings( "unused" )
     private FCD1TunerConfiguration getNamedConfiguration( String name )
     {
-    	ArrayList<TunerConfiguration> configs = 
-    			mSettingsManager.getTunerConfigurations( TunerType.FUNCUBE_DONGLE_PRO );
+//    	ArrayList<TunerConfiguration> configs = 
+//    			mSettingsManager.getTunerConfigurations( TunerType.FUNCUBE_DONGLE_PRO );
     	
-    	for( TunerConfiguration config: configs )
-    	{
-    		if( config.getName().contentEquals( name ) )
-    		{
-    			return (FCD1TunerConfiguration)config;
-    		}
-    	}
+//    	for( TunerConfiguration config: configs )
+//    	{
+//    		if( config.getName().contentEquals( name ) )
+//    		{
+//    			return (FCD1TunerConfiguration)config;
+//    		}
+//    	}
 
     	return null;
     }

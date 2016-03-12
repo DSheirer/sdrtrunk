@@ -30,8 +30,8 @@ import source.tuner.Tuner;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannelSource;
 import source.tuner.TunerClass;
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
+import source.tuner.configuration.TunerConfiguration;
 import source.tuner.usb.USBTunerDevice;
 import controller.ThreadPoolManager;
 
@@ -66,12 +66,6 @@ public class B100Tuner extends Tuner
     public TunerType getTunerType()
     {
 	    return TunerType.ETTUS_WBX;
-    }
-
-	@Override
-    public JPanel getEditor( SettingsManager settingsManager )
-    {
-	    return new B100TunerEditorPanel( this, settingsManager );
     }
 
 	@Override

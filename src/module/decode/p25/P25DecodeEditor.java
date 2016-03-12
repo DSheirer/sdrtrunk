@@ -33,7 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import source.SourceEditor;
-import source.tuner.TunerEditor;
+import source.tuner.TunerEditorOld;
 import controller.channel.ChannelConfigurationEditor;
 import controller.channel.ConfigurationValidationException;
 

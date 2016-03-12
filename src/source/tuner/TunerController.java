@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import source.SourceException;
+import source.tuner.configuration.TunerConfiguration;
 import source.tuner.frequency.FrequencyController;
 import source.tuner.frequency.FrequencyController.Tunable;
 import source.tuner.frequency.IFrequencyChangeProcessor;

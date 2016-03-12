@@ -19,8 +19,8 @@ package source.tuner.fcd.proplusV2;
 
 import javax.xml.bind.annotation.XmlAttribute;
 
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
+import source.tuner.configuration.TunerConfiguration;
 
 public class FCD2TunerConfiguration extends TunerConfiguration
 {

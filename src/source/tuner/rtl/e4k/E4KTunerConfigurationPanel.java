@@ -50,9 +50,9 @@ import org.usb4java.LibUsbException;
 
 import settings.SettingsManager;
 import source.SourceException;
-import source.tuner.TunerConfiguration;
-import source.tuner.TunerConfigurationAssignment;
 import source.tuner.TunerType;
+import source.tuner.configuration.TunerConfiguration;
+import source.tuner.configuration.TunerConfigurationAssignment;
 import source.tuner.rtl.RTL2832TunerController.SampleRate;
 import source.tuner.rtl.e4k.E4KTunerController.E4KEnhanceGain;
 import source.tuner.rtl.e4k.E4KTunerController.E4KGain;
@@ -108,15 +108,15 @@ public class E4KTunerConfigurationPanel extends JPanel
         mComboConfigurations.setModel( getModel() );
 
         /* Determine which tuner configuration should be selected/displayed */
-        TunerConfigurationAssignment savedConfig = mSettingsManager
-        		.getSelectedTunerConfiguration( 
-        				TunerType.ELONICS_E4000, mController.getUniqueID() );
-        
-        if( savedConfig != null )
-        {
-        	mSelectedConfig = getNamedConfiguration( 
-        			savedConfig.getTunerConfigurationName() );
-        }
+//        TunerConfigurationAssignment savedConfig = mSettingsManager
+//        		.getSelectedTunerConfiguration( 
+//        				TunerType.ELONICS_E4000, mController.getUniqueID() );
+//        
+//        if( savedConfig != null )
+//        {
+//        	mSelectedConfig = getNamedConfiguration( 
+//        			savedConfig.getTunerConfigurationName() );
+//        }
 
         /* If we couldn't determine the saved/selected config, use the first one */
         if( mSelectedConfig == null )
@@ -124,10 +124,10 @@ public class E4KTunerConfigurationPanel extends JPanel
         	mSelectedConfig = mComboConfigurations.getItemAt( 0 );
 
         	//Store this config as the default for this tuner at this address
-        	mSettingsManager
-        		.setSelectedTunerConfiguration( 
-        				TunerType.ELONICS_E4000, 
-        				mController.getUniqueID(), mSelectedConfig );
+//        	mSettingsManager
+//        		.setSelectedTunerConfiguration( 
+//        				TunerType.ELONICS_E4000, 
+//        				mController.getUniqueID(), mSelectedConfig );
         }
 
         mComboConfigurations.setSelectedItem( mSelectedConfig );
@@ -168,10 +168,10 @@ public class E4KTunerConfigurationPanel extends JPanel
 
 				/* Reset this named config as the assigned config for this
 				 * tuner */
-	        	mSettingsManager
-        		.setSelectedTunerConfiguration( 
-        				TunerType.ELONICS_E4000, 
-        				mController.getUniqueID(), mSelectedConfig );
+//	        	mSettingsManager
+//        		.setSelectedTunerConfiguration( 
+//        				TunerType.ELONICS_E4000, 
+//        				mController.getUniqueID(), mSelectedConfig );
 				
 				save();
             }
@@ -541,15 +541,15 @@ public class E4KTunerConfigurationPanel extends JPanel
 			@Override
             public void actionPerformed( ActionEvent e )
             {
-				TunerConfiguration config = 
-						mSettingsManager
-							.addNewTunerConfiguration( 
-									TunerType.ELONICS_E4000, 
-									"New Configuration" );
+//				TunerConfiguration config = 
+//						mSettingsManager
+//							.addNewTunerConfiguration( 
+//									TunerType.ELONICS_E4000, 
+//									"New Configuration" );
 				
 				mComboConfigurations.setModel( getModel() );
 				
-				mComboConfigurations.setSelectedItem( config );
+//				mComboConfigurations.setSelectedItem( config );
 
 				repaint();
             }
@@ -582,8 +582,8 @@ public class E4KTunerConfigurationPanel extends JPanel
 
 					if( n == JOptionPane.YES_OPTION )
 					{
-						mSettingsManager
-							.deleteTunerConfiguration( selected );
+//						mSettingsManager
+//							.deleteTunerConfiguration( selected );
 
 						mComboConfigurations.setModel( getModel() );
 						
@@ -623,8 +623,8 @@ public class E4KTunerConfigurationPanel extends JPanel
 
 	        mComboSampleRate.setSelectedItem( mSelectedConfig.getSampleRate() );
 
-	        mSettingsManager.setSelectedTunerConfiguration( 
-    			TunerType.ELONICS_E4000, mController.getUniqueID(), config );
+//	        mSettingsManager.setSelectedTunerConfiguration( 
+//    			TunerType.ELONICS_E4000, mController.getUniqueID(), config );
         }
         catch ( SourceException e1 )
         {
@@ -646,17 +646,17 @@ public class E4KTunerConfigurationPanel extends JPanel
      */
     private ComboBoxModel<E4KTunerConfiguration> getModel()
     {
-    	ArrayList<TunerConfiguration> configs = 
-    			mSettingsManager
-    			.getTunerConfigurations( TunerType.ELONICS_E4000 );
+//    	ArrayList<TunerConfiguration> configs = 
+//    			mSettingsManager
+//    			.getTunerConfigurations( TunerType.ELONICS_E4000 );
     	
     	DefaultComboBoxModel<E4KTunerConfiguration> model = 
     			new DefaultComboBoxModel<E4KTunerConfiguration>();
     	
-    	for( TunerConfiguration config: configs )
-    	{
-    		model.addElement( (E4KTunerConfiguration)config );
-    	}
+//    	for( TunerConfiguration config: configs )
+//    	{
+//    		model.addElement( (E4KTunerConfiguration)config );
+//    	}
     	
     	return model;
     }
@@ -666,17 +666,17 @@ public class E4KTunerConfigurationPanel extends JPanel
      */
     private E4KTunerConfiguration getNamedConfiguration( String name )
     {
-    	ArrayList<TunerConfiguration> configs = 
-    			mSettingsManager
-    			.getTunerConfigurations( TunerType.ELONICS_E4000 );
-    	
-    	for( TunerConfiguration config: configs )
-    	{
-    		if( config.getName().contentEquals( name ) )
-    		{
-    			return (E4KTunerConfiguration)config;
-    		}
-    	}
+//    	ArrayList<TunerConfiguration> configs = 
+//    			mSettingsManager
+//    			.getTunerConfigurations( TunerType.ELONICS_E4000 );
+//    	
+//    	for( TunerConfiguration config: configs )
+//    	{
+//    		if( config.getName().contentEquals( name ) )
+//    		{
+//    			return (E4KTunerConfiguration)config;
+//    		}
+//    	}
 
     	return null;
     }

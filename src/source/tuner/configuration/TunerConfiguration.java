@@ -15,21 +15,53 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package source.tuner;
+package source.tuner.configuration;
 
-import controller.BaseNode;
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlType;
 
-public class TunerGroupNode extends BaseNode
+import source.tuner.TunerType;
+
+/**
+ * Abstract class to hold a named configuration for a specific type of tuner
+ */
+@XmlType( name = "tuner_configuration" )
+public abstract class TunerConfiguration
 {
-    private static final long serialVersionUID = 1L;
+	protected String mName;
 
-    public TunerGroupNode()
+	/**
+	 * Default constructor to support JAXB
+	 */
+	public TunerConfiguration()
 	{
-        super( null );
+		this( "Unknown" );
 	}
-    
-    public String toString()
-    {
-    	return "Tuners [" + this.getChildCount() + "]";
-    }
+	
+	public String toString()
+	{
+		return mName;
+	}
+
+	/**
+	 * Normal constructor
+	 */
+	public TunerConfiguration( String name )
+	{
+		mName = name;
+	}
+	
+	@XmlAttribute( name = "name" )
+	public String getName()
+	{
+		return mName;
+	}
+	
+	public void setName( String name )
+	{
+		mName = name;
+	}
+	
+	@XmlAttribute( name = "tuner_type" )
+	public abstract TunerType getTunerType();
 }

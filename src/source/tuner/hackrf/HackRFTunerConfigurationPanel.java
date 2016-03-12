@@ -50,9 +50,9 @@ import org.slf4j.LoggerFactory;
 
 import settings.SettingsManager;
 import source.SourceException;
-import source.tuner.TunerConfiguration;
-import source.tuner.TunerConfigurationAssignment;
 import source.tuner.TunerType;
+import source.tuner.configuration.TunerConfiguration;
+import source.tuner.configuration.TunerConfigurationAssignment;
 import source.tuner.hackrf.HackRFTunerController.HackRFLNAGain;
 import source.tuner.hackrf.HackRFTunerController.HackRFSampleRate;
 import source.tuner.hackrf.HackRFTunerController.HackRFVGAGain;
@@ -117,11 +117,11 @@ public class HackRFTunerConfigurationPanel extends JPanel
         	mLog.error( "couldn't read hackrf serial number", e2 );
         }
         
-        if( serial != null )
-        {
-            savedConfig = mSettingsManager.getSelectedTunerConfiguration( 
-    				TunerType.HACKRF, serial );
-        }
+//        if( serial != null )
+//        {
+//            savedConfig = mSettingsManager.getSelectedTunerConfiguration( 
+//    				TunerType.HACKRF, serial );
+//        }
         
         if( savedConfig != null )
         {
@@ -136,12 +136,12 @@ public class HackRFTunerConfigurationPanel extends JPanel
 
         	//Store this config as the default for this tuner at this address
         	
-        	if( serial != null )
-        	{
-            	mSettingsManager
-        		.setSelectedTunerConfiguration( TunerType.HACKRF, 
-    				serial, mSelectedConfig );
-        	}
+//        	if( serial != null )
+//        	{
+//            	mSettingsManager
+//        		.setSelectedTunerConfiguration( TunerType.HACKRF, 
+//    				serial, mSelectedConfig );
+//        	}
         }
 
         mComboConfigurations.setSelectedItem( mSelectedConfig );
@@ -416,15 +416,15 @@ public class HackRFTunerConfigurationPanel extends JPanel
 			@Override
             public void actionPerformed( ActionEvent e )
             {
-				TunerConfiguration config = 
-						mSettingsManager
-							.addNewTunerConfiguration( 
-									TunerType.HACKRF, 
-									"New Configuration" );
+//				TunerConfiguration config = 
+//						mSettingsManager
+//							.addNewTunerConfiguration( 
+//									TunerType.HACKRF, 
+//									"New Configuration" );
 				
 				mComboConfigurations.setModel( getModel() );
 				
-				mComboConfigurations.setSelectedItem( config );
+//				mComboConfigurations.setSelectedItem( config );
 
 				repaint();
             }
@@ -457,8 +457,8 @@ public class HackRFTunerConfigurationPanel extends JPanel
 
 					if( n == JOptionPane.YES_OPTION )
 					{
-						mSettingsManager
-							.deleteTunerConfiguration( selected );
+//						mSettingsManager
+//							.deleteTunerConfiguration( selected );
 
 						mComboConfigurations.setModel( getModel() );
 						
@@ -493,10 +493,10 @@ public class HackRFTunerConfigurationPanel extends JPanel
 
 	        mComboSampleRate.setSelectedItem( mSelectedConfig.getSampleRate() );
 
-	        mSettingsManager.setSelectedTunerConfiguration( 
-			TunerType.HACKRF, mController.getSerial().getSerialNumber(), config );
+//	        mSettingsManager.setSelectedTunerConfiguration( 
+//			TunerType.HACKRF, mController.getSerial().getSerialNumber(), config );
         }
-        catch ( UsbException | SourceException e1 )
+        catch ( SourceException e1 )
         {
         	JOptionPane.showMessageDialog( 
         			HackRFTunerConfigurationPanel.this, 
@@ -516,17 +516,17 @@ public class HackRFTunerConfigurationPanel extends JPanel
      */
     private ComboBoxModel<HackRFTunerConfiguration> getModel()
     {
-    	ArrayList<TunerConfiguration> configs = 
-    			mSettingsManager
-    			.getTunerConfigurations( TunerType.HACKRF );
+//    	ArrayList<TunerConfiguration> configs = 
+//    			mSettingsManager
+//    			.getTunerConfigurations( TunerType.HACKRF );
     	
     	DefaultComboBoxModel<HackRFTunerConfiguration> model = 
     			new DefaultComboBoxModel<HackRFTunerConfiguration>();
     	
-    	for( TunerConfiguration config: configs )
-    	{
-    		model.addElement( (HackRFTunerConfiguration)config );
-    	}
+//    	for( TunerConfiguration config: configs )
+//    	{
+//    		model.addElement( (HackRFTunerConfiguration)config );
+//    	}
     	
     	return model;
     }
@@ -536,17 +536,17 @@ public class HackRFTunerConfigurationPanel extends JPanel
      */
     private HackRFTunerConfiguration getNamedConfiguration( String name )
     {
-    	ArrayList<TunerConfiguration> configs = 
-    			mSettingsManager
-    			.getTunerConfigurations( TunerType.HACKRF );
+//    	ArrayList<TunerConfiguration> configs = 
+//    			mSettingsManager
+//    			.getTunerConfigurations( TunerType.HACKRF );
     	
-    	for( TunerConfiguration config: configs )
-    	{
-    		if( config.getName().contentEquals( name ) )
-    		{
-    			return (HackRFTunerConfiguration)config;
-    		}
-    	}
+//    	for( TunerConfiguration config: configs )
+//    	{
+//    		if( config.getName().contentEquals( name ) )
+//    		{
+//    			return (HackRFTunerConfiguration)config;
+//    		}
+//    	}
 
     	return null;
     }

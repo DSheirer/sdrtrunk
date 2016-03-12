@@ -26,7 +26,6 @@ import javax.swing.JFrame;
 import net.miginfocom.swing.MigLayout;
 import settings.SettingsManager;
 import source.tuner.Tuner;
-import controller.ConfigurationControllerModel;
 import controller.channel.ChannelModel;
 import controller.channel.ChannelProcessingManager;
 
@@ -36,8 +35,7 @@ public class SpectrumFrame extends JFrame implements WindowListener
 
     private SpectralDisplayPanel mSpectralDisplayPanel;
 	
-	public SpectrumFrame( ConfigurationControllerModel controllerModel,
-						  ChannelModel channelModel,
+	public SpectrumFrame( ChannelModel channelModel,
 						  ChannelProcessingManager channelProcessingManager,
 						  SettingsManager settingsManager,
 						  Tuner tuner )
@@ -48,10 +46,10 @@ public class SpectrumFrame extends JFrame implements WindowListener
 
     	setLayout( new MigLayout( "insets 0 0 0 0", "[grow]", "[grow]") );
     	
-		mSpectralDisplayPanel = new SpectralDisplayPanel( controllerModel, 
-			channelModel, channelProcessingManager, settingsManager );
-		
-		mSpectralDisplayPanel.tunerSelected( tuner );
+		mSpectralDisplayPanel = new SpectralDisplayPanel( channelModel, 
+				channelProcessingManager, settingsManager );
+
+		mSpectralDisplayPanel.showTuner( tuner );
 		add( mSpectralDisplayPanel, "grow" );
 
 		/* Register a shutdown listener */

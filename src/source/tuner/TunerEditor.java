@@ -1,75 +1,168 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
- * 
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- * 
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- * 
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
 package source.tuner;
 
-import controller.channel.Channel;
-import controller.channel.ConfigurationValidationException;
 import gui.control.JFrequencyControl;
-import source.SourceEditor;
-import source.SourceManager;
-import source.config.SourceConfigTuner;
-import source.config.SourceConfiguration;
+import gui.editor.Editor;
+import gui.editor.EmptyEditor;
 
-public class TunerEditor extends SourceEditor
+import java.awt.Dimension;
+
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.RowFilter;
+import javax.swing.table.TableRowSorter;
+
+import net.miginfocom.swing.MigLayout;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import source.tuner.configuration.TunerConfiguration;
+import source.tuner.configuration.TunerConfigurationModel;
+
+import com.jidesoft.swing.JideSplitPane;
+
+public class TunerEditor extends Editor<Tuner>
 {
-    private static final long serialVersionUID = 1L;
-    private JFrequencyControl mFrequencyControl;
-    
-	public TunerEditor( SourceManager sourceManager, 
-						SourceConfiguration config )
-	{
-		super( sourceManager, config );
-		
-		initGUI();
-	}
+	private static final long serialVersionUID = 1L;
 
-	public void reset()
+	private final static Logger mLog = LoggerFactory.getLogger( TunerEditor.class );
+
+	private TunerConfigurationModel mTunerConfigurationModel;
+	private JTable mTunerConfigurationTable;
+	private TableRowSorter<TunerConfigurationModel> mRowSorter;
+	private ConfigurationRowFilter mRowFilter = new ConfigurationRowFilter();
+	private JFrequencyControl mFrequencyControl = new JFrequencyControl();
+	
+	public TunerEditor( TunerConfigurationModel tunerConfigurationModel )
 	{
-		mFrequencyControl.setFrequency( 
-				((SourceConfigTuner)mConfig).getFrequency(), false );
+		mTunerConfigurationModel = tunerConfigurationModel;
+		init();
 	}
 	
+	public void init()
+	{
+		setLayout( new MigLayout( "insets 0 0 0 0", "[grow,fill]", "[grow,fill]" ) );
+
+		JPanel listPanel = new JPanel();
+		listPanel.setLayout( new MigLayout( "fill,wrap 1", 
+				"[grow,fill]", "[][][grow,fill][]" ) );
+		listPanel.add( mFrequencyControl );
+
+//        mFrequencyControl.addListener( this );
+//        /* Add frequency control as frequency change listener. */
+//        mController.addListener( mFrequencyControl );
+//        mFrequencyControl.setFrequency( mController.getFrequency(), false );
+
+		mTunerConfigurationTable = new JTable( mTunerConfigurationModel );
+		mRowSorter = new TableRowSorter<>( mTunerConfigurationModel );
+		mRowSorter.setRowFilter( mRowFilter );
+		mTunerConfigurationTable.setRowSorter( mRowSorter );
+
+		listPanel.add( new JLabel( "Tuner Configurations" ) );
+		listPanel.add( mTunerConfigurationTable );
+
+		JPanel buttonPanel = new JPanel();
+		buttonPanel.setLayout( new MigLayout( "insets 0 0 0 0", 
+				"[grow,fill][grow,fill]", "[grow,fill]" ) );
+		
+		JButton newButton = new JButton( "New" );
+		buttonPanel.add( newButton );
+		
+		JButton deleteButton = new JButton( "Delete" );
+		buttonPanel.add( deleteButton );
+		
+		listPanel.add( buttonPanel );
+
+		//Set preferred size on both scrollers to same width, so they split the space
+		JScrollPane listScroller = new JScrollPane( listPanel );
+		listScroller.setPreferredSize( new Dimension( 200, 80 ) );
+		
+		JPanel editorPanel = new EmptyEditor<TunerConfiguration>();
+		JScrollPane editorScroller = new JScrollPane( editorPanel );
+		editorScroller.setPreferredSize( new Dimension( 200, 80 ) );
+
+		JideSplitPane splitPane = 
+				new JideSplitPane( JideSplitPane.HORIZONTAL_SPLIT );
+		splitPane.add( listScroller );
+		splitPane.add( editorScroller );
+
+		add( splitPane );
+	}
+	
+	@Override
 	public void save()
 	{
-		((SourceConfigTuner)mConfig).setFrequency( mFrequencyControl.getFrequency() );
+	}
+
+	@Override
+	public void setItem( Tuner tuner )
+	{
+		super.setItem( tuner );
+		
+		if( hasItem() )
+		{
+			mRowFilter.setTunerType( tuner.getTunerType() );
+
+			TunerConfiguration assigned = mTunerConfigurationModel
+				.getTunerConfiguration( tuner.getTunerType(), tuner.getUniqueID() );
+
+			int modelIndex = mTunerConfigurationModel.getRowIndex( assigned );
+			
+			if( modelIndex >= 0 )
+			{
+				int viewIndex = mTunerConfigurationTable.convertRowIndexToView( modelIndex );
+				
+				if( viewIndex >= 0 )
+				{
+					mTunerConfigurationTable.setRowSelectionInterval( viewIndex, viewIndex );
+				}
+			}
+		}
+		else
+		{
+			mRowFilter.setTunerType( null );
+		}
+		
+		mRowSorter.setRowFilter( mRowFilter );
 	}
 	
-	private void initGUI()
+	public class ConfigurationRowFilter extends RowFilter<TunerConfigurationModel,Integer>
 	{
-		mFrequencyControl = new JFrequencyControl();
+		private TunerType mTunerType;
 		
-		mFrequencyControl.setFrequency( 
-				((SourceConfigTuner)mConfig).getFrequency(), false );
+		public ConfigurationRowFilter()
+		{
+		}
 		
-		add( mFrequencyControl );
+		public void setTunerType( TunerType type )
+		{
+			mTunerType = type;
+		}
+		
+		@Override
+		public boolean include( javax.swing.RowFilter.Entry<? extends TunerConfigurationModel, 
+								? extends Integer> entry )
+		{
+			if( mTunerType == null )
+			{
+				return true;
+			}
+			else
+			{
+				TunerConfigurationModel model = entry.getModel();
+				TunerConfiguration config = model.getTunerConfiguration( entry.getIdentifier() );
+				
+				if( config != null )
+				{
+					return config.getTunerType() == mTunerType;
+				}
+			}
+			
+			return false;
+		}
 	}
-
-	@Override
-	public void setConfiguration( Channel channel )
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void validateConfiguration() throws ConfigurationValidationException
-	{
-		// TODO Auto-generated method stub
-		
-	}
+	
 }

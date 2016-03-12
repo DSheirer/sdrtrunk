@@ -50,21 +50,22 @@ import org.usb4java.LibUsbException;
 
 import settings.SettingsManager;
 import source.SourceException;
-import source.tuner.TunerConfiguration;
-import source.tuner.TunerConfigurationAssignment;
 import source.tuner.TunerType;
+import source.tuner.configuration.TunerConfiguration;
+import source.tuner.configuration.TunerConfigurationAssignment;
 import source.tuner.rtl.RTL2832TunerController.SampleRate;
 import source.tuner.rtl.r820t.R820TTunerController.R820TGain;
 import source.tuner.rtl.r820t.R820TTunerController.R820TLNAGain;
 import source.tuner.rtl.r820t.R820TTunerController.R820TMixerGain;
 import source.tuner.rtl.r820t.R820TTunerController.R820TVGAGain;
 
-public class R820TTunerConfigurationPanel extends JPanel
+public class R820TTunerConfigurationEditorOld extends JPanel
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( R820TTunerConfigurationPanel.class );
-
 	private static final long serialVersionUID = 1L;
+	
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( R820TTunerConfigurationEditorOld.class );
+
     private static final R820TGain DEFAULT_GAIN = R820TGain.GAIN_279;
     
     private SettingsManager mSettingsManager;
@@ -86,7 +87,7 @@ public class R820TTunerConfigurationPanel extends JPanel
     
     private JComboBox<SampleRate> mComboSampleRate;
     
-    public R820TTunerConfigurationPanel( SettingsManager settingsManager,
+    public R820TTunerConfigurationEditorOld( SettingsManager settingsManager,
     								  	 R820TTunerController controller )
     {
     	mSettingsManager = settingsManager;
@@ -110,27 +111,27 @@ public class R820TTunerConfigurationPanel extends JPanel
         mComboConfigurations.setModel( getModel() );
 
         /* Determine which tuner configuration should be selected/displayed */
-        TunerConfigurationAssignment savedConfig = mSettingsManager
-        		.getSelectedTunerConfiguration( 
-        				TunerType.RAFAELMICRO_R820T, mController.getUniqueID() );
-        
-        if( savedConfig != null )
-        {
-        	mSelectedConfig = getNamedConfiguration( 
-        			savedConfig.getTunerConfigurationName() );
-        }
+//        TunerConfigurationAssignment savedConfig = mSettingsManager
+//        		.getSelectedTunerConfiguration( 
+//        				TunerType.RAFAELMICRO_R820T, mController.getUniqueID() );
+//        
+//        if( savedConfig != null )
+//        {
+//        	mSelectedConfig = getNamedConfiguration( 
+//        			savedConfig.getTunerConfigurationName() );
+//        }
 
         /* If we couldn't determine the saved/selected config, use the first one */
-        if( mSelectedConfig == null )
-        {
-        	mSelectedConfig = mComboConfigurations.getItemAt( 0 );
-
-        	//Store this config as the default for this tuner at this address
-        	mSettingsManager
-        		.setSelectedTunerConfiguration( 
-        				TunerType.RAFAELMICRO_R820T, 
-        				mController.getUniqueID(), mSelectedConfig );
-        }
+//        if( mSelectedConfig == null )
+//        {
+//        	mSelectedConfig = mComboConfigurations.getItemAt( 0 );
+//
+//        	//Store this config as the default for this tuner at this address
+//        	mSettingsManager
+//        		.setSelectedTunerConfiguration( 
+//        				TunerType.RAFAELMICRO_R820T, 
+//        				mController.getUniqueID(), mSelectedConfig );
+//        }
 
         mComboConfigurations.setSelectedItem( mSelectedConfig );
 
@@ -217,7 +218,7 @@ public class R820TTunerConfigurationPanel extends JPanel
 		                catch ( SourceException e1 )
 		                {
 		                	JOptionPane.showMessageDialog( 
-		                			R820TTunerConfigurationPanel.this, 
+		                			R820TTunerConfigurationEditorOld.this, 
 		                			"R820T Tuner Controller - couldn't apply "
 		                			+ "frequency correction value: " + value + 
 		                					e1.getLocalizedMessage() );  
@@ -256,7 +257,7 @@ public class R820TTunerConfigurationPanel extends JPanel
                 catch ( SourceException | LibUsbException eSampleRate )
                 {
                 	JOptionPane.showMessageDialog( 
-                			R820TTunerConfigurationPanel.this, 
+                			R820TTunerConfigurationEditorOld.this, 
                 			"R820T Tuner Controller - couldn't apply the sample "
                 			+ "rate setting [" + sampleRate.getLabel() + "] " + 
                 					eSampleRate.getLocalizedMessage() );  
@@ -380,7 +381,7 @@ public class R820TTunerConfigurationPanel extends JPanel
                 catch ( UsbException e )
                 {
                 	JOptionPane.showMessageDialog( 
-                			R820TTunerConfigurationPanel.this, 
+                			R820TTunerConfigurationEditorOld.this, 
                 			"R820T Tuner Controller - couldn't apply the gain "
                 			+ "setting - " + e.getLocalizedMessage() );  
                 	
@@ -431,7 +432,7 @@ public class R820TTunerConfigurationPanel extends JPanel
 		                catch ( UsbException e )
 		                {
 		                	JOptionPane.showMessageDialog( 
-		                			R820TTunerConfigurationPanel.this, 
+		                			R820TTunerConfigurationEditorOld.this, 
 		                			"R820T Tuner Controller - couldn't apply the mixer "
 		                			+ "gain setting - " + e.getLocalizedMessage() );  
 		                	
@@ -477,7 +478,7 @@ public class R820TTunerConfigurationPanel extends JPanel
                 catch ( UsbException e )
                 {
                 	JOptionPane.showMessageDialog( 
-                			R820TTunerConfigurationPanel.this, 
+                			R820TTunerConfigurationEditorOld.this, 
                 			"R820T Tuner Controller - couldn't apply the LNA "
                 			+ "gain setting - " + e.getLocalizedMessage() );  
                 	
@@ -521,7 +522,7 @@ public class R820TTunerConfigurationPanel extends JPanel
                 catch ( UsbException e )
                 {
                 	JOptionPane.showMessageDialog( 
-                			R820TTunerConfigurationPanel.this, 
+                			R820TTunerConfigurationEditorOld.this, 
                 			"R820T Tuner Controller - couldn't apply the VGA "
                 			+ "gain setting - " + e.getLocalizedMessage() );  
                 	
@@ -548,17 +549,17 @@ public class R820TTunerConfigurationPanel extends JPanel
 			@Override
             public void actionPerformed( ActionEvent e )
             {
-				TunerConfiguration config = 
-						mSettingsManager
-							.addNewTunerConfiguration( 
-									TunerType.RAFAELMICRO_R820T, 
-									"New Configuration" );
-				
-				mComboConfigurations.setModel( getModel() );
-				
-				mComboConfigurations.setSelectedItem( config );
-
-				repaint();
+//				TunerConfiguration config = 
+//						mSettingsManager
+//							.addNewTunerConfiguration( 
+//									TunerType.RAFAELMICRO_R820T, 
+//									"New Configuration" );
+//				
+//				mComboConfigurations.setModel( getModel() );
+//				
+//				mComboConfigurations.setSelectedItem( config );
+//
+//				repaint();
             }
 		} );
 		
@@ -581,7 +582,7 @@ public class R820TTunerConfigurationPanel extends JPanel
 				if( selected != null )
 				{
 					int n = JOptionPane.showConfirmDialog(
-						    R820TTunerConfigurationPanel.this,
+						    R820TTunerConfigurationEditorOld.this,
 						    "Are you sure you want to delete '"
 					    		+ selected.getName() + "'?",
 						    "Are you sure?",
@@ -589,8 +590,8 @@ public class R820TTunerConfigurationPanel extends JPanel
 
 					if( n == JOptionPane.YES_OPTION )
 					{
-						mSettingsManager
-							.deleteTunerConfiguration( selected );
+//						mSettingsManager
+//							.deleteTunerConfiguration( selected );
 
 						mComboConfigurations.setModel( getModel() );
 						
@@ -630,13 +631,13 @@ public class R820TTunerConfigurationPanel extends JPanel
 
 	        mComboSampleRate.setSelectedItem( mSelectedConfig.getSampleRate() );
 
-	        mSettingsManager.setSelectedTunerConfiguration( 
-    			TunerType.RAFAELMICRO_R820T, mController.getUniqueID(), config );
+//	        mSettingsManager.setSelectedTunerConfiguration( 
+//    			TunerType.RAFAELMICRO_R820T, mController.getUniqueID(), config );
         }
         catch ( SourceException e1 )
         {
         	JOptionPane.showMessageDialog( 
-        			R820TTunerConfigurationPanel.this, 
+        			R820TTunerConfigurationEditorOld.this, 
         			"R820T Tuner Controller - couldn't "
         			+ "apply the tuner configuration settings - " + 
         					e1.getLocalizedMessage() );  
@@ -653,17 +654,17 @@ public class R820TTunerConfigurationPanel extends JPanel
      */
     private ComboBoxModel<R820TTunerConfiguration> getModel()
     {
-    	ArrayList<TunerConfiguration> configs = 
-    			mSettingsManager
-    			.getTunerConfigurations( TunerType.RAFAELMICRO_R820T );
+//    	ArrayList<TunerConfiguration> configs = 
+//    			mSettingsManager
+//    			.getTunerConfigurations( TunerType.RAFAELMICRO_R820T );
     	
     	DefaultComboBoxModel<R820TTunerConfiguration> model = 
     			new DefaultComboBoxModel<R820TTunerConfiguration>();
     	
-    	for( TunerConfiguration config: configs )
-    	{
-    		model.addElement( (R820TTunerConfiguration)config );
-    	}
+//    	for( TunerConfiguration config: configs )
+//    	{
+//    		model.addElement( (R820TTunerConfiguration)config );
+//    	}
     	
     	return model;
     }
@@ -673,17 +674,17 @@ public class R820TTunerConfigurationPanel extends JPanel
      */
     private R820TTunerConfiguration getNamedConfiguration( String name )
     {
-    	ArrayList<TunerConfiguration> configs = 
-    			mSettingsManager
-    			.getTunerConfigurations( TunerType.RAFAELMICRO_R820T );
-    	
-    	for( TunerConfiguration config: configs )
-    	{
-    		if( config.getName().contentEquals( name ) )
-    		{
-    			return (R820TTunerConfiguration)config;
-    		}
-    	}
+//    	ArrayList<TunerConfiguration> configs = 
+//    			mSettingsManager
+//    			.getTunerConfigurations( TunerType.RAFAELMICRO_R820T );
+//    	
+//    	for( TunerConfiguration config: configs )
+//    	{
+//    		if( config.getName().contentEquals( name ) )
+//    		{
+//    			return (R820TTunerConfiguration)config;
+//    		}
+//    	}
 
     	return null;
     }

@@ -1,11 +1,11 @@
 package source.tuner;
 
-public class TunerChangeEvent
+public class TunerEvent
 {
 	private Tuner mTuner;
 	private Event mEvent;
 	
-	public TunerChangeEvent( Tuner tuner, Event event )
+	public TunerEvent( Tuner tuner, Event event )
 	{
 		mTuner = tuner;
 		mEvent = event;
@@ -28,6 +28,7 @@ public class TunerChangeEvent
 		CHANNEL_COUNT,
 		FREQUENCY,
 		SAMPLE_RATE,
-		SPECTRAL_DISPLAY;
+		REQUEST_MAIN_SPECTRAL_DISPLAY,
+		REQUEST_SECONDARY_SPECTRAL_DISPLAY;
 	}
 }

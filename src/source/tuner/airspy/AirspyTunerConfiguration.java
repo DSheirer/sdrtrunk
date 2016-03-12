@@ -19,9 +19,9 @@ package source.tuner.airspy;
 
 import javax.xml.bind.annotation.XmlAttribute;
 
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
 import source.tuner.airspy.AirspyTunerController.Gain;
+import source.tuner.configuration.TunerConfiguration;
 
 public class AirspyTunerConfiguration extends TunerConfiguration
 {

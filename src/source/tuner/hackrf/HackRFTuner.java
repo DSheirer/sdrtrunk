@@ -29,12 +29,12 @@ import sample.complex.ComplexBuffer;
 import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.Tuner;
-import source.tuner.TunerChangeEvent;
+import source.tuner.TunerEvent;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannelSource;
 import source.tuner.TunerClass;
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
+import source.tuner.configuration.TunerConfiguration;
 import source.tuner.hackrf.HackRFTunerController.BoardID;
 
 public class HackRFTuner extends Tuner
@@ -76,12 +76,6 @@ public class HackRFTuner extends Tuner
     }
 
 	@Override
-    public JPanel getEditor( SettingsManager settingsManager )
-    {
-	    return new HackRFTunerEditorPanel( this, settingsManager );
-    }
-
-	@Override
     public void apply( TunerConfiguration config ) throws SourceException
     {
 		mController.apply( config );
@@ -113,7 +107,7 @@ public class HackRFTuner extends Tuner
 
 		if( source != null )
 		{
-			broadcast( new TunerChangeEvent( this, TunerChangeEvent.Event.CHANNEL_COUNT ) );
+			broadcast( new TunerEvent( this, TunerEvent.Event.CHANNEL_COUNT ) );
 		}
 		
 		return source;

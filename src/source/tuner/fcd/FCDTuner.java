@@ -28,12 +28,12 @@ import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.MixerTuner;
 import source.tuner.MixerTunerDataLine;
-import source.tuner.TunerChangeEvent;
+import source.tuner.TunerEvent;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannelSource;
 import source.tuner.TunerClass;
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
+import source.tuner.configuration.TunerConfiguration;
 
 public class FCDTuner extends MixerTuner
 {
@@ -81,12 +81,6 @@ public class FCDTuner extends MixerTuner
     }
 
 	@Override
-	public JPanel getEditor( SettingsManager settingsManager )
-	{
-		return mController.getEditor( this, settingsManager );
-	}
-	
-	@Override
     public void apply( TunerConfiguration config )throws SourceException
     {
 	    mController.apply( config );
@@ -118,7 +112,7 @@ public class FCDTuner extends MixerTuner
 
 		if( source != null )
 		{
-			broadcast( new TunerChangeEvent( this, TunerChangeEvent.Event.CHANNEL_COUNT ) );
+			broadcast( new TunerEvent( this, TunerEvent.Event.CHANNEL_COUNT ) );
 		}
 		
 		return source;

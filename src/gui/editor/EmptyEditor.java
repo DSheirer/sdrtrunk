@@ -10,7 +10,7 @@ public class EmptyEditor<T> extends Editor<T>
 
 	public EmptyEditor()
 	{
-		setLayout( new MigLayout( "", "[center]", "[grow]" ) );
+		setLayout( new MigLayout( "insets 0 0 0 0", "[center]", "[grow]" ) );
 		add( new JLabel( "Please select an item" ), "wrap" );
 	}
 

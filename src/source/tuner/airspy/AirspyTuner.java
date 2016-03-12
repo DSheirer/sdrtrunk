@@ -29,13 +29,13 @@ import sample.complex.ComplexBuffer;
 import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.Tuner;
-import source.tuner.TunerChangeEvent;
+import source.tuner.TunerEvent;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannelSource;
 import source.tuner.TunerClass;
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
 import source.tuner.airspy.AirspyTunerController.BoardID;
+import source.tuner.configuration.TunerConfiguration;
 
 public class AirspyTuner extends Tuner
 {
@@ -52,12 +52,6 @@ public class AirspyTuner extends Tuner
 		/* Register for frequency/sample rate changes so that we can rebroadcast
 		 * to any registered listeners */
 		mController.addListener( this );
-	}
-	
-	@Override
-	public JPanel getEditor( SettingsManager settingsManager )
-	{
-		return new AirspyTunerEditorPanel( this, settingsManager );
 	}
 	
 	public AirspyTunerController getController()
@@ -142,7 +136,7 @@ public class AirspyTuner extends Tuner
 
 		if( source != null )
 		{
-			broadcast( new TunerChangeEvent( this, TunerChangeEvent.Event.CHANNEL_COUNT ) );
+			broadcast( new TunerEvent( this, TunerEvent.Event.CHANNEL_COUNT ) );
 		}
 		
 		return source;

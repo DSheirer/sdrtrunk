@@ -35,8 +35,8 @@ import module.decode.state.ChannelList;
 import net.miginfocom.swing.MigLayout;
 import settings.SettingsManager;
 import source.SourceManager;
-import source.TunerViewPanel;
-import source.TunerModel;
+import source.tuner.TunerModel;
+import source.tuner.TunerViewPanel;
 import spectrum.ChannelSpectrumPanel;
 import alias.AliasController;
 import alias.AliasModel;
@@ -55,36 +55,21 @@ public class ControllerPanel extends JPanel
 {
     private static final long serialVersionUID = 1L;
 
-    private ChannelList mChannelStateList;
-
-    private TunerViewPanel mTunerManagerPanel;
-    
-    private CallEventPanel mCallEventPanel;
-    
-    private MessageActivityPanel mMessageActivityPanel;
-    
-    private ChannelSpectrumPanel mChannelSpectrumPanel;
-
     private AliasController mAliasController;
-    
-	private ChannelController mChannelController;
-
-	private JideTabbedPane mTabbedPane;
-
-//    protected ConfigurationTreePanel mSystemControlViewPanel;
-//	protected OldConfigurationEditor mConfigurationEditor;
-//    protected JideSplitPane mSystemControlSplitPane;
-
-	protected JTable mChannelActivityTable = new JTable();
 	private AudioPanel mAudioPanel;
-	private MapPanel mMapPanel;
-
+    private CallEventPanel mCallEventPanel;
+	private ChannelController mChannelController;
+    private ChannelList mChannelStateList;
 	private ChannelModel mChannelModel;
-	private ConfigurationControllerModel mController;
-	protected SettingsManager mSettingsManager;
+    private ChannelSpectrumPanel mChannelSpectrumPanel;
+	private MapPanel mMapPanel;
+    private MessageActivityPanel mMessageActivityPanel;
+    private TunerViewPanel mTunerManagerPanel;
+
+    private JideTabbedPane mTabbedPane;
+	protected JTable mChannelActivityTable = new JTable();
 
 	public ControllerPanel( AudioManager audioManager,
-							ConfigurationControllerModel controller,
 							AliasModel aliasModel,
 							ChannelModel channelModel,
 							ChannelMapModel channelMapModel,
@@ -95,29 +80,27 @@ public class ControllerPanel extends JPanel
 							TunerModel tunerModel )
 	{
 		mChannelModel = channelModel;
-		mController = controller;
-	    mSettingsManager = settingsManager;
 
-    	mAudioPanel = new AudioPanel( mSettingsManager, sourceManager, audioManager );
+    	mAudioPanel = new AudioPanel( settingsManager, sourceManager, audioManager );
 
-    	mMapPanel = new MapPanel( mapService, mSettingsManager );
+    	mMapPanel = new MapPanel( mapService, settingsManager );
 	    
     	mMessageActivityPanel = new MessageActivityPanel( channelProcessingManager );
 
-    	mCallEventPanel = new CallEventPanel( mSettingsManager, channelProcessingManager );	
+    	mCallEventPanel = new CallEventPanel( settingsManager, channelProcessingManager );	
 	    
-    	mChannelSpectrumPanel = new ChannelSpectrumPanel( mSettingsManager, 
+    	mChannelSpectrumPanel = new ChannelSpectrumPanel( settingsManager, 
     			channelProcessingManager );
 
     	mChannelStateList = new ChannelList( channelModel, channelProcessingManager, 
-    			mSettingsManager );
+    			settingsManager );
 
     	mChannelController = new ChannelController( channelModel, channelMapModel, 
     			sourceManager, aliasModel );
     	
-    	mAliasController = new AliasController( aliasModel, mSettingsManager );
+    	mAliasController = new AliasController( aliasModel, settingsManager );
     	
-    	mTunerManagerPanel = new TunerViewPanel( tunerModel, mSettingsManager );
+    	mTunerManagerPanel = new TunerViewPanel( tunerModel );
 
 		init();
 	}
@@ -128,17 +111,6 @@ public class ControllerPanel extends JPanel
     							  "[grow,fill]", 
     							  "[grow,fill]") );
     	
-//    	//System Configuration View and Editor
-//    	mConfigurationEditor = new OldConfigurationEditor();
-//
-//    	mSystemControlViewPanel = new ConfigurationTreePanel( mController );
-//    	mSystemControlViewPanel.addTreeSelectionListener( mConfigurationEditor );
-
-//    	mSystemControlSplitPane = new JideSplitPane( JideSplitPane.HORIZONTAL_SPLIT );
-//    	mSystemControlSplitPane.setDividerSize( 5 );
-//    	mSystemControlSplitPane.add( mSystemControlViewPanel );
-//    	mSystemControlSplitPane.add( mConfigurationEditor );
-    	
     	//Tabbed View - configuration, calls, messages, map
     	mTabbedPane = new JideTabbedPane();
     	mTabbedPane.setFont( this.getFont() );
@@ -146,7 +118,6 @@ public class ControllerPanel extends JPanel
     	mTabbedPane.addTab( "Tuners", mTunerManagerPanel );
     	mTabbedPane.addTab( "Channels", mChannelController );
     	mTabbedPane.addTab( "Aliases", mAliasController );
-//    	mTabbedPane.addTab( "Configuration", mSystemControlSplitPane  );
     	mTabbedPane.addTab( "Channel Spectrum", mChannelSpectrumPanel );
     	mTabbedPane.addTab( "Events", mCallEventPanel );
     	mTabbedPane.addTab( "Messages", mMessageActivityPanel );
@@ -191,6 +162,10 @@ public class ControllerPanel extends JPanel
     	audioChannelListSplit.setDividerSize( 5 );
     	audioChannelListSplit.add( mAudioPanel );
     	audioChannelListSplit.add( channelStateListScroll );
+
+    	//Set preferred size to influence the split between these panels
+    	audioChannelListSplit.setPreferredSize( new Dimension( 400, 500 ) );
+    	mTabbedPane.setPreferredSize( new Dimension( 880, 500 ) );
     	
     	JideSplitPane channelSplit = new JideSplitPane( JideSplitPane.HORIZONTAL_SPLIT );
     	channelSplit.setDividerSize( 5 );
@@ -198,10 +173,5 @@ public class ControllerPanel extends JPanel
     	channelSplit.add( mTabbedPane );
     	
     	add( channelSplit );
-	}
-
-	public ConfigurationControllerModel getController()
-	{
-		return mController;
 	}
 }

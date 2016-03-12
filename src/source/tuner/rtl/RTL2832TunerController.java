@@ -363,8 +363,6 @@ public abstract class RTL2832TunerController extends TunerController
 		}
 	}
 	
-	public abstract JPanel getEditor( SettingsManager settingsManager );
-	
 	public abstract void setSampleRateFilters( int sampleRate ) 
 						throws SourceException;
 	

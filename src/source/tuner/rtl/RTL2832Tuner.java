@@ -30,12 +30,12 @@ import sample.complex.ComplexBuffer;
 import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.Tuner;
-import source.tuner.TunerChangeEvent;
+import source.tuner.TunerEvent;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannelSource;
 import source.tuner.TunerClass;
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
+import source.tuner.configuration.TunerConfiguration;
 import source.tuner.frequency.IFrequencyChangeListener;
 import source.tuner.rtl.RTL2832TunerController.SampleRate;
 import controller.ThreadPoolManager;
@@ -89,12 +89,6 @@ public class RTL2832Tuner extends Tuner
 	    return mController.getTunerType();
     }
 	
-	@Override
-    public JPanel getEditor( SettingsManager settingsManager )
-    {
-	    return mController.getEditor( settingsManager );
-    }
-
 	@Override
     public void apply( TunerConfiguration config ) throws SourceException
     {
@@ -161,7 +155,7 @@ public class RTL2832Tuner extends Tuner
 
 			if( source != null )
 			{
-				broadcast( new TunerChangeEvent( this, TunerChangeEvent.Event.CHANNEL_COUNT ) );
+				broadcast( new TunerEvent( this, TunerEvent.Event.CHANNEL_COUNT ) );
 			}
 		}
 		catch( Exception e )

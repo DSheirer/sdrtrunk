@@ -18,13 +18,15 @@
 package source;
 
 import settings.SettingsManager;
+import source.config.SourceConfigTuner;
 import source.config.SourceConfiguration;
 import source.mixer.MixerEditor;
 import source.mixer.MixerManager;
 import source.recording.RecordingEditor;
 import source.recording.RecordingSourceManager;
-import source.tuner.TunerEditor;
+import source.tuner.TunerEditorOld;
 import source.tuner.TunerManager;
+import source.tuner.TunerModel;
 import controller.ThreadPoolManager;
 
 public class SourceManager 
@@ -32,13 +34,19 @@ public class SourceManager
 	private MixerManager mMixerManager;
 	private RecordingSourceManager mRecordingSourceManager;
 	private TunerManager mTunerManager;
+	private TunerModel mTunerModel;
 
-	public SourceManager( SettingsManager settingsManager, 
+	public SourceManager( TunerModel tunerModel,
+						  SettingsManager settingsManager, 
 						  ThreadPoolManager threadPoolManager )
 	{
+		mTunerModel = tunerModel;
 		mMixerManager = new MixerManager();
 		mRecordingSourceManager = new RecordingSourceManager( settingsManager );
-		mTunerManager = new TunerManager( mMixerManager, settingsManager, threadPoolManager );
+		mTunerManager = new TunerManager( mMixerManager, tunerModel, threadPoolManager );
+		
+		//TODO: change mixer & recording managers to be models and hand them
+		//in via the constructor.  Perform loading outside of this class.
 	}
 	
 	public MixerManager getMixerManager()
@@ -67,7 +75,7 @@ public class SourceManager
 				retVal = mMixerManager.getSource( config ); 
 				break;
 			case TUNER:
-				retVal = mTunerManager.getSource( config, bandwidth );
+				retVal = mTunerModel.getSource( (SourceConfigTuner)config, bandwidth );
 				break;
 			case RECORDING:
 				retVal = mRecordingSourceManager.getSource( config, bandwidth );
@@ -89,7 +97,7 @@ public class SourceManager
 				configuredPanel = new MixerEditor( this, config );
 				break;
 			case TUNER:
-				configuredPanel = new TunerEditor( this, config );
+				configuredPanel = new TunerEditorOld( this, config );
 				break;
 			case RECORDING:
 				configuredPanel = new RecordingEditor( this, config );

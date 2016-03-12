@@ -62,7 +62,7 @@ import settings.ColorSettingMenuItem;
 import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.Tuner;
-import source.tuner.TunerSelectionListener;
+import source.tuner.TunerEvent;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeEvent.Event;
 import source.tuner.frequency.IFrequencyChangeProcessor;
@@ -78,7 +78,6 @@ import spectrum.menu.SmoothingTypeItem;
 
 import com.jidesoft.swing.JideSplitPane;
 
-import controller.ConfigurationControllerModel;
 import controller.channel.Channel;
 import controller.channel.ChannelModel;
 import controller.channel.ChannelProcessingManager;
@@ -89,8 +88,7 @@ import dsp.filter.smoothing.SmoothingFilter.SmoothingType;
 public class SpectralDisplayPanel extends JPanel 
 								  implements Listener<ComplexBuffer>,
 								  			 IFrequencyChangeProcessor,
-								  			 IDFTWidthChangeProcessor,
-								  			 TunerSelectionListener
+								  			 IDFTWidthChangeProcessor
  {
     private static final long serialVersionUID = 1L;
     
@@ -114,7 +112,6 @@ public class SpectralDisplayPanel extends JPanel
     private OverlayPanel mOverlayPanel;
     private DFTProcessor mDFTProcessor;
     private DFTResultsConverter mDFTConverter;
-    private ConfigurationControllerModel mControllerModel;
     private ChannelModel mChannelModel;
     private ChannelProcessingManager mChannelProcessingManager;
     private SettingsManager mSettingsManager;
@@ -132,12 +129,10 @@ public class SpectralDisplayPanel extends JPanel
 	 * the DFT is translated to decibels for display in the spectrum and
 	 * waterfall components.
 	 */
-    public SpectralDisplayPanel( ConfigurationControllerModel controllerModel,
-    							 ChannelModel channelModel,
+    public SpectralDisplayPanel( ChannelModel channelModel,
     							 ChannelProcessingManager channelProcessingManager,
     							 SettingsManager settingsManager )
     {
-    	mControllerModel = controllerModel;
     	mChannelModel = channelModel;
     	mChannelProcessingManager = channelProcessingManager;
     	mSettingsManager = settingsManager;
@@ -145,12 +140,6 @@ public class SpectralDisplayPanel extends JPanel
     	mSpectrumPanel = new SpectrumPanel( mSettingsManager );
     	mOverlayPanel = new OverlayPanel( mSettingsManager, mChannelModel );
     	mWaterfallPanel = new WaterfallPanel( mSettingsManager );
-    	
-    	//Register to receive tuner selection events
-    	if( mControllerModel != null )
-    	{
-        	mControllerModel.addListener( (TunerSelectionListener)this );
-    	}
     	
 		init();
 		
@@ -190,12 +179,6 @@ public class SpectralDisplayPanel extends JPanel
 		/* De-register from receiving samples when the window closes */
     	clearTuner();
 
-    	if( mControllerModel != null )
-    	{
-        	mControllerModel.removeListener( (TunerSelectionListener)this );
-    	}
-
-    	mControllerModel = null;
     	mSettingsManager = null;
     	
     	mDFTProcessor.dispose();
@@ -215,6 +198,11 @@ public class SpectralDisplayPanel extends JPanel
     	
     	
     	mTuner = null;
+    }
+    
+    public Listener<TunerEvent> getTunerEventListener()
+    {
+    	return new TunerSelectionListener( this );
     }
     
 	/**
@@ -442,11 +430,10 @@ public class SpectralDisplayPanel extends JPanel
     }
 
 	/**
-	 * Responds to tuner selection event by deregistering from the current
+	 * Responds to tuner event by deregistering from the current
 	 * complex sample buffer source and registering with the tuner argument.
 	 */
-	@Override
-	public void tunerSelected( Tuner tuner )
+	public void showTuner( Tuner tuner )
 	{
 		clearTuner();
 		
@@ -974,5 +961,27 @@ public class SpectralDisplayPanel extends JPanel
                 }
         	} );
         }
+	}
+	
+	/**
+	 * Provides tuner event listener interface for showing tuners in this display
+	 */
+	public class TunerSelectionListener implements Listener<TunerEvent>
+	{
+		private SpectralDisplayPanel mSpectralDisplayPanel;
+		
+		public TunerSelectionListener( SpectralDisplayPanel spectralDisplayPanel )
+		{
+			mSpectralDisplayPanel = spectralDisplayPanel;
+		}
+		
+		@Override
+		public void receive( TunerEvent event )
+		{
+			if( event.getEvent() == TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY )
+			{
+				mSpectralDisplayPanel.showTuner( event.getTuner() );
+			}
+		}
 	}
 }

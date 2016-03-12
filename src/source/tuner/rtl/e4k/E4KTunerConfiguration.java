@@ -19,8 +19,8 @@ package source.tuner.rtl.e4k;
 
 import javax.xml.bind.annotation.XmlAttribute;
 
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
+import source.tuner.configuration.TunerConfiguration;
 import source.tuner.rtl.RTL2832TunerController.SampleRate;
 import source.tuner.rtl.e4k.E4KTunerController.E4KEnhanceGain;
 import source.tuner.rtl.e4k.E4KTunerController.E4KGain;

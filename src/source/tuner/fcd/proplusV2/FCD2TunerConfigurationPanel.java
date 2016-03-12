@@ -48,9 +48,9 @@ import org.slf4j.LoggerFactory;
 
 import settings.SettingsManager;
 import source.SourceException;
-import source.tuner.TunerConfiguration;
-import source.tuner.TunerConfigurationAssignment;
 import source.tuner.TunerType;
+import source.tuner.configuration.TunerConfiguration;
+import source.tuner.configuration.TunerConfigurationAssignment;
 
 public class FCD2TunerConfigurationPanel extends JPanel
 {
@@ -218,26 +218,26 @@ public class FCD2TunerConfigurationPanel extends JPanel
 		 * Lookup the save config and apply that config to update all of the
 		 * controls
 		 */
-        TunerConfigurationAssignment savedConfig = mSettingsManager
-        		.getSelectedTunerConfiguration( 
-        				TunerType.FUNCUBE_DONGLE_PRO_PLUS, 
-        								mController.getUSBAddress() );
-        
-        if( savedConfig != null )
-        {
-        	mSelectedConfig = getNamedConfiguration( 
-        			savedConfig.getTunerConfigurationName() );
-        }
+//        TunerConfigurationAssignment savedConfig = mSettingsManager
+//        		.getSelectedTunerConfiguration( 
+//        				TunerType.FUNCUBE_DONGLE_PRO_PLUS, 
+//        								mController.getUSBAddress() );
+//        
+//        if( savedConfig != null )
+//        {
+//        	mSelectedConfig = getNamedConfiguration( 
+//        			savedConfig.getTunerConfigurationName() );
+//        }
 
         if( mSelectedConfig == null )
         {
         	mSelectedConfig = mComboConfigurations.getItemAt( 0 );
 
-        	//Store this config as the default for this tuner at this address
-        	mSettingsManager
-        		.setSelectedTunerConfiguration( 
-        				TunerType.FUNCUBE_DONGLE_PRO_PLUS, 
-        				mController.getUSBAddress(), mSelectedConfig );
+//        	//Store this config as the default for this tuner at this address
+//        	mSettingsManager
+//        		.setSelectedTunerConfiguration( 
+//        				TunerType.FUNCUBE_DONGLE_PRO_PLUS, 
+//        				mController.getUSBAddress(), mSelectedConfig );
         }
 
         mComboConfigurations.setSelectedItem( mSelectedConfig );
@@ -252,15 +252,15 @@ public class FCD2TunerConfigurationPanel extends JPanel
 			@Override
             public void actionPerformed( ActionEvent e )
             {
-				TunerConfiguration config = 
-						mSettingsManager
-							.addNewTunerConfiguration( 
-									TunerType.FUNCUBE_DONGLE_PRO_PLUS, 
-									"New Configuration" );
+//				TunerConfiguration config = 
+//						mSettingsManager
+//							.addNewTunerConfiguration( 
+//									TunerType.FUNCUBE_DONGLE_PRO_PLUS, 
+//									"New Configuration" );
 				
 				mComboConfigurations.setModel( getModel() );
 				
-				mComboConfigurations.setSelectedItem( config );
+//				mComboConfigurations.setSelectedItem( config );
 
 				repaint();
             }
@@ -293,8 +293,8 @@ public class FCD2TunerConfigurationPanel extends JPanel
 
 					if( n == JOptionPane.YES_OPTION )
 					{
-						mSettingsManager
-							.deleteTunerConfiguration( selected );
+//						mSettingsManager
+//							.deleteTunerConfiguration( selected );
 
 						mComboConfigurations.setModel( getModel() );
 						
@@ -322,9 +322,9 @@ public class FCD2TunerConfigurationPanel extends JPanel
 	        mMixerGain.setSelected( config.getGainMixer() );
 	        mFrequencyCorrection.setValue( config.getFrequencyCorrection() );
 	        
-	        mSettingsManager.setSelectedTunerConfiguration( 
-        			TunerType.FUNCUBE_DONGLE_PRO_PLUS, 
-        			mController.getUSBAddress(), config );
+//	        mSettingsManager.setSelectedTunerConfiguration( 
+//        			TunerType.FUNCUBE_DONGLE_PRO_PLUS, 
+//        			mController.getUSBAddress(), config );
         }
         catch ( SourceException e1 )
         {
@@ -341,34 +341,34 @@ public class FCD2TunerConfigurationPanel extends JPanel
     
     private ComboBoxModel<FCD2TunerConfiguration> getModel()
     {
-    	ArrayList<TunerConfiguration> configs = 
-    			mSettingsManager
-    			.getTunerConfigurations( TunerType.FUNCUBE_DONGLE_PRO_PLUS );
+//    	ArrayList<TunerConfiguration> configs = 
+//    			mSettingsManager
+//    			.getTunerConfigurations( TunerType.FUNCUBE_DONGLE_PRO_PLUS );
     	
     	DefaultComboBoxModel<FCD2TunerConfiguration> model = 
     			new DefaultComboBoxModel<FCD2TunerConfiguration>();
     	
-    	for( TunerConfiguration config: configs )
-    	{
-    		model.addElement( (FCD2TunerConfiguration)config );
-    	}
+//    	for( TunerConfiguration config: configs )
+//    	{
+//    		model.addElement( (FCD2TunerConfiguration)config );
+//    	}
     	
     	return model;
     }
     
     private FCD2TunerConfiguration getNamedConfiguration( String name )
     {
-    	ArrayList<TunerConfiguration> configs = 
-    			mSettingsManager
-    			.getTunerConfigurations( TunerType.FUNCUBE_DONGLE_PRO_PLUS );
+//    	ArrayList<TunerConfiguration> configs = 
+//    			mSettingsManager
+//    			.getTunerConfigurations( TunerType.FUNCUBE_DONGLE_PRO_PLUS );
     	
-    	for( TunerConfiguration config: configs )
-    	{
-    		if( config.getName().contentEquals( name ) )
-    		{
-    			return (FCD2TunerConfiguration)config;
-    		}
-    	}
+//    	for( TunerConfiguration config: configs )
+//    	{
+//    		if( config.getName().contentEquals( name ) )
+//    		{
+//    			return (FCD2TunerConfiguration)config;
+//    		}
+//    	}
 
     	return null;
     }
