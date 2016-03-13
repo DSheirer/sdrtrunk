@@ -11,7 +11,10 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextArea;
 import javax.swing.RowFilter;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.table.TableRowSorter;
 
 import net.miginfocom.swing.MigLayout;
@@ -35,6 +38,9 @@ public class TunerEditor extends Editor<Tuner>
 	private JTable mTunerConfigurationTable;
 	private TableRowSorter<TunerConfigurationModel> mRowSorter;
 	private JFrequencyControl mFrequencyControl = new JFrequencyControl();
+	private JLabel mSelectedTunerType = new JLabel( "No Tuner Selected" );
+	private JButton mNewConfigurationButton = new JButton( "New" );
+	private JButton mDeleteConfigurationButton = new JButton( "Delete" );
 	
 	public TunerEditor( TunerConfigurationModel tunerConfigurationModel )
 	{
@@ -47,33 +53,53 @@ public class TunerEditor extends Editor<Tuner>
 		setLayout( new MigLayout( "insets 0 0 0 0", "[grow,fill]", "[grow,fill]" ) );
 
 		JPanel listPanel = new JPanel();
-		listPanel.setLayout( new MigLayout( "fill,wrap 1", 
-				"[grow,fill]", "[][][grow,fill][]" ) );
-		listPanel.add( mFrequencyControl );
+		listPanel.setLayout( new MigLayout( "fill,wrap 2", "[grow,fill]", "[][][][grow,fill][]" ) );
+
+		listPanel.add( mSelectedTunerType, "span" );
+		
+		mFrequencyControl.setEnabled( false );
+		listPanel.add( mFrequencyControl, "span" );
 
 		mTunerConfigurationTable = new JTable( mTunerConfigurationModel );
 		mRowSorter = new TableRowSorter<>( mTunerConfigurationModel );
 		mTunerConfigurationTable.setRowSorter( mRowSorter );
+		mTunerConfigurationTable.setEnabled( false );
+		mTunerConfigurationTable.getSelectionModel().addListSelectionListener( new ListSelectionListener()
+		{
+			@Override
+			public void valueChanged( ListSelectionEvent event )
+			{
+				if( !event.getValueIsAdjusting() )
+				{
+					int row = mTunerConfigurationTable.getSelectedRow();
+					
+					if( row >= 0 )
+					{
+						int modelRow = mTunerConfigurationTable.convertRowIndexToModel( row );
 
-		listPanel.add( new JLabel( "Tuner Configurations" ) );
-		listPanel.add( mTunerConfigurationTable );
+						if( modelRow >= 0 )
+						{
+							setConfigurationEditor( mTunerConfigurationModel.getTunerConfiguration( modelRow ) );
+						}
+					}
+				}
+			}
+		} );
 
-		JPanel buttonPanel = new JPanel();
-		buttonPanel.setLayout( new MigLayout( "insets 0 0 0 0", 
-				"[grow,fill][grow,fill]", "[grow,fill]" ) );
-		
-		JButton newButton = new JButton( "New" );
-		buttonPanel.add( newButton );
-		
-		JButton deleteButton = new JButton( "Delete" );
-		buttonPanel.add( deleteButton );
-		
-		listPanel.add( buttonPanel );
+		listPanel.add( new JLabel( "Tuner Configurations" ), "span" );
+		listPanel.add( mTunerConfigurationTable, "span" );
 
+		mNewConfigurationButton.setEnabled( false );
+		listPanel.add( mNewConfigurationButton );
+
+		mDeleteConfigurationButton.setEnabled( false );
+		listPanel.add( mDeleteConfigurationButton );
+		
 		//Set preferred size on both scrollers to same width, so they split the space
 		JScrollPane listScroller = new JScrollPane( listPanel );
 		listScroller.setPreferredSize( new Dimension( 200, 80 ) );
 		
+//TODO: this has to be changed
 		JPanel editorPanel = new EmptyEditor<TunerConfiguration>();
 		JScrollPane editorScroller = new JScrollPane( editorPanel );
 		editorScroller.setPreferredSize( new Dimension( 200, 80 ) );
@@ -107,6 +133,11 @@ public class TunerEditor extends Editor<Tuner>
 		
 		if( hasItem() )
 		{
+			mSelectedTunerType.setText( tuner.getName() );
+			mFrequencyControl.setEnabled( true );
+			mTunerConfigurationTable.setEnabled( true );
+			mNewConfigurationButton.setEnabled( true );
+
 			mRowSorter.setRowFilter( new ConfigurationRowFilter( tuner.getTunerType() ) );
 
 			TunerConfiguration assigned = mTunerConfigurationModel
@@ -138,7 +169,23 @@ public class TunerEditor extends Editor<Tuner>
 		}
 		else
 		{
+			mSelectedTunerType.setText( "No Tuner Selected" );
+			mFrequencyControl.setEnabled( false );
+			mTunerConfigurationTable.setEnabled( false );
+			mNewConfigurationButton.setEnabled( false );
 			mRowSorter.setRowFilter( null );
+		}
+	}
+	
+	private void setConfigurationEditor( TunerConfiguration config )
+	{
+		if( config != null )
+		{
+			mDeleteConfigurationButton.setEnabled( true );
+		}
+		else
+		{
+			mDeleteConfigurationButton.setEnabled( false );
 		}
 	}
 	

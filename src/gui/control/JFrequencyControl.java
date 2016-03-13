@@ -129,6 +129,17 @@ public class JFrequencyControl extends JPanel implements IFrequencyChangeProcess
 		
 		revalidate();
 	}
+	
+	@Override
+	public void setEnabled( boolean enabled )
+	{
+		super.setEnabled( enabled );
+		
+		for( Digit digit: mDigits.values() )
+		{
+			digit.setEnabled( enabled );
+		}
+	}
 
 	/**
 	 * Receives a frequency change event invoked by another control.  We don't
@@ -246,7 +257,10 @@ public class JFrequencyControl extends JPanel implements IFrequencyChangeProcess
 
         public void increment( boolean fireChangeEvent )
         {
-        	set( mValue + 1, fireChangeEvent );
+        	if( isEnabled() )
+        	{
+            	set( mValue + 1, fireChangeEvent );
+        	}
         }
 
         public void decrement()
@@ -256,7 +270,10 @@ public class JFrequencyControl extends JPanel implements IFrequencyChangeProcess
         
         public void decrement( boolean fireChangeEvent )
         {
-        	set( mValue - 1, fireChangeEvent );
+        	if( isEnabled() )
+        	{
+            	set( mValue - 1, fireChangeEvent );
+        	}
         }
 
         /**

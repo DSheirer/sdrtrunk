@@ -27,8 +27,8 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
 	
 	private final static Logger mLog = LoggerFactory.getLogger( TunerModel.class );
 
-	public static final int TUNER_CLASS = 0;
-	public static final int TUNER_TYPE = 1;
+	public static final int TUNER_TYPE = 0;
+	public static final int TUNER_ID = 1;
 	public static final int SAMPLE_RATE = 2;
 	public static final int FREQUENCY = 3;
 	public static final int CHANNEL_COUNT = 4;
@@ -37,7 +37,7 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
 	
 	private static final String MHZ = " MHz";
 	private static final String[] COLUMNS = 
-		{ "Class", "Type", "Sample Rate", "Frequency", "Channels", "Spectral", "Display" };
+		{ "Tuner", "ID", "Sample Rate", "Frequency", "Channels", "Spectral", "Display" };
 	
 	private List<Tuner> mTuners = new ArrayList<>();
 	private List<Listener<TunerEvent>> mTunerEventListeners = new ArrayList<>();
@@ -217,10 +217,10 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
 
 			switch( columnIndex )
 			{
-				case TUNER_CLASS:
-					return tuner.getTunerClass().getVendorDescription();
 				case TUNER_TYPE:
 					return tuner.getTunerType().getLabel();
+				case TUNER_ID:
+					return tuner.getUniqueID();
 				case SAMPLE_RATE:
 					int sampleRate = tuner.getTunerController().getSampleRate();
 

@@ -47,7 +47,7 @@ public class RTL2832Tuner extends Tuner
 								 			throws SourceException
 	{
 		super( tunerClass.getVendorDeviceLabel() + "/" + 
-			   controller.getTunerType().getLabel() + " #" +
+			   controller.getTunerType().getLabel() + " " +
 			   controller.getUniqueID(), controller );
 		
 		mTunerClass = tunerClass;

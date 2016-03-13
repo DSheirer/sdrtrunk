@@ -32,7 +32,6 @@ import source.tuner.TunerClass;
 import source.tuner.TunerEvent;
 import source.tuner.TunerType;
 import source.tuner.airspy.AirspyTunerController.BoardID;
-import source.tuner.configuration.TunerConfiguration;
 
 public class AirspyTuner extends Tuner
 {
@@ -40,7 +39,7 @@ public class AirspyTuner extends Tuner
 
 	public AirspyTuner( AirspyTunerController controller )
 	{
-		super( "Airspy", controller );
+		super( "Airspy " + controller.getDeviceInfo().getSerialNumber(), controller );
 	}
 	
 	public AirspyTunerController getController()
@@ -57,7 +56,7 @@ public class AirspyTuner extends Tuner
 		}
 		catch( Exception e )
 		{
-			mLog.error( "error gettting serial number", e );
+			mLog.error( "error getting serial number", e );
 		}
 		
 		return BoardID.AIRSPY.getLabel();
