@@ -133,14 +133,8 @@ public class TunerEditor extends Editor<Tuner>
 	        tuner.getTunerController().addListener( mFrequencyControl );
 
 	        //Set the displayed frequency without adjusting the tuner's frequency
-	        try
-	        {
-		        mFrequencyControl.setFrequency( tuner.getFrequency(), false );
-	        }
-	        catch( SourceException e )
-	        {
-	        	mLog.debug( "Couldn't get frequency from tuner: " + tuner.getUniqueID() );
-	        }
+	        mFrequencyControl.setFrequency( 
+	        		tuner.getTunerController().getFrequency(), false );
 		}
 		else
 		{

@@ -74,28 +74,10 @@ public class FCDTuner extends MixerTuner
     }
 
 	@Override
-    public void apply( TunerConfiguration config )throws SourceException
-    {
-	    getController().apply( config );
-    }
-	
-	@Override
-    public int getSampleRate()
-    {
-	    return (int)mMixerTunerType.getAudioFormat().getSampleRate();
-    }
-	
-	@Override
 	public double getSampleSize()
 	{
 		return 16.0;
 	}
-
-	@Override
-    public long getFrequency() throws SourceException
-    {
-		return getController().getFrequency();
-    }
 
 	@Override
     public TunerChannelSource getChannel( TunerChannel tunerChannel )
@@ -110,12 +92,6 @@ public class FCDTuner extends MixerTuner
 		
 		return source;
     }
-
-	@Override
-	public int getChannelCount()
-	{
-		return getController().getChannelCount();
-	}
 
 	/**
 	 * Releases the tuned channel so that the tuner controller can tune to

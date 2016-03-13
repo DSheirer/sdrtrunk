@@ -97,16 +97,18 @@ public class TunerChannelSource extends ComplexSource
 	    
 	    mTunerChannel = tunerChannel;
 
-	    mTunerFrequency = mTuner.getFrequency();
+	    mTunerFrequency = mTuner.getTunerController().getFrequency();
 	    
 	    /* Setup the frequency translator to the current source frequency */
 		long frequencyOffset = mTunerFrequency - mTunerChannel.getFrequency();
 		
-		mMixer = new Oscillator( frequencyOffset, mTuner.getSampleRate() );
+		mMixer = new Oscillator( frequencyOffset, 
+				mTuner.getTunerController().getSampleRate() );
 
 		/* Fire a sample rate change event to setup the decimation chain */
 		frequencyChanged( new FrequencyChangeEvent( 
-			Event.NOTIFICATION_SAMPLE_RATE_CHANGE, mTuner.getSampleRate() ) );
+				Event.NOTIFICATION_SAMPLE_RATE_CHANGE, 
+				mTuner.getTunerController().getSampleRate() ) );
     }
 	
 	

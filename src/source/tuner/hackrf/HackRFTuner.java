@@ -66,28 +66,10 @@ public class HackRFTuner extends Tuner
     }
 
 	@Override
-    public void apply( TunerConfiguration config ) throws SourceException
-    {
-		getController().apply( config );
-    }
-
-	@Override
-    public int getSampleRate()
-    {
-	    return getController().getSampleRate();
-    }
-
-	@Override
 	public double getSampleSize()
 	{
 		return 11.0;
 	}
-
-	@Override
-    public long getFrequency() throws SourceException
-    {
-	    return getController().getFrequency();
-    }
 
 	@Override
     public TunerChannelSource getChannel( TunerChannel channel ) 
@@ -102,12 +84,6 @@ public class HackRFTuner extends Tuner
 		
 		return source;
     }
-
-	@Override
-	public int getChannelCount()
-	{
-		return getController().getChannelCount();
-	}
 
 	@Override
     public void releaseChannel( TunerChannelSource source )

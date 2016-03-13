@@ -70,6 +70,7 @@ public abstract class FCDTunerController extends TunerController
 	 */
 	public FCDTunerController( Device device, 
 							   DeviceDescriptor descriptor,
+							   int sampleRate,
 							   int minTunableFrequency,
 							   int maxTunableFrequency )
 	{
@@ -77,7 +78,7 @@ public abstract class FCDTunerController extends TunerController
 			   maxTunableFrequency, 
 			   DC_SPIKE_AVOID_BUFFER, 
 			   USABLE_BANDWIDTH_PERCENT );
-
+		mFrequencyController.setSampleRate( sampleRate );
 		mDevice = device;
 		mDeviceDescriptor = descriptor;
 	}

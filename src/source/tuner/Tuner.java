@@ -100,12 +100,6 @@ public abstract class Tuner implements ITunerChannelProvider
 	}
 	
 	/**
-	 * Applies the settings from a saved tuner configuration setting object
-	 */
-	public abstract void apply( TunerConfiguration config )
-					throws SourceException;
-
-	/**
 	 * Unique identifier for this tuner, used to lookup a tuner configuration
 	 * from the settings manager.
 	 * 
@@ -136,22 +130,10 @@ public abstract class Tuner implements ITunerChannelProvider
 	}
 
 	/**
-	 * Sample rate of complex data coming from the Tuner
-	 * @return
-	 */
-	public abstract int getSampleRate();
-
-	/**
 	 * Sample size in bits
 	 */
 	public abstract double getSampleSize();
 	
-	/**
-	 * Tuner Local Oscillator Frequency
-	 * @return - frequency in Hertz
-	 */
-	public abstract long getFrequency() throws SourceException;
-
 	/**
 	 * Returns a tuner frequency channel source, tuned to the correct frequency
 	 * 
@@ -165,11 +147,6 @@ public abstract class Tuner implements ITunerChannelProvider
 	 */
 	public abstract TunerChannelSource getChannel( TunerChannel channel ) 
 			throws RejectedExecutionException, SourceException;
-	
-	/**
-	 * Count of currently sourced channels (TunerChannel).
-	 */
-	public abstract int getChannelCount();
 	
 	/**
 	 * Releases the tuned channel resources

@@ -976,7 +976,7 @@ public abstract class RTL2832TunerController extends TunerController
 		return mSampleRate.getRate();
 	}
 	
-    public int getSampleRate() throws SourceException
+    public int getSampleRateFromTuner() throws SourceException
 	{
         try
         {

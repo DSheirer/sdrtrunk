@@ -119,6 +119,11 @@ public abstract class TunerController implements Tunable, IFrequencyChangeProces
 	{
 		return mFrequencyController.getFrequency();
 	}
+	
+	public int getSampleRate()
+	{
+		return mFrequencyController.getBandwidth();
+	}
 
 	public double getFrequencyCorrection()
 	{

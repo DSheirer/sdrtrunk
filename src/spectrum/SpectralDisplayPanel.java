@@ -447,19 +447,13 @@ public class SpectralDisplayPanel extends JPanel
 			
 			//Fire frequency and sample rate change events so that the spectrum
 			//and overlay panels can synchronize
-			try
-            {
-				frequencyChanged( new FrequencyChangeEvent( 
-						Event.NOTIFICATION_FREQUENCY_CHANGE, mTuner.getFrequency() ) );
-				
-				frequencyChanged( new FrequencyChangeEvent( 
-						Event.NOTIFICATION_SAMPLE_RATE_CHANGE, mTuner.getSampleRate() ) );
-            }
-            catch ( SourceException e )
-            {
-            	mLog.info( "DFTProcessor - exception during new tuner setup - "
-            			+ "couldn't get frequency from the tuner", e );
-            }
+			frequencyChanged( new FrequencyChangeEvent( 
+					Event.NOTIFICATION_FREQUENCY_CHANGE, 
+					mTuner.getTunerController().getFrequency() ) );
+			
+			frequencyChanged( new FrequencyChangeEvent( 
+					Event.NOTIFICATION_SAMPLE_RATE_CHANGE, 
+					mTuner.getTunerController().getSampleRate() ) );
 		}
 	}
 

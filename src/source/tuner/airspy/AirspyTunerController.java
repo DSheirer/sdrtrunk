@@ -427,7 +427,7 @@ public class AirspyTunerController extends TunerController
 	/**
 	 * Airspy sample rate object that matches the current sample rate setting.
 	 */
-	public AirspySampleRate getSampleRate()
+	public AirspySampleRate getAirspySampleRate()
 	{
 		return getSampleRate( mSampleRate );
 	}

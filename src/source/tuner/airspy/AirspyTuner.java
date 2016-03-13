@@ -49,12 +49,6 @@ public class AirspyTuner extends Tuner
 	}
 
 	@Override
-	public void apply( TunerConfiguration config ) throws SourceException
-	{
-		getController().apply( config );
-	}
-
-	@Override
     public String getUniqueID()
     {
 		try
@@ -82,32 +76,9 @@ public class AirspyTuner extends Tuner
 	}
 
 	@Override
-	public int getSampleRate()
-	{
-		int rate = 0;
-		
-		try
-		{
-			rate = getController().getCurrentSampleRate();
-		} 
-		catch ( SourceException e )
-		{
-			mLog.error( "Error while getting sample rate from controller", e );
-		}
-		
-		return rate;
-	}
-	
-	@Override
 	public double getSampleSize()
 	{
 		return 13.0;
-	}
-
-	@Override
-	public long getFrequency() throws SourceException
-	{
-		return getController().getFrequency();
 	}
 
 	@Override
@@ -131,14 +102,6 @@ public class AirspyTuner extends Tuner
 		return source;
     }
 	
-	
-
-	@Override
-	public int getChannelCount()
-	{
-		return getController().getChannelCount();
-	}
-
 	@Override
     public void releaseChannel( TunerChannelSource source )
     {

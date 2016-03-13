@@ -96,7 +96,7 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
 			
 			try
 			{
-				tuner.apply( config );
+				tuner.getTunerController().apply( config );
 				
 				mTuners.add( tuner );
 				
@@ -222,13 +222,13 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
 				case TUNER_TYPE:
 					return tuner.getTunerType().getLabel();
 				case SAMPLE_RATE:
-					int sampleRate = tuner.getSampleRate();
+					int sampleRate = tuner.getTunerController().getSampleRate();
 
 					return mSampleRateFormat.format( sampleRate / 1E6D ) + MHZ;
 				case FREQUENCY:
 					try
 					{
-						long frequency = tuner.getFrequency();
+						long frequency = tuner.getTunerController().getFrequency();
 						
 						return mFrequencyFormat.format( frequency / 1E6D ) + MHZ;
 					}
@@ -237,7 +237,7 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
 						return 0;
 					}
 				case CHANNEL_COUNT:
-					return tuner.getChannelCount();
+					return tuner.getTunerController().getChannelCount();
 				case SPECTRAL_DISPLAY_MAIN:
 					return "Main";
 				case SPECTRAL_DISPLAY_NEW:

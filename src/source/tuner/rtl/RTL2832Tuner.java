@@ -81,27 +81,6 @@ public class RTL2832Tuner extends Tuner
 	    return getController().getTunerType();
     }
 	
-	@Override
-    public void apply( TunerConfiguration config ) throws SourceException
-    {
-		getController().apply( config );
-    }
-
-	@Override
-    public int getSampleRate()
-    {
-		try
-		{
-		    return getController().getCurrentSampleRate();
-		}
-		catch( SourceException e )
-		{
-			mLog.error( "RTL2832 Tuner - couldn't get sample rate", e );
-		}
-		
-		return 0;
-    }
-	
 	public void setSampleRate( SampleRate sampleRate ) throws SourceException
 	{
 		try
@@ -123,12 +102,6 @@ public class RTL2832Tuner extends Tuner
 		return 11.0;
 	}
 
-	@Override
-    public long getFrequency() throws SourceException
-    {
-	    return getController().getFrequency();
-    }
-	
 	public void setFrequency( int frequency ) throws SourceException
 	{
 		getController().setFrequency( frequency );
@@ -158,12 +131,6 @@ public class RTL2832Tuner extends Tuner
 		return source;
     }
 	
-	@Override
-	public int getChannelCount()
-	{
-		return getController().getChannelCount();
-	}
-
 	/**
 	 * Releases the tuned channel so that the tuner controller can tune to
 	 * other frequencies as needed.

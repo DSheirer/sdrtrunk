@@ -69,28 +69,10 @@ public class B100Tuner extends Tuner
     }
 
 	@Override
-    public void apply( TunerConfiguration config ) throws SourceException
-    {
-		mLog.error( "B100 Tuner - can't apply tuner configuration" );
-    }
-
-	@Override
-    public int getSampleRate()
-    {
-	    return 0;
-    }
-
-	@Override
 	public double getSampleSize()
 	{
 		return 16.0;
 	}
-
-	@Override
-    public long getFrequency() throws SourceException
-    {
-	    return 0;
-    }
 
 	@Override
     public TunerChannelSource getChannel( TunerChannel channel ) 
@@ -100,13 +82,6 @@ public class B100Tuner extends Tuner
 	    return null;
     }
 	
-	@Override
-	public int getChannelCount()
-	{
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
 	@Override
     public void releaseChannel( TunerChannelSource source )
     {

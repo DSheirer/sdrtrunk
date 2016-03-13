@@ -31,6 +31,7 @@ import org.usb4java.DeviceDescriptor;
 
 import settings.SettingsManager;
 import source.SourceException;
+import source.tuner.MixerTunerType;
 import source.tuner.TunerClass;
 import source.tuner.TunerType;
 import source.tuner.configuration.TunerConfiguration;
@@ -60,7 +61,8 @@ public class FCD1TunerController extends FCDTunerController
 	public FCD1TunerController( Device device, DeviceDescriptor descriptor ) 
 	{
 		super( device, 
-			   descriptor, 
+			   descriptor,
+			   (int)MixerTunerType.FUNCUBE_DONGLE_PRO.getAudioFormat().getSampleRate(),
 			   sMINIMUM_TUNABLE_FREQUENCY, 
 			   sMAXIMUM_TUNABLE_FREQUENCY );
 	}
