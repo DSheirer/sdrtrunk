@@ -46,11 +46,12 @@ public abstract class MixerTuner extends Tuner implements Listener<ComplexBuffer
 	 * to support tuning.
 	 */
 	public MixerTuner( String name,
+					   TunerController tunerController,
 					   MixerTunerType mixerTunerType,
 					   TargetDataLine targetDataLine,
 					   ISampleAdapter sampleAdapter )
 	{
-		super( name );
+		super( name, tunerController );
 		
 		mMixerTunerType = mixerTunerType;
 
@@ -61,11 +62,13 @@ public abstract class MixerTuner extends Tuner implements Listener<ComplexBuffer
         								  (Listener<ComplexBuffer>)this );
 	}
 	
-	public MixerTuner( String name, 
+	public MixerTuner( String name,
+					   TunerController tunerController,
 					   MixerTunerDataLine mixerTuner,
 					   ISampleAdapter sampleAdapter )
 	{
 		this( name, 
+			  tunerController,
 			  mixerTuner.getMixerTunerType(), 
 			  mixerTuner.getTargetDataLine(),
 			  sampleAdapter );

@@ -180,8 +180,8 @@ public class JFrequencyControl extends JPanel implements IFrequencyChangeProcess
 		
 		Iterator<IFrequencyChangeProcessor> it = mProcessors.iterator();
 		
-		FrequencyChangeEvent event = 
-				new FrequencyChangeEvent( Event.NOTIFICATION_FREQUENCY_CHANGE, mFrequency );
+		FrequencyChangeEvent event = new FrequencyChangeEvent( 
+				Event.REQUEST_FREQUENCY_CHANGE, mFrequency );
 		
 		while( it.hasNext() )
 		{

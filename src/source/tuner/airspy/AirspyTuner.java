@@ -19,20 +19,17 @@ package source.tuner.airspy;
 
 import java.util.concurrent.RejectedExecutionException;
 
-import javax.swing.JPanel;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
 import sample.complex.ComplexBuffer;
-import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.Tuner;
-import source.tuner.TunerEvent;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannelSource;
 import source.tuner.TunerClass;
+import source.tuner.TunerEvent;
 import source.tuner.TunerType;
 import source.tuner.airspy.AirspyTunerController.BoardID;
 import source.tuner.configuration.TunerConfiguration;
@@ -41,28 +38,20 @@ public class AirspyTuner extends Tuner
 {
 	private final static Logger mLog = LoggerFactory.getLogger( AirspyTuner.class );
 
-	AirspyTunerController mController;
-	
 	public AirspyTuner( AirspyTunerController controller )
 	{
-		super( "Airspy" );
-		
-		mController = controller;
-		
-		/* Register for frequency/sample rate changes so that we can rebroadcast
-		 * to any registered listeners */
-		mController.addListener( this );
+		super( "Airspy", controller );
 	}
 	
 	public AirspyTunerController getController()
 	{
-		return mController;
+		return (AirspyTunerController)getTunerController();
 	}
 
 	@Override
 	public void apply( TunerConfiguration config ) throws SourceException
 	{
-		mController.apply( config );
+		getController().apply( config );
 	}
 
 	@Override
@@ -70,7 +59,7 @@ public class AirspyTuner extends Tuner
     {
 		try
 		{
-			return mController.getDeviceInfo().getSerialNumber();
+			return getController().getDeviceInfo().getSerialNumber();
 		}
 		catch( Exception e )
 		{
@@ -99,7 +88,7 @@ public class AirspyTuner extends Tuner
 		
 		try
 		{
-			rate = mController.getCurrentSampleRate();
+			rate = getController().getCurrentSampleRate();
 		} 
 		catch ( SourceException e )
 		{
@@ -118,7 +107,7 @@ public class AirspyTuner extends Tuner
 	@Override
 	public long getFrequency() throws SourceException
 	{
-		return mController.getFrequency();
+		return getController().getFrequency();
 	}
 
 	@Override
@@ -132,7 +121,7 @@ public class AirspyTuner extends Tuner
 		//Consider implementing a fractional resampler to get a correct 48 kHz
 		//output sample rate
 		
-		TunerChannelSource source = mController.getChannel( this, channel );
+		TunerChannelSource source = getController().getChannel( this, channel );
 
 		if( source != null )
 		{
@@ -147,7 +136,7 @@ public class AirspyTuner extends Tuner
 	@Override
 	public int getChannelCount()
 	{
-		return mController.getChannelCount();
+		return getController().getChannelCount();
 	}
 
 	@Override
@@ -159,19 +148,19 @@ public class AirspyTuner extends Tuner
 		/* Tell the controller to release the channel and cleanup */
 		if( source != null )
 		{
-			mController.releaseChannel( source );
+			getController().releaseChannel( source );
 		}
     }
 
 	@Override
 	public void addListener( Listener<ComplexBuffer> listener )
 	{
-		mController.addListener( listener );
+		getController().addListener( listener );
 	}
 	
 	@Override
 	public void removeListener( Listener<ComplexBuffer> listener )
 	{
-		mController.removeListener( listener );
+		getController().removeListener( listener );
 	}
 }

@@ -35,7 +35,7 @@ public class TunerSpectralDisplayManager implements Listener<TunerEvent>
 			case REQUEST_MAIN_SPECTRAL_DISPLAY:
 				mSpectralDisplayPanel.showTuner( event.getTuner() );
 				break;
-			case REQUEST_SECONDARY_SPECTRAL_DISPLAY:
+			case REQUEST_NEW_SPECTRAL_DISPLAY:
 				final SpectrumFrame frame = new SpectrumFrame( mChannelModel,
 					mChannelProcessingManager, mSettingsManager, event.getTuner() );	
 				

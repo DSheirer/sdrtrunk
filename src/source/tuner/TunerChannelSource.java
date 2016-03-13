@@ -93,7 +93,7 @@ public class TunerChannelSource extends ComplexSource
 				   throws RejectedExecutionException, SourceException
     {
 	    mTuner = tuner;
-	    mTuner.addListener( this );
+	    mTuner.getTunerController().addListener( (IFrequencyChangeProcessor)this );
 	    
 	    mTunerChannel = tunerChannel;
 
@@ -172,7 +172,7 @@ public class TunerChannelSource extends ComplexSource
 		if( !mRunning.get() )
 		{
 	    	/* Tell the tuner to release/unregister our resources */
-	    	mTuner.removeFrequencyChangeProcessor( this );
+	    	mTuner.getTunerController().removeListener( this );
 			mTuner = null;
 			mTunerChannel = null;
 			mBuffer = null;

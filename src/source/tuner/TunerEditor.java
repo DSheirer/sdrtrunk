@@ -19,6 +19,7 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import source.SourceException;
 import source.tuner.configuration.TunerConfiguration;
 import source.tuner.configuration.TunerConfigurationModel;
 
@@ -33,7 +34,6 @@ public class TunerEditor extends Editor<Tuner>
 	private TunerConfigurationModel mTunerConfigurationModel;
 	private JTable mTunerConfigurationTable;
 	private TableRowSorter<TunerConfigurationModel> mRowSorter;
-	private ConfigurationRowFilter mRowFilter = new ConfigurationRowFilter();
 	private JFrequencyControl mFrequencyControl = new JFrequencyControl();
 	
 	public TunerEditor( TunerConfigurationModel tunerConfigurationModel )
@@ -51,14 +51,8 @@ public class TunerEditor extends Editor<Tuner>
 				"[grow,fill]", "[][][grow,fill][]" ) );
 		listPanel.add( mFrequencyControl );
 
-//        mFrequencyControl.addListener( this );
-//        /* Add frequency control as frequency change listener. */
-//        mController.addListener( mFrequencyControl );
-//        mFrequencyControl.setFrequency( mController.getFrequency(), false );
-
 		mTunerConfigurationTable = new JTable( mTunerConfigurationModel );
 		mRowSorter = new TableRowSorter<>( mTunerConfigurationModel );
-		mRowSorter.setRowFilter( mRowFilter );
 		mTunerConfigurationTable.setRowSorter( mRowSorter );
 
 		listPanel.add( new JLabel( "Tuner Configurations" ) );
@@ -95,16 +89,25 @@ public class TunerEditor extends Editor<Tuner>
 	@Override
 	public void save()
 	{
+		//Unused
 	}
 
 	@Override
 	public void setItem( Tuner tuner )
 	{
+		//Cleanup previously selected tuner
+		if( hasItem() )
+		{
+			Tuner previous = getItem();
+			previous.getTunerController().removeListener( mFrequencyControl );
+			mFrequencyControl.removeListener( previous.getTunerController() );
+		}
+		
 		super.setItem( tuner );
 		
 		if( hasItem() )
 		{
-			mRowFilter.setTunerType( tuner.getTunerType() );
+			mRowSorter.setRowFilter( new ConfigurationRowFilter( tuner.getTunerType() ) );
 
 			TunerConfiguration assigned = mTunerConfigurationModel
 				.getTunerConfiguration( tuner.getTunerType(), tuner.getUniqueID() );
@@ -113,31 +116,43 @@ public class TunerEditor extends Editor<Tuner>
 			
 			if( modelIndex >= 0 )
 			{
-				int viewIndex = mTunerConfigurationTable.convertRowIndexToView( modelIndex );
+				int viewIndex = mTunerConfigurationTable
+						.convertRowIndexToView( modelIndex );
 				
 				if( viewIndex >= 0 )
 				{
-					mTunerConfigurationTable.setRowSelectionInterval( viewIndex, viewIndex );
+					mTunerConfigurationTable
+						.setRowSelectionInterval( viewIndex, viewIndex );
 				}
 			}
+
+			//Link frequency control to the tuner
+	        mFrequencyControl.addListener( tuner.getTunerController() );
+	        
+	        //Link tuner to frequency control
+	        tuner.getTunerController().addListener( mFrequencyControl );
+
+	        //Set the displayed frequency without adjusting the tuner's frequency
+	        try
+	        {
+		        mFrequencyControl.setFrequency( tuner.getFrequency(), false );
+	        }
+	        catch( SourceException e )
+	        {
+	        	mLog.debug( "Couldn't get frequency from tuner: " + tuner.getUniqueID() );
+	        }
 		}
 		else
 		{
-			mRowFilter.setTunerType( null );
+			mRowSorter.setRowFilter( null );
 		}
-		
-		mRowSorter.setRowFilter( mRowFilter );
 	}
 	
 	public class ConfigurationRowFilter extends RowFilter<TunerConfigurationModel,Integer>
 	{
 		private TunerType mTunerType;
 		
-		public ConfigurationRowFilter()
-		{
-		}
-		
-		public void setTunerType( TunerType type )
+		public ConfigurationRowFilter( TunerType type )
 		{
 			mTunerType = type;
 		}
@@ -146,22 +161,10 @@ public class TunerEditor extends Editor<Tuner>
 		public boolean include( javax.swing.RowFilter.Entry<? extends TunerConfigurationModel, 
 								? extends Integer> entry )
 		{
-			if( mTunerType == null )
-			{
-				return true;
-			}
-			else
-			{
-				TunerConfigurationModel model = entry.getModel();
-				TunerConfiguration config = model.getTunerConfiguration( entry.getIdentifier() );
-				
-				if( config != null )
-				{
-					return config.getTunerType() == mTunerType;
-				}
-			}
-			
-			return false;
+			TunerConfiguration config = entry.getModel()
+					.getTunerConfiguration( entry.getIdentifier() );
+
+			return config != null && config.getTunerType() == mTunerType;
 		}
 	}
 	

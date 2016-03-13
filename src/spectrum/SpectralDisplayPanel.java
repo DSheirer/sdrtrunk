@@ -438,7 +438,7 @@ public class SpectralDisplayPanel extends JPanel
 		if( mTuner != null )
 		{
 			//Register to receive frequency change events
-			mTuner.addFrequencyChangeProcessor( this );
+			mTuner.getTunerController().addListener( this );
 
 			//Register the dft processor to receive samples from the tuner
 			mTuner.addListener( (Listener<ComplexBuffer>)mDFTProcessor );
@@ -471,7 +471,7 @@ public class SpectralDisplayPanel extends JPanel
 		if( mTuner != null )
 		{
 			//Deregister for frequency change events from the tuner
-			mTuner.removeFrequencyChangeProcessor( this );
+			mTuner.getTunerController().removeListener( this );
 			
 			//Deregister the dft processor from receiving samples
 			mTuner.removeListener( (Listener<ComplexBuffer>)mDFTProcessor );

@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -19,26 +19,21 @@ package source.tuner.rtl;
 
 import java.util.concurrent.RejectedExecutionException;
 
-import javax.swing.JPanel;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.LibUsbException;
 
 import sample.Listener;
 import sample.complex.ComplexBuffer;
-import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.Tuner;
-import source.tuner.TunerEvent;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannelSource;
 import source.tuner.TunerClass;
+import source.tuner.TunerEvent;
 import source.tuner.TunerType;
 import source.tuner.configuration.TunerConfiguration;
-import source.tuner.frequency.IFrequencyChangeListener;
 import source.tuner.rtl.RTL2832TunerController.SampleRate;
-import controller.ThreadPoolManager;
 
 public class RTL2832Tuner extends Tuner
 {
@@ -46,7 +41,6 @@ public class RTL2832Tuner extends Tuner
 			LoggerFactory.getLogger( RTL2832Tuner.class );
 
 	private TunerClass mTunerClass;
-	protected RTL2832TunerController mController;
 
 	public RTL2832Tuner( TunerClass tunerClass, 
 						 RTL2832TunerController controller ) 
@@ -54,11 +48,9 @@ public class RTL2832Tuner extends Tuner
 	{
 		super( tunerClass.getVendorDeviceLabel() + "/" + 
 			   controller.getTunerType().getLabel() + " #" +
-			   controller.getUniqueID() );
+			   controller.getUniqueID(), controller );
 		
 		mTunerClass = tunerClass;
-		mController = controller;
-		mController.addListener( this );
 	}
 	
 	public void dispose()
@@ -68,13 +60,13 @@ public class RTL2832Tuner extends Tuner
 	
 	public RTL2832TunerController getController()
 	{
-		return mController;
+		return (RTL2832TunerController)getTunerController();
 	}
 
 	@Override
     public String getUniqueID()
     {
-	    return mController.getUniqueID();
+	    return getController().getUniqueID();
     }
 
 	@Override
@@ -86,13 +78,13 @@ public class RTL2832Tuner extends Tuner
 	@Override
     public TunerType getTunerType()
     {
-	    return mController.getTunerType();
+	    return getController().getTunerType();
     }
 	
 	@Override
     public void apply( TunerConfiguration config ) throws SourceException
     {
-		mController.apply( config );
+		getController().apply( config );
     }
 
 	@Override
@@ -100,7 +92,7 @@ public class RTL2832Tuner extends Tuner
     {
 		try
 		{
-		    return mController.getCurrentSampleRate();
+		    return getController().getCurrentSampleRate();
 		}
 		catch( SourceException e )
 		{
@@ -114,7 +106,7 @@ public class RTL2832Tuner extends Tuner
 	{
 		try
 		{
-			mController.setSampleRate( sampleRate );
+			getController().setSampleRate( sampleRate );
 		}
 		catch( LibUsbException e )
 		{
@@ -134,12 +126,12 @@ public class RTL2832Tuner extends Tuner
 	@Override
     public long getFrequency() throws SourceException
     {
-	    return mController.getFrequency();
+	    return getController().getFrequency();
     }
 	
 	public void setFrequency( int frequency ) throws SourceException
 	{
-		mController.setFrequency( frequency );
+		getController().setFrequency( frequency );
 	}
 
 	@Override
@@ -151,7 +143,7 @@ public class RTL2832Tuner extends Tuner
 		
 		try
 		{
-			source = mController.getChannel( this, channel );
+			source = getController().getChannel( this, channel );
 
 			if( source != null )
 			{
@@ -169,7 +161,7 @@ public class RTL2832Tuner extends Tuner
 	@Override
 	public int getChannelCount()
 	{
-		return mController.getChannelCount();
+		return getController().getChannelCount();
 	}
 
 	/**
@@ -185,19 +177,19 @@ public class RTL2832Tuner extends Tuner
 		/* Tell the controller to release the channel and cleanup */
 		if( source != null )
 		{
-			mController.releaseChannel( source );
+			getController().releaseChannel( source );
 		}
     }
 
 	@Override
 	public void addListener( Listener<ComplexBuffer> listener )
 	{
-		mController.addListener( listener );
+		getController().addListener( listener );
 	}
 	
 	@Override
 	public void removeListener( Listener<ComplexBuffer> listener )
 	{
-		mController.removeListener( listener );
+		getController().removeListener( listener );
 	}
 }

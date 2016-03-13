@@ -73,7 +73,7 @@ public class FCD1TunerEditorPanel extends JPanel implements IFrequencyChangeProc
         /* Add frequency control as listener to tuner to get frequency changes
          * that are invoked elsewhere, to keep the control in sync with the
          * frequency */
-        mTuner.addFrequencyChangeProcessor( mFrequencyControl );
+        mTuner.getController().addListener( mFrequencyControl );
         
         mFrequencyControl.setFrequency( mController.getFrequency(), false );
 

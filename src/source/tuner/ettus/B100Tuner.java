@@ -46,7 +46,7 @@ public class B100Tuner extends Tuner
 		//TODO: this should extend a USBTuner class, so that we can push the
 		//complex sample listener and the frequency change listener up to that class
 		
-		super( "Ettus B100 with WBX Tuner" );
+		super( "Ettus B100 with WBX Tuner", null );
 		
 		mDevice = device;
 	}

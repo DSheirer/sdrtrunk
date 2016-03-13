@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -22,30 +22,25 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.RejectedExecutionException;
 
-import javax.swing.JPanel;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
 import sample.complex.ComplexBuffer;
-import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.configuration.TunerConfiguration;
 import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeEvent.Event;
 import source.tuner.frequency.IFrequencyChangeProcessor;
 
 /**
  * Tuner - provides tuner channel sources, representing a channel frequency
  */
-public abstract class Tuner implements IFrequencyChangeProcessor,
-									   ITunerChannelProvider
+public abstract class Tuner implements ITunerChannelProvider
 {
 	private final static Logger mLog = LoggerFactory.getLogger( Tuner.class );
 	
 	private String mName;
-
+	private TunerController mTunerController;
 	/**
 	 * Sample Listeners - these will typically be the DFT processor for spectral
 	 * display, or it will be one or more tuner channel sources
@@ -53,15 +48,40 @@ public abstract class Tuner implements IFrequencyChangeProcessor,
 	protected List<Listener<ComplexBuffer>> mSampleListeners = 
 			new CopyOnWriteArrayList<>();
 	
-	protected List<IFrequencyChangeProcessor> mFrequencyChangeProcessors = 
-			new CopyOnWriteArrayList<>();
-
 	protected List<Listener<TunerEvent>> mTunerChangeListeners =
 			new ArrayList<>();
 	
-	public Tuner( String name )
+	public Tuner( String name, TunerController tunerController )
 	{
 		mName = name;
+		mTunerController = tunerController;
+
+		//Rebroadcast frequency and sample rate change events as tuner events
+		mTunerController.addListener( new IFrequencyChangeProcessor()
+		{
+			@Override
+			public void frequencyChanged( FrequencyChangeEvent event )
+			{
+				switch( event.getEvent() )
+				{
+					case NOTIFICATION_FREQUENCY_CHANGE:
+						broadcast( new TunerEvent( Tuner.this, 
+								source.tuner.TunerEvent.Event.FREQUENCY ));
+						break;
+					case NOTIFICATION_SAMPLE_RATE_CHANGE:
+						broadcast( new TunerEvent( Tuner.this, 
+								source.tuner.TunerEvent.Event.SAMPLE_RATE ));
+						break;
+					default:
+						break;
+				}
+			}
+		} );
+	}
+	
+	public TunerController getTunerController()
+	{
+		return mTunerController;
 	}
 	
 	public String toString()
@@ -72,7 +92,6 @@ public abstract class Tuner implements IFrequencyChangeProcessor,
 	public void dispose()
 	{
 		mSampleListeners.clear();
-		mFrequencyChangeProcessors.clear();
 	}
 	
 	public void setName( String name )
@@ -189,32 +208,6 @@ public abstract class Tuner implements IFrequencyChangeProcessor,
     	}
     }
 
-    /**
-     * Adds the frequency change listener to receive frequency and/or bandwidth
-     * change events
-     */
-	public void addFrequencyChangeProcessor( IFrequencyChangeProcessor processor )
-	{
-		mFrequencyChangeProcessors.add( processor );
-	}
-
-	/**
-	 * Removes the frequency change listener
-	 */
-    public void removeFrequencyChangeProcessor( IFrequencyChangeProcessor processor )
-    {
-    	mFrequencyChangeProcessors.remove( processor );
-    }
-
-    /**
-     * Broadcasts a frequency change event to all registered listeners
-     */
-    public void broadcastFrequencyChange( long frequency )
-    {
-    	broadcastFrequencyChangeEvent( 
-				new FrequencyChangeEvent( Event.NOTIFICATION_FREQUENCY_CHANGE, frequency ) );
-    }
-
 	/**
 	 * Registers the listener
 	 */
@@ -241,51 +234,4 @@ public abstract class Tuner implements IFrequencyChangeProcessor,
     		listener.receive( event );
     	}
     }
-    
-    /**
-     * Broadcasts a sample rate change event to all registered listeners
-     */
-    public void broadcastSampleRateChange( int sampleRate )
-    {
-    	broadcastFrequencyChangeEvent( 
-				new FrequencyChangeEvent( Event.NOTIFICATION_SAMPLE_RATE_CHANGE, sampleRate ) );
-    }
-    
-    /**
-     * Broadcasts actual sample rate change event to all registered listeners
-     */
-    public void broadcastActualSampleRateChange( int actualSampleRate )
-    {
-    	broadcastFrequencyChangeEvent( 
-			new FrequencyChangeEvent( Event.NOTIFICATION_SAMPLE_RATE_CHANGE, actualSampleRate ) );
-    }
-
-    /**
-     * Broadcasts a frequency change event to all registered listeners
-     */
-    public void broadcastFrequencyChangeEvent( FrequencyChangeEvent event )
-    {
-    	for( IFrequencyChangeProcessor processor: mFrequencyChangeProcessors )
-    	{
-    		processor.frequencyChanged( event );
-    	}
-    	
-    	if( event.getEvent() == Event.NOTIFICATION_FREQUENCY_CHANGE )
-    	{
-        	broadcast( new TunerEvent( this, TunerEvent.Event.FREQUENCY ) );
-    	}
-    	else if( event.getEvent() == Event.NOTIFICATION_SAMPLE_RATE_CHANGE )
-    	{
-        	broadcast( new TunerEvent( this, TunerEvent.Event.SAMPLE_RATE ) );
-    	}
-    }
-
-    /**
-     * Frequency change listener method.  We receive change events from the
-     * controller and rebroadcast them to all registered listeners.
-     */
-	public void frequencyChanged( FrequencyChangeEvent event )
-	{
-		broadcastFrequencyChangeEvent( event );
-	}
 }

@@ -26,12 +26,13 @@ import org.slf4j.LoggerFactory;
 
 import source.SourceException;
 import source.tuner.configuration.TunerConfiguration;
+import source.tuner.frequency.FrequencyChangeEvent;
+import source.tuner.frequency.FrequencyChangeEvent.Event;
 import source.tuner.frequency.FrequencyController;
 import source.tuner.frequency.FrequencyController.Tunable;
 import source.tuner.frequency.IFrequencyChangeProcessor;
-import controller.ThreadPoolManager;
 
-public abstract class TunerController implements Tunable
+public abstract class TunerController implements Tunable, IFrequencyChangeProcessor
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( TunerController.class );
@@ -73,8 +74,27 @@ public abstract class TunerController implements Tunable
 	 */
 	public abstract void apply( TunerConfiguration config ) 
 								throws SourceException;
-	
-    public int getBandwidth()
+
+	/**
+	 * Responds to requests to set the frequency
+	 */
+    @Override
+	public void frequencyChanged( FrequencyChangeEvent event )
+	{
+    	if( event.getEvent() == Event.REQUEST_FREQUENCY_CHANGE )
+    	{
+    		try
+			{
+				setFrequency( event.getValue().longValue() );
+			} 
+    		catch ( SourceException e )
+			{
+    			mLog.error( "Error setting frequency from external controller", e );
+			}
+    	}
+	}
+
+	public int getBandwidth()
     {
     	return mFrequencyController.getBandwidth();
     }

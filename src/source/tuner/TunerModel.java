@@ -6,6 +6,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 import javax.swing.table.AbstractTableModel;
 
 import org.slf4j.Logger;
@@ -25,16 +27,17 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
 	
 	private final static Logger mLog = LoggerFactory.getLogger( TunerModel.class );
 
-	private static final int TUNER_CLASS = 0;
-	private static final int TUNER_TYPE = 1;
-	private static final int SAMPLE_RATE = 2;
-	private static final int FREQUENCY = 3;
-	private static final int CHANNEL_COUNT = 4;
-	private static final int SPECTRAL_DISPLAY = 5;
+	public static final int TUNER_CLASS = 0;
+	public static final int TUNER_TYPE = 1;
+	public static final int SAMPLE_RATE = 2;
+	public static final int FREQUENCY = 3;
+	public static final int CHANNEL_COUNT = 4;
+	public static final int SPECTRAL_DISPLAY_MAIN = 5;
+	public static final int SPECTRAL_DISPLAY_NEW = 6;
 	
 	private static final String MHZ = " MHz";
 	private static final String[] COLUMNS = 
-		{ "Class", "Type", "Sample Rate", "Frequency", "Channels", "Spectrum" };
+		{ "Class", "Type", "Sample Rate", "Frequency", "Channels", "Spectral", "Display" };
 	
 	private List<Tuner> mTuners = new ArrayList<>();
 	private List<Listener<TunerEvent>> mTunerEventListeners = new ArrayList<>();
@@ -183,7 +186,7 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
 						fireTableCellUpdated( index, SAMPLE_RATE );
 						break;
 					case REQUEST_MAIN_SPECTRAL_DISPLAY:
-						fireTableCellUpdated( index, SPECTRAL_DISPLAY );
+						fireTableCellUpdated( index, SPECTRAL_DISPLAY_MAIN );
 					default:
 						break;
 				}
@@ -202,7 +205,7 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
 	@Override
 	public int getColumnCount()
 	{
-		return 6;
+		return COLUMNS.length;
 	}
 
 	@Override
@@ -235,8 +238,10 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
 					}
 				case CHANNEL_COUNT:
 					return tuner.getChannelCount();
-				case SPECTRAL_DISPLAY:
-					return "TBD";
+				case SPECTRAL_DISPLAY_MAIN:
+					return "Main";
+				case SPECTRAL_DISPLAY_NEW:
+					return "New";
 				default:
 					break;
 			}

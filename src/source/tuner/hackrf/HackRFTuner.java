@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -19,20 +19,17 @@ package source.tuner.hackrf;
 
 import java.util.concurrent.RejectedExecutionException;
 
-import javax.swing.JPanel;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
 import sample.complex.ComplexBuffer;
-import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.Tuner;
-import source.tuner.TunerEvent;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannelSource;
 import source.tuner.TunerClass;
+import source.tuner.TunerEvent;
 import source.tuner.TunerType;
 import source.tuner.configuration.TunerConfiguration;
 import source.tuner.hackrf.HackRFTunerController.BoardID;
@@ -41,26 +38,19 @@ public class HackRFTuner extends Tuner
 {
 	private final static Logger mLog = LoggerFactory.getLogger( HackRFTuner.class );
 
-	private HackRFTunerController mController;
-	
 	public HackRFTuner( HackRFTunerController controller ) throws SourceException
 	{
-		super( "HackRF" );
-		
-		mController = controller;
-		
-		/* Register for frequency/sample rate changes */
-		mController.addListener( this );
+		super( "HackRF", controller );
+	}
+	
+	public HackRFTunerController getController()
+	{
+		return (HackRFTunerController)getTunerController();
 	}
 
 	public void dispose()
 	{
 		//TODO: dispose of something here
-	}
-	
-	public HackRFTunerController getController()
-	{
-		return mController;
 	}
 	
 	@Override
@@ -78,13 +68,13 @@ public class HackRFTuner extends Tuner
 	@Override
     public void apply( TunerConfiguration config ) throws SourceException
     {
-		mController.apply( config );
+		getController().apply( config );
     }
 
 	@Override
     public int getSampleRate()
     {
-	    return mController.getSampleRate();
+	    return getController().getSampleRate();
     }
 
 	@Override
@@ -96,14 +86,14 @@ public class HackRFTuner extends Tuner
 	@Override
     public long getFrequency() throws SourceException
     {
-	    return mController.getFrequency();
+	    return getController().getFrequency();
     }
 
 	@Override
     public TunerChannelSource getChannel( TunerChannel channel ) 
     		throws RejectedExecutionException, SourceException
     {
-		TunerChannelSource source = mController.getChannel( this, channel );
+		TunerChannelSource source = getController().getChannel( this, channel );
 
 		if( source != null )
 		{
@@ -116,7 +106,7 @@ public class HackRFTuner extends Tuner
 	@Override
 	public int getChannelCount()
 	{
-		return mController.getChannelCount();
+		return getController().getChannelCount();
 	}
 
 	@Override
@@ -128,7 +118,7 @@ public class HackRFTuner extends Tuner
 		/* Tell the controller to release the channel and cleanup */
 		if( source != null )
 		{
-			mController.releaseChannel( source );
+			getController().releaseChannel( source );
 		}
     }
 
@@ -137,7 +127,7 @@ public class HackRFTuner extends Tuner
     {
 		try
 		{
-			return mController.getSerial().getSerialNumber();
+			return getController().getSerial().getSerialNumber();
 		}
 		catch( Exception e )
 		{
@@ -150,12 +140,12 @@ public class HackRFTuner extends Tuner
 	@Override
 	public void addListener( Listener<ComplexBuffer> listener )
 	{
-		mController.addListener( listener );
+		getController().addListener( listener );
 	}
 	
 	@Override
 	public void removeListener( Listener<ComplexBuffer> listener )
 	{
-		mController.removeListener( listener );
+		getController().removeListener( listener );
 	}
 }

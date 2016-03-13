@@ -72,7 +72,7 @@ public class FCD2TunerEditorPanel extends JPanel implements IFrequencyChangeProc
         
         /* Add frequency control as frequency change listener.  This creates a
          * feedback loop, so the control does not rebroadcast the event */
-        mTuner.addFrequencyChangeProcessor( mFrequencyControl );
+        mTuner.getController().addListener( mFrequencyControl );
         
         mFrequencyControl.setFrequency( mController.getFrequency(), false );
 

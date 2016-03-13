@@ -75,7 +75,7 @@ public class AirspyTunerEditorPanel extends JPanel
         
         /* Add frequency control as frequency change listener.  This creates a
          * feedback loop, so the control does not rebroadcast the event */
-        mTuner.addFrequencyChangeProcessor( mFrequencyControl );
+        mTuner.getTunerController().addListener( mFrequencyControl );
         
         mFrequencyControl.setFrequency( mController.getFrequency(), false );
 
