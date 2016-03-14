@@ -202,7 +202,7 @@ public class TunerConfigurationModel extends AbstractTableModel
 
 		if( configurationName == null )
 		{
-			configurationName = "Default-" + uniqueID;
+			configurationName = uniqueID;
 		}
 
 		List<TunerConfiguration> configs = getTunerConfigurations( type );
@@ -228,6 +228,22 @@ public class TunerConfigurationModel extends AbstractTableModel
 		assignTunerConfiguration( config, configurationName );
 		
 		return config;
+	}
+	
+	public boolean hasTunerConfiguration( TunerType type, String name )
+	{
+		for( TunerConfiguration config: mTunerConfigurations )
+		{
+			if( config.getTunerType() == type && 
+				config.getName().contentEquals( name ) )
+			{
+				mLog.debug( "Returning true for name: " + name );
+				return true;
+			}
+		}
+		
+		mLog.debug( "Returning false for name: " + name );
+		return false;
 	}
 
 	/**

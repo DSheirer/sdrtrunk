@@ -5,9 +5,12 @@ import gui.editor.Editor;
 import gui.editor.EmptyEditor;
 
 import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -24,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import source.SourceException;
 import source.tuner.configuration.TunerConfiguration;
+import source.tuner.configuration.TunerConfigurationFactory;
 import source.tuner.configuration.TunerConfigurationModel;
 
 import com.jidesoft.swing.JideSplitPane;
@@ -90,6 +94,47 @@ public class TunerEditor extends Editor<Tuner>
 		listPanel.add( mTunerConfigurationTable, "span" );
 
 		mNewConfigurationButton.setEnabled( false );
+		mNewConfigurationButton.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				Tuner tuner = getItem();
+				
+				int counter = 0;
+				
+				String name = tuner.getUniqueID() + "-New";
+
+				while( counter < 10 && mTunerConfigurationModel
+					.hasTunerConfiguration( tuner.getTunerType(), name ) )
+				{
+					counter++;
+					
+					StringBuilder sb = new StringBuilder();
+					sb.append( tuner.getUniqueID() );
+					sb.append( "-New(" );
+					sb.append( String.valueOf( counter ) );
+					sb.append( ")" );
+					
+					name = sb.toString();
+				}
+
+				if( counter < 10 )
+				{
+					TunerConfiguration config = TunerConfigurationFactory
+						.getTunerConfiguration( tuner.getTunerType(), name );
+					
+					mTunerConfigurationModel.addTunerConfiguration( config );
+				}
+				else
+				{
+					JOptionPane.showMessageDialog( TunerEditor.this, 
+						"Can't create configuration - maximum limit reached", 
+						"Error", 
+						JOptionPane.OK_OPTION );
+				}
+			}
+		} );
 		listPanel.add( mNewConfigurationButton );
 
 		mDeleteConfigurationButton.setEnabled( false );
