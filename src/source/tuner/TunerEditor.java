@@ -14,8 +14,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.JTextArea;
 import javax.swing.RowFilter;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.TableRowSorter;
@@ -25,8 +25,8 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import source.SourceException;
 import source.tuner.configuration.TunerConfiguration;
+import source.tuner.configuration.TunerConfigurationEditor;
 import source.tuner.configuration.TunerConfigurationFactory;
 import source.tuner.configuration.TunerConfigurationModel;
 
@@ -45,6 +45,9 @@ public class TunerEditor extends Editor<Tuner>
 	private JLabel mSelectedTunerType = new JLabel( "No Tuner Selected" );
 	private JButton mNewConfigurationButton = new JButton( "New" );
 	private JButton mDeleteConfigurationButton = new JButton( "Delete" );
+	private JScrollPane mEditorScroller;
+	private Editor<TunerConfiguration> mEditor = new EmptyEditor<>();
+	private JideSplitPane mEditorSplitPane = new JideSplitPane();
 	
 	public TunerEditor( TunerConfigurationModel tunerConfigurationModel )
 	{
@@ -90,8 +93,10 @@ public class TunerEditor extends Editor<Tuner>
 			}
 		} );
 
+		JScrollPane tableScroller = new JScrollPane( mTunerConfigurationTable );
+		tableScroller.setHorizontalScrollBarPolicy( ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER );
 		listPanel.add( new JLabel( "Tuner Configurations" ), "span" );
-		listPanel.add( mTunerConfigurationTable, "span" );
+		listPanel.add( tableScroller, "span" );
 
 		mNewConfigurationButton.setEnabled( false );
 		mNewConfigurationButton.addActionListener( new ActionListener()
@@ -141,20 +146,18 @@ public class TunerEditor extends Editor<Tuner>
 		listPanel.add( mDeleteConfigurationButton );
 		
 		//Set preferred size on both scrollers to same width, so they split the space
+		listPanel.setPreferredSize( new Dimension( 100, 80 ) );
 		JScrollPane listScroller = new JScrollPane( listPanel );
-		listScroller.setPreferredSize( new Dimension( 200, 80 ) );
+		listScroller.setPreferredSize( new Dimension( 100, 80 ) );
 		
-//TODO: this has to be changed
-		JPanel editorPanel = new EmptyEditor<TunerConfiguration>();
-		JScrollPane editorScroller = new JScrollPane( editorPanel );
-		editorScroller.setPreferredSize( new Dimension( 200, 80 ) );
+		mEditorScroller = new JScrollPane( mEditor );
+		mEditorScroller.setPreferredSize( new Dimension( 100, 80 ) );
 
-		JideSplitPane splitPane = 
-				new JideSplitPane( JideSplitPane.HORIZONTAL_SPLIT );
-		splitPane.add( listScroller );
-		splitPane.add( editorScroller );
+		mEditorSplitPane = new JideSplitPane( JideSplitPane.HORIZONTAL_SPLIT );
+		mEditorSplitPane.add( listScroller );
+		mEditorSplitPane.add( mEditorScroller );
 
-		add( splitPane );
+		add( mEditorSplitPane );
 	}
 	
 	@Override
@@ -211,6 +214,9 @@ public class TunerEditor extends Editor<Tuner>
 	        //Set the displayed frequency without adjusting the tuner's frequency
 	        mFrequencyControl.setFrequency( 
 	        		tuner.getTunerController().getFrequency(), false );
+	        
+	        mEditor = TunerConfigurationFactory
+        		.getEditor( getItem(), mTunerConfigurationModel );
 		}
 		else
 		{
@@ -219,19 +225,35 @@ public class TunerEditor extends Editor<Tuner>
 			mTunerConfigurationTable.setEnabled( false );
 			mNewConfigurationButton.setEnabled( false );
 			mRowSorter.setRowFilter( null );
+			mEditor = new EmptyEditor<TunerConfiguration>();
 		}
+		
+		//Swap out the editor
+		int split = mEditorSplitPane.getDividerLocation( 0 );
+		mEditorSplitPane.remove( mEditorScroller );
+		mEditorScroller = new JScrollPane( mEditor );
+		mEditorSplitPane.add( mEditorScroller );
+		mEditorSplitPane.setDividerLocation( 0, split );
 	}
 	
 	private void setConfigurationEditor( TunerConfiguration config )
 	{
 		if( config != null )
 		{
-			mDeleteConfigurationButton.setEnabled( true );
+			if( !mDeleteConfigurationButton.isEnabled() )
+			{
+				mDeleteConfigurationButton.setEnabled( true );
+			}
 		}
 		else
 		{
-			mDeleteConfigurationButton.setEnabled( false );
+			if( mDeleteConfigurationButton.isEnabled() )
+			{
+				mDeleteConfigurationButton.setEnabled( false );
+			}
 		}
+		
+		mEditor.setItem( config );
 	}
 	
 	public class ConfigurationRowFilter extends RowFilter<TunerConfigurationModel,Integer>

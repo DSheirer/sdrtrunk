@@ -1,6 +1,7 @@
 package source.tuner.configuration;
 
 import gui.editor.Editor;
+import source.tuner.TunerType;
 
 public abstract class TunerConfigurationEditor extends Editor<TunerConfiguration>
 {
@@ -12,6 +13,8 @@ public abstract class TunerConfigurationEditor extends Editor<TunerConfiguration
 	{
 		mTunerConfigurationModel = model;
 	}
+	
+	public abstract boolean canEdit( TunerType tunerType );
 	
 	public TunerConfigurationModel getTunerConfigurationModel()
 	{

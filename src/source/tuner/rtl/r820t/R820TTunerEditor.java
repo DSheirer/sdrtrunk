@@ -29,6 +29,7 @@ import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JSeparator;
 import javax.swing.JSpinner;
 import javax.swing.JTextField;
 import javax.swing.SpinnerModel;
@@ -45,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import org.usb4java.LibUsbException;
 
 import source.SourceException;
+import source.tuner.TunerType;
 import source.tuner.configuration.TunerConfiguration;
 import source.tuner.configuration.TunerConfigurationEditor;
 import source.tuner.configuration.TunerConfigurationEvent;
@@ -83,8 +85,14 @@ public class R820TTunerEditor extends TunerConfigurationEditor
         
         init();
     }
-
+    
     @Override
+	public boolean canEdit( TunerType tunerType )
+	{
+		return tunerType == TunerType.RAFAELMICRO_R820T;
+	}
+
+	@Override
 	public void save()
 	{
     	if( hasItem() )
@@ -147,9 +155,10 @@ public class R820TTunerEditor extends TunerConfigurationEditor
 
 	private void init()
     {
-		setLayout( new MigLayout( "fill,wrap 2", "[right][grow]", "[][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 4", "[right][grow,fill][right][grow,fill]", 
+				"[][][][][][][grow]" ) );
 		
-		add( new JLabel( "R820T Tuner" ), "span, align center" );
+		add( new JLabel( "R820T Tuner Configuration" ), "span, align center" );
 
 		/**
 		 * Tuner Configuration Name
@@ -166,9 +175,40 @@ public class R820TTunerEditor extends TunerConfigurationEditor
             public void focusGained( FocusEvent e ) {}
 		} );
 		
-		add( new JLabel( "Configuration:" ) );
-		add( mConfigurationName, "growx,push" );
+		add( new JLabel( "Name:" ) );
+		add( mConfigurationName, "span,grow" );
 		
+        mComboSampleRate = new JComboBox<>( SampleRate.values() );
+        mComboSampleRate.addActionListener( new ActionListener() 
+        {
+			@Override
+            public void actionPerformed( ActionEvent e )
+            {
+				SampleRate sampleRate = 
+						(SampleRate)mComboSampleRate.getSelectedItem();
+				try
+                {
+
+					mController.setSampleRate( sampleRate );
+	                save();
+                }
+                catch ( SourceException | LibUsbException eSampleRate )
+                {
+                	JOptionPane.showMessageDialog( 
+                			R820TTunerEditor.this, 
+                			"R820T Tuner Controller - couldn't apply the sample "
+                			+ "rate setting [" + sampleRate.getLabel() + "] " + 
+                					eSampleRate.getLocalizedMessage() );  
+                	
+                	mLog.error( "R820T Tuner Controller - couldn't apply sample "
+                			+ "rate setting [" + sampleRate.getLabel() + "]", 
+                			eSampleRate );
+                }
+            }
+        } );
+        add( new JLabel( "Sample Rate:" ) );
+        add( mComboSampleRate );
+
         /**
          * Frequency Correction
          */
@@ -208,50 +248,14 @@ public class R820TTunerEditor extends TunerConfigurationEditor
             }
         } );
         
-        add( new JLabel( "Correction PPM:" ) );
-        add( mFrequencyCorrection, "growx,push" );
+        add( new JLabel( "PPM:" ) );
+        add( mFrequencyCorrection );
 
-        /**
-         * Sample Rate
-         */
-        mComboSampleRate = new JComboBox<>( SampleRate.values() );
-        mComboSampleRate.addActionListener( new ActionListener() 
-        {
-			@Override
-            public void actionPerformed( ActionEvent e )
-            {
-				SampleRate sampleRate = 
-						(SampleRate)mComboSampleRate.getSelectedItem();
-				try
-                {
-
-					mController.setSampleRate( sampleRate );
-	                save();
-                }
-                catch ( SourceException | LibUsbException eSampleRate )
-                {
-                	JOptionPane.showMessageDialog( 
-                			R820TTunerEditor.this, 
-                			"R820T Tuner Controller - couldn't apply the sample "
-                			+ "rate setting [" + sampleRate.getLabel() + "] " + 
-                					eSampleRate.getLocalizedMessage() );  
-                	
-                	mLog.error( "R820T Tuner Controller - couldn't apply sample "
-                			+ "rate setting [" + sampleRate.getLabel() + "]", 
-                			eSampleRate );
-                }
-            }
-        } );
-        add( new JLabel( "Sample Rate:" ) );
-        add( mComboSampleRate, "growx,push" );
+        add( new JSeparator( JSeparator.HORIZONTAL ), "span,grow" );
 
         /**
          * Gain Controls 
          */
-        JPanel gainPanel = new JPanel();
-        gainPanel.setLayout( new MigLayout( "", "[grow,fill]", "[grow,fill]" ) );
-        gainPanel.setBorder( BorderFactory.createTitledBorder( "Gain" ) );
-        
         /* Master Gain Control */
         mComboMasterGain = new JComboBox<R820TGain>( R820TGain.values() );
         
@@ -308,8 +312,8 @@ public class R820TTunerEditor extends TunerConfigurationEditor
         		+ "<i>Mixer</i>, <i>LNA</i> and <i>Enhance</i> gain<br>"
         		+ "settings, or one of the individual gain settings for<br>"
         		+ "semi-manual gain control</html>" );
-        gainPanel.add( new JLabel( "Master" ) );
-        gainPanel.add( mComboMasterGain );
+        add( new JLabel( "Master:" ) );
+        add( mComboMasterGain );
 
         /* Mixer Gain Control */
         mComboMixerGain = new JComboBox<R820TMixerGain>( R820TMixerGain.values() );
@@ -356,8 +360,8 @@ public class R820TTunerEditor extends TunerConfigurationEditor
         mComboMixerGain.setToolTipText( "<html>Mixer Gain.  Set master gain "
         		+ "to <b>MASTER</b> to enable adjustment</html>" );
         mComboMixerGain.setEnabled( false );
-        gainPanel.add( new JLabel( "Mixer" ) );
-        gainPanel.add( mComboMixerGain, "wrap" );
+        add( new JLabel( "Mixer:" ) );
+        add( mComboMixerGain );
 
         /* LNA Gain Control */
         mComboLNAGain = new JComboBox<R820TLNAGain>( R820TLNAGain.values() );
@@ -397,8 +401,8 @@ public class R820TTunerEditor extends TunerConfigurationEditor
         mComboLNAGain.setToolTipText( "<html>LNA Gain.  Set master gain "
         		+ "to <b>MANUAL</b> to enable adjustment</html>" );
         mComboLNAGain.setEnabled( false );
-        gainPanel.add( new JLabel( "LNA" ) );
-        gainPanel.add( mComboLNAGain );
+        add( new JLabel( "LNA:" ) );
+        add( mComboLNAGain );
 
         /* VGA Gain Control */
         mComboVGAGain = new JComboBox<R820TVGAGain>( R820TVGAGain.values() );
@@ -438,9 +442,7 @@ public class R820TTunerEditor extends TunerConfigurationEditor
         mComboVGAGain.setToolTipText( "<html>VGA Gain.  Set master gain "
         		+ "to <b>MANUAL</b> to enable adjustment</html>" );
         mComboVGAGain.setEnabled( false );
-        gainPanel.add( new JLabel( "VGA" ) );
-        gainPanel.add( mComboVGAGain, "wrap" );
-
-        add( gainPanel, "span" );
+        add( new JLabel( "VGA:" ) );
+        add( mComboVGAGain );
     }
 }

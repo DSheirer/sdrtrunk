@@ -3,16 +3,13 @@ package source.tuner.configuration;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.RowFilter;
 import javax.swing.table.AbstractTableModel;
-import javax.swing.table.TableRowSorter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
 import source.tuner.TunerType;
-import source.tuner.TunerViewPanel;
 import source.tuner.configuration.TunerConfigurationEvent.Event;
 
 public class TunerConfigurationModel extends AbstractTableModel
@@ -237,12 +234,10 @@ public class TunerConfigurationModel extends AbstractTableModel
 			if( config.getTunerType() == type && 
 				config.getName().contentEquals( name ) )
 			{
-				mLog.debug( "Returning true for name: " + name );
 				return true;
 			}
 		}
 		
-		mLog.debug( "Returning false for name: " + name );
 		return false;
 	}
 
@@ -382,5 +377,4 @@ public class TunerConfigurationModel extends AbstractTableModel
 		
 		return null;
 	}
-	
 }

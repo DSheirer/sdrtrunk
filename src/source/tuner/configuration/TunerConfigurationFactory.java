@@ -1,5 +1,7 @@
 package source.tuner.configuration;
 
+import gui.editor.Editor;
+import gui.editor.EmptyEditor;
 import source.tuner.Tuner;
 import source.tuner.TunerType;
 import source.tuner.airspy.AirspyTunerConfiguration;
@@ -36,7 +38,7 @@ public class TunerConfigurationFactory
 		}
 	}
 	
-    public static TunerConfigurationEditor getEditor( Tuner tuner, 
+    public static Editor<TunerConfiguration> getEditor( Tuner tuner, 
     		TunerConfigurationModel model )
     {
     	switch( tuner.getTunerType() )
@@ -58,7 +60,7 @@ public class TunerConfigurationFactory
 				break;
     	}
     	
-    	return null;
+    	return new EmptyEditor<TunerConfiguration>();
     }
 	
 }
