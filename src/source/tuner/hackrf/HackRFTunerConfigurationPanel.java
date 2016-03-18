@@ -23,7 +23,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
 
 import javax.swing.BorderFactory;
 import javax.swing.ComboBoxModel;
@@ -50,9 +49,6 @@ import org.slf4j.LoggerFactory;
 
 import settings.SettingsManager;
 import source.SourceException;
-import source.tuner.TunerType;
-import source.tuner.configuration.TunerConfiguration;
-import source.tuner.configuration.TunerConfigurationAssignment;
 import source.tuner.hackrf.HackRFTunerController.HackRFLNAGain;
 import source.tuner.hackrf.HackRFTunerController.HackRFSampleRate;
 import source.tuner.hackrf.HackRFTunerController.HackRFVGAGain;
@@ -105,7 +101,7 @@ public class HackRFTunerConfigurationPanel extends JPanel
         mComboConfigurations.setModel( getModel() );
 
         /* Determine which tuner configuration should be selected/displayed */
-        TunerConfigurationAssignment savedConfig = null;
+//        TunerConfigurationAssignment savedConfig = null;
         String serial = null;
         
         try
@@ -122,12 +118,12 @@ public class HackRFTunerConfigurationPanel extends JPanel
 //            savedConfig = mSettingsManager.getSelectedTunerConfiguration( 
 //    				TunerType.HACKRF, serial );
 //        }
-        
-        if( savedConfig != null )
-        {
-        	mSelectedConfig = getNamedConfiguration( 
-        			savedConfig.getTunerConfigurationName() );
-        }
+//        
+//        if( savedConfig != null )
+//        {
+//        	mSelectedConfig = getNamedConfiguration( 
+//        			savedConfig.getTunerConfigurationName() );
+//        }
 
         /* If we couldn't determine the saved/selected config, use the first one */
         if( mSelectedConfig == null )
@@ -556,6 +552,6 @@ public class HackRFTunerConfigurationPanel extends JPanel
      */
     private void save()
     {
-    	mSettingsManager.save();
+//    	mSettingsManager.save();
     }
 }

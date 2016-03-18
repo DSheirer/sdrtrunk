@@ -23,7 +23,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
 
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
@@ -48,9 +47,6 @@ import org.slf4j.LoggerFactory;
 
 import settings.SettingsManager;
 import source.SourceException;
-import source.tuner.TunerType;
-import source.tuner.configuration.TunerConfiguration;
-import source.tuner.configuration.TunerConfigurationAssignment;
 
 public class FCD2TunerConfigurationPanel extends JPanel
 {
@@ -375,6 +371,6 @@ public class FCD2TunerConfigurationPanel extends JPanel
     
     private void save()
     {
-    	mSettingsManager.save();
+//    	mSettingsManager.save();
     }
 }

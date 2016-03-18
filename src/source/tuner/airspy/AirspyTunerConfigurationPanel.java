@@ -21,7 +21,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.ComboBoxModel;
@@ -47,11 +46,8 @@ import org.usb4java.LibUsbException;
 
 import settings.SettingsManager;
 import source.SourceException;
-import source.tuner.TunerType;
 import source.tuner.airspy.AirspyTunerController.Gain;
 import source.tuner.airspy.AirspyTunerController.GainMode;
-import source.tuner.configuration.TunerConfiguration;
-import source.tuner.configuration.TunerConfigurationAssignment;
 
 public class AirspyTunerConfigurationPanel extends JPanel
 {
@@ -119,7 +115,7 @@ public class AirspyTunerConfigurationPanel extends JPanel
         mComboConfigurations.setModel( getModel() );
 
         /* Determine which tuner configuration should be selected/displayed */
-        TunerConfigurationAssignment savedConfig = null;
+//        TunerConfigurationAssignment savedConfig = null;
         String serial = null;
 
         serial = mController.getDeviceInfo().getSerialNumber();
@@ -130,11 +126,11 @@ public class AirspyTunerConfigurationPanel extends JPanel
 //    				TunerType.AIRSPY_R820T, serial );
         }
         
-        if( savedConfig != null )
-        {
-        	mSelectedConfig = getNamedConfiguration( 
-        			savedConfig.getTunerConfigurationName() );
-        }
+//        if( savedConfig != null )
+//        {
+//        	mSelectedConfig = getNamedConfiguration( 
+//        			savedConfig.getTunerConfigurationName() );
+//        }
 
         /* If we couldn't determine the saved/selected config, use the first one */
         if( mSelectedConfig == null )
@@ -694,6 +690,6 @@ public class AirspyTunerConfigurationPanel extends JPanel
      */
     private void save()
     {
-    	mSettingsManager.save();
+//    	mSettingsManager.save();
     }
 }

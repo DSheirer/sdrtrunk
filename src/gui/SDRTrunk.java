@@ -119,10 +119,10 @@ public class SDRTrunk implements Listener<TunerEvent>
 		TunerConfigurationModel tunerConfigurationModel = new TunerConfigurationModel();
 		TunerModel tunerModel = new TunerModel( tunerConfigurationModel );
 		
-		mSettingsManager = new SettingsManager( tunerConfigurationModel );
-
 		ThreadPoolManager threadPoolManager = new ThreadPoolManager();
 		
+		mSettingsManager = new SettingsManager( threadPoolManager, tunerConfigurationModel );
+
 		AliasModel aliasModel = new AliasModel();
 
 		ChannelModel channelModel = new ChannelModel();

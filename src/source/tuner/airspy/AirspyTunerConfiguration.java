@@ -30,6 +30,7 @@ public class AirspyTunerConfiguration extends TunerConfiguration
 	private int mIFGain = AirspyTunerController.IF_GAIN_DEFAULT;
 	private int mMixerGain = AirspyTunerController.MIXER_GAIN_DEFAULT;
 	private int mLNAGain = AirspyTunerController.LNA_GAIN_DEFAULT;
+	private double mFrequencyCorrection = 0.0d;
 	
 	private boolean mMixerAGC = false;
 	private boolean mLNAAGC = false;
@@ -128,4 +129,16 @@ public class AirspyTunerConfiguration extends TunerConfiguration
 	{
 		mLNAAGC = enabled;
 	}
+
+	@XmlAttribute( name = "frequency_correction" )
+	public double getFrequencyCorrection()
+	{
+		return mFrequencyCorrection;
+	}
+	
+	public void setFrequencyCorrection( double value )
+	{
+		mFrequencyCorrection = value;
+	}
+
 }

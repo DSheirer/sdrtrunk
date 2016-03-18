@@ -557,7 +557,7 @@ public class FCD1TunerConfigurationPanel extends JPanel
     
     private void save()
     {
-    	mSettingsManager.save();
+//    	mSettingsManager.save();
     }
     
     public enum Correction { GAIN, PHASE, DC_INPHASE, DC_QUADRATURE };

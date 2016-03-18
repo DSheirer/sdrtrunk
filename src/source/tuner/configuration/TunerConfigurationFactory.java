@@ -61,7 +61,6 @@ public class TunerConfigurationFactory
 				break;
     	}
     	
-    	return new EmptyEditor<TunerConfiguration>();
+    	return new EmptyEditor<TunerConfiguration>( "a tuner" );
     }
-	
 }

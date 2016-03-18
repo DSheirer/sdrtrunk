@@ -31,6 +31,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.ImageIcon;
 import javax.xml.bind.JAXBContext;
@@ -45,6 +47,8 @@ import org.jdesktop.swingx.mapviewer.GeoPosition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import controller.ThreadPoolManager;
+import playlist.PlaylistManager.PlaylistSaveTask;
 import properties.SystemProperties;
 import sample.Listener;
 import settings.ColorSetting.ColorSettingName;
@@ -72,14 +76,19 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
 							new HashMap<String,ImageIcon>();
 	
 	private TunerConfigurationModel mTunerConfigurationModel;
-	private boolean mLoading = false;
+	private ThreadPoolManager mThreadPoolManager;
+
+	private boolean mLoadingSettings = false;
+	private AtomicBoolean mSettingsSavePending = new AtomicBoolean();
 	
-	public SettingsManager( TunerConfigurationModel tunerConfigurationModel )
+	public SettingsManager( ThreadPoolManager threadPoolManager,
+							TunerConfigurationModel tunerConfigurationModel )
 	{
 		//TODO: move settings and icons into a SettingsModel and an IconModel
 		//and update this class to only provide loading, saving, and model
 		//change detection producing a save.
-		
+
+		mThreadPoolManager = threadPoolManager;
 		mTunerConfigurationModel = tunerConfigurationModel;
 
 		//Register for tuner config events so that we can save the settings
@@ -112,9 +121,9 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
 	@Override
 	public void receive( TunerConfigurationEvent t )
 	{
-		if( !mLoading )
+		if( !mLoadingSettings )
 		{
-			save();
+			scheduleSettingsSave();
 		}
 	}
 
@@ -196,7 +205,7 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
 		
 		broadcastSettingChange( setting );
 		
-		save();
+		scheduleSettingsSave();
 	}
 	
 	public void resetColorSetting( ColorSettingName name )
@@ -242,7 +251,7 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
 		
 		broadcastSettingChange( setting );
 		
-		save();
+		scheduleSettingsSave();
 	}
 	
 	public MapIcon[] getMapIcons()
@@ -339,7 +348,7 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
 
 			broadcastSettingDeleted( existing );
 
-			save();
+			scheduleSettingsSave();
 		}
 	}
 
@@ -362,7 +371,7 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
 			existing.setName( icon.getName() );
 			existing.setPath( icon.getPath() );
 			broadcastSettingChange( existing );
-			save();
+			scheduleSettingsSave();
 		}
 	}
 	
@@ -379,7 +388,7 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
 			existing.setName( newName );
 			existing.setPath( newPath );
 			broadcastSettingChange( existing );
-			save();
+			scheduleSettingsSave();
 		}
 	}
 
@@ -539,7 +548,7 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
 			
 			defaultIconSetting.setName( icon.getName() );
 			
-			save();
+			scheduleSettingsSave();
 			
 			broadcastSettingChange( defaultIconSetting );
 		}
@@ -553,7 +562,7 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
 	{
 		mSettings.addSetting( setting );
 
-		save();
+		scheduleSettingsSave();
 		
 		broadcastSettingChange( setting );
 	}
@@ -566,13 +575,13 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
 	public void addRecordingConfiguration( RecordingConfiguration config )
 	{
 		mSettings.addRecordingConfiguration( config );
-		save();
+		scheduleSettingsSave();
 	}
 	
 	public void removeRecordingConfiguration( RecordingConfiguration config )
 	{
 		mSettings.removeRecordingConfiguration( config );
-		save();
+		scheduleSettingsSave();
 	}
 	
     public MapViewSetting getMapViewSetting( String name, GeoPosition position, int zoom )
@@ -600,11 +609,12 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
 		loc.setGeoPosition( position );
 		loc.setZoom( zoom );
 		
-		save();
+		scheduleSettingsSave();
     }
 
-    public void save()
+    private void save()
 	{
+    	mLog.debug( "Saving settings" );
     	saveTunerConfigurationModel();
     	
 		JAXBContext context = null;
@@ -685,7 +695,7 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
 	 */
 	public void load( Path settingsPath )
 	{
-		mLoading = true;
+		mLoadingSettings = true;
 		
 		if( Files.exists( settingsPath ) )
 		{
@@ -748,7 +758,7 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
 		
 		loadTunerConfigurationModel();
 		
-		mLoading = false;
+		mLoadingSettings = false;
 	}
 	
 	private void loadTunerConfigurationModel()
@@ -817,5 +827,36 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
 	public void removeListener( SettingChangeListener listener )
 	{
 		mListeners.remove( listener );
+	}
+	
+	/**
+	 * Schedules a settings save task.  Subsequent calls to this method will be ignored until the 
+	 * save event occurs, thus limiting repetitive saving to a minimum.
+	 */
+	private void scheduleSettingsSave()
+	{
+		if( !mLoadingSettings )
+		{
+			if( mSettingsSavePending.compareAndSet( false, true ) )
+			{
+				mThreadPoolManager.scheduleOnce( new SettingsSaveTask(), 
+						2, TimeUnit.SECONDS );
+			}
+		}
+	}
+
+	/**
+	 * Resets the settings save pending flag to false and proceeds to save the
+	 * settings.  
+	 */
+	public class SettingsSaveTask implements Runnable
+	{
+		@Override
+		public void run()
+		{
+			mSettingsSavePending.set( false );
+			
+			save();
+		}
 	}
 }

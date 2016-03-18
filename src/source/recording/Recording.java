@@ -38,7 +38,7 @@ public class Recording implements Comparable<Recording>,
 	public void setAlias( String alias )
 	{
 		mConfiguration.setAlias( alias );
-		mSettingsManager.save();
+//		mSettingsManager.save();
 	}
 	
 	public void setRecordingFile( File file ) throws SourceException
@@ -51,7 +51,7 @@ public class Recording implements Comparable<Recording>,
 		}
 		
 		mConfiguration.setFilePath( file.getAbsolutePath() );
-		mSettingsManager.save();
+//		mSettingsManager.save();
 	}
 	
 	/**
@@ -96,7 +96,7 @@ public class Recording implements Comparable<Recording>,
 			
 			mConfiguration.setCenterFrequency( frequency );
 			
-			mSettingsManager.save();
+//			mSettingsManager.save();
 
 			mCenterFrequency = frequency;
 

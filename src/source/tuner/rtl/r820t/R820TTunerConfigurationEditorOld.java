@@ -23,7 +23,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
 
 import javax.swing.BorderFactory;
 import javax.swing.ComboBoxModel;
@@ -50,9 +49,6 @@ import org.usb4java.LibUsbException;
 
 import settings.SettingsManager;
 import source.SourceException;
-import source.tuner.TunerType;
-import source.tuner.configuration.TunerConfiguration;
-import source.tuner.configuration.TunerConfigurationAssignment;
 import source.tuner.rtl.RTL2832TunerController.SampleRate;
 import source.tuner.rtl.r820t.R820TTunerController.R820TGain;
 import source.tuner.rtl.r820t.R820TTunerController.R820TLNAGain;
@@ -694,6 +690,6 @@ public class R820TTunerConfigurationEditorOld extends JPanel
      */
     private void save()
     {
-    	mSettingsManager.save();
+//    	mSettingsManager.save();
     }
 }

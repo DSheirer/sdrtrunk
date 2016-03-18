@@ -23,12 +23,13 @@ public class TunerConfigurationModel extends AbstractTableModel
 	private static final int ASSIGNED = 2;
 	private static final String[] COLUMN_HEADERS = { "Tuner Type", "Name", "Assigned" };
 	
-	private List<Listener<TunerConfigurationEvent>> mConfigurationListeners = new ArrayList<>();
+	private List<Listener<TunerConfigurationEvent>> mConfigurationChangeListeners = 
+			new ArrayList<>();
 	private List<TunerConfiguration> mTunerConfigurations = new ArrayList<>();
 
 	/**
-	 * Table model for managing tuner configurations and tuner configuration
-	 * assignments.  Provides tuner configuration events to registered listeners
+	 * Table model for managing tuner configurations.  Provides tuner configuration events to 
+	 * registered listeners
 	 */
 	public TunerConfigurationModel()
 	{
@@ -115,7 +116,7 @@ public class TunerConfigurationModel extends AbstractTableModel
 	 */
 	public void addListener( Listener<TunerConfigurationEvent> listener )
 	{
-		mConfigurationListeners.add( listener );
+		mConfigurationChangeListeners.add( listener );
 	}
 
 	/**
@@ -123,7 +124,7 @@ public class TunerConfigurationModel extends AbstractTableModel
 	 */
 	public void removeListener( Listener<TunerConfigurationEvent> listener )
 	{
-		mConfigurationListeners.remove( listener );
+		mConfigurationChangeListeners.remove( listener );
 	}
 
 	/**
@@ -131,9 +132,41 @@ public class TunerConfigurationModel extends AbstractTableModel
 	 */
 	public void broadcast( TunerConfigurationEvent event )
 	{
-		for( Listener<TunerConfigurationEvent> listener: mConfigurationListeners )
+		for( Listener<TunerConfigurationEvent> listener: mConfigurationChangeListeners )
 		{
 			listener.receive( event );
+		}
+	}
+
+	/**
+	 * Designates the configuration argument as the currently assigned configuration and unassigns
+	 * any other configurations with the same tuner type and unique ID.
+	 */
+	public void assignTunerConfiguration( TunerConfiguration configToAssign )
+	{
+		if( configToAssign != null )
+		{
+			List<TunerConfiguration> configs = 
+					getTunerConfigurations( configToAssign.getTunerType(), configToAssign.getUniqueID() );
+			
+			for( TunerConfiguration config: configs )
+			{
+				if( config.isAssigned() )
+				{
+					mLog.debug( "Unassigning: " + config.getName() );
+					config.setAssigned( false );
+					
+					int index = mTunerConfigurations.indexOf( config );
+					fireTableCellUpdated( index, ASSIGNED );
+					broadcast( new TunerConfigurationEvent( config, Event.CHANGE ) );
+				}
+			}
+			
+			mLog.debug( "Assigning: " + configToAssign.getName() );
+			configToAssign.setAssigned( true );
+			int index = mTunerConfigurations.indexOf( configToAssign );
+			fireTableCellUpdated( index, ASSIGNED );
+			broadcast( new TunerConfigurationEvent( configToAssign, Event.CHANGE ) );
 		}
 	}
 

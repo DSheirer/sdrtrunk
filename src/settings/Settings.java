@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -28,10 +28,8 @@ import map.DefaultIcon;
 import map.MapIcon;
 import settings.ColorSetting.ColorSettingName;
 import source.recording.RecordingConfiguration;
-import source.tuner.TunerType;
 import source.tuner.airspy.AirspyTunerConfiguration;
 import source.tuner.configuration.TunerConfiguration;
-import source.tuner.configuration.TunerConfigurationAssignment;
 import source.tuner.fcd.proV1.FCD1TunerConfiguration;
 import source.tuner.fcd.proplusV2.FCD2TunerConfiguration;
 import source.tuner.hackrf.HackRFTunerConfiguration;
@@ -54,8 +52,7 @@ import source.tuner.rtl.r820t.R820TTunerConfiguration;
 			   R820TTunerConfiguration.class,
 			   RecordingConfiguration.class,
 			   Setting.class,
-			   TunerConfiguration.class, 
-			   TunerConfigurationAssignment.class} )
+			   TunerConfiguration.class } )
 
 @XmlRootElement( name = "SDRTrunk_settings" )
 public class Settings
@@ -64,9 +61,6 @@ public class Settings
 
 	private List<TunerConfiguration> mTunerConfiguration =
 			new ArrayList<TunerConfiguration>();
-	
-	private List<TunerConfigurationAssignment> mConfigurationAssignments =
-			new ArrayList<TunerConfigurationAssignment>();
 	
 	private List<RecordingConfiguration> mRecordingConfigurations =
 			new ArrayList<RecordingConfiguration>();
@@ -89,7 +83,6 @@ public class Settings
 	public void addRecordingConfiguration( RecordingConfiguration config )
 	{
 		mRecordingConfigurations.add( config );
-		
 	}
 	
 	public void removeRecordingConfiguration( RecordingConfiguration config )
@@ -106,33 +99,6 @@ public class Settings
 	public void setTunerConfigurations( List<TunerConfiguration> configs )
 	{
 		mTunerConfiguration = configs;
-	}
-	
-	public void addTunerConfiguration( TunerConfiguration config )
-	{
-		mTunerConfiguration.add( config );
-		
-	}
-	
-	public void removeTunerConfiguration( TunerConfiguration config )
-	{
-		mTunerConfiguration.remove( config );
-	}
-	
-    public ArrayList<TunerConfiguration> getTunerConfigurations( TunerType type )
-	{
-		ArrayList<TunerConfiguration> configs = 
-				new ArrayList<TunerConfiguration>();
-		
-		for( TunerConfiguration config: mTunerConfiguration )
-		{
-			if( config.getTunerType() == type )
-			{
-				configs.add( config );
-			}
-		}
-
-		return configs;
 	}
     
 	@XmlElement( name="setting" )
@@ -254,59 +220,6 @@ public class Settings
 		return icons;
 	}
 
-	@XmlElement( name="tuner_configuration_assignment" )
-	public List<TunerConfigurationAssignment> getSelectedTunerConfiguration()
-	{
-		return mConfigurationAssignments;
-	}
-	
-	public void setSelectedTunerConfiguration( List<TunerConfigurationAssignment> configs )
-	{
-		mConfigurationAssignments = configs;
-	}
-	
-	public void addSelectedTunerConfiguration( TunerConfigurationAssignment config )
-	{
-		mConfigurationAssignments.add( config );
-		
-	}
-	
-	public void removeSelectedTunerConfiguration( TunerConfigurationAssignment config )
-	{
-		mConfigurationAssignments.remove( config );
-	}
-	
-    public TunerConfigurationAssignment getConfigurationAssignment( TunerType type, String uniqueID )
-	{
-		for( TunerConfigurationAssignment config: mConfigurationAssignments )
-		{
-			if( config.getTunerType() == type && 
-				uniqueID.contentEquals( config.getUniqueID() ) )
-			{
-				return config;
-			}
-		}
-
-		return null;
-	}
-    
-    public void setConfigurationAssignment( TunerType type, 
-    							  			String uniqueID, 
-    							  			String tunerConfigurationName )
-    {
-    	TunerConfigurationAssignment config = getConfigurationAssignment( type, uniqueID );
-    	
-    	if( config == null )
-    	{
-    		config = new TunerConfigurationAssignment();
-    		config.setTunerType( type );
-    		config.setUniqueID( uniqueID );
-        	addSelectedTunerConfiguration( config );
-    	}
-    	
-    	config.setTunerConfigurationName( tunerConfigurationName );
-    }
-    
     public MapViewSetting getMapViewSetting( String name )
     {
     	for( Setting setting: mSettings )

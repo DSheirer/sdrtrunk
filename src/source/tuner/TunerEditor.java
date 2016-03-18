@@ -10,6 +10,7 @@ import java.awt.event.ActionListener;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -43,8 +44,9 @@ public class TunerEditor extends Editor<Tuner>
 	private JLabel mSelectedTunerType = new JLabel( "No Tuner Selected" );
 	private JButton mNewConfigurationButton = new JButton( "New" );
 	private JButton mDeleteConfigurationButton = new JButton( "Delete" );
+	private JButton mAssignConfigurationButton = new JButton( "Assign" );
 	private JScrollPane mEditorScroller;
-	private Editor<TunerConfiguration> mEditor = new EmptyEditor<>();
+	private Editor<TunerConfiguration> mEditor = new EmptyEditor<>( "a tuner" );
 	private JideSplitPane mEditorSplitPane = new JideSplitPane();
 	
 	public TunerEditor( TunerConfigurationModel tunerConfigurationModel )
@@ -58,7 +60,7 @@ public class TunerEditor extends Editor<Tuner>
 		setLayout( new MigLayout( "insets 0 0 0 0", "[grow,fill]", "[grow,fill]" ) );
 
 		JPanel listPanel = new JPanel();
-		listPanel.setLayout( new MigLayout( "fill,wrap 2", "[grow,fill]", "[][][][grow,fill][]" ) );
+		listPanel.setLayout( new MigLayout( "fill,wrap 3", "[grow,fill]", "[][][][grow,fill][]" ) );
 
 		listPanel.add( mSelectedTunerType, "span" );
 		
@@ -84,7 +86,7 @@ public class TunerEditor extends Editor<Tuner>
 
 						if( modelRow >= 0 )
 						{
-							setConfigurationEditor( mTunerConfigurationModel.getTunerConfiguration( modelRow ) );
+							setTunerConfiguration( mTunerConfigurationModel.getTunerConfiguration( modelRow ) );
 						}
 					}
 				}
@@ -118,7 +120,38 @@ public class TunerEditor extends Editor<Tuner>
 		listPanel.add( mNewConfigurationButton );
 
 		mDeleteConfigurationButton.setEnabled( false );
+		mDeleteConfigurationButton.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				int choice = JOptionPane.showConfirmDialog( TunerEditor.this, 
+						"Do you want to delete this tuner configuration?", 
+						"Delete Tuner Configuration?", JOptionPane.YES_NO_OPTION );
+				
+				if( choice == JOptionPane.YES_OPTION )
+				{
+					TunerConfiguration selected = getSelectedTunerConfiguration();
+					
+					mTunerConfigurationModel.removeTunerConfiguration( selected );
+				}
+			}
+		} );
 		listPanel.add( mDeleteConfigurationButton );
+		
+		mAssignConfigurationButton.setEnabled( false );
+		mAssignConfigurationButton.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				TunerConfiguration selected = getSelectedTunerConfiguration();
+				
+				mTunerConfigurationModel.assignTunerConfiguration( selected );
+				setTunerConfiguration( getSelectedTunerConfiguration() );
+			}
+		} );
+		listPanel.add( mAssignConfigurationButton );
 		
 		//Set preferred size on both scrollers to same width, so they split the space
 		listPanel.setPreferredSize( new Dimension( 100, 80 ) );
@@ -133,6 +166,23 @@ public class TunerEditor extends Editor<Tuner>
 		mEditorSplitPane.add( mEditorScroller );
 
 		add( mEditorSplitPane );
+	}
+	
+	private TunerConfiguration getSelectedTunerConfiguration()
+	{
+		int tableRow = mTunerConfigurationTable.getSelectedRow();
+		
+		if( tableRow >= 0 )
+		{
+			int modelRow = mTunerConfigurationTable.convertRowIndexToModel( tableRow );
+			
+			if( modelRow >= 0 )
+			{
+				return mTunerConfigurationModel.getTunerConfiguration( modelRow );
+			}
+		}
+
+		return null;
 	}
 	
 	@Override
@@ -161,8 +211,11 @@ public class TunerEditor extends Editor<Tuner>
 			mTunerConfigurationTable.setEnabled( true );
 			mNewConfigurationButton.setEnabled( true );
 
-			mRowSorter.setRowFilter( new ConfigurationRowFilter( 
-					tuner.getTunerType(), tuner.getUniqueID() ) );
+			//Change to an editor for this config's tuner type
+	        mEditor = TunerConfigurationFactory.getEditor( getItem(), mTunerConfigurationModel );
+		        
+			mRowSorter.setRowFilter( new ConfigurationRowFilter( tuner.getTunerType(), 
+					tuner.getUniqueID() ) );
 
 			TunerConfiguration assigned = mTunerConfigurationModel
 				.getTunerConfiguration( tuner.getTunerType(), tuner.getUniqueID() );
@@ -190,9 +243,6 @@ public class TunerEditor extends Editor<Tuner>
 	        //Set the displayed frequency without adjusting the tuner's frequency
 	        mFrequencyControl.setFrequency( 
 	        		tuner.getTunerController().getFrequency(), false );
-	        
-	        mEditor = TunerConfigurationFactory
-        		.getEditor( getItem(), mTunerConfigurationModel );
 		}
 		else
 		{
@@ -212,13 +262,32 @@ public class TunerEditor extends Editor<Tuner>
 		mEditorSplitPane.setDividerLocation( 0, split );
 	}
 	
-	private void setConfigurationEditor( TunerConfiguration config )
+	private void setTunerConfiguration( TunerConfiguration config )
 	{
 		if( config != null )
 		{
-			if( !mDeleteConfigurationButton.isEnabled() )
+			if( !config.isAssigned() )
 			{
-				mDeleteConfigurationButton.setEnabled( true );
+				if( !mAssignConfigurationButton.isEnabled() )
+				{
+					mAssignConfigurationButton.setEnabled( true );
+				}
+				if( !mDeleteConfigurationButton.isEnabled() )
+				{
+					mDeleteConfigurationButton.setEnabled( true );
+				}
+			}
+			else
+			{
+				if( mAssignConfigurationButton.isEnabled() )
+				{
+					mAssignConfigurationButton.setEnabled( false );
+				}
+				
+				if( mDeleteConfigurationButton.isEnabled() )
+				{
+					mDeleteConfigurationButton.setEnabled( false );
+				}
 			}
 		}
 		else
@@ -226,6 +295,11 @@ public class TunerEditor extends Editor<Tuner>
 			if( mDeleteConfigurationButton.isEnabled() )
 			{
 				mDeleteConfigurationButton.setEnabled( false );
+			}
+			
+			if( mAssignConfigurationButton.isEnabled() )
+			{
+				mAssignConfigurationButton.setEnabled( false );
 			}
 		}
 		
