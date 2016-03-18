@@ -33,12 +33,11 @@ public class FCD2TunerConfiguration extends TunerConfiguration
 	 */
 	public FCD2TunerConfiguration()
 	{
-		this( "Default" );
 	}
 	
-	public FCD2TunerConfiguration( String name )
+	public FCD2TunerConfiguration( String uniqueID, String name )
 	{
-		super( name );
+		super( uniqueID, name );
 	}
 	
 	@Override

@@ -20,11 +20,11 @@ public class TunerConfigurationModel extends AbstractTableModel
 	
 	private static final int TUNER_TYPE = 0;
 	private static final int CONFIGURATION_NAME = 1;
-	private static final String[] COLUMN_HEADERS = { "Tuner Type", "Name" };
+	private static final int ASSIGNED = 2;
+	private static final String[] COLUMN_HEADERS = { "Tuner Type", "Name", "Assigned" };
 	
 	private List<Listener<TunerConfigurationEvent>> mConfigurationListeners = new ArrayList<>();
 	private List<TunerConfiguration> mTunerConfigurations = new ArrayList<>();
-	private List<TunerConfigurationAssignment> mTunerConfigurationAssignments = new ArrayList<>();
 
 	/**
 	 * Table model for managing tuner configurations and tuner configuration
@@ -59,7 +59,9 @@ public class TunerConfigurationModel extends AbstractTableModel
 	 */
 	public void addTunerConfiguration( TunerConfiguration config )
 	{
-		if( !mTunerConfigurations.contains( config ) )
+		if( !mTunerConfigurations.contains( config ) &&
+			config.getUniqueID() != null &&
+			config.getName() != null )
 		{
 			mTunerConfigurations.add( config );
 
@@ -67,7 +69,7 @@ public class TunerConfigurationModel extends AbstractTableModel
 			
 			fireTableRowsInserted( index, index );
 
-			broadcast( new TunerConfigurationEvent( config, Event.CONFIGURATION_ADD ) );
+			broadcast( new TunerConfigurationEvent( config, Event.ADD ) );
 		}
 	}
 
@@ -85,7 +87,7 @@ public class TunerConfigurationModel extends AbstractTableModel
 			
 			fireTableRowsDeleted( index, index );
 			
-			broadcast( new TunerConfigurationEvent( config, Event.CONFIGURATION_REMOVE ) );
+			broadcast( new TunerConfigurationEvent( config, Event.REMOVE ) );
 		}
 	}
 
@@ -98,7 +100,7 @@ public class TunerConfigurationModel extends AbstractTableModel
 	{
 		for( TunerConfiguration config: mTunerConfigurations )
 		{
-			broadcast( new TunerConfigurationEvent( config, Event.CONFIGURATION_REMOVE ) );
+			broadcast( new TunerConfigurationEvent( config, Event.REMOVE ) );
 		}
 		
 		int size = mTunerConfigurations.size();
@@ -106,13 +108,6 @@ public class TunerConfigurationModel extends AbstractTableModel
 		mTunerConfigurations.clear();
 		
 		fireTableRowsDeleted( 0, size - 1 );
-		
-		for( TunerConfigurationAssignment assignment: mTunerConfigurationAssignments )
-		{
-			broadcast( new TunerConfigurationEvent( assignment, Event.ASSIGNMENT_REMOVE ) );
-		}
-		
-		mTunerConfigurationAssignments.clear();
 	}
 
 	/**
@@ -143,95 +138,60 @@ public class TunerConfigurationModel extends AbstractTableModel
 	}
 
 	/**
-	 * Adds a list of tuner configuration assignments to the model
-	 */
-	public void addTunerConfigurationAssignments( List<TunerConfigurationAssignment> assignments )
-	{
-		for( TunerConfigurationAssignment assigment: assignments )
-		{
-			addTunerConfigurationAssignment( assigment );
-		}
-	}
-
-	/**
-	 * Returns of list of tuner configurations from the model
-	 */
-	public List<TunerConfigurationAssignment> getTunerConfigurationAssignments()
-	{
-		return mTunerConfigurationAssignments;
-	}
-
-	/**
-	 * Adds a tuner configuration assigment to the model
-	 */
-	public void addTunerConfigurationAssignment( TunerConfigurationAssignment assignment )
-	{
-		mTunerConfigurationAssignments.add( assignment );
-		
-		broadcast( new TunerConfigurationEvent( assignment, Event.ASSIGNMENT_ADD ) );
-	}
-
-	/**
-	 * Removes a tuner configuration assignment from the model
-	 */
-	public void removeTunerConfigurationAssignment( TunerConfigurationAssignment assignment )
-	{
-		mTunerConfigurationAssignments.remove( assignment );
-
-		broadcast( new TunerConfigurationEvent( assignment, Event.ASSIGNMENT_REMOVE ) );
-	}
-
-	/**
 	 * Returns the tuner configuration that is assigned to the tuner with the 
-	 * tuner type and uniqueID, or creates a new tuner configuration and tuner
-	 * configuration assignment for the tuner.
+	 * tuner type and uniqueID, or selects the first existing configuration that
+	 * matches the tuner type and unique ID and assigns it, or creates a new 
+	 * tuner configuration and assigns it to the tuner.
+	 * 
+	 * This method will always return a tuner configuration that is assigned to
+	 * the tuner type and unique ID.
 	 */
 	public TunerConfiguration getTunerConfiguration( TunerType type, String uniqueID )
 	{
-		String configurationName = null;
-		
-		TunerConfigurationAssignment assignment = getTunerConfigurationAssignment( type, uniqueID );
-
-		if( assignment != null )
-		{
-			configurationName = assignment.getTunerConfigurationName();
-		}
-
-		if( configurationName == null )
-		{
-			configurationName = uniqueID;
-		}
-
-		List<TunerConfiguration> configs = getTunerConfigurations( type );
+		List<TunerConfiguration> configs = getTunerConfigurations( type, uniqueID );
 		
 		for( TunerConfiguration config: configs )
 		{
-			if( config.getName().contentEquals( configurationName ) )
+			if( config.isAssigned() && 
+				config.getUniqueID() != null &&
+				config.getUniqueID().contentEquals( uniqueID ) )
 			{
-				if( assignment == null )
-				{
-					assignTunerConfiguration( config, configurationName );
-				}
-				
 				return config;
 			}
 		}
 
+		//Reuse an existing configuration to assign
+		if( !configs.isEmpty() )
+		{
+			configs.get( 0 ).setAssigned( true );
+			return configs.get( 0 );
+		}
+
+		String name = getDistinctName( type, uniqueID );
+				
 		//We didn't find the config so create a new one and assign it
 		TunerConfiguration config = TunerConfigurationFactory
-				.getTunerConfiguration( type, configurationName );
+				.getTunerConfiguration( type, uniqueID, name );
+		
+		config.setAssigned( true );
 		
 		addTunerConfiguration( config );
-		assignTunerConfiguration( config, configurationName );
 		
 		return config;
 	}
 	
-	public boolean hasTunerConfiguration( TunerType type, String name )
+	/**
+	 * Indicates if a configuration exists in this model matching the tuner type
+	 * and unique ID and name.
+	 */
+	public boolean hasTunerConfiguration( TunerType type, String uniqueID, String name )
 	{
 		for( TunerConfiguration config: mTunerConfigurations )
 		{
 			if( config.getTunerType() == type && 
+				config.getUniqueID() != null &&
+				config.getUniqueID().contentEquals( uniqueID ) &&
+				config.getName() != null &&
 				config.getName().contentEquals( name ) )
 			{
 				return true;
@@ -240,59 +200,39 @@ public class TunerConfigurationModel extends AbstractTableModel
 		
 		return false;
 	}
-
-	/**
-	 * Assigns the tuner configuration to the tuner identified by the uniqueID
-	 */
-	public void assignTunerConfiguration( TunerConfiguration config, String uniqueID )
-	{
-		TunerConfigurationAssignment assignment = 
-			getTunerConfigurationAssignment( config.getTunerType(), uniqueID );
-
-		Event event = Event.ASSIGNMENT_CHANGE;
-		
-		if( assignment == null )
-		{
-			assignment = new TunerConfigurationAssignment();
-			assignment.setUniqueID( uniqueID );
-			
-			addTunerConfigurationAssignment( assignment );
-			
-			event = Event.ASSIGNMENT_ADD;
-		}
-		
-		assignment.setTunerConfigurationName( config.getName() );
-		
-		broadcast( new TunerConfigurationEvent( assignment, event ) );
-	}
-
-	/**
-	 * Returns the tuner configuration assiged to the tuner type and unique id
-	 */
-	private TunerConfigurationAssignment getTunerConfigurationAssignment( TunerType type, String uniqueID )
-	{
-		for( TunerConfigurationAssignment assignment: mTunerConfigurationAssignments )
-		{
-			if( assignment.getTunerType() == type &&
-				assignment.getUniqueID().contentEquals( uniqueID ) )
-			{
-				return assignment;
-			}
-		}
-		
-		return null;
-	}
 	
+	/**
+	 * Creates a configuration name for the tuner configuration that is distinct
+	 * among the existing tuner configurations of the same type and uniqueID
+	 */
+	public String getDistinctName( TunerType type, String uniqueID )
+	{
+		int counter = 0;
+		
+		String name = "New";
+
+		while( hasTunerConfiguration( type, uniqueID, name ) )
+		{
+			counter++;
+			
+			name = "New (" + counter + ")";
+		}
+
+		return name;
+	}
+
 	/**
 	 * Returns all tuner configurations for the specified tuner type
 	 */
-	public List<TunerConfiguration> getTunerConfigurations( TunerType type )
+	public List<TunerConfiguration> getTunerConfigurations( TunerType type, String uniqueID )
 	{
 		List<TunerConfiguration> configs = new ArrayList<>();
 		
 		for( TunerConfiguration config: mTunerConfigurations )
 		{
-			if( config.getTunerType() == type )
+			if( config.getTunerType() == type && 
+				config.getUniqueID() != null &&
+				config.getUniqueID().contentEquals( uniqueID ) )
 			{
 				configs.add( config );
 			}
@@ -370,6 +310,8 @@ public class TunerConfigurationModel extends AbstractTableModel
 					return config.getTunerType().getLabel();
 				case CONFIGURATION_NAME:
 					return config.getName();
+				case ASSIGNED:
+					return config.isAssigned() ? "*" : null;
 				default:
 					break;
 			}

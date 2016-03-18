@@ -41,12 +41,11 @@ public class R820TTunerConfiguration extends TunerConfiguration
 	 */
 	public R820TTunerConfiguration()
 	{
-		this( "Default" );
 	}
 	
-	public R820TTunerConfiguration( String name )
+	public R820TTunerConfiguration( String uniqueID, String name )
 	{
-		super( name );
+		super( uniqueID, name );
 	}
 	
 	@Override

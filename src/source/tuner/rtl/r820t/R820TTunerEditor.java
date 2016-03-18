@@ -120,7 +120,7 @@ public class R820TTunerEditor extends TunerConfigurationEditor
 			config.setVGAGain( vgaGain );
 			
 			getTunerConfigurationModel().broadcast( 
-				new TunerConfigurationEvent( getConfiguration(), Event.CONFIGURATION_CHANGE ) );
+				new TunerConfigurationEvent( getConfiguration(), Event.CHANGE ) );
     	}
 	}
 

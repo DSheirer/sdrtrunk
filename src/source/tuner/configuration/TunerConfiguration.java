@@ -29,13 +29,23 @@ import source.tuner.TunerType;
 public abstract class TunerConfiguration
 {
 	protected String mName;
+	protected String mUniqueID;
+	protected boolean mAssigned;
 
 	/**
 	 * Default constructor to support JAXB
 	 */
 	public TunerConfiguration()
 	{
-		this( "Unknown" );
+	}
+	
+	/**
+	 * Normal constructor
+	 */
+	public TunerConfiguration( String uniqueID, String name )
+	{
+		mUniqueID = uniqueID;
+		mName = name;
 	}
 	
 	public String toString()
@@ -43,14 +53,6 @@ public abstract class TunerConfiguration
 		return mName;
 	}
 
-	/**
-	 * Normal constructor
-	 */
-	public TunerConfiguration( String name )
-	{
-		mName = name;
-	}
-	
 	@XmlAttribute( name = "name" )
 	public String getName()
 	{
@@ -60,6 +62,28 @@ public abstract class TunerConfiguration
 	public void setName( String name )
 	{
 		mName = name;
+	}
+
+	@XmlAttribute( name = "unique_id" )
+	public String getUniqueID()
+	{
+		return mUniqueID;
+	}
+	
+	public void setUniqueID( String id )
+	{
+		mUniqueID = id;;
+	}
+	
+	@XmlAttribute( name = "assigned" )
+	public boolean isAssigned()
+	{
+		return mAssigned;
+	}
+	
+	public void setAssigned( boolean assigned )
+	{
+		mAssigned = assigned;
 	}
 	
 	@XmlAttribute( name = "tuner_type" )

@@ -41,12 +41,11 @@ public class E4KTunerConfiguration extends TunerConfiguration
 	 */
 	public E4KTunerConfiguration()
 	{
-		this( "Default" );
 	}
 	
-	public E4KTunerConfiguration( String name )
+	public E4KTunerConfiguration( String uniqueID, String name )
 	{
-		super( name );
+		super( uniqueID, name );
 	}
 	
 	@Override

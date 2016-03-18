@@ -10,7 +10,6 @@ import java.awt.event.ActionListener;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
-import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -26,7 +25,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import source.tuner.configuration.TunerConfiguration;
-import source.tuner.configuration.TunerConfigurationEditor;
 import source.tuner.configuration.TunerConfigurationFactory;
 import source.tuner.configuration.TunerConfigurationModel;
 
@@ -94,7 +92,8 @@ public class TunerEditor extends Editor<Tuner>
 		} );
 
 		JScrollPane tableScroller = new JScrollPane( mTunerConfigurationTable );
-		tableScroller.setHorizontalScrollBarPolicy( ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER );
+		tableScroller.setHorizontalScrollBarPolicy( 
+				ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER );
 		listPanel.add( new JLabel( "Tuner Configurations" ), "span" );
 		listPanel.add( tableScroller, "span" );
 
@@ -106,38 +105,14 @@ public class TunerEditor extends Editor<Tuner>
 			{
 				Tuner tuner = getItem();
 				
-				int counter = 0;
+				String name = mTunerConfigurationModel
+					.getDistinctName( tuner.getTunerType(), tuner.getUniqueID() );
 				
-				String name = tuner.getUniqueID() + "-New";
-
-				while( counter < 10 && mTunerConfigurationModel
-					.hasTunerConfiguration( tuner.getTunerType(), name ) )
-				{
-					counter++;
+				TunerConfiguration config = TunerConfigurationFactory
+					.getTunerConfiguration( tuner.getTunerType(), 
+							tuner.getUniqueID(), name );
 					
-					StringBuilder sb = new StringBuilder();
-					sb.append( tuner.getUniqueID() );
-					sb.append( "-New(" );
-					sb.append( String.valueOf( counter ) );
-					sb.append( ")" );
-					
-					name = sb.toString();
-				}
-
-				if( counter < 10 )
-				{
-					TunerConfiguration config = TunerConfigurationFactory
-						.getTunerConfiguration( tuner.getTunerType(), name );
-					
-					mTunerConfigurationModel.addTunerConfiguration( config );
-				}
-				else
-				{
-					JOptionPane.showMessageDialog( TunerEditor.this, 
-						"Can't create configuration - maximum limit reached", 
-						"Error", 
-						JOptionPane.OK_OPTION );
-				}
+				mTunerConfigurationModel.addTunerConfiguration( config );
 			}
 		} );
 		listPanel.add( mNewConfigurationButton );
@@ -186,7 +161,8 @@ public class TunerEditor extends Editor<Tuner>
 			mTunerConfigurationTable.setEnabled( true );
 			mNewConfigurationButton.setEnabled( true );
 
-			mRowSorter.setRowFilter( new ConfigurationRowFilter( tuner.getTunerType() ) );
+			mRowSorter.setRowFilter( new ConfigurationRowFilter( 
+					tuner.getTunerType(), tuner.getUniqueID() ) );
 
 			TunerConfiguration assigned = mTunerConfigurationModel
 				.getTunerConfiguration( tuner.getTunerType(), tuner.getUniqueID() );
@@ -228,7 +204,7 @@ public class TunerEditor extends Editor<Tuner>
 			mEditor = new EmptyEditor<TunerConfiguration>();
 		}
 		
-		//Swap out the editor
+		//Swap out the editor 
 		int split = mEditorSplitPane.getDividerLocation( 0 );
 		mEditorSplitPane.remove( mEditorScroller );
 		mEditorScroller = new JScrollPane( mEditor );
@@ -259,10 +235,12 @@ public class TunerEditor extends Editor<Tuner>
 	public class ConfigurationRowFilter extends RowFilter<TunerConfigurationModel,Integer>
 	{
 		private TunerType mTunerType;
+		private String mUniqueID;
 		
-		public ConfigurationRowFilter( TunerType type )
+		public ConfigurationRowFilter( TunerType type, String uniqueID )
 		{
 			mTunerType = type;
+			mUniqueID = uniqueID;
 		}
 		
 		@Override
@@ -272,7 +250,10 @@ public class TunerEditor extends Editor<Tuner>
 			TunerConfiguration config = entry.getModel()
 					.getTunerConfiguration( entry.getIdentifier() );
 
-			return config != null && config.getTunerType() == mTunerType;
+			return config != null && 
+				   config.getTunerType() == mTunerType &&
+				   config.getUniqueID() != null &&
+				   config.getUniqueID().contentEquals( mUniqueID );
 		}
 	}
 	

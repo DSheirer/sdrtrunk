@@ -759,9 +759,6 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
 			
 			mTunerConfigurationModel.addTunerConfigurations( 
 					mSettings.getTunerConfigurations() );
-			
-			mTunerConfigurationModel.addTunerConfigurationAssignments( 
-					mSettings.getSelectedTunerConfiguration() );
 		}
 	}
 	
@@ -771,9 +768,6 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
 		{
 			mSettings.setTunerConfigurations( 
 					mTunerConfigurationModel.getTunerConfigurations() );
-			
-			mSettings.setSelectedTunerConfiguration( 
-					mTunerConfigurationModel.getTunerConfigurationAssignments() );
 		}
 	}
 	

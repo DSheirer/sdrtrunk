@@ -39,12 +39,11 @@ public class HackRFTunerConfiguration extends TunerConfiguration
 	 */
 	public HackRFTunerConfiguration()
 	{
-		this( "Default" );
 	}
 	
-	public HackRFTunerConfiguration( String name )
+	public HackRFTunerConfiguration( String uniqueID, String name )
 	{
-		super( name );
+		super( uniqueID, name );
 	}
 	
 	@Override

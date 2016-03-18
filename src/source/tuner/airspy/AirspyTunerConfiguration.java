@@ -39,12 +39,11 @@ public class AirspyTunerConfiguration extends TunerConfiguration
 	 */
 	public AirspyTunerConfiguration()
 	{
-		this( "Default" );
 	}
 	
-	public AirspyTunerConfiguration( String name )
+	public AirspyTunerConfiguration( String uniqueID, String name )
 	{
-		super( name );
+		super( uniqueID, name );
 	}
 	
 	@Override

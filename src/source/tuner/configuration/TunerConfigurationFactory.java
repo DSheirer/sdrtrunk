@@ -15,22 +15,23 @@ import source.tuner.rtl.r820t.R820TTunerEditor;
 
 public class TunerConfigurationFactory
 {
-	public static TunerConfiguration getTunerConfiguration( TunerType type, String name )
+	public static TunerConfiguration getTunerConfiguration( TunerType type, 
+			String uniqueID, String name )
 	{
 		switch( type )
 		{
 			case AIRSPY_R820T:
-				return new AirspyTunerConfiguration( name );
+				return new AirspyTunerConfiguration( uniqueID, name );
 			case ELONICS_E4000:
-				return new E4KTunerConfiguration( name );
+				return new E4KTunerConfiguration( uniqueID, name );
 			case FUNCUBE_DONGLE_PRO:
-				return new FCD1TunerConfiguration( name );
+				return new FCD1TunerConfiguration( uniqueID, name );
 			case FUNCUBE_DONGLE_PRO_PLUS:
-				return new FCD2TunerConfiguration( name );
+				return new FCD2TunerConfiguration( uniqueID, name );
 			case HACKRF:
-				return new HackRFTunerConfiguration( name );
+				return new HackRFTunerConfiguration( uniqueID, name );
 			case RAFAELMICRO_R820T:
-				return new R820TTunerConfiguration( name );
+				return new R820TTunerConfiguration( uniqueID, name );
 			default:
 				throw new IllegalArgumentException( "Unrecognized tuner type ["
 					+ type.name() + "] - can't create named [" + name + "] tuner"
