@@ -4,7 +4,9 @@ import gui.editor.Editor;
 import gui.editor.EmptyEditor;
 import source.tuner.Tuner;
 import source.tuner.TunerType;
+import source.tuner.airspy.AirspyTuner;
 import source.tuner.airspy.AirspyTunerConfiguration;
+import source.tuner.airspy.AirspyTunerEditor;
 import source.tuner.fcd.proV1.FCD1TunerConfiguration;
 import source.tuner.fcd.proplusV2.FCD2TunerConfiguration;
 import source.tuner.hackrf.HackRFTunerConfiguration;
@@ -45,7 +47,7 @@ public class TunerConfigurationFactory
     	switch( tuner.getTunerType() )
     	{
 			case AIRSPY_R820T:
-				break;
+				return new AirspyTunerEditor( model, (AirspyTuner)tuner );
 			case ELONICS_E4000:
 				break;
 			case FUNCUBE_DONGLE_PRO:

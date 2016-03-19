@@ -100,6 +100,7 @@ public class TunerEditor extends Editor<Tuner>
 		listPanel.add( tableScroller, "span" );
 
 		mNewConfigurationButton.setEnabled( false );
+		mNewConfigurationButton.setToolTipText( "Create a new configuration for the currently selected tuner" );
 		mNewConfigurationButton.addActionListener( new ActionListener()
 		{
 			@Override
@@ -120,6 +121,7 @@ public class TunerEditor extends Editor<Tuner>
 		listPanel.add( mNewConfigurationButton );
 
 		mDeleteConfigurationButton.setEnabled( false );
+		mDeleteConfigurationButton.setToolTipText( "Deletes the currently selected tuner" );
 		mDeleteConfigurationButton.addActionListener( new ActionListener()
 		{
 			@Override
@@ -140,6 +142,7 @@ public class TunerEditor extends Editor<Tuner>
 		listPanel.add( mDeleteConfigurationButton );
 		
 		mAssignConfigurationButton.setEnabled( false );
+		mAssignConfigurationButton.setToolTipText( "Assigns to the currently selected tuner configuration to the selected tuner" );
 		mAssignConfigurationButton.addActionListener( new ActionListener()
 		{
 			@Override

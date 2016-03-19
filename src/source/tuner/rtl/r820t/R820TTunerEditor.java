@@ -23,6 +23,7 @@ import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
 import java.text.DecimalFormat;
 
+import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -43,13 +44,15 @@ import org.slf4j.LoggerFactory;
 import org.usb4java.LibUsbException;
 
 import source.SourceException;
-import source.tuner.TunerType;
+import source.tuner.airspy.AirspyDeviceInformation;
+import source.tuner.airspy.AirspyTunerEditor;
 import source.tuner.configuration.TunerConfiguration;
 import source.tuner.configuration.TunerConfigurationEditor;
 import source.tuner.configuration.TunerConfigurationEvent;
 import source.tuner.configuration.TunerConfigurationEvent.Event;
 import source.tuner.configuration.TunerConfigurationModel;
 import source.tuner.rtl.RTL2832Tuner;
+import source.tuner.rtl.RTL2832TunerController.Descriptor;
 import source.tuner.rtl.RTL2832TunerController.SampleRate;
 import source.tuner.rtl.r820t.R820TTunerController.R820TGain;
 import source.tuner.rtl.r820t.R820TTunerController.R820TLNAGain;
@@ -67,6 +70,7 @@ public class R820TTunerEditor extends TunerConfigurationEditor
     private R820TTunerController mController;
 
     private JTextField mConfigurationName;
+    private JButton mTunerInfo;
     private JSpinner mFrequencyCorrection;
     private JComboBox<R820TGain> mComboMasterGain;
     private JComboBox<R820TMixerGain> mComboMixerGain;
@@ -84,12 +88,6 @@ public class R820TTunerEditor extends TunerConfigurationEditor
         init();
     }
     
-    @Override
-	public boolean canEdit( TunerType tunerType )
-	{
-		return tunerType == TunerType.RAFAELMICRO_R820T;
-	}
-
 	@Override
 	public void save()
 	{
@@ -169,6 +167,11 @@ public class R820TTunerEditor extends TunerConfigurationEditor
 			mConfigurationName.setEnabled( enabled );
 		}
 		
+		if( mTunerInfo.isEnabled() != enabled )
+		{
+			mTunerInfo.setEnabled( enabled );
+		}
+		
 		if( mFrequencyCorrection.isEnabled() != enabled )
 		{
 			mFrequencyCorrection.setEnabled( enabled );
@@ -213,9 +216,9 @@ public class R820TTunerEditor extends TunerConfigurationEditor
 	private void init()
     {
 		setLayout( new MigLayout( "fill,wrap 4", "[right][grow,fill][right][grow,fill]", 
-				"[][][][][][][grow]" ) );
+				"[][][][][][][][grow]" ) );
 		
-		add( new JLabel( "R820T Tuner Configuration" ), "span, align center" );
+		add( new JLabel( "R820T Tuner Configuration" ), "span,align center" );
 
 		/**
 		 * Tuner Configuration Name
@@ -234,7 +237,21 @@ public class R820TTunerEditor extends TunerConfigurationEditor
 		} );
 		
 		add( new JLabel( "Name:" ) );
-		add( mConfigurationName, "span,grow" );
+		add( mConfigurationName, "span 2" );
+		
+		mTunerInfo = new JButton( "Tuner Info" );
+		mTunerInfo.setEnabled( false );
+		mTunerInfo.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				JOptionPane.showMessageDialog( R820TTunerEditor.this, getTunerInfo(), 
+						"Tuner Info", JOptionPane.INFORMATION_MESSAGE );
+			}
+		} );
+		add( mTunerInfo );
+		
 		
         mComboSampleRate = new JComboBox<>( SampleRate.values() );
         mComboSampleRate.setEnabled( false );
@@ -312,10 +329,12 @@ public class R820TTunerEditor extends TunerConfigurationEditor
         add( mFrequencyCorrection );
 
         add( new JSeparator( JSeparator.HORIZONTAL ), "span,grow" );
-
+        
         /**
          * Gain Controls 
          */
+        add( new JLabel( "Gain" ), "span" );
+        
         /* Master Gain Control */
         mComboMasterGain = new JComboBox<R820TGain>( R820TGain.values() );
         mComboMasterGain.setEnabled( false );
@@ -500,4 +519,48 @@ public class R820TTunerEditor extends TunerConfigurationEditor
         add( new JLabel( "VGA:" ) );
         add( mComboVGAGain );
     }
+	
+	private String getTunerInfo()
+	{
+		StringBuilder sb = new StringBuilder();
+
+		Descriptor descriptor = mController.getDescriptor();
+		
+		sb.append( "<html><h3>RTL-2832 with R820T Tuner</h3>" );
+		
+		if( descriptor == null )
+		{
+			sb.append( "No EEPROM Descriptor Available" );
+		}
+		else
+		{
+			sb.append( "<b>USB ID: </b>" );
+			sb.append( descriptor.getVendorID() );
+			sb.append( ":" );
+			sb.append( descriptor.getProductID() );
+			sb.append( "<br>" );
+
+			sb.append( "<b>Vendor: </b>" );
+			sb.append( descriptor.getVendorLabel() );
+			sb.append( "<br>" );
+
+			sb.append( "<b>Product: </b>" );
+			sb.append( descriptor.getProductLabel() );
+			sb.append( "<br>" );
+
+			sb.append( "<b>Serial: </b>" );
+			sb.append( descriptor.getSerial() );
+			sb.append( "<br>" );
+
+			sb.append( "<b>IR Enabled: </b>" );
+			sb.append( descriptor.irEnabled() );
+			sb.append( "<br>" );
+
+			sb.append( "<b>Remote Wake: </b>" );
+			sb.append( descriptor.remoteWakeupEnabled() );
+			sb.append( "<br>" );
+		}
+
+		return sb.toString();
+	}
 }
