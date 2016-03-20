@@ -17,6 +17,8 @@
  ******************************************************************************/
 package controller.channel;
 
+import gui.editor.Editor;
+
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Collections;
@@ -24,43 +26,55 @@ import java.util.List;
 
 import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
-import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.miginfocom.swing.MigLayout;
-import playlist.PlaylistManager;
 import alias.AliasModel;
 
-public class NameConfigurationEditor extends ChannelConfigurationEditor
+public class NameConfigurationEditor extends Editor<Channel> implements DocumentListener
 {
 	private static final long serialVersionUID = 1L;
 
-	private static final String DEFAULT_NAME = "Please select a channel to view/edit";
-	
+	private final static Logger mLog = LoggerFactory.getLogger( NameConfigurationEditor.class );
+
 	private static ComboBoxModel<String> EMPTY_MODEL = new DefaultComboBoxModel<>();
 
 	private AliasModel mAliasModel;
 	private ChannelModel mChannelModel;
 	
-	private JTextField mChannelName = new JTextField( DEFAULT_NAME );
-	private JComboBox<String> mSystemNameCombo = new JComboBox<>( EMPTY_MODEL );
-	private JComboBox<String> mSiteNameCombo = new JComboBox<>( EMPTY_MODEL );
+	private JTextField mChannelName;
+	private JComboBox<String> mSystemNameCombo;
+	private JComboBox<String> mSiteNameCombo;
 	private JComboBox<String> mAliasListCombo;
 	
-	private Channel mChannel;
-
 	public NameConfigurationEditor( AliasModel aliasModel, ChannelModel model )
 	{
 		mAliasModel = aliasModel;
 		mChannelModel = model;
-		
-		setLayout( new MigLayout( "fill,wrap 2", "[right][]", "[][][][][][grow]" ) );
+
+		init();
+	}
+	
+	private void init()
+	{
+		setLayout( new MigLayout( "fill,wrap 4", "[right][grow,fill][right][grow,fill]", "[][][grow]" ) );
+
+		mChannelName = new JTextField( "" );
+		mChannelName.getDocument().addDocumentListener( this );
+		mChannelName.setEnabled( false );
 
 		add( new JLabel( "Name:" ) );
-		add( mChannelName, "growx" );
-		
+		add( mChannelName );
+
+		mSystemNameCombo = new JComboBox<>( EMPTY_MODEL );
+		mSystemNameCombo.setEnabled( false );
 		mSystemNameCombo.setEditable( true );
 		mSystemNameCombo.addActionListener( new ActionListener()
 		{
@@ -75,9 +89,9 @@ public class NameConfigurationEditor extends ChannelConfigurationEditor
 					
 					List<String> sites = mChannelModel.getSites( system );
 
-					if( !sites.contains( mChannel.getSite() ) )
+					if( !sites.contains( getItem().getSite() ) )
 					{
-						sites.add( mChannel.getSite() );
+						sites.add( getItem().getSite() );
 					}
 					
 					if( sites.isEmpty() )
@@ -90,110 +104,99 @@ public class NameConfigurationEditor extends ChannelConfigurationEditor
 								sites.toArray( new String[ sites.size() ] ) ) );;
 					}
 							
-					mSiteNameCombo.setSelectedItem( mChannel.getSite() );
+					mSiteNameCombo.setSelectedItem( getItem().getSite() );
 				}
+				
+				setModified( true );
 			}
 		} );
-
+		
 		add( new JLabel( "System:" ) );
-		add( mSystemNameCombo, "growx" );
-		
-		mSiteNameCombo.setEditable( true );
-		
-		add( new JLabel( "Site:" ) );
-		add( mSiteNameCombo, "growx" );
-		
-		/**
-		 * ComboBox: Alias Lists
-		 */
-		add( new JLabel( "Alias List:" ) );
+		add( mSystemNameCombo );
 
 		mAliasListCombo = new JComboBox<String>();
-
-		List<String> lists = mAliasModel.getListNames();
-
-		Collections.sort( lists );
+		mAliasListCombo.setEnabled( false );
+		mAliasListCombo.setEditable( true );
+		mAliasListCombo.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				setModified( true );
+			}
+		} );
 		
-		mAliasListCombo.setModel( new DefaultComboBoxModel<String>( 
-				lists.toArray( new String[ lists.size() ] ) ) );
+		add( new JLabel( "Alias List:" ) );
+		add( mAliasListCombo );
 		
-		add( mAliasListCombo, "growx" );
+		mSiteNameCombo = new JComboBox<>( EMPTY_MODEL );
+		mSiteNameCombo.setEnabled( false );
+		mSiteNameCombo.setEditable( true );
+		mSiteNameCombo.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				setModified( true );
+			}
+		} );
 		
-		add( new JLabel() );
-		
-		final JButton aliasListButton = new JButton( "New Alias List ..." );
-		
-//		aliasListButton.addActionListener( new ActionListener()
-//		{
-//			@Override
-//			public void actionPerformed( ActionEvent e )
-//			{
-//				String name = JOptionPane.showInputDialog( aliasListButton, 
-//						"Please enter an Alias List name:" );
-//
-//				if( name != null && !name.isEmpty() )
-//				{
-//					AliasListOld aliasList = new AliasListOld( name );
-//					
-//					mPlaylistManager.getPlayist().getAliasDirectory()
-//							.addAliasList( aliasList );
-//					
-//					mPlaylistManager.save();
-//					
-//					List<AliasListOld> lists = mPlaylistManager.getPlayist()
-//							.getAliasDirectory().getAliasList();
-//					
-//					Collections.sort( lists );
-//
-//					mAliasListCombo.setModel( new DefaultComboBoxModel<AliasListOld>( 
-//							lists.toArray( new AliasListOld[ lists.size() ] ) ) );
-//					
-//					mAliasListCombo.setSelectedItem( aliasList );
-//				}
-//			}
-//		} );
-		
-		add( aliasListButton, "growx" );
+		add( new JLabel( "Site:" ) );
+		add( mSiteNameCombo );
 	}
 	
 	@Override
 	public void save()
 	{
-		if( mChannel != null )
+		if( hasItem() && isModified() )
 		{
-			mChannel.setName( mChannelName.getText() );
+			getItem().setName( mChannelName.getText() );
 			
 			Object system = mSystemNameCombo.getSelectedItem();
-			mChannel.setSystem( ( system == null ? null : (String)system ) );
+			getItem().setSystem( ( system == null ? null : (String)system ) );
 
 			Object site = mSiteNameCombo.getSelectedItem();
-			mChannel.setSite( ( site == null ? null : (String)site ) );
+			getItem().setSite( ( site == null ? null : (String)site ) );
 
 			Object aliasList = mAliasListCombo.getSelectedItem();
-			mChannel.setAliasListName( aliasList == null ? null : (String)aliasList );
+			getItem().setAliasListName( aliasList == null ? null : (String)aliasList );
+		}
+		
+		setModified( false );
+	}
+
+	private void setControlsEnabled( boolean enabled )
+	{
+		if( mChannelName.isEnabled() != enabled )
+		{
+			mChannelName.setEnabled( enabled );
+		}
+
+		if( mAliasListCombo.isEnabled() != enabled )
+		{
+			mAliasListCombo.setEnabled( enabled );
+		}
+
+		if( mSystemNameCombo.isEnabled() != enabled )
+		{
+			mSystemNameCombo.setEnabled( enabled );
+		}
+		
+		if( mSiteNameCombo.isEnabled() != enabled )
+		{
+			mSiteNameCombo.setEnabled( enabled );
 		}
 	}
 
 	@Override
-	public void validateConfiguration() throws ConfigurationValidationException
+	public void setItem( Channel channel )
 	{
-		//System and site can be null, but we must (should?) have a channel name
-		String name = mChannelName.getText();
+		super.setItem( channel );
 		
-		if( name == null || name.isEmpty() )
+		if( hasItem() )
 		{
-			throw new ConfigurationValidationException( 
-					mChannelName, "Channel name cannot be empty" );
-		}
-	}
-
-	@Override
-	public void setConfiguration( Channel channel )
-	{
-		mChannel = channel;
-		
-		if( mChannel != null )
-		{
+			setControlsEnabled( true );
+			
 			mChannelName.setText( channel.getName() );
 
 			List<String> systems = mChannelModel.getSystems();
@@ -221,21 +224,43 @@ public class NameConfigurationEditor extends ChannelConfigurationEditor
 				mSiteNameCombo.setModel( new DefaultComboBoxModel<String>( 
 						sites.toArray( new String[ sites.size() ] ) ) );;
 			}
-					
-			mSiteNameCombo.setSelectedItem( channel.getSite() );
-			
-			String aliasListName = mChannel.getAliasListName();
 
-		   	if( aliasListName != null )
-		   	{
-		   		mAliasListCombo.setSelectedItem( aliasListName );
-		   	}
+			if( channel.getSite() != null )
+			{
+				mSiteNameCombo.setSelectedItem( channel.getSite() );
+			}
+			
+			List<String> lists = mAliasModel.getListNames();
+			Collections.sort( lists );
+			mAliasListCombo.setModel( new DefaultComboBoxModel<String>( 
+					lists.toArray( new String[ lists.size() ] ) ) );
+			
+			if( channel.getAliasListName() != null )
+			{
+		   		mAliasListCombo.setSelectedItem( channel.getAliasListName() );
+			}
 		}
 		else
 		{
-			mChannelName.setText( DEFAULT_NAME );
-			mSystemNameCombo.setModel( EMPTY_MODEL );
-			mSiteNameCombo.setModel( EMPTY_MODEL );
+			setControlsEnabled( false );
+			mChannelName.setText( null );
 		}
+		
+		setModified( false );
 	}
+
+	@Override
+	public void insertUpdate( DocumentEvent e )
+	{
+		setModified( true );
+	}
+
+	@Override
+	public void changedUpdate( DocumentEvent e )
+	{
+		setModified( true );
+	}
+	
+	@Override
+	public void removeUpdate( DocumentEvent e ) {}
 }

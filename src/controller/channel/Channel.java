@@ -23,9 +23,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 import javax.xml.bind.annotation.XmlTransient;
 
+import module.decode.DecoderFactory;
 import module.decode.DecoderType;
 import module.decode.config.AuxDecodeConfiguration;
-import module.decode.config.DecodeConfigFactory;
 import module.decode.config.DecodeConfiguration;
 import module.log.EventLogType;
 import module.log.config.EventLogConfiguration;
@@ -42,7 +42,6 @@ import source.config.SourceConfigTuner;
 import source.config.SourceConfiguration;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannel.Type;
-
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeEvent.Event;
 import source.tuner.frequency.IFrequencyChangeProcessor;
@@ -61,8 +60,7 @@ public class Channel extends Configuration implements IFrequencyChangeProcessor
 	// Static unique channel identifier tracking
 	private static int UNIQUE_ID = 0;
 
-	private DecodeConfiguration mDecodeConfiguration = 
-				DecodeConfigFactory.getDefaultDecodeConfiguration();
+	private DecodeConfiguration mDecodeConfiguration = DecoderFactory.getDefaultDecodeConfiguration();
 	private AuxDecodeConfiguration mAuxDecodeConfiguration =
 				new AuxDecodeConfiguration();
 	private SourceConfiguration mSourceConfiguration = 
@@ -135,7 +133,7 @@ public class Channel extends Configuration implements IFrequencyChangeProcessor
 		
 		channel.setAuxDecodeConfiguration( aux );
 		
-		channel.setDecodeConfiguration( DecodeConfigFactory.copy( mDecodeConfiguration ) );
+		channel.setDecodeConfiguration( DecoderFactory.copy( mDecodeConfiguration ) );
 		
 		EventLogConfiguration log = new EventLogConfiguration();
 		

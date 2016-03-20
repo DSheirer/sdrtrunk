@@ -15,47 +15,35 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package source;
+package module.decode.am;
 
-import javax.swing.JLabel;
-
+import gui.editor.Editor;
+import gui.editor.EditorValidationException;
+import gui.editor.ValidatingEditor;
 import controller.channel.Channel;
-import controller.channel.ConfigurationValidationException;
-import source.config.SourceConfiguration;
 
-public class EmptySourceEditor extends SourceEditor
+public class AMDecoderEditor extends ValidatingEditor<Channel>
 {
     private static final long serialVersionUID = 1L;
-
-	public EmptySourceEditor( SourceManager resourceManager, 
-							  SourceConfiguration config )
+    
+	public AMDecoderEditor()
 	{
-		super( resourceManager, config );
-		
-		initGUI();
-	}
-	
-	public void reset() {}
-	
-	public void save()	{}
-	
-	private void initGUI()
-	{
-		JLabel selectLabel = new JLabel( "Please select a source" );
-		add( selectLabel );
 	}
 
 	@Override
-	public void setConfiguration( Channel channel )
+	public boolean isValid( Editor<Channel> editor ) throws EditorValidationException
 	{
-		// TODO Auto-generated method stub
-		
+		return true;
 	}
 
 	@Override
-	public void validateConfiguration() throws ConfigurationValidationException
+	public void save()
 	{
-		// TODO Auto-generated method stub
+		if( hasItem() && isModified() )
+		{
+			getItem().setDecodeConfiguration( new DecodeConfigAM() );
+		}
 		
+		setModified( false );
 	}
 }

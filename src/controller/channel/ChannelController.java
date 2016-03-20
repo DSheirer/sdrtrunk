@@ -2,6 +2,7 @@ package controller.channel;
 
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
 import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -23,7 +24,6 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import playlist.PlaylistManager;
 import source.SourceManager;
 import alias.AliasModel;
 
@@ -57,8 +57,7 @@ public class ChannelController extends JPanel
 	{
 		mChannelModel = channelModel;
 
-    	mEditor = new ChannelEditor( channelModel, channelMapModel, 
-    			sourceManager, aliasModel );
+    	mEditor = new ChannelEditor( channelModel, channelMapModel, sourceManager, aliasModel );
     	mChannelModel.addListener( mEditor );
 
     	init();
@@ -66,9 +65,7 @@ public class ChannelController extends JPanel
 	
 	private void init()
 	{
-    	setLayout( new MigLayout( "insets 0 0 0 0", 
-								  "[grow,fill]", 
-								  "[grow,fill]") );
+    	setLayout( new MigLayout( "", "[grow,fill]", "[grow,fill]") );
 
 		//System Configuration View and Editor
     	mChannelTable = new JTable( mChannelModel );
@@ -109,11 +106,22 @@ public class ChannelController extends JPanel
     	listAndButtonsPanel.add( channelScroller, "wrap" );
     	listAndButtonsPanel.add( buttonsPanel );
 		
-		JideSplitPane splitPane = new JideSplitPane( JideSplitPane.HORIZONTAL_SPLIT );
+		JideSplitPane splitPane = new JideSplitPane( JideSplitPane.VERTICAL_SPLIT );
 		splitPane.setDividerSize( 5 );
 		splitPane.setShowGripper( true );
-		splitPane.add( listAndButtonsPanel );
-		splitPane.add( mEditor );
+
+		//Shrink this guy so that he'll eventually be expanded to the scroller preferred size
+		listAndButtonsPanel.setPreferredSize( new Dimension( 10, 10 ) );
+
+		//Attempt to get a 60:40 vertical sizing preference
+		JScrollPane listScroller = new JScrollPane( listAndButtonsPanel );
+		listScroller.setPreferredSize( new Dimension( 800, 60 ) );
+		
+		JScrollPane editorScroller = new JScrollPane( mEditor );
+		editorScroller.setPreferredSize( new Dimension( 800, 40 ) );
+
+		splitPane.add( listScroller );
+		splitPane.add( editorScroller );
 
 		add( splitPane );
 	}
@@ -134,14 +142,14 @@ public class ChannelController extends JPanel
 				
 				if( channel != null )
 				{
-					mEditor.setChannel( channel );
+					mEditor.setItem( channel );
 					mCopyChannelButton.setEnabled( true );
 					mDeleteChannelButton.setEnabled( true );
 				}
 			}
 			else
 			{
-				mEditor.setChannel( null );
+				mEditor.setItem( null );
 				mCopyChannelButton.setEnabled( false );
 				mDeleteChannelButton.setEnabled( false );
 			}

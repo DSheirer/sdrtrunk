@@ -8,7 +8,7 @@ import javax.swing.JButton;
 import javax.swing.JDesktopPane;
 import javax.swing.JInternalFrame;
 
-import module.decode.DecodeComponentEditor;
+import module.decode.DecodeConfigurationEditor;
 import module.decode.config.DecodeConfiguration;
 import net.miginfocom.swing.MigLayout;
 import playlist.PlaylistManager;
@@ -22,7 +22,7 @@ public class DecoderSelectionFrame extends JInternalFrame
 {
 	private static final long serialVersionUID = 1L;
 
-	private DecodeComponentEditor mDecodeEditor = new DecodeComponentEditor( null );
+	private DecodeConfigurationEditor mDecodeEditor = new DecodeConfigurationEditor( null );
 	private PlaylistManager mPlaylistManager;
 	
 	private IControllableFileSource mSource;
@@ -77,17 +77,17 @@ public class DecoderSelectionFrame extends JInternalFrame
 				@Override
 				public void actionPerformed( ActionEvent arg0 )
 				{
-					DecodeConfiguration config = mDecodeEditor.getDecodeConfig();
-					
-					if( config != null )
-					{
-						DecoderViewFrame decoderFrame = new DecoderViewFrame( 
-								mPlaylistManager, null, mSource );
-
-						decoderFrame.setVisible( true );
-						
-						mDesktop.add( decoderFrame );
-					}
+//					DecodeConfiguration config = mDecodeEditor.getDecodeConfig();
+//					
+//					if( config != null )
+//					{
+//						DecoderViewFrame decoderFrame = new DecoderViewFrame( 
+//								mPlaylistManager, null, mSource );
+//
+//						decoderFrame.setVisible( true );
+//						
+//						mDesktop.add( decoderFrame );
+//					}
 				}
 			} );
 		}

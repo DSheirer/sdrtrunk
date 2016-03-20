@@ -17,29 +17,34 @@
  ******************************************************************************/
 package module.decode;
 
+import gui.editor.Editor;
+
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import javax.swing.JCheckBox;
 
-import net.miginfocom.swing.MigLayout;
 import module.decode.config.AuxDecodeConfiguration;
+import net.miginfocom.swing.MigLayout;
 import controller.channel.Channel;
-import controller.channel.ChannelConfigurationEditor;
-import controller.channel.ConfigurationValidationException;
 
-public class AuxDecodeComponentEditor extends ChannelConfigurationEditor
+public class AuxDecodeConfigurationEditor extends Editor<Channel>
 {
     private static final long serialVersionUID = 1L;
 
     private List<AuxDecoderCheckBox> mControls = new ArrayList<>();
     
-    private Channel mChannel;
-    
-	public AuxDecodeComponentEditor()
+	public AuxDecodeConfigurationEditor()
 	{
-		setLayout( new MigLayout( "fill,wrap 1", "[]", "[][][][][grow]" ) );
+		init();
+	}
+	
+	private void init()
+	{
+		setLayout( new MigLayout( "fill,wrap 4", "", "[][grow]" ) );
 
 		List<DecoderType> decoders = DecoderType.getAuxDecoders();
 		
@@ -48,29 +53,26 @@ public class AuxDecodeComponentEditor extends ChannelConfigurationEditor
 		for( DecoderType decoder: decoders )
 		{
 			AuxDecoderCheckBox control = new AuxDecoderCheckBox( decoder );
-			
+			control.setEnabled( false );
+			control.addActionListener( new ActionListener()
+			{
+				@Override
+				public void actionPerformed( ActionEvent e )
+				{
+					setModified( true );
+				}
+			} );
 			add( control );
-
 			mControls.add( control );
 		}
-	}
-
-	public AuxDecodeConfiguration getConfig()
-	{
-		if( mChannel != null )
-		{
-			return mChannel.getAuxDecodeConfiguration();
-		}
-		
-		return new AuxDecodeConfiguration();
 	}
 
 	@Override
     public void save()
     {
-		if( mChannel != null )
+		if( hasItem() )
 		{
-			AuxDecodeConfiguration config = mChannel.getAuxDecodeConfiguration();
+			AuxDecodeConfiguration config = getItem().getAuxDecodeConfiguration();
 			
 			config.clearAuxDecoders();
 			
@@ -82,7 +84,21 @@ public class AuxDecodeComponentEditor extends ChannelConfigurationEditor
 				}
 			}
 		}
+		
+		setModified( false );
     }
+	
+	private void setControlsEnabled( boolean enabled )
+	{
+		for( AuxDecoderCheckBox box: mControls )
+		{
+			if( box.isEnabled() != enabled )
+			{
+				box.setEnabled( enabled );
+			}
+		}
+	}
+	
 
 	public class AuxDecoderCheckBox extends JCheckBox
 	{
@@ -104,27 +120,29 @@ public class AuxDecodeComponentEditor extends ChannelConfigurationEditor
 	}
 
 	@Override
-	public void setConfiguration( Channel channel )
+	public void setItem( Channel channel )
 	{
-		mChannel = channel;
-
-		for( AuxDecoderCheckBox checkBox: mControls )
+		super.setItem( channel );
+		
+		if( hasItem() )
 		{
-        	if( mChannel != null &&
-    			mChannel.getAuxDecodeConfiguration().getAuxDecoders()
-    				.contains( checkBox.getDecoderType() ) )
-        	{
-        		checkBox.setSelected( true );
-        	}
-        	else
-        	{
-        		checkBox.setSelected( false );
-        	}
+			setControlsEnabled( true );
+			
+			for( AuxDecoderCheckBox cb: mControls )
+			{
+				if( getItem().getAuxDecodeConfiguration().getAuxDecoders().contains( cb.getDecoderType() ) )
+	        	{
+	        		cb.setSelected( true );
+	        	}
+	        	else
+	        	{
+	        		cb.setSelected( false );
+	        	}
+			}
 		}
-	}
-
-	@Override
-	public void validateConfiguration() throws ConfigurationValidationException
-	{
+		else
+		{
+			setControlsEnabled( false );
+		}
 	}
 }

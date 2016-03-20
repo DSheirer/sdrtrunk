@@ -26,21 +26,17 @@ public class SourceConfigFactory
 		return getSourceConfiguration( SourceType.TUNER );
 	}
 	
-	public static SourceConfiguration 
-		getSourceConfiguration( SourceType source )
+	public static SourceConfiguration getSourceConfiguration( SourceType source )
 	{
 		SourceConfiguration retVal;
 
 		switch( source )
 		{
-			case MIXER:
-				retVal = new SourceConfigMixer();
-				break;
 			case TUNER:
 				retVal = new SourceConfigTuner();
 				break;
-			case RECORDING:
-				retVal = new SourceConfigRecording();
+			case MIXER:
+				retVal = new SourceConfigMixer();
 				break;
 			case NONE:
 			default:

@@ -17,34 +17,71 @@
  ******************************************************************************/
 package module.log;
 
+import gui.editor.Editor;
+
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.List;
 
 import javax.swing.JCheckBox;
 
-import net.miginfocom.swing.MigLayout;
 import module.log.config.EventLogConfiguration;
+import net.miginfocom.swing.MigLayout;
 import controller.channel.Channel;
-import controller.channel.ChannelConfigurationEditor;
-import controller.channel.ConfigurationValidationException;
 
-public class EventLogComponentEditor extends ChannelConfigurationEditor
+public class EventLogConfigurationEditor extends Editor<Channel>
 {
     private static final long serialVersionUID = 1L;
     
-    private JCheckBox mBinaryLogger = new JCheckBox( "Binary Messages" );
-    private JCheckBox mDecodedLogger = new JCheckBox( "Decoded Messages" );
-    private JCheckBox mCallEventLogger = new JCheckBox( "Call Events" );
-    
-    private Channel mChannel;
+    private JCheckBox mBinaryLogger;
+    private JCheckBox mDecodedLogger;
+    private JCheckBox mCallEventLogger;
 
-    public EventLogComponentEditor()
+    public EventLogConfigurationEditor()
 	{
-		setLayout( new MigLayout( "fill,wrap 1", "[]", "[][][][grow]" ) );
-
-		add( mBinaryLogger );
-		add( mDecodedLogger );
-		add( mCallEventLogger );
+    	init();
 	}
+    
+    private void init()
+    {
+		setLayout( new MigLayout( "fill,wrap 4", "", "[][grow]" ) );
+
+		mBinaryLogger = new JCheckBox( "Binary Messages" );
+		mBinaryLogger.setEnabled( false );
+		mBinaryLogger.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				setModified( true );
+			}
+		} );
+		add( mBinaryLogger );
+		
+	    mDecodedLogger = new JCheckBox( "Decoded Messages" );
+	    mDecodedLogger.setEnabled( false );
+	    mDecodedLogger.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				setModified( true );
+			}
+		} );
+		add( mDecodedLogger );
+	    
+	    mCallEventLogger = new JCheckBox( "Call Events" );
+	    mCallEventLogger.setEnabled( false );
+	    mCallEventLogger.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				setModified( true );
+			}
+		} );
+		add( mCallEventLogger );
+    }
 
     /**
      * Saves the current configuration as the stored configuration
@@ -52,9 +89,9 @@ public class EventLogComponentEditor extends ChannelConfigurationEditor
 	@Override
     public void save()
     {
-		if( mChannel != null )
+		if( hasItem() )
 		{
-			EventLogConfiguration config = mChannel.getEventLogConfiguration();
+			EventLogConfiguration config = getItem().getEventLogConfiguration();
 
 			config.clear();
 			
@@ -71,31 +108,45 @@ public class EventLogComponentEditor extends ChannelConfigurationEditor
 				config.addLogger( EventLogType.CALL_EVENT );
 			}
 		}
+		
+		setModified( false );
     }
 
 	@Override
-	public void setConfiguration( Channel channel )
+	public void setItem( Channel channel )
 	{
-		mChannel = channel;
+		super.setItem( channel );
 
-		if( mChannel != null )
+		if( hasItem() )
 		{
-			List<EventLogType> loggers = mChannel.getEventLogConfiguration().getLoggers();
-	    	
+			setControlsEnabled( true );
+
+			List<EventLogType> loggers = getItem().getEventLogConfiguration().getLoggers();
     		mBinaryLogger.setSelected( loggers.contains( EventLogType.BINARY_MESSAGE ) );
     		mDecodedLogger.setSelected(	loggers.contains( EventLogType.DECODED_MESSAGE ) );
     		mCallEventLogger.setSelected( loggers.contains( EventLogType.CALL_EVENT ) );
 		}
 		else
 		{
-    		mBinaryLogger.setSelected( false );
-    		mDecodedLogger.setSelected( false );
-    		mCallEventLogger.setSelected( false );
+			setControlsEnabled( false );
 		}
 	}
-
-	@Override
-	public void validateConfiguration() throws ConfigurationValidationException
+	
+	private void setControlsEnabled( boolean enabled )
 	{
+		if( mBinaryLogger.isEnabled() != enabled )
+		{
+			mBinaryLogger.setEnabled( enabled );
+		}
+		
+		if( mDecodedLogger.isEnabled() != enabled )
+		{
+			mDecodedLogger.setEnabled( enabled );
+		}
+		
+		if( mCallEventLogger.isEnabled() != enabled )
+		{
+			mCallEventLogger.setEnabled( enabled );
+		}
 	}
 }

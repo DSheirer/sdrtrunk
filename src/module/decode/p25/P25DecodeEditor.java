@@ -32,8 +32,8 @@ import module.decode.p25.P25Decoder.Modulation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import source.SourceEditor;
-import source.tuner.TunerEditorOld;
+import source.SourceConfigurationEditor;
+import source.tuner.TunerSourceEditor;
 import controller.channel.ChannelConfigurationEditor;
 import controller.channel.ConfigurationValidationException;
 

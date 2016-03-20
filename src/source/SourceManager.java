@@ -20,11 +20,8 @@ package source;
 import settings.SettingsManager;
 import source.config.SourceConfigTuner;
 import source.config.SourceConfiguration;
-import source.mixer.MixerEditor;
 import source.mixer.MixerManager;
-import source.recording.RecordingEditor;
 import source.recording.RecordingSourceManager;
-import source.tuner.TunerEditorOld;
 import source.tuner.TunerManager;
 import source.tuner.TunerModel;
 import controller.ThreadPoolManager;
@@ -85,29 +82,5 @@ public class SourceManager
 		}
 		
 		return retVal;
-	}
-	
-	public SourceEditor getPanel( SourceConfiguration config )
-	{
-		SourceEditor configuredPanel;
-		
-		switch( config.getSourceType() )
-		{
-			case MIXER:
-				configuredPanel = new MixerEditor( this, config );
-				break;
-			case TUNER:
-				configuredPanel = new TunerEditorOld( this, config );
-				break;
-			case RECORDING:
-				configuredPanel = new RecordingEditor( this, config );
-				break;
-			case NONE:
-			default:
-				configuredPanel = new EmptySourceEditor( this, config );
-				break;
-		}
-		
-		return configuredPanel;
 	}
 }
