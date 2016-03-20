@@ -5,16 +5,21 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.ListSelectionModel;
+import javax.swing.RowSorter;
+import javax.swing.SortOrder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
+import javax.swing.table.TableRowSorter;
 
 import net.miginfocom.swing.MigLayout;
 
@@ -32,6 +37,7 @@ public class TunerViewPanel extends JPanel
 
 	private TunerModel mTunerModel;
 	private JTable mTunerTable;
+	private TableRowSorter<TunerModel> mRowSorter;
 	private JideSplitPane mSplitPane;
 	private TunerEditor mTunerEditor;
 	
@@ -47,7 +53,14 @@ public class TunerViewPanel extends JPanel
 	{
 		setLayout( new MigLayout( "insets 0 0 0 0", "[fill,grow]", "[fill,grow]" ) );
 
+		mRowSorter = new TableRowSorter<>( mTunerModel );
+		List<RowSorter.SortKey> sortKeys = new ArrayList<>();
+		sortKeys.add( new RowSorter.SortKey( TunerModel.TUNER_TYPE, SortOrder.ASCENDING ) );
+		sortKeys.add( new RowSorter.SortKey( TunerModel.TUNER_ID, SortOrder.ASCENDING ) );
+		mRowSorter.setSortKeys( sortKeys );
+		
 		mTunerTable = new JTable( mTunerModel );
+		mTunerTable.setRowSorter( mRowSorter );
 		mTunerTable.setSelectionMode( ListSelectionModel.SINGLE_SELECTION );
 		mTunerTable.getSelectionModel().addListSelectionListener( new ListSelectionListener()
 		{

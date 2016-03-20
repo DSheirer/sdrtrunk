@@ -18,9 +18,9 @@ public class TunerConfigurationModel extends AbstractTableModel
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( TunerConfigurationModel.class );
 	
-	private static final int TUNER_TYPE = 0;
-	private static final int CONFIGURATION_NAME = 1;
-	private static final int ASSIGNED = 2;
+	public static final int TUNER_TYPE = 0;
+	public static final int CONFIGURATION_NAME = 1;
+	public static final int ASSIGNED = 2;
 	private static final String[] COLUMN_HEADERS = { "Tuner Type", "Name", "Assigned" };
 	
 	private List<Listener<TunerConfigurationEvent>> mConfigurationChangeListeners = 

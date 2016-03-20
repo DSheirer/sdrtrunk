@@ -7,6 +7,8 @@ import gui.editor.EmptyEditor;
 import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -15,7 +17,9 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.RowFilter;
+import javax.swing.RowSorter;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.SortOrder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.TableRowSorter;
@@ -67,8 +71,8 @@ public class TunerEditor extends Editor<Tuner>
 		mFrequencyControl.setEnabled( false );
 		listPanel.add( mFrequencyControl, "span" );
 
-		mTunerConfigurationTable = new JTable( mTunerConfigurationModel );
 		mRowSorter = new TableRowSorter<>( mTunerConfigurationModel );
+		mTunerConfigurationTable = new JTable( mTunerConfigurationModel );
 		mTunerConfigurationTable.setRowSorter( mRowSorter );
 		mTunerConfigurationTable.setEnabled( false );
 		mTunerConfigurationTable.getSelectionModel().addListSelectionListener( new ListSelectionListener()
