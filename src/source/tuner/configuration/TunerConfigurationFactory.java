@@ -1,3 +1,21 @@
+/*******************************************************************************
+ *     SDR Trunk 
+ *     Copyright (C) 2014-2016 Dennis Sheirer
+ * 
+ *     This program is free software: you can redistribute it and/or modify
+ *     it under the terms of the GNU General Public License as published by
+ *     the Free Software Foundation, either version 3 of the License, or
+ *     (at your option) any later version.
+ * 
+ *     This program is distributed in the hope that it will be useful,
+ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *     GNU General Public License for more details.
+ * 
+ *     You should have received a copy of the GNU General Public License
+ *     along with this program.  If not, see <http://www.gnu.org/licenses/>
+ ******************************************************************************/
+
 package source.tuner.configuration;
 
 import gui.editor.Editor;
@@ -7,8 +25,10 @@ import source.tuner.TunerType;
 import source.tuner.airspy.AirspyTuner;
 import source.tuner.airspy.AirspyTunerConfiguration;
 import source.tuner.airspy.AirspyTunerEditor;
+import source.tuner.fcd.FCDTuner;
 import source.tuner.fcd.proV1.FCD1TunerConfiguration;
 import source.tuner.fcd.proplusV2.FCD2TunerConfiguration;
+import source.tuner.fcd.proplusV2.FCD2TunerEditor;
 import source.tuner.hackrf.HackRFTuner;
 import source.tuner.hackrf.HackRFTunerConfiguration;
 import source.tuner.hackrf.HackRFTunerEditor;
@@ -62,7 +82,7 @@ public class TunerConfigurationFactory
 			case FUNCUBE_DONGLE_PRO:
 		    	return new EmptyEditor<TunerConfiguration>( "a tuner" );
 			case FUNCUBE_DONGLE_PRO_PLUS:
-		    	return new EmptyEditor<TunerConfiguration>( "a tuner" );
+				return new FCD2TunerEditor( model, (FCDTuner)tuner );
 			case HACKRF:
 				return new HackRFTunerEditor( model, (HackRFTuner)tuner );
 			case RAFAELMICRO_R820T:

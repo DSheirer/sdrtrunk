@@ -148,22 +148,9 @@ public abstract class FCDTunerController extends TunerController
 	public abstract TunerType getTunerType();
 
 	/**
-	 * Editor panel (GUI) component.
-	 */
-	public abstract JPanel getEditor( FCDTuner tuner, 
-									  SettingsManager settingsManager );
-
-	/**
 	 * Applies the settings in the tuner configuration
 	 */
-	public abstract void apply( TunerConfiguration config ) 
-						throws SourceException;
-
-	/**
-	 * Returns the currently applied tuner configuration or null if one hasn't 
-	 * yet been applied
-	 */
-	public abstract TunerConfiguration getTunerConfiguration();
+	public abstract void apply( TunerConfiguration config ) throws SourceException;
 
 	/**
 	 * USB address (bus/port)

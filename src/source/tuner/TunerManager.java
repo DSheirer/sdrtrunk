@@ -54,6 +54,7 @@ public class TunerManager
     					 TunerModel tunerModel,
     					 ThreadPoolManager threadPoolManager )
 	{
+    	mMixerManager = mixerManager;
     	mTunerModel = tunerModel;
     	mThreadPoolManager = threadPoolManager;
     	

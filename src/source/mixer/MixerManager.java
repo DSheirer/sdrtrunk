@@ -19,6 +19,7 @@ package source.mixer;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -168,7 +169,14 @@ public class MixerManager
     
     public Collection<MixerTunerDataLine> getMixerTunerDataLines()
     {
-    	return mMixerTuners.values();
+    	if( mMixerTuners.isEmpty() )
+    	{
+    		return Collections.emptyList();
+    	}
+    	else
+    	{
+        	return mMixerTuners.values();
+    	}
     }
     
 	private void loadMixers()

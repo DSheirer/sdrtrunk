@@ -149,17 +149,6 @@ public class FCD1TunerController extends FCDTunerController
 		}
 	}
 
-	@Override
-    public JPanel getEditor( FCDTuner tuner, SettingsManager settingsManager )
-    {
-		if( mEditor == null )
-		{
-			mEditor = new FCD1TunerEditorPanel( tuner, settingsManager );
-		}
-		
-		return mEditor;
-    }
-
 	/**
 	 * Gets the current LNA Gain value from the controller and stores it
 	 */
