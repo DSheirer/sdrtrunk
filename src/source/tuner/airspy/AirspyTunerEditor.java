@@ -52,7 +52,9 @@ import source.tuner.airspy.AirspyTunerController.Gain;
 import source.tuner.airspy.AirspyTunerController.GainMode;
 import source.tuner.configuration.TunerConfiguration;
 import source.tuner.configuration.TunerConfigurationEditor;
+import source.tuner.configuration.TunerConfigurationEvent;
 import source.tuner.configuration.TunerConfigurationModel;
+import source.tuner.configuration.TunerConfigurationEvent.Event;
 
 public class AirspyTunerEditor extends TunerConfigurationEditor
 {
@@ -113,8 +115,6 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 		
 		add( new JLabel( "Airspy Tuner Configuration" ), "span,align center" );
         
-//        tabs.add( "Info", new AirspyInformationPanel( mController ) ); 
-
 		mConfigurationName = new JTextField();
 		mConfigurationName.setEnabled( false );
 		mConfigurationName.addFocusListener( new FocusListener() 
@@ -569,6 +569,9 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 			config.setLNAGain( mLNAGain.getValue() );
 			config.setMixerAGC( mMixerAGC.isSelected() );
 			config.setLNAAGC( mLNAAGC.isSelected() );
+			
+			getTunerConfigurationModel().broadcast( 
+					new TunerConfigurationEvent( getConfiguration(), Event.CHANGE ) );
     	}
 	}
 	

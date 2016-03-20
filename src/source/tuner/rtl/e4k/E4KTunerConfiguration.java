@@ -29,12 +29,12 @@ import source.tuner.rtl.e4k.E4KTunerController.E4KMixerGain;
 
 public class E4KTunerConfiguration extends TunerConfiguration
 {
-	private E4KGain mMasterGain = E4KGain.AUTOMATIC;
-	private E4KMixerGain mMixerGain = E4KMixerGain.AUTOMATIC;
-	private E4KLNAGain mLNAGain = E4KLNAGain.AUTOMATIC;
-	private E4KEnhanceGain mEnhanceGain = E4KEnhanceGain.AUTOMATIC;
-	private double mFrequencyCorrection = 8.9d;
-	private SampleRate mSampleRate = SampleRate.RATE_1_920MHZ;
+	private E4KGain mMasterGain = E4KGain.MANUAL;
+	private E4KMixerGain mMixerGain = E4KMixerGain.GAIN_4;
+	private E4KLNAGain mLNAGain = E4KLNAGain.GAIN_PLUS_200;
+	private E4KEnhanceGain mEnhanceGain = E4KEnhanceGain.GAIN_3;
+	private double mFrequencyCorrection = 0.0d;
+	private SampleRate mSampleRate = SampleRate.RATE_2_400MHZ;
 
 	/**
 	 * Default constructor for JAXB

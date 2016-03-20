@@ -19,7 +19,6 @@ package source.tuner.rtl.e4k;
 
 import java.util.Arrays;
 
-import javax.swing.JPanel;
 import javax.usb.UsbException;
 
 import org.slf4j.Logger;
@@ -30,7 +29,6 @@ import org.usb4java.DeviceHandle;
 import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 
-import settings.SettingsManager;
 import source.SourceException;
 import source.tuner.TunerType;
 import source.tuner.configuration.TunerConfiguration;
@@ -109,8 +107,6 @@ public class E4KTunerController extends RTL2832TunerController
 	public static final byte CLKOUT_DISABLE = (byte)0x96;
 	
 	public static final byte CHFCALIB_CMD = (byte)0x01;
-	
-	private E4KTunerEditorPanel mEditor;
 	
 	public E4KTunerController( Device device, 
 							   DeviceDescriptor deviceDescriptor,
@@ -250,16 +246,6 @@ public class E4KTunerController extends RTL2832TunerController
 			throw new SourceException( "E4K Tuner Controller - error during "
 					+ "init()", e );
 		}
-	}
-	
-	public JPanel getEditor( SettingsManager settingsManager )
-	{
-		if( mEditor == null )
-		{
-			mEditor = new E4KTunerEditorPanel( this, settingsManager );
-		}
-		
-		return mEditor;
 	}
 	
 	/**
@@ -1070,7 +1056,7 @@ public class E4KTunerController extends RTL2832TunerController
 							  (byte)( ( temp & ~mask ) | ( value & mask ) ), 
 							  controlI2CRepeater );
 			
-			int temp2 = readE4KRegister( register, controlI2CRepeater );
+			readE4KRegister( register, controlI2CRepeater );
 		}
 	}
 	

@@ -153,7 +153,6 @@ public class TunerConfigurationModel extends AbstractTableModel
 			{
 				if( config.isAssigned() )
 				{
-					mLog.debug( "Unassigning: " + config.getName() );
 					config.setAssigned( false );
 					
 					int index = mTunerConfigurations.indexOf( config );
@@ -162,7 +161,6 @@ public class TunerConfigurationModel extends AbstractTableModel
 				}
 			}
 			
-			mLog.debug( "Assigning: " + configToAssign.getName() );
 			configToAssign.setAssigned( true );
 			int index = mTunerConfigurations.indexOf( configToAssign );
 			fireTableCellUpdated( index, ASSIGNED );
