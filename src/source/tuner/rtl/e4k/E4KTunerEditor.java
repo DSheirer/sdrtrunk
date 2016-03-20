@@ -27,6 +27,7 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
+import javax.swing.JSeparator;
 import javax.swing.JSpinner;
 import javax.swing.JTextField;
 import javax.swing.SpinnerModel;
@@ -131,6 +132,7 @@ public class E4KTunerEditor extends TunerConfigurationEditor
 		add( mTunerInfo );
 
         mComboSampleRate = new JComboBox<>( SampleRate.values() );
+        mComboSampleRate.setEnabled( false );
         mComboSampleRate.addActionListener( new ActionListener() 
         {
 			@Override
@@ -199,6 +201,9 @@ public class E4KTunerEditor extends TunerConfigurationEditor
         add( new JLabel( "PPM:" ) );
         add( mFrequencyCorrection );
 
+        add( new JSeparator( JSeparator.HORIZONTAL ), "span,grow" );
+        add( new JLabel( "Gain" ), "wrap" );
+        
         mComboMasterGain = new JComboBox<E4KGain>( E4KGain.values() );
         mComboMasterGain.setEnabled( false );
         mComboMasterGain.addActionListener( new ActionListener() 
@@ -252,7 +257,7 @@ public class E4KTunerEditor extends TunerConfigurationEditor
         		+ "<i>Mixer</i>, <i>LNA</i> and <i>Enhance</i> gain<br>"
         		+ "settings, or one of the individual gain settings for<br>"
         		+ "semi-manual gain control</html>" );
-        add( new JLabel( "Master" ) );
+        add( new JLabel( "Master:" ) );
         add( mComboMasterGain );
 
         mComboMixerGain = new JComboBox<E4KMixerGain>( E4KMixerGain.values() );
@@ -279,7 +284,7 @@ public class E4KTunerEditor extends TunerConfigurationEditor
         mComboMixerGain.setToolTipText( "<html>Mixer Gain.  Set master gain "
         		+ "to <b>MASTER</b> to enable adjustment</html>" );
         mComboMixerGain.setEnabled( false );
-        add( new JLabel( "Mixer" ) );
+        add( new JLabel( "Mixer:" ) );
         add( mComboMixerGain );
 
         mComboLNAGain = new JComboBox<E4KLNAGain>( E4KLNAGain.values() );

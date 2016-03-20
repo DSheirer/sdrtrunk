@@ -59,8 +59,7 @@ import source.tuner.rtl.r820t.R820TTunerController.R820TVGAGain;
 
 public class R820TTunerEditor extends TunerConfigurationEditor
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( R820TTunerEditor.class );
+	private final static Logger mLog = LoggerFactory.getLogger( R820TTunerEditor.class );
 
 	private static final long serialVersionUID = 1L;
     private static final R820TGain DEFAULT_GAIN = R820TGain.GAIN_279;
@@ -69,16 +68,15 @@ public class R820TTunerEditor extends TunerConfigurationEditor
 
     private JTextField mConfigurationName;
     private JButton mTunerInfo;
+    private JComboBox<SampleRate> mComboSampleRate;
     private JSpinner mFrequencyCorrection;
     private JComboBox<R820TGain> mComboMasterGain;
     private JComboBox<R820TMixerGain> mComboMixerGain;
     private JComboBox<R820TLNAGain> mComboLNAGain;
     private JComboBox<R820TVGAGain> mComboVGAGain;
-    private JComboBox<SampleRate> mComboSampleRate;
     private boolean mLoading;
 
-    public R820TTunerEditor( TunerConfigurationModel tunerConfigurationModel, 
-    						 RTL2832Tuner tuner )
+    public R820TTunerEditor( TunerConfigurationModel tunerConfigurationModel, RTL2832Tuner tuner )
     {
     	super( tunerConfigurationModel );
     	mController = (R820TTunerController)tuner.getController();
@@ -103,9 +101,6 @@ public class R820TTunerEditor extends TunerConfigurationEditor
 		
 		add( new JLabel( "R820T Tuner Configuration" ), "span,align center" );
 
-		/**
-		 * Tuner Configuration Name
-		 */
 		mConfigurationName = new JTextField();
 		mConfigurationName.setEnabled( false );
 		mConfigurationName.addFocusListener( new FocusListener() 
@@ -215,7 +210,7 @@ public class R820TTunerEditor extends TunerConfigurationEditor
         /**
          * Gain Controls 
          */
-        add( new JLabel( "Gain" ), "span,align left" );
+        add( new JLabel( "Gain" ), "warp" );
         
         /* Master Gain Control */
         mComboMasterGain = new JComboBox<R820TGain>( R820TGain.values() );

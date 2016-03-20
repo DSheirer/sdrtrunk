@@ -9,7 +9,9 @@ import source.tuner.airspy.AirspyTunerConfiguration;
 import source.tuner.airspy.AirspyTunerEditor;
 import source.tuner.fcd.proV1.FCD1TunerConfiguration;
 import source.tuner.fcd.proplusV2.FCD2TunerConfiguration;
+import source.tuner.hackrf.HackRFTuner;
 import source.tuner.hackrf.HackRFTunerConfiguration;
+import source.tuner.hackrf.HackRFTunerEditor;
 import source.tuner.rtl.RTL2832Tuner;
 import source.tuner.rtl.e4k.E4KTunerConfiguration;
 import source.tuner.rtl.e4k.E4KTunerEditor;
@@ -62,7 +64,7 @@ public class TunerConfigurationFactory
 			case FUNCUBE_DONGLE_PRO_PLUS:
 		    	return new EmptyEditor<TunerConfiguration>( "a tuner" );
 			case HACKRF:
-		    	return new EmptyEditor<TunerConfiguration>( "a tuner" );
+				return new HackRFTunerEditor( model, (HackRFTuner)tuner );
 			case RAFAELMICRO_R820T:
 				return new R820TTunerEditor( model, (RTL2832Tuner)tuner );
 			case UNKNOWN:
