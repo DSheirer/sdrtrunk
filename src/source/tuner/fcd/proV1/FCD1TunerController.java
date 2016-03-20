@@ -56,7 +56,7 @@ public class FCD1TunerController extends FCDTunerController
 	private LNAEnhance mLNAEnhance;
 	private MixerGain mMixerGain;
 	private FCD1TunerConfiguration mTunerConfiguration;
-	private FCD1TunerEditorPanel mEditor;
+	private FCD1TunerEditor mEditor;
 
 	public FCD1TunerController( Device device, DeviceDescriptor descriptor ) 
 	{

@@ -19,7 +19,6 @@
 package source.tuner.configuration;
 
 import gui.editor.Editor;
-import gui.editor.EmptyEditor;
 import source.tuner.Tuner;
 import source.tuner.TunerType;
 import source.tuner.airspy.AirspyTuner;
@@ -27,6 +26,7 @@ import source.tuner.airspy.AirspyTunerConfiguration;
 import source.tuner.airspy.AirspyTunerEditor;
 import source.tuner.fcd.FCDTuner;
 import source.tuner.fcd.proV1.FCD1TunerConfiguration;
+import source.tuner.fcd.proV1.FCD1TunerEditor;
 import source.tuner.fcd.proplusV2.FCD2TunerConfiguration;
 import source.tuner.fcd.proplusV2.FCD2TunerEditor;
 import source.tuner.hackrf.HackRFTuner;
@@ -43,8 +43,8 @@ public class TunerConfigurationFactory
 	/**
 	 * Creates a tuner configuration for the specified tuner type, unique ID and name
 	 */
-	public static TunerConfiguration getTunerConfiguration( TunerType type, 
-			String uniqueID, String name )
+	public static TunerConfiguration getTunerConfiguration( TunerType type, String uniqueID, 
+															String name )
 	{
 		switch( type )
 		{
@@ -70,8 +70,7 @@ public class TunerConfigurationFactory
 	/**
 	 * Creates a tuner editor gui for the specified tuner
 	 */
-    public static Editor<TunerConfiguration> getEditor( Tuner tuner, 
-    		TunerConfigurationModel model )
+    public static Editor<TunerConfiguration> getEditor( Tuner tuner, TunerConfigurationModel model )
     {
     	switch( tuner.getTunerType() )
     	{
@@ -80,7 +79,7 @@ public class TunerConfigurationFactory
 			case ELONICS_E4000:
 				return new E4KTunerEditor( model, (RTL2832Tuner)tuner );
 			case FUNCUBE_DONGLE_PRO:
-		    	return new EmptyEditor<TunerConfiguration>( "a tuner" );
+				return new FCD1TunerEditor( model, (FCDTuner)tuner );
 			case FUNCUBE_DONGLE_PRO_PLUS:
 				return new FCD2TunerEditor( model, (FCDTuner)tuner );
 			case HACKRF:

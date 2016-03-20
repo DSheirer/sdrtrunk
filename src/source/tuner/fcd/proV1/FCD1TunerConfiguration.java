@@ -55,6 +55,7 @@ public class FCD1TunerConfiguration extends TunerConfiguration
 	    return TunerType.FUNCUBE_DONGLE_PRO;
     }
 
+	@XmlAttribute( name = "lna_gain" )
 	public LNAGain getLNAGain()
 	{
 		return mLNAGain;
@@ -65,12 +66,12 @@ public class FCD1TunerConfiguration extends TunerConfiguration
 		mLNAGain = gain;
 	}
 	
-	@XmlAttribute( name = "lna_gain" )
 	public LNAEnhance getLNAEnhance()
 	{
 		return mLNAEnhance;
 	}
 	
+	@XmlAttribute( name = "lna_enhance" )
 	public void setLNAEnhance( LNAEnhance enhance )
 	{
 		mLNAEnhance = enhance;

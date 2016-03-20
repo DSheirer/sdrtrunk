@@ -158,6 +158,7 @@ public class TunerEditor extends Editor<Tuner>
 					TunerConfiguration selected = getSelectedTunerConfiguration();
 					
 					mTunerConfigurationModel.removeTunerConfiguration( selected );
+					mTunerConfigurationTable.setRowSelectionInterval( 0, 0 );
 				}
 			}
 		} );
