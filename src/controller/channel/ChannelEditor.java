@@ -18,6 +18,7 @@
 package controller.channel;
 
 import gui.editor.Editor;
+import gui.editor.EditorValidationException;
 
 import java.awt.Color;
 import java.awt.event.ActionEvent;
@@ -55,7 +56,7 @@ public class ChannelEditor extends Editor<Channel> implements ActionListener, Ch
     private SourceConfigurationEditor mSourceConfigurationEditor;
     private DecodeConfigurationEditor mDecodeConfigurationEditor;
     private AuxDecodeConfigurationEditor mAuxDecodeConfigurationEditor;
-    private EventLogConfigurationEditor mEventLogConfiguraitonEditor;
+    private EventLogConfigurationEditor mEventLogConfigurationEditor;
     private RecordConfigurationEditor mRecordConfigurationEditor;
     
 	private JButton mEnableButton = new JButton( "Enable" );
@@ -106,7 +107,7 @@ public class ChannelEditor extends Editor<Channel> implements ActionListener, Ch
 		mSourceConfigurationEditor.setItem( channel );
 		mDecodeConfigurationEditor.setItem( channel );
 		mAuxDecodeConfigurationEditor.setItem( channel );
-		mEventLogConfiguraitonEditor.setItem( channel );
+		mEventLogConfigurationEditor.setItem( channel );
 		mRecordConfigurationEditor.setItem( channel );
 		
 		if( channel != null )
@@ -127,10 +128,8 @@ public class ChannelEditor extends Editor<Channel> implements ActionListener, Ch
 
 	private void init()
 	{
-		setLayout( new MigLayout( "fill,wrap 3", "[grow,fill][grow,fill][grow,fill]", "[][][][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 3", "[grow,fill][grow,fill][grow,fill]", "[grow,fill][]" ) );
 		
-		add( mChannelName, "wrap" );
-
 		JideTabbedPane tabs = new JideTabbedPane();
 		tabs.setFont( this.getFont() );
     	tabs.setForeground( Color.BLACK );
@@ -147,8 +146,8 @@ public class ChannelEditor extends Editor<Channel> implements ActionListener, Ch
 		mAuxDecodeConfigurationEditor = new AuxDecodeConfigurationEditor();
 		tabs.addTab( "Aux Decoders", mAuxDecodeConfigurationEditor );
 
-		mEventLogConfiguraitonEditor = new EventLogConfigurationEditor();
-		tabs.addTab( "Logging", mEventLogConfiguraitonEditor );
+		mEventLogConfigurationEditor = new EventLogConfigurationEditor();
+		tabs.addTab( "Logging", mEventLogConfigurationEditor );
 		
 		mRecordConfigurationEditor = new RecordConfigurationEditor();
 		tabs.addTab( "Recording", mRecordConfigurationEditor );
@@ -234,40 +233,40 @@ public class ChannelEditor extends Editor<Channel> implements ActionListener, Ch
     {
     	if( hasItem() )
     	{
-//    		try
-//    		{
-//TODO: validate the source editor against the decode editor
-//TODO: validate the aux editor against the decode editor - verify no aux decoders with P25
-//    		}
-//    		catch( ConfigurationValidationException e )
-//    		{
-//    			/* ChannelValidationException can be thrown by any of the component
-//    			 * editors.  Show the validation error text in a popup menu to the
-//    			 * user and set the focus on the error component */
-//    			JOptionPane.showMessageDialog( ChannelEditor.this,
-//    			    validationException.getMessage(),
-//    			    "Channel Configuration Error",
-//    			    JOptionPane.ERROR_MESSAGE );			
-//
-//    			Component component = validationException.getComponent();
-//    			
-//    			if( component != null )
-//    			{
-//    				component.requestFocus();
-//    			}
-//    			
-//    			return;
-//    		}
+    		try
+    		{
+    			mDecodeConfigurationEditor.validate( mSourceConfigurationEditor );
+    			mDecodeConfigurationEditor.validate( mAuxDecodeConfigurationEditor );
+    		}
+    		catch( EditorValidationException e )
+    		{
+    			JOptionPane.showMessageDialog( ChannelEditor.this, e.getReason(),
+    					"Configuration Error", JOptionPane.ERROR_MESSAGE );			
 
+    			e.getEditor().requestFocus();
+    			
+    			return;
+    		}
+    		
+    		boolean changed = mNameConfigurationEditor.isModified() ||
+					  mSourceConfigurationEditor.isModified() ||
+					  mDecodeConfigurationEditor.isModified() ||
+					  mAuxDecodeConfigurationEditor.isModified() ||
+					  mEventLogConfigurationEditor.isModified() ||
+					  mRecordConfigurationEditor.isModified();
+	
 			mNameConfigurationEditor.save();
    			mSourceConfigurationEditor.save();
    			mDecodeConfigurationEditor.save();
    			mAuxDecodeConfigurationEditor.save();
-   			mEventLogConfiguraitonEditor.save();
+   			mEventLogConfigurationEditor.save();
    			mRecordConfigurationEditor.save();
 
-   			//Broadcast a channel configuration change event
-   			mChannelModel.broadcast( new ChannelEvent( getItem(), Event.NOTIFICATION_CONFIGURATION_CHANGE ) );
+   			if( changed )
+   			{
+   	   			mChannelModel.broadcast( new ChannelEvent( getItem(), 
+   	   					Event.NOTIFICATION_CONFIGURATION_CHANGE ) );
+   			}
     	}
 
     	setModified( false );

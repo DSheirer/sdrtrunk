@@ -31,9 +31,8 @@ public class AMDecoderEditor extends ValidatingEditor<Channel>
 	}
 
 	@Override
-	public boolean isValid( Editor<Channel> editor ) throws EditorValidationException
+	public void validate( Editor<Channel> editor ) throws EditorValidationException
 	{
-		return true;
 	}
 
 	@Override

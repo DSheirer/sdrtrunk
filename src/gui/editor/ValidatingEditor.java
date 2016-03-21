@@ -11,5 +11,5 @@ public abstract class ValidatingEditor<T> extends Editor<T>
 	/**
 	 * Indicates if the editor argument is valid according to the settings of this editor
 	 */
-	public abstract boolean isValid( Editor<T> editor ) throws EditorValidationException;
+	public abstract void validate( Editor<T> editor ) throws EditorValidationException;
 }

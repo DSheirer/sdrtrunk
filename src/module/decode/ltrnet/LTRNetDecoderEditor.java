@@ -91,6 +91,7 @@ public class LTRNetDecoderEditor extends ValidatingEditor<Channel>
 		
 		mComboDirection = new JComboBox<MessageDirection>();
 		mComboDirection.setModel( new DefaultComboBoxModel<MessageDirection>( MessageDirection.values() ) );
+		mComboDirection.setSelectedItem( MessageDirection.OSW );
 		mComboDirection.setEnabled( false );
 		mComboDirection.addActionListener( new ActionListener() 
 		{
@@ -106,9 +107,8 @@ public class LTRNetDecoderEditor extends ValidatingEditor<Channel>
 	}
 
 	@Override
-	public boolean isValid( Editor<Channel> editor ) throws EditorValidationException
+	public void validate( Editor<Channel> editor ) throws EditorValidationException
 	{
-		return true;
 	}
 
 	
@@ -119,6 +119,8 @@ public class LTRNetDecoderEditor extends ValidatingEditor<Channel>
 		
 		if( hasItem() )
 		{
+			mAFC.setEnabled( true );
+			mAFCMaximumCorrection.setEnabled( true );
 			mComboDirection.setEnabled( true );
 			
 			DecodeConfiguration config = getItem().getDecodeConfiguration();
@@ -133,6 +135,8 @@ public class LTRNetDecoderEditor extends ValidatingEditor<Channel>
 		}
 		else
 		{
+			mAFC.setEnabled( false );
+			mAFCMaximumCorrection.setEnabled( false );
 			mComboDirection.setEnabled( false );
 		}
 	}

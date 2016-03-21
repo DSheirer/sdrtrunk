@@ -87,6 +87,7 @@ public class DecodeConfigurationEditor extends ValidatingEditor<Channel>
 		{
     		remove( mCurrentEditor );
     		mCurrentEditor = editor;
+    		mCurrentEditor.setItem( getItem() );
     		add( mCurrentEditor );
     		
     		revalidate();
@@ -97,12 +98,12 @@ public class DecodeConfigurationEditor extends ValidatingEditor<Channel>
     @Override
     public void save()
     {
-//    	if( mEditor != null )
-//    	{
-//        	mEditor.save();
-//    	}
-//    	
-//	    mChannel.setDecodeConfiguration( mEditor.getConfig() );
+    	if( hasItem() && mCurrentEditor != null )
+    	{
+    		mCurrentEditor.save();
+    	}
+    	
+    	setModified( false );
     }
 
 	@Override
@@ -119,11 +120,13 @@ public class DecodeConfigurationEditor extends ValidatingEditor<Channel>
 		{
 			mComboDecoders.setEnabled( false );
 		}
+		
+		setModified( false );
 	}
 
 	@Override
-	public boolean isValid( Editor<Channel> editor ) throws EditorValidationException
+	public void validate( Editor<Channel> editor ) throws EditorValidationException
 	{
-		return mCurrentEditor.isValid( editor );
+		mCurrentEditor.validate( editor );
 	}
 }

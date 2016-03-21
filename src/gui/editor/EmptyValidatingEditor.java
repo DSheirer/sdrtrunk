@@ -30,8 +30,7 @@ public class EmptyValidatingEditor<T> extends ValidatingEditor<T>
 	}
 
 	@Override
-	public boolean isValid( Editor<T> editor ) throws EditorValidationException
+	public void validate( Editor<T> editor ) throws EditorValidationException
 	{
-		return true;
 	}
 }
