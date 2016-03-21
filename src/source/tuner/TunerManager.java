@@ -218,6 +218,7 @@ public class TunerManager
 				case FUNCUBE_DONGLE_PRO_PLUS:
 					return initFuncubeProPlusTuner( device, descriptor );
 				case HACKRF_ONE:
+				case RAD1O:
 					return initHackRFTuner( device, descriptor );
 				case COMPRO_VIDEOMATE_U620F:
 				case COMPRO_VIDEOMATE_U650F:
