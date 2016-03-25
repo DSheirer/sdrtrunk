@@ -10,7 +10,7 @@ public class EmptyValidatingEditor<T> extends ValidatingEditor<T>
 
 	public EmptyValidatingEditor( String descriptor )
 	{
-		setLayout( new MigLayout( "insets 0 0 0 0", "[center]", "[grow]" ) );
+		setLayout( new MigLayout( "insets 0 0 0 0", "", "" ) );
 		add( new JLabel( "Please select " + descriptor ), "wrap" );
 	}
 	

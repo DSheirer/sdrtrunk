@@ -38,7 +38,7 @@ public class TunerSourceEditor extends Editor<Channel>
 
 	private void init()
 	{
-		setLayout( new MigLayout( "fill", "[left]", "[][grow]" ) );
+		setLayout( new MigLayout( "insets 0 0 0 0", "[left]", "" ) );
 		mFrequencyControl = new JFrequencyControl();
 		mFrequencyControl.setEnabled( false );
 		mFrequencyControl.addListener( new IFrequencyChangeProcessor()
@@ -73,18 +73,23 @@ public class TunerSourceEditor extends Editor<Channel>
 		{
 			SourceConfiguration config = getItem().getSourceConfiguration();
 			
+			mFrequencyControl.setEnabled( true );
+
 			if( config instanceof SourceConfigTuner )
 			{
 				mFrequencyControl.setFrequency( ((SourceConfigTuner)config).getFrequency(), false );
+				setModified( false );
 			}
-			
-			mFrequencyControl.setEnabled( true );
+			else
+			{
+				mFrequencyControl.setFrequency( 101000000, false );
+				setModified( true );
+			}
 		}
 		else
 		{
 			mFrequencyControl.setEnabled( false );
+			setModified( false );
 		}
-		
-		setModified( false );
 	}
 }

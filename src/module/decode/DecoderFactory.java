@@ -48,6 +48,7 @@ import module.decode.ltrstandard.DecodeConfigLTRStandard;
 import module.decode.ltrstandard.LTRStandardDecoder;
 import module.decode.ltrstandard.LTRStandardDecoderPanel;
 import module.decode.ltrstandard.LTRStandardDecoderState;
+import module.decode.ltrstandard.LTRStandardDecoderEditor;
 import module.decode.ltrstandard.LTRStandardMessageFilter;
 import module.decode.mdc1200.MDCDecoder;
 import module.decode.mdc1200.MDCDecoderPanel;
@@ -56,14 +57,17 @@ import module.decode.mdc1200.MDCMessageFilter;
 import module.decode.mpt1327.DecodeConfigMPT1327;
 import module.decode.mpt1327.MPT1327Decoder;
 import module.decode.mpt1327.MPT1327Decoder.Sync;
+import module.decode.mpt1327.MPT1327DecoderEditor;
 import module.decode.mpt1327.MPT1327DecoderPanel;
 import module.decode.mpt1327.MPT1327DecoderState;
 import module.decode.mpt1327.MPT1327MessageFilter;
 import module.decode.nbfm.DecodeConfigNBFM;
 import module.decode.nbfm.NBFMDecoder;
 import module.decode.nbfm.NBFMDecoderPanel;
+import module.decode.nbfm.NBFMDecoderEditor;
 import module.decode.p25.DecodeConfigP25Phase1;
 import module.decode.p25.P25Decoder.Modulation;
+import module.decode.p25.P25DecoderEditor;
 import module.decode.p25.P25DecoderPanel;
 import module.decode.p25.P25DecoderState;
 import module.decode.p25.P25_C4FMDecoder;
@@ -74,6 +78,7 @@ import module.decode.passport.DecodeConfigPassport;
 import module.decode.passport.PassportDecoder;
 import module.decode.passport.PassportDecoderPanel;
 import module.decode.passport.PassportDecoderState;
+import module.decode.passport.PassportDecoderEditor;
 import module.decode.passport.PassportMessageFilter;
 import module.decode.state.AlwaysUnsquelchedDecoderState;
 import module.decode.state.DecoderPanel;
@@ -464,7 +469,7 @@ public class DecoderFactory
 		}
 	}
 	
-	public static ValidatingEditor<Channel> getEditor( DecoderType type )
+	public static ValidatingEditor<Channel> getEditor( DecoderType type, ChannelMapModel model )
 	{
 		switch( type )
 		{
@@ -473,20 +478,20 @@ public class DecoderFactory
 			case LTR_NET:
 				return new LTRNetDecoderEditor();
 			case LTR_STANDARD:
-				break;
+				return new LTRStandardDecoderEditor();
 			case MPT1327:
-				break;
+				return new MPT1327DecoderEditor( model );
 			case NBFM:
-				break;
+				return new NBFMDecoderEditor();
 			case P25_PHASE1:
-				break;
+				return new P25DecoderEditor();
 			case PASSPORT:
-				break;
+				return new PassportDecoderEditor();
 			default:
 				break;
 		}
 		
-		return new EmptyValidatingEditor<Channel>();
+		return new EmptyValidatingEditor<Channel>( "a decoder" );
 	}
 
 	/**

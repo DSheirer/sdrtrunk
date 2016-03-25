@@ -42,6 +42,11 @@ public class AuxDecodeConfigurationEditor extends Editor<Channel>
 		init();
 	}
 	
+	public AuxDecodeConfiguration getConfiguration()
+	{
+		return hasItem() ? getItem().getAuxDecodeConfiguration() : null;
+	}
+	
 	private void init()
 	{
 		setLayout( new MigLayout( "fill,wrap 4", "", "[][grow]" ) );

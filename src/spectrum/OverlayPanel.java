@@ -100,8 +100,7 @@ public class OverlayPanel extends JPanel
 //	private List<Channel> mChannels = new ArrayList<Channel>();
 //
 	//Currently visible/displayable channels
-	private CopyOnWriteArrayList<Channel> mVisibleChannels = 
-								new CopyOnWriteArrayList<Channel>();
+	private CopyOnWriteArrayList<Channel> mVisibleChannels = new CopyOnWriteArrayList<Channel>();
 	private ChannelDisplay mChannelDisplay = ChannelDisplay.ALL;
 
 	//Defines the offset at the bottom of the spectral display to account for
@@ -597,29 +596,24 @@ public class OverlayPanel extends JPanel
                     					width );
                     
                     //Draw the decoder label
-                    drawLabel( graphics, 
-                    		channel.getDecodeConfiguration().getDecoderType()
-                    			.getShortDisplayString(),
-                    		   this.getFont(),
-                    		   xAxis,
-                    		   yAxis,
-                    		   width );
-                }
-                
-            	long frequency = tunerChannel.getFrequency();
-            	
-                double frequencyAxis = getAxisFromFrequency( frequency );
-                
-                drawChannelCenterLine( graphics, frequencyAxis );
-                
-                /* Draw Automatic Frequency Control line */
-                int correction = channel.getChannelFrequencyCorrection();
-                
-                if( correction != 0 )
-                {
-                	long error = frequency + correction;
+                    drawLabel( graphics, channel.getDecodeConfiguration().getDecoderType().getShortDisplayString(),
+                    		   this.getFont(), xAxis, yAxis, width );
+                    
+                	long frequency = tunerChannel.getFrequency();
                 	
-                    drawAFC( graphics, frequencyAxis, getAxisFromFrequency( error ) );
+                    double frequencyAxis = getAxisFromFrequency( frequency );
+                    
+                    drawChannelCenterLine( graphics, frequencyAxis );
+                    
+                    /* Draw Automatic Frequency Control line */
+                    int correction = channel.getChannelFrequencyCorrection();
+                    
+                    if( correction != 0 )
+                    {
+                    	long error = frequency + correction;
+                    	
+                        drawAFC( graphics, frequencyAxis, getAxisFromFrequency( error ) );
+                    }
                 }
     		}
     	}
@@ -724,6 +718,21 @@ public class OverlayPanel extends JPanel
 				{
 					mVisibleChannels.remove( channel );
 				}
+				break;
+			case NOTIFICATION_CONFIGURATION_CHANGE:
+				if( mVisibleChannels.contains( channel ) && 
+					!channel.isWithin( getMinFrequency(), getMaxFrequency() ) )
+				{
+					mVisibleChannels.remove( channel );
+				}
+				
+				if( !mVisibleChannels.contains( channel ) &&
+					channel.isWithin( getMinFrequency(), getMaxFrequency() ) )
+				{
+					mVisibleChannels.add( channel );
+				}
+				break;
+			default:
 				break;
 		}
 		

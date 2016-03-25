@@ -27,7 +27,6 @@ import java.awt.event.ActionListener;
 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
-import javax.swing.JLabel;
 
 import net.miginfocom.swing.MigLayout;
 
@@ -39,21 +38,21 @@ import controller.channel.map.ChannelMapModel;
 
 public class DecodeConfigurationEditor extends ValidatingEditor<Channel>
 {
-	private final static Logger mLog = LoggerFactory.getLogger( DecodeConfigurationEditor.class );
-
 	private static final long serialVersionUID = 1L;
 
     private JComboBox<DecoderType> mComboDecoders;
-    private ValidatingEditor<Channel> mCurrentEditor = new EmptyValidatingEditor<>();
+    private ValidatingEditor<Channel> mCurrentEditor = new EmptyValidatingEditor<>( "a decoder" );
+    private ChannelMapModel mChannelMapModel;
 
     public DecodeConfigurationEditor( final ChannelMapModel channelMapModel )
 	{
+    	mChannelMapModel = channelMapModel;
     	init();
 	}
 
     private void init()
     {
-		setLayout( new MigLayout( "fill,wrap 3", "[right][left][grow,fill]", "[][grow]" ) );
+		setLayout( new MigLayout( "wrap 2", "[][grow,fill]", "[align top][grow,fill]" ) );
 
 		mComboDecoders = new JComboBox<DecoderType>();
 		mComboDecoders.setEnabled( false );
@@ -72,11 +71,11 @@ public class DecodeConfigurationEditor extends ValidatingEditor<Channel>
            public void actionPerformed( ActionEvent e )
            {
 				DecoderType selected = mComboDecoders.getItemAt( mComboDecoders.getSelectedIndex() );
-				setEditor( DecoderFactory.getEditor( selected ) );
+				ValidatingEditor<Channel> editor = DecoderFactory.getEditor( selected, mChannelMapModel );
+				setEditor( editor );
            }
 		});
 		
-    	add( new JLabel( "Decoder:" ) );
 		add( mComboDecoders );
 		add( mCurrentEditor );
     }
@@ -85,9 +84,18 @@ public class DecodeConfigurationEditor extends ValidatingEditor<Channel>
     {
     	if( mCurrentEditor != editor )
 		{
+    		//Set channel to null in current editor to force a save prompt as required
+    		if( mCurrentEditor.isModified() )
+    		{
+    			mCurrentEditor.setItem( null );
+    		}
+    		
     		remove( mCurrentEditor );
+    		
     		mCurrentEditor = editor;
+    		mCurrentEditor.setSaveRequestListener( this );
     		mCurrentEditor.setItem( getItem() );
+    		
     		add( mCurrentEditor );
     		
     		revalidate();
@@ -98,7 +106,7 @@ public class DecodeConfigurationEditor extends ValidatingEditor<Channel>
     @Override
     public void save()
     {
-    	if( hasItem() && mCurrentEditor != null )
+    	if( hasItem() )
     	{
     		mCurrentEditor.save();
     	}
@@ -114,6 +122,7 @@ public class DecodeConfigurationEditor extends ValidatingEditor<Channel>
 		if( hasItem() )
 		{
 			mComboDecoders.setEnabled( true );
+			mComboDecoders.setSelectedItem( channel.getDecodeConfiguration().getDecoderType() );
 			mCurrentEditor.setItem( channel );
 		}
 		else

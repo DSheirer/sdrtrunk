@@ -262,5 +262,8 @@ public class NameConfigurationEditor extends Editor<Channel> implements Document
 	}
 	
 	@Override
-	public void removeUpdate( DocumentEvent e ) {}
+	public void removeUpdate( DocumentEvent e ) 
+	{
+		setModified( true );
+	}
 }

@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -20,6 +20,10 @@ package module.decode.am;
 import gui.editor.Editor;
 import gui.editor.EditorValidationException;
 import gui.editor.ValidatingEditor;
+
+import javax.swing.JLabel;
+
+import net.miginfocom.swing.MigLayout;
 import controller.channel.Channel;
 
 public class AMDecoderEditor extends ValidatingEditor<Channel>
@@ -28,11 +32,35 @@ public class AMDecoderEditor extends ValidatingEditor<Channel>
     
 	public AMDecoderEditor()
 	{
+		setLayout( new MigLayout( "insets 0 0 0 0", "",	"" ) );
+		add( new JLabel( "AM Decoder" ) );
 	}
 
 	@Override
 	public void validate( Editor<Channel> editor ) throws EditorValidationException
 	{
+	}
+
+	@Override
+	public void setItem( Channel item )
+	{
+		super.setItem( item );
+
+		if( hasItem() )
+		{
+			if( getItem().getDecodeConfiguration() instanceof DecodeConfigAM )
+			{
+				setModified( false );
+			}
+			else
+			{
+				setModified( true );
+			}
+		}
+		else
+		{
+			setModified( false );
+		}
 	}
 
 	@Override

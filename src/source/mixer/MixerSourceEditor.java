@@ -50,7 +50,7 @@ public class MixerSourceEditor extends Editor<Channel>
 	
 	private void init()
 	{
-		setLayout( new MigLayout( "fill,wrap 4", "[right][grow,fill][right][grow,fill]", "[][grow]" ) );
+		setLayout( new MigLayout( "insets 0 0 0 0,wrap 4", "[right][grow,fill][right][grow,fill]", "" ) );
 
 		mComboMixers = new JComboBox<InputMixerConfiguration>();
     	InputMixerConfiguration[] inputMixers = mSourceManager.getMixerManager().getInputMixers();
@@ -68,6 +68,8 @@ public class MixerSourceEditor extends Editor<Channel>
         		mComboChannels.setModel( new DefaultComboBoxModel<MixerChannel>( 
     				channels.toArray( new MixerChannel[ channels.size() ] ) ) );
         		
+        		repaint();
+        		
         		setModified( true );
 			}
 		} );
@@ -76,6 +78,17 @@ public class MixerSourceEditor extends Editor<Channel>
 		add( mComboMixers );
 
 		mComboChannels = new JComboBox<MixerChannel>();
+
+		InputMixerConfiguration selected = (InputMixerConfiguration)mComboMixers.getSelectedItem();
+
+		if( selected != null )
+		{
+	    	EnumSet<MixerChannel> channels = selected.getChannels();
+	    	
+			mComboChannels.setModel( new DefaultComboBoxModel<MixerChannel>( 
+				channels.toArray( new MixerChannel[ channels.size() ] ) ) );
+		}
+		
 		mComboChannels.setEnabled( false );
 		mComboChannels.addActionListener( new ActionListener()
 		{
@@ -114,24 +127,33 @@ public class MixerSourceEditor extends Editor<Channel>
 						
 						for( MixerChannel channel: inputMixer.getChannels() )
 						{
-							if( channel.getLabel().equalsIgnoreCase( mixer.getChannel().getLabel() ) )
+							if( channel.getLabel() != null && mixer.getChannel() != null )
 							{
-								mComboChannels.setSelectedItem( channel );
+								if( channel.getLabel().equalsIgnoreCase( mixer.getChannel().getLabel() ) )
+								{
+									mComboChannels.setSelectedItem( channel );
+								}
 							}
 						}
 						
 						continue;
 					}
 				}
+				
+				setModified( false );
+			}
+			else
+			{
+				setModified( true );
 			}
 		}
 		else
 		{
 			mComboMixers.setEnabled( false );
 			mComboChannels.setEnabled( false );
+			
+			setModified( false );
 		}
-		
-		setModified( false );
 	}
 
 	public void save()

@@ -78,7 +78,7 @@ public class JFrequencyControl extends JPanel implements IFrequencyChangeProcess
 	
 	private void init()
 	{
-		setLayout( new MigLayout( "", "[]0[]", "" ) );
+		setLayout( new MigLayout( "insets 0 0 0 0", "[]0[]", "" ) );
 		
 		Font font = new Font( Font.MONOSPACED, Font.BOLD, 30 );
 		

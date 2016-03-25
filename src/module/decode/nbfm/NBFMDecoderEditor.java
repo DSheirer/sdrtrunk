@@ -15,7 +15,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package module.decode.ltrnet;
+package module.decode.nbfm;
 
 import gui.editor.Editor;
 import gui.editor.EditorValidationException;
@@ -24,35 +24,30 @@ import gui.editor.ValidatingEditor;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
 import javax.swing.JSlider;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import message.MessageDirection;
 import module.decode.config.DecodeConfiguration;
 import net.miginfocom.swing.MigLayout;
 import controller.channel.Channel;
 
-public class LTRNetDecoderEditor extends ValidatingEditor<Channel>
+public class NBFMDecoderEditor extends ValidatingEditor<Channel>
 {
     private static final long serialVersionUID = 1L;
-
+    
     private JCheckBox mAFC;
     private JSlider mAFCMaximumCorrection;
-    private JComboBox<MessageDirection> mComboDirection;
-    
-	public LTRNetDecoderEditor()
+
+	public NBFMDecoderEditor()
 	{
 		init();
 	}
 	
 	private void init()
 	{
-		setLayout( new MigLayout( "insets 0 0 0 0,wrap 4", "[right][grow,fill][right][grow,fill]", "" ) );
+		setLayout( new MigLayout( "insets 0 0 0 0,wrap 2", "[right][grow,fill]", "" ) );
 		
         mAFC = new JCheckBox( "AFC: 3000 Hz" );
         mAFC.setEnabled( false );
@@ -95,22 +90,6 @@ public class LTRNetDecoderEditor extends ValidatingEditor<Channel>
 			}
 		} );
         add( mAFCMaximumCorrection );
-		
-		mComboDirection = new JComboBox<MessageDirection>();
-		mComboDirection.setModel( new DefaultComboBoxModel<MessageDirection>( MessageDirection.values() ) );
-		mComboDirection.setSelectedItem( MessageDirection.OSW );
-		mComboDirection.setEnabled( false );
-		mComboDirection.addActionListener( new ActionListener() 
-		{
-			@Override
-            public void actionPerformed( ActionEvent e )
-            {
-				setModified( true );
-            }
-		} );
-
-		add( new JLabel( "Format:" ) );
-		add( mComboDirection );
 	}
 
 	@Override
@@ -119,7 +98,30 @@ public class LTRNetDecoderEditor extends ValidatingEditor<Channel>
 		//No validation
 	}
 
-	
+	@Override
+	public void save()
+	{
+		if( hasItem() && isModified() )
+		{
+			DecodeConfigNBFM nbfm = new DecodeConfigNBFM();
+			
+			nbfm.setAFC( mAFC.isSelected() );                
+			nbfm.setAFCMaximumCorrection( mAFCMaximumCorrection.getValue() );
+			
+			getItem().setDecodeConfiguration( nbfm );
+		}
+		
+		setModified( false );
+	}
+
+	private void setControlsEnabled( boolean enabled )
+	{
+		if( mAFC.isEnabled() != enabled  )
+		{
+			mAFC.setEnabled( enabled );
+		}
+	}
+
 	@Override
 	public void setItem( Channel item )
 	{
@@ -127,24 +129,22 @@ public class LTRNetDecoderEditor extends ValidatingEditor<Channel>
 		
 		if( hasItem() )
 		{
-			mAFC.setEnabled( true );
-			mComboDirection.setEnabled( true );
+			setControlsEnabled( true );
 			
 			DecodeConfiguration config = getItem().getDecodeConfiguration();
 			
-			if( config instanceof DecodeConfigLTRNet )
+			if( config instanceof DecodeConfigNBFM )
 			{
-				DecodeConfigLTRNet ltr = (DecodeConfigLTRNet)config;
-				mComboDirection.setSelectedItem( ltr.getMessageDirection() );
-		        mAFC.setSelected( ltr.isAFCEnabled() );
-		        mAFCMaximumCorrection.setValue( ltr.getAFCMaximumCorrection() );
-		        mAFCMaximumCorrection.setEnabled( ltr.isAFCEnabled() );
-
-		        setModified( false );
+				DecodeConfigNBFM nbfm = (DecodeConfigNBFM)config;
+				
+		        mAFC.setSelected( nbfm.isAFCEnabled() );
+		        mAFCMaximumCorrection.setValue( nbfm.getAFCMaximumCorrection() );
+		        mAFCMaximumCorrection.setEnabled( nbfm.isAFCEnabled() );
+		        
+				setModified( false );
 			}
 			else
 			{
-				mComboDirection.setSelectedItem( MessageDirection.OSW );
 		        mAFC.setSelected( false );
 		        mAFCMaximumCorrection.setValue( DecodeConfiguration.DEFAULT_AFC_MAX_CORRECTION );
 		        mAFCMaximumCorrection.setEnabled( false );
@@ -154,26 +154,8 @@ public class LTRNetDecoderEditor extends ValidatingEditor<Channel>
 		}
 		else
 		{
-			mAFC.setEnabled( false );
-			mComboDirection.setEnabled( false );
+			setControlsEnabled( false );
 			setModified( false );
 		}
-	}
-
-	@Override
-	public void save()
-	{
-		if( hasItem() && isModified() )
-		{
-			DecodeConfigLTRNet ltr = new DecodeConfigLTRNet();
-			
-			ltr.setAFC( mAFC.isSelected() );                
-			ltr.setAFCMaximumCorrection( mAFCMaximumCorrection.getValue() );
-			ltr.setMessageDirection( (MessageDirection)mComboDirection.getSelectedItem() );
-			
-			getItem().setDecodeConfiguration( ltr );
-		}
-		
-		setModified( false );
 	}
 }

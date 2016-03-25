@@ -85,17 +85,17 @@ public class ChannelController extends JPanel
 			new MigLayout( "insets 0 0 0 0", "[grow,fill][grow,fill][grow,fill]", "[]") );
 
     	mNewChannelButton.addActionListener( this );
-    	mNewChannelButton.setToolTipText( "Adds a new default channel" );
+    	mNewChannelButton.setToolTipText( "Create a new channel configuration" );
     	buttonsPanel.add( mNewChannelButton );
     	
     	mCopyChannelButton.addActionListener( this );
     	mCopyChannelButton.setEnabled( false );
-    	mCopyChannelButton.setToolTipText( "Creates a copy of the currently selected channel and adds it" );
+    	mCopyChannelButton.setToolTipText( "Create a copy of the currently selected channel configuration" );
     	buttonsPanel.add( mCopyChannelButton );
 
     	mDeleteChannelButton.addActionListener( this );
     	mDeleteChannelButton.setEnabled( false );
-    	mDeleteChannelButton.setToolTipText( "Deletes the currently selected channel" );
+    	mDeleteChannelButton.setToolTipText( "Delete the currently selected channel configuration" );
     	buttonsPanel.add( mDeleteChannelButton );
     	
     	JPanel listAndButtonsPanel = new JPanel();
@@ -115,10 +115,10 @@ public class ChannelController extends JPanel
 
 		//Attempt to get a 60:40 vertical sizing preference
 		JScrollPane listScroller = new JScrollPane( listAndButtonsPanel );
-		listScroller.setPreferredSize( new Dimension( 800, 60 ) );
+		listScroller.setPreferredSize( new Dimension( 800, 58 ) );
 		
 		JScrollPane editorScroller = new JScrollPane( mEditor );
-		editorScroller.setPreferredSize( new Dimension( 800, 40 ) );
+		editorScroller.setPreferredSize( new Dimension( 800, 42 ) );
 
 		splitPane.add( listScroller );
 		splitPane.add( editorScroller );

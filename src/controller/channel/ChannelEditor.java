@@ -81,51 +81,6 @@ public class ChannelEditor extends Editor<Channel> implements ActionListener, Ch
 		init();
 	}
 	
-	/**
-	 * Sets the channel configuration in each of the channel editor components
-	 * Note: this method must be invoked on the swing event dispatch thread
-	 */
-	public void setItem( final Channel channel )
-	{
-		//Check if the current channel configuration has changed
-		if( hasItem() &&
-			( mNameConfigurationEditor.isModified() ) )
-		{
-			int option = JOptionPane.showConfirmDialog( ChannelEditor.this, 
-					"This channel configuration has changed.  Do you want to save these changes?", 
-					"Save Changes?", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE );
-				
-			if( option == JOptionPane.YES_OPTION )
-			{
-				save();
-			}
-			
-			setModified( false );
-		}
-		
-		mNameConfigurationEditor.setItem( channel );
-		mSourceConfigurationEditor.setItem( channel );
-		mDecodeConfigurationEditor.setItem( channel );
-		mAuxDecodeConfigurationEditor.setItem( channel );
-		mEventLogConfigurationEditor.setItem( channel );
-		mRecordConfigurationEditor.setItem( channel );
-		
-		if( channel != null )
-		{
-			mChannelName.setText( "Channel: " + channel.getName() );
-			mEnableButton.setText( channel.getEnabled() ? "Disable" : "Enable" );
-			mEnableButton.setEnabled( true );
-			mEnableButton.setBackground( channel.getEnabled() ? Color.GREEN : getBackground() );
-		}
-		else
-		{
-			mChannelName.setText( "Channel: " );
-			mEnableButton.setText( "Enable" );
-			mEnableButton.setEnabled( false );
-			mEnableButton.setBackground( getBackground() );
-		}
-	}
-
 	private void init()
 	{
 		setLayout( new MigLayout( "fill,wrap 3", "[grow,fill][grow,fill][grow,fill]", "[grow,fill][]" ) );
@@ -135,38 +90,48 @@ public class ChannelEditor extends Editor<Channel> implements ActionListener, Ch
     	tabs.setForeground( Color.BLACK );
 
     	tabs.setTabTrailingComponent( mChannelName );
+    	
+		mNameConfigurationEditor.setSaveRequestListener( this );
     	tabs.addTab( "Name/Alias", mNameConfigurationEditor );
     	
 		mSourceConfigurationEditor = new SourceConfigurationEditor( mSourceManager );
+		mSourceConfigurationEditor.setSaveRequestListener( this );
 		tabs.addTab( "Source", mSourceConfigurationEditor );
 		
 		mDecodeConfigurationEditor = new DecodeConfigurationEditor( mChannelMapModel );
+		mDecodeConfigurationEditor.setSaveRequestListener( this );
 		tabs.addTab( "Decoder", mDecodeConfigurationEditor );
 
 		mAuxDecodeConfigurationEditor = new AuxDecodeConfigurationEditor();
+		mAuxDecodeConfigurationEditor.setSaveRequestListener( this );
 		tabs.addTab( "Aux Decoders", mAuxDecodeConfigurationEditor );
 
 		mEventLogConfigurationEditor = new EventLogConfigurationEditor();
+		mEventLogConfigurationEditor.setSaveRequestListener( this );
 		tabs.addTab( "Logging", mEventLogConfigurationEditor );
 		
 		mRecordConfigurationEditor = new RecordConfigurationEditor();
+		mRecordConfigurationEditor.setSaveRequestListener( this );
 		tabs.addTab( "Recording", mRecordConfigurationEditor );
 
 		add( tabs, "span" );
 
 		mEnableButton.addActionListener( this );
 		mEnableButton.setEnabled( false );
+		mEnableButton.setToolTipText( "Start the currently selected channel running/decoding" );
 		add( mEnableButton );
 
 		JButton btnSave = new JButton( "Save" );
+		btnSave.setToolTipText( "Save changes to the currently selected channel" );
 		btnSave.addActionListener( ChannelEditor.this );
 		add( btnSave );
 
 		JButton btnReset = new JButton( "Reset" );
+		btnReset.setToolTipText( "Reload the currently selected channel" );
 		btnReset.addActionListener( ChannelEditor.this );
 		add( btnReset );
 	}
-	
+
 	@Override
 	public void channelChanged( ChannelEvent event )
 	{
@@ -229,10 +194,48 @@ public class ChannelEditor extends Editor<Channel> implements ActionListener, Ch
 		}
     }
 
+	/**
+	 * Sets the channel configuration in each of the channel editor components
+	 * Note: this method must be invoked on the swing event dispatch thread
+	 */
+	public void setItem( final Channel channel )
+	{
+		super.setItem( channel );
+		
+		mNameConfigurationEditor.setItem( channel );
+		mSourceConfigurationEditor.setItem( channel );
+		mDecodeConfigurationEditor.setItem( channel );
+		mAuxDecodeConfigurationEditor.setItem( channel );
+		mEventLogConfigurationEditor.setItem( channel );
+		mRecordConfigurationEditor.setItem( channel );
+		
+		if( channel != null )
+		{
+			mChannelName.setText( "Channel: " + channel.getName() );
+			mEnableButton.setText( channel.getEnabled() ? "Disable" : "Enable" );
+			mEnableButton.setEnabled( true );
+			mEnableButton.setBackground( channel.getEnabled() ? Color.GREEN : getBackground() );
+		}
+		else
+		{
+			mChannelName.setText( "Channel: " );
+			mEnableButton.setText( "Enable" );
+			mEnableButton.setEnabled( false );
+			mEnableButton.setBackground( getBackground() );
+		}
+	}
+	
     public void save()
     {
     	if( hasItem() )
     	{
+			mNameConfigurationEditor.save();
+   			mSourceConfigurationEditor.save();
+   			mDecodeConfigurationEditor.save();
+   			mAuxDecodeConfigurationEditor.save();
+   			mEventLogConfigurationEditor.save();
+   			mRecordConfigurationEditor.save();
+   			
     		try
     		{
     			mDecodeConfigurationEditor.validate( mSourceConfigurationEditor );
@@ -240,33 +243,17 @@ public class ChannelEditor extends Editor<Channel> implements ActionListener, Ch
     		}
     		catch( EditorValidationException e )
     		{
-    			JOptionPane.showMessageDialog( ChannelEditor.this, e.getReason(),
-    					"Configuration Error", JOptionPane.ERROR_MESSAGE );			
-
     			e.getEditor().requestFocus();
+    			
+    			JOptionPane.showMessageDialog( e.getEditor(), e.getReason(),
+    					"Configuration Error", JOptionPane.ERROR_MESSAGE );			
     			
     			return;
     		}
     		
-    		boolean changed = mNameConfigurationEditor.isModified() ||
-					  mSourceConfigurationEditor.isModified() ||
-					  mDecodeConfigurationEditor.isModified() ||
-					  mAuxDecodeConfigurationEditor.isModified() ||
-					  mEventLogConfigurationEditor.isModified() ||
-					  mRecordConfigurationEditor.isModified();
-	
-			mNameConfigurationEditor.save();
-   			mSourceConfigurationEditor.save();
-   			mDecodeConfigurationEditor.save();
-   			mAuxDecodeConfigurationEditor.save();
-   			mEventLogConfigurationEditor.save();
-   			mRecordConfigurationEditor.save();
 
-   			if( changed )
-   			{
-   	   			mChannelModel.broadcast( new ChannelEvent( getItem(), 
+   			mChannelModel.broadcast( new ChannelEvent( getItem(), 
    	   					Event.NOTIFICATION_CONFIGURATION_CHANGE ) );
-   			}
     	}
 
     	setModified( false );

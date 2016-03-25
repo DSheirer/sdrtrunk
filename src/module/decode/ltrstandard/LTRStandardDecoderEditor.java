@@ -15,7 +15,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package module.decode.ltrnet;
+package module.decode.ltrstandard;
 
 import gui.editor.Editor;
 import gui.editor.EditorValidationException;
@@ -34,10 +34,11 @@ import javax.swing.event.ChangeListener;
 
 import message.MessageDirection;
 import module.decode.config.DecodeConfiguration;
+import module.decode.ltrnet.DecodeConfigLTRNet;
 import net.miginfocom.swing.MigLayout;
 import controller.channel.Channel;
 
-public class LTRNetDecoderEditor extends ValidatingEditor<Channel>
+public class LTRStandardDecoderEditor extends ValidatingEditor<Channel>
 {
     private static final long serialVersionUID = 1L;
 
@@ -45,7 +46,7 @@ public class LTRNetDecoderEditor extends ValidatingEditor<Channel>
     private JSlider mAFCMaximumCorrection;
     private JComboBox<MessageDirection> mComboDirection;
     
-	public LTRNetDecoderEditor()
+	public LTRStandardDecoderEditor()
 	{
 		init();
 	}
@@ -116,10 +117,8 @@ public class LTRNetDecoderEditor extends ValidatingEditor<Channel>
 	@Override
 	public void validate( Editor<Channel> editor ) throws EditorValidationException
 	{
-		//No validation
 	}
 
-	
 	@Override
 	public void setItem( Channel item )
 	{
@@ -132,15 +131,14 @@ public class LTRNetDecoderEditor extends ValidatingEditor<Channel>
 			
 			DecodeConfiguration config = getItem().getDecodeConfiguration();
 			
-			if( config instanceof DecodeConfigLTRNet )
+			if( config instanceof DecodeConfigLTRStandard )
 			{
-				DecodeConfigLTRNet ltr = (DecodeConfigLTRNet)config;
+				DecodeConfigLTRStandard ltr = (DecodeConfigLTRStandard)config;
 				mComboDirection.setSelectedItem( ltr.getMessageDirection() );
 		        mAFC.setSelected( ltr.isAFCEnabled() );
 		        mAFCMaximumCorrection.setValue( ltr.getAFCMaximumCorrection() );
 		        mAFCMaximumCorrection.setEnabled( ltr.isAFCEnabled() );
-
-		        setModified( false );
+				setModified( false );
 			}
 			else
 			{
@@ -165,7 +163,7 @@ public class LTRNetDecoderEditor extends ValidatingEditor<Channel>
 	{
 		if( hasItem() && isModified() )
 		{
-			DecodeConfigLTRNet ltr = new DecodeConfigLTRNet();
+			DecodeConfigLTRStandard ltr = new DecodeConfigLTRStandard();
 			
 			ltr.setAFC( mAFC.isSelected() );                
 			ltr.setAFCMaximumCorrection( mAFCMaximumCorrection.getValue() );

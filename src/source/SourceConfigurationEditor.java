@@ -25,9 +25,9 @@ import java.awt.event.ActionListener;
 
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.JComboBox;
-import javax.swing.JLabel;
 
 import net.miginfocom.swing.MigLayout;
+import source.config.SourceConfiguration;
 import source.mixer.MixerSourceEditor;
 import source.tuner.TunerSourceEditor;
 import controller.channel.Channel;
@@ -44,13 +44,22 @@ public class SourceConfigurationEditor extends Editor<Channel>
     public SourceConfigurationEditor( SourceManager sourceManager )
 	{
     	mMixerSourceEditor = new MixerSourceEditor( sourceManager );
+    	mMixerSourceEditor.setSaveRequestListener( this );
+    	
     	mTunerSourceEditor = new TunerSourceEditor();
+    	mTunerSourceEditor.setSaveRequestListener( this );
+    	
     	init();
 	}
+    
+    public SourceConfiguration getSourceConfiguration()
+    {
+    	return hasItem() ? getItem().getSourceConfiguration() : null;
+    }
 
     private void init()
     {
-		setLayout( new MigLayout( "fill,wrap 3", "[right][left][grow,fill]", "[][grow]" ) );
+		setLayout( new MigLayout( "wrap 2", "[][grow,fill]", "[align top][grow]" ) );
 
     	mComboSources = new JComboBox<SourceType>();
 		mComboSources.setModel( new DefaultComboBoxModel<SourceType>( SourceType.getTypes() ) );
@@ -76,7 +85,6 @@ public class SourceConfigurationEditor extends Editor<Channel>
            }
 		});
 		
-		add( new JLabel( "Source:" ) );
 		add( mComboSources );
 		
 		mCurrentEditor = mTunerSourceEditor;
@@ -87,9 +95,15 @@ public class SourceConfigurationEditor extends Editor<Channel>
     {
     	if( mCurrentEditor != editor )
 		{
+    		//Set channel to null to force a save prompt as required
+    		mCurrentEditor.setItem( null );
+    		
     		remove( mCurrentEditor );
     		mCurrentEditor = editor;
+    		mCurrentEditor.setSaveRequestListener( this );
     		add( mCurrentEditor );
+    		
+    		mCurrentEditor.setItem( getItem() );
     		
     		revalidate();
 		}
@@ -98,17 +112,11 @@ public class SourceConfigurationEditor extends Editor<Channel>
 	@Override
     public void save()
     {
-		if( hasItem() && mCurrentEditor.isModified() )
+		if( hasItem() )
 		{
 			mCurrentEditor.save();
 		}
     }
-
-	@Override
-	public boolean isModified()
-	{
-		return super.isModified() || mCurrentEditor.isModified();
-	}
 
 	/**
 	 * Sets the channel configuration.  Note: this method must be invoked from
@@ -121,8 +129,9 @@ public class SourceConfigurationEditor extends Editor<Channel>
 		
 		if( hasItem() )
 		{
-			mMixerSourceEditor.setItem( channel );
-			mTunerSourceEditor.setItem( channel );
+			mComboSources.setSelectedItem( getItem().getSourceConfiguration().getSourceType() );
+			repaint();
+			mCurrentEditor.setItem( channel );
 		}
 	}
 }

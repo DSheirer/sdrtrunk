@@ -183,7 +183,7 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
 		mPrioritySlider.setMajorTickSpacing( 20 );
 		mPrioritySlider.setMinorTickSpacing( 5 );
 		mPrioritySlider.setPaintTicks( true );
-		mPrioritySlider.setLabelTable( mPrioritySlider.createStandardLabels( 20, 20 ) );
+		mPrioritySlider.setLabelTable( mPrioritySlider.createStandardLabels( 25, 25 ) );
 		mPrioritySlider.setPaintLabels( true );
 		mPrioritySlider.addChangeListener( new ChangeListener()
 		{
