@@ -34,6 +34,7 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import audio.AudioPanel;
 import settings.ColorSetting.ColorSettingName;
 import settings.ColorSettingMenuItem;
 import settings.ColorSettingResetMenuItem;
@@ -60,24 +61,32 @@ public class ChannelList extends JPanel implements ChannelEventListener
     private ChannelModel mChannelModel;
     private ChannelProcessingManager mChannelProcessingManager;
     private SettingsManager mSettingsManager;
+    private AudioPanel mAudioPanel;
     
     public ChannelList( ChannelModel channelModel,
     					ChannelProcessingManager channelProcessingManager,
-    					SettingsManager settingsManager )
+    					SettingsManager settingsManager,
+    					AudioPanel audioPanel )
     {
     	mChannelModel = channelModel;
     	mChannelProcessingManager = channelProcessingManager;
     	mSettingsManager = settingsManager;
+    	mAudioPanel = audioPanel;
 
     	init();
     }
 
     private void init()
     {
-		setLayout( new MigLayout( "insets 0 0 0 0", "[grow,fill]", "[]0[]") );
+		setLayout( new MigLayout( "insets 0 0 0 0,wrap 1", "[grow,fill]", "[]0[]") );
 		setBackground( Color.BLACK );
 		
 		addMouseListener( new ListSelectionListener() );
+		
+		add( mAudioPanel );
+		
+		JSeparator separator = new JSeparator( JSeparator.HORIZONTAL );
+		add( separator );
     }
     
 	@Override
@@ -103,7 +112,7 @@ public class ChannelList extends JPanel implements ChannelEventListener
     		ChannelPanel channelPanel = new ChannelPanel( mChannelModel, 
     			mChannelProcessingManager, mSettingsManager, channel );
     		
-			add( channelPanel, "wrap" );
+			add( channelPanel );
 			
 			mDisplayedPanels.put( channel, channelPanel );
 

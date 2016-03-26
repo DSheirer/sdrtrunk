@@ -93,7 +93,7 @@ public class ControllerPanel extends JPanel
     			channelProcessingManager );
 
     	mChannelStateList = new ChannelList( channelModel, channelProcessingManager, 
-    			settingsManager );
+    			settingsManager, mAudioPanel );
 
     	mChannelController = new ChannelController( channelModel, channelMapModel, 
     			sourceManager, aliasModel );
@@ -156,20 +156,20 @@ public class ControllerPanel extends JPanel
 		
 		JScrollPane channelStateListScroll = new JScrollPane();
     	channelStateListScroll.getViewport().setView( mChannelStateList );
-    	channelStateListScroll.setPreferredSize( new Dimension( 200, 300 ) ); 
+    	channelStateListScroll.setPreferredSize( new Dimension( 400, 500 ) ); 
 
-    	JideSplitPane audioChannelListSplit = new JideSplitPane( JideSplitPane.VERTICAL_SPLIT );
-    	audioChannelListSplit.setDividerSize( 5 );
-    	audioChannelListSplit.add( mAudioPanel );
-    	audioChannelListSplit.add( channelStateListScroll );
+//    	JideSplitPane audioChannelListSplit = new JideSplitPane( JideSplitPane.VERTICAL_SPLIT );
+//    	audioChannelListSplit.setDividerSize( 5 );
+//    	audioChannelListSplit.add( mAudioPanel );
+//    	audioChannelListSplit.add( channelStateListScroll );
 
     	//Set preferred size to influence the split between these panels
-    	audioChannelListSplit.setPreferredSize( new Dimension( 400, 500 ) );
+//    	audioChannelListSplit.setPreferredSize( new Dimension( 400, 500 ) );
     	mTabbedPane.setPreferredSize( new Dimension( 880, 500 ) );
     	
     	JideSplitPane channelSplit = new JideSplitPane( JideSplitPane.HORIZONTAL_SPLIT );
     	channelSplit.setDividerSize( 5 );
-    	channelSplit.add( audioChannelListSplit );
+    	channelSplit.add( channelStateListScroll );
     	channelSplit.add( mTabbedPane );
     	
     	add( channelSplit );

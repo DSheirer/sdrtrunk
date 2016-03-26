@@ -124,9 +124,6 @@ public class AudioChannelPanel extends JPanel
 		mFromAlias.setForeground( mLabelColor );
 		add( mFromAlias,"wrap" );
 		
-		JSeparator separator = new JSeparator( JSeparator.HORIZONTAL );
-		separator.setBackground( Color.DARK_GRAY );
-		add( separator, "span,growx" );
 	}
 	
 	@Override
