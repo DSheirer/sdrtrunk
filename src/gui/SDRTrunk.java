@@ -136,10 +136,8 @@ public class SDRTrunk implements Listener<TunerEvent>
 		SourceManager sourceManager = new SourceManager( tunerModel, 
 				mSettingsManager,  threadPoolManager );
 		
-		ChannelProcessingManager channelProcessingManager = 
-			new ChannelProcessingManager( channelModel, channelMapModel, 
-				aliasModel, eventLogManager, recorderManager, 
-				sourceManager, threadPoolManager );
+		ChannelProcessingManager channelProcessingManager = new ChannelProcessingManager( 
+			channelModel, channelMapModel, aliasModel, eventLogManager, recorderManager, sourceManager );
 		channelProcessingManager.addAudioPacketListener( recorderManager );
 		
 		channelModel.addListener( channelProcessingManager );

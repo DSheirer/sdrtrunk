@@ -15,7 +15,6 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-
 package controller.channel;
 
 import java.util.HashMap;
@@ -33,7 +32,6 @@ import module.log.EventLogManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import playlist.PlaylistManager;
 import record.RecorderManager;
 import record.RecorderType;
 import sample.Listener;
@@ -44,7 +42,6 @@ import alias.AliasModel;
 import audio.AudioPacket;
 import audio.metadata.Metadata;
 import audio.metadata.MetadataType;
-import controller.ThreadPoolManager;
 import controller.channel.Channel.ChannelType;
 import controller.channel.ChannelEvent.Event;
 import controller.channel.map.ChannelMapModel;
@@ -65,15 +62,13 @@ public class ChannelProcessingManager implements ChannelEventListener
 	private EventLogManager mEventLogManager;
 	private RecorderManager mRecorderManager;
 	private SourceManager mSourceManager;
-	private ThreadPoolManager mThreadPoolManager;
 	
 	public ChannelProcessingManager( ChannelModel channelModel,
 									 ChannelMapModel channelMapModel,
 									 AliasModel aliasModel,
 									 EventLogManager eventLogManager,
 									 RecorderManager recorderManager,
-									 SourceManager sourceManager,
-									 ThreadPoolManager threadPoolManager )
+									 SourceManager sourceManager )
 	{
 		mChannelModel = channelModel;
 		mChannelMapModel = channelMapModel;
@@ -81,7 +76,6 @@ public class ChannelProcessingManager implements ChannelEventListener
 		mEventLogManager = eventLogManager;
 		mRecorderManager = recorderManager;
 		mSourceManager = sourceManager;
-		mThreadPoolManager = threadPoolManager;
 	}
 
 	/**
@@ -108,7 +102,7 @@ public class ChannelProcessingManager implements ChannelEventListener
 	}
 
 	@Override
-	public void channelChanged( ChannelEvent event )
+	public synchronized void channelChanged( ChannelEvent event )
 	{
 		Channel channel = event.getChannel();
 		

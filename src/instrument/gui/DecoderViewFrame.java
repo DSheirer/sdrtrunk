@@ -104,7 +104,7 @@ public class DecoderViewFrame extends JInternalFrame
 		
 		ChannelProcessingManager channelProcessingManager = 
 			new ChannelProcessingManager( channelModel, channelMapModel, 
-			new AliasModel(), new EventLogManager(), null, null, new ThreadPoolManager() );
+			new AliasModel(), new EventLogManager(), null, null );
 		
 		List<Module> modules = DecoderFactory.getModules( channelModel, 
 			channelMapModel, channelProcessingManager, new AliasModel(), channel );

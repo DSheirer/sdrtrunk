@@ -9,6 +9,7 @@ import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.swing.ImageIcon;
@@ -177,8 +178,14 @@ public class AliasController extends JPanel
 		if( !event.getValueIsAdjusting() )
 		{
 			int[] selectedRows = mAliasTable.getSelectedRows();
-			
-			if( selectedRows.length <= 1 )
+
+			if( selectedRows.length == 0 )
+			{
+				mAliasEditor.setItem( null );
+				mCopyButton.setEnabled( false );
+				mDeleteButton.setEnabled( false );
+			}
+			else if( selectedRows.length == 1 )
 			{
 				setEditor( mAliasEditor );
 				
@@ -244,17 +251,26 @@ public class AliasController extends JPanel
 		}
 	}
 	
-	private Alias getSelectedAlias()
+	private List<Alias> getSelectedAliases()
 	{
-		int index = mAliasTable.getSelectedRow();
+		List<Alias> selected = new ArrayList<>();
 		
-		if( index >= 0 )
+		int[] rows = mAliasTable.getSelectedRows();
+
+		for( int row: rows )
 		{
-			return mAliasModel.getAliasAtIndex( 
-				mAliasTable.convertRowIndexToModel( index ) );
+			if( row >= 0 )
+			{
+				Alias alias = mAliasModel.getAliasAtIndex( mAliasTable.convertRowIndexToModel( row ) );
+				
+				if( alias != null )
+				{
+					selected.add( alias );
+				}
+			}
 		}
 		
-		return null;
+		return selected;
 	}
 
 	/**
@@ -269,25 +285,29 @@ public class AliasController extends JPanel
 				addAlias( new Alias( "New Alias" ) );
 				break;
 			case COPY_ALIAS:
-				Alias selected = getSelectedAlias();
-				
-				if( selected != null )
+				for( Alias alias: getSelectedAliases() )
 				{
-					addAlias( AliasFactory.copyOf( selected ) );
+					addAlias( AliasFactory.copyOf( alias ) );
 				}
 				break;
 			case DELETE_ALIAS:
-				Alias toDelete = getSelectedAlias();
+				List<Alias> toDelete = getSelectedAliases();
 
-				if( toDelete != null )
+				if( toDelete != null && !toDelete.isEmpty() )
 				{
+					String title = toDelete.size() == 1 ? "Delete Alias?" : "Delete Aliases?";
+					String prompt = toDelete.size() == 1 ? "Do you want to delete this alias?" :
+						"Do you want to delete these " + toDelete.size() + " aliases?";
+					
 					int choice = JOptionPane.showConfirmDialog( AliasController.this, 
-						"Do you want to delete this alias?", "Delete Alias?", 
-						JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE );
+						prompt, title, JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE );
 					
 					if( choice == JOptionPane.YES_OPTION )
 					{
-						mAliasModel.removeAlias( toDelete );
+						for( Alias alias: toDelete )
+						{
+							mAliasModel.removeAlias( alias );
+						}
 					}
 				}
 				break;

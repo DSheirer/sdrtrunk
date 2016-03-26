@@ -255,6 +255,8 @@ public class AliasNameEditor extends Editor<Alias>
 			mButtonColor.setForeground( getForeground() );
     	}
     	
+    	repaint();
+    	
     	setModified( false );
 	}
 

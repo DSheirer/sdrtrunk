@@ -261,21 +261,25 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
 		groupNames.add( 0, "" );
 		mGroupCombo.setModel( new DefaultComboBoxModel<String>( 
 				groupNames.toArray( new String[ groupNames.size() ] ) ) );
+
+		setCheckBoxesUnselected();
 		
 		setModified( false );
 	}
-
-	@Override
-	public void reset()
+	
+	private void setCheckBoxesUnselected()
 	{
-		//Reset multi-editor controls
 		mListCheckBox.setSelected( false );
 		mGroupCheckBox.setSelected( false );
 		mColorCheckBox.setSelected( false );
 		mIconCheckBox.setSelected( false );
 		mRecordCheckBox.setSelected( false );
 		mPriorityCheckBox.setSelected( false );
-		
+	}
+
+	@Override
+	public void reset()
+	{
 		List<String> listNames = mAliasModel.getListNames();
 		listNames.add( 0, "" );
 		mListCombo.setModel( new DefaultComboBoxModel<String>( 
