@@ -295,12 +295,13 @@ public class FCD2TunerEditor extends TunerConfigurationEditor
 	{
 		super.setItem( tunerConfiguration );
 
+		//Toggle loading so that we don't fire a change event and schedule a settings file save
+		mLoading = true;
+
 		if( hasItem() )
 		{
 			FCD2TunerConfiguration config = getConfiguration();
 			
-			//Toggle loading so that we don't fire a change event and schedule a settings file save
-			mLoading = true;
 			
 			if( tunerConfiguration.isAssigned() )
 			{
@@ -315,13 +316,13 @@ public class FCD2TunerEditor extends TunerConfigurationEditor
 				setControlsEnabled( false );
 				mConfigurationName.setText( config.getName() );
 			}
-	        
-			mLoading = false;
 		}
 		else
 		{
 			setControlsEnabled( false );
 			mConfigurationName.setText( "" );
 		}
+		
+		mLoading = false;
 	}
 }

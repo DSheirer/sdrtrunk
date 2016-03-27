@@ -432,6 +432,8 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 				try
 				{
 					mController.setMixerAGC( mMixerAGC.isSelected() );
+					mMixerGain.setEnabled( !mMixerAGC.isSelected() );
+					
 					save();
 				} 
 				catch ( Exception e1 )
@@ -452,6 +454,8 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 				try
 				{
 					mController.setLNAAGC( mLNAAGC.isSelected() );
+					mLNAGain.setEnabled( !mLNAAGC.isSelected() );
+
 					save();
 				} 
 				catch ( Exception e1 )
@@ -563,15 +567,16 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
     		double value = ((SpinnerNumberModel)mFrequencyCorrection.getModel()).getNumber().doubleValue();
 			config.setFrequencyCorrection( value );
 
-			config.setGain( Gain.getGain( (GainMode)mGainModeCombo.getSelectedItem(), mMasterGain.getValue() ) );
+			Gain gain = Gain.getGain( (GainMode)mGainModeCombo.getSelectedItem(), mMasterGain.getValue() );
+
+			config.setGain( gain );
 			config.setIFGain( mIFGain.getValue() );
 			config.setMixerGain( mMixerGain.getValue() );
 			config.setLNAGain( mLNAGain.getValue() );
 			config.setMixerAGC( mMixerAGC.isSelected() );
 			config.setLNAAGC( mLNAAGC.isSelected() );
 			
-			getTunerConfigurationModel().broadcast( 
-					new TunerConfigurationEvent( getConfiguration(), Event.CHANGE ) );
+			getTunerConfigurationModel().broadcast( new TunerConfigurationEvent( config, Event.CHANGE ) );
     	}
 	}
 	
@@ -665,6 +670,8 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 	{
 		super.setItem( config );
 		
+		mLoading = true;
+		
 		if( hasItem() && getItem().isAssigned() )
 		{
 			AirspyTunerConfiguration airspy = getConfiguration();
@@ -686,12 +693,52 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 
 			//This will set the master, IF, Mixer, LNA and AGC controls
 			mGainModeCombo.setSelectedItem( mode );
+			
+			if( mode == GainMode.CUSTOM )
+			{
+				mMasterGain.setValue( airspy.getGain().getValue() );
+				mIFGain.setValue( airspy.getIFGain() );
+				
+				if( airspy.isMixerAGC() )
+				{
+					mMixerAGC.setSelected( airspy.isMixerAGC() );
+					mMixerGain.setEnabled( false );
+				}
+				else
+				{
+					mMixerGain.setValue( airspy.getMixerGain() );
+				}
+
+				if( airspy.isLNAAGC() )
+				{
+					mLNAAGC.setSelected( airspy.isLNAAGC() );
+					mLNAGain.setEnabled( false );
+				}
+				else
+				{
+					mLNAGain.setValue( airspy.getLNAGain() );
+				}
+			}
+			else
+			{
+				mMixerAGC.setSelected( false );
+				mLNAAGC.setSelected( false );
+				
+				Gain gain = airspy.getGain();
+
+				mMasterGain.setValue( gain.getValue() );
+				mIFGain.setValue( gain.getIF() );
+				mMixerGain.setValue( gain.getMixer() );
+				mLNAGain.setValue( gain.getLNA() );
+			}
 		}
 		else
 		{
 			setControlsEnabled( false );
 			mConfigurationName.setText( hasItem() ? getItem().getName() : "" );
 		}
+		
+		mLoading = false;
 	}
 	
 	private String getTunerInfo()

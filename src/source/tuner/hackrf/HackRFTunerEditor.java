@@ -407,12 +407,12 @@ public class HackRFTunerEditor extends TunerConfigurationEditor
 	{
 		super.setItem( tunerConfiguration );
 
+		//Toggle loading so that we don't fire a change event and schedule a settings file save
+		mLoading = true;
+
 		if( hasItem() )
 		{
 			HackRFTunerConfiguration config = getConfiguration();
-			
-			//Toggle loading so that we don't fire a change event and schedule a settings file save
-			mLoading = true;
 			
 			if( tunerConfiguration.isAssigned() )
 			{
@@ -430,14 +430,14 @@ public class HackRFTunerEditor extends TunerConfigurationEditor
 				setControlsEnabled( false );
 				mConfigurationName.setText( config.getName() );
 			}
-	        
-			mLoading = false;
 		}
 		else
 		{
 			setControlsEnabled( false );
 			mConfigurationName.setText( "" );
 		}
+		
+		mLoading = false;
 	}
 
 	@Override
