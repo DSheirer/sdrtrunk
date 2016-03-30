@@ -69,7 +69,6 @@ import audio.squelch.ISquelchStateListener;
 import audio.squelch.ISquelchStateProvider;
 import audio.squelch.SquelchState;
 import controller.NamingThreadFactory;
-import controller.ThreadPoolManager;
 import controller.channel.Channel.ChannelType;
 import controller.channel.ChannelEvent;
 import controller.channel.IChannelEventListener;
@@ -95,8 +94,7 @@ import controller.channel.IChannelEventProvider;
  */
 public class ProcessingChain implements IChannelEventListener
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( ProcessingChain.class );
+	private final static Logger mLog = LoggerFactory.getLogger( ProcessingChain.class );
 
 	private Broadcaster<AudioPacket> mAudioPacketBroadcaster = new Broadcaster<>();
 	private Broadcaster<Metadata> mMetadataBroadcaster = new Broadcaster<>();
@@ -177,6 +175,11 @@ public class ProcessingChain implements IChannelEventListener
 		mMessageBroadcaster.dispose();
 		mFilteredRealBufferBroadcaster.dispose();
 		mSquelchStateBroadcaster.dispose();
+		
+		if( mScheduledExecutorService != null )
+		{
+			mScheduledExecutorService.shutdownNow();
+		}
 	}
 
 	/**
@@ -356,7 +359,7 @@ public class ProcessingChain implements IChannelEventListener
 
 		if( module instanceof IUnFilteredRealBufferListener )
 		{
-			mFilteredRealBufferBroadcaster.addListener( 
+			mUnFilteredRealBufferBroadcaster.addListener( 
 				((IUnFilteredRealBufferListener)module).getUnFilteredRealBufferListener() );
 		}
 	}
@@ -478,8 +481,11 @@ public class ProcessingChain implements IChannelEventListener
 					}
 				}
 				
-				mScheduledExecutorService = Executors.newScheduledThreadPool( 
-						1, new NamingThreadFactory( "channel " + mName ) );
+				if( mScheduledExecutorService == null )
+				{
+					mScheduledExecutorService = Executors.newScheduledThreadPool( 
+							1, new NamingThreadFactory( "channel " + mName ) );
+				}
 				
 				/* Start each of the modules */
 				for( Module module: mModules )
@@ -493,6 +499,8 @@ public class ProcessingChain implements IChannelEventListener
 						mLog.error( "Error starting module", e );
 					}
 				}
+
+				mSource.start( mScheduledExecutorService );
 			}
 			else
 			{
@@ -511,6 +519,8 @@ public class ProcessingChain implements IChannelEventListener
 		{
 			if( mSource != null )
 			{
+				mSource.stop();
+				
 				switch( mSource.getSampleType() )
 				{
 					case COMPLEX:

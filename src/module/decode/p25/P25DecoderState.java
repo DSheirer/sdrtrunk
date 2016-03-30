@@ -121,6 +121,7 @@ import module.decode.p25.reference.LinkControlOpcode;
 import module.decode.p25.reference.Response;
 import module.decode.p25.reference.Service;
 import module.decode.p25.reference.Vendor;
+import module.decode.state.ChangeChannelTimeoutEvent;
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderState;
 import module.decode.state.DecoderStateEvent;
@@ -207,6 +208,10 @@ public class P25DecoderState extends DecoderState
 	@Override
 	public void start( ScheduledExecutorService executor )
 	{
+		if( mChannelType == ChannelType.TRAFFIC )
+		{
+			broadcast( new ChangeChannelTimeoutEvent( this, ChannelType.TRAFFIC, 1000 ) );
+		}
 	}
 
 	@Override
@@ -2819,8 +2824,7 @@ public class P25DecoderState extends DecoderState
 					broadcast( event );
 				}
 				
-				broadcast( new TrafficChannelAllocationEvent( this,
-						mChannelCallMap.get( channel ) ) );
+				broadcast( new TrafficChannelAllocationEvent( this, mChannelCallMap.get( channel ) ) );
 
 				if( gvcgu.hasChannelNumber2() )
 				{

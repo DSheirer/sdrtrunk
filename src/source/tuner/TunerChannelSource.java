@@ -132,8 +132,7 @@ public class TunerChannelSource extends ComplexSource
 		}
 		else
 		{
-			mLog.warn( "Attempt to start() and already running tuner channel "
-					+ "source was ignored" );
+			mLog.warn( "Attempt to start() and already running tuner channel source was ignored" );
 		}
 	}
 
@@ -162,8 +161,7 @@ public class TunerChannelSource extends ComplexSource
 		}
 		else
 		{
-			mLog.warn( "Attempt to stop() and already stopped tuner channel "
-					+ "source was ignored" );
+			mLog.warn( "Attempt to stop() and already stopped tuner channel source was ignored" );
 		}
 	}
 
@@ -374,7 +372,7 @@ public class TunerChannelSource extends ComplexSource
 							}
 						}
 						
-						mLog.debug( "Processed [" + mSampleBuffers.size() + "] in " + ( System.currentTimeMillis() - start  ) );
+//						mLog.debug( "Processed [" + mSampleBuffers.size() + "] in " + ( System.currentTimeMillis() - start  ) );
 						
 						mSampleBuffers.clear();
 					}

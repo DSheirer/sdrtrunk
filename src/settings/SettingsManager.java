@@ -614,7 +614,6 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
 
     private void save()
 	{
-    	mLog.debug( "Saving settings" );
     	saveTunerConfigurationModel();
     	
 		JAXBContext context = null;
@@ -699,8 +698,7 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
 		
 		if( Files.exists( settingsPath ) )
 		{
-			mLog.info( "SettingsManager - loading settings file [" + 
-							settingsPath.toString() + "]" );
+			mLog.info( "SettingsManager - loading settings file [" + settingsPath.toString() + "]" );
 			
 			JAXBContext context = null;
 			

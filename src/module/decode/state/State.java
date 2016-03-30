@@ -103,11 +103,8 @@ public enum State
 	
 	private String mDisplayValue;
 	
-	public static final EnumSet<State> CALL_STATES = 
-			EnumSet.of( CALL, CONTROL, DATA, ENCRYPTED );
-	
-	public static final EnumSet<State> IDLE_STATES = 
-			EnumSet.of( IDLE, FADE );
+	public static final EnumSet<State> CALL_STATES = EnumSet.of( CALL, CONTROL, DATA, ENCRYPTED );
+	public static final EnumSet<State> IDLE_STATES = EnumSet.of( IDLE, FADE );
 	
 	private State( String displayValue )
 	{

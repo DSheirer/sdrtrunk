@@ -51,9 +51,8 @@ public class DemodulatedAudioFilterModule extends Module
 		assert( stop > pass );
 		
 //TODO: change this to a band pass filter
-		mBandPassFilter = new RealFIRFilter_RB_RB( 
-			FilterFactory.getLowPass( 48000, pass, stop, 60, 
-					WindowType.HANNING, true ), 1.0f );
+		mBandPassFilter = new RealFIRFilter_RB_RB( FilterFactory.getLowPass( 48000, pass, stop, 60, 
+			WindowType.HANNING, true ), 1.0f );
 		
 		mDCFilter.setListener( mBandPassFilter );
 	}

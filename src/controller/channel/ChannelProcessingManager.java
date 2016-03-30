@@ -112,7 +112,7 @@ public class ChannelProcessingManager implements ChannelEventListener
 				if( !mProcessingChains.containsKey( channel.getChannelID() ) ||
 					!mProcessingChains.get( channel.getChannelID() ).isProcessing() )
 				{
-					startProcessing( channel );
+					startProcessing( event );
 				}
 				break;
 			case REQUEST_DISABLE:
@@ -141,7 +141,7 @@ public class ChannelProcessingManager implements ChannelEventListener
 				if( isProcessing( channel ) )
 				{
 					stopProcessing( channel, false );
-					startProcessing( channel );
+					startProcessing( event );
 				}
 				break;
 			default:
@@ -149,8 +149,10 @@ public class ChannelProcessingManager implements ChannelEventListener
 		}
 	}
 	
-	private void startProcessing( Channel channel )
+	private void startProcessing( ChannelEvent event )
 	{
+		Channel channel = event.getChannel();
+		
 		ProcessingChain processingChain = mProcessingChains.get( channel.getChannelID() );
 
 		//If we're already processing, ignore the request
@@ -256,8 +258,17 @@ public class ChannelProcessingManager implements ChannelEventListener
 		
 		processingChain.setSource( source );
 
-		processingChain.start();
+		if( event instanceof TrafficChannelEvent )
+		{
+			TrafficChannelEvent trafficChannelEvent = (TrafficChannelEvent)event;
+			
+			processingChain.getChannelState().configureAsTrafficChannel( 
+					trafficChannelEvent.getTrafficChannelManager(),
+					trafficChannelEvent.getCallEvent() );
+		}
 
+		processingChain.start();
+		
 		channel.setEnabled( true );
 		
 		mProcessingChains.put( channel.getChannelID(), processingChain );
@@ -276,8 +287,7 @@ public class ChannelProcessingManager implements ChannelEventListener
 			
 			chain.stop();
 
-			mChannelModel.broadcast( new ChannelEvent( channel, 
-					Event.NOTIFICATION_PROCESSING_STOP ) );
+			mChannelModel.broadcast( new ChannelEvent( channel, Event.NOTIFICATION_PROCESSING_STOP ) );
 			
 			if( remove )
 			{

@@ -7,7 +7,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 
 import module.Module;
-import module.ProcessingChain;
 import module.decode.config.DecodeConfiguration;
 import module.decode.event.CallEvent;
 import module.decode.event.CallEvent.CallEventType;
@@ -29,6 +28,7 @@ import controller.channel.ChannelEvent;
 import controller.channel.ChannelEvent.Event;
 import controller.channel.ChannelModel;
 import controller.channel.ChannelProcessingManager;
+import controller.channel.TrafficChannelEvent;
 
 public class TrafficChannelManager extends Module 
 			implements ICallEventProvider, IDecoderStateEventListener
@@ -148,7 +148,7 @@ public class TrafficChannelManager extends Module
 				mTrafficChannelPool.add( channel );
 			}
 
-			/* If we have a configured channel, start it and track it */
+			/* If we have a configured channel, update metadata */
 			if( channel != null )
 			{
 				channel.setSourceConfiguration( new SourceConfigTuner( tunerChannel ) );
@@ -156,11 +156,7 @@ public class TrafficChannelManager extends Module
 				channel.setSite( mSite );
 				channel.setName( channelNumber );
 
-				mChannelModel.broadcast( new ChannelEvent( channel, 
-						Event.NOTIFICATION_CONFIGURATION_CHANGE ) );
-
-				mChannelModel.broadcast( new ChannelEvent( channel,	
-						Event.REQUEST_ENABLE ) );
+				mChannelModel.broadcast( new ChannelEvent( channel, Event.NOTIFICATION_CONFIGURATION_CHANGE ) );
 			}
 		}
 
@@ -201,35 +197,25 @@ public class TrafficChannelManager extends Module
 			}
 			else if( frequency > 0 )
 			{
-				Channel channel = getChannel( callEvent.getChannel(), 
-					new TunerChannel( Type.TRAFFIC, frequency, 
-							mDecodeConfiguration.getDecoderType()
-									.getChannelBandwidth() ) );
+				Channel channel = getChannel( callEvent.getChannel(), new TunerChannel( Type.TRAFFIC, 
+					frequency, mDecodeConfiguration.getDecoderType().getChannelBandwidth() ) );
 
 				if( channel != null )
 				{
+					TrafficChannelEvent trafficChannelEvent = 
+						new TrafficChannelEvent( this, channel, Event.REQUEST_ENABLE, callEvent );
+					
+					//Request to enable the channel
+					mChannelModel.broadcast( trafficChannelEvent );
+
 					if( channel.getEnabled() )
 					{
-						ProcessingChain chain = mChannelProcessingManager
-								.getProcessingChain( channel );
-							
-						if( chain != null )
-						{
-							ChannelState state = chain.getChannelState();
-								
-							/* Register as a listener to be notified when the call
-							 * is completed */
-							state.configureAsTrafficChannel( 
-								new TrafficChannelStatusListener( this, 
-									callEvent.getChannel() ), event );
-								
-							/* Set state to call so that audio squelch state is correct */
-							state.setState( State.CALL );
-						}
+						mTrafficChannelsInUse.put( callEvent.getChannel(), channel );
 					}
 					else
 					{
 						callEvent.setCallEventType( CallEventType.CALL_DETECT );
+						callEvent.setDetails( "CHANNEL START REJECTED" );
 					}				
 				}
 				else
@@ -394,7 +380,7 @@ public class TrafficChannelManager extends Module
 			if( channelNumber != null && mTrafficChannelsInUse.containsKey( channelNumber ) )
 			{
 				Channel channel = mTrafficChannelsInUse.get( channelNumber );
-			
+
 				mChannelModel.broadcast( new ChannelEvent( channel, Event.REQUEST_DISABLE ) );
 			
 				mTrafficChannelsInUse.remove( channelNumber );

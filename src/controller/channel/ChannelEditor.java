@@ -173,6 +173,8 @@ public class ChannelEditor extends Editor<Channel> implements ActionListener, Ch
 		{
 			if( hasItem() )
 			{
+				save();
+				
 				mChannelEnableRequested = true;
 				mChannelModel.broadcast( new ChannelEvent( getItem(), Event.REQUEST_ENABLE ) );
 			}

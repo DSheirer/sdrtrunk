@@ -37,6 +37,8 @@ import dsp.fm.FMDemodulator_CB;
 public class FMDemodulatorModule extends Module 
 		implements IComplexBufferListener, IUnFilteredRealBufferProvider
 {
+	private final static Logger mLog = LoggerFactory.getLogger( FMDemodulatorModule.class );
+	
 	private static final int SAMPLE_RATE = 48000;
 	
 	private ComplexFIRFilter_CB_CB mIQFilter;
