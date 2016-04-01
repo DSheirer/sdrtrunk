@@ -170,20 +170,23 @@ public class MessageActivityModel extends AbstractTableModel
 	@Override
     public Object getValueAt( int rowIndex, int columnIndex )
     {
-		Message message = mMessages.get( rowIndex );
-		
-		switch( columnIndex )
+		if( 0 <= rowIndex && rowIndex < mMessages.size() )
 		{
-			case TIME:
-				return mSDFTime.format( new Date( message.getTimeReceived() ) );
-			case PROTOCOL:
-				return message.getProtocol();
-			case ERROR_STATUS:
-				return message.getErrorStatus();
-			case MESSAGE:
-				return message.getMessage();
-			case MESSAGE_BITS:
-				return message.getBinaryMessage();
+			Message message = mMessages.get( rowIndex );
+			
+			switch( columnIndex )
+			{
+				case TIME:
+					return mSDFTime.format( new Date( message.getTimeReceived() ) );
+				case PROTOCOL:
+					return message.getProtocol();
+				case ERROR_STATUS:
+					return message.getErrorStatus();
+				case MESSAGE:
+					return message.getMessage();
+				case MESSAGE_BITS:
+					return message.getBinaryMessage();
+			}
 		}
 		
 		return null;
