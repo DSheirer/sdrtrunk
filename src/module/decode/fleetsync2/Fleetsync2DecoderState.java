@@ -19,6 +19,7 @@ package module.decode.fleetsync2;
 
 import java.util.Iterator;
 import java.util.TreeSet;
+import java.util.concurrent.ScheduledExecutorService;
 
 import message.Message;
 import module.decode.DecoderType;
@@ -58,7 +59,7 @@ public class Fleetsync2DecoderState extends DecoderState
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 	}
 

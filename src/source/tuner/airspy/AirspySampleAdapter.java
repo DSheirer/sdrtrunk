@@ -18,15 +18,10 @@ package source.tuner.airspy;
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import sample.adapter.ISampleAdapter;
 
 public class AirspySampleAdapter implements ISampleAdapter
 {
-	private final static Logger mLog = LoggerFactory.getLogger( AirspySampleAdapter.class );
-
 	private static final float SCALE_SIGNED_12_BIT_TO_FLOAT = 1.0f / 2048.0f;
 	
 	private boolean mSamplePacking = false;

@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,59 +17,75 @@
  ******************************************************************************/
 package alias.action.beep;
 
+import gui.editor.DocumentListenerEditor;
+
+import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
-import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JSpinner;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
+import javax.swing.JOptionPane;
+import javax.swing.JSlider;
 import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import net.miginfocom.swing.MigLayout;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import alias.action.AliasAction;
 import alias.action.RecurringAction.Interval;
 
-public class BeepActionEditor extends JPanel implements ActionListener
+public class BeepActionEditor extends DocumentListenerEditor<AliasAction>
 {
     private static final long serialVersionUID = 1L;
     
-	private final static Logger mLog = 
-							LoggerFactory.getLogger( BeepActionEditor.class );
-	
-    private BeepActionNode mBeepActionNode;
-    private JTextField mTextSiteID;
-    private JComboBox<Interval> mComboInterval;
-    private JSpinner mSpinnerPeriod;
+	private static final String HELP_TEXT = 
+		"<html><h3>Beep Action</h3>"
+		+ "This action will sound a beep according to the interval<br>"
+		+ "that you select:<br><br>"
+		+ "<b>Once:</b> Beep the first time the alias is active and<br>"
+		+ "never again<br><br>"
+		+ "<b>Once, Reset After Delay:</b> Beep once and suppress<br>"
+		+ "subsequent beeps for the specified period in seconds.<br>"
+		+ "After the reset period, beep again when the alias is active.<br><br>"
+		+ "<b>Until Dismissed:</b> Beep every period seconds until you<br>"
+		+ "click OK on the dialog that appears. Alerting is suppressed<br>"
+		+ "for 15 seconds after you click OK.<br>"
+		+ "</html>";
 
-	public BeepActionEditor( BeepActionNode beepActionNode )
+    private JComboBox<Interval> mComboInterval;
+    private JSlider mPeriodSlider;
+    private JLabel mPeriodSliderLabel;
+
+	public BeepActionEditor( AliasAction aliasAction )
 	{
-		mBeepActionNode = beepActionNode;
-		
-		initGUI();
+		init();
+
+		setItem( aliasAction );
 	}
 	
-	private void initGUI()
+	public BeepAction getBeepAction()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][][][grow]" ) );
-
-		add( new JLabel( "Action: Beep" ), "span,align center" );
+		if( getItem() instanceof BeepAction )
+		{
+			return (BeepAction)getItem();
+		}
 		
-		add( new JLabel( "Interval:" ) );
+		return null;
+	}
+	
+	private void init()
+	{
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][]" ) );
+
+		add( new JLabel( "Beep Interval:" ) );
 		
 		mComboInterval = new JComboBox<Interval>( Interval.values() );
-
-		mComboInterval.setSelectedItem( mBeepActionNode.getBeepAction().getInterval() );
-
+		mComboInterval.setToolTipText( HELP_TEXT );
 		mComboInterval.addActionListener( new ActionListener()
 		{
 			@Override
@@ -81,71 +97,97 @@ public class BeepActionEditor extends JPanel implements ActionListener
 				if( selected != null )
 				{
 					/* Enable/disable period spinner based on selection */
-					mSpinnerPeriod.setEnabled( selected != Interval.ONCE );
+					boolean enabled = selected != Interval.ONCE;
 					
-					mBeepActionNode.getBeepAction().setInterval( selected );
+					mPeriodSlider.setEnabled( enabled );
+					mPeriodSliderLabel.setEnabled( enabled );
 				}
+				
+				setModified( true );
            }
 		});
-		
 		add( mComboInterval, "wrap" );
 
-		final SpinnerModel model = new SpinnerNumberModel( 
-				mBeepActionNode.getBeepAction().getPeriod(), 1, 30, 1 );
-		
+		final SpinnerModel model = new SpinnerNumberModel( 1, 1, 30, 1 );
 		model.addChangeListener( new ChangeListener() 
 		{
 			@Override
 			public void stateChanged( ChangeEvent e )
 			{
-				mBeepActionNode.getBeepAction().setPeriod( (int)model.getValue() );
+				setModified( true );
 			}
 		} );
 		
-		mSpinnerPeriod = new JSpinner( model );
-
-		if( mBeepActionNode.getBeepAction().getInterval() == Interval.ONCE )
+		mPeriodSlider = new JSlider( JSlider.HORIZONTAL, 1, 60, 1 );
+		mPeriodSlider.setMajorTickSpacing( 10 );
+		mPeriodSlider.setMinorTickSpacing( 2 );
+		mPeriodSlider.setPaintTicks( true );
+		mPeriodSlider.setLabelTable( mPeriodSlider.createStandardLabels( 10, 10 ) );
+		mPeriodSlider.setPaintLabels( true );
+		mPeriodSlider.addChangeListener( new ChangeListener()
 		{
-			mSpinnerPeriod.setEnabled( false );
+			@Override
+			public void stateChanged( ChangeEvent e )
+			{
+				mPeriodSliderLabel.setText( "Period: " + mPeriodSlider.getValue() );
+				setModified( true );
+			}
+		} );
+		mPeriodSlider.setToolTipText( HELP_TEXT );
+		
+		mPeriodSliderLabel = new JLabel( "Period: " + mPeriodSlider.getValue() + " " );
+		add( mPeriodSliderLabel );
+		add( mPeriodSlider, "wrap,grow" );
+		
+		JLabel help = new JLabel( "Help ..." );
+		help.setForeground( Color.BLUE.brighter() );
+		help.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		help.addMouseListener( new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked( MouseEvent e )
+			{
+				JOptionPane.showMessageDialog( BeepActionEditor.this, 
+					HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE );
+			}
+		} );
+		add( help, "align left" );
+	}
+	
+	@Override
+	public void setItem( AliasAction item )
+	{
+		super.setItem( item );
+		
+		if( hasItem() )
+		{
+			BeepAction beep = getBeepAction();
+
+			Interval interval = beep.getInterval();
+			
+			mComboInterval.setSelectedItem( interval );
+
+			boolean enabled = interval != Interval.ONCE;
+			
+			mPeriodSliderLabel.setEnabled( enabled );
+			mPeriodSlider.setEnabled( enabled );
+			mPeriodSlider.setValue( beep.getPeriod() );
 		}
 		
-		add( new JLabel( "Period:" ) );
-		add( mSpinnerPeriod, "wrap" );
-
-		StringBuilder sb = new StringBuilder();
-		
-		sb.append( "This action will sound a beep according to the interval that you select.\n\n" );
-		sb.append( "Once - Beep the first time the alias is active and never again.\n\n" );
-		sb.append( "Once, Reset After Delay - Beep once and suppress subsequent beeps for the specified period in seconds.  After the reset period, it will beep again when the alias is active.\n\n" );
-		sb.append( "Until Dismissed - Beep every period seconds until you click OK on the dialog that appears. Alerting is suppressed for 15 seconds after you click OK." );
-		
-		JTextArea description = new JTextArea( sb.toString() );
-		
-		description.setLineWrap( true );
-		description.setBackground( getBackground() );
-		
-		add( description, "growx,span" );
-		
-		JButton btnSave = new JButton( "Save" );
-		btnSave.addActionListener( BeepActionEditor.this );
-		add( btnSave, "growx,push" );
-
-		JButton btnReset = new JButton( "Reset" );
-		btnReset.addActionListener( BeepActionEditor.this );
-		add( btnReset, "growx,push" );
+		setModified( false );
 	}
 
 	@Override
-    public void actionPerformed( ActionEvent e )
-    {
-		String command = e.getActionCommand();
-		
-		if( command.contentEquals( "Save" ) )
+	public void save()
+	{
+		if( hasItem() && isModified() )
 		{
-			mBeepActionNode.save();
-			mBeepActionNode.show();
+			BeepAction beep = getBeepAction();
+			
+			beep.setInterval( (Interval)mComboInterval.getSelectedItem() );
+			beep.setPeriod( mPeriodSlider.getValue() );
 		}
 		
-		mBeepActionNode.refresh();
-    }
+		setModified( false );
+	}
 }

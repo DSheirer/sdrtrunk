@@ -18,6 +18,8 @@
 
 package module.decode.am;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import module.decode.DecoderType;
 import module.decode.PrimaryDecoder;
 import module.decode.config.DecodeConfiguration;
@@ -41,7 +43,7 @@ public class AMDecoder extends PrimaryDecoder
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 	}
 

@@ -1,6 +1,5 @@
 package module.decode.p25.message.pdu;
 
-import module.decode.p25.message.pdu.confirmed.PacketData;
 import module.decode.p25.message.pdu.osp.control.AdjacentStatusBroadcastExtended;
 import module.decode.p25.message.pdu.osp.control.CallAlertExtended;
 import module.decode.p25.message.pdu.osp.control.GroupAffiliationQueryExtended;
@@ -122,8 +121,7 @@ public class PDUMessageFactory
 				}
 				
 				return new PDUMessage( message, duid, aliasList );
-			case PACKET_DATA:
-				return new PacketData( message, aliasList );
+				
 			case UNCONFIRMED_MULTI_BLOCK_TRUNKING_CONTROL:
 				return new PDUMessage( message, duid, aliasList );
 			default:

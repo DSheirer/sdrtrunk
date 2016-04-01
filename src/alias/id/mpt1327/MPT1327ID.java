@@ -19,8 +19,8 @@ package alias.id.mpt1327;
 
 import javax.xml.bind.annotation.XmlAttribute;
 
-import alias.AliasID;
-import alias.AliasIDType;
+import alias.id.AliasID;
+import alias.id.AliasIDType;
 
 public class MPT1327ID extends AliasID
 {

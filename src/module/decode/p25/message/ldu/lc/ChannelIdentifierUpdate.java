@@ -4,15 +4,9 @@ import module.decode.p25.message.IBandIdentifier;
 import module.decode.p25.message.ldu.LDU1Message;
 import module.decode.p25.reference.LinkControlOpcode;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class ChannelIdentifierUpdate extends LDU1Message
 									 implements IBandIdentifier
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( ChannelIdentifierUpdate.class );
-
 	public static final int[] IDENTIFIER = { 364,365,366,367 };
 	public static final int[] BANDWIDTH = { 372,373,374,375,376,377,382,383,384 };
 	public static final int[] TRANSMIT_OFFSET = { 385,386,387,536,537,538,539,

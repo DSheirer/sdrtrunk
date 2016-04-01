@@ -18,6 +18,7 @@
 package record.config;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -28,19 +29,19 @@ import controller.config.Configuration;
 @XmlRootElement( name = "record_configuration" )
 public class RecordConfiguration extends Configuration
 {
-	private ArrayList<RecorderType> mRecorders = new ArrayList<RecorderType>();
+	private List<RecorderType> mRecorders = new ArrayList<>();
 	
 	public RecordConfiguration()
 	{
 	}
 
 	@XmlElement( name = "recorder" )
-	public ArrayList<RecorderType> getRecorders()
+	public List<RecorderType> getRecorders()
 	{
 		return mRecorders;
 	}
 	
-	public void setRecorders( ArrayList<RecorderType> recorders )
+	public void setRecorders( List<RecorderType> recorders )
 	{
 		mRecorders = recorders;
 	}

@@ -17,27 +17,21 @@
  ******************************************************************************/
 package source;
 
+import module.Module;
 import sample.SampleType;
 
 /**
  * Abstract class to define the minimum functionality of a sample data provider.
  */
-public abstract class Source
+public abstract class Source extends Module
 {
-    protected String mName;
     protected SampleType mSampleType;
 
-    public Source( String name, SampleType sampleType )
+    public Source( SampleType sampleType )
     {
-        mName = name;
         mSampleType = sampleType;
     }
     
-    public String getName()
-    {
-    	return mName;
-    }
-
     public abstract int getSampleRate() throws SourceException;
     
     public abstract long getFrequency() throws SourceException;

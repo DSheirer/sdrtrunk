@@ -19,8 +19,8 @@ package source.tuner.fcd.proplusV2;
 
 import javax.xml.bind.annotation.XmlAttribute;
 
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
+import source.tuner.configuration.TunerConfiguration;
 
 public class FCD2TunerConfiguration extends TunerConfiguration
 {
@@ -33,12 +33,11 @@ public class FCD2TunerConfiguration extends TunerConfiguration
 	 */
 	public FCD2TunerConfiguration()
 	{
-		this( "Default" );
 	}
 	
-	public FCD2TunerConfiguration( String name )
+	public FCD2TunerConfiguration( String uniqueID, String name )
 	{
-		super( name );
+		super( uniqueID, name );
 	}
 	
 	@Override

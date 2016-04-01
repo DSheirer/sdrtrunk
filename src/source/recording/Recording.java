@@ -4,32 +4,34 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.concurrent.RejectedExecutionException;
 
+import settings.SettingsManager;
 import source.SourceException;
+import source.tuner.ITunerChannelProvider;
 import source.tuner.TunerChannel;
-import source.tuner.TunerChannelProvider;
 import source.tuner.TunerChannelSource;
 import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeListener;
 import source.tuner.frequency.FrequencyChangeEvent.Event;
-import controller.ResourceManager;
-import controller.ThreadPoolManager;
+import source.tuner.frequency.IFrequencyChangeProcessor;
 
 public class Recording implements Comparable<Recording>,
-								  FrequencyChangeListener, 
-								  TunerChannelProvider
+								  IFrequencyChangeProcessor, 
+								  ITunerChannelProvider
 {
-	private ResourceManager mResourceManager;
 	private RecordingConfiguration mConfiguration;
 	
 	private ArrayList<TunerChannelSource> mTunerChannels = 
 			new ArrayList<TunerChannelSource>();
 	
+	@SuppressWarnings( "unused" )
 	private long mCenterFrequency;
 	
-	public Recording( ResourceManager resourceManager, 
+	@SuppressWarnings( "unused" )
+	private SettingsManager mSettingsManager;
+	
+	public Recording( SettingsManager settingsManager,
 					  RecordingConfiguration configuration )
 	{
-		mResourceManager = resourceManager;
+		mSettingsManager = settingsManager;
 		mConfiguration = configuration;
 		mCenterFrequency = mConfiguration.getCenterFrequency();
 	}
@@ -37,7 +39,7 @@ public class Recording implements Comparable<Recording>,
 	public void setAlias( String alias )
 	{
 		mConfiguration.setAlias( alias );
-		mResourceManager.getSettingsManager().save();
+//		mSettingsManager.save();
 	}
 	
 	public void setRecordingFile( File file ) throws SourceException
@@ -50,7 +52,7 @@ public class Recording implements Comparable<Recording>,
 		}
 		
 		mConfiguration.setFilePath( file.getAbsolutePath() );
-		mResourceManager.getSettingsManager().save();
+//		mSettingsManager.save();
 	}
 	
 	/**
@@ -89,13 +91,13 @@ public class Recording implements Comparable<Recording>,
 	@Override
     public void frequencyChanged( FrequencyChangeEvent event )
     {
-		if( event.getEvent() == Event.FREQUENCY_CHANGE_NOTIFICATION )
+		if( event.getEvent() == Event.NOTIFICATION_FREQUENCY_CHANGE )
 		{
 			long frequency = event.getValue().longValue();
 			
 			mConfiguration.setCenterFrequency( frequency );
 			
-			mResourceManager.getSettingsManager().save();
+//			mSettingsManager.save();
 
 			mCenterFrequency = frequency;
 

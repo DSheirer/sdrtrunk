@@ -18,32 +18,30 @@
 package module.decode.state;
 
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+
+import module.Module;
+import module.decode.config.DecodeConfiguration;
+import module.decode.event.CallEvent;
+import module.decode.event.ICallEventProvider;
+import module.decode.state.DecoderStateEvent.Event;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import sample.Listener;
 import audio.metadata.IMetadataProvider;
 import audio.metadata.Metadata;
 import audio.metadata.MetadataReset;
 import audio.metadata.MetadataType;
 import audio.squelch.ISquelchStateProvider;
 import audio.squelch.SquelchState;
-import controller.ThreadPoolManager;
-import controller.ThreadPoolManager.ThreadType;
 import controller.channel.Channel.ChannelType;
-import module.Module;
-import module.decode.config.DecodeConfiguration;
-import module.decode.event.CallEvent;
-import module.decode.event.ICallEventProvider;
-import module.decode.state.DecoderStateEvent.Event;
-import sample.Listener;
 
-public class ChannelState extends Module implements ICallEventProvider,
-	IChangedAttributeProvider, IDecoderStateEventListener, 
-	IDecoderStateEventProvider, IMetadataProvider, ISquelchStateProvider
+public class ChannelState extends Module implements ICallEventProvider,	IChangedAttributeProvider, 
+	IDecoderStateEventListener, IDecoderStateEventProvider, IMetadataProvider, ISquelchStateProvider
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( ChannelState.class );
@@ -65,19 +63,16 @@ public class ChannelState extends Module implements ICallEventProvider,
 	private boolean mSelected = false;
 	
 	private long mStandardChannelFadeTimeout = FADE_TIMEOUT_DELAY;
-	private long mTrafficChannelFadeTimeout = 
-			DecodeConfiguration.DEFAULT_CALL_TIMEOUT_SECONDS * 1000;
+	private long mTrafficChannelFadeTimeout = DecodeConfiguration.DEFAULT_CALL_TIMEOUT_SECONDS * 1000;
 	private long mFadeTimeout;
 	private long mEndTimeout;
 	
 	private StateMonitor mStateMonitor = new StateMonitor();
-	private AtomicBoolean mMonitoring = new AtomicBoolean();
 	private ScheduledFuture<?> mStateMonitorFuture;
 
-	private ThreadPoolManager mThreadPoolManager;
 	private ChannelType mChannelType;
 	
-	private TrafficChannelStatusListener mTrafficChannelStatusListener;
+	private TrafficChannelManager mTrafficChannelEndListener;
 	private CallEvent mTrafficChannelCallEvent;
 	
 	/**
@@ -106,9 +101,8 @@ public class ChannelState extends Module implements ICallEventProvider,
 	 *  			ended, while continuing to display the call details for the user
 	 *  TEARDOWN	Indicates a traffic channel that will be torn down for reuse.
 	 */
-	public ChannelState( ThreadPoolManager manager, ChannelType channelType )
+	public ChannelState( ChannelType channelType )
 	{
-		mThreadPoolManager = manager;
 		mChannelType = channelType;
 	}
 	
@@ -126,23 +120,22 @@ public class ChannelState extends Module implements ICallEventProvider,
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
-		//Start a monitoring task to check for FADE and END event timeouts
-		if( mMonitoring.compareAndSet( false, true ) )
+		if( mStateMonitorFuture == null && mStateMonitor != null )
 		{
-			if( mStateMonitorFuture == null && mStateMonitor != null )
+			if( mTrafficChannelEndListener != null )
 			{
-				try
-				{
-					mStateMonitorFuture = mThreadPoolManager.scheduleFixedRate( 
-						ThreadType.DECODER, mStateMonitor, 20, TimeUnit.MILLISECONDS );
-				}
-				catch( RejectedExecutionException ree )
-				{
-					mLog.error( "state monitor scheduled task rejected", ree );
-					mMonitoring.set( false );
-				}
+				setState( State.CALL );
+			}
+			
+			try
+			{
+				mStateMonitorFuture = executor.scheduleAtFixedRate(  mStateMonitor, 0, 20, TimeUnit.MILLISECONDS );
+			}
+			catch( RejectedExecutionException ree )
+			{
+				mLog.error( "state monitor scheduled task rejected", ree );
 			}
 		}
 	}
@@ -150,23 +143,29 @@ public class ChannelState extends Module implements ICallEventProvider,
 	@Override
 	public void stop()
 	{
-		mSquelchLocked = false;
-
-		//Shutdown the state montoring task
-		if( mMonitoring.compareAndSet( true, false ) )
+		if( mStateMonitorFuture != null )
 		{
-			if( mStateMonitorFuture != null )
-			{
-				boolean success = mThreadPoolManager.cancel( mStateMonitorFuture );
-				
-				if( !success )
-				{
-					mLog.error("Couldn't stop monitoring scheduled future" );
-				}
-			}
+			boolean success = mStateMonitorFuture.cancel( true );
 			
-			mStateMonitorFuture = null;
+			if( !success )
+			{
+				mLog.error("Couldn't stop monitoring scheduled future" );
+			}
 		}
+
+		mTrafficChannelEndListener = null;
+		
+		if( mTrafficChannelCallEvent != null )
+		{
+			mTrafficChannelCallEvent.end();
+			broadcast( mTrafficChannelCallEvent );
+		}
+		
+		mTrafficChannelCallEvent = null;
+		
+		mStateMonitorFuture = null;
+		
+		mSquelchLocked = false;
 	}
 
 	public void dispose()
@@ -175,7 +174,6 @@ public class ChannelState extends Module implements ICallEventProvider,
 		mChangedAttributeListener = null;
 		mDecoderStateListener = null;
 		mSquelchStateListener = null;
-		mThreadPoolManager = null;
 		mStateMonitor = null;
 	}
 	
@@ -205,7 +203,7 @@ public class ChannelState extends Module implements ICallEventProvider,
 		
 		if( mChannelType == ChannelType.TRAFFIC )
 		{
-			mFadeTimeout = mTrafficChannelFadeTimeout;
+			mFadeTimeout = System.currentTimeMillis() + mTrafficChannelFadeTimeout;
 		}
 	}
 	
@@ -237,6 +235,7 @@ public class ChannelState extends Module implements ICallEventProvider,
 		{
 			mFadeTimeout = System.currentTimeMillis() + mStandardChannelFadeTimeout;
 		}
+		
 	}
 
 	/**
@@ -389,23 +388,9 @@ public class ChannelState extends Module implements ICallEventProvider,
 		
 		broadcast( ChangedAttribute.CHANNEL_STATE );
 
-		if( mTrafficChannelCallEvent != null )
+		if( mTrafficChannelEndListener != null )
 		{
-			mTrafficChannelCallEvent.end();
-			
-			broadcast( mTrafficChannelCallEvent );
-			mTrafficChannelCallEvent = null;
-		}
-
-		if( mTrafficChannelStatusListener != null )
-		{
-			mTrafficChannelStatusListener.callEnd();
-			mTrafficChannelStatusListener = null;
-		}
-		else
-		{
-			mLog.error( "Traffic channel status listener was null - couldn't "
-					+ "teardown the channel");
+			mTrafficChannelEndListener.callEnd( mTrafficChannelCallEvent.getChannel() );
 		}
 	}
 
@@ -530,11 +515,11 @@ public class ChannelState extends Module implements ICallEventProvider,
 	 * Registers a listener to be notified when a traffic channel call event is
 	 * completed, so that the listener can perform call tear-down 
 	 */
-	public void configureAsTrafficChannel( TrafficChannelStatusListener listener, 
-			TrafficChannelAllocationEvent allocationEvent )
+	public void configureAsTrafficChannel( TrafficChannelManager manager, CallEvent callEvent )
 	{
-		mTrafficChannelStatusListener = listener;
-		mTrafficChannelCallEvent = allocationEvent.getCallEvent();
+		mTrafficChannelEndListener = manager;
+		
+		mTrafficChannelCallEvent = callEvent;
 		
 		/* Broadcast the call event details as metadata for the audio manager */
 		String channel = mTrafficChannelCallEvent.getChannel();
@@ -543,9 +528,9 @@ public class ChannelState extends Module implements ICallEventProvider,
 		{
 			broadcast( new Metadata( MetadataType.CHANNEL_NUMBER, channel, true ) );
 		}
-
+		
 		broadcast( new Metadata( MetadataType.PROTOCOL,  
-			mTrafficChannelCallEvent.getDecoderType().getDisplayString(), true ) );
+				mTrafficChannelCallEvent.getDecoderType().getDisplayString(), true ) );
 
 		String details = mTrafficChannelCallEvent.getDetails();
 		
@@ -574,13 +559,12 @@ public class ChannelState extends Module implements ICallEventProvider,
 		
 		if( frequency > 0 )
 		{
-			broadcast( new Metadata( MetadataType.FREQUENCY, 
-					String.valueOf( frequency ), true ) );
+			broadcast( new Metadata( MetadataType.FREQUENCY, String.valueOf( frequency ), true ) );
 		}
 		
 		/* Rebroadcast the allocation event so that the internal decoder states
 		 * can self-configure with the call event details */
-		broadcast( allocationEvent );
+		broadcast( mTrafficChannelCallEvent );
 	}
 	
 	/**
@@ -662,7 +646,6 @@ public class ChannelState extends Module implements ICallEventProvider,
 					if( State.CALL_STATES.contains( mState ) &&
 						mFadeTimeout <= System.currentTimeMillis() )
 					{
-						mState = State.FADE;
 						processFadeState();
 					}
 					else if( mState == State.FADE && 

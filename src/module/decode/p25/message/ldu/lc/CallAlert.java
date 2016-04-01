@@ -3,13 +3,8 @@ package module.decode.p25.message.ldu.lc;
 import module.decode.p25.message.ldu.LDU1Message;
 import module.decode.p25.reference.LinkControlOpcode;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class CallAlert extends LDU1Message
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( CallAlert.class );
     public static final int[] TARGET_ADDRESS = { 536,537,538,539,540,541,546,
     	547,548,549,550,551,556,557,558,559,560,561,566,567,568,569,570,571 };
     public static final int[] SOURCE_ADDRESS = { 720,721,722,723,724,725,730,

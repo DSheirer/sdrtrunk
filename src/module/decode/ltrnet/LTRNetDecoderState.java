@@ -21,6 +21,7 @@ import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.TreeSet;
+import java.util.concurrent.ScheduledExecutorService;
 
 import message.Message;
 import module.decode.DecoderType;
@@ -777,7 +778,7 @@ public class LTRNetDecoderState extends DecoderState
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 	}
 

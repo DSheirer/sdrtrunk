@@ -4,6 +4,6 @@ import sample.Listener;
 
 public interface IMessageProvider
 {
-	public void addMessageListener( Listener<Message> listener );
-	public void removeMessageListener( Listener<Message> listener );
+	public void setMessageListener( Listener<Message> listener );
+	public void removeMessageListener();
 }

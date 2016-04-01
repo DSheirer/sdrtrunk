@@ -14,7 +14,7 @@ public enum DataUnitID
 	TSBK1(  7,  260, false, "TSBK1", "Trunking Signaling Block" ),
 	TSBK2(  7,  260, false, "TSBK2", "Trunking Signaling Block" ),
 	TSBK3(  7,  260, false, "TSBK3", "Trunking Signaling Block" ),
-	VSELP2( 9, 1680, false, "VSEL1", "Motorola VSELP Unit 1" ),
+	VSELP2( 9, 1680, false, "VSEL2", "Motorola VSELP Unit 2" ),
 	LDU2 ( 10, 1632, true,  "LDU2 ", "Logical Link Data Unit 2" ),
 	PDU0 ( 12,  260, false, "PDU0 ", "Packet Header Data Unit" ),
 	PDU1 ( 12,  356, false, "PDU1 ", "Packet Data Unit-Unconfirmed" ),
@@ -75,8 +75,12 @@ public enum DataUnitID
 				return TDU;
 			case 5:
 				return LDU1;
+			case 6:
+				return VSELP1;
 			case 7:
 				return TSBK1;
+			case 9:
+				return VSELP2;
 			case 10:
 				return LDU2;
 			case 12:

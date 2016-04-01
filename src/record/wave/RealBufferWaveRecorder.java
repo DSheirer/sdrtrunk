@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -34,17 +35,15 @@ import org.slf4j.LoggerFactory;
 
 import sample.ConversionUtils;
 import sample.Listener;
-import sample.real.IRealBufferListener;
+import sample.real.IFilteredRealBufferListener;
 import sample.real.RealBuffer;
 import util.TimeStamp;
-import controller.ThreadPoolManager;
-import controller.ThreadPoolManager.ThreadType;
 
 /**
  * WAVE audio recorder module for recording real sample buffers to a wave file
  */
 public class RealBufferWaveRecorder extends Module 
-				implements IRealBufferListener, Listener<RealBuffer>
+				implements IFilteredRealBufferListener, Listener<RealBuffer>
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( RealBufferWaveRecorder.class );
@@ -54,7 +53,6 @@ public class RealBufferWaveRecorder extends Module
     private Path mFile;
 	private AudioFormat mAudioFormat;
 	
-	private ThreadPoolManager mThreadPoolManager;
 	private BufferProcessor mBufferProcessor;
 	private ScheduledFuture<?> mProcessorHandle;
 	private LinkedBlockingQueue<RealBuffer> mBuffers = 
@@ -63,11 +61,8 @@ public class RealBufferWaveRecorder extends Module
 	
 	private AtomicBoolean mRunning = new AtomicBoolean();
 	
-	public RealBufferWaveRecorder( ThreadPoolManager threadPoolManager, 
-			int sampleRate, String filePrefix )
+	public RealBufferWaveRecorder( int sampleRate, String filePrefix )
 	{
-		mThreadPoolManager = threadPoolManager;
-		
 		mAudioFormat = 	new AudioFormat( sampleRate,  //SampleRate
 										 16,     //Sample Size
 										 1,      //Channels
@@ -90,7 +85,7 @@ public class RealBufferWaveRecorder extends Module
 		return mFile;
 	}
 	
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 		if( mRunning.compareAndSet( false, true ) )
 		{
@@ -112,9 +107,8 @@ public class RealBufferWaveRecorder extends Module
 				mWriter = new WaveWriter( mAudioFormat, mFile );
 
 				/* Schedule the processor to run every 500 milliseconds */
-				mProcessorHandle = mThreadPoolManager.scheduleFixedRate( 
-					ThreadType.AUDIO_RECORDING, mBufferProcessor, 500, 
-					TimeUnit.MILLISECONDS );
+				mProcessorHandle = executor.scheduleAtFixedRate( 
+					mBufferProcessor, 0, 500, TimeUnit.MILLISECONDS );
 			}
 			catch( IOException io )
 			{
@@ -151,7 +145,7 @@ public class RealBufferWaveRecorder extends Module
     }
 	
 	@Override
-	public Listener<RealBuffer> getRealBufferListener()
+	public Listener<RealBuffer> getFilteredRealBufferListener()
 	{
 		return this;
 	}
@@ -160,8 +154,6 @@ public class RealBufferWaveRecorder extends Module
 	public void dispose()
 	{
 		stop();
-		
-		mThreadPoolManager = null;
 	}
 
 	@Override
@@ -198,12 +190,14 @@ public class RealBufferWaveRecorder extends Module
 							}
 						}
 						
-						mThreadPoolManager.cancel( mProcessorHandle );
+						if( mProcessorHandle != null )
+						{
+							mProcessorHandle.cancel( true );
+						}
 						
+						mProcessorHandle = null;
 						mWriter = null;
 						mFile = null;
-						mProcessorHandle = null;
-						mThreadPoolManager = null;
 					}
 					else
 					{

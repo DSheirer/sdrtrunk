@@ -19,8 +19,8 @@ package source.tuner.rtl.e4k;
 
 import javax.xml.bind.annotation.XmlAttribute;
 
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
+import source.tuner.configuration.TunerConfiguration;
 import source.tuner.rtl.RTL2832TunerController.SampleRate;
 import source.tuner.rtl.e4k.E4KTunerController.E4KEnhanceGain;
 import source.tuner.rtl.e4k.E4KTunerController.E4KGain;
@@ -29,24 +29,23 @@ import source.tuner.rtl.e4k.E4KTunerController.E4KMixerGain;
 
 public class E4KTunerConfiguration extends TunerConfiguration
 {
-	private E4KGain mMasterGain = E4KGain.AUTOMATIC;
-	private E4KMixerGain mMixerGain = E4KMixerGain.AUTOMATIC;
-	private E4KLNAGain mLNAGain = E4KLNAGain.AUTOMATIC;
-	private E4KEnhanceGain mEnhanceGain = E4KEnhanceGain.AUTOMATIC;
-	private double mFrequencyCorrection = 8.9d;
-	private SampleRate mSampleRate = SampleRate.RATE_1_920MHZ;
+	private E4KGain mMasterGain = E4KGain.MANUAL;
+	private E4KMixerGain mMixerGain = E4KMixerGain.GAIN_4;
+	private E4KLNAGain mLNAGain = E4KLNAGain.GAIN_PLUS_200;
+	private E4KEnhanceGain mEnhanceGain = E4KEnhanceGain.GAIN_3;
+	private double mFrequencyCorrection = 0.0d;
+	private SampleRate mSampleRate = SampleRate.RATE_2_400MHZ;
 
 	/**
 	 * Default constructor for JAXB
 	 */
 	public E4KTunerConfiguration()
 	{
-		this( "Default" );
 	}
 	
-	public E4KTunerConfiguration( String name )
+	public E4KTunerConfiguration( String uniqueID, String name )
 	{
-		super( name );
+		super( uniqueID, name );
 	}
 	
 	@Override

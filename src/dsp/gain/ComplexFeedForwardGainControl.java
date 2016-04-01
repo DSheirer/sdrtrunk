@@ -1,8 +1,5 @@
 package dsp.gain;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import sample.complex.Complex;
 import sample.complex.ComplexSampleListener;
 import buffer.FloatCircularBuffer;
@@ -32,9 +29,6 @@ import buffer.FloatCircularBuffer;
  ******************************************************************************/
 public class ComplexFeedForwardGainControl implements ComplexSampleListener
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( ComplexFeedForwardGainControl.class );
-
 	public static final float OBJECTIVE_ENVELOPE = 1.0f;
 	public static final float MINIMUM_ENVELOPE = 0.0001f;
 

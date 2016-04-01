@@ -17,27 +17,48 @@
  ******************************************************************************/
 package source;
 
+import settings.SettingsManager;
+import source.config.SourceConfigTuner;
 import source.config.SourceConfiguration;
 import source.mixer.MixerManager;
-import controller.ResourceManager;
+import source.recording.RecordingSourceManager;
+import source.tuner.TunerManager;
+import source.tuner.TunerModel;
+import controller.ThreadPoolManager;
 
-public class SourceManager {
-	/**
-	 * NOTE: each source will auto-start once a listener registers on it to 
-	 * receive samples and should auto-stop once a listener de-registers
-	 * 
-	 * Each channel object will handle the starting and stopping of each channel 
-	 * processing chain.
-	 * 
-	 * Source Manager will reach out to the MixerManager or the TunerManager
-	 * to get source objects to pass off to the channel object, as requested.
-	 */
-	
-	private ResourceManager mResourceManager;
+public class SourceManager 
+{
+	private MixerManager mMixerManager;
+	private RecordingSourceManager mRecordingSourceManager;
+	private TunerManager mTunerManager;
+	private TunerModel mTunerModel;
 
-	public SourceManager( ResourceManager resourceManager )
+	public SourceManager( TunerModel tunerModel,
+						  SettingsManager settingsManager, 
+						  ThreadPoolManager threadPoolManager )
 	{
-		mResourceManager = resourceManager;
+		mTunerModel = tunerModel;
+		mMixerManager = new MixerManager();
+		mRecordingSourceManager = new RecordingSourceManager( settingsManager );
+		mTunerManager = new TunerManager( mMixerManager, tunerModel, threadPoolManager );
+		
+		//TODO: change mixer & recording managers to be models and hand them
+		//in via the constructor.  Perform loading outside of this class.
+	}
+	
+	public MixerManager getMixerManager()
+	{
+		return mMixerManager;
+	}
+
+	public RecordingSourceManager getRecordingSourceManager()
+	{
+		return mRecordingSourceManager;
+	}
+	
+	public TunerManager getTunerManager()
+	{
+		return mTunerManager;
 	}
 	
 	public Source getSource( SourceConfiguration config, int bandwidth ) 
@@ -48,14 +69,13 @@ public class SourceManager {
 		switch( config.getSourceType() )
 		{
 			case MIXER:
-				retVal = MixerManager.getInstance().getSource( config ); 
+				retVal = mMixerManager.getSource( config ); 
 				break;
 			case TUNER:
-				retVal = mResourceManager.getTunerManager().getSource( config, bandwidth );
+				retVal = mTunerModel.getSource( (SourceConfigTuner)config, bandwidth );
 				break;
 			case RECORDING:
-				retVal = mResourceManager.getRecordingSourceManager()
-								.getSource( config, bandwidth );
+				retVal = mRecordingSourceManager.getSource( config, bandwidth );
 			case NONE:
 			default:
 				break;

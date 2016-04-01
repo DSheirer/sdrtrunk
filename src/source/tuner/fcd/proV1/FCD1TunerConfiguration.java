@@ -19,8 +19,8 @@ package source.tuner.fcd.proV1;
 
 import javax.xml.bind.annotation.XmlAttribute;
 
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
+import source.tuner.configuration.TunerConfiguration;
 import source.tuner.fcd.proV1.FCD1TunerController.LNAEnhance;
 import source.tuner.fcd.proV1.FCD1TunerController.LNAGain;
 import source.tuner.fcd.proV1.FCD1TunerController.MixerGain;
@@ -42,12 +42,11 @@ public class FCD1TunerConfiguration extends TunerConfiguration
 	 */
 	public FCD1TunerConfiguration()
 	{
-		this( "Default" );
 	}
 	
-	public FCD1TunerConfiguration( String name )
+	public FCD1TunerConfiguration( String uniqueID, String name )
 	{
-		super( name );
+		super( uniqueID, name );
 	}
 	
 	@Override
@@ -56,6 +55,7 @@ public class FCD1TunerConfiguration extends TunerConfiguration
 	    return TunerType.FUNCUBE_DONGLE_PRO;
     }
 
+	@XmlAttribute( name = "lna_gain" )
 	public LNAGain getLNAGain()
 	{
 		return mLNAGain;
@@ -66,12 +66,12 @@ public class FCD1TunerConfiguration extends TunerConfiguration
 		mLNAGain = gain;
 	}
 	
-	@XmlAttribute( name = "lna_gain" )
 	public LNAEnhance getLNAEnhance()
 	{
 		return mLNAEnhance;
 	}
 	
+	@XmlAttribute( name = "lna_enhance" )
 	public void setLNAEnhance( LNAEnhance enhance )
 	{
 		mLNAEnhance = enhance;

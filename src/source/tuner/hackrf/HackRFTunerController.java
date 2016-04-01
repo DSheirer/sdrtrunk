@@ -1,4 +1,3 @@
-package source.tuner.hackrf;
 /*******************************************************************************
  *     SDR Trunk 
  *     Copyright (C) 2014 Dennis Sheirer
@@ -52,12 +51,13 @@ package source.tuner.hackrf;
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
+package source.tuner.hackrf;
+
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -81,8 +81,8 @@ import sample.Listener;
 import sample.adapter.ByteSampleAdapter;
 import sample.complex.ComplexBuffer;
 import source.SourceException;
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerController;
+import source.tuner.configuration.TunerConfiguration;
 import controller.ThreadPoolManager;
 import controller.ThreadPoolManager.ThreadType;
 
@@ -92,7 +92,7 @@ public class HackRFTunerController extends TunerController
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( HackRFTunerController.class );
 
-	public final static long USB_TIMEOUT_MS = 1000000l; //uSeconds
+	public final static long USB_TIMEOUT_US = 1000000l; //uSeconds
 	public static final byte USB_ENDPOINT = (byte)0x81;
 	public static final byte USB_INTERFACE = (byte)0x0;
 	
@@ -395,7 +395,7 @@ public class HackRFTunerController extends TunerController
 													  (short)value,
 													  (short)index,
 													  buffer, 
-													  USB_TIMEOUT_MS );
+													  USB_TIMEOUT_US );
 
 			if( transferred < 0 )
 			{
@@ -468,7 +468,7 @@ public class HackRFTunerController extends TunerController
 													  (short)value, 
 													  (short)index, 
 													  buffer, 
-													  USB_TIMEOUT_MS );
+													  USB_TIMEOUT_US );
 
 			if( transferred < 0 )
 			{
@@ -887,8 +887,8 @@ public class HackRFTunerController extends TunerController
 	 */
     public void addListener( Listener<ComplexBuffer> listener )
     {
-    	synchronized( mComplexBufferBroadcaster )
-    	{
+    	synchronized ( mComplexBufferBroadcaster )
+		{
         	mComplexBufferBroadcaster.addListener( listener );
 
     		if( mBufferProcessor == null || !mBufferProcessor.isRunning() )
@@ -901,7 +901,7 @@ public class HackRFTunerController extends TunerController
 
     			thread.start();
     		}
-    	}
+		}
     }
 
 	/**
@@ -910,15 +910,15 @@ public class HackRFTunerController extends TunerController
 	 */
     public void removeListener( Listener<ComplexBuffer> listener )
     {
-    	synchronized( mComplexBufferBroadcaster )
-    	{
+    	synchronized ( mComplexBufferBroadcaster )
+		{
         	mComplexBufferBroadcaster.removeListener( listener );
         	
     		if( !mComplexBufferBroadcaster.hasListeners() )
     		{
     			mBufferProcessor.stop();
     		}
-    	}
+		}
     }
 
 	/**
@@ -928,12 +928,12 @@ public class HackRFTunerController extends TunerController
 	public class BufferProcessor implements Runnable, TransferCallback
 	{
 		private ScheduledFuture<?> mSampleDispatcherTask;
+		private AtomicBoolean mRunning = new AtomicBoolean();
 		private LinkedTransferQueue<Transfer> mAvailableTransfers;
 		private LinkedTransferQueue<Transfer> mTransfersInProgress = new LinkedTransferQueue<>();
-		private AtomicBoolean mRunning = new AtomicBoolean();
 		private ByteBuffer mLibUsbHandlerStatus;
 		private boolean mCancel = false;
-
+		
 		@Override
         public void run()
         {
@@ -955,23 +955,23 @@ public class HackRFTunerController extends TunerController
 				{
             		mAvailableTransfers.drainTo( transfers );
             		
-    				for( Transfer transfer: transfers )
-    				{
-    					int result = LibUsb.submitTransfer( transfer );
-    					
-    					if( result == LibUsb.SUCCESS )
-    					{
-    						mTransfersInProgress.add( transfer );
-    					}
-    					else
-    					{
-    						mLog.error( "error submitting transfer [" + 
-    								LibUsb.errorName( result ) + "]" );
-    					}
-    				}
+            		for( Transfer transfer: transfers )
+            		{
+            			int result = LibUsb.submitTransfer( transfer );
+            			
+            			if( result == LibUsb.SUCCESS )
+            			{
+            				mTransfersInProgress.add( transfer );
+            			}
+            			else
+            			{
+            				mLog.error( "error submitting transfer [" + 
+            						LibUsb.errorName( result ) + "]" );
+            			}
+            		}
 					
 					int result = LibUsb.handleEventsTimeoutCompleted( 
-							null, USB_TIMEOUT_MS, mLibUsbHandlerStatus.asIntBuffer() );
+						null, USB_TIMEOUT_US, mLibUsbHandlerStatus.asIntBuffer() );
 					
 					if( result != LibUsb.SUCCESS )
 					{
@@ -990,16 +990,16 @@ public class HackRFTunerController extends TunerController
             			LibUsb.cancelTransfer( transfer );
             		}
             		
-					int result = LibUsb.handleEventsTimeoutCompleted( 
-						null, USB_TIMEOUT_MS, mLibUsbHandlerStatus.asIntBuffer() );
+            		int result = LibUsb.handleEventsTimeoutCompleted( null, 
+            				USB_TIMEOUT_US, mLibUsbHandlerStatus.asIntBuffer() );
             		
             		if( result != LibUsb.SUCCESS )
-					{
-						mLog.error( "error cancelling transfers in progress" );
-					}
-					
-					mLibUsbHandlerStatus.rewind();
-				}
+            		{
+            			mLog.error( "error cancelling transfers in progress" );
+            		}
+            		
+            		mLibUsbHandlerStatus.rewind();
+            	}
 			}
         }
 
@@ -1089,7 +1089,7 @@ public class HackRFTunerController extends TunerController
 		    				ByteBuffer.allocateDirect( mBufferSize );
 		    		
 		    		LibUsb.fillBulkTransfer( transfer, mDeviceHandle,USB_ENDPOINT, 
-	    				buffer, BufferProcessor.this, "Buffer", USB_TIMEOUT_MS );
+	    				buffer, BufferProcessor.this, "Buffer", USB_TIMEOUT_US );
 
 		    		mAvailableTransfers.add( transfer );
 		    	}

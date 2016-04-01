@@ -6,7 +6,6 @@ import java.awt.event.ComponentListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
-import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.JLayeredPane;
@@ -16,15 +15,12 @@ import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
 import javax.swing.SwingUtilities;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import module.ProcessingChain;
 import net.miginfocom.swing.MigLayout;
 import sample.Listener;
 import sample.SampleType;
 import sample.complex.ComplexBuffer;
 import sample.real.RealBuffer;
-import sample.real.RealSampleListener;
 import settings.ColorSetting.ColorSettingName;
 import settings.ColorSettingMenuItem;
 import settings.Setting;
@@ -40,15 +36,13 @@ import spectrum.menu.FFTWindowTypeItem;
 import spectrum.menu.FrameRateItem;
 import spectrum.menu.SmoothingItem;
 import spectrum.menu.SmoothingTypeItem;
-import controller.ResourceManager;
 import controller.channel.Channel;
 import controller.channel.ChannelEvent;
 import controller.channel.ChannelEventListener;
+import controller.channel.ChannelProcessingManager;
 import dsp.filter.Filters;
-import dsp.filter.FloatHalfBandFilter;
 import dsp.filter.Window.WindowType;
 import dsp.filter.halfband.real.HalfBandFilter_RB_RB;
-import dsp.filter.hilbert.HilbertTransform;
 import dsp.filter.smoothing.SmoothingFilter.SmoothingType;
 
 public class ChannelSpectrumPanel extends JPanel 
@@ -57,11 +51,8 @@ public class ChannelSpectrumPanel extends JPanel
 								  			 SettingChangeListener,
 								  			 SpectralDisplayAdjuster
 {
-	private static final Logger mLog = LoggerFactory.getLogger( ChannelSpectrumPanel.class );
-
 	private static final long serialVersionUID = 1L;
 
-//    private ResourceManager mResourceManager;
     private DFTProcessor mDFTProcessor = new DFTProcessor( SampleType.REAL );    
     private DFTResultsConverter mDFTConverter = new RealDecibelConverter();
     private JLayeredPane mLayeredPane;
@@ -71,8 +62,6 @@ public class ChannelSpectrumPanel extends JPanel
     private Channel mCurrentChannel;
     
     private int mSampleBufferSize = 2400;
-    private float[] mSamples = new float[ mSampleBufferSize ];
-    private int mSamplePointer = 0;
 
     private HalfBandFilter_RB_RB mDecimatingFilter = new HalfBandFilter_RB_RB( 
 		Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO.getCoefficients(), 1.0f, true );
@@ -80,10 +69,13 @@ public class ChannelSpectrumPanel extends JPanel
     private AtomicBoolean mEnabled = new AtomicBoolean();
     
     private SettingsManager mSettingsManager;
+    private ChannelProcessingManager mChannelProcessingManager;
 
-    public ChannelSpectrumPanel( SettingsManager settingsManager )
+    public ChannelSpectrumPanel( SettingsManager settingsManager, 
+    							 ChannelProcessingManager channelProcessingManager )
     {
     	mSettingsManager = settingsManager;
+    	mChannelProcessingManager = channelProcessingManager;
     	
     	if( mSettingsManager != null )
     	{
@@ -99,7 +91,7 @@ public class ChannelSpectrumPanel extends JPanel
 
     	/* Set the DFTProcessor to the decimated 24kHz sample rate */
     	mDFTProcessor.frequencyChanged( 
-    			new FrequencyChangeEvent( Event.SAMPLE_RATE_CHANGE_NOTIFICATION, 24000 ) );
+    			new FrequencyChangeEvent( Event.NOTIFICATION_SAMPLE_RATE_CHANGE, 24000 ) );
     	
     	initGui();
     }
@@ -166,15 +158,18 @@ public class ChannelSpectrumPanel extends JPanel
     {
 		switch( event.getEvent() )
 		{
-			case CHANGE_SELECTED:
-				if( !event.getChannel().isSelected() )
+			case NOTIFICATION_SELECTION_CHANGE:
+				//ChannelSelectionManager ensures that only 1 channel can be 
+				//selected and any previously selected channel will be first 
+				//deselected before we get a new selection event
+				if( event.getChannel().isSelected() )
 				{
-					stop();
+					if( mCurrentChannel != null )
+					{
+						stop();
+						mCurrentChannel = null;
+					}
 					
-					mCurrentChannel = null;
-				}
-				else
-				{
 					mCurrentChannel = event.getChannel();
 					
 					if( mEnabled.get() )
@@ -182,17 +177,13 @@ public class ChannelSpectrumPanel extends JPanel
 						start();
 					}
 				}
-				if( event.getChannel().isSelected() && 
-					mCurrentChannel != event.getChannel() )
+				else
 				{
 					stop();
-					
-					mCurrentChannel = event.getChannel();
-					
-					start();
+					mCurrentChannel = null;
 				}
 				break;
-			case CHANNEL_DISABLED:
+			case NOTIFICATION_PROCESSING_STOP:
 				if( event.getChannel() == mCurrentChannel )
 				{
 					if( mEnabled.get() )
@@ -203,32 +194,36 @@ public class ChannelSpectrumPanel extends JPanel
 					mCurrentChannel = null;
 				}
 				break;
-			case CHANNEL_ENABLED:
-				if( event.getChannel() == mCurrentChannel &&
-					!event.getChannel().isProcessing() )
-				{
-					stop();
-					mCurrentChannel = null;
-				}
-				break;
 		}
     }
 	
 	private void start()
 	{
-		if( mEnabled.get() && mCurrentChannel != null && mCurrentChannel.isProcessing() )
+		if( mEnabled.get() && mCurrentChannel != null && mCurrentChannel.getEnabled() )
 		{
-			mCurrentChannel.getProcessingChain().addRealBufferListener( this );
-			mDFTProcessor.start();
+			ProcessingChain processingChain = mChannelProcessingManager
+					.getProcessingChain( mCurrentChannel );
+
+			if( processingChain != null )
+			{
+				processingChain.addRealBufferListener( this );
+				
+				mDFTProcessor.start();
+			}
 		}
 	}
 	
 	private void stop()
 	{
-		
-		if( mCurrentChannel != null && mCurrentChannel.isProcessing() )
+		if( mCurrentChannel != null && mCurrentChannel.getEnabled() )
 		{
-			mCurrentChannel.getProcessingChain().removeRealBufferListener( this );
+			ProcessingChain processingChain = mChannelProcessingManager
+					.getProcessingChain( mCurrentChannel );
+
+			if( processingChain != null )
+			{
+				processingChain.removeRealBufferListener( this );
+			}
 		}
 
 		mDFTProcessor.stop();

@@ -19,6 +19,7 @@ package source.mixer;
 
 import java.util.Iterator;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.sound.sampled.AudioFormat;
@@ -29,12 +30,12 @@ import javax.sound.sampled.TargetDataLine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import dsp.gain.AutomaticGainControl;
 import sample.Listener;
 import sample.adapter.ISampleAdapter;
 import sample.real.RealBuffer;
 import source.RealSource;
 import source.SourceException;
+import dsp.gain.AutomaticGainControl;
 
 public class RealMixerSource extends RealSource
 {
@@ -72,18 +73,30 @@ public class RealMixerSource extends RealSource
 	 * the left/right stereo channels are inverted.
 	 */
     public RealMixerSource( TargetDataLine targetDataLine, 
-    						   AudioFormat format,
-    						   String name,
-    						   ISampleAdapter sampleAdapter )
+    						AudioFormat format,
+    						ISampleAdapter sampleAdapter )
     {
-    	super( name );
-    	
     	mTargetDataLine = targetDataLine;
         mAudioFormat = format;
         mSampleAdapter = sampleAdapter;
     }
     
-    public void setListener( Listener<RealBuffer> listener )
+    @Override
+	public void reset()
+	{
+	}
+
+	@Override
+	public void start( ScheduledExecutorService executor )
+	{
+	}
+
+	@Override
+	public void stop()
+	{
+	}
+
+	public void setListener( Listener<RealBuffer> listener )
     {
 		mSampleListeners.add( listener );
 		
@@ -92,7 +105,7 @@ public class RealMixerSource extends RealSource
 		{
 			Thread thread = new Thread( mBufferReader );
 			thread.setDaemon( true );
-			thread.setName( getName() + " Sample Reader" );
+			thread.setName( "Sample Reader" );
 			thread.start();
 		}
     }

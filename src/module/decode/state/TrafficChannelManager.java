@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledExecutorService;
 
 import module.Module;
 import module.decode.config.DecodeConfiguration;
@@ -15,18 +16,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import record.config.RecordConfiguration;
-import sample.Broadcaster;
 import sample.Listener;
 import source.config.SourceConfigTuner;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannel.Type;
 import alias.Alias;
-import alias.priority.Priority;
-import controller.ResourceManager;
+import alias.id.priority.Priority;
 import controller.channel.Channel;
 import controller.channel.Channel.ChannelType;
-import controller.site.Site;
-import controller.system.System;
+import controller.channel.ChannelEvent;
+import controller.channel.ChannelEvent.Event;
+import controller.channel.ChannelModel;
+import controller.channel.ChannelProcessingManager;
+import controller.channel.TrafficChannelEvent;
 
 public class TrafficChannelManager extends Module 
 			implements ICallEventProvider, IDecoderStateEventListener
@@ -41,15 +43,14 @@ public class TrafficChannelManager extends Module
 	private DecoderStateEventListener mEventListener = new DecoderStateEventListener();
 	private Listener<CallEvent> mCallEventListener;
 
+	private ChannelModel mChannelModel;
+	private ChannelProcessingManager mChannelProcessingManager;
 	private DecodeConfiguration mDecodeConfiguration;
 	private RecordConfiguration mRecordConfiguration;
-	private ResourceManager mResourceManager;
-	private System mSystem;
-	private Site mSite;
+	private String mSystem;
+	private String mSite;
 	private String mAliasListName;
-	private long mTrafficChannelTimeout;
 	private CallEvent mPreviousDoNotMonitorCallEvent;
-	private boolean mShuttingDown = false;
 
 	/**
 	 * Monitors call events and allocates traffic decoder channels in response
@@ -69,22 +70,23 @@ public class TrafficChannelManager extends Module
 	 * @param trafficChannelPoolSize - maximum number of allocated traffic channels
 	 * in the pool
 	 */
-	public TrafficChannelManager( ResourceManager resourceManager,
+	public TrafficChannelManager( ChannelModel channelModel,
+								  ChannelProcessingManager channelProcessingManager,
 								  DecodeConfiguration decodeConfiguration,
 								  RecordConfiguration recordConfiguration,
-								  System system,
-								  Site site,
+								  String system,
+								  String site,
 								  String aliasListName,
 								  long trafficChannelTimeout,
 								  int trafficChannelPoolSize ) 
 	{
-		mResourceManager = resourceManager;
+		mChannelModel = channelModel;
+		mChannelProcessingManager = channelProcessingManager;
 		mDecodeConfiguration = decodeConfiguration;
 		mRecordConfiguration = recordConfiguration;
 		mSystem = system;
 		mSite = site;
 		mAliasListName = aliasListName;
-		mTrafficChannelTimeout = trafficChannelTimeout;
 		mTrafficChannelPoolMaximumSize = trafficChannelPoolSize;
 	}
 	
@@ -93,14 +95,14 @@ public class TrafficChannelManager extends Module
 	{
 		for( Channel trafficChannel: mTrafficChannelPool )
 		{
-			trafficChannel.setEnabled( false );
-			trafficChannel.dispose();
+			mChannelModel.broadcast( new ChannelEvent( trafficChannel, Event.REQUEST_DISABLE ) );
 		}
-		
+
 		mTrafficChannelPool.clear();
 		
+		mTrafficChannelsInUse.clear();
+		
 		mCallEventListener = null;
-		mResourceManager = null;
 		mDecodeConfiguration = null;
 		mPreviousDoNotMonitorCallEvent = null;
 	}
@@ -124,7 +126,7 @@ public class TrafficChannelManager extends Module
 		{
 			for( Channel configuredChannel: mTrafficChannelPool )
 			{
-				if( !configuredChannel.isProcessing() )
+				if( !configuredChannel.getEnabled() )
 				{
 					channel = configuredChannel;
 					break;
@@ -139,39 +141,22 @@ public class TrafficChannelManager extends Module
 				
 				channel.setRecordConfiguration( mRecordConfiguration );
 				
-				channel.setResourceManager( mResourceManager );
-				
-				channel.setTrafficChannelTimeout( mTrafficChannelTimeout );
-				
 				channel.setAliasListName( mAliasListName );
+				
+				mChannelModel.addChannel( channel );
 				
 				mTrafficChannelPool.add( channel );
 			}
 
-			/* If we have a configured channel, start it and track it */
+			/* If we have a configured channel, update metadata */
 			if( channel != null )
 			{
 				channel.setSourceConfiguration( new SourceConfigTuner( tunerChannel ) );
-				
-				channel.setSystem( mSystem, false );
-				channel.setSite( mSite, false );
+				channel.setSystem( mSystem );
+				channel.setSite( mSite );
 				channel.setName( channelNumber );
 
-				channel.setEnabled( true );
-
-				/* Check the channel obtained a source and is currently processing */
-				if( channel.isProcessing() )
-				{
-					mTrafficChannelsInUse.put( channelNumber, channel );
-				}
-				else
-				{
-					channel.setEnabled( false );
-					
-					channel.setSystem( mSystem, false );
-					channel.setSite( mSite, false );
-					channel.setName( "Traffic" );
-				}
+				mChannelModel.broadcast( new ChannelEvent( channel, Event.NOTIFICATION_CONFIGURATION_CHANGE ) );
 			}
 		}
 
@@ -212,33 +197,26 @@ public class TrafficChannelManager extends Module
 			}
 			else if( frequency > 0 )
 			{
-				Channel channel = getChannel( callEvent.getChannel(), 
-					new TunerChannel( Type.TRAFFIC, frequency, 
-							mDecodeConfiguration.getDecoderType()
-									.getChannelBandwidth() ) );
+				Channel channel = getChannel( callEvent.getChannel(), new TunerChannel( Type.TRAFFIC, 
+					frequency, mDecodeConfiguration.getDecoderType().getChannelBandwidth() ) );
 
 				if( channel != null )
 				{
-					if( channel.isProcessing() )
+					TrafficChannelEvent trafficChannelEvent = 
+						new TrafficChannelEvent( this, channel, Event.REQUEST_ENABLE, callEvent );
+					
+					//Request to enable the channel
+					mChannelModel.broadcast( trafficChannelEvent );
+
+					if( channel.getEnabled() )
 					{
-						callEvent.setDetails( "TRAFFIC CHANNEL ALLOCATED" );
-						
-						ChannelState state = channel.getChannelState();
-						
-						/* Register as a listener to be notified when the call
-						 * is completed */
-						state.configureAsTrafficChannel( 
-							new TrafficChannelStatusListener( this, 
-								callEvent.getChannel() ), event );
-						
-						/* Set state to call so that audio squelch state is correct */
-						state.setState( State.CALL );
+						mTrafficChannelsInUse.put( callEvent.getChannel(), channel );
 					}
 					else
 					{
 						callEvent.setCallEventType( CallEventType.CALL_DETECT );
-						callEvent.setDetails( "CHANNEL PROCESSING ERROR" );
-					}
+						callEvent.setDetails( "CHANNEL START REJECTED" );
+					}				
 				}
 				else
 				{
@@ -325,7 +303,7 @@ public class TrafficChannelManager extends Module
 		Alias to = event.getToIDAlias();
 
 		if( to != null && 
-			to.hasPriority() && 
+			to.hasCallPriority() && 
 			to.getCallPriority() == Priority.DO_NOT_MONITOR )
 		{
 			return true;
@@ -334,7 +312,7 @@ public class TrafficChannelManager extends Module
 		Alias from = event.getFromIDAlias();
 
 		if( from != null && 
-			from.hasPriority() && 
+			from.hasCallPriority() && 
 			from.getCallPriority() == Priority.DO_NOT_MONITOR )
 		{
 			return true;
@@ -367,7 +345,7 @@ public class TrafficChannelManager extends Module
 	}
 	
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 	}
 
@@ -399,15 +377,13 @@ public class TrafficChannelManager extends Module
 	{
 		synchronized( mTrafficChannelsInUse )
 		{
-			if( channelNumber != null && 
-				mTrafficChannelsInUse.containsKey( channelNumber ) )
+			if( channelNumber != null && mTrafficChannelsInUse.containsKey( channelNumber ) )
 			{
 				Channel channel = mTrafficChannelsInUse.get( channelNumber );
-				
-				mTrafficChannelsInUse.remove( channelNumber );
 
-				/* Disable the channel and broadcast a notification */
-				channel.setEnabled( false, true );
+				mChannelModel.broadcast( new ChannelEvent( channel, Event.REQUEST_DISABLE ) );
+			
+				mTrafficChannelsInUse.remove( channelNumber );
 			}
 		}
 	}

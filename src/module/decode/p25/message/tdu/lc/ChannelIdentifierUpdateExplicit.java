@@ -3,15 +3,9 @@ package module.decode.p25.message.tdu.lc;
 import module.decode.p25.message.IBandIdentifier;
 import module.decode.p25.reference.LinkControlOpcode;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class ChannelIdentifierUpdateExplicit extends TDULinkControlMessage
 									 implements IBandIdentifier
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( ChannelIdentifierUpdateExplicit.class );
-
 	public static final int[] IDENTIFIER = { 72,73,74,75 };
 	public static final int[] BANDWIDTH = { 88,89,90,91 };
 	public static final int[] TRANSMIT_OFFSET = { 92,93,94,95,96,97,98,99,112,

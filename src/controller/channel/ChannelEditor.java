@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,147 +17,145 @@
  ******************************************************************************/
 package controller.channel;
 
+import gui.editor.Editor;
+import gui.editor.EditorValidationException;
 
 import java.awt.Color;
-import java.awt.ComponentOrientation;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.Collections;
-import java.util.List;
 
-import javax.swing.DefaultComboBoxModel;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JTextField;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreePath;
 
-import module.decode.AuxDecodeComponentEditor;
-import module.decode.DecodeComponentEditor;
-import module.log.EventLogComponentEditor;
+import module.decode.AuxDecodeConfigurationEditor;
+import module.decode.DecodeConfigurationEditor;
+import module.log.EventLogConfigurationEditor;
 import net.miginfocom.swing.MigLayout;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import playlist.PlaylistManager;
-import record.RecordComponentEditor;
-import source.SourceComponentEditor;
-import alias.AliasList;
+import record.RecordConfigurationEditor;
+import source.SourceConfigurationEditor;
+import source.SourceManager;
+import alias.AliasModel;
 
 import com.jidesoft.swing.JideTabbedPane;
 
-import controller.Editor;
+import controller.channel.ChannelEvent.Event;
+import controller.channel.map.ChannelMapModel;
 
-public class ChannelEditor extends Editor implements ActionListener
+public class ChannelEditor extends Editor<Channel> implements ActionListener, ChannelEventListener
 {
-	private final static Logger mLog = LoggerFactory.getLogger( ChannelEditor.class );
-
 	private static final long serialVersionUID = 1L;
-    private DefaultTreeModel mTreeModel;
-    private ChannelNode mChannelNode;
+
+	private NameConfigurationEditor mNameConfigurationEditor;
+    private SourceConfigurationEditor mSourceConfigurationEditor;
+    private DecodeConfigurationEditor mDecodeConfigurationEditor;
+    private AuxDecodeConfigurationEditor mAuxDecodeConfigurationEditor;
+    private EventLogConfigurationEditor mEventLogConfigurationEditor;
+    private RecordConfigurationEditor mRecordConfigurationEditor;
     
-    private DecodeComponentEditor mDecodeEditor;
-    private AuxDecodeComponentEditor mAuxDecodeEditor;
-    private EventLogComponentEditor mEventLogEditor;
-    private RecordComponentEditor mRecordEditor;
-    private SourceComponentEditor mSourceEditor;
+	private JButton mEnableButton = new JButton( "Enable" );
+	private JLabel mChannelName = new JLabel( "Channel:" );
     
-	private JTextField mChannelName;
-	private JCheckBox mChannelEnabled = new JCheckBox();
-    private JComboBox<AliasList> mComboAliasLists;
+	private ChannelModel mChannelModel;
+	private ChannelMapModel mChannelMapModel;
+    private SourceManager mSourceManager;
     
-    private PlaylistManager mPlaylistManager;
+    private boolean mChannelEnableRequested = false;
     
-	public ChannelEditor( ChannelNode channel, PlaylistManager playlistManager )
+	public ChannelEditor( ChannelModel channelModel,
+						  ChannelMapModel channelMapModel,
+						  SourceManager sourceManager,
+						  AliasModel aliasModel )
 	{
-		super();
+		mChannelModel = channelModel;
+		mChannelMapModel = channelMapModel;
+		mSourceManager = sourceManager;
+		mNameConfigurationEditor = new NameConfigurationEditor( aliasModel,	mChannelModel );
 		
-		mChannelNode = channel;
-		
-		mPlaylistManager = playlistManager;
-		
-		initGUI();
+		init();
 	}
-
-	private void initGUI()
+	
+	private void init()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right,grow][grow]", "[][][][][grow][]" ) );
+		setLayout( new MigLayout( "fill,wrap 3", "[grow,fill][grow,fill][grow,fill]", "[grow,fill][]" ) );
 		
-		add( new JLabel( "Channel Configuration" ), "span, align center" );
-
-		add( new JLabel( "Enabled:" ) );
-
-		mChannelEnabled.setSelected( 
-				mChannelNode.getChannel().getEnabled() );
-		mChannelEnabled.setComponentOrientation( ComponentOrientation.RIGHT_TO_LEFT );
-		add( mChannelEnabled );
-
-		add( new JLabel( "Name:" ) );
-
-		mChannelName = new JTextField( mChannelNode.getChannel().getName() );
-		add( mChannelName, "growx,push" );
-
-		/**
-		 * ComboBox: Alias Lists
-		 */
-		add( new JLabel( "Alias List:" ) );
-
-		mComboAliasLists = new JComboBox<AliasList>();
-
-		List<AliasList> lists = mChannelNode.getModel().getResourceManager()
-			.getPlaylistManager().getPlayist().getAliasDirectory().getAliasList();
-
-		Collections.sort( lists );
-		
-		mComboAliasLists.setModel( new DefaultComboBoxModel<AliasList>( 
-				lists.toArray( new AliasList[ lists.size() ] ) ) );
-
-		String aliasListName = 
-				mChannelNode.getChannel().getAliasListName();
-
-    	if( aliasListName != null )
-    	{
-    		AliasList selected = mChannelNode.getModel().getResourceManager()
-    			.getPlaylistManager().getPlayist().getAliasDirectory()
-    			.getAliasList( aliasListName );
-
-    		mComboAliasLists.setSelectedItem( selected );
-    	}
-		
-		add( mComboAliasLists, "growx,push" );
-
 		JideTabbedPane tabs = new JideTabbedPane();
 		tabs.setFont( this.getFont() );
     	tabs.setForeground( Color.BLACK );
 
-		mSourceEditor = new SourceComponentEditor( mChannelNode );
-		tabs.addTab( "Source", mSourceEditor );
+    	tabs.setTabTrailingComponent( mChannelName );
+    	
+		mNameConfigurationEditor.setSaveRequestListener( this );
+    	tabs.addTab( "Name/Alias", mNameConfigurationEditor );
+    	
+		mSourceConfigurationEditor = new SourceConfigurationEditor( mSourceManager );
+		mSourceConfigurationEditor.setSaveRequestListener( this );
+		tabs.addTab( "Source", mSourceConfigurationEditor );
 		
-		mDecodeEditor = new DecodeComponentEditor( mChannelNode, mPlaylistManager );
-		tabs.addTab( "Decoder", mDecodeEditor );
+		mDecodeConfigurationEditor = new DecodeConfigurationEditor( mChannelMapModel );
+		mDecodeConfigurationEditor.setSaveRequestListener( this );
+		tabs.addTab( "Decoder", mDecodeConfigurationEditor );
 
-		mAuxDecodeEditor = new AuxDecodeComponentEditor( mChannelNode );
-		tabs.addTab( "Aux", mAuxDecodeEditor );
+		mAuxDecodeConfigurationEditor = new AuxDecodeConfigurationEditor();
+		mAuxDecodeConfigurationEditor.setSaveRequestListener( this );
+		tabs.addTab( "Aux Decoders", mAuxDecodeConfigurationEditor );
 
-		mEventLogEditor = new EventLogComponentEditor( mChannelNode );
-		tabs.addTab( "Event Log", mEventLogEditor );
+		mEventLogConfigurationEditor = new EventLogConfigurationEditor();
+		mEventLogConfigurationEditor.setSaveRequestListener( this );
+		tabs.addTab( "Logging", mEventLogConfigurationEditor );
 		
-		mRecordEditor = new RecordComponentEditor( mChannelNode );
-		tabs.addTab( "Record", mRecordEditor );
+		mRecordConfigurationEditor = new RecordConfigurationEditor();
+		mRecordConfigurationEditor.setSaveRequestListener( this );
+		tabs.addTab( "Recording", mRecordConfigurationEditor );
 
-		add( tabs, "span,grow,push" );
-		
+		add( tabs, "span" );
+
+		mEnableButton.addActionListener( this );
+		mEnableButton.setEnabled( false );
+		mEnableButton.setToolTipText( "Start the currently selected channel running/decoding" );
+		add( mEnableButton );
+
 		JButton btnSave = new JButton( "Save" );
+		btnSave.setToolTipText( "Save changes to the currently selected channel" );
 		btnSave.addActionListener( ChannelEditor.this );
-		add( btnSave, "growx,push" );
+		add( btnSave );
 
 		JButton btnReset = new JButton( "Reset" );
+		btnReset.setToolTipText( "Reload the currently selected channel" );
 		btnReset.addActionListener( ChannelEditor.this );
-		add( btnReset, "growx,push" );
+		add( btnReset );
+	}
+
+	@Override
+	public void channelChanged( ChannelEvent event )
+	{
+		if( hasItem() && getItem() == event.getChannel() )
+		{
+			switch( event.getEvent() )
+			{
+				case NOTIFICATION_CONFIGURATION_CHANGE:
+				case NOTIFICATION_PROCESSING_START:
+				case NOTIFICATION_PROCESSING_STOP:
+					setItem( getItem() );
+					mChannelEnableRequested = false;
+					break;
+				case NOTIFICATION_DELETE:
+					setItem( null );
+					break;
+				case NOTIFICATION_ENABLE_REJECTED:
+					if( mChannelEnableRequested )
+					{
+						JOptionPane.showMessageDialog( ChannelEditor.this, "Channel could not be "
+							+ "enabled.  This is likely because there are no tuner channels "
+							+ "available", "Couldn't enable channel", JOptionPane.INFORMATION_MESSAGE );
+							
+						mChannelEnableRequested = false;
+					}
+					break;
+				default:
+					break;
+			}
+		}
 	}
 
 	@Override
@@ -165,115 +163,95 @@ public class ChannelEditor extends Editor implements ActionListener
     {
 		String command = e.getActionCommand();
 		
-		if( command.contentEquals( "Save" ) )
+		if( command.contentEquals( "Enable" ) )
+		{
+			if( hasItem() )
+			{
+				save();
+				
+				mChannelEnableRequested = true;
+				mChannelModel.broadcast( new ChannelEvent( getItem(), Event.REQUEST_ENABLE ) );
+			}
+		}
+		else if( command.contentEquals( "Disable" ) )
+		{
+			if( hasItem() )
+			{
+				mChannelModel.broadcast( new ChannelEvent( getItem(), Event.REQUEST_DISABLE ) );
+			}
+		}
+		else if( command.contentEquals( "Save" ) )
 		{
 			save();
 		}
 		else if( command.contentEquals( "Reset" ) )
 		{
-			reset();
+			setItem( getItem() );
 		}
-
-		if( mTreeModel != null )
-		{
-			mTreeModel.nodeChanged( mChannelNode );
-		}
-    }
-
-	@Override
-    public void save()
-    {
-		try
-		{
-			/**
-			 * Validate the source configuration against the other component
-			 * configuration editors
-			 */
-			validate( mSourceEditor.getSourceEditor() );
-
-			boolean expanded = mChannelNode.getModel().getTree()
-					.isExpanded( new TreePath( mChannelNode ) );
-
-			mSourceEditor.save();
-			mDecodeEditor.save();
-			mAuxDecodeEditor.save();
-			mEventLogEditor.save();
-			mRecordEditor.save();
-
-			mChannelNode.getChannel().setName( mChannelName.getText(), false );
-			mChannelNode.getChannel().setEnabled( mChannelEnabled.isSelected(), false );
-
-			AliasList selected = mComboAliasLists.getItemAt( 
-					mComboAliasLists.getSelectedIndex() );
-			if( selected != null )
-			{
-				mChannelNode.getChannel().setAliasListName( selected.getName(), false );
-			}
-
-			
-			mChannelNode.save();
-			mChannelNode.show();
-			
-			if( expanded )
-			{
-				mChannelNode.getModel().getTree().expandPath( new TreePath( mChannelNode ) );
-			}
-		}
-		catch ( ChannelValidationException validationException )
-		{
-			/* ChannelValidationException can be thrown by any of the component
-			 * editors.  Show the validation error text in a popup menu to the
-			 * user */
-			JOptionPane.showMessageDialog( ChannelEditor.this,
-			    validationException.getMessage(),
-			    "Channel Configuration Error",
-			    JOptionPane.ERROR_MESSAGE );			
-		}
-    }
-
-	@Override
-    public void reset()
-    {
-		mChannelName.setText( 
-				mChannelNode.getChannel().getName() );
-		mChannelName.requestFocus();
-		mChannelName.requestFocusInWindow();
-		
-		mChannelEnabled.setSelected( 
-				mChannelNode.getChannel().getEnabled() );
-		mChannelEnabled.requestFocus();
-		mChannelEnabled.requestFocusInWindow();
-
-		String aliasListName = 
-				mChannelNode.getChannel().getAliasListName();
-
-    	if( aliasListName != null )
-    	{
-    		AliasList selected = mChannelNode.getModel().getResourceManager()
-    			.getPlaylistManager().getPlayist().getAliasDirectory()
-    			.getAliasList( aliasListName );
-
-    		mComboAliasLists.setSelectedItem( selected );
-    	}
-
-
-		mSourceEditor.reset();
-		mDecodeEditor.reset();
-		mAuxDecodeEditor.reset();
-		mEventLogEditor.reset();
-		mRecordEditor.reset();
     }
 
 	/**
-	 * Validate the specified editor against each of the component editors
+	 * Sets the channel configuration in each of the channel editor components
+	 * Note: this method must be invoked on the swing event dispatch thread
 	 */
-	@Override
-	public void validate( Editor editor ) throws ChannelValidationException
+	public void setItem( final Channel channel )
 	{
-		mSourceEditor.validate( editor );
-		mDecodeEditor.validate( editor );
-		mAuxDecodeEditor.validate( editor );
-		mEventLogEditor.validate( editor );
-		mRecordEditor.validate( editor );
+		super.setItem( channel );
+		
+		mNameConfigurationEditor.setItem( channel );
+		mSourceConfigurationEditor.setItem( channel );
+		mDecodeConfigurationEditor.setItem( channel );
+		mAuxDecodeConfigurationEditor.setItem( channel );
+		mEventLogConfigurationEditor.setItem( channel );
+		mRecordConfigurationEditor.setItem( channel );
+		
+		if( channel != null )
+		{
+			mChannelName.setText( "Channel: " + channel.getName() );
+			mEnableButton.setText( channel.getEnabled() ? "Disable" : "Enable" );
+			mEnableButton.setEnabled( true );
+			mEnableButton.setBackground( channel.getEnabled() ? Color.GREEN : getBackground() );
+		}
+		else
+		{
+			mChannelName.setText( "Channel: " );
+			mEnableButton.setText( "Enable" );
+			mEnableButton.setEnabled( false );
+			mEnableButton.setBackground( getBackground() );
+		}
 	}
+	
+    public void save()
+    {
+    	if( hasItem() )
+    	{
+			mNameConfigurationEditor.save();
+   			mSourceConfigurationEditor.save();
+   			mDecodeConfigurationEditor.save();
+   			mAuxDecodeConfigurationEditor.save();
+   			mEventLogConfigurationEditor.save();
+   			mRecordConfigurationEditor.save();
+   			
+    		try
+    		{
+    			mDecodeConfigurationEditor.validate( mSourceConfigurationEditor );
+    			mDecodeConfigurationEditor.validate( mAuxDecodeConfigurationEditor );
+    		}
+    		catch( EditorValidationException e )
+    		{
+    			e.getEditor().requestFocus();
+    			
+    			JOptionPane.showMessageDialog( e.getEditor(), e.getReason(),
+    					"Configuration Error", JOptionPane.ERROR_MESSAGE );			
+    			
+    			return;
+    		}
+    		
+
+   			mChannelModel.broadcast( new ChannelEvent( getItem(), 
+   	   					Event.NOTIFICATION_CONFIGURATION_CHANGE ) );
+    	}
+
+    	setModified( false );
+    }
 }

@@ -24,6 +24,7 @@ import javax.xml.bind.annotation.XmlTransient;
 
 public class ColorSetting extends Setting
 {
+	@SuppressWarnings( "unused" )
 	private static final int NO_TRANSLUCENCY = 255;
 	private static final int SPECTRUM_TRANSLUCENCY = 128;
 	private static final int CONFIG_TRANSLUCENCY = 60;

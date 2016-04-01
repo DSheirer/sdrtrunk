@@ -21,7 +21,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 
-import javax.swing.JPanel;
 import javax.usb.UsbClaimException;
 import javax.usb.UsbException;
 
@@ -35,11 +34,10 @@ import org.usb4java.LibUsbException;
 
 import source.SourceException;
 import source.tuner.TunerClass;
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerController;
 import source.tuner.TunerType;
+import source.tuner.configuration.TunerConfiguration;
 import source.tuner.fcd.proV1.FCD1TunerController.Block;
-import controller.ResourceManager;
 
 public abstract class FCDTunerController extends TunerController
 {
@@ -70,6 +68,7 @@ public abstract class FCDTunerController extends TunerController
 	 */
 	public FCDTunerController( Device device, 
 							   DeviceDescriptor descriptor,
+							   int sampleRate,
 							   int minTunableFrequency,
 							   int maxTunableFrequency )
 	{
@@ -77,7 +76,7 @@ public abstract class FCDTunerController extends TunerController
 			   maxTunableFrequency, 
 			   DC_SPIKE_AVOID_BUFFER, 
 			   USABLE_BANDWIDTH_PERCENT );
-
+		mFrequencyController.setSampleRate( sampleRate );
 		mDevice = device;
 		mDeviceDescriptor = descriptor;
 	}
@@ -147,22 +146,9 @@ public abstract class FCDTunerController extends TunerController
 	public abstract TunerType getTunerType();
 
 	/**
-	 * Editor panel (GUI) component.
-	 */
-	public abstract JPanel getEditor( FCDTuner tuner, 
-								ResourceManager resourceManager );
-
-	/**
 	 * Applies the settings in the tuner configuration
 	 */
-	public abstract void apply( TunerConfiguration config ) 
-						throws SourceException;
-
-	/**
-	 * Returns the currently applied tuner configuration or null if one hasn't 
-	 * yet been applied
-	 */
-	public abstract TunerConfiguration getTunerConfiguration();
+	public abstract void apply( TunerConfiguration config ) throws SourceException;
 
 	/**
 	 * USB address (bus/port)

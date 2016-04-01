@@ -31,12 +31,14 @@ import javax.swing.JPanel;
 
 public abstract class TapViewPanel extends JPanel implements Observer
 {
-	protected SampleModel mModel;
+	private static final long serialVersionUID = 1L;
+	
+	protected SampleModel<?> mModel;
 	protected String mLabel;
 	
 	protected float mVerticalZoom = 1.0f;
 	
-	public TapViewPanel( SampleModel model, String label )
+	public TapViewPanel( SampleModel<?> model, String label )
 	{
 		mModel = model;
 		mModel.addObserver( this );
@@ -76,7 +78,7 @@ public abstract class TapViewPanel extends JPanel implements Observer
 		return menu;
 	}
 
-	public SampleModel getModel()
+	public SampleModel<?> getModel()
 	{
 		return mModel;
 	}
@@ -104,6 +106,8 @@ public abstract class TapViewPanel extends JPanel implements Observer
 	
 	public class VerticalZoomItem extends JCheckBoxMenuItem
 	{
+		private static final long serialVersionUID = 1L;
+		
 		private TapViewPanel mPanel;
 		private float mZoom;
 		

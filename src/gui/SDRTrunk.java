@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -43,7 +43,9 @@ import javax.swing.JOptionPane;
 import javax.swing.JSeparator;
 import javax.swing.KeyStroke;
 
+import map.IconManager;
 import map.MapService;
+import module.log.EventLogManager;
 import net.miginfocom.swing.MigLayout;
 
 import org.slf4j.Logger;
@@ -51,27 +53,37 @@ import org.slf4j.LoggerFactory;
 
 import playlist.PlaylistManager;
 import properties.SystemProperties;
+import record.RecorderManager;
+import sample.Listener;
 import settings.SettingsManager;
-import source.tuner.Tuner;
-import source.tuner.TunerSelectionListener;
+import source.SourceManager;
+import source.tuner.TunerEvent;
+import source.tuner.TunerModel;
+import source.tuner.TunerSpectralDisplayManager;
+import source.tuner.configuration.TunerConfigurationModel;
 import spectrum.SpectralDisplayPanel;
 import util.TimeStamp;
+import alias.AliasModel;
+import alias.action.AliasActionManager;
 import audio.AudioManager;
 
 import com.jidesoft.swing.JideSplitPane;
 
-import controller.ConfigurationControllerModel;
 import controller.ControllerPanel;
-import controller.ResourceManager;
+import controller.ThreadPoolManager;
 import controller.ThreadPoolManager.ThreadType;
 import controller.channel.ChannelEventListener;
-import controller.channel.ChannelManager;
+import controller.channel.ChannelModel;
+import controller.channel.ChannelProcessingManager;
+import controller.channel.ChannelSelectionManager;
+import controller.channel.map.ChannelMapModel;
 
-public class SDRTrunk
+public class SDRTrunk implements Listener<TunerEvent>
 {
 	private final static Logger mLog = LoggerFactory.getLogger( SDRTrunk.class );
 
 	private ControllerPanel mControllerPanel;
+	private SettingsManager mSettingsManager;
 	private SpectralDisplayPanel mSpectralPanel;
 	private JFrame mMainGui = new JFrame();
 	
@@ -103,43 +115,78 @@ public class SDRTrunk
 		
 		//Log current properties setting
 		SystemProperties.getInstance().logCurrentSettings();
-
-		/** 
-		 * Construct the resource manager now, so that it can use the system
-		 * properties that were just loaded 
-		 */
-		ResourceManager resource = new ResourceManager();
 		
-		//TODO: get rid of resource manager ... below is start of breaking out
-		//the encapsulated pieces from the resource manager
+		TunerConfigurationModel tunerConfigurationModel = new TunerConfigurationModel();
+		TunerModel tunerModel = new TunerModel( tunerConfigurationModel );
 		
-		AudioManager audio = resource.getAudioManager();
-		ChannelManager channel = resource.getChannelManager();
-		ConfigurationControllerModel controller = resource.getController();
-		MapService map = resource.getMapService();
-		PlaylistManager playlist = resource.getPlaylistManager();
-		SettingsManager settings = resource.getSettingsManager();
-
-		mControllerPanel = new ControllerPanel( audio, controller, channel,
-								map, playlist, settings );
-
-    	mSpectralPanel = new SpectralDisplayPanel( channel, controller, 
-    			playlist, settings );
-
-		mTitle = getTitle();
+		ThreadPoolManager threadPoolManager = new ThreadPoolManager();
 		
-		//Initialize the GUI
-        initGUI();
+		mSettingsManager = new SettingsManager( threadPoolManager, tunerConfigurationModel );
 
-    	mLog.info( "starting main application gui" );
-    	
+		AliasModel aliasModel = new AliasModel();
+
+		ChannelModel channelModel = new ChannelModel();
+		
+		ChannelMapModel channelMapModel = new ChannelMapModel();
+
+		EventLogManager eventLogManager = new EventLogManager();
+
+		RecorderManager recorderManager = new RecorderManager( threadPoolManager );
+		
+		SourceManager sourceManager = new SourceManager( tunerModel, 
+				mSettingsManager,  threadPoolManager );
+		
+		ChannelProcessingManager channelProcessingManager = new ChannelProcessingManager( 
+			channelModel, channelMapModel, aliasModel, eventLogManager, recorderManager, sourceManager );
+		channelProcessingManager.addAudioPacketListener( recorderManager );
+		
+		channelModel.addListener( channelProcessingManager );
+		
+		ChannelSelectionManager channelSelectionManager = 
+				new ChannelSelectionManager( channelModel );
+		channelModel.addListener( channelSelectionManager );
+		
+  		AliasActionManager aliasActionManager = new AliasActionManager( threadPoolManager );
+		channelProcessingManager.addMessageListener( aliasActionManager );
+		
+		AudioManager audioManager = new AudioManager( threadPoolManager, sourceManager.getMixerManager() );
+		channelProcessingManager.addAudioPacketListener( audioManager );
+
+		MapService mapService = new MapService( mSettingsManager );
+		channelProcessingManager.addMessageListener( mapService );
+
+		mControllerPanel = new ControllerPanel( audioManager, aliasModel, 
+			channelModel, channelMapModel, channelProcessingManager, 
+			mapService, mSettingsManager, sourceManager, tunerModel );
+
+    	mSpectralPanel = new SpectralDisplayPanel( channelModel, 
+    			channelProcessingManager,	mSettingsManager );
+
+    	TunerSpectralDisplayManager tunerSpectralDisplayManager = 
+    			new TunerSpectralDisplayManager( mSpectralPanel, 
+					channelModel, channelProcessingManager, mSettingsManager );
+    	tunerModel.addListener( tunerSpectralDisplayManager );
+    	tunerModel.addListener( this );
+		
+		PlaylistManager playlistManager = new PlaylistManager( threadPoolManager, 
+				aliasModel, channelModel, channelMapModel );
+
+		playlistManager.init();
+
     	if( mLogChannelAndMemoryUsage )
     	{
     		Runnable cml = new ChannelMemoryLogger();
-    		resource.getChannelManager().addListener( (ChannelEventListener)cml );
-    		resource.getThreadPoolManager().scheduleFixedRate( 
+    		channelModel.addListener( (ChannelEventListener)cml );
+    		threadPoolManager.scheduleFixedRate( 
     				ThreadType.DECODER, cml, 5, TimeUnit.SECONDS );
     	}
+
+		mLog.info( "starting main application gui" );
+		
+    	//Initialize the GUI
+        initGUI();
+        
+    	tunerModel.requestFirstTunerDisplay();
 
         //Start the gui
         EventQueue.invokeLater( new Runnable()
@@ -175,36 +222,17 @@ public class SDRTrunk
     									   "[grow,fill]", 
     									   "[grow,fill]") );
     	
-    	//init() the controller to load tuners and playlists
-    	mControllerPanel.getController().init();
-
     	/**
     	 * Setup main JFrame window
     	 */
+		mTitle = getTitle();
     	mMainGui.setTitle( mTitle );
     	mMainGui.setBounds( 100, 100, 1280, 800 );
     	mMainGui.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
-    	
-    	mControllerPanel.getController().addListener( new TunerSelectionListener() 
-    	{
-			@Override
-            public void tunerSelected( Tuner tuner )
-            {
-				if( tuner != null )
-				{
-					mMainGui.setTitle( mTitle + " - " + tuner.getName() );
-				}
-				else
-				{
-			    	mMainGui.setTitle( mTitle );
-				}
-            }
-    	} );
 
-    	//Fire first tuner selection so it is displayed in the spectrum/waterfall
-    	mControllerPanel.getController().fireFirstTunerSelected();
-
-    	mSpectralPanel.setPreferredSize( new Dimension( 1280, 400 ) );
+    	//Set preferred sizes to influence the split
+    	mSpectralPanel.setPreferredSize( new Dimension( 1280, 300 ) );
+    	mControllerPanel.setPreferredSize( new Dimension( 1280, 500 ) );
     	
     	JideSplitPane splitPane = new JideSplitPane( JideSplitPane.VERTICAL_SPLIT );
     	splitPane.setDividerSize( 5 );
@@ -252,7 +280,16 @@ public class SDRTrunk
 			@Override
             public void actionPerformed( ActionEvent arg0 )
             {
-				mControllerPanel.getController().showIconManager();
+				final IconManager iconManager = new IconManager( mSettingsManager, mMainGui );
+				
+				EventQueue.invokeLater( new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						iconManager.setVisible( true );
+					}
+				} );
             }
         } );
         fileMenu.add( settingsMenu );
@@ -421,7 +458,7 @@ public class SDRTrunk
 
     		if( version != null )
     		{
-    			sb.append( " v" );
+    			sb.append( " V" );
     			sb.append( version );
     		}
     	}
@@ -432,5 +469,13 @@ public class SDRTrunk
     	
     	return sb.toString();
     }
-    
+
+	@Override
+	public void receive( TunerEvent event )
+	{
+		if( event.getEvent() == TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY )
+		{
+			mMainGui.setTitle( mTitle + " - " + event.getTuner().getName() );
+		}
+	}
 }

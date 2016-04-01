@@ -34,7 +34,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.swing.JPanel;
 import javax.usb.UsbDisconnectedException;
 import javax.usb.UsbException;
 
@@ -56,7 +55,6 @@ import source.SourceException;
 import source.tuner.TunerController;
 import source.tuner.TunerType;
 import buffer.FloatAveragingBuffer;
-import controller.ResourceManager;
 import controller.ThreadPoolManager;
 import controller.ThreadPoolManager.ThreadType;
 
@@ -113,8 +111,6 @@ public abstract class RTL2832TunerController extends TunerController
 									
 	private SampleRateMonitor mSampleRateMonitor;
     private AtomicInteger mSampleCounter = new AtomicInteger();
-    private double mSampleRateAverageSum;
-    private int mSampleRateAverageCount;
     private static final DecimalFormat mDecimalFormatter = 
     			new DecimalFormat( "###,###,###.0" );
     private static final DecimalFormat mPercentFormatter = 
@@ -149,6 +145,7 @@ public abstract class RTL2832TunerController extends TunerController
 		mDevice = device;
 		mDeviceDescriptor = deviceDescriptor;
 	}
+
 	
 	public void init() throws SourceException
 	{
@@ -361,8 +358,6 @@ public abstract class RTL2832TunerController extends TunerController
 			return "SER#" + serial;
 		}
 	}
-	
-	public abstract JPanel getEditor( ResourceManager resourceManager );
 	
 	public abstract void setSampleRateFilters( int sampleRate ) 
 						throws SourceException;
@@ -977,7 +972,7 @@ public abstract class RTL2832TunerController extends TunerController
 		return mSampleRate.getRate();
 	}
 	
-    public int getSampleRate() throws SourceException
+    public int getSampleRateFromTuner() throws SourceException
 	{
         try
         {
@@ -1426,17 +1421,17 @@ public abstract class RTL2832TunerController extends TunerController
 				{
 					mLog.error( "NPE! = tpm null: " + ( mThreadPoolManager == null ), npe );
 				}
-
+				
 				mLibUsbHandlerStatus = ByteBuffer.allocateDirect( 4 );
 				
 				List<Transfer> transfers = new ArrayList<>();
-
+				
 				mCancel = false;
 				
-				while( mRunning.get() )
+            	while( mRunning.get() )
 				{
             		mAvailableTransfers.drainTo( transfers );
-
+            		
             		for( Transfer transfer: transfers )
             		{
             			int result = LibUsb.submitTransfer( transfer );
@@ -1453,7 +1448,7 @@ public abstract class RTL2832TunerController extends TunerController
             		}
             		
 					int result = LibUsb.handleEventsTimeoutCompleted( 
-							null, TIMEOUT_US, mLibUsbHandlerStatus.asIntBuffer() );
+						null, TIMEOUT_US, mLibUsbHandlerStatus.asIntBuffer() );
 					
 					if( result != LibUsb.SUCCESS )
 					{
@@ -1472,20 +1467,16 @@ public abstract class RTL2832TunerController extends TunerController
             			LibUsb.cancelTransfer( transfer );
             		}
             		
-					int result = LibUsb.handleEventsTimeoutCompleted( 
-							null, TIMEOUT_US, mLibUsbHandlerStatus.asIntBuffer() );
-					
-					if( result != LibUsb.SUCCESS )
-					{
-						mLog.error( "error handling events for libusb" );
-					}
-					
-					mLibUsbHandlerStatus.rewind();
+            		int result = LibUsb.handleEventsTimeoutCompleted( null, 
+            				TIMEOUT_US, mLibUsbHandlerStatus.asIntBuffer() );
+            		
+            		if( result != LibUsb.SUCCESS )
+            		{
+            			mLog.error( "error handling events for libusb during cancel" );
+            		}
+            		
+            		mLibUsbHandlerStatus.rewind();
             	}
-			}
-			else
-			{
-				mLog.error( "Couldn't start buffer processor - already running!" );
 			}
         }
 
@@ -1516,7 +1507,7 @@ public abstract class RTL2832TunerController extends TunerController
 		}
 		
 		@Override
-	    public void processTransfer( Transfer transfer )
+		public void processTransfer( Transfer transfer )
 	    {
 			mTransfersInProgress.remove( transfer );
 			
@@ -1636,6 +1627,79 @@ public abstract class RTL2832TunerController extends TunerController
 		}
 	}
 	
+
+	
+	public class USBEventHandlingThread implements Runnable
+	{
+	    /** If thread should abort. */
+	    private volatile boolean mAbort;
+
+	    /**
+	     * Aborts the event handling thread.
+	     */
+	    public void abort()
+	    {
+	    	mAbort = true;
+	    }
+
+	    @Override
+	    public void run()
+	    {
+	        while ( !mAbort )
+	        {
+	            int result = LibUsb.handleEventsTimeout( null, 1000 );
+	            
+	            if ( result != LibUsb.SUCCESS )
+	            {
+	                mAbort = true;
+
+	                mLog.error( "error handling usb events [" + 
+	            			LibUsb.errorName( result ) + "]" );
+	                
+	                throw new LibUsbException("Unable to handle USB "
+	                		+ "events", result );
+	            }
+	        }
+	    }
+	}
+
+	public enum TunerTypeCheck
+	{
+		E4K( 0xC8, 0x02, 0x40 ),
+		FC0012( 0xC6, 0x00, 0xA1 ),
+		FC0013( 0xC6, 0x00, 0xA3 ),
+		FC2580( 0xAC, 0x01, 0x56 ),
+		R820T( 0x34, 0x00, 0x69 ),
+		R828D( 0x74, 0x00, 0x69 );
+		
+		private int mI2CAddress;
+		private int mCheckAddress;
+		private int mCheckValue;
+		
+		private TunerTypeCheck( int i2c, int address, int value )
+		{
+			mI2CAddress = i2c;
+			mCheckAddress = address;
+			mCheckValue = value;
+		}
+
+		public byte getI2CAddress()
+		{
+			return (byte)mI2CAddress;
+		}
+		
+		public byte getCheckAddress()
+		{
+			return (byte)mCheckAddress;
+		}
+		
+		public byte getCheckValue()
+		{
+			return (byte)mCheckValue;
+		}
+	}
+	
+	
 	/**
 	 * Averages the sample rate over a 10-second period.  The count is for the
 	 * number of bytes received from the tuner.  There are two bytes for each
@@ -1730,7 +1794,6 @@ public abstract class RTL2832TunerController extends TunerController
 			}
         }
 	}
-
 	/**
 	 * RTL2832 EEPROM byte array descriptor parsing class
 	 */
@@ -1898,76 +1961,6 @@ public abstract class RTL2832TunerController extends TunerController
 			}
 			
 			return sb.toString();
-		}
-	}
-	
-	public class USBEventHandlingThread implements Runnable
-	{
-	    /** If thread should abort. */
-	    private volatile boolean mAbort;
-
-	    /**
-	     * Aborts the event handling thread.
-	     */
-	    public void abort()
-	    {
-	    	mAbort = true;
-	    }
-
-	    @Override
-	    public void run()
-	    {
-	        while ( !mAbort )
-	        {
-	            int result = LibUsb.handleEventsTimeout( null, 1000 );
-	            
-	            if ( result != LibUsb.SUCCESS )
-	            {
-	                mAbort = true;
-
-	                mLog.error( "error handling usb events [" + 
-	            			LibUsb.errorName( result ) + "]" );
-	                
-	                throw new LibUsbException("Unable to handle USB "
-	                		+ "events", result );
-	            }
-	        }
-	    }
-	}
-
-	public enum TunerTypeCheck
-	{
-		E4K( 0xC8, 0x02, 0x40 ),
-		FC0012( 0xC6, 0x00, 0xA1 ),
-		FC0013( 0xC6, 0x00, 0xA3 ),
-		FC2580( 0xAC, 0x01, 0x56 ),
-		R820T( 0x34, 0x00, 0x69 ),
-		R828D( 0x74, 0x00, 0x69 );
-		
-		private int mI2CAddress;
-		private int mCheckAddress;
-		private int mCheckValue;
-		
-		private TunerTypeCheck( int i2c, int address, int value )
-		{
-			mI2CAddress = i2c;
-			mCheckAddress = address;
-			mCheckValue = value;
-		}
-
-		public byte getI2CAddress()
-		{
-			return (byte)mI2CAddress;
-		}
-		
-		public byte getCheckAddress()
-		{
-			return (byte)mCheckAddress;
-		}
-		
-		public byte getCheckValue()
-		{
-			return (byte)mCheckValue;
 		}
 	}
 	

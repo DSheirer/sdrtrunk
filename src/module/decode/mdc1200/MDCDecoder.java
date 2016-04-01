@@ -26,11 +26,12 @@ import instrument.tap.stream.FloatTap;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 import module.decode.Decoder;
 import module.decode.DecoderType;
 import sample.Listener;
-import sample.real.IRealBufferListener;
+import sample.real.IFilteredRealBufferListener;
 import sample.real.RealBuffer;
 import alias.AliasList;
 import bits.MessageFramer;
@@ -46,7 +47,7 @@ import dsp.fsk.FSK2Decoder.Output;
  * MDC1200 Decoder - 1200 baud 2FSK decoder that can process 48k sample rate
  * complex or floating point samples and output fully framed MDC1200 messages
  */
-public class MDCDecoder extends Decoder implements IRealBufferListener, 
+public class MDCDecoder extends Decoder implements IFilteredRealBufferListener, 
 												   Instrumentable
 {
 	/* Decimated sample rate ( 48,000 / 2 = 24,000 ) feeding the decoder */
@@ -102,7 +103,7 @@ public class MDCDecoder extends Decoder implements IRealBufferListener,
         /* Message Processor */
         mMessageProcessor = new MDCMessageProcessor( aliasList );
         mMessageFramer.addMessageListener( mMessageProcessor );
-        mMessageProcessor.addMessageListener( mMessageBroadcaster );
+        mMessageProcessor.addMessageListener( this );
 	}
     
     public void dispose()
@@ -197,7 +198,7 @@ public class MDCDecoder extends Decoder implements IRealBufferListener,
 	}
 	
 	@Override
-	public Listener<RealBuffer> getRealBufferListener()
+	public Listener<RealBuffer> getFilteredRealBufferListener()
 	{
 		return mDecimationFilter;
 	}
@@ -210,7 +211,7 @@ public class MDCDecoder extends Decoder implements IRealBufferListener,
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 		// TODO Auto-generated method stub
 		

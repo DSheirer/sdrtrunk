@@ -31,21 +31,19 @@ import source.config.SourceConfigRecording;
 import source.config.SourceConfiguration;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannelSource;
-import controller.ResourceManager;
 
 public class RecordingSourceManager
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( RecordingSourceManager.class );
 
-	private ResourceManager mResourceManager;
-	
 	private ArrayList<Recording> mRecordings = new ArrayList<Recording>();
 
-    public RecordingSourceManager( ResourceManager resourceManager )
+	private SettingsManager mSettingsManager;
+
+    public RecordingSourceManager( SettingsManager settingsManager )
 	{
-    	mResourceManager = resourceManager;
-    	
+    	mSettingsManager = settingsManager;
     	loadRecordings();
 	}
 
@@ -114,7 +112,7 @@ public class RecordingSourceManager
     
     public Recording addRecording( RecordingConfiguration config )
     {
-    	Recording recording = new Recording( mResourceManager, config );
+    	Recording recording = new Recording( mSettingsManager, config );
 
     	mRecordings.add( recording );
     	
@@ -124,7 +122,7 @@ public class RecordingSourceManager
     public void removeRecording( Recording recording )
     {
     	/* Remove the config from the settings manager */
-    	mResourceManager.getSettingsManager().removeRecordingConfiguration( 
+    	mSettingsManager.removeRecordingConfiguration( 
     			recording.getRecordingConfiguration() );
     	
     	mRecordings.remove( recording );
@@ -132,24 +130,17 @@ public class RecordingSourceManager
 
     private void loadRecordings()
     {
-    	if( mResourceManager != null )
-    	{
-    		SettingsManager settingsManager = mResourceManager.getSettingsManager();
-    		
-    		if( settingsManager != null )
-    		{
-    			ArrayList<RecordingConfiguration> recordingConfigurations = 
-    					settingsManager.getRecordingConfigurations();
+		List<RecordingConfiguration> recordingConfigurations = 
+				mSettingsManager.getRecordingConfigurations();
 
-    			mLog.info( "discovered [" + recordingConfigurations.size() + "] recording configurations" );
-    			
-    			for( RecordingConfiguration config: recordingConfigurations )
-    			{
-    				Recording recording = new Recording( mResourceManager, config );
-    				
-    				mRecordings.add( recording );
-    			}
-    		}
-    	}
-    }
+		mLog.info( "RecordingSourceManager - discovered [" + 
+		recordingConfigurations.size() + "] recording configurations" );
+		
+		for( RecordingConfiguration config: recordingConfigurations )
+		{
+			Recording recording = new Recording( mSettingsManager, config );
+			
+			mRecordings.add( recording );
+		}
+	}
 }

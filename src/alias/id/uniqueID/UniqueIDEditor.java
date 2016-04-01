@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,101 +17,112 @@
  ******************************************************************************/
 package alias.id.uniqueID;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import gui.editor.DocumentListenerEditor;
 
-import javax.swing.JButton;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
+import alias.id.AliasID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import controller.ConfigurableNode;
-
-public class UniqueIDEditor extends JPanel implements ActionListener
+public class UniqueIDEditor extends DocumentListenerEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( UniqueIDEditor.class );
-    private UniqueIDNode mUniqueIDNode;
-    
-    private JLabel mLabelUniqueID;
-    private JTextField mTextUniqueID;
 
-	public UniqueIDEditor( UniqueIDNode uniqueIDNode )
+    private static final String HELP_TEXT = "<html>"
+    		+ "<h3>LTR-Net Unique ID (UID)</h3>"
+    		+ "<b>UID:</b> identifier assigned to each radio in<br>"
+    		+ "the range <u>1 - 2097152</u>"
+    		+ "</html>";
+
+    private JTextField mTextField;
+
+	public UniqueIDEditor( AliasID aliasID )
 	{
-		mUniqueIDNode = uniqueIDNode;
-		
 		initGUI();
+		
+		setItem( aliasID );
 	}
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][grow]" ) );
-
-		add( new JLabel( "LTR-Net Radio Unique ID" ), "span,align center" );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][]" ) );
 
 		add( new JLabel( "Unique ID:" ) );
-		
-		mTextUniqueID = new JTextField( 
-				String.valueOf( mUniqueIDNode.getUniqueID().getUid() ) );
-		add( mTextUniqueID, "growx,push" );
-		
-		JButton btnSave = new JButton( "Save" );
-		btnSave.addActionListener( UniqueIDEditor.this );
-		add( btnSave, "growx,push" );
+		mTextField = new JTextField();
+		mTextField.getDocument().addDocumentListener( this );
+		mTextField.setToolTipText( HELP_TEXT );
+		add( mTextField, "growx,push" );
 
-		JButton btnReset = new JButton( "Reset" );
-		btnReset.addActionListener( UniqueIDEditor.this );
-		add( btnReset, "growx,push" );
+		JLabel help = new JLabel( "Help ..." );
+		help.setForeground( Color.BLUE.brighter() );
+		help.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		help.addMouseListener( new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked( MouseEvent e )
+			{
+				JOptionPane.showMessageDialog( UniqueIDEditor.this, 
+					HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE );
+			}
+		} );
+		add( help, "align left" );
+	}
+	
+	public UniqueID getUniqueID()
+	{
+		if( getItem() instanceof UniqueID )
+		{
+			return (UniqueID)getItem();
+		}
+		
+		return null;
 	}
 
 	@Override
-    public void actionPerformed( ActionEvent e )
-    {
-		String command = e.getActionCommand();
+	public void setItem( AliasID aliasID )
+	{
+		super.setItem( aliasID );
 		
-		if( command.contentEquals( "Save" ) )
+		UniqueID uid = getUniqueID();
+		
+		if( uid != null )
 		{
-			String uid = mTextUniqueID.getText();
+			mTextField.setText( String.valueOf( uid.getUid() ) );
+		}
+		
+		setModified( false );
+		
+		repaint();
+	}
+
+	@Override
+	public void save()
+	{
+		UniqueID uid = getUniqueID();
+		
+		if( uid != null )
+		{
+			int id = 0;
 			
-			if( uid != null )
+			try
 			{
-				try
-				{
-					int uidInt = Integer.parseInt( uid );
-					
-					mUniqueIDNode.getUniqueID().setUid( uidInt );
-
-					((ConfigurableNode)mUniqueIDNode.getParent()).sort();
-
-					mUniqueIDNode.save();
-					
-					mUniqueIDNode.show();
-				}
-				catch( Exception ex )
-				{
-					mLog.error( "UniqueIDEditor - exception trying to parse " +
-						"int from uid [" + uid + "]", ex );
-				}
+				id = Integer.parseInt( mTextField.getText() );
 			}
-			else
+			catch( Exception e )
 			{
-				JOptionPane.showMessageDialog( UniqueIDEditor.this, 
-						"Please enter a site number and unique ID" );
+				//Do nothing, we couldn't parse the value
 			}
-		}
-		else if( command.contentEquals( "Reset" ) )
-		{
-			mTextUniqueID.setText( 
-					String.valueOf( mUniqueIDNode.getUniqueID().getUid() ) );
+			
+			uid.setUid( id );
 		}
 		
-		mUniqueIDNode.refresh();
-    }
+		setModified( false );
+	}
 }

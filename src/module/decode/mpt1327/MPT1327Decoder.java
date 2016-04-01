@@ -26,6 +26,7 @@ import instrument.tap.stream.FloatTap;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 import module.decode.Decoder;
 import module.decode.DecoderType;
@@ -35,7 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import sample.Broadcaster;
 import sample.Listener;
-import sample.real.IRealBufferListener;
+import sample.real.IFilteredRealBufferListener;
 import sample.real.RealBuffer;
 import alias.AliasList;
 import bits.MessageFramer;
@@ -55,7 +56,7 @@ import dsp.fsk.FSK2Decoder.Output;
  * traffic messages.
  */
 public class MPT1327Decoder extends Decoder 
-					implements IRealBufferListener, Instrumentable
+					implements IFilteredRealBufferListener, Instrumentable
 {
 	private final static Logger mLog = LoggerFactory.getLogger( MPT1327Decoder.class );
 	
@@ -140,13 +141,13 @@ public class MPT1327Decoder extends Decoder
 
         /* Fully decoded and framed messages processor */
         mMessageProcessor = new MPT1327MessageProcessor( aliasList );
-        mMessageProcessor.setMessageListener( mMessageBroadcaster );
+        mMessageProcessor.setMessageListener( this );
         mControlMessageFramer.addMessageListener( mMessageProcessor );
         mTrafficMessageFramer.addMessageListener( mMessageProcessor );
 	}
     
 	@Override
-	public Listener<RealBuffer> getRealBufferListener()
+	public Listener<RealBuffer> getFilteredRealBufferListener()
 	{
 		return mDecimationFilter;
 	}
@@ -306,7 +307,7 @@ public class MPT1327Decoder extends Decoder
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 		// TODO Auto-generated method stub
 		

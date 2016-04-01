@@ -58,6 +58,5 @@ public class CallEventLogger extends EventLogger implements ICallEventListener,
 	@Override
 	public void reset()
 	{
-		super.start();
 	}
 }

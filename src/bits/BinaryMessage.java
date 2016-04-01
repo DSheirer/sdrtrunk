@@ -19,15 +19,10 @@ package bits;
 
 import java.util.BitSet;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import edac.CRC;
 
 public class BinaryMessage extends BitSet
 {
-	private final static Logger mLog = LoggerFactory.getLogger( BinaryMessage.class );
-
 	private static final long serialVersionUID = 1L;
 
     /**

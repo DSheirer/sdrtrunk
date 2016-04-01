@@ -7,8 +7,8 @@ import sample.real.RealBuffer;
 
 public abstract class RealSource extends Source implements Provider<RealBuffer>
 {
-	public RealSource( String name )
+	public RealSource()
 	{
-		super( name, SampleType.REAL );
+		super( SampleType.REAL );
 	}
 }

@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import alias.Alias;
+import alias.action.AliasActionType;
 import alias.action.RecurringAction;
 
 public class ScriptAction extends RecurringAction
@@ -21,6 +22,12 @@ public class ScriptAction extends RecurringAction
 	{
 	}
 	
+	@Override
+	public AliasActionType getType()
+	{
+		return AliasActionType.SCRIPT;
+	}
+
 	public String getScript()
 	{
 		return mScript;
@@ -73,6 +80,19 @@ public class ScriptAction extends RecurringAction
             	throw new RuntimeException( "Exit Code: " + exitCode + 
             			" Console:" + sb.toString() );
             }
+		}
+	}
+	
+	@Override
+	public String toString()
+	{
+		if( mScript == null )
+		{
+			return "Run Script";
+		}
+		else
+		{
+			return "Run Script: " + mScript;
 		}
 	}
 }

@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -20,13 +20,13 @@ package module.decode;
 import message.IMessageProvider;
 import message.Message;
 import module.Module;
-import sample.Broadcaster;
 import sample.Listener;
 
-public abstract class Decoder extends Module implements IMessageProvider
+public abstract class Decoder extends Module 
+							  implements IMessageProvider, Listener<Message>
 {
 	/* This has to be a broadcaster in order for references to persist */
-	protected Broadcaster<Message> mMessageBroadcaster = new Broadcaster<>();
+	protected Listener<Message> mMessageListener;
 
 	/**
 	 * Decoder - parent class for all decoders, demodulators and components.  
@@ -38,8 +38,7 @@ public abstract class Decoder extends Module implements IMessageProvider
 	@Override
 	public void dispose()
 	{
-		mMessageBroadcaster.dispose();
-		mMessageBroadcaster = null;
+		mMessageListener = null;
 	}
 
 	/**
@@ -52,9 +51,9 @@ public abstract class Decoder extends Module implements IMessageProvider
      * Adds a listener for receiving decoded messages from this decoder
      */
     @Override
-    public void addMessageListener( Listener<Message> listener )
+    public void setMessageListener( Listener<Message> listener )
     {
-		mMessageBroadcaster.addListener( listener );
+    	mMessageListener = listener;
 	}
 
     /**
@@ -62,8 +61,25 @@ public abstract class Decoder extends Module implements IMessageProvider
      * decoders
      */
     @Override
-    public void removeMessageListener( Listener<Message> listener )
+    public void removeMessageListener()
     {
-		mMessageBroadcaster.removeListener( listener );
+    	mMessageListener = null;
     }
+
+    /**
+     * Broadcasts the message to the registered message listener
+     */
+    public void broadcast( Message message )
+    {
+    	if( mMessageListener != null )
+    	{
+    		mMessageListener.receive( message );
+    	}
+    }
+
+	@Override
+	public void receive( Message message )
+	{
+		broadcast( message );
+	}
 }

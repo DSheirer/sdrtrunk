@@ -1,5 +1,7 @@
 package module.decode.p25.audio;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import jmbe.iface.AudioConversionLibrary;
 import jmbe.iface.AudioConverter;
 import message.IMessageListener;
@@ -21,7 +23,6 @@ import audio.squelch.ISquelchStateListener;
 import audio.squelch.SquelchState;
 import controller.channel.ChannelEvent;
 import controller.channel.IChannelEventListener;
-import dsp.filter.iir.DeemphasisFilter;
 import dsp.gain.NonClippingGain;
 
 public class P25AudioModule extends Module implements Listener<Message>, 
@@ -78,7 +79,7 @@ public class P25AudioModule extends Module implements Listener<Message>,
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 		
 	}
@@ -232,10 +233,10 @@ public class P25AudioModule extends Module implements Listener<Message>,
 		{
 			switch( event.getEvent() )
 			{
-				case CHANNEL_STATE_RESET:
+				case NOTIFICATION_STATE_RESET:
 					mAudioMetadata.reset();
 					break;
-				case CHANGE_SELECTED:
+				case NOTIFICATION_SELECTION_CHANGE:
 					mAudioMetadata.setSelected( event.getChannel().isSelected() );
 					break;
 				default:

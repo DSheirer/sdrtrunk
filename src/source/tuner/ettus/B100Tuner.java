@@ -19,36 +19,22 @@ package source.tuner.ettus;
 
 import java.util.concurrent.RejectedExecutionException;
 
-import javax.swing.JPanel;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import source.SourceException;
 import source.tuner.Tuner;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannelSource;
 import source.tuner.TunerClass;
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
 import source.tuner.usb.USBTunerDevice;
-import controller.ResourceManager;
-import controller.ThreadPoolManager;
 
 public class B100Tuner extends Tuner
 {
-	private final static Logger mLog = LoggerFactory.getLogger( B100Tuner.class );
-
-	private USBTunerDevice mDevice;
-	
 	public B100Tuner( USBTunerDevice device )
 	{
 		//TODO: this should extend a USBTuner class, so that we can push the
 		//complex sample listener and the frequency change listener up to that class
 		
-		super( "Ettus B100 with WBX Tuner" );
-		
-		mDevice = device;
+		super( "Ettus B100 with WBX Tuner", null );
 	}
 	
 	public void dispose()
@@ -69,34 +55,10 @@ public class B100Tuner extends Tuner
     }
 
 	@Override
-    public JPanel getEditor( ResourceManager resourceManager )
-    {
-	    return new B100TunerEditorPanel( this, resourceManager );
-    }
-
-	@Override
-    public void apply( TunerConfiguration config ) throws SourceException
-    {
-		mLog.error( "B100 Tuner - can't apply tuner configuration" );
-    }
-
-	@Override
-    public int getSampleRate()
-    {
-	    return 0;
-    }
-
-	@Override
 	public double getSampleSize()
 	{
 		return 16.0;
 	}
-
-	@Override
-    public long getFrequency() throws SourceException
-    {
-	    return 0;
-    }
 
 	@Override
     public TunerChannelSource getChannel( TunerChannel channel ) 
@@ -105,7 +67,7 @@ public class B100Tuner extends Tuner
 		//TODO: pass this call to the tuner controller
 	    return null;
     }
-
+	
 	@Override
     public void releaseChannel( TunerChannelSource source )
     {

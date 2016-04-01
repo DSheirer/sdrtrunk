@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -33,63 +33,75 @@ import module.decode.event.CallEventPanel;
 import module.decode.event.MessageActivityPanel;
 import module.decode.state.ChannelList;
 import net.miginfocom.swing.MigLayout;
-import playlist.PlaylistManager;
 import settings.SettingsManager;
+import source.SourceManager;
+import source.tuner.TunerModel;
+import source.tuner.TunerViewPanel;
 import spectrum.ChannelSpectrumPanel;
+import alias.AliasController;
+import alias.AliasModel;
 import audio.AudioManager;
 import audio.AudioPanel;
 
 import com.jidesoft.swing.JideSplitPane;
 import com.jidesoft.swing.JideTabbedPane;
 
-import controller.channel.ChannelManager;
+import controller.channel.ChannelController;
+import controller.channel.ChannelModel;
+import controller.channel.ChannelProcessingManager;
+import controller.channel.map.ChannelMapModel;
 
 public class ControllerPanel extends JPanel
 {
     private static final long serialVersionUID = 1L;
 
-    private ChannelList mChannelStateList;
-
-    private CallEventPanel mCallEventPanel;
-    
-    private MessageActivityPanel mMessageActivityPanel = 
-    		new MessageActivityPanel();
-    
-    private ChannelSpectrumPanel mChannelSpectrumPanel;
-    
-    private JideTabbedPane mTabbedPane;
-
-    protected ConfigurationTreePanel mSystemControlViewPanel;
-	protected ConfigurationEditor mConfigurationEditor;
-    protected JideSplitPane mSystemControlSplitPane;
-
-	protected JTable mChannelActivityTable = new JTable();
+    private AliasController mAliasController;
 	private AudioPanel mAudioPanel;
+    private CallEventPanel mCallEventPanel;
+	private ChannelController mChannelController;
+    private ChannelList mChannelStateList;
+	private ChannelModel mChannelModel;
+    private ChannelSpectrumPanel mChannelSpectrumPanel;
 	private MapPanel mMapPanel;
+    private MessageActivityPanel mMessageActivityPanel;
+    private TunerViewPanel mTunerManagerPanel;
 
-	private ChannelManager mChannelManager;
-	private ConfigurationControllerModel mController;
-	protected SettingsManager mSettingsManager;
+    private JideTabbedPane mTabbedPane;
+	protected JTable mChannelActivityTable = new JTable();
 
 	public ControllerPanel( AudioManager audioManager,
-							ConfigurationControllerModel controller,
-							ChannelManager channelManager,
+							AliasModel aliasModel,
+							ChannelModel channelModel,
+							ChannelMapModel channelMapModel,
+							ChannelProcessingManager channelProcessingManager,
 							MapService mapService,
-							PlaylistManager playlistManager,
-							SettingsManager settingsManager )
+							SettingsManager settingsManager,
+							SourceManager sourceManager,
+							TunerModel tunerModel )
 	{
-		mChannelManager = channelManager;
-		mController = controller;
-	    mSettingsManager = settingsManager;
+		mChannelModel = channelModel;
 
-    	mAudioPanel = new AudioPanel( mSettingsManager, audioManager );
+    	mAudioPanel = new AudioPanel( settingsManager, sourceManager, audioManager );
 
-    	mMapPanel = new MapPanel( mapService, mSettingsManager, mChannelManager );
+    	mMapPanel = new MapPanel( mapService, settingsManager );
 	    
-	    mCallEventPanel = new CallEventPanel( mSettingsManager );	
+    	mMessageActivityPanel = new MessageActivityPanel( channelProcessingManager );
+
+    	mCallEventPanel = new CallEventPanel( settingsManager, channelProcessingManager );	
 	    
-    	mChannelStateList = new ChannelList( playlistManager, mSettingsManager );
-	    
+    	mChannelSpectrumPanel = new ChannelSpectrumPanel( settingsManager, 
+    			channelProcessingManager );
+
+    	mChannelStateList = new ChannelList( channelModel, channelProcessingManager, 
+    			settingsManager, mAudioPanel );
+
+    	mChannelController = new ChannelController( channelModel, channelMapModel, 
+    			sourceManager, aliasModel );
+    	
+    	mAliasController = new AliasController( aliasModel, settingsManager );
+    	
+    	mTunerManagerPanel = new TunerViewPanel( tunerModel );
+
 		init();
 	}
 	
@@ -99,27 +111,17 @@ public class ControllerPanel extends JPanel
     							  "[grow,fill]", 
     							  "[grow,fill]") );
     	
-    	//System Configuration View and Editor
-    	mConfigurationEditor = new ConfigurationEditor();
-
-    	mSystemControlViewPanel = new ConfigurationTreePanel( mController );
-    	mSystemControlViewPanel.addTreeSelectionListener( mConfigurationEditor );
-
-    	mSystemControlSplitPane = new JideSplitPane( JideSplitPane.HORIZONTAL_SPLIT );
-    	mSystemControlSplitPane.setDividerSize( 5 );
-    	mSystemControlSplitPane.add( mSystemControlViewPanel );
-    	mSystemControlSplitPane.add( mConfigurationEditor );
-    	
-    	mChannelSpectrumPanel = new ChannelSpectrumPanel( mSettingsManager );
-    	
     	//Tabbed View - configuration, calls, messages, map
     	mTabbedPane = new JideTabbedPane();
     	mTabbedPane.setFont( this.getFont() );
     	mTabbedPane.setForeground( Color.BLACK );
-    	mTabbedPane.addTab( "Configuration", mSystemControlSplitPane  );
+    	mTabbedPane.addTab( "Tuners", mTunerManagerPanel );
+    	mTabbedPane.addTab( "Channels", mChannelController );
+    	mTabbedPane.addTab( "Aliases", mAliasController );
     	mTabbedPane.addTab( "Channel Spectrum", mChannelSpectrumPanel );
     	mTabbedPane.addTab( "Events", mCallEventPanel );
     	mTabbedPane.addTab( "Messages", mMessageActivityPanel );
+    	mTabbedPane.addTab( "Map", mMapPanel );
 
     	/**
     	 * Change listener to enable/disable the channel spectrum display
@@ -145,38 +147,31 @@ public class ControllerPanel extends JPanel
 			}
 		} );
     	
-    	/**
-    	 * Add mapping services and map panel to a new tab
-    	 */
-    	mTabbedPane.addTab( "Map", mMapPanel );
-    	
     	/* Register each of the components to receive channel events when the
     	 * channels are selected or change */
-    	mChannelManager.addListener( mCallEventPanel );
-    	mChannelManager.addListener( mChannelStateList );
-    	mChannelManager.addListener( mChannelSpectrumPanel );
-    	mChannelManager.addListener( mMessageActivityPanel );
+    	mChannelModel.addListener( mCallEventPanel );
+    	mChannelModel.addListener( mChannelStateList );
+    	mChannelModel.addListener( mChannelSpectrumPanel );
+    	mChannelModel.addListener( mMessageActivityPanel );
 		
 		JScrollPane channelStateListScroll = new JScrollPane();
     	channelStateListScroll.getViewport().setView( mChannelStateList );
-    	channelStateListScroll.setPreferredSize( new Dimension( 200, 300 ) ); 
+    	channelStateListScroll.setPreferredSize( new Dimension( 400, 500 ) ); 
 
+//    	JideSplitPane audioChannelListSplit = new JideSplitPane( JideSplitPane.VERTICAL_SPLIT );
+//    	audioChannelListSplit.setDividerSize( 5 );
+//    	audioChannelListSplit.add( mAudioPanel );
+//    	audioChannelListSplit.add( channelStateListScroll );
 
-    	JideSplitPane audioChannelListSplit = new JideSplitPane( JideSplitPane.VERTICAL_SPLIT );
-    	audioChannelListSplit.setDividerSize( 5 );
-    	audioChannelListSplit.add( mAudioPanel );
-    	audioChannelListSplit.add( channelStateListScroll );
+    	//Set preferred size to influence the split between these panels
+//    	audioChannelListSplit.setPreferredSize( new Dimension( 400, 500 ) );
+    	mTabbedPane.setPreferredSize( new Dimension( 880, 500 ) );
     	
     	JideSplitPane channelSplit = new JideSplitPane( JideSplitPane.HORIZONTAL_SPLIT );
     	channelSplit.setDividerSize( 5 );
-    	channelSplit.add( audioChannelListSplit );
+    	channelSplit.add( channelStateListScroll );
     	channelSplit.add( mTabbedPane );
     	
     	add( channelSplit );
-	}
-
-	public ConfigurationControllerModel getController()
-	{
-		return mController;
 	}
 }

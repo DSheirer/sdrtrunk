@@ -7,15 +7,9 @@ import module.decode.p25.message.ldu.LDU1Message;
 import module.decode.p25.message.tsbk.osp.control.SystemService;
 import module.decode.p25.reference.LinkControlOpcode;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class AdjacentSiteStatusBroadcast extends LDU1Message
 					 implements IdentifierReceiver, IAdjacentSite
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( AdjacentSiteStatusBroadcast.class );
-
 	public static final int[] LRA = { 364,365,366,367,372,373,374,375 };
 	public static final int[] SYSTEM_ID = { 384,385,386,387,536,537,538,539,540,
 		541,546,547 };

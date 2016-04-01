@@ -20,7 +20,6 @@ package source.tuner.fcd.proV1;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import javax.swing.JPanel;
 import javax.usb.UsbClaimException;
 import javax.usb.UsbException;
 
@@ -30,13 +29,12 @@ import org.usb4java.Device;
 import org.usb4java.DeviceDescriptor;
 
 import source.SourceException;
+import source.tuner.MixerTunerType;
 import source.tuner.TunerClass;
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
+import source.tuner.configuration.TunerConfiguration;
 import source.tuner.fcd.FCDCommand;
-import source.tuner.fcd.FCDTuner;
 import source.tuner.fcd.FCDTunerController;
-import controller.ResourceManager;
 
 public class FCD1TunerController extends FCDTunerController
 {
@@ -55,12 +53,13 @@ public class FCD1TunerController extends FCDTunerController
 	private LNAEnhance mLNAEnhance;
 	private MixerGain mMixerGain;
 	private FCD1TunerConfiguration mTunerConfiguration;
-	private FCD1TunerEditorPanel mEditor;
+	private FCD1TunerEditor mEditor;
 
 	public FCD1TunerController( Device device, DeviceDescriptor descriptor ) 
 	{
 		super( device, 
-			   descriptor, 
+			   descriptor,
+			   (int)MixerTunerType.FUNCUBE_DONGLE_PRO.getAudioFormat().getSampleRate(),
 			   sMINIMUM_TUNABLE_FREQUENCY, 
 			   sMAXIMUM_TUNABLE_FREQUENCY );
 	}
@@ -146,17 +145,6 @@ public class FCD1TunerController extends FCDTunerController
 					e.getLocalizedMessage() );
 		}
 	}
-
-	@Override
-    public JPanel getEditor( FCDTuner tuner, ResourceManager resourceManager )
-    {
-		if( mEditor == null )
-		{
-			mEditor = new FCD1TunerEditorPanel( tuner, resourceManager );
-		}
-		
-		return mEditor;
-    }
 
 	/**
 	 * Gets the current LNA Gain value from the controller and stores it

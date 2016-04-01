@@ -24,10 +24,6 @@ import java.awt.Dimension;
 import javax.swing.JInternalFrame;
 
 import net.miginfocom.swing.MigLayout;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import sample.Listener;
 import sample.complex.Complex;
 import source.IFrameLocationListener;
@@ -36,11 +32,8 @@ public class ConstellationPanel extends JInternalFrame
 					  implements IFrameLocationListener, Listener<Complex>
 {
     private static final long serialVersionUID = 1L;
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( ConstellationPanel.class );
 	
-	private ConstellationViewer mConstellation = 
-							new ConstellationViewer( 48000, 4800 );
+	private ConstellationViewer mConstellation = new ConstellationViewer( 48000, 4800 );
 
 	public ConstellationPanel()
 	{

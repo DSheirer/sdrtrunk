@@ -17,7 +17,7 @@ public enum PDUType
 	PDU_TYPE_11( "PDU TYPE 11 UNKNOWN", 11 ),
 	
 	/* Inbound */
-	SN_ACTIVATE_TDS_CONTEXT_REQUEST( "SN-ACTIVATE TDS CONTEXT REQUEST", 0 ),
+	SNDCP_ACTIVATE_TDS_CONTEXT_REQUEST( "SNDCP-ACTIVATE TDS CONTEXT REQUEST", 0 ),
 
 	UNKNOWN( "UNKNOWN", -1 );
 	
@@ -48,7 +48,7 @@ public enum PDUType
 		}
 		else if( value == 0 && !outbound )
 		{
-			return SN_ACTIVATE_TDS_CONTEXT_REQUEST;
+			return SNDCP_ACTIVATE_TDS_CONTEXT_REQUEST;
 		}
 		
 		return UNKNOWN;

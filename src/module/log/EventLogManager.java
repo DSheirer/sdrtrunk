@@ -24,16 +24,10 @@ import java.util.List;
 import module.Module;
 import module.log.MessageEventLogger.Type;
 import module.log.config.EventLogConfiguration;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import properties.SystemProperties;
 
 public class EventLogManager
 {
-	private final static Logger mLog = LoggerFactory.getLogger( EventLogManager.class );
-
 	private Path mDirectory;
 	
 	public EventLogManager()

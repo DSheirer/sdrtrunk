@@ -93,6 +93,7 @@ public class AutomaticGainControl
 		Math.exp( -1.0 / ( SAMPLE_RATE * DECAY * .001 ) );
 
 	/* Hang timer release decay time constant in seconds */
+	@SuppressWarnings( "unused" )
 	private static final double RELEASE_TIME_CONSTANT = 0.05;
 
 	/* Specifies the AGC Knee in dB if AGC is active (nominal range -160 to 0 dB) */

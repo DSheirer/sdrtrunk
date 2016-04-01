@@ -19,7 +19,6 @@ package module.decode.state;
 
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Point;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.util.Map;
@@ -29,21 +28,19 @@ import javax.swing.JMenu;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JSeparator;
-import javax.swing.SwingUtilities;
 
 import net.miginfocom.swing.MigLayout;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import playlist.PlaylistManager;
 import settings.ColorSetting.ColorSettingName;
 import settings.ColorSettingMenuItem;
 import settings.ColorSettingResetMenuItem;
 import settings.SettingsManager;
+import audio.AudioPanel;
 import controller.channel.Channel;
 import controller.channel.ChannelEvent;
+import controller.channel.ChannelEvent.Event;
 import controller.channel.ChannelEventListener;
+import controller.channel.ChannelModel;
+import controller.channel.ChannelProcessingManager;
 
 /**
  * Gui wrapper for the list of currently processing primary channels 
@@ -52,29 +49,37 @@ public class ChannelList extends JPanel implements ChannelEventListener
 {
     private static final long serialVersionUID = 1L;
 
-	private final static Logger mLog = LoggerFactory.getLogger( ChannelList.class );
+    private Map<Channel,ChannelPanel> mDisplayedPanels = new ConcurrentHashMap<>();
 
-    private Map<Channel,ChannelCollectionPanel> mDisplayedPanels = 
-    			new ConcurrentHashMap<Channel,ChannelCollectionPanel>();
-
-    private PlaylistManager mPlaylistManager;
+    private ChannelModel mChannelModel;
+    private ChannelProcessingManager mChannelProcessingManager;
     private SettingsManager mSettingsManager;
+    private AudioPanel mAudioPanel;
     
-    public ChannelList( PlaylistManager playlistManager, 
-    					SettingsManager settingsManager )
+    public ChannelList( ChannelModel channelModel,
+    					ChannelProcessingManager channelProcessingManager,
+    					SettingsManager settingsManager,
+    					AudioPanel audioPanel )
     {
-    	mPlaylistManager = playlistManager;
+    	mChannelModel = channelModel;
+    	mChannelProcessingManager = channelProcessingManager;
     	mSettingsManager = settingsManager;
+    	mAudioPanel = audioPanel;
 
     	init();
     }
 
     private void init()
     {
-		setLayout( new MigLayout( "insets 0 0 0 0", "[grow,fill]", "[]0[]") );
+		setLayout( new MigLayout( "insets 0 0 0 0,wrap 1", "[grow,fill]", "[]0[]") );
 		setBackground( Color.BLACK );
 		
 		addMouseListener( new ListSelectionListener() );
+		
+		add( mAudioPanel );
+		
+		JSeparator separator = new JSeparator( JSeparator.HORIZONTAL );
+		add( separator );
     }
     
 	@Override
@@ -82,10 +87,10 @@ public class ChannelList extends JPanel implements ChannelEventListener
     {
 		switch( event.getEvent() )
 		{
-			case CHANNEL_PROCESSING_STARTED:
+			case NOTIFICATION_PROCESSING_START:
 				addChannelPanel( event.getChannel() );
 				break;
-			case CHANNEL_PROCESSING_STOPPED:
+			case NOTIFICATION_PROCESSING_STOP:
 				removeChannelPanel( event.getChannel() );
 				break;
 			default:
@@ -97,12 +102,12 @@ public class ChannelList extends JPanel implements ChannelEventListener
     {
     	if( !mDisplayedPanels.containsKey( channel ) )
     	{
-    		ChannelCollectionPanel panel = new ChannelCollectionPanel( 
-    				mPlaylistManager, mSettingsManager, channel );
+    		ChannelPanel channelPanel = new ChannelPanel( mChannelModel, 
+    			mChannelProcessingManager, mSettingsManager, channel );
     		
-			add( panel, "wrap" );
+			add( channelPanel );
 			
-			mDisplayedPanels.put( channel, panel );
+			mDisplayedPanels.put( channel, channelPanel );
 
 			revalidate();
 			repaint();
@@ -113,7 +118,7 @@ public class ChannelList extends JPanel implements ChannelEventListener
     {
 		if( mDisplayedPanels.containsKey( channel ) )
 		{
-			ChannelCollectionPanel panel = mDisplayedPanels.remove( channel );
+			ChannelPanel panel = mDisplayedPanels.remove( channel );
 			
 			if( panel != null )
 			{
@@ -127,18 +132,6 @@ public class ChannelList extends JPanel implements ChannelEventListener
 		}
     }
 	
-	public void setSelectedChannel( Channel channel )
-	{
-		synchronized( mDisplayedPanels )
-		{
-			/* Send channel selection to each channel panel */
-			for( ChannelCollectionPanel panel: mDisplayedPanels.values() )
-			{
-				panel.setSelectedChannel( channel );
-			}
-		}
-	}
-	
 	public class ListSelectionListener implements MouseListener
 	{
 		@Override
@@ -146,18 +139,22 @@ public class ChannelList extends JPanel implements ChannelEventListener
         {
 			Component component = getComponentAt( e.getPoint() );
 
-			if( component instanceof ChannelCollectionPanel )
+			if( component instanceof ChannelPanel )
 			{
-				ChannelCollectionPanel panel = (ChannelCollectionPanel)component;
+				ChannelPanel panel = (ChannelPanel)component;
 
-				Point translatedPoint = SwingUtilities
-						.convertPoint( e.getComponent(), e.getPoint(), panel );
-				
-				Channel channel = panel.getChannelAt( translatedPoint );
+				Channel channel = panel.getChannel();
 
 				if( e.getButton() == MouseEvent.BUTTON1 )
 				{
-					setSelectedChannel( channel );
+					if( channel.isSelected() )
+					{
+						mChannelModel.broadcast( new ChannelEvent( channel, Event.REQUEST_DESELECT ) );
+					}
+					else
+					{
+						mChannelModel.broadcast( new ChannelEvent( channel, Event.REQUEST_SELECT ) );
+					}
 				}
 				else if( e.getButton() == MouseEvent.BUTTON3 )
 				{
@@ -253,6 +250,20 @@ public class ChannelList extends JPanel implements ChannelEventListener
 							ColorSettingName.CHANNEL_STATE_GRADIENT_TOP_IDLE ) );
 					idleMenu.add( new ColorSettingResetMenuItem( mSettingsManager, 
 						ColorSettingName.CHANNEL_STATE_GRADIENT_TOP_IDLE ) );
+					
+					JMenu noTunerMenu = new JMenu( "No Tuner" );
+					channelsMenu.add( noTunerMenu );
+					
+					noTunerMenu.add( new ColorSettingMenuItem( mSettingsManager, 
+							ColorSettingName.CHANNEL_STATE_GRADIENT_MIDDLE_NO_TUNER ) );
+					noTunerMenu.add( new ColorSettingResetMenuItem( mSettingsManager, 
+						ColorSettingName.CHANNEL_STATE_GRADIENT_MIDDLE_NO_TUNER ) );
+					noTunerMenu.add( new JSeparator() );	
+					
+					noTunerMenu.add( new ColorSettingMenuItem( mSettingsManager, 
+							ColorSettingName.CHANNEL_STATE_GRADIENT_TOP_NO_TUNER ) );
+					noTunerMenu.add( new ColorSettingResetMenuItem( mSettingsManager, 
+						ColorSettingName.CHANNEL_STATE_GRADIENT_TOP_NO_TUNER ) );
 					
 					JMenu labelMenu = new JMenu( "Labels" );
 					colorMenu.add( labelMenu );

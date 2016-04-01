@@ -7,10 +7,6 @@ import module.decode.DecoderType;
 import module.decode.event.ActivitySummaryProvider;
 import module.decode.event.CallEvent;
 import module.decode.event.ICallEventProvider;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import sample.Broadcaster;
 import sample.Listener;
 import alias.AliasList;
@@ -33,8 +29,6 @@ public abstract class DecoderState extends Module
 					   IMessageListener,
 					   IMetadataProvider
 {
-	private final static Logger mLog = LoggerFactory.getLogger( DecoderState.class );
-
 	/* This has to be a broadcaster in order for references to persist */
 	private Broadcaster<CallEvent> mCallEventBroadcaster = new Broadcaster<>();
 	private Listener<ChangedAttribute> mChangedAttributeListener;

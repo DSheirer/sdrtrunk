@@ -17,7 +17,6 @@
  ******************************************************************************/
 package settings;
 
-import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -35,7 +34,6 @@ public class ColorSettingResetMenuItem extends JMenuItem
 
     private ColorSettingName mColorSettingName;
     private SettingsManager mSettingsManager;
-    private Color mCurrentColor;
 	
 	public ColorSettingResetMenuItem( SettingsManager settingsManager,
 								 ColorSettingName colorSettingName )

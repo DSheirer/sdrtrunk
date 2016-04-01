@@ -9,23 +9,20 @@ import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JSeparator;
 
+import module.ProcessingChain;
 import module.decode.event.ActivitySummaryFrame;
 import module.decode.state.DecoderState;
-import playlist.PlaylistManager;
 import controller.channel.ChannelEvent.Event;
 
 public class ChannelUtils
 {
-	private static final boolean ENABLED = true;
-	private static final boolean DISABLED = false;
-	private static final boolean BROADCAST_CHANGE = true;
-
 	/**
 	 * Creates a context menu for the channel argument
 	 */
-	public static JMenu getContextMenu( final PlaylistManager playlistManager, 
-										final Channel channel,
-										final Component anchor )
+	public static JMenu getContextMenu( final ChannelModel channelModel,
+			final ChannelProcessingManager channelProcessingManager,
+			final Channel channel,
+			final Component anchor )
 	{
 		if( channel != null )
 		{
@@ -39,12 +36,8 @@ public class ChannelUtils
 					@Override
 	                public void actionPerformed( ActionEvent e )
 	                {
-						channel.setEnabled( DISABLED, BROADCAST_CHANGE );
-						
-						if( playlistManager != null )
-						{
-							playlistManager.save();					
-						}
+						channelModel.broadcast( 
+								new ChannelEvent( channel, Event.REQUEST_DISABLE ) );
 	                }
 				} );
 				
@@ -62,10 +55,14 @@ public class ChannelUtils
 		            {
 						StringBuilder sb = new StringBuilder();
 						
-						for( DecoderState decoderState: channel
-								.getProcessingChain().getDecoderStates() )
+						ProcessingChain chain = channelProcessingManager.getProcessingChain( channel );
+						
+						if( chain != null )
 						{
-							sb.append( decoderState.getActivitySummary() );
+							for( DecoderState decoderState: chain.getDecoderStates() )
+							{
+								sb.append( decoderState.getActivitySummary() );
+							}
 						}
 						
 						new ActivitySummaryFrame( sb.toString(), anchor );
@@ -82,12 +79,8 @@ public class ChannelUtils
 					@Override
 	                public void actionPerformed( ActionEvent e )
 	                {
-						channel.setEnabled( ENABLED, BROADCAST_CHANGE );
-						
-						if( playlistManager != null )
-						{
-							playlistManager.save();
-						}
+						channelModel.broadcast( 
+							new ChannelEvent( channel, Event.REQUEST_ENABLE ) );
 	    			}	
 				} );
 				
@@ -108,16 +101,8 @@ public class ChannelUtils
 					
 					if( response == JOptionPane.YES_OPTION )
 					{
-						/* Disable the channel */
-						channel.setEnabled( DISABLED, BROADCAST_CHANGE );	
-
-		                /* Broadcast channel deleted event */
-						channel.fireChannelEvent( Event.CHANNEL_DELETED );					
-		                
-						if( playlistManager != null )
-						{
-							playlistManager.save();           
-						}
+						channelModel.broadcast( 
+							new ChannelEvent( channel, Event.REQUEST_DELETE ) );
 					}
 				}
 			} );

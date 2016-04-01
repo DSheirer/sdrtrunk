@@ -23,24 +23,20 @@ public class SourceConfigFactory
 {
 	public static SourceConfiguration getDefaultSourceConfiguration()
 	{
-		return getSourceConfiguration( SourceType.NONE );
+		return getSourceConfiguration( SourceType.TUNER );
 	}
 	
-	public static SourceConfiguration 
-		getSourceConfiguration( SourceType source )
+	public static SourceConfiguration getSourceConfiguration( SourceType source )
 	{
 		SourceConfiguration retVal;
 
 		switch( source )
 		{
-			case MIXER:
-				retVal = new SourceConfigMixer();
-				break;
 			case TUNER:
 				retVal = new SourceConfigTuner();
 				break;
-			case RECORDING:
-				retVal = new SourceConfigRecording();
+			case MIXER:
+				retVal = new SourceConfigMixer();
 				break;
 			case NONE:
 			default:
@@ -49,5 +45,40 @@ public class SourceConfigFactory
 		}
 		
 		return retVal;
+	}
+
+	/**
+	 * Creates a copy of the configuration
+	 */
+	public static SourceConfiguration copy( SourceConfiguration config )
+	{
+		if( config != null )
+		{
+			switch( config.getSourceType() )
+			{
+				case MIXER:
+					SourceConfigMixer originalMixer = (SourceConfigMixer)config;
+					SourceConfigMixer copyMixer = new SourceConfigMixer();
+					copyMixer.setChannel( originalMixer.getChannel() );
+					copyMixer.setMixer( originalMixer.getMixer() );
+					return copyMixer;
+				case RECORDING:
+					SourceConfigRecording originalRec = (SourceConfigRecording)config;
+					SourceConfigRecording copyRec = new SourceConfigRecording();
+					copyRec.setFrequency( originalRec.getFrequency() );
+					copyRec.setRecordingAlias( originalRec.getRecordingAlias() );
+					return copyRec;
+				case TUNER:
+					SourceConfigTuner originalTuner = (SourceConfigTuner)config;
+					SourceConfigTuner copyTuner = new SourceConfigTuner();
+					copyTuner.setFrequency( originalTuner.getFrequency() );
+					return copyTuner;
+				case NONE:
+				default:
+					return new SourceConfigNone();
+			}
+		}
+		
+		return null;
 	}
 }

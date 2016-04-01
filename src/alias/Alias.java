@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -22,21 +22,36 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlSeeAlso;
+import javax.xml.bind.annotation.XmlTransient;
 
 import alias.action.AliasAction;
-import alias.priority.Priority;
-import audio.inverted.AudioType;
+import alias.id.AliasID;
+import alias.id.AliasIDType;
+import alias.id.nonrecordable.NonRecordable;
+import alias.id.priority.Priority;
 
+@XmlSeeAlso( { AliasID.class, AliasAction.class } )
+@XmlRootElement( name = "alias" )
 public class Alias
 {
+	private String mList;
+	private String mGroup;
 	private String mName;
 	private int mColor;
 	private String mIconName;
-	private ArrayList<AliasID> mAliasIDs = new ArrayList<AliasID>();
+	private List<AliasID> mAliasIDs = new ArrayList<AliasID>();
 	private List<AliasAction> mAliasActions = new ArrayList<AliasAction>();
 	
 	public Alias()
 	{
+	}
+	
+	public Alias( String name )
+	{
+		mName = name;
 	}
 	
 	public String toString()
@@ -44,7 +59,7 @@ public class Alias
 		return getName();
 	}
 
-	@XmlAttribute
+	@XmlAttribute( name="name" )
 	public String getName()
 	{
 		return mName;
@@ -53,6 +68,38 @@ public class Alias
 	public void setName( String name )
 	{
 		mName = name;
+	}
+
+	@XmlAttribute( name="list" )
+	public String getList()
+	{
+		return mList;
+	}
+	
+	public void setList( String list )
+	{
+		mList = list;
+	}
+	
+	public boolean hasList()
+	{
+		return mList != null;
+	}
+
+	@XmlAttribute( name="group" )
+	public String getGroup()
+	{
+		return mGroup;
+	}
+	
+	public void setGroup( String group )
+	{
+		mGroup = group;
+	}
+	
+	public boolean hasGroup()
+	{
+		return mGroup != null;
 	}
 
 	@XmlAttribute
@@ -82,7 +129,8 @@ public class Alias
 		mIconName = iconName;
 	}
 	
-	public ArrayList<AliasID> getId()
+	@XmlElement( name="id" )
+	public List<AliasID> getId()
 	{
 		return mAliasIDs;
 	}
@@ -102,6 +150,7 @@ public class Alias
 		mAliasIDs.remove( id );
 	}
 	
+	@XmlElement( name="action" )
 	public List<AliasAction> getAction()
 	{
 		return mAliasActions;
@@ -127,35 +176,10 @@ public class Alias
 		return !mAliasActions.isEmpty();
 	}
 	
-	public boolean hasAudioType()
-	{
-		for( AliasID id: mAliasIDs )
-		{
-			if( id.hasAudioType() )
-			{
-				return true;
-			}
-		}
-		
-		return false;
-	}
-	
-	public AudioType getAudioType()
-	{
-		for( AliasID id: mAliasIDs )
-		{
-			if( id.hasAudioType() )
-			{
-				return id.getAudioType();
-			}
-		}
-		
-		return AudioType.NORMAL;
-	}
-
 	/**
 	 * Returns the priority level of this alias, if defined, or the default priority
 	 */
+	@XmlTransient
 	public int getCallPriority()
 	{
 		for( AliasID id: mAliasIDs )
@@ -169,7 +193,7 @@ public class Alias
 		return Priority.DEFAULT_PRIORITY;
 	}
 	
-	public boolean hasPriority()
+	public boolean hasCallPriority()
 	{
 		for( AliasID id: mAliasIDs )
 		{
@@ -181,10 +205,35 @@ public class Alias
 
 		return false;
 	}
+
+	/**
+	 * Sets or updates the call priority
+	 */
+	public void setCallPriority( int priority )
+	{
+		if( priority == Priority.DO_NOT_MONITOR ||
+			( Priority.MIN_PRIORITY <= priority && priority <= Priority.MAX_PRIORITY ) )
+		{
+			for( AliasID id: mAliasIDs )
+			{
+				if( id.getType() == AliasIDType.Priority )
+				{
+					((Priority)id).setPriority( priority );
+					return;
+				}
+			}
+			
+			//If we don't find a priority id, create one
+			Priority p = new Priority();
+			p.setPriority( priority );
+			addAliasID( p );
+		}
+	}
 	
 	/**
 	 * Inspects the alias for a non-recordable alias id.  Default is true;
 	 */
+	@XmlTransient
 	public boolean isRecordable()
 	{
 		for( AliasID id: getId() )
@@ -196,5 +245,42 @@ public class Alias
 		}
 		
 		return true;
+	}
+
+	/**
+	 * Sets or removes the non-recordable alias ID for this alias.
+	 */
+	public void setRecordable( boolean recordable )
+	{
+		if( recordable )
+		{
+			AliasID toRemove = null;
+			
+			for( AliasID id: getId() )
+			{
+				if( id.getType() == AliasIDType.NonRecordable )
+				{
+					toRemove = id;
+					break;
+				}
+			}
+			
+			if( toRemove != null )
+			{
+				removeAliasID( toRemove );
+			}
+		}
+		else
+		{
+			for( AliasID id: getId() )
+			{
+				if( id.getType() == AliasIDType.NonRecordable )
+				{
+					return;
+				}
+			}
+			
+			addAliasID( new NonRecordable() );
+		}
 	}
 }

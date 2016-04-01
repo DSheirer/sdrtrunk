@@ -17,13 +17,11 @@
  ******************************************************************************/
 package module.decode.state;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import message.Message;
 import module.decode.DecoderType;
 import module.decode.state.DecoderStateEvent.Event;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import audio.metadata.Metadata;
 import audio.metadata.MetadataType;
 
@@ -33,9 +31,6 @@ import audio.metadata.MetadataType;
  */
 public class AlwaysUnsquelchedDecoderState extends DecoderState
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( AlwaysUnsquelchedDecoderState.class );
-	
 	private DecoderType mDecoderType;
 	private String mChannelName;
 	
@@ -90,7 +85,7 @@ public class AlwaysUnsquelchedDecoderState extends DecoderState
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 		broadcast( new Metadata( MetadataType.TO, mChannelName, false ) );
 		broadcast( new DecoderStateEvent( this, Event.ALWAYS_UNSQUELCH, State.IDLE ) );

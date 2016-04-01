@@ -16,21 +16,14 @@ import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import sample.Listener;
 import sample.complex.Complex;
 import buffer.CircularBuffer;
 
-public class ConstellationViewer extends JPanel 
-								 implements Listener<Complex>
+public class ConstellationViewer extends JPanel implements Listener<Complex>
 {
 	private static final long serialVersionUID = 1L;
 	
-	private final static Logger mLog = 
-						LoggerFactory.getLogger( ConstellationViewer.class );
-
 	private int mSampleRate;
 	private int mSymbolRate;
 	private float mSamplesPerSymbol;

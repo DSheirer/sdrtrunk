@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,82 +17,117 @@
  ******************************************************************************/
 package alias.id.mobileID;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import gui.editor.DocumentListenerEditor;
 
-import javax.swing.JButton;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
+import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.text.MaskFormatter;
 
 import net.miginfocom.swing.MigLayout;
-import controller.ConfigurableNode;
+import alias.id.AliasID;
 
-public class MINEditor extends JPanel implements ActionListener
+public class MINEditor extends DocumentListenerEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
-    private MINNode mMINNode;
-    
-    private JLabel mLabelName;
-    private JTextField mTextMIN;
 
-	public MINEditor( MINNode minNode )
+    private static final String HELP_TEXT = "<html>"
+    		+ "<h3>Passport Mobile ID (MIN)</h3>"
+    		+ "<b>MIN:</b> six character hex value (e.g. <u>AB12CD</u>)<br>"
+    		+ "<b>Wildcard:</b> use an asterisk (*) to wildcard individual<br>"
+    		+ "digits (e.g. <u>AB**CD</u> or <u>AB12**</u>)"
+    		+ "</html>";
+
+    private JTextField mTextField;
+
+	public MINEditor( AliasID aliasID )
 	{
-		mMINNode = minNode;
-		
 		initGUI();
+		
+		setItem( aliasID );
 	}
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][grow]" ) );
-
-		add( new JLabel( "Mobile ID Number (MIN)" ), "span,align center" );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][]" ) );
 
 		add( new JLabel( "MIN:" ) );
-		
-		mTextMIN = new JTextField( mMINNode.getMIN().getMin() );
-		add( mTextMIN, "growx,push" );
-		
-		JButton btnSave = new JButton( "Save" );
-		btnSave.addActionListener( MINEditor.this );
-		add( btnSave, "growx,push" );
 
-		JButton btnReset = new JButton( "Reset" );
-		btnReset.addActionListener( MINEditor.this );
-		add( btnReset, "growx,push" );
+		MaskFormatter formatter = null;
+
+		try
+		{
+			//Mask: 6 hex characters
+			formatter = new MaskFormatter( "HHHHHH" );
+		}
+		catch( Exception e )
+		{
+			//Do nothing, the mask was invalid
+		}
+		
+		mTextField = new JFormattedTextField( formatter );
+		mTextField.getDocument().addDocumentListener( this );
+		mTextField.setToolTipText( HELP_TEXT );
+		add( mTextField, "growx,push" );
+		
+		JLabel help = new JLabel( "Help ..." );
+		help.setForeground( Color.BLUE.brighter() );
+		help.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		help.addMouseListener( new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked( MouseEvent e )
+			{
+				JOptionPane.showMessageDialog( MINEditor.this, 
+					HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE );
+			}
+		} );
+		add( help, "align left" );
+	}
+	
+	public Min getMin()
+	{
+		if( getItem() instanceof Min )
+		{
+			return (Min)getItem();
+		}
+		
+		return null;
 	}
 
 	@Override
-    public void actionPerformed( ActionEvent e )
-    {
-		String command = e.getActionCommand();
+	public void setItem( AliasID aliasID )
+	{
+		super.setItem( aliasID );
 		
-		if( command.contentEquals( "Save" ) )
+		Min min = getMin();
+		
+		if( min != null )
 		{
-			String esn = mTextMIN.getText();
-			
-			if( esn != null )
-			{
-				mMINNode.getMIN().setMin( esn );
-
-				((ConfigurableNode)mMINNode.getParent()).sort();
-
-				mMINNode.save();
-				
-				mMINNode.show();
-			}
-			else
-			{
-				JOptionPane.showMessageDialog( MINEditor.this, "Please enter an ESN" );
-			}
-		}
-		else if( command.contentEquals( "Reset" ) )
-		{
-			mTextMIN.setText( mMINNode.getMIN().getMin() );
+			mTextField.setText( min.getMin() );
 		}
 		
-		mMINNode.refresh();
-    }
+		setModified( false );
+		
+		repaint();
+	}
+
+	@Override
+	public void save()
+	{
+		Min min = getMin();
+		
+		if( min != null )
+		{
+			min.setMin( mTextField.getText() );
+		}
+		
+		setModified( false );
+	}
 }

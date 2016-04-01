@@ -73,17 +73,19 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 	
 	private ThreadPoolManager mThreadPoolManager;
 	private ScheduledFuture<?> mProcessingTask;
-	
+	private MixerManager mMixerManager;
 	private MixerChannelConfiguration mMixerChannelConfiguration;
+	
 
 	/**
 	 * Processes all audio produced by the decoding channels and routes audio 
 	 * packets to any combination of outputs based on any alias audio routing
 	 * options specified by the user.
 	 */
-	public AudioManager( ThreadPoolManager manager )
+	public AudioManager( ThreadPoolManager manager, MixerManager mixerManager )
 	{
 		mThreadPoolManager = manager;
+		mMixerManager = mixerManager;
 
 		loadSettings();
 	}
@@ -100,8 +102,7 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 		
 		String channels = properties.get( AUDIO_CHANNELS_PROPERTY, MixerChannel.MONO.name() );
 		
-		MixerChannelConfiguration[] mixerConfigurations = 
-				MixerManager.getInstance().getOutputMixers();
+		MixerChannelConfiguration[] mixerConfigurations = mMixerManager.getOutputMixers();
 
 		for( MixerChannelConfiguration mixerConfig: mixerConfigurations )
 		{

@@ -25,5 +25,10 @@
 	<classpathentry kind="lib" path="imports/logback-core-1.1.2.jar"/>
 	<classpathentry kind="lib" path="imports/commons-io-2.4.jar"/>
 	<classpathentry kind="lib" path="imports/jmbe-interface-0.3.2.jar"/>
+	<classpathentry kind="lib" path="imports/tablefilter-swing-5.2.1.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/home/denny/Downloads/tablefilter-swing-5.2.1-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

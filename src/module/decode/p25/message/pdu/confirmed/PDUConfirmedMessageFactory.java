@@ -3,7 +3,6 @@ package module.decode.p25.message.pdu.confirmed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class PDUConfirmedMessageFactory
 {
 	public final static Logger mLog = 
@@ -52,7 +51,7 @@ public class PDUConfirmedMessageFactory
 						return new SNDCPActivateTDSContextAccept( message );
 					case SNDCP_ACTIVATE_TDS_CONTEXT_REJECT:
 						return new SNDCPActivateTDSContextReject( message );
-					case SN_ACTIVATE_TDS_CONTEXT_REQUEST:
+					case SNDCP_ACTIVATE_TDS_CONTEXT_REQUEST:
 						return new SNDCPActivateTDSContextRequest( message );
 					case SNDCP_DEACTIVATE_TDS_CONTEXT_ACCEPT:
 					case SNDCP_DEACTIVATE_TDS_CONTEXT_REQUEST:
@@ -61,14 +60,6 @@ public class PDUConfirmedMessageFactory
 						return new SNDCPUserData( message );
 					case SNDCP_RF_UNCONFIRMED_DATA:
 						break;
-					case PDU_TYPE_6:
-					case PDU_TYPE_7:
-					case PDU_TYPE_8:
-					case PDU_TYPE_9:
-					case PDU_TYPE_10:
-					case PDU_TYPE_11:
-						return new PDUTypeUnknown( message );
-					case UNKNOWN:
 					default:
 						break;
 				}

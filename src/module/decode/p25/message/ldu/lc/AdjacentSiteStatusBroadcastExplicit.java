@@ -6,15 +6,9 @@ import module.decode.p25.message.IdentifierReceiver;
 import module.decode.p25.message.ldu.LDU1Message;
 import module.decode.p25.reference.LinkControlOpcode;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class AdjacentSiteStatusBroadcastExplicit extends LDU1Message
 					implements IdentifierReceiver, IAdjacentSite
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( AdjacentSiteStatusBroadcastExplicit.class );
-
 	public static final int[] LRA = { 364,365,366,367,372,373,374,375 };
 	public static final int[] TRANSMIT_IDENTIFIER = { 376,377,382,383 };
 	public static final int[] TRANSMIT_CHANNEL = { 384,385,386,387,536,537,538,

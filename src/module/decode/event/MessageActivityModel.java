@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -32,11 +32,11 @@ public class MessageActivityModel extends AbstractTableModel
 								  implements Listener<Message>
 {
     private static final long serialVersionUID = 1L;
-    private static final int sTIME = 0;
-    private static final int sPROTOCOL = 1;
-    private static final int sERROR_STATUS = 2;
-    private static final int sMESSAGE = 3;
-    private static final int sMESSAGE_BITS = 4;
+    private static final int TIME = 0;
+    private static final int PROTOCOL = 1;
+    private static final int ERROR_STATUS = 2;
+    private static final int MESSAGE = 3;
+    private static final int MESSAGE_BITS = 4;
 
 	protected int mMaxMessages = 500;
 	protected LinkedList<Message> mMessages = new LinkedList<Message>();
@@ -174,15 +174,15 @@ public class MessageActivityModel extends AbstractTableModel
 		
 		switch( columnIndex )
 		{
-			case sTIME:
+			case TIME:
 				return mSDFTime.format( new Date( message.getTimeReceived() ) );
-			case sPROTOCOL:
+			case PROTOCOL:
 				return message.getProtocol();
-			case sERROR_STATUS:
+			case ERROR_STATUS:
 				return message.getErrorStatus();
-			case sMESSAGE:
+			case MESSAGE:
 				return message.getMessage();
-			case sMESSAGE_BITS:
+			case MESSAGE_BITS:
 				return message.getBinaryMessage();
 		}
 		

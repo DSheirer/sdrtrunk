@@ -17,8 +17,6 @@
  ******************************************************************************/
 package spectrum.converter;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Converts complex DFT output to scaled dB values with a maximum amplitude of
@@ -61,9 +59,6 @@ import org.slf4j.LoggerFactory;
  */
 public class ComplexDecibelConverter extends DFTResultsConverter
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( ComplexDecibelConverter.class );
-	
 	/**
 	 * Converts the output of the JTransforms FloatFFT_1D.complexForward()
 	 * calculation into the power spectrum in decibels, normalized to the 

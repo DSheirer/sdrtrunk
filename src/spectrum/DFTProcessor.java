@@ -37,7 +37,7 @@ import sample.Listener;
 import sample.SampleType;
 import sample.complex.ComplexBuffer;
 import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeListener;
+import source.tuner.frequency.IFrequencyChangeProcessor;
 import spectrum.converter.DFTResultsConverter;
 import controller.NamingThreadFactory;
 import dsp.filter.Window;
@@ -48,7 +48,7 @@ import dsp.filter.Window.WindowType;
  * of DFT results, using configurable fft size and output dispatch timelines.  
  */
 public class DFTProcessor implements Listener<ComplexBuffer>, 
-									 FrequencyChangeListener,
+									 IFrequencyChangeProcessor,
 									 IDFTWidthChangeProcessor
 {
 	private final static Logger mLog = 
@@ -61,9 +61,9 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 	//sample rate tuner (10 MHz) producing 153 frames per second and the lowest
 	//DFT processing frame rate of 12 frames per second.  This means that the 
 	//maximum size needed is 153 / 12 = 11 frames per DFT processing iteration
-	//so we set it at 12.
+	//so we set it at 12.	
 	private BlockingQueue<ComplexBuffer> mQueue = new ArrayBlockingQueue<>( 12 );
-							
+
 	private ScheduledExecutorService mScheduler = Executors
 			.newScheduledThreadPool( 1, new NamingThreadFactory( "spectrum dft" ) );	
 	
@@ -97,15 +97,15 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 	public DFTProcessor( SampleType sampleType )
 	{
 		setSampleType( sampleType );
+		setFrameRate( 20 );
 		
 		loadSettings();
 	}
 	
 	private void loadSettings()
 	{
-		int frameRate = SystemProperties.getInstance()
-				.get( DFTProcessor.FRAME_RATE_PROPERTY, 20 );
-
+		int frameRate = SystemProperties.getInstance().get( FRAME_RATE_PROPERTY, 20 );
+		
 		setFrameRate( frameRate );
 	}
 	
@@ -187,10 +187,10 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 		}
 
 		mFrameRate = framesPerSecond;
-
+		
 		SystemProperties properties = SystemProperties.getInstance();
+		
 		properties.set( FRAME_RATE_PROPERTY, String.valueOf( mFrameRate ) );
-		properties.save();
 
 		calculateConsumptionRate();
 
@@ -491,7 +491,7 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
     {
 		switch( event.getEvent() )
 		{
-			case SAMPLE_RATE_CHANGE_NOTIFICATION:
+			case NOTIFICATION_SAMPLE_RATE_CHANGE:
 				mSampleRate = event.getValue().intValue();
 				calculateConsumptionRate();
 				break;

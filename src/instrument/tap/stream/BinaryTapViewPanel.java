@@ -37,7 +37,6 @@ public class BinaryTapViewPanel extends TapViewPanel
 	private Tap mTap;
 	private List<Boolean> mSamples;
 	private int mSampleCount;
-	private int mOffset = 0;
 
 	public BinaryTapViewPanel( BinaryTap tap )
 	{

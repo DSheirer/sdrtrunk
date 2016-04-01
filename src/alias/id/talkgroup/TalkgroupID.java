@@ -19,9 +19,8 @@ package alias.id.talkgroup;
 
 import javax.xml.bind.annotation.XmlAttribute;
 
-import alias.AliasID;
-import alias.AliasIDType;
-import audio.inverted.AudioType;
+import alias.id.AliasID;
+import alias.id.AliasIDType;
 
 
 public class TalkgroupID extends AliasID
@@ -43,11 +42,6 @@ public class TalkgroupID extends AliasID
 		mTalkgroup = talkgroup;
 	}
 
-	public boolean hasAudioType()
-	{
-		return false;
-	}
-	
 	public String toString()
 	{
 		StringBuilder sb = new StringBuilder();

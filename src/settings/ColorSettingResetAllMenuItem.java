@@ -17,7 +17,6 @@
  ******************************************************************************/
 package settings;
 
-import java.awt.Color;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -33,17 +32,14 @@ public class ColorSettingResetAllMenuItem extends JMenuItem
 {
     private static final long serialVersionUID = 1L;
 
-    private ColorSettingName mColorSettingName;
     private SettingsManager mSettingsManager;
-    private Color mCurrentColor;
 	
-	public ColorSettingResetAllMenuItem( SettingsManager settingsManager,
-								 ColorSettingName colorSettingName )
+	public ColorSettingResetAllMenuItem( SettingsManager settingsManager, 
+										 ColorSettingName colorSettingName )
 	{
 		super( "Reset - " + colorSettingName.getLabel() );
 
 		mSettingsManager = settingsManager;
-		mColorSettingName = colorSettingName;
 
 		addActionListener( new ActionListener() 
 		{

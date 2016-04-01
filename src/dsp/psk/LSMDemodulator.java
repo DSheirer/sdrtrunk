@@ -40,13 +40,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import sample.Listener;
 import sample.complex.Complex;
 import sample.complex.ComplexSampleListener;
-import source.tuner.frequency.FrequencyChangeListener;
+import source.tuner.frequency.IFrequencyChangeListener;
 import buffer.FloatAveragingBuffer;
 import dsp.filter.interpolator.RealInterpolator;
 import dsp.symbol.Dibit;
@@ -61,9 +58,6 @@ import dsp.symbol.Dibit;
  */
 public class LSMDemodulator implements Instrumentable, ComplexSampleListener
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( LSMDemodulator.class );
-
 	private List<TapGroup> mAvailableTaps;
 	
 	/* 45 degree rotation angle */
@@ -79,7 +73,7 @@ public class LSMDemodulator implements Instrumentable, ComplexSampleListener
 	
 	private CostasLoop mCostasLoop = new CostasLoop();
 	
-	private FrequencyChangeListener mFrequencyChangeListener;
+	private IFrequencyChangeListener mFrequencyChangeListener;
 	
 	private EyeDiagramDataTap mEyeDiagramDataTap;
 	
@@ -153,12 +147,12 @@ public class LSMDemodulator implements Instrumentable, ComplexSampleListener
 		}
 	}
 	
-	public void addListener( FrequencyChangeListener listener )
+	public void addListener( IFrequencyChangeListener listener )
 	{
 		mFrequencyChangeListener = listener;
 	}
 	
-	public void removeListener( FrequencyChangeListener listener )
+	public void removeListener( IFrequencyChangeListener listener )
 	{
 		mFrequencyChangeListener = null;
 	}

@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import alias.Alias;
+import alias.action.AliasActionType;
 import alias.action.RecurringAction;
 
 public class ClipAction extends RecurringAction
@@ -28,9 +29,14 @@ public class ClipAction extends RecurringAction
 	{
 	}
 	
+	@Override
+	public AliasActionType getType()
+	{
+		return AliasActionType.CLIP;
+	}
+
 	public String getPath()
 	{
-		
 		return mFilePath;
 	}
 	
@@ -85,6 +91,20 @@ public class ClipAction extends RecurringAction
 			mLog.error( "Error playing sound clip [" + mFilePath + "] - " + e.getMessage() );
 			
 			throw e;
+		}
+	}
+	
+
+	@Override
+	public String toString()
+	{
+		if( mFilePath == null )
+		{
+			return "Play Clip";
+		}
+		else
+		{
+			return "Play Clip: " + mFilePath;
 		}
 	}
 }

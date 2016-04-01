@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ScheduledExecutorService;
 
 import message.Message;
 import module.decode.DecoderType;
@@ -73,8 +74,10 @@ public class LTRStandardDecoderState extends DecoderState
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
+		// TODO Auto-generated method stub
+		
 	}
 
 	@Override

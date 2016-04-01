@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ public class SourceConfigTuner extends SourceConfiguration
 	private static DecimalFormat sFORMAT = new DecimalFormat( "0.00000" );
 
 	private long mFrequency = 0;
-	private int mBandwidth = 15000;
+	private int mBandwidth = 12500;
 	
 	public SourceConfigTuner()
     {

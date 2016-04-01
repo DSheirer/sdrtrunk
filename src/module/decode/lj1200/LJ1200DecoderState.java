@@ -22,18 +22,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.concurrent.ScheduledExecutorService;
 
 import message.Message;
 import module.decode.DecoderType;
-import module.decode.p25.P25DecoderState;
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderState;
 import module.decode.state.DecoderStateEvent;
 import module.decode.state.DecoderStateEvent.Event;
 import module.decode.state.State;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import alias.Alias;
 import alias.AliasList;
 
@@ -58,7 +59,7 @@ public class LJ1200DecoderState extends DecoderState
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 	}
 

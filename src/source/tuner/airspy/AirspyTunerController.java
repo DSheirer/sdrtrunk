@@ -6,7 +6,6 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -28,8 +27,8 @@ import sample.Broadcaster;
 import sample.Listener;
 import sample.complex.ComplexBuffer;
 import source.SourceException;
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerController;
+import source.tuner.configuration.TunerConfiguration;
 import controller.ThreadPoolManager;
 import controller.ThreadPoolManager.ThreadType;
 import dsp.filter.dc.DCRemovalFilter_RB;
@@ -262,30 +261,31 @@ public class AirspyTunerController extends TunerController
 		}
 	}
 	
-    public static String getTransferStatus( int status )
-	{
-		switch( status )
-		{
-			case 0:
-				return "TRANSFER COMPLETED (0)";
-			case 1:
-				return "TRANSFER ERROR (1)";
-			case 2:
-				return "TRANSFER TIMED OUT (2)";
-			case 3:
-				return "TRANSFER CANCELLED (3)";
-			case 4:
-				return "TRANSFER STALL (4)";
-			case 5:
-				return "TRANSFER NO DEVICE (5)";
-			case 6:
-				return "TRANSFER OVERFLOW (6)";
-			default:
-				return "UNKNOWN TRANSFER STATUS (" + status + ")";
-		}
-	}
+	 public static String getTransferStatus( int status )
+	 {
+	 	switch( status )
+	 	{
+	 		case 0:
+	 			return "TRANSFER COMPLETED (0)";
+	 		case 1:
+	 			return "TRANSFER ERROR (1)";
+	 		case 2:
+	 			return "TRANSFER TIMED OUT (2)";
+	 		case 3:
+	 			return "TRANSFER CANCELLED (3)";
+	 		case 4:
+	 			return "TRANSFER STALL (4)";
+	 		case 5:
+	 			return "TRANSFER NO DEVICE (5)";
+	 		case 6:
+	 			return "TRANSFER OVERFLOW (6)";
+	 		default:
+	 			return "UNKNOWN TRANSFER STATUS (" + status + ")";
+	 	}
+	 }
 
-    @Override
+	 
+	@Override
 	public void apply( TunerConfiguration config ) throws SourceException
 	{
 		if( config instanceof AirspyTunerConfiguration )
@@ -426,7 +426,7 @@ public class AirspyTunerController extends TunerController
 	/**
 	 * Airspy sample rate object that matches the current sample rate setting.
 	 */
-	public AirspySampleRate getSampleRate()
+	public AirspySampleRate getAirspySampleRate()
 	{
 		return getSampleRate( mSampleRate );
 	}
@@ -1215,8 +1215,8 @@ public class AirspyTunerController extends TunerController
 	 */
     public void addListener( Listener<ComplexBuffer> listener )
     {
-    	synchronized( mComplexBufferBroadcaster )
-    	{
+    	synchronized ( mComplexBufferBroadcaster )
+		{
         	mComplexBufferBroadcaster.addListener( listener );
 
     		if( mBufferProcessor == null || !mBufferProcessor.isRunning() )
@@ -1229,7 +1229,7 @@ public class AirspyTunerController extends TunerController
 
     			thread.start();
     		}
-    	}
+		}
     }
 
 	/**
@@ -1238,15 +1238,15 @@ public class AirspyTunerController extends TunerController
 	 */
     public void removeListener( Listener<ComplexBuffer> listener )
     {
-    	synchronized( mComplexBufferBroadcaster )
-    	{
+    	synchronized ( mComplexBufferBroadcaster )
+		{
         	mComplexBufferBroadcaster.removeListener( listener );
         	
     		if( !mComplexBufferBroadcaster.hasListeners() )
     		{
     			mBufferProcessor.stop();
     		}
-    	}
+		}
     }
 	
 	/**
@@ -1273,31 +1273,31 @@ public class AirspyTunerController extends TunerController
 					ThreadType.SOURCE_SAMPLE_PROCESSING, new BufferDispatcher(),
 					20, TimeUnit.MILLISECONDS );
 
-	            mLibUsbHandlerStatus = ByteBuffer.allocateDirect( 4 );
-	            
+				mLibUsbHandlerStatus = ByteBuffer.allocateDirect( 4 );
+				
 				List<Transfer> transfers = new ArrayList<>();
 				
 				mCancel = false;
 				
-            	while( mRunning.get() )
+				while( mRunning.get() )
 				{
-            		mAvailableTransfers.drainTo( transfers );
-            		
-            		for( Transfer transfer: transfers )
-            		{
-    					int result = LibUsb.submitTransfer( transfer );
-    					
-    					if( result == LibUsb.SUCCESS )
-    					{
-    						mTransfersInProgress.add( transfer );
-    					}
+					mAvailableTransfers.drainTo( transfers );
+					
+					for( Transfer transfer: transfers )
+					{
+						int result = LibUsb.submitTransfer( transfer );
+						
+						if( result == LibUsb.SUCCESS )
+						{
+							mTransfersInProgress.add( transfer );
+						}
 						else
 						{
-    						mLog.error( "error submitting transfer [" + 
-    								LibUsb.errorName( result ) + "]" );
-    					}
-            		}
-            		
+							mLog.error( "error submitting transfer [" + 
+									LibUsb.errorName( result ) + "]" );
+						}
+					}
+					
 					int result = LibUsb.handleEventsTimeoutCompleted( 
 						null, USB_TIMEOUT_MS, mLibUsbHandlerStatus.asIntBuffer() );
 					
@@ -1310,20 +1310,20 @@ public class AirspyTunerController extends TunerController
 					
 					mLibUsbHandlerStatus.rewind();
 				}
-            	
-            	if( mCancel )
-            	{
-            		for( Transfer transfer: mTransfersInProgress )
-            		{
-            			LibUsb.cancelTransfer( transfer );
-            		}
-            		
-            		int result = LibUsb.handleEventsTimeoutCompleted( null,
-        				USB_TIMEOUT_MS, mLibUsbHandlerStatus.asIntBuffer() );
+				
+				if( mCancel )
+				{
+					for( Transfer transfer: mTransfersInProgress )
+					{
+						LibUsb.cancelTransfer( transfer );
+					}
+					
+					int result = LibUsb.handleEventsTimeoutCompleted( null, 
+						USB_TIMEOUT_MS, mLibUsbHandlerStatus.asIntBuffer() );
 					
 					if( result != LibUsb.SUCCESS )
 					{
-						mLog.error( "error handling events for libusb" );
+						mLog.error( "error handling events for libusb during cancel" );
 					}
 					
 					mLibUsbHandlerStatus.rewind();

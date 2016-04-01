@@ -17,7 +17,7 @@
  ******************************************************************************/
 package module.decode.config;
 
-import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
@@ -48,10 +48,12 @@ public abstract class DecodeConfiguration extends Configuration
 	public static final int TRAFFIC_CHANNEL_LIMIT_DEFAULT = 3;
 	public static final int TRAFFIC_CHANNEL_LIMIT_MINIMUM = 0;
 	public static final int TRAFFIC_CHANNEL_LIMIT_MAXIMUM = 30;
+
+	public static final int DEFAULT_AFC_MAX_CORRECTION = 1000;
 	
 	private DecoderType mDecoderType = DecoderType.NBFM;
 	private boolean mAFCEnabled = true;
-	private int mAFCMaxCorrection = 3000;
+	private int mAFCMaxCorrection = DEFAULT_AFC_MAX_CORRECTION;
 
 	public DecodeConfiguration()
 	{
@@ -68,7 +70,7 @@ public abstract class DecodeConfiguration extends Configuration
 		return mDecoderType;
 	}
 
-	@XmlElement( name = "afc" )
+	@XmlAttribute( name = "afc" )
 	public boolean getAFC()
 	{
 		return mAFCEnabled;
@@ -84,6 +86,7 @@ public abstract class DecodeConfiguration extends Configuration
 		mAFCEnabled = enabled;
 	}
 	
+	@XmlAttribute( name = "AFCMaximumCorrection" )
 	public int getAFCMaximumCorrection()
 	{
 		return mAFCMaxCorrection;

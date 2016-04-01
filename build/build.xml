@@ -5,11 +5,11 @@
 
   <!-- version properties -->
   <property name="major" value="0"/>
-  <property name="minor" value="2"/>
+  <property name="minor" value="3"/>
   <property name="patch" value="0"/>
-  <property name="release" value=""/>
+  <property name="release" value="-alpha1"/>
   <property name="filename" value="sdrtrunk_${major}.${minor}.${patch}${release}"/>
-	
+    
   <!-- Build properties -->
   <property name="repo" location=".."/>
   <property name="source.code" location="${repo}/src"/>
@@ -33,9 +33,9 @@
   <target name="init">
     <!-- Create the classes folder to contain the compiled java classes -->
     <mkdir dir="${output.classes}"/>
-  	
+    
     <!-- Create version file -->
-  	<echo message="${major}.${minor}.${patch}-${release}" file="${output.classes}/sdrtrunk-version"/>
+    <echo message="${major}.${minor}.${patch}-${release}" file="${output.classes}/sdrtrunk-version"/>
   </target>
 
   <target name="compile" depends="clean,init" description="Compile java classes" >
@@ -48,68 +48,68 @@
 
     <!-- Create jar file -->
     <jar jarfile="${output.folder}/sdrtrunk.jar" basedir="${output.classes}">
-	  <manifest>
+      <manifest>
         <attribute name="Title" value="sdrtrunk"/>
         <attribute name="Main-Class" value="gui.SDRTrunk"/>
         <attribute name="Version" value="${major}.${minor}.${patch}-${release}"/>
       </manifest>
-	  <fileset dir="${source.configs}">
-  	  	<exclude name="*.rules"/>
-  	  </fileset>
-	  
-  	  <fileset dir="${source.license}">
-  	  	<include name="license.txt"/>
-  	  </fileset>
+      <fileset dir="${source.configs}">
+        <exclude name="*.rules"/>
+      </fileset>
+      
+      <fileset dir="${source.license}">
+        <include name="license.txt"/>
+      </fileset>
     </jar>
     
     <!-- Copy third-party libraries -->
     <mkdir dir="${output.libs}"/>
     <copy todir="${output.libs}">
-	  <fileset dir="${source.libs}" includes="*.jar" />
+      <fileset dir="${source.libs}" includes="*.jar" />
     </copy>
     
     <!-- Copy config files -->
     <mkdir dir="${output.config}"/>
 
     <copy todir="${output.config}">
-	  <fileset dir="${source.configs}">
-  	  	<include name="*.rules"/>
-  	  </fileset>
+      <fileset dir="${source.configs}">
+        <include name="*.rules"/>
+      </fileset>
     </copy>
     
     <!-- Copy image files -->
     <mkdir dir="${output.images}"/>
     <copy todir="${output.images}">
-	  <fileset dir="${source.images}" />
+      <fileset dir="${source.images}" />
     </copy>
     
     <!-- Copy license file -->
     <copy todir="${output.folder}">
-	  <fileset dir="${source.license}">
-  	  	<include name="license.txt"/>
-	  </fileset>
+      <fileset dir="${source.license}">
+        <include name="license.txt"/>
+      </fileset>
     </copy>
     
     <!-- Copy program scripts -->
     <copy todir="${output.folder}">
-	  <fileset dir="${source.scripts}" />
+      <fileset dir="${source.scripts}" />
     </copy>
 
 
-  	<!-- Bundle the files into .zip -->
-  	<zip destfile="${output}/${filename}.zip" basedir="${output}" />
+    <!-- Bundle the files into .zip -->
+    <zip destfile="${output}/${filename}.zip" basedir="${output}" />
 
-  	<!-- Remove linux start script before tar task -->
+    <!-- Remove linux start script before tar task -->
     <delete file="${output.folder}/run_sdrtrunk_linux.sh"/>
 
-  	<!-- Bundle files into .tar.gz and copy/set permissions on linux start script -->
-	<tar destfile="${output}/${filename}.tar.gz" compression="gzip">
-	    <tarfileset dir="${output.folder}" prefix="sdrtrunk" />
-		<tarfileset dir="${source.scripts}" prefix="sdrtrunk" filemode="777">
-	  	  	<include name="run_sdrtrunk_linux.sh"/>
-    	</tarfileset>
-	</tar>
-  	
+    <!-- Bundle files into .tar.gz and copy/set permissions on linux start script -->
+    <tar destfile="${output}/${filename}.tar.gz" compression="gzip">
+        <tarfileset dir="${output.folder}" prefix="sdrtrunk" />
+        <tarfileset dir="${source.scripts}" prefix="sdrtrunk" filemode="777">
+            <include name="run_sdrtrunk_linux.sh"/>
+        </tarfileset>
+    </tar>
+    
     <delete dir="${output.folder}"/>
   </target>
 

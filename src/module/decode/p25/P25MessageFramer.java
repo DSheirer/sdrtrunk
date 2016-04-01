@@ -17,6 +17,8 @@ import module.decode.p25.message.tdu.lc.TDULCMessageFactory;
 import module.decode.p25.message.tdu.lc.TDULinkControlMessage;
 import module.decode.p25.message.tsbk.TSBKMessage;
 import module.decode.p25.message.tsbk.TSBKMessageFactory;
+import module.decode.p25.message.vselp.VSELP1Message;
+import module.decode.p25.message.vselp.VSELP2Message;
 import module.decode.p25.reference.DataUnitID;
 
 import org.slf4j.Logger;
@@ -129,7 +131,7 @@ public class P25MessageFramer implements Listener<Dibit>
 		if( demodulator != null )
 		{
 			/* For CQPSK, we include 3 additional sync detectors to watch for and
-			 * correction +/-90 and 180 degree costas loop phase lock errors */
+			 * correct +/-90 and 180 degree costas loop phase lock errors */
 			mMatcher.add( new CostasPhaseErrorDetector( FrameSync.P25_PHASE1_ERROR_90_CCW, 
 					demodulator, PHASE_CORRECTION_90_DEGREES  ) );
 
@@ -289,7 +291,7 @@ public class P25MessageFramer implements Listener<Dibit>
 						else
 						{
 							mComplete = true;
-							dispatch( new P25Message( mMessage.copy(), duid, mAliasList ) );
+		                    dispatch( new P25Message( mMessage.copy(), mDUID, mAliasList ) );
 						}
 					}
 					else
@@ -630,6 +632,14 @@ public class P25MessageFramer implements Listener<Dibit>
 					}
 
 					mComplete = true;
+					break;
+				case VSELP1:
+					mComplete = true;
+                    dispatch( new VSELP1Message( mMessage.copy(), mDUID, mAliasList ) );
+					break;
+				case VSELP2:
+					mComplete = true;
+                    dispatch( new VSELP2Message( mMessage.copy(), mDUID, mAliasList ) );
 					break;
 				case UNKN:
 					mComplete = true;

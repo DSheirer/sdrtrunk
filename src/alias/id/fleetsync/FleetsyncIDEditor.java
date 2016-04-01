@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,92 +17,123 @@
  ******************************************************************************/
 package alias.id.fleetsync;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import gui.editor.DocumentListenerEditor;
 
-import javax.swing.JButton;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
+import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.text.MaskFormatter;
 
 import net.miginfocom.swing.MigLayout;
-import controller.ConfigurableNode;
 
-public class FleetsyncIDEditor extends JPanel implements ActionListener
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import alias.id.AliasID;
+
+public class FleetsyncIDEditor extends DocumentListenerEditor<AliasID>
 {
-    private static final long serialVersionUID = 1L;
-    private FleetsyncIDNode mFleetsyncIDNode;
-    
-    private JLabel mLabelName;
-    private JTextField mTextIdent;
+	private final static Logger mLog = LoggerFactory.getLogger( FleetsyncIDEditor.class );
 
-    private String mHelpText = "Enter a formatted fleetsync identifier.\n\n"
-    		+ "Format: PPP-IIII (P=Prefix, I=Identifier)\n\n"
-            + "Wildcard: use one or more asterisks (*) for any talkgroup "
-            + "digits.\n\n";
+	private static final long serialVersionUID = 1L;
 
-	public FleetsyncIDEditor( FleetsyncIDNode fsNode )
+    private static final String HELP_TEXT = "<html>"
+    		+ "<h3>Fleetsync Identifier</h3>"
+    		+ "<b>Fleetsync:</b> ggg-uuuu where g=Group and u=Unit (e.g. <u>001-0001</u>)<br>"
+    		+ "<b>Wildcard:</b> use an asterisk (*) for each digit (e.g. <u>001-****</u>)"
+    		+ "</html>";
+
+    private JTextField mTextField;
+
+	public FleetsyncIDEditor( AliasID aliasID )
 	{
-		mFleetsyncIDNode = fsNode;
 		initGUI();
+		
+		setItem( aliasID );
 	}
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][]" ) );
 
-		add( new JLabel( "Fleetsync ID" ), "span,align center" );
+		add( new JLabel( "Fleetsync ID:" ) );
 
-		add( new JLabel( "Ident:" ) );
-		mTextIdent = new JTextField( mFleetsyncIDNode.getFleetsyncID().getIdent() );
+		MaskFormatter formatter = null;
 
-		add( mTextIdent, "grow, wrap" );
+		try
+		{
+			//Mask: 3 digits - 4 digits
+			formatter = new MaskFormatter( "###-####" );
+		}
+		catch( Exception e )
+		{
+			//Do nothing, the mask was invalid
+		}
 		
-		JButton btnSave = new JButton( "Save" );
-		btnSave.addActionListener( FleetsyncIDEditor.this );
-		add( btnSave, "growx,push" );
+		mTextField = new JFormattedTextField( formatter );
+		mTextField.getDocument().addDocumentListener( this );
+		mTextField.setToolTipText( HELP_TEXT );
 
-		JButton btnReset = new JButton( "Reset" );
-		btnReset.addActionListener( FleetsyncIDEditor.this );
-		add( btnReset, "growx,push" );
+		add( mTextField, "growx,push" );
 		
-		JTextArea helpText = new JTextArea( mHelpText );
-		helpText.setLineWrap( true );
-		helpText.setBackground( getBackground() );
-		add( helpText, "span,grow,push" );
+		JLabel help = new JLabel( "Help ..." );
+		help.setForeground( Color.BLUE.brighter() );
+		help.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		help.addMouseListener( new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked( MouseEvent e )
+			{
+				JOptionPane.showMessageDialog( FleetsyncIDEditor.this, 
+					HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE );
+			}
+		} );
+		add( help, "align left" );
+	}
+	
+	public FleetsyncID getFleetsyncID()
+	{
+		if( getItem() instanceof FleetsyncID )
+		{
+			return (FleetsyncID)getItem();
+		}
+		
+		return null;
 	}
 
 	@Override
-    public void actionPerformed( ActionEvent e )
-    {
-		String command = e.getActionCommand();
+	public void setItem( AliasID aliasID )
+	{
+		super.setItem( aliasID );
 		
-		if( command.contentEquals( "Save" ) )
+		FleetsyncID fleetsync = getFleetsyncID();
+		
+		if( fleetsync != null )
 		{
-			String ident = mTextIdent.getText();
-			
-			if( ident != null )
-			{
-				mFleetsyncIDNode.getFleetsyncID().setIdent( ident );
+			mTextField.setText( fleetsync.getIdent() );
+		}
+		
+		setModified( false );
+		
+		repaint();
+	}
 
-				((ConfigurableNode)mFleetsyncIDNode.getParent()).sort();
-				
-				mFleetsyncIDNode.save();
-				
-				mFleetsyncIDNode.show();
-			}
-			else
-			{
-				JOptionPane.showMessageDialog( FleetsyncIDEditor.this, "Please enter an ident" );
-			}
-		}
-		else if( command.contentEquals( "Reset" ) )
+	@Override
+	public void save()
+	{
+		FleetsyncID fleetsync = getFleetsyncID();
+		
+		if( fleetsync != null )
 		{
-			mTextIdent.setText( mFleetsyncIDNode.getFleetsyncID().getIdent() );
+			fleetsync.setIdent( mTextField.getText() );
 		}
 		
-		mFleetsyncIDNode.refresh();
-    }
+		setModified( false );
+	}
 }

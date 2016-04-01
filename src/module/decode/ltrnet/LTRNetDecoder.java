@@ -23,19 +23,21 @@ import instrument.tap.TapGroup;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 import message.MessageDirection;
 import module.decode.Decoder;
 import module.decode.DecoderType;
 import sample.Listener;
-import sample.real.IRealBufferListener;
+import sample.real.IUnFilteredRealBufferListener;
 import sample.real.RealBuffer;
 import alias.AliasList;
 import bits.MessageFramer;
 import bits.SyncPattern;
 import dsp.fsk.LTRFSKDecoder;
 
-public class LTRNetDecoder extends Decoder implements IRealBufferListener, Instrumentable
+public class LTRNetDecoder extends Decoder 
+			implements IUnFilteredRealBufferListener, Instrumentable
 {
 	public static final int LTR_STANDARD_MESSAGE_LENGTH = 40;
 	private LTRFSKDecoder mLTRFSKDecoder;
@@ -44,6 +46,10 @@ public class LTRNetDecoder extends Decoder implements IRealBufferListener, Instr
 
     private List<TapGroup> mAvailableTaps;
     
+    /**
+     * LTR-Net Decoder.  Decodes unfiltered (e.g. demodulated but with no DC or
+     * audio filtering) samples and produces LTR-Net messages.
+     */
 	public LTRNetDecoder( DecodeConfigLTRNet config, AliasList aliasList )
 	{
 		mLTRFSKDecoder = new LTRFSKDecoder();
@@ -69,7 +75,7 @@ public class LTRNetDecoder extends Decoder implements IRealBufferListener, Instr
 		
 		mLTRMessageFramer.addMessageListener( mLTRMessageProcessor );
 		
-		mLTRMessageProcessor.setMessageListener( mMessageBroadcaster );
+		mLTRMessageProcessor.setMessageListener( this );
 	}
 
 	@Override
@@ -79,7 +85,7 @@ public class LTRNetDecoder extends Decoder implements IRealBufferListener, Instr
 	}
 
 	@Override
-	public Listener<RealBuffer> getRealBufferListener()
+	public Listener<RealBuffer> getUnFilteredRealBufferListener()
 	{
 		return mLTRFSKDecoder;
 	}
@@ -116,7 +122,7 @@ public class LTRNetDecoder extends Decoder implements IRealBufferListener, Instr
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 	}
 

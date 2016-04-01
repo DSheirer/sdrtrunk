@@ -9,25 +9,20 @@ import instrument.tap.stream.FloatTap;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import sample.Listener;
 import sample.real.RealBuffer;
 import sample.real.RealSampleListener;
 import sample.real.RealSampleProvider;
-import source.tuner.frequency.FrequencyCorrectionControl;
-import source.tuner.frequency.FrequencyCorrectionControl.FrequencyCorrectionResetListener;
+import source.tuner.frequency.FrequencyChangeEvent;
+import source.tuner.frequency.FrequencyChangeEvent.Event;
+import source.tuner.frequency.IFrequencyChangeListener;
 import dsp.gain.DirectGainControl;
 
-public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
-										 Listener<RealBuffer>, 
+public class C4FMSymbolFilter implements Listener<RealBuffer>, 
+										 IFrequencyChangeListener,
 										 RealSampleProvider,
 										 Instrumentable
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( C4FMSymbolFilter.class );
-	
 	private static final float TAPS[][] = 
 	{ 
 		{  0.00000e+00f,  0.00000e+00f,  0.00000e+00f,  0.00000e+00f,  1.00000e+00f,  0.00000e+00f,  0.00000e+00f,  0.00000e+00f }, //   0/128
@@ -201,15 +196,17 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
 	private float mHistory[] = new float[ NUMBER_FILTER_TAPS ];
 	private int mHistoryLast = 0;
 	
-	private boolean mResetFrequencyTracker = false;
-	
 	private RealSampleListener mListener;
 	
 	private DirectGainControl mGainController = 
 			new DirectGainControl( 15.0f, 0.1f, 35.0f, 0.3f );
 
-	private FrequencyCorrectionControl mFrequencyCorrectionControl;
 	private int mFrequencyAdjustmentRequested = 0;
+	private int mFrequencyCorrection = 0;
+	private int mFrequencyCorrectionMaximum = 3000;
+	private boolean mResetFrequencyTracker = false;
+	private FrequencyCorrectionProcessor mFrequencyCorrectionProcessor;
+	private Listener<FrequencyChangeEvent> mFrequencyChangeListener;
 	
 	/**
 	 * C4FM Symbol Filter
@@ -224,18 +221,15 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
 	 * setting for this filter is 15.4 and that yields a symbol spread that
 	 * is centered on 2.0, ranging 1.92 to 2.08.
 	 */
-	public C4FMSymbolFilter( FrequencyCorrectionControl frequencyControl )
+	public C4FMSymbolFilter( int frequencyCorrectionMaximum )
 	{
-		mFrequencyCorrectionControl = frequencyControl;
-		
-		/* Register for reset events, so we can reset internal frequency tracking */
-		mFrequencyCorrectionControl.setListener( this );
+		mFrequencyCorrectionMaximum = frequencyCorrectionMaximum;
 	}
 	
 	public void dispose()
 	{
 		mGainController = null;
-		mFrequencyCorrectionControl = null;
+//		mFrequencyCorrectionControl = null;
 		mListener = null;
 	}
 	
@@ -253,13 +247,21 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
 		 * the internal frequency correction tracker */
 		if( mFrequencyAdjustmentRequested != 0 )
 		{
-			mFrequencyCorrectionControl.adjust( mFrequencyAdjustmentRequested );
+			int correction = mFrequencyCorrection + mFrequencyAdjustmentRequested;
+			
+			if( correction > mFrequencyCorrectionMaximum )
+			{
+				correction = mFrequencyCorrectionMaximum;
+			}
+			else if( correction < -mFrequencyCorrectionMaximum )
+			{
+				correction = -mFrequencyCorrectionMaximum;
+			}
+
+			broadcast( new FrequencyChangeEvent( 
+				Event.REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE, correction ) );
 			
 			mFrequencyAdjustmentRequested = 0;
-
-			//Reset internal frequency tracking
-			mCoarseFrequencyCorrection = 0.0f;
-			mFineFrequencyCorrection = 0.0f;
 		}
 	}
 
@@ -272,7 +274,8 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
 			mCoarseFrequencyCorrection = 0.0f;
 			mFineFrequencyCorrection = 0.0f;
 			
-			mFrequencyCorrectionControl.setFrequencyCorrection( 0 );
+			broadcast( new FrequencyChangeEvent( 
+					Event.REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE, 0 ));
 			
 			mResetFrequencyTracker = false;
 		}
@@ -397,17 +400,6 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
 		}
     }
 
-	/**
-	 * Listener interface for frequency correction reset events.  We reset the
-	 * coarse and fine frequency control values when the tuner channel source
-	 * has changed frequency (PPM) or sample rate
-	 */
-	@Override
-	public void resetFrequencyCorrection()
-	{
-		mResetFrequencyTracker = true;
-	}
-
 	@Override
     public void setListener( RealSampleListener listener )
     {
@@ -459,4 +451,56 @@ public class C4FMSymbolFilter implements FrequencyCorrectionResetListener,
 			mSymbolSpreadTap = null;
 		}
     }
+
+	public void broadcast( FrequencyChangeEvent event )
+	{
+		if( mFrequencyChangeListener != null )
+		{
+			mFrequencyChangeListener.receive( event );
+		}
+	}
+	
+	public void setFrequencyChangeListener( Listener<FrequencyChangeEvent> listener )
+	{
+		mFrequencyChangeListener = listener;
+	}
+	
+	@Override
+	public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
+	{
+		if( mFrequencyCorrectionProcessor == null )
+		{
+			mFrequencyCorrectionProcessor = new FrequencyCorrectionProcessor();
+		}
+		
+		return mFrequencyCorrectionProcessor;
+	}
+
+	/**
+	 * Receives notifications that the channel frequency correction has been
+	 * applied and updates internal tracking value.
+	 */
+	public class FrequencyCorrectionProcessor implements Listener<FrequencyChangeEvent>
+	{
+		@Override
+		public void receive( FrequencyChangeEvent event )
+		{
+			switch( event.getEvent() )
+			{
+				case NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
+					mFrequencyCorrection = event.getValue().intValue();
+
+					//Reset internal frequency tracking
+					mCoarseFrequencyCorrection = 0.0f;
+					mFineFrequencyCorrection = 0.0f;
+					break;
+				case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
+				case NOTIFICATION_SAMPLE_RATE_CHANGE:
+					mResetFrequencyTracker = true;
+					break;
+				default:
+					break;
+			}
+		}
+	}
 }

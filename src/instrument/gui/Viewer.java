@@ -114,10 +114,8 @@ public class Viewer
     	/* Attempt to open file as a 1-channel float source */
     	try
     	{
-    		RealWaveSource floatSource = new RealWaveSource( file );
-    		floatSource.open();
-    		
-    		source = floatSource;
+    		source = new RealWaveSource( file );
+    		source.open();
     		
     		mLog.info( "File opened as float wave file" );
     		

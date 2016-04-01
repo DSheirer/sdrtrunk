@@ -131,7 +131,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 		catch (Throwable ex)
 		{
 			
-			mLog.error( "could not load 'loading.png'" );
+			mLog.error( "JXMapViewer could not load 'loading.png'" );
 			
 			BufferedImage img = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
 			Graphics2D g2 = img.createGraphics();

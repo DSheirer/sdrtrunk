@@ -64,9 +64,9 @@ public class MessageFramer implements Listener<Boolean>,
     	{
     		assembler.dispose();
     	}
-    	
-    	mMessageAssemblers.clear();
-    }
+        	
+        mMessageAssemblers.clear();
+    }    
     
     public void dispose()
     {
@@ -154,8 +154,9 @@ public class MessageFramer implements Listener<Boolean>,
     {
         mMessageAssemblers.add( assembler );
     }
-    
-    private void removeMessageAssembler( MessageAssembler assembler )
+
+    @SuppressWarnings( "unused" )
+	private void removeMessageAssembler( MessageAssembler assembler )
     {
         mMessageAssemblers.remove( assembler );
     }

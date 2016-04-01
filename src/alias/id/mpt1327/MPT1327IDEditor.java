@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,80 +17,119 @@
  ******************************************************************************/
 package alias.id.mpt1327;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import gui.editor.DocumentListenerEditor;
 
-import javax.swing.JButton;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
+import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.text.MaskFormatter;
 
 import net.miginfocom.swing.MigLayout;
-import controller.ConfigurableNode;
+import alias.id.AliasID;
 
-public class MPT1327IDEditor extends JPanel implements ActionListener
+public class MPT1327IDEditor extends DocumentListenerEditor<AliasID>
 {
-    private static final long serialVersionUID = 1L;
-    private MPT1327IDNode mMPT1327IDNode;
-    
-    private JTextField mTextIdent;
+	private static final long serialVersionUID = 1L;
 
-	public MPT1327IDEditor( MPT1327IDNode fsNode )
+    private static final String HELP_TEXT = "<html>"
+    		+ "<h3>MPT-1327 Identifier</h3>"
+    		+ "<b>MPT-1327:</b> decimal (0-9) format ppp-iiii where<br>"
+    		+ "p=Prefix and i=Ident (e.g. <u>123-0001</u>)<br>"
+    		+ "<b>Wildcard:</b> use an asterisk (*) to wildcard individual<br>"
+    		+ "digits (e.g. <u>ABCD123*</u> or <u>AB**1**4</u>)"
+    		+ "</html>";
+
+    private JTextField mTextField;
+
+	public MPT1327IDEditor( AliasID aliasID )
 	{
-		mMPT1327IDNode = fsNode;
 		initGUI();
+		
+		setItem( aliasID );
 	}
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][]" ) );
 
-		add( new JLabel( "MPT-1327 Radio or Group ID" ), "span,align center" );
+		add( new JLabel( "MPT-1327 ID:" ) );
 
-		add( new JLabel( "ID:" ) );
+		MaskFormatter formatter = null;
+
+		try
+		{
+			//Mask: 3 digits - 4 digits
+			formatter = new MaskFormatter( "###-####" );
+		}
+		catch( Exception e )
+		{
+			//Do nothing, the mask was invalid
+		}
 		
-		mTextIdent = new JTextField( mMPT1327IDNode.getMPT1327ID().getIdent() );
-		add( mTextIdent, "growx,push" );
-		
-		JButton btnSave = new JButton( "Save" );
-		btnSave.addActionListener( MPT1327IDEditor.this );
-		add( btnSave, "growx,push" );
+		mTextField = new JFormattedTextField( formatter );
+		mTextField.getDocument().addDocumentListener( this );
+		mTextField.setToolTipText( HELP_TEXT );
 
-		JButton btnReset = new JButton( "Reset" );
-		btnReset.addActionListener( MPT1327IDEditor.this );
-		add( btnReset, "growx,push" );
+		add( mTextField, "growx,push" );
+		
+		JLabel help = new JLabel( "Help ..." );
+		help.setForeground( Color.BLUE.brighter() );
+		help.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		help.addMouseListener( new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked( MouseEvent e )
+			{
+				JOptionPane.showMessageDialog( MPT1327IDEditor.this, 
+					HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE );
+			}
+		} );
+		add( help, "align left" );
+	}
+	
+	public MPT1327ID getMPT1327ID()
+	{
+		if( getItem() instanceof MPT1327ID )
+		{
+			return (MPT1327ID)getItem();
+		}
+		
+		return null;
 	}
 
 	@Override
-    public void actionPerformed( ActionEvent e )
-    {
-		String command = e.getActionCommand();
+	public void setItem( AliasID aliasID )
+	{
+		super.setItem( aliasID );
 		
-		if( command.contentEquals( "Save" ) )
+		MPT1327ID mpt = getMPT1327ID();
+		
+		if( mpt != null )
 		{
-			String ident = mTextIdent.getText();
-			
-			if( ident != null )
-			{
-				mMPT1327IDNode.getMPT1327ID().setIdent( ident );
+			mTextField.setText( mpt.getIdent() );
+		}
+		
+		setModified( false );
+		
+		repaint();
+	}
 
-				((ConfigurableNode)mMPT1327IDNode.getParent()).sort();
-				
-				mMPT1327IDNode.save();
-				
-				mMPT1327IDNode.show();
-			}
-			else
-			{
-				JOptionPane.showMessageDialog( MPT1327IDEditor.this, "Please enter a MPT1327 unit ID" );
-			}
-		}
-		else if( command.contentEquals( "Reset" ) )
+	@Override
+	public void save()
+	{
+		MPT1327ID mpt = getMPT1327ID();
+		
+		if( mpt != null )
 		{
-			mTextIdent.setText( mMPT1327IDNode.getMPT1327ID().getIdent() );
+			mpt.setIdent( mTextField.getText() );
 		}
 		
-		mMPT1327IDNode.refresh();
-    }
+		setModified( false );
+	}
 }

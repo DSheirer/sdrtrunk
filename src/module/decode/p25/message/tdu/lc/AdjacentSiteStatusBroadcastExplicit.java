@@ -5,15 +5,9 @@ import module.decode.p25.message.IBandIdentifier;
 import module.decode.p25.message.IdentifierReceiver;
 import module.decode.p25.reference.LinkControlOpcode;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class AdjacentSiteStatusBroadcastExplicit extends TDULinkControlMessage
 			implements IdentifierReceiver, IAdjacentSite
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( AdjacentSiteStatusBroadcastExplicit.class );
-
 	public static final int[] LRA = { 72,73,74,75,88,89,90,91 };
 	public static final int[] TRANSMIT_IDENTIFIER = { 92,93,94,95 };
 	public static final int[] TRANSMIT_CHANNEL = { 96,97,98,99,112,113,114,115,

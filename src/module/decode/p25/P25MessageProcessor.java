@@ -10,8 +10,8 @@ import module.decode.p25.message.ldu.LDUMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sample.Listener;
 import alias.AliasList;
+import sample.Listener;
 
 public class P25MessageProcessor implements Listener<Message>
 {

@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,11 +17,7 @@
  ******************************************************************************/
 package source.tuner;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.RejectedExecutionException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,10 +26,7 @@ import org.usb4java.DeviceDescriptor;
 import org.usb4java.DeviceList;
 import org.usb4java.LibUsb;
 
-import source.Source;
 import source.SourceException;
-import source.config.SourceConfigTuner;
-import source.config.SourceConfiguration;
 import source.mixer.MixerManager;
 import source.tuner.airspy.AirspyTuner;
 import source.tuner.airspy.AirspyTunerController;
@@ -46,22 +39,24 @@ import source.tuner.rtl.RTL2832Tuner;
 import source.tuner.rtl.RTL2832TunerController;
 import source.tuner.rtl.e4k.E4KTunerController;
 import source.tuner.rtl.r820t.R820TTunerController;
-import controller.ResourceManager;
+import controller.ThreadPoolManager;
 
 public class TunerManager
 {
 	private final static Logger mLog = 
 							LoggerFactory.getLogger( TunerManager.class );
 
-	private ResourceManager mResourceManager;
-	private ArrayList<Tuner> mTuners = new ArrayList<Tuner>();
+	private MixerManager mMixerManager;
+	private TunerModel mTunerModel;
+	private ThreadPoolManager mThreadPoolManager;
 	
-    public TunerManager( ResourceManager resourceManager )
+    public TunerManager( MixerManager mixerManager,
+    					 TunerModel tunerModel,
+    					 ThreadPoolManager threadPoolManager )
 	{
-    	mResourceManager = resourceManager;
-    	
-    	/* initialize mixers */
-    	MixerManager.getInstance();
+    	mMixerManager = mixerManager;
+    	mTunerModel = tunerModel;
+    	mThreadPoolManager = threadPoolManager;
     	
     	initTuners();
 	}
@@ -72,57 +67,6 @@ public class TunerManager
     public void dispose()
     {
     	LibUsb.exit( null );
-    }
-
-    /**
-     * Iterates current tuners to get a tuner channel source for the frequency
-     * specified in the channel config's source config object
-     */
-    public Source getSource( SourceConfiguration config, int bandwidth )
-    {
-    	TunerChannelSource retVal = null;
-    	
-    	if( config instanceof SourceConfigTuner )
-    	{
-    		SourceConfigTuner tunerConfig = (SourceConfigTuner)config;
-    		
-    		TunerChannel tunerChannel = tunerConfig.getTunerChannel();
-    		
-    		tunerChannel.setBandwidth( bandwidth );
-			
-			Iterator<Tuner> it = mTuners.iterator();
-			
-			Tuner tuner;
-			
-			while( it.hasNext() && retVal == null )
-			{
-				tuner = it.next();
-				
-				try
-                {
-                    retVal = tuner.getChannel( tunerChannel );
-                }
-				catch ( RejectedExecutionException ree )
-				{
-					mLog.error( "couldn't provide tuner channel source", ree );
-				}
-                catch ( SourceException e )
-                {
-                	mLog.error( "error obtaining channel from tuner [" + 
-                			tuner.getName() + "]", e );
-                }
-			}
-    	}
-    	
-    	return retVal;
-    }
-
-    /**
-     * Get list of current tuners
-     */
-    public List<Tuner> getTuners()
-    {
-    	return mTuners;
     }
 
     /**
@@ -182,9 +126,19 @@ public class TunerManager
 				if( status.isLoaded() )
 				{
 					Tuner tuner = status.getTuner();
-					sb.append( "] LOADED: "  );
-					sb.append( tuner.toString() );
-					mTuners.add( tuner );
+					
+					try
+					{
+						mTunerModel.addTuner( tuner );
+						sb.append( "] LOADED: "  );
+						sb.append( tuner.toString() );
+					}
+					catch( Exception e )
+					{
+						sb.append( "] NOT LOADED: " );
+						sb.append( status.getInfo() );
+						sb.append( " Error:" + e.getMessage() );
+					}
 				}
 				else
 				{
@@ -261,18 +215,11 @@ public class TunerManager
 		try
 		{
 			AirspyTunerController airspyController = 
-				new AirspyTunerController( device, mResourceManager.getThreadPoolManager() );
+				new AirspyTunerController( device, mThreadPoolManager );
 			
 			airspyController.init();
 			
 			AirspyTuner tuner = new AirspyTuner( airspyController );
-			
-			TunerConfiguration config = getTunerConfiguration( tuner );
-			
-			if( config != null )
-			{
-				tuner.apply( config );
-			}				
 			
 			return new TunerInitStatus( tuner, "LOADED" );
 		}
@@ -292,11 +239,6 @@ public class TunerManager
 	{
 		return new TunerInitStatus( null, "Ettus B100 tuner not currently "
 				+ "supported" );
-//		case ETTUS_USRP_B100:
-//		mTuners.add(  new B100Tuner( device ) );
-//		status = sLOADED;
-//		reason = null;
-//		break;
 	}
 	
 	private TunerInitStatus initFuncubeProTuner( Device device, 
@@ -318,13 +260,6 @@ public class TunerManager
 	            
 				FCDTuner tuner = 
 						new FCDTuner( dataline, controller );
-
-	            TunerConfiguration config = getTunerConfiguration( tuner );
-
-				if( config != null )
-	            {
-					tuner.apply( config );
-	            }					
 
 				return new TunerInitStatus( tuner, "LOADED" );
             }
@@ -364,13 +299,6 @@ public class TunerManager
 				FCDTuner tuner = 
 						new FCDTuner( dataline, controller );
 
-	            TunerConfiguration config = getTunerConfiguration( tuner );
-
-				if( config != null )
-	            {
-					tuner.apply( config );
-	            }				
-
 				return new TunerInitStatus( tuner, "LOADED" );
             }
             catch ( SourceException e )
@@ -397,19 +325,12 @@ public class TunerManager
 	    {
 			HackRFTunerController hackRFController = 
 						new HackRFTunerController( device, descriptor, 
-								mResourceManager.getThreadPoolManager() );
+								mThreadPoolManager );
 			
 			hackRFController.init();
 			
 			HackRFTuner tuner = new HackRFTuner( hackRFController );
 			
-            TunerConfiguration config = getTunerConfiguration( tuner );
-
-			if( config != null )
-            {
-				tuner.apply( config );
-            }				
-
 			return new TunerInitStatus( tuner, "LOADED" );
 	    }
 		catch( SourceException se )
@@ -449,21 +370,13 @@ public class TunerManager
 				{
 					E4KTunerController controller = 
 						new E4KTunerController( device, deviceDescriptor, 
-								mResourceManager.getThreadPoolManager() );
+								mThreadPoolManager );
 					
 					controller.init();
 					
 					RTL2832Tuner rtlTuner = 
 						new RTL2832Tuner( tunerClass, controller );
 					
-                    TunerConfiguration config = 
-                    		getTunerConfiguration( rtlTuner );
-
-					if( config != null )
-	                {
-						rtlTuner.apply( config );
-	                }					
-
 					return new TunerInitStatus( rtlTuner, "LOADED" );
 				}
 				catch( SourceException se )
@@ -476,20 +389,12 @@ public class TunerManager
 				{
 					R820TTunerController controller = 
 						new R820TTunerController( device, deviceDescriptor, 
-								mResourceManager.getThreadPoolManager() );
+								mThreadPoolManager );
 					
 					controller.init();
 					
 					RTL2832Tuner rtlTuner = 
 						new RTL2832Tuner( tunerClass, controller );
-					
-                    TunerConfiguration config = 
-                    		getTunerConfiguration( rtlTuner );
-
-					if( config != null )
-	                {
-						rtlTuner.apply( config );
-	                }					
 					
 					return new TunerInitStatus( rtlTuner, "LOADED" );
 				}
@@ -513,55 +418,6 @@ public class TunerManager
 		
 		return new TunerInitStatus( null, reason );
 	}
-	
-    /**
-     * Get a stored tuner configuration or create a default tuner configuration
-     * for the tuner type, connected at the address.  
-     * 
-     * Note: a named tuner configuration will be stored for for each tuner type
-     * and address combination.   
-     * @param type - tuner type
-     * @param address - current usb address/port 
-     * @return - stored tuner configuration or default configuration
-     */
-    private TunerConfiguration getTunerConfiguration( Tuner tuner )
-    {
-    	TunerConfigurationAssignment selected = mResourceManager
-			.getSettingsManager().getSelectedTunerConfiguration( 
-					tuner.getTunerType(), tuner.getUniqueID() );
-
-    	ArrayList<TunerConfiguration> configs = mResourceManager
-			.getSettingsManager().getTunerConfigurations( tuner.getTunerType() );
-
-    	TunerConfiguration config = null;
-    	
-    	if( selected != null )
-    	{
-    		for( TunerConfiguration tunerConfig: configs )
-    		{
-    			if( tunerConfig.getName().contentEquals( selected.getTunerConfigurationName() ) )
-    			{
-    				config = tunerConfig;
-    			}
-    		}
-    	}
-    	
-    	//If we're still null at this point, create a default config
-    	if( config == null )
-    	{
-    		String name = "Default-" + tuner.getUniqueID();
-    		
-    		config = mResourceManager.getSettingsManager()
-				.addNewTunerConfiguration( tuner.getTunerType(), name );
-    	}
-    	
-    	//Persist the config as the selected tuner configuration.  The method
-    	//auto-saves the setting
-    	mResourceManager.getSettingsManager().setSelectedTunerConfiguration( 
-    			tuner.getTunerType(), tuner.getUniqueID(), config );
-    	
-    	return config;
-    }
 
     /**
      * Gets the first tuner mixer dataline that corresponds to the tuner class.
@@ -577,7 +433,7 @@ public class TunerManager
     private MixerTunerDataLine getMixerTunerDataLine( TunerType tunerClass )
     {
     	Collection<MixerTunerDataLine> datalines = 
-    			MixerManager.getInstance().getMixerTunerDataLines();
+    			mMixerManager.getMixerTunerDataLines();
 
     	for( MixerTunerDataLine mixerTDL: datalines  )
 		{

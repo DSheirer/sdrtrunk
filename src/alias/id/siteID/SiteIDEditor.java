@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,95 +17,105 @@
  ******************************************************************************/
 package alias.id.siteID;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import gui.editor.DocumentListenerEditor;
 
-import javax.swing.JButton;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
+import alias.id.AliasID;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-public class SiteIDEditor extends JPanel implements ActionListener
+public class SiteIDEditor extends DocumentListenerEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
-	private final static Logger mLog = 
-							LoggerFactory.getLogger( SiteIDEditor.class );
-    private SiteIDNode mSiteIDNode;
-    private JTextField mTextSiteID;
 
-	public SiteIDEditor( SiteIDNode siteIDNode )
+    private static final String HELP_TEXT = "<html>"
+    		+ "<h3>Site Identifier</h3>"
+    		+ "<b>LTR-Net:</b> decimal (0-9) (e.g. <u>019</u>)<br>"
+    		+ "<b>MPT-1327:</b> 5 digits (0-9) (e.g. <u>23619</u>)<br>"
+    		+ "<b>Passport:</b> 3 digits (0-9) (e.g. <u>019</u>)<br>"
+    		+ "<b>P25:</b> hex (0-9, A-F) format RR-SS where RR = RF Subsystem<br>"
+    		+ "and SS = Site Number (e.g. RFSS 1 Site 1F: <u>01-1F</u>)"
+    		+ "</html>";
+
+    private JTextField mTextField;
+
+	public SiteIDEditor( AliasID aliasID )
 	{
-		mSiteIDNode = siteIDNode;
-		
 		initGUI();
+		
+		setItem( aliasID );
 	}
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][][grow]" ) );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][]" ) );
 
-		add( new JLabel( "Site ID" ), "span,align center" );
+		add( new JLabel( "Site ID:" ) );
+		mTextField = new JTextField();
+		mTextField.getDocument().addDocumentListener( this );
+		mTextField.setToolTipText( HELP_TEXT );
+		add( mTextField, "growx,push" );
 
-		add( new JLabel( "Site:" ) );
+		JLabel help = new JLabel( "Help ..." );
+		help.setForeground( Color.BLUE.brighter() );
+		help.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		help.addMouseListener( new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked( MouseEvent e )
+			{
+				JOptionPane.showMessageDialog( SiteIDEditor.this, 
+					HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE );
+			}
+		} );
 		
-		mTextSiteID = new JTextField( 
-				String.valueOf( mSiteIDNode.getSiteID().getSite() ) );
-		add( mTextSiteID, "growx,push" );
-
-		JTextArea description = new JTextArea( "Enter a site number.  "
-				+ "For P25 systems, use the format RR-SS, where RR = RF "
-				+ "Subsystem and SS = Site Number.  For example, RFSS 1 and "
-				+ "Site 3 would be: 01-03");
+		add( help, "align left" );
+	}
+	
+	public SiteID getSiteID()
+	{
+		if( getItem() instanceof SiteID )
+		{
+			return (SiteID)getItem();
+		}
 		
-		description.setLineWrap( true );
-		description.setBackground( getBackground() );
-		
-		add( description, "growx,span" );
-		
-		JButton btnSave = new JButton( "Save" );
-		btnSave.addActionListener( SiteIDEditor.this );
-		add( btnSave, "growx,push" );
-
-		JButton btnReset = new JButton( "Reset" );
-		btnReset.addActionListener( SiteIDEditor.this );
-		add( btnReset, "growx,push" );
+		return null;
 	}
 
 	@Override
-    public void actionPerformed( ActionEvent e )
-    {
-		String command = e.getActionCommand();
+	public void setItem( AliasID aliasID )
+	{
+		super.setItem( aliasID );
 		
-		if( command.contentEquals( "Save" ) )
+		SiteID siteID = getSiteID();
+		
+		if( siteID != null )
 		{
-			String siteIDString = mTextSiteID.getText();
-			
-			if( siteIDString != null )
-			{
-				mSiteIDNode.getSiteID().setSite( siteIDString );
+			mTextField.setText( siteID.getSite() );
+		}
+		
+		setModified( false );
+		
+		repaint();
+	}
 
-				mSiteIDNode.save();
-				
-				mSiteIDNode.show();
-			}
-			else
-			{
-				JOptionPane.showMessageDialog( SiteIDEditor.this, 
-						"Please enter a site ID" );
-			}
-		}
-		else if( command.contentEquals( "Reset" ) )
+	@Override
+	public void save()
+	{
+		SiteID siteID = getSiteID();
+		
+		if( siteID != null )
 		{
-			mTextSiteID.setText( mSiteIDNode.getSiteID().getSite() );
+			siteID.setSite( mTextField.getText() );
 		}
 		
-		mSiteIDNode.refresh();
-    }
+		setModified( false );
+	}
 }

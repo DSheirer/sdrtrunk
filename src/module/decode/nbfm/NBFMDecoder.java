@@ -17,6 +17,8 @@
  ******************************************************************************/
 package module.decode.nbfm;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 import module.decode.DecoderType;
 import module.decode.PrimaryDecoder;
 import module.decode.config.DecodeConfiguration;
@@ -40,7 +42,7 @@ public class NBFMDecoder extends PrimaryDecoder
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 	}
 

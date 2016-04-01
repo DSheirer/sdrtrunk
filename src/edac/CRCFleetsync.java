@@ -19,9 +19,6 @@ package edac;
 
 import java.util.BitSet;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Fleetsync CRC checksum utility
  * 
@@ -37,9 +34,6 @@ import org.slf4j.LoggerFactory;
  */
 public class CRCFleetsync
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( CRCFleetsync.class );
-
 	private static short[] sCHECKSUMS = new short[] {
 		0x740A, // 111010000001010 Bit 0
 		0x3A05, // 011101000000101 Bit 1

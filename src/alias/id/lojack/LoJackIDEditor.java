@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2015 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,112 +17,151 @@
  ******************************************************************************/
 package alias.id.lojack;
 
+import gui.editor.DocumentListenerEditor;
+
+import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
-import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JFormattedTextField;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.text.MaskFormatter;
 
 import module.decode.lj1200.LJ1200Message;
 import module.decode.lj1200.LJ1200Message.Function;
 import net.miginfocom.swing.MigLayout;
-import controller.ConfigurableNode;
+import alias.id.AliasID;
 
-public class LoJackIDEditor extends JPanel implements ActionListener
+public class LoJackIDEditor extends DocumentListenerEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
-    private LoJackIDNode mLoJackIDNode;
-
+    
+    private JTextField mTextField;
+    
     private JComboBox<LJ1200Message.Function> mFunctionCombo;
-    private JTextField mTextIdent;
 
-    private String mHelpText = "Select a LoJack message function code and enter"
-    		+ " a five character reply code/identifier in the ID field.\n\n"
-            + "Wildcard: use an asterisk (*) to wildcard any character in the "
-            + "five character reply code (e.g. AB*CD or ***12 or *****)\n\n"
-            + "Reply codes are five characters where the middle character"
-            + " identifies the entity (tower/site or transponder) as follows:\n"
-            + "X,Y\t\tTower\n"
-            + "0-9,A,C-H,J-N,P-W\tTransponder\n"
-            + "B,I,O,Z\t\tNot Used";
+    private static final String HELP_TEXT = "<html>"
+    		+ "<h3>LoJack Function and Identifier</h3>"
+    		+ "<b>Function Code:</b> <u>1Y-SITE ID</u><br>"
+    		+ "<b>ID:</b> 5 numbers or characters (e.g. <u>1BN47</u>)<br>"
+            + "<br>"
+            + "<b>Wildcard:</b> use an asterisk (*) to wildcard ID<br>"
+            + "characters (e.g. <u>AB*CD</u> or <u>***12</u> or <u>*****</u>)<br><br>"
+            + "The middle character in a reply ID code identifies the<br>"
+            + "entity.  Valid ID middle characters are:<br>"
+            + "<li><b>Tower:</b> X,Y</li>"
+            + "<li><b>Transponder:</b> 0-9,A,C-H,J-N,P-W</li>"
+            + "<li><b>Not Used:</b> B,I,O,Z</li>"
+    		+ "</html>";
 
-	public LoJackIDEditor( LoJackIDNode lojackNode )
+    public LoJackIDEditor( AliasID aliasID )
 	{
-		mLoJackIDNode = lojackNode;
 		initGUI();
+		
+		setItem( aliasID );
 	}
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][grow]" ) );
-
-		add( new JLabel( "LoJack Function and ID" ), "span,align center" );
-
-		LoJackFunctionAndID lojack = mLoJackIDNode.getLoJackID();
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][]" ) );
 
 		add( new JLabel( "Function:" ) );
 		mFunctionCombo = new JComboBox<LJ1200Message.Function>( Function.values() );
-		mFunctionCombo.setSelectedItem( lojack.getFunction() );
-		add( mFunctionCombo, "grow, wrap" );
+		mFunctionCombo.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent e )
+			{
+				setModified( true );
+			}
+		} );
+		mFunctionCombo.setToolTipText( HELP_TEXT );
+		add( mFunctionCombo, "growx, push" );
 		
 		add( new JLabel( "ID:" ) );
-		mTextIdent = new JTextField( lojack.getID() );
-
-		add( mTextIdent, "grow, wrap" );
 		
-		JButton btnSave = new JButton( "Save" );
-		btnSave.addActionListener( LoJackIDEditor.this );
-		add( btnSave, "growx,push" );
+		MaskFormatter formatter = null;
 
-		JButton btnReset = new JButton( "Reset" );
-		btnReset.addActionListener( LoJackIDEditor.this );
-		add( btnReset, "growx,push" );
+		try
+		{
+			//Mask: any character or number, 5 places
+			formatter = new MaskFormatter( "AAAAA" );
+		}
+		catch( Exception e )
+		{
+			//Do nothing, the mask was invalid
+		}
 		
-		JTextArea helpText = new JTextArea( mHelpText );
-		helpText.setLineWrap( true );
-		helpText.setBackground( getBackground() );
-		add( helpText, "span,grow,push" );
+		mTextField = new JFormattedTextField( formatter );
+		mTextField.getDocument().addDocumentListener( this );
+		mTextField.setToolTipText( HELP_TEXT );
+		add( mTextField, "growx,push" );
+		
+		JLabel help = new JLabel( "Help ..." );
+		help.setForeground( Color.BLUE.brighter() );
+		help.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		help.addMouseListener( new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked( MouseEvent e )
+			{
+				JOptionPane.showMessageDialog( LoJackIDEditor.this, 
+					HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE );
+			}
+		} );
+		add( help, "align left" );
+	}
+	
+	public LoJackFunctionAndID getLoJackID()
+	{
+		if( getItem() instanceof LoJackFunctionAndID )
+		{
+			return (LoJackFunctionAndID)getItem();
+		}
+		
+		return null;
 	}
 
 	@Override
-    public void actionPerformed( ActionEvent e )
-    {
-		String command = e.getActionCommand();
+	public void setItem( AliasID aliasID )
+	{
+		super.setItem( aliasID );
 		
-		final LoJackFunctionAndID lojack = mLoJackIDNode.getLoJackID();
-
-		if( command.contentEquals( "Save" ) )
-		{
-			String id = mTextIdent.getText();
-			
-			if( id != null )
-			{
-				
-				lojack.setID( id );
-				lojack.setFunction( (Function)mFunctionCombo.getSelectedItem() );
-
-				((ConfigurableNode)mLoJackIDNode.getParent()).sort();
-				
-				mLoJackIDNode.save();
-				
-				mLoJackIDNode.show();
-			}
-			else
-			{
-				JOptionPane.showMessageDialog( LoJackIDEditor.this, "Please enter an ident" );
-			}
-		}
-		else if( command.contentEquals( "Reset" ) )
+		LoJackFunctionAndID lojack = getLoJackID();
+		
+		if( lojack != null )
 		{
 			mFunctionCombo.setSelectedItem( lojack.getFunction() );
-			mTextIdent.setText( lojack.getID() );
+			mTextField.setText( lojack.getID() );
+		}
+		else
+		{
+			mFunctionCombo.setSelectedItem( null );
+			mTextField.setText( null );
 		}
 		
-		mLoJackIDNode.refresh();
-    }
+		setModified( false );
+		
+		repaint();
+	}
+
+	@Override
+	public void save()
+	{
+		LoJackFunctionAndID lojack = getLoJackID();
+		
+		if( lojack != null )
+		{
+			lojack.setID( mTextField.getText() );
+			lojack.setFunction( (Function)mFunctionCombo.getSelectedItem() );
+		}
+		
+		setModified( false );
+	}
 }

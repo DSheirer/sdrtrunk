@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -38,8 +39,6 @@ import sample.Listener;
 import sample.complex.ComplexBuffer;
 import sample.complex.IComplexBufferListener;
 import util.TimeStamp;
-import controller.ThreadPoolManager;
-import controller.ThreadPoolManager.ThreadType;
 
 /**
  * WAVE audio recorder module for recording complex (I&Q) samples to a wave file
@@ -55,18 +54,14 @@ public class ComplexBufferWaveRecorder extends Module
     private Path mFile;
 	private AudioFormat mAudioFormat;
 	
-	private ThreadPoolManager mThreadPoolManager;
 	private BufferProcessor mBufferProcessor;
 	private ScheduledFuture<?> mProcessorHandle;
 	private LinkedBlockingQueue<ComplexBuffer> mBuffers = new LinkedBlockingQueue<>( 500 );
 	
 	private AtomicBoolean mRunning = new AtomicBoolean();
 	
-	public ComplexBufferWaveRecorder( ThreadPoolManager threadPoolManager, 
-			int sampleRate, String filePrefix )
+	public ComplexBufferWaveRecorder( int sampleRate, String filePrefix )
 	{
-		mThreadPoolManager = threadPoolManager;
-		
 		mAudioFormat = 	new AudioFormat( sampleRate,  //SampleRate
 										 16,     //Sample Size
 										 2,      //Channels
@@ -81,7 +76,7 @@ public class ComplexBufferWaveRecorder extends Module
 		return mFile;
 	}
 	
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 		if( mRunning.compareAndSet( false, true ) )
 		{
@@ -103,9 +98,8 @@ public class ComplexBufferWaveRecorder extends Module
 				mWriter = new WaveWriter( mAudioFormat, mFile );
 
 				/* Schedule the processor to run every 500 milliseconds */
-				mProcessorHandle = mThreadPoolManager.scheduleFixedRate( 
-					ThreadType.BASEBAND_RECORDING, mBufferProcessor, 500, 
-					TimeUnit.MILLISECONDS );
+				mProcessorHandle = executor.scheduleAtFixedRate( 
+						mBufferProcessor, 0, 500, TimeUnit.MILLISECONDS );
 			}
 			catch( IOException io )
 			{
@@ -149,8 +143,6 @@ public class ComplexBufferWaveRecorder extends Module
 	public void dispose()
 	{
 		stop();
-		
-		mThreadPoolManager = null;
 	}
 
 	@Override
@@ -190,7 +182,10 @@ public class ComplexBufferWaveRecorder extends Module
 						
 						mFile = null;
 
-						mThreadPoolManager.cancel( mProcessorHandle );
+						if( mProcessorHandle != null )
+						{
+							mProcessorHandle.cancel( true );
+						}
 						
 						mProcessorHandle = null;
 					}

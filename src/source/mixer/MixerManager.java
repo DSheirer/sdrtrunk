@@ -19,6 +19,7 @@ package source.mixer;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -49,27 +50,15 @@ public class MixerManager
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( MixerManager.class );
 
-	private static MixerManager sInstance = null;
-	
 	private List<InputMixerConfiguration> mInputMixers = new ArrayList<>();
 	private List<MixerChannelConfiguration> mOutputMixers = new ArrayList<>();
 	private HashMap<String,MixerTunerDataLine> mMixerTuners = new HashMap<>();
 
-    private MixerManager()
+	public MixerManager()
 	{
 		loadMixers();
 	}
 
-    public static MixerManager getInstance()
-    {
-    	if( sInstance == null )
-    	{
-    		sInstance = new MixerManager();
-    	}
-    	
-    	return sInstance;
-    }
-    
     public RealMixerSource getSource( SourceConfiguration config )
     {
 		RealMixerSource retVal = null;
@@ -108,7 +97,6 @@ public class MixerManager
 	                            {
 									return new RealMixerSource( dataLine,
 						    				 AudioFormats.PCM_SIGNED_48KHZ_16BITS_MONO,
-											 mixerName,
 											 new ShortAdapter() );
 	                            }
                             }
@@ -137,7 +125,7 @@ public class MixerManager
 								{
 									return new RealMixerSource( dataLine, 
 										AudioFormats.PCM_SIGNED_48KHZ_16BITS_STEREO,
-										mixerName, new ChannelShortAdapter( 
+										new ChannelShortAdapter( 
 												mixerConfig.getChannel() ) );
 								}
                             }
@@ -181,7 +169,14 @@ public class MixerManager
     
     public Collection<MixerTunerDataLine> getMixerTunerDataLines()
     {
-    	return mMixerTuners.values();
+    	if( mMixerTuners.isEmpty() )
+    	{
+    		return Collections.emptyList();
+    	}
+    	else
+    	{
+        	return mMixerTuners.values();
+    	}
     }
     
 	private void loadMixers()

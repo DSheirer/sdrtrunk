@@ -21,7 +21,7 @@ import javax.usb.UsbDeviceDescriptor;
 
 public enum TunerClass
 {
-	AIRSPY( TunerType.AIRSPY_R820T, "1D50", "60A1", "Airspy.com", "Airspy" ),
+	AIRSPY( TunerType.AIRSPY_R820T, "1D50", "60A1", "Airspy", "Airspy" ),
 	GENERIC_2832( TunerType.RTL2832_VARIOUS, "0BDA", "2832", "RTL2832", "SDR" ),        		
 	GENERIC_2838( TunerType.RTL2832_VARIOUS, "0BDA", "2838", "RTL2832", "SDR" ),               
 	COMPRO_VIDEOMATE_U620F( TunerType.ELONICS_E4000, "185B", "0620", "Compro", "Videomate U620F" ),   

@@ -25,20 +25,13 @@ import java.util.List;
 import javax.swing.table.AbstractTableModel;
 
 import module.decode.event.CallEvent.CallEventType;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import sample.Listener;
 
 public class CallEventModel extends AbstractTableModel implements Listener<CallEvent>
 {
     private static final long serialVersionUID = 1L;
 
-	private final static Logger mLog = LoggerFactory.getLogger( CallEventModel.class );
-
-	private static DecimalFormat mFrequencyFormatter = 
-			new DecimalFormat( "0.000000" );
+	private static DecimalFormat mFrequencyFormatter = new DecimalFormat( "0.000000" );
     
     public static final int TIME = 0;
     public static final int EVENT = 1;

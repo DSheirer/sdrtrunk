@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  *     
  *     Java port of librtlsdr <https://github.com/steve-m/librtlsdr>
  *     
@@ -34,10 +34,9 @@ import org.usb4java.DeviceDescriptor;
 import org.usb4java.LibUsbException;
 
 import source.SourceException;
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
+import source.tuner.configuration.TunerConfiguration;
 import source.tuner.rtl.RTL2832TunerController;
-import controller.ResourceManager;
 import controller.ThreadPoolManager;
 
 public class R820TTunerController extends RTL2832TunerController
@@ -135,19 +134,6 @@ public class R820TTunerController extends RTL2832TunerController
 			}
 		}
     }
-
-	/**
-	 * Controller gui editor component for this tuner
-	 */
-	public JPanel getEditor( ResourceManager resourceManager )
-	{
-		if( mEditor == null )
-		{
-			mEditor = new R820TTunerEditorPanel( this, resourceManager );
-		}
-		
-		return mEditor;
-	}
 
 	/**
 	 * Not implemented.

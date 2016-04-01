@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -19,8 +19,6 @@ package source.tuner.fcd;
 
 import java.util.concurrent.RejectedExecutionException;
 
-import javax.swing.JPanel;
-
 import sample.Listener;
 import sample.adapter.ShortAdapter;
 import sample.complex.ComplexBuffer;
@@ -30,75 +28,50 @@ import source.tuner.MixerTunerDataLine;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannelSource;
 import source.tuner.TunerClass;
-import source.tuner.TunerConfiguration;
+import source.tuner.TunerEvent;
 import source.tuner.TunerType;
-import source.tuner.frequency.FrequencyChangeListener;
-import controller.ResourceManager;
-import controller.ThreadPoolManager;
 
 public class FCDTuner extends MixerTuner
 {
-	private FCDTunerController mController;
-	
 	public FCDTuner( MixerTunerDataLine mixerTDL,
 					 FCDTunerController controller )
 	{
-		super( controller.getConfiguration().toString(), 
+		super( controller.getConfiguration().toString(),
+			   controller,
 			   mixerTDL, 
 			   new ShortAdapter() );
-		
-		mController = controller;
-		mController.addListener( (FrequencyChangeListener)this );
 	}
 	
 	public void dispose()
 	{
 		//TODO: release the mixer tuner data line as well
 		
-		mController.dispose();
+		getController().dispose();
 	}
 	
 	public FCDTunerController getController()
 	{
-		return mController;
+		return (FCDTunerController)getTunerController();
 	}
 	
 	@Override
     public TunerClass getTunerClass()
     {
-	    return mController.getTunerClass();
+	    return getController().getTunerClass();
     }
 
 	@Override
     public TunerType getTunerType()
     {
-	    return mController.getTunerType();
+	    return getController().getTunerType();
     }
 
 	@Override
     public String getUniqueID()
     {
-	    return mController.getUSBAddress();
+	    return getController().getUSBAddress();
     }
 
-	@Override
-	public JPanel getEditor( ResourceManager resourceManager )
-	{
-		return mController.getEditor( this, resourceManager );
-	}
-	
-	@Override
-    public void apply( TunerConfiguration config )throws SourceException
-    {
-	    mController.apply( config );
-    }
-	
-	@Override
-    public int getSampleRate()
-    {
-	    return (int)mMixerTunerType.getAudioFormat().getSampleRate();
-    }
-	
 	@Override
 	public double getSampleSize()
 	{
@@ -106,16 +79,17 @@ public class FCDTuner extends MixerTuner
 	}
 
 	@Override
-    public long getFrequency() throws SourceException
-    {
-		return mController.getFrequency();
-    }
-
-	@Override
-    public TunerChannelSource getChannel( TunerChannel tunerChannel )	
+    public TunerChannelSource getChannel( TunerChannel tunerChannel )
     		throws RejectedExecutionException, SourceException
     {
-		return mController.getChannel( this, tunerChannel );
+		TunerChannelSource source = getController().getChannel( this, tunerChannel );
+
+		if( source != null )
+		{
+			broadcast( new TunerEvent( this, TunerEvent.Event.CHANNEL_COUNT ) );
+		}
+		
+		return source;
     }
 
 	/**
@@ -132,7 +106,7 @@ public class FCDTuner extends MixerTuner
 
 			/* Tell the controller to release the channel and cleanup */
 			/* This will release the channel as a frequency change listener */
-			mController.releaseChannel( source );
+			getController().releaseChannel( source );
 		}
     }
 }

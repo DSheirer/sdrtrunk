@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -20,47 +20,39 @@ package source.tuner.fcd.proplusV2;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import javax.swing.JPanel;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.Device;
 import org.usb4java.DeviceDescriptor;
 
 import source.SourceException;
+import source.tuner.MixerTunerType;
 import source.tuner.TunerClass;
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
+import source.tuner.configuration.TunerConfiguration;
 import source.tuner.fcd.FCDCommand;
-import source.tuner.fcd.FCDTuner;
 import source.tuner.fcd.FCDTunerController;
-import controller.ResourceManager;
 
 public class FCD2TunerController extends FCDTunerController
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( FCD2TunerController.class );
+	private final static Logger mLog = LoggerFactory.getLogger( FCD2TunerController.class );
 
-	public static final int sMINIMUM_TUNABLE_FREQUENCY = 150000;
-	public static final int sMAXIMUM_TUNABLE_FREQUENCY = 2050000000;
-	public static final int sSAMPLE_RATE = 192000;
-	
-	private FCD2TunerConfiguration mTunerConfiguration;
-	private FCD2TunerEditorPanel mEditor;
+	public static final int MINIMUM_TUNABLE_FREQUENCY = 150000;
+	public static final int MAXIMUM_TUNABLE_FREQUENCY = 2050000000;
+	public static final int SAMPLE_RATE = 192000;
 	
 	public FCD2TunerController( Device device, DeviceDescriptor descriptor ) 
 	{
-		super( device,
-			   descriptor,
-			   sMINIMUM_TUNABLE_FREQUENCY, 
-			   sMAXIMUM_TUNABLE_FREQUENCY );
+		super( device, descriptor,
+			   (int)MixerTunerType.FUNCUBE_DONGLE_PRO_PLUS.getAudioFormat().getSampleRate(),
+			   MINIMUM_TUNABLE_FREQUENCY, MAXIMUM_TUNABLE_FREQUENCY );
 	}
 
 	public void init() throws SourceException
 	{
 		super.init();
 
-		mFrequencyController.setSampleRate( sSAMPLE_RATE );
+		mFrequencyController.setSampleRate( SAMPLE_RATE );
 
 		try
 		{
@@ -74,7 +66,7 @@ public class FCD2TunerController extends FCDTunerController
 	
 	public int getCurrentSampleRate()
 	{
-		return sSAMPLE_RATE;
+		return SAMPLE_RATE;
 	}
 
 	@Override
@@ -88,71 +80,44 @@ public class FCD2TunerController extends FCDTunerController
     {
 	    return TunerType.FUNCUBE_DONGLE_PRO_PLUS;
     }
-
-	public JPanel getEditor( FCDTuner tuner, ResourceManager resourceManager )
-	{
-		if( mEditor == null )
-		{
-			mEditor = new FCD2TunerEditorPanel( tuner, resourceManager );
-		}
-		
-		return mEditor;
-	}
 	
+	public void setLNAGain( boolean enabled ) throws SourceException
+	{
+		try
+        {
+        	send( FCDCommand.APP_SET_LNA_GAIN, enabled ? 1 : 0 );
+        }
+        catch ( Exception e )
+        {
+        	throw new SourceException( "error while setting LNA Gain", e );
+        }
+	}
+
+	public void setMixerGain( boolean enabled ) throws SourceException
+	{
+		try
+        {
+        	send( FCDCommand.APP_SET_MIXER_GAIN, enabled ? 1 : 0 );
+        }
+        catch ( Exception e )
+        {
+        	throw new SourceException( "error while setting Mixer Gain", e );
+        }
+	}
+
 	@Override
     public void apply( TunerConfiguration config ) throws SourceException
     {
 		if( config instanceof FCD2TunerConfiguration )
 		{
-			FCD2TunerConfiguration plusConfig = 
-								(FCD2TunerConfiguration)config;
+			FCD2TunerConfiguration fcd2 = (FCD2TunerConfiguration)config;
 
-			setFrequencyCorrection( plusConfig.getFrequencyCorrection() );
-
-			try
-            {
-                if( plusConfig.getGainLNA() )
-    			{
-                	send( FCDCommand.APP_SET_LNA_GAIN, 1 );
-
-    			}
-    			else
-    			{
-    				send( FCDCommand.APP_SET_LNA_GAIN, 0 );
-    			}
-            }
-            catch ( Exception e )
-            {
-            	throw new SourceException( "error while setting LNA Gain", e );
-            }
-
-            try
-            {
-                if( plusConfig.getGainMixer() )
-    			{
-                	send( FCDCommand.APP_SET_MIXER_GAIN, 1 );
-                    
-    			}
-    			else
-    			{
-    				send( FCDCommand.APP_SET_MIXER_GAIN, 0 );
-    			}
-            }
-            catch ( Exception e )
-            {
-            	throw new SourceException( "error while setting Mixer Gain", e );
-            }
-            
-            mTunerConfiguration = plusConfig;
+			setFrequencyCorrection( fcd2.getFrequencyCorrection() );
+			setLNAGain( fcd2.getGainLNA() );
+			setMixerGain( fcd2.getGainMixer() );
 		}
     }
 	
-	@Override
-    public TunerConfiguration getTunerConfiguration()
-    {
-	    return mTunerConfiguration;
-    }
-
 	public int getDCCorrection()
 	{
 		int dcCorrection = -999;

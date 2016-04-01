@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -28,7 +28,6 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Hashtable;
 
 import javax.swing.JCheckBoxMenuItem;
@@ -54,7 +53,6 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import playlist.PlaylistManager;
 import properties.SystemProperties;
 import sample.Listener;
 import sample.SampleType;
@@ -62,12 +60,10 @@ import sample.complex.ComplexBuffer;
 import settings.ColorSetting.ColorSettingName;
 import settings.ColorSettingMenuItem;
 import settings.SettingsManager;
-import source.SourceException;
 import source.tuner.Tuner;
-import source.tuner.TunerSelectionListener;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeEvent.Event;
-import source.tuner.frequency.FrequencyChangeListener;
+import source.tuner.frequency.IFrequencyChangeProcessor;
 import spectrum.OverlayPanel.ChannelDisplay;
 import spectrum.converter.ComplexDecibelConverter;
 import spectrum.converter.DFTResultsConverter;
@@ -80,18 +76,17 @@ import spectrum.menu.SmoothingTypeItem;
 
 import com.jidesoft.swing.JideSplitPane;
 
-import controller.ConfigurationControllerModel;
 import controller.channel.Channel;
-import controller.channel.ChannelManager;
+import controller.channel.ChannelModel;
+import controller.channel.ChannelProcessingManager;
 import controller.channel.ChannelUtils;
 import dsp.filter.Window.WindowType;
 import dsp.filter.smoothing.SmoothingFilter.SmoothingType;
 
 public class SpectralDisplayPanel extends JPanel 
 								  implements Listener<ComplexBuffer>,
-								  			 FrequencyChangeListener,
-								  			 IDFTWidthChangeProcessor,
-								  			 TunerSelectionListener
+								  			 IFrequencyChangeProcessor,
+								  			 IDFTWidthChangeProcessor
  {
     private static final long serialVersionUID = 1L;
     
@@ -103,7 +98,6 @@ public class SpectralDisplayPanel extends JPanel
 	public static final String FFT_SIZE_PROPERTY = "spectral.display.dft.size";
 	public static final int NO_ZOOM = 0;
 	public static final int MAX_ZOOM = 6;
-	
 
 	private DFTSize mDFTSize = DFTSize.FFT04096;
 	private int mZoom = 0;
@@ -116,9 +110,9 @@ public class SpectralDisplayPanel extends JPanel
     private OverlayPanel mOverlayPanel;
     private DFTProcessor mDFTProcessor;
     private DFTResultsConverter mDFTConverter;
-    private PlaylistManager mPlaylistManager;
+    private ChannelModel mChannelModel;
+    private ChannelProcessingManager mChannelProcessingManager;
     private SettingsManager mSettingsManager;
-    private ConfigurationControllerModel mController;
 	private Tuner mTuner;
     
 	/**
@@ -133,24 +127,17 @@ public class SpectralDisplayPanel extends JPanel
 	 * the DFT is translated to decibels for display in the spectrum and
 	 * waterfall components.
 	 */
-    public SpectralDisplayPanel( ChannelManager channelManager,
-    							 ConfigurationControllerModel controller,
-    							 PlaylistManager playlistManager,
+    public SpectralDisplayPanel( ChannelModel channelModel,
+    							 ChannelProcessingManager channelProcessingManager,
     							 SettingsManager settingsManager )
     {
-    	mController = controller;
-    	mPlaylistManager = playlistManager;
+    	mChannelModel = channelModel;
+    	mChannelProcessingManager = channelProcessingManager;
     	mSettingsManager = settingsManager;
 
     	mSpectrumPanel = new SpectrumPanel( mSettingsManager );
-    	mOverlayPanel = new OverlayPanel( mSettingsManager, channelManager );
+    	mOverlayPanel = new OverlayPanel( mSettingsManager, mChannelModel );
     	mWaterfallPanel = new WaterfallPanel( mSettingsManager );
-    	
-    	//Register to receive tuner selection events
-    	if( mController != null )
-    	{
-        	mController.addListener( (TunerSelectionListener)this );
-    	}
     	
 		init();
 		
@@ -163,9 +150,9 @@ public class SpectralDisplayPanel extends JPanel
     	
     	String rawSize = properties.get( FFT_SIZE_PROPERTY, DFTSize.FFT04096.name() );
     	
-		DFTSize size = null;
-
-		if( rawSize != null )
+    	DFTSize size = null;
+    	
+    	if( rawSize != null )
     	{
     		try
     		{
@@ -173,16 +160,16 @@ public class SpectralDisplayPanel extends JPanel
     		}
     		catch( Exception e )
     		{
-    			//Do nothing, we couldn't parse the stored value
+    			//Do nothing
     		}
     	}
-		
-		if( size == null )
-		{
-			size = DFTSize.FFT04096;
-		}
-		
-		setDFTSize( size );
+    	
+    	if( size == null )
+    	{
+    		size = DFTSize.FFT04096;
+    	}
+    	
+    	setDFTSize( size );
     }
     
     public void dispose()
@@ -190,13 +177,6 @@ public class SpectralDisplayPanel extends JPanel
 		/* De-register from receiving samples when the window closes */
     	clearTuner();
 
-    	if( mController != null )
-    	{
-        	mController.removeListener( (TunerSelectionListener)this );
-    	}
-
-    	mController = null;
-    	mPlaylistManager = null;
     	mSettingsManager = null;
     	
     	mDFTProcessor.dispose();
@@ -229,8 +209,8 @@ public class SpectralDisplayPanel extends JPanel
 		mDFTSize = size;
 		
 		SystemProperties properties = SystemProperties.getInstance();
+		
 		properties.set( FFT_SIZE_PROPERTY, size.name() );
-		properties.save();
 
 		setZoom( 0, 0, 0 );
 	}
@@ -427,7 +407,6 @@ public class SpectralDisplayPanel extends JPanel
 	/**
 	 * Receives frequency change events -- primarily from tuner components.
 	 */
-	@Override
     public void frequencyChanged( FrequencyChangeEvent event )
     {
 		mOverlayPanel.frequencyChanged( event );
@@ -444,11 +423,10 @@ public class SpectralDisplayPanel extends JPanel
     }
 
 	/**
-	 * Responds to tuner selection event by deregistering from the current
+	 * Responds to tuner event by deregistering from the current
 	 * complex sample buffer source and registering with the tuner argument.
 	 */
-	@Override
-	public void tunerSelected( Tuner tuner )
+	public void showTuner( Tuner tuner )
 	{
 		clearTuner();
 		
@@ -459,7 +437,7 @@ public class SpectralDisplayPanel extends JPanel
 		if( mTuner != null )
 		{
 			//Register to receive frequency change events
-			mTuner.addListener( (FrequencyChangeListener)this );
+			mTuner.getTunerController().addListener( this );
 
 			//Register the dft processor to receive samples from the tuner
 			mTuner.addListener( (Listener<ComplexBuffer>)mDFTProcessor );
@@ -468,19 +446,13 @@ public class SpectralDisplayPanel extends JPanel
 			
 			//Fire frequency and sample rate change events so that the spectrum
 			//and overlay panels can synchronize
-			try
-            {
-				frequencyChanged( new FrequencyChangeEvent( 
-						Event.FREQUENCY_CHANGE_NOTIFICATION, mTuner.getFrequency() ) );
-				
-				frequencyChanged( new FrequencyChangeEvent( 
-						Event.SAMPLE_RATE_CHANGE_NOTIFICATION, mTuner.getSampleRate() ) );
-            }
-            catch ( SourceException e )
-            {
-            	mLog.info( "DFTProcessor - exception during new tuner setup - "
-            			+ "couldn't get frequency from the tuner", e );
-            }
+			frequencyChanged( new FrequencyChangeEvent( 
+					Event.NOTIFICATION_FREQUENCY_CHANGE, 
+					mTuner.getTunerController().getFrequency() ) );
+			
+			frequencyChanged( new FrequencyChangeEvent( 
+					Event.NOTIFICATION_SAMPLE_RATE_CHANGE, 
+					mTuner.getTunerController().getSampleRate() ) );
 		}
 	}
 
@@ -492,7 +464,7 @@ public class SpectralDisplayPanel extends JPanel
 		if( mTuner != null )
 		{
 			//Deregister for frequency change events from the tuner
-			mTuner.removeListener( (FrequencyChangeListener)this );
+			mTuner.getTunerController().removeListener( this );
 			
 			//Deregister the dft processor from receiving samples
 			mTuner.removeListener( (Listener<ComplexBuffer>)mDFTProcessor );
@@ -653,8 +625,9 @@ public class SpectralDisplayPanel extends JPanel
 
 					for( Channel channel: channels )
 					{
-						JMenu channelMenu = ChannelUtils.getContextMenu( 
-							mPlaylistManager, channel, SpectralDisplayPanel.this );
+						JMenu channelMenu = ChannelUtils.getContextMenu( mChannelModel, 
+							mChannelProcessingManager, channel, 
+							SpectralDisplayPanel.this );
 
 						if( channelMenu != null )
 						{
@@ -676,10 +649,7 @@ public class SpectralDisplayPanel extends JPanel
 
 				for( DecoderType type: DecoderType.getPrimaryDecoders() )
 				{
-					decoderMenu.add( new DecoderItem( mController, 
-													  frequency, 
-													  type ) );
-					
+					decoderMenu.add( new DecoderItem( type, frequency ) );
 				}
 				
 				frequencyMenu.add( decoderMenu );
@@ -958,17 +928,14 @@ public class SpectralDisplayPanel extends JPanel
 	{
         private static final long serialVersionUID = 1L;
 
-        private ConfigurationControllerModel mController;
+        private ChannelModel mChannelModel;
         private long mFrequency;
         private DecoderType mDecoder;
         
-        public DecoderItem( ConfigurationControllerModel controller, 
-        					long frequency, 
-        					DecoderType type )
+        public DecoderItem( DecoderType type, long frequency )
         {
         	super( type.getDisplayString() );
         	
-        	mController = controller;
         	mFrequency = frequency;
         	mDecoder = type;
         	
@@ -977,7 +944,7 @@ public class SpectralDisplayPanel extends JPanel
 				@Override
                 public void actionPerformed( ActionEvent e )
                 {
-					mController.createChannel( mFrequency, mDecoder );
+					mChannelModel.createChannel( mDecoder, mFrequency );
                 }
         	} );
         }

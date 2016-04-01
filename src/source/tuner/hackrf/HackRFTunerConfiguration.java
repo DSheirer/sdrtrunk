@@ -20,8 +20,8 @@ package source.tuner.hackrf;
 
 import javax.xml.bind.annotation.XmlAttribute;
 
-import source.tuner.TunerConfiguration;
 import source.tuner.TunerType;
+import source.tuner.configuration.TunerConfiguration;
 import source.tuner.hackrf.HackRFTunerController.HackRFLNAGain;
 import source.tuner.hackrf.HackRFTunerController.HackRFSampleRate;
 import source.tuner.hackrf.HackRFTunerController.HackRFVGAGain;
@@ -39,12 +39,11 @@ public class HackRFTunerConfiguration extends TunerConfiguration
 	 */
 	public HackRFTunerConfiguration()
 	{
-		this( "Default" );
 	}
 	
-	public HackRFTunerConfiguration( String name )
+	public HackRFTunerConfiguration( String uniqueID, String name )
 	{
-		super( name );
+		super( uniqueID, name );
 	}
 	
 	@Override

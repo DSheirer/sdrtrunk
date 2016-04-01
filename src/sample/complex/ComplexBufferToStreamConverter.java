@@ -9,7 +9,6 @@ public class ComplexBufferToStreamConverter implements Listener<ComplexBuffer>
 {
 	private ComplexSampleListener mListener;
 	
-	
 	public void dispose()
 	{
 		mListener = null;

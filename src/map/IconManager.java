@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
 
 import settings.Setting;
 import settings.SettingChangeListener;
-import controller.ResourceManager;
+import settings.SettingsManager;
 
 public class IconManager extends JFrame 
 							  implements ActionListener, SettingChangeListener
@@ -61,8 +61,6 @@ public class IconManager extends JFrame
 	private static final long serialVersionUID = 1L;
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( IconManager.class );
-    
-    private ResourceManager mResourceManager;
     
     private static final String sMSG_NEW = "Type a name for the new icon, "
 		+ "select the file, and click Save,\nor Cancel to reset";
@@ -81,9 +79,11 @@ public class IconManager extends JFrame
     private JFileChooser mFileChooser;
     private Mode mMode = Mode.NORMAL;
     
-	public IconManager( ResourceManager resourceManager, Component displayOver )
+    private SettingsManager mSettingsManager;
+    
+	public IconManager( SettingsManager settingsManager, Component displayOver )
 	{
-		mResourceManager = resourceManager;
+		mSettingsManager = settingsManager;
 
 		init( displayOver );
 	}
@@ -128,7 +128,7 @@ public class IconManager extends JFrame
 		/**
 		 * MapIcon list
 		 */
-		MapIcon[] icons = mResourceManager.getSettingsManager().getMapIcons();
+		MapIcon[] icons = mSettingsManager.getMapIcons();
 		Arrays.sort( icons );
 		
     	mIconList = new JList<MapIcon>( icons );
@@ -176,8 +176,7 @@ public class IconManager extends JFrame
 							@Override
                             public void actionPerformed( ActionEvent e )
                             {
-								mResourceManager.getSettingsManager()
-									.setDefaultIcon( icon );
+								mSettingsManager.setDefaultIcon( icon );
 								
 								refreshList();
                             }
@@ -193,8 +192,7 @@ public class IconManager extends JFrame
 								@Override
 	                            public void actionPerformed( ActionEvent arg0 )
 	                            {
-									mResourceManager.getSettingsManager()
-												.deleteMapIcon( icon );
+									mSettingsManager.deleteMapIcon( icon );
 	                            }
 							} );
 							
@@ -350,7 +348,7 @@ public class IconManager extends JFrame
 	
 	private void refreshList()
 	{
-		MapIcon[] icons = mResourceManager.getSettingsManager().getMapIcons();
+		MapIcon[] icons = mSettingsManager.getMapIcons();
 		
 		Arrays.sort( icons );
 
@@ -371,8 +369,7 @@ public class IconManager extends JFrame
 				{
 					if( path != null && !path.isEmpty() )
 					{
-						mResourceManager.getSettingsManager()
-							.addMapIcon( new MapIcon( name, path, true ) );
+						mSettingsManager.addMapIcon( new MapIcon( name, path, true ) );
 					}
 					else
 					{
@@ -400,8 +397,7 @@ public class IconManager extends JFrame
 					{
 						selected.setName( name );
 						selected.setPath( path );
-						mResourceManager.getSettingsManager()
-								.updatMapIcon( selected, name, path );
+						mSettingsManager.updatMapIcon( selected, name, path );
 					}
 					else
 					{

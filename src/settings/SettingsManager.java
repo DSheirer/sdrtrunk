@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -30,6 +30,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.swing.ImageIcon;
 import javax.xml.bind.JAXBContext;
@@ -45,19 +48,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import properties.SystemProperties;
+import sample.Listener;
 import settings.ColorSetting.ColorSettingName;
 import source.recording.RecordingConfiguration;
-import source.tuner.TunerConfiguration;
-import source.tuner.TunerConfigurationAssignment;
-import source.tuner.TunerType;
-import source.tuner.airspy.AirspyTunerConfiguration;
-import source.tuner.fcd.proV1.FCD1TunerConfiguration;
-import source.tuner.fcd.proplusV2.FCD2TunerConfiguration;
-import source.tuner.hackrf.HackRFTunerConfiguration;
-import source.tuner.rtl.e4k.E4KTunerConfiguration;
-import source.tuner.rtl.r820t.R820TTunerConfiguration;
+import source.tuner.configuration.TunerConfigurationEvent;
+import source.tuner.configuration.TunerConfigurationModel;
+import controller.ThreadPoolManager;
 
-public class SettingsManager
+public class SettingsManager implements Listener<TunerConfigurationEvent>
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( SettingsManager.class );
@@ -76,8 +74,25 @@ public class SettingsManager
 	private HashMap<String,ImageIcon> mResizedIcons = 
 							new HashMap<String,ImageIcon>();
 	
-	public SettingsManager()
+	private TunerConfigurationModel mTunerConfigurationModel;
+	private ThreadPoolManager mThreadPoolManager;
+
+	private boolean mLoadingSettings = false;
+	private AtomicBoolean mSettingsSavePending = new AtomicBoolean();
+	
+	public SettingsManager( ThreadPoolManager threadPoolManager,
+							TunerConfigurationModel tunerConfigurationModel )
 	{
+		//TODO: move settings and icons into a SettingsModel and an IconModel
+		//and update this class to only provide loading, saving, and model
+		//change detection producing a save.
+
+		mThreadPoolManager = threadPoolManager;
+		mTunerConfigurationModel = tunerConfigurationModel;
+
+		//Register for tuner config events so that we can save the settings
+		mTunerConfigurationModel.addListener( this );
+		
 		init();
 	}
 
@@ -100,6 +115,15 @@ public class SettingsManager
 		load( settingsFolder.resolve( settingsFile ) );
 		
 		refreshIcons();
+	}
+	
+	@Override
+	public void receive( TunerConfigurationEvent t )
+	{
+		if( !mLoadingSettings )
+		{
+			scheduleSettingsSave();
+		}
 	}
 
 	/**
@@ -180,7 +204,7 @@ public class SettingsManager
 		
 		broadcastSettingChange( setting );
 		
-		save();
+		scheduleSettingsSave();
 	}
 	
 	public void resetColorSetting( ColorSettingName name )
@@ -226,7 +250,7 @@ public class SettingsManager
 		
 		broadcastSettingChange( setting );
 		
-		save();
+		scheduleSettingsSave();
 	}
 	
 	public MapIcon[] getMapIcons()
@@ -323,7 +347,7 @@ public class SettingsManager
 
 			broadcastSettingDeleted( existing );
 
-			save();
+			scheduleSettingsSave();
 		}
 	}
 
@@ -346,7 +370,7 @@ public class SettingsManager
 			existing.setName( icon.getName() );
 			existing.setPath( icon.getPath() );
 			broadcastSettingChange( existing );
-			save();
+			scheduleSettingsSave();
 		}
 	}
 	
@@ -363,7 +387,7 @@ public class SettingsManager
 			existing.setName( newName );
 			existing.setPath( newPath );
 			broadcastSettingChange( existing );
-			save();
+			scheduleSettingsSave();
 		}
 	}
 
@@ -386,6 +410,12 @@ public class SettingsManager
 			}
 			
 			MapIcon mapIcon = mIcons.get( name );
+			
+			if( mapIcon == null )
+			{
+				mapIcon = new MapIcon( name, name );
+				mIcons.put( name, mapIcon );
+			}
 
 			if( mapIcon != null )
 			{
@@ -399,11 +429,12 @@ public class SettingsManager
 				}
 				else
 				{
-					mResizedIcons.put( mergedName, mapIcon.getImageIcon() );
+					return mapIcon.getImageIcon();
 				}
 			}
 
 			/* Use the default Icon */
+			@SuppressWarnings( "unused" )
 			String mergedDefault = mCurrentDefaultIconName + height;
 			
 			if( mResizedIcons.containsKey( mergedDefault ) )
@@ -431,7 +462,8 @@ public class SettingsManager
 			}
 
 			/* Something happened ... the above should always return an icon */
-			mLog.error( "couldn't return an icon named [" + name + "] of heigh [" + height + "]" );
+			mLog.error( "SettingsManager - couldn't return an icon named [" + 
+					name + "] of heigh [" + height + "]" );
 		}
 
 		return null;
@@ -516,7 +548,7 @@ public class SettingsManager
 			
 			defaultIconSetting.setName( icon.getName() );
 			
-			save();
+			scheduleSettingsSave();
 			
 			broadcastSettingChange( defaultIconSetting );
 		}
@@ -530,12 +562,12 @@ public class SettingsManager
 	{
 		mSettings.addSetting( setting );
 
-		save();
+		scheduleSettingsSave();
 		
 		broadcastSettingChange( setting );
 	}
 	
-	public ArrayList<RecordingConfiguration> getRecordingConfigurations()
+	public List<RecordingConfiguration> getRecordingConfigurations()
 	{
 		return mSettings.getRecordingConfigurations();
 	}
@@ -543,106 +575,15 @@ public class SettingsManager
 	public void addRecordingConfiguration( RecordingConfiguration config )
 	{
 		mSettings.addRecordingConfiguration( config );
-		save();
+		scheduleSettingsSave();
 	}
 	
 	public void removeRecordingConfiguration( RecordingConfiguration config )
 	{
 		mSettings.removeRecordingConfiguration( config );
-		save();
+		scheduleSettingsSave();
 	}
 	
-	public ArrayList<TunerConfiguration> getTunerConfigurations( TunerType type )
-	{
-		ArrayList<TunerConfiguration> configs = getSettings()
-				.getTunerConfigurations( type );
-
-		return configs;
-	}
-	
-	public void deleteTunerConfiguration( TunerConfiguration config )
-	{
-		getSettings().removeTunerConfiguration( config );
-		save();
-	}
-	
-	public TunerConfiguration addNewTunerConfiguration( TunerType type, 
-														String name )
-	{
-		switch( type )
-		{
-			case AIRSPY_R820T:
-				AirspyTunerConfiguration airspyConfig = 
-						new AirspyTunerConfiguration( name );
-				
-				getSettings().addTunerConfiguration( airspyConfig );
-				
-				save();
-				return airspyConfig;
-			case ELONICS_E4000:
-				E4KTunerConfiguration e4KConfig = 
-							new E4KTunerConfiguration( name );
-
-				getSettings().addTunerConfiguration( e4KConfig );
-				
-				save();
-				return e4KConfig;
-			case FUNCUBE_DONGLE_PRO:
-				FCD1TunerConfiguration config = 
-					new FCD1TunerConfiguration( name );
-				
-				getSettings().addTunerConfiguration( config );
-				
-				save();
-				
-				return config;
-			case FUNCUBE_DONGLE_PRO_PLUS:
-				FCD2TunerConfiguration configPlus = 
-					new FCD2TunerConfiguration( name );
-				
-				getSettings().addTunerConfiguration( configPlus );
-				
-				save();
-				
-				return configPlus;
-			case HACKRF:
-				HackRFTunerConfiguration hackConfig = 
-							new HackRFTunerConfiguration( name );
-				
-				getSettings().addTunerConfiguration( hackConfig );
-				
-				save();
-				
-				return hackConfig;
-			case RAFAELMICRO_R820T:
-				R820TTunerConfiguration r820TConfig = 
-							new R820TTunerConfiguration( name );
-
-				getSettings().addTunerConfiguration( r820TConfig );
-				
-				save();
-				
-				return r820TConfig;
-			default:
-				throw new IllegalArgumentException( "tuner type is unrecognized [" + 
-						type.toString() + "]" );
-		}
-	}
-
-    public TunerConfigurationAssignment getSelectedTunerConfiguration( 
-    							TunerType type, String address )
-	{
-    	return mSettings.getConfigurationAssignment( type, address );
-	}
-    
-    public void setSelectedTunerConfiguration( TunerType type, 
-    			String address, TunerConfiguration config )
-    {
-    	mSettings.setConfigurationAssignment( type, address, config.getName() );
-    	
-    	save();
-    }
-    
     public MapViewSetting getMapViewSetting( String name, GeoPosition position, int zoom )
     {
     	MapViewSetting loc = mSettings.getMapViewSetting( name );
@@ -668,11 +609,13 @@ public class SettingsManager
 		loc.setGeoPosition( position );
 		loc.setZoom( zoom );
 		
-		save();
+		scheduleSettingsSave();
     }
 
-    public void save()
+    private void save()
 	{
+    	saveTunerConfigurationModel();
+    	
 		JAXBContext context = null;
 		
 		SystemProperties props = SystemProperties.getInstance();
@@ -698,7 +641,8 @@ public class SettingsManager
 		}
 		catch( Exception e )
 		{
-			mLog.error( "couldn't create file to save settings [" + filePath.toString() + "]", e );
+			mLog.error( "SettingsManager - couldn't create file to save "
+					+ "settings [" + filePath.toString() + "]", e );
 		}
 		
 		OutputStream out = null;
@@ -719,12 +663,14 @@ public class SettingsManager
 	        }
 	        catch ( JAXBException e )
 	        {
-	        	mLog.error( "jaxb exception while saving settings", e );
+	        	mLog.error( "SettingsManager - jaxb exception while saving " +
+		        		"settings", e );
 	        }
         }
         catch ( Exception e )
         {
-        	mLog.error( "couldn't open outputstream to save settings [" + filePath.toString() + "]" );
+        	mLog.error( "SettingsManager - coulcn't open outputstream to " +
+        			"save settings [" + filePath.toString() + "]" );
         }
 		finally
 		{
@@ -748,9 +694,11 @@ public class SettingsManager
 	 */
 	public void load( Path settingsPath )
 	{
+		mLoadingSettings = true;
+		
 		if( Files.exists( settingsPath ) )
 		{
-			mLog.info( "loading settings file [" + settingsPath.toString() + "]" );
+			mLog.info( "SettingsManager - loading settings file [" + settingsPath.toString() + "]" );
 			
 			JAXBContext context = null;
 			
@@ -770,13 +718,13 @@ public class SettingsManager
 		        }
 		        catch ( JAXBException e )
 		        {
-		        	mLog.error( "jaxb exception while loading " +
+		        	mLog.error( "SettingsManager - jaxb exception while loading " +
 			        		"settings", e );
 		        }
 	        }
 	        catch ( Exception e )
 	        {
-	        	mLog.error( "coulcn't open inputstream to " +
+	        	mLog.error( "SettingsManager - coulcn't open inputstream to " +
 	        			"load settings [" + settingsPath.toString() + "]", e );
 	        }
 			finally
@@ -789,7 +737,7 @@ public class SettingsManager
 	                }
 	                catch ( IOException e )
 	                {
-	                	mLog.error( "exception while closing " +
+	                	mLog.error( "SettingsManager - exception while closing " +
 	                			"the settings file inputstream reader", e );
 	                }
 				}
@@ -797,12 +745,37 @@ public class SettingsManager
 		}
 		else
 		{
-			mLog.info( "settings does not exist [" + settingsPath.toString() + "]" );
+			mLog.info( "SettingsManager - settings does not exist [" + 
+							settingsPath.toString() + "]" );
 		}
 		
 		if( mSettings == null )
 		{
 			mSettings = new Settings();
+		}
+		
+		loadTunerConfigurationModel();
+		
+		mLoadingSettings = false;
+	}
+	
+	private void loadTunerConfigurationModel()
+	{
+		if( mSettings != null )
+		{
+			mTunerConfigurationModel.clear();
+			
+			mTunerConfigurationModel.addTunerConfigurations( 
+					mSettings.getTunerConfigurations() );
+		}
+	}
+	
+	private void saveTunerConfigurationModel()
+	{
+		if( mSettings != null )
+		{
+			mSettings.setTunerConfigurations( 
+					mTunerConfigurationModel.getTunerConfigurations() );
 		}
 	}
 	
@@ -852,5 +825,36 @@ public class SettingsManager
 	public void removeListener( SettingChangeListener listener )
 	{
 		mListeners.remove( listener );
+	}
+	
+	/**
+	 * Schedules a settings save task.  Subsequent calls to this method will be ignored until the 
+	 * save event occurs, thus limiting repetitive saving to a minimum.
+	 */
+	private void scheduleSettingsSave()
+	{
+		if( !mLoadingSettings )
+		{
+			if( mSettingsSavePending.compareAndSet( false, true ) )
+			{
+				mThreadPoolManager.scheduleOnce( new SettingsSaveTask(), 
+						2, TimeUnit.SECONDS );
+			}
+		}
+	}
+
+	/**
+	 * Resets the settings save pending flag to false and proceeds to save the
+	 * settings.  
+	 */
+	public class SettingsSaveTask implements Runnable
+	{
+		@Override
+		public void run()
+		{
+			mSettingsSavePending.set( false );
+			
+			save();
+		}
 	}
 }

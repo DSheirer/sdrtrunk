@@ -25,10 +25,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ScheduledExecutorService;
 
 import message.Message;
 import module.decode.DecoderType;
-import module.decode.event.CallEvent;
 import module.decode.event.CallEvent.CallEventType;
 import module.decode.p25.P25Decoder.Modulation;
 import module.decode.p25.message.IAdjacentSite;
@@ -121,6 +121,7 @@ import module.decode.p25.reference.IPProtocol;
 import module.decode.p25.reference.LinkControlOpcode;
 import module.decode.p25.reference.Response;
 import module.decode.p25.reference.Vendor;
+import module.decode.state.ChangeChannelTimeoutEvent;
 import module.decode.state.ChangedAttribute;
 import module.decode.state.DecoderState;
 import module.decode.state.DecoderStateEvent;
@@ -202,11 +203,6 @@ public class P25DecoderState extends DecoderState
 	public DecoderType getDecoderType()
 	{
 		return DecoderType.P25_PHASE1;
-	}
-
-	@Override
-	public void start()
-	{
 	}
 
 	@Override
@@ -1668,7 +1664,7 @@ public class P25DecoderState extends DecoderState
 						.to( satcr.getLogicalLinkID() )
 						.build() );
 					break;
-				case SN_ACTIVATE_TDS_CONTEXT_REQUEST:
+				case SNDCP_ACTIVATE_TDS_CONTEXT_REQUEST:
 					SNDCPActivateTDSContextRequest satcreq = 
 					(SNDCPActivateTDSContextRequest)pduc;
 	
@@ -2292,6 +2288,8 @@ public class P25DecoderState extends DecoderState
 					logAlternateVendorMessage( pdu );
 				}
 				break;
+			default:
+				break;
 		}
 	}
 	
@@ -2437,8 +2435,6 @@ public class P25DecoderState extends DecoderState
 	
 	private void processTSBKResponse( TSBKMessage message )
 	{
-		CallEvent event = null;
-		
 		switch( message.getOpcode() )
 		{
 			case ACKNOWLEDGE_RESPONSE:
@@ -3558,6 +3554,16 @@ public class P25DecoderState extends DecoderState
 				break;
 			default:
 				break;
+		}
+	}
+
+	@Override
+	public void start( ScheduledExecutorService executor )
+	{
+		//Change the default (45-second) traffic channel timeout to 1 second
+		if( mChannelType == ChannelType.TRAFFIC )
+		{
+			broadcast( new ChangeChannelTimeoutEvent( this, ChannelType.TRAFFIC, 1000 ) );
 		}
 	}
 }

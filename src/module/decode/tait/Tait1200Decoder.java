@@ -26,12 +26,13 @@ import instrument.tap.stream.FloatTap;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ScheduledExecutorService;
 
 import module.decode.Decoder;
 import module.decode.DecoderType;
 import sample.Broadcaster;
 import sample.Listener;
-import sample.real.IRealBufferListener;
+import sample.real.IFilteredRealBufferListener;
 import sample.real.RealBuffer;
 import alias.AliasList;
 import bits.MessageFramer;
@@ -45,7 +46,7 @@ import dsp.fsk.FSK2Decoder.Output;
 /**
  * TAIT 1200 - 1200 baud 2FSK decoder
  */
-public class Tait1200Decoder extends Decoder implements IRealBufferListener,
+public class Tait1200Decoder extends Decoder implements IFilteredRealBufferListener,
 					Instrumentable
 {
 	/* Decimated sample rate ( 48,000 / 2 = 24,000 ) feeding the decoder */
@@ -104,8 +105,8 @@ public class Tait1200Decoder extends Decoder implements IRealBufferListener,
         mMessageFramerGPS.addMessageListener( mMessageAProcessor );
         mMessageFramerANI.addMessageListener( mMessageBProcessor );
         
-        mMessageAProcessor.setMessageListener( mMessageBroadcaster );
-        mMessageBProcessor.setMessageListener( mMessageBroadcaster );
+        mMessageAProcessor.setMessageListener( this );
+        mMessageBProcessor.setMessageListener( this );
 	}
     
     public void dispose()
@@ -179,7 +180,7 @@ public class Tait1200Decoder extends Decoder implements IRealBufferListener,
     }
 
 	@Override
-	public Listener<RealBuffer> getRealBufferListener()
+	public Listener<RealBuffer> getFilteredRealBufferListener()
 	{
 		return mDecimationFilter;
 	}
@@ -198,7 +199,7 @@ public class Tait1200Decoder extends Decoder implements IRealBufferListener,
 	}
 
 	@Override
-	public void start()
+	public void start( ScheduledExecutorService executor )
 	{
 		// TODO Auto-generated method stub
 		

@@ -9,12 +9,13 @@ import java.util.List;
 import module.Module;
 import module.ProcessingChain;
 import source.Source;
+import controller.channel.Channel.ChannelType;
 
 public class InstrumentableProcessingChain extends ProcessingChain implements Instrumentable
 {
-	public InstrumentableProcessingChain( String name )
+	public InstrumentableProcessingChain()
 	{
-		super( name );
+		super( "instrumented", ChannelType.STANDARD );
 	}
 
 	public void setSource( Source source ) throws IllegalStateException

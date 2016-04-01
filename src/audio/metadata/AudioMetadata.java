@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import sample.Listener;
 import alias.Alias;
-import alias.priority.Priority;
+import alias.id.priority.Priority;
 
 public class AudioMetadata implements Listener<Metadata>
 {
@@ -305,6 +305,7 @@ public class AudioMetadata implements Listener<Metadata>
 		sb.append( getPriority() );
 		sb.append( " updated:" + isUpdated() );
 		sb.append( " " );
+		
 		for( Entry<MetadataType,Metadata> entry: getMetadata().entrySet() )
 		{
 			sb.append( entry.getValue().getKey() );

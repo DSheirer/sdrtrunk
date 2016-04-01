@@ -5,17 +5,10 @@ import module.decode.p25.message.IBandIdentifier;
 import module.decode.p25.message.IdentifierReceiver;
 import module.decode.p25.message.tsbk.osp.control.SystemService;
 import module.decode.p25.reference.LinkControlOpcode;
-import module.decode.p25.reference.Service;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class AdjacentSiteStatusBroadcast extends TDULinkControlMessage
 					 implements IdentifierReceiver, IAdjacentSite
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( AdjacentSiteStatusBroadcast.class );
-
 	public static final int[] LRA = { 72,73,74,75,88,89,90,91 };
 	public static final int[] SYSTEM_ID = { 96,97,98,99,112,113,114,115,
 		116,117,118,119 };

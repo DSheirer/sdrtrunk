@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -25,12 +25,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import source.SourceException;
-import source.tuner.frequency.FrequencyChangeListener;
+import source.tuner.configuration.TunerConfiguration;
+import source.tuner.frequency.FrequencyChangeEvent;
+import source.tuner.frequency.FrequencyChangeEvent.Event;
 import source.tuner.frequency.FrequencyController;
 import source.tuner.frequency.FrequencyController.Tunable;
-import controller.ThreadPoolManager;
+import source.tuner.frequency.IFrequencyChangeProcessor;
 
-public abstract class TunerController implements Tunable
+public abstract class TunerController implements Tunable, IFrequencyChangeProcessor
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( TunerController.class );
@@ -72,8 +74,27 @@ public abstract class TunerController implements Tunable
 	 */
 	public abstract void apply( TunerConfiguration config ) 
 								throws SourceException;
-	
-    public int getBandwidth()
+
+	/**
+	 * Responds to requests to set the frequency
+	 */
+    @Override
+	public void frequencyChanged( FrequencyChangeEvent event )
+	{
+    	if( event.getEvent() == Event.REQUEST_FREQUENCY_CHANGE )
+    	{
+    		try
+			{
+				setFrequency( event.getValue().longValue() );
+			} 
+    		catch ( SourceException e )
+			{
+    			mLog.error( "Error setting frequency from external controller", e );
+			}
+    	}
+	}
+
+	public int getBandwidth()
     {
     	return mFrequencyController.getBandwidth();
     }
@@ -97,6 +118,11 @@ public abstract class TunerController implements Tunable
 	public long getFrequency()	
 	{
 		return mFrequencyController.getFrequency();
+	}
+	
+	public int getSampleRate()
+	{
+		return mFrequencyController.getBandwidth();
 	}
 
 	public double getFrequencyCorrection()
@@ -220,6 +246,11 @@ public abstract class TunerController implements Tunable
 		}
 
 		return source;
+	}
+	
+	public int getChannelCount()
+	{
+		return mTunedChannels.size();
 	}
 
 	/**
@@ -358,16 +389,16 @@ public abstract class TunerController implements Tunable
 	 * Note: this is normally used by the Tuner.  Any additional listeners can
 	 * be registered on the tuner.
 	 */
-    public void addListener( FrequencyChangeListener listener )
+    public void addListener( IFrequencyChangeProcessor processor )
     {
-    	mFrequencyController.addListener( listener );
+    	mFrequencyController.addListener( processor );
     }
 
     /**
      * Removes the frequency change listener
      */
-    public void removeListener( FrequencyChangeListener listener )
+    public void removeListener( IFrequencyChangeProcessor processor )
     {
-    	mFrequencyController.removeListener( listener );
+    	mFrequencyController.removeFrequencyChangeProcessor( processor );
     }
 }

@@ -17,10 +17,11 @@
  ******************************************************************************/
 package source;
 
+
 public enum SourceType
 {
 	NONE( "No Source" ),
-	MIXER( "Mixer/Sound Card" ),
+	MIXER( "Sound Card" ),
 	TUNER( "Tuner" ),
 	RECORDING( "IQ Recording" );
 	
@@ -29,6 +30,15 @@ public enum SourceType
     SourceType( String displayString )
     {
         mDisplayString = displayString;
+    }
+    
+    public static SourceType[] getTypes()
+    {
+    	SourceType[] types = new SourceType[ 2 ];
+    	types[ 0 ] = SourceType.TUNER;
+    	types[ 1 ] = SourceType.MIXER;
+
+    	return types;
     }
     
     public String getDisplayString()

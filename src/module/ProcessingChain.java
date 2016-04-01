@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2015 Dennis Sheirer
+ *     Copyright (C) 2015-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -27,8 +27,11 @@ import message.IMessageListener;
 import message.IMessageProvider;
 import message.Message;
 import module.decode.event.CallEvent;
+import module.decode.event.CallEventModel;
 import module.decode.event.ICallEventListener;
 import module.decode.event.ICallEventProvider;
+import module.decode.event.MessageActivityModel;
+import module.decode.state.ChannelState;
 import module.decode.state.DecoderState;
 import module.decode.state.DecoderStateEvent;
 import module.decode.state.DecoderStateEvent.Event;
@@ -43,16 +46,19 @@ import sample.Broadcaster;
 import sample.Listener;
 import sample.complex.ComplexBuffer;
 import sample.complex.IComplexBufferListener;
-import sample.real.IRealBufferListener;
-import sample.real.IRealBufferProvider;
+import sample.real.IFilteredRealBufferListener;
+import sample.real.IFilteredRealBufferProvider;
+import sample.real.IUnFilteredRealBufferListener;
+import sample.real.IUnFilteredRealBufferProvider;
 import sample.real.RealBuffer;
 import source.ComplexSource;
 import source.RealSource;
 import source.Source;
 import source.SourceException;
 import source.tuner.TunerChannelSource;
-import source.tuner.frequency.FrequencyCorrectionControl;
-import source.tuner.frequency.IFrequencyCorrectionController;
+import source.tuner.frequency.FrequencyChangeEvent;
+import source.tuner.frequency.IFrequencyChangeListener;
+import source.tuner.frequency.IFrequencyChangeProvider;
 import audio.AudioPacket;
 import audio.IAudioPacketListener;
 import audio.IAudioPacketProvider;
@@ -63,6 +69,7 @@ import audio.squelch.ISquelchStateListener;
 import audio.squelch.ISquelchStateProvider;
 import audio.squelch.SquelchState;
 import controller.NamingThreadFactory;
+import controller.channel.Channel.ChannelType;
 import controller.channel.ChannelEvent;
 import controller.channel.IChannelEventListener;
 import controller.channel.IChannelEventProvider;
@@ -87,8 +94,7 @@ import controller.channel.IChannelEventProvider;
  */
 public class ProcessingChain implements IChannelEventListener
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( ProcessingChain.class );
+	private final static Logger mLog = LoggerFactory.getLogger( ProcessingChain.class );
 
 	private Broadcaster<AudioPacket> mAudioPacketBroadcaster = new Broadcaster<>();
 	private Broadcaster<Metadata> mMetadataBroadcaster = new Broadcaster<>();
@@ -96,23 +102,61 @@ public class ProcessingChain implements IChannelEventListener
 	private Broadcaster<ChannelEvent> mChannelEventBroadcaster = new Broadcaster<>();
 	private Broadcaster<ComplexBuffer> mComplexBufferBroadcaster = new Broadcaster<>();
 	private Broadcaster<DecoderStateEvent> mDecoderStateEventBroadcaster = new Broadcaster<>();
+	private Broadcaster<FrequencyChangeEvent> mFrequencyChangeEventBroadcaster = new Broadcaster<>();
 	private Broadcaster<Message> mMessageBroadcaster = new Broadcaster<>();
-	private Broadcaster<RealBuffer> mRealBufferBroadcaster = new Broadcaster<>();
+	private Broadcaster<RealBuffer> mFilteredRealBufferBroadcaster = new Broadcaster<>();
+	private Broadcaster<RealBuffer> mUnFilteredRealBufferBroadcaster = new Broadcaster<>();
 	private Broadcaster<SquelchState> mSquelchStateBroadcaster = new Broadcaster<>();
 	
 	private ScheduledExecutorService mScheduledExecutorService;
+	private String mName;
 	private AtomicBoolean mRunning = new AtomicBoolean();
 	
 	protected Source mSource;
 	private List<Module> mModules = new ArrayList<>();
-	private IFrequencyCorrectionController mFrequencyCorrectionController;
-	
-	public ProcessingChain( String name )
-	{
-		mScheduledExecutorService = Executors.newScheduledThreadPool( 1, 
-				new NamingThreadFactory( "channel " + name ) );
-	}
+	private CallEventModel mCallEventModel;
+	private ChannelState mChannelState;
+	private MessageActivityModel mMessageActivityModel;
 
+	/**
+	 * Creates a processing chain for managing a set of modules
+	 * 
+	 * @param name for thread pool naming each thread
+	 * @param channelType 
+	 */
+	public ProcessingChain( String name, ChannelType channelType )
+	{
+		mName = name;
+		
+		mChannelState = new ChannelState( channelType );
+		addModule( mChannelState );
+
+		mCallEventModel = new CallEventModel();
+		addCallEventListener( mCallEventModel );
+	}
+	
+	public CallEventModel getCallEventModel()
+	{
+		return mCallEventModel;
+	}
+	
+	public ChannelState getChannelState()
+	{
+		return mChannelState;
+	}
+	
+	public MessageActivityModel getMessageActivityModel()
+	{
+		return mMessageActivityModel;
+	}
+	
+	public void setMessageActivityModel( MessageActivityModel model )
+	{
+		mMessageActivityModel = model;
+		
+		addMessageListener( mMessageActivityModel );
+	}
+	
 	public void dispose()
 	{
 		stop();
@@ -127,15 +171,18 @@ public class ProcessingChain implements IChannelEventListener
 		mScheduledExecutorService.shutdownNow();
 		mScheduledExecutorService = null;
 		
-		mFrequencyCorrectionController = null;
-		
 		mAudioPacketBroadcaster.dispose();
 		mCallEventBroadcaster.dispose();
 		mChannelEventBroadcaster.dispose();
 		mComplexBufferBroadcaster.dispose();
 		mMessageBroadcaster.dispose();
-		mRealBufferBroadcaster.dispose();
+		mFilteredRealBufferBroadcaster.dispose();
 		mSquelchStateBroadcaster.dispose();
+		
+		if( mScheduledExecutorService != null )
+		{
+			mScheduledExecutorService.shutdownNow();
+		}
 	}
 
 	/**
@@ -153,7 +200,7 @@ public class ProcessingChain implements IChannelEventListener
 	 * Indicates if this processing chain is currently receiving samples from
 	 * a source and sending those samples to the decoders.
 	 */
-	public boolean processing()
+	public boolean isProcessing()
 	{
 		return mRunning.get();
 	}
@@ -164,28 +211,6 @@ public class ProcessingChain implements IChannelEventListener
 	public boolean hasSource()
 	{
 		return mSource != null;
-	}
-
-	/**
-	 * Indicates if one of the modules provides frequency error control.
-	 */
-	public boolean hasFrequencyCorrectionControl()
-	{
-		return mFrequencyCorrectionController != null &&
-			   mFrequencyCorrectionController.hasFrequencyCorrectionControl();
-	}
-
-	/**
-	 * Frequency correction controller.  Can be null.
-	 */
-	public FrequencyCorrectionControl getFrequencyCorrectionControl()
-	{
-		if( mFrequencyCorrectionController != null )
-		{
-			return mFrequencyCorrectionController.getFrequencyCorrectionControl();
-		}
-		
-		return null;
 	}
 
 	/**
@@ -200,7 +225,7 @@ public class ProcessingChain implements IChannelEventListener
 	 */
 	public void setSource( Source source ) throws IllegalStateException
 	{
-		if( processing() )
+		if( isProcessing() )
 		{
 			throw new IllegalStateException( "Processing chain is currently "
 				+ "processing.  Invoke stop() on the processing chain before "
@@ -208,23 +233,6 @@ public class ProcessingChain implements IChannelEventListener
 		}
 		
 		mSource = source;
-
-		/* Establish two-way communication between the tuner channel source and
-		 * the decoder for fine tuning frequency error correction feedback from 
-		 * the decoder.  The tuner channel source will also notify the frequency 
-		 * controller during frequency changes to allow the controller to reset 
-		 * frequency error tracking */
-		if( mSource != null &&  
-			mSource instanceof TunerChannelSource &&
-			hasFrequencyCorrectionControl() )
-		{
-			TunerChannelSource channel = (TunerChannelSource)mSource;
-
-			FrequencyCorrectionControl control = getFrequencyCorrectionControl();
-			
-			channel.setFrequencyChangeListener( control );
-			control.setFrequencyChangeListener( channel );
-		}
 	}
 
 	/**
@@ -254,23 +262,44 @@ public class ProcessingChain implements IChannelEventListener
 	}
 	
 	/**
+	 * Adds the list of modules to this processing chain
+	 */
+	public void addModules( List<Module> modules )
+	{
+		for( Module module: modules )
+		{
+			addModule( module );
+		}
+	}
+
+	/**
 	 * Adds a module to the processing chain.  Each module is tested for the
 	 * interfaces that it supports and is registered or receives a listener
 	 * to consume or produce the supported interface data type.  All elements
-	 * that are produced by any component are automatically routed to all other
-	 * components that support the corresponding listener interface.
+	 * and events that are produced by any module are automatically routed to 
+	 * all other components that support the corresponding listener interface.
 	 * 
 	 * At least one module should consume complex samples and either produce
 	 * decoded messages and/or audio, or produce decoded real sample buffers
 	 * for all other modules to consume.
 	 * 
-	 * @param module - processing module, demodulator or decoder
+	 * @param module - processing module, demodulator, decoder, source, state
+	 * machine, etc.
 	 */
 	public void addModule( Module module )
 	{
 		mModules.add( module );
+		
+		registerListeners( module );
+		registerProviders( module );
+	}
 
-		/* >>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Listeners <<<<<<<<<<<<<<<<<<<<<<<<<<< */
+	/**
+	 * Registers the module as a listener to each of the broadcasters that 
+	 * provide the data interface(s) supported by the module.
+	 */
+	private void registerListeners( Module module )
+	{
 		if( module instanceof IAudioPacketListener )
 		{
 			mAudioPacketBroadcaster.addListener( 
@@ -301,6 +330,12 @@ public class ProcessingChain implements IChannelEventListener
 				((IDecoderStateEventListener)module).getDecoderStateListener() );
 		}
 
+		if( module instanceof IFrequencyChangeListener )
+		{
+			mFrequencyChangeEventBroadcaster.addListener( 
+				((IFrequencyChangeListener)module).getFrequencyChangeListener());
+		}
+		
 		if( module instanceof IMessageListener )
 		{
 			mMessageBroadcaster.addListener( 
@@ -313,10 +348,10 @@ public class ProcessingChain implements IChannelEventListener
 				((IMetadataListener)module).getMetadataListener() );
 		}
 		
-		if( module instanceof IRealBufferListener )
+		if( module instanceof IFilteredRealBufferListener )
 		{
-			mRealBufferBroadcaster.addListener( 
-				((IRealBufferListener)module).getRealBufferListener() );
+			mFilteredRealBufferBroadcaster.addListener( 
+				((IFilteredRealBufferListener)module).getFilteredRealBufferListener() );
 		}
 
 		if( module instanceof ISquelchStateListener )
@@ -324,8 +359,20 @@ public class ProcessingChain implements IChannelEventListener
 			mSquelchStateBroadcaster.addListener( 
 				((ISquelchStateListener)module).getSquelchStateListener() );
 		}
-		
-		/* >>>>>>>>>>>>>>>>>>> Providers <<<<<<<<<<<<<<<<<<<<<<<<< */
+
+		if( module instanceof IUnFilteredRealBufferListener )
+		{
+			mUnFilteredRealBufferBroadcaster.addListener( 
+				((IUnFilteredRealBufferListener)module).getUnFilteredRealBufferListener() );
+		}
+	}
+	
+	/**
+	 * Registers the broadcaster(s) as listeners to the module for each 
+	 * provider interface that is supported by the module.
+	 */
+	private void registerProviders( Module module )
+	{
 		if( module instanceof IAudioPacketProvider )
 		{
 			((IAudioPacketProvider)module).setAudioPacketListener( 
@@ -348,15 +395,16 @@ public class ProcessingChain implements IChannelEventListener
 			((IDecoderStateEventProvider)module).setDecoderStateListener( 
 					mDecoderStateEventBroadcaster );
 		}
-		
-		if( module instanceof IFrequencyCorrectionController )
-		{
-			mFrequencyCorrectionController = (IFrequencyCorrectionController)module;
-		}
 
+		if( module instanceof IFrequencyChangeProvider )
+		{
+			((IFrequencyChangeProvider)module).setFrequencyChangeListener( 
+					mFrequencyChangeEventBroadcaster );
+		}
+		
 		if( module instanceof IMessageProvider )
 		{
-			((IMessageProvider)module).addMessageListener( mMessageBroadcaster );
+			((IMessageProvider)module).setMessageListener( mMessageBroadcaster );
 		}
 		
 		if( module instanceof IMetadataProvider )
@@ -365,9 +413,10 @@ public class ProcessingChain implements IChannelEventListener
 					mMetadataBroadcaster );
 		}
 
-		if( module instanceof IRealBufferProvider )
+		if( module instanceof IFilteredRealBufferProvider )
 		{
-			((IRealBufferProvider)module).setRealBufferListener( mRealBufferBroadcaster );
+			((IFilteredRealBufferProvider)module)
+				.setFilteredRealBufferListener( mFilteredRealBufferBroadcaster );
 		}
 		
 		if( module instanceof ISquelchStateProvider )
@@ -375,19 +424,13 @@ public class ProcessingChain implements IChannelEventListener
 			((ISquelchStateProvider)module).setSquelchStateListener( 
 					mSquelchStateBroadcaster );
 		}
-	}
-	
-	/**
-	 * Adds the list of modules to this processing chain
-	 */
-	public void addModules( List<Module> modules )
-	{
-		for( Module module: modules )
+
+		if( module instanceof IUnFilteredRealBufferProvider )
 		{
-			addModule( module );
+			((IUnFilteredRealBufferProvider)module)
+				.setUnFilteredRealBufferListener( mUnFilteredRealBufferBroadcaster );
 		}
 	}
-
 	
 	/**
 	 * Starts processing if the chain has a valid source.  Invocations on an
@@ -405,19 +448,6 @@ public class ProcessingChain implements IChannelEventListener
 					module.reset();
 				}
 				
-				/* Start each of the modules */
-				for( Module module: mModules )
-				{
-					try
-					{
-						module.start();
-					}
-					catch( Exception e )
-					{
-						mLog.error( "Error starting module", e );
-					}
-				}
-
 				/* Register with the source to receive sample data.  Setup a 
 				 * timer task to process the buffer queues 50 times a second 
 				 * (every 20 ms) */
@@ -427,7 +457,7 @@ public class ProcessingChain implements IChannelEventListener
 						((ComplexSource)mSource).setListener( mComplexBufferBroadcaster );
 						break;
 					case REAL:
-						((RealSource)mSource).setListener( mRealBufferBroadcaster );
+						((RealSource)mSource).setListener( mFilteredRealBufferBroadcaster );
 						break;
 					default:
 						throw new IllegalArgumentException( "Unrecognized source "
@@ -435,15 +465,15 @@ public class ProcessingChain implements IChannelEventListener
 				}
 				
 				/* If this is a tuner source, broadcast the frequency to all 
-				 * of the decoder state's */
+				 * of the decoder state's and start the samples flowing */
 				if( mSource instanceof TunerChannelSource )
 				{
-					TunerChannelSource tunerChannelSource = (TunerChannelSource)mSource;
-					
+					TunerChannelSource tcs = (TunerChannelSource)mSource;
+
 					try
 					{
-						long frequency = tunerChannelSource.getFrequency();
-						
+						long frequency = tcs.getFrequency();
+
 						mDecoderStateEventBroadcaster.broadcast( 
 							new DecoderStateEvent( this, Event.SOURCE_FREQUENCY, 
 									State.IDLE, frequency ) );
@@ -452,13 +482,32 @@ public class ProcessingChain implements IChannelEventListener
 					{
 						mLog.error( "Error getting frequency from tuner channel source", e );
 					}
-					
-					tunerChannelSource.start( mScheduledExecutorService );
 				}
+				
+				if( mScheduledExecutorService == null )
+				{
+					mScheduledExecutorService = Executors.newScheduledThreadPool( 
+							1, new NamingThreadFactory( "channel " + mName ) );
+				}
+				
+				/* Start each of the modules */
+				for( Module module: mModules )
+				{
+					try
+					{
+						module.start( mScheduledExecutorService );
+					}
+					catch( Exception e )
+					{
+						mLog.error( "Error starting module", e );
+					}
+				}
+
+				mSource.start( mScheduledExecutorService );
 			}
 			else
 			{
-				mLog.debug( "Source is null on start()" );
+				mLog.error( "Source is null on start()" );
 			}
 		}
 	}
@@ -473,13 +522,15 @@ public class ProcessingChain implements IChannelEventListener
 		{
 			if( mSource != null )
 			{
+				mSource.stop();
+				
 				switch( mSource.getSampleType() )
 				{
 					case COMPLEX:
 						((ComplexSource)mSource).removeListener( mComplexBufferBroadcaster );
 						break;
 					case REAL:
-						((RealSource)mSource).removeListener( mRealBufferBroadcaster );
+						((RealSource)mSource).removeListener( mFilteredRealBufferBroadcaster );
 						break;
 					default:
 						throw new IllegalArgumentException( "Unrecognized source "
@@ -595,12 +646,12 @@ public class ProcessingChain implements IChannelEventListener
 	
 	public void addRealBufferListener( Listener<RealBuffer> listener )
 	{
-		mRealBufferBroadcaster.addListener( listener );
+		mFilteredRealBufferBroadcaster.addListener( listener );
 	}
 	
 	public void removeRealBufferListener( Listener<RealBuffer> listener )
 	{
-		mRealBufferBroadcaster.removeListener( listener );
+		mFilteredRealBufferBroadcaster.removeListener( listener );
 	}
 	
 	@Override

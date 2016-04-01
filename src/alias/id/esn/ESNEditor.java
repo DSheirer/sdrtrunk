@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -17,79 +17,102 @@
  ******************************************************************************/
 package alias.id.esn;
 
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import gui.editor.DocumentListenerEditor;
 
-import javax.swing.JButton;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.JTextField;
 
 import net.miginfocom.swing.MigLayout;
-import controller.ConfigurableNode;
+import alias.id.AliasID;
 
-public class ESNEditor extends JPanel implements ActionListener
+public class ESNEditor extends DocumentListenerEditor<AliasID>
 {
     private static final long serialVersionUID = 1L;
-    private ESNNode mESNNode;
-    private JTextField mTextESN;
 
-	public ESNEditor( ESNNode esnNode )
+    private static final String HELP_TEXT = 
+    		"<html><h3>Electronic Serial Number (ESN)</h3>"
+    		+ "<b>ESN:</b> hexadecimal 0-9, A-F (e.g. <u>ABCD1234</u> )<br>"
+    		+ "<b>Wildcard:</b> use an asterisk (*) to wildcard individual<br>"
+    		+ "digits (e.g. <u>ABCD123*</u> or <u>AB**1**4</u>)"
+    		+ "</html>";
+
+    private JTextField mTextField;
+
+	public ESNEditor( AliasID aliasID )
 	{
-		mESNNode = esnNode;
-		
 		initGUI();
+		
+		setItem( aliasID );
 	}
 	
 	private void initGUI()
 	{
-		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][][][grow]" ) );
-
-		add( new JLabel( "Electronic Serial Number ID" ), "span,align center" );
+		setLayout( new MigLayout( "fill,wrap 2", "[right][left]", "[][]" ) );
 
 		add( new JLabel( "ESN:" ) );
-		mTextESN = new JTextField( mESNNode.getESN().getEsn() );
-		add( mTextESN, "growx,push" );
-		
-		JButton btnSave = new JButton( "Save" );
-		btnSave.addActionListener( ESNEditor.this );
-		add( btnSave, "growx,push" );
+		mTextField = new JTextField();
+		mTextField.getDocument().addDocumentListener( this );
+		mTextField.setToolTipText( HELP_TEXT );
+		add( mTextField, "growx,push" );
 
-		JButton btnReset = new JButton( "Reset" );
-		btnReset.addActionListener( ESNEditor.this );
-		add( btnReset, "growx,push" );
+		JLabel help = new JLabel( "Help ..." );
+		help.setForeground( Color.BLUE.brighter() );
+		help.setCursor( new Cursor( Cursor.HAND_CURSOR ) );
+		help.addMouseListener( new MouseAdapter() 
+		{
+			@Override
+			public void mouseClicked( MouseEvent e )
+			{
+				JOptionPane.showMessageDialog( ESNEditor.this, 
+					HELP_TEXT, "Help", JOptionPane.INFORMATION_MESSAGE );
+			}
+		} );
+		add( help, "align left" );
+	}
+	
+	public Esn getEsn()
+	{
+		if( getItem() instanceof Esn )
+		{
+			return (Esn)getItem();
+		}
+		
+		return null;
 	}
 
 	@Override
-    public void actionPerformed( ActionEvent e )
-    {
-		String command = e.getActionCommand();
+	public void setItem( AliasID aliasID )
+	{
+		super.setItem( aliasID );
 		
-		if( command.contentEquals( "Save" ) )
+		Esn esn = getEsn();
+		
+		if( esn != null )
 		{
-			String esn = mTextESN.getText();
-			
-			if( esn != null )
-			{
-				mESNNode.getESN().setEsn( esn );
-
-				((ConfigurableNode)mESNNode.getParent()).sort();
-
-				mESNNode.save();
-				
-				mESNNode.show();
-			}
-			else
-			{
-				JOptionPane.showMessageDialog( ESNEditor.this, "Please enter an ESN" );
-			}
-		}
-		else if( command.contentEquals( "Reset" ) )
-		{
-			mTextESN.setText( mESNNode.getESN().getEsn() );
+			mTextField.setText( esn.getEsn() );
 		}
 		
-		mESNNode.refresh();
-    }
+		setModified( false );
+		
+		repaint();
+	}
+
+	@Override
+	public void save()
+	{
+		Esn esn = getEsn();
+		
+		if( esn != null )
+		{
+			esn.setEsn( mTextField.getText() );
+		}
+		
+		setModified( false );
+	}
 }

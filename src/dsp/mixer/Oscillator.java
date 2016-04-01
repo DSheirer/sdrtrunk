@@ -17,20 +17,14 @@
  ******************************************************************************/
 package dsp.mixer;
 
-import java.util.Arrays;
-
-import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import dsp.filter.Filters;
-import dsp.filter.hilbert.HilbertTransform;
 import sample.complex.Complex;
 
 public class Oscillator
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( Oscillator.class );
+	private final static Logger mLog = LoggerFactory.getLogger( Oscillator.class );
 
 	private double mFrequency;
 	private double mSampleRate;

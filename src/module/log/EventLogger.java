@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.file.Path;
+import java.util.concurrent.ScheduledExecutorService;
 
 import module.Module;
 
@@ -67,7 +68,8 @@ public abstract class EventLogger extends Module
 	
 	public abstract String getHeader();
 	
-    public void start()
+	@Override
+    public void start( ScheduledExecutorService executor )
     {
     	if( mLogFile == null )
     	{

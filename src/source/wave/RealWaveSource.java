@@ -20,6 +20,7 @@ package source.wave;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.ScheduledExecutorService;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -52,11 +53,46 @@ public class RealWaveSource extends RealSource
     
     public RealWaveSource( File file ) throws IOException 
     {
-    	super( file.getAbsolutePath() );
-    	
     	mFile = file;
     }
     
+    
+	@Override
+	public void reset()
+	{
+		stop();
+		start( null );
+	}
+
+
+	@Override
+	public void start( ScheduledExecutorService executor )
+	{
+		try
+		{
+			open();
+		} 
+		catch ( IOException | UnsupportedAudioFileException e )
+		{
+			mLog.error( "Error starting real wave source", e );
+		}
+	}
+
+
+	@Override
+	public void stop()
+	{
+		try
+		{
+			close();
+		} 
+		catch ( IOException e )
+		{
+			mLog.error( "Error stopping real wave source", e );
+		}
+	}
+
+
 	@Override
 	public long getFrameCount() throws IOException
 	{

@@ -3,7 +3,6 @@ package source.tuner;
 import java.util.concurrent.RejectedExecutionException;
 
 import source.SourceException;
-import controller.ThreadPoolManager;
 
 public interface TunerChannelProvider
 {

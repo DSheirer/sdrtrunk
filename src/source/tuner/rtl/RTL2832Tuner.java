@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2016 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -19,8 +19,6 @@ package source.tuner.rtl;
 
 import java.util.concurrent.RejectedExecutionException;
 
-import javax.swing.JPanel;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.LibUsbException;
@@ -32,11 +30,9 @@ import source.tuner.Tuner;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannelSource;
 import source.tuner.TunerClass;
-import source.tuner.TunerConfiguration;
+import source.tuner.TunerEvent;
 import source.tuner.TunerType;
-import source.tuner.frequency.FrequencyChangeListener;
 import source.tuner.rtl.RTL2832TunerController.SampleRate;
-import controller.ResourceManager;
 
 public class RTL2832Tuner extends Tuner
 {
@@ -44,19 +40,16 @@ public class RTL2832Tuner extends Tuner
 			LoggerFactory.getLogger( RTL2832Tuner.class );
 
 	private TunerClass mTunerClass;
-	protected RTL2832TunerController mController;
 
 	public RTL2832Tuner( TunerClass tunerClass, 
 						 RTL2832TunerController controller ) 
 								 			throws SourceException
 	{
 		super( tunerClass.getVendorDeviceLabel() + "/" + 
-			   controller.getTunerType().getLabel() + " #" +
-			   controller.getUniqueID() );
+			   controller.getTunerType().getLabel() + " " +
+			   controller.getUniqueID(), controller );
 		
 		mTunerClass = tunerClass;
-		mController = controller;
-		mController.addListener( (FrequencyChangeListener)this );
 	}
 	
 	public void dispose()
@@ -66,13 +59,13 @@ public class RTL2832Tuner extends Tuner
 	
 	public RTL2832TunerController getController()
 	{
-		return mController;
+		return (RTL2832TunerController)getTunerController();
 	}
 
 	@Override
     public String getUniqueID()
     {
-	    return mController.getUniqueID();
+	    return getController().getUniqueID();
     }
 
 	@Override
@@ -84,41 +77,14 @@ public class RTL2832Tuner extends Tuner
 	@Override
     public TunerType getTunerType()
     {
-	    return mController.getTunerType();
-    }
-	
-	@Override
-    public JPanel getEditor( ResourceManager resourceManager )
-    {
-	    return mController.getEditor( resourceManager );
-    }
-
-	@Override
-    public void apply( TunerConfiguration config ) throws SourceException
-    {
-		mController.apply( config );
-    }
-
-	@Override
-    public int getSampleRate()
-    {
-		try
-		{
-		    return mController.getCurrentSampleRate();
-		}
-		catch( SourceException e )
-		{
-			mLog.error( "RTL2832 Tuner - couldn't get sample rate", e );
-		}
-		
-		return 0;
+	    return getController().getTunerType();
     }
 	
 	public void setSampleRate( SampleRate sampleRate ) throws SourceException
 	{
 		try
 		{
-			mController.setSampleRate( sampleRate );
+			getController().setSampleRate( sampleRate );
 		}
 		catch( LibUsbException e )
 		{
@@ -135,26 +101,26 @@ public class RTL2832Tuner extends Tuner
 		return 11.0;
 	}
 
-	@Override
-    public long getFrequency() throws SourceException
-    {
-	    return mController.getFrequency();
-    }
-	
 	public void setFrequency( int frequency ) throws SourceException
 	{
-		mController.setFrequency( frequency );
+		getController().setFrequency( frequency );
 	}
 
 	@Override
     public TunerChannelSource getChannel( TunerChannel channel )
-    		throws RejectedExecutionException, SourceException
+    									    throws RejectedExecutionException,
+    									    	   SourceException
 	{
 		TunerChannelSource source = null;
 		
 		try
 		{
-			source = mController.getChannel( this, channel );
+			source = getController().getChannel( this, channel );
+
+			if( source != null )
+			{
+				broadcast( new TunerEvent( this, TunerEvent.Event.CHANNEL_COUNT ) );
+			}
 		}
 		catch( Exception e )
 		{
@@ -163,6 +129,7 @@ public class RTL2832Tuner extends Tuner
 		
 		return source;
     }
+	
 	/**
 	 * Releases the tuned channel so that the tuner controller can tune to
 	 * other frequencies as needed.
@@ -176,19 +143,19 @@ public class RTL2832Tuner extends Tuner
 		/* Tell the controller to release the channel and cleanup */
 		if( source != null )
 		{
-			mController.releaseChannel( source );
+			getController().releaseChannel( source );
 		}
     }
 
 	@Override
 	public void addListener( Listener<ComplexBuffer> listener )
 	{
-		mController.addListener( listener );
+		getController().addListener( listener );
 	}
 	
 	@Override
 	public void removeListener( Listener<ComplexBuffer> listener )
 	{
-		mController.removeListener( listener );
+		getController().removeListener( listener );
 	}
 }

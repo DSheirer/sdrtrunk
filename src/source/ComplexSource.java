@@ -6,8 +6,8 @@ import sample.complex.ComplexBuffer;
 
 public abstract class ComplexSource extends Source implements Provider<ComplexBuffer>
 {
-	public ComplexSource( String name )
+	public ComplexSource()
 	{
-		super( name, SampleType.COMPLEX );
+		super( SampleType.COMPLEX );
 	}
 }

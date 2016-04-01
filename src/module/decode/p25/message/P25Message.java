@@ -86,7 +86,6 @@ public class P25Message extends Message
 		sb.append( getNAC() );
 		sb.append( " " );
 		sb.append( getDUID().getLabel() );
-		
 		sb.append( " DATA UNIT ID:" + mMessage.getInt( DUID ) );
 		
 	    return sb.toString();
