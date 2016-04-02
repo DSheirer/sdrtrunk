@@ -210,7 +210,7 @@ public class R820TTunerEditor extends TunerConfigurationEditor
         /**
          * Gain Controls 
          */
-        add( new JLabel( "Gain" ), "warp" );
+        add( new JLabel( "Gain" ), "wrap" );
         
         /* Master Gain Control */
         mComboMasterGain = new JComboBox<R820TGain>( R820TGain.values() );
