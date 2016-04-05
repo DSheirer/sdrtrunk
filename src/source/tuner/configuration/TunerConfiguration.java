@@ -31,6 +31,7 @@ public abstract class TunerConfiguration
 	protected String mName;
 	protected String mUniqueID;
 	protected boolean mAssigned;
+	protected long mFrequency;
 
 	/**
 	 * Default constructor to support JAXB
@@ -84,6 +85,17 @@ public abstract class TunerConfiguration
 	public void setAssigned( boolean assigned )
 	{
 		mAssigned = assigned;
+	}
+	
+	@XmlAttribute( name = "frequency" )
+	public long getFrequency()
+	{
+		return mFrequency;
+	}
+	
+	public void setFrequency( long frequency )
+	{
+		mFrequency = frequency;
 	}
 	
 	@XmlAttribute( name = "tuner_type" )

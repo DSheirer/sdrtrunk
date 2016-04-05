@@ -179,6 +179,7 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
 						break;
 					case FREQUENCY:
 						fireTableCellUpdated( index, FREQUENCY );
+						mTunerConfigurationModel.tunerFrequencyChanged( event.getTuner() );
 						break;
 					case SAMPLE_RATE:
 						fireTableCellUpdated( index, SAMPLE_RATE );

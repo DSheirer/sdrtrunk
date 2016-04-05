@@ -36,7 +36,7 @@ import dsp.filter.hilbert.HilbertTransform;
 
 /**
  * SDR Trunk 
- * Copyright (C) 2015 Dennis Sheirer
+ * Copyright (C) 2015-2016 Dennis Sheirer
  *    
  * Ported from libairspy at:
  * https://github.com/airspy/host/tree/master/libairspy
@@ -324,11 +324,22 @@ public class AirspyTunerController extends TunerController
 				//linearity and sensitivity modes will automatically override
 				//the custom values.
 				setGain( airspy.getGain() );
+				
+				setFrequencyCorrection( airspy.getFrequencyCorrection() );
 			}
 			catch( Exception e )
 			{
 				throw new SourceException( "Couldn't apply gain settings from "
 						+ "airspy config", e );
+			}
+			
+			try
+			{
+				setFrequency( airspy.getFrequency() );
+			}
+			catch( SourceException se )
+			{
+				//Do nothing, we couldn't set the frequency
 			}
 			
 		}

@@ -113,8 +113,18 @@ public class FCD2TunerController extends FCDTunerController
 			FCD2TunerConfiguration fcd2 = (FCD2TunerConfiguration)config;
 
 			setFrequencyCorrection( fcd2.getFrequencyCorrection() );
+			setFrequency( fcd2.getFrequency() );
 			setLNAGain( fcd2.getGainLNA() );
 			setMixerGain( fcd2.getGainMixer() );
+			
+			try
+			{
+				setFrequency( fcd2.getFrequency() );
+			}
+			catch( SourceException se )
+			{
+				//Do nothing, we couldn't set the frequency
+			}
 		}
     }
 	

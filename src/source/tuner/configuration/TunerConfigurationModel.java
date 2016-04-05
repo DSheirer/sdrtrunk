@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
+import source.tuner.Tuner;
 import source.tuner.TunerType;
 import source.tuner.configuration.TunerConfigurationEvent.Event;
 
@@ -367,5 +368,17 @@ public class TunerConfigurationModel extends AbstractTableModel
 		}
 		
 		return null;
+	}
+
+	/**
+	 * Stores the latest tuned frequency for the tuner in the currently assigned configuration
+	 */
+	public void tunerFrequencyChanged( Tuner tuner )
+	{
+		TunerConfiguration assigned = getTunerConfiguration( tuner.getTunerType(), tuner.getUniqueID() );
+		
+		assigned.setFrequency( tuner.getTunerController().getFrequency() );
+		
+		broadcast( new TunerConfigurationEvent( assigned, Event.CHANGE ) );
 	}
 }

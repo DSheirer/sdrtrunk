@@ -126,6 +126,15 @@ public class R820TTunerController extends RTL2832TunerController
 					R820TVGAGain vgaGain = config.getVGAGain();
 					setVGAGain( vgaGain, true );
 				}
+				
+				try
+				{
+					setFrequency( config.getFrequency() );
+				}
+				catch( SourceException se )
+				{
+					//Do nothing, we couldn't set the frequency
+				}
 			}
 			catch( UsbException e )
 			{

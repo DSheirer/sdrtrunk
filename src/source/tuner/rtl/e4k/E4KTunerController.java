@@ -152,12 +152,22 @@ public class E4KTunerController extends RTL2832TunerController
 					E4KEnhanceGain enhanceGain = e4kConfig.getEnhanceGain();
 					setEnhanceGain( enhanceGain, true );
 				}
+				
+				try
+				{
+					setFrequency( e4kConfig.getFrequency() );
+				}
+				catch( SourceException se )
+				{
+					//Do nothing, we couldn't set the frequency
+				}
 			}
 			catch( UsbException e )
 			{
 				throw new SourceException( "E4KTunerController - usb error "
 						+ "while applying tuner config", e );
 			}
+			
 		}
 		else
 		{

@@ -372,6 +372,15 @@ public class HackRFTunerController extends TunerController
             	throw new SourceException( "Error while applying tuner "
             			+ "configuration", e );
             }
+			
+			try
+			{
+				setFrequency( hackRFConfig.getFrequency() );
+			}
+			catch( SourceException se )
+			{
+				//Do nothing, we couldn't set the frequency
+			}
 		}
 		else
 		{

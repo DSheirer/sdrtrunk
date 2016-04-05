@@ -144,6 +144,15 @@ public class FCD1TunerController extends FCDTunerController
 					+ "exception while applying tuner config - " + 
 					e.getLocalizedMessage() );
 		}
+		
+		try
+		{
+			setFrequency( config.getFrequency() );
+		}
+		catch( SourceException se )
+		{
+			//Do nothing, we couldn't set the frequency
+		}
 	}
 
 	/**
