@@ -32,7 +32,7 @@ public class GoertzelFilter
     private int mSampleRate;
     private long mTargetFrequency;
     private int mBlockSize;
-    private double[] mWindowCoefficients;
+    private float[] mWindowCoefficients;
 
     private double mCoefficient;
 
