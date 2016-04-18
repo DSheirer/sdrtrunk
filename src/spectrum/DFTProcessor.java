@@ -72,7 +72,7 @@ public class DFTProcessor implements Listener<ComplexBuffer>,
 	private DFTSize mDFTSize = DFTSize.FFT04096;
 	private DFTSize mNewDFTSize = DFTSize.FFT04096;
 	
-	private float[] mWindow;
+	private double[] mWindow;
 	
 	/* The Cosine and Hanning windows seem to offer the best spectral display
 	 * with minimal bin leakage/smearing */

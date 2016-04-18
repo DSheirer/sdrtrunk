@@ -19,9 +19,6 @@ package dsp.filter;
 
 import java.util.Arrays;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Window creator
  * 
@@ -36,9 +33,7 @@ import org.slf4j.LoggerFactory;
  */
 public class Window
 {
-	private final static Logger mLog = LoggerFactory.getLogger( Window.class );
-
-	public static float[] getWindow( WindowType type, int length )
+    public static double[] getWindow( WindowType type, int length )
     {
     	switch( type )
     	{
@@ -56,18 +51,18 @@ public class Window
     	}
     }
 
-    public static float[] getRectangularWindow( int length )
+    public static double[] getRectangularWindow( int length )
     {
-    	float[] coefficients = new float[ length ];
+    	double[] coefficients = new double[ length ];
 
-    	Arrays.fill( coefficients, 1.0f );
+    	Arrays.fill( coefficients, 1.0d );
     	
     	return coefficients;
     }
     
-    public static float[] getCosineWindow( int length )
+    public static double[] getCosineWindow( int length )
     {
-    	float[] coefficients = new float[ length ];
+    	double[] coefficients = new double[ length ];
 
 
     	if( length % 2 == 0 ) //Even length
@@ -76,7 +71,7 @@ public class Window
 
         	for( int x = -half; x < length / 2 + 1; x++ )
         	{
-    		    coefficients[ x + half ] = (float)Math.cos( 
+    		    coefficients[ x + half ] = Math.cos( 
     		    		( (double)x * Math.PI ) / ( (double)length + 1.0d ) );
         	}
     	}
@@ -86,7 +81,7 @@ public class Window
 
         	for( int x = -half; x < half + 1; x++ )
         	{
-    		    coefficients[ x + half ] = (float)Math.cos( 
+    		    coefficients[ x + half ] = Math.cos( 
     		    		( (double)x * Math.PI ) / ( (double)length + 1.0d ) );
         	}
     	}
@@ -94,62 +89,62 @@ public class Window
     	return coefficients;
     }
 
-    public static float[] getBlackmanWindow( int length )
+    public static double[] getBlackmanWindow( int length )
     {
-    	float[] coefficients = new float[ length ];
+    	double[] coefficients = new double[ length ];
     	
     	for( int x = 0; x < length; x++ )
     	{
-		    coefficients[ x ] = (float)( .426591D - 
+		    coefficients[ x ] = .426591D - 
     	    	  ( .496561D * Math.cos( ( Math.PI * 2.0D * (double)x ) / (double)( length - 1 ) ) +
-    	    	  ( .076848D * Math.cos( ( Math.PI * 4.0D * (double)x ) / (double)( length - 1 ) ) ) ) );
+    	    	  ( .076848D * Math.cos( ( Math.PI * 4.0D * (double)x ) / (double)( length - 1 ) ) ) );
     	}
 
     	return coefficients;
     }
     
-    public static float[] getHammingWindow( int length )
+    public static double[] getHammingWindow( int length )
     {
-    	float[] coefficients = new float[ length ];
+    	double[] coefficients = new double[ length ];
     	
     	if( length % 2 == 0 ) //Even length
     	{
         	for( int x = 0; x < length; x++ )
         	{
-    		    coefficients[ x ] = (float)( .54D - ( .46D * 
-		    		Math.cos( ( Math.PI * ( 2.0D * (double)x + 1.0d ) ) / (double)( length - 1 ) ) ) );
+    		    coefficients[ x ] = .54D - ( .46D * 
+		    		Math.cos( ( Math.PI * ( 2.0D * (double)x + 1.0d ) ) / (double)( length - 1 ) ) );
         	}
     	}
     	else //Odd length
     	{
         	for( int x = 0; x < length; x++ )
         	{
-    		    coefficients[ x ] = (float)( .54D - ( .46D * 
-    		    		Math.cos( ( 2.0D * Math.PI * (double)x ) / (double)( length - 1 ) ) ) );
+    		    coefficients[ x ] = .54D - ( .46D * 
+    		    		Math.cos( ( 2.0D * Math.PI * (double)x ) / (double)( length - 1 ) ) );
         	}
     	}
 
     	return coefficients;
     }
 
-    public static float[] getHanningWindow( int length )
+    public static double[] getHanningWindow( int length )
     {
-    	float[] coefficients = new float[ length ];
+    	double[] coefficients = new double[ length ];
 
     	if( length % 2 == 0 ) //Even length
     	{
         	for( int x = 0; x < length; x++ )
         	{
-    		    coefficients[ x ] = (float)( .5D - ( .5D * 
-    		    		Math.cos( ( Math.PI * ( 2.0D * (double)x + 1 ) ) / (double)( length - 1 ) ) ) );
+    		    coefficients[ x ] = .5D - ( .5D * 
+    		    		Math.cos( ( Math.PI * ( 2.0D * (double)x + 1 ) ) / (double)( length - 1 ) ) );
         	}
     	}
     	else //Odd length
     	{
         	for( int x = 0; x < length; x++ )
         	{
-    		    coefficients[ x ] = (float)( .5D - ( .5D * 
-    		    		Math.cos( ( 2.0D * Math.PI * (double)x ) / (double)( length - 1 ) ) ) );
+    		    coefficients[ x ] = .5D - ( .5D * 
+    		    		Math.cos( ( 2.0D * Math.PI * (double)x ) / (double)( length - 1 ) ) );
         	}
     	}
 
@@ -160,21 +155,41 @@ public class Window
     /**
      * Apply the window against an array of float-type samples
      */
-    public static float[] apply( float[] windowCoefficients, float[] samples )
+    public static float[] apply( double[] coefficients, float[] samples )
     {
-		for( int x = 0; x < windowCoefficients.length; x++ )
+		for( int x = 0; x < coefficients.length; x++ )
 		{
-		    samples[ x ] = samples[ x ] * windowCoefficients[ x ];
+		    samples[ x ] = (float)( samples[ x ] * coefficients[ x ] );
+		}
+		
+		return samples;
+    }
+    
+    public static float[] apply( WindowType type, float[] samples )
+    {
+    	double[] coefficients = getWindow( type, samples.length );
+    	
+    	return apply( coefficients, samples );
+    }
+    
+    /**
+     * Apply the window against an array of float-type samples
+     */
+    public static double[] apply( double[] coefficients, double[] samples )
+    {
+		for( int x = 0; x < coefficients.length; x++ )
+		{
+		    samples[ x ] = samples[ x ] * coefficients[ x ];
 		}
 		
 		return samples;
     }
 
-    public static float[] apply( WindowType type, float[] samples )
+    public static double[] apply( WindowType type, double[] samples )
     {
-    	float[] windowCoefficients = getWindow( type, samples.length );
+    	double[] coefficients = getWindow( type, samples.length );
     	
-    	return apply( windowCoefficients, samples );
+    	return apply( coefficients, samples );
     }
     
     
@@ -190,7 +205,7 @@ public class Window
 	/**
 	 * Utility to log the double arrays
 	 */
-	public static String arrayToString( float[] array, boolean breaks )
+	public static String arrayToString( double[] array, boolean breaks )
 	{
 		StringBuilder sb = new StringBuilder();
 		for( int x = 0; x < array.length; x++ )

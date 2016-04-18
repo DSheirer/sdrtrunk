@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014-2016,2015 Dennis Sheirer
+ *     Copyright (C) 2014,2015 Dennis Sheirer
  *
  *	   Root Raised Cosine filter designer:
  *	   Copyright 2002,2007,2008,2012,2013 Free Software Foundation, Inc.
@@ -35,46 +35,9 @@ import dsp.filter.cic.ComplexPrimeCICDecimate;
 
 public class FilterFactory
 {
-	private final static Logger mLog = LoggerFactory.getLogger( FilterFactory.class );
+	private final static Logger mLog = 
+			LoggerFactory.getLogger( FilterFactory.class );
 
-	public static final double TWO_PI = Math.pow( Math.PI, 2.0 );
-	
-	public static float[] getNewLowPass( int sampleRate, long passFrequency, long stopFrequency, 
-			int attenuation, WindowType window )
-	{
-		assert( passFrequency <= sampleRate / 2 );
-		
-		int length = getTapCount( sampleRate, passFrequency, stopFrequency, attenuation );
-		
-		if( length % 2 == 0 )
-		{
-			length++;
-		}
-		
-		float[] coefficients = new float[ length ];
-
-		int half = length / 2;
-		
-		int K = (int)( length * ( 2.0d * (double)passFrequency / (double) sampleRate ));
-		
-		double scale = 1.0 / (double)length;
-		
-		coefficients[ half ] = (float)( K / (double)length );
-		
-		for( int k = 1; k <= half; k++ )
-		{
-			float coefficient = (float)( scale * ( Math.sin( Math.PI * k * K / length ) /
-					  Math.sin( Math.PI * k / length ) ) );
-			
-			coefficients[ k + half ] = coefficient;
-			coefficients[ half - k ] = coefficient;
-		}
-		
-		Window.apply( WindowType.HANNING, coefficients );
-		
-		return coefficients;
-	}
-	
 	/**
 	 * Generates coefficients for a unity-gain, windowed low-pass filter
 	 * @param sampleRate - hertz
@@ -115,7 +78,6 @@ public class FilterFactory
 		}
 
 		//Apply the window against the coefficients
-		
 		coefficients = Window.apply( window, coefficients );
 
 		//Normalize to unity (1) gain
