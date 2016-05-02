@@ -3,7 +3,7 @@ A cross-platform java application for decoding, monitoring, recording and stream
 
 * [Getting Started](https://github.com/DSheirer/sdrtrunk/wiki/GettingStarted)
 * [User's Manual](https://github.com/DSheirer/sdrtrunk/wiki/UserManual)
-* [Download](https://drive.google.com/folderview?id=0B7BHsssXUq8eOHBTNndCczZTd0k&usp=sharing)
+* [Download](https://github.com/DSheirer/sdrtrunk/releases)
 * [Support](https://groups.google.com/forum/#!forum/sdrtrunk)
 
 ![](https://github.com/DSheirer/sdrtrunk/wiki/images/SDRTrunk_application.png)
