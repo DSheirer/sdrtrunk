@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
 	<classpathentry kind="lib" path="imports/commons-lang3-3.2.1.jar"/>
 	<classpathentry kind="lib" path="imports/jide-oss-3.5.15.jar"/>
 	<classpathentry kind="lib" path="imports/jsr80-1.0.1.jar"/>
@@ -30,5 +29,6 @@
 			<attribute name="javadoc_location" value="jar:file:/home/denny/Downloads/tablefilter-swing-5.2.1-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
