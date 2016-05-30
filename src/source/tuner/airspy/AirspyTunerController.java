@@ -298,7 +298,14 @@ public class AirspyTunerController extends TunerController
 
 			if( rate == null )
 			{
-				rate = DEFAULT_SAMPLE_RATE;
+				if( !mSampleRates.isEmpty() )
+				{
+					rate = mSampleRates.get( 0 );
+				}
+				else
+				{
+					rate = DEFAULT_SAMPLE_RATE;
+				}
 			}
 			
 			try
@@ -359,6 +366,7 @@ public class AirspyTunerController extends TunerController
 	@Override
 	public void setTunedFrequency( long frequency ) throws SourceException
 	{
+		mLog.debug("Setting tuned frequency to: " + frequency );
 		if( FREQUENCY_MIN <= frequency && frequency <= FREQUENCY_MAX )
 		{
 			ByteBuffer buffer = ByteBuffer.allocateDirect( 4 );
@@ -635,8 +643,6 @@ public class AirspyTunerController extends TunerController
 	{
 		mSampleRates.clear();
 		
-		mSampleRates.add( DEFAULT_SAMPLE_RATE );
-		
 		//Get a count of available sample rates.  If we get an exception, then
 		//we're using an older firmware revision and only the default 10 MHz
 		//rate is supported
@@ -644,18 +650,17 @@ public class AirspyTunerController extends TunerController
 		{
 			byte[] rawCount = readArray( Command.GET_SAMPLE_RATES, 0, 0, 4 );
 
-			
 			if( rawCount != null )
 			{
 				int count = EndianUtils.readSwappedInteger( rawCount, 0 );
-				
-				byte[] rawRates = readArray( Command.GET_SAMPLE_RATES, 0, 
+
+				byte[] rawRates = readArray( Command.GET_SAMPLE_RATES, 0,
 						count, ( count * 4 ) );
 
 				for( int x = 0; x < count; x++ )
 				{
 					int rate = EndianUtils.readSwappedInteger( rawRates, ( x * 4 ) );
-					
+
 					if( rate != DEFAULT_SAMPLE_RATE.getRate() )
 					{
 						mSampleRates.add( new AirspySampleRate( x, rate, 
@@ -667,6 +672,11 @@ public class AirspyTunerController extends TunerController
 		catch( LibUsbException e )
 		{
 			//Press on, nothing else to do here ..
+		}
+
+		if( mSampleRates.isEmpty())
+		{
+			mSampleRates.add( DEFAULT_SAMPLE_RATE );
 		}
 	}
 
