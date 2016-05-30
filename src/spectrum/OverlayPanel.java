@@ -96,9 +96,6 @@ public class OverlayPanel extends JPanel
 	private Color mColorSpectrumCursor;
 	private Color mColorSpectrumLine;
 
-//	//All channels
-//	private List<Channel> mChannels = new ArrayList<Channel>();
-//
 	//Currently visible/displayable channels
 	private CopyOnWriteArrayList<Channel> mVisibleChannels = new CopyOnWriteArrayList<Channel>();
 	private ChannelDisplay mChannelDisplay = ChannelDisplay.ALL;

@@ -278,25 +278,26 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
 	{
 		return ( (double)getWidth() * (double)multiplier ) / (double)mDFTSize;
 	}
-
+	
 	/**
 	 * Renders the screen at each refresh
 	 */
 	public void paintComponent( Graphics g )
 	{
+		super.paintComponent( g );
+
 		int multiplier = getZoomMultiplier();
 
 		double binPixelWidth = getBinPixelWidth( multiplier );
 
 		int offset = (int)( getPixelOffset( multiplier ) - binPixelWidth );
-		
+
 		g.drawImage( mWaterfallImage, 
 					 offset, 
 					 0, 
 					 ( getWidth() * multiplier ) + (int)binPixelWidth, 
-					 mImageHeight, 
+					 mImageHeight,
 					 this );
-
 
     	Graphics2D graphics = (Graphics2D) g;
 
