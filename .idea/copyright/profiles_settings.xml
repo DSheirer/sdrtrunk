@@ -1,3 +1,9 @@
 <component name="CopyrightManager">
-  <settings default="" />
+  <settings default="sdrtrunk">
+    <LanguageOptions name="__TEMPLATE__">
+      <option name="addBlankAfter" value="false" />
+      <option name="separateBefore" value="true" />
+      <option name="separateAfter" value="true" />
+    </LanguageOptions>
+  </settings>
 </component>
