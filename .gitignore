@@ -1,3 +1,6 @@
-/*.class
+*.class
 /classes*
 /product*
+/bin*
+/.directory
+.settings

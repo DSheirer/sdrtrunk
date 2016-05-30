@@ -1,0 +1,31 @@
+<component name="libraryTable">
+  <library name="imports">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/imports/logback-classic-1.1.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/usb-api-1.0.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/commons-io-2.4.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/commons-lang3-3.2.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/tablefilter-swing-5.2.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/libusb4java-1.2.0-linux-x86.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/JLargeArrays-1.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/slf4j-api-1.7.7.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/libusb4java-1.2.0-linux-ppc.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/libusb4java-1.2.0-windows-x86.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/libusb4java-1.2.0-osx-x86.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/miglayout-4.0-swing.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/libusb4java-1.2.0-windows-x86_64.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/usb4java-1.2.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/jide-oss-3.5.15.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/libusb4java-1.2.0-linux-x86_64.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/logback-core-1.1.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/usb4java-javax-1.2.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/jsr80-1.0.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/libusb4java-1.2.0-linux-arm.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/jmbe-interface-0.3.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/libusb4java-1.2.0-osx-x86_64.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/JTransforms-3.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
