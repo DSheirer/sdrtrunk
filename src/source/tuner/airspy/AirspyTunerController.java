@@ -366,7 +366,6 @@ public class AirspyTunerController extends TunerController
 	@Override
 	public void setTunedFrequency( long frequency ) throws SourceException
 	{
-		mLog.debug("Setting tuned frequency to: " + frequency );
 		if( FREQUENCY_MIN <= frequency && frequency <= FREQUENCY_MAX )
 		{
 			ByteBuffer buffer = ByteBuffer.allocateDirect( 4 );
