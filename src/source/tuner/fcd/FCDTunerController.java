@@ -76,9 +76,17 @@ public abstract class FCDTunerController extends TunerController
 			   maxTunableFrequency, 
 			   DC_SPIKE_AVOID_BUFFER, 
 			   USABLE_BANDWIDTH_PERCENT );
-		mFrequencyController.setSampleRate( sampleRate );
 		mDevice = device;
 		mDeviceDescriptor = descriptor;
+
+		try
+		{
+			mFrequencyController.setSampleRate( sampleRate );
+		}
+		catch( SourceException se )
+		{
+			mLog.error("Error setting sample rate to [" + sampleRate + "]", se );
+		}
 	}
 
 	/**

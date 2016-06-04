@@ -82,7 +82,6 @@ public class TunerChannelSource extends ComplexSource
 	 * and thus the tuner might no longer be able to source this channel once it
 	 * has been stopped.
 	 * 
-	 * @param threadPoolManager to use for decimation processing task
 	 * @param tuner to obtain wideband IQ samples from
 	 * @param tunerChannel specifying the center frequency for the DDC
 	 * @throws RejectedExecutionException if the thread pool manager cannot 
@@ -229,7 +228,7 @@ public class TunerChannelSource extends ComplexSource
 	 * frequency correction events received from the channel consumer/listener
 	 */
 	@Override
-    public void frequencyChanged( FrequencyChangeEvent event )
+    public void frequencyChanged( FrequencyChangeEvent event ) throws SourceException
     {
 		// Echo the event to the registered event listener
 		if( mFrequencyChangeProcessor != null )

@@ -1,10 +1,16 @@
 package source.tuner.frequency;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sample.Listener;
+import source.SourceException;
+import source.tuner.hackrf.HackRFTunerEditor;
 
 public class FrequencyChangeProcessorWrapper 
 			implements IFrequencyChangeListener, Listener<FrequencyChangeEvent>
 {
+	private final static Logger mLog = LoggerFactory.getLogger( FrequencyChangeProcessorWrapper.class );
+
 	private IFrequencyChangeProcessor mProcessor;
 
 	/**
@@ -26,7 +32,14 @@ public class FrequencyChangeProcessorWrapper
 	{
 		if( mProcessor != null )
 		{
-			mProcessor.frequencyChanged( event );
+			try
+			{
+				mProcessor.frequencyChanged( event );
+			}
+			catch( SourceException se )
+			{
+				mLog.error("Error sending frequency change event to embedded processor", se);
+			}
 		}
 	}
 }

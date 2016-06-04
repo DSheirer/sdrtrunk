@@ -142,7 +142,7 @@ public class HackRFTunerEditor extends TunerConfigurationEditor
 					mController.setSampleRate( sampleRate );
 	                save();
                 }
-                catch ( UsbException e2 )
+                catch ( SourceException|UsbException e2 )
                 {
                 	JOptionPane.showMessageDialog( HackRFTunerEditor.this, "HackRF Tuner Controller"
             			+ " - couldn't apply the sample rate setting [" + sampleRate.getLabel() + 

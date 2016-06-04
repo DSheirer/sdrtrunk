@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import source.InvalidFrequencyException;
+import source.Source;
 import source.SourceException;
 import source.tuner.frequency.FrequencyChangeEvent.Event;
 
@@ -61,7 +63,7 @@ public class FrequencyController
 	/**
 	 * Set sample rate in hertz
 	 */
-	public void setSampleRate( int sampleRate )
+	public void setSampleRate( int sampleRate ) throws SourceException
 	{
 		mSampleRate = sampleRate;
 		
@@ -92,21 +94,22 @@ public class FrequencyController
 	 * method supports changing the frequency correction value without
 	 * broadcasting a frequency change event.
 	 */
-	private void setFrequency( long frequency, boolean broadcastChange ) 
-													throws SourceException
+	private void setFrequency( long frequency, boolean broadcastChange ) throws SourceException
 	{
 		long tunedFrequency = getTunedFrequency( frequency );
 		
-		if( tunedFrequency < mMinimumFrequency || 
-			tunedFrequency > mMaximumFrequency )
+		if( tunedFrequency < mMinimumFrequency )
 		{
-//TODO: this should throw a frequency limit exception so that the frequency
-//controller can update its display to the last tuned frequency
-			throw new SourceException( "Cannot tune frequency ( requested: " + 
-					frequency + " actual:" + tunedFrequency + "]" ); 
+			throw new InvalidFrequencyException( "Requested frequency not valid", frequency, mMinimumFrequency );
 		}
-		
+
+		if( tunedFrequency > mMaximumFrequency )
+		{
+			throw new InvalidFrequencyException( "Requested frequency not valid", frequency, mMaximumFrequency );
+		}
+
 		mFrequency = frequency;
+
 		mTunedFrequency = tunedFrequency;
 
 		if( mTunable != null )
@@ -164,8 +167,7 @@ public class FrequencyController
     	return mFrequencyCorrection;
     }
     
-    public void setFrequencyCorrection( double correction ) 
-    												throws SourceException
+    public void setFrequencyCorrection( double correction ) throws SourceException
     {
     	mFrequencyCorrection = correction;
 
@@ -202,7 +204,7 @@ public class FrequencyController
      * Broadcasts a change/update to the current (uncorrected) frequency or the 
      * bandwidth/sample rate value.
      */
-    protected void broadcastFrequencyChange()
+    protected void broadcastFrequencyChange() throws SourceException
     {
     	broadcastFrequencyChangeEvent( 
     			new FrequencyChangeEvent( Event.NOTIFICATION_FREQUENCY_CHANGE, mFrequency ) );
@@ -211,7 +213,7 @@ public class FrequencyController
     /**
      * Broadcast a frequency error/correction value change
      */
-    protected void broadcastFrequencyErrorChange()
+    protected void broadcastFrequencyErrorChange() throws SourceException
     {
     	broadcastFrequencyChangeEvent( 
 			new FrequencyChangeEvent( Event.NOTIFICATION_FREQUENCY_CORRECTION_CHANGE, mFrequencyCorrection ) );
@@ -220,13 +222,13 @@ public class FrequencyController
     /**
      * Broadcasts a sample rate change
      */
-    protected void broadcastSampleRateChange()
+    protected void broadcastSampleRateChange() throws SourceException
     {
     	broadcastFrequencyChangeEvent( 
 			new FrequencyChangeEvent( Event.NOTIFICATION_SAMPLE_RATE_CHANGE, mSampleRate ) );
     }
     
-    public void broadcastFrequencyChangeEvent( FrequencyChangeEvent event )
+    public void broadcastFrequencyChangeEvent( FrequencyChangeEvent event ) throws SourceException
     {
     	for( IFrequencyChangeProcessor processor: mProcessors )
     	{

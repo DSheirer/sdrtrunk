@@ -89,7 +89,7 @@ public class Recording implements Comparable<Recording>,
 	}
 
 	@Override
-    public void frequencyChanged( FrequencyChangeEvent event )
+    public void frequencyChanged( FrequencyChangeEvent event ) throws SourceException
     {
 		if( event.getEvent() == Event.NOTIFICATION_FREQUENCY_CHANGE )
 		{

@@ -515,7 +515,7 @@ public class HackRFTunerController extends TunerController
 	 * sample rates.  However, since we're only using integral sample rates, we
 	 * simply invoke the setSampleRateManual method directly.
 	 */
-	public void setSampleRate( HackRFSampleRate rate ) throws UsbException
+	public void setSampleRate( HackRFSampleRate rate ) throws UsbException, SourceException
 	{
 		setSampleRateManual( rate.getRate(), 1 );
 		

@@ -51,7 +51,7 @@ public abstract class TunerController implements Tunable, IFrequencyChangeProces
 	 * @param minimumFrequency minimum uncorrected tunable frequency
 	 * @param maximumFrequency maximum uncorrected tunable frequency
 	 * @param middleUnusable is the +/- value center DC spike to avoid for channels
-	 * @param extantUnusable is the unusable space at the extreme ends of the spectrum
+	 * @param usableBandwidthPercentage is the unusable space at the extreme ends of the spectrum
 	 * 
 	 * @throws SourceException - for any issues related to constructing the 
 	 * class, tuning a frequency, or setting the bandwidth
@@ -79,18 +79,11 @@ public abstract class TunerController implements Tunable, IFrequencyChangeProces
 	 * Responds to requests to set the frequency
 	 */
     @Override
-	public void frequencyChanged( FrequencyChangeEvent event )
+	public void frequencyChanged( FrequencyChangeEvent event ) throws SourceException
 	{
     	if( event.getEvent() == Event.REQUEST_FREQUENCY_CHANGE )
     	{
-    		try
-			{
-				setFrequency( event.getValue().longValue() );
-			} 
-    		catch ( SourceException e )
-			{
-    			mLog.error( "Error setting frequency from external controller", e );
-			}
+			setFrequency( event.getValue().longValue() );
     	}
 	}
 
@@ -212,7 +205,6 @@ public abstract class TunerController implements Tunable, IFrequencyChangeProces
 	 * ensure all of the channels can be accomodated and any defined central DC 
 	 * spike avoided.
 	 * 
-	 * @param threadPoolManager for the channel to use for runnables
 	 * @param tuner to source the channel from
 	 * @param channel with defined center frequency and bandwidth
 	 * 

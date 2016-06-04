@@ -405,7 +405,7 @@ public class AirspyTunerController extends TunerController
 	 * Sets the sample rate to the rate specified by the index value in the 
 	 * available sample rates map
 	 * 
-	 * @param index to a sample rate in the available samples rates map.
+	 * @param rate to a sample rate in the available samples rates map.
 	 * 
 	 * @throws IllegalArgumentException if index is not a valid rate index
 	 * @throws LibUsbException if there was a read error or if this operation
@@ -414,7 +414,7 @@ public class AirspyTunerController extends TunerController
 	 * @throws UsbException if there was a USB error
 	 */
 	public void setSampleRate( AirspySampleRate rate ) throws
-				LibUsbException, UsbException
+				LibUsbException, UsbException, SourceException
 	{
 		if( rate.getRate() != mSampleRate )
 		{

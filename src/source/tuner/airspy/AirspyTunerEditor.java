@@ -167,7 +167,7 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 					mController.setSampleRate( rate );
 					save();
 				} 
-				catch ( LibUsbException | UsbException e1 )
+				catch ( LibUsbException | UsbException | SourceException e1 )
 				{
 					JOptionPane.showMessageDialog( AirspyTunerEditor.this, 
 						"Couldn't set sample rate to " + rate.getLabel() );
