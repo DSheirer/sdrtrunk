@@ -660,11 +660,7 @@ public class AirspyTunerController extends TunerController
 				{
 					int rate = EndianUtils.readSwappedInteger( rawRates, ( x * 4 ) );
 
-					if( rate != DEFAULT_SAMPLE_RATE.getRate() )
-					{
-						mSampleRates.add( new AirspySampleRate( x, rate, 
-								formatSampleRate( rate ) ) );
-					}
+					mSampleRates.add( new AirspySampleRate( x, rate, formatSampleRate( rate ) ) );
 				}
 			}
 		}
