@@ -33,9 +33,12 @@ import controller.channel.TrafficChannelEvent;
 public class TrafficChannelManager extends Module 
 			implements ICallEventProvider, IDecoderStateEventListener
 {
-	private final static Logger mLog = LoggerFactory.getLogger( TrafficChannelManager.class );
-	
-	private int mTrafficChannelPoolMaximumSize = 
+    private final static Logger mLog = LoggerFactory.getLogger( TrafficChannelManager.class );
+    public static final String CHANNEL_START_REJECTED = "CHANNEL START REJECTED";
+    public static final String NO_TUNER_AVAILABLE = "NO TUNER AVAILABLE";
+    public static final String UNKNOWN_FREQUENCY = "UNKNOWN FREQUENCY";
+
+    private int mTrafficChannelPoolMaximumSize =
 			DecodeConfiguration.TRAFFIC_CHANNEL_LIMIT_DEFAULT;
 	private List<Channel> mTrafficChannelPool = new ArrayList<Channel>();
 	private Map<String,Channel> mTrafficChannelsInUse = new ConcurrentHashMap<String,Channel>();
@@ -56,13 +59,21 @@ public class TrafficChannelManager extends Module
 	 * Monitors call events and allocates traffic decoder channels in response
 	 * to traffic channel allocation call events.  Manages a pool of reusable
 	 * traffic channel allocations.
-	 *  
-	 * @param resourceManager - resource manager
-	 * 
-	 * @param decodeConfiguration - decoder configuration to use for each 
+	 *
+     * @param channelModel containing channels currently in use
+     *
+     * @param channelProcessingManager
+     *
+	 * @param decodeConfiguration - decoder configuration to use for each
 	 * traffic channel allocation.
 	 * 
 	 * @param recordConfiguration - recording options for each traffic channel
+     *
+     * @param system label to use to describe the system
+     *
+     * @param site label to use to describe the site
+     *
+     * @param aliasListName designated for the channel
 	 * 
 	 * @param trafficChannelTimeout - millisecond call timer limit used when an
 	 * end of call signalling event is not decoded.
@@ -215,19 +226,55 @@ public class TrafficChannelManager extends Module
 					else
 					{
 						callEvent.setCallEventType( CallEventType.CALL_DETECT );
-						callEvent.setDetails( "CHANNEL START REJECTED" );
-					}				
+
+                        String details = callEvent.getDetails();
+
+                        if(details == null || details.isEmpty())
+                        {
+                            callEvent.setDetails(CHANNEL_START_REJECTED);
+                        }
+                        else if(!details.contains(CHANNEL_START_REJECTED))
+                        {
+                            callEvent.setDetails(new StringBuilder(CHANNEL_START_REJECTED)
+                                    .append(" : ")
+                                    .append(callEvent.getDetails()).toString());
+                        }
+					}
 				}
 				else
 				{
 					callEvent.setCallEventType( CallEventType.CALL_DETECT );
-					callEvent.setDetails( "NO TUNER AVAILABLE" );
+
+                    String details = callEvent.getDetails();
+
+                    if(details == null || details.isEmpty())
+                    {
+                        callEvent.setDetails(NO_TUNER_AVAILABLE);
+                    }
+                    else if(!details.contains(NO_TUNER_AVAILABLE))
+                    {
+                        callEvent.setDetails(new StringBuilder(NO_TUNER_AVAILABLE)
+                                .append(" : ")
+                                .append(callEvent.getDetails()).toString());
+                    }
 				}
 			}
 			else
 			{
 				callEvent.setCallEventType( CallEventType.CALL_DETECT );
-				callEvent.setDetails( "UNKNOWN FREQUENCY" );
+
+                String details = callEvent.getDetails();
+
+                if(details == null || details.isEmpty())
+                {
+                    callEvent.setDetails(UNKNOWN_FREQUENCY);
+                }
+                else if(!details.contains(UNKNOWN_FREQUENCY))
+                {
+                    callEvent.setDetails(new StringBuilder(UNKNOWN_FREQUENCY)
+                            .append(" : ")
+                            .append(callEvent.getDetails()).toString());
+                }
 			}
 
 			final Listener<CallEvent> listener = mCallEventListener;
