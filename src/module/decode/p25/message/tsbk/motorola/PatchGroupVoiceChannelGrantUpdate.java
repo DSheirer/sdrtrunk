@@ -9,13 +9,13 @@ import bits.BinaryMessage;
 public class PatchGroupVoiceChannelGrantUpdate extends MotorolaTSBKMessage
 												  implements IdentifierReceiver
 {
-	public static final int[] CHANNEL_1 = { 80,81,82,83 };
-	public static final int[] IDENTIFIER_1 = { 84,85,86,87,88,89,90,91,92,93,94,
+	public static final int[] IDENTIFIER_1 = { 80,81,82,83 };
+	public static final int[] CHANNEL_1 = { 84,85,86,87,88,89,90,91,92,93,94,
 		95 };
 	public static final int[] PATCH_GROUP_ADDRESS_1 = { 96,97,98,99,100,101,102,
 		103,104,105,106,107,108,109,110,111 };
-	public static final int[] CHANNEL_2 = { 112,113,114,115 };
-	public static final int[] IDENTIFIER_2 = { 116,117,118,119,120,121,122,123,
+	public static final int[] IDENTIFIER_2 = { 112,113,114,115 };
+	public static final int[] CHANNEL_2 = { 116,117,118,119,120,121,122,123,
 		124,125,126,127 };
 	public static final int[] PATCH_GROUP_ADDRESS_2 = { 128,129,130,131,132,133,
 		134,135,136,137,138,139,140,141,142,143 };

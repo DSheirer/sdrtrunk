@@ -16,9 +16,8 @@ public class PatchGroupVoiceChannelGrant extends MotorolaTSBKMessage
     public static final int SESSION_MODE = 83;
     
     public static final int[] PRIORITY = { 85,86,87 };
-	public static final int[] CHANNEL = { 88,89,90,91 };
-	public static final int[] IDENTIFIER = { 92,93,94,95,96,97,98,99,100,101,
-		102,103 };
+	public static final int[] IDENTIFIER = { 88,89,90,91 };
+	public static final int[] CHANNEL = { 92,93,94,95,96,97,98,99,100,101,102,103 };
 	public static final int[] PATCH_GROUP_ADDRESS = { 104,105,106,107,108,109,
 		110,111,112,113,114,115,116,117,118,119 };
 	public static final int[] SOURCE_ADDRESS = { 120,121,122,123,124,125,126,
