@@ -63,6 +63,9 @@ public class PatchGroupVoiceChannelGrant extends MotorolaTSBKMessage
         sb.append( " DN:" + getDownlinkFrequency() );
         
         sb.append( " UP:" + getUplinkFrequency() );
+
+        sb.append( " SESSION MODE:");
+        sb.append( getSessionMode().name() );
 		
 	    return sb.toString();
     }

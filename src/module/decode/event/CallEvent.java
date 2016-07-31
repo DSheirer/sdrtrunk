@@ -276,6 +276,7 @@ public abstract class CallEvent implements Comparable<CallEvent>
 		GROUP_CALL( "Group Call" ),
 		ID_ANI( "ANI" ),
 		ID_UNIQUE( "Unique ID" ),
+		NOTIFICATION( "Notification" ),
 		PAGE( "Page" ),
 		QUERY( "Query" ),
 		REGISTER( "Register" ),

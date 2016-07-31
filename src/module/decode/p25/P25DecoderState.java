@@ -17,16 +17,11 @@
  ******************************************************************************/
 package module.decode.p25;
 
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.concurrent.ScheduledExecutorService;
-
+import alias.Alias;
+import alias.AliasList;
+import audio.metadata.Metadata;
+import audio.metadata.MetadataType;
+import controller.channel.Channel.ChannelType;
 import message.Message;
 import module.decode.DecoderType;
 import module.decode.event.CallEvent.CallEventType;
@@ -79,6 +74,11 @@ import module.decode.p25.message.tdu.lc.SecondaryControlChannelBroadcast;
 import module.decode.p25.message.tdu.lc.SecondaryControlChannelBroadcastExplicit;
 import module.decode.p25.message.tdu.lc.TDULinkControlMessage;
 import module.decode.p25.message.tsbk.TSBKMessage;
+import module.decode.p25.message.tsbk.motorola.MotorolaTSBKMessage;
+import module.decode.p25.message.tsbk.motorola.PatchGroupAdd;
+import module.decode.p25.message.tsbk.motorola.PatchGroupDelete;
+import module.decode.p25.message.tsbk.motorola.PatchGroupVoiceChannelGrant;
+import module.decode.p25.message.tsbk.motorola.PatchGroupVoiceChannelGrantUpdate;
 import module.decode.p25.message.tsbk.osp.control.AcknowledgeResponse;
 import module.decode.p25.message.tsbk.osp.control.AdjacentStatusBroadcast;
 import module.decode.p25.message.tsbk.osp.control.AuthenticationCommand;
@@ -128,15 +128,18 @@ import module.decode.state.DecoderStateEvent;
 import module.decode.state.DecoderStateEvent.Event;
 import module.decode.state.State;
 import module.decode.state.TrafficChannelAllocationEvent;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import alias.Alias;
-import alias.AliasList;
-import audio.metadata.Metadata;
-import audio.metadata.MetadataType;
-import controller.channel.Channel.ChannelType;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class P25DecoderState extends DecoderState
 {
@@ -178,6 +181,7 @@ public class P25DecoderState extends DecoderState
 	private ChannelType mChannelType;
 	private Modulation mModulation;
 	private boolean mIgnoreDataCalls;
+	private boolean mControlChannelShutdownLogged;
 
 	private P25CallEvent mCurrentCallEvent;
 	private List<String> mCallDetectTalkgroups = new ArrayList<>();
@@ -265,7 +269,6 @@ public class P25DecoderState extends DecoderState
 	 * @param channel - channel number
 	 * @param from user id
 	 * @param to talkgroup or user id
-	 * @param time current in millis
 	 * @return true if there is a call event
 	 */
 	public boolean hasCallEvent( String channel, String from, String to )
@@ -305,7 +308,6 @@ public class P25DecoderState extends DecoderState
 	 * Adds the channel and event to the current channel call map.  If an entry
 	 * already exists, terminates the event and broadcasts the update.
 	 * 
-	 * @param channel for the call
 	 * @param event to place in the map
 	 */
 	public void registerCallEvent( P25CallEvent event )
@@ -322,7 +324,7 @@ public class P25DecoderState extends DecoderState
 		mChannelCallMap.put( event.getChannel(), event );
 	}
 	
-	public void updateCallEvent( String channel, String from, String to )
+	private void updateCallEvent( String channel, String from, String to )
 	{
 		P25CallEvent event = mChannelCallMap.get( channel );
 		
@@ -1620,8 +1622,12 @@ public class P25DecoderState extends DecoderState
 					break;
 			}
 		}
+		else if( tsbk.getVendor() == Vendor.MOTOROLA )
+		{
+			processMotorolaTSBK((MotorolaTSBKMessage)tsbk);
+		}
 	}
-	
+
 	/**
 	 * Process a Packet Data Unit message 
 	 */
@@ -2697,7 +2703,121 @@ public class P25DecoderState extends DecoderState
 				break;
 		}
 	}
-	
+
+	/**
+	 * Process Motorola vendor-specific Trunking Signaling Block messages
+     */
+	private void processMotorolaTSBK(MotorolaTSBKMessage tsbk)
+	{
+		String channel;
+		String from;
+		String to;
+
+		switch(((MotorolaTSBKMessage)tsbk).getMotorolaOpcode())
+		{
+			case PATCH_GROUP_CHANNEL_GRANT:
+				PatchGroupVoiceChannelGrant gvcg = (PatchGroupVoiceChannelGrant)tsbk;
+
+				channel = gvcg.getChannel();
+				from = gvcg.getSourceAddress();
+				to = gvcg.getPatchGroupAddress();
+
+				if( hasCallEvent( channel, from, to ) )
+				{
+					updateCallEvent( channel, from, to );
+				}
+				else
+				{
+					P25CallEvent event = new P25CallEvent.Builder( CallEventType.GROUP_CALL )
+							.aliasList( getAliasList() )
+							.channel( channel )
+							.details( ( gvcg.isEncrypted() ? "ENCRYPTED" : "" ) +
+									  ( gvcg.isEmergency() ? " EMERGENCY" : "") +
+									    " PATCH SESSION MODE:" + gvcg.getSessionMode().name())
+							.frequency( gvcg.getDownlinkFrequency() )
+							.from( from )
+							.to( to )
+							.build();
+
+					registerCallEvent( event );
+					broadcast( event );
+				}
+
+				broadcast( new TrafficChannelAllocationEvent( this,
+						mChannelCallMap.get( channel ) ) );
+				break;
+			case PATCH_GROUP_CHANNEL_GRANT_UPDATE:
+				PatchGroupVoiceChannelGrantUpdate gvcgu = (PatchGroupVoiceChannelGrantUpdate) tsbk;
+
+				channel = gvcgu.getChannel1();
+				to = gvcgu.getPatchGroupAddress1();
+
+				if( hasCallEvent( channel, null, to ) )
+				{
+					updateCallEvent( channel, null, to );
+				}
+				else
+				{
+					P25CallEvent event = new P25CallEvent.Builder( CallEventType.GROUP_CALL )
+							.aliasList( getAliasList() )
+							.channel( channel )
+							.details( ( gvcgu.isEncrypted() ? "ENCRYPTED" : "" ) +
+									 " UPDATE - GROUP 2:" + gvcgu.getPatchGroupAddress2() +
+									 " DN:" + gvcgu.getDownlinkFrequency2())
+							.frequency( gvcgu.getDownlinkFrequency1() )
+							.to( to )
+							.build();
+
+					registerCallEvent( event );
+					broadcast( event );
+				}
+
+				broadcast( new TrafficChannelAllocationEvent( this,
+						mChannelCallMap.get( channel ) ) );
+				break;
+			case PATCH_GROUP_ADD:
+				PatchGroupAdd pga = (PatchGroupAdd)tsbk;
+
+				StringBuilder sb = new StringBuilder();
+
+				sb.append("PATCH GROUP:").append(pga.getPatchGroupAddress());
+				sb.append(" 1:").append(pga.getGroupAddress1());
+				sb.append(" 2:").append(pga.getGroupAddress2());
+				sb.append(" 3:").append(pga.getGroupAddress3());
+
+				broadcast( new P25CallEvent.Builder( CallEventType.REGISTER )
+						.aliasList( getAliasList() )
+						.details( sb.toString() )
+						.build() );
+				break;
+			case PATCH_GROUP_DELETE:
+				PatchGroupDelete pgd = (PatchGroupDelete)tsbk;
+
+				StringBuilder sbpgd = new StringBuilder();
+
+				sbpgd.append("PATCH GROUP:").append(pgd.getPatchGroupAddress());
+				sbpgd.append(" 1:").append(pgd.getGroupAddress1());
+				sbpgd.append(" 2:").append(pgd.getGroupAddress2());
+				sbpgd.append(" 3:").append(pgd.getGroupAddress3());
+
+				broadcast( new P25CallEvent.Builder( CallEventType.DEREGISTER )
+						.aliasList( getAliasList() )
+						.details( sbpgd.toString() )
+						.build() );
+				break;
+			case CCH_PLANNED_SHUTDOWN:
+				if( !mControlChannelShutdownLogged )
+				{
+                    broadcast( new P25CallEvent.Builder( CallEventType.NOTIFICATION )
+                            .details( "PLANNED CONTROL CHANNEL SHUTDOWN" )
+                            .build() );
+
+					mControlChannelShutdownLogged = true;
+				}
+				break;
+		}
+	}
+
 	/**
 	 * Process a traffic channel allocation message
 	 */
