@@ -2728,7 +2728,7 @@ public class P25DecoderState extends DecoderState
 				}
 				else
 				{
-					P25CallEvent event = new P25CallEvent.Builder( CallEventType.GROUP_CALL )
+					P25CallEvent event = new P25CallEvent.Builder( CallEventType.PATCH_GROUP_CALL )
 							.aliasList( getAliasList() )
 							.channel( channel )
 							.details( ( gvcg.isEncrypted() ? "ENCRYPTED" : "" ) +
@@ -2758,7 +2758,7 @@ public class P25DecoderState extends DecoderState
 				}
 				else
 				{
-					P25CallEvent event = new P25CallEvent.Builder( CallEventType.GROUP_CALL )
+					P25CallEvent event = new P25CallEvent.Builder( CallEventType.PATCH_GROUP_CALL )
 							.aliasList( getAliasList() )
 							.channel( channel )
 							.details( ( gvcgu.isEncrypted() ? "ENCRYPTED" : "" ) +
@@ -2785,7 +2785,7 @@ public class P25DecoderState extends DecoderState
 				sb.append(" 2:").append(pga.getGroupAddress2());
 				sb.append(" 3:").append(pga.getGroupAddress3());
 
-				broadcast( new P25CallEvent.Builder( CallEventType.REGISTER )
+				broadcast( new P25CallEvent.Builder( CallEventType.PATCH_GROUP_ADD )
 						.aliasList( getAliasList() )
 						.details( sb.toString() )
 						.build() );
@@ -2800,7 +2800,7 @@ public class P25DecoderState extends DecoderState
 				sbpgd.append(" 2:").append(pgd.getGroupAddress2());
 				sbpgd.append(" 3:").append(pgd.getGroupAddress3());
 
-				broadcast( new P25CallEvent.Builder( CallEventType.DEREGISTER )
+				broadcast( new P25CallEvent.Builder( CallEventType.PATCH_GROUP_DELETE )
 						.aliasList( getAliasList() )
 						.details( sbpgd.toString() )
 						.build() );
