@@ -3258,8 +3258,8 @@ public class P25DecoderState extends DecoderState
 				broadcast( new Metadata( MetadataType.FROM, mFromTalkgroup, mFromAlias, true ) );
 
 				if( mCurrentCallEvent != null &&
-					mCurrentCallEvent.getFromID() == null ||
-					!mCurrentCallEvent.getFromID().contentEquals( from ) )
+                    ( mCurrentCallEvent.getFromID() == null ||
+					  !mCurrentCallEvent.getFromID().contentEquals( from ) ) )
 				{
 					mCurrentCallEvent.setFromID( from );
 					broadcast( mCurrentCallEvent );
