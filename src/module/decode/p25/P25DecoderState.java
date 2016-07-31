@@ -2731,9 +2731,9 @@ public class P25DecoderState extends DecoderState
 					P25CallEvent event = new P25CallEvent.Builder( CallEventType.PATCH_GROUP_CALL )
 							.aliasList( getAliasList() )
 							.channel( channel )
-							.details( ( gvcg.isEncrypted() ? "ENCRYPTED" : "" ) +
-									  ( gvcg.isEmergency() ? " EMERGENCY" : "") +
-									    " PATCH SESSION MODE:" + gvcg.getSessionMode().name())
+							.details( ( gvcg.isEncrypted() ? "ENCRYPTED " : "" ) +
+									  ( gvcg.isEmergency() ? " EMERGENCY " : "") +
+									    "PATCH SESSION MODE:" + gvcg.getSessionMode().name())
 							.frequency( gvcg.getDownlinkFrequency() )
 							.from( from )
 							.to( to )
@@ -2761,8 +2761,8 @@ public class P25DecoderState extends DecoderState
 					P25CallEvent event = new P25CallEvent.Builder( CallEventType.PATCH_GROUP_CALL )
 							.aliasList( getAliasList() )
 							.channel( channel )
-							.details( ( gvcgu.isEncrypted() ? "ENCRYPTED" : "" ) +
-									 " UPDATE - GROUP 2:" + gvcgu.getPatchGroupAddress2() +
+							.details( ( gvcgu.isEncrypted() ? "ENCRYPTED " : "" ) +
+									 "PATCH UPDATE - GROUP 2:" + gvcgu.getPatchGroupAddress2() +
 									 " DN:" + gvcgu.getDownlinkFrequency2())
 							.frequency( gvcgu.getDownlinkFrequency1() )
 							.to( to )
