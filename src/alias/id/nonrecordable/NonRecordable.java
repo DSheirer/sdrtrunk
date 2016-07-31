@@ -12,6 +12,12 @@ public class NonRecordable extends AliasID
 	}
 
 	@Override
+	public boolean isValid()
+	{
+		return true;
+	}
+
+	@Override
 	public boolean matches( AliasID id )
 	{
 		return false;

@@ -19,6 +19,7 @@ package alias.id;
 
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
+import javax.xml.bind.annotation.XmlTransient;
 
 import playlist.version1.Group;
 import alias.id.esn.Esn;
@@ -49,4 +50,7 @@ public abstract class AliasID
 	public abstract AliasIDType getType();
 	
 	public abstract boolean matches( AliasID id );
+
+	@XmlTransient
+	public abstract boolean isValid();
 }

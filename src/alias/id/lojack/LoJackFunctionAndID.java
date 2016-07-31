@@ -55,6 +55,12 @@ public class LoJackFunctionAndID extends AliasID
 		mFunction = function;
 	}
 
+	@Override
+	public boolean isValid()
+	{
+		return mFunction != null && mID != null;
+	}
+
 	public String toString()
 	{
 		return "LoJack FUNC: " + mFunction.getLabel() + " ID:" + ( mID == null ? "" : mID );

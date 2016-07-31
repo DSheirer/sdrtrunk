@@ -36,7 +36,13 @@ public class Esn extends AliasID
 		return mEsn;
 	}
 
-	public void setEsn( String esn )
+	@Override
+	public boolean isValid()
+	{
+		return mEsn != null;
+	}
+
+	public void setEsn(String esn )
 	{
 		mEsn = esn;
 	}

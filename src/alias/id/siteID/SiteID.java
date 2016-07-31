@@ -40,7 +40,13 @@ public class SiteID extends AliasID
 	{
 		mSite = site;
 	}
-	
+
+	@Override
+	public boolean isValid()
+	{
+		return mSite != null;
+	}
+
 	public String toString()
 	{
 		return "Site: " + mSite;

@@ -42,6 +42,12 @@ public class TalkgroupID extends AliasID
 		mTalkgroup = talkgroup;
 	}
 
+	@Override
+	public boolean isValid()
+	{
+		return mTalkgroup != null;
+	}
+
 	public String toString()
 	{
 		StringBuilder sb = new StringBuilder();

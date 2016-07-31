@@ -42,6 +42,12 @@ public class MDC1200ID extends AliasID
 		mID = ident;
 	}
 
+	@Override
+	public boolean isValid()
+	{
+		return mID != null;
+	}
+
 	public String toString()
 	{
 		return "MDC-1200: " + mID;

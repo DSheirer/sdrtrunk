@@ -42,6 +42,12 @@ public class FleetsyncID extends AliasID
 		mID = ident;
 	}
 
+	@Override
+	public boolean isValid()
+	{
+		return mID != null;
+	}
+
 	public String toString()
 	{
 		return "Fleetsync: " + mID;

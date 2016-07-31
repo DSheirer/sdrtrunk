@@ -40,7 +40,13 @@ public class StatusID extends AliasID
 	{
 		this.mStatus = status;
 	}
-	
+
+	@Override
+	public boolean isValid()
+	{
+		return true;
+	}
+
 	public String toString()
 	{
 		return "Status: " + String.format( "%03d", mStatus );

@@ -17,19 +17,6 @@
  ******************************************************************************/
 package alias;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.xml.bind.annotation.XmlAttribute;
-
-import module.decode.lj1200.LJ1200Message.Function;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import sample.Listener;
 import alias.id.AliasID;
 import alias.id.esn.Esn;
 import alias.id.fleetsync.FleetsyncID;
@@ -42,12 +29,22 @@ import alias.id.status.StatusID;
 import alias.id.talkgroup.TalkgroupID;
 import alias.id.uniqueID.UniqueID;
 import audio.metadata.MetadataType;
+import module.decode.lj1200.LJ1200Message.Function;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import sample.Listener;
+
+import javax.xml.bind.annotation.XmlAttribute;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class AliasList implements Listener<AliasEvent>
 {
-	private final static Logger mLog = LoggerFactory.getLogger( AliasList.class );
+    private final static Logger mLog = LoggerFactory.getLogger( AliasList.class );
+    public static final String WILDCARD = "*";
 
-	private List<Alias> mAliases = new ArrayList<>();
 	private Map<String,Alias> mESN = new HashMap<>();
 	private Map<String,Alias> mFleetsync = new HashMap<>();
 	private Map<LoJackFunctionAndID,Alias> mLoJack = new HashMap<>();
@@ -58,15 +55,15 @@ public class AliasList implements Listener<AliasEvent>
 	private Map<Integer, Alias> mStatus = new HashMap<>();
 	private Map<String,Alias> mTalkgroup = new HashMap<>();
 	private Map<Integer,Alias> mUniqueID = new HashMap<>();
-	
-	private boolean mESNWildcard = false;
-	private boolean mMobileIDWildcard = false;
-	private boolean mFleetsyncWildcard = false;
-	private boolean mMDC1200Wildcard = false;
-	private boolean mMPT1327Wildcard = false;
-	private boolean mSiteWildcard = false;
-	private boolean mTalkgroupWildcard = false;
-	
+
+	private List<String> mESNWildcards = new ArrayList<>();
+	private List<String> mMobileIDWildcards = new ArrayList<>();
+	private List<String> mFleetsyncWildcards = new ArrayList<>();
+	private List<String> mMDC1200Wildcards = new ArrayList<>();
+	private List<String> mMPT1327Wildcards = new ArrayList<>();
+	private List<String> mSiteWildcards = new ArrayList<>();
+	private List<String> mTalkgroupWildcards = new ArrayList<>();
+
 	private String mName;
 	
 	/**
@@ -87,8 +84,6 @@ public class AliasList implements Listener<AliasEvent>
 	{
 		if( alias != null )
 		{
-			mAliases.add( alias );
-			
 			for( AliasID aliasID: alias.getId() )
 			{
 				addAliasID( aliasID, alias );
@@ -101,131 +96,140 @@ public class AliasList implements Listener<AliasEvent>
 	 */
 	private void addAliasID( AliasID id, Alias alias )
 	{
-		switch( id.getType() )
-		{
-			case ESN:
-				Esn esn = (Esn)id;
-				if( esn.getEsn().contains( "*" ) )
-				{
-					mESNWildcard = true;
+        if(id.isValid())
+        {
+            switch( id.getType() )
+            {
+                case ESN:
+                    Esn esn = (Esn)id;
+                    if( esn.getEsn().contains(WILDCARD) )
+                    {
+                        String regexESN = convertToRegex(esn.getEsn());
 
-					mESN.put( fixWildcard( esn.getEsn() ), alias );
-				}
-				else
-				{
-					mESN.put( esn.getEsn(), alias );
-				}
-				break;
-			case Fleetsync:
-				FleetsyncID fs = (FleetsyncID)id;
-				
-				if( fs.getIdent().contains( "*" ) )
-				{
-					mFleetsyncWildcard = true;
-					
-					mFleetsync.put( fixWildcard( fs.getIdent() ), alias );
-				}
-				else
-				{
-					mFleetsync.put( fs.getIdent(), alias );
-				}
-				break;
-			case LoJack:
-				mLoJack.put( (LoJackFunctionAndID)id, alias );
-				break;
-			case MDC1200:
-				MDC1200ID mdc = (MDC1200ID)id;
-				
-				if( mdc.getIdent().contains( "*" ) )
-				{
-					mMDC1200Wildcard = true;
-					
-					//Replace (*) wildcard with regex wildcard (.)
-					mMDC1200.put( fixWildcard( mdc.getIdent() ), alias );
-				}
-				else
-				{
-					mMDC1200.put( mdc.getIdent(), alias );
-				}
-				break;
-			case MPT1327:
-				MPT1327ID mpt = (MPT1327ID)id;
-				
-				String ident = mpt.getIdent();
-				
-				if( ident != null )
-				{
-					if( ident.contains( "*" ) )
-					{
-						mMPT1327Wildcard = true;
-						
-						//Replace (*) wildcard with regex wildcard (.)
-						mMPT1327.put( fixWildcard( ident ), alias );
-					}
-					else
-					{
-						mMPT1327.put( ident, alias );
-					}
-				}
-				break;
-			case MIN:
-				Min min = (Min)id;
-				
-				if( min.getMin().contains( "*" ) )
-				{
-					mMobileIDWildcard = true;
-					mMobileID.put( fixWildcard( min.getMin() ), alias );
-				}
-				else
-				{
-					mMobileID.put( min.getMin(), alias );
-				}
-				break;
-			case LTRNetUID:
-				UniqueID uid = (UniqueID)id;
-				
-				mUniqueID.put( uid.getUid(), alias );
-				break;
-			case Site:
-				SiteID siteID = (SiteID)id;
+                        mESNWildcards.add(regexESN);
+                        mESN.put( regexESN, alias );
+                    }
+                    else
+                    {
+                        mESN.put( esn.getEsn(), alias );
+                    }
+                    break;
+                case Fleetsync:
+                    FleetsyncID fs = (FleetsyncID)id;
 
-				if( siteID.getSite().contains( "*" ) )
-				{
-					mSiteWildcard = true;
-					mSiteID.put( fixWildcard( siteID.getSite() ), alias );
-				}
-				else
-				{
-					mSiteID.put( siteID.getSite(), alias );
-				}
-				
-				break;
-			case Status:
-				mStatus.put( ((StatusID)id).getStatus(), alias );
-				break;
-			case Talkgroup:
-				TalkgroupID tgid = (TalkgroupID)id;
-				
-				if( tgid.getTalkgroup().contains( "*" ) )
-				{
-					mTalkgroupWildcard = true;
-					
-					//Replace (*) wildcard with regex wildcard (.)
-					mTalkgroup.put( fixWildcard( tgid.getTalkgroup() ), alias );
-				}
-				else
-				{
-					mTalkgroup.put( tgid.getTalkgroup(), alias );
-				}
-				break;
-			case NonRecordable:
-			case Priority:
-				//We don't maintain lookups for these items
-				break;
-			default:
-				mLog.warn( "Unrecognized Alias ID Type:" + id.getType().name() );
-				break;
-		}
+                    if( fs.getIdent().contains(WILDCARD) )
+                    {
+                        String regexFleetsync = convertToRegex( fs.getIdent() );
+
+                        mFleetsyncWildcards.add(regexFleetsync);
+                        mFleetsync.put( regexFleetsync, alias );
+                    }
+                    else
+                    {
+                        mFleetsync.put( fs.getIdent(), alias );
+                    }
+                    break;
+                case LoJack:
+                    mLoJack.put( (LoJackFunctionAndID)id, alias );
+                    break;
+                case MDC1200:
+                    MDC1200ID mdc = (MDC1200ID)id;
+
+                    if( mdc.getIdent().contains(WILDCARD) )
+                    {
+                        String regexMDC = convertToRegex(mdc.getIdent());
+
+                        mMDC1200Wildcards.add(regexMDC);
+                        mMDC1200.put(regexMDC, alias);
+                    }
+                    else
+                    {
+                        mMDC1200.put( mdc.getIdent(), alias );
+                    }
+                    break;
+                case MPT1327:
+                    MPT1327ID mpt = (MPT1327ID)id;
+
+                    String ident = mpt.getIdent();
+
+                    if( ident != null )
+                    {
+                        if( ident.contains(WILDCARD) )
+                        {
+                            String regexMPT1327 = convertToRegex(ident);
+
+                            mMPT1327Wildcards.add(regexMPT1327);
+                            mMPT1327.put(regexMPT1327, alias);
+                        }
+                        else
+                        {
+                            mMPT1327.put( ident, alias );
+                        }
+                    }
+                    break;
+                case MIN:
+                    Min min = (Min)id;
+
+                    if( min.getMin().contains(WILDCARD) )
+                    {
+                        String regexMIN = convertToRegex(min.getMin());
+
+                        mMobileIDWildcards.add(regexMIN);
+                        mMobileID.put( regexMIN, alias );
+                    }
+                    else
+                    {
+                        mMobileID.put( min.getMin(), alias );
+                    }
+                    break;
+                case LTRNetUID:
+                    UniqueID uid = (UniqueID)id;
+
+                    mUniqueID.put( uid.getUid(), alias );
+                    break;
+                case Site:
+                    SiteID siteID = (SiteID)id;
+
+                    if( siteID.getSite().contains(WILDCARD) )
+                    {
+                        String regexSiteID = convertToRegex(siteID.getSite());
+
+                        mSiteWildcards.add(regexSiteID);
+                        mSiteID.put( regexSiteID, alias );
+                    }
+                    else
+                    {
+                        mSiteID.put( siteID.getSite(), alias );
+                    }
+
+                    break;
+                case Status:
+                    mStatus.put( ((StatusID)id).getStatus(), alias );
+                    break;
+                case Talkgroup:
+                    TalkgroupID tgid = (TalkgroupID)id;
+
+                    if( tgid.getTalkgroup().contains(WILDCARD) )
+                    {
+                        String regexTalkgroup = convertToRegex(tgid.getTalkgroup());
+
+                        mTalkgroupWildcards.add(regexTalkgroup);
+                        mTalkgroup.put( regexTalkgroup, alias );
+                    }
+                    else
+                    {
+                        mTalkgroup.put( tgid.getTalkgroup(), alias );
+                    }
+                    break;
+                case NonRecordable:
+                case Priority:
+                    //We don't maintain lookups for these items
+                    break;
+                default:
+                    mLog.warn( "Unrecognized Alias ID Type:" + id.getType().name() );
+                    break;
+            }
+        }
 	}
 
 	/**
@@ -239,8 +243,6 @@ public class AliasList implements Listener<AliasEvent>
 			{
 				removeAliasID( aliasID, alias );
 			}
-			
-			mAliases.remove( alias );
 		}
 	}
 
@@ -249,185 +251,178 @@ public class AliasList implements Listener<AliasEvent>
 	 */
 	private void removeAliasID( AliasID id, Alias alias )
 	{
-		switch( id.getType() )
-		{
-			case ESN:
-				Esn esn = (Esn)id;
-				if( mESN.containsKey( esn.getEsn() ) )
-				{
-					Alias esnAlias = mESN.get( esn.getEsn() );
-					
-					if( esnAlias != null && esnAlias == alias )
-					{
-						mESN.remove( esn.getEsn() );
-					}
-				}
-				break;
-			case Fleetsync:
-				FleetsyncID fs = (FleetsyncID)id;
+        if(id.isValid())
+        {
+            switch( id.getType() )
+            {
+                case ESN:
+                    Esn esn = (Esn)id;
 
-				if( mFleetsync.containsKey( fs.getIdent() ) )
-				{
-					Alias fsAlias = mFleetsync.get( fs.getIdent() );
-					
-					if( fsAlias != null && fsAlias == alias )
-					{
-						mFleetsync.remove( fs.getIdent() );
-					}
-				}
-				break;
-			case LoJack:
-				LoJackFunctionAndID lj = (LoJackFunctionAndID)id;
-				
-				if( mLoJack.containsKey( lj ) )
-				{
-					Alias ljAlias = mLoJack.get( lj );
-					
-					if( ljAlias != null && ljAlias == alias )
-					{
-						mLoJack.remove( lj );
-					}
-				}
-				break;
-			case MDC1200:
-				MDC1200ID mdc = (MDC1200ID)id;
+                    if( esn.getEsn().contains(WILDCARD))
+                    {
+                        String regexESN = convertToRegex(esn.getEsn());
+                        mESN.remove(regexESN);
+                        mESNWildcards.remove(regexESN);
+                    }
+                    else if( mESN.containsKey( esn.getEsn() ) )
+                    {
+                        mESN.remove(esn.getEsn());
+                    }
+                    break;
+                case Fleetsync:
+                    FleetsyncID fs = (FleetsyncID)id;
 
-				if( mMDC1200.containsKey( mdc.getIdent() ) )
-				{
-					Alias mdcAlias = mMDC1200.get( mdc.getIdent() );
-					
-					if( mdcAlias != null && mdcAlias == alias )
-					{
-						mMDC1200.remove( mdc.getIdent() );
-					}
-				}
-				break;
-			case MPT1327:
-				MPT1327ID mpt = (MPT1327ID)id;
-				
-				if( mMPT1327.containsKey( mpt.getIdent() ) )
-				{
-					Alias mptAlias = mMDC1200.get( mpt.getIdent() );
-					
-					if( mptAlias != null && mptAlias == alias )
-					{
-						mMPT1327.remove( mpt.getIdent() );
-					}
-				}
-				break;
-			case MIN:
-				Min min = (Min)id;
-				
-				if( mMobileID.containsKey( min.getMin() ) )
-				{
-					Alias minAlias = mMobileID.get( min.getMin() );
-					
-					if( minAlias != null && minAlias == alias )
-					{
-						mMobileID.remove( min.getMin() );
-					}
-				}
-				break;
-			case LTRNetUID:
-				UniqueID uid = (UniqueID)id;
-				
-				if( mUniqueID.containsKey( uid.getUid() ) )
-				{
-					Alias uidAlias = mUniqueID.get( uid.getUid() );
-					
-					if( uidAlias != null && uidAlias == alias )
-					{
-						mUniqueID.remove( uid.getUid() );
-					}
-				}
-				break;
-			case Site:
-				SiteID sid = (SiteID)id;
+                    if(fs.getIdent().contains(WILDCARD))
+                    {
+                        String regexFleetsync = convertToRegex(fs.getIdent());
+                        mFleetsync.remove(regexFleetsync);
+                        mFleetsyncWildcards.remove(regexFleetsync);
+                    }
+                    else
+                    {
+                        mFleetsync.remove( fs.getIdent() );
+                    }
+                    break;
+                case LoJack:
+                    mLoJack.remove((LoJackFunctionAndID)id);
+                    break;
+                case MDC1200:
+                    MDC1200ID mdc = (MDC1200ID)id;
 
-				if( mSiteID.containsKey( sid.getSite() ) )
-				{
-					Alias sidAlias = mSiteID.get( sid.getSite() );
-					
-					if( sidAlias != null && sidAlias == alias )
-					{
-						mSiteID.remove( sid.getSite() );
-					}
-				}
-				break;
-			case Status:
-				StatusID stat = (StatusID)id;
-				
-				if( mStatus.containsKey( stat.getStatus() ) )
-				{
-					Alias statAlias = mStatus.get( stat.getStatus() );
-					
-					if( statAlias != null && statAlias == alias )
-					{
-						mStatus.remove( stat.getStatus() );
-					}
-				}
-				break;
-			case Talkgroup:
-				TalkgroupID tg = (TalkgroupID)id;
-				
-				if( mTalkgroup.containsKey( tg.getTalkgroup() ) )
-				{
-					Alias tgAlias = mTalkgroup.get( tg.getTalkgroup() );
-					
-					if( tgAlias != null && tgAlias == alias )
-					{
-						mTalkgroup.remove( tg.getTalkgroup() );
-					}
-				}
-				break;
-			case NonRecordable:
-			case Priority:
-				//We don't maintain lookups for these items
-				break;
-			default:
-				mLog.warn( "Unrecognized Alias ID Type:" + id.getType().name() );
-				break;
-		}
+                    if(mdc.getIdent().contains(WILDCARD))
+                    {
+                        String regexMDC1200 = convertToRegex(mdc.getIdent());
+                        mMDC1200.remove(regexMDC1200);
+                        mMDC1200Wildcards.remove(regexMDC1200);
+                    }
+                    else
+                    {
+                        mMDC1200.remove( mdc.getIdent() );
+                    }
+                    break;
+                case MPT1327:
+                    MPT1327ID mpt = (MPT1327ID)id;
+
+                    if(mpt.getIdent().contains(WILDCARD))
+                    {
+                        String regexMPT1327 = convertToRegex(mpt.getIdent());
+                        mMPT1327.remove(regexMPT1327);
+                        mMPT1327Wildcards.remove(regexMPT1327);
+                    }
+                    else
+                    {
+                        mMPT1327.remove( mpt.getIdent() );
+                    }
+                    break;
+                case MIN:
+                    Min min = (Min)id;
+
+                    if(min.getMin().contains(WILDCARD))
+                    {
+                        String regexMIN = convertToRegex(min.getMin());
+                        mMobileID.remove(regexMIN);
+                        mMobileIDWildcards.remove(regexMIN);
+                    }
+                    else
+                    {
+                        mMobileID.remove( min.getMin() );
+                    }
+                    break;
+                case LTRNetUID:
+                    mUniqueID.remove( ((UniqueID)id).getUid() );
+                    break;
+                case Site:
+                    mSiteID.remove( ((SiteID)id).getSite() );
+                    break;
+                case Status:
+                    mStatus.remove( ((StatusID)id).getStatus() );
+                    break;
+                case Talkgroup:
+                    TalkgroupID tg = (TalkgroupID)id;
+
+                    if(tg.getTalkgroup().contains(WILDCARD))
+                    {
+                        String regexTalkgroup = convertToRegex(tg.getTalkgroup());
+                        mTalkgroup.remove(regexTalkgroup);
+                        mTalkgroupWildcards.remove(regexTalkgroup);
+                    }
+                    else
+                    {
+                        mTalkgroup.remove( tg.getTalkgroup() );
+                    }
+                    break;
+                case NonRecordable:
+                case Priority:
+                    //We don't maintain lookups for these items
+                    break;
+                default:
+                    mLog.warn( "Unrecognized Alias ID Type:" + id.getType().name() );
+                    break;
+            }
+        }
 	}
 
 	/**
 	 * Converts user wildcard character (*) to regex single character wildcard (.)
 	 * but ignores a regex multi-character wildcard (.*)
 	 */
-	private String fixWildcard( String value )
+	private String convertToRegex(String value )
 	{
-		if( value.contains( "*" ) && !value.contains( ".*" ) )
+		if( value.contains(WILDCARD) && !value.contains( ".*" ) )
 		{
-			return value.replace( "*", "." );
+			return value.replace(WILDCARD, "." );
 		}
 
 		return value;
 	}
+
+    /**
+     * Returns the first matching regex wildcard from the list of wildcards that matches the
+     * identifier.
+     *
+     * @param id to match
+     * @param wildcards to match against
+     * @return matching wildcard ID or null
+     */
+    private String getWildcardMatch( String id, List<String> wildcards )
+    {
+        if(id != null)
+        {
+            for(String wildcard: wildcards)
+            {
+                if(wildcard.matches(id))
+                {
+                    return wildcard;
+                }
+            }
+        }
+
+        return null;
+    }
 
 	/**
 	 * Lookup alias by site ID
 	 */
 	public Alias getSiteID( String siteID )
 	{
-		if( siteID != null )
-		{
-			if( mSiteWildcard )
-			{
-				for( String regex: mSiteID.keySet() )
-				{
-					if( siteID.matches( regex ) )
-					{
-						return mSiteID.get( regex );
-					}
-				}
-			}
-			else
-			{
-				return mSiteID.get( siteID );
-			}
-		}
-		
-		return null;
+        Alias alias = null;
+
+        if(siteID != null)
+        {
+            alias = mSiteID.get(siteID);
+
+            if(alias == null)
+            {
+                String wildcard = getWildcardMatch(siteID, mSiteWildcards);
+
+                if(wildcard != null)
+                {
+                    alias = mSiteID.get(wildcard);
+                }
+            }
+        }
+
+		return alias;
 	}
 
 	/**
@@ -445,31 +440,30 @@ public class AliasList implements Listener<AliasEvent>
 	{
 		return mUniqueID.get( uniqueID );
 	}
-	
+
 	/**
 	 * Lookup alias by ESN
 	 */
 	public Alias getESNAlias( String esn )
 	{
-		if( esn != null )
-		{
-			if( mESNWildcard )
-			{
-				for( String regex: mESN.keySet() )
-				{
-					if( esn.matches( regex ) )
-					{
-						return mESN.get( regex );
-					}
-				}
-			}
-			else
-			{
-				return mESN.get( esn );
-			}
-		}
-		
-		return null;
+        Alias alias = null;
+
+        if(esn != null)
+        {
+            alias = mESN.get(esn);
+
+            if(alias == null)
+            {
+                String wildcard = getWildcardMatch(esn, mESNWildcards);
+
+                if(wildcard != null)
+                {
+                    alias = mESN.get(wildcard);
+                }
+            }
+        }
+
+        return alias;
 	}
 	
 	/**
@@ -477,25 +471,24 @@ public class AliasList implements Listener<AliasEvent>
 	 */
 	public Alias getFleetsyncAlias( String ident )
 	{
+        Alias alias = null;
+
 		if( ident != null )
 		{
-			if( mFleetsyncWildcard )
-			{
-				for( String regex: mFleetsync.keySet() )
-				{
-					if( ident.matches( regex ) )
-					{
-						return mFleetsync.get( regex );
-					}
-				}
-			}
-			else
-			{
-				return mFleetsync.get( ident );
-			}
+            alias = mFleetsync.get(ident);
+
+            if(alias == null)
+            {
+                String wildcard = getWildcardMatch(ident, mFleetsyncWildcards);
+
+                if(wildcard != null)
+                {
+                    alias = mFleetsync.get(wildcard);
+                }
+            }
 		}
 		
-		return null;
+		return alias;
 	}
 	
 	/**
@@ -522,25 +515,24 @@ public class AliasList implements Listener<AliasEvent>
 	 */
 	public Alias getMDC1200Alias( String ident )
 	{
+        Alias alias = null;
+
 		if( ident != null )
 		{
-			if( mMDC1200Wildcard )
-			{
-				for( String regex: mMDC1200.keySet() )
-				{
-					if( ident.matches( regex ) )
-					{
-						return mMDC1200.get( regex );
-					}
-				}
-			}
-			else
-			{
-				return mMDC1200.get( ident );
-			}
+            alias = mMDC1200.get(ident);
+
+            if(alias == null)
+            {
+                String wildcard = getWildcardMatch(ident, mMDC1200Wildcards);
+
+                if(wildcard != null)
+                {
+                    alias = mMDC1200.get(wildcard);
+                }
+            }
 		}
 		
-		return null;
+		return alias;
 	}
 	
 	/**
@@ -548,25 +540,24 @@ public class AliasList implements Listener<AliasEvent>
 	 */
 	public Alias getMPT1327Alias( String ident )
 	{
+        Alias alias = null;
+
 		if( ident != null )
 		{
-			if( mMPT1327Wildcard )
-			{
-				for( String regex: mMPT1327.keySet() )
-				{
-					if( ident.matches( regex ) )
-					{
-						return mMPT1327.get( regex );
-					}
-				}
-			}
-			else
-			{
-				return mMPT1327.get( ident );
-			}
+            alias = mMPT1327.get(ident);
+
+            if(alias == null)
+            {
+                String wildcard = getWildcardMatch(ident, mMPT1327Wildcards);
+
+                if(wildcard != null)
+                {
+                    alias = mMPT1327.get(wildcard);
+                }
+            }
 		}
 		
-		return null;
+		return alias;
 	}
 	
 	/**
@@ -574,25 +565,24 @@ public class AliasList implements Listener<AliasEvent>
 	 */
 	public Alias getMobileIDNumberAlias( String ident )
 	{
+        Alias alias = null;
+
 		if( ident != null )
 		{
-			if( mMobileIDWildcard )
-			{
-				for( String regex: mMobileID.keySet() )
-				{
-					if( ident.matches( regex ) )
-					{
-						return mMobileID.get( regex );
-					}
-				}
-			}
-			else
-			{
-				return mMobileID.get( ident );
-			}
+            alias = mMobileID.get(ident);
+
+            if(alias == null)
+            {
+                String wildcard = getWildcardMatch(ident, mMobileIDWildcards);
+
+                if(wildcard != null)
+                {
+                    alias = mMobileID.get(wildcard);
+                }
+            }
 		}
 		
-		return null;
+		return alias;
 	}
 	
 	/**
@@ -600,25 +590,24 @@ public class AliasList implements Listener<AliasEvent>
 	 */
 	public Alias getTalkgroupAlias( String tgid )
 	{
+        Alias alias = null;
+
 		if( tgid != null )
 		{
-			if( mTalkgroupWildcard )
-			{
-				for( String regex: mTalkgroup.keySet() )
-				{
-					if( tgid.matches( regex ) )
-					{
-						return mTalkgroup.get( regex );
-					}
-				}
-			}
-			else
-			{
-				return mTalkgroup.get( tgid );
-			}
+            alias = mTalkgroup.get(tgid);
+
+            if(alias == null)
+            {
+                String wildcard = getWildcardMatch(tgid, mTalkgroupWildcards);
+
+                if(wildcard != null)
+                {
+                    alias = mTalkgroup.get(wildcard);
+                }
+            }
 		}
 		
-		return null;
+		return alias;
 	}
 
 	/**
@@ -704,30 +693,19 @@ public class AliasList implements Listener<AliasEvent>
 		switch( event.getEvent() )
 		{
 			case ADD:
-				if( alias.getList() != null && 
-					getName().equalsIgnoreCase( alias.getList() ) )
+				if( alias.getList() != null && getName().equalsIgnoreCase( alias.getList() ) )
 				{
 					addAlias( alias );
 				}
 				break;
 			case CHANGE:
-				if( alias.getList() != null &&
-					getName().equalsIgnoreCase( alias.getList() ) )
+				if( alias.getList() != null && getName().equalsIgnoreCase( alias.getList() ) )
 				{
-					if( !mAliases.contains( alias ) )
-					{
-						//Alias was moved to this list - add it 
-						addAlias( alias );
-					}
-				}
-				else if( mAliases.contains( alias ) )
-				{
-					//An alias in this list was moved to another list
-					removeAlias( alias );
+                    addAlias( alias );
 				}
 				break;
 			case DELETE:
-				if( mAliases.contains( alias ) )
+                if( alias.getList() != null && getName().equalsIgnoreCase( alias.getList() ) )
 				{
 					removeAlias( alias );
 				}

@@ -39,6 +39,12 @@ public class Priority extends AliasID
 	{
 	}
 
+	@Override
+	public boolean isValid()
+	{
+		return true;
+	}
+
 	/**
 	 * Indicates the associated alias should not be monitored or tracked.
 	 */

@@ -41,6 +41,12 @@ public class MPT1327ID extends AliasID
 		mID = ident;
 	}
 
+	@Override
+	public boolean isValid()
+	{
+		return mID != null;
+	}
+
 	public String toString()
 	{
 		return "MPT-1327: " + mID;

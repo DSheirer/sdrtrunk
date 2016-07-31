@@ -41,6 +41,12 @@ public class UniqueID extends AliasID
 		this.mUid = uid;
 	}
 
+	@Override
+	public boolean isValid()
+	{
+		return true;
+	}
+
 	public String toString()
 	{
 		return "UniqueID: " + mUid;

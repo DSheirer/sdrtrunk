@@ -43,7 +43,13 @@ public class Min extends AliasID
 	{
 		mMin = min;
 	}
-	
+
+	@Override
+	public boolean isValid()
+	{
+		return mMin != null;
+	}
+
 	public String toString()
 	{
 		return "MIN: " + mMin;
