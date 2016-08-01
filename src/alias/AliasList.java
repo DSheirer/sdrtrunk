@@ -390,7 +390,7 @@ public class AliasList implements Listener<AliasEvent>
         {
             for(String wildcard: wildcards)
             {
-                if(wildcard.matches(id))
+                if(id.matches(wildcard))
                 {
                     return wildcard;
                 }
