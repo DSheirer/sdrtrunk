@@ -1,5 +1,14 @@
 
-0.2.0 2015xxxx 
+0.3.0 2016xxxx (work in progress)
+ - Extensive GUI updates for tuner, channel and alias management.
+ - Updated alias list management of alias id values and wildcards.  Weighting is now
+   applied to each wildcard so that they can be ordered from most specific to least
+   specific for lookup value matching purposes.
+ - Added handling for Motorola-specific P25 patch messages
+ - Updated airspy controller for airspy-mini specific sample rate handling.
+ - New remez filter designer tool and internal usage
+
+0.2.0 20160329
  - Major overhaul of underlying processing chain and extensive updates to all 
    decoders and filters
  - New audio playback interface with global mute and support for one or two
