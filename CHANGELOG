@@ -1,5 +1,6 @@
 
 0.3.0 2016xxxx (work in progress)
+ - Requires Java 8 for compatibility with eventual changeover to JavaFX
  - Extensive GUI updates for tuner, channel and alias management.
  - Updated alias list management of alias id values and wildcards.  Weighting is now
    applied to each wildcard so that they can be ordered from most specific to least
