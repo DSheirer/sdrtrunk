@@ -41,14 +41,14 @@ public class FilterViewer extends Application
 	private float[] getFilter()
 	{
 		FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-		        .sampleRate( 10000 )
+		        .sampleRate( 48000 )
 		        .gridDensity( 16 )
-                .passBandCutoff( 1300 )
+                .passBandCutoff( 3000 )
 		        .passBandAmplitude( 1.0 )
 		        .passBandRipple( 0.01 )
-		        .stopBandStart( 2675 )
+		        .stopBandStart( 4000 )
 		        .stopBandAmplitude( 0.0 )
-		        .stopBandRipple( 0.001 )
+		        .stopBandRipple( 0.027 )
 		        .build();
 		
 //		FIRFilterSpecification specification = FIRFilterSpecification.highPassBuilder()

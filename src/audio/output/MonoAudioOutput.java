@@ -33,14 +33,14 @@ import controller.ThreadPoolManager;
  */
 public class MonoAudioOutput extends AudioOutput
 {
-	private final static int BUFFER_SIZE = 48000;
+	private final static int BUFFER_SIZE = 8000;
 	
 	public MonoAudioOutput( ThreadPoolManager threadPoolManager, Mixer mixer )
 	{
 		super( threadPoolManager, 
 			   mixer, 
 			   MixerChannel.MONO, 
-			   AudioFormats.PCM_SIGNED_48KHZ_16BITS_MONO, 
+			   AudioFormats.PCM_SIGNED_8KHZ_16BITS_MONO,
 			   AudioFormats.MONO_SOURCE_DATALINE_INFO, 
 			   BUFFER_SIZE  );
 	}
