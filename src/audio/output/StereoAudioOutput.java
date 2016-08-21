@@ -33,7 +33,7 @@ import controller.ThreadPoolManager;
  */
 public class StereoAudioOutput extends AudioOutput
 {
-	private final static int BUFFER_SIZE = 96000;
+	private final static int BUFFER_SIZE = 16000;
 	
 	public StereoAudioOutput( ThreadPoolManager threadPoolManager, 
 			Mixer mixer, MixerChannel channel )
@@ -41,7 +41,7 @@ public class StereoAudioOutput extends AudioOutput
 		super( threadPoolManager, 
 			   mixer, 
 			   channel, 
-			   AudioFormats.PCM_SIGNED_48KHZ_16BITS_STEREO, 
+			   AudioFormats.PCM_SIGNED_8KHZ_16BITS_STEREO,
 			   AudioFormats.STEREO_SOURCE_DATALINE_INFO, 
 			   BUFFER_SIZE  );
 	}

@@ -37,7 +37,7 @@ public class RecorderManager implements Listener<AudioPacket>
 {
 	private static final Logger mLog = LoggerFactory.getLogger( RecorderManager.class );
 
-	public static final int AUDIO_SAMPLE_RATE = 48000;
+	public static final int AUDIO_SAMPLE_RATE = 8000;
 	
 	private Map<String,RealBufferWaveRecorder> mRecorders = new HashMap<>();
 	

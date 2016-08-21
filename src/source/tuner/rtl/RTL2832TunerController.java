@@ -1599,7 +1599,7 @@ public abstract class RTL2832TunerController extends TunerController
 			}
 			catch( Exception e )
 			{
-				mLog.error( "error duing rtl2832 buffer dispatcher run", e );
+				mLog.error( "error during rtl2832 buffer dispatcher run", e );
 			}
         }
 	}

@@ -35,7 +35,7 @@ public class AudioFormats
 								 IMBE_FRAME_RATE,
 								 LITTLE_ENDIAN );
 	
-	public static AudioFormat PCM_SIGNED_8KHZ_16BITS =
+	public static AudioFormat PCM_SIGNED_8KHZ_16BITS_MONO =
 						new AudioFormat( AudioFormat.Encoding.PCM_SIGNED, 
 								 PCM_8KHZ_RATE,
 								 PCM_SAMPLE_SIZE_BITS,
@@ -43,7 +43,16 @@ public class AudioFormats
 								 PCM_FRAME_SIZE_BYTES_MONO, 
 								 PCM_8KHZ_RATE,
 								 LITTLE_ENDIAN );
-	
+
+	public static AudioFormat PCM_SIGNED_8KHZ_16BITS_STEREO =
+			new AudioFormat( AudioFormat.Encoding.PCM_SIGNED,
+					PCM_8KHZ_RATE,
+					PCM_SAMPLE_SIZE_BITS,
+					TWO_CHANNELS,
+					PCM_FRAME_SIZE_BYTES_STEREO,
+					PCM_8KHZ_RATE,
+					LITTLE_ENDIAN );
+
 	public static AudioFormat PCM_SIGNED_48KHZ_16BITS_MONO =
 						new AudioFormat( AudioFormat.Encoding.PCM_SIGNED, 
 								 PCM_48KHZ_RATE,
@@ -66,11 +75,11 @@ public class AudioFormats
 	 * Source Data Line Info for a 48 kHz, 16-bits signed PCM one channel 
 	 */
 	public static final Line.Info MONO_SOURCE_DATALINE_INFO = 
-		new DataLine.Info( SourceDataLine.class, PCM_SIGNED_48KHZ_16BITS_MONO );
+		new DataLine.Info( SourceDataLine.class, PCM_SIGNED_8KHZ_16BITS_MONO);
 	
 	/**
 	 * Source Data Line Info for a 48 kHz, 16-bits signed PCM two channels 
 	 */
 	public static final Line.Info STEREO_SOURCE_DATALINE_INFO = 
-		new DataLine.Info( SourceDataLine.class, PCM_SIGNED_48KHZ_16BITS_STEREO );
+		new DataLine.Info( SourceDataLine.class, PCM_SIGNED_8KHZ_16BITS_STEREO);
 }
