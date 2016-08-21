@@ -43,6 +43,7 @@ public class PolyphaseFIRDecimatingFilter_RB extends FIRFilter implements Listen
     private RealToRealBufferAssembler mAssembler;
     private int mDecimationRatio;
     private float mAccumulator = 0.0f;
+    private float mGain = 1.0f;
 
     /**
      * Polyphase filter stage for decimating real-valued sample buffers by the decimation ratio.  Creates a number of
@@ -55,10 +56,13 @@ public class PolyphaseFIRDecimatingFilter_RB extends FIRFilter implements Listen
      * to the nyquist frequency for an output sample rate equal to the input sample rate divided by the decimation ratio.
      *
      * @param decimationRatio to decimate the input sample rate by.
+     * @param gain to apply to the filtered output.  Use a value of 1.0 to apply no gain.
      */
-    public PolyphaseFIRDecimatingFilter_RB(float[] coefficients, int decimationRatio)
+    public PolyphaseFIRDecimatingFilter_RB(float[] coefficients, int decimationRatio, float gain)
     {
         mDecimationRatio = decimationRatio;
+        mGain = gain;
+
         createFilterStages(coefficients, mDecimationRatio);
         mFilterStagePointer = mFilterStages.size() - 1;
     }
@@ -127,7 +131,7 @@ public class PolyphaseFIRDecimatingFilter_RB extends FIRFilter implements Listen
 
         if(mFilterStagePointer < 0)
         {
-            mAssembler.receive(mAccumulator);
+            mAssembler.receive(mAccumulator * mGain);
             mAccumulator = 0.0f;
 
             mFilterStagePointer = mFilterStages.size() - 1;
@@ -177,7 +181,7 @@ public class PolyphaseFIRDecimatingFilter_RB extends FIRFilter implements Listen
             }
 
             float[] coefficients = designer.getImpulseResponse();
-            PolyphaseFIRDecimatingFilter_RB filter = new PolyphaseFIRDecimatingFilter_RB(coefficients, 6);
+            PolyphaseFIRDecimatingFilter_RB filter = new PolyphaseFIRDecimatingFilter_RB(coefficients, 6, 1.0f);
             filter.setListener(new Listener<RealBuffer>()
             {
                 @Override

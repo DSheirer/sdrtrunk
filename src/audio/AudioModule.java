@@ -46,15 +46,15 @@ public class AudioModule extends Module implements IAudioPacketProvider,
 
     static
     {
-        FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-                .sampleRate(48000)
-                .gridDensity(16)
-                .passBandCutoff(3000)
-                .passBandAmplitude(1.0)
-                .passBandRipple(0.01)
-                .stopBandStart(4000)
-                .stopBandAmplitude(0.0)
-                .stopBandRipple(0.027)
+        //Band-pass filter to both decimate (48kHz to 8kHz) and block 0 - 300 Hz (LTR signalling).
+        FIRFilterSpecification specification = FIRFilterSpecification.bandPassBuilder()
+                .sampleRate( 48000 )
+                .stopFrequency1( 150 )
+                .passFrequencyBegin( 300 )
+                .passFrequencyEnd( 3500 )
+                .stopFrequency2( 4000 )
+                .stopRipple( 0.0004 )
+                .passRipple( 0.008)
                 .build();
 
         RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
@@ -86,16 +86,12 @@ public class AudioModule extends Module implements IAudioPacketProvider,
     private Listener<AudioPacket> mAudioPacketListener;
     private PolyphaseFIRDecimatingFilter_RB mAudioDecimationFilter;
 
-    //TODO: remove this -- is being replaced by the DemodulatedAudioFilterModule
-    private RealFIRFilter_R_R mAudioFilter = new RealFIRFilter_R_R(
-            Filters.FIR_BANDPASS_AUDIO_48KHZ.getCoefficients(), 2.0f);
-
     public AudioModule(boolean record)
     {
         mSourceID = ++UNIQUE_ID;
         mAudioMetadata = new AudioMetadata(mSourceID, record);
 
-        mAudioDecimationFilter = new PolyphaseFIRDecimatingFilter_RB(mDecimationCoefficients, 6);
+        mAudioDecimationFilter = new PolyphaseFIRDecimatingFilter_RB(mDecimationCoefficients, 6, 2.0f);
         mAudioDecimationFilter.setListener(new Listener<RealBuffer>()
         {
             @Override

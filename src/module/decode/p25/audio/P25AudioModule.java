@@ -152,8 +152,12 @@ public class P25AudioModule extends Module implements Listener<Message>,
 
                     if (!mLibraryLoadStatusLogged)
                     {
-                        mLog.info("JMBE audio conversion library successfully loaded"
-                                + " - P25 audio will be available");
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("JMBE audio conversion library [");
+                        sb.append(library.getVersion());
+                        sb.append("] successfully loaded - P25 audio will be available");
+
+                        mLog.info(sb.toString());
 
                         mLibraryLoadStatusLogged = true;
                     }
