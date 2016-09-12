@@ -15,7 +15,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package audio.inverted;
+package audio.invert;
 
 import audio.InversionFrequency;
 import sample.real.RealSampleListener;
@@ -24,7 +24,7 @@ import dsp.filter.FloatFIRFilter;
 import dsp.mixer.Oscillator;
 
 /**
- * Applies audio inversion (or un-inversion) to a stream of float audio samples
+ * Applies audio inversion (or un-inversion) to a broadcast of float audio samples
  * by multiplying each successive sample by either a 1 or a -1 value.
  */
 public class AudioInverter implements RealSampleListener

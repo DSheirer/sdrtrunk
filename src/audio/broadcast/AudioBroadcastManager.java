@@ -16,9 +16,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.stream.shout.source;
+package audio.broadcast;
 
-public interface IShoutSource
+import audio.AudioPacket;
+import controller.ThreadPoolManager;
+import sample.Listener;
+
+public class AudioBroadcastManager implements Listener<AudioPacket>
 {
-    public ShoutSourceFormat getFormat();
+    private ThreadPoolManager mThreadPoolManager;
+
+    public AudioBroadcastManager(ThreadPoolManager threadPoolManager)
+    {
+        mThreadPoolManager = threadPoolManager;
+    }
+
+    @Override
+    public void receive(AudioPacket audioPacket)
+    {
+
+    }
 }

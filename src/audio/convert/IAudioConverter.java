@@ -16,12 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.stream.shout.channel;
+package audio.convert;
 
-import audio.stream.shout.source.ShoutSourceFormat;
+import audio.AudioPacket;
 
-public interface IShoutChannel
+import java.util.List;
+
+public interface IAudioConverter
 {
-    public String getName();
-    public ShoutSourceFormat getSourceFormat();
+    public byte[] convert(List<AudioPacket> audioPackets);
 }

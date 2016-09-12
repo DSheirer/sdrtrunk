@@ -16,40 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.stream;
+package audio.broadcast.configuration;
 
-import audio.AudioPacket;
-import audio.stream.shout.channel.IShoutChannel;
-import audio.stream.shout.server.IShoutServer;
-import sample.Listener;
-
-/**
- * Streaming channel encapsulates communication with a specific server and channel.
- */
-public class Stream implements Listener<AudioPacket>
+public enum BroadcastServerType
 {
-    private IShoutServer mServer;
-    private IShoutChannel mChannel;
-
-    public Stream(IShoutServer server, IShoutChannel channel)
-    {
-        mServer = server;
-        mChannel = channel;
-    }
-
-    public IShoutServer getServer()
-    {
-        return mServer;
-    }
-
-    public IShoutChannel getChannel()
-    {
-        return mChannel;
-    }
-
-    @Override
-    public void receive(AudioPacket audioPacket)
-    {
-
-    }
+    BROADCASTIFY,
+    ICECAST,
+    SHOUTCAST_V1,
+    SHOUTCAST_V2,
+    UNKNOWN;
 }

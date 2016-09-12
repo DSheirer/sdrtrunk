@@ -15,7 +15,7 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package audio.inverted;
+package audio.invert;
 
 import dsp.filter.FilterFactory;
 import dsp.filter.FloatFIRFilter;
@@ -23,7 +23,7 @@ import dsp.filter.Window.WindowType;
 import dsp.mixer.Oscillator;
 
 /**
- * Based on the AudioType applied, produces normal, muted, or audio inverted
+ * Based on the AudioType applied, produces normal, muted, or audio invert
  * audio output.
  */
 public class AudioAdapter

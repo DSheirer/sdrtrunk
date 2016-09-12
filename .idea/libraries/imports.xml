@@ -21,9 +21,10 @@
       <root url="jar://$PROJECT_DIR$/imports/usb4java-javax-1.2.0.jar!/" />
       <root url="jar://$PROJECT_DIR$/imports/jsr80-1.0.1.jar!/" />
       <root url="jar://$PROJECT_DIR$/imports/libusb4java-1.2.0-linux-arm.jar!/" />
-      <root url="jar://$PROJECT_DIR$/imports/jmbe-interface-0.3.2.jar!/" />
       <root url="jar://$PROJECT_DIR$/imports/libusb4java-1.2.0-osx-x86_64.jar!/" />
       <root url="jar://$PROJECT_DIR$/imports/JTransforms-3.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/jmbe-interface-0.3.3.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/java-lame-3.98.4.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

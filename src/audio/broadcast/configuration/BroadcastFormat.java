@@ -16,19 +16,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.stream.shout.source;
+package audio.broadcast.configuration;
 
-public abstract class ShoutSource implements IShoutSource
+public enum BroadcastFormat
 {
-    private ShoutSourceFormat mFormat;
+    MP3("audio/mpeg");
 
-    public ShoutSource(ShoutSourceFormat format)
+    private String mValue;
+
+    private BroadcastFormat(String value)
     {
-        mFormat = format;
+        mValue = value;
     }
-    @Override
-    public ShoutSourceFormat getFormat()
+
+    public String getValue()
     {
-        return mFormat;
+        return mValue;
     }
 }

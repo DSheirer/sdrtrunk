@@ -16,24 +16,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.stream;
+package audio.broadcast;
+
+import audio.broadcast.configuration.BroadcastConfiguration;
 
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.List;
 
-public class StreamModel extends AbstractTableModel
+public class AudioBroadcastModel extends AbstractTableModel
 {
     private static final int COLUMN_CHANNEL_NAME = 0;
     private static final int COLUMN_CHANNEL_FORMAT = 1;
     private static final int COLUMN_SERVER_NAME = 2;
 
-    private List<Stream> mStreams = new ArrayList<>();
+    private List<BroadcastConfiguration> mBroadcastConfigurations = new ArrayList<>();
 
     @Override
     public int getRowCount()
     {
-        return mStreams.size();
+        return mBroadcastConfigurations.size();
     }
 
     @Override
@@ -45,20 +47,20 @@ public class StreamModel extends AbstractTableModel
     @Override
     public Object getValueAt(int rowIndex, int columnIndex)
     {
-        if( rowIndex <= mStreams.size())
+        if( rowIndex <= mBroadcastConfigurations.size())
         {
-            Stream stream = mStreams.get(rowIndex);
+            BroadcastConfiguration configuration = mBroadcastConfigurations.get(rowIndex);
 
-            if(stream != null)
+            if(configuration != null)
             {
                 switch(columnIndex)
                 {
                     case COLUMN_CHANNEL_NAME:
-                        return stream.getChannel().getName();
+                        return configuration.getAlias();
                     case COLUMN_CHANNEL_FORMAT:
-                        return stream.getChannel().getSourceFormat().name();
+                        return configuration.getBroadcastFormat().name();
                     case COLUMN_SERVER_NAME:
-                        return stream.getServer().getName();
+                        return configuration.getHost();
                     default:
                         break;
                 }

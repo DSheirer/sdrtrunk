@@ -16,20 +16,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.stream.shout.server;
+package audio.broadcast.configuration;
 
-public abstract class ShoutServer implements IShoutServer
+public class BroadcastConfigurationFactory
 {
-    private String mName;
-
-    public ShoutServer(String name)
+    public static BroadcastConfiguration getConfiguration(BroadcastServerType serverType, BroadcastFormat format)
     {
-        mName = name;
-    }
+        switch(serverType)
+        {
+            case BROADCASTIFY:
+                break;
+            case ICECAST:
+                break;
+            case SHOUTCAST_V1:
+                return new ShoutcastV1Configuration(format);
+            case UNKNOWN:
+                break;
+        }
 
-    @Override
-    public String getName()
-    {
-        return mName;
+        return null;
     }
 }

@@ -43,6 +43,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JSeparator;
 import javax.swing.KeyStroke;
 
+import audio.broadcast.AudioBroadcastManager;
 import map.IconManager;
 import map.MapService;
 import module.log.EventLogManager;
@@ -151,6 +152,9 @@ public class SDRTrunk implements Listener<TunerEvent>
 		
 		AudioManager audioManager = new AudioManager( threadPoolManager, sourceManager.getMixerManager() );
 		channelProcessingManager.addAudioPacketListener( audioManager );
+
+		AudioBroadcastManager audioBroadcastManager = new AudioBroadcastManager(threadPoolManager);
+		channelProcessingManager.addAudioPacketListener(audioBroadcastManager);
 
 		MapService mapService = new MapService( mSettingsManager );
 		channelProcessingManager.addMessageListener( mapService );
