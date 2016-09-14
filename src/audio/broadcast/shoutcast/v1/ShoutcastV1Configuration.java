@@ -16,7 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.configuration;
+package audio.broadcast.shoutcast.v1;
+
+import audio.broadcast.BroadcastConfiguration;
+import audio.broadcast.BroadcastFormat;
+import audio.broadcast.BroadcastServerType;
 
 public class ShoutcastV1Configuration extends BroadcastConfiguration
 {

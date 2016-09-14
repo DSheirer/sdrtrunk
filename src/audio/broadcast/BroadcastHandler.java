@@ -16,10 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.handler;
+package audio.broadcast;
 
 import audio.AudioPacket;
-import audio.broadcast.configuration.BroadcastConfiguration;
 import audio.convert.IAudioConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

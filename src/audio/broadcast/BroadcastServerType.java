@@ -16,23 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.stream.shout.channel;
+package audio.broadcast;
 
-import audio.stream.shout.source.IShoutSource;
-
-public class ShoutChannel
+public enum BroadcastServerType
 {
-    private String mName;
-    private IShoutSource mShoutSource;
-
-    public ShoutChannel(String name, IShoutSource shoutSource)
-    {
-        mName = name;
-        mShoutSource = shoutSource;
-    }
-
-    public String getName()
-    {
-        return mName;
-    }
+    BROADCASTIFY,
+    ICECAST,
+    SHOUTCAST_V1,
+    SHOUTCAST_V2,
+    UNKNOWN;
 }

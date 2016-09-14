@@ -18,10 +18,8 @@
  ******************************************************************************/
 package audio.broadcast;
 
-import audio.broadcast.configuration.BroadcastConfiguration;
-import audio.broadcast.configuration.BroadcastFormat;
-import audio.broadcast.configuration.ShoutcastV1Configuration;
-import audio.broadcast.handler.ShoutcastV1Handler;
+import audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
+import audio.broadcast.shoutcast.v1.ShoutcastV1Handler;
 import audio.convert.IAudioConverter;
 import audio.convert.MP3AudioConverter;
 import controller.ThreadPoolManager;

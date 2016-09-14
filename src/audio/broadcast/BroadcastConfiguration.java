@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.configuration;
+package audio.broadcast;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;

@@ -16,21 +16,34 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.configuration;
+package audio.broadcast.shoutcast.v2;
 
-public enum BroadcastFormat
+public enum UltravoxMessageType
 {
-    MP3("audio/mpeg");
+    AUTHENTICATE_BROADCAST(0x1001),
 
-    private String mValue;
+    UNKNOWN(0x0000);
 
-    private BroadcastFormat(String value)
+    private int mValue;
+
+    private UltravoxMessageType(int value)
     {
         mValue = value;
     }
 
-    public String getValue()
+    public int getValue()
     {
         return mValue;
+    }
+
+    public static UltravoxMessageType fromValue(int value)
+    {
+        switch(value)
+        {
+            case 0x1001:
+                return AUTHENTICATE_BROADCAST;
+            default:
+                return UNKNOWN;
+        }
     }
 }

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.handler;
+package audio.broadcast;
 
 public enum BroadcastState
 {

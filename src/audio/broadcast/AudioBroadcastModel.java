@@ -18,8 +18,6 @@
  ******************************************************************************/
 package audio.broadcast;
 
-import audio.broadcast.configuration.BroadcastConfiguration;
-
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.List;

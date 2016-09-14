@@ -16,14 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.handler;
+package audio.broadcast.shoutcast.v1;
 
 import audio.AudioPacket;
 import audio.broadcast.Broadcaster;
 import audio.broadcast.BroadcasterFactory;
-import audio.broadcast.configuration.BroadcastFormat;
-import audio.broadcast.configuration.BroadcastMetadata;
-import audio.broadcast.configuration.ShoutcastV1Configuration;
+import audio.broadcast.BroadcastFormat;
+import audio.broadcast.BroadcastMetadata;
+import audio.broadcast.BroadcastHandler;
+import audio.broadcast.BroadcastState;
 import audio.convert.IAudioConverter;
 import controller.ThreadPoolManager;
 import org.slf4j.Logger;

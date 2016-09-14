@@ -18,6 +18,7 @@
 package bits;
 
 import java.util.BitSet;
+import java.util.logging.LogManager;
 
 import edac.CRC;
 
@@ -102,6 +103,11 @@ public class BinaryMessage extends BitSet
         this( size );
         this.or( bitset );
         this.mPointer = size - 1;
+    }
+
+    public BinaryMessage(byte[] data)
+    {
+        this(BitSet.valueOf(data), data.length * 8);
     }
     
     /**
@@ -367,7 +373,24 @@ public class BinaryMessage extends BitSet
     	
     	return value;
     }
-    
+
+    public void setInt(int value, int[] indices)
+    {
+        for(int x = 0; x < indices.length; x++)
+        {
+            int mask = 1<<(indices.length - x - 1);
+
+            if((value & mask) == mask)
+            {
+                set(indices[x]);
+            }
+            else
+            {
+                clear(indices[x]);
+            }
+        }
+    }
+
     /**
      * Returns the byte value represented by the bit array
      * @param bits - an array of bit positions that will be treated as if they
@@ -601,11 +624,11 @@ public class BinaryMessage extends BitSet
 	}
 
 	/**
-	 * Loads the value into the buffer starting at the offset index, and 
+	 * Loads the value into the buffer starting at the offset index, and
 	 * assuming that the value represents (width) number of bits.  The MSB of
-	 * the value will be located at the offset and the LSB of the value will 
+	 * the value will be located at the offset and the LSB of the value will
 	 * be located at ( offset + width ).
-	 * 
+	 *
 	 * @param offset - starting bit index for the MSB of the value
 	 * @param width - representative bit width of the value
 	 * @param value - value to be loaded into the buffer
@@ -626,7 +649,7 @@ public class BinaryMessage extends BitSet
 			}
 		}
 	}
-	
+
 	/**
 	 * Generates an array of message bit position indexes to support accessing
 	 * a contiguous field value
@@ -775,4 +798,15 @@ public class BinaryMessage extends BitSet
 		
 		this.xor( mask );
 	}
+
+	public static void main(String[] args)
+    {
+        BinaryMessage b = new BinaryMessage(32);
+
+        int[] indices = {2,3,7,8};
+
+        b.setInt(0xF, indices);
+
+        System.out.println(b.toString());
+    }
 }
