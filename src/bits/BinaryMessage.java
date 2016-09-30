@@ -17,6 +17,7 @@
  ******************************************************************************/
 package bits;
 
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.logging.LogManager;
 
@@ -283,6 +284,33 @@ public class BinaryMessage extends BitSet
 		
 		return values;
     }
+
+    /**
+     * Returns this message as a little endian byte array.  Extra 0 bits will be padded to the end to make the overall
+     * length a multiple of 8.
+     * @return little endian message byte array
+     */
+    public byte[] toByteArray()
+    {
+        int length = size() / 8;
+
+        if(length * 8 < size())
+        {
+            length ++;
+        }
+
+        byte[] bytes = new byte[length];
+
+        int pointer = 0;
+
+        for(int x = 0; x < length; x++)
+        {
+            bytes[x] = getByte(pointer);
+            pointer += 8;
+        }
+
+        return bytes;
+    }
     
     /**
      * Returns this bitset as a reversed bit order array of integer ones and zeros
@@ -419,6 +447,57 @@ public class BinaryMessage extends BitSet
     	}
     	
     	return (byte)( value & 0xFF );
+    }
+
+    /**
+     * Returns the byte value contained between index and index + 7 bit positions
+     * @param index specifying the start of the byte value
+     * @return byte value contained at index <> index + 7 bit positions
+     */
+    public byte getByte(int index)
+    {
+        assert((index + 7) <= size());
+
+        int value = 0;
+
+        for(int x = 0; x < 8; x++)
+        {
+            value = value << 1;
+
+            if(get(index + x))
+            {
+                value++;
+            }
+        }
+
+        return (byte)value;
+    }
+
+    /**
+     * Sets the byte value at index position through index + 7 position.
+     *
+     * @param index bit position where to write the  MSB of the byte value
+     * @param value to write at the index through index + 7 bit positions
+     */
+    public void setByte(int index, byte value)
+    {
+        assert((index + 8) <= size());
+
+        int mask = 0x80;
+
+        for(int x = 0; x < 8; x++)
+        {
+            if((mask & value) == mask)
+            {
+                set(index + x);
+            }
+            else
+            {
+                clear(index + x);
+            }
+
+            mask = mask >> 1;
+        }
     }
 
     /**

@@ -16,34 +16,33 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.shoutcast.v2;
+package audio.broadcast.shoutcast.v2.message;
 
-public enum UltravoxMessageType
+public class ConfigureIcyPublic extends UltravoxMessage
 {
-    AUTHENTICATE_BROADCAST(0x1001),
-
-    UNKNOWN(0x0000);
-
-    private int mValue;
-
-    private UltravoxMessageType(int value)
+    /**
+     * Client request to server to configure the ICY-PUBLIC metadata
+     *
+     * Package private constructor.  Use the UltravoxMessageFactory for this constructor.
+     */
+    ConfigureIcyPublic()
     {
-        mValue = value;
+        super(UltravoxMessageType.CONFIGURE_ICY_PUBLIC);
     }
 
-    public int getValue()
+    /**
+     * Server response to client request
+     * Package private constructor.  Use the UltravoxMessageFactory for this constructor.
+     *
+     * @param data bytes received from the server
+     */
+    ConfigureIcyPublic(byte[] data)
     {
-        return mValue;
+        super(data);
     }
 
-    public static UltravoxMessageType fromValue(int value)
+    public void setPublic(boolean publicStream)
     {
-        switch(value)
-        {
-            case 0x1001:
-                return AUTHENTICATE_BROADCAST;
-            default:
-                return UNKNOWN;
-        }
+        setPayload(publicStream ? "1" : "0");
     }
 }

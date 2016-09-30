@@ -16,13 +16,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.shoutcast.v2;
+package audio.broadcast.shoutcast.v2.message;
 
 import bits.BinaryMessage;
-import com.sun.org.apache.regexp.internal.RE;
+
+import java.util.Arrays;
 
 public abstract class UltravoxMessage
 {
+    public static final String SHOUTCAST_VERSION = "2.1";
+    public static final String VALID_RESPONSE_PREFIX = "ACK";
+    public static final String VALID_RESPONSE_PAYLOAD_PREFIX = "ACK:";
+    public static final String ERROR_RESPONSE_PREFIX = "NAK:";
+
     public static final int[] SYNC = {0,1,2,3,4,5,6,7};
     public static final int[] RESERVED = {8,9,10,11};
     public static final int REQUIRED_DELIVERY = 12;
@@ -38,23 +44,43 @@ public abstract class UltravoxMessage
      */
     public UltravoxMessage(byte[] data)
     {
-        mMessage = new BinaryMessage(data);
+        mMessage = new BinaryMessage(data.length * 8);
+
+        int pointer = 0;
+
+        for(byte b: data)
+        {
+            mMessage.setByte(pointer, b);
+            pointer += 8;
+        }
     }
 
     /**
      * Constructs an empty message of the specified length
      *
      * @param ultravoxMessageType type of message
-     * @param length of message in bits (64 minimum)
      */
-    public UltravoxMessage(UltravoxMessageType ultravoxMessageType, int length)
+    public UltravoxMessage(UltravoxMessageType ultravoxMessageType)
     {
-        assert(length >= 64);
-
-        mMessage = new BinaryMessage(length);
+        mMessage = new BinaryMessage(56);
 
         setSync();
         setMessageType(ultravoxMessageType);
+    }
+
+    /**
+     * Message byte array
+     *
+     * @return message bytes
+     */
+    public byte[] getMessage()
+    {
+        return mMessage.toByteArray();
+    }
+
+    public String toString()
+    {
+        return mMessage.toString();
     }
 
     /**
@@ -138,8 +164,25 @@ public abstract class UltravoxMessage
      */
     public String getPayload()
     {
-        //TODO: parse payload field
-        return null;
+        int payloadLength = mMessage.getInt(PAYLOAD_LENGTH);
+
+        byte[] payload = new byte[payloadLength];
+
+        int payloadPointer = 48;
+
+        for(int x = 0; x < payloadLength; x++)
+        {
+            payload[x] = mMessage.getByte(payloadPointer);
+            payloadPointer += 8;
+        }
+
+        //Strip the trailing 0x00 null value from a server response
+        if(payload[payload.length - 1] == 0)
+        {
+            return new String(Arrays.copyOf(payload, payload.length - 1));
+        }
+
+        return new String(payload);
     }
 
     /**
@@ -147,11 +190,50 @@ public abstract class UltravoxMessage
      */
     public void setPayload(String payload)
     {
-        //TODO: implement payload, along with trailing 0x00 byte and update overall payload size field.
+        setPayload(payload.getBytes());
     }
 
-    private void setPayloadLength(int length)
+    public void setPayload(byte[] payload)
     {
-        //TODO: correctly size the message to payload + 1 byte and set the payload length field
+        int messageBitLength = (7 + payload.length) * 8;
+
+        mMessage.setSize(messageBitLength);
+        mMessage.setInt(payload.length, PAYLOAD_LENGTH);
+
+        int payloadPointer = 48;
+
+        for(byte payloadByte: payload)
+        {
+            mMessage.setByte(payloadPointer, payloadByte);
+            payloadPointer += 8;
+        }
+
+        mMessage.setByte(payloadPointer, (byte)0x00);
+    }
+
+    public boolean isValidResponse()
+    {
+        String payload = getPayload();
+
+        return payload != null && payload.startsWith(VALID_RESPONSE_PREFIX);
+    }
+
+    public boolean isErrorResponse()
+    {
+        String payload = getPayload();
+
+        return payload != null && payload.startsWith(ERROR_RESPONSE_PREFIX);
+    }
+
+    public String getError()
+    {
+        String payload = getPayload();
+
+        if(payload != null)
+        {
+            return payload.replace(ERROR_RESPONSE_PREFIX, "");
+        }
+
+        return null;
     }
 }

@@ -133,12 +133,12 @@ public class ShoutcastV1Handler extends BroadcastHandler
     {
         if(!connected() && System.currentTimeMillis() - mLastConnectionAttempt >= RECONNECT_INTERVAL_MILLISECONDS)
         {
+            mLastConnectionAttempt = System.currentTimeMillis();
+
             createSocket();
 
             if(mSocket.isConnected())
             {
-                mLog.debug("Sending credentials");
-
                 StringBuilder sb = new StringBuilder();
 
                 //Password
@@ -186,7 +186,6 @@ public class ShoutcastV1Handler extends BroadcastHandler
      */
     private void send(String data) throws IOException
     {
-        mLog.debug("Sending [" + data + "]");
         if(data != null && !data.isEmpty() && mOutputStream != null)
         {
             mOutputStream.writeBytes(data);
@@ -200,7 +199,6 @@ public class ShoutcastV1Handler extends BroadcastHandler
      */
     private void send(byte[] data) throws IOException
     {
-        mLog.debug("Sending bytes:" + data.length);
         if(connected())
         {
             int sent = 0;
@@ -344,7 +342,7 @@ public class ShoutcastV1Handler extends BroadcastHandler
         config.setAlias("Test Configuration");
         config.setHost("localhost");
         config.setPort(8000);
-        config.setPassword("denny3");
+        config.setPassword("denny3:#1");
         config.setStreamName("Denny's Audio Broadcast Test");
         config.setGenre("Scanner Audio");
         config.setPublic(true);

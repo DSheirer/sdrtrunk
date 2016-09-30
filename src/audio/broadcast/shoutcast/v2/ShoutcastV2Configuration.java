@@ -24,14 +24,13 @@ import audio.broadcast.BroadcastServerType;
 
 public class ShoutcastV2Configuration extends BroadcastConfiguration
 {
-    private String mMountPoint;
-    private String mStreamName;
-    private String mSongTitle;
-    private String mGenre;
-    private boolean mPublic;
-    private int mChannels;
+    private int mStreamID;
+    private String mUserID;
     private int mBitRate;
+    private String mStreamName;
+    private String mStreamGenre;
     private String mURL;
+    private boolean mPublic = true;
 
 
     public ShoutcastV2Configuration(BroadcastFormat format)
@@ -42,26 +41,60 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     @Override
     public BroadcastServerType getBroadcastServerType()
     {
-        return BroadcastServerType.SHOUTCAST_V1;
-    }
-
-    public String getMountPoint()
-    {
-        return mMountPoint;
+        return BroadcastServerType.SHOUTCAST_V2;
     }
 
     /**
-     * Sets the optional mount point.  Shoutcast v1.x servers don't require a mount point, but v2.x servers do require
-     * the mount point.
-     *
-     * Note: if the supplied mount point contains a leading slash (/) it will be removed.
-     *
-     * @param mountPoint
+     * Stream ID
      */
-    public void setMountPoint(String mountPoint)
+    public int getStreamID()
     {
-        //Strip the leading slash from the mount point if the user supplies it
-        mMountPoint = mountPoint.replace("/", "");
+        return mStreamID;
+    }
+
+    /**
+     * Sets the stream ID
+     *
+     * @param streamID numeric stream identifier between 1 - 2147483647
+     */
+    public void setStreamID(int streamID)
+    {
+        assert(1 <= streamID && streamID <= Integer.MAX_VALUE);
+        mStreamID = streamID;
+    }
+
+    /**
+     * User ID
+     */
+    public String getUserID()
+    {
+        return mUserID;
+    }
+
+    /**
+     * Sets the user ID
+     * @param userID
+     */
+    public void setUserID(String userID)
+    {
+        mUserID = userID;
+    }
+
+    /**
+     * Bit rate in kilobits per second
+     */
+    public int getBitRate()
+    {
+        return mBitRate;
+    }
+
+    /**
+     * Bit rate
+     * @param bitRate in kilobits per second
+     */
+    public void setBitRate(int bitRate)
+    {
+        mBitRate = bitRate;
     }
 
     /**
@@ -82,36 +115,19 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     }
 
     /**
-     * Song title
-     */
-    public String getSongTitle()
-    {
-        return mSongTitle;
-    }
-
-    /**
-     * Set the song title
-     */
-    public void setSongTitle(String title)
-    {
-        mSongTitle = title;
-    }
-
-    /**
      * Stream genre
      */
-    public String getGenre()
+    public String getStreamGenre()
     {
-        return mGenre;
+        return mStreamGenre;
     }
 
     /**
-     * Stream genre
-     * @param genre
+     * Sets the genre tag for this stream
      */
-    public void setGenre(String genre)
+    public void setStreamGenre(String genre)
     {
-        mGenre = genre;
+        mStreamGenre = genre;
     }
 
     /**
@@ -129,39 +145,6 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     public void setPublic(boolean isPublic)
     {
         mPublic = isPublic;
-    }
-
-    /**
-     * Number of audio channels in the broadcast
-     */
-    public int getChannels()
-    {
-        return mChannels;
-    }
-
-    /**
-     * Sets the number of audio channels in the broadcast
-     */
-    public void setChannels(int channels)
-    {
-        mChannels = channels;
-    }
-
-    /**
-     * Bit rate in bits per second
-     */
-    public int getBitRate()
-    {
-        return mBitRate;
-    }
-
-    /**
-     * Bit rate
-     * @param bitRate in samples per second
-     */
-    public void setBitRate(int bitRate)
-    {
-        mBitRate = bitRate;
     }
 
     /**

@@ -20,6 +20,8 @@ package audio.broadcast;
 
 import audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
 import audio.broadcast.shoutcast.v1.ShoutcastV1Handler;
+import audio.broadcast.shoutcast.v2.ShoutcastV2Configuration;
+import audio.broadcast.shoutcast.v2.ShoutcastV2Handler;
 import audio.convert.IAudioConverter;
 import audio.convert.MP3AudioConverter;
 import controller.ThreadPoolManager;
@@ -51,6 +53,9 @@ public class BroadcasterFactory
                 case SHOUTCAST_V1:
                     return new Broadcaster(threadPoolManager,
                             new ShoutcastV1Handler((ShoutcastV1Configuration)configuration, converter));
+                case SHOUTCAST_V2:
+                    return new Broadcaster(threadPoolManager,
+                            new ShoutcastV2Handler((ShoutcastV2Configuration)configuration, converter));
                 case UNKNOWN:
                     break;
             }
@@ -70,7 +75,6 @@ public class BroadcasterFactory
         {
             case MP3:
                 return new MP3AudioConverter(MP3_MONO_16_KHZ_BITRATE, MP3_NO_VARIABLE_BITRATE);
-
         }
 
         return null;

@@ -66,6 +66,11 @@ public enum BroadcastState
     UNKNOWN_HOST("Unknown Host or Invalid Port", true),
 
     /**
+     * Unsupported audio format
+     */
+    UNSUPPORTED_AUDIO_FORMAT("Unsupported Audio Type", true),
+
+    /**
      * Unspecified error
      */
     ERROR("Error", true);
