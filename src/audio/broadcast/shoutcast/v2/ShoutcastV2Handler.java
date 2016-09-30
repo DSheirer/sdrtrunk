@@ -63,6 +63,8 @@ public class ShoutcastV2Handler extends BroadcastHandler
     private final static Logger mLog = LoggerFactory.getLogger( ShoutcastV2Handler.class );
 
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 15000; //15 seconds
+    private static final boolean GET_RESPONSE = true;
+    private static final boolean NO_RESPONSE_EXPECTED = false;
     private long mLastConnectionAttempt = 0;
 
     private Socket mSocket;
@@ -71,9 +73,9 @@ public class ShoutcastV2Handler extends BroadcastHandler
     private int mMaxPayloadSize = 16377;
 
     /**
-     * Creates a Shoutcast Version 1 broadcast handler.
-     * @param configuration
-     * @param audioConverter
+     * Creates a Shoutcast Version 2 broadcast handler.
+     * @param configuration details for shoutcast version 2
+     * @param audioConverter to convert PCM audio
      */
     public ShoutcastV2Handler(ShoutcastV2Configuration configuration, IAudioConverter audioConverter)
     {
@@ -105,24 +107,20 @@ public class ShoutcastV2Handler extends BroadcastHandler
             {
                 List<UltravoxMessage> audioMessages = getAudioMessages(convertedAudio);
 
-                for(UltravoxMessage audioMessage: audioMessages)
+                try
                 {
-                    try
+                    for(UltravoxMessage audioMessage: audioMessages)
                     {
-                        send(audioMessage, false);
-                    }
-                    catch(IOException e)
-                    {
-                        mLog.error("Error while dispatching audio", e);
-                        setBroadcastState(BroadcastState.BROADCAST_ERROR);
-                        return;
+                        send(audioMessage, NO_RESPONSE_EXPECTED);
                     }
                 }
+                catch(IOException e)
+                {
+                    mLog.error("Error while dispatching audio", e);
+                    setBroadcastState(BroadcastState.BROADCAST_ERROR);
+                    return;
+                }
             }
-        }
-        else
-        {
-            mLog.debug("Not connected");
         }
     }
 
@@ -305,7 +303,7 @@ public class ShoutcastV2Handler extends BroadcastHandler
 
                 try
                 {
-                    UltravoxMessage response = send(requestCipher, true);
+                    UltravoxMessage response = send(requestCipher, GET_RESPONSE);
 
                     if (response instanceof RequestCipher)
                     {
@@ -316,7 +314,7 @@ public class ShoutcastV2Handler extends BroadcastHandler
                         authenticateBroadcast.setCredentials(cipherResponse.getCipher(),
                                 getShoutcastConfiguration().getStreamID(), getShoutcastConfiguration().getUserID(),
                                 getShoutcastConfiguration().getPassword());
-                        response = send(authenticateBroadcast, true);
+                        response = send(authenticateBroadcast, GET_RESPONSE);
 
                         if (response.isErrorResponse())
                         {
@@ -327,7 +325,7 @@ public class ShoutcastV2Handler extends BroadcastHandler
                         UltravoxMessage streamMimeType = UltravoxMessageFactory
                                 .getMessage(UltravoxMessageType.STREAM_MIME_TYPE);
                         streamMimeType.setPayload(getShoutcastConfiguration().getBroadcastFormat().getValue());
-                        response = send(streamMimeType, true);
+                        response = send(streamMimeType, GET_RESPONSE);
 
                         if (response.isErrorResponse())
                         {
@@ -340,7 +338,7 @@ public class ShoutcastV2Handler extends BroadcastHandler
                                 .getMessage(UltravoxMessageType.SETUP_BROADCAST);
                         setupBroadcast.setBitRate(getShoutcastConfiguration().getBitRate(),
                                 getShoutcastConfiguration().getBitRate());
-                        response = send(setupBroadcast, true);
+                        response = send(setupBroadcast, GET_RESPONSE);
 
                         if (response.isErrorResponse())
                         {
@@ -352,7 +350,7 @@ public class ShoutcastV2Handler extends BroadcastHandler
                         NegotiateMaxPayloadSize negotiateMaxPayloadSize = (NegotiateMaxPayloadSize) UltravoxMessageFactory
                                 .getMessage(UltravoxMessageType.NEGOTIATE_MAX_PAYLOAD_SIZE);
                         negotiateMaxPayloadSize.setMaximumPayloadSize(mMaxPayloadSize, 14000);
-                        response = send(negotiateMaxPayloadSize, true);
+                        response = send(negotiateMaxPayloadSize, GET_RESPONSE);
                         mMaxPayloadSize = ((NegotiateMaxPayloadSize) response).getMaximumPayloadSize();
 
                         List<String> metadata = new ArrayList<>();
@@ -364,7 +362,7 @@ public class ShoutcastV2Handler extends BroadcastHandler
                             ConfigureIcyName icyName = (ConfigureIcyName) UltravoxMessageFactory
                                     .getMessage(UltravoxMessageType.CONFIGURE_ICY_NAME);
                             icyName.setName(getShoutcastConfiguration().getStreamName());
-                            response = send(icyName, false);
+                            response = send(icyName, NO_RESPONSE_EXPECTED);
                         }
 
                         if (getShoutcastConfiguration().getStreamGenre() != null)
@@ -374,7 +372,7 @@ public class ShoutcastV2Handler extends BroadcastHandler
                             ConfigureIcyGenre icyGenre = (ConfigureIcyGenre) UltravoxMessageFactory
                                     .getMessage(UltravoxMessageType.CONFIGURE_ICY_GENRE);
                             icyGenre.setGenre(getShoutcastConfiguration().getStreamGenre());
-                            response = send(icyGenre, false);
+                            response = send(icyGenre, NO_RESPONSE_EXPECTED);
                         }
 
                         if (getShoutcastConfiguration().getURL() != null)
@@ -382,16 +380,16 @@ public class ShoutcastV2Handler extends BroadcastHandler
                             ConfigureIcyURL icyURL = (ConfigureIcyURL) UltravoxMessageFactory
                                     .getMessage(UltravoxMessageType.CONFIGURE_ICY_URL);
                             icyURL.setURL(getShoutcastConfiguration().getURL());
-                            response = send(icyURL, false);
+                            response = send(icyURL, NO_RESPONSE_EXPECTED);
                         }
 
                         ConfigureIcyPublic icyPublic = (ConfigureIcyPublic) UltravoxMessageFactory
                                 .getMessage(UltravoxMessageType.CONFIGURE_ICY_PUBLIC);
                         icyPublic.setPublic(getShoutcastConfiguration().isPublic());
-                        response = send(icyPublic, false);
+                        response = send(icyPublic, NO_RESPONSE_EXPECTED);
 
                         Standby standby = (Standby) UltravoxMessageFactory.getMessage(UltravoxMessageType.STANDBY);
-                        response = send(standby, true);
+                        response = send(standby, GET_RESPONSE);
 
                         if (response.isValidResponse())
                         {
@@ -412,7 +410,7 @@ public class ShoutcastV2Handler extends BroadcastHandler
                         for (UltravoxMessage message : messages)
                         {
                             mLog.debug("Sending metadata message");
-                            send(message, true);
+                            send(message, GET_RESPONSE);
                         }
 
                         mLog.debug("We're connected!!!");
