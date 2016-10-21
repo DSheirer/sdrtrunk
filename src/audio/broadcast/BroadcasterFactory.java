@@ -18,6 +18,8 @@
  ******************************************************************************/
 package audio.broadcast;
 
+import audio.broadcast.icecast.IcecastConfiguration;
+import audio.broadcast.icecast.IcecastHandler;
 import audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
 import audio.broadcast.shoutcast.v1.ShoutcastV1Handler;
 import audio.broadcast.shoutcast.v2.ShoutcastV2Configuration;
@@ -29,7 +31,8 @@ import controller.ThreadPoolManager;
 public class BroadcasterFactory
 {
     public static final int MP3_MONO_16_KHZ_BITRATE = 16;
-    public static final boolean MP3_NO_VARIABLE_BITRATE = false;
+    public static final boolean MP3_CONSTANT_BITRATE = false;
+    public static final boolean MP3_VARIABLE_BITRATE = true;
 
     /**
      * Creates an audio streaming broadcaster for the configuration
@@ -49,7 +52,8 @@ public class BroadcasterFactory
                 case BROADCASTIFY:
                     break;
                 case ICECAST:
-                    break;
+                    return new Broadcaster(threadPoolManager,
+                            new IcecastHandler((IcecastConfiguration)configuration, converter));
                 case SHOUTCAST_V1:
                     return new Broadcaster(threadPoolManager,
                             new ShoutcastV1Handler((ShoutcastV1Configuration)configuration, converter));
@@ -74,7 +78,7 @@ public class BroadcasterFactory
         switch(format)
         {
             case MP3:
-                return new MP3AudioConverter(MP3_MONO_16_KHZ_BITRATE, MP3_NO_VARIABLE_BITRATE);
+                return new MP3AudioConverter(MP3_MONO_16_KHZ_BITRATE, MP3_CONSTANT_BITRATE);
         }
 
         return null;

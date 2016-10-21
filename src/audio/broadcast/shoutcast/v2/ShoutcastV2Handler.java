@@ -44,6 +44,7 @@ import audio.convert.IAudioConverter;
 import controller.ThreadPoolManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import properties.SystemProperties;
 import record.wave.AudioPacketMonoWaveReader;
 
 import java.io.DataInputStream;
@@ -402,7 +403,8 @@ public class ShoutcastV2Handler extends BroadcastHandler
                                     (response.getError() != null ? response.getError() : "no error message"));
                         }
 
-                        metadata.add(UltravoxMetadata.BROADCAST_CLIENT_APPLICATION.asXML("sdrtrunk"));
+                        metadata.add(UltravoxMetadata.BROADCAST_CLIENT_APPLICATION
+                                .asXML(SystemProperties.getInstance().getApplicationName()));
 
                         mLog.debug("Fetching metadata messages from metadata...");
                         List<UltravoxMessage> messages = getMetadataMessages(metadata);

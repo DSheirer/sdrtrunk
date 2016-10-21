@@ -229,7 +229,7 @@ public class SDRTrunk implements Listener<TunerEvent>
     	/**
     	 * Setup main JFrame window
     	 */
-		mTitle = getTitle();
+		mTitle = SystemProperties.getInstance().getApplicationName();
     	mMainGui.setTitle( mTitle );
     	mMainGui.setBounds( 100, 100, 1280, 800 );
     	mMainGui.setDefaultCloseOperation( JFrame.EXIT_ON_CLOSE );
@@ -448,32 +448,6 @@ public class SDRTrunk implements Listener<TunerEvent>
 		return homePath;
     }
     
-    private String getTitle()
-    {
-    	StringBuilder sb = new StringBuilder();
-    	
-    	sb.append( "sdrtrunk" );
-    	
-    	try( BufferedReader reader = new BufferedReader( 
-    			new InputStreamReader( this.getClass()
-    					.getResourceAsStream( "/sdrtrunk-version" ) ) ) )
-    	{
-    		String version = reader.readLine();
-
-    		if( version != null )
-    		{
-    			sb.append( " V" );
-    			sb.append( version );
-    		}
-    	}
-    	catch( Exception e )
-    	{
-    		mLog.error( "Couldn't read sdrtrunk version from application jar file" );
-    	}
-    	
-    	return sb.toString();
-    }
-
 	@Override
 	public void receive( TunerEvent event )
 	{

@@ -46,6 +46,16 @@ public enum BroadcastState
     INVALID_PASSWORD("Invalid Password", true),
 
     /**
+     * Remote server max sources has been exceeded
+     */
+    MAX_SOURCES_EXCEEDED("Max Sources Exceeded", true),
+
+    /**
+     * Specified mount point is already in use
+     */
+    MOUNT_POINT_IN_USE("Mount Point In Use", true),
+
+    /**
      * Server is not known or reachable
      */
     NO_SERVER("No Server", false),
@@ -59,6 +69,11 @@ public enum BroadcastState
      * Initial state with no connection attempted.
      */
     READY("Ready", false),
+
+    /**
+     * Error on the remote server
+     */
+    REMOTE_SERVER_ERROR("Remote Server Error", true),
 
     /**
      * Server host name or port is invalid
