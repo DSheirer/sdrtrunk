@@ -24,12 +24,12 @@ import audio.broadcast.BroadcastHandler;
 import audio.broadcast.BroadcastState;
 import audio.broadcast.Broadcaster;
 import audio.broadcast.BroadcasterFactory;
-import audio.broadcast.HttpAsyncAudioStreamer;
+import audio.broadcast.HttpAsyncAudioStreamer2;
 import audio.convert.IAudioConverter;
 import controller.ThreadPoolManager;
-import org.apache.http.HttpException;
-import org.apache.http.HttpHeaders;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
+import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.HttpVersion;
@@ -37,17 +37,16 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.concurrent.FutureCallback;
+import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.ContentType;
-import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClients;
+import org.apache.http.nio.ContentDecoder;
 import org.apache.http.nio.IOControl;
-import org.apache.http.nio.client.methods.AsyncCharConsumer;
-import org.apache.http.nio.client.methods.HttpAsyncMethods;
-import org.apache.http.nio.protocol.BasicAsyncRequestProducer;
-import org.apache.http.nio.protocol.HttpAsyncRequestProducer;
+import org.apache.http.nio.protocol.BasicAsyncResponseConsumer;
+import org.apache.http.protocol.HTTP;
 import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,11 +54,10 @@ import properties.SystemProperties;
 import record.wave.AudioPacketMonoWaveReader;
 
 import java.io.IOException;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.CharBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -73,8 +71,9 @@ public class IcecastHandler extends BroadcastHandler
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 15000; //15 seconds
     private long mLastConnectionAttempt = 0;
     private CloseableHttpAsyncClient mHttpClient;
-    private HttpAsyncAudioStreamer mAudioStreamer;
-    private URI mURI;
+    private HttpAsyncAudioStreamer2 mAudioStreamer;
+    private HttpHost mHttpHost;
+    private HttpRequest mHttpRequest;
     private int mCounter = 0;
 
     /**
@@ -86,8 +85,17 @@ public class IcecastHandler extends BroadcastHandler
     {
         super(configuration, audioConverter);
 
-        mAudioStreamer = new HttpAsyncAudioStreamer(HttpPut.METHOD_NAME, getConfiguration().getMountPoint(),
-                getAudioConverter(), 20);
+        try
+        {
+            HttpRequest httpRequest = getHttpRequest();
+            mAudioStreamer = new HttpAsyncAudioStreamer2(getHttpHost(), httpRequest,
+                    getAudioConverter(), 20);
+        }
+        catch(URISyntaxException use)
+        {
+            mLog.error("Error creating URI from configuration", use);
+            setBroadcastState(BroadcastState.UNKNOWN_HOST);
+        }
     }
 
     /**
@@ -98,19 +106,49 @@ public class IcecastHandler extends BroadcastHandler
         return (IcecastConfiguration)getBroadcastConfiguration();
     }
 
-    private URI getURI() throws URISyntaxException
+    private HttpHost getHttpHost()
     {
-        if(mURI == null)
+        if(mHttpHost == null)
         {
-            mURI = new URIBuilder()
-                    .setScheme("http")
-                    .setHost(getConfiguration().getHost())
-                    .setPort(getConfiguration().getPort())
-                    .setPath(getConfiguration().getMountPoint())
-                    .build();
+            mHttpHost = new HttpHost(getConfiguration().getHost(), getConfiguration().getPort());
         }
 
-        return mURI;
+        return mHttpHost;
+    }
+
+    private URI getURI() throws URISyntaxException
+    {
+        return new URIBuilder()
+                .setScheme("http")
+                .setHost(getConfiguration().getHost())
+                .setPort(getConfiguration().getPort())
+                .setPath(getConfiguration().getMountPoint())
+                .build();
+    }
+
+    private HttpRequest getHttpRequest() throws URISyntaxException
+    {
+        if(mHttpRequest == null)
+        {
+            HttpPut httpPut = new HttpPut(getURI());
+            httpPut.setProtocolVersion(HttpVersion.HTTP_1_1);
+
+            httpPut.setEntity(new MyHttpEntity(getConfiguration().getBroadcastFormat()));
+
+            mHttpRequest = httpPut;
+            mHttpRequest.addHeader(IcecastHeader.AUTHORIZATION.getValue(), getConfiguration().getAuthorization());
+            mHttpRequest.addHeader(IcecastHeader.ACCEPT.getValue(), "*/*");
+            mHttpRequest.addHeader(IcecastHeader.CONTENT_TYPE.getValue(), getConfiguration().getBroadcastFormat().getValue());
+            mHttpRequest.addHeader(IcecastHeader.PUBLIC.getValue(), getConfiguration().isPublic() ? "1" : "0");
+            mHttpRequest.addHeader(IcecastHeader.NAME.getValue(), getConfiguration().getStreamName());
+            mHttpRequest.addHeader(IcecastHeader.DESCRIPTION.getValue(), getConfiguration().getHost());
+            mHttpRequest.addHeader(IcecastHeader.URL.getValue(), getConfiguration().getURL());
+            mHttpRequest.addHeader(IcecastHeader.GENRE.getValue(), getConfiguration().getGenre());
+            mHttpRequest.addHeader(IcecastHeader.USER_AGENT.getValue(), SystemProperties.getInstance().getApplicationName());
+            mHttpRequest.addHeader(HTTP.EXPECT_DIRECTIVE, HTTP.EXPECT_CONTINUE);
+        }
+
+        return mHttpRequest;
     }
 
     /**
@@ -120,7 +158,7 @@ public class IcecastHandler extends BroadcastHandler
     @Override
     public void broadcast(List<AudioPacket> audioPackets)
     {
-        if(mCounter > 10)
+        if(mCounter > 1)
         {
             mLog.debug("Connecting ...");
             connect();
@@ -179,90 +217,87 @@ public class IcecastHandler extends BroadcastHandler
 
 //            try
 //            {
-                HttpHost httpHost = new HttpHost(getConfiguration().getHost(), getConfiguration().getPort());
 //                mAudioStreamer.addHeader(IcecastHeader.EXPECT.getValue(), HTTP_100_CONTINUE);
 
-                mAudioStreamer.addHeader(IcecastHeader.AUTHORIZATION.getValue(), getConfiguration().getAuthorization());
-                mAudioStreamer.addHeader(HttpHeaders.ACCEPT, "*/*");
-                mAudioStreamer.addHeader(HttpHeaders.CONTENT_TYPE, getConfiguration().getBroadcastFormat().getValue());
-                mAudioStreamer.addHeader(IcecastHeader.PUBLIC.getValue(), getConfiguration().isPublic() ? "1" : "0");
-                mAudioStreamer.addHeader(IcecastHeader.NAME.getValue(), getConfiguration().getStreamName());
-                mAudioStreamer.addHeader(IcecastHeader.DESCRIPTION.getValue(), getConfiguration().getHost());
-                mAudioStreamer.addHeader(IcecastHeader.URL.getValue(), getConfiguration().getURL());
-                mAudioStreamer.addHeader(IcecastHeader.GENRE.getValue(), getConfiguration().getGenre());
-                mAudioStreamer.addHeader(IcecastHeader.USER_AGENT.getValue(), SystemProperties.getInstance().getApplicationName());
 
 //                BasicAsyncRequestProducer producer = new BasicAsyncRequestProducer(httpHost, mAudioStreamer);
-                BasicAsyncRequestProducer producer = new MyProducer(httpHost, mAudioStreamer, mAudioStreamer);
-                AsyncCharConsumer<HttpResponse> consumer = new AsyncCharConsumer<HttpResponse>()
-                {
-                    @Override
-                    protected void onCharReceived(CharBuffer charBuffer, IOControl ioControl) throws IOException
-                    {
-                        mLog.debug("Received consumer characters!");
-                    }
+//                BasicAsyncRequestProducer producer = new MyProducer(httpHost, mAudioStreamer, mAudioStreamer);
+//                HttpAsyncRequestProducer producer = new HttpAsyncAudioStreamer2(httpHost, getConfiguration().getBroadcastFormat(),
+//                        getAudioConverter(), 2000);
 
-                    @Override
-                    protected void onResponseReceived(HttpResponse response) throws HttpException, IOException
-                    {
-                        mLog.debug("Received consumer response:\n" + response.toString());
 
-                        switch(response.getStatusLine().getStatusCode())
-                        {
-                            case HttpStatus.SC_OK: //200
-                            case HttpStatus.SC_CONTINUE: //100
-                                mLog.debug("Connected to icecast server");
-                                setBroadcastState(BroadcastState.CONNECTED);
-                                break;
-                            case HttpStatus.SC_UNAUTHORIZED: //401
-                                setBroadcastState(BroadcastState.INVALID_PASSWORD);
-                                mLog.error("Couldn't connect to Icecast2 server using login credentials");
-                                break;
-                            case HttpStatus.SC_FORBIDDEN: //403
-                                String reason = response.getStatusLine().getReasonPhrase();
+//                AsyncCharConsumer<HttpResponse> consumer = new AsyncCharConsumer<HttpResponse>()
+//                {
+//                    @Override
+//                    protected void onCharReceived(CharBuffer charBuffer, IOControl ioControl) throws IOException
+//                    {
+//                        mLog.debug("Received consumer characters!");
+//                    }
+//
+//                    @Override
+//                    protected void onResponseReceived(HttpResponse response) throws HttpException, IOException
+//                    {
+//                        mLog.debug("Received consumer response:\n" + response.toString());
+//
+//                        switch(response.getStatusLine().getStatusCode())
+//                        {
+//                            case HttpStatus.SC_OK: //200
+//                            case HttpStatus.SC_CONTINUE: //100
+//                                mLog.debug("Connected to icecast server");
+//                                setBroadcastState(BroadcastState.CONNECTED);
+//                                break;
+//                            case HttpStatus.SC_UNAUTHORIZED: //401
+//                                setBroadcastState(BroadcastState.INVALID_PASSWORD);
+//                                mLog.error("Couldn't connect to Icecast2 server using login credentials");
+//                                break;
+//                            case HttpStatus.SC_FORBIDDEN: //403
+//                                String reason = response.getStatusLine().getReasonPhrase();
+//
+//                                if(reason.contains("Content-Type"))
+//                                {
+//                                    setBroadcastState(BroadcastState.UNSUPPORTED_AUDIO_FORMAT);
+//                                    mLog.error("Icecast2 server does not support audio format");
+//                                }
+//                                else if(reason.startsWith("internal format"))
+//                                {
+//                                    setBroadcastState(BroadcastState.REMOTE_SERVER_ERROR);
+//                                    mLog.error("Icecast2 server has an error");
+//                                }
+//                                else if(reason.startsWith("too many sources"))
+//                                {
+//                                    setBroadcastState(BroadcastState.MAX_SOURCES_EXCEEDED);
+//                                    mLog.error("Icecast2 server maximum number of sources exceeded");
+//                                }
+//                                else if(reason.startsWith("Mountpoint"))
+//                                {
+//                                    setBroadcastState(BroadcastState.MOUNT_POINT_IN_USE);
+//                                    mLog.error("Icecast2 server mount point is already in use");
+//                                }
+//                            case HttpStatus.SC_INTERNAL_SERVER_ERROR: //500
+//                                setBroadcastState(BroadcastState.INVALID_PASSWORD);
+//                                mLog.error("Couldn't connect to Icecast2 server using login credentials");
+//                                break;
+//                            default:
+//                                setBroadcastState(BroadcastState.ERROR);
+//                                mLog.error("Error connecting to remote server.  HTTP Status Code:" +
+//                                    response.getStatusLine().getStatusCode() + " Reason:" +
+//                                    response.getStatusLine().getReasonPhrase());
+//                        }
+//
+//                    }
+//
+//                    @Override
+//                    protected HttpResponse buildResult(HttpContext httpContext) throws Exception
+//                    {
+//                        mLog.debug("Received consumer request for response!!!!!!");
+//                        return null;
+//                    }
+//                };
 
-                                if(reason.contains("Content-Type"))
-                                {
-                                    setBroadcastState(BroadcastState.UNSUPPORTED_AUDIO_FORMAT);
-                                    mLog.error("Icecast2 server does not support audio format");
-                                }
-                                else if(reason.startsWith("internal format"))
-                                {
-                                    setBroadcastState(BroadcastState.REMOTE_SERVER_ERROR);
-                                    mLog.error("Icecast2 server has an error");
-                                }
-                                else if(reason.startsWith("too many sources"))
-                                {
-                                    setBroadcastState(BroadcastState.MAX_SOURCES_EXCEEDED);
-                                    mLog.error("Icecast2 server maximum number of sources exceeded");
-                                }
-                                else if(reason.startsWith("Mountpoint"))
-                                {
-                                    setBroadcastState(BroadcastState.MOUNT_POINT_IN_USE);
-                                    mLog.error("Icecast2 server mount point is already in use");
-                                }
-                            case HttpStatus.SC_INTERNAL_SERVER_ERROR: //500
-                                setBroadcastState(BroadcastState.INVALID_PASSWORD);
-                                mLog.error("Couldn't connect to Icecast2 server using login credentials");
-                                break;
-                            default:
-                                setBroadcastState(BroadcastState.ERROR);
-                                mLog.error("Error connecting to remote server.  HTTP Status Code:" +
-                                    response.getStatusLine().getStatusCode() + " Reason:" +
-                                    response.getStatusLine().getReasonPhrase());
-                        }
-                    }
-
-                    @Override
-                    protected HttpResponse buildResult(HttpContext httpContext) throws Exception
-                    {
-                        mLog.debug("Received consumer request for response!!!!!!");
-                        return null;
-                    }
-                };
+                MyConsumer consumer = new MyConsumer();
 
                 mLog.debug("Sending connection request");
-                Future<HttpResponse> response = mHttpClient.execute(producer, consumer, new FutureCallback<HttpResponse>()
+                Future<HttpResponse> response = mHttpClient.execute(mAudioStreamer, consumer, new FutureCallback<HttpResponse>()
                 {
                     @Override
                     public void completed(HttpResponse httpResponse)
@@ -376,6 +411,164 @@ public class IcecastHandler extends BroadcastHandler
 
                 mLog.debug("Playback ended [" + path.toString() + "]");
             }
+        }
+    }
+
+
+    public class MyHttpEntity extends AbstractHttpEntity
+    {
+        public MyHttpEntity(BroadcastFormat broadcastFormat)
+        {
+            super.setContentType(broadcastFormat.getValue());
+            super.setChunked(false);
+        }
+
+        @Override
+        public boolean isRepeatable()
+        {
+            mLog.debug("MyEntity - isRepeatable() invoked");
+            return false;
+        }
+
+        @Override
+        public long getContentLength()
+        {
+            return -1;
+        }
+
+        @Override
+        public InputStream getContent() throws IOException, UnsupportedOperationException
+        {
+            mLog.debug("MyEntity - getContent() invoked");
+            return null;
+        }
+
+        @Override
+        public void writeTo(OutputStream outputStream) throws IOException
+        {
+            mLog.debug("MyEntity - writeTo() invoked");
+        }
+
+        @Override
+        public boolean isStreaming()
+        {
+            mLog.debug("MyEntity - isStreaming() invoked");
+            return true;
+        }
+    }
+
+    public class MyConsumer extends BasicAsyncResponseConsumer
+    {
+        public MyConsumer()
+        {
+
+        }
+
+        @Override
+        protected void onResponseReceived(HttpResponse response) throws IOException
+        {
+            mLog.debug("MyConsumer onResponseReceived() " + response.toString());
+
+            super.onResponseReceived(response);
+
+            switch(response.getStatusLine().getStatusCode())
+            {
+                case HttpStatus.SC_OK: //200
+                case HttpStatus.SC_CONTINUE: //100
+                    mLog.debug("Connected to icecast server");
+                    setBroadcastState(BroadcastState.CONNECTED);
+                    break;
+                case HttpStatus.SC_UNAUTHORIZED: //401
+                    setBroadcastState(BroadcastState.INVALID_PASSWORD);
+                    mLog.error("Couldn't connect to Icecast2 server using login credentials");
+                    break;
+                case HttpStatus.SC_FORBIDDEN: //403
+                    String reason = response.getStatusLine().getReasonPhrase();
+
+                    if(reason.contains("Content-Type"))
+                    {
+                        setBroadcastState(BroadcastState.UNSUPPORTED_AUDIO_FORMAT);
+                        mLog.error("Icecast2 server does not support audio format");
+                    }
+                    else if(reason.startsWith("internal format"))
+                    {
+                        setBroadcastState(BroadcastState.REMOTE_SERVER_ERROR);
+                        mLog.error("Icecast2 server has an error");
+                    }
+                    else if(reason.startsWith("too many sources"))
+                    {
+                        setBroadcastState(BroadcastState.MAX_SOURCES_EXCEEDED);
+                        mLog.error("Icecast2 server maximum number of sources exceeded");
+                    }
+                    else if(reason.startsWith("Mountpoint"))
+                    {
+                        setBroadcastState(BroadcastState.MOUNT_POINT_IN_USE);
+                        mLog.error("Icecast2 server mount point is already in use");
+                    }
+                case HttpStatus.SC_INTERNAL_SERVER_ERROR: //500
+                    setBroadcastState(BroadcastState.INVALID_PASSWORD);
+                    mLog.error("Couldn't connect to Icecast2 server using login credentials");
+                    break;
+                default:
+                    setBroadcastState(BroadcastState.ERROR);
+                    mLog.error("Error connecting to remote server.  HTTP Status Code:" +
+                            response.getStatusLine().getStatusCode() + " Reason:" +
+                            response.getStatusLine().getReasonPhrase());
+            }
+        }
+
+        @Override
+        protected void onEntityEnclosed(HttpEntity entity, ContentType contentType) throws IOException
+        {
+            mLog.debug("MyConsumer - onEntityEnclosed()");
+            super.onEntityEnclosed(entity, contentType);
+        }
+
+        @Override
+        protected void onContentReceived(ContentDecoder decoder, IOControl ioctrl) throws IOException
+        {
+            mLog.debug("MyConsumer - onContentReceived()");
+            super.onContentReceived(decoder, ioctrl);
+
+            mLog.debug("MyConsumer - requesting output from the IO control");
+            ioctrl.requestOutput();
+        }
+
+        @Override
+        protected HttpResponse buildResult(HttpContext context)
+        {
+            mLog.debug("MyConsumer - buildResult()");
+            return super.buildResult(context);
+        }
+
+        @Override
+        protected void onClose() throws IOException
+        {
+            mLog.debug("MyConsumer - onClose()");
+            super.onClose();
+        }
+
+        @Override
+        public Exception getException()
+        {
+            mLog.debug("MyConsumer - getException()");
+            return super.getException();
+        }
+
+        @Override
+        public HttpResponse getResult()
+        {
+            mLog.debug("MyConsumer - getResult()");
+            return super.getResult();
+        }
+
+        @Override
+        public boolean isDone()
+        {
+            boolean done = super.isDone();
+
+            mLog.debug("MyConsumer - isDone() - super says:" + done);
+            return super.isDone();
         }
     }
 }

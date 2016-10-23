@@ -31,6 +31,7 @@
       <root url="jar://$PROJECT_DIR$/imports/httpcore-4.4.5.jar!/" />
       <root url="jar://$PROJECT_DIR$/imports/httpasyncclient-4.1.2.jar!/" />
       <root url="jar://$PROJECT_DIR$/imports/httpcore-nio-4.4.5.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/async-http-client-2.0.18.jar!/" />
     </CLASSES>
     <JAVADOC>
       <root url="https://hc.apache.org/httpcomponents-core-ga/httpcore/apidocs/index.html" />
