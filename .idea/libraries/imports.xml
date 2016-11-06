@@ -8,7 +8,6 @@
       <root url="jar://$PROJECT_DIR$/imports/tablefilter-swing-5.2.1.jar!/" />
       <root url="jar://$PROJECT_DIR$/imports/libusb4java-1.2.0-linux-x86.jar!/" />
       <root url="jar://$PROJECT_DIR$/imports/JLargeArrays-1.2.jar!/" />
-      <root url="jar://$PROJECT_DIR$/imports/slf4j-api-1.7.7.jar!/" />
       <root url="jar://$PROJECT_DIR$/imports/libusb4java-1.2.0-linux-ppc.jar!/" />
       <root url="jar://$PROJECT_DIR$/imports/libusb4java-1.2.0-windows-x86.jar!/" />
       <root url="jar://$PROJECT_DIR$/imports/libusb4java-1.2.0-osx-x86.jar!/" />
@@ -27,11 +26,7 @@
       <root url="jar://$PROJECT_DIR$/imports/java-lame-3.98.4.jar!/" />
       <root url="jar://$PROJECT_DIR$/imports/commons-codec-1.9.jar!/" />
       <root url="jar://$PROJECT_DIR$/imports/commons-logging-1.2.jar!/" />
-      <root url="jar://$PROJECT_DIR$/imports/httpclient-4.5.2.jar!/" />
-      <root url="jar://$PROJECT_DIR$/imports/httpcore-4.4.5.jar!/" />
-      <root url="jar://$PROJECT_DIR$/imports/httpasyncclient-4.1.2.jar!/" />
-      <root url="jar://$PROJECT_DIR$/imports/httpcore-nio-4.4.5.jar!/" />
-      <root url="jar://$PROJECT_DIR$/imports/async-http-client-2.0.18.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/slf4j-api-1.7.21.jar!/" />
     </CLASSES>
     <JAVADOC>
       <root url="https://hc.apache.org/httpcomponents-core-ga/httpcore/apidocs/index.html" />

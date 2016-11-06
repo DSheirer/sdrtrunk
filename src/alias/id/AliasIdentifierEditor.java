@@ -17,6 +17,7 @@
  ******************************************************************************/
 package alias.id;
 
+import audio.broadcast.BroadcastModel;
 import gui.editor.Editor;
 import gui.editor.EmptyEditor;
 
@@ -61,10 +62,13 @@ public class AliasIdentifierEditor extends Editor<Alias>
 	private EditorContainer mEditorContainer = new EditorContainer();
 
 	private AliasModel mAliasModel;
+    private BroadcastModel mBroadcastModel;
 	
-	public AliasIdentifierEditor( AliasModel model )
+	public AliasIdentifierEditor( AliasModel aliasModel, BroadcastModel broadcastModel )
 	{
-		mAliasModel = model;
+		mAliasModel = aliasModel;
+        mBroadcastModel = broadcastModel;
+
 		init();
 	}
 
@@ -120,45 +124,35 @@ public class AliasIdentifierEditor extends Editor<Alias>
 				JPopupMenu menu = new JPopupMenu();
 
 				menu.add( new AddAliasIdentifierItem( AliasIDType.ESN ) );
-				menu.add( new AddAliasIdentifierItem( AliasIDType.Fleetsync ) );
-				menu.add( new AddAliasIdentifierItem( AliasIDType.LoJack ) );
-				menu.add( new AddAliasIdentifierItem( AliasIDType.LTRNetUID ) );
+				menu.add( new AddAliasIdentifierItem( AliasIDType.FLEETSYNC) );
+				menu.add( new AddAliasIdentifierItem( AliasIDType.LOJACK) );
+				menu.add( new AddAliasIdentifierItem( AliasIDType.LTR_NET_UID) );
 				menu.add( new AddAliasIdentifierItem( AliasIDType.MDC1200 ) );
 				menu.add( new AddAliasIdentifierItem( AliasIDType.MPT1327 ) );
 				menu.add( new AddAliasIdentifierItem( AliasIDType.MIN ) );
-				menu.add( new AddAliasIdentifierItem( AliasIDType.Site ) );
-				menu.add( new AddAliasIdentifierItem( AliasIDType.Status ) );
-				menu.add( new AddAliasIdentifierItem( AliasIDType.Talkgroup ) );
+				menu.add( new AddAliasIdentifierItem( AliasIDType.SITE) );
+				menu.add( new AddAliasIdentifierItem( AliasIDType.STATUS) );
+				menu.add( new AddAliasIdentifierItem( AliasIDType.TALKGROUP) );
 
-				boolean separatorAdded = false;
-				
+				menu.addSeparator();
+
+                menu.add( new AddAliasIdentifierItem( AliasIDType.BROADCAST_CHANNEL) );
+
 				if( hasItem() )
 				{
 					Alias alias = getItem();
-					
-					if( !alias.hasCallPriority() )
-					{
-						if( !separatorAdded )
-						{
-							menu.addSeparator();
-							separatorAdded = true;
-						}
-						
-						menu.add( new AddAliasIdentifierItem( AliasIDType.Priority ) );
-					}
-					
+
 					if( alias.isRecordable() )
 					{
-						if( !separatorAdded )
-						{
-							menu.addSeparator();
-							separatorAdded = true;
-						}
-						
-						menu.add( new AddAliasIdentifierItem( AliasIDType.NonRecordable ) );
+						menu.add( new AddAliasIdentifierItem( AliasIDType.NON_RECORDABLE) );
+					}
+
+					if( !alias.hasCallPriority() )
+					{
+						menu.add( new AddAliasIdentifierItem( AliasIDType.PRIORITY) );
 					}
 				}
-				
+
 				menu.show( e.getComponent(), e.getX(), e.getY() );
 			}
 		} );
@@ -327,7 +321,7 @@ public class AliasIdentifierEditor extends Editor<Alias>
 			removeAll();
 			
 			//This will always give us an editor
-			mEditor = AliasFactory.getEditor( aliasID );
+			mEditor = AliasFactory.getEditor( aliasID, mBroadcastModel );
 			
 			add( mEditor );
 

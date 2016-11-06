@@ -17,8 +17,6 @@
  ******************************************************************************/
 package alias;
 
-import gui.editor.Editor;
-import gui.editor.EmptyEditor;
 import alias.action.AliasAction;
 import alias.action.AliasActionType;
 import alias.action.beep.BeepAction;
@@ -29,6 +27,8 @@ import alias.action.script.ScriptAction;
 import alias.action.script.ScriptActionEditor;
 import alias.id.AliasID;
 import alias.id.AliasIDType;
+import alias.id.broadcast.BroadcastChannel;
+import alias.id.broadcast.BroadcastChannelEditor;
 import alias.id.esn.ESNEditor;
 import alias.id.esn.Esn;
 import alias.id.fleetsync.FleetsyncID;
@@ -53,6 +53,9 @@ import alias.id.talkgroup.TalkgroupID;
 import alias.id.talkgroup.TalkgroupIDEditor;
 import alias.id.uniqueID.UniqueID;
 import alias.id.uniqueID.UniqueIDEditor;
+import audio.broadcast.BroadcastModel;
+import gui.editor.Editor;
+import gui.editor.EmptyEditor;
 
 public class AliasFactory
 {
@@ -60,22 +63,27 @@ public class AliasFactory
 	{
 		switch( id.getType() )
 		{
+			case BROADCAST_CHANNEL:
+				BroadcastChannel originalBroadcast = (BroadcastChannel)id;
+				BroadcastChannel copyBroadcast = new BroadcastChannel();
+				copyBroadcast.setChannelName(originalBroadcast.getChannelName());
+				return copyBroadcast;
 			case ESN:
 				Esn originalESN = (Esn)id;
 				Esn copyESN = new Esn();
 				copyESN.setEsn( originalESN.getEsn() );
 				return copyESN;
-			case Fleetsync:
+			case FLEETSYNC:
 				FleetsyncID originalFleetsyncID = (FleetsyncID)id;
 				FleetsyncID copyFleetsyncID = new FleetsyncID();
 				copyFleetsyncID.setIdent( originalFleetsyncID.getIdent() );
 				return copyFleetsyncID;
-			case LTRNetUID:
+			case LTR_NET_UID:
 				UniqueID originalUniqueID = (UniqueID)id;
 				UniqueID copyUniqueID = new UniqueID();
 				copyUniqueID.setUid( originalUniqueID.getUid() );
 				return copyUniqueID;
-			case LoJack:
+			case LOJACK:
 				LoJackFunctionAndID originalLoJackFunctionAndID = (LoJackFunctionAndID)id;
 				LoJackFunctionAndID copyLoJackFunctionAndID = new LoJackFunctionAndID();
 				copyLoJackFunctionAndID.setFunction( originalLoJackFunctionAndID.getFunction() );
@@ -96,24 +104,24 @@ public class AliasFactory
 				MPT1327ID copyMPT1327ID = new MPT1327ID();
 				copyMPT1327ID.setIdent( originalMPT1327ID.getIdent() );
 				return copyMPT1327ID;
-			case NonRecordable:
+			case NON_RECORDABLE:
 				return new NonRecordable();
-			case Priority:
+			case PRIORITY:
 				Priority originalPriority = (Priority)id;
 				Priority copyPriority = new Priority();
 				copyPriority.setPriority( originalPriority.getPriority() );
 				return copyPriority;
-			case Site:
+			case SITE:
 				SiteID originalSiteID = (SiteID)id;
 				SiteID copySiteID = new SiteID();
 				copySiteID.setSite( originalSiteID.getSite() );
 				return copySiteID;
-			case Talkgroup:
+			case TALKGROUP:
 				TalkgroupID originalTalkgroupID = (TalkgroupID)id;
 				TalkgroupID copyTalkgroupID = new TalkgroupID();
 				copyTalkgroupID.setTalkgroup( originalTalkgroupID.getTalkgroup() );
 				return copyTalkgroupID;
-			case Status:
+			case STATUS:
 				StatusID originalStatusID = (StatusID)id;
 				StatusID copyStatusID = new StatusID();
 				copyStatusID.setStatus( originalStatusID.getStatus() );
@@ -183,19 +191,21 @@ public class AliasFactory
 		return copy;
 	}
 
-	public static Editor<AliasID> getEditor( AliasID aliasID )
+	public static Editor<AliasID> getEditor( AliasID aliasID, BroadcastModel broadcastModel )
 	{
 		if( aliasID != null )
 		{
 			switch( aliasID.getType() )
 			{
+				case BROADCAST_CHANNEL:
+					return new BroadcastChannelEditor(aliasID, broadcastModel);
 				case ESN:
 					return new ESNEditor( aliasID );
-				case Fleetsync:
+				case FLEETSYNC:
 					return new FleetsyncIDEditor( aliasID );
-				case LTRNetUID:
+				case LTR_NET_UID:
 					return new UniqueIDEditor( aliasID );
-				case LoJack:
+				case LOJACK:
 					return new LoJackIDEditor( aliasID );
 				case MDC1200:
 					return new MDC1200IDEditor( aliasID );
@@ -203,15 +213,15 @@ public class AliasFactory
 					return new MINEditor( aliasID );
 				case MPT1327:
 					return new MPT1327IDEditor( aliasID );
-				case NonRecordable:
+				case NON_RECORDABLE:
 					return new NonRecordableEditor( aliasID );
-				case Priority:
+				case PRIORITY:
 					return new PriorityEditor( aliasID );
-				case Site:
+				case SITE:
 					return new SiteIDEditor( aliasID );
-				case Status:
+				case STATUS:
 					return new StatusIDEditor( aliasID );
-				case Talkgroup:
+				case TALKGROUP:
 					return new TalkgroupIDEditor( aliasID );
 				default:
 					break;
@@ -245,13 +255,15 @@ public class AliasFactory
 	{
 		switch( type )
 		{
+			case BROADCAST_CHANNEL:
+				return new BroadcastChannel();
 			case ESN:
 				return new Esn();
-			case Fleetsync:
+			case FLEETSYNC:
 				return new FleetsyncID();
-			case LTRNetUID:
+			case LTR_NET_UID:
 				return new UniqueID();
-			case LoJack:
+			case LOJACK:
 				return new LoJackFunctionAndID();
 			case MDC1200:
 				return new MDC1200ID();
@@ -259,15 +271,15 @@ public class AliasFactory
 				return new Min();
 			case MPT1327:
 				return new MPT1327ID();
-			case NonRecordable:
+			case NON_RECORDABLE:
 				return new NonRecordable();
-			case Priority:
+			case PRIORITY:
 				return new Priority();
-			case Site:
+			case SITE:
 				return new SiteID();
-			case Status:
+			case STATUS:
 				return new StatusID();
-			case Talkgroup:
+			case TALKGROUP:
 				return new TalkgroupID();
 			default:
 				throw new IllegalArgumentException( "Unrecognized Alias ID type: " + type );

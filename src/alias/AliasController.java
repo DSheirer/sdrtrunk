@@ -1,5 +1,6 @@
 package alias;
 
+import audio.broadcast.BroadcastModel;
 import gui.editor.Editor;
 
 import java.awt.Color;
@@ -52,11 +53,11 @@ public class AliasController extends JPanel
 	
 	private IconCellRenderer mIconCellRenderer;
 
-	public AliasController( AliasModel aliasModel, SettingsManager settingsManager )
+	public AliasController(AliasModel aliasModel, BroadcastModel broadcastModel, SettingsManager settingsManager )
 	{
 		mAliasModel = aliasModel;
 
-    	mAliasEditor = new AliasEditor( mAliasModel, settingsManager );
+    	mAliasEditor = new AliasEditor( mAliasModel, broadcastModel, settingsManager );
     	mMultipleAliasEditor = new MultipleAliasEditor( mAliasModel, settingsManager );
 
     	mIconCellRenderer = new IconCellRenderer( settingsManager );

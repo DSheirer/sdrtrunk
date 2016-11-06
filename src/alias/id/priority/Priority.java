@@ -78,6 +78,6 @@ public class Priority extends AliasID
 	@Override
     public AliasIDType getType()
     {
-	    return AliasIDType.Priority;
+	    return AliasIDType.PRIORITY;
     }
 }

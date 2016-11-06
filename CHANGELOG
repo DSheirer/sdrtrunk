@@ -1,8 +1,8 @@
 
 0.3.0 2016xxxx (work in progress)
  - Requires Java 8 for compatibility with eventual changeover to JavaFX
- - Extensive GUI updates for tuner, channel and alias management.
- - Updated alias list management of alias id values and wildcards.  Weighting is now
+ - Extensive GUI updates for tuner, channel and name management.
+ - Updated name list management of name id values and wildcards.  Weighting is now
    applied to each wildcard so that they can be ordered from most specific to least
    specific for lookup value matching purposes.
  - Added handling for Motorola-specific P25 patch messages
@@ -14,10 +14,10 @@
    decoders and filters
  - New audio playback interface with global mute and support for one or two
    audio channels
- - Audio playback is prioritized using a new Call Priority alias action
+ - Audio playback is prioritized using a new Call Priority name action
    with selected channels having the highest priority and any audio without
-   an alias identifier having the lowest priority.
- - Updated Audio recording per call with new 'Non-Recordable' alias action
+   an name identifier having the lowest priority.
+ - Updated Audio recording per call with new 'Non-Recordable' name action
  - Updated Baseband (I/Q) recording at 48 kHz
  - Added Airspy tuner support
  - New traffic channel pool manager for trunked call following

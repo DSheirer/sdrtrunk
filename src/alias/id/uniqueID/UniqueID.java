@@ -70,6 +70,6 @@ public class UniqueID extends AliasID
 	@Override
     public AliasIDType getType()
     {
-	    return AliasIDType.LTRNetUID;
+	    return AliasIDType.LTR_NET_UID;
     }
 }

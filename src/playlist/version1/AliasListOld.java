@@ -153,7 +153,7 @@ public class AliasListOld implements Comparable<AliasListOld>
 								mESN.put( esn.getEsn(), alias );
 							}
 							break;
-						case Fleetsync:
+						case FLEETSYNC:
 							FleetsyncID fs = (FleetsyncID)id;
 							
 							if( fs.getIdent().contains( "*" ) )
@@ -167,7 +167,7 @@ public class AliasListOld implements Comparable<AliasListOld>
 								mFleetsync.put( fs.getIdent(), alias );
 							}
 							break;
-						case LoJack:
+						case LOJACK:
 							mLoJack.put( (LoJackFunctionAndID)id, alias );
 							break;
 						case MDC1200:
@@ -218,12 +218,12 @@ public class AliasListOld implements Comparable<AliasListOld>
 								mMobileID.put( min.getMin(), alias );
 							}
 							break;
-						case LTRNetUID:
+						case LTR_NET_UID:
 							UniqueID uid = (UniqueID)id;
 							
 							mUniqueID.put( uid.getUid(), alias );
 							break;
-						case Site:
+						case SITE:
 							SiteID siteID = (SiteID)id;
 
 							if( siteID.getSite().contains( "*" ) )
@@ -237,10 +237,10 @@ public class AliasListOld implements Comparable<AliasListOld>
 							}
 							
 							break;
-						case Status:
+						case STATUS:
 							mStatus.put( ((StatusID)id).getStatus(), alias );
 							break;
-						case Talkgroup:
+						case TALKGROUP:
 							TalkgroupID tgid = (TalkgroupID)id;
 							
 							if( tgid.getTalkgroup().contains( "*" ) )
@@ -255,8 +255,8 @@ public class AliasListOld implements Comparable<AliasListOld>
 								mTalkgroup.put( tgid.getTalkgroup(), alias );
 							}
 							break;
-						case NonRecordable:
-						case Priority:
+						case NON_RECORDABLE:
+						case PRIORITY:
 							//We don't maintain lookups for these items
 							break;
 						default:

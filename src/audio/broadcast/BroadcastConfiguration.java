@@ -18,49 +18,75 @@
  ******************************************************************************/
 package audio.broadcast;
 
+import audio.broadcast.icecast.IcecastTCPConfiguration;
+
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlSeeAlso;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
+@XmlSeeAlso({IcecastTCPConfiguration.class})
+@XmlRootElement(name = "stream")
 public abstract class BroadcastConfiguration
 {
     private BroadcastFormat mBroadcastFormat;
-    private String mAlias;
+    private String mName;
     private String mHost;
     private int mPort;
     private String mPassword;
 
+    public BroadcastConfiguration()
+    {
+        //No-arg constructor required for JAXB
+    }
 
     /**
-     * Broadcast audio streaming configuration.  Describes the streaming server, broadcast user authentication and
-     * audio broadcast details to use when connecting to a streaming server and broadcasting audio.
+     * Broadcast audio streaming configuration.  Describes the streaming server and configuration details.
      */
     public BroadcastConfiguration(BroadcastFormat format)
     {
         mBroadcastFormat = format;
     }
 
+    /**
+     * Broadcast server type
+     */
+    @XmlAttribute(name = "type")
     public abstract BroadcastServerType getBroadcastServerType();
 
     /**
-     * Alias identifying this broadcast configuration.
+     * Name identifying this broadcast configuration.
      */
-    public String getAlias()
+    @XmlAttribute(name = "name")
+    public String getName()
     {
-        return mAlias;
+        return mName;
     }
 
     /**
-     * Sets the alias name that identifies/describes this configuration
-     * @param alias
+     * Sets the name name that identifies/describes this configuration
+     *
+     * @param name
      */
-    public void setAlias(String alias)
+    public void setName(String name)
     {
-        mAlias = alias;
+        mName = name;
     }
 
     /**
-     * Streaming server host name.
+     * Indicates if this configuration has a name value
      */
+    public boolean hasName()
+    {
+        return mName != null;
+    }
+
+    /**
+     * BROADCAST server host name.
+     */
+    @XmlAttribute(name = "host")
     public String getHost()
     {
         return mHost;
@@ -68,6 +94,7 @@ public abstract class BroadcastConfiguration
 
     /**
      * Host name or IP address of the streaming server
+     *
      * @param host
      */
     public void setHost(String host)
@@ -76,8 +103,17 @@ public abstract class BroadcastConfiguration
     }
 
     /**
-     * Streaming server port number;
+     * Indicates if this configuration has a host value
      */
+    public boolean hasHost()
+    {
+        return mHost != null;
+    }
+
+    /**
+     * BROADCAST server port number;
+     */
+    @XmlAttribute(name = "port")
     public int getPort()
     {
         return mPort;
@@ -85,11 +121,20 @@ public abstract class BroadcastConfiguration
 
     /**
      * Port number of the streaming server to where the broadcast will be directed.
+     *
      * @param port
      */
     public void setPort(int port)
     {
         mPort = port;
+    }
+
+    /**
+     * Indicates if this configuration contains a port value
+     */
+    public boolean hasPort()
+    {
+        return mPort > 0;
     }
 
     public SocketAddress getAddress()
@@ -100,6 +145,7 @@ public abstract class BroadcastConfiguration
     /**
      * Password to authenticate with the streaming server.
      */
+    @XmlAttribute(name = "password")
     public String getPassword()
     {
         return mPassword;
@@ -107,6 +153,7 @@ public abstract class BroadcastConfiguration
 
     /**
      * Sets the password used to authenticate the broadcast broadcast user to the streaming server
+     *
      * @param password
      */
     public void setPassword(String password)
@@ -115,20 +162,19 @@ public abstract class BroadcastConfiguration
     }
 
     /**
-     * Audio broadcast content type (e.g. mp3)
+     * Indicates if this configuration has a password value
      */
-    public BroadcastFormat getBroadcastFormat()
+    public boolean hasPassword()
     {
-        return mBroadcastFormat;
+        return mPassword != null;
     }
 
     /**
      * Audio broadcast content type (e.g. mp3)
-     * @param broadcastFormat
      */
-    public void setBroadcastFormat(BroadcastFormat broadcastFormat)
+    @XmlElement(name = "format")
+    public BroadcastFormat getBroadcastFormat()
     {
-        mBroadcastFormat = broadcastFormat;
+        return mBroadcastFormat;
     }
-
 }

@@ -20,10 +20,9 @@ package audio.broadcast.shoutcast.v1;
 
 import audio.AudioPacket;
 import audio.broadcast.Broadcaster;
-import audio.broadcast.BroadcasterFactory;
+import audio.broadcast.BroadcastFactory;
 import audio.broadcast.BroadcastFormat;
 import audio.broadcast.BroadcastMetadata;
-import audio.broadcast.BroadcastHandler;
 import audio.broadcast.BroadcastState;
 import audio.convert.IAudioConverter;
 import controller.ThreadPoolManager;
@@ -39,11 +38,12 @@ import java.net.SocketAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
-public class ShoutcastV1Handler extends BroadcastHandler
+public class ShoutcastV1Broadcaster extends Broadcaster
 {
-    private final static Logger mLog = LoggerFactory.getLogger( ShoutcastV1Handler.class );
+    private final static Logger mLog = LoggerFactory.getLogger( ShoutcastV1Broadcaster.class );
 
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 15000; //15 seconds
     private long mLastConnectionAttempt = 0;
@@ -51,17 +51,20 @@ public class ShoutcastV1Handler extends BroadcastHandler
     private Socket mSocket;
     private DataOutputStream mOutputStream;
     private DataInputStream mInputStream;
+    private List<AudioPacket> mPacketsToBroadcast = new ArrayList<>();
 
     private static final int mBufferSize = 2000;
 
     /**
-     * Creates a Shoutcast Version 1 broadcast handler.
+     * Creates a Shoutcast Version 1 broadcaster.
      * @param configuration
      * @param audioConverter
      */
-    public ShoutcastV1Handler(ShoutcastV1Configuration configuration, IAudioConverter audioConverter)
+    public ShoutcastV1Broadcaster(ThreadPoolManager threadPoolManager,
+                                  ShoutcastV1Configuration configuration,
+                                  IAudioConverter audioConverter)
     {
-        super(configuration, audioConverter);
+        super(threadPoolManager, configuration, audioConverter);
     }
 
     /**
@@ -74,26 +77,31 @@ public class ShoutcastV1Handler extends BroadcastHandler
 
     /**
      * Process audio packets using Shoutcast V1 Protocol
-     * @param audioPackets
      */
-    @Override
-    public void broadcast(List<AudioPacket> audioPackets)
+    public void broadcast()
     {
         //If we're connected, send the audio, otherwise discard it
         if(connect())
         {
-            byte[] convertedAudio = mAudioConverter.convert(audioPackets);
+            mAudioQueue.drainTo(mPacketsToBroadcast, 5);
 
-            if(convertedAudio != null)
+            if(!mPacketsToBroadcast.isEmpty())
             {
-                try
+                byte[] convertedAudio = getAudioConverter().convert(mPacketsToBroadcast);
+
+                mPacketsToBroadcast.clear();
+
+                if(convertedAudio != null)
                 {
-                    send(convertedAudio);
-                }
-                catch(IOException e)
-                {
-                    mLog.error("Error while dispatching audio", e);
-                    setBroadcastState(BroadcastState.BROADCAST_ERROR);
+                    try
+                    {
+                        send(convertedAudio);
+                    }
+                    catch(IOException e)
+                    {
+                        mLog.error("Error while dispatching audio", e);
+                        setBroadcastState(BroadcastState.BROADCAST_ERROR);
+                    }
                 }
             }
         }
@@ -115,15 +123,6 @@ public class ShoutcastV1Handler extends BroadcastHandler
         return connected();
     }
 
-
-    /**
-     * Disconnect from the remote server
-     */
-    @Override
-    public void disconnect()
-    {
-
-    }
 
     /**
      * Creates a connnection to the remote server using the shoutcast configuration information.  Once disconnected
@@ -339,7 +338,7 @@ public class ShoutcastV1Handler extends BroadcastHandler
     public static void main(String[] args)
     {
         ShoutcastV1Configuration config = new ShoutcastV1Configuration(BroadcastFormat.MP3);
-        config.setAlias("Test Configuration");
+        config.setName("Test Configuration");
         config.setHost("localhost");
         config.setPort(8000);
         config.setPassword("denny3:#1");
@@ -351,7 +350,7 @@ public class ShoutcastV1Handler extends BroadcastHandler
 
         ThreadPoolManager threadPoolManager = new ThreadPoolManager();
 
-        final Broadcaster broadcaster = BroadcasterFactory.getBroadcaster(threadPoolManager,config);
+        final Broadcaster broadcaster = BroadcastFactory.getBroadcaster(threadPoolManager,config);
 
         Path path = Paths.get("/home/denny/Music/PCM.wav");
         mLog.debug("Opening: " + path.toString());

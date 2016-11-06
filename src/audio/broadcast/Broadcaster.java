@@ -20,40 +20,48 @@ package audio.broadcast;
 
 import audio.AudioPacket;
 import audio.IAudioPacketListener;
+import audio.convert.IAudioConverter;
 import controller.ThreadPoolManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sample.Listener;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class Broadcaster implements IAudioPacketListener, Listener<AudioPacket>
+public abstract class Broadcaster implements IAudioPacketListener, Listener<AudioPacket>
 {
     private final static Logger mLog = LoggerFactory.getLogger( Broadcaster.class );
 
     private ThreadPoolManager mThreadPoolManager;
     private ScheduledFuture mScheduledTask;
+
     private AudioQueueProcessor mAudioQueueProcessor;
-    private LinkedTransferQueue<AudioPacket> mAudioQueue = new LinkedTransferQueue<>();
-    private BroadcastHandler mBroadcastHandler;
+    protected LinkedTransferQueue<AudioPacket> mAudioQueue = new LinkedTransferQueue<>();
+
+    private List<Listener<BroadcastState>> mBroadcastStateListeners = new CopyOnWriteArrayList<>();
+    private BroadcastState mBroadcastState = BroadcastState.READY;
+
+    private BroadcastConfiguration mBroadcastConfiguration;
+    private IAudioConverter mAudioConverter;
+
     private boolean mEnabled = true;
 
     /**
-     * Broadcaster for sending broadcast audio to a remote broadcast server.
+     * Broadcaster for sending audio to a remote broadcast server.
      */
-    public Broadcaster(ThreadPoolManager threadPoolManager, BroadcastHandler broadcastHandler)
+    public Broadcaster(ThreadPoolManager threadPoolManager,
+                       BroadcastConfiguration broadcastConfiguration,
+                       IAudioConverter audioConverter)
     {
         mThreadPoolManager = threadPoolManager;
-        mBroadcastHandler = broadcastHandler;
+        mBroadcastConfiguration = broadcastConfiguration;
+        mAudioConverter = audioConverter;
         mAudioQueueProcessor = new AudioQueueProcessor();
-
-        //Add broadcast state listener to stop processing if we have an error
-        mBroadcastHandler.addListener(new BroadcastStateMonitor());
     }
 
     /**
@@ -61,31 +69,7 @@ public class Broadcaster implements IAudioPacketListener, Listener<AudioPacket>
      */
     public BroadcastConfiguration getBroadcastConfiguration()
     {
-        return mBroadcastHandler.getBroadcastConfiguration();
-    }
-
-    /**
-     * Current state of the broadcaster's connection with the remote server
-     */
-    public BroadcastState getBroadcastState()
-    {
-        return mBroadcastHandler.getBroadcastState();
-    }
-
-    /**
-     * Registers the listener to receive broadcast state changes
-     */
-    public void addListener(Listener<BroadcastState> listener)
-    {
-        mBroadcastHandler.addListener(listener);
-    }
-
-    /**
-     * Removes the listener from receiving broadcast state changes
-     */
-    public void removeListener(Listener<BroadcastState> listener)
-    {
-        mBroadcastHandler.removeListener(listener);
+        return mBroadcastConfiguration;
     }
 
     /**
@@ -98,25 +82,26 @@ public class Broadcaster implements IAudioPacketListener, Listener<AudioPacket>
     }
 
     /**
+     * Audio converter used by this broadcaster to convert PCM audio packets to the desired output format.
+     */
+    protected IAudioConverter getAudioConverter()
+    {
+        return mAudioConverter;
+    }
+
+    /**
+     * Commands the broadcaster to broadcast any queued audio packets.  This method is invoked by a scheduled thread
+     * pool task to periodically command the sub-class to broadcast queued audio packets.
+     */
+    protected abstract void broadcast();
+
+    /**
      * Disconnects the broadcaster and halts all broadcasting.
      */
     public void stop()
     {
         mEnabled = false;
         stopProcessor();
-        mBroadcastHandler.disconnect();
-    }
-
-    /**
-     * Pauses the broadcaster.
-     * @param paused set to true to pause and false to continue
-     */
-    public void setPaused(boolean paused)
-    {
-        if(mEnabled)
-        {
-            mBroadcastHandler.setPaused(paused);
-        }
     }
 
     /**
@@ -143,7 +128,7 @@ public class Broadcaster implements IAudioPacketListener, Listener<AudioPacket>
             if(mThreadPoolManager != null)
             {
                 mScheduledTask = mThreadPoolManager.scheduleFixedRate(ThreadPoolManager.ThreadType.AUDIO_PROCESSING,
-                        mAudioQueueProcessor, 100, TimeUnit.MILLISECONDS );
+                        mAudioQueueProcessor, 250, TimeUnit.MILLISECONDS );
             }
         }
     }
@@ -160,22 +145,84 @@ public class Broadcaster implements IAudioPacketListener, Listener<AudioPacket>
     }
 
     /**
-     * Monitors the broadcast handler for error state and halts audio broadcasting
+     * Pauses or unpauses the broadcast
      */
-    public class BroadcastStateMonitor implements Listener<BroadcastState>
+    public void setPaused(boolean paused)
     {
-        @Override
-        public void receive(BroadcastState broadcastState)
+        if(!getBroadcastState().isErrorState())
         {
-            if(broadcastState.isErrorState())
+            if(paused)
             {
-                stop();
+                setBroadcastState(BroadcastState.PAUSED);
+            }
+            else
+            {
+                setBroadcastState(BroadcastState.READY);
             }
         }
     }
 
     /**
-     * Processes audio packets from the audio packet queue and broadcasts the audio
+     * Registers the listener to receive broadcast state changes
+     */
+    public void addListener(Listener<BroadcastState> listener)
+    {
+        mBroadcastStateListeners.add(listener);
+    }
+
+    /**
+     * Removes the listener from receiving broadcast state changes
+     */
+    public void removeListener(Listener<BroadcastState> listener)
+    {
+        mBroadcastStateListeners.remove(listener);
+    }
+
+    /**
+     * Sets the state of the broadcast connection
+     */
+    protected void setBroadcastState(BroadcastState state)
+    {
+        if(mBroadcastState != state)
+        {
+            mLog.debug("Changing State to: " + state);
+            mBroadcastState = state;
+
+            for(Listener<BroadcastState> listener: mBroadcastStateListeners)
+            {
+                listener.receive(state);
+            }
+        }
+    }
+
+    /**
+     * Current state of the broadcast connection
+     */
+    public BroadcastState getBroadcastState()
+    {
+        return mBroadcastState;
+    }
+
+    public boolean connected()
+    {
+        return getBroadcastState() == BroadcastState.CONNECTED;
+    }
+
+    /**
+     * Indicates if this broadcaster can connect and is not currently in an error state or a connected state.
+     */
+    public boolean canConnect()
+    {
+        BroadcastState state = getBroadcastState();
+
+        return state != BroadcastState.CONNECTED && !state.isErrorState();
+    }
+
+
+    /**
+     * Audio packet queue processor.  Runs via a scheduled thread pool task as a timing processor to instruct
+     * sub-classes to broadcast queued audio packets.  Internal state monitor ensures that subsequent invocations of
+     * the broadcast method do not start until the previous invocation completes.
      */
     public class AudioQueueProcessor implements Runnable
     {
@@ -186,14 +233,7 @@ public class Broadcaster implements IAudioPacketListener, Listener<AudioPacket>
         {
             if(mProcessing.compareAndSet(false, true))
             {
-                List<AudioPacket> audioPackets = new ArrayList<>();
-
-                mAudioQueue.drainTo(audioPackets);
-
-                if(!audioPackets.isEmpty())
-                {
-                    mBroadcastHandler.broadcast(audioPackets);
-                }
+                broadcast();
 
                 mProcessing.set(false);
             }

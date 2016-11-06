@@ -18,24 +18,39 @@
  ******************************************************************************/
 package audio.broadcast;
 
-import audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
-
-public class BroadcastConfigurationFactory
+public class BroadcastConfigurationEvent
 {
-    public static BroadcastConfiguration getConfiguration(BroadcastServerType serverType, BroadcastFormat format)
-    {
-        switch(serverType)
-        {
-            case BROADCASTIFY:
-                break;
-            case ICECAST:
-                break;
-            case SHOUTCAST_V1:
-                return new ShoutcastV1Configuration(format);
-            case UNKNOWN:
-                break;
-        }
+	private BroadcastConfiguration mBroadcastConfiguration;
+	private Event mEvent;
 
-        return null;
-    }
+	/**
+	 * AliasEvent - event describing any changes to an alias
+	 * @param configuration - alias that changed
+	 * @param event - change event
+	 */
+	public BroadcastConfigurationEvent(BroadcastConfiguration configuration, Event event )
+	{
+		mBroadcastConfiguration = configuration;
+		mEvent = event;
+	}
+	
+	public BroadcastConfiguration getBroadcastConfiguration()
+	{
+		return mBroadcastConfiguration;
+	}
+	
+	public Event getEvent()
+	{
+		return mEvent;
+	}
+	
+	/**
+	 * Channel events to describe the specific event
+	 */
+	public enum Event
+	{
+		ADD,
+		CHANGE,
+		DELETE;
+	}
 }

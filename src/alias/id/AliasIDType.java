@@ -20,20 +20,20 @@ package alias.id;
 public enum AliasIDType
 {
 	ESN( "ESN" ),
-	Fleetsync( "Fleetsync" ),
-	LoJack( "LoJack" ),
-	LTRNetUID( "LTR-Net UID" ),
+	FLEETSYNC( "Fleetsync" ),
+	LOJACK( "LoJack" ),
+	LTR_NET_UID( "LTR-Net UID" ),
 	MDC1200( "MDC-1200" ),
 	MIN( "Passport MIN" ),
 	MPT1327( "MPT-1327" ),
-	Site( "Site" ),
-	Status( "Status" ),
-	Talkgroup( "Talkgroup" ),
+	SITE( "Site" ),
+	STATUS( "Status" ),
+	TALKGROUP( "Talkgroup" ),
 
-	Invert( "Audio Inversion" ),
-	Priority( "Audio Priority" ),
-	NonRecordable( "Audio Non-Recordable" ),
-	Streaming( "Audio Streaming" );
+	INVERT( "Audio Inversion" ),
+	PRIORITY( "Audio Priority" ),
+	NON_RECORDABLE( "Audio Non-Recordable" ),
+	BROADCAST_CHANNEL( "Audio Broadcast Channel" );
 	
 	private String mLabel;
 	

@@ -1,0 +1,25 @@
+<component name="libraryTable">
+  <library name="org.asynchttpclient:async-http-client:2.0.18" type="repository">
+    <properties maven-id="org.asynchttpclient:async-http-client:2.0.18" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/imports/async-http-client-2.0.18.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/async-http-client-netty-utils-2.0.18.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/netty-buffer-4.0.42.Final.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/netty-common-4.0.42.Final.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/slf4j-api-1.7.21.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/netty-codec-http-4.0.42.Final.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/netty-codec-4.0.42.Final.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/netty-transport-4.0.42.Final.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/netty-handler-4.0.42.Final.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/netty-transport-native-epoll-4.0.42.Final-linux-x86_64.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/netty-resolver-dns-2.0.18.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/netty-resolver-2.0.18.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/netty-codec-dns-2.0.18.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/reactive-streams-1.0.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/netty-reactive-streams-1.0.8.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/javassist-3.20.0-GA.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

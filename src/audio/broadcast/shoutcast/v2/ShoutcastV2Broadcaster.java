@@ -19,18 +19,17 @@
 package audio.broadcast.shoutcast.v2;
 
 import audio.AudioPacket;
+import audio.broadcast.BroadcastConfiguration;
 import audio.broadcast.BroadcastFormat;
-import audio.broadcast.BroadcastHandler;
 import audio.broadcast.BroadcastState;
 import audio.broadcast.Broadcaster;
-import audio.broadcast.BroadcasterFactory;
+import audio.broadcast.BroadcastFactory;
 import audio.broadcast.shoutcast.v2.message.AuthenticateBroadcast;
 import audio.broadcast.shoutcast.v2.message.ConfigureIcyGenre;
 import audio.broadcast.shoutcast.v2.message.ConfigureIcyName;
 import audio.broadcast.shoutcast.v2.message.ConfigureIcyPublic;
 import audio.broadcast.shoutcast.v2.message.ConfigureIcyURL;
 import audio.broadcast.shoutcast.v2.message.MP3Audio;
-import audio.broadcast.shoutcast.v2.message.NegotiateBufferSize;
 import audio.broadcast.shoutcast.v2.message.NegotiateMaxPayloadSize;
 import audio.broadcast.shoutcast.v2.message.RequestCipher;
 import audio.broadcast.shoutcast.v2.message.SetupBroadcast;
@@ -56,12 +55,11 @@ import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-public class ShoutcastV2Handler extends BroadcastHandler
+public class ShoutcastV2Broadcaster extends Broadcaster
 {
-    private final static Logger mLog = LoggerFactory.getLogger( ShoutcastV2Handler.class );
+    private final static Logger mLog = LoggerFactory.getLogger( ShoutcastV2Broadcaster.class );
 
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 15000; //15 seconds
     private static final boolean GET_RESPONSE = true;
@@ -72,15 +70,18 @@ public class ShoutcastV2Handler extends BroadcastHandler
     private DataOutputStream mOutputStream;
     private DataInputStream mInputStream;
     private int mMaxPayloadSize = 16377;
+    private List<AudioPacket> mPacketsToBroadcast = new ArrayList<>();
 
     /**
-     * Creates a Shoutcast Version 2 broadcast handler.
+     * Creates a Shoutcast Version 2 broadcaster.
      * @param configuration details for shoutcast version 2
      * @param audioConverter to convert PCM audio
      */
-    public ShoutcastV2Handler(ShoutcastV2Configuration configuration, IAudioConverter audioConverter)
+    public ShoutcastV2Broadcaster(ThreadPoolManager threadPoolManager,
+                                  BroadcastConfiguration configuration,
+                                  IAudioConverter audioConverter)
     {
-        super(configuration, audioConverter);
+        super(threadPoolManager, configuration, audioConverter);
     }
 
     /**
@@ -93,33 +94,37 @@ public class ShoutcastV2Handler extends BroadcastHandler
 
     /**
      * Broadcast audio packets
-     *
-     * @param audioPackets
      */
-    @Override
-    public void broadcast(List<AudioPacket> audioPackets)
+    public void broadcast()
     {
         //If we're connected, send the audio, otherwise discard it
         if(connect())
         {
-            byte[] convertedAudio = mAudioConverter.convert(audioPackets);
+            mAudioQueue.drainTo(mPacketsToBroadcast, 5);
 
-            if(convertedAudio != null)
+            if(!mPacketsToBroadcast.isEmpty())
             {
-                List<UltravoxMessage> audioMessages = getAudioMessages(convertedAudio);
+                byte[] convertedAudio = getAudioConverter().convert(mPacketsToBroadcast);
 
-                try
+                mPacketsToBroadcast.clear();
+
+                if(convertedAudio != null)
                 {
-                    for(UltravoxMessage audioMessage: audioMessages)
+                    List<UltravoxMessage> audioMessages = getAudioMessages(convertedAudio);
+
+                    try
                     {
-                        send(audioMessage, NO_RESPONSE_EXPECTED);
+                        for(UltravoxMessage audioMessage: audioMessages)
+                        {
+                            send(audioMessage, NO_RESPONSE_EXPECTED);
+                        }
                     }
-                }
-                catch(IOException e)
-                {
-                    mLog.error("Error while dispatching audio", e);
-                    setBroadcastState(BroadcastState.BROADCAST_ERROR);
-                    return;
+                    catch(IOException e)
+                    {
+                        mLog.error("Error while dispatching audio", e);
+                        setBroadcastState(BroadcastState.BROADCAST_ERROR);
+                        return;
+                    }
                 }
             }
         }
@@ -145,7 +150,6 @@ public class ShoutcastV2Handler extends BroadcastHandler
     /**
      * Disconnect from the remote server
      */
-    @Override
     public void disconnect()
     {
 //                    TerminateBroadcast terminate = (TerminateBroadcast)UltravoxMessageFactory
@@ -525,7 +529,7 @@ public class ShoutcastV2Handler extends BroadcastHandler
 
         ShoutcastV2Configuration config = new ShoutcastV2Configuration(BroadcastFormat.MP3);
         config.setStreamID(1);
-        config.setAlias("Test Configuration");
+        config.setName("Test Configuration");
         config.setHost("localhost");
         config.setPort(8000);
         config.setPassword("denny3");
@@ -542,7 +546,7 @@ public class ShoutcastV2Handler extends BroadcastHandler
         {
             ThreadPoolManager threadPoolManager = new ThreadPoolManager();
 
-            final Broadcaster broadcaster = BroadcasterFactory.getBroadcaster(threadPoolManager,config);
+            final Broadcaster broadcaster = BroadcastFactory.getBroadcaster(threadPoolManager,config);
 
             Path path = Paths.get("/home/denny/Music/PCM.wav");
             mLog.debug("Opening: " + path.toString());

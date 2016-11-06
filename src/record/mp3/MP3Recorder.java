@@ -111,6 +111,8 @@ public class MP3Recorder extends Module implements Listener<AudioPacket>, IAudio
                 mPath = Paths.get(sb.toString());
                 mFileOutputStream = new FileOutputStream(mPath.toFile());
 
+                mLog.info("Created MP3 Recording [" + sb.toString() + "]");
+
 				/* Schedule the handler to run every second */
                 mProcessorHandle = executor.scheduleAtFixedRate(mBufferProcessor, 0, 200, TimeUnit.MILLISECONDS);
             }

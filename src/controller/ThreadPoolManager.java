@@ -44,6 +44,12 @@ public class ThreadPoolManager
 	
 	public ScheduledExecutorService getScheduledExecutorService()
 	{
+		if( mExecutor == null )
+		{
+			mExecutor = Executors.newScheduledThreadPool( THREAD_POOL_SIZE,
+					new NamingThreadFactory( "sdrtrunk" ) );
+		}
+
 		return mExecutor;
 	}
 

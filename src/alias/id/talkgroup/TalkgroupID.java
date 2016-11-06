@@ -78,6 +78,6 @@ public class TalkgroupID extends AliasID
 	@Override
     public AliasIDType getType()
     {
-	    return AliasIDType.Talkgroup;
+	    return AliasIDType.TALKGROUP;
     }
 }

@@ -24,19 +24,23 @@ import audio.broadcast.BroadcastServerType;
 
 import java.util.Base64;
 
-public class IcecastConfiguration extends BroadcastConfiguration
+public class IcecastHTTPConfiguration extends BroadcastConfiguration
 {
     private String mUserName;
     private String mMountPoint;
-    private String mStreamName;
     private String mDescription;
     private String mGenre;
     private boolean mPublic;
-    private int mChannels;
     private int mBitRate;
+    private int mChannels = 1;
+    private int mSampleRate = 8000;
     private String mURL;
 
-    public IcecastConfiguration(BroadcastFormat format)
+    /**
+     * Icecast 2.3.x and 2.4.x compatible configuration
+     * @param format
+     */
+    public IcecastHTTPConfiguration(BroadcastFormat format)
     {
         super(format);
     }
@@ -44,16 +48,24 @@ public class IcecastConfiguration extends BroadcastConfiguration
     @Override
     public BroadcastServerType getBroadcastServerType()
     {
-        return BroadcastServerType.ICECAST;
+        return BroadcastServerType.ICECAST_HTTP;
     }
 
     /**
      * Base64 encoded version of the username and password with prepended 'Basic ' tag.
      */
-    public String getAuthorization()
+    public String getEncodedCredentials()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append(getUserName()).append(":").append(getPassword());
+
+        if(hasUserName())
+        {
+            sb.append(getUserName()).append(":").append(getPassword());
+        }
+        else
+        {
+            sb.append(getPassword());
+        }
 
         String base64 = Base64.getEncoder().encodeToString(sb.toString().getBytes());
 
@@ -68,6 +80,11 @@ public class IcecastConfiguration extends BroadcastConfiguration
     public void setUserName(String userName)
     {
         mUserName = userName;
+    }
+
+    public boolean hasUserName()
+    {
+        return mUserName != null;
     }
 
     /**
@@ -88,21 +105,9 @@ public class IcecastConfiguration extends BroadcastConfiguration
         mMountPoint = mountPoint;
     }
 
-    /**
-     * Stream name
-     */
-    public String getStreamName()
+    public boolean hasMountPoint()
     {
-        return mStreamName;
-    }
-
-    /**
-     * Sets the stream name
-     * @param name
-     */
-    public void setStreamName(String name)
-    {
-        mStreamName = name;
+        return mMountPoint != null;
     }
 
 
@@ -114,6 +119,11 @@ public class IcecastConfiguration extends BroadcastConfiguration
     public void setDescription(String description)
     {
         mDescription = description;
+    }
+
+    public boolean hasDescription()
+    {
+        return mDescription != null;
     }
 
     /**
@@ -131,6 +141,11 @@ public class IcecastConfiguration extends BroadcastConfiguration
     public void setGenre(String genre)
     {
         mGenre = genre;
+    }
+
+    public boolean hasGenre()
+    {
+        return mGenre != null;
     }
 
     /**
@@ -166,6 +181,11 @@ public class IcecastConfiguration extends BroadcastConfiguration
         mChannels = channels;
     }
 
+    public boolean hasChannels()
+    {
+        return mChannels > 0;
+    }
+
     /**
      * Bit rate in bits per second
      */
@@ -183,6 +203,26 @@ public class IcecastConfiguration extends BroadcastConfiguration
         mBitRate = bitRate;
     }
 
+    public boolean hasBitRate()
+    {
+        return mBitRate > 0;
+    }
+
+    public int getSampleRate()
+    {
+        return mSampleRate;
+    }
+
+    public void setSampleRate(int sampleRate)
+    {
+        mSampleRate = sampleRate;
+    }
+
+    public boolean hasSampleRate()
+    {
+        return mSampleRate > 0;
+    }
+
     /**
      * URL associated with the broadcast where users can find additional details.
      */
@@ -198,5 +238,10 @@ public class IcecastConfiguration extends BroadcastConfiguration
     public void setURL(String url)
     {
         mURL = url;
+    }
+
+    public boolean hasURL()
+    {
+        return mURL != null;
     }
 }

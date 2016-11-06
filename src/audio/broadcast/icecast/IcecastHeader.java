@@ -21,7 +21,9 @@ package audio.broadcast.icecast;
 public enum IcecastHeader
 {
     ACCEPT("Accept"),
+    AUDIO_INFO("ice-audio-info"),
     AUTHORIZATION("Authorization"),
+    BITRATE("ice-bitrate"),
     CONTENT_TYPE("Content-Type"),
     DESCRIPTION("ice-description"),
     EXPECT("Expect"),

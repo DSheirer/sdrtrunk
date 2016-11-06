@@ -47,7 +47,7 @@ public class MonoWaveReader implements AutoCloseable
 	private InputStream mInputStream;
     private int mDataByteSize = 0;
     private Listener<RealBuffer> mListener;
-    private byte[] mDataBuffer = new byte[8000]; //500 milliseconds of audio
+    private byte[] mDataBuffer = new byte[8000];
 
     /**
      * Wave file reader for PCM 8kHz, 16-bit little-endian format.

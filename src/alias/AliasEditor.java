@@ -17,6 +17,7 @@
  ******************************************************************************/
 package alias;
 
+import audio.broadcast.BroadcastModel;
 import gui.editor.Editor;
 
 import java.awt.Color;
@@ -49,11 +50,11 @@ public class AliasEditor extends Editor<Alias>
     private AliasIdentifierEditor mAliasIdentifierEditor;
     private AliasActionEditor mAliasActionEditor;
     
-    public AliasEditor( AliasModel aliasModel, SettingsManager settingsManager )
+    public AliasEditor(AliasModel aliasModel, BroadcastModel broadcastModel, SettingsManager settingsManager )
 	{
     	mAliasModel = aliasModel;
     	mAliasNameEditor = new AliasNameEditor( mAliasModel, settingsManager );
-    	mAliasIdentifierEditor = new AliasIdentifierEditor( aliasModel );
+    	mAliasIdentifierEditor = new AliasIdentifierEditor( aliasModel, broadcastModel );
     	mAliasActionEditor = new AliasActionEditor( aliasModel );
     	
     	mAliasModel.addListener( this );

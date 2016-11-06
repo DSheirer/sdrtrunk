@@ -17,24 +17,23 @@
  ******************************************************************************/
 package playlist;
 
-import java.util.ArrayList;
-import java.util.List;
+import alias.Alias;
+import audio.broadcast.BroadcastConfiguration;
+import controller.channel.Channel;
+import controller.channel.map.ChannelMap;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
+import java.util.ArrayList;
+import java.util.List;
 
-import alias.Alias;
-import controller.channel.Channel;
-import controller.channel.map.ChannelMap;
-
-@XmlSeeAlso( { Alias.class,Channel.class,ChannelMap.class } )
-
+@XmlSeeAlso( { Alias.class,Channel.class,ChannelMap.class,BroadcastConfiguration.class} )
 @XmlRootElement( name = "playlist" )
 public class PlaylistV2
 {
-	//Version 2 member variables
 	private List<Alias> mAliases = new ArrayList<>();
+	private List<BroadcastConfiguration> mBroadcastConfigurations = new ArrayList<>();
 	private List<Channel> mChannels = new ArrayList<>();
 	private List<ChannelMap> mChannelMaps = new ArrayList<>();
 	
@@ -73,5 +72,16 @@ public class PlaylistV2
 	public void setChannelMaps( List<ChannelMap> channelMaps )
 	{
 		mChannelMaps = channelMaps;
+	}
+
+	@XmlElement(name = "stream")
+	public List<BroadcastConfiguration> getBroadcastConfigurations()
+	{
+		return mBroadcastConfigurations;
+	}
+
+	public void setBroadcastConfigurations(List<BroadcastConfiguration> configurations)
+	{
+		mBroadcastConfigurations = configurations;
 	}
 }

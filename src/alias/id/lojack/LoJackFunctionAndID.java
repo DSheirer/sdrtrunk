@@ -101,7 +101,7 @@ public class LoJackFunctionAndID extends AliasID
 	@Override
     public AliasIDType getType()
     {
-	    return AliasIDType.LoJack;
+	    return AliasIDType.LOJACK;
     }
 	
 	@Override

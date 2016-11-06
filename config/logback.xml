@@ -27,4 +27,10 @@
     <appender-ref ref="STDOUT" />
   </root>
 
+  <!-- Async HTTP Client - set level to info to filter debug messages -->
+  <logger name="org.asynchttpclient.netty" level="INFO" />
+
+  <!-- IO Netty - set level to info to filter debug messages -->
+  <logger name="io.netty" level="INFO" />
+
 </configuration>

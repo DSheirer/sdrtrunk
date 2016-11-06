@@ -20,9 +20,36 @@ package audio.broadcast;
 
 public enum BroadcastServerType
 {
-    BROADCASTIFY,
-    ICECAST,
-    SHOUTCAST_V1,
-    SHOUTCAST_V2,
-    UNKNOWN;
+    /**
+     * Broadcastify is currently using Icecast Server 2.3.2
+     */
+    BROADCASTIFY("Broadcastify"),
+
+    /**
+     * Icecast Server 2.4.x and later
+     */
+    ICECAST_HTTP("Icecast 2.4+"),
+
+    /**
+     * Icecast Server 2.3.x
+     */
+    ICECAST_TCP("Icecast 2.3"),
+
+    SHOUTCAST_V1("Shoutcast 1.x"),
+
+    SHOUTCAST_V2("Shoutcast 2.x"),
+
+    UNKNOWN("Unknown");
+
+    private String mLabel;
+
+    BroadcastServerType(String label)
+    {
+        mLabel = label;
+    }
+
+    public String toString()
+    {
+        return mLabel;
+    }
 }

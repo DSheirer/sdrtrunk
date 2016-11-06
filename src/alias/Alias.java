@@ -30,6 +30,7 @@ import javax.xml.bind.annotation.XmlTransient;
 import alias.action.AliasAction;
 import alias.id.AliasID;
 import alias.id.AliasIDType;
+import alias.id.broadcast.BroadcastChannel;
 import alias.id.nonrecordable.NonRecordable;
 import alias.id.priority.Priority;
 
@@ -184,7 +185,7 @@ public class Alias
 	{
 		for( AliasID id: mAliasIDs )
 		{
-			if( id.getType() == AliasIDType.Priority )
+			if( id.getType() == AliasIDType.PRIORITY)
 			{
 				return ((Priority)id).getPriority();
 			}
@@ -197,7 +198,7 @@ public class Alias
 	{
 		for( AliasID id: mAliasIDs )
 		{
-			if( id.getType() == AliasIDType.Priority )
+			if( id.getType() == AliasIDType.PRIORITY)
 			{
 				return true;
 			}
@@ -216,7 +217,7 @@ public class Alias
 		{
 			for( AliasID id: mAliasIDs )
 			{
-				if( id.getType() == AliasIDType.Priority )
+				if( id.getType() == AliasIDType.PRIORITY)
 				{
 					((Priority)id).setPriority( priority );
 					return;
@@ -238,7 +239,7 @@ public class Alias
 	{
 		for( AliasID id: getId() )
 		{
-			if( id.getType() == AliasIDType.NonRecordable )
+			if( id.getType() == AliasIDType.NON_RECORDABLE)
 			{
 				return false;
 			}
@@ -258,7 +259,7 @@ public class Alias
 			
 			for( AliasID id: getId() )
 			{
-				if( id.getType() == AliasIDType.NonRecordable )
+				if( id.getType() == AliasIDType.NON_RECORDABLE)
 				{
 					toRemove = id;
 					break;
@@ -274,7 +275,7 @@ public class Alias
 		{
 			for( AliasID id: getId() )
 			{
-				if( id.getType() == AliasIDType.NonRecordable )
+				if( id.getType() == AliasIDType.NON_RECORDABLE)
 				{
 					return;
 				}
@@ -282,5 +283,40 @@ public class Alias
 			
 			addAliasID( new NonRecordable() );
 		}
+	}
+
+	/**
+	 * Inspects the alias for any broadcast channels;
+	 */
+	public boolean hasBroadcastChannels()
+	{
+		for( AliasID id: getId() )
+		{
+			if( id.getType() == AliasIDType.BROADCAST_CHANNEL)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * List of broadcast channels specified for this alias.
+	 */
+    @XmlTransient
+	public List<BroadcastChannel> getBroadcastChannels()
+	{
+		List<BroadcastChannel> broadcastChannels = new ArrayList<>();
+
+		for(AliasID id: getId())
+		{
+			if(id.getType() == AliasIDType.BROADCAST_CHANNEL)
+			{
+				broadcastChannels.add((BroadcastChannel)id);
+			}
+		}
+
+		return broadcastChannels;
 	}
 }

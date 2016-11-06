@@ -33,6 +33,8 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
+import audio.broadcast.BroadcastConfigurationEvent;
+import audio.broadcast.BroadcastModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +58,7 @@ public class PlaylistManager implements ChannelEventListener
 
 	private ThreadPoolManager mThreadPoolManager;
 	private AliasModel mAliasModel;
+	private BroadcastModel mBroadcastModel;
 	private ChannelModel mChannelModel;
 	private ChannelMapModel mChannelMapModel;
 	private Path mCurrentPlaylistPath;
@@ -74,11 +77,13 @@ public class PlaylistManager implements ChannelEventListener
 	 */
 	public PlaylistManager( ThreadPoolManager threadPoolManager,
 							AliasModel aliasModel,
+							BroadcastModel broadcastModel,
 							ChannelModel channelModel,
-							ChannelMapModel channelMapModel )
+							ChannelMapModel channelMapModel)
 	{
 		mThreadPoolManager = threadPoolManager;
 		mAliasModel = aliasModel;
+		mBroadcastModel = broadcastModel;
 		mChannelModel = channelModel;
 		mChannelMapModel = channelMapModel;
 
@@ -103,6 +108,15 @@ public class PlaylistManager implements ChannelEventListener
 				schedulePlaylistSave();
 			}
 		} );
+
+		mBroadcastModel.addListener(new Listener<BroadcastConfigurationEvent>()
+		{
+			@Override
+			public void receive(BroadcastConfigurationEvent broadcastConfigurationEvent)
+			{
+				schedulePlaylistSave();
+			}
+		});
 	}
 
 	/**
@@ -166,6 +180,7 @@ public class PlaylistManager implements ChannelEventListener
 			mPlaylistLoading = true;
 
 			mAliasModel.addAliases( playlist.getAliases() );
+			mBroadcastModel.addBroadcastConfigurations(playlist.getBroadcastConfigurations());
 			mChannelModel.addChannels( playlist.getChannels() );
 			mChannelMapModel.addChannelMaps( playlist.getChannelMaps() );
 			
@@ -219,6 +234,7 @@ public class PlaylistManager implements ChannelEventListener
 		PlaylistV2 playlist = new PlaylistV2();
 		
 		playlist.setAliases( mAliasModel.getAliases() );
+		playlist.setBroadcastConfigurations(mBroadcastModel.getBroadcastConfigurations());
 		playlist.setChannels( mChannelModel.getChannels() );
 		playlist.setChannelMaps( mChannelMapModel.getChannelMaps() );
 		
@@ -277,7 +293,7 @@ public class PlaylistManager implements ChannelEventListener
         }
         catch ( Exception e )
         {
-        	mLog.error( "coulcn't open outputstream to save playlist [" + 
+        	mLog.error( "couldn't open outputstream to save playlist [" +
         			mCurrentPlaylistPath.toString() + "]", e );
         }
 		finally
