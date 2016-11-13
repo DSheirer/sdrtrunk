@@ -35,6 +35,10 @@ import gui.editor.Editor;
 import gui.editor.EmptyEditor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import record.AudioRecorder;
+import record.mp3.MP3Recorder;
+
+import java.nio.file.Path;
 
 public class BroadcastFactory
 {
@@ -156,5 +160,20 @@ public class BroadcastFactory
         editor.setItem(configuration);
 
         return editor;
+    }
+
+    /**
+     * Creates an audio recorder for the specified broadcast format using the specified path output file name
+     */
+    public static AudioRecorder getAudioRecorder(Path path, BroadcastFormat broadcastFormat)
+    {
+        switch (broadcastFormat)
+        {
+            case MP3:
+                return new MP3Recorder(path);
+            default:
+                mLog.debug("Unrecognized broadcast format [" + broadcastFormat + "] cannot create audio recorder");
+                return null;
+        }
     }
 }

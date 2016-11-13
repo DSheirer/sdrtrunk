@@ -24,12 +24,14 @@ import audio.convert.MP3AudioConverter;
 import module.Module;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import record.AudioRecorder;
 import record.wave.AudioPacketMonoWaveReader;
 import sample.Listener;
 import util.TimeStamp;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -44,268 +46,65 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * MP3 recorder for converting 8 kHz PCM audio packets to MP3 and writing to .mp3 file.
  */
-public class MP3Recorder extends Module implements Listener<AudioPacket>, IAudioPacketListener
+public class MP3Recorder extends AudioRecorder
 {
     private final static Logger mLog = LoggerFactory.getLogger(MP3Recorder.class);
 
+    public static final int MP3_BIT_RATE = 16;
+    public static final boolean CONSTANT_BIT_RATE = false;
+
     private MP3AudioConverter mMP3Converter;
-    private FileOutputStream mFileOutputStream;
-    private String mFilePrefix;
-    private Path mPath;
-
-    private BufferProcessor mBufferProcessor;
-    private ScheduledFuture<?> mProcessorHandle;
-    private LinkedBlockingQueue<AudioPacket> mAudioPacketQueue = new LinkedBlockingQueue<>(500);
-    private long mLastBufferReceived;
-
-    private AtomicBoolean mRunning = new AtomicBoolean();
 
     /**
      * MP3 audio recorder module for converting audio packets to 16 kHz constant bit rate MP3 format and
      * recording to a file.
-     */
-    public MP3Recorder(String filePrefix)
-    {
-        mFilePrefix = filePrefix;
-
-        int mp3BitRate = 16; //16 kHz
-        boolean variableBitRate = false; //CBR
-        mMP3Converter = new MP3AudioConverter(mp3BitRate, variableBitRate);
-    }
-
-    /**
-     * Timestamp of when the latest buffer was received by this recorder
-     */
-    public long getLastBufferReceived()
-    {
-        return mLastBufferReceived;
-    }
-
-    public Path getPath()
-    {
-        return mPath;
-    }
-
-    /**
-     * Starts this recorder using as a scheduled thread broadcast running under the executor argument
      *
-     * @param executor to use in scheduling MP3 conversion and file writes.
+     * @param path to the output file.  File name should include the .mp3 file extension.
      */
-    public void start(ScheduledExecutorService executor)
+    public MP3Recorder(Path path)
     {
-        if (mRunning.compareAndSet(false, true))
-        {
-            if (mBufferProcessor == null)
-            {
-                mBufferProcessor = new BufferProcessor();
-            }
+        super(path);
 
-            try
-            {
-                StringBuilder sb = new StringBuilder();
-                sb.append(mFilePrefix);
-                sb.append("_");
-                sb.append(TimeStamp.getLongTimeStamp("_"));
-                sb.append(".mp3");
-
-                mPath = Paths.get(sb.toString());
-                mFileOutputStream = new FileOutputStream(mPath.toFile());
-
-                mLog.info("Created MP3 Recording [" + sb.toString() + "]");
-
-				/* Schedule the handler to run every second */
-                mProcessorHandle = executor.scheduleAtFixedRate(mBufferProcessor, 0, 200, TimeUnit.MILLISECONDS);
-            }
-            catch (IOException io)
-            {
-                mLog.error("Error starting real buffer recorder", io);
-            }
-        }
+        mMP3Converter = new MP3AudioConverter(MP3_BIT_RATE, CONSTANT_BIT_RATE);
     }
 
-    /**
-     * Stops the recorder.
-     */
-    public void stop()
-    {
-        mRunning.set(false);
-
-        if (mProcessorHandle != null)
-        {
-            mProcessorHandle.cancel(true);
-        }
-
-        mProcessorHandle = null;
-
-        processAudioPacketQueue();
-
-        close();
-    }
-
-    /**
-     * Closes the recording file.
-     */
-    private void close()
-    {
-        if (mFileOutputStream != null)
-        {
-            try
-            {
-                mFileOutputStream.close();
-            }
-            catch (IOException e)
-            {
-                mLog.error("Error closing output stream", e);
-            }
-        }
-    }
-
-    /**
-     * Primary data insert method designed to accept a stream of audio packets and a final ending audio packet.
-     *
-     * Audio packets received before the recorder is started or after the recorder is stopped will be ignored.
-     */
     @Override
-    public void receive(AudioPacket audioPacket)
+    protected void record(List<AudioPacket> audioPackets) throws IOException
     {
-        if (mRunning.get())
+        OutputStream outputStream = getOutputStream();
+
+        if(outputStream != null)
         {
-            boolean success = mAudioPacketQueue.offer(audioPacket);
+            processMetadata(audioPackets);
 
-            if (!success)
-            {
-                mLog.error("recorder buffer overflow - purging [" + mPath.toFile().getAbsolutePath() + "]");
+            byte[] mp3Audio = mMP3Converter.convert(audioPackets);
 
-                mAudioPacketQueue.clear();
-            }
-
-            mLastBufferReceived = System.currentTimeMillis();
+            outputStream.write(mp3Audio);
         }
     }
 
     /**
-     * IAudioPacketListener interface method.
+     * Processes audio metadata contained in the audio packets and converts the metadata to MP3 ID3 metadata tags and
+     * writes the ID3 tags to the output stream.
+     * @param audioPackets
      */
-    @Override
-    public Listener<AudioPacket> getAudioPacketListener()
+    private void processMetadata(List<AudioPacket> audioPackets)
     {
-        return this;
-    }
-
-    /**
-     * Disposes this audio recorder and prepares it for reclamation
-     */
-    @Override
-    public void dispose()
-    {
-        stop();
-    }
-
-    /**
-     * Not implemented.  Recorder modules are not appropriate for reset and reuse.
-     */
-    @Override
-    public void reset()
-    {
-    }
-
-    /**
-     * Processes the audio packet queue.
-     */
-    private void processAudioPacketQueue()
-    {
-        try
-        {
-            List<AudioPacket> mPacketsToProcess = new ArrayList<>();
-            mAudioPacketQueue.drainTo(mPacketsToProcess);
-
-            if (!mPacketsToProcess.isEmpty())
-            {
-                boolean stopRequested = false;
-                int stopPacketIndex = 0;
-
-                //An END audio packet is a request to stop the recorder
-                for (AudioPacket packet : mPacketsToProcess)
-                {
-                    if (packet.getType() == AudioPacket.Type.END)
-                    {
-                        stopRequested = true;
-                        stopPacketIndex = mPacketsToProcess.indexOf(packet);
-                        continue;
-                    }
-                }
-
-                if (stopRequested)
-                {
-                    mRunning.set(false);
-                    mAudioPacketQueue.clear();
-
-                    if (stopPacketIndex > 0)
-                    {
-                        List<AudioPacket> remainingPacketsToProcess = new ArrayList<>();
-
-                        for (int x = 0; x < stopPacketIndex; x++)
-                        {
-                            remainingPacketsToProcess.add(mPacketsToProcess.get(x));
-                        }
-
-                        write(remainingPacketsToProcess);
-
-                        remainingPacketsToProcess.clear();
-                    }
-
-                    stop();
-                }
-                else
-                {
-                    write(mPacketsToProcess);
-                }
-
-                mPacketsToProcess.clear();
-            }
-        }
-        catch (IOException ioe)
-        {
-            mAudioPacketQueue.clear();
-
-            mLog.error("IOException while processing audio packet queue for MP3 conversion and storage", ioe);
-        }
-    }
-
-    /**
-     * Converts the PCM audio packets to MP3 format and writes the converted audio to the output stream.
-     */
-    private void write(List<AudioPacket> audioPackets) throws IOException
-    {
-        byte[] mp3Audio = mMP3Converter.convert(audioPackets);
-
-        mFileOutputStream.write(mp3Audio);
-    }
-
-    public class BufferProcessor implements Runnable
-    {
-        private AtomicBoolean mProcessing = new AtomicBoolean();
-
-        public void run()
-        {
-            if (mProcessing.compareAndSet(false, true))
-            {
-                processAudioPacketQueue();
-
-                mProcessing.set(false);
-            }
-        }
+        //TODO: detect metadata changes and write out ID3 tags to the MP3 stream
     }
 
     public static void main(String[] args)
     {
-        Path path = Paths.get("/home/denny/Music/PCM.wav");
-        mLog.debug("Opening: " + path.toString());
+        Path inputPath = Paths.get("/home/denny/Music/PCM.wav");
+        Path outputPath = Paths.get("/home/denny/Music/denny_test/PCM.mp3");
 
-        final MP3Recorder recorder = new MP3Recorder("/home/denny/Music/denny_test");
+        mLog.debug("Reading: " + inputPath.toString());
+        mLog.debug("Writing: " + outputPath.toString());
+
+        final MP3Recorder recorder = new MP3Recorder(outputPath);
         recorder.start(Executors.newSingleThreadScheduledExecutor());
 
-        try (AudioPacketMonoWaveReader reader = new AudioPacketMonoWaveReader(path, true))
+        try (AudioPacketMonoWaveReader reader = new AudioPacketMonoWaveReader(inputPath, true))
         {
             reader.setListener(recorder);
             reader.read();

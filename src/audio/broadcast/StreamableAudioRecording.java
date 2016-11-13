@@ -18,25 +18,34 @@
  ******************************************************************************/
 package audio.broadcast;
 
-public enum BroadcastFormat
+import audio.metadata.AudioMetadata;
+
+import java.nio.file.Path;
+
+public class StreamableAudioRecording
 {
-    MP3("audio/mpeg", ".mp3");
+    private Path mPath;
+    private AudioMetadata mAudioMetadata;
 
-    private String mValue;
-    private String mFileExtension;
-
-    private BroadcastFormat(String value, String fileExtension)
+    public StreamableAudioRecording(Path path, AudioMetadata audioMetadata)
     {
-        mValue = value;
+        mPath = path;
+        mAudioMetadata = audioMetadata;
     }
 
-    public String getValue()
+    /**
+     * Path to the completed audio recording
+     */
+    public Path getPath()
     {
-        return mValue;
+        return mPath;
     }
 
-    public String getFileExtension()
+    /**
+     * Optional audio metadata for the recording.
+     */
+    public AudioMetadata getAudioMetadata()
     {
-        return mFileExtension;
+        return mAudioMetadata;
     }
 }

@@ -230,7 +230,7 @@ public class Alias
 			addAliasID( p );
 		}
 	}
-	
+
 	/**
 	 * Inspects the alias for a non-recordable alias id.  Default is true;
 	 */
@@ -285,23 +285,24 @@ public class Alias
 		}
 	}
 
-	/**
-	 * Inspects the alias for any broadcast channels;
-	 */
-	public boolean hasBroadcastChannels()
-	{
-		for( AliasID id: getId() )
-		{
-			if( id.getType() == AliasIDType.BROADCAST_CHANNEL)
-			{
-				return true;
-			}
-		}
+    /**
+     * Inspects the alias for broadcast channel/streamable alias ids.  Default is false;
+     */
+    @XmlTransient
+    public boolean isStreamable()
+    {
+        for( AliasID id: getId() )
+        {
+            if( id.getType() == AliasIDType.BROADCAST_CHANNEL)
+            {
+                return true;
+            }
+        }
 
-		return false;
-	}
+        return false;
+    }
 
-	/**
+    /**
 	 * List of broadcast channels specified for this alias.
 	 */
     @XmlTransient
