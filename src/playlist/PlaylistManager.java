@@ -33,7 +33,7 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 
-import audio.broadcast.BroadcastConfigurationEvent;
+import audio.broadcast.BroadcastEvent;
 import audio.broadcast.BroadcastModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,10 +109,10 @@ public class PlaylistManager implements ChannelEventListener
 			}
 		} );
 
-		mBroadcastModel.addListener(new Listener<BroadcastConfigurationEvent>()
+		mBroadcastModel.addListener(new Listener<BroadcastEvent>()
 		{
 			@Override
-			public void receive(BroadcastConfigurationEvent broadcastConfigurationEvent)
+			public void receive(BroadcastEvent broadcastEvent)
 			{
 				schedulePlaylistSave();
 			}
@@ -346,7 +346,7 @@ public class PlaylistManager implements ChannelEventListener
 	        }
 	        catch ( Exception e )
 	        {
-	        	mLog.error( "coulcn't open inputstream to load playlist [" + playlistPath.toString() + "]", e );
+	        	mLog.error( "couldn't open input stream to load playlist [" + playlistPath.toString() + "]", e );
 	        }
 			finally
 			{

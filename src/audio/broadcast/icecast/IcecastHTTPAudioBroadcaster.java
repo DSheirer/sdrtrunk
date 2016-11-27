@@ -19,11 +19,11 @@
 package audio.broadcast.icecast;
 
 import audio.AudioPacket;
+import audio.broadcast.AudioBroadcaster;
 import audio.broadcast.BroadcastFormat;
 import audio.broadcast.BroadcastState;
-import audio.broadcast.Broadcaster;
 import audio.broadcast.BroadcastFactory;
-import audio.convert.IAudioConverter;
+import audio.metadata.AudioMetadata;
 import controller.ThreadPoolManager;
 import org.asynchttpclient.AsyncHandler;
 import org.asynchttpclient.BoundRequestBuilder;
@@ -53,9 +53,9 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class IcecastHTTPBroadcaster extends Broadcaster implements Publisher<ByteBuffer>
+public class IcecastHTTPAudioBroadcaster extends AudioBroadcaster implements Publisher<ByteBuffer>
 {
-    private final static Logger mLog = LoggerFactory.getLogger( IcecastHTTPBroadcaster.class );
+    private final static Logger mLog = LoggerFactory.getLogger( IcecastHTTPAudioBroadcaster.class );
 
     private static final String HTTP_100_CONTINUE = "100-continue";
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 15000; //15 seconds
@@ -69,15 +69,13 @@ public class IcecastHTTPBroadcaster extends Broadcaster implements Publisher<Byt
     /**
      * Creates an Icecast 2.4.x (or newer) compatible broadcaster using HTTP 1.1 protocol
      *
-     * Note: use @see IcecastTCPBroadcaster for Icecast version 2.3.x and older.
+     * Note: use @see IcecastTCPAudioBroadcaster for Icecast version 2.3.x and older.
      * @param configuration
      * @param audioConverter
      */
-    public IcecastHTTPBroadcaster(ThreadPoolManager threadPoolManager,
-                                  IcecastHTTPConfiguration configuration,
-                                  IAudioConverter audioConverter)
+    public IcecastHTTPAudioBroadcaster(ThreadPoolManager threadPoolManager, IcecastHTTPConfiguration configuration)
     {
-        super(threadPoolManager, configuration, audioConverter);
+        super(threadPoolManager, configuration);
     }
 
     /**
@@ -88,31 +86,24 @@ public class IcecastHTTPBroadcaster extends Broadcaster implements Publisher<Byt
         return (IcecastHTTPConfiguration)getBroadcastConfiguration();
     }
 
+
+    @Override
+    protected void broadcastMetadata(AudioMetadata metadata)
+    {
+        mLog.debug("Request to send metadata to Icecast HTTP server - needs code!");
+    }
+
     /**
      * Broadcast any queued audio packets using Icecast V2 Protocol
      */
     @Override
-    public void broadcast()
+    protected void broadcastAudio(byte[] audio)
     {
         if(connect())
         {
             if (mSubscription != null && mSubscription.hasDemand())
             {
-                mAudioQueue.drainTo(mPacketsToBroadcast, 5);
-
-                if (!mPacketsToBroadcast.isEmpty())
-                {
-                    byte[] convertedAudio = getAudioConverter().convert(mPacketsToBroadcast);
-
-                    mLog.debug("We have [" + mPacketsToBroadcast.size() +
-                            "] packets - sending:" + convertedAudio.length + " bytes");
-
-                    ByteBuffer buffer = ByteBuffer.wrap(convertedAudio);
-
-                    mSubscription.broadcast(buffer);
-
-                    mPacketsToBroadcast.clear();
-                }
+                mSubscription.broadcast(ByteBuffer.wrap(audio));
             }
         }
     }
@@ -418,8 +409,9 @@ public class IcecastHTTPBroadcaster extends Broadcaster implements Publisher<Byt
         else
         {
             ThreadPoolManager threadPoolManager = new ThreadPoolManager();
+            DefaultAsyncHttpClient httpClient = new DefaultAsyncHttpClient();
 
-            final Broadcaster broadcaster = BroadcastFactory.getBroadcaster(threadPoolManager,config);
+            final AudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(httpClient, threadPoolManager,config);
 
             Path path = Paths.get("/home/denny/Music/PCM.wav");
             mLog.debug("Opening: " + path.toString());
@@ -432,7 +424,7 @@ public class IcecastHTTPBroadcaster extends Broadcaster implements Publisher<Byt
 
                 try (AudioPacketMonoWaveReader reader = new AudioPacketMonoWaveReader(path, true))
                 {
-                    reader.setListener(broadcaster);
+                    reader.setListener(audioBroadcaster);
                     reader.read();
                 }
                 catch (IOException e)

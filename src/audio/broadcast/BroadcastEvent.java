@@ -18,9 +18,10 @@
  ******************************************************************************/
 package audio.broadcast;
 
-public class BroadcastConfigurationEvent
+public class BroadcastEvent
 {
 	private BroadcastConfiguration mBroadcastConfiguration;
+	private AudioBroadcaster mAudioBroadcaster;
 	private Event mEvent;
 
 	/**
@@ -28,17 +29,44 @@ public class BroadcastConfigurationEvent
 	 * @param configuration - alias that changed
 	 * @param event - change event
 	 */
-	public BroadcastConfigurationEvent(BroadcastConfiguration configuration, Event event )
+	public BroadcastEvent(BroadcastConfiguration configuration, Event event )
 	{
 		mBroadcastConfiguration = configuration;
 		mEvent = event;
 	}
-	
+
+	public BroadcastEvent(AudioBroadcaster audioBroadcaster, Event event )
+	{
+		mAudioBroadcaster = audioBroadcaster;
+		mEvent = event;
+	}
+
 	public BroadcastConfiguration getBroadcastConfiguration()
 	{
 		return mBroadcastConfiguration;
 	}
-	
+
+	public AudioBroadcaster getAudioBroadcaster()
+	{
+		return mAudioBroadcaster;
+	}
+
+	/**
+	 * Indicates if this event pertains to an audio broadcaster
+	 */
+	public boolean isAudioBroadcasterEvent()
+	{
+		return mAudioBroadcaster != null;
+	}
+
+	/**
+	 * Indicates if this event pertains to a broadcast configuration
+	 */
+	public boolean isBroadcastConfigurationEvent()
+	{
+		return mBroadcastConfiguration != null;
+	}
+
 	public Event getEvent()
 	{
 		return mEvent;
@@ -49,8 +77,14 @@ public class BroadcastConfigurationEvent
 	 */
 	public enum Event
 	{
-		ADD,
-		CHANGE,
-		DELETE;
+		BROADCASTER_ADD,
+		BROADCASTER_QUEUE_CHANGE,
+        BROADCASTER_STATE_CHANGE,
+        BROADCASTER_STREAMED_COUNT_CHANGE,
+		BROADCASTER_DELETE,
+
+		CONFIGURATION_ADD,
+		CONFIGURATION_CHANGE,
+		CONFIGURATION_DELETE;
 	}
 }

@@ -26,11 +26,19 @@ public class StreamableAudioRecording
 {
     private Path mPath;
     private AudioMetadata mAudioMetadata;
+    private long mRecordingLengthMilliSeconds;
 
-    public StreamableAudioRecording(Path path, AudioMetadata audioMetadata)
+    /**
+     * Audio recording that is ready to be streamed
+     * @param path to the audio recording file
+     * @param audioMetadata associated with the recording
+     * @param recordingLength in milliseconds
+     */
+    public StreamableAudioRecording(Path path, AudioMetadata audioMetadata, long recordingLength)
     {
         mPath = path;
         mAudioMetadata = audioMetadata;
+        mRecordingLengthMilliSeconds = recordingLength;
     }
 
     /**
@@ -47,5 +55,13 @@ public class StreamableAudioRecording
     public AudioMetadata getAudioMetadata()
     {
         return mAudioMetadata;
+    }
+
+    /**
+     * Recording length in milliseconds
+     */
+    public long getRecordingLength()
+    {
+        return mRecordingLengthMilliSeconds;
     }
 }

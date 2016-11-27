@@ -21,7 +21,7 @@ package audio.broadcast.shoutcast.v2.message;
 public class TerminateBroadcast extends UltravoxMessage
 {
     /**
-     * Client request to server to terminate the broadcast
+     * Client request to server to terminate the broadcastAudio
      *
      * Package private constructor.  Use the UltravoxMessageFactory for this constructor.
      */

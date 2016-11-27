@@ -18,11 +18,15 @@
 package audio.metadata;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeSet;
 
+import alias.id.broadcast.BroadcastChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -310,6 +314,23 @@ public class AudioMetadata implements Listener<Metadata>
     public boolean isStreamable()
     {
         return mStreamable;
+    }
+
+    public Collection<BroadcastChannel> getBroadcastChannels()
+    {
+        Set<BroadcastChannel> broadcastChannels = new TreeSet<>();
+
+        for(Metadata metadata: mMetadata.values())
+        {
+            if(metadata.hasAlias() && metadata.getAlias().isStreamable())
+            {
+                Alias alias = metadata.getAlias();
+
+                broadcastChannels.addAll(alias.getBroadcastChannels());
+            }
+        }
+
+        return broadcastChannels;
     }
 
     public String toString()

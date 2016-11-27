@@ -20,36 +20,29 @@ package audio.broadcast;
 
 public enum BroadcastServerType
 {
-    /**
-     * Broadcastify is currently using Icecast Server 2.3.2
-     */
-    BROADCASTIFY("Broadcastify"),
-
-    /**
-     * Icecast Server 2.4.x and later
-     */
-    ICECAST_HTTP("Icecast 2.4+"),
-
-    /**
-     * Icecast Server 2.3.x
-     */
-    ICECAST_TCP("Icecast 2.3"),
-
-    SHOUTCAST_V1("Shoutcast 1.x"),
-
-    SHOUTCAST_V2("Shoutcast 2.x"),
-
-    UNKNOWN("Unknown");
+    BROADCASTIFY("Broadcastify", "images/broadcastify.png"), //Icecast Server 2.3.2
+    ICECAST_HTTP("Icecast 2.4+", null),
+    ICECAST_TCP("Icecast 2.3", null),
+    SHOUTCAST_V1("Shoutcast 1.x", null),
+    SHOUTCAST_V2("Shoutcast 2.x", null),
+    UNKNOWN("Unknown", null);
 
     private String mLabel;
+    private String mIconName;
 
-    BroadcastServerType(String label)
+    BroadcastServerType(String label, String iconName)
     {
         mLabel = label;
+        mIconName = iconName;
     }
 
     public String toString()
     {
         return mLabel;
+    }
+
+    public String getIconName()
+    {
+        return mIconName;
     }
 }

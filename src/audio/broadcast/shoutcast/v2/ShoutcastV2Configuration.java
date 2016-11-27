@@ -28,15 +28,45 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     private String mUserID;
     private int mBitRate;
     private String mStreamName;
-    private String mStreamGenre;
+    private String mGenre;
     private String mURL;
     private boolean mPublic = true;
 
+    public ShoutcastV2Configuration()
+    {
+        //No-arg JAXB constructor
+    }
 
     public ShoutcastV2Configuration(BroadcastFormat format)
     {
         super(format);
     }
+
+    @Override
+    public BroadcastConfiguration copyOf()
+    {
+        ShoutcastV2Configuration copy = new ShoutcastV2Configuration(getBroadcastFormat());
+
+        //Broadcast Configuration Parameters
+        copy.setName(getName());
+        copy.setHost(getHost());
+        copy.setPort(getPort());
+        copy.setPassword(getPassword());
+        copy.setDelay(getDelay());
+        copy.setEnabled(false);
+
+        //Shoutcast V2 Configuration Parameters
+        copy.setStreamID(getStreamID());
+        copy.setUserID(getUserID());
+        copy.setBitRate(getBitRate());
+        copy.setStreamName(getStreamName());
+        copy.setGenre(getGenre());
+        copy.setURL(getURL());
+        copy.setPublic(isPublic());
+
+        return copy;
+    }
+
 
     @Override
     public BroadcastServerType getBroadcastServerType()
@@ -117,21 +147,21 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     /**
      * Stream genre
      */
-    public String getStreamGenre()
+    public String getGenre()
     {
-        return mStreamGenre;
+        return mGenre;
     }
 
     /**
      * Sets the genre tag for this stream
      */
-    public void setStreamGenre(String genre)
+    public void setGenre(String genre)
     {
-        mStreamGenre = genre;
+        mGenre = genre;
     }
 
     /**
-     * Public visibility of the broadcast
+     * Public visibility of the broadcastAudio
      */
     public boolean isPublic()
     {
@@ -139,8 +169,8 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     }
 
     /**
-     * Sets public visibility of the broadcast
-     * @param isPublic indicates if the broadcast should be visible to the public
+     * Sets public visibility of the broadcastAudio
+     * @param isPublic indicates if the broadcastAudio should be visible to the public
      */
     public void setPublic(boolean isPublic)
     {
@@ -148,7 +178,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     }
 
     /**
-     * URL associated with the broadcast where users can find additional details.
+     * URL associated with the broadcastAudio where users can find additional details.
      */
     public String getURL()
     {
@@ -156,7 +186,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     }
 
     /**
-     * URL associated with the broadcast where users can find additional details.
+     * URL associated with the broadcastAudio where users can find additional details.
      * @param url
      */
     public void setURL(String url)

@@ -28,6 +28,7 @@ public enum BroadcastFormat
     private BroadcastFormat(String value, String fileExtension)
     {
         mValue = value;
+        mFileExtension = fileExtension;
     }
 
     public String getValue()

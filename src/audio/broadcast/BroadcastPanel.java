@@ -18,15 +18,13 @@
  ******************************************************************************/
 package audio.broadcast;
 
-import alias.Alias;
-import alias.AliasFactory;
-import alias.id.AliasID;
-import alias.id.AliasIDType;
-import alias.id.AliasIdentifierEditor;
 import com.jidesoft.swing.JideSplitPane;
 import gui.editor.Editor;
 import gui.editor.EmptyEditor;
 import net.miginfocom.swing.MigLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import settings.SettingsManager;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
@@ -38,22 +36,27 @@ import java.awt.event.MouseEvent;
 
 public class BroadcastPanel extends JPanel implements ActionListener, ListSelectionListener
 {
-    private static final String NEW_ALIAS = "New";
-    private static final String COPY_ALIAS = "Copy";
-    private static final String DELETE_ALIAS = "Delete";
+    private final static Logger mLog = LoggerFactory.getLogger( BroadcastPanel.class );
+
+    private static final String NEW_BROADCAST_CONFIGURATION = "New";
+    private static final String COPY_BROADCAST_CONFIGURATION = "Copy";
+    private static final String DELETE_BROADCAST_CONFIGURATION = "Delete";
 
     private BroadcastModel mBroadcastModel;
+    private SettingsManager mSettingsManager;
+
     private JTable mBroadcastConfigurationTable;
     private JideSplitPane mSplitPane;
     private Editor<BroadcastConfiguration> mEmptyEditor = new EmptyEditor<>("Configuration:");
     private Editor<BroadcastConfiguration> mEditor;
-    private JButton mNewButton = new JButton(NEW_ALIAS);
-    private JButton mCopyButton = new JButton(COPY_ALIAS);
-    private JButton mDeleteButton = new JButton(DELETE_ALIAS);
+    private JButton mNewButton = new JButton(NEW_BROADCAST_CONFIGURATION);
+    private JButton mCopyButton = new JButton(COPY_BROADCAST_CONFIGURATION);
+    private JButton mDeleteButton = new JButton(DELETE_BROADCAST_CONFIGURATION);
 
-    public BroadcastPanel(BroadcastModel broadcastModel)
+    public BroadcastPanel(BroadcastModel broadcastModel, SettingsManager settingManager)
     {
         mBroadcastModel = broadcastModel;
+        mSettingsManager = settingManager;
         mEditor = mEmptyEditor;
 
         init();
@@ -68,6 +71,7 @@ public class BroadcastPanel extends JPanel implements ActionListener, ListSelect
         mBroadcastConfigurationTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
         mBroadcastConfigurationTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         mBroadcastConfigurationTable.getSelectionModel().addListSelectionListener(BroadcastPanel.this);
+        mBroadcastConfigurationTable.getColumnModel().getColumn(0).setWidth(15);
 
         JScrollPane scroller = new JScrollPane(mBroadcastConfigurationTable);
 
@@ -75,7 +79,7 @@ public class BroadcastPanel extends JPanel implements ActionListener, ListSelect
         buttonsPanel.setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill][grow,fill][grow,fill]", "[]"));
 
         mNewButton = new JButton("New ...");
-        mNewButton.setToolTipText("Create a new broadcast configuration");
+        mNewButton.setToolTipText("Create a new broadcastAudio configuration");
         mNewButton.addMouseListener(new MouseAdapter()
         {
             @Override
@@ -121,18 +125,62 @@ public class BroadcastPanel extends JPanel implements ActionListener, ListSelect
     @Override
     public void actionPerformed(ActionEvent e)
     {
+        switch(e.getActionCommand())
+        {
+            case COPY_BROADCAST_CONFIGURATION:
+                BroadcastConfiguration copySelected = getSelectedBroadcastConfiguration();
+                mBroadcastModel.cloneBroadcastConfiguration(copySelected);
+                break;
+            case DELETE_BROADCAST_CONFIGURATION:
+                BroadcastConfiguration deleteSelected = getSelectedBroadcastConfiguration();
+
+                if(deleteSelected != null)
+                {
+                    int choice = JOptionPane.showConfirmDialog(BroadcastPanel.this, "Do you want to delete broadcast\n" +
+                            " configuration " + deleteSelected.getName() + "?", "Delete Broadcast Configuration?",
+                            JOptionPane.YES_NO_OPTION);
+
+                    if(choice == JOptionPane.YES_OPTION)
+                    {
+                        mBroadcastModel.removeBroadcastConfiguration(deleteSelected);
+                    }
+                }
+                break;
+        }
 
     }
+
+    /**
+     * Returns the selected configuration
+     */
+    private BroadcastConfiguration getSelectedBroadcastConfiguration()
+    {
+        int viewRow = mBroadcastConfigurationTable.getSelectedRow();
+
+        if(viewRow >= 0)
+        {
+            int modelRow = mBroadcastConfigurationTable.convertRowIndexToModel(viewRow);
+
+            if(modelRow >= 0)
+            {
+                return mBroadcastModel.getConfigurationAt(modelRow);
+            }
+        }
+
+        return null;
+    }
+
 
     @Override
     public void valueChanged(ListSelectionEvent e)
     {
         if (!e.getValueIsAdjusting())
         {
-            int row = mBroadcastConfigurationTable.getSelectedRow();
-            int modelRow = mBroadcastConfigurationTable.convertRowIndexToModel(row);
+            BroadcastConfiguration selectedConfiguration = getSelectedBroadcastConfiguration();
 
-            BroadcastConfiguration selectedConfiguration = mBroadcastModel.getConfigurationAt(modelRow);
+            //Enable buttons accordingly
+            mCopyButton.setEnabled(selectedConfiguration != null);
+            mDeleteButton.setEnabled(selectedConfiguration != null);
 
             if (mEditor.isModified())
             {
@@ -153,7 +201,7 @@ public class BroadcastPanel extends JPanel implements ActionListener, ListSelect
 
             if (selectedConfiguration != null)
             {
-                mEditor = BroadcastFactory.getEditor(selectedConfiguration, mBroadcastModel);
+                mEditor = BroadcastFactory.getEditor(selectedConfiguration, mBroadcastModel, mSettingsManager);
             }
             else
             {
@@ -185,6 +233,7 @@ public class BroadcastPanel extends JPanel implements ActionListener, ListSelect
                 {
                     final BroadcastConfiguration configuration =
                             BroadcastFactory.getConfiguration(mBroadcastServerType, BroadcastFormat.MP3);
+
 
                     mBroadcastModel.addBroadcastConfiguration(configuration);
 

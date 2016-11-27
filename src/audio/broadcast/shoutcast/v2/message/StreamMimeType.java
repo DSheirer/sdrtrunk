@@ -45,7 +45,7 @@ public class StreamMimeType extends UltravoxMessage
     }
 
     /**
-     * Sets the broadcast format or MIME type
+     * Sets the broadcastAudio format or MIME type
      * @param format of the stream
      */
     public void setFormat(BroadcastFormat format)

@@ -212,6 +212,7 @@ public class AliasList implements Listener<AliasEvent>
                             mTalkgroup.put(tgid, alias);
                         }
                         break;
+                    case BROADCAST_CHANNEL:
                     case NON_RECORDABLE:
                     case PRIORITY:
                         //We don't maintain lookups for these items

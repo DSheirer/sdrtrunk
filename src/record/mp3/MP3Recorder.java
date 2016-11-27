@@ -95,25 +95,49 @@ public class MP3Recorder extends AudioRecorder
 
     public static void main(String[] args)
     {
-        Path inputPath = Paths.get("/home/denny/Music/PCM.wav");
-        Path outputPath = Paths.get("/home/denny/Music/denny_test/PCM.mp3");
+        mLog.debug("Starting ...");
 
-        mLog.debug("Reading: " + inputPath.toString());
+//        Path inputPath = Paths.get("/home/denny/Music/PCM.wav");
+//        Path outputPath = Paths.get("/home/denny/Music/denny_test/PCM.mp3");
+//
+//        mLog.debug("Reading: " + inputPath.toString());
+//        mLog.debug("Writing: " + outputPath.toString());
+//
+//        final MP3Recorder recorder = new MP3Recorder(outputPath);
+//        recorder.start(Executors.newSingleThreadScheduledExecutor());
+//
+//        try (AudioPacketMonoWaveReader reader = new AudioPacketMonoWaveReader(inputPath, true))
+//        {
+//            reader.setListener(recorder);
+//            reader.read();
+//            recorder.stop();
+//        }
+//        catch (IOException e)
+//        {
+//            mLog.error("Error", e);
+//        }
+//
+        Path outputPath = Paths.get("/home/denny/Music/Silence_test_10_seconds.mp3");
+
         mLog.debug("Writing: " + outputPath.toString());
 
         final MP3Recorder recorder = new MP3Recorder(outputPath);
-        recorder.start(Executors.newSingleThreadScheduledExecutor());
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        recorder.start(executor);
 
-        try (AudioPacketMonoWaveReader reader = new AudioPacketMonoWaveReader(inputPath, true))
+        long duration = 1165;
+        int length = (int)(duration * 8);   //8000 Hz sample rate
+        float[] silence = new float[length];
+        AudioPacket silencePacket = new AudioPacket(silence, null);
+
+        for(int x = 0; x < 10; x++)
         {
-            reader.setListener(recorder);
-            reader.read();
-            recorder.stop();
+            recorder.receive(silencePacket);
         }
-        catch (IOException e)
-        {
-            mLog.error("Error", e);
-        }
+
+        recorder.stop();
+
+        executor.shutdown();
 
         mLog.debug("Finished");
     }

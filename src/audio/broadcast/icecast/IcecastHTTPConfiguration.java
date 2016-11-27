@@ -36,6 +36,11 @@ public class IcecastHTTPConfiguration extends BroadcastConfiguration
     private int mSampleRate = 8000;
     private String mURL;
 
+    public IcecastHTTPConfiguration()
+    {
+        //no-arg JAXB constructor
+    }
+
     /**
      * Icecast 2.3.x and 2.4.x compatible configuration
      * @param format
@@ -43,6 +48,33 @@ public class IcecastHTTPConfiguration extends BroadcastConfiguration
     public IcecastHTTPConfiguration(BroadcastFormat format)
     {
         super(format);
+    }
+
+    @Override
+    public BroadcastConfiguration copyOf()
+    {
+        IcecastHTTPConfiguration copy = new IcecastHTTPConfiguration(getBroadcastFormat());
+
+        //Broadcast Configuration Parameters
+        copy.setName(getName());
+        copy.setHost(getHost());
+        copy.setPort(getPort());
+        copy.setPassword(getPassword());
+        copy.setDelay(getDelay());
+        copy.setEnabled(false);
+
+        //Icecast Configuration Parameters
+        copy.setUserName(getUserName());
+        copy.setMountPoint(getMountPoint());
+        copy.setDescription(getDescription());
+        copy.setGenre(getGenre());
+        copy.setPublic(isPublic());
+        copy.setBitRate(getBitRate());
+        copy.setChannels(getChannels());
+        copy.setSampleRate(getSampleRate());
+        copy.setURL(getURL());
+
+        return copy;
     }
 
     @Override
@@ -149,7 +181,7 @@ public class IcecastHTTPConfiguration extends BroadcastConfiguration
     }
 
     /**
-     * Public visibility of the broadcast
+     * Public visibility of the broadcastAudio
      */
     public boolean isPublic()
     {
@@ -157,8 +189,8 @@ public class IcecastHTTPConfiguration extends BroadcastConfiguration
     }
 
     /**
-     * Sets public visibility of the broadcast
-     * @param isPublic indicates if the broadcast should be visible to the public
+     * Sets public visibility of the broadcastAudio
+     * @param isPublic indicates if the broadcastAudio should be visible to the public
      */
     public void setPublic(boolean isPublic)
     {
@@ -166,7 +198,7 @@ public class IcecastHTTPConfiguration extends BroadcastConfiguration
     }
 
     /**
-     * Number of audio channels in the broadcast
+     * Number of audio channels in the broadcastAudio
      */
     public int getChannels()
     {
@@ -174,7 +206,7 @@ public class IcecastHTTPConfiguration extends BroadcastConfiguration
     }
 
     /**
-     * Sets the number of audio channels in the broadcast
+     * Sets the number of audio channels in the broadcastAudio
      */
     public void setChannels(int channels)
     {
@@ -224,7 +256,7 @@ public class IcecastHTTPConfiguration extends BroadcastConfiguration
     }
 
     /**
-     * URL associated with the broadcast where users can find additional details.
+     * URL associated with the broadcastAudio where users can find additional details.
      */
     public String getURL()
     {
@@ -232,7 +264,7 @@ public class IcecastHTTPConfiguration extends BroadcastConfiguration
     }
 
     /**
-     * URL associated with the broadcast where users can find additional details.
+     * URL associated with the broadcastAudio where users can find additional details.
      * @param url
      */
     public void setURL(String url)

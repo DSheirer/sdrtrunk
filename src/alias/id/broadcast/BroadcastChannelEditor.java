@@ -19,12 +19,15 @@
 package alias.id.broadcast;
 
 import alias.id.AliasID;
+import audio.broadcast.BroadcastConfiguration;
 import audio.broadcast.BroadcastModel;
 import gui.editor.DocumentListenerEditor;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
@@ -40,16 +43,14 @@ public class BroadcastChannelEditor extends DocumentListenerEditor<AliasID>
 			+ "streaming server";
 
 	private JComboBox<String> mBroadcastConfigurations;
+	private BroadcastModel mBroadcastModel;
 
 	public BroadcastChannelEditor(AliasID aliasID, BroadcastModel broadcastModel)
 	{
-        List<String> channelNames = broadcastModel.getBroadcastConfigurationNames();
-
-        mBroadcastConfigurations = new JComboBox<String>(channelNames.toArray(new String[channelNames.size()]));
-
-        setItem( aliasID );
+		mBroadcastModel = broadcastModel;
 
 		initGUI();
+		setItem( aliasID );
 	}
 	
 	private void initGUI()
@@ -58,14 +59,19 @@ public class BroadcastChannelEditor extends DocumentListenerEditor<AliasID>
 
 		add( new JLabel( "Broadcast Channel" ), "grow" );
 
+		List<String> channelNames = mBroadcastModel.getBroadcastConfigurationNames();
+
+		mBroadcastConfigurations = new JComboBox<String>(channelNames.toArray(new String[channelNames.size()]));
+		mBroadcastConfigurations.addActionListener(new ActionListener()
+		{
+			@Override
+			public void actionPerformed(ActionEvent e)
+			{
+				setModified(true);
+			}
+		});
+
         add(mBroadcastConfigurations, "grow");
-
-        BroadcastChannel channel = (BroadcastChannel)getItem();
-
-        if(channel.isValid())
-        {
-            mBroadcastConfigurations.setSelectedItem(channel.getChannelName());
-        }
 
 		JLabel help = new JLabel( "Help ..." );
 		help.setForeground( Color.BLUE.brighter() );
@@ -82,10 +88,42 @@ public class BroadcastChannelEditor extends DocumentListenerEditor<AliasID>
 
 		add( help, "align left" );
 	}
-	
+
+	@Override
+	public void setItem(AliasID item)
+	{
+		super.setItem(item);
+
+		if(item instanceof BroadcastChannel)
+		{
+            BroadcastChannel channel = (BroadcastChannel)item;
+
+            if(channel.isValid())
+            {
+                mBroadcastConfigurations.setSelectedItem(channel.getChannelName());
+            }
+		}
+
+		setModified(false);
+	}
+
 	@Override
 	public void save()
 	{
-        ((BroadcastChannel)getItem()).setChannelName((String)mBroadcastConfigurations.getSelectedItem());
+        String channel = (String)mBroadcastConfigurations.getSelectedItem();
+
+        BroadcastConfiguration selectedConfiguration = mBroadcastModel.getBroadcastConfiguration(channel);
+
+
+		if(selectedConfiguration != null)
+		{
+			((BroadcastChannel)getItem()).setChannelName(selectedConfiguration.getName());
+		}
+		else
+		{
+			((BroadcastChannel)getItem()).setChannelName(null);
+		}
 	}
+
+
 }

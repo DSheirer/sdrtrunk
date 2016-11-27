@@ -55,6 +55,8 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
     private BufferProcessor mBufferProcessor;
     private ScheduledFuture<?> mProcessorHandle;
 
+    private long mSampleCount;
+
     /**
      * Abstract audio recorder that implements audio packet queueing and threaded audio conversion/writing to a file
      *
@@ -93,6 +95,15 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
     public long getTimeRecordingStart()
     {
         return mTimeRecordingStart;
+    }
+
+    /**
+     * Recording length in milliseconds
+     */
+    public long getRecordingLength()
+    {
+        //Assumes audio sample rate of 8000 samples/second or 8 samples/milli-second
+        return mSampleCount / 8;
     }
 
     /**
@@ -137,7 +148,7 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
      */
     protected OutputStream getOutputStream()
     {
-        return null;
+        return mFileOutputStream;
     }
 
     /**
@@ -169,6 +180,7 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
         {
             try
             {
+                mFileOutputStream.flush();
                 mFileOutputStream.close();
             }
             catch (IOException e)
@@ -204,8 +216,6 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
             {
                 mFileOutputStream = new FileOutputStream(mPath.toFile());
 
-                mLog.info("Created Audio Recording [" + getPath().toString() + "]");
-
 				/* Schedule the handler to run every half second */
                 mProcessorHandle = executor.scheduleAtFixedRate(mBufferProcessor, 0, 500, TimeUnit.MILLISECONDS);
             }
@@ -230,6 +240,14 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
             try
             {
                 record(mPacketsToProcess);
+
+                for(AudioPacket packet: mPacketsToProcess)
+                {
+                    if(packet.getType() == AudioPacket.Type.AUDIO)
+                    {
+                        mSampleCount += packet.getAudioBuffer().getSamples().length;
+                    }
+                }
             }
             catch(IOException ioe)
             {

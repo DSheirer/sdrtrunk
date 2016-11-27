@@ -19,13 +19,14 @@
 package audio.broadcast.shoutcast.v1;
 
 import audio.AudioPacket;
-import audio.broadcast.Broadcaster;
+import audio.broadcast.AudioBroadcaster;
 import audio.broadcast.BroadcastFactory;
 import audio.broadcast.BroadcastFormat;
 import audio.broadcast.BroadcastMetadata;
 import audio.broadcast.BroadcastState;
-import audio.convert.IAudioConverter;
+import audio.metadata.AudioMetadata;
 import controller.ThreadPoolManager;
+import org.asynchttpclient.DefaultAsyncHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import record.wave.AudioPacketMonoWaveReader;
@@ -41,9 +42,9 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ShoutcastV1Broadcaster extends Broadcaster
+public class ShoutcastV1AudioBroadcaster extends AudioBroadcaster
 {
-    private final static Logger mLog = LoggerFactory.getLogger( ShoutcastV1Broadcaster.class );
+    private final static Logger mLog = LoggerFactory.getLogger( ShoutcastV1AudioBroadcaster.class );
 
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 15000; //15 seconds
     private long mLastConnectionAttempt = 0;
@@ -58,13 +59,10 @@ public class ShoutcastV1Broadcaster extends Broadcaster
     /**
      * Creates a Shoutcast Version 1 broadcaster.
      * @param configuration
-     * @param audioConverter
      */
-    public ShoutcastV1Broadcaster(ThreadPoolManager threadPoolManager,
-                                  ShoutcastV1Configuration configuration,
-                                  IAudioConverter audioConverter)
+    public ShoutcastV1AudioBroadcaster(ThreadPoolManager threadPoolManager, ShoutcastV1Configuration configuration)
     {
-        super(threadPoolManager, configuration, audioConverter);
+        super(threadPoolManager, configuration);
     }
 
     /**
@@ -75,34 +73,29 @@ public class ShoutcastV1Broadcaster extends Broadcaster
         return (ShoutcastV1Configuration)getBroadcastConfiguration();
     }
 
+    @Override
+    protected void broadcastMetadata(AudioMetadata metadata)
+    {
+        mLog.debug("Request to send audio metadata to shoutcast v1 server - needs code");
+    }
+
     /**
      * Process audio packets using Shoutcast V1 Protocol
      */
-    public void broadcast()
+    @Override
+    protected void broadcastAudio(byte[] audio)
     {
         //If we're connected, send the audio, otherwise discard it
         if(connect())
         {
-            mAudioQueue.drainTo(mPacketsToBroadcast, 5);
-
-            if(!mPacketsToBroadcast.isEmpty())
+            try
             {
-                byte[] convertedAudio = getAudioConverter().convert(mPacketsToBroadcast);
-
-                mPacketsToBroadcast.clear();
-
-                if(convertedAudio != null)
-                {
-                    try
-                    {
-                        send(convertedAudio);
-                    }
-                    catch(IOException e)
-                    {
-                        mLog.error("Error while dispatching audio", e);
-                        setBroadcastState(BroadcastState.BROADCAST_ERROR);
-                    }
-                }
+                send(audio);
+            }
+            catch (IOException e)
+            {
+                mLog.error("Error while dispatching audio", e);
+                setBroadcastState(BroadcastState.BROADCAST_ERROR);
             }
         }
     }
@@ -349,8 +342,9 @@ public class ShoutcastV1Broadcaster extends Broadcaster
         config.setBitRate(16);
 
         ThreadPoolManager threadPoolManager = new ThreadPoolManager();
+        DefaultAsyncHttpClient httpClient = new DefaultAsyncHttpClient();
 
-        final Broadcaster broadcaster = BroadcastFactory.getBroadcaster(threadPoolManager,config);
+        final AudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(httpClient, threadPoolManager,config);
 
         Path path = Paths.get("/home/denny/Music/PCM.wav");
         mLog.debug("Opening: " + path.toString());
@@ -363,7 +357,7 @@ public class ShoutcastV1Broadcaster extends Broadcaster
 
             try (AudioPacketMonoWaveReader reader = new AudioPacketMonoWaveReader(path, true))
             {
-                reader.setListener(broadcaster);
+                reader.setListener(audioBroadcaster);
                 reader.read();
             }
             catch (IOException e)

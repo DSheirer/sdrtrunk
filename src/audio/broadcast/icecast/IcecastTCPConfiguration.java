@@ -22,9 +22,10 @@ import audio.broadcast.BroadcastConfiguration;
 import audio.broadcast.BroadcastFormat;
 import audio.broadcast.BroadcastServerType;
 import audio.broadcast.broadcastify.BroadcastifyConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 import javax.xml.bind.annotation.XmlTransient;
 import java.util.Base64;
@@ -32,6 +33,8 @@ import java.util.Base64;
 @XmlSeeAlso( {BroadcastifyConfiguration.class } )
 public class IcecastTCPConfiguration extends BroadcastConfiguration
 {
+    private final static Logger mLog = LoggerFactory.getLogger( IcecastTCPConfiguration.class );
+
     private String mUserName;
     private String mMountPoint;
     private String mDescription;
@@ -44,6 +47,7 @@ public class IcecastTCPConfiguration extends BroadcastConfiguration
 
     public IcecastTCPConfiguration()
     {
+        setUserName("source");
         //No-arg constructor for JAXB
     }
 
@@ -54,6 +58,31 @@ public class IcecastTCPConfiguration extends BroadcastConfiguration
     public IcecastTCPConfiguration(BroadcastFormat format)
     {
         super(format);
+        setUserName("source");
+    }
+
+    @Override
+    public BroadcastConfiguration copyOf()
+    {
+        IcecastTCPConfiguration copy = new IcecastTCPConfiguration(getBroadcastFormat());
+
+        //Broadcast Configuration Parameters
+        copy.setName(getName());
+        copy.setHost(getHost());
+        copy.setPort(getPort());
+        copy.setPassword(getPassword());
+        copy.setDelay(getDelay());
+        copy.setEnabled(false);
+
+        //Icecast Configuration Parameters
+        copy.setUserName(getUserName());
+        copy.setMountPoint(getMountPoint());
+        copy.setDescription(getDescription());
+        copy.setGenre(getGenre());
+        copy.setPublic(isPublic());
+        copy.setURL(getURL());
+
+        return copy;
     }
 
     @Override
@@ -78,6 +107,8 @@ public class IcecastTCPConfiguration extends BroadcastConfiguration
         {
             sb.append(getPassword());
         }
+
+        mLog.debug("Connection String: " + sb.toString());
 
         String base64 = Base64.getEncoder().encodeToString(sb.toString().getBytes());
 
@@ -175,7 +206,7 @@ public class IcecastTCPConfiguration extends BroadcastConfiguration
     }
 
     /**
-     * Public visibility of the broadcast
+     * Public visibility of the broadcastAudio
      */
     @XmlAttribute( name="public" )
     public boolean isPublic()
@@ -184,8 +215,8 @@ public class IcecastTCPConfiguration extends BroadcastConfiguration
     }
 
     /**
-     * Sets public visibility of the broadcast
-     * @param isPublic indicates if the broadcast should be visible to the public
+     * Sets public visibility of the broadcastAudio
+     * @param isPublic indicates if the broadcastAudio should be visible to the public
      */
     public void setPublic(boolean isPublic)
     {
@@ -193,7 +224,7 @@ public class IcecastTCPConfiguration extends BroadcastConfiguration
     }
 
     /**
-     * Number of audio channels in the broadcast
+     * Number of audio channels in the broadcastAudio
      */
     @XmlAttribute( name="channels" )
     public int getChannels()
@@ -202,7 +233,7 @@ public class IcecastTCPConfiguration extends BroadcastConfiguration
     }
 
     /**
-     * Sets the number of audio channels in the broadcast
+     * Sets the number of audio channels in the broadcastAudio
      */
     public void setChannels(int channels)
     {
@@ -254,7 +285,7 @@ public class IcecastTCPConfiguration extends BroadcastConfiguration
     }
 
     /**
-     * URL associated with the broadcast where users can find additional details.
+     * URL associated with the broadcastAudio where users can find additional details.
      */
     @XmlAttribute( name="url" )
     public String getURL()
@@ -263,7 +294,7 @@ public class IcecastTCPConfiguration extends BroadcastConfiguration
     }
 
     /**
-     * URL associated with the broadcast where users can find additional details.
+     * URL associated with the broadcastAudio where users can find additional details.
      * @param url
      */
     public void setURL(String url)
@@ -274,5 +305,36 @@ public class IcecastTCPConfiguration extends BroadcastConfiguration
     public boolean hasURL()
     {
         return mURL != null;
+    }
+
+    @Override
+    public boolean isValid()
+    {
+        if(!super.isValid())
+        {
+            return false;
+        }
+        else if(mUserName == null)
+        {
+            return false;
+        }
+        else if(mMountPoint == null)
+        {
+            return false;
+        }
+        else if(mChannels != 1)
+        {
+            return false;
+        }
+        else if(mSampleRate <= 0)
+        {
+            return false;
+        }
+        else if(mBitRate <= 0)
+        {
+            return false;
+        }
+
+        return true;
     }
 }

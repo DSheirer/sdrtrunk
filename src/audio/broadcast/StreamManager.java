@@ -39,8 +39,7 @@ public class StreamManager implements Listener<AudioPacket>
     private static final long MAXIMUM_RECORDER_LIFESPAN_MILLIS = 30000; //30 seconds
 
     private ThreadPoolManager mThreadPoolManager;
-    private BroadcastFormat mBroadcastFormat;
-    private Listener<StreamableAudioRecording> mOutputListener;
+    private AudioBroadcaster mAudioBroadcaster;
     private long mDelay;
     private Path mTempDirectory;
     private Map<Integer, AudioRecorder> mStreamRecorders = new HashMap<>();
@@ -57,24 +56,17 @@ public class StreamManager implements Listener<AudioPacket>
      * has elapsed.
      *
      * @param threadPoolManager for scheduling runnables
-     * @param broadcastFormat defines the output recording format
-     * @param outputListener to receive completed streamable audio recordings
+     * @param audioBroadcaster to receive completed streamable audio recordings
      * @param delay from recording start until audio recording is nominated to output listener
      * @param tempDirectory where to store temporary audio recordings
      */
-    public StreamManager(ThreadPoolManager threadPoolManager,
-                         BroadcastFormat broadcastFormat,
-                         Listener<StreamableAudioRecording> outputListener,
-                         long delay,
-                         Path tempDirectory)
+    public StreamManager(ThreadPoolManager threadPoolManager, AudioBroadcaster audioBroadcaster, long delay, Path tempDirectory)
     {
         assert(tempDirectory != null && Files.isDirectory(tempDirectory));
         assert(mThreadPoolManager != null);
-        assert(mBroadcastFormat != null);
 
         mThreadPoolManager = threadPoolManager;
-        mBroadcastFormat = broadcastFormat;
-        mOutputListener = outputListener;
+        mAudioBroadcaster = audioBroadcaster;
         mDelay = delay;
         mTempDirectory = tempDirectory;
     }
@@ -142,7 +134,7 @@ public class StreamManager implements Listener<AudioPacket>
                     else
                     {
                         AudioRecorder recorder = BroadcastFactory.getAudioRecorder(getTemporaryRecordingPath(),
-                                mBroadcastFormat);
+                                mAudioBroadcaster.getBroadcastConfiguration().getBroadcastFormat());
                         recorder.start(mThreadPoolManager.getScheduledExecutorService());
                         recorder.receive(audioPacket);
                         mStreamRecorders.put(sourceChannelID, recorder);
@@ -176,11 +168,11 @@ public class StreamManager implements Listener<AudioPacket>
             recorder.stop();
 
             StreamableAudioRecording streamableAudioRecording = new StreamableAudioRecording(recorder.getPath(),
-                    recorder.getMetadata());
+                    recorder.getMetadata(), recorder.getRecordingLength());
 
             if(mDelay <= 0)
             {
-                mOutputListener.receive(streamableAudioRecording);
+                mAudioBroadcaster.receive(streamableAudioRecording);
             }
             else
             {
@@ -198,9 +190,9 @@ public class StreamManager implements Listener<AudioPacket>
     private Path getTemporaryRecordingPath()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("temporary_streaming_file_");
+        sb.append(BroadcastModel.TEMPORARY_STREAM_FILE_SUFFIX);
         sb.append( TimeStamp.getLongTimeStamp( "_" ) );
-        sb.append( mBroadcastFormat.getFileExtension() );
+        sb.append( mAudioBroadcaster.getBroadcastConfiguration().getBroadcastFormat().getFileExtension() );
 
         Path temporaryRecordingPath = mTempDirectory.resolve(sb.toString());
 
@@ -222,9 +214,9 @@ public class StreamManager implements Listener<AudioPacket>
         @Override
         public void run()
         {
-            if(mOutputListener != null)
+            if(mAudioBroadcaster != null)
             {
-                mOutputListener.receive(mStreamableAudioRecording);
+                mAudioBroadcaster.receive(mStreamableAudioRecording);
             }
         }
     }

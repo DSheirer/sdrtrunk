@@ -18,6 +18,7 @@
  ******************************************************************************/
 package audio.broadcast.broadcastify;
 
+import audio.broadcast.BroadcastConfiguration;
 import audio.broadcast.BroadcastFormat;
 import audio.broadcast.BroadcastServerType;
 import audio.broadcast.icecast.IcecastTCPConfiguration;
@@ -26,11 +27,12 @@ import javax.xml.bind.annotation.XmlAttribute;
 
 public class BroadcastifyConfiguration extends IcecastTCPConfiguration
 {
-    public int mFeedID;
+    private int mFeedID;
 
     public BroadcastifyConfiguration()
     {
         //No-arg constructor for JAXB
+        this(BroadcastFormat.MP3);
     }
 
     /**
@@ -48,6 +50,34 @@ public class BroadcastifyConfiguration extends IcecastTCPConfiguration
     }
 
     @Override
+    public BroadcastConfiguration copyOf()
+    {
+        BroadcastifyConfiguration copy = new BroadcastifyConfiguration(getBroadcastFormat());
+
+        //Broadcast Configuration Parameters
+        copy.setName(getName());
+        copy.setHost(getHost());
+        copy.setPort(getPort());
+        copy.setPassword(getPassword());
+        copy.setDelay(getDelay());
+
+        copy.setEnabled(false);
+
+        //Icecast Configuration Parameters
+        copy.setUserName(getUserName());
+        copy.setMountPoint(getMountPoint());
+        copy.setDescription(getDescription());
+        copy.setGenre(getGenre());
+        copy.setPublic(isPublic());
+        copy.setURL(getURL());
+
+        //Broadcastify Configuration Parameters
+        copy.setFeedID(getFeedID());
+
+        return copy;
+    }
+
+    @Override
     public BroadcastServerType getBroadcastServerType()
     {
         return BroadcastServerType.BROADCASTIFY;
@@ -62,5 +92,11 @@ public class BroadcastifyConfiguration extends IcecastTCPConfiguration
     public void setFeedID(int feedID)
     {
         mFeedID = feedID;
+    }
+
+    @Override
+    public boolean isValid()
+    {
+        return super.isValid() && (mFeedID > 0);
     }
 }

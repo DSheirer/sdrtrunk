@@ -26,7 +26,7 @@ public enum BroadcastState
     BROADCAST_ERROR("Broadcast Error", false),
 
     /**
-     * Connected to the broadcast server and capable of streaming
+     * Connected to the broadcastAudio server and capable of streaming
      */
     CONNECTED("Connected", false),
 
@@ -36,7 +36,7 @@ public enum BroadcastState
     CONNECTING("Connecting", false),
 
     /**
-     * Disconnected from the broadcast server
+     * Disconnected from the broadcastAudio server
      */
     DISCONNECTED("Disconnected", true),
 

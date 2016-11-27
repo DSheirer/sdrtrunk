@@ -18,27 +18,32 @@
  ******************************************************************************/
 package audio.broadcast;
 
+import audio.AudioPacket;
 import audio.broadcast.broadcastify.BroadcastifyConfiguration;
 import audio.broadcast.broadcastify.BroadcastifyConfigurationEditor;
+import audio.broadcast.icecast.IcecastHTTPAudioBroadcaster;
 import audio.broadcast.icecast.IcecastHTTPConfiguration;
-import audio.broadcast.icecast.IcecastHTTPBroadcaster;
-import audio.broadcast.icecast.IcecastTCPBroadcaster;
+import audio.broadcast.icecast.IcecastTCPAudioBroadcaster;
 import audio.broadcast.icecast.IcecastTCPConfiguration;
 import audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
-import audio.broadcast.shoutcast.v1.ShoutcastV1Broadcaster;
+import audio.broadcast.shoutcast.v1.ShoutcastV1AudioBroadcaster;
 import audio.broadcast.shoutcast.v2.ShoutcastV2Configuration;
-import audio.broadcast.shoutcast.v2.ShoutcastV2Broadcaster;
+import audio.broadcast.shoutcast.v2.ShoutcastV2AudioBroadcaster;
 import audio.convert.IAudioConverter;
 import audio.convert.MP3AudioConverter;
 import controller.ThreadPoolManager;
 import gui.editor.Editor;
 import gui.editor.EmptyEditor;
+import org.asynchttpclient.DefaultAsyncHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import record.AudioRecorder;
 import record.mp3.MP3Recorder;
+import settings.SettingsManager;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 public class BroadcastFactory
 {
@@ -54,34 +59,35 @@ public class BroadcastFactory
      * @param configuration describing the server and audio types
      * @return configured broadcaster or null
      */
-    public static Broadcaster getBroadcaster(ThreadPoolManager threadPoolManager,
-                                             BroadcastConfiguration configuration)
+    public static AudioBroadcaster getBroadcaster(DefaultAsyncHttpClient defaultAsyncHttpClient,
+                                                  ThreadPoolManager threadPoolManager,
+                                                  BroadcastConfiguration configuration)
     {
-        IAudioConverter converter = getAudioConverter(configuration);
-
-        if(converter != null)
+        if(configuration != null)
         {
-            switch(configuration.getBroadcastServerType())
+            IAudioConverter converter = getAudioConverter(configuration);
+
+            if(converter != null)
             {
-                case BROADCASTIFY:
-                    return new IcecastTCPBroadcaster(threadPoolManager,
-                            (BroadcastifyConfiguration)configuration, converter);
-                case ICECAST_HTTP:
-                    return new IcecastHTTPBroadcaster(threadPoolManager,
-                            (IcecastHTTPConfiguration)configuration, converter);
-                case ICECAST_TCP:
-                    return new IcecastTCPBroadcaster(threadPoolManager,
-                            (IcecastTCPConfiguration)configuration, converter);
-                case SHOUTCAST_V1:
-                    return new ShoutcastV1Broadcaster(threadPoolManager,
-                            (ShoutcastV1Configuration)configuration, converter);
-                case SHOUTCAST_V2:
-                    return new ShoutcastV2Broadcaster(threadPoolManager,
-                            (ShoutcastV2Configuration)configuration, converter);
-                case UNKNOWN:
-                default:
-                    mLog.info("Unrecognized broadcast configuration: " + configuration.getBroadcastFormat().name());
-                    break;
+                switch(configuration.getBroadcastServerType())
+                {
+                    case BROADCASTIFY:
+                        return new IcecastTCPAudioBroadcaster(defaultAsyncHttpClient, threadPoolManager,
+                                (BroadcastifyConfiguration)configuration);
+                    case ICECAST_TCP:
+                        return new IcecastTCPAudioBroadcaster(defaultAsyncHttpClient, threadPoolManager,
+                                (IcecastTCPConfiguration)configuration);
+                    case ICECAST_HTTP:
+                        return new IcecastHTTPAudioBroadcaster(threadPoolManager, (IcecastHTTPConfiguration)configuration);
+                    case SHOUTCAST_V1:
+                        return new ShoutcastV1AudioBroadcaster(threadPoolManager, (ShoutcastV1Configuration)configuration);
+                    case SHOUTCAST_V2:
+                        return new ShoutcastV2AudioBroadcaster(threadPoolManager, (ShoutcastV2Configuration)configuration);
+                    case UNKNOWN:
+                    default:
+                        mLog.info("Unrecognized broadcastAudio configuration: " + configuration.getBroadcastFormat().name());
+                        break;
+                }
             }
         }
 
@@ -100,14 +106,14 @@ public class BroadcastFactory
             case MP3:
                 return new MP3AudioConverter(MP3_MONO_16_KHZ_BITRATE, MP3_CONSTANT_BITRATE);
             default:
-                mLog.info("Unrecognized broadcast format: " + configuration.getBroadcastFormat().name());
+                mLog.info("Unrecognized broadcastAudio format: " + configuration.getBroadcastFormat().name());
         }
 
         return null;
     }
 
     /**
-     * Creates a broadcast configuration for the specified server type and format
+     * Creates a broadcastAudio configuration for the specified server type and format
      *
      * @param serverType for the configuration
      * @param format for the output audio format
@@ -129,7 +135,7 @@ public class BroadcastFactory
                 return new ShoutcastV2Configuration(format);
             case UNKNOWN:
             default:
-                mLog.info("Unrecognized broadcast server type: " + serverType.name());
+                mLog.info("Unrecognized broadcastAudio server type: " + serverType.name());
                 break;
         }
 
@@ -137,20 +143,21 @@ public class BroadcastFactory
     }
 
     /**
-     * Constructs an editor for the specified broadcast configuration
+     * Constructs an editor for the specified broadcastAudio configuration
      * @param configuration to modify or view
-     * @param broadcastModel model for broadcast configurations
-     * @return an editor for the specified broadcast configuration
+     * @param broadcastModel model for broadcastAudio configurations
+     * @return an editor for the specified broadcastAudio configuration
      */
     public static Editor<BroadcastConfiguration> getEditor(BroadcastConfiguration configuration,
-                                                           BroadcastModel broadcastModel)
+                                                           BroadcastModel broadcastModel,
+                                                           SettingsManager settingsManager)
     {
         Editor<BroadcastConfiguration> editor;
 
         switch (configuration.getBroadcastServerType())
         {
             case BROADCASTIFY:
-                 editor = new BroadcastifyConfigurationEditor(broadcastModel);
+                 editor = new BroadcastifyConfigurationEditor(broadcastModel, settingsManager);
                 break;
             default:
                 editor = new EmptyEditor<BroadcastConfiguration>();
@@ -163,7 +170,7 @@ public class BroadcastFactory
     }
 
     /**
-     * Creates an audio recorder for the specified broadcast format using the specified path output file name
+     * Creates an audio recorder for the specified broadcastAudio format using the specified path output file name
      */
     public static AudioRecorder getAudioRecorder(Path path, BroadcastFormat broadcastFormat)
     {
@@ -172,8 +179,28 @@ public class BroadcastFactory
             case MP3:
                 return new MP3Recorder(path);
             default:
-                mLog.debug("Unrecognized broadcast format [" + broadcastFormat + "] cannot create audio recorder");
+                mLog.debug("Unrecognized broadcastAudio format [" + broadcastFormat + "] cannot create audio recorder");
                 return null;
+        }
+    }
+
+    public static byte[] getSilenceFrame(BroadcastFormat format, long duration)
+    {
+        int length = (int)(duration * 8);   //8000 Hz sample rate
+        float[] silence = new float[length];
+        AudioPacket silencePacket = new AudioPacket(silence, null);
+        List<AudioPacket> silencePackets = new ArrayList<>();
+        silencePackets.add(silencePacket);
+
+        switch(format)
+        {
+            case MP3:
+                MP3AudioConverter converter = new MP3AudioConverter(MP3Recorder.MP3_BIT_RATE,
+                        MP3Recorder.CONSTANT_BIT_RATE);
+
+                return converter.convert(silencePackets);
+            default:
+                throw new IllegalArgumentException("Unrecognized broadcast format: " + format.name());
         }
     }
 }

@@ -23,16 +23,42 @@ import alias.id.AliasIDType;
 
 import javax.xml.bind.annotation.XmlAttribute;
 
-public class BroadcastChannel extends AliasID
+public class BroadcastChannel extends AliasID implements Comparable<BroadcastChannel>
 {
 	private String mChannelName;
 
 	public BroadcastChannel()
 	{
+		//JAXB Constructor
+	}
+
+	@Override
+	public int compareTo(BroadcastChannel other)
+	{
+		if(mChannelName != null && other.getChannelName() != null)
+		{
+			return mChannelName.compareTo(other.getChannelName());
+		}
+		else if(mChannelName != null)
+		{
+			return -1;
+		}
+		else
+		{
+			return 1;
+		}
 	}
 
 	/**
-	 * Name of the broadcast channel configuration
+	 * Creates a named broadcast channel
+	 */
+	public BroadcastChannel(String channelName)
+	{
+		mChannelName = channelName;
+	}
+
+	/**
+	 * Name of the broadcastAudio channel configuration
 	 */
 	@XmlAttribute(name="channel")
 	public String getChannelName()
@@ -41,7 +67,7 @@ public class BroadcastChannel extends AliasID
 	}
 
 	/**
-	 * Sets the name of the broadcast channel configuration
+	 * Sets the name of the broadcastAudio channel configuration
 	 */
 	public void setChannelName(String channel)
 	{

@@ -24,6 +24,7 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
+import javax.xml.bind.annotation.XmlTransient;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
@@ -31,16 +32,23 @@ import java.net.SocketAddress;
 @XmlRootElement(name = "stream")
 public abstract class BroadcastConfiguration
 {
-    private BroadcastFormat mBroadcastFormat;
+    private BroadcastFormat mBroadcastFormat = BroadcastFormat.MP3;
     private String mName;
     private String mHost;
     private int mPort;
     private String mPassword;
+    private long mDelay;
+    private boolean mEnabled = true;
 
     public BroadcastConfiguration()
     {
         //No-arg constructor required for JAXB
     }
+
+    /**
+     * Creates a copy/clone of the configuration
+     */
+    public abstract BroadcastConfiguration copyOf();
 
     /**
      * Broadcast audio streaming configuration.  Describes the streaming server and configuration details.
@@ -57,7 +65,7 @@ public abstract class BroadcastConfiguration
     public abstract BroadcastServerType getBroadcastServerType();
 
     /**
-     * Name identifying this broadcast configuration.
+     * Name identifying this broadcastAudio configuration.
      */
     @XmlAttribute(name = "name")
     public String getName()
@@ -120,7 +128,7 @@ public abstract class BroadcastConfiguration
     }
 
     /**
-     * Port number of the streaming server to where the broadcast will be directed.
+     * Port number of the streaming server to where the broadcastAudio will be directed.
      *
      * @param port
      */
@@ -152,7 +160,7 @@ public abstract class BroadcastConfiguration
     }
 
     /**
-     * Sets the password used to authenticate the broadcast broadcast user to the streaming server
+     * Sets the password used to authenticate the broadcastAudio broadcastAudio user to the streaming server
      *
      * @param password
      */
@@ -170,11 +178,95 @@ public abstract class BroadcastConfiguration
     }
 
     /**
-     * Audio broadcast content type (e.g. mp3)
+     * Audio broadcastAudio content type (e.g. mp3)
      */
-    @XmlElement(name = "format")
+    @XmlAttribute(name = "format")
     public BroadcastFormat getBroadcastFormat()
     {
         return mBroadcastFormat;
+    }
+
+    public void setBroadcastFormat(BroadcastFormat format)
+    {
+        mBroadcastFormat = format;
+    }
+
+    /**
+     * Audio broadcastAudio delay from recording start until the audio file is broadcastAudio to the server.
+     */
+    @XmlAttribute(name = "delay")
+    public long getDelay()
+    {
+        return mDelay;
+    }
+
+    /**
+     * User specified delay in milli-seconds from audio call start until when the audio is broadcastAudio to the server.
+     * @param delay in milliseconds
+     */
+    public void setDelay(long delay)
+    {
+        mDelay = delay;
+    }
+
+    /**
+     * Indicates if this broadcaster is enable, meaning that it will automatically connect on startup.
+     */
+    @XmlAttribute(name = "enabled")
+    public boolean isEnabled()
+    {
+        return mEnabled;
+    }
+
+    public void setEnabled(boolean enabled)
+    {
+        mEnabled = enabled;
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o)
+        {
+            return true;
+        }
+
+        if (!(o instanceof BroadcastConfiguration))
+        {
+            return false;
+        }
+
+        BroadcastConfiguration that = (BroadcastConfiguration) o;
+
+        if (getBroadcastFormat() != that.getBroadcastFormat())
+        {
+            return false;
+        }
+
+        if (getName() != null ? !getName().equals(that.getName()) : that.getName() != null)
+        {
+            return false;
+        }
+
+        return getBroadcastServerType() == that.getBroadcastServerType();
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = getBroadcastFormat().hashCode();
+        result = 31 * result + (getName() != null ? getName().hashCode() : 0);
+        result = 31 * result + getBroadcastServerType().hashCode();
+        return result;
+    }
+
+    /**
+     * Indicates if this configuration is valid.  A minimal check will ensure that it contains at least a hostname and
+     * port number.
+     */
+    @XmlTransient
+    public boolean isValid()
+    {
+        return mHost != null && mPort > 0;
     }
 }

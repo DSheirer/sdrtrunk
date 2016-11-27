@@ -18,16 +18,24 @@
  ******************************************************************************/
 package audio.broadcast.icecast;
 
+import alias.Alias;
+import alias.id.broadcast.BroadcastChannel;
 import audio.AudioPacket;
+import audio.broadcast.AudioBroadcaster;
+import audio.broadcast.BroadcastFactory;
 import audio.broadcast.BroadcastFormat;
 import audio.broadcast.BroadcastState;
-import audio.broadcast.Broadcaster;
-import audio.broadcast.BroadcastFactory;
-import audio.convert.IAudioConverter;
+import audio.metadata.AudioMetadata;
+import audio.metadata.Metadata;
+import audio.metadata.MetadataType;
 import controller.ThreadPoolManager;
+import org.asynchttpclient.AsyncCompletionHandler;
+import org.asynchttpclient.AsyncHandler;
 import org.asynchttpclient.BoundRequestBuilder;
 import org.asynchttpclient.DefaultAsyncHttpClient;
+import org.asynchttpclient.ListenableFuture;
 import org.asynchttpclient.Realm;
+import org.asynchttpclient.Response;
 import org.asynchttpclient.uri.Uri;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +45,7 @@ import record.wave.AudioPacketMonoWaveReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
@@ -44,91 +53,186 @@ import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class IcecastTCPBroadcaster extends Broadcaster
+public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
 {
-    private final static Logger mLog = LoggerFactory.getLogger( IcecastTCPBroadcaster.class );
+    private final static Logger mLog = LoggerFactory.getLogger( IcecastTCPAudioBroadcaster.class );
     private final static String UTF8 = "UTF-8";
     private final static String TERMINATOR = "\r\n";
     private final static String SEPARATOR = ":";
 
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 15000; //15 seconds
     private long mLastConnectionAttempt = 0;
-    private List<AudioPacket> mPacketsToBroadcast = new ArrayList<>();
     private AtomicBoolean mConnecting = new AtomicBoolean();
     private Socket mSocket;
     private DataOutputStream mOutputStream;
     private DataInputStream mInputStream;
     private DefaultAsyncHttpClient mDefaultAsyncHttpClient;
-
-    private int mCounter;
+    private boolean mFirstMetadataUpdateSuppressed = false;
+    private byte[] mSilenceFrame;
 
     /**
      * Creates an Icecast 2.3.2 compatible broadcaster using TCP and a pseudo HTTP 1.0 protocol.  This broadcaster is
      * compatible with Icecast version 2.3.2 and older versions of the server software.
      *
-     * Note: use @see IcecastHTTPBroadcaster for Icecast version 2.4.x and newer.
+     * Note: use @see IcecastHTTPAudioBroadcaster for Icecast version 2.4.x and newer.
      *
      * @param configuration
-     * @param audioConverter
      */
-    public IcecastTCPBroadcaster(ThreadPoolManager threadPoolManager,
-                                 IcecastTCPConfiguration configuration,
-                                 IAudioConverter audioConverter)
+    public IcecastTCPAudioBroadcaster(DefaultAsyncHttpClient httpClient,
+                                      ThreadPoolManager threadPoolManager,
+                                      IcecastTCPConfiguration configuration)
     {
-        super(threadPoolManager, configuration, audioConverter);
+        super(threadPoolManager, configuration);
+
+        mDefaultAsyncHttpClient = httpClient;
     }
 
     /**
      * Configuration information
      */
-    private IcecastHTTPConfiguration getConfiguration()
+    private IcecastTCPConfiguration getConfiguration()
     {
-        return (IcecastHTTPConfiguration)getBroadcastConfiguration();
+        return (IcecastTCPConfiguration)getBroadcastConfiguration();
     }
 
     /**
      * Broadcast any queued audio packets using Icecast V2 Protocol
      */
     @Override
-    public void broadcast()
+    protected void broadcastAudio(byte[] audio)
     {
-        if(connect())
+        boolean completed = false;
+
+        while(!completed)
         {
-            mAudioQueue.drainTo(mPacketsToBroadcast, 5);
-
-            if (!mPacketsToBroadcast.isEmpty())
+            if(connect())
             {
-                byte[] convertedAudio = getAudioConverter().convert(mPacketsToBroadcast);
-
-                mLog.debug("We have [" + mPacketsToBroadcast.size() +
-                        "] packets - sending:" + convertedAudio.length + " bytes");
-
                 try
                 {
-                    send(convertedAudio);
+                    send(audio);
+                    completed = true;
                 }
                 catch(SocketException se)
                 {
-                    disconnect();
+                    //The remote server likely disconnected - setup to reconnect
+                    mLog.error("Socket Exception on Icecast TCP Audio Broadcaster -- disconnecting and resetting", se);
+                    disconnect(false);
                 }
                 catch(IOException e)
                 {
+                    completed = true;
                     mLog.error("Error sending audio", e);
                 }
+            }
+            else
+            {
+                completed = true;
+            }
+        }
+    }
 
-                mPacketsToBroadcast.clear();
+    @Override
+    protected void broadcastMetadata(AudioMetadata metadata)
+    {
+        if(connected() && mFirstMetadataUpdateSuppressed)
+        {
+            StringBuilder sb = new StringBuilder();
 
-                mCounter++;
+            if(metadata != null)
+            {
+                Metadata to = metadata.getMetadata(MetadataType.TO);
 
-                if(mCounter % 10 == 0)
+                sb.append("TO:");
+
+                if(to != null)
                 {
-                    updateMetadata("Song Count " + mCounter);
+                    if(to.hasAlias())
+                    {
+                        sb.append(to.getAlias().getName());
+                    }
+                    else
+                    {
+                        sb.append(to.getValue());
+                    }
+                }
+                else
+                {
+                    sb.append("UNKNOWN");
+                }
+
+                Metadata from = metadata.getMetadata(MetadataType.FROM);
+
+                sb.append(" FROM:");
+
+                if(from != null)
+                {
+
+                    if(from.hasAlias())
+                    {
+                        sb.append(from.getAlias().getName());
+                    }
+                    else
+                    {
+                        sb.append(from.getValue());
+                    }
+                }
+                else
+                {
+                    sb.append("UNKNOWN");
                 }
             }
+            else
+            {
+                sb.append("Scanning ....");
+            }
+
+            try
+            {
+                if(mDefaultAsyncHttpClient == null)
+                {
+                    mDefaultAsyncHttpClient = new DefaultAsyncHttpClient();
+                }
+
+                String songEncoded = URLEncoder.encode(sb.toString(), UTF8);
+
+                StringBuilder query = new StringBuilder();
+                query.append("/admin/metadata?mode=updinfo");
+                query.append("&mount=").append(getConfiguration().getMountPoint());
+                query.append("&charset=UTF%2d8");
+                query.append("&song=").append(songEncoded);
+
+                Uri uri = new Uri(Uri.HTTP, null, getConfiguration().getHost(), getConfiguration().getPort(),
+                        query.toString(), null);
+
+                BoundRequestBuilder builder = mDefaultAsyncHttpClient.prepareGet(uri.toUrl());
+
+                //Use Basic (base64) authentication
+                Realm realm = new Realm.Builder(getConfiguration().getUserName(), getConfiguration().getPassword())
+                        .setScheme(Realm.AuthScheme.BASIC).setUsePreemptiveAuth(true).build();
+                builder.setRealm(realm);
+                builder.addHeader(IcecastHeader.USER_AGENT.getValue(), SystemProperties.getInstance().getApplicationName());
+
+                AsyncHandler handler = new AsyncCompletionHandler()
+                {
+                    @Override
+                    public Object onCompleted(Response response) throws Exception
+                    {
+                        return null;
+                    }
+                };
+
+                mDefaultAsyncHttpClient.executeRequest(builder.build(), handler);
+            }
+            catch(Exception e)
+            {
+                mLog.debug("Error while updating metadata", e);
+            }
+        }
+        else if(connected())
+        {
+            mFirstMetadataUpdateSuppressed = true;
         }
     }
 
@@ -152,7 +256,7 @@ public class IcecastTCPBroadcaster extends Broadcaster
     /**
      * Disconnect from the remote server
      */
-    public void disconnect()
+    public void disconnect(boolean shutdown)
     {
         if(mOutputStream != null)
         {
@@ -197,7 +301,14 @@ public class IcecastTCPBroadcaster extends Broadcaster
             mSocket = null;
         }
 
-        mLog.debug("Icecast stream is now disconnected");
+        if(shutdown)
+        {
+            setBroadcastState(BroadcastState.DISCONNECTED);
+        }
+        else
+        {
+            setBroadcastState(BroadcastState.READY);
+        }
     }
 
     /**
@@ -226,7 +337,6 @@ public class IcecastTCPBroadcaster extends Broadcaster
                             .append(SystemProperties.getInstance().getApplicationName()).append(TERMINATOR);
                     sb.append(IcecastHeader.CONTENT_TYPE.getValue()).append(SEPARATOR)
                             .append(getConfiguration().getBroadcastFormat().getValue()).append(TERMINATOR);
-
                     sb.append(IcecastHeader.PUBLIC.getValue()).append(SEPARATOR)
                             .append(getConfiguration().isPublic() ? "1" : "0").append(TERMINATOR);
 
@@ -332,6 +442,14 @@ public class IcecastTCPBroadcaster extends Broadcaster
                 mLog.error("Unknown host or port.  Unable to create connection to streaming server host[" +
                         getConfiguration().getHost() + "] and port[" +
                         getConfiguration().getPort() + "] - will reattempt connection periodically");
+                return;
+            }
+            catch(ConnectException ce)
+            {
+                setBroadcastState(BroadcastState.NO_SERVER);
+                mLog.error("Connection refused.  Unable to create connection to streaming server host[" +
+                        getConfiguration().getHost() + "] and port[" +
+                        getConfiguration().getPort() + "]");
                 return;
             }
             catch(IOException ioe)
@@ -457,7 +575,7 @@ public class IcecastTCPBroadcaster extends Broadcaster
             {
                 setBroadcastState(BroadcastState.CONNECTED);
             }
-            else if(response.startsWith("Invalid Password"))
+            else if(response.contains("Invalid Password") || response.contains("Authentication Required"))
             {
                 setBroadcastState(BroadcastState.INVALID_PASSWORD);
             }
@@ -469,46 +587,8 @@ public class IcecastTCPBroadcaster extends Broadcaster
         }
         else
         {
+            setBroadcastState(BroadcastState.CONNECTED);
             mLog.debug("Response was empty");
-        }
-    }
-
-    private void updateMetadata(String songName)
-    {
-        if(songName != null && !songName.isEmpty())
-        {
-            try
-            {
-                if(mDefaultAsyncHttpClient == null)
-                {
-                    mDefaultAsyncHttpClient = new DefaultAsyncHttpClient();
-                }
-
-                String songEncoded = URLEncoder.encode(songName, UTF8);
-
-                StringBuilder query = new StringBuilder();
-                query.append("/admin/metadata?mode=updinfo");
-                query.append("&mount=").append(getConfiguration().getMountPoint());
-                query.append("&charset=UTF%2d8");
-                query.append("&song=").append(songEncoded);
-
-                Uri uri = new Uri(Uri.HTTP, null, getConfiguration().getHost(), getConfiguration().getPort(),
-                        query.toString(), null);
-
-                BoundRequestBuilder builder = mDefaultAsyncHttpClient.prepareGet(uri.toUrl());
-
-                //Use Basic (base64) authentication
-                Realm realm = new Realm.Builder(getConfiguration().getUserName(), getConfiguration().getPassword())
-                        .setScheme(Realm.AuthScheme.BASIC).setUsePreemptiveAuth(true).build();
-                builder.setRealm(realm);
-                builder.addHeader(IcecastHeader.USER_AGENT.getValue(), SystemProperties.getInstance().getApplicationName());
-
-                mDefaultAsyncHttpClient.executeRequest(builder.build());
-            }
-            catch(Exception e)
-            {
-                mLog.debug("Error while updating metadata", e);
-            }
         }
     }
 
@@ -518,7 +598,9 @@ public class IcecastTCPBroadcaster extends Broadcaster
 
         IcecastTCPConfiguration config = new IcecastTCPConfiguration(BroadcastFormat.MP3);
 
-        config.setName("Broadcastify SDRTrunk #2");
+        String streamName = "Broadcastify SDRTrunk #2";
+
+        config.setName(streamName);
         config.setHost("audio3.broadcastify.com");
         config.setPort(80);
         config.setMountPoint("/k0yrdpx7zn4h");
@@ -530,6 +612,11 @@ public class IcecastTCPBroadcaster extends Broadcaster
         config.setURL("http://www.radioreference.com");
         config.setBitRate(16);
 
+        AudioMetadata metadata = new AudioMetadata(0, false);
+        Alias toAlias = new Alias("ToAlias");
+        toAlias.addAliasID(new BroadcastChannel(streamName));
+        metadata.receive(new Metadata(MetadataType.TO, "1234", toAlias ));
+
         if(test)
         {
             mLog.debug("Auth:" + config.getEncodedCredentials());
@@ -537,22 +624,29 @@ public class IcecastTCPBroadcaster extends Broadcaster
         else
         {
             ThreadPoolManager threadPoolManager = new ThreadPoolManager();
+            DefaultAsyncHttpClient httpClient = new DefaultAsyncHttpClient();
 
-            final Broadcaster broadcaster = BroadcastFactory.getBroadcaster(threadPoolManager,config);
+            final AudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(httpClient, threadPoolManager,config);
 
             Path path = Paths.get("/home/denny/Music/PCM.wav");
             mLog.debug("Opening: " + path.toString());
 
             mLog.debug("Registering and starting audio playback");
 
+            int playCount = 0;
+
             while(true)
             {
                 mLog.debug("Playback started [" + path.toString() + "]");
 
+                toAlias.setName("Playback #" + playCount++);
+
                 try (AudioPacketMonoWaveReader reader = new AudioPacketMonoWaveReader(path, true))
                 {
-                    reader.setListener(broadcaster);
+                    reader.setMetadata(metadata);
+                    reader.setListener(audioBroadcaster);
                     reader.read();
+                    audioBroadcaster.receive(new AudioPacket(AudioPacket.Type.END, metadata));
                 }
                 catch (IOException e)
                 {

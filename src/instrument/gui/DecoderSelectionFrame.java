@@ -31,13 +31,13 @@ public class DecoderSelectionFrame extends JInternalFrame
 	public DecoderSelectionFrame( JDesktopPane desktop, 
 								  IControllableFileSource source )
 	{
+		ThreadPoolManager tpm = new ThreadPoolManager();
+
 		AliasModel aliasModel = new AliasModel();
-		BroadcastModel broadcastModel = new BroadcastModel();
+		BroadcastModel broadcastModel = new BroadcastModel(tpm, null);
 		ChannelModel channelModel = new ChannelModel();
 		ChannelMapModel channelMapModel = new ChannelMapModel();
-		
-		ThreadPoolManager tpm = new ThreadPoolManager();
-		
+
 		mPlaylistManager = new PlaylistManager( tpm, aliasModel, broadcastModel, channelModel, channelMapModel );
 
 		mDesktop = desktop;

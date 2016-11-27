@@ -18,28 +18,70 @@
  ******************************************************************************/
 package audio.broadcast;
 
+import alias.id.broadcast.BroadcastChannel;
+import audio.AudioPacket;
+import controller.ThreadPoolManager;
+import org.asynchttpclient.DefaultAsyncHttpClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import properties.SystemProperties;
+import sample.Broadcaster;
 import sample.Listener;
+import settings.SettingsManager;
 
+import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-public class BroadcastModel extends AbstractTableModel
+public class BroadcastModel extends AbstractTableModel implements Listener<AudioPacket>
 {
-    private static final int COLUMN_CHANNEL_NAME = 0;
-    private static final int COLUMN_SERVER_TYPE = 1;
-    private static final int COLUMN_SERVER_ADDRESS = 2;
+    private final static Logger mLog = LoggerFactory.getLogger( BroadcastModel.class );
+
+    public static final String TEMPORARY_STREAM_DIRECTORY = "streaming";
+    public static final String TEMPORARY_STREAM_FILE_SUFFIX = "temporary_streaming_file_";
+
+    private static final String UNIQUE_NAME_REGEX = "(.*)\\((\\d*)\\)";
+
+    private static final int COLUMN_SERVER_ICON = 0;
+    private static final int COLUMN_STREAM_NAME = 1;
+    private static final int COLUMN_BROADCASTER_STATUS = 2;
+    private static final int COLUMN_BROADCASTER_QUEUE_SIZE = 3;
+    private static final int COLUMN_BROADCASTER_STREAMED_COUNT = 4;
 
     private List<BroadcastConfiguration> mBroadcastConfigurations = new CopyOnWriteArrayList<>();
-    private sample.Broadcaster<BroadcastConfigurationEvent> mBroadcastEventBroadcaster = new sample.Broadcaster<>();
 
-    public BroadcastModel()
+    private Map<String,BroadcastConfiguration> mBroadcastConfigurationMap = new HashMap<>();
+    private Map<String,AudioBroadcaster> mBroadcasterMap = new HashMap<>();
+    private DefaultAsyncHttpClient mDefaultAsyncHttpClient;
+    private ThreadPoolManager mThreadPoolManager;
+    private SettingsManager mSettingsManager;
+
+    private Broadcaster<BroadcastEvent> mBroadcastEventBroadcaster = new Broadcaster<>();
+
+    /**
+     * Model for managing Broadcast configurations and any associated broadcaster instances.
+     */
+    public BroadcastModel(ThreadPoolManager threadPoolManager, SettingsManager settingsManager)
     {
+        mThreadPoolManager = threadPoolManager;
+        mSettingsManager = settingsManager;
+
+        removeOrphanedTemporaryRecordings();
     }
 
     /**
-     * List of broadcast configuration names
+     * List of broadcastAudio configuration names
      */
     public List<String> getBroadcastConfigurationNames()
     {
@@ -54,7 +96,7 @@ public class BroadcastModel extends AbstractTableModel
     }
 
     /**
-     * Current list of broadcast configurations
+     * Current list of broadcastAudio configurations
      */
     public List<BroadcastConfiguration> getBroadcastConfigurations()
     {
@@ -62,7 +104,7 @@ public class BroadcastModel extends AbstractTableModel
     }
 
     /**
-     * Adds the list of broadcast configurations to this model
+     * Adds the list of broadcastAudio configurations to this model
      */
     public void addBroadcastConfigurations(List<BroadcastConfiguration> configurations)
     {
@@ -73,58 +115,278 @@ public class BroadcastModel extends AbstractTableModel
     }
 
     /**
-     * Adds the broadcast configuration to this model
+     * Adds the broadcastAudio configuration to this model
      */
     public void addBroadcastConfiguration(BroadcastConfiguration configuration)
     {
         if(configuration != null)
         {
-            mBroadcastConfigurations.add(configuration);
+            ensureUniqueName(configuration);
 
-            int index = mBroadcastConfigurations.size() - 1;
+            if(!mBroadcastConfigurations.contains(configuration))
+            {
+                mBroadcastConfigurations.add(configuration);
 
-            fireTableRowsInserted( index, index );
+                int index = mBroadcastConfigurations.size() - 1;
 
-            broadcast( new BroadcastConfigurationEvent( configuration, BroadcastConfigurationEvent.Event.ADD ) );
-        }
-    }
+                fireTableRowsInserted( index, index );
 
-    public void removeBroadcastConfiguration(BroadcastConfiguration configuration)
-    {
-        if(configuration != null && mBroadcastConfigurations.contains(configuration))
-        {
-            int index = mBroadcastConfigurations.indexOf(configuration);
+                mBroadcastConfigurationMap.put(configuration.getName(), configuration);
 
-            mBroadcastConfigurations.remove(configuration);
-
-            fireTableRowsDeleted( index, index );
-
-            broadcast( new BroadcastConfigurationEvent( configuration, BroadcastConfigurationEvent.Event.DELETE ) );
+                process( new BroadcastEvent( configuration, BroadcastEvent.Event.CONFIGURATION_ADD) );
+            }
         }
     }
 
     /**
-     * Registers the listener to receive broadcast configuration events
+     * Clones the configuration and adds it this model with a unique configuration name
      */
-    public void addListener(Listener<BroadcastConfigurationEvent> listener)
+    public BroadcastConfiguration cloneBroadcastConfiguration(BroadcastConfiguration configuration)
+    {
+        if(configuration != null)
+        {
+            BroadcastConfiguration clone = configuration.copyOf();
+            addBroadcastConfiguration(clone);
+            return clone;
+        }
+
+        return null;
+    }
+
+    /**
+     * Updates the configuration's name so that it is unique among all other broadcast configurations
+     * @param configuration
+     */
+    private void ensureUniqueName(BroadcastConfiguration configuration)
+    {
+        if(configuration.getName() == null || configuration.getName().isEmpty())
+        {
+            configuration.setName("New Configuration");
+        }
+
+        while(!isUniqueName(configuration.getName(), configuration))
+        {
+            String currentName = configuration.getName();
+
+            if(currentName.matches(UNIQUE_NAME_REGEX))
+            {
+                int currentVersion = 1;
+
+                StringBuilder sb = new StringBuilder();
+                Matcher m = Pattern.compile(UNIQUE_NAME_REGEX).matcher(currentName);
+
+                if(m.find())
+                {
+                    String version = m.group(2);
+
+                    try
+                    {
+                        currentVersion = Integer.parseInt(version);
+                    }
+                    catch(Exception e)
+                    {
+                        //Couldn't parse the version number -- keep incrementing until we find a winner
+                    }
+
+                    currentVersion++;
+
+                    sb.append(m.group(1)).append("(").append(currentVersion).append(")");
+                }
+                else
+                {
+                    sb.append(configuration.getName()).append("(").append(currentVersion).append(")");
+                }
+
+                configuration.setName(sb.toString());
+            }
+            else
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.append(configuration.getName()).append("(2)");
+                configuration.setName(sb.toString());
+            }
+        }
+
+    }
+
+    /**
+     * Indicates if the name is unique among all of the broadcast configurations.  Checks each of the configurations
+     * in this model for a name collision.  Assumes that the name argument will be assigned to the configuration
+     * argument if the name is unique, therefore, the name will not be checked against the configuration argument for
+     * a collision.
+     *
+     * @param name to check for uniqueness
+     * @param configuration to ignore when checking the name for uniqueness
+     * @return true if the name is not null and unique among all configurations managed by this model
+     */
+    public boolean isUniqueName(String name, BroadcastConfiguration configuration)
+    {
+        if(name == null || name.isEmpty())
+        {
+            return false;
+        }
+
+        for(BroadcastConfiguration configurationToCompare: mBroadcastConfigurations)
+        {
+            if(configurationToCompare != configuration && configurationToCompare.getName().equals(name))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public void removeBroadcastConfiguration(BroadcastConfiguration broadcastConfiguration)
+    {
+        if(broadcastConfiguration != null && mBroadcastConfigurations.contains(broadcastConfiguration))
+        {
+            int index = mBroadcastConfigurations.indexOf(broadcastConfiguration);
+
+            mBroadcastConfigurations.remove(broadcastConfiguration);
+
+            mBroadcastConfigurationMap.remove(broadcastConfiguration.getName());
+
+            broadcast( new BroadcastEvent( broadcastConfiguration, BroadcastEvent.Event.CONFIGURATION_DELETE) );
+
+            fireTableRowsDeleted( index, index );
+        }
+    }
+
+    /**
+     * Returns the broadcaster associated with the stream name or null if there is no broadcaster setup for the name.
+     */
+    public AudioBroadcaster getBroadcaster(String streamName)
+    {
+        return mBroadcasterMap.get(streamName);
+    }
+
+    @Override
+    public void receive(AudioPacket audioPacket)
+    {
+        if (audioPacket.hasAudioMetadata() && audioPacket.getAudioMetadata().isStreamable())
+        {
+            for (BroadcastChannel broadcastChannel : audioPacket.getAudioMetadata().getBroadcastChannels())
+            {
+                String channelName = broadcastChannel.getChannelName();
+
+                if (channelName != null)
+                {
+                    AudioBroadcaster audioBroadcaster = getBroadcaster(channelName);
+
+                    if (audioBroadcaster != null)
+                    {
+                        audioBroadcaster.receive(audioPacket);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Creates a new broadcaster for the broadcast configuration and adds it to the model
+     */
+    private void createBroadcaster(BroadcastConfiguration broadcastConfiguration)
+    {
+        if (broadcastConfiguration != null &&
+            broadcastConfiguration.isEnabled() &&
+            broadcastConfiguration.isValid() &&
+            !mBroadcasterMap.containsKey(broadcastConfiguration.getName()))
+        {
+            AudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(getDefaultAsyncHttpClient(),
+                    mThreadPoolManager, broadcastConfiguration);
+
+            if (audioBroadcaster != null)
+            {
+                mBroadcasterMap.put(audioBroadcaster.getBroadcastConfiguration().getName(), audioBroadcaster);
+                audioBroadcaster.setListener(new Listener<BroadcastEvent>()
+                {
+                    @Override
+                    public void receive(BroadcastEvent broadcastEvent)
+                    {
+                        process(broadcastEvent);
+                    }
+                });
+
+                int index = mBroadcastConfigurations.indexOf(audioBroadcaster.getBroadcastConfiguration());
+
+                if(index >= 0)
+                {
+                    fireTableRowsUpdated(index, index);
+                }
+
+                broadcast(new BroadcastEvent(audioBroadcaster, BroadcastEvent.Event.BROADCASTER_ADD));
+            }
+        }
+    }
+
+    /**
+     * Shut down a broadcaster created from the configuration and remove it from this model
+     */
+    private void deleteBroadcaster(String name)
+    {
+        if(name != null && mBroadcasterMap.containsKey(name))
+        {
+            AudioBroadcaster audioBroadcaster = mBroadcasterMap.remove(name);
+
+            if(audioBroadcaster != null)
+            {
+                audioBroadcaster.stop();
+                audioBroadcaster.removeListener();
+
+                int index = mBroadcastConfigurations.indexOf(audioBroadcaster.getBroadcastConfiguration());
+
+                if(index >= 0)
+                {
+                    fireTableRowsUpdated(index, index);
+                }
+
+                broadcast(new BroadcastEvent(audioBroadcaster, BroadcastEvent.Event.BROADCASTER_DELETE));
+            }
+        }
+    }
+
+    private DefaultAsyncHttpClient getDefaultAsyncHttpClient()
+    {
+        if (mDefaultAsyncHttpClient == null)
+        {
+            mDefaultAsyncHttpClient = new DefaultAsyncHttpClient();
+        }
+
+        return mDefaultAsyncHttpClient;
+    }
+
+
+    /**
+     * Returns the broadcast configuration identified by the stream name
+     */
+    public BroadcastConfiguration getBroadcastConfiguration(String streamName)
+    {
+        return mBroadcastConfigurationMap.get(streamName);
+    }
+
+    /**
+     * Registers the listener to receive broadcastAudio configuration events
+     */
+    public void addListener(Listener<BroadcastEvent> listener)
     {
         mBroadcastEventBroadcaster.addListener(listener);
     }
 
     /**
-     * Removes the listener from receiving broadcast configuration events
+     * Removes the listener from receiving broadcastAudio configuration events
      */
-    public void removeListener(Listener<BroadcastConfigurationEvent> listener)
+    public void removeListener(Listener<BroadcastEvent> listener)
     {
         mBroadcastEventBroadcaster.removeListener(listener);
     }
 
     /**
-     * Broadcasts the broadcast configuration change event
+     * Broadcasts the broadcastAudio configuration change event
      */
-    public void broadcast( BroadcastConfigurationEvent event )
+    public void broadcast( BroadcastEvent event )
     {
-        if( event.getEvent() == BroadcastConfigurationEvent.Event.CHANGE )
+        if( event.getEvent() == BroadcastEvent.Event.CONFIGURATION_CHANGE)
         {
             int index = mBroadcastConfigurations.indexOf( event.getBroadcastConfiguration() );
 
@@ -132,6 +394,88 @@ public class BroadcastModel extends AbstractTableModel
         }
 
         mBroadcastEventBroadcaster.broadcast( event );
+    }
+
+    /**
+     * Process a broadcast event from one of the broadcasters managed by this model
+     */
+    public void process(BroadcastEvent broadcastEvent)
+    {
+        if(broadcastEvent.isBroadcastConfigurationEvent())
+        {
+            switch(broadcastEvent.getEvent())
+            {
+                case CONFIGURATION_ADD:
+                    createBroadcaster(broadcastEvent.getBroadcastConfiguration());
+                    break;
+                case CONFIGURATION_CHANGE:
+                    //Delete and recreate the broadcaster for any broadcast configuration changes
+                    BroadcastConfiguration broadcastConfiguration = broadcastEvent.getBroadcastConfiguration();
+                    cleanupMapAssociations(broadcastConfiguration);
+                    createBroadcaster(broadcastConfiguration);
+                    break;
+                case CONFIGURATION_DELETE:
+                    deleteBroadcaster(broadcastEvent.getBroadcastConfiguration().getName());
+                    break;
+            }
+        }
+        else if(broadcastEvent.isAudioBroadcasterEvent())
+        {
+            int row = mBroadcastConfigurations.indexOf(broadcastEvent.getAudioBroadcaster().getBroadcastConfiguration());
+
+            switch(broadcastEvent.getEvent())
+            {
+                case BROADCASTER_QUEUE_CHANGE:
+                    if(row >= 0)
+                    {
+                        fireTableCellUpdated(row, COLUMN_BROADCASTER_QUEUE_SIZE);
+                    }
+                    break;
+                case BROADCASTER_STATE_CHANGE:
+                    if(row >= 0)
+                    {
+                        fireTableCellUpdated(row, COLUMN_BROADCASTER_STATUS);
+                    }
+                    break;
+                case BROADCASTER_STREAMED_COUNT_CHANGE:
+                    if(row >= 0)
+                    {
+                        fireTableCellUpdated(row, COLUMN_BROADCASTER_STREAMED_COUNT);
+                    }
+                    break;
+            }
+        }
+
+        //Rebroadcast the event to any listeners of this model
+        broadcast(broadcastEvent);
+    }
+
+    /**
+     * When the name of a broadcast configuration changes, remove the old map associations so that they can be replaced
+     * with the new map associations.  Remove any broadcaster that is associated with the old configuration name.
+     *
+     * @param broadcastConfiguration
+     */
+    private void cleanupMapAssociations(BroadcastConfiguration broadcastConfiguration)
+    {
+        String oldName = null;
+
+        for(Map.Entry<String,BroadcastConfiguration> entry: mBroadcastConfigurationMap.entrySet())
+        {
+            if(entry.getValue() == broadcastConfiguration)
+            {
+                oldName = entry.getKey();
+                continue;
+            }
+        }
+
+        if(oldName != null)
+        {
+            deleteBroadcaster(oldName);
+            mBroadcastConfigurationMap.remove(oldName);
+        }
+
+        mBroadcastConfigurationMap.put(broadcastConfiguration.getName(), broadcastConfiguration);
     }
 
     @Override
@@ -143,7 +487,7 @@ public class BroadcastModel extends AbstractTableModel
     @Override
     public int getColumnCount()
     {
-        return 3;
+        return 5;
     }
 
     @Override
@@ -157,12 +501,47 @@ public class BroadcastModel extends AbstractTableModel
             {
                 switch(columnIndex)
                 {
-                    case COLUMN_CHANNEL_NAME:
+                    case COLUMN_SERVER_ICON:
+                        String iconName = configuration.getBroadcastServerType().getIconName();
+
+                        if(iconName != null && mSettingsManager != null)
+                        {
+                            return mSettingsManager.getImageIcon(iconName, 14);
+                        }
+                        break;
+                    case COLUMN_STREAM_NAME:
                         return configuration.getName();
-                    case COLUMN_SERVER_TYPE:
-                        return configuration.getBroadcastServerType().toString();
-                    case COLUMN_SERVER_ADDRESS:
-                        return configuration.getHost();
+                    case COLUMN_BROADCASTER_STATUS:
+                        AudioBroadcaster audioBroadcasterA = mBroadcasterMap.get(configuration.getName());
+
+                        if(audioBroadcasterA != null)
+                        {
+                            return audioBroadcasterA.getBroadcastState().toString();
+                        }
+                        else if(!configuration.isEnabled())
+                        {
+                            return "Disabled";
+                        }
+                        else if(!configuration.isValid())
+                        {
+                            return "Invalid Settings";
+                        }
+                    case COLUMN_BROADCASTER_QUEUE_SIZE:
+                        AudioBroadcaster audioBroadcasterB = mBroadcasterMap.get(configuration.getName());
+
+                        if(audioBroadcasterB != null)
+                        {
+                            return audioBroadcasterB.getQueueSize();
+                        }
+                        break;
+                    case COLUMN_BROADCASTER_STREAMED_COUNT:
+                        AudioBroadcaster audioBroadcasterC = mBroadcasterMap.get(configuration.getName());
+
+                        if(audioBroadcasterC != null)
+                        {
+                            return audioBroadcasterC.getStreamedAudioCount();
+                        }
+                        break;
                     default:
                         break;
                 }
@@ -170,6 +549,17 @@ public class BroadcastModel extends AbstractTableModel
         }
 
         return null;
+    }
+
+    @Override
+    public Class<?> getColumnClass(int columnIndex)
+    {
+        if(columnIndex == COLUMN_SERVER_ICON)
+        {
+            return ImageIcon.class;
+        }
+
+        return String.class;
     }
 
     /**
@@ -193,14 +583,60 @@ public class BroadcastModel extends AbstractTableModel
     {
         switch(column)
         {
-            case COLUMN_CHANNEL_NAME:
-                return "Channel";
-            case COLUMN_SERVER_TYPE:
-                return "Server";
-            case COLUMN_SERVER_ADDRESS:
-                return "Address";
+            case COLUMN_SERVER_ICON:
+                return null;
+            case COLUMN_STREAM_NAME:
+                return "Name";
+            case COLUMN_BROADCASTER_STATUS:
+                return "Status";
+            case COLUMN_BROADCASTER_QUEUE_SIZE:
+                return "Queued";
+            case COLUMN_BROADCASTER_STREAMED_COUNT:
+                return "Streamed";
         }
 
         return null;
+    }
+
+    /**
+     * Removes any temporary stream recordings left-over from the previous application run.
+     *
+     * This should only be invoked on startup.
+     */
+    private void removeOrphanedTemporaryRecordings()
+    {
+        Path path = SystemProperties.getInstance().getApplicationFolder(BroadcastModel.TEMPORARY_STREAM_DIRECTORY);
+
+        if(path != null && Files.isDirectory(path))
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.append(TEMPORARY_STREAM_FILE_SUFFIX);
+            sb.append("*.*");
+
+            try(DirectoryStream<Path> directoryStream = Files.newDirectoryStream(path, sb.toString()))
+            {
+                directoryStream.forEach(new Consumer<Path>()
+                {
+                    @Override
+                    public void accept(Path path)
+                    {
+                        mLog.info("Deleting orphaned temporary stream recording: " + path.toString());
+
+                        try
+                        {
+                            Files.delete(path);
+                        }
+                        catch(IOException ioe)
+                        {
+                            mLog.error("Couldn't delete orphaned temporary recording: " + path.toString(), ioe);
+                        }
+                    }
+                });
+            }
+            catch(IOException ioe)
+            {
+                mLog.error("Error discovering orphaned temporary stream recording files", ioe);
+            }
+        }
     }
 }

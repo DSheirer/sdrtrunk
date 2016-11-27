@@ -21,6 +21,7 @@ package audio.broadcast.shoutcast.v1;
 import audio.broadcast.BroadcastConfiguration;
 import audio.broadcast.BroadcastFormat;
 import audio.broadcast.BroadcastServerType;
+import audio.broadcast.icecast.IcecastTCPConfiguration;
 
 public class ShoutcastV1Configuration extends BroadcastConfiguration
 {
@@ -31,9 +32,38 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
     private int mBitRate;
     private String mURL;
 
+    public ShoutcastV1Configuration()
+    {
+        //No-arg JAXB constructor
+    }
+
     public ShoutcastV1Configuration(BroadcastFormat format)
     {
         super(format);
+    }
+
+    @Override
+    public BroadcastConfiguration copyOf()
+    {
+        ShoutcastV1Configuration copy = new ShoutcastV1Configuration(getBroadcastFormat());
+
+        //Broadcast Configuration Parameters
+        copy.setName(getName());
+        copy.setHost(getHost());
+        copy.setPort(getPort());
+        copy.setPassword(getPassword());
+        copy.setDelay(getDelay());
+        copy.setEnabled(false);
+
+        //Icecast Configuration Parameters
+        copy.setStreamName(getStreamName());
+        copy.setGenre(getGenre());
+        copy.setPublic(isPublic());
+        copy.setChannels(getChannels());
+        copy.setBitRate(getBitRate());
+        copy.setURL(getURL());
+
+        return copy;
     }
 
     @Override
@@ -77,7 +107,7 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
     }
 
     /**
-     * Public visibility of the broadcast
+     * Public visibility of the broadcastAudio
      */
     public boolean isPublic()
     {
@@ -85,8 +115,8 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
     }
 
     /**
-     * Sets public visibility of the broadcast
-     * @param isPublic indicates if the broadcast should be visible to the public
+     * Sets public visibility of the broadcastAudio
+     * @param isPublic indicates if the broadcastAudio should be visible to the public
      */
     public void setPublic(boolean isPublic)
     {
@@ -94,7 +124,7 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
     }
 
     /**
-     * Number of audio channels in the broadcast
+     * Number of audio channels in the broadcastAudio
      */
     public int getChannels()
     {
@@ -102,7 +132,7 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
     }
 
     /**
-     * Sets the number of audio channels in the broadcast
+     * Sets the number of audio channels in the broadcastAudio
      */
     public void setChannels(int channels)
     {
@@ -127,7 +157,7 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
     }
 
     /**
-     * URL associated with the broadcast where users can find additional details.
+     * URL associated with the broadcastAudio where users can find additional details.
      */
     public String getURL()
     {
@@ -135,7 +165,7 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
     }
 
     /**
-     * URL associated with the broadcast where users can find additional details.
+     * URL associated with the broadcastAudio where users can find additional details.
      * @param url
      */
     public void setURL(String url)

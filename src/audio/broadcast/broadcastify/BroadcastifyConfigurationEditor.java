@@ -19,10 +19,14 @@
 package audio.broadcast.broadcastify;
 
 import audio.broadcast.BroadcastConfiguration;
-import audio.broadcast.BroadcastConfigurationEvent;
+import audio.broadcast.BroadcastEvent;
 import audio.broadcast.BroadcastModel;
+import audio.broadcast.BroadcastServerType;
 import gui.editor.DocumentListenerEditor;
 import net.miginfocom.swing.MigLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import settings.SettingsManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -31,6 +35,9 @@ import java.awt.event.ActionListener;
 
 public class BroadcastifyConfigurationEditor extends DocumentListenerEditor<BroadcastConfiguration>
 {
+    private final static Logger mLog = LoggerFactory.getLogger( BroadcastifyConfigurationEditor.class );
+
+    private SettingsManager mSettingsManager;
     private BroadcastModel mBroadcastModel;
     private JTextField mFeedID;
     private JTextField mName;
@@ -40,24 +47,27 @@ public class BroadcastifyConfigurationEditor extends DocumentListenerEditor<Broa
     private JTextField mPassword;
     private JButton mSaveButton;
     private JButton mResetButton;
+    private JCheckBox mEnabled;
 
-    public BroadcastifyConfigurationEditor(BroadcastModel model)
+    public BroadcastifyConfigurationEditor(BroadcastModel model, SettingsManager settingsManager)
     {
         mBroadcastModel = model;
+        mSettingsManager = settingsManager;
         init();
     }
 
     private void init()
     {
-        setLayout( new MigLayout( "fill,wrap 2", "[align right][grow,fill]", "[][][][][][][][][][][grow,fill]" ) );
+        setLayout( new MigLayout( "fill,wrap 2", "[align right][grow,fill]", "[][][][][][][][][][grow,fill]" ) );
         setPreferredSize(new Dimension(150,400));
 
-        add(new JLabel("Broadcastify Channel"), "span, align center");
 
-        JButton selectButton = new JButton("Select ...");
-        add(selectButton, "wrap");
+        JLabel channelLabel = new JLabel("Broadcastify Stream");
 
-        add(new JSeparator(JSeparator.HORIZONTAL), "span,growx");
+        ImageIcon broadcastifyIcon = mSettingsManager.getImageIcon(BroadcastServerType.BROADCASTIFY.getIconName(), 25);
+        channelLabel.setIcon(broadcastifyIcon);
+
+        add(channelLabel, "span, align center");
 
         add(new JLabel("Feed ID:"));
         mFeedID = new JTextField();
@@ -88,6 +98,17 @@ public class BroadcastifyConfigurationEditor extends DocumentListenerEditor<Broa
         mPassword = new JTextField();
         mPassword.getDocument().addDocumentListener(this);
         add(mPassword);
+
+        mEnabled = new JCheckBox("Enabled");
+        mEnabled.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                setModified(true);
+            }
+        });
+        add(mEnabled, "span");
 
         mSaveButton = new JButton("Save");
         mSaveButton.setEnabled(false);
@@ -139,6 +160,7 @@ public class BroadcastifyConfigurationEditor extends DocumentListenerEditor<Broa
             mPort.setText(config.getPort() != 0 ? String.valueOf(config.getPort()) : null);
             mMountPoint.setText(config.getMountPoint());
             mPassword.setText(config.getPassword());
+            mEnabled.setSelected(config.isEnabled());
         }
         else
         {
@@ -148,6 +170,7 @@ public class BroadcastifyConfigurationEditor extends DocumentListenerEditor<Broa
             mPort.setText(null);
             mMountPoint.setText(null);
             mPassword.setText(null);
+            mEnabled.setSelected(false);
         }
 
         setModified(false);
@@ -158,14 +181,151 @@ public class BroadcastifyConfigurationEditor extends DocumentListenerEditor<Broa
     {
         BroadcastifyConfiguration config = (BroadcastifyConfiguration)getItem();
 
+        if(validateConfiguration())
+        {
+            config.setName(mName.getText());
+            config.setFeedID(getFeedID());
+            config.setHost(mServer.getText());
+            config.setPort(getPort());
+            config.setMountPoint(mMountPoint.getText());
+            config.setPassword(mPassword.getText());
+            config.setEnabled(mEnabled.isSelected());
+
+            setModified(false);
+
+            mBroadcastModel.process(new BroadcastEvent(getItem(), BroadcastEvent.Event.CONFIGURATION_CHANGE));
+        }
+    }
+
+    /**
+     * Validates the user specified values in the controls prior to saving them to the configuration
+     */
+    private boolean validateConfiguration()
+    {
+        String name = mName.getText();
+
+        //A unique stream name is required
+        if(!mBroadcastModel.isUniqueName(name, getItem()))
+        {
+            String message = (name == null || name.isEmpty()) ?
+                    "Please specify a stream name." : "Stream name " + name +
+                    "is already in use.\nPlease choose another name.";
+
+            JOptionPane.showMessageDialog(BroadcastifyConfigurationEditor.this,
+                    message, "Invalid Stream Name", JOptionPane.ERROR_MESSAGE);
+
+            mName.requestFocus();
+
+            return false;
+        }
+
+        //Feed ID is optional, but required
+        if(!validateIntegerTextField(mFeedID, "Invalid Feed ID", "Please specify a feed ID", 1, Integer.MAX_VALUE))
+        {
+            return true;
+        }
+
+        //Server address is optional, but required
+        if(!validateTextField(mServer, "Invalid Server Address", "Please specify a server address."))
+        {
+            return true;
+        }
+
+        //Port is optional, but required
+        if(!validateIntegerTextField(mPort, "Invalid Port Number", "Please specify a port number (1 <> 65535)", 1, 65535))
+        {
+            return true;
+        }
+
+        //Mount Point is optional, but required
+        if(!validateTextField(mMountPoint, "Invalid Mount Point", "Please specify a mount point."))
+        {
+            return true;
+        }
+
+        //Password is optional, but required
+        if(!validateTextField(mPassword, "Invalid Password", "Please specify a password."))
+        {
+            return true;
+        }
+
+        return true;
+    }
+
+    /**
+     * Validates a text field control for a non-null, non-empty value
+     * @param field to validate
+     * @param title to use for error dialog
+     * @param message to use for error dialog
+     * @return true if field contains a non-null, non-empty value
+     */
+    private boolean validateTextField(JTextField field, String title, String message)
+    {
+        String text = field.getText();
+
+        if(text == null || text.isEmpty())
+        {
+            JOptionPane.showMessageDialog(BroadcastifyConfigurationEditor.this, message, title,
+                    JOptionPane.ERROR_MESSAGE);
+
+            field.requestFocus();
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Validates the text field control that contains an integer value for non-null, non-empty and within the
+     * specified min/max valid range.
+     * @param field to validate
+     * @param title to use for error dialog
+     * @param message to use for error dialog
+     * @param minValid value
+     * @param maxValid value
+     * @return true if field contains a non-null, non-empty value within the valid min/max range
+     */
+    private boolean validateIntegerTextField(JTextField field, String title, String message, int minValid, int maxValid)
+    {
+        if(validateTextField(field, title, message))
+        {
+            String text = field.getText();
+
+            try
+            {
+                int value = Integer.parseInt(text);
+
+                if(minValid <= value && value <= maxValid)
+                {
+                    return true;
+                }
+            }
+            catch(Exception e)
+            {
+                //Do nothing, we couldn't parse the number value
+            }
+
+            JOptionPane.showMessageDialog(BroadcastifyConfigurationEditor.this, message, title,
+                    JOptionPane.ERROR_MESSAGE);
+
+            field.requestFocus();
+        }
+
+        return false;
+    }
+
+    /**
+     * Parses an Integer from the feed ID text control or returns 0 if the control doesn't contain an integer value.
+     */
+    private int getFeedID()
+    {
         String feedID = mFeedID.getText();
 
         if(feedID != null && !feedID.isEmpty())
         {
             try
             {
-                int id = Integer.parseInt(feedID);
-                config.setFeedID(id);
+                return Integer.parseInt(feedID);
             }
             catch(Exception e)
             {
@@ -173,17 +333,21 @@ public class BroadcastifyConfigurationEditor extends DocumentListenerEditor<Broa
             }
         }
 
-        config.setName(mName.getText());
-        config.setHost(mServer.getText());
+        return 0;
+    }
 
+    /**
+     * Parses an Integer from the port text control or returns 0 if the control doesn't contain an integer value.
+     */
+    private int getPort()
+    {
         String port = mPort.getText();
 
         if(port != null && !port.isEmpty())
         {
             try
             {
-                int number = Integer.parseInt(port);
-                config.setPort(number);
+                return Integer.parseInt(port);
             }
             catch(Exception e)
             {
@@ -191,11 +355,6 @@ public class BroadcastifyConfigurationEditor extends DocumentListenerEditor<Broa
             }
         }
 
-        config.setMountPoint(mMountPoint.getText());
-        config.setPassword(mPassword.getText());
-
-        setModified(false);
-
-        mBroadcastModel.broadcast(new BroadcastConfigurationEvent(getItem(), BroadcastConfigurationEvent.Event.CHANGE));
+        return 0;
     }
 }

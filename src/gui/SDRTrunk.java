@@ -20,7 +20,6 @@ package gui;
 import alias.AliasModel;
 import alias.action.AliasActionManager;
 import audio.AudioManager;
-import audio.broadcast.AudioBroadcastManager;
 import audio.broadcast.BroadcastModel;
 import com.jidesoft.swing.JideSplitPane;
 import controller.ControllerPanel;
@@ -137,10 +136,9 @@ public class SDRTrunk implements Listener<TunerEvent>
         AudioManager audioManager = new AudioManager(threadPoolManager, sourceManager.getMixerManager());
         channelProcessingManager.addAudioPacketListener(audioManager);
 
-        BroadcastModel broadcastModel = new BroadcastModel();
+        BroadcastModel broadcastModel = new BroadcastModel(threadPoolManager, mSettingsManager);
 
-        AudioBroadcastManager audioBroadcastManager = new AudioBroadcastManager(threadPoolManager);
-        channelProcessingManager.addAudioPacketListener(audioBroadcastManager);
+        channelProcessingManager.addAudioPacketListener(broadcastModel);
 
         MapService mapService = new MapService(mSettingsManager);
         channelProcessingManager.addMessageListener(mapService);
