@@ -74,6 +74,12 @@ public class ShoutcastV1AudioBroadcaster extends AudioBroadcaster
     }
 
     @Override
+    protected void disconnect()
+    {
+        //TODO: implement a disconnect
+    }
+
+    @Override
     protected void broadcastMetadata(AudioMetadata metadata)
     {
         mLog.debug("Request to send audio metadata to shoutcast v1 server - needs code");

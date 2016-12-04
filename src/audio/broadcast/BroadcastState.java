@@ -61,11 +61,6 @@ public enum BroadcastState
     NO_SERVER("No Server", false),
 
     /**
-     * Connected but paused.  No audio is streaming.
-     */
-    PAUSED("Paused", false),
-
-    /**
      * Initial state with no connection attempted.
      */
     READY("Ready", false),

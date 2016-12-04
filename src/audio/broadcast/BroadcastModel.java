@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -228,7 +229,9 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
 
         for(BroadcastConfiguration configurationToCompare: mBroadcastConfigurations)
         {
-            if(configurationToCompare != configuration && configurationToCompare.getName().equals(name))
+            if(configurationToCompare != configuration &&
+               configurationToCompare.getName() != null &&
+               configurationToCompare.getName().equals(name))
             {
                 return false;
             }
@@ -276,7 +279,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
 
                     if (audioBroadcaster != null)
                     {
-                        audioBroadcaster.receive(audioPacket);
+                        audioBroadcaster.getAudioPacketListener().receive(audioPacket);
                     }
                 }
             }
@@ -298,7 +301,6 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
 
             if (audioBroadcaster != null)
             {
-                mBroadcasterMap.put(audioBroadcaster.getBroadcastConfiguration().getName(), audioBroadcaster);
                 audioBroadcaster.setListener(new Listener<BroadcastEvent>()
                 {
                     @Override
@@ -307,6 +309,10 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                         process(broadcastEvent);
                     }
                 });
+
+                audioBroadcaster.start();
+
+                mBroadcasterMap.put(audioBroadcaster.getBroadcastConfiguration().getName(), audioBroadcaster);
 
                 int index = mBroadcastConfigurations.indexOf(audioBroadcaster.getBroadcastConfiguration());
 
@@ -409,10 +415,14 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                     createBroadcaster(broadcastEvent.getBroadcastConfiguration());
                     break;
                 case CONFIGURATION_CHANGE:
-                    //Delete and recreate the broadcaster for any broadcast configuration changes
                     BroadcastConfiguration broadcastConfiguration = broadcastEvent.getBroadcastConfiguration();
-                    cleanupMapAssociations(broadcastConfiguration);
-                    createBroadcaster(broadcastConfiguration);
+
+                    //Delete and recreate the broadcaster for any broadcast configuration changes
+                    String previousChannelName = cleanupMapAssociations(broadcastConfiguration);
+                    deleteBroadcaster(previousChannelName);
+
+                    //Delay restarting the broadcaster to allow remote server time to cleanup
+                    mThreadPoolManager.scheduleOnce(new DelayedBroadcasterStartup(broadcastConfiguration), 1, TimeUnit.SECONDS);
                     break;
                 case CONFIGURATION_DELETE:
                     deleteBroadcaster(broadcastEvent.getBroadcastConfiguration().getName());
@@ -455,8 +465,10 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
      * with the new map associations.  Remove any broadcaster that is associated with the old configuration name.
      *
      * @param broadcastConfiguration
+     * @return previous or current channel name that has been replaced with the current configuration channel name so
+     * that anything else associated with the previous name can be cleaned up.
      */
-    private void cleanupMapAssociations(BroadcastConfiguration broadcastConfiguration)
+    private String cleanupMapAssociations(BroadcastConfiguration broadcastConfiguration)
     {
         String oldName = null;
 
@@ -471,11 +483,12 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
 
         if(oldName != null)
         {
-            deleteBroadcaster(oldName);
             mBroadcastConfigurationMap.remove(oldName);
         }
 
         mBroadcastConfigurationMap.put(broadcastConfiguration.getName(), broadcastConfiguration);
+
+        return oldName;
     }
 
     @Override
@@ -620,8 +633,6 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                     @Override
                     public void accept(Path path)
                     {
-                        mLog.info("Deleting orphaned temporary stream recording: " + path.toString());
-
                         try
                         {
                             Files.delete(path);
@@ -637,6 +648,26 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
             {
                 mLog.error("Error discovering orphaned temporary stream recording files", ioe);
             }
+        }
+    }
+
+    /**
+     * Provides delayed startup of a broadcaster to allow for the remote server to complete a disconnection.
+     */
+    public class DelayedBroadcasterStartup implements Runnable
+    {
+        private BroadcastConfiguration mBroadcastConfiguration;
+
+        public DelayedBroadcasterStartup(BroadcastConfiguration configuration)
+        {
+            mBroadcastConfiguration = configuration;
+        }
+
+
+        @Override
+        public void run()
+        {
+            createBroadcaster(mBroadcastConfiguration);
         }
     }
 }

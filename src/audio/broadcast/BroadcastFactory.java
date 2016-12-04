@@ -18,6 +18,7 @@
  ******************************************************************************/
 package audio.broadcast;
 
+import alias.AliasModel;
 import audio.AudioPacket;
 import audio.broadcast.broadcastify.BroadcastifyConfiguration;
 import audio.broadcast.broadcastify.BroadcastifyConfigurationEditor;
@@ -25,6 +26,7 @@ import audio.broadcast.icecast.IcecastHTTPAudioBroadcaster;
 import audio.broadcast.icecast.IcecastHTTPConfiguration;
 import audio.broadcast.icecast.IcecastTCPAudioBroadcaster;
 import audio.broadcast.icecast.IcecastTCPConfiguration;
+import audio.broadcast.icecast.IcecastTCPConfigurationEditor;
 import audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
 import audio.broadcast.shoutcast.v1.ShoutcastV1AudioBroadcaster;
 import audio.broadcast.shoutcast.v2.ShoutcastV2Configuration;
@@ -150,6 +152,7 @@ public class BroadcastFactory
      */
     public static Editor<BroadcastConfiguration> getEditor(BroadcastConfiguration configuration,
                                                            BroadcastModel broadcastModel,
+                                                           AliasModel aliasModel,
                                                            SettingsManager settingsManager)
     {
         Editor<BroadcastConfiguration> editor;
@@ -157,7 +160,10 @@ public class BroadcastFactory
         switch (configuration.getBroadcastServerType())
         {
             case BROADCASTIFY:
-                 editor = new BroadcastifyConfigurationEditor(broadcastModel, settingsManager);
+                 editor = new BroadcastifyConfigurationEditor(broadcastModel, aliasModel, settingsManager);
+                break;
+            case ICECAST_TCP:
+                editor = new IcecastTCPConfigurationEditor(broadcastModel, aliasModel, settingsManager);
                 break;
             default:
                 editor = new EmptyEditor<BroadcastConfiguration>();

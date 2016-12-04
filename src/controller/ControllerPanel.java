@@ -91,7 +91,7 @@ public class ControllerPanel extends JPanel
 
         mMessageActivityPanel = new MessageActivityPanel(channelProcessingManager);
 
-        mBroadcastPanel = new BroadcastPanel(broadcastModel, settingsManager);
+        mBroadcastPanel = new BroadcastPanel(broadcastModel, aliasModel, settingsManager);
 
         mCallEventPanel = new CallEventPanel(settingsManager, channelProcessingManager);
 

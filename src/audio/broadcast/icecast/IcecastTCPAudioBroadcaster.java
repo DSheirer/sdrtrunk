@@ -18,29 +18,19 @@
  ******************************************************************************/
 package audio.broadcast.icecast;
 
-import alias.Alias;
-import alias.id.broadcast.BroadcastChannel;
-import audio.AudioPacket;
 import audio.broadcast.AudioBroadcaster;
-import audio.broadcast.BroadcastFactory;
-import audio.broadcast.BroadcastFormat;
 import audio.broadcast.BroadcastState;
 import audio.metadata.AudioMetadata;
 import audio.metadata.Metadata;
 import audio.metadata.MetadataType;
 import controller.ThreadPoolManager;
-import org.asynchttpclient.AsyncCompletionHandler;
-import org.asynchttpclient.AsyncHandler;
 import org.asynchttpclient.BoundRequestBuilder;
 import org.asynchttpclient.DefaultAsyncHttpClient;
-import org.asynchttpclient.ListenableFuture;
 import org.asynchttpclient.Realm;
-import org.asynchttpclient.Response;
 import org.asynchttpclient.uri.Uri;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import properties.SystemProperties;
-import record.wave.AudioPacketMonoWaveReader;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -51,8 +41,6 @@ import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
@@ -90,7 +78,7 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
     }
 
     /**
-     * Configuration information
+     * Icecast broadcast configuration
      */
     private IcecastTCPConfiguration getConfiguration()
     {
@@ -98,7 +86,7 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
     }
 
     /**
-     * Broadcast any queued audio packets using Icecast V2 Protocol
+     * Broadcasts the audio frame or sequence
      */
     @Override
     protected void broadcastAudio(byte[] audio)
@@ -117,10 +105,10 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
                 catch(SocketException se)
                 {
                     //The remote server likely disconnected - setup to reconnect
-                    mLog.error("Socket Exception on Icecast TCP Audio Broadcaster -- disconnecting and resetting", se);
-                    disconnect(false);
+                    mLog.error("Resetting Icecast TCP Audio Broadcaster - socket error: " + se.getMessage());
+                    disconnect();
                 }
-                catch(IOException e)
+                catch(Exception e)
                 {
                     completed = true;
                     mLog.error("Error sending audio", e);
@@ -133,6 +121,9 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
         }
     }
 
+    /**
+     * Broadcasts an audio metadata update
+     */
     @Override
     protected void broadcastMetadata(AudioMetadata metadata)
     {
@@ -214,16 +205,7 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
                 builder.setRealm(realm);
                 builder.addHeader(IcecastHeader.USER_AGENT.getValue(), SystemProperties.getInstance().getApplicationName());
 
-                AsyncHandler handler = new AsyncCompletionHandler()
-                {
-                    @Override
-                    public Object onCompleted(Response response) throws Exception
-                    {
-                        return null;
-                    }
-                };
-
-                mDefaultAsyncHttpClient.executeRequest(builder.build(), handler);
+                mDefaultAsyncHttpClient.executeRequest(builder.build());
             }
             catch(Exception e)
             {
@@ -237,9 +219,11 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
     }
 
     /**
-     * Indicates if the audio handler is currently connected to the remote server and capable of streaming audio.
+     * (Re)Connects the broadcaster to the remote server if it currently is disconnected and indicates if the broadcaster
+     * is currently connected to the remote server following any connection attempts.
      *
-     * This method will attempt to establish a connection or reconnect to the streaming server.
+     * Attempts to connect via this method when the broadcast state indicates an error condition will be ignored.
+     *
      * @return true if the audio handler can stream audio
      */
     private boolean connect()
@@ -254,10 +238,12 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
 
 
     /**
-     * Disconnect from the remote server
+     * Disconnect from the remote broadcast server and cleanup input/output streams and socket connection
      */
-    public void disconnect(boolean shutdown)
+    public void disconnect()
     {
+        mLog.info("Disconnecting Icecast TCP audio broadcaster");
+
         if(mOutputStream != null)
         {
             try
@@ -301,19 +287,16 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
             mSocket = null;
         }
 
-        if(shutdown)
-        {
-            setBroadcastState(BroadcastState.DISCONNECTED);
-        }
-        else
+        if(!isErrorState())
         {
             setBroadcastState(BroadcastState.READY);
         }
     }
 
     /**
-     * Creates a connnection to the remote server using the shoutcast configuration information.  Once disconnected
-     * following a successful connection, attempts to reestablish a connection on a set interval
+     * Creates a connection to the remote server using the icecast configuration information.  Once disconnected
+     * following a successful connection, successive calls to this method will attempt to reestablish a connection on a
+     * minimum reconnection attempt interval
      */
     private void createConnection()
     {
@@ -339,12 +322,6 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
                             .append(getConfiguration().getBroadcastFormat().getValue()).append(TERMINATOR);
                     sb.append(IcecastHeader.PUBLIC.getValue()).append(SEPARATOR)
                             .append(getConfiguration().isPublic() ? "1" : "0").append(TERMINATOR);
-
-                    if(getConfiguration().hasName())
-                    {
-                        sb.append(IcecastHeader.NAME.getValue()).append(SEPARATOR)
-                                .append(getConfiguration().getName()).append(TERMINATOR);
-                    }
 
                     if(getConfiguration().hasGenre())
                     {
@@ -374,13 +351,17 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
                 }
 
                 mLog.debug("Checking response ...");
-                checkResponse();
+                checkConnectionAttemptResponse();
             }
 
             mConnecting.set(false);
         }
     }
 
+    /**
+     * Creates an audio metadata description string that can optionally be included when connecting to the remote
+     * broadcast server.
+     */
     private String getAudioInfoMetadata()
     {
         StringBuilder sb = new StringBuilder();
@@ -422,13 +403,13 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
     }
 
     /**
-     * Creates a socket connection to the remote server and sets the state to CONNECTING.
+     * Creates a socket connection to the remote server and sets the state to CONNECTING or indicates an error state
+     * if the socket is unable to connect to the remote server with the current configuration information.
      */
     private void createSocket()
     {
         if(mSocket == null)
         {
-            mLog.debug("Creating socket");
             try
             {
                 mSocket = new Socket(getConfiguration().getHost(),
@@ -492,6 +473,7 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
 
     /**
      * Sends the string data to the remote server
+     *
      * @param data to send
      * @throws IOException if there is an error communicating with the remote server
      */
@@ -525,6 +507,11 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
         }
     }
 
+    /**
+     * Obtains any pending response from the remote server.
+     * @return string response
+     * @throws IOException if there is an error
+     */
     private String getResponse() throws IOException
     {
         if(mInputStream != null)
@@ -549,7 +536,11 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
         return null;
     }
 
-    private void checkResponse()
+    /**
+     * Checks for a remote server response following a connection attempt and evaluates the response for indication of a
+     * successful connection or an error state
+     */
+    private void checkConnectionAttemptResponse()
     {
         String response = null;
 
@@ -575,86 +566,23 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
             {
                 setBroadcastState(BroadcastState.CONNECTED);
             }
+            else if(response.startsWith("HTTP/1.0 403 Mountpoint in use"))
+            {
+                setBroadcastState(BroadcastState.MOUNT_POINT_IN_USE);
+            }
             else if(response.contains("Invalid Password") || response.contains("Authentication Required"))
             {
                 setBroadcastState(BroadcastState.INVALID_PASSWORD);
             }
             else
             {
-                mLog.debug("Unrecognized server response:" + response);
+                mLog.error("Unrecognized server response:" + response);
                 setBroadcastState(BroadcastState.ERROR);
             }
         }
         else
         {
             setBroadcastState(BroadcastState.CONNECTED);
-            mLog.debug("Response was empty");
-        }
-    }
-
-    public static void main(String[] args)
-    {
-        boolean test = false;
-
-        IcecastTCPConfiguration config = new IcecastTCPConfiguration(BroadcastFormat.MP3);
-
-        String streamName = "Broadcastify SDRTrunk #2";
-
-        config.setName(streamName);
-        config.setHost("audio3.broadcastify.com");
-        config.setPort(80);
-        config.setMountPoint("/k0yrdpx7zn4h");
-        config.setUserName("source");
-        config.setPassword("k8j9405n");
-        config.setDescription("SDRTrunk Test Feed #2");
-        config.setGenre("Scanner");
-        config.setPublic(false);
-        config.setURL("http://www.radioreference.com");
-        config.setBitRate(16);
-
-        AudioMetadata metadata = new AudioMetadata(0, false);
-        Alias toAlias = new Alias("ToAlias");
-        toAlias.addAliasID(new BroadcastChannel(streamName));
-        metadata.receive(new Metadata(MetadataType.TO, "1234", toAlias ));
-
-        if(test)
-        {
-            mLog.debug("Auth:" + config.getEncodedCredentials());
-        }
-        else
-        {
-            ThreadPoolManager threadPoolManager = new ThreadPoolManager();
-            DefaultAsyncHttpClient httpClient = new DefaultAsyncHttpClient();
-
-            final AudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(httpClient, threadPoolManager,config);
-
-            Path path = Paths.get("/home/denny/Music/PCM.wav");
-            mLog.debug("Opening: " + path.toString());
-
-            mLog.debug("Registering and starting audio playback");
-
-            int playCount = 0;
-
-            while(true)
-            {
-                mLog.debug("Playback started [" + path.toString() + "]");
-
-                toAlias.setName("Playback #" + playCount++);
-
-                try (AudioPacketMonoWaveReader reader = new AudioPacketMonoWaveReader(path, true))
-                {
-                    reader.setMetadata(metadata);
-                    reader.setListener(audioBroadcaster);
-                    reader.read();
-                    audioBroadcaster.receive(new AudioPacket(AudioPacket.Type.END, metadata));
-                }
-                catch (IOException e)
-                {
-                    mLog.error("Error", e);
-                }
-
-                mLog.debug("Playback ended [" + path.toString() + "]");
-            }
         }
     }
 }

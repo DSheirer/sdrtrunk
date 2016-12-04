@@ -21,10 +21,10 @@ package audio.broadcast;
 public enum BroadcastServerType
 {
     BROADCASTIFY("Broadcastify", "images/broadcastify.png"), //Icecast Server 2.3.2
-    ICECAST_HTTP("Icecast 2.4+", null),
-    ICECAST_TCP("Icecast 2.3", null),
-    SHOUTCAST_V1("Shoutcast 1.x", null),
-    SHOUTCAST_V2("Shoutcast 2.x", null),
+    ICECAST_HTTP("Icecast 2.4+", "images/icecast.png"),
+    ICECAST_TCP("Icecast 2.3", "images/icecast.png"),
+    SHOUTCAST_V1("Shoutcast 1.x", "images/shoutcast.png"),
+    SHOUTCAST_V2("Shoutcast 2.x", "images/shoutcast.png"),
     UNKNOWN("Unknown", null);
 
     private String mLabel;

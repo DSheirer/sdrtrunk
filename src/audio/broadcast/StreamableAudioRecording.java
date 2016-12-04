@@ -22,23 +22,26 @@ import audio.metadata.AudioMetadata;
 
 import java.nio.file.Path;
 
-public class StreamableAudioRecording
+public class StreamableAudioRecording implements Comparable<StreamableAudioRecording>
 {
     private Path mPath;
     private AudioMetadata mAudioMetadata;
-    private long mRecordingLengthMilliSeconds;
+    private long mStartTime;
+    private long mRecordingLength;
 
     /**
      * Audio recording that is ready to be streamed
      * @param path to the audio recording file
      * @param audioMetadata associated with the recording
+     * @param start time of recording in milliseconds since epoch
      * @param recordingLength in milliseconds
      */
-    public StreamableAudioRecording(Path path, AudioMetadata audioMetadata, long recordingLength)
+    public StreamableAudioRecording(Path path, AudioMetadata audioMetadata, long start, long recordingLength)
     {
         mPath = path;
         mAudioMetadata = audioMetadata;
-        mRecordingLengthMilliSeconds = recordingLength;
+        mStartTime = start;
+        mRecordingLength = recordingLength;
     }
 
     /**
@@ -58,10 +61,28 @@ public class StreamableAudioRecording
     }
 
     /**
+     * Recording start time in milliseconds since epoch
+     */
+    public long getStartTime()
+    {
+        return mStartTime;
+    }
+
+    /**
      * Recording length in milliseconds
      */
     public long getRecordingLength()
     {
-        return mRecordingLengthMilliSeconds;
+        return mRecordingLength;
+    }
+
+
+    /**
+     * Implements comparable for sorting recordings based on start time in ascending order
+     */
+    @Override
+    public int compareTo(StreamableAudioRecording otherRecording)
+    {
+        return Long.compare(getStartTime(), otherRecording.getStartTime());
     }
 }

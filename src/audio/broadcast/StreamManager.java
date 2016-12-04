@@ -28,10 +28,14 @@ import util.TimeStamp;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class StreamManager implements Listener<AudioPacket>
 {
@@ -40,11 +44,11 @@ public class StreamManager implements Listener<AudioPacket>
 
     private ThreadPoolManager mThreadPoolManager;
     private AudioBroadcaster mAudioBroadcaster;
-    private long mDelay;
     private Path mTempDirectory;
     private Map<Integer, AudioRecorder> mStreamRecorders = new HashMap<>();
     private Runnable mRecorderMonitor;
     private ScheduledFuture<?> mRecorderMonitorFuture;
+    private AtomicBoolean mRunning = new AtomicBoolean();
 
     /**
      * Stream manager processes all incoming audio packets and reassembles individual audio streams, converts audio
@@ -52,22 +56,19 @@ public class StreamManager implements Listener<AudioPacket>
      * ensure that recordings don't run too long before they are streamed out and to ensure that inactive recordings
      * are closed in a timely fashion.
      *
-     * Completed streamable audio recordings are nominated to the output listener for streaming once a specified delay
-     * has elapsed.
+     * Completed streamable audio recordings are nominated to the output listener (for broadcast) upon completion
      *
      * @param threadPoolManager for scheduling runnables
      * @param audioBroadcaster to receive completed streamable audio recordings
-     * @param delay from recording start until audio recording is nominated to output listener
      * @param tempDirectory where to store temporary audio recordings
      */
-    public StreamManager(ThreadPoolManager threadPoolManager, AudioBroadcaster audioBroadcaster, long delay, Path tempDirectory)
+    public StreamManager(ThreadPoolManager threadPoolManager, AudioBroadcaster audioBroadcaster, Path tempDirectory)
     {
         assert(tempDirectory != null && Files.isDirectory(tempDirectory));
         assert(mThreadPoolManager != null);
 
         mThreadPoolManager = threadPoolManager;
         mAudioBroadcaster = audioBroadcaster;
-        mDelay = delay;
         mTempDirectory = tempDirectory;
     }
 
@@ -77,16 +78,15 @@ public class StreamManager implements Listener<AudioPacket>
      */
     public void start()
     {
-        if(mRecorderMonitorFuture == null)
+        if(mRunning.compareAndSet(false, true))
         {
             if(mRecorderMonitor == null)
             {
                 mRecorderMonitor = new RecorderMonitor();
             }
 
-            mRecorderMonitorFuture = mThreadPoolManager
-                    .scheduleFixedRate(ThreadPoolManager.ThreadType.AUDIO_PROCESSING, mRecorderMonitor, 2,
-                            TimeUnit.SECONDS);
+            mRecorderMonitorFuture = mThreadPoolManager.scheduleFixedRate(ThreadPoolManager.ThreadType.AUDIO_PROCESSING,
+                    mRecorderMonitor, 2, TimeUnit.SECONDS);
         }
     }
 
@@ -95,24 +95,29 @@ public class StreamManager implements Listener<AudioPacket>
      */
     public void stop()
     {
-        if(mRecorderMonitorFuture != null)
+        if(mRunning.compareAndSet(true, false))
         {
-            mRecorderMonitorFuture.cancel(true);
-        }
-
-        synchronized (mStreamRecorders)
-        {
-            mStreamRecorders.entrySet().stream().forEach(entry ->
+            if(mRecorderMonitorFuture != null)
             {
-                removeRecorder(entry.getKey());
-            });
+                mRecorderMonitorFuture.cancel(true);
+            }
+
+            synchronized (mStreamRecorders)
+            {
+                List<Integer> streamKeys = new ArrayList<>(mStreamRecorders.keySet());
+
+                for(Integer streamKey: streamKeys)
+                {
+                    removeRecorder(streamKey);
+                }
+            }
         }
     }
 
     @Override
     public void receive(AudioPacket audioPacket)
     {
-        if(audioPacket.hasAudioMetadata())
+        if(mRunning.get() && audioPacket.hasAudioMetadata())
         {
             synchronized (mStreamRecorders)
             {
@@ -168,19 +173,9 @@ public class StreamManager implements Listener<AudioPacket>
             recorder.stop();
 
             StreamableAudioRecording streamableAudioRecording = new StreamableAudioRecording(recorder.getPath(),
-                    recorder.getMetadata(), recorder.getRecordingLength());
+                    recorder.getMetadata(), recorder.getTimeRecordingStart(), recorder.getRecordingLength());
 
-            if(mDelay <= 0)
-            {
-                mAudioBroadcaster.receive(streamableAudioRecording);
-            }
-            else
-            {
-                long waitTimeMillis = mDelay - (System.currentTimeMillis() - recorder.getTimeRecordingStart());
-
-                mThreadPoolManager.scheduleOnce(new RecordingDispatcher(streamableAudioRecording),
-                        waitTimeMillis, TimeUnit.MILLISECONDS);
-            }
+            mAudioBroadcaster.receive(streamableAudioRecording);
         }
     }
 
@@ -200,29 +195,7 @@ public class StreamManager implements Listener<AudioPacket>
     }
 
     /**
-     * Dispatches the streamable audio recording to the output listener.
-     */
-    public class RecordingDispatcher implements Runnable
-    {
-        StreamableAudioRecording mStreamableAudioRecording;
-
-        public RecordingDispatcher(StreamableAudioRecording recording)
-        {
-            mStreamableAudioRecording = recording;
-        }
-
-        @Override
-        public void run()
-        {
-            if(mAudioBroadcaster != null)
-            {
-                mAudioBroadcaster.receive(mStreamableAudioRecording);
-            }
-        }
-    }
-
-    /**
-     * Monitors recorders to ensure they don't exceed the maximum life-span allowed for the recording.
+     * Monitors recorders to ensure they don't exceed the maximum life-span allowed for a recording.
      */
     public class RecorderMonitor implements Runnable
     {

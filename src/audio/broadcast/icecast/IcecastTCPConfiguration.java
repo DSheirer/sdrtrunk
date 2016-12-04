@@ -108,8 +108,6 @@ public class IcecastTCPConfiguration extends BroadcastConfiguration
             sb.append(getPassword());
         }
 
-        mLog.debug("Connection String: " + sb.toString());
-
         String base64 = Base64.getEncoder().encodeToString(sb.toString().getBytes());
 
         return "Basic " + base64;

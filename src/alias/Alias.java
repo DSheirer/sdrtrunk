@@ -19,7 +19,10 @@ package alias;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
@@ -176,7 +179,34 @@ public class Alias
 	{
 		return !mAliasActions.isEmpty();
 	}
-	
+
+	/**
+	 * Perform any validation/cleanup actions on this alias.
+	 */
+	public void validate()
+	{
+		//Check for duplicate broadcast channels
+		List<BroadcastChannel> broadcastChannels = getBroadcastChannels();
+
+		if(broadcastChannels.size() > 0)
+		{
+			Set<String> channelNames = new TreeSet<>();
+
+			for(BroadcastChannel broadcastChannel: broadcastChannels)
+			{
+				String channelName = broadcastChannel.getChannelName();
+
+				if(channelName == null || channelName.isEmpty() || channelNames.contains(channelName))
+				{
+					removeAliasID(broadcastChannel);
+				}
+				else
+				{
+					channelNames.add(channelName);
+				}
+			}
+		}
+	}
 	/**
 	 * Returns the priority level of this alias, if defined, or the default priority
 	 */
@@ -319,5 +349,27 @@ public class Alias
 		}
 
 		return broadcastChannels;
+	}
+
+	/**
+	 * Indicates if this alias contains a broadcast channel alias id with the channel name.
+	 */
+	public boolean hasBroadcastChannel(String channel)
+	{
+		if(channel == null || channel.isEmpty())
+		{
+			return false;
+		}
+
+		for(AliasID id: getId())
+		{
+			if(id.getType() == AliasIDType.BROADCAST_CHANNEL &&
+			   ((BroadcastChannel)id).getChannelName().contentEquals(channel))
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 }
