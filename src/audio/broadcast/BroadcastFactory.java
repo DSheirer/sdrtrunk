@@ -24,6 +24,7 @@ import audio.broadcast.broadcastify.BroadcastifyConfiguration;
 import audio.broadcast.broadcastify.BroadcastifyConfigurationEditor;
 import audio.broadcast.icecast.IcecastHTTPAudioBroadcaster;
 import audio.broadcast.icecast.IcecastHTTPConfiguration;
+import audio.broadcast.icecast.IcecastHTTPConfigurationEditor;
 import audio.broadcast.icecast.IcecastTCPAudioBroadcaster;
 import audio.broadcast.icecast.IcecastTCPConfiguration;
 import audio.broadcast.icecast.IcecastTCPConfigurationEditor;
@@ -75,12 +76,13 @@ public class BroadcastFactory
                 {
                     case BROADCASTIFY:
                         return new IcecastTCPAudioBroadcaster(defaultAsyncHttpClient, threadPoolManager,
-                                (BroadcastifyConfiguration)configuration);
+                            (BroadcastifyConfiguration)configuration);
                     case ICECAST_TCP:
                         return new IcecastTCPAudioBroadcaster(defaultAsyncHttpClient, threadPoolManager,
-                                (IcecastTCPConfiguration)configuration);
+                            (IcecastTCPConfiguration)configuration);
                     case ICECAST_HTTP:
-                        return new IcecastHTTPAudioBroadcaster(threadPoolManager, (IcecastHTTPConfiguration)configuration);
+                        return new IcecastHTTPAudioBroadcaster(defaultAsyncHttpClient, threadPoolManager,
+                            (IcecastHTTPConfiguration)configuration);
                     case SHOUTCAST_V1:
                         return new ShoutcastV1AudioBroadcaster(threadPoolManager, (ShoutcastV1Configuration)configuration);
                     case SHOUTCAST_V2:
@@ -164,6 +166,9 @@ public class BroadcastFactory
                 break;
             case ICECAST_TCP:
                 editor = new IcecastTCPConfigurationEditor(broadcastModel, aliasModel, settingsManager);
+                break;
+            case ICECAST_HTTP:
+                editor = new IcecastHTTPConfigurationEditor(broadcastModel, aliasModel, settingsManager);
                 break;
             default:
                 editor = new EmptyEditor<BroadcastConfiguration>();

@@ -61,7 +61,7 @@ public class IcecastTCPConfigurationEditor extends BroadcastConfigurationEditor
         setLayout( new MigLayout( "fill,wrap 2", "[align right][grow,fill]", "[][][][][][][][][][grow,fill]" ) );
         setPreferredSize(new Dimension(150,400));
 
-        JLabel channelLabel = new JLabel("Icecast 2.3 Stream");
+        JLabel channelLabel = new JLabel("Icecast (v2.3) Stream");
 
         ImageIcon icon = mSettingsManager.getImageIcon(BroadcastServerType.ICECAST_TCP.getIconName(), 25);
         channelLabel.setIcon(icon);

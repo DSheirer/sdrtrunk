@@ -42,6 +42,7 @@ public class IcecastHTTPConfigurationEditor extends BroadcastConfigurationEditor
     private JTextField mServer;
     private JTextField mPort;
     private JTextField mMountPoint;
+    private JTextField mUsername;
     private JTextField mPassword;
     private JButton mSaveButton;
     private JButton mResetButton;
@@ -59,7 +60,7 @@ public class IcecastHTTPConfigurationEditor extends BroadcastConfigurationEditor
         setLayout( new MigLayout( "fill,wrap 2", "[align right][grow,fill]", "[][][][][][][][][][grow,fill]" ) );
         setPreferredSize(new Dimension(150,400));
 
-        JLabel channelLabel = new JLabel("Icecast 2.4+ Stream");
+        JLabel channelLabel = new JLabel("Icecast 2 (v2.4+) Stream");
 
         ImageIcon icon = mSettingsManager.getImageIcon(BroadcastServerType.ICECAST_HTTP.getIconName(), 25);
         channelLabel.setIcon(icon);
@@ -89,6 +90,12 @@ public class IcecastHTTPConfigurationEditor extends BroadcastConfigurationEditor
         mMountPoint.getDocument().addDocumentListener(this);
         mMountPoint.setToolTipText("Mount point (e.g. \\12345)");
         add(mMountPoint);
+
+        add(new JLabel("User Name:"));
+        mUsername = new JTextField();
+        mUsername.getDocument().addDocumentListener(this);
+        mUsername.setToolTipText("User name for the stream. Default: source");
+        add(mUsername);
 
         add(new JLabel("Password:"));
         mPassword = new JTextField();
@@ -158,6 +165,7 @@ public class IcecastHTTPConfigurationEditor extends BroadcastConfigurationEditor
             mServer.setText(config.getHost());
             mPort.setText(config.getPort() != 0 ? String.valueOf(config.getPort()) : null);
             mMountPoint.setText(config.getMountPoint());
+            mUsername.setText(config.getUserName());
             mPassword.setText(config.getPassword());
             mEnabled.setSelected(config.isEnabled());
         }
@@ -167,6 +175,7 @@ public class IcecastHTTPConfigurationEditor extends BroadcastConfigurationEditor
             mServer.setText(null);
             mPort.setText(null);
             mMountPoint.setText(null);
+            mUsername.setText(null);
             mPassword.setText(null);
             mEnabled.setSelected(false);
         }
@@ -185,6 +194,7 @@ public class IcecastHTTPConfigurationEditor extends BroadcastConfigurationEditor
             config.setHost(mServer.getText());
             config.setPort(getPort());
             config.setMountPoint(mMountPoint.getText());
+            config.setUserName(mUsername.getText());
             config.setPassword(mPassword.getText());
             config.setEnabled(mEnabled.isSelected());
 
@@ -228,16 +238,22 @@ public class IcecastHTTPConfigurationEditor extends BroadcastConfigurationEditor
             return true;
         }
 
-        //Mount Point is optional, but required
+        //Mount Point is required
         if(!validateTextField(mMountPoint, "Invalid Mount Point", "Please specify a mount point."))
         {
-            return true;
+            return false;
         }
 
-        //Password is optional, but required
+        //User name is required
+        if(!validateTextField(mUsername, "Invalid User Name", "Please specify a user name."))
+        {
+            return false;
+        }
+
+        //Password is required
         if(!validateTextField(mPassword, "Invalid Password", "Please specify a password."))
         {
-            return true;
+            return false;
         }
 
         return true;

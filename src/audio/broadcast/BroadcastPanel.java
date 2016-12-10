@@ -96,6 +96,7 @@ public class BroadcastPanel extends JPanel implements ActionListener, ListSelect
 
                 menu.add(new AddBroadcastConfigurationItem(BroadcastServerType.BROADCASTIFY));
                 menu.add(new AddBroadcastConfigurationItem(BroadcastServerType.ICECAST_TCP));
+                menu.add(new AddBroadcastConfigurationItem(BroadcastServerType.ICECAST_HTTP));
 
                 menu.show(e.getComponent(), e.getX(), e.getY());
             }

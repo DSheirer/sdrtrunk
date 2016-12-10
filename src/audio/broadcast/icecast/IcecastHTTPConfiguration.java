@@ -26,12 +26,12 @@ import java.util.Base64;
 
 public class IcecastHTTPConfiguration extends BroadcastConfiguration
 {
-    private String mUserName;
-    private String mMountPoint;
+    private String mUserName = "source";
+    private String mMountPoint = "stream";
     private String mDescription;
     private String mGenre;
     private boolean mPublic;
-    private int mBitRate;
+    private int mBitRate = 16; //kHz
     private int mChannels = 1;
     private int mSampleRate = 8000;
     private String mURL;
@@ -39,6 +39,7 @@ public class IcecastHTTPConfiguration extends BroadcastConfiguration
     public IcecastHTTPConfiguration()
     {
         //no-arg JAXB constructor
+        this(BroadcastFormat.MP3);
     }
 
     /**
@@ -47,6 +48,7 @@ public class IcecastHTTPConfiguration extends BroadcastConfiguration
     public IcecastHTTPConfiguration(BroadcastFormat format)
     {
         super(format);
+        setPassword("change me!");
     }
 
     @Override
@@ -103,16 +105,25 @@ public class IcecastHTTPConfiguration extends BroadcastConfiguration
         return "Basic " + base64;
     }
 
+    /**
+     * User name.  Default is 'source'.
+     */
     public String getUserName()
     {
         return mUserName;
     }
 
+    /**
+     * Sets the user name.
+     */
     public void setUserName(String userName)
     {
         mUserName = userName;
     }
 
+    /**
+     * Indicates if this configuration has a user name
+     */
     public boolean hasUserName()
     {
         return mUserName != null;
@@ -136,22 +147,34 @@ public class IcecastHTTPConfiguration extends BroadcastConfiguration
         mMountPoint = mountPoint;
     }
 
+    /**
+     * Indicates if this configuration has a mount point
+     */
     public boolean hasMountPoint()
     {
         return mMountPoint != null;
     }
 
 
+    /**
+     * Stream description
+     */
     public String getDescription()
     {
         return mDescription;
     }
 
+    /**
+     * Sets the stream description
+     */
     public void setDescription(String description)
     {
         mDescription = description;
     }
 
+    /**
+     * Indicates if this configuration contains a stream description
+     */
     public boolean hasDescription()
     {
         return mDescription != null;
@@ -166,14 +189,16 @@ public class IcecastHTTPConfiguration extends BroadcastConfiguration
     }
 
     /**
-     * Stream genre
-     * @param genre
+     * Sets the stream genre
      */
     public void setGenre(String genre)
     {
         mGenre = genre;
     }
 
+    /**
+     * Indicates if this configuration contains a genre
+     */
     public boolean hasGenre()
     {
         return mGenre != null;
@@ -234,21 +259,33 @@ public class IcecastHTTPConfiguration extends BroadcastConfiguration
         mBitRate = bitRate;
     }
 
+    /**
+     * Indicates if this configuration has a bit rate value
+     */
     public boolean hasBitRate()
     {
         return mBitRate > 0;
     }
 
+    /**
+     * Sample rate of the input PCM audio samples.  Default is 8 kHz
+     */
     public int getSampleRate()
     {
         return mSampleRate;
     }
 
+    /**
+     * Sets the input PCM audio sample rate
+     */
     public void setSampleRate(int sampleRate)
     {
         mSampleRate = sampleRate;
     }
 
+    /**
+     * Indicates if this configuration contains an audio sample rate
+     */
     public boolean hasSampleRate()
     {
         return mSampleRate > 0;
@@ -264,13 +301,15 @@ public class IcecastHTTPConfiguration extends BroadcastConfiguration
 
     /**
      * URL associated with the broadcastAudio where users can find additional details.
-     * @param url
      */
     public void setURL(String url)
     {
         mURL = url;
     }
 
+    /**
+     * Indicates if this configuration contains a stream URL
+     */
     public boolean hasURL()
     {
         return mURL != null;

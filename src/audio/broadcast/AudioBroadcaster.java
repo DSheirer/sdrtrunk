@@ -93,6 +93,22 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
     }
 
     /**
+     * Broadcast binary audio data frames or sequences.
+     */
+    protected abstract void broadcastAudio(byte[] audio);
+
+    /**
+     * Broadcasts the next song's audio metadata prior to streaming the next song.
+     * @param metadata
+     */
+    protected abstract void broadcastMetadata(AudioMetadata metadata);
+
+    /**
+     * Disconnects the broadcaster from the remote server for a reset or final stop.
+     */
+    protected abstract void disconnect();
+
+    /**
      * Connects to the remote server specified by the broadcast configuration and starts audio streaming.
      */
     public void start()
@@ -129,11 +145,6 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
             disconnect();
         }
     }
-
-    /**
-     * Disconnects the broadcaster from the remote server for a reset or final stop.
-     */
-    protected abstract void disconnect();
 
     /**
      * Size of recording queue for recordings awaiting streaming
@@ -197,18 +208,7 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
     }
 
     /**
-     * Broadcast binary audio data frames or sequences.
-     */
-    protected abstract void broadcastAudio(byte[] audio);
-
-    /**
-     * Broadcasts the next song's audio metadata prior to streaming the next song.
-     * @param metadata
-     */
-    protected abstract void broadcastMetadata(AudioMetadata metadata);
-
-    /**
-     * Registers the listener to receive broadcastAudio state changes
+     * Registers the listener to receive broadcast events/state changes
      */
     public void setListener(Listener<BroadcastEvent> listener)
     {
@@ -216,7 +216,7 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
     }
 
     /**
-     * Removes the listener from receiving broadcastAudio state changes
+     * Removes the listener from receiving broadcast events/state changes
      */
     public void removeListener()
     {

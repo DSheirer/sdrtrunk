@@ -18,17 +18,24 @@
  ******************************************************************************/
 package audio.broadcast;
 
+import audio.broadcast.broadcastify.BroadcastifyConfiguration;
+import audio.broadcast.icecast.IcecastHTTPConfiguration;
 import audio.broadcast.icecast.IcecastTCPConfiguration;
+import audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
+import audio.broadcast.shoutcast.v2.ShoutcastV2Configuration;
 
 import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 import javax.xml.bind.annotation.XmlTransient;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
-@XmlSeeAlso({IcecastTCPConfiguration.class})
+@XmlSeeAlso({BroadcastifyConfiguration.class,
+             IcecastTCPConfiguration.class,
+             IcecastHTTPConfiguration.class,
+             ShoutcastV1Configuration.class,
+             ShoutcastV2Configuration.class})
 @XmlRootElement(name = "stream")
 public abstract class BroadcastConfiguration
 {

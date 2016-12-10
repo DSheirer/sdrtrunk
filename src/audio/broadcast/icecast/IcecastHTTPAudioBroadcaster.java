@@ -20,9 +20,7 @@ package audio.broadcast.icecast;
 
 import audio.AudioPacket;
 import audio.broadcast.AudioBroadcaster;
-import audio.broadcast.BroadcastFormat;
 import audio.broadcast.BroadcastState;
-import audio.broadcast.BroadcastFactory;
 import audio.metadata.AudioMetadata;
 import controller.ThreadPoolManager;
 import org.asynchttpclient.AsyncHandler;
@@ -42,12 +40,8 @@ import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import properties.SystemProperties;
-import record.wave.AudioPacketMonoWaveReader;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -60,22 +54,27 @@ public class IcecastHTTPAudioBroadcaster extends AudioBroadcaster implements Pub
     private static final String HTTP_100_CONTINUE = "100-continue";
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 15000; //15 seconds
     private long mLastConnectionAttempt = 0;
-    private DefaultAsyncHttpClient mAsyncHttpClient;
+    private DefaultAsyncHttpClient mDefaultAsyncHttpClient;
     private Subscriber<? super ByteBuffer> mSubscriber;
     private List<AudioPacket> mPacketsToBroadcast = new ArrayList<>();
     private ConvertedAudioStreamSubscription mSubscription;
     private AtomicBoolean mConnecting = new AtomicBoolean();
 
     /**
-     * Creates an Icecast 2.4.x (or newer) compatible broadcaster using HTTP 1.1 protocol
+     * Creates an Icecast 2 (v2.4.x or newer) compatible broadcaster using HTTP 1.1 protocol
      *
-     * Note: use @see IcecastTCPAudioBroadcaster for Icecast version 2.3.x and older.
-     * @param configuration
-     * @param audioConverter
+     * Note: use @see IcecastTCPAudioBroadcaster for Icecast 1 (v2.3.x and older).
+     *
+     * @param defaultAsyncHttpClient to use when communicating with a remote HTTP server
+     * @param threadPoolManager
+     * @param configuration to use when connecting to the remote server
      */
-    public IcecastHTTPAudioBroadcaster(ThreadPoolManager threadPoolManager, IcecastHTTPConfiguration configuration)
+    public IcecastHTTPAudioBroadcaster(DefaultAsyncHttpClient defaultAsyncHttpClient,
+                                       ThreadPoolManager threadPoolManager,
+                                       IcecastHTTPConfiguration configuration)
     {
         super(threadPoolManager, configuration);
+        mDefaultAsyncHttpClient = defaultAsyncHttpClient;
     }
 
     /**
@@ -94,7 +93,7 @@ public class IcecastHTTPAudioBroadcaster extends AudioBroadcaster implements Pub
     }
 
     /**
-     * Broadcast any queued audio packets using Icecast V2 Protocol
+     * Broadcast converted audio chunks received from the parent class processor
      */
     @Override
     protected void broadcastAudio(byte[] audio)
@@ -147,7 +146,7 @@ public class IcecastHTTPAudioBroadcaster extends AudioBroadcaster implements Pub
     }
 
     /**
-     * Creates a connnection to the remote server using the shoutcast configuration information.  Once disconnected
+     * Creates a connection to the remote server using the shoutcast configuration information.  Once disconnected
      * following a successful connection, attempts to reestablish a connection on a set interval
      */
     private void createConnection()
@@ -159,26 +158,21 @@ public class IcecastHTTPAudioBroadcaster extends AudioBroadcaster implements Pub
                 mLog.debug("Creating a connection to icecast server");
                 mLastConnectionAttempt = System.currentTimeMillis();
 
-                DefaultAsyncHttpClientConfig config = new DefaultAsyncHttpClientConfig.Builder()
-                        .setReadTimeout(-1)
-                        .setRequestTimeout(-1)
-                        .build();
-
-                mAsyncHttpClient = new DefaultAsyncHttpClient(config);
-
                 Uri uri = new Uri(Uri.HTTP, null, getConfiguration().getHost(), getConfiguration().getPort(),
                         getConfiguration().getMountPoint(), null);
 
                 mLog.debug("URL:" + uri.toUrl());
 
-                BoundRequestBuilder builder = mAsyncHttpClient.preparePut(uri.toUrl());
+                BoundRequestBuilder builder = mDefaultAsyncHttpClient.preparePut(uri.toUrl());
 
+                mLog.debug("Setting security realm");
                 //Use Basic (base64) authentication
                 Realm realm = new Realm.Builder(getConfiguration().getUserName(), getConfiguration().getPassword())
                         .setScheme(Realm.AuthScheme.BASIC).setUsePreemptiveAuth(true).build();
                 builder.setRealm(realm);
                 builder.setBody(this);
 
+                mLog.debug("Adding headers");
                 builder.addHeader(IcecastHeader.ACCEPT.getValue(), "*/*");
                 builder.addHeader(IcecastHeader.CONTENT_TYPE.getValue(), getConfiguration().getBroadcastFormat().getValue());
                 builder.addHeader(IcecastHeader.PUBLIC.getValue(), getConfiguration().isPublic() ? "1" : "0");
@@ -213,6 +207,8 @@ public class IcecastHTTPAudioBroadcaster extends AudioBroadcaster implements Pub
                         SystemProperties.getInstance().getApplicationName());
 
                 builder.addHeader(IcecastHeader.EXPECT.getValue(), HTTP_100_CONTINUE);
+
+                mLog.debug("executing connection with http client");
 
                 ListenableFuture<Response> future = builder.execute(new AsyncHttpConnectionResponseHandler());
 
@@ -381,59 +377,6 @@ public class IcecastHTTPAudioBroadcaster extends AudioBroadcaster implements Pub
         {
             mLog.debug("Subscriber has requested a cancel");
             stop();
-        }
-    }
-
-    public static void main(String[] args)
-    {
-        boolean test = false;
-
-        IcecastHTTPConfiguration config = new IcecastHTTPConfiguration(BroadcastFormat.MP3);
-
-        config.setName("Broadcastify SDRTrunk Test #2");
-        config.setHost("audio3.broadcastify.com");
-        config.setPort(80);
-        config.setMountPoint("/k0yrdpx7zn4h");
-        config.setUserName("source");
-        config.setPassword("k8j9405n");
-        config.setDescription("SDRTrunk Test Feed #2");
-        config.setGenre("Scanner");
-        config.setPublic(true);
-        config.setURL("http://www.radioreference.com");
-        config.setBitRate(16);
-
-        if(test)
-        {
-            mLog.debug("Auth:" + config.getEncodedCredentials());
-        }
-        else
-        {
-            ThreadPoolManager threadPoolManager = new ThreadPoolManager();
-            DefaultAsyncHttpClient httpClient = new DefaultAsyncHttpClient();
-
-            final AudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(httpClient, threadPoolManager,config);
-
-            Path path = Paths.get("/home/denny/Music/PCM.wav");
-            mLog.debug("Opening: " + path.toString());
-
-            mLog.debug("Registering and starting audio playback");
-
-            while(true)
-            {
-                mLog.debug("Playback started [" + path.toString() + "]");
-
-                try (AudioPacketMonoWaveReader reader = new AudioPacketMonoWaveReader(path, true))
-                {
-                    reader.setListener(audioBroadcaster);
-                    reader.read();
-                }
-                catch (IOException e)
-                {
-                    mLog.error("Error", e);
-                }
-
-                mLog.debug("Playback ended [" + path.toString() + "]");
-            }
         }
     }
 }
