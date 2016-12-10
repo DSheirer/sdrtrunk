@@ -2,8 +2,6 @@
   <library name="org.asynchttpclient:async-http-client:2.0.18" type="repository">
     <properties maven-id="org.asynchttpclient:async-http-client:2.0.18" />
     <CLASSES>
-      <root url="jar://$PROJECT_DIR$/imports/async-http-client-2.0.18.jar!/" />
-      <root url="jar://$PROJECT_DIR$/imports/async-http-client-netty-utils-2.0.18.jar!/" />
       <root url="jar://$PROJECT_DIR$/imports/slf4j-api-1.7.21.jar!/" />
       <root url="jar://$PROJECT_DIR$/imports/reactive-streams-1.0.0.jar!/" />
       <root url="jar://$PROJECT_DIR$/imports/netty-reactive-streams-1.0.8.jar!/" />
@@ -25,6 +23,8 @@
       <root url="jar://$PROJECT_DIR$/imports/netty-codec-dns-4.1.6.Final.jar!/" />
       <root url="jar://$PROJECT_DIR$/imports/netty-resolver-4.1.6.Final.jar!/" />
       <root url="jar://$PROJECT_DIR$/imports/netty-resolver-dns-4.1.6.Final.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/async-http-client-2.0.24.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/async-http-client-netty-utils-2.0.24.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
