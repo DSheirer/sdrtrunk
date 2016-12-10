@@ -242,17 +242,25 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
 
     public void removeBroadcastConfiguration(BroadcastConfiguration broadcastConfiguration)
     {
+        mLog.debug("Removing broadcast configuration: " + broadcastConfiguration.getName());
         if(broadcastConfiguration != null && mBroadcastConfigurations.contains(broadcastConfiguration))
         {
             int index = mBroadcastConfigurations.indexOf(broadcastConfiguration);
 
+            mLog.debug("Removing configuration. Index was:" + index);
             mBroadcastConfigurations.remove(broadcastConfiguration);
 
+            mLog.debug("Removing configuration from map. Index was:" + index);
             mBroadcastConfigurationMap.remove(broadcastConfiguration.getName());
 
-            broadcast( new BroadcastEvent( broadcastConfiguration, BroadcastEvent.Event.CONFIGURATION_DELETE) );
+            mLog.debug("Broadcasting config delete event");
+            process(new BroadcastEvent( broadcastConfiguration, BroadcastEvent.Event.CONFIGURATION_DELETE));
 
             fireTableRowsDeleted( index, index );
+        }
+        else
+        {
+            mLog.debug("Config was null or not in the broadcaast configs list");
         }
     }
 
@@ -331,10 +339,12 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
      */
     private void deleteBroadcaster(String name)
     {
+        mLog.debug("Deleting broadcaster: " + name);
         if(name != null && mBroadcasterMap.containsKey(name))
         {
             AudioBroadcaster audioBroadcaster = mBroadcasterMap.remove(name);
 
+            mLog.debug("Found the broadcaster: " + (audioBroadcaster != null));
             if(audioBroadcaster != null)
             {
                 audioBroadcaster.stop();
@@ -350,6 +360,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                 broadcast(new BroadcastEvent(audioBroadcaster, BroadcastEvent.Event.BROADCASTER_DELETE));
             }
         }
+        mLog.debug("Finished deleting broadcaster: " + name);
     }
 
     private DefaultAsyncHttpClient getDefaultAsyncHttpClient()
@@ -390,15 +401,8 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     /**
      * Broadcasts the broadcastAudio configuration change event
      */
-    public void broadcast( BroadcastEvent event )
+    private void broadcast(BroadcastEvent event)
     {
-        if( event.getEvent() == BroadcastEvent.Event.CONFIGURATION_CHANGE)
-        {
-            int index = mBroadcastConfigurations.indexOf( event.getBroadcastConfiguration() );
-
-            fireTableRowsUpdated( index, index );
-        }
-
         mBroadcastEventBroadcaster.broadcast( event );
     }
 
@@ -416,6 +420,8 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                     break;
                 case CONFIGURATION_CHANGE:
                     BroadcastConfiguration broadcastConfiguration = broadcastEvent.getBroadcastConfiguration();
+                    int index = mBroadcastConfigurations.indexOf(broadcastConfiguration);
+                    fireTableRowsUpdated( index, index );
 
                     //Delete and recreate the broadcaster for any broadcast configuration changes
                     String previousChannelName = cleanupMapAssociations(broadcastConfiguration);

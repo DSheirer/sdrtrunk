@@ -93,10 +93,4 @@ public class BroadcastifyConfiguration extends IcecastTCPConfiguration
     {
         mFeedID = feedID;
     }
-
-    @Override
-    public boolean isValid()
-    {
-        return super.isValid() && (mFeedID > 0);
-    }
 }

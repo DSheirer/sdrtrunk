@@ -42,8 +42,7 @@ public class IcecastHTTPConfiguration extends BroadcastConfiguration
     }
 
     /**
-     * Icecast 2.3.x and 2.4.x compatible configuration
-     * @param format
+     * Icecast 2.4.x+ compatible configuration
      */
     public IcecastHTTPConfiguration(BroadcastFormat format)
     {

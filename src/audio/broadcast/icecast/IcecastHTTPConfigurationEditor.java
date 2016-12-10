@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.broadcastify;
+package audio.broadcast.icecast;
 
 import alias.AliasModel;
 import audio.broadcast.BroadcastConfiguration;
@@ -24,12 +24,9 @@ import audio.broadcast.BroadcastConfigurationEditor;
 import audio.broadcast.BroadcastEvent;
 import audio.broadcast.BroadcastModel;
 import audio.broadcast.BroadcastServerType;
-import com.radioreference.api.soap2.UserFeedBroadcast;
-import gui.editor.DocumentListenerEditor;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sample.Listener;
 import settings.SettingsManager;
 
 import javax.swing.*;
@@ -37,62 +34,37 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEditor implements Listener<UserFeedBroadcast>
+public class IcecastHTTPConfigurationEditor extends BroadcastConfigurationEditor
 {
-    private final static Logger mLog = LoggerFactory.getLogger( BroadcastifyConfigurationEditor.class );
+    private final static Logger mLog = LoggerFactory.getLogger( IcecastHTTPConfigurationEditor.class );
 
     private JTextField mName;
     private JTextField mServer;
     private JTextField mPort;
     private JTextField mMountPoint;
     private JTextField mPassword;
-    private JTextField mFeedID;
     private JButton mSaveButton;
     private JButton mResetButton;
     private JCheckBox mEnabled;
 
-    public BroadcastifyConfigurationEditor(BroadcastModel broadcastModel, AliasModel aliasModel,
-                                           SettingsManager settingsManager)
+    public IcecastHTTPConfigurationEditor(BroadcastModel broadcastModel, AliasModel aliasModel,
+                                          SettingsManager settingsManager)
     {
         super(broadcastModel, aliasModel, settingsManager);
-
         init();
     }
 
     private void init()
     {
-        setLayout( new MigLayout( "fill,wrap 2", "[align right][grow,fill]", "[][][][][][][][][][][grow,fill]" ) );
+        setLayout( new MigLayout( "fill,wrap 2", "[align right][grow,fill]", "[][][][][][][][][][grow,fill]" ) );
         setPreferredSize(new Dimension(150,400));
 
+        JLabel channelLabel = new JLabel("Icecast 2.4+ Stream");
 
-        JLabel channelLabel = new JLabel("Broadcastify Stream");
+        ImageIcon icon = mSettingsManager.getImageIcon(BroadcastServerType.ICECAST_HTTP.getIconName(), 25);
+        channelLabel.setIcon(icon);
 
-        ImageIcon broadcastifyIcon = mSettingsManager.getImageIcon(BroadcastServerType.BROADCASTIFY.getIconName(), 25);
-        channelLabel.setIcon(broadcastifyIcon);
         add(channelLabel, "span, align center");
-
-        JButton lookupButton = new JButton("Lookup ...");
-        lookupButton.addActionListener(new ActionListener()
-        {
-            @Override
-            public void actionPerformed(ActionEvent e)
-            {
-                final UserFeedSelectionDialog dialog = new UserFeedSelectionDialog(BroadcastifyConfigurationEditor.this);
-
-                EventQueue.invokeLater(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        dialog.setLocationRelativeTo(BroadcastifyConfigurationEditor.this);
-                        dialog.setVisible(true);
-                    }
-                });
-            }
-        });
-
-        add(new JLabel(""));
-        add(lookupButton, "grow,wrap");
 
         add(new JLabel("Name:"));
         mName = new JTextField();
@@ -103,32 +75,26 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
         add(new JLabel("Server:"));
         mServer = new JTextField();
         mServer.getDocument().addDocumentListener(this);
-        mServer.setToolTipText("Server address (e.g. audio3.broadcastify.com). See MyBCFY feed details, Technicals tab");
+        mServer.setToolTipText("Server address (e.g. audio1.icecast.com or localhost)");
         add(mServer);
 
         add(new JLabel("Port:"));
         mPort = new JTextField();
         mPort.getDocument().addDocumentListener(this);
-        mPort.setToolTipText("Server port number (e.g. 80). See MyBCFY feed details, Technicals tab");
+        mPort.setToolTipText("Server port number (e.g. 80)");
         add(mPort);
 
         add(new JLabel("Mount:"));
         mMountPoint = new JTextField();
         mMountPoint.getDocument().addDocumentListener(this);
-        mMountPoint.setToolTipText("Mount point (e.g. \\awlkejrlkjsd). See MyBCFY feed details, Technicals tab");
+        mMountPoint.setToolTipText("Mount point (e.g. \\12345)");
         add(mMountPoint);
 
         add(new JLabel("Password:"));
         mPassword = new JTextField();
         mPassword.getDocument().addDocumentListener(this);
-        mPassword.setToolTipText("Password. See MyBCFY feed details, Technicals tab");
+        mPassword.setToolTipText("Password for the stream");
         add(mPassword);
-
-        add(new JLabel("Feed ID:"));
-        mFeedID = new JTextField();
-        mFeedID.getDocument().addDocumentListener(this);
-        mFeedID.setToolTipText("Feed ID (optional). See MyBCFY feed details");
-        add(mFeedID);
 
         mEnabled = new JCheckBox("Enabled");
         mEnabled.setToolTipText("Enable (checked) or disable this stream");
@@ -140,8 +106,7 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
                 setModified(true);
             }
         });
-        add(new JLabel());
-        add(mEnabled);
+        add(mEnabled, "span");
 
         mSaveButton = new JButton("Save");
         mSaveButton.setEnabled(false);
@@ -158,7 +123,7 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
 
         mResetButton = new JButton("Reset");
         mResetButton.setEnabled(false);
-        mResetButton.setToolTipText("Click to reset any changes you've made\n since the last save");
+        mResetButton.setToolTipText("Click to reset any changes you've made since the last save");
         mResetButton.addActionListener(new ActionListener()
         {
             @Override
@@ -187,14 +152,13 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
 
         if(hasItem())
         {
-            BroadcastifyConfiguration config = (BroadcastifyConfiguration)getItem();
+            IcecastHTTPConfiguration config = (IcecastHTTPConfiguration)getItem();
 
             mName.setText(config.getName());
             mServer.setText(config.getHost());
             mPort.setText(config.getPort() != 0 ? String.valueOf(config.getPort()) : null);
             mMountPoint.setText(config.getMountPoint());
             mPassword.setText(config.getPassword());
-            mFeedID.setText(String.valueOf(config.getFeedID()));
             mEnabled.setSelected(config.isEnabled());
         }
         else
@@ -204,7 +168,6 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
             mPort.setText(null);
             mMountPoint.setText(null);
             mPassword.setText(null);
-            mFeedID.setText(null);
             mEnabled.setSelected(false);
         }
 
@@ -214,7 +177,7 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
     @Override
     public void save()
     {
-        BroadcastifyConfiguration config = (BroadcastifyConfiguration)getItem();
+        IcecastHTTPConfiguration config = (IcecastHTTPConfiguration)getItem();
 
         if(validateConfiguration())
         {
@@ -223,7 +186,6 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
             config.setPort(getPort());
             config.setMountPoint(mMountPoint.getText());
             config.setPassword(mPassword.getText());
-            config.setFeedID(getFeedID());
             config.setEnabled(mEnabled.isSelected());
 
             setModified(false);
@@ -246,7 +208,7 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
                     "Please specify a stream name." : "Stream name " + name +
                     "is already in use.\nPlease choose another name.";
 
-            JOptionPane.showMessageDialog(BroadcastifyConfigurationEditor.this,
+            JOptionPane.showMessageDialog(IcecastHTTPConfigurationEditor.this,
                     message, "Invalid Stream Name", JOptionPane.ERROR_MESSAGE);
 
             mName.requestFocus();
@@ -301,38 +263,5 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
         }
 
         return 0;
-    }
-
-    /**
-     * Parses an Integer from the port text control or returns 0 if the control doesn't contain an integer value.
-     */
-    private int getFeedID()
-    {
-        String feedID = mFeedID.getText();
-
-        if(feedID != null && !feedID.isEmpty())
-        {
-            try
-            {
-                return Integer.parseInt(feedID);
-            }
-            catch(Exception e)
-            {
-                //Do nothing, we couldn't parse the number value
-            }
-        }
-
-        return 0;
-    }
-
-    @Override
-    public void receive(UserFeedBroadcast userFeedBroadcast)
-    {
-        mName.setText(userFeedBroadcast.getDescr());
-        mServer.setText(userFeedBroadcast.getHostname());
-        mPort.setText(userFeedBroadcast.getPort());
-        mMountPoint.setText(userFeedBroadcast.getMount());
-        mPassword.setText(userFeedBroadcast.getPassword());
-        mFeedID.setText(String.valueOf(userFeedBroadcast.getFeedId()));
     }
 }
