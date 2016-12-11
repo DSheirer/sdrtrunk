@@ -365,7 +365,17 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
             DefaultAsyncHttpClientConfig config =
                 new DefaultAsyncHttpClientConfig.Builder()
                     .setReadTimeout(-1)
+                    .setThreadPoolName("audio-broadcast-pool")
+                    .setUserAgent(SystemProperties.getInstance().getApplicationName())
                     .build();
+
+            mLog.debug("Client Config - Request Timeout:" + config.getRequestTimeout());
+            mLog.debug("Client Config - Connection Ttl:" + config.getConnectionTtl());
+            mLog.debug("Client Config - Connect Timeout:" + config.getConnectTimeout());
+            mLog.debug("Client Config - IO Thread Count:" + config.getIoThreadsCount());
+            mLog.debug("Client Config - Pool Conn Idle Timeout:" + config.getPooledConnectionIdleTimeout());
+            mLog.debug("Client Config - Connection Pooling:" + config.getIoThreadsCount());
+
 
             mDefaultAsyncHttpClient = new DefaultAsyncHttpClient(config);
         }

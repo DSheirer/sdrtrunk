@@ -42,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import properties.SystemProperties;
 
+import java.net.ConnectException;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -248,6 +249,7 @@ public class IcecastHTTPAudioBroadcaster extends AudioBroadcaster implements Pub
             if(canConnect() && System.currentTimeMillis() - mLastConnectionAttempt >= RECONNECT_INTERVAL_MILLISECONDS)
             {
                 mLog.debug("Creating a connection to icecast server");
+                setBroadcastState(BroadcastState.CONNECTING);
                 mLastConnectionAttempt = System.currentTimeMillis();
 
                 Uri uri = new Uri(Uri.HTTP, null, getConfiguration().getHost(), getConfiguration().getPort(),
@@ -299,7 +301,8 @@ public class IcecastHTTPAudioBroadcaster extends AudioBroadcaster implements Pub
 
                 requestBuilder.addHeader(IcecastHeader.EXPECT.getValue(), HTTP_100_CONTINUE);
 
-                ListenableFuture<Response> future = requestBuilder.execute(new AsyncHttpConnectionResponseHandler());
+                requestBuilder.setRequestTimeout(1000);
+                requestBuilder.execute(new AsyncHttpConnectionResponseHandler());
             }
             else
             {
@@ -313,8 +316,19 @@ public class IcecastHTTPAudioBroadcaster extends AudioBroadcaster implements Pub
         @Override
         public void onThrowable(Throwable throwable)
         {
-            mLog.error("BROADCAST error", throwable);
-            setBroadcastState(BroadcastState.BROADCAST_ERROR);
+            mLog.debug("Got a throwable!");
+            if(throwable instanceof ConnectException)
+            {
+                if(throwable.getMessage().contains("Connection refused"))
+                {
+                    setBroadcastState(BroadcastState.NO_SERVER);
+                }
+            }
+            else
+            {
+                mLog.error("Error connecting to remote server - " + throwable.getMessage());
+                setBroadcastState(BroadcastState.BROADCAST_ERROR);
+            }
             mConnecting.compareAndSet(true, false);
         }
 
@@ -393,13 +407,15 @@ public class IcecastHTTPAudioBroadcaster extends AudioBroadcaster implements Pub
         @Override
         public State onHeadersReceived(HttpResponseHeaders httpResponseHeaders) throws Exception
         {
+            mLog.debug("Got headers received");
             return State.CONTINUE;
         }
 
         @Override
         public Response onCompleted() throws Exception
         {
-            mLog.debug("We're completed");
+            mLog.debug("Got on completed");
+            setBroadcastState(BroadcastState.DISCONNECTED);
             return null;
         }
     }

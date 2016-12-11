@@ -92,6 +92,11 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
                 SystemProperties.getInstance().getApplicationFolder(BroadcastModel.TEMPORARY_STREAM_DIRECTORY));
     }
 
+    protected ThreadPoolManager getThreadPoolManager()
+    {
+        return mThreadPoolManager;
+    }
+
     /**
      * Broadcast binary audio data frames or sequences.
      */

@@ -38,7 +38,7 @@ public enum BroadcastState
     /**
      * Disconnected from the broadcastAudio server
      */
-    DISCONNECTED("Disconnected", true),
+    DISCONNECTED("Disconnected", false),
 
     /**
      * Invalid password
