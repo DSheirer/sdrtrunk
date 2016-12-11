@@ -22,11 +22,12 @@ import audio.AudioPacket;
 import audio.broadcast.AudioBroadcaster;
 import audio.broadcast.BroadcastState;
 import audio.metadata.AudioMetadata;
+import audio.metadata.Metadata;
+import audio.metadata.MetadataType;
 import controller.ThreadPoolManager;
 import org.asynchttpclient.AsyncHandler;
 import org.asynchttpclient.BoundRequestBuilder;
 import org.asynchttpclient.DefaultAsyncHttpClient;
-import org.asynchttpclient.DefaultAsyncHttpClientConfig;
 import org.asynchttpclient.HttpResponseBodyPart;
 import org.asynchttpclient.HttpResponseHeaders;
 import org.asynchttpclient.HttpResponseStatus;
@@ -41,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import properties.SystemProperties;
 
+import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,6 +53,7 @@ public class IcecastHTTPAudioBroadcaster extends AudioBroadcaster implements Pub
 {
     private final static Logger mLog = LoggerFactory.getLogger( IcecastHTTPAudioBroadcaster.class );
 
+    private static final String UTF8 = "UTF-8";
     private static final String HTTP_100_CONTINUE = "100-continue";
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 15000; //15 seconds
     private long mLastConnectionAttempt = 0;
@@ -59,6 +62,7 @@ public class IcecastHTTPAudioBroadcaster extends AudioBroadcaster implements Pub
     private List<AudioPacket> mPacketsToBroadcast = new ArrayList<>();
     private ConvertedAudioStreamSubscription mSubscription;
     private AtomicBoolean mConnecting = new AtomicBoolean();
+    private boolean mFirstMetadataUpdateSuppressed = false;
 
     /**
      * Creates an Icecast 2 (v2.4.x or newer) compatible broadcaster using HTTP 1.1 protocol
@@ -89,7 +93,95 @@ public class IcecastHTTPAudioBroadcaster extends AudioBroadcaster implements Pub
     @Override
     protected void broadcastMetadata(AudioMetadata metadata)
     {
-        mLog.debug("Request to send metadata to Icecast HTTP server - needs code!");
+        if(connected() && mFirstMetadataUpdateSuppressed)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            if(metadata != null)
+            {
+                Metadata to = metadata.getMetadata(MetadataType.TO);
+
+                sb.append("TO:");
+
+                if(to != null)
+                {
+                    if(to.hasAlias())
+                    {
+                        sb.append(to.getAlias().getName());
+                    }
+                    else
+                    {
+                        sb.append(to.getValue());
+                    }
+                }
+                else
+                {
+                    sb.append("UNKNOWN");
+                }
+
+                Metadata from = metadata.getMetadata(MetadataType.FROM);
+
+                sb.append(" FROM:");
+
+                if(from != null)
+                {
+
+                    if(from.hasAlias())
+                    {
+                        sb.append(from.getAlias().getName());
+                    }
+                    else
+                    {
+                        sb.append(from.getValue());
+                    }
+                }
+                else
+                {
+                    sb.append("UNKNOWN");
+                }
+            }
+            else
+            {
+                sb.append("Scanning ....");
+            }
+
+            try
+            {
+                if(mDefaultAsyncHttpClient == null)
+                {
+                    mDefaultAsyncHttpClient = new DefaultAsyncHttpClient();
+                }
+
+                String songEncoded = URLEncoder.encode(sb.toString(), UTF8);
+
+                StringBuilder query = new StringBuilder();
+                query.append("/admin/metadata?mode=updinfo");
+                query.append("&mount=").append(getConfiguration().getMountPoint());
+                query.append("&charset=UTF%2d8");
+                query.append("&song=").append(songEncoded);
+
+                Uri uri = new Uri(Uri.HTTP, null, getConfiguration().getHost(), getConfiguration().getPort(),
+                    query.toString(), null);
+
+                BoundRequestBuilder builder = mDefaultAsyncHttpClient.prepareGet(uri.toUrl());
+
+                //Use Basic (base64) authentication
+                Realm realm = new Realm.Builder(getConfiguration().getUserName(), getConfiguration().getPassword())
+                    .setScheme(Realm.AuthScheme.BASIC).setUsePreemptiveAuth(true).build();
+                builder.setRealm(realm);
+                builder.addHeader(IcecastHeader.USER_AGENT.getValue(), SystemProperties.getInstance().getApplicationName());
+
+                mDefaultAsyncHttpClient.executeRequest(builder.build());
+            }
+            catch(Exception e)
+            {
+                mLog.debug("Error while updating metadata", e);
+            }
+        }
+        else if(connected())
+        {
+            mFirstMetadataUpdateSuppressed = true;
+        }
     }
 
     /**
@@ -161,58 +253,53 @@ public class IcecastHTTPAudioBroadcaster extends AudioBroadcaster implements Pub
                 Uri uri = new Uri(Uri.HTTP, null, getConfiguration().getHost(), getConfiguration().getPort(),
                         getConfiguration().getMountPoint(), null);
 
-                mLog.debug("URL:" + uri.toUrl());
+                BoundRequestBuilder requestBuilder = mDefaultAsyncHttpClient.preparePut(uri.toUrl());
 
-                BoundRequestBuilder builder = mDefaultAsyncHttpClient.preparePut(uri.toUrl());
-
-                mLog.debug("Setting security realm");
                 //Use Basic (base64) authentication
                 Realm realm = new Realm.Builder(getConfiguration().getUserName(), getConfiguration().getPassword())
                         .setScheme(Realm.AuthScheme.BASIC).setUsePreemptiveAuth(true).build();
-                builder.setRealm(realm);
-                builder.setBody(this);
+                requestBuilder.setRealm(realm);
+                requestBuilder.setBody(this);
 
-                mLog.debug("Adding headers");
-                builder.addHeader(IcecastHeader.ACCEPT.getValue(), "*/*");
-                builder.addHeader(IcecastHeader.CONTENT_TYPE.getValue(), getConfiguration().getBroadcastFormat().getValue());
-                builder.addHeader(IcecastHeader.PUBLIC.getValue(), getConfiguration().isPublic() ? "1" : "0");
+                //We don't want this request to timeout since it will exist while we are streaming
+                requestBuilder.setRequestTimeout(-1);
+
+                requestBuilder.addHeader(IcecastHeader.ACCEPT.getValue(), "*/*");
+                requestBuilder.addHeader(IcecastHeader.CONTENT_TYPE.getValue(), getConfiguration().getBroadcastFormat().getValue());
+                requestBuilder.addHeader(IcecastHeader.PUBLIC.getValue(), getConfiguration().isPublic() ? "1" : "0");
 
                 if(getConfiguration().hasName())
                 {
-                    builder.addHeader(IcecastHeader.NAME.getValue(), getConfiguration().getName());
+                    requestBuilder.addHeader(IcecastHeader.NAME.getValue(), getConfiguration().getName());
                 }
 
                 if(getConfiguration().hasDescription())
                 {
-                    builder.addHeader(IcecastHeader.DESCRIPTION.getValue(), getConfiguration().getDescription());
+                    requestBuilder.addHeader(IcecastHeader.DESCRIPTION.getValue(), getConfiguration().getDescription());
                 }
 
                 if(getConfiguration().hasURL())
                 {
-                    builder.addHeader(IcecastHeader.URL.getValue(), getConfiguration().getURL());
+                    requestBuilder.addHeader(IcecastHeader.URL.getValue(), getConfiguration().getURL());
                 }
 
                 if(getConfiguration().hasGenre())
                 {
-                    builder.addHeader(IcecastHeader.GENRE.getValue(), getConfiguration().getGenre());
+                    requestBuilder.addHeader(IcecastHeader.GENRE.getValue(), getConfiguration().getGenre());
                 }
 
 
                 if(getConfiguration().hasBitRate())
                 {
-                    builder.addHeader(IcecastHeader.BITRATE.getValue(), String.valueOf(getConfiguration().getBitRate()));
+                    requestBuilder.addHeader(IcecastHeader.BITRATE.getValue(), String.valueOf(getConfiguration().getBitRate()));
                 }
 
-                builder.addHeader(IcecastHeader.USER_AGENT.getValue(),
+                requestBuilder.addHeader(IcecastHeader.USER_AGENT.getValue(),
                         SystemProperties.getInstance().getApplicationName());
 
-                builder.addHeader(IcecastHeader.EXPECT.getValue(), HTTP_100_CONTINUE);
+                requestBuilder.addHeader(IcecastHeader.EXPECT.getValue(), HTTP_100_CONTINUE);
 
-                mLog.debug("executing connection with http client");
-
-                ListenableFuture<Response> future = builder.execute(new AsyncHttpConnectionResponseHandler());
-
-                mLog.debug("Create connection was submitted asynchronously");
+                ListenableFuture<Response> future = requestBuilder.execute(new AsyncHttpConnectionResponseHandler());
             }
             else
             {
@@ -306,7 +393,6 @@ public class IcecastHTTPAudioBroadcaster extends AudioBroadcaster implements Pub
         @Override
         public State onHeadersReceived(HttpResponseHeaders httpResponseHeaders) throws Exception
         {
-            mLog.debug("Got response headers!");
             return State.CONTINUE;
         }
 
@@ -345,8 +431,6 @@ public class IcecastHTTPAudioBroadcaster extends AudioBroadcaster implements Pub
         public void request(long requestedBufferCount)
         {
             mDemand.getAndAdd(requestedBufferCount);
-
-            mLog.debug("Subscriber request:" + requestedBufferCount + " outstanding demand: " + mDemand.get());
         }
 
         /**

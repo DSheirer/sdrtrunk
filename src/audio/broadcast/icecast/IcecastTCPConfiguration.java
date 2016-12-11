@@ -40,7 +40,7 @@ public class IcecastTCPConfiguration extends BroadcastConfiguration
     private String mDescription;
     private String mGenre;
     private boolean mPublic;
-    private int mBitRate;
+    private int mBitRate = 16;
     private int mChannels = 1;
     private int mSampleRate = 8000;
     private String mURL;

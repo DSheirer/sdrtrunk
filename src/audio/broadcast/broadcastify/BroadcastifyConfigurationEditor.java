@@ -33,6 +33,8 @@ import sample.Listener;
 import settings.SettingsManager;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -41,15 +43,19 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
 {
     private final static Logger mLog = LoggerFactory.getLogger( BroadcastifyConfigurationEditor.class );
 
+    private static final int ONE_MINUTE_MS = 60000;
+
     private JTextField mName;
     private JTextField mServer;
     private JTextField mPort;
     private JTextField mMountPoint;
     private JTextField mPassword;
     private JTextField mFeedID;
+    private JSlider mDelay;
+    private JLabel mDelayValue;
+    private JCheckBox mEnabled;
     private JButton mSaveButton;
     private JButton mResetButton;
-    private JCheckBox mEnabled;
 
     public BroadcastifyConfigurationEditor(BroadcastModel broadcastModel, AliasModel aliasModel,
                                            SettingsManager settingsManager)
@@ -61,7 +67,8 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
 
     private void init()
     {
-        setLayout( new MigLayout( "fill,wrap 2", "[align right][grow,fill]", "[][][][][][][][][][][grow,fill]" ) );
+        setLayout( new MigLayout( "fill,wrap 2", "[align right][grow,fill]",
+            "[][][][][][][][][][][][][grow,fill]" ) );
         setPreferredSize(new Dimension(150,400));
 
 
@@ -130,6 +137,27 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
         mFeedID.setToolTipText("Feed ID (optional). See MyBCFY feed details");
         add(mFeedID);
 
+
+        add(new JLabel());
+        mDelayValue = new JLabel("0 Minutes");
+        add(mDelayValue);
+
+        add(new JLabel("Delay:"));
+        mDelay = new JSlider(0,60,0);
+        mDelay.setMajorTickSpacing(10);
+        mDelay.setMinorTickSpacing(5);
+        mDelay.addChangeListener(new ChangeListener()
+        {
+            @Override
+            public void stateChanged(ChangeEvent e)
+            {
+                mDelayValue.setText(mDelay.getValue() + " Minutes");
+                setModified(true);
+            }
+        });
+        mDelay.setToolTipText("Audio broadcast delay in minutes");
+        add(mDelay);
+
         mEnabled = new JCheckBox("Enabled");
         mEnabled.setToolTipText("Enable (checked) or disable this stream");
         mEnabled.addActionListener(new ActionListener()
@@ -195,6 +223,7 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
             mMountPoint.setText(config.getMountPoint());
             mPassword.setText(config.getPassword());
             mFeedID.setText(String.valueOf(config.getFeedID()));
+            mDelay.setValue((int)(config.getDelay() / ONE_MINUTE_MS));
             mEnabled.setSelected(config.isEnabled());
         }
         else
@@ -205,6 +234,7 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
             mMountPoint.setText(null);
             mPassword.setText(null);
             mFeedID.setText(null);
+            mDelay.setValue(0);
             mEnabled.setSelected(false);
         }
 
@@ -224,6 +254,7 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
             config.setMountPoint(mMountPoint.getText());
             config.setPassword(mPassword.getText());
             config.setFeedID(getFeedID());
+            config.setDelay(mDelay.getValue() * ONE_MINUTE_MS);
             config.setEnabled(mEnabled.isSelected());
 
             setModified(false);

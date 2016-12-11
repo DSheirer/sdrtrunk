@@ -32,6 +32,8 @@ import org.slf4j.LoggerFactory;
 import settings.SettingsManager;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -40,14 +42,21 @@ public class IcecastTCPConfigurationEditor extends BroadcastConfigurationEditor
 {
     private final static Logger mLog = LoggerFactory.getLogger( IcecastTCPConfigurationEditor.class );
 
+    private static final int ONE_MINUTE_MS = 60000;
+
     private JTextField mName;
     private JTextField mServer;
     private JTextField mPort;
     private JTextField mMountPoint;
     private JTextField mPassword;
+    private JTextField mDescription;
+    private JTextField mGenre;
+    private JCheckBox mPublic;
+    private JSlider mDelay;
+    private JLabel mDelayValue;
+    private JCheckBox mEnabled;
     private JButton mSaveButton;
     private JButton mResetButton;
-    private JCheckBox mEnabled;
 
     public IcecastTCPConfigurationEditor(BroadcastModel broadcastModel, AliasModel aliasModel,
                                          SettingsManager settingsManager)
@@ -58,7 +67,8 @@ public class IcecastTCPConfigurationEditor extends BroadcastConfigurationEditor
 
     private void init()
     {
-        setLayout( new MigLayout( "fill,wrap 2", "[align right][grow,fill]", "[][][][][][][][][][grow,fill]" ) );
+        setLayout( new MigLayout( "fill,wrap 2", "[align right][grow,fill]",
+            "[][][][][][][][][][][][][][grow,fill]" ) );
         setPreferredSize(new Dimension(150,400));
 
         JLabel channelLabel = new JLabel("Icecast (v2.3) Stream");
@@ -98,7 +108,53 @@ public class IcecastTCPConfigurationEditor extends BroadcastConfigurationEditor
         mPassword.setToolTipText("Password for the stream");
         add(mPassword);
 
-        mEnabled = new JCheckBox("Enabled");
+        add(new JLabel("Description:"));
+        mDescription = new JTextField();
+        mDescription.getDocument().addDocumentListener(this);
+        mDescription.setToolTipText("Description of the stream contents");
+        add(mDescription);
+
+        add(new JLabel("Genre:"));
+        mGenre = new JTextField();
+        mGenre.getDocument().addDocumentListener(this);
+        mGenre.setToolTipText("Genre (e.g. public safety)");
+        add(mGenre);
+
+        add(new JLabel("Public:"));
+        mPublic = new JCheckBox();
+        mPublic.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                setModified(true);
+            }
+        });
+        mPublic.setToolTipText("Designate stream as public (checked) or private");
+        add(mPublic);
+
+        add(new JLabel());
+        mDelayValue = new JLabel("0 Minutes");
+        add(mDelayValue);
+
+        add(new JLabel("Delay:"));
+        mDelay = new JSlider(0,60,0);
+        mDelay.setMajorTickSpacing(10);
+        mDelay.setMinorTickSpacing(5);
+        mDelay.addChangeListener(new ChangeListener()
+        {
+            @Override
+            public void stateChanged(ChangeEvent e)
+            {
+                mDelayValue.setText(mDelay.getValue() + " Minutes");
+                setModified(true);
+            }
+        });
+        mDelay.setToolTipText("Audio broadcast delay in minutes");
+        add(mDelay);
+
+        add(new JLabel("Enabled:")); //Empty
+        mEnabled = new JCheckBox();
         mEnabled.setToolTipText("Enable (checked) or disable this stream");
         mEnabled.addActionListener(new ActionListener()
         {
@@ -108,7 +164,7 @@ public class IcecastTCPConfigurationEditor extends BroadcastConfigurationEditor
                 setModified(true);
             }
         });
-        add(mEnabled, "span");
+        add(mEnabled);
 
         mSaveButton = new JButton("Save");
         mSaveButton.setEnabled(false);
@@ -161,6 +217,10 @@ public class IcecastTCPConfigurationEditor extends BroadcastConfigurationEditor
             mPort.setText(config.getPort() != 0 ? String.valueOf(config.getPort()) : null);
             mMountPoint.setText(config.getMountPoint());
             mPassword.setText(config.getPassword());
+            mDescription.setText(config.getDescription());
+            mGenre.setText(config.getGenre());
+            mPublic.setSelected(config.isPublic());
+            mDelay.setValue((int)(config.getDelay() / ONE_MINUTE_MS));
             mEnabled.setSelected(config.isEnabled());
         }
         else
@@ -170,6 +230,10 @@ public class IcecastTCPConfigurationEditor extends BroadcastConfigurationEditor
             mPort.setText(null);
             mMountPoint.setText(null);
             mPassword.setText(null);
+            mDescription.setText(null);
+            mGenre.setText(null);
+            mPublic.setSelected(true);
+            mDelay.setValue(0);
             mEnabled.setSelected(false);
         }
 
@@ -188,6 +252,10 @@ public class IcecastTCPConfigurationEditor extends BroadcastConfigurationEditor
             config.setPort(getPort());
             config.setMountPoint(mMountPoint.getText());
             config.setPassword(mPassword.getText());
+            config.setDescription(mDescription.getText());
+            config.setGenre(mGenre.getText());
+            config.setPublic(mPublic.isSelected());
+            config.setDelay(mDelay.getValue() * ONE_MINUTE_MS);
             config.setEnabled(mEnabled.isSelected());
 
             setModified(false);

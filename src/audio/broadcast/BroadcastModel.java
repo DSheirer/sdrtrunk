@@ -22,6 +22,7 @@ import alias.id.broadcast.BroadcastChannel;
 import audio.AudioPacket;
 import controller.ThreadPoolManager;
 import org.asynchttpclient.DefaultAsyncHttpClient;
+import org.asynchttpclient.DefaultAsyncHttpClientConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import properties.SystemProperties;
@@ -360,7 +361,13 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     {
         if (mDefaultAsyncHttpClient == null)
         {
-            mDefaultAsyncHttpClient = new DefaultAsyncHttpClient();
+            //Set read timeout to never expire so that our streams don't get interrupted
+            DefaultAsyncHttpClientConfig config =
+                new DefaultAsyncHttpClientConfig.Builder()
+                    .setReadTimeout(-1)
+                    .build();
+
+            mDefaultAsyncHttpClient = new DefaultAsyncHttpClient(config);
         }
 
         return mDefaultAsyncHttpClient;
