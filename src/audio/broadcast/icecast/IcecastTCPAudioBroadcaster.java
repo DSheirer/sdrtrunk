@@ -19,11 +19,24 @@
 package audio.broadcast.icecast;
 
 import audio.broadcast.AudioBroadcaster;
+import audio.broadcast.BroadcastFormat;
 import audio.broadcast.BroadcastState;
 import audio.metadata.AudioMetadata;
 import audio.metadata.Metadata;
 import audio.metadata.MetadataType;
 import controller.ThreadPoolManager;
+import org.apache.mina.core.RuntimeIoException;
+import org.apache.mina.core.future.ConnectFuture;
+import org.apache.mina.core.future.IoFuture;
+import org.apache.mina.core.future.IoFutureListener;
+import org.apache.mina.core.service.IoHandler;
+import org.apache.mina.core.service.IoHandlerAdapter;
+import org.apache.mina.core.session.IdleStatus;
+import org.apache.mina.core.session.IoSession;
+import org.apache.mina.filter.codec.ProtocolCodecFilter;
+import org.apache.mina.filter.codec.textline.TextLineCodecFactory;
+import org.apache.mina.filter.logging.LoggingFilter;
+import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.asynchttpclient.BoundRequestBuilder;
 import org.asynchttpclient.DefaultAsyncHttpClient;
 import org.asynchttpclient.Realm;
@@ -36,11 +49,14 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ConnectException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
+import java.nio.charset.Charset;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
@@ -49,16 +65,14 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
     private final static String UTF8 = "UTF-8";
     private final static String TERMINATOR = "\r\n";
     private final static String SEPARATOR = ":";
-
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 15000; //15 seconds
+
+    NioSocketConnector mSocketConnector;
+    IoSession mSession = null;
+
     private long mLastConnectionAttempt = 0;
-    private AtomicBoolean mConnecting = new AtomicBoolean();
-    private Socket mSocket;
-    private DataOutputStream mOutputStream;
-    private DataInputStream mInputStream;
-    private DefaultAsyncHttpClient mDefaultAsyncHttpClient;
-    private boolean mFirstMetadataUpdateSuppressed = false;
     private byte[] mSilenceFrame;
+    private AtomicBoolean mConnecting = new AtomicBoolean();
 
     /**
      * Creates an Icecast 2.3.2 compatible broadcaster using TCP and a pseudo HTTP 1.0 protocol.  This broadcaster is
@@ -73,8 +87,6 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
                                       IcecastTCPConfiguration configuration)
     {
         super(threadPoolManager, configuration);
-
-        mDefaultAsyncHttpClient = httpClient;
     }
 
     /**
@@ -127,7 +139,7 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
     @Override
     protected void broadcastMetadata(AudioMetadata metadata)
     {
-        if(connected() && mFirstMetadataUpdateSuppressed)
+        if(mSession != null && mSession.isConnected())
         {
             StringBuilder sb = new StringBuilder();
 
@@ -181,40 +193,19 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
 
             try
             {
-                if(mDefaultAsyncHttpClient == null)
-                {
-                    mDefaultAsyncHttpClient = new DefaultAsyncHttpClient();
-                }
-
                 String songEncoded = URLEncoder.encode(sb.toString(), UTF8);
-
                 StringBuilder query = new StringBuilder();
-                query.append("/admin/metadata?mode=updinfo");
+                query.append("GET /admin/metadata?mode=updinfo");
                 query.append("&mount=").append(getConfiguration().getMountPoint());
                 query.append("&charset=UTF%2d8");
                 query.append("&song=").append(songEncoded);
 
-                Uri uri = new Uri(Uri.HTTP, null, getConfiguration().getHost(), getConfiguration().getPort(),
-                        query.toString(), null);
-
-                BoundRequestBuilder builder = mDefaultAsyncHttpClient.prepareGet(uri.toUrl());
-
-                //Use Basic (base64) authentication
-                Realm realm = new Realm.Builder(getConfiguration().getUserName(), getConfiguration().getPassword())
-                        .setScheme(Realm.AuthScheme.BASIC).setUsePreemptiveAuth(true).build();
-                builder.setRealm(realm);
-                builder.addHeader(IcecastHeader.USER_AGENT.getValue(), SystemProperties.getInstance().getApplicationName());
-
-                mDefaultAsyncHttpClient.executeRequest(builder.build());
+                send(query.toString());
             }
             catch(Exception e)
             {
                 mLog.debug("Error while updating metadata", e);
             }
-        }
-        else if(connected())
-        {
-            mFirstMetadataUpdateSuppressed = true;
         }
     }
 
@@ -228,9 +219,79 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
      */
     private boolean connect()
     {
-        if(canConnect())
+        if(!connected() && canConnect() && mConnecting.compareAndSet(false, true))
         {
-            createConnection();
+            if(mSocketConnector == null)
+            {
+                mLog.debug("NIO socket connector - creating");
+                mSocketConnector = new NioSocketConnector();
+                mSocketConnector.setConnectTimeoutCheckInterval(10000);
+                mSocketConnector.getFilterChain().addLast("logger",
+                    new LoggingFilter(IcecastTCPAudioBroadcaster.class));
+                mSocketConnector.getFilterChain().addLast("codec",
+                    new ProtocolCodecFilter(new TextLineCodecFactory((Charset.forName("UTF-8")))));
+                mLog.debug("NIO socket connector - setting handler");
+                mSocketConnector.setHandler(new IcecastTCPIOHandler());
+            }
+
+            mSession = null;
+
+            Runnable runnable = new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    mLog.debug("Runnable - connecting to server");
+                    setBroadcastState(BroadcastState.CONNECTING);
+
+                    try
+                    {
+                        ConnectFuture future = mSocketConnector
+                            .connect(new InetSocketAddress(getBroadcastConfiguration().getHost(),
+                                getBroadcastConfiguration().getPort()));
+
+                        mLog.debug("Runnable - blocking for connection");
+                        future.awaitUninterruptibly();
+
+                        mLog.debug("Runnable - assigning session");
+                        mSession = future.getSession();
+                    }
+                    catch(RuntimeIoException rie)
+                    {
+                        Throwable throwableCause = rie.getCause();
+
+                        if(throwableCause instanceof ConnectException)
+                        {
+                            setBroadcastState(BroadcastState.NO_SERVER);
+                        }
+                        else if(throwableCause != null)
+                        {
+                            setBroadcastState(BroadcastState.BROADCAST_ERROR);
+                            mLog.debug("Cause Class:" + throwableCause.getClass());
+                        }
+
+                        mLog.debug("Failed to connect", rie);
+                    }
+
+                    if(mSession != null)
+                    {
+                        mLog.debug("We have a session -- blocking thread awaiting the closing future");
+                        mSession.getCloseFuture().awaitUninterruptibly();
+                    }
+
+                    mLog.debug("Disposing the connector");
+                    mSocketConnector.dispose();
+                    mSession = null;
+                    mSocketConnector = null;
+
+                    mConnecting.set(false);
+
+                    mLog.debug("Session is closed & finished");
+                }
+            };
+
+            getThreadPoolManager().scheduleOnce(runnable, 0l, TimeUnit.SECONDS);
+
         }
 
         return connected();
@@ -244,117 +305,17 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
     {
         mLog.info("Disconnecting Icecast TCP audio broadcaster");
 
-        if(mOutputStream != null)
+        if(mConnecting.get())
         {
-            try
+            if(mSession != null)
             {
-                mOutputStream.flush();
-                mOutputStream.close();
-            }
-            catch(IOException ioe)
-            {
-                mLog.debug("Error closing output stream", ioe);
+                mSession.closeNow();
             }
 
-            mOutputStream = null;
-        }
-
-        if(mInputStream != null)
-        {
-            try
+            if(!isErrorState())
             {
-                mInputStream.close();
+                setBroadcastState(BroadcastState.READY);
             }
-            catch(IOException ioe)
-            {
-                mLog.debug("Error closing input stream", ioe);
-            }
-
-            mInputStream = null;
-        }
-
-        if(mSocket != null)
-        {
-            try
-            {
-                mSocket.close();
-            }
-            catch(IOException ioe)
-            {
-                mLog.error("Error closing socket", ioe);
-            }
-
-            mSocket = null;
-        }
-
-        if(!isErrorState())
-        {
-            setBroadcastState(BroadcastState.READY);
-        }
-    }
-
-    /**
-     * Creates a connection to the remote server using the icecast configuration information.  Once disconnected
-     * following a successful connection, successive calls to this method will attempt to reestablish a connection on a
-     * minimum reconnection attempt interval
-     */
-    private void createConnection()
-    {
-        if(mConnecting.compareAndSet(false, true))
-        {
-            if(canConnect() && System.currentTimeMillis() - mLastConnectionAttempt >= RECONNECT_INTERVAL_MILLISECONDS)
-            {
-                mLog.debug("Creating a connection to icecast server");
-                mLastConnectionAttempt = System.currentTimeMillis();
-
-                createSocket();
-
-                if(mSocket.isConnected())
-                {
-                    StringBuilder sb = new StringBuilder();
-                    sb.append("SOURCE ").append(getConfiguration().getMountPoint());
-                    sb.append(" HTTP/1.0").append(TERMINATOR);
-
-                    sb.append("Authorization: ").append(getConfiguration().getEncodedCredentials()).append(TERMINATOR);
-                    sb.append(IcecastHeader.USER_AGENT.getValue()).append(SEPARATOR)
-                            .append(SystemProperties.getInstance().getApplicationName()).append(TERMINATOR);
-                    sb.append(IcecastHeader.CONTENT_TYPE.getValue()).append(SEPARATOR)
-                            .append(getConfiguration().getBroadcastFormat().getValue()).append(TERMINATOR);
-                    sb.append(IcecastHeader.PUBLIC.getValue()).append(SEPARATOR)
-                            .append(getConfiguration().isPublic() ? "1" : "0").append(TERMINATOR);
-
-                    if(getConfiguration().hasGenre())
-                    {
-                        sb.append(IcecastHeader.GENRE.getValue()).append(SEPARATOR)
-                                .append(getConfiguration().getGenre()).append(TERMINATOR);
-                    }
-
-                    if(getConfiguration().hasDescription())
-                    {
-                        sb.append(IcecastHeader.DESCRIPTION.getValue()).append(SEPARATOR)
-                                .append(getConfiguration().getDescription()).append(TERMINATOR);
-                    }
-
-                    sb.append(getAudioInfoMetadata());
-
-                    sb.append(TERMINATOR).append(TERMINATOR);
-
-                    try
-                    {
-                        mLog.debug("Sending connection string");
-                        send(sb.toString());
-                    }
-                    catch(IOException e)
-                    {
-                        mLog.error("Error while connecting with ...\n" + sb.toString(), e);
-                    }
-                }
-
-                mLog.debug("Checking response ...");
-                checkConnectionAttemptResponse();
-            }
-
-            mConnecting.set(false);
         }
     }
 
@@ -403,75 +364,6 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
     }
 
     /**
-     * Creates a socket connection to the remote server and sets the state to CONNECTING or indicates an error state
-     * if the socket is unable to connect to the remote server with the current configuration information.
-     */
-    private void createSocket()
-    {
-        if(mSocket == null)
-        {
-            try
-            {
-                mSocket = new Socket(getConfiguration().getHost(),
-                        getConfiguration().getPort());
-                mOutputStream = new DataOutputStream(mSocket.getOutputStream());
-                mInputStream = new DataInputStream(mSocket.getInputStream());
-            }
-            catch(UnknownHostException uhe)
-            {
-                setBroadcastState(BroadcastState.UNKNOWN_HOST);
-                mLog.error("Unknown host or port.  Unable to create connection to streaming server host[" +
-                        getConfiguration().getHost() + "] and port[" +
-                        getConfiguration().getPort() + "] - will reattempt connection periodically");
-                return;
-            }
-            catch(ConnectException ce)
-            {
-                setBroadcastState(BroadcastState.NO_SERVER);
-                mLog.error("Connection refused.  Unable to create connection to streaming server host[" +
-                        getConfiguration().getHost() + "] and port[" +
-                        getConfiguration().getPort() + "]");
-                return;
-            }
-            catch(IOException ioe)
-            {
-                setBroadcastState(BroadcastState.ERROR);
-
-                mLog.error("Error connecting to streaming server host[" +
-                        getConfiguration().getHost() + "] and port[" +
-                        getConfiguration().getPort() + "]", ioe);
-                return;
-            }
-        }
-
-        if(mSocket.isConnected())
-        {
-            setBroadcastState(BroadcastState.CONNECTING);
-        }
-        else
-        {
-            try
-            {
-                SocketAddress address = getConfiguration().getAddress();
-                mSocket.connect(address);
-                setBroadcastState(BroadcastState.CONNECTING);
-            }
-            catch(UnknownHostException uhe)
-            {
-                setBroadcastState(BroadcastState.UNKNOWN_HOST);
-            }
-            catch(IOException e)
-            {
-                setBroadcastState(BroadcastState.ERROR);
-
-                mLog.error("Error connecting to streaming server host[" +
-                        getConfiguration().getHost() + "] and port[" +
-                        getConfiguration().getPort() + "]", e);
-            }
-        }
-    }
-
-    /**
      * Sends the string data to the remote server
      *
      * @param data to send
@@ -479,9 +371,9 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
      */
     private void send(String data) throws IOException
     {
-        if(data != null && !data.isEmpty() && mOutputStream != null)
+        if(data != null && !data.isEmpty() && mSession != null && mSession.isConnected())
         {
-            mOutputStream.writeBytes(data);
+            mSession.write(data);
         }
     }
 
@@ -492,97 +384,295 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
      */
     private void send(byte[] data) throws IOException
     {
-        if(connected())
+        if(mSession != null && mSession.isConnected())
         {
-            int sent = 0;
-
-            while(sent < data.length)
-            {
-                int available = data.length - sent;
-
-                mOutputStream.write(data, sent, available);
-
-                sent += available;
-            }
+            mSession.write(data);
         }
     }
 
     /**
-     * Obtains any pending response from the remote server.
-     * @return string response
-     * @throws IOException if there is an error
+     * IO Handler for managing Icecast TCP connection and credentials
      */
-    private String getResponse() throws IOException
+    public class IcecastTCPIOHandler extends IoHandlerAdapter
     {
-        if(mInputStream != null)
+        @Override
+        public void sessionCreated(IoSession session) throws Exception
         {
-            int bytesAvailable = mInputStream.available();
+            mLog.debug("Session Created");
+            super.sessionCreated(session);
+        }
 
-            if(bytesAvailable > 0)
+        /**
+         * Sends stream configuration and user credentials upon connecting to remote server
+         */
+        @Override
+        public void sessionOpened(IoSession session) throws Exception
+        {
+            mLog.debug("Session Opened");
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("SOURCE ").append(getConfiguration().getMountPoint());
+            sb.append(" HTTP/1.0").append(TERMINATOR);
+
+            sb.append("Authorization: ").append(getConfiguration().getEncodedCredentials()).append(TERMINATOR);
+            sb.append(IcecastHeader.USER_AGENT.getValue()).append(SEPARATOR)
+                .append(SystemProperties.getInstance().getApplicationName()).append(TERMINATOR);
+            sb.append(IcecastHeader.CONTENT_TYPE.getValue()).append(SEPARATOR)
+                .append(getConfiguration().getBroadcastFormat().getValue()).append(TERMINATOR);
+            sb.append(IcecastHeader.PUBLIC.getValue()).append(SEPARATOR)
+                .append(getConfiguration().isPublic() ? "1" : "0").append(TERMINATOR);
+
+            if(getConfiguration().hasName())
             {
-                byte[] responseBuffer = new byte[bytesAvailable];
+                sb.append(IcecastHeader.NAME.getValue()).append(SEPARATOR).append(getConfiguration().getName()).append(TERMINATOR);
+            }
 
-                int bytesRead = 0;
+            if(getConfiguration().hasGenre())
+            {
+                sb.append(IcecastHeader.GENRE.getValue()).append(SEPARATOR)
+                    .append(getConfiguration().getGenre()).append(TERMINATOR);
+            }
 
-                while(bytesRead < bytesAvailable)
+            if(getConfiguration().hasDescription())
+            {
+                sb.append(IcecastHeader.DESCRIPTION.getValue()).append(SEPARATOR)
+                    .append(getConfiguration().getDescription()).append(TERMINATOR);
+            }
+
+//                sb.append(getAudioInfoMetadata());
+
+            sb.append(TERMINATOR).append(TERMINATOR);
+
+            mLog.debug("Sending connection string");
+            session.write(sb.toString());
+        }
+
+        @Override
+        public void sessionClosed(IoSession session) throws Exception
+        {
+            setBroadcastState(BroadcastState.DISCONNECTED);
+            mLog.debug("Session Closed - State = Disconnected");
+            super.sessionClosed(session);
+        }
+
+        @Override
+        public void sessionIdle(IoSession session, IdleStatus status) throws Exception
+        {
+            mLog.debug("Session Idle");
+            super.sessionIdle(session, status);
+        }
+
+        @Override
+        public void exceptionCaught(IoSession session, Throwable cause) throws Exception
+        {
+            mLog.debug("Exception", cause);
+            super.exceptionCaught(session, cause);
+
+            setBroadcastState(BroadcastState.BROADCAST_ERROR);
+            mConnecting.set(false);
+        }
+
+        @Override
+        public void messageReceived(IoSession session, Object object) throws Exception
+        {
+            if(object instanceof String)
+            {
+                String message = (String)object;
+
+                if(message != null && !message.trim().isEmpty())
                 {
-                    bytesRead += mInputStream.read(responseBuffer, bytesRead, bytesAvailable - bytesRead);
+                    if(message.startsWith("HTTP/1.0 200 OK"))
+                    {
+                        setBroadcastState(BroadcastState.CONNECTED);
+                    }
+                    else if(message.startsWith("HTTP/1.0 403 Mountpoint in use"))
+                    {
+                        setBroadcastState(BroadcastState.MOUNT_POINT_IN_USE);
+                    }
+                    else if(message.contains("Invalid Password") ||
+                        message.contains("Authentication Required"))
+                    {
+                        setBroadcastState(BroadcastState.INVALID_PASSWORD);
+                    }
+                    else
+                    {
+                        mLog.error("Unrecognized server response:" + message);
+                        setBroadcastState(BroadcastState.ERROR);
+                    }
+
+                    mLog.debug("Message Received: " + message.toString());
                 }
-
-                return new String(responseBuffer);
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Checks for a remote server response following a connection attempt and evaluates the response for indication of a
-     * successful connection or an error state
-     */
-    private void checkConnectionAttemptResponse()
-    {
-        String response = null;
-
-        try
-        {
-            Thread.sleep(250);
-
-            response = getResponse();
-        }
-        catch(InterruptedException ie)
-        {
-            mLog.debug("Interrupted ...", ie);
-        }
-        catch(IOException e)
-        {
-            mLog.error("Error while retrieving server response message", e);
-            setBroadcastState(BroadcastState.ERROR);
-        }
-
-        if(response != null && !response.isEmpty())
-        {
-            if(response.startsWith("HTTP/1.0 200 OK"))
-            {
-                setBroadcastState(BroadcastState.CONNECTED);
-            }
-            else if(response.startsWith("HTTP/1.0 403 Mountpoint in use"))
-            {
-                setBroadcastState(BroadcastState.MOUNT_POINT_IN_USE);
-            }
-            else if(response.contains("Invalid Password") || response.contains("Authentication Required"))
-            {
-                setBroadcastState(BroadcastState.INVALID_PASSWORD);
             }
             else
             {
-                mLog.error("Unrecognized server response:" + response);
-                setBroadcastState(BroadcastState.ERROR);
+                mLog.debug("Message Received: " + object.getClass());
             }
         }
-        else
+
+        @Override
+        public void messageSent(IoSession session, Object message) throws Exception
         {
-            setBroadcastState(BroadcastState.CONNECTED);
+            mLog.debug("Message Sent");
+            super.messageSent(session, message);
         }
+
+        @Override
+        public void inputClosed(IoSession session) throws Exception
+        {
+            mLog.debug("Input Closed");
+            super.inputClosed(session);
+        }
+    }
+
+    public static void main(String[] args)
+    {
+        NioSocketConnector connector = new NioSocketConnector();
+        connector.setConnectTimeoutCheckInterval(10000);
+        connector.getFilterChain().addLast("logger", new LoggingFilter(IcecastTCPAudioBroadcaster.class));
+
+        connector.getFilterChain().addLast("codec",
+            new ProtocolCodecFilter(new TextLineCodecFactory((Charset.forName("UTF-8")))));
+
+        connector.setHandler(new IoHandler()
+        {
+            @Override
+            public void sessionCreated(IoSession ioSession) throws Exception
+            {
+
+            }
+
+            @Override
+            public void sessionOpened(IoSession ioSession) throws Exception
+            {
+                mLog.debug("Session Opened");
+
+                IcecastTCPConfiguration config = new IcecastTCPConfiguration(BroadcastFormat.MP3);
+                config.setHost("localhost");
+                config.setPort(8000);
+                config.setMountPoint("/stream");
+                config.setUserName("source");
+                config.setPassword("denny");
+                config.setPublic(true);
+
+                StringBuilder sb = new StringBuilder();
+                sb.append("SOURCE ").append(config.getMountPoint());
+                sb.append(" HTTP/1.0").append(TERMINATOR);
+
+                sb.append("Authorization: ").append(config.getEncodedCredentials()).append(TERMINATOR);
+                sb.append(IcecastHeader.USER_AGENT.getValue()).append(SEPARATOR)
+                    .append(SystemProperties.getInstance().getApplicationName()).append(TERMINATOR);
+                sb.append(IcecastHeader.CONTENT_TYPE.getValue()).append(SEPARATOR)
+                    .append(config.getBroadcastFormat().getValue()).append(TERMINATOR);
+                sb.append(IcecastHeader.PUBLIC.getValue()).append(SEPARATOR)
+                    .append(config.isPublic() ? "1" : "0").append(TERMINATOR);
+
+                if(config.hasGenre())
+                {
+                    sb.append(IcecastHeader.GENRE.getValue()).append(SEPARATOR)
+                        .append(config.getGenre()).append(TERMINATOR);
+                }
+
+                if(config.hasDescription())
+                {
+                    sb.append(IcecastHeader.DESCRIPTION.getValue()).append(SEPARATOR)
+                        .append(config.getDescription()).append(TERMINATOR);
+                }
+
+//                sb.append(getAudioInfoMetadata());
+
+                sb.append(TERMINATOR).append(TERMINATOR);
+
+                mLog.debug("Sending connection string");
+                ioSession.write(sb.toString());
+            }
+
+            @Override
+            public void sessionClosed(IoSession ioSession) throws Exception
+            {
+
+
+                mLog.debug("Session Closed");
+            }
+
+            @Override
+            public void sessionIdle(IoSession ioSession, IdleStatus idleStatus) throws Exception
+            {
+                mLog.debug("Session Idle");
+            }
+
+            @Override
+            public void exceptionCaught(IoSession ioSession, Throwable throwable) throws Exception
+            {
+                mLog.debug("Session Error", throwable);
+            }
+
+            @Override
+            public void messageReceived(IoSession ioSession, Object o) throws Exception
+            {
+                if(o instanceof String)
+                {
+                    mLog.debug("Message Received: " + o.toString());
+                }
+                else
+                {
+                    mLog.debug("Message Received: " + o.getClass());
+                }
+            }
+
+            @Override
+            public void messageSent(IoSession ioSession, Object o) throws Exception
+            {
+                mLog.debug("Message Sent");
+            }
+
+            @Override
+            public void inputClosed(IoSession ioSession) throws Exception
+            {
+                //This is invoked when the remote server disconnects us for whatever reason
+                mLog.debug("Input Closed");
+
+                ioSession.closeNow();
+            }
+        });
+
+        IoSession session = null;
+
+        for(;;)
+        {
+            try
+            {
+                ConnectFuture future = connector.connect(new InetSocketAddress("localhost", 8000));
+                future.awaitUninterruptibly();
+                session = future.getSession();
+                break;
+            }
+            catch(RuntimeIoException rie)
+            {
+                Throwable throwableCause = rie.getCause();
+
+                if(throwableCause instanceof ConnectException)
+                {
+                    //Indicate that the remote server is not available setState(NoServer)
+                }
+                else if(throwableCause != null)
+                {
+                    mLog.debug("Cause Class:" + throwableCause.getClass());
+                }
+
+                mLog.debug("Failed to connect", rie);
+                break;
+            }
+        }
+
+        if(session != null)
+        {
+            mLog.debug("Closing the session ... blocking on the closing future");
+            session.getCloseFuture().awaitUninterruptibly();
+        }
+
+        mLog.debug("Disposing the connector");
+        connector.dispose();
+        //sessionClosed() is now invoked
+        mLog.debug("Finished");
     }
 }
