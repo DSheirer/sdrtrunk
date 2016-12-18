@@ -19,7 +19,6 @@
 package audio.broadcast.icecast;
 
 import audio.broadcast.AudioBroadcaster;
-import audio.broadcast.BroadcastFormat;
 import audio.broadcast.BroadcastState;
 import audio.metadata.AudioMetadata;
 import audio.metadata.Metadata;
@@ -27,35 +26,32 @@ import audio.metadata.MetadataType;
 import controller.ThreadPoolManager;
 import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.future.ConnectFuture;
-import org.apache.mina.core.future.IoFuture;
-import org.apache.mina.core.future.IoFutureListener;
-import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoHandlerAdapter;
-import org.apache.mina.core.session.IdleStatus;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
 import org.apache.mina.filter.codec.textline.TextLineCodecFactory;
 import org.apache.mina.filter.logging.LoggingFilter;
+import org.apache.mina.http.HttpClientCodec;
+import org.apache.mina.http.HttpRequestImpl;
+import org.apache.mina.http.api.HttpMethod;
+import org.apache.mina.http.api.HttpRequest;
+import org.apache.mina.http.api.HttpVersion;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
-import org.asynchttpclient.BoundRequestBuilder;
 import org.asynchttpclient.DefaultAsyncHttpClient;
-import org.asynchttpclient.Realm;
-import org.asynchttpclient.uri.Uri;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import properties.SystemProperties;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.net.SocketException;
 import java.net.URLEncoder;
-import java.net.UnknownHostException;
 import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -65,10 +61,11 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
     private final static String UTF8 = "UTF-8";
     private final static String TERMINATOR = "\r\n";
     private final static String SEPARATOR = ":";
-    private static final long RECONNECT_INTERVAL_MILLISECONDS = 15000; //15 seconds
+    private static final long RECONNECT_INTERVAL_MILLISECONDS = 30000; //30 seconds
 
-    NioSocketConnector mSocketConnector;
-    IoSession mSession = null;
+    private NioSocketConnector mSocketConnector;
+    private IoSession mSession = null;
+    private IcecastMetadataUpdater mIcecastMetadataUpdater;
 
     private long mLastConnectionAttempt = 0;
     private byte[] mSilenceFrame;
@@ -103,32 +100,15 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
     @Override
     protected void broadcastAudio(byte[] audio)
     {
-        boolean completed = false;
-
-        while(!completed)
+        if(connect())
         {
-            if(connect())
+            try
             {
-                try
-                {
-                    send(audio);
-                    completed = true;
-                }
-                catch(SocketException se)
-                {
-                    //The remote server likely disconnected - setup to reconnect
-                    mLog.error("Resetting Icecast TCP Audio Broadcaster - socket error: " + se.getMessage());
-                    disconnect();
-                }
-                catch(Exception e)
-                {
-                    completed = true;
-                    mLog.error("Error sending audio", e);
-                }
+                send(audio);
             }
-            else
+            catch(IOException ioe)
             {
-                completed = true;
+                mLog.error("Error sending audio", ioe);
             }
         }
     }
@@ -139,74 +119,62 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
     @Override
     protected void broadcastMetadata(AudioMetadata metadata)
     {
-        if(mSession != null && mSession.isConnected())
+        StringBuilder sb = new StringBuilder();
+
+        if(metadata != null)
         {
-            StringBuilder sb = new StringBuilder();
+            Metadata to = metadata.getMetadata(MetadataType.TO);
 
-            if(metadata != null)
+            sb.append("TO:");
+
+            if(to != null)
             {
-                Metadata to = metadata.getMetadata(MetadataType.TO);
-
-                sb.append("TO:");
-
-                if(to != null)
+                if(to.hasAlias())
                 {
-                    if(to.hasAlias())
-                    {
-                        sb.append(to.getAlias().getName());
-                    }
-                    else
-                    {
-                        sb.append(to.getValue());
-                    }
+                    sb.append(to.getAlias().getName());
                 }
                 else
                 {
-                    sb.append("UNKNOWN");
-                }
-
-                Metadata from = metadata.getMetadata(MetadataType.FROM);
-
-                sb.append(" FROM:");
-
-                if(from != null)
-                {
-
-                    if(from.hasAlias())
-                    {
-                        sb.append(from.getAlias().getName());
-                    }
-                    else
-                    {
-                        sb.append(from.getValue());
-                    }
-                }
-                else
-                {
-                    sb.append("UNKNOWN");
+                    sb.append(to.getValue());
                 }
             }
             else
             {
-                sb.append("Scanning ....");
+                sb.append("UNKNOWN");
             }
 
-            try
-            {
-                String songEncoded = URLEncoder.encode(sb.toString(), UTF8);
-                StringBuilder query = new StringBuilder();
-                query.append("GET /admin/metadata?mode=updinfo");
-                query.append("&mount=").append(getConfiguration().getMountPoint());
-                query.append("&charset=UTF%2d8");
-                query.append("&song=").append(songEncoded);
+            Metadata from = metadata.getMetadata(MetadataType.FROM);
 
-                send(query.toString());
-            }
-            catch(Exception e)
+            sb.append(" FROM:");
+
+            if(from != null)
             {
-                mLog.debug("Error while updating metadata", e);
+
+                if(from.hasAlias())
+                {
+                    sb.append(from.getAlias().getName());
+                }
+                else
+                {
+                    sb.append(from.getValue());
+                }
+            }
+            else
+            {
+                sb.append("UNKNOWN");
             }
         }
+        else
+        {
+            sb.append("Scanning ....");
+        }
+
+        if(mIcecastMetadataUpdater == null)
+        {
+            mIcecastMetadataUpdater = new IcecastMetadataUpdater();
+        }
+
+        mIcecastMetadataUpdater.update(sb.toString());
     }
 
     /**
@@ -219,8 +187,12 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
      */
     private boolean connect()
     {
-        if(!connected() && canConnect() && mConnecting.compareAndSet(false, true))
+        if(!connected() && canConnect() &&
+           (mLastConnectionAttempt + RECONNECT_INTERVAL_MILLISECONDS < System.currentTimeMillis()) &&
+            mConnecting.compareAndSet(false, true))
         {
+            mLastConnectionAttempt = System.currentTimeMillis();
+
             if(mSocketConnector == null)
             {
                 mLog.debug("NIO socket connector - creating");
@@ -241,7 +213,8 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
                 @Override
                 public void run()
                 {
-                    mLog.debug("Runnable - connecting to server");
+                    mLog.debug("Attempting connection to Icecast TCP Server");
+
                     setBroadcastState(BroadcastState.CONNECTING);
 
                     try
@@ -249,11 +222,7 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
                         ConnectFuture future = mSocketConnector
                             .connect(new InetSocketAddress(getBroadcastConfiguration().getHost(),
                                 getBroadcastConfiguration().getPort()));
-
-                        mLog.debug("Runnable - blocking for connection");
                         future.awaitUninterruptibly();
-
-                        mLog.debug("Runnable - assigning session");
                         mSession = future.getSession();
                     }
                     catch(RuntimeIoException rie)
@@ -267,26 +236,15 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
                         else if(throwableCause != null)
                         {
                             setBroadcastState(BroadcastState.BROADCAST_ERROR);
-                            mLog.debug("Cause Class:" + throwableCause.getClass());
+                            mLog.debug("Failed to connect", rie);
+                        }
+                        else
+                        {
+                            mLog.debug("Failed to connect - no exception is available");
                         }
 
-                        mLog.debug("Failed to connect", rie);
+                        mConnecting.set(false);
                     }
-
-                    if(mSession != null)
-                    {
-                        mLog.debug("We have a session -- blocking thread awaiting the closing future");
-                        mSession.getCloseFuture().awaitUninterruptibly();
-                    }
-
-                    mLog.debug("Disposing the connector");
-                    mSocketConnector.dispose();
-                    mSession = null;
-                    mSocketConnector = null;
-
-                    mConnecting.set(false);
-
-                    mLog.debug("Session is closed & finished");
                 }
             };
 
@@ -310,11 +268,6 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
             if(mSession != null)
             {
                 mSession.closeNow();
-            }
-
-            if(!isErrorState())
-            {
-                setBroadcastState(BroadcastState.READY);
             }
         }
     }
@@ -395,21 +348,12 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
      */
     public class IcecastTCPIOHandler extends IoHandlerAdapter
     {
-        @Override
-        public void sessionCreated(IoSession session) throws Exception
-        {
-            mLog.debug("Session Created");
-            super.sessionCreated(session);
-        }
-
         /**
          * Sends stream configuration and user credentials upon connecting to remote server
          */
         @Override
         public void sessionOpened(IoSession session) throws Exception
         {
-            mLog.debug("Session Opened");
-
             StringBuilder sb = new StringBuilder();
             sb.append("SOURCE ").append(getConfiguration().getMountPoint());
             sb.append(" HTTP/1.0").append(TERMINATOR);
@@ -452,14 +396,13 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
         {
             setBroadcastState(BroadcastState.DISCONNECTED);
             mLog.debug("Session Closed - State = Disconnected");
-            super.sessionClosed(session);
-        }
 
-        @Override
-        public void sessionIdle(IoSession session, IdleStatus status) throws Exception
-        {
-            mLog.debug("Session Idle");
-            super.sessionIdle(session, status);
+            mSocketConnector.dispose();
+            mSession = null;
+            mSocketConnector = null;
+
+            mConnecting.set(false);
+            super.sessionClosed(session);
         }
 
         @Override
@@ -510,13 +453,6 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
         }
 
         @Override
-        public void messageSent(IoSession session, Object message) throws Exception
-        {
-            mLog.debug("Message Sent");
-            super.messageSent(session, message);
-        }
-
-        @Override
         public void inputClosed(IoSession session) throws Exception
         {
             mLog.debug("Input Closed");
@@ -524,155 +460,161 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
         }
     }
 
-    public static void main(String[] args)
+    public class IcecastMetadataUpdater
     {
-        NioSocketConnector connector = new NioSocketConnector();
-        connector.setConnectTimeoutCheckInterval(10000);
-        connector.getFilterChain().addLast("logger", new LoggingFilter(IcecastTCPAudioBroadcaster.class));
+        private NioSocketConnector mSocketConnector;
+        private AtomicBoolean mUpdating = new AtomicBoolean();
+        private Queue<String> mMetadataQueue = new LinkedTransferQueue<>();
+        private Map<String,String> mHTTPHeaders;
+        private boolean mStackTraceLoggingSuppressed;
 
-        connector.getFilterChain().addLast("codec",
-            new ProtocolCodecFilter(new TextLineCodecFactory((Charset.forName("UTF-8")))));
-
-        connector.setHandler(new IoHandler()
+        /**
+         * Icecast song metadata updater.  Each metadata update is processed in the order received and the dispatch of
+         * the HTTP update request is processed in a separate thread (runnable) to avoid delaying streaming of this
+         * broadcaster.  When multiple metadata updates are received prior to completion of the current ongoing update
+         * sequence, those updates will be queued and processed in the order received.
+         *
+         */
+        public IcecastMetadataUpdater()
         {
-            @Override
-            public void sessionCreated(IoSession ioSession) throws Exception
+        }
+
+        /**
+         * Initializes the network socket and HTTP headers map
+         */
+        private void init()
+        {
+            if(mSocketConnector == null)
             {
+                mSocketConnector = new NioSocketConnector();
+//                mSocketConnector.getFilterChain().addLast("logger", new LoggingFilter());
+                mSocketConnector.getFilterChain().addLast("http_client_codec", new HttpClientCodec());
 
-            }
-
-            @Override
-            public void sessionOpened(IoSession ioSession) throws Exception
-            {
-                mLog.debug("Session Opened");
-
-                IcecastTCPConfiguration config = new IcecastTCPConfiguration(BroadcastFormat.MP3);
-                config.setHost("localhost");
-                config.setPort(8000);
-                config.setMountPoint("/stream");
-                config.setUserName("source");
-                config.setPassword("denny");
-                config.setPublic(true);
-
-                StringBuilder sb = new StringBuilder();
-                sb.append("SOURCE ").append(config.getMountPoint());
-                sb.append(" HTTP/1.0").append(TERMINATOR);
-
-                sb.append("Authorization: ").append(config.getEncodedCredentials()).append(TERMINATOR);
-                sb.append(IcecastHeader.USER_AGENT.getValue()).append(SEPARATOR)
-                    .append(SystemProperties.getInstance().getApplicationName()).append(TERMINATOR);
-                sb.append(IcecastHeader.CONTENT_TYPE.getValue()).append(SEPARATOR)
-                    .append(config.getBroadcastFormat().getValue()).append(TERMINATOR);
-                sb.append(IcecastHeader.PUBLIC.getValue()).append(SEPARATOR)
-                    .append(config.isPublic() ? "1" : "0").append(TERMINATOR);
-
-                if(config.hasGenre())
+                //Each metadata update session is single-use, so we'll shut it down upon success or failure
+                mSocketConnector.setHandler(new IoHandlerAdapter()
                 {
-                    sb.append(IcecastHeader.GENRE.getValue()).append(SEPARATOR)
-                        .append(config.getGenre()).append(TERMINATOR);
-                }
+                    @Override
+                    public void exceptionCaught(IoSession session, Throwable cause) throws Exception
+                    {
+//                        mLog.debug("Session " + session.getId() + " metadata update complete - ERROR received");
+                        session.closeNow();
+                    }
 
-                if(config.hasDescription())
+                    @Override
+                    public void messageReceived(IoSession session, Object message) throws Exception
+                    {
+//                        mLog.debug("Session " + session.getId() + " metadata update complete - response received");
+                        session.closeNow();
+                    }
+                });
+
+                mHTTPHeaders = new HashMap<>();
+                mHTTPHeaders.put(IcecastHeader.USER_AGENT.getValue(), SystemProperties.getInstance().getApplicationName());
+                mHTTPHeaders.put(IcecastHeader.AUTHORIZATION.getValue(), getConfiguration().getEncodedCredentials());
+            }
+        }
+
+        /**
+         * Sends a song metadata update to the remote server.  Additional metadata updates received while the updater
+         * is in the process of sending an existing metadata update will be queued and processed in received order.
+         *
+         * Note: due to thread timing, there is a slight chance that a concurrent update request will not be processed
+         * and will remain in the update queue until the next metadata update is requested.  However, this is a design
+         * trade-off to avoid having a scheduled runnable repeatedly processing the update queue.
+         */
+        public void update(String metadata)
+        {
+            if(metadata != null)
+            {
+                mMetadataQueue.offer(metadata);
+
+                if(mUpdating.compareAndSet(false, true))
                 {
-                    sb.append(IcecastHeader.DESCRIPTION.getValue()).append(SEPARATOR)
-                        .append(config.getDescription()).append(TERMINATOR);
+                    String metadataUpdate = mMetadataQueue.poll();
+
+                    while(metadataUpdate != null)
+                    {
+                        //Ensure we're setup for network communications (only happens once)
+                        init();
+
+                        HttpRequest updateRequest = createUpdateRequest(metadataUpdate);
+
+                        if(updateRequest != null)
+                        {
+                            getThreadPoolManager().scheduleOnce(new Runnable()
+                            {
+                                @Override
+                                public void run()
+                                {
+                                    try
+                                    {
+                                        ConnectFuture connectFuture = mSocketConnector
+                                            .connect(new InetSocketAddress(getConfiguration().getHost(),
+                                                getConfiguration().getPort()));
+                                        connectFuture.awaitUninterruptibly();
+                                        IoSession session = connectFuture.getSession();
+
+                                        if(session != null)
+                                        {
+                                            session.write(updateRequest);
+                                        }
+                                    }
+                                    catch(Exception e)
+                                    {
+                                        Throwable throwableCause = e.getCause();
+
+                                        if(throwableCause instanceof ConnectException)
+                                        {
+                                            //Do nothing, the server is unavailable
+                                        }
+                                        else
+                                        {
+                                            if(!mStackTraceLoggingSuppressed)
+                                            {
+                                                mLog.error("Error sending metadata update.  Future errors will " +
+                                                    "be suppressed", e);
+
+                                                mStackTraceLoggingSuppressed = true;
+                                            }
+                                        }
+                                    }
+                                }
+                            }, 0l, TimeUnit.SECONDS);
+                        }
+
+                        //Fetch next metadata update to send
+                        metadataUpdate = mMetadataQueue.poll();
+                    }
+
+                    mUpdating.set(false);
                 }
-
-//                sb.append(getAudioInfoMetadata());
-
-                sb.append(TERMINATOR).append(TERMINATOR);
-
-                mLog.debug("Sending connection string");
-                ioSession.write(sb.toString());
             }
+        }
 
-            @Override
-            public void sessionClosed(IoSession ioSession) throws Exception
-            {
-
-
-                mLog.debug("Session Closed");
-            }
-
-            @Override
-            public void sessionIdle(IoSession ioSession, IdleStatus idleStatus) throws Exception
-            {
-                mLog.debug("Session Idle");
-            }
-
-            @Override
-            public void exceptionCaught(IoSession ioSession, Throwable throwable) throws Exception
-            {
-                mLog.debug("Session Error", throwable);
-            }
-
-            @Override
-            public void messageReceived(IoSession ioSession, Object o) throws Exception
-            {
-                if(o instanceof String)
-                {
-                    mLog.debug("Message Received: " + o.toString());
-                }
-                else
-                {
-                    mLog.debug("Message Received: " + o.getClass());
-                }
-            }
-
-            @Override
-            public void messageSent(IoSession ioSession, Object o) throws Exception
-            {
-                mLog.debug("Message Sent");
-            }
-
-            @Override
-            public void inputClosed(IoSession ioSession) throws Exception
-            {
-                //This is invoked when the remote server disconnects us for whatever reason
-                mLog.debug("Input Closed");
-
-                ioSession.closeNow();
-            }
-        });
-
-        IoSession session = null;
-
-        for(;;)
+        /**
+         * Creates an HTTP GET request to update the metadata on the remote server
+         */
+        private HttpRequest createUpdateRequest(String metadata)
         {
             try
             {
-                ConnectFuture future = connector.connect(new InetSocketAddress("localhost", 8000));
-                future.awaitUninterruptibly();
-                session = future.getSession();
-                break;
+                String songEncoded = URLEncoder.encode(metadata, UTF8);
+                StringBuilder sb = new StringBuilder();
+                sb.append("mode=updinfo");
+                sb.append("&mount=").append(getConfiguration().getMountPoint());
+                sb.append("&charset=UTF%2d8");
+                sb.append("&song=").append(songEncoded);
+
+                return new HttpRequestImpl(HttpVersion.HTTP_1_1, HttpMethod.GET, "/admin/metadata",
+                    sb.toString(), mHTTPHeaders);
             }
-            catch(RuntimeIoException rie)
+            catch(UnsupportedEncodingException e)
             {
-                Throwable throwableCause = rie.getCause();
-
-                if(throwableCause instanceof ConnectException)
-                {
-                    //Indicate that the remote server is not available setState(NoServer)
-                }
-                else if(throwableCause != null)
-                {
-                    mLog.debug("Cause Class:" + throwableCause.getClass());
-                }
-
-                mLog.debug("Failed to connect", rie);
-                break;
+                //This should never happen
+                mLog.error("UTF-8 encoding is not supported - can't update song metadata");
             }
-        }
 
-        if(session != null)
-        {
-            mLog.debug("Closing the session ... blocking on the closing future");
-            session.getCloseFuture().awaitUninterruptibly();
+            return null;
         }
-
-        mLog.debug("Disposing the connector");
-        connector.dispose();
-        //sessionClosed() is now invoked
-        mLog.debug("Finished");
     }
 }

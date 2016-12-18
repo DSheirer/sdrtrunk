@@ -59,14 +59,10 @@ public class ThreadPoolManager
 										TimeUnit unit )
 										throws RejectedExecutionException
 	{
-		if( mExecutor == null )
-		{
-			mExecutor = Executors.newScheduledThreadPool( THREAD_POOL_SIZE, 
-					new NamingThreadFactory( "sdrtrunk" ) );
-		}
+		ScheduledExecutorService executorService = getScheduledExecutorService();
 
 		ScheduledFuture<?> task = 
-				mExecutor.scheduleAtFixedRate( command, 0, period, unit );
+				executorService.scheduleAtFixedRate( command, 0, period, unit );
 		
 		mTasks.put( task, type );
 		
@@ -76,13 +72,9 @@ public class ThreadPoolManager
 	public void scheduleOnce( Runnable command, long delay, TimeUnit unit )	
 			throws RejectedExecutionException
 	{
-		if( mExecutor == null )
-		{
-			mExecutor = Executors.newScheduledThreadPool( THREAD_POOL_SIZE, 
-					new NamingThreadFactory( "sdrtrunk" ) );
-		}
+		ScheduledExecutorService executorService = getScheduledExecutorService();
 		
-		mExecutor.schedule( command, delay, unit );
+		executorService.schedule( command, delay, unit );
 	}
 
 	public boolean cancel( ScheduledFuture<?> task )

@@ -26,6 +26,7 @@
       <root url="jar://$PROJECT_DIR$/imports/async-http-client-2.0.24.jar!/" />
       <root url="jar://$PROJECT_DIR$/imports/async-http-client-netty-utils-2.0.24.jar!/" />
       <root url="jar://$PROJECT_DIR$/imports/mina-core-2.0.16.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/mina-http-2.0.16.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

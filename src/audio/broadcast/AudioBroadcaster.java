@@ -152,6 +152,22 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
     }
 
     /**
+     * Stream name for the broadcast configuration for this broadcaster
+     * @return stream name or null
+     */
+    public String getStreamName()
+    {
+        BroadcastConfiguration config = getBroadcastConfiguration();
+
+        if(config != null)
+        {
+            return config.getName();
+        }
+
+        return null;
+    }
+
+    /**
      * Size of recording queue for recordings awaiting streaming
      */
     public int getQueueSize()
@@ -246,7 +262,7 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
     {
         if(mBroadcastState != state)
         {
-            mLog.debug("Changing State to: " + state);
+            mLog.debug("[" + getStreamName()  + "] changing state to: " + state);
             mBroadcastState = state;
 
             broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_STATE_CHANGE));
