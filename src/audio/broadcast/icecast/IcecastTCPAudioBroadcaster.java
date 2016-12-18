@@ -64,7 +64,7 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 30000; //30 seconds
 
     private NioSocketConnector mSocketConnector;
-    private IoSession mSession = null;
+    private IoSession mStreamingSession = null;
     private IcecastMetadataUpdater mIcecastMetadataUpdater;
 
     private long mLastConnectionAttempt = 0;
@@ -206,7 +206,7 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
                 mSocketConnector.setHandler(new IcecastTCPIOHandler());
             }
 
-            mSession = null;
+            mStreamingSession = null;
 
             Runnable runnable = new Runnable()
             {
@@ -223,7 +223,7 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
                             .connect(new InetSocketAddress(getBroadcastConfiguration().getHost(),
                                 getBroadcastConfiguration().getPort()));
                         future.awaitUninterruptibly();
-                        mSession = future.getSession();
+                        mStreamingSession = future.getSession();
                     }
                     catch(RuntimeIoException rie)
                     {
@@ -265,9 +265,9 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
 
         if(mConnecting.get())
         {
-            if(mSession != null)
+            if(mStreamingSession != null)
             {
-                mSession.closeNow();
+                mStreamingSession.closeNow();
             }
         }
     }
@@ -324,9 +324,9 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
      */
     private void send(String data) throws IOException
     {
-        if(data != null && !data.isEmpty() && mSession != null && mSession.isConnected())
+        if(data != null && !data.isEmpty() && mStreamingSession != null && mStreamingSession.isConnected())
         {
-            mSession.write(data);
+            mStreamingSession.write(data);
         }
     }
 
@@ -337,9 +337,9 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
      */
     private void send(byte[] data) throws IOException
     {
-        if(mSession != null && mSession.isConnected())
+        if(mStreamingSession != null && mStreamingSession.isConnected())
         {
-            mSession.write(data);
+            mStreamingSession.write(data);
         }
     }
 
@@ -398,7 +398,7 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
             mLog.debug("Session Closed - State = Disconnected");
 
             mSocketConnector.dispose();
-            mSession = null;
+            mStreamingSession = null;
             mSocketConnector = null;
 
             mConnecting.set(false);
@@ -487,7 +487,7 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
             if(mSocketConnector == null)
             {
                 mSocketConnector = new NioSocketConnector();
-//                mSocketConnector.getFilterChain().addLast("logger", new LoggingFilter());
+//                mSocketConnector.getFilterChain().addLast("logger", new LoggingFilter(IcecastMetadataUpdater.class));
                 mSocketConnector.getFilterChain().addLast("http_client_codec", new HttpClientCodec());
 
                 //Each metadata update session is single-use, so we'll shut it down upon success or failure
