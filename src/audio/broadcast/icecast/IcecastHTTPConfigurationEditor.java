@@ -98,7 +98,7 @@ public class IcecastHTTPConfigurationEditor extends BroadcastConfigurationEditor
         add(new JLabel("Mount:"));
         mMountPoint = new JTextField();
         mMountPoint.getDocument().addDocumentListener(this);
-        mMountPoint.setToolTipText("Mount point (e.g. \\12345)");
+        mMountPoint.setToolTipText("Mount point (e.g. /12345)");
         add(mMountPoint);
 
         add(new JLabel("User Name:"));
