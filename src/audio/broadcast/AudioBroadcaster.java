@@ -277,7 +277,13 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
 
             if(!connected())
             {
-                mAudioRecordingQueue.clear();
+                StreamableAudioRecording recording = mAudioRecordingQueue.poll();
+
+                while(recording != null)
+                {
+                    removeRecording(recording);
+                    recording = mAudioRecordingQueue.poll();
+                }
             }
         }
     }

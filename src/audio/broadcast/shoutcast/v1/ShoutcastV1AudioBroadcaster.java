@@ -331,45 +331,4 @@ public class ShoutcastV1AudioBroadcaster extends AudioBroadcaster
             }
         }
     }
-
-
-    public static void main(String[] args)
-    {
-        ShoutcastV1Configuration config = new ShoutcastV1Configuration(BroadcastFormat.MP3);
-        config.setName("Test Configuration");
-        config.setHost("localhost");
-        config.setPort(8000);
-        config.setPassword("denny3:#1");
-        config.setStreamName("Denny's Audio Broadcast Test");
-        config.setGenre("Scanner Audio");
-        config.setPublic(true);
-        config.setURL("http://localhost:8000");
-        config.setBitRate(16);
-
-        ThreadPoolManager threadPoolManager = new ThreadPoolManager();
-
-        final AudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(threadPoolManager,config);
-
-        Path path = Paths.get("/home/denny/Music/PCM.wav");
-        mLog.debug("Opening: " + path.toString());
-
-        mLog.debug("Registering and starting audio playback");
-
-        while(true)
-        {
-            mLog.debug("Playback started [" + path.toString() + "]");
-
-            try (AudioPacketMonoWaveReader reader = new AudioPacketMonoWaveReader(path, true))
-            {
-                reader.setListener(audioBroadcaster);
-                reader.read();
-            }
-            catch (IOException e)
-            {
-                mLog.error("Error", e);
-            }
-
-            mLog.debug("Playback ended [" + path.toString() + "]");
-        }
-    }
 }
