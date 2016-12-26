@@ -33,7 +33,9 @@ import audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
 import audio.broadcast.shoutcast.v2.ShoutcastV2AudioBroadcaster;
 import audio.broadcast.shoutcast.v2.ShoutcastV2Configuration;
 import audio.convert.IAudioConverter;
+import audio.convert.ISilenceGenerator;
 import audio.convert.MP3AudioConverter;
+import audio.convert.MP3SilenceGenerator;
 import controller.ThreadPoolManager;
 import gui.editor.Editor;
 import gui.editor.EmptyEditor;
@@ -53,6 +55,20 @@ public class BroadcastFactory
 
     public static final int MP3_MONO_16_KHZ_BITRATE = 16;
     public static final boolean MP3_CONSTANT_BITRATE = false;
+    private static MP3AudioConverter MP3_SILENT_FRAME_GENERATOR;
+
+    static
+    {
+        MP3_SILENT_FRAME_GENERATOR = new MP3AudioConverter(MP3Recorder.MP3_BIT_RATE, MP3Recorder.CONSTANT_BIT_RATE);
+
+        //We have to charge the converter pipeline with 1200 milliseconds to get 1 second of audio the first time
+        float[] silence = new float[9600]; //1200 milliseconds at 8000 kHz
+        AudioPacket silencePacket = new AudioPacket(silence, null);
+        List<AudioPacket> silencePackets = new ArrayList<>();
+        silencePackets.add(silencePacket);
+        MP3_SILENT_FRAME_GENERATOR.convert(silencePackets);
+    }
+
 
     /**
      * Creates an audio streaming broadcaster for the configuration
@@ -194,23 +210,15 @@ public class BroadcastFactory
         }
     }
 
-    public static byte[] getSilenceFrame(BroadcastFormat format, long duration)
+    public static ISilenceGenerator getSilenceGenerator(BroadcastFormat format)
     {
-        int length = (int)(duration * 8);   //8000 Hz sample rate
-        float[] silence = new float[length];
-        AudioPacket silencePacket = new AudioPacket(silence, null);
-        List<AudioPacket> silencePackets = new ArrayList<>();
-        silencePackets.add(silencePacket);
-
-        switch(format)
+        switch (format)
         {
             case MP3:
-                MP3AudioConverter converter = new MP3AudioConverter(MP3Recorder.MP3_BIT_RATE,
-                        MP3Recorder.CONSTANT_BIT_RATE);
-
-                return converter.convert(silencePackets);
+                return new MP3SilenceGenerator();
             default:
-                throw new IllegalArgumentException("Unrecognized broadcast format: " + format.name());
+                throw new IllegalArgumentException("Unrecognized broadcast format [" + format +
+                    "] can't create silence generator");
         }
     }
 }

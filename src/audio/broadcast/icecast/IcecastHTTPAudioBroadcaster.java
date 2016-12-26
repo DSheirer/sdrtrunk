@@ -80,16 +80,13 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
     @Override
     protected void broadcastAudio(byte[] audio)
     {
-        if(connect())
+        if(audio != null && audio.length > 0 && connect() && mStreamingSession != null && mStreamingSession.isConnected())
         {
-            if(mStreamingSession != null && mStreamingSession.isConnected())
-            {
-                IoBuffer buffer = IoBuffer.allocate(audio.length);
-                buffer.put(audio);
-                buffer.flip();
+            IoBuffer buffer = IoBuffer.allocate(audio.length);
+            buffer.put(audio);
+            buffer.flip();
 
-                mStreamingSession.write(buffer);
-            }
+            mStreamingSession.write(buffer);
         }
     }
 

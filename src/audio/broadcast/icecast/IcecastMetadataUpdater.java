@@ -93,7 +93,8 @@ public class IcecastMetadataUpdater
                 {
                     //Single-use session - close it after we receive an error
                     session.closeNow();
-                    mLog.error("Metadata update failed", cause);
+
+                    mLog.error("Metadata update failed");
                 }
 
                 @Override

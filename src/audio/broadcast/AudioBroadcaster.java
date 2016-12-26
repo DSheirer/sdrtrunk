@@ -20,6 +20,7 @@ package audio.broadcast;
 
 import audio.AudioPacket;
 import audio.IAudioPacketListener;
+import audio.convert.ISilenceGenerator;
 import audio.metadata.AudioMetadata;
 import controller.ThreadPoolManager;
 import org.slf4j.Logger;
@@ -47,7 +48,7 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
     private RecordingQueueProcessor mRecordingQueueProcessor = new RecordingQueueProcessor();
     private LinkedTransferQueue<StreamableAudioRecording> mAudioRecordingQueue = new LinkedTransferQueue<>();
 
-    private byte[] mSilenceFrame;
+    private ISilenceGenerator mSilenceGenerator;
 
     private Listener<BroadcastEvent> mBroadcastEventListener;
     private BroadcastState mBroadcastState = BroadcastState.READY;
@@ -85,8 +86,7 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
         mBroadcastConfiguration = broadcastConfiguration;
         mDelay = mBroadcastConfiguration.getDelay();
 
-        //Create a 1 second silence frame - from 1200 millis of silence
-        mSilenceFrame = BroadcastFactory.getSilenceFrame(getBroadcastConfiguration().getBroadcastFormat(), 1200);
+        mSilenceGenerator = BroadcastFactory.getSilenceGenerator(broadcastConfiguration.getBroadcastFormat());
 
         mStreamManager = new StreamManager(threadPoolManager, this,
                 SystemProperties.getInstance().getApplicationFolder(BroadcastModel.TEMPORARY_STREAM_DIRECTORY));
@@ -326,7 +326,8 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
     {
         private AtomicBoolean mProcessing = new AtomicBoolean();
         private ByteArrayInputStream mInputStream;
-        private int mChunkSize;
+        private int mAverageBytesPerInterval;
+        private long mFinalSilencePadding = 0;
 
         @Override
         public void run()
@@ -335,12 +336,18 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
             {
                 if(mInputStream == null || mInputStream.available() <= 0)
                 {
+                    if(mFinalSilencePadding > 0)
+                    {
+                        broadcastAudio(mSilenceGenerator.generate(mFinalSilencePadding));
+                        mFinalSilencePadding = 0;
+                    }
+
                     nextRecording();
                 }
 
                 if(mInputStream != null)
                 {
-                    int length = Math.min(mChunkSize, mInputStream.available());
+                    int length = Math.min(mAverageBytesPerInterval, mInputStream.available());
 
                     byte[] audio = new byte[length];
 
@@ -357,7 +364,7 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
                 }
                 else
                 {
-                    broadcastAudio(mSilenceFrame);
+                    broadcastAudio(mSilenceGenerator.generate(PROCESSOR_RUN_INTERVAL_MS));
                 }
 
                 mProcessing.set(false);
@@ -395,17 +402,21 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
                     {
                         mInputStream = new ByteArrayInputStream(audio);
 
-                        int wholeIntervalChunks = (int)(recording.getRecordingLength() / PROCESSOR_RUN_INTERVAL_MS);
+                        double intervals = (double)recording.getRecordingLength() / (double)PROCESSOR_RUN_INTERVAL_MS;
 
-                        //Check for divide by zero situation
-                        if(wholeIntervalChunks == 0)
+                        mAverageBytesPerInterval = (int)((double)mInputStream.available() / intervals);
+
+                        int wholeIntervals = (int)Math.floor(intervals) + 1;
+
+                        //Silence padding to transmit at the end to keep stream length at multiples of run interval
+                        mFinalSilencePadding = (wholeIntervals * PROCESSOR_RUN_INTERVAL_MS) -
+                            recording.getRecordingLength();
+
+                        if(connected())
                         {
-                            wholeIntervalChunks = 1;
+                            broadcastMetadata(recording.getAudioMetadata());
                         }
 
-                        mChunkSize = (int)(mInputStream.available() / wholeIntervalChunks) + 1;
-
-                        broadcastMetadata(recording.getAudioMetadata());
                         metadataUpdateRequired = false;
                     }
                 }
@@ -423,7 +434,7 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
             }
 
             //If we closed out a recording and don't have anything new, send an empty metadata update
-            if(metadataUpdateRequired)
+            if(metadataUpdateRequired && connected())
             {
                 broadcastMetadata(null);
             }

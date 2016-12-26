@@ -73,12 +73,9 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
     @Override
     protected void broadcastAudio(byte[] audio)
     {
-        if(connect())
+        if(audio != null && audio.length > 0 && connect() && mStreamingSession != null && mStreamingSession.isConnected())
         {
-            if(mStreamingSession != null && mStreamingSession.isConnected())
-            {
-                mStreamingSession.write(audio);
-            }
+            mStreamingSession.write(audio);
         }
     }
 
