@@ -21,9 +21,9 @@ package audio.broadcast;
 public enum BroadcastState
 {
     /**
-     * Error while broadcasting stream data.  Temporary error state to allow connection to be reset.
+     * General error in configuration that causes the remote server to reject the connection
      */
-    BROADCAST_ERROR("Broadcast Error", false),
+    CONFIGURATION_ERROR("Configuration Error", true),
 
     /**
      * Connected to the broadcastAudio server and capable of streaming
@@ -41,9 +41,9 @@ public enum BroadcastState
     DISCONNECTED("Disconnected", false),
 
     /**
-     * Invalid password
+     * Invalid credentials - user name or password
      */
-    INVALID_PASSWORD("Invalid Password", true),
+    INVALID_CREDENTIALS("Invalid User Name/Password", true),
 
     /**
      * Remote server max sources has been exceeded
@@ -66,14 +66,9 @@ public enum BroadcastState
     READY("Ready", false),
 
     /**
-     * Error on the remote server
+     * Error while broadcasting stream data.  Temporary error state to allow connection to be reset.
      */
-    REMOTE_SERVER_ERROR("Remote Server Error", true),
-
-    /**
-     * Server host name or port is invalid
-     */
-    UNKNOWN_HOST("Unknown Host or Invalid Port", true),
+    TEMPORARY_BROADCAST_ERROR("Temporary Broadcast Error", false),
 
     /**
      * Unsupported audio format

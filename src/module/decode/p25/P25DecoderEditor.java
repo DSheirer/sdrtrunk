@@ -137,7 +137,6 @@ public class P25DecoderEditor extends ValidatingEditor<Channel>
 	@Override
 	public void validate( Editor<Channel> editor ) throws EditorValidationException
 	{
-		mLog.debug( "Validating editor:" + editor.getClass() );
 		/**
 		 * Enforce CQPSK modulation uses a Tuner Source for I/Q sample data
 		 */

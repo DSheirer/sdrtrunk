@@ -28,16 +28,15 @@ import audio.broadcast.icecast.IcecastHTTPConfigurationEditor;
 import audio.broadcast.icecast.IcecastTCPAudioBroadcaster;
 import audio.broadcast.icecast.IcecastTCPConfiguration;
 import audio.broadcast.icecast.IcecastTCPConfigurationEditor;
-import audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
 import audio.broadcast.shoutcast.v1.ShoutcastV1AudioBroadcaster;
-import audio.broadcast.shoutcast.v2.ShoutcastV2Configuration;
+import audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
 import audio.broadcast.shoutcast.v2.ShoutcastV2AudioBroadcaster;
+import audio.broadcast.shoutcast.v2.ShoutcastV2Configuration;
 import audio.convert.IAudioConverter;
 import audio.convert.MP3AudioConverter;
 import controller.ThreadPoolManager;
 import gui.editor.Editor;
 import gui.editor.EmptyEditor;
-import org.asynchttpclient.DefaultAsyncHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import record.AudioRecorder;
@@ -54,7 +53,6 @@ public class BroadcastFactory
 
     public static final int MP3_MONO_16_KHZ_BITRATE = 16;
     public static final boolean MP3_CONSTANT_BITRATE = false;
-    public static final boolean MP3_VARIABLE_BITRATE = true;
 
     /**
      * Creates an audio streaming broadcaster for the configuration
@@ -62,8 +60,7 @@ public class BroadcastFactory
      * @param configuration describing the server and audio types
      * @return configured broadcaster or null
      */
-    public static AudioBroadcaster getBroadcaster(DefaultAsyncHttpClient defaultAsyncHttpClient,
-                                                  ThreadPoolManager threadPoolManager,
+    public static AudioBroadcaster getBroadcaster(ThreadPoolManager threadPoolManager,
                                                   BroadcastConfiguration configuration)
     {
         if(configuration != null)
@@ -75,18 +72,20 @@ public class BroadcastFactory
                 switch(configuration.getBroadcastServerType())
                 {
                     case BROADCASTIFY:
-                        return new IcecastTCPAudioBroadcaster(defaultAsyncHttpClient, threadPoolManager,
+                        return new IcecastTCPAudioBroadcaster(threadPoolManager,
                             (BroadcastifyConfiguration)configuration);
                     case ICECAST_TCP:
-                        return new IcecastTCPAudioBroadcaster(defaultAsyncHttpClient, threadPoolManager,
+                        return new IcecastTCPAudioBroadcaster(threadPoolManager,
                             (IcecastTCPConfiguration)configuration);
                     case ICECAST_HTTP:
-                        return new IcecastHTTPAudioBroadcaster(defaultAsyncHttpClient, threadPoolManager,
+                        return new IcecastHTTPAudioBroadcaster(threadPoolManager,
                             (IcecastHTTPConfiguration)configuration);
                     case SHOUTCAST_V1:
-                        return new ShoutcastV1AudioBroadcaster(threadPoolManager, (ShoutcastV1Configuration)configuration);
+                        return new ShoutcastV1AudioBroadcaster(threadPoolManager,
+                            (ShoutcastV1Configuration)configuration);
                     case SHOUTCAST_V2:
-                        return new ShoutcastV2AudioBroadcaster(threadPoolManager, (ShoutcastV2Configuration)configuration);
+                        return new ShoutcastV2AudioBroadcaster(threadPoolManager,
+                            (ShoutcastV2Configuration)configuration);
                     case UNKNOWN:
                     default:
                         mLog.info("Unrecognized broadcastAudio configuration: " + configuration.getBroadcastFormat().name());

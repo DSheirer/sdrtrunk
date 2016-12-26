@@ -30,6 +30,9 @@
   <!-- Async HTTP Client - set level to info to filter debug messages -->
   <logger name="org.asynchttpclient.netty" level="INFO" />
 
+  <!-- Async HTTP Client - set level to info to filter debug messages -->
+  <logger name="org.apache.mina" level="INFO" />
+
   <!-- IO Netty - set level to info to filter debug messages -->
   <logger name="io.netty" level="INFO" />
 

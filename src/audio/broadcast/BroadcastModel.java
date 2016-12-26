@@ -21,8 +21,6 @@ package audio.broadcast;
 import alias.id.broadcast.BroadcastChannel;
 import audio.AudioPacket;
 import controller.ThreadPoolManager;
-import org.asynchttpclient.DefaultAsyncHttpClient;
-import org.asynchttpclient.DefaultAsyncHttpClientConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import properties.SystemProperties;
@@ -65,7 +63,6 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
 
     private Map<String,BroadcastConfiguration> mBroadcastConfigurationMap = new HashMap<>();
     private Map<String,AudioBroadcaster> mBroadcasterMap = new HashMap<>();
-    private DefaultAsyncHttpClient mDefaultAsyncHttpClient;
     private ThreadPoolManager mThreadPoolManager;
     private SettingsManager mSettingsManager;
 
@@ -297,8 +294,8 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
             broadcastConfiguration.isValid() &&
             !mBroadcasterMap.containsKey(broadcastConfiguration.getName()))
         {
-            AudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(getDefaultAsyncHttpClient(),
-                    mThreadPoolManager, broadcastConfiguration);
+            AudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(mThreadPoolManager,
+                broadcastConfiguration);
 
             if (audioBroadcaster != null)
             {
@@ -352,37 +349,6 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
             }
         }
     }
-
-    /**
-     * HTTP client shared across all broadcaster instances.  Note: client is lazy construct so that it isn't
-     * created until required
-     */
-    private DefaultAsyncHttpClient getDefaultAsyncHttpClient()
-    {
-        if (mDefaultAsyncHttpClient == null)
-        {
-            //Set read timeout to never expire so that our streams don't get interrupted
-            DefaultAsyncHttpClientConfig config =
-                new DefaultAsyncHttpClientConfig.Builder()
-                    .setReadTimeout(-1)
-                    .setThreadPoolName("audio-broadcast-pool")
-                    .setUserAgent(SystemProperties.getInstance().getApplicationName())
-                    .build();
-
-            mLog.debug("Client Config - Request Timeout:" + config.getRequestTimeout());
-            mLog.debug("Client Config - Connection Ttl:" + config.getConnectionTtl());
-            mLog.debug("Client Config - Connect Timeout:" + config.getConnectTimeout());
-            mLog.debug("Client Config - IO Thread Count:" + config.getIoThreadsCount());
-            mLog.debug("Client Config - Pool Conn Idle Timeout:" + config.getPooledConnectionIdleTimeout());
-            mLog.debug("Client Config - Connection Pooling:" + config.getIoThreadsCount());
-
-
-            mDefaultAsyncHttpClient = new DefaultAsyncHttpClient(config);
-        }
-
-        return mDefaultAsyncHttpClient;
-    }
-
 
     /**
      * Returns the broadcast configuration identified by the stream name

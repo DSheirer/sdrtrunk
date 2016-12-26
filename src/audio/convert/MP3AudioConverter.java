@@ -33,7 +33,7 @@ import java.util.List;
 public class MP3AudioConverter implements IAudioConverter
 {
     private final static Logger mLog = LoggerFactory.getLogger( MP3AudioConverter.class );
-
+    public static final int AUDIO_QUALITY = Lame.QUALITY_LOW;
     private LameEncoder mEncoder;
     private ByteArrayOutputStream mMP3Stream = new ByteArrayOutputStream();
     private byte[] mMP3Buffer;
@@ -47,7 +47,7 @@ public class MP3AudioConverter implements IAudioConverter
     public MP3AudioConverter(int bitRate, boolean variableBitRate)
     {
         mEncoder = new LameEncoder(AudioFormats.PCM_SIGNED_8KHZ_16BITS_MONO,
-                bitRate, MPEGMode.MONO, Lame.QUALITY_LOW, variableBitRate);
+                bitRate, MPEGMode.MONO, AUDIO_QUALITY, variableBitRate);
 
         mMP3Buffer = new byte[mEncoder.getPCMBufferSize()];
     }
@@ -65,13 +65,21 @@ public class MP3AudioConverter implements IAudioConverter
 
         int pcmBytesPosition = 0;
 
-        while (0 < (mp3BufferSize = mEncoder.encodeBuffer(pcmBytes, pcmBytesPosition, pcmBufferSize, mMP3Buffer)))
+        try
         {
-            pcmBytesPosition += pcmBufferSize;
-            pcmBufferSize = Math.min(mMP3Buffer.length, pcmBytes.length - pcmBytesPosition);
-            mMP3Stream.write(mMP3Buffer, 0, mp3BufferSize);
-        }
+            while (0 < (mp3BufferSize = mEncoder.encodeBuffer(pcmBytes, pcmBytesPosition, pcmBufferSize, mMP3Buffer)))
+            {
+                pcmBytesPosition += pcmBufferSize;
+                pcmBufferSize = Math.min(mMP3Buffer.length, pcmBytes.length - pcmBytesPosition);
+                mMP3Stream.write(mMP3Buffer, 0, mp3BufferSize);
+            }
 
-        return mMP3Stream.toByteArray();
+            return mMP3Stream.toByteArray();
+        }
+        catch(Exception e)
+        {
+            mLog.error("There was an error converting audio to MP3: " + e.getMessage());
+            return new byte[0];
+        }
     }
 }

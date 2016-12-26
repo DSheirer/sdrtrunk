@@ -190,8 +190,11 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
      */
     public void receive(StreamableAudioRecording recording)
     {
-        mAudioRecordingQueue.add(recording);
-        broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_QUEUE_CHANGE));
+        if(connected())
+        {
+            mAudioRecordingQueue.add(recording);
+            broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_QUEUE_CHANGE));
+        }
     }
 
     /**
@@ -262,7 +265,7 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
     {
         if(mBroadcastState != state)
         {
-            mLog.debug("[" + getStreamName()  + "] changing state to: " + state);
+            mLog.info("[" + getStreamName()  + "] changing state to: " + state);
             mBroadcastState = state;
 
             broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_STATE_CHANGE));
@@ -270,6 +273,11 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
             if(mBroadcastState.isErrorState())
             {
                 stop();
+            }
+
+            if(!connected())
+            {
+                mAudioRecordingQueue.clear();
             }
         }
     }

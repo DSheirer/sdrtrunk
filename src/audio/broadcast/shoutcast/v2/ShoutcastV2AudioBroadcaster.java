@@ -20,10 +20,9 @@ package audio.broadcast.shoutcast.v2;
 
 import audio.AudioPacket;
 import audio.broadcast.AudioBroadcaster;
-import audio.broadcast.BroadcastConfiguration;
+import audio.broadcast.BroadcastFactory;
 import audio.broadcast.BroadcastFormat;
 import audio.broadcast.BroadcastState;
-import audio.broadcast.BroadcastFactory;
 import audio.broadcast.shoutcast.v2.message.AuthenticateBroadcast;
 import audio.broadcast.shoutcast.v2.message.ConfigureIcyGenre;
 import audio.broadcast.shoutcast.v2.message.ConfigureIcyName;
@@ -41,7 +40,6 @@ import audio.broadcast.shoutcast.v2.message.UltravoxMetadata;
 import audio.broadcast.shoutcast.v2.message.XMLMetadata;
 import audio.metadata.AudioMetadata;
 import controller.ThreadPoolManager;
-import org.asynchttpclient.DefaultAsyncHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import properties.SystemProperties;
@@ -77,7 +75,7 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster
      * Creates a Shoutcast Version 2 broadcaster.
      * @param configuration details for shoutcast version 2
      */
-    public ShoutcastV2AudioBroadcaster(ThreadPoolManager threadPoolManager, BroadcastConfiguration configuration)
+    public ShoutcastV2AudioBroadcaster(ThreadPoolManager threadPoolManager, ShoutcastV2Configuration configuration)
     {
         super(threadPoolManager, configuration);
     }
@@ -117,7 +115,7 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster
             catch(IOException e)
             {
                 mLog.error("Error while dispatching audio", e);
-                setBroadcastState(BroadcastState.BROADCAST_ERROR);
+                setBroadcastState(BroadcastState.TEMPORARY_BROADCAST_ERROR);
                 return;
             }
         }
@@ -316,7 +314,7 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster
 
                         if (response.isErrorResponse())
                         {
-                            setBroadcastState(BroadcastState.INVALID_PASSWORD);
+                            setBroadcastState(BroadcastState.INVALID_CREDENTIALS);
                             return;
                         }
 
@@ -440,7 +438,7 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster
             }
             catch(UnknownHostException uhe)
             {
-                setBroadcastState(BroadcastState.UNKNOWN_HOST);
+                setBroadcastState(BroadcastState.NO_SERVER);
                 mLog.error("Unknown host or port.  Unable to create connection to streaming server host[" +
                         getShoutcastConfiguration().getHost() + "] and port[" +
                         getShoutcastConfiguration().getPort() + "] - will reattempt connection periodically");
@@ -471,7 +469,7 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster
             }
             catch(UnknownHostException uhe)
             {
-                setBroadcastState(BroadcastState.UNKNOWN_HOST);
+                setBroadcastState(BroadcastState.NO_SERVER);
             }
             catch(IOException e)
             {
@@ -538,9 +536,8 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster
         else
         {
             ThreadPoolManager threadPoolManager = new ThreadPoolManager();
-            DefaultAsyncHttpClient httpClient = new DefaultAsyncHttpClient();
 
-            final AudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(httpClient, threadPoolManager,config);
+            final AudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(threadPoolManager,config);
 
             Path path = Paths.get("/home/denny/Music/PCM.wav");
             mLog.debug("Opening: " + path.toString());

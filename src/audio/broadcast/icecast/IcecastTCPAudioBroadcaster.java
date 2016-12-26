@@ -18,21 +18,16 @@
  ******************************************************************************/
 package audio.broadcast.icecast;
 
-import audio.broadcast.AudioBroadcaster;
 import audio.broadcast.BroadcastState;
-import audio.metadata.AudioMetadata;
-import audio.metadata.Metadata;
-import audio.metadata.MetadataType;
+import audio.broadcast.icecast.codec.IcecastCodecFactory;
+import audio.convert.MP3AudioConverter;
 import controller.ThreadPoolManager;
 import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
-import org.apache.mina.filter.codec.textline.TextLineCodecFactory;
-import org.apache.mina.filter.logging.LoggingFilter;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
-import org.asynchttpclient.DefaultAsyncHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import properties.SystemProperties;
@@ -40,11 +35,10 @@ import properties.SystemProperties;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
-import java.nio.charset.Charset;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
+public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
 {
     private final static Logger mLog = LoggerFactory.getLogger( IcecastTCPAudioBroadcaster.class );
     private final static String TERMINATOR = "\r\n";
@@ -53,10 +47,8 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
 
     private NioSocketConnector mSocketConnector;
     private IoSession mStreamingSession = null;
-    private IcecastMetadataUpdater mIcecastMetadataUpdater;
 
     private long mLastConnectionAttempt = 0;
-    private byte[] mSilenceFrame;
     private AtomicBoolean mConnecting = new AtomicBoolean();
 
     /**
@@ -65,21 +57,14 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
      *
      * Note: use @see IcecastHTTPAudioBroadcaster for Icecast version 2.4.x and newer.
      *
-     * @param configuration
+     * This broadcaster uses the Apache Mina library for the streaming socket connection and for metadata updates.  The
+     * IcecastTCPIOHandler manages all interaction with the Icecast server and manages the overall broadcast state.
+     *
+     * @param configuration for the Icecast stream
      */
-    public IcecastTCPAudioBroadcaster(DefaultAsyncHttpClient httpClient,
-                                      ThreadPoolManager threadPoolManager,
-                                      IcecastTCPConfiguration configuration)
+    public IcecastTCPAudioBroadcaster(ThreadPoolManager threadPoolManager, IcecastTCPConfiguration configuration)
     {
         super(threadPoolManager, configuration);
-    }
-
-    /**
-     * Icecast broadcast configuration
-     */
-    private IcecastTCPConfiguration getConfiguration()
-    {
-        return (IcecastTCPConfiguration)getBroadcastConfiguration();
     }
 
     /**
@@ -90,79 +75,11 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
     {
         if(connect())
         {
-            try
+            if(mStreamingSession != null && mStreamingSession.isConnected())
             {
-                send(audio);
-            }
-            catch(IOException ioe)
-            {
-                mLog.error("Error sending audio", ioe);
+                mStreamingSession.write(audio);
             }
         }
-    }
-
-    /**
-     * Broadcasts an audio metadata update
-     */
-    @Override
-    protected void broadcastMetadata(AudioMetadata metadata)
-    {
-        StringBuilder sb = new StringBuilder();
-
-        if(metadata != null)
-        {
-            Metadata to = metadata.getMetadata(MetadataType.TO);
-
-            sb.append("TO:");
-
-            if(to != null)
-            {
-                if(to.hasAlias())
-                {
-                    sb.append(to.getAlias().getName());
-                }
-                else
-                {
-                    sb.append(to.getValue());
-                }
-            }
-            else
-            {
-                sb.append("UNKNOWN");
-            }
-
-            Metadata from = metadata.getMetadata(MetadataType.FROM);
-
-            sb.append(" FROM:");
-
-            if(from != null)
-            {
-
-                if(from.hasAlias())
-                {
-                    sb.append(from.getAlias().getName());
-                }
-                else
-                {
-                    sb.append(from.getValue());
-                }
-            }
-            else
-            {
-                sb.append("UNKNOWN");
-            }
-        }
-        else
-        {
-            sb.append("Scanning ....");
-        }
-
-        if(mIcecastMetadataUpdater == null)
-        {
-            mIcecastMetadataUpdater = new IcecastMetadataUpdater(getThreadPoolManager(), getConfiguration());
-        }
-
-        mIcecastMetadataUpdater.update(sb.toString());
     }
 
     /**
@@ -183,14 +100,14 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
 
             if(mSocketConnector == null)
             {
-                mLog.debug("NIO socket connector - creating");
                 mSocketConnector = new NioSocketConnector();
                 mSocketConnector.setConnectTimeoutCheckInterval(10000);
-                mSocketConnector.getFilterChain().addLast("logger",
-                    new LoggingFilter(IcecastTCPAudioBroadcaster.class));
+
+//                mSocketConnector.getFilterChain().addLast("logger",
+//                    new LoggingFilter(IcecastTCPAudioBroadcaster.class));
+
                 mSocketConnector.getFilterChain().addLast("codec",
-                    new ProtocolCodecFilter(new TextLineCodecFactory((Charset.forName("UTF-8")))));
-                mLog.debug("NIO socket connector - setting handler");
+                    new ProtocolCodecFilter(new IcecastCodecFactory()));
                 mSocketConnector.setHandler(new IcecastTCPIOHandler());
             }
 
@@ -201,8 +118,6 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
                 @Override
                 public void run()
                 {
-                    mLog.debug("Attempting connection to Icecast TCP Server");
-
                     setBroadcastState(BroadcastState.CONNECTING);
 
                     try
@@ -223,15 +138,16 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
                         }
                         else if(throwableCause != null)
                         {
-                            setBroadcastState(BroadcastState.BROADCAST_ERROR);
+                            setBroadcastState(BroadcastState.ERROR);
                             mLog.debug("Failed to connect", rie);
                         }
                         else
                         {
+                            setBroadcastState(BroadcastState.ERROR);
                             mLog.debug("Failed to connect - no exception is available");
                         }
 
-                        mConnecting.set(false);
+                        disconnect();
                     }
                 }
             };
@@ -249,85 +165,12 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
      */
     public void disconnect()
     {
-        mLog.info("Disconnecting Icecast TCP audio broadcaster");
-
-        if(mConnecting.get())
+        if(connected())
         {
             if(mStreamingSession != null)
             {
                 mStreamingSession.closeNow();
             }
-        }
-    }
-
-    /**
-     * Creates an audio metadata description string that can optionally be included when connecting to the remote
-     * broadcast server.
-     */
-    private String getAudioInfoMetadata()
-    {
-        StringBuilder sb = new StringBuilder();
-
-        if(getConfiguration().hasBitRate() || getConfiguration().hasChannels() || getConfiguration().hasSampleRate())
-        {
-            sb.append(IcecastHeader.AUDIO_INFO.getValue()).append(SEPARATOR);
-
-            boolean contentAdded = false;
-
-            if(getConfiguration().hasBitRate())
-            {
-                sb.append("bitrate=").append(getConfiguration().getBitRate());
-                contentAdded = true;
-            }
-            if(getConfiguration().hasChannels())
-            {
-                if(contentAdded)
-                {
-                    sb.append(";");
-                }
-
-                sb.append("channels=").append(getConfiguration().getChannels());
-
-                contentAdded = true;
-            }
-            if(getConfiguration().hasSampleRate())
-            {
-                if(contentAdded)
-                {
-                    sb.append(";");
-                }
-
-                sb.append("samplerate=").append(getConfiguration().getSampleRate());
-            }
-        }
-
-        return sb.toString();
-    }
-
-    /**
-     * Sends the string data to the remote server
-     *
-     * @param data to send
-     * @throws IOException if there is an error communicating with the remote server
-     */
-    private void send(String data) throws IOException
-    {
-        if(data != null && !data.isEmpty() && mStreamingSession != null && mStreamingSession.isConnected())
-        {
-            mStreamingSession.write(data);
-        }
-    }
-
-    /**
-     * Sends the byte data to the remote server
-     * @param data to send
-     * @throws IOException if there is an error communicating with the remote server
-     */
-    private void send(byte[] data) throws IOException
-    {
-        if(mStreamingSession != null && mStreamingSession.isConnected())
-        {
-            mStreamingSession.write(data);
         }
     }
 
@@ -354,6 +197,11 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
             sb.append(IcecastHeader.PUBLIC.getValue()).append(SEPARATOR)
                 .append(getConfiguration().isPublic() ? "1" : "0").append(TERMINATOR);
 
+            sb.append(IcecastHeader.AUDIO_INFO.getValue()).append(SEPARATOR);
+            sb.append("samplerate=").append(getConfiguration().getSampleRate()).append(";");
+            sb.append("quality=").append(MP3AudioConverter.AUDIO_QUALITY).append(";");
+            sb.append("channels=").append(getConfiguration().getChannels()).append(TERMINATOR);
+
             if(getConfiguration().hasName())
             {
                 sb.append(IcecastHeader.NAME.getValue()).append(SEPARATOR).append(getConfiguration().getName()).append(TERMINATOR);
@@ -371,19 +219,19 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
                     .append(getConfiguration().getDescription()).append(TERMINATOR);
             }
 
-//                sb.append(getAudioInfoMetadata());
-
             sb.append(TERMINATOR).append(TERMINATOR);
 
-            mLog.debug("Sending connection string");
             session.write(sb.toString());
         }
 
         @Override
         public void sessionClosed(IoSession session) throws Exception
         {
-            setBroadcastState(BroadcastState.DISCONNECTED);
-            mLog.debug("Session Closed - State = Disconnected");
+            //If there is already an error state, don't override it.  Otherwise, set state to disconnected
+            if(!getBroadcastState().isErrorState())
+            {
+                setBroadcastState(BroadcastState.DISCONNECTED);
+            }
 
             mSocketConnector.dispose();
             mStreamingSession = null;
@@ -396,10 +244,19 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
         @Override
         public void exceptionCaught(IoSession session, Throwable cause) throws Exception
         {
-            mLog.debug("Exception", cause);
-            super.exceptionCaught(session, cause);
+            if(cause instanceof IOException && ((IOException)cause).getMessage().startsWith("Connection reset"))
+            {
+                mLog.info("Streaming connection reset by remote server - reestablishing connection");
+                disconnect();
+                connect();
+            }
+            else
+            {
+                mLog.error("Broadcast error", cause);
+                setBroadcastState(BroadcastState.ERROR);
+                disconnect();
+            }
 
-            setBroadcastState(BroadcastState.BROADCAST_ERROR);
             mConnecting.set(false);
         }
 
@@ -423,28 +280,20 @@ public class IcecastTCPAudioBroadcaster extends AudioBroadcaster
                     else if(message.contains("Invalid Password") ||
                         message.contains("Authentication Required"))
                     {
-                        setBroadcastState(BroadcastState.INVALID_PASSWORD);
+                        setBroadcastState(BroadcastState.INVALID_CREDENTIALS);
                     }
                     else
                     {
                         mLog.error("Unrecognized server response:" + message);
                         setBroadcastState(BroadcastState.ERROR);
                     }
-
-                    mLog.debug("Message Received: " + message.toString());
                 }
             }
             else
             {
-                mLog.debug("Message Received: " + object.getClass());
+                mLog.error("Icecast TCP broadcaster - unrecognized message [ " + object.getClass() +
+                    "] received:" + object.toString());
             }
-        }
-
-        @Override
-        public void inputClosed(IoSession session) throws Exception
-        {
-            mLog.debug("Input Closed");
-            super.inputClosed(session);
         }
     }
 }

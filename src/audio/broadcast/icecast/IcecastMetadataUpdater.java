@@ -18,10 +18,14 @@
  ******************************************************************************/
 package audio.broadcast.icecast;
 
+import audio.metadata.AudioMetadata;
+import audio.metadata.Metadata;
+import audio.metadata.MetadataType;
 import controller.ThreadPoolManager;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
+import org.apache.mina.filter.logging.LoggingFilter;
 import org.apache.mina.http.HttpClientCodec;
 import org.apache.mina.http.HttpRequestImpl;
 import org.apache.mina.http.api.HttpMethod;
@@ -36,6 +40,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
@@ -70,14 +75,14 @@ public class IcecastMetadataUpdater
     }
 
     /**
-     * Initializes the network socket and HTTP headers map
+     * Socket connector - lazy constructor.
      */
-    private void init()
+    private NioSocketConnector getSocketConnector()
     {
         if (mSocketConnector == null)
         {
             mSocketConnector = new NioSocketConnector();
-//                mSocketConnector.getFilterChain().addLast("logger", new LoggingFilter(IcecastMetadataUpdater.class));
+//            mSocketConnector.getFilterChain().addLast("logger", new LoggingFilter(IcecastMetadataUpdater.class));
             mSocketConnector.getFilterChain().addLast("http_client_codec", new HttpClientCodec());
 
             //Each metadata update session is single-use, so we'll shut it down upon success or failure
@@ -86,22 +91,21 @@ public class IcecastMetadataUpdater
                 @Override
                 public void exceptionCaught(IoSession session, Throwable cause) throws Exception
                 {
-//                        mLog.debug("Session " + session.getId() + " metadata update complete - ERROR received");
+                    //Single-use session - close it after we receive an error
                     session.closeNow();
+                    mLog.error("Metadata update failed", cause);
                 }
 
                 @Override
                 public void messageReceived(IoSession session, Object message) throws Exception
                 {
-//                        mLog.debug("Session " + session.getId() + " metadata update complete - response received");
+                    //Single-use session - close it after we receive a response
                     session.closeNow();
                 }
             });
-
-            mHTTPHeaders = new HashMap<>();
-            mHTTPHeaders.put(IcecastHeader.USER_AGENT.getValue(), SystemProperties.getInstance().getApplicationName());
-            mHTTPHeaders.put(IcecastHeader.AUTHORIZATION.getValue(), mIcecastConfiguration.getBase64EncodedCredentials());
         }
+
+        return mSocketConnector;
     }
 
     /**
@@ -112,91 +116,144 @@ public class IcecastMetadataUpdater
      * and will remain in the update queue until the next metadata update is requested.  However, this is a design
      * trade-off to avoid having a scheduled runnable repeatedly processing the update queue.
      */
-    public void update(String metadata)
+    public void update(AudioMetadata audioMetadata)
     {
-        if (metadata != null)
+        mMetadataQueue.offer(getSong(audioMetadata));
+
+        if (mUpdating.compareAndSet(false, true))
         {
-            mMetadataQueue.offer(metadata);
+            String song = mMetadataQueue.poll();
 
-            if (mUpdating.compareAndSet(false, true))
+            while (song != null)
             {
-                String metadataUpdate = mMetadataQueue.poll();
+                HttpRequest updateRequest = createUpdateRequest(song);
 
-                while (metadataUpdate != null)
+                if (updateRequest != null)
                 {
-                    //Ensure we're setup for network communications (only happens once)
-                    init();
-
-                    HttpRequest updateRequest = createUpdateRequest(metadataUpdate);
-
-                    if (updateRequest != null)
+                    mThreadPoolManager.scheduleOnce(new Runnable()
                     {
-                        mThreadPoolManager.scheduleOnce(new Runnable()
+                        @Override
+                        public void run()
                         {
-                            @Override
-                            public void run()
+                            try
                             {
-                                try
-                                {
-                                    ConnectFuture connectFuture = mSocketConnector
-                                        .connect(new InetSocketAddress(mIcecastConfiguration.getHost(),
-                                            mIcecastConfiguration.getPort()));
-                                    connectFuture.awaitUninterruptibly();
-                                    IoSession session = connectFuture.getSession();
+                                ConnectFuture connectFuture = getSocketConnector()
+                                    .connect(new InetSocketAddress(mIcecastConfiguration.getHost(),
+                                        mIcecastConfiguration.getPort()));
+                                connectFuture.awaitUninterruptibly();
+                                IoSession session = connectFuture.getSession();
 
-                                    if (session != null)
-                                    {
-                                        session.write(updateRequest);
-                                    }
+                                if (session != null)
+                                {
+                                    session.write(updateRequest);
                                 }
-                                catch (Exception e)
+                            }
+                            catch (Exception e)
+                            {
+                                Throwable throwableCause = e.getCause();
+
+                                if (throwableCause instanceof ConnectException)
                                 {
-                                    Throwable throwableCause = e.getCause();
-
-                                    if (throwableCause instanceof ConnectException)
+                                    //Do nothing, the server is unavailable
+                                }
+                                else
+                                {
+                                    if (!mStackTraceLoggingSuppressed)
                                     {
-                                        //Do nothing, the server is unavailable
-                                    }
-                                    else
-                                    {
-                                        if (!mStackTraceLoggingSuppressed)
-                                        {
-                                            mLog.error("Error sending metadata update.  Future errors will " +
-                                                "be suppressed", e);
+                                        mLog.error("Error sending metadata update.  Future errors will " +
+                                            "be suppressed", e);
 
-                                            mStackTraceLoggingSuppressed = true;
-                                        }
+                                        mStackTraceLoggingSuppressed = true;
                                     }
                                 }
                             }
-                        }, 0l, TimeUnit.SECONDS);
-                    }
-
-                    //Fetch next metadata update to send
-                    metadataUpdate = mMetadataQueue.poll();
+                        }
+                    }, 0l, TimeUnit.SECONDS);
                 }
 
-                mUpdating.set(false);
+                //Fetch next metadata update to send
+                song = mMetadataQueue.poll();
+            }
+
+            mUpdating.set(false);
+        }
+    }
+
+    /**
+     * Creates the song information for a metadata update
+     */
+    private static String getSong(AudioMetadata audioMetadata)
+    {
+        StringBuilder sb = new StringBuilder();
+
+        if(audioMetadata != null)
+        {
+            Metadata to = audioMetadata.getMetadata(MetadataType.TO);
+
+            sb.append("TO:");
+
+            if(to != null)
+            {
+                if(to.hasAlias())
+                {
+                    sb.append(to.getAlias().getName());
+                }
+                else
+                {
+                    sb.append(to.getValue());
+                }
+            }
+            else
+            {
+                sb.append("UNKNOWN");
+            }
+
+            Metadata from = audioMetadata.getMetadata(MetadataType.FROM);
+
+            sb.append(" FROM:");
+
+            if(from != null)
+            {
+
+                if(from.hasAlias())
+                {
+                    sb.append(from.getAlias().getName());
+                }
+                else
+                {
+                    sb.append(from.getValue());
+                }
+            }
+            else
+            {
+                sb.append("UNKNOWN");
             }
         }
+        else
+        {
+            sb.append("Scanning ....");
+        }
+
+        return sb.toString();
     }
 
     /**
      * Creates an HTTP GET request to update the metadata on the remote server
      */
-    private HttpRequest createUpdateRequest(String metadata)
+    private HttpRequest createUpdateRequest(String song)
     {
         try
         {
-            String songEncoded = URLEncoder.encode(metadata, UTF8);
             StringBuilder sb = new StringBuilder();
             sb.append("mode=updinfo");
             sb.append("&mount=").append(mIcecastConfiguration.getMountPoint());
             sb.append("&charset=UTF%2d8");
-            sb.append("&song=").append(songEncoded);
+            sb.append("&song=").append(URLEncoder.encode(song, UTF8));
 
-            return new HttpRequestImpl(HttpVersion.HTTP_1_1, HttpMethod.GET, "/admin/metadata",
-                sb.toString(), mHTTPHeaders);
+            HttpRequestImpl request = new HttpRequestImpl(HttpVersion.HTTP_1_1, HttpMethod.GET, "/admin/metadata",
+                sb.toString(), getHTTPHeaders());
+
+            return request;
         }
         catch (UnsupportedEncodingException e)
         {
@@ -205,5 +262,20 @@ public class IcecastMetadataUpdater
         }
 
         return null;
+    }
+
+    /**
+     * HTTP headers to use for a metadata update request.
+     */
+    private Map<String,String> getHTTPHeaders()
+    {
+        if(mHTTPHeaders == null)
+        {
+            mHTTPHeaders = new HashMap<>();
+            mHTTPHeaders.put(IcecastHeader.USER_AGENT.getValue(), SystemProperties.getInstance().getApplicationName());
+            mHTTPHeaders.put(IcecastHeader.AUTHORIZATION.getValue(), mIcecastConfiguration.getBase64EncodedCredentials());
+        }
+
+        return mHTTPHeaders;
     }
 }
