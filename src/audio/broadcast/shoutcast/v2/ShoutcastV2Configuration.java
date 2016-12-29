@@ -26,7 +26,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
 {
     private int mStreamID;
     private String mUserID;
-    private int mBitRate;
+    private int mBitRate = 16;
     private String mStreamName;
     private String mGenre;
     private String mURL;

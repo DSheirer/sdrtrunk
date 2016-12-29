@@ -170,12 +170,23 @@ public class StreamManager implements Listener<AudioPacket>
         if(mStreamRecorders.containsKey(sourceChannelID))
         {
             AudioRecorder recorder = mStreamRecorders.remove(sourceChannelID);
-            recorder.stop();
 
-            StreamableAudioRecording streamableAudioRecording = new StreamableAudioRecording(recorder.getPath(),
-                    recorder.getMetadata(), recorder.getTimeRecordingStart(), recorder.getRecordingLength());
+            recorder.close(new Listener<AudioRecorder>()
+            {
+                @Override
+                public void receive(AudioRecorder audioRecorder)
+                {
+                    StreamableAudioRecording streamableAudioRecording =
+                        new StreamableAudioRecording(audioRecorder.getPath(), audioRecorder.getMetadata(),
+                            audioRecorder.getTimeRecordingStart(), audioRecorder.getRecordingLength());
 
-            mAudioBroadcaster.receive(streamableAudioRecording);
+                    if(mAudioBroadcaster != null)
+                    {
+                        mAudioBroadcaster.receive(streamableAudioRecording);
+                    }
+                }
+            });
+
         }
     }
 

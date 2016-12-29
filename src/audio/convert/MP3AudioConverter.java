@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
 import java.util.List;
 
 public class MP3AudioConverter implements IAudioConverter
@@ -81,5 +82,15 @@ public class MP3AudioConverter implements IAudioConverter
             mLog.error("There was an error converting audio to MP3: " + e.getMessage());
             return new byte[0];
         }
+    }
+
+    @Override
+    public byte[] flush()
+    {
+        byte[] lastPartialFrame = new byte[mEncoder.getMP3BufferSize()];
+
+        int length = mEncoder.encodeFinish(lastPartialFrame);
+
+        return Arrays.copyOf(lastPartialFrame, length);
     }
 }

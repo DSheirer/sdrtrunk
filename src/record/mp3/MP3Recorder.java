@@ -20,21 +20,28 @@ package record.mp3;
 
 import audio.AudioPacket;
 import audio.IAudioPacketListener;
+import audio.broadcast.BroadcastModel;
 import audio.convert.MP3AudioConverter;
 import module.Module;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import properties.SystemProperties;
 import record.AudioRecorder;
 import record.wave.AudioPacketMonoWaveReader;
 import sample.Listener;
 import util.TimeStamp;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -42,6 +49,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 /**
  * MP3 recorder for converting 8 kHz PCM audio packets to MP3 and writing to .mp3 file.
@@ -83,6 +91,24 @@ public class MP3Recorder extends AudioRecorder
         }
     }
 
+    @Override
+    protected void flush()
+    {
+        byte[] partialFrame = mMP3Converter.flush();
+
+        if(partialFrame != null && partialFrame.length > 0)
+        {
+            try
+            {
+                getOutputStream().write(partialFrame);
+            }
+            catch(IOException ioe)
+            {
+                mLog.error("Error writing final audio frame data to file", ioe);
+            }
+        }
+    }
+
     /**
      * Processes audio metadata contained in the audio packets and converts the metadata to MP3 ID3 metadata tags and
      * writes the ID3 tags to the output stream.
@@ -91,54 +117,5 @@ public class MP3Recorder extends AudioRecorder
     private void processMetadata(List<AudioPacket> audioPackets)
     {
         //TODO: detect metadata changes and write out ID3 tags to the MP3 stream
-    }
-
-    public static void main(String[] args)
-    {
-        mLog.debug("Starting ...");
-
-//        Path inputPath = Paths.get("/home/denny/Music/PCM.wav");
-//        Path outputPath = Paths.get("/home/denny/Music/denny_test/PCM.mp3");
-//
-//        mLog.debug("Reading: " + inputPath.toString());
-//        mLog.debug("Writing: " + outputPath.toString());
-//
-//        final MP3Recorder recorder = new MP3Recorder(outputPath);
-//        recorder.start(Executors.newSingleThreadScheduledExecutor());
-//
-//        try (AudioPacketMonoWaveReader reader = new AudioPacketMonoWaveReader(inputPath, true))
-//        {
-//            reader.setListener(recorder);
-//            reader.read();
-//            recorder.stop();
-//        }
-//        catch (IOException e)
-//        {
-//            mLog.error("Error", e);
-//        }
-//
-        Path outputPath = Paths.get("/home/denny/Music/Silence_test_10_seconds.mp3");
-
-        mLog.debug("Writing: " + outputPath.toString());
-
-        final MP3Recorder recorder = new MP3Recorder(outputPath);
-        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        recorder.start(executor);
-
-        long duration = 1165;
-        int length = (int)(duration * 8);   //8000 Hz sample rate
-        float[] silence = new float[length];
-        AudioPacket silencePacket = new AudioPacket(silence, null);
-
-        for(int x = 0; x < 10; x++)
-        {
-            recorder.receive(silencePacket);
-        }
-
-        recorder.stop();
-
-        executor.shutdown();
-
-        mLog.debug("Finished");
     }
 }

@@ -24,5 +24,14 @@ import java.util.List;
 
 public interface IAudioConverter
 {
+    /**
+     * Converts the PCM audio packets to converted audio format.  May produce partial audio frame data.
+     */
     public byte[] convert(List<AudioPacket> audioPackets);
+
+    /**
+     * Finalizes audio conversion by fully converting any partial frames left in the buffer and returning the
+     * remaining bytes to produce a full frame.
+     */
+    public byte[] flush();
 }

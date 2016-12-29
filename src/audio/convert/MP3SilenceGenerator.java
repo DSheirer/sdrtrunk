@@ -39,6 +39,8 @@ public class MP3SilenceGenerator implements ISilenceGenerator
      */
     public MP3SilenceGenerator()
     {
+        //Prime the conversion buffer with 172 ms of audio to produce (and throw away) the first 20 byte buffer
+        generate(172);
     }
 
     public byte[] generate(long duration)
@@ -57,10 +59,16 @@ public class MP3SilenceGenerator implements ISilenceGenerator
 
         MP3SilenceGenerator generator = new MP3SilenceGenerator();
 
-        for(long x = 0; x < 20; x ++)
+        int sampleCount = 0;
+
+        int block = 1;
+
+        for(long x = 0; x < 500; x ++)
         {
-            byte[] silence = generator.generate(1000);
-            mLog.debug("Silence:" + x + " Length:" + silence.length);
+            byte[] silence = generator.generate(block);
+
+            sampleCount += block;
+            mLog.debug("Silence:" + x + " Count:" + sampleCount + " Length:" + silence.length);
         }
 
         mLog.debug("Finished");

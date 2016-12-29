@@ -21,16 +21,16 @@ package audio.broadcast.shoutcast.v1;
 import audio.broadcast.BroadcastConfiguration;
 import audio.broadcast.BroadcastFormat;
 import audio.broadcast.BroadcastServerType;
-import audio.broadcast.icecast.IcecastTCPConfiguration;
+
+import javax.xml.bind.annotation.XmlAttribute;
 
 public class ShoutcastV1Configuration extends BroadcastConfiguration
 {
-    private String mStreamName;
     private String mGenre;
+    private String mDescription;
     private boolean mPublic;
-    private int mChannels;
-    private int mBitRate;
-    private String mURL;
+    private int mChannels = 1;
+    private int mBitRate = 16;
 
     public ShoutcastV1Configuration()
     {
@@ -56,12 +56,10 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
         copy.setEnabled(false);
 
         //Icecast Configuration Parameters
-        copy.setStreamName(getStreamName());
         copy.setGenre(getGenre());
         copy.setPublic(isPublic());
         copy.setChannels(getChannels());
         copy.setBitRate(getBitRate());
-        copy.setURL(getURL());
 
         return copy;
     }
@@ -73,25 +71,9 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
     }
 
     /**
-     * Stream name
-     */
-    public String getStreamName()
-    {
-        return mStreamName;
-    }
-
-    /**
-     * Sets the stream name
-     * @param name
-     */
-    public void setStreamName(String name)
-    {
-        mStreamName = name;
-    }
-
-    /**
      * Stream genre
      */
+    @XmlAttribute(name="genre")
     public String getGenre()
     {
         return mGenre;
@@ -107,8 +89,27 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
     }
 
     /**
+     * Stream description
+     */
+    @XmlAttribute(name="description")
+    public String getDescription()
+    {
+        return mDescription;
+    }
+
+    /**
+     * Stream description
+     * @param description
+     */
+    public void setDescription(String description)
+    {
+        mDescription = description;
+    }
+
+    /**
      * Public visibility of the broadcastAudio
      */
+    @XmlAttribute(name="public")
     public boolean isPublic()
     {
         return mPublic;
@@ -126,6 +127,7 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
     /**
      * Number of audio channels in the broadcastAudio
      */
+    @XmlAttribute(name="channels")
     public int getChannels()
     {
         return mChannels;
@@ -142,6 +144,7 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
     /**
      * Bit rate in bits per second
      */
+    @XmlAttribute(name="bitrate")
     public int getBitRate()
     {
         return mBitRate;
@@ -156,20 +159,12 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
         mBitRate = bitRate;
     }
 
-    /**
-     * URL associated with the broadcastAudio where users can find additional details.
-     */
-    public String getURL()
+    @Override
+    public boolean isValid()
     {
-        return mURL;
-    }
-
-    /**
-     * URL associated with the broadcastAudio where users can find additional details.
-     * @param url
-     */
-    public void setURL(String url)
-    {
-        mURL = url;
+        return getName() != null && !getName().isEmpty() &&
+               getHost() != null && !getHost().isEmpty() &&
+               getPort() > 0 && getPort() < 65535 &&
+               getPassword() != null && !getPassword().isEmpty();
     }
 }

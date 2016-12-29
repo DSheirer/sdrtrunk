@@ -18,46 +18,45 @@
  ******************************************************************************/
 package audio.broadcast.shoutcast.v1;
 
-import audio.AudioPacket;
-import audio.broadcast.AudioBroadcaster;
-import audio.broadcast.BroadcastFactory;
-import audio.broadcast.BroadcastFormat;
-import audio.broadcast.BroadcastMetadata;
 import audio.broadcast.BroadcastState;
-import audio.metadata.AudioMetadata;
 import controller.ThreadPoolManager;
+import org.apache.mina.core.RuntimeIoException;
+import org.apache.mina.core.buffer.IoBuffer;
+import org.apache.mina.core.future.ConnectFuture;
+import org.apache.mina.core.service.IoHandlerAdapter;
+import org.apache.mina.core.session.IoSession;
+import org.apache.mina.filter.codec.ProtocolCodecFilter;
+import org.apache.mina.filter.codec.textline.TextLineCodecFactory;
+import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import record.wave.AudioPacketMonoWaveReader;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.net.UnknownHostException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
+import java.net.ConnectException;
+import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ShoutcastV1AudioBroadcaster extends AudioBroadcaster
+public class ShoutcastV1AudioBroadcaster extends ShoutcastAudioBroadcaster
 {
     private final static Logger mLog = LoggerFactory.getLogger( ShoutcastV1AudioBroadcaster.class );
+    private static final long RECONNECT_INTERVAL_MILLISECONDS = 30000; //30 seconds
 
-    private static final long RECONNECT_INTERVAL_MILLISECONDS = 15000; //15 seconds
+    private NioSocketConnector mSocketConnector;
+    private IoSession mStreamingSession = null;
+
     private long mLastConnectionAttempt = 0;
-
-    private Socket mSocket;
-    private DataOutputStream mOutputStream;
-    private DataInputStream mInputStream;
-    private List<AudioPacket> mPacketsToBroadcast = new ArrayList<>();
-
-    private static final int mBufferSize = 2000;
+    private AtomicBoolean mConnecting = new AtomicBoolean();
 
     /**
-     * Creates a Shoutcast Version 1 broadcaster.
-     * @param configuration
+     * Creates a Shoutcast v1 compatible broadcaster using TCP protocol.
+     *
+     * Note: use @see ShoutcastV2AudioBroadcaster for Shoutcast version 2.x and newer.
+     *
+     * This broadcaster uses the Apache Mina library for the streaming socket connection and for metadata updates.  The
+     * ShoutcastV1IOHandler manages all interaction with the Shoutcast server and manages the overall broadcast state.
+     *
+     * @param configuration for the Shoutcast stream
      */
     public ShoutcastV1AudioBroadcaster(ThreadPoolManager threadPoolManager, ShoutcastV1Configuration configuration)
     {
@@ -65,57 +64,102 @@ public class ShoutcastV1AudioBroadcaster extends AudioBroadcaster
     }
 
     /**
-     * Shoutcast V1 Configuration information
+     * Shoutcast V1 broadcast configuration
      */
-    private ShoutcastV1Configuration getShoutcastConfiguration()
+    private ShoutcastV1Configuration getConfiguration()
     {
         return (ShoutcastV1Configuration)getBroadcastConfiguration();
     }
 
-    @Override
-    protected void disconnect()
-    {
-        //TODO: implement a disconnect
-    }
-
-    @Override
-    protected void broadcastMetadata(AudioMetadata metadata)
-    {
-        mLog.debug("Request to send audio metadata to shoutcast v1 server - needs code");
-    }
 
     /**
-     * Process audio packets using Shoutcast V1 Protocol
+     * Broadcasts the audio frame or sequence
      */
     @Override
     protected void broadcastAudio(byte[] audio)
     {
-        //If we're connected, send the audio, otherwise discard it
-        if(connect())
+        if(audio != null && audio.length > 0 && connect() && mStreamingSession != null && mStreamingSession.isConnected())
         {
-            try
-            {
-                send(audio);
-            }
-            catch (IOException e)
-            {
-                mLog.error("Error while dispatching audio", e);
-                setBroadcastState(BroadcastState.TEMPORARY_BROADCAST_ERROR);
-            }
+            IoBuffer buf = IoBuffer.allocate(audio.length).setAutoExpand(false);
+            buf.put(audio);
+            buf.flip();
+            mStreamingSession.write(buf);
         }
     }
 
     /**
-     * Indicates if the audio handler is currently connected to the remote server and capable of streaming audio.
+     * (Re)Connects the broadcaster to the remote server if it currently is disconnected and indicates if the broadcaster
+     * is currently connected to the remote server following any connection attempts.
      *
-     * This method will attempt to establish a connection or reconnect to the streaming server.
+     * Attempts to connect via this method when the broadcast state indicates an error condition will be ignored.
+     *
      * @return true if the audio handler can stream audio
      */
     private boolean connect()
     {
-        if(!connected())
+        if(!connected() && canConnect() &&
+           (mLastConnectionAttempt + RECONNECT_INTERVAL_MILLISECONDS < System.currentTimeMillis()) &&
+            mConnecting.compareAndSet(false, true))
         {
-            createConnection();
+            mLastConnectionAttempt = System.currentTimeMillis();
+
+            if(mSocketConnector == null)
+            {
+                mSocketConnector = new NioSocketConnector();
+                mSocketConnector.setConnectTimeoutCheckInterval(10000);
+
+//                mSocketConnector.getFilterChain().addLast("logger",
+//                    new LoggingFilter(ShoutcastV1AudioBroadcaster.class));
+
+                mSocketConnector.getFilterChain().addLast("codec",
+                    new ProtocolCodecFilter(new TextLineCodecFactory()));
+
+                mSocketConnector.setHandler(new ShoutcastIOHandler());
+            }
+
+            mStreamingSession = null;
+
+            Runnable runnable = new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    setBroadcastState(BroadcastState.CONNECTING);
+
+                    try
+                    {
+                        ConnectFuture future = mSocketConnector
+                            .connect(new InetSocketAddress(getBroadcastConfiguration().getHost(),
+                                getBroadcastConfiguration().getPort()));
+                        future.awaitUninterruptibly();
+                        mStreamingSession = future.getSession();
+                    }
+                    catch(RuntimeIoException rie)
+                    {
+                        Throwable throwableCause = rie.getCause();
+
+                        if(throwableCause instanceof ConnectException)
+                        {
+                            setBroadcastState(BroadcastState.NO_SERVER);
+                        }
+                        else if(throwableCause != null)
+                        {
+                            setBroadcastState(BroadcastState.ERROR);
+                            mLog.debug("Failed to connect", rie);
+                        }
+                        else
+                        {
+                            setBroadcastState(BroadcastState.ERROR);
+                            mLog.debug("Failed to connect - no exception is available");
+                        }
+
+                        disconnect();
+                    }
+                }
+            };
+
+            getThreadPoolManager().scheduleOnce(runnable, 0l, TimeUnit.SECONDS);
+
         }
 
         return connected();
@@ -123,211 +167,113 @@ public class ShoutcastV1AudioBroadcaster extends AudioBroadcaster
 
 
     /**
-     * Creates a connnection to the remote server using the shoutcast configuration information.  Once disconnected
-     * following a successful connection, attempts to reestablish a connection on a set interval
+     * Disconnect from the remote broadcast server and cleanup input/output streams and socket connection
      */
-    private void createConnection()
-    {
-        if(!connected() && System.currentTimeMillis() - mLastConnectionAttempt >= RECONNECT_INTERVAL_MILLISECONDS)
-        {
-            mLastConnectionAttempt = System.currentTimeMillis();
-
-            createSocket();
-
-            if(mSocket.isConnected())
-            {
-                StringBuilder sb = new StringBuilder();
-
-                //Password
-                sb.append(getShoutcastConfiguration().getPassword()).append(BroadcastMetadata.COMMAND_TERMINATOR);
-
-                //Metadata
-                sb.append(BroadcastMetadata.STREAM_NAME.encode(getShoutcastConfiguration().getStreamName()));
-                sb.append(BroadcastMetadata.URL.encode(getShoutcastConfiguration().getURL()));
-                sb.append(BroadcastMetadata.PUBLIC.encode(getShoutcastConfiguration().isPublic()));
-                sb.append(BroadcastMetadata.GENRE.encode(getShoutcastConfiguration().getGenre()));
-                sb.append(BroadcastMetadata.AUDIO_BIT_RATE.encode(getShoutcastConfiguration().getBitRate()));
-
-                //End of connection string
-                sb.append(BroadcastMetadata.COMMAND_TERMINATOR);
-
-                try
-                {
-                    send(sb.toString());
-
-                    if(isInvalidResponse())
-                    {
-                        mLog.error("Invalid response after sending metadata");
-                        return;
-                    }
-                    else
-                    {
-                        setBroadcastState(BroadcastState.CONNECTED);
-                    }
-                }
-                catch(IOException ioe)
-                {
-                    mLog.debug("Error while connecting to server", ioe);
-                    setBroadcastState(BroadcastState.ERROR);
-                }
-
-                mLog.debug("Connection established");
-            }
-        }
-    }
-
-    /**
-     * Sends the string data to the remote server
-     * @param data to send
-     * @throws IOException if there is an error communicating with the remote server
-     */
-    private void send(String data) throws IOException
-    {
-        if(data != null && !data.isEmpty() && mOutputStream != null)
-        {
-            mOutputStream.writeBytes(data);
-        }
-    }
-
-    /**
-     * Sends the byte data to the remote server
-     * @param data to send
-     * @throws IOException if there is an error communicating with the remote server
-     */
-    private void send(byte[] data) throws IOException
+    public void disconnect()
     {
         if(connected())
         {
-            int sent = 0;
-
-            while(sent < data.length)
+            if(mStreamingSession != null)
             {
-                int available = data.length - sent;
-
-                int sending = available <mBufferSize ? available : mBufferSize;
-
-                mOutputStream.write(data, sent, sending);
-
-                sent += sending;
+                mStreamingSession.closeNow();
             }
         }
-    }
-
-    private String getResponse() throws IOException
-    {
-        if(mInputStream != null)
-        {
-            int bytesAvailable = mInputStream.available();
-
-            if(bytesAvailable > 0)
-            {
-                byte[] responseBuffer = new byte[bytesAvailable];
-
-                int bytesRead = 0;
-
-                while(bytesRead < bytesAvailable)
-                {
-                    bytesRead += mInputStream.read(responseBuffer, bytesRead, bytesAvailable - bytesRead);
-                }
-
-                return new String(responseBuffer);
-            }
-        }
-
-        return null;
-    }
-
-    private boolean isInvalidResponse()
-    {
-        String response;
-
-        try
-        {
-            response = getResponse();
-        }
-        catch(IOException e)
-        {
-            mLog.error("Error while retrieving server response message", e);
-            setBroadcastState(BroadcastState.ERROR);
-            return false;
-        }
-
-        if(response != null && !response.isEmpty())
-        {
-            if(response.startsWith("OK"))
-            {
-                return false;
-            }
-            else if(response.startsWith("Invalid Password"))
-            {
-                setBroadcastState(BroadcastState.INVALID_CREDENTIALS);
-                return true;
-            }
-
-            mLog.debug("Unrecognized server response:" + response);
-            return true;
-        }
-
-        return false;
     }
 
     /**
-     * Creates a socket connection to the remote server and sets the state to CONNECTING.
+     * IO Handler for managing Icecast TCP connection and credentials
      */
-    private void createSocket()
+    public class ShoutcastIOHandler extends IoHandlerAdapter
     {
-        if(mSocket == null)
+        /**
+         * Sends stream configuration and user credentials upon connecting to remote server
+         */
+        @Override
+        public void sessionOpened(IoSession session) throws Exception
         {
-            mLog.debug("Creating socket");
-            try
-            {
-                mSocket = new Socket(getShoutcastConfiguration().getHost(),
-                                     getShoutcastConfiguration().getPort());
-                mOutputStream = new DataOutputStream(mSocket.getOutputStream());
-                mInputStream = new DataInputStream(mSocket.getInputStream());
-            }
-            catch(UnknownHostException uhe)
-            {
-                setBroadcastState(BroadcastState.NO_SERVER);
-                mLog.error("Unknown host or port.  Unable to create connection to streaming server host[" +
-                        getShoutcastConfiguration().getHost() + "] and port[" +
-                        getShoutcastConfiguration().getPort() + "] - will reattempt connection periodically");
-                return;
-            }
-            catch(IOException ioe)
-            {
-                setBroadcastState(BroadcastState.ERROR);
+            StringBuilder sb = new StringBuilder();
 
-                mLog.error("Error connecting to streaming server host[" +
-                        getShoutcastConfiguration().getHost() + "] and port[" +
-                        getShoutcastConfiguration().getPort() + "]", ioe);
-                return;
-            }
+            //Password
+            sb.append(getConfiguration().getPassword()).append(ShoutcastMetadata.COMMAND_TERMINATOR);
+
+            //Metadata
+            sb.append(ShoutcastMetadata.STREAM_NAME.encode(getConfiguration().getName()));
+            sb.append(ShoutcastMetadata.PUBLIC.encode(getConfiguration().isPublic()));
+            sb.append(ShoutcastMetadata.GENRE.encode(getConfiguration().getGenre()));
+            sb.append(ShoutcastMetadata.DESCRIPTION.encode(getConfiguration().getDescription()));
+            sb.append(ShoutcastMetadata.AUDIO_BIT_RATE.encode(getConfiguration().getBitRate()));
+
+            //End of connection string
+            sb.append(ShoutcastMetadata.COMMAND_TERMINATOR);
+
+            session.write(sb.toString());
         }
 
-        if(mSocket.isConnected())
+        @Override
+        public void sessionClosed(IoSession session) throws Exception
         {
-            setBroadcastState(BroadcastState.CONNECTING);
-        }
-        else
-        {
-            try
+            //If there is already an error state, don't override it.  Otherwise, set state to disconnected
+            if(!getBroadcastState().isErrorState())
             {
-                SocketAddress address = getShoutcastConfiguration().getAddress();
-                mSocket.connect(address);
-                setBroadcastState(BroadcastState.CONNECTING);
+                setBroadcastState(BroadcastState.DISCONNECTED);
             }
-            catch(UnknownHostException uhe)
-            {
-                setBroadcastState(BroadcastState.NO_SERVER);
-            }
-            catch(IOException e)
-            {
-                setBroadcastState(BroadcastState.ERROR);
 
-                mLog.error("Error connecting to streaming server host[" +
-                        getShoutcastConfiguration().getHost() + "] and port[" +
-                        getShoutcastConfiguration().getPort() + "]", e);
+            mSocketConnector.dispose();
+            mStreamingSession = null;
+            mSocketConnector = null;
+
+            mConnecting.set(false);
+            super.sessionClosed(session);
+        }
+
+        @Override
+        public void exceptionCaught(IoSession session, Throwable cause) throws Exception
+        {
+            if(cause instanceof IOException && ((IOException)cause).getMessage().startsWith("Connection reset"))
+            {
+                mLog.info("Streaming connection reset by remote server - reestablishing connection");
+                disconnect();
+                connect();
+            }
+            else
+            {
+                mLog.error("Broadcast error", cause);
+                setBroadcastState(BroadcastState.ERROR);
+                disconnect();
+            }
+
+            mConnecting.set(false);
+        }
+
+        @Override
+        public void messageReceived(IoSession session, Object object) throws Exception
+        {
+            mLog.debug("Message Received:" + object.toString());
+            if(object instanceof String)
+            {
+                String message = (String)object;
+
+                if(message != null && !message.trim().isEmpty())
+                {
+                    if(message.startsWith("OK"))
+                    {
+                        setBroadcastState(BroadcastState.CONNECTED);
+                    }
+                    else if(message.startsWith("icy-caps:"))
+                    {
+                        //TODO: what does icy-caps:11 tell us?
+                    }
+                    else
+                    {
+                        mLog.error("Unrecognized server response:" + message);
+                        setBroadcastState(BroadcastState.ERROR);
+                    }
+                }
+            }
+            else
+            {
+                mLog.error("Icecast TCP broadcaster - unrecognized message [ " + object.getClass() +
+                    "] received:" + object.toString());
             }
         }
     }

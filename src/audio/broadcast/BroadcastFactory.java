@@ -19,7 +19,6 @@
 package audio.broadcast;
 
 import alias.AliasModel;
-import audio.AudioPacket;
 import audio.broadcast.broadcastify.BroadcastifyConfiguration;
 import audio.broadcast.broadcastify.BroadcastifyConfigurationEditor;
 import audio.broadcast.icecast.IcecastHTTPAudioBroadcaster;
@@ -30,6 +29,7 @@ import audio.broadcast.icecast.IcecastTCPConfiguration;
 import audio.broadcast.icecast.IcecastTCPConfigurationEditor;
 import audio.broadcast.shoutcast.v1.ShoutcastV1AudioBroadcaster;
 import audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
+import audio.broadcast.shoutcast.v1.ShoutcastV1ConfigurationEditor;
 import audio.broadcast.shoutcast.v2.ShoutcastV2AudioBroadcaster;
 import audio.broadcast.shoutcast.v2.ShoutcastV2Configuration;
 import audio.convert.IAudioConverter;
@@ -46,8 +46,6 @@ import record.mp3.MP3Recorder;
 import settings.SettingsManager;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 public class BroadcastFactory
 {
@@ -55,20 +53,6 @@ public class BroadcastFactory
 
     public static final int MP3_MONO_16_KHZ_BITRATE = 16;
     public static final boolean MP3_CONSTANT_BITRATE = false;
-    private static MP3AudioConverter MP3_SILENT_FRAME_GENERATOR;
-
-    static
-    {
-        MP3_SILENT_FRAME_GENERATOR = new MP3AudioConverter(MP3Recorder.MP3_BIT_RATE, MP3Recorder.CONSTANT_BIT_RATE);
-
-        //We have to charge the converter pipeline with 1200 milliseconds to get 1 second of audio the first time
-        float[] silence = new float[9600]; //1200 milliseconds at 8000 kHz
-        AudioPacket silencePacket = new AudioPacket(silence, null);
-        List<AudioPacket> silencePackets = new ArrayList<>();
-        silencePackets.add(silencePacket);
-        MP3_SILENT_FRAME_GENERATOR.convert(silencePackets);
-    }
-
 
     /**
      * Creates an audio streaming broadcaster for the configuration
@@ -184,6 +168,9 @@ public class BroadcastFactory
                 break;
             case ICECAST_HTTP:
                 editor = new IcecastHTTPConfigurationEditor(broadcastModel, aliasModel, settingsManager);
+                break;
+            case SHOUTCAST_V1:
+                editor = new ShoutcastV1ConfigurationEditor(broadcastModel, aliasModel, settingsManager);
                 break;
             default:
                 editor = new EmptyEditor<BroadcastConfiguration>();

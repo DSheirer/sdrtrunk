@@ -16,9 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast;
+package audio.broadcast.shoutcast.v1;
 
-public enum BroadcastMetadata
+import audio.broadcast.BroadcastFormat;
+
+public enum ShoutcastMetadata
 {
     AIM("icy-aim:"),
     AUDIO_BIT_RATE("icy-br:"),
@@ -43,7 +45,7 @@ public enum BroadcastMetadata
 
     private String mTag;
 
-    private BroadcastMetadata(String tag)
+    private ShoutcastMetadata(String tag)
     {
         mTag = tag;
     }

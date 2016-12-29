@@ -54,6 +54,7 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
     protected long mTimeLastPacketReceived;
     private BufferProcessor mBufferProcessor;
     private ScheduledFuture<?> mProcessorHandle;
+    private Listener<AudioRecorder> mRecordingClosedListener;
 
     private long mSampleCount;
 
@@ -152,42 +153,23 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
     }
 
     /**
-     * Stops the recorder and closes out the recording file
+     * Stops the recorder and flags the recording to be closed.  Use this method if you do not need any details about
+     * the final recording.  Otherwise, use the close() method and register a closing listener.
      */
     public void stop()
     {
-        if(mRunning.compareAndSet(true, false))
-        {
-            if (mProcessorHandle != null)
-            {
-                mProcessorHandle.cancel(true);
-            }
-
-            mProcessorHandle = null;
-
-            processAudioPacketQueue();
-
-            close();
-        }
+        close(null);
     }
 
     /**
-     * Closes the recording file.
+     * Closes the recording file.  Upon successful closing of the recording file, the listener is notified that the
+     * audio recorder is closed.
      */
-    private void close()
+    public void close(Listener<AudioRecorder> listener)
     {
-        if (mFileOutputStream != null)
-        {
-            try
-            {
-                mFileOutputStream.flush();
-                mFileOutputStream.close();
-            }
-            catch (IOException e)
-            {
-                mLog.error("Error closing output stream", e);
-            }
-        }
+        mRecordingClosedListener = listener;
+
+        mRunning.set(false);
     }
 
 
@@ -277,6 +259,14 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
     }
 
     /**
+     * Flushes any remaining audio to the output file.  This method should be implemented by subclasses where an audio
+     * converter may contain residual frame data that should be flushed to disk before closing the audio file.
+     */
+    protected void flush()
+    {
+    }
+
+    /**
      * Drains the audio packet queue and records the audio packets to file
      */
     public class BufferProcessor implements Runnable
@@ -288,6 +278,38 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
             if (mProcessing.compareAndSet(false, true))
             {
                 processAudioPacketQueue();
+
+                //If we've been stopped or closed, finish the queue, close the recording, notify the listener, and
+                // cancel the future
+                if(!mRunning.get())
+                {
+                    //Allow sub-classes to flush remaining audio frame data to disk.
+                    flush();
+
+                    if (mFileOutputStream != null)
+                    {
+                        try
+                        {
+                            mFileOutputStream.flush();
+                            mFileOutputStream.close();
+                        }
+                        catch (IOException e)
+                        {
+                            mLog.error("Error closing output stream", e);
+                        }
+                    }
+
+                    if(mRecordingClosedListener != null)
+                    {
+                        mRecordingClosedListener.receive(AudioRecorder.this);
+                    }
+
+                    if (mProcessorHandle != null)
+                    {
+                        mProcessorHandle.cancel(false);
+                        mProcessorHandle = null;
+                    }
+                }
 
                 mProcessing.set(false);
             }
