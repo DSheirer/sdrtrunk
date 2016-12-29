@@ -57,18 +57,27 @@ public class MP3SilenceGenerator implements ISilenceGenerator
     {
         mLog.debug("Starting ...");
 
-        MP3SilenceGenerator generator = new MP3SilenceGenerator();
+//        MP3SilenceGenerator generator = new MP3SilenceGenerator();
+//
+//        int sampleCount = 0;
+//
+//        int block = 1;
+//
+//        for(long x = 0; x < 5000; x ++)
+//        {
+//            byte[] silence = generator.generate(block);
+//
+//            sampleCount += block;
+//
+//            if(silence.length > 0)
+//            {
+//                mLog.debug("Silence:" + x + " Count:" + sampleCount + " Length:" + silence.length);
+//            }
+//        }
 
-        int sampleCount = 0;
-
-        int block = 1;
-
-        for(long x = 0; x < 500; x ++)
+        for(int x = 1; x <= 288; x++)
         {
-            byte[] silence = generator.generate(block);
-
-            sampleCount += block;
-            mLog.debug("Silence:" + x + " Count:" + sampleCount + " Length:" + silence.length);
+            mLog.debug(x + ": " + (x / 144));
         }
 
         mLog.debug("Finished");

@@ -248,7 +248,6 @@ public class ShoutcastV1AudioBroadcaster extends ShoutcastAudioBroadcaster
         @Override
         public void messageReceived(IoSession session, Object object) throws Exception
         {
-            mLog.debug("Message Received:" + object.toString());
             if(object instanceof String)
             {
                 String message = (String)object;

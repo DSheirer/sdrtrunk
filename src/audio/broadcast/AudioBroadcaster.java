@@ -265,7 +265,7 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
     {
         if(mBroadcastState != state)
         {
-            mLog.info("[" + getStreamName()  + "] changing state to: " + state);
+            mLog.info("[" + getStreamName()  + "] state: " + state);
             mBroadcastState = state;
 
             broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_STATE_CHANGE));
@@ -332,8 +332,9 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
     {
         private AtomicBoolean mProcessing = new AtomicBoolean();
         private ByteArrayInputStream mInputStream;
-        private int mAverageBytesPerInterval;
         private long mFinalSilencePadding = 0;
+        private int mBytesStreamedActual = 0;
+        private int mBytesStreamedRequired = 0;
 
         @Override
         public void run()
@@ -353,13 +354,20 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
 
                 if(mInputStream != null)
                 {
-                    int length = Math.min(mAverageBytesPerInterval, mInputStream.available());
+                    //We need to stream at 13.888 fps (144 byte frame) to achieve 2000 Bps or 16 kbps
+                    mBytesStreamedRequired += 2000;  //2000 bytes per second for 16 kbps data rate
+                    int bytesToStream = mBytesStreamedRequired - mBytesStreamedActual;
+
+                    //Trim length to whole-frame intervals (144 byte frame)
+                    bytesToStream -= (bytesToStream % 144);
+
+                    int length = Math.min(bytesToStream, mInputStream.available());
 
                     byte[] audio = new byte[length];
 
                     try
                     {
-                        mInputStream.read(audio);
+                        mBytesStreamedActual += mInputStream.read(audio);
 
                         broadcastAudio(audio);
                     }
@@ -382,6 +390,9 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
          */
         private void nextRecording()
         {
+            mBytesStreamedActual = 0;
+            mBytesStreamedRequired = 0;
+
             boolean metadataUpdateRequired = false;
 
             if(mInputStream != null)
@@ -408,15 +419,13 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
                     {
                         mInputStream = new ByteArrayInputStream(audio);
 
-                        double intervals = (double)recording.getRecordingLength() / (double)PROCESSOR_RUN_INTERVAL_MS;
+                        mFinalSilencePadding = PROCESSOR_RUN_INTERVAL_MS -
+                            (recording.getRecordingLength() % PROCESSOR_RUN_INTERVAL_MS);
 
-                        mAverageBytesPerInterval = (int)((double)mInputStream.available() / intervals);
-
-                        int wholeIntervals = (int)Math.floor(intervals) + 1;
-
-                        //Silence padding to transmit at the end to keep stream length at multiples of run interval
-                        mFinalSilencePadding = (wholeIntervals * PROCESSOR_RUN_INTERVAL_MS) -
-                            recording.getRecordingLength();
+                        while(mFinalSilencePadding >= PROCESSOR_RUN_INTERVAL_MS)
+                        {
+                            mFinalSilencePadding -= PROCESSOR_RUN_INTERVAL_MS;
+                        }
 
                         if(connected())
                         {
