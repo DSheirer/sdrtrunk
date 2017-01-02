@@ -32,6 +32,7 @@ import audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
 import audio.broadcast.shoutcast.v1.ShoutcastV1ConfigurationEditor;
 import audio.broadcast.shoutcast.v2.ShoutcastV2AudioBroadcaster;
 import audio.broadcast.shoutcast.v2.ShoutcastV2Configuration;
+import audio.broadcast.shoutcast.v2.ShoutcastV2ConfigurationEditor;
 import audio.convert.IAudioConverter;
 import audio.convert.ISilenceGenerator;
 import audio.convert.MP3AudioConverter;
@@ -171,6 +172,9 @@ public class BroadcastFactory
                 break;
             case SHOUTCAST_V1:
                 editor = new ShoutcastV1ConfigurationEditor(broadcastModel, aliasModel, settingsManager);
+                break;
+            case SHOUTCAST_V2:
+                editor = new ShoutcastV2ConfigurationEditor(broadcastModel, aliasModel, settingsManager);
                 break;
             default:
                 editor = new EmptyEditor<BroadcastConfiguration>();

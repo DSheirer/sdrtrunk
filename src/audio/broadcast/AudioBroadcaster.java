@@ -103,10 +103,23 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
     protected abstract void broadcastAudio(byte[] audio);
 
     /**
-     * Broadcasts the next song's audio metadata prior to streaming the next song.
-     * @param metadata
+     * Protocol-specific metadata updater
      */
-    protected abstract void broadcastMetadata(AudioMetadata metadata);
+    protected abstract IBroadcastMetadataUpdater getMetadataUpdater();
+
+    /**
+     * Broadcasts the next song's audio metadata prior to streaming the next song.
+     * @param metadata for the next recording that will be streamed
+     */
+    protected void broadcastMetadata(AudioMetadata metadata)
+    {
+        IBroadcastMetadataUpdater metadataUpdater = getMetadataUpdater();
+
+        if(metadataUpdater != null)
+        {
+            metadataUpdater.update(metadata);
+        }
+    }
 
     /**
      * Disconnects the broadcaster from the remote server for a reset or final stop.

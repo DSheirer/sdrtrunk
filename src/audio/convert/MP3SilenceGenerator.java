@@ -19,13 +19,12 @@
 package audio.convert;
 
 import audio.AudioPacket;
-import audio.broadcast.AudioBroadcaster;
-import audio.convert.MP3AudioConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import record.mp3.MP3Recorder;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class MP3SilenceGenerator implements ISilenceGenerator
@@ -33,14 +32,13 @@ public class MP3SilenceGenerator implements ISilenceGenerator
     private final static Logger mLog = LoggerFactory.getLogger(MP3SilenceGenerator.class);
 
     private MP3AudioConverter mGenerator = new MP3AudioConverter(MP3Recorder.MP3_BIT_RATE, MP3Recorder.CONSTANT_BIT_RATE);
+    private byte[] mPreviousPartialFrameData;
 
     /**
      * Generates MP3 audio silence frames
      */
     public MP3SilenceGenerator()
     {
-        //Prime the conversion buffer with 172 ms of audio to produce (and throw away) the first 20 byte buffer
-        generate(172);
     }
 
     public byte[] generate(long duration)
@@ -50,34 +48,71 @@ public class MP3SilenceGenerator implements ISilenceGenerator
         AudioPacket silencePacket = new AudioPacket(silence, null);
         List<AudioPacket> silencePackets = new ArrayList<>();
         silencePackets.add(silencePacket);
-        return mGenerator.convert(silencePackets);
+
+        byte[] frameData = mGenerator.convert(silencePackets);
+
+        frameData = merge(mPreviousPartialFrameData, frameData);
+
+        if(frameData != null && frameData.length > 0)
+        {
+            if(frameData.length < 144)
+            {
+                mPreviousPartialFrameData = frameData;
+                return null;
+            }
+            else if((frameData.length % 144) == 0)
+            {
+                mPreviousPartialFrameData = null;
+                return frameData;
+            }
+            else
+            {
+                int integralFrameLength = (int)(frameData.length / 144) * 144;
+                mPreviousPartialFrameData = Arrays.copyOfRange(frameData, integralFrameLength, frameData.length);
+                return Arrays.copyOf(frameData, integralFrameLength);
+            }
+        }
+
+        return null;
+    }
+
+    private static byte[] merge(byte[] a, byte[] b)
+    {
+        if(a == null && b == null)
+        {
+            return null;
+        }
+        else if(a == null)
+        {
+            return b;
+        }
+        else if(b == null)
+        {
+            return a;
+        }
+
+        byte[] c = new byte[a.length + b.length];
+        System.arraycopy(a,0,c,0,a.length);
+        System.arraycopy(b,0,c,a.length,b.length);
+
+        return c;
     }
 
     public static void main(String[] args)
     {
         mLog.debug("Starting ...");
 
-//        MP3SilenceGenerator generator = new MP3SilenceGenerator();
-//
-//        int sampleCount = 0;
-//
-//        int block = 1;
-//
-//        for(long x = 0; x < 5000; x ++)
-//        {
-//            byte[] silence = generator.generate(block);
-//
-//            sampleCount += block;
-//
-//            if(silence.length > 0)
-//            {
-//                mLog.debug("Silence:" + x + " Count:" + sampleCount + " Length:" + silence.length);
-//            }
-//        }
-
-        for(int x = 1; x <= 288; x++)
+        for(long x = 243; x < 500; x ++)
         {
-            mLog.debug(x + ": " + (x / 144));
+            MP3SilenceGenerator generator = new MP3SilenceGenerator();
+
+            byte[] silence = generator.generate(x);
+
+            if(silence != null && silence.length > 0)
+            {
+                mLog.debug("Silence:" + x + " Length:" + silence.length);
+                MP3FrameInspector.inspect(silence);
+            }
         }
 
         mLog.debug("Finished");

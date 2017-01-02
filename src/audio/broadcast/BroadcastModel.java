@@ -488,59 +488,66 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     @Override
     public Object getValueAt(int rowIndex, int columnIndex)
     {
-        if( rowIndex <= mBroadcastConfigurations.size())
+        try
         {
-            BroadcastConfiguration configuration = mBroadcastConfigurations.get(rowIndex);
-
-            if(configuration != null)
+            if( rowIndex <= mBroadcastConfigurations.size())
             {
-                switch(columnIndex)
+                BroadcastConfiguration configuration = mBroadcastConfigurations.get(rowIndex);
+
+                if(configuration != null)
                 {
-                    case COLUMN_SERVER_ICON:
-                        String iconName = configuration.getBroadcastServerType().getIconName();
+                    switch(columnIndex)
+                    {
+                        case COLUMN_SERVER_ICON:
+                            String iconName = configuration.getBroadcastServerType().getIconName();
 
-                        if(iconName != null && mSettingsManager != null)
-                        {
-                            return mSettingsManager.getImageIcon(iconName, 14);
-                        }
-                        break;
-                    case COLUMN_STREAM_NAME:
-                        return configuration.getName();
-                    case COLUMN_BROADCASTER_STATUS:
-                        AudioBroadcaster audioBroadcasterA = mBroadcasterMap.get(configuration.getName());
+                            if(iconName != null && mSettingsManager != null)
+                            {
+                                return mSettingsManager.getImageIcon(iconName, 14);
+                            }
+                            break;
+                        case COLUMN_STREAM_NAME:
+                            return configuration.getName();
+                        case COLUMN_BROADCASTER_STATUS:
+                            AudioBroadcaster audioBroadcasterA = mBroadcasterMap.get(configuration.getName());
 
-                        if(audioBroadcasterA != null)
-                        {
-                            return audioBroadcasterA.getBroadcastState().toString();
-                        }
-                        else if(!configuration.isEnabled())
-                        {
-                            return "Disabled";
-                        }
-                        else if(!configuration.isValid())
-                        {
-                            return "Invalid Settings";
-                        }
-                    case COLUMN_BROADCASTER_QUEUE_SIZE:
-                        AudioBroadcaster audioBroadcasterB = mBroadcasterMap.get(configuration.getName());
+                            if(audioBroadcasterA != null)
+                            {
+                                return audioBroadcasterA.getBroadcastState().toString();
+                            }
+                            else if(!configuration.isEnabled())
+                            {
+                                return "Disabled";
+                            }
+                            else if(!configuration.isValid())
+                            {
+                                return "Invalid Settings";
+                            }
+                        case COLUMN_BROADCASTER_QUEUE_SIZE:
+                            AudioBroadcaster audioBroadcasterB = mBroadcasterMap.get(configuration.getName());
 
-                        if(audioBroadcasterB != null)
-                        {
-                            return audioBroadcasterB.getQueueSize();
-                        }
-                        break;
-                    case COLUMN_BROADCASTER_STREAMED_COUNT:
-                        AudioBroadcaster audioBroadcasterC = mBroadcasterMap.get(configuration.getName());
+                            if(audioBroadcasterB != null)
+                            {
+                                return audioBroadcasterB.getQueueSize();
+                            }
+                            break;
+                        case COLUMN_BROADCASTER_STREAMED_COUNT:
+                            AudioBroadcaster audioBroadcasterC = mBroadcasterMap.get(configuration.getName());
 
-                        if(audioBroadcasterC != null)
-                        {
-                            return audioBroadcasterC.getStreamedAudioCount();
-                        }
-                        break;
-                    default:
-                        break;
+                            if(audioBroadcasterC != null)
+                            {
+                                return audioBroadcasterC.getStreamedAudioCount();
+                            }
+                            break;
+                        default:
+                            break;
+                    }
                 }
             }
+        }
+        catch(Exception e)
+        {
+            mLog.error("Error accessing data in broadcast model", e);
         }
 
         return null;

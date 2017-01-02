@@ -18,6 +18,7 @@
  ******************************************************************************/
 package audio.broadcast.icecast;
 
+import audio.broadcast.IBroadcastMetadataUpdater;
 import audio.metadata.AudioMetadata;
 import audio.metadata.Metadata;
 import audio.metadata.MetadataType;
@@ -25,7 +26,6 @@ import controller.ThreadPoolManager;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
-import org.apache.mina.filter.logging.LoggingFilter;
 import org.apache.mina.http.HttpClientCodec;
 import org.apache.mina.http.HttpRequestImpl;
 import org.apache.mina.http.api.HttpMethod;
@@ -40,7 +40,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.URLEncoder;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
@@ -48,9 +47,9 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class IcecastMetadataUpdater
+public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdater
 {
-    private final static Logger mLog = LoggerFactory.getLogger(IcecastMetadataUpdater.class);
+    private final static Logger mLog = LoggerFactory.getLogger(IcecastBroadcastMetadataUpdater.class);
     private final static String UTF8 = "UTF-8";
 
     private ThreadPoolManager mThreadPoolManager;
@@ -68,7 +67,7 @@ public class IcecastMetadataUpdater
      * broadcaster.  When multiple metadata updates are received prior to completion of the current ongoing update
      * sequence, those updates will be queued and processed in the order received.
      */
-    public IcecastMetadataUpdater(ThreadPoolManager threadPoolManager, IcecastConfiguration icecastConfiguration)
+    public IcecastBroadcastMetadataUpdater(ThreadPoolManager threadPoolManager, IcecastConfiguration icecastConfiguration)
     {
         mThreadPoolManager = threadPoolManager;
         mIcecastConfiguration = icecastConfiguration;
@@ -82,7 +81,7 @@ public class IcecastMetadataUpdater
         if (mSocketConnector == null)
         {
             mSocketConnector = new NioSocketConnector();
-//            mSocketConnector.getFilterChain().addLast("logger", new LoggingFilter(IcecastMetadataUpdater.class));
+//            mSocketConnector.getFilterChain().addLast("logger", new LoggingFilter(IcecastBroadcastMetadataUpdater.class));
             mSocketConnector.getFilterChain().addLast("http_client_codec", new HttpClientCodec());
 
             //Each metadata update session is single-use, so we'll shut it down upon success or failure

@@ -46,6 +46,11 @@ public enum BroadcastState
     INVALID_CREDENTIALS("Invalid User Name/Password", true),
 
     /**
+     * Invalid mount point
+     */
+    INVALID_MOUNT_POINT("Invalid Mount/Stream ID", true),
+
+    /**
      * Remote server max sources has been exceeded
      */
     MAX_SOURCES_EXCEEDED("Max Sources Exceeded", true),

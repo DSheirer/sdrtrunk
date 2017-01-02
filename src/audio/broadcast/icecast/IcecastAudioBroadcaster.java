@@ -20,12 +20,12 @@ package audio.broadcast.icecast;
 
 import audio.broadcast.AudioBroadcaster;
 import audio.broadcast.BroadcastConfiguration;
-import audio.metadata.AudioMetadata;
+import audio.broadcast.IBroadcastMetadataUpdater;
 import controller.ThreadPoolManager;
 
 public abstract class IcecastAudioBroadcaster extends AudioBroadcaster
 {
-    private IcecastMetadataUpdater mIcecastMetadataUpdater;
+    private IBroadcastMetadataUpdater mMetadataUpdater;
 
     public IcecastAudioBroadcaster(ThreadPoolManager threadPoolManager, BroadcastConfiguration broadcastConfiguration)
     {
@@ -40,17 +40,14 @@ public abstract class IcecastAudioBroadcaster extends AudioBroadcaster
         return (IcecastConfiguration)getBroadcastConfiguration();
     }
 
-    /**
-     * Broadcasts an audio metadata update
-     */
     @Override
-    protected void broadcastMetadata(AudioMetadata metadata)
+    protected IBroadcastMetadataUpdater getMetadataUpdater()
     {
-        if(mIcecastMetadataUpdater == null)
+        if(mMetadataUpdater == null)
         {
-            mIcecastMetadataUpdater = new IcecastMetadataUpdater(getThreadPoolManager(), getConfiguration());
+            mMetadataUpdater = new IcecastBroadcastMetadataUpdater(getThreadPoolManager(), getConfiguration());
         }
 
-        mIcecastMetadataUpdater.update(metadata);
+        return mMetadataUpdater;
     }
 }
