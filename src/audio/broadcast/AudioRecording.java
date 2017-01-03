@@ -21,13 +21,15 @@ package audio.broadcast;
 import audio.metadata.AudioMetadata;
 
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class StreamableAudioRecording implements Comparable<StreamableAudioRecording>
+public class AudioRecording implements Comparable<AudioRecording>
 {
     private Path mPath;
     private AudioMetadata mAudioMetadata;
     private long mStartTime;
     private long mRecordingLength;
+    private AtomicInteger mPendingReplayCount = new AtomicInteger();
 
     /**
      * Audio recording that is ready to be streamed
@@ -36,7 +38,7 @@ public class StreamableAudioRecording implements Comparable<StreamableAudioRecor
      * @param start time of recording in milliseconds since epoch
      * @param recordingLength in milliseconds
      */
-    public StreamableAudioRecording(Path path, AudioMetadata audioMetadata, long start, long recordingLength)
+    public AudioRecording(Path path, AudioMetadata audioMetadata, long start, long recordingLength)
     {
         mPath = path;
         mAudioMetadata = audioMetadata;
@@ -81,8 +83,33 @@ public class StreamableAudioRecording implements Comparable<StreamableAudioRecor
      * Implements comparable for sorting recordings based on start time in ascending order
      */
     @Override
-    public int compareTo(StreamableAudioRecording otherRecording)
+    public int compareTo(AudioRecording otherRecording)
     {
         return Long.compare(getStartTime(), otherRecording.getStartTime());
+    }
+
+    /**
+     * Increments the count of pending replays.
+     */
+    public void addPendingReplay()
+    {
+        mPendingReplayCount.incrementAndGet();
+    }
+
+    /**
+     * Decrements the count of pending replays.
+     */
+    public void removePendingReplay()
+    {
+        mPendingReplayCount.decrementAndGet();
+    }
+
+    /**
+     * Indicates if there are any remaining pending replays.  Once the pending replay count is less than or equal to
+     * zero, the recording can be deleted.
+     */
+    public boolean hasPendingReplays()
+    {
+        return mPendingReplayCount.get() <= 0;
     }
 }

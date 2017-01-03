@@ -45,7 +45,8 @@ public class StreamManager implements Listener<AudioPacket>
     private static AtomicInteger sNextRecordingNumber = new AtomicInteger();
 
     private ThreadPoolManager mThreadPoolManager;
-    private AudioBroadcaster mAudioBroadcaster;
+    private Listener<AudioRecording> mAudioRecordingListener;
+    private BroadcastFormat mBroadcastFormat;
     private Path mTempDirectory;
     private Map<Integer, AudioRecorder> mStreamRecorders = new HashMap<>();
     private Runnable mRecorderMonitor;
@@ -61,16 +62,18 @@ public class StreamManager implements Listener<AudioPacket>
      * Completed streamable audio recordings are nominated to the output listener (for broadcast) upon completion
      *
      * @param threadPoolManager for scheduling runnables
-     * @param audioBroadcaster to receive completed streamable audio recordings
+     * @param listener to receive completed audio recordings
      * @param tempDirectory where to store temporary audio recordings
      */
-    public StreamManager(ThreadPoolManager threadPoolManager, AudioBroadcaster audioBroadcaster, Path tempDirectory)
+    public StreamManager(ThreadPoolManager threadPoolManager, Listener<AudioRecording> listener,
+                         BroadcastFormat broadcastFormat, Path tempDirectory)
     {
         assert(tempDirectory != null && Files.isDirectory(tempDirectory));
         assert(mThreadPoolManager != null);
 
         mThreadPoolManager = threadPoolManager;
-        mAudioBroadcaster = audioBroadcaster;
+        mAudioRecordingListener = listener;
+        mBroadcastFormat = broadcastFormat;
         mTempDirectory = tempDirectory;
     }
 
@@ -141,7 +144,7 @@ public class StreamManager implements Listener<AudioPacket>
                     else
                     {
                         AudioRecorder recorder = BroadcastFactory.getAudioRecorder(getTemporaryRecordingPath(),
-                                mAudioBroadcaster.getBroadcastConfiguration().getBroadcastFormat());
+                                mBroadcastFormat);
                         recorder.start(mThreadPoolManager.getScheduledExecutorService());
                         recorder.receive(audioPacket);
                         mStreamRecorders.put(sourceChannelID, recorder);
@@ -178,13 +181,13 @@ public class StreamManager implements Listener<AudioPacket>
                 @Override
                 public void receive(AudioRecorder audioRecorder)
                 {
-                    StreamableAudioRecording streamableAudioRecording =
-                        new StreamableAudioRecording(audioRecorder.getPath(), audioRecorder.getMetadata(),
+                    AudioRecording audioRecording =
+                        new AudioRecording(audioRecorder.getPath(), audioRecorder.getMetadata(),
                             audioRecorder.getTimeRecordingStart(), audioRecorder.getRecordingLength());
 
-                    if(mAudioBroadcaster != null)
+                    if(mAudioRecordingListener != null)
                     {
-                        mAudioBroadcaster.receive(streamableAudioRecording);
+                        mAudioRecordingListener.receive(audioRecording);
                     }
                 }
             });
@@ -201,7 +204,7 @@ public class StreamManager implements Listener<AudioPacket>
         sb.append(BroadcastModel.TEMPORARY_STREAM_FILE_SUFFIX);
         sb.append(sNextRecordingNumber.incrementAndGet()).append("_");
         sb.append( TimeStamp.getLongTimeStamp( "_" ) );
-        sb.append( mAudioBroadcaster.getBroadcastConfiguration().getBroadcastFormat().getFileExtension() );
+        sb.append( mBroadcastFormat.getFileExtension() );
 
         Path temporaryRecordingPath = mTempDirectory.resolve(sb.toString());
 

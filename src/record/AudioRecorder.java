@@ -169,7 +169,11 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
     {
         mRecordingClosedListener = listener;
 
-        mRunning.set(false);
+        if(!mRunning.compareAndSet(true, false))
+        {
+            //If this recorder has already been stopped/closed, immediately inform the listener
+            mRecordingClosedListener.receive(this);
+        }
     }
 
 

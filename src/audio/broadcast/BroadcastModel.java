@@ -20,6 +20,7 @@ package audio.broadcast;
 
 import alias.id.broadcast.BroadcastChannel;
 import audio.AudioPacket;
+import audio.metadata.AudioMetadata;
 import controller.ThreadPoolManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +37,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -60,12 +62,13 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     public static final int COLUMN_BROADCASTER_STREAMED_COUNT = 4;
 
     private List<BroadcastConfiguration> mBroadcastConfigurations = new CopyOnWriteArrayList<>();
+    private List<AudioRecording> mRecordingQueue = new CopyOnWriteArrayList<>();
 
     private Map<String,BroadcastConfiguration> mBroadcastConfigurationMap = new HashMap<>();
     private Map<String,AudioBroadcaster> mBroadcasterMap = new HashMap<>();
     private ThreadPoolManager mThreadPoolManager;
     private SettingsManager mSettingsManager;
-
+    private StreamManager mStreamManager;
     private Broadcaster<BroadcastEvent> mBroadcastEventBroadcaster = new Broadcaster<>();
 
     /**
@@ -75,6 +78,13 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     {
         mThreadPoolManager = threadPoolManager;
         mSettingsManager = settingsManager;
+        mStreamManager = new StreamManager(threadPoolManager, new CompletedRecordingListener(), BroadcastFormat.MP3,
+            SystemProperties.getInstance().getApplicationFolder(TEMPORARY_STREAM_DIRECTORY));
+        mStreamManager.start();
+
+        //Monitor to remove temporary recording files that have been streamed by all audio broadcasters
+        mThreadPoolManager.scheduleFixedRate(ThreadPoolManager.ThreadType.AUDIO_RECORDING,
+            new RecordingDeletionMonitor(), 15l, TimeUnit.SECONDS );
 
         removeOrphanedTemporaryRecordings();
     }
@@ -265,22 +275,10 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     @Override
     public void receive(AudioPacket audioPacket)
     {
-        if (audioPacket.hasAudioMetadata() && audioPacket.getAudioMetadata().isStreamable())
+        if (audioPacket.hasAudioMetadata() &&
+            audioPacket.getAudioMetadata().isStreamable())
         {
-            for (BroadcastChannel broadcastChannel : audioPacket.getAudioMetadata().getBroadcastChannels())
-            {
-                String channelName = broadcastChannel.getChannelName();
-
-                if (channelName != null)
-                {
-                    AudioBroadcaster audioBroadcaster = getBroadcaster(channelName);
-
-                    if (audioBroadcaster != null)
-                    {
-                        audioBroadcaster.getAudioPacketListener().receive(audioPacket);
-                    }
-                }
-            }
+            mStreamManager.receive(audioPacket);
         }
     }
 
@@ -601,6 +599,25 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     }
 
     /**
+     * Cleanup method to remove a temporary recording file from disk.
+     *
+     * @param recording to remove
+     */
+    private void removeRecording(AudioRecording recording)
+    {
+        try
+        {
+            Files.delete(recording.getPath());
+        }
+        catch(IOException ioe)
+        {
+            mLog.error("Error deleting temporary internet recording file: " + recording.getPath().toString() + " - " +
+                ioe.getMessage());
+        }
+    }
+
+
+    /**
      * Removes any temporary stream recordings left-over from the previous application run.
      *
      * This should only be invoked on startup.
@@ -657,6 +674,82 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
         public void run()
         {
             createBroadcaster(mBroadcastConfiguration);
+        }
+    }
+
+    /**
+     * Processes completed audio recordings and distributes them to the audio broadcasters.  Adds the recording to
+     * the audio recording queue to be monitored for deletion.
+     */
+    public class CompletedRecordingListener implements Listener<AudioRecording>
+    {
+        @Override
+        public void receive(AudioRecording audioRecording)
+        {
+            AudioMetadata metadata = audioRecording.getAudioMetadata();
+
+            if(metadata != null && metadata.isStreamable())
+            {
+                for (BroadcastChannel broadcastChannel : metadata.getBroadcastChannels())
+                {
+                    String channelName = broadcastChannel.getChannelName();
+
+                    if (channelName != null)
+                    {
+                        AudioBroadcaster audioBroadcaster = getBroadcaster(channelName);
+
+                        if (audioBroadcaster != null)
+                        {
+                            audioRecording.addPendingReplay();
+                            audioBroadcaster.receive(audioRecording);
+                        }
+                    }
+                }
+            }
+
+            mRecordingQueue.add(audioRecording);
+        }
+    }
+
+    /**
+     * Monitors the recording queue and removes any recordings that have no pending replays by audio broadcasters
+     */
+    public class RecordingDeletionMonitor implements Runnable
+    {
+        @Override
+        public void run()
+        {
+            try
+            {
+                List<AudioRecording> recordingsToDelete = new ArrayList<>();
+
+                Iterator<AudioRecording> it = mRecordingQueue.iterator();
+
+                AudioRecording recording;
+
+                while(it.hasNext())
+                {
+                    recording = it.next();
+
+                    if(!recording.hasPendingReplays())
+                    {
+                        recordingsToDelete.add(recording);
+                    }
+                }
+
+                if(!recordingsToDelete.isEmpty())
+                {
+                    for(AudioRecording recordingToDelete: recordingsToDelete)
+                    {
+                        mRecordingQueue.remove(recordingToDelete);
+                        removeRecording(recordingToDelete);
+                    }
+                }
+            }
+            catch(Exception e)
+            {
+                mLog.error("Error while checking audio recording queue for recordings to delete", e);
+            }
         }
     }
 }

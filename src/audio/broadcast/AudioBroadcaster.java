@@ -36,7 +36,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public abstract class AudioBroadcaster implements IAudioPacketListener
+public abstract class AudioBroadcaster implements Listener<AudioRecording>
 {
     private final static Logger mLog = LoggerFactory.getLogger( AudioBroadcaster.class );
 
@@ -46,14 +46,13 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
     private ScheduledFuture mScheduledTask;
 
     private RecordingQueueProcessor mRecordingQueueProcessor = new RecordingQueueProcessor();
-    private LinkedTransferQueue<StreamableAudioRecording> mAudioRecordingQueue = new LinkedTransferQueue<>();
+    private LinkedTransferQueue<AudioRecording> mAudioRecordingQueue = new LinkedTransferQueue<>();
 
     private ISilenceGenerator mSilenceGenerator;
 
     private Listener<BroadcastEvent> mBroadcastEventListener;
     private BroadcastState mBroadcastState = BroadcastState.READY;
 
-    private StreamManager mStreamManager;
     private int mStreamedAudioCount = 0;
     private BroadcastConfiguration mBroadcastConfiguration;
     private long mDelay;
@@ -85,11 +84,7 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
         mThreadPoolManager = threadPoolManager;
         mBroadcastConfiguration = broadcastConfiguration;
         mDelay = mBroadcastConfiguration.getDelay();
-
         mSilenceGenerator = BroadcastFactory.getSilenceGenerator(broadcastConfiguration.getBroadcastFormat());
-
-        mStreamManager = new StreamManager(threadPoolManager, this,
-                SystemProperties.getInstance().getApplicationFolder(BroadcastModel.TEMPORARY_STREAM_DIRECTORY));
     }
 
     protected ThreadPoolManager getThreadPoolManager()
@@ -133,8 +128,6 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
     {
         if(mStreaming.compareAndSet(false, true))
         {
-            mStreamManager.start();
-
             if(mScheduledTask == null)
             {
                 if(mThreadPoolManager != null)
@@ -153,8 +146,6 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
     {
         if(mStreaming.compareAndSet(true, false))
         {
-            mStreamManager.stop();
-
             if(mThreadPoolManager != null && mScheduledTask != null)
             {
                 mThreadPoolManager.cancel(mScheduledTask);
@@ -201,7 +192,7 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
      *
      * @param recording to queue for broadcasting
      */
-    public void receive(StreamableAudioRecording recording)
+    public void receive(AudioRecording recording)
     {
         if(connected())
         {
@@ -211,38 +202,11 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
     }
 
     /**
-     * Cleanup method to remove a temporary recording file from disk.
-     *
-     * @param recording to remove
-     */
-    private void removeRecording(StreamableAudioRecording recording)
-    {
-        try
-        {
-            Files.delete(recording.getPath());
-        }
-        catch(IOException ioe)
-        {
-            mLog.error("Stream [" + getBroadcastConfiguration().getName() + "] - error deleting temporary internet " +
-                "recording file: " + recording.getPath().toString() + " - " + ioe.getMessage());
-        }
-    }
-
-    /**
      * Broadcast configuration used by this broadcaster
      */
     public BroadcastConfiguration getBroadcastConfiguration()
     {
         return mBroadcastConfiguration;
-    }
-
-    /**
-     * IAudioPacketListener interface method to gain access to the internal stream manager for enqueuing audio packets.
-     */
-    @Override
-    public Listener<AudioPacket> getAudioPacketListener()
-    {
-        return mStreamManager;
     }
 
     /**
@@ -291,11 +255,11 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
 
             if(!connected())
             {
-                StreamableAudioRecording recording = mAudioRecordingQueue.poll();
+                //Remove all pending audio recordings
+                AudioRecording recording = mAudioRecordingQueue.poll();
 
                 while(recording != null)
                 {
-                    removeRecording(recording);
                     recording = mAudioRecordingQueue.poll();
                 }
             }
@@ -426,37 +390,38 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
 
             mInputStream = null;
 
-            StreamableAudioRecording nextRecording = mAudioRecordingQueue.peek();
+            AudioRecording nextRecording = mAudioRecordingQueue.peek();
 
             if(nextRecording != null && nextRecording.getStartTime() + mDelay <= System.currentTimeMillis())
             {
-                StreamableAudioRecording recording = mAudioRecordingQueue.poll();
+                AudioRecording recording = mAudioRecordingQueue.poll();
 
                 try
                 {
-                    byte[] audio = Files.readAllBytes(recording.getPath());
-
-                    if(audio != null && audio.length > 0)
+                    if(Files.exists(recording.getPath()))
                     {
-                        mInputStream = new ByteArrayInputStream(audio);
+                        byte[] audio = Files.readAllBytes(recording.getPath());
 
-                        mFinalSilencePadding = PROCESSOR_RUN_INTERVAL_MS -
-                            (recording.getRecordingLength() % PROCESSOR_RUN_INTERVAL_MS);
-
-                        while(mFinalSilencePadding >= PROCESSOR_RUN_INTERVAL_MS)
+                        if(audio != null && audio.length > 0)
                         {
-                            mFinalSilencePadding -= PROCESSOR_RUN_INTERVAL_MS;
-                        }
+                            mInputStream = new ByteArrayInputStream(audio);
 
-                        if(connected())
-                        {
-                            broadcastMetadata(recording.getAudioMetadata());
-                        }
+                            mFinalSilencePadding = PROCESSOR_RUN_INTERVAL_MS -
+                                (recording.getRecordingLength() % PROCESSOR_RUN_INTERVAL_MS);
 
-                        metadataUpdateRequired = false;
+                            while(mFinalSilencePadding >= PROCESSOR_RUN_INTERVAL_MS)
+                            {
+                                mFinalSilencePadding -= PROCESSOR_RUN_INTERVAL_MS;
+                            }
+
+                            if(connected())
+                            {
+                                broadcastMetadata(recording.getAudioMetadata());
+                            }
+
+                            metadataUpdateRequired = false;
+                        }
                     }
-
-                    removeRecording(recording);
                 }
                 catch(IOException ioe)
                 {
@@ -466,6 +431,8 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
                     mInputStream = null;
                     metadataUpdateRequired = false;
                 }
+
+                recording.removePendingReplay();
 
                 broadcast(new BroadcastEvent(AudioBroadcaster.this, BroadcastEvent.Event.BROADCASTER_QUEUE_CHANGE));
             }
