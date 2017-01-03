@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.shoutcast.v2.message;
+package audio.broadcast.shoutcast.v2.ultravox;
 
 import bits.BinaryMessage;
 
@@ -24,7 +24,7 @@ import java.util.Arrays;
 
 public abstract class UltravoxMessage
 {
-    public static final String SHOUTCAST_VERSION = "2.1";
+    public static final String ULTRAVOX_VERSION = "2.1";
     public static final String VALID_RESPONSE_PREFIX = "ACK";
     public static final String VALID_RESPONSE_PAYLOAD_PREFIX = "ACK:";
     public static final String ERROR_RESPONSE_PREFIX = "NAK:";
@@ -40,7 +40,7 @@ public abstract class UltravoxMessage
     private BinaryMessage mMessage;
 
     /**
-     * Constructs a message from the byte array
+     * Constructs a ultravox from the byte array
      */
     public UltravoxMessage(byte[] data)
     {
@@ -56,9 +56,9 @@ public abstract class UltravoxMessage
     }
 
     /**
-     * Constructs an empty message of the specified length
+     * Constructs an empty ultravox of the specified length
      *
-     * @param ultravoxMessageType type of message
+     * @param ultravoxMessageType type of ultravox
      */
     public UltravoxMessage(UltravoxMessageType ultravoxMessageType)
     {
@@ -71,7 +71,7 @@ public abstract class UltravoxMessage
     /**
      * Message byte array
      *
-     * @return message bytes
+     * @return ultravox bytes
      */
     public byte[] getMessage()
     {
@@ -80,11 +80,11 @@ public abstract class UltravoxMessage
 
     public String toString()
     {
-        return mMessage.toString();
+        return getMessageType().name();
     }
 
     /**
-     * Sets the message sync bits to the predefined sync pattern: 01011010 (0x5A)
+     * Sets the ultravox sync bits to the predefined sync pattern: 01011010 (0x5A)
      */
     private void setSync()
     {
@@ -92,7 +92,7 @@ public abstract class UltravoxMessage
     }
 
     /**
-     * Ultravox message class
+     * Ultravox ultravox class
      */
     public UltravoxMessageClass getMessageClass()
     {
@@ -100,7 +100,7 @@ public abstract class UltravoxMessage
     }
 
     /**
-     * Ultravox message type
+     * Ultravox ultravox type
      * @return
      */
     public UltravoxMessageType getMessageType()
@@ -109,8 +109,8 @@ public abstract class UltravoxMessage
     }
 
     /**
-     * Sets the message bits according to the message class and type
-     * @param messageType of ultravox message
+     * Sets the ultravox bits according to the ultravox class and type
+     * @param messageType of ultravox ultravox
      */
     private void setMessageType(UltravoxMessageType messageType)
     {
@@ -118,7 +118,7 @@ public abstract class UltravoxMessage
     }
 
     /**
-     * Indicates if this message has the required delivery flag set
+     * Indicates if this ultravox has the required delivery flag set
      */
     public boolean isRequiredDelivery()
     {
@@ -141,7 +141,7 @@ public abstract class UltravoxMessage
     }
 
     /**
-     * Send queue priority (0 - 7) for this message
+     * Send queue priority (0 - 7) for this ultravox
      */
     public int getSendQueuePriority()
     {
@@ -149,7 +149,7 @@ public abstract class UltravoxMessage
     }
 
     /**
-     * Sets send queue priority for this message
+     * Sets send queue priority for this ultravox
      * @param priority 0 - 7
      */
     public void setSendQueuePriority(int priority)
@@ -186,7 +186,7 @@ public abstract class UltravoxMessage
     }
 
     /**
-     * Sets the message payload, updates the message length field, and appends a trailing 0x00 byte after the payload.
+     * Sets the ultravox payload, updates the ultravox length field, and appends a trailing 0x00 byte after the payload.
      */
     public void setPayload(String payload)
     {
@@ -211,6 +211,9 @@ public abstract class UltravoxMessage
         mMessage.setByte(payloadPointer, (byte)0x00);
     }
 
+    /**
+     * Indicates if the response is a valid (ie non-error) response
+     */
     public boolean isValidResponse()
     {
         String payload = getPayload();
@@ -218,6 +221,9 @@ public abstract class UltravoxMessage
         return payload != null && payload.startsWith(VALID_RESPONSE_PREFIX);
     }
 
+    /**
+     * Indicates if the response message contains an error message.
+     */
     public boolean isErrorResponse()
     {
         String payload = getPayload();
@@ -225,7 +231,10 @@ public abstract class UltravoxMessage
         return payload != null && payload.startsWith(ERROR_RESPONSE_PREFIX);
     }
 
-    public String getError()
+    /**
+     * Textual message available when the error response flag is set.
+     */
+    public String getErrorMessage()
     {
         String payload = getPayload();
 

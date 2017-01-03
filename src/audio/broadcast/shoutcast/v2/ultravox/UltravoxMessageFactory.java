@@ -16,12 +16,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.shoutcast.v2.message;
+package audio.broadcast.shoutcast.v2.ultravox;
 
 public class UltravoxMessageFactory
 {
     /**
-     * Creates an empty message of the specified message type for sending to the server
+     * Creates an empty ultravox of the specified ultravox type for sending to the server
      */
     public static UltravoxMessage getMessage(UltravoxMessageType type)
     {
@@ -29,6 +29,8 @@ public class UltravoxMessageFactory
         {
             case AUTHENTICATE_BROADCAST:
                 return new AuthenticateBroadcast();
+            case CACHEABLE_XML_METADATA:
+                return new CacheableXMLMetadata();
             case CONFIGURE_ICY_GENRE:
                 return new ConfigureIcyGenre();
             case CONFIGURE_ICY_NAME:
@@ -45,6 +47,8 @@ public class UltravoxMessageFactory
                 return new NegotiateBufferSize();
             case NEGOTIATE_MAX_PAYLOAD_SIZE:
                 return new NegotiateMaxPayloadSize();
+            case PASS_THROUGH_XML_METADATA:
+                return new PassThroughXMLMetadata();
             case REQUEST_CIPHER:
                 return new RequestCipher();
             case SETUP_BROADCAST:
@@ -55,19 +59,17 @@ public class UltravoxMessageFactory
                 return new StreamMimeType();
             case TERMINATE_BROADCAST:
                 return new TerminateBroadcast();
-            case XML_METADATA:
-                return new XMLMetadata();
             default:
                 return null;
         }
     }
 
     /**
-     * Creates an ultravox message from the server response bytes.
+     * Creates an ultravox ultravox from the server response bytes.
      *
      * @param bytes in network order (big-endian).
      *
-     * @return constructed message or null if the message type cannot be determined or is unrecognized
+     * @return constructed ultravox or null if the ultravox type cannot be determined or is unrecognized
      */
     public static UltravoxMessage getMessage(byte[] bytes)
     {
@@ -77,6 +79,8 @@ public class UltravoxMessageFactory
         {
             case AUTHENTICATE_BROADCAST:
                 return new AuthenticateBroadcast(bytes);
+            case CACHEABLE_XML_METADATA:
+                return new CacheableXMLMetadata(bytes);
             case CONFIGURE_ICY_GENRE:
                 return new ConfigureIcyGenre(bytes);
             case CONFIGURE_ICY_NAME:
@@ -93,6 +97,8 @@ public class UltravoxMessageFactory
                 return new NegotiateBufferSize(bytes);
             case NEGOTIATE_MAX_PAYLOAD_SIZE:
                 return new NegotiateMaxPayloadSize(bytes);
+            case PASS_THROUGH_XML_METADATA:
+                return new PassThroughXMLMetadata(bytes);
             case REQUEST_CIPHER:
                 return new RequestCipher(bytes);
             case SETUP_BROADCAST:
@@ -103,8 +109,6 @@ public class UltravoxMessageFactory
                 return new StreamMimeType(bytes);
             case TERMINATE_BROADCAST:
                 return new TerminateBroadcast(bytes);
-            case XML_METADATA:
-                return new XMLMetadata(bytes);
             case UNKNOWN:
             default:
                 return null;
@@ -112,10 +116,10 @@ public class UltravoxMessageFactory
     }
 
     /**
-     * Identifies the message type from the server response byte array
+     * Identifies the ultravox type from the server response byte array
      *
      * @param data in little-endian format
-     * @return message type or UNKNOWN if the message type cannot be determined.
+     * @return ultravox type or UNKNOWN if the ultravox type cannot be determined.
      */
     private static UltravoxMessageType getMessageType(byte[] data)
     {

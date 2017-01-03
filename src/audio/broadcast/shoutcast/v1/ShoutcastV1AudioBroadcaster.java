@@ -18,7 +18,9 @@
  ******************************************************************************/
 package audio.broadcast.shoutcast.v1;
 
+import audio.broadcast.AudioBroadcaster;
 import audio.broadcast.BroadcastState;
+import audio.broadcast.IBroadcastMetadataUpdater;
 import controller.ThreadPoolManager;
 import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.buffer.IoBuffer;
@@ -37,13 +39,14 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ShoutcastV1AudioBroadcaster extends ShoutcastAudioBroadcaster
+public class ShoutcastV1AudioBroadcaster extends AudioBroadcaster
 {
     private final static Logger mLog = LoggerFactory.getLogger( ShoutcastV1AudioBroadcaster.class );
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 30000; //30 seconds
 
     private NioSocketConnector mSocketConnector;
     private IoSession mStreamingSession = null;
+    private IBroadcastMetadataUpdater mMetadataUpdater;
 
     private long mLastConnectionAttempt = 0;
     private AtomicBoolean mConnecting = new AtomicBoolean();
@@ -71,6 +74,16 @@ public class ShoutcastV1AudioBroadcaster extends ShoutcastAudioBroadcaster
         return (ShoutcastV1Configuration)getBroadcastConfiguration();
     }
 
+    @Override
+    protected IBroadcastMetadataUpdater getMetadataUpdater()
+    {
+        if(mMetadataUpdater == null)
+        {
+            mMetadataUpdater = new ShoutcastV1BroadcastMetadataUpdater(getThreadPoolManager(), getConfiguration());
+        }
+
+        return mMetadataUpdater;
+    }
 
     /**
      * Broadcasts the audio frame or sequence

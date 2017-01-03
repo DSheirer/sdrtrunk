@@ -16,16 +16,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.shoutcast.v2.message;
+package audio.broadcast.shoutcast.v2.ultravox;
 
 public class NegotiateMaxPayloadSize extends UltravoxMessage
 {
     /**
      * Client request to server to negotiate maximum payload size
-     *
-     * Package private constructor.  Use the UltravoxMessageFactory for this constructor.
      */
-    NegotiateMaxPayloadSize()
+    public NegotiateMaxPayloadSize()
     {
         super(UltravoxMessageType.NEGOTIATE_MAX_PAYLOAD_SIZE);
     }
@@ -42,7 +40,7 @@ public class NegotiateMaxPayloadSize extends UltravoxMessage
     }
 
     /**
-     * Sets the maximum payload size.
+     * Sets the maximum payload size in bytes
      *
      * @param desiredMaximum payload size (no larger than 16377)
      * @param minimum acceptable payload size (no larger than 16377)
@@ -59,11 +57,11 @@ public class NegotiateMaxPayloadSize extends UltravoxMessage
     }
 
     /**
-     * Negotiated maximum payload size from a server response message.
+     * Negotiated maximum payload size from a server response ultravox.
      *
-     * @return server negotiated maximum payload size, or zero if this is not a server response message, or this is an
-     * error server response message, or the server response message maximum payload size cannot be determined from the
-     * message payload.
+     * @return server negotiated maximum payload size, or zero if this is not a server response ultravox, or this is an
+     * error server response ultravox, or the server response ultravox maximum payload size cannot be determined from the
+     * ultravox payload.
      */
     public int getMaximumPayloadSize()
     {

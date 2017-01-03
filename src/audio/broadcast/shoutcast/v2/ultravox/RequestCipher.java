@@ -16,20 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.shoutcast.v2.message;
+package audio.broadcast.shoutcast.v2.ultravox;
 
-public class MP3Audio extends UltravoxMessage
+public class RequestCipher extends UltravoxMessage
 {
     /**
-     * Client request to server to send authentication credentials
-     *
-     * Package private constructor.  Use the UltravoxMessageFactory for this constructor.
+     * Client request to server for encryption key
      */
-    MP3Audio()
+    public RequestCipher()
     {
-        super(UltravoxMessageType.MP3_DATA);
+        super(UltravoxMessageType.REQUEST_CIPHER);
+        setPayload(ULTRAVOX_VERSION);
     }
-
 
     /**
      * Server response to client request
@@ -37,8 +35,23 @@ public class MP3Audio extends UltravoxMessage
      *
      * @param data bytes received from the server
      */
-    MP3Audio(byte[] data)
+    RequestCipher(byte[] data)
     {
         super(data);
+    }
+
+    /**
+     * Cipher key returned from the server to use for encrypting user id and password credentials
+     *
+     * @return cipher key or null
+     */
+    public String getCipher()
+    {
+        if(isValidResponse())
+        {
+            return getPayload().replace(VALID_RESPONSE_PAYLOAD_PREFIX, "");
+        }
+
+        return null;
     }
 }

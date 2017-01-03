@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.shoutcast.v2.message;
+package audio.broadcast.shoutcast.v2.ultravox;
 
 import audio.broadcast.BroadcastFormat;
 
@@ -24,10 +24,8 @@ public class StreamMimeType extends UltravoxMessage
 {
     /**
      * Client request to server to set stream MIME type
-     *
-     * Package private constructor.  Use the UltravoxMessageFactory for this constructor.
      */
-    StreamMimeType()
+    public StreamMimeType()
     {
         super(UltravoxMessageType.STREAM_MIME_TYPE);
     }

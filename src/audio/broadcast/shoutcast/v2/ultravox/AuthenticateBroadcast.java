@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.shoutcast.v2.message;
+package audio.broadcast.shoutcast.v2.ultravox;
 
 import util.XTEA;
 
@@ -24,12 +24,12 @@ import java.util.Arrays;
 
 public class AuthenticateBroadcast extends UltravoxMessage
 {
+    public static final String STREAM_ID_ERROR = "Stream ID Error";
+
     /**
      * Client request to server to send authentication credentials
-     *
-     * Package private constructor.  Use the UltravoxMessageFactory for this constructor.
      */
-    AuthenticateBroadcast()
+    public AuthenticateBroadcast()
     {
         super(UltravoxMessageType.AUTHENTICATE_BROADCAST);
     }
@@ -60,7 +60,7 @@ public class AuthenticateBroadcast extends UltravoxMessage
 
         StringBuilder sb = new StringBuilder();
 
-        sb.append(SHOUTCAST_VERSION);
+        sb.append(ULTRAVOX_VERSION);
         sb.append(":");
         sb.append(streamID);
         sb.append(":");

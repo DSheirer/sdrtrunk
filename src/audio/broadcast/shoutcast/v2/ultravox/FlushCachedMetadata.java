@@ -16,18 +16,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.shoutcast.v2.message;
+package audio.broadcast.shoutcast.v2.ultravox;
 
-public class TerminateBroadcast extends UltravoxMessage
+public class FlushCachedMetadata extends UltravoxMessage
 {
     /**
-     * Client request to server to terminate the broadcastAudio
-     *
-     * Package private constructor.  Use the UltravoxMessageFactory for this constructor.
+     * Client request to server to flush any currently cached stream metadata
      */
-    TerminateBroadcast()
+    public FlushCachedMetadata()
     {
-        super(UltravoxMessageType.TERMINATE_BROADCAST);
+        super(UltravoxMessageType.FLUSH_CACHED_METADATA);
     }
 
     /**
@@ -36,7 +34,7 @@ public class TerminateBroadcast extends UltravoxMessage
      *
      * @param data bytes received from the server
      */
-    TerminateBroadcast(byte[] data)
+    FlushCachedMetadata(byte[] data)
     {
         super(data);
     }

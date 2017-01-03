@@ -16,19 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.shoutcast.v2.message;
+package audio.broadcast.shoutcast.v2.ultravox;
 
-public class ConfigureIcyPublic extends UltravoxMessage
+public class CacheableXMLMetadata extends UltravoxMessage
 {
     /**
-     * Client request to server to configure the ICY-PUBLIC metadata
-     *
-     * Package private constructor.  Use the UltravoxMessageFactory for this constructor.
+     * Client request to server to send cacheable XML metadata
      */
-    ConfigureIcyPublic()
+    public CacheableXMLMetadata()
     {
-        super(UltravoxMessageType.CONFIGURE_ICY_PUBLIC);
+        super(UltravoxMessageType.CACHEABLE_XML_METADATA);
     }
+
 
     /**
      * Server response to client request
@@ -36,13 +35,8 @@ public class ConfigureIcyPublic extends UltravoxMessage
      *
      * @param data bytes received from the server
      */
-    ConfigureIcyPublic(byte[] data)
+    CacheableXMLMetadata(byte[] data)
     {
         super(data);
-    }
-
-    public void setPublic(boolean publicStream)
-    {
-        setPayload(publicStream ? "1" : "0");
     }
 }

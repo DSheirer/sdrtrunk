@@ -36,6 +36,11 @@ public enum BroadcastState
     CONNECTING("Connecting", false),
 
     /**
+     * Indicates the configuration is disabled
+     */
+    DISABLED("Disabled", true),
+
+    /**
      * Disconnected from the broadcastAudio server
      */
     DISCONNECTED("Disconnected", false),
@@ -49,6 +54,11 @@ public enum BroadcastState
      * Invalid mount point
      */
     INVALID_MOUNT_POINT("Invalid Mount/Stream ID", true),
+
+    /**
+     * Invalid configuration settings
+     */
+    INVALID_SETTINGS("Invalid Settings", true),
 
     /**
      * Remote server max sources has been exceeded

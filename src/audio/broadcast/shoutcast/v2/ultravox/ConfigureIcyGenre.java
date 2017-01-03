@@ -16,18 +16,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.shoutcast.v2.message;
+package audio.broadcast.shoutcast.v2.ultravox;
 
-public class FlushCachedMetadata extends UltravoxMessage
+public class ConfigureIcyGenre extends UltravoxMessage
 {
     /**
-     * Client request to server to flush any currently cached stream metadata
-     *
-     * Package private constructor.  Use the UltravoxMessageFactory for this constructor.
+     * Client request to server to configure the ICY-GENRE metadata
      */
-    FlushCachedMetadata()
+    public ConfigureIcyGenre()
     {
-        super(UltravoxMessageType.FLUSH_CACHED_METADATA);
+        super(UltravoxMessageType.CONFIGURE_ICY_GENRE);
     }
 
     /**
@@ -36,8 +34,13 @@ public class FlushCachedMetadata extends UltravoxMessage
      *
      * @param data bytes received from the server
      */
-    FlushCachedMetadata(byte[] data)
+    ConfigureIcyGenre(byte[] data)
     {
         super(data);
+    }
+
+    public void setGenre(String genre)
+    {
+        setPayload(genre);
     }
 }

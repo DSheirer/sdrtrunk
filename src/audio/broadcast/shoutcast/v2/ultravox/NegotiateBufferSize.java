@@ -16,16 +16,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.shoutcast.v2.message;
+package audio.broadcast.shoutcast.v2.ultravox;
 
 public class NegotiateBufferSize extends UltravoxMessage
 {
     /**
      * Client request to server to negotiate the server's buffer size
-     *
-     * Package private constructor.  Use the UltravoxMessageFactory for this constructor.
      */
-    NegotiateBufferSize()
+    public NegotiateBufferSize()
     {
         super(UltravoxMessageType.NEGOTIATE_BUFFER_SIZE);
     }
@@ -55,10 +53,10 @@ public class NegotiateBufferSize extends UltravoxMessage
     }
 
     /**
-     * Negotiated buffer size from a server response message.
+     * Negotiated buffer size from a server response ultravox.
      *
-     * @return server negotiated buffer size, or zero if this is not a server response message, or this is an error
-     * server response message, or the server response message buffer size cannot be determined from the message payload.
+     * @return server negotiated buffer size, or zero if this is not a server response ultravox, or this is an error
+     * server response ultravox, or the server response ultravox buffer size cannot be determined from the ultravox payload.
      */
     public int getBufferSize()
     {

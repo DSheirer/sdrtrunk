@@ -1,6 +1,6 @@
 /*******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2016 Dennis Sheirer
+ * Copyright (C) 2014-2017 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,42 +16,37 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.shoutcast.v2.message;
+package audio.broadcast.shoutcast.v2.ultravox;
 
-public enum UltravoxMessageClass
+import org.apache.mina.core.session.IoSession;
+import org.apache.mina.filter.codec.ProtocolCodecFactory;
+import org.apache.mina.filter.codec.ProtocolDecoder;
+import org.apache.mina.filter.codec.ProtocolEncoder;
+
+public class UltravoxProtocolFactory implements ProtocolCodecFactory
 {
-    OPERATIONS(0x0),
-    BROADCASTER(0x1),
-    LISTENER(0x2),
-    CACHEABLE_METADATA_1(0x3),
-    CACHEABLE_METADATA_2(0x4),
-    PASS_THROUGH_METADATA_1(0x5),
-    PASS_THROUGH_METADATA_2(0x6),
-    ENCODED_DATA(0x7),
-    ADVANCED_ENCODED_DATA(0x8),
-    FRAMED_DATA(0x9),
-    CACHEABLE_BINARY_METADATA(0xA),
-    UNKNOWN(0xF);
+    private ProtocolEncoder mEncoder;
+    private ProtocolDecoder mDecoder;
 
-    private int mValue;
-
-    private UltravoxMessageClass(int value)
+    @Override
+    public ProtocolEncoder getEncoder(IoSession ioSession) throws Exception
     {
-        mValue = value;
-    }
-
-    public int getValue()
-    {
-        return mValue;
-    }
-
-    public static UltravoxMessageClass fromValue(int value)
-    {
-        if(0x0 <= value && value <= 0xA)
+        if(mEncoder == null)
         {
-            return values()[value];
+            mEncoder = new UltravoxEncoder();
         }
 
-        return UNKNOWN;
+        return mEncoder;
+    }
+
+    @Override
+    public ProtocolDecoder getDecoder(IoSession ioSession) throws Exception
+    {
+        if(mDecoder == null)
+        {
+            mDecoder = new UltravoxDecoder();
+        }
+
+        return mDecoder;
     }
 }

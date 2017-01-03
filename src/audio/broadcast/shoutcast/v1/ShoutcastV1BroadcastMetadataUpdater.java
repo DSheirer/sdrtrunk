@@ -1,6 +1,6 @@
 /*******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2016 Dennis Sheirer
+ * Copyright (C) 2014-2017 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,12 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.shoutcast;
+package audio.broadcast.shoutcast.v1;
 
-import audio.broadcast.icecast.IcecastConfiguration;
-import audio.broadcast.icecast.IcecastHeader;
-import audio.broadcast.shoutcast.v1.ShoutcastMetadata;
-import audio.broadcast.shoutcast.v1.ShoutcastV1Configuration;
+import audio.broadcast.IBroadcastMetadataUpdater;
 import audio.metadata.AudioMetadata;
 import audio.metadata.Metadata;
 import audio.metadata.MetadataType;
@@ -29,9 +26,6 @@ import controller.ThreadPoolManager;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
-import org.apache.mina.filter.codec.ProtocolCodecFilter;
-import org.apache.mina.filter.codec.textline.TextLineCodecFactory;
-import org.apache.mina.filter.logging.LoggingFilter;
 import org.apache.mina.http.HttpClientCodec;
 import org.apache.mina.http.HttpRequestImpl;
 import org.apache.mina.http.api.HttpMethod;
@@ -40,7 +34,6 @@ import org.apache.mina.http.api.HttpVersion;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import properties.SystemProperties;
 
 import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
@@ -53,9 +46,9 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ShoutcastMetadataUpdater
+public class ShoutcastV1BroadcastMetadataUpdater implements IBroadcastMetadataUpdater
 {
-    private final static Logger mLog = LoggerFactory.getLogger(ShoutcastMetadataUpdater.class);
+    private final static Logger mLog = LoggerFactory.getLogger(ShoutcastV1BroadcastMetadataUpdater.class);
     private final static String UTF8 = "UTF-8";
 
     private ThreadPoolManager mThreadPoolManager;
@@ -73,7 +66,7 @@ public class ShoutcastMetadataUpdater
      * broadcaster.  When multiple metadata updates are received prior to completion of the current ongoing update
      * sequence, those updates will be queued and processed in the order received.
      */
-    public ShoutcastMetadataUpdater(ThreadPoolManager threadPoolManager, ShoutcastV1Configuration shoutcastV1Configuration)
+    public ShoutcastV1BroadcastMetadataUpdater(ThreadPoolManager threadPoolManager, ShoutcastV1Configuration shoutcastV1Configuration)
     {
         mThreadPoolManager = threadPoolManager;
         mShoutcastV1Configuration = shoutcastV1Configuration;
@@ -89,7 +82,7 @@ public class ShoutcastMetadataUpdater
             mSocketConnector = new NioSocketConnector();
 
 //            mSocketConnector.getFilterChain().addLast("logger",
-//                new LoggingFilter(ShoutcastMetadataUpdater.class));
+//                new LoggingFilter(ShoutcastV1BroadcastMetadataUpdater.class));
 
             mSocketConnector.getFilterChain().addLast("http_client_codec", new HttpClientCodec());
 
@@ -257,7 +250,6 @@ public class ShoutcastMetadataUpdater
             sb.append("&song=").append(URLEncoder.encode(song, UTF8));
 
             Map<String,String> headers = new HashMap<>();
-//            headers.put("User-Agent", SystemProperties.getInstance().getApplicationName() + " (Mozilla compatible)");
 
             HttpRequestImpl request = new HttpRequestImpl(HttpVersion.HTTP_1_0, HttpMethod.GET, "/admin.cgi",
                 sb.toString(), headers);

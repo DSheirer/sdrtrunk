@@ -16,22 +16,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.shoutcast.v2.message;
+package audio.broadcast.shoutcast.v2.ultravox;
 
-import util.XTEA;
-
-import java.util.Arrays;
-
-public class ConfigureIcyName extends UltravoxMessage
+public class TerminateBroadcast extends UltravoxMessage
 {
     /**
-     * Client request to server to configure the ICY-NAME metadata
-     *
-     * Package private constructor.  Use the UltravoxMessageFactory for this constructor.
+     * Client request to server to terminate the broadcastAudio
      */
-    ConfigureIcyName()
+    public TerminateBroadcast()
     {
-        super(UltravoxMessageType.CONFIGURE_ICY_NAME);
+        super(UltravoxMessageType.TERMINATE_BROADCAST);
     }
 
     /**
@@ -40,13 +34,8 @@ public class ConfigureIcyName extends UltravoxMessage
      *
      * @param data bytes received from the server
      */
-    ConfigureIcyName(byte[] data)
+    TerminateBroadcast(byte[] data)
     {
         super(data);
-    }
-
-    public void setName(String name)
-    {
-        setPayload(name);
     }
 }

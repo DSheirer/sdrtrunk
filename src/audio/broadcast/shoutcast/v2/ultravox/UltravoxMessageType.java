@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.shoutcast.v2.message;
+package audio.broadcast.shoutcast.v2.ultravox;
 
 public enum UltravoxMessageType
 {
@@ -33,7 +33,8 @@ public enum UltravoxMessageType
     CONFIGURE_ICY_GENRE(0x1101),
     CONFIGURE_ICY_URL(0x1102),
     CONFIGURE_ICY_PUBLIC(0x1103),
-    XML_METADATA(0x3902),
+    CACHEABLE_XML_METADATA(0x3902),
+    PASS_THROUGH_XML_METADATA(0x5902),
     MP3_DATA(0x7000),
     UNKNOWN(0x0000);
 
@@ -80,7 +81,9 @@ public enum UltravoxMessageType
             case 0x1103:
                 return CONFIGURE_ICY_PUBLIC;
             case 0x3902:
-                return XML_METADATA;
+                return CACHEABLE_XML_METADATA;
+            case 0x5902:
+                return PASS_THROUGH_XML_METADATA;
             case 0x7000:
                 return MP3_DATA;
             default:

@@ -53,11 +53,11 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
 
     private static final String UNIQUE_NAME_REGEX = "(.*)\\((\\d*)\\)";
 
-    private static final int COLUMN_SERVER_ICON = 0;
-    private static final int COLUMN_STREAM_NAME = 1;
-    private static final int COLUMN_BROADCASTER_STATUS = 2;
-    private static final int COLUMN_BROADCASTER_QUEUE_SIZE = 3;
-    private static final int COLUMN_BROADCASTER_STREAMED_COUNT = 4;
+    public static final int COLUMN_SERVER_ICON = 0;
+    public static final int COLUMN_STREAM_NAME = 1;
+    public static final int COLUMN_BROADCASTER_STATUS = 2;
+    public static final int COLUMN_BROADCASTER_QUEUE_SIZE = 3;
+    public static final int COLUMN_BROADCASTER_STREAMED_COUNT = 4;
 
     private List<BroadcastConfiguration> mBroadcastConfigurations = new CopyOnWriteArrayList<>();
 
@@ -513,15 +513,15 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
 
                             if(audioBroadcasterA != null)
                             {
-                                return audioBroadcasterA.getBroadcastState().toString();
+                                return audioBroadcasterA.getBroadcastState();
                             }
                             else if(!configuration.isEnabled())
                             {
-                                return "Disabled";
+                                return BroadcastState.DISABLED;
                             }
                             else if(!configuration.isValid())
                             {
-                                return "Invalid Settings";
+                                return BroadcastState.INVALID_SETTINGS;
                             }
                         case COLUMN_BROADCASTER_QUEUE_SIZE:
                             AudioBroadcaster audioBroadcasterB = mBroadcasterMap.get(configuration.getName());

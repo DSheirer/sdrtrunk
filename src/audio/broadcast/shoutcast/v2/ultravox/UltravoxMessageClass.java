@@ -16,28 +16,42 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.shoutcast.v2.message;
+package audio.broadcast.shoutcast.v2.ultravox;
 
-public class Standby extends UltravoxMessage
+public enum UltravoxMessageClass
 {
-    /**
-     * Client request to server to notify that configuration is complete, prepare for streaming
-     *
-     * Package private constructor.  Use the UltravoxMessageFactory for this constructor.
-     */
-    Standby()
+    OPERATIONS(0x0),
+    BROADCASTER(0x1),
+    LISTENER(0x2),
+    CACHEABLE_METADATA_1(0x3),
+    CACHEABLE_METADATA_2(0x4),
+    PASS_THROUGH_METADATA_1(0x5),
+    PASS_THROUGH_METADATA_2(0x6),
+    ENCODED_DATA(0x7),
+    ADVANCED_ENCODED_DATA(0x8),
+    FRAMED_DATA(0x9),
+    CACHEABLE_BINARY_METADATA(0xA),
+    UNKNOWN(0xF);
+
+    private int mValue;
+
+    private UltravoxMessageClass(int value)
     {
-        super(UltravoxMessageType.STANDBY);
+        mValue = value;
     }
 
-    /**
-     * Server response to client request
-     * Package private constructor.  Use the UltravoxMessageFactory for this constructor.
-     *
-     * @param data bytes received from the server
-     */
-    Standby(byte[] data)
+    public int getValue()
     {
-        super(data);
+        return mValue;
+    }
+
+    public static UltravoxMessageClass fromValue(int value)
+    {
+        if(0x0 <= value && value <= 0xA)
+        {
+            return values()[value];
+        }
+
+        return UNKNOWN;
     }
 }

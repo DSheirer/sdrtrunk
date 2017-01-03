@@ -33,6 +33,9 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableColumnModelListener;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableCellRenderer;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
@@ -77,8 +80,10 @@ public class BroadcastPanel extends JPanel implements ActionListener, ListSelect
         mBroadcastConfigurationTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         mBroadcastConfigurationTable.getSelectionModel().addListSelectionListener(BroadcastPanel.this);
 
-        mBroadcastConfigurationTable.getColumnModel().getColumn(0).setPreferredWidth(1);
-        mBroadcastConfigurationTable.getColumnModel().getColumn(1).setPreferredWidth(25);
+        mBroadcastConfigurationTable.getColumnModel().getColumn(BroadcastModel.COLUMN_SERVER_ICON).setPreferredWidth(1);
+        mBroadcastConfigurationTable.getColumnModel().getColumn(BroadcastModel.COLUMN_STREAM_NAME).setPreferredWidth(25);
+        mBroadcastConfigurationTable.getColumnModel().getColumn(BroadcastModel.COLUMN_BROADCASTER_STATUS)
+            .setCellRenderer(new StatusCellRenderer());
 
         JScrollPane scroller = new JScrollPane(mBroadcastConfigurationTable);
 
@@ -261,4 +266,67 @@ public class BroadcastPanel extends JPanel implements ActionListener, ListSelect
         }
     }
 
+    /**
+     * Custom cell renderer for the broadcast state column.
+     */
+    public class StatusCellRenderer extends DefaultTableCellRenderer
+    {
+        public StatusCellRenderer()
+        {
+            setOpaque(true);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
+                                                       boolean hasFocus, int row, int column)
+        {
+            JLabel component = (JLabel)super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            if(isSelected)
+            {
+                setBackground(table.getSelectionBackground());
+                setForeground(table.getSelectionForeground());
+            }
+            else
+            {
+                if(value instanceof BroadcastState)
+                {
+                    BroadcastState state = (BroadcastState)value;
+
+                    if(state == BroadcastState.CONNECTED)
+                    {
+                        setBackground(Color.GREEN);
+                        setForeground(table.getForeground());
+                    }
+                    else if(state == BroadcastState.DISABLED)
+                    {
+                        setBackground(table.getBackground());
+                        setForeground(Color.LIGHT_GRAY);
+                    }
+                    else if(state == BroadcastState.INVALID_SETTINGS)
+                    {
+                        setBackground(Color.YELLOW);
+                        setForeground(table.getForeground());
+                    }
+                    else if(state.isErrorState())
+                    {
+                        setBackground(Color.RED);
+                        setForeground(table.getForeground());
+                    }
+                    else
+                    {
+                        setBackground(table.getBackground());
+                        setForeground(table.getForeground());
+                    }
+                }
+                else
+                {
+                    setForeground(table.getForeground());
+                    setBackground(table.getBackground());
+                }
+            }
+
+            return this;
+        }
+    }
 }

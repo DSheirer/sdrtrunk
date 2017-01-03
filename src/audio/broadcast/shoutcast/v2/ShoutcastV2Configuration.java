@@ -22,12 +22,13 @@ import audio.broadcast.BroadcastConfiguration;
 import audio.broadcast.BroadcastFormat;
 import audio.broadcast.BroadcastServerType;
 
+import javax.xml.bind.annotation.XmlAttribute;
+
 public class ShoutcastV2Configuration extends BroadcastConfiguration
 {
     private int mStreamID;
     private String mUserID;
     private int mBitRate = 16;
-    private String mStreamName;
     private String mGenre;
     private String mURL;
     private boolean mPublic = true;
@@ -59,7 +60,6 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
         copy.setStreamID(getStreamID());
         copy.setUserID(getUserID());
         copy.setBitRate(getBitRate());
-        copy.setStreamName(getStreamName());
         copy.setGenre(getGenre());
         copy.setURL(getURL());
         copy.setPublic(isPublic());
@@ -77,6 +77,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     /**
      * Stream ID
      */
+    @XmlAttribute(name = "stream_id")
     public int getStreamID()
     {
         return mStreamID;
@@ -96,6 +97,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     /**
      * User ID
      */
+    @XmlAttribute(name = "user_id")
     public String getUserID()
     {
         return mUserID;
@@ -113,6 +115,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     /**
      * Bit rate in kilobits per second
      */
+    @XmlAttribute(name = "bitrate")
     public int getBitRate()
     {
         return mBitRate;
@@ -128,25 +131,9 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     }
 
     /**
-     * Stream name
-     */
-    public String getStreamName()
-    {
-        return mStreamName;
-    }
-
-    /**
-     * Sets the stream name
-     * @param name
-     */
-    public void setStreamName(String name)
-    {
-        mStreamName = name;
-    }
-
-    /**
      * Stream genre
      */
+    @XmlAttribute(name = "genre")
     public String getGenre()
     {
         return mGenre;
@@ -160,9 +147,16 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
         mGenre = genre;
     }
 
+
+    public boolean hasGenre()
+    {
+        return mGenre != null && !mGenre.isEmpty();
+    }
+
     /**
      * Public visibility of the broadcastAudio
      */
+    @XmlAttribute(name = "public")
     public boolean isPublic()
     {
         return mPublic;
@@ -180,6 +174,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     /**
      * URL associated with the broadcastAudio where users can find additional details.
      */
+    @XmlAttribute(name = "url")
     public String getURL()
     {
         return mURL;
@@ -192,5 +187,19 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     public void setURL(String url)
     {
         mURL = url;
+    }
+
+    public boolean hasURL()
+    {
+        return mURL != null && !mURL.isEmpty();
+    }
+
+    @Override
+    public boolean isValid()
+    {
+        return super.isValid() && hasName() &&
+            getUserID() != null && !getUserID().isEmpty() &&
+            1 <= getStreamID() &&
+            getPassword() != null && !getPassword().isEmpty();
     }
 }

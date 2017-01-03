@@ -30,17 +30,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class StreamManager implements Listener<AudioPacket>
 {
     private final static Logger mLog = LoggerFactory.getLogger(StreamManager.class);
     private static final long MAXIMUM_RECORDER_LIFESPAN_MILLIS = 30000; //30 seconds
+
+    private static AtomicInteger sNextRecordingNumber = new AtomicInteger();
 
     private ThreadPoolManager mThreadPoolManager;
     private AudioBroadcaster mAudioBroadcaster;
@@ -197,6 +199,7 @@ public class StreamManager implements Listener<AudioPacket>
     {
         StringBuilder sb = new StringBuilder();
         sb.append(BroadcastModel.TEMPORARY_STREAM_FILE_SUFFIX);
+        sb.append(sNextRecordingNumber.incrementAndGet()).append("_");
         sb.append( TimeStamp.getLongTimeStamp( "_" ) );
         sb.append( mAudioBroadcaster.getBroadcastConfiguration().getBroadcastFormat().getFileExtension() );
 
@@ -221,6 +224,9 @@ public class StreamManager implements Listener<AudioPacket>
                     .filter(entry -> entry.getValue().getTimeRecordingStart() + MAXIMUM_RECORDER_LIFESPAN_MILLIS < now)
                     .forEach(entry ->
                 {
+                    mLog.debug("Maximum recording time limit reached - removing recorder: " +
+                        entry.getValue().getPath().toString());
+
                     removeRecorder(entry.getKey());
                 });
             }

@@ -16,19 +16,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.shoutcast.v2.message;
+package audio.broadcast.shoutcast.v2.ultravox;
 
-public class RequestCipher extends UltravoxMessage
+public class ConfigureIcyName extends UltravoxMessage
 {
     /**
-     * Client request to server for encryption key
-     *
-     * Package private constructor.  Use the UltravoxMessageFactory for this constructor.
+     * Client request to server to configure the ICY-NAME metadata
      */
-    RequestCipher()
+    public ConfigureIcyName()
     {
-        super(UltravoxMessageType.REQUEST_CIPHER);
-        setPayload(SHOUTCAST_VERSION);
+        super(UltravoxMessageType.CONFIGURE_ICY_NAME);
     }
 
     /**
@@ -37,23 +34,13 @@ public class RequestCipher extends UltravoxMessage
      *
      * @param data bytes received from the server
      */
-    RequestCipher(byte[] data)
+    ConfigureIcyName(byte[] data)
     {
         super(data);
     }
 
-    /**
-     * Cipher key returned from the server to use for encrypting user id and password credentials
-     *
-     * @return cipher key or null
-     */
-    public String getCipher()
+    public void setName(String name)
     {
-        if(isValidResponse())
-        {
-            return getPayload().replace(VALID_RESPONSE_PAYLOAD_PREFIX, "");
-        }
-
-        return null;
+        setPayload(name);
     }
 }

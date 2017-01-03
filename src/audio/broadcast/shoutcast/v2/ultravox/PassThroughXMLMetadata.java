@@ -1,6 +1,6 @@
 /*******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2016 Dennis Sheirer
+ * Copyright (C) 2014-2017 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,19 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.shoutcast.v2.message;
+package audio.broadcast.shoutcast.v2.ultravox;
 
-public class ConfigureIcyURL extends UltravoxMessage
+public class PassThroughXMLMetadata extends UltravoxMessage
 {
     /**
-     * Client request to server to configure the ICY-URL metadata
-     *
-     * Package private constructor.  Use the UltravoxMessageFactory for this constructor.
+     * Client request to server to send pass-through XML metadata
      */
-    ConfigureIcyURL()
+    public PassThroughXMLMetadata()
     {
-        super(UltravoxMessageType.CONFIGURE_ICY_URL);
+        super(UltravoxMessageType.PASS_THROUGH_XML_METADATA);
     }
+
 
     /**
      * Server response to client request
@@ -36,13 +35,8 @@ public class ConfigureIcyURL extends UltravoxMessage
      *
      * @param data bytes received from the server
      */
-    ConfigureIcyURL(byte[] data)
+    PassThroughXMLMetadata(byte[] data)
     {
         super(data);
-    }
-
-    public void setURL(String url)
-    {
-        setPayload(url);
     }
 }

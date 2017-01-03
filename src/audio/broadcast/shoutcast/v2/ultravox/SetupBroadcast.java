@@ -16,18 +16,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.shoutcast.v2.message;
+package audio.broadcast.shoutcast.v2.ultravox;
 
-public class ConfigureIcyGenre extends UltravoxMessage
+public class SetupBroadcast extends UltravoxMessage
 {
     /**
-     * Client request to server to configure the ICY-GENRE metadata
-     *
-     * Package private constructor.  Use the UltravoxMessageFactory for this constructor.
+     * Client request to server to specify the stream bit rate
      */
-    ConfigureIcyGenre()
+    public SetupBroadcast()
     {
-        super(UltravoxMessageType.CONFIGURE_ICY_GENRE);
+        super(UltravoxMessageType.SETUP_BROADCAST);
     }
 
     /**
@@ -36,13 +34,22 @@ public class ConfigureIcyGenre extends UltravoxMessage
      *
      * @param data bytes received from the server
      */
-    ConfigureIcyGenre(byte[] data)
+    SetupBroadcast(byte[] data)
     {
         super(data);
     }
 
-    public void setGenre(String genre)
+    /**
+     * Sets the average and maximum bit rates.  Set both to the same value for a Constant Bit Rate (CBR) stream.
+     *
+     * @param average bit rate of the stream in kbps
+     * @param maximum bit rate of the stream in kbps
+     */
+    public void setBitRate(int average, int maximum)
     {
-        setPayload(genre);
+        StringBuilder sb = new StringBuilder();
+        sb.append(average).append(":").append(maximum);
+
+        setPayload(sb.toString());
     }
 }

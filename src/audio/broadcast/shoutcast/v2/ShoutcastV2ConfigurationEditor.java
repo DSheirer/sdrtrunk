@@ -1,6 +1,6 @@
 /*******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2016 Dennis Sheirer
+ * Copyright (C) 2014-2017 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package audio.broadcast.shoutcast.v1;
+package audio.broadcast.shoutcast.v2;
 
 import alias.AliasModel;
 import audio.broadcast.BroadcastConfiguration;
@@ -36,18 +36,19 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-public class ShoutcastV1ConfigurationEditor extends BroadcastConfigurationEditor
+public class ShoutcastV2ConfigurationEditor extends BroadcastConfigurationEditor
 {
-    private final static Logger mLog = LoggerFactory.getLogger( ShoutcastV1ConfigurationEditor.class );
+    private final static Logger mLog = LoggerFactory.getLogger( ShoutcastV2ConfigurationEditor.class );
 
     private static final int ONE_MINUTE_MS = 60000;
 
     private JTextField mName;
     private JTextField mServer;
     private JTextField mPort;
+    private JTextField mStreamID;
+    private JTextField mUserID;
     private JTextField mPassword;
     private JTextField mGenre;
-    private JTextField mDescription;
     private JCheckBox mPublic;
     private JSlider mDelay;
     private JLabel mDelayValue;
@@ -55,7 +56,7 @@ public class ShoutcastV1ConfigurationEditor extends BroadcastConfigurationEditor
     private JButton mSaveButton;
     private JButton mResetButton;
 
-    public ShoutcastV1ConfigurationEditor(BroadcastModel broadcastModel, AliasModel aliasModel,
+    public ShoutcastV2ConfigurationEditor(BroadcastModel broadcastModel, AliasModel aliasModel,
                                           SettingsManager settingsManager)
     {
         super(broadcastModel, aliasModel, settingsManager);
@@ -68,9 +69,9 @@ public class ShoutcastV1ConfigurationEditor extends BroadcastConfigurationEditor
             "[][][][][][][][][][][][][][grow,fill]" ) );
         setPreferredSize(new Dimension(150,400));
 
-        JLabel channelLabel = new JLabel("Shoutcast (v1.x) Stream");
+        JLabel channelLabel = new JLabel("Shoutcast (v2) Stream");
 
-        ImageIcon icon = mSettingsManager.getImageIcon(BroadcastServerType.SHOUTCAST_V1.getIconName(), 25);
+        ImageIcon icon = mSettingsManager.getImageIcon(BroadcastServerType.SHOUTCAST_V2.getIconName(), 25);
         channelLabel.setIcon(icon);
 
         add(channelLabel, "span, align center");
@@ -93,6 +94,18 @@ public class ShoutcastV1ConfigurationEditor extends BroadcastConfigurationEditor
         mPort.setToolTipText("Server port number (e.g. 80)");
         add(mPort);
 
+        add(new JLabel("Stream ID:"));
+        mStreamID = new JTextField();
+        mStreamID.getDocument().addDocumentListener(this);
+        mStreamID.setToolTipText("Stream Identifier)");
+        add(mStreamID);
+
+        add(new JLabel("User ID:"));
+        mUserID = new JTextField();
+        mUserID.getDocument().addDocumentListener(this);
+        mUserID.setToolTipText("User ID/Name");
+        add(mUserID);
+
         add(new JLabel("Password:"));
         mPassword = new JTextField();
         mPassword.getDocument().addDocumentListener(this);
@@ -104,12 +117,6 @@ public class ShoutcastV1ConfigurationEditor extends BroadcastConfigurationEditor
         mGenre.getDocument().addDocumentListener(this);
         mGenre.setToolTipText("Genre (e.g. public safety)");
         add(mGenre);
-
-        add(new JLabel("Description:"));
-        mDescription = new JTextField();
-        mDescription.getDocument().addDocumentListener(this);
-        mDescription.setToolTipText("Description of the stream");
-        add(mDescription);
 
         add(new JLabel("Public:"));
         mPublic = new JCheckBox();
@@ -201,14 +208,15 @@ public class ShoutcastV1ConfigurationEditor extends BroadcastConfigurationEditor
 
         if(hasItem())
         {
-            ShoutcastV1Configuration config = (ShoutcastV1Configuration)getItem();
+            ShoutcastV2Configuration config = (ShoutcastV2Configuration)getItem();
 
             mName.setText(config.getName());
             mServer.setText(config.getHost());
             mPort.setText(config.getPort() != 0 ? String.valueOf(config.getPort()) : null);
+            mStreamID.setText(String.valueOf(config.getStreamID()));
+            mUserID.setText(config.getUserID());
             mPassword.setText(config.getPassword());
             mGenre.setText(config.getGenre());
-            mDescription.setText(config.getDescription());
             mPublic.setSelected(config.isPublic());
             mDelay.setValue((int)(config.getDelay() / ONE_MINUTE_MS));
             mEnabled.setSelected(config.isEnabled());
@@ -218,9 +226,10 @@ public class ShoutcastV1ConfigurationEditor extends BroadcastConfigurationEditor
             mName.setText(null);
             mServer.setText(null);
             mPort.setText(null);
+            mStreamID.setText(null);
+            mUserID.setText(null);
             mPassword.setText(null);
             mGenre.setText(null);
-            mDescription.setText(null);
             mPublic.setSelected(true);
             mDelay.setValue(0);
             mEnabled.setSelected(false);
@@ -232,15 +241,16 @@ public class ShoutcastV1ConfigurationEditor extends BroadcastConfigurationEditor
     @Override
     public void save()
     {
-        ShoutcastV1Configuration config = (ShoutcastV1Configuration)getItem();
+        ShoutcastV2Configuration config = (ShoutcastV2Configuration)getItem();
 
         if(validateConfiguration())
         {
             updateConfigurationName(config, mName.getText());
             config.setHost(mServer.getText());
             config.setPort(getPort());
+            config.setUserID(mUserID.getText());
             config.setPassword(mPassword.getText());
-            config.setDescription(mDescription.getText());
+            config.setStreamID(getStreamID());
             config.setGenre(mGenre.getText());
             config.setPublic(mPublic.isSelected());
             config.setDelay(mDelay.getValue() * ONE_MINUTE_MS);
@@ -266,7 +276,7 @@ public class ShoutcastV1ConfigurationEditor extends BroadcastConfigurationEditor
                     "Please specify a stream name." : "Stream name " + name +
                     "is already in use.\nPlease choose another name.";
 
-            JOptionPane.showMessageDialog(ShoutcastV1ConfigurationEditor.this,
+            JOptionPane.showMessageDialog(ShoutcastV2ConfigurationEditor.this,
                     message, "Invalid Stream Name", JOptionPane.ERROR_MESSAGE);
 
             mName.requestFocus();
@@ -274,19 +284,31 @@ public class ShoutcastV1ConfigurationEditor extends BroadcastConfigurationEditor
             return false;
         }
 
-        //Server address is optional, but required
+        //Server address is required
         if(!validateTextField(mServer, "Invalid Server Address", "Please specify a server address."))
         {
             return true;
         }
 
-        //Port is optional, but required
+        //Port is required
         if(!validateIntegerTextField(mPort, "Invalid Port Number", "Please specify a port number (1 <> 65535)", 1, 65535))
         {
             return true;
         }
 
-        //Password is optional, but required
+        //Stream ID is required
+        if(!validateIntegerTextField(mStreamID, "Invalid Stream ID", "Please specify a stream ID of 1 or higher", 1, Integer.MAX_VALUE))
+        {
+            return true;
+        }
+
+        //User ID is required
+        if(!validateTextField(mUserID, "Invalid User ID", "Please specify a user ID/name."))
+        {
+            return true;
+        }
+
+        //Password is required
         if(!validateTextField(mPassword, "Invalid Password", "Please specify a password."))
         {
             return true;
@@ -307,6 +329,28 @@ public class ShoutcastV1ConfigurationEditor extends BroadcastConfigurationEditor
             try
             {
                 return Integer.parseInt(port);
+            }
+            catch(Exception e)
+            {
+                //Do nothing, we couldn't parse the number value
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * Parses an Integer from the port text control or returns 0 if the control doesn't contain an integer value.
+     */
+    private int getStreamID()
+    {
+        String streamID = mStreamID.getText();
+
+        if(streamID != null && !streamID.isEmpty())
+        {
+            try
+            {
+                return Integer.parseInt(streamID);
             }
             catch(Exception e)
             {

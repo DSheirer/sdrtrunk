@@ -1,6 +1,6 @@
 /*******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2016 Dennis Sheirer
+ * Copyright (C) 2014-2017 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,120 +18,199 @@
  ******************************************************************************/
 package audio.broadcast.shoutcast.v2;
 
-import audio.AudioPacket;
 import audio.broadcast.AudioBroadcaster;
-import audio.broadcast.BroadcastFactory;
-import audio.broadcast.BroadcastFormat;
 import audio.broadcast.BroadcastState;
-import audio.broadcast.shoutcast.v2.message.AuthenticateBroadcast;
-import audio.broadcast.shoutcast.v2.message.ConfigureIcyGenre;
-import audio.broadcast.shoutcast.v2.message.ConfigureIcyName;
-import audio.broadcast.shoutcast.v2.message.ConfigureIcyPublic;
-import audio.broadcast.shoutcast.v2.message.ConfigureIcyURL;
-import audio.broadcast.shoutcast.v2.message.MP3Audio;
-import audio.broadcast.shoutcast.v2.message.NegotiateMaxPayloadSize;
-import audio.broadcast.shoutcast.v2.message.RequestCipher;
-import audio.broadcast.shoutcast.v2.message.SetupBroadcast;
-import audio.broadcast.shoutcast.v2.message.Standby;
-import audio.broadcast.shoutcast.v2.message.UltravoxMessage;
-import audio.broadcast.shoutcast.v2.message.UltravoxMessageFactory;
-import audio.broadcast.shoutcast.v2.message.UltravoxMessageType;
-import audio.broadcast.shoutcast.v2.message.UltravoxMetadata;
-import audio.broadcast.shoutcast.v2.message.XMLMetadata;
+import audio.broadcast.IBroadcastMetadataUpdater;
+import audio.broadcast.shoutcast.v2.ultravox.AuthenticateBroadcast;
+import audio.broadcast.shoutcast.v2.ultravox.CacheableXMLMetadata;
+import audio.broadcast.shoutcast.v2.ultravox.ConfigureIcyName;
+import audio.broadcast.shoutcast.v2.ultravox.ConfigureIcyPublic;
+import audio.broadcast.shoutcast.v2.ultravox.MP3Audio;
+import audio.broadcast.shoutcast.v2.ultravox.NegotiateMaxPayloadSize;
+import audio.broadcast.shoutcast.v2.ultravox.RequestCipher;
+import audio.broadcast.shoutcast.v2.ultravox.SetupBroadcast;
+import audio.broadcast.shoutcast.v2.ultravox.Standby;
+import audio.broadcast.shoutcast.v2.ultravox.StreamMimeType;
+import audio.broadcast.shoutcast.v2.ultravox.TerminateBroadcast;
+import audio.broadcast.shoutcast.v2.ultravox.UltravoxMessage;
+import audio.broadcast.shoutcast.v2.ultravox.UltravoxMessageFactory;
+import audio.broadcast.shoutcast.v2.ultravox.UltravoxMessageType;
+import audio.broadcast.shoutcast.v2.ultravox.UltravoxMetadata;
+import audio.broadcast.shoutcast.v2.ultravox.UltravoxProtocolFactory;
 import audio.metadata.AudioMetadata;
+import audio.metadata.Metadata;
+import audio.metadata.MetadataType;
 import controller.ThreadPoolManager;
+import org.apache.mina.core.RuntimeIoException;
+import org.apache.mina.core.future.ConnectFuture;
+import org.apache.mina.core.service.IoHandlerAdapter;
+import org.apache.mina.core.session.IoSession;
+import org.apache.mina.filter.codec.ProtocolCodecFilter;
+import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import properties.SystemProperties;
-import record.wave.AudioPacketMonoWaveReader;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.net.UnknownHostException;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.net.ConnectException;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster
+public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBroadcastMetadataUpdater
 {
     private final static Logger mLog = LoggerFactory.getLogger( ShoutcastV2AudioBroadcaster.class );
-
-    private static final long RECONNECT_INTERVAL_MILLISECONDS = 15000; //15 seconds
-    private static final boolean GET_RESPONSE = true;
-    private static final boolean NO_RESPONSE_EXPECTED = false;
-    private long mLastConnectionAttempt = 0;
-
-    private Socket mSocket;
-    private DataOutputStream mOutputStream;
-    private DataInputStream mInputStream;
+    private static final long RECONNECT_INTERVAL_MILLISECONDS = 30000; //30 seconds
     private int mMaxPayloadSize = 16377;
-    private List<AudioPacket> mPacketsToBroadcast = new ArrayList<>();
+
+    private NioSocketConnector mSocketConnector;
+    private IoSession mStreamingSession = null;
+
+    private long mLastConnectionAttempt = 0;
+    private AtomicBoolean mConnecting = new AtomicBoolean();
+    private LinkedTransferQueue<UltravoxMessage> mMetadataMessageQueue = new LinkedTransferQueue<>();
+
 
     /**
-     * Creates a Shoutcast Version 2 broadcaster.
-     * @param configuration details for shoutcast version 2
+     * Shoutcast 2.x (Ultravox 2.1) broadcaster.  This broadcaster is compatible with Shoutcast 2.x and newer versions
+     * of the server software.
+     *
+     * Note: use @see ShoutcastV1AudioBroadcaster for Shoutcast version 1.x and older.
+     *
+     * This broadcaster uses the Apache Mina library for the streaming socket connection.  The
+     * ShoutcastV2IOHandler manages all interaction with the Shoutcast server and manages the overall broadcast state.
+     *
+     * @param threadPoolManager for thread pool access
+     * @param configuration for the Shoutcast V2 stream
      */
     public ShoutcastV2AudioBroadcaster(ThreadPoolManager threadPoolManager, ShoutcastV2Configuration configuration)
     {
         super(threadPoolManager, configuration);
     }
 
-    /**
-     * Shoutcast V2 Configuration information
-     */
-    private ShoutcastV2Configuration getShoutcastConfiguration()
+    public ShoutcastV2Configuration getConfiguration()
     {
         return (ShoutcastV2Configuration)getBroadcastConfiguration();
     }
 
-    @Override
-    protected void broadcastMetadata(AudioMetadata metadata)
-    {
-        mLog.debug("Request to broadcast audio metadata to shoutcast v2 server - needs coding");
-    }
-
     /**
-     * Broadcast audio
+     * Broadcasts the audio frame or sequence
      */
     @Override
     protected void broadcastAudio(byte[] audio)
     {
-        //If we're connected, send the audio, otherwise discard it
-        if(connect())
-        {
-            List<UltravoxMessage> audioMessages = getAudioMessages(audio);
+        //Dispatch any queued metadata messages
+        UltravoxMessage metadataMessage = mMetadataMessageQueue.poll();
 
-            try
-            {
-                for(UltravoxMessage audioMessage: audioMessages)
-                {
-                    send(audioMessage, NO_RESPONSE_EXPECTED);
-                }
-            }
-            catch(IOException e)
-            {
-                mLog.error("Error while dispatching audio", e);
-                setBroadcastState(BroadcastState.TEMPORARY_BROADCAST_ERROR);
-                return;
-            }
+        while(metadataMessage != null)
+        {
+            mStreamingSession.write(metadataMessage);
+            metadataMessage = mMetadataMessageQueue.poll();
+        }
+
+        //Dispatch audio message
+        if(audio != null && audio.length > 0 && connect() && mStreamingSession != null && mStreamingSession.isConnected())
+        {
+            MP3Audio mp3Audio = new MP3Audio();
+            mp3Audio.setPayload(audio);
+
+            mStreamingSession.write(mp3Audio);
         }
     }
 
+    @Override
+    public void update(AudioMetadata metadata)
+    {
+        List<UltravoxMessage> metadataMessages = getMetadataMessages(metadata);
+
+        if(!metadataMessages.isEmpty())
+        {
+            mMetadataMessageQueue.addAll(metadataMessages);
+        }
+    }
+
+    @Override
+    protected IBroadcastMetadataUpdater getMetadataUpdater()
+    {
+        return this;
+    }
+
     /**
-     * Indicates if the audio handler is currently connected to the remote server and capable of streaming audio.
+     * (Re)Connects the broadcaster to the remote server if it currently is disconnected and indicates if the broadcaster
+     * is currently connected to the remote server following any connection attempts.
      *
-     * This method will attempt to establish a connection or reconnect to the streaming server.
+     * Attempts to connect via this method when the broadcast state indicates an error condition will be ignored.
+     *
      * @return true if the audio handler can stream audio
      */
     private boolean connect()
     {
-        if(!connected())
+        if(!connected() && canConnect() &&
+           (mLastConnectionAttempt + RECONNECT_INTERVAL_MILLISECONDS < System.currentTimeMillis()) &&
+            mConnecting.compareAndSet(false, true))
         {
-            createConnection();
+            mLastConnectionAttempt = System.currentTimeMillis();
+
+            if(mSocketConnector == null)
+            {
+                mSocketConnector = new NioSocketConnector();
+                mSocketConnector.setConnectTimeoutCheckInterval(10000);
+
+//                mSocketConnector.getFilterChain().addLast("logger",
+//                    new LoggingFilter(ShoutcastV2AudioBroadcaster.class));
+
+                mSocketConnector.getFilterChain().addLast("codec",
+                    new ProtocolCodecFilter(new UltravoxProtocolFactory()));
+
+                mSocketConnector.setHandler(new ShoutcastV2IOHandler());
+            }
+
+            mStreamingSession = null;
+
+            Runnable runnable = new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    setBroadcastState(BroadcastState.CONNECTING);
+
+                    try
+                    {
+                        ConnectFuture future = mSocketConnector
+                            .connect(new InetSocketAddress(getBroadcastConfiguration().getHost(),
+                                getBroadcastConfiguration().getPort()));
+                        future.awaitUninterruptibly();
+                        mStreamingSession = future.getSession();
+                    }
+                    catch(RuntimeIoException rie)
+                    {
+                        Throwable throwableCause = rie.getCause();
+
+                        if(throwableCause instanceof ConnectException)
+                        {
+                            setBroadcastState(BroadcastState.NO_SERVER);
+                        }
+                        else if(throwableCause != null)
+                        {
+                            setBroadcastState(BroadcastState.ERROR);
+                            mLog.error("Failed to connect", rie);
+                        }
+                        else
+                        {
+                            setBroadcastState(BroadcastState.ERROR);
+                            mLog.error("Failed to connect - no exception is available");
+                        }
+
+                        disconnect();
+                    }
+                }
+            };
+
+            getThreadPoolManager().scheduleOnce(runnable, 0l, TimeUnit.SECONDS);
+
         }
 
         return connected();
@@ -139,112 +218,85 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster
 
 
     /**
-     * Disconnect from the remote server
+     * Disconnect from the remote broadcast server and cleanup input/output streams and socket connection
      */
     public void disconnect()
     {
-//                    TerminateBroadcast terminate = (TerminateBroadcast)UltravoxMessageFactory
-//                            .getMessage(UltravoxMessageType.TERMINATE_BROADCAST);
-//                    response = send(terminate, out, in);
-//                    mLog.debug("Terminate Response:" + (response.getPayload() != null ? response.getPayload() : ""));
-
-    }
-
-    /**
-     * Sends the message.  When get response is true, reads from the input stream and converts the response to a
-     * message that is returned.
-     *
-     * @param message to send to the shoutcast/ultravox server
-     * @param getResponse true if the sent message will generate a response
-     * @return response message when getResponse is set to true
-     * @throws IOException if there is an issue while communicating with the server
-     */
-    private UltravoxMessage send(UltravoxMessage message, boolean getResponse) throws IOException
-    {
-        byte[] bytes = message.getMessage();
-
-        mOutputStream.write(bytes);
-
-        if(getResponse)
+        if(connected())
         {
-            try
+            if(mStreamingSession != null)
             {
-                Thread.sleep(50);
-            }
-            catch (InterruptedException e)
-            {
-                e.printStackTrace();
-            }
-
-            int available = mInputStream.available();
-
-            if(available > 0)
-            {
-                byte[] buffer = new byte[available];
-                int read = mInputStream.read(buffer);
-
-                return UltravoxMessageFactory.getMessage(buffer);
+                mStreamingSession.write(new TerminateBroadcast());
+                mStreamingSession.closeNow();
             }
         }
-
-        return null;
     }
 
     /**
-     * Loads the encoded audio byte array into a list of ultravox messages ready for transmission
-     * @param audio to embed as message payload
-     * @return list of messages containing the audio payload
-     */
-    private List<UltravoxMessage> getAudioMessages(byte[] audio)
-    {
-        List<UltravoxMessage> messages = new ArrayList<>();
-
-        int pointer = 0;
-
-        while(pointer < audio.length)
-        {
-            int payloadSize = Math.min(mMaxPayloadSize, audio.length - pointer);
-
-            byte[] payload = new byte[payloadSize];
-
-            System.arraycopy(audio, pointer, payload, 0, payloadSize);
-
-            MP3Audio mp3Audio = (MP3Audio)UltravoxMessageFactory.getMessage(UltravoxMessageType.MP3_DATA);
-            mp3Audio.setPayload(payload);
-            messages.add(mp3Audio);
-
-            pointer += payloadSize;
-        }
-
-        return messages;
-    }
-
-    /**
-     * Encodes the list of metadata in one or more Ultravox XMLMetadata messages according to the maximum negotiated
+     * Encodes the list of metadata in one or more Ultravox CacheableXMLMetadata messages according to the maximum negotiated
      * payload size for the current connection.  Each entry in the list of metadata strings should be an xml encoded
      * value:  <tag>value</tag>
      *
      * See UltravoxMetadata.TAG.asXML(String value)
      *
-     * @param xmlMetadata list of xml encoded values
-     * @return a sequence of XMLMetadata messages sufficient to carry the complete set of metadata
+     * @param metadata containing audio metadata tags and attributes
+     * @return a sequence of CacheableXMLMetadata messages sufficient to carry the complete set of metadata
      */
-    private List<UltravoxMessage> getMetadataMessages(List<String> xmlMetadata)
+    private List<UltravoxMessage> getMetadataMessages(AudioMetadata metadata)
     {
-        List<UltravoxMessage> messages = new ArrayList<>();
-
         StringBuilder sb = new StringBuilder();
 
-        sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<metadata>\n");
+        sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\" ?><metadata>");
 
-        for(String metadata: xmlMetadata)
+        sb.append(UltravoxMetadata.ALBUM_TITLE.asXML(getConfiguration().getName()));
+
+        sb.append(UltravoxMetadata.BROADCAST_CLIENT_APPLICATION.asXML(SystemProperties.getInstance().getApplicationName()));
+
+        if(getConfiguration().hasGenre())
         {
-            sb.append(metadata);
+            sb.append(UltravoxMetadata.GENRE.asXML(getConfiguration().getGenre()));
         }
 
-        sb.append("\n</metadata>");
+        if(getConfiguration().hasURL())
+        {
+            sb.append(UltravoxMetadata.URL.asXML(getConfiguration().getURL()));
+        }
 
-        mLog.debug("Metadata:" + sb.toString());
+        if(metadata != null)
+        {
+            Metadata to = metadata.getMetadata(MetadataType.TO);
+            if(to != null)
+            {
+                if(to.hasAlias())
+                {
+                    sb.append(UltravoxMetadata.TITLE_2.asXML(to.getAlias().toString()));
+                }
+                else
+                {
+                    sb.append(UltravoxMetadata.TITLE_2.asXML(to.getValue()));
+                }
+            }
+
+            Metadata from = metadata.getMetadata(MetadataType.FROM);
+            if(from != null)
+            {
+                if(from.hasAlias())
+                {
+                    sb.append(UltravoxMetadata.TITLE_3.asXML("From: " + from.getAlias().toString()));
+                }
+                else
+                {
+                    sb.append(UltravoxMetadata.TITLE_3.asXML("From: " + from.getValue()));
+                }
+            }
+        }
+        else
+        {
+            sb.append(UltravoxMetadata.TITLE_2.asXML("Scanning ..."));
+        }
+
+        sb.append("</metadata>");
+
         byte[] xml = sb.toString().getBytes();
 
         int pointer = 0;
@@ -256,6 +308,8 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster
             messageCount = 32; //Max number of metadata messages in a sequence
         }
 
+
+        List<UltravoxMessage> messages = new ArrayList<>();
 
         while(pointer < xml.length && messageCounter <= messageCount)
         {
@@ -269,7 +323,7 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster
 
             System.arraycopy(xml, pointer, payload, 6, payloadSize);
 
-            XMLMetadata message = (XMLMetadata)UltravoxMessageFactory.getMessage(UltravoxMessageType.XML_METADATA);
+            CacheableXMLMetadata message = new CacheableXMLMetadata();
             message.setPayload(payload);
             messages.add(message);
 
@@ -281,235 +335,194 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster
 
 
     /**
-     * Creates a connnection to the remote server using the shoutcast configuration information.  Once disconnected
-     * following a successful connection, attempts to reestablish a connection on a set interval
+     * IO Handler for managing Shoutcast V2 connection and credentials
      */
-    private void createConnection()
+    public class ShoutcastV2IOHandler extends IoHandlerAdapter
     {
-        if(!connected() && System.currentTimeMillis() - mLastConnectionAttempt >= RECONNECT_INTERVAL_MILLISECONDS)
+        /**
+         * Sends stream configuration and user credentials upon connecting to remote server
+         */
+        @Override
+        public void sessionOpened(IoSession session) throws Exception
         {
-            mLastConnectionAttempt = System.currentTimeMillis();
+            session.write(UltravoxMessageFactory.getMessage(UltravoxMessageType.REQUEST_CIPHER));
+        }
 
-            createSocket();
-
-            if (mSocket.isConnected())
+        @Override
+        public void sessionClosed(IoSession session) throws Exception
+        {
+            //If there is already an error state, don't override it.  Otherwise, set state to disconnected
+            if(!getBroadcastState().isErrorState())
             {
-                RequestCipher requestCipher = (RequestCipher) UltravoxMessageFactory
-                        .getMessage(UltravoxMessageType.REQUEST_CIPHER);
+                setBroadcastState(BroadcastState.DISCONNECTED);
+            }
 
-                try
+            mSocketConnector.dispose();
+            mStreamingSession = null;
+            mSocketConnector = null;
+
+            mConnecting.set(false);
+            super.sessionClosed(session);
+        }
+
+        @Override
+        public void exceptionCaught(IoSession session, Throwable cause) throws Exception
+        {
+            if(cause instanceof IOException && ((IOException)cause).getMessage().startsWith("Connection reset"))
+            {
+                mLog.info("Streaming connection reset by remote server - reestablishing connection");
+                disconnect();
+                connect();
+            }
+            else
+            {
+                mLog.error("Broadcast error", cause);
+                setBroadcastState(BroadcastState.ERROR);
+                disconnect();
+            }
+
+            mConnecting.set(false);
+        }
+
+        @Override
+        public void messageReceived(IoSession session, Object object) throws Exception
+        {
+            if(object instanceof UltravoxMessage)
+            {
+                UltravoxMessage ultravoxMessage = (UltravoxMessage)object;
+
+                switch (ultravoxMessage.getMessageType())
                 {
-                    UltravoxMessage response = send(requestCipher, GET_RESPONSE);
+                    case REQUEST_CIPHER:
+                        String cipherKey = ((RequestCipher)ultravoxMessage).getCipher();
 
-                    if (response instanceof RequestCipher)
-                    {
-                        RequestCipher cipherResponse = (RequestCipher) response;
+                        AuthenticateBroadcast authenticateBroadcast = new AuthenticateBroadcast();
 
-                        AuthenticateBroadcast authenticateBroadcast = (AuthenticateBroadcast) UltravoxMessageFactory
-                                .getMessage(UltravoxMessageType.AUTHENTICATE_BROADCAST);
-                        authenticateBroadcast.setCredentials(cipherResponse.getCipher(),
-                                getShoutcastConfiguration().getStreamID(), getShoutcastConfiguration().getUserID(),
-                                getShoutcastConfiguration().getPassword());
-                        response = send(authenticateBroadcast, GET_RESPONSE);
+                        authenticateBroadcast.setCredentials(cipherKey, getConfiguration().getStreamID(),
+                            getConfiguration().getUserID(), getConfiguration().getPassword());
 
-                        if (response.isErrorResponse())
+                        session.write(authenticateBroadcast);
+                        break;
+                    case AUTHENTICATE_BROADCAST:
+                        if(ultravoxMessage.isErrorResponse())
                         {
-                            setBroadcastState(BroadcastState.INVALID_CREDENTIALS);
-                            return;
-                        }
+                            String errorMessage = ultravoxMessage.getErrorMessage();
 
-                        UltravoxMessage streamMimeType = UltravoxMessageFactory
-                                .getMessage(UltravoxMessageType.STREAM_MIME_TYPE);
-                        streamMimeType.setPayload(getShoutcastConfiguration().getBroadcastFormat().getValue());
-                        response = send(streamMimeType, GET_RESPONSE);
-
-                        if (response.isErrorResponse())
-                        {
-                            setBroadcastState(BroadcastState.UNSUPPORTED_AUDIO_FORMAT);
-                            mLog.error("Audio format [" + getShoutcastConfiguration().getBroadcastFormat() + "] not supported");
-                            return;
-                        }
-
-                        SetupBroadcast setupBroadcast = (SetupBroadcast) UltravoxMessageFactory
-                                .getMessage(UltravoxMessageType.SETUP_BROADCAST);
-                        setupBroadcast.setBitRate(getShoutcastConfiguration().getBitRate(),
-                                getShoutcastConfiguration().getBitRate());
-                        response = send(setupBroadcast, GET_RESPONSE);
-
-                        if (response.isErrorResponse())
-                        {
-                            setBroadcastState(BroadcastState.UNSUPPORTED_AUDIO_FORMAT);
-                            mLog.error("Audio bit rate [" + getShoutcastConfiguration().getBitRate() + "] not supported");
-                            return;
-                        }
-
-                        NegotiateMaxPayloadSize negotiateMaxPayloadSize = (NegotiateMaxPayloadSize) UltravoxMessageFactory
-                                .getMessage(UltravoxMessageType.NEGOTIATE_MAX_PAYLOAD_SIZE);
-                        negotiateMaxPayloadSize.setMaximumPayloadSize(mMaxPayloadSize, 14000);
-                        response = send(negotiateMaxPayloadSize, GET_RESPONSE);
-                        mMaxPayloadSize = ((NegotiateMaxPayloadSize) response).getMaximumPayloadSize();
-
-                        List<String> metadata = new ArrayList<>();
-
-                        if (getShoutcastConfiguration().getStreamName() != null)
-                        {
-                            metadata.add(UltravoxMetadata.TITLE_1.asXML(getShoutcastConfiguration().getStreamName()));
-
-                            ConfigureIcyName icyName = (ConfigureIcyName) UltravoxMessageFactory
-                                    .getMessage(UltravoxMessageType.CONFIGURE_ICY_NAME);
-                            icyName.setName(getShoutcastConfiguration().getStreamName());
-                            response = send(icyName, NO_RESPONSE_EXPECTED);
-                        }
-
-                        if (getShoutcastConfiguration().getGenre() != null)
-                        {
-                            metadata.add(UltravoxMetadata.GENRE.asXML(getShoutcastConfiguration().getGenre()));
-
-                            ConfigureIcyGenre icyGenre = (ConfigureIcyGenre) UltravoxMessageFactory
-                                    .getMessage(UltravoxMessageType.CONFIGURE_ICY_GENRE);
-                            icyGenre.setGenre(getShoutcastConfiguration().getGenre());
-                            response = send(icyGenre, NO_RESPONSE_EXPECTED);
-                        }
-
-                        if (getShoutcastConfiguration().getURL() != null)
-                        {
-                            ConfigureIcyURL icyURL = (ConfigureIcyURL) UltravoxMessageFactory
-                                    .getMessage(UltravoxMessageType.CONFIGURE_ICY_URL);
-                            icyURL.setURL(getShoutcastConfiguration().getURL());
-                            response = send(icyURL, NO_RESPONSE_EXPECTED);
-                        }
-
-                        ConfigureIcyPublic icyPublic = (ConfigureIcyPublic) UltravoxMessageFactory
-                                .getMessage(UltravoxMessageType.CONFIGURE_ICY_PUBLIC);
-                        icyPublic.setPublic(getShoutcastConfiguration().isPublic());
-                        response = send(icyPublic, NO_RESPONSE_EXPECTED);
-
-                        Standby standby = (Standby) UltravoxMessageFactory.getMessage(UltravoxMessageType.STANDBY);
-                        response = send(standby, GET_RESPONSE);
-
-                        if (response.isValidResponse())
-                        {
-                            setBroadcastState(BroadcastState.CONNECTED);
+                            if(errorMessage.startsWith(AuthenticateBroadcast.STREAM_ID_ERROR))
+                            {
+                                setBroadcastState(BroadcastState.INVALID_MOUNT_POINT);
+                            }
+                            else
+                            {
+                                mLog.error("Invalid Credentials - response: " + ultravoxMessage.getPayload());
+                                setBroadcastState(BroadcastState.INVALID_CREDENTIALS);
+                            }
                         }
                         else
                         {
-                            setBroadcastState(BroadcastState.DISCONNECTED);
-                            mLog.error("Error message after configuration and sending standby:" +
-                                    (response.getError() != null ? response.getError() : "no error message"));
+                            StreamMimeType streamMimeType = new StreamMimeType();
+                            streamMimeType.setFormat(getConfiguration().getBroadcastFormat());
+                            session.write(streamMimeType);
                         }
-
-                        metadata.add(UltravoxMetadata.BROADCAST_CLIENT_APPLICATION
-                                .asXML(SystemProperties.getInstance().getApplicationName()));
-
-                        mLog.debug("Fetching metadata messages from metadata...");
-                        List<UltravoxMessage> messages = getMetadataMessages(metadata);
-
-                        for (UltravoxMessage message : messages)
+                        break;
+                    case STREAM_MIME_TYPE:
+                        if(ultravoxMessage.isErrorResponse())
                         {
-                            mLog.debug("Sending metadata message");
-                            send(message, GET_RESPONSE);
+                            mLog.error("Unsupported Audio Format:" + getConfiguration().getBroadcastFormat().toString() +
+                                " - " + ultravoxMessage.getErrorMessage());
+                            setBroadcastState(BroadcastState.UNSUPPORTED_AUDIO_FORMAT);
                         }
+                        else
+                        {
+                            SetupBroadcast setupBroadcast = new SetupBroadcast();
 
-                        mLog.debug("We're connected!!!");
-                    }
+                            //Use the same value for average and minimum bit rates
+                            setupBroadcast.setBitRate(getConfiguration().getBitRate(), getConfiguration().getBitRate());
+
+                            session.write(setupBroadcast);
+                        }
+                        break;
+                    case SETUP_BROADCAST:
+                        if(ultravoxMessage.isErrorResponse())
+                        {
+                            mLog.error("Unsupported Audio Bit Rate:" + getConfiguration().getBitRate() +
+                                " - " + ultravoxMessage.getErrorMessage());
+                            setBroadcastState(BroadcastState.UNSUPPORTED_AUDIO_FORMAT);
+                        }
+                        else
+                        {
+                            NegotiateMaxPayloadSize negotiateMaxPayloadSize = new NegotiateMaxPayloadSize();
+
+                            negotiateMaxPayloadSize.setMaximumPayloadSize(16377, 4192);
+
+                            session.write(negotiateMaxPayloadSize);
+                        }
+                        break;
+                    case NEGOTIATE_MAX_PAYLOAD_SIZE:
+                        if(ultravoxMessage.isErrorResponse())
+                        {
+                            mLog.error("Unsupported maximum payload size (18 min - 36 kbps max) - " +
+                                ultravoxMessage.getErrorMessage());
+                            setBroadcastState(BroadcastState.UNSUPPORTED_AUDIO_FORMAT);
+                        }
+                        else
+                        {
+                            mMaxPayloadSize = ((NegotiateMaxPayloadSize)ultravoxMessage).getMaximumPayloadSize();
+
+                            ConfigureIcyPublic configureIcyPublic = new ConfigureIcyPublic();
+                            configureIcyPublic.setPublic(getConfiguration().isPublic());
+                            session.write(configureIcyPublic);
+                        }
+                        break;
+                    case CONFIGURE_ICY_PUBLIC:
+                        if(ultravoxMessage.isErrorResponse())
+                        {
+                            mLog.error("Error setting shoutcast stream as public - " + ultravoxMessage.getErrorMessage());
+                            setBroadcastState(BroadcastState.ERROR);
+                        }
+                        else
+                        {
+                            ConfigureIcyName configureIcyName = new ConfigureIcyName();
+                            configureIcyName.setName(getConfiguration().getName());
+                            session.write(configureIcyName);
+                        }
+                        break;
+                    case CONFIGURE_ICY_NAME:
+                        if(ultravoxMessage.isErrorResponse())
+                        {
+                            mLog.error("Error setting shoutcast stream name - " + ultravoxMessage.getErrorMessage());
+                            setBroadcastState(BroadcastState.CONFIGURATION_ERROR);
+                        }
+                        else
+                        {
+                            session.write(new Standby());
+                        }
+                        break;
+                    case STANDBY:
+                        if(ultravoxMessage.isErrorResponse())
+                        {
+                            mLog.error("Error following stream configuration and standby - " +
+                                ultravoxMessage.getErrorMessage());
+                            setBroadcastState(BroadcastState.ERROR);
+                        }
+                        else
+                        {
+                            setBroadcastState(BroadcastState.CONNECTED);
+                        }
+                        break;
+                    default:
+                        mLog.error("Unrecognized ultravox message:" + ultravoxMessage.getMessageType() +
+                            " payload:" + ultravoxMessage.getPayload());
+
+                        setBroadcastState(BroadcastState.ERROR);
                 }
-                catch (IOException e)
-                {
-                    setBroadcastState(BroadcastState.ERROR);
-                    mLog.error("Error while creating connection to server", e);
-                }
             }
-        }
-    }
+            else
+            {
+                mLog.debug("Unrecognized message received from shoutcast v2 server:" + object.toString());
 
-    /**
-     * Creates a socket connection to the remote server and sets the state to CONNECTING.
-     */
-    private void createSocket()
-    {
-        if(mSocket == null)
-        {
-            try
-            {
-                mSocket = new Socket(getShoutcastConfiguration().getHost(),
-                                     getShoutcastConfiguration().getPort());
-                mOutputStream = new DataOutputStream(mSocket.getOutputStream());
-                mInputStream = new DataInputStream(mSocket.getInputStream());
-            }
-            catch(UnknownHostException uhe)
-            {
-                setBroadcastState(BroadcastState.NO_SERVER);
-                mLog.error("Unknown host or port.  Unable to create connection to streaming server host[" +
-                        getShoutcastConfiguration().getHost() + "] and port[" +
-                        getShoutcastConfiguration().getPort() + "] - will reattempt connection periodically");
-                return;
-            }
-            catch(IOException ioe)
-            {
                 setBroadcastState(BroadcastState.ERROR);
-
-                mLog.error("Error connecting to streaming server host[" +
-                        getShoutcastConfiguration().getHost() + "] and port[" +
-                        getShoutcastConfiguration().getPort() + "]", ioe);
-                return;
             }
         }
-
-        if(mSocket.isConnected())
-        {
-            setBroadcastState(BroadcastState.CONNECTING);
-        }
-        else
-        {
-            try
-            {
-                SocketAddress address = getShoutcastConfiguration().getAddress();
-                mSocket.connect(address);
-                setBroadcastState(BroadcastState.CONNECTING);
-            }
-            catch(UnknownHostException uhe)
-            {
-                setBroadcastState(BroadcastState.NO_SERVER);
-            }
-            catch(IOException e)
-            {
-                setBroadcastState(BroadcastState.ERROR);
-
-                mLog.error("Error connecting to streaming server host[" +
-                        getShoutcastConfiguration().getHost() + "] and port[" +
-                        getShoutcastConfiguration().getPort() + "]", e);
-            }
-        }
-    }
-
-    public static UltravoxMessage send(UltravoxMessage message,
-                                       DataOutputStream out,
-                                       DataInputStream in,
-                                       int maxPayloadSize) throws IOException
-    {
-        byte[] bytes = message.getMessage();
-
-        out.write(bytes);
-
-        try
-        {
-            Thread.sleep(50);
-        }
-        catch (InterruptedException e)
-        {
-            e.printStackTrace();
-        }
-
-        int available = in.available();
-
-        if(available > 0)
-        {
-            byte[] buffer = new byte[available];
-            int read = in.read(buffer);
-
-            return UltravoxMessageFactory.getMessage(buffer);
-        }
-
-        return null;
     }
 }

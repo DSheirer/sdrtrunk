@@ -223,7 +223,8 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
         }
         catch(IOException ioe)
         {
-            mLog.error("Error deleting temporary internet recording file: " + recording.getPath().toString());
+            mLog.error("Stream [" + getBroadcastConfiguration().getName() + "] - error deleting temporary internet " +
+                "recording file: " + recording.getPath().toString() + " - " + ioe.getMessage());
         }
     }
 
@@ -354,44 +355,51 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
         {
             if(mProcessing.compareAndSet(false, true))
             {
-                if(mInputStream == null || mInputStream.available() <= 0)
+                try
                 {
-                    if(mFinalSilencePadding > 0)
+                    if(mInputStream == null || mInputStream.available() <= 0)
                     {
-                        broadcastAudio(mSilenceGenerator.generate(mFinalSilencePadding));
-                        mFinalSilencePadding = 0;
+                        if(mFinalSilencePadding > 0)
+                        {
+                            broadcastAudio(mSilenceGenerator.generate(mFinalSilencePadding));
+                            mFinalSilencePadding = 0;
+                        }
+
+                        nextRecording();
                     }
 
-                    nextRecording();
+                    if(mInputStream != null)
+                    {
+                        //We need to stream at 13.888 fps (144 byte frame) to achieve 2000 Bps or 16 kbps
+                        mBytesStreamedRequired += 2000;  //2000 bytes per second for 16 kbps data rate
+                        int bytesToStream = mBytesStreamedRequired - mBytesStreamedActual;
+
+                        //Trim length to whole-frame intervals (144 byte frame)
+                        bytesToStream -= (bytesToStream % 144);
+
+                        int length = Math.min(bytesToStream, mInputStream.available());
+
+                        byte[] audio = new byte[length];
+
+                        try
+                        {
+                            mBytesStreamedActual += mInputStream.read(audio);
+
+                            broadcastAudio(audio);
+                        }
+                        catch(IOException ioe)
+                        {
+                            mLog.error("Error reading from in-memory audio recording input stream", ioe);
+                        }
+                    }
+                    else
+                    {
+                        broadcastAudio(mSilenceGenerator.generate(PROCESSOR_RUN_INTERVAL_MS));
+                    }
                 }
-
-                if(mInputStream != null)
+                catch(Exception e)
                 {
-                    //We need to stream at 13.888 fps (144 byte frame) to achieve 2000 Bps or 16 kbps
-                    mBytesStreamedRequired += 2000;  //2000 bytes per second for 16 kbps data rate
-                    int bytesToStream = mBytesStreamedRequired - mBytesStreamedActual;
-
-                    //Trim length to whole-frame intervals (144 byte frame)
-                    bytesToStream -= (bytesToStream % 144);
-
-                    int length = Math.min(bytesToStream, mInputStream.available());
-
-                    byte[] audio = new byte[length];
-
-                    try
-                    {
-                        mBytesStreamedActual += mInputStream.read(audio);
-
-                        broadcastAudio(audio);
-                    }
-                    catch(IOException ioe)
-                    {
-                        mLog.error("Error reading from in-memory audio recording input stream", ioe);
-                    }
-                }
-                else
-                {
-                    broadcastAudio(mSilenceGenerator.generate(PROCESSOR_RUN_INTERVAL_MS));
+                    mLog.error("Error while processing audio streaming queue", e);
                 }
 
                 mProcessing.set(false);
@@ -447,16 +455,17 @@ public abstract class AudioBroadcaster implements IAudioPacketListener
 
                         metadataUpdateRequired = false;
                     }
+
+                    removeRecording(recording);
                 }
                 catch(IOException ioe)
                 {
-                    mLog.error("Error reading temporary audio stream recording [" + recording.getPath().toString() +
-                            "] - skipping recording");
+                    mLog.error("Stream [" + getBroadcastConfiguration().getName() + "] error reading temporary audio " +
+                        "stream recording [" + recording.getPath().toString() + "] - skipping recording - ", ioe);
 
                     mInputStream = null;
+                    metadataUpdateRequired = false;
                 }
-
-                removeRecording(recording);
 
                 broadcast(new BroadcastEvent(AudioBroadcaster.this, BroadcastEvent.Event.BROADCASTER_QUEUE_CHANGE));
             }
