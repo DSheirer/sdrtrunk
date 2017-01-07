@@ -1,8 +1,12 @@
 
-0.3.0 2016xxxx (work in progress)
- - Requires Java 8 for compatibility with eventual changeover to JavaFX
- - Extensive GUI updates for tuner, channel and name management.
- - Updated name list management of name id values and wildcards.  Weighting is now
+0.3.0 2017xxxx (work in progress)
+ - FEATURE: audio streaming - adds capability to stream to multiple remote broadcast
+   servers (Broadcastify, Icecast v2.3 and v2.4+, and Shoutcast V1 and V2).  Each
+   stream can be independently configured with a delay.  Audio calls are directed
+   to one or more streams by attaching one or more stream identifiers to each alias.
+ - Requires Java 8 (or newer) for compatibility with eventual changeover to JavaFX
+ - Extensive GUI updates for tuner, channel and alias management.
+ - Updated alias list management of alias id values and wildcards.  Weighting is now
    applied to each wildcard so that they can be ordered from most specific to least
    specific for lookup value matching purposes.
  - Added handling for Motorola-specific P25 patch messages
