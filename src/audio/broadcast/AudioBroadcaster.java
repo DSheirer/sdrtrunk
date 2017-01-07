@@ -31,6 +31,9 @@ import sample.Listener;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -46,7 +49,7 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
     private ScheduledFuture mScheduledTask;
 
     private RecordingQueueProcessor mRecordingQueueProcessor = new RecordingQueueProcessor();
-    private LinkedTransferQueue<AudioRecording> mAudioRecordingQueue = new LinkedTransferQueue<>();
+    private List<AudioRecording> mAudioRecordingQueue = new CopyOnWriteArrayList<>();
 
     private ISilenceGenerator mSilenceGenerator;
 
@@ -256,11 +259,10 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
             if(!connected())
             {
                 //Remove all pending audio recordings
-                AudioRecording recording = mAudioRecordingQueue.poll();
-
-                while(recording != null)
+                while(!mAudioRecordingQueue.isEmpty())
                 {
-                    recording = mAudioRecordingQueue.poll();
+                    AudioRecording recording = mAudioRecordingQueue.get(0);
+                    recording.removePendingReplay();
                 }
             }
         }
@@ -390,24 +392,37 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
 
             mInputStream = null;
 
-            AudioRecording nextRecording = mAudioRecordingQueue.peek();
+            AudioRecording nextRecording = null;
+
+            //Find the recording with the earliest start time
+            Iterator<AudioRecording> it = mAudioRecordingQueue.iterator();
+
+            while(it.hasNext())
+            {
+                AudioRecording recording = it.next();
+
+                if(nextRecording == null || (recording.getStartTime() < nextRecording.getStartTime()))
+                {
+                    nextRecording = recording;
+                }
+            }
 
             if(nextRecording != null && nextRecording.getStartTime() + mDelay <= System.currentTimeMillis())
             {
-                AudioRecording recording = mAudioRecordingQueue.poll();
+                mAudioRecordingQueue.remove(nextRecording);
 
                 try
                 {
-                    if(Files.exists(recording.getPath()))
+                    if(Files.exists(nextRecording.getPath()))
                     {
-                        byte[] audio = Files.readAllBytes(recording.getPath());
+                        byte[] audio = Files.readAllBytes(nextRecording.getPath());
 
                         if(audio != null && audio.length > 0)
                         {
                             mInputStream = new ByteArrayInputStream(audio);
 
                             mFinalSilencePadding = PROCESSOR_RUN_INTERVAL_MS -
-                                (recording.getRecordingLength() % PROCESSOR_RUN_INTERVAL_MS);
+                                (nextRecording.getRecordingLength() % PROCESSOR_RUN_INTERVAL_MS);
 
                             while(mFinalSilencePadding >= PROCESSOR_RUN_INTERVAL_MS)
                             {
@@ -416,7 +431,7 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
 
                             if(connected())
                             {
-                                broadcastMetadata(recording.getAudioMetadata());
+                                broadcastMetadata(nextRecording.getAudioMetadata());
                             }
 
                             metadataUpdateRequired = false;
@@ -426,18 +441,18 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
                 catch(IOException ioe)
                 {
                     mLog.error("Stream [" + getBroadcastConfiguration().getName() + "] error reading temporary audio " +
-                        "stream recording [" + recording.getPath().toString() + "] - skipping recording - ", ioe);
+                        "stream recording [" + nextRecording.getPath().toString() + "] - skipping recording - ", ioe);
 
                     mInputStream = null;
                     metadataUpdateRequired = false;
                 }
 
-                recording.removePendingReplay();
+                nextRecording.removePendingReplay();
 
                 broadcast(new BroadcastEvent(AudioBroadcaster.this, BroadcastEvent.Event.BROADCASTER_QUEUE_CHANGE));
             }
 
-            //If we closed out a recording and don't have anything new, send an empty metadata update
+            //If we closed out a recording and don't have a new/next recording, send an empty metadata update
             if(metadataUpdateRequired && connected())
             {
                 broadcastMetadata(null);

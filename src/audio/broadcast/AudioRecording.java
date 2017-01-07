@@ -19,12 +19,16 @@
 package audio.broadcast;
 
 import audio.metadata.AudioMetadata;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class AudioRecording implements Comparable<AudioRecording>
 {
+    private final static Logger mLog = LoggerFactory.getLogger(StreamManager.class);
+
     private Path mPath;
     private AudioMetadata mAudioMetadata;
     private long mStartTime;
@@ -110,6 +114,6 @@ public class AudioRecording implements Comparable<AudioRecording>
      */
     public boolean hasPendingReplays()
     {
-        return mPendingReplayCount.get() <= 0;
+        return mPendingReplayCount.get() > 0;
     }
 }
