@@ -21,6 +21,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 import javax.xml.bind.annotation.XmlTransient;
 
+import alias.id.broadcast.BroadcastChannel;
 import playlist.version1.Group;
 import alias.id.esn.Esn;
 import alias.id.fleetsync.FleetsyncID;
@@ -36,7 +37,7 @@ import alias.id.talkgroup.TalkgroupID;
 import alias.id.uniqueID.UniqueID;
 
 @SuppressWarnings( "deprecation" )
-@XmlSeeAlso( { Esn.class, FleetsyncID.class, Group.class, LoJackFunctionAndID.class,
+@XmlSeeAlso( {BroadcastChannel.class, Esn.class, FleetsyncID.class, Group.class, LoJackFunctionAndID.class,
 			   MDC1200ID.class, Min.class, MPT1327ID.class, NonRecordable.class,
 			   Priority.class, SiteID.class, StatusID.class, TalkgroupID.class,
 			   UniqueID.class } )

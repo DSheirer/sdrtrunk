@@ -19,7 +19,10 @@ package alias;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
@@ -30,6 +33,7 @@ import javax.xml.bind.annotation.XmlTransient;
 import alias.action.AliasAction;
 import alias.id.AliasID;
 import alias.id.AliasIDType;
+import alias.id.broadcast.BroadcastChannel;
 import alias.id.nonrecordable.NonRecordable;
 import alias.id.priority.Priority;
 
@@ -175,7 +179,34 @@ public class Alias
 	{
 		return !mAliasActions.isEmpty();
 	}
-	
+
+	/**
+	 * Perform any validation/cleanup actions on this alias.
+	 */
+	public void validate()
+	{
+		//Check for duplicate broadcast channels
+		List<BroadcastChannel> broadcastChannels = getBroadcastChannels();
+
+		if(broadcastChannels.size() > 0)
+		{
+			Set<String> channelNames = new TreeSet<>();
+
+			for(BroadcastChannel broadcastChannel: broadcastChannels)
+			{
+				String channelName = broadcastChannel.getChannelName();
+
+				if(channelName == null || channelName.isEmpty() || channelNames.contains(channelName))
+				{
+					removeAliasID(broadcastChannel);
+				}
+				else
+				{
+					channelNames.add(channelName);
+				}
+			}
+		}
+	}
 	/**
 	 * Returns the priority level of this alias, if defined, or the default priority
 	 */
@@ -184,7 +215,7 @@ public class Alias
 	{
 		for( AliasID id: mAliasIDs )
 		{
-			if( id.getType() == AliasIDType.Priority )
+			if( id.getType() == AliasIDType.PRIORITY)
 			{
 				return ((Priority)id).getPriority();
 			}
@@ -197,7 +228,7 @@ public class Alias
 	{
 		for( AliasID id: mAliasIDs )
 		{
-			if( id.getType() == AliasIDType.Priority )
+			if( id.getType() == AliasIDType.PRIORITY)
 			{
 				return true;
 			}
@@ -216,7 +247,7 @@ public class Alias
 		{
 			for( AliasID id: mAliasIDs )
 			{
-				if( id.getType() == AliasIDType.Priority )
+				if( id.getType() == AliasIDType.PRIORITY)
 				{
 					((Priority)id).setPriority( priority );
 					return;
@@ -229,7 +260,7 @@ public class Alias
 			addAliasID( p );
 		}
 	}
-	
+
 	/**
 	 * Inspects the alias for a non-recordable alias id.  Default is true;
 	 */
@@ -238,7 +269,7 @@ public class Alias
 	{
 		for( AliasID id: getId() )
 		{
-			if( id.getType() == AliasIDType.NonRecordable )
+			if( id.getType() == AliasIDType.NON_RECORDABLE)
 			{
 				return false;
 			}
@@ -258,7 +289,7 @@ public class Alias
 			
 			for( AliasID id: getId() )
 			{
-				if( id.getType() == AliasIDType.NonRecordable )
+				if( id.getType() == AliasIDType.NON_RECORDABLE)
 				{
 					toRemove = id;
 					break;
@@ -274,7 +305,7 @@ public class Alias
 		{
 			for( AliasID id: getId() )
 			{
-				if( id.getType() == AliasIDType.NonRecordable )
+				if( id.getType() == AliasIDType.NON_RECORDABLE)
 				{
 					return;
 				}
@@ -282,5 +313,63 @@ public class Alias
 			
 			addAliasID( new NonRecordable() );
 		}
+	}
+
+    /**
+     * Inspects the alias for broadcast channel/streamable alias ids.  Default is false;
+     */
+    @XmlTransient
+    public boolean isStreamable()
+    {
+        for( AliasID id: getId() )
+        {
+            if( id.getType() == AliasIDType.BROADCAST_CHANNEL)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+	 * List of broadcast channels specified for this alias.
+	 */
+    @XmlTransient
+	public List<BroadcastChannel> getBroadcastChannels()
+	{
+		List<BroadcastChannel> broadcastChannels = new ArrayList<>();
+
+		for(AliasID id: getId())
+		{
+			if(id.getType() == AliasIDType.BROADCAST_CHANNEL)
+			{
+				broadcastChannels.add((BroadcastChannel)id);
+			}
+		}
+
+		return broadcastChannels;
+	}
+
+	/**
+	 * Indicates if this alias contains a broadcast channel alias id with the channel name.
+	 */
+	public boolean hasBroadcastChannel(String channel)
+	{
+		if(channel == null || channel.isEmpty())
+		{
+			return false;
+		}
+
+		for(AliasID id: getId())
+		{
+			if(id.getType() == AliasIDType.BROADCAST_CHANNEL &&
+			   ((BroadcastChannel)id).getChannelName().contentEquals(channel))
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

@@ -17,11 +17,13 @@
  ******************************************************************************/
 package properties;
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,7 +49,7 @@ public class SystemProperties
 	private static SystemProperties mInstance;
 	private static Properties mProperties;
 	private Path mPropertiesPath;
-	
+	private String mApplicationName;
 	
 	private SystemProperties()
 	{
@@ -67,7 +69,7 @@ public class SystemProperties
 		
 		return mInstance;
 	}
-	
+
 	/**
 	 * Saves any currently changed settings to the application properties file
 	 */
@@ -86,9 +88,6 @@ public class SystemProperties
 					"SDRTrunk - SDR Trunking Decoder Application Settings";
 			
 			mProperties.store( out, comments );
-			
-//			mLog.info( "SystemProperties - saved current properties [" + 
-//							propsPath.toString() + "]" );
 		}
 		catch( Exception e )
 		{
@@ -214,6 +213,37 @@ public class SystemProperties
 		
 		mLog.info( "SystemProperties - loaded [" + 
 						propertiesPath.toString() + "]" );
+	}
+
+	public String getApplicationName()
+	{
+		if(mApplicationName == null)
+		{
+			StringBuilder sb = new StringBuilder();
+
+			sb.append( "sdrtrunk" );
+
+			try(BufferedReader reader = new BufferedReader(
+					new InputStreamReader( this.getClass()
+							.getResourceAsStream( "/sdrtrunk-version" ) ) ) )
+			{
+				String version = reader.readLine();
+
+				if( version != null )
+				{
+					sb.append( " V" );
+					sb.append( version );
+				}
+			}
+			catch( Exception e )
+			{
+				mLog.error( "Couldn't read sdrtrunk version from application jar file" );
+			}
+
+			mApplicationName = sb.toString();
+		}
+
+		return mApplicationName;
 	}
 
 	/**

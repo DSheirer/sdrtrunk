@@ -74,6 +74,6 @@ public class FleetsyncID extends AliasID
 	@Override
     public AliasIDType getType()
     {
-	    return AliasIDType.Fleetsync;
+	    return AliasIDType.FLEETSYNC;
     }
 }

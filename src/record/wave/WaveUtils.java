@@ -17,14 +17,19 @@
  ******************************************************************************/
 package record.wave;
 
+import javax.sound.sampled.AudioFormat;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
-import javax.sound.sampled.AudioFormat;
 
 
 public class WaveUtils
 {
+	public static final byte[] RIFF_CHUNK = {(byte)0x52, (byte)0x49, (byte)0x46, (byte)0x46}; //RIFF
+	public static final byte[] WAV_FORMAT = {(byte)0x57, (byte)0x41, (byte)0x56, (byte)0x45}; //WAVE
+	public static final byte[] CHUNK_FORMAT = {(byte)0x66, (byte)0x6D, (byte)0x74, (byte)0x20}; //fmt space
+	public static final byte[] CHUNK_DATA = {(byte)0x64, (byte)0x61, (byte)0x74, (byte)0x61}; //data
+    public static final int PCM_FORMAT = 1;
+
 	/**
 	 * Creates a wave file header with the RIFF chunk descriptor and the WAVE
 	 * format chunk 1 and chunk 2 header

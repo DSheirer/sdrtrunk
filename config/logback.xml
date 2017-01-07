@@ -27,4 +27,7 @@
     <appender-ref ref="STDOUT" />
   </root>
 
+  <!-- Apache Mina TCP/HTTP library -->
+  <logger name="org.apache.mina" level="INFO" />
+
 </configuration>

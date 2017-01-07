@@ -8,7 +8,7 @@ public class NonRecordable extends AliasID
 	@Override
 	public AliasIDType getType()
 	{
-		return AliasIDType.NonRecordable;
+		return AliasIDType.NON_RECORDABLE;
 	}
 
 	@Override

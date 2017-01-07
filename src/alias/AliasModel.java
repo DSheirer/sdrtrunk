@@ -26,6 +26,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.table.AbstractTableModel;
 
+import alias.id.broadcast.BroadcastChannel;
 import sample.Broadcaster;
 import sample.Listener;
 import alias.AliasEvent.Event;
@@ -210,6 +211,33 @@ public class AliasModel extends AbstractTableModel
 		}
 	}
 
+    /**
+     * Renames any broadcast channels that have the previous name.
+     * @param previousName to rename
+     * @param newName to assign to the broadcast channel
+     */
+    public void renameBroadcastChannel(String previousName, String newName)
+    {
+        if(previousName == null || previousName.isEmpty() || newName == null || newName.isEmpty())
+        {
+            return;
+        }
+
+        for(Alias alias: mAliases)
+        {
+            if(alias.hasBroadcastChannel(previousName))
+            {
+                for(BroadcastChannel broadcastChannel: alias.getBroadcastChannels())
+                {
+                    if(broadcastChannel.getChannelName().contentEquals(previousName))
+                    {
+                        broadcastChannel.setChannelName(newName);
+                    }
+                }
+            }
+        }
+    }
+
 	@Override
 	public int getRowCount()
 	{
@@ -289,6 +317,14 @@ public class AliasModel extends AbstractTableModel
 	
 	public void broadcast( AliasEvent event )
 	{
+        Alias alias = event.getAlias();
+
+        //Validate the alias following a user action that changed the alias or any alias IDs
+        if(alias != null)
+        {
+            alias.validate();
+        }
+
 		if( event.getEvent() == Event.CHANGE )
 		{
 			int index = mAliases.indexOf( event.getAlias() );

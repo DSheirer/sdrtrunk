@@ -1,0 +1,20 @@
+<component name="libraryTable">
+  <library name="org.asynchttpclient:async-http-client:2.0.18" type="repository">
+    <properties maven-id="org.asynchttpclient:async-http-client:2.0.18" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/imports/slf4j-api-1.7.21.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/javassist-3.20.0-GA.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/axis.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/jaxrpc.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/commons-discovery-0.2.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/activation-1.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/java-mail-1.4.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/wsdl4j-1.5.1.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/radioreference-14.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/mina-core-2.0.16.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/mina-http-2.0.16.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

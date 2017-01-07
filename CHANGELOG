@@ -1,6 +1,10 @@
 
-0.3.0 2016xxxx (work in progress)
- - Requires Java 8 for compatibility with eventual changeover to JavaFX
+0.3.0 2017xxxx (work in progress)
+ - FEATURE: audio streaming - adds capability to stream to multiple remote broadcast
+   servers (Broadcastify, Icecast v2.3 and v2.4+, and Shoutcast V1 and V2).  Each
+   stream can be independently configured with a delay.  Audio calls are directed
+   to one or more streams by attaching one or more stream identifiers to each alias.
+ - Requires Java 8 (or newer) for compatibility with eventual changeover to JavaFX
  - Extensive GUI updates for tuner, channel and alias management.
  - Updated alias list management of alias id values and wildcards.  Weighting is now
    applied to each wildcard so that they can be ordered from most specific to least
@@ -14,10 +18,10 @@
    decoders and filters
  - New audio playback interface with global mute and support for one or two
    audio channels
- - Audio playback is prioritized using a new Call Priority alias action
+ - Audio playback is prioritized using a new Call Priority name action
    with selected channels having the highest priority and any audio without
-   an alias identifier having the lowest priority.
- - Updated Audio recording per call with new 'Non-Recordable' alias action
+   an name identifier having the lowest priority.
+ - Updated Audio recording per call with new 'Non-Recordable' name action
  - Updated Baseband (I/Q) recording at 48 kHz
  - Added Airspy tuner support
  - New traffic channel pool manager for trunked call following

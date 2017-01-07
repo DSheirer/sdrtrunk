@@ -65,14 +65,14 @@ public class AdjacentStatusBroadcastExtended extends PDUMessage
         sb.append( " RFSS:" + getRFSS() );
         
         sb.append( " SITE:" + getSiteID() );
-        
-        sb.append( " CTRL CHAN:" + getReceiveIdentifier() + "-" + getReceiveChannel() );
-        
+
+		sb.append( " CTRL CHAN:" + getTransmitIdentifier() + "-" + getTransmitChannel() );
+
         sb.append( " DN:" + getDownlinkFrequency() );
-        
-        sb.append( " " + getTransmitIdentifier() + "-" + getTransmitChannel() );
-        
-        sb.append( " UP:" + getUplinkFrequency() );
+
+		sb.append( " " + getReceiveIdentifier() + "-" + getReceiveChannel() );
+
+		sb.append( " UP:" + getUplinkFrequency() );
         
         sb.append( " SYS SVC CLASS:" + getSystemServiceClass() );
         

@@ -20,6 +20,6 @@
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="library" name="jmbe-interface-0.3.3" level="project" />
+    <orderEntry type="library" name="org.asynchttpclient:async-http-client:2.0.18" level="project" />
   </component>
 </module>

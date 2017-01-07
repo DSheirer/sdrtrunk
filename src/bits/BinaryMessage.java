@@ -17,7 +17,9 @@
  ******************************************************************************/
 package bits;
 
+import java.util.Arrays;
 import java.util.BitSet;
+import java.util.logging.LogManager;
 
 import edac.CRC;
 
@@ -102,6 +104,11 @@ public class BinaryMessage extends BitSet
         this( size );
         this.or( bitset );
         this.mPointer = size - 1;
+    }
+
+    public BinaryMessage(byte[] data)
+    {
+        this(BitSet.valueOf(data), data.length * 8);
     }
     
     /**
@@ -277,6 +284,33 @@ public class BinaryMessage extends BitSet
 		
 		return values;
     }
+
+    /**
+     * Returns this message as a little endian byte array.  Extra 0 bits will be padded to the end to make the overall
+     * length a multiple of 8.
+     * @return little endian message byte array
+     */
+    public byte[] toByteArray()
+    {
+        int length = size() / 8;
+
+        if(length * 8 < size())
+        {
+            length ++;
+        }
+
+        byte[] bytes = new byte[length];
+
+        int pointer = 0;
+
+        for(int x = 0; x < length; x++)
+        {
+            bytes[x] = getByte(pointer);
+            pointer += 8;
+        }
+
+        return bytes;
+    }
     
     /**
      * Returns this bitset as a reversed bit order array of integer ones and zeros
@@ -367,7 +401,24 @@ public class BinaryMessage extends BitSet
     	
     	return value;
     }
-    
+
+    public void setInt(int value, int[] indices)
+    {
+        for(int x = 0; x < indices.length; x++)
+        {
+            int mask = 1<<(indices.length - x - 1);
+
+            if((value & mask) == mask)
+            {
+                set(indices[x]);
+            }
+            else
+            {
+                clear(indices[x]);
+            }
+        }
+    }
+
     /**
      * Returns the byte value represented by the bit array
      * @param bits - an array of bit positions that will be treated as if they
@@ -396,6 +447,57 @@ public class BinaryMessage extends BitSet
     	}
     	
     	return (byte)( value & 0xFF );
+    }
+
+    /**
+     * Returns the byte value contained between index and index + 7 bit positions
+     * @param index specifying the start of the byte value
+     * @return byte value contained at index <> index + 7 bit positions
+     */
+    public byte getByte(int index)
+    {
+        assert((index + 7) <= size());
+
+        int value = 0;
+
+        for(int x = 0; x < 8; x++)
+        {
+            value = value << 1;
+
+            if(get(index + x))
+            {
+                value++;
+            }
+        }
+
+        return (byte)value;
+    }
+
+    /**
+     * Sets the byte value at index position through index + 7 position.
+     *
+     * @param index bit position where to write the  MSB of the byte value
+     * @param value to write at the index through index + 7 bit positions
+     */
+    public void setByte(int index, byte value)
+    {
+        assert((index + 8) <= size());
+
+        int mask = 0x80;
+
+        for(int x = 0; x < 8; x++)
+        {
+            if((mask & value) == mask)
+            {
+                set(index + x);
+            }
+            else
+            {
+                clear(index + x);
+            }
+
+            mask = mask >> 1;
+        }
     }
 
     /**
@@ -601,11 +703,11 @@ public class BinaryMessage extends BitSet
 	}
 
 	/**
-	 * Loads the value into the buffer starting at the offset index, and 
+	 * Loads the value into the buffer starting at the offset index, and
 	 * assuming that the value represents (width) number of bits.  The MSB of
-	 * the value will be located at the offset and the LSB of the value will 
+	 * the value will be located at the offset and the LSB of the value will
 	 * be located at ( offset + width ).
-	 * 
+	 *
 	 * @param offset - starting bit index for the MSB of the value
 	 * @param width - representative bit width of the value
 	 * @param value - value to be loaded into the buffer
@@ -626,7 +728,7 @@ public class BinaryMessage extends BitSet
 			}
 		}
 	}
-	
+
 	/**
 	 * Generates an array of message bit position indexes to support accessing
 	 * a contiguous field value
@@ -775,4 +877,15 @@ public class BinaryMessage extends BitSet
 		
 		this.xor( mask );
 	}
+
+	public static void main(String[] args)
+    {
+        BinaryMessage b = new BinaryMessage(32);
+
+        int[] indices = {2,3,7,8};
+
+        b.setInt(0xF, indices);
+
+        System.out.println(b.toString());
+    }
 }

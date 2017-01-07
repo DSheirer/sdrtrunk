@@ -63,6 +63,6 @@ public class SiteID extends AliasID
 	@Override
     public AliasIDType getType()
     {
-	    return AliasIDType.Site;
+	    return AliasIDType.SITE;
     }
 }

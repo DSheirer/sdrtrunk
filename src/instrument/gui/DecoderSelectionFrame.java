@@ -8,6 +8,7 @@ import javax.swing.JButton;
 import javax.swing.JDesktopPane;
 import javax.swing.JInternalFrame;
 
+import audio.broadcast.BroadcastModel;
 import module.decode.DecodeConfigurationEditor;
 import net.miginfocom.swing.MigLayout;
 import playlist.PlaylistManager;
@@ -30,13 +31,14 @@ public class DecoderSelectionFrame extends JInternalFrame
 	public DecoderSelectionFrame( JDesktopPane desktop, 
 								  IControllableFileSource source )
 	{
+		ThreadPoolManager tpm = new ThreadPoolManager();
+
 		AliasModel aliasModel = new AliasModel();
+		BroadcastModel broadcastModel = new BroadcastModel(tpm, null);
 		ChannelModel channelModel = new ChannelModel();
 		ChannelMapModel channelMapModel = new ChannelMapModel();
-		
-		ThreadPoolManager tpm = new ThreadPoolManager();
-		
-		mPlaylistManager = new PlaylistManager( tpm, aliasModel, channelModel, channelMapModel );
+
+		mPlaylistManager = new PlaylistManager( tpm, aliasModel, broadcastModel, channelModel, channelMapModel );
 
 		mDesktop = desktop;
 		mSource = source;

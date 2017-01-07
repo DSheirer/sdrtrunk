@@ -41,7 +41,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 public class AliasList implements Listener<AliasEvent>
 {
@@ -120,7 +119,7 @@ public class AliasList implements Listener<AliasEvent>
                             mESN.put(esn, alias);
                         }
                         break;
-                    case Fleetsync:
+                    case FLEETSYNC:
                         String fleetsync = ((FleetsyncID)id).getIdent();
 
                         if(fleetsync != null)
@@ -134,7 +133,7 @@ public class AliasList implements Listener<AliasEvent>
                             mFleetsync.put(fleetsync, alias);
                         }
                         break;
-                    case LoJack:
+                    case LOJACK:
                         mLoJack.put((LoJackFunctionAndID) id, alias);
                         break;
                     case MDC1200:
@@ -179,10 +178,10 @@ public class AliasList implements Listener<AliasEvent>
                             mMobileID.put(min, alias);
                         }
                         break;
-                    case LTRNetUID:
+                    case LTR_NET_UID:
                         mUniqueID.put(((UniqueID)id).getUid(), alias);
                         break;
-                    case Site:
+                    case SITE:
                         String siteID = ((SiteID)id).getSite();
 
                         if(siteID != null)
@@ -196,10 +195,10 @@ public class AliasList implements Listener<AliasEvent>
                             mSiteID.put(siteID, alias);
                         }
                         break;
-                    case Status:
+                    case STATUS:
                         mStatus.put(((StatusID) id).getStatus(), alias);
                         break;
-                    case Talkgroup:
+                    case TALKGROUP:
                         String tgid = ((TalkgroupID)id).getTalkgroup();
 
                         if(tgid != null)
@@ -213,8 +212,9 @@ public class AliasList implements Listener<AliasEvent>
                             mTalkgroup.put(tgid, alias);
                         }
                         break;
-                    case NonRecordable:
-                    case Priority:
+                    case BROADCAST_CHANNEL:
+                    case NON_RECORDABLE:
+                    case PRIORITY:
                         //We don't maintain lookups for these items
                         break;
                     default:
@@ -279,7 +279,7 @@ public class AliasList implements Listener<AliasEvent>
 
                     mESN.remove(esn);
                     break;
-                case Fleetsync:
+                case FLEETSYNC:
                     String fleetsync = ((FleetsyncID)id).getIdent();
 
                     if(fleetsync != null)
@@ -292,7 +292,7 @@ public class AliasList implements Listener<AliasEvent>
                         mFleetsync.remove(fleetsync);
                     }
                     break;
-                case LoJack:
+                case LOJACK:
                     mLoJack.remove((LoJackFunctionAndID) id);
                     break;
                 case MDC1200:
@@ -334,16 +334,16 @@ public class AliasList implements Listener<AliasEvent>
                         mMobileID.remove(min);
                     }
                     break;
-                case LTRNetUID:
+                case LTR_NET_UID:
                     mUniqueID.remove(((UniqueID) id).getUid());
                     break;
-                case Site:
+                case SITE:
                     mSiteID.remove(((SiteID) id).getSite());
                     break;
-                case Status:
+                case STATUS:
                     mStatus.remove(((StatusID) id).getStatus());
                     break;
-                case Talkgroup:
+                case TALKGROUP:
                     String tgid = ((TalkgroupID)id).getTalkgroup();
 
                     if(tgid != null)
@@ -356,8 +356,8 @@ public class AliasList implements Listener<AliasEvent>
                         mTalkgroup.remove(tgid);
                     }
                     break;
-                case NonRecordable:
-                case Priority:
+                case NON_RECORDABLE:
+                case PRIORITY:
                     //We don't maintain lookups for these items
                     break;
                 default:

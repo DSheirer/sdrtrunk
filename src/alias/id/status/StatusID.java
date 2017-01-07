@@ -70,6 +70,6 @@ public class StatusID extends AliasID
 	@Override
     public AliasIDType getType()
     {
-	    return AliasIDType.Status;
+	    return AliasIDType.STATUS;
     }
 }
