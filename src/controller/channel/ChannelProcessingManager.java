@@ -218,8 +218,7 @@ public class ChannelProcessingManager implements ChannelEventListener
         }
 
         /* Setup event logging */
-        List<Module> loggers = mEventLogManager.getLoggers(
-            channel.getEventLogConfiguration(), channel.getName());
+        List<Module> loggers = mEventLogManager.getLoggers(channel.getEventLogConfiguration(), channel.getName());
 
         if (!loggers.isEmpty())
         {
@@ -232,19 +231,15 @@ public class ChannelProcessingManager implements ChannelEventListener
         if (!recorders.isEmpty())
         {
 				/* Add baseband recorder */
-            if ((recorders.contains(RecorderType.BASEBAND) &&
-                channel.getChannelType() == ChannelType.STANDARD))
+            if ((recorders.contains(RecorderType.BASEBAND) && channel.getChannelType() == ChannelType.STANDARD))
             {
-                processingChain.addModule(mRecorderManager.getBasebandRecorder(
-                    channel.toString()));
+                processingChain.addModule(mRecorderManager.getBasebandRecorder(channel.toString()));
             }
 
 				/* Add traffic channel baseband recorder */
-            if (recorders.contains(RecorderType.TRAFFIC_BASEBAND) &&
-                channel.getChannelType() == ChannelType.TRAFFIC)
+            if (recorders.contains(RecorderType.TRAFFIC_BASEBAND) && channel.getChannelType() == ChannelType.TRAFFIC)
             {
-                processingChain.addModule(mRecorderManager
-                    .getBasebandRecorder(channel.toString()));
+                processingChain.addModule(mRecorderManager.getBasebandRecorder(channel.toString()));
             }
         }
 
@@ -275,9 +270,14 @@ public class ChannelProcessingManager implements ChannelEventListener
 
         if (mProcessingChains.containsKey(channel.getChannelID()))
         {
-            ProcessingChain chain = mProcessingChains.get(channel.getChannelID());
+            ProcessingChain processingChain = mProcessingChains.get(channel.getChannelID());
 
-            chain.stop();
+            processingChain.stop();
+
+            processingChain.removeEventLoggingModules();
+
+            processingChain.removeRecordingModules();
+
 
             mChannelModel.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_PROCESSING_STOP));
 
@@ -285,7 +285,7 @@ public class ChannelProcessingManager implements ChannelEventListener
             {
                 mProcessingChains.remove(channel.getChannelID());
 
-                chain.dispose();
+                processingChain.dispose();
             }
         }
     }

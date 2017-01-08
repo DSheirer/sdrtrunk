@@ -687,17 +687,13 @@ public class ProcessingChain implements IChannelEventListener
             {
                 module.stop();
             }
-
-            removeEventLoggingModules();
-
-            removeRecordingModules();
         }
     }
 
     /**
      * Removes any logging modules that are currently registered with this processing chain
      */
-    private void removeEventLoggingModules()
+    public void removeEventLoggingModules()
     {
         List<Module> eventLoggingModules = new ArrayList<>();
 
@@ -718,7 +714,7 @@ public class ProcessingChain implements IChannelEventListener
     /**
      * Removes any recording modules that are currently registered with this processing chain
      */
-    private void removeRecordingModules()
+    public void removeRecordingModules()
     {
         List<Module> recordingModules = new ArrayList<>();
 

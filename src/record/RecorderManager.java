@@ -45,7 +45,8 @@ public class RecorderManager implements Listener<AudioPacket>
     private boolean mCanStartNewRecorders = true;
 
     /**
-     * Manages starting and stopping all system recorders and distributes channel audio to each of the recorders.
+     * Manages all audio recording for all processing channels. Reconstructs audio streams and distributes channel
+     * audio to each of the recorders, starting and stopping the recorders as needed.
      */
     public RecorderManager(ThreadPoolManager threadPoolManager)
     {
