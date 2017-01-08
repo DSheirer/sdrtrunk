@@ -243,9 +243,18 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
         {
             if(cause instanceof IOException && ((IOException)cause).getMessage().startsWith("Connection reset"))
             {
-                mLog.info("Streaming connection reset by remote server - reestablishing connection");
-                disconnect();
-                connect();
+                IOException ioe = (IOException)cause;
+
+                if(ioe.getMessage() != null && ioe.getMessage().startsWith("Connection reset"))
+                {
+                    mLog.info("Streaming connection reset by remote server - reestablishing connection");
+                    disconnect();
+                    connect();
+                }
+                else
+                {
+                    mLog.error("IO Exception", ioe);
+                }
             }
             else
             {
