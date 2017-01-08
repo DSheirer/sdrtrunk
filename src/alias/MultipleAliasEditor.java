@@ -3,14 +3,13 @@ package alias;
 import alias.id.AliasIDType;
 import alias.id.broadcast.BroadcastChannel;
 import audio.broadcast.BroadcastModel;
+import com.sun.org.apache.xpath.internal.operations.Mult;
 import gui.editor.Editor;
 
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.swing.DefaultComboBoxModel;
@@ -24,16 +23,16 @@ import javax.swing.JSlider;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import map.IconManager;
+import icon.Icon;
+import icon.IconManager;
 import map.MapIcon;
-import map.MapIconListCellRenderer;
+import icon.IconCellRenderer;
 import net.miginfocom.swing.MigLayout;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.Listener;
-import settings.SettingsManager;
 import alias.AliasEvent.Event;
 import alias.id.priority.Priority;
 
@@ -54,7 +53,7 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
     private JCheckBox mGroupCheckBox = new JCheckBox("Group");
     private JComboBox<String> mGroupCombo = new JComboBox<>();
     private JCheckBox mIconCheckBox = new JCheckBox("Icon");
-    private JComboBox<MapIcon> mMapIconCombo;
+    private JComboBox<Icon> mIconCombo;
     private JCheckBox mColorCheckBox = new JCheckBox("Color");
     private JButton mButtonColor;
     private JButton mBtnIconManager;
@@ -68,13 +67,13 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
 
     private AliasModel mAliasModel;
     private BroadcastModel mBroadcastModel;
-    private SettingsManager mSettingsManager;
+    private IconManager mIconManager;
 
-    public MultipleAliasEditor(AliasModel aliasModel, BroadcastModel broadcastModel, SettingsManager settingsManager)
+    public MultipleAliasEditor(AliasModel aliasModel, BroadcastModel broadcastModel, IconManager iconManager)
     {
         mAliasModel = aliasModel;
         mBroadcastModel = broadcastModel;
-        mSettingsManager = settingsManager;
+        mIconManager = iconManager;
 
         mAliasModel.addListener(this);
 
@@ -139,12 +138,12 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
 
         add(mIconCheckBox);
 
-        mMapIconCombo = new JComboBox<MapIcon>(mSettingsManager.getMapIcons());
+        mIconCombo = new JComboBox<Icon>(mIconManager.getIcons());
 
-        MapIconListCellRenderer renderer = new MapIconListCellRenderer();
+        IconCellRenderer renderer = new IconCellRenderer(mIconManager);
         renderer.setPreferredSize(new Dimension(200, 30));
-        mMapIconCombo.setRenderer(renderer);
-        add(mMapIconCombo, "wrap");
+        mIconCombo.setRenderer(renderer);
+        add(mIconCombo, "wrap");
 
         //Dummy place holder
         add(new JLabel());
@@ -155,17 +154,7 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
             @Override
             public void actionPerformed(ActionEvent arg0)
             {
-                final IconManager iconManager =
-                        new IconManager(mSettingsManager, MultipleAliasEditor.this);
-
-                EventQueue.invokeLater(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        iconManager.setVisible(true);
-                    }
-                });
+                mIconManager.showEditor(MultipleAliasEditor.this);
             }
         });
 
@@ -363,9 +352,9 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
 
                 if (mIconCheckBox.isSelected())
                 {
-                    if (mMapIconCombo.getSelectedItem() != null)
+                    if (mIconCombo.getSelectedItem() != null)
                     {
-                        alias.setIconName(((MapIcon) mMapIconCombo.getSelectedItem()).getName());
+                        alias.setIconName(((MapIcon) mIconCombo.getSelectedItem()).getName());
                     }
                     else
                     {

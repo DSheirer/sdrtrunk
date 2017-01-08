@@ -29,6 +29,7 @@ import javax.swing.event.ChangeListener;
 
 import audio.broadcast.BroadcastModel;
 import audio.broadcast.BroadcastPanel;
+import icon.IconManager;
 import map.MapPanel;
 import map.MapService;
 import module.decode.event.CallEventPanel;
@@ -78,6 +79,7 @@ public class ControllerPanel extends JPanel
                            ChannelModel channelModel,
                            ChannelMapModel channelMapModel,
                            ChannelProcessingManager channelProcessingManager,
+                           IconManager iconManager,
                            MapService mapService,
                            SettingsManager settingsManager,
                            SourceManager sourceManager,
@@ -104,8 +106,7 @@ public class ControllerPanel extends JPanel
         mChannelController = new ChannelController(channelModel, channelMapModel,
                 sourceManager, aliasModel);
 
-        mAliasController = new AliasController(aliasModel, broadcastModel, settingsManager);
-
+        mAliasController = new AliasController(aliasModel, broadcastModel, iconManager);
         mTunerManagerPanel = new TunerViewPanel(tunerModel);
 
         init();
