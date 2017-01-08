@@ -4,6 +4,10 @@ import module.decode.p25.reference.DataUnitID;
 import alias.AliasList;
 import bits.BinaryMessage;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 public abstract class PatchGroup extends MotorolaTSBKMessage
 {
 	public static final int[] PATCH_GROUP_ADDRESS = { 80,81,82,83,84,85,86,87,
@@ -14,6 +18,8 @@ public abstract class PatchGroup extends MotorolaTSBKMessage
 		119,120,121,122,123,124,125,126,127 };
 	public static final int[] GROUP_ADDRESS_3 = { 128,129,130,131,132,133,134,
 		135,136,137,138,139,140,141,142,143 };
+
+	private List<String> mPatchedTalkgroups;
 
 	public PatchGroup( BinaryMessage message, DataUnitID duid,
             AliasList aliasList )
@@ -28,15 +34,11 @@ public abstract class PatchGroup extends MotorolaTSBKMessage
 
 		sb.append( getMessageStub() );
 		
-		sb.append( " PATCH GROUP:" );
+		sb.append( " " );
 		sb.append( getPatchGroupAddress() );
-		sb.append( " GRP1:" );
-		sb.append( getGroupAddress1() );
-		sb.append( " GRP2:" );
-		sb.append( getGroupAddress2() );
-		sb.append( " GRP3:" );
-		sb.append( getGroupAddress3() );
-		
+		sb.append(" ");
+		sb.append(getPatchedTalkgroups());
+
 	    return sb.toString();
     }
 	
@@ -44,6 +46,35 @@ public abstract class PatchGroup extends MotorolaTSBKMessage
     {
         return mMessage.getHex( PATCH_GROUP_ADDRESS, 4 );
     }
+
+	/**
+	 * List of de-deplicated patched talkgroups contained in this message
+	 */
+	public List<String> getPatchedTalkgroups()
+	{
+		if(mPatchedTalkgroups == null)
+		{
+			mPatchedTalkgroups = new ArrayList<>();
+
+			mPatchedTalkgroups.add(getGroupAddress1());
+
+			String group2 = getGroupAddress2();
+
+			if(!mPatchedTalkgroups.contains(group2))
+			{
+				mPatchedTalkgroups.add(group2);
+			}
+
+			String group3 = getGroupAddress3();
+
+			if(!mPatchedTalkgroups.contains(group3))
+			{
+				mPatchedTalkgroups.add(group3);
+			}
+		}
+
+		return mPatchedTalkgroups;
+	}
 	
     public String getGroupAddress1()
     {

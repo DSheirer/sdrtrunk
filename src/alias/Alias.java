@@ -52,7 +52,7 @@ public class Alias
 	public Alias()
 	{
 	}
-	
+
 	public Alias( String name )
 	{
 		mName = name;

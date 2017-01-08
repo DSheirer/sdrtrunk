@@ -9,9 +9,12 @@
  - Updated alias list management of alias id values and wildcards.  Weighting is now
    applied to each wildcard so that they can be ordered from most specific to least
    specific for lookup value matching purposes.
- - Added handling for Motorola-specific P25 patch messages
+ - Added handling for Motorola-specific P25 patch messages and auto-generation of
+   patch group aliases that roll-up aliases from each patched talkgroup to support
+   audio recording and streaming of patch calls according to the identifiers and
+   actions defined for each of the patched talkgroups.
  - Updated airspy controller for airspy-mini specific sample rate handling.
- - New remez filter designer tool and internal usage
+ - New developer remez filter designer tool and internal usage
 
 0.2.0 20160329
  - Major overhaul of underlying processing chain and extensive updates to all 
