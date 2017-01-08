@@ -207,37 +207,6 @@ public class ChannelProcessingManager implements ChannelEventListener
             MessageActivityModel messageModel = new MessageActivityModel(messageFilter);
             processingChain.setMessageActivityModel(messageModel);
 			
-			/* Setup event logging */
-            List<Module> loggers = mEventLogManager.getLoggers(
-                    channel.getEventLogConfiguration(), channel.getName());
-
-            if (!loggers.isEmpty())
-            {
-                processingChain.addModules(loggers);
-            }
-
-			/* Setup recorders */
-            List<RecorderType> recorders = channel.getRecordConfiguration().getRecorders();
-
-            if (!recorders.isEmpty())
-            {
-				/* Add baseband recorder */
-                if ((recorders.contains(RecorderType.BASEBAND) &&
-                        channel.getChannelType() == ChannelType.STANDARD))
-                {
-                    processingChain.addModule(mRecorderManager.getBasebandRecorder(
-                            channel.toString()));
-                }
-				
-				/* Add traffic channel baseband recorder */
-                if (recorders.contains(RecorderType.TRAFFIC_BASEBAND) &&
-                        channel.getChannelType() == ChannelType.TRAFFIC)
-                {
-                    processingChain.addModule(mRecorderManager
-                            .getBasebandRecorder(channel.toString()));
-                }
-            }
-			
 			/* Inject channel metadata that will be inserted into audio packets
 			 * for the recorder manager and streaming */
             processingChain.broadcast(
@@ -246,6 +215,37 @@ public class ChannelProcessingManager implements ChannelEventListener
                     new Metadata(MetadataType.SITE_ID, channel.getSite()));
             processingChain.broadcast(
                     new Metadata(MetadataType.CHANNEL_NAME, channel.getName()));
+        }
+
+        /* Setup event logging */
+        List<Module> loggers = mEventLogManager.getLoggers(
+            channel.getEventLogConfiguration(), channel.getName());
+
+        if (!loggers.isEmpty())
+        {
+            processingChain.addModules(loggers);
+        }
+
+        /* Setup recorders */
+        List<RecorderType> recorders = channel.getRecordConfiguration().getRecorders();
+
+        if (!recorders.isEmpty())
+        {
+				/* Add baseband recorder */
+            if ((recorders.contains(RecorderType.BASEBAND) &&
+                channel.getChannelType() == ChannelType.STANDARD))
+            {
+                processingChain.addModule(mRecorderManager.getBasebandRecorder(
+                    channel.toString()));
+            }
+
+				/* Add traffic channel baseband recorder */
+            if (recorders.contains(RecorderType.TRAFFIC_BASEBAND) &&
+                channel.getChannelType() == ChannelType.TRAFFIC)
+            {
+                processingChain.addModule(mRecorderManager
+                    .getBasebandRecorder(channel.toString()));
+            }
         }
 
         processingChain.setSource(source);
