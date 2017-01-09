@@ -19,24 +19,22 @@
 package audio.broadcast;
 
 import alias.AliasModel;
-import audio.broadcast.broadcastify.BroadcastifyConfiguration;
-import audio.broadcast.broadcastify.BroadcastifyConfigurationEditor;
 import gui.editor.DocumentListenerEditor;
-import settings.SettingsManager;
+import icon.IconManager;
 
 import javax.swing.*;
 
 public abstract class BroadcastConfigurationEditor extends DocumentListenerEditor<BroadcastConfiguration>
 {
-    protected SettingsManager mSettingsManager;
+    protected IconManager mIconManager;
     protected BroadcastModel mBroadcastModel;
     protected AliasModel mAliasModel;
 
-    public BroadcastConfigurationEditor(BroadcastModel broadcastModel, AliasModel aliasModel, SettingsManager settingsManager)
+    public BroadcastConfigurationEditor(BroadcastModel broadcastModel, AliasModel aliasModel, IconManager iconManager)
     {
         mBroadcastModel = broadcastModel;
         mAliasModel = aliasModel;
-        mSettingsManager = settingsManager;
+        mIconManager = iconManager;
     }
 
     /**

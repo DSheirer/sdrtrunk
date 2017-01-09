@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class IconManager
 {
     private final static Logger mLog = LoggerFactory.getLogger(IconManager.class);
+    public static final int DEFAULT_ICON_SIZE = 12;
 
     private Path mIconFolderPath;
     private Path mIconFilePath;
@@ -99,6 +100,14 @@ public class IconManager
         {
             IconSet loadedIcons = load();
 
+            boolean saveRequired = false;
+
+            if(loadedIcons == null)
+            {
+                loadedIcons = getDefaultIconSet();
+                saveRequired = true;
+            }
+
             mIconModel = new IconModel(loadedIcons);
             mIconModel.addListDataListener(new ListDataListener()
             {
@@ -120,6 +129,11 @@ public class IconManager
                     scheduleSave();
                 }
             });
+
+            if(saveRequired)
+            {
+                scheduleSave();
+            }
         }
 
         return mIconModel;
@@ -170,7 +184,7 @@ public class IconManager
      * @param height new height to scale the image (width will be scaled accordingly)
      * @return
      */
-    private static ImageIcon getScaledIcon(ImageIcon original, int height)
+    public static ImageIcon getScaledIcon(ImageIcon original, int height)
     {
         double scale = (double) original.getIconHeight() / (double) height;
 
@@ -363,11 +377,6 @@ public class IconManager
         else
         {
             mLog.info("Icons file not found at [" + getIconFilePath().toString() + "]");
-        }
-
-        if(iconSet == null)
-        {
-            iconSet = getDefaultIconSet();
         }
 
         return iconSet;

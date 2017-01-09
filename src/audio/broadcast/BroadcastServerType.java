@@ -28,12 +28,12 @@ public enum BroadcastServerType
     UNKNOWN("Unknown", null);
 
     private String mLabel;
-    private String mIconName;
+    private String mIconPath;
 
-    BroadcastServerType(String label, String iconName)
+    BroadcastServerType(String label, String iconPath)
     {
         mLabel = label;
-        mIconName = iconName;
+        mIconPath = iconPath;
     }
 
     public String toString()
@@ -41,8 +41,8 @@ public enum BroadcastServerType
         return mLabel;
     }
 
-    public String getIconName()
+    public String getIconPath()
     {
-        return mIconName;
+        return mIconPath;
     }
 }

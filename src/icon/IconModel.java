@@ -20,7 +20,6 @@ package icon;
 
 import javax.swing.*;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -31,11 +30,11 @@ public class IconModel extends DefaultListModel<Icon>
     public static final String DEFAULT_ICON = "No Icon";
 
     private Icon mDefaultIcon;
-    private Map<String,Icon> mIconMap = new HashMap();
+    private Map<String, Icon> mIconMap = new HashMap<>();
 
     public IconModel(IconSet iconSet)
     {
-        for(Icon icon: iconSet.getIcons())
+        for(Icon icon : iconSet.getIcons())
         {
             this.addElement(icon);
         }
@@ -78,6 +77,7 @@ public class IconModel extends DefaultListModel<Icon>
 
     /**
      * Indicates if this model contains an icon with the specified name
+     *
      * @param name to check
      * @return true if name is not null and not empty and the internal map contains an icon matching name
      */
@@ -131,7 +131,7 @@ public class IconModel extends DefaultListModel<Icon>
     {
         if(object instanceof Icon)
         {
-            mIconMap.remove(((Icon)object).getName());
+            mIconMap.remove(((Icon) object).getName());
         }
 
         return super.removeElement(object);

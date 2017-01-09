@@ -24,10 +24,10 @@ import audio.broadcast.BroadcastConfigurationEditor;
 import audio.broadcast.BroadcastEvent;
 import audio.broadcast.BroadcastModel;
 import audio.broadcast.BroadcastServerType;
+import icon.IconManager;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import settings.SettingsManager;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -38,7 +38,7 @@ import java.awt.event.ActionListener;
 
 public class ShoutcastV2ConfigurationEditor extends BroadcastConfigurationEditor
 {
-    private final static Logger mLog = LoggerFactory.getLogger( ShoutcastV2ConfigurationEditor.class );
+    private final static Logger mLog = LoggerFactory.getLogger(ShoutcastV2ConfigurationEditor.class);
 
     private static final int ONE_MINUTE_MS = 60000;
 
@@ -56,22 +56,21 @@ public class ShoutcastV2ConfigurationEditor extends BroadcastConfigurationEditor
     private JButton mSaveButton;
     private JButton mResetButton;
 
-    public ShoutcastV2ConfigurationEditor(BroadcastModel broadcastModel, AliasModel aliasModel,
-                                          SettingsManager settingsManager)
+    public ShoutcastV2ConfigurationEditor(BroadcastModel broadcastModel, AliasModel aliasModel, IconManager iconManager)
     {
-        super(broadcastModel, aliasModel, settingsManager);
+        super(broadcastModel, aliasModel, iconManager);
         init();
     }
 
     private void init()
     {
-        setLayout( new MigLayout( "fill,wrap 2", "[align right][grow,fill]",
-            "[][][][][][][][][][][][][][grow,fill]" ) );
-        setPreferredSize(new Dimension(150,400));
+        setLayout(new MigLayout("fill,wrap 2", "[align right][grow,fill]",
+            "[][][][][][][][][][][][][][grow,fill]"));
+        setPreferredSize(new Dimension(150, 400));
 
         JLabel channelLabel = new JLabel("Shoutcast (v2) Stream");
 
-        ImageIcon icon = mSettingsManager.getImageIcon(BroadcastServerType.SHOUTCAST_V2.getIconName(), 25);
+        ImageIcon icon = mIconManager.getScaledIcon(new ImageIcon(BroadcastServerType.SHOUTCAST_V2.getIconPath()), 25);
         channelLabel.setIcon(icon);
 
         add(channelLabel, "span, align center");
@@ -136,7 +135,7 @@ public class ShoutcastV2ConfigurationEditor extends BroadcastConfigurationEditor
         add(mDelayValue);
 
         add(new JLabel("Delay:"));
-        mDelay = new JSlider(0,60,0);
+        mDelay = new JSlider(0, 60, 0);
         mDelay.setMajorTickSpacing(10);
         mDelay.setMinorTickSpacing(5);
         mDelay.addChangeListener(new ChangeListener()
@@ -208,7 +207,7 @@ public class ShoutcastV2ConfigurationEditor extends BroadcastConfigurationEditor
 
         if(hasItem())
         {
-            ShoutcastV2Configuration config = (ShoutcastV2Configuration)getItem();
+            ShoutcastV2Configuration config = (ShoutcastV2Configuration) getItem();
 
             mName.setText(config.getName());
             mServer.setText(config.getHost());
@@ -218,7 +217,7 @@ public class ShoutcastV2ConfigurationEditor extends BroadcastConfigurationEditor
             mPassword.setText(config.getPassword());
             mGenre.setText(config.getGenre());
             mPublic.setSelected(config.isPublic());
-            mDelay.setValue((int)(config.getDelay() / ONE_MINUTE_MS));
+            mDelay.setValue((int) (config.getDelay() / ONE_MINUTE_MS));
             mEnabled.setSelected(config.isEnabled());
         }
         else
@@ -241,7 +240,7 @@ public class ShoutcastV2ConfigurationEditor extends BroadcastConfigurationEditor
     @Override
     public void save()
     {
-        ShoutcastV2Configuration config = (ShoutcastV2Configuration)getItem();
+        ShoutcastV2Configuration config = (ShoutcastV2Configuration) getItem();
 
         if(validateConfiguration())
         {
@@ -273,11 +272,11 @@ public class ShoutcastV2ConfigurationEditor extends BroadcastConfigurationEditor
         if(!mBroadcastModel.isUniqueName(name, getItem()))
         {
             String message = (name == null || name.isEmpty()) ?
-                    "Please specify a stream name." : "Stream name " + name +
-                    "is already in use.\nPlease choose another name.";
+                "Please specify a stream name." : "Stream name " + name +
+                "is already in use.\nPlease choose another name.";
 
             JOptionPane.showMessageDialog(ShoutcastV2ConfigurationEditor.this,
-                    message, "Invalid Stream Name", JOptionPane.ERROR_MESSAGE);
+                message, "Invalid Stream Name", JOptionPane.ERROR_MESSAGE);
 
             mName.requestFocus();
 

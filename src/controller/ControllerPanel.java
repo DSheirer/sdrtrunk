@@ -87,20 +87,20 @@ public class ControllerPanel extends JPanel
     {
         mChannelModel = channelModel;
 
-        mAudioPanel = new AudioPanel(settingsManager, sourceManager, audioManager);
+        mAudioPanel = new AudioPanel(iconManager, settingsManager, sourceManager, audioManager);
 
-        mMapPanel = new MapPanel(mapService, settingsManager);
+        mMapPanel = new MapPanel(mapService, iconManager, settingsManager);
 
         mMessageActivityPanel = new MessageActivityPanel(channelProcessingManager);
 
-        mBroadcastPanel = new BroadcastPanel(broadcastModel, aliasModel, settingsManager);
+        mBroadcastPanel = new BroadcastPanel(broadcastModel, aliasModel, iconManager);
 
-        mCallEventPanel = new CallEventPanel(settingsManager, channelProcessingManager);
+        mCallEventPanel = new CallEventPanel(iconManager, channelProcessingManager);
 
         mChannelSpectrumPanel = new ChannelSpectrumPanel(settingsManager,
                 channelProcessingManager);
 
-        mChannelStateList = new ChannelList(channelModel, channelProcessingManager,
+        mChannelStateList = new ChannelList(channelModel, channelProcessingManager, iconManager,
                 settingsManager, mAudioPanel);
 
         mChannelController = new ChannelController(channelModel, channelMapModel,

@@ -20,7 +20,6 @@ package icon;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +45,6 @@ public class IconSet
         mIcons.remove(icon);
     }
 
-    @XmlElementWrapper(name="icons")
     @XmlElement(name = "icon")
     public List<Icon> getIcons()
     {

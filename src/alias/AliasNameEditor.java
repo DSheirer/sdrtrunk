@@ -1,3 +1,21 @@
+/*******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2017 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *
+ ******************************************************************************/
 package alias;
 
 import alias.AliasEvent.Event;
@@ -5,9 +23,9 @@ import gui.editor.Editor;
 import icon.Icon;
 import icon.IconCellRenderer;
 import icon.IconManager;
+import icon.IconModel;
 import map.MapIcon;
 import net.miginfocom.swing.MigLayout;
-import settings.SettingsManager;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -43,8 +61,7 @@ public class AliasNameEditor extends Editor<Alias>
 
     private void init()
     {
-        setLayout(new MigLayout("fill,wrap 2", "[right][grow,fill]",
-            "[][][][][][][grow]"));
+        setLayout(new MigLayout("fill,wrap 2", "[right][grow,fill]", "[][][][][][][grow]"));
 
         add(new JLabel("Name:"));
         mName = new JTextField();
@@ -140,7 +157,7 @@ public class AliasNameEditor extends Editor<Alias>
 
         IconCellRenderer renderer = new IconCellRenderer(mIconManager);
         renderer.setPreferredSize(new Dimension(200, 30));
-		mIconCombo.setRenderer( renderer );
+        mIconCombo.setRenderer(renderer);
         mIconCombo.addActionListener(new ActionListener()
         {
             @Override
@@ -178,6 +195,8 @@ public class AliasNameEditor extends Editor<Alias>
         if(hasItem())
         {
             mName.setText(alias.getName());
+
+            mIconCombo.setModel(new DefaultComboBoxModel<>(mIconManager.getIcons()));
 
             List<String> listNames = mAliasModel.getListNames();
 
@@ -218,7 +237,7 @@ public class AliasNameEditor extends Editor<Alias>
 
             if(iconName == null)
             {
-                iconName = SettingsManager.DEFAULT_ICON;
+                iconName = IconModel.DEFAULT_ICON;
             }
 
             Icon savedIcon = mIconManager.getModel().getIcon(iconName);

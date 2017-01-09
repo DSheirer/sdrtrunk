@@ -266,6 +266,8 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
         List<String> streamNames = mBroadcastModel.getBroadcastConfigurationNames();
         mStreamCombo.setModel(new DefaultComboBoxModel<String>(streamNames.toArray(new String[streamNames.size()])));
 
+        mIconCombo.setModel(new DefaultComboBoxModel<>(mIconManager.getIcons()));
+
         setCheckBoxesUnselected();
 
         setModified(false);

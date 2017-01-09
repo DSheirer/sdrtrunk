@@ -22,12 +22,12 @@ import alias.id.broadcast.BroadcastChannel;
 import audio.AudioPacket;
 import audio.metadata.AudioMetadata;
 import controller.ThreadPoolManager;
+import icon.IconManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import properties.SystemProperties;
 import sample.Broadcaster;
 import sample.Listener;
-import settings.SettingsManager;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
@@ -67,17 +67,17 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     private Map<String,BroadcastConfiguration> mBroadcastConfigurationMap = new HashMap<>();
     private Map<String,AudioBroadcaster> mBroadcasterMap = new HashMap<>();
     private ThreadPoolManager mThreadPoolManager;
-    private SettingsManager mSettingsManager;
+    private IconManager mIconManager;
     private StreamManager mStreamManager;
     private Broadcaster<BroadcastEvent> mBroadcastEventBroadcaster = new Broadcaster<>();
 
     /**
      * Model for managing Broadcast configurations and any associated broadcaster instances.
      */
-    public BroadcastModel(ThreadPoolManager threadPoolManager, SettingsManager settingsManager)
+    public BroadcastModel(ThreadPoolManager threadPoolManager, IconManager iconManager)
     {
         mThreadPoolManager = threadPoolManager;
-        mSettingsManager = settingsManager;
+        mIconManager = iconManager;
         mStreamManager = new StreamManager(threadPoolManager, new CompletedRecordingListener(), BroadcastFormat.MP3,
             SystemProperties.getInstance().getApplicationFolder(TEMPORARY_STREAM_DIRECTORY));
         mStreamManager.start();
@@ -497,11 +497,11 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                     switch(columnIndex)
                     {
                         case COLUMN_SERVER_ICON:
-                            String iconName = configuration.getBroadcastServerType().getIconName();
+                            String iconPath = configuration.getBroadcastServerType().getIconPath();
 
-                            if(iconName != null && mSettingsManager != null)
+                            if(iconPath != null && mIconManager != null)
                             {
-                                return mSettingsManager.getImageIcon(iconName, 14);
+                                return mIconManager.getScaledIcon(new ImageIcon(iconPath), 14);
                             }
                             break;
                         case COLUMN_STREAM_NAME:
