@@ -137,13 +137,9 @@ public class P25AudioModule extends Module implements Listener<Message>,
 
             library = (AudioConversionLibrary) temp.newInstance();
 
-            if ((library.getMajorVersion() == 0 &&
-                    library.getMinorVersion() >= 3 &&
-                    library.getBuildVersion() >= 3) ||
-                    library.getMajorVersion() >= 1)
+            if ((library.getMajorVersion() == 0 && library.getMinorVersion() >= 3 &&
+                    library.getBuildVersion() >= 3) || library.getMajorVersion() >= 1)
             {
-//				mAudioConverter = library.getAudioConverter( IMBE_CODEC,
-//						AudioFormats.PCM_SIGNED_48KHZ_16BITS_MONO );
                 mAudioConverter = library.getAudioConverter(IMBE_CODEC, AudioFormats.PCM_SIGNED_8KHZ_16BITS_MONO);
 
                 if (mAudioConverter != null)
@@ -173,7 +169,7 @@ public class P25AudioModule extends Module implements Listener<Message>,
             }
             else
             {
-                mLog.warn("JMBE library version 0.3.1 or higher is required - found: " + library.getVersion());
+                mLog.warn("JMBE library version 0.3.3 or higher is required - found: " + library.getVersion());
             }
         }
         catch (ClassNotFoundException e1)
