@@ -29,10 +29,10 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-public class IconViewer extends JFrame implements ActionListener
+public class IconEditor extends JFrame implements ActionListener
 {
     private static final long serialVersionUID = 1L;
-    private static final Logger mLog = LoggerFactory.getLogger(IconViewer.class);
+    private static final Logger mLog = LoggerFactory.getLogger(IconEditor.class);
     private static final String ADD = "Add";
     private static final String DEFAULT = "Set Default";
     private static final String DELETE = "Delete";
@@ -40,10 +40,10 @@ public class IconViewer extends JFrame implements ActionListener
     private JButton mAddButton;
     private JButton mDeleteButton;
     private JButton mDefaultButton;
-    private JList<Icon> mIconList;
+    private JTable mIconTable;
     private IconManager mIconManager;
 
-    public IconViewer(IconManager model)
+    public IconEditor(IconManager model)
     {
         mIconManager = model;
 
@@ -52,7 +52,7 @@ public class IconViewer extends JFrame implements ActionListener
 
     private void init()
     {
-        setTitle("Icon Viewer");
+        setTitle("Icon Manager");
         setSize(400, 400);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLayout(new MigLayout("", "[grow,fill]", "[grow,fill]"));
@@ -63,11 +63,13 @@ public class IconViewer extends JFrame implements ActionListener
         JPanel editorPanel = new JPanel();
         editorPanel.setLayout(new MigLayout("insets 1 1 1 1", "[grow,fill][grow,fill][grow,fill]", "[grow,fill][]"));
 
-        mIconList = new JList<>(mIconManager.getModel());
-        IconCellRenderer renderer = new IconCellRenderer(mIconManager);
-        renderer.setPreferredSize(new Dimension(200, 30));
-        mIconList.setCellRenderer(renderer);
-        mIconList.addListSelectionListener(new ListSelectionListener()
+        mIconTable = new JTable(mIconManager.getModel());
+        IconTableCellRenderer renderer = new IconTableCellRenderer(mIconManager);
+        mIconTable.getColumnModel().getColumn(IconTableModel.COLUMN_IMAGE_ICON).setCellRenderer(renderer);
+        mIconTable.setAutoCreateRowSorter(true);
+        mIconTable.getRowSorter().toggleSortOrder(IconTableModel.COLUMN_ICON_NAME);
+        mIconTable.setRowHeight(36);
+        mIconTable.getSelectionModel().addListSelectionListener(new ListSelectionListener()
         {
             @Override
             public void valueChanged(ListSelectionEvent e)
@@ -75,7 +77,7 @@ public class IconViewer extends JFrame implements ActionListener
                 checkButtons();
             }
         });
-        editorPanel.add(new JScrollPane(mIconList), "span");
+        editorPanel.add(new JScrollPane(mIconTable), "span");
 
         mAddButton = new JButton(ADD);
         mAddButton.addActionListener(this);
@@ -96,15 +98,32 @@ public class IconViewer extends JFrame implements ActionListener
 
     private void checkButtons()
     {
-        Icon selected = mIconList.getSelectedValue();
+        Icon selected = getSelectedIcon();
 
         mDefaultButton.setEnabled(selected != null && selected != mIconManager.getModel().getDefaultIcon());
         mDeleteButton.setEnabled(selected != null && selected != mIconManager.getModel().getDefaultIcon());
     }
 
+    private Icon getSelectedIcon()
+    {
+        int selectedViewRow = mIconTable.getSelectedRow();
+
+        if(selectedViewRow >= 0)
+        {
+            int selectedModelRow = mIconTable.convertRowIndexToModel(mIconTable.getSelectedRow());
+
+            if(selectedModelRow >= 0)
+            {
+                return mIconManager.getModel().get(selectedModelRow);
+            }
+        }
+
+        return null;
+    }
+
     public void actionPerformed(ActionEvent e)
     {
-        Icon selected = mIconList.getSelectedValue();
+        Icon selected = getSelectedIcon();
 
         switch(e.getActionCommand())
         {
@@ -115,12 +134,12 @@ public class IconViewer extends JFrame implements ActionListener
             case DELETE:
                 if(selected != null)
                 {
-                    int choice = JOptionPane.showConfirmDialog(IconViewer.this,
+                    int choice = JOptionPane.showConfirmDialog(IconEditor.this,
                         "Are you sure you want to delete this icon?", "Delete Icon?", JOptionPane.YES_NO_OPTION);
 
                     if(choice == JOptionPane.YES_OPTION)
                     {
-                        mIconManager.getModel().removeElement(selected);
+                        mIconManager.getModel().remove(selected);
                     }
                 }
                 break;

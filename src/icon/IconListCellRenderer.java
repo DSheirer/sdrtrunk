@@ -21,13 +21,13 @@ package icon;
 import javax.swing.*;
 import java.awt.*;
 
-public class IconCellRenderer extends JLabel implements ListCellRenderer<Icon>
+public class IconListCellRenderer extends JLabel implements ListCellRenderer<Icon>
 {
     private static final long serialVersionUID = 1L;
 
     private IconManager mIconManager;
 
-    public IconCellRenderer(IconManager iconManager)
+    public IconListCellRenderer(IconManager iconManager)
     {
         mIconManager = iconManager;
         setOpaque(true);
@@ -37,15 +37,16 @@ public class IconCellRenderer extends JLabel implements ListCellRenderer<Icon>
     public Component getListCellRendererComponent(JList<? extends Icon> list, Icon icon, int index,
                                                   boolean isSelected, boolean cellHasFocus)
     {
+        //Get a scaled version of the icon
         setIcon(mIconManager.getIcon(icon.getName(), 24));
 
-        if(icon == mIconManager.getModel().getDefaultIcon())
+        if(mIconManager.getModel().isDefaultIcon(icon))
         {
-            setText(icon.toString() + " (default)");
+            setText(icon.getName() + " (default)");
         }
         else
         {
-            setText(icon.toString());
+            setText(icon.getName());
         }
 
         if(isSelected)

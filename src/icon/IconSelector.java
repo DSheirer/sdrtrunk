@@ -19,8 +19,6 @@
 package icon;
 
 import net.miginfocom.swing.MigLayout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -32,7 +30,7 @@ import java.io.File;
 
 public class IconSelector extends JDialog implements DocumentListener
 {
-    private IconModel mIconModel;
+    private IconTableModel mIconTableModel;
     private JTextField mNameText;
     private JTextField mFileLabel;
     private JButton mFileChooserButton;
@@ -43,13 +41,13 @@ public class IconSelector extends JDialog implements DocumentListener
      * Window for selecting an Icon to add to the Icon Model
      *
      * @param owner for this modal dialog
-     * @param iconModel to receive the added/selected icon
+     * @param iconTableModel to receive the added/selected icon
      */
-    public IconSelector(Frame owner, IconModel iconModel)
+    public IconSelector(Frame owner, IconTableModel iconTableModel)
     {
         super(owner, "Add Icon", true);
 
-        mIconModel = iconModel;
+        mIconTableModel = iconTableModel;
 
         init();
 
@@ -122,7 +120,7 @@ public class IconSelector extends JDialog implements DocumentListener
                 String path = mFileLabel.getText();
 
                 Icon icon = new Icon(name, path);
-                mIconModel.addElement(icon);
+                mIconTableModel.add(icon);
 
                 IconSelector.this.dispose();
             }
@@ -151,7 +149,7 @@ public class IconSelector extends JDialog implements DocumentListener
         String name = mNameText.getText();
         String path = mFileLabel.getText();
 
-        mOKButton.setEnabled(name != null && path != null && !path.isEmpty() && !mIconModel.hasIcon(name));
+        mOKButton.setEnabled(name != null && path != null && !path.isEmpty() && !mIconTableModel.hasIcon(name));
     }
 
     @Override

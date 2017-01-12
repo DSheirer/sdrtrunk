@@ -1,40 +1,28 @@
 package alias;
 
+import alias.AliasEvent.Event;
 import alias.id.AliasIDType;
 import alias.id.broadcast.BroadcastChannel;
+import alias.id.priority.Priority;
 import audio.broadcast.BroadcastModel;
-import com.sun.org.apache.xpath.internal.operations.Mult;
 import gui.editor.Editor;
+import icon.Icon;
+import icon.IconListCellRenderer;
+import icon.IconManager;
+import net.miginfocom.swing.MigLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import sample.Listener;
 
-import java.awt.Color;
-import java.awt.Dimension;
+import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
-
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JColorChooser;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JSeparator;
-import javax.swing.JSlider;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-
-import icon.Icon;
-import icon.IconManager;
-import map.MapIcon;
-import icon.IconCellRenderer;
-import net.miginfocom.swing.MigLayout;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import sample.Listener;
-import alias.AliasEvent.Event;
-import alias.id.priority.Priority;
 
 public class MultipleAliasEditor extends Editor<List<Alias>>
         implements Listener<AliasEvent>
@@ -76,6 +64,14 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
         mIconManager = iconManager;
 
         mAliasModel.addListener(this);
+        mIconManager.getModel().addTableModelListener(new TableModelListener()
+        {
+            @Override
+            public void tableChanged(TableModelEvent e)
+            {
+                refreshIcons();
+            }
+        });
 
         init();
     }
@@ -140,7 +136,7 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
 
         mIconCombo = new JComboBox<Icon>(mIconManager.getIcons());
 
-        IconCellRenderer renderer = new IconCellRenderer(mIconManager);
+        IconListCellRenderer renderer = new IconListCellRenderer(mIconManager);
         renderer.setPreferredSize(new Dimension(200, 30));
         mIconCombo.setRenderer(renderer);
         add(mIconCombo, "wrap");
@@ -230,6 +226,21 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
         add(resetButton);
 
         setModified(false);
+    }
+
+    private void refreshIcons()
+    {
+        if(mIconCombo != null)
+        {
+            EventQueue.invokeLater(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    mIconCombo.setModel(new DefaultComboBoxModel<>(mIconManager.getIcons()));
+                }
+            });
+        }
     }
 
     @Override
@@ -356,7 +367,7 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
                 {
                     if (mIconCombo.getSelectedItem() != null)
                     {
-                        alias.setIconName(((MapIcon) mIconCombo.getSelectedItem()).getName());
+                        alias.setIconName(((Icon)mIconCombo.getSelectedItem()).getName());
                     }
                     else
                     {

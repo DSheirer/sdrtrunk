@@ -21,15 +21,16 @@ package alias;
 import alias.AliasEvent.Event;
 import gui.editor.Editor;
 import icon.Icon;
-import icon.IconCellRenderer;
+import icon.IconListCellRenderer;
 import icon.IconManager;
-import icon.IconModel;
-import map.MapIcon;
+import icon.IconTableModel;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -55,6 +56,15 @@ public class AliasNameEditor extends Editor<Alias>
     {
         mAliasModel = aliasModel;
         mIconManager = iconManager;
+
+        mIconManager.getModel().addTableModelListener(new TableModelListener()
+        {
+            @Override
+            public void tableChanged(TableModelEvent e)
+            {
+                refreshIcons();
+            }
+        });
 
         init();
     }
@@ -155,7 +165,7 @@ public class AliasNameEditor extends Editor<Alias>
 
         mIconCombo = new JComboBox<Icon>(mIconManager.getIcons());
 
-        IconCellRenderer renderer = new IconCellRenderer(mIconManager);
+        IconListCellRenderer renderer = new IconListCellRenderer(mIconManager);
         renderer.setPreferredSize(new Dimension(200, 30));
         mIconCombo.setRenderer(renderer);
         mIconCombo.addActionListener(new ActionListener()
@@ -185,6 +195,32 @@ public class AliasNameEditor extends Editor<Alias>
         add(mBtnIconManager, "span 2,wrap");
 
         setModified(false);
+    }
+
+    private void refreshIcons()
+    {
+        if(mIconCombo != null)
+        {
+            EventQueue.invokeLater(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    mIconCombo.setModel(new DefaultComboBoxModel<>(mIconManager.getIcons()));
+
+                    if(hasItem())
+                    {
+                        String iconName = getItem().getIconName();
+                        Icon aliasIcon = mIconManager.getModel().getIcon(iconName);
+
+                        if(aliasIcon != null)
+                        {
+                            mIconCombo.setSelectedItem(aliasIcon);
+                        }
+                    }
+                }
+            });
+        }
     }
 
     @Override
@@ -237,7 +273,7 @@ public class AliasNameEditor extends Editor<Alias>
 
             if(iconName == null)
             {
-                iconName = IconModel.DEFAULT_ICON;
+                iconName = IconTableModel.DEFAULT_ICON;
             }
 
             Icon savedIcon = mIconManager.getModel().getIcon(iconName);
@@ -285,7 +321,7 @@ public class AliasNameEditor extends Editor<Alias>
 
             if(mIconCombo.getSelectedItem() != null)
             {
-                alias.setIconName(((MapIcon) mIconCombo.getSelectedItem()).getName());
+                alias.setIconName(((Icon) mIconCombo.getSelectedItem()).getName());
             }
 
             setModified(false);

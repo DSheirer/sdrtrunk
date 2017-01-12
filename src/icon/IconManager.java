@@ -26,6 +26,8 @@ import properties.SystemProperties;
 import javax.swing.*;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
@@ -53,8 +55,8 @@ public class IconManager
     private Path mIconLockFilePath;
 
     private ThreadPoolManager mThreadPoolManager;
-    private IconViewer mIconViewer;
-    private IconModel mIconModel;
+    private IconEditor mIconEditor;
+    private IconTableModel mIconTableModel;
     private AtomicBoolean mSavingIcons = new AtomicBoolean();
 
     private Map<String, ImageIcon> mResizedIcons = new HashMap<>();
@@ -71,32 +73,33 @@ public class IconManager
      */
     public void showEditor(Component centerOnComponent)
     {
-        if(mIconViewer == null)
+        if(mIconEditor == null)
         {
-            mIconViewer = new IconViewer(this);
-            mIconViewer.setLocationRelativeTo(centerOnComponent);
+            mIconEditor = new IconEditor(this);
+        }
 
-            if(mIconViewer.isVisible())
+        mIconEditor.setLocationRelativeTo(centerOnComponent);
+
+        if(mIconEditor.isVisible())
+        {
+            mIconEditor.requestFocus();
+        }
+        else
+        {
+            EventQueue.invokeLater(new Runnable()
             {
-                mIconViewer.requestFocus();
-            }
-            else
-            {
-                EventQueue.invokeLater(new Runnable()
+                @Override
+                public void run()
                 {
-                    @Override
-                    public void run()
-                    {
-                        mIconViewer.setVisible(true);
-                    }
-                });
-            }
+                    mIconEditor.setVisible(true);
+                }
+            });
         }
     }
 
-    public IconModel getModel()
+    public IconTableModel getModel()
     {
-        if(mIconModel == null)
+        if(mIconTableModel == null)
         {
             IconSet loadedIcons = load();
 
@@ -108,23 +111,11 @@ public class IconManager
                 saveRequired = true;
             }
 
-            mIconModel = new IconModel(loadedIcons);
-            mIconModel.addListDataListener(new ListDataListener()
+            mIconTableModel = new IconTableModel(loadedIcons);
+            mIconTableModel.addTableModelListener(new TableModelListener()
             {
                 @Override
-                public void intervalAdded(ListDataEvent e)
-                {
-                    scheduleSave();
-                }
-
-                @Override
-                public void intervalRemoved(ListDataEvent e)
-                {
-                    scheduleSave();
-                }
-
-                @Override
-                public void contentsChanged(ListDataEvent e)
+                public void tableChanged(TableModelEvent e)
                 {
                     scheduleSave();
                 }
@@ -136,7 +127,7 @@ public class IconManager
             }
         }
 
-        return mIconModel;
+        return mIconTableModel;
     }
 
     /**
@@ -389,7 +380,7 @@ public class IconManager
     {
         IconSet iconSet = new IconSet();
 
-        Icon defaultIcon = new Icon(IconModel.DEFAULT_ICON, "images/no_icon.png");
+        Icon defaultIcon = new Icon(IconTableModel.DEFAULT_ICON, "images/no_icon.png");
         iconSet.add(defaultIcon);
         iconSet.setDefaultIcon(defaultIcon.getName());
 
