@@ -40,6 +40,7 @@ import audio.convert.MP3SilenceGenerator;
 import controller.ThreadPoolManager;
 import gui.editor.Editor;
 import gui.editor.EmptyEditor;
+import icon.IconManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import record.AudioRecorder;
@@ -155,26 +156,26 @@ public class BroadcastFactory
     public static Editor<BroadcastConfiguration> getEditor(BroadcastConfiguration configuration,
                                                            BroadcastModel broadcastModel,
                                                            AliasModel aliasModel,
-                                                           SettingsManager settingsManager)
+                                                           IconManager iconManager)
     {
         Editor<BroadcastConfiguration> editor;
 
         switch (configuration.getBroadcastServerType())
         {
             case BROADCASTIFY:
-                 editor = new BroadcastifyConfigurationEditor(broadcastModel, aliasModel, settingsManager);
+                 editor = new BroadcastifyConfigurationEditor(broadcastModel, aliasModel, iconManager);
                 break;
             case ICECAST_TCP:
-                editor = new IcecastTCPConfigurationEditor(broadcastModel, aliasModel, settingsManager);
+                editor = new IcecastTCPConfigurationEditor(broadcastModel, aliasModel, iconManager);
                 break;
             case ICECAST_HTTP:
-                editor = new IcecastHTTPConfigurationEditor(broadcastModel, aliasModel, settingsManager);
+                editor = new IcecastHTTPConfigurationEditor(broadcastModel, aliasModel, iconManager);
                 break;
             case SHOUTCAST_V1:
-                editor = new ShoutcastV1ConfigurationEditor(broadcastModel, aliasModel, settingsManager);
+                editor = new ShoutcastV1ConfigurationEditor(broadcastModel, aliasModel, iconManager);
                 break;
             case SHOUTCAST_V2:
-                editor = new ShoutcastV2ConfigurationEditor(broadcastModel, aliasModel, settingsManager);
+                editor = new ShoutcastV2ConfigurationEditor(broadcastModel, aliasModel, iconManager);
                 break;
             default:
                 editor = new EmptyEditor<BroadcastConfiguration>();

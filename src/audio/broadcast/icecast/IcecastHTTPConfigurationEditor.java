@@ -24,6 +24,7 @@ import audio.broadcast.BroadcastConfigurationEditor;
 import audio.broadcast.BroadcastEvent;
 import audio.broadcast.BroadcastModel;
 import audio.broadcast.BroadcastServerType;
+import icon.IconManager;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,10 +58,9 @@ public class IcecastHTTPConfigurationEditor extends BroadcastConfigurationEditor
     private JButton mSaveButton;
     private JButton mResetButton;
 
-    public IcecastHTTPConfigurationEditor(BroadcastModel broadcastModel, AliasModel aliasModel,
-                                          SettingsManager settingsManager)
+    public IcecastHTTPConfigurationEditor(BroadcastModel broadcastModel, AliasModel aliasModel, IconManager iconManager)
     {
-        super(broadcastModel, aliasModel, settingsManager);
+        super(broadcastModel, aliasModel, iconManager);
         init();
     }
 
@@ -72,7 +72,7 @@ public class IcecastHTTPConfigurationEditor extends BroadcastConfigurationEditor
 
         JLabel channelLabel = new JLabel("Icecast 2 (v2.4+) Stream");
 
-        ImageIcon icon = mSettingsManager.getImageIcon(BroadcastServerType.ICECAST_HTTP.getIconName(), 25);
+        ImageIcon icon = mIconManager.getScaledIcon(new ImageIcon(BroadcastServerType.ICECAST_HTTP.getIconPath()), 25);
         channelLabel.setIcon(icon);
 
         add(channelLabel, "span, align center");

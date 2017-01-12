@@ -1,382 +1,411 @@
+/*******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2017 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *
+ ******************************************************************************/
 package audio;
 
-import java.awt.Color;
-import java.awt.EventQueue;
+import audio.output.AudioOutput;
+import icon.IconManager;
+import net.miginfocom.swing.MigLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import sample.Listener;
+import settings.SettingsManager;
+import source.SourceManager;
+import source.mixer.MixerChannelConfiguration;
+
+import javax.sound.sampled.FloatControl;
+import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
-import javax.sound.sampled.FloatControl;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JMenu;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.JSlider;
-import javax.swing.SwingUtilities;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-
-import net.miginfocom.swing.MigLayout;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import sample.Listener;
-import settings.SettingsManager;
-import source.SourceManager;
-import source.mixer.MixerChannelConfiguration;
-import audio.output.AudioOutput;
-
 public class AudioPanel extends JPanel implements Listener<AudioEvent>
 {
-	private static final long serialVersionUID = 1L;
-	
-	private static final Logger mLog = LoggerFactory.getLogger( AudioPanel.class );
-	
-	private static ImageIcon MUTED_ICON = SettingsManager.getScaledIcon( 
-			new ImageIcon( "images/audio_muted.png" ), 38 );
-	private static ImageIcon UNMUTED_ICON = SettingsManager.getScaledIcon( 
-			new ImageIcon( "images/audio_unmuted.png" ), 38 );
+    private static final long serialVersionUID = 1L;
 
-	private SettingsManager mSettingsManager;
-	private SourceManager mSourceManager;
-	private IAudioController mController;
+    private static final Logger mLog = LoggerFactory.getLogger(AudioPanel.class);
 
-	private JButton mMuteButton;
-	private AudioChannelsPanel mAudioChannelsPanel;
-	
-	public AudioPanel( SettingsManager settingsManager, 
-					   SourceManager sourceManager,
-					   IAudioController controller )
-	{
-		mSettingsManager = settingsManager;
-		mSourceManager = sourceManager;
-		mController = controller;
-		
-		mController.addControllerListener( this );
-		
-		init();
-	}
-	
-	private void init()
-	{
-		setLayout( new MigLayout( "insets 0 0 0 0", "[]0[grow,fill]", "[fill]0[]") );
-		setBackground( Color.BLACK );
+    private static ImageIcon MUTED_ICON = IconManager.getScaledIcon(
+        new ImageIcon("images/audio_muted.png"), 38);
+    private static ImageIcon UNMUTED_ICON = IconManager.getScaledIcon(
+        new ImageIcon("images/audio_unmuted.png"), 38);
 
-		mMuteButton = new MuteButton();
-		mMuteButton.setBackground( getBackground() );
-		add( mMuteButton );
-		
-		mAudioChannelsPanel = new AudioChannelsPanel( mSettingsManager, mController );
-		
-		add( mAudioChannelsPanel );
-		
-		addMouseListener( new MouseSelectionListener() );
-	}
-	
-	@Override
-	public void receive( AudioEvent event )
-	{
-		switch( event.getType() )
-		{
-			case AUDIO_CONFIGURATION_CHANGE_STARTED:
-				break;
-			case AUDIO_CONFIGURATION_CHANGE_COMPLETE:
-				EventQueue.invokeLater( new Runnable()
-				{
-					@Override
-					public void run()
-					{
-						remove( mAudioChannelsPanel );
+    private IconManager mIconManager;
+    private SettingsManager mSettingsManager;
+    private SourceManager mSourceManager;
+    private IAudioController mController;
 
-						mAudioChannelsPanel = new AudioChannelsPanel( 
-								mSettingsManager, mController );
-						
-						add( mAudioChannelsPanel );
+    private JButton mMuteButton;
+    private AudioChannelsPanel mAudioChannelsPanel;
 
-						mAudioChannelsPanel.repaint();
+    public AudioPanel(IconManager iconManager, SettingsManager settingsManager, SourceManager sourceManager,
+                      IAudioController controller)
+    {
+        mIconManager = iconManager;
+        mSettingsManager = settingsManager;
+        mSourceManager = sourceManager;
+        mController = controller;
 
-						revalidate();
-						repaint();
-					}
-				} );
-				break;
-			default:
-				break;
-		}
-	}
+        mController.addControllerListener(this);
 
-	/**
-	 * Audio output mute control menu item.
-	 */
-	public class AudioOutputMuteItem extends JMenuItem
-	{
-		private static final long serialVersionUID = 1L;
-		
-		private AudioOutput mAudioOutput;
-		
-		public AudioOutputMuteItem( AudioOutput audioOutput )
-		{
-			super( audioOutput.isMuted() ? "Unmute" : "Mute" );
-			
-			mAudioOutput = audioOutput;
-			
-			addActionListener( new ActionListener()
-			{
-				@Override
-				public void actionPerformed( ActionEvent e )
-				{
-					mAudioOutput.setMuted( !mAudioOutput.isMuted() );
-				}
-			} );
-		}
-	}
-	
-	/**
-	 * Mouse listener
-	 */
-	public class MouseSelectionListener implements MouseListener
-	{
-		@Override
-		public void mouseClicked( MouseEvent event )
-		{
-			if( SwingUtilities.isRightMouseButton( event ) )
-			{
-				JPopupMenu popup = new JPopupMenu();
+        init();
+    }
+
+    private void init()
+    {
+        setLayout(new MigLayout("insets 0 0 0 0", "[]0[grow,fill]", "[fill]0[]"));
+        setBackground(Color.BLACK);
+
+        mMuteButton = new MuteButton();
+        mMuteButton.setBackground(getBackground());
+        add(mMuteButton);
+
+        mAudioChannelsPanel = new AudioChannelsPanel(mIconManager, mSettingsManager, mController);
+
+        add(mAudioChannelsPanel);
+
+        addMouseListener(new MouseSelectionListener());
+    }
+
+    @Override
+    public void receive(AudioEvent event)
+    {
+        switch(event.getType())
+        {
+            case AUDIO_CONFIGURATION_CHANGE_STARTED:
+                break;
+            case AUDIO_CONFIGURATION_CHANGE_COMPLETE:
+                EventQueue.invokeLater(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        remove(mAudioChannelsPanel);
+
+                        mAudioChannelsPanel = new AudioChannelsPanel(mIconManager, mSettingsManager, mController);
+
+                        add(mAudioChannelsPanel);
+
+                        mAudioChannelsPanel.repaint();
+
+                        revalidate();
+                        repaint();
+                    }
+                });
+                break;
+            default:
+                break;
+        }
+    }
+
+    /**
+     * Audio output mute control menu item.
+     */
+    public class AudioOutputMuteItem extends JMenuItem
+    {
+        private static final long serialVersionUID = 1L;
+
+        private AudioOutput mAudioOutput;
+
+        public AudioOutputMuteItem(AudioOutput audioOutput)
+        {
+            super(audioOutput.isMuted() ? "Unmute" : "Mute");
+
+            mAudioOutput = audioOutput;
+
+            addActionListener(new ActionListener()
+            {
+                @Override
+                public void actionPerformed(ActionEvent e)
+                {
+                    mAudioOutput.setMuted(!mAudioOutput.isMuted());
+                }
+            });
+        }
+    }
+
+    /**
+     * Mouse listener
+     */
+    public class MouseSelectionListener implements MouseListener
+    {
+        @Override
+        public void mouseClicked(MouseEvent event)
+        {
+            if(SwingUtilities.isRightMouseButton(event))
+            {
+                JPopupMenu popup = new JPopupMenu();
 
 				/* Audio mixer/output selection menus */
-				JMenu outputMenu = new JMenu( "Audio Output" );
+                JMenu outputMenu = new JMenu("Audio Output");
 
-				MixerChannelConfiguration[] mixerConfigurations = 
-						mSourceManager.getMixerManager().getOutputMixers();
+                MixerChannelConfiguration[] mixerConfigurations =
+                    mSourceManager.getMixerManager().getOutputMixers();
 
-				for( MixerChannelConfiguration mixerConfig: mixerConfigurations )
-				{
-					MixerSelectionItem mixerItem = new MixerSelectionItem( mixerConfig );
-					
-					try
-					{
-						MixerChannelConfiguration current = mController.getMixerChannelConfiguration();
+                for(MixerChannelConfiguration mixerConfig : mixerConfigurations)
+                {
+                    MixerSelectionItem mixerItem = new MixerSelectionItem(mixerConfig);
 
-						if( current != null && current.equals( mixerConfig ) )
-						{
-							mixerItem.setSelected( true );
-						}
-					}
-					catch( AudioException e )
-					{
-						mLog.error( "Error while detecting current mixer "
-								+ "channel configuration", e );
-					}
-					
-					outputMenu.add( mixerItem );
-				}
-				
-				popup.add( outputMenu );
+                    try
+                    {
+                        MixerChannelConfiguration current = mController.getMixerChannelConfiguration();
+
+                        if(current != null && current.equals(mixerConfig))
+                        {
+                            mixerItem.setSelected(true);
+                        }
+                    }
+                    catch(AudioException e)
+                    {
+                        mLog.error("Error while detecting current mixer "
+                            + "channel configuration", e);
+                    }
+
+                    outputMenu.add(mixerItem);
+                }
+
+                popup.add(outputMenu);
 
 				/* Audio output mute and volume control */
-				for( AudioOutput output: mController.getAudioOutputs() )
-				{
-					JMenu menu = new JMenu( "Channel: " + output.getChannelName() );
-					
-					menu.add( new AudioOutputMuteItem( output ) );
-					
-					if( output.hasGainControl() )
-					{
-						JMenu volume = new JMenu( "Volume" );
-						volume.add( new VolumeSlider( output.getGainControl() ) );
-						menu.add( volume );
-					}
-					
-					popup.add( menu );
-				}
-				
-				popup.show( event.getComponent(), event.getX(), event.getY() );
-			}
-		}
+                for(AudioOutput output : mController.getAudioOutputs())
+                {
+                    JMenu menu = new JMenu("Channel: " + output.getChannelName());
 
-		@Override
-		public void mousePressed( MouseEvent e ) {}
-		@Override
-		public void mouseReleased( MouseEvent e ) {}
-		@Override
-		public void mouseEntered( MouseEvent e ) {}
-		@Override
-		public void mouseExited( MouseEvent e ) {}
-	}
-	
-	/**
-	 * Audio volume (gain) adjustment slider control
-	 */
-	public class VolumeSlider extends JSlider
-	{
-		private static final long serialVersionUID = 1L;
-		
-		private FloatControl mFloatControl;
-		
-		public VolumeSlider( FloatControl control )
-		{
-			super( 0, 100, 0 );
-			
-	    	setMajorTickSpacing( 25 );
-	    	setMinorTickSpacing( 5 );
-	    	setPaintTicks( true );
-	    	setPaintLabels( true );
+                    menu.add(new AudioOutputMuteItem(output));
 
-			mFloatControl = control;
-			
-			setValue( getIntegerValue( mFloatControl.getValue() ) );
-			
-			addChangeListener( new ChangeListener() 
-			{
-				@Override
-				public void stateChanged( ChangeEvent event )
-				{
-					mFloatControl.shift( mFloatControl.getValue(), 
-						getFloatValue( VolumeSlider.this.getValue() ), 
-						1000 );
-				}
-			} );
-			
-	    	addMouseListener( new MouseListener()
-			{
-				@Override
-				public void mouseClicked( MouseEvent event )
-				{
-					if( event.getClickCount() == 2 )
-					{
-						VolumeSlider.this.setValue( 50 );
-					}
-				}
-				
-				public void mouseReleased( MouseEvent arg0 ) {}
-				public void mousePressed( MouseEvent arg0 ) {}
-				public void mouseExited( MouseEvent arg0 ) {}
-				public void mouseEntered( MouseEvent arg0 ) {}
-			} );
-		}
+                    if(output.hasGainControl())
+                    {
+                        JMenu volume = new JMenu("Volume");
+                        volume.add(new VolumeSlider(output.getGainControl()));
+                        menu.add(volume);
+                    }
 
-		/**
-		 * Converts the integer value to a floating point value to use in the
-		 * float control.  Assumes an integer value of 50 is the 0.0 dB mid
-		 * point (ie no gain ) value.
-		 */
-		private int getIntegerValue( float value )
-		{
-			if( value == 0.0f )
-			{
-				return 50;
-			}
-			else if( value < 0.0f )
-			{
-				float ratio = value / mFloatControl.getMinimum();
-				
-				return 50 - (int)( ratio * 50.0f );
-			}
-			else
-			{
-				float ratio = value / mFloatControl.getMaximum();
-				
-				return 50 + (int)( ratio * 50.0f );
-			}
-		}
-		
-		private float getFloatValue( int value )
-		{
-			if( value == 50 )
-			{
-				return 0.0f;
-			}
-			else if( value < 50 )
-			{
-				return (float)( 50 - value ) / 50.0f * mFloatControl.getMinimum();
-			}
-			else
-			{
-				return (float)( value - 50 ) / 50.0f * mFloatControl.getMaximum();
-			}
-		}
-	}
-	
-	/**
-	 * Mixer/Channel configuration selection item
-	 */
-	public class MixerSelectionItem extends JMenuItem
-	{
-		private static final long serialVersionUID = 1L;
+                    popup.add(menu);
+                }
 
-		private MixerChannelConfiguration mConfiguration;
-		
-		public MixerSelectionItem( MixerChannelConfiguration config )
-		{
-			super( config.toString() );
-			
-			mConfiguration = config;
-			
-			addActionListener( new ActionListener()
-			{
-				@Override
-				public void actionPerformed( ActionEvent e )
-				{
-					try
-					{
-						mController.setMixerChannelConfiguration( mConfiguration );
-					} 
-					catch ( AudioException e1 )
-					{
-						mLog.error( "Couldn't set mixer channel configuration "
-								+ "to: " + mConfiguration.toString() );
-						
-						JOptionPane.showMessageDialog( MixerSelectionItem.this, 
-							"Couldn't set [" + mConfiguration.toString() + 
-							"] as the audio output device" );
-					}
-				}
-			} );
-		}
-	}
+                popup.show(event.getComponent(), event.getX(), event.getY());
+            }
+        }
 
-	/**
-	 * Mute button to mute all audio output channels exposed by the audio
-	 * controller
-	 */
-	public class MuteButton extends JButton
-	{
-		private static final long serialVersionUID = 1L;
-		
-		private boolean mMuted = false;
-		
-		public MuteButton()
-		{
-			setIcon( UNMUTED_ICON );
-			setBorderPainted( false );
-			
-			addActionListener( new ActionListener()
-			{
-				@Override
-				public void actionPerformed( ActionEvent e )
-				{
-					mMuted = !mMuted;
-					
-					for( AudioOutput output: mController.getAudioOutputs() )
-					{
-						output.setMuted( mMuted );
-					}
-					
-					EventQueue.invokeLater( new Runnable()
-					{
-						@Override
-						public void run()
-						{
-							setIcon( mMuted ? MUTED_ICON : UNMUTED_ICON );
-						}
-					} );
-				}
-			} );
-		}
-	}
+        @Override
+        public void mousePressed(MouseEvent e)
+        {
+        }
+
+        @Override
+        public void mouseReleased(MouseEvent e)
+        {
+        }
+
+        @Override
+        public void mouseEntered(MouseEvent e)
+        {
+        }
+
+        @Override
+        public void mouseExited(MouseEvent e)
+        {
+        }
+    }
+
+    /**
+     * Audio volume (gain) adjustment slider control
+     */
+    public class VolumeSlider extends JSlider
+    {
+        private static final long serialVersionUID = 1L;
+
+        private FloatControl mFloatControl;
+
+        public VolumeSlider(FloatControl control)
+        {
+            super(0, 100, 0);
+
+            setMajorTickSpacing(25);
+            setMinorTickSpacing(5);
+            setPaintTicks(true);
+            setPaintLabels(true);
+
+            mFloatControl = control;
+
+            setValue(getIntegerValue(mFloatControl.getValue()));
+
+            addChangeListener(new ChangeListener()
+            {
+                @Override
+                public void stateChanged(ChangeEvent event)
+                {
+                    mFloatControl.shift(mFloatControl.getValue(),
+                        getFloatValue(VolumeSlider.this.getValue()),
+                        1000);
+                }
+            });
+
+            addMouseListener(new MouseListener()
+            {
+                @Override
+                public void mouseClicked(MouseEvent event)
+                {
+                    if(event.getClickCount() == 2)
+                    {
+                        VolumeSlider.this.setValue(50);
+                    }
+                }
+
+                public void mouseReleased(MouseEvent arg0)
+                {
+                }
+
+                public void mousePressed(MouseEvent arg0)
+                {
+                }
+
+                public void mouseExited(MouseEvent arg0)
+                {
+                }
+
+                public void mouseEntered(MouseEvent arg0)
+                {
+                }
+            });
+        }
+
+        /**
+         * Converts the integer value to a floating point value to use in the
+         * float control.  Assumes an integer value of 50 is the 0.0 dB mid
+         * point (ie no gain ) value.
+         */
+        private int getIntegerValue(float value)
+        {
+            if(value == 0.0f)
+            {
+                return 50;
+            }
+            else if(value < 0.0f)
+            {
+                float ratio = value / mFloatControl.getMinimum();
+
+                return 50 - (int) (ratio * 50.0f);
+            }
+            else
+            {
+                float ratio = value / mFloatControl.getMaximum();
+
+                return 50 + (int) (ratio * 50.0f);
+            }
+        }
+
+        private float getFloatValue(int value)
+        {
+            if(value == 50)
+            {
+                return 0.0f;
+            }
+            else if(value < 50)
+            {
+                return (float) (50 - value) / 50.0f * mFloatControl.getMinimum();
+            }
+            else
+            {
+                return (float) (value - 50) / 50.0f * mFloatControl.getMaximum();
+            }
+        }
+    }
+
+    /**
+     * Mixer/Channel configuration selection item
+     */
+    public class MixerSelectionItem extends JMenuItem
+    {
+        private static final long serialVersionUID = 1L;
+
+        private MixerChannelConfiguration mConfiguration;
+
+        public MixerSelectionItem(MixerChannelConfiguration config)
+        {
+            super(config.toString());
+
+            mConfiguration = config;
+
+            addActionListener(new ActionListener()
+            {
+                @Override
+                public void actionPerformed(ActionEvent e)
+                {
+                    try
+                    {
+                        mController.setMixerChannelConfiguration(mConfiguration);
+                    }
+                    catch(AudioException e1)
+                    {
+                        mLog.error("Couldn't set mixer channel configuration "
+                            + "to: " + mConfiguration.toString());
+
+                        JOptionPane.showMessageDialog(MixerSelectionItem.this,
+                            "Couldn't set [" + mConfiguration.toString() +
+                                "] as the audio output device");
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * Mute button to mute all audio output channels exposed by the audio
+     * controller
+     */
+    public class MuteButton extends JButton
+    {
+        private static final long serialVersionUID = 1L;
+
+        private boolean mMuted = false;
+
+        public MuteButton()
+        {
+            setIcon(UNMUTED_ICON);
+            setBorderPainted(false);
+
+            addActionListener(new ActionListener()
+            {
+                @Override
+                public void actionPerformed(ActionEvent e)
+                {
+                    mMuted = !mMuted;
+
+                    for(AudioOutput output : mController.getAudioOutputs())
+                    {
+                        output.setMuted(mMuted);
+                    }
+
+                    EventQueue.invokeLater(new Runnable()
+                    {
+                        @Override
+                        public void run()
+                        {
+                            setIcon(mMuted ? MUTED_ICON : UNMUTED_ICON);
+                        }
+                    });
+                }
+            });
+        }
+    }
 }

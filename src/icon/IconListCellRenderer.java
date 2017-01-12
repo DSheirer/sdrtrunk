@@ -16,60 +16,50 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package module.decode.event;
-
-import alias.Alias;
-import icon.IconManager;
+package icon;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableCellRenderer;
+import java.awt.*;
 
-/**
- * Custom renderer for JTable cells that contain Alias objects.  Renders the
- * alias name, and if there is an icon name, attempts to get that icon from
- * the settings manager and render it.
- */
-public class CallEventAliasCellRenderer extends DefaultTableCellRenderer
+public class IconListCellRenderer extends JLabel implements ListCellRenderer<Icon>
 {
     private static final long serialVersionUID = 1L;
 
     private IconManager mIconManager;
 
-    public CallEventAliasCellRenderer(IconManager iconManager)
+    public IconListCellRenderer(IconManager iconManager)
     {
-        super();
         mIconManager = iconManager;
+        setOpaque(true);
     }
 
-    public void setValue(Object obj)
+    @Override
+    public Component getListCellRendererComponent(JList<? extends Icon> list, Icon icon, int index,
+                                                  boolean isSelected, boolean cellHasFocus)
     {
-        if(obj != null && obj instanceof Alias)
+        //Get a scaled version of the icon
+        setIcon(mIconManager.getIcon(icon.getName(), 24));
+
+        if(mIconManager.getModel().isDefaultIcon(icon))
         {
-            Alias alias = (Alias) obj;
-
-            setText(alias.getName());
-
-            ImageIcon icon = getIcon(alias, IconManager.DEFAULT_ICON_SIZE);
-
-            if(icon != null)
-            {
-                setIcon(icon);
-            }
+            setText(icon.getName() + " (default)");
         }
         else
         {
-            setText(" ");
-            setIcon(null);
+            setText(icon.getName());
         }
-    }
 
-    private ImageIcon getIcon(Alias alias, int height)
-    {
-        if(mIconManager != null && alias != null)
+        if(isSelected)
         {
-            return mIconManager.getIcon(alias.getIconName(), height);
+            setBackground(list.getSelectionBackground());
+            setForeground(list.getSelectionForeground());
+        }
+        else
+        {
+            setBackground(list.getBackground());
+            setForeground(list.getForeground());
         }
 
-        return null;
+        return this;
     }
 }

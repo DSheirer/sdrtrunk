@@ -1,369 +1,356 @@
 package alias;
 
 import audio.broadcast.BroadcastModel;
+import com.jidesoft.swing.JideSplitPane;
 import gui.editor.Editor;
+import icon.IconManager;
+import net.coderazzi.filters.gui.AutoChoices;
+import net.coderazzi.filters.gui.TableFilterHeader;
+import net.miginfocom.swing.MigLayout;
 
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Rectangle;
+import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import javax.swing.table.DefaultTableCellRenderer;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.ListSelectionModel;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
-import javax.swing.table.DefaultTableCellRenderer;
-
-import net.coderazzi.filters.gui.AutoChoices;
-import net.coderazzi.filters.gui.TableFilterHeader;
-import net.miginfocom.swing.MigLayout;
-import settings.SettingsManager;
-
-import com.jidesoft.swing.JideSplitPane;
-
-public class AliasController extends JPanel 
-				implements ActionListener, ListSelectionListener
+public class AliasController extends JPanel
+    implements ActionListener, ListSelectionListener
 {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	private AliasModel mAliasModel;
-	private JTable mAliasTable;
-	private TableFilterHeader mTableFilterHeader;
-	private AliasEditor mAliasEditor;
-	private MultipleAliasEditor mMultipleAliasEditor;
-	private JideSplitPane mSplitPane;
-	
-	private static final String NEW_ALIAS = "New";
-	private static final String COPY_ALIAS = "Copy";
-	private static final String DELETE_ALIAS = "Delete";
-	
-	private JButton mNewButton = new JButton( NEW_ALIAS );
-	private JButton mCopyButton = new JButton( COPY_ALIAS );
-	private JButton mDeleteButton = new JButton( DELETE_ALIAS );
-	
-	private IconCellRenderer mIconCellRenderer;
+    private AliasModel mAliasModel;
+    private JTable mAliasTable;
+    private TableFilterHeader mTableFilterHeader;
+    private AliasEditor mAliasEditor;
+    private MultipleAliasEditor mMultipleAliasEditor;
+    private JideSplitPane mSplitPane;
 
-	public AliasController(AliasModel aliasModel, BroadcastModel broadcastModel, SettingsManager settingsManager )
-	{
-		mAliasModel = aliasModel;
+    private static final String NEW_ALIAS = "New";
+    private static final String COPY_ALIAS = "Copy";
+    private static final String DELETE_ALIAS = "Delete";
 
-    	mAliasEditor = new AliasEditor( mAliasModel, broadcastModel, settingsManager );
-    	mMultipleAliasEditor = new MultipleAliasEditor( mAliasModel, broadcastModel, settingsManager );
+    private JButton mNewButton = new JButton(NEW_ALIAS);
+    private JButton mCopyButton = new JButton(COPY_ALIAS);
+    private JButton mDeleteButton = new JButton(DELETE_ALIAS);
 
-    	mIconCellRenderer = new IconCellRenderer( settingsManager );
-    	
-    	init();
-    	
-    	mAliasModel.addListener( mAliasEditor );
-	}
-	
-	private void init()
-	{
-    	setLayout( new MigLayout( "insets 0 0 0 0", 
-								  "[grow,fill]", 
-								  "[grow,fill]") );
+    private IconCellRenderer mIconCellRenderer;
 
-		//System Configuration View and Editor
-    	mAliasTable = new JTable( mAliasModel );
-    	mAliasTable.setSelectionMode( ListSelectionModel.MULTIPLE_INTERVAL_SELECTION );
-    	mAliasTable.getSelectionModel().addListSelectionListener( this );
-    	mAliasTable.setAutoCreateRowSorter( true );
-    	
-    	mAliasTable.getColumnModel().getColumn( AliasModel.COLUMN_COLOR )
-			.setCellRenderer( new ColorCellRenderer() );
-    	
-    	mAliasTable.getColumnModel().getColumn( AliasModel.COLUMN_ICON )
-			.setCellRenderer( mIconCellRenderer );
+    public AliasController(AliasModel aliasModel, BroadcastModel broadcastModel, IconManager iconManager)
+    {
+        mAliasModel = aliasModel;
 
-    	mTableFilterHeader = new TableFilterHeader( mAliasTable, AutoChoices.ENABLED );
-    	mTableFilterHeader.setFilterOnUpdates( true );
-    	
-    	JScrollPane tableScroller = new JScrollPane( mAliasTable );
+        mAliasEditor = new AliasEditor(mAliasModel, broadcastModel, iconManager);
+        mMultipleAliasEditor = new MultipleAliasEditor(mAliasModel, broadcastModel, iconManager);
 
-    	JPanel buttonsPanel = new JPanel();
-    	
-    	buttonsPanel.setLayout( 
-			new MigLayout( "insets 0 0 0 0", "[grow,fill][grow,fill][grow,fill]", "[]") );
+        mIconCellRenderer = new IconCellRenderer(iconManager);
 
-    	mNewButton.addActionListener( this );
-    	mNewButton.setToolTipText( "Adds a new alias" );
-    	buttonsPanel.add( mNewButton );
-    	
-    	mCopyButton.addActionListener( this );
-    	mCopyButton.setEnabled( false );
-    	mCopyButton.setToolTipText( "Creates a copy of the currently selected alias and adds it" );
-    	buttonsPanel.add( mCopyButton );
+        init();
 
-    	mDeleteButton.addActionListener( this );
-    	mDeleteButton.setEnabled( false );
-    	mDeleteButton.setToolTipText( "Deletes the currently selected alias" );
-    	buttonsPanel.add( mDeleteButton );
-    	
-    	JPanel listAndButtonsPanel = new JPanel();
+        mAliasModel.addListener(mAliasEditor);
+    }
 
-    	listAndButtonsPanel.setLayout( 
-			new MigLayout( "insets 0 0 0 0", "[grow,fill]", "[grow,fill][]") );
+    private void init()
+    {
+        setLayout(new MigLayout("insets 0 0 0 0",
+            "[grow,fill]",
+            "[grow,fill]"));
 
-    	listAndButtonsPanel.add( tableScroller, "wrap" );
-    	listAndButtonsPanel.add( buttonsPanel );
-		
-		mSplitPane = new JideSplitPane( JideSplitPane.HORIZONTAL_SPLIT );
-		mSplitPane.setDividerSize( 5 );
-		mSplitPane.setShowGripper( true );
-		mSplitPane.add( listAndButtonsPanel );
-		mSplitPane.add( mAliasEditor );
+        //System Configuration View and Editor
+        mAliasTable = new JTable(mAliasModel);
+        mAliasTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        mAliasTable.getSelectionModel().addListSelectionListener(this);
+        mAliasTable.setAutoCreateRowSorter(true);
 
-		add( mSplitPane );
-	}
+        mAliasTable.getColumnModel().getColumn(AliasModel.COLUMN_COLOR)
+            .setCellRenderer(new ColorCellRenderer());
 
-	/**
-	 * Sets the editor argument as the currently visible alias editor
-	 */
-	private void setEditor( Editor<?> editor )
-	{
-		if( mSplitPane.getComponentCount() == 3 )
-		{
-			Component component = mSplitPane.getComponent( 2 );
-			
-			if( component instanceof Editor<?> && component != editor )
-			{
-				//Get current divider location so that we can reapply it after
-				//changing out the editors, so that the interface doesn't move
-				int location = mSplitPane.getDividerLocation( 0 );
-				
-				((Editor<?>)component).setItem( null );
-				
-				mSplitPane.remove( component );
-				editor.setPreferredSize( new Dimension( 100, 100 ) );
-				mSplitPane.add( editor );
-				
-				mSplitPane.validate();
-				mSplitPane.setDividerLocation( 0, location );
-				mSplitPane.repaint();
-			}
-		}
-	}
-	
-	private Alias getAlias( int selectedRow )
-	{
-		if( selectedRow >= 0 )
-		{
-			int index = mAliasTable.convertRowIndexToModel( selectedRow );
-			
-			return mAliasModel.getAliasAtIndex( index );
-		}
-		
-		return null;
-	}
+        mAliasTable.getColumnModel().getColumn(AliasModel.COLUMN_ICON)
+            .setCellRenderer(mIconCellRenderer);
 
-	@Override
-	public void valueChanged( ListSelectionEvent event )
-	{
-		//Limits event firing to only when selection is complete 
-		if( !event.getValueIsAdjusting() )
-		{
-			int[] selectedRows = mAliasTable.getSelectedRows();
+        mTableFilterHeader = new TableFilterHeader(mAliasTable, AutoChoices.ENABLED);
+        mTableFilterHeader.setFilterOnUpdates(true);
 
-			if( selectedRows.length == 0 )
-			{
-				mAliasEditor.setItem( null );
-				mCopyButton.setEnabled( false );
-				mDeleteButton.setEnabled( false );
-			}
-			else if( selectedRows.length == 1 )
-			{
-				setEditor( mAliasEditor );
-				
-				Alias selectedAlias = getAlias( selectedRows[ 0 ] );
-				
-				mAliasEditor.setItem( selectedAlias );
-				
-				if( selectedAlias != null )
-				{
-					mCopyButton.setEnabled( true );
-					mDeleteButton.setEnabled( true );
-				}
-				else
-				{
-					mCopyButton.setEnabled( false );
-					mDeleteButton.setEnabled( false );
-				}
-			}
-			else
-			{
-				setEditor( mMultipleAliasEditor );
-				
-				mCopyButton.setEnabled( true );
-				mDeleteButton.setEnabled( true );
+        JScrollPane tableScroller = new JScrollPane(mAliasTable);
 
-				List<Alias> selectedAliases = new ArrayList<Alias>();
-				
-				for( int selectedRow: selectedRows )
-				{
-					Alias alias = getAlias( selectedRow );
+        JPanel buttonsPanel = new JPanel();
 
-					selectedAliases.add( alias );
-				}
-				
-				mMultipleAliasEditor.setItem( selectedAliases );
-			}
-		}
-	}
+        buttonsPanel.setLayout(
+            new MigLayout("insets 0 0 0 0", "[grow,fill][grow,fill][grow,fill]", "[]"));
 
-	/**
-	 * Adds the alias to the alias table/model and scrolls the view it
-	 */
-	private void addAlias( Alias alias )
-	{
-		//HACK: when inserting a row to the model, the JTable gets
-		//notified and attempts to tell the coderazzi table filter 
-		//adaptive choices filter to refresh before the table filter is 
-		//notified of the row additions, causing an index out of bounds 
-		//exception.  We turn off adaptive choices temporarily, add the
-		//channel, and turn on adaptive choices again.
-		mTableFilterHeader.setAdaptiveChoices( false );
-		
-		int index = mAliasModel.addAlias( alias );
+        mNewButton.addActionListener(this);
+        mNewButton.setToolTipText("Adds a new alias");
+        buttonsPanel.add(mNewButton);
 
-		mTableFilterHeader.setAdaptiveChoices( true );
+        mCopyButton.addActionListener(this);
+        mCopyButton.setEnabled(false);
+        mCopyButton.setToolTipText("Creates a copy of the currently selected alias and adds it");
+        buttonsPanel.add(mCopyButton);
 
-		if( index >= 0 )
-		{
-			int translatedIndex = mAliasTable.convertRowIndexToView( index );
-			mAliasTable.setRowSelectionInterval( translatedIndex, translatedIndex );
-			mAliasTable.scrollRectToVisible( 
-				new Rectangle( mAliasTable.getCellRect( translatedIndex, 0, true ) ) );
-		}
-	}
-	
-	private List<Alias> getSelectedAliases()
-	{
-		List<Alias> selected = new ArrayList<>();
-		
-		int[] rows = mAliasTable.getSelectedRows();
+        mDeleteButton.addActionListener(this);
+        mDeleteButton.setEnabled(false);
+        mDeleteButton.setToolTipText("Deletes the currently selected alias");
+        buttonsPanel.add(mDeleteButton);
 
-		for( int row: rows )
-		{
-			if( row >= 0 )
-			{
-				Alias alias = mAliasModel.getAliasAtIndex( mAliasTable.convertRowIndexToModel( row ) );
-				
-				if( alias != null )
-				{
-					selected.add( alias );
-				}
-			}
-		}
-		
-		return selected;
-	}
+        JPanel listAndButtonsPanel = new JPanel();
 
-	/**
-	 * Responds to New, Copy and Delete Channel button invocations
-	 */
-	@Override
-	public void actionPerformed( ActionEvent event )
-	{
-		switch( event.getActionCommand() )
-		{
-			case NEW_ALIAS:
-				addAlias( new Alias( "New Alias" ) );
-				break;
-			case COPY_ALIAS:
-				for( Alias alias: getSelectedAliases() )
-				{
-					addAlias( AliasFactory.copyOf( alias ) );
-				}
-				break;
-			case DELETE_ALIAS:
-				List<Alias> toDelete = getSelectedAliases();
+        listAndButtonsPanel.setLayout(
+            new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill][]"));
 
-				if( toDelete != null && !toDelete.isEmpty() )
-				{
-					String title = toDelete.size() == 1 ? "Delete Alias?" : "Delete Aliases?";
-					String prompt = toDelete.size() == 1 ? "Do you want to delete this alias?" :
-						"Do you want to delete these " + toDelete.size() + " aliases?";
-					
-					int choice = JOptionPane.showConfirmDialog( AliasController.this, 
-						prompt, title, JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE );
-					
-					if( choice == JOptionPane.YES_OPTION )
-					{
-						for( Alias alias: toDelete )
-						{
-							mAliasModel.removeAlias( alias );
-						}
-					}
-				}
-				break;
-			default:
-				break;
-		}
-	}
+        listAndButtonsPanel.add(tableScroller, "wrap");
+        listAndButtonsPanel.add(buttonsPanel);
 
-	/**
-	 * Colorizes the cell based on the cell's integer value
-	 */
-	public class ColorCellRenderer extends DefaultTableCellRenderer
-	{
-		private static final long serialVersionUID = 1L;
+        mSplitPane = new JideSplitPane(JideSplitPane.HORIZONTAL_SPLIT);
+        mSplitPane.setDividerSize(5);
+        mSplitPane.setShowGripper(true);
+        mSplitPane.add(listAndButtonsPanel);
+        mSplitPane.add(mAliasEditor);
 
-		@Override
-		public Component getTableCellRendererComponent( JTable table,
-				Object value, boolean isSelected, boolean hasFocus, int row,
-				int column )
-		{
-			JLabel label = (JLabel)super.getTableCellRendererComponent( table, 
-					value, isSelected, hasFocus, row, column );
+        add(mSplitPane);
+    }
 
-			label.setBackground( new Color( (int)value ) );
-			
-			label.setText( "" );
-			
-			return label;
-		}
-	}
-	
-	/**
-	 * Displays cell's icon and name
-	 */
-	public class IconCellRenderer extends DefaultTableCellRenderer
-	{
-		private static final long serialVersionUID = 1L;
-		
-		private SettingsManager mSettingsManager;
-		
-		public IconCellRenderer( SettingsManager settingsManager )
-		{
-			mSettingsManager = settingsManager;
-		}
+    /**
+     * Sets the editor argument as the currently visible alias editor
+     */
+    private void setEditor(Editor<?> editor)
+    {
+        if(mSplitPane.getComponentCount() == 3)
+        {
+            Component component = mSplitPane.getComponent(2);
 
-		@Override
-		public Component getTableCellRendererComponent( JTable table,
-				Object value, boolean isSelected, boolean hasFocus, int row,
-				int column )
-		{
-			JLabel label = (JLabel)super.getTableCellRendererComponent( table, 
-					value, isSelected, hasFocus, row, column );
+            if(component instanceof Editor<?> && component != editor)
+            {
+                //Get current divider location so that we can reapply it after
+                //changing out the editors, so that the interface doesn't move
+                int location = mSplitPane.getDividerLocation(0);
 
-			ImageIcon icon = mSettingsManager.getImageIcon( label.getText(), 12 );
+                ((Editor<?>) component).setItem(null);
 
-			if( icon != null )
-			{
-				label.setIcon( icon );
-			}
-			
-			return label;
-		}
-	}
+                mSplitPane.remove(component);
+                editor.setPreferredSize(new Dimension(100, 100));
+                mSplitPane.add(editor);
+
+                mSplitPane.validate();
+                mSplitPane.setDividerLocation(0, location);
+                mSplitPane.repaint();
+            }
+        }
+    }
+
+    private Alias getAlias(int selectedRow)
+    {
+        if(selectedRow >= 0)
+        {
+            int index = mAliasTable.convertRowIndexToModel(selectedRow);
+
+            return mAliasModel.getAliasAtIndex(index);
+        }
+
+        return null;
+    }
+
+    @Override
+    public void valueChanged(ListSelectionEvent event)
+    {
+        //Limits event firing to only when selection is complete
+        if(!event.getValueIsAdjusting())
+        {
+            int[] selectedRows = mAliasTable.getSelectedRows();
+
+            if(selectedRows.length == 0)
+            {
+                mAliasEditor.setItem(null);
+                mCopyButton.setEnabled(false);
+                mDeleteButton.setEnabled(false);
+            }
+            else if(selectedRows.length == 1)
+            {
+                setEditor(mAliasEditor);
+
+                Alias selectedAlias = getAlias(selectedRows[0]);
+
+                mAliasEditor.setItem(selectedAlias);
+
+                if(selectedAlias != null)
+                {
+                    mCopyButton.setEnabled(true);
+                    mDeleteButton.setEnabled(true);
+                }
+                else
+                {
+                    mCopyButton.setEnabled(false);
+                    mDeleteButton.setEnabled(false);
+                }
+            }
+            else
+            {
+                setEditor(mMultipleAliasEditor);
+
+                mCopyButton.setEnabled(true);
+                mDeleteButton.setEnabled(true);
+
+                List<Alias> selectedAliases = new ArrayList<Alias>();
+
+                for(int selectedRow : selectedRows)
+                {
+                    Alias alias = getAlias(selectedRow);
+
+                    selectedAliases.add(alias);
+                }
+
+                mMultipleAliasEditor.setItem(selectedAliases);
+            }
+        }
+    }
+
+    /**
+     * Adds the alias to the alias table/model and scrolls the view it
+     */
+    private void addAlias(Alias alias)
+    {
+        //HACK: when inserting a row to the model, the JTable gets
+        //notified and attempts to tell the coderazzi table filter
+        //adaptive choices filter to refresh before the table filter is
+        //notified of the row additions, causing an index out of bounds
+        //exception.  We turn off adaptive choices temporarily, add the
+        //channel, and turn on adaptive choices again.
+        mTableFilterHeader.setAdaptiveChoices(false);
+
+        int index = mAliasModel.addAlias(alias);
+
+        mTableFilterHeader.setAdaptiveChoices(true);
+
+        if(index >= 0)
+        {
+            int translatedIndex = mAliasTable.convertRowIndexToView(index);
+            mAliasTable.setRowSelectionInterval(translatedIndex, translatedIndex);
+            mAliasTable.scrollRectToVisible(
+                new Rectangle(mAliasTable.getCellRect(translatedIndex, 0, true)));
+        }
+    }
+
+    private List<Alias> getSelectedAliases()
+    {
+        List<Alias> selected = new ArrayList<>();
+
+        int[] rows = mAliasTable.getSelectedRows();
+
+        for(int row : rows)
+        {
+            if(row >= 0)
+            {
+                Alias alias = mAliasModel.getAliasAtIndex(mAliasTable.convertRowIndexToModel(row));
+
+                if(alias != null)
+                {
+                    selected.add(alias);
+                }
+            }
+        }
+
+        return selected;
+    }
+
+    /**
+     * Responds to New, Copy and Delete Channel button invocations
+     */
+    @Override
+    public void actionPerformed(ActionEvent event)
+    {
+        switch(event.getActionCommand())
+        {
+            case NEW_ALIAS:
+                addAlias(new Alias("New Alias"));
+                break;
+            case COPY_ALIAS:
+                for(Alias alias : getSelectedAliases())
+                {
+                    addAlias(AliasFactory.copyOf(alias));
+                }
+                break;
+            case DELETE_ALIAS:
+                List<Alias> toDelete = getSelectedAliases();
+
+                if(toDelete != null && !toDelete.isEmpty())
+                {
+                    String title = toDelete.size() == 1 ? "Delete Alias?" : "Delete Aliases?";
+                    String prompt = toDelete.size() == 1 ? "Do you want to delete this alias?" :
+                        "Do you want to delete these " + toDelete.size() + " aliases?";
+
+                    int choice = JOptionPane.showConfirmDialog(AliasController.this,
+                        prompt, title, JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
+                    if(choice == JOptionPane.YES_OPTION)
+                    {
+                        for(Alias alias : toDelete)
+                        {
+                            mAliasModel.removeAlias(alias);
+                        }
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    /**
+     * Colorizes the cell based on the cell's integer value
+     */
+    public class ColorCellRenderer extends DefaultTableCellRenderer
+    {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table,
+                                                       Object value, boolean isSelected, boolean hasFocus, int row,
+                                                       int column)
+        {
+            JLabel label = (JLabel) super.getTableCellRendererComponent(table,
+                value, isSelected, hasFocus, row, column);
+
+            label.setBackground(new Color((int) value));
+
+            label.setText("");
+
+            return label;
+        }
+    }
+
+    /**
+     * Displays cell's icon and name
+     */
+    public class IconCellRenderer extends DefaultTableCellRenderer
+    {
+        private static final long serialVersionUID = 1L;
+
+        private IconManager mIconManager;
+
+        public IconCellRenderer(IconManager iconManager)
+        {
+            mIconManager = iconManager;
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table,
+                                                       Object value, boolean isSelected, boolean hasFocus, int row,
+                                                       int column)
+        {
+            JLabel label = (JLabel) super.getTableCellRendererComponent(table,
+                value, isSelected, hasFocus, row, column);
+
+            ImageIcon icon = mIconManager.getIcon(label.getText(), 12);
+
+            if(icon != null)
+            {
+                label.setIcon(icon);
+            }
+
+            return label;
+        }
+    }
 }

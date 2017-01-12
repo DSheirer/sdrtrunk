@@ -25,12 +25,11 @@ import audio.broadcast.BroadcastEvent;
 import audio.broadcast.BroadcastModel;
 import audio.broadcast.BroadcastServerType;
 import com.radioreference.api.soap2.UserFeedBroadcast;
-import gui.editor.DocumentListenerEditor;
+import icon.IconManager;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sample.Listener;
-import settings.SettingsManager;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -41,7 +40,7 @@ import java.awt.event.ActionListener;
 
 public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEditor implements Listener<UserFeedBroadcast>
 {
-    private final static Logger mLog = LoggerFactory.getLogger( BroadcastifyConfigurationEditor.class );
+    private final static Logger mLog = LoggerFactory.getLogger(BroadcastifyConfigurationEditor.class);
 
     private static final int ONE_MINUTE_MS = 60000;
 
@@ -57,24 +56,24 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
     private JButton mSaveButton;
     private JButton mResetButton;
 
-    public BroadcastifyConfigurationEditor(BroadcastModel broadcastModel, AliasModel aliasModel,
-                                           SettingsManager settingsManager)
+    public BroadcastifyConfigurationEditor(BroadcastModel broadcastModel, AliasModel aliasModel, IconManager iconManager)
     {
-        super(broadcastModel, aliasModel, settingsManager);
+        super(broadcastModel, aliasModel, iconManager);
 
         init();
     }
 
     private void init()
     {
-        setLayout( new MigLayout( "fill,wrap 2", "[align right][grow,fill]",
-            "[][][][][][][][][][][][][grow,fill]" ) );
-        setPreferredSize(new Dimension(150,400));
+        setLayout(new MigLayout("fill,wrap 2", "[align right][grow,fill]",
+            "[][][][][][][][][][][][][grow,fill]"));
+        setPreferredSize(new Dimension(150, 400));
 
 
         JLabel channelLabel = new JLabel("Broadcastify Stream");
 
-        ImageIcon broadcastifyIcon = mSettingsManager.getImageIcon(BroadcastServerType.BROADCASTIFY.getIconName(), 25);
+        ImageIcon broadcastifyIcon = mIconManager.getScaledIcon(
+            new ImageIcon(BroadcastServerType.BROADCASTIFY.getIconPath()), 25);
         channelLabel.setIcon(broadcastifyIcon);
         add(channelLabel, "span, align center");
 
@@ -143,7 +142,7 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
         add(mDelayValue);
 
         add(new JLabel("Delay:"));
-        mDelay = new JSlider(0,60,0);
+        mDelay = new JSlider(0, 60, 0);
         mDelay.setMajorTickSpacing(10);
         mDelay.setMinorTickSpacing(5);
         mDelay.addChangeListener(new ChangeListener()
@@ -215,7 +214,7 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
 
         if(hasItem())
         {
-            BroadcastifyConfiguration config = (BroadcastifyConfiguration)getItem();
+            BroadcastifyConfiguration config = (BroadcastifyConfiguration) getItem();
 
             mName.setText(config.getName());
             mServer.setText(config.getHost());
@@ -223,7 +222,7 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
             mMountPoint.setText(config.getMountPoint());
             mPassword.setText(config.getPassword());
             mFeedID.setText(String.valueOf(config.getFeedID()));
-            mDelay.setValue((int)(config.getDelay() / ONE_MINUTE_MS));
+            mDelay.setValue((int) (config.getDelay() / ONE_MINUTE_MS));
             mEnabled.setSelected(config.isEnabled());
         }
         else
@@ -244,7 +243,7 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
     @Override
     public void save()
     {
-        BroadcastifyConfiguration config = (BroadcastifyConfiguration)getItem();
+        BroadcastifyConfiguration config = (BroadcastifyConfiguration) getItem();
 
         if(validateConfiguration())
         {
@@ -274,11 +273,11 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
         if(!mBroadcastModel.isUniqueName(name, getItem()))
         {
             String message = (name == null || name.isEmpty()) ?
-                    "Please specify a stream name." : "Stream name " + name +
-                    "is already in use.\nPlease choose another name.";
+                "Please specify a stream name." : "Stream name " + name +
+                "is already in use.\nPlease choose another name.";
 
             JOptionPane.showMessageDialog(BroadcastifyConfigurationEditor.this,
-                    message, "Invalid Stream Name", JOptionPane.ERROR_MESSAGE);
+                message, "Invalid Stream Name", JOptionPane.ERROR_MESSAGE);
 
             mName.requestFocus();
 

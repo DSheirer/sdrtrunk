@@ -30,7 +30,7 @@ import controller.channel.ChannelModel;
 import controller.channel.ChannelProcessingManager;
 import controller.channel.ChannelSelectionManager;
 import controller.channel.map.ChannelMapModel;
-import map.IconManager;
+import icon.IconManager;
 import map.MapService;
 import module.log.EventLogManager;
 import net.miginfocom.swing.MigLayout;
@@ -66,6 +66,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(SDRTrunk.class);
 
+    private IconManager mIconManager;
     private ControllerPanel mControllerPanel;
     private SettingsManager mSettingsManager;
     private SpectralDisplayPanel mSpectralPanel;
@@ -105,6 +106,8 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         ThreadPoolManager threadPoolManager = new ThreadPoolManager();
 
+        mIconManager = new IconManager(threadPoolManager);
+
         mSettingsManager = new SettingsManager(threadPoolManager, tunerConfigurationModel);
 
         AliasModel aliasModel = new AliasModel();
@@ -136,15 +139,15 @@ public class SDRTrunk implements Listener<TunerEvent>
         AudioManager audioManager = new AudioManager(threadPoolManager, sourceManager.getMixerManager());
         channelProcessingManager.addAudioPacketListener(audioManager);
 
-        BroadcastModel broadcastModel = new BroadcastModel(threadPoolManager, mSettingsManager);
+        BroadcastModel broadcastModel = new BroadcastModel(threadPoolManager, mIconManager);
 
         channelProcessingManager.addAudioPacketListener(broadcastModel);
 
-        MapService mapService = new MapService(mSettingsManager);
+        MapService mapService = new MapService(mIconManager);
         channelProcessingManager.addMessageListener(mapService);
 
         mControllerPanel = new ControllerPanel(audioManager, aliasModel, broadcastModel,
-                channelModel, channelMapModel, channelProcessingManager,
+                channelModel, channelMapModel, channelProcessingManager, mIconManager,
                 mapService, mSettingsManager, sourceManager, tunerModel);
 
         mSpectralPanel = new SpectralDisplayPanel(channelModel,
@@ -268,16 +271,7 @@ public class SDRTrunk implements Listener<TunerEvent>
             @Override
             public void actionPerformed(ActionEvent arg0)
             {
-                final IconManager iconManager = new IconManager(mSettingsManager, mMainGui);
-
-                EventQueue.invokeLater(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        iconManager.setVisible(true);
-                    }
-                });
+                mIconManager.showEditor(mMainGui);
             }
         });
         fileMenu.add(settingsMenu);

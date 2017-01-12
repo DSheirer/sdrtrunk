@@ -1,41 +1,28 @@
 package alias;
 
+import alias.AliasEvent.Event;
 import alias.id.AliasIDType;
 import alias.id.broadcast.BroadcastChannel;
+import alias.id.priority.Priority;
 import audio.broadcast.BroadcastModel;
 import gui.editor.Editor;
-
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.EventQueue;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.Arrays;
-import java.util.List;
-
-import javax.swing.DefaultComboBoxModel;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JColorChooser;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JSeparator;
-import javax.swing.JSlider;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-
-import map.IconManager;
-import map.MapIcon;
-import map.MapIconListCellRenderer;
+import icon.Icon;
+import icon.IconListCellRenderer;
+import icon.IconManager;
 import net.miginfocom.swing.MigLayout;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import sample.Listener;
-import settings.SettingsManager;
-import alias.AliasEvent.Event;
-import alias.id.priority.Priority;
+
+import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.TableModelEvent;
+import javax.swing.event.TableModelListener;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.List;
 
 public class MultipleAliasEditor extends Editor<List<Alias>>
         implements Listener<AliasEvent>
@@ -54,7 +41,7 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
     private JCheckBox mGroupCheckBox = new JCheckBox("Group");
     private JComboBox<String> mGroupCombo = new JComboBox<>();
     private JCheckBox mIconCheckBox = new JCheckBox("Icon");
-    private JComboBox<MapIcon> mMapIconCombo;
+    private JComboBox<Icon> mIconCombo;
     private JCheckBox mColorCheckBox = new JCheckBox("Color");
     private JButton mButtonColor;
     private JButton mBtnIconManager;
@@ -68,15 +55,23 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
 
     private AliasModel mAliasModel;
     private BroadcastModel mBroadcastModel;
-    private SettingsManager mSettingsManager;
+    private IconManager mIconManager;
 
-    public MultipleAliasEditor(AliasModel aliasModel, BroadcastModel broadcastModel, SettingsManager settingsManager)
+    public MultipleAliasEditor(AliasModel aliasModel, BroadcastModel broadcastModel, IconManager iconManager)
     {
         mAliasModel = aliasModel;
         mBroadcastModel = broadcastModel;
-        mSettingsManager = settingsManager;
+        mIconManager = iconManager;
 
         mAliasModel.addListener(this);
+        mIconManager.getModel().addTableModelListener(new TableModelListener()
+        {
+            @Override
+            public void tableChanged(TableModelEvent e)
+            {
+                refreshIcons();
+            }
+        });
 
         init();
     }
@@ -139,12 +134,12 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
 
         add(mIconCheckBox);
 
-        mMapIconCombo = new JComboBox<MapIcon>(mSettingsManager.getMapIcons());
+        mIconCombo = new JComboBox<Icon>(mIconManager.getIcons());
 
-        MapIconListCellRenderer renderer = new MapIconListCellRenderer();
+        IconListCellRenderer renderer = new IconListCellRenderer(mIconManager);
         renderer.setPreferredSize(new Dimension(200, 30));
-        mMapIconCombo.setRenderer(renderer);
-        add(mMapIconCombo, "wrap");
+        mIconCombo.setRenderer(renderer);
+        add(mIconCombo, "wrap");
 
         //Dummy place holder
         add(new JLabel());
@@ -155,17 +150,7 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
             @Override
             public void actionPerformed(ActionEvent arg0)
             {
-                final IconManager iconManager =
-                        new IconManager(mSettingsManager, MultipleAliasEditor.this);
-
-                EventQueue.invokeLater(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        iconManager.setVisible(true);
-                    }
-                });
+                mIconManager.showEditor(MultipleAliasEditor.this);
             }
         });
 
@@ -243,6 +228,21 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
         setModified(false);
     }
 
+    private void refreshIcons()
+    {
+        if(mIconCombo != null)
+        {
+            EventQueue.invokeLater(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    mIconCombo.setModel(new DefaultComboBoxModel<>(mIconManager.getIcons()));
+                }
+            });
+        }
+    }
+
     @Override
     public void setItem(List<Alias> item)
     {
@@ -276,6 +276,8 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
 
         List<String> streamNames = mBroadcastModel.getBroadcastConfigurationNames();
         mStreamCombo.setModel(new DefaultComboBoxModel<String>(streamNames.toArray(new String[streamNames.size()])));
+
+        mIconCombo.setModel(new DefaultComboBoxModel<>(mIconManager.getIcons()));
 
         setCheckBoxesUnselected();
 
@@ -363,9 +365,9 @@ public class MultipleAliasEditor extends Editor<List<Alias>>
 
                 if (mIconCheckBox.isSelected())
                 {
-                    if (mMapIconCombo.getSelectedItem() != null)
+                    if (mIconCombo.getSelectedItem() != null)
                     {
-                        alias.setIconName(((MapIcon) mMapIconCombo.getSelectedItem()).getName());
+                        alias.setIconName(((Icon)mIconCombo.getSelectedItem()).getName());
                     }
                     else
                     {

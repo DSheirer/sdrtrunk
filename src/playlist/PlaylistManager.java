@@ -432,9 +432,9 @@ public class PlaylistManager implements ChannelEventListener
         @Override
         public void run()
         {
-            mPlaylistSavePending.set(false);
-
             save();
+
+            mPlaylistSavePending.set(false);
         }
     }
 }

@@ -22,19 +22,16 @@ import alias.AliasModel;
 import com.jidesoft.swing.JideSplitPane;
 import gui.editor.Editor;
 import gui.editor.EmptyEditor;
+import icon.IconManager;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import settings.SettingsManager;
 
 import javax.swing.*;
-import javax.swing.event.ChangeEvent;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.event.TableColumnModelEvent;
-import javax.swing.event.TableColumnModelListener;
 import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -51,7 +48,7 @@ public class BroadcastPanel extends JPanel implements ActionListener, ListSelect
 
     private BroadcastModel mBroadcastModel;
     private AliasModel mAliasModel;
-    private SettingsManager mSettingsManager;
+    private IconManager mIconManager;
 
     private JTable mBroadcastConfigurationTable;
     private JideSplitPane mSplitPane;
@@ -61,11 +58,11 @@ public class BroadcastPanel extends JPanel implements ActionListener, ListSelect
     private JButton mCopyButton = new JButton(COPY_BROADCAST_CONFIGURATION);
     private JButton mDeleteButton = new JButton(DELETE_BROADCAST_CONFIGURATION);
 
-    public BroadcastPanel(BroadcastModel broadcastModel, AliasModel aliasModel, SettingsManager settingManager)
+    public BroadcastPanel(BroadcastModel broadcastModel, AliasModel aliasModel, IconManager iconManager)
     {
         mBroadcastModel = broadcastModel;
         mAliasModel = aliasModel;
-        mSettingsManager = settingManager;
+        mIconManager = iconManager;
         mEditor = mEmptyEditor;
 
         init();
@@ -218,7 +215,7 @@ public class BroadcastPanel extends JPanel implements ActionListener, ListSelect
             if (selectedConfiguration != null)
             {
                 mEditor = BroadcastFactory.getEditor(selectedConfiguration, mBroadcastModel, mAliasModel,
-                    mSettingsManager);
+                    mIconManager);
             }
             else
             {
@@ -239,7 +236,7 @@ public class BroadcastPanel extends JPanel implements ActionListener, ListSelect
 
         public AddBroadcastConfigurationItem(BroadcastServerType type)
         {
-            super(type.toString(), mSettingsManager.getImageIcon(type.getIconName(), 14));
+            super(type.toString(), mIconManager.getScaledIcon(new ImageIcon(type.getIconPath()), 14));
 
             mBroadcastServerType = type;
 

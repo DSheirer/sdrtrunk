@@ -16,60 +16,56 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package module.decode.event;
+package icon;
 
-import alias.Alias;
-import icon.IconManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.TableCellRenderer;
+import java.awt.*;
 
-/**
- * Custom renderer for JTable cells that contain Alias objects.  Renders the
- * alias name, and if there is an icon name, attempts to get that icon from
- * the settings manager and render it.
- */
-public class CallEventAliasCellRenderer extends DefaultTableCellRenderer
+public class IconTableCellRenderer extends JLabel implements TableCellRenderer
 {
+    private final static Logger mLog = LoggerFactory.getLogger(IconTableCellRenderer.class);
+
     private static final long serialVersionUID = 1L;
 
     private IconManager mIconManager;
 
-    public CallEventAliasCellRenderer(IconManager iconManager)
+    public IconTableCellRenderer(IconManager iconManager)
     {
-        super();
         mIconManager = iconManager;
+        setOpaque(true);
+        setHorizontalAlignment(JLabel.CENTER);
+        setPreferredSize(new Dimension(40,34));
     }
 
-    public void setValue(Object obj)
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
+                                                   int row, int column)
     {
-        if(obj != null && obj instanceof Alias)
+        if(value instanceof ImageIcon)
         {
-            Alias alias = (Alias) obj;
-
-            setText(alias.getName());
-
-            ImageIcon icon = getIcon(alias, IconManager.DEFAULT_ICON_SIZE);
-
-            if(icon != null)
-            {
-                setIcon(icon);
-            }
+            //Get a scaled version of the icon
+            setIcon(mIconManager.getScaledIcon((ImageIcon)value, 24));
         }
         else
         {
-            setText(" ");
             setIcon(null);
         }
-    }
 
-    private ImageIcon getIcon(Alias alias, int height)
-    {
-        if(mIconManager != null && alias != null)
+        if(isSelected)
         {
-            return mIconManager.getIcon(alias.getIconName(), height);
+            setBackground(table.getSelectionBackground());
+            setForeground(table.getSelectionForeground());
+        }
+        else
+        {
+            setBackground(table.getBackground());
+            setForeground(table.getForeground());
         }
 
-        return null;
+        return this;
     }
 }
