@@ -2719,11 +2719,11 @@ public class P25DecoderState extends DecoderState
         switch(((MotorolaTSBKMessage) tsbk).getMotorolaOpcode())
         {
             case PATCH_GROUP_CHANNEL_GRANT:
-                PatchGroupVoiceChannelGrant gvcg = (PatchGroupVoiceChannelGrant) tsbk;
+                PatchGroupVoiceChannelGrant pgvcg = (PatchGroupVoiceChannelGrant) tsbk;
 
-                channel = gvcg.getChannel();
-                from = gvcg.getSourceAddress();
-                to = gvcg.getPatchGroupAddress();
+                channel = pgvcg.getChannel();
+                from = pgvcg.getSourceAddress();
+                to = pgvcg.getPatchGroupAddress();
 
                 if(hasCallEvent(channel, from, to))
                 {
@@ -2734,10 +2734,10 @@ public class P25DecoderState extends DecoderState
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.PATCH_GROUP_CALL)
                         .aliasList(getAliasList())
                         .channel(channel)
-                        .details((gvcg.isEncrypted() ? "ENCRYPTED " : "") +
-                            (gvcg.isEmergency() ? " EMERGENCY " : "") +
-                            "PATCH SESSION MODE:" + gvcg.getSessionMode().name())
-                        .frequency(gvcg.getDownlinkFrequency())
+                        .details((pgvcg.isEncrypted() ? "ENCRYPTED " : "") +
+                            (pgvcg.isEmergency() ? " EMERGENCY " : "") +
+                            "PATCH SESSION MODE:" + pgvcg.getSessionMode().name())
+                        .frequency(pgvcg.getDownlinkFrequency())
                         .from(from)
                         .to(to)
                         .build();
@@ -2845,6 +2845,13 @@ public class P25DecoderState extends DecoderState
 
             for(String talkgroupToAdd: talkgroupsToAdd)
             {
+                //Exclude the patch group ID if it is included in the patched talkgroup list so that we don't have
+                //an infinite loop situation
+                if(talkgroupToAdd.equals(patchGroupID))
+                {
+                    continue;
+                }
+
                 if(!patchedTalkgroups.contains(talkgroupToAdd))
                 {
                     patchedTalkgroups.add(talkgroupToAdd);
@@ -2906,7 +2913,9 @@ public class P25DecoderState extends DecoderState
     }
 
     /**
-     * Adds/updates a patch group alias to the alias list containing aliases for each of the patched talkgroups
+     * Adds/updates a patch group alias to the alias list containing aliases for each of the patched talkgroups.  If the
+     * patch group alias already exists, any patched talkgroups will be removed from the existing patch group alias and
+     * replaced with the aliases corresponding to the patched talkgroup aliases.
      *
      * @param patchGroupID for the patch group
      * @param patchedTalkgroups containing the talkgroup IDs for each of the patched talkgroups
@@ -2916,25 +2925,32 @@ public class P25DecoderState extends DecoderState
         PatchGroupAlias patchGroupAlias = null;
 
         //Check for an existing alias for the patch talkgroup
-        Alias alias = getAliasList().getTalkgroupAlias(patchGroupID);
+        Alias existingAlias = getAliasList().getTalkgroupAlias(patchGroupID);
 
-        if(alias instanceof PatchGroupAlias)
+        if(existingAlias instanceof PatchGroupAlias)
         {
-            patchGroupAlias = (PatchGroupAlias)alias;
-        }
-        else if(alias != null)
-        {
-            //If the talkgroup is already aliased to a non-patch group, do nothing
+            patchGroupAlias = (PatchGroupAlias)existingAlias;
         }
         else
         {
             patchGroupAlias = new PatchGroupAlias();
+
+            if(existingAlias != null)
+            {
+                getAliasList().removeAlias(existingAlias);
+
+                patchGroupAlias.setPatchGroupAlias(existingAlias);
+            }
+
             patchGroupAlias.addAliasID(new TalkgroupID(patchGroupID));
+
             getAliasList().addAlias(patchGroupAlias);
         }
 
         if(patchGroupAlias != null)
         {
+            patchGroupAlias.setPatchedTalkgroupIDs(patchedTalkgroups);
+
             patchGroupAlias.clearPatchedAliases();
 
             for(String patchedTalkgroup: patchedTalkgroups)
@@ -2958,7 +2974,15 @@ public class P25DecoderState extends DecoderState
 
         if(alias instanceof PatchGroupAlias)
         {
-            getAliasList().removeAlias(alias);
+            PatchGroupAlias patchGroupAlias = (PatchGroupAlias)alias;
+
+            getAliasList().removeAlias(patchGroupAlias);
+
+            //Replace our temporary patch group alias with the original alias for the patch group ID
+            if(patchGroupAlias.hasPatchGroupAlias())
+            {
+                getAliasList().addAlias(patchGroupAlias.getPatchGroupAlias());
+            }
         }
     }
 

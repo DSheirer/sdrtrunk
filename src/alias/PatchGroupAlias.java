@@ -30,7 +30,9 @@ import java.util.List;
 
 public class PatchGroupAlias extends Alias
 {
+    private Alias mPatchGroupAlias;
     private List<Alias> mPatchedAliases = new ArrayList<>();
+    private List<String> mPatchedTalkgroupIDs = new ArrayList<>();
 
     /**
      * Patch group alias is a single alias for a group of aliases that are temporarily patched together.  This will
@@ -38,11 +40,35 @@ public class PatchGroupAlias extends Alias
      * temporarily joined to form a patch group.
      *
      * Alias properties such as recordable, streamable and call priority are an aggregation from the set of patched
-     * aliases contained in this patch group alias and where applicable, return the highest value/priority from the
-     * group of patched aliases.
+     * aliases contained in this patch group alias and the patch group ID alias and where applicable, return the highest
+     * value/priority from the group of patched aliases.
      */
     public PatchGroupAlias()
     {
+    }
+
+    /**
+     * Sets an alias for this patch group ID
+     */
+    public void setPatchGroupAlias(Alias alias)
+    {
+        mPatchGroupAlias = alias;
+    }
+
+    /**
+     * Alias for this patch group
+     */
+    public Alias getPatchGroupAlias()
+    {
+        return mPatchGroupAlias;
+    }
+
+    /**
+     * Indicates if this patch group has an alias
+     */
+    public boolean hasPatchGroupAlias()
+    {
+        return mPatchGroupAlias != null;
     }
 
     /**
@@ -66,6 +92,11 @@ public class PatchGroupAlias extends Alias
      */
     public void addPatchedAlias(Alias alias)
     {
+        if(alias == PatchGroupAlias.this)
+        {
+            throw new IllegalArgumentException("Can't add patch group alias to itself - would create an infinite loop");
+        }
+
         mPatchedAliases.add(alias);
     }
 
@@ -77,16 +108,39 @@ public class PatchGroupAlias extends Alias
         mPatchedAliases.remove(alias);
     }
 
+    /**
+     * Sets the list of patched talkgroup IDs for this patch group
+     */
+    public void setPatchedTalkgroupIDs(List<String> talkgroupIDs)
+    {
+        mPatchedTalkgroupIDs = talkgroupIDs;
+    }
+
+    /**
+     * List of patched talkgroup IDs for this patch group
+     */
+    public List<String> getPatchedTalkgroupIDs()
+    {
+        return mPatchedTalkgroupIDs;
+    }
+
     @Override
     public String getName()
     {
-        if(getId().size() > 0)
+        if(hasPatchGroupAlias())
         {
-            for(AliasID id: getId())
+            return getPatchGroupAlias().getName();
+        }
+        else
+        {
+            if(getId().size() > 0)
             {
-                if(id.getType() == AliasIDType.TALKGROUP)
+                for(AliasID id: getId())
                 {
-                    return "PATCH:" + ((TalkgroupID)id).getTalkgroup();
+                    if(id.getType() == AliasIDType.TALKGROUP)
+                    {
+                        return "PATCH:" + ((TalkgroupID)id).getTalkgroup();
+                    }
                 }
             }
         }
@@ -104,6 +158,11 @@ public class PatchGroupAlias extends Alias
             aliasActions.addAll(alias.getAction());
         }
 
+        if(hasPatchGroupAlias())
+        {
+            aliasActions.addAll(getPatchGroupAlias().getAction());
+        }
+
         return aliasActions;
     }
 
@@ -118,13 +177,13 @@ public class PatchGroupAlias extends Alias
             }
         }
 
-        return false;
+        return hasPatchGroupAlias() && getPatchGroupAlias().hasActions();
     }
 
     @Override
     public int getCallPriority()
     {
-        int highestPriority = Priority.DEFAULT_PRIORITY;
+        int highestPriority = (hasPatchGroupAlias() ? getPatchGroupAlias().getCallPriority() : Priority.DEFAULT_PRIORITY);
 
         for(Alias alias: mPatchedAliases)
         {
@@ -140,6 +199,11 @@ public class PatchGroupAlias extends Alias
     @Override
     public boolean hasCallPriority()
     {
+        if(hasPatchGroupAlias() && getPatchGroupAlias().hasCallPriority())
+        {
+            return true;
+        }
+
         for(Alias alias: mPatchedAliases)
         {
             if(alias.hasCallPriority())
@@ -154,6 +218,11 @@ public class PatchGroupAlias extends Alias
     @Override
     public boolean isRecordable()
     {
+        if(hasPatchGroupAlias() && getPatchGroupAlias().isRecordable())
+        {
+            return true;
+        }
+
         for(Alias alias: mPatchedAliases)
         {
             if(alias.isRecordable())
@@ -168,6 +237,11 @@ public class PatchGroupAlias extends Alias
     @Override
     public boolean isStreamable()
     {
+        if(hasPatchGroupAlias() && getPatchGroupAlias().isStreamable())
+        {
+            return true;
+        }
+
         for(Alias alias: mPatchedAliases)
         {
             if(alias.isStreamable())
@@ -183,6 +257,11 @@ public class PatchGroupAlias extends Alias
     public List<BroadcastChannel> getBroadcastChannels()
     {
         List<BroadcastChannel> broadcastChannels = new ArrayList<>();
+
+        if(hasPatchGroupAlias())
+        {
+            broadcastChannels.addAll(getPatchGroupAlias().getBroadcastChannels());
+        }
 
         for(Alias alias: mPatchedAliases)
         {
@@ -201,6 +280,11 @@ public class PatchGroupAlias extends Alias
     @Override
     public boolean hasBroadcastChannel(String channel)
     {
+        if(hasPatchGroupAlias() && getPatchGroupAlias().hasBroadcastChannel(channel))
+        {
+            return true;
+        }
+
         for(Alias alias: mPatchedAliases)
         {
             if(alias.hasBroadcastChannel(channel))
