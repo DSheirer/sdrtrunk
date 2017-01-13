@@ -308,7 +308,7 @@ public class R820TTunerEditor extends TunerConfigurationEditor
             }
         } );
         mComboMixerGain.setToolTipText( "<html>Mixer Gain.  Set master gain "
-        		+ "to <b>MASTER</b> to enable adjustment</html>" );
+        		+ "to <b>MANUAL</b> to enable adjustment</html>" );
         
         add( new JLabel( "Mixer:" ) );
         add( mComboMixerGain );
