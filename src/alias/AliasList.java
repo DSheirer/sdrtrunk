@@ -218,7 +218,7 @@ public class AliasList implements Listener<AliasEvent>
                         //We don't maintain lookups for these items
                         break;
                     default:
-                        mLog.warn("Unrecognized Alias ID Type:" + id.getType().name());
+                        mLog.warn("Unrecognized Alias ID Type:" + id.getType().name() + " - can't ADD to lookup table");
                         break;
                 }
             }
@@ -358,10 +358,11 @@ public class AliasList implements Listener<AliasEvent>
                     break;
                 case NON_RECORDABLE:
                 case PRIORITY:
+                case BROADCAST_CHANNEL:
                     //We don't maintain lookups for these items
                     break;
                 default:
-                    mLog.warn("Unrecognized Alias ID Type:" + id.getType().name());
+                    mLog.warn("Unrecognized Alias ID Type:" + id.getType().name() + " - can't REMOVE from lookup table");
                     break;
             }
         }
