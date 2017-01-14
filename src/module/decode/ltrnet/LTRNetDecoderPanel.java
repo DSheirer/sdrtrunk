@@ -20,8 +20,8 @@ package module.decode.ltrnet;
 
 import alias.Alias;
 import icon.IconManager;
-import module.decode.state.ChangedAttribute;
-import module.decode.state.DecoderPanel;
+import channel.metadata.Attribute;
+import channel.state.DecoderPanel;
 import net.miginfocom.swing.MigLayout;
 import settings.ColorSetting;
 import settings.Setting;
@@ -83,7 +83,7 @@ public class LTRNetDecoderPanel extends DecoderPanel
     }
 
     @Override
-    public void receive(final ChangedAttribute changedAttribute)
+    public void receive(final Attribute attribute)
     {
         EventQueue.invokeLater(new Runnable()
         {
@@ -92,7 +92,7 @@ public class LTRNetDecoderPanel extends DecoderPanel
             {
                 LTRNetDecoderState state = getDecoderState();
 
-                switch(changedAttribute)
+                switch(attribute)
                 {
                     case TO_TALKGROUP:
                         mTalkgroup.setText(state.getToTalkgroup());

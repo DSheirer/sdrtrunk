@@ -34,7 +34,7 @@ import map.MapPanel;
 import map.MapService;
 import module.decode.event.CallEventPanel;
 import module.decode.event.MessageActivityPanel;
-import module.decode.state.ChannelList;
+import channel.state.ChannelList;
 import net.miginfocom.swing.MigLayout;
 import settings.SettingsManager;
 import source.SourceManager;

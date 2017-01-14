@@ -1,4 +1,4 @@
-package module.decode.state;
+package channel.state;
 
 import sample.Listener;
 

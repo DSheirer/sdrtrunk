@@ -31,13 +31,13 @@ import module.decode.config.DecodeConfiguration;
 import module.decode.event.CallEvent;
 import module.decode.event.CallEvent.CallEventType;
 import module.decode.mpt1327.MPT1327Message.IdentType;
-import module.decode.state.ChangeChannelTimeoutEvent;
-import module.decode.state.ChangedAttribute;
-import module.decode.state.DecoderState;
-import module.decode.state.DecoderStateEvent;
-import module.decode.state.DecoderStateEvent.Event;
-import module.decode.state.State;
-import module.decode.state.TrafficChannelAllocationEvent;
+import channel.state.ChangeChannelTimeoutEvent;
+import channel.metadata.Attribute;
+import channel.state.DecoderState;
+import channel.state.DecoderStateEvent;
+import channel.state.DecoderStateEvent.Event;
+import channel.state.State;
+import channel.traffic.TrafficChannelAllocationEvent;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -184,7 +184,7 @@ public class MPT1327DecoderState extends DecoderState
 						if( site != null && ( mSite == null || !site.contentEquals( mSite ) ) )
 						{
 							mSite = site;
-							broadcast( ChangedAttribute.CHANNEL_SITE_NUMBER  );
+							broadcast( Attribute.CHANNEL_SITE_NUMBER  );
 						}
 						mSite = mpt.getSiteID();
 						
@@ -314,10 +314,10 @@ public class MPT1327DecoderState extends DecoderState
 	private void resetState()
 	{
 		mFromTalkgroup = null;
-		broadcast( ChangedAttribute.FROM_TALKGROUP );
+		broadcast( Attribute.FROM_TALKGROUP );
 
 		mToTalkgroup = null;
-		broadcast( ChangedAttribute.TO_TALKGROUP );
+		broadcast( Attribute.TO_TALKGROUP );
 
 		/**
 		 * If this is a standard channel, reset the fade timeout to the default
@@ -378,7 +378,7 @@ public class MPT1327DecoderState extends DecoderState
 	{
 		mFromTalkgroup = fromTalkgroup;
 		
-		broadcast( ChangedAttribute.FROM_TALKGROUP );
+		broadcast( Attribute.FROM_TALKGROUP );
 	}
 	
 	public Alias getFromTalkgroupAlias()
@@ -405,7 +405,7 @@ public class MPT1327DecoderState extends DecoderState
 	{
 		mToTalkgroup = toTalkgroup;
 		
-		broadcast( ChangedAttribute.TO_TALKGROUP );
+		broadcast( Attribute.TO_TALKGROUP );
 	}
 	
 	public Alias getToTalkgroupAlias()
@@ -432,7 +432,7 @@ public class MPT1327DecoderState extends DecoderState
 	{
 		mChannelNumber = channel;
 		
-		broadcast( ChangedAttribute.CHANNEL_NUMBER );
+		broadcast( Attribute.CHANNEL_NUMBER );
 	}
 	
 	@Override
@@ -590,7 +590,7 @@ public class MPT1327DecoderState extends DecoderState
 							try
 							{
 								mChannelNumber = Integer.valueOf( channel );
-								broadcast( ChangedAttribute.CHANNEL_NUMBER );
+								broadcast( Attribute.CHANNEL_NUMBER );
 							}
 							catch( Exception e )
 							{
@@ -599,13 +599,13 @@ public class MPT1327DecoderState extends DecoderState
 						}
 						
 						mFrequency = allocationEvent.getCallEvent().getFrequency();
-						broadcast( ChangedAttribute.SOURCE );
+						broadcast( Attribute.SOURCE );
 
 						mFromTalkgroup = allocationEvent.getCallEvent().getFromID();
-						broadcast( ChangedAttribute.FROM_TALKGROUP );
+						broadcast( Attribute.FROM_TALKGROUP );
 						
 						mToTalkgroup = allocationEvent.getCallEvent().getToID();
-						broadcast( ChangedAttribute.TO_TALKGROUP );
+						broadcast( Attribute.TO_TALKGROUP );
 					}
 				}
 				break;

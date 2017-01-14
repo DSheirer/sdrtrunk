@@ -16,8 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package module.decode.state;
+package channel.state;
 
+import channel.metadata.Attribute;
 import controller.channel.Channel;
 import controller.channel.ChannelEvent;
 import controller.channel.ChannelEvent.Event;
@@ -46,7 +47,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ChannelPanel extends JPanel
-    implements Listener<ChangedAttribute>,
+    implements Listener<Attribute>,
     SettingChangeListener,
     ChannelEventListener
 {
@@ -222,14 +223,14 @@ public class ChannelPanel extends JPanel
     }
 
     @Override
-    public void receive(final ChangedAttribute changedAttribute)
+    public void receive(final Attribute attribute)
     {
         EventQueue.invokeLater(new Runnable()
         {
             @Override
             public void run()
             {
-                switch(changedAttribute)
+                switch(attribute)
                 {
                     case CHANNEL_STATE:
                         if(mChannelState != null && mChannelState.getState() != null)

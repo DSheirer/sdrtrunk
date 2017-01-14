@@ -23,7 +23,6 @@ import controller.NamingThreadFactory;
 import icon.IconManager;
 import message.Message;
 import sample.Listener;
-import settings.SettingsManager;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -102,7 +101,7 @@ public class MapService implements Listener<Message>
 
                 if(alias != null)
                 {
-                    color = alias.getMapColor();
+                    color = alias.getDisplayColor();
                 }
 
                 if(color == null)

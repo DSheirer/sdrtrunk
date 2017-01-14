@@ -23,11 +23,11 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import message.Message;
 import module.decode.DecoderType;
-import module.decode.state.ChangedAttribute;
-import module.decode.state.DecoderState;
-import module.decode.state.DecoderStateEvent;
-import module.decode.state.State;
-import module.decode.state.DecoderStateEvent.Event;
+import channel.metadata.Attribute;
+import channel.state.DecoderState;
+import channel.state.DecoderStateEvent;
+import channel.state.State;
+import channel.state.DecoderStateEvent.Event;
 import alias.Alias;
 import alias.AliasList;
 
@@ -150,7 +150,7 @@ public class MDCDecoderState extends DecoderState
 	public void setFrom( String from )
 	{
 		mFrom = from;
-		broadcast( ChangedAttribute.FROM_TALKGROUP );
+		broadcast( Attribute.FROM_TALKGROUP );
 	}
 	
 	public Alias getFromAlias()
@@ -161,7 +161,7 @@ public class MDCDecoderState extends DecoderState
 	public void setFromAlias( Alias alias )
 	{
 		mFromAlias = alias;
-		broadcast( ChangedAttribute.FROM_TALKGROUP_ALIAS );
+		broadcast( Attribute.FROM_TALKGROUP_ALIAS );
 	}
 	
 	public String getTo()
@@ -172,7 +172,7 @@ public class MDCDecoderState extends DecoderState
 	public void setTo( String to )
 	{
 		mTo = to;
-		broadcast( ChangedAttribute.TO_TALKGROUP );
+		broadcast( Attribute.TO_TALKGROUP );
 	}
 	
 	public Alias getToAlias()
@@ -183,7 +183,7 @@ public class MDCDecoderState extends DecoderState
 	public void setToAlias( Alias alias )
 	{
 		mToAlias = alias;
-		broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
+		broadcast( Attribute.TO_TALKGROUP_ALIAS );
 	}
 	
 	public String getMessage()
@@ -194,7 +194,7 @@ public class MDCDecoderState extends DecoderState
 	public void setMessage( String message )
 	{
 		mMessage = message;
-		broadcast( ChangedAttribute.MESSAGE );
+		broadcast( Attribute.MESSAGE );
 	}
 	
 	public String getMessageType()
@@ -205,7 +205,7 @@ public class MDCDecoderState extends DecoderState
 	public void setMessageType( String type )
 	{
 		mMessageType = type;
-		broadcast( ChangedAttribute.MESSAGE_TYPE );
+		broadcast( Attribute.MESSAGE_TYPE );
 	}
 	
 	@Override

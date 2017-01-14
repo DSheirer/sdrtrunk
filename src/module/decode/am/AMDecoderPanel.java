@@ -19,9 +19,9 @@
 package module.decode.am;
 
 import icon.IconManager;
-import module.decode.state.ChangedAttribute;
-import module.decode.state.DecoderPanel;
-import module.decode.state.DecoderState;
+import channel.metadata.Attribute;
+import channel.state.DecoderPanel;
+import channel.state.DecoderState;
 import net.miginfocom.swing.MigLayout;
 import settings.ColorSetting;
 import settings.Setting;
@@ -55,7 +55,7 @@ public class AMDecoderPanel extends DecoderPanel
     }
 
     @Override
-    public void receive(final ChangedAttribute changedAttribute)
+    public void receive(final Attribute attribute)
     {
     }
 

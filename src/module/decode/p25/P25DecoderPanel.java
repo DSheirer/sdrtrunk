@@ -20,8 +20,8 @@ package module.decode.p25;
 
 import alias.Alias;
 import icon.IconManager;
-import module.decode.state.ChangedAttribute;
-import module.decode.state.DecoderPanel;
+import channel.metadata.Attribute;
+import channel.state.DecoderPanel;
 import net.miginfocom.swing.MigLayout;
 import settings.ColorSetting;
 import settings.Setting;
@@ -108,7 +108,7 @@ public class P25DecoderPanel extends DecoderPanel
     }
 
     @Override
-    public void receive(final ChangedAttribute changedAttribute)
+    public void receive(final Attribute attribute)
     {
         final P25DecoderState state = getDecoderState();
 
@@ -118,7 +118,7 @@ public class P25DecoderPanel extends DecoderPanel
             public void run()
             {
 
-                switch(changedAttribute)
+                switch(attribute)
                 {
                     case NAC:
                         mNAC.setText("NAC:" + state.getNAC());

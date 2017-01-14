@@ -20,8 +20,8 @@ package module.decode.ltrstandard;
 
 import alias.Alias;
 import icon.IconManager;
-import module.decode.state.ChangedAttribute;
-import module.decode.state.DecoderPanel;
+import channel.metadata.Attribute;
+import channel.state.DecoderPanel;
 import net.miginfocom.swing.MigLayout;
 import settings.ColorSetting;
 import settings.Setting;
@@ -84,7 +84,7 @@ public class LTRStandardDecoderPanel extends DecoderPanel
     }
 
     @Override
-    public void receive(final ChangedAttribute attribute)
+    public void receive(final Attribute attribute)
     {
         EventQueue.invokeLater(new Runnable()
         {

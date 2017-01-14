@@ -19,9 +19,9 @@
 package module.decode.nbfm;
 
 import icon.IconManager;
-import module.decode.state.ChangedAttribute;
-import module.decode.state.DecoderPanel;
-import module.decode.state.DecoderState;
+import channel.metadata.Attribute;
+import channel.state.DecoderPanel;
+import channel.state.DecoderState;
 import net.miginfocom.swing.MigLayout;
 import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
@@ -56,7 +56,7 @@ public class NBFMDecoderPanel extends DecoderPanel
     }
 
     @Override
-    public void receive(ChangedAttribute t)
+    public void receive(Attribute t)
     {
         /* Not implemented */
     }

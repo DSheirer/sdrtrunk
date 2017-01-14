@@ -1,7 +1,7 @@
 package controller.channel;
 
 import module.decode.event.CallEvent;
-import module.decode.state.TrafficChannelManager;
+import channel.traffic.TrafficChannelManager;
 
 public class TrafficChannelEvent extends ChannelEvent
 {

@@ -23,11 +23,11 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import message.Message;
 import module.decode.DecoderType;
-import module.decode.state.ChangedAttribute;
-import module.decode.state.DecoderState;
-import module.decode.state.DecoderStateEvent;
-import module.decode.state.DecoderStateEvent.Event;
-import module.decode.state.State;
+import channel.metadata.Attribute;
+import channel.state.DecoderState;
+import channel.state.DecoderStateEvent;
+import channel.state.DecoderStateEvent.Event;
+import channel.state.State;
 import alias.Alias;
 import alias.AliasList;
 
@@ -182,7 +182,7 @@ public class Fleetsync2DecoderState extends DecoderState
 	public void setFromID( String from )
 	{
 		mFrom = from;
-		broadcast( ChangedAttribute.FROM_TALKGROUP );
+		broadcast( Attribute.FROM_TALKGROUP );
 	}
 	
 	public Alias getFromIDAlias()
@@ -193,7 +193,7 @@ public class Fleetsync2DecoderState extends DecoderState
 	public void setFromIDAlias( Alias alias )
 	{
 		mFromAlias = alias;
-		broadcast( ChangedAttribute.FROM_TALKGROUP_ALIAS );
+		broadcast( Attribute.FROM_TALKGROUP_ALIAS );
 	}
 	
 	public String getToID()
@@ -204,7 +204,7 @@ public class Fleetsync2DecoderState extends DecoderState
 	public void setToID( String to )
 	{
 		mTo = to;
-		broadcast( ChangedAttribute.TO_TALKGROUP );
+		broadcast( Attribute.TO_TALKGROUP );
 	}
 	
 	public Alias getToIDAlias()
@@ -215,7 +215,7 @@ public class Fleetsync2DecoderState extends DecoderState
 	public void setToIDAlias( Alias alias )
 	{
 		mToAlias = alias;
-		broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
+		broadcast( Attribute.TO_TALKGROUP_ALIAS );
 	}
 	
 	public String getMessage()
@@ -226,7 +226,7 @@ public class Fleetsync2DecoderState extends DecoderState
 	public void setMessage( String message )
 	{
 		mMessage = message;
-		broadcast( ChangedAttribute.MESSAGE );
+		broadcast( Attribute.MESSAGE );
 	}
 	
 	public String getMessageType()
@@ -237,7 +237,7 @@ public class Fleetsync2DecoderState extends DecoderState
 	public void setMessageType( String type )
 	{
 		mMessageType = type;
-		broadcast( ChangedAttribute.MESSAGE_TYPE );
+		broadcast( Attribute.MESSAGE_TYPE );
 	}
 	
 	/**

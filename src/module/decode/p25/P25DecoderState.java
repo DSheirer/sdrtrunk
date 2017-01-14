@@ -123,13 +123,13 @@ import module.decode.p25.reference.IPProtocol;
 import module.decode.p25.reference.LinkControlOpcode;
 import module.decode.p25.reference.Response;
 import module.decode.p25.reference.Vendor;
-import module.decode.state.ChangeChannelTimeoutEvent;
-import module.decode.state.ChangedAttribute;
-import module.decode.state.DecoderState;
-import module.decode.state.DecoderStateEvent;
-import module.decode.state.DecoderStateEvent.Event;
-import module.decode.state.State;
-import module.decode.state.TrafficChannelAllocationEvent;
+import channel.state.ChangeChannelTimeoutEvent;
+import channel.metadata.Attribute;
+import channel.state.DecoderState;
+import channel.state.DecoderStateEvent;
+import channel.state.DecoderStateEvent.Event;
+import channel.state.State;
+import channel.traffic.TrafficChannelAllocationEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -236,16 +236,16 @@ public class P25DecoderState extends DecoderState
     private void resetState()
     {
         mFromTalkgroup = null;
-        broadcast(ChangedAttribute.FROM_TALKGROUP);
+        broadcast(Attribute.FROM_TALKGROUP);
 
         mFromAlias = null;
-        broadcast(ChangedAttribute.FROM_TALKGROUP_ALIAS);
+        broadcast(Attribute.FROM_TALKGROUP_ALIAS);
 
         mToTalkgroup = null;
-        broadcast(ChangedAttribute.TO_TALKGROUP);
+        broadcast(Attribute.TO_TALKGROUP);
 
         mToAlias = null;
-        broadcast(ChangedAttribute.TO_TALKGROUP_ALIAS);
+        broadcast(Attribute.TO_TALKGROUP_ALIAS);
 
         mCallDetectTalkgroups.clear();
 
@@ -3372,7 +3372,7 @@ public class P25DecoderState extends DecoderState
             {
                 mToTalkgroup = to;
 
-                broadcast(ChangedAttribute.TO_TALKGROUP);
+                broadcast(Attribute.TO_TALKGROUP);
 
                 if(hasAliasList())
                 {
@@ -3383,7 +3383,7 @@ public class P25DecoderState extends DecoderState
                     mToAlias = null;
                 }
 
-                broadcast(ChangedAttribute.TO_TALKGROUP_ALIAS);
+                broadcast(Attribute.TO_TALKGROUP_ALIAS);
 
 				/* Send audio metadata update */
                 broadcast(new Metadata(MetadataType.TO, mToTalkgroup, mToAlias, true));
@@ -3409,7 +3409,7 @@ public class P25DecoderState extends DecoderState
             if(mFromTalkgroup == null || !mFromTalkgroup.contentEquals(from))
             {
                 mFromTalkgroup = from;
-                broadcast(ChangedAttribute.FROM_TALKGROUP);
+                broadcast(Attribute.FROM_TALKGROUP);
 
                 if(hasAliasList())
                 {
@@ -3420,7 +3420,7 @@ public class P25DecoderState extends DecoderState
                     mFromAlias = null;
                 }
 
-                broadcast(ChangedAttribute.FROM_TALKGROUP_ALIAS);
+                broadcast(Attribute.FROM_TALKGROUP_ALIAS);
 
 				/* Send audio metadata update */
                 broadcast(new Metadata(MetadataType.FROM, mFromTalkgroup, mFromAlias, true));
@@ -3446,7 +3446,7 @@ public class P25DecoderState extends DecoderState
         {
             mNAC = nac;
 
-            broadcast(ChangedAttribute.NAC);
+            broadcast(Attribute.NAC);
         }
     }
 
@@ -3459,7 +3459,7 @@ public class P25DecoderState extends DecoderState
         {
             mSite = site;
 
-            broadcast(ChangedAttribute.SITE);
+            broadcast(Attribute.SITE);
 
             if(hasAliasList())
             {
@@ -3475,7 +3475,7 @@ public class P25DecoderState extends DecoderState
                 }
             }
 
-            broadcast(ChangedAttribute.SITE_ALIAS);
+            broadcast(Attribute.SITE_ALIAS);
         }
     }
 
@@ -3485,7 +3485,7 @@ public class P25DecoderState extends DecoderState
         {
             mSystem = system;
 
-            broadcast(ChangedAttribute.SYSTEM);
+            broadcast(Attribute.SYSTEM);
         }
     }
 
@@ -3816,26 +3816,26 @@ public class P25DecoderState extends DecoderState
                         mCurrentCallEvent = (P25CallEvent) allocationEvent.getCallEvent();
 
                         mCurrentChannel = allocationEvent.getCallEvent().getChannel();
-                        broadcast(ChangedAttribute.CHANNEL_NUMBER);
+                        broadcast(Attribute.CHANNEL_NUMBER);
 
                         mCurrentChannelFrequency = allocationEvent.getCallEvent().getFrequency();
-                        broadcast(ChangedAttribute.SOURCE);
+                        broadcast(Attribute.SOURCE);
 
                         mFromTalkgroup = allocationEvent.getCallEvent().getFromID();
-                        broadcast(ChangedAttribute.FROM_TALKGROUP);
+                        broadcast(Attribute.FROM_TALKGROUP);
 
                         mToTalkgroup = allocationEvent.getCallEvent().getToID();
-                        broadcast(ChangedAttribute.TO_TALKGROUP);
+                        broadcast(Attribute.TO_TALKGROUP);
 
                         if(allocationEvent.getCallEvent().hasAliasList())
                         {
                             AliasList aliasList = allocationEvent.getCallEvent().getAliasList();
 
                             mFromAlias = aliasList.getTalkgroupAlias(mFromTalkgroup);
-                            broadcast(ChangedAttribute.FROM_TALKGROUP_ALIAS);
+                            broadcast(Attribute.FROM_TALKGROUP_ALIAS);
 
                             mToAlias = aliasList.getTalkgroupAlias(mToTalkgroup);
-                            broadcast(ChangedAttribute.TO_TALKGROUP_ALIAS);
+                            broadcast(Attribute.TO_TALKGROUP_ALIAS);
                         }
                     }
                 }

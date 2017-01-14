@@ -28,11 +28,11 @@ import org.jdesktop.swingx.mapviewer.GeoPosition;
 import message.Message;
 import module.decode.DecoderType;
 import module.decode.event.CallEvent.CallEventType;
-import module.decode.state.ChangedAttribute;
-import module.decode.state.DecoderState;
-import module.decode.state.DecoderStateEvent;
-import module.decode.state.State;
-import module.decode.state.DecoderStateEvent.Event;
+import channel.metadata.Attribute;
+import channel.state.DecoderState;
+import channel.state.DecoderStateEvent;
+import channel.state.State;
+import channel.state.DecoderStateEvent.Event;
 import alias.Alias;
 import alias.AliasList;
 
@@ -208,7 +208,7 @@ public class Tait1200DecoderState extends DecoderState
 	public void setFromID( String from )
 	{
 		mFrom = from;
-		broadcast( ChangedAttribute.FROM_TALKGROUP );
+		broadcast( Attribute.FROM_TALKGROUP );
 	}
 	
 	public Alias getFromIDAlias()
@@ -219,7 +219,7 @@ public class Tait1200DecoderState extends DecoderState
 	public void setFromIDAlias( Alias alias )
 	{
 		mFromAlias = alias;
-		broadcast( ChangedAttribute.FROM_TALKGROUP_ALIAS );
+		broadcast( Attribute.FROM_TALKGROUP_ALIAS );
 	}
 	
 	public String getToID()
@@ -230,7 +230,7 @@ public class Tait1200DecoderState extends DecoderState
 	public void setToID( String to )
 	{
 		mTo = to;
-		broadcast( ChangedAttribute.TO_TALKGROUP );
+		broadcast( Attribute.TO_TALKGROUP );
 	}
 	
 	public Alias getToIDAlias()
@@ -241,7 +241,7 @@ public class Tait1200DecoderState extends DecoderState
 	public void setToIDAlias( Alias alias )
 	{
 		mToAlias = alias;
-		broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
+		broadcast( Attribute.TO_TALKGROUP_ALIAS );
 	}
 	
 	public String getMessage()
@@ -252,7 +252,7 @@ public class Tait1200DecoderState extends DecoderState
 	public void setMessage( String message )
 	{
 		mMessage = message;
-		broadcast( ChangedAttribute.MESSAGE );
+		broadcast( Attribute.MESSAGE );
 	}
 	
 	public String getMessageType()
@@ -263,6 +263,6 @@ public class Tait1200DecoderState extends DecoderState
 	public void setMessageType( String type )
 	{
 		mMessageType = type;
-		broadcast( ChangedAttribute.MESSAGE_TYPE );
+		broadcast( Attribute.MESSAGE_TYPE );
 	}
 }

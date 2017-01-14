@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package module.decode.state;
+package channel.state;
 
 import audio.AudioPanel;
 import controller.channel.Channel;

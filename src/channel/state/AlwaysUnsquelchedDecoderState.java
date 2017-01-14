@@ -15,13 +15,13 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package module.decode.state;
+package channel.state;
 
 import java.util.concurrent.ScheduledExecutorService;
 
 import message.Message;
 import module.decode.DecoderType;
-import module.decode.state.DecoderStateEvent.Event;
+import channel.state.DecoderStateEvent.Event;
 import audio.metadata.Metadata;
 import audio.metadata.MetadataType;
 

@@ -20,8 +20,8 @@ package module.decode.mpt1327;
 
 import alias.Alias;
 import icon.IconManager;
-import module.decode.state.ChangedAttribute;
-import module.decode.state.DecoderPanel;
+import channel.metadata.Attribute;
+import channel.state.DecoderPanel;
 import settings.ColorSetting;
 import settings.Setting;
 import settings.SettingsManager;
@@ -95,7 +95,7 @@ public class MPT1327TrafficPanel extends DecoderPanel
     }
 
     @Override
-    public void receive(final ChangedAttribute changedAttribute)
+    public void receive(final Attribute attribute)
     {
         final MPT1327DecoderState state = getDecoderState();
 
@@ -104,7 +104,7 @@ public class MPT1327TrafficPanel extends DecoderPanel
             @Override
             public void run()
             {
-                switch(changedAttribute)
+                switch(attribute)
                 {
                     case FROM_TALKGROUP:
                         String talkgroup = state.getFromTalkgroup();

@@ -16,9 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package module.decode.state;
+package channel.state;
 
 import alias.Alias;
+import channel.metadata.Attribute;
 import icon.IconManager;
 import sample.Listener;
 import settings.ColorSetting;
@@ -31,7 +32,7 @@ import javax.swing.*;
 import java.awt.*;
 
 public abstract class DecoderPanel extends JPanel
-    implements Listener<ChangedAttribute>, SettingChangeListener
+    implements Listener<Attribute>, SettingChangeListener
 {
     private static final long serialVersionUID = 1L;
 

@@ -34,11 +34,11 @@ import module.decode.ltrstandard.message.CallEndMessage;
 import module.decode.ltrstandard.message.CallMessage;
 import module.decode.ltrstandard.message.IdleMessage;
 import module.decode.ltrstandard.message.LTRStandardMessage;
-import module.decode.state.ChangedAttribute;
-import module.decode.state.DecoderState;
-import module.decode.state.DecoderStateEvent;
-import module.decode.state.DecoderStateEvent.Event;
-import module.decode.state.State;
+import channel.metadata.Attribute;
+import channel.state.DecoderState;
+import channel.state.DecoderStateEvent;
+import channel.state.DecoderStateEvent.Event;
+import channel.state.State;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -137,12 +137,12 @@ public class LTRStandardDecoderState extends DecoderState
 							if( mLCNTracker.isCurrentChannel( channel ) )
 							{
 		                        mTalkgroup = start.getToID();
-		                        broadcast( ChangedAttribute.TO_TALKGROUP );
+		                        broadcast( Attribute.TO_TALKGROUP );
 		                        
 		                        processTalkgroup( mTalkgroup );
 		                        
 		                        mTalkgroupAlias = start.getToIDAlias();
-		                        broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
+		                        broadcast( Attribute.TO_TALKGROUP_ALIAS );
 
 		                        broadcast( new Metadata( MetadataType.TO, 
 	            						mTalkgroup, mTalkgroupAlias, true ) );
@@ -165,12 +165,12 @@ public class LTRStandardDecoderState extends DecoderState
 					if( mLCNTracker.isCurrentChannel( repeater ) )
 					{
 		                mTalkgroup = end.getToID();
-		                broadcast( ChangedAttribute.TO_TALKGROUP );
+		                broadcast( Attribute.TO_TALKGROUP );
 		                
 		                processTalkgroup( mTalkgroup );
 		
 		                mTalkgroupAlias = end.getToIDAlias();
-		                broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
+		                broadcast( Attribute.TO_TALKGROUP_ALIAS );
 
 		                LTRCallEvent event = mActiveCalls.remove( repeater );
 		                
@@ -242,10 +242,10 @@ public class LTRStandardDecoderState extends DecoderState
 		mActiveCalls.clear();
 		
 		mTalkgroup = null;
-		broadcast( ChangedAttribute.TO_TALKGROUP );
+		broadcast( Attribute.TO_TALKGROUP );
 
 		mTalkgroupAlias = null;
-        broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
+        broadcast( Attribute.TO_TALKGROUP_ALIAS );
 	}
 	
 	public String getTalkgroup()
@@ -453,7 +453,7 @@ public class LTRStandardDecoderState extends DecoderState
 					mCallHighestCount = mCallLCNCounts[ channel ];
 					mCurrentLCN = channel;
 					
-	                broadcast( ChangedAttribute.CHANNEL_NUMBER );
+	                broadcast( Attribute.CHANNEL_NUMBER );
 				}
 			}
 		}

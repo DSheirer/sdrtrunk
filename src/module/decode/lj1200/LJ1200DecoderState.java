@@ -26,11 +26,11 @@ import java.util.concurrent.ScheduledExecutorService;
 
 import message.Message;
 import module.decode.DecoderType;
-import module.decode.state.ChangedAttribute;
-import module.decode.state.DecoderState;
-import module.decode.state.DecoderStateEvent;
-import module.decode.state.DecoderStateEvent.Event;
-import module.decode.state.State;
+import channel.metadata.Attribute;
+import channel.state.DecoderState;
+import channel.state.DecoderStateEvent;
+import channel.state.DecoderStateEvent.Event;
+import channel.state.State;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,13 +106,13 @@ public class LJ1200DecoderState extends DecoderState
 	private void setAddress( String address )
 	{
 		mAddress = address;
-		broadcast( ChangedAttribute.TO_TALKGROUP );
+		broadcast( Attribute.TO_TALKGROUP );
 	}
 
 	private void setAddressAlias( Alias alias )
 	{
 		mAddressAlias = alias;
-		broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
+		broadcast( Attribute.TO_TALKGROUP_ALIAS );
 	}
 	
 	@Override
@@ -160,9 +160,9 @@ public class LJ1200DecoderState extends DecoderState
 	private void resetState()
 	{
 		setAddress( null );
-		broadcast( ChangedAttribute.TO_TALKGROUP );
+		broadcast( Attribute.TO_TALKGROUP );
 		setAddressAlias( null );
-		broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
+		broadcast( Attribute.TO_TALKGROUP_ALIAS );
 	}
 
 	@Override

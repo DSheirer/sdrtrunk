@@ -20,8 +20,8 @@ package module.decode.mdc1200;
 
 import alias.Alias;
 import icon.IconManager;
-import module.decode.state.ChangedAttribute;
-import module.decode.state.DecoderPanel;
+import channel.metadata.Attribute;
+import channel.state.DecoderPanel;
 import net.miginfocom.swing.MigLayout;
 import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
@@ -82,14 +82,14 @@ public class MDCDecoderPanel extends DecoderPanel
     }
 
     @Override
-    public void receive(final ChangedAttribute changedAttribute)
+    public void receive(final Attribute attribute)
     {
         EventQueue.invokeLater(new Runnable()
         {
             @Override
             public void run()
             {
-                switch(changedAttribute)
+                switch(attribute)
                 {
                     case FROM_TALKGROUP:
                         String from = getDecoderState().getFrom();

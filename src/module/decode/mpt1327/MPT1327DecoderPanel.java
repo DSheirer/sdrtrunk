@@ -20,8 +20,8 @@ package module.decode.mpt1327;
 
 import controller.channel.Channel.ChannelType;
 import icon.IconManager;
-import module.decode.state.ChangedAttribute;
-import module.decode.state.DecoderPanel;
+import channel.metadata.Attribute;
+import channel.state.DecoderPanel;
 import net.miginfocom.swing.MigLayout;
 import settings.ColorSetting;
 import settings.Setting;
@@ -120,7 +120,7 @@ public class MPT1327DecoderPanel extends DecoderPanel
     }
 
     @Override
-    public void receive(final ChangedAttribute changedAttribute)
+    public void receive(final Attribute attribute)
     {
         final MPT1327DecoderState state = getDecoderState();
 
@@ -129,7 +129,7 @@ public class MPT1327DecoderPanel extends DecoderPanel
             @Override
             public void run()
             {
-                switch(changedAttribute)
+                switch(attribute)
                 {
                     case CHANNEL_SITE_NUMBER:
                         mSiteOrToTalkgroup.setText(String.valueOf(state.getSite()));

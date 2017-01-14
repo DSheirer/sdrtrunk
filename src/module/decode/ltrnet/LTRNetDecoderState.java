@@ -27,11 +27,11 @@ import message.Message;
 import module.decode.DecoderType;
 import module.decode.event.CallEvent;
 import module.decode.event.CallEvent.CallEventType;
-import module.decode.state.ChangedAttribute;
-import module.decode.state.DecoderState;
-import module.decode.state.DecoderStateEvent;
-import module.decode.state.DecoderStateEvent.Event;
-import module.decode.state.State;
+import channel.metadata.Attribute;
+import channel.state.DecoderState;
+import channel.state.DecoderStateEvent;
+import channel.state.DecoderStateEvent.Event;
+import channel.state.State;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,7 +93,7 @@ public class LTRNetDecoderState extends DecoderState
                         if (mChannelNumber == 0)
                         {
                             mChannelNumber = ltr.getChannel();
-                            broadcast(ChangedAttribute.CHANNEL_NUMBER);
+                            broadcast(Attribute.CHANNEL_NUMBER);
                         }
 
 						/* Process FCC Station ID Events */
@@ -131,7 +131,7 @@ public class LTRNetDecoderState extends DecoderState
                         if (mChannelNumber == 0)
                         {
                             mChannelNumber = ltr.getChannel();
-                            broadcast(ChangedAttribute.CHANNEL_NUMBER);
+                            broadcast(Attribute.CHANNEL_NUMBER);
                         }
 
 						/* If the call event channel matches our current channel
@@ -150,7 +150,7 @@ public class LTRNetDecoderState extends DecoderState
                         if (mChannelNumber != ltr.getChannel())
                         {
                             mChannelNumber = ltr.getChannel();
-                            broadcast(ChangedAttribute.CHANNEL_NUMBER);
+                            broadcast(Attribute.CHANNEL_NUMBER);
                         }
                         break;
                     case MA_CHNH:
@@ -211,10 +211,10 @@ public class LTRNetDecoderState extends DecoderState
                         }
 
                         mTalkgroup = String.valueOf(uniqueID);
-                        broadcast(ChangedAttribute.TO_TALKGROUP);
+                        broadcast(Attribute.TO_TALKGROUP);
 
                         mTalkgroupAlias = ltr.getRadioUniqueIDAlias();
-                        broadcast(ChangedAttribute.TO_TALKGROUP_ALIAS);
+                        broadcast(Attribute.TO_TALKGROUP_ALIAS);
                         break;
                     case ID_SITE:
                         String siteID = ltr.getSiteID();
@@ -252,13 +252,13 @@ public class LTRNetDecoderState extends DecoderState
                         }
 
                         mDescription = "ESN";
-                        broadcast(ChangedAttribute.DESCRIPTION);
+                        broadcast(Attribute.DESCRIPTION);
 
                         mTalkgroup = ltr.getESN();
-                        broadcast(ChangedAttribute.TO_TALKGROUP);
+                        broadcast(Attribute.TO_TALKGROUP);
 
                         mTalkgroupAlias = ltr.getESNAlias();
-                        broadcast(ChangedAttribute.TO_TALKGROUP_ALIAS);
+                        broadcast(Attribute.TO_TALKGROUP_ALIAS);
 
                         broadcast(new DecoderStateEvent(this, Event.DECODE, State.DATA));
 
@@ -286,13 +286,13 @@ public class LTRNetDecoderState extends DecoderState
                             mUniqueIDs.add(uniqueid);
 
                             mDescription = "REGISTER UID";
-                            broadcast(ChangedAttribute.DESCRIPTION);
+                            broadcast(Attribute.DESCRIPTION);
 
                             mTalkgroup = String.valueOf(uniqueid);
-                            broadcast(ChangedAttribute.TO_TALKGROUP);
+                            broadcast(Attribute.TO_TALKGROUP);
 
                             mTalkgroupAlias = ltr.getRadioUniqueIDAlias();
-                            broadcast(ChangedAttribute.TO_TALKGROUP_ALIAS);
+                            broadcast(Attribute.TO_TALKGROUP_ALIAS);
 
                             if (getCurrentLTRCallEvent() == null)
                             {
@@ -620,7 +620,7 @@ public class LTRNetDecoderState extends DecoderState
         {
             broadcast(new DecoderStateEvent(this, Event.START, State.DATA));
             mDescription = "REGISTER";
-            broadcast(ChangedAttribute.DESCRIPTION);
+            broadcast(Attribute.DESCRIPTION);
         }
         /* Process call */
         else
@@ -643,7 +643,7 @@ public class LTRNetDecoderState extends DecoderState
                     }
 
                     mTalkgroup = message.getTalkgroupID();
-                    broadcast(ChangedAttribute.TO_TALKGROUP);
+                    broadcast(Attribute.TO_TALKGROUP);
 
 				/* A talkgroup must be seen at least once before it will be added
 				 * to the mTalkgroups list that is used in the activity summary,
@@ -658,7 +658,7 @@ public class LTRNetDecoderState extends DecoderState
                     }
 
                     mTalkgroupAlias = message.getTalkgroupIDAlias();
-                    broadcast(ChangedAttribute.TO_TALKGROUP_ALIAS);
+                    broadcast(Attribute.TO_TALKGROUP_ALIAS);
 
                     CallEvent callEvent = new LTRCallEvent.Builder(DecoderType.LTR_NET, CallEventType.CALL)
                             .aliasList(getAliasList())
@@ -729,13 +729,13 @@ public class LTRNetDecoderState extends DecoderState
         mCurrentCallEvent = null;
 
         mTalkgroup = null;
-        broadcast(ChangedAttribute.TO_TALKGROUP);
+        broadcast(Attribute.TO_TALKGROUP);
 
         mTalkgroupAlias = null;
-        broadcast(ChangedAttribute.TO_TALKGROUP_ALIAS);
+        broadcast(Attribute.TO_TALKGROUP_ALIAS);
 
         mDescription = null;
-        broadcast(ChangedAttribute.DESCRIPTION);
+        broadcast(Attribute.DESCRIPTION);
     }
 
     public String getToTalkgroup()

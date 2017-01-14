@@ -148,7 +148,7 @@ public class AliasNameEditor extends Editor<Alias>
                 Color newColor = JColorChooser.showDialog(
                     AliasNameEditor.this,
                     "Choose color for this alias",
-                    (hasItem() ? getItem().getMapColor() : null));
+                    (hasItem() ? getItem().getDisplayColor() : null));
 
                 if(newColor != null)
                 {
@@ -264,7 +264,7 @@ public class AliasNameEditor extends Editor<Alias>
 
             mGroupCombo.setSelectedItem(alias.getGroup());
 
-            Color color = alias.getMapColor();
+            Color color = alias.getDisplayColor();
 
             mButtonColor.setBackground(color);
             mButtonColor.setForeground(color);

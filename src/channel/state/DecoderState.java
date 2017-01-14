@@ -1,5 +1,6 @@
-package module.decode.state;
+package channel.state;
 
+import channel.metadata.Attribute;
 import message.IMessageListener;
 import message.Message;
 import module.Module;
@@ -31,7 +32,7 @@ public abstract class DecoderState extends Module
 {
 	/* This has to be a broadcaster in order for references to persist */
 	private Broadcaster<CallEvent> mCallEventBroadcaster = new Broadcaster<>();
-	private Listener<ChangedAttribute> mChangedAttributeListener;
+	private Listener<Attribute> mChangedAttributeListener;
 	private Listener<DecoderStateEvent> mDecoderStateListener;
 	private Listener<Metadata> mMetadataListener;
 	
@@ -141,7 +142,7 @@ public abstract class DecoderState extends Module
 	 * Broadcasts the channel state attribute change event to all registered
 	 * listeners
 	 */
-	protected void broadcast( ChangedAttribute attribute )
+	protected void broadcast( Attribute attribute )
 	{
 		if( mChangedAttributeListener != null )
 		{
@@ -153,7 +154,7 @@ public abstract class DecoderState extends Module
 	 * Adds the listener to receive channel state attribute change events
 	 */
 	@Override
-	public void setChangedAttributeListener( Listener<ChangedAttribute> listener )
+	public void setChangedAttributeListener( Listener<Attribute> listener )
 	{
 		mChangedAttributeListener = listener;
 	}

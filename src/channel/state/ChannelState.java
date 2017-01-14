@@ -15,18 +15,20 @@
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
-package module.decode.state;
+package channel.state;
 
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import channel.metadata.Attribute;
+import channel.traffic.TrafficChannelManager;
 import module.Module;
 import module.decode.config.DecodeConfiguration;
 import module.decode.event.CallEvent;
 import module.decode.event.ICallEventProvider;
-import module.decode.state.DecoderStateEvent.Event;
+import channel.state.DecoderStateEvent.Event;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,7 +54,7 @@ public class ChannelState extends Module implements ICallEventProvider,	IChanged
 	private State mState = State.IDLE;
 
 	private Listener<CallEvent> mCallEventListener;
-	private Listener<ChangedAttribute> mChangedAttributeListener;
+	private Listener<Attribute> mChangedAttributeListener;
 	private Listener<DecoderStateEvent> mDecoderStateListener;
 	private Listener<Metadata> mMetadataListener;
 	private Listener<SquelchState> mSquelchStateListener;
@@ -116,7 +118,7 @@ public class ChannelState extends Module implements ICallEventProvider,	IChanged
 		broadcast( new MetadataReset() );
 		
 		mState = State.IDLE;
-		broadcast( ChangedAttribute.CHANNEL_STATE );
+		broadcast( Attribute.CHANNEL_STATE );
 	}
 
 	@Override
@@ -312,7 +314,7 @@ public class ChannelState extends Module implements ICallEventProvider,	IChanged
 							broadcast( SquelchState.SQUELCH );
 							updateFadeTimeout();
 							mState = state;
-							broadcast( ChangedAttribute.CHANNEL_STATE );
+							broadcast( Attribute.CHANNEL_STATE );
 						}
 						break;
 					case DATA:
@@ -320,13 +322,13 @@ public class ChannelState extends Module implements ICallEventProvider,	IChanged
 						broadcast( SquelchState.SQUELCH );
 						updateFadeTimeout();
 						mState = state;
-						broadcast( ChangedAttribute.CHANNEL_STATE );
+						broadcast( Attribute.CHANNEL_STATE );
 						break;
 					case CALL:
 						broadcast( SquelchState.UNSQUELCH );
 						updateFadeTimeout();
 						mState = state;
-						broadcast( ChangedAttribute.CHANNEL_STATE );
+						broadcast( Attribute.CHANNEL_STATE );
 						break;
 					case FADE:
 						processFadeState();
@@ -360,7 +362,7 @@ public class ChannelState extends Module implements ICallEventProvider,	IChanged
 		mState = State.FADE;
 		
 		broadcast( SquelchState.SQUELCH );
-		broadcast( ChangedAttribute.CHANNEL_STATE );
+		broadcast( Attribute.CHANNEL_STATE );
 	}
 	
 	private void processIdleState()
@@ -375,7 +377,7 @@ public class ChannelState extends Module implements ICallEventProvider,	IChanged
 		
 		mState = State.IDLE;
 		
-		broadcast( ChangedAttribute.CHANNEL_STATE );
+		broadcast( Attribute.CHANNEL_STATE );
 	}
 	
 	private void processTeardownState()
@@ -386,7 +388,7 @@ public class ChannelState extends Module implements ICallEventProvider,	IChanged
 
 		mState = State.TEARDOWN;
 		
-		broadcast( ChangedAttribute.CHANNEL_STATE );
+		broadcast( Attribute.CHANNEL_STATE );
 
 		if( mTrafficChannelEndListener != null )
 		{
@@ -421,7 +423,7 @@ public class ChannelState extends Module implements ICallEventProvider,	IChanged
 	 * Broadcasts the channel state attribute change event to all registered
 	 * listeners
 	 */
-	protected void broadcast( ChangedAttribute attribute )
+	protected void broadcast( Attribute attribute )
 	{
 		if( mChangedAttributeListener != null )
 		{
@@ -433,7 +435,7 @@ public class ChannelState extends Module implements ICallEventProvider,	IChanged
 	 * Adds the listener to receive channel state attribute change events
 	 */
 	@Override
-	public void setChangedAttributeListener( Listener<ChangedAttribute> listener )
+	public void setChangedAttributeListener( Listener<Attribute> listener )
 	{
 		mChangedAttributeListener = listener;
 	}

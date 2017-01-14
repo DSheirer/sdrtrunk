@@ -29,11 +29,11 @@ import message.Message;
 import module.decode.DecoderType;
 import module.decode.event.CallEvent;
 import module.decode.event.CallEvent.CallEventType;
-import module.decode.state.ChangedAttribute;
-import module.decode.state.DecoderState;
-import module.decode.state.DecoderStateEvent;
-import module.decode.state.DecoderStateEvent.Event;
-import module.decode.state.State;
+import channel.metadata.Attribute;
+import channel.state.DecoderState;
+import channel.state.DecoderStateEvent;
+import channel.state.DecoderStateEvent.Event;
+import channel.state.State;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -390,7 +390,7 @@ public class PassportDecoderState extends DecoderState
 	                		
 	                		mChannelNumber = mSiteBand.getChannel( mFrequency );
 	                		
-	                		broadcast( ChangedAttribute.CHANNEL_NUMBER );
+	                		broadcast( Attribute.CHANNEL_NUMBER );
 	                	}
 						break;
 					default:
@@ -570,7 +570,7 @@ public class PassportDecoderState extends DecoderState
 	public void setTalkgroup( String talkgroup )
 	{
 		mTalkgroup = talkgroup;
-		broadcast( ChangedAttribute.TO_TALKGROUP );
+		broadcast( Attribute.TO_TALKGROUP );
 	}
 	
 	public Alias getTalkgroupAlias()
@@ -581,7 +581,7 @@ public class PassportDecoderState extends DecoderState
 	public void setTalkgroupAlias( Alias alias )
 	{
 		mTalkgroupAlias = alias;
-		broadcast( ChangedAttribute.TO_TALKGROUP_ALIAS );
+		broadcast( Attribute.TO_TALKGROUP_ALIAS );
 	}
 
 	public String getMobileID()
@@ -592,7 +592,7 @@ public class PassportDecoderState extends DecoderState
 	public void setMobileID( String id )
 	{
 		mMobileID = id;
-		broadcast( ChangedAttribute.FROM_TALKGROUP );
+		broadcast( Attribute.FROM_TALKGROUP );
 	}
 	
 	public Alias getMobileIDAlias()
@@ -603,7 +603,7 @@ public class PassportDecoderState extends DecoderState
 	public void setMobileIDAlias( Alias alias )
 	{
 		mMobileIDAlias = alias;
-		broadcast( ChangedAttribute.FROM_TALKGROUP_ALIAS );
+		broadcast( Attribute.FROM_TALKGROUP_ALIAS );
 	}
 
 	@Override

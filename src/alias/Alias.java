@@ -117,9 +117,9 @@ public class Alias
 		mColor = color;
 	}
 
-	public Color getMapColor()
+	public Color getDisplayColor()
 	{
-		return new Color( mColor );
+		return new Color( getColor() );
 	}
 	
 	@XmlAttribute

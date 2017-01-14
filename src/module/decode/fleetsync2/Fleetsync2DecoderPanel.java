@@ -19,8 +19,8 @@
 package module.decode.fleetsync2;
 
 import icon.IconManager;
-import module.decode.state.ChangedAttribute;
-import module.decode.state.DecoderPanel;
+import channel.metadata.Attribute;
+import channel.state.DecoderPanel;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -116,14 +116,14 @@ public class Fleetsync2DecoderPanel extends DecoderPanel
     }
 
     @Override
-    public void receive(final ChangedAttribute changedAttribute)
+    public void receive(final Attribute attribute)
     {
         EventQueue.invokeLater(new Runnable()
         {
             @Override
             public void run()
             {
-                switch(changedAttribute)
+                switch(attribute)
                 {
                     case FROM_TALKGROUP:
                         String from = getDecoderState().getFromID();

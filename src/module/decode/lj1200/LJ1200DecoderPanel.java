@@ -20,8 +20,8 @@ package module.decode.lj1200;
 
 import alias.Alias;
 import icon.IconManager;
-import module.decode.state.ChangedAttribute;
-import module.decode.state.DecoderPanel;
+import channel.metadata.Attribute;
+import channel.state.DecoderPanel;
 import net.miginfocom.swing.MigLayout;
 import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
@@ -79,9 +79,9 @@ public class LJ1200DecoderPanel extends DecoderPanel
     }
 
     @Override
-    public void receive(final ChangedAttribute changedAttribute)
+    public void receive(final Attribute attribute)
     {
-        switch(changedAttribute)
+        switch(attribute)
         {
             case TO_TALKGROUP:
                 mTo.setText(getDecoderState().getAddress());
