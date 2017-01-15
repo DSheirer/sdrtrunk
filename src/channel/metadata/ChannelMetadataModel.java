@@ -27,7 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ChannelMetadataModel extends AbstractTableModel implements Listener<MetadataChangeEvent>
+public class ChannelMetadataModel extends AbstractTableModel implements Listener<MutableMetadataChangeEvent>
 {
     public static final int COLUMN_STATE = 0;
     public static final int COLUMN_PRIMARY = 1;
@@ -40,10 +40,10 @@ public class ChannelMetadataModel extends AbstractTableModel implements Listener
     private static final String[] COLUMNS =
         {"State", "Primary", "Secondary", "Message", "Network", "Frequency", "Configuration"};
 
-    private List<Metadata> mChannelMetadata = new ArrayList();
-    private Map<Metadata,Channel> mMetadataChannelMap = new HashMap();
+    private List<MutableMetadata> mChannelMetadata = new ArrayList();
+    private Map<MutableMetadata,Channel> mMetadataChannelMap = new HashMap();
 
-    public void add(Metadata metadata, Channel channel)
+    public void add(MutableMetadata metadata, Channel channel)
     {
         mChannelMetadata.add(metadata);
         mMetadataChannelMap.put(metadata, channel);
@@ -55,7 +55,7 @@ public class ChannelMetadataModel extends AbstractTableModel implements Listener
         metadata.addListener(this);
     }
 
-    public void remove(Metadata metadata)
+    public void remove(MutableMetadata metadata)
     {
         metadata.removeListener(this);
 
@@ -88,7 +88,7 @@ public class ChannelMetadataModel extends AbstractTableModel implements Listener
     @Override
     public Class<?> getColumnClass(int columnIndex)
     {
-        return Metadata.class;
+        return MutableMetadata.class;
     }
 
     @Override
@@ -98,13 +98,13 @@ public class ChannelMetadataModel extends AbstractTableModel implements Listener
     }
 
     @Override
-    public void receive(MetadataChangeEvent metadataChangeEvent)
+    public void receive(MutableMetadataChangeEvent mutableMetadataChangeEvent)
     {
-        int rowIndex = mChannelMetadata.indexOf(metadataChangeEvent.getMetadata());
+        int rowIndex = mChannelMetadata.indexOf(mutableMetadataChangeEvent.getMetadata());
 
         if(rowIndex >= 0)
         {
-            switch(metadataChangeEvent.getAttribute())
+            switch(mutableMetadataChangeEvent.getAttribute())
             {
                 case CHANNEL_CONFIGURATION_LABEL_1:
                 case CHANNEL_CONFIGURATION_LABEL_2:

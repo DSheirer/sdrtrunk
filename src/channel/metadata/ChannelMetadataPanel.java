@@ -24,7 +24,6 @@ import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionListener;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.text.DecimalFormat;
@@ -120,7 +119,7 @@ public class ChannelMetadataPanel extends JPanel
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
                                                        int row, int column)
         {
-            Metadata metadata = (Metadata)value;
+            MutableMetadata metadata = (MutableMetadata)value;
 
             if(mAttribute1 != null)
             {
@@ -187,7 +186,7 @@ public class ChannelMetadataPanel extends JPanel
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
                                                        int row, int column)
         {
-            Metadata metadata = (Metadata)value;
+            MutableMetadata metadata = (MutableMetadata)value;
 
             if(metadata.hasChannelFrequency())
             {
@@ -198,7 +197,7 @@ public class ChannelMetadataPanel extends JPanel
                 mLabel1.setText(null);
             }
 
-            mLabel2.setText(metadata.getChannelID());
+            mLabel2.setText(metadata.getChannelFrequencyLabel());
 
             setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
 
@@ -224,7 +223,7 @@ public class ChannelMetadataPanel extends JPanel
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus,
                                                        int row, int column)
         {
-            Metadata metadata = (Metadata)value;
+            MutableMetadata metadata = (MutableMetadata)value;
 
             mLabel1.setText(metadata.getState().getDisplayValue());
 

@@ -1,6 +1,11 @@
 package channel.state;
 
+import alias.AliasList;
+import audio.metadata.IMetadataProvider;
+import audio.metadata.Metadata;
 import channel.metadata.Attribute;
+import channel.metadata.AttributeChangeRequest;
+import channel.metadata.IAttributeChangeRequestProvider;
 import message.IMessageListener;
 import message.Message;
 import module.Module;
@@ -10,219 +15,182 @@ import module.decode.event.CallEvent;
 import module.decode.event.ICallEventProvider;
 import sample.Broadcaster;
 import sample.Listener;
-import alias.AliasList;
-import audio.metadata.IMetadataProvider;
-import audio.metadata.Metadata;
 
 /**
- * Channel state monitors the stream of decoded messages produced by the 
+ * Channel state monitors the stream of decoded messages produced by the
  * decoder and broadcasts call events as they occur within the decoded message activity.
- * 
+ *
  * Provides access to a textual activity summary of events observed.
  */
-public abstract class DecoderState extends Module 
-			implements ActivitySummaryProvider,
-					   Listener<Message>,
-					   ICallEventProvider,
-					   IChangedAttributeProvider, 
-					   IDecoderStateEventListener,
-					   IDecoderStateEventProvider,
-					   IMessageListener,
-					   IMetadataProvider
+public abstract class DecoderState extends Module implements ActivitySummaryProvider, Listener<Message>,
+    IAttributeChangeRequestProvider, ICallEventProvider, IDecoderStateEventListener,
+    IDecoderStateEventProvider, IMessageListener
 {
-	/* This has to be a broadcaster in order for references to persist */
-	private Broadcaster<CallEvent> mCallEventBroadcaster = new Broadcaster<>();
-	private Listener<Attribute> mChangedAttributeListener;
-	private Listener<DecoderStateEvent> mDecoderStateListener;
-	private Listener<Metadata> mMetadataListener;
-	
-	private DecoderStateEventListener mDecoderStateEventListener = 
-										new DecoderStateEventListener();
-	
-	protected CallEvent mCurrentCallEvent;
-	
-	private AliasList mAliasList;
-	
-	public DecoderState( AliasList aliasList )
-	{
-		mAliasList = aliasList;
-	}
-	
-	public abstract DecoderType getDecoderType();
-	
-	public AliasList getAliasList()
-	{
-		return mAliasList;
-	}
-	
-	public boolean hasAliasList()
-	{
-		return mAliasList != null;
-	}
-	
-	/**
-	 * Reset the decoder state to prepare for processing a different sample
-	 * source
-	 */
-	public abstract void reset();
+    /* This has to be a broadcaster in order for references to persist */
+    private Broadcaster<CallEvent> mCallEventBroadcaster = new Broadcaster<>();
+    private Listener<AttributeChangeRequest> mAttributeChangeRequestListener;
+    private Listener<DecoderStateEvent> mDecoderStateListener;
 
-	/**
-	 * Allow the decoder to perform any setup actions
-	 */
-	public abstract void init();
+    private DecoderStateEventListener mDecoderStateEventListener = new DecoderStateEventListener();
 
-	/**
-	 * Implements the IDecoderStateEventListener interface to receive state
-	 * reset events.
-	 */
-	public abstract void receiveDecoderStateEvent( DecoderStateEvent event );
-	
-	/**
-	 * Disposes any resources or pointers held by this instance to prepare for
-	 * garbage collection
-	 */
-	public void dispose()
-	{
-		mCallEventBroadcaster.dispose();
-		mCallEventBroadcaster = null;
-		mChangedAttributeListener = null;
-		mDecoderStateListener = null;
-		mMetadataListener = null;
+    protected CallEvent mCurrentCallEvent;
 
-		mAliasList = null;
-	}
-	
-	/**
-	 * Activity Summary - textual summary of activity observed by the channel state.
-	 */
-	public abstract String getActivitySummary();
+    private AliasList mAliasList;
 
-	/**
-	 * Broadcasts a call event to any registered listeners
-	 */
-	protected void broadcast( CallEvent event )
-	{
-		mCallEventBroadcaster.broadcast( event );
-	}
+    public DecoderState(AliasList aliasList)
+    {
+        mAliasList = aliasList;
+    }
 
-	/**
-	 * Adds a call event listener
-	 */
-	@Override
-	public void addCallEventListener( Listener<CallEvent> listener )
-	{
-		mCallEventBroadcaster.addListener( listener );
-	}
+    public abstract DecoderType getDecoderType();
 
-	/**
-	 * Removes the call event listener
-	 */
-	@Override
-	public void removeCallEventListener( Listener<CallEvent> listener )
-	{
-		mCallEventBroadcaster.removeListener( listener );
-	}
+    public AliasList getAliasList()
+    {
+        return mAliasList;
+    }
 
-	@Override
-	public Listener<DecoderStateEvent> getDecoderStateListener()
-	{
-		return mDecoderStateEventListener;
-	}
-	
-	private class DecoderStateEventListener implements Listener<DecoderStateEvent>
-	{
-		@Override
-		public void receive( DecoderStateEvent event )
-		{
-			receiveDecoderStateEvent( event );
-		}
-	}
-	
-	/**
-	 * Broadcasts the channel state attribute change event to all registered
-	 * listeners
-	 */
-	protected void broadcast( Attribute attribute )
-	{
-		if( mChangedAttributeListener != null )
-		{
-			mChangedAttributeListener.receive( attribute );
-		}
-	}
+    public boolean hasAliasList()
+    {
+        return mAliasList != null;
+    }
 
-	/**
-	 * Adds the listener to receive channel state attribute change events
-	 */
-	@Override
-	public void setChangedAttributeListener( Listener<Attribute> listener )
-	{
-		mChangedAttributeListener = listener;
-	}
-	
-	/**
-	 * Removes the listener to receive channel state attribute change events
-	 */
-	@Override
-	public void removeChangedAttributeListener()
-	{
-		mChangedAttributeListener = null;
-	}
+    /**
+     * Reset the decoder state to prepare for processing a different sample
+     * source
+     */
+    public abstract void reset();
 
-	/**
-	 * Broadcasts a channel state event to any registered listeners
-	 */
-	protected void broadcast( DecoderStateEvent event )
-	{
-		if( mDecoderStateListener != null )
-		{
-			mDecoderStateListener.receive( event );
-		}
-	}
+    /**
+     * Allow the decoder to perform any setup actions
+     */
+    public abstract void init();
 
-	/**
-	 * Adds a decoder state event listener
-	 */
-	@Override
-	public void setDecoderStateListener( Listener<DecoderStateEvent> listener )
-	{
-		mDecoderStateListener = listener;
-	}
+    /**
+     * Implements the IDecoderStateEventListener interface to receive state
+     * reset events.
+     */
+    public abstract void receiveDecoderStateEvent(DecoderStateEvent event);
 
-	/**
-	 * Removes the decoder state event listener
-	 */
-	@Override
-	public void removeDecoderStateListener()
-	{
-		mDecoderStateListener = null;
-	}
+    /**
+     * Disposes any resources or pointers held by this instance to prepare for
+     * garbage collection
+     */
+    public void dispose()
+    {
+        mCallEventBroadcaster.dispose();
+        mCallEventBroadcaster = null;
+        mDecoderStateListener = null;
 
-	/**
-	 * Broadcasts metadata to a registered listener
-	 */
-	protected void broadcast( Metadata metadata )
-	{
-		if( mMetadataListener != null )
-		{
-			mMetadataListener.receive( metadata );
-		}
-	}
+        mAliasList = null;
+    }
 
-	@Override
-	public void setMetadataListener( Listener<Metadata> listener )
-	{
-		mMetadataListener = listener;
-	}
+    /**
+     * Activity Summary - textual summary of activity observed by the channel state.
+     */
+    public abstract String getActivitySummary();
 
-	@Override
-	public void removeMetadataListener()
-	{
-		mMetadataListener = null;
-	}
+    /**
+     * Broadcasts a call event to any registered listeners
+     */
+    protected void broadcast(CallEvent event)
+    {
+        mCallEventBroadcaster.broadcast(event);
+    }
 
-	@Override
-	public Listener<Message> getMessageListener()
-	{
-		return this;
-	}
+    /**
+     * Adds a call event listener
+     */
+    @Override
+    public void addCallEventListener(Listener<CallEvent> listener)
+    {
+        mCallEventBroadcaster.addListener(listener);
+    }
+
+    /**
+     * Removes the call event listener
+     */
+    @Override
+    public void removeCallEventListener(Listener<CallEvent> listener)
+    {
+        mCallEventBroadcaster.removeListener(listener);
+    }
+
+    @Override
+    public Listener<DecoderStateEvent> getDecoderStateListener()
+    {
+        return mDecoderStateEventListener;
+    }
+
+    private class DecoderStateEventListener implements Listener<DecoderStateEvent>
+    {
+        @Override
+        public void receive(DecoderStateEvent event)
+        {
+            receiveDecoderStateEvent(event);
+        }
+    }
+
+    /**
+     * Broadcasts a channel state event to any registered listeners
+     */
+    protected void broadcast(DecoderStateEvent event)
+    {
+        if(mDecoderStateListener != null)
+        {
+            mDecoderStateListener.receive(event);
+        }
+    }
+
+    /**
+     * Adds a decoder state event listener
+     */
+    @Override
+    public void setDecoderStateListener(Listener<DecoderStateEvent> listener)
+    {
+        mDecoderStateListener = listener;
+    }
+
+    /**
+     * Removes the decoder state event listener
+     */
+    @Override
+    public void removeDecoderStateListener()
+    {
+        mDecoderStateListener = null;
+    }
+
+    @Override
+    public Listener<Message> getMessageListener()
+    {
+        return this;
+    }
+
+    /**
+     * Broadcasts the attribute change request to the registered listener
+     */
+    protected void broadcast(AttributeChangeRequest<?> request)
+    {
+        if(mAttributeChangeRequestListener != null)
+        {
+            mAttributeChangeRequestListener.receive(request);
+        }
+    }
+
+    /**
+     * Sets the listener to receive attribute change requests from this decoder state
+     */
+    @Override
+    public void setAttributeChangeRequestListener(Listener<AttributeChangeRequest> listener)
+    {
+        mAttributeChangeRequestListener = listener;
+    }
+
+    /**
+     * Removes any listener from receiving attribute change requests
+     */
+    @Override
+    public void removeAttributeChangeRequestListener()
+    {
+        mAttributeChangeRequestListener = null;
+    }
 }

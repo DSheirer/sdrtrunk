@@ -19,234 +19,187 @@
 package channel.metadata;
 
 import alias.Alias;
+import alias.id.broadcast.BroadcastChannel;
+import alias.id.priority.Priority;
 import channel.state.State;
-import sample.Broadcaster;
-import sample.Listener;
+import module.decode.DecoderType;
 
-public class Metadata implements Listener<AttributeChangeRequest>
+import java.util.ArrayList;
+import java.util.List;
+
+public class Metadata
 {
-    private State mState = State.IDLE;
-    private String mChannelConfigurationLabel1;
-    private String mChannelConfigurationLabel2;
-    private String mChannelID;
-    private long mChannelFrequency;
-    private AliasedIdentifier mNetworkID1 = new AliasedIdentifier();
-    private AliasedIdentifier mNetworkID2 = new AliasedIdentifier();
+    // Static unique metadata identifier tracking
+    private static int UNIQUE_METADATA_ID_GENERATOR = 0;
 
-    //Temporal attributes
-    private String mMessage;
-    private String mMessageType;
-    private AliasedIdentifier mPrimaryAddressFrom = new AliasedIdentifier();
-    private AliasedIdentifier mPrimaryAddressTo = new AliasedIdentifier();
-    private AliasedIdentifier mSecondaryAddressFrom = new AliasedIdentifier();
-    private AliasedIdentifier mSecondaryAddressTo = new AliasedIdentifier();
+    private int mMetadataID;
 
-    private Broadcaster<MetadataChangeEvent> mMetadataChangeEventBroadcaster = new Broadcaster<>();
+    protected boolean mUpdated;
+    protected DecoderType mPrimaryDecoderType;
+    protected boolean mSelected;
+    protected State mState = State.IDLE;
+    protected String mChannelConfigurationLabel1;
+    protected String mChannelConfigurationLabel2;
+    protected String mChannelFrequencyLabel;
+    protected long mChannelFrequency;
+    protected AliasedIdentifier mNetworkID1 = new AliasedIdentifier();
+    protected AliasedIdentifier mNetworkID2 = new AliasedIdentifier();
+
+    protected String mMessage;
+    protected String mMessageType;
+    protected AliasedIdentifier mPrimaryAddressFrom = new AliasedIdentifier();
+    protected AliasedIdentifier mPrimaryAddressTo = new AliasedIdentifier();
+    protected AliasedIdentifier mSecondaryAddressFrom = new AliasedIdentifier();
+    protected AliasedIdentifier mSecondaryAddressTo = new AliasedIdentifier();
+
+    //Lazily constructed member variables.
+    private Integer mAudioPriority;
+    private Boolean mRecordable;
+    private List<BroadcastChannel> mBroadcastChannels;
 
 
     /**
      * Channel metadata.  Contains all attributes that reflect the state and current attribute values for a channel
      * that is currently decoding.  This metadata is intended to support any decoding channel gui components to
-     * graphically convey the current state of a decoding channel.
+     * graphically convey the current state of a decoding channel and to provide audio metadata
      */
     public Metadata()
     {
+        mMetadataID = UNIQUE_METADATA_ID_GENERATOR++;
     }
 
     /**
-     * Sets the state of this metadata
+     * Protected constructor.  Primarily used by the copyOf() method to create a metadata copy with the same ID
      */
-    public void setState(State state)
+    protected Metadata(int metadataID)
     {
-        mState = state;
-        broadcast(Attribute.CHANNEL_STATE);
+        mMetadataID = metadataID;
     }
 
     /**
-     * Request to change an attribute value for this metadata.  This is the primary method for updating all attributes
-     * in this metadata set.
+     * Unique string identifier for this metadata that is comprised of the channel ID and the primary TO address.
+     *
+     * This identifier can be used to uniquely identify a channel audio stream and the primary communicant.
      */
-    @Override
-    public void receive(AttributeChangeRequest request)
+    public String getUniqueIdentifier()
     {
-        switch(request.getAttribute())
-        {
-            case CHANNEL_CONFIGURATION_LABEL_1:
-                mChannelConfigurationLabel1 = request.getStringValue();
-                broadcast(Attribute.CHANNEL_CONFIGURATION_LABEL_1);
-                break;
-            case CHANNEL_CONFIGURATION_LABEL_2:
-                mChannelConfigurationLabel2 = request.getStringValue();
-                broadcast(Attribute.CHANNEL_CONFIGURATION_LABEL_2);
-                break;
-            case CHANNEL_FREQUENCY:
-                if(request.hasValue())
-                {
-                    mChannelFrequency = request.getLongValue();
-                }
-                else
-                {
-                    mChannelFrequency = 0;
-                }
-                broadcast(Attribute.CHANNEL_FREQUENCY);
-                break;
-            case CHANNEL_ID:
-                mChannelID = request.getStringValue();
-                broadcast(Attribute.CHANNEL_ID);
-                break;
-            case MESSAGE:
-                mMessage = request.getStringValue();
-                broadcast(Attribute.MESSAGE);
-                break;
-            case MESSAGE_TYPE:
-                mMessageType = request.getStringValue();
-                broadcast(Attribute.MESSAGE_TYPE);
-                break;
-            case NETWORK_ID_1:
-                mNetworkID1.setIdentifier(request.getStringValue());
-                mNetworkID1.setAlias(request.getAlias());
-                broadcast(Attribute.NETWORK_ID_1);
-                break;
-            case NETWORK_ID_2:
-                mNetworkID2.setIdentifier(request.getStringValue());
-                mNetworkID2.setAlias(request.getAlias());
-                broadcast(Attribute.NETWORK_ID_2);
-                break;
-            case PRIMARY_ADDRESS_FROM:
-                mPrimaryAddressFrom.setIdentifier(request.getStringValue());
-                mPrimaryAddressFrom.setAlias(request.getAlias());
-                broadcast(Attribute.PRIMARY_ADDRESS_FROM);
-                break;
-            case PRIMARY_ADDRESS_TO:
-                mPrimaryAddressTo.setIdentifier(request.getStringValue());
-                mPrimaryAddressTo.setAlias(request.getAlias());
-                broadcast(Attribute.PRIMARY_ADDRESS_TO);
-                break;
-            case SECONDARY_ADDRESS_FROM:
-                mSecondaryAddressFrom.setIdentifier(request.getStringValue());
-                mSecondaryAddressFrom.setAlias(request.getAlias());
-                broadcast(Attribute.SECONDARY_ADDRESS_FROM);
-                break;
-            case SECONDARY_ADDRESS_TO:
-                mSecondaryAddressTo.setIdentifier(request.getStringValue());
-                mSecondaryAddressTo.setAlias(request.getAlias());
-                broadcast(Attribute.SECONDARY_ADDRESS_TO);
-                break;
-            default:
-                throw new IllegalArgumentException("Unrecognized Metadata Attribute: " +
-                    request.getAttribute().name());
-        }
+        return "SRC:" + mMetadataID +
+            " ID:" + (mPrimaryAddressTo.hasIdentifier() ? mPrimaryAddressTo.getIdentifier() : "UNKNOWN");
     }
 
     /**
-     * Broadcasts to registered listeners that an attribute has changed for this metadata
+     * Indicates if any of the fields of this metadata have been updated since the last time a copy was made from this
+     * metadata.  This method is primarily used by downstream audio playback and audio recording to signal when changes
+     * are made to the metadata that requires the downstream component to reinspect the metadata.
+     *
+     * This flag is reset to false immediately after a copy is made of this metadata via the copyOf() method.
      */
-    private void broadcast(Attribute attribute)
+    public boolean isUpdated()
     {
-        mMetadataChangeEventBroadcaster.broadcast(new MetadataChangeEvent(this, attribute));
+        return mUpdated;
     }
 
     /**
-     * Adds the listener to receive metadata change events for this channel metadata
+     * Audio Priority as the highest audio priority value from across the primary and secondary identifier aliases.
+     *
+     * A default priority will be used if there are no aliased values.  If there is a conflict between audio priority
+     * and 'Do Not Monitor' among the aliases, the highest audio priority will be used (prefer to monitor).
+     *
+     * -1   Do Not Monitor
+     *  0   Channel Selected for immediate monitor
+     *  1   Highest Priority
+     *  100 Lowest Priority (default)
+     *
+     * @return audio priority
      */
-    public void addListener(Listener<MetadataChangeEvent> listener)
+    public int getAudioPriority()
     {
-        mMetadataChangeEventBroadcaster.addListener(listener);
+        if(isSelected())
+        {
+            return Priority.SELECTED_PRIORITY;
+        }
+
+        if(mAudioPriority == null)
+        {
+            determineAudioPriority();
+        }
+
+        return mAudioPriority;
     }
 
     /**
-     * Removes the listener from receiving metadata change events for this channel metadata
+     * Indicates if the audio priority is set to 'Do Not Monitor'
      */
-    public void removeListener(Listener<MetadataChangeEvent> listener)
+    public boolean isDoNotMonitor()
     {
-        mMetadataChangeEventBroadcaster.removeListener(listener);
+        return getAudioPriority() == Priority.DO_NOT_MONITOR;
     }
 
     /**
-     * Resets temporal attributes to null value.  This only resets attributes that have a non-ull value in order to
-     * limit the number of change events that are produced.
+     * Indicates if any of the primary or secondary TO/FROM aliases are identified as recordable
      */
-    public void resetTemporalAttributes()
+    public boolean isRecordable()
     {
-        if(hasMessage())
+        if(mRecordable == null)
         {
-            mMessage = null;
-            broadcast(Attribute.MESSAGE);
+            determineRecordable();
         }
 
-        if(hasMessageType())
-        {
-            mMessageType = null;
-            broadcast(Attribute.MESSAGE_TYPE);
-        }
-
-        if(mPrimaryAddressFrom.hasIdentifier())
-        {
-            mPrimaryAddressFrom.reset();
-            broadcast(Attribute.PRIMARY_ADDRESS_FROM);
-        }
-
-        if(mPrimaryAddressTo.hasIdentifier())
-        {
-            mPrimaryAddressTo.reset();
-            broadcast(Attribute.PRIMARY_ADDRESS_TO);
-        }
-
-        if(mSecondaryAddressFrom.hasIdentifier())
-        {
-            mSecondaryAddressFrom.reset();
-            broadcast(Attribute.SECONDARY_ADDRESS_FROM);
-        }
-
-        if(mSecondaryAddressTo.hasIdentifier())
-        {
-            mSecondaryAddressTo.reset();
-            broadcast(Attribute.SECONDARY_ADDRESS_TO);
-        }
+        return mRecordable;
     }
 
     /**
-     * Resets all attributes to empty values
+     * Indicates that this metadata has been selected by the user and any audio produced by this channel will be set
+     * to the highest playback priority (immediate monitor).
      */
-    public void resetAllAttributes()
+    public boolean isSelected()
     {
-        resetTemporalAttributes();
+        return mSelected;
+    }
 
-        if(hasChannelConfigurationLabel1())
+    /**
+     * List of de-duplicated broadcast channels aggregated from the primary and secondary TO/FROM aliases.
+     */
+    public List<BroadcastChannel> getBroadcastChannels()
+    {
+        if(mBroadcastChannels == null)
         {
-            mChannelConfigurationLabel1 = null;
-            broadcast(Attribute.CHANNEL_CONFIGURATION_LABEL_1);
+            determineBroadcastChannels();
         }
 
-        if(hasChannelConfigurationLabel2())
-        {
-            mChannelConfigurationLabel2 = null;
-            broadcast(Attribute.CHANNEL_CONFIGURATION_LABEL_2);
-        }
+        return mBroadcastChannels;
+    }
 
-        if(hasChannelID())
-        {
-            mChannelID = null;
-            broadcast(Attribute.CHANNEL_ID);
-        }
+    /**
+     * Indicates if this metadata is streamable, meaning that it contains one ore more broadcast channels
+     */
+    public boolean isStreamable()
+    {
+        return !getBroadcastChannels().isEmpty();
+    }
 
-        if(hasChannelFrequency())
-        {
-            mChannelFrequency = 0;
-            broadcast(Attribute.CHANNEL_FREQUENCY);
-        }
+    /**
+     * Unique identifier for the source channel that produces this metadata
+     */
+    public int getMetadataID()
+    {
+        return mMetadataID;
+    }
 
-        if(mNetworkID1.hasIdentifier())
-        {
-            mNetworkID1.reset();
-            broadcast(Attribute.NETWORK_ID_1);
-        }
+    /**
+     * Decoder type (ie protocol) for the primary decoder
+     */
+    public DecoderType getPrimaryDecoderType()
+    {
+        return mPrimaryDecoderType;
+    }
 
-        if(mNetworkID2.hasIdentifier())
-        {
-            mNetworkID2.reset();
-            broadcast(Attribute.NETWORK_ID_2);
-        }
+    /**
+     * Indicates if this metadata has a primary decoder type defined
+     */
+    public boolean hasPrimaryDecoderType()
+    {
+        return mPrimaryDecoderType != null;
     }
 
     /**
@@ -285,7 +238,7 @@ public class Metadata implements Listener<AttributeChangeRequest>
             case CHANNEL_CONFIGURATION_LABEL_2:
                 return mChannelConfigurationLabel2;
             case CHANNEL_ID:
-                return mChannelID;
+                return mChannelFrequencyLabel;
             case CHANNEL_STATE:
                 return mState.getDisplayValue();
             case MESSAGE:
@@ -352,17 +305,17 @@ public class Metadata implements Listener<AttributeChangeRequest>
     /**
      * Channel ID or Channel Number
      */
-    public String getChannelID()
+    public String getChannelFrequencyLabel()
     {
-        return mChannelID;
+        return mChannelFrequencyLabel;
     }
 
     /**
      * Indicates if there is a non-null, non-empty channel identifier value
      */
-    public boolean hasChannelID()
+    public boolean hasChannelFrequencyLabel()
     {
-        return mChannelID != null && !mChannelID.isEmpty();
+        return mChannelFrequencyLabel != null && !mChannelFrequencyLabel.isEmpty();
     }
 
     /**
@@ -459,5 +412,233 @@ public class Metadata implements Listener<AttributeChangeRequest>
     public AliasedIdentifier getSecondaryAddressTo()
     {
         return mSecondaryAddressTo;
+    }
+
+    /**
+     * Determines the audio priority from across the primary and secondary TO/FROM aliases when they exist
+     */
+    private void determineAudioPriority()
+    {
+        int priority = Priority.DEFAULT_PRIORITY;
+
+        boolean doNotMonitorFound = false;
+        boolean audioPriorityFound = false;
+
+        if(getPrimaryAddressTo().hasAlias())
+        {
+            Alias primaryTo = getPrimaryAddressTo().getAlias();
+
+            if(primaryTo.hasCallPriority())
+            {
+                if(primaryTo.getCallPriority() == Priority.DO_NOT_MONITOR)
+                {
+                    doNotMonitorFound = true;
+                }
+                else
+                {
+                    audioPriorityFound = true;
+
+                    if(primaryTo.getCallPriority() < priority)
+                    {
+                        priority = primaryTo.getCallPriority();
+                    }
+                }
+            }
+        }
+
+        if(getPrimaryAddressFrom().hasAlias())
+        {
+            Alias primaryFrom = getPrimaryAddressFrom().getAlias();
+
+            if(primaryFrom.hasCallPriority())
+            {
+                if(primaryFrom.getCallPriority() == Priority.DO_NOT_MONITOR)
+                {
+                    doNotMonitorFound = true;
+                }
+                else
+                {
+                    audioPriorityFound = true;
+
+                    if(primaryFrom.getCallPriority() < priority)
+                    {
+                        priority = primaryFrom.getCallPriority();
+                    }
+                }
+            }
+        }
+
+        if(getSecondaryAddressTo().hasAlias())
+        {
+            Alias secondaryTo = getSecondaryAddressTo().getAlias();
+
+            if(secondaryTo.hasCallPriority())
+            {
+                if(secondaryTo.getCallPriority() == Priority.DO_NOT_MONITOR)
+                {
+                    doNotMonitorFound = true;
+                }
+                else
+                {
+                    audioPriorityFound = true;
+
+                    if(secondaryTo.getCallPriority() < priority)
+                    {
+                        priority = secondaryTo.getCallPriority();
+                    }
+                }
+            }
+        }
+
+        if(getSecondaryAddressFrom().hasAlias())
+        {
+            Alias secondaryFrom = getSecondaryAddressFrom().getAlias();
+
+            if(secondaryFrom.hasCallPriority())
+            {
+                if(secondaryFrom.getCallPriority() == Priority.DO_NOT_MONITOR)
+                {
+                    doNotMonitorFound = true;
+                }
+                else
+                {
+                    audioPriorityFound = true;
+
+                    if(secondaryFrom.getCallPriority() < priority)
+                    {
+                        priority = secondaryFrom.getCallPriority();
+                    }
+                }
+            }
+        }
+
+        //If we found a 'Do Not Monitor' and no other audio priority, then set to do not monitor
+        if(doNotMonitorFound && !audioPriorityFound)
+        {
+            mAudioPriority = Priority.DO_NOT_MONITOR;
+        }
+        else
+        {
+            mAudioPriority = priority;
+        }
+    }
+
+    /**
+     * Determines if any of the primary or secondary to/from aliases are recordable.
+     */
+    private void determineRecordable()
+    {
+        mRecordable = false;
+
+        if(mPrimaryAddressTo.hasAlias() && mPrimaryAddressTo.getAlias().isRecordable())
+        {
+            mRecordable = true;
+            return;
+        }
+
+        if(mPrimaryAddressFrom.hasAlias() && mPrimaryAddressFrom.getAlias().isRecordable())
+        {
+            mRecordable = true;
+            return;
+        }
+
+        if(mSecondaryAddressTo.hasAlias() && mSecondaryAddressTo.getAlias().isRecordable())
+        {
+            mRecordable = true;
+            return;
+        }
+
+        if(mSecondaryAddressFrom.hasAlias() && mSecondaryAddressFrom.getAlias().isRecordable())
+        {
+            mRecordable = true;
+            return;
+        }
+    }
+
+    /**
+     * Aggregates a de-duplicated list of broadcast channels from among the primary/secondary to/from aliases
+     */
+    private void determineBroadcastChannels()
+    {
+        mBroadcastChannels = new ArrayList<>();
+
+        if(mPrimaryAddressTo.hasAlias() && mPrimaryAddressTo.getAlias().isStreamable())
+        {
+            for(BroadcastChannel broadcastChannel: mPrimaryAddressTo.getAlias().getBroadcastChannels())
+            {
+                if(!mBroadcastChannels.contains(broadcastChannel))
+                {
+                    mBroadcastChannels.add(broadcastChannel);
+                }
+            }
+        }
+
+        if(mPrimaryAddressFrom.hasAlias() && mPrimaryAddressFrom.getAlias().isStreamable())
+        {
+            for(BroadcastChannel broadcastChannel: mPrimaryAddressFrom.getAlias().getBroadcastChannels())
+            {
+                if(!mBroadcastChannels.contains(broadcastChannel))
+                {
+                    mBroadcastChannels.add(broadcastChannel);
+                }
+            }
+        }
+
+        if(mSecondaryAddressTo.hasAlias() && mSecondaryAddressTo.getAlias().isStreamable())
+        {
+            for(BroadcastChannel broadcastChannel: mSecondaryAddressTo.getAlias().getBroadcastChannels())
+            {
+                if(!mBroadcastChannels.contains(broadcastChannel))
+                {
+                    mBroadcastChannels.add(broadcastChannel);
+                }
+            }
+        }
+
+        if(mSecondaryAddressFrom.hasAlias() && mSecondaryAddressFrom.getAlias().isStreamable())
+        {
+            for(BroadcastChannel broadcastChannel: mSecondaryAddressFrom.getAlias().getBroadcastChannels())
+            {
+                if(!mBroadcastChannels.contains(broadcastChannel))
+                {
+                    mBroadcastChannels.add(broadcastChannel);
+                }
+            }
+        }
+    }
+
+    /**
+     * Creates a deep/full snapshot copy of this metadata set.
+     *
+     * The streamable, recordable, audio priority and broadcast channels are not copied.  These are lazily determined
+     * when initially requested.
+     */
+    public Metadata copyOf()
+    {
+        Metadata copy = new Metadata(mMetadataID);
+
+        copy.mState = mState;
+        copy.mPrimaryDecoderType = mPrimaryDecoderType;
+        copy.mChannelFrequency = mChannelFrequency;
+
+        copy.mChannelConfigurationLabel1 = hasChannelConfigurationLabel1() ? new String(mChannelConfigurationLabel1) : null;
+        copy.mChannelConfigurationLabel2 = hasChannelConfigurationLabel2() ? new String(mChannelConfigurationLabel2) : null;
+        copy.mChannelFrequencyLabel = hasChannelFrequencyLabel() ? new String(mChannelFrequencyLabel) : null;
+        copy.mMessage = hasMessage() ? new String(mMessage) : null;
+        copy.mMessageType = hasMessageType() ? new String(mMessageType) : null;
+
+        copy.mNetworkID1 = mNetworkID1.copyOf();
+        copy.mNetworkID2 = mNetworkID2.copyOf();
+        copy.mPrimaryAddressFrom = mPrimaryAddressFrom.copyOf();
+        copy.mPrimaryAddressTo = mPrimaryAddressTo.copyOf();
+        copy.mSecondaryAddressFrom = mSecondaryAddressFrom.copyOf();
+        copy.mSecondaryAddressTo = mSecondaryAddressTo.copyOf();
+
+        copy.mUpdated = mUpdated;
+
+        //Reset the updated flag
+        mUpdated = false;
+
+        return copy;
     }
 }

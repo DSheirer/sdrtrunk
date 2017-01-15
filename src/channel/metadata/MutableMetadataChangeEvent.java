@@ -18,9 +18,9 @@
  ******************************************************************************/
 package channel.metadata;
 
-public class MetadataChangeEvent
+public class MutableMetadataChangeEvent
 {
-    private Metadata mMetadata;
+    private MutableMetadata mMetadata;
     private Attribute mAttribute;
 
     /**
@@ -29,7 +29,7 @@ public class MetadataChangeEvent
      * @param metadata where the change occurred
      * @param attribute that changed
      */
-    public MetadataChangeEvent(Metadata metadata, Attribute attribute)
+    public MutableMetadataChangeEvent(MutableMetadata metadata, Attribute attribute)
     {
         mMetadata = metadata;
         mAttribute = attribute;
@@ -38,7 +38,7 @@ public class MetadataChangeEvent
     /**
      * Channel metadata where the change occurred
      */
-    public Metadata getMetadata()
+    public MutableMetadata getMetadata()
     {
         return mMetadata;
     }

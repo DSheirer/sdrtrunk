@@ -23,6 +23,9 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import channel.metadata.Attribute;
+import channel.metadata.AttributeChangeRequest;
+import channel.metadata.IAttributeChangeRequestListener;
+import channel.metadata.MutableMetadata;
 import channel.traffic.TrafficChannelManager;
 import module.Module;
 import module.decode.config.DecodeConfiguration;
@@ -43,14 +46,16 @@ import audio.squelch.SquelchState;
 import controller.channel.Channel.ChannelType;
 
 public class ChannelState extends Module implements ICallEventProvider,	IChangedAttributeProvider, 
-	IDecoderStateEventListener, IDecoderStateEventProvider, IMetadataProvider, ISquelchStateProvider
+	IDecoderStateEventListener, IDecoderStateEventProvider, IMetadataProvider, ISquelchStateProvider,
+    IAttributeChangeRequestListener
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( ChannelState.class );
 
 	public static final long FADE_TIMEOUT_DELAY = 1200;
 	public static final long RESET_TIMEOUT_DELAY = 2000;
-	
+
+	private MutableMetadata mMutableMetadata = new MutableMetadata();
 	private State mState = State.IDLE;
 
 	private Listener<CallEvent> mCallEventListener;
@@ -107,7 +112,19 @@ public class ChannelState extends Module implements ICallEventProvider,	IChanged
 	{
 		mChannelType = channelType;
 	}
-	
+
+
+    /**
+     * Metadata for this channel containing channel details, primary and secondary entities for call events and any
+     * decoded messages.  This metadata is primarily intended to be used by graphical components to convey the
+     * details of the current channel state and to provide metadata backing any decoded audio packets produced by
+     * any audio streams for this channel.
+     */
+	public MutableMetadata getMutableMetadata()
+    {
+        return mMutableMetadata;
+    }
+
 	/**
 	 * Resets this channel state and prepares it for reuse.
 	 */
@@ -115,8 +132,9 @@ public class ChannelState extends Module implements ICallEventProvider,	IChanged
 	public void reset()
 	{
 		broadcast( new DecoderStateEvent( this, Event.RESET, State.IDLE ) );
-		broadcast( new MetadataReset() );
-		
+
+		mMutableMetadata.resetTemporalAttributes();
+
 		mState = State.IDLE;
 		broadcast( Attribute.CHANNEL_STATE );
 	}
@@ -126,6 +144,8 @@ public class ChannelState extends Module implements ICallEventProvider,	IChanged
 	{
 		if( mStateMonitorFuture == null && mStateMonitor != null )
 		{
+		    mMutableMetadata.resetAllAttributes();
+
 			if( mTrafficChannelEndListener != null )
 			{
 				setState( State.CALL );
@@ -419,7 +439,16 @@ public class ChannelState extends Module implements ICallEventProvider,	IChanged
 		mCallEventListener = null;
 	}
 
-	/**
+
+
+	//NEW:
+    @Override
+    public Listener<AttributeChangeRequest> getAttributeChangeRequestListener()
+    {
+        return mMutableMetadata;
+    }
+
+    /**
 	 * Broadcasts the channel state attribute change event to all registered
 	 * listeners
 	 */
@@ -439,7 +468,7 @@ public class ChannelState extends Module implements ICallEventProvider,	IChanged
 	{
 		mChangedAttributeListener = listener;
 	}
-	
+
 	/**
 	 * Removes the listener to receive channel state attribute change events
 	 */

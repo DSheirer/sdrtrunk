@@ -34,8 +34,10 @@ public class AliasedIdentifier
 
     /**
      * Resets alias and value to null
+     *
+     * Package Private - should only be changed within MutableMetadata
      */
-    public void reset()
+    void reset()
     {
         mIdentifier = null;
         mAlias = null;
@@ -51,8 +53,10 @@ public class AliasedIdentifier
 
     /**
      * Sets the identifier to the argument value
+     *
+     * Package Private - should only be changed within MutableMetadata
      */
-    public void setIdentifier(String identifier)
+    void setIdentifier(String identifier)
     {
         mIdentifier = identifier;
     }
@@ -75,8 +79,10 @@ public class AliasedIdentifier
 
     /**
      * Sets the alias to the argument
+     *
+     * Package Private - should only be changed within MutableMetadata
      */
-    public void setAlias(Alias alias)
+    void setAlias(Alias alias)
     {
         mAlias = alias;
     }
@@ -87,5 +93,15 @@ public class AliasedIdentifier
     public boolean hasAlias()
     {
         return mAlias != null;
+    }
+
+    public AliasedIdentifier copyOf()
+    {
+        AliasedIdentifier copy = new AliasedIdentifier();
+
+        copy.setAlias(mAlias);
+        copy.setIdentifier(new String(mIdentifier));
+
+        return copy;
     }
 }
