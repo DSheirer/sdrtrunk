@@ -21,8 +21,14 @@ import alias.Alias;
 import alias.AliasList;
 import alias.PatchGroupAlias;
 import alias.id.talkgroup.TalkgroupID;
-import audio.metadata.Metadata;
-import audio.metadata.MetadataType;
+import channel.metadata.Attribute;
+import channel.metadata.AttributeChangeRequest;
+import channel.state.ChangeChannelTimeoutEvent;
+import channel.state.DecoderState;
+import channel.state.DecoderStateEvent;
+import channel.state.DecoderStateEvent.Event;
+import channel.state.State;
+import channel.traffic.TrafficChannelAllocationEvent;
 import controller.channel.Channel.ChannelType;
 import message.Message;
 import module.decode.DecoderType;
@@ -123,13 +129,6 @@ import module.decode.p25.reference.IPProtocol;
 import module.decode.p25.reference.LinkControlOpcode;
 import module.decode.p25.reference.Response;
 import module.decode.p25.reference.Vendor;
-import channel.state.ChangeChannelTimeoutEvent;
-import channel.metadata.Attribute;
-import channel.state.DecoderState;
-import channel.state.DecoderStateEvent;
-import channel.state.DecoderStateEvent.Event;
-import channel.state.State;
-import channel.traffic.TrafficChannelAllocationEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,10 +158,10 @@ public class P25DecoderState extends DecoderState
     private Set<module.decode.p25.message.tsbk.osp.control.SecondaryControlChannelBroadcast> mSecondaryControlChannels =
         new TreeSet<>();
 
-    private Map<Integer, IdentifierUpdate> mBands = new HashMap<>();
-    private Map<String, Long> mRegistrations = new HashMap<>();
-    private Map<String, IAdjacentSite> mNeighborMap = new HashMap<>();
-    private Map<String, List<String>> mPatchGroupMap = new HashMap<>();
+    private Map<Integer,IdentifierUpdate> mBands = new HashMap<>();
+    private Map<String,Long> mRegistrations = new HashMap<>();
+    private Map<String,IAdjacentSite> mNeighborMap = new HashMap<>();
+    private Map<String,List<String>> mPatchGroupMap = new HashMap<>();
 
     private String mLastCommandEventID;
     private String mLastPageEventID;
@@ -188,7 +187,7 @@ public class P25DecoderState extends DecoderState
 
     private P25CallEvent mCurrentCallEvent;
     private List<String> mCallDetectTalkgroups = new ArrayList<>();
-    private Map<String, P25CallEvent> mChannelCallMap = new HashMap<>();
+    private Map<String,P25CallEvent> mChannelCallMap = new HashMap<>();
 
     public P25DecoderState(AliasList aliasList,
                            ChannelType channelType,
@@ -225,9 +224,10 @@ public class P25DecoderState extends DecoderState
     {
         resetState();
 
-        updateNAC(null);
-        updateSite(null);
-        updateSystem(null);
+        mNAC = null;
+        mSite = null;
+        mSiteAlias = null;
+        mSystem = null;
     }
 
     /**
@@ -236,16 +236,9 @@ public class P25DecoderState extends DecoderState
     private void resetState()
     {
         mFromTalkgroup = null;
-        broadcast(Attribute.FROM_TALKGROUP);
-
         mFromAlias = null;
-        broadcast(Attribute.FROM_TALKGROUP_ALIAS);
-
         mToTalkgroup = null;
-        broadcast(Attribute.TO_TALKGROUP);
-
         mToAlias = null;
-        broadcast(Attribute.TO_TALKGROUP_ALIAS);
 
         mCallDetectTalkgroups.clear();
 
@@ -496,7 +489,7 @@ public class P25DecoderState extends DecoderState
                 }
                 break;
             case CALL_TERMINATION_OR_CANCELLATION:
-				/* This opcode as handled at the beginning of the method */
+                /* This opcode as handled at the beginning of the method */
                 break;
             case CHANNEL_IDENTIFIER_UPDATE:
                 //TODO: does the activity summary need this message?
@@ -2843,7 +2836,7 @@ public class P25DecoderState extends DecoderState
                 patchedTalkgroups = new ArrayList<>();
             }
 
-            for(String talkgroupToAdd: talkgroupsToAdd)
+            for(String talkgroupToAdd : talkgroupsToAdd)
             {
                 //Exclude the patch group ID if it is included in the patched talkgroup list so that we don't have
                 //an infinite loop situation
@@ -2887,7 +2880,7 @@ public class P25DecoderState extends DecoderState
 
             if(patchedTalkgroups != null)
             {
-                for(String talkgroupToRemove: talkgroupsToRemove)
+                for(String talkgroupToRemove : talkgroupsToRemove)
                 {
                     if(patchedTalkgroups.contains(talkgroupToRemove))
                     {
@@ -2929,7 +2922,7 @@ public class P25DecoderState extends DecoderState
 
         if(existingAlias instanceof PatchGroupAlias)
         {
-            patchGroupAlias = (PatchGroupAlias)existingAlias;
+            patchGroupAlias = (PatchGroupAlias) existingAlias;
         }
         else
         {
@@ -2953,7 +2946,7 @@ public class P25DecoderState extends DecoderState
 
             patchGroupAlias.clearPatchedAliases();
 
-            for(String patchedTalkgroup: patchedTalkgroups)
+            for(String patchedTalkgroup : patchedTalkgroups)
             {
                 Alias patchedAlias = getAliasList().getTalkgroupAlias(patchedTalkgroup);
 
@@ -2974,7 +2967,7 @@ public class P25DecoderState extends DecoderState
 
         if(alias instanceof PatchGroupAlias)
         {
-            PatchGroupAlias patchGroupAlias = (PatchGroupAlias)alias;
+            PatchGroupAlias patchGroupAlias = (PatchGroupAlias) alias;
 
             getAliasList().removeAlias(patchGroupAlias);
 
@@ -3372,8 +3365,6 @@ public class P25DecoderState extends DecoderState
             {
                 mToTalkgroup = to;
 
-                broadcast(Attribute.TO_TALKGROUP);
-
                 if(hasAliasList())
                 {
                     mToAlias = getAliasList().getTalkgroupAlias(mToTalkgroup);
@@ -3383,14 +3374,10 @@ public class P25DecoderState extends DecoderState
                     mToAlias = null;
                 }
 
-                broadcast(Attribute.TO_TALKGROUP_ALIAS);
-
-				/* Send audio metadata update */
-                broadcast(new Metadata(MetadataType.TO, mToTalkgroup, mToAlias, true));
+                broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_TO, mToTalkgroup, mToAlias));
 
                 if(mCurrentCallEvent != null &&
-                    (mCurrentCallEvent.getToID() == null ||
-                        !mCurrentCallEvent.getToID().contentEquals(to)))
+                    (mCurrentCallEvent.getToID() == null || !mCurrentCallEvent.getToID().contentEquals(to)))
                 {
                     mCurrentCallEvent.setToID(to);
                     broadcast(mCurrentCallEvent);
@@ -3409,7 +3396,6 @@ public class P25DecoderState extends DecoderState
             if(mFromTalkgroup == null || !mFromTalkgroup.contentEquals(from))
             {
                 mFromTalkgroup = from;
-                broadcast(Attribute.FROM_TALKGROUP);
 
                 if(hasAliasList())
                 {
@@ -3420,33 +3406,17 @@ public class P25DecoderState extends DecoderState
                     mFromAlias = null;
                 }
 
-                broadcast(Attribute.FROM_TALKGROUP_ALIAS);
-
-				/* Send audio metadata update */
-                broadcast(new Metadata(MetadataType.FROM, mFromTalkgroup, mFromAlias, true));
+                broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_FROM, mFromTalkgroup,
+                    mFromAlias));
 
                 if(mCurrentCallEvent != null &&
-                    (mCurrentCallEvent.getFromID() == null ||
-                        !mCurrentCallEvent.getFromID().contentEquals(from)))
+                    (mCurrentCallEvent.getFromID() == null || !mCurrentCallEvent.getFromID().contentEquals(from)))
                 {
                     mCurrentCallEvent.setFromID(from);
                     broadcast(mCurrentCallEvent);
                 }
             }
 
-        }
-    }
-
-    /**
-     * Broadcasts an update to the NAC
-     */
-    private void updateNAC(String nac)
-    {
-        if(mNAC == null || (nac != null && !mNAC.contentEquals(nac)))
-        {
-            mNAC = nac;
-
-            broadcast(Attribute.NAC);
         }
     }
 
@@ -3458,8 +3428,6 @@ public class P25DecoderState extends DecoderState
         if(mSite == null || (site != null && !mSite.contentEquals(site)))
         {
             mSite = site;
-
-            broadcast(Attribute.SITE);
 
             if(hasAliasList())
             {
@@ -3475,7 +3443,7 @@ public class P25DecoderState extends DecoderState
                 }
             }
 
-            broadcast(Attribute.SITE_ALIAS);
+
         }
     }
 
@@ -3484,9 +3452,26 @@ public class P25DecoderState extends DecoderState
         if(mSystem == null || (system != null && !mSystem.contentEquals(system)))
         {
             mSystem = system;
-
-            broadcast(Attribute.SYSTEM);
+            broadcastSystemAndNACUpdate();
         }
+    }
+
+    /**
+     * Broadcasts an update to the NAC
+     */
+    private void updateNAC(String nac)
+    {
+        if(mNAC == null || (nac != null && !mNAC.contentEquals(nac)))
+        {
+            mNAC = nac;
+            broadcastSystemAndNACUpdate();
+        }
+    }
+
+    private void broadcastSystemAndNACUpdate()
+    {
+        String label = String.format("SYS:%s NAC:%s", mSystem, mNAC);
+        broadcast(new AttributeChangeRequest<String>(Attribute.NETWORK_ID_1, label));
     }
 
     /**
@@ -3816,27 +3801,24 @@ public class P25DecoderState extends DecoderState
                         mCurrentCallEvent = (P25CallEvent) allocationEvent.getCallEvent();
 
                         mCurrentChannel = allocationEvent.getCallEvent().getChannel();
-                        broadcast(Attribute.CHANNEL_NUMBER);
+                        broadcast(new AttributeChangeRequest<String>(Attribute.CHANNEL_FREQUENCY_LABEL, mCurrentChannel));
 
                         mCurrentChannelFrequency = allocationEvent.getCallEvent().getFrequency();
-                        broadcast(Attribute.SOURCE);
+                        broadcast(new AttributeChangeRequest<Long>(Attribute.CHANNEL_FREQUENCY, mCurrentChannelFrequency));
 
                         mFromTalkgroup = allocationEvent.getCallEvent().getFromID();
-                        broadcast(Attribute.FROM_TALKGROUP);
-
                         mToTalkgroup = allocationEvent.getCallEvent().getToID();
-                        broadcast(Attribute.TO_TALKGROUP);
 
                         if(allocationEvent.getCallEvent().hasAliasList())
                         {
                             AliasList aliasList = allocationEvent.getCallEvent().getAliasList();
 
                             mFromAlias = aliasList.getTalkgroupAlias(mFromTalkgroup);
-                            broadcast(Attribute.FROM_TALKGROUP_ALIAS);
-
                             mToAlias = aliasList.getTalkgroupAlias(mToTalkgroup);
-                            broadcast(Attribute.TO_TALKGROUP_ALIAS);
                         }
+
+                        broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_FROM, mFromTalkgroup, mFromAlias));
+                        broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_TO, mToTalkgroup, mToAlias));
                     }
                 }
                 break;

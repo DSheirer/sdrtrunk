@@ -1,6 +1,6 @@
 /*******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2016 Dennis Sheirer
+ * Copyright (C) 2014-2017 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  ******************************************************************************/
 package audio.broadcast;
 
-import audio.metadata.AudioMetadata;
+import channel.metadata.Metadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,22 +30,23 @@ public class AudioRecording implements Comparable<AudioRecording>
     private final static Logger mLog = LoggerFactory.getLogger(StreamManager.class);
 
     private Path mPath;
-    private AudioMetadata mAudioMetadata;
     private long mStartTime;
     private long mRecordingLength;
     private AtomicInteger mPendingReplayCount = new AtomicInteger();
+    private Metadata mMetadata;
 
     /**
      * Audio recording that is ready to be streamed
+     *
      * @param path to the audio recording file
-     * @param audioMetadata associated with the recording
+     * @param metadata associated with the recording
      * @param start time of recording in milliseconds since epoch
      * @param recordingLength in milliseconds
      */
-    public AudioRecording(Path path, AudioMetadata audioMetadata, long start, long recordingLength)
+    public AudioRecording(Path path, Metadata metadata, long start, long recordingLength)
     {
         mPath = path;
-        mAudioMetadata = audioMetadata;
+        mMetadata = metadata;
         mStartTime = start;
         mRecordingLength = recordingLength;
     }
@@ -61,9 +62,9 @@ public class AudioRecording implements Comparable<AudioRecording>
     /**
      * Optional audio metadata for the recording.
      */
-    public AudioMetadata getAudioMetadata()
+    public Metadata getMetadata()
     {
-        return mAudioMetadata;
+        return mMetadata;
     }
 
     /**

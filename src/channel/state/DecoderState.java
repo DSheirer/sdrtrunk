@@ -1,9 +1,6 @@
 package channel.state;
 
 import alias.AliasList;
-import audio.metadata.IMetadataProvider;
-import audio.metadata.Metadata;
-import channel.metadata.Attribute;
 import channel.metadata.AttributeChangeRequest;
 import channel.metadata.IAttributeChangeRequestProvider;
 import message.IMessageListener;
@@ -193,4 +190,5 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
     {
         mAttributeChangeRequestListener = null;
     }
+
 }

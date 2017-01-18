@@ -19,6 +19,7 @@
 package channel.metadata;
 
 import alias.Alias;
+import module.decode.DecoderType;
 
 public class AttributeChangeRequest<T>
 {
@@ -89,6 +90,9 @@ public class AttributeChangeRequest<T>
         return mAlias != null;
     }
 
+    /**
+     * Returns the value as a String or null if the value is not a String instance.
+     */
     public String getStringValue()
     {
         if(mValue instanceof String)
@@ -99,11 +103,27 @@ public class AttributeChangeRequest<T>
         return null;
     }
 
+    /**
+     * Returns the value as a Long or null if the value is not a Long instance.
+     */
     public Long getLongValue()
     {
         if(mValue instanceof Long)
         {
             return (Long)mValue;
+        }
+
+        return null;
+    }
+
+    /**
+     * Returns the value as a DecoderType or null if the value is not a DecoderType instance.
+     */
+    public DecoderType getDecoderTypeValue()
+    {
+        if(mValue instanceof DecoderType)
+        {
+            return (DecoderType)mValue;
         }
 
         return null;

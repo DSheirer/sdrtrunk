@@ -47,6 +47,15 @@ public class MutableMetadata extends Metadata implements Listener<AttributeChang
     public void setSelected(boolean selected)
     {
         mSelected = selected;
+        mUpdated = true;
+    }
+
+    /**
+     * Sets the recordable flag to the argument value and overrides any recordable settings in the enclosed aliases.
+     */
+    public void setRecordable(boolean recordable)
+    {
+        mRecordable = recordable;
     }
 
     /**
@@ -55,6 +64,7 @@ public class MutableMetadata extends Metadata implements Listener<AttributeChang
     public void setPrimaryDecoderType(DecoderType decoderType)
     {
         mPrimaryDecoderType = decoderType;
+        mUpdated = true;
     }
 
     /**
@@ -85,9 +95,9 @@ public class MutableMetadata extends Metadata implements Listener<AttributeChang
                 }
                 broadcast(Attribute.CHANNEL_FREQUENCY);
                 break;
-            case CHANNEL_ID:
+            case CHANNEL_FREQUENCY_LABEL:
                 mChannelFrequencyLabel = request.getStringValue();
-                broadcast(Attribute.CHANNEL_ID);
+                broadcast(Attribute.CHANNEL_FREQUENCY_LABEL);
                 break;
             case MESSAGE:
                 mMessage = request.getStringValue();
@@ -117,6 +127,10 @@ public class MutableMetadata extends Metadata implements Listener<AttributeChang
                 mPrimaryAddressTo.setAlias(request.getAlias());
                 broadcast(Attribute.PRIMARY_ADDRESS_TO);
                 break;
+            case PRIMARY_DECODER_TYPE:
+                mPrimaryDecoderType = request.getDecoderTypeValue();
+                broadcast(Attribute.PRIMARY_DECODER_TYPE);
+                break;
             case SECONDARY_ADDRESS_FROM:
                 mSecondaryAddressFrom.setIdentifier(request.getStringValue());
                 mSecondaryAddressFrom.setAlias(request.getAlias());
@@ -135,6 +149,8 @@ public class MutableMetadata extends Metadata implements Listener<AttributeChang
                 throw new IllegalArgumentException("Unrecognized Metadata Attribute: " +
                     request.getAttribute().name());
         }
+
+        mUpdated = true;
     }
 
     /**
@@ -178,6 +194,8 @@ public class MutableMetadata extends Metadata implements Listener<AttributeChang
             mSecondaryAddressTo.reset();
             broadcast(Attribute.SECONDARY_ADDRESS_TO);
         }
+
+        mUpdated = true;
     }
 
     /**
@@ -202,13 +220,19 @@ public class MutableMetadata extends Metadata implements Listener<AttributeChang
         if(hasChannelFrequencyLabel())
         {
             mChannelFrequencyLabel = null;
-            broadcast(Attribute.CHANNEL_ID);
+            broadcast(Attribute.CHANNEL_FREQUENCY_LABEL);
         }
 
         if(hasChannelFrequency())
         {
             mChannelFrequency = 0;
             broadcast(Attribute.CHANNEL_FREQUENCY);
+        }
+
+        if(hasPrimaryDecoderType())
+        {
+            mPrimaryDecoderType = null;
+            broadcast(Attribute.PRIMARY_DECODER_TYPE);
         }
 
         if(mNetworkID1.hasIdentifier())
@@ -222,6 +246,8 @@ public class MutableMetadata extends Metadata implements Listener<AttributeChang
             mNetworkID2.reset();
             broadcast(Attribute.NETWORK_ID_2);
         }
+
+        mUpdated = true;
     }
 
 

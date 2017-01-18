@@ -1,31 +1,34 @@
 /*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
+ * sdrtrunk
+ * Copyright (C) 2014-2017 Dennis Sheirer
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *
  ******************************************************************************/
 package module.decode.fleetsync2;
 
 import alias.Alias;
 import alias.AliasList;
 import channel.metadata.Attribute;
+import channel.metadata.AttributeChangeRequest;
 import channel.state.DecoderState;
 import channel.state.DecoderStateEvent;
 import channel.state.DecoderStateEvent.Event;
 import channel.state.State;
 import message.Message;
 import module.decode.DecoderType;
+import util.StringUtils;
 
 import java.util.Iterator;
 import java.util.TreeSet;
@@ -116,7 +119,6 @@ public class Fleetsync2DecoderState extends DecoderState
                 State state = State.CALL;
 
                 setFromID(fleetsync.getFromID());
-                setFromIDAlias(fleetsync.getFromIDAlias());
                 mIdents.add(fleetsync.getFromID());
 
                 FleetsyncMessageType type = fleetsync.getMessageType();
@@ -124,7 +126,6 @@ public class Fleetsync2DecoderState extends DecoderState
                 if(type != FleetsyncMessageType.ANI)
                 {
                     setToID(fleetsync.getToID());
-                    setToIDAlias(fleetsync.getToIDAlias());
                     mIdents.add(fleetsync.getToID());
                 }
 
@@ -179,22 +180,19 @@ public class Fleetsync2DecoderState extends DecoderState
         return mFrom;
     }
 
-    public void setFromID(String from)
-    {
-        mFrom = from;
-
-        broadcast(Attribute.FROM_TALKGROUP);
-    }
-
     public Alias getFromIDAlias()
     {
         return mFromAlias;
     }
 
-    public void setFromIDAlias(Alias alias)
+    public void setFromID(String from)
     {
-        mFromAlias = alias;
-        broadcast(Attribute.FROM_TALKGROUP_ALIAS);
+        if(!StringUtils.isEqual(mFrom, from))
+        {
+            mFrom = from;
+            mFromAlias = hasAliasList() ? getAliasList().getFleetsyncAlias(mFrom) : null;
+            broadcast(new AttributeChangeRequest<String>(Attribute.SECONDARY_ADDRESS_FROM, mFrom, mFromAlias));
+        }
     }
 
     public String getToID()
@@ -202,21 +200,19 @@ public class Fleetsync2DecoderState extends DecoderState
         return mTo;
     }
 
-    public void setToID(String to)
-    {
-        mTo = to;
-        broadcast(Attribute.TO_TALKGROUP);
-    }
-
     public Alias getToIDAlias()
     {
         return mToAlias;
     }
 
-    public void setToIDAlias(Alias alias)
+    public void setToID(String to)
     {
-        mToAlias = alias;
-        broadcast(Attribute.TO_TALKGROUP_ALIAS);
+        if(!StringUtils.isEqual(mTo, to))
+        {
+            mTo = to;
+            mToAlias = hasAliasList() ? getAliasList().getFleetsyncAlias(mTo) : null;
+            broadcast(new AttributeChangeRequest<String>(Attribute.SECONDARY_ADDRESS_TO, mTo, mToAlias));
+        }
     }
 
     public String getMessage()
@@ -226,19 +222,25 @@ public class Fleetsync2DecoderState extends DecoderState
 
     public void setMessage(String message)
     {
-        mMessage = message;
-        broadcast(Attribute.MESSAGE);
+        if(!StringUtils.isEqual(mMessage, message))
+        {
+            mMessage = message;
+            broadcast(new AttributeChangeRequest<String>(Attribute.MESSAGE, mMessage));
+        }
     }
 
     public String getMessageType()
     {
-        return mMessageType;
+        return "Fleetsync " + mMessageType;
     }
 
     public void setMessageType(String type)
     {
-        mMessageType = type;
-        broadcast(Attribute.MESSAGE_TYPE);
+        if(!StringUtils.isEqual(mMessageType, type))
+        {
+            mMessageType = type;
+            broadcast(new AttributeChangeRequest<String>(Attribute.MESSAGE_TYPE, getMessageType()));
+        }
     }
 
     /**

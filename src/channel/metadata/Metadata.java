@@ -54,7 +54,7 @@ public class Metadata
 
     //Lazily constructed member variables.
     private Integer mAudioPriority;
-    private Boolean mRecordable;
+    protected Boolean mRecordable;
     private List<BroadcastChannel> mBroadcastChannels;
 
 
@@ -237,7 +237,7 @@ public class Metadata
                 return mChannelConfigurationLabel1;
             case CHANNEL_CONFIGURATION_LABEL_2:
                 return mChannelConfigurationLabel2;
-            case CHANNEL_ID:
+            case CHANNEL_FREQUENCY_LABEL:
                 return mChannelFrequencyLabel;
             case CHANNEL_STATE:
                 return mState.getDisplayValue();

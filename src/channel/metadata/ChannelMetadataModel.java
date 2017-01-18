@@ -111,7 +111,7 @@ public class ChannelMetadataModel extends AbstractTableModel implements Listener
                     fireTableCellUpdated(rowIndex, COLUMN_CONFIGURATION);
                     break;
                 case CHANNEL_FREQUENCY:
-                case CHANNEL_ID:
+                case CHANNEL_FREQUENCY_LABEL:
                     fireTableCellUpdated(rowIndex, COLUMN_FREQUENCY);
                     break;
                 case CHANNEL_STATE:

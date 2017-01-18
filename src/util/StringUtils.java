@@ -16,22 +16,26 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package channel.metadata;
+package util;
 
-public enum Attribute
+public class StringUtils
 {
-    CHANNEL_CONFIGURATION_LABEL_1,
-    CHANNEL_CONFIGURATION_LABEL_2,
-    CHANNEL_FREQUENCY,
-    CHANNEL_FREQUENCY_LABEL,
-    CHANNEL_STATE,
-    MESSAGE,
-    MESSAGE_TYPE,
-    NETWORK_ID_1,
-    NETWORK_ID_2,
-    PRIMARY_ADDRESS_FROM,
-    PRIMARY_ADDRESS_TO,
-    PRIMARY_DECODER_TYPE,
-    SECONDARY_ADDRESS_FROM,
-    SECONDARY_ADDRESS_TO,
+    /**
+     * Compares string a to b and returns true if a is non-null and non-empty, b is non-null and non-empty, and
+     * a is equal to b.
+     * @param a string to compare
+     * @param b string to compare
+     */
+    public static boolean isEqual(String a, String b)
+    {
+        return !isEmpty(a) && !isEmpty(b) && a.equals(b);
+    }
+
+    /**
+     * Checks the string for null or empty condition
+     */
+    public static boolean isEmpty(String a)
+    {
+        return a == null || a.isEmpty();
+    }
 }

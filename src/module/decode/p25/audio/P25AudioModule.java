@@ -1,56 +1,42 @@
 package module.decode.p25.audio;
 
-import java.util.concurrent.ScheduledExecutorService;
-
+import audio.AudioFormats;
+import audio.AudioPacket;
+import audio.IAudioPacketProvider;
+import audio.squelch.ISquelchStateListener;
+import audio.squelch.SquelchState;
+import channel.metadata.Metadata;
+import dsp.gain.NonClippingGain;
 import jmbe.iface.AudioConversionLibrary;
 import jmbe.iface.AudioConverter;
 import message.IMessageListener;
 import message.Message;
 import module.Module;
 import module.decode.p25.message.ldu.LDUMessage;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import sample.Listener;
-import audio.AudioFormats;
-import audio.AudioPacket;
-import audio.IAudioPacketProvider;
-import audio.metadata.AudioMetadata;
-import audio.metadata.IMetadataListener;
-import audio.metadata.Metadata;
-import audio.squelch.ISquelchStateListener;
-import audio.squelch.SquelchState;
-import controller.channel.ChannelEvent;
-import controller.channel.IChannelEventListener;
-import dsp.gain.NonClippingGain;
 
-public class P25AudioModule extends Module implements Listener<Message>,
-        IAudioPacketProvider, IMessageListener, IChannelEventListener,
-        IMetadataListener, ISquelchStateListener
+import java.util.concurrent.ScheduledExecutorService;
+
+public class P25AudioModule extends Module implements Listener<Message>, IAudioPacketProvider, IMessageListener,
+    ISquelchStateListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25AudioModule.class);
 
     private static final String IMBE_CODEC = "IMBE";
 
-    /* Provides a unique identifier for this audio module instance to use as a
-     * source identifier for all audio packets */
-    private static int UNIQUE_ID = 0;
-    private int mSourceID;
     private static boolean mLibraryLoadStatusLogged = false;
     private boolean mCanConvertAudio = false;
     private AudioConverter mAudioConverter;
     private Listener<AudioPacket> mAudioPacketListener;
-    private AudioMetadata mAudioMetadata;
-    private ChannelEventListener mChannelEventListener = new ChannelEventListener();
     private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
     private NonClippingGain mGain = new NonClippingGain(5.0f, 0.95f);
+    private Metadata mMetadata;
 
-    public P25AudioModule(boolean record)
+    public P25AudioModule(Metadata metadata)
     {
-        mSourceID = ++UNIQUE_ID;
-        mAudioMetadata = new AudioMetadata(mSourceID, record);
-
+        mMetadata = metadata;
         loadConverter();
     }
 
@@ -75,7 +61,6 @@ public class P25AudioModule extends Module implements Listener<Message>,
     @Override
     public void reset()
     {
-        mAudioMetadata.reset();
     }
 
     @Override
@@ -113,8 +98,7 @@ public class P25AudioModule extends Module implements Listener<Message>,
 
                         audio = mGain.apply(audio);
 
-                        mAudioPacketListener.receive(
-                                new AudioPacket(audio, mAudioMetadata.copyOf()));
+                        mAudioPacketListener.receive(new AudioPacket(audio, mMetadata.copyOf()));
                     }
                 }
             }
@@ -211,41 +195,6 @@ public class P25AudioModule extends Module implements Listener<Message>,
         mAudioPacketListener = null;
     }
 
-    @Override
-    public Listener<Metadata> getMetadataListener()
-    {
-        return mAudioMetadata;
-    }
-
-    @Override
-    public Listener<ChannelEvent> getChannelEventListener()
-    {
-        return mChannelEventListener;
-    }
-
-    /**
-     * Wrapper for channel event listener.  Responds to channel state reset
-     * events to remove/cleanup current audio metadata
-     */
-    public class ChannelEventListener implements Listener<ChannelEvent>
-    {
-        @Override
-        public void receive(ChannelEvent event)
-        {
-            switch (event.getEvent())
-            {
-                case NOTIFICATION_STATE_RESET:
-                    mAudioMetadata.reset();
-                    break;
-                case NOTIFICATION_SELECTION_CHANGE:
-                    mAudioMetadata.setSelected(event.getChannel().isSelected());
-                    break;
-                default:
-                    break;
-            }
-        }
-    }
-
     /**
      * Wrapper for squelch state listener.  Internally, the P25 audio module
      * doesn't have a squelch state.  If there are IMBE audio frames, we have
@@ -259,10 +208,7 @@ public class P25AudioModule extends Module implements Listener<Message>,
         {
             if (state == SquelchState.SQUELCH && mAudioPacketListener != null)
             {
-                mAudioPacketListener.receive(new AudioPacket(AudioPacket.Type.END,
-                        mAudioMetadata.copyOf()));
-
-                mAudioMetadata.reset();
+                mAudioPacketListener.receive(new AudioPacket(AudioPacket.Type.END, mMetadata.copyOf()));
             }
         }
     }

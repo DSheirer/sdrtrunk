@@ -19,10 +19,8 @@
 package audio;
 
 import alias.Alias;
-import audio.metadata.AudioMetadata;
-import audio.metadata.Metadata;
-import audio.metadata.MetadataType;
 import audio.output.AudioOutput;
+import channel.metadata.Metadata;
 import icon.IconManager;
 import net.miginfocom.swing.MigLayout;
 import sample.Listener;
@@ -50,12 +48,12 @@ public class AudioChannelPanel extends JPanel
 
     private JLabel mChannelName = new JLabel(" ");
     private JLabel mToLabel = new JLabel("TO:");
-    private JLabel mTo = new JLabel("");
+    private JLabel mTo = new JLabel("-----");
     private JLabel mToAlias = new JLabel("");
 
     private JLabel mMutedLabel = new JLabel(" ");
     private JLabel mFromLabel = new JLabel("FROM:");
-    private JLabel mFrom = new JLabel("");
+    private JLabel mFrom = new JLabel("-----");
     private JLabel mFromAlias = new JLabel("");
 
     private boolean mConfigured = false;
@@ -71,7 +69,7 @@ public class AudioChannelPanel extends JPanel
         if(mAudioOutput != null)
         {
             mAudioOutput.addAudioEventListener(this);
-            mAudioOutput.setAudioMetadataListener(new AudioMetadataProcessor());
+            mAudioOutput.setMetadataListener(new AudioMetadataProcessor());
         }
 
         mLabelColor = mSettingsManager.getColorSetting(
@@ -173,11 +171,8 @@ public class AudioChannelPanel extends JPanel
      */
     private void resetLabels()
     {
-        mFrom.setText("");
-        updateAlias(mFromAlias, null);
-
-        mTo.setText("");
-        updateAlias(mToAlias, null);
+        updateLabel(mFromLabel, null, mFromAlias, null);
+        updateLabel(mToLabel, null, mToAlias, null);
 
         mConfigured = false;
     }
@@ -187,27 +182,25 @@ public class AudioChannelPanel extends JPanel
      * does not occur on the Swing event thread -- wrap any calls to this
      * method with an event thread call.
      */
-    private void updateAlias(JLabel label, Alias alias)
+    private void updateLabel(JLabel valueLabel, String value, JLabel aliasLabel, Alias alias)
     {
-        if(alias != null)
+        if(value != null)
         {
-            label.setText(alias.getName());
+            valueLabel.setText(value);
 
-            String icon = alias.getIconName();
-
-            if(icon != null)
+            if(alias != null)
             {
-                label.setIcon(mIconManager.getIcon(icon, IconManager.DEFAULT_ICON_SIZE));
+                aliasLabel.setIcon(mIconManager.getIcon(alias.getIconName(), IconManager.DEFAULT_ICON_SIZE));
             }
             else
             {
-                label.setIcon(null);
+                aliasLabel.setIcon(null);
             }
         }
         else
         {
-            label.setText("");
-            label.setIcon(null);
+            valueLabel.setText("-----");
+            aliasLabel.setIcon(null);
         }
     }
 
@@ -215,45 +208,28 @@ public class AudioChannelPanel extends JPanel
     /**
      * Processes audio metadata to update this panel's display values
      */
-    public class AudioMetadataProcessor implements Listener<AudioMetadata>
+    public class AudioMetadataProcessor implements Listener<Metadata>
     {
         @Override
-        public void receive(AudioMetadata audioMetadata)
+        public void receive(final Metadata metadata)
         {
-            if(!mConfigured || audioMetadata.isUpdated())
+            if(metadata.isUpdated() || !mConfigured)
             {
-                final Metadata from = audioMetadata.getMetadata(MetadataType.FROM);
-
-                final Metadata to = audioMetadata.getMetadata(MetadataType.TO);
-
                 EventQueue.invokeLater(new Runnable()
                 {
                     @Override
                     public void run()
                     {
-                        if(from != null)
-                        {
-                            mFrom.setText(from.getValue());
-                            updateAlias(mFromAlias, from.getAlias());
-                        }
-                        else
-                        {
-                            mFrom.setText("-----");
-                        }
+                        updateLabel(mFromLabel, metadata.getPrimaryAddressFrom().getIdentifier(),
+                            mFromAlias, metadata.getPrimaryAddressFrom().getAlias());
 
-                        if(to != null)
-                        {
-                            mTo.setText(to.getValue());
-                            updateAlias(mToAlias, to.getAlias());
-                        }
-                        else
-                        {
-                            mTo.setText("-----");
-                        }
+                        updateLabel(mToLabel, metadata.getPrimaryAddressTo().getIdentifier(),
+                            mToAlias, metadata.getPrimaryAddressTo().getAlias());
+
+                        mConfigured = true;
                     }
                 });
 
-                mConfigured = true;
             }
         }
     }

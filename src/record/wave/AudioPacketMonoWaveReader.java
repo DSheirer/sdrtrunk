@@ -1,6 +1,6 @@
 /*******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2016 Dennis Sheirer
+ * Copyright (C) 2014-2017 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ package record.wave;
 
 import audio.AudioPacket;
 import audio.IAudioPacketListener;
-import audio.metadata.AudioMetadata;
+import channel.metadata.Metadata;
 import sample.Listener;
 import sample.real.RealBuffer;
 
@@ -29,7 +29,7 @@ import java.nio.file.Path;
 
 public class AudioPacketMonoWaveReader extends MonoWaveReader implements Listener<RealBuffer>
 {
-    private AudioMetadata mMetadata = new AudioMetadata(0, false);
+    private Metadata mMetadata = new Metadata();
 
     private IAudioPacketListener mListener;
 
@@ -40,7 +40,6 @@ public class AudioPacketMonoWaveReader extends MonoWaveReader implements Listene
      * @param realTime causes the read() method to read and dispatch audio packets in real time.  Note: when using
      * real time playback, the thread calling the read() method will sleep as needed to effect real-time playback,
      * therefore you should invoke read() on a separate thread if this will impact the calling thread.
-     *
      * @throws IOException on any file IO errors
      */
     public AudioPacketMonoWaveReader(Path path, boolean realTime) throws IOException
@@ -49,7 +48,7 @@ public class AudioPacketMonoWaveReader extends MonoWaveReader implements Listene
         setListener(this);
     }
 
-    public void setMetadata(AudioMetadata metadata)
+    public void setMetadata(Metadata metadata)
     {
         mMetadata = metadata;
     }
