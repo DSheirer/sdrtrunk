@@ -133,19 +133,16 @@ public class PatchGroupAlias extends Alias
         }
         else
         {
-            if(getId().size() > 0)
+            for(AliasID id: getId())
             {
-                for(AliasID id: getId())
+                if(id.getType() == AliasIDType.TALKGROUP)
                 {
-                    if(id.getType() == AliasIDType.TALKGROUP)
-                    {
-                        return "PATCH:" + ((TalkgroupID)id).getTalkgroup();
-                    }
+                    return "PATCH:" + ((TalkgroupID)id).getTalkgroup();
                 }
             }
         }
 
-        return "PATCH";
+        return "PATCH:****";
     }
 
     @Override
@@ -153,14 +150,20 @@ public class PatchGroupAlias extends Alias
     {
         List<AliasAction> aliasActions = new ArrayList<>();
 
-        for(Alias alias: mPatchedAliases)
-        {
-            aliasActions.addAll(alias.getAction());
-        }
-
         if(hasPatchGroupAlias())
         {
             aliasActions.addAll(getPatchGroupAlias().getAction());
+        }
+
+        for(Alias alias: mPatchedAliases)
+        {
+            for(AliasAction action: alias.getAction())
+            {
+                if(!aliasActions.contains(action))
+                {
+                    aliasActions.add(action);
+                }
+            }
         }
 
         return aliasActions;
@@ -187,7 +190,7 @@ public class PatchGroupAlias extends Alias
 
         for(Alias alias: mPatchedAliases)
         {
-            if(alias.getCallPriority() < highestPriority)
+            if(alias.hasCallPriority() && alias.getCallPriority() < highestPriority)
             {
                 highestPriority = alias.getCallPriority();
             }

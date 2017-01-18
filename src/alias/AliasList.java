@@ -579,8 +579,12 @@ public class AliasList implements Listener<AliasEvent>
 
     /**
      * Lookup alias by talkgroup
+     *
+     * @param tgid to use when searching for an alias
+     * @param includeWildcards true if you want to additionally search for a matching alias that contains wildcard(s)
+     * when there is not a direct match to the TGID.
      */
-    public Alias getTalkgroupAlias(String tgid)
+    public Alias getTalkgroupAlias(String tgid, boolean includeWildcards)
     {
         Alias alias = null;
 
@@ -588,7 +592,7 @@ public class AliasList implements Listener<AliasEvent>
         {
             alias = mTalkgroup.get(tgid);
 
-            if (alias == null)
+            if (alias == null && includeWildcards)
             {
                 String wildcard = getWildcardMatch(tgid, mTalkgroupWildcards);
 
@@ -603,8 +607,16 @@ public class AliasList implements Listener<AliasEvent>
     }
 
     /**
-     * Alias list name
+     * Lookup alias by talkgroup.  Defaults to matching to wildcard talkgroups.
      */
+    public Alias getTalkgroupAlias(String tgid)
+    {
+        return getTalkgroupAlias(tgid, true);
+    }
+
+        /**
+         * Alias list name
+         */
     public String toString()
     {
         return mName;
