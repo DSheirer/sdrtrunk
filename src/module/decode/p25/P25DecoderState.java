@@ -2917,8 +2917,8 @@ public class P25DecoderState extends DecoderState
     {
         PatchGroupAlias patchGroupAlias = null;
 
-        //Check for an existing alias for the patch talkgroup
-        Alias existingAlias = getAliasList().getTalkgroupAlias(patchGroupID);
+        //Check for an existing alias for the patch talkgroup - do not include wildcard aliases
+        Alias existingAlias = getAliasList().getTalkgroupAlias(patchGroupID, false);
 
         if(existingAlias instanceof PatchGroupAlias)
         {
@@ -2928,14 +2928,14 @@ public class P25DecoderState extends DecoderState
         {
             patchGroupAlias = new PatchGroupAlias();
 
+            patchGroupAlias.addAliasID(new TalkgroupID(patchGroupID));
+
             if(existingAlias != null)
             {
                 getAliasList().removeAlias(existingAlias);
 
                 patchGroupAlias.setPatchGroupAlias(existingAlias);
             }
-
-            patchGroupAlias.addAliasID(new TalkgroupID(patchGroupID));
 
             getAliasList().addAlias(patchGroupAlias);
         }
