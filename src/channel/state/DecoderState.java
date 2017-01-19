@@ -25,7 +25,7 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
 {
     /* This has to be a broadcaster in order for references to persist */
     private Broadcaster<CallEvent> mCallEventBroadcaster = new Broadcaster<>();
-    private Listener<AttributeChangeRequest> mAttributeChangeRequestListener;
+    private Broadcaster<AttributeChangeRequest> mAttributeChangeRequestBroadcaster = new Broadcaster<>();
     private Listener<DecoderStateEvent> mDecoderStateListener;
 
     private DecoderStateEventListener mDecoderStateEventListener = new DecoderStateEventListener();
@@ -167,10 +167,7 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
      */
     protected void broadcast(AttributeChangeRequest<?> request)
     {
-        if(mAttributeChangeRequestListener != null)
-        {
-            mAttributeChangeRequestListener.receive(request);
-        }
+        mAttributeChangeRequestBroadcaster.broadcast(request);
     }
 
     /**
@@ -179,16 +176,23 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
     @Override
     public void setAttributeChangeRequestListener(Listener<AttributeChangeRequest> listener)
     {
-        mAttributeChangeRequestListener = listener;
+        mAttributeChangeRequestBroadcaster.addListener(listener);
     }
 
     /**
      * Removes any listener from receiving attribute change requests
      */
     @Override
-    public void removeAttributeChangeRequestListener()
+    public void removeAttributeChangeRequestListener(Listener<AttributeChangeRequest> listener)
     {
-        mAttributeChangeRequestListener = null;
+        mAttributeChangeRequestBroadcaster.removeListener(listener);
     }
 
+    /**
+     * Broadaster so that Attribute monitors can broadcast attribute change requests
+     */
+    protected Listener<AttributeChangeRequest> getAttributeChangeRequestListener()
+    {
+        return mAttributeChangeRequestBroadcaster;
+    }
 }

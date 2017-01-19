@@ -24,5 +24,5 @@ public interface IAttributeChangeRequestProvider
 {
     public void setAttributeChangeRequestListener(Listener<AttributeChangeRequest> listener);
 
-    public void removeAttributeChangeRequestListener();
+    public void removeAttributeChangeRequestListener(Listener<AttributeChangeRequest> listener);
 }
