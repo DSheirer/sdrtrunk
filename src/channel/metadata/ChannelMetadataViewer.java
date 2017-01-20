@@ -49,12 +49,14 @@ public class ChannelMetadataViewer extends JPanel
         mMessageActivityPanel = new MessageActivityPanel(channelProcessingManager);
         mChannelSpectrumPanel = new ChannelSpectrumPanel(settingsManager, channelProcessingManager);
         mChannelMetadataPanel = new ChannelMetadataPanel(channelProcessingManager.getChannelMetadataModel(),
-            iconManager.getModel());
+            iconManager);
+
+        init();
     }
 
     private void init()
     {
-        setLayout( new MigLayout( "", "[grow,fill]", "[grow,fill]") );
+        setLayout( new MigLayout( "insets 0 0 0 0", "[grow,fill]", "[grow,fill]") );
 
         JideTabbedPane tabbedPane = new JideTabbedPane();
         tabbedPane.addTab("Details", new JPanel());
@@ -65,6 +67,7 @@ public class ChannelMetadataViewer extends JPanel
         JideSplitPane splitPane = new JideSplitPane(JideSplitPane.VERTICAL_SPLIT);
         splitPane.add(mChannelMetadataPanel);
         splitPane.add(tabbedPane);
+        add(splitPane);
 
 //TODO: move this change listener to the metadata table view
 //        /**
@@ -100,6 +103,5 @@ public class ChannelMetadataViewer extends JPanel
 //        mChannelModel.addListener(mChannelSpectrumPanel);
 //        mChannelModel.addListener(mMessageActivityPanel);
 
-        add(splitPane);
     }
 }

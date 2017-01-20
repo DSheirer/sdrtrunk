@@ -100,7 +100,11 @@ public class AliasedIdentifier
         AliasedIdentifier copy = new AliasedIdentifier();
 
         copy.setAlias(mAlias);
-        copy.setIdentifier(new String(mIdentifier));
+
+        if(mIdentifier != null)
+        {
+            copy.setIdentifier(new String(mIdentifier));
+        }
 
         return copy;
     }

@@ -21,10 +21,10 @@ import java.util.EnumSet;
 
 public enum MixerChannel
 {
-	LEFT( "L" ),
-	RIGHT( "R" ),
-	MONO( "M" ),
-	STEREO( "S" );
+	LEFT( "LEFT" ),
+	RIGHT( "RIGHT" ),
+	MONO( "MONO" ),
+	STEREO( "STEREO" );
 	
 	private String mLabel;
 	

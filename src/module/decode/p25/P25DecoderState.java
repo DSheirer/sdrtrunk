@@ -203,8 +203,11 @@ public class P25DecoderState extends DecoderState
             getAttributeChangeRequestListener(), getAliasList(), AliasIDType.SITE);
         mFromTalkgroupMonitor = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_FROM,
             getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
+        mFromTalkgroupMonitor.addIllegalValue("000000");
         mToTalkgroupMonitor = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_TO,
             getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
+        mToTalkgroupMonitor.addIllegalValue("0000");
+        mToTalkgroupMonitor.addIllegalValue("000000");
     }
 
     public Modulation getModulation()

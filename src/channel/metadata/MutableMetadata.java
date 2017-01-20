@@ -89,10 +89,6 @@ public class MutableMetadata extends Metadata implements Listener<AttributeChang
                 {
                     mChannelFrequency = request.getLongValue();
                 }
-                else
-                {
-                    mChannelFrequency = 0;
-                }
                 broadcast(Attribute.CHANNEL_FREQUENCY);
                 break;
             case CHANNEL_FREQUENCY_LABEL:

@@ -23,6 +23,8 @@ import audio.output.AudioOutput;
 import channel.metadata.Metadata;
 import icon.IconManager;
 import net.miginfocom.swing.MigLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sample.Listener;
 import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
@@ -37,8 +39,9 @@ public class AudioChannelPanel extends JPanel
     implements Listener<AudioEvent>, SettingChangeListener
 {
     private static final long serialVersionUID = 1L;
+    private static final Logger mLog = LoggerFactory.getLogger(AudioChannelPanel.class);
 
-    private Font mFont = new Font(Font.MONOSPACED, Font.PLAIN, 12);
+    private Font mFont = new Font(Font.MONOSPACED, Font.PLAIN, 16);
     private Color mLabelColor;
     private Color mDetailsColor;
 
@@ -49,12 +52,12 @@ public class AudioChannelPanel extends JPanel
     private JLabel mChannelName = new JLabel(" ");
     private JLabel mToLabel = new JLabel("TO:");
     private JLabel mTo = new JLabel("-----");
-    private JLabel mToAlias = new JLabel("");
+    private JLabel mToAlias = new JLabel(" ");
 
-    private JLabel mMutedLabel = new JLabel(" ");
+    private JLabel mMutedLabel = new JLabel("MUTED");
     private JLabel mFromLabel = new JLabel("FROM:");
     private JLabel mFrom = new JLabel("-----");
-    private JLabel mFromAlias = new JLabel("");
+    private JLabel mFromAlias = new JLabel(" ");
 
     private boolean mConfigured = false;
 
@@ -82,8 +85,14 @@ public class AudioChannelPanel extends JPanel
 
     private void init()
     {
-        setLayout(new MigLayout("insets 0 0 0 0", "[][right][][grow,fill]", "[]0[]0[grow,fill]"));
+        setLayout(new MigLayout("align center center, insets 0 0 0 0",
+            "[][][right][grow,fill][grow,fill][right][grow,fill][grow,fill]", ""));
         setBackground(Color.BLACK);
+
+        mMutedLabel.setFont(mFont);
+        mMutedLabel.setForeground(Color.RED);
+        mMutedLabel.setVisible(false);
+        add(mMutedLabel);
 
         mChannelName = new JLabel(mAudioOutput != null ? mAudioOutput.getChannelName() : " ");
         mChannelName.setFont(mFont);
@@ -107,11 +116,7 @@ public class AudioChannelPanel extends JPanel
 
         mToAlias.setFont(mFont);
         mToAlias.setForeground(mLabelColor);
-        add(mToAlias, "wrap");
-
-        mMutedLabel.setFont(mFont);
-        mMutedLabel.setForeground(Color.RED);
-        add(mMutedLabel);
+        add(mToAlias);
 
         mFromLabel.setFont(mFont);
         if(mAudioOutput != null)
@@ -130,8 +135,7 @@ public class AudioChannelPanel extends JPanel
 
         mFromAlias.setFont(mFont);
         mFromAlias.setForeground(mLabelColor);
-        add(mFromAlias, "wrap");
-
+        add(mFromAlias);
     }
 
     @Override
@@ -156,7 +160,7 @@ public class AudioChannelPanel extends JPanel
                     @Override
                     public void run()
                     {
-                        mMutedLabel.setText(mAudioOutput.isMuted() ? "M" : " ");
+                        mMutedLabel.setVisible(mAudioOutput.isMuted());
                     }
                 });
                 break;
@@ -171,8 +175,8 @@ public class AudioChannelPanel extends JPanel
      */
     private void resetLabels()
     {
-        updateLabel(mFromLabel, null, mFromAlias, null);
-        updateLabel(mToLabel, null, mToAlias, null);
+        updateLabel(mFrom, null, mFromAlias, null);
+        updateLabel(mTo, null, mToAlias, null);
 
         mConfigured = false;
     }
@@ -190,7 +194,7 @@ public class AudioChannelPanel extends JPanel
 
             if(alias != null)
             {
-                aliasLabel.setIcon(mIconManager.getIcon(alias.getIconName(), IconManager.DEFAULT_ICON_SIZE));
+                aliasLabel.setIcon(mIconManager.getIcon(alias.getIconName(), 16));
             }
             else
             {
@@ -220,10 +224,10 @@ public class AudioChannelPanel extends JPanel
                     @Override
                     public void run()
                     {
-                        updateLabel(mFromLabel, metadata.getPrimaryAddressFrom().getIdentifier(),
+                        updateLabel(mFrom, metadata.getPrimaryAddressFrom().getIdentifier(),
                             mFromAlias, metadata.getPrimaryAddressFrom().getAlias());
 
-                        updateLabel(mToLabel, metadata.getPrimaryAddressTo().getIdentifier(),
+                        updateLabel(mTo, metadata.getPrimaryAddressTo().getIdentifier(),
                             mToAlias, metadata.getPrimaryAddressTo().getAlias());
 
                         mConfigured = true;

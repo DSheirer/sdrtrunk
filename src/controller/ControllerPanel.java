@@ -93,7 +93,7 @@ public class ControllerPanel extends JPanel
     {
         setLayout(new MigLayout("insets 0 0 0 0 ", "[grow,fill]", "[]0[grow,fill]"));
 
-        add(mAudioPanel);
+        add(mAudioPanel, "wrap");
 
         //Tabbed View - configuration, calls, messages, map
         mTabbedPane = new JideTabbedPane();

@@ -132,7 +132,6 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     {
         if(mStateMonitorFuture == null && mStateMonitor != null)
         {
-            mMutableMetadata.resetAllAttributes();
             mMutableMetadata.receive(new AttributeChangeRequest<State>(Attribute.CHANNEL_STATE, mState));
 
             if(mTrafficChannelEndListener != null)
@@ -154,6 +153,8 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     @Override
     public void stop()
     {
+        mMutableMetadata.resetAllAttributes();
+
         if(mStateMonitorFuture != null)
         {
             boolean success = mStateMonitorFuture.cancel(true);

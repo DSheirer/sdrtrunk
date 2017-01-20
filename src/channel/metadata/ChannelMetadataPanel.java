@@ -19,6 +19,7 @@
 package channel.metadata;
 
 import alias.Alias;
+import icon.IconManager;
 import icon.IconTableModel;
 import net.miginfocom.swing.MigLayout;
 
@@ -31,13 +32,13 @@ import java.text.DecimalFormat;
 public class ChannelMetadataPanel extends JPanel
 {
     private ChannelMetadataModel mChannelMetadataModel;
-    private IconTableModel mIconTableModel;
+    private IconManager mIconManager;
     private JTable mTable;
 
-    public ChannelMetadataPanel(ChannelMetadataModel channelMetadataModel, IconTableModel iconTableModel)
+    public ChannelMetadataPanel(ChannelMetadataModel channelMetadataModel, IconManager iconManager)
     {
         mChannelMetadataModel = channelMetadataModel;
-        mIconTableModel = iconTableModel;
+        mIconManager = iconManager;
 
         init();
     }
@@ -47,11 +48,15 @@ public class ChannelMetadataPanel extends JPanel
      */
     private void init()
     {
-        setLayout( new MigLayout( "", "[grow,fill]", "[grow,fill]") );
+        setLayout( new MigLayout( "insets 0 0 0 0", "[grow,fill]", "[grow,fill]") );
 
         mTable = new JTable(mChannelMetadataModel);
+        mTable.setRowHeight(35);
 
         mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_STATE).setCellRenderer(new StateCellRenderer());
+
+        mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_FREQUENCY)
+            .setCellRenderer(new FrequencyCellRenderer());
 
         mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_PRIMARY)
             .setCellRenderer(new AliasedValueCellRenderer(Attribute.PRIMARY_ADDRESS_TO, Attribute.PRIMARY_ADDRESS_FROM));
@@ -65,9 +70,6 @@ public class ChannelMetadataPanel extends JPanel
         mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_NETWORK)
             .setCellRenderer(new AliasedValueCellRenderer(Attribute.NETWORK_ID_1, Attribute.NETWORK_ID_2));
 
-        mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_FREQUENCY)
-            .setCellRenderer(new FrequencyCellRenderer());
-
         mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_CONFIGURATION)
             .setCellRenderer(new AliasedValueCellRenderer(Attribute.CHANNEL_CONFIGURATION_LABEL_1,
                 Attribute.CHANNEL_CONFIGURATION_LABEL_2));
@@ -76,6 +78,7 @@ public class ChannelMetadataPanel extends JPanel
             JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
         add(scrollPane);
+
     }
 
     /**
@@ -97,21 +100,29 @@ public class ChannelMetadataPanel extends JPanel
     public class AliasedValueCellRenderer extends JPanel implements TableCellRenderer
     {
         private JLabel mLabel1;
+        private JLabel mAlias1;
         private JLabel mLabel2;
+        private JLabel mAlias2;
 
         private Attribute mAttribute1;
         private Attribute mAttribute2;
 
         public AliasedValueCellRenderer(Attribute attribute1, Attribute attribute2)
         {
-            attribute1 = attribute1;
-            attribute2 = attribute2;
+            mAttribute1 = attribute1;
+            mAttribute2 = attribute2;
 
-            setLayout( new MigLayout( "", "[grow,fill]", "[grow,fill][grow,fill]") );
+            setLayout( new MigLayout( "insets 0 0 0 0", "[12][grow,fill]", "[grow,fill]0[grow,fill]") );
 
-            mLabel1 = new JLabel();
+            mAlias1 = new JLabel();
+            add(mAlias1);
+            mLabel1 = new JLabel("---");
+            mLabel1.setFont(mTable.getFont());
             add(mLabel1,"wrap");
-            mLabel2 = new JLabel();
+            mAlias2 = new JLabel();
+            add(mAlias2);
+            mLabel2 = new JLabel("---");
+            mLabel2.setFont(mTable.getFont());
             add(mLabel2,"wrap");
         }
 
@@ -130,12 +141,12 @@ public class ChannelMetadataPanel extends JPanel
 
                 if(alias1 != null)
                 {
-                    mLabel1.setIcon(mIconTableModel.getIcon(alias1.getIconName()).getIcon());
+                    mAlias1.setIcon(mIconManager.getIcon(alias1.getIconName(), IconManager.DEFAULT_ICON_SIZE));
                     mLabel1.setForeground(alias1.getDisplayColor());
                 }
                 else
                 {
-                    mLabel1.setIcon(null);
+                    mAlias1.setIcon(null);
                     mLabel1.setForeground(mTable.getForeground());
                 }
             }
@@ -149,12 +160,12 @@ public class ChannelMetadataPanel extends JPanel
 
                 if(alias2 != null)
                 {
-                    mLabel2.setIcon(mIconTableModel.getIcon(alias2.getIconName()).getIcon());
+                    mAlias2.setIcon(mIconManager.getIcon(alias2.getIconName(), IconManager.DEFAULT_ICON_SIZE));
                     mLabel2.setForeground(alias2.getDisplayColor());
                 }
                 else
                 {
-                    mLabel2.setIcon(null);
+                    mAlias2.setIcon(null);
                     mLabel2.setForeground(mTable.getForeground());
                 }
             }
@@ -165,21 +176,23 @@ public class ChannelMetadataPanel extends JPanel
         }
     }
 
-    public static class FrequencyCellRenderer extends JPanel implements TableCellRenderer
+    public class FrequencyCellRenderer extends JPanel implements TableCellRenderer
     {
-        private static final DecimalFormat FREQUENCY_FORMATTER = new DecimalFormat( "#.0000" );
+        private final DecimalFormat FREQUENCY_FORMATTER = new DecimalFormat( "#.000000" );
 
         private JLabel mLabel1;
         private JLabel mLabel2;
 
         public FrequencyCellRenderer()
         {
-            setLayout( new MigLayout( "", "[grow,fill]", "[grow,fill][grow,fill]") );
+            setLayout( new MigLayout( "insets 0 0 0 0", "[grow,fill,align center]", "[grow,fill]0[grow,fill]") );
 
             mLabel1 = new JLabel();
+            mLabel1.setFont(mTable.getFont());
             add(mLabel1,"wrap");
             mLabel2 = new JLabel();
-            add(mLabel2,"wrap");
+            mLabel2.setFont(mTable.getFont());
+            add(mLabel2);
         }
 
         @Override
@@ -205,17 +218,16 @@ public class ChannelMetadataPanel extends JPanel
         }
     }
 
-    public static class StateCellRenderer extends JPanel implements TableCellRenderer
+    public class StateCellRenderer extends JPanel implements TableCellRenderer
     {
-        private static final DecimalFormat FREQUENCY_FORMATTER = new DecimalFormat( "#.0000" );
-
         private JLabel mLabel1;
 
         public StateCellRenderer()
         {
-            setLayout( new MigLayout( "", "[grow,fill,align center]", "[grow,fill,align center]") );
+            setLayout( new MigLayout( "insets 0 0 0 0", "[grow,fill,align center]", "[grow,fill,align center]") );
 
             mLabel1 = new JLabel();
+            mLabel1.setFont(mTable.getFont());
             add(mLabel1);
         }
 

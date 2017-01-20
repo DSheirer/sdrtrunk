@@ -22,6 +22,7 @@ import controller.channel.Channel;
 import sample.Listener;
 
 import javax.swing.table.AbstractTableModel;
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,41 +31,55 @@ import java.util.Map;
 public class ChannelMetadataModel extends AbstractTableModel implements Listener<MutableMetadataChangeEvent>
 {
     public static final int COLUMN_STATE = 0;
-    public static final int COLUMN_PRIMARY = 1;
-    public static final int COLUMN_SECONDARY = 2;
-    public static final int COLUMN_MESSAGE = 3;
-    public static final int COLUMN_NETWORK = 4;
-    public static final int COLUMN_FREQUENCY = 5;
+    public static final int COLUMN_FREQUENCY = 1;
+    public static final int COLUMN_PRIMARY = 2;
+    public static final int COLUMN_SECONDARY = 3;
+    public static final int COLUMN_MESSAGE = 4;
+    public static final int COLUMN_NETWORK = 5;
     public static final int COLUMN_CONFIGURATION = 6;
 
     private static final String[] COLUMNS =
-        {"State", "Primary", "Secondary", "Message", "Network", "Frequency", "Configuration"};
+        {"State", "Frequency", "Primary", "Secondary", "Message", "Network", "Configuration"};
 
     private List<MutableMetadata> mChannelMetadata = new ArrayList();
     private Map<MutableMetadata,Channel> mMetadataChannelMap = new HashMap();
 
     public void add(MutableMetadata metadata, Channel channel)
     {
-        mChannelMetadata.add(metadata);
-        mMetadataChannelMap.put(metadata, channel);
+        EventQueue.invokeLater(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                mChannelMetadata.add(metadata);
+                mMetadataChannelMap.put(metadata, channel);
 
-        int index = mChannelMetadata.indexOf(metadata);
+                int index = mChannelMetadata.indexOf(metadata);
 
-        fireTableRowsInserted(index, index);
+                fireTableRowsInserted(index, index);
 
-        metadata.addListener(this);
+                metadata.addListener(ChannelMetadataModel.this);
+            }
+        });
     }
 
     public void remove(MutableMetadata metadata)
     {
-        metadata.removeListener(this);
+        EventQueue.invokeLater(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                metadata.removeListener(ChannelMetadataModel.this);
 
-        int index = mChannelMetadata.indexOf(metadata);
+                int index = mChannelMetadata.indexOf(metadata);
 
-        mChannelMetadata.remove(metadata);
-        mMetadataChannelMap.remove(metadata);
+                mChannelMetadata.remove(metadata);
+                mMetadataChannelMap.remove(metadata);
 
-        fireTableRowsDeleted(index, index);
+                fireTableRowsDeleted(index, index);
+            }
+        });
     }
 
     @Override
@@ -94,46 +109,58 @@ public class ChannelMetadataModel extends AbstractTableModel implements Listener
     @Override
     public Object getValueAt(int rowIndex, int columnIndex)
     {
-        return mChannelMetadata.get(rowIndex);
+        if(rowIndex <= mChannelMetadata.size())
+        {
+            return mChannelMetadata.get(rowIndex);
+        }
+
+        return null;
     }
 
     @Override
     public void receive(MutableMetadataChangeEvent mutableMetadataChangeEvent)
     {
-        int rowIndex = mChannelMetadata.indexOf(mutableMetadataChangeEvent.getMetadata());
-
-        if(rowIndex >= 0)
+        EventQueue.invokeLater(new Runnable()
         {
-            switch(mutableMetadataChangeEvent.getAttribute())
+            @Override
+            public void run()
             {
-                case CHANNEL_CONFIGURATION_LABEL_1:
-                case CHANNEL_CONFIGURATION_LABEL_2:
-                    fireTableCellUpdated(rowIndex, COLUMN_CONFIGURATION);
-                    break;
-                case CHANNEL_FREQUENCY:
-                case CHANNEL_FREQUENCY_LABEL:
-                    fireTableCellUpdated(rowIndex, COLUMN_FREQUENCY);
-                    break;
-                case CHANNEL_STATE:
-                    fireTableCellUpdated(rowIndex, COLUMN_STATE);
-                    break;
-                case MESSAGE:
-                case MESSAGE_TYPE:
-                    fireTableCellUpdated(rowIndex, COLUMN_MESSAGE);
-                    break;
-                case NETWORK_ID_1:
-                case NETWORK_ID_2:
-                    fireTableCellUpdated(rowIndex, COLUMN_NETWORK);
-                    break;
-                case PRIMARY_ADDRESS_FROM:
-                case PRIMARY_ADDRESS_TO:
-                    fireTableCellUpdated(rowIndex, COLUMN_PRIMARY);
-                    break;
-                case SECONDARY_ADDRESS_FROM:
-                case SECONDARY_ADDRESS_TO:
-                    fireTableCellUpdated(rowIndex, COLUMN_SECONDARY);
-                    break;
+                int rowIndex = mChannelMetadata.indexOf(mutableMetadataChangeEvent.getMetadata());
+
+                if(rowIndex >= 0)
+                {
+                    switch(mutableMetadataChangeEvent.getAttribute())
+                    {
+                        case CHANNEL_CONFIGURATION_LABEL_1:
+                        case CHANNEL_CONFIGURATION_LABEL_2:
+                            fireTableCellUpdated(rowIndex, COLUMN_CONFIGURATION);
+                            break;
+                        case CHANNEL_FREQUENCY:
+                        case CHANNEL_FREQUENCY_LABEL:
+                            fireTableCellUpdated(rowIndex, COLUMN_FREQUENCY);
+                            break;
+                        case CHANNEL_STATE:
+                            fireTableCellUpdated(rowIndex, COLUMN_STATE);
+                            break;
+                        case MESSAGE:
+                        case MESSAGE_TYPE:
+                            fireTableCellUpdated(rowIndex, COLUMN_MESSAGE);
+                            break;
+                        case NETWORK_ID_1:
+                        case NETWORK_ID_2:
+                            fireTableCellUpdated(rowIndex, COLUMN_NETWORK);
+                            break;
+                        case PRIMARY_ADDRESS_FROM:
+                        case PRIMARY_ADDRESS_TO:
+                            fireTableCellUpdated(rowIndex, COLUMN_PRIMARY);
+                            break;
+                        case SECONDARY_ADDRESS_FROM:
+                        case SECONDARY_ADDRESS_TO:
+                            fireTableCellUpdated(rowIndex, COLUMN_SECONDARY);
+                            break;
+                    }
+                }
             }
-        }
+        });
     }
 }

@@ -24,6 +24,9 @@ import audio.IAudioPacketProvider;
 import audio.squelch.ISquelchStateListener;
 import audio.squelch.ISquelchStateProvider;
 import audio.squelch.SquelchState;
+import channel.metadata.AttributeChangeRequest;
+import channel.metadata.IAttributeChangeRequestListener;
+import channel.metadata.IAttributeChangeRequestProvider;
 import channel.state.ChannelState;
 import channel.state.DecoderState;
 import channel.state.DecoderStateEvent;
@@ -95,6 +98,7 @@ public class ProcessingChain implements IChannelEventListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(ProcessingChain.class);
 
+    private Broadcaster<AttributeChangeRequest> mAttributeChangeRequestBroadcaster = new Broadcaster<>();
     private Broadcaster<AudioPacket> mAudioPacketBroadcaster = new Broadcaster<>();
     private Broadcaster<CallEvent> mCallEventBroadcaster = new Broadcaster<>();
     private Broadcaster<ChannelEvent> mChannelEventBroadcaster = new Broadcaster<>();
@@ -297,6 +301,11 @@ public class ProcessingChain implements IChannelEventListener
      */
     private void registerListeners(Module module)
     {
+        if(module instanceof IAttributeChangeRequestListener)
+        {
+            mAttributeChangeRequestBroadcaster.addListener(((IAttributeChangeRequestListener)module).getAttributeChangeRequestListener());
+        }
+
         if(module instanceof IAudioPacketListener)
         {
             mAudioPacketBroadcaster.addListener(((IAudioPacketListener) module).getAudioPacketListener());
@@ -354,6 +363,11 @@ public class ProcessingChain implements IChannelEventListener
      */
     private void unregisterListeners(Module module)
     {
+        if(module instanceof IAttributeChangeRequestListener)
+        {
+            mAttributeChangeRequestBroadcaster.removeListener(((IAttributeChangeRequestListener) module).getAttributeChangeRequestListener());
+        }
+
         if(module instanceof IAudioPacketListener)
         {
             mAudioPacketBroadcaster.removeListener(((IAudioPacketListener) module).getAudioPacketListener());
@@ -411,6 +425,11 @@ public class ProcessingChain implements IChannelEventListener
      */
     private void registerProviders(Module module)
     {
+        if(module instanceof IAttributeChangeRequestProvider)
+        {
+            ((IAttributeChangeRequestProvider)module).setAttributeChangeRequestListener(mAttributeChangeRequestBroadcaster);
+        }
+
         if(module instanceof IAudioPacketProvider)
         {
             ((IAudioPacketProvider) module).setAudioPacketListener(mAudioPacketBroadcaster);
@@ -463,6 +482,11 @@ public class ProcessingChain implements IChannelEventListener
      */
     private void unregisterProviders(Module module)
     {
+        if(module instanceof IAttributeChangeRequestProvider)
+        {
+            ((IAttributeChangeRequestProvider)module).removeAttributeChangeRequestListener(mAttributeChangeRequestBroadcaster);
+        }
+
         if(module instanceof IAudioPacketProvider)
         {
             ((IAudioPacketProvider) module).setAudioPacketListener(null);

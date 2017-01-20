@@ -290,12 +290,13 @@ public class ChannelProcessingManager implements ChannelEventListener
 
         processingChain.start();
 
+        getChannelMetadataModel().add(processingChain.getChannelState().getMutableMetadata(), channel);
+
         channel.setEnabled(true);
 
         mProcessingChains.put(channel.getChannelID(), processingChain);
 
-        mChannelModel.broadcast(
-            new ChannelEvent(channel, Event.NOTIFICATION_PROCESSING_START));
+        mChannelModel.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_PROCESSING_START));
     }
 
     private void stopProcessing(Channel channel, boolean remove)
@@ -305,6 +306,8 @@ public class ChannelProcessingManager implements ChannelEventListener
         if(mProcessingChains.containsKey(channel.getChannelID()))
         {
             ProcessingChain processingChain = mProcessingChains.get(channel.getChannelID());
+
+            getChannelMetadataModel().remove(processingChain.getChannelState().getMutableMetadata());
 
             processingChain.stop();
 

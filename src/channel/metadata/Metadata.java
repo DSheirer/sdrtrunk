@@ -256,7 +256,7 @@ public class Metadata
             case SECONDARY_ADDRESS_FROM:
                 return mSecondaryAddressFrom.getIdentifier();
             case SECONDARY_ADDRESS_TO:
-                return mPrimaryAddressTo.getIdentifier();
+                return mSecondaryAddressTo.getIdentifier();
         }
 
         return null;
