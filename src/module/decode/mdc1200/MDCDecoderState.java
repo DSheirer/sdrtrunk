@@ -20,6 +20,8 @@ package module.decode.mdc1200;
 
 import alias.Alias;
 import alias.AliasList;
+import alias.id.AliasIDType;
+import channel.metadata.AliasedStringAttributeMonitor;
 import channel.metadata.Attribute;
 import channel.metadata.AttributeChangeRequest;
 import channel.state.DecoderState;
@@ -39,16 +41,16 @@ public class MDCDecoderState extends DecoderState
     private TreeSet<String> mIdents = new TreeSet<String>();
     private TreeSet<String> mEmergencyIdents = new TreeSet<String>();
 
-    private String mFrom;
-    private Alias mFromAlias;
-    private String mTo;
-    private Alias mToAlias;
+    private AliasedStringAttributeMonitor mFromAttribute;
     private String mMessage;
     private String mMessageType;
 
     public MDCDecoderState(AliasList aliasList)
     {
         super(aliasList);
+
+        mFromAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_FROM,
+            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.MDC1200);
     }
 
     @Override
@@ -78,10 +80,7 @@ public class MDCDecoderState extends DecoderState
 
     private void resetState()
     {
-        mFrom = null;
-        mFromAlias = null;
-        mTo = null;
-        mToAlias = null;
+        mFromAttribute.reset();
         mMessage = null;
         mMessageType = null;
     }
@@ -100,8 +99,7 @@ public class MDCDecoderState extends DecoderState
                 mEmergencyIdents.add(mdc.getUnitID());
             }
 
-            setFrom(mdc.getFromID());
-            setFromAlias(mdc.getFromIDAlias());
+            mFromAttribute.process(mdc.getFromID());
 
             MDCMessageType type = mdc.getMessageType();
 
@@ -142,62 +140,6 @@ public class MDCDecoderState extends DecoderState
                     break;
             }
 
-        }
-    }
-
-    public String getFrom()
-    {
-        return mFrom;
-    }
-
-    public void setFrom(String from)
-    {
-        if(!StringUtils.isEqual(mFrom, from))
-        {
-            mFrom = from;
-            broadcast(new AttributeChangeRequest<String>(Attribute.SECONDARY_ADDRESS_FROM, mFrom, mFromAlias));
-        }
-    }
-
-    public Alias getFromAlias()
-    {
-        return mFromAlias;
-    }
-
-    public void setFromAlias(Alias alias)
-    {
-        if(mFromAlias == null || (alias != null && mFromAlias != alias))
-        {
-            mFromAlias = alias;
-            broadcast(new AttributeChangeRequest<String>(Attribute.SECONDARY_ADDRESS_FROM, mFrom, mFromAlias));
-        }
-    }
-
-    public String getTo()
-    {
-        return mTo;
-    }
-
-    public void setTo(String to)
-    {
-        if(!StringUtils.isEqual(mTo, to))
-        {
-            mTo = to;
-            broadcast(new AttributeChangeRequest<String>(Attribute.SECONDARY_ADDRESS_TO, mTo, mToAlias));
-        }
-    }
-
-    public Alias getToAlias()
-    {
-        return mToAlias;
-    }
-
-    public void setToAlias(Alias alias)
-    {
-        if(mToAlias == null || (alias != null && mToAlias != alias))
-        {
-            mToAlias = alias;
-            broadcast(new AttributeChangeRequest<String>(Attribute.SECONDARY_ADDRESS_TO, mTo, mToAlias));
         }
     }
 

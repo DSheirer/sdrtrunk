@@ -20,6 +20,8 @@ package module.decode.lj1200;
 
 import alias.Alias;
 import alias.AliasList;
+import alias.id.AliasIDType;
+import channel.metadata.AliasedStringAttributeMonitor;
 import channel.metadata.Attribute;
 import channel.metadata.AttributeChangeRequest;
 import channel.state.DecoderState;
@@ -45,12 +47,14 @@ public class LJ1200DecoderState extends DecoderState
 
     private Set<String> mAddresses = new TreeSet<String>();
 
-    private String mAddress;
-    private Alias mAddressAlias;
+    private AliasedStringAttributeMonitor mAddressAttribute;
 
     public LJ1200DecoderState(AliasList aliasList)
     {
         super(aliasList);
+
+        mAddressAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_TO,
+            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.LOJACK);
     }
 
     @Override
@@ -69,16 +73,6 @@ public class LJ1200DecoderState extends DecoderState
     {
     }
 
-    public String getAddress()
-    {
-        return mAddress;
-    }
-
-    public Alias getAddressAlias()
-    {
-        return mAddressAlias;
-    }
-
     @Override
     public void receive(Message message)
     {
@@ -88,10 +82,10 @@ public class LJ1200DecoderState extends DecoderState
 
             if(lj.isValid())
             {
-                setAddress(lj.getAddress());
-                setAddressAlias(lj.getTransponderAlias());
+                String address = lj.getAddress();
 
-                mAddresses.add(mAddress);
+                mAddressAttribute.process(address);
+                mAddresses.add(address);
 
                 broadcast(LJ1200CallEvent.getLJ1200Event(lj));
 
@@ -102,21 +96,6 @@ public class LJ1200DecoderState extends DecoderState
         {
 
         }
-    }
-
-    private void setAddress(String address)
-    {
-        if(!StringUtils.isEqual(mAddress, address))
-        {
-            mAddress = address;
-            broadcast(new AttributeChangeRequest<String>(Attribute.SECONDARY_ADDRESS_TO, mAddress, mAddressAlias));
-        }
-    }
-
-    private void setAddressAlias(Alias alias)
-    {
-        mAddressAlias = alias;
-        broadcast(new AttributeChangeRequest<String>(Attribute.SECONDARY_ADDRESS_TO, mAddress, mAddressAlias));
     }
 
     @Override
@@ -163,8 +142,7 @@ public class LJ1200DecoderState extends DecoderState
 
     private void resetState()
     {
-        mAddress = null;
-        mAddressAlias = null;
+        mAddressAttribute.reset();
     }
 
     @Override

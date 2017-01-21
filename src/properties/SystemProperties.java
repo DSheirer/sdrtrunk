@@ -1,22 +1,26 @@
 /*******************************************************************************
  *     SDR Trunk 
  *     Copyright (C) 2014 Dennis Sheirer
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
 package properties;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.awt.*;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -30,9 +34,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * SystemProperties - provides an isolated instance of properties for the
  * application
@@ -40,301 +41,325 @@ import org.slf4j.LoggerFactory;
 
 public class SystemProperties
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( SystemProperties.class );
+    private final static Logger mLog =
+        LoggerFactory.getLogger(SystemProperties.class);
 
-	private static String sDEFAULT_APP_ROOT = "SDRTrunk";
-	private static String sPROPERTIES_FILENAME = "SDRTrunk.properties";
-	
-	private static SystemProperties mInstance;
-	private static Properties mProperties;
-	private Path mPropertiesPath;
-	private String mApplicationName;
-	
-	private SystemProperties()
-	{
-		mProperties = new Properties();
-	}
-	
-	/**
-	 * Returns a SINGLETON instance of the application properties set
-	 * @return
-	 */
-	public static SystemProperties getInstance()
-	{
-		if( mInstance == null )
-		{
-			mInstance = new SystemProperties();
-		}
-		
-		return mInstance;
-	}
+    private static String sDEFAULT_APP_ROOT = "SDRTrunk";
+    private static String sPROPERTIES_FILENAME = "SDRTrunk.properties";
 
-	/**
-	 * Saves any currently changed settings to the application properties file
-	 */
-	public void save()
-	{
-		Path propsPath = 
-				getApplicationRootPath().resolve( sPROPERTIES_FILENAME );
+    private static SystemProperties mInstance;
+    private static Properties mProperties;
+    private Path mPropertiesPath;
+    private String mApplicationName;
 
-		OutputStream out = null;
-		
-		try
-		{
-			out = new FileOutputStream( propsPath.toString() );
+    private SystemProperties()
+    {
+        mProperties = new Properties();
+    }
 
-			String comments = 
-					"SDRTrunk - SDR Trunking Decoder Application Settings";
-			
-			mProperties.store( out, comments );
-		}
-		catch( Exception e )
-		{
-			mLog.error( "SystemProperties - exception while saving " +
-					"application properties", e );
-		}
-		finally
-		{
-			if( out != null )
-			{
-				try
-                {
-	                out.close();
-                }
-                catch ( IOException e )
-                {
-                }
-			}
-		}
-	}
+    /**
+     * Returns a SINGLETON instance of the application properties set
+     *
+     * @return
+     */
+    public static SystemProperties getInstance()
+    {
+        if(mInstance == null)
+        {
+            mInstance = new SystemProperties();
+        }
 
-	/**
-	 * Application root directory.  Normally returns "SDRTRunk" from the user's
-	 * home directory, unless that has been changed to another location on the 
-	 * file system by the user.
-	 */
-	public Path getApplicationRootPath()
-	{
-		Path retVal = null;
-		
-		String root = get( "root.directory", sDEFAULT_APP_ROOT );
-		
-		if( root.equalsIgnoreCase( sDEFAULT_APP_ROOT ) )
-		{
-			retVal = Paths.get( 
-					System.getProperty( "user.home" ), sDEFAULT_APP_ROOT );
-		}
-		else
-		{
-			retVal = Paths.get( root );
-		}
-		
-		return retVal;
-	}
-	
-	public Path getApplicationFolder( String folder )
-	{
-		Path retVal = getApplicationRootPath().resolve( folder );
-		
-		if( !Files.exists( retVal ) )
-		{
-			try
+        return mInstance;
+    }
+
+    /**
+     * Saves any currently changed settings to the application properties file
+     */
+    public void save()
+    {
+        Path propsPath =
+            getApplicationRootPath().resolve(sPROPERTIES_FILENAME);
+
+        OutputStream out = null;
+
+        try
+        {
+            out = new FileOutputStream(propsPath.toString());
+
+            String comments =
+                "SDRTrunk - SDR Trunking Decoder Application Settings";
+
+            mProperties.store(out, comments);
+        }
+        catch(Exception e)
+        {
+            mLog.error("SystemProperties - exception while saving " +
+                "application properties", e);
+        }
+        finally
+        {
+            if(out != null)
             {
-	            Files.createDirectory( retVal );
+                try
+                {
+                    out.close();
+                }
+                catch(IOException e)
+                {
+                }
             }
-            catch ( IOException e )
-            {
-            	mLog.error( "SystemProperties - exception while creating " +
-            			"app folder [" + folder + "]", e );
-            }
-		}
-		
-		return retVal;
-	}
-	
-	public void logCurrentSettings()
-	{
-		if( mPropertiesPath == null )
-		{
-			mLog.info( "SystemProperties - no properties file loaded - using defaults" );
-		}
-		else
-		{
-			mLog.info( "SystemProperties - application properties loaded [" + mPropertiesPath.toString() + "]" );
-		}
-	}
-	
-	/**
-	 * Loads the properties file into this properties set
-	 * @param file
-	 */
-	public void load( Path propertiesPath )
-	{
-		if( propertiesPath != null )
-		{
-			mPropertiesPath = propertiesPath;
-			
-			InputStream in = null;
-			
+        }
+    }
+
+    /**
+     * Application root directory.  Normally returns "SDRTRunk" from the user's
+     * home directory, unless that has been changed to another location on the
+     * file system by the user.
+     */
+    public Path getApplicationRootPath()
+    {
+        Path retVal = null;
+
+        String root = get("root.directory", sDEFAULT_APP_ROOT);
+
+        if(root.equalsIgnoreCase(sDEFAULT_APP_ROOT))
+        {
+            retVal = Paths.get(
+                System.getProperty("user.home"), sDEFAULT_APP_ROOT);
+        }
+        else
+        {
+            retVal = Paths.get(root);
+        }
+
+        return retVal;
+    }
+
+    public Path getApplicationFolder(String folder)
+    {
+        Path retVal = getApplicationRootPath().resolve(folder);
+
+        if(!Files.exists(retVal))
+        {
             try
             {
-	            in = new FileInputStream( propertiesPath.toString() );
+                Files.createDirectory(retVal);
             }
-            catch ( FileNotFoundException e )
+            catch(IOException e)
             {
-            	mLog.error( "SDRTrunk - exception while opening inputstream on " +
-    			"application properties file", e  );
+                mLog.error("SystemProperties - exception while creating " +
+                    "app folder [" + folder + "]", e);
+            }
+        }
+
+        return retVal;
+    }
+
+    public void logCurrentSettings()
+    {
+        if(mPropertiesPath == null)
+        {
+            mLog.info("SystemProperties - no properties file loaded - using defaults");
+        }
+        else
+        {
+            mLog.info("SystemProperties - application properties loaded [" + mPropertiesPath.toString() + "]");
+        }
+    }
+
+    /**
+     * Loads the properties file into this properties set
+     *
+     * @param file
+     */
+    public void load(Path propertiesPath)
+    {
+        if(propertiesPath != null)
+        {
+            mPropertiesPath = propertiesPath;
+
+            InputStream in = null;
+
+            try
+            {
+                in = new FileInputStream(propertiesPath.toString());
+            }
+            catch(FileNotFoundException e)
+            {
+                mLog.error("SDRTrunk - exception while opening inputstream on " +
+                    "application properties file", e);
             }
 
-			if( in != null )
-			{
-				try
+            if(in != null)
+            {
+                try
                 {
-	                mProperties.load( in );
+                    mProperties.load(in);
                 }
-                catch ( IOException e )
+                catch(IOException e)
                 {
-                	mLog.error( "SDRTrunk - exception while loading properties " +
-                			"inputstream into SystemProperties", e );
+                    mLog.error("SDRTrunk - exception while loading properties " +
+                        "inputstream into SystemProperties", e);
                 }
-				finally
-				{
-					try
+                finally
+                {
+                    try
                     {
-	                    in.close();
+                        in.close();
                     }
-                    catch ( IOException e )
+                    catch(IOException e)
                     {
                     }
-				}
-			}
-		}
-		
-		mLog.info( "SystemProperties - loaded [" + 
-						propertiesPath.toString() + "]" );
-	}
+                }
+            }
+        }
 
-	public String getApplicationName()
-	{
-		if(mApplicationName == null)
-		{
-			StringBuilder sb = new StringBuilder();
+        mLog.info("SystemProperties - loaded [" +
+            propertiesPath.toString() + "]");
+    }
 
-			sb.append( "sdrtrunk" );
+    public String getApplicationName()
+    {
+        if(mApplicationName == null)
+        {
+            StringBuilder sb = new StringBuilder();
 
-			try(BufferedReader reader = new BufferedReader(
-					new InputStreamReader( this.getClass()
-							.getResourceAsStream( "/sdrtrunk-version" ) ) ) )
-			{
-				String version = reader.readLine();
+            sb.append("sdrtrunk");
 
-				if( version != null )
-				{
-					sb.append( " V" );
-					sb.append( version );
-				}
-			}
-			catch( Exception e )
-			{
-				mLog.error( "Couldn't read sdrtrunk version from application jar file" );
-			}
+            try(BufferedReader reader = new BufferedReader(
+                new InputStreamReader(this.getClass()
+                    .getResourceAsStream("/sdrtrunk-version"))))
+            {
+                String version = reader.readLine();
 
-			mApplicationName = sb.toString();
-		}
+                if(version != null)
+                {
+                    sb.append(" V");
+                    sb.append(version);
+                }
+            }
+            catch(Exception e)
+            {
+                mLog.error("Couldn't read sdrtrunk version from application jar file");
+            }
 
-		return mApplicationName;
-	}
+            mApplicationName = sb.toString();
+        }
 
-	/**
-	 * Returns the value of the property, or null if the property doesn't exist
-	 */
-	private String get( String key )
-	{
-		return mProperties.getProperty( key );
-	}
+        return mApplicationName;
+    }
 
-	/**
-	 * Returns the value of the property, or the defaultValue if the
-	 * property doesn't exist
-	 */
-	public String get( String key, String defaultValue )
-	{
-		String value = get( key );
-		
-		if( value != null )
-		{
-			return value;
-		}
+    /**
+     * Returns the value of the property, or null if the property doesn't exist
+     */
+    private String get(String key)
+    {
+        return mProperties.getProperty(key);
+    }
 
-		set( key, defaultValue );
-		
-		return defaultValue;
-	}
-	
-	/**
-	 * Returns the value of the property, or the defaultValue if the
-	 * property doesn't exist
-	 */
-	public boolean get( String key, boolean defaultValue )
-	{
-		String value = get( key );
-		
-		if( value != null )
-		{
-			try
-			{
-				boolean stored = Boolean.parseBoolean( value );
-				
-				return stored;
-			}
-			catch( Exception e )
-			{
-				//Do nothing, we couldn't parse the stored value
-			}
-		}
+    /**
+     * Returns the value of the property, or the defaultValue if the
+     * property doesn't exist
+     */
+    public String get(String key, String defaultValue)
+    {
+        String value = get(key);
 
-		set( key, String.valueOf( defaultValue ) );
-		
-		return defaultValue;
-	}
-	
-	/**
-	 * Returns the value of the property, or the defaultValue if the
-	 * property doesn't exist
-	 */
-	public int get( String key, int defaultValue )
-	{
-		String value = get( key );
-		
-		if( value != null )
-		{
-			try
-			{
-				int stored = Integer.parseInt( value );
-				
-				return stored;
-			}
-			catch( Exception e )
-			{
-				//Do nothing, we couldn't parse the stored value
-			}
-		}
+        if(value != null)
+        {
+            return value;
+        }
 
-		set( key, String.valueOf( defaultValue ) );
-		
-		return defaultValue;
-	}
+        set(key, defaultValue);
 
-	/**
-	 * Sets (overrides) the property key with the new value
-	 */
-	public void set( String key, String value )
-	{
-		mProperties.setProperty( key, value );
-		
-		save();
-	}
-	
-	
+        return defaultValue;
+    }
+
+    /**
+     * Returns the value of the property, or the defaultValue if the
+     * property doesn't exist
+     */
+    public boolean get(String key, boolean defaultValue)
+    {
+        String value = get(key);
+
+        if(value != null)
+        {
+            try
+            {
+                boolean stored = Boolean.parseBoolean(value);
+
+                return stored;
+            }
+            catch(Exception e)
+            {
+                //Do nothing, we couldn't parse the stored value
+            }
+        }
+
+        set(key, String.valueOf(defaultValue));
+
+        return defaultValue;
+    }
+
+    /**
+     * Returns the value of the property, or the defaultValue if the
+     * property doesn't exist
+     */
+    public int get(String key, int defaultValue)
+    {
+        String value = get(key);
+
+        if(value != null)
+        {
+            try
+            {
+                int stored = Integer.parseInt(value);
+
+                return stored;
+            }
+            catch(Exception e)
+            {
+                //Do nothing, we couldn't parse the stored value
+            }
+        }
+
+        set(key, String.valueOf(defaultValue));
+
+        return defaultValue;
+    }
+
+    /**
+     * Sets (overrides) the property key with the new value
+     */
+    public void set(String key, String value)
+    {
+        mProperties.setProperty(key, value);
+
+        save();
+    }
+
+    /**
+     * Gets the named color property, storing the default value in properties file if it doesn't exist.
+     *
+     * @param key identifying the color property
+     * @param defaultColor to use for creating the property if it doesn't exist
+     * @return named color
+     */
+    public Color get(String key, Color defaultColor)
+    {
+        return new Color(get(key, defaultColor.getRGB()), true);
+    }
+
+    /**
+     * Creates a new color instance with the RGB values from color argument and translucency (alpha) argument
+     * @param color containing RGB values
+     * @param alpha desired translucency/alpha value
+     * @return new color with adjusted alpha value
+     */
+    public static Color getTranslucent(Color color, int alpha)
+    {
+        return new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha);
+    }
+
 }

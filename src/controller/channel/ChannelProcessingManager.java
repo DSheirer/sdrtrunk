@@ -31,6 +31,7 @@ import message.Message;
 import module.Module;
 import module.ProcessingChain;
 import module.decode.DecoderFactory;
+import module.decode.DecoderType;
 import module.decode.event.MessageActivityModel;
 import module.log.EventLogManager;
 import org.slf4j.Logger;
@@ -41,6 +42,8 @@ import sample.Listener;
 import source.Source;
 import source.SourceException;
 import source.SourceManager;
+import source.SourceType;
+import source.config.SourceConfigTuner;
 
 import java.util.HashMap;
 import java.util.List;
@@ -184,8 +187,7 @@ public class ChannelProcessingManager implements ChannelEventListener
         {
             channel.setEnabled(false);
 
-            mChannelModel.broadcast(
-                new ChannelEvent(channel, Event.NOTIFICATION_ENABLE_REJECTED));
+            mChannelModel.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_ENABLE_REJECTED));
 
             return;
         }
@@ -224,31 +226,20 @@ public class ChannelProcessingManager implements ChannelEventListener
             }
 
             //Inject channel metadata that will be inserted into audio packets for recorder manager and streaming
-            StringBuilder sb = new StringBuilder();
+            processingChain.getChannelState().getMutableMetadata().receive(
+                new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_LABEL_1, channel.getName()));
 
-            if(channel.getSystem() != null)
+            if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
             {
-                sb.append(channel.getSystem());
+                long frequency = ((SourceConfigTuner)channel.getSourceConfiguration()).getFrequency();
+
+                processingChain.getChannelState().getMutableMetadata().receive(
+                    new AttributeChangeRequest<Long>(Attribute.CHANNEL_FREQUENCY, frequency));
             }
 
-            if(channel.getSite() != null)
-            {
-                if(sb.length() > 0)
-                {
-                    sb.append(" - ");
-                }
-
-                sb.append(channel.getSite());
-            }
-
-            if(sb.length() > 0)
-            {
-                processingChain.getChannelState().getMutableMetadata()
-                    .receive(new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_LABEL_1, sb.toString()));
-            }
-
-            processingChain.getChannelState().getMutableMetadata()
-                .receive(new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_LABEL_2, channel.getName()));
+            processingChain.getChannelState().getMutableMetadata().receive(
+                new AttributeChangeRequest<DecoderType>(Attribute.PRIMARY_DECODER_TYPE,
+                    channel.getDecodeConfiguration().getDecoderType()));
         }
 
         /* Setup event logging */

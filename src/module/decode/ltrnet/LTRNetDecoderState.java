@@ -19,6 +19,9 @@ package module.decode.ltrnet;
 
 import alias.Alias;
 import alias.AliasList;
+import alias.id.AliasIDType;
+import channel.metadata.AliasedIntegerAttributeMonitor;
+import channel.metadata.AliasedStringAttributeMonitor;
 import channel.metadata.Attribute;
 import channel.metadata.AttributeChangeRequest;
 import channel.state.DecoderState;
@@ -57,10 +60,9 @@ public class LTRNetDecoderState extends DecoderState
         new HashMap<Integer,Long>();
     private HashMap<Integer,String> mActiveCalls = new HashMap<Integer,String>();
 
-    private String mToTalkgroup;
-    private Alias mToTalkgroupAlias;
-    private String mFromTalkgroup;
-    private Alias mFromTalkgroupAlias;
+    private AliasedStringAttributeMonitor mToAttribute;
+    private AliasedIntegerAttributeMonitor mFromUIDAttribute;
+    private AliasedStringAttributeMonitor mESNAttribute;
     private String mMessage;
     private String mMessageType;
     private int mChannelNumber;
@@ -69,6 +71,16 @@ public class LTRNetDecoderState extends DecoderState
     public LTRNetDecoderState(AliasList aliasList)
     {
         super(aliasList);
+
+        mToAttribute = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_TO,
+            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
+        mToAttribute.addIllegalValue("0-00-000");
+
+        mFromUIDAttribute = new AliasedIntegerAttributeMonitor(Attribute.PRIMARY_ADDRESS_TO,
+            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.LTR_NET_UID);
+
+        mESNAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_FROM,
+            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.ESN);
     }
 
     @Override
@@ -204,8 +216,7 @@ public class LTRNetDecoderState extends DecoderState
                             broadcast(mCurrentCallEvent);
                         }
 
-                        setFromTalkgroup(String.valueOf(uniqueID));
-                        setFromTalkgroupAlias(ltr.getRadioUniqueIDAlias());
+                        mFromUIDAttribute.process(uniqueID);
                         break;
                     case ID_SITE:
                         String siteID = ltr.getSiteID();
@@ -243,8 +254,7 @@ public class LTRNetDecoderState extends DecoderState
                         }
 
                         setMessageType("ESN");
-                        setFromTalkgroup(ltr.getESN());
-                        setFromTalkgroupAlias(ltr.getESNAlias());
+                        mESNAttribute.process(ltr.getESN());
 
                         broadcast(new DecoderStateEvent(this, Event.DECODE, State.DATA));
 
@@ -272,8 +282,7 @@ public class LTRNetDecoderState extends DecoderState
                             mUniqueIDs.add(uniqueid);
 
                             setMessageType("REGISTER UID");
-                            setToTalkgroup(String.valueOf(uniqueid));
-                            setToTalkgroupAlias(ltr.getRadioUniqueIDAlias());
+                            mFromUIDAttribute.process(uniqueid);
 
                             if(getCurrentLTRCallEvent() == null)
                             {
@@ -609,10 +618,11 @@ public class LTRNetDecoderState extends DecoderState
 
             if(isValidTalkgroup(talkgroup))
             {
+                mToAttribute.process(talkgroup);
+
                 final LTRCallEvent current = getCurrentLTRCallEvent();
 
-			/* If this is a new call or the talkgroup is different from the current
-             * call, create a new call event */
+    			//If this is a new call or the talkgroup is different from the current call, create a new call event
                 if(current == null || isDifferentTalkgroup(talkgroup))
                 {
     				/* Invalidate the current call */
@@ -622,21 +632,17 @@ public class LTRNetDecoderState extends DecoderState
                         broadcast(current);
                     }
 
-                    setToTalkgroup(message.getTalkgroupID());
-
                     /* A talkgroup must be seen at least once before it will be added
                      * to the mTalkgroups list that is used in the activity summary,
                      * so that we don't pollute the summary with one-off error talkgroups */
-                    if(mTalkgroupsFirstHeard.contains(mToTalkgroup))
+                    if(mTalkgroupsFirstHeard.contains(talkgroup))
                     {
-                        mTalkgroups.add(mToTalkgroup);
+                        mTalkgroups.add(talkgroup);
                     }
                     else
                     {
-                        mTalkgroupsFirstHeard.add(mToTalkgroup);
+                        mTalkgroupsFirstHeard.add(talkgroup);
                     }
-
-                    setToTalkgroupAlias(message.getTalkgroupIDAlias());
 
                     CallEvent callEvent = new LTRCallEvent.Builder(DecoderType.LTR_NET, CallEventType.CALL)
                         .aliasList(getAliasList())
@@ -704,69 +710,11 @@ public class LTRNetDecoderState extends DecoderState
 
         mCurrentCallEvent = null;
 
-        mToTalkgroup = null;
-
-        mToTalkgroupAlias = null;
-
+        mToAttribute.reset();
+        mESNAttribute.reset();
+        mFromUIDAttribute.reset();
+        mMessage = null;
         mMessageType = null;
-    }
-
-    public String getToTalkgroup()
-    {
-        return mToTalkgroup;
-    }
-
-    public void setToTalkgroup(String toTalkgroup)
-    {
-        if(!StringUtils.isEqual(mToTalkgroup, toTalkgroup))
-        {
-            mToTalkgroup = toTalkgroup;
-            broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_TO, mToTalkgroup, mToTalkgroupAlias));
-        }
-    }
-
-    public Alias getToTalkgroupAlias()
-    {
-        return mToTalkgroupAlias;
-    }
-
-    public void setToTalkgroupAlias(Alias alias)
-    {
-        if(mToTalkgroupAlias == null || (alias != null && mToTalkgroupAlias != alias))
-        {
-            mToTalkgroupAlias = alias;
-            broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_TO, mToTalkgroup, mToTalkgroupAlias));
-        }
-    }
-
-    public String getFromTalkgroup()
-    {
-        return mFromTalkgroup;
-    }
-
-    public void setFromTalkgroup(String fromTalkgroup)
-    {
-        if(!StringUtils.isEqual(mFromTalkgroup, fromTalkgroup))
-        {
-            mFromTalkgroup = fromTalkgroup;
-            broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_FROM, mFromTalkgroup,
-                mFromTalkgroupAlias));
-        }
-    }
-
-    public Alias getFromTalkgroupAlias()
-    {
-        return mFromTalkgroupAlias;
-    }
-
-    public void setFromTalkgroupAlias(Alias alias)
-    {
-        if(mFromTalkgroupAlias == null || (alias != null && alias != mFromTalkgroupAlias))
-        {
-            mFromTalkgroupAlias = alias;
-            broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_FROM, mFromTalkgroup,
-                mFromTalkgroupAlias));
-        }
     }
 
     public String getMessage()

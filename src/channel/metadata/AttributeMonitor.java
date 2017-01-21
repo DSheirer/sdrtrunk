@@ -51,13 +51,15 @@ public class AttributeMonitor<T>
      * different from the current value, has a higher occurrence count than the current value.  If heuristics are
      * disabled, then a change is emitted at each change in the value.
      * @param t
+     *
+     * @return true if the value was changed after processing
      */
-    public void process(T t)
+    public boolean process(T t)
     {
+        boolean changed = false;
+
         if(t != null && !mIllegalValues.contains(t))
         {
-            boolean changed = false;
-
             if(mHeuristicsEnabled)
             {
                 if(mOccurrenceCounts.containsKey(t))
@@ -103,6 +105,8 @@ public class AttributeMonitor<T>
                 mListener.receive(new AttributeChangeRequest(mAttribute, getValue(), getAlias()));
             }
         }
+
+        return changed;
     }
 
     /**

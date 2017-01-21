@@ -20,6 +20,8 @@ package module.decode.passport;
 
 import alias.Alias;
 import alias.AliasList;
+import alias.id.AliasIDType;
+import channel.metadata.AliasedStringAttributeMonitor;
 import channel.metadata.Attribute;
 import channel.metadata.AttributeChangeRequest;
 import channel.state.DecoderState;
@@ -32,7 +34,6 @@ import module.decode.event.CallEvent;
 import module.decode.event.CallEvent.CallEventType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -53,10 +54,8 @@ public class PassportDecoderState extends DecoderState
     private HashMap<Integer,String> mSiteLCNs = new HashMap<Integer,String>();
     private HashMap<Integer,String> mNeighborLCNs = new HashMap<Integer,String>();
 
-    private String mTalkgroup;
-    private Alias mTalkgroupAlias;
-    private String mMobileID;
-    private Alias mMobileIDAlias;
+    private AliasedStringAttributeMonitor mFromMobileIDAttribute;
+    private AliasedStringAttributeMonitor mToTalkgroupAttribute;
     private int mChannelNumber;
     private int mSiteNumber;
     private PassportBand mSiteBand;
@@ -66,6 +65,11 @@ public class PassportDecoderState extends DecoderState
     public PassportDecoderState(AliasList aliasList)
     {
         super(aliasList);
+
+        mFromMobileIDAttribute = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_FROM,
+            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.MIN);
+        mToTalkgroupAttribute = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_TO,
+            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
     }
 
     @Override
@@ -146,7 +150,7 @@ public class PassportDecoderState extends DecoderState
 	                    /* Call on this channel */
                         if(passport.getLCN() == mChannelNumber)
                         {
-                            setTalkgroup(talkgroup);
+                            mToTalkgroupAttribute.process(talkgroup);
 
                             PassportCallEvent current = getCurrentCallEvent();
 
@@ -207,7 +211,7 @@ public class PassportDecoderState extends DecoderState
                             String.valueOf(passport.getTalkgroupID());
 
                         logTalkgroup(endTalkgroup);
-                        setTalkgroup(endTalkgroup);
+                        mToTalkgroupAttribute.process(endTalkgroup);
 
                         broadcast(new DecoderStateEvent(this,
                             Event.END, State.CALL));
@@ -234,11 +238,11 @@ public class PassportDecoderState extends DecoderState
                         {
                             setChannelNumber(passport.getLCN());
                         }
-		
+
 		                 /* Data call on this channel */
                         if(passport.getLCN() == mChannelNumber)
                         {
-                            setTalkgroup(dataTalkgroup);
+                            mToTalkgroupAttribute.process(dataTalkgroup);
 
                             PassportCallEvent current = getCurrentCallEvent();
 	
@@ -299,7 +303,7 @@ public class PassportDecoderState extends DecoderState
                             String.valueOf(passport.getTalkgroupID());
 
                         logTalkgroup(dataEndTalkgroup);
-                        setTalkgroup(dataEndTalkgroup);
+                        mToTalkgroupAttribute.process(dataEndTalkgroup);
 
                         broadcast(new DecoderStateEvent(this,
                             Event.END, State.DATA));
@@ -321,7 +325,7 @@ public class PassportDecoderState extends DecoderState
                             mMobileIDs.add(min);
                         }
 
-                        setMobileID(min);
+                        mFromMobileIDAttribute.process(min);
 
                         final CallEvent current = getCurrentCallEvent();
 
@@ -519,10 +523,8 @@ public class PassportDecoderState extends DecoderState
 
     private void resetState()
     {
-        mTalkgroup = null;
-        mTalkgroupAlias = null;
-        mMobileID = null;
-        mMobileIDAlias = null;
+        mToTalkgroupAttribute.reset();
+        mFromMobileIDAttribute.reset();
     }
 
     public int getChannelNumber()
@@ -566,48 +568,6 @@ public class PassportDecoderState extends DecoderState
             mSiteBand = band;
             broadcast(new AttributeChangeRequest<String>(Attribute.NETWORK_ID_2, "BAND:" + band.getDescription()));
         }
-    }
-
-    public String getTalkgroup()
-    {
-        return mTalkgroup;
-    }
-
-    public void setTalkgroup(String talkgroup)
-    {
-        if(!StringUtils.isEqual(mTalkgroup, talkgroup))
-        {
-            mTalkgroup = talkgroup;
-            mTalkgroupAlias = hasAliasList() ? getAliasList().getTalkgroupAlias(getTalkgroup()) : null;
-            broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_TO, getTalkgroup(),
-                getTalkgroupAlias()));
-        }
-    }
-
-    public Alias getTalkgroupAlias()
-    {
-        return mTalkgroupAlias;
-    }
-
-    public String getMobileID()
-    {
-        return mMobileID;
-    }
-
-    public void setMobileID(String id)
-    {
-        if(!StringUtils.isEqual(mMobileID, id))
-        {
-            mMobileID = id;
-            mMobileIDAlias = hasAliasList() ? getAliasList().getMobileIDNumberAlias(getMobileID()) : null;
-            broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_FROM, getMobileID(),
-                getMobileIDAlias()));
-        }
-    }
-
-    public Alias getMobileIDAlias()
-    {
-        return mMobileIDAlias;
     }
 
     @Override

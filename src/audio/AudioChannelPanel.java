@@ -25,6 +25,7 @@ import icon.IconManager;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import properties.SystemProperties;
 import sample.Listener;
 import settings.ColorSetting;
 import settings.ColorSetting.ColorSettingName;
@@ -41,23 +42,27 @@ public class AudioChannelPanel extends JPanel
     private static final long serialVersionUID = 1L;
     private static final Logger mLog = LoggerFactory.getLogger(AudioChannelPanel.class);
 
+    public static final String PROPERTY_PREFIX = "audio.channel.panel.color.";
+    public static final String PROPERTY_COLOR_BACKGROUND = PROPERTY_PREFIX + "background";
+    public static final String PROPERTY_COLOR_LABEL = PROPERTY_PREFIX + "label";
+    public static final String PROPERTY_COLOR_MUTED = PROPERTY_PREFIX + "muted";
+    public static final String PROPERTY_COLOR_VALUE = PROPERTY_PREFIX + "value";
+
     private Font mFont = new Font(Font.MONOSPACED, Font.PLAIN, 16);
+
+    private Color mBackgroundColor;
     private Color mLabelColor;
-    private Color mDetailsColor;
+    private Color mMutedColor;
+    private Color mValueColor;
 
     private IconManager mIconManager;
     private SettingsManager mSettingsManager;
     private AudioOutput mAudioOutput;
 
+    private JLabel mMutedLabel = new JLabel("M");
     private JLabel mChannelName = new JLabel(" ");
-    private JLabel mToLabel = new JLabel("TO:");
-    private JLabel mTo = new JLabel("-----");
     private JLabel mToAlias = new JLabel(" ");
-
-    private JLabel mMutedLabel = new JLabel("MUTED");
-    private JLabel mFromLabel = new JLabel("FROM:");
-    private JLabel mFrom = new JLabel("-----");
-    private JLabel mFromAlias = new JLabel(" ");
+    private JLabel mTo = new JLabel("-----");
 
     private boolean mConfigured = false;
 
@@ -75,67 +80,36 @@ public class AudioChannelPanel extends JPanel
             mAudioOutput.setMetadataListener(new AudioMetadataProcessor());
         }
 
-        mLabelColor = mSettingsManager.getColorSetting(
-            ColorSettingName.CHANNEL_STATE_LABEL_DECODER).getColor();
-        mDetailsColor = mSettingsManager.getColorSetting(
-            ColorSettingName.CHANNEL_STATE_LABEL_DETAILS).getColor();
+        mBackgroundColor = SystemProperties.getInstance().get(PROPERTY_COLOR_BACKGROUND, Color.BLACK);
+        mLabelColor = SystemProperties.getInstance().get(PROPERTY_COLOR_LABEL, Color.LIGHT_GRAY);
+        mMutedColor = SystemProperties.getInstance().get(PROPERTY_COLOR_MUTED, Color.RED);
+        mValueColor = SystemProperties.getInstance().get(PROPERTY_COLOR_VALUE, Color.GREEN);
 
         init();
     }
 
     private void init()
     {
-        setLayout(new MigLayout("align center center, insets 0 0 0 0",
-            "[][][right][grow,fill][grow,fill][right][grow,fill][grow,fill]", ""));
-        setBackground(Color.BLACK);
+        setLayout(new MigLayout("align center center, insets 0 0 0 0", "[][][align right]0[grow,fill]", ""));
+        setBackground(mBackgroundColor);
 
         mMutedLabel.setFont(mFont);
-        mMutedLabel.setForeground(Color.RED);
+        mMutedLabel.setForeground(mMutedColor);
         mMutedLabel.setVisible(false);
         add(mMutedLabel);
 
         mChannelName = new JLabel(mAudioOutput != null ? mAudioOutput.getChannelName() : " ");
         mChannelName.setFont(mFont);
-        mChannelName.setForeground(mDetailsColor);
+        mChannelName.setForeground(mLabelColor);
         add(mChannelName);
 
-        mToLabel.setFont(mFont);
-        if(mAudioOutput != null)
-        {
-            mToLabel.setForeground(mLabelColor);
-        }
-        else
-        {
-            mToLabel.setForeground(getBackground());
-        }
-        add(mToLabel);
-
-        mTo.setFont(mFont);
-        mTo.setForeground(mLabelColor);
-        add(mTo);
-
         mToAlias.setFont(mFont);
-        mToAlias.setForeground(mLabelColor);
+        mToAlias.setForeground(mValueColor);
         add(mToAlias);
 
-        mFromLabel.setFont(mFont);
-        if(mAudioOutput != null)
-        {
-            mFromLabel.setForeground(mLabelColor);
-        }
-        else
-        {
-            mFromLabel.setForeground(getBackground());
-        }
-        add(mFromLabel);
-
-        mFrom.setFont(mFont);
-        mFrom.setForeground(mLabelColor);
-        add(mFrom);
-
-        mFromAlias.setFont(mFont);
-        mFromAlias.setForeground(mLabelColor);
-        add(mFromAlias);
+        mTo.setFont(mFont);
+        mTo.setForeground(mValueColor);
+        add(mTo);
     }
 
     @Override
@@ -175,7 +149,6 @@ public class AudioChannelPanel extends JPanel
      */
     private void resetLabels()
     {
-        updateLabel(mFrom, null, mFromAlias, null);
         updateLabel(mTo, null, mToAlias, null);
 
         mConfigured = false;
@@ -190,14 +163,15 @@ public class AudioChannelPanel extends JPanel
     {
         if(value != null)
         {
-            valueLabel.setText(value);
 
             if(alias != null)
             {
-                aliasLabel.setIcon(mIconManager.getIcon(alias.getIconName(), 16));
+                valueLabel.setText(alias.getName());
+                aliasLabel.setIcon(mIconManager.getIcon(alias.getIconName(), 18));
             }
             else
             {
+                valueLabel.setText(value);
                 aliasLabel.setIcon(null);
             }
         }
@@ -224,9 +198,6 @@ public class AudioChannelPanel extends JPanel
                     @Override
                     public void run()
                     {
-                        updateLabel(mFrom, metadata.getPrimaryAddressFrom().getIdentifier(),
-                            mFromAlias, metadata.getPrimaryAddressFrom().getAlias());
-
                         updateLabel(mTo, metadata.getPrimaryAddressTo().getIdentifier(),
                             mToAlias, metadata.getPrimaryAddressTo().getAlias());
 
@@ -249,14 +220,6 @@ public class AudioChannelPanel extends JPanel
             switch(colorSetting.getColorSettingName())
             {
                 case CHANNEL_STATE_LABEL_DECODER:
-                    if(mFrom != null)
-                    {
-                        mFrom.setForeground(mLabelColor);
-                    }
-                    if(mFromAlias != null)
-                    {
-                        mFromAlias.setForeground(mLabelColor);
-                    }
                     if(mTo != null)
                     {
                         mTo.setForeground(mLabelColor);
@@ -264,16 +227,6 @@ public class AudioChannelPanel extends JPanel
                     if(mToAlias != null)
                     {
                         mToAlias.setForeground(mLabelColor);
-                    }
-                    break;
-                case CHANNEL_STATE_LABEL_DETAILS:
-                    if(mFromLabel != null)
-                    {
-                        mFromLabel.setForeground(mDetailsColor);
-                    }
-                    if(mToLabel != null)
-                    {
-                        mToLabel.setForeground(mDetailsColor);
                     }
                     break;
                 default:

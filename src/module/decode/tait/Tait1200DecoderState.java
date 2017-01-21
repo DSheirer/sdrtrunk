@@ -20,6 +20,8 @@ package module.decode.tait;
 
 import alias.Alias;
 import alias.AliasList;
+import alias.id.AliasIDType;
+import channel.metadata.AliasedStringAttributeMonitor;
 import channel.metadata.Attribute;
 import channel.metadata.AttributeChangeRequest;
 import channel.state.DecoderState;
@@ -42,18 +44,19 @@ public class Tait1200DecoderState extends DecoderState
 {
     private TreeSet<String> mIdents = new TreeSet<String>();
 
-    private String mFrom;
-    private Alias mFromAlias;
-
-    private String mTo;
-    private Alias mToAlias;
-
+    private AliasedStringAttributeMonitor mFromAttribute;
+    private AliasedStringAttributeMonitor mToAttribute;
     private String mMessage;
     private String mMessageType;
 
     public Tait1200DecoderState(AliasList aliasList)
     {
         super(aliasList);
+
+        mFromAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_FROM,
+            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
+        mToAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_TO,
+            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
     }
 
     @Override
@@ -82,10 +85,8 @@ public class Tait1200DecoderState extends DecoderState
 
     private void resetState()
     {
-        mFrom = null;
-        mFromAlias = null;
-        mTo = null;
-        mToAlias = null;
+        mFromAttribute.reset();
+        mToAttribute.reset();
         mMessage = null;
         mMessageType = null;
     }
@@ -97,12 +98,10 @@ public class Tait1200DecoderState extends DecoderState
         {
             Tait1200GPSMessage gps = (Tait1200GPSMessage) message;
 
-            setFromID(gps.getFromID());
-            setFromIDAlias(gps.getFromIDAlias());
+            mFromAttribute.process(gps.getFromID());
             mIdents.add(gps.getFromID());
 
-            setToID(gps.getToID());
-            setToIDAlias(gps.getToIDAlias());
+            mToAttribute.process(gps.getToID());
             mIdents.add(gps.getToID());
 
             GeoPosition position = gps.getGPSLocation();
@@ -123,13 +122,10 @@ public class Tait1200DecoderState extends DecoderState
         else if(message instanceof Tait1200ANIMessage)
         {
             Tait1200ANIMessage ani = (Tait1200ANIMessage) message;
-
-            setFromID(ani.getFromID());
-            setFromIDAlias(ani.getFromIDAlias());
+            mFromAttribute.process(ani.getFromID());
             mIdents.add(ani.getFromID());
 
-            setToID(ani.getToID());
-            setToIDAlias(ani.getToIDAlias());
+            mToAttribute.process(ani.getToID());
             mIdents.add(ani.getToID());
 
             setMessage(null);
@@ -199,62 +195,6 @@ public class Tait1200DecoderState extends DecoderState
                 break;
             default:
                 break;
-        }
-    }
-
-    public String getFromID()
-    {
-        return mFrom;
-    }
-
-    public void setFromID(String from)
-    {
-        if(!StringUtils.isEqual(mFrom, from))
-        {
-            mFrom = from;
-            broadcast(new AttributeChangeRequest<String>(Attribute.SECONDARY_ADDRESS_FROM, getFromID(), getFromIDAlias()));
-        }
-    }
-
-    public Alias getFromIDAlias()
-    {
-        return mFromAlias;
-    }
-
-    public void setFromIDAlias(Alias alias)
-    {
-        if(mFromAlias == null || (alias != null && mFromAlias != alias))
-        {
-            mFromAlias = alias;
-            broadcast(new AttributeChangeRequest<String>(Attribute.SECONDARY_ADDRESS_FROM, getFromID(), getFromIDAlias()));
-        }
-    }
-
-    public String getToID()
-    {
-        return mTo;
-    }
-
-    public void setToID(String to)
-    {
-        if(!StringUtils.isEqual(mTo, to))
-        {
-            mTo = to;
-            broadcast(new AttributeChangeRequest<String>(Attribute.SECONDARY_ADDRESS_TO, getToID(), getToIDAlias()));
-        }
-    }
-
-    public Alias getToIDAlias()
-    {
-        return mToAlias;
-    }
-
-    public void setToIDAlias(Alias alias)
-    {
-        if(mToAlias == null || (alias != null && mToAlias != alias))
-        {
-            mToAlias = alias;
-            broadcast(new AttributeChangeRequest<String>(Attribute.SECONDARY_ADDRESS_TO, getToID(), getToIDAlias()));
         }
     }
 

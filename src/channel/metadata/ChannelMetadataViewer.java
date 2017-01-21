@@ -22,7 +22,6 @@ import com.jidesoft.swing.JideSplitPane;
 import com.jidesoft.swing.JideTabbedPane;
 import controller.channel.ChannelProcessingManager;
 import icon.IconManager;
-import icon.IconTableModel;
 import module.decode.event.CallEventPanel;
 import module.decode.event.MessageActivityPanel;
 import net.miginfocom.swing.MigLayout;
@@ -30,6 +29,7 @@ import settings.SettingsManager;
 import spectrum.ChannelSpectrumPanel;
 
 import javax.swing.*;
+import java.awt.*;
 
 public class ChannelMetadataViewer extends JPanel
 {
@@ -45,11 +45,10 @@ public class ChannelMetadataViewer extends JPanel
     public ChannelMetadataViewer(ChannelProcessingManager channelProcessingManager, IconManager iconManager,
                                  SettingsManager settingsManager)
     {
-        mCallEventPanel = new CallEventPanel(iconManager, channelProcessingManager);
+        mCallEventPanel = new CallEventPanel(iconManager);
         mMessageActivityPanel = new MessageActivityPanel(channelProcessingManager);
         mChannelSpectrumPanel = new ChannelSpectrumPanel(settingsManager, channelProcessingManager);
-        mChannelMetadataPanel = new ChannelMetadataPanel(channelProcessingManager.getChannelMetadataModel(),
-            iconManager);
+        mChannelMetadataPanel = new ChannelMetadataPanel(channelProcessingManager, iconManager);
 
         init();
     }
@@ -59,49 +58,20 @@ public class ChannelMetadataViewer extends JPanel
         setLayout( new MigLayout( "insets 0 0 0 0", "[grow,fill]", "[grow,fill]") );
 
         JideTabbedPane tabbedPane = new JideTabbedPane();
-        tabbedPane.addTab("Details", new JPanel());
+//        tabbedPane.addTab("Details", new JPanel());
         tabbedPane.addTab("Events", mCallEventPanel);
         tabbedPane.addTab("Messages", mMessageActivityPanel);
-        tabbedPane.addTab("Spectrum", mChannelSpectrumPanel);
+//        tabbedPane.addTab("Spectrum", mChannelSpectrumPanel);
+        tabbedPane.setFont(this.getFont());
+        tabbedPane.setForeground(Color.BLACK);
 
         JideSplitPane splitPane = new JideSplitPane(JideSplitPane.VERTICAL_SPLIT);
+        splitPane.setShowGripper(true);
         splitPane.add(mChannelMetadataPanel);
         splitPane.add(tabbedPane);
         add(splitPane);
 
-//TODO: move this change listener to the metadata table view
-//        /**
-//         * Change listener to enable/disable the channel spectrum display
-//         * only when the tab is visible, and a channel has been selected
-//         */
-//        mTabbedPane.addChangeListener(new ChangeListener()
-//        {
-//            @Override
-//            public void stateChanged(ChangeEvent event)
-//            {
-//                int index = mTabbedPane.getSelectedIndex();
-//
-//                Component component = mTabbedPane.getComponentAt(index);
-//
-//                if(component instanceof ChannelSpectrumPanel)
-//                {
-//                    mChannelSpectrumPanel.setEnabled(true);
-//                }
-//                else
-//                {
-//                    mChannelSpectrumPanel.setEnabled(false);
-//                }
-//            }
-//        });
-
-//TODO: call, message and spectrum should listen to the metadata table now
-//
-//
-//    	/* Register each of the components to receive channel events when the
-//         * channels are selected or change */
-//        mChannelModel.addListener(mCallEventPanel);
-//        mChannelModel.addListener(mChannelSpectrumPanel);
-//        mChannelModel.addListener(mMessageActivityPanel);
-
+        mChannelMetadataPanel.addProcessingChainSelectionListener(mCallEventPanel);
+        mChannelMetadataPanel.addProcessingChainSelectionListener(mMessageActivityPanel);
     }
 }

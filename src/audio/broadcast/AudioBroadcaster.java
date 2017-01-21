@@ -259,8 +259,15 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
                 //Remove all pending audio recordings
                 while(!mAudioRecordingQueue.isEmpty())
                 {
-                    AudioRecording recording = mAudioRecordingQueue.get(0);
-                    recording.removePendingReplay();
+                    try
+                    {
+                        AudioRecording recording = mAudioRecordingQueue.get(0);
+                        recording.removePendingReplay();
+                    }
+                    catch(Exception e)
+                    {
+                        //Ignore
+                    }
                 }
             }
         }

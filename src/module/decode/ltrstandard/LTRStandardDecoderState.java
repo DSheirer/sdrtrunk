@@ -20,6 +20,8 @@ package module.decode.ltrstandard;
 
 import alias.Alias;
 import alias.AliasList;
+import alias.id.AliasIDType;
+import channel.metadata.AliasedStringAttributeMonitor;
 import channel.metadata.Attribute;
 import channel.metadata.AttributeChangeRequest;
 import channel.state.DecoderState;
@@ -56,14 +58,16 @@ public class LTRStandardDecoderState extends DecoderState
     private Set<String> mTalkgroupsFirstHeard = new HashSet<>();
     private Set<String> mTalkgroups = new TreeSet<>();
 
-    private String mTalkgroup;
-    private Alias mTalkgroupAlias;
+    private AliasedStringAttributeMonitor mTalkgroupAttribute;
     private long mFrequency;
     private LCNTracker mLCNTracker = new LCNTracker();
 
     public LTRStandardDecoderState(AliasList aliasList)
     {
         super(aliasList);
+
+        mTalkgroupAttribute = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_TO,
+            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
     }
 
     @Override
@@ -134,11 +138,9 @@ public class LTRStandardDecoderState extends DecoderState
 
                             if(mLCNTracker.isCurrentChannel(channel))
                             {
-                                setTalkgroup(start.getToID());
-
-                                processTalkgroup(mTalkgroup);
-
-                                setTalkgroupAlias(start.getToIDAlias());
+                                String talkgroup = start.getToID();
+                                mTalkgroupAttribute.process(talkgroup);
+                                processTalkgroup(talkgroup);
                             }
                         }
 
@@ -156,11 +158,9 @@ public class LTRStandardDecoderState extends DecoderState
 
                     if(mLCNTracker.isCurrentChannel(repeater))
                     {
-                        setTalkgroup(end.getToID());
-
-                        processTalkgroup(mTalkgroup);
-
-                        setTalkgroupAlias(end.getToIDAlias());
+                        String talkgroup = end.getToID();
+                        mTalkgroupAttribute.process(talkgroup);
+                        processTalkgroup(talkgroup);
 
                         LTRCallEvent event = mActiveCalls.remove(repeater);
 
@@ -231,36 +231,7 @@ public class LTRStandardDecoderState extends DecoderState
 
         mActiveCalls.clear();
 
-        mTalkgroup = null;
-        mTalkgroupAlias = null;
-    }
-
-    public String getTalkgroup()
-    {
-        return mTalkgroup;
-    }
-
-    private void setTalkgroup(String talkgroup)
-    {
-        if(!StringUtils.isEqual(mTalkgroup, talkgroup))
-        {
-            mTalkgroup = talkgroup;
-            broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_TO, mTalkgroup, mTalkgroupAlias));
-        }
-    }
-
-    public Alias getTalkgroupAlias()
-    {
-        return mTalkgroupAlias;
-    }
-
-    private void setTalkgroupAlias(Alias alias)
-    {
-        if(mTalkgroupAlias == null || (alias != null && mTalkgroupAlias != alias))
-        {
-            mTalkgroupAlias = alias;
-            broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_TO, mTalkgroup, mTalkgroupAlias));
-        }
+        mTalkgroupAttribute.reset();
     }
 
     public boolean hasChannelNumber()

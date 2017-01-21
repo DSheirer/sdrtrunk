@@ -19,10 +19,14 @@
 package module.decode.event;
 
 import alias.Alias;
+import gui.SDRTrunk;
 import icon.IconManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
+import java.awt.*;
 
 /**
  * Custom renderer for JTable cells that contain Alias objects.  Renders the
@@ -32,6 +36,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 public class CallEventAliasCellRenderer extends DefaultTableCellRenderer
 {
     private static final long serialVersionUID = 1L;
+    private final static Logger mLog = LoggerFactory.getLogger(CallEventAliasCellRenderer.class);
 
     private IconManager mIconManager;
 
@@ -41,35 +46,26 @@ public class CallEventAliasCellRenderer extends DefaultTableCellRenderer
         mIconManager = iconManager;
     }
 
-    public void setValue(Object obj)
+    @Override
+    public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column)
     {
-        if(obj != null && obj instanceof Alias)
+        JLabel label = (JLabel)super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+        if(value instanceof Alias)
         {
-            Alias alias = (Alias) obj;
+            Alias alias = (Alias)value;
 
-            setText(alias.getName());
-
-            ImageIcon icon = getIcon(alias, IconManager.DEFAULT_ICON_SIZE);
-
-            if(icon != null)
-            {
-                setIcon(icon);
-            }
+            label.setText(alias.getName());
+            label.setForeground(alias.getDisplayColor());
+            label.setIcon(mIconManager.getIcon(alias.getIconName(), IconManager.DEFAULT_ICON_SIZE));
         }
         else
         {
-            setText(" ");
-            setIcon(null);
-        }
-    }
-
-    private ImageIcon getIcon(Alias alias, int height)
-    {
-        if(mIconManager != null && alias != null)
-        {
-            return mIconManager.getIcon(alias.getIconName(), height);
+            label.setText("");
+            label.setForeground(table.getForeground());
+            label.setIcon(null);
         }
 
-        return null;
+        return label;
     }
 }

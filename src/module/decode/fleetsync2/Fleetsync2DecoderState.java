@@ -20,6 +20,8 @@ package module.decode.fleetsync2;
 
 import alias.Alias;
 import alias.AliasList;
+import alias.id.AliasIDType;
+import channel.metadata.AliasedStringAttributeMonitor;
 import channel.metadata.Attribute;
 import channel.metadata.AttributeChangeRequest;
 import channel.state.DecoderState;
@@ -39,20 +41,20 @@ public class Fleetsync2DecoderState extends DecoderState
     private TreeSet<String> mIdents = new TreeSet<String>();
     private TreeSet<String> mEmergencyIdents = new TreeSet<String>();
 
-    private String mFrom;
-    private Alias mFromAlias;
-
-    private String mTo;
-    private Alias mToAlias;
-
+    private AliasedStringAttributeMonitor mFromAttribute;
+    private AliasedStringAttributeMonitor mToAttribute;
     private String mMessage;
     private String mMessageType;
-
     private long mFrequency;
 
     public Fleetsync2DecoderState(AliasList aliasList)
     {
         super(aliasList);
+
+        mFromAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_FROM,
+            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.FLEETSYNC);
+        mToAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_TO,
+            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.FLEETSYNC);
     }
 
     @Override
@@ -99,10 +101,8 @@ public class Fleetsync2DecoderState extends DecoderState
      */
     public void resetState()
     {
-        mFrom = null;
-        mFromAlias = null;
-        mTo = null;
-        mToAlias = null;
+        mFromAttribute.reset();
+        mToAttribute.reset();
         mMessage = null;
         mMessageType = null;
     }
@@ -118,14 +118,14 @@ public class Fleetsync2DecoderState extends DecoderState
             {
                 State state = State.CALL;
 
-                setFromID(fleetsync.getFromID());
+                mFromAttribute.process(fleetsync.getFromID());
                 mIdents.add(fleetsync.getFromID());
 
                 FleetsyncMessageType type = fleetsync.getMessageType();
 
                 if(type != FleetsyncMessageType.ANI)
                 {
-                    setToID(fleetsync.getToID());
+                    mToAttribute.process(fleetsync.getToID());
                     mIdents.add(fleetsync.getToID());
                 }
 
@@ -172,46 +172,6 @@ public class Fleetsync2DecoderState extends DecoderState
                  * kick in and reset everything after a short delay */
                 broadcast(new DecoderStateEvent(this, Event.DECODE, state));
             }
-        }
-    }
-
-    public String getFromID()
-    {
-        return mFrom;
-    }
-
-    public Alias getFromIDAlias()
-    {
-        return mFromAlias;
-    }
-
-    public void setFromID(String from)
-    {
-        if(!StringUtils.isEqual(mFrom, from))
-        {
-            mFrom = from;
-            mFromAlias = hasAliasList() ? getAliasList().getFleetsyncAlias(mFrom) : null;
-            broadcast(new AttributeChangeRequest<String>(Attribute.SECONDARY_ADDRESS_FROM, mFrom, mFromAlias));
-        }
-    }
-
-    public String getToID()
-    {
-        return mTo;
-    }
-
-    public Alias getToIDAlias()
-    {
-        return mToAlias;
-    }
-
-    public void setToID(String to)
-    {
-        if(!StringUtils.isEqual(mTo, to))
-        {
-            mTo = to;
-            mToAlias = hasAliasList() ? getAliasList().getFleetsyncAlias(mTo) : null;
-            broadcast(new AttributeChangeRequest<String>(Attribute.SECONDARY_ADDRESS_TO, mTo, mToAlias));
         }
     }
 

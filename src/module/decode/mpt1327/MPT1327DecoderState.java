@@ -20,6 +20,8 @@ package module.decode.mpt1327;
 
 import alias.Alias;
 import alias.AliasList;
+import alias.id.AliasIDType;
+import channel.metadata.AliasedStringAttributeMonitor;
 import channel.metadata.Attribute;
 import channel.metadata.AttributeChangeRequest;
 import channel.state.ChangeChannelTimeoutEvent;
@@ -56,8 +58,8 @@ public class MPT1327DecoderState extends DecoderState
     private HashMap<String,ArrayList<String>> mGroups = new HashMap<String,ArrayList<String>>();
 
     private String mSite;
-    private String mFromTalkgroup;
-    private String mToTalkgroup;
+    private AliasedStringAttributeMonitor mFromAttribute;
+    private AliasedStringAttributeMonitor mToAttribute;
 
     private int mChannelNumber;
     private ChannelType mChannelType;
@@ -73,6 +75,10 @@ public class MPT1327DecoderState extends DecoderState
         mChannelMap = channelMap;
         mChannelType = channelType;
         mCallTimeout = callTimeout;
+        mFromAttribute = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_FROM,
+            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.MPT1327);
+        mToAttribute = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_TO,
+            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.MPT1327);
     }
 
     @Override
@@ -277,7 +283,7 @@ public class MPT1327DecoderState extends DecoderState
                                 broadcast(mCurrentCallEvent);
                             }
 
-                            setToTalkgroup(mpt.getToID());
+                            mToAttribute.process(mpt.getToID());
 
                             broadcast(new DecoderStateEvent(this, Event.START, State.CALL));
                         }
@@ -298,8 +304,8 @@ public class MPT1327DecoderState extends DecoderState
 
     private void resetState()
     {
-        mFromTalkgroup = null;
-        mToTalkgroup = null;
+        mFromAttribute.reset();
+        mToAttribute.reset();
 
         /**
          * If this is a standard channel, reset the fade timeout to the default
@@ -358,67 +364,6 @@ public class MPT1327DecoderState extends DecoderState
     {
         mChannelMap = channelMap;
     }
-
-    public String getFromTalkgroup()
-    {
-        return mFromTalkgroup;
-    }
-
-    /**
-     * Set the talkgroup.  This is used primarily for traffic channels since
-     * the talkgroup will already have been identified prior to the traffic
-     * channel being created.
-     */
-    public void setFromTalkgroup(String fromTalkgroup)
-    {
-        if(!StringUtils.isEqual(mFromTalkgroup, fromTalkgroup))
-        {
-            mFromTalkgroup = fromTalkgroup;
-            broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_FROM, mFromTalkgroup,
-                getFromTalkgroupAlias()));
-        }
-    }
-
-    public Alias getFromTalkgroupAlias()
-    {
-        if(hasAliasList())
-        {
-            return getAliasList().getMPT1327Alias(mFromTalkgroup);
-        }
-
-        return null;
-    }
-
-    public String getToTalkgroup()
-    {
-        return mToTalkgroup;
-    }
-
-    /**
-     * Set the talkgroup.  This is used primarily for traffic channels since
-     * the talkgroup will already have been identified prior to the traffic
-     * channel being created.
-     */
-    public void setToTalkgroup(String toTalkgroup)
-    {
-        if(!StringUtils.isEqual(mToTalkgroup, toTalkgroup))
-        {
-            mToTalkgroup = toTalkgroup;
-            broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_TO, mToTalkgroup,
-                getToTalkgroupAlias()));
-        }
-    }
-
-    public Alias getToTalkgroupAlias()
-    {
-        if(hasAliasList())
-        {
-            return getAliasList().getMPT1327Alias(mToTalkgroup);
-        }
-
-        return null;
-    }
-
 
     public int getChannelNumber()
     {
@@ -588,6 +533,8 @@ public class MPT1327DecoderState extends DecoderState
                         TrafficChannelAllocationEvent allocationEvent =
                             (TrafficChannelAllocationEvent) event;
 
+                        broadcast(new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_LABEL_1, "TRAFFIC"));
+
                         String channel = allocationEvent.getCallEvent().getChannel();
 
                         if(channel != null)
@@ -606,8 +553,8 @@ public class MPT1327DecoderState extends DecoderState
                         broadcast(new AttributeChangeRequest<Long>(Attribute.CHANNEL_FREQUENCY,
                             allocationEvent.getCallEvent().getFrequency()));
 
-                        setFromTalkgroup(allocationEvent.getCallEvent().getFromID());
-                        setToTalkgroup(allocationEvent.getCallEvent().getToID());
+                        mFromAttribute.process(allocationEvent.getCallEvent().getFromID());
+                        mToAttribute.process(allocationEvent.getCallEvent().getToID());
                     }
                 }
                 break;

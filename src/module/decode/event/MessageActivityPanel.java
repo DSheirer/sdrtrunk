@@ -32,6 +32,7 @@ import module.ProcessingChain;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sample.Listener;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -42,7 +43,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 
-public class MessageActivityPanel extends JPanel implements ChannelEventListener
+public class MessageActivityPanel extends JPanel implements Listener<ProcessingChain>
 {
     private static final long serialVersionUID = 1L;
 
@@ -50,10 +51,7 @@ public class MessageActivityPanel extends JPanel implements ChannelEventListener
 
     private static MessageActivityModel EMPTY_MODEL = new MessageActivityModel();
 
-    private JTable mMessageTable;
-
-    private Channel mDisplayedChannel;
-    private MessageActivityModel mDisplayedModel = EMPTY_MODEL;
+    private JTable mTable = new JTable(EMPTY_MODEL);
 
     private MessageManagementPanel mManagementPanel = new MessageManagementPanel();
 
@@ -67,37 +65,20 @@ public class MessageActivityPanel extends JPanel implements ChannelEventListener
 
         add(mManagementPanel, "span,growx");
 
-        mMessageTable = new JTable(mDisplayedModel);
-
-        add(new JScrollPane(mMessageTable), "span,grow");
+        add(new JScrollPane(mTable), "span,grow");
     }
 
     @Override
-    public void channelChanged(ChannelEvent event)
+    public void receive(ProcessingChain processingChain)
     {
-        boolean changed = false;
-
-        if(event.getEvent() == Event.NOTIFICATION_SELECTION_CHANGE &&
-            event.getChannel().isSelected())
+        EventQueue.invokeLater(new Runnable()
         {
-            if(mDisplayedChannel == null || (mDisplayedChannel != null && mDisplayedChannel != event.getChannel()))
+            @Override
+            public void run()
             {
-                mDisplayedChannel = event.getChannel();
+                mTable.setModel(processingChain != null ? processingChain.getMessageActivityModel() : EMPTY_MODEL);
 
-                ProcessingChain chain = mChannelProcessingManager.getProcessingChain(mDisplayedChannel);
-
-                if(chain != null)
-                {
-                    mDisplayedModel = chain.getMessageActivityModel();
-                }
-                else
-                {
-                    mDisplayedModel = EMPTY_MODEL;
-                }
-
-                mMessageTable.setModel(mDisplayedModel);
-
-                if(mDisplayedChannel != null)
+                if(processingChain != null)
                 {
                     mManagementPanel.enableButtons();
                 }
@@ -105,30 +86,67 @@ public class MessageActivityPanel extends JPanel implements ChannelEventListener
                 {
                     mManagementPanel.disableButtons();
                 }
-
-                changed = true;
             }
-        }
-        else if(event.getEvent() == Event.NOTIFICATION_PROCESSING_STOP || event.getEvent() == Event.REQUEST_DISABLE)
-        {
-            if(mDisplayedChannel != null && mDisplayedChannel == event.getChannel())
-            {
-                mDisplayedChannel = null;
-
-                mMessageTable.setModel(EMPTY_MODEL);
-
-                mManagementPanel.disableButtons();
-
-                changed = true;
-            }
-        }
-
-        if(changed)
-        {
-            revalidate();
-            repaint();
-        }
+        });
     }
+
+    //    @Override
+//    public void channelChanged(ChannelEvent event)
+//    {
+//        boolean changed = false;
+//
+//        if(event.getEvent() == Event.NOTIFICATION_SELECTION_CHANGE &&
+//            event.getChannel().isSelected())
+//        {
+//            if(mDisplayedChannel == null || (mDisplayedChannel != null && mDisplayedChannel != event.getChannel()))
+//            {
+//                mDisplayedChannel = event.getChannel();
+//
+//                ProcessingChain chain = mChannelProcessingManager.getProcessingChain(mDisplayedChannel);
+//
+//                if(chain != null)
+//                {
+//                    mDisplayedModel = chain.getMessageActivityModel();
+//                }
+//                else
+//                {
+//                    mDisplayedModel = EMPTY_MODEL;
+//                }
+//
+//                mMessageTable.setModel(mDisplayedModel);
+//
+//                if(mDisplayedChannel != null)
+//                {
+//                    mManagementPanel.enableButtons();
+//                }
+//                else
+//                {
+//                    mManagementPanel.disableButtons();
+//                }
+//
+//                changed = true;
+//            }
+//        }
+//        else if(event.getEvent() == Event.NOTIFICATION_PROCESSING_STOP || event.getEvent() == Event.REQUEST_DISABLE)
+//        {
+//            if(mDisplayedChannel != null && mDisplayedChannel == event.getChannel())
+//            {
+//                mDisplayedChannel = null;
+//
+//                mMessageTable.setModel(EMPTY_MODEL);
+//
+//                mManagementPanel.disableButtons();
+//
+//                changed = true;
+//            }
+//        }
+//
+//        if(changed)
+//        {
+//            revalidate();
+//            repaint();
+//        }
+//    }
 
     public class MessageManagementPanel extends JPanel
     {
@@ -184,8 +202,7 @@ public class MessageActivityPanel extends JPanel implements ChannelEventListener
                 @Override
                 public void mouseClicked(MouseEvent arg0)
                 {
-                    if(SwingUtilities.isLeftMouseButton(arg0) &&
-                        arg0.getClickCount() == 2)
+                    if(SwingUtilities.isLeftMouseButton(arg0) && arg0.getClickCount() == 2)
                     {
                         slider.setValue(500); //default
                     }
@@ -208,24 +225,13 @@ public class MessageActivityPanel extends JPanel implements ChannelEventListener
                 }
             });
 
-            if(mDisplayedModel != null)
-            {
-                slider.setValue(mDisplayedModel.getMaxMessageCount());
-            }
-            else
-            {
-                slider.setValue(500);
-            }
-
+            slider.setValue(((MessageActivityModel)mTable.getModel()).getMaxMessageCount());
             slider.addChangeListener(new ChangeListener()
             {
                 @Override
                 public void stateChanged(ChangeEvent arg0)
                 {
-                    if(mDisplayedModel != null)
-                    {
-                        mDisplayedModel.setMaxMessageCount(slider.getValue());
-                    }
+                    ((MessageActivityModel)mTable.getModel()).setMaxMessageCount(slider.getValue());
                 }
             });
 
@@ -239,10 +245,7 @@ public class MessageActivityPanel extends JPanel implements ChannelEventListener
                 @Override
                 public void actionPerformed(ActionEvent e)
                 {
-                    if(mDisplayedModel != null)
-                    {
-                        mDisplayedModel.clear();
-                    }
+                    ((MessageActivityModel)mTable.getModel()).clear();
                 }
             });
         }
@@ -261,61 +264,46 @@ public class MessageActivityPanel extends JPanel implements ChannelEventListener
                 @Override
                 public void actionPerformed(ActionEvent arg0)
                 {
-                    if(mDisplayedChannel == null)
+                    final JFrame editor = new JFrame();
+
+                    editor.setTitle("Message Filter Editor");
+                    editor.setSize(600, 400);
+                    editor.setLocationRelativeTo(MessageFilterButton.this);
+                    editor.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+                    editor.setLayout(new MigLayout("", "[grow,fill]",
+                        "[grow,fill][][]"));
+
+                    @SuppressWarnings("unchecked")
+                    FilterSet<Message> filter = (FilterSet<Message>) ((MessageActivityModel)mTable.getModel()).getMessageFilter();
+
+                    FilterEditorPanel<Message> panel = new FilterEditorPanel<Message>(filter);
+
+                    JScrollPane scroller = new JScrollPane(panel);
+                    scroller.setViewportView(panel);
+
+                    editor.add(scroller, "wrap");
+
+                    editor.add(new JLabel("Right-click to select/deselect all nodes"), "wrap");
+
+                    JButton close = new JButton("Close");
+                    close.addActionListener(new ActionListener()
                     {
-                        JOptionPane.showMessageDialog(MessageFilterButton.this,
-                            "Please enable and select a decoding channel to "
-                                + "adjust the channel's message display filter");
-                    }
-                    else
-                    {
-                        if(mDisplayedModel != null)
+                        @Override
+                        public void actionPerformed(ActionEvent e)
                         {
-                            final JFrame editor = new JFrame();
-
-                            editor.setTitle("Message Filter Editor");
-                            editor.setSize(600, 400);
-                            editor.setLocationRelativeTo(MessageFilterButton.this);
-                            editor.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-                            editor.setLayout(new MigLayout("", "[grow,fill]",
-                                "[grow,fill][][]"));
-
-                            @SuppressWarnings("unchecked")
-                            FilterSet<Message> filter = (FilterSet<Message>)
-                                mDisplayedModel.getMessageFilter();
-
-                            FilterEditorPanel<Message> panel =
-                                new FilterEditorPanel<Message>(filter);
-
-                            JScrollPane scroller = new JScrollPane(panel);
-                            scroller.setViewportView(panel);
-
-                            editor.add(scroller, "wrap");
-
-                            editor.add(new JLabel("Right-click to select/deselect "
-                                + "all nodes"), "wrap");
-
-                            JButton close = new JButton("Close");
-                            close.addActionListener(new ActionListener()
-                            {
-                                @Override
-                                public void actionPerformed(ActionEvent e)
-                                {
-                                    editor.dispose();
-                                }
-                            });
-
-                            editor.add(close);
-
-                            EventQueue.invokeLater(new Runnable()
-                            {
-                                public void run()
-                                {
-                                    editor.setVisible(true);
-                                }
-                            });
+                            editor.dispose();
                         }
-                    }
+                    });
+
+                    editor.add(close);
+
+                    EventQueue.invokeLater(new Runnable()
+                    {
+                        public void run()
+                        {
+                            editor.setVisible(true);
+                        }
+                    });
                 }
             });
         }

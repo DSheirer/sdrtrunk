@@ -18,112 +18,58 @@
  ******************************************************************************/
 package module.decode.event;
 
-import controller.channel.Channel;
-import controller.channel.ChannelEvent;
-import controller.channel.ChannelEvent.Event;
-import controller.channel.ChannelEventListener;
-import controller.channel.ChannelProcessingManager;
 import icon.IconManager;
 import module.ProcessingChain;
 import net.miginfocom.swing.MigLayout;
+import sample.Listener;
 
 import javax.swing.*;
 import java.awt.*;
 
-public class CallEventPanel extends JPanel implements ChannelEventListener
+public class CallEventPanel extends JPanel implements Listener<ProcessingChain>
 {
     private static final long serialVersionUID = 1L;
-
+    private JTable mTable;
+    private CallEventModel mEmptyCallEventModel = new CallEventModel();
     private JScrollPane mEmptyScroller;
-    private Channel mDisplayedChannel;
     private CallEventAliasCellRenderer mRenderer;
-    private ChannelProcessingManager mChannelProcessingManager;
 
-    public CallEventPanel(IconManager iconManager, ChannelProcessingManager channelProcessingManager)
+    /**
+     * View for call event table
+     * @param iconManager to display alias icons in table rows
+     */
+    public CallEventPanel(IconManager iconManager)
     {
-        mChannelProcessingManager = channelProcessingManager;
+        setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
 
-        setLayout(new MigLayout("insets 0 0 0 0 ", "[grow,fill]", "[grow,fill]"));
-
-        JTable table = new JTable(new CallEventModel());
-        table.setAutoCreateRowSorter(true);
-        table.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
+        mTable = new JTable(mEmptyCallEventModel);
+        mTable.setAutoCreateRowSorter(true);
+        mTable.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
 
         mRenderer = new CallEventAliasCellRenderer(iconManager);
 
-        table.getColumnModel().getColumn(CallEventModel.FROM_ALIAS).setCellRenderer(mRenderer);
 
-        table.getColumnModel().getColumn(CallEventModel.TO_ALIAS).setCellRenderer(mRenderer);
-
-        mEmptyScroller = new JScrollPane(table);
+        mEmptyScroller = new JScrollPane(mTable);
 
         add(mEmptyScroller);
     }
 
     @Override
-    public void channelChanged(final ChannelEvent event)
+    public void receive(ProcessingChain processingChain)
     {
-        if(event.getEvent() == Event.NOTIFICATION_SELECTION_CHANGE && event.getChannel().isSelected())
+        EventQueue.invokeLater(new Runnable()
         {
-            if(mDisplayedChannel == null || (mDisplayedChannel != null && mDisplayedChannel != event.getChannel()))
+            @Override
+            public void run()
             {
-                ProcessingChain chain = mChannelProcessingManager.getProcessingChain(event.getChannel());
+                mTable.setModel(processingChain != null ? processingChain.getCallEventModel() : mEmptyCallEventModel);
 
-                if(chain != null)
+                if(processingChain != null)
                 {
-                    final CallEventModel model = chain.getCallEventModel();
-
-                    if(model != null)
-                    {
-                        EventQueue.invokeLater(new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                removeAll();
-
-                                JTable table = new JTable(model);
-
-                                table.setAutoCreateRowSorter(true);
-                                table.setAutoResizeMode(JTable.AUTO_RESIZE_LAST_COLUMN);
-
-                                table.getColumnModel().getColumn(CallEventModel.FROM_ALIAS)
-                                    .setCellRenderer(mRenderer);
-
-                                table.getColumnModel().getColumn(CallEventModel.TO_ALIAS)
-                                    .setCellRenderer(mRenderer);
-
-                                add(new JScrollPane(table));
-
-                                mDisplayedChannel = event.getChannel();
-
-                                revalidate();
-                                repaint();
-                            }
-                        });
-                    }
+                    mTable.getColumnModel().getColumn(CallEventModel.FROM_ALIAS).setCellRenderer(mRenderer);
+                    mTable.getColumnModel().getColumn(CallEventModel.TO_ALIAS).setCellRenderer(mRenderer);
                 }
             }
-        }
-        else if(event.getEvent() == Event.NOTIFICATION_PROCESSING_STOP || event.getEvent() == Event.REQUEST_DISABLE)
-        {
-            if(mDisplayedChannel != null && mDisplayedChannel == event.getChannel())
-            {
-                mDisplayedChannel = null;
-
-                EventQueue.invokeLater(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        removeAll();
-                        add(mEmptyScroller);
-
-                        revalidate();
-                        repaint();
-                    }
-                });
-            }
-        }
+        });
     }
 }

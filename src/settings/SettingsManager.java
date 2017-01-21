@@ -135,6 +135,7 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
         return setting;
     }
 
+
     /**
      * Fetches the current setting and applies the parameter(s) to it.  Creates
      * the setting if it does not exist

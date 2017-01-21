@@ -3669,8 +3669,9 @@ public class P25DecoderState extends DecoderState
                 {
                     if(event instanceof TrafficChannelAllocationEvent)
                     {
-                        TrafficChannelAllocationEvent allocationEvent =
-                            (TrafficChannelAllocationEvent) event;
+                        TrafficChannelAllocationEvent allocationEvent = (TrafficChannelAllocationEvent) event;
+
+                        broadcast(new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_LABEL_1, "TRAFFIC"));
 
                         mCurrentCallEvent = (P25CallEvent) allocationEvent.getCallEvent();
 
