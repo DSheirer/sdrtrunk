@@ -473,7 +473,6 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
      */
     public void configureAsTrafficChannel(TrafficChannelManager manager, CallEvent callEvent)
     {
-        mLog.debug("Configuring for traffic channel: " + callEvent.toCSV());
         mTrafficChannelEndListener = manager;
 
         mTrafficChannelCallEvent = callEvent;
