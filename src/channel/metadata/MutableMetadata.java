@@ -20,11 +20,15 @@ package channel.metadata;
 
 import channel.state.State;
 import module.decode.DecoderType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sample.Broadcaster;
 import sample.Listener;
 
 public class MutableMetadata extends Metadata implements Listener<AttributeChangeRequest>
 {
+    private final static Logger mLog = LoggerFactory.getLogger(MutableMetadata.class);
+
     private Broadcaster<MutableMetadataChangeEvent> mMetadataChangeEventBroadcaster = new Broadcaster<>();
 
     /**
@@ -138,7 +142,7 @@ public class MutableMetadata extends Metadata implements Listener<AttributeChang
                 broadcast(Attribute.SECONDARY_ADDRESS_TO);
                 break;
             case CHANNEL_STATE:
-                mState = (State)request.getValue();
+                mState = (State) request.getValue();
                 broadcast(Attribute.CHANNEL_STATE);
                 break;
             default:

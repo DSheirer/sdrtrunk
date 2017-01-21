@@ -121,8 +121,6 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     {
         broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE));
 
-        mMutableMetadata.resetTemporalAttributes();
-
         mState = State.IDLE;
         mMutableMetadata.receive(new AttributeChangeRequest<State>(Attribute.CHANNEL_STATE, mState));
     }
@@ -475,6 +473,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
      */
     public void configureAsTrafficChannel(TrafficChannelManager manager, CallEvent callEvent)
     {
+        mLog.debug("Configuring for traffic channel: " + callEvent.toCSV());
         mTrafficChannelEndListener = manager;
 
         mTrafficChannelCallEvent = callEvent;
@@ -487,30 +486,32 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
             mMutableMetadata.receive(new AttributeChangeRequest<String>(Attribute.CHANNEL_FREQUENCY_LABEL, channel));
         }
 
+        long frequency = mTrafficChannelCallEvent.getFrequency();
+
+        if(frequency > 0)
+        {
+            mMutableMetadata.receive(new AttributeChangeRequest<Long>(Attribute.CHANNEL_FREQUENCY, frequency));
+        }
+
         mMutableMetadata.receive(new AttributeChangeRequest<DecoderType>(Attribute.PRIMARY_DECODER_TYPE,
             mTrafficChannelCallEvent.getDecoderType()));
 
-        String details = mTrafficChannelCallEvent.getDetails();
+        mMutableMetadata.receive(new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_LABEL_1, "TRAFFIC"));
 
         String from = mTrafficChannelCallEvent.getFromID();
 
         if(from != null)
         {
-            mMutableMetadata.receive(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_FROM, from));
+            mMutableMetadata.receive(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_FROM, from,
+                mTrafficChannelCallEvent.getFromIDAlias()));
         }
 
         String to = mTrafficChannelCallEvent.getToID();
 
         if(to != null)
         {
-            mMutableMetadata.receive(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_TO, to));
-        }
-
-        long frequency = mTrafficChannelCallEvent.getFrequency();
-
-        if(frequency > 0)
-        {
-            mMutableMetadata.receive(new AttributeChangeRequest<Long>(Attribute.CHANNEL_FREQUENCY, frequency));
+            mMutableMetadata.receive(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_TO, to,
+                mTrafficChannelCallEvent.getToIDAlias()));
         }
 
 		/* Rebroadcast the allocation event so that the internal decoder states

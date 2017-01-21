@@ -386,7 +386,7 @@ public class SDRTrunk implements Listener<TunerEvent>
         if(mBroadcastStatusPanel == null)
         {
             mBroadcastStatusPanel = new BroadcastStatusPanel(mBroadcastModel);
-            mBroadcastStatusPanel.setPreferredSize(new Dimension(880, 100));
+            mBroadcastStatusPanel.setPreferredSize(new Dimension(880, 70));
             mBroadcastStatusPanel.getTable().setEnabled(false);
         }
 

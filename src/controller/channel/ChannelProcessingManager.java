@@ -194,8 +194,7 @@ public class ChannelProcessingManager implements ChannelEventListener
 
         if(processingChain == null)
         {
-            processingChain = new ProcessingChain(channel.getName(),
-                channel.getChannelType());
+            processingChain = new ProcessingChain(channel.getName(), channel.getChannelType());
 
 			/* Register global listeners */
             for(Listener<AudioPacket> listener : mAudioPacketListeners)

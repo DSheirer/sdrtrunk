@@ -166,8 +166,10 @@ public class PlaylistManager implements ChannelEventListener
 
             mAliasModel.addAliases(playlist.getAliases());
             mBroadcastModel.addBroadcastConfigurations(playlist.getBroadcastConfigurations());
-            mChannelModel.addChannels(playlist.getChannels());
             mChannelMapModel.addChannelMaps(playlist.getChannelMaps());
+
+            //Channel model has to be loaded last since it will auto-start channels that are enabled
+            mChannelModel.addChannels(playlist.getChannels());
 
             mPlaylistLoading = false;
         }

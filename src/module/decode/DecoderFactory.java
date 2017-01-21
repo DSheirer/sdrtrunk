@@ -30,6 +30,8 @@ import controller.channel.ChannelModel;
 import controller.channel.ChannelProcessingManager;
 import controller.channel.map.ChannelMap;
 import controller.channel.map.ChannelMapModel;
+import dsp.filter.FilterFactory;
+import dsp.filter.fir.FIRFilterSpecification;
 import filter.AllPassFilter;
 import filter.FilterSet;
 import filter.IFilter;
@@ -89,12 +91,34 @@ import module.decode.tait.Tait1200DecoderState;
 import module.demodulate.am.AMDemodulatorModule;
 import module.demodulate.audio.DemodulatedAudioFilterModule;
 import module.demodulate.fm.FMDemodulatorModule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class DecoderFactory
 {
+    private final static Logger mLog = LoggerFactory.getLogger(DecoderFactory.class);
+
+    private static final FIRFilterSpecification MPT1327_FILTER_SPECIFICATION = FIRFilterSpecification.bandPassBuilder()
+        .sampleRate(48000).stopFrequency1(200).passFrequencyBegin(400).passFrequencyEnd(3200)
+        .stopFrequency2(3400).stopRipple(0.0003).passRipple(0.008).build();
+
+    private static float[] MPT1327_BANDPASS_FILTER;
+
+    static
+    {
+        try
+        {
+            MPT1327_BANDPASS_FILTER = FilterFactory.getTaps(MPT1327_FILTER_SPECIFICATION);
+        }
+        catch(Exception e)
+        {
+            mLog.error("Couldn't design MPT1327 bandpass filter");
+        }
+    }
+
     public static final boolean NO_REMOVE_DC = false;
     public static final boolean REMOVE_DC = true;
 
@@ -197,7 +221,7 @@ public class DecoderFactory
                 }
 
                 modules.add(new FMDemodulatorModule(iqPass, iqStop));
-                modules.add(new DemodulatedAudioFilterModule(4000, 6000));
+                modules.add(new DemodulatedAudioFilterModule(MPT1327_BANDPASS_FILTER, 2.0f));
                 modules.add(new AudioModule(metadata));
                 break;
             case PASSPORT:
