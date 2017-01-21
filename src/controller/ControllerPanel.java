@@ -24,6 +24,7 @@ import audio.AudioManager;
 import audio.AudioPanel;
 import audio.broadcast.BroadcastModel;
 import audio.broadcast.BroadcastPanel;
+import audio.broadcast.BroadcastStatusPanel;
 import channel.metadata.ChannelMetadataViewer;
 import com.jidesoft.swing.JideTabbedPane;
 import controller.channel.ChannelController;
@@ -34,6 +35,7 @@ import icon.IconManager;
 import map.MapPanel;
 import map.MapService;
 import net.miginfocom.swing.MigLayout;
+import properties.SystemProperties;
 import settings.SettingsManager;
 import source.SourceManager;
 import source.tuner.TunerModel;
@@ -54,6 +56,7 @@ public class ControllerPanel extends JPanel
     private ChannelModel mChannelModel;
     private MapPanel mMapPanel;
     private TunerViewPanel mTunerManagerPanel;
+    private BroadcastModel mBroadcastModel;
 
     private JideTabbedPane mTabbedPane;
     protected JTable mChannelActivityTable = new JTable();
@@ -70,6 +73,7 @@ public class ControllerPanel extends JPanel
                            SourceManager sourceManager,
                            TunerModel tunerModel)
     {
+        mBroadcastModel = broadcastModel;
         mChannelModel = channelModel;
 
         mAudioPanel = new AudioPanel(iconManager, settingsManager, sourceManager, audioManager);
@@ -91,7 +95,7 @@ public class ControllerPanel extends JPanel
 
     private void init()
     {
-        setLayout(new MigLayout("insets 0 0 0 0 ", "[grow,fill]", "[]0[grow,fill]"));
+        setLayout(new MigLayout("insets 0 0 0 0 ", "[grow,fill]", "[]0[grow,fill]0[]"));
 
         add(mAudioPanel, "wrap");
 
@@ -109,6 +113,6 @@ public class ControllerPanel extends JPanel
         //Set preferred size to influence the split between these panels
         mTabbedPane.setPreferredSize(new Dimension(880, 500));
 
-        add(mTabbedPane);
+        add(mTabbedPane,"wrap");
     }
 }

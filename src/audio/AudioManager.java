@@ -118,12 +118,11 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 
         try
         {
-            setMixerChannelConfiguration(configuration);
+            setMixerChannelConfiguration(configuration, false);
         }
         catch(Exception e)
         {
-            mLog.error("Couldn't set stored audio mixer/channel configuration"
-                + " - using default", e);
+            mLog.error("Couldn't set stored audio mixer/channel configuration - using default", e);
 
             try
             {
@@ -131,8 +130,7 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
             }
             catch(Exception e2)
             {
-                mLog.error("Couldn't set default audio mixer/channel "
-                    + "configuration - no audio will be available", e2);
+                mLog.error("Couldn't set default audio mixer/channel configuration - no audio will be available", e2);
             }
         }
     }
@@ -217,8 +215,12 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
     @Override
     public void setMixerChannelConfiguration(MixerChannelConfiguration entry) throws AudioException
     {
-        if(entry != null &&
-            (entry.getMixerChannel() == MixerChannel.MONO || entry.getMixerChannel() == MixerChannel.STEREO))
+        setMixerChannelConfiguration(entry, true);
+    }
+
+    public void setMixerChannelConfiguration(MixerChannelConfiguration entry, boolean saveSettings) throws AudioException
+    {
+        if(entry != null && (entry.getMixerChannel() == MixerChannel.MONO || entry.getMixerChannel() == MixerChannel.STEREO))
         {
             mControllerBroadcaster.broadcast(CONFIGURATION_CHANGE_STARTED);
 
@@ -260,11 +262,12 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 
             mControllerBroadcaster.broadcast(CONFIGURATION_CHANGE_COMPLETE);
 
-            SystemProperties properties = SystemProperties.getInstance();
-
-            properties.set(AUDIO_MIXER_PROPERTY, entry.getMixer().getMixerInfo().getName());
-            properties.set(AUDIO_CHANNELS_PROPERTY, entry.getMixerChannel().name());
-            properties.save();
+            if(saveSettings)
+            {
+                SystemProperties properties = SystemProperties.getInstance();
+                properties.set(AUDIO_MIXER_PROPERTY, entry.getMixer().getMixerInfo().getName());
+                properties.set(AUDIO_CHANNELS_PROPERTY, entry.getMixerChannel().name());
+            }
         }
     }
 

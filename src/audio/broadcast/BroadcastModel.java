@@ -585,7 +585,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
         switch(column)
         {
             case COLUMN_SERVER_ICON:
-                return null;
+                return "Streaming";
             case COLUMN_STREAM_NAME:
                 return "Name";
             case COLUMN_BROADCASTER_STATUS:

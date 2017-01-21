@@ -1,19 +1,20 @@
 /*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ * sdrtrunk
+ * Copyright (C) 2014-2017 Dennis Sheirer
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *
  ******************************************************************************/
 package properties;
 
@@ -33,24 +34,27 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * SystemProperties - provides an isolated instance of properties for the
- * application
+ * SystemProperties - provides an isolated instance of properties for the application
  */
-
 public class SystemProperties
 {
-    private final static Logger mLog =
-        LoggerFactory.getLogger(SystemProperties.class);
+    private final static Logger mLog = LoggerFactory.getLogger(SystemProperties.class);
 
-    private static String sDEFAULT_APP_ROOT = "SDRTrunk";
-    private static String sPROPERTIES_FILENAME = "SDRTrunk.properties";
+    private static String DEFAULT_APP_ROOT = "SDRTrunk";
+    private static String PROPERTIES_FILENAME = "SDRTrunk.properties";
 
-    private static SystemProperties mInstance;
+    private static SystemProperties INSTANCE;
     private static Properties mProperties;
     private Path mPropertiesPath;
     private String mApplicationName;
+    private AtomicBoolean mSavePending = new AtomicBoolean();
+    private ScheduledExecutorService mScheduledExecutorService;
 
     private SystemProperties()
     {
@@ -64,50 +68,27 @@ public class SystemProperties
      */
     public static SystemProperties getInstance()
     {
-        if(mInstance == null)
+        if(INSTANCE == null)
         {
-            mInstance = new SystemProperties();
+            INSTANCE = new SystemProperties();
         }
 
-        return mInstance;
+        return INSTANCE;
     }
 
     /**
      * Saves any currently changed settings to the application properties file
      */
-    public void save()
+    private void save()
     {
-        Path propsPath =
-            getApplicationRootPath().resolve(sPROPERTIES_FILENAME);
-
-        OutputStream out = null;
-
-        try
+        if(mSavePending.compareAndSet(false, true))
         {
-            out = new FileOutputStream(propsPath.toString());
-
-            String comments =
-                "SDRTrunk - SDR Trunking Decoder Application Settings";
-
-            mProperties.store(out, comments);
-        }
-        catch(Exception e)
-        {
-            mLog.error("SystemProperties - exception while saving " +
-                "application properties", e);
-        }
-        finally
-        {
-            if(out != null)
+            if(mScheduledExecutorService == null)
             {
-                try
-                {
-                    out.close();
-                }
-                catch(IOException e)
-                {
-                }
+                mScheduledExecutorService = Executors.newScheduledThreadPool(1);
             }
+
+            mScheduledExecutorService.schedule(new SavePropertiesTask(), 2, TimeUnit.SECONDS);
         }
     }
 
@@ -120,12 +101,12 @@ public class SystemProperties
     {
         Path retVal = null;
 
-        String root = get("root.directory", sDEFAULT_APP_ROOT);
+        String root = get("root.directory", DEFAULT_APP_ROOT);
 
-        if(root.equalsIgnoreCase(sDEFAULT_APP_ROOT))
+        if(root.equalsIgnoreCase(DEFAULT_APP_ROOT))
         {
             retVal = Paths.get(
-                System.getProperty("user.home"), sDEFAULT_APP_ROOT);
+                System.getProperty("user.home"), DEFAULT_APP_ROOT);
         }
         else
         {
@@ -147,8 +128,7 @@ public class SystemProperties
             }
             catch(IOException e)
             {
-                mLog.error("SystemProperties - exception while creating " +
-                    "app folder [" + folder + "]", e);
+                mLog.error("SystemProperties - exception while creating app folder [" + folder + "]", e);
             }
         }
 
@@ -169,8 +149,6 @@ public class SystemProperties
 
     /**
      * Loads the properties file into this properties set
-     *
-     * @param file
      */
     public void load(Path propertiesPath)
     {
@@ -178,44 +156,20 @@ public class SystemProperties
         {
             mPropertiesPath = propertiesPath;
 
-            InputStream in = null;
-
-            try
+            if(Files.exists(mPropertiesPath))
             {
-                in = new FileInputStream(propertiesPath.toString());
-            }
-            catch(FileNotFoundException e)
-            {
-                mLog.error("SDRTrunk - exception while opening inputstream on " +
-                    "application properties file", e);
-            }
-
-            if(in != null)
-            {
-                try
+                try(InputStream in = new FileInputStream(propertiesPath.toString()))
                 {
                     mProperties.load(in);
                 }
-                catch(IOException e)
+                catch(IOException ioe)
                 {
-                    mLog.error("SDRTrunk - exception while loading properties " +
-                        "inputstream into SystemProperties", e);
-                }
-                finally
-                {
-                    try
-                    {
-                        in.close();
-                    }
-                    catch(IOException e)
-                    {
-                    }
+                    mLog.error("Error loading system properties file", ioe.getMessage());
                 }
             }
         }
 
-        mLog.info("SystemProperties - loaded [" +
-            propertiesPath.toString() + "]");
+        mLog.info("SystemProperties - loaded [" + propertiesPath.toString() + "]");
     }
 
     public String getApplicationName()
@@ -340,6 +294,22 @@ public class SystemProperties
     }
 
     /**
+     * Sets (overrides) the property key with the new boolean value
+     */
+    public void set(String key, boolean value)
+    {
+        set(key, String.valueOf(value));
+    }
+
+    /**
+     * Sets (overrides) the property key with the new integer value
+     */
+    public void set(String key, int value)
+    {
+        set(key, String.valueOf(value));
+    }
+
+    /**
      * Gets the named color property, storing the default value in properties file if it doesn't exist.
      *
      * @param key identifying the color property
@@ -362,4 +332,25 @@ public class SystemProperties
         return new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha);
     }
 
+    public class SavePropertiesTask implements Runnable
+    {
+        @Override
+        public void run()
+        {
+            if(mSavePending.compareAndSet(true, false))
+            {
+                Path propsPath = getApplicationRootPath().resolve(PROPERTIES_FILENAME);
+
+                try(OutputStream out = new FileOutputStream(propsPath.toString()))
+                {
+                    String comments = "SDRTrunk - SDR Trunking Decoder Application Settings";
+                    mProperties.store(out, comments);
+                }
+                catch(IOException ioe)
+                {
+                    mLog.error("Error saving system properties file [" + propsPath.toString() + "]", ioe);
+                }
+            }
+        }
+    }
 }
