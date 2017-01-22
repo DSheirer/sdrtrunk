@@ -8,6 +8,7 @@
       <w>icecast</w>
       <w>ident</w>
       <w>polyphase</w>
+      <w>remez</w>
       <w>samplerate</w>
       <w>sdrtrunk</w>
       <w>sheirer</w>

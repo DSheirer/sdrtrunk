@@ -20,9 +20,17 @@ package module.decode.p25;
 import alias.Alias;
 import alias.AliasList;
 import alias.PatchGroupAlias;
+import alias.id.AliasIDType;
 import alias.id.talkgroup.TalkgroupID;
-import audio.metadata.Metadata;
-import audio.metadata.MetadataType;
+import channel.metadata.AliasedStringAttributeMonitor;
+import channel.metadata.Attribute;
+import channel.metadata.AttributeChangeRequest;
+import channel.state.ChangeChannelTimeoutEvent;
+import channel.state.DecoderState;
+import channel.state.DecoderStateEvent;
+import channel.state.DecoderStateEvent.Event;
+import channel.state.State;
+import channel.traffic.TrafficChannelAllocationEvent;
 import controller.channel.Channel.ChannelType;
 import message.Message;
 import module.decode.DecoderType;
@@ -123,13 +131,6 @@ import module.decode.p25.reference.IPProtocol;
 import module.decode.p25.reference.LinkControlOpcode;
 import module.decode.p25.reference.Response;
 import module.decode.p25.reference.Vendor;
-import module.decode.state.ChangeChannelTimeoutEvent;
-import module.decode.state.ChangedAttribute;
-import module.decode.state.DecoderState;
-import module.decode.state.DecoderStateEvent;
-import module.decode.state.DecoderStateEvent.Event;
-import module.decode.state.State;
-import module.decode.state.TrafficChannelAllocationEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -159,10 +160,10 @@ public class P25DecoderState extends DecoderState
     private Set<module.decode.p25.message.tsbk.osp.control.SecondaryControlChannelBroadcast> mSecondaryControlChannels =
         new TreeSet<>();
 
-    private Map<Integer, IdentifierUpdate> mBands = new HashMap<>();
-    private Map<String, Long> mRegistrations = new HashMap<>();
-    private Map<String, IAdjacentSite> mNeighborMap = new HashMap<>();
-    private Map<String, List<String>> mPatchGroupMap = new HashMap<>();
+    private Map<Integer,IdentifierUpdate> mBands = new HashMap<>();
+    private Map<String,Long> mRegistrations = new HashMap<>();
+    private Map<String,IAdjacentSite> mNeighborMap = new HashMap<>();
+    private Map<String,List<String>> mPatchGroupMap = new HashMap<>();
 
     private String mLastCommandEventID;
     private String mLastPageEventID;
@@ -170,14 +171,12 @@ public class P25DecoderState extends DecoderState
     private String mLastRegistrationEventID;
     private String mLastResponseEventID;
 
+    //TODO: create multi-attribute monitor for NAC and System
     private String mNAC;
     private String mSystem;
-    private String mSite;
-    private String mSiteAlias;
-    private String mFromTalkgroup;
-    private Alias mFromAlias;
-    private String mToTalkgroup;
-    private Alias mToAlias;
+    private AliasedStringAttributeMonitor mSiteAttributeMonitor;
+    private AliasedStringAttributeMonitor mFromTalkgroupMonitor;
+    private AliasedStringAttributeMonitor mToTalkgroupMonitor;
     private String mCurrentChannel = "CURRENT";
     private long mCurrentChannelFrequency = 0;
 
@@ -188,7 +187,7 @@ public class P25DecoderState extends DecoderState
 
     private P25CallEvent mCurrentCallEvent;
     private List<String> mCallDetectTalkgroups = new ArrayList<>();
-    private Map<String, P25CallEvent> mChannelCallMap = new HashMap<>();
+    private Map<String,P25CallEvent> mChannelCallMap = new HashMap<>();
 
     public P25DecoderState(AliasList aliasList,
                            ChannelType channelType,
@@ -199,6 +198,16 @@ public class P25DecoderState extends DecoderState
         mChannelType = channelType;
         mModulation = modulation;
         mIgnoreDataCalls = ignoreDataCalls;
+
+        mSiteAttributeMonitor = new AliasedStringAttributeMonitor(Attribute.NETWORK_ID_2,
+            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.SITE);
+        mFromTalkgroupMonitor = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_FROM,
+            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
+        mFromTalkgroupMonitor.addIllegalValue("000000");
+        mToTalkgroupMonitor = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_TO,
+            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.TALKGROUP);
+        mToTalkgroupMonitor.addIllegalValue("0000");
+        mToTalkgroupMonitor.addIllegalValue("000000");
     }
 
     public Modulation getModulation()
@@ -225,9 +234,9 @@ public class P25DecoderState extends DecoderState
     {
         resetState();
 
-        updateNAC(null);
-        updateSite(null);
-        updateSystem(null);
+        mNAC = null;
+        mSiteAttributeMonitor.reset();
+        mSystem = null;
     }
 
     /**
@@ -235,17 +244,8 @@ public class P25DecoderState extends DecoderState
      */
     private void resetState()
     {
-        mFromTalkgroup = null;
-        broadcast(ChangedAttribute.FROM_TALKGROUP);
-
-        mFromAlias = null;
-        broadcast(ChangedAttribute.FROM_TALKGROUP_ALIAS);
-
-        mToTalkgroup = null;
-        broadcast(ChangedAttribute.TO_TALKGROUP);
-
-        mToAlias = null;
-        broadcast(ChangedAttribute.TO_TALKGROUP_ALIAS);
+        mFromTalkgroupMonitor.reset();
+        mToTalkgroupMonitor.reset();
 
         mCallDetectTalkgroups.clear();
 
@@ -412,7 +412,7 @@ public class P25DecoderState extends DecoderState
 
             String to = hdu.getToID();
 
-            updateTo(to);
+            mToTalkgroupMonitor.process(to);
 
             if(mCurrentCallEvent == null)
             {
@@ -496,13 +496,13 @@ public class P25DecoderState extends DecoderState
                 }
                 break;
             case CALL_TERMINATION_OR_CANCELLATION:
-				/* This opcode as handled at the beginning of the method */
+                /* This opcode as handled at the beginning of the method */
                 break;
             case CHANNEL_IDENTIFIER_UPDATE:
                 //TODO: does the activity summary need this message?
 
 				/* This message is handled by the P25MessageProcessor and
-				 * inserted into any channels needing frequency band info */
+                 * inserted into any channels needing frequency band info */
                 break;
             case CHANNEL_IDENTIFIER_UPDATE_EXPLICIT:
                 //TODO: does the activity summary need this message?
@@ -621,8 +621,8 @@ public class P25DecoderState extends DecoderState
                     String from = gvcuser.getSourceAddress();
                     String to = gvcuser.getGroupAddress();
 
-                    updateFrom(from);
-                    updateTo(to);
+                    mFromTalkgroupMonitor.process(from);
+                    mToTalkgroupMonitor.process(to);
 
                     if(mCurrentCallEvent == null)
                     {
@@ -709,7 +709,7 @@ public class P25DecoderState extends DecoderState
                     String site = rfsssb.getRFSubsystemID() + "-" +
                         rfsssb.getSiteID();
 
-                    updateSite(site);
+                    mSiteAttributeMonitor.process(site);
 
                     if(mCurrentChannel == null ||
                         !mCurrentChannel.contentEquals(rfsssb.getChannel()))
@@ -732,7 +732,7 @@ public class P25DecoderState extends DecoderState
                     String site = rfsssbe.getRFSubsystemID() + "-" +
                         rfsssbe.getSiteID();
 
-                    updateSite(site);
+                    mSiteAttributeMonitor.process(site);
 
                     if(mCurrentChannel == null ||
                         !mCurrentChannel.contentEquals(rfsssbe.getTransmitChannel()))
@@ -755,7 +755,7 @@ public class P25DecoderState extends DecoderState
                     String site = sccb.getRFSubsystemID() + "-" +
                         sccb.getSiteID();
 
-                    updateSite(site);
+                    mSiteAttributeMonitor.process(site);
                 }
                 else
                 {
@@ -771,7 +771,7 @@ public class P25DecoderState extends DecoderState
                     String site = sccb.getRFSubsystemID() + "-" +
                         sccb.getSiteID();
 
-                    updateSite(site);
+                    mSiteAttributeMonitor.process(site);
                 }
                 else
                 {
@@ -845,7 +845,7 @@ public class P25DecoderState extends DecoderState
 
                     String to = tivcu.getAddress();
 
-                    updateTo(to);
+                    mToTalkgroupMonitor.process(to);
 
                     if(mCurrentCallEvent == null)
                     {
@@ -922,10 +922,10 @@ public class P25DecoderState extends DecoderState
                         (module.decode.p25.message.tdu.lc.UnitToUnitVoiceChannelUser) tdulc;
 
                     String from = uuvcu.getSourceAddress();
-                    updateFrom(from);
+                    mFromTalkgroupMonitor.process(from);
 
                     String to = uuvcu.getTargetAddress();
-                    updateTo(to);
+                    mToTalkgroupMonitor.process(to);
 
                     if(mCurrentCallEvent != null)
                     {
@@ -1170,9 +1170,9 @@ public class P25DecoderState extends DecoderState
                         module.decode.p25.message.ldu.lc.GroupVoiceChannelUser gvcuser =
                             (module.decode.p25.message.ldu.lc.GroupVoiceChannelUser) ldu;
 
-                        updateFrom(gvcuser.getSourceAddress());
+                        mFromTalkgroupMonitor.process(gvcuser.getSourceAddress());
 
-                        updateTo(gvcuser.getGroupAddress());
+                        mToTalkgroupMonitor.process(gvcuser.getGroupAddress());
 
                         if(mChannelType == ChannelType.STANDARD)
                         {
@@ -1265,7 +1265,7 @@ public class P25DecoderState extends DecoderState
                         String site = rfsssb.getRFSubsystemID() + "-" +
                             rfsssb.getSiteID();
 
-                        updateSite(site);
+                        mSiteAttributeMonitor.process(site);
                     }
                     else
                     {
@@ -1281,7 +1281,7 @@ public class P25DecoderState extends DecoderState
                         String site = rfsssbe.getRFSubsystemID() + "-" +
                             rfsssbe.getSiteID();
 
-                        updateSite(site);
+                        mSiteAttributeMonitor.process(site);
                     }
                     else
                     {
@@ -1297,7 +1297,7 @@ public class P25DecoderState extends DecoderState
                         String site = sccb.getRFSubsystemID() + "-" +
                             sccb.getSiteID();
 
-                        updateSite(site);
+                        mSiteAttributeMonitor.process(site);
                     }
                     else
                     {
@@ -1313,7 +1313,7 @@ public class P25DecoderState extends DecoderState
                         String site = sccb.getRFSubsystemID() + "-" +
                             sccb.getSiteID();
 
-                        updateSite(site);
+                        mSiteAttributeMonitor.process(site);
                     }
                     else
                     {
@@ -1386,7 +1386,7 @@ public class P25DecoderState extends DecoderState
                         TelephoneInterconnectVoiceChannelUser tivcu =
                             (TelephoneInterconnectVoiceChannelUser) ldu;
 
-                        updateTo(tivcu.getAddress());
+                        mToTalkgroupMonitor.process(tivcu.getAddress());
 
                         if(mCurrentCallEvent.getCallEventType() != CallEventType.TELEPHONE_INTERCONNECT)
                         {
@@ -1467,9 +1467,9 @@ public class P25DecoderState extends DecoderState
                         UnitToUnitVoiceChannelUser uuvcu =
                             (UnitToUnitVoiceChannelUser) ldu;
 
-                        updateFrom(uuvcu.getSourceAddress());
+                        mFromTalkgroupMonitor.process(uuvcu.getSourceAddress());
 
-                        updateTo(uuvcu.getTargetAddress());
+                        mToTalkgroupMonitor.process(uuvcu.getTargetAddress());
 
                         if(mCurrentCallEvent.getCallEventType() != CallEventType.UNIT_TO_UNIT_CALL)
                         {
@@ -1884,7 +1884,7 @@ public class P25DecoderState extends DecoderState
 
                         updateNAC(mRFSSStatusMessageExtended.getNAC());
                         updateSystem(mRFSSStatusMessageExtended.getSystemID());
-                        updateSite(mRFSSStatusMessageExtended.getRFSubsystemID() +
+                        mSiteAttributeMonitor.process(mRFSSStatusMessageExtended.getRFSubsystemID() +
                             "-" + mRFSSStatusMessageExtended.getSiteID());
                     }
                     else
@@ -2658,7 +2658,7 @@ public class P25DecoderState extends DecoderState
 
         updateSystem(message.getSystemID());
 
-        updateSite(message.getRFSubsystemID() + "-" + message.getSiteID());
+        mSiteAttributeMonitor.process(message.getRFSubsystemID() + "-" + message.getSiteID());
     }
 
     private void processTSBKDataChannelAnnouncement(TSBKMessage message)
@@ -2843,7 +2843,7 @@ public class P25DecoderState extends DecoderState
                 patchedTalkgroups = new ArrayList<>();
             }
 
-            for(String talkgroupToAdd: talkgroupsToAdd)
+            for(String talkgroupToAdd : talkgroupsToAdd)
             {
                 //Exclude the patch group ID if it is included in the patched talkgroup list so that we don't have
                 //an infinite loop situation
@@ -2887,7 +2887,7 @@ public class P25DecoderState extends DecoderState
 
             if(patchedTalkgroups != null)
             {
-                for(String talkgroupToRemove: talkgroupsToRemove)
+                for(String talkgroupToRemove : talkgroupsToRemove)
                 {
                     if(patchedTalkgroups.contains(talkgroupToRemove))
                     {
@@ -2929,7 +2929,7 @@ public class P25DecoderState extends DecoderState
 
         if(existingAlias instanceof PatchGroupAlias)
         {
-            patchGroupAlias = (PatchGroupAlias)existingAlias;
+            patchGroupAlias = (PatchGroupAlias) existingAlias;
         }
         else
         {
@@ -2953,7 +2953,7 @@ public class P25DecoderState extends DecoderState
 
             patchGroupAlias.clearPatchedAliases();
 
-            for(String patchedTalkgroup: patchedTalkgroups)
+            for(String patchedTalkgroup : patchedTalkgroups)
             {
                 Alias patchedAlias = getAliasList().getTalkgroupAlias(patchedTalkgroup);
 
@@ -2974,7 +2974,7 @@ public class P25DecoderState extends DecoderState
 
         if(alias instanceof PatchGroupAlias)
         {
-            PatchGroupAlias patchGroupAlias = (PatchGroupAlias)alias;
+            PatchGroupAlias patchGroupAlias = (PatchGroupAlias) alias;
 
             getAliasList().removeAlias(patchGroupAlias);
 
@@ -3361,79 +3361,12 @@ public class P25DecoderState extends DecoderState
         }
     }
 
-    /**
-     * Broadcasts an update for the TO group or unit address
-     */
-    private void updateTo(final String to)
+    private void updateSystem(String system)
     {
-        if(to != null && !to.contentEquals("0000") && !to.contentEquals("000000"))
+        if(mSystem == null || (system != null && !mSystem.contentEquals(system)))
         {
-            if(mToTalkgroup == null || !mToTalkgroup.contentEquals(to))
-            {
-                mToTalkgroup = to;
-
-                broadcast(ChangedAttribute.TO_TALKGROUP);
-
-                if(hasAliasList())
-                {
-                    mToAlias = getAliasList().getTalkgroupAlias(mToTalkgroup);
-                }
-                else
-                {
-                    mToAlias = null;
-                }
-
-                broadcast(ChangedAttribute.TO_TALKGROUP_ALIAS);
-
-				/* Send audio metadata update */
-                broadcast(new Metadata(MetadataType.TO, mToTalkgroup, mToAlias, true));
-
-                if(mCurrentCallEvent != null &&
-                    (mCurrentCallEvent.getToID() == null ||
-                        !mCurrentCallEvent.getToID().contentEquals(to)))
-                {
-                    mCurrentCallEvent.setToID(to);
-                    broadcast(mCurrentCallEvent);
-                }
-            }
-        }
-    }
-
-    /**
-     * Broadcasts an update for the FROM group or unit address
-     */
-    private void updateFrom(final String from)
-    {
-        if(from != null && !from.contentEquals("0000") && !from.contentEquals("000000"))
-        {
-            if(mFromTalkgroup == null || !mFromTalkgroup.contentEquals(from))
-            {
-                mFromTalkgroup = from;
-                broadcast(ChangedAttribute.FROM_TALKGROUP);
-
-                if(hasAliasList())
-                {
-                    mFromAlias = getAliasList().getTalkgroupAlias(mFromTalkgroup);
-                }
-                else
-                {
-                    mFromAlias = null;
-                }
-
-                broadcast(ChangedAttribute.FROM_TALKGROUP_ALIAS);
-
-				/* Send audio metadata update */
-                broadcast(new Metadata(MetadataType.FROM, mFromTalkgroup, mFromAlias, true));
-
-                if(mCurrentCallEvent != null &&
-                    (mCurrentCallEvent.getFromID() == null ||
-                        !mCurrentCallEvent.getFromID().contentEquals(from)))
-                {
-                    mCurrentCallEvent.setFromID(from);
-                    broadcast(mCurrentCallEvent);
-                }
-            }
-
+            mSystem = system;
+            broadcastSystemAndNACUpdate();
         }
     }
 
@@ -3445,48 +3378,14 @@ public class P25DecoderState extends DecoderState
         if(mNAC == null || (nac != null && !mNAC.contentEquals(nac)))
         {
             mNAC = nac;
-
-            broadcast(ChangedAttribute.NAC);
+            broadcastSystemAndNACUpdate();
         }
     }
 
-    /**
-     * Updates the site information
-     */
-    private void updateSite(String site)
+    private void broadcastSystemAndNACUpdate()
     {
-        if(mSite == null || (site != null && !mSite.contentEquals(site)))
-        {
-            mSite = site;
-
-            broadcast(ChangedAttribute.SITE);
-
-            if(hasAliasList())
-            {
-                Alias alias = getAliasList().getSiteID(mSite);
-
-                if(alias != null)
-                {
-                    mSiteAlias = alias.getName();
-                }
-                else
-                {
-                    mSiteAlias = null;
-                }
-            }
-
-            broadcast(ChangedAttribute.SITE_ALIAS);
-        }
-    }
-
-    private void updateSystem(String system)
-    {
-        if(mSystem == null || (system != null && !mSystem.contentEquals(system)))
-        {
-            mSystem = system;
-
-            broadcast(ChangedAttribute.SYSTEM);
-        }
+        String label = String.format("SYS:%s NAC:%s", mSystem, mNAC);
+        broadcast(new AttributeChangeRequest<String>(Attribute.NETWORK_ID_1, label));
     }
 
     /**
@@ -3754,46 +3653,6 @@ public class P25DecoderState extends DecoderState
         return sb.toString();
     }
 
-    public String getNAC()
-    {
-        return mNAC;
-    }
-
-    public String getSystem()
-    {
-        return mSystem;
-    }
-
-    public String getSiteAlias()
-    {
-        return mSiteAlias;
-    }
-
-    public String getSite()
-    {
-        return mSite;
-    }
-
-    public String getFromTalkgroup()
-    {
-        return mFromTalkgroup;
-    }
-
-    public Alias getFromAlias()
-    {
-        return mFromAlias;
-    }
-
-    public String getToTalkgroup()
-    {
-        return mToTalkgroup;
-    }
-
-    public Alias getToAlias()
-    {
-        return mToAlias;
-    }
-
     @Override
     public void receiveDecoderStateEvent(DecoderStateEvent event)
     {
@@ -3810,33 +3669,21 @@ public class P25DecoderState extends DecoderState
                 {
                     if(event instanceof TrafficChannelAllocationEvent)
                     {
-                        TrafficChannelAllocationEvent allocationEvent =
-                            (TrafficChannelAllocationEvent) event;
+                        TrafficChannelAllocationEvent allocationEvent = (TrafficChannelAllocationEvent) event;
 
                         mCurrentCallEvent = (P25CallEvent) allocationEvent.getCallEvent();
 
                         mCurrentChannel = allocationEvent.getCallEvent().getChannel();
-                        broadcast(ChangedAttribute.CHANNEL_NUMBER);
+                        broadcast(new AttributeChangeRequest<String>(Attribute.CHANNEL_FREQUENCY_LABEL, mCurrentChannel));
 
                         mCurrentChannelFrequency = allocationEvent.getCallEvent().getFrequency();
-                        broadcast(ChangedAttribute.SOURCE);
+                        broadcast(new AttributeChangeRequest<Long>(Attribute.CHANNEL_FREQUENCY, mCurrentChannelFrequency));
 
-                        mFromTalkgroup = allocationEvent.getCallEvent().getFromID();
-                        broadcast(ChangedAttribute.FROM_TALKGROUP);
+                        mFromTalkgroupMonitor.reset();
+                        mFromTalkgroupMonitor.process(allocationEvent.getCallEvent().getFromID());
 
-                        mToTalkgroup = allocationEvent.getCallEvent().getToID();
-                        broadcast(ChangedAttribute.TO_TALKGROUP);
-
-                        if(allocationEvent.getCallEvent().hasAliasList())
-                        {
-                            AliasList aliasList = allocationEvent.getCallEvent().getAliasList();
-
-                            mFromAlias = aliasList.getTalkgroupAlias(mFromTalkgroup);
-                            broadcast(ChangedAttribute.FROM_TALKGROUP_ALIAS);
-
-                            mToAlias = aliasList.getTalkgroupAlias(mToTalkgroup);
-                            broadcast(ChangedAttribute.TO_TALKGROUP_ALIAS);
-                        }
+                        mToTalkgroupMonitor.reset();
+                        mToTalkgroupMonitor.process(allocationEvent.getCallEvent().getToID());
                     }
                 }
                 break;

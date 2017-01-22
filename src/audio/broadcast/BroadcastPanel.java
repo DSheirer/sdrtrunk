@@ -50,7 +50,7 @@ public class BroadcastPanel extends JPanel implements ActionListener, ListSelect
     private AliasModel mAliasModel;
     private IconManager mIconManager;
 
-    private JTable mBroadcastConfigurationTable;
+    private BroadcastStatusPanel mBroadcastStatusPanel;
     private JideSplitPane mSplitPane;
     private Editor<BroadcastConfiguration> mEmptyEditor = new EmptyEditor<>("Configuration:");
     private Editor<BroadcastConfiguration> mEditor;
@@ -72,17 +72,11 @@ public class BroadcastPanel extends JPanel implements ActionListener, ListSelect
     {
         setLayout(new MigLayout("insets 0 0 0 0 ", "[grow,fill]", "[grow,fill]"));
 
-        mBroadcastConfigurationTable = new JTable(mBroadcastModel);
-        mBroadcastConfigurationTable.setAutoCreateRowSorter(true);
-        mBroadcastConfigurationTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        mBroadcastConfigurationTable.getSelectionModel().addListSelectionListener(BroadcastPanel.this);
+        mBroadcastStatusPanel = new BroadcastStatusPanel(mBroadcastModel);
 
-        mBroadcastConfigurationTable.getColumnModel().getColumn(BroadcastModel.COLUMN_SERVER_ICON).setPreferredWidth(1);
-        mBroadcastConfigurationTable.getColumnModel().getColumn(BroadcastModel.COLUMN_STREAM_NAME).setPreferredWidth(25);
-        mBroadcastConfigurationTable.getColumnModel().getColumn(BroadcastModel.COLUMN_BROADCASTER_STATUS)
-            .setCellRenderer(new StatusCellRenderer());
-
-        JScrollPane scroller = new JScrollPane(mBroadcastConfigurationTable);
+        mBroadcastStatusPanel.getTable().setAutoCreateRowSorter(true);
+        mBroadcastStatusPanel.getTable().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        mBroadcastStatusPanel.getTable().getSelectionModel().addListSelectionListener(BroadcastPanel.this);
 
         JPanel buttonsPanel = new JPanel();
         buttonsPanel.setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill][grow,fill][grow,fill]", "[]"));
@@ -122,7 +116,7 @@ public class BroadcastPanel extends JPanel implements ActionListener, ListSelect
 
         listAndButtonsPanel.setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill][]"));
 
-        listAndButtonsPanel.add(scroller, "wrap");
+        listAndButtonsPanel.add(mBroadcastStatusPanel, "wrap");
         listAndButtonsPanel.add(buttonsPanel);
 
         mSplitPane = new JideSplitPane(JideSplitPane.HORIZONTAL_SPLIT);
@@ -168,11 +162,11 @@ public class BroadcastPanel extends JPanel implements ActionListener, ListSelect
      */
     private BroadcastConfiguration getSelectedBroadcastConfiguration()
     {
-        int viewRow = mBroadcastConfigurationTable.getSelectedRow();
+        int viewRow = mBroadcastStatusPanel.getTable().getSelectedRow();
 
         if(viewRow >= 0)
         {
-            int modelRow = mBroadcastConfigurationTable.convertRowIndexToModel(viewRow);
+            int modelRow = mBroadcastStatusPanel.getTable().convertRowIndexToModel(viewRow);
 
             if(modelRow >= 0)
             {
@@ -255,75 +249,12 @@ public class BroadcastPanel extends JPanel implements ActionListener, ListSelect
                         mBroadcastModel.addBroadcastConfiguration(configuration);
 
                         int modelRow = mBroadcastModel.getRowForConfiguration(configuration);
-                        int tableRow = mBroadcastConfigurationTable.convertRowIndexToView(modelRow);
-                        mBroadcastConfigurationTable.changeSelection(tableRow, 0, false, false);
+                        int tableRow = mBroadcastStatusPanel.getTable().convertRowIndexToView(modelRow);
+                        mBroadcastStatusPanel.getTable().changeSelection(tableRow, 0, false, false);
                     }
                 }
             });
         }
     }
 
-    /**
-     * Custom cell renderer for the broadcast state column.
-     */
-    public class StatusCellRenderer extends DefaultTableCellRenderer
-    {
-        public StatusCellRenderer()
-        {
-            setOpaque(true);
-        }
-
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
-                                                       boolean hasFocus, int row, int column)
-        {
-            JLabel component = (JLabel)super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-
-            if(isSelected)
-            {
-                setBackground(table.getSelectionBackground());
-                setForeground(table.getSelectionForeground());
-            }
-            else
-            {
-                if(value instanceof BroadcastState)
-                {
-                    BroadcastState state = (BroadcastState)value;
-
-                    if(state == BroadcastState.CONNECTED)
-                    {
-                        setBackground(Color.GREEN);
-                        setForeground(table.getForeground());
-                    }
-                    else if(state == BroadcastState.DISABLED)
-                    {
-                        setBackground(table.getBackground());
-                        setForeground(Color.LIGHT_GRAY);
-                    }
-                    else if(state == BroadcastState.INVALID_SETTINGS)
-                    {
-                        setBackground(Color.YELLOW);
-                        setForeground(table.getForeground());
-                    }
-                    else if(state.isErrorState())
-                    {
-                        setBackground(Color.RED);
-                        setForeground(table.getForeground());
-                    }
-                    else
-                    {
-                        setBackground(table.getBackground());
-                        setForeground(table.getForeground());
-                    }
-                }
-                else
-                {
-                    setForeground(table.getForeground());
-                    setBackground(table.getBackground());
-                }
-            }
-
-            return this;
-        }
-    }
 }

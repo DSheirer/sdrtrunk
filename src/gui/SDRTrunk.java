@@ -21,6 +21,7 @@ import alias.AliasModel;
 import alias.action.AliasActionManager;
 import audio.AudioManager;
 import audio.broadcast.BroadcastModel;
+import audio.broadcast.BroadcastStatusPanel;
 import com.jidesoft.swing.JideSplitPane;
 import controller.ControllerPanel;
 import controller.ThreadPoolManager;
@@ -65,12 +66,17 @@ import java.util.concurrent.TimeUnit;
 public class SDRTrunk implements Listener<TunerEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(SDRTrunk.class);
+    private static final String PROPERTY_BROADCAST_STATUS_VISIBLE = "main.broadcast.status.visible";
+    private boolean mBroadcastStatusVisible;
 
     private IconManager mIconManager;
+    private BroadcastStatusPanel mBroadcastStatusPanel;
+    private BroadcastModel mBroadcastModel;
     private ControllerPanel mControllerPanel;
     private SettingsManager mSettingsManager;
     private SpectralDisplayPanel mSpectralPanel;
     private JFrame mMainGui = new JFrame();
+    private JideSplitPane mSplitPane;
 
     private String mTitle;
 
@@ -139,14 +145,14 @@ public class SDRTrunk implements Listener<TunerEvent>
         AudioManager audioManager = new AudioManager(threadPoolManager, sourceManager.getMixerManager());
         channelProcessingManager.addAudioPacketListener(audioManager);
 
-        BroadcastModel broadcastModel = new BroadcastModel(threadPoolManager, mIconManager);
+        mBroadcastModel = new BroadcastModel(threadPoolManager, mIconManager);
 
-        channelProcessingManager.addAudioPacketListener(broadcastModel);
+        channelProcessingManager.addAudioPacketListener(mBroadcastModel);
 
         MapService mapService = new MapService(mIconManager);
         channelProcessingManager.addMessageListener(mapService);
 
-        mControllerPanel = new ControllerPanel(audioManager, aliasModel, broadcastModel,
+        mControllerPanel = new ControllerPanel(audioManager, aliasModel, mBroadcastModel,
                 channelModel, channelMapModel, channelProcessingManager, mIconManager,
                 mapService, mSettingsManager, sourceManager, tunerModel);
 
@@ -160,7 +166,7 @@ public class SDRTrunk implements Listener<TunerEvent>
         tunerModel.addListener(this);
 
         PlaylistManager playlistManager = new PlaylistManager(threadPoolManager,
-                aliasModel, broadcastModel, channelModel, channelMapModel);
+                aliasModel, mBroadcastModel, channelModel, channelMapModel);
 
         playlistManager.init();
 
@@ -209,9 +215,7 @@ public class SDRTrunk implements Listener<TunerEvent>
      */
     private void initGUI()
     {
-        mMainGui.setLayout(new MigLayout("insets 0 0 0 0 ",
-                "[grow,fill]",
-                "[grow,fill]"));
+        mMainGui.setLayout(new MigLayout("insets 0 0 0 0 ", "[grow,fill]", "[grow,fill]"));
 
         /**
          * Setup main JFrame window
@@ -225,12 +229,20 @@ public class SDRTrunk implements Listener<TunerEvent>
         mSpectralPanel.setPreferredSize(new Dimension(1280, 300));
         mControllerPanel.setPreferredSize(new Dimension(1280, 500));
 
-        JideSplitPane splitPane = new JideSplitPane(JideSplitPane.VERTICAL_SPLIT);
-        splitPane.setDividerSize(5);
-        splitPane.add(mSpectralPanel);
-        splitPane.add(mControllerPanel);
+        mSplitPane = new JideSplitPane(JideSplitPane.VERTICAL_SPLIT);
+        mSplitPane.setDividerSize(5);
+        mSplitPane.add(mSpectralPanel);
+        mSplitPane.add(mControllerPanel);
 
-        mMainGui.add(splitPane, "cell 0 0,span,grow");
+        mBroadcastStatusVisible = SystemProperties.getInstance().get(PROPERTY_BROADCAST_STATUS_VISIBLE, false);
+
+        //Show broadcast status panel when user requests - disabled by default
+        if(mBroadcastStatusVisible)
+        {
+            mSplitPane.add(getBroadcastStatusPanel());
+        }
+
+        mMainGui.add(mSplitPane, "cell 0 0,span,grow");
 
         /**
          * Menu items
@@ -290,6 +302,12 @@ public class SDRTrunk implements Listener<TunerEvent>
         );
 
         fileMenu.add(exitMenu);
+
+        JMenu viewMenu = new JMenu("View");
+
+        viewMenu.add(new BroadcastStatusVisibleMenuItem(mControllerPanel));
+
+        menuBar.add(viewMenu);
 
         JMenuItem screenCaptureItem = new JMenuItem("Screen Capture");
 
@@ -359,6 +377,50 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         menuBar.add(screenCaptureItem);
     }
+
+    /**
+     * Lazy constructor for broadcast status panel
+     */
+    private BroadcastStatusPanel getBroadcastStatusPanel()
+    {
+        if(mBroadcastStatusPanel == null)
+        {
+            mBroadcastStatusPanel = new BroadcastStatusPanel(mBroadcastModel);
+            mBroadcastStatusPanel.setPreferredSize(new Dimension(880, 70));
+            mBroadcastStatusPanel.getTable().setEnabled(false);
+        }
+
+        return mBroadcastStatusPanel;
+    }
+
+    /**
+     * Toggles visibility of the broadcast channels status panel at the bottom of the controller panel
+     */
+    private void toggleBroadcastStatusPanelVisibility()
+    {
+        mBroadcastStatusVisible = !mBroadcastStatusVisible;
+
+        EventQueue.invokeLater(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                if(mBroadcastStatusVisible)
+                {
+                    mSplitPane.add(getBroadcastStatusPanel());
+                }
+                else
+                {
+                    mSplitPane.remove(getBroadcastStatusPanel());
+                }
+
+                mMainGui.revalidate();
+            }
+        });
+
+        SystemProperties.getInstance().set(PROPERTY_BROADCAST_STATUS_VISIBLE, mBroadcastStatusVisible);
+    }
+
 
     /**
      * Loads the application properties file from the user's home directory,
@@ -433,6 +495,30 @@ public class SDRTrunk implements Listener<TunerEvent>
         if (event.getEvent() == TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY)
         {
             mMainGui.setTitle(mTitle + " - " + event.getTuner().getName());
+        }
+    }
+
+    public class BroadcastStatusVisibleMenuItem extends JCheckBoxMenuItem
+    {
+        private ControllerPanel mControllerPanel;
+
+        public BroadcastStatusVisibleMenuItem(ControllerPanel controllerPanel)
+        {
+            super("Show Streaming Status");
+
+            mControllerPanel = controllerPanel;
+
+            setSelected(mBroadcastStatusPanel != null);
+
+            addActionListener(new ActionListener()
+            {
+                @Override
+                public void actionPerformed(ActionEvent e)
+                {
+                    toggleBroadcastStatusPanelVisibility();
+                    setSelected(mBroadcastStatusVisible);
+                }
+            });
         }
     }
 }

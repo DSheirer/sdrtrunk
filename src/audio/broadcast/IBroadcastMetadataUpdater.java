@@ -18,7 +18,7 @@
  ******************************************************************************/
 package audio.broadcast;
 
-import audio.metadata.AudioMetadata;
+import channel.metadata.Metadata;
 
 public interface IBroadcastMetadataUpdater
 {
@@ -27,5 +27,5 @@ public interface IBroadcastMetadataUpdater
      *
      * @param metadata containing metadata attributes
      */
-    void update(AudioMetadata metadata);
+    void update(Metadata metadata);
 }

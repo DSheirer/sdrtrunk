@@ -37,9 +37,7 @@ import audio.broadcast.shoutcast.v2.ultravox.UltravoxMessageFactory;
 import audio.broadcast.shoutcast.v2.ultravox.UltravoxMessageType;
 import audio.broadcast.shoutcast.v2.ultravox.UltravoxMetadata;
 import audio.broadcast.shoutcast.v2.ultravox.UltravoxProtocolFactory;
-import audio.metadata.AudioMetadata;
-import audio.metadata.Metadata;
-import audio.metadata.MetadataType;
+import channel.metadata.Metadata;
 import controller.ThreadPoolManager;
 import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.future.ConnectFuture;
@@ -62,7 +60,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBroadcastMetadataUpdater
 {
-    private final static Logger mLog = LoggerFactory.getLogger( ShoutcastV2AudioBroadcaster.class );
+    private final static Logger mLog = LoggerFactory.getLogger(ShoutcastV2AudioBroadcaster.class);
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 30000; //30 seconds
     private int mMaxPayloadSize = 16377;
 
@@ -93,7 +91,7 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
 
     public ShoutcastV2Configuration getConfiguration()
     {
-        return (ShoutcastV2Configuration)getBroadcastConfiguration();
+        return (ShoutcastV2Configuration) getBroadcastConfiguration();
     }
 
     /**
@@ -122,7 +120,7 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
     }
 
     @Override
-    public void update(AudioMetadata metadata)
+    public void update(Metadata metadata)
     {
         List<UltravoxMessage> metadataMessages = getMetadataMessages(metadata);
 
@@ -149,7 +147,7 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
     private boolean connect()
     {
         if(!connected() && canConnect() &&
-           (mLastConnectionAttempt + RECONNECT_INTERVAL_MILLISECONDS < System.currentTimeMillis()) &&
+            (mLastConnectionAttempt + RECONNECT_INTERVAL_MILLISECONDS < System.currentTimeMillis()) &&
             mConnecting.compareAndSet(false, true))
         {
             mLastConnectionAttempt = System.currentTimeMillis();
@@ -242,7 +240,7 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
      * @param metadata containing audio metadata tags and attributes
      * @return a sequence of CacheableXMLMetadata messages sufficient to carry the complete set of metadata
      */
-    private List<UltravoxMessage> getMetadataMessages(AudioMetadata metadata)
+    private List<UltravoxMessage> getMetadataMessages(Metadata metadata)
     {
         StringBuilder sb = new StringBuilder();
 
@@ -264,30 +262,22 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
 
         if(metadata != null)
         {
-            Metadata to = metadata.getMetadata(MetadataType.TO);
-            if(to != null)
+            if(metadata.getPrimaryAddressTo().hasAlias())
             {
-                if(to.hasAlias())
-                {
-                    sb.append(UltravoxMetadata.TITLE_2.asXML(to.getAlias().toString()));
-                }
-                else
-                {
-                    sb.append(UltravoxMetadata.TITLE_2.asXML(to.getValue()));
-                }
+                sb.append(UltravoxMetadata.TITLE_2.asXML(metadata.getPrimaryAddressTo().getAlias().getName()));
+            }
+            else if(metadata.getPrimaryAddressTo().hasIdentifier())
+            {
+                sb.append(UltravoxMetadata.TITLE_2.asXML(metadata.getPrimaryAddressTo().getIdentifier()));
             }
 
-            Metadata from = metadata.getMetadata(MetadataType.FROM);
-            if(from != null)
+            if(metadata.getPrimaryAddressFrom().hasAlias())
             {
-                if(from.hasAlias())
-                {
-                    sb.append(UltravoxMetadata.TITLE_3.asXML("From: " + from.getAlias().toString()));
-                }
-                else
-                {
-                    sb.append(UltravoxMetadata.TITLE_3.asXML("From: " + from.getValue()));
-                }
+                sb.append(UltravoxMetadata.TITLE_3.asXML("From:" + metadata.getPrimaryAddressFrom().getAlias().getName()));
+            }
+            else if(metadata.getPrimaryAddressFrom().hasIdentifier())
+            {
+                sb.append(UltravoxMetadata.TITLE_3.asXML("From:" + metadata.getPrimaryAddressFrom().getIdentifier()));
             }
         }
         else
@@ -301,7 +291,7 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
 
         int pointer = 0;
         int messageCounter = 1;
-        int messageCount = (int)Math.ceil((double)xml.length / (double)(mMaxPayloadSize - 6));
+        int messageCount = (int) Math.ceil((double) xml.length / (double) (mMaxPayloadSize - 6));
 
         if(messageCount > 32)
         {
@@ -317,9 +307,9 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
 
             byte[] payload = new byte[payloadSize + 6];
 
-            payload[1] = (byte)(0x01);
-            payload[3] = (byte)(messageCount & 0xFF);
-            payload[5] = (byte)(messageCounter & 0xFF);
+            payload[1] = (byte) (0x01);
+            payload[3] = (byte) (messageCount & 0xFF);
+            payload[5] = (byte) (messageCounter & 0xFF);
 
             System.arraycopy(xml, pointer, payload, 6, payloadSize);
 
@@ -368,9 +358,9 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
         @Override
         public void exceptionCaught(IoSession session, Throwable cause) throws Exception
         {
-            if(cause instanceof IOException && ((IOException)cause).getMessage().startsWith("Connection reset"))
+            if(cause instanceof IOException && ((IOException) cause).getMessage().startsWith("Connection reset"))
             {
-                IOException ioe = (IOException)cause;
+                IOException ioe = (IOException) cause;
 
                 if(ioe.getMessage() != null && ioe.getMessage().startsWith("Connection reset"))
                 {
@@ -398,12 +388,12 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
         {
             if(object instanceof UltravoxMessage)
             {
-                UltravoxMessage ultravoxMessage = (UltravoxMessage)object;
+                UltravoxMessage ultravoxMessage = (UltravoxMessage) object;
 
-                switch (ultravoxMessage.getMessageType())
+                switch(ultravoxMessage.getMessageType())
                 {
                     case REQUEST_CIPHER:
-                        String cipherKey = ((RequestCipher)ultravoxMessage).getCipher();
+                        String cipherKey = ((RequestCipher) ultravoxMessage).getCipher();
 
                         AuthenticateBroadcast authenticateBroadcast = new AuthenticateBroadcast();
 
@@ -476,7 +466,7 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
                         }
                         else
                         {
-                            mMaxPayloadSize = ((NegotiateMaxPayloadSize)ultravoxMessage).getMaximumPayloadSize();
+                            mMaxPayloadSize = ((NegotiateMaxPayloadSize) ultravoxMessage).getMaximumPayloadSize();
 
                             ConfigureIcyPublic configureIcyPublic = new ConfigureIcyPublic();
                             configureIcyPublic.setPublic(getConfiguration().isPublic());

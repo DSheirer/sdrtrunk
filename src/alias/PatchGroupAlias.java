@@ -47,6 +47,17 @@ public class PatchGroupAlias extends Alias
     {
     }
 
+    @Override
+    public int getColor()
+    {
+        if(mPatchGroupAlias != null)
+        {
+            return mPatchGroupAlias.getColor();
+        }
+
+        return super.getColor();
+    }
+
     /**
      * Sets an alias for this patch group ID
      */

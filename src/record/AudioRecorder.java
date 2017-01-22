@@ -20,7 +20,7 @@ package record;
 
 import audio.AudioPacket;
 import audio.IAudioPacketListener;
-import audio.metadata.AudioMetadata;
+import channel.metadata.Metadata;
 import module.Module;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +49,7 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
     private AtomicBoolean mRunning = new AtomicBoolean();
 
     protected Path mPath;
-    protected AudioMetadata mAudioMetadata;
+    protected Metadata mMetadata;
     protected long mTimeRecordingStart;
     protected long mTimeLastPacketReceived;
     private BufferProcessor mBufferProcessor;
@@ -79,9 +79,9 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
     /**
      * Latest audio metadata received for this recording
      */
-    public AudioMetadata getMetadata()
+    public Metadata getMetadata()
     {
-        return mAudioMetadata;
+        return mMetadata;
     }
 
     /**
@@ -119,7 +119,7 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
     }
 
     /**
-     * Processes the audio packet and captures the latest AudioMetadata for the recording for easy access.
+     * Processes the audio packet and captures the latest Metadata for the recording for easy access.
      */
     @Override
     public void receive(AudioPacket audioPacket)
@@ -129,14 +129,14 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
             mTimeRecordingStart = System.currentTimeMillis();
             mTimeLastPacketReceived = mTimeRecordingStart;
 
-            if(audioPacket.hasAudioMetadata())
+            if(audioPacket.hasMetadata())
             {
-                mAudioMetadata = audioPacket.getAudioMetadata();
+                mMetadata = audioPacket.getMetadata();
             }
 
             boolean success = mAudioPacketQueue.offer(audioPacket);
 
-            if (!success)
+            if(!success)
             {
                 mLog.error("recorder buffer overflow - stopping recorder [" + getPath().toString() + "]");
                 stop();
@@ -189,11 +189,11 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
      */
     public void start(ScheduledExecutorService executor)
     {
-        if (mRunning.compareAndSet(false, true))
+        if(mRunning.compareAndSet(false, true))
         {
             mTimeLastPacketReceived = System.currentTimeMillis();
 
-            if (mBufferProcessor == null)
+            if(mBufferProcessor == null)
             {
                 mBufferProcessor = new BufferProcessor();
             }
@@ -205,7 +205,7 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
 				/* Schedule the handler to run every half second */
                 mProcessorHandle = executor.scheduleAtFixedRate(mBufferProcessor, 0, 500, TimeUnit.MILLISECONDS);
             }
-            catch (IOException io)
+            catch(IOException io)
             {
                 mLog.error("Error starting audio recorder [" + getPath().toString() + "]", io);
 
@@ -221,13 +221,13 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
     {
         mAudioPacketQueue.drainTo(mPacketsToProcess);
 
-        if (!mPacketsToProcess.isEmpty())
+        if(!mPacketsToProcess.isEmpty())
         {
             try
             {
                 record(mPacketsToProcess);
 
-                for(AudioPacket packet: mPacketsToProcess)
+                for(AudioPacket packet : mPacketsToProcess)
                 {
                     if(packet.getType() == AudioPacket.Type.AUDIO)
                     {
@@ -279,7 +279,7 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
 
         public void run()
         {
-            if (mProcessing.compareAndSet(false, true))
+            if(mProcessing.compareAndSet(false, true))
             {
                 processAudioPacketQueue();
 
@@ -290,14 +290,14 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
                     //Allow sub-classes to flush remaining audio frame data to disk.
                     flush();
 
-                    if (mFileOutputStream != null)
+                    if(mFileOutputStream != null)
                     {
                         try
                         {
                             mFileOutputStream.flush();
                             mFileOutputStream.close();
                         }
-                        catch (IOException e)
+                        catch(IOException e)
                         {
                             mLog.error("Error closing output stream", e);
                         }
@@ -308,7 +308,7 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
                         mRecordingClosedListener.receive(AudioRecorder.this);
                     }
 
-                    if (mProcessorHandle != null)
+                    if(mProcessorHandle != null)
                     {
                         mProcessorHandle.cancel(false);
                         mProcessorHandle = null;

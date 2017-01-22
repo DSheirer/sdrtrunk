@@ -1,6 +1,6 @@
 /*******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2016 Dennis Sheirer
+ * Copyright (C) 2014-2017 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,9 +19,7 @@
 package audio.broadcast.icecast;
 
 import audio.broadcast.IBroadcastMetadataUpdater;
-import audio.metadata.AudioMetadata;
-import audio.metadata.Metadata;
-import audio.metadata.MetadataType;
+import channel.metadata.Metadata;
 import controller.ThreadPoolManager;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
@@ -58,7 +56,7 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
     private NioSocketConnector mSocketConnector;
     private AtomicBoolean mUpdating = new AtomicBoolean();
     private Queue<String> mMetadataQueue = new LinkedTransferQueue<>();
-    private Map<String, String> mHTTPHeaders;
+    private Map<String,String> mHTTPHeaders;
     private boolean mStackTraceLoggingSuppressed;
 
     /**
@@ -78,7 +76,7 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
      */
     private NioSocketConnector getSocketConnector()
     {
-        if (mSocketConnector == null)
+        if(mSocketConnector == null)
         {
             mSocketConnector = new NioSocketConnector();
 //            mSocketConnector.getFilterChain().addLast("logger", new LoggingFilter(IcecastBroadcastMetadataUpdater.class));
@@ -116,19 +114,19 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
      * and will remain in the update queue until the next metadata update is requested.  However, this is a design
      * trade-off to avoid having a scheduled runnable repeatedly processing the update queue.
      */
-    public void update(AudioMetadata audioMetadata)
+    public void update(Metadata metadata)
     {
-        mMetadataQueue.offer(getSong(audioMetadata));
+        mMetadataQueue.offer(getSong(metadata));
 
-        if (mUpdating.compareAndSet(false, true))
+        if(mUpdating.compareAndSet(false, true))
         {
             String song = mMetadataQueue.poll();
 
-            while (song != null)
+            while(song != null)
             {
                 HttpRequest updateRequest = createUpdateRequest(song);
 
-                if (updateRequest != null)
+                if(updateRequest != null)
                 {
                     mThreadPoolManager.scheduleOnce(new Runnable()
                     {
@@ -143,22 +141,22 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
                                 connectFuture.awaitUninterruptibly();
                                 IoSession session = connectFuture.getSession();
 
-                                if (session != null)
+                                if(session != null)
                                 {
                                     session.write(updateRequest);
                                 }
                             }
-                            catch (Exception e)
+                            catch(Exception e)
                             {
                                 Throwable throwableCause = e.getCause();
 
-                                if (throwableCause instanceof ConnectException)
+                                if(throwableCause instanceof ConnectException)
                                 {
                                     //Do nothing, the server is unavailable
                                 }
                                 else
                                 {
-                                    if (!mStackTraceLoggingSuppressed)
+                                    if(!mStackTraceLoggingSuppressed)
                                     {
                                         mLog.error("Error sending metadata update.  Future errors will " +
                                             "be suppressed", e);
@@ -182,52 +180,45 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
     /**
      * Creates the song information for a metadata update
      */
-    private static String getSong(AudioMetadata audioMetadata)
+    private static String getSong(Metadata metadata)
     {
         StringBuilder sb = new StringBuilder();
 
-        if(audioMetadata != null)
+        if(metadata != null)
         {
-            Metadata to = audioMetadata.getMetadata(MetadataType.TO);
+            String to = metadata.getPrimaryAddressTo().getIdentifier();
 
             sb.append("TO:");
 
-            if(to != null)
+            if(metadata.getPrimaryAddressTo().hasAlias())
             {
-                if(to.hasAlias())
-                {
-                    sb.append(to.getAlias().getName());
-                }
-                else
-                {
-                    sb.append(to.getValue());
-                }
+                sb.append(metadata.getPrimaryAddressTo().getAlias().getName());
+            }
+            else if(metadata.getPrimaryAddressTo().hasIdentifier())
+            {
+                sb.append(metadata.getPrimaryAddressTo().getIdentifier());
             }
             else
             {
                 sb.append("UNKNOWN");
             }
 
-            Metadata from = audioMetadata.getMetadata(MetadataType.FROM);
 
             sb.append(" FROM:");
 
-            if(from != null)
+            if(metadata.getPrimaryAddressFrom().hasAlias())
             {
-
-                if(from.hasAlias())
-                {
-                    sb.append(from.getAlias().getName());
-                }
-                else
-                {
-                    sb.append(from.getValue());
-                }
+                sb.append(metadata.getPrimaryAddressFrom().getAlias().getName());
+            }
+            else if(metadata.getPrimaryAddressFrom().hasIdentifier())
+            {
+                sb.append(metadata.getPrimaryAddressFrom().getIdentifier());
             }
             else
             {
                 sb.append("UNKNOWN");
             }
+
         }
         else
         {
@@ -255,7 +246,7 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
 
             return request;
         }
-        catch (UnsupportedEncodingException e)
+        catch(UnsupportedEncodingException e)
         {
             //This should never happen
             mLog.error("UTF-8 encoding is not supported - can't update song metadata");

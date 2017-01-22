@@ -11,7 +11,7 @@ import javax.swing.JSeparator;
 
 import module.ProcessingChain;
 import module.decode.event.ActivitySummaryFrame;
-import module.decode.state.DecoderState;
+import channel.state.DecoderState;
 import controller.channel.ChannelEvent.Event;
 
 public class ChannelUtils
