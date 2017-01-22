@@ -81,12 +81,10 @@ public class SDRTrunk implements Listener<TunerEvent>
     public SDRTrunk()
     {
         mLog.info("");
-        mLog.info("");
         mLog.info("*******************************************************************");
         mLog.info("**** sdrtrunk: a trunked radio and digital decoding application ***");
         mLog.info("****  website: https://github.com/dsheirer/sdrtrunk             ***");
         mLog.info("*******************************************************************");
-        mLog.info("");
         mLog.info("");
         mLog.info("Host CPU Cores: " + Runtime.getRuntime().availableProcessors());
         mLog.info("Host Memory Total: " + Runtime.getRuntime().totalMemory());
