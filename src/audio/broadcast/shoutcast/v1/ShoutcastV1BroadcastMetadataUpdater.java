@@ -20,7 +20,6 @@ package audio.broadcast.shoutcast.v1;
 
 import audio.broadcast.IBroadcastMetadataUpdater;
 import channel.metadata.Metadata;
-import controller.ThreadPoolManager;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
@@ -32,6 +31,7 @@ import org.apache.mina.http.api.HttpVersion;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.ThreadPool;
 
 import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
@@ -49,7 +49,6 @@ public class ShoutcastV1BroadcastMetadataUpdater implements IBroadcastMetadataUp
     private final static Logger mLog = LoggerFactory.getLogger(ShoutcastV1BroadcastMetadataUpdater.class);
     private final static String UTF8 = "UTF-8";
 
-    private ThreadPoolManager mThreadPoolManager;
     private ShoutcastV1Configuration mShoutcastV1Configuration;
 
     private NioSocketConnector mSocketConnector;
@@ -63,9 +62,8 @@ public class ShoutcastV1BroadcastMetadataUpdater implements IBroadcastMetadataUp
      * broadcaster.  When multiple metadata updates are received prior to completion of the current ongoing update
      * sequence, those updates will be queued and processed in the order received.
      */
-    public ShoutcastV1BroadcastMetadataUpdater(ThreadPoolManager threadPoolManager, ShoutcastV1Configuration shoutcastV1Configuration)
+    public ShoutcastV1BroadcastMetadataUpdater(ShoutcastV1Configuration shoutcastV1Configuration)
     {
-        mThreadPoolManager = threadPoolManager;
         mShoutcastV1Configuration = shoutcastV1Configuration;
     }
 
@@ -127,7 +125,7 @@ public class ShoutcastV1BroadcastMetadataUpdater implements IBroadcastMetadataUp
 
                 if(updateRequest != null)
                 {
-                    mThreadPoolManager.scheduleOnce(new Runnable()
+                    ThreadPool.SCHEDULED.schedule(new Runnable()
                     {
                         @Override
                         public void run()

@@ -1,19 +1,20 @@
 /*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014-2016 Dennis Sheirer
+ * sdrtrunk
+ * Copyright (C) 2014-2017 Dennis Sheirer
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *
  ******************************************************************************/
 package gui;
 
@@ -24,9 +25,6 @@ import audio.broadcast.BroadcastModel;
 import audio.broadcast.BroadcastStatusPanel;
 import com.jidesoft.swing.JideSplitPane;
 import controller.ControllerPanel;
-import controller.ThreadPoolManager;
-import controller.ThreadPoolManager.ThreadType;
-import controller.channel.ChannelEventListener;
 import controller.channel.ChannelModel;
 import controller.channel.ChannelProcessingManager;
 import controller.channel.ChannelSelectionManager;
@@ -48,6 +46,7 @@ import source.tuner.TunerModel;
 import source.tuner.TunerSpectralDisplayManager;
 import source.tuner.configuration.TunerConfigurationModel;
 import spectrum.SpectralDisplayPanel;
+import util.ThreadPool;
 import util.TimeStamp;
 
 import javax.imageio.ImageIO;
@@ -61,7 +60,6 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
 
 public class SDRTrunk implements Listener<TunerEvent>
 {
@@ -80,8 +78,6 @@ public class SDRTrunk implements Listener<TunerEvent>
 
     private String mTitle;
 
-    private boolean mLogChannelAndMemoryUsage = false;
-
     public SDRTrunk()
     {
         mLog.info("");
@@ -92,14 +88,20 @@ public class SDRTrunk implements Listener<TunerEvent>
         mLog.info("*******************************************************************");
         mLog.info("");
         mLog.info("");
+        mLog.info("Host CPU Cores: " + Runtime.getRuntime().availableProcessors());
+        mLog.info("Host Memory Total: " + Runtime.getRuntime().totalMemory());
+        mLog.info("Host Memory Max: " + Runtime.getRuntime().maxMemory());
+        mLog.info("Host Memory Free: " + Runtime.getRuntime().freeMemory());
 
         //Setup the application home directory
         Path home = getHomePath();
 
+        ThreadPool.logSettings();
+
         mLog.info("Home path: " + home.toString());
 
         //Load properties file
-        if (home != null)
+        if(home != null)
         {
             loadProperties(home);
         }
@@ -110,11 +112,9 @@ public class SDRTrunk implements Listener<TunerEvent>
         TunerConfigurationModel tunerConfigurationModel = new TunerConfigurationModel();
         TunerModel tunerModel = new TunerModel(tunerConfigurationModel);
 
-        ThreadPoolManager threadPoolManager = new ThreadPoolManager();
+        mIconManager = new IconManager();
 
-        mIconManager = new IconManager(threadPoolManager);
-
-        mSettingsManager = new SettingsManager(threadPoolManager, tunerConfigurationModel);
+        mSettingsManager = new SettingsManager(tunerConfigurationModel);
 
         AliasModel aliasModel = new AliasModel();
 
@@ -124,28 +124,27 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         EventLogManager eventLogManager = new EventLogManager();
 
-        RecorderManager recorderManager = new RecorderManager(threadPoolManager);
+        RecorderManager recorderManager = new RecorderManager();
 
-        SourceManager sourceManager = new SourceManager(tunerModel,
-                mSettingsManager, threadPoolManager);
+        SourceManager sourceManager = new SourceManager(tunerModel, mSettingsManager);
 
         ChannelProcessingManager channelProcessingManager = new ChannelProcessingManager(
-                channelModel, channelMapModel, aliasModel, eventLogManager, recorderManager, sourceManager);
+            channelModel, channelMapModel, aliasModel, eventLogManager, recorderManager, sourceManager);
         channelProcessingManager.addAudioPacketListener(recorderManager);
 
         channelModel.addListener(channelProcessingManager);
 
         ChannelSelectionManager channelSelectionManager =
-                new ChannelSelectionManager(channelModel);
+            new ChannelSelectionManager(channelModel);
         channelModel.addListener(channelSelectionManager);
 
-        AliasActionManager aliasActionManager = new AliasActionManager(threadPoolManager);
+        AliasActionManager aliasActionManager = new AliasActionManager();
         channelProcessingManager.addMessageListener(aliasActionManager);
 
-        AudioManager audioManager = new AudioManager(threadPoolManager, sourceManager.getMixerManager());
+        AudioManager audioManager = new AudioManager(sourceManager.getMixerManager());
         channelProcessingManager.addAudioPacketListener(audioManager);
 
-        mBroadcastModel = new BroadcastModel(threadPoolManager, mIconManager);
+        mBroadcastModel = new BroadcastModel(mIconManager);
 
         channelProcessingManager.addAudioPacketListener(mBroadcastModel);
 
@@ -153,30 +152,22 @@ public class SDRTrunk implements Listener<TunerEvent>
         channelProcessingManager.addMessageListener(mapService);
 
         mControllerPanel = new ControllerPanel(audioManager, aliasModel, mBroadcastModel,
-                channelModel, channelMapModel, channelProcessingManager, mIconManager,
-                mapService, mSettingsManager, sourceManager, tunerModel);
+            channelModel, channelMapModel, channelProcessingManager, mIconManager,
+            mapService, mSettingsManager, sourceManager, tunerModel);
 
         mSpectralPanel = new SpectralDisplayPanel(channelModel,
-                channelProcessingManager, mSettingsManager);
+            channelProcessingManager, mSettingsManager);
 
         TunerSpectralDisplayManager tunerSpectralDisplayManager =
-                new TunerSpectralDisplayManager(mSpectralPanel,
-                        channelModel, channelProcessingManager, mSettingsManager);
+            new TunerSpectralDisplayManager(mSpectralPanel,
+                channelModel, channelProcessingManager, mSettingsManager);
         tunerModel.addListener(tunerSpectralDisplayManager);
         tunerModel.addListener(this);
 
-        PlaylistManager playlistManager = new PlaylistManager(threadPoolManager,
-                aliasModel, mBroadcastModel, channelModel, channelMapModel);
+        PlaylistManager playlistManager = new PlaylistManager(aliasModel, mBroadcastModel, channelModel,
+            channelMapModel);
 
         playlistManager.init();
-
-        if (mLogChannelAndMemoryUsage)
-        {
-            Runnable cml = new ChannelMemoryLogger();
-            channelModel.addListener((ChannelEventListener) cml);
-            threadPoolManager.scheduleFixedRate(
-                    ThreadType.DECODER, cml, 5, TimeUnit.SECONDS);
-        }
 
         mLog.info("starting main application gui");
 
@@ -194,7 +185,7 @@ public class SDRTrunk implements Listener<TunerEvent>
                 {
                     mMainGui.setVisible(true);
                 }
-                catch (Exception e)
+                catch(Exception e)
                 {
                     e.printStackTrace();
                 }
@@ -263,15 +254,15 @@ public class SDRTrunk implements Listener<TunerEvent>
                 {
                     Desktop.getDesktop().open(getHomePath().toFile());
                 }
-                catch (Exception e)
+                catch(Exception e)
                 {
                     mLog.error("Couldn't open file explorer");
 
                     JOptionPane.showMessageDialog(mMainGui,
-                            "Can't launch file explorer - files are located at: " +
-                                    getHomePath().toString(),
-                            "Can't launch file explorer",
-                            JOptionPane.ERROR_MESSAGE);
+                        "Can't launch file explorer - files are located at: " +
+                            getHomePath().toString(),
+                        "Can't launch file explorer",
+                        JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
@@ -292,13 +283,13 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         JMenuItem exitMenu = new JMenuItem("Exit");
         exitMenu.addActionListener(
-                new ActionListener()
+            new ActionListener()
+            {
+                public void actionPerformed(ActionEvent event)
                 {
-                    public void actionPerformed(ActionEvent event)
-                    {
-                        System.exit(0);
-                    }
+                    System.exit(0);
                 }
+            }
         );
 
         fileMenu.add(exitMenu);
@@ -313,7 +304,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         screenCaptureItem.setMnemonic(KeyEvent.VK_C);
         screenCaptureItem.setAccelerator(
-                KeyStroke.getKeyStroke(KeyEvent.VK_C, ActionEvent.ALT_MASK));
+            KeyStroke.getKeyStroke(KeyEvent.VK_C, ActionEvent.ALT_MASK));
 
         screenCaptureItem.addActionListener(new ActionListener()
         {
@@ -325,28 +316,28 @@ public class SDRTrunk implements Listener<TunerEvent>
                     Robot robot = new Robot();
 
                     final BufferedImage image =
-                            robot.createScreenCapture(mMainGui.getBounds());
+                        robot.createScreenCapture(mMainGui.getBounds());
 
                     SystemProperties props = SystemProperties.getInstance();
 
                     Path capturePath = props.getApplicationFolder("screen_captures");
 
-                    if (!Files.exists(capturePath))
+                    if(!Files.exists(capturePath))
                     {
                         try
                         {
                             Files.createDirectory(capturePath);
                         }
-                        catch (IOException e)
+                        catch(IOException e)
                         {
                             mLog.error("Couldn't create 'screen_captures' "
-                                    + "subdirectory in the " +
-                                    "SDRTrunk application directory", e);
+                                + "subdirectory in the " +
+                                "SDRTrunk application directory", e);
                         }
                     }
 
                     String filename = TimeStamp.getTimeStamp("_") +
-                            "_screen_capture.png";
+                        "_screen_capture.png";
 
                     final Path captureFile = capturePath.resolve(filename);
 
@@ -358,17 +349,17 @@ public class SDRTrunk implements Listener<TunerEvent>
                             try
                             {
                                 ImageIO.write(image, "png",
-                                        captureFile.toFile());
+                                    captureFile.toFile());
                             }
-                            catch (IOException e)
+                            catch(IOException e)
                             {
                                 mLog.error("Couldn't write screen capture to "
-                                        + "file [" + captureFile.toString() + "]", e);
+                                    + "file [" + captureFile.toString() + "]", e);
                             }
                         }
                     });
                 }
-                catch (AWTException e)
+                catch(AWTException e)
                 {
                     mLog.error("Exception while taking screen capture", e);
                 }
@@ -430,30 +421,30 @@ public class SDRTrunk implements Listener<TunerEvent>
     {
         Path propsPath = homePath.resolve("SDRTrunk.properties");
 
-        if (!Files.exists(propsPath))
+        if(!Files.exists(propsPath))
         {
             try
             {
                 mLog.info("SDRTrunk - creating application properties file [" +
-                        propsPath.toAbsolutePath() + "]");
+                    propsPath.toAbsolutePath() + "]");
 
                 Files.createFile(propsPath);
             }
-            catch (IOException e)
+            catch(IOException e)
             {
                 mLog.error("SDRTrunk - couldn't create application properties "
-                        + "file [" + propsPath.toAbsolutePath(), e);
+                    + "file [" + propsPath.toAbsolutePath(), e);
             }
         }
 
-        if (Files.exists(propsPath))
+        if(Files.exists(propsPath))
         {
             SystemProperties.getInstance().load(propsPath);
         }
         else
         {
             mLog.error("SDRTrunk - couldn't find or recreate the SDRTrunk " +
-                    "application properties file");
+                "application properties file");
         }
     }
 
@@ -466,23 +457,23 @@ public class SDRTrunk implements Listener<TunerEvent>
     private Path getHomePath()
     {
         Path homePath = FileSystems.getDefault()
-                .getPath(System.getProperty("user.home"), "SDRTrunk");
+            .getPath(System.getProperty("user.home"), "SDRTrunk");
 
-        if (!Files.exists(homePath))
+        if(!Files.exists(homePath))
         {
             try
             {
                 Files.createDirectory(homePath);
 
                 mLog.info("SDRTrunk - created application home directory [" +
-                        homePath.toString() + "]");
+                    homePath.toString() + "]");
             }
-            catch (Exception e)
+            catch(Exception e)
             {
                 homePath = null;
 
                 mLog.error("SDRTrunk: exception while creating SDRTrunk home " +
-                        "directory in the user's home directory", e);
+                    "directory in the user's home directory", e);
             }
         }
 
@@ -492,7 +483,7 @@ public class SDRTrunk implements Listener<TunerEvent>
     @Override
     public void receive(TunerEvent event)
     {
-        if (event.getEvent() == TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY)
+        if(event.getEvent() == TunerEvent.Event.REQUEST_MAIN_SPECTRAL_DISPLAY)
         {
             mMainGui.setTitle(mTitle + " - " + event.getTuner().getName());
         }

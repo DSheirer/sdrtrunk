@@ -20,7 +20,6 @@ package audio.broadcast.icecast;
 
 import audio.broadcast.BroadcastState;
 import audio.convert.MP3AudioConverter;
-import controller.ThreadPoolManager;
 import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.buffer.IoBuffer;
 import org.apache.mina.core.future.ConnectFuture;
@@ -38,6 +37,7 @@ import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import properties.SystemProperties;
+import util.ThreadPool;
 
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
@@ -48,12 +48,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
 {
-    private static final Logger mLog = LoggerFactory.getLogger( IcecastHTTPAudioBroadcaster.class );
+    private static final Logger mLog = LoggerFactory.getLogger(IcecastHTTPAudioBroadcaster.class);
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 30000; //30 seconds
 
     private NioSocketConnector mSocketConnector;
     private IoSession mStreamingSession = null;
-    private Map<String, String> mHTTPHeaders;
+    private Map<String,String> mHTTPHeaders;
 
     private long mLastConnectionAttempt = 0;
     private AtomicBoolean mConnecting = new AtomicBoolean();
@@ -69,9 +69,9 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
      *
      * @param configuration for the Icecast stream
      */
-    public IcecastHTTPAudioBroadcaster(ThreadPoolManager threadPoolManager, IcecastHTTPConfiguration configuration)
+    public IcecastHTTPAudioBroadcaster(IcecastHTTPConfiguration configuration)
     {
-        super(threadPoolManager, configuration);
+        super(configuration);
     }
 
     /**
@@ -101,7 +101,7 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
     private boolean connect()
     {
         if(!connected() && canConnect() &&
-           (mLastConnectionAttempt + RECONNECT_INTERVAL_MILLISECONDS < System.currentTimeMillis()) &&
+            (mLastConnectionAttempt + RECONNECT_INTERVAL_MILLISECONDS < System.currentTimeMillis()) &&
             mConnecting.compareAndSet(false, true))
         {
             mLastConnectionAttempt = System.currentTimeMillis();
@@ -159,7 +159,7 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
                 }
             };
 
-            getThreadPoolManager().scheduleOnce(runnable, 0l, TimeUnit.SECONDS);
+            ThreadPool.SCHEDULED.schedule(runnable, 0l, TimeUnit.SECONDS);
 
         }
 
@@ -264,10 +264,10 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
         {
             if(throwable instanceof ProtocolDecoderException)
             {
-                Throwable cause = ((ProtocolDecoderException)throwable).getCause();
+                Throwable cause = ((ProtocolDecoderException) throwable).getCause();
 
                 if(cause instanceof HttpException &&
-                    ((HttpException)cause).getStatusCode() == HttpStatus.CLIENT_ERROR_LENGTH_REQUIRED.code())
+                    ((HttpException) cause).getStatusCode() == HttpStatus.CLIENT_ERROR_LENGTH_REQUIRED.code())
                 {
                     //Ignore - Icecast 2.4 sometimes doesn't send any headers with their HTTP responses.  Mina expects a
                     //content-length for HTTP responses.
@@ -294,7 +294,7 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
         {
             if(object instanceof DefaultHttpResponse)
             {
-                DefaultHttpResponse response = (DefaultHttpResponse)object;
+                DefaultHttpResponse response = (DefaultHttpResponse) object;
 
                 switch(response.getStatus())
                 {
@@ -322,7 +322,7 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
             else
             {
                 mLog.error("Icecast HTTP broadcaster - unrecognized message [ " + object.getClass() +
-                        "] received:" + object.toString());
+                    "] received:" + object.toString());
             }
         }
     }

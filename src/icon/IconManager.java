@@ -18,14 +18,12 @@
  ******************************************************************************/
 package icon;
 
-import controller.ThreadPoolManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import properties.SystemProperties;
+import util.ThreadPool;
 
 import javax.swing.*;
-import javax.swing.event.ListDataEvent;
-import javax.swing.event.ListDataListener;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.xml.bind.JAXBContext;
@@ -54,16 +52,14 @@ public class IconManager
     private Path mIconBackupFilePath;
     private Path mIconLockFilePath;
 
-    private ThreadPoolManager mThreadPoolManager;
     private IconEditor mIconEditor;
     private IconTableModel mIconTableModel;
     private AtomicBoolean mSavingIcons = new AtomicBoolean();
 
-    private Map<String, ImageIcon> mResizedIcons = new HashMap<>();
+    private Map<String,ImageIcon> mResizedIcons = new HashMap<>();
 
-    public IconManager(ThreadPoolManager threadPoolManager)
+    public IconManager()
     {
-        mThreadPoolManager = threadPoolManager;
     }
 
     /**
@@ -412,7 +408,7 @@ public class IconManager
     {
         if(mSavingIcons.compareAndSet(false, true))
         {
-            mThreadPoolManager.scheduleOnce(new IconSaveTask(), 2, TimeUnit.SECONDS);
+            ThreadPool.SCHEDULED.schedule(new IconSaveTask(), 2, TimeUnit.SECONDS);
         }
     }
 

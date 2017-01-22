@@ -21,7 +21,6 @@ package audio.broadcast.icecast;
 import audio.broadcast.BroadcastState;
 import audio.broadcast.icecast.codec.IcecastCodecFactory;
 import audio.convert.MP3AudioConverter;
-import controller.ThreadPoolManager;
 import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
@@ -31,6 +30,7 @@ import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import properties.SystemProperties;
+import util.ThreadPool;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
 {
-    private final static Logger mLog = LoggerFactory.getLogger( IcecastTCPAudioBroadcaster.class );
+    private final static Logger mLog = LoggerFactory.getLogger(IcecastTCPAudioBroadcaster.class);
     private final static String TERMINATOR = "\r\n";
     private final static String SEPARATOR = ":";
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 30000; //30 seconds
@@ -62,9 +62,9 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
      *
      * @param configuration for the Icecast stream
      */
-    public IcecastTCPAudioBroadcaster(ThreadPoolManager threadPoolManager, IcecastTCPConfiguration configuration)
+    public IcecastTCPAudioBroadcaster(IcecastTCPConfiguration configuration)
     {
-        super(threadPoolManager, configuration);
+        super(configuration);
     }
 
     /**
@@ -90,7 +90,7 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
     private boolean connect()
     {
         if(!connected() && canConnect() &&
-           (mLastConnectionAttempt + RECONNECT_INTERVAL_MILLISECONDS < System.currentTimeMillis()) &&
+            (mLastConnectionAttempt + RECONNECT_INTERVAL_MILLISECONDS < System.currentTimeMillis()) &&
             mConnecting.compareAndSet(false, true))
         {
             mLastConnectionAttempt = System.currentTimeMillis();
@@ -149,8 +149,7 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                 }
             };
 
-            getThreadPoolManager().scheduleOnce(runnable, 0l, TimeUnit.SECONDS);
-
+            ThreadPool.SCHEDULED.schedule(runnable, 0l, TimeUnit.SECONDS);
         }
 
         return connected();
@@ -241,9 +240,9 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
         @Override
         public void exceptionCaught(IoSession session, Throwable cause) throws Exception
         {
-            if(cause instanceof IOException && ((IOException)cause).getMessage().startsWith("Connection reset"))
+            if(cause instanceof IOException && ((IOException) cause).getMessage().startsWith("Connection reset"))
             {
-                IOException ioe = (IOException)cause;
+                IOException ioe = (IOException) cause;
 
                 if(ioe.getMessage() != null && ioe.getMessage().startsWith("Connection reset"))
                 {
@@ -271,7 +270,7 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
         {
             if(object instanceof String)
             {
-                String message = (String)object;
+                String message = (String) object;
 
                 if(message != null && !message.trim().isEmpty())
                 {

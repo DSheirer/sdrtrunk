@@ -20,10 +20,10 @@ package audio.broadcast;
 
 import audio.convert.ISilenceGenerator;
 import channel.metadata.Metadata;
-import controller.ThreadPoolManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sample.Listener;
+import util.ThreadPool;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -40,7 +40,6 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
 
     public static final int PROCESSOR_RUN_INTERVAL_MS = 1000;
 
-    private ThreadPoolManager mThreadPoolManager;
     private ScheduledFuture mScheduledTask;
 
     private RecordingQueueProcessor mRecordingQueueProcessor = new RecordingQueueProcessor();
@@ -77,17 +76,11 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
      * The last audio packet's metadata is automatically attached to the closed audio recording when it is enqueued for
      * broadcast.  That metadata will be updated on the remote server once the audio recording is opened for streaming.
      */
-    public AudioBroadcaster(ThreadPoolManager threadPoolManager, BroadcastConfiguration broadcastConfiguration)
+    public AudioBroadcaster(BroadcastConfiguration broadcastConfiguration)
     {
-        mThreadPoolManager = threadPoolManager;
         mBroadcastConfiguration = broadcastConfiguration;
         mDelay = mBroadcastConfiguration.getDelay();
         mSilenceGenerator = BroadcastFactory.getSilenceGenerator(broadcastConfiguration.getBroadcastFormat());
-    }
-
-    protected ThreadPoolManager getThreadPoolManager()
-    {
-        return mThreadPoolManager;
     }
 
     /**
@@ -129,11 +122,8 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
         {
             if(mScheduledTask == null)
             {
-                if(mThreadPoolManager != null)
-                {
-                    mScheduledTask = mThreadPoolManager.scheduleFixedRate(ThreadPoolManager.ThreadType.AUDIO_PROCESSING,
-                        mRecordingQueueProcessor, PROCESSOR_RUN_INTERVAL_MS, TimeUnit.MILLISECONDS);
-                }
+                ThreadPool.SCHEDULED.scheduleAtFixedRate(mRecordingQueueProcessor, 0,
+                    PROCESSOR_RUN_INTERVAL_MS, TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -145,9 +135,9 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
     {
         if(mStreaming.compareAndSet(true, false))
         {
-            if(mThreadPoolManager != null && mScheduledTask != null)
+            if(mScheduledTask != null)
             {
-                mThreadPoolManager.cancel(mScheduledTask);
+                mScheduledTask.cancel(true);
             }
 
             disconnect();

@@ -18,7 +18,6 @@
  ******************************************************************************/
 package spectrum;
 
-import controller.NamingThreadFactory;
 import dsp.filter.Window;
 import dsp.filter.Window.WindowType;
 import org.jtransforms.fft.FloatFFT_1D;
@@ -32,14 +31,14 @@ import sample.complex.ComplexBuffer;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.IFrequencyChangeProcessor;
 import spectrum.converter.DFTResultsConverter;
+import util.ThreadPool;
 
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -60,8 +59,7 @@ public class DFTProcessor implements Listener<ComplexBuffer>, IFrequencyChangePr
     //so we set it at 12.
     private BlockingQueue<ComplexBuffer> mQueue = new ArrayBlockingQueue<>(12);
 
-    private ScheduledExecutorService mScheduler = Executors
-        .newScheduledThreadPool(1, new NamingThreadFactory("spectrum dft processor"));
+    private ScheduledFuture<?> mProcessorTaskHandle;
 
     public static final String FRAME_RATE_PROPERTY = "spectral.display.frame.rate";
 
@@ -184,38 +182,20 @@ public class DFTProcessor implements Listener<ComplexBuffer>, IFrequencyChangePr
 
     public void start()
     {
-        /**
-         * Reset the scheduler
-         */
-        mScheduler = Executors.newScheduledThreadPool(1, new NamingThreadFactory("spectrum dft"));
-
-        /**
-         * Schedule the DFT to run calculations at a fixed rate
-         */
+        //Schedule the DFT to run calculations at a fixed rate
         int initialDelay = 0;
         int period = (int) (1000 / mFrameRate);
-        TimeUnit unit = TimeUnit.MILLISECONDS;
 
-        mScheduler.scheduleAtFixedRate(new DFTCalculationTask(),
-            initialDelay, period, unit);
+        mProcessorTaskHandle = ThreadPool.SCHEDULED.scheduleAtFixedRate(new DFTCalculationTask(), initialDelay, period,
+            TimeUnit.MILLISECONDS);
     }
 
     public void stop()
     {
-        /**
-         * Shutdown the scheduler and clear out any remaining tasks
-         */
-        try
+        //Cancel running DFT calculation task
+        if(mProcessorTaskHandle != null)
         {
-            mScheduler.shutdown();
-
-            mScheduler.awaitTermination(100, TimeUnit.MILLISECONDS);
-        }
-        catch(InterruptedException e)
-        {
-            /* Do nothing ... we're shutting down */
-//	        mLog.error( "DFTProcessor - exception while awaiting shutdown of "
-//	        		+ "calculation scheduler for reset", e );
+            mProcessorTaskHandle.cancel(true);
         }
     }
 

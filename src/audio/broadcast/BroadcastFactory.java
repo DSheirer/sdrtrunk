@@ -37,7 +37,6 @@ import audio.convert.IAudioConverter;
 import audio.convert.ISilenceGenerator;
 import audio.convert.MP3AudioConverter;
 import audio.convert.MP3SilenceGenerator;
-import controller.ThreadPoolManager;
 import gui.editor.Editor;
 import gui.editor.EmptyEditor;
 import icon.IconManager;
@@ -45,25 +44,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import record.AudioRecorder;
 import record.mp3.MP3Recorder;
-import settings.SettingsManager;
 
 import java.nio.file.Path;
 
 public class BroadcastFactory
 {
-    private final static Logger mLog = LoggerFactory.getLogger( BroadcastFactory.class );
+    private final static Logger mLog = LoggerFactory.getLogger(BroadcastFactory.class);
 
     public static final int MP3_MONO_16_KHZ_BITRATE = 16;
     public static final boolean MP3_CONSTANT_BITRATE = false;
 
     /**
      * Creates an audio streaming broadcaster for the configuration
-     * @param threadPoolManager for creating an audio broadcasting connection thread
+     *
      * @param configuration describing the server and audio types
      * @return configured broadcaster or null
      */
-    public static AudioBroadcaster getBroadcaster(ThreadPoolManager threadPoolManager,
-                                                  BroadcastConfiguration configuration)
+    public static AudioBroadcaster getBroadcaster(BroadcastConfiguration configuration)
     {
         if(configuration != null)
         {
@@ -74,20 +71,15 @@ public class BroadcastFactory
                 switch(configuration.getBroadcastServerType())
                 {
                     case BROADCASTIFY:
-                        return new IcecastTCPAudioBroadcaster(threadPoolManager,
-                            (BroadcastifyConfiguration)configuration);
+                        return new IcecastTCPAudioBroadcaster((BroadcastifyConfiguration) configuration);
                     case ICECAST_TCP:
-                        return new IcecastTCPAudioBroadcaster(threadPoolManager,
-                            (IcecastTCPConfiguration)configuration);
+                        return new IcecastTCPAudioBroadcaster((IcecastTCPConfiguration) configuration);
                     case ICECAST_HTTP:
-                        return new IcecastHTTPAudioBroadcaster(threadPoolManager,
-                            (IcecastHTTPConfiguration)configuration);
+                        return new IcecastHTTPAudioBroadcaster((IcecastHTTPConfiguration) configuration);
                     case SHOUTCAST_V1:
-                        return new ShoutcastV1AudioBroadcaster(threadPoolManager,
-                            (ShoutcastV1Configuration)configuration);
+                        return new ShoutcastV1AudioBroadcaster((ShoutcastV1Configuration) configuration);
                     case SHOUTCAST_V2:
-                        return new ShoutcastV2AudioBroadcaster(threadPoolManager,
-                            (ShoutcastV2Configuration)configuration);
+                        return new ShoutcastV2AudioBroadcaster((ShoutcastV2Configuration) configuration);
                     case UNKNOWN:
                     default:
                         mLog.info("Unrecognized broadcastAudio configuration: " + configuration.getBroadcastFormat().name());
@@ -101,6 +93,7 @@ public class BroadcastFactory
 
     /**
      * Creates an audio convert to convert from 8 kHz PCM audio to the specified format
+     *
      * @param configuration containing the requested output audio format
      * @return audio convert or null
      */
@@ -149,6 +142,7 @@ public class BroadcastFactory
 
     /**
      * Constructs an editor for the specified broadcastAudio configuration
+     *
      * @param configuration to modify or view
      * @param broadcastModel model for broadcastAudio configurations
      * @return an editor for the specified broadcastAudio configuration
@@ -160,10 +154,10 @@ public class BroadcastFactory
     {
         Editor<BroadcastConfiguration> editor;
 
-        switch (configuration.getBroadcastServerType())
+        switch(configuration.getBroadcastServerType())
         {
             case BROADCASTIFY:
-                 editor = new BroadcastifyConfigurationEditor(broadcastModel, aliasModel, iconManager);
+                editor = new BroadcastifyConfigurationEditor(broadcastModel, aliasModel, iconManager);
                 break;
             case ICECAST_TCP:
                 editor = new IcecastTCPConfigurationEditor(broadcastModel, aliasModel, iconManager);
@@ -192,7 +186,7 @@ public class BroadcastFactory
      */
     public static AudioRecorder getAudioRecorder(Path path, BroadcastFormat broadcastFormat)
     {
-        switch (broadcastFormat)
+        switch(broadcastFormat)
         {
             case MP3:
                 return new MP3Recorder(path);
@@ -204,7 +198,7 @@ public class BroadcastFactory
 
     public static ISilenceGenerator getSilenceGenerator(BroadcastFormat format)
     {
-        switch (format)
+        switch(format)
         {
             case MP3:
                 return new MP3SilenceGenerator();
