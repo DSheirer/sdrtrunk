@@ -533,8 +533,6 @@ public class MPT1327DecoderState extends DecoderState
                         TrafficChannelAllocationEvent allocationEvent =
                             (TrafficChannelAllocationEvent) event;
 
-                        broadcast(new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_LABEL_1, "TRAFFIC"));
-
                         String channel = allocationEvent.getCallEvent().getChannel();
 
                         if(channel != null)

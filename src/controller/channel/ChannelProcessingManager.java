@@ -226,7 +226,11 @@ public class ChannelProcessingManager implements ChannelEventListener
 
             //Inject channel metadata that will be inserted into audio packets for recorder manager and streaming
             processingChain.getChannelState().getMutableMetadata().receive(
-                new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_LABEL_1, channel.getName()));
+                new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_SYSTEM, channel.getSystem()));
+            processingChain.getChannelState().getMutableMetadata().receive(
+                new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_SITE, channel.getSite()));
+            processingChain.getChannelState().getMutableMetadata().receive(
+                new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_NAME, channel.getName()));
 
             if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
             {

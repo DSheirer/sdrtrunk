@@ -377,8 +377,8 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
 
         if(mState == State.FADE)
         {
-            broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE));
             getMutableMetadata().resetTemporalAttributes();
+            broadcast(new DecoderStateEvent(this, Event.RESET, State.IDLE));
         }
 
         mState = State.IDLE;
@@ -495,7 +495,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
         mMutableMetadata.receive(new AttributeChangeRequest<DecoderType>(Attribute.PRIMARY_DECODER_TYPE,
             mTrafficChannelCallEvent.getDecoderType()));
 
-        mMutableMetadata.receive(new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_LABEL_1, "TRAFFIC"));
+        mMutableMetadata.receive(new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_NAME, "TRAFFIC"));
 
         String from = mTrafficChannelCallEvent.getFromID();
 

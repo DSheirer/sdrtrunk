@@ -38,8 +38,9 @@ public class Metadata
     protected DecoderType mPrimaryDecoderType;
     protected boolean mSelected;
     protected State mState = State.IDLE;
-    protected String mChannelConfigurationLabel1;
-    protected String mChannelConfigurationLabel2;
+    protected String mChannelConfigurationSystem;
+    protected String mChannelConfigurationSite;
+    protected String mChannelConfigurationName;
     protected String mChannelFrequencyLabel;
     protected long mChannelFrequency;
     protected AliasedIdentifier mNetworkID1 = new AliasedIdentifier();
@@ -233,10 +234,10 @@ public class Metadata
     {
         switch(attribute)
         {
-            case CHANNEL_CONFIGURATION_LABEL_1:
-                return mChannelConfigurationLabel1;
-            case CHANNEL_CONFIGURATION_LABEL_2:
-                return mChannelConfigurationLabel2;
+            case CHANNEL_CONFIGURATION_SYSTEM:
+                return mChannelConfigurationSystem;
+            case CHANNEL_CONFIGURATION_SITE:
+                return mChannelConfigurationSite;
             case CHANNEL_FREQUENCY_LABEL:
                 return mChannelFrequencyLabel;
             case CHANNEL_STATE:
@@ -273,33 +274,49 @@ public class Metadata
     /**
      * System name from the channel configuration
      */
-    public String getChannelConfigurationLabel1()
+    public String getChannelConfigurationSystem()
     {
-        return mChannelConfigurationLabel1;
+        return mChannelConfigurationSystem;
     }
 
     /**
      * Indicates if there is a non-null, non-empty channel configuration system value
      */
-    public boolean hasChannelConfigurationLabel1()
+    public boolean hasChannelConfigurationSystem()
     {
-        return mChannelConfigurationLabel1 != null && !mChannelConfigurationLabel1.isEmpty();
+        return mChannelConfigurationSystem != null && !mChannelConfigurationSystem.isEmpty();
     }
 
     /**
      * Site name from the channel configuration
      */
-    public String getChannelConfigurationLabel2()
+    public String getChannelConfigurationSite()
     {
-        return mChannelConfigurationLabel2;
+        return mChannelConfigurationSite;
     }
 
     /**
      * Indicates if there is a non-null, non-empty channel configuration site value
      */
-    public boolean hasChannelConfigurationLabel2()
+    public boolean hasChannelConfigurationSite()
     {
-        return mChannelConfigurationLabel2 != null && !mChannelConfigurationLabel2.isEmpty();
+        return mChannelConfigurationSite != null && !mChannelConfigurationSite.isEmpty();
+    }
+
+    /**
+     * Site name from the channel configuration
+     */
+    public String getChannelConfigurationName()
+    {
+        return mChannelConfigurationName;
+    }
+
+    /**
+     * Indicates if there is a non-null, non-empty channel configuration name value
+     */
+    public boolean hasChannelConfigurationName()
+    {
+        return mChannelConfigurationSite != null && !mChannelConfigurationSite.isEmpty();
     }
 
     /**
@@ -621,8 +638,9 @@ public class Metadata
         copy.mPrimaryDecoderType = mPrimaryDecoderType;
         copy.mChannelFrequency = mChannelFrequency;
 
-        copy.mChannelConfigurationLabel1 = hasChannelConfigurationLabel1() ? new String(mChannelConfigurationLabel1) : null;
-        copy.mChannelConfigurationLabel2 = hasChannelConfigurationLabel2() ? new String(mChannelConfigurationLabel2) : null;
+        copy.mChannelConfigurationSystem = hasChannelConfigurationSystem() ? new String(mChannelConfigurationSystem) : null;
+        copy.mChannelConfigurationSite = hasChannelConfigurationSite() ? new String(mChannelConfigurationSite) : null;
+        copy.mChannelConfigurationName = hasChannelConfigurationName() ? new String(mChannelConfigurationName) : null;
         copy.mChannelFrequencyLabel = hasChannelFrequencyLabel() ? new String(mChannelFrequencyLabel) : null;
         copy.mMessage = hasMessage() ? new String(mMessage) : null;
         copy.mMessageType = hasMessageType() ? new String(mMessageType) : null;

@@ -20,8 +20,11 @@ package channel.state;
 import channel.metadata.Attribute;
 import channel.metadata.AttributeChangeRequest;
 import channel.state.DecoderStateEvent.Event;
+import gui.SDRTrunk;
 import message.Message;
 import module.decode.DecoderType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -31,6 +34,8 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class AlwaysUnsquelchedDecoderState extends DecoderState
 {
+    private final static Logger mLog = LoggerFactory.getLogger(AlwaysUnsquelchedDecoderState.class);
+
     private DecoderType mDecoderType;
     private String mChannelName;
 
@@ -50,7 +55,6 @@ public class AlwaysUnsquelchedDecoderState extends DecoderState
     @Override
     public void reset()
     {
-        /* No reset actions needed */
     }
 
     @Override
@@ -75,7 +79,12 @@ public class AlwaysUnsquelchedDecoderState extends DecoderState
     @Override
     public void receiveDecoderStateEvent(DecoderStateEvent event)
     {
-		/* Not implemented */
+        if(event.getEvent() == Event.RESET)
+        {
+            //Each time we're reset, set the PRIMARY TO attribute back to the channel name, otherwise we won't have
+            //a primary ID for any audio produced by this state.
+            broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_TO, mChannelName));
+        }
     }
 
     @Override

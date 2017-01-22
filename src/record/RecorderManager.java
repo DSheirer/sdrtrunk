@@ -126,8 +126,9 @@ public class RecorderManager implements Listener<AudioPacket>
 
         Metadata metadata = packet.getMetadata();
 
-        sb.append(metadata.getNetworkID1().hasIdentifier() ? metadata.getNetworkID1().getIdentifier() + "_" : "SYSTEM-SITE");
-        sb.append(metadata.getNetworkID1().hasIdentifier() ? metadata.getNetworkID1().getIdentifier() : "CHANNEL");
+        sb.append(metadata.hasChannelConfigurationSystem() ? metadata.getChannelConfigurationSystem() + "_" : "");
+        sb.append(metadata.hasChannelConfigurationSite() ? metadata.getChannelConfigurationSite() + "_" : "");
+        sb.append(metadata.hasChannelConfigurationName() ? metadata.getChannelConfigurationName() + "_" : "");
 
         if(metadata.getPrimaryAddressTo().hasIdentifier())
         {

@@ -202,7 +202,7 @@ public class ChannelMetadataModel extends AbstractTableModel implements Listener
 
                     return null;
                 case COLUMN_CONFIGURATION_NAME:
-                    return metadata.getChannelConfigurationLabel1();
+                    return metadata.getChannelConfigurationName();
                 case COLUMN_PRIMARY_TO:
                 case COLUMN_PRIMARY_FROM:
                 case COLUMN_SECONDARY_TO:
@@ -232,9 +232,11 @@ public class ChannelMetadataModel extends AbstractTableModel implements Listener
                 {
                     switch(mutableMetadataChangeEvent.getAttribute())
                     {
-                        case CHANNEL_CONFIGURATION_LABEL_1:
+                        case CHANNEL_CONFIGURATION_SYSTEM:
                             break;
-                        case CHANNEL_CONFIGURATION_LABEL_2:
+                        case CHANNEL_CONFIGURATION_SITE:
+                            break;
+                        case CHANNEL_CONFIGURATION_NAME:
                             fireTableCellUpdated(rowIndex, COLUMN_CONFIGURATION_NAME);
                             break;
                         case CHANNEL_FREQUENCY:

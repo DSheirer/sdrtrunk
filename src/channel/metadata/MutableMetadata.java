@@ -80,13 +80,17 @@ public class MutableMetadata extends Metadata implements Listener<AttributeChang
     {
         switch(request.getAttribute())
         {
-            case CHANNEL_CONFIGURATION_LABEL_1:
-                mChannelConfigurationLabel1 = request.getStringValue();
-                broadcast(Attribute.CHANNEL_CONFIGURATION_LABEL_1);
+            case CHANNEL_CONFIGURATION_SYSTEM:
+                mChannelConfigurationSystem = request.getStringValue();
+                broadcast(Attribute.CHANNEL_CONFIGURATION_SYSTEM);
                 break;
-            case CHANNEL_CONFIGURATION_LABEL_2:
-                mChannelConfigurationLabel2 = request.getStringValue();
-                broadcast(Attribute.CHANNEL_CONFIGURATION_LABEL_2);
+            case CHANNEL_CONFIGURATION_SITE:
+                mChannelConfigurationSite = request.getStringValue();
+                broadcast(Attribute.CHANNEL_CONFIGURATION_SITE);
+                break;
+            case CHANNEL_CONFIGURATION_NAME:
+                mChannelConfigurationName = request.getStringValue();
+                broadcast(Attribute.CHANNEL_CONFIGURATION_NAME);
                 break;
             case CHANNEL_FREQUENCY:
                 if(request.hasValue())
@@ -205,16 +209,22 @@ public class MutableMetadata extends Metadata implements Listener<AttributeChang
     {
         resetTemporalAttributes();
 
-        if(hasChannelConfigurationLabel1())
+        if(hasChannelConfigurationSystem())
         {
-            mChannelConfigurationLabel1 = null;
-            broadcast(Attribute.CHANNEL_CONFIGURATION_LABEL_1);
+            mChannelConfigurationSystem = null;
+            broadcast(Attribute.CHANNEL_CONFIGURATION_SYSTEM);
         }
 
-        if(hasChannelConfigurationLabel2())
+        if(hasChannelConfigurationSite())
         {
-            mChannelConfigurationLabel2 = null;
-            broadcast(Attribute.CHANNEL_CONFIGURATION_LABEL_2);
+            mChannelConfigurationSite = null;
+            broadcast(Attribute.CHANNEL_CONFIGURATION_SITE);
+        }
+
+        if(hasChannelConfigurationName())
+        {
+            mChannelConfigurationSite = null;
+            broadcast(Attribute.CHANNEL_CONFIGURATION_NAME);
         }
 
         if(hasChannelFrequencyLabel())
