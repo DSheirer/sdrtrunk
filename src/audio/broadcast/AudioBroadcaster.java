@@ -28,9 +28,8 @@ import sample.Listener;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Queue;
+import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -45,7 +44,7 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
     private ScheduledFuture mScheduledTask;
 
     private RecordingQueueProcessor mRecordingQueueProcessor = new RecordingQueueProcessor();
-    private List<AudioRecording> mAudioRecordingQueue = new CopyOnWriteArrayList<>();
+    private Queue<AudioRecording> mAudioRecordingQueue = new LinkedTransferQueue<>();
 
     private ISilenceGenerator mSilenceGenerator;
 
@@ -197,7 +196,7 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
     {
         if(connected())
         {
-            mAudioRecordingQueue.add(recording);
+            mAudioRecordingQueue.offer(recording);
             broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_QUEUE_CHANGE));
         }
     }
@@ -261,7 +260,7 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
                 {
                     try
                     {
-                        AudioRecording recording = mAudioRecordingQueue.get(0);
+                        AudioRecording recording = mAudioRecordingQueue.remove();
                         recording.removePendingReplay();
                     }
                     catch(Exception e)
@@ -397,24 +396,12 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
 
             mInputStream = null;
 
-            AudioRecording nextRecording = null;
-
-            //Find the recording with the earliest start time
-            Iterator<AudioRecording> it = mAudioRecordingQueue.iterator();
-
-            while(it.hasNext())
-            {
-                AudioRecording recording = it.next();
-
-                if(nextRecording == null || (recording.getStartTime() < nextRecording.getStartTime()))
-                {
-                    nextRecording = recording;
-                }
-            }
+            //Peek at the next recording but don't remove it from the queue yet, so we can inspect the delay time
+            AudioRecording nextRecording = mAudioRecordingQueue.peek();
 
             if(nextRecording != null && nextRecording.getStartTime() + mDelay <= System.currentTimeMillis())
             {
-                mAudioRecordingQueue.remove(nextRecording);
+                nextRecording = mAudioRecordingQueue.remove();
 
                 try
                 {
