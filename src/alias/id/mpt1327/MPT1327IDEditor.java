@@ -65,7 +65,7 @@ public class MPT1327IDEditor extends DocumentListenerEditor<AliasID>
 		try
 		{
 			//Mask: 3 digits - 4 digits
-			formatter = new MaskFormatter( "###-####" );
+			formatter = new MaskFormatter( "***-****" );
 		}
 		catch( Exception e )
 		{
