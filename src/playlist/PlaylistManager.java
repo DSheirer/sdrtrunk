@@ -21,7 +21,6 @@ import alias.AliasEvent;
 import alias.AliasModel;
 import audio.broadcast.BroadcastEvent;
 import audio.broadcast.BroadcastModel;
-import controller.ThreadPoolManager;
 import controller.channel.Channel.ChannelType;
 import controller.channel.ChannelEvent;
 import controller.channel.ChannelEventListener;
@@ -33,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import playlist.version1.PlaylistConverterV1ToV2;
 import properties.SystemProperties;
 import sample.Listener;
+import util.ThreadPool;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -51,7 +51,6 @@ public class PlaylistManager implements ChannelEventListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(PlaylistManager.class);
 
-    private ThreadPoolManager mThreadPoolManager;
     private AliasModel mAliasModel;
     private BroadcastModel mBroadcastModel;
     private ChannelModel mChannelModel;
@@ -72,16 +71,10 @@ public class PlaylistManager implements ChannelEventListener
      * Monitors playlist changes to automatically save configuration changes
      * after they occur.
      *
-     * @param threadPoolManager
      * @param channelModel
      */
-    public PlaylistManager(ThreadPoolManager threadPoolManager,
-                           AliasModel aliasModel,
-                           BroadcastModel broadcastModel,
-                           ChannelModel channelModel,
-                           ChannelMapModel channelMapModel)
+    public PlaylistManager(AliasModel aliasModel, BroadcastModel broadcastModel, ChannelModel channelModel, ChannelMapModel channelMapModel)
     {
-        mThreadPoolManager = threadPoolManager;
         mAliasModel = aliasModel;
         mBroadcastModel = broadcastModel;
         mChannelModel = channelModel;
@@ -421,7 +414,7 @@ public class PlaylistManager implements ChannelEventListener
         {
             if(mPlaylistSavePending.compareAndSet(false, true))
             {
-                mThreadPoolManager.scheduleOnce(new PlaylistSaveTask(), 2, TimeUnit.SECONDS);
+                ThreadPool.SCHEDULED.schedule(new PlaylistSaveTask(), 2, TimeUnit.SECONDS);
             }
         }
     }

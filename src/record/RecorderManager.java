@@ -19,13 +19,13 @@ package record;
 
 import audio.AudioPacket;
 import channel.metadata.Metadata;
-import controller.ThreadPoolManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import properties.SystemProperties;
 import record.wave.ComplexBufferWaveRecorder;
 import record.wave.RealBufferWaveRecorder;
 import sample.Listener;
+import util.ThreadPool;
 
 import java.io.File;
 import java.util.HashMap;
@@ -39,22 +39,18 @@ public class RecorderManager implements Listener<AudioPacket>
 
     private Map<String,RealBufferWaveRecorder> mRecorders = new HashMap<>();
 
-    private ThreadPoolManager mThreadPoolManager;
-
     private boolean mCanStartNewRecorders = true;
 
     /**
      * Manages all audio recording for all processing channels. Reconstructs audio streams and distributes channel
      * audio to each of the recorders, starting and stopping the recorders as needed.
      */
-    public RecorderManager(ThreadPoolManager threadPoolManager)
+    public RecorderManager()
     {
-        mThreadPoolManager = threadPoolManager;
     }
 
     public void dispose()
     {
-        mThreadPoolManager = null;
     }
 
     @Override
@@ -91,7 +87,7 @@ public class RecorderManager implements Listener<AudioPacket>
                     {
                         recorder = new RealBufferWaveRecorder(AUDIO_SAMPLE_RATE, filePrefix);
 
-                        recorder.start(mThreadPoolManager.getScheduledExecutorService());
+                        recorder.start(ThreadPool.SCHEDULED);
 
                         recorder.receive(audioPacket.getAudioBuffer());
                         mRecorders.put(identifier, recorder);

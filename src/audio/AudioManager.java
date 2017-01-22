@@ -22,8 +22,6 @@ import audio.AudioEvent.Type;
 import audio.output.AudioOutput;
 import audio.output.MonoAudioOutput;
 import audio.output.StereoAudioOutput;
-import controller.ThreadPoolManager;
-import controller.ThreadPoolManager.ThreadType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import properties.SystemProperties;
@@ -32,6 +30,7 @@ import sample.Listener;
 import source.mixer.MixerChannel;
 import source.mixer.MixerChannelConfiguration;
 import source.mixer.MixerManager;
+import util.ThreadPool;
 
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Mixer;
@@ -70,7 +69,6 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 
     private Broadcaster<AudioEvent> mControllerBroadcaster = new Broadcaster<>();
 
-    private ThreadPoolManager mThreadPoolManager;
     private ScheduledFuture<?> mProcessingTask;
     private MixerManager mMixerManager;
     private MixerChannelConfiguration mMixerChannelConfiguration;
@@ -81,9 +79,8 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
      * packets to any combination of outputs based on any alias audio routing
      * options specified by the user.
      */
-    public AudioManager(ThreadPoolManager manager, MixerManager mixerManager)
+    public AudioManager(MixerManager mixerManager)
     {
-        mThreadPoolManager = manager;
         mMixerManager = mixerManager;
 
         loadSettings();
@@ -145,14 +142,13 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 
     public void dispose()
     {
-        if(mThreadPoolManager != null && mProcessingTask != null)
+        if(mProcessingTask != null)
         {
-            mThreadPoolManager.cancel(mProcessingTask);
+            mProcessingTask.cancel(true);
         }
 
         mAudioPacketQueue.clear();
 
-        mThreadPoolManager = null;
         mProcessingTask = null;
 
         mChannelConnectionMap.clear();
@@ -224,9 +220,9 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
         {
             mControllerBroadcaster.broadcast(CONFIGURATION_CHANGE_STARTED);
 
-            if(mThreadPoolManager != null && mProcessingTask != null)
+            if(mProcessingTask != null)
             {
-                mThreadPoolManager.cancel(mProcessingTask);
+                mProcessingTask.cancel(true);
             }
 
             disposeCurrentConfiguration();
@@ -234,19 +230,18 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
             switch(entry.getMixerChannel())
             {
                 case MONO:
-                    AudioOutput mono = new MonoAudioOutput(mThreadPoolManager,
-                        entry.getMixer());
+                    AudioOutput mono = new MonoAudioOutput(entry.getMixer());
                     mAudioOutputConnections.add(new AudioOutputConnection(mono));
                     mAvailableConnectionCount++;
                     mAudioOutputMap.put(mono.getChannelName(), mono);
                     break;
                 case STEREO:
-                    AudioOutput left = new StereoAudioOutput(mThreadPoolManager, entry.getMixer(), MixerChannel.LEFT);
+                    AudioOutput left = new StereoAudioOutput(entry.getMixer(), MixerChannel.LEFT);
                     mAudioOutputConnections.add(new AudioOutputConnection(left));
                     mAvailableConnectionCount++;
                     mAudioOutputMap.put(left.getChannelName(), left);
 
-                    AudioOutput right = new StereoAudioOutput(mThreadPoolManager, entry.getMixer(), MixerChannel.RIGHT);
+                    AudioOutput right = new StereoAudioOutput(entry.getMixer(), MixerChannel.RIGHT);
                     mAudioOutputConnections.add(new AudioOutputConnection(right));
                     mAvailableConnectionCount++;
                     mAudioOutputMap.put(right.getChannelName(), right);
@@ -256,9 +251,8 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
                         + "configuration: " + entry.getMixerChannel());
             }
 
-            mProcessingTask = mThreadPoolManager.scheduleFixedRate(
-                ThreadType.AUDIO_PROCESSING, new AudioPacketProcessor(), 15,
-                TimeUnit.MILLISECONDS);
+            mProcessingTask = ThreadPool.SCHEDULED.scheduleAtFixedRate(new AudioPacketProcessor(),
+                0, 15, TimeUnit.MILLISECONDS);
 
             mControllerBroadcaster.broadcast(CONFIGURATION_CHANGE_COMPLETE);
 

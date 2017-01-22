@@ -19,11 +19,11 @@
 package audio.broadcast;
 
 import audio.AudioPacket;
-import controller.ThreadPoolManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import record.AudioRecorder;
 import sample.Listener;
+import util.ThreadPool;
 import util.TimeStamp;
 
 import java.nio.file.Files;
@@ -44,7 +44,6 @@ public class StreamManager implements Listener<AudioPacket>
 
     private static AtomicInteger sNextRecordingNumber = new AtomicInteger();
 
-    private ThreadPoolManager mThreadPoolManager;
     private Listener<AudioRecording> mAudioRecordingListener;
     private BroadcastFormat mBroadcastFormat;
     private Path mTempDirectory;
@@ -61,17 +60,13 @@ public class StreamManager implements Listener<AudioPacket>
      *
      * Completed streamable audio recordings are nominated to the output listener (for broadcast) upon completion
      *
-     * @param threadPoolManager for scheduling runnables
      * @param listener to receive completed audio recordings
      * @param tempDirectory where to store temporary audio recordings
      */
-    public StreamManager(ThreadPoolManager threadPoolManager, Listener<AudioRecording> listener,
-                         BroadcastFormat broadcastFormat, Path tempDirectory)
+    public StreamManager(Listener<AudioRecording> listener, BroadcastFormat broadcastFormat, Path tempDirectory)
     {
         assert (tempDirectory != null && Files.isDirectory(tempDirectory));
-        assert (mThreadPoolManager != null);
 
-        mThreadPoolManager = threadPoolManager;
         mAudioRecordingListener = listener;
         mBroadcastFormat = broadcastFormat;
         mTempDirectory = tempDirectory;
@@ -90,8 +85,8 @@ public class StreamManager implements Listener<AudioPacket>
                 mRecorderMonitor = new RecorderMonitor();
             }
 
-            mRecorderMonitorFuture = mThreadPoolManager.scheduleFixedRate(ThreadPoolManager.ThreadType.AUDIO_PROCESSING,
-                mRecorderMonitor, 2, TimeUnit.SECONDS);
+            mRecorderMonitorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(mRecorderMonitor,
+                0,2, TimeUnit.SECONDS);
         }
     }
 
@@ -145,7 +140,7 @@ public class StreamManager implements Listener<AudioPacket>
                     {
                         AudioRecorder recorder = BroadcastFactory.getAudioRecorder(getTemporaryRecordingPath(),
                             mBroadcastFormat);
-                        recorder.start(mThreadPoolManager.getScheduledExecutorService());
+                        recorder.start(ThreadPool.SCHEDULED);
                         recorder.receive(audioPacket);
                         mStreamRecorders.put(channelMetadataID, recorder);
                     }

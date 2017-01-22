@@ -17,7 +17,6 @@
  ******************************************************************************/
 package settings;
 
-import controller.ThreadPoolManager;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +26,7 @@ import settings.ColorSetting.ColorSettingName;
 import source.recording.RecordingConfiguration;
 import source.tuner.configuration.TunerConfigurationEvent;
 import source.tuner.configuration.TunerConfigurationModel;
+import util.ThreadPool;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -54,18 +54,15 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
     private Settings mSettings = new Settings();
     private List<SettingChangeListener> mListeners = new ArrayList<>();
     private TunerConfigurationModel mTunerConfigurationModel;
-    private ThreadPoolManager mThreadPoolManager;
     private boolean mLoadingSettings = false;
     private AtomicBoolean mSettingsSavePending = new AtomicBoolean();
 
-    public SettingsManager(ThreadPoolManager threadPoolManager,
-                           TunerConfigurationModel tunerConfigurationModel)
+    public SettingsManager(TunerConfigurationModel tunerConfigurationModel)
     {
         //TODO: move settings into a SettingsModel
         //and update this class to only provide loading, saving, and model
         //change detection producing a save.
 
-        mThreadPoolManager = threadPoolManager;
         mTunerConfigurationModel = tunerConfigurationModel;
 
         //Register for tuner config events so that we can save the settings
@@ -481,8 +478,7 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
         {
             if(mSettingsSavePending.compareAndSet(false, true))
             {
-                mThreadPoolManager.scheduleOnce(new SettingsSaveTask(),
-                    2, TimeUnit.SECONDS);
+                ThreadPool.SCHEDULED.schedule(new SettingsSaveTask(), 2, TimeUnit.SECONDS);
             }
         }
     }

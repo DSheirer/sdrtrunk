@@ -38,7 +38,6 @@ import audio.broadcast.shoutcast.v2.ultravox.UltravoxMessageType;
 import audio.broadcast.shoutcast.v2.ultravox.UltravoxMetadata;
 import audio.broadcast.shoutcast.v2.ultravox.UltravoxProtocolFactory;
 import channel.metadata.Metadata;
-import controller.ThreadPoolManager;
 import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
@@ -48,6 +47,7 @@ import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import properties.SystemProperties;
+import util.ThreadPool;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -81,12 +81,11 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
      * This broadcaster uses the Apache Mina library for the streaming socket connection.  The
      * ShoutcastV2IOHandler manages all interaction with the Shoutcast server and manages the overall broadcast state.
      *
-     * @param threadPoolManager for thread pool access
      * @param configuration for the Shoutcast V2 stream
      */
-    public ShoutcastV2AudioBroadcaster(ThreadPoolManager threadPoolManager, ShoutcastV2Configuration configuration)
+    public ShoutcastV2AudioBroadcaster(ShoutcastV2Configuration configuration)
     {
-        super(threadPoolManager, configuration);
+        super(configuration);
     }
 
     public ShoutcastV2Configuration getConfiguration()
@@ -207,8 +206,7 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
                 }
             };
 
-            getThreadPoolManager().scheduleOnce(runnable, 0l, TimeUnit.SECONDS);
-
+            ThreadPool.SCHEDULED.schedule(runnable, 0l, TimeUnit.SECONDS);
         }
 
         return connected();

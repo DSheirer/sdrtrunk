@@ -22,13 +22,12 @@ import audio.AudioEvent;
 import audio.AudioPacket;
 import audio.AudioPacket.Type;
 import channel.metadata.Metadata;
-import controller.ThreadPoolManager;
-import controller.ThreadPoolManager.ThreadType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sample.Broadcaster;
 import sample.Listener;
 import source.mixer.MixerChannel;
+import util.ThreadPool;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.BooleanControl;
@@ -59,7 +58,6 @@ public abstract class AudioOutput implements Listener<AudioPacket>, LineListener
     private Listener<Metadata> mMetadataListener;
     private Broadcaster<AudioEvent> mAudioEventBroadcaster = new Broadcaster<>();
 
-    private ThreadPoolManager mThreadPoolManager;
     private ScheduledFuture<?> mProcessorTask;
 
     private SourceDataLine mOutput;
@@ -82,21 +80,18 @@ public abstract class AudioOutput implements Listener<AudioPacket>, LineListener
      * Maintains an internal non-blocking audio packet queue and processes this
      * queue 25 times a second (every 40 ms).
      *
-     * @param threadPoolManager for assigning buffer processing schedule task
      * @param mixer to obtain source data line
      * @param mixerChannel either mono or left/right stereo
      * @param audioFormat to use during playback
      * @param lineInfo to use when obtaining the source data line
      * @param requestedBufferSize of approximately 1 second of audio
      */
-    public AudioOutput(ThreadPoolManager threadPoolManager,
-                       Mixer mixer,
+    public AudioOutput(Mixer mixer,
                        MixerChannel mixerChannel,
                        AudioFormat audioFormat,
                        Line.Info lineInfo,
                        int requestedBufferSize)
     {
-        mThreadPoolManager = threadPoolManager;
         mMixer = mixer;
         mMixerChannel = mixerChannel;
 
@@ -141,9 +136,8 @@ public abstract class AudioOutput implements Listener<AudioPacket>, LineListener
                     }
 
 					/* Run the queue processor task every 40 milliseconds or 25 times a second */
-                    mProcessorTask = mThreadPoolManager.scheduleFixedRate(
-                        ThreadType.AUDIO_PROCESSING, new BufferProcessor(),
-                        40, TimeUnit.MILLISECONDS);
+                    mProcessorTask = ThreadPool.SCHEDULED.scheduleAtFixedRate(new BufferProcessor(),
+                        0, 40, TimeUnit.MILLISECONDS);
                 }
 
                 mAudioStartEvent = new AudioEvent(AudioEvent.Type.AUDIO_STARTED,
@@ -170,12 +164,11 @@ public abstract class AudioOutput implements Listener<AudioPacket>, LineListener
     {
         mCanProcessAudio = false;
 
-        if(mProcessorTask != null && mThreadPoolManager != null)
+        if(mProcessorTask != null)
         {
-            mThreadPoolManager.cancel(mProcessorTask);
+            mProcessorTask.cancel(true);
         }
 
-        mThreadPoolManager = null;
         mProcessorTask = null;
 
         mBuffer.clear();

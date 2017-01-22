@@ -20,11 +20,11 @@ package properties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import util.ThreadPool;
 
 import java.awt.*;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,8 +34,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -54,7 +52,6 @@ public class SystemProperties
     private Path mPropertiesPath;
     private String mApplicationName;
     private AtomicBoolean mSavePending = new AtomicBoolean();
-    private ScheduledExecutorService mScheduledExecutorService;
 
     private SystemProperties()
     {
@@ -83,12 +80,7 @@ public class SystemProperties
     {
         if(mSavePending.compareAndSet(false, true))
         {
-            if(mScheduledExecutorService == null)
-            {
-                mScheduledExecutorService = Executors.newScheduledThreadPool(1);
-            }
-
-            mScheduledExecutorService.schedule(new SavePropertiesTask(), 2, TimeUnit.SECONDS);
+            ThreadPool.SCHEDULED.schedule(new SavePropertiesTask(), 2, TimeUnit.SECONDS);
         }
     }
 

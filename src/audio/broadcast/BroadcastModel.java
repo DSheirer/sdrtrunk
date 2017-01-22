@@ -21,13 +21,13 @@ package audio.broadcast;
 import alias.id.broadcast.BroadcastChannel;
 import audio.AudioPacket;
 import channel.metadata.Metadata;
-import controller.ThreadPoolManager;
 import icon.IconManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import properties.SystemProperties;
 import sample.Broadcaster;
 import sample.Listener;
+import util.ThreadPool;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
@@ -66,7 +66,6 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
 
     private Map<String,BroadcastConfiguration> mBroadcastConfigurationMap = new HashMap<>();
     private Map<String,AudioBroadcaster> mBroadcasterMap = new HashMap<>();
-    private ThreadPoolManager mThreadPoolManager;
     private IconManager mIconManager;
     private StreamManager mStreamManager;
     private Broadcaster<BroadcastEvent> mBroadcastEventBroadcaster = new Broadcaster<>();
@@ -74,17 +73,16 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     /**
      * Model for managing Broadcast configurations and any associated broadcaster instances.
      */
-    public BroadcastModel(ThreadPoolManager threadPoolManager, IconManager iconManager)
+    public BroadcastModel(IconManager iconManager)
     {
-        mThreadPoolManager = threadPoolManager;
         mIconManager = iconManager;
-        mStreamManager = new StreamManager(threadPoolManager, new CompletedRecordingListener(), BroadcastFormat.MP3,
+        mStreamManager = new StreamManager(new CompletedRecordingListener(), BroadcastFormat.MP3,
             SystemProperties.getInstance().getApplicationFolder(TEMPORARY_STREAM_DIRECTORY));
         mStreamManager.start();
 
         //Monitor to remove temporary recording files that have been streamed by all audio broadcasters
-        mThreadPoolManager.scheduleFixedRate(ThreadPoolManager.ThreadType.AUDIO_RECORDING,
-            new RecordingDeletionMonitor(), 15l, TimeUnit.SECONDS);
+        ThreadPool.SCHEDULED.scheduleAtFixedRate(new RecordingDeletionMonitor(),
+            15l, 15l, TimeUnit.SECONDS);
 
         removeOrphanedTemporaryRecordings();
     }
@@ -293,8 +291,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
             broadcastConfiguration.isValid() &&
             !mBroadcasterMap.containsKey(broadcastConfiguration.getName()))
         {
-            AudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(mThreadPoolManager,
-                broadcastConfiguration);
+            AudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(broadcastConfiguration);
 
             if(audioBroadcaster != null)
             {
@@ -403,7 +400,8 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                     deleteBroadcaster(previousChannelName);
 
                     //Delay restarting the broadcaster to allow remote server time to cleanup
-                    mThreadPoolManager.scheduleOnce(new DelayedBroadcasterStartup(broadcastConfiguration), 1, TimeUnit.SECONDS);
+                    ThreadPool.SCHEDULED.schedule(new DelayedBroadcasterStartup(broadcastConfiguration),
+                        1, TimeUnit.SECONDS);
                     break;
                 case CONFIGURATION_DELETE:
                     deleteBroadcaster(broadcastEvent.getBroadcastConfiguration().getName());

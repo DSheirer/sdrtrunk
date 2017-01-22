@@ -20,7 +20,6 @@ package channel.metadata;
 
 import alias.Alias;
 import channel.state.State;
-import com.sun.xml.internal.ws.api.streaming.XMLStreamReaderFactory;
 import controller.channel.Channel;
 import controller.channel.ChannelProcessingManager;
 import icon.IconManager;

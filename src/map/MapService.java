@@ -19,7 +19,6 @@
 package map;
 
 import alias.Alias;
-import controller.NamingThreadFactory;
 import icon.IconManager;
 import message.Message;
 import sample.Listener;
@@ -28,9 +27,8 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class MapService implements Listener<Message>
 {
@@ -39,12 +37,7 @@ public class MapService implements Listener<Message>
 
     private static final Color sDEFAULT_COLOR = Color.BLACK;
 
-    private final ScheduledExecutorService scheduler =
-        Executors.newScheduledThreadPool(1,
-            new NamingThreadFactory("map tile fetcher"));
-
-    private ArrayList<PlottableUpdateListener> mListeners =
-        new ArrayList<PlottableUpdateListener>();
+    private List<PlottableUpdateListener> mListeners = new ArrayList<PlottableUpdateListener>();
 
     private HashMap<String, PlottableEntity> mEntities =
         new HashMap<String, PlottableEntity>();

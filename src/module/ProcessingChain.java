@@ -34,7 +34,6 @@ import channel.state.DecoderStateEvent.Event;
 import channel.state.IDecoderStateEventListener;
 import channel.state.IDecoderStateEventProvider;
 import channel.state.State;
-import controller.NamingThreadFactory;
 import controller.channel.Channel.ChannelType;
 import controller.channel.ChannelEvent;
 import controller.channel.IChannelEventListener;
@@ -69,11 +68,10 @@ import source.tuner.TunerChannelSource;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.IFrequencyChangeListener;
 import source.tuner.frequency.IFrequencyChangeProvider;
+import util.ThreadPool;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -110,7 +108,6 @@ public class ProcessingChain implements IChannelEventListener
     private Broadcaster<RealBuffer> mUnFilteredRealBufferBroadcaster = new Broadcaster<>();
     private Broadcaster<SquelchState> mSquelchStateBroadcaster = new Broadcaster<>();
 
-    private ScheduledExecutorService mScheduledExecutorService;
     private String mName;
     private AtomicBoolean mRunning = new AtomicBoolean();
 
@@ -170,9 +167,6 @@ public class ProcessingChain implements IChannelEventListener
 
         mModules.clear();
 
-        mScheduledExecutorService.shutdownNow();
-        mScheduledExecutorService = null;
-
         mAudioPacketBroadcaster.dispose();
         mCallEventBroadcaster.dispose();
         mChannelEventBroadcaster.dispose();
@@ -180,11 +174,6 @@ public class ProcessingChain implements IChannelEventListener
         mMessageBroadcaster.dispose();
         mFilteredRealBufferBroadcaster.dispose();
         mSquelchStateBroadcaster.dispose();
-
-        if(mScheduledExecutorService != null)
-        {
-            mScheduledExecutorService.shutdownNow();
-        }
     }
 
     /**
@@ -584,18 +573,12 @@ public class ProcessingChain implements IChannelEventListener
                     }
                 }
 
-                if(mScheduledExecutorService == null)
-                {
-                    mScheduledExecutorService = Executors.newScheduledThreadPool(
-                        1, new NamingThreadFactory("channel " + mName));
-                }
-				
 				/* Start each of the modules */
                 for(Module module : mModules)
                 {
                     try
                     {
-                        module.start(mScheduledExecutorService);
+                        module.start(ThreadPool.SCHEDULED);
                     }
                     catch(Exception e)
                     {
@@ -603,7 +586,7 @@ public class ProcessingChain implements IChannelEventListener
                     }
                 }
 
-                mSource.start(mScheduledExecutorService);
+                mSource.start(ThreadPool.SCHEDULED);
             }
             else
             {

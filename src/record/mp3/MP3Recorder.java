@@ -19,37 +19,15 @@
 package record.mp3;
 
 import audio.AudioPacket;
-import audio.IAudioPacketListener;
-import audio.broadcast.BroadcastModel;
 import audio.convert.MP3AudioConverter;
-import module.Module;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import properties.SystemProperties;
 import record.AudioRecorder;
-import record.wave.AudioPacketMonoWaveReader;
-import sample.Listener;
-import util.TimeStamp;
 
-import java.io.ByteArrayInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 
 /**
  * MP3 recorder for converting 8 kHz PCM audio packets to MP3 and writing to .mp3 file.
