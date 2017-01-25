@@ -163,6 +163,8 @@ public class MutableMetadata extends Metadata implements Listener<AttributeChang
      */
     public void resetTemporalAttributes()
     {
+        mDoNotRecord = null;
+
         if(hasMessage())
         {
             mMessage = null;

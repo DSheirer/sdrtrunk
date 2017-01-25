@@ -217,15 +217,11 @@ public class ChannelProcessingManager implements ChannelEventListener
             MessageActivityModel messageModel = new MessageActivityModel(messageFilter);
             processingChain.setMessageActivityModel(messageModel);
 
-            //Set the recordable flag to false in metadata if we don't have a record configuration, or if the user
-            //has not specified audio recording.  Note: the metadata class sets recordable to true by default if no
-            //setting has been specified.  This flag is subsequently turned off if any of the primary or secondary
-            //identifiers are designated as non-recordable.
-            if(channel.getRecordConfiguration() == null ||
-               !channel.getRecordConfiguration().getRecorders().contains(RecorderType.AUDIO))
-            {
-                processingChain.getChannelState().getMutableMetadata().setRecordable(false);
-            }
+            //Set the recordable flag to true if the user has requested recording.  The metadata class can still
+            //override recordability if any of the aliased values has 'Do Not Record' alias identifier.
+            processingChain.getChannelState().getMutableMetadata()
+                .setRecordable(channel.getRecordConfiguration() != null &&
+                    channel.getRecordConfiguration().getRecorders().contains(RecorderType.AUDIO));
 
             //Inject channel metadata that will be inserted into audio packets for recorder manager and streaming
             processingChain.getChannelState().getMutableMetadata().receive(

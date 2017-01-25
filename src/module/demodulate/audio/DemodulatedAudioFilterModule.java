@@ -72,8 +72,11 @@ public class DemodulatedAudioFilterModule extends Module implements IUnFilteredR
         mBandPassFilter.dispose();
         mBandPassFilter = null;
 
-        mDCFilter.dispose();
-        mDCFilter = null;
+        if(mDCFilter != null)
+        {
+            mDCFilter.dispose();
+            mDCFilter = null;
+        }
     }
 
     @Override

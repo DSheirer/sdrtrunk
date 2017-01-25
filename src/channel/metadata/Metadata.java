@@ -55,7 +55,8 @@ public class Metadata
 
     //Lazily constructed member variables.
     private Integer mAudioPriority;
-    protected Boolean mRecordable;
+    protected Boolean mRecordable = false;
+    protected Boolean mDoNotRecord;
     private List<BroadcastChannel> mBroadcastChannels;
 
 
@@ -141,12 +142,12 @@ public class Metadata
      */
     public boolean isRecordable()
     {
-        if(mRecordable == null)
+        if(mDoNotRecord == null)
         {
             determineRecordable();
         }
 
-        return mRecordable;
+        return mRecordable & !mDoNotRecord;
     }
 
     /**
@@ -545,29 +546,29 @@ public class Metadata
      */
     private void determineRecordable()
     {
-        mRecordable = true;
+        mDoNotRecord = false;
 
         if(mPrimaryAddressTo.hasAlias() && !mPrimaryAddressTo.getAlias().isRecordable())
         {
-            mRecordable = false;
+            mDoNotRecord = true;
             return;
         }
 
         if(mPrimaryAddressFrom.hasAlias() && !mPrimaryAddressFrom.getAlias().isRecordable())
         {
-            mRecordable = false;
+            mDoNotRecord = true;
             return;
         }
 
         if(mSecondaryAddressTo.hasAlias() && !mSecondaryAddressTo.getAlias().isRecordable())
         {
-            mRecordable = false;
+            mDoNotRecord = true;
             return;
         }
 
         if(mSecondaryAddressFrom.hasAlias() && !mSecondaryAddressFrom.getAlias().isRecordable())
         {
-            mRecordable = false;
+            mDoNotRecord = true;
             return;
         }
     }
