@@ -21,8 +21,9 @@ package module.decode.mpt1327;
 import alias.AliasList;
 import bits.MessageFramer;
 import bits.SyncPattern;
+import dsp.filter.FilterFactory;
 import dsp.filter.Filters;
-import dsp.filter.dc.DCRemovalFilterLyons;
+import dsp.filter.fir.FIRFilterSpecification;
 import dsp.filter.fir.real.RealFIRFilter_RB_RB;
 import dsp.filter.halfband.real.HalfBandFilter_RB_RB;
 import dsp.fsk.FSK2Decoder;
@@ -55,6 +56,30 @@ public class MPT1327Decoder extends Decoder implements IFilteredRealBufferListen
 {
     private final static Logger mLog = LoggerFactory.getLogger(MPT1327Decoder.class);
 
+    private static final FIRFilterSpecification HIGH_PASS_SPECIFICATION = FIRFilterSpecification.highPassBuilder()
+        .sampleRate( 24000 )
+        .stopBandCutoff( 800 )
+        .stopBandAmplitude( 0.0 )
+        .stopBandRipple( 0.03 )
+        .passBandStart( 1000 )
+        .passBandAmplitude( 1.0 )
+        .passBandRipple( 0.08 )
+        .build();
+
+    private static float[] HIGHPASS_FILTER;
+
+    static
+    {
+        try
+        {
+            HIGHPASS_FILTER = FilterFactory.getTaps(HIGH_PASS_SPECIFICATION);
+        }
+        catch(Exception e)
+        {
+            mLog.error("Couldn't design MPT1327 highpass filter");
+        }
+    }
+
     /* Decimated sample rate ( 48,000 / 2 = 24,000 ) feeding the decoder */
     private static final int sDECIMATED_SAMPLE_RATE = 24000;
 
@@ -66,17 +91,16 @@ public class MPT1327Decoder extends Decoder implements IFilteredRealBufferListen
     private static final int sMESSAGE_LENGTH = 350;
 
     /* Instrumentation Taps */
-    private static final String INSTRUMENT_HB1_FILTER_TO_LOW_PASS =
+    private static final String INSTRUMENT_HB1_FILTER_TO_HIGH_PASS =
         "Tap Point: Half-band Decimation Filter > < Low Pass Filter";
-    private static final String INSTRUMENT_LOW_PASS_TO_DECODER =
+    private static final String INSTRUMENT_HIGH_PASS_TO_DECODER =
         "Tap Point: Low Pass Filter > < Decoder";
     private static final String INSTRUMENT_DECODER_TO_FRAMER =
         "Tap Point: Decoder > < Sync Detect/Message Framer";
     private List<TapGroup> mAvailableTaps;
 
     private HalfBandFilter_RB_RB mDecimationFilter;
-    private RealFIRFilter_RB_RB mLowPassFilter;
-    private DCRemovalFilterLyons mDCRemovalFilter;
+    private RealFIRFilter_RB_RB mHighPassFilter;
     private FSK2Decoder mFSKDecoder;
     private Broadcaster<Boolean> mSymbolBroadcaster;
     private MessageFramer mControlMessageFramer;
@@ -85,9 +109,6 @@ public class MPT1327Decoder extends Decoder implements IFilteredRealBufferListen
 
     public MPT1327Decoder(AliasList aliasList, Sync sync)
     {
-        /* Decimation filter - 48000 / 2 = 24000 output */
-        mDecimationFilter = new HalfBandFilter_RB_RB(Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO.getCoefficients(), 1.0002f, true);
-
         /**
          * Normal: 2FSK Decoder with inverted output
          * French: 2FSK Decoder with normal output
@@ -105,7 +126,15 @@ public class MPT1327Decoder extends Decoder implements IFilteredRealBufferListen
             throw new IllegalArgumentException("MPT1327 Decoder - unrecognized Sync type");
         }
 
-        mDecimationFilter.setListener(mFSKDecoder);
+        /* Decimation filter - 48000 / 2 = 24000 output */
+        mDecimationFilter = new HalfBandFilter_RB_RB(Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO.getCoefficients(), 1.0002f, true);
+
+        //High-pass filter the audio to remove any DC component or CTCSS tones. The audio has already been low-pass
+        //filtered by the AudioDemodulation filter cutoff of 3400 Hz.
+        mHighPassFilter = new RealFIRFilter_RB_RB(HIGHPASS_FILTER, 1.0f);
+        mDecimationFilter.setListener(mHighPassFilter);
+
+        mHighPassFilter.setListener(mFSKDecoder);
 
         mSymbolBroadcaster = new Broadcaster<Boolean>();
         mFSKDecoder.setListener(mSymbolBroadcaster);
@@ -148,16 +177,9 @@ public class MPT1327Decoder extends Decoder implements IFilteredRealBufferListen
 
         mControlMessageFramer.dispose();
 
-        if(mDCRemovalFilter != null)
-        {
-            mDCRemovalFilter.dispose();
-        }
-
         mFSKDecoder.dispose();
 
         mDecimationFilter.dispose();
-
-        mLowPassFilter.dispose();
 
         mMessageProcessor.dispose();
 
@@ -174,8 +196,8 @@ public class MPT1327Decoder extends Decoder implements IFilteredRealBufferListen
 
             TapGroup group = new TapGroup("MPT-1327 Decoder");
 
-            group.add(new FloatTap(INSTRUMENT_HB1_FILTER_TO_LOW_PASS, 0, 0.5f));
-            group.add(new FloatTap(INSTRUMENT_LOW_PASS_TO_DECODER, 0, 0.5f));
+            group.add(new FloatTap(INSTRUMENT_HB1_FILTER_TO_HIGH_PASS, 0, 0.5f));
+            group.add(new FloatTap(INSTRUMENT_HIGH_PASS_TO_DECODER, 0, 0.5f));
             group.add(new BinaryTap(INSTRUMENT_DECODER_TO_FRAMER, 0, 0.025f));
 
             mAvailableTaps.add(group);
@@ -195,14 +217,14 @@ public class MPT1327Decoder extends Decoder implements IFilteredRealBufferListen
 
         switch(tap.getName())
         {
-            case INSTRUMENT_HB1_FILTER_TO_LOW_PASS:
+            case INSTRUMENT_HB1_FILTER_TO_HIGH_PASS:
                 FloatBufferTap hb1Tap = (FloatBufferTap) tap;
                 mDecimationFilter.setListener(hb1Tap);
-                hb1Tap.setListener(mLowPassFilter);
+                hb1Tap.setListener(mHighPassFilter);
                 break;
-            case INSTRUMENT_LOW_PASS_TO_DECODER:
+            case INSTRUMENT_HIGH_PASS_TO_DECODER:
                 FloatBufferTap lowTap = (FloatBufferTap) tap;
-                mLowPassFilter.setListener(lowTap);
+                mHighPassFilter.setListener(lowTap);
                 lowTap.setListener(mFSKDecoder);
                 break;
             case INSTRUMENT_DECODER_TO_FRAMER:
@@ -220,11 +242,11 @@ public class MPT1327Decoder extends Decoder implements IFilteredRealBufferListen
 
         switch(tap.getName())
         {
-            case INSTRUMENT_HB1_FILTER_TO_LOW_PASS:
-                mDecimationFilter.setListener(mLowPassFilter);
+            case INSTRUMENT_HB1_FILTER_TO_HIGH_PASS:
+                mDecimationFilter.setListener(mHighPassFilter);
                 break;
-            case INSTRUMENT_LOW_PASS_TO_DECODER:
-                mLowPassFilter.setListener(mFSKDecoder);
+            case INSTRUMENT_HIGH_PASS_TO_DECODER:
+                mHighPassFilter.setListener(mFSKDecoder);
                 break;
             case INSTRUMENT_DECODER_TO_FRAMER:
                 mFSKDecoder.setListener(mSymbolBroadcaster);
