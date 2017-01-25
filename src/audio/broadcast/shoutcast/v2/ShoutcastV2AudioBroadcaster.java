@@ -356,19 +356,38 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
         @Override
         public void exceptionCaught(IoSession session, Throwable cause) throws Exception
         {
-            if(cause instanceof IOException && ((IOException) cause).getMessage().startsWith("Connection reset"))
+            if(cause instanceof IOException)
             {
-                IOException ioe = (IOException) cause;
+                IOException ioe = (IOException)cause;
 
-                if(ioe.getMessage() != null && ioe.getMessage().startsWith("Connection reset"))
+                if(ioe.getMessage() != null)
                 {
-                    mLog.info("Streaming connection reset by remote server - reestablishing connection");
-                    disconnect();
-                    connect();
+                    String reason = ioe.getMessage();
+
+                    if(reason.startsWith("Connection reset"))
+                    {
+                        mLog.info("Streaming connection reset by remote server - reestablishing connection");
+                        disconnect();
+                        connect();
+                    }
+                    else if(reason.startsWith("Operation timed out"))
+                    {
+                        mLog.info("Streaming connection timed out - resetting connection");
+                        disconnect();
+                        connect();
+                    }
+                    else
+                    {
+                        setBroadcastState(BroadcastState.ERROR);
+                        disconnect();
+                        mLog.error("Unrecognized IO error: " + reason + ". Streaming halted.");
+                    }
                 }
                 else
                 {
-                    mLog.error("IO Exception", ioe);
+                    setBroadcastState(BroadcastState.ERROR);
+                    disconnect();
+                    mLog.error("Unspecified IO error - streaming halted.");
                 }
             }
             else
