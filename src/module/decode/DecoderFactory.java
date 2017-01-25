@@ -101,17 +101,25 @@ public class DecoderFactory
 {
     private final static Logger mLog = LoggerFactory.getLogger(DecoderFactory.class);
 
-    private static final FIRFilterSpecification MPT1327_FILTER_SPECIFICATION = FIRFilterSpecification.bandPassBuilder()
-        .sampleRate(48000).stopFrequency1(200).passFrequencyBegin(400).passFrequencyEnd(3200)
-        .stopFrequency2(3400).stopRipple(0.0003).passRipple(0.008).build();
+    //Low-pass filter with ~60 dB attenuation and 89 taps
+    private static final FIRFilterSpecification MPT1327_FILTER_SPECIFICATION = FIRFilterSpecification.lowPassBuilder()
+        .sampleRate( 48000 )
+        .gridDensity( 16 )
+        .passBandCutoff( 3200 )
+        .passBandAmplitude( 1.0 )
+        .passBandRipple( 0.02 )
+        .stopBandStart( 4000 )
+        .stopBandAmplitude( 0.0 )
+        .stopBandRipple( 0.03 )
+        .build();
 
-    private static float[] MPT1327_BANDPASS_FILTER;
+    private static float[] MPT1327_LOWPASS_FILTER;
 
     static
     {
         try
         {
-            MPT1327_BANDPASS_FILTER = FilterFactory.getTaps(MPT1327_FILTER_SPECIFICATION);
+            MPT1327_LOWPASS_FILTER = FilterFactory.getTaps(MPT1327_FILTER_SPECIFICATION);
         }
         catch(Exception e)
         {
@@ -221,7 +229,7 @@ public class DecoderFactory
                 }
 
                 modules.add(new FMDemodulatorModule(iqPass, iqStop));
-                modules.add(new DemodulatedAudioFilterModule(MPT1327_BANDPASS_FILTER, 2.0f));
+                modules.add(new DemodulatedAudioFilterModule(MPT1327_LOWPASS_FILTER, 1.0f));
                 modules.add(new AudioModule(metadata));
                 break;
             case PASSPORT:
