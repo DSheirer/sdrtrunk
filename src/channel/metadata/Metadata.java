@@ -545,29 +545,29 @@ public class Metadata
      */
     private void determineRecordable()
     {
-        mRecordable = false;
+        mRecordable = true;
 
-        if(mPrimaryAddressTo.hasAlias() && mPrimaryAddressTo.getAlias().isRecordable())
+        if(mPrimaryAddressTo.hasAlias() && !mPrimaryAddressTo.getAlias().isRecordable())
         {
-            mRecordable = true;
+            mRecordable = false;
             return;
         }
 
-        if(mPrimaryAddressFrom.hasAlias() && mPrimaryAddressFrom.getAlias().isRecordable())
+        if(mPrimaryAddressFrom.hasAlias() && !mPrimaryAddressFrom.getAlias().isRecordable())
         {
-            mRecordable = true;
+            mRecordable = false;
             return;
         }
 
-        if(mSecondaryAddressTo.hasAlias() && mSecondaryAddressTo.getAlias().isRecordable())
+        if(mSecondaryAddressTo.hasAlias() && !mSecondaryAddressTo.getAlias().isRecordable())
         {
-            mRecordable = true;
+            mRecordable = false;
             return;
         }
 
-        if(mSecondaryAddressFrom.hasAlias() && mSecondaryAddressFrom.getAlias().isRecordable())
+        if(mSecondaryAddressFrom.hasAlias() && !mSecondaryAddressFrom.getAlias().isRecordable())
         {
-            mRecordable = true;
+            mRecordable = false;
             return;
         }
     }
