@@ -23,12 +23,16 @@ import alias.id.broadcast.BroadcastChannel;
 import alias.id.priority.Priority;
 import channel.state.State;
 import module.decode.DecoderType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Metadata
 {
+    private final static Logger mLog = LoggerFactory.getLogger(Metadata.class);
+
     // Static unique metadata identifier tracking
     private static int UNIQUE_METADATA_ID_GENERATOR = 0;
 
@@ -147,7 +151,7 @@ public class Metadata
             determineRecordable();
         }
 
-        return mRecordable & !mDoNotRecord;
+        return mRecordable && !mDoNotRecord;
     }
 
     /**
@@ -635,6 +639,8 @@ public class Metadata
     {
         Metadata copy = new Metadata(mMetadataID);
 
+        copy.mDoNotRecord = mDoNotRecord;
+        copy.mRecordable = mRecordable;
         copy.mState = mState;
         copy.mPrimaryDecoderType = mPrimaryDecoderType;
         copy.mChannelFrequency = mChannelFrequency;
