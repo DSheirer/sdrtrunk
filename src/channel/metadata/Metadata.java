@@ -23,12 +23,16 @@ import alias.id.broadcast.BroadcastChannel;
 import alias.id.priority.Priority;
 import channel.state.State;
 import module.decode.DecoderType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class Metadata
 {
+    private final static Logger mLog = LoggerFactory.getLogger(Metadata.class);
+
     // Static unique metadata identifier tracking
     private static int UNIQUE_METADATA_ID_GENERATOR = 0;
 
@@ -55,7 +59,8 @@ public class Metadata
 
     //Lazily constructed member variables.
     private Integer mAudioPriority;
-    protected Boolean mRecordable;
+    protected Boolean mRecordable = false;
+    protected Boolean mDoNotRecord;
     private List<BroadcastChannel> mBroadcastChannels;
 
 
@@ -141,12 +146,12 @@ public class Metadata
      */
     public boolean isRecordable()
     {
-        if(mRecordable == null)
+        if(mDoNotRecord == null)
         {
             determineRecordable();
         }
 
-        return mRecordable;
+        return mRecordable && !mDoNotRecord;
     }
 
     /**
@@ -545,29 +550,29 @@ public class Metadata
      */
     private void determineRecordable()
     {
-        mRecordable = false;
+        mDoNotRecord = false;
 
-        if(mPrimaryAddressTo.hasAlias() && mPrimaryAddressTo.getAlias().isRecordable())
+        if(mPrimaryAddressTo.hasAlias() && !mPrimaryAddressTo.getAlias().isRecordable())
         {
-            mRecordable = true;
+            mDoNotRecord = true;
             return;
         }
 
-        if(mPrimaryAddressFrom.hasAlias() && mPrimaryAddressFrom.getAlias().isRecordable())
+        if(mPrimaryAddressFrom.hasAlias() && !mPrimaryAddressFrom.getAlias().isRecordable())
         {
-            mRecordable = true;
+            mDoNotRecord = true;
             return;
         }
 
-        if(mSecondaryAddressTo.hasAlias() && mSecondaryAddressTo.getAlias().isRecordable())
+        if(mSecondaryAddressTo.hasAlias() && !mSecondaryAddressTo.getAlias().isRecordable())
         {
-            mRecordable = true;
+            mDoNotRecord = true;
             return;
         }
 
-        if(mSecondaryAddressFrom.hasAlias() && mSecondaryAddressFrom.getAlias().isRecordable())
+        if(mSecondaryAddressFrom.hasAlias() && !mSecondaryAddressFrom.getAlias().isRecordable())
         {
-            mRecordable = true;
+            mDoNotRecord = true;
             return;
         }
     }
@@ -634,6 +639,8 @@ public class Metadata
     {
         Metadata copy = new Metadata(mMetadataID);
 
+        copy.mDoNotRecord = mDoNotRecord;
+        copy.mRecordable = mRecordable;
         copy.mState = mState;
         copy.mPrimaryDecoderType = mPrimaryDecoderType;
         copy.mChannelFrequency = mChannelFrequency;

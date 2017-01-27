@@ -149,7 +149,7 @@ public class ChannelProcessingManager implements ChannelEventListener
             case NOTIFICATION_CONFIGURATION_CHANGE:
                 if(isProcessing(channel))
                 {
-                    stopProcessing(channel, false);
+                    stopProcessing(channel, true);
                     startProcessing(event);
                 }
                 break;
@@ -217,33 +217,34 @@ public class ChannelProcessingManager implements ChannelEventListener
             MessageActivityModel messageModel = new MessageActivityModel(messageFilter);
             processingChain.setMessageActivityModel(messageModel);
 
-            //Override recordable flag in metadata if user has specified audio recording
-            if(channel.getRecordConfiguration() != null &&
-                channel.getRecordConfiguration().getRecorders().contains(RecorderType.AUDIO))
-            {
-                processingChain.getChannelState().getMutableMetadata().setRecordable(true);
-            }
-
-            //Inject channel metadata that will be inserted into audio packets for recorder manager and streaming
-            processingChain.getChannelState().getMutableMetadata().receive(
-                new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_SYSTEM, channel.getSystem()));
-            processingChain.getChannelState().getMutableMetadata().receive(
-                new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_SITE, channel.getSite()));
-            processingChain.getChannelState().getMutableMetadata().receive(
-                new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_NAME, channel.getName()));
-
-            if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
-            {
-                long frequency = ((SourceConfigTuner)channel.getSourceConfiguration()).getFrequency();
-
-                processingChain.getChannelState().getMutableMetadata().receive(
-                    new AttributeChangeRequest<Long>(Attribute.CHANNEL_FREQUENCY, frequency));
-            }
-
-            processingChain.getChannelState().getMutableMetadata().receive(
-                new AttributeChangeRequest<DecoderType>(Attribute.PRIMARY_DECODER_TYPE,
-                    channel.getDecodeConfiguration().getDecoderType()));
         }
+
+        //Set the recordable flag to true if the user has requested recording.  The metadata class can still
+        //override recordability if any of the aliased values has 'Do Not Record' alias identifier.
+        boolean recordable = channel.getRecordConfiguration() != null &&
+            channel.getRecordConfiguration().getRecorders().contains(RecorderType.AUDIO);
+
+        processingChain.getChannelState().getMutableMetadata().setRecordable(recordable);
+
+        //Inject channel metadata that will be inserted into audio packets for recorder manager and streaming
+        processingChain.getChannelState().getMutableMetadata().receive(
+            new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_SYSTEM, channel.getSystem()));
+        processingChain.getChannelState().getMutableMetadata().receive(
+            new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_SITE, channel.getSite()));
+        processingChain.getChannelState().getMutableMetadata().receive(
+            new AttributeChangeRequest<String>(Attribute.CHANNEL_CONFIGURATION_NAME, channel.getName()));
+
+        if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
+        {
+            long frequency = ((SourceConfigTuner)channel.getSourceConfiguration()).getFrequency();
+
+            processingChain.getChannelState().getMutableMetadata().receive(
+                new AttributeChangeRequest<Long>(Attribute.CHANNEL_FREQUENCY, frequency));
+        }
+
+        processingChain.getChannelState().getMutableMetadata().receive(
+            new AttributeChangeRequest<DecoderType>(Attribute.PRIMARY_DECODER_TYPE,
+                channel.getDecodeConfiguration().getDecoderType()));
 
         /* Setup event logging */
         List<Module> loggers = mEventLogManager.getLoggers(channel.getEventLogConfiguration(), channel.getName());

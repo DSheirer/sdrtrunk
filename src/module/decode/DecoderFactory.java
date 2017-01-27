@@ -164,7 +164,8 @@ public class DecoderFactory
                                                  ChannelMapModel channelMapModel,
                                                  ChannelProcessingManager channelProcessingManager,
                                                  AliasList aliasList,
-                                                 Channel channel, Metadata metadata)
+                                                 Channel channel,
+                                                 Metadata metadata)
     {
         List<Module> modules = new ArrayList<Module>();
 
