@@ -274,10 +274,16 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     @Override
     public void receive(AudioPacket audioPacket)
     {
-        if(audioPacket.hasMetadata() &&
-            audioPacket.getMetadata().isStreamable())
+        if(audioPacket.hasMetadata() && audioPacket.getMetadata().isStreamable())
         {
-            mStreamManager.receive(audioPacket);
+            for(BroadcastChannel channel: audioPacket.getMetadata().getBroadcastChannels())
+            {
+                if(mBroadcasterMap.containsKey(channel.getChannelName()))
+                {
+                    mStreamManager.receive(audioPacket);
+                    return;
+                }
+            }
         }
     }
 
@@ -286,9 +292,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
      */
     private void createBroadcaster(BroadcastConfiguration broadcastConfiguration)
     {
-        if(broadcastConfiguration != null &&
-            broadcastConfiguration.isEnabled() &&
-            broadcastConfiguration.isValid() &&
+        if(broadcastConfiguration != null && broadcastConfiguration.isEnabled() && broadcastConfiguration.isValid() &&
             !mBroadcasterMap.containsKey(broadcastConfiguration.getName()))
         {
             AudioBroadcaster audioBroadcaster = BroadcastFactory.getBroadcaster(broadcastConfiguration);
@@ -393,15 +397,20 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                 case CONFIGURATION_CHANGE:
                     BroadcastConfiguration broadcastConfiguration = broadcastEvent.getBroadcastConfiguration();
                     int index = mBroadcastConfigurations.indexOf(broadcastConfiguration);
-                    fireTableRowsUpdated(index, index);
 
-                    //Delete and recreate the broadcaster for any broadcast configuration changes
+                    //Delete the existing broadcaster for any broadcast configuration changes
                     String previousChannelName = cleanupMapAssociations(broadcastConfiguration);
                     deleteBroadcaster(previousChannelName);
 
-                    //Delay restarting the broadcaster to allow remote server time to cleanup
-                    ThreadPool.SCHEDULED.schedule(new DelayedBroadcasterStartup(broadcastConfiguration),
-                        1, TimeUnit.SECONDS);
+                    //If the configuration is enabled, create a new broadcaster after a brief delay
+                    if(broadcastConfiguration.isEnabled())
+                    {
+                        //Delay restarting the broadcaster to allow remote server time to cleanup
+                        ThreadPool.SCHEDULED.schedule(new DelayedBroadcasterStartup(broadcastConfiguration),
+                            3, TimeUnit.SECONDS);
+                    }
+
+                    fireTableRowsUpdated(index, index);
                     break;
                 case CONFIGURATION_DELETE:
                     deleteBroadcaster(broadcastEvent.getBroadcastConfiguration().getName());
