@@ -1,19 +1,20 @@
 /*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014-2016 Dennis Sheirer
+ * sdrtrunk
+ * Copyright (C) 2014-2017 Dennis Sheirer
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *
  ******************************************************************************/
 package source.tuner;
 
@@ -25,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sample.Buffer;
 import sample.Listener;
+import sample.OverflowableTransferQueue;
 import sample.complex.Complex;
 import sample.complex.ComplexBuffer;
 import source.ComplexSource;
@@ -35,24 +37,27 @@ import source.tuner.frequency.IFrequencyChangeProcessor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class TunerChannelSource extends ComplexSource
-    implements IFrequencyChangeProcessor, Listener<ComplexBuffer>
+public class TunerChannelSource extends ComplexSource implements IFrequencyChangeProcessor, Listener<ComplexBuffer>
 {
-    private final static Logger mLog =
-        LoggerFactory.getLogger(TunerChannelSource.class);
+    private final static Logger mLog = LoggerFactory.getLogger(TunerChannelSource.class);
+
+    //Maximum number of filled buffers for the blocking queue
+    private static final int BUFFER_MAX_CAPACITY = 300;
+
+    //Threshold for resetting buffer overflow condition
+    private static final int BUFFER_OVERFLOW_RESET_THRESHOLD = 200;
 
     private static int CHANNEL_RATE = 48000;
     private static int CHANNEL_PASS_FREQUENCY = 12000;
 
-    private LinkedTransferQueue<ComplexBuffer> mBuffer =
-        new LinkedTransferQueue<ComplexBuffer>();
+    private OverflowableTransferQueue<ComplexBuffer> mBuffer;
+
     private Tuner mTuner;
     private TunerChannel mTunerChannel;
     private Oscillator mMixer;
@@ -69,6 +74,7 @@ public class TunerChannelSource extends ComplexSource
 
     private AtomicBoolean mRunning = new AtomicBoolean();
     private boolean mExpended = false;
+    private int mCount;
 
     /**
      * Provides a Digital Drop Channel (DDC) to decimate the IQ output from a
@@ -87,26 +93,37 @@ public class TunerChannelSource extends ComplexSource
      *                                    accept the decimation processing task
      * @throws SourceException            if the tuner has an issue providing IQ samples
      */
-    public TunerChannelSource(Tuner tuner, TunerChannel tunerChannel)
-        throws RejectedExecutionException, SourceException
+    public TunerChannelSource(Tuner tuner, TunerChannel tunerChannel) throws RejectedExecutionException, SourceException
     {
         mTuner = tuner;
-        mTuner.getTunerController().addListener((IFrequencyChangeProcessor) this);
-
         mTunerChannel = tunerChannel;
-
+        mTuner.getTunerController().addListener((IFrequencyChangeProcessor) this);
         mTunerFrequency = mTuner.getTunerController().getFrequency();
+
+        mBuffer = new OverflowableTransferQueue<>(BUFFER_MAX_CAPACITY, BUFFER_OVERFLOW_RESET_THRESHOLD);
+        mBuffer.setStateListener(new Listener<OverflowableTransferQueue.State>()
+        {
+            @Override
+            public void receive(OverflowableTransferQueue.State state)
+            {
+                if(state == OverflowableTransferQueue.State.NORMAL)
+                {
+                    mLog.debug("Channel [" + mTunerFrequency + "] buffer overflow - temporary pause until processing catches up");
+                }
+                else
+                {
+                    mLog.debug("Channel [" + mTunerFrequency + "] buffer overflow cleared - resuming normal processing");
+                }
+            }
+        });
 
 	    /* Setup the frequency translator to the current source frequency */
         long frequencyOffset = mTunerFrequency - mTunerChannel.getFrequency();
 
-        mMixer = new Oscillator(frequencyOffset,
-            mTuner.getTunerController().getSampleRate());
+        mMixer = new Oscillator(frequencyOffset, mTuner.getTunerController().getSampleRate());
 
 		/* Fire a sample rate change event to setup the decimation chain */
-        frequencyChanged(new FrequencyChangeEvent(
-            Event.NOTIFICATION_SAMPLE_RATE_CHANGE,
-            mTuner.getTunerController().getSampleRate()));
+        frequencyChanged(new FrequencyChangeEvent(Event.NOTIFICATION_SAMPLE_RATE_CHANGE, mTuner.getTunerController().getSampleRate()));
     }
 
 
@@ -114,23 +131,22 @@ public class TunerChannelSource extends ComplexSource
     {
         if(mExpended)
         {
-            throw new IllegalStateException("Attempt to re-start an expended "
-                + "tuner channel source.  TunerChannelSource objects can only "
-                + "be used once. ");
+            throw new IllegalStateException("Attempt to re-start an expended tuner channel source.  TunerChannelSource" +
+                " objects can only be used once. ");
         }
 
         if(mRunning.compareAndSet(false, true))
         {
-			/* Schedule the decimation task to run every 10 ms (100 iterations/second) */
-            mTaskHandle = executor.scheduleAtFixedRate(mDecimationProcessor,
-                0, 10, TimeUnit.MILLISECONDS);
+            //Schedule the decimation task to run every 9 ms (111 iterations/second), an odd periodicity relative
+            //to the inbound periodicity of 20 ms, to attempt to avoid thread queue contention
+            mTaskHandle = executor.scheduleAtFixedRate(mDecimationProcessor, 0, 9, TimeUnit.MILLISECONDS);
 
 		    /* Finally, register to receive samples from the tuner */
             mTuner.addListener((Listener<ComplexBuffer>) this);
         }
         else
         {
-            mLog.warn("Attempt to start() and already running tuner channel source was ignored");
+            mLog.warn("Attempt to start() an already running tuner channel source was ignored");
         }
     }
 
@@ -171,14 +187,6 @@ public class TunerChannelSource extends ComplexSource
         {
 	    	/* Tell the tuner to release/unregister our resources */
             mTuner.getTunerController().removeListener(this);
-//            mTuner = null;
-//            mTunerChannel = null;
-//            mBuffer = null;
-//            mFrequencyChangeProcessor = null;
-//            mListener = null;
-//            mMixer = null;
-//            mDecimationFilter.dispose();
-//            mDecimationFilter = null;
         }
     }
 
@@ -197,7 +205,7 @@ public class TunerChannelSource extends ComplexSource
     {
         if(mRunning.get())
         {
-            mBuffer.add(buffer);
+            mBuffer.offer(buffer);
         }
     }
 
@@ -248,10 +256,8 @@ public class TunerChannelSource extends ComplexSource
 
                 if(mFrequencyChangeProcessor != null)
                 {
-                    mFrequencyChangeProcessor.frequencyChanged(
-                        new FrequencyChangeEvent(
-                            Event.NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE,
-                            mChannelFrequencyCorrection));
+                    mFrequencyChangeProcessor.frequencyChanged(new FrequencyChangeEvent(
+                        Event.NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE, mChannelFrequencyCorrection));
                 }
                 break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
@@ -262,13 +268,8 @@ public class TunerChannelSource extends ComplexSource
                     mMixer.setSampleRate(sampleRate);
 
 					/* Get new decimation filter */
-                    mDecimationFilter = FilterFactory
-                        .getDecimationFilter(sampleRate,
-                            CHANNEL_RATE,
-                            1,   //Order
-                            CHANNEL_PASS_FREQUENCY,
-                            60, //dB attenuation
-                            WindowType.HAMMING);
+                    mDecimationFilter = FilterFactory.getDecimationFilter(sampleRate, CHANNEL_RATE, 1,
+                        CHANNEL_PASS_FREQUENCY, 60, WindowType.HAMMING);
 					
 					/* re-add the original output listener */
                     mDecimationFilter.setListener(mListener);
@@ -328,48 +329,46 @@ public class TunerChannelSource extends ComplexSource
             {
                 if(mProcessing)
                 {
-                    {
-                        mBuffer.drainTo(mSampleBuffers, 8);
+                    mBuffer.drainTo(mSampleBuffers, 20);
 
-                        for(Buffer buffer : mSampleBuffers)
-                        {
+                    for(Buffer buffer : mSampleBuffers)
+                    {
 							/* Check to see if we've been shutdown */
-                            if(!mProcessing)
-                            {
-                                mBuffer.clear();
-                                return;
-                            }
-                            else
-                            {
-                                float[] samples = buffer.getSamples();
+                        if(!mProcessing)
+                        {
+                            mBuffer.clear();
+                            return;
+                        }
+                        else
+                        {
+                            float[] samples = buffer.getSamples();
 
 								/* We make a copy of the buffer so that we don't affect
 								 * anyone else that is using the same buffer, like other
 								 * channels or the spectral display */
-                                float[] translated = new float[samples.length];
-								
+                            float[] translated = new float[samples.length];
+
 								/* Perform frequency translation */
-                                for(int x = 0; x < samples.length; x += 2)
-                                {
-                                    mMixer.rotate();
+                            for(int x = 0; x < samples.length; x += 2)
+                            {
+                                mMixer.rotate();
 
-                                    translated[x] = Complex.multiplyInphase(
-                                        samples[x], samples[x + 1], mMixer.inphase(), mMixer.quadrature());
+                                translated[x] = Complex.multiplyInphase(
+                                    samples[x], samples[x + 1], mMixer.inphase(), mMixer.quadrature());
 
-                                    translated[x + 1] = Complex.multiplyQuadrature(
-                                        samples[x], samples[x + 1], mMixer.inphase(), mMixer.quadrature());
-                                }
+                                translated[x + 1] = Complex.multiplyQuadrature(
+                                    samples[x], samples[x + 1], mMixer.inphase(), mMixer.quadrature());
+                            }
 
-                                if(mProcessing)
-                                {
-                                    final ComplexPrimeCICDecimate filter = mDecimationFilter;
-                                    filter.receive(new ComplexBuffer(translated));
-                                }
+                            if(mProcessing)
+                            {
+                                final ComplexPrimeCICDecimate filter = mDecimationFilter;
+                                filter.receive(new ComplexBuffer(translated));
                             }
                         }
-
-                        mSampleBuffers.clear();
                     }
+
+                    mSampleBuffers.clear();
                 }
             }
             catch(Exception e)
