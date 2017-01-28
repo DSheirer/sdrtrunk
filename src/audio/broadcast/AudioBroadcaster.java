@@ -51,8 +51,10 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
     private BroadcastState mBroadcastState = BroadcastState.READY;
 
     private int mStreamedAudioCount = 0;
+    private int mAgedOffAudioCount = 0;
     private BroadcastConfiguration mBroadcastConfiguration;
     private long mDelay;
+    private long mMaximumRecordingAge;
     private AtomicBoolean mStreaming = new AtomicBoolean();
 
     /**
@@ -80,6 +82,7 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
     {
         mBroadcastConfiguration = broadcastConfiguration;
         mDelay = mBroadcastConfiguration.getDelay();
+        mMaximumRecordingAge = mBroadcastConfiguration.getMaximumRecordingAge();
         mSilenceGenerator = BroadcastFactory.getSilenceGenerator(broadcastConfiguration.getBroadcastFormat());
     }
 
@@ -176,6 +179,14 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
     public int getStreamedAudioCount()
     {
         return mStreamedAudioCount;
+    }
+
+    /**
+     * Number of audio recordings that were removed for exceeding age limit
+     */
+    public int getAgedOffAudioCount()
+    {
+        return mAgedOffAudioCount;
     }
 
     /**
@@ -387,8 +398,21 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
 
             mInputStream = null;
 
-            //Peek at the next recording but don't remove it from the queue yet, so we can inspect the delay time
+            //Peek at the next recording but don't remove it from the queue yet, so we can inspect the start time for
+            //age limits and/or delay elapsed
             AudioRecording nextRecording = mAudioRecordingQueue.peek();
+
+            //Purge any recordings that have exceeded maximum recording age limit
+            while(nextRecording != null &&
+                (nextRecording.getStartTime() + mDelay + mMaximumRecordingAge) < java.lang.System.currentTimeMillis())
+            {
+                nextRecording = mAudioRecordingQueue.remove();
+                nextRecording.removePendingReplay();
+                mAgedOffAudioCount++;
+                broadcast(new BroadcastEvent(AudioBroadcaster.this,
+                    BroadcastEvent.Event.BROADCASTER_AGED_OFF_COUNT_CHANGE));
+                nextRecording = mAudioRecordingQueue.peek();
+            }
 
             if(nextRecording != null && nextRecording.getStartTime() + mDelay <= System.currentTimeMillis())
             {

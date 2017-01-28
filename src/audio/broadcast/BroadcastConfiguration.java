@@ -45,6 +45,7 @@ public abstract class BroadcastConfiguration
     private int mPort;
     private String mPassword;
     private long mDelay;
+    private long mMaximumRecordingAge = 10 * 60 * 1000; //10 minutes default
     private boolean mEnabled = true;
 
     public BroadcastConfiguration()
@@ -214,6 +215,27 @@ public abstract class BroadcastConfiguration
     public void setDelay(long delay)
     {
         mDelay = delay;
+    }
+
+    /**
+     * Gets maximum recording age which determines the maximum amount of elapsed time that a recording can set in the
+     * queue awaiting streaming before it is purged from the queue.  This value is in addition to the delay setting.
+     * @return age in milliseconds
+     */
+    @XmlAttribute(name = "maximum_recording_age")
+    public long getMaximumRecordingAge()
+    {
+        return mMaximumRecordingAge;
+    }
+
+    /**
+     * Sets maximum recording age which determines the maximum amount of elapsed time that a recording can set in the
+     * queue awaiting streaming before it is purged from the queue.  This value is in addition to the delay setting.
+     * @param age in milliseconds
+     */
+    public void setMaximumRecordingAge(long age)
+    {
+        mMaximumRecordingAge = age;
     }
 
     /**

@@ -60,6 +60,10 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     public static final int COLUMN_BROADCASTER_STATUS = 2;
     public static final int COLUMN_BROADCASTER_QUEUE_SIZE = 3;
     public static final int COLUMN_BROADCASTER_STREAMED_COUNT = 4;
+    public static final int COLUMN_BROADCASTER_AGED_OFF_COUNT = 5;
+
+    public static final String[] COLUMN_NAMES = new String[]
+        {"Streaming", "Name", "Status", "Queued", "Streamed", "Aged Off"};
 
     private List<BroadcastConfiguration> mBroadcastConfigurations = new CopyOnWriteArrayList<>();
     private List<AudioRecording> mRecordingQueue = new CopyOnWriteArrayList<>();
@@ -441,6 +445,12 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                         fireTableCellUpdated(row, COLUMN_BROADCASTER_STREAMED_COUNT);
                     }
                     break;
+                case BROADCASTER_AGED_OFF_COUNT_CHANGE:
+                    if(row >= 0)
+                    {
+                        fireTableCellUpdated(row, COLUMN_BROADCASTER_AGED_OFF_COUNT);
+                    }
+                    break;
             }
         }
 
@@ -488,7 +498,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     @Override
     public int getColumnCount()
     {
-        return 5;
+        return COLUMN_NAMES.length;
     }
 
     @Override
@@ -545,6 +555,14 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
                                 return audioBroadcasterC.getStreamedAudioCount();
                             }
                             break;
+                        case COLUMN_BROADCASTER_AGED_OFF_COUNT:
+                            AudioBroadcaster audioBroadcasterD = mBroadcasterMap.get(configuration.getName());
+
+                            if(audioBroadcasterD != null)
+                            {
+                                return audioBroadcasterD.getAgedOffAudioCount();
+                            }
+                            break;
                         default:
                             break;
                     }
@@ -589,18 +607,9 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     @Override
     public String getColumnName(int column)
     {
-        switch(column)
+        if(0 <= column && column < COLUMN_NAMES.length)
         {
-            case COLUMN_SERVER_ICON:
-                return "Streaming";
-            case COLUMN_STREAM_NAME:
-                return "Name";
-            case COLUMN_BROADCASTER_STATUS:
-                return "Status";
-            case COLUMN_BROADCASTER_QUEUE_SIZE:
-                return "Queued";
-            case COLUMN_BROADCASTER_STREAMED_COUNT:
-                return "Streamed";
+            return COLUMN_NAMES[column];
         }
 
         return null;
