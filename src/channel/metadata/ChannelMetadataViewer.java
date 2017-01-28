@@ -18,6 +18,7 @@
  ******************************************************************************/
 package channel.metadata;
 
+import channel.details.ChannelDetailPanel;
 import com.jidesoft.swing.JideSplitPane;
 import com.jidesoft.swing.JideTabbedPane;
 import controller.channel.ChannelProcessingManager;
@@ -33,10 +34,12 @@ import java.awt.*;
 
 public class ChannelMetadataViewer extends JPanel
 {
+    private ChannelMetadataPanel mChannelMetadataPanel;
+
+    private ChannelDetailPanel mChannelDetailPanel;
     private CallEventPanel mCallEventPanel;
     private MessageActivityPanel mMessageActivityPanel;
     private ChannelSpectrumPanel mChannelSpectrumPanel;
-    private ChannelMetadataPanel mChannelMetadataPanel;
 
     /**
      * GUI panel that combines the currently decoding channels metadata table and viewers for channel details,
@@ -45,6 +48,7 @@ public class ChannelMetadataViewer extends JPanel
     public ChannelMetadataViewer(ChannelProcessingManager channelProcessingManager, IconManager iconManager,
                                  SettingsManager settingsManager)
     {
+        mChannelDetailPanel = new ChannelDetailPanel(channelProcessingManager);
         mCallEventPanel = new CallEventPanel(iconManager);
         mMessageActivityPanel = new MessageActivityPanel(channelProcessingManager);
         mChannelSpectrumPanel = new ChannelSpectrumPanel(settingsManager, channelProcessingManager);
@@ -58,7 +62,7 @@ public class ChannelMetadataViewer extends JPanel
         setLayout( new MigLayout( "insets 0 0 0 0", "[grow,fill]", "[grow,fill]") );
 
         JideTabbedPane tabbedPane = new JideTabbedPane();
-//        tabbedPane.addTab("Details", new JPanel());
+        tabbedPane.addTab("Details", mChannelDetailPanel);
         tabbedPane.addTab("Events", mCallEventPanel);
         tabbedPane.addTab("Messages", mMessageActivityPanel);
 //        tabbedPane.addTab("Spectrum", mChannelSpectrumPanel);
@@ -71,6 +75,7 @@ public class ChannelMetadataViewer extends JPanel
         splitPane.add(tabbedPane);
         add(splitPane);
 
+        mChannelMetadataPanel.addProcessingChainSelectionListener(mChannelDetailPanel);
         mChannelMetadataPanel.addProcessingChainSelectionListener(mCallEventPanel);
         mChannelMetadataPanel.addProcessingChainSelectionListener(mMessageActivityPanel);
     }
