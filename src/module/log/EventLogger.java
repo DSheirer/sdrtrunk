@@ -1,21 +1,27 @@
 /*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
- * 
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- * 
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- * 
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * sdrtrunk
+ * Copyright (C) 2014-2017 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *
  ******************************************************************************/
 package module.log;
+
+import module.Module;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import util.TimeStamp;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -26,117 +32,107 @@ import java.io.Writer;
 import java.nio.file.Path;
 import java.util.concurrent.ScheduledExecutorService;
 
-import module.Module;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import util.TimeStamp;
-
 public abstract class EventLogger extends Module
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( EventLogger.class );
+    private final static Logger mLog = LoggerFactory.getLogger(EventLogger.class);
 
-	/* Illegal filename characters */
-	private static final String[] mIllegalCharacters = 
-		{ "#", "%", "&", "{", "}", "\\", "<", ">", "*", "?", "/", 
-		  " ", "$", "!", "'", "\"", ":", "@", "+", "`", "|", "=" };
-	
-	private Path mLogDirectory;
-	private String mFileNameSuffix;
-	private String mLogFileName;
-	protected Writer mLogFile;
+    private static final String[] ILLEGAL_FILENAME_CHARACTERS = {"#", "%", "&", "{", "}", "\\", "<", ">",
+        "*", "?", "/", " ", "$", "!", "'", "\"", ":", "@", "+", "`", "|", "="};
 
-	public EventLogger( Path logDirectory, String fileNameSuffix )
-	{
-		mLogDirectory = logDirectory;
-		mFileNameSuffix = fileNameSuffix;
-	}
-	
-	public String toString()
-	{
-		if( mLogFileName != null )
-		{
-			return mLogFileName;
-		}
-		else
-		{
-			return "Unknown";
-		}
-	}
-	
-	public abstract String getHeader();
-	
-	@Override
-    public void start( ScheduledExecutorService executor )
+    private Path mLogDirectory;
+    private String mFileNameSuffix;
+    private String mLogFileName;
+    protected Writer mLogFile;
+
+    public EventLogger(Path logDirectory, String fileNameSuffix)
     {
-    	if( mLogFile == null )
-    	{
-        	try 
-        	{
-        		StringBuilder sb = new StringBuilder();
-        		sb.append( mLogDirectory );
-        		sb.append( File.separator );
-        		sb.append( TimeStamp.getTimeStamp( "_" ) );
-        		sb.append( "_" );
-        		sb.append( replaceIllegalCharacters( mFileNameSuffix ) );
+        mLogDirectory = logDirectory;
+        mFileNameSuffix = fileNameSuffix;
+    }
 
-        		mLogFileName = sb.toString();
-        		
-        		mLog.info( "Creating log file:" + mLogFileName );
-        		
-    			mLogFile = new OutputStreamWriter(new FileOutputStream( mLogFileName ) );
-    			
-    			write( getHeader() );
-    		} 
-        	catch (FileNotFoundException e) 
-        	{
-        		mLog.error("Couldn't create log file in directory:" + mLogDirectory );
-    		}    	
-    	}
+    public String toString()
+    {
+        if(mLogFileName != null)
+        {
+            return mLogFileName;
+        }
+        else
+        {
+            return "Unknown";
+        }
+    }
+
+    public abstract String getHeader();
+
+    @Override
+    public void start(ScheduledExecutorService executor)
+    {
+        if(mLogFile == null)
+        {
+            try
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.append(mLogDirectory);
+                sb.append(File.separator);
+                sb.append(TimeStamp.getTimeStamp("_"));
+                sb.append("_");
+                sb.append(replaceIllegalCharacters(mFileNameSuffix));
+
+                mLogFileName = sb.toString();
+
+                mLog.info("Creating log file:" + mLogFileName);
+
+                mLogFile = new OutputStreamWriter(new FileOutputStream(mLogFileName));
+
+                write(getHeader());
+            }
+            catch(FileNotFoundException e)
+            {
+                mLog.error("Couldn't create log file in directory:" + mLogDirectory);
+            }
+        }
     }
 
     /**
      * Replaces any illegal filename characters in the proposed filename
      */
-    private String replaceIllegalCharacters( String filename )
+    private String replaceIllegalCharacters(String filename)
     {
-    	for( String illegalCharacter: mIllegalCharacters )
-    	{
-    		filename = filename.replace( illegalCharacter, "_" );
-    	}
+        for(String illegalCharacter : ILLEGAL_FILENAME_CHARACTERS)
+        {
+            filename = filename.replace(illegalCharacter, "_");
+        }
 
-    	return filename;
+        return filename;
     }
 
     public void stop()
     {
-    	if( mLogFile != null )
-    	{
-    		try
-    		{
-    	    	mLogFile.flush();
-    	    	mLogFile.close();
-    	    	mLogFile = null;
-    		}
-    		catch( Exception e )
-    		{
-    			mLog.error( "Couldn't close log file:" + mFileNameSuffix );
-    		}
-    	}
-    }
-    
-    protected void write( String eventLogEntry )
-    {
-		try
+        if(mLogFile != null)
         {
-	        mLogFile.write( eventLogEntry + "\n" );
-	        mLogFile.flush();
+            try
+            {
+                mLogFile.flush();
+                mLogFile.close();
+                mLogFile = null;
+            }
+            catch(Exception e)
+            {
+                mLog.error("Couldn't close log file:" + mFileNameSuffix);
+            }
         }
-        catch ( IOException e )
+    }
+
+    protected void write(String eventLogEntry)
+    {
+        try
         {
-        	mLog.error( "Error writing entry to event log file", e );
+            mLogFile.write(eventLogEntry + "\n");
+            mLogFile.flush();
+        }
+        catch(IOException e)
+        {
+            mLog.error("Error writing entry to event log file", e);
         }
     }
 }
