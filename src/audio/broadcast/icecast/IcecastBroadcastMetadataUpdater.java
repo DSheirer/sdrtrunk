@@ -235,7 +235,7 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
         {
             StringBuilder sb = new StringBuilder();
             sb.append("mode=updinfo");
-            sb.append("&mount=").append(mIcecastConfiguration.getMountPoint());
+            sb.append("&mount=").append(URLEncoder.encode(mIcecastConfiguration.getMountPoint(), UTF8));
             sb.append("&charset=UTF%2d8");
             sb.append("&song=").append(URLEncoder.encode(song, UTF8));
 
