@@ -20,71 +20,73 @@ package audio.broadcast;
 
 public class BroadcastEvent
 {
-	private BroadcastConfiguration mBroadcastConfiguration;
-	private AudioBroadcaster mAudioBroadcaster;
-	private Event mEvent;
+    private BroadcastConfiguration mBroadcastConfiguration;
+    private AudioBroadcaster mAudioBroadcaster;
+    private Event mEvent;
 
-	/**
-	 * AliasEvent - event describing any changes to an alias
-	 * @param configuration - alias that changed
-	 * @param event - change event
-	 */
-	public BroadcastEvent(BroadcastConfiguration configuration, Event event )
-	{
-		mBroadcastConfiguration = configuration;
-		mEvent = event;
-	}
+    /**
+     * AliasEvent - event describing any changes to an alias
+     *
+     * @param configuration - alias that changed
+     * @param event - change event
+     */
+    public BroadcastEvent(BroadcastConfiguration configuration, Event event)
+    {
+        mBroadcastConfiguration = configuration;
+        mEvent = event;
+    }
 
-	public BroadcastEvent(AudioBroadcaster audioBroadcaster, Event event )
-	{
-		mAudioBroadcaster = audioBroadcaster;
-		mEvent = event;
-	}
+    public BroadcastEvent(AudioBroadcaster audioBroadcaster, Event event)
+    {
+        mAudioBroadcaster = audioBroadcaster;
+        mEvent = event;
+    }
 
-	public BroadcastConfiguration getBroadcastConfiguration()
-	{
-		return mBroadcastConfiguration;
-	}
+    public BroadcastConfiguration getBroadcastConfiguration()
+    {
+        return mBroadcastConfiguration;
+    }
 
-	public AudioBroadcaster getAudioBroadcaster()
-	{
-		return mAudioBroadcaster;
-	}
+    public AudioBroadcaster getAudioBroadcaster()
+    {
+        return mAudioBroadcaster;
+    }
 
-	/**
-	 * Indicates if this event pertains to an audio broadcaster
-	 */
-	public boolean isAudioBroadcasterEvent()
-	{
-		return mAudioBroadcaster != null;
-	}
+    /**
+     * Indicates if this event pertains to an audio broadcaster
+     */
+    public boolean isAudioBroadcasterEvent()
+    {
+        return mAudioBroadcaster != null;
+    }
 
-	/**
-	 * Indicates if this event pertains to a broadcast configuration
-	 */
-	public boolean isBroadcastConfigurationEvent()
-	{
-		return mBroadcastConfiguration != null;
-	}
+    /**
+     * Indicates if this event pertains to a broadcast configuration
+     */
+    public boolean isBroadcastConfigurationEvent()
+    {
+        return mBroadcastConfiguration != null;
+    }
 
-	public Event getEvent()
-	{
-		return mEvent;
-	}
-	
-	/**
-	 * Channel events to describe the specific event
-	 */
-	public enum Event
-	{
-		BROADCASTER_ADD,
-		BROADCASTER_QUEUE_CHANGE,
+    public Event getEvent()
+    {
+        return mEvent;
+    }
+
+    /**
+     * Channel events to describe the specific event
+     */
+    public enum Event
+    {
+        BROADCASTER_ADD,
+        BROADCASTER_QUEUE_CHANGE,
         BROADCASTER_STATE_CHANGE,
         BROADCASTER_STREAMED_COUNT_CHANGE,
-		BROADCASTER_DELETE,
+        BROADCASTER_AGED_OFF_COUNT_CHANGE,
+        BROADCASTER_DELETE,
 
-		CONFIGURATION_ADD,
-		CONFIGURATION_CHANGE,
-		CONFIGURATION_DELETE;
-	}
+        CONFIGURATION_ADD,
+        CONFIGURATION_CHANGE,
+        CONFIGURATION_DELETE;
+    }
 }

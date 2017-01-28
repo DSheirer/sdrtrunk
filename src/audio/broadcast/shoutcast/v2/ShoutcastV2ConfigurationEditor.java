@@ -52,6 +52,8 @@ public class ShoutcastV2ConfigurationEditor extends BroadcastConfigurationEditor
     private JCheckBox mPublic;
     private JSlider mDelay;
     private JLabel mDelayValue;
+    private JSlider mMaximumRecordingAge;
+    private JLabel mMaximumRecordingAgeValue;
     private JCheckBox mEnabled;
     private JButton mSaveButton;
     private JButton mResetButton;
@@ -65,7 +67,7 @@ public class ShoutcastV2ConfigurationEditor extends BroadcastConfigurationEditor
     private void init()
     {
         setLayout(new MigLayout("fill,wrap 2", "[align right][grow,fill]",
-            "[][][][][][][][][][][][][][grow,fill]"));
+            "[][][][][][][][][][][][][][][][grow,fill]"));
         setPreferredSize(new Dimension(150, 400));
 
         JLabel channelLabel = new JLabel("Shoutcast (v2) Stream");
@@ -150,6 +152,28 @@ public class ShoutcastV2ConfigurationEditor extends BroadcastConfigurationEditor
         mDelay.setToolTipText("Audio broadcast delay in minutes");
         add(mDelay);
 
+        add(new JLabel());
+        mMaximumRecordingAgeValue = new JLabel("1 Minute");
+        add(mMaximumRecordingAgeValue);
+
+        add(new JLabel("Age Limit:"));
+        mMaximumRecordingAge = new JSlider(1,60,5);
+        mMaximumRecordingAge.setMajorTickSpacing(10);
+        mMaximumRecordingAge.setMinorTickSpacing(5);
+        mMaximumRecordingAge.addChangeListener(new ChangeListener()
+        {
+            @Override
+            public void stateChanged(ChangeEvent e)
+            {
+                int value = mMaximumRecordingAge.getValue();
+
+                mMaximumRecordingAgeValue.setText(value + " Minute" + (value > 1 ? "s" : ""));
+                setModified(true);
+            }
+        });
+        mMaximumRecordingAge.setToolTipText("Maximum recording age (in addition to delay) to stream");
+        add(mMaximumRecordingAge);
+
         add(new JLabel("Enabled:")); //Empty
         mEnabled = new JCheckBox();
         mEnabled.setToolTipText("Enable (checked) or disable this stream");
@@ -218,6 +242,7 @@ public class ShoutcastV2ConfigurationEditor extends BroadcastConfigurationEditor
             mGenre.setText(config.getGenre());
             mPublic.setSelected(config.isPublic());
             mDelay.setValue((int) (config.getDelay() / ONE_MINUTE_MS));
+            mMaximumRecordingAge.setValue((int)config.getMaximumRecordingAge() / ONE_MINUTE_MS);
             mEnabled.setSelected(config.isEnabled());
         }
         else
@@ -231,6 +256,7 @@ public class ShoutcastV2ConfigurationEditor extends BroadcastConfigurationEditor
             mGenre.setText(null);
             mPublic.setSelected(true);
             mDelay.setValue(0);
+            mMaximumRecordingAge.setValue(1);
             mEnabled.setSelected(false);
         }
 
@@ -253,6 +279,7 @@ public class ShoutcastV2ConfigurationEditor extends BroadcastConfigurationEditor
             config.setGenre(mGenre.getText());
             config.setPublic(mPublic.isSelected());
             config.setDelay(mDelay.getValue() * ONE_MINUTE_MS);
+            config.setMaximumRecordingAge(mMaximumRecordingAge.getValue() * ONE_MINUTE_MS);
             config.setEnabled(mEnabled.isSelected());
 
             setModified(false);

@@ -52,6 +52,8 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
     private JTextField mFeedID;
     private JSlider mDelay;
     private JLabel mDelayValue;
+    private JSlider mMaximumRecordingAge;
+    private JLabel mMaximumRecordingAgeValue;
     private JCheckBox mEnabled;
     private JButton mSaveButton;
     private JButton mResetButton;
@@ -66,7 +68,7 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
     private void init()
     {
         setLayout(new MigLayout("fill,wrap 2", "[align right][grow,fill]",
-            "[][][][][][][][][][][][][grow,fill]"));
+            "[][][][][][][][][][][][][][][grow,fill]"));
         setPreferredSize(new Dimension(150, 400));
 
 
@@ -157,6 +159,28 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
         mDelay.setToolTipText("Audio broadcast delay in minutes");
         add(mDelay);
 
+        add(new JLabel());
+        mMaximumRecordingAgeValue = new JLabel("1 Minute");
+        add(mMaximumRecordingAgeValue);
+
+        add(new JLabel("Age Limit:"));
+        mMaximumRecordingAge = new JSlider(1,60,5);
+        mMaximumRecordingAge.setMajorTickSpacing(10);
+        mMaximumRecordingAge.setMinorTickSpacing(5);
+        mMaximumRecordingAge.addChangeListener(new ChangeListener()
+        {
+            @Override
+            public void stateChanged(ChangeEvent e)
+            {
+                int value = mMaximumRecordingAge.getValue();
+
+                mMaximumRecordingAgeValue.setText(value + " Minute" + (value > 1 ? "s" : ""));
+                setModified(true);
+            }
+        });
+        mMaximumRecordingAge.setToolTipText("Maximum recording age (in addition to delay) to stream");
+        add(mMaximumRecordingAge);
+
         mEnabled = new JCheckBox("Enabled");
         mEnabled.setToolTipText("Enable (checked) or disable this stream");
         mEnabled.addActionListener(new ActionListener()
@@ -223,6 +247,7 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
             mPassword.setText(config.getPassword());
             mFeedID.setText(String.valueOf(config.getFeedID()));
             mDelay.setValue((int) (config.getDelay() / ONE_MINUTE_MS));
+            mMaximumRecordingAge.setValue((int)config.getMaximumRecordingAge() / ONE_MINUTE_MS);
             mEnabled.setSelected(config.isEnabled());
         }
         else
@@ -234,6 +259,7 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
             mPassword.setText(null);
             mFeedID.setText(null);
             mDelay.setValue(0);
+            mMaximumRecordingAge.setValue(1);
             mEnabled.setSelected(false);
         }
 
@@ -254,6 +280,7 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
             config.setPassword(mPassword.getText());
             config.setFeedID(getFeedID());
             config.setDelay(mDelay.getValue() * ONE_MINUTE_MS);
+            config.setMaximumRecordingAge(mMaximumRecordingAge.getValue() * ONE_MINUTE_MS);
             config.setEnabled(mEnabled.isSelected());
 
             setModified(false);
