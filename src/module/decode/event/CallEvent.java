@@ -30,7 +30,8 @@ public abstract class CallEvent implements Comparable<CallEvent>
     protected long mEventStart = System.currentTimeMillis();
     protected long mEventEnd;
 
-    private SimpleDateFormat mSDF = new SimpleDateFormat("yyyyMMdd','HHmmss");
+    private SimpleDateFormat DATE_FORMATTER = new SimpleDateFormat("yyyyMMdd");
+    private SimpleDateFormat TIME_FORMATTER = new SimpleDateFormat("HHmmss");
 
     protected DecoderType mDecoderType;
     protected CallEventType mCallEventType;
@@ -176,15 +177,23 @@ public abstract class CallEvent implements Comparable<CallEvent>
         StringBuilder sb = new StringBuilder();
 
         sb.append("'");
-        sb.append(mSDF.format(new Date(getEventStartTime())));
+
+        Date eventStart = new Date(getEventStartTime());
+        sb.append(DATE_FORMATTER.format(eventStart));
+        sb.append("','");
+        sb.append(TIME_FORMATTER.format(eventStart));
         sb.append("','");
         if(mEventEnd != 0)
         {
-            sb.append(mSDF.format(new Date(getEventEndTime())));
+            Date eventEnd = new Date(getEventEndTime());
+            sb.append(DATE_FORMATTER.format(eventEnd));
+            sb.append("','");
+            sb.append(TIME_FORMATTER.format(eventEnd));
+            sb.append("','");
         }
         else
         {
-            sb.append("','");
+            sb.append("','',");
         }
         sb.append("','");
         sb.append(getDecoderType().toString());
