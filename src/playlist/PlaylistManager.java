@@ -212,13 +212,13 @@ public class PlaylistManager implements ChannelEventListener
     {
         if(mPlaylistCurrentPath == null)
         {
-            SystemProperties props = SystemProperties.getInstance();
+            //Temporarily removed and hard-coding the V2 playlist name.  Will be reimplemented with future
+            //enhancement that allows multiple playlists.
+//            SystemProperties props = SystemProperties.getInstance();
+//            String playlistDefault = props.get("playlist.defaultfilename", "playlist_v2.xml");
+//            String playlistCurrent = props.get("playlist.currentfilename", playlistDefault);
 
-            String playlistDefault = props.get("playlist.defaultfilename", "playlist_v2.xml");
-
-            String playlistCurrent = props.get("playlist.currentfilename", playlistDefault);
-
-            mPlaylistCurrentPath = getPlaylistFolderPath().resolve(playlistCurrent);
+            mPlaylistCurrentPath = getPlaylistFolderPath().resolve("playlist_v2.xml");
         }
 
         return mPlaylistCurrentPath;
@@ -347,7 +347,7 @@ public class PlaylistManager implements ChannelEventListener
      */
     public PlaylistV2 load()
     {
-        mLog.info("loading version 2 playlist file [" + getPlaylistPath().toString() + "]");
+        mLog.info("Attempting to load version 2 playlist file [" + getPlaylistPath().toString() + "]");
 
         PlaylistV2 playlist = null;
 
