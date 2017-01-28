@@ -42,11 +42,23 @@ import java.util.Collection;
 
 public class TunerManager
 {
-    private final static Logger mLog =
-        LoggerFactory.getLogger(TunerManager.class);
+    private final static Logger mLog = LoggerFactory.getLogger(TunerManager.class);
 
     private MixerManager mMixerManager;
     private TunerModel mTunerModel;
+
+
+    /**
+     * Application-wide LibUSB timeout processor for transfer buffers.  All classes that need to use USB transfer
+     * buffers can register with this processor and the processor will auto-start and auto-stop while USB transfer
+     * processors are registered.
+     */
+    public static final LibUSBTransferProcessor LIBUSB_TRANSFER_PROCESSOR;
+
+    static
+    {
+        LIBUSB_TRANSFER_PROCESSOR = new LibUSBTransferProcessor();
+    }
 
     public TunerManager(MixerManager mixerManager, TunerModel tunerModel)
     {

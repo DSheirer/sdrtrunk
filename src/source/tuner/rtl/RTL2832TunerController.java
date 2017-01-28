@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
+ *     Copyright (C) 2014-2017 Dennis Sheirer
  *
  *     Java version based on librtlsdr
  *     Copyright (C) 2012-2013 by Steve Markgraf <steve@steve-m.de>
@@ -21,7 +21,6 @@
  ******************************************************************************/
 package source.tuner.rtl;
 
-import buffer.FloatAveragingBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.Device;
@@ -29,54 +28,38 @@ import org.usb4java.DeviceDescriptor;
 import org.usb4java.DeviceHandle;
 import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
-import org.usb4java.Transfer;
-import org.usb4java.TransferCallback;
 import sample.Broadcaster;
 import sample.Listener;
 import sample.adapter.ByteSampleAdapter;
+import sample.adapter.ISampleAdapter;
 import sample.complex.ComplexBuffer;
 import source.SourceException;
 import source.tuner.TunerController;
+import source.tuner.TunerManager;
 import source.tuner.TunerType;
-import util.ThreadPool;
+import source.tuner.usb.USBTransferProcessor;
 
 import javax.usb.UsbDisconnectedException;
 import javax.usb.UsbException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class RTL2832TunerController extends TunerController
 {
     private final static Logger mLog = LoggerFactory.getLogger(RTL2832TunerController.class);
 
-    public final static int INT_NULL_VALUE = -1;
-    public final static long LONG_NULL_VALUE = -1l;
-    public final static double DOUBLE_NULL_VALUE = -1.0D;
     public final static int TWO_TO_22_POWER = 4194304;
 
+    public final static int USB_TRANSFER_BUFFER_SIZE = 131072;
     public final static byte USB_INTERFACE = (byte) 0x0;
-    public final static byte USB_BULK_ENDPOINT = (byte) 0x81;
-    public final static byte CONTROL_ENDPOINT_IN =
-        (byte) (LibUsb.ENDPOINT_IN | LibUsb.REQUEST_TYPE_VENDOR);
-    public final static byte CONTROL_ENDPOINT_OUT =
-        (byte) (LibUsb.ENDPOINT_OUT | LibUsb.REQUEST_TYPE_VENDOR);
+    public final static byte CONTROL_ENDPOINT_IN = (byte) (LibUsb.ENDPOINT_IN | LibUsb.REQUEST_TYPE_VENDOR);
+    public final static byte CONTROL_ENDPOINT_OUT = (byte) (LibUsb.ENDPOINT_OUT | LibUsb.REQUEST_TYPE_VENDOR);
 
     public final static long TIMEOUT_US = 1000000l; //uSeconds
-
     public final static byte REQUEST_ZERO = (byte) 0;
-
-    public final static int TRANSFER_BUFFER_POOL_SIZE = 16;
-
     public final static byte EEPROM_ADDRESS = (byte) 0xA0;
 
     public final static byte[] sFIR_COEFFICIENTS =
@@ -87,8 +70,7 @@ public abstract class RTL2832TunerController extends TunerController
             (byte) 0x71, (byte) 0x74, (byte) 0x19, (byte) 0x41, (byte) 0xA5
         };
 
-    public static final SampleRate DEFAULT_SAMPLE_RATE =
-        SampleRate.RATE_0_960MHZ;
+    public static final SampleRate DEFAULT_SAMPLE_RATE = SampleRate.RATE_2_400MHZ;
 
     protected Device mDevice;
     protected DeviceDescriptor mDeviceDescriptor;
@@ -96,24 +78,13 @@ public abstract class RTL2832TunerController extends TunerController
 
     private SampleRate mSampleRate = DEFAULT_SAMPLE_RATE;
 
-    private BufferProcessor mBufferProcessor;
-
     private ByteSampleAdapter mSampleAdapter = new ByteSampleAdapter();
 
     private Broadcaster<ComplexBuffer> mComplexBufferBroadcaster = new Broadcaster<>();
 
-    private LinkedTransferQueue<byte[]> mFilledBuffers =
-        new LinkedTransferQueue<byte[]>();
-
-    private SampleRateMonitor mSampleRateMonitor;
-    private AtomicInteger mSampleCounter = new AtomicInteger();
-    private static final DecimalFormat mDecimalFormatter =
-        new DecimalFormat("###,###,###.0");
-    private static final DecimalFormat mPercentFormatter =
-        new DecimalFormat("###.00");
-
     protected int mOscillatorFrequency = 28800000; //28.8 MHz
-    public int mBufferSize = 131072;
+
+    private USBTransferProcessor mUSBTransferProcessor;
 
     protected Descriptor mDescriptor;
 
@@ -190,6 +161,11 @@ public abstract class RTL2832TunerController extends TunerController
                 + "descriptor byte array " +
                 (eeprom == null ? "[null]" : Arrays.toString(eeprom)), e);
         }
+
+        String deviceName = getTunerType().getLabel() + " " + getUniqueID();
+
+        mUSBTransferProcessor = new RTL2832USBTransferProcessor(deviceName, mDeviceHandle, mSampleAdapter,
+            USB_TRANSFER_BUFFER_SIZE);
     }
 
     /**
@@ -265,7 +241,7 @@ public abstract class RTL2832TunerController extends TunerController
         switch(mode)
         {
             case QUADRATURE:
-				/* Set intermediate frequency to 0 Hz */
+                /* Set intermediate frequency to 0 Hz */
                 setIFFrequency(0);
 
 				/* Enable I/Q ADC Input */
@@ -476,14 +452,13 @@ public abstract class RTL2832TunerController extends TunerController
     {
         try
         {
-            if(mBufferProcessor.isRunning())
+            if(mUSBTransferProcessor != null)
             {
-                mBufferProcessor.stop();
+                mUSBTransferProcessor.removeAllListeners();
+                TunerManager.LIBUSB_TRANSFER_PROCESSOR.unregisterTransferProcessor(mUSBTransferProcessor);
             }
 
             LibUsb.releaseInterface(mDeviceHandle, USB_INTERFACE);
-
-            LibUsb.exit(null);
         }
         catch(Exception e)
         {
@@ -1014,11 +989,6 @@ public abstract class RTL2832TunerController extends TunerController
         mSampleRate = sampleRate;
 
         mFrequencyController.setSampleRate(sampleRate.getRate());
-
-        if(mSampleRateMonitor != null)
-        {
-            mSampleRateMonitor.setSampleRate(mSampleRate.getRate());
-        }
     }
 
     public void setSampleRateFrequencyCorrection(int ppm) throws SourceException
@@ -1318,331 +1288,6 @@ public abstract class RTL2832TunerController extends TunerController
         }
     }
 
-    /**
-     * Adds a sample listener.  If the buffer processing thread is
-     * not currently running, starts it running in a new thread.
-     */
-    public void addListener(Listener<ComplexBuffer> listener)
-    {
-        synchronized(mComplexBufferBroadcaster)
-        {
-            mComplexBufferBroadcaster.addListener(listener);
-
-            if(mBufferProcessor == null)
-            {
-                mBufferProcessor = new BufferProcessor();
-            }
-
-            if(!mBufferProcessor.isRunning())
-            {
-                Thread thread = new Thread(mBufferProcessor);
-                thread.setDaemon(true);
-                thread.setName("RTL2832 Sample Processor");
-
-                thread.start();
-            }
-        }
-    }
-
-    /**
-     * Removes the sample listener.  If this is the last registered listener,
-     * shuts down the buffer processing thread.
-     */
-    public void removeListener(Listener<ComplexBuffer> listener)
-    {
-        synchronized(mComplexBufferBroadcaster)
-        {
-            mComplexBufferBroadcaster.removeListener(listener);
-
-            if(!mComplexBufferBroadcaster.hasListeners())
-            {
-                mBufferProcessor.stop();
-            }
-        }
-    }
-
-    /**
-     * Buffer processing thread.  Fetches samples from the RTL2832 Tuner and
-     * dispatches them to all registered listeners
-     */
-    public class BufferProcessor implements Runnable, TransferCallback
-    {
-        private ScheduledFuture<?> mSampleDispatcherTask;
-        private LinkedTransferQueue<Transfer> mAvailableTransfers;
-        private LinkedTransferQueue<Transfer> mTransfersInProgress = new LinkedTransferQueue<>();
-        private AtomicBoolean mRunning = new AtomicBoolean();
-        private ByteBuffer mLibUsbHandlerStatus;
-        private boolean mCancel = false;
-
-        public BufferProcessor()
-        {
-        }
-
-        @Override
-        public void run()
-        {
-            if(mRunning.compareAndSet(false, true))
-            {
-                try
-                {
-                    setSampleRate(mSampleRate);
-
-                    resetUSBBuffer();
-                }
-                catch(SourceException e)
-                {
-                    mLog.error("couldn't start buffer processor", e);
-
-                    mRunning.set(false);
-                }
-
-                prepareTransfers();
-
-                mSampleDispatcherTask = ThreadPool.SCHEDULED.scheduleAtFixedRate(new BufferDispatcher(),
-                    20, 20, TimeUnit.MILLISECONDS);
-
-                mLibUsbHandlerStatus = ByteBuffer.allocateDirect(4);
-
-                List<Transfer> transfers = new ArrayList<>();
-
-                mCancel = false;
-
-                while(mRunning.get())
-                {
-                    mAvailableTransfers.drainTo(transfers);
-
-                    for(Transfer transfer : transfers)
-                    {
-                        int result = LibUsb.submitTransfer(transfer);
-
-                        if(result == LibUsb.SUCCESS)
-                        {
-                            mTransfersInProgress.add(transfer);
-                        }
-                        else
-                        {
-                            mLog.error("Error submitting transfer [" +
-                                LibUsb.errorName(result) + "]");
-                        }
-                    }
-
-                    int result = LibUsb.handleEventsTimeoutCompleted(
-                        null, TIMEOUT_US, mLibUsbHandlerStatus.asIntBuffer());
-
-                    if(result != LibUsb.SUCCESS)
-                    {
-                        mLog.error("error handling events for libusb");
-                    }
-
-                    transfers.clear();
-
-                    mLibUsbHandlerStatus.rewind();
-                }
-
-                if(mCancel)
-                {
-                    for(Transfer transfer : mTransfersInProgress)
-                    {
-                        LibUsb.cancelTransfer(transfer);
-                    }
-
-                    int result = LibUsb.handleEventsTimeoutCompleted(null,
-                        TIMEOUT_US, mLibUsbHandlerStatus.asIntBuffer());
-
-                    if(result != LibUsb.SUCCESS)
-                    {
-                        mLog.error("error handling events for libusb during cancel");
-                    }
-
-                    mLibUsbHandlerStatus.rewind();
-                }
-            }
-        }
-
-        /**
-         * Stops the sample fetching thread
-         */
-        public void stop()
-        {
-            mCancel = true;
-
-            if(mRunning.compareAndSet(true, false))
-            {
-                if(mSampleDispatcherTask != null)
-                {
-                    mSampleDispatcherTask.cancel(true);
-                    mSampleDispatcherTask = null;
-                    mFilledBuffers.clear();
-                }
-            }
-        }
-
-        /**
-         * Indicates if this thread is running
-         */
-        public boolean isRunning()
-        {
-            return mRunning.get();
-        }
-
-        @Override
-        public void processTransfer(Transfer transfer)
-        {
-            mTransfersInProgress.remove(transfer);
-
-            switch(transfer.status())
-            {
-                case LibUsb.TRANSFER_COMPLETED:
-                case LibUsb.TRANSFER_STALL:
-                    if(transfer.actualLength() > 0)
-                    {
-                        ByteBuffer buffer = transfer.buffer();
-
-                        byte[] data = new byte[transfer.actualLength()];
-
-                        buffer.get(data);
-
-                        buffer.rewind();
-
-                        if(isRunning())
-                        {
-                            mFilledBuffers.add(data);
-                        }
-                    }
-                    break;
-                case LibUsb.TRANSFER_CANCELLED:
-                    break;
-                default:
-					/* unexpected error */
-                    mLog.error("transfer error [" +
-                        getTransferStatus(transfer.status()) +
-                        "] transferred actual: " + transfer.actualLength());
-            }
-
-            mAvailableTransfers.add(transfer);
-        }
-
-        /**
-         * Prepares (allocates) a set of transfer buffers for use in
-         * transferring data from the tuner via the bulk interface
-         */
-        private void prepareTransfers() throws LibUsbException
-        {
-            if(mAvailableTransfers == null)
-            {
-                mAvailableTransfers = new LinkedTransferQueue<>();
-
-                for(int x = 0; x < TRANSFER_BUFFER_POOL_SIZE; x++)
-                {
-                    Transfer transfer = LibUsb.allocTransfer();
-
-                    if(transfer == null)
-                    {
-                        throw new LibUsbException("couldn't allocate transfer",
-                            LibUsb.ERROR_NO_MEM);
-                    }
-
-                    final ByteBuffer buffer =
-                        ByteBuffer.allocateDirect(mBufferSize);
-
-                    LibUsb.fillBulkTransfer(transfer, mDeviceHandle, USB_BULK_ENDPOINT,
-                        buffer, BufferProcessor.this, "Buffer", TIMEOUT_US);
-
-                    mAvailableTransfers.add(transfer);
-                }
-            }
-        }
-    }
-
-    /**
-     * Fetches byte[] chunks from the raw sample buffer.  Converts each byte
-     * array and broadcasts the array to all registered listeners
-     */
-    public class BufferDispatcher implements Runnable
-    {
-        @Override
-        public void run()
-        {
-            try
-            {
-                ArrayList<byte[]> buffers = new ArrayList<byte[]>();
-
-                mFilledBuffers.drainTo(buffers);
-
-                for(byte[] buffer : buffers)
-                {
-                    float[] samples = mSampleAdapter.convert(buffer);
-
-                    mComplexBufferBroadcaster.broadcast(new ComplexBuffer(samples));
-                }
-            }
-            catch(Exception e)
-            {
-                mLog.error("error during rtl2832 buffer dispatcher run", e);
-            }
-        }
-    }
-
-    public static String getTransferStatus(int status)
-    {
-        switch(status)
-        {
-            case 0:
-                return "TRANSFER COMPLETED (0)";
-            case 1:
-                return "TRANSFER ERROR (1)";
-            case 2:
-                return "TRANSFER TIMED OUT (2)";
-            case 3:
-                return "TRANSFER CANCELLED (3)";
-            case 4:
-                return "TRANSFER STALL (4)";
-            case 5:
-                return "TRANSFER NO DEVICE (5)";
-            case 6:
-                return "TRANSFER OVERFLOW (6)";
-            default:
-                return "UNKNOWN TRANSFER STATUS (" + status + ")";
-        }
-    }
-
-
-    public class USBEventHandlingThread implements Runnable
-    {
-        /**
-         * If thread should abort.
-         */
-        private volatile boolean mAbort;
-
-        /**
-         * Aborts the event handling thread.
-         */
-        public void abort()
-        {
-            mAbort = true;
-        }
-
-        @Override
-        public void run()
-        {
-            while(!mAbort)
-            {
-                int result = LibUsb.handleEventsTimeout(null, 1000);
-
-                if(result != LibUsb.SUCCESS)
-                {
-                    mAbort = true;
-
-                    mLog.error("error handling usb events [" +
-                        LibUsb.errorName(result) + "]");
-
-                    throw new LibUsbException("Unable to handle USB "
-                        + "events", result);
-                }
-            }
-        }
-    }
-
     public enum TunerTypeCheck
     {
         E4K(0xC8, 0x02, 0x40),
@@ -1676,102 +1321,6 @@ public abstract class RTL2832TunerController extends TunerController
         public byte getCheckValue()
         {
             return (byte) mCheckValue;
-        }
-    }
-
-
-    /**
-     * Averages the sample rate over a 10-second period.  The count is for the
-     * number of bytes received from the tuner.  There are two bytes for each
-     * sample.  So, we divide by 20 to get the average sample rate.
-     */
-    public class SampleRateMonitor implements Runnable
-    {
-        private static final int BUFFER_SIZE = 5;
-        private int mTargetSampleRate;
-        private int mSampleRateMinimum;
-        private int mSampleRateMaximum;
-        private int mNewTargetSampleRate;
-        private FloatAveragingBuffer mRateErrorBuffer =
-            new FloatAveragingBuffer(BUFFER_SIZE);
-        private AtomicBoolean mRateChanged = new AtomicBoolean();
-
-        public SampleRateMonitor(int sampleRate)
-        {
-            setTargetRate(sampleRate);
-        }
-
-        public void setSampleRate(int sampleRate)
-        {
-            mNewTargetSampleRate = sampleRate;
-            mRateChanged.set(true);
-        }
-
-        private void setTargetRate(int rate)
-        {
-            mTargetSampleRate = rate;
-            mSampleRateMinimum = (int) ((float) mTargetSampleRate * 0.95f);
-            mSampleRateMaximum = (int) ((float) mTargetSampleRate * 1.05f);
-
-            for(int x = 0; x < BUFFER_SIZE; x++)
-            {
-                mRateErrorBuffer.get(0);
-            }
-        }
-
-        @Override
-        public void run()
-        {
-            if(mRateChanged.compareAndSet(true, false))
-            {
-                setTargetRate(mNewTargetSampleRate);
-
-				/* Reset the sample counter */
-                mSampleCounter.set(0);
-
-                mLog.info("monitor reset for new sample rate [" + mTargetSampleRate + "]");
-            }
-            else
-            {
-                int count = mSampleCounter.getAndSet(0);
-
-                float current = (float) count / 20.0f;
-
-                /**
-                 * Only accept values +/- 5% of target rate
-                 */
-                float average;
-
-                if(mSampleRateMinimum < current && current < mSampleRateMaximum)
-                {
-                    average = mRateErrorBuffer.get((float) mTargetSampleRate - current);
-                }
-                else
-                {
-                    average = mTargetSampleRate;
-                }
-
-                StringBuilder sb = new StringBuilder();
-                sb.append("[");
-                if(mDescriptor != null)
-                {
-                    sb.append(mDescriptor.getSerial());
-                }
-                else
-                {
-                    sb.append("DESCRIPTOR IS NULL");
-                }
-                sb.append("] sample rate current [");
-                sb.append(mDecimalFormatter.format(current));
-                sb.append(" Hz ");
-                sb.append(mPercentFormatter.format(100.0f * (current / (float) mTargetSampleRate)));
-                sb.append("% ] error [");
-                sb.append(average);
-                sb.append(" Hz ] target ");
-                sb.append(mDecimalFormatter.format(mTargetSampleRate));
-
-                mLog.info(sb.toString());
-            }
         }
     }
 
@@ -1945,4 +1494,47 @@ public abstract class RTL2832TunerController extends TunerController
         }
     }
 
+    /**
+     * Adds a sample listener.  If the USB transfer processor is not currently running, it will auto-start
+     */
+    public void addListener(Listener<ComplexBuffer> listener)
+    {
+        mUSBTransferProcessor.addListener(listener);
+    }
+
+    /**
+     * Removes the sample listener.  If this is the last registered listener, the USB transfer processor will
+     * halt buffer processing
+     */
+    public void removeListener(Listener<ComplexBuffer> listener)
+    {
+        mUSBTransferProcessor.removeListener(listener);
+    }
+
+    /**
+     * RTL-2832 USB transfer processor.  Extends USB transfer processor and allows resetting the device USB
+     * buffer prior to starting streaming.
+     */
+    public class RTL2832USBTransferProcessor extends USBTransferProcessor
+    {
+        /**
+         * Manages stream of USB transfer buffers and converts buffers to complex buffer samples for distribution to
+         * any registered listeners.
+         *
+         * @param deviceName to use when logging information or errors
+         * @param deviceHandle to the USB bulk transfer device
+         * @param sampleAdapter specific to the tuner's byte buffer format for converting to floating point I/Q samples
+         * @param bufferSize in bytes.  Should be a multiple of two: 65536, 131072 or 262144.
+         */
+        public RTL2832USBTransferProcessor(String deviceName, DeviceHandle deviceHandle, ISampleAdapter sampleAdapter, int bufferSize)
+        {
+            super(deviceName, deviceHandle, sampleAdapter, bufferSize);
+        }
+
+        @Override
+        protected void prepareDeviceStart()
+        {
+            resetUSBBuffer();
+        }
+    }
 }
