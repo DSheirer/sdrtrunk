@@ -33,6 +33,7 @@ import sample.complex.ComplexBuffer;
 import source.tuner.TunerManager;
 import util.ThreadPool;
 
+import javax.usb.UsbException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -139,6 +140,28 @@ public class USBTransferProcessor implements TransferCallback
                     if(result == LibUsb.SUCCESS)
                     {
                         mTransfersInProgress.add(transfer);
+                    }
+                    else if(result == LibUsb.ERROR_PIPE)
+                    {
+                        int resetResult = LibUsb.clearHalt(mDeviceHandle, USB_BULK_TRANSFER_ENDPOINT);
+
+                        if(resetResult == LibUsb.SUCCESS)
+                        {
+                            int resubmitResult = LibUsb.submitTransfer(transfer);
+
+                            if(resubmitResult == LibUsb.SUCCESS)
+                            {
+                                mTransfersInProgress.add(transfer);
+                            }
+                            else
+                            {
+                                mLog.error(mDeviceName + " - error resubmitting transfer after endpoint clear halt");
+                            }
+                        }
+                        else
+                        {
+                            mLog.error(mDeviceName + " - unable to clear device endpoint halt");
+                        }
                     }
                     else
                     {
