@@ -40,7 +40,7 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
 
     public static final int PROCESSOR_RUN_INTERVAL_MS = 1000;
 
-    private ScheduledFuture mScheduledTask;
+    private ScheduledFuture mRecordingQueueProcessorFuture;
 
     private RecordingQueueProcessor mRecordingQueueProcessor = new RecordingQueueProcessor();
     private Queue<AudioRecording> mAudioRecordingQueue = new LinkedTransferQueue<>();
@@ -120,10 +120,10 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
     {
         if(mStreaming.compareAndSet(false, true))
         {
-            if(mScheduledTask == null)
+            if(mRecordingQueueProcessorFuture == null)
             {
-                ThreadPool.SCHEDULED.scheduleAtFixedRate(mRecordingQueueProcessor, 0,
-                    PROCESSOR_RUN_INTERVAL_MS, TimeUnit.MILLISECONDS);
+                mRecordingQueueProcessorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(mRecordingQueueProcessor,
+                    0, PROCESSOR_RUN_INTERVAL_MS, TimeUnit.MILLISECONDS);
             }
         }
     }
@@ -135,9 +135,10 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
     {
         if(mStreaming.compareAndSet(true, false))
         {
-            if(mScheduledTask != null)
+            if(mRecordingQueueProcessorFuture != null)
             {
-                mScheduledTask.cancel(true);
+                mRecordingQueueProcessorFuture.cancel(true);
+                mRecordingQueueProcessorFuture = null;
             }
 
             disconnect();

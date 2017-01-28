@@ -222,8 +222,8 @@ public class StreamManager implements Listener<AudioPacket>
                     .filter(entry -> entry.getValue().getTimeRecordingStart() + MAXIMUM_RECORDER_LIFESPAN_MILLIS < now)
                     .forEach(entry ->
                     {
-                        mLog.debug("Maximum recording time limit reached - removing recorder: " +
-                            entry.getValue().getPath().toString());
+                        mLog.info("cycling recorder - max temporary streaming recording time limit reached [" +
+                            entry.getValue().getPath().toString() + "]");
 
                         removeRecorder(entry.getKey());
                     });
