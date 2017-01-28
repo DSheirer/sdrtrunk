@@ -73,6 +73,25 @@ public class ChannelModel extends AbstractTableModel implements IChannelEventBro
     }
 
     /**
+     * Returns the channel identified by the id argument
+     */
+    public Channel getChannelFromChannelID(Integer id)
+    {
+        if(id != null)
+        {
+            for(Channel channel: mChannels)
+            {
+                if(channel.getChannelID() == id)
+                {
+                    return channel;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Returns a list of unique system values from across the channel set
      */
     public List<String> getSystems()

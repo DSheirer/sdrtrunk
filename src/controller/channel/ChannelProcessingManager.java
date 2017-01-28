@@ -109,6 +109,35 @@ public class ChannelProcessingManager implements ChannelEventListener
         return mProcessingChains.get(channel.getChannelID());
     }
 
+    /**
+     * Returns the channel associated with the processing chain
+     * @param processingChain
+     * @return channel associated with the processing chain or null
+     */
+    public Channel getChannel(ProcessingChain processingChain)
+    {
+        return mChannelModel.getChannelFromChannelID(getChannelID(processingChain));
+    }
+
+    /**
+     * Returns the channel ID associated with the processing chain
+     */
+    private Integer getChannelID(ProcessingChain processingChain)
+    {
+        if(processingChain != null)
+        {
+            for(Map.Entry<Integer,ProcessingChain> entry: mProcessingChains.entrySet())
+            {
+                if(entry.getValue() == processingChain)
+                {
+                    return entry.getKey();
+                }
+            }
+        }
+
+        return null;
+    }
+
     @Override
     public synchronized void channelChanged(ChannelEvent event)
     {
