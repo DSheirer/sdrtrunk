@@ -354,42 +354,42 @@ public class P25DecoderState extends DecoderState
     {
         if(message instanceof P25Message)
         {
-            updateNAC(((P25Message) message).getNAC());
+            updateNAC(((P25Message)message).getNAC());
 
 			/* Voice Vocoder messages */
             if(message instanceof LDUMessage)
             {
-                processLDU((LDUMessage) message);
+                processLDU((LDUMessage)message);
             }
 
 			/* Trunking Signalling Messages */
             else if(message instanceof TSBKMessage)
             {
-                processTSBK((TSBKMessage) message);
+                processTSBK((TSBKMessage)message);
             }
 
 			/* Terminator Data Unit with Link Control Message */
             else if(message instanceof TDULinkControlMessage)
             {
-                processTDULC((TDULinkControlMessage) message);
+                processTDULC((TDULinkControlMessage)message);
             }
 
 			/* Packet Data Unit Messages */
             else if(message instanceof PDUMessage)
             {
-                processPDU((PDUMessage) message);
+                processPDU((PDUMessage)message);
             }
 
 			/* Header Data Unit Message - preceeds voice LDUs */
             else if(message instanceof HDUMessage)
             {
-                processHDU((HDUMessage) message);
+                processHDU((HDUMessage)message);
             }
 
 			/* Terminator Data Unit, or default message if CRC failed */
             else if(message instanceof TDUMessage)
             {
-                processTDU((TDUMessage) message);
+                processTDU((TDUMessage)message);
             }
         }
     }
@@ -456,7 +456,7 @@ public class P25DecoderState extends DecoderState
             case ADJACENT_SITE_STATUS_BROADCAST:
                 if(tdulc instanceof AdjacentSiteStatusBroadcast)
                 {
-                    IAdjacentSite ias = (IAdjacentSite) tdulc;
+                    IAdjacentSite ias = (IAdjacentSite)tdulc;
 
                     mNeighborMap.put(ias.getUniqueID(), ias);
 
@@ -470,7 +470,7 @@ public class P25DecoderState extends DecoderState
             case ADJACENT_SITE_STATUS_BROADCAST_EXPLICIT:
                 if(tdulc instanceof AdjacentSiteStatusBroadcastExplicit)
                 {
-                    IAdjacentSite ias = (IAdjacentSite) tdulc;
+                    IAdjacentSite ias = (IAdjacentSite)tdulc;
 
                     mNeighborMap.put(ias.getUniqueID(), ias);
 
@@ -481,7 +481,7 @@ public class P25DecoderState extends DecoderState
                 if(tdulc instanceof module.decode.p25.message.tdu.lc.CallAlert)
                 {
                     module.decode.p25.message.tdu.lc.CallAlert ca =
-                        (module.decode.p25.message.tdu.lc.CallAlert) tdulc;
+                        (module.decode.p25.message.tdu.lc.CallAlert)tdulc;
 
                     broadcast(new P25CallEvent.Builder(CallEventType.PAGE)
                         .aliasList(getAliasList())
@@ -508,13 +508,13 @@ public class P25DecoderState extends DecoderState
                 //TODO: does the activity summary need this message?
 
 				/* This message is handled by the P25MessageProcessor and
-				 * inserted into any channels needing frequency band info */
+                 * inserted into any channels needing frequency band info */
                 break;
             case EXTENDED_FUNCTION_COMMAND:
                 if(tdulc instanceof module.decode.p25.message.tdu.lc.ExtendedFunctionCommand)
                 {
                     module.decode.p25.message.tdu.lc.ExtendedFunctionCommand efc =
-                        (module.decode.p25.message.tdu.lc.ExtendedFunctionCommand) tdulc;
+                        (module.decode.p25.message.tdu.lc.ExtendedFunctionCommand)tdulc;
 
                     broadcast(new P25CallEvent.Builder(CallEventType.COMMAND)
                         .aliasList(getAliasList())
@@ -532,7 +532,7 @@ public class P25DecoderState extends DecoderState
                 if(tdulc instanceof module.decode.p25.message.tdu.lc.GroupAffiliationQuery)
                 {
                     module.decode.p25.message.tdu.lc.GroupAffiliationQuery gaq =
-                        (module.decode.p25.message.tdu.lc.GroupAffiliationQuery) tdulc;
+                        (module.decode.p25.message.tdu.lc.GroupAffiliationQuery)tdulc;
 
                     broadcast(new P25CallEvent.Builder(CallEventType.QUERY)
                         .aliasList(getAliasList())
@@ -552,7 +552,7 @@ public class P25DecoderState extends DecoderState
 				 * as a call detect */
                 if(tdulc instanceof GroupVoiceChannelUpdate)
                 {
-                    GroupVoiceChannelUpdate gvcu = (GroupVoiceChannelUpdate) tdulc;
+                    GroupVoiceChannelUpdate gvcu = (GroupVoiceChannelUpdate)tdulc;
 
                     String groupA = gvcu.getGroupAddressA();
 
@@ -591,7 +591,7 @@ public class P25DecoderState extends DecoderState
                     tdulc instanceof GroupVoiceChannelUpdateExplicit)
                 {
                     GroupVoiceChannelUpdateExplicit gvcue =
-                        (GroupVoiceChannelUpdateExplicit) tdulc;
+                        (GroupVoiceChannelUpdateExplicit)tdulc;
 
                     String group = gvcue.getGroupAddress();
 
@@ -614,7 +614,7 @@ public class P25DecoderState extends DecoderState
                 if(tdulc instanceof module.decode.p25.message.tdu.lc.GroupVoiceChannelUser)
                 {
                     module.decode.p25.message.tdu.lc.GroupVoiceChannelUser gvcuser =
-                        (module.decode.p25.message.tdu.lc.GroupVoiceChannelUser) tdulc;
+                        (module.decode.p25.message.tdu.lc.GroupVoiceChannelUser)tdulc;
 
                     broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL));
 
@@ -645,7 +645,7 @@ public class P25DecoderState extends DecoderState
                 if(tdulc instanceof module.decode.p25.message.tdu.lc.MessageUpdate)
                 {
                     module.decode.p25.message.tdu.lc.MessageUpdate mu =
-                        (module.decode.p25.message.tdu.lc.MessageUpdate) tdulc;
+                        (module.decode.p25.message.tdu.lc.MessageUpdate)tdulc;
 
                     broadcast(new P25CallEvent.Builder(CallEventType.SDM)
                         .aliasList(getAliasList())
@@ -662,7 +662,7 @@ public class P25DecoderState extends DecoderState
             case NETWORK_STATUS_BROADCAST:
                 if(tdulc instanceof NetworkStatusBroadcast)
                 {
-                    updateSystem(((NetworkStatusBroadcast) tdulc).getSystem());
+                    updateSystem(((NetworkStatusBroadcast)tdulc).getSystem());
                 }
                 else
                 {
@@ -672,7 +672,7 @@ public class P25DecoderState extends DecoderState
             case NETWORK_STATUS_BROADCAST_EXPLICIT:
                 if(tdulc instanceof NetworkStatusBroadcastExplicit)
                 {
-                    updateSystem(((NetworkStatusBroadcastExplicit) tdulc).getSystem());
+                    updateSystem(((NetworkStatusBroadcastExplicit)tdulc).getSystem());
                 }
                 else
                 {
@@ -683,7 +683,7 @@ public class P25DecoderState extends DecoderState
                 if(tdulc instanceof module.decode.p25.message.tdu.lc.ProtectionParameterBroadcast)
                 {
                     module.decode.p25.message.tdu.lc.ProtectionParameterBroadcast ppb =
-                        (module.decode.p25.message.tdu.lc.ProtectionParameterBroadcast) tdulc;
+                        (module.decode.p25.message.tdu.lc.ProtectionParameterBroadcast)tdulc;
 
                     broadcast(new P25CallEvent.Builder(CallEventType.COMMAND)
                         .aliasList(getAliasList())
@@ -702,7 +702,7 @@ public class P25DecoderState extends DecoderState
                 if(tdulc instanceof module.decode.p25.message.tdu.lc.RFSSStatusBroadcast)
                 {
                     module.decode.p25.message.tdu.lc.RFSSStatusBroadcast rfsssb =
-                        (module.decode.p25.message.tdu.lc.RFSSStatusBroadcast) tdulc;
+                        (module.decode.p25.message.tdu.lc.RFSSStatusBroadcast)tdulc;
 
                     updateSystem(rfsssb.getSystem());
 
@@ -727,7 +727,7 @@ public class P25DecoderState extends DecoderState
                 if(tdulc instanceof module.decode.p25.message.tdu.lc.RFSSStatusBroadcastExplicit)
                 {
                     module.decode.p25.message.tdu.lc.RFSSStatusBroadcastExplicit rfsssbe =
-                        (module.decode.p25.message.tdu.lc.RFSSStatusBroadcastExplicit) tdulc;
+                        (module.decode.p25.message.tdu.lc.RFSSStatusBroadcastExplicit)tdulc;
 
                     String site = rfsssbe.getRFSubsystemID() + "-" +
                         rfsssbe.getSiteID();
@@ -750,7 +750,7 @@ public class P25DecoderState extends DecoderState
                 if(tdulc instanceof SecondaryControlChannelBroadcast)
                 {
                     SecondaryControlChannelBroadcast sccb =
-                        (SecondaryControlChannelBroadcast) tdulc;
+                        (SecondaryControlChannelBroadcast)tdulc;
 
                     String site = sccb.getRFSubsystemID() + "-" +
                         sccb.getSiteID();
@@ -766,7 +766,7 @@ public class P25DecoderState extends DecoderState
                 if(tdulc instanceof SecondaryControlChannelBroadcastExplicit)
                 {
                     SecondaryControlChannelBroadcastExplicit sccb =
-                        (SecondaryControlChannelBroadcastExplicit) tdulc;
+                        (SecondaryControlChannelBroadcastExplicit)tdulc;
 
                     String site = sccb.getRFSubsystemID() + "-" +
                         sccb.getSiteID();
@@ -782,7 +782,7 @@ public class P25DecoderState extends DecoderState
                 if(tdulc instanceof module.decode.p25.message.tdu.lc.StatusQuery)
                 {
                     module.decode.p25.message.tdu.lc.StatusQuery sq =
-                        (module.decode.p25.message.tdu.lc.StatusQuery) tdulc;
+                        (module.decode.p25.message.tdu.lc.StatusQuery)tdulc;
 
                     broadcast(new P25CallEvent.Builder(CallEventType.QUERY)
                         .aliasList(getAliasList())
@@ -800,7 +800,7 @@ public class P25DecoderState extends DecoderState
                 if(tdulc instanceof module.decode.p25.message.tdu.lc.StatusUpdate)
                 {
                     module.decode.p25.message.tdu.lc.StatusUpdate su =
-                        (module.decode.p25.message.tdu.lc.StatusUpdate) tdulc;
+                        (module.decode.p25.message.tdu.lc.StatusUpdate)tdulc;
 
                     broadcast(new P25CallEvent.Builder(CallEventType.STATUS)
                         .aliasList(getAliasList())
@@ -822,7 +822,7 @@ public class P25DecoderState extends DecoderState
                 if(tdulc instanceof module.decode.p25.message.tdu.lc.TelephoneInterconnectAnswerRequest)
                 {
                     module.decode.p25.message.tdu.lc.TelephoneInterconnectAnswerRequest tiar =
-                        (module.decode.p25.message.tdu.lc.TelephoneInterconnectAnswerRequest) tdulc;
+                        (module.decode.p25.message.tdu.lc.TelephoneInterconnectAnswerRequest)tdulc;
 
                     broadcast(new P25CallEvent.Builder(CallEventType.PAGE)
                         .aliasList(getAliasList())
@@ -841,7 +841,7 @@ public class P25DecoderState extends DecoderState
                     tdulc instanceof module.decode.p25.message.tdu.lc.TelephoneInterconnectVoiceChannelUser)
                 {
                     module.decode.p25.message.tdu.lc.TelephoneInterconnectVoiceChannelUser tivcu =
-                        (module.decode.p25.message.tdu.lc.TelephoneInterconnectVoiceChannelUser) tdulc;
+                        (module.decode.p25.message.tdu.lc.TelephoneInterconnectVoiceChannelUser)tdulc;
 
                     String to = tivcu.getAddress();
 
@@ -866,7 +866,7 @@ public class P25DecoderState extends DecoderState
                 if(tdulc instanceof module.decode.p25.message.tdu.lc.UnitAuthenticationCommand)
                 {
                     module.decode.p25.message.tdu.lc.UnitAuthenticationCommand uac =
-                        (module.decode.p25.message.tdu.lc.UnitAuthenticationCommand) tdulc;
+                        (module.decode.p25.message.tdu.lc.UnitAuthenticationCommand)tdulc;
 
                     broadcast(new P25CallEvent.Builder(CallEventType.COMMAND)
                         .aliasList(getAliasList())
@@ -883,7 +883,7 @@ public class P25DecoderState extends DecoderState
                 if(tdulc instanceof module.decode.p25.message.tdu.lc.UnitRegistrationCommand)
                 {
                     module.decode.p25.message.tdu.lc.UnitRegistrationCommand urc =
-                        (module.decode.p25.message.tdu.lc.UnitRegistrationCommand) tdulc;
+                        (module.decode.p25.message.tdu.lc.UnitRegistrationCommand)tdulc;
 
                     broadcast(new P25CallEvent.Builder(CallEventType.COMMAND)
                         .aliasList(getAliasList())
@@ -900,7 +900,7 @@ public class P25DecoderState extends DecoderState
                 if(tdulc instanceof module.decode.p25.message.tdu.lc.UnitToUnitAnswerRequest)
                 {
                     module.decode.p25.message.tdu.lc.UnitToUnitAnswerRequest uuar =
-                        (module.decode.p25.message.tdu.lc.UnitToUnitAnswerRequest) tdulc;
+                        (module.decode.p25.message.tdu.lc.UnitToUnitAnswerRequest)tdulc;
 
                     broadcast(new P25CallEvent.Builder(CallEventType.PAGE)
                         .aliasList(getAliasList())
@@ -919,7 +919,7 @@ public class P25DecoderState extends DecoderState
                 if(tdulc instanceof module.decode.p25.message.tdu.lc.UnitToUnitVoiceChannelUser)
                 {
                     module.decode.p25.message.tdu.lc.UnitToUnitVoiceChannelUser uuvcu =
-                        (module.decode.p25.message.tdu.lc.UnitToUnitVoiceChannelUser) tdulc;
+                        (module.decode.p25.message.tdu.lc.UnitToUnitVoiceChannelUser)tdulc;
 
                     String from = uuvcu.getSourceAddress();
                     mFromTalkgroupMonitor.process(from);
@@ -983,12 +983,12 @@ public class P25DecoderState extends DecoderState
 
         if(ldu instanceof LDU1Message)
         {
-            switch(((LDU1Message) ldu).getOpcode())
+            switch(((LDU1Message)ldu).getOpcode())
             {
                 case ADJACENT_SITE_STATUS_BROADCAST:
                     if(ldu instanceof module.decode.p25.message.ldu.lc.AdjacentSiteStatusBroadcast)
                     {
-                        IAdjacentSite ias = (IAdjacentSite) ldu;
+                        IAdjacentSite ias = (IAdjacentSite)ldu;
 
                         mNeighborMap.put(ias.getUniqueID(), ias);
 
@@ -1003,7 +1003,7 @@ public class P25DecoderState extends DecoderState
                 case ADJACENT_SITE_STATUS_BROADCAST_EXPLICIT:
                     if(ldu instanceof module.decode.p25.message.ldu.lc.AdjacentSiteStatusBroadcastExplicit)
                     {
-                        IAdjacentSite ias = (IAdjacentSite) ldu;
+                        IAdjacentSite ias = (IAdjacentSite)ldu;
 
                         mNeighborMap.put(ias.getUniqueID(), ias);
 
@@ -1018,7 +1018,7 @@ public class P25DecoderState extends DecoderState
                     if(ldu instanceof module.decode.p25.message.ldu.lc.CallAlert)
                     {
                         module.decode.p25.message.ldu.lc.CallAlert ca =
-                            (module.decode.p25.message.ldu.lc.CallAlert) ldu;
+                            (module.decode.p25.message.ldu.lc.CallAlert)ldu;
                         broadcast(new P25CallEvent.Builder(CallEventType.PAGE)
                             .aliasList(getAliasList())
                             .from(ca.getSourceAddress())
@@ -1056,7 +1056,7 @@ public class P25DecoderState extends DecoderState
                     if(ldu instanceof module.decode.p25.message.ldu.lc.ExtendedFunctionCommand)
                     {
                         module.decode.p25.message.ldu.lc.ExtendedFunctionCommand efc =
-                            (module.decode.p25.message.ldu.lc.ExtendedFunctionCommand) ldu;
+                            (module.decode.p25.message.ldu.lc.ExtendedFunctionCommand)ldu;
 
                         broadcast(new P25CallEvent.Builder(CallEventType.COMMAND)
                             .aliasList(getAliasList())
@@ -1075,7 +1075,7 @@ public class P25DecoderState extends DecoderState
                         ldu instanceof module.decode.p25.message.ldu.lc.GroupAffiliationQuery)
                     {
                         module.decode.p25.message.ldu.lc.GroupAffiliationQuery gaq =
-                            (module.decode.p25.message.ldu.lc.GroupAffiliationQuery) ldu;
+                            (module.decode.p25.message.ldu.lc.GroupAffiliationQuery)ldu;
 
                         broadcast(new P25CallEvent.Builder(CallEventType.QUERY)
                             .aliasList(getAliasList())
@@ -1093,7 +1093,7 @@ public class P25DecoderState extends DecoderState
                     if(ldu instanceof module.decode.p25.message.ldu.lc.GroupVoiceChannelUpdate)
                     {
                         module.decode.p25.message.ldu.lc.GroupVoiceChannelUpdate gvcu =
-                            (module.decode.p25.message.ldu.lc.GroupVoiceChannelUpdate) ldu;
+                            (module.decode.p25.message.ldu.lc.GroupVoiceChannelUpdate)ldu;
 
                         String userA = gvcu.getGroupAddressA();
                         String userB = gvcu.getGroupAddressB();
@@ -1138,7 +1138,7 @@ public class P25DecoderState extends DecoderState
                     if(ldu instanceof module.decode.p25.message.ldu.lc.GroupVoiceChannelUpdateExplicit)
                     {
                         module.decode.p25.message.ldu.lc.GroupVoiceChannelUpdateExplicit gvcue =
-                            (module.decode.p25.message.ldu.lc.GroupVoiceChannelUpdateExplicit) ldu;
+                            (module.decode.p25.message.ldu.lc.GroupVoiceChannelUpdateExplicit)ldu;
 
                         String group = gvcue.getGroupAddress();
 
@@ -1168,7 +1168,7 @@ public class P25DecoderState extends DecoderState
                     if(ldu instanceof module.decode.p25.message.ldu.lc.GroupVoiceChannelUser)
                     {
                         module.decode.p25.message.ldu.lc.GroupVoiceChannelUser gvcuser =
-                            (module.decode.p25.message.ldu.lc.GroupVoiceChannelUser) ldu;
+                            (module.decode.p25.message.ldu.lc.GroupVoiceChannelUser)ldu;
 
                         mFromTalkgroupMonitor.process(gvcuser.getSourceAddress());
 
@@ -1201,7 +1201,7 @@ public class P25DecoderState extends DecoderState
                     if(ldu instanceof module.decode.p25.message.ldu.lc.MessageUpdate)
                     {
                         module.decode.p25.message.ldu.lc.MessageUpdate mu =
-                            (module.decode.p25.message.ldu.lc.MessageUpdate) ldu;
+                            (module.decode.p25.message.ldu.lc.MessageUpdate)ldu;
 
                         broadcast(new P25CallEvent.Builder(CallEventType.SDM)
                             .aliasList(getAliasList())
@@ -1218,7 +1218,7 @@ public class P25DecoderState extends DecoderState
                 case NETWORK_STATUS_BROADCAST:
                     if(ldu instanceof module.decode.p25.message.ldu.lc.NetworkStatusBroadcast)
                     {
-                        updateSystem(((module.decode.p25.message.ldu.lc.NetworkStatusBroadcast) ldu).getSystem());
+                        updateSystem(((module.decode.p25.message.ldu.lc.NetworkStatusBroadcast)ldu).getSystem());
                     }
                     else
                     {
@@ -1228,7 +1228,7 @@ public class P25DecoderState extends DecoderState
                 case NETWORK_STATUS_BROADCAST_EXPLICIT:
                     if(ldu instanceof module.decode.p25.message.ldu.lc.NetworkStatusBroadcastExplicit)
                     {
-                        updateSystem(((module.decode.p25.message.ldu.lc.NetworkStatusBroadcastExplicit) ldu).getSystem());
+                        updateSystem(((module.decode.p25.message.ldu.lc.NetworkStatusBroadcastExplicit)ldu).getSystem());
                     }
                     else
                     {
@@ -1239,7 +1239,7 @@ public class P25DecoderState extends DecoderState
                     if(ldu instanceof module.decode.p25.message.ldu.lc.ProtectionParameterBroadcast)
                     {
                         module.decode.p25.message.ldu.lc.ProtectionParameterBroadcast ppb =
-                            (module.decode.p25.message.ldu.lc.ProtectionParameterBroadcast) ldu;
+                            (module.decode.p25.message.ldu.lc.ProtectionParameterBroadcast)ldu;
 
                         broadcast(new P25CallEvent.Builder(CallEventType.COMMAND)
                             .aliasList(getAliasList())
@@ -1258,7 +1258,7 @@ public class P25DecoderState extends DecoderState
                     if(ldu instanceof module.decode.p25.message.ldu.lc.RFSSStatusBroadcast)
                     {
                         module.decode.p25.message.ldu.lc.RFSSStatusBroadcast rfsssb =
-                            (module.decode.p25.message.ldu.lc.RFSSStatusBroadcast) ldu;
+                            (module.decode.p25.message.ldu.lc.RFSSStatusBroadcast)ldu;
 
                         updateSystem(rfsssb.getSystem());
 
@@ -1276,7 +1276,7 @@ public class P25DecoderState extends DecoderState
                     if(ldu instanceof module.decode.p25.message.ldu.lc.RFSSStatusBroadcastExplicit)
                     {
                         module.decode.p25.message.ldu.lc.RFSSStatusBroadcastExplicit rfsssbe =
-                            (module.decode.p25.message.ldu.lc.RFSSStatusBroadcastExplicit) ldu;
+                            (module.decode.p25.message.ldu.lc.RFSSStatusBroadcastExplicit)ldu;
 
                         String site = rfsssbe.getRFSubsystemID() + "-" +
                             rfsssbe.getSiteID();
@@ -1292,7 +1292,7 @@ public class P25DecoderState extends DecoderState
                     if(ldu instanceof module.decode.p25.message.ldu.lc.SecondaryControlChannelBroadcast)
                     {
                         module.decode.p25.message.ldu.lc.SecondaryControlChannelBroadcast sccb =
-                            (module.decode.p25.message.ldu.lc.SecondaryControlChannelBroadcast) ldu;
+                            (module.decode.p25.message.ldu.lc.SecondaryControlChannelBroadcast)ldu;
 
                         String site = sccb.getRFSubsystemID() + "-" +
                             sccb.getSiteID();
@@ -1308,7 +1308,7 @@ public class P25DecoderState extends DecoderState
                     if(ldu instanceof module.decode.p25.message.ldu.lc.SecondaryControlChannelBroadcastExplicit)
                     {
                         module.decode.p25.message.ldu.lc.SecondaryControlChannelBroadcastExplicit sccb =
-                            (module.decode.p25.message.ldu.lc.SecondaryControlChannelBroadcastExplicit) ldu;
+                            (module.decode.p25.message.ldu.lc.SecondaryControlChannelBroadcastExplicit)ldu;
 
                         String site = sccb.getRFSubsystemID() + "-" +
                             sccb.getSiteID();
@@ -1324,7 +1324,7 @@ public class P25DecoderState extends DecoderState
                     if(ldu instanceof module.decode.p25.message.ldu.lc.StatusQuery)
                     {
                         module.decode.p25.message.ldu.lc.StatusQuery sq =
-                            (module.decode.p25.message.ldu.lc.StatusQuery) ldu;
+                            (module.decode.p25.message.ldu.lc.StatusQuery)ldu;
 
                         broadcast(new P25CallEvent.Builder(CallEventType.QUERY)
                             .aliasList(getAliasList())
@@ -1342,7 +1342,7 @@ public class P25DecoderState extends DecoderState
                     if(ldu instanceof module.decode.p25.message.ldu.lc.StatusUpdate)
                     {
                         module.decode.p25.message.ldu.lc.StatusUpdate su =
-                            (module.decode.p25.message.ldu.lc.StatusUpdate) ldu;
+                            (module.decode.p25.message.ldu.lc.StatusUpdate)ldu;
 
                         broadcast(new P25CallEvent.Builder(CallEventType.STATUS)
                             .aliasList(getAliasList())
@@ -1364,7 +1364,7 @@ public class P25DecoderState extends DecoderState
                     if(ldu instanceof module.decode.p25.message.ldu.lc.TelephoneInterconnectAnswerRequest)
                     {
                         module.decode.p25.message.ldu.lc.TelephoneInterconnectAnswerRequest tiar =
-                            (module.decode.p25.message.ldu.lc.TelephoneInterconnectAnswerRequest) ldu;
+                            (module.decode.p25.message.ldu.lc.TelephoneInterconnectAnswerRequest)ldu;
 
                         broadcast(new P25CallEvent.Builder(CallEventType.PAGE)
                             .aliasList(getAliasList())
@@ -1384,7 +1384,7 @@ public class P25DecoderState extends DecoderState
                         ldu instanceof TelephoneInterconnectVoiceChannelUser)
                     {
                         TelephoneInterconnectVoiceChannelUser tivcu =
-                            (TelephoneInterconnectVoiceChannelUser) ldu;
+                            (TelephoneInterconnectVoiceChannelUser)ldu;
 
                         mToTalkgroupMonitor.process(tivcu.getAddress());
 
@@ -1412,7 +1412,7 @@ public class P25DecoderState extends DecoderState
                     if(ldu instanceof module.decode.p25.message.ldu.lc.UnitAuthenticationCommand)
                     {
                         module.decode.p25.message.ldu.lc.UnitAuthenticationCommand uac =
-                            (module.decode.p25.message.ldu.lc.UnitAuthenticationCommand) ldu;
+                            (module.decode.p25.message.ldu.lc.UnitAuthenticationCommand)ldu;
 
                         broadcast(new P25CallEvent.Builder(CallEventType.COMMAND)
                             .aliasList(getAliasList())
@@ -1429,7 +1429,7 @@ public class P25DecoderState extends DecoderState
                     if(ldu instanceof module.decode.p25.message.ldu.lc.UnitRegistrationCommand)
                     {
                         module.decode.p25.message.ldu.lc.UnitRegistrationCommand urc =
-                            (module.decode.p25.message.ldu.lc.UnitRegistrationCommand) ldu;
+                            (module.decode.p25.message.ldu.lc.UnitRegistrationCommand)ldu;
 
                         broadcast(new P25CallEvent.Builder(CallEventType.COMMAND)
                             .aliasList(getAliasList())
@@ -1446,7 +1446,7 @@ public class P25DecoderState extends DecoderState
                     if(ldu instanceof module.decode.p25.message.ldu.lc.UnitToUnitAnswerRequest)
                     {
                         module.decode.p25.message.ldu.lc.UnitToUnitAnswerRequest uuar =
-                            (module.decode.p25.message.ldu.lc.UnitToUnitAnswerRequest) ldu;
+                            (module.decode.p25.message.ldu.lc.UnitToUnitAnswerRequest)ldu;
 
                         broadcast(new P25CallEvent.Builder(CallEventType.PAGE)
                             .aliasList(getAliasList())
@@ -1465,7 +1465,7 @@ public class P25DecoderState extends DecoderState
                         ldu instanceof UnitToUnitVoiceChannelUser)
                     {
                         UnitToUnitVoiceChannelUser uuvcu =
-                            (UnitToUnitVoiceChannelUser) ldu;
+                            (UnitToUnitVoiceChannelUser)ldu;
 
                         mFromTalkgroupMonitor.process(uuvcu.getSourceAddress());
 
@@ -1512,7 +1512,7 @@ public class P25DecoderState extends DecoderState
                 case ADJACENT_STATUS_BROADCAST:
                     if(tsbk instanceof AdjacentStatusBroadcast)
                     {
-                        IAdjacentSite ias = (IAdjacentSite) tsbk;
+                        IAdjacentSite ias = (IAdjacentSite)tsbk;
 
                         mNeighborMap.put(ias.getUniqueID(), ias);
 
@@ -1557,7 +1557,7 @@ public class P25DecoderState extends DecoderState
                     break;
                 case IDENTIFIER_UPDATE_NON_VUHF:
                 case IDENTIFIER_UPDATE_VHF_UHF_BANDS:
-                    IdentifierUpdate iu = (IdentifierUpdate) tsbk;
+                    IdentifierUpdate iu = (IdentifierUpdate)tsbk;
 
                     if(!mBands.containsKey(iu.getIdentifier()))
                     {
@@ -1573,7 +1573,7 @@ public class P25DecoderState extends DecoderState
                     break;
                 case NETWORK_STATUS_BROADCAST:
                     mNetworkStatus = (module.decode.p25.message.tsbk.osp
-                        .control.NetworkStatusBroadcast) tsbk;
+                        .control.NetworkStatusBroadcast)tsbk;
                     break;
                 case PROTECTION_PARAMETER_UPDATE:
                     processTSBKResponse(tsbk);
@@ -1585,14 +1585,14 @@ public class P25DecoderState extends DecoderState
                     processTSBKCommand(tsbk);
                     break;
                 case RFSS_STATUS_BROADCAST:
-                    processTSBKRFSSStatus((RFSSStatusBroadcast) tsbk);
+                    processTSBKRFSSStatus((RFSSStatusBroadcast)tsbk);
                     break;
                 case ROAMING_ADDRESS_COMMAND:
                     processTSBKCommand(tsbk);
                     break;
                 case SECONDARY_CONTROL_CHANNEL_BROADCAST:
                     module.decode.p25.message.tsbk.osp.control.SecondaryControlChannelBroadcast sccb =
-                        (module.decode.p25.message.tsbk.osp.control.SecondaryControlChannelBroadcast) tsbk;
+                        (module.decode.p25.message.tsbk.osp.control.SecondaryControlChannelBroadcast)tsbk;
 
                     if(sccb.getDownlinkFrequency1() > 0)
                     {
@@ -1600,7 +1600,7 @@ public class P25DecoderState extends DecoderState
                     }
                     break;
                 case SNDCP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT:
-                    mSNDCPDataChannel = (SNDCPDataChannelAnnouncementExplicit) tsbk;
+                    mSNDCPDataChannel = (SNDCPDataChannelAnnouncementExplicit)tsbk;
                     break;
                 case SNDCP_DATA_CHANNEL_GRANT:
                     processTSBKChannelGrant(tsbk);
@@ -1627,7 +1627,7 @@ public class P25DecoderState extends DecoderState
         }
         else if(tsbk.getVendor() == Vendor.MOTOROLA)
         {
-            processMotorolaTSBK((MotorolaTSBKMessage) tsbk);
+            processMotorolaTSBK((MotorolaTSBKMessage)tsbk);
         }
     }
 
@@ -1644,13 +1644,13 @@ public class P25DecoderState extends DecoderState
         {
             broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA));
 
-            PDUConfirmedMessage pduc = (PDUConfirmedMessage) pdu;
+            PDUConfirmedMessage pduc = (PDUConfirmedMessage)pdu;
 
             switch(pduc.getPDUType())
             {
                 case SNDCP_ACTIVATE_TDS_CONTEXT_ACCEPT:
                     SNDCPActivateTDSContextAccept satca =
-                        (SNDCPActivateTDSContextAccept) pduc;
+                        (SNDCPActivateTDSContextAccept)pduc;
 
                     broadcast(new P25CallEvent.Builder(CallEventType.COMMAND)
                         .aliasList(getAliasList())
@@ -1662,7 +1662,7 @@ public class P25DecoderState extends DecoderState
                     break;
                 case SNDCP_ACTIVATE_TDS_CONTEXT_REJECT:
                     SNDCPActivateTDSContextReject satcr =
-                        (SNDCPActivateTDSContextReject) pduc;
+                        (SNDCPActivateTDSContextReject)pduc;
 
                     broadcast(new P25CallEvent.Builder(CallEventType.COMMAND)
                         .aliasList(getAliasList())
@@ -1675,7 +1675,7 @@ public class P25DecoderState extends DecoderState
                     break;
                 case SNDCP_ACTIVATE_TDS_CONTEXT_REQUEST:
                     SNDCPActivateTDSContextRequest satcreq =
-                        (SNDCPActivateTDSContextRequest) pduc;
+                        (SNDCPActivateTDSContextRequest)pduc;
 
                     broadcast(new P25CallEvent.Builder(CallEventType.QUERY)
                         .aliasList(getAliasList())
@@ -1687,7 +1687,7 @@ public class P25DecoderState extends DecoderState
                     break;
                 case SNDCP_DEACTIVATE_TDS_CONTEXT_ACCEPT:
                     SNDCPDeactivateTDSContext sdtca =
-                        (SNDCPDeactivateTDSContext) pduc;
+                        (SNDCPDeactivateTDSContext)pduc;
 
                     broadcast(new P25CallEvent.Builder(CallEventType.QUERY)
                         .aliasList(getAliasList())
@@ -1699,7 +1699,7 @@ public class P25DecoderState extends DecoderState
                     break;
                 case SNDCP_DEACTIVATE_TDS_CONTEXT_REQUEST:
                     SNDCPDeactivateTDSContext sdtcreq =
-                        (SNDCPDeactivateTDSContext) pduc;
+                        (SNDCPDeactivateTDSContext)pduc;
 
                     broadcast(new P25CallEvent.Builder(CallEventType.QUERY)
                         .aliasList(getAliasList())
@@ -1710,7 +1710,7 @@ public class P25DecoderState extends DecoderState
                         .build());
                     break;
                 case SNDCP_RF_CONFIRMED_DATA:
-                    SNDCPUserData sud = (SNDCPUserData) pduc;
+                    SNDCPUserData sud = (SNDCPUserData)pduc;
 
                     StringBuilder sbFrom = new StringBuilder();
                     StringBuilder sbTo = new StringBuilder();
@@ -1763,7 +1763,7 @@ public class P25DecoderState extends DecoderState
                 case ADJACENT_STATUS_BROADCAST:
                     if(pdu instanceof AdjacentStatusBroadcastExtended)
                     {
-                        IAdjacentSite ias = (IAdjacentSite) pdu;
+                        IAdjacentSite ias = (IAdjacentSite)pdu;
 
                         mNeighborMap.put(ias.getUniqueID(), ias);
 
@@ -1773,7 +1773,7 @@ public class P25DecoderState extends DecoderState
                 case CALL_ALERT:
                     if(pdu instanceof CallAlertExtended)
                     {
-                        CallAlertExtended ca = (CallAlertExtended) pdu;
+                        CallAlertExtended ca = (CallAlertExtended)pdu;
 
                         broadcast(new P25CallEvent.Builder(CallEventType.PAGE)
                             .aliasList(getAliasList())
@@ -1791,7 +1791,7 @@ public class P25DecoderState extends DecoderState
                     if(pdu instanceof GroupAffiliationQueryExtended)
                     {
                         GroupAffiliationQueryExtended gaqe =
-                            (GroupAffiliationQueryExtended) pdu;
+                            (GroupAffiliationQueryExtended)pdu;
 
                         if(mLastQueryEventID == null || !gaqe.getTargetAddress()
                             .contentEquals(mLastQueryEventID))
@@ -1812,7 +1812,7 @@ public class P25DecoderState extends DecoderState
                     if(pdu instanceof GroupAffiliationResponseExtended)
                     {
                         GroupAffiliationResponseExtended gar =
-                            (GroupAffiliationResponseExtended) pdu;
+                            (GroupAffiliationResponseExtended)pdu;
 
                         if(mLastResponseEventID == null || !gar.getTargetAddress()
                             .contentEquals(mLastResponseEventID))
@@ -1841,7 +1841,7 @@ public class P25DecoderState extends DecoderState
                 case MESSAGE_UPDATE:
                     if(pdu instanceof MessageUpdateExtended)
                     {
-                        MessageUpdateExtended mu = (MessageUpdateExtended) pdu;
+                        MessageUpdateExtended mu = (MessageUpdateExtended)pdu;
 
                         broadcast(new P25CallEvent.Builder(CallEventType.SDM)
                             .aliasList(getAliasList())
@@ -1859,7 +1859,7 @@ public class P25DecoderState extends DecoderState
                 case NETWORK_STATUS_BROADCAST:
                     if(pdu instanceof NetworkStatusBroadcastExtended)
                     {
-                        mNetworkStatusExtended = (NetworkStatusBroadcastExtended) pdu;
+                        mNetworkStatusExtended = (NetworkStatusBroadcastExtended)pdu;
                     }
                     else
                     {
@@ -1870,7 +1870,7 @@ public class P25DecoderState extends DecoderState
                     if(pdu instanceof ProtectionParameterBroadcast)
                     {
                         mProtectionParameterBroadcast =
-                            (ProtectionParameterBroadcast) pdu;
+                            (ProtectionParameterBroadcast)pdu;
                     }
                     else
                     {
@@ -1880,7 +1880,7 @@ public class P25DecoderState extends DecoderState
                 case RFSS_STATUS_BROADCAST:
                     if(pdu instanceof RFSSStatusBroadcastExtended)
                     {
-                        mRFSSStatusMessageExtended = (RFSSStatusBroadcastExtended) pdu;
+                        mRFSSStatusMessageExtended = (RFSSStatusBroadcastExtended)pdu;
 
                         updateNAC(mRFSSStatusMessageExtended.getNAC());
                         updateSystem(mRFSSStatusMessageExtended.getSystemID());
@@ -1896,7 +1896,7 @@ public class P25DecoderState extends DecoderState
                     if(pdu instanceof RoamingAddressUpdateExtended)
                     {
                         RoamingAddressUpdateExtended raue =
-                            (RoamingAddressUpdateExtended) pdu;
+                            (RoamingAddressUpdateExtended)pdu;
 
                         StringBuilder sb = new StringBuilder();
                         sb.append("ROAMING ADDRESS STACK A:");
@@ -1937,7 +1937,7 @@ public class P25DecoderState extends DecoderState
                 case STATUS_QUERY:
                     if(pdu instanceof StatusQueryExtended)
                     {
-                        StatusQueryExtended sq = (StatusQueryExtended) pdu;
+                        StatusQueryExtended sq = (StatusQueryExtended)pdu;
 
                         if(mLastQueryEventID == null || !sq.getTargetAddress()
                             .contentEquals(mLastQueryEventID))
@@ -1962,7 +1962,7 @@ public class P25DecoderState extends DecoderState
                 case STATUS_UPDATE:
                     if(pdu instanceof StatusUpdateExtended)
                     {
-                        StatusUpdateExtended su = (StatusUpdateExtended) pdu;
+                        StatusUpdateExtended su = (StatusUpdateExtended)pdu;
 
                         if(mLastResponseEventID == null || !mLastResponseEventID
                             .contentEquals(su.getTargetAddress()))
@@ -1989,7 +1989,7 @@ public class P25DecoderState extends DecoderState
                     if(pdu instanceof UnitRegistrationResponseExtended)
                     {
                         UnitRegistrationResponseExtended urr =
-                            (UnitRegistrationResponseExtended) pdu;
+                            (UnitRegistrationResponseExtended)pdu;
 
                         if(urr.getResponse() == Response.ACCEPT)
                         {
@@ -2023,7 +2023,7 @@ public class P25DecoderState extends DecoderState
                     if(pdu instanceof UnitToUnitAnswerRequestExplicit)
                     {
                         UnitToUnitAnswerRequestExplicit utuare =
-                            (UnitToUnitAnswerRequestExplicit) pdu;
+                            (UnitToUnitAnswerRequestExplicit)pdu;
 
                         if(mLastPageEventID == null || !mLastPageEventID
                             .contentEquals(utuare.getTargetAddress()))
@@ -2063,7 +2063,7 @@ public class P25DecoderState extends DecoderState
                 if(pdu instanceof GroupDataChannelGrantExtended)
                 {
                     GroupDataChannelGrantExtended gdcge =
-                        (GroupDataChannelGrantExtended) pdu;
+                        (GroupDataChannelGrantExtended)pdu;
 
                     channel = gdcge.getTransmitChannel();
                     from = gdcge.getSourceAddress();
@@ -2104,7 +2104,7 @@ public class P25DecoderState extends DecoderState
                 if(pdu instanceof GroupVoiceChannelGrantExplicit)
                 {
                     GroupVoiceChannelGrantExplicit gvcge =
-                        (GroupVoiceChannelGrantExplicit) pdu;
+                        (GroupVoiceChannelGrantExplicit)pdu;
 
                     channel = gvcge.getTransmitChannel();
                     from = gvcge.getSourceAddress();
@@ -2142,7 +2142,7 @@ public class P25DecoderState extends DecoderState
                 if(pdu instanceof IndividualDataChannelGrantExtended)
                 {
                     IndividualDataChannelGrantExtended idcge =
-                        (IndividualDataChannelGrantExtended) pdu;
+                        (IndividualDataChannelGrantExtended)pdu;
 
                     channel = idcge.getTransmitChannel();
                     from = idcge.getSourceWACN() + "-" +
@@ -2183,7 +2183,7 @@ public class P25DecoderState extends DecoderState
                 break;
             case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
                 TelephoneInterconnectChannelGrantExplicit ticge =
-                    (TelephoneInterconnectChannelGrantExplicit) pdu;
+                    (TelephoneInterconnectChannelGrantExplicit)pdu;
 
                 channel = ticge.getTransmitChannel();
 
@@ -2220,7 +2220,7 @@ public class P25DecoderState extends DecoderState
                 if(pdu instanceof UnitToUnitVoiceChannelGrantExtended)
                 {
                     UnitToUnitVoiceChannelGrantExtended uuvcge =
-                        (UnitToUnitVoiceChannelGrantExtended) pdu;
+                        (UnitToUnitVoiceChannelGrantExtended)pdu;
 
                     channel = uuvcge.getTransmitChannel();
                     from = uuvcge.getSourceWACN() + "-" +
@@ -2260,7 +2260,7 @@ public class P25DecoderState extends DecoderState
                 if(pdu instanceof UnitToUnitVoiceChannelGrantUpdateExtended)
                 {
                     UnitToUnitVoiceChannelGrantUpdateExtended uuvcgue =
-                        (UnitToUnitVoiceChannelGrantUpdateExtended) pdu;
+                        (UnitToUnitVoiceChannelGrantUpdateExtended)pdu;
 
                     channel = uuvcgue.getTransmitChannel();
                     from = uuvcgue.getSourceWACN() + "-" +
@@ -2307,7 +2307,7 @@ public class P25DecoderState extends DecoderState
         switch(message.getOpcode())
         {
             case AUTHENTICATION_COMMAND:
-                AuthenticationCommand ac = (AuthenticationCommand) message;
+                AuthenticationCommand ac = (AuthenticationCommand)message;
 
                 if(mLastCommandEventID == null || !mLastCommandEventID
                     .contentEquals(ac.getFullTargetID()))
@@ -2323,7 +2323,7 @@ public class P25DecoderState extends DecoderState
                 }
                 break;
             case EXTENDED_FUNCTION_COMMAND:
-                ExtendedFunctionCommand efc = (ExtendedFunctionCommand) message;
+                ExtendedFunctionCommand efc = (ExtendedFunctionCommand)message;
 
                 if(mLastCommandEventID == null || !mLastCommandEventID
                     .contentEquals(efc.getTargetAddress()))
@@ -2340,7 +2340,7 @@ public class P25DecoderState extends DecoderState
                 }
                 break;
             case RADIO_UNIT_MONITOR_COMMAND:
-                RadioUnitMonitorCommand rumc = (RadioUnitMonitorCommand) message;
+                RadioUnitMonitorCommand rumc = (RadioUnitMonitorCommand)message;
 
                 if(mLastCommandEventID == null || !mLastCommandEventID
                     .contentEquals(rumc.getTargetAddress()))
@@ -2356,7 +2356,7 @@ public class P25DecoderState extends DecoderState
                 }
                 break;
             case ROAMING_ADDRESS_COMMAND:
-                RoamingAddressCommand rac = (RoamingAddressCommand) message;
+                RoamingAddressCommand rac = (RoamingAddressCommand)message;
 
                 if(mLastCommandEventID == null || !mLastCommandEventID
                     .contentEquals(rac.getTargetID()))
@@ -2373,7 +2373,7 @@ public class P25DecoderState extends DecoderState
                 }
                 break;
             case UNIT_REGISTRATION_COMMAND:
-                UnitRegistrationCommand urc = (UnitRegistrationCommand) message;
+                UnitRegistrationCommand urc = (UnitRegistrationCommand)message;
 
                 if(mLastCommandEventID == null || !mLastCommandEventID
                     .contentEquals(urc.getTargetAddress()))
@@ -2395,7 +2395,7 @@ public class P25DecoderState extends DecoderState
 
     private void processTSBKMessage(TSBKMessage message)
     {
-        MessageUpdate mu = (MessageUpdate) message;
+        MessageUpdate mu = (MessageUpdate)message;
 
         broadcast(new P25CallEvent.Builder(CallEventType.SDM)
             .aliasList(getAliasList())
@@ -2410,7 +2410,7 @@ public class P25DecoderState extends DecoderState
         switch(message.getOpcode())
         {
             case GROUP_AFFILIATION_QUERY:
-                GroupAffiliationQuery gaq = (GroupAffiliationQuery) message;
+                GroupAffiliationQuery gaq = (GroupAffiliationQuery)message;
 
                 if(mLastQueryEventID == null || !mLastQueryEventID
                     .contentEquals(gaq.getTargetAddress()))
@@ -2424,7 +2424,7 @@ public class P25DecoderState extends DecoderState
                 }
                 break;
             case STATUS_QUERY:
-                StatusQuery sq = (StatusQuery) message;
+                StatusQuery sq = (StatusQuery)message;
 
                 if(mLastQueryEventID == null || !mLastQueryEventID
                     .contentEquals(sq.getTargetAddress()))
@@ -2447,7 +2447,7 @@ public class P25DecoderState extends DecoderState
         switch(message.getOpcode())
         {
             case ACKNOWLEDGE_RESPONSE:
-                AcknowledgeResponse ar = (AcknowledgeResponse) message;
+                AcknowledgeResponse ar = (AcknowledgeResponse)message;
 
                 if(mLastResponseEventID == null || !ar.getTargetAddress()
                     .contentEquals(mLastResponseEventID))
@@ -2478,7 +2478,7 @@ public class P25DecoderState extends DecoderState
                 }
                 break;
             case DENY_RESPONSE:
-                DenyResponse dr = (DenyResponse) message;
+                DenyResponse dr = (DenyResponse)message;
 
                 if(mLastResponseEventID == null || !dr.getTargetAddress()
                     .contentEquals(mLastResponseEventID))
@@ -2495,7 +2495,7 @@ public class P25DecoderState extends DecoderState
                 }
                 break;
             case GROUP_AFFILIATION_RESPONSE:
-                GroupAffiliationResponse gar = (GroupAffiliationResponse) message;
+                GroupAffiliationResponse gar = (GroupAffiliationResponse)message;
 
                 if(mLastResponseEventID == null || !gar.getTargetAddress()
                     .contentEquals(mLastResponseEventID))
@@ -2515,7 +2515,7 @@ public class P25DecoderState extends DecoderState
                 break;
             case LOCATION_REGISTRATION_RESPONSE:
                 LocationRegistrationResponse lrr =
-                    (LocationRegistrationResponse) message;
+                    (LocationRegistrationResponse)message;
 
                 if(lrr.getResponse() == Response.ACCEPT)
                 {
@@ -2539,7 +2539,7 @@ public class P25DecoderState extends DecoderState
                 }
                 break;
             case PROTECTION_PARAMETER_UPDATE:
-                ProtectionParameterUpdate ppu = (ProtectionParameterUpdate) message;
+                ProtectionParameterUpdate ppu = (ProtectionParameterUpdate)message;
 
                 if(mLastResponseEventID == null || !ppu.getTargetAddress()
                     .contentEquals(mLastResponseEventID))
@@ -2556,7 +2556,7 @@ public class P25DecoderState extends DecoderState
                 }
                 break;
             case QUEUED_RESPONSE:
-                QueuedResponse qr = (QueuedResponse) message;
+                QueuedResponse qr = (QueuedResponse)message;
 
                 if(mLastResponseEventID == null || !qr.getTargetAddress()
                     .contentEquals(mLastResponseEventID))
@@ -2573,7 +2573,7 @@ public class P25DecoderState extends DecoderState
                 }
                 break;
             case STATUS_UPDATE:
-                StatusUpdate su = (StatusUpdate) message;
+                StatusUpdate su = (StatusUpdate)message;
 
                 if(mLastResponseEventID == null || !su.getTargetAddress()
                     .contentEquals(mLastResponseEventID))
@@ -2591,7 +2591,7 @@ public class P25DecoderState extends DecoderState
 
                 break;
             case UNIT_REGISTRATION_RESPONSE:
-                UnitRegistrationResponse urr = (UnitRegistrationResponse) message;
+                UnitRegistrationResponse urr = (UnitRegistrationResponse)message;
 
                 if(urr.getResponse() == Response.ACCEPT)
                 {
@@ -2615,7 +2615,7 @@ public class P25DecoderState extends DecoderState
                 break;
             case UNIT_DEREGISTRATION_ACKNOWLEDGE:
                 UnitDeregistrationAcknowledge udr =
-                    (UnitDeregistrationAcknowledge) message;
+                    (UnitDeregistrationAcknowledge)message;
 
                 if(mLastRegistrationEventID == null ||
                     !mLastRegistrationEventID.contentEquals(udr.getSourceID()))
@@ -2666,7 +2666,7 @@ public class P25DecoderState extends DecoderState
         switch(message.getOpcode())
         {
             case GROUP_DATA_CHANNEL_ANNOUNCEMENT:
-                GroupDataChannelAnnouncement gdca = (GroupDataChannelAnnouncement) message;
+                GroupDataChannelAnnouncement gdca = (GroupDataChannelAnnouncement)message;
 
                 broadcast(new P25CallEvent.Builder(CallEventType.ANNOUNCEMENT)
                     .aliasList(getAliasList())
@@ -2691,7 +2691,7 @@ public class P25DecoderState extends DecoderState
                 break;
             case GROUP_DATA_CHANNEL_ANNOUNCEMENT_EXPLICIT:
                 GroupDataChannelAnnouncementExplicit gdcae =
-                    (GroupDataChannelAnnouncementExplicit) message;
+                    (GroupDataChannelAnnouncementExplicit)message;
 
                 broadcast(new P25CallEvent.Builder(CallEventType.DATA_CALL)
                     .aliasList(getAliasList())
@@ -2716,10 +2716,10 @@ public class P25DecoderState extends DecoderState
         String from;
         String to;
 
-        switch(((MotorolaTSBKMessage) tsbk).getMotorolaOpcode())
+        switch(((MotorolaTSBKMessage)tsbk).getMotorolaOpcode())
         {
             case PATCH_GROUP_CHANNEL_GRANT:
-                PatchGroupVoiceChannelGrant pgvcg = (PatchGroupVoiceChannelGrant) tsbk;
+                PatchGroupVoiceChannelGrant pgvcg = (PatchGroupVoiceChannelGrant)tsbk;
 
                 channel = pgvcg.getChannel();
                 from = pgvcg.getSourceAddress();
@@ -2731,12 +2731,16 @@ public class P25DecoderState extends DecoderState
                 }
                 else
                 {
+                    StringBuilder details = new StringBuilder();
+                    details.append(pgvcg.isEmergency() ? "EMERGENCY " : "");
+                    details.append("PRI:").append(pgvcg.getPriority());
+                    details.append(pgvcg.isEncryptedChannel() ? " ENCRYPTED" : "");
+                    details.append(" ").append(pgvcg.getSessionMode().name());
+
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.PATCH_GROUP_CALL)
                         .aliasList(getAliasList())
                         .channel(channel)
-                        .details((pgvcg.isEncrypted() ? "ENCRYPTED " : "") +
-                            (pgvcg.isEmergency() ? " EMERGENCY " : "") +
-                            "PATCH SESSION MODE:" + pgvcg.getSessionMode().name())
+                        .details(details.toString())
                         .frequency(pgvcg.getDownlinkFrequency())
                         .from(from)
                         .to(to)
@@ -2750,7 +2754,7 @@ public class P25DecoderState extends DecoderState
                     mChannelCallMap.get(channel)));
                 break;
             case PATCH_GROUP_CHANNEL_GRANT_UPDATE:
-                PatchGroupVoiceChannelGrantUpdate gvcgu = (PatchGroupVoiceChannelGrantUpdate) tsbk;
+                PatchGroupVoiceChannelGrantUpdate gvcgu = (PatchGroupVoiceChannelGrantUpdate)tsbk;
 
                 channel = gvcgu.getChannel1();
                 to = gvcgu.getPatchGroupAddress1();
@@ -2779,7 +2783,7 @@ public class P25DecoderState extends DecoderState
                     mChannelCallMap.get(channel)));
                 break;
             case PATCH_GROUP_ADD:
-                PatchGroupAdd pga = (PatchGroupAdd) tsbk;
+                PatchGroupAdd pga = (PatchGroupAdd)tsbk;
 
                 if(addPatchGroup(pga.getPatchGroupAddress(), pga.getPatchedTalkgroups()))
                 {
@@ -2795,7 +2799,7 @@ public class P25DecoderState extends DecoderState
                 }
                 break;
             case PATCH_GROUP_DELETE:
-                PatchGroupDelete pgd = (PatchGroupDelete) tsbk;
+                PatchGroupDelete pgd = (PatchGroupDelete)tsbk;
 
                 if(removePatchGroup(pgd.getPatchGroupAddress(), pgd.getPatchedTalkgroups()))
                 {
@@ -2929,7 +2933,7 @@ public class P25DecoderState extends DecoderState
 
         if(existingAlias instanceof PatchGroupAlias)
         {
-            patchGroupAlias = (PatchGroupAlias) existingAlias;
+            patchGroupAlias = (PatchGroupAlias)existingAlias;
         }
         else
         {
@@ -2974,7 +2978,7 @@ public class P25DecoderState extends DecoderState
 
         if(alias instanceof PatchGroupAlias)
         {
-            PatchGroupAlias patchGroupAlias = (PatchGroupAlias) alias;
+            PatchGroupAlias patchGroupAlias = (PatchGroupAlias)alias;
 
             getAliasList().removeAlias(patchGroupAlias);
 
@@ -2998,7 +3002,7 @@ public class P25DecoderState extends DecoderState
         switch(message.getOpcode())
         {
             case GROUP_DATA_CHANNEL_GRANT:
-                GroupDataChannelGrant gdcg = (GroupDataChannelGrant) message;
+                GroupDataChannelGrant gdcg = (GroupDataChannelGrant)message;
 
                 channel = gdcg.getChannel();
                 from = gdcg.getSourceAddress();
@@ -3010,11 +3014,16 @@ public class P25DecoderState extends DecoderState
                 }
                 else
                 {
+                    StringBuilder details = new StringBuilder();
+                    details.append(gdcg.isEmergency() ? "EMERGENCY " : "");
+                    details.append("PRI:").append(gdcg.getPriority()).append(" ");
+                    details.append(gdcg.isEncryptedChannel() ? "ENCRYPTED " : "");
+                    details.append(gdcg.getSessionMode().name());
+
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.DATA_CALL)
                         .aliasList(getAliasList())
                         .channel(channel)
-                        .details((gdcg.isEncrypted() ? "ENCRYPTED" : "") +
-                            (gdcg.isEmergency() ? " EMERGENCY" : ""))
+                        .details(details.toString())
                         .frequency(gdcg.getDownlinkFrequency())
                         .from(from)
                         .to(to)
@@ -3031,7 +3040,7 @@ public class P25DecoderState extends DecoderState
                 }
                 break;
             case GROUP_VOICE_CHANNEL_GRANT:
-                GroupVoiceChannelGrant gvcg = (GroupVoiceChannelGrant) message;
+                GroupVoiceChannelGrant gvcg = (GroupVoiceChannelGrant)message;
 
                 channel = gvcg.getChannel();
                 from = gvcg.getSourceAddress();
@@ -3043,11 +3052,16 @@ public class P25DecoderState extends DecoderState
                 }
                 else
                 {
+                    StringBuilder details = new StringBuilder();
+                    details.append(gvcg.isEmergency() ? "EMERGENCY " : "");
+                    details.append("PRI:").append(gvcg.getPriority()).append(" ");
+                    details.append(gvcg.isEncryptedChannel() ? "ENCRYPTED " : "");
+                    details.append(gvcg.getSessionMode().name());
+
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.GROUP_CALL)
                         .aliasList(getAliasList())
                         .channel(channel)
-                        .details((gvcg.isEncrypted() ? "ENCRYPTED" : "") +
-                            (gvcg.isEmergency() ? " EMERGENCY" : ""))
+                        .details(details.toString())
                         .frequency(gvcg.getDownlinkFrequency())
                         .from(from)
                         .to(to)
@@ -3062,7 +3076,7 @@ public class P25DecoderState extends DecoderState
                 break;
             case GROUP_VOICE_CHANNEL_GRANT_UPDATE:
                 GroupVoiceChannelGrantUpdate gvcgu =
-                    (GroupVoiceChannelGrantUpdate) message;
+                    (GroupVoiceChannelGrantUpdate)message;
 
                 channel = gvcgu.getChannel1();
                 from = null;
@@ -3074,12 +3088,17 @@ public class P25DecoderState extends DecoderState
                 }
                 else
                 {
+                    StringBuilder details = new StringBuilder();
+                    details.append(gvcgu.isEmergency() ? "EMERGENCY " : "");
+                    details.append("PRI:").append(gvcgu.getPriority()).append(" ");
+                    details.append(gvcgu.isEncryptedChannel() ? "ENCRYPTED " : "");
+                    details.append(gvcgu.getSessionMode().name());
+
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.GROUP_CALL)
                         .aliasList(getAliasList())
                         .channel(channel)
                         .channel(gvcgu.getChannel1())
-                        .details((gvcgu.isEncrypted() ? "ENCRYPTED" : "") +
-                            (gvcgu.isEmergency() ? " EMERGENCY" : ""))
+                        .details(details.toString())
                         .frequency(gvcgu.getDownlinkFrequency1())
                         .from(from)
                         .to(to)
@@ -3103,11 +3122,16 @@ public class P25DecoderState extends DecoderState
                     }
                     else
                     {
+                        StringBuilder details = new StringBuilder();
+                        details.append(gvcgu.isEmergency() ? "EMERGENCY " : "");
+                        details.append("PRI:").append(gvcgu.getPriority()).append(" ");
+                        details.append(gvcgu.isEncryptedChannel() ? "ENCRYPTED " : "");
+                        details.append(gvcgu.getSessionMode().name());
+
                         P25CallEvent event2 = new P25CallEvent.Builder(CallEventType.GROUP_CALL)
                             .aliasList(getAliasList())
                             .channel(gvcgu.getChannel2())
-                            .details((gvcgu.isEncrypted() ? "ENCRYPTED" : "") +
-                                (gvcgu.isEmergency() ? " EMERGENCY" : ""))
+                            .details(details.toString())
                             .frequency(gvcgu.getDownlinkFrequency2())
                             .to(gvcgu.getGroupAddress2())
                             .build();
@@ -3122,7 +3146,7 @@ public class P25DecoderState extends DecoderState
                 break;
             case GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:
                 GroupVoiceChannelGrantUpdateExplicit gvcgue =
-                    (GroupVoiceChannelGrantUpdateExplicit) message;
+                    (GroupVoiceChannelGrantUpdateExplicit)message;
 
                 channel = gvcgue.getTransmitChannelIdentifier() + "-" +
                     gvcgue.getTransmitChannelNumber();
@@ -3135,11 +3159,16 @@ public class P25DecoderState extends DecoderState
                 }
                 else
                 {
+                    StringBuilder details = new StringBuilder();
+                    details.append(gvcgue.isEmergency() ? "EMERGENCY " : "");
+                    details.append("PRI:").append(gvcgue.getPriority()).append(" ");
+                    details.append(gvcgue.isEncryptedChannel() ? "ENCRYPTED " : "");
+                    details.append(gvcgue.getSessionMode().name());
+
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.GROUP_CALL)
                         .aliasList(getAliasList())
                         .channel(channel)
-                        .details((gvcgue.isEncrypted() ? "ENCRYPTED" : "") +
-                            (gvcgue.isEmergency() ? " EMERGENCY" : ""))
+                        .details(details.toString())
                         .frequency(gvcgue.getDownlinkFrequency())
                         .from(from)
                         .to(to)
@@ -3153,7 +3182,7 @@ public class P25DecoderState extends DecoderState
                     mChannelCallMap.get(channel)));
                 break;
             case INDIVIDUAL_DATA_CHANNEL_GRANT:
-                IndividualDataChannelGrant idcg = (IndividualDataChannelGrant) message;
+                IndividualDataChannelGrant idcg = (IndividualDataChannelGrant)message;
 
                 channel = idcg.getChannel();
                 from = idcg.getSourceAddress();
@@ -3165,11 +3194,16 @@ public class P25DecoderState extends DecoderState
                 }
                 else
                 {
+                    StringBuilder details = new StringBuilder();
+                    details.append(idcg.isEmergency() ? "EMERGENCY " : "");
+                    details.append("PRI:").append(idcg.getPriority()).append(" ");
+                    details.append(idcg.isEncryptedChannel() ? "ENCRYPTED " : "");
+                    details.append(idcg.getSessionMode().name());
+
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.DATA_CALL)
                         .aliasList(getAliasList())
                         .channel(channel)
-                        .details((idcg.isEncrypted() ? "ENCRYPTED" : "") +
-                            (idcg.isEmergency() ? " EMERGENCY" : ""))
+                        .details(details.toString())
                         .frequency(idcg.getDownlinkFrequency())
                         .from(from)
                         .to(to)
@@ -3186,7 +3220,7 @@ public class P25DecoderState extends DecoderState
                 }
                 break;
             case SNDCP_DATA_CHANNEL_GRANT:
-                SNDCPDataChannelGrant sdcg = (SNDCPDataChannelGrant) message;
+                SNDCPDataChannelGrant sdcg = (SNDCPDataChannelGrant)message;
 
                 channel = sdcg.getTransmitChannel();
                 from = null;
@@ -3198,11 +3232,15 @@ public class P25DecoderState extends DecoderState
                 }
                 else
                 {
+                    StringBuilder details = new StringBuilder();
+                    details.append(sdcg.isEmergency() ? "EMERGENCY " : "");
+                    details.append(sdcg.isEncryptedChannel() ? "ENCRYPTED " : "");
+                    details.append(sdcg.getSessionMode().name());
+
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.DATA_CALL)
                         .aliasList(getAliasList())
                         .channel(channel)
-                        .details((sdcg.isEncrypted() ? "ENCRYPTED" : "") +
-                            (sdcg.isEmergency() ? " EMERGENCY" : ""))
+                        .details(details.toString())
                         .frequency(sdcg.getDownlinkFrequency())
                         .from(from)
                         .to(to)
@@ -3220,7 +3258,7 @@ public class P25DecoderState extends DecoderState
                 break;
             case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
                 TelephoneInterconnectVoiceChannelGrant tivcg =
-                    (TelephoneInterconnectVoiceChannelGrant) message;
+                    (TelephoneInterconnectVoiceChannelGrant)message;
 
                 channel = tivcg.getChannel();
                 from = null;
@@ -3234,13 +3272,18 @@ public class P25DecoderState extends DecoderState
                 }
                 else
                 {
+                    StringBuilder details = new StringBuilder();
+                    details.append(tivcg.isEmergency() ? "EMERGENCY " : "");
+                    details.append("PRI:").append(tivcg.getPriority()).append(" ");
+                    details.append(tivcg.isEncryptedChannel() ? "ENCRYPTED " : "");
+                    details.append(tivcg.getSessionMode().name()).append(" ");
+                    details.append("CALL TIMER:").append(tivcg.getCallTimer());
+
                     P25CallEvent event = new P25CallEvent.Builder(
                         CallEventType.TELEPHONE_INTERCONNECT)
                         .aliasList(getAliasList())
                         .channel(channel)
-                        .details((tivcg.isEncrypted() ? "ENCRYPTED " : "") +
-                            (tivcg.isEmergency() ? "EMERGENCY " : "") +
-                            "CALL TIMER:" + tivcg.getCallTimer())
+                        .details(details.toString())
                         .frequency(tivcg.getDownlinkFrequency())
                         .from(from)
                         .to(to)
@@ -3255,7 +3298,7 @@ public class P25DecoderState extends DecoderState
                 break;
             case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT_UPDATE:
                 TelephoneInterconnectVoiceChannelGrantUpdate tivcgu =
-                    (TelephoneInterconnectVoiceChannelGrantUpdate) message;
+                    (TelephoneInterconnectVoiceChannelGrantUpdate)message;
 
                 channel = tivcgu.getChannelIdentifier() + "-" +
                     tivcgu.getChannelNumber();
@@ -3271,13 +3314,18 @@ public class P25DecoderState extends DecoderState
                 }
                 else
                 {
+                    StringBuilder details = new StringBuilder();
+                    details.append(tivcgu.isEmergency() ? "EMERGENCY " : "");
+                    details.append("PRI:").append(tivcgu.getPriority()).append(" ");
+                    details.append(tivcgu.isEncryptedChannel() ? "ENCRYPTED " : "");
+                    details.append(tivcgu.getSessionMode().name()).append(" ");
+                    details.append("CALL TIMER:").append(tivcgu.getCallTimer());
+
                     P25CallEvent event = new P25CallEvent.Builder(
                         CallEventType.TELEPHONE_INTERCONNECT)
                         .aliasList(getAliasList())
                         .channel(channel)
-                        .details((tivcgu.isEncrypted() ? "ENCRYPTED " : "") +
-                            (tivcgu.isEmergency() ? "EMERGENCY " : "") +
-                            "CALL TIMER:" + tivcgu.getCallTimer())
+                        .details(details.toString())
                         .frequency(tivcgu.getDownlinkFrequency())
                         .from(from)
                         .to(to)
@@ -3292,7 +3340,7 @@ public class P25DecoderState extends DecoderState
                 break;
             case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
                 UnitToUnitVoiceChannelGrant uuvcg =
-                    (UnitToUnitVoiceChannelGrant) message;
+                    (UnitToUnitVoiceChannelGrant)message;
 
                 channel = uuvcg.getChannelIdentifier() + "-" +
                     uuvcg.getChannelNumber();
@@ -3305,12 +3353,17 @@ public class P25DecoderState extends DecoderState
                 }
                 else
                 {
+                    StringBuilder details = new StringBuilder();
+                    details.append(uuvcg.isEmergency() ? "EMERGENCY " : "");
+                    details.append("PRI:").append(uuvcg.getPriority()).append(" ");
+                    details.append(uuvcg.isEncryptedChannel() ? " ENCRYPTED " : "");
+                    details.append(uuvcg.getSessionMode().name());
+
                     P25CallEvent event = new P25CallEvent.Builder(
                         CallEventType.UNIT_TO_UNIT_CALL)
                         .aliasList(getAliasList())
                         .channel(channel)
-                        .details((uuvcg.isEncrypted() ? "ENCRYPTED " : "") +
-                            (uuvcg.isEmergency() ? "EMERGENCY " : ""))
+                        .details(details.toString())
                         .frequency(uuvcg.getDownlinkFrequency())
                         .from(from)
                         .to(to)
@@ -3325,7 +3378,7 @@ public class P25DecoderState extends DecoderState
                 break;
             case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
                 UnitToUnitVoiceChannelGrantUpdate uuvcgu =
-                    (UnitToUnitVoiceChannelGrantUpdate) message;
+                    (UnitToUnitVoiceChannelGrantUpdate)message;
 
                 channel = uuvcgu.getChannelIdentifier() + "-" +
                     uuvcgu.getChannelNumber();
@@ -3338,12 +3391,17 @@ public class P25DecoderState extends DecoderState
                 }
                 else
                 {
+                    StringBuilder details = new StringBuilder();
+                    details.append(uuvcgu.isEmergency() ? "EMERGENCY " : "");
+                    details.append("PRI:").append(uuvcgu.getPriority()).append(" ");
+                    details.append(uuvcgu.isEncryptedChannel() ? "ENCRYPTED " : "");
+                    details.append(uuvcgu.getSessionMode().name());
+
                     P25CallEvent event = new P25CallEvent.Builder(
                         CallEventType.UNIT_TO_UNIT_CALL)
                         .aliasList(getAliasList())
                         .channel(channel)
-                        .details((uuvcgu.isEncrypted() ? "ENCRYPTED " : "") +
-                            (uuvcgu.isEmergency() ? "EMERGENCY " : ""))
+                        .details(details.toString())
                         .frequency(uuvcgu.getDownlinkFrequency())
                         .from(from)
                         .to(to)
@@ -3396,7 +3454,7 @@ public class P25DecoderState extends DecoderState
         switch(message.getOpcode())
         {
             case CALL_ALERT:
-                CallAlert ca = (CallAlert) message;
+                CallAlert ca = (CallAlert)message;
 
                 broadcast(new P25CallEvent.Builder(CallEventType.PAGE)
                     .aliasList(getAliasList())
@@ -3405,7 +3463,7 @@ public class P25DecoderState extends DecoderState
                     .build());
                 break;
             case UNIT_TO_UNIT_ANSWER_REQUEST:
-                UnitToUnitAnswerRequest utuar = (UnitToUnitAnswerRequest) message;
+                UnitToUnitAnswerRequest utuar = (UnitToUnitAnswerRequest)message;
 
                 if(mLastPageEventID == null || !mLastPageEventID
                     .contentEquals(utuar.getTargetAddress()))
@@ -3421,7 +3479,7 @@ public class P25DecoderState extends DecoderState
                 }
                 break;
             case SNDCP_DATA_PAGE_REQUEST:
-                SNDCPDataPageRequest sdpr = (SNDCPDataPageRequest) message;
+                SNDCPDataPageRequest sdpr = (SNDCPDataPageRequest)message;
 
                 if(mLastPageEventID == null || !mLastPageEventID
                     .contentEquals(sdpr.getTargetAddress()))
@@ -3439,7 +3497,7 @@ public class P25DecoderState extends DecoderState
                 break;
             case TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
                 TelephoneInterconnectAnswerRequest tiar =
-                    (TelephoneInterconnectAnswerRequest) message;
+                    (TelephoneInterconnectAnswerRequest)message;
 
                 if(mLastPageEventID == null || !mLastPageEventID
                     .contentEquals(tiar.getTargetAddress()))
@@ -3518,11 +3576,11 @@ public class P25DecoderState extends DecoderState
             sb.append("\nSERVICES:\t" + SystemService.toString(
                 mNetworkStatus.getSystemServiceClass()));
             sb.append("\nPCCH:\tDNLINK " + mFrequencyFormatter.format(
-                (double) mNetworkStatus.getDownlinkFrequency() / 1E6d) +
+                (double)mNetworkStatus.getDownlinkFrequency() / 1E6d) +
                 " [" + mNetworkStatus.getIdentifier() + "-" +
                 mNetworkStatus.getChannel() + "]\n");
             sb.append("\tUPLINK " + mFrequencyFormatter.format(
-                (double) mNetworkStatus.getUplinkFrequency() / 1E6d) + " [" +
+                (double)mNetworkStatus.getUplinkFrequency() / 1E6d) + " [" +
                 mNetworkStatus.getIdentifier() + "-" +
                 mNetworkStatus.getChannel() + "]\n");
         }
@@ -3531,11 +3589,11 @@ public class P25DecoderState extends DecoderState
             sb.append("\nSERVICES:\t" + SystemService.toString(
                 mNetworkStatusExtended.getSystemServiceClass()));
             sb.append("\nPCCH:\tDNLINK " + mFrequencyFormatter.format(
-                (double) mNetworkStatusExtended.getDownlinkFrequency() / 1E6d) +
+                (double)mNetworkStatusExtended.getDownlinkFrequency() / 1E6d) +
                 " [" + mNetworkStatusExtended.getTransmitIdentifier() + "-" +
                 mNetworkStatusExtended.getTransmitChannel() + "]\n");
             sb.append("\tUPLINK " + mFrequencyFormatter.format(
-                (double) mNetworkStatusExtended.getUplinkFrequency() / 1E6d) +
+                (double)mNetworkStatusExtended.getUplinkFrequency() / 1E6d) +
                 " [" + mNetworkStatusExtended.getReceiveIdentifier() + "-" +
                 mNetworkStatusExtended.getReceiveChannel() + "]");
         }
@@ -3550,19 +3608,19 @@ public class P25DecoderState extends DecoderState
                 sec : mSecondaryControlChannels)
             {
                 sb.append("\nSCCH:\tDNLINK " + mFrequencyFormatter.format(
-                    (double) sec.getDownlinkFrequency1() / 1E6d) +
+                    (double)sec.getDownlinkFrequency1() / 1E6d) +
                     " [" + sec.getIdentifier1() + "-" + sec.getChannel1() + "]\n");
                 sb.append("\tUPLINK " + mFrequencyFormatter.format(
-                    (double) sec.getUplinkFrequency1() / 1E6d) + " [" +
+                    (double)sec.getUplinkFrequency1() / 1E6d) + " [" +
                     sec.getIdentifier1() + "-" + sec.getChannel1() + "]\n");
 
                 if(sec.hasChannel2())
                 {
                     sb.append("\nSCCH:\tDNLINK " + mFrequencyFormatter.format(
-                        (double) sec.getDownlinkFrequency2() / 1E6d) +
+                        (double)sec.getDownlinkFrequency2() / 1E6d) +
                         " [" + sec.getIdentifier2() + "-" + sec.getChannel2() + "]\n");
                     sb.append("\tUPLINK " + mFrequencyFormatter.format(
-                        (double) sec.getUplinkFrequency2() / 1E6d) + " [" +
+                        (double)sec.getUplinkFrequency2() / 1E6d) + " [" +
                         sec.getIdentifier2() + "-" + sec.getChannel2() + "]");
                 }
             }
@@ -3572,10 +3630,10 @@ public class P25DecoderState extends DecoderState
         {
             sb.append("\nSNDCP:");
             sb.append("\tDNLINK " + mFrequencyFormatter.format(
-                (double) mSNDCPDataChannel.getDownlinkFrequency() / 1E6D) +
+                (double)mSNDCPDataChannel.getDownlinkFrequency() / 1E6D) +
                 " [" + mSNDCPDataChannel.getTransmitChannel() + "]");
             sb.append("\tUPLINK " + mFrequencyFormatter.format(
-                (double) mSNDCPDataChannel.getUplinkFrequency() / 1E6D) +
+                (double)mSNDCPDataChannel.getUplinkFrequency() / 1E6D) +
                 " [" + mSNDCPDataChannel.getReceiveChannel() + "]");
         }
 
@@ -3604,11 +3662,11 @@ public class P25DecoderState extends DecoderState
 
             sb.append("\n\t" + id);
             sb.append("- BASE: " + mFrequencyFormatter.format(
-                (double) band.getBaseFrequency() / 1E6d));
+                (double)band.getBaseFrequency() / 1E6d));
             sb.append(" CHANNEL SIZE: " + mFrequencyFormatter.format(
-                (double) band.getChannelSpacing() / 1E6d));
+                (double)band.getChannelSpacing() / 1E6d));
             sb.append(" UPLINK OFFSET: " + mFrequencyFormatter.format(
-                (double) band.getTransmitOffset() / 1E6D));
+                (double)band.getTransmitOffset() / 1E6D));
         }
 
         sb.append("\n\n=================== NEIGHBORS ======================");
@@ -3622,7 +3680,7 @@ public class P25DecoderState extends DecoderState
         {
             for(IAdjacentSite neighbor : mNeighborMap.values())
             {
-                sb.append("\nNAC:\t" + ((P25Message) neighbor).getNAC());
+                sb.append("\nNAC:\t" + ((P25Message)neighbor).getNAC());
                 sb.append("\nSYSTEM:\t" + neighbor.getSystemID());
                 sb.append("\nLRA:\t" + neighbor.getLRA());
 
@@ -3640,10 +3698,10 @@ public class P25DecoderState extends DecoderState
                 }
 
                 sb.append("\nPCCH:\tDNLINK " + mFrequencyFormatter.format(
-                    (double) neighbor.getDownlinkFrequency() / 1E6d) +
+                    (double)neighbor.getDownlinkFrequency() / 1E6d) +
                     " [" + neighbor.getDownlinkChannel() + "]");
                 sb.append("\n\tUPLINK:" + mFrequencyFormatter.format(
-                    (double) neighbor.getUplinkFrequency() / 1E6d) +
+                    (double)neighbor.getUplinkFrequency() / 1E6d) +
                     " [" + neighbor.getDownlinkChannel() + "]\n");
                 sb.append("\nSERVICES:\t" + neighbor.getSystemServiceClass());
                 sb.append("\n----------------------------------------------------");
@@ -3669,9 +3727,9 @@ public class P25DecoderState extends DecoderState
                 {
                     if(event instanceof TrafficChannelAllocationEvent)
                     {
-                        TrafficChannelAllocationEvent allocationEvent = (TrafficChannelAllocationEvent) event;
+                        TrafficChannelAllocationEvent allocationEvent = (TrafficChannelAllocationEvent)event;
 
-                        mCurrentCallEvent = (P25CallEvent) allocationEvent.getCallEvent();
+                        mCurrentCallEvent = (P25CallEvent)allocationEvent.getCallEvent();
 
                         mCurrentChannel = allocationEvent.getCallEvent().getChannel();
                         broadcast(new AttributeChangeRequest<String>(Attribute.CHANNEL_FREQUENCY_LABEL, mCurrentChannel));
