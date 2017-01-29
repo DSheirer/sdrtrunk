@@ -55,14 +55,13 @@ public class OverflowableTransferQueue<E>
     {
         if(!mOverflow)
         {
-            if(mCounter.get() > mMaximumSize)
+            mQueue.offer(e);
+
+            int size = mCounter.incrementAndGet();
+
+            if(size > mMaximumSize)
             {
                 setOverflow(true);
-            }
-            else
-            {
-                mQueue.offer(e);
-                mCounter.incrementAndGet();
             }
         }
     }
@@ -76,7 +75,12 @@ public class OverflowableTransferQueue<E>
 
         if(drainCount > 0)
         {
-            mCounter.addAndGet(-drainCount);
+            int size = mCounter.addAndGet(-drainCount);
+
+            if(mOverflow && size <= mResetThreshold)
+            {
+                setOverflow(false);
+            }
         }
 
         return drainCount;
