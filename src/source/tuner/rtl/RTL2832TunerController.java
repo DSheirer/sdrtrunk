@@ -78,14 +78,9 @@ public abstract class RTL2832TunerController extends TunerController
 
     private SampleRate mSampleRate = DEFAULT_SAMPLE_RATE;
 
-    private ByteSampleAdapter mSampleAdapter = new ByteSampleAdapter();
-
-    private Broadcaster<ComplexBuffer> mComplexBufferBroadcaster = new Broadcaster<>();
-
+    protected ByteSampleAdapter mSampleAdapter = new ByteSampleAdapter();
     protected int mOscillatorFrequency = 28800000; //28.8 MHz
-
-    private USBTransferProcessor mUSBTransferProcessor;
-
+    protected USBTransferProcessor mUSBTransferProcessor;
     protected Descriptor mDescriptor;
 
     /**

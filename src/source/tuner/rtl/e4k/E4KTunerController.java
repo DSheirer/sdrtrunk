@@ -249,6 +249,11 @@ public class E4KTunerController extends RTL2832TunerController
             throw new SourceException("E4K Tuner Controller - error during "
                 + "init()", e);
         }
+
+        String deviceName = getTunerType().getLabel() + " " + getUniqueID();
+
+        mUSBTransferProcessor = new RTL2832USBTransferProcessor(deviceName, mDeviceHandle, mSampleAdapter,
+            USB_TRANSFER_BUFFER_SIZE);
     }
 
     /**

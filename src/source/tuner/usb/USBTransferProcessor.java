@@ -173,7 +173,7 @@ public class USBTransferProcessor implements TransferCallback
 
             //Start transferred buffer dispatcher
             mBufferDispatcherFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(mBufferDispatcher,
-                20, 20, TimeUnit.MILLISECONDS);
+                0, 11, TimeUnit.MILLISECONDS);
 
             //Register with LibUSB processor so that it auto-starts LibUSB processing
             TunerManager.LIBUSB_TRANSFER_PROCESSOR.registerTransferProcessor(this);
