@@ -339,7 +339,7 @@ public abstract class RTL2832TunerController extends TunerController
         if(reason != LibUsb.SUCCESS)
         {
             throw new SourceException("couldn't open device - check permissions"
-                + " (udev.rule) [" + LibUsb.errorName(reason) + "]");
+                + " Linux: udev.rule? , or Windows: reinstall Zadig? [" + LibUsb.errorName(reason) + "]");
         }
 
         TunerType tunerClass = TunerType.UNKNOWN;
