@@ -300,6 +300,7 @@ public class USBTransferProcessor implements TransferCallback
         {
             case LibUsb.TRANSFER_COMPLETED:
             case LibUsb.TRANSFER_STALL:
+            case LibUsb.TRANSFER_TIMED_OUT:
                 if(transfer.actualLength() > 0)
                 {
                     ByteBuffer buffer = transfer.buffer();
