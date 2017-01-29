@@ -91,6 +91,14 @@ public class ChannelProcessingManager implements ChannelEventListener
     }
 
     /**
+     * Channel model
+     */
+    public ChannelModel getChannelModel()
+    {
+        return mChannelModel;
+    }
+
+    /**
      * Indicates if a processing chain is constructed for the channel and that
      * the processing chain is currently processing.
      */

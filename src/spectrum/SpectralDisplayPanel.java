@@ -636,21 +636,21 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuff
 
                 }
 
-                JMenu frequencyMenu = new JMenu(
-                    sCURSOR_FORMAT.format((float) frequency / 1000000.0f));
-
-                JMenu decoderMenu = new JMenu("Add Decoder");
-
-                for(DecoderType type : DecoderType.getPrimaryDecoders())
-                {
-                    decoderMenu.add(new DecoderItem(type, frequency));
-                }
-
-                frequencyMenu.add(decoderMenu);
-
-                contextMenu.add(frequencyMenu);
-
-                contextMenu.add(new JSeparator());
+//                JMenu frequencyMenu = new JMenu(
+//                    sCURSOR_FORMAT.format((float) frequency / 1000000.0f));
+//
+//                JMenu decoderMenu = new JMenu("Add Decoder");
+//
+//                for(DecoderType type : DecoderType.getPrimaryDecoders())
+//                {
+//                    decoderMenu.add(new DecoderItem(type, frequency));
+//                }
+//
+//                frequencyMenu.add(decoderMenu);
+//
+//                contextMenu.add(frequencyMenu);
+//
+//                contextMenu.add(new JSeparator());
 
                 /**
                  * Color Menus

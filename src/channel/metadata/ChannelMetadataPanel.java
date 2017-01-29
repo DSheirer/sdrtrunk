@@ -22,9 +22,12 @@ import alias.Alias;
 import channel.state.State;
 import controller.channel.Channel;
 import controller.channel.ChannelProcessingManager;
+import controller.channel.ChannelUtils;
 import icon.IconManager;
 import module.ProcessingChain;
 import net.miginfocom.swing.MigLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import properties.SystemProperties;
 import sample.Broadcaster;
 import sample.Listener;
@@ -34,9 +37,13 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class ChannelMetadataPanel extends JPanel implements ListSelectionListener
 {
+    private final static Logger mLog = LoggerFactory.getLogger(ChannelMetadataPanel.class);
+
     private static final String PROPERTY_PREFIX_BACKGROUND = "channel.metadata.panel.state.color.";
     private static final String PROPERTY_PREFIX_FOREGROUND = "channel.metadata.panel.text.color.";
     private ChannelProcessingManager mChannelProcessingManager;
@@ -68,6 +75,7 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
         renderer.setHorizontalAlignment(SwingConstants.CENTER);
 
         mTable.getSelectionModel().addListSelectionListener(this);
+        mTable.addMouseListener(new MouseSupport());
 
         mTable.getColumnModel().getColumn(ChannelMetadataModel.COLUMN_STATE)
             .setCellRenderer(new ColoredStateCellRenderer());
@@ -221,6 +229,54 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
             setForeground(foreground);
 
             return label;
+        }
+    }
+
+    public class MouseSupport extends MouseAdapter
+    {
+        @Override
+        public void mouseClicked(MouseEvent e)
+        {
+            if(e.getButton() == MouseEvent.BUTTON3) //Right click for context
+            {
+                JPopupMenu popupMenu = new JPopupMenu();
+
+                boolean populated = false;
+
+                int viewRowIndex = mTable.rowAtPoint(e.getPoint());
+
+                if(viewRowIndex >= 0)
+                {
+                    int modelRowIndex = mTable.convertRowIndexToModel(viewRowIndex);
+
+                    if(modelRowIndex >= 0)
+                    {
+                        Metadata metadata = mChannelProcessingManager.getChannelMetadataModel().getMetadata(modelRowIndex);
+
+                        if(metadata != null)
+                        {
+                            Channel channel = mChannelProcessingManager.getChannelMetadataModel()
+                                .getChannelFromMetadata(metadata);
+
+                            if(channel != null)
+                            {
+                                popupMenu.add(ChannelUtils.getContextMenu(mChannelProcessingManager.getChannelModel(),
+                                    mChannelProcessingManager, channel, mTable));
+
+                                populated = true;
+                            }
+                        }
+
+                    }
+                }
+
+                if(!populated)
+                {
+                    popupMenu.add(new JMenuItem("No Actions Available"));
+                }
+
+                popupMenu.show(mTable, e.getX(), e.getY());
+            }
         }
     }
 }
