@@ -331,6 +331,28 @@ public class USBTransferProcessor implements TransferCallback
             {
                 mTransfersInProgress.add(transfer);
             }
+            else if(result == LibUsb.ERROR_PIPE)
+            {
+                int resetResult = LibUsb.clearHalt(mDeviceHandle, USB_BULK_TRANSFER_ENDPOINT);
+
+                if(resetResult == LibUsb.SUCCESS)
+                {
+                    int resubmitResult = LibUsb.submitTransfer(transfer);
+
+                    if(resubmitResult == LibUsb.SUCCESS)
+                    {
+                        mTransfersInProgress.add(transfer);
+                    }
+                    else
+                    {
+                        mLog.error(mDeviceName + " - error resubmitting transfer after endpoint clear halt");
+                    }
+                }
+                else
+                {
+                    mLog.error(mDeviceName + " - unable to clear device endpoint halt");
+                }
+            }
             else
             {
                 mAvailableTransfers.add(transfer);
