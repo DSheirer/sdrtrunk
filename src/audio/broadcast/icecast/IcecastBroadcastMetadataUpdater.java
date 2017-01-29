@@ -145,6 +145,10 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
                                     session.write(updateRequest);
                                 }
                             }
+                            catch(UnresolvedAddressException uae)
+                            {
+                                //Do nothing - the server is temporarily unavailable
+                            }
                             catch(Exception e)
                             {
                                 Throwable throwableCause = e.getCause();
