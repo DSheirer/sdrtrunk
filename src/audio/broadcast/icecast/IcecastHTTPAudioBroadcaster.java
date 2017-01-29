@@ -59,10 +59,10 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
     private AtomicBoolean mConnecting = new AtomicBoolean();
 
     /**
-     * Creates an Icecast 2.3.2 compatible broadcaster using TCP and a pseudo HTTP 1.0 protocol.  This broadcaster is
-     * compatible with Icecast version 2.3.2 and older versions of the server software.
+     * Creates an Icecast 2.4.x compatible broadcaster using HTTP 1.1 protocol.  This broadcaster is
+     * compatible with Icecast version 2.4.x and newer versions of the server software.
      *
-     * Note: use @see IcecastHTTPAudioBroadcaster for Icecast version 2.4.x and newer.
+     * Note: use @see IcecastTCPAudioBroadcaster for Icecast version 2.3.x and older.
      *
      * This broadcaster uses the Apache Mina library for the streaming socket connection and for metadata updates.  The
      * IcecastHTTPIOHandler manages all interaction with the Icecast server and manages the overall broadcast state.
