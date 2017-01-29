@@ -1,11 +1,12 @@
 
-0.3.0 2017xxxx (work in progress)
+0.3.0-beta1 20170129
  - FEATURE: audio streaming - adds capability to stream to multiple remote broadcast
    servers (Broadcastify, Icecast v2.3 and v2.4+, and Shoutcast V1 and V2).  Each
    stream can be independently configured with a delay.  Audio calls are directed
    to one or more streams by attaching one or more stream identifiers to each alias.
- - Requires Java 8 (or newer) for compatibility with eventual changeover to JavaFX
- - Extensive GUI updates for tuner, channel and alias management.
+ - Requires Java 8 (or newer) for compatibility and eventual changeover to JavaFX
+ - Extensive GUI updates for tuner, channel and alias management.  Includes new
+   'Now Playing' channel view and 'Detail' view.
  - Updated alias list management of alias id values and wildcards.  Weighting is now
    applied to each wildcard so that they can be ordered from most specific to least
    specific for lookup value matching purposes.
@@ -13,6 +14,10 @@
    patch group aliases that roll-up aliases from each patched talkgroup to support
    audio recording and streaming of patch calls according to the identifiers and
    actions defined for each of the patched talkgroups.
+ - Implemented bounded queues for both tuner and individual channel IQ sample
+   buffers.  Bounded queues have ability to enter/exit overflow state when queue
+   size reaches overflow threshold and reset when queue size falls below the reset
+   threshold.
  - Updated airspy controller for airspy-mini specific sample rate handling.
  - New developer remez filter designer tool and internal usage
 
