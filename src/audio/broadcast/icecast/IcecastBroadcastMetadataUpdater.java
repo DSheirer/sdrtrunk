@@ -38,6 +38,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.URLEncoder;
+import java.nio.channels.UnresolvedAddressException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
@@ -151,6 +152,10 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
                                 if(throwableCause instanceof ConnectException)
                                 {
                                     //Do nothing, the server is unavailable
+                                }
+                                else if(throwableCause instanceof UnresolvedAddressException)
+                                {
+                                    //Do nothing - the server is temporarily unavailable
                                 }
                                 else
                                 {
