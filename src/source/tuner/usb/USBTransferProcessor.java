@@ -56,7 +56,7 @@ public class USBTransferProcessor implements TransferCallback
     private static final int FILLED_BUFFER_MAX_CAPACITY = 300;
 
     //Threshold for resetting buffer overflow condition
-    private static final int FILLED_BUFFER_OVERFLOW_RESET_THRESHOLD = 200;
+    private static final int FILLED_BUFFER_OVERFLOW_RESET_THRESHOLD = 100;
 
     private String mDeviceName;
 

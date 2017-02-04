@@ -51,7 +51,7 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
     private static final int BUFFER_MAX_CAPACITY = 300;
 
     //Threshold for resetting buffer overflow condition
-    private static final int BUFFER_OVERFLOW_RESET_THRESHOLD = 200;
+    private static final int BUFFER_OVERFLOW_RESET_THRESHOLD = 100;
 
     private static int CHANNEL_RATE = 48000;
     private static int CHANNEL_PASS_FREQUENCY = 12000;
@@ -108,11 +108,11 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
             {
                 if(state == OverflowableTransferQueue.State.NORMAL)
                 {
-                    mLog.debug("Channel [" + mTunerFrequency + "] buffer overflow - temporary pause until processing catches up");
+                    mLog.debug("Channel [" + mTunerChannel.getFrequency() + "] buffer overflow - temporary pause until processing catches up");
                 }
                 else
                 {
-                    mLog.debug("Channel [" + mTunerFrequency + "] buffer overflow cleared - resuming normal processing");
+                    mLog.debug("Channel [" + mTunerChannel.getFrequency() + "] buffer overflow cleared - resuming normal processing");
                 }
             }
         });

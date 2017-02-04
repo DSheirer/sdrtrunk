@@ -18,20 +18,27 @@
  ******************************************************************************/
 package sample;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import source.tuner.TunerChannelSource;
+
 import java.util.Collection;
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class OverflowableTransferQueue<E>
 {
+    private final static Logger mLog = LoggerFactory.getLogger(OverflowableTransferQueue.class);
+
     public enum State {NORMAL, OVERFLOW};
     private Listener<State> mStateListener;
 
     private LinkedTransferQueue<E> mQueue = new LinkedTransferQueue<E>();
     private AtomicInteger mCounter = new AtomicInteger();
+    private AtomicBoolean mOverflow = new AtomicBoolean();
     private int mMaximumSize;
     private int mResetThreshold;
-    private boolean mOverflow = false;
 
     /**
      * Concurrent transfer queue that couples a higher-throughput linked transfer queue with an atomic integer for
@@ -53,7 +60,7 @@ public class OverflowableTransferQueue<E>
      */
     public void offer(E e)
     {
-        if(!mOverflow)
+        if(!mOverflow.get())
         {
             mQueue.offer(e);
 
@@ -73,14 +80,16 @@ public class OverflowableTransferQueue<E>
     {
         int drainCount = mQueue.drainTo(collection, maxElements);
 
-        if(drainCount > 0)
-        {
-            int size = mCounter.addAndGet(-drainCount);
+        int size = mCounter.addAndGet(-drainCount);
 
-            if(mOverflow && size <= mResetThreshold)
-            {
-                setOverflow(false);
-            }
+        if(mOverflow.get())
+        {
+            mLog.debug("Overflow - current size:" + size + " threshold:" + mResetThreshold);
+        }
+
+        if(mOverflow.get() && size <= mResetThreshold)
+        {
+            setOverflow(false);
         }
 
         return drainCount;
@@ -100,7 +109,7 @@ public class OverflowableTransferQueue<E>
      */
     public State getState()
     {
-        return mOverflow ? State.OVERFLOW : State.NORMAL;
+        return mOverflow.get() ? State.OVERFLOW : State.NORMAL;
     }
 
     /**
@@ -108,11 +117,12 @@ public class OverflowableTransferQueue<E>
      */
     private void setOverflow(boolean overflow)
     {
-        mOverflow = overflow;
-
-        if(mStateListener != null)
+        if(mOverflow.compareAndSet(!overflow, overflow))
         {
-            mStateListener.receive(getState());
+            if(mStateListener != null)
+            {
+                mStateListener.receive(overflow ? State.OVERFLOW : State.NORMAL);
+            }
         }
     }
 
@@ -125,7 +135,7 @@ public class OverflowableTransferQueue<E>
         {
             mQueue.clear();
             mCounter.set(0);
-            mOverflow = false;
+            mOverflow.set(false);
         }
     }
 }
