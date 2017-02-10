@@ -51,7 +51,7 @@ public class ChannelMetadataViewer extends JPanel
         mChannelDetailPanel = new ChannelDetailPanel(channelProcessingManager);
         mCallEventPanel = new CallEventPanel(iconManager);
         mMessageActivityPanel = new MessageActivityPanel(channelProcessingManager);
-        mChannelSpectrumPanel = new ChannelSpectrumPanel(settingsManager, channelProcessingManager);
+//        mChannelSpectrumPanel = new ChannelSpectrumPanel(settingsManager, channelProcessingManager);
         mChannelMetadataPanel = new ChannelMetadataPanel(channelProcessingManager, iconManager);
 
         init();

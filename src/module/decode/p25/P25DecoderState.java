@@ -19,9 +19,7 @@ package module.decode.p25;
 
 import alias.Alias;
 import alias.AliasList;
-import alias.PatchGroupAlias;
 import alias.id.AliasIDType;
-import alias.id.talkgroup.TalkgroupID;
 import channel.metadata.AliasedStringAttributeMonitor;
 import channel.metadata.Attribute;
 import channel.metadata.AttributeChangeRequest;
@@ -163,7 +161,6 @@ public class P25DecoderState extends DecoderState
     private Map<Integer,IdentifierUpdate> mBands = new HashMap<>();
     private Map<String,Long> mRegistrations = new HashMap<>();
     private Map<String,IAdjacentSite> mNeighborMap = new HashMap<>();
-    private Map<String,List<String>> mPatchGroupMap = new HashMap<>();
 
     private String mLastCommandEventID;
     private String mLastPageEventID;
@@ -188,6 +185,7 @@ public class P25DecoderState extends DecoderState
     private P25CallEvent mCurrentCallEvent;
     private List<String> mCallDetectTalkgroups = new ArrayList<>();
     private Map<String,P25CallEvent> mChannelCallMap = new HashMap<>();
+    private PatchGroupManager mPatchGroupManager;
 
     public P25DecoderState(AliasList aliasList,
                            ChannelType channelType,
@@ -199,6 +197,7 @@ public class P25DecoderState extends DecoderState
         mModulation = modulation;
         mIgnoreDataCalls = ignoreDataCalls;
 
+        mPatchGroupManager = new PatchGroupManager(aliasList, getCallEventBroadcaster());
         mSiteAttributeMonitor = new AliasedStringAttributeMonitor(Attribute.NETWORK_ID_2,
             getAttributeChangeRequestListener(), getAliasList(), AliasIDType.SITE);
         mFromTalkgroupMonitor = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_FROM,
@@ -2719,6 +2718,9 @@ public class P25DecoderState extends DecoderState
         switch(((MotorolaTSBKMessage)tsbk).getMotorolaOpcode())
         {
             case PATCH_GROUP_CHANNEL_GRANT:
+                //Cleanup patch groups - auto-expire any patch groups before we allocate a channel
+                mPatchGroupManager.cleanupPatchGroups();
+
                 PatchGroupVoiceChannelGrant pgvcg = (PatchGroupVoiceChannelGrant)tsbk;
 
                 channel = pgvcg.getChannel();
@@ -2754,6 +2756,9 @@ public class P25DecoderState extends DecoderState
                     mChannelCallMap.get(channel)));
                 break;
             case PATCH_GROUP_CHANNEL_GRANT_UPDATE:
+                //Cleanup patch groups - auto-expire any patch groups before we allocate a channel
+                mPatchGroupManager.cleanupPatchGroups();
+
                 PatchGroupVoiceChannelGrantUpdate gvcgu = (PatchGroupVoiceChannelGrantUpdate)tsbk;
 
                 channel = gvcgu.getChannel1();
@@ -2784,35 +2789,11 @@ public class P25DecoderState extends DecoderState
                 break;
             case PATCH_GROUP_ADD:
                 PatchGroupAdd pga = (PatchGroupAdd)tsbk;
-
-                if(addPatchGroup(pga.getPatchGroupAddress(), pga.getPatchedTalkgroups()))
-                {
-                    StringBuilder sb = new StringBuilder();
-
-                    sb.append("PATCH GROUP:").append(pga.getPatchGroupAddress());
-                    sb.append(" ").append(pga.getPatchedTalkgroups());
-
-                    broadcast(new P25CallEvent.Builder(CallEventType.PATCH_GROUP_ADD)
-                        .aliasList(getAliasList())
-                        .details(sb.toString())
-                        .build());
-                }
+                mPatchGroupManager.updatePatchGroup(pga.getPatchGroupAddress(), pga.getPatchedTalkgroups());
                 break;
             case PATCH_GROUP_DELETE:
                 PatchGroupDelete pgd = (PatchGroupDelete)tsbk;
-
-                if(removePatchGroup(pgd.getPatchGroupAddress(), pgd.getPatchedTalkgroups()))
-                {
-                    StringBuilder sbpgd = new StringBuilder();
-
-                    sbpgd.append("PATCH GROUP:").append(pgd.getPatchGroupAddress());
-                    sbpgd.append(" ").append(pgd.getPatchedTalkgroups());
-
-                    broadcast(new P25CallEvent.Builder(CallEventType.PATCH_GROUP_DELETE)
-                        .aliasList(getAliasList())
-                        .details(sbpgd.toString())
-                        .build());
-                }
+                mPatchGroupManager.removePatchGroup(pgd.getPatchGroupAddress());
                 break;
             case CCH_PLANNED_SHUTDOWN:
                 if(!mControlChannelShutdownLogged)
@@ -2828,173 +2809,13 @@ public class P25DecoderState extends DecoderState
     }
 
     /**
-     * Creates a new patch group or updates an existing patch group with the patched talkgroup entries.
-     *
-     * @param patchGroupID for the patch group
-     * @param talkgroupsToAdd to include in the patch group
-     * @return true if the patch group or the patch group map was updated
-     */
-    private boolean addPatchGroup(String patchGroupID, List<String> talkgroupsToAdd)
-    {
-        boolean updated = false;
-
-        if(patchGroupID != null && !talkgroupsToAdd.isEmpty())
-        {
-            List<String> patchedTalkgroups = mPatchGroupMap.get(patchGroupID);
-
-            if(patchedTalkgroups == null)
-            {
-                patchedTalkgroups = new ArrayList<>();
-            }
-
-            for(String talkgroupToAdd : talkgroupsToAdd)
-            {
-                //Exclude the patch group ID if it is included in the patched talkgroup list so that we don't have
-                //an infinite loop situation
-                if(talkgroupToAdd.equals(patchGroupID))
-                {
-                    continue;
-                }
-
-                if(!patchedTalkgroups.contains(talkgroupToAdd))
-                {
-                    patchedTalkgroups.add(talkgroupToAdd);
-                    updated = true;
-                }
-            }
-
-            if(updated)
-            {
-                mPatchGroupMap.put(patchGroupID, patchedTalkgroups);
-                updatePatchAlias(patchGroupID, patchedTalkgroups);
-            }
-        }
-
-        return updated;
-    }
-
-    /**
-     * Removes the patched talkgroups from the patch group and removes the patch group from the patch group map if
-     * there are no more patched talkgroups in the patch group.
-     *
-     * @param patchGroupID for the patch group
-     * @param talkgroupsToRemove to remove from the patch group
-     * @return true if the patch group or the patch group map was updated
-     */
-    private boolean removePatchGroup(String patchGroupID, List<String> talkgroupsToRemove)
-    {
-        boolean updated = false;
-
-        if(patchGroupID != null && !talkgroupsToRemove.isEmpty())
-        {
-            List<String> patchedTalkgroups = mPatchGroupMap.get(patchGroupID);
-
-            if(patchedTalkgroups != null)
-            {
-                for(String talkgroupToRemove : talkgroupsToRemove)
-                {
-                    if(patchedTalkgroups.contains(talkgroupToRemove))
-                    {
-                        patchedTalkgroups.remove(talkgroupToRemove);
-                        updated = true;
-                    }
-                }
-
-                if(patchedTalkgroups.isEmpty())
-                {
-                    mPatchGroupMap.remove(patchGroupID);
-                    removePatchGroupAlias(patchGroupID);
-                    updated = true;
-                }
-                else
-                {
-                    updatePatchAlias(patchGroupID, patchedTalkgroups);
-                }
-            }
-        }
-
-        return updated;
-    }
-
-    /**
-     * Adds/updates a patch group alias to the alias list containing aliases for each of the patched talkgroups.  If the
-     * patch group alias already exists, any patched talkgroups will be removed from the existing patch group alias and
-     * replaced with the aliases corresponding to the patched talkgroup aliases.
-     *
-     * @param patchGroupID for the patch group
-     * @param patchedTalkgroups containing the talkgroup IDs for each of the patched talkgroups
-     */
-    private void updatePatchAlias(String patchGroupID, List<String> patchedTalkgroups)
-    {
-        PatchGroupAlias patchGroupAlias = null;
-
-        //Check for an existing alias for the patch talkgroup - do not include wildcard aliases
-        Alias existingAlias = getAliasList().getTalkgroupAlias(patchGroupID, false);
-
-        if(existingAlias instanceof PatchGroupAlias)
-        {
-            patchGroupAlias = (PatchGroupAlias)existingAlias;
-        }
-        else
-        {
-            patchGroupAlias = new PatchGroupAlias();
-
-            patchGroupAlias.addAliasID(new TalkgroupID(patchGroupID));
-
-            if(existingAlias != null)
-            {
-                getAliasList().removeAlias(existingAlias);
-
-                patchGroupAlias.setPatchGroupAlias(existingAlias);
-            }
-
-            getAliasList().addAlias(patchGroupAlias);
-        }
-
-        if(patchGroupAlias != null)
-        {
-            patchGroupAlias.setPatchedTalkgroupIDs(patchedTalkgroups);
-
-            patchGroupAlias.clearPatchedAliases();
-
-            for(String patchedTalkgroup : patchedTalkgroups)
-            {
-                Alias patchedAlias = getAliasList().getTalkgroupAlias(patchedTalkgroup);
-
-                if(patchedAlias != null)
-                {
-                    patchGroupAlias.addPatchedAlias(patchedAlias);
-                }
-            }
-        }
-    }
-
-    /**
-     * Removes the temporary patch group alias from the alias list
-     */
-    private void removePatchGroupAlias(String patchGroupID)
-    {
-        Alias alias = getAliasList().getTalkgroupAlias(patchGroupID);
-
-        if(alias instanceof PatchGroupAlias)
-        {
-            PatchGroupAlias patchGroupAlias = (PatchGroupAlias)alias;
-
-            getAliasList().removeAlias(patchGroupAlias);
-
-            //Replace our temporary patch group alias with the original alias for the patch group ID
-            if(patchGroupAlias.hasPatchGroupAlias())
-            {
-                getAliasList().addAlias(patchGroupAlias.getPatchGroupAlias());
-            }
-        }
-    }
-
-    /**
      * Process a traffic channel allocation message
      */
     private void processTSBKChannelGrant(TSBKMessage message)
     {
+        //Cleanup patch groups - auto-expire any patch groups before we allocate a channel
+        mPatchGroupManager.cleanupPatchGroups();
+
         String channel = null;
         String from = null;
         String to = null;

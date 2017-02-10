@@ -168,11 +168,14 @@ public class PatchGroupAlias extends Alias
 
         for(Alias alias: mPatchedAliases)
         {
-            for(AliasAction action: alias.getAction())
+            if(!(alias instanceof PatchGroupAlias))
             {
-                if(!aliasActions.contains(action))
+                for(AliasAction action: alias.getAction())
                 {
-                    aliasActions.add(action);
+                    if(!aliasActions.contains(action))
+                    {
+                        aliasActions.add(action);
+                    }
                 }
             }
         }
@@ -185,7 +188,7 @@ public class PatchGroupAlias extends Alias
     {
         for(Alias alias: mPatchedAliases)
         {
-            if(alias.hasActions())
+            if(!(alias instanceof PatchGroupAlias) && alias.hasActions())
             {
                 return true;
             }
@@ -201,7 +204,9 @@ public class PatchGroupAlias extends Alias
 
         for(Alias alias: mPatchedAliases)
         {
-            if(alias.hasCallPriority() && alias.getCallPriority() < highestPriority)
+            if(!(alias instanceof PatchGroupAlias) &&
+                alias.hasCallPriority() &&
+                alias.getCallPriority() < highestPriority)
             {
                 highestPriority = alias.getCallPriority();
             }
@@ -220,7 +225,7 @@ public class PatchGroupAlias extends Alias
 
         for(Alias alias: mPatchedAliases)
         {
-            if(alias.hasCallPriority())
+            if(!(alias instanceof PatchGroupAlias) && alias.hasCallPriority())
             {
                 return true;
             }
@@ -239,7 +244,7 @@ public class PatchGroupAlias extends Alias
 
         for(Alias alias: mPatchedAliases)
         {
-            if(alias.isRecordable())
+            if(!(alias instanceof PatchGroupAlias) && alias.isRecordable())
             {
                 return true;
             }
@@ -258,7 +263,7 @@ public class PatchGroupAlias extends Alias
 
         for(Alias alias: mPatchedAliases)
         {
-            if(alias.isStreamable())
+            if(!(alias instanceof PatchGroupAlias) && alias.isStreamable())
             {
                 return true;
             }
@@ -279,11 +284,14 @@ public class PatchGroupAlias extends Alias
 
         for(Alias alias: mPatchedAliases)
         {
-            for(BroadcastChannel broadcastChannel: alias.getBroadcastChannels())
+            if(!(alias instanceof PatchGroupAlias))
             {
-                if(!broadcastChannels.contains(broadcastChannel))
+                for(BroadcastChannel broadcastChannel: alias.getBroadcastChannels())
                 {
-                    broadcastChannels.add(broadcastChannel);
+                    if(!broadcastChannels.contains(broadcastChannel))
+                    {
+                        broadcastChannels.add(broadcastChannel);
+                    }
                 }
             }
         }
@@ -301,7 +309,7 @@ public class PatchGroupAlias extends Alias
 
         for(Alias alias: mPatchedAliases)
         {
-            if(alias.hasBroadcastChannel(channel))
+            if(!(alias instanceof PatchGroupAlias) && alias.hasBroadcastChannel(channel))
             {
                 return true;
             }

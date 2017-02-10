@@ -19,6 +19,7 @@ package source;
 
 import module.Module;
 import sample.SampleType;
+import sample.real.IOverflowListener;
 
 /**
  * Abstract class to define the minimum functionality of a sample data provider.
@@ -26,6 +27,7 @@ import sample.SampleType;
 public abstract class Source extends Module
 {
     protected SampleType mSampleType;
+    protected IOverflowListener mOverflowListener;
 
     public Source( SampleType sampleType )
     {
@@ -46,5 +48,26 @@ public abstract class Source extends Module
     public void setSampleType( SampleType sampleType )
     {
     	mSampleType = sampleType;
+    }
+
+    /**
+     * Registers the listener to receive overflow state changes.  Use null argument to clear the listener
+     */
+    public void setOverflowListener(IOverflowListener listener)
+    {
+        mOverflowListener = listener;
+    }
+
+    /**
+     * Broadcasts an overflow state
+     *
+     * @param overflow true if overlow, false if normal
+     */
+    protected void broadcastOverflowState(boolean overflow)
+    {
+        if(mOverflowListener != null)
+        {
+            mOverflowListener.sourceOverflow(overflow);
+        }
     }
 }

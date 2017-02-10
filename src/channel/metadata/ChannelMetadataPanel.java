@@ -210,6 +210,10 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
                         background = SystemProperties.getInstance().get(PROPERTY_PREFIX_BACKGROUND + "idle", Color.WHITE);
                         foreground = SystemProperties.getInstance().get(PROPERTY_PREFIX_FOREGROUND + "idle", Color.BLUE);
                         break;
+                    case OVERFLOW:
+                        background = SystemProperties.getInstance().get(PROPERTY_PREFIX_BACKGROUND + "overflow", Color.RED);
+                        foreground = SystemProperties.getInstance().get(PROPERTY_PREFIX_FOREGROUND + "overflow", Color.YELLOW);
+                        break;
                     case RESET:
                         background = SystemProperties.getInstance().get(PROPERTY_PREFIX_BACKGROUND + "reset", Color.PINK);
                         foreground = SystemProperties.getInstance().get(PROPERTY_PREFIX_FOREGROUND + "reset", Color.YELLOW);
