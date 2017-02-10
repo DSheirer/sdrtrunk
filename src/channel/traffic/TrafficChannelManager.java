@@ -84,8 +84,6 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
      * @param system label to use to describe the system
      * @param site label to use to describe the site
      * @param aliasListName designated for the channel
-     * @param trafficChannelTimeout - millisecond call timer limit used when an
-     * end of call signalling event is not decoded.
      * @param trafficChannelPoolSize - maximum number of allocated traffic channels
      * in the pool
      */
@@ -96,7 +94,6 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
                                  String system,
                                  String site,
                                  String aliasListName,
-                                 long trafficChannelTimeout,
                                  int trafficChannelPoolSize)
     {
         mChannelModel = channelModel;
