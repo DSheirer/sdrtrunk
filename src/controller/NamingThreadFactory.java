@@ -1,5 +1,9 @@
 package controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import util.ThreadPool;
+
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -8,24 +12,23 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class NamingThreadFactory implements ThreadFactory 
 {
-    static final AtomicInteger poolNumber = new AtomicInteger(1);
+    private final static Logger mLog = LoggerFactory.getLogger(ThreadPool.class);
+
+    private static final AtomicInteger mPoolNumber = new AtomicInteger(1);
     
-    final ThreadGroup mThreadGroup;
+    private final ThreadGroup mThreadGroup;
     
-    final AtomicInteger mThreadNumber = new AtomicInteger(1);
+    private final AtomicInteger mThreadNumber = new AtomicInteger(1);
     
-    final String mNamePrefix;
+    private final String mNamePrefix;
 
     public NamingThreadFactory( String prefix ) 
     {
     	SecurityManager s = System.getSecurityManager();
         
-        mThreadGroup = (s != null)? s.getThreadGroup() :
-                             Thread.currentThread().getThreadGroup();
+        mThreadGroup = (s != null)? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
         
-        mNamePrefix = prefix + " pool-" +
-                      poolNumber.getAndIncrement() +
-                     "-thread-";
+        mNamePrefix = prefix + " pool-" + mPoolNumber.getAndIncrement() + "-thread-";
     }
 
     public Thread newThread( Runnable runnable ) 
@@ -42,7 +45,16 @@ public class NamingThreadFactory implements ThreadFactory
         {
             thread.setPriority( Thread.NORM_PRIORITY );
         }
-        
+
+        thread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler()
+        {
+            @Override
+            public void uncaughtException(Thread t, Throwable e)
+            {
+                mLog.error("Error while executing runnable in scheduled thread pool [" + t.getName() + "]", e);
+            }
+        });
+
         return thread;
     }
 }

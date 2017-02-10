@@ -29,6 +29,7 @@ import sample.Listener;
 import sample.OverflowableTransferQueue;
 import sample.complex.Complex;
 import sample.complex.ComplexBuffer;
+import sample.real.IOverflowListener;
 import source.ComplexSource;
 import source.SourceException;
 import source.tuner.frequency.FrequencyChangeEvent;
@@ -101,21 +102,6 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
         mTunerFrequency = mTuner.getTunerController().getFrequency();
 
         mBuffer = new OverflowableTransferQueue<>(BUFFER_MAX_CAPACITY, BUFFER_OVERFLOW_RESET_THRESHOLD);
-        mBuffer.setStateListener(new Listener<OverflowableTransferQueue.State>()
-        {
-            @Override
-            public void receive(OverflowableTransferQueue.State state)
-            {
-                if(state == OverflowableTransferQueue.State.NORMAL)
-                {
-                    mLog.debug("Channel [" + mTunerChannel.getFrequency() + "] buffer overflow - temporary pause until processing catches up");
-                }
-                else
-                {
-                    mLog.debug("Channel [" + mTunerChannel.getFrequency() + "] buffer overflow cleared - resuming normal processing");
-                }
-            }
-        });
 
 	    /* Setup the frequency translator to the current source frequency */
         long frequencyOffset = mTunerFrequency - mTunerChannel.getFrequency();
@@ -126,6 +112,14 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
         frequencyChanged(new FrequencyChangeEvent(Event.NOTIFICATION_SAMPLE_RATE_CHANGE, mTuner.getTunerController().getSampleRate()));
     }
 
+    /**
+     * Overrides the default source overflow listener management to delegate responsibility to the overflow buffer
+     */
+    @Override
+    public void setOverflowListener(IOverflowListener listener)
+    {
+        mBuffer.setOverflowListener(listener);
+    }
 
     public void start(ScheduledExecutorService executor)
     {
@@ -175,7 +169,7 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
         }
         else
         {
-            mLog.warn("Attempt to stop() and already stopped tuner channel source was ignored");
+            mLog.warn("Attempt to stop() an already stopped tuner channel source was ignored");
         }
     }
 
@@ -316,6 +310,11 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
 
         public void shutdown()
         {
+            if(getTunerChannel().getFrequency() == 460500000)
+            {
+                mLog.debug("************** Shutdown has been invoked on the P25 primary control channel: 460500000");
+            }
+
             mProcessing = false;
         }
 
@@ -373,11 +372,17 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
             }
             catch(Exception e)
             {
+                mLog.error("Error encountered during decimation process", e);
+
 				/* Only log the stack trace if we're still processing */
                 if(mProcessing)
                 {
                     mLog.error("Error encountered during decimation process", e);
                 }
+            }
+            catch(Throwable throwable)
+            {
+                mLog.error("Bad Error", throwable);
             }
 
 			/* Check to see if we've been shutdown */

@@ -20,6 +20,7 @@ package sample;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sample.real.IOverflowListener;
 import source.tuner.TunerChannelSource;
 
 import java.util.Collection;
@@ -32,7 +33,7 @@ public class OverflowableTransferQueue<E>
     private final static Logger mLog = LoggerFactory.getLogger(OverflowableTransferQueue.class);
 
     public enum State {NORMAL, OVERFLOW};
-    private Listener<State> mStateListener;
+    private IOverflowListener mOverflowListener;
 
     private LinkedTransferQueue<E> mQueue = new LinkedTransferQueue<E>();
     private AtomicInteger mCounter = new AtomicInteger();
@@ -82,11 +83,6 @@ public class OverflowableTransferQueue<E>
 
         int size = mCounter.addAndGet(-drainCount);
 
-        if(mOverflow.get())
-        {
-            mLog.debug("Overflow - current size:" + size + " threshold:" + mResetThreshold);
-        }
-
         if(mOverflow.get() && size <= mResetThreshold)
         {
             setOverflow(false);
@@ -96,32 +92,24 @@ public class OverflowableTransferQueue<E>
     }
 
     /**
-     * Sets a listener to receive state change events
+     * Sets a listener to receive overflow state change events
      */
-    public void setStateListener(Listener<State> listener)
+    public void setOverflowListener(IOverflowListener listener)
     {
-        mStateListener = listener;
+        mOverflowListener = listener;
     }
 
 
     /**
-     * Current state of the queue, normal or overflow
-     */
-    public State getState()
-    {
-        return mOverflow.get() ? State.OVERFLOW : State.NORMAL;
-    }
-
-    /**
-     * Toggles the overflow state
+     * Toggles the overflow state and broadcast state change to listener
      */
     private void setOverflow(boolean overflow)
     {
         if(mOverflow.compareAndSet(!overflow, overflow))
         {
-            if(mStateListener != null)
+            if(mOverflowListener != null)
             {
-                mStateListener.receive(overflow ? State.OVERFLOW : State.NORMAL);
+                mOverflowListener.sourceOverflow(overflow);
             }
         }
     }
@@ -136,6 +124,10 @@ public class OverflowableTransferQueue<E>
             mQueue.clear();
             mCounter.set(0);
             mOverflow.set(false);
+            if(mOverflowListener != null)
+            {
+                mOverflowListener.sourceOverflow(false);
+            }
         }
     }
 }

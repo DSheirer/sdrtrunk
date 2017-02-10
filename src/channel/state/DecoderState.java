@@ -52,6 +52,14 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
     }
 
     /**
+     * Provides subclass reference to the call event broadcaster
+     */
+    protected Broadcaster<CallEvent> getCallEventBroadcaster()
+    {
+        return mCallEventBroadcaster;
+    }
+
+    /**
      * Reset the decoder state to prepare for processing a different sample
      * source
      */
