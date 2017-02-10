@@ -310,11 +310,6 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
 
         public void shutdown()
         {
-            if(getTunerChannel().getFrequency() == 460500000)
-            {
-                mLog.debug("************** Shutdown has been invoked on the P25 primary control channel: 460500000");
-            }
-
             mProcessing = false;
         }
 
@@ -372,8 +367,6 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
             }
             catch(Exception e)
             {
-                mLog.error("Error encountered during decimation process", e);
-
 				/* Only log the stack trace if we're still processing */
                 if(mProcessing)
                 {
@@ -382,7 +375,7 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
             }
             catch(Throwable throwable)
             {
-                mLog.error("Bad Error", throwable);
+                mLog.error("Code error encountered during decimation process - channel thread will probably die", throwable);
             }
 
 			/* Check to see if we've been shutdown */
