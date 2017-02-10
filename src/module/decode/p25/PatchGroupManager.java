@@ -37,6 +37,7 @@ public class PatchGroupManager
 
     /**
      * Manages active P25 patch groups and auto-expires patch groups if not updated every 5 seconds.
+     *
      * @param aliasList to keep updated with patch group changes
      * @param broadcaster for rebroadcasting patch group related call events
      */
@@ -127,13 +128,14 @@ public class PatchGroupManager
             cleanupPatchGroups();
             patchGroup = new PatchGroup(patchGroupID);
             mPatchGroups.add(patchGroup);
+            updated = true;
         }
         else
         {
             patchGroup.updateTimestamp();
         }
 
-        for(String patchedGroup: patchedTalkgroups)
+        for(String patchedGroup : patchedTalkgroups)
         {
             if(patchGroup.addPatchedGroup(patchedGroup))
             {
@@ -209,7 +211,7 @@ public class PatchGroupManager
      */
     private PatchGroup getPatchGroup(String patchGroupID)
     {
-        for(PatchGroup patchGroup: mPatchGroups)
+        for(PatchGroup patchGroup : mPatchGroups)
         {
             if(patchGroup.getPatchGroupID().equals(patchGroupID))
             {
