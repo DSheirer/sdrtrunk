@@ -248,6 +248,12 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                 {
                     String reason = ioe.getMessage();
 
+                    if(connected())
+                    {
+                        mLog.info("Streaming connection error detected - resetting connection - " + reason);
+                        disconnect();
+                        connect();
+                    }
                     if(reason.startsWith("Connection reset"))
                     {
                         mLog.info("Streaming connection reset by remote server - reestablishing connection");
@@ -264,14 +270,14 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                     {
                         setBroadcastState(BroadcastState.ERROR);
                         disconnect();
-                        mLog.error("Unrecognized IO error: " + reason + ". Streaming halted.");
+                        mLog.error("Unrecognized IO error: " + reason + ". Streaming halted.", cause);
                     }
                 }
                 else
                 {
                     setBroadcastState(BroadcastState.ERROR);
                     disconnect();
-                    mLog.error("Unspecified IO error - streaming halted.");
+                    mLog.error("Unspecified IO error - streaming halted.", cause);
                 }
             }
             else

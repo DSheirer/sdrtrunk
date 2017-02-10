@@ -163,7 +163,10 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
 
     /**
      * Closes the recording file.  Upon successful closing of the recording file, the listener is notified that the
-     * audio recorder is closed.
+     * audio recorder is closed.  There is potential for the calling thread (here) and the buffer processor thread to
+     * both inform the recording closed listener that the recording is ended.  So, we synchronize on the listener and
+     * the first thread to get the lock informs the listener and then nullifies the listener pointer so that if the
+     * second thread attempts a duplicate notification the listener would be null at that point.
      */
     public void close(Listener<AudioRecorder> listener)
     {
@@ -171,8 +174,14 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
 
         if(!mRunning.compareAndSet(true, false))
         {
-            //If this recorder has already been stopped/closed, immediately inform the listener
-            mRecordingClosedListener.receive(this);
+            synchronized(mRecordingClosedListener)
+            {
+                if(mRecordingClosedListener != null)
+                {
+                    mRecordingClosedListener.receive(AudioRecorder.this);
+                    mRecordingClosedListener = null;
+                }
+            }
         }
     }
 
@@ -303,9 +312,13 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
                         }
                     }
 
-                    if(mRecordingClosedListener != null)
+                    synchronized(mRecordingClosedListener)
                     {
-                        mRecordingClosedListener.receive(AudioRecorder.this);
+                        if(mRecordingClosedListener != null)
+                        {
+                            mRecordingClosedListener.receive(AudioRecorder.this);
+                            mRecordingClosedListener = null;
+                        }
                     }
 
                     if(mProcessorHandle != null)
