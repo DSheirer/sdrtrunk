@@ -222,11 +222,9 @@ public class DecoderFactory
 
                 if(channelType == ChannelType.STANDARD)
                 {
-                    long timeout = mptConfig.getCallTimeout() * 1000; //convert to milliseconds
-
                     modules.add(new TrafficChannelManager(channelModel, channelProcessingManager, decodeConfig,
                         channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
-                        (aliasList != null ? aliasList.getName() : null), timeout, mptConfig.getTrafficChannelPoolSize()));
+                        (aliasList != null ? aliasList.getName() : null), mptConfig.getTrafficChannelPoolSize()));
                 }
 
                 modules.add(new FMDemodulatorModule(iqPass, iqStop));
@@ -264,12 +262,9 @@ public class DecoderFactory
 
                 if(channelType == ChannelType.STANDARD)
                 {
-                    //Set call timeout to 3 seconds for P25 traffic channels
-                    long timeout = 3000;
-
                     modules.add(new TrafficChannelManager(channelModel, channelProcessingManager, decodeConfig,
                         channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
-                        (aliasList != null ? aliasList.getName() : null), timeout, p25Config.getTrafficChannelPoolSize()));
+                        (aliasList != null ? aliasList.getName() : null), p25Config.getTrafficChannelPoolSize()));
                 }
 
                 modules.add(new P25AudioModule(metadata));
