@@ -27,39 +27,9 @@
       <root url="jar://$PROJECT_DIR$/imports/commons-codec-1.9.jar!/" />
       <root url="jar://$PROJECT_DIR$/imports/commons-logging-1.2.jar!/" />
       <root url="jar://$PROJECT_DIR$/imports/slf4j-api-1.7.21.jar!/" />
+      <root url="jar://$PROJECT_DIR$/imports/libusb4java-1.2.0-linux-aarch64.jar!/" />
     </CLASSES>
-    <JAVADOC>
-      <root url="https://hc.apache.org/httpcomponents-core-ga/httpcore/apidocs/index.html" />
-    </JAVADOC>
-    <SOURCES>
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/examples" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/fluent-hc/src/examples" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/fluent-hc/src/main/java" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/fluent-hc/src/test/java" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/httpclient-cache/src/main/java" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/httpclient-cache/src/main/java-deprecated" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/httpclient-cache/src/test/java" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/httpclient-osgi/src/main/java" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/httpclient-osgi/src/test/java" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/httpclient-win/src/examples" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/httpclient-win/src/main/java" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/httpclient-win/src/test/java" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/httpclient/src/examples" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/httpclient/src/main/java" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/httpclient/src/main/java-deprecated" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/httpclient/src/test/java" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/httpmime/src/examples" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/httpmime/src/main/java" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/httpmime/src/main/java-deprecated" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/httpmime/src/test/java" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-asyncclient-4.1.2/httpasyncclient/src/examples" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-asyncclient-4.1.2/httpasyncclient/src/main/java" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-asyncclient-4.1.2/httpasyncclient/src/main/java-deprecated" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-asyncclient-4.1.2/httpasyncclient/src/test/java" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/httpclient/src/examples" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/httpclient/src/main/java" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/httpclient/src/main/java-deprecated" />
-      <root url="file://$USER_HOME$/Downloads/httpcomponents-client-4.5.2/httpclient/src/test/java" />
-    </SOURCES>
+    <JAVADOC />
+    <SOURCES />
   </library>
 </component>
