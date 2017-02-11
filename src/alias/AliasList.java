@@ -632,35 +632,46 @@ public class AliasList implements Listener<AliasEvent>
     }
 
     /**
+     * Indicates if this alias list has a non-null, non-empty name
+     */
+    private boolean hasName()
+    {
+        return mName != null && !mName.isEmpty();
+    }
+
+    /**
      * Receive alias change event notifications and modify this list accordingly
      */
     @Override
     public void receive(AliasEvent event)
     {
-        Alias alias = event.getAlias();
-
-        switch(event.getEvent())
+        if(hasName())
         {
-            case ADD:
-                if(alias.getList() != null && getName().equalsIgnoreCase(alias.getList()))
-                {
-                    addAlias(alias);
-                }
-                break;
-            case CHANGE:
-                if(alias.getList() != null && getName().equalsIgnoreCase(alias.getList()))
-                {
-                    addAlias(alias);
-                }
-                break;
-            case DELETE:
-                if(alias.getList() != null && getName().equalsIgnoreCase(alias.getList()))
-                {
-                    removeAlias(alias);
-                }
-                break;
-            default:
-                break;
+            Alias alias = event.getAlias();
+
+            switch(event.getEvent())
+            {
+                case ADD:
+                    if(alias.getList() != null && getName().equalsIgnoreCase(alias.getList()))
+                    {
+                        addAlias(alias);
+                    }
+                    break;
+                case CHANGE:
+                    if(alias.getList() != null && getName().equalsIgnoreCase(alias.getList()))
+                    {
+                        addAlias(alias);
+                    }
+                    break;
+                case DELETE:
+                    if(alias.getList() != null && getName().equalsIgnoreCase(alias.getList()))
+                    {
+                        removeAlias(alias);
+                    }
+                    break;
+                default:
+                    break;
+            }
         }
     }
 }
