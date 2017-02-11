@@ -197,22 +197,44 @@ public class PatchGroupAlias extends Alias
         return hasPatchGroupAlias() && getPatchGroupAlias().hasActions();
     }
 
+    /**
+     * Returns the highest listenable audio priority defined among the aliases in the group, or returns 'Do Not Monitor'
+     * if that is the only priority defined.  Otherwise, returns default (100) priority.
+     */
     @Override
     public int getCallPriority()
     {
-        int highestPriority = (hasPatchGroupAlias() ? getPatchGroupAlias().getCallPriority() : Priority.DEFAULT_PRIORITY);
+        boolean hasDoNotMonitor = false;
+
+        int highestPriority = (hasPatchGroupAlias() ? getPatchGroupAlias().getCallPriority() : Priority.DEFAULT_PRIORITY + 1);
 
         for(Alias alias: mPatchedAliases)
         {
-            if(!(alias instanceof PatchGroupAlias) &&
-                alias.hasCallPriority() &&
-                alias.getCallPriority() < highestPriority)
+            if(!(alias instanceof PatchGroupAlias) && alias.hasCallPriority() && alias.getCallPriority() < highestPriority)
             {
-                highestPriority = alias.getCallPriority();
+                if(alias.getCallPriority() == Priority.DO_NOT_MONITOR)
+                {
+                    hasDoNotMonitor = true;
+                }
+                else
+                {
+                    highestPriority = alias.getCallPriority();
+                }
             }
         }
 
-        return highestPriority;
+        if(highestPriority <= Priority.DEFAULT_PRIORITY)
+        {
+            return highestPriority;
+        }
+        else if(hasDoNotMonitor)
+        {
+            return Priority.DO_NOT_MONITOR;
+        }
+        else
+        {
+            return Priority.DEFAULT_PRIORITY;
+        }
     }
 
     @Override
