@@ -6,28 +6,21 @@ import module.decode.p25.reference.DataUnitID;
 import alias.AliasList;
 import bits.BinaryMessage;
 
-public class SNDCPDataChannelAnnouncementExplicit extends SNDCPData 
-					implements IdentifierReceiver
+public class SNDCPDataChannelAnnouncementExplicit extends SNDCPData implements IdentifierReceiver
 {
 	public static final int AUTONOMOUS_ACCESS_AVAILABLE_INDICATOR = 88;
 	public static final int REQUESTED_ACCESS_AVAILABLE_INDICATOR = 89;
 	
 	public static final int[] TRANSMIT_IDENTIFIER = { 96,97,98,99 };
-    public static final int[] TRANSMIT_NUMBER = { 100,101,102,103,104,105,106,
-    	107,108,109,110,111 };
+    public static final int[] TRANSMIT_NUMBER = { 100,101,102,103,104,105,106, 107,108,109,110,111 };
 	public static final int[] RECEIVE_IDENTIFIER = { 112,113,114,115 };
-    public static final int[] RECEIVE_NUMBER = { 116,117,118,119,120,121,122,
-    	123,124,125,126,127 };
-    
-    public static final int[] DATA_ACCESS_CONTROL = { 128,129,130,131,132,133,
-    	134,135,136,137,138,139,140,141,142,143 };
+    public static final int[] RECEIVE_NUMBER = { 116,117,118,119,120,121,122, 123,124,125,126,127 };
+    public static final int[] DATA_ACCESS_CONTROL = { 128,129,130,131,132,133, 134,135,136,137,138,139,140,141,142,143 };
     
     private IBandIdentifier mIdentifierUpdateTransmit;
     private IBandIdentifier mIdentifierUpdateReceive;
 
-    public SNDCPDataChannelAnnouncementExplicit( BinaryMessage message, 
-								  DataUnitID duid,
-								  AliasList aliasList )
+    public SNDCPDataChannelAnnouncementExplicit( BinaryMessage message, DataUnitID duid, AliasList aliasList )
     {
 	    super( message, duid, aliasList );
     }
@@ -148,11 +141,11 @@ public class SNDCPDataChannelAnnouncementExplicit extends SNDCPData
 
     public long getDownlinkFrequency()
     {
-    	return calculateDownlink( mIdentifierUpdateTransmit, getReceiveChannelNumber() );
+    	return calculateDownlink( mIdentifierUpdateTransmit, getTransmitChannelNumber() );
     }
     
     public long getUplinkFrequency()
     {
-    	return calculateUplink( mIdentifierUpdateReceive, getTransmitChannelNumber() );
+    	return calculateUplink( mIdentifierUpdateReceive, getReceiveChannelNumber() );
     }
 }

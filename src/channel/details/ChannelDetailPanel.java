@@ -38,7 +38,7 @@ public class ChannelDetailPanel extends JPanel implements Listener<ProcessingCha
     private JLabel mSystemLabel;
     private JLabel mSiteLabel;
     private JLabel mNameLabel;
-    private JTextPane mDetailTextPane;
+    private JTextArea mDetailTextPane;
 
     private ChannelProcessingManager mChannelProcessingManager;
     private ProcessingChain mProcessingChain;
@@ -82,9 +82,7 @@ public class ChannelDetailPanel extends JPanel implements Listener<ProcessingCha
 
         add(buttonPanel, "wrap");
 
-        mDetailTextPane = new JTextPane();
-        mDetailTextPane.setContentType("text/html");
-        mDetailTextPane.setText(EMPTY_DETAILS);
+        mDetailTextPane = new JTextArea(EMPTY_DETAILS);
         DefaultCaret caret = (DefaultCaret)mDetailTextPane.getCaret();
         caret.setUpdatePolicy(DefaultCaret.NEVER_UPDATE);
         add(new JScrollPane(mDetailTextPane));

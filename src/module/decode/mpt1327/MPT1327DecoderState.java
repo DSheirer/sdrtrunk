@@ -389,9 +389,9 @@ public class MPT1327DecoderState extends DecoderState
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Activity Summary\n");
-        sb.append("Decoder:\tMPT-1327\n");
-        sb.append("Site:\t");
+        sb.append("Activity Summary - Decoder: MPT-1327\n");
+        sb.append(DIVIDER1);
+        sb.append("Site: ");
 
         if(mSite != null)
         {
@@ -403,9 +403,7 @@ public class MPT1327DecoderState extends DecoderState
 
                 if(siteAlias != null)
                 {
-                    sb.append(" ");
-                    sb.append(siteAlias.getName());
-                    sb.append("\n");
+                    sb.append(" ").append(siteAlias.getName()).append("\n");
                 }
             }
         }
@@ -414,13 +412,11 @@ public class MPT1327DecoderState extends DecoderState
             sb.append("Unknown\n");
         }
 
-        sb.append("\n\n");
-
-        sb.append("Talkgroups\n\n");
+        sb.append(DIVIDER2).append("Talkgroups: ");
 
         if(mGroups.isEmpty())
         {
-            sb.append("  None\n");
+            sb.append("None\n");
         }
         else
         {
@@ -429,8 +425,7 @@ public class MPT1327DecoderState extends DecoderState
 
             for(String talkgroup : talkgroups)
             {
-                sb.append("  ");
-                sb.append(talkgroup);
+                sb.append("\n ").append(talkgroup);
 
                 if(hasAliasList())
                 {
@@ -450,7 +445,7 @@ public class MPT1327DecoderState extends DecoderState
 
                 for(String member : members)
                 {
-                    sb.append("   >");
+                    sb.append("  >");
                     sb.append(member);
 
                     if(hasAliasList())
@@ -466,27 +461,26 @@ public class MPT1327DecoderState extends DecoderState
 
                     sb.append("\n");
                 }
-
-                sb.append("\n");
             }
         }
 
-        sb.append("\n");
+        sb.append(DIVIDER2).append("All Idents: ");
 
-        sb.append("Individual Idents\n");
         if(mIdents.isEmpty())
         {
-            sb.append("  None\n");
+            sb.append("None\n");
         }
         else
         {
+            sb.append("\n");
+
             Iterator<String> it = mIdents.iterator();
 
             while(it.hasNext())
             {
                 String ident = it.next();
 
-                sb.append("  ");
+                sb.append("");
                 sb.append(ident);
                 sb.append(" ");
 
