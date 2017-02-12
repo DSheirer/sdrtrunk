@@ -18,6 +18,9 @@
  ******************************************************************************/
 package audio.broadcast.shoutcast.v2.ultravox;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+
 public enum UltravoxMetadata
 {
     ALBUM_TITLE("TALB"),
@@ -58,11 +61,11 @@ public enum UltravoxMetadata
      * @param value to enclose in XML tags
      * @return xml tag wrapped value
      */
-    public String asXML(String value)
+    public String asXML(String value) throws UnsupportedEncodingException
     {
         StringBuilder sb = new StringBuilder();
         sb.append("<").append(getXMLTag()).append(">");
-        sb.append(value);
+        sb.append(URLEncoder.encode(value, "UTF-8"));
         sb.append("</").append(getXMLTag()).append(">");
 
         return sb.toString();
