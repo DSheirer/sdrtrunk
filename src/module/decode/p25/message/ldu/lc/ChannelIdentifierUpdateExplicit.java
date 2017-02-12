@@ -4,8 +4,7 @@ import module.decode.p25.message.IBandIdentifier;
 import module.decode.p25.message.ldu.LDU1Message;
 import module.decode.p25.reference.LinkControlOpcode;
 
-public class ChannelIdentifierUpdateExplicit extends LDU1Message
-									 implements IBandIdentifier
+public class ChannelIdentifierUpdateExplicit extends LDU1Message implements IBandIdentifier
 {
 	public static final int[] IDENTIFIER = { 364,365,366,367 };
 	public static final int[] BANDWIDTH = { 372,373,374,375 };
@@ -80,4 +79,22 @@ public class ChannelIdentifierUpdateExplicit extends LDU1Message
     {
 		return  -1 * mMessage.getLong( TRANSMIT_OFFSET ) * 250000l;
     }
+
+	@Override
+	public long getDownlinkFrequency(int channelNumber)
+	{
+		return getBaseFrequency() + ( channelNumber * getChannelSpacing() );
+	}
+
+	@Override
+	public long getUplinkFrequency(int channelNumber)
+	{
+		return getDownlinkFrequency(channelNumber) + getTransmitOffset();
+	}
+
+	@Override
+	public boolean isTDMA()
+	{
+		return false;
+	}
 }

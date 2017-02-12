@@ -18,6 +18,7 @@
    buffers.  Bounded queues have ability to enter/exit overflow state when queue
    size reaches overflow threshold and reset when queue size falls below the reset
    threshold.  Channel state will show OVERFLOW in red/yellow.
+ - Improves handling of P25 TDMA channels (NO Phase 2 decoder support yet)
  - Updated airspy controller for airspy-mini specific sample rate handling.
  - New developer remez filter designer tool and internal usage
 

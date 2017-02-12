@@ -1,3 +1,21 @@
+/*******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2017 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *
+ ******************************************************************************/
 package module.decode.p25.message.tsbk.osp.control;
 
 import alias.AliasList;
@@ -7,37 +25,20 @@ import module.decode.p25.message.IdentifierReceiver;
 import module.decode.p25.message.tsbk.TSBKMessage;
 import module.decode.p25.reference.DataUnitID;
 import module.decode.p25.reference.Opcode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class SecondaryControlChannelBroadcast extends TSBKMessage
-    implements IdentifierReceiver, Comparable<SecondaryControlChannelBroadcast>
+public class SecondaryControlChannelBroadcast extends TSBKMessage implements IdentifierReceiver, Comparable<SecondaryControlChannelBroadcast>
 {
-    private final static Logger mLog =
-        LoggerFactory.getLogger(SecondaryControlChannelBroadcast.class);
-
     public static final int[] RFSS_ID = {80, 81, 82, 83, 84, 85, 86, 87};
     public static final int[] SITE_ID = {88, 89, 90, 91, 92, 93, 94, 95};
     public static final int[] IDENTIFIER_1 = {96, 97, 98, 99};
-    public static final int[] CHANNEL_1 = {100, 101, 102, 103, 104, 105, 106, 107, 108,
-        109, 110, 111};
-    public static final int[] SYSTEM_SERVICE_CLASS_1 = {112, 113, 114, 115, 116,
-        117, 118, 119};
+    public static final int[] CHANNEL_1 = {100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111};
+    public static final int[] SYSTEM_SERVICE_CLASS_1 = {112, 113, 114, 115, 116, 117, 118, 119};
     public static final int[] IDENTIFIER_2 = {120, 121, 122, 123};
-    public static final int[] CHANNEL_2 = {124, 125, 126, 127, 128, 129, 130, 131, 132,
-        133, 134, 135};
-    public static final int[] SYSTEM_SERVICE_CLASS_2 = {136, 137, 138, 139, 140,
-        141, 142, 143};
+    public static final int[] CHANNEL_2 = {124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135};
+    public static final int[] SYSTEM_SERVICE_CLASS_2 = {136, 137, 138, 139, 140, 141, 142, 143};
 
     private IBandIdentifier mIdentifierUpdate1;
     private IBandIdentifier mIdentifierUpdate2;
-
-    private int mRFSS;
-    private int mSite;
-    private int mIdent1;
-    private int mIdent2;
-    private int mChan1;
-    private int mChan2;
 
     public SecondaryControlChannelBroadcast(BinaryMessage message,
                                             DataUnitID duid,
@@ -66,8 +67,7 @@ public class SecondaryControlChannelBroadcast extends TSBKMessage
 
         sb.append(" UP1:" + getUplinkFrequency1());
 
-        sb.append(" SVC1:" +
-            SystemService.toString(getSystemServiceClass1()));
+        sb.append(" SVC1:" + SystemService.toString(getSystemServiceClass1()));
 
         if(hasChannel2())
         {
@@ -77,8 +77,7 @@ public class SecondaryControlChannelBroadcast extends TSBKMessage
 
             sb.append(" UP2:" + getUplinkFrequency2());
 
-            sb.append(" SVC2:" +
-                SystemService.toString(getSystemServiceClass2()));
+            sb.append(" SVC2:" + SystemService.toString(getSystemServiceClass2()));
         }
 
         return sb.toString();
@@ -132,22 +131,42 @@ public class SecondaryControlChannelBroadcast extends TSBKMessage
 
     public long getDownlinkFrequency1()
     {
-        return calculateDownlink(mIdentifierUpdate1, getChannel1());
+        if(mIdentifierUpdate1 != null)
+        {
+            return mIdentifierUpdate1.getDownlinkFrequency(getChannel1());
+        }
+
+        return 0;
     }
 
     public long getUplinkFrequency1()
     {
-        return calculateUplink(mIdentifierUpdate1, getChannel1());
+        if(mIdentifierUpdate1 != null)
+        {
+            return mIdentifierUpdate1.getUplinkFrequency(getChannel1());
+        }
+
+        return 0;
     }
 
     public long getDownlinkFrequency2()
     {
-        return calculateDownlink(mIdentifierUpdate2, getChannel2());
+        if(mIdentifierUpdate2 != null)
+        {
+            return mIdentifierUpdate2.getDownlinkFrequency(getChannel2());
+        }
+
+        return 0;
     }
 
     public long getUplinkFrequency2()
     {
-        return calculateUplink(mIdentifierUpdate2, getChannel2());
+        if(mIdentifierUpdate2 != null)
+        {
+            return mIdentifierUpdate2.getUplinkFrequency(getChannel2());
+        }
+
+        return 0;
     }
 
     @Override
