@@ -24,12 +24,20 @@ import alias.id.AliasIDType;
 import alias.id.broadcast.BroadcastChannel;
 import alias.id.priority.Priority;
 import alias.id.talkgroup.TalkgroupID;
+import gui.SDRTrunk;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import playlist.version1.System;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class PatchGroupAlias extends Alias
 {
+    private final static Logger mLog = LoggerFactory.getLogger(PatchGroupAlias.class);
+
     private Alias mPatchGroupAlias;
     private List<Alias> mPatchedAliases = new ArrayList<>();
     private List<String> mPatchedTalkgroupIDs = new ArrayList<>();
@@ -295,9 +303,9 @@ public class PatchGroupAlias extends Alias
     }
 
     @Override
-    public List<BroadcastChannel> getBroadcastChannels()
+    public Set<BroadcastChannel> getBroadcastChannels()
     {
-        List<BroadcastChannel> broadcastChannels = new ArrayList<>();
+        Set<BroadcastChannel> broadcastChannels = new TreeSet<>();
 
         if(hasPatchGroupAlias())
         {
@@ -308,13 +316,7 @@ public class PatchGroupAlias extends Alias
         {
             if(!(alias instanceof PatchGroupAlias))
             {
-                for(BroadcastChannel broadcastChannel: alias.getBroadcastChannels())
-                {
-                    if(!broadcastChannels.contains(broadcastChannel))
-                    {
-                        broadcastChannels.add(broadcastChannel);
-                    }
-                }
+                broadcastChannels.addAll(alias.getBroadcastChannels());
             }
         }
 
@@ -338,5 +340,42 @@ public class PatchGroupAlias extends Alias
         }
 
         return false;
+    }
+
+    public static void main(String[] args)
+    {
+        Alias a1 = new Alias("Alias 1");
+        a1.addAliasID(new BroadcastChannel("Channel 1"));
+        a1.addAliasID(new BroadcastChannel("Channel 2"));
+        a1.addAliasID(new BroadcastChannel("Channel 3"));
+        a1.addAliasID(new BroadcastChannel("Channel 4"));
+
+        Alias a2 = new Alias("Alias 1");
+        a1.addAliasID(new BroadcastChannel("Channel 1"));
+        a1.addAliasID(new BroadcastChannel("Channel 2"));
+        a1.addAliasID(new BroadcastChannel("Channel 3"));
+        a1.addAliasID(new BroadcastChannel("Channel 4"));
+
+        Alias a3 = new Alias("Alias 1");
+        a1.addAliasID(new BroadcastChannel("Channel 1"));
+        a1.addAliasID(new BroadcastChannel("Channel 2"));
+        a1.addAliasID(new BroadcastChannel("Channel 3"));
+        a1.addAliasID(new BroadcastChannel("Channel 4"));
+
+        Alias a4 = new Alias("Alias 1");
+        a1.addAliasID(new BroadcastChannel("Channel 1"));
+        a1.addAliasID(new BroadcastChannel("Channel 2"));
+        a1.addAliasID(new BroadcastChannel("Channel 3"));
+        a1.addAliasID(new BroadcastChannel("Channel 4"));
+
+        PatchGroupAlias pga = new PatchGroupAlias();
+        pga.setPatchGroupAlias(a1);
+        pga.addPatchedAlias(a2);
+        pga.addPatchedAlias(a3);
+        pga.addPatchedAlias(a4);
+
+        Set<BroadcastChannel> bc = pga.getBroadcastChannels();
+
+        mLog.debug("Channels:" + bc);
     }
 }

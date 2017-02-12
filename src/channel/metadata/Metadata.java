@@ -28,6 +28,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class Metadata
 {
@@ -61,7 +63,7 @@ public class Metadata
     private Integer mAudioPriority;
     protected Boolean mRecordable = false;
     protected Boolean mDoNotRecord;
-    private List<BroadcastChannel> mBroadcastChannels;
+    private Set<BroadcastChannel> mBroadcastChannels;
 
 
     /**
@@ -166,7 +168,7 @@ public class Metadata
     /**
      * List of de-duplicated broadcast channels aggregated from the primary and secondary TO/FROM aliases.
      */
-    public List<BroadcastChannel> getBroadcastChannels()
+    public Set<BroadcastChannel> getBroadcastChannels()
     {
         if(mBroadcastChannels == null)
         {
@@ -582,50 +584,26 @@ public class Metadata
      */
     private void determineBroadcastChannels()
     {
-        mBroadcastChannels = new ArrayList<>();
+        mBroadcastChannels = new TreeSet<>();
 
         if(mPrimaryAddressTo.hasAlias() && mPrimaryAddressTo.getAlias().isStreamable())
         {
-            for(BroadcastChannel broadcastChannel: mPrimaryAddressTo.getAlias().getBroadcastChannels())
-            {
-                if(!mBroadcastChannels.contains(broadcastChannel))
-                {
-                    mBroadcastChannels.add(broadcastChannel);
-                }
-            }
+            mBroadcastChannels.addAll(mPrimaryAddressTo.getAlias().getBroadcastChannels());
         }
 
         if(mPrimaryAddressFrom.hasAlias() && mPrimaryAddressFrom.getAlias().isStreamable())
         {
-            for(BroadcastChannel broadcastChannel: mPrimaryAddressFrom.getAlias().getBroadcastChannels())
-            {
-                if(!mBroadcastChannels.contains(broadcastChannel))
-                {
-                    mBroadcastChannels.add(broadcastChannel);
-                }
-            }
+            mBroadcastChannels.addAll(mPrimaryAddressFrom.getAlias().getBroadcastChannels());
         }
 
         if(mSecondaryAddressTo.hasAlias() && mSecondaryAddressTo.getAlias().isStreamable())
         {
-            for(BroadcastChannel broadcastChannel: mSecondaryAddressTo.getAlias().getBroadcastChannels())
-            {
-                if(!mBroadcastChannels.contains(broadcastChannel))
-                {
-                    mBroadcastChannels.add(broadcastChannel);
-                }
-            }
+            mBroadcastChannels.addAll(mSecondaryAddressTo.getAlias().getBroadcastChannels());
         }
 
         if(mSecondaryAddressFrom.hasAlias() && mSecondaryAddressFrom.getAlias().isStreamable())
         {
-            for(BroadcastChannel broadcastChannel: mSecondaryAddressFrom.getAlias().getBroadcastChannels())
-            {
-                if(!mBroadcastChannels.contains(broadcastChannel))
-                {
-                    mBroadcastChannels.add(broadcastChannel);
-                }
-            }
+            mBroadcastChannels.addAll(mSecondaryAddressFrom.getAlias().getBroadcastChannels());
         }
     }
 
