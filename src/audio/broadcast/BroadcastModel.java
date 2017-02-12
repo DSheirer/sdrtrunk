@@ -707,9 +707,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
 
             if(metadata != null && metadata.isStreamable())
             {
-                List<BroadcastChannel> broadcastChannels = metadata.getBroadcastChannels();
-
-                for(BroadcastChannel broadcastChannel : broadcastChannels)
+                for(BroadcastChannel broadcastChannel : metadata.getBroadcastChannels())
                 {
                     String channelName = broadcastChannel.getChannelName();
 

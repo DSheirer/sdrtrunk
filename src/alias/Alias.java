@@ -185,27 +185,6 @@ public class Alias
 	 */
 	public void validate()
 	{
-		//Check for duplicate broadcast channels
-		List<BroadcastChannel> broadcastChannels = getBroadcastChannels();
-
-		if(broadcastChannels.size() > 0)
-		{
-			Set<String> channelNames = new TreeSet<>();
-
-			for(BroadcastChannel broadcastChannel: broadcastChannels)
-			{
-				String channelName = broadcastChannel.getChannelName();
-
-				if(channelName == null || channelName.isEmpty() || channelNames.contains(channelName))
-				{
-					removeAliasID(broadcastChannel);
-				}
-				else
-				{
-					channelNames.add(channelName);
-				}
-			}
-		}
 	}
 	/**
 	 * Returns the priority level of this alias, if defined, or the default priority
@@ -336,9 +315,9 @@ public class Alias
 	 * List of broadcast channels specified for this alias.
 	 */
     @XmlTransient
-	public List<BroadcastChannel> getBroadcastChannels()
+	public Set<BroadcastChannel> getBroadcastChannels()
 	{
-		List<BroadcastChannel> broadcastChannels = new ArrayList<>();
+		Set<BroadcastChannel> broadcastChannels = new TreeSet<>();
 
 		for(AliasID id: getId())
 		{
