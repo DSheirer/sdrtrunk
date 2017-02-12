@@ -80,7 +80,26 @@ public class IdentifierUpdateTDMA extends IdentifierUpdate
             return -offset;
         }
     }
-    
+
+    @Override
+    public long getDownlinkFrequency(int channelNumber)
+    {
+        if(isTDMA())
+        {
+            return getBaseFrequency() + ( (channelNumber / getChannelType().getSlotsPerCarrier()) * getChannelSpacing() );
+        }
+        else
+        {
+            return super.getDownlinkFrequency(channelNumber);
+        }
+    }
+
+    @Override
+    public boolean isTDMA()
+    {
+        return getChannelType().getAccessType() == AccessType.TDMA;
+    }
+
     public enum ChannelType
     {
     	TYPE_0( AccessType.FDMA, 12500, 1, Vocoder.HALF_RATE ),

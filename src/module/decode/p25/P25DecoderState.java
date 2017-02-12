@@ -2742,7 +2742,7 @@ public class P25DecoderState extends DecoderState
 
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.PATCH_GROUP_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel)
+                        .channel(channel + (pgvcg.isTDMAChannel() ? " TDMA" : ""))
                         .details(details.toString())
                         .frequency(pgvcg.getDownlinkFrequency())
                         .from(from)
@@ -2753,8 +2753,10 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                broadcast(new TrafficChannelAllocationEvent(this,
-                    mChannelCallMap.get(channel)));
+                if(!pgvcg.isTDMAChannel())
+                {
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
+                }
                 break;
             case PATCH_GROUP_CHANNEL_GRANT_UPDATE:
                 //Cleanup patch groups - auto-expire any patch groups before we allocate a channel
@@ -2773,10 +2775,8 @@ public class P25DecoderState extends DecoderState
                 {
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.PATCH_GROUP_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel)
-                        .details((gvcgu.isEncrypted() ? "ENCRYPTED " : "") +
-                            "PATCH UPDATE - GROUP 2:" + gvcgu.getPatchGroupAddress2() +
-                            " DN:" + gvcgu.getDownlinkFrequency2())
+                        .channel(channel + (gvcgu.isTDMAChannel1() ? " TDMA" : ""))
+                        .details((gvcgu.isEncrypted() ? "ENCRYPTED " : ""))
                         .frequency(gvcgu.getDownlinkFrequency1())
                         .to(to)
                         .build();
@@ -2785,8 +2785,37 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                broadcast(new TrafficChannelAllocationEvent(this,
-                    mChannelCallMap.get(channel)));
+                if(!gvcgu.isTDMAChannel1())
+                {
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
+                }
+
+                String channel2 = gvcgu.getChannel2();
+                String to2 = gvcgu.getPatchGroupAddress2();
+
+                if(hasCallEvent(channel2, null, to2))
+                {
+                    updateCallEvent(channel2, null, to2);
+                }
+                else
+                {
+                    P25CallEvent event = new P25CallEvent.Builder(CallEventType.PATCH_GROUP_CALL)
+                        .aliasList(getAliasList())
+                        .channel(channel2 + (gvcgu.isTDMAChannel2() ? " TDMA" : ""))
+                        .details((gvcgu.isEncrypted() ? "ENCRYPTED " : ""))
+                        .frequency(gvcgu.getDownlinkFrequency2())
+                        .to(to2)
+                        .build();
+
+                    registerCallEvent(event);
+                    broadcast(event);
+                }
+
+                if(!gvcgu.isTDMAChannel2())
+                {
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel2)));
+                }
+
                 break;
             case PATCH_GROUP_ADD:
                 PatchGroupAdd pga = (PatchGroupAdd)tsbk;
@@ -2844,7 +2873,7 @@ public class P25DecoderState extends DecoderState
 
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.DATA_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel)
+                        .channel(channel + (gdcg.isTDMAChannel() ? " TDMA" : ""))
                         .details(details.toString())
                         .frequency(gdcg.getDownlinkFrequency())
                         .from(from)
@@ -2855,7 +2884,7 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                if(!mIgnoreDataCalls)
+                if(!mIgnoreDataCalls && !gdcg.isTDMAChannel())
                 {
                     broadcast(new TrafficChannelAllocationEvent(this,
                         mChannelCallMap.get(channel)));
@@ -2882,7 +2911,7 @@ public class P25DecoderState extends DecoderState
 
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.GROUP_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel)
+                        .channel(channel + (gvcg.isTDMAChannel() ? " TDMA" : ""))
                         .details(details.toString())
                         .frequency(gvcg.getDownlinkFrequency())
                         .from(from)
@@ -2893,8 +2922,10 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                broadcast(new TrafficChannelAllocationEvent(this,
-                    mChannelCallMap.get(channel)));
+                if(!gvcg.isTDMAChannel())
+                {
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
+                }
                 break;
             case GROUP_VOICE_CHANNEL_GRANT_UPDATE:
                 GroupVoiceChannelGrantUpdate gvcgu =
@@ -2918,8 +2949,7 @@ public class P25DecoderState extends DecoderState
 
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.GROUP_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel)
-                        .channel(gvcgu.getChannel1())
+                        .channel(gvcgu.getChannel1() + (gvcgu.isTDMAChannel1() ? " TDMA" : ""))
                         .details(details.toString())
                         .frequency(gvcgu.getDownlinkFrequency1())
                         .from(from)
@@ -2930,8 +2960,10 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                broadcast(new TrafficChannelAllocationEvent(this,
-                    mChannelCallMap.get(channel)));
+                if(!gvcgu.isTDMAChannel1())
+                {
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
+                }
 
                 if(gvcgu.hasChannelNumber2())
                 {
@@ -2952,7 +2984,7 @@ public class P25DecoderState extends DecoderState
 
                         P25CallEvent event2 = new P25CallEvent.Builder(CallEventType.GROUP_CALL)
                             .aliasList(getAliasList())
-                            .channel(gvcgu.getChannel2())
+                            .channel(gvcgu.getChannel2() + (gvcgu.isTDMAChannel2() ? " TDMA" : ""))
                             .details(details.toString())
                             .frequency(gvcgu.getDownlinkFrequency2())
                             .to(gvcgu.getGroupAddress2())
@@ -2962,8 +2994,10 @@ public class P25DecoderState extends DecoderState
                         broadcast(event2);
                     }
 
-                    broadcast(new TrafficChannelAllocationEvent(this,
-                        mChannelCallMap.get(channel)));
+                    if(!gvcgu.isTDMAChannel2())
+                    {
+                        broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
+                    }
                 }
                 break;
             case GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:
@@ -2989,7 +3023,7 @@ public class P25DecoderState extends DecoderState
 
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.GROUP_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel)
+                        .channel(channel + (gvcgue.isTDMAChannel() ? " TDMA" : ""))
                         .details(details.toString())
                         .frequency(gvcgue.getDownlinkFrequency())
                         .from(from)
@@ -3000,8 +3034,10 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                broadcast(new TrafficChannelAllocationEvent(this,
-                    mChannelCallMap.get(channel)));
+                if(!gvcgue.isTDMAChannel())
+                {
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
+                }
                 break;
             case INDIVIDUAL_DATA_CHANNEL_GRANT:
                 IndividualDataChannelGrant idcg = (IndividualDataChannelGrant)message;
@@ -3024,7 +3060,7 @@ public class P25DecoderState extends DecoderState
 
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.DATA_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel)
+                        .channel(channel + (idcg.isTDMAChannel() ? " TDMA" : ""))
                         .details(details.toString())
                         .frequency(idcg.getDownlinkFrequency())
                         .from(from)
@@ -3035,10 +3071,9 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                if(!mIgnoreDataCalls)
+                if(!mIgnoreDataCalls && !idcg.isTDMAChannel())
                 {
-                    broadcast(new TrafficChannelAllocationEvent(this,
-                        mChannelCallMap.get(channel)));
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
                 }
                 break;
             case SNDCP_DATA_CHANNEL_GRANT:
@@ -3061,7 +3096,7 @@ public class P25DecoderState extends DecoderState
 
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.DATA_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel)
+                        .channel(channel + (sdcg.isTDMAChannel() ? " TDMA" : ""))
                         .details(details.toString())
                         .frequency(sdcg.getDownlinkFrequency())
                         .from(from)
@@ -3072,15 +3107,13 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                if(!mIgnoreDataCalls)
+                if(!mIgnoreDataCalls && !sdcg.isTDMAChannel())
                 {
-                    broadcast(new TrafficChannelAllocationEvent(this,
-                        mChannelCallMap.get(channel)));
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
                 }
                 break;
             case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
-                TelephoneInterconnectVoiceChannelGrant tivcg =
-                    (TelephoneInterconnectVoiceChannelGrant)message;
+                TelephoneInterconnectVoiceChannelGrant tivcg = (TelephoneInterconnectVoiceChannelGrant)message;
 
                 channel = tivcg.getChannel();
                 from = null;
@@ -3104,7 +3137,7 @@ public class P25DecoderState extends DecoderState
                     P25CallEvent event = new P25CallEvent.Builder(
                         CallEventType.TELEPHONE_INTERCONNECT)
                         .aliasList(getAliasList())
-                        .channel(channel)
+                        .channel(channel + (tivcg.isTDMAChannel() ? " TDMA" : ""))
                         .details(details.toString())
                         .frequency(tivcg.getDownlinkFrequency())
                         .from(from)
@@ -3115,15 +3148,15 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                broadcast(new TrafficChannelAllocationEvent(this,
-                    mChannelCallMap.get(channel)));
+                if(!tivcg.isTDMAChannel())
+                {
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
+                }
                 break;
             case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT_UPDATE:
-                TelephoneInterconnectVoiceChannelGrantUpdate tivcgu =
-                    (TelephoneInterconnectVoiceChannelGrantUpdate)message;
+                TelephoneInterconnectVoiceChannelGrantUpdate tivcgu = (TelephoneInterconnectVoiceChannelGrantUpdate)message;
 
-                channel = tivcgu.getChannelIdentifier() + "-" +
-                    tivcgu.getChannelNumber();
+                channel = tivcgu.getChannelIdentifier() + "-" + tivcgu.getChannelNumber();
                 from = null;
 
 				/* Address is ambiguous and could mean either source or target,
@@ -3146,7 +3179,7 @@ public class P25DecoderState extends DecoderState
                     P25CallEvent event = new P25CallEvent.Builder(
                         CallEventType.TELEPHONE_INTERCONNECT)
                         .aliasList(getAliasList())
-                        .channel(channel)
+                        .channel(channel + (tivcgu.isTDMAChannel() ? " TDMA" : ""))
                         .details(details.toString())
                         .frequency(tivcgu.getDownlinkFrequency())
                         .from(from)
@@ -3157,15 +3190,15 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                broadcast(new TrafficChannelAllocationEvent(this,
-                    mChannelCallMap.get(channel)));
+                if(!tivcgu.isTDMAChannel())
+                {
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
+                }
                 break;
             case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
-                UnitToUnitVoiceChannelGrant uuvcg =
-                    (UnitToUnitVoiceChannelGrant)message;
+                UnitToUnitVoiceChannelGrant uuvcg = (UnitToUnitVoiceChannelGrant)message;
 
-                channel = uuvcg.getChannelIdentifier() + "-" +
-                    uuvcg.getChannelNumber();
+                channel = uuvcg.getChannelIdentifier() + "-" + uuvcg.getChannelNumber();
                 from = uuvcg.getSourceAddress();
                 to = uuvcg.getTargetAddress();
 
@@ -3184,7 +3217,7 @@ public class P25DecoderState extends DecoderState
                     P25CallEvent event = new P25CallEvent.Builder(
                         CallEventType.UNIT_TO_UNIT_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel)
+                        .channel(channel + (uuvcg.isTDMAChannel() ? " TDMA" : ""))
                         .details(details.toString())
                         .frequency(uuvcg.getDownlinkFrequency())
                         .from(from)
@@ -3195,15 +3228,15 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                broadcast(new TrafficChannelAllocationEvent(this,
-                    mChannelCallMap.get(channel)));
+                if(!uuvcg.isTDMAChannel())
+                {
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
+                }
                 break;
             case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
-                UnitToUnitVoiceChannelGrantUpdate uuvcgu =
-                    (UnitToUnitVoiceChannelGrantUpdate)message;
+                UnitToUnitVoiceChannelGrantUpdate uuvcgu = (UnitToUnitVoiceChannelGrantUpdate)message;
 
-                channel = uuvcgu.getChannelIdentifier() + "-" +
-                    uuvcgu.getChannelNumber();
+                channel = uuvcgu.getChannelIdentifier() + "-" + uuvcgu.getChannelNumber();
                 from = uuvcgu.getSourceAddress();
                 to = uuvcgu.getTargetAddress();
 
@@ -3222,7 +3255,7 @@ public class P25DecoderState extends DecoderState
                     P25CallEvent event = new P25CallEvent.Builder(
                         CallEventType.UNIT_TO_UNIT_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel)
+                        .channel(channel + (uuvcgu.isTDMAChannel() ? " TDMA" : ""))
                         .details(details.toString())
                         .frequency(uuvcgu.getDownlinkFrequency())
                         .from(from)
@@ -3233,8 +3266,10 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                broadcast(new TrafficChannelAllocationEvent(this,
-                    mChannelCallMap.get(channel)));
+                if(!uuvcgu.isTDMAChannel())
+                {
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
+                }
                 break;
             default:
                 break;
