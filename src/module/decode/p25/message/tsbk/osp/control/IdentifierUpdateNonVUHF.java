@@ -31,17 +31,21 @@ public class IdentifierUpdateNonVUHF extends IdentifierUpdate
         StringBuilder sb = new StringBuilder();
         
         sb.append( getMessageStub() );
+        sb.append(toString());
 
-        sb.append( " IDEN:" + getIdentifier() );
+        return sb.toString();
+    }
 
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append( " ID:" + getIdentifier() );
         sb.append( " BASE:" + getBaseFrequency() );
-        
-        sb.append( " BW:" + getBandwidth() );
-        
+        sb.append( " BANDWIDTH:" + getBandwidth() );
         sb.append( " SPACING:" + getChannelSpacing() );
-        
         sb.append( " OFFSET:" + getTransmitOffset() );
-        
+
         return sb.toString();
     }
 
