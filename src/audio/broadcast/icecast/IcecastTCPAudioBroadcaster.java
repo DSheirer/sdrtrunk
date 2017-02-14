@@ -255,7 +255,7 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                         disconnect();
                         connect();
                     }
-                    if(reason.startsWith("Connection reset"))
+                    else if(reason.startsWith("Connection reset"))
                     {
                         mLog.info("Streaming connection reset by remote server - reestablishing connection");
                         disconnect();
