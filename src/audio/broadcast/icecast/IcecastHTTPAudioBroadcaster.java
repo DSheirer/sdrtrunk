@@ -156,6 +156,8 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
 
                         disconnect();
                     }
+
+                    mConnecting.set(false);
                 }
             };
 
@@ -176,8 +178,6 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
         {
             mStreamingSession.closeNow();
         }
-
-        mConnecting.set(false);
     }
 
     /**
@@ -256,6 +256,7 @@ public class IcecastHTTPAudioBroadcaster extends IcecastAudioBroadcaster
             mSocketConnector = null;
 
             mConnecting.set(false);
+
             super.sessionClosed(session);
         }
 
