@@ -23,6 +23,9 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
     IAttributeChangeRequestProvider, ICallEventProvider, IDecoderStateEventListener,
     IDecoderStateEventProvider, IMessageListener
 {
+    protected String DIVIDER1 = "======================================================\n";
+    protected String DIVIDER2 = "------------------------------------------------------\n";
+
     /* This has to be a broadcaster in order for references to persist */
     private Broadcaster<CallEvent> mCallEventBroadcaster = new Broadcaster<>();
     private Broadcaster<AttributeChangeRequest> mAttributeChangeRequestBroadcaster = new Broadcaster<>();
@@ -49,6 +52,14 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
     public boolean hasAliasList()
     {
         return mAliasList != null;
+    }
+
+    /**
+     * Provides subclass reference to the call event broadcaster
+     */
+    protected Broadcaster<CallEvent> getCallEventBroadcaster()
+    {
+        return mCallEventBroadcaster;
     }
 
     /**

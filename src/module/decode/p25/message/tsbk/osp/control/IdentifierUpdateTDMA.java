@@ -30,18 +30,26 @@ public class IdentifierUpdateTDMA extends IdentifierUpdate
         StringBuilder sb = new StringBuilder();
         
         sb.append( getMessageStub() );
+        sb.append(toString());
 
-        sb.append( " IDEN:" + getIdentifier() );
-        sb.append( " BASE:" + getBaseFrequency() );
-        sb.append( " BW:" + getBandwidth() );
-        sb.append( " SPACING:" + getChannelSpacing() );
-        sb.append( " OFFSET:" + getTransmitOffset() );
-        sb.append( " TYPE:" + getChannelType().toString() );
-        
         return sb.toString();
     }
-    
-    public ChannelType getChannelType()
+
+	public String toString()
+	{
+		StringBuilder sb = new StringBuilder();
+
+		sb.append( " ID:" + getIdentifier() );
+		sb.append( " BASE:" + getBaseFrequency() );
+		sb.append( " BW:" + getBandwidth() );
+		sb.append( " SPACING:" + getChannelSpacing() );
+		sb.append( " OFFSET:" + getTransmitOffset() );
+		sb.append( " TYPE:" + getChannelType().toString() );
+
+		return sb.toString();
+	}
+
+	public ChannelType getChannelType()
     {
     	return ChannelType.fromValue( mMessage.getInt( CHANNEL_TYPE) );
     }
@@ -72,7 +80,26 @@ public class IdentifierUpdateTDMA extends IdentifierUpdate
             return -offset;
         }
     }
-    
+
+    @Override
+    public long getDownlinkFrequency(int channelNumber)
+    {
+        if(isTDMA())
+        {
+            return getBaseFrequency() + ( (channelNumber / getChannelType().getSlotsPerCarrier()) * getChannelSpacing() );
+        }
+        else
+        {
+            return super.getDownlinkFrequency(channelNumber);
+        }
+    }
+
+    @Override
+    public boolean isTDMA()
+    {
+        return getChannelType().getAccessType() == AccessType.TDMA;
+    }
+
     public enum ChannelType
     {
     	TYPE_0( AccessType.FDMA, 12500, 1, Vocoder.HALF_RATE ),
@@ -109,7 +136,7 @@ public class IdentifierUpdateTDMA extends IdentifierUpdate
     		}
     		
     		sb.append( mAccessType.name() );
-    		sb.append( " BW:" + mBandwidth );
+    		sb.append( " BANDWIDTH:" + mBandwidth );
     		sb.append( " SLOT/CARRIER:" + mSlotsPerCarrier );
     		sb.append( " VOCODER:" + mVocoder.name() );
     		

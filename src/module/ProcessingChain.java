@@ -538,6 +538,9 @@ public class ProcessingChain implements IChannelEventListener
                     module.reset();
                 }
 
+                //Setup the channel state to monitor source overflow conditions
+                mSource.setOverflowListener(mChannelState);
+
 				/* Register with the source to receive sample data.  Setup a 
 				 * timer task to process the buffer queues 50 times a second 
 				 * (every 20 ms) */
@@ -606,6 +609,7 @@ public class ProcessingChain implements IChannelEventListener
             if(mSource != null)
             {
                 mSource.stop();
+                mSource.setOverflowListener(null);
 
                 switch(mSource.getSampleType())
                 {

@@ -16,49 +16,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package module.decode.p25.message;
+package sample.real;
 
-public interface IBandIdentifier
+public interface IOverflowListener
 {
-
-	/**
-	 * (Band) Identifier
-	 */
-	public abstract int getIdentifier();
-
-	/**
-	 * Channel spacing in hertz
-	 */
-	public abstract long getChannelSpacing();
-
-	/**
-	 * Base frequency in hertz
-	 */
-	public abstract long getBaseFrequency();
-
-
-	/**
-	 * Channel bandwidth in hertz
-	 */
-    public abstract int getBandwidth();
-
     /**
-     * Transmit offset in hertz
+     * Indicates that the source is in overflow state (true) or out of overflow state (false)
+     * @param overflow true to indicate an overflow state
      */
-    public abstract long getTransmitOffset();
-
-	/**
-	 * Downlink (tower to mobile) Frequency for the specified channel
-	 */
-	public abstract long getDownlinkFrequency(int channelNumber);
-
-	/**
-	 * Uplink (mobile to tower) Frequency for the specified channel
-	 */
-	public abstract long getUplinkFrequency(int channelNumber);
-
-    /**
-     * Indicates if this band is an FDMA (false) or TDMA (true) band
-     */
-	public boolean isTDMA();
+    void sourceOverflow(boolean overflow);
 }

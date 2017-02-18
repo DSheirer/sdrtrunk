@@ -29,6 +29,7 @@ import sample.Listener;
 import sample.OverflowableTransferQueue;
 import sample.complex.Complex;
 import sample.complex.ComplexBuffer;
+import sample.real.IOverflowListener;
 import source.ComplexSource;
 import source.SourceException;
 import source.tuner.frequency.FrequencyChangeEvent;
@@ -51,7 +52,7 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
     private static final int BUFFER_MAX_CAPACITY = 300;
 
     //Threshold for resetting buffer overflow condition
-    private static final int BUFFER_OVERFLOW_RESET_THRESHOLD = 200;
+    private static final int BUFFER_OVERFLOW_RESET_THRESHOLD = 100;
 
     private static int CHANNEL_RATE = 48000;
     private static int CHANNEL_PASS_FREQUENCY = 12000;
@@ -101,21 +102,6 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
         mTunerFrequency = mTuner.getTunerController().getFrequency();
 
         mBuffer = new OverflowableTransferQueue<>(BUFFER_MAX_CAPACITY, BUFFER_OVERFLOW_RESET_THRESHOLD);
-        mBuffer.setStateListener(new Listener<OverflowableTransferQueue.State>()
-        {
-            @Override
-            public void receive(OverflowableTransferQueue.State state)
-            {
-                if(state == OverflowableTransferQueue.State.NORMAL)
-                {
-                    mLog.debug("Channel [" + mTunerFrequency + "] buffer overflow - temporary pause until processing catches up");
-                }
-                else
-                {
-                    mLog.debug("Channel [" + mTunerFrequency + "] buffer overflow cleared - resuming normal processing");
-                }
-            }
-        });
 
 	    /* Setup the frequency translator to the current source frequency */
         long frequencyOffset = mTunerFrequency - mTunerChannel.getFrequency();
@@ -126,6 +112,14 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
         frequencyChanged(new FrequencyChangeEvent(Event.NOTIFICATION_SAMPLE_RATE_CHANGE, mTuner.getTunerController().getSampleRate()));
     }
 
+    /**
+     * Overrides the default source overflow listener management to delegate responsibility to the overflow buffer
+     */
+    @Override
+    public void setOverflowListener(IOverflowListener listener)
+    {
+        mBuffer.setOverflowListener(listener);
+    }
 
     public void start(ScheduledExecutorService executor)
     {
@@ -175,7 +169,7 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
         }
         else
         {
-            mLog.warn("Attempt to stop() and already stopped tuner channel source was ignored");
+            mLog.warn("Attempt to stop() an already stopped tuner channel source was ignored");
         }
     }
 
@@ -378,6 +372,10 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
                 {
                     mLog.error("Error encountered during decimation process", e);
                 }
+            }
+            catch(Throwable throwable)
+            {
+                mLog.error("Code error encountered during decimation process - channel thread will probably die", throwable);
             }
 
 			/* Check to see if we've been shutdown */

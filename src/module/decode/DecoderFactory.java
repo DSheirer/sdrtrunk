@@ -103,34 +103,34 @@ public class DecoderFactory
 
     //Low-pass filter with ~60 dB attenuation and 89 taps
     private static final FIRFilterSpecification MPT1327_FILTER_SPECIFICATION = FIRFilterSpecification.lowPassBuilder()
-        .sampleRate( 48000 )
-        .gridDensity( 16 )
-        .passBandCutoff( 3200 )
-        .passBandAmplitude( 1.0 )
-        .passBandRipple( 0.02 )
-        .stopBandStart( 4000 )
-        .stopBandAmplitude( 0.0 )
-        .stopBandRipple( 0.03 )
-        .build();
+        .sampleRate( 48000 ).gridDensity( 16 ).passBandCutoff( 3200 ).passBandAmplitude( 1.0 ).passBandRipple( 0.02 )
+        .stopBandStart( 4000 ).stopBandAmplitude( 0.0 ).stopBandRipple( 0.03 ).build();
+
+    private static final FIRFilterSpecification P25_C4FM_IQ_SPECIFICATION = FIRFilterSpecification.lowPassBuilder()
+        .sampleRate(48000).gridDensity(16).passBandCutoff(6750).passBandAmplitude(1.0).passBandRipple(0.01)
+        .stopBandStart(7000).stopBandAmplitude(0.0).stopBandRipple(0.008).build();
+
+    private static final FIRFilterSpecification P25_C4FM_DEMOD_SPECIFICATION = FIRFilterSpecification.lowPassBuilder()
+        .sampleRate(48000).gridDensity(16).passBandCutoff(2500).passBandAmplitude(1.0).passBandRipple(0.01)
+        .stopBandStart(4000).stopBandAmplitude(0.0).stopBandRipple(0.008).build();
 
     private static float[] MPT1327_LOWPASS_FILTER;
+    private static float[] P25_C4FM_IQ_FILTER;
+    private static float[] P25_C4FM_DEMOD_FILTER;
 
     static
     {
         try
         {
             MPT1327_LOWPASS_FILTER = FilterFactory.getTaps(MPT1327_FILTER_SPECIFICATION);
+            P25_C4FM_IQ_FILTER = FilterFactory.getTaps(P25_C4FM_IQ_SPECIFICATION);
+            P25_C4FM_DEMOD_FILTER = FilterFactory.getTaps(P25_C4FM_DEMOD_SPECIFICATION);
         }
         catch(Exception e)
         {
-            mLog.error("Couldn't design MPT1327 bandpass filter");
+            mLog.error("Couldn't design startup filter(s)");
         }
     }
-
-    public static final boolean NO_REMOVE_DC = false;
-    public static final boolean REMOVE_DC = true;
-
-    public static final int NO_FREQUENCY_CORRECTION = 0;
 
     /**
      * Returns a list of one primary decoder and any auxiliary decoders, as
@@ -222,15 +222,13 @@ public class DecoderFactory
 
                 if(channelType == ChannelType.STANDARD)
                 {
-                    long timeout = mptConfig.getCallTimeout() * 1000; //convert to milliseconds
-
                     modules.add(new TrafficChannelManager(channelModel, channelProcessingManager, decodeConfig,
                         channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
-                        (aliasList != null ? aliasList.getName() : null), timeout, mptConfig.getTrafficChannelPoolSize()));
+                        (aliasList != null ? aliasList.getName() : null), mptConfig.getTrafficChannelPoolSize()));
                 }
 
                 modules.add(new FMDemodulatorModule(iqPass, iqStop));
-                modules.add(new DemodulatedAudioFilterModule(MPT1327_LOWPASS_FILTER, 1.0f));
+                modules.add(new DemodulatedAudioFilterModule(P25_C4FM_DEMOD_FILTER, 1.0f));
                 modules.add(new AudioModule(metadata));
                 break;
             case PASSPORT:
@@ -249,7 +247,8 @@ public class DecoderFactory
                 switch(modulation)
                 {
                     case C4FM:
-                        modules.add(new FMDemodulatorModule(6750, 7500));
+                        modules.add(new FMDemodulatorModule(P25_C4FM_IQ_FILTER));
+                        modules.add(new DemodulatedAudioFilterModule(P25_C4FM_DEMOD_FILTER, 1.0f));
                         modules.add(new P25_C4FMDecoder(aliasList, decodeConfig.getAFCMaximumCorrection()));
                         modules.add(new P25DecoderState(aliasList, channelType, Modulation.C4FM,
                             p25Config.getIgnoreDataCalls()));
@@ -264,12 +263,9 @@ public class DecoderFactory
 
                 if(channelType == ChannelType.STANDARD)
                 {
-                    //Set call timeout to 3 seconds for P25 traffic channels
-                    long timeout = 3000;
-
                     modules.add(new TrafficChannelManager(channelModel, channelProcessingManager, decodeConfig,
                         channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
-                        (aliasList != null ? aliasList.getName() : null), timeout, p25Config.getTrafficChannelPoolSize()));
+                        (aliasList != null ? aliasList.getName() : null), p25Config.getTrafficChannelPoolSize()));
                 }
 
                 modules.add(new P25AudioModule(metadata));

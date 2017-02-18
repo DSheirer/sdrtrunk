@@ -30,6 +30,7 @@ import sample.Listener;
 import sample.OverflowableTransferQueue;
 import sample.adapter.ISampleAdapter;
 import sample.complex.ComplexBuffer;
+import sample.real.IOverflowListener;
 import source.tuner.TunerManager;
 import util.ThreadPool;
 
@@ -56,7 +57,7 @@ public class USBTransferProcessor implements TransferCallback
     private static final int FILLED_BUFFER_MAX_CAPACITY = 300;
 
     //Threshold for resetting buffer overflow condition
-    private static final int FILLED_BUFFER_OVERFLOW_RESET_THRESHOLD = 200;
+    private static final int FILLED_BUFFER_OVERFLOW_RESET_THRESHOLD = 100;
 
     private String mDeviceName;
 
@@ -101,12 +102,12 @@ public class USBTransferProcessor implements TransferCallback
         mBufferSize = bufferSize;
 
         mFilledBuffers = new OverflowableTransferQueue<>(FILLED_BUFFER_MAX_CAPACITY, FILLED_BUFFER_OVERFLOW_RESET_THRESHOLD);
-        mFilledBuffers.setStateListener(new Listener<OverflowableTransferQueue.State>()
+        mFilledBuffers.setOverflowListener(new IOverflowListener()
         {
             @Override
-            public void receive(OverflowableTransferQueue.State state)
+            public void sourceOverflow(boolean overflow)
             {
-                if(state == OverflowableTransferQueue.State.NORMAL)
+                if(overflow)
                 {
                     mLog.debug(mDeviceName + " - buffer overflow - temporary pause until processing catches up");
                 }

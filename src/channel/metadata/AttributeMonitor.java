@@ -19,8 +19,6 @@
 package channel.metadata;
 
 import alias.Alias;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import sample.Listener;
 
 import java.util.ArrayList;
@@ -30,8 +28,6 @@ import java.util.Map;
 
 public class AttributeMonitor<T>
 {
-    private final static Logger mLog = LoggerFactory.getLogger(AttributeMonitor.class);
-
     private Attribute mAttribute;
     private Listener<AttributeChangeRequest> mListener;
     private boolean mHeuristicsEnabled = true;
@@ -50,8 +46,8 @@ public class AttributeMonitor<T>
      * an internal mapping of values to occurrence counts is updated and a change is emitted once a value that is
      * different from the current value, has a higher occurrence count than the current value.  If heuristics are
      * disabled, then a change is emitted at each change in the value.
-     * @param t
      *
+     * @param t type
      * @return true if the value was changed after processing
      */
     public boolean process(T t)
@@ -83,7 +79,7 @@ public class AttributeMonitor<T>
                 {
                     int count = mOccurrenceCounts.get(mCurrentValue);
 
-                    for(Map.Entry<T,Integer> entry: mOccurrenceCounts.entrySet())
+                    for(Map.Entry<T,Integer> entry : mOccurrenceCounts.entrySet())
                     {
                         if(entry.getValue() > count)
                         {
@@ -154,36 +150,5 @@ public class AttributeMonitor<T>
     public boolean hasValue()
     {
         return mCurrentValue != null;
-    }
-
-    public static void main(String[] args)
-    {
-        AttributeMonitor<String> monitor = new AttributeMonitor<>(Attribute.PRIMARY_ADDRESS_TO, new Listener<AttributeChangeRequest>()
-        {
-            @Override
-            public void receive(AttributeChangeRequest attributeChangeRequest)
-            {
-                mLog.debug("Attribute Changed - value:" + attributeChangeRequest.getValue());
-            }
-        });
-        monitor.addIllegalValue("0000");
-        monitor.addIllegalValue("000000");
-
-        monitor.process("ABCD");
-        monitor.process("EFGH");
-        monitor.process("0000");
-        monitor.process("0000");
-        monitor.process("ABCD");
-        monitor.reset();
-
-        monitor.process("EFGH");
-        monitor.process("ABCD");
-        monitor.process("ABCD");
-        monitor.process("EFGH");
-        monitor.process("EFGH");
-        monitor.process("000000");
-        monitor.process("000000");
-        monitor.process("000000");
-        monitor.process("000000");
     }
 }

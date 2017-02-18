@@ -383,6 +383,7 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
         {
             setIcon(UNMUTED_ICON);
             setBorderPainted(false);
+            getAccessibleContext().setAccessibleName("Mute");
 
             addActionListener(new ActionListener()
             {
@@ -402,6 +403,7 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
                         public void run()
                         {
                             setIcon(mMuted ? MUTED_ICON : UNMUTED_ICON);
+                            getAccessibleContext().setAccessibleName(mMuted ? "Unmute" : "Mute");
                         }
                     });
                 }

@@ -24,12 +24,20 @@ import alias.id.AliasIDType;
 import alias.id.broadcast.BroadcastChannel;
 import alias.id.priority.Priority;
 import alias.id.talkgroup.TalkgroupID;
+import gui.SDRTrunk;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import playlist.version1.System;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 
 public class PatchGroupAlias extends Alias
 {
+    private final static Logger mLog = LoggerFactory.getLogger(PatchGroupAlias.class);
+
     private Alias mPatchGroupAlias;
     private List<Alias> mPatchedAliases = new ArrayList<>();
     private List<String> mPatchedTalkgroupIDs = new ArrayList<>();
@@ -168,11 +176,14 @@ public class PatchGroupAlias extends Alias
 
         for(Alias alias: mPatchedAliases)
         {
-            for(AliasAction action: alias.getAction())
+            if(!(alias instanceof PatchGroupAlias))
             {
-                if(!aliasActions.contains(action))
+                for(AliasAction action: alias.getAction())
                 {
-                    aliasActions.add(action);
+                    if(!aliasActions.contains(action))
+                    {
+                        aliasActions.add(action);
+                    }
                 }
             }
         }
@@ -185,7 +196,7 @@ public class PatchGroupAlias extends Alias
     {
         for(Alias alias: mPatchedAliases)
         {
-            if(alias.hasActions())
+            if(!(alias instanceof PatchGroupAlias) && alias.hasActions())
             {
                 return true;
             }
@@ -194,20 +205,44 @@ public class PatchGroupAlias extends Alias
         return hasPatchGroupAlias() && getPatchGroupAlias().hasActions();
     }
 
+    /**
+     * Returns the highest listenable audio priority defined among the aliases in the group, or returns 'Do Not Monitor'
+     * if that is the only priority defined.  Otherwise, returns default (100) priority.
+     */
     @Override
     public int getCallPriority()
     {
-        int highestPriority = (hasPatchGroupAlias() ? getPatchGroupAlias().getCallPriority() : Priority.DEFAULT_PRIORITY);
+        boolean hasDoNotMonitor = false;
+
+        int highestPriority = (hasPatchGroupAlias() ? getPatchGroupAlias().getCallPriority() : Priority.DEFAULT_PRIORITY + 1);
 
         for(Alias alias: mPatchedAliases)
         {
-            if(alias.hasCallPriority() && alias.getCallPriority() < highestPriority)
+            if(!(alias instanceof PatchGroupAlias) && alias.hasCallPriority() && alias.getCallPriority() < highestPriority)
             {
-                highestPriority = alias.getCallPriority();
+                if(alias.getCallPriority() == Priority.DO_NOT_MONITOR)
+                {
+                    hasDoNotMonitor = true;
+                }
+                else
+                {
+                    highestPriority = alias.getCallPriority();
+                }
             }
         }
 
-        return highestPriority;
+        if(highestPriority <= Priority.DEFAULT_PRIORITY)
+        {
+            return highestPriority;
+        }
+        else if(hasDoNotMonitor)
+        {
+            return Priority.DO_NOT_MONITOR;
+        }
+        else
+        {
+            return Priority.DEFAULT_PRIORITY;
+        }
     }
 
     @Override
@@ -220,7 +255,7 @@ public class PatchGroupAlias extends Alias
 
         for(Alias alias: mPatchedAliases)
         {
-            if(alias.hasCallPriority())
+            if(!(alias instanceof PatchGroupAlias) && alias.hasCallPriority())
             {
                 return true;
             }
@@ -239,7 +274,7 @@ public class PatchGroupAlias extends Alias
 
         for(Alias alias: mPatchedAliases)
         {
-            if(alias.isRecordable())
+            if(!(alias instanceof PatchGroupAlias) && alias.isRecordable())
             {
                 return true;
             }
@@ -258,7 +293,7 @@ public class PatchGroupAlias extends Alias
 
         for(Alias alias: mPatchedAliases)
         {
-            if(alias.isStreamable())
+            if(!(alias instanceof PatchGroupAlias) && alias.isStreamable())
             {
                 return true;
             }
@@ -268,9 +303,9 @@ public class PatchGroupAlias extends Alias
     }
 
     @Override
-    public List<BroadcastChannel> getBroadcastChannels()
+    public Set<BroadcastChannel> getBroadcastChannels()
     {
-        List<BroadcastChannel> broadcastChannels = new ArrayList<>();
+        Set<BroadcastChannel> broadcastChannels = new TreeSet<>();
 
         if(hasPatchGroupAlias())
         {
@@ -279,12 +314,9 @@ public class PatchGroupAlias extends Alias
 
         for(Alias alias: mPatchedAliases)
         {
-            for(BroadcastChannel broadcastChannel: alias.getBroadcastChannels())
+            if(!(alias instanceof PatchGroupAlias))
             {
-                if(!broadcastChannels.contains(broadcastChannel))
-                {
-                    broadcastChannels.add(broadcastChannel);
-                }
+                broadcastChannels.addAll(alias.getBroadcastChannels());
             }
         }
 
@@ -301,12 +333,49 @@ public class PatchGroupAlias extends Alias
 
         for(Alias alias: mPatchedAliases)
         {
-            if(alias.hasBroadcastChannel(channel))
+            if(!(alias instanceof PatchGroupAlias) && alias.hasBroadcastChannel(channel))
             {
                 return true;
             }
         }
 
         return false;
+    }
+
+    public static void main(String[] args)
+    {
+        Alias a1 = new Alias("Alias 1");
+        a1.addAliasID(new BroadcastChannel("Channel 1"));
+        a1.addAliasID(new BroadcastChannel("Channel 2"));
+        a1.addAliasID(new BroadcastChannel("Channel 3"));
+        a1.addAliasID(new BroadcastChannel("Channel 4"));
+
+        Alias a2 = new Alias("Alias 1");
+        a1.addAliasID(new BroadcastChannel("Channel 1"));
+        a1.addAliasID(new BroadcastChannel("Channel 2"));
+        a1.addAliasID(new BroadcastChannel("Channel 3"));
+        a1.addAliasID(new BroadcastChannel("Channel 4"));
+
+        Alias a3 = new Alias("Alias 1");
+        a1.addAliasID(new BroadcastChannel("Channel 1"));
+        a1.addAliasID(new BroadcastChannel("Channel 2"));
+        a1.addAliasID(new BroadcastChannel("Channel 3"));
+        a1.addAliasID(new BroadcastChannel("Channel 4"));
+
+        Alias a4 = new Alias("Alias 1");
+        a1.addAliasID(new BroadcastChannel("Channel 1"));
+        a1.addAliasID(new BroadcastChannel("Channel 2"));
+        a1.addAliasID(new BroadcastChannel("Channel 3"));
+        a1.addAliasID(new BroadcastChannel("Channel 4"));
+
+        PatchGroupAlias pga = new PatchGroupAlias();
+        pga.setPatchGroupAlias(a1);
+        pga.addPatchedAlias(a2);
+        pga.addPatchedAlias(a3);
+        pga.addPatchedAlias(a4);
+
+        Set<BroadcastChannel> bc = pga.getBroadcastChannels();
+
+        mLog.debug("Channels:" + bc);
     }
 }

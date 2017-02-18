@@ -62,6 +62,13 @@ public class FMDemodulatorModule extends Module implements IComplexBufferListene
         mIQFilter.setListener(mDemodulator);
     }
 
+    public FMDemodulatorModule(float[] filter)
+    {
+        mIQFilter = new ComplexFIRFilter_CB_CB(filter, 1.0f);
+        mDemodulator = new FMDemodulator_CB(1.0f);
+        mIQFilter.setListener(mDemodulator);
+    }
+
     @Override
     public Listener<ComplexBuffer> getComplexBufferListener()
     {

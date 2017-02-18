@@ -25,6 +25,7 @@ import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
+import org.apache.mina.core.write.WriteTimeoutException;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.slf4j.Logger;
@@ -248,7 +249,13 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                 {
                     String reason = ioe.getMessage();
 
-                    if(reason.startsWith("Connection reset"))
+                    if(connected())
+                    {
+                        mLog.info("Streaming connection error detected - resetting connection - " + reason);
+                        disconnect();
+                        connect();
+                    }
+                    else if(reason.startsWith("Connection reset"))
                     {
                         mLog.info("Streaming connection reset by remote server - reestablishing connection");
                         disconnect();
@@ -264,14 +271,20 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                     {
                         setBroadcastState(BroadcastState.ERROR);
                         disconnect();
-                        mLog.error("Unrecognized IO error: " + reason + ". Streaming halted.");
+                        mLog.error("Unrecognized IO error: " + reason + ". Streaming halted.", cause);
                     }
+                }
+                else if(ioe instanceof WriteTimeoutException)
+                {
+                    mLog.info("Network write timeout error - resetting connection");
+                    disconnect();
+                    connect();
                 }
                 else
                 {
                     setBroadcastState(BroadcastState.ERROR);
                     disconnect();
-                    mLog.error("Unspecified IO error - streaming halted.");
+                    mLog.error("Unspecified IO error - streaming halted.", cause);
                 }
             }
             else

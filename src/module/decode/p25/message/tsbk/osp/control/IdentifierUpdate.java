@@ -1,3 +1,21 @@
+/*******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2017 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *
+ ******************************************************************************/
 package module.decode.p25.message.tsbk.osp.control;
 
 import module.decode.p25.message.IBandIdentifier;
@@ -6,8 +24,7 @@ import module.decode.p25.reference.DataUnitID;
 import alias.AliasList;
 import bits.BinaryMessage;
 
-public abstract class IdentifierUpdate extends TSBKMessage 
-									   implements IBandIdentifier
+public abstract class IdentifierUpdate extends TSBKMessage implements IBandIdentifier
 {
     public static final int[] IDENTIFIER = { 80,81,82,83 };
 
@@ -45,4 +62,22 @@ public abstract class IdentifierUpdate extends TSBKMessage
     
     @Override
     public abstract long getTransmitOffset();
+
+    @Override
+    public long getDownlinkFrequency(int channelNumber)
+    {
+        return getBaseFrequency() + ( channelNumber * getChannelSpacing() );
+    }
+
+    @Override
+    public long getUplinkFrequency(int channelNumber)
+    {
+        return getDownlinkFrequency(channelNumber) + getTransmitOffset();
+    }
+
+    @Override
+    public boolean isTDMA()
+    {
+        return false;
+    }
 }

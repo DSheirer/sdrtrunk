@@ -50,6 +50,7 @@ import properties.SystemProperties;
 import util.ThreadPool;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -244,43 +245,50 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
 
         sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\" ?><metadata>");
 
-        sb.append(UltravoxMetadata.ALBUM_TITLE.asXML(getConfiguration().getName()));
-
-        sb.append(UltravoxMetadata.BROADCAST_CLIENT_APPLICATION.asXML(SystemProperties.getInstance().getApplicationName()));
-
-        if(getConfiguration().hasGenre())
+        try
         {
-            sb.append(UltravoxMetadata.GENRE.asXML(getConfiguration().getGenre()));
+            sb.append(UltravoxMetadata.ALBUM_TITLE.asXML(getConfiguration().getName()));
+
+            sb.append(UltravoxMetadata.BROADCAST_CLIENT_APPLICATION.asXML(SystemProperties.getInstance().getApplicationName()));
+
+            if(getConfiguration().hasGenre())
+            {
+                sb.append(UltravoxMetadata.GENRE.asXML(getConfiguration().getGenre()));
+            }
+
+            if(getConfiguration().hasURL())
+            {
+                sb.append(UltravoxMetadata.URL.asXML(getConfiguration().getURL()));
+            }
+
+            if(metadata != null)
+            {
+                if(metadata.getPrimaryAddressTo().hasAlias())
+                {
+                    sb.append(UltravoxMetadata.TITLE_2.asXML(metadata.getPrimaryAddressTo().getAlias().getName()));
+                }
+                else if(metadata.getPrimaryAddressTo().hasIdentifier())
+                {
+                    sb.append(UltravoxMetadata.TITLE_2.asXML(metadata.getPrimaryAddressTo().getIdentifier()));
+                }
+
+                if(metadata.getPrimaryAddressFrom().hasAlias())
+                {
+                    sb.append(UltravoxMetadata.TITLE_3.asXML("From:" + metadata.getPrimaryAddressFrom().getAlias().getName()));
+                }
+                else if(metadata.getPrimaryAddressFrom().hasIdentifier())
+                {
+                    sb.append(UltravoxMetadata.TITLE_3.asXML("From:" + metadata.getPrimaryAddressFrom().getIdentifier()));
+                }
+            }
+            else
+            {
+                sb.append(UltravoxMetadata.TITLE_2.asXML("Scanning ..."));
+            }
         }
-
-        if(getConfiguration().hasURL())
+        catch(UnsupportedEncodingException uee)
         {
-            sb.append(UltravoxMetadata.URL.asXML(getConfiguration().getURL()));
-        }
-
-        if(metadata != null)
-        {
-            if(metadata.getPrimaryAddressTo().hasAlias())
-            {
-                sb.append(UltravoxMetadata.TITLE_2.asXML(metadata.getPrimaryAddressTo().getAlias().getName()));
-            }
-            else if(metadata.getPrimaryAddressTo().hasIdentifier())
-            {
-                sb.append(UltravoxMetadata.TITLE_2.asXML(metadata.getPrimaryAddressTo().getIdentifier()));
-            }
-
-            if(metadata.getPrimaryAddressFrom().hasAlias())
-            {
-                sb.append(UltravoxMetadata.TITLE_3.asXML("From:" + metadata.getPrimaryAddressFrom().getAlias().getName()));
-            }
-            else if(metadata.getPrimaryAddressFrom().hasIdentifier())
-            {
-                sb.append(UltravoxMetadata.TITLE_3.asXML("From:" + metadata.getPrimaryAddressFrom().getIdentifier()));
-            }
-        }
-        else
-        {
-            sb.append(UltravoxMetadata.TITLE_2.asXML("Scanning ..."));
+            mLog.error("UTF-8 Encoding is not supported - shoutcast/ultravox metadata will not be updated");
         }
 
         sb.append("</metadata>");

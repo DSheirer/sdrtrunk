@@ -35,6 +35,7 @@ import module.decode.event.ICallEventProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sample.Listener;
+import sample.real.IOverflowListener;
 
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
@@ -42,7 +43,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class ChannelState extends Module implements ICallEventProvider, IDecoderStateEventListener,
-    IDecoderStateEventProvider, ISquelchStateProvider, IAttributeChangeRequestListener
+    IDecoderStateEventProvider, ISquelchStateProvider, IAttributeChangeRequestListener, IOverflowListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelState.class);
 
@@ -63,6 +64,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
 
     private boolean mSquelchLocked = false;
     private boolean mSelected = false;
+    private boolean mSourceOverflow = false;
 
     private long mStandardChannelFadeTimeout = FADE_TIMEOUT_DELAY;
     private long mTrafficChannelFadeTimeout = DecodeConfiguration.DEFAULT_CALL_TIMEOUT_SECONDS * 1000;
@@ -123,6 +125,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
 
         mState = State.IDLE;
         mMutableMetadata.receive(new AttributeChangeRequest<State>(Attribute.CHANNEL_STATE, mState));
+        mSourceOverflow = false;
     }
 
     @Override
@@ -350,13 +353,24 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
                         break;
                 }
 
-                mMutableMetadata.receive(new AttributeChangeRequest<State>(Attribute.CHANNEL_STATE, mState));
-            }
-            else
-            {
-//				mLog.debug( "Can't change from [" + mState + "] to [" + state + "]" );
+                mMutableMetadata.receive(new AttributeChangeRequest<State>(Attribute.CHANNEL_STATE,
+                    mSourceOverflow ? State.OVERFLOW : mState));
             }
         }
+    }
+
+    /**
+     * This method is invoked if the source buffer provider goes into overflow state.  Since this is an external state,
+     * we use the mSourceOverflow variable to override the internal state reported to external listeners.
+     * @param overflow true to indicate an overflow state
+     */
+    @Override
+    public void sourceOverflow(boolean overflow)
+    {
+        mSourceOverflow = overflow;
+
+        mMutableMetadata.receive(new AttributeChangeRequest<State>(Attribute.CHANNEL_STATE,
+            mSourceOverflow ? State.OVERFLOW : mState));
     }
 
     /**

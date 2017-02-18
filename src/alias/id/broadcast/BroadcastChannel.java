@@ -25,76 +25,99 @@ import javax.xml.bind.annotation.XmlAttribute;
 
 public class BroadcastChannel extends AliasID implements Comparable<BroadcastChannel>
 {
-	private String mChannelName;
+    private String mChannelName;
 
-	public BroadcastChannel()
-	{
-		//JAXB Constructor
-	}
+    public BroadcastChannel()
+    {
+        //JAXB Constructor
+    }
 
-	@Override
-	public int compareTo(BroadcastChannel other)
-	{
-		if(mChannelName != null && other.getChannelName() != null)
-		{
-			return mChannelName.compareTo(other.getChannelName());
-		}
-		else if(mChannelName != null)
-		{
-			return -1;
-		}
-		else
-		{
-			return 1;
-		}
-	}
+    @Override
+    public int compareTo(BroadcastChannel other)
+    {
+        if(mChannelName != null && other.getChannelName() != null)
+        {
+            return mChannelName.compareTo(other.getChannelName());
+        }
+        else if(mChannelName != null)
+        {
+            return -1;
+        }
+        else
+        {
+            return 1;
+        }
+    }
 
-	/**
-	 * Creates a named broadcast channel
-	 */
-	public BroadcastChannel(String channelName)
-	{
-		mChannelName = channelName;
-	}
+    @Override
+    public boolean equals(Object o)
+    {
+        if(this == o)
+        {
+            return true;
+        }
+        if(!(o instanceof BroadcastChannel))
+        {
+            return false;
+        }
 
-	/**
-	 * Name of the broadcastAudio channel configuration
-	 */
-	@XmlAttribute(name="channel")
-	public String getChannelName()
-	{
-		return mChannelName;
-	}
+        BroadcastChannel that = (BroadcastChannel)o;
 
-	/**
-	 * Sets the name of the broadcastAudio channel configuration
-	 */
-	public void setChannelName(String channel)
-	{
-		mChannelName = channel;
-	}
+        return getChannelName() != null ? getChannelName().equals(that.getChannelName()) : that.getChannelName() == null;
+    }
 
-	@Override
-	public AliasIDType getType()
-	{
-		return AliasIDType.BROADCAST_CHANNEL;
-	}
+    @Override
+    public int hashCode()
+    {
+        return getChannelName() != null ? getChannelName().hashCode() : 0;
+    }
 
-	@Override
-	public boolean isValid()
-	{
-		return mChannelName != null;
-	}
+    /**
+     * Creates a named broadcast channel
+     */
+    public BroadcastChannel(String channelName)
+    {
+        mChannelName = channelName;
+    }
 
-	@Override
-	public boolean matches( AliasID id )
-	{
-		return false;
-	}
-	
-	@Override
-	public String toString()
-	{
+    /**
+     * Name of the broadcastAudio channel configuration
+     */
+    @XmlAttribute(name = "channel")
+    public String getChannelName()
+    {
+        return mChannelName;
+    }
+
+    /**
+     * Sets the name of the broadcastAudio channel configuration
+     */
+    public void setChannelName(String channel)
+    {
+        mChannelName = channel;
+    }
+
+    @Override
+    public AliasIDType getType()
+    {
+        return AliasIDType.BROADCAST_CHANNEL;
+    }
+
+    @Override
+    public boolean isValid()
+    {
+        return mChannelName != null;
+    }
+
+    @Override
+    public boolean matches(AliasID id)
+    {
+        return false;
+    }
+
+    @Override
+    public String toString()
+    {
         if(isValid())
         {
             return "Broadcast Channel: " + mChannelName;
@@ -103,5 +126,5 @@ public class BroadcastChannel extends AliasID implements Comparable<BroadcastCha
         {
             return "Broadcast Channel: None Selected";
         }
-	}
+    }
 }

@@ -19,9 +19,7 @@ package module.decode.p25;
 
 import alias.Alias;
 import alias.AliasList;
-import alias.PatchGroupAlias;
 import alias.id.AliasIDType;
-import alias.id.talkgroup.TalkgroupID;
 import channel.metadata.AliasedStringAttributeMonitor;
 import channel.metadata.Attribute;
 import channel.metadata.AttributeChangeRequest;
@@ -150,6 +148,7 @@ public class P25DecoderState extends DecoderState
     private static final DecimalFormat mFrequencyFormatter =
         new DecimalFormat("0.000000");
 
+
     private module.decode.p25.message.tsbk.osp.control.NetworkStatusBroadcast mNetworkStatus;
     private NetworkStatusBroadcastExtended mNetworkStatusExtended;
     private ProtectionParameterBroadcast mProtectionParameterBroadcast;
@@ -163,7 +162,6 @@ public class P25DecoderState extends DecoderState
     private Map<Integer,IdentifierUpdate> mBands = new HashMap<>();
     private Map<String,Long> mRegistrations = new HashMap<>();
     private Map<String,IAdjacentSite> mNeighborMap = new HashMap<>();
-    private Map<String,List<String>> mPatchGroupMap = new HashMap<>();
 
     private String mLastCommandEventID;
     private String mLastPageEventID;
@@ -188,6 +186,7 @@ public class P25DecoderState extends DecoderState
     private P25CallEvent mCurrentCallEvent;
     private List<String> mCallDetectTalkgroups = new ArrayList<>();
     private Map<String,P25CallEvent> mChannelCallMap = new HashMap<>();
+    private PatchGroupManager mPatchGroupManager;
 
     public P25DecoderState(AliasList aliasList,
                            ChannelType channelType,
@@ -199,6 +198,7 @@ public class P25DecoderState extends DecoderState
         mModulation = modulation;
         mIgnoreDataCalls = ignoreDataCalls;
 
+        mPatchGroupManager = new PatchGroupManager(aliasList, getCallEventBroadcaster());
         mSiteAttributeMonitor = new AliasedStringAttributeMonitor(Attribute.NETWORK_ID_2,
             getAttributeChangeRequestListener(), getAliasList(), AliasIDType.SITE);
         mFromTalkgroupMonitor = new AliasedStringAttributeMonitor(Attribute.PRIMARY_ADDRESS_FROM,
@@ -2719,6 +2719,9 @@ public class P25DecoderState extends DecoderState
         switch(((MotorolaTSBKMessage)tsbk).getMotorolaOpcode())
         {
             case PATCH_GROUP_CHANNEL_GRANT:
+                //Cleanup patch groups - auto-expire any patch groups before we allocate a channel
+                mPatchGroupManager.cleanupPatchGroups();
+
                 PatchGroupVoiceChannelGrant pgvcg = (PatchGroupVoiceChannelGrant)tsbk;
 
                 channel = pgvcg.getChannel();
@@ -2739,7 +2742,7 @@ public class P25DecoderState extends DecoderState
 
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.PATCH_GROUP_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel)
+                        .channel(channel + (pgvcg.isTDMAChannel() ? " TDMA" : ""))
                         .details(details.toString())
                         .frequency(pgvcg.getDownlinkFrequency())
                         .from(from)
@@ -2750,10 +2753,15 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                broadcast(new TrafficChannelAllocationEvent(this,
-                    mChannelCallMap.get(channel)));
+                if(!pgvcg.isTDMAChannel())
+                {
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
+                }
                 break;
             case PATCH_GROUP_CHANNEL_GRANT_UPDATE:
+                //Cleanup patch groups - auto-expire any patch groups before we allocate a channel
+                mPatchGroupManager.cleanupPatchGroups();
+
                 PatchGroupVoiceChannelGrantUpdate gvcgu = (PatchGroupVoiceChannelGrantUpdate)tsbk;
 
                 channel = gvcgu.getChannel1();
@@ -2767,10 +2775,8 @@ public class P25DecoderState extends DecoderState
                 {
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.PATCH_GROUP_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel)
-                        .details((gvcgu.isEncrypted() ? "ENCRYPTED " : "") +
-                            "PATCH UPDATE - GROUP 2:" + gvcgu.getPatchGroupAddress2() +
-                            " DN:" + gvcgu.getDownlinkFrequency2())
+                        .channel(channel + (gvcgu.isTDMAChannel1() ? " TDMA" : ""))
+                        .details((gvcgu.isEncrypted() ? "ENCRYPTED " : ""))
                         .frequency(gvcgu.getDownlinkFrequency1())
                         .to(to)
                         .build();
@@ -2779,40 +2785,45 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                broadcast(new TrafficChannelAllocationEvent(this,
-                    mChannelCallMap.get(channel)));
+                if(!gvcgu.isTDMAChannel1())
+                {
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
+                }
+
+                String channel2 = gvcgu.getChannel2();
+                String to2 = gvcgu.getPatchGroupAddress2();
+
+                if(hasCallEvent(channel2, null, to2))
+                {
+                    updateCallEvent(channel2, null, to2);
+                }
+                else
+                {
+                    P25CallEvent event = new P25CallEvent.Builder(CallEventType.PATCH_GROUP_CALL)
+                        .aliasList(getAliasList())
+                        .channel(channel2 + (gvcgu.isTDMAChannel2() ? " TDMA" : ""))
+                        .details((gvcgu.isEncrypted() ? "ENCRYPTED " : ""))
+                        .frequency(gvcgu.getDownlinkFrequency2())
+                        .to(to2)
+                        .build();
+
+                    registerCallEvent(event);
+                    broadcast(event);
+                }
+
+                if(!gvcgu.isTDMAChannel2())
+                {
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel2)));
+                }
+
                 break;
             case PATCH_GROUP_ADD:
                 PatchGroupAdd pga = (PatchGroupAdd)tsbk;
-
-                if(addPatchGroup(pga.getPatchGroupAddress(), pga.getPatchedTalkgroups()))
-                {
-                    StringBuilder sb = new StringBuilder();
-
-                    sb.append("PATCH GROUP:").append(pga.getPatchGroupAddress());
-                    sb.append(" ").append(pga.getPatchedTalkgroups());
-
-                    broadcast(new P25CallEvent.Builder(CallEventType.PATCH_GROUP_ADD)
-                        .aliasList(getAliasList())
-                        .details(sb.toString())
-                        .build());
-                }
+                mPatchGroupManager.updatePatchGroup(pga.getPatchGroupAddress(), pga.getPatchedTalkgroups());
                 break;
             case PATCH_GROUP_DELETE:
                 PatchGroupDelete pgd = (PatchGroupDelete)tsbk;
-
-                if(removePatchGroup(pgd.getPatchGroupAddress(), pgd.getPatchedTalkgroups()))
-                {
-                    StringBuilder sbpgd = new StringBuilder();
-
-                    sbpgd.append("PATCH GROUP:").append(pgd.getPatchGroupAddress());
-                    sbpgd.append(" ").append(pgd.getPatchedTalkgroups());
-
-                    broadcast(new P25CallEvent.Builder(CallEventType.PATCH_GROUP_DELETE)
-                        .aliasList(getAliasList())
-                        .details(sbpgd.toString())
-                        .build());
-                }
+                mPatchGroupManager.removePatchGroup(pgd.getPatchGroupAddress());
                 break;
             case CCH_PLANNED_SHUTDOWN:
                 if(!mControlChannelShutdownLogged)
@@ -2828,173 +2839,13 @@ public class P25DecoderState extends DecoderState
     }
 
     /**
-     * Creates a new patch group or updates an existing patch group with the patched talkgroup entries.
-     *
-     * @param patchGroupID for the patch group
-     * @param talkgroupsToAdd to include in the patch group
-     * @return true if the patch group or the patch group map was updated
-     */
-    private boolean addPatchGroup(String patchGroupID, List<String> talkgroupsToAdd)
-    {
-        boolean updated = false;
-
-        if(patchGroupID != null && !talkgroupsToAdd.isEmpty())
-        {
-            List<String> patchedTalkgroups = mPatchGroupMap.get(patchGroupID);
-
-            if(patchedTalkgroups == null)
-            {
-                patchedTalkgroups = new ArrayList<>();
-            }
-
-            for(String talkgroupToAdd : talkgroupsToAdd)
-            {
-                //Exclude the patch group ID if it is included in the patched talkgroup list so that we don't have
-                //an infinite loop situation
-                if(talkgroupToAdd.equals(patchGroupID))
-                {
-                    continue;
-                }
-
-                if(!patchedTalkgroups.contains(talkgroupToAdd))
-                {
-                    patchedTalkgroups.add(talkgroupToAdd);
-                    updated = true;
-                }
-            }
-
-            if(updated)
-            {
-                mPatchGroupMap.put(patchGroupID, patchedTalkgroups);
-                updatePatchAlias(patchGroupID, patchedTalkgroups);
-            }
-        }
-
-        return updated;
-    }
-
-    /**
-     * Removes the patched talkgroups from the patch group and removes the patch group from the patch group map if
-     * there are no more patched talkgroups in the patch group.
-     *
-     * @param patchGroupID for the patch group
-     * @param talkgroupsToRemove to remove from the patch group
-     * @return true if the patch group or the patch group map was updated
-     */
-    private boolean removePatchGroup(String patchGroupID, List<String> talkgroupsToRemove)
-    {
-        boolean updated = false;
-
-        if(patchGroupID != null && !talkgroupsToRemove.isEmpty())
-        {
-            List<String> patchedTalkgroups = mPatchGroupMap.get(patchGroupID);
-
-            if(patchedTalkgroups != null)
-            {
-                for(String talkgroupToRemove : talkgroupsToRemove)
-                {
-                    if(patchedTalkgroups.contains(talkgroupToRemove))
-                    {
-                        patchedTalkgroups.remove(talkgroupToRemove);
-                        updated = true;
-                    }
-                }
-
-                if(patchedTalkgroups.isEmpty())
-                {
-                    mPatchGroupMap.remove(patchGroupID);
-                    removePatchGroupAlias(patchGroupID);
-                    updated = true;
-                }
-                else
-                {
-                    updatePatchAlias(patchGroupID, patchedTalkgroups);
-                }
-            }
-        }
-
-        return updated;
-    }
-
-    /**
-     * Adds/updates a patch group alias to the alias list containing aliases for each of the patched talkgroups.  If the
-     * patch group alias already exists, any patched talkgroups will be removed from the existing patch group alias and
-     * replaced with the aliases corresponding to the patched talkgroup aliases.
-     *
-     * @param patchGroupID for the patch group
-     * @param patchedTalkgroups containing the talkgroup IDs for each of the patched talkgroups
-     */
-    private void updatePatchAlias(String patchGroupID, List<String> patchedTalkgroups)
-    {
-        PatchGroupAlias patchGroupAlias = null;
-
-        //Check for an existing alias for the patch talkgroup - do not include wildcard aliases
-        Alias existingAlias = getAliasList().getTalkgroupAlias(patchGroupID, false);
-
-        if(existingAlias instanceof PatchGroupAlias)
-        {
-            patchGroupAlias = (PatchGroupAlias)existingAlias;
-        }
-        else
-        {
-            patchGroupAlias = new PatchGroupAlias();
-
-            patchGroupAlias.addAliasID(new TalkgroupID(patchGroupID));
-
-            if(existingAlias != null)
-            {
-                getAliasList().removeAlias(existingAlias);
-
-                patchGroupAlias.setPatchGroupAlias(existingAlias);
-            }
-
-            getAliasList().addAlias(patchGroupAlias);
-        }
-
-        if(patchGroupAlias != null)
-        {
-            patchGroupAlias.setPatchedTalkgroupIDs(patchedTalkgroups);
-
-            patchGroupAlias.clearPatchedAliases();
-
-            for(String patchedTalkgroup : patchedTalkgroups)
-            {
-                Alias patchedAlias = getAliasList().getTalkgroupAlias(patchedTalkgroup);
-
-                if(patchedAlias != null)
-                {
-                    patchGroupAlias.addPatchedAlias(patchedAlias);
-                }
-            }
-        }
-    }
-
-    /**
-     * Removes the temporary patch group alias from the alias list
-     */
-    private void removePatchGroupAlias(String patchGroupID)
-    {
-        Alias alias = getAliasList().getTalkgroupAlias(patchGroupID);
-
-        if(alias instanceof PatchGroupAlias)
-        {
-            PatchGroupAlias patchGroupAlias = (PatchGroupAlias)alias;
-
-            getAliasList().removeAlias(patchGroupAlias);
-
-            //Replace our temporary patch group alias with the original alias for the patch group ID
-            if(patchGroupAlias.hasPatchGroupAlias())
-            {
-                getAliasList().addAlias(patchGroupAlias.getPatchGroupAlias());
-            }
-        }
-    }
-
-    /**
      * Process a traffic channel allocation message
      */
     private void processTSBKChannelGrant(TSBKMessage message)
     {
+        //Cleanup patch groups - auto-expire any patch groups before we allocate a channel
+        mPatchGroupManager.cleanupPatchGroups();
+
         String channel = null;
         String from = null;
         String to = null;
@@ -3022,7 +2873,7 @@ public class P25DecoderState extends DecoderState
 
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.DATA_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel)
+                        .channel(channel + (gdcg.isTDMAChannel() ? " TDMA" : ""))
                         .details(details.toString())
                         .frequency(gdcg.getDownlinkFrequency())
                         .from(from)
@@ -3033,7 +2884,7 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                if(!mIgnoreDataCalls)
+                if(!mIgnoreDataCalls && !gdcg.isTDMAChannel())
                 {
                     broadcast(new TrafficChannelAllocationEvent(this,
                         mChannelCallMap.get(channel)));
@@ -3060,7 +2911,7 @@ public class P25DecoderState extends DecoderState
 
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.GROUP_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel)
+                        .channel(channel + (gvcg.isTDMAChannel() ? " TDMA" : ""))
                         .details(details.toString())
                         .frequency(gvcg.getDownlinkFrequency())
                         .from(from)
@@ -3071,8 +2922,10 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                broadcast(new TrafficChannelAllocationEvent(this,
-                    mChannelCallMap.get(channel)));
+                if(!gvcg.isTDMAChannel())
+                {
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
+                }
                 break;
             case GROUP_VOICE_CHANNEL_GRANT_UPDATE:
                 GroupVoiceChannelGrantUpdate gvcgu =
@@ -3096,8 +2949,7 @@ public class P25DecoderState extends DecoderState
 
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.GROUP_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel)
-                        .channel(gvcgu.getChannel1())
+                        .channel(gvcgu.getChannel1() + (gvcgu.isTDMAChannel1() ? " TDMA" : ""))
                         .details(details.toString())
                         .frequency(gvcgu.getDownlinkFrequency1())
                         .from(from)
@@ -3108,8 +2960,10 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                broadcast(new TrafficChannelAllocationEvent(this,
-                    mChannelCallMap.get(channel)));
+                if(!gvcgu.isTDMAChannel1())
+                {
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
+                }
 
                 if(gvcgu.hasChannelNumber2())
                 {
@@ -3130,7 +2984,7 @@ public class P25DecoderState extends DecoderState
 
                         P25CallEvent event2 = new P25CallEvent.Builder(CallEventType.GROUP_CALL)
                             .aliasList(getAliasList())
-                            .channel(gvcgu.getChannel2())
+                            .channel(gvcgu.getChannel2() + (gvcgu.isTDMAChannel2() ? " TDMA" : ""))
                             .details(details.toString())
                             .frequency(gvcgu.getDownlinkFrequency2())
                             .to(gvcgu.getGroupAddress2())
@@ -3140,8 +2994,10 @@ public class P25DecoderState extends DecoderState
                         broadcast(event2);
                     }
 
-                    broadcast(new TrafficChannelAllocationEvent(this,
-                        mChannelCallMap.get(channel)));
+                    if(!gvcgu.isTDMAChannel2())
+                    {
+                        broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
+                    }
                 }
                 break;
             case GROUP_VOICE_CHANNEL_GRANT_UPDATE_EXPLICIT:
@@ -3167,7 +3023,7 @@ public class P25DecoderState extends DecoderState
 
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.GROUP_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel)
+                        .channel(channel + (gvcgue.isTDMAChannel() ? " TDMA" : ""))
                         .details(details.toString())
                         .frequency(gvcgue.getDownlinkFrequency())
                         .from(from)
@@ -3178,8 +3034,10 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                broadcast(new TrafficChannelAllocationEvent(this,
-                    mChannelCallMap.get(channel)));
+                if(!gvcgue.isTDMAChannel())
+                {
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
+                }
                 break;
             case INDIVIDUAL_DATA_CHANNEL_GRANT:
                 IndividualDataChannelGrant idcg = (IndividualDataChannelGrant)message;
@@ -3202,7 +3060,7 @@ public class P25DecoderState extends DecoderState
 
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.DATA_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel)
+                        .channel(channel + (idcg.isTDMAChannel() ? " TDMA" : ""))
                         .details(details.toString())
                         .frequency(idcg.getDownlinkFrequency())
                         .from(from)
@@ -3213,10 +3071,9 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                if(!mIgnoreDataCalls)
+                if(!mIgnoreDataCalls && !idcg.isTDMAChannel())
                 {
-                    broadcast(new TrafficChannelAllocationEvent(this,
-                        mChannelCallMap.get(channel)));
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
                 }
                 break;
             case SNDCP_DATA_CHANNEL_GRANT:
@@ -3239,7 +3096,7 @@ public class P25DecoderState extends DecoderState
 
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.DATA_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel)
+                        .channel(channel + (sdcg.isTDMAChannel() ? " TDMA" : ""))
                         .details(details.toString())
                         .frequency(sdcg.getDownlinkFrequency())
                         .from(from)
@@ -3250,15 +3107,13 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                if(!mIgnoreDataCalls)
+                if(!mIgnoreDataCalls && !sdcg.isTDMAChannel())
                 {
-                    broadcast(new TrafficChannelAllocationEvent(this,
-                        mChannelCallMap.get(channel)));
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
                 }
                 break;
             case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT:
-                TelephoneInterconnectVoiceChannelGrant tivcg =
-                    (TelephoneInterconnectVoiceChannelGrant)message;
+                TelephoneInterconnectVoiceChannelGrant tivcg = (TelephoneInterconnectVoiceChannelGrant)message;
 
                 channel = tivcg.getChannel();
                 from = null;
@@ -3282,7 +3137,7 @@ public class P25DecoderState extends DecoderState
                     P25CallEvent event = new P25CallEvent.Builder(
                         CallEventType.TELEPHONE_INTERCONNECT)
                         .aliasList(getAliasList())
-                        .channel(channel)
+                        .channel(channel + (tivcg.isTDMAChannel() ? " TDMA" : ""))
                         .details(details.toString())
                         .frequency(tivcg.getDownlinkFrequency())
                         .from(from)
@@ -3293,15 +3148,15 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                broadcast(new TrafficChannelAllocationEvent(this,
-                    mChannelCallMap.get(channel)));
+                if(!tivcg.isTDMAChannel())
+                {
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
+                }
                 break;
             case TELEPHONE_INTERCONNECT_VOICE_CHANNEL_GRANT_UPDATE:
-                TelephoneInterconnectVoiceChannelGrantUpdate tivcgu =
-                    (TelephoneInterconnectVoiceChannelGrantUpdate)message;
+                TelephoneInterconnectVoiceChannelGrantUpdate tivcgu = (TelephoneInterconnectVoiceChannelGrantUpdate)message;
 
-                channel = tivcgu.getChannelIdentifier() + "-" +
-                    tivcgu.getChannelNumber();
+                channel = tivcgu.getChannelIdentifier() + "-" + tivcgu.getChannelNumber();
                 from = null;
 
 				/* Address is ambiguous and could mean either source or target,
@@ -3324,7 +3179,7 @@ public class P25DecoderState extends DecoderState
                     P25CallEvent event = new P25CallEvent.Builder(
                         CallEventType.TELEPHONE_INTERCONNECT)
                         .aliasList(getAliasList())
-                        .channel(channel)
+                        .channel(channel + (tivcgu.isTDMAChannel() ? " TDMA" : ""))
                         .details(details.toString())
                         .frequency(tivcgu.getDownlinkFrequency())
                         .from(from)
@@ -3335,15 +3190,15 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                broadcast(new TrafficChannelAllocationEvent(this,
-                    mChannelCallMap.get(channel)));
+                if(!tivcgu.isTDMAChannel())
+                {
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
+                }
                 break;
             case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT:
-                UnitToUnitVoiceChannelGrant uuvcg =
-                    (UnitToUnitVoiceChannelGrant)message;
+                UnitToUnitVoiceChannelGrant uuvcg = (UnitToUnitVoiceChannelGrant)message;
 
-                channel = uuvcg.getChannelIdentifier() + "-" +
-                    uuvcg.getChannelNumber();
+                channel = uuvcg.getChannelIdentifier() + "-" + uuvcg.getChannelNumber();
                 from = uuvcg.getSourceAddress();
                 to = uuvcg.getTargetAddress();
 
@@ -3362,7 +3217,7 @@ public class P25DecoderState extends DecoderState
                     P25CallEvent event = new P25CallEvent.Builder(
                         CallEventType.UNIT_TO_UNIT_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel)
+                        .channel(channel + (uuvcg.isTDMAChannel() ? " TDMA" : ""))
                         .details(details.toString())
                         .frequency(uuvcg.getDownlinkFrequency())
                         .from(from)
@@ -3373,15 +3228,15 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                broadcast(new TrafficChannelAllocationEvent(this,
-                    mChannelCallMap.get(channel)));
+                if(!uuvcg.isTDMAChannel())
+                {
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
+                }
                 break;
             case UNIT_TO_UNIT_VOICE_CHANNEL_GRANT_UPDATE:
-                UnitToUnitVoiceChannelGrantUpdate uuvcgu =
-                    (UnitToUnitVoiceChannelGrantUpdate)message;
+                UnitToUnitVoiceChannelGrantUpdate uuvcgu = (UnitToUnitVoiceChannelGrantUpdate)message;
 
-                channel = uuvcgu.getChannelIdentifier() + "-" +
-                    uuvcgu.getChannelNumber();
+                channel = uuvcgu.getChannelIdentifier() + "-" + uuvcgu.getChannelNumber();
                 from = uuvcgu.getSourceAddress();
                 to = uuvcgu.getTargetAddress();
 
@@ -3400,7 +3255,7 @@ public class P25DecoderState extends DecoderState
                     P25CallEvent event = new P25CallEvent.Builder(
                         CallEventType.UNIT_TO_UNIT_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel)
+                        .channel(channel + (uuvcgu.isTDMAChannel() ? " TDMA" : ""))
                         .details(details.toString())
                         .frequency(uuvcgu.getDownlinkFrequency())
                         .from(from)
@@ -3411,8 +3266,10 @@ public class P25DecoderState extends DecoderState
                     broadcast(event);
                 }
 
-                broadcast(new TrafficChannelAllocationEvent(this,
-                    mChannelCallMap.get(channel)));
+                if(!uuvcgu.isTDMAChannel())
+                {
+                    broadcast(new TrafficChannelAllocationEvent(this, mChannelCallMap.get(channel)));
+                }
                 break;
             default:
                 break;
@@ -3522,29 +3379,25 @@ public class P25DecoderState extends DecoderState
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Activity Summary\n");
-        sb.append("Decoder:\tP25\n");
-        sb.append("===================== THIS SITE ======================");
+        sb.append("Activity Summary - Decoder:P25 ").append(getModulation().getLabel()).append("\n");
+        sb.append(DIVIDER1);
+        sb.append("SITE ");
 
         if(mNetworkStatus != null)
         {
-            sb.append("\nNAC:\t" + mNetworkStatus.getNAC());
-            sb.append("\nWACN-SYS:\t" + mNetworkStatus.getWACN());
-            sb.append("-" + mNetworkStatus.getSystemID());
-            sb.append(" [");
-            sb.append(mNetworkStatus.getNetworkCallsign());
-            sb.append("]");
-            sb.append("\nLRA:\t" + mNetworkStatus.getLocationRegistrationArea());
+            sb.append("NAC:" + mNetworkStatus.getNAC());
+            sb.append("h WACN:" + mNetworkStatus.getWACN());
+            sb.append("h SYS:" + mNetworkStatus.getSystemID());
+            sb.append("h [").append(mNetworkStatus.getNetworkCallsign()).append("]");
+            sb.append(" LRA:" + mNetworkStatus.getLocationRegistrationArea());
         }
         else if(mNetworkStatusExtended != null)
         {
-            sb.append("\nNAC:\t" + mNetworkStatusExtended.getNAC());
-            sb.append("\nWACN-SYS:\t" + mNetworkStatusExtended.getWACN());
-            sb.append("-" + mNetworkStatusExtended.getSystemID());
-            sb.append(" [");
-            sb.append(mNetworkStatusExtended.getNetworkCallsign());
-            sb.append("]");
-            sb.append("\nLRA:\t" + mNetworkStatusExtended.getLocationRegistrationArea());
+            sb.append("NAC:" + mNetworkStatusExtended.getNAC());
+            sb.append("h WACN:" + mNetworkStatusExtended.getWACN());
+            sb.append("h SYS:" + mNetworkStatusExtended.getSystemID());
+            sb.append("h [").append(mNetworkStatusExtended.getNetworkCallsign()).append("]");
+            sb.append(" LRA:" + mNetworkStatusExtended.getLocationRegistrationArea());
         }
 
         String site = null;
@@ -3555,11 +3408,10 @@ public class P25DecoderState extends DecoderState
         }
         else if(mRFSSStatusMessageExtended != null)
         {
-            site = mRFSSStatusMessageExtended.getRFSubsystemID() + "-" +
-                mRFSSStatusMessageExtended.getSiteID();
+            site = mRFSSStatusMessageExtended.getRFSubsystemID() + "-" + mRFSSStatusMessageExtended.getSiteID();
         }
 
-        sb.append("\nRFSS-SITE:\t" + site);
+        sb.append("h RFSS-SITE:").append(site).append("h");
 
         if(hasAliasList())
         {
@@ -3571,121 +3423,120 @@ public class P25DecoderState extends DecoderState
             }
         }
 
+        sb.append("\n").append(DIVIDER2);
+
         if(mNetworkStatus != null)
         {
-            sb.append("\nSERVICES:\t" + SystemService.toString(
-                mNetworkStatus.getSystemServiceClass()));
-            sb.append("\nPCCH:\tDNLINK " + mFrequencyFormatter.format(
-                (double)mNetworkStatus.getDownlinkFrequency() / 1E6d) +
-                " [" + mNetworkStatus.getIdentifier() + "-" +
-                mNetworkStatus.getChannel() + "]\n");
-            sb.append("\tUPLINK " + mFrequencyFormatter.format(
-                (double)mNetworkStatus.getUplinkFrequency() / 1E6d) + " [" +
-                mNetworkStatus.getIdentifier() + "-" +
-                mNetworkStatus.getChannel() + "]\n");
+            sb.append("SERVICES: " + SystemService.toString(mNetworkStatus.getSystemServiceClass())).append("\n");
+            sb.append(DIVIDER2);
+            sb.append("PCCH DOWNLINK ")
+              .append(mFrequencyFormatter.format((double)mNetworkStatus.getDownlinkFrequency() / 1E6d))
+              .append(" [").append(mNetworkStatus.getIdentifier()).append("-").append(mNetworkStatus.getChannel())
+              .append("] UPLINK ")
+              .append(mFrequencyFormatter.format((double)mNetworkStatus.getUplinkFrequency() / 1E6d))
+              .append(" [").append(mNetworkStatus.getIdentifier()).append("-").append(mNetworkStatus.getChannel())
+              .append("]\n");
         }
         else if(mNetworkStatusExtended != null)
         {
-            sb.append("\nSERVICES:\t" + SystemService.toString(
-                mNetworkStatusExtended.getSystemServiceClass()));
-            sb.append("\nPCCH:\tDNLINK " + mFrequencyFormatter.format(
-                (double)mNetworkStatusExtended.getDownlinkFrequency() / 1E6d) +
-                " [" + mNetworkStatusExtended.getTransmitIdentifier() + "-" +
-                mNetworkStatusExtended.getTransmitChannel() + "]\n");
-            sb.append("\tUPLINK " + mFrequencyFormatter.format(
-                (double)mNetworkStatusExtended.getUplinkFrequency() / 1E6d) +
-                " [" + mNetworkStatusExtended.getReceiveIdentifier() + "-" +
-                mNetworkStatusExtended.getReceiveChannel() + "]");
+            sb.append("\nSERVICES:").append(SystemService.toString(mNetworkStatusExtended.getSystemServiceClass()))
+                .append("\n");
+            sb.append(DIVIDER2);
+            sb.append("PCCH DOWNLINK ")
+              .append(mFrequencyFormatter.format((double)mNetworkStatusExtended.getDownlinkFrequency() / 1E6d))
+              .append(" [").append(mNetworkStatusExtended.getTransmitIdentifier()).append("-")
+              .append(mNetworkStatusExtended.getTransmitChannel()).append("] UPLINK ")
+              .append(mFrequencyFormatter.format((double)mNetworkStatusExtended.getUplinkFrequency() / 1E6d))
+              .append(" [").append(mNetworkStatusExtended.getReceiveIdentifier()).append("-")
+              .append(mNetworkStatusExtended.getReceiveChannel()).append("]\n");
         }
 
         if(mSecondaryControlChannels.isEmpty())
         {
-            sb.append("\nSCCH:\tNONE");
+            sb.append("SCCH: NONE\n");
         }
         else
         {
-            for(module.decode.p25.message.tsbk.osp.control.SecondaryControlChannelBroadcast
-                sec : mSecondaryControlChannels)
+            for(module.decode.p25.message.tsbk.osp.control.SecondaryControlChannelBroadcast sec : mSecondaryControlChannels)
             {
-                sb.append("\nSCCH:\tDNLINK " + mFrequencyFormatter.format(
-                    (double)sec.getDownlinkFrequency1() / 1E6d) +
-                    " [" + sec.getIdentifier1() + "-" + sec.getChannel1() + "]\n");
-                sb.append("\tUPLINK " + mFrequencyFormatter.format(
-                    (double)sec.getUplinkFrequency1() / 1E6d) + " [" +
-                    sec.getIdentifier1() + "-" + sec.getChannel1() + "]\n");
+                sb.append("SCCH DOWNLINK ")
+                    .append(mFrequencyFormatter.format((double)sec.getDownlinkFrequency1() / 1E6d))
+                    .append(" [").append(sec.getIdentifier1()).append("-").append(sec.getChannel1()).append("] UPLINK ")
+                    .append(mFrequencyFormatter.format((double)sec.getUplinkFrequency1() / 1E6d))
+                    .append(" [").append(sec.getIdentifier1()).append("-").append(sec.getChannel1()).append("]");
 
                 if(sec.hasChannel2())
                 {
-                    sb.append("\nSCCH:\tDNLINK " + mFrequencyFormatter.format(
-                        (double)sec.getDownlinkFrequency2() / 1E6d) +
-                        " [" + sec.getIdentifier2() + "-" + sec.getChannel2() + "]\n");
-                    sb.append("\tUPLINK " + mFrequencyFormatter.format(
-                        (double)sec.getUplinkFrequency2() / 1E6d) + " [" +
-                        sec.getIdentifier2() + "-" + sec.getChannel2() + "]");
+                    sb.append("  SCCH 2 DOWNLINK ")
+                        .append(mFrequencyFormatter.format((double)sec.getDownlinkFrequency2() / 1E6d))
+                        .append(" [").append(sec.getIdentifier2()).append("-").append(sec.getChannel2())
+                        .append("] UPLINK ").append(mFrequencyFormatter.format((double)sec.getUplinkFrequency2() / 1E6d))
+                        .append(" [").append(sec.getIdentifier2()).append("-").append(sec.getChannel2()).append("]");
                 }
+
+                sb.append("\n");
             }
         }
 
+
         if(mSNDCPDataChannel != null)
         {
-            sb.append("\nSNDCP:");
-            sb.append("\tDNLINK " + mFrequencyFormatter.format(
-                (double)mSNDCPDataChannel.getDownlinkFrequency() / 1E6D) +
-                " [" + mSNDCPDataChannel.getTransmitChannel() + "]");
-            sb.append("\tUPLINK " + mFrequencyFormatter.format(
-                (double)mSNDCPDataChannel.getUplinkFrequency() / 1E6D) +
-                " [" + mSNDCPDataChannel.getReceiveChannel() + "]");
+            sb.append("SNDCP DOWNLINK ")
+                .append(mFrequencyFormatter.format((double)mSNDCPDataChannel.getDownlinkFrequency() / 1E6D))
+                .append(" [").append(mSNDCPDataChannel.getTransmitChannel()).append("]").append(" UPLINK ")
+                .append(mFrequencyFormatter.format((double)mSNDCPDataChannel.getUplinkFrequency() / 1E6D))
+                .append(" [").append(mSNDCPDataChannel.getReceiveChannel()).append("]\n");
         }
 
         if(mProtectionParameterBroadcast != null)
         {
-            sb.append("\nENCRYPTION:");
-            sb.append("\nTYPE:\t" + mProtectionParameterBroadcast
-                .getEncryptionType().name());
-            sb.append("\nALGORITHM:\t" + mProtectionParameterBroadcast
-                .getAlgorithmID());
-            sb.append("\nKEY:\t" + mProtectionParameterBroadcast.getKeyID());
-            sb.append("\nINBOUND IV:\t" + mProtectionParameterBroadcast
-                .getInboundInitializationVector());
-            sb.append("\nOUTBOUND IV:\t" + mProtectionParameterBroadcast
-                .getOutboundInitializationVector());
+            sb.append(DIVIDER2);
+            sb.append("ENCRYPTION TYPE:").append(mProtectionParameterBroadcast.getEncryptionType().name());
+            sb.append(" ALGORITHM:").append(mProtectionParameterBroadcast.getAlgorithmID());
+            sb.append(" KEY:").append(mProtectionParameterBroadcast.getKeyID());
+            sb.append(" INBOUND IV:").append(mProtectionParameterBroadcast.getInboundInitializationVector());
+            sb.append(" OUTBOUND IV:").append(mProtectionParameterBroadcast.getOutboundInitializationVector());
+            sb.append("\n");
         }
 
         List<Integer> identifiers = new ArrayList<>(mBands.keySet());
 
         Collections.sort(identifiers);
 
-        sb.append("\nFREQUENCY BANDS:");
+        sb.append(DIVIDER2).append("FREQUENCY BANDS:\n");
         for(Integer id : identifiers)
         {
             IBandIdentifier band = mBands.get(id);
-
-            sb.append("\n\t" + id);
-            sb.append("- BASE: " + mFrequencyFormatter.format(
-                (double)band.getBaseFrequency() / 1E6d));
-            sb.append(" CHANNEL SIZE: " + mFrequencyFormatter.format(
-                (double)band.getChannelSpacing() / 1E6d));
-            sb.append(" UPLINK OFFSET: " + mFrequencyFormatter.format(
-                (double)band.getTransmitOffset() / 1E6D));
+            sb.append(band.toString()).append("\n");
+//            sb.append("  ").append(id);
+//            sb.append(" - BASE: " + mFrequencyFormatter.format(
+//                (double)band.getBaseFrequency() / 1E6d));
+//            sb.append(" CHANNEL SIZE: " + mFrequencyFormatter.format(
+//                (double)band.getChannelSpacing() / 1E6d));
+//            sb.append(" UPLINK OFFSET: " + mFrequencyFormatter.format(
+//                (double)band.getTransmitOffset() / 1E6D));
+//            sb.append("\n");
         }
 
-        sb.append("\n\n=================== NEIGHBORS ======================");
+        sb.append(DIVIDER2).append("NEIGHBOR SITES: ");
 
         if(mNeighborMap.isEmpty())
         {
-            sb.append("\n\tNONE\n");
-            sb.append("\n----------------------------------------------------");
+            sb.append("NONE\n");
         }
         else
         {
             for(IAdjacentSite neighbor : mNeighborMap.values())
             {
-                sb.append("\nNAC:\t" + ((P25Message)neighbor).getNAC());
-                sb.append("\nSYSTEM:\t" + neighbor.getSystemID());
-                sb.append("\nLRA:\t" + neighbor.getLRA());
+                sb.append("\n");
+                sb.append("NAC:").append(((P25Message)neighbor).getNAC());
+                sb.append("h SYSTEM:" + neighbor.getSystemID());
+                sb.append("h LRA:" + neighbor.getLRA());
 
                 String neighborID = neighbor.getRFSS() + "-" + neighbor.getSiteID();
-                sb.append("\nRFSS-SITE:\t" + neighborID);
+                sb.append("h RFSS-SITE:" + neighborID);
+
+                sb.append("h ");
 
                 if(hasAliasList())
                 {
@@ -3693,18 +3544,16 @@ public class P25DecoderState extends DecoderState
 
                     if(siteAlias != null)
                     {
-                        sb.append(" " + siteAlias.getName());
+                        sb.append(siteAlias.getName());
                     }
                 }
 
-                sb.append("\nPCCH:\tDNLINK " + mFrequencyFormatter.format(
-                    (double)neighbor.getDownlinkFrequency() / 1E6d) +
-                    " [" + neighbor.getDownlinkChannel() + "]");
-                sb.append("\n\tUPLINK:" + mFrequencyFormatter.format(
-                    (double)neighbor.getUplinkFrequency() / 1E6d) +
-                    " [" + neighbor.getDownlinkChannel() + "]\n");
-                sb.append("\nSERVICES:\t" + neighbor.getSystemServiceClass());
-                sb.append("\n----------------------------------------------------");
+                sb.append("\n  PCCH: DOWNLINK ")
+                  .append(mFrequencyFormatter.format((double)neighbor.getDownlinkFrequency() / 1E6d))
+                  .append(" [").append(neighbor.getDownlinkChannel()).append("] UPLINK:")
+                  .append(mFrequencyFormatter.format((double)neighbor.getUplinkFrequency() / 1E6d))
+                  .append(" [").append(neighbor.getDownlinkChannel()).append("] SERVICES: ")
+                  .append(neighbor.getSystemServiceClass());
             }
         }
 

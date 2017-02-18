@@ -7,6 +7,7 @@
       <w>fleetsync</w>
       <w>icecast</w>
       <w>ident</w>
+      <w>overflowable</w>
       <w>polyphase</w>
       <w>remez</w>
       <w>samplerate</w>
@@ -17,6 +18,7 @@
       <w>talkgroup</w>
       <w>tgid</w>
       <w>ultravox</w>
+      <w>wacn</w>
       <w>xtea</w>
     </words>
   </dictionary>
