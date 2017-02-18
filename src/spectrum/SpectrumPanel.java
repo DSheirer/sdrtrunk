@@ -45,24 +45,18 @@ import dsp.filter.smoothing.SmoothingFilter;
 import dsp.filter.smoothing.SmoothingFilter.SmoothingType;
 import dsp.filter.smoothing.TriangularSmoothingFilter;
 
-public class SpectrumPanel extends JPanel
-							implements DFTResultsListener,
-									   SettingChangeListener,
-									   SpectralDisplayAdjuster
+public class SpectrumPanel extends JPanel implements DFTResultsListener, SettingChangeListener, SpectralDisplayAdjuster
 {
 	private static final long serialVersionUID = 1L;
 
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( SpectrumPanel.class );
+	private final static Logger mLog = LoggerFactory.getLogger( SpectrumPanel.class );
 	
 	private static final RenderingHints RENDERING_HINTS = 
-    		new RenderingHints( RenderingHints.KEY_ANTIALIASING, 
-    							RenderingHints.VALUE_ANTIALIAS_ON );
+    		new RenderingHints( RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON );
 
 	static
 	{
-		RENDERING_HINTS.put( RenderingHints.KEY_RENDERING, 
-							 RenderingHints.VALUE_RENDER_QUALITY );
+		RENDERING_HINTS.put( RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY );
 	}
 	
 	private Color mColorSpectrumBackground;
@@ -77,7 +71,7 @@ public class SpectrumPanel extends JPanel
 	private float[] mDisplayFFTBins = new float[ 1 ];
 
 	//Averaging across multiple DFT result sets
-	private int mAveraging = 4;
+	private int mAveraging = 1;
 	
 	//Smoothing across bins in the same DFT result set
 	private SmoothingFilter mSmoothingFilter = new GaussianSmoothingFilter();

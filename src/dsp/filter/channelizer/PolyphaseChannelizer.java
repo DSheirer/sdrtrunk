@@ -18,6 +18,7 @@
  ******************************************************************************/
 package dsp.filter.channelizer;
 
+import dsp.filter.FilterFactory;
 import dsp.filter.design.FilterDesignException;
 import dsp.filter.fir.FIRFilterSpecification;
 import dsp.filter.fir.real.RealFIRFilter;
@@ -26,11 +27,12 @@ import dsp.mixer.Oscillator;
 import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sample.Listener;
 import sample.complex.ComplexBuffer;
 
 import java.text.DecimalFormat;
 
-public class PolyphaseChannelizer
+public class PolyphaseChannelizer implements Listener<ComplexBuffer>
 {
     private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelizer.class);
 
@@ -90,9 +92,10 @@ public class PolyphaseChannelizer
         }
     }
 
-    public void filter(ComplexBuffer buffer)
+    @Override
+    public void receive(ComplexBuffer complexBuffer)
     {
-        float[] samples = buffer.getSamples();
+        float[] samples = complexBuffer.getSamples();
 
         for(int x = 0; x < samples.length; x += 2)
         {
@@ -115,22 +118,22 @@ public class PolyphaseChannelizer
         }
 
         //FFT is executed in-place where the output overwrites the input
-        mFFT.complexInverse(samples, true);
+        mFFT.complexForward(samples);
 
         dispatch(samples);
     }
 
     private void dispatch(float[] channels)
     {
-        StringBuilder sb = new StringBuilder();
-
-        for(int x = 0; x < channels.length; x += 2)
-        {
-            sb.append((x/2)).append("-")
-                .append(DECIMAL_FORMAT.format(magnitude(channels[x], channels[x + 1], mChannelCount))).append(" ");
-        }
-
-        mLog.debug("Out: " + sb.toString());
+//        StringBuilder sb = new StringBuilder();
+//
+//        for(int x = 0; x < channels.length; x += 2)
+//        {
+//            sb.append((x/2)).append("[")
+//                .append(DECIMAL_FORMAT.format(magnitude(channels[x], channels[x + 1], mChannelCount))).append("] ");
+//        }
+//
+//        mLog.debug("Out: " + sb.toString());
     }
 
     private double magnitude(float real, float imaginary, int fftSize)
@@ -183,39 +186,36 @@ public class PolyphaseChannelizer
     {
         mLog.debug("Starting ...");
 
-        FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-            .sampleRate(4000)
-            .gridDensity(16)
-            .passBandCutoff(950)
-            .passBandAmplitude(1.0)
-            .passBandRipple(0.01)
-            .stopBandStart(1050)
-            .stopBandAmplitude(0.0)
-            .stopBandRipple(0.005)
-            .build();
+        int symbolRate = 4800;
+        int samplesPerSymbol = 2;
+        int symbolCount = 4;
+        int channels = 10;
+        int channelBandwidth = 12500;
+        int sampleRate = channels * channelBandwidth;
 
-        RemezFIRFilterDesigner filterDesigner = new RemezFIRFilterDesigner(specification);
+        //Alpha is the residual channel bandwidth left over from the symbol rate and samples per symbol
+        float alpha = ((float)channelBandwidth / (float)(symbolRate * samplesPerSymbol)) - 1.0f;
 
-        if(filterDesigner.isValid())
+        float[] taps = FilterFactory.getRootRaisedCosine(samplesPerSymbol * channels, symbolCount, alpha);
+
+        int channelCenter = (int)(12500 * 1.5);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("\nPolyphase Channelizer\n");
+        sb.append("Sample Rate:" + sampleRate + " Channels:" + channels + " Channel Rate:" + channelBandwidth + "\n");
+        sb.append("Alpha: " + alpha + " Tap Count:" + taps.length + "\n");
+        sb.append("Channel:" + channelCenter);
+
+        mLog.debug(sb.toString());
+
+        PolyphaseChannelizer channelizer = new PolyphaseChannelizer(taps, 8);
+
+        Oscillator oscillator = new Oscillator(channelCenter, 2 * sampleRate);
+
+        for(int x = 0; x < 2000; x++)
         {
-            try
-            {
-                float[] taps = filterDesigner.getImpulseResponse();
-
-                PolyphaseChannelizer channelizer = new PolyphaseChannelizer(taps, 8);
-
-                Oscillator oscillator = new Oscillator(-1000, 8000);
-
-                for(int x = 0; x < 2000; x++)
-                {
-                    channelizer.filter(oscillator.getComplex().inphase(), oscillator.getComplex().quadrature());
-                    oscillator.rotate();
-                }
-            }
-            catch(FilterDesignException fde)
-            {
-                mLog.error("Couldn't design filter to specification");
-            }
+            channelizer.filter(oscillator.getComplex().inphase(), oscillator.getComplex().quadrature());
+            oscillator.rotate();
         }
 
         mLog.debug("Finished!");

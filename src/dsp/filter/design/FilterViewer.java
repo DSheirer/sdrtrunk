@@ -1,5 +1,6 @@
 package dsp.filter.design;
 
+import dsp.filter.FilterFactory;
 import dsp.filter.fir.FIRFilterSpecification;
 import dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import javafx.application.Application;
@@ -39,16 +40,16 @@ public class FilterViewer extends Application
      */
     private float[] getFilter()
     {
-        FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-            .sampleRate(4000)
-            .gridDensity(16)
-            .passBandCutoff(950)
-            .passBandAmplitude(1.0)
-            .passBandRipple(0.01)
-            .stopBandStart(1050)
-            .stopBandAmplitude(0.0)
-            .stopBandRipple(0.005)
-            .build();
+//        FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
+//            .sampleRate(4000)
+//            .gridDensity(16)
+//            .passBandCutoff(950)
+//            .passBandAmplitude(1.0)
+//            .passBandRipple(0.01)
+//            .stopBandStart(1050)
+//            .stopBandAmplitude(0.0)
+//            .stopBandRipple(0.005)
+//            .build();
 
 //		FIRFilterSpecification specification = FIRFilterSpecification.highPassBuilder()
 //		        .sampleRate( 24000 )
@@ -74,19 +75,21 @@ public class FilterViewer extends Application
 
 //		taps = FilterFactory.getLowPass( 16000, 2400, 73, WindowType.HANNING );
 
-        try
-        {
-            RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
+        taps = FilterFactory.getRootRaisedCosine(2 * 8, 16, (12500.0f / 9600.0f - 1.0f));
 
-            if(designer.isValid())
-            {
-                taps = designer.getImpulseResponse();
-            }
-        }
-        catch(FilterDesignException fde)
-        {
-            mLog.error("Filter design error", fde);
-        }
+//        try
+//        {
+//            RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
+//
+//            if(designer.isValid())
+//            {
+//                taps = designer.getImpulseResponse();
+//            }
+//        }
+//        catch(FilterDesignException fde)
+//        {
+//            mLog.error("Filter design error", fde);
+//        }
 
         return taps;
     }

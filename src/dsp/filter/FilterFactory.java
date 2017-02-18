@@ -662,16 +662,22 @@ public class FilterFactory
      *
      * Symbols = -44 * alpha + 33
      *
+     * Polyphase Channelizer notes:
+     * -Set samples Per Symbol at 2 (or more) * number of channels
+     * -Set symbolCount to sufficient size to produce requireded attenuation
+     * -Set symbol rate in hertz
+     * -Set alpha = (desired channel bandwidth / (symbol rate * samples per symbol) - 1.0
+     * -Channel bandwidth must be larger than symbol rate * samples per symbol, in order for there to be a positive alpha
+     *
      * @param samplesPerSymbol - number of samples per symbol
-     * @param symbols - number of symbols - must be even
-     * @param alpha - roll-off factor
+     * @param symbolCount - number of symbol intervals for the filter.  This directly impacts the filter size
+     * @param alpha - roll-off factor.
+     *
      * @return - filter coefficients
      */
-    public static float[] getRootRaisedCosine(int samplesPerSymbol,
-                                              int symbols,
-                                              float alpha)
+    public static float[] getRootRaisedCosine(int samplesPerSymbol, int symbolCount, float alpha)
     {
-        int taps = samplesPerSymbol * symbols + 1;
+        int taps = samplesPerSymbol * symbolCount;
 
         float scale = 0;
 
