@@ -20,6 +20,7 @@ package dsp.mixer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sample.complex.ComplexBuffer;
 
 import java.util.Arrays;
 
@@ -111,16 +112,57 @@ public class LowPhaseNoiseOscillator
 
     public static void main(String[] args)
     {
-        LowPhaseNoiseOscillator o = new LowPhaseNoiseOscillator(10, 1);
+        int sampleRate = 10000000;
+        int frequency = 24000;
+        int sampleSize = 65536;
+        int warmUpIterations = 100000;
+        int testIterations = 500000;
 
-        float[] samples = o.generate(20);
+        LowPhaseNoiseOscillator o = new LowPhaseNoiseOscillator(sampleRate, frequency);
 
-        StringBuilder sb = new StringBuilder();
-        for(int x = 0; x < samples.length; x += 2)
+        mLog.debug("Warming up ...");
+
+        for(int x = 0; x < warmUpIterations; x++)
         {
-            sb.append(samples[x]).append(" ").append(samples[x + 1]).append("\n");
+            float[] samples = o.generate(sampleSize);
         }
 
-        mLog.debug("Samples:\n" + sb.toString());
+        mLog.debug("Testing ...");
+
+        long start = System.nanoTime();
+
+        for(int x = 0; x < testIterations; x++)
+        {
+            float[] samples = o.generate(sampleSize);
+        }
+
+        long duration = System.nanoTime() - start;
+
+        double durationSeconds = (double)duration / 1000000000.0;
+        mLog.debug("New Took:" + durationSeconds + " seconds to generate " + (testIterations * sampleSize) + " samples");
+
+        Oscillator o2 = new Oscillator(frequency, sampleRate);
+
+        mLog.debug("Warming up ...");
+
+        for(int x = 0; x < warmUpIterations; x++)
+        {
+            ComplexBuffer samples = o2.generateComplexBuffer(sampleSize);
+        }
+
+        mLog.debug("Testing ...");
+
+        long start2 = System.nanoTime();
+
+        for(int x = 0; x < testIterations; x++)
+        {
+            float[] samples = o.generate(sampleSize);
+        }
+
+        long duration2 = System.nanoTime() - start2;
+
+        double durationSeconds2 = (double)duration2 / 1000000000.0;
+        mLog.debug("New Took:" + durationSeconds2 + " seconds to generate " + (testIterations * sampleSize) + " samples");
+
     }
 }

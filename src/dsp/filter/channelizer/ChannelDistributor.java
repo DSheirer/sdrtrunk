@@ -26,6 +26,7 @@ import sample.complex.ComplexBuffer;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Queue;
 
 public class ChannelDistributor
 {
@@ -85,7 +86,7 @@ public class ChannelDistributor
         public void receive(float inphase, float quadrature)
         {
             mBuffer[mBufferPointer++] = inphase;
-            mBuffer[mBufferPointer++] = inphase;
+            mBuffer[mBufferPointer++] = quadrature;
 
             if(mBufferPointer >= mBufferSize)
             {

@@ -19,10 +19,7 @@
 package dsp.filter.channelizer;
 
 import dsp.filter.FilterFactory;
-import dsp.filter.design.FilterDesignException;
-import dsp.filter.fir.FIRFilterSpecification;
 import dsp.filter.fir.real.RealFIRFilter;
-import dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import dsp.mixer.Oscillator;
 import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
@@ -32,16 +29,16 @@ import sample.complex.ComplexBuffer;
 
 import java.text.DecimalFormat;
 
-public class PolyphaseChannelizer implements Listener<ComplexBuffer>
+public class PolyphaseChannelizer2 implements Listener<ComplexBuffer>
 {
-    private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelizer.class);
+    private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelizer2.class);
 
-    private RealFIRFilter[] mFilters;
+    private RealFIRFilter[] mInphaseFilters;
+    private RealFIRFilter[] mQuadratureFilters;
     private int mFilterPointer = 0;
     private int mChannelCount;
     private int mBlockSize;
     private float[] mFilteredSamples;
-    private boolean mToggle = false;
     private FloatFFT_1D mFFT;
     private ChannelDistributor mChannelDistributor;
 
@@ -59,7 +56,7 @@ public class PolyphaseChannelizer implements Listener<ComplexBuffer>
      * @param channels - number of filters/channels to output.  Since this filter bank oversamples each filter
      * output, this number must be even (divisible by the oversample rate).
      */
-    public PolyphaseChannelizer(float[] taps, int channels)
+    public PolyphaseChannelizer2(float[] taps, int channels)
     {
         assert(channels % 2 == 0);
 
@@ -70,22 +67,15 @@ public class PolyphaseChannelizer implements Listener<ComplexBuffer>
 
     public void filter(float inphase, float quadrature)
     {
-        int iIndex = 2 * mFilterPointer;
-        int qIndex = iIndex + 1;
+        int index = mFilterPointer * 2;
 
-        mFilteredSamples[iIndex] = mFilters[iIndex].filter(inphase);
-        mFilteredSamples[qIndex] = mFilters[qIndex].filter(quadrature);
+        mFilteredSamples[index] = mInphaseFilters[mFilterPointer].filter(inphase);
+        mFilteredSamples[index + 1] = mQuadratureFilters[mFilterPointer].filter(quadrature);
 
         if(mFilterPointer == 0)
         {
             calculate();
             mFilterPointer = mChannelCount - 1;
-            mToggle = !mToggle;
-        }
-        else if(mFilterPointer == mBlockSize)
-        {
-            calculate();
-            mFilterPointer--;
         }
         else
         {
@@ -106,17 +96,8 @@ public class PolyphaseChannelizer implements Listener<ComplexBuffer>
 
     private void calculate()
     {
-        float[] samples = new float[mFilters.length];
-
-        if(mToggle)
-        {
-            System.arraycopy(mFilteredSamples, 0, samples, mChannelCount, mChannelCount);
-            System.arraycopy(mFilteredSamples, mChannelCount, samples, 0, mChannelCount);
-        }
-        else
-        {
-            System.arraycopy(mFilteredSamples, 0, samples, 0, mFilteredSamples.length);
-        }
+        float[] samples = new float[mChannelCount * 2];
+        System.arraycopy(mFilteredSamples, 0, samples, 0, mFilteredSamples.length);
 
         //FFT is executed in-place where the output overwrites the input
         mFFT.complexForward(samples);
@@ -166,20 +147,17 @@ public class PolyphaseChannelizer implements Listener<ComplexBuffer>
             }
         }
 
-        mFilters = new RealFIRFilter[mChannelCount * 2];
+        mInphaseFilters = new RealFIRFilter[mChannelCount];
+        mQuadratureFilters = new RealFIRFilter[mChannelCount];
 
         for(int filter = 0; filter < mChannelCount; filter++)
         {
-            //Inphase filter
-            mFilters[2 * filter] = new RealFIRFilter(coefficients[filter], 1.0f);
-
-            //Quadrature filter
-            mFilters[2 * filter + 1] = new RealFIRFilter(coefficients[filter], 1.0f);
+            mInphaseFilters[filter] = new RealFIRFilter(coefficients[filter], 1.0f);
+            mQuadratureFilters[filter] = new RealFIRFilter(coefficients[filter], 1.0f);
         }
 
-        mFilteredSamples = new float[mFilters.length];
+        mFilteredSamples = new float[mChannelCount * 2];
         mFFT = new FloatFFT_1D(mChannelCount);
-        mBlockSize = mChannelCount / 2;
         mFilterPointer = mChannelCount -1;
     }
 
@@ -209,7 +187,7 @@ public class PolyphaseChannelizer implements Listener<ComplexBuffer>
 
         mLog.debug(sb.toString());
 
-        PolyphaseChannelizer channelizer = new PolyphaseChannelizer(taps, 8);
+        PolyphaseChannelizer2 channelizer = new PolyphaseChannelizer2(taps, 8);
 
         Oscillator oscillator = new Oscillator(channelCenter, 2 * sampleRate);
 

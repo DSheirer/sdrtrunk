@@ -96,7 +96,7 @@ public class ChannelizerViewer extends JFrame
 
     private void generateSamples()
     {
-        int size = mChannelCount * CHANNEL_BANDWIDTH / CHANNEL_FFT_FRAME_RATE * 2;
+        int size = mSampleRate / CHANNEL_FFT_FRAME_RATE;
 
         float[] samples = mOscillator.generate(size);
 
@@ -137,10 +137,13 @@ public class ChannelizerViewer extends JFrame
         if(mControlPanel == null)
         {
             mControlPanel = new JPanel();
+            mControlPanel.setLayout(new MigLayout("insets 0 0 0 0", "", ""));
 
+            mControlPanel.add(new JLabel("Tone:"), "align left");
             int maximumFrequency = mSampleRate / 2;
 
-            SpinnerNumberModel model = new SpinnerNumberModel(mToneFrequency, -maximumFrequency, maximumFrequency, CHANNEL_BANDWIDTH );
+            SpinnerNumberModel model = new SpinnerNumberModel(mToneFrequency, -maximumFrequency, maximumFrequency,
+                500 );
 
             model.addChangeListener(new ChangeListener()
             {
@@ -155,6 +158,12 @@ public class ChannelizerViewer extends JFrame
             JSpinner spinner = new JSpinner(model);
 
             mControlPanel.add(spinner);
+            mControlPanel.add(new JLabel("Hz"));
+
+            mControlPanel.add(new JLabel("Sample Rate: " + mSampleRate + " Hz"), "push,align right");
+
+            mControlPanel.add(new JLabel("Max: " + (mSampleRate / 2) + " Hz"), "push,align right");
+            mControlPanel.add(new JLabel("Channels: " + mChannelCount), "push,align right");
         }
 
         return mControlPanel;
@@ -174,7 +183,7 @@ public class ChannelizerViewer extends JFrame
     {
         int symbolRate = 4800;
         int samplesPerSymbol = 2;
-        int symbolCount = 8;
+        int symbolCount = 14;
 
         //Alpha is the residual channel bandwidth left over from the symbol rate and samples per symbol
         float alpha = ((float)CHANNEL_BANDWIDTH / (float)(symbolRate * samplesPerSymbol)) - 1.0f;
@@ -193,7 +202,7 @@ public class ChannelizerViewer extends JFrame
 
     public class ChannelArrayPanel extends JPanel implements Listener<ComplexBuffer>
     {
-        private PolyphaseChannelizer mPolyphaseChannelizer;
+        private PolyphaseChannelizer2 mPolyphaseChannelizer;
         private ChannelDistributor mChannelDistributor;
 
         public ChannelArrayPanel(float[] taps)
@@ -204,7 +213,7 @@ public class ChannelizerViewer extends JFrame
                 bufferSize++;
             }
 
-            mPolyphaseChannelizer = new PolyphaseChannelizer(taps, mChannelCount);
+            mPolyphaseChannelizer = new PolyphaseChannelizer2(taps, mChannelCount);
             mChannelDistributor = new ChannelDistributor(bufferSize, mChannelCount);
             mPolyphaseChannelizer.setChannelDistributor(mChannelDistributor);
 
@@ -213,21 +222,23 @@ public class ChannelizerViewer extends JFrame
 
         private void init()
         {
-            setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill][grow,fill][grow,fill][grow,fill]", ""));
+            setLayout(new MigLayout("insets 0 0 0 0", "fill", "fill"));
+
+            int channelsPerRow = 32;
 
             for(int x = 0; x < mChannelCount; x++)
             {
                 ChannelPanel channelPanel = new ChannelPanel(mSettingsManager, CHANNEL_BANDWIDTH * 2);
-                channelPanel.setPreferredSize(new Dimension(250,100));
+//                channelPanel.setPreferredSize(new Dimension(250,100));
                 channelPanel.setDFTSize(DFTSize.FFT00512);
 
-                if(x % 4 == 3)
+                if(x % channelsPerRow == channelsPerRow - 1)
                 {
-                    add(channelPanel, "wrap");
+                    add(channelPanel, "grow,push,wrap 2px");
                 }
                 else
                 {
-                    add(channelPanel);
+                    add(channelPanel, "grow,push");
                 }
 
                 mChannelDistributor.addListener(x, channelPanel);
@@ -303,7 +314,7 @@ public class ChannelizerViewer extends JFrame
 
     public static void main(String[] args)
     {
-        int channelCount = 24;
+        int channelCount = 512;
 
         final ChannelizerViewer frame = new ChannelizerViewer(channelCount);
 
