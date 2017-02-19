@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import sample.complex.Complex;
+import sample.complex.ComplexBuffer;
 
 public class Oscillator
 {
@@ -109,5 +110,26 @@ public class Oscillator
 	public float getFloat()
 	{
 		return mCurrentAngle.real();
+	}
+
+	/**
+	 * Generates the requested number of complex samples and returns them in a complex buffer
+	 * @param sampleCount to generate
+	 * @return complex buffer containing the requested complex samples
+	 */
+	public ComplexBuffer generateComplexBuffer(int sampleCount)
+	{
+		float[] buffer = new float[sampleCount * 2];
+
+		for(int x = 0; x < sampleCount; x++)
+		{
+			int index = 2 * x;
+			buffer[index] = inphase();
+			buffer[index + 1] = quadrature();
+
+			rotate();
+		}
+
+		return new ComplexBuffer(buffer);
 	}
 }

@@ -43,6 +43,7 @@ public class PolyphaseChannelizer implements Listener<ComplexBuffer>
     private float[] mFilteredSamples;
     private boolean mToggle = false;
     private FloatFFT_1D mFFT;
+    private ChannelDistributor mChannelDistributor;
 
     private DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0000");
 
@@ -125,15 +126,15 @@ public class PolyphaseChannelizer implements Listener<ComplexBuffer>
 
     private void dispatch(float[] channels)
     {
-//        StringBuilder sb = new StringBuilder();
-//
-//        for(int x = 0; x < channels.length; x += 2)
-//        {
-//            sb.append((x/2)).append("[")
-//                .append(DECIMAL_FORMAT.format(magnitude(channels[x], channels[x + 1], mChannelCount))).append("] ");
-//        }
-//
-//        mLog.debug("Out: " + sb.toString());
+        if(mChannelDistributor != null)
+        {
+            mChannelDistributor.receive(channels);
+        }
+    }
+
+    public void setChannelDistributor(ChannelDistributor channelDistributor)
+    {
+        mChannelDistributor = channelDistributor;
     }
 
     private double magnitude(float real, float imaginary, int fftSize)
