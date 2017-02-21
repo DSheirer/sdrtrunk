@@ -19,6 +19,9 @@
 package dsp.filter.channelizer;
 
 import dsp.filter.FilterFactory;
+import dsp.filter.design.FilterDesignException;
+import dsp.filter.fir.FIRFilterSpecification;
+import dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import dsp.mixer.LowPhaseNoiseOscillator;
 import dsp.mixer.Oscillator;
 import net.miginfocom.swing.MigLayout;
@@ -65,7 +68,7 @@ public class ChannelizerViewer extends JFrame
     {
         mChannelCount = channelCount;
         mSampleRate = mChannelCount * CHANNEL_BANDWIDTH;
-        mToneFrequency = (int)(CHANNEL_BANDWIDTH * 3); //Set to channel 1 as default
+        mToneFrequency = (int)(CHANNEL_BANDWIDTH * 1); //Set to channel 1 as default
 
         init();
     }
@@ -143,7 +146,7 @@ public class ChannelizerViewer extends JFrame
             int maximumFrequency = mSampleRate / 2;
 
             SpinnerNumberModel model = new SpinnerNumberModel(mToneFrequency, -maximumFrequency, maximumFrequency,
-                500 );
+                100 );
 
             model.addChangeListener(new ChangeListener()
             {
@@ -186,9 +189,38 @@ public class ChannelizerViewer extends JFrame
         int symbolCount = 14;
 
         //Alpha is the residual channel bandwidth left over from the symbol rate and samples per symbol
-        float alpha = ((float)CHANNEL_BANDWIDTH / (float)(symbolRate * samplesPerSymbol)) - 1.0f;
+//        float alpha = ((float)CHANNEL_BANDWIDTH / (float)(symbolRate * samplesPerSymbol)) - 1.0f;
 
-        float[] taps = FilterFactory.getRootRaisedCosine(samplesPerSymbol * mChannelCount, symbolCount, alpha);
+        float alpha = 0.8f;
+
+//        float[] taps = FilterFactory.getRootRaisedCosine(samplesPerSymbol * mChannelCount, symbolCount, alpha);
+        float[] taps = null;
+
+        FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
+            .sampleRate(CHANNEL_BANDWIDTH * 2 * mChannelCount)
+            .gridDensity(16)
+            .passBandAmplitude(1.0)
+            .passBandCutoff(11900)
+            .passBandRipple(0.01)
+            .stopBandAmplitude(0.0)
+            .stopBandRipple(0.001)
+            .stopBandStart(13100)
+            .build();
+
+        try
+        {
+            RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
+
+            if(designer.isValid())
+            {
+                taps = designer.getImpulseResponse();
+            }
+        }
+        catch(FilterDesignException fde)
+        {
+            mLog.error("Filter design error", fde);
+        }
+
 
         StringBuilder sb = new StringBuilder();
         sb.append("\nPolyphase Channelizer\n");
@@ -224,7 +256,7 @@ public class ChannelizerViewer extends JFrame
         {
             setLayout(new MigLayout("insets 0 0 0 0", "fill", "fill"));
 
-            int channelsPerRow = 32;
+            int channelsPerRow = 16;
 
             for(int x = 0; x < mChannelCount; x++)
             {
@@ -314,7 +346,7 @@ public class ChannelizerViewer extends JFrame
 
     public static void main(String[] args)
     {
-        int channelCount = 512;
+        int channelCount = 4;
 
         final ChannelizerViewer frame = new ChannelizerViewer(channelCount);
 

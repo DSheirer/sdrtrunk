@@ -67,7 +67,7 @@ public class PolyphaseChannelizer2 implements Listener<ComplexBuffer>
 
     public void filter(float inphase, float quadrature)
     {
-        int index = mFilterPointer * 2;
+        int index = (mChannelCount - mFilterPointer - 1) * 2;
 
         mFilteredSamples[index] = mInphaseFilters[mFilterPointer].filter(inphase);
         mFilteredSamples[index + 1] = mQuadratureFilters[mFilterPointer].filter(quadrature);
