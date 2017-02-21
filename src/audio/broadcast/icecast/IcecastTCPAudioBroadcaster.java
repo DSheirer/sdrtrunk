@@ -147,6 +147,8 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
 
                         disconnect();
                     }
+
+                    mConnecting.set(false);
                 }
             };
 
@@ -293,8 +295,6 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                 setBroadcastState(BroadcastState.ERROR);
                 disconnect();
             }
-
-            mConnecting.set(false);
         }
 
         @Override

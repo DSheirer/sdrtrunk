@@ -65,7 +65,7 @@ public enum UltravoxMetadata
     {
         StringBuilder sb = new StringBuilder();
         sb.append("<").append(getXMLTag()).append(">");
-        sb.append(URLEncoder.encode(value, "UTF-8"));
+        sb.append(new String(value.getBytes(), "UTF-8"));
         sb.append("</").append(getXMLTag()).append(">");
 
         return sb.toString();
