@@ -82,7 +82,7 @@ public class AliasModel extends AbstractTableModel
         {
             for(Alias alias : mAliases)
             {
-                if(alias.getList().equalsIgnoreCase(name))
+                if(alias.hasList() && alias.getList().equalsIgnoreCase(name))
                 {
                     aliasList.addAlias(alias);
                 }
