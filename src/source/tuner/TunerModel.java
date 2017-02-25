@@ -108,7 +108,7 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
 			{
 				mLog.error( "Couldn't apply tuner configuration to tuner - ["
 					+ tuner.getTunerType().name() + "] with id ["
-					+ tuner.getUniqueID() + "] - tuner will not be included", se );
+					+ tuner.getUniqueID() + "] - tuner will not be included" );
 			}
 			
 		}
