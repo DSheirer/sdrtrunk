@@ -113,7 +113,16 @@ public class FCD2TunerController extends FCDTunerController
             FCD2TunerConfiguration fcd2 = (FCD2TunerConfiguration)config;
 
             setFrequencyCorrection(fcd2.getFrequencyCorrection());
-            setFrequency(fcd2.getFrequency());
+
+            long frequency = MINIMUM_TUNABLE_FREQUENCY;
+
+            if(fcd2.getFrequency() >= MINIMUM_TUNABLE_FREQUENCY &&
+                fcd2.getFrequency() <= MAXIMUM_TUNABLE_FREQUENCY)
+            {
+                frequency = fcd2.getFrequency();
+            }
+
+            setFrequency(frequency);
             setLNAGain(fcd2.getGainLNA());
             setMixerGain(fcd2.getGainMixer());
 
