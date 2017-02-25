@@ -18,6 +18,8 @@
  ******************************************************************************/
 package alias.id;
 
+import org.apache.commons.lang3.Validate;
+
 import java.util.regex.Pattern;
 
 public class WildcardID implements Comparable<WildcardID>
@@ -45,7 +47,7 @@ public class WildcardID implements Comparable<WildcardID>
      */
     public WildcardID(String value)
     {
-        assert(value != null && value.contains(WILDCARD) && value.length() < 10);
+        Validate.isTrue(value != null && value.contains(WILDCARD) && value.length() < 10);
 
         mValue = value;
 

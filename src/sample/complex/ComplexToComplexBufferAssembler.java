@@ -17,6 +17,7 @@
  ******************************************************************************/
 package sample.complex;
 
+import org.apache.commons.lang3.Validate;
 import sample.Listener;
 
 /**
@@ -32,7 +33,7 @@ public class ComplexToComplexBufferAssembler implements ComplexSampleListener
 	
 	public ComplexToComplexBufferAssembler( int bufferSize )
 	{
-		assert( bufferSize % 2 == 0 );
+		Validate.isTrue(bufferSize % 2 == 0);
 		
 		mBufferSize = bufferSize;
 		mBuffer = new float[ mBufferSize ];

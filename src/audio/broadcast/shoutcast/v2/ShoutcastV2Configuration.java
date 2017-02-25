@@ -21,6 +21,7 @@ package audio.broadcast.shoutcast.v2;
 import audio.broadcast.BroadcastConfiguration;
 import audio.broadcast.BroadcastFormat;
 import audio.broadcast.BroadcastServerType;
+import org.apache.commons.lang3.Validate;
 
 import javax.xml.bind.annotation.XmlAttribute;
 
@@ -90,7 +91,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
      */
     public void setStreamID(int streamID)
     {
-        assert(1 <= streamID && streamID <= Integer.MAX_VALUE);
+        Validate.isTrue(1 <= streamID && streamID <= Integer.MAX_VALUE);
         mStreamID = streamID;
     }
 

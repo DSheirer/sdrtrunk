@@ -30,6 +30,7 @@ import java.util.Arrays;
 
 import javax.swing.JPanel;
 
+import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -282,7 +283,7 @@ public class SpectrumPanel extends JPanel
      */
     public void setZoom( int zoom )
     {
-    	assert( 0 <= zoom && zoom <= 5 );
+    	Validate.isTrue( 0 <= zoom && zoom <= 5 );
     	
     	mZoom = zoom;
     }
@@ -305,7 +306,7 @@ public class SpectrumPanel extends JPanel
 	 */
 	public void setSampleSize( double sampleSize )
 	{
-		assert( 2.0 <= sampleSize && sampleSize <= 32.0 );
+		Validate.isTrue(2.0 <= sampleSize && sampleSize <= 32.0);
 
 		mDBScale = (float)( 20.0 * Math.log10( Math.pow( 2.0, sampleSize - 1 ) ) );
 	}

@@ -19,6 +19,7 @@
 package audio.broadcast.shoutcast.v2.ultravox;
 
 import bits.BinaryMessage;
+import org.apache.commons.lang3.Validate;
 
 import java.util.Arrays;
 
@@ -154,7 +155,7 @@ public abstract class UltravoxMessage
      */
     public void setSendQueuePriority(int priority)
     {
-        assert(0 <= priority && priority <= 7);
+        Validate.isTrue(0 <= priority && priority <= 7);
 
         mMessage.setInt(priority, SEND_QUEUE_PRIORITY);
     }

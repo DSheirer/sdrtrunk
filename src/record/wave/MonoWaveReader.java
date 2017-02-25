@@ -18,6 +18,7 @@
  ******************************************************************************/
 package record.wave;
 
+import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sample.ConversionUtils;
@@ -58,7 +59,7 @@ public class MonoWaveReader implements AutoCloseable
      */
 	public MonoWaveReader(Path path, boolean realTime) throws IOException
 	{
-		assert( path != null );
+        Validate.isTrue(path != null);
 		mPath = path;
         mRealTime = realTime;
 

@@ -18,6 +18,8 @@
  ******************************************************************************/
 package util;
 
+import org.apache.commons.lang3.Validate;
+
 import java.util.Arrays;
 
 public class XTEA
@@ -58,7 +60,7 @@ public class XTEA
      */
     public void setKey(byte[] key)
     {
-        assert(key.length == 16);
+        Validate.isTrue(key.length == 16);
 
         int keyInts[] = new int[8];
         
@@ -94,7 +96,7 @@ public class XTEA
      */
     public byte[] encrypt(byte[] plainText)
     {
-        assert(plainText.length == 8);
+        Validate.isTrue(plainText.length == 8);
 
         //Convert the 8 bytes of plaintext to 2 integers
         int result0 = (plainText[3] << 0) & MASK0 | (plainText[2] << 8) & MASK1 |

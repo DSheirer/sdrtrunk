@@ -22,6 +22,7 @@ import java.util.BitSet;
 import java.util.logging.LogManager;
 
 import edac.CRC;
+import org.apache.commons.lang3.Validate;
 
 public class BinaryMessage extends BitSet
 {
@@ -456,7 +457,7 @@ public class BinaryMessage extends BitSet
      */
     public byte getByte(int index)
     {
-        assert((index + 7) <= size());
+        Validate.isTrue((index + 7) <= size());
 
         int value = 0;
 
@@ -481,7 +482,7 @@ public class BinaryMessage extends BitSet
      */
     public void setByte(int index, byte value)
     {
-        assert((index + 8) <= size());
+        Validate.isTrue((index + 8) <= size());
 
         int mask = 0x80;
 

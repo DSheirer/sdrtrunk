@@ -17,6 +17,8 @@
  ******************************************************************************/
 package record.wave;
 
+import org.apache.commons.lang3.Validate;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -59,8 +61,8 @@ public class WaveWriter implements AutoCloseable
 	public WaveWriter( AudioFormat format, Path file, long maxSize ) 
 			throws IOException
 	{
-		assert( format != null );
-		assert( file != null );
+		Validate.isTrue(format != null);
+		Validate.isTrue( file != null );
 		
 		mAudioFormat = format;
 		mFile = file;

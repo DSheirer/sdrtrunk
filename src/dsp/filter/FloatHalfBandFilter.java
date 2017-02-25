@@ -19,6 +19,7 @@ package dsp.filter;
 
 import java.util.ArrayList;
 
+import org.apache.commons.lang3.Validate;
 import sample.real.RealSampleListener;
 
 public class FloatHalfBandFilter implements RealSampleListener
@@ -149,7 +150,7 @@ public class FloatHalfBandFilter implements RealSampleListener
 	private void generateIndexMap( int size )
 	{
 		//Ensure we have an odd size
-		assert( size % 2 == 1 );
+		Validate.isTrue(size % 2 == 1);
 
 		int mapWidth = ( ( size + 1 ) / 2 ) + 1;
 		
