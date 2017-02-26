@@ -26,6 +26,7 @@ import controller.channel.ChannelUtils;
 import icon.IconManager;
 import module.ProcessingChain;
 import net.miginfocom.swing.MigLayout;
+import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import properties.SystemProperties;
@@ -140,7 +141,7 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
 
         public AliasedValueCellRenderer(Attribute attribute)
         {
-            assert(attribute != null);
+            Validate.isTrue(attribute != null);
             mAttribute = attribute;
             setHorizontalAlignment(JLabel.CENTER);
         }

@@ -20,6 +20,7 @@ package dsp.filter.cic;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,7 +82,7 @@ public class RealPrimeCICDecimate
 	public RealPrimeCICDecimate( int decimation, int order, int passFrequency, 
 			int attenuation, WindowType windowType, int outputBufferSize )
 	{
-		assert( decimation <= 700 );
+		Validate.isTrue(decimation <= 700);
 
 		mOutputBufferSize = outputBufferSize;
 

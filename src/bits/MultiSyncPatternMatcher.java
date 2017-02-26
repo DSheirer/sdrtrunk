@@ -17,6 +17,8 @@
  ******************************************************************************/
 package bits;
 
+import org.apache.commons.lang3.Validate;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,7 +41,7 @@ public class MultiSyncPatternMatcher
 	
 	public MultiSyncPatternMatcher( int syncSize )
 	{
-		assert( syncSize < 64 );
+		Validate.isTrue(syncSize < 64);
 		
 		//Setup a bit mask of all ones the length of the sync pattern
 		mMask = (long)( ( Math.pow( 2, syncSize ) ) - 1 );

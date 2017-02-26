@@ -20,6 +20,7 @@ package dsp.filter.cic;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang3.Validate;
 import sample.Listener;
 import sample.complex.ComplexBuffer;
 import sample.complex.ComplexSampleListener;
@@ -67,7 +68,7 @@ public class ComplexPrimeCICDecimate implements Listener<ComplexBuffer>
 	public ComplexPrimeCICDecimate( int decimation, int order, 
 			int passFrequency, int attenuation, WindowType windowType )
 	{
-		assert( decimation <= 700 );
+		Validate.isTrue(decimation <= 700);
 		
 
 		List<Integer> stageSizes = getPrimeFactors( decimation );

@@ -20,6 +20,7 @@ package sample.adapter;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
+import org.apache.commons.lang3.Validate;
 import source.mixer.MixerChannel;
 
 /**
@@ -34,7 +35,7 @@ public class ChannelShortAdapter implements ISampleAdapter
 	public ChannelShortAdapter( MixerChannel channel )
 	{
 		/* Only use with LEFT/RIGHT channels */
-		assert( channel != MixerChannel.MONO );
+		Validate.isTrue(channel != MixerChannel.MONO);
 		
 		mMixerChannel = channel;
 	}

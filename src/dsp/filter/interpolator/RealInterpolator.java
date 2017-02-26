@@ -1,5 +1,6 @@
 package dsp.filter.interpolator;
 
+import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +32,7 @@ public class RealInterpolator extends Interpolator
 	public float filter( float[] samples, int offset, float mu )
 	{
 		/* Ensure we have enough samples in the array */
-		assert( samples.length >= offset + 7 );
+		Validate.isTrue(samples.length >= offset + 7);
 
 		/* Identify the filter bank that corresponds to mu */
 		int index = (int)( NSTEPS * mu );

@@ -18,6 +18,8 @@
  ******************************************************************************/
 package audio.broadcast.shoutcast.v2.ultravox;
 
+import org.apache.commons.lang3.Validate;
+
 public class NegotiateMaxPayloadSize extends UltravoxMessage
 {
     /**
@@ -47,8 +49,8 @@ public class NegotiateMaxPayloadSize extends UltravoxMessage
      */
     public void setMaximumPayloadSize(int desiredMaximum, int minimum)
     {
-        assert(desiredMaximum <= 16377);
-        assert(minimum <= 16377);
+        Validate.isTrue(desiredMaximum <= 16377);
+        Validate.isTrue(minimum <= 16377);
 
         StringBuilder sb = new StringBuilder();
         sb.append(desiredMaximum).append(":").append(minimum);

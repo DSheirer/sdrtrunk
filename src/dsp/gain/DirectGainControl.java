@@ -17,6 +17,7 @@
  ******************************************************************************/
 package dsp.gain;
 
+import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +50,7 @@ public class DirectGainControl implements GainController, RealSampleListener
 	 */
 	public DirectGainControl( float gain, float minimum, float maximum, float increment )
 	{
-		assert( minimum > 0 );
+		Validate.isTrue(minimum > 0);
 
 		mDefaultGain = gain;
 		mGain = gain;

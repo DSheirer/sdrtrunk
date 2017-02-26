@@ -17,6 +17,8 @@
  ******************************************************************************/
 package dsp.filter.halfband.real;
 
+import org.apache.commons.lang3.Validate;
+
 public class HalfBandFilter
 {
 	private float[] mBuffer;
@@ -122,7 +124,7 @@ public class HalfBandFilter
 	private void generateIndexMap( int size )
 	{
 		//Ensure we have an odd size
-		assert( size % 2 == 1 );
+		Validate.isTrue(size % 2 == 1);
 
 		int mapWidth = ( ( size + 1 ) / 2 ) + 1;
 		

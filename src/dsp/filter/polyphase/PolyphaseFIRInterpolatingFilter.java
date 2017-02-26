@@ -18,6 +18,7 @@
  ******************************************************************************/
 package dsp.filter.polyphase;
 
+import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,7 +54,7 @@ public class PolyphaseFIRInterpolatingFilter
 	public PolyphaseFIRInterpolatingFilter( double[] coefficients, int interpolation )
 	{
 		/* Ensure coefficients are an integral multiple of the interpolation factor */
-		assert( coefficients.length % interpolation == 0 );
+		Validate.isTrue(coefficients.length % interpolation == 0);
 		
 		mTaps = coefficients;
 
