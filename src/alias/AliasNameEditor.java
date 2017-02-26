@@ -40,10 +40,11 @@ public class AliasNameEditor extends Editor<Alias>
 {
     private static final long serialVersionUID = 1L;
 
-    private static ComboBoxModel<String> EMPTY_MODEL = new DefaultComboBoxModel<>();
+    private static ComboBoxModel<String> EMPTY_LIST_MODEL = new DefaultComboBoxModel<>();
+    private static ComboBoxModel<String> EMPTY_GROUP_MODEL = new DefaultComboBoxModel<>();
 
-    private JComboBox<String> mListCombo = new JComboBox<>(EMPTY_MODEL);
-    private JComboBox<String> mGroupCombo = new JComboBox<>(EMPTY_MODEL);
+    private JComboBox<String> mListCombo = new JComboBox<>(EMPTY_LIST_MODEL);
+    private JComboBox<String> mGroupCombo = new JComboBox<>(EMPTY_GROUP_MODEL);
     private JComboBox<Icon> mIconCombo;
     private JTextField mName;
     private JButton mButtonColor;
@@ -110,7 +111,7 @@ public class AliasNameEditor extends Editor<Alias>
 
                     if(groups.isEmpty())
                     {
-                        mGroupCombo.setModel(EMPTY_MODEL);
+                        mGroupCombo.setModel(EMPTY_GROUP_MODEL);
                     }
                     else
                     {
@@ -238,7 +239,7 @@ public class AliasNameEditor extends Editor<Alias>
 
             if(listNames.isEmpty())
             {
-                mListCombo.setModel(EMPTY_MODEL);
+                mListCombo.setModel(EMPTY_LIST_MODEL);
             }
             else
             {
@@ -253,7 +254,7 @@ public class AliasNameEditor extends Editor<Alias>
 
             if(groupNames.isEmpty())
             {
-                mGroupCombo.setModel(EMPTY_MODEL);
+                mGroupCombo.setModel(EMPTY_GROUP_MODEL);
             }
             else
             {
@@ -285,8 +286,8 @@ public class AliasNameEditor extends Editor<Alias>
         }
         else
         {
-            mListCombo.setModel(EMPTY_MODEL);
-            mGroupCombo.setModel(EMPTY_MODEL);
+            mListCombo.setModel(EMPTY_LIST_MODEL);
+            mGroupCombo.setModel(EMPTY_GROUP_MODEL);
             mName.setText(null);
 
             mButtonColor.setBackground(getBackground());
