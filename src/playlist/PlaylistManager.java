@@ -89,6 +89,7 @@ public class PlaylistManager implements ChannelEventListener
             @Override
             public void receive(AliasEvent t)
             {
+                //Save the playlist for all alias events
                 schedulePlaylistSave();
             }
         });
@@ -98,6 +99,7 @@ public class PlaylistManager implements ChannelEventListener
             @Override
             public void receive(ChannelMapEvent t)
             {
+                //Save the playlist for all channel map events
                 schedulePlaylistSave();
             }
         });
@@ -107,7 +109,23 @@ public class PlaylistManager implements ChannelEventListener
             @Override
             public void receive(BroadcastEvent broadcastEvent)
             {
-                schedulePlaylistSave();
+                switch(broadcastEvent.getEvent())
+                {
+                    case CONFIGURATION_ADD:
+                    case CONFIGURATION_CHANGE:
+                    case CONFIGURATION_DELETE:
+                        schedulePlaylistSave();
+                        break;
+                    case BROADCASTER_ADD:
+                    case BROADCASTER_QUEUE_CHANGE:
+                    case BROADCASTER_STATE_CHANGE:
+                    case BROADCASTER_STREAMED_COUNT_CHANGE:
+                    case BROADCASTER_AGED_OFF_COUNT_CHANGE:
+                    case BROADCASTER_DELETE:
+                    default:
+                        //Do nothing
+                        break;
+                }
             }
         });
     }
