@@ -1,19 +1,20 @@
 /*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
- * 
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- * 
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- * 
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * sdrtrunk
+ * Copyright (C) 2014-2017 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *
  ******************************************************************************/
 package record.wave;
 
@@ -34,10 +35,7 @@ import javax.sound.sampled.AudioFormat;
 
 public class WaveWriter implements AutoCloseable 
 {
-//	private final static Logger mLog = LoggerFactory.getLogger( WaveWriter.class );
-
-	private static final Pattern FILENAME_PATTERN = 
-			Pattern.compile( "(.*_)(\\d+)(\\.wav)" );
+	private static final Pattern FILENAME_PATTERN = Pattern.compile( "(.*_)(\\d+)(\\.wav)" );
 	public static final long MAX_WAVE_SIZE = 2l * (long)Integer.MAX_VALUE;
 	
 	private AudioFormat mAudioFormat;
@@ -58,8 +56,7 @@ public class WaveWriter implements AutoCloseable
 	 * @param maxSize - maximum file size ( range: 1 - 4,294,967,294 bytes )
 	 * @throws IOException - if there are any IO issues
 	 */
-	public WaveWriter( AudioFormat format, Path file, long maxSize ) 
-			throws IOException
+	public WaveWriter( AudioFormat format, Path file, long maxSize ) throws IOException
 	{
 		Validate.isTrue(format != null);
 		Validate.isTrue( file != null );
@@ -102,15 +99,11 @@ public class WaveWriter implements AutoCloseable
 		
 		while( Files.exists( mFile ) )
 		{
-			mFile = Paths.get( mFile.toFile().getAbsolutePath()
-					.replace( ".wav", "_" + version + ".wav" ) );
-			
+			mFile = Paths.get( mFile.toFile().getAbsolutePath().replace( ".wav", "_" + version + ".wav" ) );
 			version++;
 		}
 		
-		Files.createFile( mFile );
-		
-		mFileChannel = (FileChannel.open( mFile, StandardOpenOption.WRITE ) );
+		mFileChannel = (FileChannel.open( mFile, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW ) );
 
 		ByteBuffer header = WaveUtils.getWaveHeader( mAudioFormat );
 		
@@ -129,9 +122,18 @@ public class WaveWriter implements AutoCloseable
 	{
 		mFileChannel.force( true );
 		mFileChannel.close();
+		mFileChannel = null;
 	}
-	
-	/**
+
+    @Override
+    protected void finalize() throws IOException
+    {
+        mFileChannel.force( true );
+        mFileChannel.close();
+        mFileChannel = null;
+    }
+
+    /**
 	 * Writes the buffer contents to the file.  Assumes that the buffer is full 
 	 * and the first byte of data is at position 0.
 	 */
