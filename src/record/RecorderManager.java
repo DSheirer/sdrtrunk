@@ -25,11 +25,15 @@ import properties.SystemProperties;
 import record.wave.ComplexBufferWaveRecorder;
 import record.wave.RealBufferWaveRecorder;
 import sample.Listener;
+import sample.OverflowableTransferQueue;
+import sample.real.IOverflowListener;
 import util.ThreadPool;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -42,7 +46,8 @@ public class RecorderManager implements Listener<AudioPacket>
     public static final long IDLE_RECORDER_REMOVAL_THRESHOLD = 6000; //6 seconds
 
     private Map<String,RealBufferWaveRecorder> mRecorders = new HashMap<>();
-    private ScheduledFuture<?> mRecorderMonitorFuture;
+    private OverflowableTransferQueue<AudioPacket> mAudioPacketQueue = new OverflowableTransferQueue<>(1000, 100);
+    private ScheduledFuture<?> mBufferProcessorFuture;
 
     private boolean mCanStartNewRecorders = true;
 
@@ -55,8 +60,24 @@ public class RecorderManager implements Listener<AudioPacket>
      */
     public RecorderManager()
     {
-        mRecorderMonitorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new RecorderMonitor(), 2,
-            2, TimeUnit.SECONDS);
+        mAudioPacketQueue.setOverflowListener(new IOverflowListener()
+        {
+            @Override
+            public void sourceOverflow(boolean overflow)
+            {
+                if(overflow)
+                {
+                    mLog.warn("overflow - audio packets will be dropped until recording catches up");
+                }
+                else
+                {
+                    mLog.info("audio recorder packet processing has returned to normal");
+                }
+            }
+        });
+
+        mBufferProcessorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new BufferProcessor(), 0,
+            1, TimeUnit.SECONDS);
     }
 
     /**
@@ -64,9 +85,9 @@ public class RecorderManager implements Listener<AudioPacket>
      */
     public void dispose()
     {
-        if(mRecorderMonitorFuture != null)
+        if(mBufferProcessorFuture != null)
         {
-            mRecorderMonitorFuture.cancel(true);
+            mBufferProcessorFuture.cancel(true);
         }
     }
 
@@ -79,10 +100,25 @@ public class RecorderManager implements Listener<AudioPacket>
     {
         if(audioPacket.hasMetadata() && audioPacket.getMetadata().isRecordable())
         {
-            String identifier = audioPacket.getMetadata().getUniqueIdentifier();
+            mAudioPacketQueue.offer(audioPacket);
+        }
+    }
 
-            synchronized(mRecorders)
+    /**
+     * Process any queued audio buffers and dispatch them to the audio recorders
+     */
+    private void processBuffers()
+    {
+        List<AudioPacket> audioPackets = new ArrayList<>();
+
+        mAudioPacketQueue.drainTo(audioPackets, 50);
+
+        while(!audioPackets.isEmpty())
+        {
+            for(AudioPacket audioPacket: audioPackets)
             {
+                String identifier = audioPacket.getMetadata().getUniqueIdentifier();
+
                 if(mRecorders.containsKey(identifier))
                 {
                     RealBufferWaveRecorder recorder = mRecorders.get(identifier);
@@ -128,6 +164,29 @@ public class RecorderManager implements Listener<AudioPacket>
                         }
                     }
                 }
+            }
+
+            audioPackets.clear();
+            mAudioPacketQueue.drainTo(audioPackets, 50);
+        }
+    }
+
+    /**
+     * Removes recorders that have not received any new audio buffers in the last 6 seconds.
+     */
+    private void removeIdleRecorders()
+    {
+        Iterator<Map.Entry<String,RealBufferWaveRecorder>> it = mRecorders.entrySet().iterator();
+
+        while(it.hasNext())
+        {
+            Map.Entry<String,RealBufferWaveRecorder> entry = it.next();
+
+            if(entry.getValue().getLastBufferReceived() + IDLE_RECORDER_REMOVAL_THRESHOLD < System.currentTimeMillis())
+            {
+                mLog.info("Removing idle recorder [" + entry.getKey() + "]");
+                it.remove();
+                entry.getValue().stop();
             }
         }
     }
@@ -175,29 +234,16 @@ public class RecorderManager implements Listener<AudioPacket>
     }
 
     /**
-     * Monitors currently running recorders and removes/closes any recorders that are idle more than 6 seconds
+     * Processes queued audio packets and distributes to each of the audio recorders.  Removes any idle recorders
+     * that have not been updated according to an idle threshold period
      */
-    public class RecorderMonitor implements Runnable
+    public class BufferProcessor implements Runnable
     {
         @Override
         public void run()
         {
-            synchronized(mRecorders)
-            {
-                Iterator<Map.Entry<String,RealBufferWaveRecorder>> it = mRecorders.entrySet().iterator();
-
-                while(it.hasNext())
-                {
-                    Map.Entry<String,RealBufferWaveRecorder> entry = it.next();
-
-                    if(entry.getValue().getLastBufferReceived() + IDLE_RECORDER_REMOVAL_THRESHOLD < System.currentTimeMillis())
-                    {
-                        mLog.info("Removing idle recorder [" + entry.getKey() + "]");
-                        it.remove();
-                        entry.getValue().stop();
-                    }
-                }
-            }
+            processBuffers();
+            removeIdleRecorders();
         }
     }
 }
