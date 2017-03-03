@@ -60,9 +60,6 @@ public class RecorderManager implements Listener<AudioPacket>
      */
     public RecorderManager()
     {
-        mBufferProcessorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new BufferProcessor(), 0,
-            1, TimeUnit.SECONDS);
-
         mAudioPacketQueue.setOverflowListener(new IOverflowListener()
         {
             @Override
@@ -78,6 +75,9 @@ public class RecorderManager implements Listener<AudioPacket>
                 }
             }
         });
+
+        mBufferProcessorFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new BufferProcessor(), 0,
+            1, TimeUnit.SECONDS);
     }
 
     /**
@@ -119,50 +119,47 @@ public class RecorderManager implements Listener<AudioPacket>
             {
                 String identifier = audioPacket.getMetadata().getUniqueIdentifier();
 
-                synchronized(mRecorders)
+                if(mRecorders.containsKey(identifier))
                 {
-                    if(mRecorders.containsKey(identifier))
-                    {
-                        RealBufferWaveRecorder recorder = mRecorders.get(identifier);
+                    RealBufferWaveRecorder recorder = mRecorders.get(identifier);
 
-                        if(audioPacket.getType() == AudioPacket.Type.AUDIO)
-                        {
-                            recorder.receive(audioPacket.getAudioBuffer());
-                        }
-                        else if(audioPacket.getType() == AudioPacket.Type.END)
-                        {
-                            RealBufferWaveRecorder finished = mRecorders.remove(identifier);
-                            finished.stop();
-                        }
+                    if(audioPacket.getType() == AudioPacket.Type.AUDIO)
+                    {
+                        recorder.receive(audioPacket.getAudioBuffer());
                     }
-                    else if(audioPacket.getType() == AudioPacket.Type.AUDIO)
+                    else if(audioPacket.getType() == AudioPacket.Type.END)
                     {
-                        if(mCanStartNewRecorders)
+                        RealBufferWaveRecorder finished = mRecorders.remove(identifier);
+                        finished.stop();
+                    }
+                }
+                else if(audioPacket.getType() == AudioPacket.Type.AUDIO)
+                {
+                    if(mCanStartNewRecorders)
+                    {
+                        String filePrefix = getFilePrefix(audioPacket);
+
+                        RealBufferWaveRecorder recorder = null;
+
+                        try
                         {
-                            String filePrefix = getFilePrefix(audioPacket);
+                            recorder = new RealBufferWaveRecorder(AUDIO_SAMPLE_RATE, filePrefix);
 
-                            RealBufferWaveRecorder recorder = null;
+                            recorder.start(ThreadPool.SCHEDULED);
 
-                            try
+                            recorder.receive(audioPacket.getAudioBuffer());
+                            mRecorders.put(identifier, recorder);
+                        }
+                        catch(Exception ioe)
+                        {
+                            mCanStartNewRecorders = false;
+
+                            mLog.error("Error attempting to start new audio wave recorder. All (future) audio recording " +
+                                "is disabled", ioe);
+
+                            if(recorder != null)
                             {
-                                recorder = new RealBufferWaveRecorder(AUDIO_SAMPLE_RATE, filePrefix);
-
-                                recorder.start(ThreadPool.SCHEDULED);
-
-                                recorder.receive(audioPacket.getAudioBuffer());
-                                mRecorders.put(identifier, recorder);
-                            }
-                            catch(Exception ioe)
-                            {
-                                mCanStartNewRecorders = false;
-
-                                mLog.error("Error attempting to start new audio wave recorder. All (future) audio recording " +
-                                    "is disabled", ioe);
-
-                                if(recorder != null)
-                                {
-                                    recorder.stop();
-                                }
+                                recorder.stop();
                             }
                         }
                     }
@@ -245,11 +242,8 @@ public class RecorderManager implements Listener<AudioPacket>
         @Override
         public void run()
         {
-            synchronized(mRecorders)
-            {
-                processBuffers();
-                removeIdleRecorders();
-            }
+            processBuffers();
+            removeIdleRecorders();
         }
     }
 }
