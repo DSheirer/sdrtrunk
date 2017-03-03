@@ -40,26 +40,26 @@ public class FilterViewer extends Application
      */
     private float[] getFilter()
     {
-        FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-            .sampleRate(100000)
-            .gridDensity(16)
-            .passBandAmplitude(1.0)
-            .passBandCutoff(12000)
-            .passBandRipple(0.01)
-            .stopBandAmplitude(0.0)
-            .stopBandRipple(0.001)
-            .stopBandStart(13000)
-            .build();
+//        FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
+//            .sampleRate(10000)
+//            .gridDensity(16)
+//            .passBandAmplitude(1.0)
+//            .passBandCutoff(4000)
+//            .passBandRipple(0.01)
+//            .stopBandAmplitude(0.0)
+//            .stopBandRipple(0.001)
+//            .stopBandStart(5000)
+//            .build();
 
-//		FIRFilterSpecification specification = FIRFilterSpecification.highPassBuilder()
-//		        .sampleRate( 24000 )
-//		        .stopBandCutoff( 800 )
-//		        .stopBandAmplitude( 0.0 )
-//		        .stopBandRipple( 0.03 )
-//		        .passBandStart( 1000 )
-//		        .passBandAmplitude( 1.0 )
-//		        .passBandRipple( 0.08 )
-//		        .build();
+		FIRFilterSpecification specification = FIRFilterSpecification.highPassBuilder()
+		        .sampleRate( 24000 )
+		        .stopBandCutoff( 800 )
+		        .stopBandAmplitude( 0.0 )
+		        .stopBandRipple( 0.03 )
+		        .passBandStart( 1000 )
+		        .passBandAmplitude( 1.0 )
+		        .passBandRipple( 0.08 )
+		        .build();
 
 //		FIRFilterSpecification specification = FIRFilterSpecification.bandPassBuilder()
 //	        .sampleRate( 48000 )

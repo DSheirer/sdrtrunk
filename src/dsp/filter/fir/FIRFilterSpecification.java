@@ -1,3 +1,21 @@
+/*******************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2017 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *
+ ******************************************************************************/
 package dsp.filter.fir;
 
 import java.text.DecimalFormat;
@@ -19,14 +37,12 @@ public class FIRFilterSpecification
 	/**
 	 * Constructs a Remez filter specification. Use one of the filter builders to construct a Remez
 	 * filter specification.
-	 * 
+	 *
+	 * @param type of filter
 	 * @param order of the filter
-	 * @param frequencyBands containing the start and stop values for each frequency band normalized
-	 *            to the sample rate where each frequency value is in the range (0.0 <> 0.5)
-	 * @param amplitudes of each frequency band
-	 * @param weights of the band ripples normalized to the largest ripple value
+	 * @param gridDensity to use when calculating the coefficients
 	 */
-	private FIRFilterSpecification( FIRLinearPhaseFilterType type, int order, int gridDensity )
+	protected FIRFilterSpecification( FIRLinearPhaseFilterType type, int order, int gridDensity )
 	{
 		mRemezFilterType = type;
 		mOrder = order;
@@ -69,6 +85,14 @@ public class FIRFilterSpecification
 
 		updateGridSize();
 	}
+
+    /**
+     * Removes all frequency bands from this filter specification
+     */
+	public void clearFrequencyBands()
+    {
+        mFrequencyBands.clear();
+    }
 
 	public List<FrequencyBand> getFrequencyBands()
 	{
@@ -868,7 +892,139 @@ public class FIRFilterSpecification
 		}
 	}
 
-	// /**
+    /**
+     * Builder for creating polyphase channelizer low-pass prototype filter.
+     */
+    public static class PolyphaseChannelizerBuilder
+    {
+        private int mOrder;
+        private int mGridDensity = 16;
+        private int mSampleRate;
+        private int mChannelBandwidth;
+        private int mPassFrequencyBegin = 0;
+        private int mPassFrequencyEnd;
+        private int mStopFrequencyBegin;
+        private double mStopRipple = 0.001;
+        private double mPassRipple = 0.01;
+        private double mStopAmplitude = 0.0;
+        private double mPassAmplitude = 1.0;
+
+        public PolyphaseChannelizerBuilder()
+        {
+        }
+
+        /**
+         * Sets the filter sample rate in hertz
+         */
+        public PolyphaseChannelizerBuilder sampleRate(int sampleRate )
+        {
+            mSampleRate = sampleRate;
+            return this;
+        }
+
+        /**
+         * Sets the channel bandwidth in hertz
+         */
+        public PolyphaseChannelizerBuilder channelBandwidth(int channelBandwidth)
+        {
+            mChannelBandwidth = channelBandwidth;
+            return this;
+        }
+
+        /**
+         * Sets the filter order. If the order is not specified, it will be calculated from the
+         * other parameters. If you specify and odd-length order, it will be corrected (+1) to make
+         * it an even order number.
+         */
+        public PolyphaseChannelizerBuilder order(int order )
+        {
+            mOrder = order;
+            return this;
+        }
+
+        /**
+         * Sets the frequency grid density. Default is 16.
+         */
+        public PolyphaseChannelizerBuilder gridDensity(int density )
+        {
+            mGridDensity = density;
+            return this;
+        }
+
+        /**
+         * Specifies the ripple in dB for both stop bands
+         */
+        public PolyphaseChannelizerBuilder stopRipple(double rippleDb )
+        {
+            mStopRipple = rippleDb;
+            return this;
+        }
+
+        /**
+         * Specifies the ripple in dB for the pass band
+         */
+        public PolyphaseChannelizerBuilder passRipple(double rippleDb )
+        {
+            mPassRipple = rippleDb;
+            return this;
+        }
+
+        /**
+         * Specifies the amplitude of the stop bands. Default is 0.0
+         */
+        public PolyphaseChannelizerBuilder stopAmplitude(double amplitude )
+        {
+            mStopAmplitude = amplitude;
+            return this;
+        }
+
+        /**
+         * Specifies the amplitude of the pass band. Default is 1.0
+         */
+        public PolyphaseChannelizerBuilder passAmplitude(double amplitude )
+        {
+            mPassAmplitude = amplitude;
+            return this;
+        }
+
+        public FIRFilterSpecification build()
+        {
+            FIRLinearPhaseFilterType type = FIRLinearPhaseFilterType.TYPE_1_ODD_LENGTH_EVEN_ORDER_SYMMETRICAL;
+
+            if ( mOrder < 10 )
+            {
+                mOrder = estimateBandPassOrder( mSampleRate, mPassFrequencyBegin, mPassFrequencyEnd,
+                    mPassRipple, mStopRipple );
+            }
+
+            // Ensure even order since we're designing a Type 1 filter
+            if ( mOrder % 2 == 1 )
+            {
+                mOrder++;
+            }
+
+            FIRFilterSpecification spec = new FIRFilterSpecification( type, mOrder, mGridDensity );
+
+            //Set pass band to stop at about 80% of channel bandwidth as starting point
+            int passBandStop = (int)(mChannelBandwidth * .80);
+
+            //Set the stop band to start at 40% into the adjacent channel, since we're oversampling by 2.
+            int stopBandStart = (int)(mChannelBandwidth * 1.40);
+
+            FrequencyBand passBand = new FrequencyBand(mSampleRate, 0, passBandStop, 1.0, mPassRipple);
+            FrequencyBand stopBand = new FrequencyBand(mSampleRate, stopBandStart, (int)(mSampleRate / 2),
+                0.0, mStopRipple);
+
+            spec.addFrequencyBand(passBand);
+            spec.addFrequencyBand(stopBand);
+
+            return spec;
+        }
+    }
+
+
+
+    // /**
 	// * Converts the set of band amplitude values into a set of weights
 	// * normalized to the largest band amplitude value
 	// */
@@ -918,7 +1074,7 @@ public class FIRFilterSpecification
 	 * 
 	 * @return estimated filter length
 	 */
-	private static int estimateFilterOrder( int sampleRate, int frequency1, int frequency2,
+	public static int estimateFilterOrder( int sampleRate, int frequency1, int frequency2,
 			double passBandRipple, double stopBandRipple )
 	{
 		double df = Math.abs( frequency2 - frequency1 ) / (double) sampleRate;
