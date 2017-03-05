@@ -86,6 +86,9 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
         loadSettings();
     }
 
+    /**
+     * Loads the saved mixer configuration or a default configuration for audio playback.
+     */
     private void loadSettings()
     {
         MixerChannelConfiguration configuration = null;
@@ -132,6 +135,9 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
         }
     }
 
+    /**
+     * Creates a default audio playback configuration with a mono audio playback channel.
+     */
     private MixerChannelConfiguration getDefaultConfiguration()
     {
         /* Use the system default mixer and mono channel as default startup */
@@ -161,6 +167,9 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
         mAudioOutputConnections.clear();
     }
 
+    /**
+     * Primary ingest point for audio produced by all decoding channels, for distribution to audio playback devices.
+     */
     @Override
     public synchronized void receive(AudioPacket packet)
     {
@@ -176,11 +185,11 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 
         for(AudioOutputConnection connection : mAudioOutputConnections)
         {
-            if(connection.isInactive() &&
-                mChannelConnectionMap.containsKey(connection.getChannelMetadataID()))
+            if(connection.isInactive() && mChannelConnectionMap.containsKey(connection.getChannelMetadataID()))
             {
                 mChannelConnectionMap.remove(connection.getChannelMetadataID());
                 connection.disconnect();
+                mAvailableConnectionCount++;
                 changed = true;
             }
         }
@@ -192,7 +201,7 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
     }
 
     /**
-     * Identifies the lowest priority channel connection
+     * Identifies the lowest priority channel connection where the a higher value indicates a lower priority.
      */
     private void updateLowestPriorityAssignment()
     {
@@ -201,19 +210,32 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
         for(AudioOutputConnection connection : mAudioOutputConnections)
         {
             if(connection.isConnected() &&
-                (mLowestPriorityConnection == null || mLowestPriorityConnection.getPriority() > connection.getPriority()))
+                (mLowestPriorityConnection == null || mLowestPriorityConnection.getPriority() < connection.getPriority()))
             {
                 mLowestPriorityConnection = connection;
             }
         }
     }
 
+    /**
+     * Configures audio playback to use the configuration specified in the entry argument.
+     *
+     * @param entry to use in configuring the audio playback setup.
+     * @throws AudioException if there is an error
+     */
     @Override
     public void setMixerChannelConfiguration(MixerChannelConfiguration entry) throws AudioException
     {
         setMixerChannelConfiguration(entry, true);
     }
 
+    /**
+     * Configures audio playback to use the configuration specified in the entry argument.
+     *
+     * @param entry to use in configuring the audio playback setup.
+     * @param saveSettings to save the audio playback configuration settings in the properties file.
+     * @throws AudioException if there is an error
+     */
     public void setMixerChannelConfiguration(MixerChannelConfiguration entry, boolean saveSettings) throws AudioException
     {
         if(entry != null && (entry.getMixerChannel() == MixerChannel.MONO || entry.getMixerChannel() == MixerChannel.STEREO))
@@ -266,9 +288,8 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
     }
 
     /**
-     * Clears all channel assignments and terminates all audio outputs in
-     * preparation for complete shutdown or change to another mixer/channel
-     * configuration
+     * Clears all channel assignments and terminates all audio outputs in preparation for complete shutdown or change
+     * to another mixer/channel configuration
      */
     private void disposeCurrentConfiguration()
     {
@@ -288,12 +309,18 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
         mLowestPriorityConnection = null;
     }
 
+    /**
+     * Current audio playback mixer channel configuration setting.
+     */
     @Override
     public MixerChannelConfiguration getMixerChannelConfiguration() throws AudioException
     {
         return mMixerChannelConfiguration;
     }
 
+    /**
+     * List of audio outputs available for the current mixer channel configuration
+     */
     @Override
     public List<AudioOutput> getAudioOutputs()
     {
@@ -311,12 +338,18 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
         return outputs;
     }
 
+    /**
+     * Adds an audio event listener to receive audio event notifications.
+     */
     @Override
     public void addControllerListener(Listener<AudioEvent> listener)
     {
         mControllerBroadcaster.addListener(listener);
     }
 
+    /**
+     * Removes an audio event listener from receiving audio event notifications.
+     */
     @Override
     public void removeControllerListener(Listener<AudioEvent> listener)
     {
@@ -324,16 +357,15 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
     }
 
     /**
-     * Returns an audio output connection for the packet if one is
-     * available, or overrides an existing lower priority connection.
-     * Returns null if no connection is available for the audio packet.
+     * Returns an audio output connection for the packet if one is available, or overrides an existing lower priority
+     * connection. Returns null if no connection is available for the audio packet.
      *
-     * @param packet from a source
+     * @param audioPacket from a decoding channel source
      * @return an audio output connection or null
      */
-    private AudioOutputConnection getConnection(AudioPacket packet)
+    private AudioOutputConnection getConnection(AudioPacket audioPacket)
     {
-        int channelMetadataID = packet.getMetadata().getMetadataID();
+        int channelMetadataID = audioPacket.getMetadata().getMetadataID();
 
         //Use an existing connection
         if(mChannelConnectionMap.containsKey(channelMetadataID))
@@ -341,36 +373,34 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
             return mChannelConnectionMap.get(channelMetadataID);
         }
 
-        //Connect to and use an available connection
+        //Connect to an unused, available connection
         if(mAvailableConnectionCount > 0)
         {
             for(AudioOutputConnection connection : mAudioOutputConnections)
             {
                 if(connection.isDisconnected())
                 {
-                    connection.connect(channelMetadataID);
+                    connection.connect(channelMetadataID, audioPacket.getMetadata().getAudioPriority());
                     mChannelConnectionMap.put(channelMetadataID, connection);
+                    mAvailableConnectionCount--;
                     return connection;
                 }
             }
         }
-        //Preempt an existing connection and connect it to this higher priority source
-        else //Check for a channel priority override
+        //Preempt an existing lower priority connection and connect when this is a higher priority packet
+        else
         {
-            int priority = packet.getMetadata().getAudioPriority();
+            int priority = audioPacket.getMetadata().getAudioPriority();
 
-            if(mLowestPriorityConnection != null &&
-                priority < mLowestPriorityConnection.getPriority())
+            AudioOutputConnection connection = mLowestPriorityConnection;
+
+            if(connection != null && priority < connection.getPriority())
             {
-                AudioOutputConnection connection = mLowestPriorityConnection;
-
                 mChannelConnectionMap.remove(connection.getChannelMetadataID());
 
-                connection.connect(channelMetadataID);
+                connection.connect(channelMetadataID, priority);
 
                 mChannelConnectionMap.put(channelMetadataID, connection);
-
-                updateLowestPriorityAssignment();
 
                 return connection;
             }
@@ -396,7 +426,7 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 
                     for(AudioPacket packet : packets)
                     {
-						/* Don't process any packet's marked as do not monitor */
+                        /* Don't process any packet's marked as do not monitor */
                         if(!packet.getMetadata().isDoNotMonitor() && packet.getType() == AudioPacket.Type.AUDIO)
                         {
                             AudioOutputConnection connection = getConnection(packet);
@@ -494,9 +524,11 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
          * Connects this assignment to the indicated source so that audio
          * packets from this source can be sent to the audio output
          */
-        public void connect(int source)
+        public void connect(int source, int priority)
         {
             mChannelMetadataID = source;
+            mPriority = priority;
+            updateLowestPriorityAssignment();
 
             mAudioOutput.updateTimestamp();
         }
