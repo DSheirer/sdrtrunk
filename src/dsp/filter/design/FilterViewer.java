@@ -2,7 +2,9 @@ package dsp.filter.design;
 
 import dsp.filter.FilterFactory;
 import dsp.filter.fir.FIRFilterSpecification;
+import dsp.filter.fir.remez.PolyphaseChannelizerFilterFactory;
 import dsp.filter.fir.remez.RemezFIRFilterDesigner;
+import dsp.filter.fir.remez.RemezFIRFilterDesignerWithLagrange;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -51,15 +53,15 @@ public class FilterViewer extends Application
 //            .stopBandStart(5000)
 //            .build();
 
-		FIRFilterSpecification specification = FIRFilterSpecification.highPassBuilder()
-		        .sampleRate( 24000 )
-		        .stopBandCutoff( 800 )
-		        .stopBandAmplitude( 0.0 )
-		        .stopBandRipple( 0.03 )
-		        .passBandStart( 1000 )
-		        .passBandAmplitude( 1.0 )
-		        .passBandRipple( 0.08 )
-		        .build();
+//		FIRFilterSpecification specification = FIRFilterSpecification.highPassBuilder()
+//		        .sampleRate( 24000 )
+//		        .stopBandCutoff( 800 )
+//		        .stopBandAmplitude( 0.0 )
+//		        .stopBandRipple( 0.03 )
+//		        .passBandStart( 1000 )
+//		        .passBandAmplitude( 1.0 )
+//		        .passBandRipple( 0.08 )
+//		        .build();
 
 //		FIRFilterSpecification specification = FIRFilterSpecification.bandPassBuilder()
 //	        .sampleRate( 48000 )
@@ -76,20 +78,22 @@ public class FilterViewer extends Application
 //		taps = FilterFactory.getLowPass( 16000, 2400, 73, WindowType.HANNING );
 
 
-        try
-        {
-            RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
+//        try
+//        {
+//            RemezFIRFilterDesignerWithLagrange designer = new RemezFIRFilterDesignerWithLagrange(specification);
+////            RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
+//
+//            if(designer.isValid())
+//            {
+//                taps = designer.getImpulseResponse();
+//            }
+//        }
+//        catch(FilterDesignException fde)
+//        {
+//            mLog.error("Filter design error", fde);
+//        }
 
-            if(designer.isValid())
-            {
-                taps = designer.getImpulseResponse();
-            }
-        }
-        catch(FilterDesignException fde)
-        {
-            mLog.error("Filter design error", fde);
-        }
-
+        taps = PolyphaseChannelizerFilterFactory.getFilter(10000000, 312500, 0.21);
         return taps;
     }
 }

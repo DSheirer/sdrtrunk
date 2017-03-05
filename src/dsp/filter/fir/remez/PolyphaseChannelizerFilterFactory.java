@@ -28,27 +28,25 @@ public class PolyphaseChannelizerFilterFactory
 
     private static final double OBJECTIVE_BAND_EDGE_COEFFICIENT_AMPLITUDE = Math.sqrt(2.0) / 2.0; //.707xxx
 
-    public static float[] getFilter(int sampleRate, int channelBandwidth)
+    public static float[] getFilter(int sampleRate, int channelBandwidth, double alpha)
     {
         FIRLinearPhaseFilterType type = FIRLinearPhaseFilterType.TYPE_1_ODD_LENGTH_EVEN_ORDER_SYMMETRICAL;
 
         int passBandStart = 0;
-        int gridDensity = 32;
+        int gridDensity = 50;
 
-        //Set pass band to stop at about 80% of channel bandwidth as starting point
-//        int passBandStop = (int)(channelBandwidth * 0.95);
-        int passBandStop = channelBandwidth;
+        int rolloffFrequency = (int)(alpha * (double)channelBandwidth);
+
+        int passBandStop = channelBandwidth - rolloffFrequency;
 
         //Set the stop band to start at 40% into the adjacent channel, since we're oversampling by 2.
-        int stopBandStart = (int)(channelBandwidth * 1.40);
+        int stopBandStart = channelBandwidth + rolloffFrequency;
 
-        double passRipple = 0.1d;
-        double stopRipple = 0.01d;
+        double passRipple = 0.01d;
+        double stopRipple = 0.001d; //Approximately 90 dB of attenuation
 
-//        int order = FIRFilterSpecification.estimateBandPassOrder(sampleRate, passBandStart, passBandStop,
-//            passRipple, stopRipple);
-        int order = FIRFilterSpecification.estimateFilterOrder( sampleRate, passBandStop,
-            stopBandStart, passRipple, stopRipple );
+        int order = FIRFilterSpecification.estimateFilterOrder( sampleRate, passBandStop, stopBandStart,
+            passRipple, stopRipple );
 
         // Ensure even order since we're designing a Type 1 filter
         if(order % 2 == 1)
@@ -56,66 +54,39 @@ public class PolyphaseChannelizerFilterFactory
             order++;
         }
 
+        mLog.info("Filter Order: " + order);
+
         FIRFilterSpecification specification = new PolyphaseChannelizerDesigner(order, gridDensity);
 
-        FIRFilterSpecification.FrequencyBand passBand = new FIRFilterSpecification.FrequencyBand(sampleRate, 0,
-            passBandStop, 1.0, passRipple);
+        FIRFilterSpecification.FrequencyBand passBand = new FIRFilterSpecification.FrequencyBand(sampleRate, passBandStart,
+            passBandStop, 1.0, passRipple, 1.0);
+
+        //Use the filter order as the weighting for the pass band edge frequency
+        double weight = order;
+
+        FIRFilterSpecification.FrequencyBand transitionBand = new FIRFilterSpecification.FrequencyBand(sampleRate,
+            channelBandwidth, channelBandwidth, OBJECTIVE_BAND_EDGE_COEFFICIENT_AMPLITUDE, passRipple, weight);
+
         FIRFilterSpecification.FrequencyBand stopBand = new FIRFilterSpecification.FrequencyBand(sampleRate,
             stopBandStart, (int)(sampleRate / 2), 0.0, stopRipple);
 
         specification.addFrequencyBand(passBand);
+        specification.addFrequencyBand(transitionBand);
         specification.addFrequencyBand(stopBand);
 
-        boolean complete = false;
-        int stepSize = 100;
         double bandEdgeFrequency = Math.cos(Math.PI * (double)channelBandwidth / (double)(sampleRate / 2));
         float[] filter = null;
 
-        while(!complete)
+        try
         {
-            mLog.debug("Step Size: " + stepSize);
-
-            RemezFIRFilterDesigner2 designer = new RemezFIRFilterDesigner2(specification);
-
-            complete = true; //temporary
-
+            RemezFIRFilterDesignerWithLagrange designer = new RemezFIRFilterDesignerWithLagrange(specification);
+            filter = designer.getImpulseResponse();
             double bandEdgeAmplitude = designer.getFrequencyResponse(bandEdgeFrequency);
             mLog.debug("Coefficient Amplitude at Band Edge is: " + bandEdgeAmplitude + " for frequency: " + passBandStop);
-
-            if(bandEdgeAmplitude < OBJECTIVE_BAND_EDGE_COEFFICIENT_AMPLITUDE)
-            {
-                if(stepSize <= 1)
-                {
-                    complete = true;
-                    try
-                    {
-                        filter = designer.getImpulseResponse();
-                    }
-                    catch(Exception e)
-                    {
-                        mLog.debug("Error getting filter response", e);
-                    }
-                }
-                else
-                {
-                    passBandStop += stepSize;
-                    stepSize /= 10;
-                }
-            }
-            else
-            {
-                passBandStop -= stepSize;
-            }
-
-            if(!complete)
-            {
-                specification.clearFrequencyBands();
-
-                passBand = new FIRFilterSpecification.FrequencyBand(sampleRate, 0,
-                    passBandStop, 1.0, passRipple);
-                specification.addFrequencyBand(passBand);
-                specification.addFrequencyBand(stopBand);
-            }
+        }
+        catch(Exception e)
+        {
+            mLog.error("Error designing filter", e);
         }
 
         return filter;
@@ -125,7 +96,7 @@ public class PolyphaseChannelizerFilterFactory
     {
         mLog.debug("Starting ...");
 
-        float[] filter = getFilter(2500000, 12500);
+        float[] filter = getFilter(200000, 12500, 0.21);
 
         mLog.debug("Finished ...");
     }

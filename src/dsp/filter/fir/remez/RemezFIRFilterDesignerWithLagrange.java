@@ -20,32 +20,35 @@ package dsp.filter.fir.remez;
 
 import dsp.filter.design.FilterDesignException;
 import dsp.filter.fir.FIRFilterSpecification;
+import org.apache.commons.math3.analysis.polynomials.PolynomialFunctionLagrangeForm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class RemezFIRFilterDesigner2
+public class RemezFIRFilterDesignerWithLagrange
 {
-    private final static Logger mLog = LoggerFactory.getLogger(RemezFIRFilterDesigner2.class);
+    private final static Logger mLog = LoggerFactory.getLogger(RemezFIRFilterDesignerWithLagrange.class);
 
     private static final double CONVERGENCE_THRESHOLD = 0.0001;
     public static final int MAXIMUM_ITERATION_COUNT = 40;
     public static final double TWO_PI = 2.0 * Math.PI;
-    public static final double FREQUENCY_PROXIMITY_THRESHOLD = 1.0e-7;
+
+    private static final DecimalFormat DECIMAL_FORMATTER = new DecimalFormat("0.00000000");
 
     private FIRFilterSpecification mSpecification;
     private Grid mGrid;
     private List<Integer> mExtremalIndices;
 
-    private BigDecimal[] mD;
+    private double[] mD;
     private double[] mGridErrors;
     private double[] mGridFrequencyResponse;
     private double[] mIdealFrequencyResponse;
+    private PolynomialFunctionLagrangeForm mLagrangeInterpolator;
 
     private double mDelta;
 
@@ -66,7 +69,7 @@ public class RemezFIRFilterDesigner2
      *
      * @param specification that defines a Type 1-4 linear phase FIR Filter
      */
-    public RemezFIRFilterDesigner2(FIRFilterSpecification specification)
+    public RemezFIRFilterDesignerWithLagrange(FIRFilterSpecification specification) throws FilterDesignException
     {
         mSpecification = specification;
 
@@ -76,46 +79,32 @@ public class RemezFIRFilterDesigner2
     /**
      * Designs the filter according to the specification
      */
-    private void design()
+    private void design() throws FilterDesignException
     {
-        mLog.debug("Designing filter ...");
         mGrid = new Grid(mSpecification);
         mExtremalIndices = getInitialExtremalIndices();
 
         int iterationCount = 0;
 
-        try
+        do
         {
-            do
-            {
-                mLog.debug("Calculating grid frequency response");
-                calculateGridFrequencyResponse();
-                mLog.debug("Calculating grid error");
-                calculateGridError();
-                mLog.debug("Finding extremal indices");
-                findExtremalIndices();
-                mLog.debug("Checking Convergence");
-                checkConvergence();
+            calculateGridFrequencyResponse();
+            calculateGridError();
+            findExtremalIndices();
+            checkConvergence();
 
-                iterationCount++;
-
-                mLog.debug("Iteration: " + iterationCount);
-            }
-            while(!mConverged && iterationCount < MAXIMUM_ITERATION_COUNT);
+            iterationCount++;
         }
-        catch(FilterDesignException fde)
-        {
-            mLog.error("Filter design error - couldn't find extremal indices at count [" +
-                iterationCount + "] try changing filter order up/down from [" +
-                mSpecification.getOrder() + "]");
-
-            mConverged = false;
-        }
+        while(!mConverged && iterationCount < MAXIMUM_ITERATION_COUNT);
 
         if(mConverged)
         {
             //Update frequency response using the final set of extremal indices
             calculateGridFrequencyResponse();
+        }
+        else
+        {
+            throw new FilterDesignException("Unable to design filter after [" + iterationCount + "] iterations");
         }
     }
 
@@ -142,7 +131,7 @@ public class RemezFIRFilterDesigner2
         if(!mConverged)
         {
             throw new FilterDesignException("Can't create filter from specification - failed "
-                + "to converge");
+                + "to converge ");
         }
 
         //Resample the final polynomial at the desired filter length
@@ -230,33 +219,35 @@ public class RemezFIRFilterDesigner2
      */
     public double getFrequencyResponse(double cosineOfFrequency)
     {
-        BigDecimal numerator = BigDecimal.ZERO;
-        BigDecimal denominator = BigDecimal.ZERO;
-
-        for(int k = 0; k < mExtremalIndices.size() - 1; k++)
+        if(mLagrangeInterpolator == null)
         {
-            double cosineDelta = cosineOfFrequency - mGrid.getCosineFrequencyGrid()[mExtremalIndices.get(k)];
-
-            //If this frequency is close to one of the polynomial points, use the point as the response value
-            if(Math.abs(cosineDelta) < FREQUENCY_PROXIMITY_THRESHOLD)
-            {
-                return mIdealFrequencyResponse[k];
-            }
-            else
-            {
-                BigDecimal dkOverCosineDelta = mD[k].divide(BigDecimal.valueOf(cosineDelta), 25, RoundingMode.HALF_UP);
-
-                numerator = numerator.add(dkOverCosineDelta.multiply(BigDecimal.valueOf(mIdealFrequencyResponse[k])));
-                denominator = denominator.add(dkOverCosineDelta);
-            }
+            throw new IllegalStateException("Lagrange interpolator is not setup - can't calculate frequency response");
         }
 
-        if(denominator.doubleValue() == 0.0)
-        {
-            int a = 0;
-        }
+        return mLagrangeInterpolator.value(cosineOfFrequency);
 
-        return numerator.divide(denominator, 25, RoundingMode.HALF_UP).doubleValue();
+//    	double numerator = 0.0;
+//    	double denominator = 0.0;
+//
+//		for( int k = 0; k < mExtremalIndices.size() - 1; k++ )
+//    	{
+//    		double cosineDelta = cosineOfFrequency - mGrid.getCosineFrequencyGrid()[ mExtremalIndices.get( k ) ];
+//
+//    		//If this frequency is close to one of the polynomial points, use the polynomial point for the response
+//    		if( Math.abs( cosineDelta ) < 1.0e-7 )
+//    		{
+//    			return mIdealFrequencyResponse[ k ];
+//    		}
+//    		else
+//    		{
+//    			double dkOverCosineDelta = mD[ k ] / cosineDelta;
+//
+//        		numerator += dkOverCosineDelta * mIdealFrequencyResponse[ k ];
+//        		denominator += dkOverCosineDelta;
+//    		}
+//    	}
+//
+//    	return numerator / denominator;
     }
 
     /**
@@ -295,19 +286,26 @@ public class RemezFIRFilterDesigner2
      */
     private void calculateGridFrequencyResponse()
     {
-        mLog.debug("\tCalculating B");
         BigDecimal[] b = calculateB();
 
-        mLog.debug("\tCalculating Delta");
         calculateDelta(b);
 
-        mLog.debug("\tCalculating C");
         calculateC();
 
-        mLog.debug("\tCalculating D");
-        calculateD(b);
+        //Setup the lagrange polynomial so that we can determine the frequency response at the grid frequencies
+        //where mExtremalIndices are the polynomial points, the subset of cosine frequency grid identified by the
+        //extremal indices is the x value set and mIdealFrequencyResponse is the y axis value set
+        double[] xAxis = new double[mIdealFrequencyResponse.length];
 
-        mLog.debug("\tUpdating Grid Frequency Response");
+        for(int x = 0; x < mExtremalIndices.size() - 1; x++)
+        {
+            int index = mExtremalIndices.get(x);
+
+            xAxis[x] = mGrid.getCosineFrequencyGrid()[index];
+        }
+
+        mLagrangeInterpolator = new PolynomialFunctionLagrangeForm(xAxis, mIdealFrequencyResponse);
+
         updateGridFrequencyResponse();
     }
 
@@ -322,14 +320,7 @@ public class RemezFIRFilterDesigner2
 
         for(int i = 0; i < mGridFrequencyResponse.length; i++)
         {
-            //TODO: parallelize this part!!!!
             mGridFrequencyResponse[i] = getFrequencyResponse(gridFrequencyCosines[i]);
-
-            if(i % 1000 == 0)
-            {
-                mLog.debug("\t\tUpdating Frequency Response - index:" + i + " of " +
-                    mGridFrequencyResponse.length + " Value:" + mGridFrequencyResponse[i]);
-            }
         }
     }
 
@@ -366,6 +357,7 @@ public class RemezFIRFilterDesigner2
                     }
 
                     b[k] = b[k].multiply(BigDecimal.valueOf(1.0 / denominator));
+//        			b[ k ] *= 1.0 / denominator;
                 }
             }
         }
@@ -396,6 +388,7 @@ public class RemezFIRFilterDesigner2
 
                 numerator = numerator.add(b[k].multiply(BigDecimal.valueOf(mGrid.getDesiredResponse()[extremalIndex])));
                 denominator = denominator.add(b[k].multiply(BigDecimal.valueOf(sign / mGrid.getWeight()[extremalIndex])));
+
                 sign = -sign;
             }
             else
@@ -404,6 +397,7 @@ public class RemezFIRFilterDesigner2
             }
         }
 
+        //Set the scale to the maximum scale we could see for a primitive decimal
         mDelta = numerator.divide(denominator, 1023, BigDecimal.ROUND_HALF_DOWN).doubleValue();
     }
 
@@ -437,26 +431,6 @@ public class RemezFIRFilterDesigner2
     }
 
     /**
-     * Calculates the set of D values for the current extremal index set.
-     *
-     * Implements Oppenheim/Schafer Discrete Time Signal Processing, 3e, 2016, equation 116c
-     */
-    private void calculateD(BigDecimal[] b)
-    {
-        int length = mExtremalIndices.size() - 1;
-
-        mD = new BigDecimal[length];
-
-        for(int k = 0; k < length; k++)
-        {
-            //Note: extremalCosines array is one index longer than d array, so we use length as
-            //a pointer to the final (L+2) extremalCosine index
-            mD[k] = b[k].multiply(BigDecimal.valueOf((mGrid.getCosineFrequencyGrid()[mExtremalIndices.get(k)] -
-                    mGrid.getCosineFrequencyGrid()[mExtremalIndices.get(length)])));
-        }
-    }
-
-    /**
      * Calculates the weighted error between the specification desired frequency response and the
      * actual frequency response of the current extremal index set across the frequencies in the
      * dense frequency grid.
@@ -471,8 +445,7 @@ public class RemezFIRFilterDesigner2
 
         for(int i = 0; i < length; i++)
         {
-            mGridErrors[i] = mGrid.getWeight()[i] *
-                (mGrid.getDesiredResponse()[i] - mGridFrequencyResponse[i]);
+            mGridErrors[i] = mGrid.getWeight()[i] * (mGrid.getDesiredResponse()[i] - mGridFrequencyResponse[i]);
         }
     }
 
@@ -518,7 +491,8 @@ public class RemezFIRFilterDesigner2
         if(mExtremalIndices.size() < mSpecification.getExtremaCount())
         {
             throw new FilterDesignException("Couldn't find the minimum extremal frequencies in "
-                + "error set");
+                + "error set before checking for alternation theory - found:" + mExtremalIndices.size() +
+                " required:" + mSpecification.getExtremaCount());
         }
 
         //Enforce alternation theory -- only one extremal for each transition about the zero axis 
@@ -586,7 +560,7 @@ public class RemezFIRFilterDesigner2
         if(mExtremalIndices.size() < mSpecification.getExtremaCount())
         {
             throw new FilterDesignException("Couldn't find the minimum extremal frequencies in "
-                + "error set");
+                + "error set - found:" + mExtremalIndices.size() + " required:" + mSpecification.getExtremaCount());
         }
     }
 
@@ -623,6 +597,8 @@ public class RemezFIRFilterDesigner2
         }
 
         double convergence = maximum - Math.abs(mDelta);
+
+        mLog.debug("Convergence: " + convergence);
 
         mConverged = convergence < CONVERGENCE_THRESHOLD;
     }
