@@ -1,19 +1,20 @@
 /*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
- * 
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- * 
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- * 
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * sdrtrunk
+ * Copyright (C) 2014-2017 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ *
  ******************************************************************************/
 package module.decode.p25;
 
@@ -41,8 +42,7 @@ import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
 import dsp.filter.fir.real.RealFIRFilter_RB_RB;
 
-public class P25_C4FMDecoder extends P25Decoder 
-	implements IFrequencyChangeListener, IFrequencyChangeProvider,IFilteredRealBufferListener
+public class P25_C4FMDecoder extends P25Decoder implements IFilteredRealBufferListener
 {
 	private final static Logger mLog = LoggerFactory.getLogger( P25_C4FMDecoder.class );
 	
