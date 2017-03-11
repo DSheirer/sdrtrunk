@@ -1,6 +1,7 @@
 package dsp.filter.design;
 
 import dsp.filter.FilterFactory;
+import dsp.filter.Window;
 import dsp.filter.fir.FIRFilterSpecification;
 import dsp.filter.fir.remez.PolyphaseChannelizerFilterFactory;
 import dsp.filter.fir.remez.RemezFIRFilterDesigner;
@@ -25,11 +26,20 @@ public class FilterViewer extends Application
     @Override
     public void start(Stage primaryStage) throws Exception
     {
-        Scene scene = new Scene(new FilterView(getFilter()));
+        float[] taps = getFilter();
 
-        primaryStage.setTitle("Filter Viewer");
-        primaryStage.setScene(scene);
-        primaryStage.show();
+        if(taps != null)
+        {
+            Scene scene = new Scene(new FilterView(taps));
+
+            primaryStage.setTitle("Filter Viewer");
+            primaryStage.setScene(scene);
+            primaryStage.show();
+        }
+        else
+        {
+            throw new Exception("Couldn't start application - filter error");
+        }
     }
 
     public static void main(String[] args)
@@ -93,7 +103,10 @@ public class FilterViewer extends Application
 //            mLog.error("Filter design error", fde);
 //        }
 
-        taps = PolyphaseChannelizerFilterFactory.getFilter(10000000, 312500, 0.21);
+//        taps = PolyphaseChannelizerFilterFactory.getFilter(2000000, 12500, 0.3);
+
+        taps = FilterFactory.getSinc(10000000, 12500, 450, Window.WindowType.HANNING);
+
         return taps;
     }
 }

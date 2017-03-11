@@ -30,10 +30,10 @@ public class PolyphaseChannelizerFilterFactory
 
     public static float[] getFilter(int sampleRate, int channelBandwidth, double alpha)
     {
-        FIRLinearPhaseFilterType type = FIRLinearPhaseFilterType.TYPE_1_ODD_LENGTH_EVEN_ORDER_SYMMETRICAL;
+        FIRLinearPhaseFilterType type = FIRLinearPhaseFilterType.TYPE_2_EVEN_LENGTH_ODD_ORDER_SYMMETRICAL;
 
         int passBandStart = 0;
-        int gridDensity = 50;
+        int gridDensity = 60;
 
         int rolloffFrequency = (int)(alpha * (double)channelBandwidth);
 
@@ -43,13 +43,16 @@ public class PolyphaseChannelizerFilterFactory
         int stopBandStart = channelBandwidth + rolloffFrequency;
 
         double passRipple = 0.01d;
+        double transitionRipple = 0.02d;
         double stopRipple = 0.001d; //Approximately 90 dB of attenuation
 
         int order = FIRFilterSpecification.estimateFilterOrder( sampleRate, passBandStop, stopBandStart,
             passRipple, stopRipple );
 
-        // Ensure even order since we're designing a Type 1 filter
-        if(order % 2 == 1)
+//        order = 1001;
+
+        // Ensure odd order since we're designing a Type 2 filter
+        if(order % 2 == 0)
         {
             order++;
         }
@@ -62,10 +65,10 @@ public class PolyphaseChannelizerFilterFactory
             passBandStop, 1.0, passRipple, 1.0);
 
         //Use the filter order as the weighting for the pass band edge frequency
-        double weight = order;
+//        double weight = order;
 
         FIRFilterSpecification.FrequencyBand transitionBand = new FIRFilterSpecification.FrequencyBand(sampleRate,
-            channelBandwidth, channelBandwidth, OBJECTIVE_BAND_EDGE_COEFFICIENT_AMPLITUDE, passRipple, weight);
+            channelBandwidth, channelBandwidth, OBJECTIVE_BAND_EDGE_COEFFICIENT_AMPLITUDE, transitionRipple, 5.0);
 
         FIRFilterSpecification.FrequencyBand stopBand = new FIRFilterSpecification.FrequencyBand(sampleRate,
             stopBandStart, (int)(sampleRate / 2), 0.0, stopRipple);
@@ -90,14 +93,5 @@ public class PolyphaseChannelizerFilterFactory
         }
 
         return filter;
-    }
-
-    public static void main(String[] args)
-    {
-        mLog.debug("Starting ...");
-
-        float[] filter = getFilter(200000, 12500, 0.21);
-
-        mLog.debug("Finished ...");
     }
 }
