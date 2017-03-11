@@ -32,7 +32,7 @@ import java.util.Map;
 
 public class ChannelMetadataModel extends AbstractTableModel implements Listener<MutableMetadataChangeEvent>
 {
-    private final DecimalFormat FREQUENCY_FORMATTER = new DecimalFormat( "#.0000" );
+    private final DecimalFormat FREQUENCY_FORMATTER = new DecimalFormat( "#.00000" );
 
     public static final int COLUMN_STATE = 0;
     public static final int COLUMN_DECODER = 1;
