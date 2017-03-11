@@ -34,7 +34,9 @@ import source.ComplexSource;
 import source.SourceException;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeEvent.Event;
+import source.tuner.frequency.IFrequencyChangeListener;
 import source.tuner.frequency.IFrequencyChangeProcessor;
+import source.tuner.frequency.IFrequencyChangeProvider;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,6 +67,7 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
     private ComplexPrimeCICDecimate mDecimationFilter;
     private Listener<ComplexBuffer> mListener;
     private IFrequencyChangeProcessor mFrequencyChangeProcessor;
+    private DownstreamProcessor mDownstreamFrequencyEventProcessor = new DownstreamProcessor();
     private ScheduledFuture<?> mTaskHandle;
 
     private long mTunerFrequency = 0;
@@ -75,7 +78,6 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
 
     private AtomicBoolean mRunning = new AtomicBoolean();
     private boolean mExpended = false;
-    private int mCount;
 
     /**
      * Provides a Digital Drop Channel (DDC) to decimate the IQ output from a
@@ -109,7 +111,8 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
         mMixer = new Oscillator(frequencyOffset, mTuner.getTunerController().getSampleRate());
 
 		/* Fire a sample rate change event to setup the decimation chain */
-        frequencyChanged(new FrequencyChangeEvent(Event.NOTIFICATION_SAMPLE_RATE_CHANGE, mTuner.getTunerController().getSampleRate()));
+        frequencyChanged(new FrequencyChangeEvent(Event.NOTIFICATION_SAMPLE_RATE_CHANGE,
+            mTuner.getTunerController().getSampleRate()));
     }
 
     /**
@@ -131,6 +134,10 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
 
         if(mRunning.compareAndSet(false, true))
         {
+            //Broadcast current frequency and sample rate settings so all downstream components are aware
+            mDownstreamFrequencyEventProcessor.broadcastCurrentFrequency();
+            mDownstreamFrequencyEventProcessor.broadcastCurrentSampleRate();
+
             //Schedule the decimation task to run every 9 ms (111 iterations/second), an odd periodicity relative
             //to the inbound periodicity of 20 ms, to attempt to avoid thread queue contention
             mTaskHandle = executor.scheduleAtFixedRate(mDecimationProcessor, 0, 9, TimeUnit.MILLISECONDS);
@@ -182,6 +189,20 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
 	    	/* Tell the tuner to release/unregister our resources */
             mTuner.getTunerController().removeListener(this);
         }
+    }
+
+    /**
+     * Changes the frequency correction value and broadcasts the change to the registered downstream listener.
+     * @param correction current frequency correction value.
+     */
+    private void setFrequencyCorrection(int correction)
+    {
+        mChannelFrequencyCorrection = correction;
+
+        updateMixerFrequencyOffset();
+
+        mDownstreamFrequencyEventProcessor.broadcast(
+            new FrequencyChangeEvent( Event.NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE, mChannelFrequencyCorrection));
     }
 
     public Tuner getTuner()
@@ -242,37 +263,39 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
             case NOTIFICATION_FREQUENCY_CHANGE:
                 mTunerFrequency = event.getValue().longValue();
                 updateMixerFrequencyOffset();
-                break;
-            case REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
-                mChannelFrequencyCorrection = event.getValue().intValue();
 
-                updateMixerFrequencyOffset();
-
-                if(mFrequencyChangeProcessor != null)
-                {
-                    mFrequencyChangeProcessor.frequencyChanged(new FrequencyChangeEvent(
-                        Event.NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE, mChannelFrequencyCorrection));
-                }
+                //Reset frequency correction so that downstream components can recalculate the value
+                setFrequencyCorrection(0);
                 break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
                 int sampleRate = event.getValue().intValue();
-
-                if(mTunerSampleRate != sampleRate)
-                {
-                    mMixer.setSampleRate(sampleRate);
-
-					/* Get new decimation filter */
-                    mDecimationFilter = FilterFactory.getDecimationFilter(sampleRate, CHANNEL_RATE, 1,
-                        CHANNEL_PASS_FREQUENCY, 60, WindowType.HAMMING);
-					
-					/* re-add the original output listener */
-                    mDecimationFilter.setListener(mListener);
-
-                    mTunerSampleRate = sampleRate;
-                }
+                setSampleRate(sampleRate);
                 break;
             default:
                 break;
+        }
+    }
+
+    /**
+     * Updates the sample rate to the requested value and notifies any downstream components of the change
+     * @param sampleRate to set
+     */
+    private void setSampleRate(int sampleRate)
+    {
+        if(mTunerSampleRate != sampleRate)
+        {
+            mMixer.setSampleRate(sampleRate);
+
+            /* Get new decimation filter */
+            mDecimationFilter = FilterFactory.getDecimationFilter(sampleRate, CHANNEL_RATE, 1,
+                CHANNEL_PASS_FREQUENCY, 60, WindowType.HAMMING);
+
+            /* re-add the original output listener */
+            mDecimationFilter.setListener(mListener);
+
+            mTunerSampleRate = sampleRate;
+
+            mDownstreamFrequencyEventProcessor.broadcastCurrentSampleRate();
         }
     }
 
@@ -282,10 +305,7 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
      */
     private void updateMixerFrequencyOffset()
     {
-        long offset = mTunerFrequency -
-            mTunerChannel.getFrequency() -
-            mChannelFrequencyCorrection;
-
+        long offset = mTunerFrequency - mTunerChannel.getFrequency() - mChannelFrequencyCorrection;
         mMixer.setFrequency(offset);
     }
 
@@ -297,6 +317,140 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
     public long getFrequency() throws SourceException
     {
         return mTunerChannel.getFrequency();
+    }
+
+    /**
+     * Implements IFrequencyChangeProvider to enable this source to broadcast frequency change events to downstream
+     * listeners.
+     *
+     * @param listener to receive downstream events
+     */
+    @Override
+    public void setFrequencyChangeListener(Listener<FrequencyChangeEvent> listener)
+    {
+        mDownstreamFrequencyEventProcessor.setFrequencyChangeListener(listener);
+    }
+
+    /**
+     * Implements IFrequencyChangeProvider to remove the frequency change listener from receiving down-stream frequency
+     * change events.
+      */
+    @Override
+    public void removeFrequencyChangeListener()
+    {
+        mDownstreamFrequencyEventProcessor.removeFrequencyChangeListener();
+    }
+
+    /**
+     * Implements IFrequencyChangeListener to receive frequency change events containing requests from downstream
+     * listeners to change frequency values.
+     * @return listener
+     */
+    @Override
+    public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
+    {
+        return mDownstreamFrequencyEventProcessor.getFrequencyChangeListener();
+    }
+
+    /**
+     * Managers frequency change requests and notifications from/to any downstream component.  Downstream
+     * components are those that receive samples from this tuner channel source.  These downstream components will be
+     * notified of any frequency or sample rate change events and will also be able to request frequency correction
+     * updates.
+     */
+    public class DownstreamProcessor implements IFrequencyChangeListener, IFrequencyChangeProvider,
+        Listener<FrequencyChangeEvent>
+    {
+        //Listener to receive downstream events
+        private Listener<FrequencyChangeEvent> mListener;
+
+        /**
+         * Broadcasts the frequency change event to the downstream frequency change listener
+         * @param event to broadcast
+         */
+        public void broadcast(FrequencyChangeEvent event)
+        {
+            if(mListener != null)
+            {
+                mListener.receive(event);
+            }
+        }
+
+        /**
+         * Broadcasts the current frequency of this tuner channel source to the downstream listener
+         */
+        public void broadcastCurrentFrequency()
+        {
+            try
+            {
+                long frequency = getFrequency();
+                broadcast(new FrequencyChangeEvent(Event.NOTIFICATION_FREQUENCY_CHANGE, frequency));
+            }
+            catch(SourceException se)
+            {
+                mLog.error("Error obtaining frequency from tuner to broadcast downstream");
+            }
+        }
+
+        /**
+         * Broadcasts the current decimated sample rate of this tuner channel source
+         */
+        public void broadcastCurrentSampleRate()
+        {
+            try
+            {
+                //Note: downstream sample rate is currently a fixed value -- it will change in the future
+                broadcast(new FrequencyChangeEvent(Event.NOTIFICATION_SAMPLE_RATE_CHANGE, getSampleRate()));
+            }
+            catch(SourceException se)
+            {
+                mLog.error("Error obtaining sample rate from tuner to broadcast downstream");
+            }
+        }
+
+        /**
+         * Sets the downstream listener to receive frequency change events from this tuner channel source
+         * @param listener to receive events
+         */
+        @Override
+        public void setFrequencyChangeListener(Listener<FrequencyChangeEvent> listener)
+        {
+            mListener = listener;
+        }
+
+        /**
+         * Removes the downstream listener from receiving frequency change events.
+         */
+        @Override
+        public void removeFrequencyChangeListener()
+        {
+            mListener = null;
+        }
+
+        /**
+         * Listener for receiving frequency change events from downstream components
+         */
+        @Override
+        public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
+        {
+            return this;
+        }
+
+        /**
+         * Processes frequency change events from downstream components.
+         * @param event to process
+         */
+        @Override
+        public void receive(FrequencyChangeEvent event)
+        {
+            switch(event.getEvent())
+            {
+                //Frequency correction requests are the only change requests supported from downstream components
+                case REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
+                    setFrequencyCorrection(event.getValue().intValue());
+                    break;
+            }
+        }
     }
 
     /**

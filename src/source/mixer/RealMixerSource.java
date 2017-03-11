@@ -36,11 +36,11 @@ import sample.real.RealBuffer;
 import source.RealSource;
 import source.SourceException;
 import dsp.gain.AutomaticGainControl;
+import source.tuner.frequency.FrequencyChangeEvent;
 
 public class RealMixerSource extends RealSource
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( RealMixerSource.class );
+	private final static Logger mLog = LoggerFactory.getLogger( RealMixerSource.class );
 
 	private long mFrequency = 0;
 	private int mBufferSize = 16384;
@@ -48,13 +48,11 @@ public class RealMixerSource extends RealSource
 	private BufferReader mBufferReader = new BufferReader();
 	private TargetDataLine mTargetDataLine;
 	private AudioFormat mAudioFormat;
-	private String mDisplayName;
 	private int mBytesPerFrame = 0;
 	private ISampleAdapter mSampleAdapter;
 	private AutomaticGainControl mAGC = new AutomaticGainControl();
 	
-	CopyOnWriteArrayList<Listener<RealBuffer>> mSampleListeners = 
-					new CopyOnWriteArrayList<Listener<RealBuffer>>();
+	CopyOnWriteArrayList<Listener<RealBuffer>> mSampleListeners = new CopyOnWriteArrayList<Listener<RealBuffer>>();
     
 	/**
 	 * Real Mixer Source - constructs a reader on the mixer/sound card target 
@@ -80,8 +78,27 @@ public class RealMixerSource extends RealSource
         mAudioFormat = format;
         mSampleAdapter = sampleAdapter;
     }
-    
-    @Override
+
+	@Override
+	public void setFrequencyChangeListener(Listener<FrequencyChangeEvent> listener)
+	{
+		//Not implemented
+	}
+
+	@Override
+	public void removeFrequencyChangeListener()
+	{
+		//Not implemented
+	}
+
+	@Override
+	public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
+	{
+		//Not implemented
+		return null;
+	}
+
+	@Override
 	public void reset()
 	{
 	}
@@ -133,23 +150,15 @@ public class RealMixerSource extends RealSource
 			 * buffer, otherwise send him a copy of the buffer */
 			if( it.hasNext() )
 			{
-//				next.receive( mAGC.process( samples.copyOf() ) );
 				next.receive( samples.copyOf() );
 			}
 			else
 			{
-//				next.receive( mAGC.process( samples ) );
 				next.receive( samples );
 			}
 		}
     }
     
-	@Override
-	public String toString()
-	{
-		return mDisplayName;
-	}
-	
     public int getSampleRate()
     {
 		if( mTargetDataLine != null )

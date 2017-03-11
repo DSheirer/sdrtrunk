@@ -689,8 +689,7 @@ public class P25MessageFramer implements Listener<Dibit>
     	private LSMDemodulator mDemodulator;
     	private double mCorrection;
     	
-    	public CostasPhaseErrorDetector( FrameSync frameSync, 
-    			LSMDemodulator demodulator, double correction )
+    	public CostasPhaseErrorDetector( FrameSync frameSync, LSMDemodulator demodulator, double correction )
     	{
     		super( frameSync.getSync() );
 
