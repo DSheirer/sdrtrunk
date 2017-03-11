@@ -121,7 +121,14 @@ public class P25_LSMDecoder extends P25Decoder implements IComplexBufferListener
     @Override
     public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
     {
-        return null;
+        return new Listener<FrequencyChangeEvent>()
+        {
+            @Override
+            public void receive(FrequencyChangeEvent frequencyChangeEvent)
+            {
+                //Ignored
+            }
+        };
     }
 
     @Override
