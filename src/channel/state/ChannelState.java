@@ -36,14 +36,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sample.Listener;
 import sample.real.IOverflowListener;
+import source.tuner.frequency.FrequencyChangeEvent;
+import source.tuner.frequency.IFrequencyChangeListener;
 
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import static source.tuner.frequency.FrequencyChangeEvent.Event.NOTIFICATION_FREQUENCY_CHANGE;
+
 public class ChannelState extends Module implements ICallEventProvider, IDecoderStateEventListener,
-    IDecoderStateEventProvider, ISquelchStateProvider, IAttributeChangeRequestListener, IOverflowListener
+    IDecoderStateEventProvider, IFrequencyChangeListener, ISquelchStateProvider, IAttributeChangeRequestListener,
+    IOverflowListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelState.class);
 
@@ -61,6 +66,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     private ChannelType mChannelType;
     private TrafficChannelManager mTrafficChannelEndListener;
     private CallEvent mTrafficChannelCallEvent;
+    private FrequencyChangeListener mFrequencyChangeListener;
 
     private boolean mSquelchLocked = false;
     private boolean mSelected = false;
@@ -187,6 +193,17 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
         mDecoderStateListener = null;
         mSquelchStateListener = null;
         mStateMonitor = null;
+    }
+
+    @Override
+    public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
+    {
+        if(mFrequencyChangeListener == null)
+        {
+            mFrequencyChangeListener = new FrequencyChangeListener();
+        }
+
+        return mFrequencyChangeListener;
     }
 
     private boolean isStandardChannel()
@@ -530,6 +547,23 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
 		/* Rebroadcast the allocation event so that the internal decoder states
 		 * can self-configure with the call event details */
         broadcast(mTrafficChannelCallEvent);
+    }
+
+    /**
+     * Listener to receive frequency change events and rebroadcast them to the decoder states
+     */
+    public class FrequencyChangeListener implements Listener<FrequencyChangeEvent>
+    {
+        @Override
+        public void receive(FrequencyChangeEvent frequencyChangeEvent)
+        {
+            if(frequencyChangeEvent.getEvent() == NOTIFICATION_FREQUENCY_CHANGE)
+            {
+                long frequency = frequencyChangeEvent.getValue().longValue();
+
+                broadcast(new DecoderStateEvent(this, Event.SOURCE_FREQUENCY, getState(), frequency));
+            }
+        }
     }
 
     /**

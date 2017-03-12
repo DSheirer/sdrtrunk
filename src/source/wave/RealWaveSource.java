@@ -36,6 +36,7 @@ import sample.real.RealBuffer;
 import source.IControllableFileSource;
 import source.IFrameLocationListener;
 import source.RealSource;
+import source.tuner.frequency.FrequencyChangeEvent;
 
 public class RealWaveSource extends RealSource 
 	implements IControllableFileSource, AutoCloseable
@@ -55,8 +56,27 @@ public class RealWaveSource extends RealSource
     {
     	mFile = file;
     }
-    
-    
+
+	@Override
+	public void setFrequencyChangeListener(Listener<FrequencyChangeEvent> listener)
+	{
+		//Not implemented
+	}
+
+	@Override
+	public void removeFrequencyChangeListener()
+	{
+		//Not implemented
+	}
+
+	@Override
+	public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
+	{
+		//Not implemented
+		return null;
+	}
+
+
 	@Override
 	public void reset()
 	{

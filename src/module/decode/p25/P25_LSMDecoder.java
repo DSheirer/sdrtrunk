@@ -42,6 +42,7 @@ import dsp.filter.fir.complex.ComplexFIRFilter_CB_CB;
 import dsp.gain.ComplexFeedForwardGainControl;
 import dsp.psk.LSMDemodulator;
 import dsp.psk.QPSKPolarSlicer;
+import source.tuner.frequency.FrequencyChangeEvent;
 
 public class P25_LSMDecoder extends P25Decoder implements IComplexBufferListener
 {
@@ -56,8 +57,7 @@ public class P25_LSMDecoder extends P25Decoder implements IComplexBufferListener
 	private List<TapGroup> mAvailableTaps;
 	
 	private ComplexFIRFilter_CB_CB mBasebandFilter;
-	private ComplexBufferToStreamConverter mStreamConverter = 
-							new ComplexBufferToStreamConverter();
+	private ComplexBufferToStreamConverter mStreamConverter = new ComplexBufferToStreamConverter();
 	private ComplexFeedForwardGainControl mAGC = 
 							new ComplexFeedForwardGainControl( 32 );
 	private LSMDemodulator mLSMDemodulator = new LSMDemodulator();
@@ -107,8 +107,31 @@ public class P25_LSMDecoder extends P25Decoder implements IComplexBufferListener
 		mMessageFramer.dispose();
 		mMessageFramer = null;
 	}
-	
-	@Override
+
+    @Override
+    public void setFrequencyChangeListener(Listener<FrequencyChangeEvent> listener)
+    {
+    }
+
+    @Override
+    public void removeFrequencyChangeListener()
+    {
+    }
+
+    @Override
+    public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
+    {
+        return new Listener<FrequencyChangeEvent>()
+        {
+            @Override
+            public void receive(FrequencyChangeEvent frequencyChangeEvent)
+            {
+                //Ignored
+            }
+        };
+    }
+
+    @Override
 	public Listener<ComplexBuffer> getComplexBufferListener()
 	{
 		return mBasebandFilter;

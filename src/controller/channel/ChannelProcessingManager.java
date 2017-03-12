@@ -231,7 +231,7 @@ public class ChannelProcessingManager implements ChannelEventListener
 
         if(processingChain == null)
         {
-            processingChain = new ProcessingChain(channel.getName(), channel.getChannelType());
+            processingChain = new ProcessingChain(channel.getChannelType());
 
 			/* Register global listeners */
             for(Listener<AudioPacket> listener : mAudioPacketListeners)
@@ -243,6 +243,9 @@ public class ChannelProcessingManager implements ChannelEventListener
             {
                 processingChain.addMessageListener(listener);
             }
+
+            //Register channel to receive frequency correction events to show in the spectral display (hack!)
+            processingChain.addFrequencyChangeListener(channel);
 
 			/* Processing Modules */
             List<Module> modules = DecoderFactory.getModules(mChannelModel, mChannelMapModel, this,
@@ -347,6 +350,9 @@ public class ChannelProcessingManager implements ChannelEventListener
 
             processingChain.removeRecordingModules();
 
+            //Deregister channel from receive frequency correction events to show in the spectral display (hack!)
+            processingChain.removeFrequencyChangeListener(channel);
+            channel.resetFrequencyCorrection();
 
             mChannelModel.broadcast(new ChannelEvent(channel, Event.NOTIFICATION_PROCESSING_STOP));
 

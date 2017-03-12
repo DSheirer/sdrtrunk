@@ -4,8 +4,10 @@ import alias.AliasList;
 import instrument.Instrumentable;
 import module.decode.Decoder;
 import module.decode.DecoderType;
+import source.tuner.frequency.IFrequencyChangeListener;
+import source.tuner.frequency.IFrequencyChangeProvider;
 
-public abstract class P25Decoder extends Decoder implements Instrumentable
+public abstract class P25Decoder extends Decoder implements IFrequencyChangeListener, IFrequencyChangeProvider, Instrumentable
 {
 	private P25MessageProcessor mMessageProcessor;
 	
