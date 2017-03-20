@@ -69,7 +69,7 @@ public class P25_LSMDecoder extends P25Decoder implements IComplexBufferListener
 		super( aliasList );
 		
 		mBasebandFilter = new ComplexFIRFilter_CB_CB( FilterFactory.getLowPass( 
-				48000, 7250, 8000, 60, WindowType.HANNING, true ), 1.0f );
+				48000, 7250, 8000, 60, WindowType.HANN, true ), 1.0f );
 		
 		mBasebandFilter.setListener( mStreamConverter );
 		

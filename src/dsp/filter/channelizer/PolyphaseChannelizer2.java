@@ -19,6 +19,7 @@
 package dsp.filter.channelizer;
 
 import dsp.filter.FilterFactory;
+import dsp.filter.Window;
 import dsp.filter.fir.real.RealFIRFilter;
 import dsp.mixer.Oscillator;
 import org.jtransforms.fft.FloatFFT_1D;
@@ -167,22 +168,18 @@ public class PolyphaseChannelizer2 implements Listener<ComplexBuffer>
 
         int symbolRate = 4800;
         int samplesPerSymbol = 2;
-        int symbolCount = 4;
-        int channels = 10;
+        int channels = 800;
         int channelBandwidth = 12500;
         int sampleRate = channels * channelBandwidth;
 
-        //Alpha is the residual channel bandwidth left over from the symbol rate and samples per symbol
-        float alpha = ((float)channelBandwidth / (float)(symbolRate * samplesPerSymbol)) - 1.0f;
-
-        float[] taps = FilterFactory.getRootRaisedCosine(samplesPerSymbol * channels, symbolCount, alpha);
+        float[] taps = FilterFactory.getLowPass( 10000000, 12500, 5600, Window.WindowType.BLACKMAN_HARRIS_7 );
 
         int channelCenter = (int)(12500 * 1.5);
 
         StringBuilder sb = new StringBuilder();
         sb.append("\nPolyphase Channelizer\n");
         sb.append("Sample Rate:" + sampleRate + " Channels:" + channels + " Channel Rate:" + channelBandwidth + "\n");
-        sb.append("Alpha: " + alpha + " Tap Count:" + taps.length + "\n");
+        sb.append("Tap Count:" + taps.length + "\n");
         sb.append("Channel:" + channelCenter);
 
         mLog.debug(sb.toString());

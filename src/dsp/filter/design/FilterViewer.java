@@ -6,11 +6,14 @@ import dsp.filter.fir.FIRFilterSpecification;
 import dsp.filter.fir.remez.PolyphaseChannelizerFilterFactory;
 import dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import dsp.filter.fir.remez.RemezFIRFilterDesignerWithLagrange;
+import filter.Filter;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
 
 public class FilterViewer extends Application
 {
@@ -85,27 +88,34 @@ public class FilterViewer extends Application
 
         float[] taps = null;
 
-//		taps = FilterFactory.getLowPass( 16000, 2400, 73, WindowType.HANNING );
+//        int tapCount = FilterFactory.getTapCount(10000000, 12500, 18750, 80);
+//		taps = FilterFactory.getLowPass( 10000000, 12500, 5600, Window.WindowType.BLACKMAN_HARRIS_7 );
 
-
-//        try
-//        {
-//            RemezFIRFilterDesignerWithLagrange designer = new RemezFIRFilterDesignerWithLagrange(specification);
-////            RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
+//        int channels = 10;
+//        int channelRate = 12500;
+//        int cutoff = 8000;
+//        int sampleRate = channelRate * channels;
+//        int filterLength = channels * 7;
 //
-//            if(designer.isValid())
-//            {
-//                taps = designer.getImpulseResponse();
-//            }
-//        }
-//        catch(FilterDesignException fde)
-//        {
-//            mLog.error("Filter design error", fde);
-//        }
+//        taps = FilterFactory.getLowPass(sampleRate, cutoff, filterLength, Window.WindowType.BLACKMAN_HARRIS_7);
+//
+//        double response = FilterFactory.evaluate(taps, (double)channelRate / (double)sampleRate );
+//
+//        mLog.debug("Taps:" + taps.length + " With response at [" + channelRate + "]: " + response);
 
-//        taps = PolyphaseChannelizerFilterFactory.getFilter(2000000, 12500, 0.3);
+        int channelBandwidth = 12500;
+        int channels = 4;
+        int tapsPerChannel = 20;
 
-        taps = FilterFactory.getSinc(10000000, 12500, 450, Window.WindowType.HANNING);
+        taps = FilterFactory.getChannelizer(channelBandwidth, channels, tapsPerChannel, Window.WindowType.BLACKMAN_HARRIS_4);
+
+        double sampleRate = channelBandwidth * channels * 2;
+
+        for(int x = 0; x < 25000; x += 100)
+        {
+            double toEval = (double)x / sampleRate;
+            mLog.debug("Response at [" + x + "] is:" + FilterFactory.evaluate(taps, toEval));
+        }
 
         return taps;
     }

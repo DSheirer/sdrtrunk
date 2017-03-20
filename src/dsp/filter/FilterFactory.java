@@ -1,24 +1,20 @@
 /*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
+ * sdrtrunk
+ * Copyright (C) 2014-2017 Dennis Sheirer
  *
- *	   Root Raised Cosine filter designer:
- *	   Copyright 2002,2007,2008,2012,2013 Free Software Foundation, Inc.
- *	   http://gnuradio.org/redmine/projects/gnuradio/repository/changes/gr-filter
- *	   /lib/firdes.cc?rev=435b1d166f0c7092bbd5e1f788e75dbb6ade3a4b
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
 package dsp.filter;
 
@@ -31,14 +27,12 @@ import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
 
 public class FilterFactory
 {
-    private final static Logger mLog =
-        LoggerFactory.getLogger(FilterFactory.class);
+    private final static Logger mLog = LoggerFactory.getLogger(FilterFactory.class);
 
     /**
      * Generates coefficients for a unity-gain, windowed low-pass filter
@@ -49,42 +43,48 @@ public class FilterFactory
      * @param window - to apply against the coefficients
      * @return
      */
-    public static float[] getSinc(int sampleRate,
-                                  long frequency,
-                                  int length,
-                                  WindowType window)
+    public static float[] getSinc(int sampleRate, long frequency, int length, WindowType window)
     {
-        //Ensure we have an odd length
-        assert (length % 2 == 0);
+        int evenLength = length % 2 == 0 ? length : length + 1;
 
         //Get unity response array (one element longer to align with IDFT size)
-        float[] frequencyResponse = getUnityResponseArray(sampleRate, frequency, length + 1);
+        float[] frequencyResponse = getUnityResponseArray(sampleRate, frequency, evenLength);
 
         //Apply Inverse DFT against frequency response unity values, leaving the
         //IDFT bin results in the frequency response array
-        FloatFFT_1D idft = new FloatFFT_1D(length + 1);
-        idft.realInverseFull(frequencyResponse, false);
+        FloatFFT_1D idft = new FloatFFT_1D(evenLength);
+        idft.realInverseFull(frequencyResponse, true);
 
         //Transfer the IDFT results to the return array
         float[] coefficients = new float[length];
-        int middleCoefficient = (int) (length / 2);
+        int middleCoefficient = (int)(length / 2);
 
-        //Bin 0 of the idft is our center coefficient
-        coefficients[middleCoefficient] = frequencyResponse[0];
-
-        //The remaining idft bins from 1 to (middle - 1) are the mirror image
-        //coefficients
-        for(int x = 1; x < middleCoefficient; x++)
+        if(length % 2 == 0) //Even length
         {
-            coefficients[middleCoefficient + x] = frequencyResponse[2 * x];
-            coefficients[middleCoefficient - x] = frequencyResponse[2 * x];
+            //The remaining idft bins from 1 to (middle - 1) are the mirror image
+            //coefficients
+            for(int x = 0; x < middleCoefficient; x++)
+            {
+                coefficients[middleCoefficient + x] = frequencyResponse[2 * x];
+                coefficients[middleCoefficient - x] = frequencyResponse[2 * x];
+            }
+        }
+        else
+        {
+            //Bin 0 of the idft is our center coefficient
+            coefficients[middleCoefficient] = frequencyResponse[0];
+
+            //The remaining idft bins from 1 to (middle - 1) are the mirror image
+            //coefficients
+            for(int x = 1; x < middleCoefficient; x++)
+            {
+                coefficients[middleCoefficient + x] = frequencyResponse[2 * x];
+                coefficients[middleCoefficient - x] = frequencyResponse[2 * x];
+            }
         }
 
         //Apply the window against the coefficients
         coefficients = Window.apply(window, coefficients);
-
-        //Normalize to unity (1) gain
-        coefficients = normalize(coefficients);
 
         return coefficients;
     }
@@ -96,7 +96,7 @@ public class FilterFactory
      * @param coefficients
      * @return
      */
-    private static float[] normalize(float[] coefficients)
+    public static float[] normalize(float[] coefficients)
     {
         float accumulator = 0;
 
@@ -129,17 +129,15 @@ public class FilterFactory
      * @param length
      * @return
      */
-    public static float[] getUnityResponseArray(int sampleRate,
-                                                long frequency,
-                                                int length)
+    public static float[] getUnityResponseArray(int sampleRate, long frequency, int length)
     {
         float[] unityArray = new float[length * 2];
 
-        int binCount = (int) ((Math.round(
-            (float) frequency / (float) sampleRate * (float) length)));
 
         if(length % 2 == 0) //even length
         {
+            int binCount = (int)((Math.round((float)frequency / (float)sampleRate * (float)length)));
+
             for(int x = 0; x < binCount; x++)
             {
                 unityArray[x] = 1.0f;
@@ -148,9 +146,11 @@ public class FilterFactory
         }
         else //odd length
         {
+            int binCount = (int)((Math.round((float)frequency / (float)sampleRate * (float)length + 0.5)));
+
             unityArray[0] = 1.0f;
 
-            for(int x = 1; x <= binCount; x++)
+            for(int x = 1; x < binCount; x++)
             {
                 unityArray[x] = 1.0f;
                 unityArray[length - x] = 1.0f;
@@ -158,25 +158,6 @@ public class FilterFactory
         }
 
         return unityArray;
-    }
-
-    public static float[] getSine(float sampleRate, float frequency, int length)
-    {
-        float[] retVal = new float[length];
-
-        float radianFrequency = (float) (2.0d * Math.PI * (frequency / sampleRate));
-
-        int middle = (int) (length / 2);
-
-        for(int x = 0; x < middle; x++)
-        {
-            float val = (float) Math.sin(radianFrequency * x);
-
-            retVal[middle + x] = val;
-            retVal[middle - x] = -val;
-        }
-
-        return retVal;
     }
 
     /**
@@ -212,25 +193,9 @@ public class FilterFactory
      * @param windowType - window to apply against the generated coefficients
      * @return
      */
-    public static float[] getLowPass(int sampleRate,
-                                     long cutoff,
-                                     int filterLength,
-                                     WindowType windowType)
+    public static float[] getLowPass(int sampleRate, long cutoff, int filterLength, WindowType windowType)
     {
-        if(filterLength % 2 == 0) //even length
-        {
-            float[] values = getSinc(sampleRate, cutoff, filterLength + 2, windowType);
-
-            //throw away the 0 index and the last index
-            return Arrays.copyOfRange(values, 1, values.length - 2);
-        }
-        else
-        {
-            float[] values = getSinc(sampleRate, cutoff, filterLength + 1, windowType);
-
-            //throw away the 0 index
-            return Arrays.copyOfRange(values, 1, values.length);
-        }
+        return getSinc(sampleRate, cutoff, filterLength, windowType);
     }
 
     /**
@@ -247,26 +212,17 @@ public class FilterFactory
      * - passFrequency < stopFrequency
      * - stopFrequency <= sampleRate/2
      */
-    public static float[] getLowPass(int sampleRate,
-                                     int passFrequency,
-                                     int stopFrequency,
-                                     int attenuation,
-                                     WindowType windowType,
-                                     boolean forceOddLength)
+    public static float[] getLowPass(int sampleRate, int passFrequency, int stopFrequency, int attenuation,
+                                     WindowType windowType, boolean forceOddLength)
     {
         if(stopFrequency < passFrequency || stopFrequency > (sampleRate / 2))
         {
-            throw new IllegalArgumentException("FilterFactory - low pass "
-                + "filter pass frequency [" + passFrequency + "] must be "
-                + "less than the stop frequency [" + stopFrequency + "] "
-                + "and must be less than half [" + (int) (sampleRate / 2) +
-                "] of the sample rate [" + sampleRate + "]");
+            throw new IllegalArgumentException("FilterFactory - low pass filter pass frequency [" + passFrequency +
+                "] must be less than the stop frequency [" + stopFrequency + "] and must be less than half [" +
+                (int)(sampleRate / 2) + "] of the sample rate [" + sampleRate + "]");
         }
 
-        int tapCount = getTapCount(sampleRate,
-            passFrequency,
-            stopFrequency,
-            attenuation);
+        int tapCount = getTapCount(sampleRate, passFrequency, stopFrequency, attenuation);
 
         if(forceOddLength)
         {
@@ -300,10 +256,7 @@ public class FilterFactory
         //inversion, its at the correct frequency
         long convertedCutoff = sampleRate / 2 - cutoff;
 
-        return invert(getSinc(sampleRate,
-            convertedCutoff,
-            filterLength,
-            windowType));
+        return invert(getSinc(sampleRate, convertedCutoff, filterLength, windowType));
     }
 
     public static float[] getHighPass(int sampleRate,
@@ -378,16 +331,16 @@ public class FilterFactory
                                   long stop,
                                   int attenuation)
     {
-        double frequency = ((double) stop - (double) pass) / (double) sampleRate;
+        double frequency = ((double)stop - (double)pass) / (double)sampleRate;
 
-        return (int) (Math.round((double) attenuation / (22.0d * frequency)));
+        return (int)(Math.round((double)attenuation / (22.0d * frequency)));
     }
 
     public static ComplexPrimeCICDecimate getDecimationFilter(int sampleRate,
                                                               int decimatedRate, int order, int passFrequency, int attenuation,
                                                               WindowType windowType)
     {
-        int decimationRate = (int) (sampleRate / decimatedRate);
+        int decimationRate = (int)(sampleRate / decimatedRate);
 
         return new ComplexPrimeCICDecimate(decimationRate, order,
             passFrequency, attenuation, windowType);
@@ -415,7 +368,7 @@ public class FilterFactory
                 + "integer multiple of sample rate");
         }
 
-        int decimation = (int) (sampleRate / decimatedRate);
+        int decimation = (int)(sampleRate / decimatedRate);
 
         //Decimation rates below 20 will use single stage polyphase filter
         if(decimation < 20)
@@ -448,7 +401,7 @@ public class FilterFactory
             {
                 rates = new int[2];
 
-                int stage2 = (int) (decimation / stage1);
+                int stage2 = (int)(decimation / stage1);
 
                 if(stage1 > stage2)
                 {
@@ -499,11 +452,11 @@ public class FilterFactory
     private static Set<Integer> getFactors(int value)
     {
         Set<Integer> factors = new TreeSet<Integer>();
-		
+
 		/* Brute force */
         for(int x = 1; x <= value; x++)
         {
-            int remainder = (int) (value / x);
+            int remainder = (int)(value / x);
 
             if(remainder * x == value)
             {
@@ -530,25 +483,15 @@ public class FilterFactory
      * @return optimum integer decimation rate for the first stage decimation
      * filter
      */
-    public static int getOptimalStageOneRate(int sampleRate,
-                                             int decimation,
-                                             long passFrequency,
-                                             long stopFrequency)
+    public static int getOptimalStageOneRate(int sampleRate, int decimation, long passFrequency, long stopFrequency)
     {
         double ratio = getBandwidthRatio(passFrequency, stopFrequency);
 
-        double numerator = 1.0d - (
-            Math.sqrt((double) decimation * ratio / (2.0d - ratio)));
+        double numerator = 1.0d - (Math.sqrt((double)decimation * ratio / (2.0d - ratio)));
 
         double denominator = 2.0d - (ratio * (decimation + 1.0d));
 
-        int retVal = (int) (2.0d * decimation * (numerator / denominator));
-
-//		mLog.info( "Optimal Stage 1 Decimation - rate [" + sampleRate +
-//				  "] pass [" + passFrequency +
-//				  "] bw ratio [" + ratio +
-//				  "] optimal [" + retVal +
-//				  "]" );
+        int retVal = (int)(2.0d * decimation * (numerator / denominator));
 
         return retVal;
     }
@@ -564,8 +507,8 @@ public class FilterFactory
     {
         assert (passFrequency < stopFrequency);
 
-        return ((double) (stopFrequency - passFrequency) /
-            (double) stopFrequency);
+        return ((double)(stopFrequency - passFrequency) /
+            (double)stopFrequency);
     }
 
     /**
@@ -576,14 +519,11 @@ public class FilterFactory
      * @param outputSampleRate
      * @return
      */
-    public static float[] getCICCleanupFilter(int outputSampleRate,
-                                              int passFrequency,
-                                              int attenuation,
-                                              WindowType window)
+    public static float[] getCICCleanupFilter(int outputSampleRate, int passFrequency, int attenuation, WindowType window)
     {
         int taps = getTapCount(outputSampleRate, passFrequency, passFrequency + 1500,
             attenuation);
-		
+
 		/* Make tap count odd */
         if(taps % 2 == 0)
         {
@@ -600,7 +540,7 @@ public class FilterFactory
 
         //Transfer the IDFT results to the odd length return array
         float[] coefficients = new float[taps];
-        int middleCoefficient = (int) (taps / 2);
+        int middleCoefficient = (int)(taps / 2);
 
         //Bin 0 of the idft is our center coefficient
         coefficients[middleCoefficient] = frequencyResponse[0];
@@ -621,26 +561,22 @@ public class FilterFactory
         return coefficients;
     }
 
-    public static float[] getCICResponseArray(int sampleRate,
-                                              int frequency,
-                                              int length)
+    public static float[] getCICResponseArray(int sampleRate, int frequency, int length)
     {
         float[] cicArray = new float[length * 2];
 
-        int binCount = (int) ((Math.round(
-            (double) frequency / (double) sampleRate * 2.0d * (double) length)));
+        int binCount = (int)((Math.round(
+            (double)frequency / (double)sampleRate * 2.0d * (double)length)));
 
         cicArray[0] = 1.0f;
 
-        float unityResponse = (float) (Math.sin(1.0d / (double) length) /
-            (1.0d / (double) length));
+        float unityResponse = (float)(Math.sin(1.0d / (double)length) /
+            (1.0d / (double)length));
 
         for(int x = 1; x <= binCount; x++)
         {
-			/* Calculate unity response plus amplification for droop */
-            float compensated = 1.0f + (unityResponse -
-                (float) (Math.sin((double) x / (double) length) /
-                    ((double) x / (double) length)));
+            /* Calculate unity response plus amplification for droop */
+            float compensated = 1.0f + (unityResponse - (float)(Math.sin((double)x / (double)length) / ((double)x / (double)length)));
 
             cicArray[x] = compensated;
             cicArray[length - x] = compensated;
@@ -672,7 +608,6 @@ public class FilterFactory
      * @param samplesPerSymbol - number of samples per symbol
      * @param symbolCount - number of symbol intervals for the filter.  This directly impacts the filter size
      * @param alpha - roll-off factor.
-     *
      * @return - filter coefficients
      */
     public static float[] getRootRaisedCosine(int samplesPerSymbol, int symbolCount, float alpha)
@@ -685,10 +620,10 @@ public class FilterFactory
 
         for(int x = 0; x < taps; x++)
         {
-            float index = (float) x - ((float) taps / 2.0f);
+            float index = (float)x - ((float)taps / 2.0f);
 
-            float x1 = (float) Math.PI * index / (float) samplesPerSymbol;
-            float x2 = 4.0f * alpha * index / (float) samplesPerSymbol;
+            float x1 = (float)Math.PI * index / (float)samplesPerSymbol;
+            float x2 = 4.0f * alpha * index / (float)samplesPerSymbol;
             float x3 = x2 * x2 - 1.0f;
 
             float numerator, denominator;
@@ -697,17 +632,15 @@ public class FilterFactory
             {
                 if(x != taps / 2)
                 {
-                    numerator = (float) Math.cos((1.0 + alpha) * x1) +
-                        (float) Math.sin((1.0f - alpha) * x1) /
-                            (4.0f * alpha * index / (float) samplesPerSymbol);
+                    numerator = (float)Math.cos((1.0 + alpha) * x1) +
+                        (float)Math.sin((1.0f - alpha) * x1) / (4.0f * alpha * index / (float)samplesPerSymbol);
                 }
                 else
                 {
-                    numerator = (float) Math.cos((1.0f + alpha) * x1) +
-                        (1.0f - alpha) * (float) Math.PI / (4.0f * alpha);
+                    numerator = (float)Math.cos((1.0f + alpha) * x1) + (1.0f - alpha) * (float)Math.PI / (4.0f * alpha);
                 }
 
-                denominator = x3 * (float) Math.PI;
+                denominator = x3 * (float)Math.PI;
             }
             else
             {
@@ -720,14 +653,11 @@ public class FilterFactory
                 x3 = (1.0f - alpha) * x1;
                 x2 = (1.0f + alpha) * x1;
 
-                numerator = (float) (Math.sin(x2) * (1.0f + alpha) * Math.PI -
-                    Math.cos(x3) * ((1.0 - alpha) * Math.PI *
-                        (double) samplesPerSymbol) / (4 * alpha * index) +
-                    Math.sin(x3) * (double) samplesPerSymbol *
-                        (double) samplesPerSymbol / (4.0 * alpha * index * index));
+                numerator = (float)(Math.sin(x2) * (1.0f + alpha) * Math.PI - Math.cos(x3) * ((1.0 - alpha) * Math.PI *
+                    (double)samplesPerSymbol) / (4.0 * alpha * index) + Math.sin(x3) * (double)samplesPerSymbol *
+                    (double)samplesPerSymbol / (4.0 * alpha * index * index));
 
-                denominator = (float) (-32.0 * Math.PI * alpha * alpha * index /
-                    (double) samplesPerSymbol);
+                denominator = (float)(-32.0 * Math.PI * alpha * alpha * index / (double)samplesPerSymbol);
             }
 
             coefficients[x] = 4.0f * alpha * numerator / denominator;
@@ -763,5 +693,101 @@ public class FilterFactory
         }
 
         return null;
+    }
+
+    /**
+     * Evaluates the filter to determine the magnitude response (dB) at the specified frequency.
+     *
+     * @param filter to evaluate
+     * @param frequency to calculate (0 <> 0.5)
+     * @return magnitude frequency response in decibels
+     */
+    public static double evaluate(float[] filter, double frequency)
+    {
+        double real = 0.0;
+        double imag = 0.0;
+
+        for(int x = 0; x < filter.length; x++)
+        {
+            real += filter[x] * Math.cos(Math.PI * frequency * (double)x);
+            imag += filter[x] * Math.sin(Math.PI * frequency * (double)x);
+        }
+
+        return decibel(real, imag);
+    }
+
+    public static double decibel(double real, double imag)
+    {
+        return (float)(10.0 * Math.log10(Math.pow(real, 2.0) + Math.pow(imag, 2.0)));
+    }
+
+    public static float[] getChannelizer(int channelBandwidth, int channels, int tapsPerChannel, WindowType windowType)
+    {
+        int sampleRate = channelBandwidth * channels * 2;
+        int filterLength = channels * tapsPerChannel;
+
+        double objective = -6.0;
+        int cutoff = channelBandwidth;
+        int increment = (int)((double)channelBandwidth * .1);
+
+        float[] taps = null;
+        double response = 0.0;
+
+        while(increment > 1)
+        {
+            taps = FilterFactory.getLowPass(sampleRate, cutoff, filterLength, windowType);
+
+            double responseToCompare = FilterFactory.evaluate(taps, (double)channelBandwidth / (double)sampleRate );
+
+            mLog.debug("Comparing: " + responseToCompare + " Previous:" + response + " Cutoff:" + cutoff + " Increment:" + increment);
+
+            double a = Math.abs(objective - responseToCompare);
+            double b = Math.abs(objective - response);
+
+            if(a == b)
+            {
+                cutoff -= increment;
+            }
+            else if(a < b)
+            {
+                response = responseToCompare;
+                cutoff -= increment;
+            }
+            else
+            {
+                //reset the cutoff
+                if(cutoff < channelBandwidth)
+                {
+                    cutoff += increment;
+                }
+
+                increment /= 2;
+
+                if(increment == 1)
+                {
+                    taps = FilterFactory.getLowPass(sampleRate, cutoff, filterLength, windowType);
+                }
+            }
+        }
+
+        if(response < objective)
+        {
+            mLog.debug("Checking ...");
+            float[] tapsToCompare = FilterFactory.getLowPass(sampleRate, cutoff + 1, filterLength, windowType);
+            double responseToCompare = FilterFactory.evaluate(tapsToCompare, (double)channelBandwidth / (double)sampleRate );
+
+            if(Math.abs(objective - responseToCompare) < Math.abs(objective - response))
+            {
+                mLog.debug("Using Cutoff:" + cutoff + 1);
+                taps = tapsToCompare;
+            }
+            else
+            {
+                mLog.debug("Staying at cutoff: " + cutoff + " And Response at 12500 of:" + response);
+            }
+        }
+
+
+        return taps;
     }
 }

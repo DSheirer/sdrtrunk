@@ -70,7 +70,7 @@ public class DFTProcessor implements Listener<ComplexBuffer>, IFrequencyChangePr
 
     /* The Cosine and Hanning windows seem to offer the best spectral display
      * with minimal bin leakage/smearing */
-    private WindowType mWindowType = Window.WindowType.HANNING;
+    private WindowType mWindowType = WindowType.BLACKMAN_HARRIS_7;
 
     private FloatFFT_1D mFFT = new FloatFFT_1D(mDFTSize.getSize());
 

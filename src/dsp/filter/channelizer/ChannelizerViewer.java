@@ -18,7 +18,8 @@
  ******************************************************************************/
 package dsp.filter.channelizer;
 
-import dsp.filter.FilterFactory;
+import dsp.filter.*;
+import dsp.filter.Window;
 import dsp.filter.design.FilterDesignException;
 import dsp.filter.fir.FIRFilterSpecification;
 import dsp.filter.fir.remez.RemezFIRFilterDesigner;
@@ -184,48 +185,12 @@ public class ChannelizerViewer extends JFrame
 
     private float[] getFilter()
     {
-        int symbolRate = 4800;
-        int samplesPerSymbol = 2;
-        int symbolCount = 14;
-
-        //Alpha is the residual channel bandwidth left over from the symbol rate and samples per symbol
-//        float alpha = ((float)CHANNEL_BANDWIDTH / (float)(symbolRate * samplesPerSymbol)) - 1.0f;
-
-        float alpha = 0.8f;
-
-//        float[] taps = FilterFactory.getRootRaisedCosine(samplesPerSymbol * mChannelCount, symbolCount, alpha);
-        float[] taps = null;
-
-        FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-            .sampleRate(CHANNEL_BANDWIDTH * 2 * mChannelCount)
-            .gridDensity(16)
-            .passBandAmplitude(1.0)
-            .passBandCutoff(11900)
-            .passBandRipple(0.01)
-            .stopBandAmplitude(0.0)
-            .stopBandRipple(0.001)
-            .stopBandStart(13100)
-            .build();
-
-        try
-        {
-            RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
-
-            if(designer.isValid())
-            {
-                taps = designer.getImpulseResponse();
-            }
-        }
-        catch(FilterDesignException fde)
-        {
-            mLog.error("Filter design error", fde);
-        }
-
+        float[] taps = FilterFactory.getChannelizer(CHANNEL_BANDWIDTH, mChannelCount, 16, Window.WindowType.BLACKMAN_HARRIS_7);
 
         StringBuilder sb = new StringBuilder();
         sb.append("\nPolyphase Channelizer\n");
         sb.append("Sample Rate:" + mSampleRate + " Channels:" + mChannelCount + " Channel Rate:" + CHANNEL_BANDWIDTH + "\n");
-        sb.append("Alpha: " + alpha + " Tap Count:" + taps.length + "\n");
+        sb.append("Tap Count:" + taps.length + "\n");
         sb.append("Channel:" + mToneFrequency);
         mLog.debug(sb.toString());
 
@@ -256,7 +221,7 @@ public class ChannelizerViewer extends JFrame
         {
             setLayout(new MigLayout("insets 0 0 0 0", "fill", "fill"));
 
-            int channelsPerRow = 16;
+            int channelsPerRow = 20;
 
             for(int x = 0; x < mChannelCount; x++)
             {
@@ -346,7 +311,7 @@ public class ChannelizerViewer extends JFrame
 
     public static void main(String[] args)
     {
-        int channelCount = 4;
+        int channelCount = 10;
 
         final ChannelizerViewer frame = new ChannelizerViewer(channelCount);
 
