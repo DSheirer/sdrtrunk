@@ -6,21 +6,9 @@
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$/images" type="java-resource" />
       <sourceFolder url="file://$MODULE_DIR$/config" type="java-resource" />
-      <sourceFolder url="file://$MODULE_DIR$" type="java-resource" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="imports" level="project" />
-    <orderEntry type="module-library">
-      <library>
-        <CLASSES>
-          <root url="jar://$MODULE_DIR$/../jmbe/jmbe/library/jmbe-0.3.3.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
-    <orderEntry type="library" name="org.asynchttpclient:async-http-client:2.0.18" level="project" />
-    <orderEntry type="library" name="commons-math3-3.6.1" level="project" />
   </component>
 </module>
