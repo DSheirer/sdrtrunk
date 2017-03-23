@@ -1557,6 +1557,7 @@ public class P25DecoderState extends DecoderState
                     break;
                 case IDENTIFIER_UPDATE_NON_VUHF:
                 case IDENTIFIER_UPDATE_VHF_UHF_BANDS:
+                case IDENTIFIER_UPDATE_TDMA:
                     IdentifierUpdate iu = (IdentifierUpdate)tsbk;
 
                     if(!mBands.containsKey(iu.getIdentifier()))
