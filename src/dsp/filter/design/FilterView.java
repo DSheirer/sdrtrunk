@@ -22,7 +22,7 @@ public class FilterView extends BorderPane
     private CurveFittedAreaChart mDFTChart;
     private NumberAxis mDFTXAxis;
     private NumberAxis mDFTYAxis;
-    private static final int FFT_SIZE = 4096;
+    private static final int FFT_SIZE = 2048;
     private FloatFFT_1D mFFT = new FloatFFT_1D(FFT_SIZE);
 
     public FilterView(float[] taps)
@@ -156,7 +156,8 @@ public class FilterView extends BorderPane
         for(int x = 0; x < decibels.length; x++)
         {
             index = x * 2;
-            decibels[x] = 10.0f * (float)Math.log10((dft[index] * dft[index]) + (dft[index + 1] * dft[index + 1]));
+            double magnitude = Math.sqrt(Math.pow(dft[index], 2.0) + Math.pow(dft[index + 1], 2.0));
+            decibels[x] = (float)(20.0 * Math.log10(magnitude));
         }
 
         return decibels;

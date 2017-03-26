@@ -30,9 +30,13 @@ import org.slf4j.LoggerFactory;
 import java.util.Set;
 import java.util.TreeSet;
 
+/**
+ * Utility methods for designing various types of filters.
+ */
 public class FilterFactory
 {
     private final static Logger mLog = LoggerFactory.getLogger(FilterFactory.class);
+    private static final double PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE = -6.020599842071533; //decibel(0.5)
 
     /**
      * Generates coefficients for a unity-gain, windowed low-pass filter
@@ -246,10 +250,7 @@ public class FilterFactory
      * @param windowType - window to apply against the generated coefficients
      * @return
      */
-    public static float[] getHighPass(int sampleRate,
-                                      long cutoff,
-                                      int filterLength,
-                                      WindowType windowType)
+    public static float[] getHighPass(int sampleRate, long cutoff, int filterLength, WindowType windowType)
     {
         //Convert the high frequency cutoff to its low frequency cutoff
         //equivalent, so that when we generate the low pass filter, prior to
@@ -259,18 +260,11 @@ public class FilterFactory
         return invert(getSinc(sampleRate, convertedCutoff, filterLength, windowType));
     }
 
-    public static float[] getHighPass(int sampleRate,
-                                      long stopFrequency,
-                                      long passFrequency,
-                                      int attenuation,
-                                      WindowType windowType,
-                                      boolean forceOddLength)
+    public static float[] getHighPass(int sampleRate, long stopFrequency, long passFrequency, int attenuation,
+                                      WindowType windowType, boolean forceOddLength)
     {
         /* reverse the stop and pass frequency to get the low pass variant */
-        int tapCount = getTapCount(sampleRate,
-            stopFrequency,
-            passFrequency,
-            attenuation);
+        int tapCount = getTapCount(sampleRate, stopFrequency, passFrequency, attenuation);
 
         if(forceOddLength)
         {
@@ -314,11 +308,10 @@ public class FilterFactory
     }
 
     /**
-     * Determines the number of fir filter taps required to produce the
-     * specified frequency response with passband ripple near .1dB.
+     * Determines the number of fir filter taps required to produce the specified frequency response with passband
+     * ripple near 0.1dB.
      *
-     * Implements the algorithm from Understanding Digital Signal Processing, 3e
-     * , Lyons, section 5.10.5.
+     * Implements the algorithm from Understanding Digital Signal Processing, 3e, Lyons, section 5.10.5.
      *
      * @param sampleRate in hertz
      * @param pass pass frequency in hertz
@@ -326,19 +319,15 @@ public class FilterFactory
      * @param attenuation in dB
      * @return
      */
-    public static int getTapCount(int sampleRate,
-                                  long pass,
-                                  long stop,
-                                  int attenuation)
+    public static int getTapCount(int sampleRate, long pass, long stop, int attenuation)
     {
         double frequency = ((double)stop - (double)pass) / (double)sampleRate;
 
         return (int)(Math.round((double)attenuation / (22.0d * frequency)));
     }
 
-    public static ComplexPrimeCICDecimate getDecimationFilter(int sampleRate,
-                                                              int decimatedRate, int order, int passFrequency, int attenuation,
-                                                              WindowType windowType)
+    public static ComplexPrimeCICDecimate getDecimationFilter(int sampleRate, int decimatedRate, int order,
+                                                              int passFrequency, int attenuation, WindowType windowType)
     {
         int decimationRate = (int)(sampleRate / decimatedRate);
 
@@ -355,10 +344,7 @@ public class FilterFactory
      * polyphase filter decimation chain
      * @throws - AssertionException if sample rate is not a multiple of 48 kHz
      */
-    public static int[] getPolyphaseDecimationRates(int sampleRate,
-                                                    int decimatedRate,
-                                                    long passFrequency,
-                                                    long stopFrequency)
+    public static int[] getPolyphaseDecimationRates(int sampleRate, int decimatedRate, long passFrequency, long stopFrequency)
     {
         int[] rates;
 
@@ -385,11 +371,6 @@ public class FilterFactory
             Set<Integer> factors = getFactors(decimation);
 
             int stage1 = findClosest(optimalStage1, factors);
-
-//			mLog.info( "Decimation rate [" + decimation +
-//					  "] stage1 optimal [" + optimalStage1 +
-//					  "] stage1 actual [" + stage1 +
-//					  "]");
 
             if(stage1 == decimation || stage1 == 1)
             {
@@ -419,8 +400,7 @@ public class FilterFactory
     }
 
     /**
-     * Finds the factor that is closest to the desired factor, from an ordered
-     * list of factors.
+     * Finds the factor that is closest to the desired factor, from an ordered list of factors.
      */
     private static int findClosest(int desiredFactor, Set<Integer> factors)
     {
@@ -442,9 +422,8 @@ public class FilterFactory
     }
 
     /**
-     * Determines the factors that make up an integer.  Uses a brute force
-     * method to iterate all integers from 1 to value, determining which factors
-     * are evenly divisible into the value.
+     * Determines the factors that make up an integer.  Uses a brute force method to iterate all integers from 1 to
+     * value, determining which factors are evenly divisible into the value.
      *
      * @param value - integer decimation value
      * @return - ordered set of factors for value
@@ -468,14 +447,10 @@ public class FilterFactory
     }
 
     /**
-     * Determines the optimal decimation rate for stage 1 of a two-stage
-     * poly-phase decimation filter chain, to produce a final sample rate of
-     * 48 kHz using a pass bandwidth of 25 kHz.
+     * Determines the optimal decimation rate for stage 1 of a two-stage poly-phase decimation filter chain, to produce
+     * a final sample rate of 48 kHz using a pass bandwidth of 25 kHz.  Use for total decimation rates of 20 or higher.
      *
-     * Use for total decimation rates of 20 or higher.
-     *
-     * Implements the algorithm described in Lyons, Understanding Digital Signal
-     * Processing, 3e, section 10.2.1, page 511.
+     * Implements the algorithm described in Lyons, Understanding Digital Signal Processing, 3e, section 10.2.1, page 511.
      *
      * @param sampleRate
      * @param decimation
@@ -497,11 +472,8 @@ public class FilterFactory
     }
 
     /**
-     * Determines the F ratio as described in Lyons, Understanding Digital
-     * Signal Processing, 3e, section 10.2.1, page 511
-     *
-     * Used in conjunction with the optimal stage one decimation rate method
-     * above.
+     * Determines the F ratio as described in Lyons, Understanding Digital Signal Processing, 3e, section 10.2.1, page 511
+     * Used in conjunction with the optimal stage one decimation rate method above.
      */
     private static double getBandwidthRatio(long passFrequency, long stopFrequency)
     {
@@ -586,21 +558,17 @@ public class FilterFactory
     }
 
     /**
-     * Creates root raised cosine filter coefficients with a tap count equal
-     * to the symbols x samplesPerSymbol + 1.
+     * Creates root raised cosine filter coefficients with a tap count equal to the symbols x samplesPerSymbol + 1.
      *
      * Symbol count should be an even integer.
-     *
      * Ported to java from gnuradio/filter/firdes.cc
      *
-     * For 40db attenuation, calculate the number of symbols based on the
-     * following formula:
-     *
-     * Symbols = -44 * alpha + 33
+     * For 40db attenuation, calculate the number of symbols based on the following formula:
+     *    Symbols = -44 * alpha + 33
      *
      * Polyphase Channelizer notes:
      * -Set samples Per Symbol at 2 (or more) * number of channels
-     * -Set symbolCount to sufficient size to produce requireded attenuation
+     * -Set symbolCount to sufficient size to produce required attenuation
      * -Set symbol rate in hertz
      * -Set alpha = (desired channel bandwidth / (symbol rate * samples per symbol) - 1.0
      * -Channel bandwidth must be larger than symbol rate * samples per symbol, in order for there to be a positive alpha
@@ -677,10 +645,10 @@ public class FilterFactory
     }
 
     /**
-     * Creates a filter from the filter specification
+     * Creates a filter from the filter specification using the remez exchange design algorithm
      *
      * @param specification
-     * @return
+     * @return filter coefficients
      * @throws FilterDesignException if the filter cannot be designed
      */
     public static float[] getTaps(FIRFilterSpecification specification) throws FilterDesignException
@@ -716,78 +684,195 @@ public class FilterFactory
         return decibel(real, imag);
     }
 
+    /**
+     * Calculates the decibel magnitude of the real and imaginary complex sample
+     * @param real (x-axis) value
+     * @param imag (y-axis) value
+     * @return magnitude in decibels
+     */
     public static double decibel(double real, double imag)
     {
         return (float)(10.0 * Math.log10(Math.pow(real, 2.0) + Math.pow(imag, 2.0)));
     }
 
-    public static float[] getChannelizer(int channelBandwidth, int channels, int tapsPerChannel, WindowType windowType)
+    /**
+     * Creates a windowed-sync (Nyquist) M/2 prototype FIR filter for use with a Polyphase Channelizer/Synthesizer.
+     * The filter is designed for x2 oversampling of each channel and the filter cutoff frequency is incrementally
+     * adjusted to achieve a -6.02 dB attenuation at the channel band edge to enable perfect reconstruction of adjacent
+     * channels.
+     *
+     * The odd length sync filter that meets the design objectives will be increased in length by pre-padding a zero
+     * coefficient to produce a filter with a length that is an integral of the channel count.
+     *
+     * Note: the tapsPerChannel value will be iteratively increased (up to 10x) if a filter cannot be designed to meet
+     * the channel band edge attenuation objective.
+     *
+     * Note: a channelizer filter designed using a Blackman-Harris-7 window and 18-21 taps per channel creates a filter
+     * with attenuation in range of -60 to -80 dB at the edge of the 2x sampled channel.
+     *
+     * @param channelBandwidth - full bandwidth of the channel in hertz
+     * @param channels - number of channels
+     * @param tapsPerChannel - desired filter tap count per channel (may be increased to meet objective)
+     * @param windowType - to use when designing the windowed-sync filter
+     * @param logResults - to log a debug summary of the filter characteristics
+     *
+     * @return filter coefficients
+     *
+     * @throws FilterDesignException if a filter cannot be designed with a band edge attenuation of -6.02 dB
+     */
+    public static float[] getChannelizer(int channelBandwidth, int channels, int tapsPerChannel, WindowType windowType,
+                                         boolean logResults) throws FilterDesignException
     {
+        int currentTapsPerChannel = tapsPerChannel;
         int sampleRate = channelBandwidth * channels * 2;
-        int filterLength = channels * tapsPerChannel;
+        int filterLength = (channels * currentTapsPerChannel) - 1;
 
-        double objective = -6.0;
-        int cutoff = channelBandwidth;
-        int increment = (int)((double)channelBandwidth * .1);
+        double cutoffFrequency = ((double)channelBandwidth / (double)sampleRate);
+        double bandEdge = cutoffFrequency;
+        double increment = cutoffFrequency * 0.1;
 
-        float[] taps = null;
-        double response = 0.0;
+        //Get an initial filter and band edge frequency response using the channel bandwidth as a cutoff
+        float[] taps = FilterFactory.getSinc(cutoffFrequency, filterLength, windowType);
+        double response = FilterFactory.evaluate(taps, bandEdge);
 
-        while(increment > 1)
+        //Set cutoff adjustment threshold - we'll test cutoff frequencies to around 1 hertz resolution
+        double incrementThreshold = 1.0 / (double)sampleRate;
+
+        //Iteratively evaluate filters to find the filter with the highest cutoff frequency that meets the objective
+        while(increment > incrementThreshold)
         {
-            taps = FilterFactory.getLowPass(sampleRate, cutoff, filterLength, windowType);
-
-            double responseToCompare = FilterFactory.evaluate(taps, (double)channelBandwidth / (double)sampleRate );
-
-            mLog.debug("Comparing: " + responseToCompare + " Previous:" + response + " Cutoff:" + cutoff + " Increment:" + increment);
-
-            double a = Math.abs(objective - responseToCompare);
-            double b = Math.abs(objective - response);
-
-            if(a == b)
+            //If the current cutoff meets the objective, test if a higher cutoff also meets the objective
+            if(matchesObjective(response, PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE) &&
+                (cutoffFrequency + increment <= bandEdge))
             {
-                cutoff -= increment;
+                float[] higherCutoffTaps = FilterFactory.getSinc(cutoffFrequency + increment, filterLength, windowType);
+                double higherCutoffResponse = FilterFactory.evaluate(higherCutoffTaps, bandEdge);
+
+                if(matchesObjective(higherCutoffResponse, PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE))
+                {
+                    cutoffFrequency += increment;
+                    taps = higherCutoffTaps;
+                    response = higherCutoffResponse;
+                }
+                else
+                {
+                    increment /= 2.0;
+                }
             }
-            else if(a < b)
+            //If the current cutoff meets the objective, decrease the increment to test for smaller resolution cutoffs
+            else if(matchesObjective(response, PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE))
             {
-                response = responseToCompare;
-                cutoff -= increment;
+                increment /= 2.0;
             }
+            //Decrease the cutoff frequency - we can't meet the objective
             else
             {
-                //reset the cutoff
-                if(cutoff < channelBandwidth)
+                cutoffFrequency -= increment;
+
+                if(cutoffFrequency <= 0)
                 {
-                    cutoff += increment;
+                    if(logResults)
+                    {
+                        mLog.debug("Warning: cannot design channelizer filter with tap count [" + currentTapsPerChannel +
+                            "] increasing tap count and starting over");
+                    }
+
+                    currentTapsPerChannel++;
+
+                    //After we've attempted increasing the taps per channel 10x, give up
+                    if(currentTapsPerChannel > (tapsPerChannel + 10))
+                    {
+                        throw new FilterDesignException("Couldn't design filter with taps per channel count in the " +
+                            "range of " + tapsPerChannel + " - " + (tapsPerChannel + 10));
+                    }
+
+                    filterLength = channels * currentTapsPerChannel - 1;
+                    cutoffFrequency = ((double)channelBandwidth / (double)sampleRate);
+                    increment = cutoffFrequency * 0.1;
                 }
 
-                increment /= 2;
-
-                if(increment == 1)
-                {
-                    taps = FilterFactory.getLowPass(sampleRate, cutoff, filterLength, windowType);
-                }
+                taps = FilterFactory.getSinc(cutoffFrequency, filterLength, windowType);
+                response = FilterFactory.evaluate(taps, bandEdge);
             }
         }
 
-        if(response < objective)
+        //This will probably never happen, but ...
+        if(!matchesObjective(response, PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE))
         {
-            mLog.debug("Checking ...");
-            float[] tapsToCompare = FilterFactory.getLowPass(sampleRate, cutoff + 1, filterLength, windowType);
-            double responseToCompare = FilterFactory.evaluate(tapsToCompare, (double)channelBandwidth / (double)sampleRate );
-
-            if(Math.abs(objective - responseToCompare) < Math.abs(objective - response))
-            {
-                mLog.debug("Using Cutoff:" + cutoff + 1);
-                taps = tapsToCompare;
-            }
-            else
-            {
-                mLog.debug("Staying at cutoff: " + cutoff + " And Response at 12500 of:" + response);
-            }
+            throw new FilterDesignException("Cannot design filter to specifications");
         }
 
+        if(logResults)
+        {
+            mLog.debug("Polyphase Channelizer Filter Design Summary");
+            mLog.debug("-------------------------------------------");
+            mLog.debug("Channels: " + channels);
+            mLog.debug("Taps Per Channel: " + tapsPerChannel);
+            mLog.debug("Filter Length: " + (taps.length + 1));
+            mLog.debug("Channel Bandwidth: " + channelBandwidth);
+            mLog.debug("Cutoff Frequency: " + (sampleRate * cutoffFrequency));
+            mLog.debug("Attenuation at 1.00 OBJECTIVE: " + PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE);
+            mLog.debug("Attenuation at 1.00 Channels:  " + evaluate(taps, bandEdge * 1.00));
+            mLog.debug("Attenuation at 1.25 Channels:  " + evaluate(taps, bandEdge * 1.25));
+            mLog.debug("Attenuation at 1.50 Channels:  " + evaluate(taps, bandEdge * 1.50));
+            mLog.debug("Attenuation at 1.75 Channels:  " + evaluate(taps, bandEdge * 1.75));
+            mLog.debug("Attenuation at 2.00 Channels:  " + evaluate(taps, bandEdge * 2.00));
+        }
 
-        return taps;
+        //This is an odd length filter - increase the length by 1 by pre-padding a zero coefficient
+        float[] extendedTaps = new float[taps.length + 1];
+        System.arraycopy(taps, 0, extendedTaps, 1, taps.length);
+
+        return extendedTaps;
+    }
+
+    /**
+     * Creates a windowed-sync (Nyquist) filter.
+     *
+     * @param cutoff frequency (0.0 <> 0.5)
+     * @param length of the filter - must be odd-length
+     * @param windowType to use in designing the filter
+     * @return filter coefficients.
+     * @throws FilterDesignException if the requested length is not odd
+     */
+    public static float[] getSinc(double cutoff, int length, WindowType windowType) throws FilterDesignException
+    {
+        if(length % 2 == 0)
+        {
+            throw new FilterDesignException("Sinc filters must be odd-length");
+        }
+
+        float[] coefficients = new float[length];
+        int half = length / 2;
+
+        double[] window = Window.getWindow(windowType, length);
+
+        double scalor = 2.0 * cutoff;
+        double piScalor = Math.PI * scalor;
+
+        coefficients[half] = (float)(1.0 * scalor);
+
+        for(int x = 1; x <= half; x++)
+        {
+            double a = piScalor * x;
+            double coefficient = scalor * Math.sin(a) / a;
+
+            coefficient *= window[half + x];
+            coefficients[half + x] = (float)coefficient;
+            coefficients[half - x] = (float)coefficient;
+        }
+
+        return coefficients;
+    }
+
+    /**
+     * Compares two doubles for equals and avoids any rounding error that are present.
+     * @param a value to compare
+     * @param objective value to compare
+     * @return true if they are equivalent within the margin of error
+     */
+    private static boolean matchesObjective(double a, double objective)
+    {
+        return Math.abs(a - objective) < 0.0000000001;
     }
 }

@@ -5,6 +5,7 @@ import dsp.filter.Window;
 import dsp.filter.fir.FIRFilterSpecification;
 import dsp.filter.fir.remez.PolyphaseChannelizerFilterFactory;
 import dsp.filter.fir.remez.RemezFIRFilterDesigner;
+import dsp.filter.fir.remez.RemezFIRFilterDesigner2;
 import dsp.filter.fir.remez.RemezFIRFilterDesignerWithLagrange;
 import filter.Filter;
 import javafx.application.Application;
@@ -55,15 +56,17 @@ public class FilterViewer extends Application
      */
     private float[] getFilter()
     {
+        float[] taps = null;
+
 //        FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-//            .sampleRate(10000)
+//            .sampleRate(1000)
 //            .gridDensity(16)
 //            .passBandAmplitude(1.0)
-//            .passBandCutoff(4000)
+//            .passBandCutoff(100)
 //            .passBandRipple(0.01)
 //            .stopBandAmplitude(0.0)
-//            .stopBandRipple(0.001)
-//            .stopBandStart(5000)
+//            .stopBandRipple(0.0001)
+//            .stopBandStart(150)
 //            .build();
 
 //		FIRFilterSpecification specification = FIRFilterSpecification.highPassBuilder()
@@ -86,35 +89,25 @@ public class FilterViewer extends Application
 //	        .passRipple( 0.008)
 //	        .build();
 
-        float[] taps = null;
+//        try
+//        {
+//            RemezFIRFilterDesignerWithLagrange remez = new RemezFIRFilterDesignerWithLagrange(specification);
+//            taps = remez.getImpulseResponse();
+//        }
+//        catch(Exception e)
+//        {
+//            mLog.error("Error designing filter", e);
+//        }
 
-//        int tapCount = FilterFactory.getTapCount(10000000, 12500, 18750, 80);
-//		taps = FilterFactory.getLowPass( 10000000, 12500, 5600, Window.WindowType.BLACKMAN_HARRIS_7 );
-
-//        int channels = 10;
-//        int channelRate = 12500;
-//        int cutoff = 8000;
-//        int sampleRate = channelRate * channels;
-//        int filterLength = channels * 7;
-//
-//        taps = FilterFactory.getLowPass(sampleRate, cutoff, filterLength, Window.WindowType.BLACKMAN_HARRIS_7);
-//
-//        double response = FilterFactory.evaluate(taps, (double)channelRate / (double)sampleRate );
-//
-//        mLog.debug("Taps:" + taps.length + " With response at [" + channelRate + "]: " + response);
-
-        int channelBandwidth = 12500;
-        int channels = 4;
-        int tapsPerChannel = 20;
-
-        taps = FilterFactory.getChannelizer(channelBandwidth, channels, tapsPerChannel, Window.WindowType.BLACKMAN_HARRIS_4);
-
-        double sampleRate = channelBandwidth * channels * 2;
-
-        for(int x = 0; x < 25000; x += 100)
+//        taps = FilterFactory.getSinc(0.1, 51, Window.WindowType.BLACKMAN_HARRIS_7);
+        try
         {
-            double toEval = (double)x / sampleRate;
-            mLog.debug("Response at [" + x + "] is:" + FilterFactory.evaluate(taps, toEval));
+            taps = FilterFactory.getChannelizer(12500, 50, 14,
+                Window.WindowType.BLACKMAN_HARRIS_7, true);
+        }
+        catch(Exception e)
+        {
+            mLog.error("Couldn't design filter", e);
         }
 
         return taps;

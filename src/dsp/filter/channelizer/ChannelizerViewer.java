@@ -18,13 +18,10 @@
  ******************************************************************************/
 package dsp.filter.channelizer;
 
-import dsp.filter.*;
+import dsp.filter.FilterFactory;
 import dsp.filter.Window;
 import dsp.filter.design.FilterDesignException;
-import dsp.filter.fir.FIRFilterSpecification;
-import dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import dsp.mixer.LowPhaseNoiseOscillator;
-import dsp.mixer.Oscillator;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,13 +58,22 @@ public class ChannelizerViewer extends JFrame
     private ChannelArrayPanel mChannelPanel;
     private LowPhaseNoiseOscillator mOscillator;
     private int mChannelCount;
+    private int mChannelsPerRow;
     private int mSampleRate;
     private int mToneFrequency;
-    private DFTSize mDFTSize = DFTSize.FFT04096;
+    private DFTSize mMainPanelDFTSize = DFTSize.FFT32768;
+    private DFTSize mChannelPanelDFTSize = DFTSize.FFT00512;
 
-    public ChannelizerViewer(int channelCount)
+    /**
+     * GUI Test utility for researching polyphase channelizers.
+     *
+     * @param channelCount
+     * @param channelsPerRow
+     */
+    public ChannelizerViewer(int channelCount, int channelsPerRow)
     {
         mChannelCount = channelCount;
+        mChannelsPerRow = channelsPerRow;
         mSampleRate = mChannelCount * CHANNEL_BANDWIDTH;
         mToneFrequency = (int)(CHANNEL_BANDWIDTH * 1); //Set to channel 1 as default
 
@@ -130,7 +136,7 @@ public class ChannelizerViewer extends JFrame
         {
             mPrimarySpectrumPanel = new ChannelPanel(mSettingsManager, mSampleRate);
             mPrimarySpectrumPanel.setPreferredSize(new Dimension(1000, 200));
-            mPrimarySpectrumPanel.setDFTSize(DFTSize.FFT32768);
+            mPrimarySpectrumPanel.setDFTSize(mMainPanelDFTSize);
         }
 
         return mPrimarySpectrumPanel;
@@ -177,24 +183,27 @@ public class ChannelizerViewer extends JFrame
     {
         if(mChannelPanel == null)
         {
-            mChannelPanel = new ChannelArrayPanel(getFilter());
+            float[] taps = null;
+
+            try
+            {
+                taps = getFilter();
+            }
+            catch(FilterDesignException fde)
+            {
+                mLog.debug("Couldn't design filter", fde);
+            }
+
+            mChannelPanel = new ChannelArrayPanel(taps);
         }
 
         return mChannelPanel;
     }
 
-    private float[] getFilter()
+    private float[] getFilter() throws FilterDesignException
     {
-        float[] taps = FilterFactory.getChannelizer(CHANNEL_BANDWIDTH, mChannelCount, 16, Window.WindowType.BLACKMAN_HARRIS_7);
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("\nPolyphase Channelizer\n");
-        sb.append("Sample Rate:" + mSampleRate + " Channels:" + mChannelCount + " Channel Rate:" + CHANNEL_BANDWIDTH + "\n");
-        sb.append("Tap Count:" + taps.length + "\n");
-        sb.append("Channel:" + mToneFrequency);
-        mLog.debug(sb.toString());
-
-        return taps;
+        return FilterFactory.getChannelizer(CHANNEL_BANDWIDTH, mChannelCount, 19,
+            Window.WindowType.BLACKMAN_HARRIS_7, true);
     }
 
     public class ChannelArrayPanel extends JPanel implements Listener<ComplexBuffer>
@@ -221,15 +230,12 @@ public class ChannelizerViewer extends JFrame
         {
             setLayout(new MigLayout("insets 0 0 0 0", "fill", "fill"));
 
-            int channelsPerRow = 20;
-
             for(int x = 0; x < mChannelCount; x++)
             {
                 ChannelPanel channelPanel = new ChannelPanel(mSettingsManager, CHANNEL_BANDWIDTH * 2);
-//                channelPanel.setPreferredSize(new Dimension(250,100));
-                channelPanel.setDFTSize(DFTSize.FFT00512);
+                channelPanel.setDFTSize(mChannelPanelDFTSize);
 
-                if(x % channelsPerRow == channelsPerRow - 1)
+                if(x % mChannelsPerRow == mChannelsPerRow - 1)
                 {
                     add(channelPanel, "grow,push,wrap 2px");
                 }
@@ -279,27 +285,6 @@ public class ChannelizerViewer extends JFrame
         }
     }
 
-    public class SampleGenerator
-    {
-        public SampleGenerator()
-        {
-            mLog.debug("Starting ...");
-
-
-            PolyphaseChannelizer channelizer = new PolyphaseChannelizer(getFilter(), mChannelCount);
-
-            Oscillator oscillator = new Oscillator(mToneFrequency, mSampleRate);
-
-            for(int x = 0; x < 2000; x++)
-            {
-                channelizer.filter(oscillator.getComplex().inphase(), oscillator.getComplex().quadrature());
-                oscillator.rotate();
-            }
-
-            mLog.debug("Finished!");
-        }
-    }
-
     public class SampleGenerationTask implements Runnable
     {
         @Override
@@ -311,9 +296,10 @@ public class ChannelizerViewer extends JFrame
 
     public static void main(String[] args)
     {
-        int channelCount = 10;
+        int channelCount = 100;
+        int channelsPerRow = 25;
 
-        final ChannelizerViewer frame = new ChannelizerViewer(channelCount);
+        final ChannelizerViewer frame = new ChannelizerViewer(channelCount, channelsPerRow);
 
         EventQueue.invokeLater(new Runnable()
         {

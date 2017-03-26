@@ -138,8 +138,8 @@ public class Window
         for(int x = 0; x < length; x++)
         {
             coefficients[x] = a0 -
-                (a1 * Math.cos((TWO_PI * (double)x) / denominator) +
-                    (a2 * Math.cos((FOUR_PI * (double)x) / denominator)));
+                (a1 * Math.cos((TWO_PI * (double)x) / denominator)) +
+                (a2 * Math.cos((FOUR_PI * (double)x) / denominator));
         }
 
         return coefficients;
@@ -273,21 +273,13 @@ public class Window
     {
         double[] coefficients = new double[length];
 
-        if(length % 2 == 0) //Even length
+        double a0 = 0.54;
+        double a1 = 0.46;
+        double denominator = length;
+
+        for(int x = 0; x < length; x++)
         {
-            for(int x = 0; x < length; x++)
-            {
-                coefficients[x] = .54D - (.46D *
-                    Math.cos((Math.PI * (2.0D * (double)x + 1.0d)) / (double)(length - 1)));
-            }
-        }
-        else //Odd length
-        {
-            for(int x = 0; x < length; x++)
-            {
-                coefficients[x] = .54D - (.46D *
-                    Math.cos((2.0D * Math.PI * (double)x) / (double)(length - 1)));
-            }
+            coefficients[x] = a0 - (a1 * Math.cos(TWO_PI * (double)x / denominator));
         }
 
         return coefficients;
@@ -303,23 +295,14 @@ public class Window
     {
         double[] coefficients = new double[length];
 
-        if(length % 2 == 0) //Even length
-        {
-            for(int x = 0; x < length; x++)
-            {
-                coefficients[x] = .5D - (.5D *
-                    Math.cos((Math.PI * (2.0D * (double)x + 1)) / (double)(length - 1)));
-            }
-        }
-        else //Odd length
-        {
-            for(int x = 0; x < length; x++)
-            {
-                coefficients[x] = .5D - (.5D *
-                    Math.cos((2.0D * Math.PI * (double)x) / (double)(length - 1)));
-            }
-        }
+        double a0 = 0.5;
+        double a1 = 0.5;
+        double denominator = length;
 
+        for(int x = 0; x < length; x++)
+        {
+            coefficients[x] = a0 - (a1 * Math.cos(TWO_PI * (double)x / denominator));
+        }
 
         return coefficients;
     }
