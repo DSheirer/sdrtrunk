@@ -18,7 +18,11 @@
  ******************************************************************************/
 package dsp.filter.fir;
 
+import dsp.filter.FilterFactory;
 import dsp.filter.fir.remez.FIRLinearPhaseFilterType;
+import org.apache.commons.lang3.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
@@ -27,6 +31,9 @@ import java.util.List;
 
 public class FIRFilterSpecification
 {
+    private final static Logger mLog = LoggerFactory.getLogger(FIRFilterSpecification.class);
+
+    private static final double PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE = -6.020599842071533; //0.5 magnitude
     private static final DecimalFormat DECIMAL_FORMATTER = new DecimalFormat("0.00000");
 
     private FIRLinearPhaseFilterType mRemezFilterType;
@@ -141,6 +148,15 @@ public class FIRFilterSpecification
     public static BandPassBuilder bandPassBuilder()
     {
         return new BandPassBuilder();
+    }
+
+    /**
+     * Creates a Polyphase Channelizer filter specification builder that allows you to define the filter parameters and
+     * create a filter specification
+     */
+    public static ChannelizerBuilder channelizerBuilder()
+    {
+        return new ChannelizerBuilder();
     }
 
     public FIRLinearPhaseFilterType getFilterType()
@@ -693,57 +709,64 @@ public class FIRFilterSpecification
     /**
      * Builder for creating polyphase channelizer low-pass prototype filter.
      */
-    public static class PolyphaseChannelizerBuilder
+    public static class ChannelizerBuilder
     {
-        private int mOrder;
         private int mGridDensity = 16;
         private int mSampleRate;
+        private int mChannelCount;
         private int mChannelBandwidth;
-        private int mPassFrequencyBegin = 0;
-        private int mPassFrequencyEnd;
-        private int mStopFrequencyBegin;
+        private int mTapsPerChannel;
         private double mStopRipple = 0.001;
         private double mPassRipple = 0.01;
-        private double mStopAmplitude = 0.0;
-        private double mPassAmplitude = 1.0;
+        private double mAlpha = 0.2;
 
-        public PolyphaseChannelizerBuilder()
+        public ChannelizerBuilder()
         {
         }
 
         /**
          * Sets the filter sample rate in hertz
          */
-        public PolyphaseChannelizerBuilder sampleRate(int sampleRate)
+        public ChannelizerBuilder sampleRate(int sampleRate)
         {
             mSampleRate = sampleRate;
             return this;
         }
 
         /**
+         * Number of Channels
+         * @param channels - must be a multiple of 2
+         * @return
+         */
+        public ChannelizerBuilder channels(int channels)
+        {
+            Validate.isTrue(channels % 2 == 0, "Channel count must be a multiple of 2");
+            mChannelCount = channels;
+            return this;
+        }
+
+        /**
          * Sets the channel bandwidth in hertz
          */
-        public PolyphaseChannelizerBuilder channelBandwidth(int channelBandwidth)
+        public ChannelizerBuilder channelBandwidth(int channelBandwidth)
         {
             mChannelBandwidth = channelBandwidth;
             return this;
         }
 
         /**
-         * Sets the filter order. If the order is not specified, it will be calculated from the
-         * other parameters. If you specify and odd-length order, it will be corrected (+1) to make
-         * it an even order number.
+         * Number of filter taps per channel.  Note: total filter length will be channels * tapsPerChannel
          */
-        public PolyphaseChannelizerBuilder order(int order)
+        public ChannelizerBuilder tapsPerChannel(int tapsPerChannel)
         {
-            mOrder = order;
+            mTapsPerChannel = tapsPerChannel;
             return this;
         }
 
         /**
          * Sets the frequency grid density. Default is 16.
          */
-        public PolyphaseChannelizerBuilder gridDensity(int density)
+        public ChannelizerBuilder gridDensity(int density)
         {
             mGridDensity = density;
             return this;
@@ -752,7 +775,7 @@ public class FIRFilterSpecification
         /**
          * Specifies the ripple in dB for both stop bands
          */
-        public PolyphaseChannelizerBuilder stopRipple(double rippleDb)
+        public ChannelizerBuilder stopRipple(double rippleDb)
         {
             mStopRipple = rippleDb;
             return this;
@@ -761,65 +784,68 @@ public class FIRFilterSpecification
         /**
          * Specifies the ripple in dB for the pass band
          */
-        public PolyphaseChannelizerBuilder passRipple(double rippleDb)
+        public ChannelizerBuilder passRipple(double rippleDb)
         {
             mPassRipple = rippleDb;
             return this;
         }
 
         /**
-         * Specifies the amplitude of the stop bands. Default is 0.0
+         * Rolloff factor for the start band and stop band.
+         * @param alpha - value in range 0.0 - 1.0
          */
-        public PolyphaseChannelizerBuilder stopAmplitude(double amplitude)
+        public ChannelizerBuilder alpha(double alpha)
         {
-            mStopAmplitude = amplitude;
-            return this;
-        }
+            Validate.isTrue(0.0 <= alpha && alpha <= 1.0);
+            mAlpha = alpha;
 
-        /**
-         * Specifies the amplitude of the pass band. Default is 1.0
-         */
-        public PolyphaseChannelizerBuilder passAmplitude(double amplitude)
-        {
-            mPassAmplitude = amplitude;
             return this;
         }
 
         public FIRFilterSpecification build()
         {
-            FIRLinearPhaseFilterType type = FIRLinearPhaseFilterType.TYPE_1_ODD_LENGTH_EVEN_ORDER_SYMMETRICAL;
+            FIRLinearPhaseFilterType type = FIRLinearPhaseFilterType.TYPE_2_EVEN_LENGTH_ODD_ORDER_SYMMETRICAL;
 
-            if(mOrder < 10)
+            int passFrequencyEnd = (int)(mChannelBandwidth * (1.0 - mAlpha));
+            int stopFrequencyBegin = (int)(mChannelBandwidth * (1.0 + mAlpha));
+
+            int estimatedOrder = estimateFilterOrder(mSampleRate, passFrequencyEnd, stopFrequencyBegin, mPassRipple,
+                mStopRipple);
+
+            // Ensure odd order since we're designing a Type 2 filter
+            if(estimatedOrder % 2 == 0)
             {
-                mOrder = estimateBandPassOrder(mSampleRate, mPassFrequencyBegin, mPassFrequencyEnd,
-                    mPassRipple, mStopRipple);
+                estimatedOrder++;
             }
 
-            // Ensure even order since we're designing a Type 1 filter
-            if(mOrder % 2 == 1)
-            {
-                mOrder++;
-            }
+            int order = mChannelCount * mTapsPerChannel - 1;
 
-            FIRFilterSpecification spec = new FIRFilterSpecification(type, mOrder, mGridDensity);
+            mLog.debug("Order:" + order + " Sample Rate:" + mSampleRate + " Estimated Order:" + estimatedOrder + " Requested Order:" + order);
 
-            //Set pass band to stop at about 80% of channel bandwidth as starting point
-            int passBandStop = (int)(mChannelBandwidth * .80);
+            FIRFilterSpecification spec = new FIRFilterSpecification(type, order, mGridDensity);
 
-            //Set the stop band to start at 40% into the adjacent channel, since we're oversampling by 2.
-            int stopBandStart = (int)(mChannelBandwidth * 1.40);
+            double bandEdge = (double)mChannelBandwidth / (double)mSampleRate;
+            double passEnd = bandEdge * (1.0 - mAlpha);
+            double stopStart = bandEdge * (1.0 + mAlpha);
 
-            FrequencyBand passBand = new FrequencyBand(mSampleRate, 0, passBandStop, 1.0, mPassRipple);
-            FrequencyBand stopBand = new FrequencyBand(mSampleRate, stopBandStart, (int)(mSampleRate / 2),
-                0.0, mStopRipple);
+            mLog.debug("Pass End:" + passEnd + " Band Edge:" + bandEdge + " Stop Begin:" + stopStart);
+            mLog.debug("Pass End:" + (int)(mSampleRate * passEnd) +
+                " Band Edge:" + (int)(mSampleRate * bandEdge) +
+                " Stop Begin:" + (int)(mSampleRate * stopStart));
+
+            FrequencyBand passBand = new FrequencyBand(0.0, passEnd, 1.0, mPassRipple);
+            FrequencyBand edgeBand = new FrequencyBand(bandEdge, bandEdge, 0.5, mPassRipple);
+            edgeBand.setWeight(8.0 * edgeBand.getWeight(mPassRipple));
+            FrequencyBand stopBand = new FrequencyBand(stopStart, 0.5, 0.0, mStopRipple);
 
             spec.addFrequencyBand(passBand);
+            spec.addFrequencyBand(edgeBand);
             spec.addFrequencyBand(stopBand);
 
+            mLog.debug(spec.toString());
             return spec;
         }
     }
-
 
     // /**
     // * Converts the set of band amplitude values into a set of weights
@@ -992,6 +1018,14 @@ public class FIRFilterSpecification
             mWeight = weight;
         }
 
+        /**
+         * Explicitly sets the weight of this frequency band.
+         */
+        public void setWeight(double weight)
+        {
+            mWeight = weight;
+        }
+
         public int getGridSize()
         {
             return mGridSize;
@@ -1018,6 +1052,8 @@ public class FIRFilterSpecification
             sb.append(DECIMAL_FORMATTER.format(getRippleAmplitude()));
             sb.append(" Grid Size: ");
             sb.append(mGridSize);
+            sb.append(" Weight: ");
+            sb.append(getWeight(mRippleDB));
 
             return sb.toString();
         }

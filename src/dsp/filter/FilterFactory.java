@@ -23,6 +23,7 @@ import dsp.filter.cic.ComplexPrimeCICDecimate;
 import dsp.filter.design.FilterDesignException;
 import dsp.filter.fir.FIRFilterSpecification;
 import dsp.filter.fir.remez.RemezFIRFilterDesigner;
+import dsp.filter.fir.remez.RemezFIRFilterDesignerWithLagrange;
 import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,7 +37,7 @@ import java.util.TreeSet;
 public class FilterFactory
 {
     private final static Logger mLog = LoggerFactory.getLogger(FilterFactory.class);
-    private static final double PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE = -6.020599842071533; //decibel(0.5)
+    private static final double PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE = -6.020599842071533; //decibel(0.5, 0.0)
 
     /**
      * Generates coefficients for a unity-gain, windowed low-pass filter
@@ -695,6 +696,34 @@ public class FilterFactory
         return (float)(10.0 * Math.log10(Math.pow(real, 2.0) + Math.pow(imag, 2.0)));
     }
 
+
+    public static float[] getRemezChannelizer(int channelBandwidth, int channels, int tapsPerChannel, double alpha,
+                                              double passRipple, double stopRipple) throws FilterDesignException
+    {
+        FIRFilterSpecification specification = FIRFilterSpecification.channelizerBuilder()
+            .sampleRate(channels * channelBandwidth * 4)
+            .channels(channels)
+            .channelBandwidth(channelBandwidth)
+            .tapsPerChannel(tapsPerChannel)
+            .alpha(alpha)
+            .passRipple(passRipple)
+            .stopRipple(stopRipple)
+            .build();
+
+        RemezFIRFilterDesignerWithLagrange designer = new RemezFIRFilterDesignerWithLagrange(specification);
+
+        float[] taps = designer.getImpulseResponse();
+
+        double bandEdgeFrequency = (double)channelBandwidth / (double)(channels * channelBandwidth * 2);
+
+        double response = decibel(designer.getFrequencyResponse(Math.cos(bandEdgeFrequency * Math.PI)), 0.0);
+        mLog.debug("Frequency Response at 1.0: " + response);
+        response = decibel(designer.getFrequencyResponse(Math.cos(bandEdgeFrequency * Math.PI * 2.0)), 0.0);
+        mLog.debug("Frequency Response at 2.0: " + response);
+
+        return taps;
+    }
+
     /**
      * Creates a windowed-sync (Nyquist) M/2 prototype FIR filter for use with a Polyphase Channelizer/Synthesizer.
      * The filter is designed for x2 oversampling of each channel and the filter cutoff frequency is incrementally
@@ -720,8 +749,8 @@ public class FilterFactory
      *
      * @throws FilterDesignException if a filter cannot be designed with a band edge attenuation of -6.02 dB
      */
-    public static float[] getChannelizer(int channelBandwidth, int channels, int tapsPerChannel, WindowType windowType,
-                                         boolean logResults) throws FilterDesignException
+    public static float[] getSincChannelizer(int channelBandwidth, int channels, int tapsPerChannel, WindowType windowType,
+                                             boolean logResults) throws FilterDesignException
     {
         int currentTapsPerChannel = tapsPerChannel;
         int sampleRate = channelBandwidth * channels * 2;

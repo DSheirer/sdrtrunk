@@ -2,19 +2,11 @@ package dsp.filter.design;
 
 import dsp.filter.FilterFactory;
 import dsp.filter.Window;
-import dsp.filter.fir.FIRFilterSpecification;
-import dsp.filter.fir.remez.PolyphaseChannelizerFilterFactory;
-import dsp.filter.fir.remez.RemezFIRFilterDesigner;
-import dsp.filter.fir.remez.RemezFIRFilterDesigner2;
-import dsp.filter.fir.remez.RemezFIRFilterDesignerWithLagrange;
-import filter.Filter;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Arrays;
 
 public class FilterViewer extends Application
 {
@@ -102,8 +94,10 @@ public class FilterViewer extends Application
 //        taps = FilterFactory.getSinc(0.1, 51, Window.WindowType.BLACKMAN_HARRIS_7);
         try
         {
-            taps = FilterFactory.getChannelizer(12500, 50, 14,
-                Window.WindowType.BLACKMAN_HARRIS_7, true);
+//            taps = FilterFactory.getSincChannelizer(12500, 50, 14,
+//                Window.WindowType.BLACKMAN_HARRIS_7, true);
+            taps = FilterFactory.getRemezChannelizer(12500, 4, 22, 0.4,
+                0.01, 0.0001);
         }
         catch(Exception e)
         {

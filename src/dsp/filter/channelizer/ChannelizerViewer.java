@@ -202,7 +202,7 @@ public class ChannelizerViewer extends JFrame
 
     private float[] getFilter() throws FilterDesignException
     {
-        return FilterFactory.getChannelizer(CHANNEL_BANDWIDTH, mChannelCount, 19,
+        return FilterFactory.getSincChannelizer(CHANNEL_BANDWIDTH, mChannelCount, 19,
             Window.WindowType.BLACKMAN_HARRIS_7, true);
     }
 
