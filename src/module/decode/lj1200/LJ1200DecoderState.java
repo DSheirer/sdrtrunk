@@ -54,7 +54,7 @@ public class LJ1200DecoderState extends DecoderState
         super(aliasList);
 
         mAddressAttribute = new AliasedStringAttributeMonitor(Attribute.SECONDARY_ADDRESS_TO,
-            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.LOJACK);
+            getAttributeChangeRequestListener(), getAliasList(), AliasIDType.SITE);
     }
 
     @Override
