@@ -168,7 +168,18 @@ public class AudioChannelPanel extends JPanel
             if(alias != null)
             {
                 iconLabel.setIcon(mIconManager.getIcon(alias.getIconName(), 18));
-                textLabel.setText(alias.getName());
+
+                String aliasName = alias.getName();
+
+                //Truncate label if length exceeds 33 characters - hack!
+                if(aliasName.length() > 33)
+                {
+                    textLabel.setText(aliasName.substring(0,30) + "...");
+                }
+                else
+                {
+                    textLabel.setText(aliasName);
+                }
             }
             else
             {
