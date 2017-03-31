@@ -90,7 +90,8 @@ public class AudioChannelPanel extends JPanel
 
     private void init()
     {
-        setLayout(new MigLayout("align center center, insets 0 0 0 0", "[][][align right]0[grow,fill]", ""));
+        setLayout(new MigLayout("align center center, insets 0 0 0 0",
+            "[][][align right]0[grow,fill]", ""));
         setBackground(mBackgroundColor);
 
         mMutedLabel.setFont(mFont);
@@ -109,7 +110,7 @@ public class AudioChannelPanel extends JPanel
 
         mTo.setFont(mFont);
         mTo.setForeground(mValueColor);
-        add(mTo);
+        add(mTo,"wmin 10lp");
     }
 
     @Override
@@ -159,29 +160,39 @@ public class AudioChannelPanel extends JPanel
      * does not occur on the Swing event thread -- wrap any calls to this
      * method with an event thread call.
      */
-    private void updateLabel(JLabel valueLabel, String value, JLabel aliasLabel, Alias alias)
+    private void updateLabel(JLabel textLabel, String value, JLabel iconLabel, Alias alias)
     {
         if(value != null)
         {
 
             if(alias != null)
             {
-                valueLabel.setText(alias.getName());
-                aliasLabel.setIcon(mIconManager.getIcon(alias.getIconName(), 18));
+                iconLabel.setIcon(mIconManager.getIcon(alias.getIconName(), 18));
+
+                String aliasName = alias.getName();
+
+                //Truncate label if length exceeds 33 characters - hack!
+                if(aliasName.length() > 33)
+                {
+                    textLabel.setText(aliasName.substring(0,30) + "...");
+                }
+                else
+                {
+                    textLabel.setText(aliasName);
+                }
             }
             else
             {
-                valueLabel.setText(value);
-                aliasLabel.setIcon(null);
+                iconLabel.setIcon(null);
+                textLabel.setText(value);
             }
         }
         else
         {
-            valueLabel.setText("-----");
-            aliasLabel.setIcon(null);
+            iconLabel.setIcon(null);
+            textLabel.setText("-----");
         }
     }
-
 
     /**
      * Processes audio metadata to update this panel's display values
