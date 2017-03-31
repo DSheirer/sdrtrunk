@@ -110,7 +110,7 @@ public class AudioChannelPanel extends JPanel
 
         mTo.setFont(mFont);
         mTo.setForeground(mValueColor);
-        add(mTo);
+        add(mTo,"wmin 10lp");
     }
 
     @Override
