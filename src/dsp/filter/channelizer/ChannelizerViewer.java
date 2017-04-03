@@ -208,7 +208,7 @@ public class ChannelizerViewer extends JFrame
 
     public class ChannelArrayPanel extends JPanel implements Listener<ComplexBuffer>
     {
-        private ComplexPolyphaseChannelizer mPolyphaseChannelizer;
+        private ComplexPolyphaseChannelizer2 mPolyphaseChannelizer;
         private ChannelDistributor mChannelDistributor;
 
         public ChannelArrayPanel(float[] taps)
@@ -219,7 +219,7 @@ public class ChannelizerViewer extends JFrame
                 bufferSize++;
             }
 
-            mPolyphaseChannelizer = new ComplexPolyphaseChannelizer(taps, mChannelCount, 1);
+            mPolyphaseChannelizer = new ComplexPolyphaseChannelizer2(taps, mChannelCount);
             mChannelDistributor = new ChannelDistributor(bufferSize, mChannelCount);
             mPolyphaseChannelizer.setChannelDistributor(mChannelDistributor);
 
