@@ -37,15 +37,14 @@ public class ComplexPolyphaseChannelizer2 implements Listener<ComplexBuffer>
 
     private float[][] mFilterCoefficients;
 
-
-    private float[][] mBuffer;
+    private float[][] mIBuffer;
+    private float[][] mQBuffer;
     private int mBufferRowPointer = 0;
     private int mBufferColumnPointer = 0;
     private int[][] mIndexMap;
     private int mStrideLength;
     private int mStrideCount;
 
-    private int mFilterPointer = 0;
     private int mChannelCount;
     private float[] mFilteredSamples;
     private FloatFFT_1D mFFT;
@@ -79,13 +78,9 @@ public class ComplexPolyphaseChannelizer2 implements Listener<ComplexBuffer>
 
     public void filter(float inphase, float quadrature)
     {
-        mBuffer[mBufferRowPointer][mBufferColumnPointer] = quadrature;
+        mIBuffer[mBufferRowPointer][mBufferColumnPointer] = inphase;
+        mQBuffer[mBufferRowPointer][mBufferColumnPointer] = quadrature;
 
-        calculate();
-        mBufferRowPointer--;
-
-        mBuffer[mBufferRowPointer][mBufferColumnPointer] = inphase;
-        calculate();
         mBufferRowPointer--;
 
         mStrideCount++;
@@ -99,12 +94,12 @@ public class ComplexPolyphaseChannelizer2 implements Listener<ComplexBuffer>
         //Adjust the circular buffer pointers, wrapping as necessary
         if(mBufferRowPointer < 0)
         {
-            mBufferRowPointer += mBuffer.length;
+            mBufferRowPointer += mChannelCount;
             mBufferColumnPointer--;
 
             if(mBufferColumnPointer < 0)
             {
-                mBufferColumnPointer += mBuffer[mBufferRowPointer].length;
+                mBufferColumnPointer += mIBuffer[mBufferRowPointer].length;
             }
         }
     }
@@ -122,11 +117,7 @@ public class ComplexPolyphaseChannelizer2 implements Listener<ComplexBuffer>
 
     private void dispatch()
     {
-        //Create a copy of the filtered samples
-        float[] samples = Arrays.copyOf(mFilteredSamples, mFilteredSamples.length);
-
-        //Copy the first half of the samples copy back to the second half of the array to prepare for the next iteration
-        System.arraycopy(samples, 0, mFilteredSamples, mChannelCount, mChannelCount);
+        float[] samples = calculate();
 
         //FFT is executed in-place where the output overwrites the input
         mFFT.complexForward(samples);
@@ -138,28 +129,54 @@ public class ComplexPolyphaseChannelizer2 implements Listener<ComplexBuffer>
      * Calculates the value of the current data row and the current filter coefficient set and assigns the value to the
      * current filtered samples array
      */
-    private void calculate()
+    private float[] calculate()
     {
-        float accumulator = 0.0f;
+        float[] samples = new float[mChannelCount * 2];
 
-        float[] coefficients = mFilterCoefficients[mBufferRowPointer / 2];
-        float[] samples = mBuffer[mBufferRowPointer];
-
-        for( int x = 0; x < coefficients.length; x++ )
+        try
         {
-            int column = mIndexMap[mBufferColumnPointer][x];
+            for(int x = 0; x < mChannelCount; x++)
+            {
+                float iAccumulator = 0.0f;
+                float qAccumulator = 0.0f;
 
-            accumulator += coefficients[ x ] * samples[column];
+                int coefficientIndex;
+
+                if(mBufferRowPointer <= 0)
+                {
+                    coefficientIndex = x;
+                }
+                else if(x < mChannelCount / 2)
+                {
+                    coefficientIndex = x + mChannelCount / 2;
+                }
+                else
+                {
+                    coefficientIndex = x - mChannelCount / 2;
+                }
+
+                float[] coefficients = mFilterCoefficients[coefficientIndex];
+                float[] iSamples = mIBuffer[x];
+                float[] qSamples = mQBuffer[x];
+
+                for( int y = 0; y < coefficients.length; y++ )
+                {
+                    int column = mIndexMap[mBufferColumnPointer][y];
+
+                    iAccumulator += coefficients[y] * iSamples[column];
+                    qAccumulator += coefficients[y] * qSamples[column];
+                }
+
+                samples[coefficientIndex * 2] = iAccumulator;
+                samples[coefficientIndex * 2 + 1] = qAccumulator;
+            }
+        }
+        catch(Exception e)
+        {
+            mLog.error("Error", e);
         }
 
-        if(mBufferRowPointer < mChannelCount)
-        {
-            mFilteredSamples[mBufferRowPointer] = accumulator;
-        }
-        else
-        {
-            mFilteredSamples[mBufferRowPointer - mChannelCount] = accumulator;
-        }
+        return samples;
     }
 
     /**
@@ -193,7 +210,9 @@ public class ComplexPolyphaseChannelizer2 implements Listener<ComplexBuffer>
     {
         int tapCount = (int)Math.ceil((double)taps.length / (double)mChannelCount);
 
-        mBuffer = new float[mChannelCount * 2][tapCount];
+        mIBuffer = new float[mChannelCount][tapCount];
+        mQBuffer = new float[mChannelCount][tapCount];
+
         mFilterCoefficients = new float[mChannelCount][tapCount];
 
         for(int tap = 0; tap < tapCount; tap++)
@@ -213,11 +232,10 @@ public class ComplexPolyphaseChannelizer2 implements Listener<ComplexBuffer>
 
         mFilteredSamples = new float[mChannelCount * 2];
         mFFT = new FloatFFT_1D(mChannelCount);
-        mFilterPointer = mChannelCount -1;
         mStrideLength = mChannelCount / 2;  //channel count * 2 / 2
         mStrideCount = 0;
-        mBufferRowPointer = mChannelCount - 1;  //Start filling data half way into buffer
-        mBufferColumnPointer = mBuffer[mBufferRowPointer].length - 1;
+        mBufferRowPointer = mChannelCount / 2 - 1;  //Start filling data half way into buffer
+        mBufferColumnPointer = tapCount - 1;
     }
 
     /**
