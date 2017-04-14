@@ -315,6 +315,8 @@ public class P25DecoderState extends DecoderState
      */
     public void registerCallEvent(P25CallEvent event)
     {
+        String channel = event.getChannel();
+
         if(mChannelCallMap.containsKey(event.getChannel()))
         {
             P25CallEvent previousEvent = mChannelCallMap.remove(event.getChannel());
@@ -1557,6 +1559,7 @@ public class P25DecoderState extends DecoderState
                     break;
                 case IDENTIFIER_UPDATE_NON_VUHF:
                 case IDENTIFIER_UPDATE_VHF_UHF_BANDS:
+                case IDENTIFIER_UPDATE_TDMA:
                     IdentifierUpdate iu = (IdentifierUpdate)tsbk;
 
                     if(!mBands.containsKey(iu.getIdentifier()))
@@ -2735,6 +2738,7 @@ public class P25DecoderState extends DecoderState
                 else
                 {
                     StringBuilder details = new StringBuilder();
+                    details.append(pgvcg.isTDMAChannel() ? "TDMA " : "");
                     details.append(pgvcg.isEmergency() ? "EMERGENCY " : "");
                     details.append("PRI:").append(pgvcg.getPriority());
                     details.append(pgvcg.isEncryptedChannel() ? " ENCRYPTED" : "");
@@ -2742,7 +2746,7 @@ public class P25DecoderState extends DecoderState
 
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.PATCH_GROUP_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel + (pgvcg.isTDMAChannel() ? " TDMA" : ""))
+                        .channel(channel)
                         .details(details.toString())
                         .frequency(pgvcg.getDownlinkFrequency())
                         .from(from)
@@ -2775,8 +2779,9 @@ public class P25DecoderState extends DecoderState
                 {
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.PATCH_GROUP_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel + (gvcgu.isTDMAChannel1() ? " TDMA" : ""))
-                        .details((gvcgu.isEncrypted() ? "ENCRYPTED " : ""))
+                        .channel(channel)
+                        .details((gvcgu.isTDMAChannel1() ? "TDMA " : "") +
+                            (gvcgu.isEncrypted() ? "ENCRYPTED " : ""))
                         .frequency(gvcgu.getDownlinkFrequency1())
                         .to(to)
                         .build();
@@ -2801,8 +2806,9 @@ public class P25DecoderState extends DecoderState
                 {
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.PATCH_GROUP_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel2 + (gvcgu.isTDMAChannel2() ? " TDMA" : ""))
-                        .details((gvcgu.isEncrypted() ? "ENCRYPTED " : ""))
+                        .channel(channel2)
+                        .details((gvcgu.isTDMAChannel2() ? "TDMA " : "") +
+                                (gvcgu.isEncrypted() ? "ENCRYPTED " : ""))
                         .frequency(gvcgu.getDownlinkFrequency2())
                         .to(to2)
                         .build();
@@ -2866,6 +2872,7 @@ public class P25DecoderState extends DecoderState
                 else
                 {
                     StringBuilder details = new StringBuilder();
+                    details.append(gdcg.isTDMAChannel() ? "TDMA " : "");
                     details.append(gdcg.isEmergency() ? "EMERGENCY " : "");
                     details.append("PRI:").append(gdcg.getPriority()).append(" ");
                     details.append(gdcg.isEncryptedChannel() ? "ENCRYPTED " : "");
@@ -2873,7 +2880,7 @@ public class P25DecoderState extends DecoderState
 
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.DATA_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel + (gdcg.isTDMAChannel() ? " TDMA" : ""))
+                        .channel(channel)
                         .details(details.toString())
                         .frequency(gdcg.getDownlinkFrequency())
                         .from(from)
@@ -2904,6 +2911,7 @@ public class P25DecoderState extends DecoderState
                 else
                 {
                     StringBuilder details = new StringBuilder();
+                    details.append(gvcg.isTDMAChannel() ? "TDMA " : "");
                     details.append(gvcg.isEmergency() ? "EMERGENCY " : "");
                     details.append("PRI:").append(gvcg.getPriority()).append(" ");
                     details.append(gvcg.isEncryptedChannel() ? "ENCRYPTED " : "");
@@ -2911,7 +2919,7 @@ public class P25DecoderState extends DecoderState
 
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.GROUP_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel + (gvcg.isTDMAChannel() ? " TDMA" : ""))
+                        .channel(channel)
                         .details(details.toString())
                         .frequency(gvcg.getDownlinkFrequency())
                         .from(from)
@@ -2928,8 +2936,7 @@ public class P25DecoderState extends DecoderState
                 }
                 break;
             case GROUP_VOICE_CHANNEL_GRANT_UPDATE:
-                GroupVoiceChannelGrantUpdate gvcgu =
-                    (GroupVoiceChannelGrantUpdate)message;
+                GroupVoiceChannelGrantUpdate gvcgu = (GroupVoiceChannelGrantUpdate)message;
 
                 channel = gvcgu.getChannel1();
                 from = null;
@@ -2942,6 +2949,7 @@ public class P25DecoderState extends DecoderState
                 else
                 {
                     StringBuilder details = new StringBuilder();
+                    details.append(gvcgu.isTDMAChannel() ? "TDMA " : "");
                     details.append(gvcgu.isEmergency() ? "EMERGENCY " : "");
                     details.append("PRI:").append(gvcgu.getPriority()).append(" ");
                     details.append(gvcgu.isEncryptedChannel() ? "ENCRYPTED " : "");
@@ -2949,7 +2957,7 @@ public class P25DecoderState extends DecoderState
 
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.GROUP_CALL)
                         .aliasList(getAliasList())
-                        .channel(gvcgu.getChannel1() + (gvcgu.isTDMAChannel1() ? " TDMA" : ""))
+                        .channel(gvcgu.getChannel1())
                         .details(details.toString())
                         .frequency(gvcgu.getDownlinkFrequency1())
                         .from(from)
@@ -2977,6 +2985,7 @@ public class P25DecoderState extends DecoderState
                     else
                     {
                         StringBuilder details = new StringBuilder();
+                        details.append(gvcgu.isTDMAChannel() ? "TDMA " : "");
                         details.append(gvcgu.isEmergency() ? "EMERGENCY " : "");
                         details.append("PRI:").append(gvcgu.getPriority()).append(" ");
                         details.append(gvcgu.isEncryptedChannel() ? "ENCRYPTED " : "");
@@ -2984,7 +2993,7 @@ public class P25DecoderState extends DecoderState
 
                         P25CallEvent event2 = new P25CallEvent.Builder(CallEventType.GROUP_CALL)
                             .aliasList(getAliasList())
-                            .channel(gvcgu.getChannel2() + (gvcgu.isTDMAChannel2() ? " TDMA" : ""))
+                            .channel(gvcgu.getChannel2())
                             .details(details.toString())
                             .frequency(gvcgu.getDownlinkFrequency2())
                             .to(gvcgu.getGroupAddress2())
@@ -3016,6 +3025,7 @@ public class P25DecoderState extends DecoderState
                 else
                 {
                     StringBuilder details = new StringBuilder();
+                    details.append(gvcgue.isTDMAChannel() ? "TDMA " : "");
                     details.append(gvcgue.isEmergency() ? "EMERGENCY " : "");
                     details.append("PRI:").append(gvcgue.getPriority()).append(" ");
                     details.append(gvcgue.isEncryptedChannel() ? "ENCRYPTED " : "");
@@ -3023,7 +3033,7 @@ public class P25DecoderState extends DecoderState
 
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.GROUP_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel + (gvcgue.isTDMAChannel() ? " TDMA" : ""))
+                        .channel(channel)
                         .details(details.toString())
                         .frequency(gvcgue.getDownlinkFrequency())
                         .from(from)
@@ -3053,6 +3063,7 @@ public class P25DecoderState extends DecoderState
                 else
                 {
                     StringBuilder details = new StringBuilder();
+                    details.append(idcg.isTDMAChannel() ? "TDMA " : "");
                     details.append(idcg.isEmergency() ? "EMERGENCY " : "");
                     details.append("PRI:").append(idcg.getPriority()).append(" ");
                     details.append(idcg.isEncryptedChannel() ? "ENCRYPTED " : "");
@@ -3060,7 +3071,7 @@ public class P25DecoderState extends DecoderState
 
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.DATA_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel + (idcg.isTDMAChannel() ? " TDMA" : ""))
+                        .channel(channel)
                         .details(details.toString())
                         .frequency(idcg.getDownlinkFrequency())
                         .from(from)
@@ -3090,13 +3101,14 @@ public class P25DecoderState extends DecoderState
                 else
                 {
                     StringBuilder details = new StringBuilder();
+                    details.append(sdcg.isTDMAChannel() ? "TDMA " : "");
                     details.append(sdcg.isEmergency() ? "EMERGENCY " : "");
                     details.append(sdcg.isEncryptedChannel() ? "ENCRYPTED " : "");
                     details.append(sdcg.getSessionMode().name());
 
                     P25CallEvent event = new P25CallEvent.Builder(CallEventType.DATA_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel + (sdcg.isTDMAChannel() ? " TDMA" : ""))
+                        .channel(channel)
                         .details(details.toString())
                         .frequency(sdcg.getDownlinkFrequency())
                         .from(from)
@@ -3128,6 +3140,7 @@ public class P25DecoderState extends DecoderState
                 else
                 {
                     StringBuilder details = new StringBuilder();
+                    details.append(tivcg.isTDMAChannel() ? "TDMA " : "");
                     details.append(tivcg.isEmergency() ? "EMERGENCY " : "");
                     details.append("PRI:").append(tivcg.getPriority()).append(" ");
                     details.append(tivcg.isEncryptedChannel() ? "ENCRYPTED " : "");
@@ -3137,7 +3150,7 @@ public class P25DecoderState extends DecoderState
                     P25CallEvent event = new P25CallEvent.Builder(
                         CallEventType.TELEPHONE_INTERCONNECT)
                         .aliasList(getAliasList())
-                        .channel(channel + (tivcg.isTDMAChannel() ? " TDMA" : ""))
+                        .channel(channel)
                         .details(details.toString())
                         .frequency(tivcg.getDownlinkFrequency())
                         .from(from)
@@ -3170,6 +3183,7 @@ public class P25DecoderState extends DecoderState
                 else
                 {
                     StringBuilder details = new StringBuilder();
+                    details.append(tivcgu.isTDMAChannel() ? "TDMA " : "");
                     details.append(tivcgu.isEmergency() ? "EMERGENCY " : "");
                     details.append("PRI:").append(tivcgu.getPriority()).append(" ");
                     details.append(tivcgu.isEncryptedChannel() ? "ENCRYPTED " : "");
@@ -3179,7 +3193,7 @@ public class P25DecoderState extends DecoderState
                     P25CallEvent event = new P25CallEvent.Builder(
                         CallEventType.TELEPHONE_INTERCONNECT)
                         .aliasList(getAliasList())
-                        .channel(channel + (tivcgu.isTDMAChannel() ? " TDMA" : ""))
+                        .channel(channel)
                         .details(details.toString())
                         .frequency(tivcgu.getDownlinkFrequency())
                         .from(from)
@@ -3209,6 +3223,7 @@ public class P25DecoderState extends DecoderState
                 else
                 {
                     StringBuilder details = new StringBuilder();
+                    details.append(uuvcg.isTDMAChannel() ? "TDMA " : "");
                     details.append(uuvcg.isEmergency() ? "EMERGENCY " : "");
                     details.append("PRI:").append(uuvcg.getPriority()).append(" ");
                     details.append(uuvcg.isEncryptedChannel() ? " ENCRYPTED " : "");
@@ -3217,7 +3232,7 @@ public class P25DecoderState extends DecoderState
                     P25CallEvent event = new P25CallEvent.Builder(
                         CallEventType.UNIT_TO_UNIT_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel + (uuvcg.isTDMAChannel() ? " TDMA" : ""))
+                        .channel(channel)
                         .details(details.toString())
                         .frequency(uuvcg.getDownlinkFrequency())
                         .from(from)
@@ -3247,6 +3262,7 @@ public class P25DecoderState extends DecoderState
                 else
                 {
                     StringBuilder details = new StringBuilder();
+                    details.append(uuvcgu.isTDMAChannel() ? "TDMA " : "");
                     details.append(uuvcgu.isEmergency() ? "EMERGENCY " : "");
                     details.append("PRI:").append(uuvcgu.getPriority()).append(" ");
                     details.append(uuvcgu.isEncryptedChannel() ? "ENCRYPTED " : "");
@@ -3255,7 +3271,7 @@ public class P25DecoderState extends DecoderState
                     P25CallEvent event = new P25CallEvent.Builder(
                         CallEventType.UNIT_TO_UNIT_CALL)
                         .aliasList(getAliasList())
-                        .channel(channel + (uuvcgu.isTDMAChannel() ? " TDMA" : ""))
+                        .channel(channel)
                         .details(details.toString())
                         .frequency(uuvcgu.getDownlinkFrequency())
                         .from(from)

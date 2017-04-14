@@ -63,13 +63,11 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
     private Listener<CallEvent> mCallEventListener;
 
     private ChannelModel mChannelModel;
-    private ChannelProcessingManager mChannelProcessingManager;
     private DecodeConfiguration mDecodeConfiguration;
     private RecordConfiguration mRecordConfiguration;
     private String mSystem;
     private String mSite;
     private String mAliasListName;
-    private CallEvent mPreviousDoNotMonitorCallEvent;
 
     /**
      * Monitors call events and allocates traffic decoder channels in response
@@ -77,7 +75,6 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
      * traffic channel allocations.
      *
      * @param channelModel containing channels currently in use
-     * @param channelProcessingManager
      * @param decodeConfiguration - decoder configuration to use for each
      * traffic channel allocation.
      * @param recordConfiguration - recording options for each traffic channel
@@ -88,7 +85,6 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
      * in the pool
      */
     public TrafficChannelManager(ChannelModel channelModel,
-                                 ChannelProcessingManager channelProcessingManager,
                                  DecodeConfiguration decodeConfiguration,
                                  RecordConfiguration recordConfiguration,
                                  String system,
@@ -97,7 +93,6 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
                                  int trafficChannelPoolSize)
     {
         mChannelModel = channelModel;
-        mChannelProcessingManager = channelProcessingManager;
         mDecodeConfiguration = decodeConfiguration;
         mRecordConfiguration = recordConfiguration;
         mSystem = system;
@@ -120,7 +115,6 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
 
         mCallEventListener = null;
         mDecodeConfiguration = null;
-        mPreviousDoNotMonitorCallEvent = null;
     }
 
     /**
@@ -197,21 +191,7 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
 
             long frequency = callEvent.getFrequency();
 
-			/* Check the from/to aliases for do not monitor priority */
-            if(isDoNotMonitor(callEvent))
-            {
-                callEvent.setCallEventType(CallEventType.CALL_DO_NOT_MONITOR);
-
-                if(isSameCallEvent(mPreviousDoNotMonitorCallEvent, callEvent))
-                {
-                    return;
-                }
-                else
-                {
-                    mPreviousDoNotMonitorCallEvent = callEvent;
-                }
-            }
-            else if(frequency > 0)
+            if(frequency > 0)
             {
                 Channel channel = getChannel(callEvent.getChannel(), new TunerChannel(Type.TRAFFIC,
                     frequency, mDecodeConfiguration.getDecoderType().getChannelBandwidth()));
@@ -323,31 +303,6 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
             return (e1.getFromID() == null && e2.getFromID() == null);
         }
         else if(e1.getFromID().contentEquals(e2.getFromID()))
-        {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Checks for aliases that contain a do not follow/process priority.
-     *
-     * @param event
-     * @return - true if there is an alias that has a do not process alias id
-     */
-    private boolean isDoNotMonitor(CallEvent event)
-    {
-        Alias to = event.getToIDAlias();
-
-        if(to != null && to.hasCallPriority() && to.getCallPriority() == Priority.DO_NOT_MONITOR)
-        {
-            return true;
-        }
-
-        Alias from = event.getFromIDAlias();
-
-        if(from != null && from.hasCallPriority() && from.getCallPriority() == Priority.DO_NOT_MONITOR)
         {
             return true;
         }

@@ -50,6 +50,7 @@ public class OverlayPanel extends JPanel implements ChannelEventListener, IFrequ
     private static final long serialVersionUID = 1L;
 
     private final static Logger mLog = LoggerFactory.getLogger(OverlayPanel.class);
+    private final DecimalFormat PPM_FORMATTER = new DecimalFormat( "#.0" );
 
     private final static RenderingHints RENDERING_HINTS = new RenderingHints(RenderingHints.KEY_ANTIALIASING,
         RenderingHints.VALUE_ANTIALIAS_ON);
@@ -187,7 +188,6 @@ public class OverlayPanel extends JPanel implements ChannelEventListener, IFrequ
      * 6	64x Zoom
      *
      * @param zoom level, 0 - 6.
-     * @param offset into the FFT bins for start zoom window
      */
     public void setZoom(int zoom)
     {
@@ -412,20 +412,41 @@ public class OverlayPanel extends JPanel implements ChannelEventListener, IFrequ
     }
 
     /**
-     * Draws a vertical line at the xaxis
+     * Draws the Automatic Frequency Control (AFC) channel center offset
      */
-    private void drawAFC(Graphics2D graphics, double frequencyAxis, double errorAxis)
+    private void drawAFC(Graphics2D graphics, double frequencyAxis, double errorAxis, double bandwidth,
+                         int correction, long frequency)
     {
         double height = getSize().getHeight() - mSpectrumInset;
-        double lineHeight = height * 0.75d;
+        double verticalAxisTop = height * 0.88d;
+        double verticalAxisBottom = height * 0.98d;
+
+        double halfBandwidth = bandwidth / 2.0;
+        double errorEdgeStart = errorAxis - halfBandwidth;
+        double errorEdgeStop = errorAxis + halfBandwidth;
 
         graphics.setColor(Color.YELLOW);
 
-        //Vertical frequency error line
-        graphics.draw(new Line2D.Double(errorAxis, lineHeight, errorAxis, height - 1.0d));
+        //Horizontal line connecting frequency and error line
+        graphics.draw(new Line2D.Double(errorEdgeStart, verticalAxisBottom, errorEdgeStop, verticalAxisBottom));
 
-        //Horizontal line connecting frequency and error lines
-        graphics.draw(new Line2D.Double(frequencyAxis, lineHeight, errorAxis, lineHeight));
+        //Vertical band edge lines
+        graphics.draw(new Line2D.Double(errorEdgeStart, verticalAxisTop, errorEdgeStart, verticalAxisBottom));
+        graphics.draw(new Line2D.Double(errorEdgeStop, verticalAxisTop, errorEdgeStop, verticalAxisBottom));
+
+        double ppm = (double)correction / ((double)frequency / 1E6d);
+
+        String label = "PPM " + PPM_FORMATTER.format(ppm) ;
+
+        FontMetrics fontMetrics = graphics.getFontMetrics(this.getFont());
+
+        Rectangle2D rect = fontMetrics.getStringBounds(label, graphics);
+
+        //Only render the correction value label if the spacing is large enough
+        if(rect.getWidth() <= bandwidth && rect.getHeight() * 5 <= height)
+        {
+            graphics.drawString(label, (float)(errorEdgeStart + 1.0), (float)(verticalAxisBottom - 2.0));
+        }
     }
 
     /**
@@ -564,7 +585,8 @@ public class OverlayPanel extends JPanel implements ChannelEventListener, IFrequ
                     {
                         long error = frequency + correction;
 
-                        drawAFC(graphics, frequencyAxis, getAxisFromFrequency(error));
+                        drawAFC(graphics, frequencyAxis, getAxisFromFrequency(error), width, correction,
+                            tunerChannel.getFrequency());
                     }
                 }
             }

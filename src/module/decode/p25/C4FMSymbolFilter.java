@@ -9,21 +9,21 @@ import instrument.tap.stream.FloatTap;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sample.Listener;
 import sample.real.RealBuffer;
 import sample.real.RealSampleListener;
 import sample.real.RealSampleProvider;
+import source.tuner.TunerChannelSource;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.FrequencyChangeEvent.Event;
 import source.tuner.frequency.IFrequencyChangeListener;
 import dsp.gain.DirectGainControl;
 
-public class C4FMSymbolFilter implements Listener<RealBuffer>, 
-										 IFrequencyChangeListener,
-										 RealSampleProvider,
-										 Instrumentable
+public class C4FMSymbolFilter implements Listener<RealBuffer>, IFrequencyChangeListener, RealSampleProvider, Instrumentable
 {
-	private static final float TAPS[][] = 
+	private static final float TAPS[][] =
 	{ 
 		{  0.00000e+00f,  0.00000e+00f,  0.00000e+00f,  0.00000e+00f,  1.00000e+00f,  0.00000e+00f,  0.00000e+00f,  0.00000e+00f }, //   0/128
 		{ -1.54700e-04f,  8.53777e-04f, -2.76968e-03f,  7.89295e-03f,  9.98534e-01f, -5.41054e-03f,  1.24642e-03f, -1.98993e-04f }, //   1/128
@@ -198,8 +198,7 @@ public class C4FMSymbolFilter implements Listener<RealBuffer>,
 	
 	private RealSampleListener mListener;
 	
-	private DirectGainControl mGainController = 
-			new DirectGainControl( 15.0f, 0.1f, 35.0f, 0.3f );
+	private DirectGainControl mGainController = new DirectGainControl( 15.0f, 0.1f, 35.0f, 0.3f );
 
 	private int mFrequencyAdjustmentRequested = 0;
 	private int mFrequencyCorrection = 0;
@@ -258,9 +257,8 @@ public class C4FMSymbolFilter implements Listener<RealBuffer>,
 				correction = -mFrequencyCorrectionMaximum;
 			}
 
-			broadcast( new FrequencyChangeEvent( 
-				Event.REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE, correction ) );
-			
+			broadcast( new FrequencyChangeEvent(Event.REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE, correction ) );
+
 			mFrequencyAdjustmentRequested = 0;
 		}
 	}
@@ -452,6 +450,10 @@ public class C4FMSymbolFilter implements Listener<RealBuffer>,
 		}
     }
 
+    /**
+     * Broadcasts a frequency change event to the registered listener
+     * @param event
+     */
 	public void broadcast( FrequencyChangeEvent event )
 	{
 		if( mFrequencyChangeListener != null )
@@ -459,7 +461,11 @@ public class C4FMSymbolFilter implements Listener<RealBuffer>,
 			mFrequencyChangeListener.receive( event );
 		}
 	}
-	
+
+    /**
+     * Sets the listener for frequency change events.
+     * @param listener
+     */
 	public void setFrequencyChangeListener( Listener<FrequencyChangeEvent> listener )
 	{
 		mFrequencyChangeListener = listener;

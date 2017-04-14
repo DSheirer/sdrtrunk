@@ -108,7 +108,6 @@ public class ProcessingChain implements IChannelEventListener
     private Broadcaster<RealBuffer> mUnFilteredRealBufferBroadcaster = new Broadcaster<>();
     private Broadcaster<SquelchState> mSquelchStateBroadcaster = new Broadcaster<>();
 
-    private String mName;
     private AtomicBoolean mRunning = new AtomicBoolean();
 
     protected Source mSource;
@@ -120,13 +119,10 @@ public class ProcessingChain implements IChannelEventListener
     /**
      * Creates a processing chain for managing a set of modules
      *
-     * @param name for thread pool naming each thread
      * @param channelType
      */
-    public ProcessingChain(String name, ChannelType channelType)
+    public ProcessingChain(ChannelType channelType)
     {
-        mName = name;
-
         mChannelState = new ChannelState(channelType);
         addModule(mChannelState);
 
@@ -211,6 +207,8 @@ public class ProcessingChain implements IChannelEventListener
         }
 
         mSource = source;
+
+        addModule(mSource);
     }
 
     /**
@@ -557,25 +555,6 @@ public class ProcessingChain implements IChannelEventListener
                             + "sample type - cannot start processing chain");
                 }
 				
-				/* If this is a tuner source, broadcast the frequency to all 
-				 * of the decoder state's and start the samples flowing */
-                if(mSource instanceof TunerChannelSource)
-                {
-                    TunerChannelSource tcs = (TunerChannelSource) mSource;
-
-                    try
-                    {
-                        long frequency = tcs.getFrequency();
-
-                        mDecoderStateEventBroadcaster.broadcast(
-                            new DecoderStateEvent(this, Event.SOURCE_FREQUENCY, State.IDLE, frequency));
-                    }
-                    catch(SourceException e)
-                    {
-                        mLog.error("Error getting frequency from tuner channel source", e);
-                    }
-                }
-
 				/* Start each of the modules */
                 for(Module module : mModules)
                 {
@@ -588,8 +567,6 @@ public class ProcessingChain implements IChannelEventListener
                         mLog.error("Error starting module", e);
                     }
                 }
-
-                mSource.start(ThreadPool.SCHEDULED);
             }
             else
             {
@@ -606,9 +583,16 @@ public class ProcessingChain implements IChannelEventListener
     {
         if(mRunning.compareAndSet(true, false))
         {
+			/* Stop each of the modules */
+            for(Module module : mModules)
+            {
+                module.stop();
+            }
+
             if(mSource != null)
             {
-                mSource.stop();
+                removeModule(mSource);
+
                 mSource.setOverflowListener(null);
 
                 switch(mSource.getSampleType())
@@ -629,11 +613,6 @@ public class ProcessingChain implements IChannelEventListener
                 mSource = null;
             }
 			
-			/* Stop each of the modules */
-            for(Module module : mModules)
-            {
-                module.stop();
-            }
         }
     }
 
@@ -758,6 +737,24 @@ public class ProcessingChain implements IChannelEventListener
     public void removeMessageListener(Listener<Message> listener)
     {
         mMessageBroadcaster.removeListener(listener);
+    }
+
+    /**
+     * Adds the listener to receive frequency change events from the processing chain
+     * @param listener to receive events
+     */
+    public void addFrequencyChangeListener(Listener<FrequencyChangeEvent> listener)
+    {
+        mFrequencyChangeEventBroadcaster.addListener(listener);
+    }
+
+    /**
+     * Removes the listener from receiving frequency change events
+     * @param listener to remove
+     */
+    public void removeFrequencyChangeListener(Listener<FrequencyChangeEvent> listener)
+    {
+        mFrequencyChangeEventBroadcaster.removeListener(listener);
     }
 
     /**

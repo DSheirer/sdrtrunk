@@ -222,7 +222,7 @@ public class DecoderFactory
 
                 if(channelType == ChannelType.STANDARD)
                 {
-                    modules.add(new TrafficChannelManager(channelModel, channelProcessingManager, decodeConfig,
+                    modules.add(new TrafficChannelManager(channelModel, decodeConfig,
                         channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
                         (aliasList != null ? aliasList.getName() : null), mptConfig.getTrafficChannelPoolSize()));
                 }
@@ -263,7 +263,7 @@ public class DecoderFactory
 
                 if(channelType == ChannelType.STANDARD)
                 {
-                    modules.add(new TrafficChannelManager(channelModel, channelProcessingManager, decodeConfig,
+                    modules.add(new TrafficChannelManager(channelModel, decodeConfig,
                         channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
                         (aliasList != null ? aliasList.getName() : null), p25Config.getTrafficChannelPoolSize()));
                 }

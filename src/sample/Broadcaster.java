@@ -58,6 +58,11 @@ public class Broadcaster<T> implements Listener<T>
 	
 	public void addListener( Listener<T> listener )
 	{
+	    if(listener == null)
+        {
+            throw new IllegalArgumentException("Listener cannot be null");
+        }
+
 		mListeners.add( listener );
 	}
 	

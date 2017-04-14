@@ -33,8 +33,7 @@ public class AudioChannelsPanel extends JPanel
 
     public AudioChannelsPanel(IconManager iconManager, SettingsManager settingsManager, IAudioController controller)
     {
-//        setLayout(new MigLayout("insets 0 0 0 0", "[][grow,fill][][grow,fill]", "[grow,fill]"));
-        setLayout(new MigLayout("insets 0 0 0 0", "[][sg,grow,fill][][sg,grow,fill]", "[grow,fill]"));
+        setLayout(new MigLayout("insets 0 0 0 0", "[][sg abc,grow,fill][][sg abc,grow,fill]", "[grow,fill]"));
 
         setBackground(Color.BLACK);
 
@@ -44,7 +43,7 @@ public class AudioChannelsPanel extends JPanel
 
         for(int x = 0; x < outputs.size(); x++)
         {
-            add(new AudioChannelPanel(iconManager, settingsManager, outputs.get(x)), "growx");
+            add(new AudioChannelPanel(iconManager, settingsManager, outputs.get(x)));
 
             if(x < outputs.size() - 1)
             {
