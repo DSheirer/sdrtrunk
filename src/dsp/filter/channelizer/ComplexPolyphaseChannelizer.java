@@ -38,32 +38,23 @@ public class ComplexPolyphaseChannelizer implements Listener<ComplexBuffer>
     private RealFIRFilter[] mQuadratureFilters;
     private int mFilterPointer = 0;
     private int mChannelCount;
-    private int mBlockSize;
     private float[] mFilteredSamples;
     private FloatFFT_1D mFFT;
     private ChannelDistributor mChannelDistributor;
 
-    private DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0000");
-
     /**
-     * Creates a polyphase filter bank that divides the input frequency band into evenly spaced channels that
-     * are oversampled by 2x for output.
+     * Maximally Decimated Polyphase Filter Bank (MDPFB) channelizer that divides the input frequency band into
+     * equal bandwidth channels.
      *
      * @param taps of a low-pass filter designed for the inbound sample rate with a cutoff frequency
      * equal to the channel bandwidth (sample rate / filters).  If you need to synthesize (combine two or more
      * filte outputs) a new bandwidth signal from the outputs of this filter, then the filter should be designed
      * as a nyquist filter with -6 dB attenuation at the channel bandwidth cutoff frequency
      *
-     * @param channels - number of filters/channels to output.  Since this filter bank oversamples each filter
-     * output, this number must be even (divisible by the oversample rate).
+     * @param channels - number of channels to output.
      */
-    public ComplexPolyphaseChannelizer(float[] taps, int channels, int oversample)
+    public ComplexPolyphaseChannelizer(float[] taps, int channels)
     {
-        if(oversample > 1 && channels % 2 != 0)
-        {
-            throw new IllegalArgumentException("Channel count must be a multiple of 2 when oversampling");
-        }
-
         mChannelCount = channels;
 
         initFilters(taps);
@@ -187,7 +178,7 @@ public class ComplexPolyphaseChannelizer implements Listener<ComplexBuffer>
 
         mLog.debug(sb.toString());
 
-        ComplexPolyphaseChannelizer channelizer = new ComplexPolyphaseChannelizer(taps, 8, 1);
+        ComplexPolyphaseChannelizer channelizer = new ComplexPolyphaseChannelizer(taps, 8);
 
         Oscillator oscillator = new Oscillator(channelCenter, 2 * sampleRate);
 

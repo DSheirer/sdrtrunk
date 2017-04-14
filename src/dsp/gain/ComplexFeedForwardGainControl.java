@@ -74,7 +74,7 @@ public class ComplexFeedForwardGainControl implements ComplexSampleListener
 		}
 
 		/* Replace oldest envelope value with current envelope value */
-		float oldestEnvelope = mEnvelopeHistory.get( envelope );
+		float oldestEnvelope = mEnvelopeHistory.putAndGet( envelope );
 
 		/* If the oldest envelope value was the max envelope value, then we 
 		 * have to rediscover the max value from the envelope history */

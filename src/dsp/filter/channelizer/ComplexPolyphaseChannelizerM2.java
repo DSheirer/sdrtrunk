@@ -18,9 +18,9 @@
  ******************************************************************************/
 package dsp.filter.channelizer;
 
+import buffer.ReverseFloatCircularBuffer;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window;
-import dsp.filter.fir.real.RealFIRFilter;
 import dsp.mixer.Oscillator;
 import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
@@ -30,27 +30,22 @@ import sample.complex.ComplexBuffer;
 
 import java.text.DecimalFormat;
 
-public class ComplexPolyphaseChannelizer3 implements Listener<ComplexBuffer>
+public class ComplexPolyphaseChannelizerM2 implements Listener<ComplexBuffer>
 {
-    private final static Logger mLog = LoggerFactory.getLogger(ComplexPolyphaseChannelizer3.class);
+    private final static Logger mLog = LoggerFactory.getLogger(ComplexPolyphaseChannelizerM2.class);
 
-    private RealFIRFilter[] mInphaseFilters;
-    private RealFIRFilter[] mQuadratureFilters;
-    private int mInputPointer = 0;
+    private ReverseFloatCircularBuffer[] mDataBuffers;
+    private float[][] mFilterCoefficients;
+    private int mFilterPointer = 0;
     private int mChannelCount;
-    private int mBlockSize;
-    private float[] mInputISamples;
-    private float[] mInputQSamples;
-    private float[] mOutputSamples;
     private FloatFFT_1D mFFT;
     private ChannelDistributor mChannelDistributor;
-    private boolean mFlipFlop = false;
 
     private DecimalFormat DECIMAL_FORMAT = new DecimalFormat("0.0000");
 
     /**
-     * Creates a polyphase filter bank that divides the input frequency band into evenly spaced channels that
-     * are oversampled by 2x for output.
+     * Non-Maximally Decimated Polyphase Filter Bank (NMDPFB) channelizer that divides the input frequency band into
+     * equal bandwidth channels that are each oversampled by 2x for output.
      *
      * @param taps of a low-pass filter designed for the inbound sample rate with a cutoff frequency
      * equal to the channel bandwidth (sample rate / filters).  If you need to synthesize (combine two or more
@@ -60,7 +55,7 @@ public class ComplexPolyphaseChannelizer3 implements Listener<ComplexBuffer>
      * @param channels - number of filters/channels to output.  Since this filter bank oversamples each filter
      * output, this number must be even (divisible by the oversample rate).
      */
-    public ComplexPolyphaseChannelizer3(float[] taps, int channels)
+    public ComplexPolyphaseChannelizerM2(float[] taps, int channels)
     {
         if(channels % 2 != 0)
         {
@@ -74,17 +69,26 @@ public class ComplexPolyphaseChannelizer3 implements Listener<ComplexBuffer>
 
     public void filter(float inphase, float quadrature)
     {
-        mInputISamples[mInputPointer] = inphase;
-        mInputQSamples[mInputPointer] = quadrature;
+        try
+        {
+            mDataBuffers[mFilterPointer--].put(quadrature);
+            mDataBuffers[mFilterPointer].put(inphase);
 
-        if(mInputPointer == 0)
-        {
-            calculate();
-            mInputPointer = mChannelCount / 2 - 1;
+            if(mFilterPointer == 0)
+            {
+                calculate();
+                mFilterPointer = mChannelCount * 2;
+            }
+            else if(mFilterPointer == mChannelCount)
+            {
+                calculate();
+            }
+
+            mFilterPointer--;
         }
-        else
+        catch(Exception e)
         {
-            mInputPointer--;
+            mLog.error("Error!", e);
         }
     }
 
@@ -101,39 +105,73 @@ public class ComplexPolyphaseChannelizer3 implements Listener<ComplexBuffer>
 
     private void calculate()
     {
-        float[] filteredSamples = new float[mChannelCount * 2];
+        float[] samples = new float[mChannelCount * 2];
 
-        for(int x = 0; x < mChannelCount; x++)
+        if(mFilterPointer == 0)
         {
-            int index = x * 2;
+            for(int x = 0; x < mFilterCoefficients.length; x++)
+            {
+                int index = x * 2;
 
-            filteredSamples[index] = mInphaseFilters[x].filter(mInputISamples[x]);
-            filteredSamples[index + 1] = mQuadratureFilters[x].filter(mInputQSamples[x]);
+                //Inphase sample
+                samples[index] = convolve(mFilterCoefficients[x], mDataBuffers[index]);
+
+                //Quadrature sample
+                samples[index + 1] = convolve(mFilterCoefficients[x], mDataBuffers[index + 1]);
+
+            }
+        }
+        else
+        {
+            int half = mFilterCoefficients.length / 2;
+
+            for(int x = 0; x < half; x++)
+            {
+                int index = x * 2;
+                int filterIndex = x + half;
+
+                //Inphase sample
+                samples[index] = convolve(mFilterCoefficients[filterIndex], mDataBuffers[index]);
+
+                //Quadrature sample
+                samples[index + 1] = convolve(mFilterCoefficients[filterIndex], mDataBuffers[index + 1]);
+            }
+
+            for(int x = half; x < mFilterCoefficients.length; x++)
+            {
+                int index = x * 2;
+                int filterIndex = x - half;
+
+                //Inphase sample
+                samples[index] = convolve(mFilterCoefficients[filterIndex], mDataBuffers[index]);
+
+                //Quadrature sample
+                samples[index + 1] = convolve(mFilterCoefficients[filterIndex], mDataBuffers[index + 1]);
+            }
         }
 
-        //Toggled flip-flop here
-        if(mFlipFlop)
+        //IFFT is executed in-place with the output overwriting the input
+        mFFT.complexInverse(samples, true);
+
+        dispatch(samples);
+    }
+
+    /**
+     * Filters the samples contained in the buffer against the filter coefficients
+     * @param coefficients of the sub filter
+     * @param buffer containing data samples
+     * @return
+     */
+    private float convolve(float[] coefficients, ReverseFloatCircularBuffer buffer)
+    {
+        float accumulator = 0.0f;
+
+        for( int x = 0; x < coefficients.length; x++ )
         {
-            float[] flippedSamples = new float[mChannelCount * 2];
-
-            System.arraycopy(filteredSamples, 0, flippedSamples, mChannelCount, mChannelCount);
-            System.arraycopy(filteredSamples, mChannelCount, flippedSamples, 0, mChannelCount);
-
-            filteredSamples = flippedSamples;
+            accumulator += coefficients[ x ] * buffer.get(x);
         }
 
-        mFlipFlop = !mFlipFlop;
-
-        //FFT is executed in-place where the output overwrites the input
-        mFFT.complexForward(filteredSamples);
-
-        dispatch(filteredSamples);
-
-        int half = mChannelCount / 2;
-
-        //Serpentine shift the 0 to m/2 samples to bottom of the input arrays
-        System.arraycopy(mInputISamples, half, mInputISamples, 0, half);
-        System.arraycopy(mInputQSamples, half, mInputQSamples, 0, half);
+        return accumulator;
     }
 
     private void dispatch(float[] channels)
@@ -163,7 +201,14 @@ public class ComplexPolyphaseChannelizer3 implements Listener<ComplexBuffer>
     {
         int tapCount = (int)Math.ceil((double)taps.length / (double)mChannelCount);
 
-        float[][] coefficients = new float[mChannelCount][tapCount];
+        mDataBuffers = new ReverseFloatCircularBuffer[mChannelCount * 2];
+
+        for(int x = 0; x < mChannelCount * 2; x++)
+        {
+            mDataBuffers[x] = new ReverseFloatCircularBuffer(tapCount);
+        }
+
+        mFilterCoefficients = new float[mChannelCount][tapCount];
 
         for(int tap = 0; tap < tapCount; tap++)
         {
@@ -173,25 +218,13 @@ public class ComplexPolyphaseChannelizer3 implements Listener<ComplexBuffer>
 
                 if(index < taps.length)
                 {
-                    coefficients[filter][tap] = taps[index];
+                    mFilterCoefficients[filter][tap] = taps[index];
                 }
             }
         }
 
-        mInphaseFilters = new RealFIRFilter[mChannelCount];
-        mQuadratureFilters = new RealFIRFilter[mChannelCount];
-
-        for(int filter = 0; filter < mChannelCount; filter++)
-        {
-            mInphaseFilters[filter] = new RealFIRFilter(coefficients[filter], 1.0f);
-            mQuadratureFilters[filter] = new RealFIRFilter(coefficients[filter], 1.0f);
-        }
-
-        mInputISamples = new float[mChannelCount];
-        mInputQSamples = new float[mChannelCount];
-        mOutputSamples = new float[mChannelCount * 2];
         mFFT = new FloatFFT_1D(mChannelCount);
-        mInputPointer = mChannelCount -1;
+        mFilterPointer = mChannelCount - 1; //Start at M/2
     }
 
     public static void main(String[] args)
@@ -216,7 +249,7 @@ public class ComplexPolyphaseChannelizer3 implements Listener<ComplexBuffer>
 
         mLog.debug(sb.toString());
 
-        ComplexPolyphaseChannelizer3 channelizer = new ComplexPolyphaseChannelizer3(taps, 8);
+        ComplexPolyphaseChannelizerM2 channelizer = new ComplexPolyphaseChannelizerM2(taps, 8);
 
         Oscillator oscillator = new Oscillator(channelCenter, 2 * sampleRate);
 

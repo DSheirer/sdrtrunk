@@ -20,6 +20,7 @@ package dsp.filter.channelizer;
 
 import dsp.filter.FilterFactory;
 import dsp.filter.Window;
+import dsp.filter.correction.IQCorrectionFilter;
 import dsp.filter.design.FilterDesignException;
 import dsp.mixer.LowPhaseNoiseOscillator;
 import net.miginfocom.swing.MigLayout;
@@ -59,6 +60,7 @@ public class ChannelizerViewer extends JFrame
     private LowPhaseNoiseOscillator mOscillator;
     private int mChannelCount;
     private int mChannelsPerRow;
+    private int mFilterTapsPerChannel;
     private int mSampleRate;
     private int mToneFrequency;
     private DFTSize mMainPanelDFTSize = DFTSize.FFT32768;
@@ -70,10 +72,12 @@ public class ChannelizerViewer extends JFrame
      * @param channelCount
      * @param channelsPerRow
      */
-    public ChannelizerViewer(int channelCount, int channelsPerRow)
+    public ChannelizerViewer(int channelCount, int channelsPerRow, int tapsPerChannel)
     {
         mChannelCount = channelCount;
         mChannelsPerRow = channelsPerRow;
+        mFilterTapsPerChannel = tapsPerChannel;
+
         mSampleRate = mChannelCount * CHANNEL_BANDWIDTH;
         mToneFrequency = (int)(CHANNEL_BANDWIDTH * 1); //Set to channel 1 as default
 
@@ -202,13 +206,13 @@ public class ChannelizerViewer extends JFrame
 
     private float[] getFilter() throws FilterDesignException
     {
-        return FilterFactory.getSincChannelizer(CHANNEL_BANDWIDTH, mChannelCount, 19,
+        return FilterFactory.getSincChannelizer(CHANNEL_BANDWIDTH, mChannelCount, mFilterTapsPerChannel,
             Window.WindowType.BLACKMAN_HARRIS_7, true);
     }
 
     public class ChannelArrayPanel extends JPanel implements Listener<ComplexBuffer>
     {
-        private ComplexPolyphaseChannelizer3 mPolyphaseChannelizer;
+        private ComplexPolyphaseChannelizerM2 mPolyphaseChannelizer;
         private ChannelDistributor mChannelDistributor;
 
         public ChannelArrayPanel(float[] taps)
@@ -219,7 +223,7 @@ public class ChannelizerViewer extends JFrame
                 bufferSize++;
             }
 
-            mPolyphaseChannelizer = new ComplexPolyphaseChannelizer3(taps, mChannelCount);
+            mPolyphaseChannelizer = new ComplexPolyphaseChannelizerM2(taps, mChannelCount);
             mChannelDistributor = new ChannelDistributor(bufferSize, mChannelCount);
             mPolyphaseChannelizer.setChannelDistributor(mChannelDistributor);
 
@@ -298,8 +302,9 @@ public class ChannelizerViewer extends JFrame
     {
         int channelCount = 4;
         int channelsPerRow = 4;
+        int tapsPerChannel = 17;
 
-        final ChannelizerViewer frame = new ChannelizerViewer(channelCount, channelsPerRow);
+        final ChannelizerViewer frame = new ChannelizerViewer(channelCount, channelsPerRow, tapsPerChannel);
 
         EventQueue.invokeLater(new Runnable()
         {

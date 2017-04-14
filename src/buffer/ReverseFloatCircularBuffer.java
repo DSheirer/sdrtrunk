@@ -18,24 +18,25 @@
  ******************************************************************************/
 package buffer;
 
-import java.util.Arrays;
-
 /**
  * Circular sample buffer - allocates a buffer and stores samples in a circular
  * fashion, overwriting older samples with newly arrived samples.
- *
- * Can be used as a delay-type buffer, to delay samples by the 'size' amount
  */
-public class FloatCircularBuffer
+public class ReverseFloatCircularBuffer
 {
-    float[] mBuffer;
-    int mBufferPointer = 0;
+    private float[] mBuffer;
+    private int mBufferPointer = 0;
 
-    public FloatCircularBuffer(int size)
+    public ReverseFloatCircularBuffer(int size)
     {
         mBuffer = new float[size];
+        mBufferPointer = mBuffer.length - 1;
     }
 
+    /**
+     * Size of the buffer
+     * @return
+     */
     public int getSize()
     {
         return mBuffer.length;
@@ -47,39 +48,21 @@ public class FloatCircularBuffer
     }
 
     /**
-     * Puts the new value into the buffer and returns the oldest buffer value
-     * that it replaced
-     *
-     * @param newValue
-     * @return
-     */
-    public float putAndGet(float newValue)
-    {
-        float oldestSample = mBuffer[mBufferPointer];
-
-        put(newValue);
-
-        return oldestSample;
-    }
-
-    /**
      * Adds the new value to this buffer.
      */
     public void put(float newValue)
     {
-        mBuffer[mBufferPointer] = newValue;
+        mBuffer[mBufferPointer--] = newValue;
 
-        mBufferPointer++;
-
-        if(mBufferPointer >= mBuffer.length)
+        if(mBufferPointer < 0)
         {
-            mBufferPointer = 0;
+            mBufferPointer = mBuffer.length - 1;
         }
     }
 
     /**
-     * Returns the sample at the specified index, where index 0 is the oldest sample and index (length - 1) is the
-     * newest sample.
+     * Returns the sample at the specified index, where index 0 is the newest sample and index (length - 1) is the
+     * oldest sample.
      * @param index in range of 0 to length-1
      * @return value at indexed position
      */
@@ -88,7 +71,7 @@ public class FloatCircularBuffer
     {
         if(index < mBuffer.length)
         {
-            int pointer = mBufferPointer + index;
+            int pointer = mBufferPointer + 1 + index;
 
             if(pointer >= mBuffer.length)
             {
@@ -102,25 +85,5 @@ public class FloatCircularBuffer
             throw new ArrayIndexOutOfBoundsException("Index [" + index + "] is not valid for the buffer size of [" +
                 mBuffer.length + "]");
         }
-    }
-
-    /**
-     * Returns the contents of the circular buffer unwrapped where index 0 is the oldest sample and index length-1
-     * is the newest sample.
-     *
-     * @return array of samples
-     */
-    public float[] get()
-    {
-        float[] samples = new float[mBuffer.length];
-
-        System.arraycopy(mBuffer, mBufferPointer, samples, 0, mBuffer.length - mBufferPointer);
-
-        if(mBufferPointer != 0)
-        {
-            System.arraycopy(mBuffer, 0, samples, mBuffer.length - mBufferPointer, mBufferPointer);
-        }
-
-        return samples;
     }
 }
