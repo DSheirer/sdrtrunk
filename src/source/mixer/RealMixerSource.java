@@ -36,7 +36,7 @@ import sample.real.RealBuffer;
 import source.RealSource;
 import source.SourceException;
 import dsp.gain.AutomaticGainControl;
-import source.tuner.frequency.FrequencyChangeEvent;
+import source.SourceEvent;
 
 public class RealMixerSource extends RealSource
 {
@@ -80,19 +80,19 @@ public class RealMixerSource extends RealSource
     }
 
 	@Override
-	public void setFrequencyChangeListener(Listener<FrequencyChangeEvent> listener)
+	public void setSourceEventListener(Listener<SourceEvent> listener)
 	{
 		//Not implemented
 	}
 
 	@Override
-	public void removeFrequencyChangeListener()
+	public void removeSourceEventListener()
 	{
 		//Not implemented
 	}
 
 	@Override
-	public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
+	public Listener<SourceEvent> getSourceEventListener()
 	{
 		//Not implemented
 		return null;

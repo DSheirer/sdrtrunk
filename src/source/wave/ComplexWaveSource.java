@@ -37,7 +37,7 @@ import sample.complex.ComplexBuffer;
 import source.ComplexSource;
 import source.IControllableFileSource;
 import source.IFrameLocationListener;
-import source.tuner.frequency.FrequencyChangeEvent;
+import source.SourceEvent;
 
 public class ComplexWaveSource extends ComplexSource implements IControllableFileSource
 {
@@ -58,19 +58,19 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     }
 
     @Override
-    public void setFrequencyChangeListener(Listener<FrequencyChangeEvent> listener)
+    public void setSourceEventListener(Listener<SourceEvent> listener)
     {
         //Not implemented
     }
 
     @Override
-    public void removeFrequencyChangeListener()
+    public void removeSourceEventListener()
     {
         //Not implemented
     }
 
     @Override
-    public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
+    public Listener<SourceEvent> getSourceEventListener()
     {
         //Not implemented
         return null;

@@ -151,7 +151,7 @@ public class FIRFilterSpecification
     }
 
     /**
-     * Creates a Polyphase Channelizer filter specification builder that allows you to define the filter parameters and
+     * Creates a Polyphase TunerChannelizer filter specification builder that allows you to define the filter parameters and
      * create a filter specification
      */
     public static ChannelizerBuilder channelizerBuilder()

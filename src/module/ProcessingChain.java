@@ -30,10 +30,8 @@ import channel.metadata.IAttributeChangeRequestProvider;
 import channel.state.ChannelState;
 import channel.state.DecoderState;
 import channel.state.DecoderStateEvent;
-import channel.state.DecoderStateEvent.Event;
 import channel.state.IDecoderStateEventListener;
 import channel.state.IDecoderStateEventProvider;
-import channel.state.State;
 import controller.channel.Channel.ChannelType;
 import controller.channel.ChannelEvent;
 import controller.channel.IChannelEventListener;
@@ -63,11 +61,9 @@ import sample.real.RealBuffer;
 import source.ComplexSource;
 import source.RealSource;
 import source.Source;
-import source.SourceException;
-import source.tuner.TunerChannelSource;
-import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.IFrequencyChangeListener;
-import source.tuner.frequency.IFrequencyChangeProvider;
+import source.ISourceEventListener;
+import source.ISourceEventProvider;
+import source.SourceEvent;
 import util.ThreadPool;
 
 import java.util.ArrayList;
@@ -102,7 +98,7 @@ public class ProcessingChain implements IChannelEventListener
     private Broadcaster<ChannelEvent> mChannelEventBroadcaster = new Broadcaster<>();
     private Broadcaster<ComplexBuffer> mComplexBufferBroadcaster = new Broadcaster<>();
     private Broadcaster<DecoderStateEvent> mDecoderStateEventBroadcaster = new Broadcaster<>();
-    private Broadcaster<FrequencyChangeEvent> mFrequencyChangeEventBroadcaster = new Broadcaster<>();
+    private Broadcaster<SourceEvent> mFrequencyChangeEventBroadcaster = new Broadcaster<>();
     private Broadcaster<Message> mMessageBroadcaster = new Broadcaster<>();
     private Broadcaster<RealBuffer> mFilteredRealBufferBroadcaster = new Broadcaster<>();
     private Broadcaster<RealBuffer> mUnFilteredRealBufferBroadcaster = new Broadcaster<>();
@@ -318,9 +314,9 @@ public class ProcessingChain implements IChannelEventListener
             mDecoderStateEventBroadcaster.addListener(((IDecoderStateEventListener) module).getDecoderStateListener());
         }
 
-        if(module instanceof IFrequencyChangeListener)
+        if(module instanceof ISourceEventListener)
         {
-            mFrequencyChangeEventBroadcaster.addListener(((IFrequencyChangeListener) module).getFrequencyChangeListener());
+            mFrequencyChangeEventBroadcaster.addListener(((ISourceEventListener) module).getSourceEventListener());
         }
 
         if(module instanceof IMessageListener)
@@ -380,9 +376,9 @@ public class ProcessingChain implements IChannelEventListener
             mDecoderStateEventBroadcaster.removeListener(((IDecoderStateEventListener) module).getDecoderStateListener());
         }
 
-        if(module instanceof IFrequencyChangeListener)
+        if(module instanceof ISourceEventListener)
         {
-            mFrequencyChangeEventBroadcaster.removeListener(((IFrequencyChangeListener) module).getFrequencyChangeListener());
+            mFrequencyChangeEventBroadcaster.removeListener(((ISourceEventListener) module).getSourceEventListener());
         }
 
         if(module instanceof IMessageListener)
@@ -437,9 +433,9 @@ public class ProcessingChain implements IChannelEventListener
             ((IDecoderStateEventProvider) module).setDecoderStateListener(mDecoderStateEventBroadcaster);
         }
 
-        if(module instanceof IFrequencyChangeProvider)
+        if(module instanceof IFilteredRealBufferProvider)
         {
-            ((IFrequencyChangeProvider) module).setFrequencyChangeListener(mFrequencyChangeEventBroadcaster);
+            ((IFilteredRealBufferProvider) module).setFilteredRealBufferListener(mFilteredRealBufferBroadcaster);
         }
 
         if(module instanceof IMessageProvider)
@@ -447,9 +443,9 @@ public class ProcessingChain implements IChannelEventListener
             ((IMessageProvider) module).setMessageListener(mMessageBroadcaster);
         }
 
-        if(module instanceof IFilteredRealBufferProvider)
+        if(module instanceof ISourceEventProvider)
         {
-            ((IFilteredRealBufferProvider) module).setFilteredRealBufferListener(mFilteredRealBufferBroadcaster);
+            ((ISourceEventProvider) module).setSourceEventListener(mFrequencyChangeEventBroadcaster);
         }
 
         if(module instanceof ISquelchStateProvider)
@@ -494,9 +490,9 @@ public class ProcessingChain implements IChannelEventListener
             ((IDecoderStateEventProvider) module).setDecoderStateListener(null);
         }
 
-        if(module instanceof IFrequencyChangeProvider)
+        if(module instanceof IFilteredRealBufferProvider)
         {
-            ((IFrequencyChangeProvider) module).setFrequencyChangeListener(null);
+            ((IFilteredRealBufferProvider) module).setFilteredRealBufferListener(null);
         }
 
         if(module instanceof IMessageProvider)
@@ -504,9 +500,9 @@ public class ProcessingChain implements IChannelEventListener
             ((IMessageProvider) module).setMessageListener(null);
         }
 
-        if(module instanceof IFilteredRealBufferProvider)
+        if(module instanceof ISourceEventProvider)
         {
-            ((IFilteredRealBufferProvider) module).setFilteredRealBufferListener(null);
+            ((ISourceEventProvider) module).setSourceEventListener(null);
         }
 
         if(module instanceof ISquelchStateProvider)
@@ -743,7 +739,7 @@ public class ProcessingChain implements IChannelEventListener
      * Adds the listener to receive frequency change events from the processing chain
      * @param listener to receive events
      */
-    public void addFrequencyChangeListener(Listener<FrequencyChangeEvent> listener)
+    public void addFrequencyChangeListener(Listener<SourceEvent> listener)
     {
         mFrequencyChangeEventBroadcaster.addListener(listener);
     }
@@ -752,7 +748,7 @@ public class ProcessingChain implements IChannelEventListener
      * Removes the listener from receiving frequency change events
      * @param listener to remove
      */
-    public void removeFrequencyChangeListener(Listener<FrequencyChangeEvent> listener)
+    public void removeFrequencyChangeListener(Listener<SourceEvent> listener)
     {
         mFrequencyChangeEventBroadcaster.removeListener(listener);
     }

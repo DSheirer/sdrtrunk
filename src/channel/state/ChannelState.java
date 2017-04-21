@@ -36,18 +36,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sample.Listener;
 import sample.real.IOverflowListener;
-import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.IFrequencyChangeListener;
+import source.SourceEvent;
+import source.ISourceEventListener;
 
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import static source.tuner.frequency.FrequencyChangeEvent.Event.NOTIFICATION_FREQUENCY_CHANGE;
+import static source.SourceEvent.Event.NOTIFICATION_FREQUENCY_CHANGE;
 
 public class ChannelState extends Module implements ICallEventProvider, IDecoderStateEventListener,
-    IDecoderStateEventProvider, IFrequencyChangeListener, ISquelchStateProvider, IAttributeChangeRequestListener,
+    IDecoderStateEventProvider, ISourceEventListener, ISquelchStateProvider, IAttributeChangeRequestListener,
     IOverflowListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelState.class);
@@ -66,7 +66,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     private ChannelType mChannelType;
     private TrafficChannelManager mTrafficChannelEndListener;
     private CallEvent mTrafficChannelCallEvent;
-    private FrequencyChangeListener mFrequencyChangeListener;
+    private SourceChangeListener mSourceChangeListener;
 
     private boolean mSquelchLocked = false;
     private boolean mSelected = false;
@@ -196,14 +196,14 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     }
 
     @Override
-    public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
+    public Listener<SourceEvent> getSourceEventListener()
     {
-        if(mFrequencyChangeListener == null)
+        if(mSourceChangeListener == null)
         {
-            mFrequencyChangeListener = new FrequencyChangeListener();
+            mSourceChangeListener = new SourceChangeListener();
         }
 
-        return mFrequencyChangeListener;
+        return mSourceChangeListener;
     }
 
     private boolean isStandardChannel()
@@ -552,14 +552,14 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     /**
      * Listener to receive frequency change events and rebroadcast them to the decoder states
      */
-    public class FrequencyChangeListener implements Listener<FrequencyChangeEvent>
+    public class SourceChangeListener implements Listener<SourceEvent>
     {
         @Override
-        public void receive(FrequencyChangeEvent frequencyChangeEvent)
+        public void receive(SourceEvent sourceEvent)
         {
-            if(frequencyChangeEvent.getEvent() == NOTIFICATION_FREQUENCY_CHANGE)
+            if(sourceEvent.getEvent() == NOTIFICATION_FREQUENCY_CHANGE)
             {
-                long frequency = frequencyChangeEvent.getValue().longValue();
+                long frequency = sourceEvent.getValue().longValue();
 
                 broadcast(new DecoderStateEvent(this, Event.SOURCE_FREQUENCY, getState(), frequency));
             }

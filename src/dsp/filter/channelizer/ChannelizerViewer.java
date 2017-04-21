@@ -20,7 +20,6 @@ package dsp.filter.channelizer;
 
 import dsp.filter.FilterFactory;
 import dsp.filter.Window;
-import dsp.filter.correction.IQCorrectionFilter;
 import dsp.filter.design.FilterDesignException;
 import dsp.mixer.LowPhaseNoiseOscillator;
 import net.miginfocom.swing.MigLayout;
@@ -31,7 +30,7 @@ import sample.SampleType;
 import sample.complex.ComplexBuffer;
 import settings.SettingsManager;
 import source.tuner.configuration.TunerConfigurationModel;
-import source.tuner.frequency.FrequencyChangeEvent;
+import source.SourceEvent;
 import spectrum.DFTProcessor;
 import spectrum.DFTSize;
 import spectrum.SpectrumPanel;
@@ -86,7 +85,7 @@ public class ChannelizerViewer extends JFrame
 
     private void init()
     {
-        setTitle("Channelizer Viewer");
+        setTitle("TunerChannelizer Viewer");
         setSize(1000, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
@@ -212,7 +211,7 @@ public class ChannelizerViewer extends JFrame
 
     public class ChannelArrayPanel extends JPanel implements Listener<ComplexBuffer>
     {
-        private ComplexPolyphaseChannelizerM2 mPolyphaseChannelizer;
+        private ComplexPolyphaseChannelizer mPolyphaseChannelizer;
         private ChannelDistributor mChannelDistributor;
 
         public ChannelArrayPanel(float[] taps)
@@ -223,7 +222,7 @@ public class ChannelizerViewer extends JFrame
                 bufferSize++;
             }
 
-            mPolyphaseChannelizer = new ComplexPolyphaseChannelizerM2(taps, mChannelCount);
+            mPolyphaseChannelizer = new ComplexPolyphaseChannelizer(taps, mChannelCount, CHANNEL_BANDWIDTH);
             mChannelDistributor = new ChannelDistributor(bufferSize, mChannelCount);
             mPolyphaseChannelizer.setChannelDistributor(mChannelDistributor);
 
@@ -272,8 +271,7 @@ public class ChannelizerViewer extends JFrame
             add(mSpectrumPanel);
 
             mDFTProcessor.addConverter(mComplexDecibelConverter);
-            mDFTProcessor.frequencyChanged(new FrequencyChangeEvent(
-                FrequencyChangeEvent.Event.NOTIFICATION_SAMPLE_RATE_CHANGE, sampleRate));
+            mDFTProcessor.process(SourceEvent.sampleRateChange(sampleRate));
             mComplexDecibelConverter.addListener(mSpectrumPanel);
         }
 

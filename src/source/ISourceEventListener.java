@@ -16,22 +16,20 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package dsp.filter.fir.remez;
+package source;
 
-import dsp.filter.fir.FIRFilterSpecification;
+import sample.Listener;
 
-public class PolyphaseChannelizerDesigner extends FIRFilterSpecification
+
+/**
+ * Interface for broadcasting changes to frequency, bandwidth, sample rate,
+ * and actual sample rate values to all registered listeners.
+ * 
+ * Note: broadcasted frequency should be the uncorrected, or displayable 
+ * frequency value.  All frequency correction aspects should be handled within
+ * the device that implements the tuning of the frequency.
+ */
+public interface ISourceEventListener
 {
-    /**
-     * Constructs a Polyphase TunerChannelizer Remez filter specification.
-     *
-     * Constructor is package private -- use the PolyphaseChannelizerFilterFactory to create a filter
-     *
-     * @param order of the filter
-     * @param gridDensity to use when calculating the coefficients
-     */
-    PolyphaseChannelizerDesigner(int order, int gridDensity)
-    {
-        super(FIRLinearPhaseFilterType.TYPE_1_ODD_LENGTH_EVEN_ORDER_SYMMETRICAL, order, gridDensity);
-    }
+	Listener<SourceEvent> getSourceEventListener();
 }

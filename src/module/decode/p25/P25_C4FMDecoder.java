@@ -21,7 +21,6 @@ package module.decode.p25;
 import instrument.tap.Tap;
 import instrument.tap.TapGroup;
 import instrument.tap.stream.DibitTap;
-import instrument.tap.stream.FloatBufferTap;
 import instrument.tap.stream.FloatTap;
 
 import java.util.ArrayList;
@@ -35,12 +34,7 @@ import alias.AliasList;
 import sample.Listener;
 import sample.real.IFilteredRealBufferListener;
 import sample.real.RealBuffer;
-import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.IFrequencyChangeListener;
-import source.tuner.frequency.IFrequencyChangeProvider;
-import dsp.filter.FilterFactory;
-import dsp.filter.Window.WindowType;
-import dsp.filter.fir.real.RealFIRFilter_RB_RB;
+import source.SourceEvent;
 
 public class P25_C4FMDecoder extends P25Decoder implements IFilteredRealBufferListener
 {
@@ -222,7 +216,7 @@ public class P25_C4FMDecoder extends P25Decoder implements IFilteredRealBufferLi
 	}
 
 	@Override
-	public void setFrequencyChangeListener(	Listener<FrequencyChangeEvent> listener )
+	public void setSourceEventListener(Listener<SourceEvent> listener )
 	{
 		if( mSymbolFilter != null )
 		{
@@ -231,7 +225,7 @@ public class P25_C4FMDecoder extends P25Decoder implements IFilteredRealBufferLi
 	}
 
 	@Override
-	public void removeFrequencyChangeListener()
+	public void removeSourceEventListener()
 	{
 		if( mSymbolFilter != null )
 		{
@@ -240,11 +234,11 @@ public class P25_C4FMDecoder extends P25Decoder implements IFilteredRealBufferLi
 	}
 
 	@Override
-	public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
+	public Listener<SourceEvent> getSourceEventListener()
 	{
 		if( mSymbolFilter != null )
 		{
-			return mSymbolFilter.getFrequencyChangeListener();
+			return mSymbolFilter.getSourceEventListener();
 		}
 		
 		return null;

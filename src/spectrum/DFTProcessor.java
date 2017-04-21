@@ -28,8 +28,8 @@ import sample.Buffer;
 import sample.Listener;
 import sample.SampleType;
 import sample.complex.ComplexBuffer;
-import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.IFrequencyChangeProcessor;
+import source.SourceEvent;
+import source.ISourceEventProcessor;
 import spectrum.converter.DFTResultsConverter;
 import util.ThreadPool;
 
@@ -46,7 +46,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Processes both complex samples or float samples and dispatches a float array
  * of DFT results, using configurable fft size and output dispatch timelines.
  */
-public class DFTProcessor implements Listener<ComplexBuffer>, IFrequencyChangeProcessor, IDFTWidthChangeProcessor
+public class DFTProcessor implements Listener<ComplexBuffer>, ISourceEventProcessor, IDFTWidthChangeProcessor
 {
     private final static Logger mLog = LoggerFactory.getLogger(DFTProcessor.class);
 
@@ -452,7 +452,7 @@ public class DFTProcessor implements Listener<ComplexBuffer>, IFrequencyChangePr
     }
 
     @Override
-    public void frequencyChanged(FrequencyChangeEvent event)
+    public void process(SourceEvent event)
     {
         switch(event.getEvent())
         {

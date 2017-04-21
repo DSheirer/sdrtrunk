@@ -36,10 +36,9 @@ import sample.complex.ComplexBuffer;
 import settings.ColorSetting.ColorSettingName;
 import settings.ColorSettingMenuItem;
 import settings.SettingsManager;
+import source.ISourceEventProcessor;
+import source.SourceEvent;
 import source.tuner.Tuner;
-import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeEvent.Event;
-import source.tuner.frequency.IFrequencyChangeProcessor;
 import spectrum.OverlayPanel.ChannelDisplay;
 import spectrum.converter.ComplexDecibelConverter;
 import spectrum.converter.DFTResultsConverter;
@@ -65,7 +64,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Hashtable;
 
-public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuffer>, IFrequencyChangeProcessor, IDFTWidthChangeProcessor
+public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuffer>, ISourceEventProcessor, IDFTWidthChangeProcessor
 {
     private static final long serialVersionUID = 1L;
 
@@ -223,7 +222,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuff
      *
      * @param zoom level, 0 - 6.
      * @param frequency under the mouse to maintain while zooming
-     * @param xAxisOffset where to maintain the frequency under the mouse
+     * @param windowOffset where to maintain the frequency under the mouse
      */
     public void setZoom(int zoom, long frequency, double windowOffset)
     {
@@ -247,7 +246,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuff
             //Calculate the bin offset into the newly sized zoom window that
             //would place the frequency in the same proportional window location
             //that it was in the previous zoom size
-            double windowBinOffset = (double) getZoomWindowSizeInBins() * windowOffset;
+            double windowBinOffset = (double)getZoomWindowSizeInBins() * windowOffset;
 
             //Set the overall offset to place the reference frequency in the
             //same location in the newly zoomed window
@@ -276,7 +275,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuff
             offset = mDFTSize.getSize() - getZoomWindowSizeInBins();
         }
 
-        mDFTZoomWindowOffset = (int) offset;
+        mDFTZoomWindowOffset = (int)offset;
 
         mSpectrumPanel.setZoomWindowOffset(mDFTZoomWindowOffset);
         mOverlayPanel.setZoomWindowOffset(mDFTZoomWindowOffset);
@@ -294,7 +293,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuff
 
     public int getZoomMultiplier()
     {
-        return (int) Math.pow(2.0, mZoom);
+        return (int)Math.pow(2.0, mZoom);
     }
 
     /**
@@ -310,9 +309,9 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuff
 
         if(mOverlayPanel.containsFrequency(frequency))
         {
-            offset = (double) mDFTSize.getSize() *
-                ((double) (frequency - mOverlayPanel.getMinFrequency()) /
-                    (double) mOverlayPanel.getBandwidth());
+            offset = (double)mDFTSize.getSize() *
+                ((double)(frequency - mOverlayPanel.getMinFrequency()) /
+                    (double)mOverlayPanel.getBandwidth());
         }
 
         return offset;
@@ -361,11 +360,11 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuff
         double totalHeight = mLayeredPanel.getPreferredSize().getHeight() +
             mWaterfallPanel.getPreferredSize().getHeight();
 
-        mLayeredPanel.setPreferredSize(new Dimension((int) mLayeredPanel
-            .getPreferredSize().getWidth(), (int) (totalHeight / 2.0d)));
+        mLayeredPanel.setPreferredSize(new Dimension((int)mLayeredPanel
+            .getPreferredSize().getWidth(), (int)(totalHeight / 2.0d)));
 
-        mWaterfallPanel.setPreferredSize(new Dimension((int) mWaterfallPanel
-            .getPreferredSize().getWidth(), (int) (totalHeight / 2.0d)));
+        mWaterfallPanel.setPreferredSize(new Dimension((int)mWaterfallPanel
+            .getPreferredSize().getWidth(), (int)(totalHeight / 2.0d)));
 
         //Create the split pane to hold the layered pane and the waterfall
         JideSplitPane splitPane = new JideSplitPane(JSplitPane.VERTICAL_SPLIT);
@@ -385,17 +384,17 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuff
         mDFTConverter = new ComplexDecibelConverter();
         mDFTProcessor.addConverter(mDFTConverter);
 
-        mDFTConverter.addListener((DFTResultsListener) mSpectrumPanel);
-        mDFTConverter.addListener((DFTResultsListener) mWaterfallPanel);
+        mDFTConverter.addListener((DFTResultsListener)mSpectrumPanel);
+        mDFTConverter.addListener((DFTResultsListener)mWaterfallPanel);
     }
 
     /**
      * Receives frequency change events -- primarily from tuner components.
      */
-    public void frequencyChanged(FrequencyChangeEvent event)
+    public void process(SourceEvent event)
     {
-        mOverlayPanel.frequencyChanged(event);
-        mDFTProcessor.frequencyChanged(event);
+        mOverlayPanel.process(event);
+        mDFTProcessor.process(event);
     }
 
     /**
@@ -425,19 +424,15 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuff
             mTuner.getTunerController().addListener(this);
 
             //Register the dft processor to receive samples from the tuner
-            mTuner.addListener((Listener<ComplexBuffer>) mDFTProcessor);
+            mTuner.addListener((Listener<ComplexBuffer>)mDFTProcessor);
 
             mSpectrumPanel.setSampleSize(mTuner.getSampleSize());
 
             //Fire frequency and sample rate change events so that the spectrum
             //and overlay panels can synchronize
-            frequencyChanged(new FrequencyChangeEvent(
-                Event.NOTIFICATION_FREQUENCY_CHANGE,
-                mTuner.getTunerController().getFrequency()));
+            process(SourceEvent.frequencyChange(mTuner.getTunerController().getFrequency()));
 
-            frequencyChanged(new FrequencyChangeEvent(
-                Event.NOTIFICATION_SAMPLE_RATE_CHANGE,
-                mTuner.getTunerController().getSampleRate()));
+            process(SourceEvent.sampleRateChange(mTuner.getTunerController().getSampleRate()));
         }
     }
 
@@ -452,7 +447,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuff
             mTuner.getTunerController().removeListener(this);
 
             //Deregister the dft processor from receiving samples
-            mTuner.removeListener((Listener<ComplexBuffer>) mDFTProcessor);
+            mTuner.removeListener((Listener<ComplexBuffer>)mDFTProcessor);
             mTuner = null;
         }
     }
@@ -508,7 +503,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuff
 
             long frequency = mOverlayPanel.getFrequencyFromAxis(e.getX());
 
-            double windowOffset = (double) e.getX() / (double) getWidth();
+            double windowOffset = (double)e.getX() / (double)getWidth();
 
             setZoom(zoom, frequency, windowOffset);
         }
@@ -526,9 +521,9 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuff
 
             int dragDistance = mDragStartX - event.getX();
 
-            double binDistance = (double) dragDistance / mPixelsPerBin;
+            double binDistance = (double)dragDistance / mPixelsPerBin;
 
-            int offset = (int) (mDFTZoomWindowOffsetAtDragStart + binDistance);
+            int offset = (int)(mDFTZoomWindowOffsetAtDragStart + binDistance);
 
             if(offset < 0)
             {
@@ -552,9 +547,9 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuff
 
             mDFTZoomWindowOffsetAtDragStart = mDFTZoomWindowOffset;
 
-            mPixelsPerBin = (double) getWidth() /
-                ((double) (mDFTSize.getSize()) /
-                    (double) getZoomMultiplier());
+            mPixelsPerBin = (double)getWidth() /
+                ((double)(mDFTSize.getSize()) /
+                    (double)getZoomMultiplier());
         }
 
         /**
@@ -774,11 +769,11 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuff
                 }
 
 				/*
-				 * Zoom menu 
+                 * Zoom menu
 				 */
                 JMenuItem zoomMenu = new JMenu("Zoom");
 
-                double windowOffset = (double) event.getX() / (double) getWidth();
+                double windowOffset = (double)event.getX() / (double)getWidth();
 
                 zoomMenu.add(new ZoomItem(frequency, windowOffset));
 

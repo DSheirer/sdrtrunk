@@ -26,13 +26,13 @@ import org.slf4j.LoggerFactory;
 
 import source.SourceException;
 import source.tuner.configuration.TunerConfiguration;
-import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeEvent.Event;
+import source.SourceEvent;
+import source.SourceEvent.Event;
 import source.tuner.frequency.FrequencyController;
 import source.tuner.frequency.FrequencyController.Tunable;
-import source.tuner.frequency.IFrequencyChangeProcessor;
+import source.ISourceEventProcessor;
 
-public abstract class TunerController implements Tunable, IFrequencyChangeProcessor
+public abstract class TunerController implements Tunable, ISourceEventProcessor
 {
 	private final static Logger mLog = 
 			LoggerFactory.getLogger( TunerController.class );
@@ -79,7 +79,7 @@ public abstract class TunerController implements Tunable, IFrequencyChangeProces
 	 * Responds to requests to set the frequency
 	 */
     @Override
-	public void frequencyChanged( FrequencyChangeEvent event ) throws SourceException
+	public void process(SourceEvent event ) throws SourceException
 	{
     	if( event.getEvent() == Event.REQUEST_FREQUENCY_CHANGE )
     	{
@@ -381,7 +381,7 @@ public abstract class TunerController implements Tunable, IFrequencyChangeProces
 	 * Note: this is normally used by the Tuner.  Any additional listeners can
 	 * be registered on the tuner.
 	 */
-    public void addListener( IFrequencyChangeProcessor processor )
+    public void addListener( ISourceEventProcessor processor )
     {
     	mFrequencyController.addListener( processor );
     }
@@ -389,7 +389,7 @@ public abstract class TunerController implements Tunable, IFrequencyChangeProces
     /**
      * Removes the frequency change listener
      */
-    public void removeListener( IFrequencyChangeProcessor processor )
+    public void removeListener( ISourceEventProcessor processor )
     {
     	mFrequencyController.removeFrequencyChangeProcessor( processor );
     }

@@ -18,8 +18,6 @@
  ******************************************************************************/
 package channel.traffic;
 
-import alias.Alias;
-import alias.id.priority.Priority;
 import channel.state.DecoderStateEvent;
 import channel.state.IDecoderStateEventListener;
 import controller.channel.Channel;
@@ -27,7 +25,6 @@ import controller.channel.Channel.ChannelType;
 import controller.channel.ChannelEvent;
 import controller.channel.ChannelEvent.Event;
 import controller.channel.ChannelModel;
-import controller.channel.ChannelProcessingManager;
 import controller.channel.TrafficChannelEvent;
 import module.Module;
 import module.decode.config.DecodeConfiguration;
@@ -40,7 +37,6 @@ import record.config.RecordConfiguration;
 import sample.Listener;
 import source.config.SourceConfigTuner;
 import source.tuner.TunerChannel;
-import source.tuner.TunerChannel.Type;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -193,8 +189,8 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
 
             if(frequency > 0)
             {
-                Channel channel = getChannel(callEvent.getChannel(), new TunerChannel(Type.TRAFFIC,
-                    frequency, mDecodeConfiguration.getDecoderType().getChannelBandwidth()));
+                Channel channel = getChannel(callEvent.getChannel(), new TunerChannel(frequency,
+                    mDecodeConfiguration.getDecoderType().getChannelBandwidth()));
 
                 if(channel != null)
                 {

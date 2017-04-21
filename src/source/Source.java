@@ -20,38 +20,38 @@ package source;
 import module.Module;
 import sample.SampleType;
 import sample.real.IOverflowListener;
-import source.tuner.frequency.IFrequencyChangeListener;
-import source.tuner.frequency.IFrequencyChangeProvider;
 
 /**
  * Abstract class to define the minimum functionality of a sample data provider.
  */
-public abstract class Source extends Module implements IFrequencyChangeListener, IFrequencyChangeProvider
+public abstract class Source extends Module implements ISourceEventListener, ISourceEventProvider
 {
-    protected SampleType mSampleType;
     protected IOverflowListener mOverflowListener;
 
-    public Source( SampleType sampleType )
-    {
-        mSampleType = sampleType;
-    }
-    
+    /**
+     * Indicates the type of samples provided by this source: real or complex
+     */
+    public abstract SampleType getSampleType();
+
+    /**
+     * Sample rate provided by this source
+     *
+     * @throws SourceException if there is an issue determining the sample rate for this source
+     */
     public abstract int getSampleRate() throws SourceException;
-    
+
+    /**
+     * Center frequency for this source in Hertz
+     *
+     * @throws SourceException if there is an issue in determining the center frequency for this source
+     */
     public abstract long getFrequency() throws SourceException;
-    
+
+    /**
+     * Process any cleanup actions to prepare for garbage collection of this source
+     */
     public abstract void dispose();
     
-    public SampleType getSampleType()
-    {
-    	return mSampleType;
-    }
-    
-    public void setSampleType( SampleType sampleType )
-    {
-    	mSampleType = sampleType;
-    }
-
     /**
      * Registers the listener to receive overflow state changes.  Use null argument to clear the listener
      */
@@ -63,7 +63,7 @@ public abstract class Source extends Module implements IFrequencyChangeListener,
     /**
      * Broadcasts an overflow state
      *
-     * @param overflow true if overlow, false if normal
+     * @param overflow true if overflow, false if normal
      */
     protected void broadcastOverflowState(boolean overflow)
     {

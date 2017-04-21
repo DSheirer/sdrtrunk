@@ -9,12 +9,12 @@ import source.SourceException;
 import source.tuner.ITunerChannelProvider;
 import source.tuner.TunerChannel;
 import source.tuner.TunerChannelSource;
-import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeEvent.Event;
-import source.tuner.frequency.IFrequencyChangeProcessor;
+import source.SourceEvent;
+import source.SourceEvent.Event;
+import source.ISourceEventProcessor;
 
 public class Recording implements Comparable<Recording>,
-								  IFrequencyChangeProcessor, 
+	ISourceEventProcessor,
 								  ITunerChannelProvider
 {
 	private RecordingConfiguration mConfiguration;
@@ -89,7 +89,7 @@ public class Recording implements Comparable<Recording>,
 	}
 
 	@Override
-    public void frequencyChanged( FrequencyChangeEvent event ) throws SourceException
+    public void process(SourceEvent event ) throws SourceException
     {
 		if( event.getEvent() == Event.NOTIFICATION_FREQUENCY_CHANGE )
 		{
@@ -103,7 +103,7 @@ public class Recording implements Comparable<Recording>,
 
 			for( TunerChannelSource channel: mTunerChannels )
 			{
-				channel.frequencyChanged( event );
+				channel.process( event );
 			}
 		}
     }

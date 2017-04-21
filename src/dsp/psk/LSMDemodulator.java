@@ -43,7 +43,7 @@ import java.util.List;
 import sample.Listener;
 import sample.complex.Complex;
 import sample.complex.ComplexSampleListener;
-import source.tuner.frequency.IFrequencyChangeListener;
+import source.ISourceEventListener;
 import buffer.FloatAveragingBuffer;
 import dsp.filter.interpolator.RealInterpolator;
 import dsp.symbol.Dibit;
@@ -73,7 +73,7 @@ public class LSMDemodulator implements Instrumentable, ComplexSampleListener
 	
 	private CostasLoop mCostasLoop = new CostasLoop();
 	
-	private IFrequencyChangeListener mFrequencyChangeListener;
+	private ISourceEventListener mFrequencyChangeListener;
 	
 	private EyeDiagramDataTap mEyeDiagramDataTap;
 	
@@ -147,12 +147,12 @@ public class LSMDemodulator implements Instrumentable, ComplexSampleListener
 		}
 	}
 	
-	public void addListener( IFrequencyChangeListener listener )
+	public void addListener( ISourceEventListener listener )
 	{
 		mFrequencyChangeListener = listener;
 	}
 	
-	public void removeListener( IFrequencyChangeListener listener )
+	public void removeListener( ISourceEventListener listener )
 	{
 		mFrequencyChangeListener = null;
 	}
@@ -202,8 +202,8 @@ public class LSMDemodulator implements Instrumentable, ComplexSampleListener
 //				if( correctionNeeded && mFrequencyChangeListener != null )
 //				{
 //					mLog.debug( "Issuing Frequency Correction: " + mFrequencyError );
-//					mFrequencyChangeListener.frequencyChanged( 
-//						new FrequencyChangeEvent( Attribute.FREQUENCY_ERROR, 
+//					mFrequencyChangeListener.process(
+//						new SourceEvent( Attribute.FREQUENCY_ERROR,
 //								mFrequencyError ) );
 //				}
 //				

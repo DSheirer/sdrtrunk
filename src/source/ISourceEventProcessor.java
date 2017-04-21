@@ -16,15 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package source.tuner.frequency;
+package source;
 
-import sample.Listener;
-
-/**
- * Provider of Frequency Change Events
- */
-public interface IFrequencyChangeProvider
+public interface ISourceEventProcessor
 {
-	void setFrequencyChangeListener( Listener<FrequencyChangeEvent> listener );
-	void removeFrequencyChangeListener();
+    void process(SourceEvent event) throws SourceException;
 }

@@ -567,7 +567,7 @@ public class FilterFactory
      * For 40db attenuation, calculate the number of symbols based on the following formula:
      *    Symbols = -44 * alpha + 33
      *
-     * Polyphase Channelizer notes:
+     * Polyphase TunerChannelizer notes:
      * -Set samples Per Symbol at 2 (or more) * number of channels
      * -Set symbolCount to sufficient size to produce required attenuation
      * -Set symbol rate in hertz
@@ -725,7 +725,7 @@ public class FilterFactory
     }
 
     /**
-     * Creates a windowed-sync (Nyquist) M/2 prototype FIR filter for use with a Polyphase Channelizer/Synthesizer.
+     * Creates a windowed-sync (Nyquist) M/2 prototype FIR filter for use with a Polyphase TunerChannelizer/Synthesizer.
      * The filter is designed for x2 oversampling of each channel and the filter cutoff frequency is incrementally
      * adjusted to achieve a -6.02 dB attenuation at the channel band edge to enable perfect reconstruction of adjacent
      * channels.
@@ -833,7 +833,7 @@ public class FilterFactory
 
         if(logResults)
         {
-            mLog.debug("Polyphase Channelizer Filter Design Summary");
+            mLog.debug("Polyphase TunerChannelizer Filter Design Summary");
             mLog.debug("-------------------------------------------");
             mLog.debug("Channels: " + channels);
             mLog.debug("Taps Per Channel: " + tapsPerChannel);

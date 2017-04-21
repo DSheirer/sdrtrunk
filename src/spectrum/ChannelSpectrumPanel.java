@@ -26,8 +26,8 @@ import settings.ColorSettingMenuItem;
 import settings.Setting;
 import settings.SettingChangeListener;
 import settings.SettingsManager;
-import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeEvent.Event;
+import source.SourceEvent;
+import source.SourceEvent.Event;
 import spectrum.converter.DFTResultsConverter;
 import spectrum.converter.RealDecibelConverter;
 import spectrum.menu.AveragingItem;
@@ -90,8 +90,7 @@ public class ChannelSpectrumPanel extends JPanel
     	mDFTConverter.addListener( mSpectrumPanel );
 
     	/* Set the DFTProcessor to the decimated 24kHz sample rate */
-    	mDFTProcessor.frequencyChanged( 
-    			new FrequencyChangeEvent( Event.NOTIFICATION_SAMPLE_RATE_CHANGE, 24000 ) );
+    	mDFTProcessor.process(SourceEvent.sampleRateChange(24000));
     	
     	initGui();
     }

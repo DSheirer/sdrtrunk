@@ -34,9 +34,8 @@ import source.config.SourceConfigRecording;
 import source.config.SourceConfigTuner;
 import source.config.SourceConfiguration;
 import source.tuner.TunerChannel;
-import source.tuner.TunerChannel.Type;
-import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeEvent.Event;
+import source.SourceEvent;
+import source.SourceEvent.Event;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
@@ -46,7 +45,7 @@ import javax.xml.bind.annotation.XmlTransient;
 
 @XmlSeeAlso({Configuration.class})
 @XmlRootElement(name = "channel")
-public class Channel extends Configuration implements Listener<FrequencyChangeEvent>
+public class Channel extends Configuration implements Listener<SourceEvent>
 {
     // Standard channels are persisted and traffic channels are temporary
     public enum ChannelType
@@ -418,15 +417,14 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
             {
                 SourceConfigTuner config = (SourceConfigTuner)mSourceConfiguration;
 
-                mTunerChannel = new TunerChannel(Type.LOCKED, config.getFrequency(),
+                mTunerChannel = new TunerChannel(config.getFrequency(),
                     mDecodeConfiguration.getDecoderType().getChannelBandwidth());
             }
             else if(mSourceConfiguration.getSourceType() == SourceType.RECORDING)
             {
-                SourceConfigRecording config =
-                    (SourceConfigRecording)mSourceConfiguration;
+                SourceConfigRecording config = (SourceConfigRecording)mSourceConfiguration;
 
-                mTunerChannel = new TunerChannel(Type.LOCKED, config.getFrequency(),
+                mTunerChannel = new TunerChannel(config.getFrequency(),
                     mDecodeConfiguration.getDecoderType().getChannelBandwidth());
             }
         }
@@ -452,7 +450,7 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
      * be used to visually show in the spectral display.
      */
     @Override
-    public void receive(FrequencyChangeEvent event)
+    public void receive(SourceEvent event)
     {
         if(event.getEvent() == Event.NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE)
         {

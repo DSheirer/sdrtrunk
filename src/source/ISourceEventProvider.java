@@ -16,22 +16,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package dsp.filter.fir.remez;
+package source;
 
-import dsp.filter.fir.FIRFilterSpecification;
+import sample.Listener;
 
-public class PolyphaseChannelizerDesigner extends FIRFilterSpecification
+/**
+ * Provider of Source Change Events
+ */
+public interface ISourceEventProvider
 {
-    /**
-     * Constructs a Polyphase TunerChannelizer Remez filter specification.
-     *
-     * Constructor is package private -- use the PolyphaseChannelizerFilterFactory to create a filter
-     *
-     * @param order of the filter
-     * @param gridDensity to use when calculating the coefficients
-     */
-    PolyphaseChannelizerDesigner(int order, int gridDensity)
-    {
-        super(FIRLinearPhaseFilterType.TYPE_1_ODD_LENGTH_EVEN_ORDER_SYMMETRICAL, order, gridDensity);
-    }
+	void setSourceEventListener(Listener<SourceEvent> listener );
+	void removeSourceEventListener();
 }

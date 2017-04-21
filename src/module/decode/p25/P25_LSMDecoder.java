@@ -42,7 +42,7 @@ import dsp.filter.fir.complex.ComplexFIRFilter_CB_CB;
 import dsp.gain.ComplexFeedForwardGainControl;
 import dsp.psk.LSMDemodulator;
 import dsp.psk.QPSKPolarSlicer;
-import source.tuner.frequency.FrequencyChangeEvent;
+import source.SourceEvent;
 
 public class P25_LSMDecoder extends P25Decoder implements IComplexBufferListener
 {
@@ -109,22 +109,22 @@ public class P25_LSMDecoder extends P25Decoder implements IComplexBufferListener
 	}
 
     @Override
-    public void setFrequencyChangeListener(Listener<FrequencyChangeEvent> listener)
+    public void setSourceEventListener(Listener<SourceEvent> listener)
     {
     }
 
     @Override
-    public void removeFrequencyChangeListener()
+    public void removeSourceEventListener()
     {
     }
 
     @Override
-    public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
+    public Listener<SourceEvent> getSourceEventListener()
     {
-        return new Listener<FrequencyChangeEvent>()
+        return new Listener<SourceEvent>()
         {
             @Override
-            public void receive(FrequencyChangeEvent frequencyChangeEvent)
+            public void receive(SourceEvent sourceEvent)
             {
                 //Ignored
             }

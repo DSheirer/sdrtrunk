@@ -31,8 +31,8 @@ import settings.Setting;
 import settings.SettingChangeListener;
 import settings.SettingsManager;
 import source.tuner.TunerChannel;
-import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.IFrequencyChangeProcessor;
+import source.SourceEvent;
+import source.ISourceEventProcessor;
 
 import javax.swing.*;
 import java.awt.*;
@@ -44,7 +44,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class OverlayPanel extends JPanel implements ChannelEventListener, IFrequencyChangeProcessor,
+public class OverlayPanel extends JPanel implements ChannelEventListener, ISourceEventProcessor,
         SettingChangeListener
 {
     private static final long serialVersionUID = 1L;
@@ -635,7 +635,7 @@ public class OverlayPanel extends JPanel implements ChannelEventListener, IFrequ
      * Frequency change event handler
      */
     @Override
-    public void frequencyChanged(FrequencyChangeEvent event)
+    public void process(SourceEvent event)
     {
         switch(event.getEvent())
         {

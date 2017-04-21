@@ -32,11 +32,10 @@ import sample.complex.ComplexBuffer;
 import sample.real.IOverflowListener;
 import source.ComplexSource;
 import source.SourceException;
-import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.FrequencyChangeEvent.Event;
-import source.tuner.frequency.IFrequencyChangeListener;
-import source.tuner.frequency.IFrequencyChangeProcessor;
-import source.tuner.frequency.IFrequencyChangeProvider;
+import source.ISourceEventListener;
+import source.ISourceEventProvider;
+import source.SourceEvent;
+import source.ISourceEventProcessor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +45,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class TunerChannelSource extends ComplexSource implements IFrequencyChangeProcessor, Listener<ComplexBuffer>
+public class TunerChannelSource extends ComplexSource implements ISourceEventProcessor, Listener<ComplexBuffer>
 {
     private final static Logger mLog = LoggerFactory.getLogger(TunerChannelSource.class);
 
@@ -66,7 +65,7 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
     private Oscillator mMixer;
     private ComplexPrimeCICDecimate mDecimationFilter;
     private Listener<ComplexBuffer> mListener;
-    private IFrequencyChangeProcessor mFrequencyChangeProcessor;
+    private ISourceEventProcessor mFrequencyChangeProcessor;
     private DownstreamProcessor mDownstreamFrequencyEventProcessor = new DownstreamProcessor();
     private ScheduledFuture<?> mTaskHandle;
 
@@ -100,7 +99,7 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
     {
         mTuner = tuner;
         mTunerChannel = tunerChannel;
-        mTuner.getTunerController().addListener((IFrequencyChangeProcessor) this);
+        mTuner.getTunerController().addListener((ISourceEventProcessor) this);
         mTunerFrequency = mTuner.getTunerController().getFrequency();
 
         mBuffer = new OverflowableTransferQueue<>(BUFFER_MAX_CAPACITY, BUFFER_OVERFLOW_RESET_THRESHOLD);
@@ -111,8 +110,7 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
         mMixer = new Oscillator(frequencyOffset, mTuner.getTunerController().getSampleRate());
 
 		/* Fire a sample rate change event to setup the decimation chain */
-        frequencyChanged(new FrequencyChangeEvent(Event.NOTIFICATION_SAMPLE_RATE_CHANGE,
-            mTuner.getTunerController().getSampleRate()));
+        process(SourceEvent.sampleRateChange(mTuner.getTunerController().getSampleRate()));
     }
 
     /**
@@ -202,7 +200,7 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
         updateMixerFrequencyOffset();
 
         mDownstreamFrequencyEventProcessor.broadcast(
-            new FrequencyChangeEvent( Event.NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE, mChannelFrequencyCorrection));
+            SourceEvent.channelFrequencyCorrectionChange(mChannelFrequencyCorrection));
     }
 
     public Tuner getTuner()
@@ -224,7 +222,7 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
         }
     }
 
-    public void setFrequencyChangeListener(IFrequencyChangeProcessor processor)
+    public void setFrequencyChangeListener(ISourceEventProcessor processor)
     {
         mFrequencyChangeProcessor = processor;
     }
@@ -250,12 +248,12 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
      * frequency correction events received from the channel consumer/listener
      */
     @Override
-    public void frequencyChanged(FrequencyChangeEvent event) throws SourceException
+    public void process(SourceEvent event) throws SourceException
     {
         // Echo the event to the registered event listener
         if(mFrequencyChangeProcessor != null)
         {
-            mFrequencyChangeProcessor.frequencyChanged(event);
+            mFrequencyChangeProcessor.process(event);
         }
 
         switch(event.getEvent())
@@ -320,36 +318,36 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
     }
 
     /**
-     * Implements IFrequencyChangeProvider to enable this source to broadcast frequency change events to downstream
+     * Implements ISourceEventProvider to enable this source to broadcast frequency change events to downstream
      * listeners.
      *
      * @param listener to receive downstream events
      */
     @Override
-    public void setFrequencyChangeListener(Listener<FrequencyChangeEvent> listener)
+    public void setSourceEventListener(Listener<SourceEvent> listener)
     {
-        mDownstreamFrequencyEventProcessor.setFrequencyChangeListener(listener);
+        mDownstreamFrequencyEventProcessor.setSourceEventListener(listener);
     }
 
     /**
-     * Implements IFrequencyChangeProvider to remove the frequency change listener from receiving down-stream frequency
+     * Implements ISourceEventProvider to remove the frequency change listener from receiving down-stream frequency
      * change events.
       */
     @Override
-    public void removeFrequencyChangeListener()
+    public void removeSourceEventListener()
     {
-        mDownstreamFrequencyEventProcessor.removeFrequencyChangeListener();
+        mDownstreamFrequencyEventProcessor.removeSourceEventListener();
     }
 
     /**
-     * Implements IFrequencyChangeListener to receive frequency change events containing requests from downstream
+     * Implements ISourceEventListener to receive frequency change events containing requests from downstream
      * listeners to change frequency values.
      * @return listener
      */
     @Override
-    public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
+    public Listener<SourceEvent> getSourceEventListener()
     {
-        return mDownstreamFrequencyEventProcessor.getFrequencyChangeListener();
+        return mDownstreamFrequencyEventProcessor.getSourceEventListener();
     }
 
     /**
@@ -358,17 +356,17 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
      * notified of any frequency or sample rate change events and will also be able to request frequency correction
      * updates.
      */
-    public class DownstreamProcessor implements IFrequencyChangeListener, IFrequencyChangeProvider,
-        Listener<FrequencyChangeEvent>
+    public class DownstreamProcessor implements ISourceEventListener, ISourceEventProvider,
+        Listener<SourceEvent>
     {
         //Listener to receive downstream events
-        private Listener<FrequencyChangeEvent> mListener;
+        private Listener<SourceEvent> mListener;
 
         /**
          * Broadcasts the frequency change event to the downstream frequency change listener
          * @param event to broadcast
          */
-        public void broadcast(FrequencyChangeEvent event)
+        public void broadcast(SourceEvent event)
         {
             if(mListener != null)
             {
@@ -384,7 +382,7 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
             try
             {
                 long frequency = getFrequency();
-                broadcast(new FrequencyChangeEvent(Event.NOTIFICATION_FREQUENCY_CHANGE, frequency));
+                broadcast(SourceEvent.frequencyChange(frequency));
             }
             catch(SourceException se)
             {
@@ -400,7 +398,7 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
             try
             {
                 //Note: downstream sample rate is currently a fixed value -- it will change in the future
-                broadcast(new FrequencyChangeEvent(Event.NOTIFICATION_SAMPLE_RATE_CHANGE, getSampleRate()));
+                broadcast(SourceEvent.sampleRateChange(getSampleRate()));
             }
             catch(SourceException se)
             {
@@ -413,7 +411,7 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
          * @param listener to receive events
          */
         @Override
-        public void setFrequencyChangeListener(Listener<FrequencyChangeEvent> listener)
+        public void setSourceEventListener(Listener<SourceEvent> listener)
         {
             mListener = listener;
         }
@@ -422,7 +420,7 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
          * Removes the downstream listener from receiving frequency change events.
          */
         @Override
-        public void removeFrequencyChangeListener()
+        public void removeSourceEventListener()
         {
             mListener = null;
         }
@@ -431,7 +429,7 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
          * Listener for receiving frequency change events from downstream components
          */
         @Override
-        public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
+        public Listener<SourceEvent> getSourceEventListener()
         {
             return this;
         }
@@ -441,7 +439,7 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
          * @param event to process
          */
         @Override
-        public void receive(FrequencyChangeEvent event)
+        public void receive(SourceEvent event)
         {
             switch(event.getEvent())
             {

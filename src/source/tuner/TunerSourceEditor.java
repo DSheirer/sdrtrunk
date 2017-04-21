@@ -22,8 +22,8 @@ import gui.editor.Editor;
 import net.miginfocom.swing.MigLayout;
 import source.config.SourceConfigTuner;
 import source.config.SourceConfiguration;
-import source.tuner.frequency.FrequencyChangeEvent;
-import source.tuner.frequency.IFrequencyChangeProcessor;
+import source.SourceEvent;
+import source.ISourceEventProcessor;
 import controller.channel.Channel;
 
 public class TunerSourceEditor extends Editor<Channel>
@@ -41,10 +41,10 @@ public class TunerSourceEditor extends Editor<Channel>
 		setLayout( new MigLayout( "insets 0 0 0 0", "[left]", "" ) );
 		mFrequencyControl = new JFrequencyControl();
 		mFrequencyControl.setEnabled( false );
-		mFrequencyControl.addListener( new IFrequencyChangeProcessor()
+		mFrequencyControl.addListener( new ISourceEventProcessor()
 		{
 			@Override
-			public void frequencyChanged( FrequencyChangeEvent event )
+			public void process(SourceEvent event )
 			{
 				setModified( true );
 			}
