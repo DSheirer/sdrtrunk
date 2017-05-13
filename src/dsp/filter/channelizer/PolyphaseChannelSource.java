@@ -20,15 +20,14 @@ package dsp.filter.channelizer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sample.Listener;
+import sample.OverflowableTransferQueue;
 import sample.complex.ComplexBuffer;
+import sample.real.IOverflowListener;
 import source.ISourceEventProcessor;
 import source.SourceEvent;
 import source.SourceException;
 import source.tuner.ComplexChannelSource;
 import source.tuner.TunerChannel;
-
-import java.util.concurrent.ScheduledExecutorService;
 
 public class PolyphaseChannelSource extends ComplexChannelSource
 {
@@ -40,6 +39,7 @@ public class PolyphaseChannelSource extends ComplexChannelSource
     private int mChannelSampleRate;
     private int mChannelCount;
     private int mOutputFrequencyCorrection;
+    private ChannelBufferProcessor mProcessor = new ChannelBufferProcessor();
 
     /**
      * Polyphase channelizer channel implementation.  Adapts the channel array output samples from the polyphase
@@ -86,13 +86,11 @@ public class PolyphaseChannelSource extends ComplexChannelSource
 
     /**
      * Process the array samples for each of the output channels from the polyphase channelizer.
-     * @param channels
+     * @param channelsBuffer
      */
-    public void processChannels(float[] channels)
+    public void processChannels(ComplexBuffer channelsBuffer)
     {
-
-        //TODO we have to dispatch full buffers on a separate thread so that we don't bog down the channelizer
-        //TODO thread that is delivering the channel samples to us.
+        mProcessor.process(channelsBuffer);
     }
 
     /**
@@ -197,5 +195,47 @@ public class PolyphaseChannelSource extends ComplexChannelSource
     public void dispose()
     {
 
+    }
+
+    public class ChannelBufferProcessor implements Runnable
+    {
+        private OverflowableTransferQueue<ComplexBuffer> mComplexChannelBuffers;
+
+        public ChannelBufferProcessor()
+        {
+            mComplexChannelBuffers = new OverflowableTransferQueue<>(500, 10);
+            mComplexChannelBuffers.setOverflowListener(new IOverflowListener()
+            {
+                @Override
+                public void sourceOverflow(boolean overflow)
+                {
+                    broadcastOverflowState(overflow);
+                }
+            });
+        }
+
+        /**
+         * Enqueues the polyphase analysis filter's channel output for post channelizer mixing, filtering
+         * and resampling operations and buffers output for dispatch to downstream processing.
+         *
+         * @param channelsBuffer to enqueue for processing
+         */
+        public void process(ComplexBuffer channelsBuffer)
+        {
+            mComplexChannelBuffers.offer(channelsBuffer);
+        }
+
+        @Override
+        public void run()
+        {
+            try
+            {
+
+            }
+            catch(Throwable throwable)
+            {
+                mLog.error("Error while processing polyphase channel samples", throwable);
+            }
+        }
     }
 }

@@ -33,9 +33,12 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class Channelizer implements ISourceEventProcessor, Listener<SourceEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(Channelizer.class);
+    private static final int CHANNEL_BANDWIDTH = 12500;
+    private static final double CHANNEL_OVERSAMPLING = 2.0;
 
     private Tuner mTuner;
     private List<PolyphaseChannelSource> mChannelSources = new CopyOnWriteArrayList<>();
+    private ChannelizerConfiguration mChannelizerConfiguration;
 
     /**
      * Provides access to Digital Drop Channel (DDC) sources from the tuner.  Incorporates a polyphase channelizer
@@ -46,12 +49,47 @@ public class Channelizer implements ISourceEventProcessor, Listener<SourceEvent>
     public Channelizer(Tuner tuner)
     {
         mTuner = tuner;
+
+        int sampleRate = mTuner.getTunerController().getSampleRate();
+
+        if(sampleRate % 25000 != 0)
+        {
+            throw new IllegalArgumentException("Tuner sample rate [" + sampleRate + "] must be a multiple of 25 kHz");
+        }
+
+        int channelCount = sampleRate / CHANNEL_BANDWIDTH;
+
+        long frequency = mTuner.getTunerController().getFrequency();
+
+        mChannelizerConfiguration = new ChannelizerConfiguration(frequency, channelCount,
+            CHANNEL_BANDWIDTH, CHANNEL_OVERSAMPLING);
+
         mTuner.addSourceEventListener(this);
     }
 
+    /**
+     * Provides a Digital Drop Channel (DDC) for the specified tuner channel or returns null if the channel can't be
+     * sourced due to the current center frequency and/or sample rate.
+     * @param tunerChannel specifying center frequency and bandwidth.
+     * @return source or null.
+     */
     public Source getChannel(TunerChannel tunerChannel)
     {
-        //TODO: return a polyphase channel here
+        try
+        {
+            List<Integer> polyphaseIndexes = mChannelizerConfiguration.getPolyphaseChannelIndexes(tunerChannel);
+
+
+
+        }
+        catch(IllegalArgumentException iae)
+        {
+            mLog.info("Can't provide DDC for " + tunerChannel.toString() + " due to channelizer frequency [" +
+                " due to channelizer frequency [" + mChannelizerConfiguration.getCenterFrequency() +
+                "] and sample rate [" + (mChannelizerConfiguration.getChannelCount() *
+                mChannelizerConfiguration.getChannelBandwidth()) + "]");
+        }
+
         return null;
     }
 
@@ -121,6 +159,16 @@ public class Channelizer implements ISourceEventProcessor, Listener<SourceEvent>
                         (sourceEvent.hasSource() ? sourceEvent.getSource().getClass() : "null source"));
                 }
                 break;
+            case NOTIFICATION_FREQUENCY_CHANGE:
+                mChannelizerConfiguration.setCenterFrequency(sourceEvent.getValue().longValue());
+                updateChannelResultsProcessors();
+                break;
+            case NOTIFICATION_SAMPLE_RATE_CHANGE:
+                int sampleRate = sourceEvent.getValue().intValue();
+                int channelCount = sampleRate / mChannelizerConfiguration.getChannelBandwidth();
+                mChannelizerConfiguration.setChannelCount(channelCount);
+                updateChannelResultsProcessors();
+                break;
         }
 
 
@@ -130,6 +178,11 @@ public class Channelizer implements ISourceEventProcessor, Listener<SourceEvent>
     @Override
     public void receive(SourceEvent sourceEvent)
     {
+        process(sourceEvent);
+    }
 
+    private void updateChannelResultsProcessors()
+    {
+        //Update the processors anytime that the center frequency or sample rate changes
     }
 }

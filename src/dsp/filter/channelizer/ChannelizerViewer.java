@@ -224,7 +224,7 @@ public class ChannelizerViewer extends JFrame
 
             mPolyphaseChannelizer = new ComplexPolyphaseChannelizer(taps, mChannelCount, CHANNEL_BANDWIDTH);
             mChannelDistributor = new ChannelDistributor(bufferSize, mChannelCount);
-            mPolyphaseChannelizer.setChannelDistributor(mChannelDistributor);
+//            mPolyphaseChannelizer.setChannelDistributor(mChannelDistributor);
 
             init();
         }
