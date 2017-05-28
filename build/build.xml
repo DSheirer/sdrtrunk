@@ -7,7 +7,7 @@
   <property name="major" value="0"/>
   <property name="minor" value="3"/>
   <property name="patch" value="0"/>
-  <property name="release" value="-beta11"/>
+  <property name="release" value="-beta12"/>
   <property name="filename" value="sdrtrunk_${major}.${minor}.${patch}${release}"/>
     
   <!-- Build properties -->
