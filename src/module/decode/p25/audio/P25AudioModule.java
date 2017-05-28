@@ -262,6 +262,7 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
 
                 mEncryptedCallStateEstablished = false;
                 mEncryptedCall = false;
+                mCachedLDU1Message = null;
             }
         }
     }
