@@ -421,7 +421,7 @@ public class P25DecoderState extends DecoderState
                 mCurrentCallEvent = new P25CallEvent.Builder(CallEventType.CALL)
                     .aliasList(getAliasList())
                     .channel(mCurrentChannel)
-                    .details((hdu.isEncrypted() ? "ENCRYPTED " : ""))
+                    .details((hdu.isEncryptedAudio() ? "ENCRYPTED " : ""))
                     .frequency(mCurrentChannelFrequency)
                     .to(to)
                     .build();
@@ -1107,7 +1107,7 @@ public class P25DecoderState extends DecoderState
                                 broadcast(new P25CallEvent.Builder(CallEventType.CALL_DETECT)
                                     .aliasList(getAliasList())
                                     .channel(gvcu.getChannelA())
-                                    .details((gvcu.isEncrypted() ? "ENCRYPTED" : ""))
+                                    .details((gvcu.isEncryptedLinkControlWord() ? "ENCRYPTED" : ""))
                                     .frequency(gvcu.getDownlinkFrequencyA())
                                     .to(userA)
                                     .build());
@@ -1122,7 +1122,7 @@ public class P25DecoderState extends DecoderState
                                 broadcast(new P25CallEvent.Builder(CallEventType.CALL_DETECT)
                                     .aliasList(getAliasList())
                                     .channel(gvcu.getChannelB())
-                                    .details((gvcu.isEncrypted() ? "ENCRYPTED" : ""))
+                                    .details((gvcu.isEncryptedLinkControlWord() ? "ENCRYPTED" : ""))
                                     .frequency(gvcu.getDownlinkFrequencyB())
                                     .to(userB)
                                     .build());
@@ -1151,7 +1151,7 @@ public class P25DecoderState extends DecoderState
                                 broadcast(new P25CallEvent.Builder(CallEventType.CALL_DETECT)
                                     .aliasList(getAliasList())
                                     .channel(gvcue.getTransmitChannel())
-                                    .details((gvcue.isEncrypted() ? "ENCRYPTED" : ""))
+                                    .details((gvcue.isEncryptedLinkControlWord() ? "ENCRYPTED" : ""))
                                     .frequency(gvcue.getDownlinkFrequency())
                                     .to(group)
                                     .build());
@@ -1187,7 +1187,7 @@ public class P25DecoderState extends DecoderState
                             if(mCurrentCallEvent.getDetails() == null)
                             {
                                 mCurrentCallEvent.setDetails(
-                                    (gvcuser.isEncrypted() ? "ENCRYPTED " : "") +
+                                    (gvcuser.isEncryptedLinkControlWord() ? "ENCRYPTED " : "") +
                                         (gvcuser.isEmergency() ? "EMERGENCY " : ""));
 
                                 broadcast(mCurrentCallEvent);
@@ -1399,7 +1399,7 @@ public class P25DecoderState extends DecoderState
                         if(mCurrentCallEvent.getDetails() == null)
                         {
                             mCurrentCallEvent.setDetails(
-                                (tivcu.isEncrypted() ? "ENCRYPTED " : "") +
+                                (tivcu.isEncryptedLinkControlWord() ? "ENCRYPTED " : "") +
                                     (tivcu.isEmergency() ? "EMERGENCY " : ""));
 
                             broadcast(mCurrentCallEvent);
@@ -1482,7 +1482,7 @@ public class P25DecoderState extends DecoderState
                         if(mCurrentCallEvent.getDetails() == null)
                         {
                             mCurrentCallEvent.setDetails(
-                                (uuvcu.isEncrypted() ? "ENCRYPTED " : "") +
+                                (uuvcu.isEncryptedLinkControlWord() ? "ENCRYPTED " : "") +
                                     (uuvcu.isEmergency() ? "EMERGENCY " : ""));
 
                             broadcast(mCurrentCallEvent);

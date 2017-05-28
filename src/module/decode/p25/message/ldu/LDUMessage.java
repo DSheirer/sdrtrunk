@@ -35,8 +35,6 @@ public abstract class LDUMessage extends P25Message
 	    super( message, duid, aliasList );
     }
 	
-	public abstract boolean isEncrypted();
-	
 	@Override
     public String getMessage()
     {

@@ -72,9 +72,11 @@ public class LDU2Message extends LDUMessage
 	    
 	    checkCRC();
     }
-	
-	@Override
-	public boolean isEncrypted()
+
+	/**
+	 * Indicates if the audio stream is encrypted
+	 */
+	public boolean isEncryptedAudio()
 	{
 		Encryption encryption = getEncryption();
 		

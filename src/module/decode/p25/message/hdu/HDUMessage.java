@@ -245,7 +245,7 @@ public class HDUMessage extends P25Message
 		return Encryption.fromValue( mMessage.getInt( ALGORITHM_ID ) );
 	}
 	
-	public boolean isEncrypted()
+	public boolean isEncryptedAudio()
 	{
 		return getEncryption() != Encryption.UNENCRYPTED;
 	}
