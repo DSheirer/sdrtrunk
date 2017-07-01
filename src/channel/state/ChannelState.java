@@ -661,9 +661,9 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
                     }
                 }
             }
-            catch(Exception e)
+            catch(Throwable e)
             {
-                mLog.error("Exception thrown while state monitor is running " +
+                mLog.error("An error occurred while state monitor was running " +
                     "- state [" + getState() +
                     "] current [" + System.currentTimeMillis() +
                     "] mResetTimeout [" + mEndTimeout +
