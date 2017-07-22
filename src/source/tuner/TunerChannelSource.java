@@ -18,6 +18,8 @@
  ******************************************************************************/
 package source.tuner;
 
+import channel.heartbeat.Heartbeat;
+import channel.heartbeat.IHeartbeatProvider;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window.WindowType;
 import dsp.filter.cic.ComplexPrimeCICDecimate;
@@ -58,6 +60,7 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
 
     private static int CHANNEL_RATE = 48000;
     private static int CHANNEL_PASS_FREQUENCY = 12000;
+    private static final Heartbeat HEARTBEAT = new Heartbeat();
 
     private OverflowableTransferQueue<ComplexBuffer> mBuffer;
 
@@ -66,6 +69,7 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
     private Oscillator mMixer;
     private ComplexPrimeCICDecimate mDecimationFilter;
     private Listener<ComplexBuffer> mListener;
+    private Listener<Heartbeat> mHeartbeatListener;
     private IFrequencyChangeProcessor mFrequencyChangeProcessor;
     private DownstreamProcessor mDownstreamFrequencyEventProcessor = new DownstreamProcessor();
     private ScheduledFuture<?> mTaskHandle;
@@ -353,6 +357,25 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
     }
 
     /**
+     * Registers the listener to receive heartbeats from this source.
+     * @param listener to receive heartbeats
+     */
+    @Override
+    public void setHeartbeatListener(Listener<Heartbeat> listener)
+    {
+        mHeartbeatListener = listener;
+    }
+
+    /**
+     * Removes the currently registered heartbeat listener
+     */
+    @Override
+    public void removeHeartbeatListener()
+    {
+        mHeartbeatListener = null;
+    }
+
+    /**
      * Managers frequency change requests and notifications from/to any downstream component.  Downstream
      * components are those that receive samples from this tuner channel source.  These downstream components will be
      * notified of any frequency or sample rate change events and will also be able to request frequency correction
@@ -477,6 +500,13 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
             {
                 if(mProcessing)
                 {
+                    //Send a heartbeat every time this runs to allow downstream components to perform periodic
+                    //state monitoring functions on this thread
+                    if(mHeartbeatListener != null)
+                    {
+                        mHeartbeatListener.receive(HEARTBEAT);
+                    }
+
                     mBuffer.drainTo(mSampleBuffers, 20);
 
                     for(Buffer buffer : mSampleBuffers)

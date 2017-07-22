@@ -17,6 +17,7 @@
  ******************************************************************************/
 package source;
 
+import channel.heartbeat.IHeartbeatProvider;
 import module.Module;
 import sample.SampleType;
 import sample.real.IOverflowListener;
@@ -26,7 +27,8 @@ import source.tuner.frequency.IFrequencyChangeProvider;
 /**
  * Abstract class to define the minimum functionality of a sample data provider.
  */
-public abstract class Source extends Module implements IFrequencyChangeListener, IFrequencyChangeProvider
+public abstract class Source extends Module implements IFrequencyChangeListener, IFrequencyChangeProvider,
+    IHeartbeatProvider
 {
     protected SampleType mSampleType;
     protected IOverflowListener mOverflowListener;
