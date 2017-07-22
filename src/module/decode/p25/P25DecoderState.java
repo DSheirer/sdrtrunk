@@ -1713,33 +1713,41 @@ public class P25DecoderState extends DecoderState
                         .build());
                     break;
                 case SNDCP_RF_CONFIRMED_DATA:
-                    SNDCPUserData sud = (SNDCPUserData)pduc;
-
-                    StringBuilder sbFrom = new StringBuilder();
-                    StringBuilder sbTo = new StringBuilder();
-
-                    sbFrom.append(sud.getSourceIPAddress());
-                    sbTo.append(sud.getDestinationIPAddress());
-
-                    if(sud.getIPProtocol() == IPProtocol.UDP)
+                    if(pduc instanceof SNDCPUserData)
                     {
-                        sbFrom.append(":");
-                        sbFrom.append(sud.getUDPSourcePort());
-                        sbTo.append(":");
-                        sbTo.append(sud.getUDPDestinationPort());
+                        SNDCPUserData sud = (SNDCPUserData)pduc;
+
+                        StringBuilder sbFrom = new StringBuilder();
+                        StringBuilder sbTo = new StringBuilder();
+
+                        sbFrom.append(sud.getSourceIPAddress());
+                        sbTo.append(sud.getDestinationIPAddress());
+
+                        if(sud.getIPProtocol() == IPProtocol.UDP)
+                        {
+                            sbFrom.append(":");
+                            sbFrom.append(sud.getUDPSourcePort());
+                            sbTo.append(":");
+                            sbTo.append(sud.getUDPDestinationPort());
+                        }
+
+                        broadcast(new DecoderStateEvent(this, Event.START, State.DATA));
+
+                        broadcast(new P25CallEvent.Builder(CallEventType.DATA_CALL)
+                            .aliasList(getAliasList())
+                            .channel(mCurrentChannel)
+                            .details("DATA: " + sud.getPayload() +
+                                " RADIO IP:" + sbTo.toString())
+                            .frequency(mCurrentChannelFrequency)
+                            .from(sbFrom.toString())
+                            .to(pduc.getLogicalLinkID())
+                            .build());
                     }
-
-                    broadcast(new DecoderStateEvent(this, Event.START, State.DATA));
-
-                    broadcast(new P25CallEvent.Builder(CallEventType.DATA_CALL)
-                        .aliasList(getAliasList())
-                        .channel(mCurrentChannel)
-                        .details("DATA: " + sud.getPayload() +
-                            " RADIO IP:" + sbTo.toString())
-                        .frequency(mCurrentChannelFrequency)
-                        .from(sbFrom.toString())
-                        .to(pduc.getLogicalLinkID())
-                        .build());
+                    else
+                    {
+                        mLog.error("Error - expected SNDCPUserData instance but class was: " + pduc.getClass() +
+                        " and PDU Type:" + pduc.getPDUType().name());
+                    }
                     break;
                 case SNDCP_RF_UNCONFIRMED_DATA:
                     break;

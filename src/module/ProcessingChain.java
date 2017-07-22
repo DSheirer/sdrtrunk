@@ -24,16 +24,17 @@ import audio.IAudioPacketProvider;
 import audio.squelch.ISquelchStateListener;
 import audio.squelch.ISquelchStateProvider;
 import audio.squelch.SquelchState;
+import channel.heartbeat.Heartbeat;
+import channel.heartbeat.IHeartbeatListener;
+import channel.heartbeat.IHeartbeatProvider;
 import channel.metadata.AttributeChangeRequest;
 import channel.metadata.IAttributeChangeRequestListener;
 import channel.metadata.IAttributeChangeRequestProvider;
 import channel.state.ChannelState;
 import channel.state.DecoderState;
 import channel.state.DecoderStateEvent;
-import channel.state.DecoderStateEvent.Event;
 import channel.state.IDecoderStateEventListener;
 import channel.state.IDecoderStateEventProvider;
-import channel.state.State;
 import controller.channel.Channel.ChannelType;
 import controller.channel.ChannelEvent;
 import controller.channel.IChannelEventListener;
@@ -63,8 +64,6 @@ import sample.real.RealBuffer;
 import source.ComplexSource;
 import source.RealSource;
 import source.Source;
-import source.SourceException;
-import source.tuner.TunerChannelSource;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.IFrequencyChangeListener;
 import source.tuner.frequency.IFrequencyChangeProvider;
@@ -103,6 +102,7 @@ public class ProcessingChain implements IChannelEventListener
     private Broadcaster<ComplexBuffer> mComplexBufferBroadcaster = new Broadcaster<>();
     private Broadcaster<DecoderStateEvent> mDecoderStateEventBroadcaster = new Broadcaster<>();
     private Broadcaster<FrequencyChangeEvent> mFrequencyChangeEventBroadcaster = new Broadcaster<>();
+    private Broadcaster<Heartbeat> mHeartbeatBroadcaster = new Broadcaster<>();
     private Broadcaster<Message> mMessageBroadcaster = new Broadcaster<>();
     private Broadcaster<RealBuffer> mFilteredRealBufferBroadcaster = new Broadcaster<>();
     private Broadcaster<RealBuffer> mUnFilteredRealBufferBroadcaster = new Broadcaster<>();
@@ -329,6 +329,11 @@ public class ProcessingChain implements IChannelEventListener
             }
         }
 
+        if(module instanceof IHeartbeatListener)
+        {
+            mHeartbeatBroadcaster.addListener(((IHeartbeatListener)module).getHeartbeatListener());
+        }
+
         if(module instanceof IMessageListener)
         {
             mMessageBroadcaster.addListener(((IMessageListener) module).getMessageListener());
@@ -391,6 +396,11 @@ public class ProcessingChain implements IChannelEventListener
             mFrequencyChangeEventBroadcaster.removeListener(((IFrequencyChangeListener) module).getFrequencyChangeListener());
         }
 
+        if(module instanceof IHeartbeatListener)
+        {
+            mHeartbeatBroadcaster.removeListener(((IHeartbeatListener)module).getHeartbeatListener());
+        }
+
         if(module instanceof IMessageListener)
         {
             mMessageBroadcaster.removeListener(((IMessageListener) module).getMessageListener());
@@ -448,6 +458,11 @@ public class ProcessingChain implements IChannelEventListener
             ((IFrequencyChangeProvider) module).setFrequencyChangeListener(mFrequencyChangeEventBroadcaster);
         }
 
+        if(module instanceof IHeartbeatProvider)
+        {
+            ((IHeartbeatProvider)module).setHeartbeatListener(mHeartbeatBroadcaster);
+        }
+
         if(module instanceof IMessageProvider)
         {
             ((IMessageProvider) module).setMessageListener(mMessageBroadcaster);
@@ -503,6 +518,11 @@ public class ProcessingChain implements IChannelEventListener
         if(module instanceof IFrequencyChangeProvider)
         {
             ((IFrequencyChangeProvider) module).setFrequencyChangeListener(null);
+        }
+
+        if(module instanceof IHeartbeatProvider)
+        {
+            ((IHeartbeatProvider)module).removeHeartbeatListener();
         }
 
         if(module instanceof IMessageProvider)

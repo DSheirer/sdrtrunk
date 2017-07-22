@@ -20,6 +20,8 @@ package channel.state;
 
 import audio.squelch.ISquelchStateProvider;
 import audio.squelch.SquelchState;
+import channel.heartbeat.Heartbeat;
+import channel.heartbeat.IHeartbeatListener;
 import channel.metadata.Attribute;
 import channel.metadata.AttributeChangeRequest;
 import channel.metadata.IAttributeChangeRequestListener;
@@ -39,16 +41,13 @@ import sample.real.IOverflowListener;
 import source.tuner.frequency.FrequencyChangeEvent;
 import source.tuner.frequency.IFrequencyChangeListener;
 
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
 
 import static source.tuner.frequency.FrequencyChangeEvent.Event.NOTIFICATION_FREQUENCY_CHANGE;
 
 public class ChannelState extends Module implements ICallEventProvider, IDecoderStateEventListener,
-    IDecoderStateEventProvider, IFrequencyChangeListener, ISquelchStateProvider, IAttributeChangeRequestListener,
-    IOverflowListener
+    IDecoderStateEventProvider, IFrequencyChangeListener, IHeartbeatListener, ISquelchStateProvider,
+    IAttributeChangeRequestListener, IOverflowListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelState.class);
 
@@ -61,8 +60,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     private Listener<DecoderStateEvent> mDecoderStateListener;
     private Listener<SquelchState> mSquelchStateListener;
     private DecoderStateEventReceiver mDecoderStateEventReceiver = new DecoderStateEventReceiver();
-    private StateMonitor mStateMonitor = new StateMonitor();
-    private ScheduledFuture<?> mStateMonitorFuture;
+    private HeartbeatReceiver mHeartbeatReceiver = new HeartbeatReceiver();
     private ChannelType mChannelType;
     private TrafficChannelManager mTrafficChannelEndListener;
     private CallEvent mTrafficChannelCallEvent;
@@ -79,30 +77,21 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
 
 
     /**
-     * Channel state tracks the overall state of all processing modules and decoders
-     * configured for the channel and provides squelch control and decoder state
-     * reset events.
+     * Channel state tracks the overall state of all processing modules and decoders configured for the channel and
+     * provides squelch control and decoder state reset events.
      *
-     * Uses a state enumeration that defines allowable channel state transitions in
-     * order to track a call or data decode event from start to finish.  Uses a
-     * timer to monitor for inactivity and to provide a FADE period that indicates
-     * to the user that the activity has stopped while continuing to provide details
-     * about the call, before the state is reset to IDLE.
-     *
-     * Since this class is multi-threaded between decoder events and the internal
-     * timer that monitors for inactivity, this class uses the mState object for
-     * thread synchronization.
+     * Uses a state enumeration that defines allowable channel state transitions in order to track a call or data decode
+     * event from start to finish.  Uses a timer to monitor for inactivity and to provide a FADE period that indicates
+     * to the user that the activity has stopped while continuing to provide details about the call, before the state is
+     * reset to IDLE.
      *
      * State Descriptions:
-     * IDLE		Normal state. No voice or data call activity
-     * CALL/DATA/ENCRYPTED/CONTROL
-     * Decoding states.
-     * FADE		The phase after a voice or data call when either an explicit
-     * call end has been received, or when no new signalling updates
-     * have been received, and the fade timer has expired.  This phase
-     * allows for gui updates to signal to the user that the call is
-     * ended, while continuing to display the call details for the user
-     * TEARDOWN	Indicates a traffic channel that will be torn down for reuse.
+     * IDLE:  Normal state. No voice or data call activity
+     * CALL/DATA/ENCRYPTED/CONTROL:  Decoding states.
+     * FADE:  The phase after a voice or data call when either an explicit call end has been received, or when no new
+     *     signalling updates have been received, and the fade timer has expired.  This phase allows for gui updates to
+     *     signal to the user that the call is ended, while continuing to display the call details for the user
+     * TEARDOWN:  Indicates a traffic channel that will be torn down for reuse.
      */
     public ChannelState(ChannelType channelType)
     {
@@ -137,23 +126,11 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     @Override
     public void start(ScheduledExecutorService executor)
     {
-        if(mStateMonitorFuture == null && mStateMonitor != null)
+        mMutableMetadata.receive(new AttributeChangeRequest<State>(Attribute.CHANNEL_STATE, mState));
+
+        if(mTrafficChannelEndListener != null)
         {
-            mMutableMetadata.receive(new AttributeChangeRequest<State>(Attribute.CHANNEL_STATE, mState));
-
-            if(mTrafficChannelEndListener != null)
-            {
-                setState(State.CALL);
-            }
-
-            try
-            {
-                mStateMonitorFuture = executor.scheduleAtFixedRate(mStateMonitor, 0, 20, TimeUnit.MILLISECONDS);
-            }
-            catch(RejectedExecutionException ree)
-            {
-                mLog.error("state monitor scheduled task rejected", ree);
-            }
+            setState(State.CALL);
         }
     }
 
@@ -161,16 +138,6 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     public void stop()
     {
         mMutableMetadata.resetAllAttributes();
-
-        if(mStateMonitorFuture != null)
-        {
-            boolean success = mStateMonitorFuture.cancel(true);
-
-            if(!success)
-            {
-                mLog.error("Couldn't stop monitoring scheduled future");
-            }
-        }
 
         mTrafficChannelEndListener = null;
 
@@ -182,8 +149,6 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
 
         mTrafficChannelCallEvent = null;
 
-        mStateMonitorFuture = null;
-
         mSquelchLocked = false;
     }
 
@@ -192,7 +157,6 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
         mCallEventListener = null;
         mDecoderStateListener = null;
         mSquelchStateListener = null;
-        mStateMonitor = null;
     }
 
     @Override
@@ -312,68 +276,72 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     }
 
     /**
-     * Sets the channel state to the specified state, or updates the timeout
-     * values so that the state monitor will not change state.  Broadcasts a
-     * squelch event when the state changes and the audio squelch state should
-     * change.  Also broadcasts changed attribute and decoder state events so
-     * that external processes can maintain sync with this channel state.
+     * Sets the channel state to the specified state, or updates the timeout values so that the state monitor will not
+     * change state.  Broadcasts a squelch event when the state changes and the audio squelch state should change.  Also
+     * broadcasts changed attribute and decoder state events so that external processes can maintain sync with this
+     * channel state.
      */
     protected void setState(State state)
     {
-        synchronized(mState)
+        if(state == mState)
         {
-            if(state == mState)
+            if(State.CALL_STATES.contains(state))
             {
-                if(State.CALL_STATES.contains(state))
-                {
-                    updateFadeTimeout();
-                }
+                updateFadeTimeout();
             }
-            else if(state != mState && mState.canChangeTo(state))
+        }
+        else if(mState.canChangeTo(state))
+        {
+            switch(state)
             {
-                switch(state)
-                {
-                    case CONTROL:
-                        //Don't allow traffic channels to be control channels,
-                        //otherwise they can't transition to call tear down
-                        if(isStandardChannel())
-                        {
-                            broadcast(SquelchState.SQUELCH);
-                            updateFadeTimeout();
-                            mState = state;
-                        }
-                        break;
-                    case DATA:
-                    case ENCRYPTED:
+                case CONTROL:
+                    //Don't allow traffic channels to be control channels, otherwise they can't transition to teardown
+                    if(isStandardChannel())
+                    {
                         broadcast(SquelchState.SQUELCH);
                         updateFadeTimeout();
                         mState = state;
-                        break;
-                    case CALL:
-                        broadcast(SquelchState.UNSQUELCH);
-                        updateFadeTimeout();
-                        mState = state;
-                        break;
-                    case FADE:
-                        processFadeState();
-                        break;
-                    case IDLE:
-                        processIdleState();
-                        break;
-                    case TEARDOWN:
-                        processTeardownState();
-                        break;
-                    case RESET:
-                        mState = State.IDLE;
-                        break;
-                    default:
-                        break;
-                }
-
-                mMutableMetadata.receive(new AttributeChangeRequest<State>(Attribute.CHANNEL_STATE,
-                    mSourceOverflow ? State.OVERFLOW : mState));
+                    }
+                    break;
+                case DATA:
+                case ENCRYPTED:
+                    broadcast(SquelchState.SQUELCH);
+                    updateFadeTimeout();
+                    mState = state;
+                    break;
+                case CALL:
+                    broadcast(SquelchState.UNSQUELCH);
+                    updateFadeTimeout();
+                    mState = state;
+                    break;
+                case FADE:
+                    processFadeState();
+                    break;
+                case IDLE:
+                    processIdleState();
+                    break;
+                case TEARDOWN:
+                    processTeardownState();
+                    break;
+                case RESET:
+                    mState = State.IDLE;
+                    break;
+                default:
+                    break;
             }
+
+            mMutableMetadata.receive(new AttributeChangeRequest<State>(Attribute.CHANNEL_STATE,
+                mSourceOverflow ? State.OVERFLOW : mState));
         }
+    }
+
+    /**
+     * Receiver inner class that implements the IHeartbeatListener interface to receive heartbeat messages.
+     */
+    @Override
+    public Listener<Heartbeat> getHeartbeatListener()
+    {
+        return mHeartbeatReceiver;
     }
 
     /**
@@ -625,39 +593,35 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     }
 
     /**
-     * Monitors decoder state events to automatically transition the channel
-     * state to IDLE (standard channel) or to TEARDOWN (traffic channel) when
-     * decoding stops or the monitored channel returns to a no signal state.
+     * Processes periodic heartbeats received from the processing chain to perform state monitoring and cleanup
+     * functions.
      *
-     * Provides a FADE transition state to allow for momentary decoding dropouts
-     * and to allow the user access to call details for a fade period upon
-     * call end.
+     * Monitors decoder state events to automatically transition the channel state to IDLE (standard channel) or to
+     * TEARDOWN (traffic channel) when decoding stops or the monitored channel returns to a no signal state.
+     *
+     * Provides a FADE transition state to allow for momentary decoding dropouts and to allow the user access to call
+     * details for a fade period upon call end.
      */
-    public class StateMonitor implements Runnable
+    public class HeartbeatReceiver implements Listener<Heartbeat>
     {
         @Override
-        public void run()
+        public void receive(Heartbeat heartbeat)
         {
             try
             {
-                synchronized(mState)
+                if(State.CALL_STATES.contains(mState) && mFadeTimeout <= System.currentTimeMillis())
                 {
-                    if(State.CALL_STATES.contains(mState) &&
-                        mFadeTimeout <= System.currentTimeMillis())
+                    processFadeState();
+                }
+                else if(mState == State.FADE && mEndTimeout <= System.currentTimeMillis())
+                {
+                    if(isTrafficChannel())
                     {
-                        processFadeState();
+                        processTeardownState();
                     }
-                    else if(mState == State.FADE &&
-                        mEndTimeout <= System.currentTimeMillis())
+                    else
                     {
-                        if(isTrafficChannel())
-                        {
-                            processTeardownState();
-                        }
-                        else
-                        {
-                            processIdleState();
-                        }
+                        processIdleState();
                     }
                 }
             }
