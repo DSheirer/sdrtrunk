@@ -204,6 +204,10 @@ public class ShoutcastV2AudioBroadcaster extends AudioBroadcaster implements IBr
 
                         disconnect();
                     }
+                    catch(Throwable t)
+                    {
+                        disconnect();
+                    }
 
                     mConnecting.set(false);
                 }

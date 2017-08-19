@@ -168,6 +168,10 @@ public class ShoutcastV1AudioBroadcaster extends AudioBroadcaster
 
                         disconnect();
                     }
+                    catch(Throwable t)
+                    {
+                        disconnect();
+                    }
 
                     mConnecting.set(false);
                 }
