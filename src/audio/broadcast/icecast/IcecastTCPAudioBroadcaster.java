@@ -36,6 +36,7 @@ import util.ThreadPool;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
+import java.nio.channels.UnresolvedAddressException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -44,7 +45,8 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
     private final static Logger mLog = LoggerFactory.getLogger(IcecastTCPAudioBroadcaster.class);
     private final static String TERMINATOR = "\r\n";
     private final static String SEPARATOR = ":";
-    private static final long RECONNECT_INTERVAL_MILLISECONDS = 30000; //30 seconds
+    private static final long RECONNECT_INTERVAL_MILLISECONDS = 3000; //3 seconds
+    private static final long CONNECTION_ATTEMPT_TIMEOUT = 5000; //5 seconds
 
     private NioSocketConnector mSocketConnector;
     private IoSession mStreamingSession = null;
@@ -99,10 +101,11 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
             if(mSocketConnector == null)
             {
                 mSocketConnector = new NioSocketConnector();
-                mSocketConnector.setConnectTimeoutCheckInterval(10000);
+                mSocketConnector.setConnectTimeoutCheckInterval(CONNECTION_ATTEMPT_TIMEOUT);
 
-//                mSocketConnector.getFilterChain().addLast("logger",
-//                    new LoggingFilter(IcecastTCPAudioBroadcaster.class));
+//                LoggingFilter loggingFilter = new LoggingFilter(IcecastTCPAudioBroadcaster.class);
+//                loggingFilter.setMessageSentLogLevel(LogLevel.NONE);
+//                mSocketConnector.getFilterChain().addLast("logger", loggingFilter);
 
                 mSocketConnector.getFilterChain().addLast("codec",
                     new ProtocolCodecFilter(new IcecastCodecFactory()));
@@ -123,8 +126,19 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                         ConnectFuture future = mSocketConnector
                             .connect(new InetSocketAddress(getBroadcastConfiguration().getHost(),
                                 getBroadcastConfiguration().getPort()));
-                        future.awaitUninterruptibly();
+
+                        boolean connected = future.await(CONNECTION_ATTEMPT_TIMEOUT, TimeUnit.MILLISECONDS);
+
                         mStreamingSession = future.getSession();
+                    }
+                    catch(UnresolvedAddressException uae)
+                    {
+                        //What do you do with this?  Nothing.
+                    }
+                    catch(InterruptedException ie)
+                    {
+                        //We couldn't connect within the timeout period -- disconnect so that we can try again later
+                        disconnect();
                     }
                     catch(RuntimeIoException rie)
                     {
@@ -137,14 +151,18 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                         else if(throwableCause != null)
                         {
                             setBroadcastState(BroadcastState.ERROR);
-                            mLog.debug("Failed to connect", rie);
+                            mLog.debug("[" + getStreamName() + "] failed to connect", rie);
                         }
                         else
                         {
                             setBroadcastState(BroadcastState.ERROR);
-                            mLog.debug("Failed to connect - no exception is available");
+                            mLog.debug("[" + getStreamName() + "] failed to connect - no exception is available");
                         }
 
+                        disconnect();
+                    }
+                    catch(Throwable t)
+                    {
                         disconnect();
                     }
 
@@ -164,12 +182,13 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
      */
     public void disconnect()
     {
-        if(connected())
+        if(connected() && mStreamingSession != null)
         {
-            if(mStreamingSession != null)
-            {
-                mStreamingSession.closeNow();
-            }
+            mStreamingSession.closeNow();
+        }
+        else
+        {
+            mLastConnectionAttempt = System.currentTimeMillis();
         }
     }
 
@@ -226,17 +245,18 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
         @Override
         public void sessionClosed(IoSession session) throws Exception
         {
+            mLastConnectionAttempt = System.currentTimeMillis();
+
             //If there is already an error state, don't override it.  Otherwise, set state to disconnected
             if(!getBroadcastState().isErrorState())
             {
                 setBroadcastState(BroadcastState.DISCONNECTED);
             }
 
-            mSocketConnector.dispose();
             mStreamingSession = null;
-            mSocketConnector = null;
 
             mConnecting.set(false);
+
             super.sessionClosed(session);
         }
 
@@ -253,45 +273,36 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
 
                     if(connected())
                     {
-                        mLog.info("Streaming connection error detected - resetting connection - " + reason);
                         disconnect();
-                        connect();
                     }
                     else if(reason.startsWith("Connection reset"))
                     {
-                        mLog.info("Streaming connection reset by remote server - reestablishing connection");
                         disconnect();
-                        connect();
                     }
                     else if(reason.startsWith("Operation timed out"))
                     {
-                        mLog.info("Streaming connection timed out - resetting connection");
                         disconnect();
-                        connect();
                     }
                     else
                     {
                         setBroadcastState(BroadcastState.ERROR);
                         disconnect();
-                        mLog.error("Unrecognized IO error: " + reason + ". Streaming halted.", cause);
                     }
                 }
                 else if(ioe instanceof WriteTimeoutException)
                 {
-                    mLog.info("Network write timeout error - resetting connection");
                     disconnect();
-                    connect();
                 }
                 else
                 {
                     setBroadcastState(BroadcastState.ERROR);
                     disconnect();
-                    mLog.error("Unspecified IO error - streaming halted.", cause);
+                    mLog.error("[" + getStreamName() + "] Unspecified IO error - streaming halted.", cause);
                 }
             }
             else
             {
-                mLog.error("Broadcast error", cause);
+                mLog.error("[" + getStreamName() + "] Broadcast error", cause);
                 setBroadcastState(BroadcastState.ERROR);
                 disconnect();
             }
@@ -319,6 +330,10 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                     {
                         setBroadcastState(BroadcastState.INVALID_CREDENTIALS);
                     }
+                    else if(message.contains("HTTP/1.1 501"))
+                    {
+                        disconnect(); //So that we can reconnect later
+                    }
                     else
                     {
                         mLog.error("Unrecognized server response:" + message);
@@ -328,7 +343,7 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
             }
             else
             {
-                mLog.error("Icecast TCP broadcaster - unrecognized message [ " + object.getClass() +
+                mLog.error("[" + getStreamName() + "]Icecast TCP broadcaster - unrecognized message [ " + object.getClass() +
                     "] received:" + object.toString());
             }
         }
