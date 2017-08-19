@@ -101,7 +101,7 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
             if(mSocketConnector == null)
             {
                 mSocketConnector = new NioSocketConnector();
-                mSocketConnector.setConnectTimeoutCheckInterval(1000);
+                mSocketConnector.setConnectTimeoutCheckInterval(CONNECTION_ATTEMPT_TIMEOUT);
 
 //                LoggingFilter loggingFilter = new LoggingFilter(IcecastTCPAudioBroadcaster.class);
 //                loggingFilter.setMessageSentLogLevel(LogLevel.NONE);
@@ -151,12 +151,12 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                         else if(throwableCause != null)
                         {
                             setBroadcastState(BroadcastState.ERROR);
-                            mLog.debug("[" + getStreamName() + "]Failed to connect", rie);
+                            mLog.debug("[" + getStreamName() + "] failed to connect", rie);
                         }
                         else
                         {
                             setBroadcastState(BroadcastState.ERROR);
-                            mLog.debug("[" + getStreamName() + "]Failed to connect - no exception is available");
+                            mLog.debug("[" + getStreamName() + "] failed to connect - no exception is available");
                         }
 
                         disconnect();

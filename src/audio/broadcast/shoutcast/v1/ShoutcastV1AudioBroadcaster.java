@@ -189,12 +189,13 @@ public class ShoutcastV1AudioBroadcaster extends AudioBroadcaster
      */
     public void disconnect()
     {
-        if(connected())
+        if(connected() && mStreamingSession != null)
         {
-            if(mStreamingSession != null)
-            {
-                mStreamingSession.closeNow();
-            }
+            mStreamingSession.closeNow();
+        }
+        else
+        {
+            mLastConnectionAttempt = System.currentTimeMillis();
         }
     }
 
@@ -230,15 +231,15 @@ public class ShoutcastV1AudioBroadcaster extends AudioBroadcaster
         @Override
         public void sessionClosed(IoSession session) throws Exception
         {
+            mLastConnectionAttempt = System.currentTimeMillis();
+
             //If there is already an error state, don't override it.  Otherwise, set state to disconnected
             if(!getBroadcastState().isErrorState())
             {
                 setBroadcastState(BroadcastState.DISCONNECTED);
             }
 
-            mSocketConnector.dispose();
             mStreamingSession = null;
-            mSocketConnector = null;
 
             mConnecting.set(false);
             super.sessionClosed(session);
@@ -259,13 +260,11 @@ public class ShoutcastV1AudioBroadcaster extends AudioBroadcaster
                     {
                         mLog.info("Streaming connection reset by remote server - reestablishing connection");
                         disconnect();
-                        connect();
                     }
                     else if(reason.startsWith("Operation timed out"))
                     {
                         mLog.info("Streaming connection timed out - resetting connection");
                         disconnect();
-                        connect();
                     }
                     else
                     {
