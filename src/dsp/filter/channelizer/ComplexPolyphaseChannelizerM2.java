@@ -58,7 +58,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
 
         if(channels % 2 != 0)
         {
-            throw new IllegalArgumentException("Channel count must be a multiple of 2");
+            throw new IllegalArgumentException("Channel count must be an even multiple of the oversample rate (2)");
         }
 
         initFilters(taps);

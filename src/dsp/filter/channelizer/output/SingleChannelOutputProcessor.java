@@ -64,30 +64,30 @@ public class SingleChannelOutputProcessor implements IPolyphaseChannelOutputProc
      * Extracts the channel from the channel results array, applies frequency translation, and delivers the
      * extracted frequency-translated channel sample to the complex sample listener.
      *
-     * @param channelResults to process containing an array of channel I/Q sample pairs (I0,Q0,I1,Q1...In,Qn)
+     * @param channels to process containing an array of channel I/Q sample pairs (I0,Q0,I1,Q1...In,Qn)
      * @param listener to receive the extracted, frequency-translated channel results
      */
     @Override
-    public void process(float[] channelResults, IComplexSampleListener listener)
+    public void process(float[] channels, IComplexSampleListener listener)
     {
-        if(channelResults.length >= (mChannelOffset + 1))
+        if(channels.length >= (mChannelOffset + 1))
         {
             //Only perform frequency translation if the frequency correction mixer has a non-zero frequency value
             if(mFrequencyCorrectionMixer.isEnabled())
             {
                 mFrequencyCorrectionMixer.rotate();
 
-                float i = Complex.multiplyInphase(channelResults[mChannelOffset], channelResults[mChannelOffset + 1],
+                float i = Complex.multiplyInphase(channels[mChannelOffset], channels[mChannelOffset + 1],
                     mFrequencyCorrectionMixer.inphase(), mFrequencyCorrectionMixer.quadrature());
 
-                float q = Complex.multiplyQuadrature(channelResults[mChannelOffset], channelResults[mChannelOffset + 1],
+                float q = Complex.multiplyQuadrature(channels[mChannelOffset], channels[mChannelOffset + 1],
                     mFrequencyCorrectionMixer.inphase(), mFrequencyCorrectionMixer.quadrature());
 
                 listener.receive(i, q);
             }
             else
             {
-                listener.receive(channelResults[mChannelOffset], channelResults[mChannelOffset + 1]);
+                listener.receive(channels[mChannelOffset], channels[mChannelOffset + 1]);
             }
         }
     }

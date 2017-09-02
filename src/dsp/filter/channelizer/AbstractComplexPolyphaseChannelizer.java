@@ -92,11 +92,9 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<Co
      */
     protected void dispatch(float[] channels)
     {
-        ComplexBuffer complexChannelsBuffer = new ComplexBuffer(channels);
-
         for(PolyphaseChannelSource channel : mChannels)
         {
-            channel.processChannels(complexChannelsBuffer);
+            channel.processChannels(channels);
         }
     }
 

@@ -16,24 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package dsp.filter.channelizer.output;
+package sample.complex;
 
-import sample.complex.IComplexSampleListener;
-
-public interface IPolyphaseChannelOutputProcessor
+public interface IComplexSampleListener
 {
-    /**
-     * Process the channel output channel results from the polyphase channelizer filter
-     *
-     * @param channels to process
-     * @param listener to receive the processed channel results
-     */
-    void process(float[] channels, IComplexSampleListener listener);
-
-    /**
-     * Specifies the positive or negative frequency correction that should be applied to samples extracted from
-     * the polyphase channelizer output results.
-     * @param frequency
-     */
-    void setFrequencyCorrection(long frequency);
+    public void receive(float i, float q);
 }

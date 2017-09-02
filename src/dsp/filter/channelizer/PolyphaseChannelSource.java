@@ -88,7 +88,7 @@ public class PolyphaseChannelSource extends ComplexChannelSource
      * Process the array samples for each of the output channels from the polyphase channelizer.
      * @param channelsBuffer
      */
-    public void processChannels(ComplexBuffer channelsBuffer)
+    public void processChannels(float[] channelsBuffer)
     {
         mProcessor.process(channelsBuffer);
     }
@@ -199,7 +199,7 @@ public class PolyphaseChannelSource extends ComplexChannelSource
 
     public class ChannelBufferProcessor implements Runnable
     {
-        private OverflowableTransferQueue<ComplexBuffer> mComplexChannelBuffers;
+        private OverflowableTransferQueue<float[]> mComplexChannelBuffers;
 
         public ChannelBufferProcessor()
         {
@@ -220,7 +220,7 @@ public class PolyphaseChannelSource extends ComplexChannelSource
          *
          * @param channelsBuffer to enqueue for processing
          */
-        public void process(ComplexBuffer channelsBuffer)
+        public void process(float[] channelsBuffer)
         {
             mComplexChannelBuffers.offer(channelsBuffer);
         }
@@ -230,7 +230,7 @@ public class PolyphaseChannelSource extends ComplexChannelSource
         {
             try
             {
-
+//TODO: implement distribution to each channel
             }
             catch(Throwable throwable)
             {
