@@ -16,7 +16,6 @@
   <property name="source.configs"  location="${repo}/config"/>
   <property name="source.images"  location="${repo}/images"/>
   <property name="source.libs"  location="${repo}/imports"/>
-  <property name="source.license"  location="${repo}/license"/>
   <property name="source.scripts"  location="${repo}/scripts"/>
 
   <property name="output"  location="${repo}/product"/>
@@ -57,8 +56,8 @@
         <exclude name="*.rules"/>
       </fileset>
       
-      <fileset dir="${source.license}">
-        <include name="license.txt"/>
+      <fileset dir="${repo}">
+        <include name="LICENSE"/>
       </fileset>
     </jar>
     
@@ -85,8 +84,8 @@
     
     <!-- Copy license file -->
     <copy todir="${output.folder}">
-      <fileset dir="${source.license}">
-        <include name="license.txt"/>
+      <fileset dir="${repo}">
+        <include name="LICENSE"/>
       </fileset>
     </copy>
     
