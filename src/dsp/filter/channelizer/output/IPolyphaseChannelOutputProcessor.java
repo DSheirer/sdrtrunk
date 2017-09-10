@@ -31,9 +31,10 @@ public interface IPolyphaseChannelOutputProcessor
     void process(float[] channels, IComplexSampleListener listener);
 
     /**
-     * Specifies the positive or negative frequency correction that should be applied to samples extracted from
-     * the polyphase channelizer output results.
-     * @param frequency
+     * Specifies the frequency correction (+/-) that should be applied to samples extracted from the polyphase
+     * channelizer output results.
+     *
+     * @param frequencyCorrection correction value
      */
-    void setFrequencyCorrection(long frequency);
+    void setFrequencyCorrection(long frequencyCorrection);
 }

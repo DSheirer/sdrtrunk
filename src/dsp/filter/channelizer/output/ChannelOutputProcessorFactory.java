@@ -21,7 +21,7 @@ package dsp.filter.channelizer.output;
 public class ChannelOutputProcessorFactory
 {
     /**
-     * Factory for obtaining polyphase channelizer results processors to perform any post-processing
+     * Factory for obtaining polyphase channelizer output processors to perform any post-processing
      * that may be required to perform frequency translation and/or resampling of channel results.
      */
     public static IPolyphaseChannelOutputProcessor getProcessor(int sampleRate, long frequency)

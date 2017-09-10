@@ -58,7 +58,7 @@ public class Oscillator
      *
      * @return true if the current frequency value is non-zero.
      */
-    public boolean isEnabled()
+    public boolean enabled()
     {
         return mEnabled;
     }
