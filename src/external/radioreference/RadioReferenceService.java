@@ -151,41 +151,4 @@ public class RadioReferenceService
 
         return mClient.getUserFeedBroadcasts(mUserAuthorization);
     }
-
-
-    public static void main(String[] args)
-    {
-        try
-        {
-            RadioReferenceService service = new RadioReferenceService("dsheirer", "1dodgeram");
-
-            Long expiration = service.getAccountExpirationDate();
-
-            mLog.debug("Expiration Date:" + (expiration != null ? new Date(expiration).toString() : "unknown"));
-
-            mLog.debug("Is Active: " + service.isAccountActive());
-
-            UserFeedBroadcast[] feeds = service.getUserFeedBroadcasts();
-
-            for(UserFeedBroadcast feed: feeds)
-            {
-                mLog.debug("Feed ID: " + feed.getFeedId() + " Desc:" + feed.getDescr());
-            }
-        }
-        catch(AxisFault af)
-        {
-            mLog.debug("Hey, I caught an axis fault!");
-            mLog.debug("Reason:" + af.getFaultReason());
-        }
-        catch(RemoteException re)
-        {
-            re.printStackTrace();
-        }
-        catch(Exception e)
-        {
-            e.printStackTrace();
-        }
-
-        mLog.debug("Finished!");
-    }
 }
