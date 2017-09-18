@@ -22,42 +22,39 @@ import sample.complex.IComplexSampleListener;
 
 import java.util.List;
 
-public class DoubleChannelOutputProcessor extends ChannelOutputProcessor
+public class OneChannelOutputProcessor extends ChannelOutputProcessor
 {
-    private int mChannelOffset1;
-    private int mChannelOffset2;
+    private int mChannelOffset;
 
     /**
-     * Processor to extract two channels from a polyphase channelizer, synthesize/recombine the channels, apply
-     * frequency translation and frequency correction, down-sample by a factor of two and output an I/Q complex sample.
+     * Processor to extract a single channel from a polyphase channelizer and produce an output I/Q complex sample
+     * from each polyphase channelizer output results array.
      *
      * @param sampleRate of the output sample stream.
-     * @param channelIndexes containing two channel indices.
+     * @param channelIndexes containing a single channel index.
      */
-    public DoubleChannelOutputProcessor(int sampleRate, List<Integer> channelIndexes)
+    public OneChannelOutputProcessor(int sampleRate, List<Integer> channelIndexes)
     {
         super(sampleRate);
         setPolyphaseChannelIndices(channelIndexes);
     }
 
     /**
-     * Updates this processor to extract the two specified channel indexes.
-     *
+     * Updates this processor to extract a single, specified channel index.
      * @param indexes containing a single channel index value.
      * @throws IllegalArgumentException if the list of indexes does not contain a single channel index.
      */
     public void setPolyphaseChannelIndices(List<Integer> indexes)
     {
-        if(indexes.size() != 2)
+        if(indexes.size() != 1)
         {
-            throw new IllegalArgumentException("Double channel output processor requires two indexes to " +
+            throw new IllegalArgumentException("Single channel output processor requires a single index to " +
                 "process - provided indexes " + indexes.toString());
         }
 
-        //Set the channelized output results offsets to twice the channel index to account for each channel having
+        //Set the channelized output results offset to twice the channel index to account for each channel having
         //an I/Q pair
-        mChannelOffset1 = indexes.get(0) * 2;
-        mChannelOffset2 = indexes.get(1) * 2;
+        mChannelOffset = indexes.get(0) * 2;
     }
 
     /**
@@ -70,14 +67,14 @@ public class DoubleChannelOutputProcessor extends ChannelOutputProcessor
     @Override
     public void process(float[] channels, IComplexSampleListener listener)
     {
-//        if(channels.length < mChannelOffset + 1)
-//        {
-//            throw new IllegalArgumentException("Polyphase channelizer output channels array is not large enough to " +
-//                "cover this single channel output processor with channel offset [" + mChannelOffset + "]");
-//        }
-//
-//        float i = channels[mChannelOffset];
-//        float q = channels[mChannelOffset + 1];
+        if(channels.length < mChannelOffset + 1)
+        {
+            throw new IllegalArgumentException("Polyphase channelizer output channels array is not large enough to " +
+                "cover this single channel output processor with channel offset [" + mChannelOffset + "]");
+        }
+
+        float i = channels[mChannelOffset];
+        float q = channels[mChannelOffset + 1];
 
         listener.receive(getFrequencyCorrectedInphase(i, q), getFrequencyCorrectedQuadrature(i, q));
     }
