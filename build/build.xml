@@ -1,120 +1,142 @@
 <project name="SDRTrunk" default="SDRTrunk" basedir=".">
-  <description>
-    Ant build script for SDRTrunk Decoder Application
-  </description>
+    <description>
+        Ant build script for SDRTrunk Decoder Application
+    </description>
 
-  <!-- version properties -->
-  <property name="major" value="0"/>
-  <property name="minor" value="3"/>
-  <property name="patch" value="0"/>
-  <property name="release" value=""/>
-  <property name="filename" value="sdrtrunk_${major}.${minor}.${patch}${release}"/>
-    
-  <!-- Build properties -->
-  <property name="repo" location=".."/>
-  <property name="source.code" location="${repo}/src"/>
-  <property name="source.configs"  location="${repo}/config"/>
-  <property name="source.images"  location="${repo}/images"/>
-  <property name="source.libs"  location="${repo}/imports"/>
-  <property name="source.scripts"  location="${repo}/scripts"/>
+    <!-- version properties -->
+    <property name="major" value="0"/>
+    <property name="minor" value="3"/>
+    <property name="patch" value="1"/>
+    <property name="release" value="final"/>
+    <property name="filename" value="sdrtrunk_${major}.${minor}.${patch}${release}"/>
 
-  <property name="output"  location="${repo}/product"/>
-  <property name="output.classes" location="${repo}/classes"/>
-  <property name="output.folder"  location="${output}/sdrtrunk"/>
-  <property name="output.config" location="${output.folder}/config"/>
-  <property name="output.images" location="${output.folder}/images"/>
-  <property name="output.libs" location="${output.folder}/libs"/>
+    <!-- Build properties -->
+    <property name="repo" location=".."/>
+    <property name="source.code" location="${repo}/src"/>
+    <property name="source.configs" location="${repo}/config"/>
+    <property name="source.images" location="${repo}/images"/>
+    <property name="source.libs" location="${repo}/imports"/>
+    <property name="source.scripts" location="${repo}/scripts"/>
 
-  <path id="classpath">
-    <fileset dir="${source.libs}" includes="*.jar" />
-  </path>
-  
-  <target name="init">
-    <!-- Create the classes folder to contain the compiled java classes -->
-    <mkdir dir="${output.classes}"/>
-    
-    <!-- Create version file -->
-    <echo message="${major}.${minor}.${patch}-${release}" file="${output.classes}/sdrtrunk-version"/>
-  </target>
+    <property name="output" location="${repo}/product"/>
+    <property name="output.classes" location="${repo}/classes"/>
+    <property name="output.folder" location="${output}/sdrtrunk"/>
+    <property name="output.config" location="${output.folder}/config"/>
+    <property name="output.images" location="${output.folder}/images"/>
+    <property name="output.libs" location="${output.folder}/libs"/>
 
-  <target name="compile" depends="clean,init" description="Compile java classes" >
-    <javac srcdir="${source.code}" destdir="${output.classes}" classpathref="classpath" includeantruntime="false" />
-  </target>
+    <path id="classpath">
+        <fileset dir="${source.libs}" includes="*.jar"/>
+    </path>
 
-  <target name="SDRTrunk" depends="compile" description="Create SDRTrunk application" >
-    <!-- Create the distribution directory -->
-    <mkdir dir="${output.folder}"/>
+    <target name="init">
+        <!-- Create the classes folder to contain the compiled java classes -->
+        <mkdir dir="${output.classes}"/>
 
-    <!-- Create jar file -->
-    <jar jarfile="${output.folder}/sdrtrunk.jar" basedir="${output.classes}">
-      <manifest>
-        <attribute name="Title" value="sdrtrunk"/>
-        <attribute name="Main-Class" value="gui.SDRTrunk"/>
-        <attribute name="Version" value="${major}.${minor}.${patch}-${release}"/>
-      </manifest>
-      <fileset dir="${source.configs}">
-        <exclude name="*.rules"/>
-      </fileset>
-      
-      <fileset dir="${repo}">
-        <include name="LICENSE"/>
-      </fileset>
-    </jar>
-    
-    <!-- Copy third-party libraries -->
-    <mkdir dir="${output.libs}"/>
-    <copy todir="${output.libs}">
-      <fileset dir="${source.libs}" includes="*.jar" />
-    </copy>
-    
-    <!-- Copy config files -->
-    <mkdir dir="${output.config}"/>
+        <!-- Create version file -->
+        <echo message="${major}.${minor}.${patch}-${release}" file="${output.classes}/sdrtrunk-version"/>
+    </target>
 
-    <copy todir="${output.config}">
-      <fileset dir="${source.configs}">
-        <include name="*.rules"/>
-      </fileset>
-    </copy>
-    
-    <!-- Copy image files -->
-    <mkdir dir="${output.images}"/>
-    <copy todir="${output.images}">
-      <fileset dir="${source.images}" />
-    </copy>
-    
-    <!-- Copy license file -->
-    <copy todir="${output.folder}">
-      <fileset dir="${repo}">
-        <include name="LICENSE"/>
-      </fileset>
-    </copy>
-    
-    <!-- Copy program scripts -->
-    <copy todir="${output.folder}">
-      <fileset dir="${source.scripts}" />
-    </copy>
+    <target name="compile" depends="clean,init,compile-java-8,compile-java-9"
+            description="Compile java classes" />
+
+    <target name="compile-java-8" depends="check-java-version" if="java.8" description="Compiles code with Java 8 arguments">
+        <echo message="Compiling with Java 8 Options"/>
+        <javac srcdir="${source.code}" destdir="${output.classes}" classpathref="classpath" includeantruntime="false"/>
+    </target>
+
+    <target name="compile-java-9" depends="check-java-version" if="java.9" description="Compiles code with Java 9 arguments">
+        <echo message="Compiling with Java 9 Options"/>
+        <javac srcdir="${source.code}" destdir="${output.classes}" classpathref="classpath" includeantruntime="false">
+            <compilerarg value="--add-modules"/>
+            <compilerarg value="java.xml.bind"/>
+        </javac>
+    </target>
+
+    <target name="check-java-version" description="Determines if the compiler is Java 8 or 9">
+        <condition property="java.8" value="true">
+            <contains string="${java.version}" substring="1.8"/>
+        </condition>
+        <condition property="java.9" value="true">
+            <equals arg1="${java.version}" arg2="9"/>
+        </condition>
+        <echo message="Java Version: ${java.version}"/>
+    </target>
+
+    <target name="SDRTrunk" depends="compile" description="Create SDRTrunk application">
+        <!-- Create the distribution directory -->
+        <mkdir dir="${output.folder}"/>
+
+        <!-- Create jar file -->
+        <jar jarfile="${output.folder}/sdrtrunk.jar" basedir="${output.classes}">
+            <manifest>
+                <attribute name="Title" value="sdrtrunk"/>
+                <attribute name="Main-Class" value="gui.SDRTrunk"/>
+                <attribute name="Version" value="${major}.${minor}.${patch}-${release}"/>
+            </manifest>
+            <fileset dir="${source.configs}">
+                <exclude name="*.rules"/>
+            </fileset>
+
+            <fileset dir="${repo}">
+                <include name="LICENSE"/>
+            </fileset>
+        </jar>
+
+        <!-- Copy third-party libraries -->
+        <mkdir dir="${output.libs}"/>
+        <copy todir="${output.libs}">
+            <fileset dir="${source.libs}" includes="*.jar"/>
+        </copy>
+
+        <!-- Copy config files -->
+        <mkdir dir="${output.config}"/>
+
+        <copy todir="${output.config}">
+            <fileset dir="${source.configs}">
+                <include name="*.rules"/>
+            </fileset>
+        </copy>
+
+        <!-- Copy image files -->
+        <mkdir dir="${output.images}"/>
+        <copy todir="${output.images}">
+            <fileset dir="${source.images}"/>
+        </copy>
+
+        <!-- Copy license file -->
+        <copy todir="${output.folder}">
+            <fileset dir="${repo}">
+                <include name="LICENSE"/>
+            </fileset>
+        </copy>
+
+        <!-- Copy program scripts -->
+        <copy todir="${output.folder}">
+            <fileset dir="${source.scripts}"/>
+        </copy>
 
 
-    <!-- Bundle the files into .zip -->
-    <zip destfile="${output}/${filename}.zip" basedir="${output}" />
+        <!-- Bundle the files into .zip -->
+        <zip destfile="${output}/${filename}.zip" basedir="${output}"/>
 
-    <!-- Remove linux start script before tar task -->
-    <delete file="${output.folder}/run_sdrtrunk_linux.sh"/>
+        <!-- Remove linux start script before tar task -->
+        <delete file="${output.folder}/run_sdrtrunk_linux.sh"/>
 
-    <!-- Bundle files into .tar.gz and copy/set permissions on linux start script -->
-    <tar destfile="${output}/${filename}.tar.gz" compression="gzip">
-        <tarfileset dir="${output.folder}" prefix="sdrtrunk" />
-        <tarfileset dir="${source.scripts}" prefix="sdrtrunk" filemode="777">
-            <include name="run_sdrtrunk_linux.sh"/>
-        </tarfileset>
-    </tar>
-    
-    <delete dir="${output.folder}"/>
-  </target>
+        <!-- Bundle files into .tar.gz and copy/set permissions on linux start script -->
+        <tar destfile="${output}/${filename}.tar.gz" compression="gzip">
+            <tarfileset dir="${output.folder}" prefix="sdrtrunk"/>
+            <tarfileset dir="${source.scripts}" prefix="sdrtrunk" filemode="777">
+                <include name="run_sdrtrunk_linux.sh"/>
+            </tarfileset>
+        </tar>
 
-  <target name="clean" description="Clean previous build artifacts" >
-    <delete dir="${output.classes}"/>
-    <delete dir="${output}"/>
-  </target>
+        <delete dir="${output.folder}"/>
+    </target>
+
+    <target name="clean" description="Clean previous build artifacts">
+        <delete dir="${output.classes}"/>
+        <delete dir="${output}"/>
+    </target>
 
 </project>
