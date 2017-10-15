@@ -26,7 +26,7 @@ import sample.real.RealBuffer;
 import source.IControllableFileSource;
 import source.IFrameLocationListener;
 import source.RealSource;
-import source.SourceEvent
+import source.SourceEvent;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -129,7 +129,6 @@ public class RealWaveSource extends RealSource implements IControllableFileSourc
     @Override
     public long getFrameCount() throws IOException
     {
-        // TODO Auto-generated method stub
         return 0;
     }
 
