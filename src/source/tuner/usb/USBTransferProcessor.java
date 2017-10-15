@@ -54,7 +54,7 @@ public class USBTransferProcessor implements TransferCallback
     private static final int TRANSFER_BUFFER_POOL_SIZE = 16;
 
     //Maximum number of filled buffers for the blocking queue
-    private static final int FILLED_BUFFER_MAX_CAPACITY = 300;
+    private static final int FILLED_BUFFER_MAX_CAPACITY = 500;
 
     //Threshold for resetting buffer overflow condition
     private static final int FILLED_BUFFER_OVERFLOW_RESET_THRESHOLD = 100;
@@ -200,7 +200,7 @@ public class USBTransferProcessor implements TransferCallback
 
 
             //Unregister from LibUSB processor so that it auto-stops LibUSB processing
-            TunerManager.LIBUSB_TRANSFER_PROCESSOR.registerTransferProcessor(this);
+            TunerManager.LIBUSB_TRANSFER_PROCESSOR.unregisterTransferProcessor(this);
 
             //Directly invoke the timeout handler to ensure that our cancelled transfer buffers are flushed.
             int result = LibUsb.handleEventsTimeoutCompleted(null, USB_TIMEOUT_MS,
@@ -415,23 +415,27 @@ public class USBTransferProcessor implements TransferCallback
         @Override
         public void run()
         {
-            try
-            {
-                mFilledBuffers.drainTo(mBuffersToDispatch, 15);
+            mFilledBuffers.drainTo(mBuffersToDispatch, 50);
 
-                for(byte[] buffer : mBuffersToDispatch)
+            while(!mBuffersToDispatch.isEmpty())
+            {
+                try
                 {
-                    float[] complexSamples = mSampleAdapter.convert(buffer);
+                    for(byte[] buffer : mBuffersToDispatch)
+                    {
+                        float[] complexSamples = mSampleAdapter.convert(buffer);
 
-                    mComplexBufferBroadcaster.broadcast(new ComplexBuffer(complexSamples));
+                        mComplexBufferBroadcaster.broadcast(new ComplexBuffer(complexSamples));
+                    }
                 }
-            }
-            catch(Exception e)
-            {
-                mLog.error(mDeviceName + " - error while dispatching complex IQ buffer samples", e);
-            }
+                catch(Exception e)
+                {
+                    mLog.error(mDeviceName + " - error while dispatching complex IQ buffer samples", e);
+                }
 
-            mBuffersToDispatch.clear();
+                mBuffersToDispatch.clear();
+                mFilledBuffers.drainTo(mBuffersToDispatch, 50);
+            }
         }
     }
 }

@@ -24,6 +24,9 @@ import audio.IAudioPacketProvider;
 import audio.squelch.ISquelchStateListener;
 import audio.squelch.ISquelchStateProvider;
 import audio.squelch.SquelchState;
+import channel.heartbeat.Heartbeat;
+import channel.heartbeat.IHeartbeatListener;
+import channel.heartbeat.IHeartbeatProvider;
 import channel.metadata.AttributeChangeRequest;
 import channel.metadata.IAttributeChangeRequestListener;
 import channel.metadata.IAttributeChangeRequestProvider;
@@ -98,6 +101,7 @@ public class ProcessingChain implements IChannelEventListener
     private Broadcaster<ChannelEvent> mChannelEventBroadcaster = new Broadcaster<>();
     private Broadcaster<ComplexBuffer> mComplexBufferBroadcaster = new Broadcaster<>();
     private Broadcaster<DecoderStateEvent> mDecoderStateEventBroadcaster = new Broadcaster<>();
+    private Broadcaster<Heartbeat> mHeartbeatBroadcaster = new Broadcaster<>();
     private Broadcaster<SourceEvent> mFrequencyChangeEventBroadcaster = new Broadcaster<>();
     private Broadcaster<Message> mMessageBroadcaster = new Broadcaster<>();
     private Broadcaster<RealBuffer> mFilteredRealBufferBroadcaster = new Broadcaster<>();
@@ -316,7 +320,12 @@ public class ProcessingChain implements IChannelEventListener
 
         if(module instanceof ISourceEventListener)
         {
-            mFrequencyChangeEventBroadcaster.addListener(((ISourceEventListener) module).getSourceEventListener());
+            mFrequencyChangeEventBroadcaster.addListener(frequencyChangeEventListener);
+        }
+
+        if(module instanceof IHeartbeatListener)
+        {
+            mHeartbeatBroadcaster.addListener(((IHeartbeatListener)module).getHeartbeatListener());
         }
 
         if(module instanceof IMessageListener)
@@ -381,6 +390,11 @@ public class ProcessingChain implements IChannelEventListener
             mFrequencyChangeEventBroadcaster.removeListener(((ISourceEventListener) module).getSourceEventListener());
         }
 
+        if(module instanceof IHeartbeatListener)
+        {
+            mHeartbeatBroadcaster.removeListener(((IHeartbeatListener)module).getHeartbeatListener());
+        }
+
         if(module instanceof IMessageListener)
         {
             mMessageBroadcaster.removeListener(((IMessageListener) module).getMessageListener());
@@ -431,6 +445,16 @@ public class ProcessingChain implements IChannelEventListener
         if(module instanceof IDecoderStateEventProvider)
         {
             ((IDecoderStateEventProvider) module).setDecoderStateListener(mDecoderStateEventBroadcaster);
+        }
+
+        if(module instanceof IHeartbeatProvider)
+        {
+            ((IHeartbeatProvider)module).setHeartbeatListener(mHeartbeatBroadcaster);
+        }
+
+        if(module instanceof IMessageProvider)
+        {
+            ((IMessageProvider) module).setMessageListener(mMessageBroadcaster);
         }
 
         if(module instanceof IFilteredRealBufferProvider)
@@ -488,6 +512,16 @@ public class ProcessingChain implements IChannelEventListener
         if(module instanceof IDecoderStateEventProvider)
         {
             ((IDecoderStateEventProvider) module).setDecoderStateListener(null);
+        }
+
+        if(module instanceof IHeartbeatProvider)
+        {
+            ((IHeartbeatProvider)module).removeHeartbeatListener();
+        }
+
+        if(module instanceof IMessageProvider)
+        {
+            ((IMessageProvider) module).setMessageListener(null);
         }
 
         if(module instanceof IFilteredRealBufferProvider)

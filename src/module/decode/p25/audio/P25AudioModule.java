@@ -12,6 +12,9 @@ import jmbe.iface.AudioConverter;
 import message.IMessageListener;
 import message.Message;
 import module.Module;
+import module.decode.p25.message.hdu.HDUMessage;
+import module.decode.p25.message.ldu.LDU1Message;
+import module.decode.p25.message.ldu.LDU2Message;
 import module.decode.p25.message.ldu.LDUMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,14 +28,18 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
     private final static Logger mLog = LoggerFactory.getLogger(P25AudioModule.class);
 
     private static final String IMBE_CODEC = "IMBE";
-
     private static boolean mLibraryLoadStatusLogged = false;
+
     private boolean mCanConvertAudio = false;
+    private boolean mEncryptedCall = false;
+    private boolean mEncryptedCallStateEstablished = false;
+
     private AudioConverter mAudioConverter;
     private Listener<AudioPacket> mAudioPacketListener;
     private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
     private NonClippingGain mGain = new NonClippingGain(5.0f, 0.95f);
     private Metadata mMetadata;
+    private LDU1Message mCachedLDU1Message = null;
 
     public P25AudioModule(Metadata metadata)
     {
@@ -76,32 +83,73 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
     }
 
     /**
-     * Primary processing method for p25 imbe audio frame messages.  Each LDU
-     * audio message contains 9 imbe voice frames.  Each frame is converted to
-     * audio when the JMBE library is loaded, processed by auto-gain, and
-     * broadcast to the audio packet listener.
+     * Processes call header (HDU) and voice frame (LDU1/LDU2) messages to decode audio and to determine the
+     * encrypted audio status of a call event. Only the HDU and LDU2 messages convey encrypted call status. If an
+     * LDU1 message is received without a preceding HDU message, then the LDU1 message is cached until the first
+     * LDU2 message is received and the encryption state can be determined. Both the LDU1 and the LDU2 message are
+     * then processed for audio if the call is unencrypted.
      */
     public void receive(Message message)
     {
-        if (mCanConvertAudio && mAudioPacketListener != null)
+        if(mCanConvertAudio && mAudioPacketListener != null)
         {
-            if (message instanceof LDUMessage)
+            if(mEncryptedCallStateEstablished)
             {
-                LDUMessage ldu = (LDUMessage) message;
-
-				/* Only process unencrypted audio frames */
-                if (!(ldu.isValid() && ldu.isEncrypted()))
+                if(message instanceof LDUMessage)
                 {
-                    for (byte[] frame : ldu.getIMBEFrames())
-                    {
-                        float[] audio = mAudioConverter.decode(frame);
-
-                        audio = mGain.apply(audio);
-
-                        mAudioPacketListener.receive(new AudioPacket(audio, mMetadata.copyOf()));
-                    }
+                    processAudio((LDUMessage)message);
                 }
             }
+            else
+            {
+                if(message instanceof HDUMessage)
+                {
+                    mEncryptedCallStateEstablished = true;
+                    mEncryptedCall = ((HDUMessage)message).isEncryptedAudio();
+                }
+                else if(message instanceof LDU1Message)
+                {
+                    //When we receive an LDU1 message with first receiving the HDU message, cache the LDU1 Message
+                    //until we can determine the encrypted call state from the next LDU2 message
+                    mCachedLDU1Message = (LDU1Message)message;
+                }
+                else if(message instanceof LDU2Message)
+                {
+                    mEncryptedCallStateEstablished = true;
+                    LDU2Message ldu2 = (LDU2Message)message;
+                    mEncryptedCall = ldu2.isEncryptedAudio();
+
+                    if(mCachedLDU1Message != null)
+                    {
+                        processAudio(mCachedLDU1Message);
+                        mCachedLDU1Message = null;
+                    }
+
+                    processAudio(ldu2);
+                }
+            }
+        }
+    }
+
+    /**
+     * Processes an audio packet by decoding the IMBE audio frames and rebroadcasting them as PCM audio packets.
+     */
+    private void processAudio(LDUMessage ldu)
+    {
+        if(!mEncryptedCall)
+        {
+            for(byte[] frame : ldu.getIMBEFrames())
+            {
+                float[] audio = mAudioConverter.decode(frame);
+
+                audio = mGain.apply(audio);
+
+                mAudioPacketListener.receive(new AudioPacket(audio, mMetadata.copyOf()));
+            }
+        }
+        else
+        {
+            //Encrypted audio processing not implemented
         }
     }
 
@@ -119,18 +167,18 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
             @SuppressWarnings("rawtypes")
             Class temp = Class.forName("jmbe.JMBEAudioLibrary");
 
-            library = (AudioConversionLibrary) temp.newInstance();
+            library = (AudioConversionLibrary)temp.newInstance();
 
-            if ((library.getMajorVersion() == 0 && library.getMinorVersion() >= 3 &&
-                    library.getBuildVersion() >= 3) || library.getMajorVersion() >= 1)
+            if((library.getMajorVersion() == 0 && library.getMinorVersion() >= 3 &&
+                library.getBuildVersion() >= 3) || library.getMajorVersion() >= 1)
             {
                 mAudioConverter = library.getAudioConverter(IMBE_CODEC, AudioFormats.PCM_SIGNED_8KHZ_16BITS_MONO);
 
-                if (mAudioConverter != null)
+                if(mAudioConverter != null)
                 {
                     mCanConvertAudio = true;
 
-                    if (!mLibraryLoadStatusLogged)
+                    if(!mLibraryLoadStatusLogged)
                     {
                         StringBuilder sb = new StringBuilder();
                         sb.append("JMBE audio conversion library [");
@@ -144,7 +192,7 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
                 }
                 else
                 {
-                    if (!mLibraryLoadStatusLogged)
+                    if(!mLibraryLoadStatusLogged)
                     {
                         mLog.info("JMBE audio conversion library NOT FOUND");
                         mLibraryLoadStatusLogged = true;
@@ -156,28 +204,28 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
                 mLog.warn("JMBE library version 0.3.3 or higher is required - found: " + library.getVersion());
             }
         }
-        catch (ClassNotFoundException e1)
+        catch(ClassNotFoundException e1)
         {
-            if (!mLibraryLoadStatusLogged)
+            if(!mLibraryLoadStatusLogged)
             {
                 mLog.error("Couldn't find/load JMBE audio conversion library");
                 mLibraryLoadStatusLogged = true;
             }
         }
-        catch (InstantiationException e1)
+        catch(InstantiationException e1)
         {
-            if (!mLibraryLoadStatusLogged)
+            if(!mLibraryLoadStatusLogged)
             {
                 mLog.error("Couldn't instantiate JMBE audio conversion library class");
                 mLibraryLoadStatusLogged = true;
             }
         }
-        catch (IllegalAccessException e1)
+        catch(IllegalAccessException e1)
         {
-            if (!mLibraryLoadStatusLogged)
+            if(!mLibraryLoadStatusLogged)
             {
                 mLog.error("Couldn't load JMBE audio conversion library due to "
-                        + "security restrictions");
+                    + "security restrictions");
                 mLibraryLoadStatusLogged = true;
             }
         }
@@ -196,19 +244,25 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
     }
 
     /**
-     * Wrapper for squelch state listener.  Internally, the P25 audio module
-     * doesn't have a squelch state.  If there are IMBE audio frames, we have
-     * audio.  We use this listener to signal to the recorder manager that the
-     * channel state is resetting and it should end the recording.
+     * Wrapper for squelch state to process end of call actions.  At call end the encrypted call state established
+     * flag is reset so that the encrypted audio state for the next call can be properly detected and we send an
+     * END audio packet so that downstream processors like the audio recorder can properly close out a call sequence.
      */
     public class SquelchStateListener implements Listener<SquelchState>
     {
         @Override
         public void receive(SquelchState state)
         {
-            if (state == SquelchState.SQUELCH && mAudioPacketListener != null)
+            if(state == SquelchState.SQUELCH)
             {
-                mAudioPacketListener.receive(new AudioPacket(AudioPacket.Type.END, mMetadata.copyOf()));
+                if(mAudioPacketListener != null)
+                {
+                    mAudioPacketListener.receive(new AudioPacket(AudioPacket.Type.END, mMetadata.copyOf()));
+                }
+
+                mEncryptedCallStateEstablished = false;
+                mEncryptedCall = false;
+                mCachedLDU1Message = null;
             }
         }
     }

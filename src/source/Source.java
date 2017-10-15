@@ -18,6 +18,7 @@
  ******************************************************************************/
 package source;
 
+import channel.heartbeat.IHeartbeatProvider;
 import module.Module;
 import sample.SampleType;
 import sample.real.IOverflowListener;
@@ -25,7 +26,7 @@ import sample.real.IOverflowListener;
 /**
  * Abstract class to define the minimum functionality of a sample data provider.
  */
-public abstract class Source extends Module implements ISourceEventListener, ISourceEventProvider
+public abstract class Source extends Module implements ISourceEventListener, ISourceEventProvider, IHeartbeatProvider
 {
     protected IOverflowListener mOverflowListener;
 
@@ -52,7 +53,7 @@ public abstract class Source extends Module implements ISourceEventListener, ISo
      * Process any cleanup actions to prepare for garbage collection of this source
      */
     public abstract void dispose();
-    
+
     /**
      * Registers the listener to receive overflow state changes.  Use null argument to clear the listener
      */

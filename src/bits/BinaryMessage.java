@@ -136,6 +136,17 @@ public class BinaryMessage extends BitSet
     {
     	mCRC = crc;
     }
+
+    /**
+     * Indicates the number of bit errors that were corrected in this message.
+     *
+     * @see CorrectedBinaryMessage subclass that supports setting this value
+     * @return number of corrected bits in this message
+     */
+    public int getCorrectedBitCount()
+    {
+        return 0;
+    }
     
     /**
      * Current pointer index

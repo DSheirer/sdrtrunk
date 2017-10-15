@@ -124,10 +124,6 @@ public class OverflowableTransferQueue<E>
             mQueue.clear();
             mCounter.set(0);
             mOverflow.set(false);
-            if(mOverflowListener != null)
-            {
-                mOverflowListener.sourceOverflow(false);
-            }
         }
     }
 }
