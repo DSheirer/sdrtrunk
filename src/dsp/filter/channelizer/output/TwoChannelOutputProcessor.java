@@ -79,6 +79,6 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
 //        float i = channels[mChannelOffset];
 //        float q = channels[mChannelOffset + 1];
 
-        listener.receive(getFrequencyCorrectedInphase(i, q), getFrequencyCorrectedQuadrature(i, q));
+//        listener.receive(getFrequencyCorrectedInphase(i, q), getFrequencyCorrectedQuadrature(i, q));
     }
 }

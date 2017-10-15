@@ -320,7 +320,12 @@ public class ProcessingChain implements IChannelEventListener
 
         if(module instanceof ISourceEventListener)
         {
-            mFrequencyChangeEventBroadcaster.addListener(frequencyChangeEventListener);
+            Listener<SourceEvent> listener = ((ISourceEventListener)module).getSourceEventListener();
+
+            if(listener != null)
+            {
+                mFrequencyChangeEventBroadcaster.addListener(listener);
+            }
         }
 
         if(module instanceof IHeartbeatListener)

@@ -93,7 +93,7 @@ public class BinaryTapViewPanel extends TapViewPanel
 	 * Paints a polyline representing a boolean value with a 0 or 1 label in 
 	 * the middle of it
 	 * 
-	 * @param graphics
+	 * @param graphics object
 	 * @param index - index of the sample int the sample buffer
 	 * @param value - bit value, 0 or 1
 	 */

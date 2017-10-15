@@ -18,8 +18,10 @@
  ******************************************************************************/
 package dsp.filter.channelizer;
 
+import channel.heartbeat.Heartbeat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sample.Listener;
 import sample.OverflowableTransferQueue;
 import sample.complex.ComplexBuffer;
 import sample.real.IOverflowListener;
@@ -182,6 +184,18 @@ public class PolyphaseChannelSource extends ComplexChannelSource
     {
         //TODO:
         mLog.debug("Request for frequency correction: " + correction + " -- not yet implemented");
+    }
+
+    @Override
+    public void setHeartbeatListener(Listener<Heartbeat> listener)
+    {
+        //TODO: implement this
+    }
+
+    @Override
+    public void removeHeartbeatListener()
+    {
+        //TODO: implement this
     }
 
     @Override
