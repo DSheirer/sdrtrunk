@@ -6,8 +6,8 @@
     <!-- version properties -->
     <property name="major" value="0"/>
     <property name="minor" value="3"/>
-    <property name="patch" value="1"/>
-    <property name="release" value="final"/>
+    <property name="patch" value="2"/>
+    <property name="release" value="-beta1"/>
     <property name="filename" value="sdrtrunk_${major}.${minor}.${patch}${release}"/>
 
     <!-- Build properties -->
