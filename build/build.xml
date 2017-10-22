@@ -7,7 +7,7 @@
     <property name="major" value="0"/>
     <property name="minor" value="3"/>
     <property name="patch" value="1"/>
-    <property name="release" value="final"/>
+    <property name="release" value=""/> <!-- Use dash (-) prefix (e.g. -beta1) -->
     <property name="filename" value="sdrtrunk_${major}.${minor}.${patch}${release}"/>
 
     <!-- Build properties -->
@@ -34,7 +34,7 @@
         <mkdir dir="${output.classes}"/>
 
         <!-- Create version file -->
-        <echo message="${major}.${minor}.${patch}-${release}" file="${output.classes}/sdrtrunk-version"/>
+        <echo message="${major}.${minor}.${patch}${release}" file="${output.classes}/sdrtrunk-version"/>
     </target>
 
     <target name="compile" depends="clean,init,compile-java-8,compile-java-9"
