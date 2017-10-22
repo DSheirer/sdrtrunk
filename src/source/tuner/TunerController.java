@@ -19,20 +19,19 @@ package source.tuner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import source.SourceException;
-import source.tuner.configuration.TunerConfiguration;
+import source.ISourceEventProcessor;
 import source.SourceEvent;
 import source.SourceEvent.Event;
+import source.SourceException;
+import source.tuner.configuration.TunerConfiguration;
 import source.tuner.frequency.FrequencyController;
 import source.tuner.frequency.FrequencyController.Tunable;
-import source.ISourceEventProcessor;
 
-public abstract class TunerController implements Tunable, ISourceEventProcessor
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.RejectedExecutionException;
 
-public abstract class TunerController implements Tunable, IFrequencyChangeProcessor
+public abstract class TunerController implements Tunable, ISourceEventProcessor
 {
     private final static Logger mLog = LoggerFactory.getLogger(TunerController.class);
 
