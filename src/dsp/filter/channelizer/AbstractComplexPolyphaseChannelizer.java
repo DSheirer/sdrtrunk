@@ -120,6 +120,14 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<Co
         mSourceChangeBroadcaster.removeListener(polyphaseChannelSource.getSourceEventListener());
     }
 
+    /**
+     * Number of polyphase channels registered to receive sample streams
+     */
+    public int getRegisteredChannelCount()
+    {
+        return mChannels.size();
+    }
+
     @Override
     public Listener<SourceEvent> getSourceEventListener()
     {

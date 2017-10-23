@@ -139,7 +139,7 @@ public class ChannelizerConfiguration
     }
 
     /**
-     * Channelizer input sample rate
+     * PolyphaseChannelManager input sample rate
      * @return input sample rate in hertz
      */
     public int getSampleRate()
@@ -148,7 +148,7 @@ public class ChannelizerConfiguration
     }
 
     /**
-     * Channelizer input minimum frequency
+     * PolyphaseChannelManager input minimum frequency
      * @return minimum frequency in hertz
      */
     public long getMinimumFrequency()
@@ -157,7 +157,7 @@ public class ChannelizerConfiguration
     }
 
     /**
-     * Channelizer input maximum frequency
+     * PolyphaseChannelManager input maximum frequency
      * @return maximum frequency in hertz
      */
     public long getMaximumFrequency()

@@ -46,7 +46,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      *
      * @param taps of a low-pass filter designed for the inbound sample rate with a cutoff frequency
      * equal to the channel bandwidth (sample rate / filters).  If you need to synthesize (combine two or more
-     * filte outputs) a new bandwidth signal from the outputs of this filter, then the filter should be designed
+     * filter outputs) a new bandwidth signal from the outputs of this filter, then the filter should be designed
      * as a nyquist filter with -6 dB attenuation at the channel bandwidth cutoff frequency
      * @param channels - number of filters/channels to output.  Since this filter bank oversamples each filter
      * output, this number must be even (divisible by the oversample rate).

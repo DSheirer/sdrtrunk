@@ -173,6 +173,16 @@ public abstract class Tuner implements ITunerChannelProvider
     }
 
     /**
+     * Indicates if the listener is currently registered with this tuner
+     * @param listener of complex buffer samples
+     * @return true if the listener is registered
+     */
+    public boolean hasListener(Listener<ComplexBuffer> listener)
+    {
+        return mSampleListeners.contains(listener);
+    }
+
+    /**
      * Broadcasts the samples to all registered listeners
      */
     public void broadcast(ComplexBuffer sampleBuffer)

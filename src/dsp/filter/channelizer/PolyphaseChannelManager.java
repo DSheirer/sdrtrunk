@@ -18,6 +18,9 @@
  ******************************************************************************/
 package dsp.filter.channelizer;
 
+import dsp.filter.channelizer.output.IPolyphaseChannelOutputProcessor;
+import dsp.filter.channelizer.output.OneChannelOutputProcessor;
+import dsp.filter.channelizer.output.TwoChannelOutputProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sample.Listener;
@@ -29,33 +32,43 @@ import source.tuner.TunerChannel;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class Channelizer implements ISourceEventProcessor, Listener<SourceEvent>
+public class PolyphaseChannelManager implements ISourceEventProcessor, Listener<SourceEvent>
 {
-    private final static Logger mLog = LoggerFactory.getLogger(Channelizer.class);
+    private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelManager.class);
     private static final int CHANNEL_BANDWIDTH = 12500;
+    private static final int CHANNEL_SAMPLE_RATE = CHANNEL_BANDWIDTH * 2;
     private static final double CHANNEL_OVERSAMPLING = 2.0;
 
     private Tuner mTuner;
     private List<PolyphaseChannelSource> mChannelSources = new CopyOnWriteArrayList<>();
     private ChannelizerConfiguration mChannelizerConfiguration;
+    private ComplexPolyphaseChannelizerM2 mPolyphaseChannelizer;
 
     /**
-     * Provides access to Digital Drop Channel (DDC) sources from the tuner.  Incorporates a polyphase channelizer
+     * Provides access to Digital Drop Channel (DDC) sources from a tuner.  Incorporates a polyphase channelizer
      * with downstream channel and upstream tuner management.
      *
      * @param tuner providing broadband sample buffers
      */
-    public Channelizer(Tuner tuner)
+    public PolyphaseChannelManager(Tuner tuner)
     {
-        mTuner = tuner;
+        if(tuner == null)
+        {
+            throw new IllegalArgumentException("Tuner argument cannot be null");
+        }
 
         int sampleRate = mTuner.getTunerController().getSampleRate();
 
-        if(sampleRate % 25000 != 0)
+        //Ensure that tuner sample rate is a multiple of channel sample rate since polyphase channelizer is M2
+        if(sampleRate % (CHANNEL_SAMPLE_RATE) != 0)
         {
-            throw new IllegalArgumentException("Tuner sample rate [" + sampleRate + "] must be a multiple of 25 kHz");
+            throw new IllegalArgumentException("Tuner sample rate [" + sampleRate + "] must be a multiple of " +
+                CHANNEL_SAMPLE_RATE + " Hz");
         }
+
+        mTuner = tuner;
 
         int channelCount = sampleRate / CHANNEL_BANDWIDTH;
 
@@ -75,22 +88,41 @@ public class Channelizer implements ISourceEventProcessor, Listener<SourceEvent>
      */
     public Source getChannel(TunerChannel tunerChannel)
     {
+        PolyphaseChannelSource channelSource = null;
+
+        IPolyphaseChannelOutputProcessor outputProcessor = null;
+
         try
         {
             List<Integer> polyphaseIndexes = mChannelizerConfiguration.getPolyphaseChannelIndexes(tunerChannel);
 
-
-
+            switch(polyphaseIndexes.size())
+            {
+                case 1:
+                    outputProcessor = new OneChannelOutputProcessor(CHANNEL_SAMPLE_RATE, polyphaseIndexes);
+                    break;
+                case 2:
+                    outputProcessor = new TwoChannelOutputProcessor(CHANNEL_SAMPLE_RATE, polyphaseIndexes);
+                    break;
+                default:
+                    //TODO: create output processor for greater than 2 input channels
+                    break;
+            }
         }
         catch(IllegalArgumentException iae)
         {
             mLog.info("Can't provide DDC for " + tunerChannel.toString() + " due to channelizer frequency [" +
-                " due to channelizer frequency [" + mChannelizerConfiguration.getCenterFrequency() +
-                "] and sample rate [" + (mChannelizerConfiguration.getChannelCount() *
-                mChannelizerConfiguration.getChannelBandwidth()) + "]");
+                mChannelizerConfiguration.getCenterFrequency() + "] and sample rate [" +
+                (mChannelizerConfiguration.getChannelCount() * mChannelizerConfiguration.getChannelBandwidth()) + "]");
         }
 
-        return null;
+        if(outputProcessor != null)
+        {
+            channelSource = new PolyphaseChannelSource(tunerChannel, outputProcessor, this);
+            mChannelSources.add(channelSource);
+        }
+
+        return channelSource;
     }
 
     /**
@@ -101,17 +133,17 @@ public class Channelizer implements ISourceEventProcessor, Listener<SourceEvent>
      */
     private void startChannelSource(PolyphaseChannelSource channelSource)
     {
-        if(mChannelSources.isEmpty())
-        {
-            //TODO: start the tuner
-        }
+        mPolyphaseChannelizer.addChannel(channelSource);
 
-        mChannelSources.add(channelSource);
+        if(mPolyphaseChannelizer.getRegisteredChannelCount() == 1)
+        {
+            mTuner.addListener(mPolyphaseChannelizer);
+        }
     }
 
     /**
      * Stops/removes the channel source from receiving channelized sample buffers and deregisters from the tuner
-     * if this is the last channel being sourced.
+     * when this is the last channel being sourced.
      *
      * @param channelSource to stop
      */
@@ -119,15 +151,9 @@ public class Channelizer implements ISourceEventProcessor, Listener<SourceEvent>
     {
         mChannelSources.remove(channelSource);
 
-        if(mChannelSources.isEmpty())
+        if(mPolyphaseChannelizer.getRegisteredChannelCount() == 0)
         {
-            //TODO: stop the tuner
-        }
-
-        if(mTuner != null)
-        {
-            //TODO: change the tuner to accept a remove(TunerChannel) method
-//            mTuner.remove(channel.getTunerChannel());
+            mTuner.removeListener(mPolyphaseChannelizer);
         }
     }
 

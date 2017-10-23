@@ -19,6 +19,7 @@
 package dsp.filter.channelizer;
 
 import channel.heartbeat.Heartbeat;
+import dsp.filter.channelizer.output.IPolyphaseChannelOutputProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sample.Listener;
@@ -36,6 +37,7 @@ public class PolyphaseChannelSource extends ComplexChannelSource
     private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelSource.class);
 
     private TunerChannel mTunerChannel;
+    private IPolyphaseChannelOutputProcessor mPolyphaseChannelOutputProcessor;
     private long mTunerCenterFrequency;
     private int mUpstreamSampleRate;
     private int mChannelSampleRate;
@@ -49,12 +51,16 @@ public class PolyphaseChannelSource extends ComplexChannelSource
      * translated and decimated to a single channel.
      *
      * @param tunerChannel - requested output tuner channel frequency and bandwidth.
+     * @param outputProcessor - to process polyphase channelizer channel results into a channel stream
+     * @param upstreamSourceEventProcessor to handle requests for start/stop sample flow and frequency corrections
      */
-    public PolyphaseChannelSource(ISourceEventProcessor upstreamSourceEventProcessor, TunerChannel tunerChannel)
+    public PolyphaseChannelSource(TunerChannel tunerChannel, IPolyphaseChannelOutputProcessor outputProcessor,
+                                  ISourceEventProcessor upstreamSourceEventProcessor)
     {
         super(upstreamSourceEventProcessor);
 
         mTunerChannel = tunerChannel;
+        mPolyphaseChannelOutputProcessor = outputProcessor;
     }
 
     /**
