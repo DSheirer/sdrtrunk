@@ -20,6 +20,8 @@ package dsp.filter.channelizer.output;
 
 import sample.complex.IComplexSampleListener;
 
+import java.util.List;
+
 public interface IPolyphaseChannelOutputProcessor
 {
     /**
@@ -37,4 +39,16 @@ public interface IPolyphaseChannelOutputProcessor
      * @param frequencyCorrection correction value
      */
     void setFrequencyCorrection(long frequencyCorrection);
+
+    /**
+     * Indicates the number of input channels processed by this output processor
+     * @return
+     */
+    int getInputChannelCount();
+
+    /**
+     * Updates the input polyphase channel index(es) used by this output processor
+     * @param indexes
+     */
+    void setPolyphaseChannelIndices(List<Integer> indexes);
 }

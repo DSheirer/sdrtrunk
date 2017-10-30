@@ -25,9 +25,9 @@ import source.tuner.TunerChannel;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ChannelizerConfiguration
+public class ChannelIndexCalculator
 {
-    private final static Logger mLog = LoggerFactory.getLogger(ChannelizerConfiguration.class);
+    private final static Logger mLog = LoggerFactory.getLogger(ChannelIndexCalculator.class);
 
     private long mCenterFrequency;
     private int mChannelCount;
@@ -35,16 +35,15 @@ public class ChannelizerConfiguration
     private double mOversampling = 1.0;
 
     /**
-     * Configuration details for a polyphase channelizer that can be used to identify which polyphase
-     * channelizer output channel(s) should be processed to produce an output channel of a specified
-     * center frequency and channel sample rate/bandwidth.
+     * Calculates the channel index(es) from a polyphase channelizer output to source a DDC polyphase channel source
+     * with a specified channel center frequency and bandwidth.
      *
      * @param centerFrequency
      * @param channelCount
      * @param channelBandwidth
      * @param oversampling set to 1.0 for no oversample, or greater than 1.0 for oversampling
      */
-    public ChannelizerConfiguration(long centerFrequency, int channelCount, int channelBandwidth, double oversampling)
+    public ChannelIndexCalculator(long centerFrequency, int channelCount, int channelBandwidth, double oversampling)
     {
         mCenterFrequency = centerFrequency;
         mChannelCount = channelCount;
@@ -289,19 +288,19 @@ public class ChannelizerConfiguration
 
         int channelCount = 10;
 
-        ChannelizerConfiguration channelizerConfiguration =
-            new ChannelizerConfiguration(100062500, channelCount, 12500, 2.0);
+        ChannelIndexCalculator channelIndexCalculator =
+            new ChannelIndexCalculator(100062500, channelCount, 12500, 2.0);
 
         for(int x = 0; x < channelCount; x++)
         {
-            mLog.debug("Channel " + x + ": " + channelizerConfiguration.getMinimumFrequencyForChannelIndex(x) + " - " +
-                channelizerConfiguration.getMaximumFrequencyForChannelIndex(x) +
-                " Center: " + channelizerConfiguration.getCenterFrequencyForChannelIndex(x));
+            mLog.debug("Channel " + x + ": " + channelIndexCalculator.getMinimumFrequencyForChannelIndex(x) + " - " +
+                channelIndexCalculator.getMaximumFrequencyForChannelIndex(x) +
+                " Center: " + channelIndexCalculator.getCenterFrequencyForChannelIndex(x));
         }
 
         TunerChannel tunerChannel = new TunerChannel(100006250, 12500);
 
-        List<Integer> indices = channelizerConfiguration.getPolyphaseChannelIndexes(tunerChannel);
+        List<Integer> indices = channelIndexCalculator.getPolyphaseChannelIndexes(tunerChannel);
 
         mLog.debug("Indices: " + indices);
 

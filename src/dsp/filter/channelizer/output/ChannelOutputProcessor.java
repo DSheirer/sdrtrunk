@@ -23,18 +23,27 @@ import sample.complex.Complex;
 
 public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputProcessor
 {
+    private int mInputChannelCount;
     private Oscillator mFrequencyCorrectionMixer;
 
     /**
      * Base class for polyphase channelizer output channel processing.  Provides built-in frequency translation
      * oscillator support to apply frequency correction to the channel sample stream as requested by sample consumer.
      *
+     * @param inputChannelCount is the number of input channels for this output processor
      * @param sampleRate of the output channel.  This is used to match the oscillator's sample rate to the output
      * channel sample rate for frequency translation/correction.
      */
-    public ChannelOutputProcessor(int sampleRate)
+    public ChannelOutputProcessor(int inputChannelCount, int sampleRate)
     {
+        mInputChannelCount = inputChannelCount;
         mFrequencyCorrectionMixer = new Oscillator(0, sampleRate);
+    }
+
+    @Override
+    public int getInputChannelCount()
+    {
+        return mInputChannelCount;
     }
 
     /**

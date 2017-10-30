@@ -64,6 +64,33 @@ public class PolyphaseChannelSource extends ComplexChannelSource
     }
 
     /**
+     * Channel output processor used by this channel source.
+     */
+    public IPolyphaseChannelOutputProcessor getPolyphaseChannelOutputProcessor()
+    {
+        return mPolyphaseChannelOutputProcessor;
+    }
+
+    /**
+     * Updates the output processor for this channel source
+     */
+    public void setPolyphaseChannelOutputProcessor(IPolyphaseChannelOutputProcessor outputProcessor)
+    {
+        synchronized(mPolyphaseChannelOutputProcessor)
+        {
+            mPolyphaseChannelOutputProcessor = outputProcessor;
+        }
+    }
+
+    /**
+     * Tuner channel sourced by this channel source.
+     */
+    public TunerChannel getTunerChannel()
+    {
+        return mTunerChannel;
+    }
+
+    /**
      * Process source event notifications received from upstream source provider and source event requests
      * received from downstream consumers.
      *

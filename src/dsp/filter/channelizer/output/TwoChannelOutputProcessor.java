@@ -38,7 +38,7 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
     {
         //Set the frequency correction oscillator to 2 x output sample rate since we'll be correcting the frequency
         //after synthesizing both input channels
-        super(sampleRate * 2);
+        super(2, sampleRate * 2);
         setPolyphaseChannelIndices(channelIndexes);
     }
 

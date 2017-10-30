@@ -35,7 +35,7 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
      */
     public OneChannelOutputProcessor(int sampleRate, List<Integer> channelIndexes)
     {
-        super(sampleRate);
+        super(1, sampleRate);
         setPolyphaseChannelIndices(channelIndexes);
     }
 
