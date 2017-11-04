@@ -1,4 +1,6 @@
 <configuration>
+  <conversionRule conversionWord="memory_usage" converterClass="util.MemoryUsageLogger" />
+
   <timestamp key="appstart" datePattern="HHmmss"/>
 
   <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -9,7 +11,7 @@
       <maxHistory>10</maxHistory>
 	</rollingPolicy>
     <encoder>
-      <pattern>%-25(%d{yyyyMMdd HHmmss.SSS} [%thread]) %-5level %logger{30} - %msg%n</pattern>
+      <pattern>%-25(%d{yyyyMMdd HHmmss.SSS} [%thread]) %-5level %logger{30} - %msg  %memory_usage%n</pattern>
     </encoder>
   </appender>
 
@@ -19,7 +21,7 @@
 
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
-      <pattern>%-12(%d{HH:mm:ss.SSS}) %-5level %logger{25} - %msg%n</pattern>
+      <pattern>%-12(%d{HH:mm:ss.SSS}) %-5level %logger{25} - %msg  %memory_usage%n</pattern>
     </encoder>
   </appender>
           

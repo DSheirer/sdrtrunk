@@ -68,7 +68,7 @@ public enum BroadcastState
     /**
      * Specified mount point is already in use
      */
-    MOUNT_POINT_IN_USE("Mount Point In Use", true),
+    MOUNT_POINT_IN_USE("Mount Point In Use", false),
 
     /**
      * Server is not known or reachable
