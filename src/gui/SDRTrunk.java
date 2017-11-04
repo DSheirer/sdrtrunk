@@ -33,6 +33,7 @@ import icon.IconManager;
 import map.MapService;
 import module.log.EventLogManager;
 import net.miginfocom.swing.MigLayout;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import playlist.PlaylistManager;
@@ -80,16 +81,16 @@ public class SDRTrunk implements Listener<TunerEvent>
 
     public SDRTrunk()
     {
-        mLog.info("");
         mLog.info("*******************************************************************");
         mLog.info("**** sdrtrunk: a trunked radio and digital decoding application ***");
         mLog.info("****  website: https://github.com/dsheirer/sdrtrunk             ***");
         mLog.info("*******************************************************************");
-        mLog.info("");
-        mLog.info("Host CPU Cores: " + Runtime.getRuntime().availableProcessors());
-        mLog.info("Host Memory Total: " + Runtime.getRuntime().totalMemory());
-        mLog.info("Host Memory Max: " + Runtime.getRuntime().maxMemory());
-        mLog.info("Host Memory Free: " + Runtime.getRuntime().freeMemory());
+        mLog.info("Memory Logging Format: [Used/Allocated PercentUsed%]");
+        mLog.info("Host CPU Cores:        " + Runtime.getRuntime().availableProcessors());
+        mLog.info("Host OS Name:          " + System.getProperty("os.name"));
+        mLog.info("Host OS Arch:          " + System.getProperty("os.arch"));
+        mLog.info("Host OS Version:       " + System.getProperty("os.version"));
+        mLog.info("Host Max Java Memory:  " + FileUtils.byteCountToDisplaySize(Runtime.getRuntime().maxMemory()));
 
         //Setup the application home directory
         Path home = getHomePath();
