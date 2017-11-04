@@ -325,6 +325,10 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                     {
                         setBroadcastState(BroadcastState.MOUNT_POINT_IN_USE);
                     }
+                    else if(message.contains("Content-Type: text/html"))
+                    {
+                        //Disregard ... this normally follows the mount point in use error
+                    }
                     else if(message.contains("Invalid Password") ||
                         message.contains("Authentication Required"))
                     {
