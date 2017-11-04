@@ -1,5 +1,13 @@
+0.3.2 20171105
+ - Resolves issue with tuner frequency adjustments that was causing channel processing
+   to lockup and show persistent 'overflow' state in each channel status
+ - Resolves issue with broadcastify 'mountpoint-in-use' error handling and updates
+   memory usage logging
 
-0.3.0-beta1 20170129
+0.3.1 20171009
+ - Resolves Java 9 incompatibility issues
+
+0.3.0 20170922
  - REQUIRES: Java 8 (or newer) for compatibility and eventual changeover to JavaFX
  - FEATURE: audio streaming - adds capability to stream to multiple remote broadcast
    servers (Broadcastify, Icecast v2.3 and v2.4+, and Shoutcast V1 and V2).  Each
