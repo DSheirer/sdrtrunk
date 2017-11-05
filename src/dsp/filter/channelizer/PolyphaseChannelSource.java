@@ -23,27 +23,33 @@ import dsp.filter.channelizer.output.IPolyphaseChannelOutputProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sample.Listener;
-import sample.OverflowableTransferQueue;
 import sample.complex.ComplexBuffer;
-import sample.real.IOverflowListener;
+import sample.complex.ComplexToComplexBufferAssembler;
+import source.ComplexSource;
 import source.ISourceEventProcessor;
+import source.Source;
 import source.SourceEvent;
 import source.SourceException;
-import source.tuner.ComplexChannelSource;
 import source.tuner.TunerChannel;
 
-public class PolyphaseChannelSource extends ComplexChannelSource
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+
+public class PolyphaseChannelSource extends ComplexSource implements ISourceEventProcessor
 {
     private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelSource.class);
 
     private TunerChannel mTunerChannel;
-    private IPolyphaseChannelOutputProcessor mPolyphaseChannelOutputProcessor;
-    private long mTunerCenterFrequency;
-    private int mUpstreamSampleRate;
     private int mChannelSampleRate;
-    private int mChannelCount;
-    private int mOutputFrequencyCorrection;
-    private ChannelBufferProcessor mProcessor = new ChannelBufferProcessor();
+
+    private DownstreamSourceEventHandler mDownstreamSourceEventHandler = new DownstreamSourceEventHandler();
+    private UpstreamSourceEventHandler mUpstreamSourceEventHandler;
+
+    private ComplexToComplexBufferAssembler mComplexBufferAssembler = new ComplexToComplexBufferAssembler(2500);
+    private IPolyphaseChannelOutputProcessor mPolyphaseChannelOutputProcessor;
+    private ChannelResultsProcessor mChannelResultsProcessor;
+    private ScheduledFuture<?> mChannelResultsProcessorFuture;
 
     /**
      * Polyphase channelizer channel implementation.  Adapts the channel array output samples from the polyphase
@@ -52,47 +58,116 @@ public class PolyphaseChannelSource extends ComplexChannelSource
      *
      * @param tunerChannel - requested output tuner channel frequency and bandwidth.
      * @param outputProcessor - to process polyphase channelizer channel results into a channel stream
-     * @param upstreamSourceEventProcessor to handle requests for start/stop sample flow and frequency corrections
+     * @param externalEventListener to process sample stream start/stop requests
      */
     public PolyphaseChannelSource(TunerChannel tunerChannel, IPolyphaseChannelOutputProcessor outputProcessor,
-                                  ISourceEventProcessor upstreamSourceEventProcessor)
+                                  Listener<SourceEvent> externalEventListener, int channelSampleRate)
     {
-        super(upstreamSourceEventProcessor);
-
         mTunerChannel = tunerChannel;
         mPolyphaseChannelOutputProcessor = outputProcessor;
+        mUpstreamSourceEventHandler = new UpstreamSourceEventHandler(externalEventListener);;
+        mChannelSampleRate = channelSampleRate;
     }
 
     /**
-     * Channel output processor used by this channel source.
+     * Registers the listener to receive complex sample buffers from this channel source
      */
-    public IPolyphaseChannelOutputProcessor getPolyphaseChannelOutputProcessor()
+    @Override
+    public void setListener(Listener<ComplexBuffer> listener)
     {
-        return mPolyphaseChannelOutputProcessor;
+        mComplexBufferAssembler.setListener(listener);
     }
 
     /**
-     * Updates the output processor for this channel source
+     * Removes the listener from receiving complex sample buffers from this channel source
      */
-    public void setPolyphaseChannelOutputProcessor(IPolyphaseChannelOutputProcessor outputProcessor)
+    @Override
+    public void removeListener(Listener<ComplexBuffer> listener)
     {
-        synchronized(mPolyphaseChannelOutputProcessor)
+        mComplexBufferAssembler.setListener(null);
+    }
+
+    /**
+     * Starts scheduled thread pool processing of the inbound polyphase channel results buffer to produce channelized
+     * complex sample buffer output for broadcast to a registered complex sample buffer listener.
+     *
+     * @param executor to use when scheduling a buffer processor
+     */
+    @Override
+    public void start(ScheduledExecutorService executor)
+    {
+        if(mUpstreamSourceEventHandler != null)
         {
-            mPolyphaseChannelOutputProcessor = outputProcessor;
+            mUpstreamSourceEventHandler.broadcast(SourceEvent.startSampleStream(PolyphaseChannelSource.this));
         }
+
+        mChannelResultsProcessor = new ChannelResultsProcessor();
+
+        if(mChannelResultsProcessorFuture != null)
+        {
+            mChannelResultsProcessorFuture.cancel(true);
+            mLog.error("An existing channel results processor scheduled future was cancelled");
+        }
+
+        //Schedule the results processor to run every 100 milliseconds
+        mChannelResultsProcessorFuture =
+            executor.scheduleAtFixedRate(mChannelResultsProcessor, 0, 100, TimeUnit.MILLISECONDS);
     }
 
     /**
-     * Tuner channel sourced by this channel source.
+     * Stops scheduled thread pool processing of the inbound polyphase channel results buffer to produce channelized
+     * complex sample buffer output for broadcast to a registered complex sample buffer listener.
      */
-    public TunerChannel getTunerChannel()
+    @Override
+    public void stop()
     {
-        return mTunerChannel;
+        if(mUpstreamSourceEventHandler != null)
+        {
+            mUpstreamSourceEventHandler.broadcast(SourceEvent.stopSampleStream(PolyphaseChannelSource.this));
+        }
+
+        if(mChannelResultsProcessorFuture != null)
+        {
+            mChannelResultsProcessorFuture.cancel(true);
+            mChannelResultsProcessorFuture = null;
+        }
+
+        mChannelResultsProcessor = null;
+    }
+
+
+    /**
+     * Module-level ISourceEventListener interface implementation for processing downstream events
+     */
+    @Override
+    public Listener<SourceEvent> getSourceEventListener()
+    {
+        return mDownstreamSourceEventHandler;
     }
 
     /**
-     * Process source event notifications received from upstream source provider and source event requests
-     * received from downstream consumers.
+     * Module-level ISourceEventProvider interface implementation, sets the listener to receive downstream module
+     * level source events from this source
+     */
+    @Override
+    public void setSourceEventListener(Listener<SourceEvent> listener)
+    {
+        mDownstreamSourceEventHandler.setDownstreamEventListener(listener);
+    }
+
+    /**
+     * Module-level ISourceEventProvider interface implementation, removes the listener from receiving downstream module
+     * level source events from this source
+     */
+    @Override
+    public void removeSourceEventListener()
+    {
+        mDownstreamSourceEventHandler.removeDownstreamEventListener();
+    }
+
+    /**
+     * ISourceEventProcessor implementation for processing source events from the external polyphase channel manager
+     * and/or tuner providing samples to the polphase channelizer implementation.
      *
      * @param sourceEvent containing a request or notification
      * @throws SourceException if there are any errors while processing the source event
@@ -100,188 +175,240 @@ public class PolyphaseChannelSource extends ComplexChannelSource
     @Override
     public void process(SourceEvent sourceEvent) throws SourceException
     {
-        switch(sourceEvent.getEvent())
+        mUpstreamSourceEventHandler.receive(sourceEvent);
+    }
+
+    /**
+     * Channel output processor used by this channel source to convert polyphase channel results into a specific
+     * channel complex buffer output stream.
+     */
+    public IPolyphaseChannelOutputProcessor getPolyphaseChannelOutputProcessor()
+    {
+        return mPolyphaseChannelOutputProcessor;
+    }
+
+    /**
+     * Sets/updates the output processor for this channel source, replacing the existing output processor.
+     */
+    public void setPolyphaseChannelOutputProcessor(IPolyphaseChannelOutputProcessor outputProcessor)
+    {
+        //Lock on the channel output processor to block the channel results processor thread from servicing the
+        //channel output processor's buffer while we change out the processors.
+        synchronized(mPolyphaseChannelOutputProcessor)
         {
-            case NOTIFICATION_CHANNEL_SAMPLE_RATE_CHANGE:
-                setChannelSampleRate(sourceEvent.getValue().intValue());
-                break;
-            case NOTIFICATION_FREQUENCY_CHANGE:
-                mTunerCenterFrequency = sourceEvent.getValue().longValue();
-                updateInputConfiguration();
-                break;
-            case NOTIFICATION_SAMPLE_RATE_CHANGE:
-                setUpstreamSampleRate(sourceEvent.getValue().intValue());
-                updateInputConfiguration();
-                break;
-            case REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
-                setFrequencyCorrection(sourceEvent.getValue().intValue());
-                break;
+            IPolyphaseChannelOutputProcessor existingProcessor = mPolyphaseChannelOutputProcessor;
+
+            //Swap out the processor so that incoming samples can accumulate in the new channel output processor
+            mPolyphaseChannelOutputProcessor = outputProcessor;
+
+            //Fully process the residual channel results buffer of the previous channel output processor
+            if(existingProcessor != null)
+            {
+                existingProcessor.processChannelResults(mComplexBufferAssembler);
+            }
         }
     }
 
     /**
-     * Process the array samples for each of the output channels from the polyphase channelizer.
-     * @param channelsBuffer
+     * Tuner channel that is being sourced by this polyphase channel source.
      */
-    public void processChannels(float[] channelsBuffer)
+    public TunerChannel getTunerChannel()
     {
-        mProcessor.process(channelsBuffer);
+        return mTunerChannel;
     }
 
     /**
-     * Updates current processing configuration any time there is a change in tuner center frequency
-     * or tuner sample rate.
+     * Primary method for receiving channel results output from a polyphase channelizer.  The results array will be
+     * queued for processing to extract the target channel samples, process them for frequency correction and/or
+     * channel aggregation, and dispatch the results to the downstream sample listener/consumer.
+     *
+     * @param channelResultsBuffer containing the polyphase channelizer output for a single complex sample period.
      */
-    private void updateInputConfiguration()
+    public void receiveChannelResults(float[] channelResultsBuffer)
     {
-
+        mPolyphaseChannelOutputProcessor.receiveChannelResults(channelResultsBuffer);
     }
 
     /**
      * Downstream sample rate
      *
      * @return sample rate in Hertz
-     * @throws SourceException if this method is accessed before the channel count is established
+     * @throws SourceException never
      */
     @Override
     public int getSampleRate() throws SourceException
     {
-        if(mChannelSampleRate > 0)
-        {
-            return mChannelSampleRate;
-        }
-
-        throw new SourceException("Channel sample rate has not been set.");
+        return mChannelSampleRate;
     }
 
     /**
-     * Sets the downstream channel sample rate.  Since oversampling may occur in the upstream channelizer, we can't
-     * rely on simply dividing the upstream sample rate by the number of channels.  Thus, we required the upstream
-     * channelizer to tell us the exact channel sample rate.
+     * Center tuned frequency for this channel.
      *
-     * @param channelSampleRate in hertz
+     * @return frequency in hertz.
+     * @throws SourceException never
      */
-    private void setChannelSampleRate(int channelSampleRate)
-    {
-        mChannelSampleRate = channelSampleRate;
-
-        //Translate the upstream channel sample rate event into a downstream sample rate change event
-        broadcast(SourceEvent.sampleRateChange(mChannelSampleRate));
-    }
-
-    /**
-     * Sets the input sample rate and broadcasts a source change event to the downstream listener
-     * @param sampleRate from the upstream source
-     */
-    private void setUpstreamSampleRate(int sampleRate)
-    {
-        mUpstreamSampleRate = sampleRate;
-
-        try
-        {
-            broadcast(SourceEvent.sampleRateChange(getSampleRate()));
-        }
-        catch(SourceException se)
-        {
-            mLog.error("Upstream sample rate changed - couldn't broadcast channel sample rate change event " +
-                "to downstream channel", se);
-        }
-    }
-
-    /**
-     * Sets the polyphase channel count.
-     * @param channelCount number of channels being processed by the polyphase channelizer
-     */
-    private void setChannelCount(int channelCount)
-    {
-        mChannelCount = channelCount;
-
-        try
-        {
-            broadcast(SourceEvent.sampleRateChange(getSampleRate()));
-        }
-        catch(SourceException se)
-        {
-            mLog.error("Polyphase channel count changed - couldn't broadcast channel sample rate change event " +
-                "to downstream channel", se);
-        }
-    }
-
     @Override
     public long getFrequency() throws SourceException
     {
         return mTunerChannel.getFrequency();
     }
 
-    private void setFrequencyCorrection(int correction)
-    {
-        //TODO:
-        mLog.debug("Request for frequency correction: " + correction + " -- not yet implemented");
-    }
-
     @Override
     public void setHeartbeatListener(Listener<Heartbeat> listener)
     {
+        mLog.info("Polyphase channel source received request to set heartbeat listener");
         //TODO: implement this
     }
 
     @Override
     public void removeHeartbeatListener()
     {
+        mLog.info("Polyphase channel source received request to remove heartbeat listener");
         //TODO: implement this
     }
 
     @Override
     public void reset()
     {
-
+        mLog.info("Polyphase channel source received request to reset");
     }
 
 
     @Override
     public void dispose()
     {
-
+        mLog.info("Polyphase channel source received request to dispose");
     }
 
-    public class ChannelBufferProcessor implements Runnable
+    /**
+     * Adjusts the frequency correction value that is being applied to the channelized output stream by the
+     * polyphase channel output processor.
+     * @param value to apply for frequency correction in hertz
+     */
+    private void setFrequencyCorrection(long value)
     {
-        private OverflowableTransferQueue<float[]> mComplexChannelBuffers;
-
-        public ChannelBufferProcessor()
+        if(mPolyphaseChannelOutputProcessor != null)
         {
-            mComplexChannelBuffers = new OverflowableTransferQueue<>(500, 10);
-            mComplexChannelBuffers.setOverflowListener(new IOverflowListener()
-            {
-                @Override
-                public void sourceOverflow(boolean overflow)
-                {
-                    broadcastOverflowState(overflow);
-                }
-            });
+            mPolyphaseChannelOutputProcessor.setFrequencyCorrection(value);
+            mDownstreamSourceEventHandler.broadcast(SourceEvent.frequencyCorrectionChange(value));
         }
+    }
 
-        /**
-         * Enqueues the polyphase analysis filter's channel output for post channelizer mixing, filtering
-         * and resampling operations and buffers output for dispatch to downstream processing.
-         *
-         * @param channelsBuffer to enqueue for processing
-         */
-        public void process(float[] channelsBuffer)
-        {
-            mComplexChannelBuffers.offer(channelsBuffer);
-        }
-
+    /**
+     * Runnable for processing the incoming polyphase channelizer results queue and distributing the channel
+     * results to the registered complex sample listener
+     */
+    public class ChannelResultsProcessor implements Runnable
+    {
         @Override
         public void run()
         {
             try
             {
-//TODO: implement distribution to each channel
+                //Lock on the output processor so that it can't be changed out in the middle of processing
+                synchronized(mPolyphaseChannelOutputProcessor)
+                {
+                    mPolyphaseChannelOutputProcessor.processChannelResults(mComplexBufferAssembler);
+                }
             }
             catch(Throwable throwable)
             {
                 mLog.error("Error while processing polyphase channel samples", throwable);
+            }
+        }
+    }
+
+    public class UpstreamSourceEventHandler implements Listener<SourceEvent>
+    {
+        private Listener<SourceEvent> mExternalSourceEventListener;
+
+        /**
+         * Upstream source event processor for handling any source events generated by the polyphase channelizer that
+         * provides this polyphase channel source.
+         *
+         * @param externalSourceEventListener to receive requests for start/stop sample streams
+         */
+        public UpstreamSourceEventHandler(Listener<SourceEvent> externalSourceEventListener)
+        {
+            mExternalSourceEventListener = externalSourceEventListener;
+        }
+
+        /**
+         * Broadcasts the request source event to the external source event listener.  This listener is normally the
+         * polyphase channel manager.
+         *
+         * @param sourceEvent to broadcast
+         */
+        public void broadcast(SourceEvent sourceEvent)
+        {
+            if(mExternalSourceEventListener != null)
+            {
+                mExternalSourceEventListener.receive(sourceEvent);
+            }
+        }
+
+        /**
+         * Process source events received from the upstream (ie tuner or channelizer) sample provider.
+         * @param sourceEvent to process
+         */
+        @Override
+        public void receive(SourceEvent sourceEvent)
+        {
+            switch(sourceEvent.getEvent())
+            {
+                //Reset frequency correction anytime the upstream frequency or sample rate changes so that the
+                //downstream modules can reset and recalculate any needed frequency correction
+                case NOTIFICATION_FREQUENCY_CHANGE:
+                case NOTIFICATION_SAMPLE_RATE_CHANGE:
+                    setFrequencyCorrection(0);
+                    break;
+            }
+        }
+    }
+
+    /**
+     * Downstream source event handler implements the ISourceEventProvider and ISourceEventProcessor interfaces on
+     * for this module to handle broadcasting source events to other downstream modules and receiving requests from
+     * any downstream modules.
+     */
+    public class DownstreamSourceEventHandler implements Listener<SourceEvent>
+    {
+        private Listener<SourceEvent> mDownstreamEventListener;
+
+        public void broadcast(SourceEvent sourceEvent)
+        {
+            if(mDownstreamEventListener != null)
+            {
+                mDownstreamEventListener.receive(sourceEvent);
+            }
+        }
+
+        /**
+         * Sets the downstream event listener to receive source events from this channel source module
+         * @param listener to receive events
+         */
+        public void setDownstreamEventListener(Listener<SourceEvent> listener)
+        {
+            mDownstreamEventListener = listener;
+        }
+
+        public void removeDownstreamEventListener()
+        {
+            mDownstreamEventListener = null;
+        }
+
+        /**
+         * Process source events received from the downstream channel modules.
+         * @param sourceEvent to process
+         */
+        @Override
+        public void receive(SourceEvent sourceEvent)
+        {
+            switch(sourceEvent.getEvent())
+            {
+                case REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
+                    setFrequencyCorrection(sourceEvent.getValue().intValue());
+                    break;
             }
         }
     }

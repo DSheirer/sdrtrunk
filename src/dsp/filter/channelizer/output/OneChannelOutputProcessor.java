@@ -18,7 +18,7 @@
  ******************************************************************************/
 package dsp.filter.channelizer.output;
 
-import sample.complex.IComplexSampleListener;
+import sample.complex.ComplexSampleListener;
 
 import java.util.List;
 
@@ -65,7 +65,7 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
      * @param listener to receive the extracted, frequency-translated channel results
      */
     @Override
-    public void process(float[] channels, IComplexSampleListener listener)
+    public void process(float[] channels, ComplexSampleListener listener)
     {
         if(channels.length < mChannelOffset + 1)
         {

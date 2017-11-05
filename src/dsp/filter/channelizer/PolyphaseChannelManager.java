@@ -27,6 +27,7 @@ import sample.Listener;
 import source.ISourceEventProcessor;
 import source.Source;
 import source.SourceEvent;
+import source.SourceException;
 import source.tuner.Tuner;
 import source.tuner.TunerChannel;
 
@@ -44,6 +45,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor, Listener<
     private List<PolyphaseChannelSource> mChannelSources = new CopyOnWriteArrayList<>();
     private ChannelIndexCalculator mChannelIndexCalculator;
     private ComplexPolyphaseChannelizerM2 mPolyphaseChannelizer;
+    private ChannelSourceEventListener mChannelSourceEventListener = new ChannelSourceEventListener();
 
     /**
      * Polyphase Channel Manager is a DDC channel manager for a tuner.  This class provides DDC polyphase channel
@@ -101,7 +103,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor, Listener<
 
             if(outputProcessor != null)
             {
-                channelSource = new PolyphaseChannelSource(tunerChannel, outputProcessor, this);
+                channelSource = new PolyphaseChannelSource(tunerChannel, outputProcessor, this, CHANNEL_SAMPLE_RATE);
                 mChannelSources.add(channelSource);
             }
         }
@@ -162,45 +164,23 @@ public class PolyphaseChannelManager implements ISourceEventProcessor, Listener<
     }
 
     /**
-     * Processes source events from the tuner or from any of the child polyphase channel sources.
+     * Processes source event notifications from the tuner or source event requests from any of the child polyphase
+     * channel sources.
      */
     @Override
     public void process(SourceEvent sourceEvent)
     {
         switch(sourceEvent.getEvent())
         {
-            case REQUEST_START_SAMPLE_STREAM:
-                if(sourceEvent.hasSource() && sourceEvent.getSource() instanceof PolyphaseChannelSource)
-                {
-                    startChannelSource((PolyphaseChannelSource)sourceEvent.getSource());
-                }
-                else
-                {
-                    mLog.error("Request to start sample stream for unrecognized source: " +
-                        (sourceEvent.hasSource() ? sourceEvent.getSource().getClass() : "null source"));
-                }
-                //TODO: add the channel and register for samples from the tuner
-                break;
-            case REQUEST_STOP_SAMPLE_STREAM:
-                if(sourceEvent.hasSource() && sourceEvent.getSource() instanceof PolyphaseChannelSource)
-                {
-                    stopChannelSource((PolyphaseChannelSource)sourceEvent.getSource());
-                }
-                else
-                {
-                    mLog.error("Request to stop sample stream for unrecognized source: " +
-                        (sourceEvent.hasSource() ? sourceEvent.getSource().getClass() : "null source"));
-                }
-                break;
             case NOTIFICATION_FREQUENCY_CHANGE:
                 mChannelIndexCalculator.setCenterFrequency(sourceEvent.getValue().longValue());
-                updateOutputProcessors();
+                updateOutputProcessors(sourceEvent);
                 break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
                 int sampleRate = sourceEvent.getValue().intValue();
                 int channelCount = sampleRate / mChannelIndexCalculator.getChannelBandwidth();
                 mChannelIndexCalculator.setChannelCount(channelCount);
-                updateOutputProcessors();
+                updateOutputProcessors(sourceEvent);
                 break;
         }
     }
@@ -218,12 +198,28 @@ public class PolyphaseChannelManager implements ISourceEventProcessor, Listener<
      * Updates each of the output processors for any changes in the tuner's center frequency or sample rate, which
      * would cause the output processors to change the polyphase channelizer results channel(s) that the processor is
      * consuming
+     *
+     * @param sourceEvent that requires an update to the output processors
      */
-    private void updateOutputProcessors()
+    private void updateOutputProcessors(SourceEvent sourceEvent)
     {
         for(PolyphaseChannelSource channelSource: mChannelSources)
         {
             updateOutputProcessor(channelSource);
+
+            //Notify the channel source that the frequency or sample rate has changed so that it can reset
+            //any frequency correction value.
+            if(sourceEvent != null)
+            {
+                try
+                {
+                    channelSource.process(sourceEvent);
+                }
+                catch(SourceException se)
+                {
+                    mLog.error("Error while notifying polyphase channel source of a source event", se);
+                }
+            }
         }
     }
 
@@ -256,6 +252,45 @@ public class PolyphaseChannelManager implements ISourceEventProcessor, Listener<
                 "updated tuner center frequency and sample rate.  Stopping channel source", iae);
 
             stopChannelSource(channelSource);
+        }
+    }
+
+    /**
+     * Internal class for handling requests for start/stop sample stream from polyphase channel sources
+     */
+    private class ChannelSourceEventListener implements Listener<SourceEvent>
+    {
+        @Override
+        public void receive(SourceEvent sourceEvent)
+        {
+            switch(sourceEvent.getEvent())
+            {
+                case REQUEST_START_SAMPLE_STREAM:
+                    if(sourceEvent.hasSource() && sourceEvent.getSource() instanceof PolyphaseChannelSource)
+                    {
+                        startChannelSource((PolyphaseChannelSource)sourceEvent.getSource());
+                    }
+                    else
+                    {
+                        mLog.error("Request to start sample stream for unrecognized source: " +
+                            (sourceEvent.hasSource() ? sourceEvent.getSource().getClass() : "null source"));
+                    }
+                    break;
+                case REQUEST_STOP_SAMPLE_STREAM:
+                    if(sourceEvent.hasSource() && sourceEvent.getSource() instanceof PolyphaseChannelSource)
+                    {
+                        stopChannelSource((PolyphaseChannelSource)sourceEvent.getSource());
+                    }
+                    else
+                    {
+                        mLog.error("Request to stop sample stream for unrecognized source: " +
+                            (sourceEvent.hasSource() ? sourceEvent.getSource().getClass() : "null source"));
+                    }
+                    break;
+                default:
+                    mLog.error("Received unrecognized source event from polyphase channel source [" +
+                        sourceEvent.getEvent() + "]");
+            }
         }
     }
 }

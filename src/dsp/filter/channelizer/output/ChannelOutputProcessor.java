@@ -19,10 +19,26 @@
 package dsp.filter.channelizer.output;
 
 import dsp.mixer.Oscillator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import sample.OverflowableTransferQueue;
 import sample.complex.Complex;
+import sample.complex.ComplexSampleListener;
+import sample.real.IOverflowListener;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputProcessor
 {
+    private final static Logger mLog = LoggerFactory.getLogger(ChannelOutputProcessor.class);
+
+    private static final int OVERFLOW_THRESHOLD = 25000 * 3; //25 kHz * 3 seconds
+    private static final int RESET_THRESHOLD = (int)(OVERFLOW_THRESHOLD * .25); //reset at 25%
+
+    private OverflowableTransferQueue<float[]> mChannelResultsQueue;
+    private List<float[]> mChannelResultsToProcess = new ArrayList<>();
+
     private int mInputChannelCount;
     private Oscillator mFrequencyCorrectionMixer;
 
@@ -38,6 +54,67 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     {
         mInputChannelCount = inputChannelCount;
         mFrequencyCorrectionMixer = new Oscillator(0, sampleRate);
+        mChannelResultsQueue = new OverflowableTransferQueue<>(OVERFLOW_THRESHOLD, RESET_THRESHOLD);
+    }
+
+    @Override
+    public void receiveChannelResults(float[] channelResults)
+    {
+        mChannelResultsQueue.offer(channelResults);
+    }
+
+    /**
+     * Processes all enqueued polyphase channelizer results until the internal queue is empty
+     * @param listener to receive the processed channel results
+     */
+    @Override
+    public void processChannelResults(ComplexSampleListener listener)
+    {
+        try
+        {
+            mChannelResultsQueue.drainTo(mChannelResultsToProcess, 1000);
+
+            while(!mChannelResultsToProcess.isEmpty())
+            {
+                for(float[] channelResults: mChannelResultsToProcess)
+                {
+                    process(channelResults, listener);
+                }
+
+                mChannelResultsToProcess.clear();
+                mChannelResultsQueue.drainTo(mChannelResultsToProcess, 1000);
+            }
+        }
+        catch(Throwable throwable)
+        {
+            mLog.error("Error while processing polyphase channel samples", throwable);
+            mChannelResultsToProcess.clear();
+        }
+
+    }
+
+    /**
+     * Sub-class implementation to process one polyphase channelizer result array.
+     * @param channelResult to process
+     * @param listener to receive the channel complex sample
+     */
+    public abstract void process(float[] channelResult, ComplexSampleListener listener);
+
+
+    /**
+     * Sets the overflow listener to monitor the internal channelizer channel results queue overflow state
+     */
+    public void setOverflowListener(IOverflowListener listener)
+    {
+        mChannelResultsQueue.setOverflowListener(listener);
+    }
+
+    /**
+     * Removes the overflow listener from monitoring the internal channelizer channel results queue overflow state
+     */
+    public void removeOverflowListener(IOverflowListener listener)
+    {
+        mChannelResultsQueue.setOverflowListener(null);
     }
 
     @Override

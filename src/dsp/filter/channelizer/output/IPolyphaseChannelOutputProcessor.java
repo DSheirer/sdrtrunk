@@ -18,19 +18,24 @@
  ******************************************************************************/
 package dsp.filter.channelizer.output;
 
-import sample.complex.IComplexSampleListener;
+import sample.complex.ComplexSampleListener;
 
 import java.util.List;
 
 public interface IPolyphaseChannelOutputProcessor
 {
     /**
-     * Process the channel output channel results from the polyphase channelizer filter
+     * Receive and enqueue output results from the polyphase analysis channelizer
+     * @param channelResults to enqueue
+     */
+    void receiveChannelResults(float[] channelResults);
+
+    /**
+     * Process the channel output channel results queue and deliver the output to the listener
      *
-     * @param channels to process
      * @param listener to receive the processed channel results
      */
-    void process(float[] channels, IComplexSampleListener listener);
+    void processChannelResults(ComplexSampleListener listener);
 
     /**
      * Specifies the frequency correction (+/-) that should be applied to samples extracted from the polyphase

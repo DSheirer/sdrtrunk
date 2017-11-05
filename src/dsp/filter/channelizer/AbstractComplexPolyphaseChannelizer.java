@@ -94,7 +94,7 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<Co
     {
         for(PolyphaseChannelSource channel : mChannels)
         {
-            channel.processChannels(channels);
+            channel.receiveChannelResults(channels);
         }
     }
 
