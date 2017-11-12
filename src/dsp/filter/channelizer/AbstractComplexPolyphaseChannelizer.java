@@ -105,8 +105,11 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<Co
      */
     public void addChannel(PolyphaseChannelSource polyphaseChannelSource)
     {
-        mChannels.add(polyphaseChannelSource);
-        mSourceChangeBroadcaster.addListener(polyphaseChannelSource.getSourceEventListener());
+        if(polyphaseChannelSource != null && !mChannels.contains(polyphaseChannelSource))
+        {
+            mChannels.add(polyphaseChannelSource);
+            mSourceChangeBroadcaster.addListener(polyphaseChannelSource.getSourceEventListener());
+        }
     }
 
     /**
@@ -116,8 +119,11 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<Co
      */
     public void removeChannel(PolyphaseChannelSource polyphaseChannelSource)
     {
-        mChannels.remove(polyphaseChannelSource);
-        mSourceChangeBroadcaster.removeListener(polyphaseChannelSource.getSourceEventListener());
+        if(polyphaseChannelSource != null && mChannels.contains(polyphaseChannelSource))
+        {
+            mChannels.remove(polyphaseChannelSource);
+            mSourceChangeBroadcaster.removeListener(polyphaseChannelSource.getSourceEventListener());
+        }
     }
 
     /**

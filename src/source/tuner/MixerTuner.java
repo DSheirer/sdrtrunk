@@ -123,7 +123,7 @@ public abstract class MixerTuner extends Tuner implements Listener<ComplexBuffer
     {
 		super.removeListener( listener );
 		
-		if( mSampleListeners.isEmpty() )
+		if( !hasListeners() )
 		{
 			mComplexMixer.stop();
 		}

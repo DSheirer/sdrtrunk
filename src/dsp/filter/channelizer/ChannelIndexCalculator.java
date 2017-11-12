@@ -84,6 +84,17 @@ public class ChannelIndexCalculator
     }
 
     /**
+     * Updates the channel count using the sample rate argument to calculate the number of channels from the
+     * already established channel bandwidth.
+     *
+     * @param sampleRate to use for channel count
+     */
+    public void setSampleRate(int sampleRate)
+    {
+        setChannelCount(sampleRate / getChannelBandwidth());
+    }
+
+    /**
      * Channel bandwidth.  Note: this value may be smaller than the channel sample rate when oversampling
      * is being used.
      */

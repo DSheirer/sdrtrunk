@@ -18,10 +18,6 @@
  ******************************************************************************/
 package dsp.filter.channelizer;
 
-import dsp.filter.FilterFactory;
-import dsp.filter.Window;
-import dsp.filter.design.FilterDesignException;
-import dsp.mixer.LowPhaseNoiseOscillator;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,10 +26,11 @@ import sample.SampleType;
 import sample.complex.ComplexBuffer;
 import settings.SettingsManager;
 import source.ISourceEventProcessor;
+import source.SourceEvent;
 import source.SourceException;
 import source.tuner.TunerChannel;
 import source.tuner.configuration.TunerConfigurationModel;
-import source.SourceEvent;
+import source.tuner.test.TestTuner;
 import spectrum.DFTProcessor;
 import spectrum.DFTSize;
 import spectrum.SpectrumPanel;
@@ -44,9 +41,6 @@ import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class ChannelizerViewer extends JFrame
 {
@@ -58,16 +52,16 @@ public class ChannelizerViewer extends JFrame
     private SettingsManager mSettingsManager = new SettingsManager(new TunerConfigurationModel());
     private JPanel mPrimaryPanel;
     private JPanel mControlPanel;
-    private ChannelPanel mPrimarySpectrumPanel;
+    private PrimarySpectrumPanel mPrimarySpectrumPanel;
     private ChannelArrayPanel mChannelPanel;
-    private LowPhaseNoiseOscillator mOscillator;
     private int mChannelCount;
     private int mChannelsPerRow;
     private int mFilterTapsPerChannel;
     private int mSampleRate;
-    private int mToneFrequency;
+    private long mToneFrequency;
     private DFTSize mMainPanelDFTSize = DFTSize.FFT32768;
     private DFTSize mChannelPanelDFTSize = DFTSize.FFT00512;
+    private TestTuner mTestTuner;
 
     /**
      * GUI Test utility for researching polyphase channelizers.
@@ -82,7 +76,13 @@ public class ChannelizerViewer extends JFrame
         mFilterTapsPerChannel = tapsPerChannel;
 
         mSampleRate = mChannelCount * CHANNEL_BANDWIDTH;
-        mToneFrequency = (int)(CHANNEL_BANDWIDTH * 1); //Set to channel 1 as default
+
+        mTestTuner = new TestTuner();
+
+        mToneFrequency = mTestTuner.getTunerController().getFrequency() +
+            (int)(CHANNEL_BANDWIDTH * 1); //Set to channel 1 as default
+
+        mTestTuner.setToneFrequency(mToneFrequency);
 
         init();
     }
@@ -95,32 +95,6 @@ public class ChannelizerViewer extends JFrame
         setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
         setLocationRelativeTo(null);
         add(getPrimaryPanel());
-
-        mOscillator = new LowPhaseNoiseOscillator(mSampleRate, mToneFrequency);
-    }
-
-    public void start()
-    {
-        ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
-        scheduledExecutorService.scheduleAtFixedRate(new SampleGenerationTask(), 0, 50, TimeUnit.MILLISECONDS);
-    }
-
-    public void setToneFrequency(int frequency)
-    {
-        mOscillator.setFrequency(frequency);
-        mToneFrequency = frequency;
-    }
-
-    private void generateSamples()
-    {
-        int size = mSampleRate / CHANNEL_FFT_FRAME_RATE;
-
-        float[] samples = mOscillator.generate(size);
-
-        ComplexBuffer buffer = new ComplexBuffer(samples);
-
-        getChannelArrayPanel().receive(buffer);
-        getSpectrumPanel().receive(buffer);
     }
 
     private JPanel getPrimaryPanel()
@@ -137,13 +111,14 @@ public class ChannelizerViewer extends JFrame
         return mPrimaryPanel;
     }
 
-    private ChannelPanel getSpectrumPanel()
+    private PrimarySpectrumPanel getSpectrumPanel()
     {
         if(mPrimarySpectrumPanel == null)
         {
-//            mPrimarySpectrumPanel = new ChannelPanel(mSettingsManager, mSampleRate);
+            mPrimarySpectrumPanel = new PrimarySpectrumPanel(mSettingsManager, mSampleRate);
             mPrimarySpectrumPanel.setPreferredSize(new Dimension(1000, 200));
             mPrimarySpectrumPanel.setDFTSize(mMainPanelDFTSize);
+            mTestTuner.addListener(mPrimarySpectrumPanel);
         }
 
         return mPrimarySpectrumPanel;
@@ -157,9 +132,11 @@ public class ChannelizerViewer extends JFrame
             mControlPanel.setLayout(new MigLayout("insets 0 0 0 0", "", ""));
 
             mControlPanel.add(new JLabel("Tone:"), "align left");
-            int maximumFrequency = mSampleRate / 2;
+            int maximumFrequencyOffset = mSampleRate / 2;
+            long minimumFrequency = mTestTuner.getTunerController().getFrequency() - maximumFrequencyOffset;
+            long maximumFrequency = mTestTuner.getTunerController().getFrequency() + maximumFrequencyOffset;
 
-            SpinnerNumberModel model = new SpinnerNumberModel(mToneFrequency, -maximumFrequency, maximumFrequency,
+            SpinnerNumberModel model = new SpinnerNumberModel(mToneFrequency, minimumFrequency, maximumFrequency,
                 100 );
 
             model.addChangeListener(new ChangeListener()
@@ -167,8 +144,8 @@ public class ChannelizerViewer extends JFrame
                 @Override
                 public void stateChanged(ChangeEvent e)
                 {
-                    int frequency = model.getNumber().intValue();
-                    mOscillator.setFrequency(frequency);
+                    int toneFrequency = model.getNumber().intValue();
+                    mTestTuner.setToneFrequency(toneFrequency);
                 }
             });
 
@@ -190,45 +167,27 @@ public class ChannelizerViewer extends JFrame
     {
         if(mChannelPanel == null)
         {
-            float[] taps = null;
-
-            try
-            {
-                taps = getFilter();
-            }
-            catch(FilterDesignException fde)
-            {
-                mLog.debug("Couldn't design filter", fde);
-            }
-
-            mChannelPanel = new ChannelArrayPanel(taps);
+            mChannelPanel = new ChannelArrayPanel();
         }
 
         return mChannelPanel;
     }
 
-    private float[] getFilter() throws FilterDesignException
-    {
-        return FilterFactory.getSincChannelizer(CHANNEL_BANDWIDTH, mChannelCount, mFilterTapsPerChannel,
-            Window.WindowType.BLACKMAN_HARRIS_7, true);
-    }
+//    private float[] getFilter() throws FilterDesignException
+//    {
+//        return FilterFactory.getSincChannelizer(CHANNEL_BANDWIDTH, mChannelCount, mFilterTapsPerChannel,
+//            Window.WindowType.BLACKMAN_HARRIS_7, true);
+//    }
 
-    public class ChannelArrayPanel extends JPanel implements Listener<ComplexBuffer>
+    public class ChannelArrayPanel extends JPanel
     {
-        private ComplexPolyphaseChannelizer mPolyphaseChannelizer;
-        private ChannelDistributor mChannelDistributor;
-
-        public ChannelArrayPanel(float[] taps)
+        public ChannelArrayPanel()
         {
             int bufferSize = CHANNEL_BANDWIDTH / CHANNEL_FFT_FRAME_RATE;
             if(bufferSize % 2 == 1)
             {
                 bufferSize++;
             }
-
-            mPolyphaseChannelizer = new ComplexPolyphaseChannelizer(taps, mChannelCount, CHANNEL_BANDWIDTH);
-            mChannelDistributor = new ChannelDistributor(bufferSize, mChannelCount);
-//            mPolyphaseChannelizer.setChannelDistributor(mChannelDistributor);
 
             init();
         }
@@ -243,7 +202,8 @@ public class ChannelizerViewer extends JFrame
             for(int x = 0; x < mChannelCount; x++)
             {
                 //place the channels left and right of 10.0 MHz
-                long frequency = 10000000l + ((x * CHANNEL_BANDWIDTH) - halfSpectralBandwidth);
+                long frequency = mTestTuner.getTunerController().getFrequency() +
+                    ((x * CHANNEL_BANDWIDTH) - halfSpectralBandwidth);
                 ChannelPanel channelPanel = new ChannelPanel(mSettingsManager, CHANNEL_BANDWIDTH * 2, frequency, CHANNEL_BANDWIDTH);
                 channelPanel.setDFTSize(mChannelPanelDFTSize);
 
@@ -255,28 +215,17 @@ public class ChannelizerViewer extends JFrame
                 {
                     add(channelPanel, "grow,push");
                 }
-
-//                channelPanel.getPolyphaseChannelSource()
-
-                mChannelDistributor.addListener(x, channelPanel);
             }
-        }
-
-        @Override
-        public void receive(ComplexBuffer complexBuffer)
-        {
-            mPolyphaseChannelizer.receive(complexBuffer);
         }
     }
 
-    public class ChannelPanel extends JPanel implements Listener<ComplexBuffer>, ISourceEventProcessor
+    public class PrimarySpectrumPanel extends JPanel implements Listener<ComplexBuffer>, ISourceEventProcessor
     {
-        private PolyphaseChannelSource mPolyphaseChannelSource;
         private DFTProcessor mDFTProcessor = new DFTProcessor(SampleType.COMPLEX);
         private ComplexDecibelConverter mComplexDecibelConverter = new ComplexDecibelConverter();
         private SpectrumPanel mSpectrumPanel;
 
-        public ChannelPanel(SettingsManager settingsManager, int sampleRate, long frequency, int bandwidth)
+        public PrimarySpectrumPanel(SettingsManager settingsManager, int sampleRate)
         {
             setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
             mSpectrumPanel = new SpectrumPanel(settingsManager);
@@ -285,16 +234,6 @@ public class ChannelizerViewer extends JFrame
             mDFTProcessor.addConverter(mComplexDecibelConverter);
             mDFTProcessor.process(SourceEvent.sampleRateChange(sampleRate));
             mComplexDecibelConverter.addListener(mSpectrumPanel);
-
-            TunerChannel tunerChannel = new TunerChannel(frequency, bandwidth);
-            mPolyphaseChannelSource = new PolyphaseChannelSource(this, tunerChannel);
-            mPolyphaseChannelSource.setListener(mDFTProcessor);
-            mPolyphaseChannelSource.start(ThreadPool.SCHEDULED);
-        }
-
-        public PolyphaseChannelSource getPolyphaseChannelSource()
-        {
-            return mPolyphaseChannelSource;
         }
 
         public void setDFTSize(DFTSize dftSize)
@@ -315,12 +254,57 @@ public class ChannelizerViewer extends JFrame
         }
     }
 
-    public class SampleGenerationTask implements Runnable
+    public class ChannelPanel extends JPanel implements Listener<ComplexBuffer>, ISourceEventProcessor
     {
-        @Override
-        public void run()
+        private PolyphaseChannelSource mSource;
+        private DFTProcessor mDFTProcessor = new DFTProcessor(SampleType.COMPLEX);
+        private ComplexDecibelConverter mComplexDecibelConverter = new ComplexDecibelConverter();
+        private SpectrumPanel mSpectrumPanel;
+
+        public ChannelPanel(SettingsManager settingsManager, int sampleRate, long frequency, int bandwidth)
         {
-            generateSamples();
+            setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
+            mSpectrumPanel = new SpectrumPanel(settingsManager);
+            add(mSpectrumPanel);
+
+            mDFTProcessor.addConverter(mComplexDecibelConverter);
+            mDFTProcessor.process(SourceEvent.sampleRateChange(sampleRate));
+            mComplexDecibelConverter.addListener(mSpectrumPanel);
+
+            TunerChannel tunerChannel = new TunerChannel(frequency, bandwidth);
+            mSource = (PolyphaseChannelSource)mTestTuner.getChannelSource(tunerChannel);
+
+            if(mSource != null)
+            {
+                mSource.setListener(mDFTProcessor);
+                mSource.start(ThreadPool.SCHEDULED);
+            }
+            else
+            {
+                mLog.error("Couldn't get a source from the tuner for frequency: " + frequency);
+            }
+        }
+
+        public PolyphaseChannelSource getSource()
+        {
+            return mSource;
+        }
+
+        public void setDFTSize(DFTSize dftSize)
+        {
+            mDFTProcessor.setDFTSize(dftSize);
+        }
+
+        @Override
+        public void receive(ComplexBuffer complexBuffer)
+        {
+            mDFTProcessor.receive(complexBuffer);
+        }
+
+        @Override
+        public void process(SourceEvent event) throws SourceException
+        {
+            mLog.debug("Source Event!  Add handler support for this to channelizer viewer");
         }
     }
 
@@ -338,7 +322,6 @@ public class ChannelizerViewer extends JFrame
             public void run()
             {
                 frame.setVisible(true);
-                frame.start();
             }
         });
     }

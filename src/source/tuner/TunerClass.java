@@ -51,7 +51,8 @@ public enum TunerClass
 	TERRATEC_NOXON_REV2( TunerType.ELONICS_E4000, "0CCD", "00E0", "Terratec", "NOXON R2" ),
 	TERRATEC_T_STICK_PLUS( TunerType.ELONICS_E4000, "0CCD", "00D7", "Terratec", "T Stick Plus" ),
 	TWINTECH_UT40( TunerType.FITIPOWER_FC0013, "1B80", "D3A4", "Twintech", "UT-40" ),
-	ZAAPA_ZTMINDVBZP( TunerType.FITIPOWER_FC0012, "1B80", "D398", "Zaapa", "ZT-MINDVBZP" ), 
+	ZAAPA_ZTMINDVBZP( TunerType.FITIPOWER_FC0012, "1B80", "D398", "Zaapa", "ZT-MINDVBZP" ),
+	TEST_TUNER(TunerType.TEST, "0", "0", "ABC Tuners Inc.", "Model XYZ"),
 	UNKNOWN( TunerType.UNKNOWN, "0", "0", "Unknown Manufacturer", "Unknown Device" );
 	
 	private TunerType mTunerType;

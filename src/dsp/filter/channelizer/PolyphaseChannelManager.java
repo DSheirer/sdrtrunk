@@ -21,6 +21,7 @@ package dsp.filter.channelizer;
 import dsp.filter.channelizer.output.IPolyphaseChannelOutputProcessor;
 import dsp.filter.channelizer.output.OneChannelOutputProcessor;
 import dsp.filter.channelizer.output.TwoChannelOutputProcessor;
+import dsp.filter.design.FilterDesignException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sample.Listener;
@@ -34,28 +35,29 @@ import source.tuner.TunerChannel;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class PolyphaseChannelManager implements ISourceEventProcessor, Listener<SourceEvent>
+public class PolyphaseChannelManager implements Listener<SourceEvent>
 {
     private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelManager.class);
     private static final int CHANNEL_BANDWIDTH = 12500;
-    private static final int CHANNEL_SAMPLE_RATE = CHANNEL_BANDWIDTH * 2;
     private static final double CHANNEL_OVERSAMPLING = 2.0;
+    private static final int CHANNEL_SAMPLE_RATE = (int)(CHANNEL_BANDWIDTH * CHANNEL_OVERSAMPLING);
 
     private Tuner mTuner;
     private List<PolyphaseChannelSource> mChannelSources = new CopyOnWriteArrayList<>();
     private ChannelIndexCalculator mChannelIndexCalculator;
     private ComplexPolyphaseChannelizerM2 mPolyphaseChannelizer;
     private ChannelSourceEventListener mChannelSourceEventListener = new ChannelSourceEventListener();
+    private ScheduledBufferProcessor mBufferProcessor;
 
     /**
-     * Polyphase Channel Manager is a DDC channel manager for a tuner.  This class provides DDC polyphase channel
-     * sources and wraps a polyphase channelizer processing sample buffers produced by the tuner and distributing
-     * channelized sample buffers to each allocated DDC polyphase channel source.  This class is responsible for
-     * monitoring the tuner for changes in center frequency and/or sample rate and updating active DDC polyphase channel
-     * sources accordingly.  This class also monitors source event requests and notifications received from active DDC
-     * polyphase channel sources to adjust sample streams as required.
+     * Polyphase Channel Manager is a DDC channel manager and complex buffer queue/processor for a tuner.  This class
+     * provides DDC polyphase channel sources and wraps a polyphase channelizer processing sample buffers produced by
+     * the tuner and distributing channelized sample buffers to each allocated DDC polyphase channel source.  This
+     * class is responsible for monitoring the tuner for changes in center frequency and/or sample rate and updating
+     * active DDC polyphase channel sources accordingly.  This class also monitors source event requests and
+     * notifications received from active DDC polyphase channel sources to adjust sample streams as required.
      *
-     * @param tuner providing broadband sample buffers
+     * @param tuner providing complex sample buffers
      */
     public PolyphaseChannelManager(Tuner tuner)
     {
@@ -64,25 +66,29 @@ public class PolyphaseChannelManager implements ISourceEventProcessor, Listener<
             throw new IllegalArgumentException("Tuner argument cannot be null");
         }
 
+        mTuner = tuner;
+
         int sampleRate = mTuner.getTunerController().getSampleRate();
 
         //Ensure that tuner sample rate is a multiple of channel sample rate since polyphase channelizer is M2
         if(sampleRate % (CHANNEL_SAMPLE_RATE) != 0)
         {
-            throw new IllegalArgumentException("Tuner sample rate [" + sampleRate + "] must be a multiple of " +
+            throw new IllegalArgumentException("Tuner sample rate [" + sampleRate + "] must be an even multiple of " +
                 CHANNEL_SAMPLE_RATE + " Hz");
         }
 
-        mTuner = tuner;
-
-        int channelCount = sampleRate / CHANNEL_BANDWIDTH;
-
         long frequency = mTuner.getTunerController().getFrequency();
+        int channelCount = sampleRate / CHANNEL_BANDWIDTH;
 
         mChannelIndexCalculator = new ChannelIndexCalculator(frequency, channelCount, CHANNEL_BANDWIDTH,
             CHANNEL_OVERSAMPLING);
 
+        mBufferProcessor = new ScheduledBufferProcessor(500, 100, 100, 50);
+
+        updateChannelizer(sampleRate, null);
+
         mTuner.addSourceEventListener(this);
+
     }
 
     /**
@@ -103,7 +109,9 @@ public class PolyphaseChannelManager implements ISourceEventProcessor, Listener<
 
             if(outputProcessor != null)
             {
-                channelSource = new PolyphaseChannelSource(tunerChannel, outputProcessor, this, CHANNEL_SAMPLE_RATE);
+                channelSource = new PolyphaseChannelSource(tunerChannel, outputProcessor, mChannelSourceEventListener,
+                    CHANNEL_SAMPLE_RATE);
+
                 mChannelSources.add(channelSource);
             }
         }
@@ -117,7 +125,13 @@ public class PolyphaseChannelManager implements ISourceEventProcessor, Listener<
         return channelSource;
     }
 
-    private IPolyphaseChannelOutputProcessor getOutputProcessor(List<Integer> indexes) throws IllegalArgumentException
+    /**
+     * Creates a processor to process the channelizer channel indexes into a composite output stream providing
+     * channelized complex sample buffers to a registered source listener.
+     * @param indexes to target by the output processor
+     * @return output processor compatible with the number of indexes to monitor
+     */
+    private IPolyphaseChannelOutputProcessor getOutputProcessor(List<Integer> indexes)
     {
         switch(indexes.size())
         {
@@ -127,6 +141,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor, Listener<
                 return new TwoChannelOutputProcessor(CHANNEL_SAMPLE_RATE, indexes);
             default:
                 //TODO: create output processor for greater than 2 input channels
+                mLog.error("Request to create an output processor for unexpected channel index size:" + indexes.size());
                 return null;
         }
     }
@@ -139,11 +154,15 @@ public class PolyphaseChannelManager implements ISourceEventProcessor, Listener<
      */
     private void startChannelSource(PolyphaseChannelSource channelSource)
     {
-        mPolyphaseChannelizer.addChannel(channelSource);
-
-        if(mPolyphaseChannelizer.getRegisteredChannelCount() == 1)
+        synchronized(mBufferProcessor)
         {
-            mTuner.addListener(mPolyphaseChannelizer);
+            mPolyphaseChannelizer.addChannel(channelSource);
+
+            if(mPolyphaseChannelizer.getRegisteredChannelCount() == 1)
+            {
+                mTuner.addListener(mBufferProcessor);
+                mBufferProcessor.start();
+            }
         }
     }
 
@@ -155,43 +174,91 @@ public class PolyphaseChannelManager implements ISourceEventProcessor, Listener<
      */
     private void stopChannelSource(PolyphaseChannelSource channelSource)
     {
-        mChannelSources.remove(channelSource);
-
-        if(mPolyphaseChannelizer.getRegisteredChannelCount() == 0)
+        synchronized(mBufferProcessor)
         {
-            mTuner.removeListener(mPolyphaseChannelizer);
+            mChannelSources.remove(channelSource);
+
+            if(mPolyphaseChannelizer.getRegisteredChannelCount() == 0)
+            {
+                mTuner.removeListener(mBufferProcessor);
+                mBufferProcessor.stop();
+            }
         }
     }
 
     /**
-     * Processes source event notifications from the tuner or source event requests from any of the child polyphase
-     * channel sources.
-     */
-    @Override
-    public void process(SourceEvent sourceEvent)
-    {
-        switch(sourceEvent.getEvent())
-        {
-            case NOTIFICATION_FREQUENCY_CHANGE:
-                mChannelIndexCalculator.setCenterFrequency(sourceEvent.getValue().longValue());
-                updateOutputProcessors(sourceEvent);
-                break;
-            case NOTIFICATION_SAMPLE_RATE_CHANGE:
-                int sampleRate = sourceEvent.getValue().intValue();
-                int channelCount = sampleRate / mChannelIndexCalculator.getChannelBandwidth();
-                mChannelIndexCalculator.setChannelCount(channelCount);
-                updateOutputProcessors(sourceEvent);
-                break;
-        }
-    }
-
-    /**
-     * Implements the Listener<SourceEvent> interface by delegating to the process(sourceEvent) method.
+     * Implements the Listener<SourceEvent> interface for receiving notifications of frequency and sample rate
+     * changes from the tuner.
      */
     @Override
     public void receive(SourceEvent sourceEvent)
     {
-        process(sourceEvent);
+        switch(sourceEvent.getEvent())
+        {
+            case NOTIFICATION_FREQUENCY_CHANGE:
+                //Update the index calculator and each of the output processors to update each channel frequency
+                mChannelIndexCalculator.setCenterFrequency(sourceEvent.getValue().longValue());
+                updateOutputProcessors(sourceEvent);
+                break;
+            case NOTIFICATION_SAMPLE_RATE_CHANGE:
+                //Update the channelizer (and the output processors) for the new sample rate
+                updateChannelizer(sourceEvent.getValue().intValue(), sourceEvent);
+                break;
+        }
+    }
+
+    /**
+     * Creates or updates the channelizer to process the incoming sample rate and updates any channel processors.
+     *
+     * @param sampleRate to use for the channelizer
+     * @param sourceEvent containing a notification of sample rate change (optional - can be null).  This source
+     * event will be passed to all output processors to ensure the change is fully promulgated before restarting the
+     * buffer processor if it was already running.
+     */
+    private void updateChannelizer(int sampleRate, SourceEvent sourceEvent)
+    {
+        mChannelIndexCalculator.setSampleRate(sampleRate);
+
+        //Lock on the buffer processor to block any channel create/start/stop requests while we configure
+        synchronized(mBufferProcessor)
+        {
+            //Get current processor state so we can restart it after we update the channelizer
+            boolean bufferProcessorWasRunning = mBufferProcessor.isRunning();
+
+            //Stop will be ignored if it is not currently running
+            mBufferProcessor.stop();
+
+            try
+            {
+                if(mPolyphaseChannelizer == null)
+                {
+                    mPolyphaseChannelizer = ComplexPolyphaseChannelizerM2.create(sampleRate);
+                    mBufferProcessor.setListener(mPolyphaseChannelizer);
+                }
+                else
+                {
+                    mPolyphaseChannelizer.updateSampleRate(sampleRate);
+                }
+            }
+            catch(IllegalArgumentException iae)
+            {
+                mLog.error("Could not create polyphase channelizer for sample rate [" + sampleRate + "]", iae);
+            }
+            catch(FilterDesignException fde)
+            {
+                mLog.error("Could not create filter for polyphase channelizer for sample rate [" + sampleRate + "]", fde);
+            }
+
+            if(sourceEvent != null && sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_SAMPLE_RATE_CHANGE)
+            {
+                updateOutputProcessors(sourceEvent);
+            }
+
+            if(bufferProcessorWasRunning)
+            {
+                mBufferProcessor.start();
+            }
+        }
     }
 
     /**

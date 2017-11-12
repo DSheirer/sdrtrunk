@@ -21,17 +21,19 @@ package dsp.filter.channelizer;
 import buffer.ReverseFloatCircularBuffer;
 import dsp.filter.FilterFactory;
 import dsp.filter.Window;
+import dsp.filter.design.FilterDesignException;
 import dsp.mixer.Oscillator;
 import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sample.complex.ComplexBuffer;
 
 import java.text.DecimalFormat;
 
 public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChannelizer
 {
     private final static Logger mLog = LoggerFactory.getLogger(ComplexPolyphaseChannelizerM2.class);
+
+    private static final int DEFAULT_CHANNEL_BANDWIDTH = 12500;
 
     private ReverseFloatCircularBuffer[] mDataBuffers;
     private float[][] mFilterCoefficients;
@@ -48,8 +50,10 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      * equal to the channel bandwidth (sample rate / filters).  If you need to synthesize (combine two or more
      * filter outputs) a new bandwidth signal from the outputs of this filter, then the filter should be designed
      * as a nyquist filter with -6 dB attenuation at the channel bandwidth cutoff frequency
+     *
      * @param channels - number of filters/channels to output.  Since this filter bank oversamples each filter
      * output, this number must be even (divisible by the oversample rate).
+     *
      * @param channelSampleRate for each decimated, oversampled channel
      */
     public ComplexPolyphaseChannelizerM2(float[] taps, int channels, int channelSampleRate)
@@ -64,6 +68,72 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
         initFilters(taps);
     }
 
+    /**
+     * Non-Maximally Decimated Polyphase Filter Bank (NMDPFB) channelizer that divides the input frequency band into
+     * equal bandwidth channels that are each oversampled by 2x for output.
+     *
+     * Note: this constructor uses a default channel bandwidth of 12.5 kHz and produces channels with an oversampled
+     * channel sample rate of 25.0 kHz.
+     *
+     * @param sampleRate to be channelized.
+     */
+    private ComplexPolyphaseChannelizerM2(int sampleRate) throws FilterDesignException
+    {
+        super(sampleRate / DEFAULT_CHANNEL_BANDWIDTH, DEFAULT_CHANNEL_BANDWIDTH);
+
+        mLog.debug("Sample Rate: " + sampleRate);
+
+        float[] filterTaps = FilterFactory.getSincChannelizer(getChannelSampleRate(), getChannelCount(),
+            15, Window.WindowType.BLACKMAN_HARRIS_7, true);
+
+        initFilters(filterTaps);
+    }
+
+    /**
+     * Non-Maximally Decimated Polyphase Filter Bank (NMDPFB) channelizer with a default channel bandwidth of 12.5 kHz
+     * and a channel output sample rate of 25.0 kHz.
+     *
+     * @param sampleRate that is an even multiple of 25.0 kHz
+     * @return channelizer
+     * @throws IllegalArgumentException if the sample rate argument is not an even multiple of 25.0 kHz
+     */
+    public static ComplexPolyphaseChannelizerM2 create(int sampleRate) throws IllegalArgumentException,
+        FilterDesignException
+    {
+        if(sampleRate % (2 * DEFAULT_CHANNEL_BANDWIDTH) != 0)
+        {
+            throw new IllegalArgumentException("Sample rate must be an even multiple of 25 kHz");
+        }
+
+        return new ComplexPolyphaseChannelizerM2(sampleRate);
+    }
+
+    /**
+     * Updates this channelizer to use the new sample rate.  This method creates a new filter suitable for the
+     * sample rate and reinitializes all internal data structures to prepare for processing the new sample rate.
+     * @param sampleRate that is a multiple of 25.0 kHz
+     * @throws IllegalArgumentException if the sample rate is not a multiple of 25.0 kHz
+     * @throws FilterDesignException if a filter cannot be designed for the target sample rate
+     */
+    public void updateSampleRate(int sampleRate) throws IllegalArgumentException, FilterDesignException
+    {
+        if(sampleRate % (2 * DEFAULT_CHANNEL_BANDWIDTH) != 0)
+        {
+            throw new IllegalArgumentException("Sample rate must be an even multiple of 25 kHz");
+        }
+
+        float[] filterTaps = FilterFactory.getSincChannelizer(getChannelSampleRate(), getChannelCount(),
+            15, Window.WindowType.BLACKMAN_HARRIS_7, true);
+
+        initFilters(filterTaps);
+    }
+
+    /**
+     * Filters the incoming complex sample pair
+     *
+     * @param inphase sample
+     * @param quadrature sample
+     */
     protected void filter(float inphase, float quadrature)
     {
         try

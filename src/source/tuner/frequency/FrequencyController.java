@@ -50,7 +50,7 @@ public class FrequencyController
     }
 
     /**
-     * Get bandwidth/sample rate in hertz
+     * Get bandwidth in hertz
      */
     public int getBandwidth()
     {
@@ -65,6 +65,14 @@ public class FrequencyController
         mSampleRate = sampleRate;
 
         broadcastSampleRateChange();
+    }
+
+    /**
+     * Get sample rate in hertz
+     */
+    public int getSampleRate()
+    {
+        return mSampleRate;
     }
 
     /**

@@ -41,11 +41,7 @@ public abstract class Tuner implements ITunerChannelProvider
 
     private String mName;
     private TunerController mTunerController;
-    /**
-     * Sample Listeners - these will typically be the DFT processor for spectral
-     * display, or it will be one or more tuner channel sources
-     */
-    protected List<Listener<ComplexBuffer>> mSampleListeners = new CopyOnWriteArrayList<>();
+    private Broadcaster<ComplexBuffer> mSampleBroadcaster = new Broadcaster<>();
     protected List<Listener<TunerEvent>> mTunerChangeListeners = new ArrayList<>();
     protected Broadcaster<SourceEvent> mSourceEventBroadcaster = new Broadcaster<>();
 
@@ -89,7 +85,7 @@ public abstract class Tuner implements ITunerChannelProvider
 
     public void dispose()
     {
-        mSampleListeners.clear();
+        mSampleBroadcaster.clear();
     }
 
     public void setName(String name)
@@ -161,7 +157,7 @@ public abstract class Tuner implements ITunerChannelProvider
      */
     public void addListener(Listener<ComplexBuffer> listener)
     {
-        mSampleListeners.add(listener);
+        mSampleBroadcaster.addListener(listener);
     }
 
     /**
@@ -169,7 +165,15 @@ public abstract class Tuner implements ITunerChannelProvider
      */
     public void removeListener(Listener<ComplexBuffer> listener)
     {
-        mSampleListeners.remove(listener);
+        mSampleBroadcaster.removeListener(listener);
+    }
+
+    /**
+     * Provides access to the internal sample broadcaster for sub-class use (ie protected).
+     */
+    protected Broadcaster<ComplexBuffer> getSampleBroadcaster()
+    {
+        return mSampleBroadcaster;
     }
 
     /**
@@ -179,7 +183,15 @@ public abstract class Tuner implements ITunerChannelProvider
      */
     public boolean hasListener(Listener<ComplexBuffer> listener)
     {
-        return mSampleListeners.contains(listener);
+        return mSampleBroadcaster.hasListener(listener);
+    }
+
+    /**
+     * Indicates if this tuner has any complex buffer listeners registered
+     */
+    public boolean hasListeners()
+    {
+        return mSampleBroadcaster.hasListeners();
     }
 
     /**
@@ -187,10 +199,7 @@ public abstract class Tuner implements ITunerChannelProvider
      */
     public void broadcast(ComplexBuffer sampleBuffer)
     {
-        for(Listener<ComplexBuffer> listener : mSampleListeners)
-        {
-            listener.receive(sampleBuffer);
-        }
+        mSampleBroadcaster.broadcast(sampleBuffer);
     }
 
     /**

@@ -104,7 +104,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor
 
     public int getSampleRate()
     {
-        return mFrequencyController.getBandwidth();
+        return mFrequencyController.getSampleRate();
     }
 
     public double getFrequencyCorrection()
