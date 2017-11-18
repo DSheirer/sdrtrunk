@@ -36,18 +36,39 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<Co
 
     private Broadcaster<SourceEvent> mSourceChangeBroadcaster = new Broadcaster();
     private List<PolyphaseChannelSource> mChannels = new CopyOnWriteArrayList<>();
+    private int mSampleRate;
     private int mChannelCount;
-    private int mChannelSampleRate;
+    private double mChannelSampleRate;
 
     /**
      * Complex sample polyphase channelizer
      *
      * @param channelCount
      */
-    public AbstractComplexPolyphaseChannelizer(int channelCount, int channelSampleRate)
+    public AbstractComplexPolyphaseChannelizer(int sampleRate, int channelCount)
     {
         mChannelCount = channelCount;
-        mChannelSampleRate = channelSampleRate;
+        mSampleRate = sampleRate;
+        mChannelSampleRate = (double)mSampleRate / (double)mChannelCount;
+    }
+
+    /**
+     * Input sample rate for this channelizer
+     * @return sample rate in hertz
+     */
+    public int getSampleRate()
+    {
+        return mSampleRate;
+    }
+
+    /**
+     * Sets the input sample rate for for this channelizer
+     * @param sampleRate in hertz
+     */
+    public void setSampleRate(int sampleRate)
+    {
+        mSampleRate = sampleRate;
+        mChannelSampleRate = (double)mSampleRate / (double)mChannelCount;
     }
 
     /**
@@ -59,31 +80,12 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<Co
     }
 
     /**
-     * Output sample rate for each channel
+     * Output channel sample rate
      * @return sample rate in hertz
      */
-    public int getChannelSampleRate()
+    public double getChannelSampleRate()
     {
         return mChannelSampleRate;
-    }
-
-    /**
-     * Filters the complex sample pair
-     *
-     * @param inphase sample
-     * @param quadrature sample
-     */
-    protected abstract void filter(float inphase, float quadrature);
-
-    @Override
-    public void receive(ComplexBuffer complexBuffer)
-    {
-        float[] samples = complexBuffer.getSamples();
-
-        for(int x = 0; x < samples.length; x += 2)
-        {
-            filter(samples[x], samples[x + 1]);
-        }
     }
 
     /**

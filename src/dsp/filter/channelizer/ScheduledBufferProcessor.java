@@ -106,10 +106,7 @@ public class ScheduledBufferProcessor<E> implements Listener<E>
     @Override
     public void receive(E e)
     {
-        if(mRunning.get())
-        {
-            mQueue.offer(e);
-        }
+        mQueue.offer(e);
     }
 
     /**

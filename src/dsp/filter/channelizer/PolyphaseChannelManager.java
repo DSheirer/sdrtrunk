@@ -25,7 +25,6 @@ import dsp.filter.design.FilterDesignException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sample.Listener;
-import source.ISourceEventProcessor;
 import source.Source;
 import source.SourceEvent;
 import source.SourceException;
@@ -45,7 +44,7 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
 
     private Tuner mTuner;
     private List<PolyphaseChannelSource> mChannelSources = new CopyOnWriteArrayList<>();
-    private ChannelIndexCalculator mChannelIndexCalculator;
+    private ChannelCalculator mChannelCalculator;
     private ComplexPolyphaseChannelizerM2 mPolyphaseChannelizer;
     private ChannelSourceEventListener mChannelSourceEventListener = new ChannelSourceEventListener();
     private ScheduledBufferProcessor mBufferProcessor;
@@ -81,10 +80,9 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
         long frequency = mTuner.getTunerController().getFrequency();
         int channelCount = sampleRate / CHANNEL_BANDWIDTH;
 
-        mChannelIndexCalculator = new ChannelIndexCalculator(frequency, channelCount, CHANNEL_BANDWIDTH,
-            CHANNEL_OVERSAMPLING);
+        mChannelCalculator = new ChannelCalculator(sampleRate, channelCount, frequency, CHANNEL_OVERSAMPLING);
 
-        mBufferProcessor = new ScheduledBufferProcessor(500, 100, 100, 50);
+        mBufferProcessor = new ScheduledBufferProcessor(500, 100, 50, 50);
 
         updateChannelizer(sampleRate, null);
 
@@ -104,7 +102,7 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
 
         try
         {
-            List<Integer> polyphaseIndexes = mChannelIndexCalculator.getPolyphaseChannelIndexes(tunerChannel);
+            List<Integer> polyphaseIndexes = mChannelCalculator.getChannelIndexes(tunerChannel);
 
             IPolyphaseChannelOutputProcessor outputProcessor = getOutputProcessor(polyphaseIndexes);
 
@@ -119,8 +117,8 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
         catch(IllegalArgumentException iae)
         {
             mLog.info("Can't provide DDC for " + tunerChannel.toString() + " due to channelizer frequency [" +
-                mChannelIndexCalculator.getCenterFrequency() + "] and sample rate [" +
-                (mChannelIndexCalculator.getChannelCount() * mChannelIndexCalculator.getChannelBandwidth()) + "]");
+                mChannelCalculator.getCenterFrequency() + "] and sample rate [" +
+                (mChannelCalculator.getChannelCount() * mChannelCalculator.getChannelBandwidth()) + "]");
         }
 
         return channelSource;
@@ -198,7 +196,7 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
         {
             case NOTIFICATION_FREQUENCY_CHANGE:
                 //Update the index calculator and each of the output processors to update each channel frequency
-                mChannelIndexCalculator.setCenterFrequency(sourceEvent.getValue().longValue());
+                mChannelCalculator.setCenterFrequency(sourceEvent.getValue().longValue());
                 updateOutputProcessors(sourceEvent);
                 break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
@@ -218,7 +216,7 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
      */
     private void updateChannelizer(int sampleRate, SourceEvent sourceEvent)
     {
-        mChannelIndexCalculator.setSampleRate(sampleRate);
+        mChannelCalculator.setSampleRate(sampleRate);
 
         //Lock on the buffer processor to block any channel create/start/stop requests while we configure
         synchronized(mBufferProcessor)
@@ -233,14 +231,14 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
             {
                 if(mPolyphaseChannelizer == null)
                 {
-                    mPolyphaseChannelizer = ComplexPolyphaseChannelizerM2.create(sampleRate,
+                    mPolyphaseChannelizer = new ComplexPolyphaseChannelizerM2(sampleRate,
                         POLYPHASE_FILTER_TAPS_PER_CHANNEL);
 
                     mBufferProcessor.setListener(mPolyphaseChannelizer);
                 }
                 else
                 {
-                    mPolyphaseChannelizer.updateSampleRate(sampleRate);
+                    mPolyphaseChannelizer.setSampleRate(sampleRate);
                 }
             }
             catch(IllegalArgumentException iae)
@@ -304,7 +302,7 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
     {
         try
         {
-            List<Integer> indexes = mChannelIndexCalculator.getPolyphaseChannelIndexes(channelSource.getTunerChannel());
+            List<Integer> indexes = mChannelCalculator.getChannelIndexes(channelSource.getTunerChannel());
 
             //If the indexes size is the same then update the current processor, otherwise create a new one
             if(channelSource.getPolyphaseChannelOutputProcessor().getInputChannelCount() == indexes.size())

@@ -25,6 +25,7 @@ import dsp.mixer.Oscillator;
 import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sample.complex.ComplexBuffer;
 
 public class ComplexPolyphaseChannelizer extends AbstractComplexPolyphaseChannelizer
 {
@@ -56,6 +57,16 @@ public class ComplexPolyphaseChannelizer extends AbstractComplexPolyphaseChannel
     }
 
     @Override
+    public void receive(ComplexBuffer complexBuffer)
+    {
+        float[] samples = complexBuffer.getSamples();
+
+        for(int x = 0; x < samples.length; x += 2)
+        {
+            filter(samples[x], samples[x + 1]);
+        }
+    }
+
     protected void filter(float inphase, float quadrature)
     {
         int index = (getChannelCount() - mFilterPointer - 1) * 2;

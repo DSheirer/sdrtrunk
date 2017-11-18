@@ -749,14 +749,14 @@ public class FilterFactory
      *
      * @throws FilterDesignException if a filter cannot be designed with a band edge attenuation of -6.02 dB
      */
-    public static float[] getSincChannelizer(int channelBandwidth, int channels, int tapsPerChannel, WindowType windowType,
-                                             boolean logResults) throws FilterDesignException
+    public static float[] getSincChannelizer(double channelBandwidth, int channels, int tapsPerChannel,
+                                             WindowType windowType, boolean logResults) throws FilterDesignException
     {
         int currentTapsPerChannel = tapsPerChannel;
-        int sampleRate = channelBandwidth * channels * 2;
+        int sampleRate = (int)(channelBandwidth * (double)channels * 2.0);
         int filterLength = (channels * currentTapsPerChannel) - 1;
 
-        double cutoffFrequency = ((double)channelBandwidth / (double)sampleRate);
+        double cutoffFrequency = channelBandwidth / (double)sampleRate;
         double bandEdge = cutoffFrequency;
         double increment = cutoffFrequency * 0.1;
 
@@ -831,6 +831,10 @@ public class FilterFactory
             throw new FilterDesignException("Cannot design filter to specifications");
         }
 
+        //This is an odd length filter - increase the length by 1 by pre-padding a zero coefficient
+        float[] extendedTaps = new float[taps.length + 1];
+        System.arraycopy(taps, 0, extendedTaps, 1, taps.length);
+
         if(logResults)
         {
             mLog.debug("Polyphase Channelizer Filter Design Summary");
@@ -839,21 +843,17 @@ public class FilterFactory
             mLog.debug("Channel Bandwidth: " + channelBandwidth);
             mLog.debug("Channels: " + channels);
             mLog.debug("Window Type: " + windowType.name());
-            mLog.debug("Taps Per Channel: " + tapsPerChannel + " (Requested:" + tapsPerChannel + ")");
-            mLog.debug("Filter Length: " + (taps.length + 1));
+            mLog.debug("Taps Per Channel - Requested:" + tapsPerChannel + " Actual:" + ((double)extendedTaps.length / (double)channels));
+            mLog.debug("Filter Length: " + (extendedTaps.length));
             mLog.debug("Requested Cutoff Frequency:  " + (sampleRate * bandEdge));
             mLog.debug("Actual Cutoff Frequency:  " + (sampleRate * cutoffFrequency));
-            mLog.debug("Attenuation at 1.00 OBJECTIVE: " + PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE);
+            mLog.debug("Attenuation at 1.0 OBJECTIVE:  " + PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE);
             mLog.debug("Attenuation at 1.00 Channels:  " + evaluate(taps, bandEdge * 1.00));
             mLog.debug("Attenuation at 1.25 Channels:  " + evaluate(taps, bandEdge * 1.25));
             mLog.debug("Attenuation at 1.50 Channels:  " + evaluate(taps, bandEdge * 1.50));
             mLog.debug("Attenuation at 1.75 Channels:  " + evaluate(taps, bandEdge * 1.75));
             mLog.debug("Attenuation at 2.00 Channels:  " + evaluate(taps, bandEdge * 2.00));
         }
-
-        //This is an odd length filter - increase the length by 1 by pre-padding a zero coefficient
-        float[] extendedTaps = new float[taps.length + 1];
-        System.arraycopy(taps, 0, extendedTaps, 1, taps.length);
 
         return extendedTaps;
     }

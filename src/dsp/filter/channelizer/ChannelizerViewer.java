@@ -58,7 +58,7 @@ public class ChannelizerViewer extends JFrame
     private int mChannelsPerRow;
     private long mToneFrequency;
     private DFTSize mMainPanelDFTSize = DFTSize.FFT32768;
-    private DFTSize mChannelPanelDFTSize = DFTSize.FFT00512;
+    private DFTSize mChannelPanelDFTSize = DFTSize.FFT01024;
     private TestTuner mTestTuner;
 
     /**
@@ -73,8 +73,7 @@ public class ChannelizerViewer extends JFrame
         mChannelCount = mTestTuner.getSampleRate() / CHANNEL_BANDWIDTH;
         mChannelsPerRow = channelsPerRow;
 
-        mToneFrequency = mTestTuner.getTunerController().getFrequency() +
-            (int)(CHANNEL_BANDWIDTH * 1); //Set to channel 1 as default
+        mToneFrequency = mTestTuner.getTunerController().getFrequency() + 19200;
 
         mTestTuner.setToneFrequency(mToneFrequency);
 

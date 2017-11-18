@@ -51,7 +51,7 @@ public class TestTunerController extends TunerController
 
         int sweepRate = 0;  //Hz per interval
 
-        mSampleGenerator = new SampleGenerator(DEFAULT_SAMPLE_RATE, 5000, SAMPLE_GENERATION_INTERVAL, sweepRate);
+        mSampleGenerator = new SampleGenerator(DEFAULT_SAMPLE_RATE, 12500, SAMPLE_GENERATION_INTERVAL, sweepRate);
 
         try
         {
