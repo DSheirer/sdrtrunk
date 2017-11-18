@@ -187,6 +187,9 @@ public class ChannelIndexCalculator
      */
     public List<Integer> getPolyphaseChannelIndexes(TunerChannel tunerChannel) throws IllegalArgumentException
     {
+        long min = getMinimumFrequency();
+        long max = getMaximumFrequency();
+
         if(tunerChannel.getMinFrequency() < getMinimumFrequency() ||
             tunerChannel.getMaxFrequency() > getMaximumFrequency())
         {

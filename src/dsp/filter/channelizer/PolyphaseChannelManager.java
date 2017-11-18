@@ -41,6 +41,7 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
     private static final int CHANNEL_BANDWIDTH = 12500;
     private static final double CHANNEL_OVERSAMPLING = 2.0;
     private static final int CHANNEL_SAMPLE_RATE = (int)(CHANNEL_BANDWIDTH * CHANNEL_OVERSAMPLING);
+    private static final int POLYPHASE_FILTER_TAPS_PER_CHANNEL = 17;
 
     private Tuner mTuner;
     private List<PolyphaseChannelSource> mChannelSources = new CopyOnWriteArrayList<>();
@@ -232,7 +233,9 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
             {
                 if(mPolyphaseChannelizer == null)
                 {
-                    mPolyphaseChannelizer = ComplexPolyphaseChannelizerM2.create(sampleRate);
+                    mPolyphaseChannelizer = ComplexPolyphaseChannelizerM2.create(sampleRate,
+                        POLYPHASE_FILTER_TAPS_PER_CHANNEL);
+
                     mBufferProcessor.setListener(mPolyphaseChannelizer);
                 }
                 else

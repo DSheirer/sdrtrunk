@@ -18,12 +18,16 @@
  ******************************************************************************/
 package dsp.filter.channelizer.output;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sample.complex.ComplexSampleListener;
 
 import java.util.List;
 
 public class TwoChannelOutputProcessor extends ChannelOutputProcessor
 {
+    private final static Logger mLog = LoggerFactory.getLogger(TwoChannelOutputProcessor.class);
+
     private int mChannelOffset1;
     private int mChannelOffset2;
 
@@ -66,12 +70,13 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
      * Extract the channel from the channel results array, apply frequency translation, and deliver the
      * extracted frequency-corrected channel I/Q sample set to the complex sample listener.
      *
-     * @param channels to process containing an array of channel I/Q sample pairs (I0,Q0,I1,Q1...In,Qn)
+     * @param channelResults to process containing an array of channel I/Q sample pairs (I0,Q0,I1,Q1...In,Qn)
      * @param listener to receive the extracted, frequency-translated channel results
      */
     @Override
-    public void process(float[] channels, ComplexSampleListener listener)
+    public void process(List<float[]> channelResults, ComplexSampleListener listener)
     {
+        mLog.debug("I got channel results - doing nothing !!");
 //        if(channels.length < mChannelOffset + 1)
 //        {
 //            throw new IllegalArgumentException("Polyphase channelizer output channels array is not large enough to " +

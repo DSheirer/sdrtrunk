@@ -33,7 +33,7 @@ public class TestTunerController extends TunerController
     public static final long MINIMUM_FREQUENCY = 1000000l;     //1 MHz
     public static final long MAXIMUM_FREQUENCY = 10000000000l; //10 GHz
     public static final long DEFAULT_FREQUENCY = 100000000;    //100 MHz
-    public static final int DEFAULT_SAMPLE_RATE = 1000000;     //1 MHz
+    public static final int DEFAULT_SAMPLE_RATE = 50000;     //25 kHz
     public static final int DC_NOISE_BANDWIDTH = 5000;         // +/-5 kHz
     public static final double USABLE_BANDWIDTH = 0.90;  //90% usable bandwidth - 5% unusable on either end
 
@@ -46,7 +46,9 @@ public class TestTunerController extends TunerController
     {
         super(MINIMUM_FREQUENCY, MAXIMUM_FREQUENCY, DC_NOISE_BANDWIDTH, USABLE_BANDWIDTH);
 
-        mSampleGenerator = new SampleGenerator(DEFAULT_SAMPLE_RATE, DEFAULT_FREQUENCY, 100);
+        int sweepRate = 0;  //Hz per interval
+
+        mSampleGenerator = new SampleGenerator(DEFAULT_SAMPLE_RATE, DEFAULT_FREQUENCY, 100, sweepRate);
 
         try
         {

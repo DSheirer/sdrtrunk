@@ -75,6 +75,14 @@ public class OverflowableTransferQueue<E>
     }
 
     /**
+     * Removes and returns a single element from the head of the queue or null if the queue is empty
+     */
+    public E poll()
+    {
+        return mQueue.poll();
+    }
+
+    /**
      * Retrieves elements from the queue into the collection up to the maximum number of elements specified
      */
     public int drainTo(Collection<? super E> collection, int maxElements)

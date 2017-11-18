@@ -19,6 +19,8 @@
 package source.tuner.test;
 
 import dsp.mixer.LowPhaseNoiseOscillator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sample.Listener;
 import sample.complex.ComplexBuffer;
 import util.ThreadPool;
@@ -28,7 +30,10 @@ import java.util.concurrent.TimeUnit;
 
 public class SampleGenerator
 {
+    private final static Logger mLog = LoggerFactory.getLogger(SampleGenerator.class);
+
     private LowPhaseNoiseOscillator mOscillator;
+    private int mSweepUpdateInterval;
     private Listener<ComplexBuffer> mListener;
     private long mInterval;
     private int mSamplesPerInterval;
@@ -42,13 +47,35 @@ public class SampleGenerator
      * @param sampleRate of the complex samples
      * @param frequency of the tone produced by the generator
      * @param interval in milliseconds for generating samples
+     * @param sweepUpdateRate to turn on sweeping of the tone frequency where the frequency is incremented by the
+     * rate specified at each interval, resetting to 1 Hz after reaching/exceeding the highest frequency.
+     */
+    public SampleGenerator(int sampleRate, long frequency, long interval, int sweepUpdateRate)
+    {
+        if(Math.abs(sweepUpdateRate) >= sampleRate)
+        {
+            throw new IllegalArgumentException("Sweep update rate cannot be greater than sample rate");
+        }
+
+        mOscillator = new LowPhaseNoiseOscillator(sampleRate, frequency);
+        mInterval = interval;
+        mSweepUpdateInterval = sweepUpdateRate;
+
+        updateSamplesPerInterval();
+    }
+
+    /**
+     * Generates complex sample buffers at the specified sample rate with a unity gain tone at the specified
+     * frequency.  This generator runs via a scheduled thread pool and generates samples at the specified time
+     * interval.
+     *
+     * @param sampleRate of the complex samples
+     * @param frequency of the tone produced by the generator
+     * @param interval in milliseconds for generating samples
      */
     public SampleGenerator(int sampleRate, long frequency, long interval)
     {
-        mOscillator = new LowPhaseNoiseOscillator(sampleRate, frequency);
-        mInterval = interval;
-
-        updateSamplesPerInterval();
+        this(sampleRate, frequency, interval, 0);
     }
 
     /**
@@ -56,7 +83,9 @@ public class SampleGenerator
      */
     private void updateSamplesPerInterval()
     {
-        mSamplesPerInterval = (int)((double)mOscillator.getSampleRate() * ((double)mInterval / 1000.0) * 2.0);
+        mSamplesPerInterval = (int)((double)mOscillator.getSampleRate() * ((double)mInterval / 1000.0));
+
+        mLog.debug("Sample Generator: " + mSamplesPerInterval + " samples every " + mInterval + " ms.");
     }
 
     /**
@@ -141,6 +170,24 @@ public class SampleGenerator
             {
                 float[] samples = mOscillator.generate(mSamplesPerInterval);
                 mListener.receive(new ComplexBuffer(samples));
+
+                if(mSweepUpdateInterval != 0)
+                {
+                    long updatedFrequency = mOscillator.getFrequency() + mSweepUpdateInterval;
+
+                    if(updatedFrequency > mOscillator.getSampleRate() / 2)
+                    {
+                        mOscillator.setFrequency(mOscillator.getSampleRate() / -2);
+                    }
+                    else if(updatedFrequency < mOscillator.getSampleRate() / -2)
+                    {
+                        mOscillator.setFrequency(mOscillator.getSampleRate() / 2);
+                    }
+                    else
+                    {
+                        mOscillator.setFrequency(updatedFrequency);
+                    }
+                }
             }
         }
     }

@@ -834,9 +834,10 @@ public class FilterFactory
         if(logResults)
         {
             mLog.debug("Polyphase TunerChannelizer Filter Design Summary");
-            mLog.debug("-------------------------------------------");
+            mLog.debug("-----------------------------------------------------");
+            mLog.debug("Window Type: " + windowType.name());
             mLog.debug("Channels: " + channels);
-            mLog.debug("Taps Per Channel: " + tapsPerChannel);
+            mLog.debug("Taps Per Channel: " + tapsPerChannel + " (Requested:" + tapsPerChannel + ")");
             mLog.debug("Filter Length: " + (taps.length + 1));
             mLog.debug("Channel Bandwidth: " + channelBandwidth);
             mLog.debug("Cutoff Frequency: " + (sampleRate * cutoffFrequency));

@@ -169,6 +169,14 @@ public abstract class Tuner implements ITunerChannelProvider
     }
 
     /**
+     * Number of registered complex sample buffer listeners
+     */
+    public int getListenerCount()
+    {
+        return mSampleBroadcaster.getListenerCount();
+    }
+
+    /**
      * Provides access to the internal sample broadcaster for sub-class use (ie protected).
      */
     protected Broadcaster<ComplexBuffer> getSampleBroadcaster()

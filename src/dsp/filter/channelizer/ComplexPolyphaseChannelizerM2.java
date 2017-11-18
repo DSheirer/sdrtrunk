@@ -77,14 +77,14 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      *
      * @param sampleRate to be channelized.
      */
-    private ComplexPolyphaseChannelizerM2(int sampleRate) throws FilterDesignException
+    private ComplexPolyphaseChannelizerM2(int sampleRate, int tapsPerFilter) throws FilterDesignException
     {
         super(sampleRate / DEFAULT_CHANNEL_BANDWIDTH, DEFAULT_CHANNEL_BANDWIDTH);
 
         mLog.debug("Sample Rate: " + sampleRate);
 
         float[] filterTaps = FilterFactory.getSincChannelizer(getChannelSampleRate(), getChannelCount(),
-            15, Window.WindowType.BLACKMAN_HARRIS_7, true);
+            tapsPerFilter, Window.WindowType.BLACKMAN_HARRIS_7, true);
 
         initFilters(filterTaps);
     }
@@ -97,7 +97,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      * @return channelizer
      * @throws IllegalArgumentException if the sample rate argument is not an even multiple of 25.0 kHz
      */
-    public static ComplexPolyphaseChannelizerM2 create(int sampleRate) throws IllegalArgumentException,
+    public static ComplexPolyphaseChannelizerM2 create(int sampleRate, int tapsPerFilter) throws IllegalArgumentException,
         FilterDesignException
     {
         if(sampleRate % (2 * DEFAULT_CHANNEL_BANDWIDTH) != 0)
@@ -105,7 +105,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
             throw new IllegalArgumentException("Sample rate must be an even multiple of 25 kHz");
         }
 
-        return new ComplexPolyphaseChannelizerM2(sampleRate);
+        return new ComplexPolyphaseChannelizerM2(sampleRate, tapsPerFilter);
     }
 
     /**

@@ -18,12 +18,17 @@
  ******************************************************************************/
 package dsp.filter.channelizer.output;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sample.complex.ComplexSampleListener;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class OneChannelOutputProcessor extends ChannelOutputProcessor
 {
+    private final static Logger mLog = LoggerFactory.getLogger(OneChannelOutputProcessor.class);
+
     private int mChannelOffset;
 
     /**
@@ -37,6 +42,7 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
     {
         super(1, sampleRate);
         setPolyphaseChannelIndices(channelIndexes);
+        mLog.debug("Sample Rate:" + sampleRate + " PolyPhase Channel Indexes:" + channelIndexes);
     }
 
     /**
@@ -61,21 +67,31 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
      * Extract the channel from the channel results array, apply frequency translation, and deliver the
      * extracted frequency-corrected channel I/Q sample set to the complex sample listener.
      *
-     * @param channels to process containing an array of channel I/Q sample pairs (I0,Q0,I1,Q1...In,Qn)
+     * @param channelResults to process containing a list of channel array of I/Q sample pairs (I0,Q0,I1,Q1...In,Qn)
      * @param listener to receive the extracted, frequency-translated channel results
      */
     @Override
-    public void process(float[] channels, ComplexSampleListener listener)
+    public void process(List<float[]> channelResults, ComplexSampleListener listener)
     {
-        if(channels.length < mChannelOffset + 1)
+        for(float[] channels: channelResults)
         {
-            throw new IllegalArgumentException("Polyphase channelizer output channels array is not large enough to " +
-                "cover this single channel output processor with channel offset [" + mChannelOffset + "]");
+            if(channels.length < mChannelOffset + 1)
+            {
+                throw new IllegalArgumentException("Polyphase channelizer output channels array is not large enough to " +
+                    "cover this single channel output processor with channel offset [" + mChannelOffset + "]");
+            }
+
+            float i = channels[mChannelOffset];
+            float q = channels[mChannelOffset + 1];
+
+            if(hasFrequencyCorrection())
+            {
+                listener.receive(getFrequencyCorrectedInphase(i, q), getFrequencyCorrectedQuadrature(i, q));
+            }
+            else
+            {
+                listener.receive(i, q);
+            }
         }
-
-        float i = channels[mChannelOffset];
-        float q = channels[mChannelOffset + 1];
-
-        listener.receive(getFrequencyCorrectedInphase(i, q), getFrequencyCorrectedQuadrature(i, q));
     }
 }

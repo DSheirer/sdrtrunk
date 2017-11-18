@@ -33,14 +33,14 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelOutputProcessor.class);
 
-    private static final int OVERFLOW_THRESHOLD = 25000 * 3; //25 kHz * 3 seconds
-    private static final int RESET_THRESHOLD = (int)(OVERFLOW_THRESHOLD * .25); //reset at 25%
-
     private OverflowableTransferQueue<float[]> mChannelResultsQueue;
     private List<float[]> mChannelResultsToProcess = new ArrayList<>();
+    private int mMaxResultsToProcess;
 
     private int mInputChannelCount;
+//TODO: swap this out and use the LowPhaseNoiseOscillator
     private Oscillator mFrequencyCorrectionMixer;
+    private boolean mFrequencyCorrectionEnabled;
 
     /**
      * Base class for polyphase channelizer output channel processing.  Provides built-in frequency translation
@@ -54,7 +54,9 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     {
         mInputChannelCount = inputChannelCount;
         mFrequencyCorrectionMixer = new Oscillator(0, sampleRate);
-        mChannelResultsQueue = new OverflowableTransferQueue<>(OVERFLOW_THRESHOLD, RESET_THRESHOLD);
+        mMaxResultsToProcess = sampleRate / 10 * 2;  //process at 100 millis interval, twice the expected inflow rate
+
+        mChannelResultsQueue = new OverflowableTransferQueue<>(sampleRate * 3, (int)(sampleRate * 0.5));
     }
 
     @Override
@@ -72,33 +74,27 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     {
         try
         {
-            mChannelResultsQueue.drainTo(mChannelResultsToProcess, 1000);
+            int count = mChannelResultsQueue.drainTo(mChannelResultsToProcess, mMaxResultsToProcess);
 
-            while(!mChannelResultsToProcess.isEmpty())
+            if(count > 0)
             {
-                for(float[] channelResults: mChannelResultsToProcess)
-                {
-                    process(channelResults, listener);
-                }
-
-                mChannelResultsToProcess.clear();
-                mChannelResultsQueue.drainTo(mChannelResultsToProcess, 1000);
+                process(mChannelResultsToProcess, listener);
             }
         }
         catch(Throwable throwable)
         {
             mLog.error("Error while processing polyphase channel samples", throwable);
-            mChannelResultsToProcess.clear();
         }
 
+        mChannelResultsToProcess.clear();
     }
 
     /**
      * Sub-class implementation to process one polyphase channelizer result array.
-     * @param channelResult to process
+     * @param channelResults to process
      * @param listener to receive the channel complex sample
      */
-    public abstract void process(float[] channelResult, ComplexSampleListener listener);
+    public abstract void process(List<float[]> channelResults, ComplexSampleListener listener);
 
 
     /**
@@ -133,16 +129,8 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
      */
     protected float getFrequencyCorrectedInphase(float inphase, float quadrature)
     {
-        //Only apply frequency correction if the oscillator is set to a non-zero frequency offset
-        if(mFrequencyCorrectionMixer.enabled())
-        {
-            return Complex.multiplyInphase(inphase, quadrature, mFrequencyCorrectionMixer.inphase(),
-                mFrequencyCorrectionMixer.quadrature());
-        }
-        else
-        {
-            return inphase;
-        }
+        return Complex.multiplyInphase(inphase, quadrature, mFrequencyCorrectionMixer.inphase(),
+            mFrequencyCorrectionMixer.quadrature());
     }
 
     /**
@@ -155,16 +143,8 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
      */
     protected float getFrequencyCorrectedQuadrature(float inphase, float quadrature)
     {
-        //Only apply frequency correction if the oscillator is set to a non-zero frequency offset
-        if(mFrequencyCorrectionMixer.enabled())
-        {
-            return Complex.multiplyQuadrature(inphase, quadrature, mFrequencyCorrectionMixer.inphase(),
-                mFrequencyCorrectionMixer.quadrature());
-        }
-        else
-        {
-            return quadrature;
-        }
+        return Complex.multiplyQuadrature(inphase, quadrature, mFrequencyCorrectionMixer.inphase(),
+            mFrequencyCorrectionMixer.quadrature());
     }
 
     /**
@@ -177,6 +157,16 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     public void setFrequencyCorrection(long frequencyCorrection)
     {
         mFrequencyCorrectionMixer.setFrequency(frequencyCorrection);
+
+        mFrequencyCorrectionEnabled = (frequencyCorrection != 0);
+    }
+
+    /**
+     * Indicates if this channel has a frequency correction offset
+     */
+    public boolean hasFrequencyCorrection()
+    {
+        return mFrequencyCorrectionEnabled;
     }
 
 }

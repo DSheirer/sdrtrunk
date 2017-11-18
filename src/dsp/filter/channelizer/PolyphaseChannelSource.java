@@ -32,6 +32,7 @@ import source.SourceEvent;
 import source.SourceException;
 import source.tuner.TunerChannel;
 
+import java.util.Arrays;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -67,15 +68,29 @@ public class PolyphaseChannelSource extends ComplexSource implements ISourceEven
         mPolyphaseChannelOutputProcessor = outputProcessor;
         mUpstreamSourceEventHandler = new UpstreamSourceEventHandler(externalEventListener);;
         mChannelSampleRate = channelSampleRate;
+
     }
 
     /**
      * Registers the listener to receive complex sample buffers from this channel source
      */
     @Override
-    public void setListener(Listener<ComplexBuffer> listener)
+    public void setListener(final Listener<ComplexBuffer> listener)
     {
-        mComplexBufferAssembler.setListener(listener);
+//        mComplexBufferAssembler.setListener(listener);
+
+        mComplexBufferAssembler.setListener(new Listener<ComplexBuffer>()
+        {
+            @Override
+            public void receive(ComplexBuffer complexBuffer)
+            {
+                if(mTunerChannel.getFrequency() == 99981250)
+                {
+//                    mLog.debug(Arrays.toString(complexBuffer.getSamples()));
+                }
+                listener.receive(complexBuffer);
+            }
+        });
     }
 
     /**

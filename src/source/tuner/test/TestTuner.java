@@ -49,9 +49,6 @@ public class TestTuner extends Tuner
     {
         super("Test Tuner", new TestTunerController());
 
-        mLog.debug("Initializing test tuner.  Tuner Controller's sample rate is:" + getTunerController().getSampleRate());
-        mLog.debug("Initializing test tuner.  Test Tuner Controller's sample rate is:" + getTestTunerController().getSampleRate());
-
         mPolyphaseChannelManager = new PolyphaseChannelManager(this);
     }
 

@@ -18,6 +18,8 @@
  ******************************************************************************/
 package dsp.filter.channelizer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sample.Listener;
 import sample.OverflowableTransferQueue;
 import sample.real.IOverflowListener;
@@ -31,6 +33,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ScheduledBufferProcessor<E> implements Listener<E>
 {
+    private final static Logger mLog = LoggerFactory.getLogger(ScheduledBufferProcessor.class);
+
     private OverflowableTransferQueue<E> mQueue;
     private Listener<E> mListener;
     private ScheduledFuture<?> mScheduledFuture;
@@ -59,6 +63,15 @@ public class ScheduledBufferProcessor<E> implements Listener<E>
     public ScheduledBufferProcessor(int maximumSize, int resetThreshold, long distributionInterval, int maxBuffersPerInterval)
     {
         mQueue = new OverflowableTransferQueue<>(maximumSize, resetThreshold);
+
+        mQueue.setOverflowListener(new IOverflowListener()
+        {
+            @Override
+            public void sourceOverflow(boolean overflow)
+            {
+                mLog.error("Overflow state changed - overflow:" + overflow);
+            }
+        });
         mDistributionInterval = distributionInterval;
         mMaxBuffersPerInterval = maxBuffersPerInterval;
     }
