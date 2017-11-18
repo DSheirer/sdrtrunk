@@ -32,7 +32,6 @@ import source.tuner.TunerChannel;
 import source.tuner.configuration.TunerConfigurationModel;
 import source.tuner.test.TestTuner;
 import spectrum.DFTProcessor;
-import spectrum.DFTResultsListener;
 import spectrum.DFTSize;
 import spectrum.SpectrumPanel;
 import spectrum.converter.ComplexDecibelConverter;
@@ -167,12 +166,6 @@ public class ChannelizerViewer extends JFrame
 
         return mChannelPanel;
     }
-
-//    private float[] getFilter() throws FilterDesignException
-//    {
-//        return FilterFactory.getSincChannelizer(CHANNEL_BANDWIDTH, mChannelCount, mFilterTapsPerChannel,
-//            Window.WindowType.BLACKMAN_HARRIS_7, true);
-//    }
 
     public class ChannelArrayPanel extends JPanel
     {

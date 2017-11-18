@@ -567,7 +567,7 @@ public class FilterFactory
      * For 40db attenuation, calculate the number of symbols based on the following formula:
      *    Symbols = -44 * alpha + 33
      *
-     * Polyphase TunerChannelizer notes:
+     * Polyphase Channelizer notes:
      * -Set samples Per Symbol at 2 (or more) * number of channels
      * -Set symbolCount to sufficient size to produce required attenuation
      * -Set symbol rate in hertz
@@ -725,7 +725,7 @@ public class FilterFactory
     }
 
     /**
-     * Creates a windowed-sync (Nyquist) M/2 prototype FIR filter for use with a Polyphase TunerChannelizer/Synthesizer.
+     * Creates a windowed-sync (Nyquist) M/2 prototype FIR filter for use with a Polyphase Channelizer/Synthesizer.
      * The filter is designed for x2 oversampling of each channel and the filter cutoff frequency is incrementally
      * adjusted to achieve a -6.02 dB attenuation at the channel band edge to enable perfect reconstruction of adjacent
      * channels.
@@ -833,14 +833,16 @@ public class FilterFactory
 
         if(logResults)
         {
-            mLog.debug("Polyphase TunerChannelizer Filter Design Summary");
+            mLog.debug("Polyphase Channelizer Filter Design Summary");
             mLog.debug("-----------------------------------------------------");
-            mLog.debug("Window Type: " + windowType.name());
+            mLog.debug("Input Sample Rate: " + sampleRate);
+            mLog.debug("Channel Bandwidth: " + channelBandwidth);
             mLog.debug("Channels: " + channels);
+            mLog.debug("Window Type: " + windowType.name());
             mLog.debug("Taps Per Channel: " + tapsPerChannel + " (Requested:" + tapsPerChannel + ")");
             mLog.debug("Filter Length: " + (taps.length + 1));
-            mLog.debug("Channel Bandwidth: " + channelBandwidth);
-            mLog.debug("Cutoff Frequency: " + (sampleRate * cutoffFrequency));
+            mLog.debug("Requested Cutoff Frequency:  " + (sampleRate * bandEdge));
+            mLog.debug("Actual Cutoff Frequency:  " + (sampleRate * cutoffFrequency));
             mLog.debug("Attenuation at 1.00 OBJECTIVE: " + PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE);
             mLog.debug("Attenuation at 1.00 Channels:  " + evaluate(taps, bandEdge * 1.00));
             mLog.debug("Attenuation at 1.25 Channels:  " + evaluate(taps, bandEdge * 1.25));

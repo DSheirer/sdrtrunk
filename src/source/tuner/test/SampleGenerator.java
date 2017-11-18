@@ -57,6 +57,7 @@ public class SampleGenerator
             throw new IllegalArgumentException("Sweep update rate cannot be greater than sample rate");
         }
 
+        mLog.debug("Sample Generator - Sample Rate:" + sampleRate + " Frequency:" + frequency);
         mOscillator = new LowPhaseNoiseOscillator(sampleRate, frequency);
         mInterval = interval;
         mSweepUpdateInterval = sweepUpdateRate;
@@ -85,7 +86,7 @@ public class SampleGenerator
     {
         mSamplesPerInterval = (int)((double)mOscillator.getSampleRate() * ((double)mInterval / 1000.0));
 
-        mLog.debug("Sample Generator: " + mSamplesPerInterval + " samples every " + mInterval + " ms.");
+        mLog.debug("Sample Generator - " + mSamplesPerInterval + " samples every " + mInterval + "ms");
     }
 
     /**
