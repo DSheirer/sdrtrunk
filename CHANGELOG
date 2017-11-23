@@ -3,6 +3,7 @@
    to lockup and show persistent 'overflow' state in each channel status
  - Resolves issue with broadcastify 'mountpoint-in-use' error handling and updates
    memory usage logging
+ - Resolves issue with Shoutcast 2 login error
 
 0.3.1 20171009
  - Resolves Java 9 incompatibility issues
