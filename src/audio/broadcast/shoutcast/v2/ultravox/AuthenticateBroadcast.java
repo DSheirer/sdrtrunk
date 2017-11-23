@@ -72,6 +72,40 @@ public class AuthenticateBroadcast extends UltravoxMessage
     }
 
     /**
+     * Encrypts the value using the XTEA block cipher algorithm.  The byte array is sliced into 8-byte chunks and each
+     * chunk is encrypted into a 16 hexadecimal character string.  All encrypted chunks are concatenated and returned
+     * as a single string.  If the value byte array is not an even multiple of 8 characters, it will be padded with
+     * zero valued bytes to make it an even multiple of eight.
+     *
+     * @param xtea instance of the XTEA algorithm with a loaded encryption key
+     * @param value to encode
+     * @return value encrypted into one or more multiples of 16 hexadecimal characters
+     */
+    private static String encrypt(XTEA xtea, byte[] value)
+    {
+        if(value.length % 8 != 0 || value.length == 0)
+        {
+            int newLength = ((value.length / 8) + 1) * 8;
+            value = Arrays.copyOf(value, newLength);
+        }
+
+        StringBuilder sb = new StringBuilder();
+
+        for(int x = 0; x < value.length; x += 8)
+        {
+            byte[] plaintext = Arrays.copyOfRange(value, x, x + 8);
+            byte[] encrypted = xtea.encrypt(plaintext);
+
+            for(byte b: encrypted)
+            {
+                sb.append(String.format("%02x", b));
+            }
+        }
+
+        return sb.toString();
+    }
+
+    /**
      * Encrypts the value using the XTEA block cipher algorithm and returns the encrypted value as a 16 hex value
      *
      * @param xtea instance of the XTEA algorithm with a loaded encryption key
@@ -80,23 +114,6 @@ public class AuthenticateBroadcast extends UltravoxMessage
      */
     private static String encrypt(XTEA xtea, String value)
     {
-        byte[] valueBytes = value.getBytes();
-
-        if(valueBytes.length % 8 != 0 || valueBytes.length == 0)
-        {
-            int newLength = ((valueBytes.length / 8) + 1) * 8;
-            valueBytes = Arrays.copyOf(valueBytes, newLength);
-        }
-
-        byte[] encrypted = xtea.encrypt(valueBytes);
-
-        StringBuilder sb = new StringBuilder();
-
-        for(byte b: encrypted)
-        {
-            sb.append(String.format("%02x", b));
-        }
-
-        return sb.toString();
+        return encrypt(xtea, value.getBytes());
     }
 }
