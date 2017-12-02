@@ -163,7 +163,7 @@ public class CRCLJ
     }
 
     /**
-     * Identifies 1 or 2 bit error positions that match the checksum error value.
+     * Identifies 1 bit error positions that match the checksum error value.
      */
     public static int[] findBitErrors( int checksumError )
     {
@@ -180,24 +180,6 @@ public class CRCLJ
 			}
 		}
 
-    	/* Two bit errors */
-		for( int x = 0; x < 48; x++ )
-		{
-			for( int y = 0; y < 48; y++ )
-			{
-				if( x != y && 
-					( CHECKSUMS[ x ] ^ CHECKSUMS[ y ] ) == checksumError )
-				{
-					int[] errors = new int[ 2 ];
-
-					errors[ 0 ] = x;
-					errors[ 1 ] = y;
-					
-					return errors;
-				}
-			}
-		}
-		
 		return null;
     }
     
