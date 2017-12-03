@@ -70,10 +70,10 @@ public class USBTransferProcessor implements TransferCallback
     //Byte array transfer buffers size in bytes
     private int mBufferSize;
 
-    private Broadcaster<ComplexBuffer> mComplexBufferBroadcaster = new Broadcaster<>();
     private OverflowableTransferQueue<byte[]> mFilledBuffers;
     private LinkedTransferQueue<Transfer> mAvailableTransfers = new LinkedTransferQueue<>();
     private LinkedTransferQueue<Transfer> mTransfersInProgress = new LinkedTransferQueue<>();
+    private Listener<ComplexBuffer> mComplexBufferListener;
 
     private AtomicBoolean mRunning = new AtomicBoolean();
 
@@ -234,34 +234,24 @@ public class USBTransferProcessor implements TransferCallback
     }
 
     /**
-     * Indicates if there are complex buffer listeners registered with this processor
+     * Sets the listener and auto-starts the buffer processor
      */
-    public boolean hasListeners()
+    public void setListener(Listener<ComplexBuffer> listener)
     {
-        return mComplexBufferBroadcaster.hasListeners();
-    }
-
-    public void addListener(Listener<ComplexBuffer> listener)
-    {
-        mComplexBufferBroadcaster.addListener(listener);
-
+        mComplexBufferListener = listener;
         start();
     }
 
-    public void removeListener(Listener<ComplexBuffer> listener)
+    /**
+     * Auto-stops the buffer processor and removes the listener
+     */
+    public void removeListener()
     {
-        mComplexBufferBroadcaster.removeListener(listener);
-
-        if(!hasListeners())
+        if(mComplexBufferListener != null)
         {
             stop();
+            mComplexBufferListener = null;
         }
-    }
-
-    public void removeAllListeners()
-    {
-        mComplexBufferBroadcaster.clear();
-        stop();
     }
 
     /**
@@ -425,7 +415,10 @@ public class USBTransferProcessor implements TransferCallback
                     {
                         float[] complexSamples = mSampleAdapter.convert(buffer);
 
-                        mComplexBufferBroadcaster.broadcast(new ComplexBuffer(complexSamples));
+                        if(mComplexBufferListener != null)
+                        {
+                            mComplexBufferListener.receive(new ComplexBuffer(complexSamples));
+                        }
                     }
                 }
                 catch(Exception e)

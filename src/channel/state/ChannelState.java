@@ -20,8 +20,8 @@ package channel.state;
 
 import audio.squelch.ISquelchStateProvider;
 import audio.squelch.SquelchState;
-import channel.heartbeat.Heartbeat;
-import channel.heartbeat.IHeartbeatListener;
+import source.heartbeat.Heartbeat;
+import source.heartbeat.IHeartbeatListener;
 import channel.metadata.Attribute;
 import channel.metadata.AttributeChangeRequest;
 import channel.metadata.IAttributeChangeRequestListener;
@@ -124,7 +124,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
         mMutableMetadata.receive(new AttributeChangeRequest<State>(Attribute.CHANNEL_STATE, mState));
 

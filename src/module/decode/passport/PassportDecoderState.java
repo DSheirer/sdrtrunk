@@ -78,21 +78,6 @@ public class PassportDecoderState extends DecoderState
         return DecoderType.PASSPORT;
     }
 
-    @Override
-    public void start(ScheduledExecutorService executor)
-    {
-    }
-
-    @Override
-    public void init()
-    {
-    }
-
-    @Override
-    public void stop()
-    {
-    }
-
     private void logTalkgroup(String talkgroup)
     {
         if(mTalkgroupsFirstHeard.contains(talkgroup))

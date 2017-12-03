@@ -16,13 +16,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package channel.heartbeat;
+package source.heartbeat;
 
 import sample.Listener;
 
-public interface IHeartbeatProvider
+public interface IHeartbeatListener
 {
-    public void setHeartbeatListener(Listener<Heartbeat> listener);
-
-    public void removeHeartbeatListener();
+    public Listener<Heartbeat> getHeartbeatListener();
 }

@@ -221,11 +221,6 @@ public class P25DecoderState extends DecoderState
         return DecoderType.P25_PHASE1;
     }
 
-    @Override
-    public void stop()
-    {
-    }
-
     /**
      * Performs a full reset to prepare this object for reuse on a new channel
      */
@@ -255,14 +250,6 @@ public class P25DecoderState extends DecoderState
         }
 
         mCurrentCallEvent = null;
-    }
-
-    /**
-     * Performs any initialization operations to prepare for use
-     */
-    @Override
-    public void init()
-    {
     }
 
     /**
@@ -3624,7 +3611,7 @@ public class P25DecoderState extends DecoderState
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
         //Change the default (45-second) traffic channel timeout to 1 second
         if(mChannelType == ChannelType.TRAFFIC)

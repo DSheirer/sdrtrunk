@@ -18,7 +18,8 @@
  ******************************************************************************/
 package source;
 
-import channel.heartbeat.IHeartbeatProvider;
+import source.heartbeat.HeartbeatManager;
+import source.heartbeat.IHeartbeatProvider;
 import module.Module;
 import sample.SampleType;
 import sample.real.IOverflowListener;
@@ -28,6 +29,17 @@ import sample.real.IOverflowListener;
  */
 public abstract class Source extends Module implements ISourceEventListener, ISourceEventProvider, IHeartbeatProvider
 {
+    private HeartbeatManager mHeartbeatManager = new HeartbeatManager();
+
+    /**
+     * Heartbeat manager for this source
+     */
+    public HeartbeatManager getHeartbeatManager()
+    {
+        return mHeartbeatManager;
+    }
+
+
     protected IOverflowListener mOverflowListener;
 
     /**

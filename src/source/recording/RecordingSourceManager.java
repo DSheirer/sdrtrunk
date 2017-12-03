@@ -29,8 +29,8 @@ import source.Source;
 import source.SourceException;
 import source.config.SourceConfigRecording;
 import source.config.SourceConfiguration;
-import source.tuner.TunerChannel;
-import source.tuner.TunerChannelSource;
+import source.tuner.channel.TunerChannel;
+import source.tuner.channel.TunerChannelSource;
 
 public class RecordingSourceManager
 {

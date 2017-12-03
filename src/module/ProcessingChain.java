@@ -24,9 +24,9 @@ import audio.IAudioPacketProvider;
 import audio.squelch.ISquelchStateListener;
 import audio.squelch.ISquelchStateProvider;
 import audio.squelch.SquelchState;
-import channel.heartbeat.Heartbeat;
-import channel.heartbeat.IHeartbeatListener;
-import channel.heartbeat.IHeartbeatProvider;
+import source.heartbeat.Heartbeat;
+import source.heartbeat.IHeartbeatListener;
+import source.heartbeat.IHeartbeatProvider;
 import channel.metadata.AttributeChangeRequest;
 import channel.metadata.IAttributeChangeRequestListener;
 import channel.metadata.IAttributeChangeRequestProvider;
@@ -454,7 +454,7 @@ public class ProcessingChain implements IChannelEventListener
 
         if(module instanceof IHeartbeatProvider)
         {
-            ((IHeartbeatProvider)module).setHeartbeatListener(mHeartbeatBroadcaster);
+            ((IHeartbeatProvider)module).getHeartbeatManager().addHeartbeatListener(mHeartbeatBroadcaster);
         }
 
         if(module instanceof IMessageProvider)
@@ -521,7 +521,7 @@ public class ProcessingChain implements IChannelEventListener
 
         if(module instanceof IHeartbeatProvider)
         {
-            ((IHeartbeatProvider)module).removeHeartbeatListener();
+            ((IHeartbeatProvider)module).getHeartbeatManager().removeHeartbeatListener(mHeartbeatBroadcaster);
         }
 
         if(module instanceof IMessageProvider)
@@ -595,7 +595,7 @@ public class ProcessingChain implements IChannelEventListener
                 {
                     try
                     {
-                        module.start(ThreadPool.SCHEDULED);
+                        module.start();
                     }
                     catch(Exception e)
                     {

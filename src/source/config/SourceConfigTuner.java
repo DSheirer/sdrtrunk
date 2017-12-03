@@ -19,7 +19,7 @@
 package source.config;
 
 import source.SourceType;
-import source.tuner.TunerChannel;
+import source.tuner.channel.TunerChannel;
 
 import javax.xml.bind.annotation.XmlAttribute;
 import java.text.DecimalFormat;

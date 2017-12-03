@@ -25,6 +25,7 @@ import sample.ConversionUtils;
 import sample.Listener;
 import sample.real.IFilteredRealBufferListener;
 import sample.real.RealBuffer;
+import util.ThreadPool;
 import util.TimeStamp;
 
 import javax.sound.sampled.AudioFormat;
@@ -89,7 +90,7 @@ public class RealBufferWaveRecorder extends Module
         return mFile;
     }
 
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
         if(mRunning.compareAndSet(false, true))
         {
@@ -111,7 +112,7 @@ public class RealBufferWaveRecorder extends Module
                 mWriter = new WaveWriter(mAudioFormat, mFile);
 
 				/* Schedule the processor to run every 500 milliseconds */
-                mProcessorHandle = executor.scheduleAtFixedRate(mBufferProcessor, 0, 500, TimeUnit.MILLISECONDS);
+                mProcessorHandle = ThreadPool.SCHEDULED.scheduleAtFixedRate(mBufferProcessor, 0, 500, TimeUnit.MILLISECONDS);
             }
             catch(IOException io)
             {

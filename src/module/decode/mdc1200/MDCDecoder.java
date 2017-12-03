@@ -202,25 +202,4 @@ public class MDCDecoder extends Decoder implements IFilteredRealBufferListener,
 	{
 		return mDecimationFilter;
 	}
-
-	@Override
-	public void reset()
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void start( ScheduledExecutorService executor )
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void stop()
-	{
-		// TODO Auto-generated method stub
-		
-	}
 }

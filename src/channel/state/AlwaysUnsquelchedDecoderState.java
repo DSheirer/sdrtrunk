@@ -48,11 +48,6 @@ public class AlwaysUnsquelchedDecoderState extends DecoderState
     }
 
     @Override
-    public void init()
-    {
-    }
-
-    @Override
     public void reset()
     {
     }
@@ -94,14 +89,9 @@ public class AlwaysUnsquelchedDecoderState extends DecoderState
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
         broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_TO, mChannelName));
         broadcast(new DecoderStateEvent(this, Event.ALWAYS_UNSQUELCH, State.IDLE));
-    }
-
-    @Override
-    public void stop()
-    {
     }
 }

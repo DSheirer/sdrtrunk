@@ -25,6 +25,7 @@ import module.Module;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sample.Listener;
+import util.ThreadPool;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -196,7 +197,7 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
      *
      * @param executor to use in scheduling audio conversion and file writes.
      */
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
         if(mRunning.compareAndSet(false, true))
         {
@@ -212,7 +213,7 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
                 mFileOutputStream = new FileOutputStream(mPath.toFile());
 
 				/* Schedule the handler to run every half second */
-                mProcessorHandle = executor.scheduleAtFixedRate(mBufferProcessor, 0, 500, TimeUnit.MILLISECONDS);
+                mProcessorHandle = ThreadPool.SCHEDULED.scheduleAtFixedRate(mBufferProcessor, 0, 500, TimeUnit.MILLISECONDS);
             }
             catch(IOException io)
             {

@@ -65,7 +65,7 @@ public abstract class EventLogger extends Module
     public abstract String getHeader();
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
         if(mLogFile == null)
         {

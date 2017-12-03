@@ -64,16 +64,6 @@ public class LJ1200DecoderState extends DecoderState
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
-    {
-    }
-
-    @Override
-    public void stop()
-    {
-    }
-
-    @Override
     public void receive(Message message)
     {
         if(message instanceof LJ1200Message)
@@ -123,12 +113,6 @@ public class LJ1200DecoderState extends DecoderState
         }
 
         return sb.toString();
-    }
-
-    @Override
-    public void init()
-    {
-        /* No initialization steps */
     }
 
     @Override

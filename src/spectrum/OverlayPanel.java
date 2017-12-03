@@ -30,7 +30,7 @@ import settings.ColorSetting.ColorSettingName;
 import settings.Setting;
 import settings.SettingChangeListener;
 import settings.SettingsManager;
-import source.tuner.TunerChannel;
+import source.tuner.channel.TunerChannel;
 import source.SourceEvent;
 import source.ISourceEventProcessor;
 

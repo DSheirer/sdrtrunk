@@ -16,11 +16,30 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package channel.heartbeat;
+package source.tuner.channel;
 
-import sample.Listener;
+import java.util.concurrent.RejectedExecutionException;
 
-public interface IHeartbeatListener
+import source.SourceException;
+
+public interface TunerChannelProvider
 {
-    public Listener<Heartbeat> getHeartbeatListener();
+	/**
+	 * Returns a tuner frequency channel source, tuned to the correct frequency
+	 * 
+	 * @param frequency - desired frequency
+	 * 
+	 * @return - source for 48k sample rate
+	 */
+	public abstract TunerChannelSource getChannel( TunerChannel channel ) 
+			throws RejectedExecutionException, SourceException;
+
+	/**
+	 * Releases the tuned channel resources
+	 * 
+	 * @param channel - previously obtained tuner channel
+	 */
+	public abstract void releaseChannel( TunerChannelSource source );
+	
+	
 }

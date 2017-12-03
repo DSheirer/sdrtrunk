@@ -25,13 +25,19 @@ import org.usb4java.DeviceDescriptor;
 import org.usb4java.DeviceHandle;
 import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
+import sample.Listener;
+import sample.adapter.ShortAdapter;
+import sample.complex.ComplexBuffer;
 import source.SourceException;
+import source.mixer.ComplexMixer;
+import source.tuner.MixerTunerDataLine;
 import source.tuner.TunerClass;
 import source.tuner.TunerController;
 import source.tuner.TunerType;
 import source.tuner.configuration.TunerConfiguration;
 import source.tuner.fcd.proV1.FCD1TunerController.Block;
 
+import javax.sound.sampled.AudioFormat;
 import javax.usb.UsbClaimException;
 import javax.usb.UsbException;
 import java.nio.ByteBuffer;
@@ -54,6 +60,8 @@ public abstract class FCDTunerController extends TunerController
     private DeviceHandle mDeviceHandle;
 
     private FCDConfiguration mConfiguration = new FCDConfiguration();
+    protected ComplexMixer mComplexMixer;
+
 
     /**
      * Generic FCD tuner controller - contains functionality common across both
@@ -64,11 +72,8 @@ public abstract class FCDTunerController extends TunerController
      * @param minTunableFrequency
      * @param maxTunableFrequency
      */
-    public FCDTunerController(Device device,
-                              DeviceDescriptor descriptor,
-                              int sampleRate,
-                              int minTunableFrequency,
-                              int maxTunableFrequency)
+    public FCDTunerController(MixerTunerDataLine mixerTDL, Device device, DeviceDescriptor descriptor, String tunerName,
+                              int minTunableFrequency, int maxTunableFrequency, AudioFormat audioFormat)
     {
         super(minTunableFrequency, maxTunableFrequency, DC_SPIKE_AVOID_BUFFER, USABLE_BANDWIDTH_PERCENT);
         mDevice = device;
@@ -76,11 +81,45 @@ public abstract class FCDTunerController extends TunerController
 
         try
         {
-            mFrequencyController.setSampleRate(sampleRate);
+            mFrequencyController.setSampleRate((int)audioFormat.getSampleRate());
         }
         catch(SourceException se)
         {
-            mLog.error("Error setting sample rate to [" + sampleRate + "]", se);
+            mLog.error("Error setting sample rate to [" + audioFormat.getSampleRate() + "]", se);
+        }
+
+        mComplexMixer = new ComplexMixer( mixerTDL.getTargetDataLine(), audioFormat, tunerName, new ShortAdapter(),
+            mSampleBroadcaster);
+    }
+
+    /**
+     * Overrides the super class functionality to auto-start the complex mixer and provide samples to listeners
+     */
+    @Override
+    public void addComplexBufferListener(Listener<ComplexBuffer> listener)
+    {
+        boolean hasExistingListeners = hasComplexBufferListeners();
+
+        super.addComplexBufferListener(listener);
+
+        if(!hasExistingListeners)
+        {
+            mComplexMixer.start();
+        }
+    }
+
+    /**
+     * Overrides the super class functionality to auto-stop the complex mixer and stop sample stream when there are no
+     * more registered listeners
+     */
+    @Override
+    public void removeComplexBufferListener(Listener<ComplexBuffer> listener)
+    {
+        super.removeComplexBufferListener(listener);
+
+        if(!hasComplexBufferListeners())
+        {
+            mComplexMixer.stop();
         }
     }
 

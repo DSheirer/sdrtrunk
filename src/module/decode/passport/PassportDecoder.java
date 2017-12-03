@@ -109,14 +109,4 @@ public class PassportDecoder extends Decoder
 	{
 		mPassportMessageFramer.reset();
 	}
-
-	@Override
-	public void start( ScheduledExecutorService executor )
-	{
-	}
-
-	@Override
-	public void stop()
-	{
-	}
 }

@@ -120,14 +120,4 @@ public class LTRNetDecoder extends Decoder
 	{
 		mLTRMessageFramer.reset();
 	}
-
-	@Override
-	public void start( ScheduledExecutorService executor )
-	{
-	}
-
-	@Override
-	public void stop()
-	{
-	}
 }

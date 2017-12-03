@@ -104,7 +104,7 @@ public class FMDemodulatorModule extends Module implements IComplexBufferListene
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
     }
 

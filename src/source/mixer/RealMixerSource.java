@@ -17,8 +17,7 @@
  ******************************************************************************/
 package source.mixer;
 
-import channel.heartbeat.Heartbeat;
-import dsp.gain.AutomaticGainControl;
+import source.heartbeat.Heartbeat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sample.Listener;

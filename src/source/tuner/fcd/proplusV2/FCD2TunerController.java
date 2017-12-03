@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import org.usb4java.Device;
 import org.usb4java.DeviceDescriptor;
 import source.SourceException;
+import source.tuner.MixerTunerDataLine;
 import source.tuner.MixerTunerType;
 import source.tuner.TunerClass;
 import source.tuner.TunerType;
@@ -41,11 +42,10 @@ public class FCD2TunerController extends FCDTunerController
     public static final int MAXIMUM_TUNABLE_FREQUENCY = 2050000000;
     public static final int SAMPLE_RATE = 192000;
 
-    public FCD2TunerController(Device device, DeviceDescriptor descriptor)
+    public FCD2TunerController(MixerTunerDataLine mixerTDL, Device device, DeviceDescriptor descriptor)
     {
-        super(device, descriptor,
-            (int)MixerTunerType.FUNCUBE_DONGLE_PRO_PLUS.getAudioFormat().getSampleRate(),
-            MINIMUM_TUNABLE_FREQUENCY, MAXIMUM_TUNABLE_FREQUENCY);
+        super(mixerTDL, device, descriptor, MixerTunerType.FUNCUBE_DONGLE_PRO_PLUS.getDisplayString(),
+            MINIMUM_TUNABLE_FREQUENCY, MAXIMUM_TUNABLE_FREQUENCY, MixerTunerType.FUNCUBE_DONGLE_PRO.getAudioFormat());
     }
 
     public void init() throws SourceException

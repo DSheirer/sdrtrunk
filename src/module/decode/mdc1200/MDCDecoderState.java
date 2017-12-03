@@ -60,16 +60,6 @@ public class MDCDecoderState extends DecoderState
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
-    {
-    }
-
-    @Override
-    public void stop()
-    {
-    }
-
-    @Override
     public void reset()
     {
         mIdents.clear();
@@ -243,12 +233,6 @@ public class MDCDecoderState extends DecoderState
         }
 
         return sb.toString();
-    }
-
-    @Override
-    public void init()
-    {
-        /* No initialization required */
     }
 
     /**

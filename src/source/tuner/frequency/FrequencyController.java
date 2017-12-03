@@ -96,6 +96,16 @@ public class FrequencyController
     }
 
     /**
+     * Indicates if the specified frequency can be tuned (ie is within min/max frequency) by this controller.
+     * @param frequency to evaluate
+     * @return true if the frequency falls within the tuning range of this controller
+     */
+    public boolean canTune(long frequency)
+    {
+        return getMinimumFrequency() <= frequency && frequency <= getMaximumFrequency();
+    }
+
+    /**
      * Set frequency with optional broadcast of frequency change event.  This
      * method supports changing the frequency correction value without
      * broadcasting a frequency change event.
@@ -257,5 +267,10 @@ public class FrequencyController
          * Gets the current bandwidth setting of the device
          */
         public int getCurrentSampleRate() throws SourceException;
+
+        /**
+         * Indicates if this tunable can tune the frequency
+         */
+        public boolean canTune(long frequency);
     }
 }

@@ -297,16 +297,4 @@ public class MPT1327Decoder extends Decoder implements IFilteredRealBufferListen
         mControlMessageFramer.reset();
         mTrafficMessageFramer.reset();
     }
-
-    @Override
-    public void start(ScheduledExecutorService executor)
-    {
-        // TODO Auto-generated method stub
-    }
-
-    @Override
-    public void stop()
-    {
-        // TODO Auto-generated method stub
-    }
 }

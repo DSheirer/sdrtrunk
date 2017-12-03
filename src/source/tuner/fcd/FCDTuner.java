@@ -17,35 +17,19 @@
  ******************************************************************************/
 package source.tuner.fcd;
 
-import java.util.concurrent.RejectedExecutionException;
-
-import sample.Listener;
-import sample.adapter.ShortAdapter;
-import sample.complex.ComplexBuffer;
-import source.SourceException;
-import source.tuner.MixerTuner;
-import source.tuner.MixerTunerDataLine;
-import source.tuner.TunerChannel;
-import source.tuner.TunerChannelSource;
+import source.tuner.Tuner;
 import source.tuner.TunerClass;
-import source.tuner.TunerEvent;
 import source.tuner.TunerType;
 
-public class FCDTuner extends MixerTuner
+public class FCDTuner extends Tuner
 {
-	public FCDTuner( MixerTunerDataLine mixerTDL,
-					 FCDTunerController controller )
+	public FCDTuner(FCDTunerController controller)
 	{
-		super( controller.getConfiguration().toString(),
-			   controller,
-			   mixerTDL, 
-			   new ShortAdapter() );
+		super( controller.getConfiguration().toString(), controller);
 	}
 	
 	public void dispose()
 	{
-		//TODO: release the mixer tuner data line as well
-		
 		getController().dispose();
 	}
 	
@@ -77,36 +61,4 @@ public class FCDTuner extends MixerTuner
 	{
 		return 16.0;
 	}
-
-	@Override
-    public TunerChannelSource getChannel( TunerChannel tunerChannel )
-    		throws RejectedExecutionException, SourceException
-    {
-		TunerChannelSource source = getController().getChannel( this, tunerChannel );
-
-		if( source != null )
-		{
-			broadcast( new TunerEvent( this, TunerEvent.Event.CHANNEL_COUNT ) );
-		}
-		
-		return source;
-    }
-
-	/**
-	 * Releases the tuned channel so that the tuner controller can tune to
-	 * other frequencies as needed.
-	 */
-	@Override
-    public void releaseChannel( TunerChannelSource source )
-    {
-		if( source != null )
-		{
-			/* Unregister for receiving samples */
-			removeListener( (Listener<ComplexBuffer>)source );
-
-			/* Tell the controller to release the channel and cleanup */
-			/* This will release the channel as a frequency change listener */
-			getController().releaseChannel( source );
-		}
-    }
 }

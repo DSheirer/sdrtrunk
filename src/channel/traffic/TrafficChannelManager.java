@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 import record.config.RecordConfiguration;
 import sample.Listener;
 import source.config.SourceConfigTuner;
-import source.tuner.TunerChannel;
+import source.tuner.channel.TunerChannel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -330,7 +330,7 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
     }
 

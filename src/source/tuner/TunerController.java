@@ -19,10 +19,16 @@ package source.tuner;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sample.Broadcaster;
+import sample.Listener;
+import sample.complex.ComplexBuffer;
+import sample.complex.IComplexBufferProvider;
 import source.ISourceEventProcessor;
 import source.SourceEvent;
 import source.SourceEvent.Event;
 import source.SourceException;
+import source.tuner.channel.TunerChannel;
+import source.tuner.channel.TunerChannelSource;
 import source.tuner.configuration.TunerConfiguration;
 import source.tuner.frequency.FrequencyController;
 import source.tuner.frequency.FrequencyController.Tunable;
@@ -31,9 +37,11 @@ import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.RejectedExecutionException;
 
-public abstract class TunerController implements Tunable, ISourceEventProcessor
+public abstract class TunerController implements Tunable, ISourceEventProcessor,
+    IComplexBufferProvider, Listener<ComplexBuffer>
 {
     private final static Logger mLog = LoggerFactory.getLogger(TunerController.class);
+    protected Broadcaster<ComplexBuffer> mSampleBroadcaster = new Broadcaster<>();
 
     /* List of currently tuned channels being served to demod channels */
     private SortedSet<TunerChannel> mTunedChannels = new ConcurrentSkipListSet<>();
@@ -100,6 +108,12 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor
     public long getFrequency()
     {
         return mFrequencyController.getFrequency();
+    }
+
+    @Override
+    public boolean canTune(long frequency)
+    {
+        return mFrequencyController.canTune(frequency);
     }
 
     public int getSampleRate()
@@ -368,5 +382,49 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor
     public void removeListener( ISourceEventProcessor processor )
     {
         mFrequencyController.removeFrequencyChangeProcessor(processor);
+    }
+
+    /**
+     * Adds the listener to receive complex buffer samples
+     */
+    @Override
+    public void addComplexBufferListener(Listener<ComplexBuffer> listener)
+    {
+        mSampleBroadcaster.addListener(listener);
+    }
+
+    /**
+     * Removes the listener from receiving complex buffer samples
+     */
+    @Override
+    public void removeComplexBufferListener(Listener<ComplexBuffer> listener)
+    {
+        mSampleBroadcaster.removeListener(listener);
+    }
+
+    /**
+     * Indicates if there are any complex buffer listeners registered on this controller
+     */
+    @Override
+    public boolean hasComplexBufferListeners()
+    {
+        return mSampleBroadcaster.hasListeners();
+    }
+
+    /**
+     * Broadcasts the buffer to any registered listeners
+     */
+    protected void broadcast(ComplexBuffer complexBuffer)
+    {
+        mSampleBroadcaster.broadcast(complexBuffer);
+    }
+
+    /**
+     * Implements the Listener<T> interface to receive and distribute complex buffers from subclass implementations
+     */
+    @Override
+    public void receive(ComplexBuffer complexBuffer)
+    {
+        broadcast(complexBuffer);
     }
 }

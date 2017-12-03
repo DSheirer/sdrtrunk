@@ -77,18 +77,6 @@ public class LTRStandardDecoderState extends DecoderState
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void stop()
-    {
-    }
-
-    @Override
     public void receive(Message message)
     {
         if(message.isValid() && message instanceof LTRStandardMessage)
@@ -255,11 +243,6 @@ public class LTRStandardDecoderState extends DecoderState
             broadcast(new AttributeChangeRequest<String>(Attribute.CHANNEL_FREQUENCY_LABEL,
                 "LCN:" + mLCNTracker.getCurrentChannel()));
         }
-    }
-
-    @Override
-    public void init()
-    {
     }
 
     @Override

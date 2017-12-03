@@ -174,19 +174,4 @@ public class Fleetsync2Decoder extends Decoder implements IFilteredRealBufferLis
 	{
 		return mDecimationFilter;
 	}
-
-	@Override
-	public void reset()
-	{
-	}
-
-	@Override
-	public void start( ScheduledExecutorService executor )
-	{
-	}
-
-	@Override
-	public void stop()
-	{
-	}
 }

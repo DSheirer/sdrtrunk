@@ -117,7 +117,7 @@ public class AudioModule extends Module implements IAudioPacketProvider, IFilter
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
         /* No start operations provided */
     }

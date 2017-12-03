@@ -59,9 +59,9 @@ public abstract class Module
 	public abstract void reset();
 
 	/**
-	 * Start processing.  Provides an executor to use for scheduling tasks
+	 * Start processing.
 	 */
-	public abstract void start( ScheduledExecutorService executor );
+	public abstract void start();
 
 	/**
 	 * Stop processing

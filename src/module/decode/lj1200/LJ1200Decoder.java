@@ -192,19 +192,4 @@ public class LJ1200Decoder extends Decoder implements IFilteredRealBufferListene
 	{
 		return mDecimationFilter;
 	}
-
-	@Override
-	public void reset()
-	{
-	}
-
-	@Override
-	public void start( ScheduledExecutorService executor )
-	{
-	}
-
-	@Override
-	public void stop()
-	{
-	}
 }

@@ -84,14 +84,4 @@ public class LTRStandardDecoder extends Decoder implements IUnFilteredRealBuffer
 	{
 		mLTRMessageFramer.reset();
 	}
-
-	@Override
-	public void start( ScheduledExecutorService executor )
-	{
-	}
-
-	@Override
-	public void stop()
-	{
-	}
 }

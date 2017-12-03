@@ -766,12 +766,6 @@ public class LTRNetDecoderState extends DecoderState
     }
 
     @Override
-    public void init()
-    {
-		/* No initialization steps required */
-    }
-
-    @Override
     public void receiveDecoderStateEvent(DecoderStateEvent event)
     {
         switch(event.getEvent())
@@ -785,15 +779,5 @@ public class LTRNetDecoderState extends DecoderState
             default:
                 break;
         }
-    }
-
-    @Override
-    public void start(ScheduledExecutorService executor)
-    {
-    }
-
-    @Override
-    public void stop()
-    {
     }
 }

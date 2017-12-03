@@ -71,8 +71,20 @@ public class TestTunerController extends TunerController
      */
     public void start(Listener<ComplexBuffer> listener)
     {
+    }
+
+    @Override
+    public void addComplexBufferListener(Listener<ComplexBuffer> listener)
+    {
         mSampleGenerator.setListener(listener);
         mSampleGenerator.start();
+    }
+
+    @Override
+    public void removeComplexBufferListener(Listener<ComplexBuffer> listener)
+    {
+        mSampleGenerator.stop();
+        mSampleGenerator.setListener(null);
     }
 
     /**
@@ -80,8 +92,6 @@ public class TestTunerController extends TunerController
      */
     public void stop()
     {
-        mSampleGenerator.stop();
-        mSampleGenerator.setListener(null);
     }
 
     @Override

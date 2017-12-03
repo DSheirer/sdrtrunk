@@ -424,7 +424,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuff
             mTuner.getTunerController().addListener(this);
 
             //Register the dft processor to receive samples from the tuner
-            mTuner.addListener((Listener<ComplexBuffer>)mDFTProcessor);
+            mTuner.getSourceManager().addComplexBufferListener(mDFTProcessor);
 
             mSpectrumPanel.setSampleSize(mTuner.getSampleSize());
 

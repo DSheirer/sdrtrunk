@@ -71,7 +71,7 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
 
     }

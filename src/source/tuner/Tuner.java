@@ -23,9 +23,12 @@ import org.slf4j.LoggerFactory;
 import sample.Broadcaster;
 import sample.Listener;
 import sample.complex.ComplexBuffer;
+import sample.complex.IComplexBufferProvider;
 import source.ISourceEventProcessor;
 import source.SourceEvent;
 import source.SourceException;
+import source.tuner.manager.AbstractSourceManager;
+import source.tuner.manager.TunerSourceManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,20 +38,26 @@ import java.util.concurrent.RejectedExecutionException;
 /**
  * Tuner - provides tuner channel sources, representing a channel frequency
  */
-public abstract class Tuner implements ITunerChannelProvider
+public abstract class Tuner
 {
     private final static Logger mLog = LoggerFactory.getLogger(Tuner.class);
 
-    private String mName;
+    protected Broadcaster<TunerEvent> mTunerEventBroadcaster = new Broadcaster<>();
     private TunerController mTunerController;
-    private Broadcaster<ComplexBuffer> mSampleBroadcaster = new Broadcaster<>();
-    protected List<Listener<TunerEvent>> mTunerChangeListeners = new ArrayList<>();
-    protected Broadcaster<SourceEvent> mSourceEventBroadcaster = new Broadcaster<>();
+    private String mName;
+    private AbstractSourceManager mTunerSourceManager;
 
+    /**
+     * Abstract tuner class.
+     * @param name of the tuner
+     * @param tunerController for the tuner
+     */
     public Tuner(String name, TunerController tunerController)
     {
         mName = name;
         mTunerController = tunerController;
+
+        mTunerSourceManager = new TunerSourceManager(mTunerController);
 
         //Rebroadcast frequency and sample rate change events as tuner events
         mTunerController.addListener(new ISourceEventProcessor()
@@ -59,18 +68,24 @@ public abstract class Tuner implements ITunerChannelProvider
                 switch(event.getEvent())
                 {
                     case NOTIFICATION_FREQUENCY_CHANGE:
-                        broadcast(new TunerEvent(Tuner.this,
-                            source.tuner.TunerEvent.Event.FREQUENCY));
+                        broadcast(new TunerEvent(Tuner.this, source.tuner.TunerEvent.Event.FREQUENCY));
                         break;
                     case NOTIFICATION_SAMPLE_RATE_CHANGE:
-                        broadcast(new TunerEvent(Tuner.this,
-                            source.tuner.TunerEvent.Event.SAMPLE_RATE));
+                        broadcast(new TunerEvent(Tuner.this, source.tuner.TunerEvent.Event.SAMPLE_RATE));
                         break;
                     default:
                         break;
                 }
             }
         });
+    }
+
+    /**
+     * Source Manager.  Provides access to registering for complex buffer samples and source event notifications.
+     */
+    public AbstractSourceManager getSourceManager()
+    {
+        return mTunerSourceManager;
     }
 
     public TunerController getTunerController()
@@ -85,7 +100,6 @@ public abstract class Tuner implements ITunerChannelProvider
 
     public void dispose()
     {
-        mSampleBroadcaster.clear();
     }
 
     public void setName(String name)
@@ -130,92 +144,11 @@ public abstract class Tuner implements ITunerChannelProvider
     public abstract double getSampleSize();
 
     /**
-     * Returns a tuner frequency channel source, tuned to the correct frequency
-     *
-     * Note: ensure the concrete implementation registers the returned
-     * tuner channel source as a listener on the tuner, to receive frequency
-     * change events.
-     *
-     * @param channel - desired frequency and bandwidth
-     * @return - source for 48k sample rate
-     */
-    public abstract TunerChannelSource getChannel(TunerChannel channel)
-        throws RejectedExecutionException, SourceException;
-
-    /**
-     * Releases the tuned channel resources
-     *
-     * Note: ensure the concrete implementation unregisters the tuner channel
-     * source from the tuner as a frequency change listener
-     *
-     * @param source - previously obtained tuner channel
-     */
-    public abstract void releaseChannel(TunerChannelSource source);
-
-    /**
-     * Registers the listener to receive complex float sample arrays
-     */
-    public void addListener(Listener<ComplexBuffer> listener)
-    {
-        mSampleBroadcaster.addListener(listener);
-    }
-
-    /**
-     * Removes the registered listener
-     */
-    public void removeListener(Listener<ComplexBuffer> listener)
-    {
-        mSampleBroadcaster.removeListener(listener);
-    }
-
-    /**
-     * Number of registered complex sample buffer listeners
-     */
-    public int getListenerCount()
-    {
-        return mSampleBroadcaster.getListenerCount();
-    }
-
-    /**
-     * Provides access to the internal sample broadcaster for sub-class use (ie protected).
-     */
-    protected Broadcaster<ComplexBuffer> getSampleBroadcaster()
-    {
-        return mSampleBroadcaster;
-    }
-
-    /**
-     * Indicates if the listener is currently registered with this tuner
-     * @param listener of complex buffer samples
-     * @return true if the listener is registered
-     */
-    public boolean hasListener(Listener<ComplexBuffer> listener)
-    {
-        return mSampleBroadcaster.hasListener(listener);
-    }
-
-    /**
-     * Indicates if this tuner has any complex buffer listeners registered
-     */
-    public boolean hasListeners()
-    {
-        return mSampleBroadcaster.hasListeners();
-    }
-
-    /**
-     * Broadcasts the samples to all registered listeners
-     */
-    public void broadcast(ComplexBuffer sampleBuffer)
-    {
-        mSampleBroadcaster.broadcast(sampleBuffer);
-    }
-
-    /**
      * Registers the listener
      */
     public void addTunerChangeListener(Listener<TunerEvent> listener)
     {
-        mTunerChangeListeners.add(listener);
+        mTunerEventBroadcaster.addListener(listener);
     }
 
     /**
@@ -223,7 +156,7 @@ public abstract class Tuner implements ITunerChannelProvider
      */
     public void removeTunerChangeListener(Listener<TunerEvent> listener)
     {
-        mTunerChangeListeners.remove(listener);
+        mTunerEventBroadcaster.removeListener(listener);
     }
 
     /**
@@ -231,36 +164,6 @@ public abstract class Tuner implements ITunerChannelProvider
      */
     public void broadcast(TunerEvent tunerEvent)
     {
-        for(Listener<TunerEvent> listener : mTunerChangeListeners)
-        {
-            listener.receive(tunerEvent);
-        }
-
-        //Re-broadcast frequency and sample rate change events as source events
-        switch(tunerEvent.getEvent())
-        {
-            case FREQUENCY:
-                mSourceEventBroadcaster.broadcast(SourceEvent.frequencyChange(getTunerController().getFrequency()));
-                break;
-            case SAMPLE_RATE:
-                mSourceEventBroadcaster.broadcast(SourceEvent.sampleRateChange(getTunerController().getSampleRate()));
-                break;
-        }
-    }
-
-    /**
-     * Adds the listener to receive source events
-     */
-    public void addSourceEventListener(Listener<SourceEvent> listener)
-    {
-        mSourceEventBroadcaster.addListener(listener);
-    }
-
-    /**
-     * Removes the listener from receiving source events
-     */
-    public void removeSourceEventListener(Listener<SourceEvent> listener)
-    {
-        mSourceEventBroadcaster.removeListener(listener);
+        mTunerEventBroadcaster.broadcast(tunerEvent);
     }
 }

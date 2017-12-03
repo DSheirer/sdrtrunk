@@ -16,12 +16,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package source.tuner;
+package source.tuner.channel;
 
-import channel.heartbeat.Heartbeat;
-import channel.heartbeat.IHeartbeatProvider;
 import dsp.filter.FilterFactory;
-import dsp.filter.Window.WindowType;
+import dsp.filter.Window;
 import dsp.filter.cic.ComplexPrimeCICDecimate;
 import dsp.mixer.Oscillator;
 import org.slf4j.Logger;
@@ -32,12 +30,13 @@ import sample.OverflowableTransferQueue;
 import sample.complex.Complex;
 import sample.complex.ComplexBuffer;
 import sample.real.IOverflowListener;
-import source.ComplexSource;
-import source.SourceException;
 import source.ISourceEventListener;
-import source.ISourceEventProvider;
-import source.SourceEvent;
 import source.ISourceEventProcessor;
+import source.ISourceEventProvider;
+import source.Source;
+import source.SourceEvent;
+import source.SourceException;
+import source.tuner.Tuner;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,9 +46,9 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class TunerChannelSource extends ComplexSource implements ISourceEventProcessor, Listener<ComplexBuffer>
+public class DecimatingTunerChannelSource extends TunerChannelSource
 {
-    private final static Logger mLog = LoggerFactory.getLogger(TunerChannelSource.class);
+    private final static Logger mLog = LoggerFactory.getLogger(DecimatingTunerChannelSource.class);
 
     //Maximum number of filled buffers for the blocking queue
     private static final int BUFFER_MAX_CAPACITY = 300;
@@ -59,17 +58,14 @@ public class TunerChannelSource extends ComplexSource implements ISourceEventPro
 
     private static int CHANNEL_RATE = 48000;
     private static int CHANNEL_PASS_FREQUENCY = 12000;
-    private static final Heartbeat HEARTBEAT = new Heartbeat();
 
     private OverflowableTransferQueue<ComplexBuffer> mBuffer;
 
-    private Tuner mTuner;
     private TunerChannel mTunerChannel;
     private Oscillator mMixer;
     private ComplexPrimeCICDecimate mDecimationFilter;
     private Listener<ComplexBuffer> mListener;
     private ISourceEventProcessor mFrequencyChangeProcessor;
-    private Listener<Heartbeat> mHeartbeatListener;
     private DownstreamProcessor mDownstreamFrequencyEventProcessor = new DownstreamProcessor();
     private ScheduledFuture<?> mTaskHandle;
 
@@ -93,28 +89,50 @@ public class TunerChannelSource extends ComplexSource implements ISourceEventPro
      * and thus the tuner might no longer be able to source this channel once it
      * has been stopped.
      *
-     * @param tuner to obtain wideband IQ samples from
      * @param tunerChannel specifying the center frequency for the DDC
      * @throws RejectedExecutionException if the thread pool manager cannot
      *                                    accept the decimation processing task
      * @throws SourceException            if the tuner has an issue providing IQ samples
      */
-    public TunerChannelSource(Tuner tuner, TunerChannel tunerChannel) throws RejectedExecutionException, SourceException
+    public DecimatingTunerChannelSource(Listener<SourceEvent> listener, TunerChannel tunerChannel, int inputSampleRate,
+                                        long frequency)
     {
-        mTuner = tuner;
+        super(listener, tunerChannel);
+
         mTunerChannel = tunerChannel;
-        mTuner.getTunerController().addListener((ISourceEventProcessor) this);
-        mTunerFrequency = mTuner.getTunerController().getFrequency();
+        mTunerFrequency = frequency;
 
         mBuffer = new OverflowableTransferQueue<>(BUFFER_MAX_CAPACITY, BUFFER_OVERFLOW_RESET_THRESHOLD);
 
 	    /* Setup the frequency translator to the current source frequency */
         long frequencyOffset = mTunerFrequency - mTunerChannel.getFrequency();
 
-        mMixer = new Oscillator(frequencyOffset, mTuner.getTunerController().getSampleRate());
+        mMixer = new Oscillator(frequencyOffset, inputSampleRate);
 
 		/* Fire a sample rate change event to setup the decimation chain */
-        process(SourceEvent.sampleRateChange(mTuner.getTunerController().getSampleRate()));
+		try
+        {
+            process(SourceEvent.sampleRateChange(inputSampleRate));
+        }
+        catch(SourceException se)
+        {
+            mLog.error("Error", se);
+        }
+
+    }
+
+    /**
+     * Changes the frequency correction value and broadcasts the change to the registered downstream listener.
+     * @param correction current frequency correction value.
+     */
+    private void setFrequencyCorrection(int correction)
+    {
+        mChannelFrequencyCorrection = correction;
+
+        updateMixerFrequencyOffset();
+
+        mDownstreamFrequencyEventProcessor.broadcast(
+            SourceEvent.channelFrequencyCorrectionChange(mChannelFrequencyCorrection));
     }
 
     /**
@@ -145,7 +163,7 @@ public class TunerChannelSource extends ComplexSource implements ISourceEventPro
             mTaskHandle = executor.scheduleAtFixedRate(mDecimationProcessor, 0, 9, TimeUnit.MILLISECONDS);
 
 		    /* Finally, register to receive samples from the tuner */
-            mTuner.addListener((Listener<ComplexBuffer>) this);
+		    mSourceEventListener.receive(SourceEvent.startSampleStream(this));
         }
         else
         {
@@ -163,7 +181,7 @@ public class TunerChannelSource extends ComplexSource implements ISourceEventPro
     {
         if(mRunning.compareAndSet(true, false))
         {
-            mTuner.releaseChannel(this);
+            mSourceEventListener.receive(SourceEvent.stopSampleStream(this));
             mDecimationProcessor.shutdown();
 
             if(mTaskHandle != null)
@@ -186,30 +204,6 @@ public class TunerChannelSource extends ComplexSource implements ISourceEventPro
     @Override
     public void dispose()
     {
-        if(!mRunning.get())
-        {
-	    	/* Tell the tuner to release/unregister our resources */
-            mTuner.getTunerController().removeListener(this);
-        }
-    }
-
-    /**
-     * Changes the frequency correction value and broadcasts the change to the registered downstream listener.
-     * @param correction current frequency correction value.
-     */
-    private void setFrequencyCorrection(int correction)
-    {
-        mChannelFrequencyCorrection = correction;
-
-        updateMixerFrequencyOffset();
-
-        mDownstreamFrequencyEventProcessor.broadcast(
-            SourceEvent.channelFrequencyCorrectionChange(mChannelFrequencyCorrection));
-    }
-
-    public Tuner getTuner()
-    {
-        return mTuner;
     }
 
     public TunerChannel getTunerChannel()
@@ -234,7 +228,7 @@ public class TunerChannelSource extends ComplexSource implements ISourceEventPro
     @Override
     public void setListener(Listener<ComplexBuffer> listener)
     {
-		/* Save a pointer to the listener so that if we have to change the 
+		/* Save a pointer to the listener so that if we have to change the
 		 * decimation filter, we can re-add the listener */
         mListener = listener;
 
@@ -290,7 +284,7 @@ public class TunerChannelSource extends ComplexSource implements ISourceEventPro
 
             /* Get new decimation filter */
             mDecimationFilter = FilterFactory.getDecimationFilter(sampleRate, CHANNEL_RATE, 1,
-                CHANNEL_PASS_FREQUENCY, 60, WindowType.HAMMING);
+                CHANNEL_PASS_FREQUENCY, 60, Window.WindowType.HAMMING);
 
             /* re-add the original output listener */
             mDecimationFilter.setListener(mListener);
@@ -336,7 +330,7 @@ public class TunerChannelSource extends ComplexSource implements ISourceEventPro
     /**
      * Implements ISourceEventProvider to remove the frequency change listener from receiving down-stream frequency
      * change events.
-      */
+     */
     @Override
     public void removeSourceEventListener()
     {
@@ -352,25 +346,6 @@ public class TunerChannelSource extends ComplexSource implements ISourceEventPro
     public Listener<SourceEvent> getSourceEventListener()
     {
         return mDownstreamFrequencyEventProcessor.getSourceEventListener();
-    }
-
-    /**
-     * Registers the listener to receive heartbeats from this source.
-     * @param listener to receive heartbeats
-     */
-    @Override
-    public void setHeartbeatListener(Listener<Heartbeat> listener)
-    {
-        mHeartbeatListener = listener;
-    }
-
-    /**
-     * Removes the currently registered heartbeat listener
-     */
-    @Override
-    public void removeHeartbeatListener()
-    {
-        mHeartbeatListener = null;
     }
 
     /**
@@ -500,10 +475,7 @@ public class TunerChannelSource extends ComplexSource implements ISourceEventPro
                 {
                     //Send a heartbeat every time this runs to allow downstream components to perform periodic
                     //state monitoring functions on this thread
-                    if(mHeartbeatListener != null)
-                    {
-                        mHeartbeatListener.receive(HEARTBEAT);
-                    }
+                    getHeartbeatManager().broadcast();
 
                     mBuffer.drainTo(mSampleBuffers, 20);
 

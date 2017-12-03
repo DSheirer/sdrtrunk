@@ -113,7 +113,7 @@ public class DCTrackingSourceControl extends Module
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
     }
 

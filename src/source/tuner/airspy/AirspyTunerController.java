@@ -1,7 +1,5 @@
 package source.tuner.airspy;
 
-import dsp.filter.dc.DCRemovalFilter_RB;
-import dsp.filter.hilbert.HilbertTransform;
 import org.apache.commons.io.EndianUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,16 +7,11 @@ import org.usb4java.Device;
 import org.usb4java.DeviceHandle;
 import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
-import org.usb4java.Transfer;
-import org.usb4java.TransferCallback;
-import sample.Broadcaster;
-import sample.Listener;
-import sample.complex.ComplexBuffer;
 import source.SourceException;
 import source.tuner.TunerController;
 import source.tuner.configuration.TunerConfiguration;
 import source.tuner.usb.USBTransferProcessor;
-import util.ThreadPool;
+import source.tuner.usb.USBTunerController;
 
 import javax.usb.UsbException;
 import java.nio.ByteBuffer;
@@ -27,10 +20,6 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.concurrent.LinkedTransferQueue;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * SDR Trunk
@@ -72,7 +61,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-public class AirspyTunerController extends TunerController
+public class AirspyTunerController extends USBTunerController
 {
     public static final Gain LINEARITY_GAIN_DEFAULT = Gain.LINEARITY_14;
     public static final Gain SENSITIVITY_GAIN_DEFAULT = Gain.SENSITIVITY_10;
@@ -192,6 +181,14 @@ public class AirspyTunerController extends TunerController
         mUSBTransferProcessor = new USBTransferProcessor(deviceName, mDeviceHandle, mSampleAdapter,
             USB_TRANSFER_BUFFER_SIZE);
     }
+
+
+    @Override
+    protected USBTransferProcessor getUSBTransferProcessor()
+    {
+        return mUSBTransferProcessor;
+    }
+
 
     /**
      * Claims the USB interface.  If another application currently has
@@ -1191,36 +1188,6 @@ public class AirspyTunerController extends TunerController
         public int getValue()
         {
             return mValue;
-        }
-    }
-
-    /**
-     * Adds the IQ buffer listener and automatically starts buffer transfer processing, if not already started.
-     */
-    public void addListener(Listener<ComplexBuffer> listener)
-    {
-        if(mUSBTransferProcessor != null)
-        {
-            mUSBTransferProcessor.addListener(listener);
-        }
-        else
-        {
-            mLog.error("Couldn't add IQ buffer listener to Airspy tuner - processor is null");
-        }
-    }
-
-    /**
-     * Removes the IQ buffer listener and stops buffer transfer processing if there are no more listeners.
-     */
-    public void removeListener(Listener<ComplexBuffer> listener)
-    {
-        if(mUSBTransferProcessor != null)
-        {
-            mUSBTransferProcessor.removeListener(listener);
-        }
-        else
-        {
-            mLog.error("Couldn't remove IQ buffer listener from Airspy tuner - processor is null");
         }
     }
 }

@@ -64,24 +64,9 @@ public class Fleetsync2DecoderState extends DecoderState
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
-    {
-    }
-
-    @Override
-    public void stop()
-    {
-    }
-
-    @Override
     public void dispose()
     {
         super.dispose();
-    }
-
-    @Override
-    public void init()
-    {
     }
 
     /**

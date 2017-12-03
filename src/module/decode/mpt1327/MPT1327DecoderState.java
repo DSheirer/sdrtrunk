@@ -87,16 +87,6 @@ public class MPT1327DecoderState extends DecoderState
         return DecoderType.MPT1327;
     }
 
-    @Override
-    public void start(ScheduledExecutorService executor)
-    {
-    }
-
-    @Override
-    public void stop()
-    {
-    }
-
     public ChannelType getChannelType()
     {
         return mChannelType;
@@ -499,12 +489,6 @@ public class MPT1327DecoderState extends DecoderState
         }
 
         return sb.toString();
-    }
-
-    @Override
-    public void init()
-    {
-        /* No initialization required */
     }
 
     @Override

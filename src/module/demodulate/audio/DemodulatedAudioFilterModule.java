@@ -97,7 +97,7 @@ public class DemodulatedAudioFilterModule extends Module implements IUnFilteredR
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
     }
 

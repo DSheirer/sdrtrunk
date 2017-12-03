@@ -17,7 +17,7 @@
  ******************************************************************************/
 package source.wave;
 
-import channel.heartbeat.Heartbeat;
+import source.heartbeat.Heartbeat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sample.ConversionUtils;

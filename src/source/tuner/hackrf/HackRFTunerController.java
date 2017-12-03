@@ -69,6 +69,7 @@ import source.SourceException;
 import source.tuner.TunerController;
 import source.tuner.configuration.TunerConfiguration;
 import source.tuner.usb.USBTransferProcessor;
+import source.tuner.usb.USBTunerController;
 
 import javax.usb.UsbException;
 import java.nio.ByteBuffer;
@@ -76,7 +77,7 @@ import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.concurrent.LinkedTransferQueue;
 
-public class HackRFTunerController extends TunerController
+public class HackRFTunerController extends USBTunerController
 {
     private final static Logger mLog = LoggerFactory.getLogger(HackRFTunerController.class);
 
@@ -158,6 +159,12 @@ public class HackRFTunerController extends TunerController
         }
 
         mUSBTransferProcessor = new USBTransferProcessor(name, mDeviceHandle, mSampleAdapter, USB_TRANSFER_BUFFER_SIZE);
+    }
+
+    @Override
+    protected USBTransferProcessor getUSBTransferProcessor()
+    {
+        return mUSBTransferProcessor;
     }
 
     /**
@@ -874,23 +881,4 @@ public class HackRFTunerController extends TunerController
             return sb.toString();
         }
     }
-
-    /**
-     * Adds a sample listener.  If the buffer processing thread is
-     * not currently running, starts it running in a new thread.
-     */
-    public void addListener(Listener<ComplexBuffer> listener)
-    {
-        mUSBTransferProcessor.addListener(listener);
-    }
-
-    /**
-     * Removes the sample listener.  If this is the last registered listener,
-     * shuts down the buffer processing thread.
-     */
-    public void removeListener(Listener<ComplexBuffer> listener)
-    {
-        mUSBTransferProcessor.removeListener(listener);
-    }
-
 }

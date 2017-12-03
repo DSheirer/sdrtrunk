@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package source.tuner;
+package source.tuner.channel;
 
 public class TunerChannel implements Comparable<TunerChannel>
 {

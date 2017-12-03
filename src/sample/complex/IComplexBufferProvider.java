@@ -16,16 +16,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package channel.heartbeat;
+package sample.complex;
 
-public class Heartbeat
+import sample.Listener;
+
+public interface IComplexBufferProvider
 {
     /**
-     * Periodic pulse that is broadcast to subscribing modules within the demodulating chain so that
-     * monitoring of state and other attributes can occur on the primary demodulation and decoding
-     * thread.
+     * Adds the listener to receive complex buffer samples
      */
-    public Heartbeat()
-    {
-    }
+    void addComplexBufferListener(Listener<ComplexBuffer> listener);
+
+    /**
+     * Removes the listener from receiving complex buffer samples
+     */
+    void removeComplexBufferListener(Listener<ComplexBuffer> listener);
+
+    /**
+     * Indicates if there are any complex buffer listeners registered
+     */
+    boolean hasComplexBufferListeners();
 }

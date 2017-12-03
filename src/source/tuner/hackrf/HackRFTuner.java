@@ -17,19 +17,12 @@
  ******************************************************************************/
 package source.tuner.hackrf;
 
-import java.util.concurrent.RejectedExecutionException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sample.Listener;
-import sample.complex.ComplexBuffer;
 import source.SourceException;
 import source.tuner.Tuner;
-import source.tuner.TunerChannel;
-import source.tuner.TunerChannelSource;
 import source.tuner.TunerClass;
-import source.tuner.TunerEvent;
 import source.tuner.TunerType;
 import source.tuner.hackrf.HackRFTunerController.BoardID;
 
@@ -49,7 +42,6 @@ public class HackRFTuner extends Tuner
 
 	public void dispose()
 	{
-		//TODO: dispose of something here
 	}
 	
 	@Override
@@ -71,33 +63,6 @@ public class HackRFTuner extends Tuner
 	}
 
 	@Override
-    public TunerChannelSource getChannel( TunerChannel channel ) 
-    		throws RejectedExecutionException, SourceException
-    {
-		TunerChannelSource source = getController().getChannel( this, channel );
-
-		if( source != null )
-		{
-			broadcast( new TunerEvent( this, TunerEvent.Event.CHANNEL_COUNT ) );
-		}
-		
-		return source;
-    }
-
-	@Override
-    public void releaseChannel( TunerChannelSource source )
-    {
-		/* Unregister for receiving samples */
-		removeListener( (Listener<ComplexBuffer>)source );
-		
-		/* Tell the controller to release the channel and cleanup */
-		if( source != null )
-		{
-			getController().releaseChannel( source );
-		}
-    }
-
-	@Override
     public String getUniqueID()
     {
 		try
@@ -111,16 +76,4 @@ public class HackRFTuner extends Tuner
 		
 		return BoardID.HACKRF_ONE.getLabel();
     }
-	
-	@Override
-	public void addListener( Listener<ComplexBuffer> listener )
-	{
-		getController().addListener( listener );
-	}
-	
-	@Override
-	public void removeListener( Listener<ComplexBuffer> listener )
-	{
-		getController().removeListener( listener );
-	}
 }

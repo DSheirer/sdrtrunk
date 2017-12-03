@@ -20,6 +20,8 @@ package source.tuner;
 import java.util.concurrent.RejectedExecutionException;
 
 import source.SourceException;
+import source.tuner.channel.TunerChannel;
+import source.tuner.channel.TunerChannelSource;
 
 public interface ITunerChannelProvider
 {
@@ -30,7 +32,7 @@ public interface ITunerChannelProvider
 	 * 
 	 * @return - source for 48k sample rate
 	 */
-	public abstract TunerChannelSource getChannel( TunerChannel channel ) 
+	public abstract TunerChannelSource getChannel(TunerChannel channel )
 			throws RejectedExecutionException, SourceException;
 
 	/**

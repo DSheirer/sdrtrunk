@@ -33,7 +33,7 @@ import source.config.SourceConfigFactory;
 import source.config.SourceConfigRecording;
 import source.config.SourceConfigTuner;
 import source.config.SourceConfiguration;
-import source.tuner.TunerChannel;
+import source.tuner.channel.TunerChannel;
 import source.SourceEvent;
 import source.SourceEvent.Event;
 

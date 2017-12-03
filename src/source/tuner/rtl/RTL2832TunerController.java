@@ -38,6 +38,7 @@ import source.tuner.TunerController;
 import source.tuner.TunerManager;
 import source.tuner.TunerType;
 import source.tuner.usb.USBTransferProcessor;
+import source.tuner.usb.USBTunerController;
 
 import javax.usb.UsbDisconnectedException;
 import javax.usb.UsbException;
@@ -47,7 +48,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public abstract class RTL2832TunerController extends TunerController
+public abstract class RTL2832TunerController extends USBTunerController
 {
     private final static Logger mLog = LoggerFactory.getLogger(RTL2832TunerController.class);
 
@@ -161,6 +162,12 @@ public abstract class RTL2832TunerController extends TunerController
 
         mUSBTransferProcessor = new RTL2832USBTransferProcessor(deviceName, mDeviceHandle, mSampleAdapter,
             USB_TRANSFER_BUFFER_SIZE);
+    }
+
+    @Override
+    protected USBTransferProcessor getUSBTransferProcessor()
+    {
+        return mUSBTransferProcessor;
     }
 
     /**
@@ -449,7 +456,7 @@ public abstract class RTL2832TunerController extends TunerController
         {
             if(mUSBTransferProcessor != null)
             {
-                mUSBTransferProcessor.removeAllListeners();
+                mUSBTransferProcessor.removeListener();
                 TunerManager.LIBUSB_TRANSFER_PROCESSOR.unregisterTransferProcessor(mUSBTransferProcessor);
             }
 
@@ -1490,20 +1497,33 @@ public abstract class RTL2832TunerController extends TunerController
     }
 
     /**
-     * Adds a sample listener.  If the USB transfer processor is not currently running, it will auto-start
+     * Adds the IQ buffer listener and automatically starts buffer transfer processing, if not already started.
      */
-    public void addListener(Listener<ComplexBuffer> listener)
+    @Override
+    public void addComplexBufferListener(Listener<ComplexBuffer> listener)
     {
-        mUSBTransferProcessor.addListener(listener);
+        boolean hasExistingListeners = hasComplexBufferListeners();
+
+        super.addComplexBufferListener(listener);
+
+        if(!hasExistingListeners)
+        {
+            mUSBTransferProcessor.setListener(this);
+        }
     }
 
     /**
-     * Removes the sample listener.  If this is the last registered listener, the USB transfer processor will
-     * halt buffer processing
+     * Removes the IQ buffer listener and stops buffer transfer processing if there are no more listeners.
      */
-    public void removeListener(Listener<ComplexBuffer> listener)
+    @Override
+    public void removeComplexBufferListener(Listener<ComplexBuffer> listener)
     {
-        mUSBTransferProcessor.removeListener(listener);
+        super.removeComplexBufferListener(listener);
+
+        if(!hasComplexBufferListeners())
+        {
+            mUSBTransferProcessor.removeListener();
+        }
     }
 
     /**

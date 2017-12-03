@@ -25,11 +25,11 @@ import dsp.filter.design.FilterDesignException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sample.Listener;
+import sample.complex.IComplexBufferProvider;
 import source.Source;
 import source.SourceEvent;
 import source.SourceException;
-import source.tuner.Tuner;
-import source.tuner.TunerChannel;
+import source.tuner.channel.TunerChannel;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -42,7 +42,7 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
     private static final int CHANNEL_SAMPLE_RATE = (int)(CHANNEL_BANDWIDTH * CHANNEL_OVERSAMPLING);
     private static final int POLYPHASE_FILTER_TAPS_PER_CHANNEL = 17;
 
-    private Tuner mTuner;
+    private IComplexBufferProvider mComplexBufferProvider;
     private List<PolyphaseChannelSource> mChannelSources = new CopyOnWriteArrayList<>();
     private ChannelCalculator mChannelCalculator;
     private ComplexPolyphaseChannelizerM2 mPolyphaseChannelizer;
@@ -57,27 +57,29 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
      * active DDC polyphase channel sources accordingly.  This class also monitors source event requests and
      * notifications received from active DDC polyphase channel sources to adjust sample streams as required.
      *
-     * @param tuner providing complex sample buffers
+     * Note: add this channel manager as a source event listener to the complex buffer provider to ensure this manager
+     * adapts to changes in source frequency and sample rate.
+     *
+     * @param complexBufferProvider that supports register/deregister of this channel manager
+     * @param frequency of the provided complex buffer samples
+     * @param sampleRate of the provided complex buffer samples
      */
-    public PolyphaseChannelManager(Tuner tuner)
+    public PolyphaseChannelManager(IComplexBufferProvider complexBufferProvider, long frequency, int sampleRate)
     {
-        if(tuner == null)
+        if(complexBufferProvider == null)
         {
-            throw new IllegalArgumentException("Tuner argument cannot be null");
+            throw new IllegalArgumentException("Complex buffer provider argument cannot be null");
         }
 
-        mTuner = tuner;
+        mComplexBufferProvider = complexBufferProvider;
 
-        int sampleRate = mTuner.getTunerController().getSampleRate();
-
-        //Ensure that tuner sample rate is a multiple of channel sample rate since polyphase channelizer is M2
+        //Ensure that sample rate is a multiple of channel sample rate since polyphase channelizer is M2
         if(sampleRate % (CHANNEL_SAMPLE_RATE) != 0)
         {
             throw new IllegalArgumentException("Tuner sample rate [" + sampleRate + "] must be an even multiple of " +
                 CHANNEL_SAMPLE_RATE + " Hz");
         }
 
-        long frequency = mTuner.getTunerController().getFrequency();
         int channelCount = sampleRate / CHANNEL_BANDWIDTH;
 
         mChannelCalculator = new ChannelCalculator(sampleRate, channelCount, frequency, CHANNEL_OVERSAMPLING);
@@ -85,9 +87,6 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
         mBufferProcessor = new ScheduledBufferProcessor(500, 100, 50, 50);
 
         updateChannelizer(sampleRate, null);
-
-        mTuner.addSourceEventListener(this);
-
     }
 
     /**
@@ -159,7 +158,7 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
 
             if(mPolyphaseChannelizer.getRegisteredChannelCount() == 1)
             {
-                mTuner.addListener(mBufferProcessor);
+                mComplexBufferProvider.addComplexBufferListener(mBufferProcessor);
                 mBufferProcessor.start();
             }
         }
@@ -179,7 +178,7 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
 
             if(mPolyphaseChannelizer.getRegisteredChannelCount() == 0)
             {
-                mTuner.removeListener(mBufferProcessor);
+                mComplexBufferProvider.removeComplexBufferListener(mBufferProcessor);
                 mBufferProcessor.stop();
             }
         }

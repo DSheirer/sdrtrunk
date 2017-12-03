@@ -190,25 +190,4 @@ public class Tait1200Decoder extends Decoder implements IFilteredRealBufferListe
 	{
 		return DecoderType.TAIT_1200;
 	}
-
-	@Override
-	public void reset()
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void start( ScheduledExecutorService executor )
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void stop()
-	{
-		// TODO Auto-generated method stub
-		
-	}
 }

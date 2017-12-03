@@ -71,7 +71,20 @@ public abstract class DecoderState extends Module implements ActivitySummaryProv
     /**
      * Allow the decoder to perform any setup actions
      */
-    public abstract void init();
+    public void init()
+    {
+
+    }
+
+    @Override
+    public void start()
+    {
+    }
+
+    @Override
+    public void stop()
+    {
+    }
 
     /**
      * Implements the IDecoderStateEventListener interface to receive state

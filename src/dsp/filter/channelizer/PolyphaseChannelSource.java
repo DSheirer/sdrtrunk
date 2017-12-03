@@ -18,7 +18,7 @@
  ******************************************************************************/
 package dsp.filter.channelizer;
 
-import channel.heartbeat.Heartbeat;
+import source.heartbeat.Heartbeat;
 import dsp.filter.channelizer.output.IPolyphaseChannelOutputProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,12 +27,10 @@ import sample.complex.ComplexBuffer;
 import sample.complex.ComplexToComplexBufferAssembler;
 import source.ComplexSource;
 import source.ISourceEventProcessor;
-import source.Source;
 import source.SourceEvent;
 import source.SourceException;
-import source.tuner.TunerChannel;
+import source.tuner.channel.TunerChannel;
 
-import java.util.Arrays;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;

@@ -17,19 +17,11 @@
  ******************************************************************************/
 package source.tuner.airspy;
 
-import java.util.concurrent.RejectedExecutionException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sample.Listener;
-import sample.complex.ComplexBuffer;
-import source.SourceException;
 import source.tuner.Tuner;
-import source.tuner.TunerChannel;
-import source.tuner.TunerChannelSource;
 import source.tuner.TunerClass;
-import source.tuner.TunerEvent;
 import source.tuner.TunerType;
 import source.tuner.airspy.AirspyTunerController.BoardID;
 
@@ -78,51 +70,5 @@ public class AirspyTuner extends Tuner
 	public double getSampleSize()
 	{
 		return 13.0;
-	}
-
-	@Override
-    public TunerChannelSource getChannel( TunerChannel channel ) 
-    		throws RejectedExecutionException, SourceException
-    {
-		//TODO: this channel has a decimated sample rate of:
-		// 10.0 MSps = 10,000,000 / 208 = 48076.923
-		//  5.0 MSps =  5,000,000 / 104 = 48076.923
-		//  2.5 MSps =  2,500,000 /  52 = 48076.923
-		//Consider implementing a fractional resampler to get a correct 48 kHz
-		//output sample rate
-		
-		TunerChannelSource source = getController().getChannel( this, channel );
-
-		if( source != null )
-		{
-			broadcast( new TunerEvent( this, TunerEvent.Event.CHANNEL_COUNT ) );
-		}
-		
-		return source;
-    }
-	
-	@Override
-    public void releaseChannel( TunerChannelSource source )
-    {
-		/* Unregister for receiving samples */
-		removeListener( (Listener<ComplexBuffer>)source );
-		
-		/* Tell the controller to release the channel and cleanup */
-		if( source != null )
-		{
-			getController().releaseChannel( source );
-		}
-    }
-
-	@Override
-	public void addListener( Listener<ComplexBuffer> listener )
-	{
-		getController().addListener( listener );
-	}
-	
-	@Override
-	public void removeListener( Listener<ComplexBuffer> listener )
-	{
-		getController().removeListener( listener );
 	}
 }

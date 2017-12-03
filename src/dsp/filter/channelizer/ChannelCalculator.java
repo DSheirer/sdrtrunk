@@ -20,7 +20,7 @@ package dsp.filter.channelizer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import source.tuner.TunerChannel;
+import source.tuner.channel.TunerChannel;
 
 import java.text.DecimalFormat;
 import java.util.ArrayList;
