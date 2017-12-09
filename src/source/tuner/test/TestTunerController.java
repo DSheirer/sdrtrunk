@@ -144,7 +144,7 @@ public class TestTunerController extends TunerController
      * Current sample rate for this tuner controller
      */
     @Override
-    public int getCurrentSampleRate() throws SourceException
+    public double getCurrentSampleRate()
     {
         return mFrequencyController.getSampleRate();
     }

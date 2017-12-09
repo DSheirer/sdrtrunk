@@ -71,7 +71,7 @@ public class ChannelizerViewer extends JFrame
     {
         mTestTuner = new TestTuner();
 
-        mChannelCount = mTestTuner.getTunerController().getSampleRate() / CHANNEL_BANDWIDTH;
+        mChannelCount = (int)(mTestTuner.getTunerController().getSampleRate() / CHANNEL_BANDWIDTH);
         mChannelsPerRow = channelsPerRow;
 
         mToneFrequency = mTestTuner.getTunerController().getFrequency() + 19200;
@@ -127,7 +127,7 @@ public class ChannelizerViewer extends JFrame
             mControlPanel.setLayout(new MigLayout("insets 0 0 0 0", "", ""));
 
             mControlPanel.add(new JLabel("Tone:"), "align left");
-            int maximumFrequencyOffset = mTestTuner.getTunerController().getSampleRate() / 2;
+            int maximumFrequencyOffset = (int)(mTestTuner.getTunerController().getSampleRate() / 2);
             long minimumFrequency = mTestTuner.getTunerController().getFrequency() - maximumFrequencyOffset;
             long maximumFrequency = mTestTuner.getTunerController().getFrequency() + maximumFrequencyOffset;
 
@@ -185,16 +185,16 @@ public class ChannelizerViewer extends JFrame
         {
             setLayout(new MigLayout("insets 0 0 0 0", "fill", "fill"));
 
-            long spectralBandwidth = mTestTuner.getTunerController().getSampleRate();
-            long halfSpectralBandwidth = spectralBandwidth / 2;
+            double spectralBandwidth = mTestTuner.getTunerController().getSampleRate();
+            double halfSpectralBandwidth = spectralBandwidth / 2.0;
 
             int channelToLog = -1;
 
             for(int x = 0; x < mChannelCount; x++)
             {
                 //place the channels left and right of 10.0 MHz
-                long frequency = mTestTuner.getTunerController().getFrequency() +
-                    ((x * CHANNEL_BANDWIDTH) - halfSpectralBandwidth) + (CHANNEL_BANDWIDTH / 2);
+                long frequency = (long)(mTestTuner.getTunerController().getFrequency() +
+                    ((x * CHANNEL_BANDWIDTH) - halfSpectralBandwidth) + (CHANNEL_BANDWIDTH / 2));
 
                 mLog.debug("Channel " + x + " Frequency: " + frequency);
 
@@ -219,7 +219,7 @@ public class ChannelizerViewer extends JFrame
         private ComplexDecibelConverter mComplexDecibelConverter = new ComplexDecibelConverter();
         private SpectrumPanel mSpectrumPanel;
 
-        public PrimarySpectrumPanel(SettingsManager settingsManager, int sampleRate)
+        public PrimarySpectrumPanel(SettingsManager settingsManager, double sampleRate)
         {
             setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
             mSpectrumPanel = new SpectrumPanel(settingsManager);
@@ -256,7 +256,7 @@ public class ChannelizerViewer extends JFrame
         private SpectrumPanel mSpectrumPanel;
         private long mFrequency;
 
-        public ChannelPanel(SettingsManager settingsManager, int sampleRate, long frequency, int bandwidth, boolean enableLogging)
+        public ChannelPanel(SettingsManager settingsManager, double sampleRate, long frequency, int bandwidth, boolean enableLogging)
         {
             setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
             mSpectrumPanel = new SpectrumPanel(settingsManager);

@@ -130,7 +130,7 @@ public class SourceEvent
      *
      * @param sampleRate in hertz
      */
-    public static SourceEvent sampleRateChange(int sampleRate)
+    public static SourceEvent sampleRateChange(double sampleRate)
     {
         return new SourceEvent(Event.NOTIFICATION_SAMPLE_RATE_CHANGE, sampleRate);
     }
@@ -140,7 +140,7 @@ public class SourceEvent
      *
      * @param sampleRate in hertz
      */
-    public static SourceEvent channelSampleRateChange(int sampleRate)
+    public static SourceEvent channelSampleRateChange(double sampleRate)
     {
         return new SourceEvent(Event.NOTIFICATION_CHANNEL_SAMPLE_RATE_CHANGE, sampleRate);
     }

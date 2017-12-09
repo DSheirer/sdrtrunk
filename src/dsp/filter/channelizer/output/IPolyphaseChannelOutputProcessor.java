@@ -19,6 +19,8 @@
 package dsp.filter.channelizer.output;
 
 import sample.complex.ComplexSampleListener;
+import sample.real.IOverflowListener;
+import source.Source;
 
 import java.util.List;
 
@@ -38,12 +40,23 @@ public interface IPolyphaseChannelOutputProcessor
     void processChannelResults(ComplexSampleListener listener);
 
     /**
+     * Sets the center frequency of the incoming channel results samples
+     * @param frequency in hertz
+     */
+    void setFrequency(long frequency);
+
+    /**
      * Specifies the frequency correction (+/-) that should be applied to samples extracted from the polyphase
      * channelizer output results.
      *
      * @param frequencyCorrection correction value
      */
     void setFrequencyCorrection(long frequencyCorrection);
+
+    /**
+     * Current frequency correction value.
+     */
+    long getFrequencyCorrection();
 
     /**
      * Indicates the number of input channels processed by this output processor
@@ -56,4 +69,10 @@ public interface IPolyphaseChannelOutputProcessor
      * @param indexes
      */
     void setPolyphaseChannelIndices(List<Integer> indexes);
+
+    /**
+     * Sets the listener to receive buffer overflow notifications
+     * @param source to receive overflow notifications
+     */
+    void setSourceOverflowListener(Source source);
 }

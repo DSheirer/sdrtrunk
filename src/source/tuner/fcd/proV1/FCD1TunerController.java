@@ -85,7 +85,7 @@ public class FCD1TunerController extends FCDTunerController
         }
     }
 
-    public int getCurrentSampleRate()
+    public double getCurrentSampleRate()
     {
         return SAMPLE_RATE;
     }

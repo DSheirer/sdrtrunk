@@ -337,7 +337,7 @@ public class HackRFTunerController extends USBTunerController
     }
 
     @Override
-    public int getCurrentSampleRate() throws SourceException
+    public double getCurrentSampleRate()
     {
         return mSampleRate.getRate();
     }
@@ -531,7 +531,7 @@ public class HackRFTunerController extends USBTunerController
         write(Request.SET_SAMPLE_RATE, 0, 0, buffer);
     }
 
-    public int getSampleRate()
+    public double getSampleRate()
     {
         return mSampleRate.getRate();
     }

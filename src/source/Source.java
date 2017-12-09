@@ -52,14 +52,14 @@ public abstract class Source extends Module implements ISourceEventListener, ISo
      *
      * @throws SourceException if there is an issue determining the sample rate for this source
      */
-    public abstract int getSampleRate() throws SourceException;
+    public abstract double getSampleRate();
 
     /**
      * Center frequency for this source in Hertz
      *
      * @throws SourceException if there is an issue in determining the center frequency for this source
      */
-    public abstract long getFrequency() throws SourceException;
+    public abstract long getFrequency();
 
     /**
      * Process any cleanup actions to prepare for garbage collection of this source
@@ -79,7 +79,7 @@ public abstract class Source extends Module implements ISourceEventListener, ISo
      *
      * @param overflow true if overflow, false if normal
      */
-    protected void broadcastOverflowState(boolean overflow)
+    public void broadcastOverflowState(boolean overflow)
     {
         if(mOverflowListener != null)
         {

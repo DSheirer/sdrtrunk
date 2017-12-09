@@ -21,6 +21,7 @@ package sample;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sample.real.IOverflowListener;
+import source.Source;
 
 import java.util.Collection;
 import java.util.concurrent.LinkedTransferQueue;
@@ -33,6 +34,7 @@ public class OverflowableTransferQueue<E>
 
     public enum State {NORMAL, OVERFLOW};
     private IOverflowListener mOverflowListener;
+    private Source mSourceOverflowListener;
 
     private LinkedTransferQueue<E> mQueue = new LinkedTransferQueue<E>();
     private AtomicInteger mCounter = new AtomicInteger();
@@ -99,11 +101,19 @@ public class OverflowableTransferQueue<E>
     }
 
     /**
-     * Sets a listener to receive overflow state change events
+     * Sets a listener to receive overflow state change events.
      */
     public void setOverflowListener(IOverflowListener listener)
     {
         mOverflowListener = listener;
+    }
+
+    /**
+     * Sets the source to receive overflow state change events (in addition to an IOverflow listener)
+     */
+    public void setSourceOverflowListener(Source source)
+    {
+        mSourceOverflowListener = source;
     }
 
 
@@ -117,6 +127,11 @@ public class OverflowableTransferQueue<E>
             if(mOverflowListener != null)
             {
                 mOverflowListener.sourceOverflow(overflow);
+            }
+
+            if(mSourceOverflowListener != null)
+            {
+                mSourceOverflowListener.broadcastOverflowState(overflow);
             }
         }
     }

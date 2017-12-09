@@ -36,8 +36,8 @@ public class FrequencyController
     private long mTunedFrequency = 101100000;
     private long mMinimumFrequency;
     private long mMaximumFrequency;
-    private double mFrequencyCorrection = 0d;
-    private int mSampleRate = 0;
+    private double mFrequencyCorrection = 0.0d;
+    private double mSampleRate = 0.0d;
 
     private ArrayList<ISourceEventProcessor> mProcessors = new ArrayList<>();
 
@@ -54,7 +54,7 @@ public class FrequencyController
      */
     public int getBandwidth()
     {
-        return mSampleRate;
+        return (int)mSampleRate;
     }
 
     /**
@@ -70,7 +70,7 @@ public class FrequencyController
     /**
      * Get sample rate in hertz
      */
-    public int getSampleRate()
+    public double getSampleRate()
     {
         return mSampleRate;
     }
@@ -266,7 +266,7 @@ public class FrequencyController
         /**
          * Gets the current bandwidth setting of the device
          */
-        public int getCurrentSampleRate() throws SourceException;
+        public double getCurrentSampleRate() throws SourceException;
 
         /**
          * Indicates if this tunable can tune the frequency

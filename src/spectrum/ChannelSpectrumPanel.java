@@ -90,7 +90,7 @@ public class ChannelSpectrumPanel extends JPanel
     	mDFTConverter.addListener( mSpectrumPanel );
 
     	/* Set the DFTProcessor to the decimated 24kHz sample rate */
-    	mDFTProcessor.process(SourceEvent.sampleRateChange(24000));
+    	mDFTProcessor.process(SourceEvent.sampleRateChange(24000.0));
     	
     	initGui();
     }

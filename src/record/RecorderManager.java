@@ -145,7 +145,7 @@ public class RecorderManager implements Listener<AudioPacket>
                         {
                             recorder = new RealBufferWaveRecorder(AUDIO_SAMPLE_RATE, filePrefix);
 
-                            recorder.start(ThreadPool.SCHEDULED);
+                            recorder.start();
 
                             recorder.receive(audioPacket.getAudioBuffer());
                             mRecorders.put(identifier, recorder);

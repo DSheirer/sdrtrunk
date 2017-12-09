@@ -21,12 +21,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sample.Broadcaster;
 import sample.Listener;
+import sample.complex.Complex;
 import sample.complex.ComplexBuffer;
 import sample.complex.IComplexBufferProvider;
+import source.ISourceEventListener;
 import source.ISourceEventProcessor;
 import source.SourceEvent;
 import source.SourceEvent.Event;
+import source.SourceEventListenerToProcessorAdapter;
 import source.SourceException;
+import source.tuner.channel.CICTunerChannelSource;
 import source.tuner.channel.TunerChannel;
 import source.tuner.channel.TunerChannelSource;
 import source.tuner.configuration.TunerConfiguration;
@@ -37,7 +41,7 @@ import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.RejectedExecutionException;
 
-public abstract class TunerController implements Tunable, ISourceEventProcessor,
+public abstract class TunerController implements Tunable, ISourceEventProcessor, ISourceEventListener,
     IComplexBufferProvider, Listener<ComplexBuffer>
 {
     private final static Logger mLog = LoggerFactory.getLogger(TunerController.class);
@@ -48,6 +52,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     protected FrequencyController mFrequencyController;
     private int mMiddleUnusable;
     private double mUsableBandwidthPercentage;
+    private Listener<SourceEvent> mSourceEventListener;
 
     /**
      * Abstract tuner controller class.  The tuner controller manages frequency bandwidth and currently tuned channels
@@ -65,6 +70,16 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
         mFrequencyController = new FrequencyController(this, minimumFrequency, maximumFrequency, 0.0d);
         mMiddleUnusable = middleUnusable;
         mUsableBandwidthPercentage = usableBandwidth;
+        mSourceEventListener = new SourceEventListenerToProcessorAdapter(this);
+    }
+
+    /**
+     * Implements the ISourceEventListener interface to receive requests from sample consumers
+     */
+    @Override
+    public Listener<SourceEvent> getSourceEventListener()
+    {
+        return mSourceEventListener;
     }
 
     /**
@@ -76,12 +91,29 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      * Responds to requests to set the frequency
      */
     @Override
-	public void process(SourceEvent event ) throws SourceException
+	public void process(SourceEvent sourceEvent ) throws SourceException
 	{
-    	if( event.getEvent() == Event.REQUEST_FREQUENCY_CHANGE )
-    	{
-			setFrequency( event.getValue().longValue() );
-    	}
+	    switch(sourceEvent.getEvent())
+        {
+            case REQUEST_FREQUENCY_CHANGE:
+                setFrequency( sourceEvent.getValue().longValue() );
+                break;
+            case REQUEST_START_SAMPLE_STREAM:
+                if(sourceEvent.getSource() instanceof Listener)
+                {
+                    addComplexBufferListener((Listener<ComplexBuffer>)sourceEvent.getSource());
+                }
+                break;
+            case REQUEST_STOP_SAMPLE_STREAM:
+                if(sourceEvent.getSource() instanceof Listener)
+                {
+                    removeComplexBufferListener((Listener<ComplexBuffer>)sourceEvent.getSource());
+                }
+                break;
+            default:
+                mLog.error("Ignoring unrecognized source event: " + sourceEvent.getEvent().name() + " from [" +
+                    sourceEvent.getSource().getClass() + "]" );
+        }
 	}
 
     public int getBandwidth()
@@ -116,7 +148,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
         return mFrequencyController.canTune(frequency);
     }
 
-    public int getSampleRate()
+    public double getSampleRate()
     {
         return mFrequencyController.getSampleRate();
     }
@@ -224,7 +256,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
                     updateLOFrequency();
                 }
 
-                source = new TunerChannelSource(tuner, channel);
+                source = new CICTunerChannelSource(tuner, channel);
             }
             catch(SourceException se)
             {

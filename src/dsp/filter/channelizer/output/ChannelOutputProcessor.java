@@ -25,6 +25,7 @@ import sample.OverflowableTransferQueue;
 import sample.complex.Complex;
 import sample.complex.ComplexSampleListener;
 import sample.real.IOverflowListener;
+import source.Source;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,13 +51,25 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
      * @param sampleRate of the output channel.  This is used to match the oscillator's sample rate to the output
      * channel sample rate for frequency translation/correction.
      */
-    public ChannelOutputProcessor(int inputChannelCount, int sampleRate)
+    public ChannelOutputProcessor(int inputChannelCount, double sampleRate)
     {
         mInputChannelCount = inputChannelCount;
         mFrequencyCorrectionMixer = new Oscillator(0, sampleRate);
-        mMaxResultsToProcess = sampleRate / 10 * 2;  //process at 100 millis interval, twice the expected inflow rate
+        mMaxResultsToProcess = (int)(sampleRate / 10) * 2;  //process at 100 millis interval, twice the expected inflow rate
 
-        mChannelResultsQueue = new OverflowableTransferQueue<>(sampleRate * 3, (int)(sampleRate * 0.5));
+        mChannelResultsQueue = new OverflowableTransferQueue<>((int)(sampleRate * 3), (int)(sampleRate * 0.5));
+    }
+
+    @Override
+    public void setFrequency(long frequency)
+    {
+
+    }
+
+    @Override
+    public long getFrequencyCorrection()
+    {
+        return 0;
     }
 
     @Override
@@ -100,9 +113,9 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     /**
      * Sets the overflow listener to monitor the internal channelizer channel results queue overflow state
      */
-    public void setOverflowListener(IOverflowListener listener)
+    public void setSourceOverflowListener(Source source)
     {
-        mChannelResultsQueue.setOverflowListener(listener);
+        mChannelResultsQueue.setSourceOverflowListener(source);
     }
 
     /**

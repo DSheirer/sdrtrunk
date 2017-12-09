@@ -447,7 +447,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuff
             mTuner.getTunerController().removeListener(this);
 
             //Deregister the dft processor from receiving samples
-            mTuner.removeListener((Listener<ComplexBuffer>)mDFTProcessor);
+            mTuner.getTunerController().removeComplexBufferListener(mDFTProcessor);
             mTuner = null;
         }
     }

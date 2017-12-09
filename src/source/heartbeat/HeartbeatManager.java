@@ -26,6 +26,9 @@ public class HeartbeatManager
     private static final Heartbeat HEARTBEAT = new Heartbeat();
     private Broadcaster<Heartbeat> mHeartbeatBroadcaster = new Broadcaster<>();
 
+    /**
+     * Broadcasts heartbeat as commanded and handles listener registration details.
+     */
     public HeartbeatManager()
     {
     }
@@ -54,5 +57,4 @@ public class HeartbeatManager
     {
         mHeartbeatBroadcaster.removeListener(listener);
     }
-
 }

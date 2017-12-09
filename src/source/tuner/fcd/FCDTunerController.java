@@ -174,7 +174,7 @@ public abstract class FCDTunerController extends TunerController
     /**
      * Sample rate of the tuner
      */
-    public abstract int getCurrentSampleRate() throws SourceException;
+    public abstract double getCurrentSampleRate();
 
     /**
      * Tuner class

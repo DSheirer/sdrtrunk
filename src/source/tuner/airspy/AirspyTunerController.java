@@ -375,7 +375,7 @@ public class AirspyTunerController extends USBTunerController
     }
 
     @Override
-    public int getCurrentSampleRate() throws SourceException
+    public double getCurrentSampleRate()
     {
         return mSampleRate;
     }

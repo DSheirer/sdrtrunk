@@ -41,11 +41,11 @@ public class Oscillator
      * @param frequency - positive or negative frequency in hertz
      * @param sampleRate - in hertz
      */
-    public Oscillator(long frequency, int sampleRate)
+    public Oscillator(long frequency, double sampleRate)
     {
         mEnabled = frequency != 0;
 
-        mSampleRate = (double)sampleRate;
+        mSampleRate = sampleRate;
         mFrequency = (double)frequency;
 
         update();
@@ -87,9 +87,9 @@ public class Oscillator
     /**
      * Sets or changes the sample rate of this oscillator
      */
-    public void setSampleRate(int sampleRate)
+    public void setSampleRate(double sampleRate)
     {
-        mSampleRate = (double)sampleRate;
+        mSampleRate = sampleRate;
         update();
     }
 

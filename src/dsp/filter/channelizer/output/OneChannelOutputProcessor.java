@@ -38,7 +38,7 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
      * @param sampleRate of the output sample stream.
      * @param channelIndexes containing a single channel index.
      */
-    public OneChannelOutputProcessor(int sampleRate, List<Integer> channelIndexes)
+    public OneChannelOutputProcessor(double sampleRate, List<Integer> channelIndexes)
     {
         super(1, sampleRate);
         setPolyphaseChannelIndices(channelIndexes);

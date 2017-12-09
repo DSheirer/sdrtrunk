@@ -93,33 +93,13 @@ public class RealMixerSource extends RealSource
 		return null;
 	}
 
-    /**
-     * Registers the listener to receive heartbeats from this source.
-     *
-     * @param listener to receive heartbeats
-     */
-    @Override
-    public void setHeartbeatListener(Listener<Heartbeat> listener)
-    {
-        mHeartbeatListener = listener;
-    }
-
-    /**
-     * Removes the currently registered heartbeat listener
-     */
-    @Override
-    public void removeHeartbeatListener()
-    {
-        mHeartbeatListener = null;
-    }
-
     @Override
     public void reset()
     {
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
     }
 
@@ -174,11 +154,11 @@ public class RealMixerSource extends RealSource
         }
     }
 
-    public int getSampleRate()
+    public double getSampleRate()
     {
         if(mTargetDataLine != null)
         {
-            return (int)mTargetDataLine.getFormat().getSampleRate();
+            return mTargetDataLine.getFormat().getSampleRate();
         }
         else
         {
@@ -189,7 +169,7 @@ public class RealMixerSource extends RealSource
     /**
      * Returns the frequency of this source.  Default is 0.
      */
-    public long getFrequency() throws SourceException
+    public long getFrequency()
     {
         return mFrequency;
     }

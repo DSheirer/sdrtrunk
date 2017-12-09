@@ -75,31 +75,15 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
         return null;
     }
 
-    /**
-     * Not implemented
-     */
-    @Override
-    public void setHeartbeatListener(Listener<Heartbeat> listener)
-    {
-    }
-
-    /**
-     * Not implemented
-     */
-    @Override
-    public void removeHeartbeatListener()
-    {
-    }
-
     @Override
     public void reset()
     {
         stop();
-        start(null);
+        start();
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
         try
         {
@@ -132,11 +116,11 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     }
 
     @Override
-    public int getSampleRate()
+    public double getSampleRate()
     {
         if(mInputStream != null)
         {
-            return (int)mInputStream.getFormat().getSampleRate();
+            return mInputStream.getFormat().getSampleRate();
         }
 
         return 0;

@@ -932,7 +932,7 @@ public abstract class RTL2832TunerController extends USBTunerController
         return false;
     }
 
-    public int getCurrentSampleRate() throws SourceException
+    public double getCurrentSampleRate()
     {
         return mSampleRate.getRate();
     }
