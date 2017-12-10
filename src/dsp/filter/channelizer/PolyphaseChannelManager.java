@@ -303,14 +303,17 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
         {
             List<Integer> indexes = mChannelCalculator.getChannelIndexes(channelSource.getTunerChannel());
 
+            long centerFrequency = mChannelCalculator.getCenterFrequencyForIndexes(indexes);
+
             //If the indexes size is the same then update the current processor, otherwise create a new one
             if(channelSource.getPolyphaseChannelOutputProcessor().getInputChannelCount() == indexes.size())
             {
                 channelSource.getPolyphaseChannelOutputProcessor().setPolyphaseChannelIndices(indexes);
+                channelSource.setFrequency(centerFrequency);
             }
             else
             {
-                channelSource.setPolyphaseChannelOutputProcessor(getOutputProcessor(indexes));
+                channelSource.setPolyphaseChannelOutputProcessor(getOutputProcessor(indexes), centerFrequency);
             }
         }
         catch(IllegalArgumentException iae)

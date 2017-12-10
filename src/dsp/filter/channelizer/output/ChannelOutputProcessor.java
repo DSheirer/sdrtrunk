@@ -60,16 +60,15 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
         mChannelResultsQueue = new OverflowableTransferQueue<>((int)(sampleRate * 3), (int)(sampleRate * 0.5));
     }
 
+    /**
+     * Sets the frequency offset to apply to the incoming samples to mix the desired signal to baseband.
+     * @param frequencyOffset in hertz
+     */
     @Override
-    public void setFrequency(long frequency)
+    public void setFrequencyOffset(long frequencyOffset)
     {
-
-    }
-
-    @Override
-    public long getFrequencyCorrection()
-    {
-        return 0;
+        mFrequencyCorrectionMixer.setFrequency(frequencyOffset);
+        mFrequencyCorrectionEnabled = (frequencyOffset != 0);
     }
 
     @Override
@@ -158,20 +157,6 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     {
         return Complex.multiplyQuadrature(inphase, quadrature, mFrequencyCorrectionMixer.inphase(),
             mFrequencyCorrectionMixer.quadrature());
-    }
-
-    /**
-     * Specifies a frequency correction value to be applied to channel samples output from this polyphase channelizer
-     * output processor.
-     *
-     * @param frequencyCorrection offset value
-     */
-    @Override
-    public void setFrequencyCorrection(long frequencyCorrection)
-    {
-        mFrequencyCorrectionMixer.setFrequency(frequencyCorrection);
-
-        mFrequencyCorrectionEnabled = (frequencyCorrection != 0);
     }
 
     /**

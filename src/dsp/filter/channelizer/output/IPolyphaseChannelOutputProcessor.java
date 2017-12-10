@@ -40,23 +40,12 @@ public interface IPolyphaseChannelOutputProcessor
     void processChannelResults(ComplexSampleListener listener);
 
     /**
-     * Sets the center frequency of the incoming channel results samples
+     * Sets the desired frequency offset from center.  The samples will be mixed with an oscillator set to this offset
+     * frequency to produce an output where the desired signal is centered in the passband.
+     *
      * @param frequency in hertz
      */
-    void setFrequency(long frequency);
-
-    /**
-     * Specifies the frequency correction (+/-) that should be applied to samples extracted from the polyphase
-     * channelizer output results.
-     *
-     * @param frequencyCorrection correction value
-     */
-    void setFrequencyCorrection(long frequencyCorrection);
-
-    /**
-     * Current frequency correction value.
-     */
-    long getFrequencyCorrection();
+    void setFrequencyOffset(long frequency);
 
     /**
      * Indicates the number of input channels processed by this output processor

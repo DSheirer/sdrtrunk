@@ -36,6 +36,8 @@ public class PolyphaseChannelSource extends TunerChannelSource
     private ComplexToComplexBufferAssembler mComplexBufferAssembler = new ComplexToComplexBufferAssembler(2500);
     private IPolyphaseChannelOutputProcessor mPolyphaseChannelOutputProcessor;
     private double mChannelSampleRate;
+    private long mCenterFrequency;
+    private long mFrequencyCorrection;
 
     /**
      * Polyphase channelizer tuner channel source implementation.  Adapts the channel array output samples from the
@@ -84,8 +86,11 @@ public class PolyphaseChannelSource extends TunerChannelSource
 
     /**
      * Sets/updates the output processor for this channel source, replacing the existing output processor.
+     *
+     * @param outputProcessor to use
+     * @param frequency center for the channels processed by the output processor
      */
-    public void setPolyphaseChannelOutputProcessor(IPolyphaseChannelOutputProcessor outputProcessor)
+    public void setPolyphaseChannelOutputProcessor(IPolyphaseChannelOutputProcessor outputProcessor, long frequency)
     {
         //Lock on the channel output processor to block the channel results processor thread from servicing the
         //channel output processor's buffer while we change out the processors.
@@ -108,6 +113,13 @@ public class PolyphaseChannelSource extends TunerChannelSource
             {
                 existingProcessor.processChannelResults(mComplexBufferAssembler);
             }
+
+            //Finally, setup the frequency offset for the output processor and reset the frequency correction value
+            //to allow consumers to adjust and calculate a new frequency correction value, if needed.
+            mCenterFrequency = frequency;
+            mFrequencyCorrection = 0;
+            mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
+            broadcastConsumerSourceEvent(SourceEvent.frequencyCorrectionChange(mFrequencyCorrection));
         }
     }
 
@@ -153,14 +165,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
     @Override
     public long getFrequencyCorrection()
     {
-        IPolyphaseChannelOutputProcessor processor = mPolyphaseChannelOutputProcessor;
-
-        if(processor != null)
-        {
-            return processor.getFrequencyCorrection();
-        }
-
-        return 0;
+        return mFrequencyCorrection;
     }
 
     /**
@@ -171,24 +176,20 @@ public class PolyphaseChannelSource extends TunerChannelSource
      */
     protected void setFrequencyCorrection(long value)
     {
-        if(mPolyphaseChannelOutputProcessor != null)
-        {
-            mPolyphaseChannelOutputProcessor.setFrequencyCorrection(value);
-            broadcastConsumerSourceEvent(SourceEvent.frequencyCorrectionChange(value));
-        }
+        mFrequencyCorrection = value;
+        updateFrequencyOffset();
+        broadcastConsumerSourceEvent(SourceEvent.frequencyCorrectionChange(mFrequencyCorrection));
     }
 
     /**
-     * Sets the center frequency for the incoming sample stream channel results
+     * Sets the center frequency for the incoming sample stream channel results and resets frequency correction to zero.
      * @param frequency in hertz
      */
     @Override
     protected void setFrequency(long frequency)
     {
-        if(mPolyphaseChannelOutputProcessor != null)
-        {
-            mPolyphaseChannelOutputProcessor.setFrequency(frequency);
-        }
+        mCenterFrequency = frequency;
+        setFrequencyCorrection(0);
     }
 
     @Override
@@ -198,6 +199,27 @@ public class PolyphaseChannelSource extends TunerChannelSource
         synchronized(mPolyphaseChannelOutputProcessor)
         {
             mPolyphaseChannelOutputProcessor.processChannelResults(mComplexBufferAssembler);
+        }
+    }
+
+    /**
+     * Calculates the frequency offset required to mix the incoming signal to the desired output baseband
+     */
+    private long getFrequencyOffset()
+    {
+        return getTunerChannel().getFrequency() - mCenterFrequency + mFrequencyCorrection;
+    }
+
+    /**
+     * Updates the frequency offset being applied by the output processor.  Calculates the offset using the center
+     * frequency of the incoming polyphase channel results and the desired output channel frequency adjusted by any
+     * requested frequency correction value.
+     */
+    private void updateFrequencyOffset()
+    {
+        synchronized(mPolyphaseChannelOutputProcessor)
+        {
+            mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
         }
     }
 }
