@@ -80,8 +80,6 @@ public abstract class EventLogger extends Module
 
                 mLogFileName = sb.toString();
 
-                mLog.info("Creating log file:" + mLogFileName);
-
                 mLogFile = new OutputStreamWriter(new FileOutputStream(mLogFileName));
 
                 write(getHeader());
@@ -125,14 +123,17 @@ public abstract class EventLogger extends Module
 
     protected void write(String eventLogEntry)
     {
-        try
+        if(mLogFile != null)
         {
-            mLogFile.write(eventLogEntry + "\n");
-            mLogFile.flush();
-        }
-        catch(IOException e)
-        {
-            mLog.error("Error writing entry to event log file", e);
+            try
+            {
+                mLogFile.write(eventLogEntry + "\n");
+                mLogFile.flush();
+            }
+            catch(IOException e)
+            {
+                mLog.error("Error writing entry to event log file", e);
+            }
         }
     }
 }
