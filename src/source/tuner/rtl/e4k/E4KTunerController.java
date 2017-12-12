@@ -129,7 +129,7 @@ public class E4KTunerController extends RTL2832TunerController
                 setSampleRate(sampleRate);
 
                 double correction = e4kConfig.getFrequencyCorrection();
-                setFrequencyCorrection(correction);
+                getFrequencyController().setFrequencyCorrection(correction);
 
                 E4KGain masterGain = e4kConfig.getMasterGain();
                 setGain(masterGain, true);
@@ -148,7 +148,7 @@ public class E4KTunerController extends RTL2832TunerController
 
                 try
                 {
-                    setFrequency(e4kConfig.getFrequency());
+                    getFrequencyController().setFrequency(e4kConfig.getFrequency());
                 }
                 catch(SourceException se)
                 {
@@ -354,7 +354,7 @@ public class E4KTunerController extends RTL2832TunerController
          * to rounding errors, 52 mhz becomes 51.999993, so we need to adjust
          * x to get 52.000003 mhz ... otherwise the PLL won't lock on the freq
          */
-        if(actualFrequency < getMinFrequency())
+        if(actualFrequency < getFrequencyController().getMinimumFrequency())
         {
             x++;
             actualFrequency = calculateActualFrequency(pll, z, x);

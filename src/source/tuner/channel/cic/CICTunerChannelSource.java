@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package source.tuner.channel;
+package source.tuner.channel.cic;
 
 import dsp.filter.FilterFactory;
 import dsp.filter.Window;
@@ -31,11 +31,13 @@ import sample.complex.Complex;
 import sample.complex.ComplexBuffer;
 import source.SourceEvent;
 import source.tuner.Tuner;
+import source.tuner.channel.TunerChannel;
+import source.tuner.channel.TunerChannelSource;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class CICTunerChannelSource extends TunerChannelSource
+public class CICTunerChannelSource extends TunerChannelSource implements Listener<ComplexBuffer>
 {
     private final static Logger mLog = LoggerFactory.getLogger(CICTunerChannelSource.class);
 
@@ -77,12 +79,13 @@ public class CICTunerChannelSource extends TunerChannelSource
         mBuffer.setSourceOverflowListener(this);
 
         //Setup the frequency translator to the current source frequency
-        mTunerFrequency = tuner.getTunerController().getFrequency();
+        mTunerFrequency = tuner.getTunerController().getFrequencyController().getFrequency();
         long frequencyOffset = mTunerFrequency - getTunerChannel().getFrequency();
-        mFrequencyCorrectionMixer = new Oscillator(frequencyOffset, tuner.getTunerController().getSampleRate());
+        mFrequencyCorrectionMixer = new Oscillator(frequencyOffset,
+            tuner.getTunerController().getFrequencyController().getSampleRate());
 
         //Setup the decimation filter chain
-        setSampleRate(tuner.getTunerController().getSampleRate());
+        setSampleRate(tuner.getTunerController().getFrequencyController().getSampleRate());
     }
 
     /**

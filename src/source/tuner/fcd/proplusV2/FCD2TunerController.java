@@ -52,7 +52,7 @@ public class FCD2TunerController extends FCDTunerController
     {
         super.init();
 
-        mFrequencyController.setSampleRate(SAMPLE_RATE);
+        getFrequencyController().setSampleRate(SAMPLE_RATE);
 
         try
         {
@@ -112,7 +112,7 @@ public class FCD2TunerController extends FCDTunerController
         {
             FCD2TunerConfiguration fcd2 = (FCD2TunerConfiguration)config;
 
-            setFrequencyCorrection(fcd2.getFrequencyCorrection());
+            getFrequencyController().setFrequencyCorrection(fcd2.getFrequencyCorrection());
 
             long frequency = MINIMUM_TUNABLE_FREQUENCY;
 
@@ -122,13 +122,13 @@ public class FCD2TunerController extends FCDTunerController
                 frequency = fcd2.getFrequency();
             }
 
-            setFrequency(frequency);
+            getFrequencyController().setFrequency(frequency);
             setLNAGain(fcd2.getGainLNA());
             setMixerGain(fcd2.getGainMixer());
 
             try
             {
-                setFrequency(fcd2.getFrequency());
+                getFrequencyController().setFrequency(fcd2.getFrequency());
             }
             catch(SourceException se)
             {

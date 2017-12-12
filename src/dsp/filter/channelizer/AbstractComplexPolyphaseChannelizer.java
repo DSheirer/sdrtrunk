@@ -25,8 +25,8 @@ import sample.Listener;
 import sample.complex.ComplexBuffer;
 import source.ISourceEventListener;
 import source.SourceEvent;
+import source.tuner.channel.polyphase.PolyphaseChannelSource;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -36,7 +36,7 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<Co
 
     private Broadcaster<SourceEvent> mSourceChangeBroadcaster = new Broadcaster();
     private List<PolyphaseChannelSource> mChannels = new CopyOnWriteArrayList<>();
-    private int mSampleRate;
+    private double mSampleRate;
     private int mChannelCount;
     private double mChannelSampleRate;
 
@@ -45,7 +45,7 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<Co
      *
      * @param channelCount
      */
-    public AbstractComplexPolyphaseChannelizer(int sampleRate, int channelCount)
+    public AbstractComplexPolyphaseChannelizer(double sampleRate, int channelCount)
     {
         mChannelCount = channelCount;
         mSampleRate = sampleRate;
@@ -56,7 +56,7 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<Co
      * Input sample rate for this channelizer
      * @return sample rate in hertz
      */
-    public int getSampleRate()
+    public double getSampleRate()
     {
         return mSampleRate;
     }
@@ -65,10 +65,10 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<Co
      * Sets the input sample rate for for this channelizer
      * @param sampleRate in hertz
      */
-    public void setSampleRate(int sampleRate)
+    public void setSampleRate(double sampleRate)
     {
         mSampleRate = sampleRate;
-        mChannelSampleRate = (double)mSampleRate / (double)mChannelCount;
+        mChannelSampleRate = mSampleRate / (double)mChannelCount;
     }
 
     /**

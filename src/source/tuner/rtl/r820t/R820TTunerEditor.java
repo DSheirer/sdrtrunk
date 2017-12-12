@@ -191,7 +191,7 @@ public class R820TTunerEditor extends TunerConfigurationEditor
 				
                 try
 				{
-					mController.setFrequencyCorrection( value );
+					mController.getFrequencyController().setFrequencyCorrection( value );
 				} 
                 catch ( SourceException e1 )
 				{

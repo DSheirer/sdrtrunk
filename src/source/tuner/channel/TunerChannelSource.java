@@ -41,6 +41,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     private Listener<SourceEvent> mProducerSourceEventListener;
     private Listener<SourceEvent> mConsumerSourceEventListener;
     private BufferProcessor mBufferProcessor = new BufferProcessor();
+    private boolean mExpended = false;
 
     /**
      * Tuner Channel Source is a Digital Drop Channel (DDC) abstract class that defines the minimum functionality
@@ -116,6 +117,12 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
      */
     public void start()
     {
+        if(mExpended)
+        {
+            throw new IllegalStateException("Cannot start an expended tuner channel source.  You must request a new" +
+                " tuner channel source each time.  Tuner channel sources are one-use only");
+        }
+
         //Broadcast current frequency and sample rate so consumer can configure correctly
         broadcastConsumerSourceEvent(SourceEvent.frequencyChange(getFrequency()));
         broadcastConsumerSourceEvent(SourceEvent.sampleRateChange(getSampleRate()));
@@ -134,6 +141,8 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
      */
     public void stop()
     {
+        mExpended = true;
+
         if(mProducerSourceEventListener != null)
         {
             mProducerSourceEventListener.receive(SourceEvent.stopSampleStream(this));
@@ -146,7 +155,11 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     @Override
     public void reset()
     {
-        //Reset is not valid for a tuner channel source - ignored
+        if(mExpended)
+        {
+            throw new IllegalStateException("Cannot reset an expended tuner channel source.  You must request a new" +
+                " tuner channel source each time.  Tuner channel sources are one-use only");
+        }
     }
 
     /**

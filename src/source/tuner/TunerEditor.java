@@ -264,7 +264,7 @@ public class TunerEditor extends Editor<Tuner>
 
 	        //Set the displayed frequency without adjusting the tuner's frequency
 	        mFrequencyControl.setFrequency( 
-	        		tuner.getTunerController().getFrequency(), false );
+	        		tuner.getTunerController().getFrequencyController().getFrequency(), false );
 		}
 		else
 		{

@@ -22,18 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import sample.Broadcaster;
 import sample.Listener;
-import sample.complex.ComplexBuffer;
-import sample.complex.IComplexBufferProvider;
 import source.ISourceEventProcessor;
 import source.SourceEvent;
-import source.SourceException;
-import source.tuner.manager.AbstractSourceManager;
-import source.tuner.manager.TunerSourceManager;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.RejectedExecutionException;
 
 /**
  * Tuner - provides tuner channel sources, representing a channel frequency
@@ -45,7 +35,6 @@ public abstract class Tuner
     protected Broadcaster<TunerEvent> mTunerEventBroadcaster = new Broadcaster<>();
     private TunerController mTunerController;
     private String mName;
-    private AbstractSourceManager mTunerSourceManager;
 
     /**
      * Abstract tuner class.
@@ -56,8 +45,6 @@ public abstract class Tuner
     {
         mName = name;
         mTunerController = tunerController;
-
-        mTunerSourceManager = new TunerSourceManager(mTunerController);
 
         //Rebroadcast frequency and sample rate change events as tuner events
         mTunerController.addListener(new ISourceEventProcessor()
@@ -78,14 +65,6 @@ public abstract class Tuner
                 }
             }
         });
-    }
-
-    /**
-     * Source Manager.  Provides access to registering for complex buffer samples and source event notifications.
-     */
-    public AbstractSourceManager getSourceManager()
-    {
-        return mTunerSourceManager;
     }
 
     public TunerController getTunerController()

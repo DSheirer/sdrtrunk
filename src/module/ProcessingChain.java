@@ -611,8 +611,7 @@ public class ProcessingChain implements IChannelEventListener
     }
 
     /**
-     * Stops processing if the chain is currently processing.  Invocations on
-     * an already stopped chain have no effect.
+     * Stops processing if the chain is currently processing.  Invocations on an already stopped chain have no effect.
      */
     public void stop()
     {
@@ -639,15 +638,14 @@ public class ProcessingChain implements IChannelEventListener
                         ((RealSource) mSource).removeListener(mFilteredRealBufferBroadcaster);
                         break;
                     default:
-                        throw new IllegalArgumentException("Unrecognized source "
-                            + "sample type - cannot start processing chain");
+                        throw new IllegalArgumentException("Unrecognized source sample type - cannot start processing " +
+                            "chain");
                 }
 
 				/* Release the source */
                 mSource.dispose();
                 mSource = null;
             }
-			
         }
     }
 

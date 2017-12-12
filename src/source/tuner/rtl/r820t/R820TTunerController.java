@@ -104,7 +104,7 @@ public class R820TTunerController extends RTL2832TunerController
                 setSampleRate(sampleRate);
 
                 double correction = config.getFrequencyCorrection();
-                setFrequencyCorrection(correction);
+                getFrequencyController().setFrequencyCorrection(correction);
 
                 R820TGain masterGain = config.getMasterGain();
                 setGain(masterGain, true);
@@ -123,7 +123,7 @@ public class R820TTunerController extends RTL2832TunerController
 
                 try
                 {
-                    setFrequency(config.getFrequency());
+                    getFrequencyController().setFrequency(config.getFrequency());
                 }
                 catch(SourceException se)
                 {

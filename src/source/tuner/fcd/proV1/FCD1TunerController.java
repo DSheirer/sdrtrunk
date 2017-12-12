@@ -63,7 +63,7 @@ public class FCD1TunerController extends FCDTunerController
     {
         super.init();
 
-        mFrequencyController.setSampleRate(SAMPLE_RATE);
+        getFrequencyController().setSampleRate(SAMPLE_RATE);
 
         try
         {
@@ -120,7 +120,7 @@ public class FCD1TunerController extends FCDTunerController
 
         try
         {
-            setFrequencyCorrection(config.getFrequencyCorrection());
+            getFrequencyController().setFrequencyCorrection(config.getFrequencyCorrection());
             setLNAGain(config.getLNAGain());
             setLNAEnhance(config.getLNAEnhance());
             setMixerGain(config.getMixerGain());
@@ -142,7 +142,7 @@ public class FCD1TunerController extends FCDTunerController
 
         try
         {
-            setFrequency(config.getFrequency());
+            getFrequencyController().setFrequency(config.getFrequency());
         }
         catch(SourceException se)
         {

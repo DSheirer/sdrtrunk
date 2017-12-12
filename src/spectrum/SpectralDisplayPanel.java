@@ -430,9 +430,9 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuff
 
             //Fire frequency and sample rate change events so that the spectrum
             //and overlay panels can synchronize
-            process(SourceEvent.frequencyChange(mTuner.getTunerController().getFrequency()));
+            process(SourceEvent.frequencyChange(mTuner.getTunerController().getFrequencyController().getFrequency()));
 
-            process(SourceEvent.sampleRateChange(mTuner.getTunerController().getSampleRate()));
+            process(SourceEvent.sampleRateChange(mTuner.getTunerController().getFrequencyController().getSampleRate()));
         }
     }
 

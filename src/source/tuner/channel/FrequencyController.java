@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package source.tuner.frequency;
+package source.tuner.channel;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +26,7 @@ import source.SourceEvent;
 import source.SourceException;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class FrequencyController
 {
@@ -38,37 +39,59 @@ public class FrequencyController
     private long mMaximumFrequency;
     private double mFrequencyCorrection = 0.0d;
     private double mSampleRate = 0.0d;
+    private long mCenterBlackoutBandwidth;
+    private double mUsableBandwidthPercentage;
+    private boolean mLocked;
 
-    private ArrayList<ISourceEventProcessor> mProcessors = new ArrayList<>();
+    private List<ISourceEventProcessor> mProcessors = new ArrayList<>();
 
-    public FrequencyController(Tunable tunable, long minFrequency, long maxFrequency, double frequencyCorrection)
+    public FrequencyController(Tunable tunable, long minFrequency, long maxFrequency, double frequencyCorrection,
+                               long centerBlackoutBandwidth, double usableBandwidthPercentage)
     {
         mTunable = tunable;
         mMinimumFrequency = minFrequency;
         mMaximumFrequency = maxFrequency;
         mFrequencyCorrection = frequencyCorrection;
+        mCenterBlackoutBandwidth = centerBlackoutBandwidth;
+        mUsableBandwidthPercentage = usableBandwidthPercentage;
     }
 
-    /**
-     * Get bandwidth in hertz
-     */
-    public int getBandwidth()
+    public boolean isLocked()
     {
-        return (int)mSampleRate;
+        return mLocked;
     }
 
     /**
-     * Set sample rate in hertz
+     * Sets the locked status.  When this control is locked, the sample rate cannot be changed and the center
+     * tuned frequency can only be changed via the setLockedFrequency() method.
+     *
+     * Note: this method is package-private and is intended to be used (only) by the ChannelManager.
+     *
+     * @param locked
+     */
+    void setLocked(boolean locked)
+    {
+        mLocked = locked;
+    }
+
+
+    /**
+     * Set sample rate/bandwidth in hertz
      */
     public void setSampleRate(int sampleRate) throws SourceException
     {
+        if(isLocked())
+        {
+            throw new FrequencyControllerLockedException();
+        }
+
         mSampleRate = sampleRate;
 
         broadcastSampleRateChange();
     }
 
     /**
-     * Get sample rate in hertz
+     * Get sample rate/bandwidth in hertz
      */
     public double getSampleRate()
     {
@@ -91,6 +114,23 @@ public class FrequencyController
      *                         version of the requested frequency
      */
     public void setFrequency(long frequency) throws SourceException
+    {
+        if(isLocked())
+        {
+            throw new FrequencyControllerLockedException();
+        }
+
+        setFrequency(frequency, true);
+    }
+
+    /**
+     * Sets the frequency when the frequency controller is locked.  Note: this method is package-private and is
+     * only intended to be used by the ChannelManager.
+     *
+     * @param frequency to set as the center tuned frequency
+     * @throws SourceException if there is an error while setting the frequency
+     */
+    void setLockedFrequency(long frequency) throws SourceException
     {
         setFrequency(frequency, true);
     }
@@ -250,6 +290,34 @@ public class FrequencyController
         }
     }
 
+    /**
+     * Identifies the bandwidth of a blackout frequency range centered about the center frequency.  This is
+     * used to block the frequency range where a DC spike may exist.
+     * @return center blackout bandwidth in hertz
+     */
+    public long getCenterBlackoutBandwidth()
+    {
+        return mCenterBlackoutBandwidth;
+    }
+
+    /**
+     * Percentage of the available bandwidth that is usable.  Sources with filter roll-off at the ends of the
+     * spectral range can limit the usable bandwidth to avoid providing samples at these spectral ends.
+     *
+     * @return bandwidth percentage (0.0 <> 1.0)
+     */
+    public double getUsableBandwidthPercentage()
+    {
+        return mUsableBandwidthPercentage;
+    }
+
+    /**
+     * Usable bandwidth in hertz calculated as the sample rate constrained by the usable bandwidth percentage.
+     */
+    public int getUsableBandwidth()
+    {
+        return (int)(getSampleRate() * getUsableBandwidthPercentage());
+    }
 
     public interface Tunable
     {

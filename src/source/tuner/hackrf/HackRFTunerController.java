@@ -138,7 +138,7 @@ public class HackRFTunerController extends USBTunerController
 
             setMode(Mode.RECEIVE);
 
-            setFrequency(DEFAULT_FREQUENCY);
+            getFrequencyController().setFrequency(DEFAULT_FREQUENCY);
         }
         catch(Exception e)
         {
@@ -306,7 +306,7 @@ public class HackRFTunerController extends USBTunerController
      */
     public long getTunedFrequency() throws SourceException
     {
-        return mFrequencyController.getTunedFrequency();
+        return getFrequencyController().getTunedFrequency();
     }
 
     @Override
@@ -353,11 +353,11 @@ public class HackRFTunerController extends USBTunerController
             try
             {
                 setSampleRate(hackRFConfig.getSampleRate());
-                setFrequencyCorrection(hackRFConfig.getFrequencyCorrection());
+                getFrequencyController().setFrequencyCorrection(hackRFConfig.getFrequencyCorrection());
                 setAmplifierEnabled(hackRFConfig.getAmplifierEnabled());
                 setLNAGain(hackRFConfig.getLNAGain());
                 setVGAGain(hackRFConfig.getVGAGain());
-                setFrequency(getFrequency());
+                getFrequencyController().setFrequency(getFrequencyController().getFrequency());
             }
             catch(UsbException e)
             {
@@ -367,7 +367,7 @@ public class HackRFTunerController extends USBTunerController
 
             try
             {
-                setFrequency(hackRFConfig.getFrequency());
+                getFrequencyController().setFrequency(hackRFConfig.getFrequency());
             }
             catch(SourceException se)
             {
@@ -511,7 +511,7 @@ public class HackRFTunerController extends USBTunerController
     {
         setSampleRateManual(rate.getRate(), 1);
 
-        mFrequencyController.setSampleRate(rate.getRate());
+        getFrequencyController().setSampleRate(rate.getRate());
 
         setBasebandFilter(rate.getFilter());
 

@@ -179,7 +179,7 @@ public class HackRFTunerEditor extends TunerConfigurationEditor
 
 				try
                 {
-	                mController.setFrequencyCorrection( value );
+	                mController.getFrequencyController().setFrequencyCorrection( value );
 	                save();
                 }
                 catch ( SourceException e1 )

@@ -377,7 +377,7 @@ public class TunerConfigurationModel extends AbstractTableModel
 	{
 		TunerConfiguration assigned = getTunerConfiguration( tuner.getTunerType(), tuner.getUniqueID() );
 		
-		assigned.setFrequency( tuner.getTunerController().getFrequency() );
+		assigned.setFrequency( tuner.getTunerController().getFrequencyController().getFrequency() );
 		
 		broadcast( new TunerConfigurationEvent( assigned, Event.CHANGE ) );
 	}

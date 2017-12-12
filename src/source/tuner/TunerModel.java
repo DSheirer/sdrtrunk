@@ -220,13 +220,13 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
                 case TUNER_ID:
                     return tuner.getUniqueID();
                 case SAMPLE_RATE:
-                    double sampleRate = tuner.getTunerController().getSampleRate();
+                    double sampleRate = tuner.getTunerController().getFrequencyController().getSampleRate();
 
                     return mSampleRateFormat.format(sampleRate / 1E6D) + MHZ;
                 case FREQUENCY:
                     try
                     {
-                        long frequency = tuner.getTunerController().getFrequency();
+                        long frequency = tuner.getTunerController().getFrequencyController().getFrequency();
 
                         return mFrequencyFormat.format(frequency / 1E6D) + MHZ;
                     }

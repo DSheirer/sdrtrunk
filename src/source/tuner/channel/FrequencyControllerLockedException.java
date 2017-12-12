@@ -18,28 +18,18 @@
  ******************************************************************************/
 package source.tuner.channel;
 
-import java.util.concurrent.RejectedExecutionException;
-
 import source.SourceException;
 
-public interface TunerChannelProvider
+public class FrequencyControllerLockedException extends SourceException
 {
-	/**
-	 * Returns a tuner frequency channel source, tuned to the correct frequency
-	 * 
-	 * @param frequency - desired frequency
-	 * 
-	 * @return - source for 48k sample rate
-	 */
-	public abstract TunerChannelSource getChannel( TunerChannel channel ) 
-			throws RejectedExecutionException, SourceException;
+    private static final long serialVersionUID = 1L;
 
-	/**
-	 * Releases the tuned channel resources
-	 * 
-	 * @param channel - previously obtained tuner channel
-	 */
-	public abstract void releaseChannel( TunerChannelSource source );
-	
-	
+    /**
+     * Indicates an attempt to adjust frequency or sample rate on a locked frequency controller.
+     */
+    public FrequencyControllerLockedException()
+	{
+    	super( "Frequency controller is locked -- frequency and sample rate cannot be changed until the controller" +
+            " is unlocked by the channel manager" );
+	}
 }

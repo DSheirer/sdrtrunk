@@ -78,7 +78,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      * @param sampleRate to be channelized.
      * @param tapsPerFilter to use when designing the filter
      */
-    public ComplexPolyphaseChannelizerM2(int sampleRate, int tapsPerFilter) throws FilterDesignException
+    public ComplexPolyphaseChannelizerM2(double sampleRate, int tapsPerFilter) throws FilterDesignException
     {
         super(sampleRate, (int)(sampleRate / DEFAULT_MINIMUM_CHANNEL_BANDWIDTH));
 
@@ -94,7 +94,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      * @param sampleRate in hertz
      */
     @Override
-    public void setSampleRate(int sampleRate)
+    public void setSampleRate(double sampleRate)
     {
         try
         {
