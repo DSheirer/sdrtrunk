@@ -18,8 +18,6 @@
  ******************************************************************************/
 package channel.traffic;
 
-import alias.Alias;
-import alias.id.priority.Priority;
 import channel.state.DecoderStateEvent;
 import channel.state.IDecoderStateEventListener;
 import controller.channel.Channel;
@@ -27,13 +25,13 @@ import controller.channel.Channel.ChannelType;
 import controller.channel.ChannelEvent;
 import controller.channel.ChannelEvent.Event;
 import controller.channel.ChannelModel;
-import controller.channel.ChannelProcessingManager;
 import controller.channel.TrafficChannelEvent;
 import module.Module;
 import module.decode.config.DecodeConfiguration;
 import module.decode.event.CallEvent;
 import module.decode.event.CallEvent.CallEventType;
 import module.decode.event.ICallEventProvider;
+import module.log.config.EventLogConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import record.config.RecordConfiguration;
@@ -64,6 +62,7 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
 
     private ChannelModel mChannelModel;
     private DecodeConfiguration mDecodeConfiguration;
+    private EventLogConfiguration mEventLogConfiguration;
     private RecordConfiguration mRecordConfiguration;
     private String mSystem;
     private String mSite;
@@ -77,6 +76,7 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
      * @param channelModel containing channels currently in use
      * @param decodeConfiguration - decoder configuration to use for each
      * traffic channel allocation.
+     * @param eventLogConfiguration - logging configuration to use for traffic channels
      * @param recordConfiguration - recording options for each traffic channel
      * @param system label to use to describe the system
      * @param site label to use to describe the site
@@ -86,6 +86,7 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
      */
     public TrafficChannelManager(ChannelModel channelModel,
                                  DecodeConfiguration decodeConfiguration,
+                                 EventLogConfiguration eventLogConfiguration,
                                  RecordConfiguration recordConfiguration,
                                  String system,
                                  String site,
@@ -94,6 +95,7 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
     {
         mChannelModel = channelModel;
         mDecodeConfiguration = decodeConfiguration;
+        mEventLogConfiguration = eventLogConfiguration;
         mRecordConfiguration = recordConfiguration;
         mSystem = system;
         mSite = site;
@@ -148,6 +150,8 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
                 channel = new Channel("Traffic", ChannelType.TRAFFIC);
 
                 channel.setDecodeConfiguration(mDecodeConfiguration);
+
+                channel.setEventLogConfiguration(mEventLogConfiguration);
 
                 channel.setRecordConfiguration(mRecordConfiguration);
 
