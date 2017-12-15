@@ -12,8 +12,8 @@ package org.jdesktop.swingx.mapviewer;
 import java.awt.geom.Point2D;
 
 /**
- * A TileFactoryInfo encapsulates all information specific to a map server. This includes everything from the url to
- * load the map tiles from to the size and depth of the tiles. Theoretically any map server can be used by installing a
+ * A TileFactoryInfo encapsulates all information specific to a ua.in.smartjava.map server. This includes everything from the url to
+ * load the ua.in.smartjava.map tiles from to the size and depth of the tiles. Theoretically any ua.in.smartjava.map server can be used by installing a
  * customized TileFactoryInfo. Currently
  * @author joshy
  */
@@ -30,7 +30,7 @@ public class TileFactoryInfo
 	 */
 	private int[] mapWidthInTilesAtZoom;
 	/**
-	 * An array of coordinates in <em>pixels</em> that indicates the center in the world map for the given zoom level.
+	 * An array of coordinates in <em>pixels</em> that indicates the center in the world ua.in.smartjava.map for the given zoom level.
 	 */
 	private Point2D[] mapCenterInPixelsAtZoom;// = new Point2D.Double[18];
 
@@ -62,7 +62,7 @@ public class TileFactoryInfo
 
 	/**
 	 * Creates a new instance of TileFactoryInfo. Note that TileFactoryInfo should be considered invariate, meaning that
-	 * subclasses should ensure all of the properties stay the same after the class is constructed. Returning different
+	 * subclasses should ensure all of the ua.in.smartjava.properties stay the same after the class is constructed. Returning different
 	 * values of getTileSize() for example is considered an error and may result in unexpected behavior.
 	 * @param minimumZoomLevel The minimum zoom level
 	 * @param maximumZoomLevel the maximum zoom level
@@ -76,7 +76,7 @@ public class TileFactoryInfo
 	 * @param zparam the z parameter for the tile url
 	 */
 	/*
-	 * @param xr2l true if tile x is measured from the far left of the map to the far right, or else false if based on
+	 * @param xr2l true if tile x is measured from the far left of the ua.in.smartjava.map to the far right, or else false if based on
 	 * the center line.
 	 * @param yt2b true if tile y is measured from the top (north pole) to the bottom (south pole) or else false if
 	 * based on the equator.
@@ -90,7 +90,7 @@ public class TileFactoryInfo
 
 	/**
 	 * Creates a new instance of TileFactoryInfo. Note that TileFactoryInfo should be considered invariate, meaning that
-	 * subclasses should ensure all of the properties stay the same after the class is constructed. Returning different
+	 * subclasses should ensure all of the ua.in.smartjava.properties stay the same after the class is constructed. Returning different
 	 * values of getTileSize() for example is considered an error and may result in unexpected behavior.
 	 * @param name A name to identify this information.
 	 * @param minimumZoomLevel The minimum zoom level
@@ -105,7 +105,7 @@ public class TileFactoryInfo
 	 * @param zparam the z parameter for the tile url
 	 */
 	/*
-	 * @param xr2l true if tile x is measured from the far left of the map to the far right, or else false if based on
+	 * @param xr2l true if tile x is measured from the far left of the ua.in.smartjava.map to the far right, or else false if based on
 	 * the center line.
 	 * @param yt2b true if tile y is measured from the top (north pole) to the bottom (south pole) or else false if
 	 * based on the equator.
@@ -170,7 +170,7 @@ public class TileFactoryInfo
 	}
 
 	/**
-	 * @return the total map zoom level
+	 * @return the total ua.in.smartjava.map zoom level
 	 */
 	public int getTotalMapZoom()
 	{
@@ -179,7 +179,7 @@ public class TileFactoryInfo
 
 	/**
 	 * @param zoom the zoom level
-	 * @return the map width in tiles
+	 * @return the ua.in.smartjava.map width in tiles
 	 */
 	public int getMapWidthInTilesAtZoom(int zoom)
 	{
@@ -188,7 +188,7 @@ public class TileFactoryInfo
 
 	/**
 	 * @param zoom the zoom level
-	 * @return the map center in pixels
+	 * @return the ua.in.smartjava.map center in pixels
 	 */
 	public Point2D getMapCenterInPixelsAtZoom(int zoom)
 	{
@@ -211,7 +211,7 @@ public class TileFactoryInfo
 	public String getTileUrl(int x, int y, int zoom)
 	{
 		// System.out.println("getting tile at zoom: " + zoom);
-		// System.out.println("map width at zoom = " + getMapWidthInTilesAtZoom(zoom));
+		// System.out.println("ua.in.smartjava.map width at zoom = " + getMapWidthInTilesAtZoom(zoom));
 		String ypart = "&" + yparam + "=" + y;
 		// System.out.println("ypart = " + ypart);
 

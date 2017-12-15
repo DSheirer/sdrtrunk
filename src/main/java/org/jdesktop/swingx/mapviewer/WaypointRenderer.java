@@ -22,9 +22,9 @@ import org.jdesktop.swingx.JXMapViewer;
 public interface WaypointRenderer<W>
 {
     /**
-     * paint the specified waypoint on the specified map and graphics context
+     * paint the specified waypoint on the specified ua.in.smartjava.map and graphics context
      * @param g the graphics2D object 
-     * @param map the map
+     * @param map the ua.in.smartjava.map
      * @param waypoint the waypoint
      */
     public void paintWaypoint(Graphics2D g, JXMapViewer map, W waypoint);

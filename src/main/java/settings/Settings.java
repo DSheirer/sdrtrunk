@@ -24,17 +24,17 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
-import map.DefaultIcon;
-import map.MapIcon;
+import ua.in.smartjava.map.DefaultIcon;
+import ua.in.smartjava.map.MapIcon;
 import settings.ColorSetting.ColorSettingName;
-import source.recording.RecordingConfiguration;
-import source.tuner.airspy.AirspyTunerConfiguration;
-import source.tuner.configuration.TunerConfiguration;
-import source.tuner.fcd.proV1.FCD1TunerConfiguration;
-import source.tuner.fcd.proplusV2.FCD2TunerConfiguration;
-import source.tuner.hackrf.HackRFTunerConfiguration;
-import source.tuner.rtl.e4k.E4KTunerConfiguration;
-import source.tuner.rtl.r820t.R820TTunerConfiguration;
+import ua.in.smartjava.source.recording.RecordingConfiguration;
+import ua.in.smartjava.source.tuner.airspy.AirspyTunerConfiguration;
+import ua.in.smartjava.source.tuner.configuration.TunerConfiguration;
+import ua.in.smartjava.source.tuner.fcd.proV1.FCD1TunerConfiguration;
+import ua.in.smartjava.source.tuner.fcd.proplusV2.FCD2TunerConfiguration;
+import ua.in.smartjava.source.tuner.hackrf.HackRFTunerConfiguration;
+import ua.in.smartjava.source.tuner.rtl.e4k.E4KTunerConfiguration;
+import ua.in.smartjava.source.tuner.rtl.r820t.R820TTunerConfiguration;
 
 /**
  * Support for persisting via JAXB all configured SDRTrunk settings

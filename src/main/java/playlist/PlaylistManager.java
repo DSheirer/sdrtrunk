@@ -17,22 +17,22 @@
  ******************************************************************************/
 package playlist;
 
-import alias.AliasEvent;
-import alias.AliasModel;
-import audio.broadcast.BroadcastEvent;
-import audio.broadcast.BroadcastModel;
-import controller.channel.Channel.ChannelType;
-import controller.channel.ChannelEvent;
-import controller.channel.ChannelEventListener;
-import controller.channel.ChannelModel;
-import controller.channel.map.ChannelMapEvent;
-import controller.channel.map.ChannelMapModel;
+import ua.in.smartjava.alias.AliasEvent;
+import ua.in.smartjava.alias.AliasModel;
+import ua.in.smartjava.audio.broadcast.BroadcastEvent;
+import ua.in.smartjava.audio.broadcast.BroadcastModel;
+import ua.in.smartjava.controller.channel.Channel.ChannelType;
+import ua.in.smartjava.controller.channel.ChannelEvent;
+import ua.in.smartjava.controller.channel.ChannelEventListener;
+import ua.in.smartjava.controller.channel.ChannelModel;
+import ua.in.smartjava.controller.channel.map.ChannelMapEvent;
+import ua.in.smartjava.controller.channel.map.ChannelMapModel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import playlist.version1.PlaylistConverterV1ToV2;
-import properties.SystemProperties;
-import sample.Listener;
-import util.ThreadPool;
+import ua.in.smartjava.properties.SystemProperties;
+import ua.in.smartjava.sample.Listener;
+import ua.in.smartjava.util.ThreadPool;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -65,8 +65,8 @@ public class PlaylistManager implements ChannelEventListener
     private boolean mPlaylistLoading = false;
 
     /**
-     * Playlist manager - manages all channel configurations, channel maps, and
-     * alias lists and handles loading or persisting to a playlist.xml file
+     * Playlist manager - manages all ua.in.smartjava.channel configurations, ua.in.smartjava.channel maps, and
+     * ua.in.smartjava.alias lists and handles loading or persisting to a playlist.xml file
      *
      * Monitors playlist changes to automatically save configuration changes
      * after they occur.
@@ -80,7 +80,7 @@ public class PlaylistManager implements ChannelEventListener
         mChannelModel = channelModel;
         mChannelMapModel = channelMapModel;
 
-        //Register for alias, channel and channel map events so that we can
+        //Register for ua.in.smartjava.alias, ua.in.smartjava.channel and ua.in.smartjava.channel ua.in.smartjava.map events so that we can
         //save the playlist when there are any changes
         mChannelModel.addListener(this);
 
@@ -89,7 +89,7 @@ public class PlaylistManager implements ChannelEventListener
             @Override
             public void receive(AliasEvent t)
             {
-                //Save the playlist for all alias events
+                //Save the playlist for all ua.in.smartjava.alias events
                 schedulePlaylistSave();
             }
         });
@@ -99,7 +99,7 @@ public class PlaylistManager implements ChannelEventListener
             @Override
             public void receive(ChannelMapEvent t)
             {
-                //Save the playlist for all channel map events
+                //Save the playlist for all ua.in.smartjava.channel ua.in.smartjava.map events
                 schedulePlaylistSave();
             }
         });
@@ -188,7 +188,7 @@ public class PlaylistManager implements ChannelEventListener
 
 
     /**
-     * Channel event listener method.  Monitors channel events for events that indicate that the playlist has changed
+     * Channel event listener method.  Monitors ua.in.smartjava.channel events for events that indicate that the playlist has changed
      * and queues automatic playlist saving.
      */
     @Override

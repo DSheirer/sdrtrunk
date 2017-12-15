@@ -39,7 +39,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * <p>A {@link Painter} implementation composed of an array of <code>Painter</code>s.
  * <code>CompoundPainter</code> provides a means for combining several individual
  * <code>Painter</code>s, or groups of them, into one logical unit. Each of the
- * <code>Painter</code>s are executed in order. BufferedImageOp filter effects can
+ * <code>Painter</code>s are executed in order. BufferedImageOp ua.in.smartjava.filter effects can
  * be applied to them together as a whole. The entire set of painting operations
  * may be cached together.</p>
  *

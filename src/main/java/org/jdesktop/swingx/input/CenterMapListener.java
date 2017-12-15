@@ -27,7 +27,7 @@ import javax.swing.SwingUtilities;
 import org.jdesktop.swingx.JXMapViewer;
 
 /**
- * Centers the map on the mouse cursor
+ * Centers the ua.in.smartjava.map on the mouse cursor
  * if left is double-clicked or middle mouse
  * button is pressed.
  * @author Martin Steiger

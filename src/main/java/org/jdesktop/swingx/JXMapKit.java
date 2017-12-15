@@ -42,7 +42,7 @@ import org.jdesktop.swingx.painter.Painter;
 /**
  * <p>The JXMapKit is a pair of JXMapViewers preconfigured to be easy to use
  * with common features built in.  This includes zoom buttons, a zoom slider,
- * and a mini-map in the lower right corner showing an overview of the map.
+ * and a mini-ua.in.smartjava.map in the lower right corner showing an overview of the ua.in.smartjava.map.
  * Each feature can be turned off using an appropriate
  * <CODE>is<I>X</I>visible</CODE> property. For example, to turn
  * off the minimap call
@@ -112,7 +112,7 @@ public class JXMapKit extends JPanel
 		rebuildMainMapOverlay();
 
 		/*
-		 * // adapter to move the minimap after the main map has moved MouseInputAdapter ma = new MouseInputAdapter() {
+		 * // adapter to move the minimap after the main ua.in.smartjava.map has moved MouseInputAdapter ma = new MouseInputAdapter() {
 		 * public void mouseReleased(MouseEvent e) { miniMap.setCenterPosition(mapCenterPosition); } };
 		 * mainMap.addMouseMotionListener(ma); mainMap.addMouseListener(ma);
 		 */
@@ -152,13 +152,13 @@ public class JXMapKit extends JPanel
 			}
 		});
 
-		// an overlay for the mini-map which shows a rectangle representing the main map
+		// an overlay for the mini-ua.in.smartjava.map which shows a rectangle representing the main ua.in.smartjava.map
 		miniMap.setOverlayPainter(new Painter<JXMapViewer>()
 		{
 			@Override
 			public void paint(Graphics2D g, JXMapViewer map, int width, int height)
 			{
-				// get the viewport rect of the main map
+				// get the viewport rect of the main ua.in.smartjava.map
 				Rectangle mainMapBounds = mainMap.getViewportBounds();
 
 				// convert to Point2Ds
@@ -170,7 +170,7 @@ public class JXMapKit extends JPanel
 				GeoPosition upperLeft = mainMap.getTileFactory().pixelToGeo(upperLeft2D, mainMap.getZoom());
 				GeoPosition lowerRight = mainMap.getTileFactory().pixelToGeo(lowerRight2D, mainMap.getZoom());
 
-				// convert to Point2Ds on the mini-map
+				// convert to Point2Ds on the mini-ua.in.smartjava.map
 				upperLeft2D = map.getTileFactory().geoToPixel(upperLeft, map.getZoom());
 				lowerRight2D = map.getTileFactory().geoToPixel(lowerRight, map.getZoom());
 
@@ -178,7 +178,7 @@ public class JXMapKit extends JPanel
 				Rectangle rect = map.getViewportBounds();
 				// p("rect = " + rect);
 				g.translate(-rect.x, -rect.y);
-//				Point2D centerpos = map.getTileFactory().geoToPixel(mapCenterPosition, map.getZoom());
+//				Point2D centerpos = ua.in.smartjava.map.getTileFactory().geoToPixel(mapCenterPosition, ua.in.smartjava.map.getZoom());
 				// p("center pos = " + centerpos);
 				g.setPaint(Color.RED);
 				// g.drawRect((int)centerpos.getX()-30,(int)centerpos.getY()-30,60,60);
@@ -210,7 +210,7 @@ public class JXMapKit extends JPanel
 	private boolean zoomChanging = false;
 
 	/**
-	 * Set the current zoomlevel for the main map. The minimap will be updated accordingly
+	 * Set the current zoomlevel for the main ua.in.smartjava.map. The minimap will be updated accordingly
 	 * @param zoom the new zoom level
 	 */
 	public void setZoom(int zoom)
@@ -230,7 +230,7 @@ public class JXMapKit extends JPanel
 	}
 
 	/**
-	 * Returns an action which can be attached to buttons or menu items to make the map zoom out
+	 * Returns an action which can be attached to buttons or menu items to make the ua.in.smartjava.map zoom out
 	 * @return a preconfigured Zoom Out action
 	 */
 	public Action getZoomOutAction()
@@ -253,7 +253,7 @@ public class JXMapKit extends JPanel
 	}
 
 	/**
-	 * Returns an action which can be attached to buttons or menu items to make the map zoom in
+	 * Returns an action which can be attached to buttons or menu items to make the ua.in.smartjava.map zoom in
 	 * @return a preconfigured Zoom In action
 	 */
 	public Action getZoomInAction()
@@ -417,8 +417,8 @@ public class JXMapKit extends JPanel
 	// End of variables declaration//GEN-END:variables
 
 	/**
-	 * Indicates if the mini-map is currently visible
-	 * @return the current value of the mini-map property
+	 * Indicates if the mini-ua.in.smartjava.map is currently visible
+	 * @return the current value of the mini-ua.in.smartjava.map property
 	 */
 	public boolean isMiniMapVisible()
 	{
@@ -426,7 +426,7 @@ public class JXMapKit extends JPanel
 	}
 
 	/**
-	 * Sets if the mini-map should be visible
+	 * Sets if the mini-ua.in.smartjava.map should be visible
 	 * @param miniMapVisible a new value for the miniMap property
 	 */
 	public void setMiniMapVisible(boolean miniMapVisible)
@@ -534,7 +534,7 @@ public class JXMapKit extends JPanel
 
 	/**
 	 * Returns a reference to the main embedded JXMapViewer component
-	 * @return the main map
+	 * @return the main ua.in.smartjava.map
 	 */
 	public JXMapViewer getMainMap()
 	{

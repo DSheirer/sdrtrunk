@@ -13,10 +13,10 @@ for /f "usebackq tokens=3" %%a in (`java -version 2^>^&1 ^| find "version"`) do 
 
 	if !c! equ 9 (
 		echo Using Java 9 options		
-		java -cp "SDRTrunk.jar;*;libs/*;config/*;images/*" --add-modules java.xml.bind gui.SDRTrunk
+		java -cp "SDRTrunk.jar;*;libs/*;config/*;images/*" --add-modules java.xml.bind ua.in.smartjava.gui.SDRTrunk
 	) else (
 		echo Using Java 8 options		
-		java -XX:+UseG1GC -cp "SDRTrunk.jar;*;libs/*;config/*;images/*" gui.SDRTrunk
+		java -XX:+UseG1GC -cp "SDRTrunk.jar;*;libs/*;config/*;images/*" ua.in.smartjava.gui.SDRTrunk
 	)
 )
 

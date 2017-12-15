@@ -58,7 +58,7 @@ public class ESRITileFactory extends DefaultTileFactory
 		{
 			// "&usrid=&ds=&c=-117.1817|34.0556&sf=52500&fmt=&ocs=";
 			// System.out.println("getting tile at zoom: " + zoom);
-			// System.out.println("map width at zoom = " + getMapWidthInTilesAtZoom(zoom));
+			// System.out.println("ua.in.smartjava.map width at zoom = " + getMapWidthInTilesAtZoom(zoom));
 
 			// provide the center point of the tile, in lat/long coords
 			int tileY = y;

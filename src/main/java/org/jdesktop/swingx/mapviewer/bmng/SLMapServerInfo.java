@@ -20,7 +20,7 @@ package org.jdesktop.swingx.mapviewer.bmng;
 import org.jdesktop.swingx.mapviewer.TileFactoryInfo;
 
 /**
- * A TileFactoryInfo subclass which knows how to connect to the SwingLabs map server. This server contains 2k resolution
+ * A TileFactoryInfo subclass which knows how to connect to the SwingLabs ua.in.smartjava.map server. This server contains 2k resolution
  * Blue Marble data from NASA.
  */
 public class SLMapServerInfo extends TileFactoryInfo

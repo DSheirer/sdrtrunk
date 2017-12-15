@@ -17,25 +17,25 @@
  ******************************************************************************/
 package playlist.version1;
 
-import alias.Alias;
-import alias.action.AliasAction;
-import alias.action.beep.BeepAction;
-import alias.action.clip.ClipAction;
-import alias.action.script.ScriptAction;
-import alias.id.AliasID;
-import alias.id.esn.Esn;
-import alias.id.fleetsync.FleetsyncID;
-import alias.id.lojack.LoJackFunctionAndID;
-import alias.id.mdc.MDC1200ID;
-import alias.id.mobileID.Min;
-import alias.id.mpt1327.MPT1327ID;
-import alias.id.nonrecordable.NonRecordable;
-import alias.id.priority.Priority;
-import alias.id.siteID.SiteID;
-import alias.id.status.StatusID;
-import alias.id.talkgroup.TalkgroupID;
-import alias.id.uniqueID.UniqueID;
-import module.decode.lj1200.LJ1200Message.Function;
+import ua.in.smartjava.alias.Alias;
+import ua.in.smartjava.alias.action.AliasAction;
+import ua.in.smartjava.alias.action.beep.BeepAction;
+import ua.in.smartjava.alias.action.clip.ClipAction;
+import ua.in.smartjava.alias.action.script.ScriptAction;
+import ua.in.smartjava.alias.id.AliasID;
+import ua.in.smartjava.alias.id.esn.Esn;
+import ua.in.smartjava.alias.id.fleetsync.FleetsyncID;
+import ua.in.smartjava.alias.id.lojack.LoJackFunctionAndID;
+import ua.in.smartjava.alias.id.mdc.MDC1200ID;
+import ua.in.smartjava.alias.id.mobileID.Min;
+import ua.in.smartjava.alias.id.mpt1327.MPT1327ID;
+import ua.in.smartjava.alias.id.nonrecordable.NonRecordable;
+import ua.in.smartjava.alias.id.priority.Priority;
+import ua.in.smartjava.alias.id.siteID.SiteID;
+import ua.in.smartjava.alias.id.status.StatusID;
+import ua.in.smartjava.alias.id.talkgroup.TalkgroupID;
+import ua.in.smartjava.alias.id.uniqueID.UniqueID;
+import ua.in.smartjava.module.decode.lj1200.LJ1200Message.Function;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

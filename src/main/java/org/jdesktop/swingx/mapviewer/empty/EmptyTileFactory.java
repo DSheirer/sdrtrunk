@@ -59,9 +59,9 @@ public class EmptyTileFactory extends TileFactory
 	}
 
 	/**
-	 * Gets an instance of an empty tile for the given tile position and zoom on the world map.
-	 * @param x The tile's x position on the world map.
-	 * @param y The tile's y position on the world map.
+	 * Gets an instance of an empty tile for the given tile position and zoom on the world ua.in.smartjava.map.
+	 * @param x The tile's x position on the world ua.in.smartjava.map.
+	 * @param y The tile's y position on the world ua.in.smartjava.map.
 	 * @param zoom The current zoom level.
 	 */
 	@Override

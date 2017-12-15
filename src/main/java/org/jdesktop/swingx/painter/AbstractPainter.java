@@ -61,7 +61,7 @@ import org.jdesktop.swingx.util.GraphicsUtilities;
 public abstract class AbstractPainter<T> extends AbstractBean implements Painter<T> {
     /**
      * An enum representing the possible interpolation values of Bicubic, Bilinear, and
-     * Nearest Neighbor. These map to the underlying RenderingHints,
+     * Nearest Neighbor. These ua.in.smartjava.map to the underlying RenderingHints,
      * but are easier to use and serialization safe.
      */
     public enum Interpolation {

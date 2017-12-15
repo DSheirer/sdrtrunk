@@ -23,7 +23,7 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
-import alias.AliasList;
+import ua.in.smartjava.alias.AliasList;
 
 @XmlSeeAlso( { AliasList.class} )
 @XmlRootElement( name = "alias_directory" )
@@ -72,7 +72,7 @@ public class AliasDirectory
 	}
 	
 	/**
-	 * Gets the named alias list, or returns an empty alias list
+	 * Gets the named ua.in.smartjava.alias list, or returns an empty ua.in.smartjava.alias list
 	 */
 	public AliasListOld getAliasList( String name )
 	{

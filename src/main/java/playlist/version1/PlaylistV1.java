@@ -21,8 +21,8 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
-import alias.Alias;
-import controller.channel.Channel;
+import ua.in.smartjava.alias.Alias;
+import ua.in.smartjava.controller.channel.Channel;
 
 @XmlSeeAlso( { AliasDirectory.class,
 			   Alias.class,
@@ -31,7 +31,7 @@ import controller.channel.Channel;
 			   SystemList.class } )
 
 @Deprecated
-@XmlRootElement( name = "playlist" )
+@XmlRootElement( name = "playlist")
 public class PlaylistV1
 {
 	//Note: these are for legacy version 1 format playlists

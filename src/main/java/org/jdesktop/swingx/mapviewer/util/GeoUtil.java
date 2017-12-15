@@ -31,7 +31,7 @@ public final class GeoUtil
 	/**
 	 * @param zoom the zoom level
 	 * @param info the tile factory info
-	 * @return the size of the map at the given zoom, in tiles (num tiles tall by num tiles wide)
+	 * @return the size of the ua.in.smartjava.map at the given zoom, in tiles (num tiles tall by num tiles wide)
 	 */
 	public static Dimension getMapSize(int zoom, TileFactoryInfo info)
 	{
@@ -50,17 +50,17 @@ public final class GeoUtil
 	{
 		// int x = (int)coord.getX();
 		// int y = (int)coord.getY();
-		// if off the map to the top or left
+		// if off the ua.in.smartjava.map to the top or left
 		if (x < 0 || y < 0)
 		{
 			return false;
 		}
-		// if of the map to the right
+		// if of the ua.in.smartjava.map to the right
 		if (info.getMapCenterInPixelsAtZoom(zoomLevel).getX() * 2 <= x * info.getTileSize(zoomLevel))
 		{
 			return false;
 		}
-		// if off the map to the bottom
+		// if off the ua.in.smartjava.map to the bottom
 		if (info.getMapCenterInPixelsAtZoom(zoomLevel).getY() * 2 <= y * info.getTileSize(zoomLevel))
 		{
 			return false;
@@ -136,8 +136,8 @@ public final class GeoUtil
 	}
 
 	/**
-	 * Gets the map bounds.
-	 * @param mapViewer The map viewer.
+	 * Gets the ua.in.smartjava.map bounds.
+	 * @param mapViewer The ua.in.smartjava.map viewer.
 	 * @return Returns the bounds.
 	 */
 	public static GeoBounds getMapBounds(JXMapViewer mapViewer)
@@ -147,9 +147,9 @@ public final class GeoUtil
 
 	/**
 	 * Gets the bounds as a set of two <code>GeoPosition</code> objects.
-	 * @param mapViewer The map viewer.
+	 * @param mapViewer The ua.in.smartjava.map viewer.
 	 * @return Returns the set of two <code>GeoPosition</code> objects that represent the north west and south east
-	 * corners of the map.
+	 * corners of the ua.in.smartjava.map.
 	 */
 	private static Set<GeoPosition> getMapGeoBounds(JXMapViewer mapViewer)
 	{

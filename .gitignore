@@ -27,9 +27,9 @@ out/
 
 # Crashlytics plugin (for Android Studio and IntelliJ)
 com_crashlytics_export_strings.xml
-crashlytics.properties
-crashlytics-build.properties
-fabric.properties
+crashlytics.ua.in.smartjava.properties
+crashlytics-build.ua.in.smartjava.properties
+fabric.ua.in.smartjava.properties
 ### Java template
 # Compiled class file
 *.class
@@ -67,5 +67,5 @@ gradle-app.setting
 .gradletasknamecache
 
 # # Work around https://youtrack.jetbrains.com/issue/IDEA-116898
-# gradle/wrapper/gradle-wrapper.properties
+# gradle/wrapper/gradle-wrapper.ua.in.smartjava.properties
 

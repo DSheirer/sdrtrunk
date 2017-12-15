@@ -16,9 +16,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import playlist.PlaylistV2;
-import alias.Alias;
-import controller.channel.Channel;
-import controller.channel.map.ChannelMap;
+import ua.in.smartjava.alias.Alias;
+import ua.in.smartjava.controller.channel.Channel;
+import ua.in.smartjava.controller.channel.map.ChannelMap;
 
 public class PlaylistConverterV1ToV2
 {
@@ -35,7 +35,7 @@ public class PlaylistConverterV1ToV2
         
         if( path != null && Files.exists( path ) )
 		{
-			mLog.info( "attempting playlist v1 to v2 conversion [" + 
+			mLog.info( "attempting playlist v1 to v2 conversion [" +
 							path.toString() + "]" );
 			
 			JAXBContext context = null;
@@ -56,13 +56,13 @@ public class PlaylistConverterV1ToV2
 		        }
 		        catch ( JAXBException e )
 		        {
-		        	mErrors.add( "Couldn't unmarshall version 1 playlist - " + 
+		        	mErrors.add( "Couldn't unmarshall version 1 playlist - " +
 		        				e.getLocalizedMessage() );
 		        }
 	        }
 	        catch ( Exception e )
 	        {
-	        	mErrors.add( "Couldn't open version 1 playlist - [" + 
+	        	mErrors.add( "Couldn't open version 1 playlist - [" +
 	        			path.toString() + "] - " + e.getLocalizedMessage() );
 	        }
 			finally
@@ -83,7 +83,7 @@ public class PlaylistConverterV1ToV2
 		}
 		else
 		{
-			mErrors.add( "version 1 playlist is null or not found [" + 
+			mErrors.add( "version 1 playlist is null or not found [" +
 					path.toString() + "]" );
 		}
 
@@ -131,7 +131,7 @@ public class PlaylistConverterV1ToV2
 			
 			if( playlistVersion1.hasChannelMapList() )
 			{
-				//Move the channel maps out of the channel map list
+				//Move the ua.in.smartjava.channel maps out of the ua.in.smartjava.channel ua.in.smartjava.map list
 				ChannelMapList channelMapList = playlistVersion1.getChannelMapList();
 				
 				List<ChannelMap> channelMaps = channelMapList.getChannelMap();
@@ -147,7 +147,7 @@ public class PlaylistConverterV1ToV2
 			mLog.info( "Converted [" + mConvertedPlaylist.getAliases().size() + 
 					"] aliases to new playlist format" );
 			mLog.info( "Converted [" + mConvertedPlaylist.getChannelMaps().size() + 
-					"] channel maps to new playlist format" );
+					"] ua.in.smartjava.channel maps to new playlist format" );
 		}
 	}
 	

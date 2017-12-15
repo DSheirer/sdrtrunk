@@ -21,7 +21,7 @@ import java.util.ArrayList;
 
 import javax.xml.bind.annotation.XmlAttribute;
 
-import alias.Alias;
+import ua.in.smartjava.alias.Alias;
 
 @Deprecated
 public class Group

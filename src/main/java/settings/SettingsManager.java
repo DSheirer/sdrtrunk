@@ -20,13 +20,13 @@ package settings;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import properties.SystemProperties;
-import sample.Listener;
+import ua.in.smartjava.properties.SystemProperties;
+import ua.in.smartjava.sample.Listener;
 import settings.ColorSetting.ColorSettingName;
-import source.recording.RecordingConfiguration;
-import source.tuner.configuration.TunerConfigurationEvent;
-import source.tuner.configuration.TunerConfigurationModel;
-import util.ThreadPool;
+import ua.in.smartjava.source.recording.RecordingConfiguration;
+import ua.in.smartjava.source.tuner.configuration.TunerConfigurationEvent;
+import ua.in.smartjava.source.tuner.configuration.TunerConfigurationModel;
+import ua.in.smartjava.util.ThreadPool;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -305,7 +305,7 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
             catch(JAXBException e)
             {
                 mLog.error("SettingsManager - jaxb exception while saving " +
-                    "settings", e);
+                        "settings", e);
             }
         }
         catch(Exception e)
@@ -360,7 +360,7 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
                 catch(JAXBException e)
                 {
                     mLog.error("SettingsManager - jaxb exception while loading " +
-                        "settings", e);
+                            "settings", e);
                 }
             }
             catch(Exception e)

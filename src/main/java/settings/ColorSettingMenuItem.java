@@ -25,7 +25,7 @@ import javax.swing.JColorChooser;
 import javax.swing.JMenuItem;
 
 import settings.ColorSetting.ColorSettingName;
-import util.ColorIcon;
+import ua.in.smartjava.util.ColorIcon;
 
 /**
  * JMenuItem for selecting a color and automatically setting (saving) the

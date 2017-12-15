@@ -6,8 +6,6 @@ buildscript {
     dependencies {
     }
 }
-apply plugin:'application'
-mainClassName = "gui.SDRTrunk"
 
 apply plugin: 'java'
 apply plugin: 'idea'
@@ -17,6 +15,7 @@ repositories {
     mavenCentral()
 }
 
+version = '1.0'
 sourceCompatibility = 1.8
 
 sourceSets {
@@ -59,13 +58,4 @@ dependencies {
 
 task wrapper(type: Wrapper) {
     gradleVersion = '4.3.1'
-}
-
-jar {
-    manifest {
-        attributes(
-                'Class-Path': configurations.compile.collect { it.getName() }.join(' '),
-                'Main-Class': 'gui.SDRTrunk'
-        )
-    }
 }

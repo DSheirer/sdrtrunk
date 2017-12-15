@@ -17,10 +17,10 @@
  ******************************************************************************/
 package playlist;
 
-import alias.Alias;
-import audio.broadcast.BroadcastConfiguration;
-import controller.channel.Channel;
-import controller.channel.map.ChannelMap;
+import ua.in.smartjava.alias.Alias;
+import ua.in.smartjava.audio.broadcast.BroadcastConfiguration;
+import ua.in.smartjava.controller.channel.Channel;
+import ua.in.smartjava.controller.channel.map.ChannelMap;
 
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;

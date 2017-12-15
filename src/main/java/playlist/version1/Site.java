@@ -23,7 +23,7 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
-import controller.channel.Channel;
+import ua.in.smartjava.controller.channel.Channel;
 
 @XmlSeeAlso( { Channel.class } )
 @XmlRootElement( name = "site" )

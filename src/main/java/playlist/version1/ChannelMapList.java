@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
-import controller.channel.map.ChannelMap;
+import ua.in.smartjava.controller.channel.map.ChannelMap;
 
 @XmlSeeAlso( ChannelMap.class )
 @Deprecated
@@ -62,7 +62,7 @@ public class ChannelMapList
     }
     
 	/**
-	 * Gets the named channel map, or returns an empty map
+	 * Gets the named ua.in.smartjava.channel ua.in.smartjava.map, or returns an empty ua.in.smartjava.map
 	 */
 	public ChannelMap getChannelMap( String name )
 	{
