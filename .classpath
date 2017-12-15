@@ -3,14 +3,6 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="lib" path="imports/jide-oss-3.5.15.jar"/>
 	<classpathentry kind="lib" path="imports/jsr80-1.0.1.jar"/>
-	<classpathentry kind="lib" path="imports/libusb4java-1.2.0-linux-arm.jar"/>
-	<classpathentry kind="lib" path="imports/libusb4java-1.2.0-linux-x86_64.jar"/>
-	<classpathentry kind="lib" path="imports/libusb4java-1.2.0-linux-x86.jar"/>
-	<classpathentry kind="lib" path="imports/libusb4java-1.2.0-osx-x86_64.jar"/>
-	<classpathentry kind="lib" path="imports/libusb4java-1.2.0-osx-x86.jar"/>
-	<classpathentry kind="lib" path="imports/libusb4java-1.2.0-windows-x86_64.jar"/>
-	<classpathentry kind="lib" path="imports/libusb4java-1.2.0-windows-x86.jar"/>
-	<classpathentry kind="lib" path="imports/libusb4java-1.2.0-linux-ppc.jar"/>
 	<classpathentry kind="lib" path="imports/commons-io-2.4.jar"/>
 	<classpathentry kind="lib" path="imports/jmbe-interface-0.3.2.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
