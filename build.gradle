@@ -41,6 +41,11 @@ dependencies {
     compile 'ch.qos.logback:logback-classic:1.2.3'
     compile 'com.miglayout:miglayout-swing:5.0'
 
+    compile 'org.usb4java:usb4java-javax:1.2.0'
+    compile 'org.usb4java:usb4java:1.2.0'
+    compile 'org.usb4java:libusb4java:1.2.0'
+    compile 'javax.usb:usb-api:1.0.2'
+
 }
 
 task wrapper(type: Wrapper) {

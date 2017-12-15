@@ -11,9 +11,6 @@
 	<classpathentry kind="lib" path="imports/libusb4java-1.2.0-osx-x86.jar"/>
 	<classpathentry kind="lib" path="imports/libusb4java-1.2.0-windows-x86_64.jar"/>
 	<classpathentry kind="lib" path="imports/libusb4java-1.2.0-windows-x86.jar"/>
-	<classpathentry kind="lib" path="imports/usb-api-1.0.2.jar"/>
-	<classpathentry kind="lib" path="imports/usb4java-1.2.0.jar"/>
-	<classpathentry kind="lib" path="imports/usb4java-javax-1.2.0.jar"/>
 	<classpathentry kind="lib" path="config"/>
 	<classpathentry kind="lib" path="imports/JTransforms-3.0.jar" sourcepath="/home/denny/.m2/repository/com/github/wendykierp/JTransforms/3.0/JTransforms-3.0-sources.jar"/>
 	<classpathentry kind="lib" path="imports/libusb4java-1.2.0-linux-ppc.jar"/>
