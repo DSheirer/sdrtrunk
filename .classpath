@@ -11,7 +11,6 @@
 	<classpathentry kind="lib" path="imports/libusb4java-1.2.0-osx-x86.jar"/>
 	<classpathentry kind="lib" path="imports/libusb4java-1.2.0-windows-x86_64.jar"/>
 	<classpathentry kind="lib" path="imports/libusb4java-1.2.0-windows-x86.jar"/>
-	<classpathentry kind="lib" path="imports/miglayout-4.0-swing.jar"/>
 	<classpathentry kind="lib" path="imports/usb-api-1.0.2.jar"/>
 	<classpathentry kind="lib" path="imports/usb4java-1.2.0.jar"/>
 	<classpathentry kind="lib" path="imports/usb4java-javax-1.2.0.jar"/>
@@ -19,9 +18,6 @@
 	<classpathentry kind="lib" path="imports/JTransforms-3.0.jar" sourcepath="/home/denny/.m2/repository/com/github/wendykierp/JTransforms/3.0/JTransforms-3.0-sources.jar"/>
 	<classpathentry kind="lib" path="imports/libusb4java-1.2.0-linux-ppc.jar"/>
 	<classpathentry kind="lib" path="imports/JLargeArrays-1.2.jar"/>
-	<classpathentry kind="lib" path="imports/slf4j-api-1.7.7.jar"/>
-	<classpathentry kind="lib" path="imports/logback-classic-1.1.2.jar"/>
-	<classpathentry kind="lib" path="imports/logback-core-1.1.2.jar"/>
 	<classpathentry kind="lib" path="imports/commons-io-2.4.jar"/>
 	<classpathentry kind="lib" path="imports/jmbe-interface-0.3.2.jar"/>
 	<classpathentry kind="lib" path="imports/tablefilter-swing-5.2.1.jar">
