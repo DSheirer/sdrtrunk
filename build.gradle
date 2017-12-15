@@ -49,11 +49,11 @@ dependencies {
     compile 'com.github.wendykierp:JTransforms:3.1'
     compile 'pl.edu.icm:JLargeArrays:1.6'
     compile 'net.coderazzi:tablefilter-swing:5.3.1'
-    compile group: 'com.jidesoft', name: 'jide-oss', version: '3.4.3'
-    compile group: 'org.apache.mina', name: 'mina-core', version: '2.0.16'
-    compile group: 'org.apache.mina', name: 'mina-http', version: '2.0.16'
-    compile group: 'org.apache.axis', name: 'axis-jaxrpc', version: '1.4'
-    compile group: 'org.apache.axis', name: 'axis', version: '1.4'
+    compile 'com.jidesoft:jide-oss:3.4.3'
+    compile 'org.apache.mina:mina-core:2.0.16'
+    compile 'org.apache.mina:mina-http:2.0.16'
+    compile 'org.apache.axis:axis-jaxrpc:1.4'
+    compile 'org.apache.axis:axis:1.4'
 
 }
 
