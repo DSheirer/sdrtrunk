@@ -1,0 +1,40 @@
+buildscript {
+    repositories {
+        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+//        classpath 'me.champeau.gradle:antlr4-gradle-plugin:0.1'
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'idea'
+
+repositories {
+    jcenter()
+    mavenCentral()
+}
+
+sourceCompatibility = 1.8
+
+sourceSets {
+    main.java.srcDirs 'src/main'
+    test.java.srcDirs 'src/test'
+}
+
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+    }
+}
+
+dependencies {
+    testCompile 'junit:junit:4.12'
+    testCompile 'org.assertj:assertj-core:3.8.0'
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.3.1'
+}
