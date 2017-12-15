@@ -7,6 +7,8 @@ buildscript {
 //        classpath 'me.champeau.gradle:antlr4-gradle-plugin:0.1'
     }
 }
+apply plugin:'application'
+mainClassName = "gui.SDRTrunk"
 
 apply plugin: 'java'
 apply plugin: 'idea'
@@ -34,9 +36,19 @@ dependencies {
     testCompile 'junit:junit:4.12'
     testCompile 'org.assertj:assertj-core:3.8.0'
     compile fileTree(dir: 'imports', include: '*.jar')
-    compile 'org.apache.commons:commons-lang3:3.7'
+    compile 'org.apache.commons:commons-lang3:3.2.1'
+    compile 'org.usb4java:libusb4java:1.2.0'
 }
 
 task wrapper(type: Wrapper) {
     gradleVersion = '4.3.1'
+}
+
+jar {
+    manifest {
+        attributes(
+                'Class-Path': configurations.compile.collect { it.getName() }.join(' '),
+                'Main-Class': 'gui.SDRTrunk'
+        )
+    }
 }
