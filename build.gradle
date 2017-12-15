@@ -36,6 +36,7 @@ dependencies {
     testCompile 'org.assertj:assertj-core:3.8.0'
     compile fileTree(dir: 'imports', include: '*.jar')
     compile 'org.apache.commons:commons-lang3:3.7'
+    compile 'org.apache.commons:commons-io:1.3.2'
     compile 'org.slf4j:slf4j-api:1.7.25'
     compile 'ch.qos.logback:logback-core:1.2.3'
     compile 'ch.qos.logback:logback-classic:1.2.3'
@@ -48,7 +49,11 @@ dependencies {
     compile 'com.github.wendykierp:JTransforms:3.1'
     compile 'pl.edu.icm:JLargeArrays:1.6'
     compile 'net.coderazzi:tablefilter-swing:5.3.1'
-
+    compile group: 'com.jidesoft', name: 'jide-oss', version: '3.4.3'
+    compile group: 'org.apache.mina', name: 'mina-core', version: '2.0.16'
+    compile group: 'org.apache.mina', name: 'mina-http', version: '2.0.16'
+    compile group: 'org.apache.axis', name: 'axis-jaxrpc', version: '1.4'
+    compile group: 'org.apache.axis', name: 'axis', version: '1.4'
 
 }
 
