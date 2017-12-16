@@ -53,7 +53,7 @@ public class ImageFilter extends FileFilter
         return false;
     }
 
-    //The description of this ua.in.smartjava.filter
+    //The description of this filter
     public String getDescription()
     {
         return "Images (*.gif,*.jpg,*.png.";

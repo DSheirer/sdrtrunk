@@ -83,11 +83,11 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
     }
 
     /**
-     * Processes call header (HDU) and voice frame (LDU1/LDU2) messages to decode ua.in.smartjava.audio and to determine the
-     * encrypted ua.in.smartjava.audio status of a call event. Only the HDU and LDU2 messages convey encrypted call status. If an
-     * LDU1 ua.in.smartjava.message is received without a preceding HDU ua.in.smartjava.message, then the LDU1 ua.in.smartjava.message is cached until the first
-     * LDU2 ua.in.smartjava.message is received and the encryption state can be determined. Both the LDU1 and the LDU2 ua.in.smartjava.message are
-     * then processed for ua.in.smartjava.audio if the call is unencrypted.
+     * Processes call header (HDU) and voice frame (LDU1/LDU2) messages to decode audio and to determine the
+     * encrypted audio status of a call event. Only the HDU and LDU2 messages convey encrypted call status. If an
+     * LDU1 message is received without a preceding HDU message, then the LDU1 message is cached until the first
+     * LDU2 message is received and the encryption state can be determined. Both the LDU1 and the LDU2 message are
+     * then processed for audio if the call is unencrypted.
      */
     public void receive(Message message)
     {
@@ -109,8 +109,8 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
                 }
                 else if(message instanceof LDU1Message)
                 {
-                    //When we receive an LDU1 ua.in.smartjava.message with first receiving the HDU ua.in.smartjava.message, cache the LDU1 Message
-                    //until we can determine the encrypted call state from the next LDU2 ua.in.smartjava.message
+                    //When we receive an LDU1 message with first receiving the HDU message, cache the LDU1 Message
+                    //until we can determine the encrypted call state from the next LDU2 message
                     mCachedLDU1Message = (LDU1Message)message;
                 }
                 else if(message instanceof LDU2Message)
@@ -132,7 +132,7 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
     }
 
     /**
-     * Processes an ua.in.smartjava.audio packet by decoding the IMBE ua.in.smartjava.audio frames and rebroadcasting them as PCM ua.in.smartjava.audio packets.
+     * Processes an audio packet by decoding the IMBE audio frames and rebroadcasting them as PCM audio packets.
      */
     private void processAudio(LDUMessage ldu)
     {
@@ -149,12 +149,12 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
         }
         else
         {
-            //Encrypted ua.in.smartjava.audio processing not implemented
+            //Encrypted audio processing not implemented
         }
     }
 
     /**
-     * Loads ua.in.smartjava.audio frame processing chain.  Constructs an imbe targetdataline
+     * Loads audio frame processing chain.  Constructs an imbe targetdataline
      * to receive the raw imbe frames.  Adds an IMBE to 8k PCM format conversion
      * stream wrapper.  Finally, adds an upsampling (8k to 48k) stream wrapper.
      */
@@ -181,9 +181,9 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
                     if(!mLibraryLoadStatusLogged)
                     {
                         StringBuilder sb = new StringBuilder();
-                        sb.append("JMBE ua.in.smartjava.audio conversion library [");
+                        sb.append("JMBE audio conversion library [");
                         sb.append(library.getVersion());
-                        sb.append("] successfully loaded - P25 ua.in.smartjava.audio will be available");
+                        sb.append("] successfully loaded - P25 audio will be available");
 
                         mLog.info(sb.toString());
 
@@ -194,7 +194,7 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
                 {
                     if(!mLibraryLoadStatusLogged)
                     {
-                        mLog.info("JMBE ua.in.smartjava.audio conversion library NOT FOUND");
+                        mLog.info("JMBE audio conversion library NOT FOUND");
                         mLibraryLoadStatusLogged = true;
                     }
                 }
@@ -208,7 +208,7 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
         {
             if(!mLibraryLoadStatusLogged)
             {
-                mLog.error("Couldn't find/load JMBE ua.in.smartjava.audio conversion library");
+                mLog.error("Couldn't find/load JMBE audio conversion library");
                 mLibraryLoadStatusLogged = true;
             }
         }
@@ -216,7 +216,7 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
         {
             if(!mLibraryLoadStatusLogged)
             {
-                mLog.error("Couldn't instantiate JMBE ua.in.smartjava.audio conversion library class");
+                mLog.error("Couldn't instantiate JMBE audio conversion library class");
                 mLibraryLoadStatusLogged = true;
             }
         }
@@ -224,7 +224,7 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
         {
             if(!mLibraryLoadStatusLogged)
             {
-                mLog.error("Couldn't load JMBE ua.in.smartjava.audio conversion library due to "
+                mLog.error("Couldn't load JMBE audio conversion library due to "
                     + "security restrictions");
                 mLibraryLoadStatusLogged = true;
             }
@@ -245,8 +245,8 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
 
     /**
      * Wrapper for squelch state to process end of call actions.  At call end the encrypted call state established
-     * flag is reset so that the encrypted ua.in.smartjava.audio state for the next call can be properly detected and we send an
-     * END ua.in.smartjava.audio packet so that downstream processors like the ua.in.smartjava.audio recorder can properly close out a call sequence.
+     * flag is reset so that the encrypted audio state for the next call can be properly detected and we send an
+     * END audio packet so that downstream processors like the audio recorder can properly close out a call sequence.
      */
     public class SquelchStateListener implements Listener<SquelchState>
     {

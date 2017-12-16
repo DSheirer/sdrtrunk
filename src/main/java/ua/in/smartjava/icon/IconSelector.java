@@ -41,7 +41,7 @@ public class IconSelector extends JDialog implements DocumentListener
      * Window for selecting an Icon to add to the Icon Model
      *
      * @param owner for this modal dialog
-     * @param iconTableModel to receive the added/selected ua.in.smartjava.icon
+     * @param iconTableModel to receive the added/selected icon
      */
     public IconSelector(Frame owner, IconTableModel iconTableModel)
     {
@@ -84,7 +84,7 @@ public class IconSelector extends JDialog implements DocumentListener
 
 //                fileChooser.setSelectedFile(null);
 
-                //Add a custom file ua.in.smartjava.filter and disable the default
+                //Add a custom file filter and disable the default
                 fileChooser.addChoosableFileFilter(new ImageFilter());
                 fileChooser.setAcceptAllFileFilterUsed(false);
 

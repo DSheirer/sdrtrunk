@@ -65,7 +65,7 @@ public abstract class AbstractTileFactory extends TileFactory
 	private int threadPoolSize = 4;
 	private ExecutorService service;
 
-	// TODO the tile ua.in.smartjava.map should be static ALWAYS, regardless of the number
+	// TODO the tile map should be static ALWAYS, regardless of the number
 	// of GoogleTileFactories because each tile is, really, a singleton.
 	private Map<String, Tile> tileMap = new HashMap<String, Tile>();
 
@@ -123,7 +123,7 @@ public abstract class AbstractTileFactory extends TileFactory
 		else
 		{
 			tile = tileMap.get(url);
-			// if its in the ua.in.smartjava.map but is low and isn't loaded yet
+			// if its in the map but is low and isn't loaded yet
 			// but we are in high mode
 			if (tile.getPriority() == Tile.Priority.Low && eagerLoad && !tile.isLoaded())
 			{
@@ -208,7 +208,7 @@ public abstract class AbstractTileFactory extends TileFactory
 				@Override
 				public Thread newThread(Runnable r)
 				{
-					Thread t = new Thread(r, "ua.in.smartjava.map tile fetcher-pool-" + count++);
+					Thread t = new Thread(r, "map tile fetcher-pool-" + count++);
 					t.setPriority(Thread.MIN_PRIORITY);
 					t.setDaemon(true);
 					return t;

@@ -58,7 +58,7 @@ public class IconTableModel extends AbstractTableModel
     }
 
     /**
-     * Adds the ua.in.smartjava.icon to the model
+     * Adds the icon to the model
      */
     public void add(Icon icon)
     {
@@ -73,7 +73,7 @@ public class IconTableModel extends AbstractTableModel
     }
 
     /**
-     * Removes the ua.in.smartjava.icon from the model
+     * Removes the icon from the model
      */
     public void remove(Icon icon)
     {
@@ -172,7 +172,7 @@ public class IconTableModel extends AbstractTableModel
     }
 
     /**
-     * Returns the current default ua.in.smartjava.icon
+     * Returns the current default icon
      */
     public Icon getDefaultIcon()
     {
@@ -180,7 +180,7 @@ public class IconTableModel extends AbstractTableModel
     }
 
     /**
-     * Indicates if the ua.in.smartjava.icon argument is the current default ua.in.smartjava.icon
+     * Indicates if the icon argument is the current default icon
      */
     public boolean isDefaultIcon(Icon icon)
     {
@@ -188,10 +188,10 @@ public class IconTableModel extends AbstractTableModel
     }
 
     /**
-     * Indicates if this model contains an ua.in.smartjava.icon with the specified name
+     * Indicates if this model contains an icon with the specified name
      *
      * @param name to check
-     * @return true if name is not null and not empty and the internal ua.in.smartjava.map contains an ua.in.smartjava.icon matching name
+     * @return true if name is not null and not empty and the internal map contains an icon matching name
      */
     public boolean hasIcon(String name)
     {
@@ -214,7 +214,7 @@ public class IconTableModel extends AbstractTableModel
     }
 
     /**
-     * Sets the default ua.in.smartjava.icon to the ua.in.smartjava.icon with the specified name, or to a default ua.in.smartjava.icon of the named ua.in.smartjava.icon does not exist
+     * Sets the default icon to the icon with the specified name, or to a default icon of the named icon does not exist
      */
     public void setDefaultIcon(String name)
     {
@@ -238,7 +238,7 @@ public class IconTableModel extends AbstractTableModel
     }
 
     /**
-     * Returns the named ua.in.smartjava.icon or the default ua.in.smartjava.icon if the named ua.in.smartjava.icon does not exist
+     * Returns the named icon or the default icon if the named icon does not exist
      */
     public Icon getIcon(String name)
     {
@@ -258,7 +258,7 @@ public class IconTableModel extends AbstractTableModel
     }
 
     /**
-     * Creates a new ua.in.smartjava.icon set from a snapshot of the icons contained in this model
+     * Creates a new icon set from a snapshot of the icons contained in this model
      */
     public IconSet getIconSet()
     {

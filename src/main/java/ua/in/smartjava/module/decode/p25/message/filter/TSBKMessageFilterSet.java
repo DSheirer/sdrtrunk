@@ -26,11 +26,11 @@ public class TSBKMessageFilterSet extends FilterSet<Message>
 	}
 	
 //	@Override
-//    public boolean passes( Message ua.in.smartjava.message )
+//    public boolean passes( Message message )
 //    {
-//		if( mEnabled && canProcess( ua.in.smartjava.message ) )
+//		if( mEnabled && canProcess( message ) )
 //		{
-//			TSBKMessage tsbk = (TSBKMessage)ua.in.smartjava.message;
+//			TSBKMessage tsbk = (TSBKMessage) message;
 //
 //			switch( tsbk.getVendor() )
 //			{

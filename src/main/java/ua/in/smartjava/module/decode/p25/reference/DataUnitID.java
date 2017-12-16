@@ -2,7 +2,7 @@ package ua.in.smartjava.module.decode.p25.reference;
 
 /**
  * The Data Unit ID (DUID) is part of the Network ID (NID) field and indicates
- * the type of ua.in.smartjava.message.
+ * the type of message.
  */
 public enum DataUnitID
 {

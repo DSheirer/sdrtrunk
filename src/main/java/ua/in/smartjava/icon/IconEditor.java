@@ -135,7 +135,7 @@ public class IconEditor extends JFrame implements ActionListener
                 if(selected != null)
                 {
                     int choice = JOptionPane.showConfirmDialog(IconEditor.this,
-                        "Are you sure you want to delete this ua.in.smartjava.icon?", "Delete Icon?", JOptionPane.YES_NO_OPTION);
+                        "Are you sure you want to delete this icon?", "Delete Icon?", JOptionPane.YES_NO_OPTION);
 
                     if(choice == JOptionPane.YES_OPTION)
                     {
