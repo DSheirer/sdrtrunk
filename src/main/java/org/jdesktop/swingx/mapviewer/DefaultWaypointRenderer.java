@@ -9,15 +9,14 @@
 
 package org.jdesktop.swingx.mapviewer;
 
-import java.awt.Graphics2D;
-import java.awt.geom.Point2D;
-import java.awt.image.BufferedImage;
-
-import javax.imageio.ImageIO;
-
 import org.jdesktop.swingx.JXMapViewer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.geom.Point2D;
+import java.awt.image.BufferedImage;
 
 /**
  * This is a standard waypoint renderer.

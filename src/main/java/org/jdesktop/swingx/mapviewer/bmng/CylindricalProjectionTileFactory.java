@@ -17,11 +17,11 @@
  ******************************************************************************/
 package org.jdesktop.swingx.mapviewer.bmng;
 
-import java.awt.Dimension;
-import java.awt.geom.Point2D;
-
 import org.jdesktop.swingx.mapviewer.DefaultTileFactory;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
+
+import java.awt.*;
+import java.awt.geom.Point2D;
 
 /**
  * @author joshy

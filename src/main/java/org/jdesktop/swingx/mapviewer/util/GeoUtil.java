@@ -9,17 +9,17 @@
 
 package org.jdesktop.swingx.mapviewer.util;
 
-import java.awt.Dimension;
-import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.jdesktop.swingx.JXMapViewer;
 import org.jdesktop.swingx.mapviewer.GeoBounds;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 import org.jdesktop.swingx.mapviewer.TileFactory;
 import org.jdesktop.swingx.mapviewer.TileFactoryInfo;
+
+import java.awt.*;
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * These are math utilities for converting between pixels, tiles, and geographic coordinates. Implements a Google Maps

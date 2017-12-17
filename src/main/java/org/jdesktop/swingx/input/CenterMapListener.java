@@ -17,17 +17,16 @@
  ******************************************************************************/
 package org.jdesktop.swingx.input;
 
-import java.awt.Rectangle;
+import org.jdesktop.swingx.JXMapViewer;
+
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Point2D;
 
-import javax.swing.SwingUtilities;
-
-import org.jdesktop.swingx.JXMapViewer;
-
 /**
- * Centers the ua.in.smartjava.map on the mouse cursor
+ * Centers the map on the mouse cursor
  * if left is double-clicked or middle mouse
  * button is pressed.
  * @author Martin Steiger

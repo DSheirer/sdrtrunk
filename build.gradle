@@ -15,7 +15,7 @@ repositories {
     mavenCentral()
 }
 
-version = '0.3.1'
+version = '0.3.2'
 sourceCompatibility = 1.8
 
 sourceSets {
@@ -64,7 +64,8 @@ task buildSdr(type: Jar) {
     manifest {
         attributes 'Implementation-Title': 'SdrTrunk project',
                 'Implementation-Version': version,
-                'Main-Class': 'ua.in.smartjava.gui.SDRTrunk'
+                'Main-Class': 'io.github.dsheirer.gui.SDRTrunk',
+                'Class-Path': 'jmbe-0.3.2.jar jmbe-0.3.3.jar'
     }
     baseName = project.name + '-all'
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }

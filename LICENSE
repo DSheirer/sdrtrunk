@@ -22,7 +22,7 @@ your programs, too.
   When we speak of free software, we are referring to freedom, not
 price.  Our General Public Licenses are designed to make sure that you
 have the freedom to distribute copies of free software (and charge for
-them if you wish), that you receive ua.in.smartjava.source code or can get it if you
+them if you wish), that you receive source code or can get it if you
 want it, that you can change the software or use pieces of it in new
 free programs, and that you know you can do these things.
 
@@ -34,7 +34,7 @@ you modify it: responsibilities to respect the freedom of others.
   For example, if you distribute copies of such a program, whether
 gratis or for a fee, you must pass on to the recipients the same
 freedoms that you received.  You must make sure that they, too, receive
-or can get the ua.in.smartjava.source code.  And you must show them these terms so they
+or can get the source code.  And you must show them these terms so they
 know their rights.
 
   Developers that use the GNU GPL protect your rights with two steps:
@@ -111,8 +111,8 @@ menu, a prominent item in the list meets this criterion.
 
   1. Source Code.
 
-  The "ua.in.smartjava.source code" for a work means the preferred form of the work
-for making modifications to it.  "Object code" means any non-ua.in.smartjava.source
+  The "source code" for a work means the preferred form of the work
+for making modifications to it.  "Object code" means any non-source
 form of a work.
 
   A "Standard Interface" means an interface that either is an official
@@ -125,21 +125,21 @@ than the work as a whole, that (a) is included in the normal form of
 packaging a Major Component, but which is not part of that Major
 Component, and (b) serves only to enable use of the work with that
 Major Component, or to implement a Standard Interface for which an
-implementation is available to the public in ua.in.smartjava.source code form.  A
+implementation is available to the public in source code form.  A
 "Major Component", in this context, means a major essential component
 (kernel, window system, and so on) of the specific operating system
 (if any) on which the executable work runs, or a compiler used to
 produce the work, or an object code interpreter used to run it.
 
   The "Corresponding Source" for a work in object code form means all
-the ua.in.smartjava.source code needed to generate, install, and (for an executable
+the source code needed to generate, install, and (for an executable
 work) run the object code and to modify the work, including scripts to
 control those activities.  However, it does not include the work's
 System Libraries, or general-purpose tools or generally available free
 programs which are used unmodified in performing those activities but
 which are not part of the work.  For example, Corresponding Source
-includes interface definition files associated with ua.in.smartjava.source files for
-the work, and the ua.in.smartjava.source code for shared libraries and dynamically
+includes interface definition files associated with source files for
+the work, and the source code for shared libraries and dynamically
 linked subprograms that the work is specifically designed to require,
 such as by intimate data communication or control flow between those
 subprograms and other parts of the work.
@@ -148,7 +148,7 @@ subprograms and other parts of the work.
 can regenerate automatically from other parts of the Corresponding
 Source.
 
-  The Corresponding Source for a work in ua.in.smartjava.source code form is that
+  The Corresponding Source for a work in source code form is that
 same work.
 
   2. Basic Permissions.
@@ -194,7 +194,7 @@ technological measures.
 
   4. Conveying Verbatim Copies.
 
-  You may convey verbatim copies of the Program's ua.in.smartjava.source code as you
+  You may convey verbatim copies of the Program's source code as you
 receive it, in any medium, provided that you conspicuously and
 appropriately publish on each copy an appropriate copyright notice;
 keep intact all notices stating that this License and any
@@ -208,7 +208,7 @@ and you may offer support or warranty protection for a fee.
   5. Conveying Modified Source Versions.
 
   You may convey a work based on the Program, or the modifications to
-produce it from the Program, in the form of ua.in.smartjava.source code under the
+produce it from the Program, in the form of source code under the
 terms of section 4, provided that you also meet all of these conditions:
 
     a) The work must carry prominent notices stating that you modified
@@ -263,7 +263,7 @@ in one of these ways:
     product that is covered by this License, on a durable physical
     medium customarily used for software interchange, for a price no
     more than your reasonable cost of physically performing this
-    conveying of ua.in.smartjava.source, or (2) access to copy the
+    conveying of source, or (2) access to copy the
     Corresponding Source from a network server at no charge.
 
     c) Convey individual copies of the object code with a copy of the
@@ -290,7 +290,7 @@ in one of these ways:
     Source of the work are being offered to the general public at no
     charge under subsection 6d.
 
-  A separable portion of the object code, whose ua.in.smartjava.source code is excluded
+  A separable portion of the object code, whose source code is excluded
 from the Corresponding Source as a System Library, need not be
 included in conveying the object code work.
 
@@ -337,7 +337,7 @@ protocols for communication across the network.
   Corresponding Source conveyed, and Installation Information provided,
 in accord with this section must be in a format that is publicly
 documented (and with an implementation available to the public in
-ua.in.smartjava.source code form), and must require no special password or key for
+source code form), and must require no special password or key for
 unpacking, reading or copying.
 
   7. Additional Terms.
@@ -396,7 +396,7 @@ of that license document, provided that the further restriction does
 not survive such relicensing or conveying.
 
   If you add terms to a covered work in accord with this section, you
-must place, in the relevant ua.in.smartjava.source files, a statement of the
+must place, in the relevant source files, a statement of the
 additional terms that apply to those files, or a notice indicating
 where to find the applicable terms.
 
@@ -627,7 +627,7 @@ possible use to the public, the best way to achieve this is to make it
 free software which everyone can redistribute and change under these terms.
 
   To do so, attach the following notices to the program.  It is safest
-to attach them to the start of each ua.in.smartjava.source file to most effectively
+to attach them to the start of each source file to most effectively
 state the exclusion of warranty; and each file should have at least
 the "copyright" line and a pointer to where the full notice is found.
 

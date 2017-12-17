@@ -28,22 +28,22 @@ import org.jdesktop.swingx.mapviewer.TileFactoryInfo;
 public class VirtualEarthTileFactoryInfo extends TileFactoryInfo
 {
 	/**
-	 * Use road ua.in.smartjava.map
+	 * Use road map
 	 */
-	public final static MVEMode MAP = new MVEMode("ua/in/smartjava/map", "ua/in/smartjava/map", "r", ".png");
+	public final static MVEMode MAP = new MVEMode("map", "map", "r", ".png");
 
 	/**
-	 * Use satellite ua.in.smartjava.map
+	 * Use satellite map
 	 */
 	public final static MVEMode SATELLITE = new MVEMode("satellite", "satellite", "a", ".jpeg");
 
 	/**
-	 * Use hybrid ua.in.smartjava.map
+	 * Use hybrid map
 	 */
 	public final static MVEMode HYBRID = new MVEMode("hybrid", "hybrid", "h", ".jpeg");
 
 	/**
-	 * The ua.in.smartjava.map mode
+	 * The map mode
 	 */
 	public static class MVEMode
 	{

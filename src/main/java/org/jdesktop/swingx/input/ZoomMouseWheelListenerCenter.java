@@ -17,10 +17,10 @@
  ******************************************************************************/
 package org.jdesktop.swingx.input;
 
+import org.jdesktop.swingx.JXMapViewer;
+
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
-
-import org.jdesktop.swingx.JXMapViewer;
 
 /**
  * zooms using the mouse wheel on the view center

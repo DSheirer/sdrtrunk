@@ -9,10 +9,10 @@
 
 package org.jdesktop.swingx.mapviewer;
 
+import org.jdesktop.beans.AbstractBean;
+
 import java.awt.image.BufferedImage;
 import java.lang.ref.SoftReference;
-
-import org.jdesktop.beans.AbstractBean;
 
 /**
  * The Tile class represents a particular square image piece of the world bitmap at a particular zoom level.

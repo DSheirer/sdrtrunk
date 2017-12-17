@@ -21,7 +21,7 @@
 
 package org.jdesktop.swingx.painter;
 
-import java.awt.Graphics2D;
+import java.awt.*;
 
 /**
  * <p>A painting delegate. The Painter interface defines exactly one method,

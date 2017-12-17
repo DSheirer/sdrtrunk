@@ -9,24 +9,6 @@
 
 package org.jdesktop.swingx;
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Image;
-import java.awt.Insets;
-import java.awt.Rectangle;
-import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
-import java.awt.image.BufferedImage;
-import java.beans.DesignMode;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-import java.util.Set;
-
-import javax.swing.ImageIcon;
-import javax.swing.JPanel;
-
 import org.jdesktop.swingx.mapviewer.GeoPosition;
 import org.jdesktop.swingx.mapviewer.Tile;
 import org.jdesktop.swingx.mapviewer.TileFactory;
@@ -38,25 +20,35 @@ import org.jdesktop.swingx.painter.Painter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.swing.*;
+import java.awt.*;
+import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
+import java.beans.DesignMode;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.util.Set;
+
 /**
- * A tile oriented ua.in.smartjava.map component that can easily be used with tile sources
+ * A tile oriented map component that can easily be used with tile sources
  * on the web like Google and Yahoo maps, satellite data such as NASA imagery,
  * and also with file based sources like pre-processed NASA images.
- * A known ua.in.smartjava.map provider can be used with the SLMapServerInfo,
+ * A known map provider can be used with the SLMapServerInfo,
  * which will connect to a 2km resolution version of NASA's Blue Marble Next Generation
  * imagery. @see SLMapServerInfo for more information.
  *
- * Note, the JXMapViewer has three center point ua.in.smartjava.properties.  The <B>addressLocation</B> property
- * represents an abstract center of the ua.in.smartjava.map. This would usually be something like the first item
+ * Note, the JXMapViewer has three center point properties.  The <B>addressLocation</B> property
+ * represents an abstract center of the map. This would usually be something like the first item
  * in a search result. It is a {@link GeoPosition}.  The <b>centerPosition</b> property represents
- * the current center point of the ua.in.smartjava.map.  If the user pans the ua.in.smartjava.map then the centerPosition point will
- * change but the <B>addressLocation</B> will not.  Calling <B>recenterToAddressLocation()</B> will move the ua.in.smartjava.map
+ * the current center point of the map.  If the user pans the map then the centerPosition point will
+ * change but the <B>addressLocation</B> will not.  Calling <B>recenterToAddressLocation()</B> will move the map
  * back to that center address.  The <B>center</B> property represents the same point as the centerPosition
  * property, but as a Point2D in pixel space instead of a GeoPosition in lat/long space.  Note that
- * the center property is a Point2D in the entire world bitmap, not in the portion of the ua.in.smartjava.map currently
- * visible. You can use the <B>getViewportBounds()</B> method to find the portion of the ua.in.smartjava.map currently visible
+ * the center property is a Point2D in the entire world bitmap, not in the portion of the map currently
+ * visible. You can use the <B>getViewportBounds()</B> method to find the portion of the map currently visible
  * and adjust your calculations accordingly.  Changing the <B>center</B> property will change the <B>centerPosition</B>
- * property and vice versa.  All three ua.in.smartjava.properties are bound.
+ * property and vice versa.  All three properties are bound.
  * @author Joshua.Marinacci@sun.com
  * @see org.jdesktop.swingx.mapviewer.bmng.SLMapServerInfo
  */
@@ -76,9 +68,9 @@ public class JXMapViewer extends JPanel implements DesignMode
 	private int zoomLevel = 1;
 
 	/**
-	 * The position, in <I>ua.in.smartjava.map coordinates</I> of the center point. This is defined as the distance from the top and
-	 * left edges of the ua.in.smartjava.map in pixels. Dragging the ua.in.smartjava.map component will change the center position. Zooming in/out will
-	 * cause the center to be recalculated so as to remain in the center of the new "ua.in.smartjava.map".
+	 * The position, in <I>map coordinates</I> of the center point. This is defined as the distance from the top and
+	 * left edges of the map in pixels. Dragging the map component will change the center position. Zooming in/out will
+	 * cause the center to be recalculated so as to remain in the center of the new "map".
 	 */
 	private Point2D center = new Point2D.Double(0, 0);
 
@@ -89,20 +81,20 @@ public class JXMapViewer extends JPanel implements DesignMode
 	private boolean drawTileBorders = false;
 
 	/**
-	 * Factory used by this component to grab the tiles necessary for painting the ua.in.smartjava.map.
+	 * Factory used by this component to grab the tiles necessary for painting the map.
 	 */
 	private TileFactory factory;
 
 	/**
 	 * The position in latitude/longitude of the "address" being mapped. This is a special coordinate that, when moved,
-	 * will cause the ua.in.smartjava.map to be moved as well. It is separate from "center" in that "center" tracks the current center
+	 * will cause the map to be moved as well. It is separate from "center" in that "center" tracks the current center
 	 * (in pixels) of the viewport whereas this will not change when panning or zooming. Whenever the addressLocation is
-	 * changed, however, the ua.in.smartjava.map will be repositioned.
+	 * changed, however, the map will be repositioned.
 	 */
 	private GeoPosition addressLocation;
 
 	/**
-	 * The overlay to delegate to for painting the "foreground" of the ua.in.smartjava.map component. This would include painting
+	 * The overlay to delegate to for painting the "foreground" of the map component. This would include painting
 	 * waypoints, day/night, etc. Also receives mouse events.
 	 */
 	private Painter<? super JXMapViewer> overlay;
@@ -194,7 +186,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	}
 
 	/**
-	 * Draw the ua.in.smartjava.map tiles. This method is for implementation use only.
+	 * Draw the map tiles. This method is for implementation use only.
 	 * @param g Graphics
 	 * @param zoom zoom level to draw at
 	 * @param viewportBounds the bounds to draw within
@@ -233,7 +225,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 					int ox = ((itpx * getTileFactory().getTileSize(zoom)) - viewportBounds.x);
 					int oy = ((itpy * getTileFactory().getTileSize(zoom)) - viewportBounds.y);
 
-					// if the tile is off the ua.in.smartjava.map to the north/south, then just don't paint anything
+					// if the tile is off the map to the north/south, then just don't paint anything
 					if (isTileOnMap(itpx, itpy, mapSize))
 					{
 						if (isOpaque())
@@ -303,9 +295,9 @@ public class JXMapViewer extends JPanel implements DesignMode
 	}
 
 	/**
-	 * Sets the ua.in.smartjava.map overlay. This is a Painter<JXMapViewer> which will paint on top of the ua.in.smartjava.map. It can be used to draw waypoints,
+	 * Sets the map overlay. This is a Painter<JXMapViewer> which will paint on top of the map. It can be used to draw waypoints,
 	 * lines, or static overlays like text messages.
-	 * @param overlay the ua.in.smartjava.map overlay to use
+	 * @param overlay the map overlay to use
 	 */
 	public void setOverlayPainter(Painter<? super JXMapViewer> overlay)
 	{
@@ -341,8 +333,8 @@ public class JXMapViewer extends JPanel implements DesignMode
 	}
 
 	/**
-	 * Gets the current ua.in.smartjava.map overlay
-	 * @return the current ua.in.smartjava.map overlay
+	 * Gets the current map overlay
+	 * @return the current map overlay
 	 */
 	public Painter<? super JXMapViewer> getOverlayPainter()
 	{
@@ -352,7 +344,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	/**
 	 * Returns the bounds of the viewport in pixels. This can be used to transform points into the world bitmap
 	 * coordinate space.
-	 * @return the bounds in <em>pixels</em> of the "view" of this ua.in.smartjava.map
+	 * @return the bounds in <em>pixels</em> of the "view" of this map
 	 */
 	public Rectangle getViewportBounds()
 	{
@@ -413,9 +405,9 @@ public class JXMapViewer extends JPanel implements DesignMode
 	}
 
 	/**
-	 * Gets the current address location of the ua.in.smartjava.map. This property does not change when the user pans the ua.in.smartjava.map. This
+	 * Gets the current address location of the map. This property does not change when the user pans the map. This
 	 * property is bound.
-	 * @return the current ua.in.smartjava.map location (address)
+	 * @return the current map location (address)
 	 */
 	public GeoPosition getAddressLocation()
 	{
@@ -423,7 +415,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	}
 
 	/**
-	 * Gets the current address location of the ua.in.smartjava.map
+	 * Gets the current address location of the map
 	 * @param addressLocation the new address location
 	 */
 	public void setAddressLocation(GeoPosition addressLocation)
@@ -437,7 +429,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	}
 
 	/**
-	 * Re-centers the ua.in.smartjava.map to have the current address location be at the center of the ua.in.smartjava.map, accounting for the ua.in.smartjava.map's
+	 * Re-centers the map to have the current address location be at the center of the map, accounting for the map's
 	 * width and height.
 	 */
 	public void recenterToAddressLocation()
@@ -468,7 +460,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	}
 
 	/**
-	 * A property indicating the center position of the ua.in.smartjava.map
+	 * A property indicating the center position of the map
 	 * @param geoPosition the new property value
 	 */
 	public void setCenterPosition(GeoPosition geoPosition)
@@ -481,7 +473,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 	}
 
 	/**
-	 * A property indicating the center position of the ua.in.smartjava.map
+	 * A property indicating the center position of the map
 	 * @return the current center position
 	 */
 	public GeoPosition getCenterPosition()
@@ -537,8 +529,8 @@ public class JXMapViewer extends JPanel implements DesignMode
 	}
 
 	/**
-	 * Gets the current pixel center of the ua.in.smartjava.map. This point is in the global bitmap coordinate system, not as lat/longs.
-	 * @return the current center of the ua.in.smartjava.map as a pixel value
+	 * Gets the current pixel center of the map. This point is in the global bitmap coordinate system, not as lat/longs.
+	 * @return the current center of the map as a pixel value
 	 */
 	public Point2D getCenter()
 	{
@@ -546,8 +538,8 @@ public class JXMapViewer extends JPanel implements DesignMode
 	}
 
 	/**
-	 * Sets the new center of the ua.in.smartjava.map in pixel coordinates.
-	 * @param center the new center of the ua.in.smartjava.map in pixel coordinates
+	 * Sets the new center of the map in pixel coordinates.
+	 * @param center the new center of the map in pixel coordinates
 	 */
 	public void setCenter(Point2D center)
 	{
@@ -591,13 +583,13 @@ public class JXMapViewer extends JPanel implements DesignMode
 				centerX = mapWidth - viewportWidth / 2;
 			}
 
-			// if ua.in.smartjava.map is to small then just center it vert
+			// if map is to small then just center it vert
 			if (mapHeight < newVP.getHeight())
 			{
 				centerY = mapHeight / 2;// viewportHeight/2;// - mapHeight/2;
 			}
 
-			// if ua.in.smartjava.map is too small then just center it horiz
+			// if map is too small then just center it horiz
 			if (!isHorizontalWrapped() && mapWidth < newVP.getWidth())
 			{
 				centerX = mapWidth / 2;
@@ -641,7 +633,7 @@ public class JXMapViewer extends JPanel implements DesignMode
 
 		int zoom = getZoom();
 		Rectangle2D rect = generateBoundingRect(positions, zoom);
-		// Rectangle2D viewport = ua.in.smartjava.map.getViewportBounds();
+		// Rectangle2D viewport = map.getViewportBounds();
 		int count = 0;
 		while (!getViewportBounds().contains(rect))
 		{
@@ -745,9 +737,9 @@ public class JXMapViewer extends JPanel implements DesignMode
 
 	/**
 	 * Converts the specified GeoPosition to a point in the JXMapViewer's local coordinate space. This method is
-	 * especially useful when drawing lat/long positions on the ua.in.smartjava.map.
-	 * @param pos a GeoPosition on the ua.in.smartjava.map
-	 * @return the point in the local coordinate space of the ua.in.smartjava.map
+	 * especially useful when drawing lat/long positions on the map.
+	 * @param pos a GeoPosition on the map
+	 * @return the point in the local coordinate space of the map
 	 */
 	public Point2D convertGeoPositionToPoint(GeoPosition pos)
 	{
@@ -759,9 +751,9 @@ public class JXMapViewer extends JPanel implements DesignMode
 	}
 
 	/**
-	 * Converts the specified Point2D in the JXMapViewer's local coordinate space to a GeoPosition on the ua.in.smartjava.map. This
+	 * Converts the specified Point2D in the JXMapViewer's local coordinate space to a GeoPosition on the map. This
 	 * method is especially useful for determining the GeoPosition under the mouse cursor.
-	 * @param pt a point in the local coordinate space of the ua.in.smartjava.map
+	 * @param pt a point in the local coordinate space of the map
 	 * @return the point converted to a GeoPosition
 	 */
 	public GeoPosition convertPointToGeoPosition(Point2D pt)

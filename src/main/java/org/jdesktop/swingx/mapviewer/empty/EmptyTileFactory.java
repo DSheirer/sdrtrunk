@@ -9,14 +9,12 @@
 
 package org.jdesktop.swingx.mapviewer.empty;
 
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
-import java.awt.image.BufferedImage;
-
 import org.jdesktop.swingx.mapviewer.Tile;
 import org.jdesktop.swingx.mapviewer.TileFactory;
 import org.jdesktop.swingx.mapviewer.TileFactoryInfo;
+
+import java.awt.*;
+import java.awt.image.BufferedImage;
 
 /**
  * A null implementation of TileFactory. Draws empty areas.

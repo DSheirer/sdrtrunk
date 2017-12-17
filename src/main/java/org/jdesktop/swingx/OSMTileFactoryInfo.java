@@ -20,7 +20,7 @@
 //
 // Copyright (c) Fraunhofer IGD. All rights reserved.
 //
-// This ua.in.smartjava.source code is property of the Fraunhofer IGD and underlies
+// This source code is property of the Fraunhofer IGD and underlies
 // copyright restrictions. It may only be used with explicit
 // permission from the respective owner.
 

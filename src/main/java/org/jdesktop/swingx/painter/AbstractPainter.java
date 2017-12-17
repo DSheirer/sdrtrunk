@@ -21,16 +21,13 @@
 
 package org.jdesktop.swingx.painter;
 
-import java.awt.AlphaComposite;
-import java.awt.Composite;
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
+import org.jdesktop.beans.AbstractBean;
+import org.jdesktop.swingx.util.GraphicsUtilities;
+
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.BufferedImageOp;
 import java.lang.ref.SoftReference;
-
-import org.jdesktop.beans.AbstractBean;
-import org.jdesktop.swingx.util.GraphicsUtilities;
 
 /**
  * <p>A convenient base class from which concrete {@link Painter} implementations may
@@ -61,7 +58,7 @@ import org.jdesktop.swingx.util.GraphicsUtilities;
 public abstract class AbstractPainter<T> extends AbstractBean implements Painter<T> {
     /**
      * An enum representing the possible interpolation values of Bicubic, Bilinear, and
-     * Nearest Neighbor. These ua.in.smartjava.map to the underlying RenderingHints,
+     * Nearest Neighbor. These map to the underlying RenderingHints,
      * but are easier to use and serialization safe.
      */
     public enum Interpolation {

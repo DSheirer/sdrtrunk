@@ -9,10 +9,10 @@
  * Copyright (c) 2006 Romain Guy <romain.guy@mac.com>
  * All rights reserved.
  *
- * Redistribution and use in ua.in.smartjava.source and binary forms, with or without
+ * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
- * 1. Redistributions of ua.in.smartjava.source code must retain the above copyright
+ * 1. Redistributions of source code must retain the above copyright
  *    notice, this list of conditions and the following disclaimer.
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
@@ -34,17 +34,9 @@
 
 package org.jdesktop.swingx.util;
 
-import java.awt.AlphaComposite;
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.GraphicsConfiguration;
-import java.awt.GraphicsEnvironment;
-import java.awt.Image;
-import java.awt.Insets;
-import java.awt.RenderingHints;
-import java.awt.Shape;
-import java.awt.Transparency;
+import javax.imageio.ImageIO;
+import javax.swing.*;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 import java.awt.image.Raster;
@@ -52,9 +44,6 @@ import java.awt.image.WritableRaster;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-
-import javax.imageio.ImageIO;
-import javax.swing.JComponent;
 
 /**
  * <p><code>GraphicsUtilities</code> contains a set of tools to perform
@@ -151,7 +140,7 @@ public class GraphicsUtilities {
      * transparency as the image specified as a parameter. That is, the
      * returned BufferedImage will be compatible with the graphics hardware.
      * If this method is called in a headless environment, then
-     * the returned BufferedImage will be compatible with the ua.in.smartjava.source
+     * the returned BufferedImage will be compatible with the source
      * image.</p>
      *
      * @see java.awt.Transparency
@@ -175,7 +164,7 @@ public class GraphicsUtilities {
      * That is, the returned <code>BufferedImage</code> is compatible with
      * the graphics hardware. If the method is called in a headless
      * environment, then the returned BufferedImage will be compatible with
-     * the ua.in.smartjava.source image.</p>
+     * the source image.</p>
      *
      * @see java.awt.Transparency
      * @see #createCompatibleImage(java.awt.image.BufferedImage)
@@ -203,7 +192,7 @@ public class GraphicsUtilities {
      * height. That is, the returned <code>BufferedImage</code> is compatible with
      * the graphics hardware. If the method is called in a headless
      * environment, then the returned BufferedImage will be compatible with
-     * the ua.in.smartjava.source image.</p>
+     * the source image.</p>
      *
      * @see #createCompatibleImage(java.awt.image.BufferedImage)
      * @see #createCompatibleImage(java.awt.image.BufferedImage, int, int)
@@ -226,7 +215,7 @@ public class GraphicsUtilities {
      * height. That is, the returned <code>BufferedImage</code> is compatible with
      * the graphics hardware. If the method is called in a headless
      * environment, then the returned BufferedImage will be compatible with
-     * the ua.in.smartjava.source image.</p>
+     * the source image.</p>
      *
      * @see #createCompatibleImage(java.awt.image.BufferedImage)
      * @see #createCompatibleImage(java.awt.image.BufferedImage, int, int)
@@ -298,7 +287,7 @@ public class GraphicsUtilities {
      * and therefore optimized for fast blitting operations.</p>
      *
      * <p>If the method is called in a headless environment, then the returned
-     * <code>BufferedImage</code> will be the ua.in.smartjava.source image.</p>
+     * <code>BufferedImage</code> will be the source image.</p>
      *
      * @see #createCompatibleImage(java.awt.image.BufferedImage)
      * @see #createCompatibleImage(java.awt.image.BufferedImage, int, int)
@@ -335,12 +324,12 @@ public class GraphicsUtilities {
     }
 
     /**
-     * <p>Returns a thumbnail of a ua.in.smartjava.source image. <code>newSize</code> defines
+     * <p>Returns a thumbnail of a source image. <code>newSize</code> defines
      * the length of the longest dimension of the thumbnail. The other
      * dimension is then computed according to the dimensions ratio of the
      * original picture.</p>
      * <p>This method favors speed over quality. When the new size is less than
-     * half the longest dimension of the ua.in.smartjava.source image,
+     * half the longest dimension of the source image,
      * {@link #createThumbnail(BufferedImage, int)} or
      * {@link #createThumbnail(BufferedImage, int, int)} should be used instead
      * to ensure the quality of the result without sacrificing too much
@@ -349,7 +338,7 @@ public class GraphicsUtilities {
      * @see #createThumbnailFast(java.awt.image.BufferedImage, int, int)
      * @see #createThumbnail(java.awt.image.BufferedImage, int)
      * @see #createThumbnail(java.awt.image.BufferedImage, int, int)
-     * @param image the ua.in.smartjava.source image
+     * @param image the source image
      * @param newSize the length of the largest dimension of the thumbnail
      * @return a new compatible <code>BufferedImage</code> containing a
      *   thumbnail of <code>image</code>
@@ -403,9 +392,9 @@ public class GraphicsUtilities {
     }
 
     /**
-     * <p>Returns a thumbnail of a ua.in.smartjava.source image.</p>
+     * <p>Returns a thumbnail of a source image.</p>
      * <p>This method favors speed over quality. When the new size is less than
-     * half the longest dimension of the ua.in.smartjava.source image,
+     * half the longest dimension of the source image,
      * {@link #createThumbnail(BufferedImage, int)} or
      * {@link #createThumbnail(BufferedImage, int, int)} should be used instead
      * to ensure the quality of the result without sacrificing too much
@@ -414,7 +403,7 @@ public class GraphicsUtilities {
      * @see #createThumbnailFast(java.awt.image.BufferedImage, int)
      * @see #createThumbnail(java.awt.image.BufferedImage, int)
      * @see #createThumbnail(java.awt.image.BufferedImage, int, int)
-     * @param image the ua.in.smartjava.source image
+     * @param image the source image
      * @param newWidth the width of the thumbnail
      * @param newHeight the height of the thumbnail
      * @return a new compatible <code>BufferedImage</code> containing a
@@ -451,20 +440,20 @@ public class GraphicsUtilities {
     }
 
     /**
-     * <p>Returns a thumbnail of a ua.in.smartjava.source image. <code>newSize</code> defines
+     * <p>Returns a thumbnail of a source image. <code>newSize</code> defines
      * the length of the longest dimension of the thumbnail. The other
      * dimension is then computed according to the dimensions ratio of the
      * original picture.</p>
      * <p>This method offers a good trade-off between speed and quality.
      * The result looks better than
      * {@link #createThumbnailFast(java.awt.image.BufferedImage, int)} when
-     * the new size is less than half the longest dimension of the ua.in.smartjava.source
+     * the new size is less than half the longest dimension of the source
      * image, yet the rendering speed is almost similar.</p>
      *
      * @see #createThumbnailFast(java.awt.image.BufferedImage, int, int)
      * @see #createThumbnailFast(java.awt.image.BufferedImage, int)
      * @see #createThumbnail(java.awt.image.BufferedImage, int, int)
-     * @param image the ua.in.smartjava.source image
+     * @param image the source image
      * @param newSize the length of the largest dimension of the thumbnail
      * @return a new compatible <code>BufferedImage</code> containing a
      *   thumbnail of <code>image</code>
@@ -567,17 +556,17 @@ public class GraphicsUtilities {
     }
 
     /**
-     * <p>Returns a thumbnail of a ua.in.smartjava.source image.</p>
+     * <p>Returns a thumbnail of a source image.</p>
      * <p>This method offers a good trade-off between speed and quality.
      * The result looks better than
      * {@link #createThumbnailFast(java.awt.image.BufferedImage, int)} when
-     * the new size is less than half the longest dimension of the ua.in.smartjava.source
+     * the new size is less than half the longest dimension of the source
      * image, yet the rendering speed is almost similar.</p>
      *
      * @see #createThumbnailFast(java.awt.image.BufferedImage, int)
      * @see #createThumbnailFast(java.awt.image.BufferedImage, int, int)
      * @see #createThumbnail(java.awt.image.BufferedImage, int)
-     * @param image the ua.in.smartjava.source image
+     * @param image the source image
      * @param newWidth the width of the thumbnail
      * @param newHeight the height of the thumbnail
      * @return a new compatible <code>BufferedImage</code> containing a
@@ -678,7 +667,7 @@ public class GraphicsUtilities {
      * an image of type different from <code>BufferedImage.TYPE_INT_ARGB</code>
      * and <code>BufferedImage.TYPE_INT_RGB</code> will unmanage the image.</p>
      *
-     * @param img the ua.in.smartjava.source image
+     * @param img the source image
      * @param x the x location at which to start grabbing pixels
      * @param y the y location at which to start grabbing pixels
      * @param w the width of the rectangle of pixels to grab

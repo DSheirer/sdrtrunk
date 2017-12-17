@@ -1,6 +1,9 @@
+0.4.0 ........ (in progress)
+ - Changes build system from ant to gradle.  Thanks to: Roman Tsypuk https://github.com/tsypuk
+
 0.3.2 20171105
- - Resolves issue with tuner frequency adjustments that was causing ua.in.smartjava.channel processing
-   to lockup and show persistent 'overflow' state in each ua.in.smartjava.channel status
+ - Resolves issue with tuner frequency adjustments that was causing channel processing
+   to lockup and show persistent 'overflow' state in each channel status
  - Resolves issue with broadcastify 'mountpoint-in-use' error handling and updates
    memory usage logging
  - Resolves issue with Shoutcast 2 login error
@@ -10,47 +13,47 @@
 
 0.3.0 20170922
  - REQUIRES: Java 8 (or newer) for compatibility and eventual changeover to JavaFX
- - FEATURE: ua.in.smartjava.audio streaming - adds capability to stream to multiple remote broadcast
+ - FEATURE: audio streaming - adds capability to stream to multiple remote broadcast
    servers (Broadcastify, Icecast v2.3 and v2.4+, and Shoutcast V1 and V2).  Each
    stream can be independently configured with a delay.  Audio calls are directed
-   to one or more streams by attaching one or more stream identifiers to each ua.in.smartjava.alias.
- - Extensive GUI updates for tuner, ua.in.smartjava.channel and ua.in.smartjava.alias management.  Includes new
-   'Now Playing' ua.in.smartjava.channel view and 'Detail' view.
- - Updated ua.in.smartjava.alias list management of ua.in.smartjava.alias id values and wildcards.  Weighting is now
+   to one or more streams by attaching one or more stream identifiers to each alias.
+ - Extensive GUI updates for tuner, channel and alias management.  Includes new
+   'Now Playing' channel view and 'Detail' view.
+ - Updated alias list management of alias id values and wildcards.  Weighting is now
    applied to each wildcard so that they can be ordered from most specific to least
    specific for lookup value matching purposes.
  - Added handling for Motorola-specific P25 patch messages and auto-generation of
    patch group aliases that roll-up aliases from each patched talkgroup to support
-   ua.in.smartjava.audio recording and streaming of patch calls according to the identifiers and
+   audio recording and streaming of patch calls according to the identifiers and
    actions defined for each of the patched talkgroups.
- - Implemented bounded queues for both tuner and individual ua.in.smartjava.channel IQ ua.in.smartjava.sample
+ - Implemented bounded queues for both tuner and individual channel IQ sample
    buffers.  Bounded queues have ability to enter/exit overflow state when queue
    size reaches overflow threshold and reset when queue size falls below the reset
    threshold.  Channel state will show OVERFLOW in red/yellow.
  - Improves handling of P25 TDMA channels (NO Phase 2 decoder support yet)
- - Updated airspy ua.in.smartjava.controller for airspy-mini specific ua.in.smartjava.sample rate handling.
- - New developer remez ua.in.smartjava.filter designer tool and internal usage
+ - Updated airspy controller for airspy-mini specific sample rate handling.
+ - New developer remez filter designer tool and internal usage
 
 0.2.0 20160329
  - Major overhaul of underlying processing chain and extensive updates to all 
    decoders and filters
- - New ua.in.smartjava.audio playback interface with global mute and support for one or two
-   ua.in.smartjava.audio channels
+ - New audio playback interface with global mute and support for one or two
+   audio channels
  - Audio playback is prioritized using a new Call Priority name action
-   with selected channels having the highest priority and any ua.in.smartjava.audio without
+   with selected channels having the highest priority and any audio without
    an name identifier having the lowest priority.
  - Updated Audio recording per call with new 'Non-Recordable' name action
  - Updated Baseband (I/Q) recording at 48 kHz
  - Added Airspy tuner support
- - New traffic ua.in.smartjava.channel pool manager for trunked call following
- - P25 Decoder for C4FM and LSM with trunked call following and ua.in.smartjava.audio
+ - New traffic channel pool manager for trunked call following
+ - P25 Decoder for C4FM and LSM with trunked call following and audio
    decoding via the JMBE library
  - Updated MPT1327 decoder and trunked call following.
  - Updated spectral and waterfall display with zoom (2-64x) and pan and automatic
-   noise floor (dB) adjusted to tuner ua.in.smartjava.sample size
+   noise floor (dB) adjusted to tuner sample size
  - Resolved some issues with memory leaks and crashes
       
-0.1.5 20150612 Added initial P25 Decoder support with integrated ua.in.smartjava.audio decoding
+0.1.5 20150612 Added initial P25 Decoder support with integrated audio decoding
       using the JMBE library   
 
 0.1.4 20150528 Updated test P25 Decoder

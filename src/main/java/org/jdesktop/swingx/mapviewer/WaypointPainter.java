@@ -9,14 +9,13 @@
 
 package org.jdesktop.swingx.mapviewer;
 
-import java.awt.Graphics2D;
-import java.awt.Rectangle;
+import org.jdesktop.swingx.JXMapViewer;
+import org.jdesktop.swingx.painter.AbstractPainter;
+
+import java.awt.*;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-
-import org.jdesktop.swingx.JXMapViewer;
-import org.jdesktop.swingx.painter.AbstractPainter;
 
 /**
  * Paints waypoints on the JXMapViewer. This is an 

@@ -17,7 +17,7 @@
   ~
   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
 <configuration>
-  <conversionRule conversionWord="memory_usage" converterClass="ua.in.smartjava.util.MemoryUsageLogger" />
+  <conversionRule conversionWord="memory_usage" converterClass="io.github.dsheirer.util.MemoryUsageLogger" />
 
   <timestamp key="appstart" datePattern="HHmmss"/>
 

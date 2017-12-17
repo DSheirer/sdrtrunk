@@ -9,6 +9,7 @@
 
 package org.jdesktop.swingx.mapviewer;
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -16,8 +17,6 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
-
-import javax.imageio.ImageIO;
 
 /**
  * An implementation only class for now. For internal use only.

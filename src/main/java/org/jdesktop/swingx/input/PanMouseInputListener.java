@@ -17,15 +17,13 @@
  ******************************************************************************/
 package org.jdesktop.swingx.input;
 
-import java.awt.Cursor;
-import java.awt.Point;
+import org.jdesktop.swingx.JXMapViewer;
+
+import javax.swing.*;
+import javax.swing.event.MouseInputAdapter;
+import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Point2D;
-
-import javax.swing.SwingUtilities;
-import javax.swing.event.MouseInputAdapter;
-
-import org.jdesktop.swingx.JXMapViewer;
 
 /**
  * Used to pan using press and drag mouse gestures

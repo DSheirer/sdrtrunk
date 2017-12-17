@@ -25,13 +25,13 @@ Windows
 ```
 gradle.bat clean buildSdr
 ```
-This would add gradle, download all project dependencied and build JAR
+This would add gradle, download all project dependencies and build JAR
 
 ## Development
 All dependencies/versions are controlled from build.gradle.
 To change the new release version tag of artifact - change property:
 ```
-version = '0.3.1'
+version = '0.3.2'
 ```
 
 ## Run SDRTrunk
@@ -39,7 +39,7 @@ SDRTrunk is packed into single uber-jar file. There is need to have folders with
 adding them with classpath. Just run with java.
 ### Use Java8
 ```
-java -jar build/libs/sdr-trunk-all-0.3.1.jar 
+java -jar build/libs/sdr-trunk-all-0.3.2.jar 
 ```
 
 ## TODO ITEMS

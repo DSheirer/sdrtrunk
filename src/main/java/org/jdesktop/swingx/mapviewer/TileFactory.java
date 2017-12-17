@@ -9,12 +9,12 @@
 
 package org.jdesktop.swingx.mapviewer;
 
-import java.awt.Dimension;
+import org.jdesktop.swingx.mapviewer.util.GeoUtil;
+
+import java.awt.*;
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.jdesktop.swingx.mapviewer.util.GeoUtil;
 
 /**
  * A class that can produce tiles and convert coordinates to pixels
@@ -45,9 +45,9 @@ public abstract class TileFactory
 	}
 
 	/**
-	 * Returns a Dimension containing the width and height of the ua.in.smartjava.map, in tiles at the current zoom level. So a
+	 * Returns a Dimension containing the width and height of the map, in tiles at the current zoom level. So a
 	 * Dimension that returns 10x20 would be 10 tiles wide and 20 tiles tall. These values can be multipled by
-	 * getTileSize() to determine the pixel width/height for the ua.in.smartjava.map at the given zoom level
+	 * getTileSize() to determine the pixel width/height for the map at the given zoom level
 	 * @return the size of the world bitmap in tiles
 	 * @param zoom the current zoom level
 	 */
@@ -61,7 +61,7 @@ public abstract class TileFactory
 	 * @return the tile that is located at the given tilePoint for this zoom level. For example, if getMapSize() returns
 	 * 10x20 for this zoom, and the tilePoint is (3,5), then the appropriate tile will be located and returned. This
 	 * method must not return null. However, it can return dummy tiles that contain no data if it wants. This is
-	 * appropriate, for example, for tiles which are outside of the bounds of the ua.in.smartjava.map and if the factory doesn't
+	 * appropriate, for example, for tiles which are outside of the bounds of the map and if the factory doesn't
 	 * implement wrapping.
 	 * @param x the x value
 	 * @param y the y value
