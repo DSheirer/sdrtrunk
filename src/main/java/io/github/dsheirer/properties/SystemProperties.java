@@ -103,11 +103,16 @@ public class SystemProperties
             archivePath = archivePath.substring(0, archivePath.length() - "/WEB-INF/classes".length()); // Required for wars
         }
 
-        try (InputStream input = new URL(archivePath + "/META-INF/MANIFEST.MF").openStream()) {
+        try (InputStream input = new URL(archivePath + "/META-INF/MANIFEST.MF").openStream())
+        {
             return new Manifest(input);
-        } catch (Exception e) {
-            throw new RuntimeException("Loading MANIFEST for class " + clz + " failed!", e);
         }
+        catch (Exception e)
+        {
+            mLog.error("Couldn't load jar manifest - probably not running from a jar release");
+        }
+
+        return null;
     }
 
     /**
