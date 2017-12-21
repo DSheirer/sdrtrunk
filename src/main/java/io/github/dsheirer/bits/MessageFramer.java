@@ -17,10 +17,10 @@
  ******************************************************************************/
 package io.github.dsheirer.bits;
 
-import io.github.dsheirer.sample.Broadcaster;
-import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.dsp.symbol.SyncDetectListener;
 import io.github.dsheirer.dsp.symbol.SyncDetectProvider;
+import io.github.dsheirer.sample.Broadcaster;
+import io.github.dsheirer.sample.Listener;
 
 import java.util.ArrayList;
 import java.util.Iterator;

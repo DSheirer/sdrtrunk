@@ -18,10 +18,10 @@
 package io.github.dsheirer.audio.invert;
 
 import io.github.dsheirer.audio.InversionFrequency;
-import io.github.dsheirer.sample.real.RealSampleListener;
 import io.github.dsheirer.dsp.filter.Filters;
 import io.github.dsheirer.dsp.filter.FloatFIRFilter;
 import io.github.dsheirer.dsp.mixer.Oscillator;
+import io.github.dsheirer.sample.real.RealSampleListener;
 
 /**
  * Applies audio inversion (or un-inversion) to a broadcast of float audio samples

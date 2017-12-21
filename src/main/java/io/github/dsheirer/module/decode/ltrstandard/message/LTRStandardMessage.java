@@ -26,9 +26,6 @@ import io.github.dsheirer.message.MessageDirection;
 import io.github.dsheirer.message.MessageType;
 import io.github.dsheirer.module.decode.DecoderType;
 import org.apache.commons.lang3.StringUtils;
-import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.module.decode.DecoderType;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;

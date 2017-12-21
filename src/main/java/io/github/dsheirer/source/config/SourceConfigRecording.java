@@ -17,11 +17,10 @@
  ******************************************************************************/
 package io.github.dsheirer.source.config;
 
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.source.SourceType;
 import io.github.dsheirer.source.tuner.TunerChannel;
 import io.github.dsheirer.source.tuner.TunerChannel.Type;
-
-import javax.xml.bind.annotation.XmlAttribute;
 
 public class SourceConfigRecording extends SourceConfiguration
 {
@@ -32,8 +31,8 @@ public class SourceConfigRecording extends SourceConfiguration
     {
 	    super( SourceType.RECORDING );
     }
-	
-	@XmlAttribute( name = "recording_alias" )
+
+	@JacksonXmlProperty(isAttribute=true,localName= "recording_alias" )
 	public String getRecordingAlias()
 	{
 		return mRecordingAlias;
@@ -44,7 +43,7 @@ public class SourceConfigRecording extends SourceConfiguration
 		mRecordingAlias = alias;
 	}
 
-	@XmlAttribute( name = "frequency" )
+	@JacksonXmlProperty(isAttribute=true,localName= "frequency" )
 	public long getFrequency()
 	{
 		return mFrequency;

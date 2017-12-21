@@ -17,14 +17,14 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.fleetsync2;
 
+import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.edac.CRCFleetsync;
 import io.github.dsheirer.map.Plottable;
 import io.github.dsheirer.message.Message;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
-import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.alias.AliasList;
 
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;

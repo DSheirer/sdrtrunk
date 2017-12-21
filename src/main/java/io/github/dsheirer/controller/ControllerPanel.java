@@ -19,6 +19,8 @@
 package io.github.dsheirer.controller;
 
 import com.jidesoft.swing.JideTabbedPane;
+import io.github.dsheirer.alias.AliasController;
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.AudioManager;
 import io.github.dsheirer.audio.AudioPanel;
 import io.github.dsheirer.audio.broadcast.BroadcastModel;
@@ -36,8 +38,6 @@ import io.github.dsheirer.source.SourceManager;
 import io.github.dsheirer.source.tuner.TunerModel;
 import io.github.dsheirer.source.tuner.TunerViewPanel;
 import net.miginfocom.swing.MigLayout;
-import io.github.dsheirer.alias.AliasController;
-import io.github.dsheirer.alias.AliasModel;
 
 import javax.swing.*;
 import java.awt.*;

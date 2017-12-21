@@ -19,6 +19,8 @@
 package io.github.dsheirer.gui;
 
 import com.jidesoft.swing.JideSplitPane;
+import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.alias.action.AliasActionManager;
 import io.github.dsheirer.audio.AudioManager;
 import io.github.dsheirer.audio.broadcast.BroadcastModel;
 import io.github.dsheirer.audio.broadcast.BroadcastStatusPanel;
@@ -29,6 +31,7 @@ import io.github.dsheirer.controller.channel.ChannelSelectionManager;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.map.MapService;
+import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.record.RecorderManager;
@@ -46,9 +49,6 @@ import net.miginfocom.swing.MigLayout;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.alias.action.AliasActionManager;
-import io.github.dsheirer.module.log.EventLogManager;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;

@@ -53,7 +53,7 @@ dependencies {
     compile 'org.apache.mina:mina-http:2.0.16'
     compile 'org.apache.axis:axis-jaxrpc:1.4'
     compile 'org.apache.axis:axis:1.4'
-
+    compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.3'
 }
 
 task wrapper(type: Wrapper) {

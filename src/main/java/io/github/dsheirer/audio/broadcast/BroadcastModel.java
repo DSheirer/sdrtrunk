@@ -18,6 +18,7 @@
  ******************************************************************************/
 package io.github.dsheirer.audio.broadcast;
 
+import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.audio.AudioPacket;
 import io.github.dsheirer.channel.metadata.Metadata;
 import io.github.dsheirer.icon.IconManager;
@@ -27,7 +28,6 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;

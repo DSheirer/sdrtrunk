@@ -18,10 +18,13 @@
  ******************************************************************************/
 package io.github.dsheirer.audio.broadcast.icecast;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastFormat;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
 
+@JsonSubTypes.Type(value=IcecastHTTPConfiguration.class, name="icecastHTTPConfiguration")
 public class IcecastHTTPConfiguration extends IcecastConfiguration
 {
     public IcecastHTTPConfiguration()
@@ -66,11 +69,10 @@ public class IcecastHTTPConfiguration extends IcecastConfiguration
         return copy;
     }
 
+    @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
     @Override
     public BroadcastServerType getBroadcastServerType()
     {
         return BroadcastServerType.ICECAST_HTTP;
     }
-
-
 }

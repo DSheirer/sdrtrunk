@@ -1,5 +1,6 @@
 package io.github.dsheirer.alias;
 
+import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.alias.id.priority.Priority;
 import io.github.dsheirer.audio.broadcast.BroadcastModel;
@@ -11,7 +12,6 @@ import io.github.dsheirer.sample.Listener;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.alias.id.AliasIDType;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;

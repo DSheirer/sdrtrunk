@@ -19,9 +19,9 @@
 package io.github.dsheirer.module.decode.event;
 
 import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.sample.Listener;
 import net.miginfocom.swing.MigLayout;
-import io.github.dsheirer.module.ProcessingChain;
 
 import javax.swing.*;
 import java.awt.*;

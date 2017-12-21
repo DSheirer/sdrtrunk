@@ -21,12 +21,12 @@ import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilter;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
+import io.github.dsheirer.dsp.mixer.Oscillator;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.real.RealBuffer;
 import io.github.dsheirer.sample.real.RealToRealBufferAssembler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.dsp.mixer.Oscillator;
 
 import java.util.ArrayList;
 import java.util.Arrays;

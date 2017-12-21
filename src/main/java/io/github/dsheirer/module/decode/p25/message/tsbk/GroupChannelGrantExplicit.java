@@ -18,9 +18,9 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message.tsbk;
 
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.module.decode.p25.message.IBandIdentifier;
-import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 
 public abstract class GroupChannelGrantExplicit extends ChannelGrant

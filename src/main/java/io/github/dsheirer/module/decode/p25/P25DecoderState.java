@@ -129,7 +129,6 @@ import io.github.dsheirer.module.decode.p25.message.tsbk.osp.voice.UnitToUnitVoi
 import io.github.dsheirer.module.decode.p25.message.tsbk.osp.voice.UnitToUnitVoiceChannelGrantUpdate;
 import io.github.dsheirer.module.decode.p25.reference.IPProtocol;
 import io.github.dsheirer.module.decode.p25.reference.LinkControlOpcode;
-import io.github.dsheirer.module.decode.p25.reference.PDUType;
 import io.github.dsheirer.module.decode.p25.reference.Response;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
 import org.slf4j.Logger;
@@ -144,8 +143,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ScheduledExecutorService;
-
-import static io.github.dsheirer.module.decode.p25.reference.PDUType.*;
 
 public class P25DecoderState extends DecoderState
 {

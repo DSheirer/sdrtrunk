@@ -18,6 +18,8 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.lj1200;
 
+import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.channel.metadata.AliasedStringAttributeMonitor;
 import io.github.dsheirer.channel.metadata.Attribute;
 import io.github.dsheirer.channel.state.DecoderState;
@@ -28,8 +30,6 @@ import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.decode.DecoderType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.alias.id.AliasIDType;
 
 import java.util.ArrayList;
 import java.util.Collections;

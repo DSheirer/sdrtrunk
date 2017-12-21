@@ -18,17 +18,17 @@
 package io.github.dsheirer.controller.channel;
 
 import com.jidesoft.swing.JideTabbedPane;
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.gui.editor.Editor;
 import io.github.dsheirer.gui.editor.EditorValidationException;
+import io.github.dsheirer.module.decode.AuxDecodeConfigurationEditor;
+import io.github.dsheirer.module.decode.DecodeConfigurationEditor;
+import io.github.dsheirer.module.log.EventLogConfigurationEditor;
 import io.github.dsheirer.record.RecordConfigurationEditor;
 import io.github.dsheirer.source.SourceConfigurationEditor;
 import io.github.dsheirer.source.SourceManager;
 import net.miginfocom.swing.MigLayout;
-import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.module.decode.AuxDecodeConfigurationEditor;
-import io.github.dsheirer.module.decode.DecodeConfigurationEditor;
-import io.github.dsheirer.module.log.EventLogConfigurationEditor;
 
 import javax.swing.*;
 import java.awt.*;

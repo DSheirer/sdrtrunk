@@ -18,10 +18,10 @@
  ******************************************************************************/
 package io.github.dsheirer.map;
 
+import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.alias.Alias;
 
 import java.awt.*;
 import java.util.ArrayList;

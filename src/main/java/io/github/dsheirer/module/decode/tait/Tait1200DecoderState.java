@@ -18,6 +18,9 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.tait;
 
+import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.channel.metadata.AliasedStringAttributeMonitor;
 import io.github.dsheirer.channel.metadata.Attribute;
 import io.github.dsheirer.channel.metadata.AttributeChangeRequest;
@@ -30,9 +33,6 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.CallEvent;
 import io.github.dsheirer.util.StringUtils;
 import org.jdesktop.swingx.mapviewer.GeoPosition;
-import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.alias.id.AliasIDType;
 
 import java.util.ArrayList;
 import java.util.Collections;

@@ -18,9 +18,15 @@
 package io.github.dsheirer.dsp.fsk;
 
 import io.github.dsheirer.dsp.filter.Filters;
+import io.github.dsheirer.dsp.filter.FloatHalfBandFilter;
 import io.github.dsheirer.dsp.filter.FloatHalfBandNoDecimateFilter;
 import io.github.dsheirer.dsp.filter.LTRPulseShapingFilter;
 import io.github.dsheirer.dsp.filter.SquaringFilter;
+import io.github.dsheirer.dsp.filter.Window.WindowType;
+import io.github.dsheirer.dsp.filter.cic.RealPrimeCICDecimate;
+import io.github.dsheirer.dsp.filter.dc.IIRSinglePoleDCRemovalFilter;
+import io.github.dsheirer.dsp.symbol.Slicer;
+import io.github.dsheirer.dsp.symbol.Slicer.Output;
 import io.github.dsheirer.instrument.Instrumentable;
 import io.github.dsheirer.instrument.tap.Tap;
 import io.github.dsheirer.instrument.tap.TapGroup;
@@ -30,12 +36,6 @@ import io.github.dsheirer.instrument.tap.stream.FloatTap;
 import io.github.dsheirer.instrument.tap.stream.SymbolEventTap;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.real.RealBuffer;
-import io.github.dsheirer.dsp.filter.FloatHalfBandFilter;
-import io.github.dsheirer.dsp.filter.Window.WindowType;
-import io.github.dsheirer.dsp.filter.cic.RealPrimeCICDecimate;
-import io.github.dsheirer.dsp.filter.dc.IIRSinglePoleDCRemovalFilter;
-import io.github.dsheirer.dsp.symbol.Slicer;
-import io.github.dsheirer.dsp.symbol.Slicer.Output;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -18,11 +18,11 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message.tsbk.motorola;
 
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.module.decode.p25.message.IBandIdentifier;
 import io.github.dsheirer.module.decode.p25.message.IdentifierReceiver;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
-import io.github.dsheirer.alias.AliasList;
 
 public class PatchGroupVoiceChannelGrantUpdate extends MotorolaTSBKMessage implements IdentifierReceiver
 {

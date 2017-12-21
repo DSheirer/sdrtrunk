@@ -18,11 +18,10 @@
  ******************************************************************************/
 package io.github.dsheirer.audio.broadcast.shoutcast.v1;
 
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastFormat;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
-
-import javax.xml.bind.annotation.XmlAttribute;
 
 public class ShoutcastV1Configuration extends BroadcastConfiguration
 {
@@ -73,7 +72,7 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
     /**
      * Stream genre
      */
-    @XmlAttribute(name="genre")
+    @JacksonXmlProperty(isAttribute = true, localName = "genre")
     public String getGenre()
     {
         return mGenre;
@@ -81,6 +80,7 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
 
     /**
      * Stream genre
+     *
      * @param genre
      */
     public void setGenre(String genre)
@@ -91,7 +91,7 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
     /**
      * Stream description
      */
-    @XmlAttribute(name="description")
+    @JacksonXmlProperty(isAttribute = true, localName = "description")
     public String getDescription()
     {
         return mDescription;
@@ -99,6 +99,7 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
 
     /**
      * Stream description
+     *
      * @param description
      */
     public void setDescription(String description)
@@ -109,7 +110,7 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
     /**
      * Public visibility of the broadcastAudio
      */
-    @XmlAttribute(name="public")
+    @JacksonXmlProperty(isAttribute = true, localName = "public")
     public boolean isPublic()
     {
         return mPublic;
@@ -117,6 +118,7 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
 
     /**
      * Sets public visibility of the broadcastAudio
+     *
      * @param isPublic indicates if the broadcastAudio should be visible to the public
      */
     public void setPublic(boolean isPublic)
@@ -127,7 +129,7 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
     /**
      * Number of audio channels in the broadcastAudio
      */
-    @XmlAttribute(name="channels")
+    @JacksonXmlProperty(isAttribute = true, localName = "channels")
     public int getChannels()
     {
         return mChannels;
@@ -144,7 +146,7 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
     /**
      * Bit rate in bits per second
      */
-    @XmlAttribute(name="bitrate")
+    @JacksonXmlProperty(isAttribute = true, localName = "bitrate")
     public int getBitRate()
     {
         return mBitRate;
@@ -152,6 +154,7 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
 
     /**
      * Bit rate
+     *
      * @param bitRate in samples per second
      */
     public void setBitRate(int bitRate)
@@ -163,8 +166,8 @@ public class ShoutcastV1Configuration extends BroadcastConfiguration
     public boolean isValid()
     {
         return getName() != null && !getName().isEmpty() &&
-               getHost() != null && !getHost().isEmpty() &&
-               getPort() > 0 && getPort() < 65535 &&
-               getPassword() != null && !getPassword().isEmpty();
+            getHost() != null && !getHost().isEmpty() &&
+            getPort() > 0 && getPort() < 65535 &&
+            getPassword() != null && !getPassword().isEmpty();
     }
 }

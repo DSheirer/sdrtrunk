@@ -19,11 +19,11 @@
 package io.github.dsheirer.channel.metadata;
 
 import io.github.dsheirer.channel.state.State;
+import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.module.decode.DecoderType;
 
 public class MutableMetadata extends Metadata implements Listener<AttributeChangeRequest>
 {

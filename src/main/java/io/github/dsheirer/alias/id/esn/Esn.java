@@ -17,10 +17,9 @@
  ******************************************************************************/
 package io.github.dsheirer.alias.id.esn;
 
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.AliasIDType;
-
-import javax.xml.bind.annotation.XmlAttribute;
 
 public class Esn extends AliasID
 {
@@ -30,7 +29,7 @@ public class Esn extends AliasID
 	{
 	}
 
-	@XmlAttribute
+	@JacksonXmlProperty(isAttribute = true, localName = "esn")
 	public String getEsn()
 	{
 		return mEsn;
@@ -70,6 +69,7 @@ public class Esn extends AliasID
 	    return retVal;
     }
 
+	@JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
 	@Override
     public AliasIDType getType()
     {

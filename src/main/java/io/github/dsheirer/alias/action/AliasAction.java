@@ -18,41 +18,48 @@
  ******************************************************************************/
 package io.github.dsheirer.alias.action;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.action.beep.BeepAction;
 import io.github.dsheirer.alias.action.clip.ClipAction;
 import io.github.dsheirer.alias.action.script.ScriptAction;
 import io.github.dsheirer.message.Message;
-import io.github.dsheirer.alias.action.beep.BeepAction;
 
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlSeeAlso;
-import javax.xml.bind.annotation.XmlTransient;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Alias action defines an action to execute when an alias is detected active.
  */
-@XmlSeeAlso( { BeepAction.class, ClipAction.class, ScriptAction.class } )
-@XmlRootElement( name = "action" )
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonSubTypes({
+    @JsonSubTypes.Type(value = BeepAction.class, name="beepAction"),
+    @JsonSubTypes.Type(value = ClipAction.class, name = "clipAction"),
+    @JsonSubTypes.Type(value = RecurringAction.class, name = "recurringAction"),
+    @JsonSubTypes.Type(value = ScriptAction.class, name = "scriptAction")
+})
+@JacksonXmlRootElement(localName = "action")
 public abstract class AliasAction
 {
-	public AliasAction()
-	{
-	}
+    public AliasAction()
+    {
+    }
 
-	@XmlTransient
-	public abstract AliasActionType getType();
-	
-	/**
-	 * Task to execute when an alias action is defined.  The message argument is
-	 * the original message containing one or more aliases that have an alias
-	 * action attached.  The alias argument is the parent alias containing the
-	 * alias action.
-	 */
-	public abstract void execute(ScheduledExecutorService scheduledExecutorService, Alias alias, Message message );
+    @JsonIgnore
+    public abstract AliasActionType getType();
 
-	/**
-	 * Dismiss a persistent alias action
-	 */
-	public abstract void dismiss( boolean reset );
+    /**
+     * Task to execute when an alias action is defined.  The message argument is
+     * the original message containing one or more aliases that have an alias
+     * action attached.  The alias argument is the parent alias containing the
+     * alias action.
+     */
+    public abstract void execute(ScheduledExecutorService scheduledExecutorService, Alias alias, Message message);
+
+    /**
+     * Dismiss a persistent alias action
+     */
+    public abstract void dismiss(boolean reset);
 }

@@ -19,6 +19,8 @@ package io.github.dsheirer.dsp.filter.cic;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.Filters;
+import io.github.dsheirer.dsp.filter.Window.WindowType;
+import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter_RB_RB;
 import io.github.dsheirer.dsp.filter.halfband.real.HalfBandFilter_RB_RB;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.decimator.RealDecimator;
@@ -28,8 +30,6 @@ import io.github.dsheirer.sample.real.RealToRealBufferAssembler;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.dsp.filter.Window.WindowType;
-import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter_RB_RB;
 
 import java.util.ArrayList;
 import java.util.List;

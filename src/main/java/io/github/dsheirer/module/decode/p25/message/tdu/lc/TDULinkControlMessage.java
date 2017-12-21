@@ -1,5 +1,6 @@
 package io.github.dsheirer.module.decode.p25.message.tdu.lc;
 
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.edac.Golay24;
@@ -12,7 +13,6 @@ import io.github.dsheirer.module.decode.p25.reference.Vendor;
 import io.github.dsheirer.module.decode.p25.reference.VendorLinkControlOpcode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.alias.AliasList;
 
 public class TDULinkControlMessage extends P25Message
 {

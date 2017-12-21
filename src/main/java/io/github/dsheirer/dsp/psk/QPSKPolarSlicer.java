@@ -1,9 +1,9 @@
 package io.github.dsheirer.dsp.psk;
 
+import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.Complex;
-import io.github.dsheirer.dsp.symbol.Dibit;
 
 /*******************************************************************************
  *     SDR Trunk 

@@ -19,12 +19,12 @@ package io.github.dsheirer.alias;
 
 import com.jidesoft.swing.JideTabbedPane;
 import io.github.dsheirer.alias.action.AliasActionEditor;
+import io.github.dsheirer.alias.id.AliasIdentifierEditor;
 import io.github.dsheirer.audio.broadcast.BroadcastModel;
 import io.github.dsheirer.gui.editor.Editor;
 import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.sample.Listener;
 import net.miginfocom.swing.MigLayout;
-import io.github.dsheirer.alias.id.AliasIdentifierEditor;
 
 import javax.swing.*;
 import java.awt.*;

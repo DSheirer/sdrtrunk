@@ -17,8 +17,10 @@
  ******************************************************************************/
 package io.github.dsheirer.map;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
 import io.github.dsheirer.settings.Setting;
 
+@JsonSubTypes.Type(value = DefaultIcon.class, name = "defaultIcon")
 public class DefaultIcon extends Setting
 {
 	public DefaultIcon( String name )

@@ -1,5 +1,6 @@
 package io.github.dsheirer.module.decode.p25;
 
+import io.github.dsheirer.dsp.gain.DirectGainControl;
 import io.github.dsheirer.instrument.Instrumentable;
 import io.github.dsheirer.instrument.tap.Tap;
 import io.github.dsheirer.instrument.tap.TapGroup;
@@ -12,7 +13,6 @@ import io.github.dsheirer.sample.real.RealSampleProvider;
 import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
 import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent.Event;
 import io.github.dsheirer.source.tuner.frequency.IFrequencyChangeListener;
-import io.github.dsheirer.dsp.gain.DirectGainControl;
 
 import java.util.ArrayList;
 import java.util.List;

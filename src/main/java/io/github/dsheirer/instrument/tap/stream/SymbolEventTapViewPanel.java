@@ -17,9 +17,9 @@
  ******************************************************************************/
 package io.github.dsheirer.instrument.tap.stream;
 
+import io.github.dsheirer.dsp.symbol.SymbolEvent;
 import io.github.dsheirer.instrument.gui.SampleModel;
 import io.github.dsheirer.instrument.tap.TapViewPanel;
-import io.github.dsheirer.dsp.symbol.SymbolEvent;
 
 import java.awt.*;
 import java.awt.geom.Path2D;

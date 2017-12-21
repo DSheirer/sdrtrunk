@@ -17,11 +17,11 @@
  ******************************************************************************/
 package io.github.dsheirer.controller.channel;
 
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.gui.editor.Editor;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.alias.AliasModel;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;

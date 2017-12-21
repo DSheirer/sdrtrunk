@@ -18,9 +18,9 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message.pdu.osp.voice;
 
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.edac.CRCP25;
-import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.module.decode.p25.message.IBandIdentifier;
 import io.github.dsheirer.module.decode.p25.message.IdentifierReceiver;
 import io.github.dsheirer.module.decode.p25.message.pdu.PDUMessage;

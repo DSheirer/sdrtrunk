@@ -18,12 +18,11 @@
  ******************************************************************************/
 package io.github.dsheirer.audio.broadcast.shoutcast.v2;
 
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastFormat;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
 import org.apache.commons.lang3.Validate;
-
-import javax.xml.bind.annotation.XmlAttribute;
 
 public class ShoutcastV2Configuration extends BroadcastConfiguration
 {
@@ -78,7 +77,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     /**
      * Stream ID
      */
-    @XmlAttribute(name = "stream_id")
+    @JacksonXmlProperty(isAttribute = true, localName = "stream_id")
     public int getStreamID()
     {
         return mStreamID;
@@ -98,7 +97,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     /**
      * User ID
      */
-    @XmlAttribute(name = "user_id")
+    @JacksonXmlProperty(isAttribute = true, localName = "user_id")
     public String getUserID()
     {
         return mUserID;
@@ -106,6 +105,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
 
     /**
      * Sets the user ID
+     *
      * @param userID
      */
     public void setUserID(String userID)
@@ -116,7 +116,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     /**
      * Bit rate in kilobits per second
      */
-    @XmlAttribute(name = "bitrate")
+    @JacksonXmlProperty(isAttribute = true, localName = "bitrate")
     public int getBitRate()
     {
         return mBitRate;
@@ -124,6 +124,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
 
     /**
      * Bit rate
+     *
      * @param bitRate in kilobits per second
      */
     public void setBitRate(int bitRate)
@@ -134,7 +135,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     /**
      * Stream genre
      */
-    @XmlAttribute(name = "genre")
+    @JacksonXmlProperty(isAttribute = true, localName = "genre")
     public String getGenre()
     {
         return mGenre;
@@ -157,7 +158,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     /**
      * Public visibility of the broadcastAudio
      */
-    @XmlAttribute(name = "public")
+    @JacksonXmlProperty(isAttribute = true, localName = "public")
     public boolean isPublic()
     {
         return mPublic;
@@ -165,6 +166,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
 
     /**
      * Sets public visibility of the broadcastAudio
+     *
      * @param isPublic indicates if the broadcastAudio should be visible to the public
      */
     public void setPublic(boolean isPublic)
@@ -175,7 +177,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
     /**
      * URL associated with the broadcastAudio where users can find additional details.
      */
-    @XmlAttribute(name = "url")
+    @JacksonXmlProperty(isAttribute = true, localName = "url")
     public String getURL()
     {
         return mURL;
@@ -183,6 +185,7 @@ public class ShoutcastV2Configuration extends BroadcastConfiguration
 
     /**
      * URL associated with the broadcastAudio where users can find additional details.
+     *
      * @param url
      */
     public void setURL(String url)

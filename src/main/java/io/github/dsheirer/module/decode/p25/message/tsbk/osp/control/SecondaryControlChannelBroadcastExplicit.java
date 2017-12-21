@@ -1,11 +1,11 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.osp.control;
 
-import io.github.dsheirer.bits.BinaryMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.module.decode.p25.reference.Opcode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SecondaryControlChannelBroadcastExplicit
 				extends SecondaryControlChannelBroadcast

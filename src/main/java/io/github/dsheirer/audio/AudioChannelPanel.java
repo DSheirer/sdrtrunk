@@ -18,6 +18,7 @@
  ******************************************************************************/
 package io.github.dsheirer.audio;
 
+import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.audio.output.AudioOutput;
 import io.github.dsheirer.channel.metadata.Metadata;
 import io.github.dsheirer.icon.IconManager;
@@ -30,7 +31,6 @@ import io.github.dsheirer.settings.SettingsManager;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.alias.Alias;
 
 import javax.swing.*;
 import java.awt.*;

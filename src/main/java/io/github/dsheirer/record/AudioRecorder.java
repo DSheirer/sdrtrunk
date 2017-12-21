@@ -21,10 +21,10 @@ package io.github.dsheirer.record;
 import io.github.dsheirer.audio.AudioPacket;
 import io.github.dsheirer.audio.IAudioPacketListener;
 import io.github.dsheirer.channel.metadata.Metadata;
+import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.module.Module;
 
 import java.io.FileOutputStream;
 import java.io.IOException;

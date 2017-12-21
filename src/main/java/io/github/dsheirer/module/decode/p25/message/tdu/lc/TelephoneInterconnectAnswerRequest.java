@@ -1,9 +1,9 @@
 package io.github.dsheirer.module.decode.p25.message.tdu.lc;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import io.github.dsheirer.module.decode.p25.reference.Digit;
 import io.github.dsheirer.module.decode.p25.reference.LinkControlOpcode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;

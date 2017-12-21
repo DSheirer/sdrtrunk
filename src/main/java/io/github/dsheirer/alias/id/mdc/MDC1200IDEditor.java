@@ -17,9 +17,9 @@
  ******************************************************************************/
 package io.github.dsheirer.alias.id.mdc;
 
+import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.gui.editor.DocumentListenerEditor;
 import net.miginfocom.swing.MigLayout;
-import io.github.dsheirer.alias.id.AliasID;
 
 import javax.swing.*;
 import javax.swing.text.MaskFormatter;

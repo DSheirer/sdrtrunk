@@ -1,12 +1,12 @@
 package io.github.dsheirer.controller.channel;
 
 import com.jidesoft.swing.JideSplitPane;
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.source.SourceManager;
 import net.coderazzi.filters.gui.AutoChoices;
 import net.coderazzi.filters.gui.TableFilterHeader;
 import net.miginfocom.swing.MigLayout;
-import io.github.dsheirer.alias.AliasModel;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;

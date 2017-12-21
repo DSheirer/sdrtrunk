@@ -21,9 +21,9 @@ package io.github.dsheirer.channel.details;
 import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
+import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.sample.Listener;
 import net.miginfocom.swing.MigLayout;
-import io.github.dsheirer.module.ProcessingChain;
 
 import javax.swing.*;
 import javax.swing.text.DefaultCaret;

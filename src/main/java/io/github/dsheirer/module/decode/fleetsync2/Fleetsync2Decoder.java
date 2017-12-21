@@ -17,24 +17,24 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.fleetsync2;
 
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.MessageFramer;
 import io.github.dsheirer.bits.SyncPattern;
-import io.github.dsheirer.instrument.Instrumentable;
-import io.github.dsheirer.instrument.tap.Tap;
-import io.github.dsheirer.instrument.tap.TapGroup;
-import io.github.dsheirer.instrument.tap.stream.BinaryTap;
-import io.github.dsheirer.instrument.tap.stream.FloatBufferTap;
-import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.real.IFilteredRealBufferListener;
-import io.github.dsheirer.sample.real.RealBuffer;
-import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.dsp.filter.Filters;
 import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter_RB_RB;
 import io.github.dsheirer.dsp.filter.halfband.real.HalfBandFilter_RB_RB;
 import io.github.dsheirer.dsp.fsk.FSK2Decoder;
 import io.github.dsheirer.dsp.fsk.FSK2Decoder.Output;
+import io.github.dsheirer.instrument.Instrumentable;
+import io.github.dsheirer.instrument.tap.Tap;
+import io.github.dsheirer.instrument.tap.TapGroup;
+import io.github.dsheirer.instrument.tap.stream.BinaryTap;
+import io.github.dsheirer.instrument.tap.stream.FloatBufferTap;
 import io.github.dsheirer.module.decode.Decoder;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.real.IFilteredRealBufferListener;
+import io.github.dsheirer.sample.real.RealBuffer;
 
 import java.util.ArrayList;
 import java.util.List;

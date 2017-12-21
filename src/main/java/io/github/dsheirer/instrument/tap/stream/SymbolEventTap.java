@@ -17,10 +17,10 @@
  ******************************************************************************/
 package io.github.dsheirer.instrument.tap.stream;
 
+import io.github.dsheirer.dsp.symbol.SymbolEvent;
 import io.github.dsheirer.instrument.tap.TapListener;
 import io.github.dsheirer.instrument.tap.TapType;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.dsp.symbol.SymbolEvent;
 
 public class SymbolEventTap extends StreamTap implements Listener<SymbolEvent>
 {

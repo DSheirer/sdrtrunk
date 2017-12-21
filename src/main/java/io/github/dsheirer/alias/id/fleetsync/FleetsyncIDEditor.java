@@ -17,11 +17,11 @@
  ******************************************************************************/
 package io.github.dsheirer.alias.id.fleetsync;
 
+import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.gui.editor.DocumentListenerEditor;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.alias.id.AliasID;
 
 import javax.swing.*;
 import javax.swing.text.MaskFormatter;

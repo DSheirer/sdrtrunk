@@ -17,18 +17,18 @@
  ******************************************************************************/
 package io.github.dsheirer.module.demodulate.am;
 
-import io.github.dsheirer.module.Module;
-import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
-import io.github.dsheirer.sample.complex.IComplexBufferListener;
-import io.github.dsheirer.sample.real.IFilteredRealBufferProvider;
-import io.github.dsheirer.sample.real.RealBuffer;
 import io.github.dsheirer.dsp.am.AMDemodulator_CB;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.Window.WindowType;
 import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter_CB_CB;
 import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter_RB_RB;
 import io.github.dsheirer.dsp.gain.AutomaticGainControl_RB;
+import io.github.dsheirer.module.Module;
+import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.complex.IComplexBufferListener;
+import io.github.dsheirer.sample.real.IFilteredRealBufferProvider;
+import io.github.dsheirer.sample.real.RealBuffer;
 
 import java.util.concurrent.ScheduledExecutorService;
 

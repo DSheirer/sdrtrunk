@@ -18,6 +18,7 @@
  ******************************************************************************/
 package io.github.dsheirer.audio.broadcast;
 
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyConfiguration;
 import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyConfigurationEditor;
 import io.github.dsheirer.audio.broadcast.icecast.IcecastHTTPAudioBroadcaster;
@@ -43,7 +44,6 @@ import io.github.dsheirer.record.AudioRecorder;
 import io.github.dsheirer.record.mp3.MP3Recorder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.alias.AliasModel;
 
 import java.nio.file.Path;
 

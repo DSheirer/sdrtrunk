@@ -1,15 +1,15 @@
 package io.github.dsheirer.module.decode.p25.message.hdu;
 
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.edac.Golay18;
 import io.github.dsheirer.edac.ReedSolomon_63_47_17;
 import io.github.dsheirer.module.decode.p25.message.P25Message;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
+import io.github.dsheirer.module.decode.p25.reference.Encryption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.module.decode.p25.reference.Encryption;
 
 public class HDUMessage extends P25Message
 {

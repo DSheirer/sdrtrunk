@@ -17,11 +17,11 @@
  ******************************************************************************/
 package io.github.dsheirer.instrument.tap.event;
 
+import io.github.dsheirer.dsp.symbol.SyncDetectListener;
+import io.github.dsheirer.dsp.symbol.SyncDetectProvider;
 import io.github.dsheirer.instrument.tap.Tap;
 import io.github.dsheirer.instrument.tap.TapListener;
 import io.github.dsheirer.instrument.tap.TapType;
-import io.github.dsheirer.dsp.symbol.SyncDetectListener;
-import io.github.dsheirer.dsp.symbol.SyncDetectProvider;
 
 public class SyncDetectTap extends Tap
 						   implements SyncDetectListener,

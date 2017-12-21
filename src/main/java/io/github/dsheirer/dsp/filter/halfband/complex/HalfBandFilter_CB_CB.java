@@ -1,8 +1,8 @@
 package io.github.dsheirer.dsp.filter.halfband.complex;
 
+import io.github.dsheirer.dsp.filter.halfband.real.HalfBandFilter;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
-import io.github.dsheirer.dsp.filter.halfband.real.HalfBandFilter;
 
 public class HalfBandFilter_CB_CB implements Listener<ComplexBuffer>
 {

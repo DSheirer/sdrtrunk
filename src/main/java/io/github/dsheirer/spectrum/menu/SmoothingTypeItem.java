@@ -1,7 +1,7 @@
 package io.github.dsheirer.spectrum.menu;
 
-import io.github.dsheirer.spectrum.SpectralDisplayAdjuster;
 import io.github.dsheirer.dsp.filter.smoothing.SmoothingFilter.SmoothingType;
+import io.github.dsheirer.spectrum.SpectralDisplayAdjuster;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;

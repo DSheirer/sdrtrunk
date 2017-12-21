@@ -18,12 +18,11 @@
  ******************************************************************************/
 package io.github.dsheirer.audio.broadcast.broadcastify;
 
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastFormat;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
 import io.github.dsheirer.audio.broadcast.icecast.IcecastTCPConfiguration;
-
-import javax.xml.bind.annotation.XmlAttribute;
 
 public class BroadcastifyConfiguration extends IcecastTCPConfiguration
 {
@@ -77,13 +76,14 @@ public class BroadcastifyConfiguration extends IcecastTCPConfiguration
         return copy;
     }
 
+    @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
     @Override
     public BroadcastServerType getBroadcastServerType()
     {
         return BroadcastServerType.BROADCASTIFY;
     }
 
-    @XmlAttribute(name="feed_id")
+    @JacksonXmlProperty(isAttribute = true, localName = "feed_id")
     public int getFeedID()
     {
         return mFeedID;

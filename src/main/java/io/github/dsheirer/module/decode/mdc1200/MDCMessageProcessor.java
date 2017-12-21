@@ -17,11 +17,11 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.mdc1200;
 
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.alias.AliasList;
 
 public class MDCMessageProcessor implements Listener<BinaryMessage>
 {

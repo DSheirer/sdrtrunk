@@ -18,6 +18,9 @@
  ******************************************************************************/
 package io.github.dsheirer.controller.channel;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import io.github.dsheirer.controller.config.Configuration;
 import io.github.dsheirer.module.decode.DecoderFactory;
 import io.github.dsheirer.module.decode.DecoderType;
@@ -38,24 +41,11 @@ import io.github.dsheirer.source.tuner.TunerChannel.Type;
 import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
 import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent.Event;
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlSeeAlso;
-import javax.xml.bind.annotation.XmlTransient;
-
-@XmlSeeAlso({Configuration.class})
-@XmlRootElement(name = "channel")
+@JacksonXmlRootElement(localName = "channel")
 public class Channel extends Configuration implements Listener<FrequencyChangeEvent>
 {
     // Standard channels are persisted and traffic channels are temporary
-    public enum ChannelType
-    {
-        STANDARD, TRAFFIC
-    }
-
-    ;
-
+    public enum ChannelType {STANDARD, TRAFFIC}
 
     // Static unique channel identifier tracking
     private static int UNIQUE_ID = 0;
@@ -161,7 +151,7 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
     /**
      * Unique identifier for this channel.  Value is transient (not persisted).
      */
-    @XmlTransient
+    @JsonIgnore
     public int getChannelID()
     {
         return mChannelID;
@@ -171,7 +161,7 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
      * Indicates if this channel has been selected for prioritized audio output
      * and display of processing chain products
      */
-    @XmlTransient
+    @JsonIgnore
     public boolean isSelected()
     {
         return mSelected;
@@ -191,7 +181,7 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
         mSelected = selected;
     }
 
-    @XmlTransient
+    @JsonIgnore
     public ChannelType getChannelType()
     {
         return mChannelType;
@@ -200,7 +190,7 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
     /**
      * Returns the owning system for this channel.
      */
-    @XmlAttribute(name = "system")
+    @JacksonXmlProperty(isAttribute = true, localName = "system")
     public String getSystem()
     {
         return mSystem;
@@ -219,7 +209,7 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
     /**
      * Returns the owning site for this channel.
      */
-    @XmlAttribute(name = "site")
+    @JacksonXmlProperty(isAttribute = true, localName = "site")
     public String getSite()
     {
         return mSite;
@@ -238,7 +228,7 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
     /**
      * Returns the name of this channel.
      */
-    @XmlAttribute(name = "name")
+    @JacksonXmlProperty(isAttribute = true, localName = "name")
     public String getName()
     {
         return mName;
@@ -270,7 +260,7 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
     /**
      * Indicates if this channel is enabled for processing.
      */
-    @XmlAttribute(name = "enabled")
+    @JacksonXmlProperty(isAttribute = true, localName = "enabled")
     public boolean getEnabled()
     {
         return mEnabled;
@@ -295,7 +285,7 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
      * Returns the alias list that is used by this channel for looking up alias
      * values for the various identifiers produced by the decoder(s).
      */
-    @XmlElement(name = "alias_list_name")
+    @JacksonXmlProperty(isAttribute = false, localName = "alias_list_name")
     public String getAliasListName()
     {
         return mAliasListName;
@@ -313,7 +303,7 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
     /**
      * Gets the primary decoder configuration used by this channel
      */
-    @XmlElement(name = "decode_configuration")
+    @JacksonXmlProperty(isAttribute = false, localName = "decode_configuration")
     public DecodeConfiguration getDecodeConfiguration()
     {
         return mDecodeConfiguration;
@@ -331,7 +321,7 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
      * Gets the aux decoder configuration used by this channel.  Aux decoders
      * operate on demodulated audio
      */
-    @XmlElement(name = "aux_decode_configuration")
+    @JacksonXmlProperty(isAttribute = false, localName = "aux_decode_configuration")
     public AuxDecodeConfiguration getAuxDecodeConfiguration()
     {
         return mAuxDecodeConfiguration;
@@ -349,7 +339,7 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
      * Returns the source configuration for this channel.  A channel source
      * identifies where the processing chain will get source sample data from.
      */
-    @XmlElement(name = "source_configuration")
+    @JacksonXmlProperty(isAttribute = false, localName = "source_configuration")
     public SourceConfiguration getSourceConfiguration()
     {
         return mSourceConfiguration;
@@ -370,7 +360,7 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
     /**
      * Returns the event logger configuration for this channel.
      */
-    @XmlElement(name = "event_log_configuration")
+    @JacksonXmlProperty(isAttribute = false, localName = "event_log_configuration")
     public EventLogConfiguration getEventLogConfiguration()
     {
         return mEventLogConfiguration;
@@ -387,7 +377,7 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
     /**
      * Returns the recorder configuration for this channel.
      */
-    @XmlElement(name = "record_configuration")
+    @JacksonXmlProperty(isAttribute = false, localName = "record_configuration")
     public RecordConfiguration getRecordConfiguration()
     {
         return mRecordConfiguration;
@@ -409,7 +399,7 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
      * If the source configuration is not a tuner or recording, this method
      * returns null.
      */
-    @XmlTransient
+    @JsonIgnore
     public TunerChannel getTunerChannel()
     {
         if(mTunerChannel == null)
@@ -462,9 +452,10 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
 
     /**
      * Current channel frequency correction value (when this channel is processing)
+     *
      * @return
      */
-    @XmlTransient
+    @JsonIgnore
     public int getChannelFrequencyCorrection()
     {
         return mChannelFrequencyCorrection;

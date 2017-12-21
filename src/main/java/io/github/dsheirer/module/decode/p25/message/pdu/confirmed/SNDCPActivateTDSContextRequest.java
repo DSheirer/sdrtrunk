@@ -1,8 +1,8 @@
 package io.github.dsheirer.module.decode.p25.message.pdu.confirmed;
 
+import io.github.dsheirer.module.decode.p25.reference.MDPConfigurationOption;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.module.decode.p25.reference.MDPConfigurationOption;
 
 public class SNDCPActivateTDSContextRequest extends PDUConfirmedMessage
 {

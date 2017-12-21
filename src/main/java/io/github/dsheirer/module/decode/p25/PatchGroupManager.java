@@ -18,12 +18,12 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25;
 
-import io.github.dsheirer.module.decode.event.CallEvent;
-import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.PatchGroupAlias;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupID;
+import io.github.dsheirer.module.decode.event.CallEvent;
+import io.github.dsheirer.sample.Broadcaster;
 
 import java.util.ArrayList;
 import java.util.Iterator;

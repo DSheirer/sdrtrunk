@@ -18,6 +18,12 @@
  ******************************************************************************/
 package io.github.dsheirer.spectrum;
 
+import io.github.dsheirer.dsp.filter.smoothing.GaussianSmoothingFilter;
+import io.github.dsheirer.dsp.filter.smoothing.NoSmoothingFilter;
+import io.github.dsheirer.dsp.filter.smoothing.RectangularSmoothingFilter;
+import io.github.dsheirer.dsp.filter.smoothing.SmoothingFilter;
+import io.github.dsheirer.dsp.filter.smoothing.SmoothingFilter.SmoothingType;
+import io.github.dsheirer.dsp.filter.smoothing.TriangularSmoothingFilter;
 import io.github.dsheirer.settings.ColorSetting;
 import io.github.dsheirer.settings.ColorSetting.ColorSettingName;
 import io.github.dsheirer.settings.Setting;
@@ -26,12 +32,6 @@ import io.github.dsheirer.settings.SettingsManager;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.dsp.filter.smoothing.GaussianSmoothingFilter;
-import io.github.dsheirer.dsp.filter.smoothing.NoSmoothingFilter;
-import io.github.dsheirer.dsp.filter.smoothing.RectangularSmoothingFilter;
-import io.github.dsheirer.dsp.filter.smoothing.SmoothingFilter;
-import io.github.dsheirer.dsp.filter.smoothing.SmoothingFilter.SmoothingType;
-import io.github.dsheirer.dsp.filter.smoothing.TriangularSmoothingFilter;
 
 import javax.swing.*;
 import java.awt.*;

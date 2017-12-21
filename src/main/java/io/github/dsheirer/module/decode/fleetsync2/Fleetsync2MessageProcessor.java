@@ -17,10 +17,10 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.fleetsync2;
 
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.alias.AliasList;
 
 public class Fleetsync2MessageProcessor implements Listener<BinaryMessage>
 {

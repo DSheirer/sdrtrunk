@@ -1,9 +1,9 @@
 package io.github.dsheirer.module.decode.p25;
 
 import io.github.dsheirer.bits.BinaryMessage;
+import io.github.dsheirer.dsp.symbol.Dibit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.dsp.symbol.Dibit;
 
 import java.util.ArrayList;
 import java.util.HashMap;

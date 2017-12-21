@@ -18,15 +18,15 @@
  ******************************************************************************/
 package io.github.dsheirer.icon;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlTransient;
 
-@XmlRootElement(name = "icon")
+@JacksonXmlRootElement(localName = "icon")
 public class Icon implements Comparable<Icon>
 {
     private final static Logger mLog = LoggerFactory.getLogger(Icon.class);
@@ -46,7 +46,7 @@ public class Icon implements Comparable<Icon>
         mPath = path;
     }
 
-    @XmlAttribute(name = "name")
+    @JacksonXmlProperty(isAttribute = true, localName = "name")
     public String getName()
     {
         return mName;
@@ -62,7 +62,7 @@ public class Icon implements Comparable<Icon>
         return mName;
     }
 
-    @XmlAttribute(name = "path")
+    @JacksonXmlProperty(isAttribute = true, localName = "path")
     public String getPath()
     {
         return mPath;
@@ -73,7 +73,7 @@ public class Icon implements Comparable<Icon>
         mPath = path;
     }
 
-    @XmlTransient
+    @JsonIgnore
     public ImageIcon getIcon()
     {
         if(mImageIcon == null && mPath != null)

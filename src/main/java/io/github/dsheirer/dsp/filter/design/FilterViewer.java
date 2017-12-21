@@ -1,12 +1,12 @@
 package io.github.dsheirer.dsp.filter.design;
 
+import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
+import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
-import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 
 public class FilterViewer extends Application
 {

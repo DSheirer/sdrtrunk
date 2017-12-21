@@ -17,9 +17,9 @@
  ******************************************************************************/
 package io.github.dsheirer.module.log;
 
+import io.github.dsheirer.module.decode.event.CallEvent;
 import io.github.dsheirer.module.decode.event.ICallEventListener;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.module.decode.event.CallEvent;
 
 import java.nio.file.Path;
 

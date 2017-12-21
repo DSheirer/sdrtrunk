@@ -19,6 +19,10 @@
 package io.github.dsheirer.source.tuner;
 
 import io.github.dsheirer.channel.heartbeat.Heartbeat;
+import io.github.dsheirer.dsp.filter.FilterFactory;
+import io.github.dsheirer.dsp.filter.Window.WindowType;
+import io.github.dsheirer.dsp.filter.cic.ComplexPrimeCICDecimate;
+import io.github.dsheirer.dsp.mixer.Oscillator;
 import io.github.dsheirer.sample.Buffer;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.OverflowableTransferQueue;
@@ -34,10 +38,6 @@ import io.github.dsheirer.source.tuner.frequency.IFrequencyChangeProcessor;
 import io.github.dsheirer.source.tuner.frequency.IFrequencyChangeProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.dsp.filter.FilterFactory;
-import io.github.dsheirer.dsp.filter.Window.WindowType;
-import io.github.dsheirer.dsp.filter.cic.ComplexPrimeCICDecimate;
-import io.github.dsheirer.dsp.mixer.Oscillator;
 
 import java.util.ArrayList;
 import java.util.List;

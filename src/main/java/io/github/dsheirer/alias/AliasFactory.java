@@ -17,31 +17,25 @@
  ******************************************************************************/
 package io.github.dsheirer.alias;
 
-import io.github.dsheirer.alias.action.AliasActionType;
-import io.github.dsheirer.alias.action.clip.ClipAction;
-import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
-import io.github.dsheirer.alias.id.fleetsync.FleetsyncIDEditor;
-import io.github.dsheirer.alias.id.lojack.LoJackIDEditor;
-import io.github.dsheirer.alias.id.mdc.MDC1200ID;
-import io.github.dsheirer.alias.id.priority.Priority;
-import io.github.dsheirer.alias.id.siteID.SiteID;
-import io.github.dsheirer.alias.id.uniqueID.UniqueIDEditor;
-import io.github.dsheirer.audio.broadcast.BroadcastModel;
-import io.github.dsheirer.gui.editor.Editor;
-import io.github.dsheirer.gui.editor.EmptyEditor;
 import io.github.dsheirer.alias.action.AliasAction;
+import io.github.dsheirer.alias.action.AliasActionType;
 import io.github.dsheirer.alias.action.beep.BeepAction;
 import io.github.dsheirer.alias.action.beep.BeepActionEditor;
+import io.github.dsheirer.alias.action.clip.ClipAction;
 import io.github.dsheirer.alias.action.clip.ClipActionEditor;
 import io.github.dsheirer.alias.action.script.ScriptAction;
 import io.github.dsheirer.alias.action.script.ScriptActionEditor;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.AliasIDType;
+import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannelEditor;
 import io.github.dsheirer.alias.id.esn.ESNEditor;
 import io.github.dsheirer.alias.id.esn.Esn;
 import io.github.dsheirer.alias.id.fleetsync.FleetsyncID;
+import io.github.dsheirer.alias.id.fleetsync.FleetsyncIDEditor;
 import io.github.dsheirer.alias.id.lojack.LoJackFunctionAndID;
+import io.github.dsheirer.alias.id.lojack.LoJackIDEditor;
+import io.github.dsheirer.alias.id.mdc.MDC1200ID;
 import io.github.dsheirer.alias.id.mdc.MDC1200IDEditor;
 import io.github.dsheirer.alias.id.mobileID.MINEditor;
 import io.github.dsheirer.alias.id.mobileID.Min;
@@ -49,13 +43,19 @@ import io.github.dsheirer.alias.id.mpt1327.MPT1327ID;
 import io.github.dsheirer.alias.id.mpt1327.MPT1327IDEditor;
 import io.github.dsheirer.alias.id.nonrecordable.NonRecordable;
 import io.github.dsheirer.alias.id.nonrecordable.NonRecordableEditor;
+import io.github.dsheirer.alias.id.priority.Priority;
 import io.github.dsheirer.alias.id.priority.PriorityEditor;
+import io.github.dsheirer.alias.id.siteID.SiteID;
 import io.github.dsheirer.alias.id.siteID.SiteIDEditor;
 import io.github.dsheirer.alias.id.status.StatusID;
 import io.github.dsheirer.alias.id.status.StatusIDEditor;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupID;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupIDEditor;
 import io.github.dsheirer.alias.id.uniqueID.UniqueID;
+import io.github.dsheirer.alias.id.uniqueID.UniqueIDEditor;
+import io.github.dsheirer.audio.broadcast.BroadcastModel;
+import io.github.dsheirer.gui.editor.Editor;
+import io.github.dsheirer.gui.editor.EmptyEditor;
 
 public class AliasFactory
 {

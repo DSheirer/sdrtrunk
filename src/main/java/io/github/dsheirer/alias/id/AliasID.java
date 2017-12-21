@@ -17,6 +17,10 @@
  ******************************************************************************/
 package io.github.dsheirer.alias.id;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.alias.id.esn.Esn;
 import io.github.dsheirer.alias.id.fleetsync.FleetsyncID;
@@ -30,28 +34,35 @@ import io.github.dsheirer.alias.id.siteID.SiteID;
 import io.github.dsheirer.alias.id.status.StatusID;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupID;
 import io.github.dsheirer.alias.id.uniqueID.UniqueID;
-import io.github.dsheirer.playlist.version1.Group;
 
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlSeeAlso;
-import javax.xml.bind.annotation.XmlTransient;
-
-@SuppressWarnings( "deprecation" )
-@XmlSeeAlso( {BroadcastChannel.class, Esn.class, FleetsyncID.class, Group.class, LoJackFunctionAndID.class,
-			   MDC1200ID.class, Min.class, MPT1327ID.class, NonRecordable.class,
-			   Priority.class, SiteID.class, StatusID.class, TalkgroupID.class,
-			   UniqueID.class } )
-@XmlRootElement( name = "id" )
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include= JsonTypeInfo.As.PROPERTY, property="type")
+@JsonSubTypes({
+    @JsonSubTypes.Type(value=BroadcastChannel.class, name="broadcastChannel"),
+    @JsonSubTypes.Type(value=Esn.class, name="esn"),
+    @JsonSubTypes.Type(value=FleetsyncID.class, name="fleetsyncID"),
+    @JsonSubTypes.Type(value = LoJackFunctionAndID.class, name = "loJackFunctionAndID"),
+    @JsonSubTypes.Type(value = MDC1200ID.class, name = "mdc1200ID"),
+    @JsonSubTypes.Type(value = Min.class, name = "min"),
+    @JsonSubTypes.Type(value = MPT1327ID.class, name = "mpt1327ID"),
+    @JsonSubTypes.Type(value = NonRecordable.class, name = "nonRecordable"),
+    @JsonSubTypes.Type(value = Priority.class, name = "priority"),
+    @JsonSubTypes.Type(value = SiteID.class, name = "siteID"),
+    @JsonSubTypes.Type(value = StatusID.class, name = "statusID"),
+    @JsonSubTypes.Type(value = TalkgroupID.class, name = "talkgroupID"),
+    @JsonSubTypes.Type(value = UniqueID.class, name = "uniqueID")
+})
+@JacksonXmlRootElement( localName = "id" )
 public abstract class AliasID
 {
 	public AliasID()
 	{
 	}
-	
+
+	@JsonIgnore
 	public abstract AliasIDType getType();
 	
 	public abstract boolean matches( AliasID id );
 
-	@XmlTransient
+	@JsonIgnore
 	public abstract boolean isValid();
 }

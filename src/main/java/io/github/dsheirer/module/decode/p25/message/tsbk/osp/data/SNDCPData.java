@@ -1,7 +1,7 @@
 package io.github.dsheirer.module.decode.p25.message.tsbk.osp.data;
 
-import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.module.decode.p25.message.tsbk.ServiceMessage;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 

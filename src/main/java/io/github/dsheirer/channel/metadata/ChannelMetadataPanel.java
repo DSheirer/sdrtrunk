@@ -18,11 +18,13 @@
  ******************************************************************************/
 package io.github.dsheirer.channel.metadata;
 
+import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.controller.channel.ChannelUtils;
 import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
@@ -30,8 +32,6 @@ import net.miginfocom.swing.MigLayout;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.module.ProcessingChain;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;

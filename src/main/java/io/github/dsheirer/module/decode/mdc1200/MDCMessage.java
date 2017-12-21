@@ -17,11 +17,11 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.mdc1200;
 
+import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.map.Plottable;
 import io.github.dsheirer.message.Message;
-import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.alias.AliasList;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;

@@ -18,9 +18,9 @@
  ******************************************************************************/
 package io.github.dsheirer.source.tuner.airspy;
 
-import io.github.dsheirer.sample.adapter.ISampleAdapter;
 import io.github.dsheirer.dsp.filter.dc.DCRemovalFilter_RB;
 import io.github.dsheirer.dsp.filter.hilbert.HilbertTransform;
+import io.github.dsheirer.sample.adapter.ISampleAdapter;
 
 public class AirspySampleAdapter implements ISampleAdapter
 {

@@ -18,10 +18,10 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.event;
 
+import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.icon.IconManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.alias.Alias;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;

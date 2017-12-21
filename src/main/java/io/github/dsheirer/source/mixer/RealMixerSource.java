@@ -18,6 +18,7 @@
 package io.github.dsheirer.source.mixer;
 
 import io.github.dsheirer.channel.heartbeat.Heartbeat;
+import io.github.dsheirer.dsp.gain.AutomaticGainControl;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.adapter.ISampleAdapter;
 import io.github.dsheirer.sample.real.RealBuffer;
@@ -26,7 +27,6 @@ import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.dsp.gain.AutomaticGainControl;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;

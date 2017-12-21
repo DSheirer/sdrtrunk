@@ -19,7 +19,6 @@
 package io.github.dsheirer.module.demodulate.audio;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
-import io.github.dsheirer.dsp.filter.Window;
 import io.github.dsheirer.dsp.filter.Window.WindowType;
 import io.github.dsheirer.dsp.filter.dc.DCRemovalFilter_RealBuffer;
 import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter_RB_RB;

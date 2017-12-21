@@ -18,6 +18,7 @@
  ******************************************************************************/
 package io.github.dsheirer.controller.channel;
 
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.AudioPacket;
 import io.github.dsheirer.channel.metadata.Attribute;
 import io.github.dsheirer.channel.metadata.AttributeChangeRequest;
@@ -25,6 +26,12 @@ import io.github.dsheirer.channel.metadata.ChannelMetadataModel;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.message.Message;
+import io.github.dsheirer.module.Module;
+import io.github.dsheirer.module.ProcessingChain;
+import io.github.dsheirer.module.decode.DecoderFactory;
+import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.event.MessageActivityModel;
+import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.record.RecorderManager;
 import io.github.dsheirer.record.RecorderType;
 import io.github.dsheirer.sample.Listener;
@@ -35,13 +42,6 @@ import io.github.dsheirer.source.SourceType;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.module.Module;
-import io.github.dsheirer.module.ProcessingChain;
-import io.github.dsheirer.module.decode.DecoderFactory;
-import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.event.MessageActivityModel;
-import io.github.dsheirer.module.log.EventLogManager;
 
 import java.util.HashMap;
 import java.util.List;

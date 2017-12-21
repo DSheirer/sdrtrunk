@@ -1,13 +1,13 @@
 package io.github.dsheirer.instrument.gui;
 
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.BroadcastModel;
 import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
+import io.github.dsheirer.module.decode.DecodeConfigurationEditor;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.source.IControllableFileSource;
 import net.miginfocom.swing.MigLayout;
-import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.module.decode.DecodeConfigurationEditor;
 
 import javax.swing.*;
 import java.awt.*;

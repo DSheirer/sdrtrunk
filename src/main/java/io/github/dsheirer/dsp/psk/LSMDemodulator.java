@@ -31,6 +31,8 @@ package io.github.dsheirer.dsp.psk;
  ******************************************************************************/
 
 import io.github.dsheirer.buffer.FloatAveragingBuffer;
+import io.github.dsheirer.dsp.filter.interpolator.RealInterpolator;
+import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.instrument.Instrumentable;
 import io.github.dsheirer.instrument.tap.Tap;
 import io.github.dsheirer.instrument.tap.TapGroup;
@@ -40,8 +42,6 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.Complex;
 import io.github.dsheirer.sample.complex.ComplexSampleListener;
 import io.github.dsheirer.source.tuner.frequency.IFrequencyChangeListener;
-import io.github.dsheirer.dsp.filter.interpolator.RealInterpolator;
-import io.github.dsheirer.dsp.symbol.Dibit;
 
 import java.util.ArrayList;
 import java.util.Arrays;

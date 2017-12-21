@@ -17,12 +17,14 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.config;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.controller.config.Configuration;
 import io.github.dsheirer.module.decode.DecoderType;
 
-import javax.xml.bind.annotation.XmlElement;
 import java.util.ArrayList;
 
+@JsonSubTypes.Type(value = AuxDecodeConfiguration.class, name = "auxDecodeConfiguration")
 public class AuxDecodeConfiguration extends Configuration
 {
 	ArrayList<DecoderType> mAuxDecoders = new ArrayList<DecoderType>();
@@ -31,7 +33,7 @@ public class AuxDecodeConfiguration extends Configuration
 	{
 	}
 
-	@XmlElement( name="aux_decoder" )
+	@JacksonXmlProperty(isAttribute = false, localName = "aux_decoder")
 	public ArrayList<DecoderType> getAuxDecoders()
 	{
 		return mAuxDecoders;

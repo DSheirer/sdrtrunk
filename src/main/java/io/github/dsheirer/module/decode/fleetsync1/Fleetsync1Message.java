@@ -17,10 +17,10 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.fleetsync1;
 
+import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.map.Plottable;
 import io.github.dsheirer.message.Message;
-import io.github.dsheirer.alias.Alias;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;

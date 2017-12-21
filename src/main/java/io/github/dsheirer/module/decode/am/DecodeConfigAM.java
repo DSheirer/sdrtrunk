@@ -17,6 +17,7 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.am;
 
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 
@@ -24,11 +25,15 @@ public class DecodeConfigAM extends DecodeConfiguration
 {
 	public DecodeConfigAM()
     {
-	    super( DecoderType.AM );
-	    
 	    setAFC( false );
     }
-	
+
+    @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
+    public DecoderType getDecoderType()
+    {
+        return DecoderType.AM;
+    }
+
     public boolean supportsAFC()
     {
         return false;

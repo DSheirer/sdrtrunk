@@ -1,22 +1,25 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014-2017 Dennis Sheirer
+/*
+ * *********************************************************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2017 Dennis Sheirer
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
+ * *********************************************************************************************************************
+ */
 package io.github.dsheirer.playlist;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import io.github.dsheirer.alias.AliasEvent;
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.BroadcastEvent;
@@ -27,17 +30,12 @@ import io.github.dsheirer.controller.channel.ChannelEventListener;
 import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.map.ChannelMapEvent;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
-import io.github.dsheirer.playlist.version1.PlaylistConverterV1ToV2;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -137,33 +135,7 @@ public class PlaylistManager implements ChannelEventListener
     public void init()
     {
         PlaylistV2 playlist = load();
-
-        boolean saveRequired = false;
-
-        if(playlist == null)
-        {
-            mLog.info("Couldn't find version 2 playlist - looking for version 1 playlist to convert");
-
-            Path playlistV1Path = getPlaylistFolderPath().resolve("playlist.xml");
-
-            PlaylistConverterV1ToV2 converter = new PlaylistConverterV1ToV2(playlistV1Path);
-
-            if(converter.hasErrorMessages())
-            {
-                mLog.error("Playlist version 1 conversion errors: " + converter.getErrorMessages());
-            }
-
-            playlist = converter.getConvertedPlaylist();
-
-            saveRequired = true;
-        }
-
         transferPlaylistToModels(playlist);
-
-        if(saveRequired)
-        {
-            schedulePlaylistSave();
-        }
     }
 
     /**
@@ -297,8 +269,6 @@ public class PlaylistManager implements ChannelEventListener
         playlist.setChannels(mChannelModel.getChannels());
         playlist.setChannelMaps(mChannelMapModel.getChannelMaps());
 
-        JAXBContext context = null;
-
         //Create a backup copy of the current playlist
         if(Files.exists(getPlaylistPath()))
         {
@@ -329,14 +299,11 @@ public class PlaylistManager implements ChannelEventListener
 
         try(OutputStream out = Files.newOutputStream(getPlaylistPath()))
         {
-            context = JAXBContext.newInstance(PlaylistV2.class);
-
-            Marshaller m = context.createMarshaller();
-
-            m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-
-            m.marshal(playlist, out);
-
+            JacksonXmlModule xmlModule = new JacksonXmlModule();
+            xmlModule.setDefaultUseWrapper(false);
+            ObjectMapper objectMapper = new XmlMapper(xmlModule);
+            objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+            objectMapper.writeValue(out, playlist);
             out.flush();
 
             //Remove the playlist lock file to indicate that we successfully saved the file
@@ -344,11 +311,6 @@ public class PlaylistManager implements ChannelEventListener
             {
                 Files.delete(getPlaylistLockPath());
             }
-        }
-        catch(JAXBException je)
-        {
-            mLog.error("JAXB exception while serializing the playlist to a file [" + getPlaylistPath().toString() +
-                "]", je);
         }
         catch(IOException ioe)
         {
@@ -395,19 +357,13 @@ public class PlaylistManager implements ChannelEventListener
 
         if(Files.exists(getPlaylistPath()))
         {
-            JAXBContext context = null;
+            JacksonXmlModule xmlModule = new JacksonXmlModule();
+            xmlModule.setDefaultUseWrapper(false);
+            ObjectMapper objectMapper = new XmlMapper(xmlModule);
 
             try(InputStream in = Files.newInputStream(getPlaylistPath()))
             {
-                context = JAXBContext.newInstance(PlaylistV2.class);
-
-                Unmarshaller m = context.createUnmarshaller();
-
-                playlist = (PlaylistV2) m.unmarshal(in);
-            }
-            catch(JAXBException je)
-            {
-                mLog.error("JAXB exception while loading/unmarshalling playlist", je);
+                playlist = objectMapper.readValue(in, PlaylistV2.class);
             }
             catch(IOException ioe)
             {

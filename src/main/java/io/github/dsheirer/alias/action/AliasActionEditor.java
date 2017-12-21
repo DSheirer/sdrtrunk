@@ -18,13 +18,13 @@
 package io.github.dsheirer.alias.action;
 
 import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.gui.editor.Editor;
-import io.github.dsheirer.gui.editor.EmptyEditor;
-import net.miginfocom.swing.MigLayout;
 import io.github.dsheirer.alias.AliasEvent;
 import io.github.dsheirer.alias.AliasEvent.Event;
 import io.github.dsheirer.alias.AliasFactory;
 import io.github.dsheirer.alias.AliasModel;
+import io.github.dsheirer.gui.editor.Editor;
+import io.github.dsheirer.gui.editor.EmptyEditor;
+import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;

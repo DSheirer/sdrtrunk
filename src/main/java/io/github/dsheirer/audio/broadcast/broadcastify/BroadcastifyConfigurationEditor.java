@@ -19,6 +19,7 @@
 package io.github.dsheirer.audio.broadcast.broadcastify;
 
 import com.radioreference.api.soap2.UserFeedBroadcast;
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastConfigurationEditor;
 import io.github.dsheirer.audio.broadcast.BroadcastEvent;
@@ -29,7 +30,6 @@ import io.github.dsheirer.sample.Listener;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.alias.AliasModel;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;

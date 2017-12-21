@@ -17,6 +17,8 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.lj1200;
 
+import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.edac.CRC;
 import io.github.dsheirer.edac.CRCLJ;
@@ -24,8 +26,6 @@ import io.github.dsheirer.map.Plottable;
 import io.github.dsheirer.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.alias.AliasList;
 
 import java.util.ArrayList;
 import java.util.List;

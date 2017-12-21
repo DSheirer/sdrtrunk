@@ -1,22 +1,25 @@
 /*******************************************************************************
  *     SDR Trunk 
  *     Copyright (C) 2014-2016 Dennis Sheirer
- * 
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
 package io.github.dsheirer.alias;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import io.github.dsheirer.alias.action.AliasAction;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.AliasIDType;
@@ -24,283 +27,184 @@ import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.alias.id.nonrecordable.NonRecordable;
 import io.github.dsheirer.alias.id.priority.Priority;
 
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlSeeAlso;
-import javax.xml.bind.annotation.XmlTransient;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-@XmlSeeAlso( { AliasID.class, AliasAction.class } )
-@XmlRootElement( name = "alias")
+@JacksonXmlRootElement(localName = "alias")
 public class Alias
 {
-	private String mList;
-	private String mGroup;
-	private String mName;
-	private int mColor;
-	private String mIconName;
-	private List<AliasID> mAliasIDs = new ArrayList<AliasID>();
-	private List<AliasAction> mAliasActions = new ArrayList<AliasAction>();
-	
-	public Alias()
-	{
-	}
+    private String mList;
+    private String mGroup;
+    private String mName;
+    private int mColor;
+    private String mIconName;
+    private List<AliasID> mAliasIDs = new ArrayList<AliasID>();
+    private List<AliasAction> mAliasActions = new ArrayList<AliasAction>();
 
-	public Alias( String name )
-	{
-		mName = name;
-	}
-	
-	public String toString()
-	{
-		return getName();
-	}
+    public Alias()
+    {
+    }
 
-	@XmlAttribute( name="name" )
-	public String getName()
-	{
-		return mName;
-	}
-	
-	public void setName( String name )
-	{
-		mName = name;
-	}
+    public Alias(String name)
+    {
+        mName = name;
+    }
 
-	@XmlAttribute( name="list" )
-	public String getList()
-	{
-		return mList;
-	}
-	
-	public void setList( String list )
-	{
-		mList = list;
-	}
-	
-	public boolean hasList()
-	{
-		return mList != null;
-	}
+    public String toString()
+    {
+        return getName();
+    }
 
-	@XmlAttribute( name="group" )
-	public String getGroup()
-	{
-		return mGroup;
-	}
-	
-	public void setGroup( String group )
-	{
-		mGroup = group;
-	}
-	
-	public boolean hasGroup()
-	{
-		return mGroup != null;
-	}
+    @JacksonXmlProperty(isAttribute = true, localName = "name")
+    public String getName()
+    {
+        return mName;
+    }
 
-	@XmlAttribute
-	public int getColor()
-	{
-		return mColor;
-	}
+    public void setName(String name)
+    {
+        mName = name;
+    }
 
-	public void setColor( int color )
-	{
-		mColor = color;
-	}
+    @JacksonXmlProperty(isAttribute = true, localName = "list")
+    public String getList()
+    {
+        return mList;
+    }
 
-	public Color getDisplayColor()
-	{
-		return new Color( getColor() );
-	}
-	
-	@XmlAttribute
-	public String getIconName()
-	{
-		return mIconName;
-	}
-	
-	public void setIconName( String iconName )
-	{
-		mIconName = iconName;
-	}
-	
-	@XmlElement( name="id" )
-	public List<AliasID> getId()
-	{
-		return mAliasIDs;
-	}
-	
-	public void setId( ArrayList<AliasID> id )
-	{
-		mAliasIDs = id;
-	}
-	
-	public void addAliasID( AliasID id )
-	{
-		mAliasIDs.add( id );
-	}
-	
-	public void removeAliasID( AliasID id )
-	{
-		mAliasIDs.remove( id );
-	}
-	
-	@XmlElement( name="action" )
-	public List<AliasAction> getAction()
-	{
-		return mAliasActions;
-	}
-	
-	public void setAction( List<AliasAction> actions )
-	{
-		mAliasActions = actions;
-	}
-	
-	public void addAliasAction( AliasAction action )
-	{
-		mAliasActions.add( action );
-	}
-	
-	public void removeAliasAction( AliasAction action )
-	{
-		mAliasActions.remove( action );
-	}
-	
-	public boolean hasActions()
-	{
-		return !mAliasActions.isEmpty();
-	}
+    public void setList(String list)
+    {
+        mList = list;
+    }
 
-	/**
-	 * Perform any validation/cleanup actions on this alias.
-	 */
-	public void validate()
-	{
-	}
-	/**
-	 * Returns the priority level of this alias, if defined, or the default priority
-	 */
-	@XmlTransient
-	public int getCallPriority()
-	{
-		for( AliasID id: mAliasIDs )
-		{
-			if( id.getType() == AliasIDType.PRIORITY)
-			{
-				return ((Priority)id).getPriority();
-			}
-		}
-		
-		return Priority.DEFAULT_PRIORITY;
-	}
-	
-	public boolean hasCallPriority()
-	{
-		for( AliasID id: mAliasIDs )
-		{
-			if( id.getType() == AliasIDType.PRIORITY)
-			{
-				return true;
-			}
-		}
+    public boolean hasList()
+    {
+        return mList != null;
+    }
 
-		return false;
-	}
+    @JacksonXmlProperty(isAttribute = true, localName = "group")
+    public String getGroup()
+    {
+        return mGroup;
+    }
 
-	/**
-	 * Sets or updates the call priority
-	 */
-	public void setCallPriority( int priority )
-	{
-		if( priority == Priority.DO_NOT_MONITOR ||
-			( Priority.MIN_PRIORITY <= priority && priority <= Priority.MAX_PRIORITY ) )
-		{
-			for( AliasID id: mAliasIDs )
-			{
-				if( id.getType() == AliasIDType.PRIORITY)
-				{
-					((Priority)id).setPriority( priority );
-					return;
-				}
-			}
-			
-			//If we don't find a priority id, create one
-			Priority p = new Priority();
-			p.setPriority( priority );
-			addAliasID( p );
-		}
-	}
+    public void setGroup(String group)
+    {
+        mGroup = group;
+    }
 
-	/**
-	 * Inspects the alias for a non-recordable alias id.  Default is true;
-	 */
-	@XmlTransient
-	public boolean isRecordable()
-	{
-		for( AliasID id: getId() )
-		{
-			if( id.getType() == AliasIDType.NON_RECORDABLE)
-			{
-				return false;
-			}
-		}
-		
-		return true;
-	}
+    public boolean hasGroup()
+    {
+        return mGroup != null;
+    }
 
-	/**
-	 * Sets or removes the non-recordable alias ID for this alias.
-	 */
-	public void setRecordable( boolean recordable )
-	{
-		if( recordable )
-		{
-			AliasID toRemove = null;
-			
-			for( AliasID id: getId() )
-			{
-				if( id.getType() == AliasIDType.NON_RECORDABLE)
-				{
-					toRemove = id;
-					break;
-				}
-			}
-			
-			if( toRemove != null )
-			{
-				removeAliasID( toRemove );
-			}
-		}
-		else
-		{
-			for( AliasID id: getId() )
-			{
-				if( id.getType() == AliasIDType.NON_RECORDABLE)
-				{
-					return;
-				}
-			}
-			
-			addAliasID( new NonRecordable() );
-		}
-	}
+    @JacksonXmlProperty(isAttribute = true, localName = "color")
+    public int getColor()
+    {
+        return mColor;
+    }
+
+    public void setColor(int color)
+    {
+        mColor = color;
+    }
+
+    @JsonIgnore
+    public Color getDisplayColor()
+    {
+        return new Color(getColor());
+    }
+
+    @JacksonXmlProperty(isAttribute = true, localName = "iconName")
+    public String getIconName()
+    {
+        return mIconName;
+    }
+
+    public void setIconName(String iconName)
+    {
+        mIconName = iconName;
+    }
+
+    @JacksonXmlProperty(isAttribute = false, localName = "id")
+    public List<AliasID> getId()
+    {
+        return mAliasIDs;
+    }
+
+    public void setId(ArrayList<AliasID> id)
+    {
+        mAliasIDs = id;
+    }
+
+    public void addAliasID(AliasID id)
+    {
+        mAliasIDs.add(id);
+    }
+
+    public void removeAliasID(AliasID id)
+    {
+        mAliasIDs.remove(id);
+    }
+
+    @JacksonXmlProperty(isAttribute = false, localName = "action")
+    public List<AliasAction> getAction()
+    {
+        return mAliasActions;
+    }
+
+    public void setAction(List<AliasAction> actions)
+    {
+        mAliasActions = actions;
+    }
+
+    public void addAliasAction(AliasAction action)
+    {
+        mAliasActions.add(action);
+    }
+
+    public void removeAliasAction(AliasAction action)
+    {
+        mAliasActions.remove(action);
+    }
+
+    public boolean hasActions()
+    {
+        return !mAliasActions.isEmpty();
+    }
 
     /**
-     * Inspects the alias for broadcast channel/streamable alias ids.  Default is false;
+     * Perform any validation/cleanup actions on this alias.
      */
-    @XmlTransient
-    public boolean isStreamable()
+    public void validate()
     {
-        for( AliasID id: getId() )
+    }
+
+    /**
+     * Returns the priority level of this alias, if defined, or the default priority
+     */
+    @JsonIgnore
+    public int getCallPriority()
+    {
+        for(AliasID id : mAliasIDs)
         {
-            if( id.getType() == AliasIDType.BROADCAST_CHANNEL)
+            if(id.getType() == AliasIDType.PRIORITY)
+            {
+                return ((Priority)id).getPriority();
+            }
+        }
+
+        return Priority.DEFAULT_PRIORITY;
+    }
+
+    public boolean hasCallPriority()
+    {
+        for(AliasID id : mAliasIDs)
+        {
+            if(id.getType() == AliasIDType.PRIORITY)
             {
                 return true;
             }
@@ -310,43 +214,138 @@ public class Alias
     }
 
     /**
-	 * List of broadcast channels specified for this alias.
-	 */
-    @XmlTransient
-	public Set<BroadcastChannel> getBroadcastChannels()
-	{
-		Set<BroadcastChannel> broadcastChannels = new TreeSet<>();
+     * Sets or updates the call priority
+     */
+    public void setCallPriority(int priority)
+    {
+        if(priority == Priority.DO_NOT_MONITOR ||
+            (Priority.MIN_PRIORITY <= priority && priority <= Priority.MAX_PRIORITY))
+        {
+            for(AliasID id : mAliasIDs)
+            {
+                if(id.getType() == AliasIDType.PRIORITY)
+                {
+                    ((Priority)id).setPriority(priority);
+                    return;
+                }
+            }
 
-		for(AliasID id: getId())
-		{
-			if(id.getType() == AliasIDType.BROADCAST_CHANNEL)
-			{
-				broadcastChannels.add((BroadcastChannel)id);
-			}
-		}
+            //If we don't find a priority id, create one
+            Priority p = new Priority();
+            p.setPriority(priority);
+            addAliasID(p);
+        }
+    }
 
-		return broadcastChannels;
-	}
+    /**
+     * Inspects the alias for a non-recordable alias id.  Default is true;
+     */
+    @JsonIgnore
+    public boolean isRecordable()
+    {
+        for(AliasID id : getId())
+        {
+            if(id.getType() == AliasIDType.NON_RECORDABLE)
+            {
+                return false;
+            }
+        }
 
-	/**
-	 * Indicates if this alias contains a broadcast channel alias id with the channel name.
-	 */
-	public boolean hasBroadcastChannel(String channel)
-	{
-		if(channel == null || channel.isEmpty())
-		{
-			return false;
-		}
+        return true;
+    }
 
-		for(AliasID id: getId())
-		{
-			if(id.getType() == AliasIDType.BROADCAST_CHANNEL &&
-			   ((BroadcastChannel)id).getChannelName().contentEquals(channel))
-			{
-				return true;
-			}
-		}
+    /**
+     * Sets or removes the non-recordable alias ID for this alias.
+     */
+    public void setRecordable(boolean recordable)
+    {
+        if(recordable)
+        {
+            AliasID toRemove = null;
 
-		return false;
-	}
+            for(AliasID id : getId())
+            {
+                if(id.getType() == AliasIDType.NON_RECORDABLE)
+                {
+                    toRemove = id;
+                    break;
+                }
+            }
+
+            if(toRemove != null)
+            {
+                removeAliasID(toRemove);
+            }
+        }
+        else
+        {
+            for(AliasID id : getId())
+            {
+                if(id.getType() == AliasIDType.NON_RECORDABLE)
+                {
+                    return;
+                }
+            }
+
+            addAliasID(new NonRecordable());
+        }
+    }
+
+    /**
+     * Inspects the alias for broadcast channel/streamable alias ids.  Default is false;
+     */
+    @JsonIgnore
+    public boolean isStreamable()
+    {
+        for(AliasID id : getId())
+        {
+            if(id.getType() == AliasIDType.BROADCAST_CHANNEL)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * List of broadcast channels specified for this alias.
+     */
+    @JsonIgnore
+    public Set<BroadcastChannel> getBroadcastChannels()
+    {
+        Set<BroadcastChannel> broadcastChannels = new TreeSet<>();
+
+        for(AliasID id : getId())
+        {
+            if(id.getType() == AliasIDType.BROADCAST_CHANNEL)
+            {
+                broadcastChannels.add((BroadcastChannel)id);
+            }
+        }
+
+        return broadcastChannels;
+    }
+
+    /**
+     * Indicates if this alias contains a broadcast channel alias id with the channel name.
+     */
+    public boolean hasBroadcastChannel(String channel)
+    {
+        if(channel == null || channel.isEmpty())
+        {
+            return false;
+        }
+
+        for(AliasID id : getId())
+        {
+            if(id.getType() == AliasIDType.BROADCAST_CHANNEL &&
+                ((BroadcastChannel)id).getChannelName().contentEquals(channel))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }

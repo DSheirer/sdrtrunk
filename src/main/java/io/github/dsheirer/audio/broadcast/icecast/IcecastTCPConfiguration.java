@@ -18,6 +18,9 @@
  ******************************************************************************/
 package io.github.dsheirer.audio.broadcast.icecast;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastFormat;
 import io.github.dsheirer.audio.broadcast.BroadcastServerType;
@@ -25,9 +28,10 @@ import io.github.dsheirer.audio.broadcast.broadcastify.BroadcastifyConfiguration
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.bind.annotation.XmlSeeAlso;
-
-@XmlSeeAlso( {BroadcastifyConfiguration.class } )
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonSubTypes({
+    @JsonSubTypes.Type(value = BroadcastifyConfiguration.class, name="broadcastifyConfiguration"),
+})
 public class IcecastTCPConfiguration extends IcecastConfiguration
 {
     private final static Logger mLog = LoggerFactory.getLogger( IcecastTCPConfiguration.class );
@@ -70,6 +74,7 @@ public class IcecastTCPConfiguration extends IcecastConfiguration
         return copy;
     }
 
+    @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
     @Override
     public BroadcastServerType getBroadcastServerType()
     {

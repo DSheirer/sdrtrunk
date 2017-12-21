@@ -17,9 +17,9 @@
  ******************************************************************************/
 package io.github.dsheirer.alias.id.siteID;
 
+import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.gui.editor.DocumentListenerEditor;
 import net.miginfocom.swing.MigLayout;
-import io.github.dsheirer.alias.id.AliasID;
 
 import javax.swing.*;
 import java.awt.*;

@@ -18,11 +18,11 @@
  ******************************************************************************/
 package io.github.dsheirer.alias.id.broadcast;
 
+import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.audio.broadcast.BroadcastConfiguration;
 import io.github.dsheirer.audio.broadcast.BroadcastModel;
 import io.github.dsheirer.gui.editor.DocumentListenerEditor;
 import net.miginfocom.swing.MigLayout;
-import io.github.dsheirer.alias.id.AliasID;
 
 import javax.swing.*;
 import java.awt.*;

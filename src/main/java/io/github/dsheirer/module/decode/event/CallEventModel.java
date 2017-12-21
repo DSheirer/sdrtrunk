@@ -17,8 +17,8 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.event;
 
-import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.sample.Listener;
 
 import javax.swing.table.AbstractTableModel;
 import java.text.DecimalFormat;

@@ -1,7 +1,7 @@
 package io.github.dsheirer.spectrum.menu;
 
-import io.github.dsheirer.spectrum.DFTProcessor;
 import io.github.dsheirer.dsp.filter.Window.WindowType;
+import io.github.dsheirer.spectrum.DFTProcessor;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;

@@ -18,6 +18,8 @@
  ******************************************************************************/
 package io.github.dsheirer.spectrum;
 
+import io.github.dsheirer.dsp.filter.Window;
+import io.github.dsheirer.dsp.filter.Window.WindowType;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Buffer;
 import io.github.dsheirer.sample.Listener;
@@ -30,8 +32,6 @@ import io.github.dsheirer.util.ThreadPool;
 import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.dsp.filter.Window;
-import io.github.dsheirer.dsp.filter.Window.WindowType;
 
 import java.util.Arrays;
 import java.util.Iterator;

@@ -18,6 +18,9 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.mdc1200;
 
+import io.github.dsheirer.alias.Alias;
+import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.channel.metadata.AliasedStringAttributeMonitor;
 import io.github.dsheirer.channel.metadata.Attribute;
 import io.github.dsheirer.channel.metadata.AttributeChangeRequest;
@@ -28,9 +31,6 @@ import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.util.StringUtils;
-import io.github.dsheirer.alias.Alias;
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.alias.id.AliasIDType;
 
 import java.util.Iterator;
 import java.util.TreeSet;

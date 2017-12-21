@@ -17,11 +17,11 @@
  ******************************************************************************/
 package io.github.dsheirer.alias.id.lojack;
 
-import io.github.dsheirer.gui.editor.DocumentListenerEditor;
-import net.miginfocom.swing.MigLayout;
 import io.github.dsheirer.alias.id.AliasID;
+import io.github.dsheirer.gui.editor.DocumentListenerEditor;
 import io.github.dsheirer.module.decode.lj1200.LJ1200Message;
 import io.github.dsheirer.module.decode.lj1200.LJ1200Message.Function;
+import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
 import javax.swing.text.MaskFormatter;

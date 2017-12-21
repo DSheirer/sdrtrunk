@@ -18,13 +18,13 @@
  ******************************************************************************/
 package io.github.dsheirer.channel.metadata;
 
-import io.github.dsheirer.channel.state.State;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.alias.id.priority.Priority;
+import io.github.dsheirer.channel.state.State;
 import io.github.dsheirer.module.decode.DecoderType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 import java.util.TreeSet;

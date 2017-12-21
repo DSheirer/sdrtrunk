@@ -17,10 +17,10 @@
  ******************************************************************************/
 package io.github.dsheirer.instrument.tap.stream;
 
+import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.instrument.gui.SampleModel;
 import io.github.dsheirer.instrument.tap.Tap;
 import io.github.dsheirer.instrument.tap.TapViewPanel;
-import io.github.dsheirer.dsp.symbol.Dibit;
 
 import java.awt.*;
 import java.awt.geom.Path2D;

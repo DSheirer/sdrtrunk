@@ -18,11 +18,9 @@
 package io.github.dsheirer.alias.id.talkgroup;
 
 
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.alias.id.AliasID;
 import io.github.dsheirer.alias.id.AliasIDType;
-
-import javax.xml.bind.annotation.XmlAttribute;
-
 
 public class TalkgroupID extends AliasID
 {
@@ -38,7 +36,7 @@ public class TalkgroupID extends AliasID
         mTalkgroup = talkgroup;
     }
 
-    @XmlAttribute
+    @JacksonXmlProperty(isAttribute = true, localName = "talkgroup")
     public String getTalkgroup()
     {
         return mTalkgroup;
@@ -71,7 +69,7 @@ public class TalkgroupID extends AliasID
 
         if(id instanceof TalkgroupID)
         {
-            TalkgroupID tgid = (TalkgroupID) id;
+            TalkgroupID tgid = (TalkgroupID)id;
 
             //Create a pattern - replace * wildcards with regex single-char wildcard
             String pattern = mTalkgroup.replace("*", ".?");
@@ -82,6 +80,7 @@ public class TalkgroupID extends AliasID
         return retVal;
     }
 
+    @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
     @Override
     public AliasIDType getType()
     {

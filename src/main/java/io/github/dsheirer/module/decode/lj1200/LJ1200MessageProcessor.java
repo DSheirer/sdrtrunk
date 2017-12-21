@@ -17,12 +17,12 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.lj1200;
 
+import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.BinaryMessage;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.alias.AliasList;
 
 public class LJ1200MessageProcessor implements Listener<BinaryMessage>
 {

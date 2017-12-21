@@ -17,6 +17,13 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25;
 
+import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.dsp.filter.FilterFactory;
+import io.github.dsheirer.dsp.filter.Window.WindowType;
+import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter_CB_CB;
+import io.github.dsheirer.dsp.gain.ComplexFeedForwardGainControl;
+import io.github.dsheirer.dsp.psk.LSMDemodulator;
+import io.github.dsheirer.dsp.psk.QPSKPolarSlicer;
 import io.github.dsheirer.instrument.tap.Tap;
 import io.github.dsheirer.instrument.tap.TapGroup;
 import io.github.dsheirer.instrument.tap.stream.ComplexSampleTap;
@@ -30,13 +37,6 @@ import io.github.dsheirer.sample.complex.IComplexBufferListener;
 import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.dsp.filter.FilterFactory;
-import io.github.dsheirer.dsp.filter.Window.WindowType;
-import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter_CB_CB;
-import io.github.dsheirer.dsp.gain.ComplexFeedForwardGainControl;
-import io.github.dsheirer.dsp.psk.LSMDemodulator;
-import io.github.dsheirer.dsp.psk.QPSKPolarSlicer;
 
 import java.util.ArrayList;
 import java.util.List;

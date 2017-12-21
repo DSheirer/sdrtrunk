@@ -6,8 +6,8 @@ import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.decode.p25.message.tsbk.TSBKMessage;
 import io.github.dsheirer.module.decode.p25.message.tsbk.motorola.MotorolaOpcode;
-import io.github.dsheirer.module.decode.p25.reference.Opcode;
 import io.github.dsheirer.module.decode.p25.message.tsbk.vendor.VendorOpcode;
+import io.github.dsheirer.module.decode.p25.reference.Opcode;
 import io.github.dsheirer.module.decode.p25.reference.Vendor;
 
 import java.util.ArrayList;

@@ -1,10 +1,10 @@
 package io.github.dsheirer.module.decode.p25.message.ldu.lc;
 
+import io.github.dsheirer.module.decode.p25.message.ldu.LDU1Message;
 import io.github.dsheirer.module.decode.p25.reference.ExtendedFunction;
+import io.github.dsheirer.module.decode.p25.reference.LinkControlOpcode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.module.decode.p25.message.ldu.LDU1Message;
-import io.github.dsheirer.module.decode.p25.reference.LinkControlOpcode;
 
 public class ExtendedFunctionCommand extends LDU1Message
 {

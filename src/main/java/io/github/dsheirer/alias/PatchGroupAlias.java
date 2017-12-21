@@ -20,12 +20,12 @@ package io.github.dsheirer.alias;
 
 import io.github.dsheirer.alias.action.AliasAction;
 import io.github.dsheirer.alias.id.AliasID;
+import io.github.dsheirer.alias.id.AliasIDType;
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
 import io.github.dsheirer.alias.id.priority.Priority;
 import io.github.dsheirer.alias.id.talkgroup.TalkgroupID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.alias.id.AliasIDType;
 
 import java.util.ArrayList;
 import java.util.List;

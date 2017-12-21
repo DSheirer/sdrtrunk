@@ -18,9 +18,9 @@
  ******************************************************************************/
 package io.github.dsheirer.audio.broadcast;
 
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.gui.editor.DocumentListenerEditor;
 import io.github.dsheirer.icon.IconManager;
-import io.github.dsheirer.alias.AliasModel;
 
 import javax.swing.*;
 

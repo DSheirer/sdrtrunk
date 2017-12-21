@@ -18,12 +18,12 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message.tdu.lc;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import io.github.dsheirer.module.decode.p25.message.IBandIdentifier;
 import io.github.dsheirer.module.decode.p25.message.IdentifierReceiver;
 import io.github.dsheirer.module.decode.p25.message.tsbk.osp.control.SystemService;
 import io.github.dsheirer.module.decode.p25.reference.LinkControlOpcode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RFSSStatusBroadcastExplicit extends TDULinkControlMessage implements IdentifierReceiver
 {

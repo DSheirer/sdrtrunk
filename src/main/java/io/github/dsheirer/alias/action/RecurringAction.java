@@ -1,11 +1,11 @@
 package io.github.dsheirer.alias.action;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.message.Message;
 
 import javax.swing.*;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlTransient;
 import java.awt.*;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -14,11 +14,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class RecurringAction extends AliasAction
 {
-    @XmlTransient
+    @JsonIgnore
     protected AtomicBoolean mRunning = new AtomicBoolean(false);
-    @XmlTransient
+    @JsonIgnore
     private ScheduledFuture<?> mPerpetualAction;
-    @XmlTransient
+    @JsonIgnore
     protected ScheduledExecutorService mScheduledExecutorService;
 
     protected Interval mInterval = Interval.ONCE;
@@ -107,7 +107,7 @@ public abstract class RecurringAction extends AliasAction
         }
     }
 
-    @XmlAttribute
+    @JacksonXmlProperty(isAttribute = true, localName = "period")
     public int getPeriod()
     {
         return mPeriod;
@@ -118,7 +118,7 @@ public abstract class RecurringAction extends AliasAction
         mPeriod = period;
     }
 
-    @XmlAttribute
+    @JacksonXmlProperty(isAttribute = true, localName = "interval")
     public Interval getInterval()
     {
         return mInterval;
@@ -164,8 +164,8 @@ public abstract class RecurringAction extends AliasAction
         @Override
         public void run()
         {
-			/* Don't use the performThreadedAction() method, since this is
-			 * already running in a separate thread */
+            /* Don't use the performThreadedAction() method, since this is
+             * already running in a separate thread */
             performAction(mAlias, mMessage);
         }
     }

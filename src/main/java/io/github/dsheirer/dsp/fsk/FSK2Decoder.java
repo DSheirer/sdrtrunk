@@ -18,6 +18,8 @@
 package io.github.dsheirer.dsp.fsk;
 
 import io.github.dsheirer.buffer.BooleanAveragingBuffer;
+import io.github.dsheirer.dsp.symbol.SymbolEvent;
+import io.github.dsheirer.dsp.symbol.SymbolEvent.Shift;
 import io.github.dsheirer.instrument.Instrumentable;
 import io.github.dsheirer.instrument.tap.Tap;
 import io.github.dsheirer.instrument.tap.TapGroup;
@@ -26,8 +28,6 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.real.RealBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.dsp.symbol.SymbolEvent;
-import io.github.dsheirer.dsp.symbol.SymbolEvent.Shift;
 
 import java.util.ArrayList;
 import java.util.BitSet;

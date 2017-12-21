@@ -19,13 +19,13 @@
 package io.github.dsheirer.audio.broadcast;
 
 import com.jidesoft.swing.JideSplitPane;
+import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.gui.editor.Editor;
 import io.github.dsheirer.gui.editor.EmptyEditor;
 import io.github.dsheirer.icon.IconManager;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.github.dsheirer.alias.AliasModel;
 
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;

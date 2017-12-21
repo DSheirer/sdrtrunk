@@ -17,43 +17,18 @@
  ******************************************************************************/
 package io.github.dsheirer.settings;
 
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import io.github.dsheirer.map.DefaultIcon;
 import io.github.dsheirer.map.MapIcon;
 import io.github.dsheirer.settings.ColorSetting.ColorSettingName;
 import io.github.dsheirer.source.recording.RecordingConfiguration;
-import io.github.dsheirer.source.tuner.airspy.AirspyTunerConfiguration;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
-import io.github.dsheirer.source.tuner.fcd.proV1.FCD1TunerConfiguration;
-import io.github.dsheirer.source.tuner.fcd.proplusV2.FCD2TunerConfiguration;
-import io.github.dsheirer.source.tuner.hackrf.HackRFTunerConfiguration;
-import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerConfiguration;
-import io.github.dsheirer.source.tuner.rtl.r820t.R820TTunerConfiguration;
 
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlSeeAlso;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Support for persisting via JAXB all configured SDRTrunk settings
- */
-@XmlSeeAlso( { AirspyTunerConfiguration.class,
-			   ColorSetting.class,
-			   DefaultIcon.class,
-			   E4KTunerConfiguration.class,
-			   FCD1TunerConfiguration.class,
-			   FCD2TunerConfiguration.class,
-			   FileSetting.class,
-			   HackRFTunerConfiguration.class,
-			   MapViewSetting.class,
-			   MapIcon.class,
-			   R820TTunerConfiguration.class,
-			   RecordingConfiguration.class,
-			   Setting.class,
-			   TunerConfiguration.class } )
-
-@XmlRootElement( name = "SDRTrunk_settings" )
+@JacksonXmlRootElement( localName = "SDRTrunk_settings" )
 public class Settings
 {
 	private List<Setting> mSettings = new ArrayList<Setting>();
@@ -68,7 +43,7 @@ public class Settings
 	{
 	}
 
-	@XmlElement( name="recording_configuration" )
+	@JacksonXmlProperty(isAttribute = false, localName = "recording_configuration")
 	public List<RecordingConfiguration> getRecordingConfigurations()
 	{
 		return mRecordingConfigurations;
@@ -88,8 +63,8 @@ public class Settings
 	{
 		mRecordingConfigurations.remove( config );
 	}
-	
-	@XmlElement( name="tuner_configuration" )
+
+	@JacksonXmlProperty(isAttribute = false, localName = "tuner_configuration")
 	public List<TunerConfiguration> getTunerConfigurations()
 	{
 		return mTunerConfiguration;
@@ -99,8 +74,8 @@ public class Settings
 	{
 		mTunerConfiguration = configs;
 	}
-    
-	@XmlElement( name="setting" )
+
+	@JacksonXmlProperty(isAttribute = false, localName = "setting")
 	public List<Setting> getSettings()
 	{
 		return mSettings;

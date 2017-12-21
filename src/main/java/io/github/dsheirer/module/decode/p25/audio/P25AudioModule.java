@@ -6,19 +6,19 @@ import io.github.dsheirer.audio.IAudioPacketProvider;
 import io.github.dsheirer.audio.squelch.ISquelchStateListener;
 import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.channel.metadata.Metadata;
+import io.github.dsheirer.dsp.gain.NonClippingGain;
 import io.github.dsheirer.message.IMessageListener;
 import io.github.dsheirer.message.Message;
-import io.github.dsheirer.sample.Listener;
-import jmbe.iface.AudioConversionLibrary;
-import jmbe.iface.AudioConverter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import io.github.dsheirer.dsp.gain.NonClippingGain;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.p25.message.hdu.HDUMessage;
 import io.github.dsheirer.module.decode.p25.message.ldu.LDU1Message;
 import io.github.dsheirer.module.decode.p25.message.ldu.LDU2Message;
 import io.github.dsheirer.module.decode.p25.message.ldu.LDUMessage;
+import io.github.dsheirer.sample.Listener;
+import jmbe.iface.AudioConversionLibrary;
+import jmbe.iface.AudioConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ScheduledExecutorService;
 

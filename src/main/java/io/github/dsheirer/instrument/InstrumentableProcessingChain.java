@@ -21,9 +21,9 @@ package io.github.dsheirer.instrument;
 import io.github.dsheirer.controller.channel.Channel.ChannelType;
 import io.github.dsheirer.instrument.tap.Tap;
 import io.github.dsheirer.instrument.tap.TapGroup;
-import io.github.dsheirer.source.Source;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.ProcessingChain;
+import io.github.dsheirer.source.Source;
 
 import java.util.ArrayList;
 import java.util.List;

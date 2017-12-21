@@ -17,9 +17,9 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.fleetsync2;
 
-import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.alias.Alias;
 import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.event.CallEvent;
 
 public class FleetsyncCallEvent extends CallEvent

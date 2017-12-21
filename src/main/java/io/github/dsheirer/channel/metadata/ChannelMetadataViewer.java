@@ -23,11 +23,11 @@ import com.jidesoft.swing.JideTabbedPane;
 import io.github.dsheirer.channel.details.ChannelDetailPanel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.icon.IconManager;
+import io.github.dsheirer.module.decode.event.CallEventPanel;
+import io.github.dsheirer.module.decode.event.MessageActivityPanel;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.spectrum.ChannelSpectrumPanel;
 import net.miginfocom.swing.MigLayout;
-import io.github.dsheirer.module.decode.event.CallEventPanel;
-import io.github.dsheirer.module.decode.event.MessageActivityPanel;
 
 import javax.swing.*;
 import java.awt.*;

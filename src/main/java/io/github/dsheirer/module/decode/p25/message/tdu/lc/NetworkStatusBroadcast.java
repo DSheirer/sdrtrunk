@@ -18,10 +18,10 @@
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25.message.tdu.lc;
 
-import io.github.dsheirer.module.decode.p25.reference.Service;
 import io.github.dsheirer.module.decode.p25.message.IBandIdentifier;
 import io.github.dsheirer.module.decode.p25.message.IdentifierReceiver;
 import io.github.dsheirer.module.decode.p25.reference.LinkControlOpcode;
+import io.github.dsheirer.module.decode.p25.reference.Service;
 
 public class NetworkStatusBroadcast extends TDULinkControlMessage implements IdentifierReceiver
 {

@@ -17,10 +17,10 @@ package io.github.dsheirer.source.tuner.frequency;
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
 
+import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.real.RealBuffer;
 import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent.Event;
-import io.github.dsheirer.module.Module;
 
 import java.util.concurrent.ScheduledExecutorService;
 

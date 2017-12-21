@@ -17,8 +17,8 @@
  ******************************************************************************/
 package io.github.dsheirer.map;
 
-import org.jdesktop.swingx.mapviewer.GeoPosition;
 import io.github.dsheirer.alias.Alias;
+import org.jdesktop.swingx.mapviewer.GeoPosition;
 
 import java.awt.*;
 import java.util.Collections;

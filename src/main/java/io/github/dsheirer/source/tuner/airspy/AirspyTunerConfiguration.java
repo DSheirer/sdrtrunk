@@ -17,12 +17,13 @@
  ******************************************************************************/
 package io.github.dsheirer.source.tuner.airspy;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.airspy.AirspyTunerController.Gain;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 
-import javax.xml.bind.annotation.XmlAttribute;
-
+@JsonSubTypes.Type(value = AirspyTunerConfiguration.class, name = "airspyTunerConfiguration")
 public class AirspyTunerConfiguration extends TunerConfiguration
 {
 	private int mSampleRate = AirspyTunerController.DEFAULT_SAMPLE_RATE.getRate();
@@ -53,7 +54,7 @@ public class AirspyTunerConfiguration extends TunerConfiguration
 	    return TunerType.AIRSPY_R820T;
     }
 
-	@XmlAttribute( name = "sample_rate" )
+	@JacksonXmlProperty(isAttribute = true, localName = "sample_rate")
 	public int getSampleRate()
 	{
 		return mSampleRate;
@@ -63,8 +64,8 @@ public class AirspyTunerConfiguration extends TunerConfiguration
 	{
 		mSampleRate = sampleRate;
 	}
-	
-	@XmlAttribute( name = "gain" )
+
+	@JacksonXmlProperty(isAttribute = true, localName = "gain")
 	public Gain getGain()
 	{
 		return mGain;
@@ -74,8 +75,8 @@ public class AirspyTunerConfiguration extends TunerConfiguration
 	{
 		mGain = gain;
 	}
-	
-	@XmlAttribute( name = "if_gain" )
+
+	@JacksonXmlProperty(isAttribute = true, localName = "if_gain")
 	public int getIFGain()
 	{
 		return mIFGain;
@@ -85,8 +86,8 @@ public class AirspyTunerConfiguration extends TunerConfiguration
 	{
 		mIFGain = gain;
 	}
-	
-	@XmlAttribute( name = "mixer_gain" )
+
+	@JacksonXmlProperty(isAttribute = true, localName = "mixer_gain")
 	public int getMixerGain()
 	{
 		return mMixerGain;
@@ -97,7 +98,7 @@ public class AirspyTunerConfiguration extends TunerConfiguration
 		mMixerGain = gain;
 	}
 
-	@XmlAttribute( name = "lna_gain" )
+	@JacksonXmlProperty(isAttribute = true, localName = "lna_gain")
 	public int getLNAGain()
 	{
 		return mLNAGain;
@@ -108,7 +109,7 @@ public class AirspyTunerConfiguration extends TunerConfiguration
 		mLNAGain = gain;
 	}
 
-	@XmlAttribute( name = "mixer_agc" )
+	@JacksonXmlProperty(isAttribute = true, localName = "mixer_agc")
 	public boolean isMixerAGC()
 	{
 		return mMixerAGC;
@@ -119,7 +120,7 @@ public class AirspyTunerConfiguration extends TunerConfiguration
 		mMixerAGC = enabled;
 	}
 
-	@XmlAttribute( name = "lna_agc" )
+	@JacksonXmlProperty(isAttribute = true, localName = "lna_agc")
 	public boolean isLNAAGC()
 	{
 		return mLNAAGC;
@@ -130,7 +131,7 @@ public class AirspyTunerConfiguration extends TunerConfiguration
 		mLNAAGC = enabled;
 	}
 
-	@XmlAttribute( name = "frequency_correction" )
+	@JacksonXmlProperty(isAttribute = true, localName = "frequency_correction")
 	public double getFrequencyCorrection()
 	{
 		return mFrequencyCorrection;
