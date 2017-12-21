@@ -16,6 +16,10 @@
  */
 package io.github.dsheirer.icon;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
@@ -24,10 +28,6 @@ import org.slf4j.LoggerFactory;
 import javax.swing.*;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
 import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
@@ -243,8 +243,6 @@ public class IconManager
     {
         IconSet iconSet = getModel().getIconSet();
 
-        JAXBContext context = null;
-
         //Create a backup copy of the current playlist
         if(Files.exists(getIconFilePath()))
         {
@@ -275,14 +273,11 @@ public class IconManager
 
         try(OutputStream out = Files.newOutputStream(getIconFilePath()))
         {
-            context = JAXBContext.newInstance(IconSet.class);
-
-            Marshaller m = context.createMarshaller();
-
-            m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-
-            m.marshal(iconSet, out);
-
+            JacksonXmlModule xmlModule = new JacksonXmlModule();
+            xmlModule.setDefaultUseWrapper(false);
+            ObjectMapper objectMapper = new XmlMapper(xmlModule);
+            objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+            objectMapper.writeValue(out, iconSet);
             out.flush();
 
             //Remove the playlist lock file to indicate that we successfully saved the file
@@ -290,10 +285,6 @@ public class IconManager
             {
                 Files.delete(getIconLockFilePath());
             }
-        }
-        catch(JAXBException je)
-        {
-            mLog.error("JAXB exception while serializing icons to a file [" + getIconFilePath().toString() + "]", je);
         }
         catch(IOException ioe)
         {
@@ -340,19 +331,13 @@ public class IconManager
 
         if(Files.exists(getIconFilePath()))
         {
-            JAXBContext context = null;
+            JacksonXmlModule xmlModule = new JacksonXmlModule();
+            xmlModule.setDefaultUseWrapper(false);
+            ObjectMapper objectMapper = new XmlMapper(xmlModule);
 
             try(InputStream in = Files.newInputStream(getIconFilePath()))
             {
-                context = JAXBContext.newInstance(IconSet.class);
-
-                Unmarshaller m = context.createUnmarshaller();
-
-                iconSet = (IconSet) m.unmarshal(in);
-            }
-            catch(JAXBException je)
-            {
-                mLog.error("JAXB exception while loading/unmarshalling icons", je);
+                iconSet = objectMapper.readValue(in, IconSet.class);
             }
             catch(IOException ioe)
             {
