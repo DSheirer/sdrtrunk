@@ -1,0 +1,73 @@
+buildscript {
+    repositories {
+        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'idea'
+
+repositories {
+    jcenter()
+    mavenCentral()
+}
+
+version = '0.3.2'
+sourceCompatibility = 1.8
+
+sourceSets {
+    main.java.srcDirs 'src/main'
+    test.java.srcDirs 'src/test'
+}
+
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+    }
+}
+
+dependencies {
+    testCompile 'junit:junit:4.12'
+    testCompile 'org.assertj:assertj-core:3.8.0'
+    compile fileTree(dir: 'imports', include: '*.jar')
+    compile 'org.apache.commons:commons-lang3:3.7'
+    compile 'org.apache.commons:commons-io:1.3.2'
+    compile 'org.slf4j:slf4j-api:1.7.25'
+    compile 'ch.qos.logback:logback-core:1.2.3'
+    compile 'ch.qos.logback:logback-classic:1.2.3'
+    compile 'com.miglayout:miglayout-swing:5.0'
+
+    compile 'org.usb4java:usb4java-javax:1.2.0'
+    compile 'org.usb4java:usb4java:1.2.0'
+    compile 'org.usb4java:libusb4java:1.2.0'
+    compile 'javax.usb:usb-api:1.0.2'
+    compile 'com.github.wendykierp:JTransforms:3.1'
+    compile 'pl.edu.icm:JLargeArrays:1.6'
+    compile 'net.coderazzi:tablefilter-swing:5.3.1'
+    compile 'com.jidesoft:jide-oss:3.4.3'
+    compile 'org.apache.mina:mina-core:2.0.16'
+    compile 'org.apache.mina:mina-http:2.0.16'
+    compile 'org.apache.axis:axis-jaxrpc:1.4'
+    compile 'org.apache.axis:axis:1.4'
+    compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.3'
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.3.1'
+}
+
+task buildSdr(type: Jar) {
+    manifest {
+        attributes 'Implementation-Title': 'SdrTrunk project',
+                'Implementation-Version': version,
+                'Main-Class': 'io.github.dsheirer.gui.SDRTrunk',
+                'Class-Path': 'jmbe-0.3.2.jar jmbe-0.3.3.jar'
+    }
+    baseName = project.name + '-all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}

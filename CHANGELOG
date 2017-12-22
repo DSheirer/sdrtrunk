@@ -1,3 +1,6 @@
+0.4.0 ........ (in progress)
+ - Changes build system from ant to gradle.  Thanks to: Roman Tsypuk https://github.com/tsypuk
+
 0.3.2 20171105
  - Resolves issue with tuner frequency adjustments that was causing channel processing
    to lockup and show persistent 'overflow' state in each channel status
@@ -43,7 +46,7 @@
  - Updated Baseband (I/Q) recording at 48 kHz
  - Added Airspy tuner support
  - New traffic channel pool manager for trunked call following
- - P25 Decoder for C4FM and LSM with trunked call following and audio 
+ - P25 Decoder for C4FM and LSM with trunked call following and audio
    decoding via the JMBE library
  - Updated MPT1327 decoder and trunked call following.
  - Updated spectral and waterfall display with zoom (2-64x) and pan and automatic
