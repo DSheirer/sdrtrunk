@@ -14,49 +14,15 @@
  * If not, see <http://www.gnu.org/licenses/>
  * *********************************************************************************************************************
  */
+
 package io.github.dsheirer.settings;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-
-import java.io.File;
-
-public class FileSetting extends Setting
+public enum SettingType
 {
-    private String mPath;
-
-    public FileSetting()
-    {
-        super();
-    }
-
-    public FileSetting(String name, String path)
-    {
-        super(name);
-        setPath(path);
-    }
-
-    @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
-    @Override
-    public SettingType getType()
-    {
-        return SettingType.FILE_SETTING;
-    }
-
-    @JacksonXmlProperty(isAttribute = true, localName = "path")
-    public String getPath()
-    {
-        return mPath;
-    }
-
-    public void setPath(String value)
-    {
-        mPath = value;
-    }
-
-    @JsonIgnore
-    public File getFile()
-    {
-        return new File(mPath);
-    }
+    COLOR_SETTING,
+    DEFAULT_ICON,
+    FILE_SETTING,
+    MAP_ICON,
+    MAP_VIEW_SETTING,
+    UNKNOWN;
 }

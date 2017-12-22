@@ -314,7 +314,10 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
      */
     public void setDecodeConfiguration(DecodeConfiguration config)
     {
-        mDecodeConfiguration = config;
+        if(config != null)
+        {
+            mDecodeConfiguration = config;
+        }
     }
 
     /**
@@ -332,7 +335,10 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
      */
     public void setAuxDecodeConfiguration(AuxDecodeConfiguration config)
     {
-        mAuxDecodeConfiguration = config;
+        if(config != null)
+        {
+            mAuxDecodeConfiguration = config;
+        }
     }
 
     /**
@@ -350,7 +356,10 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
      */
     public void setSourceConfiguration(SourceConfiguration config)
     {
-        mSourceConfiguration = config;
+        if(config != null)
+        {
+            mSourceConfiguration = config;
+        }
 
         //Clear the tune channel object so that it can be recreated if the
         //source configuration changes
@@ -371,7 +380,10 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
      */
     public void setEventLogConfiguration(EventLogConfiguration config)
     {
-        mEventLogConfiguration = config;
+        if(config != null)
+        {
+            mEventLogConfiguration = config;
+        }
     }
 
     /**
@@ -388,7 +400,10 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
      */
     public void setRecordConfiguration(RecordConfiguration config)
     {
-        mRecordConfiguration = config;
+        if(config != null)
+        {
+            mRecordConfiguration = config;
+        }
     }
 
     /**

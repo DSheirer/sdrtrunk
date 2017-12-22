@@ -18,12 +18,10 @@
 package io.github.dsheirer.settings;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 
 import java.awt.*;
 
-@JsonSubTypes.Type(value = ColorSetting.class, name = "colorSetting")
 public class ColorSetting extends Setting
 {
     private static final int NO_TRANSLUCENCY = 255;
@@ -43,6 +41,13 @@ public class ColorSetting extends Setting
     {
         setColor(name.getDefaultColor());
         setColorSettingName(name);
+    }
+
+    @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
+    @Override
+    public SettingType getType()
+    {
+        return SettingType.COLOR_SETTING;
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "colorSettingName")

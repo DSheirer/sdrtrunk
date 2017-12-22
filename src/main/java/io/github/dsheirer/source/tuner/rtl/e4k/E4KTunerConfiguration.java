@@ -17,10 +17,8 @@
  ******************************************************************************/
 package io.github.dsheirer.source.tuner.rtl.e4k;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.source.tuner.TunerType;
-import io.github.dsheirer.source.tuner.airspy.AirspyTunerConfiguration;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.RTL2832TunerController;
 import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerController.E4KEnhanceGain;
@@ -28,7 +26,6 @@ import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerController.E4KGain;
 import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerController.E4KLNAGain;
 import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerController.E4KMixerGain;
 
-@JsonSubTypes.Type(value = AirspyTunerConfiguration.class, name = "e4KTunerConfiguration")
 public class E4KTunerConfiguration extends TunerConfiguration
 {
     private E4KGain mMasterGain = E4KGain.MANUAL;
@@ -50,6 +47,7 @@ public class E4KTunerConfiguration extends TunerConfiguration
         super(uniqueID, name);
     }
 
+    @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
     @Override
     public TunerType getTunerType()
     {

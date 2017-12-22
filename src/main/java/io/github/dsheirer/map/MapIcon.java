@@ -18,19 +18,25 @@
 package io.github.dsheirer.map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.settings.Setting;
+import io.github.dsheirer.settings.SettingType;
 
 import javax.swing.*;
 import java.awt.*;
 
-@JsonSubTypes.Type(value = MapIcon.class, name = "mapIcon")
 public class MapIcon extends Setting implements Comparable<MapIcon>
 {
     private static final int sMAX_IMAGE_DIMENSION = 48;
     private String mPath;
     private ImageIcon mImageIcon;
+
+    @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
+    @Override
+    public SettingType getType()
+    {
+        return SettingType.MAP_ICON;
+    }
 
     /**
      * Only map icons created at runtime can be marked as non-editable, and
@@ -91,6 +97,7 @@ public class MapIcon extends Setting implements Comparable<MapIcon>
         mDefaultIcon = isDefault;
     }
 
+    @JsonIgnore
     public ImageIcon getImageIcon()
     {
         if(mImageIcon == null)

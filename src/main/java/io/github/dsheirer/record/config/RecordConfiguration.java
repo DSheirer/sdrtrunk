@@ -17,17 +17,13 @@
  ******************************************************************************/
 package io.github.dsheirer.record.config;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import io.github.dsheirer.controller.config.Configuration;
 import io.github.dsheirer.record.RecorderType;
 
 import java.util.ArrayList;
 import java.util.List;
 
-@JsonSubTypes.Type(value = RecordConfiguration.class, name = "recordConfiguration")
-@JacksonXmlRootElement(localName = "record_configuration")
 public class RecordConfiguration extends Configuration
 {
     private List<RecorderType> mRecorders = new ArrayList<>();

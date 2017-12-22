@@ -1,12 +1,12 @@
 package io.github.dsheirer.source.recording;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 
 import java.io.File;
 
-@JsonSubTypes.Type(value = RecordingConfiguration.class, name = "recordingConfiguration")
+@JacksonXmlRootElement(localName = "recording_configuration")
 public class RecordingConfiguration
 {
     private File mRecording;

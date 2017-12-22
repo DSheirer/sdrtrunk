@@ -106,7 +106,7 @@ public class SystemProperties
         }
         catch (Exception e)
         {
-            mLog.error("Couldn't load jar manifest - probably not running from a jar release");
+            mLog.error("Unable to load jar manifest - we're probably not running from a release jar");
         }
 
         return null;

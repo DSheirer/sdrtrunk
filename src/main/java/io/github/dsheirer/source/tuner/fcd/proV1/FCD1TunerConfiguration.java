@@ -17,7 +17,6 @@
  ******************************************************************************/
 package io.github.dsheirer.source.tuner.fcd.proV1;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
@@ -25,7 +24,6 @@ import io.github.dsheirer.source.tuner.fcd.proV1.FCD1TunerController.LNAEnhance;
 import io.github.dsheirer.source.tuner.fcd.proV1.FCD1TunerController.LNAGain;
 import io.github.dsheirer.source.tuner.fcd.proV1.FCD1TunerController.MixerGain;
 
-@JsonSubTypes.Type(value = FCD1TunerConfiguration.class, name = "fcd1TunerConfiguration")
 public class FCD1TunerConfiguration extends TunerConfiguration
 {
     private double mFrequencyCorrection = 22.0d;
@@ -50,6 +48,7 @@ public class FCD1TunerConfiguration extends TunerConfiguration
         super(uniqueID, name);
     }
 
+    @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
     @Override
     public TunerType getTunerType()
     {

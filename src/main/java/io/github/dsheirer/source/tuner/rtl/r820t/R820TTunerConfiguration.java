@@ -17,13 +17,11 @@
  ******************************************************************************/
 package io.github.dsheirer.source.tuner.rtl.r820t;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.RTL2832TunerController;
 
-@JsonSubTypes.Type(value = R820TTunerConfiguration.class, name = "r820TTunerConfiguration")
 public class R820TTunerConfiguration extends TunerConfiguration
 {
     private R820TTunerController.R820TGain mMasterGain = R820TTunerController.R820TGain.GAIN_327;
@@ -45,6 +43,7 @@ public class R820TTunerConfiguration extends TunerConfiguration
         super(uniqueID, name);
     }
 
+    @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
     @Override
     public TunerType getTunerType()
     {

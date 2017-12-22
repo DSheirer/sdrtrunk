@@ -17,12 +17,10 @@
  ******************************************************************************/
 package io.github.dsheirer.source.tuner.fcd.proplusV2;
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 
-@JsonSubTypes.Type(value = FCD2TunerConfiguration.class, name = "fcd2TunerConfiguration")
 public class FCD2TunerConfiguration extends TunerConfiguration
 {
     private boolean mGainLNA = true;
@@ -41,6 +39,7 @@ public class FCD2TunerConfiguration extends TunerConfiguration
         super(uniqueID, name);
     }
 
+    @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
     @Override
     public TunerType getTunerType()
     {

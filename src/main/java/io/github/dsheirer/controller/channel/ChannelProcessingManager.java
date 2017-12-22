@@ -297,13 +297,13 @@ public class ChannelProcessingManager implements ChannelEventListener
 
         if(!recorders.isEmpty())
         {
-                /* Add baseband recorder */
+            /* Add baseband recorder */
             if((recorders.contains(RecorderType.BASEBAND) && channel.getChannelType() == Channel.ChannelType.STANDARD))
             {
                 processingChain.addModule(mRecorderManager.getBasebandRecorder(channel.toString()));
             }
 
-				/* Add traffic channel baseband recorder */
+            /* Add traffic channel baseband recorder */
             if(recorders.contains(RecorderType.TRAFFIC_BASEBAND) && channel.getChannelType() == Channel.ChannelType.TRAFFIC)
             {
                 processingChain.addModule(mRecorderManager.getBasebandRecorder(channel.toString()));

@@ -18,7 +18,6 @@
 package io.github.dsheirer.source.tuner.hackrf;
 
 
-import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
@@ -26,7 +25,6 @@ import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController.HackRFLNAGai
 import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController.HackRFSampleRate;
 import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController.HackRFVGAGain;
 
-@JsonSubTypes.Type(value = HackRFTunerConfiguration.class, name = "hackRFTunerConfiguration")
 public class HackRFTunerConfiguration extends TunerConfiguration
 {
     private HackRFSampleRate mSampleRate = HackRFSampleRate.RATE2_016MHZ;
@@ -47,6 +45,7 @@ public class HackRFTunerConfiguration extends TunerConfiguration
         super(uniqueID, name);
     }
 
+    @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
     @Override
     public TunerType getTunerType()
     {

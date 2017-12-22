@@ -1,22 +1,25 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014-2016 Dennis Sheirer
+/*
+ * *********************************************************************************************************************
+ * sdrtrunk
+ * Copyright (C) 2014-2017 Dennis Sheirer
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
+ * *********************************************************************************************************************
+ */
 package io.github.dsheirer.settings;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.recording.RecordingConfiguration;
@@ -27,14 +30,7 @@ import org.jdesktop.swingx.mapviewer.GeoPosition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
 import java.awt.*;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -256,11 +252,9 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
     {
         saveTunerConfigurationModel();
 
-        JAXBContext context = null;
-
         SystemProperties props = SystemProperties.getInstance();
 
-        Path settingsPath = props.getApplicationFolder("settings");
+        Path settingsFolder = props.getApplicationFolder("settings");
 
         String settingsDefault = props.get("settings.defaultFilename",
             "settings.xml");
@@ -268,63 +262,24 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
         String settingsCurrent = props.get("settings.currentFilename",
             settingsDefault);
 
-        Path filePath = settingsPath.resolve(settingsCurrent);
+        Path settingsPath = settingsFolder.resolve(settingsCurrent);
 
-        File outputFile = new File(filePath.toString());
-
-        try
+        try(OutputStream out = Files.newOutputStream(settingsPath))
         {
-            if(!outputFile.exists())
-            {
-                outputFile.createNewFile();
-            }
+            JacksonXmlModule xmlModule = new JacksonXmlModule();
+            xmlModule.setDefaultUseWrapper(false);
+            ObjectMapper objectMapper = new XmlMapper(xmlModule);
+            objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+            objectMapper.writeValue(out, mSettings);
+            out.flush();
+        }
+        catch(IOException ioe)
+        {
+            mLog.error("IO error while writing the settings to a file [" + settingsPath + "]", ioe);
         }
         catch(Exception e)
         {
-            mLog.error("SettingsManager - couldn't create file to save "
-                + "settings [" + filePath.toString() + "]", e);
-        }
-
-        OutputStream out = null;
-
-        try
-        {
-            out = new FileOutputStream(outputFile);
-
-            try
-            {
-                context = JAXBContext.newInstance(Settings.class);
-
-                Marshaller m = context.createMarshaller();
-
-                m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-
-                m.marshal(mSettings, out);
-            }
-            catch(JAXBException e)
-            {
-                mLog.error("SettingsManager - jaxb exception while saving " +
-                    "settings", e);
-            }
-        }
-        catch(Exception e)
-        {
-            mLog.error("SettingsManager - couldn't open output stream to " +
-                "save settings [" + filePath.toString() + "]");
-        }
-        finally
-        {
-            if(out != null)
-            {
-                try
-                {
-                    out.close();
-                }
-                catch(IOException e)
-                {
-                    e.printStackTrace();
-                }
-            }
+            mLog.error("Error while saving settings file [" + settingsPath + "]", e);
         }
     }
 
@@ -340,47 +295,17 @@ public class SettingsManager implements Listener<TunerConfigurationEvent>
         {
             mLog.info("SettingsManager - loading settings file [" + settingsPath.toString() + "]");
 
-            JAXBContext context = null;
+            JacksonXmlModule xmlModule = new JacksonXmlModule();
+            xmlModule.setDefaultUseWrapper(false);
+            ObjectMapper objectMapper = new XmlMapper(xmlModule);
 
-            InputStream in = null;
-
-            try
+            try(InputStream in = Files.newInputStream(settingsPath))
             {
-                in = new FileInputStream(settingsPath.toString());
-
-                try
-                {
-                    context = JAXBContext.newInstance(Settings.class);
-
-                    Unmarshaller m = context.createUnmarshaller();
-
-                    mSettings = (Settings) m.unmarshal(in);
-                }
-                catch(JAXBException e)
-                {
-                    mLog.error("SettingsManager - jaxb exception while loading " +
-                        "settings", e);
-                }
+                mSettings = objectMapper.readValue(in, Settings.class);
             }
-            catch(Exception e)
+            catch(IOException ioe)
             {
-                mLog.error("SettingsManager - coulcn't open inputstream to " +
-                    "load settings [" + settingsPath.toString() + "]", e);
-            }
-            finally
-            {
-                if(in != null)
-                {
-                    try
-                    {
-                        in.close();
-                    }
-                    catch(IOException e)
-                    {
-                        mLog.error("SettingsManager - exception while closing " +
-                            "the settings file inputstream reader", e);
-                    }
-                }
+                mLog.error("IO error while reading settings file", ioe);
             }
         }
         else
