@@ -34,6 +34,7 @@ import java.util.concurrent.ScheduledExecutorService;
 public class AlwaysUnsquelchedDecoderState extends DecoderState
 {
     private final static Logger mLog = LoggerFactory.getLogger(AlwaysUnsquelchedDecoderState.class);
+    private static final String NO_SQUELCH = "No Squelch";
 
     private DecoderType mDecoderType;
     private String mChannelName;
@@ -82,7 +83,7 @@ public class AlwaysUnsquelchedDecoderState extends DecoderState
         {
             //Each time we're reset, set the PRIMARY TO attribute back to the channel name, otherwise we won't have
             //a primary ID for any audio produced by this state.
-            broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_TO, mChannelName));
+            broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_TO, NO_SQUELCH));
         }
     }
 
@@ -95,7 +96,7 @@ public class AlwaysUnsquelchedDecoderState extends DecoderState
     @Override
     public void start(ScheduledExecutorService executor)
     {
-        broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_TO, mChannelName));
+        broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_TO, NO_SQUELCH));
         broadcast(new DecoderStateEvent(this, Event.ALWAYS_UNSQUELCH, State.IDLE));
     }
 

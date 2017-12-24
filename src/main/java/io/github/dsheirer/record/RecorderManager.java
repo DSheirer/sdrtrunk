@@ -1,27 +1,26 @@
-/*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014-2017 Dennis Sheirer
+/*
+ * *********************************************************************************************************************
+ * sdr-trunk
+ * Copyright (C) 2014-2017 Dennis Sheirer
  *
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
  *
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
- ******************************************************************************/
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
+ * *********************************************************************************************************************
+ */
 package io.github.dsheirer.record;
 
 import io.github.dsheirer.audio.AudioPacket;
 import io.github.dsheirer.channel.metadata.Metadata;
 import io.github.dsheirer.properties.SystemProperties;
+import io.github.dsheirer.record.wave.AudioPacketWaveRecorder;
 import io.github.dsheirer.record.wave.ComplexBufferWaveRecorder;
-import io.github.dsheirer.record.wave.RealBufferWaveRecorder;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.OverflowableTransferQueue;
 import io.github.dsheirer.sample.real.IOverflowListener;
@@ -45,7 +44,7 @@ public class RecorderManager implements Listener<AudioPacket>
     public static final int AUDIO_SAMPLE_RATE = 8000;
     public static final long IDLE_RECORDER_REMOVAL_THRESHOLD = 6000; //6 seconds
 
-    private Map<String,RealBufferWaveRecorder> mRecorders = new HashMap<>();
+    private Map<String,AudioPacketWaveRecorder> mRecorders = new HashMap<>();
     private OverflowableTransferQueue<AudioPacket> mAudioPacketQueue = new OverflowableTransferQueue<>(1000, 100);
     private ScheduledFuture<?> mBufferProcessorFuture;
 
@@ -121,15 +120,15 @@ public class RecorderManager implements Listener<AudioPacket>
 
                 if(mRecorders.containsKey(identifier))
                 {
-                    RealBufferWaveRecorder recorder = mRecorders.get(identifier);
+                    AudioPacketWaveRecorder recorder = mRecorders.get(identifier);
 
                     if(audioPacket.getType() == AudioPacket.Type.AUDIO)
                     {
-                        recorder.receive(audioPacket.getAudioBuffer());
+                        recorder.receive(audioPacket);
                     }
                     else if(audioPacket.getType() == AudioPacket.Type.END)
                     {
-                        RealBufferWaveRecorder finished = mRecorders.remove(identifier);
+                        AudioPacketWaveRecorder finished = mRecorders.remove(identifier);
                         finished.stop();
                     }
                 }
@@ -139,15 +138,15 @@ public class RecorderManager implements Listener<AudioPacket>
                     {
                         String filePrefix = getFilePrefix(audioPacket);
 
-                        RealBufferWaveRecorder recorder = null;
+                        AudioPacketWaveRecorder recorder = null;
 
                         try
                         {
-                            recorder = new RealBufferWaveRecorder(AUDIO_SAMPLE_RATE, filePrefix);
+                            recorder = new AudioPacketWaveRecorder(filePrefix, audioPacket.getMetadata());
 
                             recorder.start(ThreadPool.SCHEDULED);
 
-                            recorder.receive(audioPacket.getAudioBuffer());
+                            recorder.receive(audioPacket);
                             mRecorders.put(identifier, recorder);
                         }
                         catch(Exception ioe)
@@ -176,11 +175,11 @@ public class RecorderManager implements Listener<AudioPacket>
      */
     private void removeIdleRecorders()
     {
-        Iterator<Map.Entry<String,RealBufferWaveRecorder>> it = mRecorders.entrySet().iterator();
+        Iterator<Map.Entry<String,AudioPacketWaveRecorder>> it = mRecorders.entrySet().iterator();
 
         while(it.hasNext())
         {
-            Map.Entry<String,RealBufferWaveRecorder> entry = it.next();
+            Map.Entry<String,AudioPacketWaveRecorder> entry = it.next();
 
             if(entry.getValue().getLastBufferReceived() + IDLE_RECORDER_REMOVAL_THRESHOLD < System.currentTimeMillis())
             {

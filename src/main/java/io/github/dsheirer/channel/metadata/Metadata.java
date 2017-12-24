@@ -63,6 +63,8 @@ public class Metadata
     protected Boolean mDoNotRecord;
     private Set<BroadcastChannel> mBroadcastChannels;
 
+    private long mTimestamp = System.currentTimeMillis();
+
 
     /**
      * Channel metadata.  Contains all attributes that reflect the state and current attribute values for a channel
@@ -82,6 +84,14 @@ public class Metadata
         mMetadataID = metadataID;
     }
 
+    /**
+     * Timestamp when this metadata was created
+     * @return milliseconds since epoch
+     */
+    public long getTimestamp()
+    {
+        return mTimestamp;
+    }
     /**
      * Unique string identifier for this metadata that is comprised of the channel ID and the primary TO address.
      *

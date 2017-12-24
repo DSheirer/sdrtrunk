@@ -188,7 +188,7 @@ public class ComplexBufferWaveRecorder extends Module
 					}
 					else
 					{
-						mWriter.write( ConversionUtils.convertToSigned16BitSamples( buffer ) );
+						mWriter.writeData( ConversionUtils.convertToSigned16BitSamples( buffer ) );
 						buffer = mBuffers.poll();
 					}
 				}
