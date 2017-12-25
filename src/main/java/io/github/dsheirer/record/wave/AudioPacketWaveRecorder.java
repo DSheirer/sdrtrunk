@@ -56,6 +56,11 @@ public class AudioPacketWaveRecorder extends Module implements Listener<AudioPac
 
     private AtomicBoolean mRunning = new AtomicBoolean();
 
+    /**
+     * Wave audio recorder for AudioPackets
+     * @param filePrefix
+     * @param metadata
+     */
     public AudioPacketWaveRecorder(String filePrefix, Metadata metadata)
     {
         mMetadata = metadata;
@@ -105,11 +110,6 @@ public class AudioPacketWaveRecorder extends Module implements Listener<AudioPac
 
                 mWriter = new WaveWriter(mAudioFormat, mFile);
 
-                if(mMetadata != null)
-                {
-                    mWriter.writeMetadata(WaveMetadata.createFrom(mMetadata));
-                }
-
 				/* Schedule the processor to run every 500 milliseconds */
                 mProcessorHandle = executor.scheduleAtFixedRate(mBufferProcessor, 0, 500, TimeUnit.MILLISECONDS);
             }
@@ -126,8 +126,10 @@ public class AudioPacketWaveRecorder extends Module implements Listener<AudioPac
         {
             try
             {
+                //Finish writing any residual audio buffers
                 write();
 
+                //Append the LIST and ID3 metadata to the end
                 if(mMetadata != null)
                 {
                     mWriter.writeMetadata(WaveMetadata.createFrom(mMetadata));
@@ -147,6 +149,9 @@ public class AudioPacketWaveRecorder extends Module implements Listener<AudioPac
         }
     }
 
+    /**
+     * Primary input method for receiving audio packets to enqueue for later writing to the wav file.
+     */
     @Override
     public void receive(AudioPacket audioPacket)
     {
@@ -176,7 +181,9 @@ public class AudioPacketWaveRecorder extends Module implements Listener<AudioPac
     }
 
     /**
-     * Writes all audio currently in the queue to the file
+     * Writes all audio currently in the queue to the file.  Captures any audio metadata from the packet and retains a
+     * copy of the latest metadata to append to the end of the recording when stop() is invoked.
+     *
      * @throws IOException if there are any errors writing the audio
      */
     private void write() throws IOException
@@ -185,13 +192,9 @@ public class AudioPacketWaveRecorder extends Module implements Listener<AudioPac
 
         while(audioPacket != null && audioPacket.getType() == AudioPacket.Type.AUDIO)
         {
-            if(audioPacket.hasMetadata() && audioPacket.getMetadata().isUpdated())
+            if(audioPacket.hasMetadata())
             {
-                if(mMetadata == null || mMetadata != audioPacket.getMetadata())
-                {
-                    mMetadata = audioPacket.getMetadata();
-                    mWriter.writeMetadata(WaveMetadata.createFrom(mMetadata));
-                }
+                mMetadata = audioPacket.getMetadata();
             }
 
             mWriter.writeData(ConversionUtils.convertToSigned16BitSamples(audioPacket.getAudioBuffer()));
@@ -199,6 +202,9 @@ public class AudioPacketWaveRecorder extends Module implements Listener<AudioPac
         }
     }
 
+    /**
+     * Scheduled runnable to periodically write the enqueued audio packets to the file
+     */
     public class BufferProcessor implements Runnable
     {
         public void run()

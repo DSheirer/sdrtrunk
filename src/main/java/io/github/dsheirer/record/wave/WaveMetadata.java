@@ -8,6 +8,7 @@ import io.github.dsheirer.properties.SystemProperties;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -18,19 +19,140 @@ import java.util.Map;
 public class WaveMetadata
 {
     private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyyMMddHHmmssSSS");
+    private static final Charset ISO_8859_1 = Charset.forName("ISO-8859-1");
+    private static final Charset UTF_8 = Charset.forName("UTF-8");
     private static final byte NULL_TERMINATOR = (byte)0x00;
-    private static final String LIST = "LIST";
-    private static final String INFO = "INFO";
-    private static final String COMMENT = "Recording created by sdrtrunk";
+    private static final String LIST_CHUNK_IDENTIFIER = "LIST";
+    private static final String INFO_TYPE_IDENTIFIER = "INFO";
+    private static final String ID3_CHUNK_IDENTIFIER = "ID3 ";
+    private static final String ID3V2_IDENTIFIER = "ID3";
+    private static final byte ID3V2_MAJOR_VERSION = (byte)0x4;
+    private static final byte ID3V2_MINOR_VERSION = (byte)0x0;
+    private static final byte ID3V2_FLAGS = (byte)0x0;
+    private static final byte ID3V2_ISO_8859_1_ENCODING = (byte)0x0;
 
     private Map<WaveMetadataType, String> mMetadataMap = new HashMap<>();
 
     /**
      * Audio Wave File - Metadata Chunk.  Supports creating a map of metadata key:value pairs and
-     * converting the metadata to a .wav audio recording INFO chunk.
+     * converting the metadata to WAV audio recording INFO/LIST and ID3 v2.4.0 metadata chunks.
      */
     public WaveMetadata()
     {
+    }
+
+    public ByteBuffer getID3Chunk()
+    {
+        ByteBuffer subChunks = getID3Frames();
+        int subChunksLength = subChunks.capacity();
+
+        int overallLength = subChunksLength + 18;
+
+        //Pad the overall length to make it an even 32-bit boundary
+        int padding = 0;
+
+        if(overallLength % 4 != 0)
+        {
+            padding = 4 - (overallLength % 4);
+        }
+
+        ByteBuffer chunk = ByteBuffer.allocate(overallLength + padding).order(ByteOrder.LITTLE_ENDIAN);
+
+        int chunkLength = subChunksLength + 10 + padding;
+
+        chunk.put(ID3_CHUNK_IDENTIFIER.getBytes());
+        chunk.putInt(chunkLength);
+        chunk.put(ID3V2_IDENTIFIER.getBytes());
+        chunk.put(ID3V2_MAJOR_VERSION);
+        chunk.put(ID3V2_MINOR_VERSION);
+        chunk.put(ID3V2_FLAGS);
+        chunk.put(getID3EncodedLength(subChunksLength));
+
+        chunk.put(subChunks);
+
+        chunk.position(0);
+
+        return chunk;
+    }
+
+    /**
+     * Creates an ID3 v2.4.0 compatible frame set from the metadata
+     */
+    public ByteBuffer getID3Frames()
+    {
+        int length = 0;
+        List<ByteBuffer> buffers = new ArrayList<>();
+
+        //List the primary metadata tags first
+        for(Map.Entry<WaveMetadataType, String> entry: mMetadataMap.entrySet())
+        {
+            if(entry.getKey().isPrimaryTag())
+            {
+                ByteBuffer buffer = getID3Frame(entry.getKey(), entry.getValue());
+
+                if(buffer != null)
+                {
+                    length += buffer.capacity();
+                    buffers.add(buffer);
+                }
+            }
+        }
+
+        for(Map.Entry<WaveMetadataType, String> entry: mMetadataMap.entrySet())
+        {
+            if(!entry.getKey().isPrimaryTag())
+            {
+                ByteBuffer buffer = getID3Frame(entry.getKey(), entry.getValue());
+
+                if(buffer != null)
+                {
+                    length += buffer.capacity();
+                    buffers.add(buffer);
+                }
+            }
+        }
+
+        ByteBuffer concatenatedBuffer = ByteBuffer.allocate(length);
+
+        for(ByteBuffer buffer: buffers)
+        {
+            concatenatedBuffer.put(buffer);
+        }
+
+        concatenatedBuffer.position(0);
+
+        return concatenatedBuffer;
+    }
+
+    /**
+     * Creates an ID3 v2.4.0 compatible metadata frame
+     * @param type of metadata
+     * @param value of the metadata
+     * @return frame byte buffer or null if the value is empty or null
+     */
+    public ByteBuffer getID3Frame(WaveMetadataType type, String value)
+    {
+        if(value != null && !value.isEmpty())
+        {
+            ByteBuffer encodedValue = ISO_8859_1.encode(value);
+
+            //Length is 4 bytes for tag ID, 4 bytes for length, value, and null terminator
+            int chunkLength = encodedValue.capacity() + 11;
+
+            ByteBuffer buffer = ByteBuffer.allocate(chunkLength).order(ByteOrder.LITTLE_ENDIAN);
+            buffer.put(type.getID3Tag().getBytes());
+            buffer.put(getID3EncodedLength(encodedValue.capacity() + 1));
+            buffer.put(ID3V2_FLAGS);
+            buffer.put(ID3V2_FLAGS);
+            buffer.put(ID3V2_ISO_8859_1_ENCODING);
+            buffer.put(encodedValue);
+
+            buffer.position(0);
+
+            return buffer;
+        }
+
+        return null;
     }
 
     /**
@@ -38,7 +160,7 @@ public class WaveMetadata
      */
     public ByteBuffer getLISTChunk()
     {
-        ByteBuffer metadataBuffer = getAllTags();
+        ByteBuffer metadataBuffer = getLISTSubChunks();
         int tagsLength = metadataBuffer.capacity();
 
         int overallLength = tagsLength + 8;
@@ -53,7 +175,7 @@ public class WaveMetadata
 
         ByteBuffer chunk = ByteBuffer.allocate(overallLength + padding).order(ByteOrder.LITTLE_ENDIAN);
 
-        chunk.put(LIST.getBytes());
+        chunk.put(LIST_CHUNK_IDENTIFIER.getBytes());
         chunk.putInt(tagsLength + padding);
         chunk.put(metadataBuffer);
 
@@ -65,29 +187,28 @@ public class WaveMetadata
     /**
      * Formats all metadata key:value pairs in the metadata map into a wave INFO compatible format
      */
-    private ByteBuffer getAllTags()
+    private ByteBuffer getLISTSubChunks()
     {
-        int length = INFO.length();
+        int length = INFO_TYPE_IDENTIFIER.length();
 
         List<ByteBuffer> buffers = new ArrayList<>();
 
-        //Do the non-custom metadata types first
+        //Add the primary tags first
         for(Map.Entry<WaveMetadataType, String> entry: mMetadataMap.entrySet())
         {
-            if(!entry.getKey().isCustomType())
+            if(entry.getKey().isPrimaryTag())
             {
-                ByteBuffer buffer = getListMetadataChunk(entry.getKey(), entry.getValue());
+                ByteBuffer buffer = getLISTSubChunk(entry.getKey(), entry.getValue());
                 length += buffer.capacity();
                 buffers.add(buffer);
             }
         }
 
-        //Do the custom metadata types second
         for(Map.Entry<WaveMetadataType, String> entry: mMetadataMap.entrySet())
         {
-            if(entry.getKey().isCustomType())
+            if(!entry.getKey().isPrimaryTag())
             {
-                ByteBuffer buffer = getListMetadataChunk(entry.getKey(), entry.getValue());
+                ByteBuffer buffer = getLISTSubChunk(entry.getKey(), entry.getValue());
                 length += buffer.capacity();
                 buffers.add(buffer);
             }
@@ -95,7 +216,7 @@ public class WaveMetadata
 
         ByteBuffer joinedBuffer = ByteBuffer.allocate(length);
 
-        joinedBuffer.put(INFO.getBytes());
+        joinedBuffer.put(INFO_TYPE_IDENTIFIER.getBytes());
 
         for(ByteBuffer buffer: buffers)
         {
@@ -114,26 +235,26 @@ public class WaveMetadata
      * @param value for the metadata
      * @return metadata and value formatted for wave chunk
      */
-    private ByteBuffer getListMetadataChunk(WaveMetadataType type, String value)
+    private ByteBuffer getLISTSubChunk(WaveMetadataType type, String value)
     {
-        //Length is 4 bytes for tag ID, 4 bytes for length, value, and null terminator
-        int chunkLength = value.length() + 9;
+        if(value != null && !value.isEmpty())
+        {
+            //Length is 4 bytes for tag ID, 4 bytes for length, value, and null terminator
+            ByteBuffer encodedValue = UTF_8.encode(value);
+            int chunkLength = encodedValue.capacity() + 9;
 
-//        //Ensure length is an even multiple of 4 bytes/32-bit word
-//        if(chunkLength % 4 != 0)
-//        {
-//            chunkLength += (4 - (chunkLength % 4));
-//        }
-//
-        ByteBuffer buffer = ByteBuffer.allocate(chunkLength).order(ByteOrder.LITTLE_ENDIAN);
-        buffer.put(type.getTag().getBytes());
-        buffer.putInt(value.length() + 1);
-        buffer.put(value.getBytes());
-        buffer.put(NULL_TERMINATOR);
+            ByteBuffer buffer = ByteBuffer.allocate(chunkLength).order(ByteOrder.LITTLE_ENDIAN);
+            buffer.put(type.getLISTTag().getBytes());
+            buffer.putInt(encodedValue.capacity() + 1);
+            buffer.put(encodedValue);
+            buffer.put(NULL_TERMINATOR);
 
-        buffer.position(0);
+            buffer.position(0);
 
-        return buffer;
+            return buffer;
+        }
+
+        return null;
     }
 
     /**
@@ -159,15 +280,12 @@ public class WaveMetadata
     {
         WaveMetadata waveMetadata = new WaveMetadata();
 
-        waveMetadata.add(WaveMetadataType.GENRE, "TEST GENRE");
-        waveMetadata.add(WaveMetadataType.PRODUCT, SystemProperties.getInstance().getApplicationName());
-        waveMetadata.add(WaveMetadataType.COMMENTS, COMMENT);
+        waveMetadata.add(WaveMetadataType.SOFTWARE, SystemProperties.getInstance().getApplicationName());
         waveMetadata.add(WaveMetadataType.DATE_CREATED, SDF.format(new Date(audioMetadata.getTimestamp())));
         waveMetadata.add(WaveMetadataType.ARTIST_NAME, audioMetadata.getChannelConfigurationSystem());
         waveMetadata.add(WaveMetadataType.ALBUM_TITLE, audioMetadata.getChannelConfigurationSite());
         waveMetadata.add(WaveMetadataType.TRACK_TITLE, audioMetadata.getChannelConfigurationName());
-        waveMetadata.add(WaveMetadataType.SOURCE_FORM, audioMetadata.getPrimaryDecoderType().getDisplayString());
-//        waveMetadata.add(WaveMetadataType.ALIAS_LIST_NAME, "not implemented yet");
+        waveMetadata.add(WaveMetadataType.COMMENTS, audioMetadata.getPrimaryDecoderType().getDisplayString());
         waveMetadata.add(WaveMetadataType.CHANNEL_ID, audioMetadata.getChannelFrequencyLabel());
         waveMetadata.add(WaveMetadataType.CHANNEL_FREQUENCY, String.valueOf(audioMetadata.getChannelFrequency()));
 
@@ -279,5 +397,22 @@ public class WaveMetadata
         }
 
         return waveMetadata;
+    }
+
+    /**
+     * Converts the integer length to an ID3 compatible length field where each byte only uses the 7 least significant
+     * bits for a maximum of 28 bits used out of the 32-bit representation.
+     * @param length
+     * @return
+     */
+    public static byte[] getID3EncodedLength(int length)
+    {
+        byte[] value = new byte[4];
+        value[0] = (byte)((length >> 21) & 0x7F);
+        value[1] = (byte)((length >> 14) & 0x7F);
+        value[2] = (byte)((length >> 7) & 0x7F);
+        value[3] = (byte)(length & 0x7F);
+
+        return value;
     }
 }

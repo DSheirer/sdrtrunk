@@ -256,20 +256,36 @@ public class WaveWriter implements AutoCloseable
      */
     public void writeMetadata(WaveMetadata metadata) throws IOException
     {
-        ByteBuffer metadataChunk = metadata.getLISTChunk();
+        ByteBuffer listChunk = metadata.getLISTChunk();
 
-        if(mFileChannel.size() + metadataChunk.capacity() >= mMaxSize)
+        if(mFileChannel.size() + listChunk.capacity() >= mMaxSize)
         {
-            throw new IOException("Cannot write metadata chunk - insufficient file space remaining");
+            throw new IOException("Cannot write LIST metadata chunk - insufficient file space remaining");
         }
 
         closeDataChunk();
 
-        metadataChunk.position(0);
+        listChunk.position(0);
 
-        while(metadataChunk.hasRemaining())
+        while(listChunk.hasRemaining())
         {
-            mFileChannel.write(metadataChunk);
+            mFileChannel.write(listChunk);
+        }
+
+        updateTotalSize();
+
+        ByteBuffer id3Chunk = metadata.getID3Chunk();
+
+        if(mFileChannel.size() + id3Chunk.capacity() >= mMaxSize)
+        {
+            throw new IOException("Cannot write ID3 metadata chunk - insufficient file space remaining");
+        }
+
+        id3Chunk.position(0);
+
+        while(id3Chunk.hasRemaining())
+        {
+            mFileChannel.write(id3Chunk);
         }
 
         updateTotalSize();
@@ -332,8 +348,7 @@ public class WaveWriter implements AutoCloseable
 
         /* This side-steps an issue with right shifting a signed long by 32
          * where it produces an error value.  Instead, we right shift in two steps. */
-        buffer.put((byte)Long.rotateRight(
-            Long.rotateRight(size & 0xFF000000l, 16), 8));
+        buffer.put((byte)Long.rotateRight(Long.rotateRight(size & 0xFF000000l, 16), 8));
 
         buffer.position(0);
 
