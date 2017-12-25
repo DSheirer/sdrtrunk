@@ -1,5 +1,6 @@
-0.4.0 ........ (in progress)
+0.3.3 20171225
  - Changes build system from ant to gradle.  Thanks to: Roman Tsypuk https://github.com/tsypuk
+ - Adds LIST and ID3 metadata to wav audio recordings
 
 0.3.2 20171105
  - Resolves issue with tuner frequency adjustments that was causing channel processing
