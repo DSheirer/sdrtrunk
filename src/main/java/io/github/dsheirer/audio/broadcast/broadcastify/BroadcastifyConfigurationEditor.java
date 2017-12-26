@@ -31,10 +31,17 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JSlider;
+import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.awt.*;
+import java.awt.Dimension;
+import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -74,8 +81,7 @@ public class BroadcastifyConfigurationEditor extends BroadcastConfigurationEdito
 
         JLabel channelLabel = new JLabel("Broadcastify Stream");
 
-        ImageIcon broadcastifyIcon = mIconManager.getScaledIcon(
-            new ImageIcon(BroadcastServerType.BROADCASTIFY.getIconPath()), 25);
+        ImageIcon broadcastifyIcon = mIconManager.getScaledIcon(BroadcastServerType.BROADCASTIFY.getIconPath(), 25);
         channelLabel.setIcon(broadcastifyIcon);
         add(channelLabel, "span, align center");
 

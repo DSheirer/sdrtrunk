@@ -29,7 +29,7 @@ import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
+import javax.swing.ImageIcon;
 import javax.swing.table.AbstractTableModel;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -519,7 +519,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
 
                             if(iconPath != null && mIconManager != null)
                             {
-                                return mIconManager.getScaledIcon(new ImageIcon(iconPath), 14);
+                                return mIconManager.getScaledIcon(iconPath, 14);
                             }
                             break;
                         case COLUMN_STREAM_NAME:

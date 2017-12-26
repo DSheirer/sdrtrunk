@@ -20,11 +20,11 @@ package io.github.dsheirer.audio.broadcast;
 
 public enum BroadcastServerType
 {
-    BROADCASTIFY("Broadcastify", "images/broadcastify.png"), //Icecast Server 2.3.2
-    ICECAST_HTTP("Icecast 2 (v2.4+)", "images/icecast.png"),
-    ICECAST_TCP("Icecast (v2.3)", "images/icecast.png"),
-    SHOUTCAST_V1("Shoutcast v1.x", "images/shoutcast.png"),
-    SHOUTCAST_V2("Shoutcast v2.x", "images/shoutcast.png"),
+    BROADCASTIFY("Broadcastify", "/images/broadcastify.png"), //Icecast Server 2.3.2
+    ICECAST_HTTP("Icecast 2 (v2.4+)", "/images/icecast.png"),
+    ICECAST_TCP("Icecast (v2.3)", "/images/icecast.png"),
+    SHOUTCAST_V1("Shoutcast v1.x", "/images/shoutcast.png"),
+    SHOUTCAST_V2("Shoutcast v2.x", "/images/shoutcast.png"),
     UNKNOWN("Unknown", null);
 
     private String mLabel;

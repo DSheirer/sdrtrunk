@@ -18,7 +18,7 @@
  ******************************************************************************/
 package io.github.dsheirer.icon;
 
-import javax.swing.*;
+import javax.swing.ImageIcon;
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,10 +32,10 @@ public class IconTableModel extends AbstractTableModel
     public static final int COLUMN_IMAGE_ICON = 0;
     public static final int COLUMN_ICON_NAME = 1;
 
-    private io.github.dsheirer.icon.Icon mDefaultIcon;
+    private Icon mDefaultIcon;
 
-    private Map<String,io.github.dsheirer.icon.Icon> mIconMap = new HashMap<>();
-    private List<io.github.dsheirer.icon.Icon> mIcons = new ArrayList<>();
+    private Map<String,Icon> mIconMap = new HashMap<>();
+    private List<Icon> mIcons = new ArrayList<>();
 
     public IconTableModel()
     {
@@ -49,7 +49,7 @@ public class IconTableModel extends AbstractTableModel
 
         fireTableDataChanged();
 
-        for(io.github.dsheirer.icon.Icon icon: iconSet.getIcons())
+        for(Icon icon: iconSet.getIcons())
         {
             add(icon);
         }
@@ -60,7 +60,7 @@ public class IconTableModel extends AbstractTableModel
     /**
      * Adds the icon to the model
      */
-    public void add(io.github.dsheirer.icon.Icon icon)
+    public void add(Icon icon)
     {
         if(icon != null)
         {
@@ -75,7 +75,7 @@ public class IconTableModel extends AbstractTableModel
     /**
      * Removes the icon from the model
      */
-    public void remove(io.github.dsheirer.icon.Icon icon)
+    public void remove(Icon icon)
     {
         if(icon != null && mIcons.contains(icon))
         {
@@ -89,7 +89,7 @@ public class IconTableModel extends AbstractTableModel
 
     }
 
-    public io.github.dsheirer.icon.Icon get(int row)
+    public Icon get(int row)
     {
         if(row < mIcons.size())
         {
@@ -116,7 +116,7 @@ public class IconTableModel extends AbstractTableModel
     {
         if(rowIndex < mIcons.size() && columnIndex < getColumnCount())
         {
-            io.github.dsheirer.icon.Icon icon = get(rowIndex);
+            Icon icon = get(rowIndex);
 
             switch(columnIndex)
             {
@@ -162,19 +162,19 @@ public class IconTableModel extends AbstractTableModel
     /**
      * Icons in an array - suitable for use in a JComboBox
      */
-    public io.github.dsheirer.icon.Icon[] getIconsAsArray()
+    public Icon[] getIconsAsArray()
     {
-        List<io.github.dsheirer.icon.Icon> icons = new ArrayList<>(mIconMap.values());
+        List<Icon> icons = new ArrayList<>(mIconMap.values());
 
         Collections.sort(icons);
 
-        return icons.toArray(new io.github.dsheirer.icon.Icon[icons.size()]);
+        return icons.toArray(new Icon[icons.size()]);
     }
 
     /**
      * Returns the current default icon
      */
-    public io.github.dsheirer.icon.Icon getDefaultIcon()
+    public Icon getDefaultIcon()
     {
         return mDefaultIcon;
     }
@@ -182,7 +182,7 @@ public class IconTableModel extends AbstractTableModel
     /**
      * Indicates if the icon argument is the current default icon
      */
-    public boolean isDefaultIcon(io.github.dsheirer.icon.Icon icon)
+    public boolean isDefaultIcon(Icon icon)
     {
         return icon == getDefaultIcon();
     }
@@ -198,7 +198,7 @@ public class IconTableModel extends AbstractTableModel
         return name != null && !name.isEmpty() && mIconMap.containsKey(name);
     }
 
-    public void setDefaultIcon(io.github.dsheirer.icon.Icon icon)
+    public void setDefaultIcon(Icon icon)
     {
         if(icon != null)
         {
@@ -223,7 +223,7 @@ public class IconTableModel extends AbstractTableModel
             name = DEFAULT_ICON;
         }
 
-        io.github.dsheirer.icon.Icon defaultIcon = mIconMap.get(name);
+        Icon defaultIcon = mIconMap.get(name);
 
         if(defaultIcon != null)
         {
@@ -231,7 +231,7 @@ public class IconTableModel extends AbstractTableModel
         }
         else
         {
-            defaultIcon = new io.github.dsheirer.icon.Icon(DEFAULT_ICON, "images/no_icon.png");
+            defaultIcon = new Icon(DEFAULT_ICON, "images/no_icon.png");
             add(defaultIcon);
             setDefaultIcon(defaultIcon);
         }
@@ -240,14 +240,14 @@ public class IconTableModel extends AbstractTableModel
     /**
      * Returns the named icon or the default icon if the named icon does not exist
      */
-    public io.github.dsheirer.icon.Icon getIcon(String name)
+    public Icon getIcon(String name)
     {
         if(name == null || name.isEmpty())
         {
             return mDefaultIcon;
         }
 
-        io.github.dsheirer.icon.Icon icon = mIconMap.get(name);
+        Icon icon = mIconMap.get(name);
 
         if(icon == null)
         {
@@ -263,7 +263,7 @@ public class IconTableModel extends AbstractTableModel
     public IconSet getIconSet()
     {
         IconSet iconSet = new IconSet();
-        iconSet.setIcons(new ArrayList<io.github.dsheirer.icon.Icon>(mIconMap.values()));
+        iconSet.setIcons(new ArrayList<Icon>(mIconMap.values()));
         iconSet.setDefaultIcon(getDefaultIcon().getName());
         return iconSet;
     }

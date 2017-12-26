@@ -25,10 +25,12 @@ import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
+import javax.swing.ImageIcon;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
-import java.awt.*;
+import java.awt.Component;
+import java.awt.EventQueue;
+import java.awt.Image;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -154,7 +156,7 @@ public class IconManager
             return mResizedIcons.get(scaledIconName);
         }
 
-        io.github.dsheirer.icon.Icon icon = getModel().getIcon(name);
+        Icon icon = getModel().getIcon(name);
 
         ImageIcon scaledIcon = getScaledIcon(icon.getIcon(), height);
         mResizedIcons.put(scaledIconName, scaledIcon);
@@ -179,6 +181,19 @@ public class IconManager
             height, java.awt.Image.SCALE_SMOOTH);
 
         return new ImageIcon(scaledImage);
+    }
+
+    /**
+     * Constructs an icon and scales it to the specified height
+     * @param path
+     * @param height
+     * @return
+     */
+    public static ImageIcon getScaledIcon(String path, int height)
+    {
+        Icon icon = new Icon("", path);
+
+        return getScaledIcon(icon.getIcon(), height);
     }
 
     /**
@@ -359,26 +374,26 @@ public class IconManager
     {
         IconSet iconSet = new IconSet();
 
-        io.github.dsheirer.icon.Icon defaultIcon = new io.github.dsheirer.icon.Icon(IconTableModel.DEFAULT_ICON, "images/no_icon.png");
+        Icon defaultIcon = new Icon(IconTableModel.DEFAULT_ICON, "images/no_icon.png");
         iconSet.add(defaultIcon);
         iconSet.setDefaultIcon(defaultIcon.getName());
 
-        iconSet.add(new io.github.dsheirer.icon.Icon("Ambulance", "images/ambulance.png"));
-        iconSet.add(new io.github.dsheirer.icon.Icon("Block Truck", "images/concrete_block_truck.png"));
-        iconSet.add(new io.github.dsheirer.icon.Icon("CWID", "images/cwid.png"));
-        iconSet.add(new io.github.dsheirer.icon.Icon("Dispatcher", "images/dispatcher.png"));
-        iconSet.add(new io.github.dsheirer.icon.Icon("Dump Truck", "images/dump_truck_red.png"));
-        iconSet.add(new io.github.dsheirer.icon.Icon("Fire Truck", "images/fire_truck.png"));
-        iconSet.add(new io.github.dsheirer.icon.Icon("Garbage Truck", "images/garbage_truck.png"));
-        iconSet.add(new io.github.dsheirer.icon.Icon("Loader", "images/loader.png"));
-        iconSet.add(new io.github.dsheirer.icon.Icon("Police", "images/police.png"));
-        iconSet.add(new io.github.dsheirer.icon.Icon("Propane Truck", "images/propane_truck.png"));
-        iconSet.add(new io.github.dsheirer.icon.Icon("Rescue Truck", "images/rescue_truck.png"));
-        iconSet.add(new io.github.dsheirer.icon.Icon("School Bus", "images/school_bus.png"));
-        iconSet.add(new io.github.dsheirer.icon.Icon("Taxi", "images/taxi.png"));
-        iconSet.add(new io.github.dsheirer.icon.Icon("Train", "images/train.png"));
-        iconSet.add(new io.github.dsheirer.icon.Icon("Transport Bus", "images/opt_bus.png"));
-        iconSet.add(new io.github.dsheirer.icon.Icon("Van", "images/van.png"));
+        iconSet.add(new Icon("Ambulance", "images/ambulance.png"));
+        iconSet.add(new Icon("Block Truck", "images/concrete_block_truck.png"));
+        iconSet.add(new Icon("CWID", "images/cwid.png"));
+        iconSet.add(new Icon("Dispatcher", "images/dispatcher.png"));
+        iconSet.add(new Icon("Dump Truck", "images/dump_truck_red.png"));
+        iconSet.add(new Icon("Fire Truck", "images/fire_truck.png"));
+        iconSet.add(new Icon("Garbage Truck", "images/garbage_truck.png"));
+        iconSet.add(new Icon("Loader", "images/loader.png"));
+        iconSet.add(new Icon("Police", "images/police.png"));
+        iconSet.add(new Icon("Propane Truck", "images/propane_truck.png"));
+        iconSet.add(new Icon("Rescue Truck", "images/rescue_truck.png"));
+        iconSet.add(new Icon("School Bus", "images/school_bus.png"));
+        iconSet.add(new Icon("Taxi", "images/taxi.png"));
+        iconSet.add(new Icon("Train", "images/train.png"));
+        iconSet.add(new Icon("Transport Bus", "images/opt_bus.png"));
+        iconSet.add(new Icon("Van", "images/van.png"));
 
         return iconSet;
     }
