@@ -24,7 +24,8 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
+import javax.swing.ImageIcon;
+import java.net.URL;
 
 @JacksonXmlRootElement(localName = "icon")
 public class Icon implements Comparable<Icon>
@@ -80,7 +81,17 @@ public class Icon implements Comparable<Icon>
         {
             try
             {
-                mImageIcon = new ImageIcon(mPath);
+                URL imageURL = Icon.class.getResource(mPath);
+
+                if(imageURL == null && !mPath.startsWith("/"))
+                {
+                    imageURL = (Icon.class.getResource("/" + mPath));
+                }
+
+                if(imageURL != null)
+                {
+                    mImageIcon = new ImageIcon(imageURL);
+                }
             }
             catch(Exception e)
             {

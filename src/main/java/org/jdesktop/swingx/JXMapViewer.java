@@ -20,14 +20,22 @@ import org.jdesktop.swingx.painter.Painter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.ImageIcon;
+import javax.swing.JPanel;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.Insets;
+import java.awt.Rectangle;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.beans.DesignMode;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.net.URL;
 import java.util.Set;
 
 /**
@@ -117,8 +125,13 @@ public class JXMapViewer extends JPanel implements DesignMode
 		// make a dummy loading image
 		try
 		{
-			ImageIcon imageIcon = new ImageIcon( "images/loading.png" );
-			this.setLoadingImage( imageIcon.getImage() );
+			URL imageURL = JXMapViewer.class.getResource("/images/loading.png");
+
+			if(imageURL != null)
+			{
+				ImageIcon imageIcon = new ImageIcon( imageURL );
+				this.setLoadingImage( imageIcon.getImage() );
+			}
 		}
 		catch (Throwable ex)
 		{

@@ -27,7 +27,12 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
+import javax.swing.JButton;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import java.awt.event.ActionEvent;
@@ -227,7 +232,7 @@ public class BroadcastPanel extends JPanel implements ActionListener, ListSelect
 
         public AddBroadcastConfigurationItem(BroadcastServerType type)
         {
-            super(type.toString(), mIconManager.getScaledIcon(new ImageIcon(type.getIconPath()), 14));
+            super(type.toString(), mIconManager.getScaledIcon(type.getIconPath(), 14));
 
             mBroadcastServerType = type;
 

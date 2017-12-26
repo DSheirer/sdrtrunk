@@ -29,10 +29,16 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JSlider;
+import javax.swing.JTextField;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.awt.*;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -73,7 +79,7 @@ public class IcecastHTTPConfigurationEditor extends BroadcastConfigurationEditor
 
         JLabel channelLabel = new JLabel("Icecast 2 (v2.4+) Stream");
 
-        ImageIcon icon = mIconManager.getScaledIcon(new ImageIcon(BroadcastServerType.ICECAST_HTTP.getIconPath()), 25);
+        ImageIcon icon = mIconManager.getScaledIcon(BroadcastServerType.ICECAST_HTTP.getIconPath(), 25);
         channelLabel.setIcon(icon);
 
         add(channelLabel, "span, align center");

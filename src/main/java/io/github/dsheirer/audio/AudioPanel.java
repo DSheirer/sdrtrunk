@@ -29,10 +29,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sound.sampled.FloatControl;
-import javax.swing.*;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JSlider;
+import javax.swing.SwingUtilities;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
@@ -44,10 +53,8 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
 
     private static final Logger mLog = LoggerFactory.getLogger(AudioPanel.class);
 
-    private static ImageIcon MUTED_ICON = IconManager.getScaledIcon(
-        new ImageIcon("images/audio_muted.png"), 20);
-    private static ImageIcon UNMUTED_ICON = IconManager.getScaledIcon(
-        new ImageIcon("images/audio_unmuted.png"), 20);
+    private static ImageIcon MUTED_ICON = IconManager.getScaledIcon("/images/audio_muted.png", 20);
+    private static ImageIcon UNMUTED_ICON = IconManager.getScaledIcon("/images/audio_unmuted.png", 20);
 
     private IconManager mIconManager;
     private SettingsManager mSettingsManager;
