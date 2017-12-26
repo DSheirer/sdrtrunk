@@ -1,5 +1,18 @@
+0.3.3 20171225
+ - Changes build system from ant to gradle.  Thanks to: Roman Tsypuk https://github.com/tsypuk
+ - Adds LIST and ID3 metadata to wav audio recordings
 
-0.3.0-beta1 20170129
+0.3.2 20171105
+ - Resolves issue with tuner frequency adjustments that was causing channel processing
+   to lockup and show persistent 'overflow' state in each channel status
+ - Resolves issue with broadcastify 'mountpoint-in-use' error handling and updates
+   memory usage logging
+ - Resolves issue with Shoutcast 2 login error
+
+0.3.1 20171009
+ - Resolves Java 9 incompatibility issues
+
+0.3.0 20170922
  - REQUIRES: Java 8 (or newer) for compatibility and eventual changeover to JavaFX
  - FEATURE: audio streaming - adds capability to stream to multiple remote broadcast
    servers (Broadcastify, Icecast v2.3 and v2.4+, and Shoutcast V1 and V2).  Each
@@ -34,7 +47,7 @@
  - Updated Baseband (I/Q) recording at 48 kHz
  - Added Airspy tuner support
  - New traffic channel pool manager for trunked call following
- - P25 Decoder for C4FM and LSM with trunked call following and audio 
+ - P25 Decoder for C4FM and LSM with trunked call following and audio
    decoding via the JMBE library
  - Updated MPT1327 decoder and trunked call following.
  - Updated spectral and waterfall display with zoom (2-64x) and pan and automatic
