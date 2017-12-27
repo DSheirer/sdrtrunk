@@ -24,12 +24,26 @@ import io.github.dsheirer.source.tuner.configuration.TunerConfigurationEvent;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
 import io.github.dsheirer.source.tuner.rtl.RTL2832Tuner;
 import io.github.dsheirer.source.tuner.rtl.RTL2832TunerController;
+import io.github.dsheirer.source.tuner.rtl.RTL2832TunerController.SampleRate;
+import io.github.dsheirer.source.tuner.rtl.r820t.R820TTunerController.R820TGain;
+import io.github.dsheirer.source.tuner.rtl.r820t.R820TTunerController.R820TLNAGain;
+import io.github.dsheirer.source.tuner.rtl.r820t.R820TTunerController.R820TMixerGain;
+import io.github.dsheirer.source.tuner.rtl.r820t.R820TTunerController.R820TVGAGain;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.LibUsbException;
 
-import javax.swing.*;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JSeparator;
+import javax.swing.JSpinner;
+import javax.swing.JTextField;
+import javax.swing.SpinnerModel;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.usb.UsbException;
@@ -44,61 +58,61 @@ public class R820TTunerEditor extends TunerConfigurationEditor
 	private final static Logger mLog = LoggerFactory.getLogger( R820TTunerEditor.class );
 
 	private static final long serialVersionUID = 1L;
-    private static final R820TTunerController.R820TGain DEFAULT_GAIN = R820TTunerController.R820TGain.GAIN_279;
-    
-    private R820TTunerController mController;
+	private static final R820TGain DEFAULT_GAIN = R820TGain.GAIN_279;
 
-    private JTextField mConfigurationName;
-    private JButton mTunerInfo;
-    private JComboBox<RTL2832TunerController.SampleRate> mComboSampleRate;
-    private JSpinner mFrequencyCorrection;
-    private JComboBox<R820TTunerController.R820TGain> mComboMasterGain;
-    private JComboBox<R820TTunerController.R820TMixerGain> mComboMixerGain;
-    private JComboBox<R820TTunerController.R820TLNAGain> mComboLNAGain;
-    private JComboBox<R820TTunerController.R820TVGAGain> mComboVGAGain;
-    private boolean mLoading;
+	private R820TTunerController mController;
 
-    public R820TTunerEditor(TunerConfigurationModel tunerConfigurationModel, RTL2832Tuner tuner )
-    {
-    	super( tunerConfigurationModel );
-    	mController = (R820TTunerController)tuner.getController();
-        
-        init();
-    }
-	
+	private JTextField mConfigurationName;
+	private JButton mTunerInfo;
+	private JComboBox<SampleRate> mComboSampleRate;
+	private JSpinner mFrequencyCorrection;
+	private JComboBox<R820TGain> mComboMasterGain;
+	private JComboBox<R820TMixerGain> mComboMixerGain;
+	private JComboBox<R820TLNAGain> mComboLNAGain;
+	private JComboBox<R820TVGAGain> mComboVGAGain;
+	private boolean mLoading;
+
+	public R820TTunerEditor( TunerConfigurationModel tunerConfigurationModel, RTL2832Tuner tuner )
+	{
+		super( tunerConfigurationModel );
+		mController = (R820TTunerController)tuner.getController();
+
+		init();
+	}
+
 	private R820TTunerConfiguration getConfiguration()
 	{
 		if( hasItem() )
 		{
 			return (R820TTunerConfiguration)getItem();
 		}
-		
+
 		return null;
 	}
 
 	private void init()
-    {
-		setLayout( new MigLayout( "fill,wrap 4", "[right][grow,fill][right][grow,fill]", 
-				"[][][][][][][][grow]" ) );
-		
+	{
+		setLayout( new MigLayout( "fill,wrap 4", "[right][grow,fill][right][grow,fill]",
+			"[][][][][][][][grow]" ) );
+
 		add( new JLabel( "R820T Tuner Configuration" ), "span,align center" );
 
 		mConfigurationName = new JTextField();
 		mConfigurationName.setEnabled( false );
-		mConfigurationName.addFocusListener( new FocusListener() 
+		mConfigurationName.addFocusListener( new FocusListener()
 		{
 			@Override
-            public void focusLost( FocusEvent e )
-            {
+			public void focusLost( FocusEvent e )
+			{
 				save();
-            }
+			}
 			@Override
-            public void focusGained( FocusEvent e ) {}
+			public void focusGained( FocusEvent e ) {}
 		} );
-		
+
 		add( new JLabel( "Name:" ) );
 		add( mConfigurationName, "span 2" );
-		
+
 		mTunerInfo = new JButton( "Tuner Info" );
 		mTunerInfo.setEnabled( false );
 		mTunerInfo.addActionListener( new ActionListener()
@@ -106,279 +120,279 @@ public class R820TTunerEditor extends TunerConfigurationEditor
 			@Override
 			public void actionPerformed( ActionEvent e )
 			{
-				JOptionPane.showMessageDialog( R820TTunerEditor.this, getTunerInfo(), 
-						"Tuner Info", JOptionPane.INFORMATION_MESSAGE );
+				JOptionPane.showMessageDialog( R820TTunerEditor.this, getTunerInfo(),
+					"Tuner Info", JOptionPane.INFORMATION_MESSAGE );
 			}
 		} );
 		add( mTunerInfo );
-		
-        mComboSampleRate = new JComboBox<>( RTL2832TunerController.SampleRate.values() );
-        mComboSampleRate.setEnabled( false );
-        mComboSampleRate.addActionListener( new ActionListener() 
-        {
+
+		mComboSampleRate = new JComboBox<>( SampleRate.values() );
+		mComboSampleRate.setEnabled( false );
+		mComboSampleRate.addActionListener( new ActionListener()
+		{
 			@Override
-            public void actionPerformed( ActionEvent e )
-            {
-				RTL2832TunerController.SampleRate sampleRate =
-						(RTL2832TunerController.SampleRate)mComboSampleRate.getSelectedItem();
+			public void actionPerformed( ActionEvent e )
+			{
+				SampleRate sampleRate =
+					(SampleRate)mComboSampleRate.getSelectedItem();
 				try
-                {
+				{
 
 					mController.setSampleRate( sampleRate );
-	                save();
-                }
-                catch ( SourceException | LibUsbException eSampleRate )
-                {
-                	JOptionPane.showMessageDialog( 
-                			R820TTunerEditor.this, 
-                			"R820T Tuner Controller - couldn't apply the sample "
-                			+ "rate setting [" + sampleRate.getLabel() + "] " + 
-                					eSampleRate.getLocalizedMessage() );  
-                	
-                	mLog.error( "R820T Tuner Controller - couldn't apply sample "
-                			+ "rate setting [" + sampleRate.getLabel() + "]", 
-                			eSampleRate );
-                }
-            }
-        } );
-        add( new JLabel( "Sample Rate:" ) );
-        add( mComboSampleRate );
+					save();
+				}
+				catch ( SourceException | LibUsbException eSampleRate )
+				{
+					JOptionPane.showMessageDialog(
+						R820TTunerEditor.this,
+						"R820T Tuner Controller - couldn't apply the sample "
+							+ "rate setting [" + sampleRate.getLabel() + "] " +
+							eSampleRate.getLocalizedMessage() );
 
-        /**
-         * Frequency Correction
-         */
-        SpinnerModel model =
-                new SpinnerNumberModel(     0.0,   //initial value
-                                        -1000.0,   //min
-                                         1000.0,   //max
-                                            0.1 ); //step
+					mLog.error( "R820T Tuner Controller - couldn't apply sample "
+							+ "rate setting [" + sampleRate.getLabel() + "]",
+						eSampleRate );
+				}
+			}
+		} );
+		add( new JLabel( "Sample Rate:" ) );
+		add( mComboSampleRate );
 
-        mFrequencyCorrection = new JSpinner( model );
-        mFrequencyCorrection.setEnabled( false );
+		/**
+		 * Frequency Correction
+		 */
+		SpinnerModel model =
+			new SpinnerNumberModel(     0.0,   //initial value
+				-1000.0,   //min
+				1000.0,   //max
+				0.1 ); //step
 
-        JSpinner.NumberEditor editor = 
-        		(JSpinner.NumberEditor)mFrequencyCorrection.getEditor();  
-        
-        DecimalFormat format = editor.getFormat();  
-        format.setMinimumFractionDigits( 1 );  
-        editor.getTextField().setHorizontalAlignment( SwingConstants.CENTER );          
+		mFrequencyCorrection = new JSpinner( model );
+		mFrequencyCorrection.setEnabled( false );
 
-        mFrequencyCorrection.addChangeListener( new ChangeListener() 
-        {
+		JSpinner.NumberEditor editor =
+			(JSpinner.NumberEditor)mFrequencyCorrection.getEditor();
+
+		DecimalFormat format = editor.getFormat();
+		format.setMinimumFractionDigits( 1 );
+		editor.getTextField().setHorizontalAlignment( SwingConstants.CENTER );
+
+		mFrequencyCorrection.addChangeListener( new ChangeListener()
+		{
 			@Override
-            public void stateChanged( ChangeEvent e )
-            {
+			public void stateChanged( ChangeEvent e )
+			{
 				final double value = ((SpinnerNumberModel)mFrequencyCorrection
-						.getModel()).getNumber().doubleValue();
-				
-                try
+					.getModel()).getNumber().doubleValue();
+
+				try
 				{
 					mController.setFrequencyCorrection( value );
-				} 
-                catch ( SourceException e1 )
+				}
+				catch ( SourceException e1 )
 				{
 					mLog.error( "Error setting frequency correction value", e1 );
 				}
-                
-                save();
-            }
-        } );
-        
-        add( new JLabel( "PPM:" ) );
-        add( mFrequencyCorrection );
 
-        add( new JSeparator( JSeparator.HORIZONTAL ), "span,grow" );
-        
-        /**
-         * Gain Controls 
-         */
-        add( new JLabel( "Gain" ), "wrap" );
-        
-        /* Master Gain Control */
-        mComboMasterGain = new JComboBox<R820TTunerController.R820TGain>( R820TTunerController.R820TGain.values() );
-        mComboMasterGain.setEnabled( false );
-        mComboMasterGain.addActionListener( new ActionListener() 
-        {
+				save();
+			}
+		} );
+
+		add( new JLabel( "PPM:" ) );
+		add( mFrequencyCorrection );
+
+		add( new JSeparator( JSeparator.HORIZONTAL ), "span,grow" );
+
+		/**
+		 * Gain Controls
+		 */
+		add( new JLabel( "Gain" ), "wrap" );
+
+		/* Master Gain Control */
+		mComboMasterGain = new JComboBox<R820TGain>( R820TGain.values() );
+		mComboMasterGain.setEnabled( false );
+		mComboMasterGain.addActionListener( new ActionListener()
+		{
 			@Override
-            public void actionPerformed( ActionEvent arg0 )
-            {
+			public void actionPerformed( ActionEvent arg0 )
+			{
 				try
-                {
-					R820TTunerController.R820TGain gain = (R820TTunerController.R820TGain)mComboMasterGain.getSelectedItem();
-					
-	                mController.setGain( (R820TTunerController.R820TGain)mComboMasterGain.getSelectedItem(), true );
-	                
-	                if( gain == R820TTunerController.R820TGain.MANUAL )
-	                {
-	                	mComboMixerGain.setSelectedItem( gain.getMixerGain() ); 
-	                	mComboMixerGain.setEnabled( true );
-	                	
-	                	mComboLNAGain.setSelectedItem( gain.getLNAGain() );
-	                	mComboLNAGain.setEnabled( true );
+				{
+					R820TGain gain = (R820TGain)mComboMasterGain.getSelectedItem();
 
-	                	mComboVGAGain.setSelectedItem( gain.getVGAGain() );
-	                	mComboVGAGain.setEnabled( true );
-	                }
-	                else
-	                {
-	                	mComboMixerGain.setEnabled( false );
-	                	mComboMixerGain.setSelectedItem( gain.getMixerGain() );
+					mController.setGain( (R820TGain)mComboMasterGain.getSelectedItem(), true );
 
-	                	mComboLNAGain.setEnabled( false );
-	                	mComboLNAGain.setSelectedItem( gain.getLNAGain() );
+					if( gain == R820TGain.MANUAL )
+					{
+						mComboMixerGain.setSelectedItem( gain.getMixerGain() );
+						mComboMixerGain.setEnabled( true );
 
-	                	mComboVGAGain.setEnabled( false );
-	                	mComboVGAGain.setSelectedItem( gain.getVGAGain() );
-	                }
+						mComboLNAGain.setSelectedItem( gain.getLNAGain() );
+						mComboLNAGain.setEnabled( true );
 
-	                save();
-                }
-                catch ( UsbException e )
-                {
-                	JOptionPane.showMessageDialog( 
-                			R820TTunerEditor.this, 
-                			"R820T Tuner Controller - couldn't apply the gain "
-                			+ "setting - " + e.getLocalizedMessage() );  
-                	
-                	mLog.error( "R820T Tuner Controller - couldn't apply "
-                			+ "gain setting - ", e );
-                }
-            }
-        } );
-        mComboMasterGain.setToolTipText( "<html>Select <b>AUTOMATIC</b> for auto "
-        		+ "gain, <b>MANUAL</b> to enable<br> independent control of "
-        		+ "<i>Mixer</i>, <i>LNA</i> and <i>Enhance</i> gain<br>"
-        		+ "settings, or one of the individual gain settings for<br>"
-        		+ "semi-manual gain control</html>" );
-        add( new JLabel( "Master:" ) );
-        add( mComboMasterGain );
+						mComboVGAGain.setSelectedItem( gain.getVGAGain() );
+						mComboVGAGain.setEnabled( true );
+					}
+					else
+					{
+						mComboMixerGain.setEnabled( false );
+						mComboMixerGain.setSelectedItem( gain.getMixerGain() );
 
-        /* Mixer Gain Control */
-        mComboMixerGain = new JComboBox<R820TTunerController.R820TMixerGain>( R820TTunerController.R820TMixerGain.values() );
-        mComboMixerGain.setEnabled( false );
-        mComboMixerGain.addActionListener( new ActionListener() 
-        {
+						mComboLNAGain.setEnabled( false );
+						mComboLNAGain.setSelectedItem( gain.getLNAGain() );
+
+						mComboVGAGain.setEnabled( false );
+						mComboVGAGain.setSelectedItem( gain.getVGAGain() );
+					}
+
+					save();
+				}
+				catch ( UsbException e )
+				{
+					JOptionPane.showMessageDialog(
+						R820TTunerEditor.this,
+						"R820T Tuner Controller - couldn't apply the gain "
+							+ "setting - " + e.getLocalizedMessage() );
+
+					mLog.error( "R820T Tuner Controller - couldn't apply "
+						+ "gain setting - ", e );
+				}
+			}
+		} );
+		mComboMasterGain.setToolTipText( "<html>Select <b>AUTOMATIC</b> for auto "
+			+ "gain, <b>MANUAL</b> to enable<br> independent control of "
+			+ "<i>Mixer</i>, <i>LNA</i> and <i>Enhance</i> gain<br>"
+			+ "settings, or one of the individual gain settings for<br>"
+			+ "semi-manual gain control</html>" );
+		add( new JLabel( "Master:" ) );
+		add( mComboMasterGain );
+
+		/* Mixer Gain Control */
+		mComboMixerGain = new JComboBox<R820TMixerGain>( R820TMixerGain.values() );
+		mComboMixerGain.setEnabled( false );
+		mComboMixerGain.addActionListener( new ActionListener()
+		{
 			@Override
-            public void actionPerformed( ActionEvent arg0 )
-            {
+			public void actionPerformed( ActionEvent arg0 )
+			{
 				try
-                {
-					R820TTunerController.R820TMixerGain mixerGain =
-							(R820TTunerController.R820TMixerGain)mComboMixerGain.getSelectedItem();
-					
+				{
+					R820TMixerGain mixerGain =
+						(R820TMixerGain)mComboMixerGain.getSelectedItem();
+
 					if( mixerGain == null )
 					{
 						mixerGain = DEFAULT_GAIN.getMixerGain();
 					}
-					
+
 					if( mComboMixerGain.isEnabled() )
 					{
 						mController.setMixerGain( mixerGain, true );
 					}
 
-	                save();
-                }
-                catch ( UsbException e )
-                {
-                	JOptionPane.showMessageDialog( R820TTunerEditor.this, 
-            			"R820T Tuner Controller - couldn't apply the mixer "
-            			+ "gain setting - " + e.getLocalizedMessage() );  
-                	
-                	mLog.error( "R820T Tuner Controller - couldn't apply mixer "
-                			+ "gain setting - ", e );
-                }
-            }
-        } );
-        mComboMixerGain.setToolTipText( "<html>Mixer Gain.  Set master gain "
-        		+ "to <b>MANUAL</b> to enable adjustment</html>" );
-        
-        add( new JLabel( "Mixer:" ) );
-        add( mComboMixerGain );
+					save();
+				}
+				catch ( UsbException e )
+				{
+					JOptionPane.showMessageDialog( R820TTunerEditor.this,
+						"R820T Tuner Controller - couldn't apply the mixer "
+							+ "gain setting - " + e.getLocalizedMessage() );
 
-        /* LNA Gain Control */
-        mComboLNAGain = new JComboBox<R820TTunerController.R820TLNAGain>( R820TTunerController.R820TLNAGain.values() );
-        mComboLNAGain.setEnabled( false );
-        mComboLNAGain.addActionListener( new ActionListener() 
-        {
+					mLog.error( "R820T Tuner Controller - couldn't apply mixer "
+						+ "gain setting - ", e );
+				}
+			}
+		} );
+		mComboMixerGain.setToolTipText( "<html>Mixer Gain.  Set master gain "
+			+ "to <b>MANUAL</b> to enable adjustment</html>" );
+
+		add( new JLabel( "Mixer:" ) );
+		add( mComboMixerGain );
+
+		/* LNA Gain Control */
+		mComboLNAGain = new JComboBox<R820TLNAGain>( R820TLNAGain.values() );
+		mComboLNAGain.setEnabled( false );
+		mComboLNAGain.addActionListener( new ActionListener()
+		{
 			@Override
-            public void actionPerformed( ActionEvent arg0 )
-            {
+			public void actionPerformed( ActionEvent arg0 )
+			{
 				try
-                {
-					R820TTunerController.R820TLNAGain lnaGain =
-							(R820TTunerController.R820TLNAGain)mComboLNAGain.getSelectedItem();
-					
+				{
+					R820TLNAGain lnaGain =
+						(R820TLNAGain)mComboLNAGain.getSelectedItem();
+
 					if ( lnaGain == null )
 					{
 						lnaGain = DEFAULT_GAIN.getLNAGain();
 					}
-					
+
 					if( mComboLNAGain.isEnabled() )
 					{
 						mController.setLNAGain( lnaGain, true );
 					}
 
-	                save();
-                }
-                catch ( UsbException e )
-                {
-                	JOptionPane.showMessageDialog( R820TTunerEditor.this, 
-            			"R820T Tuner Controller - couldn't apply the LNA "
-            			+ "gain setting - " + e.getLocalizedMessage() );  
-                	
-                	mLog.error( "R820T Tuner Controller - couldn't apply LNA "
-                			+ "gain setting - ", e );
-                }
-            }
-        } );
-        mComboLNAGain.setToolTipText( "<html>LNA Gain.  Set master gain "
-        		+ "to <b>MANUAL</b> to enable adjustment</html>" );
-        
-        add( new JLabel( "LNA:" ) );
-        add( mComboLNAGain );
+					save();
+				}
+				catch ( UsbException e )
+				{
+					JOptionPane.showMessageDialog( R820TTunerEditor.this,
+						"R820T Tuner Controller - couldn't apply the LNA "
+							+ "gain setting - " + e.getLocalizedMessage() );
 
-        /* VGA Gain Control */
-        mComboVGAGain = new JComboBox<R820TTunerController.R820TVGAGain>( R820TTunerController.R820TVGAGain.values() );
-        mComboVGAGain.setEnabled( false );
-        mComboVGAGain.addActionListener( new ActionListener() 
-        {
+					mLog.error( "R820T Tuner Controller - couldn't apply LNA "
+						+ "gain setting - ", e );
+				}
+			}
+		} );
+		mComboLNAGain.setToolTipText( "<html>LNA Gain.  Set master gain "
+			+ "to <b>MANUAL</b> to enable adjustment</html>" );
+
+		add( new JLabel( "LNA:" ) );
+		add( mComboLNAGain );
+
+		/* VGA Gain Control */
+		mComboVGAGain = new JComboBox<R820TVGAGain>( R820TVGAGain.values() );
+		mComboVGAGain.setEnabled( false );
+		mComboVGAGain.addActionListener( new ActionListener()
+		{
 			@Override
-            public void actionPerformed( ActionEvent arg0 )
-            {
+			public void actionPerformed( ActionEvent arg0 )
+			{
 				try
-                {
-					R820TTunerController.R820TVGAGain vgaGain =
-							(R820TTunerController.R820TVGAGain)mComboVGAGain.getSelectedItem();
+				{
+					R820TVGAGain vgaGain =
+						(R820TVGAGain)mComboVGAGain.getSelectedItem();
 
 					if( vgaGain == null )
 					{
 						vgaGain = DEFAULT_GAIN.getVGAGain();
 					}
-					
+
 					if( mComboVGAGain.isEnabled() )
 					{
 						mController.setVGAGain( vgaGain, true );
 					}
-					
-	                save();
-                }
-                catch ( UsbException e )
-                {
-                	JOptionPane.showMessageDialog( R820TTunerEditor.this, 
-            			"R820T Tuner Controller - couldn't apply the VGA "
-            			+ "gain setting - " + e.getLocalizedMessage() );  
-                	
-                	mLog.error( "R820T Tuner Controller - couldn't apply VGA "
-                			+ "gain setting", e );
-                }
-            }
-        } );
-        mComboVGAGain.setToolTipText( "<html>VGA Gain.  Set master gain "
-        		+ "to <b>MANUAL</b> to enable adjustment</html>" );
-        add( new JLabel( "VGA:" ) );
-        add( mComboVGAGain );
-    }
-	
+
+					save();
+				}
+				catch ( UsbException e )
+				{
+					JOptionPane.showMessageDialog( R820TTunerEditor.this,
+						"R820T Tuner Controller - couldn't apply the VGA "
+							+ "gain setting - " + e.getLocalizedMessage() );
+
+					mLog.error( "R820T Tuner Controller - couldn't apply VGA "
+						+ "gain setting", e );
+				}
+			}
+		} );
+		mComboVGAGain.setToolTipText( "<html>VGA Gain.  Set master gain "
+			+ "to <b>MANUAL</b> to enable adjustment</html>" );
+		add( new JLabel( "VGA:" ) );
+		add( mComboVGAGain );
+	}
+
 	/**
 	 * Sets each of the tuner configuration controls to the enabled argument state
 	 */
@@ -388,41 +402,41 @@ public class R820TTunerEditor extends TunerConfigurationEditor
 		{
 			mConfigurationName.setEnabled( enabled );
 		}
-		
+
 		if( mTunerInfo.isEnabled() != enabled )
 		{
 			mTunerInfo.setEnabled( enabled );
 		}
-		
+
 		if( mFrequencyCorrection.isEnabled() != enabled )
 		{
 			mFrequencyCorrection.setEnabled( enabled );
 		}
 
-        if( mComboSampleRate.isEnabled() != enabled )
-        {
-        	mComboSampleRate.setEnabled( enabled );
-        }
+		if( mComboSampleRate.isEnabled() != enabled )
+		{
+			mComboSampleRate.setEnabled( enabled );
+		}
 
-        if( mComboMasterGain.isEnabled() != enabled )
-        {
-        	mComboMasterGain.setEnabled( enabled );
-        }
+		if( mComboMasterGain.isEnabled() != enabled )
+		{
+			mComboMasterGain.setEnabled( enabled );
+		}
 
-        if( mComboMixerGain.isEnabled() != enabled )
-        {
-        	mComboMixerGain.setEnabled( enabled );
-        }
-        
-        if( mComboLNAGain.isEnabled() != enabled )
-        {
-        	mComboLNAGain.setEnabled( enabled );
-        }
-        
-        if( mComboVGAGain.isEnabled() != enabled )
-        {
-        	mComboVGAGain.setEnabled( enabled );
-        }
+		if( mComboMixerGain.isEnabled() != enabled )
+		{
+			mComboMixerGain.setEnabled( enabled );
+		}
+
+		if( mComboLNAGain.isEnabled() != enabled )
+		{
+			mComboLNAGain.setEnabled( enabled );
+		}
+
+		if( mComboVGAGain.isEnabled() != enabled )
+		{
+			mComboVGAGain.setEnabled( enabled );
+		}
 	}
 
 	private String getTunerInfo()
@@ -430,9 +444,9 @@ public class R820TTunerEditor extends TunerConfigurationEditor
 		StringBuilder sb = new StringBuilder();
 
 		RTL2832TunerController.Descriptor descriptor = mController.getDescriptor();
-		
+
 		sb.append( "<html><h3>RTL-2832 with R820T Tuner</h3>" );
-		
+
 		if( descriptor == null )
 		{
 			sb.append( "No EEPROM Descriptor Available" );
@@ -468,37 +482,37 @@ public class R820TTunerEditor extends TunerConfigurationEditor
 
 		return sb.toString();
 	}
-	
+
 	@Override
 	public void save()
 	{
-    	if( hasItem() && !mLoading )
-    	{
-    		R820TTunerConfiguration config = getConfiguration();
+		if( hasItem() && !mLoading )
+		{
+			R820TTunerConfiguration config = getConfiguration();
 
-    		config.setName( mConfigurationName.getText() );
+			config.setName( mConfigurationName.getText() );
 
 			double value = ((SpinnerNumberModel)mFrequencyCorrection
-					.getModel()).getNumber().doubleValue();
-    		config.setFrequencyCorrection( value );
-    		
-    		config.setSampleRate( (RTL2832TunerController.SampleRate)mComboSampleRate.getSelectedItem() );
-    		
-			R820TTunerController.R820TGain gain = (R820TTunerController.R820TGain)mComboMasterGain.getSelectedItem();
+				.getModel()).getNumber().doubleValue();
+			config.setFrequencyCorrection( value );
+
+			config.setSampleRate( (SampleRate)mComboSampleRate.getSelectedItem() );
+
+			R820TGain gain = (R820TGain)mComboMasterGain.getSelectedItem();
 			config.setMasterGain( gain );
-			
-			R820TTunerController.R820TMixerGain mixerGain = (R820TTunerController.R820TMixerGain)mComboMixerGain.getSelectedItem();
+
+			R820TMixerGain mixerGain = (R820TMixerGain)mComboMixerGain.getSelectedItem();
 			config.setMixerGain( mixerGain );
-			
-			R820TTunerController.R820TLNAGain lnaGain = (R820TTunerController.R820TLNAGain)mComboLNAGain.getSelectedItem();
+
+			R820TLNAGain lnaGain = (R820TLNAGain)mComboLNAGain.getSelectedItem();
 			config.setLNAGain( lnaGain );
 
-			R820TTunerController.R820TVGAGain vgaGain = (R820TTunerController.R820TVGAGain)mComboVGAGain.getSelectedItem();
+			R820TVGAGain vgaGain = (R820TVGAGain)mComboVGAGain.getSelectedItem();
 			config.setVGAGain( vgaGain );
-			
-			getTunerConfigurationModel().broadcast( 
+
+			getTunerConfigurationModel().broadcast(
 				new TunerConfigurationEvent( getConfiguration(), TunerConfigurationEvent.Event.CHANGE ) );
-    	}
+		}
 	}
 
 	@Override
@@ -508,21 +522,21 @@ public class R820TTunerEditor extends TunerConfigurationEditor
 
 		//Toggle loading so that we don't fire a change event and schedule a settings file save
 		mLoading = true;
-		
+
 		if( hasItem() )
 		{
 			R820TTunerConfiguration config = getConfiguration();
-			
+
 			if( tunerConfiguration.isAssigned() )
 			{
 				setControlsEnabled( true );
 				mConfigurationName.setText( config.getName() );
-		        mFrequencyCorrection.setValue( config.getFrequencyCorrection() );
-		        mComboSampleRate.setSelectedItem( config.getSampleRate() );
-		        mComboMasterGain.setSelectedItem( config.getMasterGain() );
-		        mComboMixerGain.setSelectedItem( config.getMixerGain() );
-		        mComboLNAGain.setSelectedItem( config.getLNAGain() );
-		        mComboVGAGain.setSelectedItem( config.getVGAGain() );
+				mFrequencyCorrection.setValue( config.getFrequencyCorrection() );
+				mComboSampleRate.setSelectedItem( config.getSampleRate() );
+				mComboMasterGain.setSelectedItem( config.getMasterGain() );
+				mComboMixerGain.setSelectedItem( config.getMixerGain() );
+				mComboLNAGain.setSelectedItem( config.getLNAGain() );
+				mComboVGAGain.setSelectedItem( config.getVGAGain() );
 			}
 			else
 			{
@@ -535,7 +549,7 @@ public class R820TTunerEditor extends TunerConfigurationEditor
 			setControlsEnabled( false );
 			mConfigurationName.setText( "" );
 		}
-        
+
 		mLoading = false;
 	}
 }

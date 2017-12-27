@@ -26,13 +26,12 @@ import io.github.dsheirer.instrument.tap.stream.FloatTap;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.real.IFilteredRealBufferListener;
 import io.github.dsheirer.sample.real.RealBuffer;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
+import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class P25_C4FMDecoder extends P25Decoder implements IFilteredRealBufferListener
 {
@@ -60,7 +59,7 @@ public class P25_C4FMDecoder extends P25Decoder implements IFilteredRealBufferLi
 	 * infrastructure and subscriber identities that will be included in each
 	 * decoded message
 	 */
-	public P25_C4FMDecoder(AliasList aliasList, int frequencyCorrectionMaximum )
+	public P25_C4FMDecoder( AliasList aliasList, int frequencyCorrectionMaximum )
 	{
 		super( aliasList );
 		
@@ -193,28 +192,7 @@ public class P25_C4FMDecoder extends P25Decoder implements IFilteredRealBufferLi
     }
 
 	@Override
-	public void reset()
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void start( ScheduledExecutorService executor )
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void stop()
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void setFrequencyChangeListener(	Listener<FrequencyChangeEvent> listener )
+	public void setSourceEventListener(Listener<SourceEvent> listener )
 	{
 		if( mSymbolFilter != null )
 		{
@@ -223,7 +201,7 @@ public class P25_C4FMDecoder extends P25Decoder implements IFilteredRealBufferLi
 	}
 
 	@Override
-	public void removeFrequencyChangeListener()
+	public void removeSourceEventListener()
 	{
 		if( mSymbolFilter != null )
 		{
@@ -232,11 +210,11 @@ public class P25_C4FMDecoder extends P25Decoder implements IFilteredRealBufferLi
 	}
 
 	@Override
-	public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
+	public Listener<SourceEvent> getSourceEventListener()
 	{
 		if( mSymbolFilter != null )
 		{
-			return mSymbolFilter.getFrequencyChangeListener();
+			return mSymbolFilter.getSourceEventListener();
 		}
 		
 		return null;

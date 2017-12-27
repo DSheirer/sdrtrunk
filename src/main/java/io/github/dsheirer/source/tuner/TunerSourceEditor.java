@@ -20,16 +20,16 @@ package io.github.dsheirer.source.tuner;
 import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.gui.control.JFrequencyControl;
 import io.github.dsheirer.gui.editor.Editor;
+import io.github.dsheirer.source.ISourceEventProcessor;
+import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfiguration;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
-import io.github.dsheirer.source.tuner.frequency.IFrequencyChangeProcessor;
 import net.miginfocom.swing.MigLayout;
 
 public class TunerSourceEditor extends Editor<Channel>
 {
-    private static final long serialVersionUID = 1L;
-    private JFrequencyControl mFrequencyControl;
+	private static final long serialVersionUID = 1L;
+	private JFrequencyControl mFrequencyControl;
 
 	public TunerSourceEditor()
 	{
@@ -41,10 +41,10 @@ public class TunerSourceEditor extends Editor<Channel>
 		setLayout( new MigLayout( "insets 0 0 0 0", "[left]", "" ) );
 		mFrequencyControl = new JFrequencyControl();
 		mFrequencyControl.setEnabled( false );
-		mFrequencyControl.addListener( new IFrequencyChangeProcessor()
+		mFrequencyControl.addListener( new ISourceEventProcessor()
 		{
 			@Override
-			public void frequencyChanged( FrequencyChangeEvent event )
+			public void process(SourceEvent event )
 			{
 				setModified( true );
 			}
@@ -63,16 +63,16 @@ public class TunerSourceEditor extends Editor<Channel>
 
 		setModified( false );
 	}
-	
+
 	@Override
 	public void setItem( Channel item )
 	{
 		super.setItem( item );
-		
+
 		if( hasItem() )
 		{
 			SourceConfiguration config = getItem().getSourceConfiguration();
-			
+
 			mFrequencyControl.setEnabled( true );
 
 			if( config instanceof SourceConfigTuner )

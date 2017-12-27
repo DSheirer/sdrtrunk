@@ -30,95 +30,81 @@ import io.github.dsheirer.sample.complex.IComplexBufferListener;
 import io.github.dsheirer.sample.real.IFilteredRealBufferProvider;
 import io.github.dsheirer.sample.real.RealBuffer;
 
-import java.util.concurrent.ScheduledExecutorService;
-
 public class AMDemodulatorModule extends Module
-					implements IComplexBufferListener, IFilteredRealBufferProvider
+    implements IComplexBufferListener, IFilteredRealBufferProvider
 {
-	private static final int SAMPLE_RATE = 48000;
-	
-	private ComplexFIRFilter_CB_CB mIQFilter;
-	private AMDemodulator_CB mDemodulator;
-	private RealFIRFilter_RB_RB mLowPassFilter;	
+    private static final int SAMPLE_RATE = 48000;
+
+    private ComplexFIRFilter_CB_CB mIQFilter;
+    private AMDemodulator_CB mDemodulator;
+    private RealFIRFilter_RB_RB mLowPassFilter;
     private AutomaticGainControl_RB mAGC;
 
-	/**
-	 * FM Demodulator with integrated DC removal and automatic frequency
-	 * correction control.
-	 * 
-	 * @param pass - pass frequency for IQ filtering prior to demodulation.  This
-	 * frequency should be half of the signal bandwidth since the filter will
-	 * be applied against each of the inphase and quadrature signals and the 
-	 * combined pass bandwidth will be twice this value.
-	 * 
-	 * @param stop - stop frequency for IQ filtering prior to demodulation.
-	 * 
-	 * @param maxFrequencyCorrection - defines the maximum frequency +/- that 
-	 * the correction controller can adjust from the center tuned frequency.
-	 * Set this value to 0 for no frequency correction control.
-	 */
-	public AMDemodulatorModule()
-	{
-		mIQFilter = new ComplexFIRFilter_CB_CB( FilterFactory.getLowPass( 
-			SAMPLE_RATE, 5000, 73, WindowType.HAMMING ), 1.0f );
-		
-		mDemodulator = new AMDemodulator_CB( 500.0f );
-		mIQFilter.setListener( mDemodulator );
+    /**
+     * AM Demodulator Module
+     */
+    public AMDemodulatorModule()
+    {
+        mIQFilter = new ComplexFIRFilter_CB_CB(FilterFactory.getLowPass(
+            SAMPLE_RATE, 5000, 73, WindowType.HAMMING), 1.0f);
 
-		mLowPassFilter = new RealFIRFilter_RB_RB( 
-    		FilterFactory.getLowPass( 48000, 3000, 31, WindowType.COSINE ), 1.0f );
-		mDemodulator.setListener( mLowPassFilter );
-		
-		mAGC = new AutomaticGainControl_RB();
-		mLowPassFilter.setListener( mAGC );
-	}
+        mDemodulator = new AMDemodulator_CB(500.0f);
+        mIQFilter.setListener(mDemodulator);
 
-	@Override
-	public Listener<ComplexBuffer> getComplexBufferListener()
-	{
-		return mIQFilter;
-	}
+        mLowPassFilter = new RealFIRFilter_RB_RB(
+            FilterFactory.getLowPass(48000, 3000, 31, WindowType.COSINE), 1.0f);
+        mDemodulator.setListener(mLowPassFilter);
 
-	@Override
-	public void dispose()
-	{
-		mIQFilter.dispose();
-		mIQFilter = null;
-		
-		mDemodulator.dispose();
-		mDemodulator = null;
-		
-		mLowPassFilter.dispose();
-		mLowPassFilter = null;
-		
-		mAGC.dispose();
-		mAGC = null;
-	}
+        mAGC = new AutomaticGainControl_RB();
+        mLowPassFilter.setListener(mAGC);
+    }
 
-	@Override
-	public void reset()
-	{
-	}
+    @Override
+    public Listener<ComplexBuffer> getComplexBufferListener()
+    {
+        return mIQFilter;
+    }
 
-	@Override
-	public void setFilteredRealBufferListener( Listener<RealBuffer> listener )
-	{
-		mAGC.setListener( listener );
-	}
+    @Override
+    public void dispose()
+    {
+        mIQFilter.dispose();
+        mIQFilter = null;
 
-	@Override
-	public void removeFilteredRealBufferListener()
-	{
-		mAGC.removeListener();
-	}
+        mDemodulator.dispose();
+        mDemodulator = null;
 
-	@Override
-	public void start( ScheduledExecutorService executor )
-	{
-	}
+        mLowPassFilter.dispose();
+        mLowPassFilter = null;
 
-	@Override
-	public void stop()
-	{
-	}
+        mAGC.dispose();
+        mAGC = null;
+    }
+
+    @Override
+    public void reset()
+    {
+    }
+
+    @Override
+    public void setFilteredRealBufferListener(Listener<RealBuffer> listener)
+    {
+        mAGC.setListener(listener);
+    }
+
+    @Override
+    public void removeFilteredRealBufferListener()
+    {
+        mAGC.removeListener();
+    }
+
+    @Override
+    public void start()
+    {
+    }
+
+    @Override
+    public void stop()
+    {
+    }
 }

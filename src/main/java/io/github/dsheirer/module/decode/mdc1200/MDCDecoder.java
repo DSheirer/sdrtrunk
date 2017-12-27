@@ -40,7 +40,6 @@ import io.github.dsheirer.sample.real.RealBuffer;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * MDC1200 Decoder - 1200 baud 2FSK decoder that can process 48k sample rate
@@ -200,26 +199,5 @@ public class MDCDecoder extends Decoder implements IFilteredRealBufferListener,
 	public Listener<RealBuffer> getFilteredRealBufferListener()
 	{
 		return mDecimationFilter;
-	}
-
-	@Override
-	public void reset()
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void start( ScheduledExecutorService executor )
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void stop()
-	{
-		// TODO Auto-generated method stub
-		
 	}
 }

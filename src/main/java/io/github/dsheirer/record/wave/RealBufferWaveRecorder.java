@@ -23,6 +23,7 @@ import io.github.dsheirer.sample.ConversionUtils;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.real.IFilteredRealBufferListener;
 import io.github.dsheirer.sample.real.RealBuffer;
+import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +33,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,8 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * WAVE audio recorder module for recording real sample buffers to a wave file
  */
-public class RealBufferWaveRecorder extends Module
-    implements IFilteredRealBufferListener, Listener<RealBuffer>
+public class RealBufferWaveRecorder extends Module implements IFilteredRealBufferListener, Listener<RealBuffer>
 {
     private final static Logger mLog = LoggerFactory.getLogger(RealBufferWaveRecorder.class);
 
@@ -89,7 +88,7 @@ public class RealBufferWaveRecorder extends Module
         return mFile;
     }
 
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
         if(mRunning.compareAndSet(false, true))
         {
@@ -111,7 +110,7 @@ public class RealBufferWaveRecorder extends Module
                 mWriter = new WaveWriter(mAudioFormat, mFile);
 
 				/* Schedule the processor to run every 500 milliseconds */
-                mProcessorHandle = executor.scheduleAtFixedRate(mBufferProcessor, 0, 500, TimeUnit.MILLISECONDS);
+                mProcessorHandle = ThreadPool.SCHEDULED.scheduleAtFixedRate(mBufferProcessor, 0, 500, TimeUnit.MILLISECONDS);
             }
             catch(IOException io)
             {

@@ -26,10 +26,10 @@ import io.github.dsheirer.sample.adapter.ByteSampleAdapter;
 import io.github.dsheirer.sample.adapter.ISampleAdapter;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
 import io.github.dsheirer.source.SourceException;
-import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.TunerManager;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.usb.USBTransferProcessor;
+import io.github.dsheirer.source.tuner.usb.USBTunerController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.Device;
@@ -46,7 +46,7 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public abstract class RTL2832TunerController extends TunerController
+public abstract class RTL2832TunerController extends USBTunerController
 {
     private final static Logger mLog = LoggerFactory.getLogger(RTL2832TunerController.class);
 
@@ -162,6 +162,12 @@ public abstract class RTL2832TunerController extends TunerController
             USB_TRANSFER_BUFFER_SIZE);
     }
 
+    @Override
+    protected USBTransferProcessor getUSBTransferProcessor()
+    {
+        return mUSBTransferProcessor;
+    }
+
     /**
      * Claims the USB interface.  Attempts to detach the active kernel driver
      * if one is currently attached.
@@ -238,21 +244,21 @@ public abstract class RTL2832TunerController extends TunerController
                 /* Set intermediate frequency to 0 Hz */
                 setIFFrequency(0);
 
-				/* Enable I/Q ADC Input */
+                /* Enable I/Q ADC Input */
                 writeDemodRegister(mDeviceHandle,
                     Page.ZERO,
                     (short) 0x08,
                     (short) 0xCD,
                     1);
-				
-				/* Enable zero-IF mode */
+
+                /* Enable zero-IF mode */
                 writeDemodRegister(mDeviceHandle,
                     Page.ONE,
                     (short) 0xB1,
                     (short) 0x1B,
                     1);
-				
-				/* Set default i/q path */
+
+                /* Set default i/q path */
                 writeDemodRegister(mDeviceHandle,
                     Page.ZERO,
                     (short) 0x06,
@@ -271,21 +277,21 @@ public abstract class RTL2832TunerController extends TunerController
         long ifFrequency = ((long) TWO_TO_22_POWER * (long) frequency) /
             (long) mOscillatorFrequency * -1;
 
-		/* Write byte 2 (high) */
+        /* Write byte 2 (high) */
         writeDemodRegister(mDeviceHandle,
             Page.ONE,
             (short) 0x19,
             (short) (Long.rotateRight(ifFrequency, 16) & 0x3F),
             1);
-		
-		/* Write byte 1 (middle) */
+
+        /* Write byte 1 (middle) */
         writeDemodRegister(mDeviceHandle,
             Page.ONE,
             (short) 0x1A,
             (short) (Long.rotateRight(ifFrequency, 8) & 0xFF),
             1);
-		
-		/* Write byte 0 (low) */
+
+        /* Write byte 0 (low) */
         writeDemodRegister(mDeviceHandle,
             Page.ONE,
             (short) 0x1B,
@@ -341,8 +347,8 @@ public abstract class RTL2832TunerController extends TunerController
         try
         {
             claimInterface(handle);
-			
-			/* Perform a dummy write to see if the device needs reset */
+
+            /* Perform a dummy write to see if the device needs reset */
             boolean resetRequired = false;
 
             try
@@ -392,14 +398,14 @@ public abstract class RTL2832TunerController extends TunerController
                 }
             }
 
-			/* Initialize the baseband */
+            /* Initialize the baseband */
             initBaseband(handle);
 
             enableI2CRepeater(handle, true);
 
             boolean controlI2CRepeater = false;
 
-			/* Test for each tuner type until we find the correct one */
+            /* Test for each tuner type until we find the correct one */
             if(isTuner(TunerTypeCheck.E4K, handle, controlI2CRepeater))
             {
                 tunerClass = TunerType.ELONICS_E4000;
@@ -448,7 +454,7 @@ public abstract class RTL2832TunerController extends TunerController
         {
             if(mUSBTransferProcessor != null)
             {
-                mUSBTransferProcessor.removeAllListeners();
+                mUSBTransferProcessor.removeListener();
                 TunerManager.LIBUSB_TRANSFER_PROCESSOR.unregisterTransferProcessor(mUSBTransferProcessor);
             }
 
@@ -468,32 +474,32 @@ public abstract class RTL2832TunerController extends TunerController
 
     public static void initBaseband(DeviceHandle handle) throws LibUsbException
     {
-		/* Initialize USB */
+        /* Initialize USB */
         writeRegister(handle, Block.USB, Address.USB_SYSCTL.getAddress(), 0x09, 1);
         writeRegister(handle, Block.USB, Address.USB_EPA_MAXPKT.getAddress(), 0x0002, 2);
         writeRegister(handle, Block.USB, Address.USB_EPA_CTL.getAddress(), 0x1002, 2);
 
-		/* Power on demod */
+        /* Power on demod */
         writeRegister(handle, Block.SYS, Address.DEMOD_CTL_1.getAddress(), 0x22, 1);
         writeRegister(handle, Block.SYS, Address.DEMOD_CTL.getAddress(), 0xE8, 1);
 
-		/* Reset demod */
+        /* Reset demod */
         writeDemodRegister(handle, Page.ONE, (short) 0x01, 0x14, 1); //Bit 3 = soft reset
         writeDemodRegister(handle, Page.ONE, (short) 0x01, 0x10, 1);
-		
-		/* Disable spectrum inversion and adjacent channel rejection */
+
+        /* Disable spectrum inversion and adjacent channel rejection */
         writeDemodRegister(handle, Page.ONE, (short) 0x15, 0x00, 1);
         writeDemodRegister(handle, Page.ONE, (short) 0x16, 0x0000, 2);
 
-		/* Clear DDC shift and IF frequency registers */
+        /* Clear DDC shift and IF frequency registers */
         writeDemodRegister(handle, Page.ONE, (short) 0x16, 0x00, 1);
         writeDemodRegister(handle, Page.ONE, (short) 0x17, 0x00, 1);
         writeDemodRegister(handle, Page.ONE, (short) 0x18, 0x00, 1);
         writeDemodRegister(handle, Page.ONE, (short) 0x19, 0x00, 1);
         writeDemodRegister(handle, Page.ONE, (short) 0x1A, 0x00, 1);
         writeDemodRegister(handle, Page.ONE, (short) 0x1B, 0x00, 1);
-		
-		/* Set FIR coefficients */
+
+        /* Set FIR coefficients */
         for(int x = 0; x < sFIR_COEFFICIENTS.length; x++)
         {
             writeDemodRegister(handle,
@@ -502,32 +508,32 @@ public abstract class RTL2832TunerController extends TunerController
                 sFIR_COEFFICIENTS[x],
                 1);
         }
-		
-		/* Enable SDR mode, disable DAGC (bit 5) */
+
+        /* Enable SDR mode, disable DAGC (bit 5) */
         writeDemodRegister(handle, Page.ZERO, (short) 0x19, 0x05, 1);
-		
-		/* Init FSM state-holding register */
+
+        /* Init FSM state-holding register */
         writeDemodRegister(handle, Page.ONE, (short) 0x93, 0xF0, 1);
         writeDemodRegister(handle, Page.ONE, (short) 0x94, 0x0F, 1);
-		
-		/* Disable AGC (en_dagc, bit 0) (seems to have no effect) */
+
+        /* Disable AGC (en_dagc, bit 0) (seems to have no effect) */
         writeDemodRegister(handle, Page.ONE, (short) 0x11, 0x00, 1);
 
-		/* Disable RF and IF AGC loop */
+        /* Disable RF and IF AGC loop */
         writeDemodRegister(handle, Page.ONE, (short) 0x04, 0x00, 1);
-		
-		/* Disable PID filter */
+
+        /* Disable PID filter */
         writeDemodRegister(handle, Page.ZERO, (short) 0x61, 0x60, 1);
 
-		/* opt_adc_iq = 0, default ADC_I/ADC_Q datapath */
+        /* opt_adc_iq = 0, default ADC_I/ADC_Q datapath */
         writeDemodRegister(handle, Page.ZERO, (short) 0x06, 0x80, 1);
-		
-		/* Enable Zero-if mode (en_bbin bit), 
-		 *        DC cancellation (en_dc_est),
-		 *        IQ estimation/compensation (en_iq_comp, en_iq_est) */
+
+        /* Enable Zero-if mode (en_bbin bit),
+         *        DC cancellation (en_dc_est),
+         *        IQ estimation/compensation (en_iq_comp, en_iq_est) */
         writeDemodRegister(handle, Page.ONE, (short) 0xB1, 0x1B, 1);
 
-		/* Disable 4.096 MHz clock output on pin TP_CK0 */
+        /* Disable 4.096 MHz clock output on pin TP_CK0 */
         writeDemodRegister(handle, Page.ZERO, (short) 0x0D, 0x83, 1);
     }
 
@@ -896,10 +902,10 @@ public abstract class RTL2832TunerController extends TunerController
             if(type == TunerTypeCheck.FC0012 ||
                 type == TunerTypeCheck.FC2580)
             {
-				/* Initialize the GPIOs */
+                /* Initialize the GPIOs */
                 setGPIOOutput(handle, (byte) 0x20);
 
-				/* Reset tuner before probing */
+                /* Reset tuner before probing */
                 setGPIOBit(handle, (byte) 0x20, true);
                 setGPIOBit(handle, (byte) 0x20, false);
             }
@@ -924,7 +930,7 @@ public abstract class RTL2832TunerController extends TunerController
         return false;
     }
 
-    public int getCurrentSampleRate() throws SourceException
+    public double getCurrentSampleRate()
     {
         return mSampleRate.getRate();
     }
@@ -942,7 +948,7 @@ public abstract class RTL2832TunerController extends TunerController
 
             SampleRate sampleRate = SampleRate.getClosest(rate);
 
-			/* If we're not currently set to this rate, set it as the current rate */
+            /* If we're not currently set to this rate, set it as the current rate */
             if(sampleRate.getRate() != rate)
             {
                 setSampleRate(sampleRate);
@@ -961,23 +967,23 @@ public abstract class RTL2832TunerController extends TunerController
 
     public void setSampleRate(SampleRate sampleRate) throws SourceException
     {
-		/* Write high-order 16-bits of sample rate ratio to demod register */
+        /* Write high-order 16-bits of sample rate ratio to demod register */
         writeDemodRegister(mDeviceHandle, Page.ONE, (short) 0x9F,
             sampleRate.getRatioHighBits(), 2);
-		
-		/* Write low-order 16-bits of sample rate ratio to demod register.
-		 * Note: none of the defined rates have a low order ratio value, so we
-		 * simply write a zero to the register */
+
+        /* Write low-order 16-bits of sample rate ratio to demod register.
+         * Note: none of the defined rates have a low order ratio value, so we
+         * simply write a zero to the register */
         writeDemodRegister(mDeviceHandle, Page.ONE, (short) 0xA1, 0, 2);
-		
-		/* Set sample rate correction to 0 */
+
+        /* Set sample rate correction to 0 */
         setSampleRateFrequencyCorrection(0);
 
-		/* Reset the demod for the changes to take effect */
+        /* Reset the demod for the changes to take effect */
         writeDemodRegister(mDeviceHandle, Page.ONE, (short) 0x01, 0x14, 1);
         writeDemodRegister(mDeviceHandle, Page.ONE, (short) 0x01, 0x10, 1);
 
-		/* Apply any tuner specific sample rate filter settings */
+        /* Apply any tuner specific sample rate filter settings */
         setSampleRateFilters(sampleRate.getRate());
 
         mSampleRate = sampleRate;
@@ -999,7 +1005,7 @@ public abstract class RTL2832TunerController extends TunerController
             (short) 0x3E,
             (Integer.rotateRight(offset, 8) & 0xFF),
             1);
-		/* Test to retune controller to apply frequency correction */
+        /* Test to retune controller to apply frequency correction */
         try
         {
             mFrequencyController.setFrequency(mFrequencyController.getFrequency());
@@ -1052,7 +1058,7 @@ public abstract class RTL2832TunerController extends TunerController
 
         try
         {
-			/* Tell the RTL-2832 to address the EEPROM */
+            /* Tell the RTL-2832 to address the EEPROM */
             writeRegister(handle, Block.I2C, EEPROM_ADDRESS, (byte) offset, 1);
         }
         catch(LibUsbException e)
@@ -1410,13 +1416,13 @@ public abstract class RTL2832TunerController extends TunerController
 
         private int getLabel(int start)
         {
-			/* Validate length and check second byte for ETX (0x03) */
+            /* Validate length and check second byte for ETX (0x03) */
             if(start > 254 || mData[start + 1] != (byte) 0x03)
             {
                 return 256;
             }
 
-			/* Get label length, including the length and ETX bytes */
+            /* Get label length, including the length and ETX bytes */
             int length = 0xFF & mData[start];
 
             if(start + length > 255)
@@ -1424,10 +1430,10 @@ public abstract class RTL2832TunerController extends TunerController
                 return 256;
             }
 
-			/* Get the label bytes */
+            /* Get the label bytes */
             byte[] data = Arrays.copyOfRange(mData, start + 2, start + length);
-			
-			/* Translate the bytes as UTF-16 Little Endian and store the label */
+
+            /* Translate the bytes as UTF-16 Little Endian and store the label */
             String label = new String(data, Charset.forName("UTF-16LE"));
 
             mLabels.add(label);
@@ -1489,20 +1495,33 @@ public abstract class RTL2832TunerController extends TunerController
     }
 
     /**
-     * Adds a sample listener.  If the USB transfer processor is not currently running, it will auto-start
+     * Adds the IQ buffer listener and automatically starts buffer transfer processing, if not already started.
      */
-    public void addListener(Listener<ComplexBuffer> listener)
+    @Override
+    public void addComplexBufferListener(Listener<ComplexBuffer> listener)
     {
-        mUSBTransferProcessor.addListener(listener);
+        boolean hasExistingListeners = hasComplexBufferListeners();
+
+        super.addComplexBufferListener(listener);
+
+        if(!hasExistingListeners)
+        {
+            mUSBTransferProcessor.setListener(this);
+        }
     }
 
     /**
-     * Removes the sample listener.  If this is the last registered listener, the USB transfer processor will
-     * halt buffer processing
+     * Removes the IQ buffer listener and stops buffer transfer processing if there are no more listeners.
      */
-    public void removeListener(Listener<ComplexBuffer> listener)
+    @Override
+    public void removeComplexBufferListener(Listener<ComplexBuffer> listener)
     {
-        mUSBTransferProcessor.removeListener(listener);
+        super.removeComplexBufferListener(listener);
+
+        if(!hasComplexBufferListeners())
+        {
+            mUSBTransferProcessor.removeListener();
+        }
     }
 
     /**

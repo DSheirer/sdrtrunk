@@ -142,7 +142,7 @@ public class AutomaticGainControl
 
     public float process( float currentSample )
     {
-		float delayedSample = mDelayBuffer.get( currentSample );
+		float delayedSample = mDelayBuffer.putAndGet( currentSample );
 
 		double gain = MANUAL_AGC_GAIN;
 		

@@ -34,7 +34,6 @@ import io.github.dsheirer.util.StringUtils;
 
 import java.util.Iterator;
 import java.util.TreeSet;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class Fleetsync2DecoderState extends DecoderState
 {
@@ -64,24 +63,9 @@ public class Fleetsync2DecoderState extends DecoderState
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
-    {
-    }
-
-    @Override
-    public void stop()
-    {
-    }
-
-    @Override
     public void dispose()
     {
         super.dispose();
-    }
-
-    @Override
-    public void init()
-    {
     }
 
     /**
@@ -94,6 +78,24 @@ public class Fleetsync2DecoderState extends DecoderState
         mEmergencyIdents.clear();
 
         resetState();
+    }
+
+    @Override
+    public void start()
+    {
+
+    }
+
+    @Override
+    public void stop()
+    {
+
+    }
+
+    @Override
+    public void init()
+    {
+
     }
 
     /**

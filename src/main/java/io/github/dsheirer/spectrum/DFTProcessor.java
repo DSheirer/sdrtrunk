@@ -1,19 +1,16 @@
 /*******************************************************************************
- * sdrtrunk
+ * sdr-trunk
  * Copyright (C) 2014-2017 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
 package io.github.dsheirer.spectrum;
@@ -25,8 +22,8 @@ import io.github.dsheirer.sample.Buffer;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
-import io.github.dsheirer.source.tuner.frequency.IFrequencyChangeProcessor;
+import io.github.dsheirer.source.ISourceEventProcessor;
+import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.spectrum.converter.DFTResultsConverter;
 import io.github.dsheirer.util.ThreadPool;
 import org.jtransforms.fft.FloatFFT_1D;
@@ -46,7 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Processes both complex samples or float samples and dispatches a float array
  * of DFT results, using configurable fft size and output dispatch timelines.
  */
-public class DFTProcessor implements Listener<ComplexBuffer>, IFrequencyChangeProcessor, IDFTWidthChangeProcessor
+public class DFTProcessor implements Listener<ComplexBuffer>, ISourceEventProcessor, IDFTWidthChangeProcessor
 {
     private final static Logger mLog = LoggerFactory.getLogger(DFTProcessor.class);
 
@@ -70,7 +67,7 @@ public class DFTProcessor implements Listener<ComplexBuffer>, IFrequencyChangePr
 
     /* The Cosine and Hanning windows seem to offer the best spectral display
      * with minimal bin leakage/smearing */
-    private WindowType mWindowType = Window.WindowType.HANNING;
+    private WindowType mWindowType = WindowType.BLACKMAN_HARRIS_7;
 
     private FloatFFT_1D mFFT = new FloatFFT_1D(mDFTSize.getSize());
 
@@ -452,7 +449,7 @@ public class DFTProcessor implements Listener<ComplexBuffer>, IFrequencyChangePr
     }
 
     @Override
-    public void frequencyChanged(FrequencyChangeEvent event)
+    public void process(SourceEvent event)
     {
         switch(event.getEvent())
         {

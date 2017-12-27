@@ -4,10 +4,10 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.instrument.Instrumentable;
 import io.github.dsheirer.module.decode.Decoder;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.source.tuner.frequency.IFrequencyChangeListener;
-import io.github.dsheirer.source.tuner.frequency.IFrequencyChangeProvider;
+import io.github.dsheirer.source.ISourceEventListener;
+import io.github.dsheirer.source.ISourceEventProvider;
 
-public abstract class P25Decoder extends Decoder implements IFrequencyChangeListener, IFrequencyChangeProvider, Instrumentable
+public abstract class P25Decoder extends Decoder implements ISourceEventListener, ISourceEventProvider, Instrumentable
 {
 	private P25MessageProcessor mMessageProcessor;
 	

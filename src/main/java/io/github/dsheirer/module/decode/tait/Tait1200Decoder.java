@@ -40,7 +40,6 @@ import io.github.dsheirer.sample.real.RealBuffer;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * TAIT 1200 - 1200 baud 2FSK decoder
@@ -188,26 +187,5 @@ public class Tait1200Decoder extends Decoder implements IFilteredRealBufferListe
 	public DecoderType getDecoderType()
 	{
 		return DecoderType.TAIT_1200;
-	}
-
-	@Override
-	public void reset()
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void start( ScheduledExecutorService executor )
-	{
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void stop()
-	{
-		// TODO Auto-generated method stub
-		
 	}
 }

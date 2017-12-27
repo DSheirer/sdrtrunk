@@ -144,7 +144,7 @@ public class RecorderManager implements Listener<AudioPacket>
                         {
                             recorder = new AudioPacketWaveRecorder(filePrefix, audioPacket.getMetadata());
 
-                            recorder.start(ThreadPool.SCHEDULED);
+                            recorder.start();
 
                             recorder.receive(audioPacket);
                             mRecorders.put(identifier, recorder);

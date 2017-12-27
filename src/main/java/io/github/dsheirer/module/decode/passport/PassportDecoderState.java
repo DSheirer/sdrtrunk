@@ -40,7 +40,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.TreeSet;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class PassportDecoderState extends DecoderState
 {
@@ -74,21 +73,6 @@ public class PassportDecoderState extends DecoderState
     public DecoderType getDecoderType()
     {
         return DecoderType.PASSPORT;
-    }
-
-    @Override
-    public void start(ScheduledExecutorService executor)
-    {
-    }
-
-    @Override
-    public void init()
-    {
-    }
-
-    @Override
-    public void stop()
-    {
     }
 
     private void logTalkgroup(String talkgroup)
@@ -517,6 +501,24 @@ public class PassportDecoderState extends DecoderState
         mNeighborLCNs.clear();
 
         resetState();
+    }
+
+    @Override
+    public void start()
+    {
+
+    }
+
+    @Override
+    public void stop()
+    {
+
+    }
+
+    @Override
+    public void init()
+    {
+
     }
 
     private void resetState()

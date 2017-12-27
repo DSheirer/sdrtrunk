@@ -33,7 +33,6 @@ import io.github.dsheirer.sample.real.RealBuffer;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class LTRNetDecoder extends Decoder
 			implements IUnFilteredRealBufferListener, Instrumentable
@@ -118,15 +117,5 @@ public class LTRNetDecoder extends Decoder
 	public void reset()
 	{
 		mLTRMessageFramer.reset();
-	}
-
-	@Override
-	public void start( ScheduledExecutorService executor )
-	{
-	}
-
-	@Override
-	public void stop()
-	{
 	}
 }

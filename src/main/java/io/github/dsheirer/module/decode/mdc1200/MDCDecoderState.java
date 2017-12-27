@@ -34,7 +34,6 @@ import io.github.dsheirer.util.StringUtils;
 
 import java.util.Iterator;
 import java.util.TreeSet;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class MDCDecoderState extends DecoderState
 {
@@ -60,22 +59,30 @@ public class MDCDecoderState extends DecoderState
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
-    {
-    }
-
-    @Override
-    public void stop()
-    {
-    }
-
-    @Override
     public void reset()
     {
         mIdents.clear();
         mEmergencyIdents.clear();
 
         resetState();
+    }
+
+    @Override
+    public void start()
+    {
+
+    }
+
+    @Override
+    public void stop()
+    {
+
+    }
+
+    @Override
+    public void init()
+    {
+
     }
 
     private void resetState()
@@ -243,12 +250,6 @@ public class MDCDecoderState extends DecoderState
         }
 
         return sb.toString();
-    }
-
-    @Override
-    public void init()
-    {
-        /* No initialization required */
     }
 
     /**

@@ -29,7 +29,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.LibUsbException;
 
-import javax.swing.*;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JSeparator;
+import javax.swing.JSlider;
+import javax.swing.JSpinner;
+import javax.swing.JTextField;
+import javax.swing.SpinnerModel;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.usb.UsbException;
@@ -42,43 +54,43 @@ import java.util.List;
 
 public class AirspyTunerEditor extends TunerConfigurationEditor
 {
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( AirspyTunerEditor.class );
+	private final static Logger mLog =
+		LoggerFactory.getLogger( AirspyTunerEditor.class );
 
-    private JTextField mConfigurationName;
-    private JButton mTunerInfo;
+	private JTextField mConfigurationName;
+	private JButton mTunerInfo;
 
-    private JComboBox<AirspySampleRate> mSampleRateCombo;
-    private JSpinner mFrequencyCorrection;
+	private JComboBox<AirspySampleRate> mSampleRateCombo;
+	private JSpinner mFrequencyCorrection;
 
-    private JComboBox<GainMode> mGainModeCombo;
+	private JComboBox<GainMode> mGainModeCombo;
 
-    private JSlider mMasterGain;
-    private JLabel mMasterGainValueLabel;
+	private JSlider mMasterGain;
+	private JLabel mMasterGainValueLabel;
 
-    private JSlider mIFGain;
-    private JLabel mIFGainValueLabel;
+	private JSlider mIFGain;
+	private JLabel mIFGainValueLabel;
 
-    private JSlider mLNAGain;
-    private JLabel mLNAGainValueLabel;
+	private JSlider mLNAGain;
+	private JLabel mLNAGainValueLabel;
 
-    private JSlider mMixerGain;
-    private JLabel mMixerGainValueLabel;
+	private JSlider mMixerGain;
+	private JLabel mMixerGainValueLabel;
 
-    private JCheckBox mLNAAGC;
-    private JCheckBox mMixerAGC;
+	private JCheckBox mLNAAGC;
+	private JCheckBox mMixerAGC;
 
-    private AirspyTunerController mController;
-    private boolean mLoading;
+	private AirspyTunerController mController;
+	private boolean mLoading;
 
-	public AirspyTunerEditor( TunerConfigurationModel tunerConfigurationModel, 
-								   AirspyTuner tuner )
+	public AirspyTunerEditor( TunerConfigurationModel tunerConfigurationModel,
+							  AirspyTuner tuner )
 	{
 		super( tunerConfigurationModel );
 		mController = tuner.getController();
-		
+
 		init();
 	}
 
@@ -88,33 +100,33 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 		{
 			return (AirspyTunerConfiguration)getItem();
 		}
-		
+
 		return null;
 	}
 
-    private void init()
-    {
-		setLayout( new MigLayout( "fill,wrap 4", "[right][grow,fill][right][grow,fill]", 
-				"[][][][][][grow]" ) );
-		
+	private void init()
+	{
+		setLayout( new MigLayout( "fill,wrap 4", "[right][grow,fill][right][grow,fill]",
+			"[][][][][][grow]" ) );
+
 		add( new JLabel( "Airspy Tuner Configuration" ), "span,align center" );
-        
+
 		mConfigurationName = new JTextField();
 		mConfigurationName.setEnabled( false );
-		mConfigurationName.addFocusListener( new FocusListener() 
+		mConfigurationName.addFocusListener( new FocusListener()
 		{
 			@Override
-            public void focusLost( FocusEvent e )
-            {
+			public void focusLost( FocusEvent e )
+			{
 				save();
-            }
+			}
 			@Override
-            public void focusGained( FocusEvent e ) {}
+			public void focusGained( FocusEvent e ) {}
 		} );
-		
+
 		add( new JLabel( "Name:" ) );
 		add( mConfigurationName, "span 2" );
-		
+
 		mTunerInfo = new JButton( "Tuner Info" );
 		mTunerInfo.setEnabled( false );
 		mTunerInfo.addActionListener( new ActionListener()
@@ -122,22 +134,22 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 			@Override
 			public void actionPerformed( ActionEvent e )
 			{
-				JOptionPane.showMessageDialog( AirspyTunerEditor.this, getTunerInfo(), 
-						"Tuner Info", JOptionPane.INFORMATION_MESSAGE );
+				JOptionPane.showMessageDialog( AirspyTunerEditor.this, getTunerInfo(),
+					"Tuner Info", JOptionPane.INFORMATION_MESSAGE );
 			}
 		} );
 		add( mTunerInfo );
-		
+
 		/**
 		 * Sample Rate
 		 */
 		add( new JLabel( "Sample Rate:" ) );
-		
+
 		List<AirspySampleRate> rates = mController.getSampleRates();
-		
-		mSampleRateCombo = new JComboBox<AirspySampleRate>( 
-			new DefaultComboBoxModel<AirspySampleRate>( rates.toArray( 
-					new AirspySampleRate[ rates.size() ] ) ) );
+
+		mSampleRateCombo = new JComboBox<AirspySampleRate>(
+			new DefaultComboBoxModel<AirspySampleRate>( rates.toArray(
+				new AirspySampleRate[ rates.size() ] ) ) );
 		mSampleRateCombo.setEnabled( false );
 		mSampleRateCombo.addActionListener( new ActionListener()
 		{
@@ -150,62 +162,62 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 				{
 					mController.setSampleRate( rate );
 					save();
-				} 
+				}
 				catch ( LibUsbException | UsbException | SourceException e1 )
 				{
-					JOptionPane.showMessageDialog( AirspyTunerEditor.this, 
+					JOptionPane.showMessageDialog( AirspyTunerEditor.this,
 						"Couldn't set sample rate to " + rate.getLabel() );
-					
+
 					mLog.error( "Error setting airspy sample rate", e1 );
-				} 
+				}
 			}
 		} );
-		
+
 		add( mSampleRateCombo );
 
-        /**
-         * Frequency Correction
-         */
-        SpinnerModel model =
-                new SpinnerNumberModel(     0.0,   //initial value
-                                        -1000.0,   //min
-                                         1000.0,   //max
-                                            0.1 ); //step
+		/**
+		 * Frequency Correction
+		 */
+		SpinnerModel model =
+			new SpinnerNumberModel(     0.0,   //initial value
+				-1000.0,   //min
+				1000.0,   //max
+				0.1 ); //step
 
-        mFrequencyCorrection = new JSpinner( model );
-        mFrequencyCorrection.setEnabled( false );
+		mFrequencyCorrection = new JSpinner( model );
+		mFrequencyCorrection.setEnabled( false );
 
-        JSpinner.NumberEditor editor = 
-        		(JSpinner.NumberEditor)mFrequencyCorrection.getEditor();  
-        
-        DecimalFormat format = editor.getFormat();  
-        format.setMinimumFractionDigits( 1 );  
-        editor.getTextField().setHorizontalAlignment( SwingConstants.CENTER );          
+		JSpinner.NumberEditor editor =
+			(JSpinner.NumberEditor)mFrequencyCorrection.getEditor();
 
-        mFrequencyCorrection.addChangeListener( new ChangeListener() 
-        {
+		DecimalFormat format = editor.getFormat();
+		format.setMinimumFractionDigits( 1 );
+		editor.getTextField().setHorizontalAlignment( SwingConstants.CENTER );
+
+		mFrequencyCorrection.addChangeListener( new ChangeListener()
+		{
 			@Override
-            public void stateChanged( ChangeEvent e )
-            {
+			public void stateChanged( ChangeEvent e )
+			{
 				final double value = ((SpinnerNumberModel)mFrequencyCorrection
-						.getModel()).getNumber().doubleValue();
-				
-                try
+					.getModel()).getNumber().doubleValue();
+
+				try
 				{
 					mController.setFrequencyCorrection( value );
-				} 
-                catch ( SourceException e1 )
+				}
+				catch ( SourceException e1 )
 				{
 					mLog.error( "Error setting frequency correction value", e1 );
 				}
-                
-                save();
-            }
-        } );
-        
-        add( new JLabel( "PPM:" ) );
-        add( mFrequencyCorrection );
-		
+
+				save();
+			}
+		} );
+
+		add( new JLabel( "PPM:" ) );
+		add( mFrequencyCorrection );
+
 		add( new JSeparator(), "span,growx,push" );
 
 		/**
@@ -222,11 +234,11 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 				GainMode mode = (GainMode)mGainModeCombo.getSelectedItem();
 
 				updateGainComponents( mode );
-				
+
 				if( hasItem() )
 				{
 					AirspyTunerConfiguration airspy = getConfiguration();
-					
+
 					Gain gain = airspy.getGain();
 
 					if( mode == GainMode.CUSTOM )
@@ -247,25 +259,25 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 						mLNAGain.setValue( gain.getLNA() );
 					}
 				}
-				
+
 				save();
 			}
 		} );
-		
+
 		add( mGainModeCombo, "wrap" );
 
 		/**
 		 * Gain
 		 */
 		add( new JLabel( "Master:" ) );
-		
-		mMasterGain = new JSlider( JSlider.HORIZONTAL, 
-				AirspyTunerController.GAIN_MIN, 
-				AirspyTunerController.GAIN_MAX,
-				AirspyTunerController.GAIN_MIN );
+
+		mMasterGain = new JSlider( JSlider.HORIZONTAL,
+			AirspyTunerController.GAIN_MIN,
+			AirspyTunerController.GAIN_MAX,
+			AirspyTunerController.GAIN_MIN );
 		mMasterGain.setMajorTickSpacing( 1 );
 		mMasterGain.setPaintTicks( true );
-		
+
 		mMasterGain.addChangeListener( new ChangeListener()
 		{
 			@Override
@@ -280,31 +292,31 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 					mController.setGain( gain );
 					save();
 					mMasterGainValueLabel.setText( String.valueOf( gain.getValue() ) );
-				} 
+				}
 				catch ( Exception e )
 				{
 					mLog.error( "Couldn't set airspy gain to:" + gain.name(), e );
-					JOptionPane.showMessageDialog( mMasterGain, "Couldn't set gain value to " + 
-							gain.getValue() );
+					JOptionPane.showMessageDialog( mMasterGain, "Couldn't set gain value to " +
+						gain.getValue() );
 				}
 			}
 		} );
 
 		add( mMasterGain, "span 2" );
-		
+
 		mMasterGainValueLabel = new JLabel( "0" );
 		add( mMasterGainValueLabel );
-		
+
 		add( new JLabel( "IF:" ) );
-		
-		mIFGain = new JSlider( JSlider.HORIZONTAL, 
-								AirspyTunerController.IF_GAIN_MIN, 
-								AirspyTunerController.IF_GAIN_MAX,
-								AirspyTunerController.IF_GAIN_MIN );
-		
+
+		mIFGain = new JSlider( JSlider.HORIZONTAL,
+			AirspyTunerController.IF_GAIN_MIN,
+			AirspyTunerController.IF_GAIN_MAX,
+			AirspyTunerController.IF_GAIN_MIN );
+
 		mIFGain.setMajorTickSpacing( 1 );
 		mIFGain.setPaintTicks( true );
-		
+
 		mIFGain.addChangeListener( new ChangeListener()
 		{
 			@Override
@@ -317,34 +329,34 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 					mController.setIFGain( gain );
 					save();
 					mIFGainValueLabel.setText( String.valueOf( gain ) );
-				} 
+				}
 				catch ( Exception e )
 				{
 					mLog.error( "Couldn't set airspy IF gain to:" + gain, e );
-					
+
 					JOptionPane.showMessageDialog( mIFGain, "Couldn't set IF gain value to " + gain );
 				}
 			}
 		} );
 
 		add( mIFGain, "span 2" );
-		
+
 		mIFGainValueLabel = new JLabel( "0" );
 		add( mIFGainValueLabel );
-		
+
 		/**
-		 *  Mixer Gain 
+		 *  Mixer Gain
 		 */
 		add( new JLabel( "Mixer:" ) );
-		
-		mMixerGain = new JSlider( JSlider.HORIZONTAL, 
-								AirspyTunerController.MIXER_GAIN_MIN, 
-								AirspyTunerController.MIXER_GAIN_MAX,
-								AirspyTunerController.MIXER_GAIN_MIN );
-		
+
+		mMixerGain = new JSlider( JSlider.HORIZONTAL,
+			AirspyTunerController.MIXER_GAIN_MIN,
+			AirspyTunerController.MIXER_GAIN_MAX,
+			AirspyTunerController.MIXER_GAIN_MIN );
+
 		mMixerGain.setMajorTickSpacing( 1 );
 		mMixerGain.setPaintTicks( true );
-		
+
 		mMixerGain.addChangeListener( new ChangeListener()
 		{
 			@Override
@@ -357,7 +369,7 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 					mController.setMixerGain( gain );
 					save();
 					mMixerGainValueLabel.setText( String.valueOf( gain ) );
-				} 
+				}
 				catch ( Exception e )
 				{
 					mLog.error( "Couldn't set airspy Mixer gain to:" + gain, e );
@@ -370,17 +382,17 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 
 		mMixerGainValueLabel = new JLabel( "0" );
 		add( mMixerGainValueLabel );
-		
+
 		add( new JLabel( "LNA:" ) );
-		
-		mLNAGain = new JSlider( JSlider.HORIZONTAL, 
-								AirspyTunerController.LNA_GAIN_MIN, 
-								AirspyTunerController.LNA_GAIN_MAX,
-								AirspyTunerController.LNA_GAIN_MIN );
-		
+
+		mLNAGain = new JSlider( JSlider.HORIZONTAL,
+			AirspyTunerController.LNA_GAIN_MIN,
+			AirspyTunerController.LNA_GAIN_MAX,
+			AirspyTunerController.LNA_GAIN_MIN );
+
 		mLNAGain.setMajorTickSpacing( 1 );
 		mLNAGain.setPaintTicks( true );
-		
+
 		mLNAGain.addChangeListener( new ChangeListener()
 		{
 			@Override
@@ -393,7 +405,7 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 					mController.setLNAGain( gain );
 					save();
 					mLNAGainValueLabel.setText( String.valueOf( gain ) );
-				} 
+				}
 				catch ( Exception e )
 				{
 					mLog.error( "Couldn't set airspy LNA gain to:" + gain, e );
@@ -406,7 +418,7 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 
 		mLNAGainValueLabel = new JLabel( "0" );
 		add( mLNAGainValueLabel );
-		
+
 		mMixerAGC = new JCheckBox( "Mixer AGC" );
 		mMixerAGC.addActionListener( new ActionListener()
 		{
@@ -417,16 +429,16 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 				{
 					mController.setMixerAGC( mMixerAGC.isSelected() );
 					mMixerGain.setEnabled( !mMixerAGC.isSelected() );
-					
+
 					save();
-				} 
+				}
 				catch ( Exception e1 )
 				{
 					mLog.error( "Error setting Mixer AGC Enabled" );
 				}
 			}
 		} );
-		
+
 		add( mMixerAGC, "span 2,center" );
 
 		mLNAAGC = new JCheckBox( "LNA AGC" );
@@ -441,26 +453,26 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 					mLNAGain.setEnabled( !mLNAAGC.isSelected() );
 
 					save();
-				} 
+				}
 				catch ( Exception e1 )
 				{
 					mLog.error( "Error setting LNA AGC Enabled" );
 				}
-				
+
 			}
 		} );
-		
+
 		add( mLNAAGC, "span 2,center" );
-    }
-    
-    /**
-     * Updates the enabled state of each of the gain controls according to the
-     * specified gain mode.  The master gain control is enabled for linearity
-     * and sensitivity and the individual gain controls are disabled, and 
-     * vice-versa for custom mode.
-     */
-    private void updateGainComponents( GainMode mode )
-    {
+	}
+
+	/**
+	 * Updates the enabled state of each of the gain controls according to the
+	 * specified gain mode.  The master gain control is enabled for linearity
+	 * and sensitivity and the individual gain controls are disabled, and
+	 * vice-versa for custom mode.
+	 */
+	private void updateGainComponents( GainMode mode )
+	{
 		switch( mode )
 		{
 			case LINEARITY:
@@ -471,20 +483,20 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 				}
 				if( mIFGain.isEnabled() )
 				{
-				    mIFGain.setEnabled( false );
+					mIFGain.setEnabled( false );
 					mIFGainValueLabel.setEnabled( false );
 				}
 				if( mLNAGain.isEnabled() )
 				{
 					mLNAAGC.setEnabled( false );
-				    mLNAGainValueLabel.setEnabled( false );
-				    mLNAGain.setEnabled( false );
+					mLNAGainValueLabel.setEnabled( false );
+					mLNAGain.setEnabled( false );
 				}
 				if( mMixerGain.isEnabled() )
 				{
-				    mMixerGainValueLabel.setEnabled( false );
-				    mMixerAGC.setEnabled( false );
-				    mMixerGain.setEnabled( false );
+					mMixerGainValueLabel.setEnabled( false );
+					mMixerAGC.setEnabled( false );
+					mMixerGain.setEnabled( false );
 				}
 				break;
 			case SENSITIVITY:
@@ -495,20 +507,20 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 				}
 				if( mIFGain.isEnabled() )
 				{
-				    mIFGain.setEnabled( false );
+					mIFGain.setEnabled( false );
 					mIFGainValueLabel.setEnabled( false );
 				}
 				if( mLNAGain.isEnabled() )
 				{
 					mLNAAGC.setEnabled( false );
-				    mLNAGainValueLabel.setEnabled( false );
-				    mLNAGain.setEnabled( false );
+					mLNAGainValueLabel.setEnabled( false );
+					mLNAGain.setEnabled( false );
 				}
 				if( mMixerGain.isEnabled() )
 				{
-				    mMixerGainValueLabel.setEnabled( false );
-				    mMixerAGC.setEnabled( false );
-				    mMixerGain.setEnabled( false );
+					mMixerGainValueLabel.setEnabled( false );
+					mMixerAGC.setEnabled( false );
+					mMixerGain.setEnabled( false );
 				}
 				break;
 			case CUSTOM:
@@ -519,36 +531,36 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 				}
 				if( !mIFGain.isEnabled() )
 				{
-				    mIFGain.setEnabled( true );
+					mIFGain.setEnabled( true );
 					mIFGainValueLabel.setEnabled( true );
 				}
 				if( !mLNAGain.isEnabled() )
 				{
 					mLNAAGC.setEnabled( true );
-				    mLNAGainValueLabel.setEnabled( true );
-				    mLNAGain.setEnabled( true );
+					mLNAGainValueLabel.setEnabled( true );
+					mLNAGain.setEnabled( true );
 				}
 				if( !mMixerGain.isEnabled() )
 				{
-				    mMixerGainValueLabel.setEnabled( true );
-				    mMixerAGC.setEnabled( true );
-				    mMixerGain.setEnabled( true );
+					mMixerGainValueLabel.setEnabled( true );
+					mMixerAGC.setEnabled( true );
+					mMixerGain.setEnabled( true );
 				}
 			default:
 				break;
 		}
-    }
+	}
 
 	@Override
 	public void save()
 	{
-    	if( hasItem() && !mLoading )
-    	{
-    		AirspyTunerConfiguration config = getConfiguration();
-    		config.setName( mConfigurationName.getText() );
-    		config.setSampleRate( ((AirspySampleRate)mSampleRateCombo.getSelectedItem()).getRate() );
+		if( hasItem() && !mLoading )
+		{
+			AirspyTunerConfiguration config = getConfiguration();
+			config.setName( mConfigurationName.getText() );
+			config.setSampleRate( ((AirspySampleRate)mSampleRateCombo.getSelectedItem()).getRate() );
 
-    		double value = ((SpinnerNumberModel)mFrequencyCorrection.getModel()).getNumber().doubleValue();
+			double value = ((SpinnerNumberModel)mFrequencyCorrection.getModel()).getNumber().doubleValue();
 			config.setFrequencyCorrection( value );
 
 			Gain gain = Gain.getGain( (GainMode)mGainModeCombo.getSelectedItem(), mMasterGain.getValue() );
@@ -559,15 +571,15 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 			config.setLNAGain( mLNAGain.getValue() );
 			config.setMixerAGC( mMixerAGC.isSelected() );
 			config.setLNAAGC( mLNAAGC.isSelected() );
-			
+
 			getTunerConfigurationModel().broadcast( new TunerConfigurationEvent( config, TunerConfigurationEvent.Event.CHANGE ) );
-    	}
+		}
 	}
-	
+
 	private AirspySampleRate fromValue( int value )
 	{
 		List<AirspySampleRate> rates = mController.getSampleRates();
-		
+
 		for( AirspySampleRate rate: rates )
 		{
 			if( rate.getRate() == value )
@@ -580,10 +592,10 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 		{
 			return rates.get( 0 );
 		}
-		
+
 		return null;
 	}
-	
+
 	/**
 	 * Sets all controls to the argument enabled state
 	 */
@@ -593,52 +605,52 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 		{
 			mConfigurationName.setEnabled( enabled );
 		}
-		
+
 		if( mTunerInfo.isEnabled() != enabled )
 		{
 			mTunerInfo.setEnabled( enabled );
 		}
-		
+
 		if( mSampleRateCombo.isEnabled() != enabled )
 		{
 			mSampleRateCombo.setEnabled( enabled );
 		}
-		
+
 		if( mFrequencyCorrection.isEnabled() != enabled )
 		{
 			mFrequencyCorrection.setEnabled( enabled );
 		}
-		
+
 		if( mGainModeCombo.isEnabled() != enabled )
 		{
 			mGainModeCombo.setEnabled( enabled );
 		}
-		
+
 		if( mMasterGain.isEnabled() != enabled )
 		{
 			mMasterGain.setEnabled( enabled );
 		}
-		
+
 		if( mIFGain.isEnabled() != enabled )
 		{
 			mIFGain.setEnabled( enabled );
 		}
-		
+
 		if( mMixerGain.isEnabled() != enabled )
 		{
 			mMixerGain.setEnabled( enabled );
 		}
-		
+
 		if( mMixerAGC.isEnabled() != enabled )
 		{
 			mMixerAGC.setEnabled( enabled );
 		}
-		
+
 		if( mLNAGain.isEnabled() != enabled )
 		{
 			mLNAGain.setEnabled( enabled );
 		}
-		
+
 		if( mLNAAGC.isEnabled() != enabled )
 		{
 			mLNAAGC.setEnabled( enabled );
@@ -646,43 +658,43 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 	}
 
 	/**
-	 * Applies the tuner configuration to the editor.  If the configuration is assigned to the 
+	 * Applies the tuner configuration to the editor.  If the configuration is assigned to the
 	 * currently selected tuner, then the settings are applied.
 	 */
 	@Override
 	public void setItem( TunerConfiguration config )
 	{
 		super.setItem( config );
-		
+
 		mLoading = true;
-		
+
 		if( hasItem() && getItem().isAssigned() )
 		{
 			AirspyTunerConfiguration airspy = getConfiguration();
-			
+
 			setControlsEnabled( true );
-			
+
 			mConfigurationName.setText( airspy.getName() );
 
 			AirspySampleRate rate = fromValue( airspy.getSampleRate() );
-			
+
 			if( rate != null )
 			{
 				mSampleRateCombo.setSelectedItem( rate );
 			}
-			
+
 			mFrequencyCorrection.setValue( airspy.getFrequencyCorrection() );
 
 			GainMode mode = Gain.getGainMode( airspy.getGain() );
 
 			//This will set the master, IF, Mixer, LNA and AGC controls
 			mGainModeCombo.setSelectedItem( mode );
-			
+
 			if( mode == GainMode.CUSTOM )
 			{
 				mMasterGain.setValue( airspy.getGain().getValue() );
 				mIFGain.setValue( airspy.getIFGain() );
-				
+
 				if( airspy.isMixerAGC() )
 				{
 					mMixerAGC.setSelected( airspy.isMixerAGC() );
@@ -707,7 +719,7 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 			{
 				mMixerAGC.setSelected( false );
 				mLNAAGC.setSelected( false );
-				
+
 				Gain gain = airspy.getGain();
 
 				mMasterGain.setValue( gain.getValue() );
@@ -721,16 +733,16 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 			setControlsEnabled( false );
 			mConfigurationName.setText( hasItem() ? getItem().getName() : "" );
 		}
-		
+
 		mLoading = false;
 	}
-	
+
 	private String getTunerInfo()
 	{
 		StringBuilder sb = new StringBuilder();
 
 		AirspyDeviceInformation info = mController.getDeviceInfo();
-		
+
 		sb.append( "<html><h3>Airspy Tuner</h3>" );
 		sb.append( "<b>Serial: </b>" );
 		sb.append( info.getSerialNumber() );
@@ -740,11 +752,11 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 		String[] firmware = info.getVersion().split( " " );
 		sb.append( firmware.length > 1 ? firmware[ 0 ] : info.getVersion() );
 		sb.append( "<br>" );
-		
+
 		sb.append( "<b>Part: </b>" );
 		sb.append( info.getPartNumber() );
 		sb.append( "<br>" );
-		
+
 		sb.append( "<b>Board ID: </b>" );
 		sb.append( info.getBoardID().getLabel() );
 		sb.append( "<br>" );

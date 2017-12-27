@@ -18,14 +18,13 @@
  ******************************************************************************/
 package io.github.dsheirer.source.wave;
 
-import io.github.dsheirer.channel.heartbeat.Heartbeat;
 import io.github.dsheirer.sample.ConversionUtils;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
 import io.github.dsheirer.source.ComplexSource;
 import io.github.dsheirer.source.IControllableFileSource;
 import io.github.dsheirer.source.IFrameLocationListener;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
+import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,12 +35,10 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class ComplexWaveSource extends ComplexSource implements IControllableFileSource
 {
-    private final static Logger mLog =
-        LoggerFactory.getLogger(ComplexWaveSource.class);
+    private final static Logger mLog = LoggerFactory.getLogger(ComplexWaveSource.class);
 
     private IFrameLocationListener mFrameLocationListener;
     private int mBytesPerFrame;
@@ -57,49 +54,33 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     }
 
     @Override
-    public void setFrequencyChangeListener(Listener<FrequencyChangeEvent> listener)
+    public void setSourceEventListener(Listener<SourceEvent> listener)
     {
         //Not implemented
     }
 
     @Override
-    public void removeFrequencyChangeListener()
+    public void removeSourceEventListener()
     {
         //Not implemented
     }
 
     @Override
-    public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
+    public Listener<SourceEvent> getSourceEventListener()
     {
         //Not implemented
         return null;
-    }
-
-    /**
-     * Not implemented
-     */
-    @Override
-    public void setHeartbeatListener(Listener<Heartbeat> listener)
-    {
-    }
-
-    /**
-     * Not implemented
-     */
-    @Override
-    public void removeHeartbeatListener()
-    {
     }
 
     @Override
     public void reset()
     {
         stop();
-        start(null);
+        start();
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
         try
         {
@@ -132,11 +113,11 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     }
 
     @Override
-    public int getSampleRate()
+    public double getSampleRate()
     {
         if(mInputStream != null)
         {
-            return (int)mInputStream.getFormat().getSampleRate();
+            return mInputStream.getFormat().getSampleRate();
         }
 
         return 0;

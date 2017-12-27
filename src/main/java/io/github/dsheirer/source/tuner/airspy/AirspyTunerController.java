@@ -1,11 +1,9 @@
 package io.github.dsheirer.source.tuner.airspy;
 
-import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
 import io.github.dsheirer.source.SourceException;
-import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.usb.USBTransferProcessor;
+import io.github.dsheirer.source.tuner.usb.USBTunerController;
 import org.apache.commons.io.EndianUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +60,7 @@ import java.util.List;
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-public class AirspyTunerController extends TunerController
+public class AirspyTunerController extends USBTunerController
 {
     public static final Gain LINEARITY_GAIN_DEFAULT = Gain.LINEARITY_14;
     public static final Gain SENSITIVITY_GAIN_DEFAULT = Gain.SENSITIVITY_10;
@@ -182,6 +180,14 @@ public class AirspyTunerController extends TunerController
         mUSBTransferProcessor = new USBTransferProcessor(deviceName, mDeviceHandle, mSampleAdapter,
             USB_TRANSFER_BUFFER_SIZE);
     }
+
+
+    @Override
+    protected USBTransferProcessor getUSBTransferProcessor()
+    {
+        return mUSBTransferProcessor;
+    }
+
 
     /**
      * Claims the USB interface.  If another application currently has
@@ -368,7 +374,7 @@ public class AirspyTunerController extends TunerController
     }
 
     @Override
-    public int getCurrentSampleRate() throws SourceException
+    public double getCurrentSampleRate()
     {
         return mSampleRate;
     }
@@ -456,7 +462,7 @@ public class AirspyTunerController extends TunerController
             throw new UsbException("Couldnt set sample packing enabled: " + enabled);
         }
 
-		/* If we didn't throw an exception above, then update the sample adapter
+        /* If we didn't throw an exception above, then update the sample adapter
          * to process samples accordingly */
         mSampleAdapter.setSamplePacking(enabled);
     }
@@ -671,7 +677,7 @@ public class AirspyTunerController extends TunerController
             mDeviceInfo = new AirspyDeviceInformation();
         }
 
-		/* Board ID */
+        /* Board ID */
         try
         {
             int boardID = readByte(Command.BOARD_ID_READ, 0, 0, true);
@@ -683,7 +689,7 @@ public class AirspyTunerController extends TunerController
             mLog.error("Error reading airspy board ID", e);
         }
 
-		/* Version String */
+        /* Version String */
         try
         {
             //NOTE: libairspy is internally reading 127 bytes, however airspy_info
@@ -696,8 +702,8 @@ public class AirspyTunerController extends TunerController
         {
             mLog.error("Error reading airspy version string", e);
         }
-		
-		/* Part ID and Serial Number */
+
+        /* Part ID and Serial Number */
         try
         {
             //Read 6 x 32-bit integers = 24 bytes
@@ -1181,36 +1187,6 @@ public class AirspyTunerController extends TunerController
         public int getValue()
         {
             return mValue;
-        }
-    }
-
-    /**
-     * Adds the IQ buffer listener and automatically starts buffer transfer processing, if not already started.
-     */
-    public void addListener(Listener<ComplexBuffer> listener)
-    {
-        if(mUSBTransferProcessor != null)
-        {
-            mUSBTransferProcessor.addListener(listener);
-        }
-        else
-        {
-            mLog.error("Couldn't add IQ buffer listener to Airspy tuner - processor is null");
-        }
-    }
-
-    /**
-     * Removes the IQ buffer listener and stops buffer transfer processing if there are no more listeners.
-     */
-    public void removeListener(Listener<ComplexBuffer> listener)
-    {
-        if(mUSBTransferProcessor != null)
-        {
-            mUSBTransferProcessor.removeListener(listener);
-        }
-        else
-        {
-            mLog.error("Couldn't remove IQ buffer listener from Airspy tuner - processor is null");
         }
     }
 }

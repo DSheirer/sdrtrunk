@@ -211,15 +211,12 @@ public class RemezFIRFilterDesigner
     	
 		for( int k = 0; k < mExtremalIndices.size() - 1; k++ )
     	{
-    		double cosineDelta = cosineOfFrequency - 
-    				mGrid.getCosineFrequencyGrid()[ mExtremalIndices.get( k ) ];
+    		double cosineDelta = cosineOfFrequency - mGrid.getCosineFrequencyGrid()[ mExtremalIndices.get( k ) ];
     		
-    		//If this frequency is or is close to one of the polynomial points, use c[k] for that point
+    		//If this frequency is close to one of the polynomial points, use the polynomial point for the response
     		if( Math.abs( cosineDelta ) < 1.0e-7 )
     		{
-    			numerator = mIdealFrequencyResponse[ k ];
-    			denominator = 1.0;
-    			break;
+    			return mIdealFrequencyResponse[ k ];
     		}
     		else
     		{

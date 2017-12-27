@@ -6,8 +6,9 @@ import io.github.dsheirer.sample.complex.ComplexBuffer;
 
 public abstract class ComplexSource extends Source implements Provider<ComplexBuffer>
 {
-	public ComplexSource()
-	{
-		super( SampleType.COMPLEX );
-	}
+    @Override
+    public SampleType getSampleType()
+    {
+        return SampleType.COMPLEX;
+    }
 }

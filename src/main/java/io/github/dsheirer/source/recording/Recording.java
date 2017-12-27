@@ -1,26 +1,37 @@
+/*******************************************************************************
+ * sdr-trunk
+ * Copyright (C) 2014-2017 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
+ *
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
+ *
+ ******************************************************************************/
 package io.github.dsheirer.source.recording;
 
 import io.github.dsheirer.settings.SettingsManager;
+import io.github.dsheirer.source.ISourceEventProcessor;
+import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.ITunerChannelProvider;
-import io.github.dsheirer.source.tuner.TunerChannel;
-import io.github.dsheirer.source.tuner.TunerChannelSource;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent.Event;
-import io.github.dsheirer.source.tuner.frequency.IFrequencyChangeProcessor;
+import io.github.dsheirer.source.tuner.channel.TunerChannel;
+import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.concurrent.RejectedExecutionException;
+import java.util.List;
 
-public class Recording implements Comparable<Recording>,
-								  IFrequencyChangeProcessor, 
-								  ITunerChannelProvider
+public class Recording implements Comparable<Recording>, ISourceEventProcessor,	ITunerChannelProvider
 {
 	private RecordingConfiguration mConfiguration;
 	
-	private ArrayList<TunerChannelSource> mTunerChannels = 
-			new ArrayList<TunerChannelSource>();
+	private List<TunerChannelSource> mTunerChannels = new ArrayList<TunerChannelSource>();
 	
 	@SuppressWarnings( "unused" )
 	private long mCenterFrequency;
@@ -65,8 +76,7 @@ public class Recording implements Comparable<Recording>,
 	}
 	
 	@Override
-    public TunerChannelSource getChannel( TunerChannel channel ) 
-    		throws RejectedExecutionException, SourceException
+    public TunerChannelSource getChannel( TunerChannel channel )
     {
 	    // TODO Auto-generated method stub
 	    return null;
@@ -89,9 +99,9 @@ public class Recording implements Comparable<Recording>,
 	}
 
 	@Override
-    public void frequencyChanged( FrequencyChangeEvent event ) throws SourceException
+    public void process(SourceEvent event ) throws SourceException
     {
-		if( event.getEvent() == Event.NOTIFICATION_FREQUENCY_CHANGE )
+		if( event.getEvent() == SourceEvent.Event.NOTIFICATION_FREQUENCY_CHANGE )
 		{
 			long frequency = event.getValue().longValue();
 			
@@ -103,7 +113,7 @@ public class Recording implements Comparable<Recording>,
 
 			for( TunerChannelSource channel: mTunerChannels )
 			{
-				channel.frequencyChanged( event );
+				channel.process( event );
 			}
 		}
     }

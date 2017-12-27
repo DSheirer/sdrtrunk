@@ -22,6 +22,7 @@ import io.github.dsheirer.channel.metadata.Metadata;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.ConversionUtils;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +32,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -89,7 +89,7 @@ public class AudioPacketWaveRecorder extends Module implements Listener<AudioPac
         return mFile;
     }
 
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
         if(mRunning.compareAndSet(false, true))
         {
@@ -111,7 +111,7 @@ public class AudioPacketWaveRecorder extends Module implements Listener<AudioPac
                 mWriter = new WaveWriter(mAudioFormat, mFile);
 
 				/* Schedule the processor to run every 500 milliseconds */
-                mProcessorHandle = executor.scheduleAtFixedRate(mBufferProcessor, 0, 500, TimeUnit.MILLISECONDS);
+                mProcessorHandle = ThreadPool.SCHEDULED.scheduleAtFixedRate(mBufferProcessor, 0, 500, TimeUnit.MILLISECONDS);
             }
             catch(IOException io)
             {

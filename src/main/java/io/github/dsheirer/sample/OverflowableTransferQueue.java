@@ -19,6 +19,7 @@
 package io.github.dsheirer.sample;
 
 import io.github.dsheirer.sample.real.IOverflowListener;
+import io.github.dsheirer.source.Source;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +34,7 @@ public class OverflowableTransferQueue<E>
 
     public enum State {NORMAL, OVERFLOW};
     private IOverflowListener mOverflowListener;
+    private Source mSourceOverflowListener;
 
     private LinkedTransferQueue<E> mQueue = new LinkedTransferQueue<E>();
     private AtomicInteger mCounter = new AtomicInteger();
@@ -74,6 +76,14 @@ public class OverflowableTransferQueue<E>
     }
 
     /**
+     * Removes and returns a single element from the head of the queue or null if the queue is empty
+     */
+    public E poll()
+    {
+        return mQueue.poll();
+    }
+
+    /**
      * Retrieves elements from the queue into the collection up to the maximum number of elements specified
      */
     public int drainTo(Collection<? super E> collection, int maxElements)
@@ -91,11 +101,19 @@ public class OverflowableTransferQueue<E>
     }
 
     /**
-     * Sets a listener to receive overflow state change events
+     * Sets a listener to receive overflow state change events.
      */
     public void setOverflowListener(IOverflowListener listener)
     {
         mOverflowListener = listener;
+    }
+
+    /**
+     * Sets the source to receive overflow state change events (in addition to an IOverflow listener)
+     */
+    public void setSourceOverflowListener(Source source)
+    {
+        mSourceOverflowListener = source;
     }
 
 
@@ -109,6 +127,11 @@ public class OverflowableTransferQueue<E>
             if(mOverflowListener != null)
             {
                 mOverflowListener.sourceOverflow(overflow);
+            }
+
+            if(mSourceOverflowListener != null)
+            {
+                mSourceOverflowListener.broadcastOverflowState(overflow);
             }
         }
     }

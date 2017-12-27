@@ -41,7 +41,6 @@ import io.github.dsheirer.sample.real.RealSampleListener;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * LJ1200 - 1200 baud 2FSK decoder
@@ -190,20 +189,5 @@ public class LJ1200Decoder extends Decoder implements IFilteredRealBufferListene
 	public Listener<RealBuffer> getFilteredRealBufferListener()
 	{
 		return mDecimationFilter;
-	}
-
-	@Override
-	public void reset()
-	{
-	}
-
-	@Override
-	public void start( ScheduledExecutorService executor )
-	{
-	}
-
-	@Override
-	public void stop()
-	{
 	}
 }

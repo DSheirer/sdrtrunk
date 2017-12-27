@@ -17,14 +17,13 @@
  ******************************************************************************/
 package io.github.dsheirer.source.wave;
 
-import io.github.dsheirer.channel.heartbeat.Heartbeat;
 import io.github.dsheirer.sample.ConversionUtils;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.real.RealBuffer;
 import io.github.dsheirer.source.IControllableFileSource;
 import io.github.dsheirer.source.IFrameLocationListener;
 import io.github.dsheirer.source.RealSource;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
+import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +34,6 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class RealWaveSource extends RealSource implements IControllableFileSource, AutoCloseable
 {
@@ -54,52 +52,35 @@ public class RealWaveSource extends RealSource implements IControllableFileSourc
         mFile = file;
     }
 
-    @Override
-    public void setFrequencyChangeListener(Listener<FrequencyChangeEvent> listener)
-    {
-        //Not implemented
-    }
+	@Override
+	public void setSourceEventListener(Listener<SourceEvent> listener)
+	{
+		//Not implemented
+	}
 
-    @Override
-    public void removeFrequencyChangeListener()
-    {
-        //Not implemented
-    }
+	@Override
+	public void removeSourceEventListener()
+	{
+		//Not implemented
+	}
 
-    @Override
-    public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
-    {
-        //Not implemented
-        return null;
-    }
-
-    /**
-     * Not implemented
-     */
-    @Override
-    public void setHeartbeatListener(Listener<Heartbeat> listener)
-    {
-    }
-
-    /**
-     * Not implemented
-     */
-    @Override
-    public void removeHeartbeatListener()
-    {
-    }
-
+	@Override
+	public Listener<SourceEvent> getSourceEventListener()
+	{
+		//Not implemented
+		return null;
+	}
 
     @Override
     public void reset()
     {
         stop();
-        start(null);
+        start();
     }
 
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
         try
         {
@@ -129,16 +110,15 @@ public class RealWaveSource extends RealSource implements IControllableFileSourc
     @Override
     public long getFrameCount() throws IOException
     {
-        // TODO Auto-generated method stub
         return 0;
     }
 
     @Override
-    public int getSampleRate()
+    public double getSampleRate()
     {
         if(mInputStream != null)
         {
-            return (int)mInputStream.getFormat().getSampleRate();
+            return mInputStream.getFormat().getSampleRate();
         }
 
         return 0;

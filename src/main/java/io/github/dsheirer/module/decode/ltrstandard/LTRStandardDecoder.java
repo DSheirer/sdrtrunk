@@ -28,8 +28,6 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.real.IUnFilteredRealBufferListener;
 import io.github.dsheirer.sample.real.RealBuffer;
 
-import java.util.concurrent.ScheduledExecutorService;
-
 public class LTRStandardDecoder extends Decoder implements IUnFilteredRealBufferListener
 {
 	public static final int LTR_STANDARD_MESSAGE_LENGTH = 40;
@@ -83,15 +81,5 @@ public class LTRStandardDecoder extends Decoder implements IUnFilteredRealBuffer
 	public void reset()
 	{
 		mLTRMessageFramer.reset();
-	}
-
-	@Override
-	public void start( ScheduledExecutorService executor )
-	{
-	}
-
-	@Override
-	public void stop()
-	{
 	}
 }

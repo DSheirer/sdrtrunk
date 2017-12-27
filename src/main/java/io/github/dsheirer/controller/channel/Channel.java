@@ -31,18 +31,16 @@ import io.github.dsheirer.module.log.config.EventLogConfiguration;
 import io.github.dsheirer.record.RecorderType;
 import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceType;
 import io.github.dsheirer.source.config.SourceConfigFactory;
 import io.github.dsheirer.source.config.SourceConfigRecording;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfiguration;
-import io.github.dsheirer.source.tuner.TunerChannel;
-import io.github.dsheirer.source.tuner.TunerChannel.Type;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent.Event;
+import io.github.dsheirer.source.tuner.channel.TunerChannel;
 
 @JacksonXmlRootElement(localName = "channel")
-public class Channel extends Configuration implements Listener<FrequencyChangeEvent>
+public class Channel extends Configuration implements Listener<SourceEvent>
 {
     // Standard channels are persisted and traffic channels are temporary
     public enum ChannelType {STANDARD, TRAFFIC}
@@ -51,12 +49,9 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
     private static int UNIQUE_ID = 0;
 
     private DecodeConfiguration mDecodeConfiguration = DecoderFactory.getDefaultDecodeConfiguration();
-    private AuxDecodeConfiguration mAuxDecodeConfiguration =
-        new AuxDecodeConfiguration();
-    private SourceConfiguration mSourceConfiguration =
-        SourceConfigFactory.getDefaultSourceConfiguration();
-    private EventLogConfiguration mEventLogConfiguration =
-        new EventLogConfiguration();
+    private AuxDecodeConfiguration mAuxDecodeConfiguration = new AuxDecodeConfiguration();
+    private SourceConfiguration mSourceConfiguration = SourceConfigFactory.getDefaultSourceConfiguration();
+    private EventLogConfiguration mEventLogConfiguration = new EventLogConfiguration();
     private RecordConfiguration mRecordConfiguration = new RecordConfiguration();
 
     private String mAliasListName;
@@ -423,15 +418,14 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
             {
                 SourceConfigTuner config = (SourceConfigTuner)mSourceConfiguration;
 
-                mTunerChannel = new TunerChannel(Type.LOCKED, config.getFrequency(),
+                mTunerChannel = new TunerChannel(config.getFrequency(),
                     mDecodeConfiguration.getDecoderType().getChannelBandwidth());
             }
             else if(mSourceConfiguration.getSourceType() == SourceType.RECORDING)
             {
-                SourceConfigRecording config =
-                    (SourceConfigRecording)mSourceConfiguration;
+                SourceConfigRecording config = (SourceConfigRecording)mSourceConfiguration;
 
-                mTunerChannel = new TunerChannel(Type.LOCKED, config.getFrequency(),
+                mTunerChannel = new TunerChannel(config.getFrequency(),
                     mDecodeConfiguration.getDecoderType().getChannelBandwidth());
             }
         }
@@ -457,9 +451,9 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
      * be used to visually show in the spectral display.
      */
     @Override
-    public void receive(FrequencyChangeEvent event)
+    public void receive(SourceEvent event)
     {
-        if(event.getEvent() == Event.NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE)
+        if(event.getEvent() == SourceEvent.Event.NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE)
         {
             mChannelFrequencyCorrection = event.getValue().intValue();
         }

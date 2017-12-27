@@ -30,8 +30,6 @@ import io.github.dsheirer.sample.real.RealBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ScheduledExecutorService;
-
 public class DemodulatedAudioFilterModule extends Module implements IUnFilteredRealBufferListener, IFilteredRealBufferProvider
 {
     private final static Logger mLog = LoggerFactory.getLogger(DemodulatedAudioFilterModule.class);
@@ -53,7 +51,7 @@ public class DemodulatedAudioFilterModule extends Module implements IUnFilteredR
 
         //TODO: change this to a band pass filter
         mBandPassFilter = new RealFIRFilter_RB_RB(FilterFactory.getLowPass(48000, pass, stop, 60,
-            WindowType.HANNING, true), 1.0f);
+            WindowType.HANN, true), 1.0f);
 
         mDCFilter.setListener(mBandPassFilter);
     }
@@ -97,7 +95,7 @@ public class DemodulatedAudioFilterModule extends Module implements IUnFilteredR
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
     }
 

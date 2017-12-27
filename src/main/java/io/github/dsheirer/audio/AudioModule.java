@@ -32,8 +32,6 @@ import io.github.dsheirer.sample.real.RealBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ScheduledExecutorService;
-
 /**
  * Provides packaging of demodulated audio sample buffers into audio packets for
  * broadcast to registered audio packet listeners.  Includes audio packet
@@ -117,7 +115,7 @@ public class AudioModule extends Module implements IAudioPacketProvider, IFilter
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
         /* No start operations provided */
     }

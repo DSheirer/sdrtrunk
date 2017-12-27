@@ -17,20 +17,12 @@
  ******************************************************************************/
 package io.github.dsheirer.source.tuner.airspy;
 
-import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
-import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.Tuner;
-import io.github.dsheirer.source.tuner.TunerChannel;
-import io.github.dsheirer.source.tuner.TunerChannelSource;
 import io.github.dsheirer.source.tuner.TunerClass;
-import io.github.dsheirer.source.tuner.TunerEvent;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.airspy.AirspyTunerController.BoardID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.RejectedExecutionException;
 
 public class AirspyTuner extends Tuner
 {
@@ -40,15 +32,15 @@ public class AirspyTuner extends Tuner
 	{
 		super( "Airspy " + controller.getDeviceInfo().getSerialNumber(), controller );
 	}
-	
+
 	public AirspyTunerController getController()
 	{
 		return (AirspyTunerController)getTunerController();
 	}
 
 	@Override
-    public String getUniqueID()
-    {
+	public String getUniqueID()
+	{
 		try
 		{
 			return getController().getDeviceInfo().getSerialNumber();
@@ -57,9 +49,9 @@ public class AirspyTuner extends Tuner
 		{
 			mLog.error( "error getting serial number", e );
 		}
-		
+
 		return BoardID.AIRSPY.getLabel();
-    }
+	}
 
 	@Override
 	public TunerClass getTunerClass()
@@ -77,51 +69,5 @@ public class AirspyTuner extends Tuner
 	public double getSampleSize()
 	{
 		return 13.0;
-	}
-
-	@Override
-    public TunerChannelSource getChannel( TunerChannel channel ) 
-    		throws RejectedExecutionException, SourceException
-    {
-		//TODO: this channel has a decimated sample rate of:
-		// 10.0 MSps = 10,000,000 / 208 = 48076.923
-		//  5.0 MSps =  5,000,000 / 104 = 48076.923
-		//  2.5 MSps =  2,500,000 /  52 = 48076.923
-		//Consider implementing a fractional resampler to get a correct 48 kHz
-		//output sample rate
-		
-		TunerChannelSource source = getController().getChannel( this, channel );
-
-		if( source != null )
-		{
-			broadcast( new TunerEvent( this, TunerEvent.Event.CHANNEL_COUNT ) );
-		}
-		
-		return source;
-    }
-	
-	@Override
-    public void releaseChannel( TunerChannelSource source )
-    {
-		/* Unregister for receiving samples */
-		removeListener( (Listener<ComplexBuffer>)source );
-		
-		/* Tell the controller to release the channel and cleanup */
-		if( source != null )
-		{
-			getController().releaseChannel( source );
-		}
-    }
-
-	@Override
-	public void addListener( Listener<ComplexBuffer> listener )
-	{
-		getController().addListener( listener );
-	}
-	
-	@Override
-	public void removeListener( Listener<ComplexBuffer> listener )
-	{
-		getController().removeListener( listener );
 	}
 }

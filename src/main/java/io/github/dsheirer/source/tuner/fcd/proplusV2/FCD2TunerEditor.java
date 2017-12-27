@@ -28,7 +28,16 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JSeparator;
+import javax.swing.JSpinner;
+import javax.swing.JTextField;
+import javax.swing.SpinnerModel;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.event.ActionEvent;
@@ -40,24 +49,24 @@ import java.text.DecimalFormat;
 public class FCD2TunerEditor extends TunerConfigurationEditor
 {
 	private final static Logger mLog = LoggerFactory.getLogger( FCD2TunerEditor.class );
-    private static final long serialVersionUID = 1L;
-    
-    private JTextField mConfigurationName;
-    private JButton mTunerInfo;
-    private JSpinner mFrequencyCorrection;
-    private JCheckBox mLNAGain;
-    private JCheckBox mMixerGain;
-    private boolean mLoading;
+	private static final long serialVersionUID = 1L;
 
-    private FCD2TunerController mController;
+	private JTextField mConfigurationName;
+	private JButton mTunerInfo;
+	private JSpinner mFrequencyCorrection;
+	private JCheckBox mLNAGain;
+	private JCheckBox mMixerGain;
+	private boolean mLoading;
 
-    public FCD2TunerEditor( TunerConfigurationModel tunerConfigurationModel, FCDTuner tuner )
-    {
-    	super( tunerConfigurationModel );
-        mController = (FCD2TunerController)tuner.getController();
-        
-        init();
-    }
+	private FCD2TunerController mController;
+
+	public FCD2TunerEditor( TunerConfigurationModel tunerConfigurationModel, FCDTuner tuner )
+	{
+		super( tunerConfigurationModel );
+		mController = (FCD2TunerController)tuner.getController();
+
+		init();
+	}
 
 	private FCD2TunerConfiguration getConfiguration()
 	{
@@ -65,33 +74,33 @@ public class FCD2TunerEditor extends TunerConfigurationEditor
 		{
 			return (FCD2TunerConfiguration)getItem();
 		}
-		
+
 		return null;
 	}
 
-    private void init()
-    {
-		setLayout( new MigLayout( "fill,wrap 4", "[right][grow,fill][right][grow,fill]", 
-				"[][][][][][grow]" ) );
-		
+	private void init()
+	{
+		setLayout( new MigLayout( "fill,wrap 4", "[right][grow,fill][right][grow,fill]",
+			"[][][][][][grow]" ) );
+
 		add( new JLabel( "FCD Pro+ Tuner Configuration" ), "span,align center" );
 
 		mConfigurationName = new JTextField();
 		mConfigurationName.setEnabled( false );
-		mConfigurationName.addFocusListener( new FocusListener() 
+		mConfigurationName.addFocusListener( new FocusListener()
 		{
 			@Override
-            public void focusLost( FocusEvent e )
-            {
+			public void focusLost( FocusEvent e )
+			{
 				save();
-            }
+			}
 			@Override
-            public void focusGained( FocusEvent e ) {}
+			public void focusGained( FocusEvent e ) {}
 		} );
-		
+
 		add( new JLabel( "Name:" ) );
 		add( mConfigurationName, "span 2" );
-		
+
 		mTunerInfo = new JButton( "Tuner Info" );
 		mTunerInfo.setEnabled( false );
 		mTunerInfo.addActionListener( new ActionListener()
@@ -99,103 +108,103 @@ public class FCD2TunerEditor extends TunerConfigurationEditor
 			@Override
 			public void actionPerformed( ActionEvent e )
 			{
-				JOptionPane.showMessageDialog( FCD2TunerEditor.this, getTunerInfo(), 
-						"Tuner Info", JOptionPane.INFORMATION_MESSAGE );
+				JOptionPane.showMessageDialog( FCD2TunerEditor.this, getTunerInfo(),
+					"Tuner Info", JOptionPane.INFORMATION_MESSAGE );
 			}
 		} );
 		add( mTunerInfo );
 
-        SpinnerModel model = new SpinnerNumberModel(     0.0,   //initial value
-        											 -1000.0,   //min
-        											  1000.0,   //max
-        											     0.1 ); //step
+		SpinnerModel model = new SpinnerNumberModel(     0.0,   //initial value
+			-1000.0,   //min
+			1000.0,   //max
+			0.1 ); //step
 
-        mFrequencyCorrection = new JSpinner( model );
-        mFrequencyCorrection.setEnabled( false );
-        JSpinner.NumberEditor editor = 
-        		(JSpinner.NumberEditor)mFrequencyCorrection.getEditor();  
+		mFrequencyCorrection = new JSpinner( model );
+		mFrequencyCorrection.setEnabled( false );
+		JSpinner.NumberEditor editor =
+			(JSpinner.NumberEditor)mFrequencyCorrection.getEditor();
 
-        DecimalFormat format = editor.getFormat();  
-        format.setMinimumFractionDigits( 1 );  
-        editor.getTextField().setHorizontalAlignment( SwingConstants.CENTER );          
+		DecimalFormat format = editor.getFormat();
+		format.setMinimumFractionDigits( 1 );
+		editor.getTextField().setHorizontalAlignment( SwingConstants.CENTER );
 
-        mFrequencyCorrection.addChangeListener( new ChangeListener() 
-        {
+		mFrequencyCorrection.addChangeListener( new ChangeListener()
+		{
 			@Override
-            public void stateChanged( ChangeEvent e )
-            {
+			public void stateChanged( ChangeEvent e )
+			{
 				double value = ((SpinnerNumberModel)mFrequencyCorrection
-						.getModel()).getNumber().doubleValue();
+					.getModel()).getNumber().doubleValue();
 
 				try
-                {
-	                mController.setFrequencyCorrection( value );
-	                save();
-                }
-                catch ( SourceException e1 )
-                {
-                	JOptionPane.showMessageDialog( FCD2TunerEditor.this, "FCD Pro Plus Tuner "
-            			+ "Controller - couldn't apply frequency correction value: " + value + 
-            			e1.getLocalizedMessage() );  
-                	
-                	mLog.error( "FuncubeDongleProPlus Controller - couldn't apply "
-                			+ "frequency correction value: " + value, e1 );
-                }
-            }
-        } );
-        
-        add( new JLabel( "PPM:" ) );
-        add( mFrequencyCorrection, "wrap" );
-        
-        add( new JSeparator( JSeparator.HORIZONTAL ), "span,grow" );
+				{
+					mController.setFrequencyCorrection( value );
+					save();
+				}
+				catch ( SourceException e1 )
+				{
+					JOptionPane.showMessageDialog( FCD2TunerEditor.this, "FCD Pro Plus Tuner "
+						+ "Controller - couldn't apply frequency correction value: " + value +
+						e1.getLocalizedMessage() );
 
-        mLNAGain = new JCheckBox( "LNA Gain" );
-        mLNAGain.setEnabled( false );
-        mLNAGain.addActionListener( new ActionListener() 
-        {
-            @Override
-            public void actionPerformed( ActionEvent event )
-            {
-            	try
-            	{
-                	mController.setLNAGain( mLNAGain.isSelected() );
-                	save();
-            	}
-            	catch( SourceException e )
-            	{
-            		mLog.error( "Couldn't set LNA gain for FCD2", e );
-            	}
-            }
-        } );
+					mLog.error( "FuncubeDongleProPlus Controller - couldn't apply "
+						+ "frequency correction value: " + value, e1 );
+				}
+			}
+		} );
 
-        add( new JLabel( "" ) );
-        add( mLNAGain );
+		add( new JLabel( "PPM:" ) );
+		add( mFrequencyCorrection, "wrap" );
 
-        /**
-         * Mixer Gain
-         */
-        mMixerGain = new JCheckBox( "Mixer Gain" );
-        
-        mMixerGain.addActionListener( new ActionListener() 
-        {
-            @Override
-            public void actionPerformed( ActionEvent event )
-            {
-            	try
-            	{
-                	mController.setMixerGain( mMixerGain.isSelected() );
-                	save();
-            	}
-            	catch( SourceException e )
-            	{
-            		mLog.error( "Couldn't set mixer gain for FCD2", e );
-            	}
-            }
-        } );
+		add( new JSeparator( JSeparator.HORIZONTAL ), "span,grow" );
 
-        add( new JLabel( "" ) );
-        add( mMixerGain );
-    }
+		mLNAGain = new JCheckBox( "LNA Gain" );
+		mLNAGain.setEnabled( false );
+		mLNAGain.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent event )
+			{
+				try
+				{
+					mController.setLNAGain( mLNAGain.isSelected() );
+					save();
+				}
+				catch( SourceException e )
+				{
+					mLog.error( "Couldn't set LNA gain for FCD2", e );
+				}
+			}
+		} );
+
+		add( new JLabel( "" ) );
+		add( mLNAGain );
+
+		/**
+		 * Mixer Gain
+		 */
+		mMixerGain = new JCheckBox( "Mixer Gain" );
+
+		mMixerGain.addActionListener( new ActionListener()
+		{
+			@Override
+			public void actionPerformed( ActionEvent event )
+			{
+				try
+				{
+					mController.setMixerGain( mMixerGain.isSelected() );
+					save();
+				}
+				catch( SourceException e )
+				{
+					mLog.error( "Couldn't set mixer gain for FCD2", e );
+				}
+			}
+		} );
+
+		add( new JLabel( "" ) );
+		add( mMixerGain );
+	}
 
 	/**
 	 * Sets each of the tuner configuration controls to the enabled argument state
@@ -206,12 +215,12 @@ public class FCD2TunerEditor extends TunerConfigurationEditor
 		{
 			mConfigurationName.setEnabled( enabled );
 		}
-		
+
 		if( mTunerInfo.isEnabled() != enabled )
 		{
 			mTunerInfo.setEnabled( enabled );
 		}
-		
+
 		if( mFrequencyCorrection.isEnabled() != enabled )
 		{
 			mFrequencyCorrection.setEnabled( enabled );
@@ -221,7 +230,7 @@ public class FCD2TunerEditor extends TunerConfigurationEditor
 		{
 			mLNAGain.setEnabled( enabled );
 		}
-		
+
 		if( mMixerGain.isEnabled() != enabled )
 		{
 			mMixerGain.setEnabled( enabled );
@@ -233,7 +242,7 @@ public class FCD2TunerEditor extends TunerConfigurationEditor
 		StringBuilder sb = new StringBuilder();
 
 		sb.append( "<html><h3>Funcube Dongle Pro Plus Tuner</h3>" );
-		
+
 		sb.append( "<b>USB ID: </b>" );
 		sb.append( mController.getUSBID() );
 		sb.append( "<br>" );
@@ -256,26 +265,26 @@ public class FCD2TunerEditor extends TunerConfigurationEditor
 
 		return sb.toString();
 	}
-	
+
 	@Override
 	public void save()
 	{
-    	if( hasItem() && !mLoading )
-    	{
-    		FCD2TunerConfiguration config = getConfiguration();
+		if( hasItem() && !mLoading )
+		{
+			FCD2TunerConfiguration config = getConfiguration();
 
-    		config.setName( mConfigurationName.getText() );
+			config.setName( mConfigurationName.getText() );
 
 			double value = ((SpinnerNumberModel)mFrequencyCorrection
-					.getModel()).getNumber().doubleValue();
-    		config.setFrequencyCorrection( value );
-    		
-    		config.setGainLNA( mLNAGain.isSelected() );
-    		config.setGainMixer( mMixerGain.isSelected() );
-			
-			getTunerConfigurationModel().broadcast( 
+				.getModel()).getNumber().doubleValue();
+			config.setFrequencyCorrection( value );
+
+			config.setGainLNA( mLNAGain.isSelected() );
+			config.setGainMixer( mMixerGain.isSelected() );
+
+			getTunerConfigurationModel().broadcast(
 				new TunerConfigurationEvent( getConfiguration(), Event.CHANGE ) );
-    	}
+		}
 	}
 
 	@Override
@@ -289,15 +298,15 @@ public class FCD2TunerEditor extends TunerConfigurationEditor
 		if( hasItem() )
 		{
 			FCD2TunerConfiguration config = getConfiguration();
-			
-			
+
+
 			if( tunerConfiguration.isAssigned() )
 			{
 				setControlsEnabled( true );
 				mConfigurationName.setText( config.getName() );
-		        mFrequencyCorrection.setValue( config.getFrequencyCorrection() );
-		        mLNAGain.setSelected( config.getGainLNA() );
-		        mMixerGain.setSelected( config.getGainMixer() );
+				mFrequencyCorrection.setValue( config.getFrequencyCorrection() );
+				mLNAGain.setSelected( config.getGainLNA() );
+				mMixerGain.setSelected( config.getGainMixer() );
 			}
 			else
 			{
@@ -310,7 +319,7 @@ public class FCD2TunerEditor extends TunerConfigurationEditor
 			setControlsEnabled( false );
 			mConfigurationName.setText( "" );
 		}
-		
+
 		mLoading = false;
 	}
 }

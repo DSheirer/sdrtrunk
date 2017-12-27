@@ -7,8 +7,9 @@ import io.github.dsheirer.sample.real.RealBuffer;
 
 public abstract class RealSource extends Source implements Provider<RealBuffer>
 {
-	public RealSource()
-	{
-		super( SampleType.REAL );
-	}
+    @Override
+    public SampleType getSampleType()
+    {
+        return SampleType.REAL;
+    }
 }

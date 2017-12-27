@@ -22,8 +22,7 @@ import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.Listener;
 
-public abstract class Decoder extends Module
-							  implements IMessageProvider, Listener<Message>
+public abstract class Decoder extends Module implements IMessageProvider, Listener<Message>
 {
 	/* This has to be a broadcaster in order for references to persist */
 	protected Listener<Message> mMessageListener;
@@ -81,5 +80,20 @@ public abstract class Decoder extends Module
 	public void receive( Message message )
 	{
 		broadcast( message );
+	}
+
+	@Override
+	public void reset()
+	{
+	}
+
+	@Override
+	public void start()
+	{
+	}
+
+	@Override
+	public void stop()
+	{
 	}
 }

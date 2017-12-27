@@ -20,8 +20,6 @@ import jmbe.iface.AudioConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ScheduledExecutorService;
-
 public class P25AudioModule extends Module implements Listener<Message>, IAudioPacketProvider, IMessageListener,
     ISquelchStateListener
 {
@@ -71,7 +69,7 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
 
     }

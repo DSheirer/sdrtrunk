@@ -19,6 +19,7 @@
 package io.github.dsheirer.source.tuner.fcd.proplusV2;
 
 import io.github.dsheirer.source.SourceException;
+import io.github.dsheirer.source.tuner.MixerTunerDataLine;
 import io.github.dsheirer.source.tuner.MixerTunerType;
 import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerType;
@@ -41,11 +42,10 @@ public class FCD2TunerController extends FCDTunerController
     public static final int MAXIMUM_TUNABLE_FREQUENCY = 2050000000;
     public static final int SAMPLE_RATE = 192000;
 
-    public FCD2TunerController(Device device, DeviceDescriptor descriptor)
+    public FCD2TunerController(MixerTunerDataLine mixerTDL, Device device, DeviceDescriptor descriptor)
     {
-        super(device, descriptor,
-            (int)MixerTunerType.FUNCUBE_DONGLE_PRO_PLUS.getAudioFormat().getSampleRate(),
-            MINIMUM_TUNABLE_FREQUENCY, MAXIMUM_TUNABLE_FREQUENCY);
+        super(mixerTDL, device, descriptor, MixerTunerType.FUNCUBE_DONGLE_PRO_PLUS.getDisplayString(),
+            MINIMUM_TUNABLE_FREQUENCY, MAXIMUM_TUNABLE_FREQUENCY, MixerTunerType.FUNCUBE_DONGLE_PRO.getAudioFormat());
     }
 
     public void init() throws SourceException
@@ -64,7 +64,7 @@ public class FCD2TunerController extends FCDTunerController
         }
     }
 
-    public int getCurrentSampleRate()
+    public double getCurrentSampleRate()
     {
         return SAMPLE_RATE;
     }
@@ -198,41 +198,6 @@ public class FCD2TunerController extends FCDTunerController
         catch(Exception e)
         {
             mLog.error("error setting IQ correction to [" + value + "]", e);
-        }
-    }
-
-    public enum Block
-    {
-        CELLULAR_BAND_BLOCKED("Blocked"),
-        NO_BAND_BLOCK("Unblocked"),
-        UNKNOWN("Unknown");
-
-        private String mLabel;
-
-        private Block(String label)
-        {
-            mLabel = label;
-        }
-
-        public String getLabel()
-        {
-            return mLabel;
-        }
-
-        public static Block getBlock(String block)
-        {
-            Block retVal = UNKNOWN;
-
-            if(block.equalsIgnoreCase("No blk"))
-            {
-                retVal = NO_BAND_BLOCK;
-            }
-            else if(block.equalsIgnoreCase("Cell blk"))
-            {
-                retVal = CELLULAR_BAND_BLOCKED;
-            }
-
-            return retVal;
         }
     }
 }

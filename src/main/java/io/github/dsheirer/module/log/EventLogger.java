@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
 import java.nio.file.Path;
-import java.util.concurrent.ScheduledExecutorService;
 
 public abstract class EventLogger extends Module
 {
@@ -65,7 +64,7 @@ public abstract class EventLogger extends Module
     public abstract String getHeader();
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
         if(mLogFile == null)
         {
@@ -79,6 +78,8 @@ public abstract class EventLogger extends Module
                 sb.append(replaceIllegalCharacters(mFileNameSuffix));
 
                 mLogFileName = sb.toString();
+
+                mLog.info("Creating log file:" + mLogFileName);
 
                 mLogFile = new OutputStreamWriter(new FileOutputStream(mLogFileName));
 
@@ -123,17 +124,14 @@ public abstract class EventLogger extends Module
 
     protected void write(String eventLogEntry)
     {
-        if(mLogFile != null)
+        try
         {
-            try
-            {
-                mLogFile.write(eventLogEntry + "\n");
-                mLogFile.flush();
-            }
-            catch(IOException e)
-            {
-                mLog.error("Error writing entry to event log file", e);
-            }
+            mLogFile.write(eventLogEntry + "\n");
+            mLogFile.flush();
+        }
+        catch(IOException e)
+        {
+            mLog.error("Error writing entry to event log file", e);
         }
     }
 }

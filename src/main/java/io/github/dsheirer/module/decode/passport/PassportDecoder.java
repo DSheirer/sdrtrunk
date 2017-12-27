@@ -33,7 +33,6 @@ import io.github.dsheirer.sample.real.RealBuffer;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class PassportDecoder extends Decoder
 	implements IUnFilteredRealBufferListener, Instrumentable
@@ -107,15 +106,5 @@ public class PassportDecoder extends Decoder
 	public void reset()
 	{
 		mPassportMessageFramer.reset();
-	}
-
-	@Override
-	public void start( ScheduledExecutorService executor )
-	{
-	}
-
-	@Override
-	public void stop()
-	{
 	}
 }

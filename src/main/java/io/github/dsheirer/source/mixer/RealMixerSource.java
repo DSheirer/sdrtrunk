@@ -17,14 +17,11 @@
  ******************************************************************************/
 package io.github.dsheirer.source.mixer;
 
-import io.github.dsheirer.channel.heartbeat.Heartbeat;
-import io.github.dsheirer.dsp.gain.AutomaticGainControl;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.adapter.ISampleAdapter;
 import io.github.dsheirer.sample.real.RealBuffer;
 import io.github.dsheirer.source.RealSource;
-import io.github.dsheirer.source.SourceException;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
+import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +31,6 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.TargetDataLine;
 import java.util.Iterator;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RealMixerSource extends RealSource
@@ -49,9 +45,6 @@ public class RealMixerSource extends RealSource
     private AudioFormat mAudioFormat;
     private int mBytesPerFrame = 0;
     private ISampleAdapter mSampleAdapter;
-    private AutomaticGainControl mAGC = new AutomaticGainControl();
-    private Listener<Heartbeat> mHeartbeatListener;
-    private static final Heartbeat HEARTBEAT = new Heartbeat();
 
     private CopyOnWriteArrayList<Listener<RealBuffer>> mSampleListeners = new CopyOnWriteArrayList<Listener<RealBuffer>>();
 
@@ -76,44 +69,24 @@ public class RealMixerSource extends RealSource
         mSampleAdapter = sampleAdapter;
     }
 
-    @Override
-    public void setFrequencyChangeListener(Listener<FrequencyChangeEvent> listener)
-    {
-        //Not implemented
-    }
+	@Override
+	public void setSourceEventListener(Listener<SourceEvent> listener)
+	{
+		//Not implemented
+	}
 
-    @Override
-    public void removeFrequencyChangeListener()
-    {
-        //Not implemented
-    }
+	@Override
+	public void removeSourceEventListener()
+	{
+		//Not implemented
+	}
 
-    @Override
-    public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
-    {
-        //Not implemented
-        return null;
-    }
-
-    /**
-     * Registers the listener to receive heartbeats from this source.
-     *
-     * @param listener to receive heartbeats
-     */
-    @Override
-    public void setHeartbeatListener(Listener<Heartbeat> listener)
-    {
-        mHeartbeatListener = listener;
-    }
-
-    /**
-     * Removes the currently registered heartbeat listener
-     */
-    @Override
-    public void removeHeartbeatListener()
-    {
-        mHeartbeatListener = null;
-    }
+	@Override
+	public Listener<SourceEvent> getSourceEventListener()
+	{
+		//Not implemented
+		return null;
+	}
 
     @Override
     public void reset()
@@ -121,7 +94,7 @@ public class RealMixerSource extends RealSource
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
     }
 
@@ -176,11 +149,11 @@ public class RealMixerSource extends RealSource
         }
     }
 
-    public int getSampleRate()
+    public double getSampleRate()
     {
         if(mTargetDataLine != null)
         {
-            return (int)mTargetDataLine.getFormat().getSampleRate();
+            return mTargetDataLine.getFormat().getSampleRate();
         }
         else
         {
@@ -191,7 +164,7 @@ public class RealMixerSource extends RealSource
     /**
      * Returns the frequency of this source.  Default is 0.
      */
-    public long getFrequency() throws SourceException
+    public long getFrequency()
     {
         return mFrequency;
     }
@@ -220,11 +193,7 @@ public class RealMixerSource extends RealSource
         {
             if(mRunning.compareAndSet(false, true))
             {
-                //Send a heartbeat every time we run
-                if(mHeartbeatListener != null)
-                {
-                    mHeartbeatListener.receive(HEARTBEAT);
-                }
+                getHeartbeatManager().broadcast();
 
                 if(mTargetDataLine == null)
                 {

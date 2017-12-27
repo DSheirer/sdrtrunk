@@ -54,4 +54,11 @@ public class InvalidFrequencyException extends SourceException
     {
         return mValidFrequency;
     }
+
+    @Override
+    public String getMessage()
+    {
+        return super.getMessage() + " Invalid Frequency: " + getInvalidFrequency() +
+            " - current valid frequency:" + getValidFrequency();
+    }
 }

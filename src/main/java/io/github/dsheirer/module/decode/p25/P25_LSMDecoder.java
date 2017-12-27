@@ -34,13 +34,12 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
 import io.github.dsheirer.sample.complex.ComplexBufferToStreamConverter;
 import io.github.dsheirer.sample.complex.IComplexBufferListener;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
+import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class P25_LSMDecoder extends P25Decoder implements IComplexBufferListener
 {
@@ -67,7 +66,7 @@ public class P25_LSMDecoder extends P25Decoder implements IComplexBufferListener
 		super( aliasList );
 		
 		mBasebandFilter = new ComplexFIRFilter_CB_CB( FilterFactory.getLowPass( 
-				48000, 7250, 8000, 60, WindowType.HANNING, true ), 1.0f );
+				48000, 7250, 8000, 60, WindowType.HANN, true ), 1.0f );
 		
 		mBasebandFilter.setListener( mStreamConverter );
 		
@@ -105,29 +104,6 @@ public class P25_LSMDecoder extends P25Decoder implements IComplexBufferListener
 		mMessageFramer.dispose();
 		mMessageFramer = null;
 	}
-
-    @Override
-    public void setFrequencyChangeListener(Listener<FrequencyChangeEvent> listener)
-    {
-    }
-
-    @Override
-    public void removeFrequencyChangeListener()
-    {
-    }
-
-    @Override
-    public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
-    {
-        return new Listener<FrequencyChangeEvent>()
-        {
-            @Override
-            public void receive(FrequencyChangeEvent frequencyChangeEvent)
-            {
-                //Ignored
-            }
-        };
-    }
 
     @Override
 	public Listener<ComplexBuffer> getComplexBufferListener()
@@ -237,23 +213,20 @@ public class P25_LSMDecoder extends P25Decoder implements IComplexBufferListener
     }
 
 	@Override
-	public void reset()
+	public Listener<SourceEvent> getSourceEventListener()
 	{
-		// TODO Auto-generated method stub
-		
+		return null;
 	}
 
 	@Override
-	public void start( ScheduledExecutorService executor )
+	public void setSourceEventListener(Listener<SourceEvent> listener)
 	{
-		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
-	public void stop()
+	public void removeSourceEventListener()
 	{
-		// TODO Auto-generated method stub
-		
+
 	}
 }

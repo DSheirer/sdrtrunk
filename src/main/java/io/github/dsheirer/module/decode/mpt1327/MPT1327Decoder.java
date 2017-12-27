@@ -44,7 +44,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * MPT1327 Decoder - 1200 baud 2FSK decoder that can process 48k sample rate
@@ -295,17 +294,5 @@ public class MPT1327Decoder extends Decoder implements IFilteredRealBufferListen
     {
         mControlMessageFramer.reset();
         mTrafficMessageFramer.reset();
-    }
-
-    @Override
-    public void start(ScheduledExecutorService executor)
-    {
-        // TODO Auto-generated method stub
-    }
-
-    @Override
-    public void stop()
-    {
-        // TODO Auto-generated method stub
     }
 }

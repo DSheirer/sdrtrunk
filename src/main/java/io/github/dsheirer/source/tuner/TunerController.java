@@ -17,13 +17,21 @@
  ******************************************************************************/
 package io.github.dsheirer.source.tuner;
 
+import io.github.dsheirer.sample.Broadcaster;
+import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.complex.IComplexBufferProvider;
+import io.github.dsheirer.source.ISourceEventListener;
+import io.github.dsheirer.source.ISourceEventProcessor;
+import io.github.dsheirer.source.SourceEvent;
+import io.github.dsheirer.source.SourceEventListenerToProcessorAdapter;
 import io.github.dsheirer.source.SourceException;
+import io.github.dsheirer.source.tuner.channel.CICTunerChannelSource;
+import io.github.dsheirer.source.tuner.channel.TunerChannel;
+import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent.Event;
 import io.github.dsheirer.source.tuner.frequency.FrequencyController;
 import io.github.dsheirer.source.tuner.frequency.FrequencyController.Tunable;
-import io.github.dsheirer.source.tuner.frequency.IFrequencyChangeProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,15 +39,18 @@ import java.util.SortedSet;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.RejectedExecutionException;
 
-public abstract class TunerController implements Tunable, IFrequencyChangeProcessor
+public abstract class TunerController implements Tunable, ISourceEventProcessor, ISourceEventListener,
+    IComplexBufferProvider, Listener<ComplexBuffer>
 {
     private final static Logger mLog = LoggerFactory.getLogger(TunerController.class);
+    protected Broadcaster<ComplexBuffer> mSampleBroadcaster = new Broadcaster<>();
 
     /* List of currently tuned channels being served to demod channels */
     private SortedSet<TunerChannel> mTunedChannels = new ConcurrentSkipListSet<>();
     protected FrequencyController mFrequencyController;
     private int mMiddleUnusable;
     private double mUsableBandwidthPercentage;
+    private Listener<SourceEvent> mSourceEventListener;
 
     /**
      * Abstract tuner controller class.  The tuner controller manages frequency bandwidth and currently tuned channels
@@ -57,6 +68,16 @@ public abstract class TunerController implements Tunable, IFrequencyChangeProces
         mFrequencyController = new FrequencyController(this, minimumFrequency, maximumFrequency, 0.0d);
         mMiddleUnusable = middleUnusable;
         mUsableBandwidthPercentage = usableBandwidth;
+        mSourceEventListener = new SourceEventListenerToProcessorAdapter(this);
+    }
+
+    /**
+     * Implements the ISourceEventListener interface to receive requests from sample consumers
+     */
+    @Override
+    public Listener<SourceEvent> getSourceEventListener()
+    {
+        return mSourceEventListener;
     }
 
     /**
@@ -68,11 +89,28 @@ public abstract class TunerController implements Tunable, IFrequencyChangeProces
      * Responds to requests to set the frequency
      */
     @Override
-    public void frequencyChanged(FrequencyChangeEvent event) throws SourceException
+    public void process(SourceEvent sourceEvent ) throws SourceException
     {
-        if(event.getEvent() == Event.REQUEST_FREQUENCY_CHANGE)
+        switch(sourceEvent.getEvent())
         {
-            setFrequency(event.getValue().longValue());
+            case REQUEST_FREQUENCY_CHANGE:
+                setFrequency( sourceEvent.getValue().longValue() );
+                break;
+            case REQUEST_START_SAMPLE_STREAM:
+                if(sourceEvent.getSource() instanceof Listener)
+                {
+                    addComplexBufferListener((Listener<ComplexBuffer>)sourceEvent.getSource());
+                }
+                break;
+            case REQUEST_STOP_SAMPLE_STREAM:
+                if(sourceEvent.getSource() instanceof Listener)
+                {
+                    removeComplexBufferListener((Listener<ComplexBuffer>)sourceEvent.getSource());
+                }
+                break;
+            default:
+                mLog.error("Ignoring unrecognized source event: " + sourceEvent.getEvent().name() + " from [" +
+                    sourceEvent.getSource().getClass() + "]" );
         }
     }
 
@@ -102,9 +140,15 @@ public abstract class TunerController implements Tunable, IFrequencyChangeProces
         return mFrequencyController.getFrequency();
     }
 
-    public int getSampleRate()
+    @Override
+    public boolean canTune(long frequency)
     {
-        return mFrequencyController.getBandwidth();
+        return mFrequencyController.canTune(frequency);
+    }
+
+    public double getSampleRate()
+    {
+        return mFrequencyController.getSampleRate();
     }
 
     public double getFrequencyCorrection()
@@ -210,7 +254,7 @@ public abstract class TunerController implements Tunable, IFrequencyChangeProces
                     updateLOFrequency();
                 }
 
-                source = new TunerChannelSource(tuner, channel);
+                source = new CICTunerChannelSource(tuner, channel);
             }
             catch(SourceException se)
             {
@@ -351,11 +395,13 @@ public abstract class TunerController implements Tunable, IFrequencyChangeProces
     }
 
     /**
-     * Sets the listener to be notified any time that the tuner changes frequency or bandwidth/sample rate.
+     * Sets the listener to be notified any time that the tuner changes frequency
+     * or bandwidth/sample rate.
      *
-     * Note: this is normally used by the Tuner.  Any additional listeners can be registered on the tuner.
+     * Note: this is normally used by the Tuner.  Any additional listeners can
+     * be registered on the tuner.
      */
-    public void addListener(IFrequencyChangeProcessor processor)
+    public void addListener( ISourceEventProcessor processor )
     {
         mFrequencyController.addListener(processor);
     }
@@ -363,8 +409,52 @@ public abstract class TunerController implements Tunable, IFrequencyChangeProces
     /**
      * Removes the frequency change listener
      */
-    public void removeListener(IFrequencyChangeProcessor processor)
+    public void removeListener( ISourceEventProcessor processor )
     {
         mFrequencyController.removeFrequencyChangeProcessor(processor);
+    }
+
+    /**
+     * Adds the listener to receive complex buffer samples
+     */
+    @Override
+    public void addComplexBufferListener(Listener<ComplexBuffer> listener)
+    {
+        mSampleBroadcaster.addListener(listener);
+    }
+
+    /**
+     * Removes the listener from receiving complex buffer samples
+     */
+    @Override
+    public void removeComplexBufferListener(Listener<ComplexBuffer> listener)
+    {
+        mSampleBroadcaster.removeListener(listener);
+    }
+
+    /**
+     * Indicates if there are any complex buffer listeners registered on this controller
+     */
+    @Override
+    public boolean hasComplexBufferListeners()
+    {
+        return mSampleBroadcaster.hasListeners();
+    }
+
+    /**
+     * Broadcasts the buffer to any registered listeners
+     */
+    protected void broadcast(ComplexBuffer complexBuffer)
+    {
+        mSampleBroadcaster.broadcast(complexBuffer);
+    }
+
+    /**
+     * Implements the Listener<T> interface to receive and distribute complex buffers from subclass implementations
+     */
+    @Override
+    public void receive(ComplexBuffer complexBuffer)
+    {
+        broadcast(complexBuffer);
     }
 }

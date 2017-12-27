@@ -140,7 +140,7 @@ public class StreamManager implements Listener<AudioPacket>
                     {
                         AudioRecorder recorder = BroadcastFactory.getAudioRecorder(getTemporaryRecordingPath(),
                             mBroadcastFormat);
-                        recorder.start(ThreadPool.SCHEDULED);
+                        recorder.start();
                         recorder.receive(audioPacket);
                         mStreamRecorders.put(channelMetadataID, recorder);
                     }

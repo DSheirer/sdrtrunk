@@ -22,8 +22,8 @@ import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.config.SourceConfigRecording;
 import io.github.dsheirer.source.config.SourceConfiguration;
-import io.github.dsheirer.source.tuner.TunerChannel;
-import io.github.dsheirer.source.tuner.TunerChannelSource;
+import io.github.dsheirer.source.tuner.channel.TunerChannel;
+import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,8 +33,7 @@ import java.util.List;
 
 public class RecordingSourceManager
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( RecordingSourceManager.class );
+	private final static Logger mLog = LoggerFactory.getLogger( RecordingSourceManager.class );
 
 	private ArrayList<Recording> mRecordings = new ArrayList<Recording>();
 
@@ -50,12 +49,12 @@ public class RecordingSourceManager
      * Iterates current recordings to get a tuner channel source for the frequency
      * specified in the channel config's source config object
      */
-    public Source getSource(SourceConfiguration config, int bandwidth )
+    public Source getSource( SourceConfiguration config, int bandwidth )
     					throws SourceException
     {
     	TunerChannelSource retVal = null;
 
-    	if( config instanceof SourceConfigRecording)
+    	if( config instanceof SourceConfigRecording )
     	{
     		SourceConfigRecording configRecording = (SourceConfigRecording)config;
     		

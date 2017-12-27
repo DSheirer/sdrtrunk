@@ -21,15 +21,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.source.SourceType;
-import io.github.dsheirer.source.tuner.TunerChannel;
-import io.github.dsheirer.source.tuner.TunerChannel.Type;
+import io.github.dsheirer.source.tuner.channel.TunerChannel;
 
 import java.text.DecimalFormat;
 
 @JsonSubTypes.Type(value = SourceConfigTuner.class, name = "sourceConfigTuner")
 public class SourceConfigTuner extends SourceConfiguration
 {
-    private static DecimalFormat sFORMAT = new DecimalFormat("0.00000");
+    private static DecimalFormat FREQUENCY_FORMAT = new DecimalFormat("0.00000");
 
     private long mFrequency = 0;
     private int mBandwidth = 12500;
@@ -62,12 +61,12 @@ public class SourceConfigTuner extends SourceConfiguration
     @Override
     public String getDescription()
     {
-        return sFORMAT.format((double)mFrequency / 1000000.0d) + " MHz";
+        return FREQUENCY_FORMAT.format((double)mFrequency / 1000000.0d) + " MHz";
     }
 
     @JsonIgnore
     public TunerChannel getTunerChannel()
     {
-        return new TunerChannel(Type.LOCKED, mFrequency, mBandwidth);
+        return new TunerChannel(mFrequency, mBandwidth);
     }
 }

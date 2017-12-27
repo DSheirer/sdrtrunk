@@ -46,7 +46,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.TreeSet;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class MPT1327DecoderState extends DecoderState
 {
@@ -83,16 +82,6 @@ public class MPT1327DecoderState extends DecoderState
     public DecoderType getDecoderType()
     {
         return DecoderType.MPT1327;
-    }
-
-    @Override
-    public void start(ScheduledExecutorService executor)
-    {
-    }
-
-    @Override
-    public void stop()
-    {
     }
 
     public ChannelType getChannelType()
@@ -300,6 +289,24 @@ public class MPT1327DecoderState extends DecoderState
         resetState();
     }
 
+    @Override
+    public void start()
+    {
+
+    }
+
+    @Override
+    public void stop()
+    {
+
+    }
+
+    @Override
+    public void init()
+    {
+
+    }
+
     private void resetState()
     {
         mFromAttribute.reset();
@@ -497,12 +504,6 @@ public class MPT1327DecoderState extends DecoderState
         }
 
         return sb.toString();
-    }
-
-    @Override
-    public void init()
-    {
-        /* No initialization required */
     }
 
     @Override

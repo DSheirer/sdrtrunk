@@ -21,7 +21,10 @@ import io.github.dsheirer.instrument.gui.SampleModel;
 import io.github.dsheirer.instrument.tap.Tap;
 import io.github.dsheirer.instrument.tap.TapViewPanel;
 
-import java.awt.*;
+import java.awt.Color;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
 import java.util.List;
@@ -90,7 +93,7 @@ public class BinaryTapViewPanel extends TapViewPanel
 	 * Paints a polyline representing a boolean value with a 0 or 1 label in 
 	 * the middle of it
 	 * 
-	 * @param graphics
+	 * @param graphics object
 	 * @param index - index of the sample int the sample buffer
 	 * @param value - bit value, 0 or 1
 	 */

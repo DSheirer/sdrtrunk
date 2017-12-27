@@ -25,62 +25,100 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class Broadcaster<T> implements Listener<T>
 {
-	private List<Listener<T>> mListeners = new CopyOnWriteArrayList<>();
+    private List<Listener<T>> mListeners = new CopyOnWriteArrayList<>();
 
-	@Override
-    public void receive( T t )
+    /**
+     * Implements the Listener<T> interface to receive an element and broadcast that element to all registered
+     * listeners.
+     *
+     * @param t element to broadcast
+     */
+    @Override
+    public void receive(T t)
     {
-		broadcast( t );
+        broadcast(t);
     }
-	
-	/**
-	 * Clear listeners to prepare for garbage collection
-	 */
-	public void dispose()
-	{
-		mListeners.clear();
-	}
-	
-	public boolean hasListeners()
-	{
-		return !mListeners.isEmpty();
-	}
-	
-	public int getListenerCount()
-	{
-		return mListeners.size();
-	}
-	
-	public List<Listener<T>> getListeners()
-	{
-		return mListeners;
-	}
-	
-	public void addListener( Listener<T> listener )
-	{
-	    if(listener == null)
-        {
-            throw new IllegalArgumentException("Listener cannot be null");
-        }
 
-		mListeners.add( listener );
-	}
-	
-	public void removeListener( Listener<T> listener )
-	{
-		mListeners.remove( listener );
-	}
-	
-	public void clear()
-	{
-		mListeners.clear();
-	}
-
-    public void broadcast( T t )
+    /**
+     * Clear listeners to prepare for garbage collection
+     */
+    public void dispose()
     {
-    	for( Listener<T> listener: mListeners )
-    	{
-    		listener.receive( t );
-    	}
+        mListeners.clear();
+    }
+
+    /**
+     * Indicates if this broadcaster has any listeners registered
+     */
+    public boolean hasListeners()
+    {
+        return !mListeners.isEmpty();
+    }
+
+    /**
+     * Indicates if the listener is currently registered with this broadcaster
+     */
+    public boolean hasListener(Listener<T> listener)
+    {
+        return listener != null && mListeners.contains(listener);
+    }
+
+    /**
+     * The count of listeners currently registered with this broadcaster
+     */
+    public int getListenerCount()
+    {
+        return mListeners.size();
+    }
+
+    /**
+     * The list of listeners currently registered with this broadcaster
+     */
+    public List<Listener<T>> getListeners()
+    {
+        return mListeners;
+    }
+
+    /**
+     * Registers the listener to receive elements from this broadcaster
+     *
+     * @param listener
+     */
+    public void addListener(Listener<T> listener)
+    {
+        if(listener != null && !mListeners.contains(listener))
+        {
+            mListeners.add(listener);
+        }
+    }
+
+    /**
+     * Deregisters the listener from receiving elements from this broadcaster
+     */
+    public void removeListener(Listener<T> listener)
+    {
+        if(listener != null && mListeners.contains(listener))
+        {
+            mListeners.remove(listener);
+        }
+    }
+
+    /**
+     * Deregisters all listeners from this broadcaster
+     */
+    public void clear()
+    {
+        mListeners.clear();
+    }
+
+    /**
+     * Broadcasts the element to all registered listeners
+     */
+    public void broadcast(T t)
+    {
+        for(Listener<T> listener : mListeners)
+        {
+            listener.receive(t);
+        }
     }
 }

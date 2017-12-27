@@ -23,6 +23,7 @@ import io.github.dsheirer.sample.ConversionUtils;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
 import io.github.dsheirer.sample.complex.IComplexBufferListener;
+import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +33,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -43,8 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class ComplexBufferWaveRecorder extends Module
 				implements IComplexBufferListener, Listener<ComplexBuffer>
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( ComplexBufferWaveRecorder.class );
+	private final static Logger mLog = LoggerFactory.getLogger( ComplexBufferWaveRecorder.class );
 
     private WaveWriter mWriter;
     private String mFilePrefix;
@@ -68,19 +67,19 @@ public class ComplexBufferWaveRecorder extends Module
 		mFilePrefix = filePrefix;
 	}
 
-	public Path getFile()
-	{
-		return mFile;
-	}
-	
-	public void start( ScheduledExecutorService executor )
-	{
-		if( mRunning.compareAndSet( false, true ) )
-		{
-			if( mBufferProcessor == null )
-			{
-				mBufferProcessor = new BufferProcessor();
-			}
+    public Path getFile()
+    {
+        return mFile;
+    }
+
+    public void start()
+    {
+        if(mRunning.compareAndSet(false, true))
+        {
+            if(mBufferProcessor == null)
+            {
+                mBufferProcessor = new BufferProcessor();
+            }
 
 			try
 			{
@@ -95,7 +94,7 @@ public class ComplexBufferWaveRecorder extends Module
 				mWriter = new WaveWriter( mAudioFormat, mFile );
 
 				/* Schedule the processor to run every 500 milliseconds */
-				mProcessorHandle = executor.scheduleAtFixedRate( 
+				mProcessorHandle = ThreadPool.SCHEDULED.scheduleAtFixedRate(
 						mBufferProcessor, 0, 500, TimeUnit.MILLISECONDS );
 			}
 			catch( IOException io )

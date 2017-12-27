@@ -41,7 +41,7 @@ import io.github.dsheirer.instrument.tap.stream.EyeDiagramDataTap;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.Complex;
 import io.github.dsheirer.sample.complex.ComplexSampleListener;
-import io.github.dsheirer.source.tuner.frequency.IFrequencyChangeListener;
+import io.github.dsheirer.source.ISourceEventListener;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -72,7 +72,7 @@ public class LSMDemodulator implements Instrumentable, ComplexSampleListener
 	
 	private CostasLoop mCostasLoop = new CostasLoop();
 	
-	private IFrequencyChangeListener mFrequencyChangeListener;
+	private ISourceEventListener mFrequencyChangeListener;
 	
 	private EyeDiagramDataTap mEyeDiagramDataTap;
 	
@@ -146,12 +146,12 @@ public class LSMDemodulator implements Instrumentable, ComplexSampleListener
 		}
 	}
 	
-	public void addListener( IFrequencyChangeListener listener )
+	public void addListener( ISourceEventListener listener )
 	{
 		mFrequencyChangeListener = listener;
 	}
 	
-	public void removeListener( IFrequencyChangeListener listener )
+	public void removeListener( ISourceEventListener listener )
 	{
 		mFrequencyChangeListener = null;
 	}
@@ -201,8 +201,8 @@ public class LSMDemodulator implements Instrumentable, ComplexSampleListener
 //				if( correctionNeeded && mFrequencyChangeListener != null )
 //				{
 //					mLog.debug( "Issuing Frequency Correction: " + mFrequencyError );
-//					mFrequencyChangeListener.frequencyChanged( 
-//						new FrequencyChangeEvent( Attribute.FREQUENCY_ERROR, 
+//					mFrequencyChangeListener.process(
+//						new SourceEvent( Attribute.FREQUENCY_ERROR,
 //								mFrequencyError ) );
 //				}
 //				

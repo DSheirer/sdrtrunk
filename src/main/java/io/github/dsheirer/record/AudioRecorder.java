@@ -23,6 +23,7 @@ import io.github.dsheirer.audio.IAudioPacketListener;
 import io.github.dsheirer.channel.metadata.Metadata;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +34,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -193,10 +193,8 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
 
     /**
      * Starts this recorder as a scheduled thread running under the executor argument
-     *
-     * @param executor to use in scheduling audio conversion and file writes.
      */
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
         if(mRunning.compareAndSet(false, true))
         {
@@ -212,7 +210,7 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
                 mFileOutputStream = new FileOutputStream(mPath.toFile());
 
 				/* Schedule the handler to run every half second */
-                mProcessorHandle = executor.scheduleAtFixedRate(mBufferProcessor, 0, 500, TimeUnit.MILLISECONDS);
+                mProcessorHandle = ThreadPool.SCHEDULED.scheduleAtFixedRate(mBufferProcessor, 0, 500, TimeUnit.MILLISECONDS);
             }
             catch(IOException io)
             {

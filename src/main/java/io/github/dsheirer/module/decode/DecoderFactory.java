@@ -66,6 +66,7 @@ import io.github.dsheirer.module.decode.mdc1200.MDCDecoderState;
 import io.github.dsheirer.module.decode.mdc1200.MDCMessageFilter;
 import io.github.dsheirer.module.decode.mpt1327.DecodeConfigMPT1327;
 import io.github.dsheirer.module.decode.mpt1327.MPT1327Decoder;
+import io.github.dsheirer.module.decode.mpt1327.MPT1327Decoder.Sync;
 import io.github.dsheirer.module.decode.mpt1327.MPT1327DecoderEditor;
 import io.github.dsheirer.module.decode.mpt1327.MPT1327DecoderState;
 import io.github.dsheirer.module.decode.mpt1327.MPT1327MessageFilter;
@@ -73,7 +74,7 @@ import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoder;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoderEditor;
 import io.github.dsheirer.module.decode.p25.DecodeConfigP25Phase1;
-import io.github.dsheirer.module.decode.p25.P25Decoder;
+import io.github.dsheirer.module.decode.p25.P25Decoder.Modulation;
 import io.github.dsheirer.module.decode.p25.P25DecoderEditor;
 import io.github.dsheirer.module.decode.p25.P25DecoderState;
 import io.github.dsheirer.module.decode.p25.P25_C4FMDecoder;
@@ -145,7 +146,7 @@ public class DecoderFactory
                                           Metadata metadata)
     {
 
-		/* Get the optional alias list for the decode modules to use */
+        /* Get the optional alias list for the decode modules to use */
         AliasList aliasList = aliasModel.getAliasList(channel.getAliasListName());
 
         List<Module> modules = getPrimaryModules(channelModel, channelMapModel, channelProcessingManager, aliasList,
@@ -170,7 +171,7 @@ public class DecoderFactory
 
         ChannelType channelType = channel.getChannelType();
 
-		/* Baseband low-pass filter pass and stop frequencies */
+        /* Baseband low-pass filter pass and stop frequencies */
         DecodeConfiguration decodeConfig = channel.getDecodeConfiguration();
 
         int iqPass = decodeConfig.getDecoderType().getChannelBandwidth() / 2;
@@ -212,7 +213,7 @@ public class DecoderFactory
 
                 ChannelMap channelMap = channelMapModel.getChannelMap(mptConfig.getChannelMapName());
 
-                MPT1327Decoder.Sync sync = mptConfig.getSync();
+                Sync sync = mptConfig.getSync();
 
                 modules.add(new MPT1327Decoder(aliasList, sync));
 
@@ -221,7 +222,7 @@ public class DecoderFactory
 
                 if(channelType == ChannelType.STANDARD)
                 {
-                    modules.add(new TrafficChannelManager(channelModel, decodeConfig, channel.getEventLogConfiguration(),
+                    modules.add(new TrafficChannelManager(channelModel, decodeConfig,
                         channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
                         (aliasList != null ? aliasList.getName() : null), mptConfig.getTrafficChannelPoolSize()));
                 }
@@ -240,7 +241,7 @@ public class DecoderFactory
             case P25_PHASE1:
                 DecodeConfigP25Phase1 p25Config = (DecodeConfigP25Phase1) decodeConfig;
 
-                P25Decoder.Modulation modulation = p25Config.getModulation();
+                Modulation modulation = p25Config.getModulation();
 
 
                 switch(modulation)
@@ -249,12 +250,12 @@ public class DecoderFactory
                         modules.add(new FMDemodulatorModule(P25_C4FM_IQ_FILTER));
                         modules.add(new DemodulatedAudioFilterModule(P25_C4FM_DEMOD_FILTER, 1.0f));
                         modules.add(new P25_C4FMDecoder(aliasList, decodeConfig.getAFCMaximumCorrection()));
-                        modules.add(new P25DecoderState(aliasList, channelType, P25Decoder.Modulation.C4FM,
+                        modules.add(new P25DecoderState(aliasList, channelType, Modulation.C4FM,
                             p25Config.getIgnoreDataCalls()));
                         break;
                     case CQPSK:
                         modules.add(new P25_LSMDecoder(aliasList));
-                        modules.add(new P25DecoderState(aliasList, channelType, P25Decoder.Modulation.CQPSK, p25Config.getIgnoreDataCalls()));
+                        modules.add(new P25DecoderState(aliasList, channelType, Modulation.CQPSK, p25Config.getIgnoreDataCalls()));
                         break;
                     default:
                         throw new IllegalArgumentException("Unrecognized P25 Phase 1 Modulation [" + modulation + "]");
@@ -262,7 +263,7 @@ public class DecoderFactory
 
                 if(channelType == ChannelType.STANDARD)
                 {
-                    modules.add(new TrafficChannelManager(channelModel, decodeConfig, channel.getEventLogConfiguration(),
+                    modules.add(new TrafficChannelManager(channelModel, decodeConfig,
                         channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
                         (aliasList != null ? aliasList.getName() : null), p25Config.getTrafficChannelPoolSize()));
                 }
@@ -337,7 +338,7 @@ public class DecoderFactory
             }
         }
 
-		/* If we don't have any filters, add an ALL-PASS filter */
+        /* If we don't have any filters, add an ALL-PASS filter */
         if(filterSet.getFilters().isEmpty())
         {
             filterSet.addFilter(new AllPassFilter<Message>());

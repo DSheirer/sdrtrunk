@@ -38,7 +38,6 @@ import io.github.dsheirer.sample.real.RealBuffer;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Fleetsync II Decoder - 1200 baud 2FSK decoder that can process 48k sample rate
@@ -172,20 +171,5 @@ public class Fleetsync2Decoder extends Decoder implements IFilteredRealBufferLis
 	public Listener<RealBuffer> getFilteredRealBufferListener()
 	{
 		return mDecimationFilter;
-	}
-
-	@Override
-	public void reset()
-	{
-	}
-
-	@Override
-	public void start( ScheduledExecutorService executor )
-	{
-	}
-
-	@Override
-	public void stop()
-	{
 	}
 }

@@ -246,25 +246,21 @@ public class TunerManager
             + "supported");
     }
 
-    private TunerInitStatus initFuncubeProTuner(Device device,
-                                                DeviceDescriptor descriptor)
+    private TunerInitStatus initFuncubeProTuner(Device device, DeviceDescriptor descriptor)
     {
         String reason = "NOT LOADED";
 
-        MixerTunerDataLine dataline = getMixerTunerDataLine(
-            TunerClass.FUNCUBE_DONGLE_PRO.getTunerType());
+        MixerTunerDataLine dataline = getMixerTunerDataLine(TunerClass.FUNCUBE_DONGLE_PRO.getTunerType());
 
         if(dataline != null)
         {
-            FCD1TunerController controller =
-                new FCD1TunerController(device, descriptor);
+            FCD1TunerController controller = new FCD1TunerController(dataline, device, descriptor);
 
             try
             {
                 controller.init();
 
-                FCDTuner tuner =
-                    new FCDTuner(dataline, controller);
+                FCDTuner tuner = new FCDTuner(controller);
 
                 return new TunerInitStatus(tuner, "LOADED");
             }
@@ -284,25 +280,21 @@ public class TunerManager
             + "loaded - " + reason);
     }
 
-    private TunerInitStatus initFuncubeProPlusTuner(Device device,
-                                                    DeviceDescriptor descriptor)
+    private TunerInitStatus initFuncubeProPlusTuner(Device device, DeviceDescriptor descriptor)
     {
         String reason = "NOT LOADED";
 
-        MixerTunerDataLine dataline = getMixerTunerDataLine(
-            TunerClass.FUNCUBE_DONGLE_PRO_PLUS.getTunerType());
+        MixerTunerDataLine dataline = getMixerTunerDataLine(TunerClass.FUNCUBE_DONGLE_PRO_PLUS.getTunerType());
 
         if(dataline != null)
         {
-            FCD2TunerController controller =
-                new FCD2TunerController(device, descriptor);
+            FCD2TunerController controller = new FCD2TunerController(dataline, device, descriptor);
 
             try
             {
                 controller.init();
 
-                FCDTuner tuner =
-                    new FCDTuner(dataline, controller);
+                FCDTuner tuner = new FCDTuner(controller);
 
                 return new TunerInitStatus(tuner, "LOADED");
             }
@@ -323,8 +315,7 @@ public class TunerManager
             + "loaded - " + reason);
     }
 
-    private TunerInitStatus initHackRFTuner(Device device,
-                                            DeviceDescriptor descriptor)
+    private TunerInitStatus initHackRFTuner(Device device, DeviceDescriptor descriptor)
     {
         try
         {

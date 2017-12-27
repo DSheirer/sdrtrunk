@@ -30,8 +30,6 @@ import io.github.dsheirer.sample.real.RealBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ScheduledExecutorService;
-
 public class FMDemodulatorModule extends Module implements IComplexBufferListener, IUnFilteredRealBufferProvider
 {
     private final static Logger mLog = LoggerFactory.getLogger(FMDemodulatorModule.class);
@@ -104,7 +102,7 @@ public class FMDemodulatorModule extends Module implements IComplexBufferListene
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
     }
 
