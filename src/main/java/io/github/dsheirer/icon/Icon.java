@@ -81,16 +81,23 @@ public class Icon implements Comparable<Icon>
         {
             try
             {
-                URL imageURL = Icon.class.getResource(mPath);
-
-                if(imageURL == null && !mPath.startsWith("/"))
+                if(mPath.startsWith("/"))
                 {
-                    imageURL = (Icon.class.getResource("/" + mPath));
+                    mImageIcon = new ImageIcon(mPath);
                 }
-
-                if(imageURL != null)
+                else
                 {
-                    mImageIcon = new ImageIcon(imageURL);
+                    URL imageURL = Icon.class.getResource(mPath);
+
+                    if(imageURL == null && !mPath.startsWith("/"))
+                    {
+                        imageURL = (Icon.class.getResource("/" + mPath));
+                    }
+
+                    if(imageURL != null)
+                    {
+                        mImageIcon = new ImageIcon(imageURL);
+                    }
                 }
             }
             catch(Exception e)
