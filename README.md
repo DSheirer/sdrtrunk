@@ -33,7 +33,7 @@ java -jar downloaded-jar-filename
 Note: replace _downloaded-jar-filename_ with the actual name of the sdrtrunk release version that you downloaded 
 
 ## Optional - P25 Audio
-If you're using sdrtrunk with a P25 trunked radio system, the [JMBE](JMBE) wiki page contains instructions
+If you're using sdrtrunk with a P25 trunked radio system, the [JMBE](https://github.com/DSheirer/sdrtrunk/wiki/JMBE) wiki page contains instructions
 for downloading the JMBE audio library source code and compiling the JMBE library.  Copy the resulting JMBE audio library 
 jar file to the same folder containing the sdrtrunk application to use the library with sdrtrunk.
 
