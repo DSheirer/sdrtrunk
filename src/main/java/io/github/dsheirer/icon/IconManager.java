@@ -129,7 +129,7 @@ public class IconManager
     /**
      * All icons in a sorted array
      */
-    public io.github.dsheirer.icon.Icon[] getIcons()
+    public Icon[] getIcons()
     {
         return getModel().getIconsAsArray();
     }
@@ -159,7 +159,11 @@ public class IconManager
         Icon icon = getModel().getIcon(name);
 
         ImageIcon scaledIcon = getScaledIcon(icon.getIcon(), height);
-        mResizedIcons.put(scaledIconName, scaledIcon);
+
+        if(scaledIcon != null)
+        {
+            mResizedIcons.put(scaledIconName, scaledIcon);
+        }
 
         return scaledIcon;
     }
@@ -173,14 +177,19 @@ public class IconManager
      */
     public static ImageIcon getScaledIcon(ImageIcon original, int height)
     {
-        double scale = (double) original.getIconHeight() / (double) height;
+        if(original != null)
+        {
+            double scale = (double) original.getIconHeight() / (double) height;
 
-        int scaledWidth = (int) ((double) original.getIconWidth() / scale);
+            int scaledWidth = (int) ((double) original.getIconWidth() / scale);
 
-        Image scaledImage = original.getImage().getScaledInstance(scaledWidth,
-            height, java.awt.Image.SCALE_SMOOTH);
+            Image scaledImage = original.getImage().getScaledInstance(scaledWidth,
+                height, java.awt.Image.SCALE_SMOOTH);
 
-        return new ImageIcon(scaledImage);
+            return new ImageIcon(scaledImage);
+        }
+
+        return null;
     }
 
     /**
@@ -191,9 +200,14 @@ public class IconManager
      */
     public static ImageIcon getScaledIcon(String path, int height)
     {
-        Icon icon = new Icon("", path);
+        if(path != null)
+        {
+            Icon icon = new Icon("", path);
 
-        return getScaledIcon(icon.getIcon(), height);
+            return getScaledIcon(icon.getIcon(), height);
+        }
+
+        return null;
     }
 
     /**
