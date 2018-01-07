@@ -38,7 +38,7 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
      * @param sampleRate of the output sample stream.
      * @param channelIndexes containing two channel indices.
      */
-    public TwoChannelOutputProcessor(int sampleRate, List<Integer> channelIndexes)
+    public TwoChannelOutputProcessor(double sampleRate, List<Integer> channelIndexes)
     {
         //Set the frequency correction oscillator to 2 x output sample rate since we'll be correcting the frequency
         //after synthesizing both input channels

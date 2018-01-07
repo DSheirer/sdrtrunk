@@ -18,15 +18,17 @@
  ******************************************************************************/
 package io.github.dsheirer.source;
 
+import java.util.EnumSet;
+
 public class SourceEvent
 {
     public enum Event
     {
+        NOTIFICATION_CHANNEL_COUNT_CHANGE,
         NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE,
         NOTIFICATION_CHANNEL_SAMPLE_RATE_CHANGE,
         NOTIFICATION_FREQUENCY_CHANGE,
         NOTIFICATION_FREQUENCY_CORRECTION_CHANGE,
-        NOTIFICATION_POLYPHASE_CHANNEL_COUNT_CHANGE,
         NOTIFICATION_SAMPLE_RATE_CHANGE,
 
         REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE,
@@ -34,6 +36,11 @@ public class SourceEvent
         REQUEST_SOURCE_DISPOSE,
         REQUEST_START_SAMPLE_STREAM,
         REQUEST_STOP_SAMPLE_STREAM;
+
+        public static EnumSet<Event> NOTIFICATION_EVENTS =
+            EnumSet.range(NOTIFICATION_CHANNEL_COUNT_CHANGE, NOTIFICATION_SAMPLE_RATE_CHANGE);
+        public static EnumSet<Event> REQUEST_EVENTS =
+            EnumSet.range(NOTIFICATION_CHANNEL_COUNT_CHANGE, NOTIFICATION_SAMPLE_RATE_CHANGE);
     }
 
     private Event mEvent;
@@ -64,6 +71,22 @@ public class SourceEvent
     public Event getEvent()
     {
         return mEvent;
+    }
+
+    /**
+     * Indicates if this is a notification event
+     */
+    public boolean isNotificationEvent()
+    {
+        return Event.NOTIFICATION_EVENTS.contains(mEvent);
+    }
+
+    /**
+     * Indicates if this is a request event
+     */
+    public boolean isRequestEvent()
+    {
+        return Event.REQUEST_EVENTS.contains(mEvent);
     }
 
     /**
@@ -152,7 +175,7 @@ public class SourceEvent
      */
     public static SourceEvent channelCountChange(int channelCount)
     {
-        return new SourceEvent(Event.NOTIFICATION_POLYPHASE_CHANNEL_COUNT_CHANGE, channelCount);
+        return new SourceEvent(Event.NOTIFICATION_CHANNEL_COUNT_CHANGE, channelCount);
     }
 
     /**
@@ -198,5 +221,10 @@ public class SourceEvent
     public static SourceEvent sourceDisposeRequest(Source source)
     {
         return new SourceEvent(Event.REQUEST_SOURCE_DISPOSE, source);
+    }
+
+    public String toString()
+    {
+        return "SOURCE EVENT:" + mEvent + " VALUE:" + (mValue != null ? mValue : "(empty)");
     }
 }

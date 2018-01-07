@@ -1,19 +1,17 @@
 /*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014-2016 Dennis Sheirer
- * 
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- * 
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- * 
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
+ *
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
+ *
  ******************************************************************************/
 package io.github.dsheirer.source.tuner;
 
@@ -24,20 +22,17 @@ import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.TunerEvent.Event;
 import io.github.dsheirer.source.tuner.manager.AbstractSourceManager;
 import io.github.dsheirer.source.tuner.manager.TunerSourceManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Tuner - provides tuner channel sources, representing a channel frequency
+ * Tuner provides an interface to a software or hardware tuner controller that provides I/Q sample data coupled with an
+ * abstract source manager to provide access to Digital Drop Channel (DDC) resources.
  */
-public abstract class Tuner
+public abstract class Tuner implements ISourceEventProcessor
 {
-    private final static Logger mLog = LoggerFactory.getLogger(Tuner.class);
-
-    protected Broadcaster<TunerEvent> mTunerEventBroadcaster = new Broadcaster<>();
+    private Broadcaster<TunerEvent> mTunerEventBroadcaster = new Broadcaster<>();
     private TunerController mTunerController;
+    private AbstractSourceManager mSourceManager;
     private String mName;
-    private AbstractSourceManager mTunerSourceManager;
 
     /**
      * Abstract tuner class.
@@ -48,28 +43,31 @@ public abstract class Tuner
     {
         mName = name;
         mTunerController = tunerController;
+        //Register to receive frequency and sample rate change notifications
+        mTunerController.addListener(this::process);
 
-        mTunerSourceManager = new TunerSourceManager(mTunerController);
+        mSourceManager = new TunerSourceManager(mTunerController);
+        //Register to receive channel count change notifications
+        mSourceManager.addSourceEventListener(this::process);
+    }
 
-        //Rebroadcast frequency and sample rate change events as tuner events
-        mTunerController.addListener(new ISourceEventProcessor()
+    @Override
+    public void process(SourceEvent event)
+    {
+        switch(event.getEvent())
         {
-            @Override
-            public void process(SourceEvent event)
-            {
-                switch(event.getEvent())
-                {
-                    case NOTIFICATION_FREQUENCY_CHANGE:
-                        broadcast(new TunerEvent(Tuner.this, Event.FREQUENCY));
-                        break;
-                    case NOTIFICATION_SAMPLE_RATE_CHANGE:
-                        broadcast(new TunerEvent(Tuner.this, Event.SAMPLE_RATE));
-                        break;
-                    default:
-                        break;
-                }
-            }
-        });
+            case NOTIFICATION_CHANNEL_COUNT_CHANGE:
+                broadcast(new TunerEvent(Tuner.this, Event.CHANNEL_COUNT));
+                break;
+            case NOTIFICATION_FREQUENCY_CHANGE:
+                broadcast(new TunerEvent(Tuner.this, Event.FREQUENCY));
+                break;
+            case NOTIFICATION_SAMPLE_RATE_CHANGE:
+                broadcast(new TunerEvent(Tuner.this, Event.SAMPLE_RATE));
+                break;
+            default:
+                break;
+        }
     }
 
     /**
@@ -77,14 +75,20 @@ public abstract class Tuner
      */
     public AbstractSourceManager getSourceManager()
     {
-        return mTunerSourceManager;
+        return mSourceManager;
     }
 
+    /**
+     * Tuner controller.
+     */
     public TunerController getTunerController()
     {
         return mTunerController;
     }
 
+    /**
+     * Name for this tuner
+     */
     public String toString()
     {
         return mName;
@@ -94,19 +98,19 @@ public abstract class Tuner
     {
     }
 
+    /**
+     * Sets the name for this tuner
+     */
     public void setName(String name)
     {
         mName = name;
     }
 
     /**
-     * Unique identifier for this tuner, used to lookup a tuner configuration
-     * from the settings manager.
+     * Unique identifier for this tuner, used to lookup a tuner configuration from the settings manager.
      *
-     * @return - unique identifier like a serial number, or a usb bus location
-     * or ip address and port.  Return some form of unique identification that
-     * allows this tuner to be identified from among several of the same types
-     * of tuners.
+     * @return - unique identifier like a serial number, or a usb bus location or ip address and port.  Return some
+     * form of unique identification that allows this tuner to be identified from among the same types of tuners.
      */
     public abstract String getUniqueID();
 
@@ -154,7 +158,7 @@ public abstract class Tuner
     /**
      * Broadcasts the tuner change event
      */
-    public void broadcast(TunerEvent tunerEvent)
+    protected void broadcast(TunerEvent tunerEvent)
     {
         mTunerEventBroadcaster.broadcast(tunerEvent);
     }

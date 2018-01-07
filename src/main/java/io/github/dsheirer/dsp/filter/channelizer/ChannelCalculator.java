@@ -185,7 +185,7 @@ public class ChannelCalculator
      */
     public double getChannelSampleRate()
     {
-        return (double)getChannelBandwidth() * getOversampling();
+        return getChannelBandwidth() * getOversampling();
     }
 
     /**
@@ -550,9 +550,9 @@ public class ChannelCalculator
     {
         mLog.debug("Starting ....");
 
-        int channelBandwidth = 12500;
-        int sampleRate = 100000; //Airspy
-        int channelCount = sampleRate / channelBandwidth;
+        double channelBandwidth = 12500.0;
+        double sampleRate = 100000.0; //Airspy
+        int channelCount = (int)(sampleRate / channelBandwidth);
         double centerFrequency = 455000000;
 
         ChannelCalculator calculator = new ChannelCalculator(sampleRate, channelCount, centerFrequency, 2.0);

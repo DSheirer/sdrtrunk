@@ -1,6 +1,6 @@
 /*******************************************************************************
  * sdr-trunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
  * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
@@ -19,26 +19,31 @@ import io.github.dsheirer.dsp.filter.channelizer.output.IPolyphaseChannelOutputP
 import io.github.dsheirer.dsp.filter.channelizer.output.OneChannelOutputProcessor;
 import io.github.dsheirer.dsp.filter.channelizer.output.TwoChannelOutputProcessor;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
+import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.IComplexBufferProvider;
-import io.github.dsheirer.source.Source;
+import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
+import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
+import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class PolyphaseChannelManager implements Listener<SourceEvent>
+public class PolyphaseChannelManager implements ISourceEventProcessor
 {
     private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelManager.class);
-    private static final int CHANNEL_BANDWIDTH = 12500;
+    private static final double MINIMUM_CHANNEL_BANDWIDTH = 12500.0;
     private static final double CHANNEL_OVERSAMPLING = 2.0;
-    private static final int CHANNEL_SAMPLE_RATE = (int)(CHANNEL_BANDWIDTH * CHANNEL_OVERSAMPLING);
     private static final int POLYPHASE_FILTER_TAPS_PER_CHANNEL = 17;
 
+    private Broadcaster<SourceEvent> mSourceEventBroadcaster = new Broadcaster<>();
     private IComplexBufferProvider mComplexBufferProvider;
     private List<PolyphaseChannelSource> mChannelSources = new CopyOnWriteArrayList<>();
     private ChannelCalculator mChannelCalculator;
@@ -61,7 +66,7 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
      * @param frequency of the provided complex buffer samples
      * @param sampleRate of the provided complex buffer samples
      */
-    public PolyphaseChannelManager(IComplexBufferProvider complexBufferProvider, long frequency, int sampleRate)
+    public PolyphaseChannelManager(IComplexBufferProvider complexBufferProvider, long frequency, double sampleRate)
     {
         if(complexBufferProvider == null)
         {
@@ -70,14 +75,13 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
 
         mComplexBufferProvider = complexBufferProvider;
 
-        //Ensure that sample rate is a multiple of channel sample rate since polyphase channelizer is M2
-        if(sampleRate % (CHANNEL_SAMPLE_RATE) != 0)
-        {
-            throw new IllegalArgumentException("Tuner sample rate [" + sampleRate + "] must be an even multiple of " +
-                CHANNEL_SAMPLE_RATE + " Hz");
-        }
+        int channelCount = (int)(sampleRate / MINIMUM_CHANNEL_BANDWIDTH);
 
-        int channelCount = sampleRate / CHANNEL_BANDWIDTH;
+        //Ensure channel count is an even integer since we're using a 2x oversampling polyphase channelizer
+        if(channelCount % 2 != 0)
+        {
+            channelCount--;
+        }
 
         mChannelCalculator = new ChannelCalculator(sampleRate, channelCount, frequency, CHANNEL_OVERSAMPLING);
 
@@ -87,12 +91,36 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
     }
 
     /**
+     * Creates a polyphase channel manager for the tuner controller
+     */
+    public PolyphaseChannelManager(TunerController tunerController)
+    {
+        this(tunerController, tunerController.getFrequency(), tunerController.getSampleRate());
+    }
+
+    /**
+     * Current channel sample rate which is (2 * channel bandwidth).
+     */
+    public double getChannelSampleRate()
+    {
+        return mChannelCalculator.getChannelSampleRate();
+    }
+
+    /**
+     * Current channel bandwidth/spacing.
+     */
+    public double getChannelBandwidth()
+    {
+        return mChannelCalculator.getChannelBandwidth();
+    }
+
+    /**
      * Provides a Digital Drop Channel (DDC) for the specified tuner channel or returns null if the channel can't be
      * sourced due to the current center frequency and/or sample rate.
      * @param tunerChannel specifying center frequency and bandwidth.
      * @return source or null.
      */
-    public Source getChannel(TunerChannel tunerChannel)
+    public TunerChannelSource getChannel(TunerChannel tunerChannel)
     {
         PolyphaseChannelSource channelSource = null;
 
@@ -105,7 +133,7 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
             if(outputProcessor != null)
             {
                 channelSource = new PolyphaseChannelSource(tunerChannel, outputProcessor, mChannelSourceEventListener,
-                    CHANNEL_SAMPLE_RATE);
+                    mChannelCalculator.getChannelSampleRate());
 
                 mChannelSources.add(channelSource);
             }
@@ -131,9 +159,9 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
         switch(indexes.size())
         {
             case 1:
-                return new OneChannelOutputProcessor(CHANNEL_SAMPLE_RATE, indexes);
+                return new OneChannelOutputProcessor(mChannelCalculator.getChannelSampleRate(), indexes);
             case 2:
-                return new TwoChannelOutputProcessor(CHANNEL_SAMPLE_RATE, indexes);
+                return new TwoChannelOutputProcessor(mChannelCalculator.getChannelSampleRate(), indexes);
             default:
                 //TODO: create output processor for greater than 2 input channels
                 mLog.error("Request to create an output processor for unexpected channel index size:" + indexes.size());
@@ -152,6 +180,7 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
         synchronized(mBufferProcessor)
         {
             mPolyphaseChannelizer.addChannel(channelSource);
+            mSourceEventBroadcaster.broadcast(SourceEvent.channelCountChange(mChannelSources.size()));
 
             if(mPolyphaseChannelizer.getRegisteredChannelCount() == 1)
             {
@@ -172,6 +201,7 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
         synchronized(mBufferProcessor)
         {
             mChannelSources.remove(channelSource);
+            mSourceEventBroadcaster.broadcast(SourceEvent.channelCountChange(mChannelSources.size()));
 
             if(mPolyphaseChannelizer.getRegisteredChannelCount() == 0)
             {
@@ -182,11 +212,11 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
     }
 
     /**
-     * Implements the Listener<SourceEvent> interface for receiving notifications of frequency and sample rate
+     * Implements the ISourceEventProcessor interface for receiving notifications of frequency and sample rate
      * changes from the tuner.
      */
     @Override
-    public void receive(SourceEvent sourceEvent)
+    public void process(SourceEvent sourceEvent)
     {
         switch(sourceEvent.getEvent())
         {
@@ -199,6 +229,9 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
                 //Update the channelizer (and the output processors) for the new sample rate
                 updateChannelizer(sourceEvent.getValue().intValue(), sourceEvent);
                 break;
+            default:
+                mLog.info("Received an unrecognized source event: " + sourceEvent.getEvent());
+                break;
         }
     }
 
@@ -210,7 +243,7 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
      * event will be passed to all output processors to ensure the change is fully promulgated before restarting the
      * buffer processor if it was already running.
      */
-    private void updateChannelizer(int sampleRate, SourceEvent sourceEvent)
+    private void updateChannelizer(double sampleRate, SourceEvent sourceEvent)
     {
         mChannelCalculator.setSampleRate(sampleRate);
 
@@ -320,6 +353,46 @@ public class PolyphaseChannelManager implements Listener<SourceEvent>
 
             stopChannelSource(channelSource);
         }
+    }
+
+    /**
+     * Sorted set of currently sourced tuner channels being provided by this channel manager.  The set is ordered by
+     * frequency (low to high).
+     */
+    public SortedSet<TunerChannel> getTunerChannels()
+    {
+        SortedSet<TunerChannel> tunerChannels = new TreeSet<>();
+
+        for(PolyphaseChannelSource channelSource: mChannelSources)
+        {
+            tunerChannels.add(channelSource.getTunerChannel());
+        }
+
+        return tunerChannels;
+    }
+
+    /**
+     * Count of currently sourced tuner channels
+     */
+    public int getTunerChannelCount()
+    {
+        return mChannelSources.size();
+    }
+
+    /**
+     * Adds the listener to receive source events
+     */
+    public void addSourceEventListener(Listener<SourceEvent> listener)
+    {
+        mSourceEventBroadcaster.addListener(listener);
+    }
+
+    /**
+     * Removes the listener from receiving source events
+     */
+    public void removeSourceEventListener(Listener<SourceEvent> listener)
+    {
+        mSourceEventBroadcaster.removeListener(listener);
     }
 
     /**
