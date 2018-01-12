@@ -11,6 +11,8 @@ A cross-platform java application for decoding, monitoring, recording and stream
 
 # End User Instructions:
 
+If you simply want to download and run the program, please follow these instructions.
+
 ## Install Java 8 (or newer)
 
 ## Download the latest sdrtrunk release
@@ -39,8 +41,7 @@ jar file to the same folder containing the sdrtrunk application to use the libra
 
 # Developer Instructions:
 
-If you're interested in downloading and compiling the source code, please follow these 
-instructions to use gradle to compile the code. 
+If you're interested in modifying and/or compiling the source code, please follow these instructions to use gradle to compile the code. 
 
 ## Build the project
 sdrtrunk uses gradle as the build system. You can build it with locally installed gradle or if you do not have/want 
