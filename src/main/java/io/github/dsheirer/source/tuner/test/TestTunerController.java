@@ -20,7 +20,6 @@ package io.github.dsheirer.source.tuner.test;
 
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
-import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
@@ -56,7 +55,7 @@ public class TestTunerController extends TunerController
 
         try
         {
-            mLog.debug("Setting frequency ...");
+            mLog.debug("Setting frequency to:" + DEFAULT_CENTER_FREQUENCY);
             mFrequencyController.setFrequency(DEFAULT_CENTER_FREQUENCY);
             mLog.debug("Setting sample rate of freq controller to: " + DEFAULT_SAMPLE_RATE);
             mFrequencyController.setSampleRate(DEFAULT_SAMPLE_RATE);
@@ -130,7 +129,6 @@ public class TestTunerController extends TunerController
     {
         long frequency = toneFrequency - mReferenceFrequency;
         mSampleGenerator.setFrequency(frequency);
-        mSampleGenerator.queue(SourceEvent.frequencyChange(frequency));
     }
 
     /**
@@ -157,6 +155,5 @@ public class TestTunerController extends TunerController
     public void setSampleRate(int sampleRate) throws SourceException
     {
         mFrequencyController.setSampleRate(sampleRate);
-        mSampleGenerator.queue(SourceEvent.sampleRateChange(sampleRate));
     }
 }

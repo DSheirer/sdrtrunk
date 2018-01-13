@@ -15,25 +15,9 @@
  ******************************************************************************/
 package io.github.dsheirer.sample;
 
-import io.github.dsheirer.source.SourceEvent;
-
 public class Buffer
 {
     private float[] mSamples;
-    private SourceEvent mSourceEvent;
-
-    /**
-     * Buffer containing float sample data and a source event that should be processed prior to processing the
-     * sample data.
-     *
-     * @param samples data
-     * @param sourceEvent indicating a change to the sample data that should be processed first
-     */
-    public Buffer(float[] samples, SourceEvent sourceEvent)
-    {
-        mSamples = samples;
-        mSourceEvent = sourceEvent;
-    }
 
     /**
      * Buffer containing float sample data
@@ -53,31 +37,10 @@ public class Buffer
     }
 
     /**
-     * Optional source event that should be processed before processing the included samples.  Use the hasSourceEvent()
-     * method to check for the existence of an event before accessing.
-     *
-     * @return optional source event or null
-     */
-    public SourceEvent getSourceEvent()
-    {
-        return mSourceEvent;
-    }
-
-    /**
-     * Indicates if this buffer contains an optional source event that should be processed prior to processing the
-     * included float samples array.
-     */
-    public boolean hasSourceEvent()
-    {
-        return mSourceEvent != null;
-    }
-
-    /**
      * Cleanup method to nullify all data and references
      */
     public void dispose()
     {
         mSamples = null;
-        mSourceEvent = null;
     }
 }

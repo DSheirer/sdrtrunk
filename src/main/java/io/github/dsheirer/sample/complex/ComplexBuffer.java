@@ -16,21 +16,12 @@
 package io.github.dsheirer.sample.complex;
 
 import io.github.dsheirer.sample.Buffer;
-import io.github.dsheirer.source.SourceEvent;
 
 public class ComplexBuffer extends Buffer
 {
     //Default timestamp - we use a static variable here so that there is only ever 1 instance in memory
     private static final long DEFAULT_TIMESTAMP = 0;
 
-    /**
-     * Wrapper around float array containing interleaved I/Q samples and an optional source event that should be
-     * processed prior to processing the sample data.
-     */
-    public ComplexBuffer(float[] samples, SourceEvent sourceEvent)
-    {
-        super(samples, sourceEvent);
-    }
     /**
      * Wrapper around float array containing interleaved I/Q samples
      */

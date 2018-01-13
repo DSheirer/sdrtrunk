@@ -16,21 +16,11 @@
 package io.github.dsheirer.sample.real;
 
 import io.github.dsheirer.sample.Buffer;
-import io.github.dsheirer.source.SourceEvent;
 
 import java.util.Arrays;
 
 public class RealBuffer extends Buffer
 {
-    /**
-     * Wrapper around float array containing real float samples and an optional source event that should be processed
-     * prior to processing the sample array data.
-     */
-    public RealBuffer(float[] samples, SourceEvent sourceEvent)
-    {
-        super(samples, sourceEvent);
-    }
-
     /**
      * Wrapper around float array containing real float samples
      */
@@ -46,6 +36,6 @@ public class RealBuffer extends Buffer
     {
         float[] copy = Arrays.copyOf(getSamples(), getSamples().length);
 
-        return new RealBuffer(copy, getSourceEvent());
+        return new RealBuffer(copy);
     }
 }

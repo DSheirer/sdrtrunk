@@ -46,6 +46,7 @@ public class TunerSourceManager extends AbstractSourceManager
         mPolyphaseChannelManager = new PolyphaseChannelManager(tunerController);
         //Register to receive channel count change notifications for rebroadcasting
         mPolyphaseChannelManager.addSourceEventListener(this::process);
+        mTunerController.addListener(mPolyphaseChannelManager);
     }
 
     /**
@@ -427,7 +428,7 @@ public class TunerSourceManager extends AbstractSourceManager
                 broadcast(sourceEvent);
                 break;
             default:
-                mLog.info("Received an unrecognized source event: " + sourceEvent);
+                mLog.info("Unrecognized source event: " + sourceEvent);
                 break;
         }
     }

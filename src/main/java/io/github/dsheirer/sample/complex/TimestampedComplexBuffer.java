@@ -15,25 +15,9 @@
  ******************************************************************************/
 package io.github.dsheirer.sample.complex;
 
-import io.github.dsheirer.source.SourceEvent;
-
 public class TimestampedComplexBuffer extends ComplexBuffer
 {
     private long mTimestamp;
-
-    /**
-     * Constructs a timestamped complex buffer using the specified time in milliseconds.  Also includes a source event
-     * that should be processed prior to processing the sample data.
-     *
-     * @param samples of data
-     * @param sourceEvent - optional source event to embed with this buffer
-     * @param timestamp relative to the first sample in the sample array
-     */
-    public TimestampedComplexBuffer(float[] samples, SourceEvent sourceEvent, long timestamp)
-    {
-        super(samples, sourceEvent);
-        mTimestamp = timestamp;
-    }
 
     /**
      * Constructs a timestamped complex buffer using the specified time in milliseconds.
@@ -42,18 +26,9 @@ public class TimestampedComplexBuffer extends ComplexBuffer
      */
     public TimestampedComplexBuffer(float[] samples, long timestamp)
     {
-        this(samples, null, timestamp);
-    }
+        super(samples);
 
-    /**
-     * Constructs a timestamped complex buffer using the current system time in milliseconds.  Also includes a source
-     * event that should be processed prior to processing the sample data.
-     *
-     * @param samples of data
-     */
-    public TimestampedComplexBuffer(float[] samples, SourceEvent sourceEvent)
-    {
-        this(samples, sourceEvent, System.currentTimeMillis());
+        mTimestamp = timestamp;
     }
 
     /**
@@ -63,7 +38,7 @@ public class TimestampedComplexBuffer extends ComplexBuffer
      */
     public TimestampedComplexBuffer(float[] samples)
     {
-        this(samples, null, System.currentTimeMillis());
+        this(samples, System.currentTimeMillis());
     }
 
     /**
