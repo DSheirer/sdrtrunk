@@ -122,7 +122,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
 
         if(mProducerSourceEventListener != null)
         {
-            mProducerSourceEventListener.receive(SourceEvent.startSampleStream(this));
+            mProducerSourceEventListener.receive(SourceEvent.startSampleStreamRequest(this));
         }
 
         mBufferProcessor.start();
@@ -136,7 +136,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     {
         if(mProducerSourceEventListener != null)
         {
-            mProducerSourceEventListener.receive(SourceEvent.stopSampleStream(this));
+            mProducerSourceEventListener.receive(SourceEvent.stopSampleStreamRequest(this));
             mProducerSourceEventListener.receive(SourceEvent.sourceDisposeRequest(this));
         }
 

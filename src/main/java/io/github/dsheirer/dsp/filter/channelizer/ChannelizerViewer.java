@@ -73,7 +73,7 @@ public class ChannelizerViewer extends JFrame
     {
         mTestTuner = new TestTuner();
 
-        mChannelCount = (int)(mTestTuner.getTunerController().getSampleRate() / CHANNEL_BANDWIDTH);
+        mChannelCount = (int)(mTestTuner.getTunerController().getUsableBandwidth() / CHANNEL_BANDWIDTH);
         mChannelsPerRow = channelsPerRow;
 
         mToneFrequency = mTestTuner.getTunerController().getFrequency() + 19200;
@@ -192,11 +192,11 @@ public class ChannelizerViewer extends JFrame
 
             int channelToLog = -1;
 
+            long baseFrequency = 100006250;  //100.006250 MHz
+
             for(int x = 0; x < mChannelCount; x++)
             {
-                //place the channels left and right of 10.0 MHz
-                long frequency = (long)(mTestTuner.getTunerController().getFrequency() +
-                    ((x * CHANNEL_BANDWIDTH) - halfSpectralBandwidth) + (CHANNEL_BANDWIDTH / 2));
+                long frequency = baseFrequency + (x * CHANNEL_BANDWIDTH);
 
                 mLog.debug("Channel " + x + " Frequency: " + frequency);
 
@@ -283,7 +283,6 @@ public class ChannelizerViewer extends JFrame
                         @Override
                         public void receive(ComplexBuffer complexBuffer)
                         {
-                            mLog.debug("Sending samples to DFT processor: " + complexBuffer.getSamples().length);
                             mDFTProcessor.receive(complexBuffer);
                         }
                     });

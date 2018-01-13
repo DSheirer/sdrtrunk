@@ -197,12 +197,13 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     }
 
     /**
-     * Usable half bandwidth - total bandwidth minus unusable space at either end of the spectrum, minus the blocked
-     * center bandwidth.
+     * Usable half bandwidth - total bandwidth minus unusable space at either end of the spectrum.
+     *
+     * Note: this does not account for any DC spike protected frequency region at the center of the tuner
      */
     public int getUsableHalfBandwidth()
     {
-        return (int)(getUsableBandwidth() / 2) - mMiddleUnusableHalfBandwidth;
+        return (int)(getUsableBandwidth() / 2);
     }
 
     /**

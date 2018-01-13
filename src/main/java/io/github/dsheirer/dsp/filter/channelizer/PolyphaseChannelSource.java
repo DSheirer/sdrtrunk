@@ -1,7 +1,6 @@
 /*******************************************************************************
- * *********************************************************************************************************************
  * sdr-trunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
  * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
@@ -12,14 +11,14 @@
  *
  * You should have received a copy of the GNU General Public License  along with this program.
  * If not, see <http://www.gnu.org/licenses/>
- * *********************************************************************************************************************
+ *
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.channelizer;
 
 import io.github.dsheirer.dsp.filter.channelizer.output.IPolyphaseChannelOutputProcessor;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
-import io.github.dsheirer.sample.complex.ComplexToComplexBufferAssembler;
+import io.github.dsheirer.sample.complex.TimestampedBufferAssembler;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
@@ -30,7 +29,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
 {
     private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelSource.class);
 
-    private ComplexToComplexBufferAssembler mComplexBufferAssembler = new ComplexToComplexBufferAssembler(2500);
+    private TimestampedBufferAssembler mTimestampedBufferAssembler;
     private IPolyphaseChannelOutputProcessor mPolyphaseChannelOutputProcessor;
     private double mChannelSampleRate;
     private long mCenterFrequency;
@@ -52,6 +51,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
         super(producerSourceEventListener, tunerChannel);
         mPolyphaseChannelOutputProcessor = outputProcessor;
         mChannelSampleRate = channelSampleRate;
+        mTimestampedBufferAssembler = new TimestampedBufferAssembler(2500, mChannelSampleRate);
     }
 
     /**
@@ -60,7 +60,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
     @Override
     public void setListener(final Listener<ComplexBuffer> listener)
     {
-        mComplexBufferAssembler.setListener(listener);
+        mTimestampedBufferAssembler.setListener(listener);
    }
 
     /**
@@ -69,7 +69,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
     @Override
     public void removeListener(Listener<ComplexBuffer> listener)
     {
-        mComplexBufferAssembler.setListener(null);
+        mTimestampedBufferAssembler.setListener(null);
     }
 
     /**
@@ -108,7 +108,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
             //Fully process the residual channel results buffer of the previous channel output processor
             if(existingProcessor != null)
             {
-                existingProcessor.processChannelResults(mComplexBufferAssembler);
+                existingProcessor.processChannelResults(mTimestampedBufferAssembler);
             }
 
             //Finally, setup the frequency offset for the output processor and reset the frequency correction value
@@ -121,14 +121,15 @@ public class PolyphaseChannelSource extends TunerChannelSource
     }
 
     /**
-     * Primary method for receiving channel results output from a polyphase channelizer.  The results array will be
+     * Primary method for receiving channel results output from a polyphase channelizer.  The results buffer will be
      * queued for processing to extract the target channel samples, process them for frequency correction and/or
      * channel aggregation, and dispatch the results to the downstream sample listener/consumer.
      *
-     * @param channelResultsBuffer containing the polyphase channelizer output for a single complex sample period.
+     * @param channelResultsBuffer containing an array of polyphase channelizer outputs.
      */
-    public void receiveChannelResults(float[] channelResultsBuffer)
+    public void receiveChannelResults(PolyphaseChannelResultsBuffer channelResultsBuffer)
     {
+        mTimestampedBufferAssembler.updateTimestamp(channelResultsBuffer.getTimestamp());
         mPolyphaseChannelOutputProcessor.receiveChannelResults(channelResultsBuffer);
     }
 
@@ -186,16 +187,19 @@ public class PolyphaseChannelSource extends TunerChannelSource
     protected void setFrequency(long frequency)
     {
         mCenterFrequency = frequency;
+
+        //Set frequency correction to zero to trigger an update to the mixer and allow downstream monitors to
+        //recalculate the frequency error correction again
         setFrequencyCorrection(0);
     }
 
     @Override
     protected void processSamples()
     {
-        //Lock on the output processor so that it can't be changed out in the middle of processing
+        //Lock on the output processor so that it can't be changed in the middle of processing
         synchronized(mPolyphaseChannelOutputProcessor)
         {
-            mPolyphaseChannelOutputProcessor.processChannelResults(mComplexBufferAssembler);
+            mPolyphaseChannelOutputProcessor.processChannelResults(mTimestampedBufferAssembler);
         }
     }
 

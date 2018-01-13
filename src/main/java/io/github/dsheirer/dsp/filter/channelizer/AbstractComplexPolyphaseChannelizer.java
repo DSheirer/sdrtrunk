@@ -90,13 +90,13 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<Co
     /**
      * Dispatches the processed channel samples to any registered polyphase channel outputs.
      *
-     * @param channels containing an array of I/Q samples per channel
+     * @param channelResultsBuffer containing an array of an array of I/Q samples per channel
      */
-    protected void dispatch(float[] channels)
+    protected void dispatch(PolyphaseChannelResultsBuffer channelResultsBuffer)
     {
         for(PolyphaseChannelSource channel : mChannels)
         {
-            channel.receiveChannelResults(channels);
+            channel.receiveChannelResults(channelResultsBuffer);
         }
     }
 

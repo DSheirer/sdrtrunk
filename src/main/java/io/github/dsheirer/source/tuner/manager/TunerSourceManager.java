@@ -42,8 +42,6 @@ public class TunerSourceManager extends AbstractSourceManager
     public TunerSourceManager(TunerController tunerController)
     {
         mTunerController = tunerController;
-        //Register to receive frequency and sample rate notifications
-        mTunerController.addListener(this);
 
         mPolyphaseChannelManager = new PolyphaseChannelManager(tunerController);
         //Register to receive channel count change notifications for rebroadcasting
@@ -166,6 +164,13 @@ public class TunerSourceManager extends AbstractSourceManager
             return currentCenterFrequency;
         }
 
+        long channelSetBandwidth = getChannelSetBandwidth(channels);
+
+        if(channelSetBandwidth > mTunerController.getUsableBandwidth())
+        {
+            throw new IllegalArgumentException("Channel set bandwidth is greater than tuner's available bandwidth");
+        }
+
         long bestIntegralFrequency = getIntegralFrequency(channels);
 
         //See if we can reuse the current frequency
@@ -175,32 +180,42 @@ public class TunerSourceManager extends AbstractSourceManager
             return currentCenterFrequency;
         }
 
-        int integralHalfChannelCount = (int)(mTunerController.getUsableHalfBandwidth() /
-            mPolyphaseChannelManager.getChannelBandwidth()) + 1;
+        //Start by placing the first channel at the minimum location within the tuner bandwidth
+        double usableHalfBandwidth = mTunerController.getUsableHalfBandwidth();
+        double startFrequency = channels.first().getMinFrequency() + usableHalfBandwidth;
 
-        int integralHalfBandwidth = (int)(integralHalfChannelCount * mPolyphaseChannelManager.getChannelBandwidth());
+        //Align the test frequency to the next greater integral frequency placing to place the first channel at the
+        // minimum extreme of the available bandwidth as a starting location
+        double delta = Math.abs(startFrequency - bestIntegralFrequency);
+        double adjustment = delta % mPolyphaseChannelManager.getChannelBandwidth();
 
-        long minimumFrequency = channels.last().getFrequency() - integralHalfBandwidth;
-        long testFrequency = channels.first().getFrequency() + integralHalfBandwidth;
+        startFrequency += adjustment;
 
-        if(isValidCenterFrequency(channels,testFrequency))
+        long availableTestBandwidth = mTunerController.getUsableBandwidth() - channelSetBandwidth;
+        int availableTestChannels = (int)(availableTestBandwidth / mPolyphaseChannelManager.getChannelBandwidth()) + 1;
+
+        if(isValidCenterFrequency(channels,(long)startFrequency))
         {
-            return testFrequency;
+            return (long)startFrequency;
         }
 
-        while(testFrequency >= minimumFrequency)
+        int currentChannel = 1;
+
+        while(currentChannel <= availableTestChannels)
         {
-            testFrequency -= (long)mPolyphaseChannelManager.getChannelBandwidth();
+            long testFrequency = (long)(startFrequency - (currentChannel * mPolyphaseChannelManager.getChannelBandwidth()));
 
             if(isValidCenterFrequency(channels, testFrequency))
             {
                 return testFrequency;
             }
+
+            currentChannel++;
         }
 
         //If we can't find an integral center frequency, choose a frequency that will fit the channels
-        minimumFrequency = channels.last().getFrequency() - mTunerController.getUsableHalfBandwidth();
-        testFrequency = channels.first().getMinFrequency() + mTunerController.getUsableHalfBandwidth();
+        long testFrequency = channels.first().getMinFrequency() + mTunerController.getUsableHalfBandwidth();
+        long minimumFrequency = testFrequency - availableTestBandwidth;
 
         if(isValidCenterFrequency(channels,testFrequency))
         {
@@ -218,6 +233,11 @@ public class TunerSourceManager extends AbstractSourceManager
         }
 
         throw new IllegalArgumentException("Can't calculate valid center frequency for the channel set");
+    }
+
+    private long getChannelSetBandwidth(SortedSet<TunerChannel> channels)
+    {
+        return channels.last().getMaxFrequency() - channels.first().getMinFrequency();
     }
 
     /**
@@ -405,12 +425,6 @@ public class TunerSourceManager extends AbstractSourceManager
             case NOTIFICATION_CHANNEL_COUNT_CHANGE:
                 //Rebroadcast this event to any registered listeners (ie tuner and tuner controller)
                 broadcast(sourceEvent);
-                break;
-            case NOTIFICATION_FREQUENCY_CHANGE:
-                mPolyphaseChannelManager.process(sourceEvent);
-                break;
-            case NOTIFICATION_SAMPLE_RATE_CHANGE:
-                mPolyphaseChannelManager.process(sourceEvent);
                 break;
             default:
                 mLog.info("Received an unrecognized source event: " + sourceEvent);

@@ -30,6 +30,7 @@ public class SourceEvent
         NOTIFICATION_FREQUENCY_CHANGE,
         NOTIFICATION_FREQUENCY_CORRECTION_CHANGE,
         NOTIFICATION_SAMPLE_RATE_CHANGE,
+        NOTIFICATION_STOP_SAMPLE_STREAM,
 
         REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE,
         REQUEST_FREQUENCY_CHANGE,
@@ -38,7 +39,7 @@ public class SourceEvent
         REQUEST_STOP_SAMPLE_STREAM;
 
         public static EnumSet<Event> NOTIFICATION_EVENTS =
-            EnumSet.range(NOTIFICATION_CHANNEL_COUNT_CHANGE, NOTIFICATION_SAMPLE_RATE_CHANGE);
+            EnumSet.range(NOTIFICATION_CHANNEL_COUNT_CHANGE, NOTIFICATION_STOP_SAMPLE_STREAM);
         public static EnumSet<Event> REQUEST_EVENTS =
             EnumSet.range(NOTIFICATION_CHANNEL_COUNT_CHANGE, NOTIFICATION_SAMPLE_RATE_CHANGE);
     }
@@ -201,7 +202,7 @@ public class SourceEvent
     /**
      * Creates a new start sample stream request event
      */
-    public static SourceEvent startSampleStream(Source source)
+    public static SourceEvent startSampleStreamRequest(Source source)
     {
         return new SourceEvent(Event.REQUEST_START_SAMPLE_STREAM, source);
     }
@@ -209,9 +210,17 @@ public class SourceEvent
     /**
      * Creates a new stop sample stream request event
      */
-    public static SourceEvent stopSampleStream(Source source)
+    public static SourceEvent stopSampleStreamRequest(Source source)
     {
         return new SourceEvent(Event.REQUEST_STOP_SAMPLE_STREAM, source);
+    }
+
+    /**
+     * Creates a new stop sample stream request event
+     */
+    public static SourceEvent stopSampleStreamNotification(Source source)
+    {
+        return new SourceEvent(Event.NOTIFICATION_STOP_SAMPLE_STREAM, source);
     }
 
     /**

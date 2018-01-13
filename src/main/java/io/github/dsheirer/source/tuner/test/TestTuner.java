@@ -47,7 +47,7 @@ public class TestTuner extends Tuner
      */
     public TestTunerController getTunerController()
     {
-        return (TestTunerController)getTunerController();
+        return (TestTunerController)super.getTunerController();
     }
 
     @Override

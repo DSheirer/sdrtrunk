@@ -39,6 +39,9 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
     private int mRowPointer;
     private int mBlockSize;
     private FloatFFT_1D mFFT;
+    private PolyphaseChannelResultsBuffer mChannelResultsBuffer;
+    private int mChannelResultsBufferSize;
+    private SampleTimestampManager mTimestampManager;
 
     /**
      * Non-Maximally Decimated Polyphase Filter Bank (NMDPFB) channelizer that divides the input frequency band into
@@ -52,15 +55,21 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      * @param sampleRate of the incoming sample stream
      * @param channelCount - number of filters/channels to output.  Since this filter bank oversamples each filter
      * output, this number must be even (divisible by the 2x oversample rate).
+     * @param bufferSize for the channel results buffers produced by this channelizer
      */
-    public ComplexPolyphaseChannelizerM2(float[] taps, int sampleRate, int channelCount)
+    public ComplexPolyphaseChannelizerM2(float[] taps, int sampleRate, int channelCount, int bufferSize)
     {
         super(sampleRate, channelCount);
 
+        mChannelResultsBufferSize = bufferSize;
+
         if(channelCount % 2 != 0)
         {
-            throw new IllegalArgumentException("Channel count must be an even multiple of the oversample rate (2x)");
+            throw new IllegalArgumentException("Channel count must be an even multiple of the over-sample rate (2x)");
         }
+
+        double oversampledChannelSampleRate = getChannelSampleRate() * 2.0;
+        mTimestampManager = new SampleTimestampManager(oversampledChannelSampleRate);
 
         init(taps);
     }
@@ -116,6 +125,12 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
     @Override
     public void receive(ComplexBuffer complexBuffer)
     {
+        //Use the buffer's reference timestamp to update our timestamp manager (for timestamping output buffers)
+        if(complexBuffer.hasTimestamp())
+        {
+            mTimestampManager.setReferenceTimestamp(complexBuffer.getTimestamp());
+        }
+
         float[] samples = complexBuffer.getSamples();
 
         int samplesPointer = 0;
@@ -209,7 +224,58 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
         //Rotate each of the channels to the correct phase using the IFFT
         mFFT.complexInverse(processed, true);
 
-        dispatch(processed);
+        processChannelResults(processed);
+    }
+
+    /**
+     * Buffers the channel results and dispatches the channel results buffer to the channel output processors when full.
+     * @param channelResults
+     */
+    private void processChannelResults(float[] channelResults)
+    {
+        if(mChannelResultsBuffer == null)
+        {
+            mChannelResultsBuffer = new PolyphaseChannelResultsBuffer(mTimestampManager.getCurrentTimestamp(),
+                mChannelResultsBufferSize);
+        }
+
+        try
+        {
+            mChannelResultsBuffer.add(channelResults);
+        }
+        catch(IllegalArgumentException iae)
+        {
+            //If the buffer is full (unlikely) or the channel results array length has changed (possible), flush the
+            //current buffer, create a new one, and store the current results
+            flushChannelResultsBuffer();
+
+            mChannelResultsBuffer = new PolyphaseChannelResultsBuffer(mTimestampManager.getCurrentTimestamp(),
+                mChannelResultsBufferSize);
+
+            mChannelResultsBuffer.add(channelResults);
+        }
+
+        if(mChannelResultsBuffer.isFull())
+        {
+            flushChannelResultsBuffer();
+        }
+
+        //Each channel results array is equivalent to one sample from our timestamp manager's perspective
+        mTimestampManager.increment();
+    }
+
+    /**
+     * Dispatches the non-empty channel results buffer to the channel output processors and nullifies the reference to
+     * the buffer so that a new buffer can be created upon receiving the next channel results.
+     */
+    private void flushChannelResultsBuffer()
+    {
+        if(mChannelResultsBuffer != null && !mChannelResultsBuffer.isEmpty())
+        {
+            dispatch(mChannelResultsBuffer);
+        }
+
+        mChannelResultsBuffer = null;
     }
 
     /**
@@ -303,47 +369,5 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
                 mSampleIndexMap[row][column] = ((offset < size) ? offset : offset - size);
             }
         }
-    }
-
-    public static void main(String[] args)
-    {
-        mLog.debug("Starting ...");
-
-        int channelCount = 4;
-        int channelBandwidth = 12500;
-        int sampleRate = channelCount * channelBandwidth;
-        int tapsPerFilter = 14;
-
-        int channelCenter = (int)(12500 * 1.5);
-
-        float[] taps = new float[16];
-        for(int x = 0; x < taps.length; x++)
-        {
-            taps[x] = x;
-        }
-        float[] samples = new float[32];
-        for(int x = 0; x < samples.length; x++)
-        {
-            samples[x] = x;
-        }
-
-        try
-        {
-//            ComplexPolyphaseChannelizerM2 channelizer = new ComplexPolyphaseChannelizerM2(sampleRate, tapsPerFilter);
-            ComplexPolyphaseChannelizerM2 channelizer = new ComplexPolyphaseChannelizerM2(taps,sampleRate, channelCount);
-
-//            Oscillator oscillator = new Oscillator(channelCenter, 2 * sampleRate);
-//
-//            ComplexBuffer complexBuffer = oscillator.generateComplexBuffer(1000);
-            ComplexBuffer complexBuffer = new ComplexBuffer(samples);
-
-            channelizer.receive(complexBuffer);
-        }
-        catch(Exception e)
-        {
-            mLog.error("Error", e);
-        }
-
-        mLog.debug("Finished!");
     }
 }

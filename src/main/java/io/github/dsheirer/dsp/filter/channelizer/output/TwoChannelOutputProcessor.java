@@ -18,7 +18,8 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
-import io.github.dsheirer.sample.complex.ComplexSampleListener;
+import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelResultsBuffer;
+import io.github.dsheirer.sample.complex.TimestampedBufferAssembler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,22 +71,13 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
      * Extract the channel from the channel results array, apply frequency translation, and deliver the
      * extracted frequency-corrected channel I/Q sample set to the complex sample listener.
      *
-     * @param channelResults to process containing an array of channel I/Q sample pairs (I0,Q0,I1,Q1...In,Qn)
-     * @param listener to receive the extracted, frequency-translated channel results
+     * @param channelResultsBuffers to process containing an array of channel I/Q sample pairs (I0,Q0,I1,Q1...In,Qn)
+     * @param timestampedBufferAssembler to receive the extracted, frequency-translated channel results
      */
     @Override
-    public void process(List<float[]> channelResults, ComplexSampleListener listener)
+    public void process(List<PolyphaseChannelResultsBuffer> channelResultsBuffers,
+                        TimestampedBufferAssembler timestampedBufferAssembler)
     {
         mLog.debug("I got channel results - doing nothing !!");
-//        if(channels.length < mChannelOffset + 1)
-//        {
-//            throw new IllegalArgumentException("Polyphase channelizer output channels array is not large enough to " +
-//                "cover this single channel output processor with channel offset [" + mChannelOffset + "]");
-//        }
-//
-//        float i = channels[mChannelOffset];
-//        float q = channels[mChannelOffset + 1];
-
-//        listener.receive(getFrequencyCorrectedInphase(i, q), getFrequencyCorrectedQuadrature(i, q));
     }
 }

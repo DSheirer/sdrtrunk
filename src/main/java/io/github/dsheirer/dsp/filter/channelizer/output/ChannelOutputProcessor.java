@@ -18,10 +18,10 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
+import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelResultsBuffer;
 import io.github.dsheirer.dsp.mixer.Oscillator;
 import io.github.dsheirer.sample.OverflowableTransferQueue;
-import io.github.dsheirer.sample.complex.Complex;
-import io.github.dsheirer.sample.complex.ComplexSampleListener;
+import io.github.dsheirer.sample.complex.TimestampedBufferAssembler;
 import io.github.dsheirer.sample.real.IOverflowListener;
 import io.github.dsheirer.source.Source;
 import org.slf4j.Logger;
@@ -34,8 +34,8 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelOutputProcessor.class);
 
-    private OverflowableTransferQueue<float[]> mChannelResultsQueue;
-    private List<float[]> mChannelResultsToProcess = new ArrayList<>();
+    private OverflowableTransferQueue<PolyphaseChannelResultsBuffer> mChannelResultsQueue;
+    private List<PolyphaseChannelResultsBuffer> mChannelResultsToProcess = new ArrayList<>();
     private int mMaxResultsToProcess;
 
     private int mInputChannelCount;
@@ -71,26 +71,34 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
         mFrequencyCorrectionEnabled = (frequencyOffset != 0);
     }
 
+    /**
+     * Oscillator/mixer to use for frequency correction against incominb sample stream
+     */
+    protected Oscillator getFrequencyCorrectionMixer()
+    {
+        return mFrequencyCorrectionMixer;
+    }
+
     @Override
-    public void receiveChannelResults(float[] channelResults)
+    public void receiveChannelResults(PolyphaseChannelResultsBuffer channelResults)
     {
         mChannelResultsQueue.offer(channelResults);
     }
 
     /**
      * Processes all enqueued polyphase channelizer results until the internal queue is empty
-     * @param listener to receive the processed channel results
+     * @param timestampedBufferAssembler to receive the processed channel results
      */
     @Override
-    public void processChannelResults(ComplexSampleListener listener)
+    public void processChannelResults(TimestampedBufferAssembler timestampedBufferAssembler)
     {
         try
         {
-            int count = mChannelResultsQueue.drainTo(mChannelResultsToProcess, mMaxResultsToProcess);
+            int toProcess = mChannelResultsQueue.drainTo(mChannelResultsToProcess, mMaxResultsToProcess);
 
-            if(count > 0)
+            if(toProcess > 0)
             {
-                process(mChannelResultsToProcess, listener);
+                process(mChannelResultsToProcess, timestampedBufferAssembler);
             }
         }
         catch(Throwable throwable)
@@ -104,9 +112,10 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     /**
      * Sub-class implementation to process one polyphase channelizer result array.
      * @param channelResults to process
-     * @param listener to receive the channel complex sample
+     * @param timestampedBufferAssembler to receive the processed channelizer results
      */
-    public abstract void process(List<float[]> channelResults, ComplexSampleListener listener);
+    public abstract void process(List<PolyphaseChannelResultsBuffer> channelResults,
+                                 TimestampedBufferAssembler timestampedBufferAssembler);
 
 
     /**
@@ -132,39 +141,10 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     }
 
     /**
-     * Provides frequency correction of the inphase component or simply returns the inphase argument value when no
-     * frequency correction value has been specified.
-     *
-     * @param inphase value of the sample to translate/correct
-     * @param quadrature value of the sample to translate/correct
-     * @return corrected inphase value
-     */
-    protected float getFrequencyCorrectedInphase(float inphase, float quadrature)
-    {
-        return Complex.multiplyInphase(inphase, quadrature, mFrequencyCorrectionMixer.inphase(),
-            mFrequencyCorrectionMixer.quadrature());
-    }
-
-    /**
-     * Provides frequency correction of the quadrature component or simply returns the quadrature argument value when no
-     * frequency correction value has been applied,
-     *
-     * @param inphase value of the sample to translate/correct
-     * @param quadrature value of the sample to translate/correct
-     * @return translated inphase value
-     */
-    protected float getFrequencyCorrectedQuadrature(float inphase, float quadrature)
-    {
-        return Complex.multiplyQuadrature(inphase, quadrature, mFrequencyCorrectionMixer.inphase(),
-            mFrequencyCorrectionMixer.quadrature());
-    }
-
-    /**
      * Indicates if this channel has a frequency correction offset
      */
     public boolean hasFrequencyCorrection()
     {
         return mFrequencyCorrectionEnabled;
     }
-
 }

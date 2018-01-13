@@ -149,4 +149,22 @@ public class Oscillator
 
         return new ComplexBuffer(buffer);
     }
+
+    /**
+     * Performs complex heterodyne against the samples using this oscillator
+     * @param samples to mix with this oscillator
+     */
+    public void mixComplex(float[] samples)
+    {
+        for(int x = 0; x < samples.length; x += 2)
+        {
+            float i = Complex.multiplyInphase(samples[x], samples[x + 1], inphase(), quadrature());
+            float q = Complex.multiplyQuadrature(samples[x], samples[x + 1], inphase(), quadrature());
+
+            samples[x] = i;
+            samples[x + 1] = q;
+
+            rotate();
+        }
+    }
 }

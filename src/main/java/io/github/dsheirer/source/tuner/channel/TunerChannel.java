@@ -77,10 +77,8 @@ public class TunerChannel implements Comparable<TunerChannel>
     {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("Channel: ");
-        sb.append(getMinFrequency());
-        sb.append("-");
-        sb.append(getMaxFrequency());
+        sb.append("Channel:").append(getFrequency()).append(" (").append(getMinFrequency());
+        sb.append("-").append(getMaxFrequency()).append(")");
 
         return sb.toString();
     }

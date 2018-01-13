@@ -18,7 +18,8 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
-import io.github.dsheirer.sample.complex.ComplexSampleListener;
+import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelResultsBuffer;
+import io.github.dsheirer.sample.complex.TimestampedBufferAssembler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,29 +68,28 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
      * extracted frequency-corrected channel I/Q sample set to the complex sample listener.
      *
      * @param channelResults to process containing a list of channel array of I/Q sample pairs (I0,Q0,I1,Q1...In,Qn)
-     * @param listener to receive the extracted, frequency-translated channel results
+     * @param timestampedBufferAssembler to receive the extracted, frequency-translated channel results
      */
     @Override
-    public void process(List<float[]> channelResults, ComplexSampleListener listener)
+    public void process(List<PolyphaseChannelResultsBuffer> channelResults,
+                        TimestampedBufferAssembler timestampedBufferAssembler)
     {
-        for(float[] channels: channelResults)
+        for(PolyphaseChannelResultsBuffer channelResultsBuffer: channelResults)
         {
-            if(channels.length < mChannelOffset + 1)
+            try
             {
-                throw new IllegalArgumentException("Polyphase channelizer output channels array is not large enough to " +
-                    "cover this single channel output processor with channel offset [" + mChannelOffset + "]");
-            }
+                float[] samples = channelResultsBuffer.getChannel(mChannelOffset);
 
-            float i = channels[mChannelOffset];
-            float q = channels[mChannelOffset + 1];
+                if(hasFrequencyCorrection())
+                {
+                    getFrequencyCorrectionMixer().mixComplex(samples);
+                }
 
-            if(hasFrequencyCorrection())
-            {
-                listener.receive(getFrequencyCorrectedInphase(i, q), getFrequencyCorrectedQuadrature(i, q));
+                timestampedBufferAssembler.receive(samples);
             }
-            else
+            catch(IllegalArgumentException iae)
             {
-                listener.receive(i, q);
+                mLog.error("Error extracting channel samples from polyphase channel results buffer");
             }
         }
     }

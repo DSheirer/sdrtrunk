@@ -20,6 +20,7 @@ package io.github.dsheirer.source.tuner.test;
 
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
@@ -33,9 +34,9 @@ public class TestTunerController extends TunerController
     public static final long MINIMUM_FREQUENCY = 1000000l;     //1 MHz
     public static final long MAXIMUM_FREQUENCY = 10000000000l; //10 GHz
     public static final long DEFAULT_CENTER_FREQUENCY = 100000000;    //100 MHz
-    public static final int DEFAULT_SAMPLE_RATE = 50000;     //25 kHz
-    public static final int DC_NOISE_BANDWIDTH = 5000;         // +/-5 kHz
-    public static final double USABLE_BANDWIDTH = 0.90;  //90% usable bandwidth - 5% unusable on either end
+    public static final int DEFAULT_SAMPLE_RATE = 100000;     //25 kHz
+    public static final int DC_NOISE_BANDWIDTH = 0;         // +/-5 kHz
+    public static final double USABLE_BANDWIDTH = 1.00;  //100% usable bandwidth
     public static final int SPECTRAL_FRAME_RATE = 20;
     public static final long SAMPLE_GENERATION_INTERVAL = 1000 / SPECTRAL_FRAME_RATE;
 
@@ -129,6 +130,7 @@ public class TestTunerController extends TunerController
     {
         long frequency = toneFrequency - mReferenceFrequency;
         mSampleGenerator.setFrequency(frequency);
+        mSampleGenerator.queue(SourceEvent.frequencyChange(frequency));
     }
 
     /**
@@ -155,5 +157,6 @@ public class TestTunerController extends TunerController
     public void setSampleRate(int sampleRate) throws SourceException
     {
         mFrequencyController.setSampleRate(sampleRate);
+        mSampleGenerator.queue(SourceEvent.sampleRateChange(sampleRate));
     }
 }
