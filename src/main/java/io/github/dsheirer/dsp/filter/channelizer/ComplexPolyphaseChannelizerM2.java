@@ -40,7 +40,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
     private int mBlockSize;
     private FloatFFT_1D mFFT;
     private PolyphaseChannelResultsBuffer mChannelResultsBuffer;
-    private int mChannelResultsBufferSize;
+    private int mChannelResultsBufferSize = 2500;
     private SampleTimestampManager mTimestampManager;
 
     /**
@@ -55,13 +55,10 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      * @param sampleRate of the incoming sample stream
      * @param channelCount - number of filters/channels to output.  Since this filter bank oversamples each filter
      * output, this number must be even (divisible by the 2x oversample rate).
-     * @param bufferSize for the channel results buffers produced by this channelizer
      */
-    public ComplexPolyphaseChannelizerM2(float[] taps, int sampleRate, int channelCount, int bufferSize)
+    public ComplexPolyphaseChannelizerM2(float[] taps, int sampleRate, int channelCount)
     {
         super(sampleRate, channelCount);
-
-        mChannelResultsBufferSize = bufferSize;
 
         if(channelCount % 2 != 0)
         {
@@ -91,6 +88,9 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
 
         float[] filterTaps = FilterFactory.getSincChannelizer(getChannelSampleRate(), getChannelCount(),
             tapsPerFilter, WindowType.BLACKMAN_HARRIS_7, true);
+
+        double oversampledChannelSampleRate = getChannelSampleRate() * 2.0;
+        mTimestampManager = new SampleTimestampManager(oversampledChannelSampleRate);
 
         init(filterTaps);
     }

@@ -470,33 +470,45 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
          */
         public void receive(SourceEvent event)
         {
+            mLog.debug("Got a source event: " + event.toString());
             mQueuedSourceEvents.offer(event);
         }
 
         @Override
         public void receive(ComplexBuffer complexBuffer)
         {
-            //Process any queued source events before processing the buffer
-            SourceEvent queuedSourceEvent = mQueuedSourceEvents.poll();
-
-            while(queuedSourceEvent != null)
+            try
             {
-                switch(queuedSourceEvent.getEvent())
+                //Process any queued source events before processing the buffer
+                SourceEvent queuedSourceEvent = mQueuedSourceEvents.poll();
+
+                while(queuedSourceEvent != null)
                 {
-                    case NOTIFICATION_FREQUENCY_CHANGE:
-                        updateOutputProcessors(queuedSourceEvent);
-                        break;
-                    case NOTIFICATION_SAMPLE_RATE_CHANGE:
-                        updateChannelizerSampleRate(queuedSourceEvent.getValue().intValue());
-                        break;
+                    switch(queuedSourceEvent.getEvent())
+                    {
+                        case NOTIFICATION_FREQUENCY_CHANGE:
+                            mLog.debug("******Frequency change event");
+                            updateOutputProcessors(queuedSourceEvent);
+                            break;
+                        case NOTIFICATION_SAMPLE_RATE_CHANGE:
+                            mLog.debug("******Sample Rate change event");
+                            updateChannelizerSampleRate(queuedSourceEvent.getValue().intValue());
+                            break;
+                    }
+
+                    mLog.debug("****** Source event processed ... continuing");
+
+                    queuedSourceEvent = mQueuedSourceEvents.poll();
                 }
 
-                queuedSourceEvent = mQueuedSourceEvents.poll();
+                if(mPolyphaseChannelizer != null)
+                {
+                    mPolyphaseChannelizer.receive(complexBuffer);
+                }
             }
-
-            if(mPolyphaseChannelizer != null)
+            catch(Throwable throwable)
             {
-                mPolyphaseChannelizer.receive(complexBuffer);
+                mLog.error("Error", throwable);
             }
         }
     }

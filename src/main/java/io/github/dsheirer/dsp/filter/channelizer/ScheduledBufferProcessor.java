@@ -152,17 +152,26 @@ public class ScheduledBufferProcessor<E> implements Listener<E>
         @Override
         public void run()
         {
-            mQueue.drainTo(mBuffers, mMaxBuffersPerInterval);
-
-            if(mListener != null)
+            try
             {
-                for(E buffer: mBuffers)
-                {
-                    mListener.receive(buffer);
-                }
-            }
+                mQueue.drainTo(mBuffers, mMaxBuffersPerInterval);
 
-            mBuffers.clear();
+                mLog.debug("Dispatching buffers: " + mBuffers.size());
+                if(mListener != null)
+                {
+                    for(E buffer: mBuffers)
+                    {
+                        mListener.receive(buffer);
+                    }
+                }
+                mLog.debug("Finished Dispatching buffers");
+
+                mBuffers.clear();
+            }
+            catch(Throwable throwable)
+            {
+                mLog.error("Error while dispatching buffers to listeners", throwable);
+            }
         }
     }
 }

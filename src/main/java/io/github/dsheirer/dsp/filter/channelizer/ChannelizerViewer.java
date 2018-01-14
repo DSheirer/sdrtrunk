@@ -194,7 +194,7 @@ public class ChannelizerViewer extends JFrame
 
             long baseFrequency = 100006250;  //100.006250 MHz
 
-            for(int x = 0; x < mChannelCount; x++)
+            for(int x = 0; x < mChannelCount - 1; x++)
             {
                 long frequency = baseFrequency + (x * CHANNEL_BANDWIDTH);
 
