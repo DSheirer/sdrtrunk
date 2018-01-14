@@ -1,19 +1,16 @@
 /*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
 package io.github.dsheirer.spectrum;
@@ -21,7 +18,6 @@ package io.github.dsheirer.spectrum;
 import io.github.dsheirer.dsp.filter.Window;
 import io.github.dsheirer.dsp.filter.Window.WindowType;
 import io.github.dsheirer.properties.SystemProperties;
-import io.github.dsheirer.sample.Buffer;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
@@ -33,60 +29,42 @@ import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
+import java.io.IOException;
 import java.util.Iterator;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Processes both complex samples or float samples and dispatches a float array
- * of DFT results, using configurable fft size and output dispatch timelines.
+ * Processes both complex samples or float samples and dispatches a float array of DFT results, using configurable fft
+ * size and output dispatch timelines.
  */
 public class DFTProcessor implements Listener<ComplexBuffer>, IFrequencyChangeProcessor, IDFTWidthChangeProcessor
 {
-    private final static Logger mLog = LoggerFactory.getLogger(DFTProcessor.class);
+    private static final Logger mLog = LoggerFactory.getLogger(DFTProcessor.class);
+    private static final int BUFFER_QUEUE_MAX_SIZE = 12;
+    private static final int BUFFER_QUEUE_OVERFLOW_RESET_THRESHOLD = 6;
+    private static final String FRAME_RATE_PROPERTY = "spectral.display.frame.rate";
 
-    private CopyOnWriteArrayList<DFTResultsConverter> mListeners = new CopyOnWriteArrayList<DFTResultsConverter>();
-
-    //Fixed size sample queue.  We set the size at 12 based on the highest
-    //sample rate tuner (10 MHz) producing 153 frames per second and the lowest
-    //DFT processing frame rate of 12 frames per second.  This means that the
-    //maximum size needed is 153 / 12 = 11 frames per DFT processing iteration
-    //so we set it at 12.
-    private BlockingQueue<ComplexBuffer> mQueue = new ArrayBlockingQueue<>(12);
-
-    private ScheduledFuture<?> mProcessorTaskHandle;
-
-    public static final String FRAME_RATE_PROPERTY = "spectral.display.frame.rate";
-
+    //The Cosine and Hanning windows seem to offer the best spectral display with minimal bin leakage/smearing
+    private WindowType mWindowType = Window.WindowType.HANNING;
+    private double[] mWindow;
     private DFTSize mDFTSize = DFTSize.FFT04096;
     private DFTSize mNewDFTSize = DFTSize.FFT04096;
-
-    private double[] mWindow;
-
-    /* The Cosine and Hanning windows seem to offer the best spectral display
-     * with minimal bin leakage/smearing */
-    private WindowType mWindowType = Window.WindowType.HANNING;
-
     private FloatFFT_1D mFFT = new FloatFFT_1D(mDFTSize.getSize());
-
     private int mFrameRate;
-    private int mSampleRate;
-    private int mFFTFloatsPerFrame;
-    private float mNewFloatsPerFrame;
-    private float mNewFloatResidual;
-    private float[] mPreviousFrame = new float[8192];
-
-    private float[] mCurrentBuffer;
-    private int mCurrentBufferPointer = 0;
-
+    private int mSampleRate = 2400000; //Initial high value until we receive update from tuner
+    private int mFrameSize;
+    private int mFrameFlushCount;
+    private int mFrameOverlapCount;
     private SampleType mSampleType;
-
     private AtomicBoolean mRunning = new AtomicBoolean();
+    private ScheduledFuture<?> mProcessorTaskHandle;
+    private CopyOnWriteArrayList<DFTResultsConverter> mListeners = new CopyOnWriteArrayList<DFTResultsConverter>();
+    private OverflowableBufferStream mOverflowableBufferStream = new OverflowableBufferStream(BUFFER_QUEUE_MAX_SIZE,
+        BUFFER_QUEUE_OVERFLOW_RESET_THRESHOLD, mDFTSize.getSize());
+    private float[] mPreviousSamples;
 
     public DFTProcessor(SampleType sampleType)
     {
@@ -101,9 +79,8 @@ public class DFTProcessor implements Listener<ComplexBuffer>, IFrequencyChangePr
         stop();
 
         mListeners.clear();
-        mQueue.clear();
+        mOverflowableBufferStream.clear();
         mWindow = null;
-        mCurrentBuffer = null;
     }
 
     public WindowType getWindowType()
@@ -161,14 +138,10 @@ public class DFTProcessor implements Listener<ComplexBuffer>, IFrequencyChangePr
 
     public void setFrameRate(int framesPerSecond)
     {
-        //TODO: make sure frame rate & sample rate sample requirement doesn't
-        //expect overlap greater than the previous frame length
-
         if(framesPerSecond < 1 || framesPerSecond > 1000)
         {
-            throw new IllegalArgumentException("DFTProcessor cannot run "
-                + "more than 1000 times per second -- requested setting:"
-                + framesPerSecond);
+            throw new IllegalArgumentException("DFTProcessor cannot run more than 1000 times per second -- requested " +
+                "setting:" + framesPerSecond);
         }
 
         mFrameRate = framesPerSecond;
@@ -205,168 +178,46 @@ public class DFTProcessor implements Listener<ComplexBuffer>, IFrequencyChangePr
         start();
     }
 
-    public int getCalculationsPerSecond()
-    {
-        return mFrameRate;
-    }
-
     /**
      * Places the sample into a transfer queue for future processing.
      */
     @Override
     public void receive(ComplexBuffer sampleBuffer)
     {
-        mQueue.offer(sampleBuffer);
-    }
-
-    private void getNextBuffer()
-    {
-        mCurrentBuffer = null;
-
-        try
-        {
-            Buffer buffer = mQueue.take();
-            mCurrentBuffer = buffer.getSamples();
-        }
-        catch(InterruptedException e)
-        {
-            mCurrentBuffer = null;
-        }
-
-        mCurrentBufferPointer = 0;
-    }
-
-    private float[] getSamples()
-    {
-        int remaining = (int) mFFTFloatsPerFrame;
-
-        float[] currentFrame = new float[remaining];
-
-        int currentFramePointer = 0;
-
-        float integralFloatsToConsume = mNewFloatsPerFrame + mNewFloatResidual;
-
-        int newFloatsToConsumeThisFrame = (int) integralFloatsToConsume;
-
-        mNewFloatResidual = integralFloatsToConsume - newFloatsToConsumeThisFrame;
-		
-		/* If the number of required floats for the fft is greater than the
-		 * consumption rate per frame, we have to reach into the previous
-		 * frame to makeup the difference. */
-        if(newFloatsToConsumeThisFrame < remaining)
-        {
-            int previousFloatsRequired = remaining - newFloatsToConsumeThisFrame;
-
-            System.arraycopy(mPreviousFrame,
-                mPreviousFrame.length - previousFloatsRequired,
-                currentFrame,
-                currentFramePointer,
-                previousFloatsRequired);
-
-            remaining -= previousFloatsRequired;
-            currentFramePointer += previousFloatsRequired;
-        }
-
-		/* Fill the rest of the buffer with new samples */
-        while(mRunning.get() && remaining > 0)
-        {
-            if(mCurrentBuffer == null ||
-                mCurrentBufferPointer >= mCurrentBuffer.length)
-            {
-                getNextBuffer();
-            }
-
-			/* If we don't have new samples to use, send the current frame with
-			 * the remaining values as zero */
-            if(mCurrentBuffer == null)
-            {
-                remaining = 0;
-            }
-            else
-            {
-                int samplesAvailable = mCurrentBuffer.length - mCurrentBufferPointer;
-
-                while(remaining > 0 && samplesAvailable > 0)
-                {
-                    currentFrame[currentFramePointer++] =
-                        (float) mCurrentBuffer[mCurrentBufferPointer++];
-
-                    samplesAvailable--;
-                    remaining--;
-                    newFloatsToConsumeThisFrame--;
-                }
-            }
-        }
-		
-		/* If the incoming float rate is greater than the fft consumption rate,
-		 * then we have to purge some floats, otherwise, store the previous
-		 * frame, because we have overlapping frames */
-        if(newFloatsToConsumeThisFrame > 0)
-        {
-            purge(newFloatsToConsumeThisFrame);
-        }
-        else
-        {
-            mPreviousFrame = Arrays.copyOf(currentFrame, currentFrame.length);
-        }
-
-        return currentFrame;
+        mOverflowableBufferStream.offer(sampleBuffer);
     }
 
     private void calculate()
     {
-        float[] samples = getSamples();
-
-        Window.apply(mWindow, samples);
-
-        if(mSampleType == SampleType.REAL)
+        try
         {
-            mFFT.realForward(samples);
-        }
-        else
-        {
-            mFFT.complexForward(samples);
-        }
-
-        dispatch(samples);
-    }
-
-
-    private void purge(int samplesToPurge)
-    {
-        if(samplesToPurge <= 0)
-        {
-            throw new IllegalArgumentException("DFTProcessor - cannot purge "
-                + "negative sample amount");
-        }
-
-        while(mRunning.get() && samplesToPurge > 0)
-        {
-            if(mCurrentBuffer == null ||
-                mCurrentBufferPointer >= mCurrentBuffer.length)
+            if(mFrameFlushCount > 0)
             {
-                getNextBuffer();
+                mOverflowableBufferStream.flush(mFrameFlushCount);
             }
 
-            if(mCurrentBuffer != null)
-            {
-                int samplesAvailable = mCurrentBuffer.length - mCurrentBufferPointer;
+            //If this throws an IO exception, the buffer queue is (temporarily) empty and we return from the method
+            float[] samples = mOverflowableBufferStream.get(mFrameSize, mFrameOverlapCount);
 
-                if(samplesAvailable >= samplesToPurge)
-                {
-                    mCurrentBufferPointer += samplesToPurge;
-                    samplesToPurge = 0;
-                }
-                else
-                {
-                    samplesToPurge -= samplesAvailable;
-                    mCurrentBufferPointer = mCurrentBuffer.length;
-                }
+            Window.apply(mWindow, samples);
+
+            if(mSampleType == SampleType.REAL)
+            {
+                mFFT.realForward(samples);
             }
             else
             {
-                samplesToPurge = 0;
+                mFFT.complexForward(samples);
             }
+
+            dispatch(samples);
+
+            mPreviousSamples = samples;
+        }
+        catch(IOException ioe)
+        {
+            //No new data, dispatch the previous samples again
+            dispatch(mPreviousSamples);
         }
     }
 
@@ -387,11 +238,6 @@ public class DFTProcessor implements Listener<ComplexBuffer>, IFrequencyChangePr
     public void addConverter(DFTResultsConverter listener)
     {
         mListeners.add(listener);
-    }
-
-    public void removeConverter(DFTResultsConverter listener)
-    {
-        mListeners.remove(listener);
     }
 
     private class DFTCalculationTask implements Runnable
@@ -433,22 +279,13 @@ public class DFTProcessor implements Listener<ComplexBuffer>, IFrequencyChangePr
 
             setWindowType(mWindowType);
 
-            if(mSampleType == SampleType.COMPLEX)
-            {
-                mPreviousFrame = new float[mDFTSize.getSize() * 2];
-            }
-            else
-            {
-                mPreviousFrame = new float[mDFTSize.getSize()];
-            }
-
             mFFT = new FloatFFT_1D(mDFTSize.getSize());
         }
     }
 
     public void clearBuffer()
     {
-        mQueue.clear();
+        mOverflowableBufferStream.clear();
     }
 
     @Override
@@ -466,17 +303,69 @@ public class DFTProcessor implements Listener<ComplexBuffer>, IFrequencyChangePr
     }
 
     /**
-     *
+     * Calculates the frame size, flush count and overlap count to use for each calculation cycle.
      */
     private void calculateConsumptionRate()
     {
-        mNewFloatResidual = 0.0f;
+        int floatsPerSample = mSampleType == SampleType.COMPLEX ? 2 : 1;
 
-        mNewFloatsPerFrame = ((float) mSampleRate / (float) mFrameRate) *
-            (mSampleType == SampleType.COMPLEX ? 2.0f : 1.0f);
+        mFrameSize = mDFTSize.getSize() * floatsPerSample;
+        mPreviousSamples = new float[mFrameSize];
 
-        mFFTFloatsPerFrame = (mSampleType == SampleType.COMPLEX ?
-            mDFTSize.getSize() * 2 :
-            mDFTSize.getSize());
+        int productionRate = mSampleRate * floatsPerSample;
+        int consumptionRate = mFrameRate * mFrameSize;
+        int residual = productionRate - consumptionRate;
+
+        if(residual < 0)
+        {
+            mFrameFlushCount = 0;
+            mFrameOverlapCount = -residual / mFrameRate;
+
+            if(mFrameOverlapCount * mFrameRate < -residual)
+            {
+                mFrameOverlapCount ++;
+            }
+        }
+        else if(residual > 0)
+        {
+            mFrameOverlapCount = 0;
+            mFrameFlushCount = residual / mFrameRate;
+
+            if(mFrameFlushCount * mFrameRate < residual)
+            {
+                mFrameFlushCount++;
+            }
+        }
+
+        //Ensure we're flushing or overlapping by even multiples of the sample size
+        if(mFrameOverlapCount % floatsPerSample != 0)
+        {
+            mFrameOverlapCount++;
+        }
+
+        if(mFrameFlushCount % floatsPerSample != 0)
+        {
+            mFrameFlushCount++;
+        }
+
+        //If the overlap size is greater than the frame size, we can't do that.  Automatically decrease the frame rate
+        //until we reach a legitimate overlap value.
+        if(mFrameOverlapCount >= mFrameSize)
+        {
+            mLog.warn("Unable to provide frame rate [" + mFrameRate + "] for current DFT size [" + mDFTSize.getSize() +
+                "] - reducing frame rate");
+
+            mFrameRate--;
+
+            if(mFrameRate <= 0)
+            {
+                //Consider reducing the FFT size as a possible alternative corrective measure
+                throw new IllegalStateException("Unable to determine a viable frame rate based on incoming sample " +
+                    "rate, DFT size and DFT frame rate");
+            }
+
+            //Recursively call this method to test the new frame rate
+            calculateConsumptionRate();
+        }
     }
 }
