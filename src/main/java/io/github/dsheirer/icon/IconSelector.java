@@ -20,10 +20,16 @@ package io.github.dsheirer.icon;
 
 import net.miginfocom.swing.MigLayout;
 
-import javax.swing.*;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import java.awt.*;
+import java.awt.Dimension;
+import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -119,7 +125,7 @@ public class IconSelector extends JDialog implements DocumentListener
                 String name = mNameText.getText();
                 String path = mFileLabel.getText();
 
-                io.github.dsheirer.icon.Icon icon = new io.github.dsheirer.icon.Icon(name, path);
+                Icon icon = new Icon(name, path);
                 mIconTableModel.add(icon);
 
                 IconSelector.this.dispose();
