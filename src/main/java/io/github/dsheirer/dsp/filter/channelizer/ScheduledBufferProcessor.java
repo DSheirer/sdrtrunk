@@ -156,7 +156,6 @@ public class ScheduledBufferProcessor<E> implements Listener<E>
             {
                 mQueue.drainTo(mBuffers, mMaxBuffersPerInterval);
 
-                mLog.debug("Dispatching buffers: " + mBuffers.size());
                 if(mListener != null)
                 {
                     for(E buffer: mBuffers)
@@ -164,7 +163,6 @@ public class ScheduledBufferProcessor<E> implements Listener<E>
                         mListener.receive(buffer);
                     }
                 }
-                mLog.debug("Finished Dispatching buffers");
 
                 mBuffers.clear();
             }

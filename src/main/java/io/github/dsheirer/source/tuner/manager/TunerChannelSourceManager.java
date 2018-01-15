@@ -26,20 +26,20 @@ import org.slf4j.LoggerFactory;
 
 import java.util.SortedSet;
 
-public class TunerSourceManager extends AbstractSourceManager
+public class TunerChannelSourceManager extends ChannelSourceManager
 {
-    private final static Logger mLog = LoggerFactory.getLogger(TunerSourceManager.class);
+    private final static Logger mLog = LoggerFactory.getLogger(TunerChannelSourceManager.class);
     private PolyphaseChannelManager mPolyphaseChannelManager;
     private TunerController mTunerController;
 
     /**
-     * TunerSourceManager is responsible for managing the tuner's center tuned frequency and providing access to
+     * TunerChannelSourceManager is responsible for managing the tuner's center tuned frequency and providing access to
      * polyphase tuner channel sources (ie DDCs).  This class is responsible for determining IF a requested channel can
      * be provided and then adjusting the center frequency and provisioning a DDC Polyphase Tuner channel source.
      *
      * @param tunerController with a center tuned frequency that will be managed by this instance
      */
-    public TunerSourceManager(TunerController tunerController)
+    public TunerChannelSourceManager(TunerController tunerController)
     {
         mTunerController = tunerController;
 

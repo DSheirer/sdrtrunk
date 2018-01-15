@@ -115,7 +115,7 @@ public class ChannelizerViewer extends JFrame
                 mTestTuner.getTunerController().getSampleRate());
             mPrimarySpectrumPanel.setPreferredSize(new Dimension(1000, 200));
             mPrimarySpectrumPanel.setDFTSize(mMainPanelDFTSize);
-            mTestTuner.getSourceManager().addComplexBufferListener(mPrimarySpectrumPanel);
+            mTestTuner.getTunerController().addComplexBufferListener(mPrimarySpectrumPanel);
         }
 
         return mPrimarySpectrumPanel;
@@ -272,7 +272,7 @@ public class ChannelizerViewer extends JFrame
             mFrequency = frequency;
 
             TunerChannel tunerChannel = new TunerChannel(frequency, bandwidth);
-            mSource = mTestTuner.getSourceManager().getSource(tunerChannel);
+            mSource = mTestTuner.getChannelSourceManager().getSource(tunerChannel);
 
             if(mSource != null)
             {

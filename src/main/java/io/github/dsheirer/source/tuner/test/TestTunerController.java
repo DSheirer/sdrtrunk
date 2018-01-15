@@ -66,32 +66,16 @@ public class TestTunerController extends TunerController
         }
     }
 
-    /**
-     * Starts the tuner controller producing samples that will be delivered to the specified listener
-     */
-    public void start(Listener<ComplexBuffer> listener)
-    {
-    }
-
     @Override
     public void addComplexBufferListener(Listener<ComplexBuffer> listener)
     {
-        mSampleGenerator.setListener(listener);
-        mSampleGenerator.start();
+        mSampleGenerator.addListener(listener);
     }
 
     @Override
     public void removeComplexBufferListener(Listener<ComplexBuffer> listener)
     {
-        mSampleGenerator.stop();
-        mSampleGenerator.setListener(null);
-    }
-
-    /**
-     * Stops the tuner controller sample generator and deregisters the listener
-     */
-    public void stop()
-    {
+        mSampleGenerator.removeListener(listener);
     }
 
     @Override

@@ -20,18 +20,18 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.TunerEvent.Event;
-import io.github.dsheirer.source.tuner.manager.AbstractSourceManager;
-import io.github.dsheirer.source.tuner.manager.TunerSourceManager;
+import io.github.dsheirer.source.tuner.manager.ChannelSourceManager;
+import io.github.dsheirer.source.tuner.manager.TunerChannelSourceManager;
 
 /**
- * Tuner provides an interface to a software or hardware tuner controller that provides I/Q sample data coupled with an
- * abstract source manager to provide access to Digital Drop Channel (DDC) resources.
+ * Tuner provides an interface to a software or hardware tuner controller that provides I/Q sample data coupled with a
+ * channel source manager to provide access to Digital Drop Channel (DDC) resources.
  */
 public abstract class Tuner implements ISourceEventProcessor
 {
     private Broadcaster<TunerEvent> mTunerEventBroadcaster = new Broadcaster<>();
+    private ChannelSourceManager mChannelSourceManager;
     private TunerController mTunerController;
-    private AbstractSourceManager mSourceManager;
     private String mName;
 
     /**
@@ -46,9 +46,9 @@ public abstract class Tuner implements ISourceEventProcessor
         //Register to receive frequency and sample rate change notifications
         mTunerController.addListener(this::process);
 
-        mSourceManager = new TunerSourceManager(mTunerController);
+        mChannelSourceManager = new TunerChannelSourceManager(mTunerController);
         //Register to receive channel count change notifications
-        mSourceManager.addSourceEventListener(this::process);
+        mChannelSourceManager.addSourceEventListener(this::process);
     }
 
     @Override
@@ -73,9 +73,9 @@ public abstract class Tuner implements ISourceEventProcessor
     /**
      * Source Manager.  Provides access to registering for complex buffer samples and source event notifications.
      */
-    public AbstractSourceManager getSourceManager()
+    public ChannelSourceManager getChannelSourceManager()
     {
-        return mSourceManager;
+        return mChannelSourceManager;
     }
 
     /**

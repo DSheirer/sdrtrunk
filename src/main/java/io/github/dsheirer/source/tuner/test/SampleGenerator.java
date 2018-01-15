@@ -1,24 +1,22 @@
 /*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
 package io.github.dsheirer.source.tuner.test;
 
 import io.github.dsheirer.dsp.mixer.LowPhaseNoiseOscillator;
+import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
 import io.github.dsheirer.sample.complex.TimestampedComplexBuffer;
@@ -33,9 +31,9 @@ public class SampleGenerator
 {
     private final static Logger mLog = LoggerFactory.getLogger(SampleGenerator.class);
 
+    private Broadcaster<ComplexBuffer> mComplexBufferBroadcaster = new Broadcaster<>();
     private LowPhaseNoiseOscillator mOscillator;
     private int mSweepUpdateInterval;
-    private Listener<ComplexBuffer> mListener;
     private long mInterval;
     private int mSamplesPerInterval;
     private ScheduledFuture<?> mScheduledFuture;
@@ -93,7 +91,7 @@ public class SampleGenerator
     /**
      * Starts the generator producing samples
      */
-    public void start()
+    private void start()
     {
         if(mScheduledFuture == null)
         {
@@ -109,7 +107,7 @@ public class SampleGenerator
     /**
      * Stops the generator from producing samples
      */
-    public void stop()
+    private void stop()
     {
         if(mScheduledFuture != null)
         {
@@ -123,14 +121,31 @@ public class SampleGenerator
     }
 
     /**
-     * Registers the listener to receive samples once the generator starts.  Note: invoke this method with null
-     * argument to de-register the listener.
+     * Registers the listener to receive samples and auto-starts the generator if this is the first listener.
      *
      * @param listener to receive complex sample buffers
      */
-    public void setListener(Listener<ComplexBuffer> listener)
+    public void addListener(Listener<ComplexBuffer> listener)
     {
-        mListener = listener;
+        mComplexBufferBroadcaster.addListener(listener);
+
+        if(mComplexBufferBroadcaster.getListenerCount() == 1)
+        {
+            start();
+        }
+    }
+
+    /**
+     * Removes the listener and stops the sample generator if there are no more listeners.
+     */
+    public void removeListener(Listener<ComplexBuffer> listener)
+    {
+        mComplexBufferBroadcaster.removeListener(listener);
+
+        if(mComplexBufferBroadcaster.getListenerCount() == 0)
+        {
+            stop();
+        }
     }
 
     /**
@@ -168,10 +183,11 @@ public class SampleGenerator
         @Override
         public void run()
         {
-            if(mListener != null)
+            if(mComplexBufferBroadcaster.hasListeners())
             {
                 float[] samples = mOscillator.generate(mSamplesPerInterval);
-                mListener.receive(new TimestampedComplexBuffer(samples));
+
+                mComplexBufferBroadcaster.receive(new TimestampedComplexBuffer(samples));
 
                 if(mSweepUpdateInterval != 0)
                 {
