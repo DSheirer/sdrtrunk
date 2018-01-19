@@ -161,12 +161,12 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
         return mFrequencyController.getMaximumFrequency();
     }
 
-    private long getMinTunedFrequency() throws SourceException
+    public long getMinTunedFrequency() throws SourceException
     {
         return mFrequencyController.getFrequency() - (getUsableBandwidth() / 2);
     }
 
-    private long getMaxTunedFrequency() throws SourceException
+    public long getMaxTunedFrequency() throws SourceException
     {
         return mFrequencyController.getFrequency() + (getUsableBandwidth() / 2);
     }

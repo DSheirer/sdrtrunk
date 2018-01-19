@@ -42,7 +42,6 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
     {
         super(1, sampleRate);
         setPolyphaseChannelIndices(channelIndexes);
-        mLog.debug("Sample Rate:" + sampleRate + " PolyPhase Channel Indexes:" + channelIndexes);
     }
 
     /**

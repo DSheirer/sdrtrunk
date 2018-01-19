@@ -72,10 +72,10 @@ public class PolyphaseChannelResultsBuffer
         {
             throw new IllegalArgumentException("Buffer is full - cannot add new channel results");
         }
+
         if(mPointer == 0)
         {
             mChannelResults = new float[mMaxSize][channelResults.length];
-            mChannelResults[mPointer++] = channelResults;
         }
         else
         {
@@ -87,9 +87,9 @@ public class PolyphaseChannelResultsBuffer
                     "a different length than the channel results that are already contained in this buffer [" +
                     currentLength + "]");
             }
-
-            mChannelResults[mPointer++] = channelResults;
         }
+
+        mChannelResults[mPointer++] = channelResults;
     }
 
     /**
@@ -97,10 +97,12 @@ public class PolyphaseChannelResultsBuffer
      */
     public float[][] getChannelResults()
     {
+        //If this buffer is full, return all of the channel results
         if(mPointer == mMaxSize)
         {
             return mChannelResults;
         }
+        //Otherwise, truncate the results to return
         else
         {
             return Arrays.copyOf(mChannelResults, mPointer);
@@ -120,6 +122,7 @@ public class PolyphaseChannelResultsBuffer
         {
             throw new IllegalArgumentException("Buffer is empty - cannot extract channel [" + iChannelIndex + "]");
         }
+
         if(!isValidChannelIndex(iChannelIndex))
         {
             throw new IllegalArgumentException("Channel [" + iChannelIndex + "] is not valid for the contained channel " +
@@ -131,8 +134,10 @@ public class PolyphaseChannelResultsBuffer
 
         int qChannelIndex = iChannelIndex + 1;
 
-        for(float[] channelResults: mChannelResults)
+        for(int x = 0; x < mPointer; x++)
         {
+            float[] channelResults = mChannelResults[x];
+
             samples[pointer++] = channelResults[iChannelIndex];
             samples[pointer++] = channelResults[qChannelIndex];
         }

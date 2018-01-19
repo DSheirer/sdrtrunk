@@ -23,6 +23,7 @@ import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
+import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
@@ -44,6 +45,8 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.Dimension;
 import java.awt.EventQueue;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ChannelizerViewer extends JFrame
 {
@@ -55,13 +58,14 @@ public class ChannelizerViewer extends JFrame
     private SettingsManager mSettingsManager = new SettingsManager(new TunerConfigurationModel());
     private JPanel mPrimaryPanel;
     private JPanel mControlPanel;
+    private JLabel mToneFrequencyLabel;
     private PrimarySpectrumPanel mPrimarySpectrumPanel;
     private ChannelArrayPanel mChannelPanel;
     private int mChannelCount;
     private int mChannelsPerRow;
-    private long mToneFrequency;
+    private long mBaseFrequency = 100000000;  //100 MHz
     private DFTSize mMainPanelDFTSize = DFTSize.FFT32768;
-    private DFTSize mChannelPanelDFTSize = DFTSize.FFT01024;
+    private DFTSize mChannelPanelDFTSize = DFTSize.FFT04096;
     private TestTuner mTestTuner;
 
     /**
@@ -76,16 +80,12 @@ public class ChannelizerViewer extends JFrame
         mChannelCount = (int)(mTestTuner.getTunerController().getUsableBandwidth() / CHANNEL_BANDWIDTH);
         mChannelsPerRow = channelsPerRow;
 
-        mToneFrequency = mTestTuner.getTunerController().getFrequency() + 19200;
-
-        mTestTuner.getTunerController().setToneFrequency(mToneFrequency);
-
         init();
     }
 
     private void init()
     {
-        setTitle("TunerChannelizer Viewer");
+        setTitle("Polyphase Channelizer Viewer");
         setSize(1000, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
@@ -129,11 +129,11 @@ public class ChannelizerViewer extends JFrame
             mControlPanel.setLayout(new MigLayout("insets 0 0 0 0", "", ""));
 
             mControlPanel.add(new JLabel("Tone:"), "align left");
-            int maximumFrequencyOffset = (int)(mTestTuner.getTunerController().getSampleRate() / 2);
-            long minimumFrequency = mTestTuner.getTunerController().getFrequency() - maximumFrequencyOffset;
-            long maximumFrequency = mTestTuner.getTunerController().getFrequency() + maximumFrequencyOffset;
+            long minimumFrequency = -(long)mTestTuner.getTunerController().getSampleRate() / 2;
+            long maximumFrequency = (long)mTestTuner.getTunerController().getSampleRate() / 2;
+            long toneFrequency = 0;
 
-            SpinnerNumberModel model = new SpinnerNumberModel(mToneFrequency, minimumFrequency, maximumFrequency,
+            SpinnerNumberModel model = new SpinnerNumberModel(toneFrequency, minimumFrequency, maximumFrequency,
                 100 );
 
             model.addChangeListener(new ChangeListener()
@@ -141,8 +141,9 @@ public class ChannelizerViewer extends JFrame
                 @Override
                 public void stateChanged(ChangeEvent e)
                 {
-                    int toneFrequency = model.getNumber().intValue();
+                    long toneFrequency = model.getNumber().longValue();
                     mTestTuner.getTunerController().setToneFrequency(toneFrequency);
+                    mToneFrequencyLabel.setText(String.valueOf(getToneFrequency()));
                 }
             });
 
@@ -151,13 +152,19 @@ public class ChannelizerViewer extends JFrame
             mControlPanel.add(spinner);
             mControlPanel.add(new JLabel("Hz"));
 
-            mControlPanel.add(new JLabel("Sample Rate: " + mTestTuner.getTunerController().getSampleRate() + " Hz"), "push,align right");
+            mControlPanel.add(new JLabel("Frequency:"), "push,align right");
+            mToneFrequencyLabel = new JLabel(String.valueOf(getToneFrequency()));
+            mControlPanel.add(mToneFrequencyLabel, "push,align left");
 
-            mControlPanel.add(new JLabel("Max: " + (mTestTuner.getTunerController().getSampleRate() / 2) + " Hz"), "push,align right");
             mControlPanel.add(new JLabel("Channels: " + mChannelCount), "push,align right");
         }
 
         return mControlPanel;
+    }
+
+    private long getToneFrequency()
+    {
+        return mTestTuner.getTunerController().getFrequency() + mTestTuner.getTunerController().getToneFrequency();
     }
 
     private ChannelArrayPanel getChannelArrayPanel()
@@ -192,7 +199,7 @@ public class ChannelizerViewer extends JFrame
 
             int channelToLog = -1;
 
-            long baseFrequency = 100006250;  //100.006250 MHz
+            long baseFrequency = mBaseFrequency + (CHANNEL_BANDWIDTH / 2);
 
             for(int x = 0; x < mChannelCount - 1; x++)
             {
@@ -215,6 +222,33 @@ public class ChannelizerViewer extends JFrame
         }
     }
 
+    /**
+     * Returns a list of tuner channels that will fit within the tuner's bandwidth, minus a half channel each at the
+     * lower and upper ends of the spectrum.
+     *
+     * @param tuner to create channels for
+     * @return list of contiguous channels filling the tuner bandwidth
+     */
+    public static List<TunerChannel> getTunerChannels(Tuner tuner)
+    {
+        List<TunerChannel> tunerChannels = new ArrayList<>();
+
+        long baseFrequency = tuner.getTunerController().getFrequency();
+        baseFrequency -= tuner.getTunerController().getSampleRate() / 2;
+        baseFrequency += (CHANNEL_BANDWIDTH / 2);
+
+        int channelCount = (int)(tuner.getTunerController().getSampleRate() / CHANNEL_BANDWIDTH) - 1;
+
+        for(int x = 0; x < channelCount; x++)
+        {
+            long frequency = baseFrequency + (x * CHANNEL_BANDWIDTH);
+            TunerChannel tunerChannel = new TunerChannel(frequency, CHANNEL_BANDWIDTH);
+            tunerChannels.add(tunerChannel);
+        }
+
+        return tunerChannels;
+    }
+
     public class PrimarySpectrumPanel extends JPanel implements Listener<ComplexBuffer>, ISourceEventProcessor
     {
         private DFTProcessor mDFTProcessor = new DFTProcessor(SampleType.COMPLEX);
@@ -225,6 +259,7 @@ public class ChannelizerViewer extends JFrame
         {
             setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
             mSpectrumPanel = new SpectrumPanel(settingsManager);
+            mSpectrumPanel.setSampleSize(26);
             add(mSpectrumPanel);
 
             mDFTProcessor.addConverter(mComplexDecibelConverter);
@@ -256,20 +291,19 @@ public class ChannelizerViewer extends JFrame
         private DFTProcessor mDFTProcessor = new DFTProcessor(SampleType.COMPLEX);
         private ComplexDecibelConverter mComplexDecibelConverter = new ComplexDecibelConverter();
         private SpectrumPanel mSpectrumPanel;
-        private long mFrequency;
 
         public ChannelPanel(SettingsManager settingsManager, double sampleRate, long frequency, int bandwidth, boolean enableLogging)
         {
-            setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
+            setLayout(new MigLayout("insets 0 0 0 0", "[center,grow,fill]", "[grow,fill][]"));
             mSpectrumPanel = new SpectrumPanel(settingsManager);
-            add(mSpectrumPanel);
+            mSpectrumPanel.setSampleSize(28);
+            add(mSpectrumPanel, "wrap");
+            add(new JLabel("Center:" + frequency));
 
             mDFTProcessor.addConverter(mComplexDecibelConverter);
             mDFTProcessor.process(SourceEvent.sampleRateChange(sampleRate));
 
             mComplexDecibelConverter.addListener(mSpectrumPanel);
-
-            mFrequency = frequency;
 
             TunerChannel tunerChannel = new TunerChannel(frequency, bandwidth);
             mSource = mTestTuner.getChannelSourceManager().getSource(tunerChannel);
@@ -326,18 +360,69 @@ public class ChannelizerViewer extends JFrame
 
     public static void main(String[] args)
     {
-        int channelsPerRow = 4;
+        boolean useGUI = true;
 
-        final ChannelizerViewer frame = new ChannelizerViewer(channelsPerRow);
-
-        EventQueue.invokeLater(new Runnable()
+        if(useGUI)
         {
-            @Override
-            public void run()
+            int channelsPerRow = 4;
+
+            final ChannelizerViewer frame = new ChannelizerViewer(channelsPerRow);
+
+            EventQueue.invokeLater(new Runnable()
             {
-                frame.setVisible(true);
+                @Override
+                public void run()
+                {
+                    frame.setVisible(true);
+                }
+            });
+        }
+        else
+        {
+            TestTuner tuner = new TestTuner();
+
+            List<TunerChannel> tunerChannels = getTunerChannels(tuner);
+
+            List<TunerChannelSource> sources = new ArrayList<>();
+
+            int maxSourceCount = 30;
+            int sourceCount = 0;
+            for(TunerChannel tunerChannel: tunerChannels)
+            {
+                if(sourceCount < maxSourceCount)
+                {
+                    TunerChannelSource source = tuner.getChannelSourceManager().getSource(tunerChannel);
+
+                    if(source != null)
+                    {
+                        sources.add(source);
+                        sourceCount++;
+                    }
+                    else
+                    {
+                        mLog.debug("Couldn't get source for: " + tunerChannel);
+                    }
+                }
             }
-        });
+
+            mLog.debug("Starting [" + sources.size() + "] tuner channel sources");
+
+            for(TunerChannelSource tunerChannelSource: sources)
+            {
+                tunerChannelSource.setListener(new Listener<ComplexBuffer>()
+                {
+                    @Override
+                    public void receive(ComplexBuffer complexBuffer)
+                    {
+                        //Do nothing
+                    }
+                });
+
+                tunerChannelSource.start();
+            }
+
+            while(true);
+        }
     }
 
 }

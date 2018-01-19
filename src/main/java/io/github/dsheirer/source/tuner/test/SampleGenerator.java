@@ -36,6 +36,7 @@ public class SampleGenerator
     private int mSweepUpdateInterval;
     private long mInterval;
     private int mSamplesPerInterval;
+    private boolean mReuseBuffers;
     private ScheduledFuture<?> mScheduledFuture;
 
     /**
@@ -49,17 +50,17 @@ public class SampleGenerator
      * @param sweepUpdateRate to turn on sweeping of the tone frequency where the frequency is incremented by the
      * rate specified at each interval, resetting to 1 Hz after reaching/exceeding the highest frequency.
      */
-    public SampleGenerator(int sampleRate, long frequency, long interval, int sweepUpdateRate)
+    public SampleGenerator(int sampleRate, long frequency, long interval, int sweepUpdateRate, boolean reuseBuffers)
     {
         if(Math.abs(sweepUpdateRate) >= sampleRate)
         {
             throw new IllegalArgumentException("Sweep update rate cannot be greater than sample rate");
         }
 
-        mLog.debug("Sample Generator - Sample Rate:" + sampleRate + " Frequency:" + frequency);
         mOscillator = new LowPhaseNoiseOscillator(sampleRate, frequency);
         mInterval = interval;
         mSweepUpdateInterval = sweepUpdateRate;
+        mReuseBuffers = reuseBuffers;
 
         updateSamplesPerInterval();
     }
@@ -73,9 +74,9 @@ public class SampleGenerator
      * @param frequency of the tone produced by the generator
      * @param interval in milliseconds for generating samples
      */
-    public SampleGenerator(int sampleRate, long frequency, long interval)
+    public SampleGenerator(int sampleRate, long frequency, long interval, boolean reuseBuffers)
     {
-        this(sampleRate, frequency, interval, 0);
+        this(sampleRate, frequency, interval, 0, reuseBuffers);
     }
 
     /**
@@ -84,8 +85,6 @@ public class SampleGenerator
     private void updateSamplesPerInterval()
     {
         mSamplesPerInterval = (int)((double)mOscillator.getSampleRate() * ((double)mInterval / 1000.0));
-
-        mLog.debug("Sample Generator - " + mSamplesPerInterval + " samples every " + mInterval + "ms");
     }
 
     /**
@@ -175,35 +174,65 @@ public class SampleGenerator
         updateSamplesPerInterval();
     }
 
+    public double getSampleRate()
+    {
+        return mOscillator.getSampleRate();
+    }
+
     /**
      * Generates a complex sample buffer and distributes the buffer to a registered listener
      */
     public class Generator implements Runnable
     {
+        private int mTriggerInterval = 0;
+        private long mOscillatorFrequency = 1;
+        private ComplexBuffer mReusableBuffer;
+
         @Override
         public void run()
         {
             if(mComplexBufferBroadcaster.hasListeners())
             {
-                float[] samples = mOscillator.generate(mSamplesPerInterval);
+                if(mReuseBuffers)
+                {
+                    if(mReusableBuffer == null ||
+                       mReusableBuffer.getSamples().length != mSamplesPerInterval ||
+                       mOscillatorFrequency != mOscillator.getFrequency())
+                    {
+                        mOscillatorFrequency = mOscillator.getFrequency();
+                        mReusableBuffer = new TimestampedComplexBuffer(mOscillator.generate(mSamplesPerInterval));
+                    }
 
-                mComplexBufferBroadcaster.receive(new TimestampedComplexBuffer(samples));
+                    mComplexBufferBroadcaster.receive(mReusableBuffer);
+                }
+                else
+                {
+                    float[] samples = mOscillator.generate(mSamplesPerInterval);
+                    mComplexBufferBroadcaster.receive(new TimestampedComplexBuffer(samples));
+                }
 
                 if(mSweepUpdateInterval != 0)
                 {
-                    long updatedFrequency = mOscillator.getFrequency() + mSweepUpdateInterval;
+                    mTriggerInterval++;
 
-                    if(updatedFrequency > mOscillator.getSampleRate() / 2)
+                    if(mTriggerInterval >= 10)
                     {
-                        mOscillator.setFrequency(mOscillator.getSampleRate() / -2);
-                    }
-                    else if(updatedFrequency < mOscillator.getSampleRate() / -2)
-                    {
-                        mOscillator.setFrequency(mOscillator.getSampleRate() / 2);
-                    }
-                    else
-                    {
-                        mOscillator.setFrequency(updatedFrequency);
+                        mTriggerInterval = 0;
+
+                        long updatedFrequency = mOscillator.getFrequency() + mSweepUpdateInterval;
+
+                        if(updatedFrequency > mOscillator.getSampleRate() / 2)
+                        {
+                            mOscillator.setFrequency(mOscillator.getSampleRate() / -2);
+                        }
+                        else if(updatedFrequency < mOscillator.getSampleRate() / -2)
+                        {
+                            mOscillator.setFrequency(mOscillator.getSampleRate() / 2);
+                        }
+                        else
+                        {
+                            mOscillator.setFrequency(updatedFrequency);
+                        }
                     }
                 }
             }

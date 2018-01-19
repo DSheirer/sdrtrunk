@@ -132,7 +132,6 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         try
         {
             List<Integer> polyphaseIndexes = mChannelCalculator.getChannelIndexes(tunerChannel);
-            mLog.debug("Getting polyphase channel for: " + tunerChannel + " indexes:" + polyphaseIndexes);
 
             IPolyphaseChannelOutputProcessor outputProcessor = getOutputProcessor(polyphaseIndexes);
 
@@ -240,7 +239,6 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         {
             case NOTIFICATION_FREQUENCY_CHANGE:
                 //Update channel calculator immediately so that channels can be allocated
-                mLog.debug("Updating channel calculator to frequency: " + sourceEvent.getValue());
                 mChannelCalculator.setCenterFrequency(sourceEvent.getValue().longValue());
 
                 //Defer channelizer configuration changes to be handled on the buffer processor thread
@@ -248,7 +246,6 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                 break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
                 //Update channel calculator immediately so that channels can be allocated
-                mLog.debug("Updating channel calculator to sample rate: " + sourceEvent.getValue());
                 mChannelCalculator.setSampleRate(sourceEvent.getValue().doubleValue());
 
                 //Defer channelizer configuration changes to be handled on the buffer processor thread
@@ -355,13 +352,11 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             //If the indexes size is the same then update the current processor, otherwise create a new one
             if(channelSource.getPolyphaseChannelOutputProcessor().getInputChannelCount() == indexes.size())
             {
-                mLog.debug("Updating indexes to " + indexes + " for: " + channelSource.getTunerChannel());
                 channelSource.getPolyphaseChannelOutputProcessor().setPolyphaseChannelIndices(indexes);
                 channelSource.setFrequency(centerFrequency);
             }
             else
             {
-                mLog.debug("Creating new output processor for indexes " + indexes);
                 channelSource.setPolyphaseChannelOutputProcessor(getOutputProcessor(indexes), centerFrequency);
             }
         }
@@ -487,16 +482,12 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                     switch(queuedSourceEvent.getEvent())
                     {
                         case NOTIFICATION_FREQUENCY_CHANGE:
-                            mLog.debug("******Frequency change event");
                             updateOutputProcessors(queuedSourceEvent);
                             break;
                         case NOTIFICATION_SAMPLE_RATE_CHANGE:
-                            mLog.debug("******Sample Rate change event");
                             updateChannelizerSampleRate(queuedSourceEvent.getValue().intValue());
                             break;
                     }
-
-                    mLog.debug("****** Source event processed ... continuing");
 
                     queuedSourceEvent = mQueuedSourceEvents.poll();
                 }

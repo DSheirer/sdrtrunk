@@ -197,11 +197,16 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
 
             int half = getChannelCount() / 2;
 
+            int outputOffset = getChannelCount() - half - 1;
+            int outputIndex;
+            int sampleIndex;
+            int filterIndex;
+
             for(int channel = 0; channel < half; channel++)
             {
-                int outputIndex = 2 * (getChannelCount() - channel - 1);
-                int sampleIndex = 2 * channel;
-                int filterIndex = channel + half;
+                outputIndex = 2 * (outputOffset - channel);
+                sampleIndex = 2 * channel;
+                filterIndex = channel + half;
 
                 processed[outputIndex] = filter(sampleIndex, mCoefficients[filterIndex], sampleIndexMap);
                 processed[outputIndex + 1] = filter(sampleIndex + 1, mCoefficients[filterIndex], sampleIndexMap);
@@ -209,12 +214,13 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
 
             //The second half of the sample buffer was loaded using the previous column pointer - adjust for that now
             sampleIndexMap = mSampleIndexMap[(mColumnPointer == (mSamples.length - 1) ? 0 : mColumnPointer + 1)];
+            outputOffset = getChannelCount() + half - 1;
 
             for(int channel = half; channel < getChannelCount(); channel++)
             {
-                int outputIndex = 2 * (getChannelCount() - channel - 1);
-                int sampleIndex = 2 * channel;
-                int filterIndex = channel - half;
+                outputIndex = 2 * (outputOffset - channel);
+                sampleIndex = 2 * channel;
+                filterIndex = channel - half;
 
                 processed[outputIndex] = filter(sampleIndex, mCoefficients[filterIndex], sampleIndexMap);
                 processed[outputIndex + 1] = filter(sampleIndex + 1, mCoefficients[filterIndex], sampleIndexMap);

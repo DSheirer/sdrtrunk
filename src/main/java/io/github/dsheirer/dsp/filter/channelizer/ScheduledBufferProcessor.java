@@ -60,15 +60,6 @@ public class ScheduledBufferProcessor<E> implements Listener<E>
     public ScheduledBufferProcessor(int maximumSize, int resetThreshold, long distributionInterval, int maxBuffersPerInterval)
     {
         mQueue = new OverflowableTransferQueue<>(maximumSize, resetThreshold);
-
-        mQueue.setOverflowListener(new IOverflowListener()
-        {
-            @Override
-            public void sourceOverflow(boolean overflow)
-            {
-                mLog.error("Overflow state changed - overflow:" + overflow);
-            }
-        });
         mDistributionInterval = distributionInterval;
         mMaxBuffersPerInterval = maxBuffersPerInterval;
     }

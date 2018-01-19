@@ -30,17 +30,18 @@ public class TestTunerController extends TunerController
 {
     private final static Logger mLog = LoggerFactory.getLogger(TestTunerController.class);
 
-    public static final long MINIMUM_FREQUENCY = 1000000l;     //1 MHz
-    public static final long MAXIMUM_FREQUENCY = 10000000000l; //10 GHz
-    public static final long DEFAULT_CENTER_FREQUENCY = 100000000;    //100 MHz
-    public static final int DEFAULT_SAMPLE_RATE = 100000;     //25 kHz
-    public static final int DC_NOISE_BANDWIDTH = 0;         // +/-5 kHz
-    public static final double USABLE_BANDWIDTH = 1.00;  //100% usable bandwidth
+    public static final long MINIMUM_FREQUENCY = 1l;
+    public static final long MAXIMUM_FREQUENCY = 1000000000l;
+    public static final int SAMPLE_RATE = 225000;
+    public static final int DC_NOISE_BANDWIDTH = 0;
+    public static final double USABLE_BANDWIDTH = 1.00;
+
     public static final int SPECTRAL_FRAME_RATE = 20;
     public static final long SAMPLE_GENERATION_INTERVAL = 1000 / SPECTRAL_FRAME_RATE;
 
     private SampleGenerator mSampleGenerator;
-    private long mReferenceFrequency = DEFAULT_CENTER_FREQUENCY;
+    private boolean mReuseBuffers = true;
+    private long mFrequency = 100000000l;
 
     /**
      * Tuner controller testing implementation.
@@ -50,15 +51,14 @@ public class TestTunerController extends TunerController
         super(MINIMUM_FREQUENCY, MAXIMUM_FREQUENCY, DC_NOISE_BANDWIDTH, USABLE_BANDWIDTH);
 
         int sweepRate = 0;  //Hz per interval
-
-        mSampleGenerator = new SampleGenerator(DEFAULT_SAMPLE_RATE, 12500, SAMPLE_GENERATION_INTERVAL, sweepRate);
+        long initialToneFrequency = SAMPLE_RATE / 2 + 100;
+        mSampleGenerator = new SampleGenerator(SAMPLE_RATE, initialToneFrequency, SAMPLE_GENERATION_INTERVAL,
+            sweepRate, mReuseBuffers);
 
         try
         {
-            mLog.debug("Setting frequency to:" + DEFAULT_CENTER_FREQUENCY);
-            mFrequencyController.setFrequency(DEFAULT_CENTER_FREQUENCY);
-            mLog.debug("Setting sample rate of freq controller to: " + DEFAULT_SAMPLE_RATE);
-            mFrequencyController.setSampleRate(DEFAULT_SAMPLE_RATE);
+            mFrequencyController.setFrequency(mFrequency);
+            mFrequencyController.setSampleRate(SAMPLE_RATE);
         }
         catch(Exception e)
         {
@@ -91,7 +91,7 @@ public class TestTunerController extends TunerController
     @Override
     public long getTunedFrequency() throws SourceException
     {
-        return mReferenceFrequency;
+        return mFrequency;
     }
 
     /**
@@ -102,26 +102,26 @@ public class TestTunerController extends TunerController
     @Override
     public void setTunedFrequency(long frequency) throws SourceException
     {
-        mReferenceFrequency = frequency;
+        mFrequency = frequency;
     }
 
     /**
-     * Sets the tone frequency for the sample generator.  The tone frequency is offset from the center tuned frequency.
-     * @param toneFrequency
+     * Sets the tone output of the frequency generator
+     * @param frequency in the range: 0 <> Sample Rate
      */
-    public void setToneFrequency(long toneFrequency)
+    public void setToneFrequency(long frequency)
     {
-        long frequency = toneFrequency - mReferenceFrequency;
         mSampleGenerator.setFrequency(frequency);
     }
 
     /**
-     * Current tone frequency for this test controller.
-     * @return
+     * Frequency of the tone being generated
+     *
+     * @return tone frequency in range: 0 <> Sample Rate
      */
     public long getToneFrequency()
     {
-        return mReferenceFrequency + mSampleGenerator.getFrequency();
+        return mSampleGenerator.getFrequency();
     }
 
     /**
@@ -130,7 +130,7 @@ public class TestTunerController extends TunerController
     @Override
     public double getCurrentSampleRate()
     {
-        return mFrequencyController.getSampleRate();
+        return mSampleGenerator.getSampleRate();
     }
 
     /**
@@ -138,6 +138,6 @@ public class TestTunerController extends TunerController
      */
     public void setSampleRate(int sampleRate) throws SourceException
     {
-        mFrequencyController.setSampleRate(sampleRate);
+        mSampleGenerator.setSampleRate(sampleRate);
     }
 }
