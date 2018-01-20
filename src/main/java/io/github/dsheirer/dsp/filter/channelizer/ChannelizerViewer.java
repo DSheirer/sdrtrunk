@@ -381,6 +381,9 @@ public class ChannelizerViewer extends JFrame
         {
             TestTuner tuner = new TestTuner();
 
+            //Turn on buffer reuse since we're simply profiling data flow/throughput
+            tuner.getTunerController().setReuseBuffers(true);
+
             List<TunerChannel> tunerChannels = getTunerChannels(tuner);
 
             List<TunerChannelSource> sources = new ArrayList<>();
@@ -424,5 +427,4 @@ public class ChannelizerViewer extends JFrame
             while(true);
         }
     }
-
 }

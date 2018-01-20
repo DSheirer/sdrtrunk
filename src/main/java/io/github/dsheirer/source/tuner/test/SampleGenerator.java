@@ -50,7 +50,7 @@ public class SampleGenerator
      * @param sweepUpdateRate to turn on sweeping of the tone frequency where the frequency is incremented by the
      * rate specified at each interval, resetting to 1 Hz after reaching/exceeding the highest frequency.
      */
-    public SampleGenerator(int sampleRate, long frequency, long interval, int sweepUpdateRate, boolean reuseBuffers)
+    public SampleGenerator(int sampleRate, long frequency, long interval, int sweepUpdateRate)
     {
         if(Math.abs(sweepUpdateRate) >= sampleRate)
         {
@@ -60,7 +60,6 @@ public class SampleGenerator
         mOscillator = new LowPhaseNoiseOscillator(sampleRate, frequency);
         mInterval = interval;
         mSweepUpdateInterval = sweepUpdateRate;
-        mReuseBuffers = reuseBuffers;
 
         updateSamplesPerInterval();
     }
@@ -74,9 +73,24 @@ public class SampleGenerator
      * @param frequency of the tone produced by the generator
      * @param interval in milliseconds for generating samples
      */
-    public SampleGenerator(int sampleRate, long frequency, long interval, boolean reuseBuffers)
+    public SampleGenerator(int sampleRate, long frequency, long interval)
     {
-        this(sampleRate, frequency, interval, 0, reuseBuffers);
+        this(sampleRate, frequency, interval, 0);
+    }
+
+    /**
+     * Instructs the sample generator to reuse the same sample buffer each time instead of generating new samples for
+     * each and every buffer.  This is useful when you simply want to generate data to test or profile data flows and
+     * are not concerned about the content of the buffers.
+     *
+     * The generator will create a new buffer of data each time that it detects that the sample size changes or when
+     * the tone frequency changes.
+     *
+     * @param reuseBuffers set to true to turn on buffer reuse
+     */
+    public void setReuseBuffers(boolean reuseBuffers)
+    {
+        mReuseBuffers = reuseBuffers;
     }
 
     /**

@@ -40,7 +40,6 @@ public class TestTunerController extends TunerController
     public static final long SAMPLE_GENERATION_INTERVAL = 1000 / SPECTRAL_FRAME_RATE;
 
     private SampleGenerator mSampleGenerator;
-    private boolean mReuseBuffers = true;
     private long mFrequency = 100000000l;
 
     /**
@@ -53,7 +52,7 @@ public class TestTunerController extends TunerController
         int sweepRate = 0;  //Hz per interval
         long initialToneFrequency = SAMPLE_RATE / 2 + 100;
         mSampleGenerator = new SampleGenerator(SAMPLE_RATE, initialToneFrequency, SAMPLE_GENERATION_INTERVAL,
-            sweepRate, mReuseBuffers);
+            sweepRate);
 
         try
         {
@@ -64,6 +63,17 @@ public class TestTunerController extends TunerController
         {
             mLog.error("Error!", e);
         }
+    }
+
+    /**
+     * Sets the sample generator to reuse buffers instead of generating new buffers each time.  Enable this setting
+     * when you simply want to test/profile buffer data flows for consumer processes.
+     *
+     * @param reuseBuffers set to true to turn on buffer reuse
+     */
+    public void setReuseBuffers(boolean reuseBuffers)
+    {
+        mSampleGenerator.setReuseBuffers(reuseBuffers);
     }
 
     @Override
