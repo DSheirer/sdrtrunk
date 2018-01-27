@@ -54,6 +54,8 @@ public abstract class ChannelSourceManager implements ISourceEventProcessor
      */
     public abstract TunerChannelSource getSource(TunerChannel tunerChannel);
 
+    public abstract TunerChannelSource getSpecialSource(int index);
+
     /**
      * Adds a listener to receive source events
      */

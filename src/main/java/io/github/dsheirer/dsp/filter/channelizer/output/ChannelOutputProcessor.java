@@ -68,7 +68,9 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     @Override
     public void setFrequencyOffset(long frequencyOffset)
     {
-        mFrequencyCorrectionMixer.setFrequency(frequencyOffset);
+        long offset = frequencyOffset;
+        mLog.debug("Setting frequency offset to: " + offset);
+//        mFrequencyCorrectionMixer.setFrequency(offset);
         mFrequencyCorrectionEnabled = (frequencyOffset != 0);
     }
 

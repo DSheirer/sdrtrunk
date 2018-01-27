@@ -34,6 +34,7 @@ import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -153,6 +154,32 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             mLog.info("Can't provide DDC for " + tunerChannel.toString() + " due to channelizer frequency [" +
                 mChannelCalculator.getCenterFrequency() + "] and sample rate [" +
                 (mChannelCalculator.getChannelCount() * mChannelCalculator.getChannelBandwidth()) + "]");
+        }
+
+        return channelSource;
+    }
+
+    public TunerChannelSource getSpecialChannel(int index)
+    {
+        PolyphaseChannelSource channelSource = null;
+
+        try
+        {
+            List<Integer> polyphaseIndexes = new ArrayList<>();
+            polyphaseIndexes.add(index);
+
+            IPolyphaseChannelOutputProcessor outputProcessor = getOutputProcessor(polyphaseIndexes);
+
+            TunerChannel tunerChannel = new TunerChannel(100000000, 12500);
+
+            if(outputProcessor != null)
+            {
+                channelSource = new PolyphaseChannelSource(tunerChannel, outputProcessor, mChannelSourceEventListener,
+                    mChannelCalculator.getChannelSampleRate());
+            }
+        }
+        catch(IllegalArgumentException iae)
+        {
         }
 
         return channelSource;
@@ -456,7 +483,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
 
         if(taps == null)
         {
-            taps = FilterFactory.getSincM2Synthesizer(mChannelCalculator.getChannelBandwidth(), channels,
+            taps = FilterFactory.getSincM2Synthesizer(mChannelCalculator.getChannelSampleRate(), channels,
                 POLYPHASE_FILTER_TAPS_PER_CHANNEL, Window.WindowType.BLACKMAN_HARRIS_7, true);
 
             mOutputProcessorFilters.put(channels, taps);

@@ -21,6 +21,7 @@ import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.real.IOverflowListener;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.spectrum.converter.DFTResultsConverter;
@@ -81,6 +82,15 @@ public class DFTProcessor implements Listener<ComplexBuffer>, ISourceEventProces
         mListeners.clear();
         mOverflowableBufferStream.clear();
         mWindow = null;
+    }
+
+    /**
+     * Sets the listener to receive buffer overflow/reset indications
+     * @param listener
+     */
+    public void setOverflowListener(IOverflowListener listener)
+    {
+        mOverflowableBufferStream.setOverflowListener(listener);
     }
 
     public WindowType getWindowType()

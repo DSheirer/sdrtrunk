@@ -79,6 +79,10 @@ public abstract class AbstractOscillator implements IOscillator
         return mEnabled;
     }
 
+    /**
+     * Commands sub-class implementations to update internal structures to account for changes in frequency or
+     * sample rate.  The boolean reset indicator optionally commands a reset of the current I/Q values.
+     */
     protected abstract void update();
 
     /**

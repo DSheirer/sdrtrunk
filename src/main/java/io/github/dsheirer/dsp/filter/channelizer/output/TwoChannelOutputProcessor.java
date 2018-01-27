@@ -19,6 +19,7 @@ import io.github.dsheirer.dsp.filter.Filters;
 import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelResultsBuffer;
 import io.github.dsheirer.dsp.filter.channelizer.TwoChannelSynthesizerM2;
 import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter;
+import io.github.dsheirer.dsp.mixer.FS4DownConverter;
 import io.github.dsheirer.sample.complex.TimestampedBufferAssembler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,7 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
     private ComplexFIRFilter mLowPassFilter =
         new ComplexFIRFilter(Filters.HALF_BAND_FILTER_47T.getCoefficients(), 1.0f);
     private TwoChannelSynthesizerM2 mSynthesizer;
+    private FS4DownConverter mFS4DownConverter = new FS4DownConverter();
 
     private final static Logger mLog = LoggerFactory.getLogger(TwoChannelOutputProcessor.class);
 
@@ -59,8 +61,7 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
     @Override
     public void setFrequencyOffset(long frequencyOffset)
     {
-//        super.setFrequencyOffset(frequencyOffset);
-        mLog.debug("**Ignoring** Setting frequency offset [" + frequencyOffset + "] for channel offsets [" + mChannelOffset1 + "," + mChannelOffset2 + "]");
+        super.setFrequencyOffset(frequencyOffset);
     }
 
 
@@ -109,8 +110,11 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
             //Join the two channels using the synthesizer
             float[] synthesized = mSynthesizer.process(channel1, channel2);
 
+            //The synthesized channels are centered at +FS/4 ... downconvert to center the spectrum
+            mFS4DownConverter.mixComplex(synthesized);
+
             //Apply frequency correction to center the signal of interest within the synthesized channel
-            getFrequencyCorrectionMixer().mixComplex(synthesized);
+//            getFrequencyCorrectionMixer().mixComplex(synthesized);
 
             //Apply low-pass filtering to attenuate neighboring channel(s)
 //            synthesized = mLowPassFilter.filter(synthesized);

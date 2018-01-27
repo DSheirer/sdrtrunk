@@ -23,6 +23,7 @@ import io.github.dsheirer.dsp.mixer.LowPhaseNoiseOscillator;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.real.IOverflowListener;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
@@ -155,6 +156,15 @@ public class SynthesizerViewer extends JFrame
             mDFTProcessor.process(SourceEvent.sampleRateChange(CHANNEL_SAMPLE_RATE));
             mDFTProcessor.setFrameRate(CHANNEL_FFT_FRAME_RATE);
             mComplexDecibelConverter.addListener(mSpectrumPanel);
+
+            mDFTProcessor.setOverflowListener(new IOverflowListener()
+            {
+                @Override
+                public void sourceOverflow(boolean overflow)
+                {
+                    mLog.debug("Buffer " + (overflow ? "overflow" : "reset"));
+                }
+            });
         }
 
         public void setDFTSize(DFTSize dftSize)
@@ -174,6 +184,7 @@ public class SynthesizerViewer extends JFrame
         private DFTProcessor mDFTProcessor = new DFTProcessor(SampleType.COMPLEX);
         private ComplexDecibelConverter mComplexDecibelConverter = new ComplexDecibelConverter();
         private SpectrumPanel mSpectrumPanel;
+        private boolean mLoggingEnabled = false;
 
         public ChannelPanel(SettingsManager settingsManager, ChannelControlPanel channelControlPanel)
         {

@@ -40,12 +40,16 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
+import javax.swing.JToggleButton;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.Dimension;
 import java.awt.EventQueue;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class ChannelizerViewer extends JFrame
@@ -61,6 +65,7 @@ public class ChannelizerViewer extends JFrame
     private JLabel mToneFrequencyLabel;
     private PrimarySpectrumPanel mPrimarySpectrumPanel;
     private ChannelArrayPanel mChannelPanel;
+    private DiscreteIndexChannelArrayPanel mDiscreteIndexChannelPanel;
     private int mChannelCount;
     private int mChannelsPerRow;
     private long mBaseFrequency = 100000000;  //100 MHz
@@ -98,10 +103,11 @@ public class ChannelizerViewer extends JFrame
         if(mPrimaryPanel == null)
         {
             mPrimaryPanel = new JPanel();
-            mPrimaryPanel.setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[][][grow,fill]"));
+            mPrimaryPanel.setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[][][grow,fill][grow,fill]"));
             mPrimaryPanel.add(getSpectrumPanel(), "wrap");
             mPrimaryPanel.add(getControlPanel(), "wrap");
-            mPrimaryPanel.add(getChannelArrayPanel());
+            mPrimaryPanel.add(getChannelArrayPanel(), "wrap");
+            mPrimaryPanel.add(getDiscreteIndexChannelPanel());
         }
 
         return mPrimaryPanel;
@@ -177,6 +183,16 @@ public class ChannelizerViewer extends JFrame
         return mChannelPanel;
     }
 
+    private DiscreteIndexChannelArrayPanel getDiscreteIndexChannelPanel()
+    {
+        if(mDiscreteIndexChannelPanel == null)
+        {
+            mDiscreteIndexChannelPanel = new DiscreteIndexChannelArrayPanel();
+        }
+
+        return mDiscreteIndexChannelPanel;
+    }
+
     public class ChannelArrayPanel extends JPanel
     {
         public ChannelArrayPanel()
@@ -208,6 +224,41 @@ public class ChannelizerViewer extends JFrame
                 mLog.debug("Channel " + x + " Frequency: " + frequency);
 
                 ChannelPanel channelPanel = new ChannelPanel(mSettingsManager, CHANNEL_BANDWIDTH * 2, frequency, CHANNEL_BANDWIDTH, (x == channelToLog));
+                channelPanel.setDFTSize(mChannelPanelDFTSize);
+
+                if(x % mChannelsPerRow == mChannelsPerRow - 1)
+                {
+                    add(channelPanel, "grow,push,wrap 2px");
+                }
+                else
+                {
+                    add(channelPanel, "grow,push");
+                }
+            }
+        }
+    }
+
+    public class DiscreteIndexChannelArrayPanel extends JPanel
+    {
+        public DiscreteIndexChannelArrayPanel()
+        {
+            int bufferSize = CHANNEL_BANDWIDTH / CHANNEL_FFT_FRAME_RATE;
+            if(bufferSize % 2 == 1)
+            {
+                bufferSize++;
+            }
+
+            init();
+        }
+
+        private void init()
+        {
+            setLayout(new MigLayout("insets 0 0 0 0", "fill", "fill"));
+
+            for(int x = 0; x < mChannelCount; x++)
+            {
+                TunerChannelSource source = mTestTuner.getChannelSourceManager().getSpecialSource(x);
+                DiscreteChannelPanel channelPanel = new DiscreteChannelPanel(mSettingsManager, source, x);
                 channelPanel.setDFTSize(mChannelPanelDFTSize);
 
                 if(x % mChannelsPerRow == mChannelsPerRow - 1)
@@ -291,18 +342,30 @@ public class ChannelizerViewer extends JFrame
         private DFTProcessor mDFTProcessor = new DFTProcessor(SampleType.COMPLEX);
         private ComplexDecibelConverter mComplexDecibelConverter = new ComplexDecibelConverter();
         private SpectrumPanel mSpectrumPanel;
+        private JToggleButton mLoggingButton;
+        private boolean mLoggingEnabled;
 
         public ChannelPanel(SettingsManager settingsManager, double sampleRate, long frequency, int bandwidth, boolean enableLogging)
         {
-            setLayout(new MigLayout("insets 0 0 0 0", "[center,grow,fill]", "[grow,fill][]"));
+            setLayout(new MigLayout("insets 0 0 0 0", "[center,grow,fill][]", "[grow,fill][]"));
             mSpectrumPanel = new SpectrumPanel(settingsManager);
             mSpectrumPanel.setSampleSize(28);
-            add(mSpectrumPanel, "wrap");
+            add(mSpectrumPanel, "span");
             add(new JLabel("Center:" + frequency));
+
+            mLoggingButton = new JToggleButton("Logging");
+            mLoggingButton.addActionListener(new ActionListener()
+            {
+                @Override
+                public void actionPerformed(ActionEvent e)
+                {
+                    mLoggingEnabled = mLoggingButton.isSelected();
+                }
+            });
+            add(mLoggingButton);
 
             mDFTProcessor.addConverter(mComplexDecibelConverter);
             mDFTProcessor.process(SourceEvent.sampleRateChange(sampleRate));
-
             mComplexDecibelConverter.addListener(mSpectrumPanel);
 
             TunerChannel tunerChannel = new TunerChannel(frequency, bandwidth);
@@ -310,21 +373,19 @@ public class ChannelizerViewer extends JFrame
 
             if(mSource != null)
             {
-                if(enableLogging)
+                mSource.setListener(new Listener<ComplexBuffer>()
                 {
-                    mSource.setListener(new Listener<ComplexBuffer>()
+                    @Override
+                    public void receive(ComplexBuffer complexBuffer)
                     {
-                        @Override
-                        public void receive(ComplexBuffer complexBuffer)
+                        if(mLoggingEnabled)
                         {
-                            mDFTProcessor.receive(complexBuffer);
+                            mLog.debug("Samples:" + Arrays.toString(complexBuffer.getSamples()));
                         }
-                    });
-                }
-                else
-                {
-                    mSource.setListener(mDFTProcessor);
-                }
+
+                        mDFTProcessor.receive(complexBuffer);
+                    }
+                });
 
                 mSource.start();
             }
@@ -358,13 +419,95 @@ public class ChannelizerViewer extends JFrame
         }
     }
 
+    public class DiscreteChannelPanel extends JPanel implements Listener<ComplexBuffer>, ISourceEventProcessor
+    {
+        private TunerChannelSource mSource;
+        private DFTProcessor mDFTProcessor = new DFTProcessor(SampleType.COMPLEX);
+        private ComplexDecibelConverter mComplexDecibelConverter = new ComplexDecibelConverter();
+        private SpectrumPanel mSpectrumPanel;
+        private JToggleButton mLoggingButton;
+        private boolean mLoggingEnabled;
+
+        public DiscreteChannelPanel(SettingsManager settingsManager, TunerChannelSource source, int index)
+        {
+            mSource = source;
+            setLayout(new MigLayout("insets 0 0 0 0", "[center,grow,fill][]", "[grow,fill][]"));
+            mSpectrumPanel = new SpectrumPanel(settingsManager);
+            mSpectrumPanel.setSampleSize(28);
+            add(mSpectrumPanel, "span");
+            add(new JLabel("Index:" + index));
+
+            mLoggingButton = new JToggleButton("Logging");
+            mLoggingButton.addActionListener(new ActionListener()
+            {
+                @Override
+                public void actionPerformed(ActionEvent e)
+                {
+                    mLoggingEnabled = mLoggingButton.isSelected();
+                }
+            });
+            add(mLoggingButton);
+
+            mDFTProcessor.addConverter(mComplexDecibelConverter);
+            mDFTProcessor.process(SourceEvent.sampleRateChange(25000.0));
+            mComplexDecibelConverter.addListener(mSpectrumPanel);
+
+            if(mSource != null)
+            {
+                mSource.setListener(new Listener<ComplexBuffer>()
+                {
+                    @Override
+                    public void receive(ComplexBuffer complexBuffer)
+                    {
+                        if(mLoggingEnabled)
+                        {
+                            mLog.debug("Samples:" + Arrays.toString(complexBuffer.getSamples()));
+                        }
+
+                        mDFTProcessor.receive(complexBuffer);
+                    }
+                });
+
+                mSource.start();
+            }
+            else
+            {
+                mLog.error("Couldn't get a source from the tuner for index: " + index);
+            }
+        }
+
+        public TunerChannelSource getSource()
+        {
+            return mSource;
+        }
+
+        public void setDFTSize(DFTSize dftSize)
+        {
+            mDFTProcessor.setDFTSize(dftSize);
+        }
+
+        @Override
+        public void receive(ComplexBuffer complexBuffer)
+        {
+            mLog.debug("Got a buffer for the channel dft processor");
+            mDFTProcessor.receive(complexBuffer);
+        }
+
+        @Override
+        public void process(SourceEvent event) throws SourceException
+        {
+            mLog.debug("Source Event!  Add handler support for this to channelizer viewer");
+        }
+    }
+
+
     public static void main(String[] args)
     {
         boolean useGUI = true;
 
         if(useGUI)
         {
-            int channelsPerRow = 4;
+            int channelsPerRow = 8;
 
             final ChannelizerViewer frame = new ChannelizerViewer(channelsPerRow);
 
