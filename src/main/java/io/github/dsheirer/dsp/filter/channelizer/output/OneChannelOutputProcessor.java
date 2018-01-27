@@ -44,6 +44,12 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
         setPolyphaseChannelIndices(channelIndexes);
     }
 
+    @Override
+    public void setSynthesisFilter(float[] filter)
+    {
+        throw new IllegalArgumentException("The one channel output processor does not support filter updates");
+    }
+
     /**
      * Updates this processor to extract a single, specified channel index.
      * @param indexes containing a single channel index value.

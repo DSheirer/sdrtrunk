@@ -60,6 +60,12 @@ public interface IPolyphaseChannelOutputProcessor
     void setPolyphaseChannelIndices(List<Integer> indexes);
 
     /**
+     * Updates the synthesis filter taps for this output processor
+     * @param filter
+     */
+    void setSynthesisFilter(float[] filter);
+
+    /**
      * Sets the listener to receive buffer overflow notifications
      * @param source to receive overflow notifications
      */

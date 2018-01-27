@@ -19,6 +19,7 @@
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
 import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelResultsBuffer;
+import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.Oscillator;
 import io.github.dsheirer.sample.OverflowableTransferQueue;
 import io.github.dsheirer.sample.complex.TimestampedBufferAssembler;
@@ -40,7 +41,7 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
 
     private int mInputChannelCount;
 //TODO: swap this out and use the LowPhaseNoiseOscillator
-    private Oscillator mFrequencyCorrectionMixer;
+    private IOscillator mFrequencyCorrectionMixer;
     private boolean mFrequencyCorrectionEnabled;
 
     /**
@@ -74,7 +75,7 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     /**
      * Oscillator/mixer to use for frequency correction against incominb sample stream
      */
-    protected Oscillator getFrequencyCorrectionMixer()
+    protected IOscillator getFrequencyCorrectionMixer()
     {
         return mFrequencyCorrectionMixer;
     }

@@ -1,6 +1,6 @@
 package io.github.dsheirer.dsp.gain;
 
-import io.github.dsheirer.buffer.FloatCircularBuffer;
+import io.github.dsheirer.buffer.RealCircularBuffer;
 import io.github.dsheirer.sample.complex.Complex;
 import io.github.dsheirer.sample.complex.ComplexSampleListener;
 
@@ -34,7 +34,7 @@ public class ComplexFeedForwardGainControl implements ComplexSampleListener
 
 	private ComplexSampleListener mListener;
 
-	private FloatCircularBuffer mEnvelopeHistory;
+	private RealCircularBuffer mEnvelopeHistory;
 	
 	private float mMaxEnvelope = 0.0f;
 	private float mGain = 1.0f;
@@ -53,7 +53,7 @@ public class ComplexFeedForwardGainControl implements ComplexSampleListener
 	 */
 	public ComplexFeedForwardGainControl( int window )
 	{
-		mEnvelopeHistory = new FloatCircularBuffer( window );
+		mEnvelopeHistory = new RealCircularBuffer( window );
 	}
 	
 	public void dispose()

@@ -21,6 +21,7 @@ import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilter;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
+import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.Oscillator;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.real.RealBuffer;
@@ -190,15 +191,9 @@ public class PolyphaseFIRDecimatingFilter_RB extends FIRFilter implements Listen
                 }
             });
 
-            Oscillator oscillator = new Oscillator(3400, 48000);
+            IOscillator oscillator = new Oscillator(3400, 48000);
 
-            float[] samples = new float[500];
-            for(int x = 0; x < 500; x++)
-            {
-                samples[x] = oscillator.getFloat();
-                oscillator.rotate();
-            }
-
+            float[] samples = oscillator.generateReal(500);
             RealBuffer buffer = new RealBuffer(samples);
             filter.receive(buffer);
         }

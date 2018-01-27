@@ -1,7 +1,7 @@
 package io.github.dsheirer.dsp.gain;
 
 import io.github.dsheirer.buffer.DoubleCircularBuffer;
-import io.github.dsheirer.buffer.FloatCircularBuffer;
+import io.github.dsheirer.buffer.RealCircularBuffer;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -131,8 +131,8 @@ public class AutomaticGainControl
 	private double mAttackAverage = 0.0;
 	private double mDecayAverage = 0.0;
 	
-	private FloatCircularBuffer mDelayBuffer = 
-		new FloatCircularBuffer( (int)( SAMPLE_RATE * DELAY_TIME_CONSTANT ) );
+	private RealCircularBuffer mDelayBuffer =
+		new RealCircularBuffer( (int)( SAMPLE_RATE * DELAY_TIME_CONSTANT ) );
 	private DoubleCircularBuffer mMagnitudeBuffer = 
 		new DoubleCircularBuffer( (int)( SAMPLE_RATE * WINDOW_TIME_CONSTANT ) );
 	

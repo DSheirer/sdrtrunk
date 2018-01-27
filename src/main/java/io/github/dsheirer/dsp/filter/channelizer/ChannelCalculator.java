@@ -396,7 +396,8 @@ public class ChannelCalculator
     {
         if(index < 0 || index >= getChannelCount())
         {
-            throw new IllegalArgumentException("Illegal channel index");
+            throw new IllegalArgumentException("Illegal channel index [" + index + "] current max channels[" +
+                getChannelCount() + "]");
         }
 
         int wrapAroundIndex = getWrapAroundIndex();
@@ -516,18 +517,19 @@ public class ChannelCalculator
             throw new IllegalArgumentException("Indexes cannot be empty");
         }
 
-        int middleIndex = indexes.get(indexes.size() / 2);
+        int centerIndex = (indexes.size() - 1) / 2;
 
-        if(indexes.size() % 2 == 0)
+        int index = indexes.get(centerIndex);
+
+        if(index == getWrapAroundIndex())
         {
-            //Even number of indexes
-            return (long)getIndexMinimumFrequency(middleIndex, IndexBoundaryPolicy.ADJUST_POSITIVE);
+            return (long)getIndexCenterFrequency(indexes.get(centerIndex), IndexBoundaryPolicy.ADJUST_NEGATIVE);
         }
         else
         {
-            //Odd number of indexes
-            return (long)getIndexCenterFrequency(middleIndex, IndexBoundaryPolicy.ADJUST_POSITIVE);
+            return (long)getIndexCenterFrequency(indexes.get(centerIndex), IndexBoundaryPolicy.ADJUST_POSITIVE);
         }
+
     }
 
     /**

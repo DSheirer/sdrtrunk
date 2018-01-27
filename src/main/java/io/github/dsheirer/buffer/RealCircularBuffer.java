@@ -24,12 +24,12 @@ package io.github.dsheirer.buffer;
  *
  * Can be used as a delay-type buffer, to delay samples by the 'size' amount
  */
-public class FloatCircularBuffer
+public class RealCircularBuffer
 {
     float[] mBuffer;
     int mBufferPointer = 0;
 
-    public FloatCircularBuffer(int size)
+    public RealCircularBuffer(int size)
     {
         mBuffer = new float[size];
     }

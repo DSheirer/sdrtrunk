@@ -174,6 +174,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
         {
             //Notification events from the producer
             case NOTIFICATION_FREQUENCY_CHANGE:
+                mLog.debug("Processing Source Event - setting frequency to " + sourceEvent.getValue().longValue());
                 setFrequency(sourceEvent.getValue().longValue());
                 break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:

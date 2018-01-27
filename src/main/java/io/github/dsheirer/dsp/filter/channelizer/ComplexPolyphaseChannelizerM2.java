@@ -86,7 +86,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
     {
         super(sampleRate, (int)(sampleRate / DEFAULT_MINIMUM_CHANNEL_BANDWIDTH));
 
-        float[] filterTaps = FilterFactory.getSincChannelizer(getChannelSampleRate(), getChannelCount(),
+        float[] filterTaps = FilterFactory.getSincM2Channelizer(getChannelSampleRate(), getChannelCount(),
             tapsPerFilter, WindowType.BLACKMAN_HARRIS_7, true);
 
         double oversampledChannelSampleRate = getChannelSampleRate() * 2.0;
@@ -107,7 +107,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
         {
             super.setSampleRate(sampleRate);
 
-            float[] filterTaps = FilterFactory.getSincChannelizer(getChannelSampleRate(), getChannelCount(),
+            float[] filterTaps = FilterFactory.getSincM2Channelizer(getChannelSampleRate(), getChannelCount(),
                 15, WindowType.BLACKMAN_HARRIS_7, true);
 
             init(filterTaps);

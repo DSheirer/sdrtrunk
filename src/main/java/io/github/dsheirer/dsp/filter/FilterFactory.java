@@ -728,6 +728,42 @@ public class FilterFactory
     }
 
     /**
+     * Polyphase M2 channelizer sync filter.  Designed for an M*channel input and an M2 channel output.
+     * @param channelBandwidth per channel
+     * @param channels count
+     * @param tapsPerChannel minumum.  This may be increased to meet the band edge -6.02dB requirement
+     * @param windowType to use
+     * @param logResults to log the results of the design
+     * @return filter
+     * @throws FilterDesignException if the filter cannot be designed with a band edge of -6.02dB
+     */
+    public static float[] getSincM2Channelizer(double channelBandwidth, int channels, int tapsPerChannel,
+                           Window.WindowType windowType, boolean logResults) throws FilterDesignException
+    {
+        return getSincFilter(channelBandwidth * channels * 2.0, channelBandwidth,
+            channels, tapsPerChannel, windowType,logResults);
+    }
+
+    /**
+     * Polyphase M2 synthesizer sync filter.  Designed for multiple M2 oversampled channel inputs and
+     * an M*channel count output.
+     *
+     * @param channelBandwidth per channel
+     * @param channels count
+     * @param tapsPerChannel minumum.  This may be increased to meet the band edge -6.02dB requirement
+     * @param windowType to use
+     * @param logResults to log the results of the design
+     * @return filter
+     * @throws FilterDesignException if the filter cannot be designed with a band edge of -6.02dB
+     */
+    public static float[] getSincM2Synthesizer(double channelBandwidth, int channels, int tapsPerChannel,
+                     Window.WindowType windowType, boolean logResults) throws FilterDesignException
+    {
+        return getSincFilter(channelBandwidth * channels, channelBandwidth, channels,
+            tapsPerChannel, windowType,logResults);
+    }
+
+    /**
      * Creates a windowed-sync (Nyquist) M/2 prototype FIR filter for use with a Polyphase Channelizer/Synthesizer.
      * The filter is designed for x2 oversampling of each channel and the filter cutoff frequency is incrementally
      * adjusted to achieve a -6.02 dB attenuation at the channel band edge to enable perfect reconstruction of adjacent
@@ -752,14 +788,13 @@ public class FilterFactory
      *
      * @throws FilterDesignException if a filter cannot be designed with a band edge attenuation of -6.02 dB
      */
-    public static float[] getSincChannelizer(double channelBandwidth, int channels, int tapsPerChannel,
-                                             Window.WindowType windowType, boolean logResults) throws FilterDesignException
+    public static float[] getSincFilter(double sampleRate, double channelBandwidth, int channels,
+         int tapsPerChannel, Window.WindowType windowType, boolean logResults) throws FilterDesignException
     {
         int currentTapsPerChannel = tapsPerChannel;
-        int sampleRate = (int)(channelBandwidth * (double)channels * 2.0);
         int filterLength = (channels * currentTapsPerChannel) - 1;
 
-        double cutoffFrequency = channelBandwidth / (double)sampleRate;
+        double cutoffFrequency = channelBandwidth / sampleRate;
         double bandEdge = cutoffFrequency;
         double increment = cutoffFrequency * 0.1;
 
@@ -768,7 +803,7 @@ public class FilterFactory
         double response = FilterFactory.evaluate(taps, bandEdge);
 
         //Set cutoff adjustment threshold - we'll test cutoff frequencies to around 1 hertz resolution
-        double incrementThreshold = 1.0 / (double)sampleRate;
+        double incrementThreshold = 1.0 / sampleRate;
 
         //Iteratively evaluate filters to find the filter with the highest cutoff frequency that meets the objective
         while(increment > incrementThreshold)
@@ -819,7 +854,7 @@ public class FilterFactory
                     }
 
                     filterLength = channels * currentTapsPerChannel - 1;
-                    cutoffFrequency = ((double)channelBandwidth / (double)sampleRate);
+                    cutoffFrequency = channelBandwidth / sampleRate;
                     increment = cutoffFrequency * 0.1;
                 }
 

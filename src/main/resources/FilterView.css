@@ -1,12 +1,12 @@
 /* ....Show License.... */
 .chart {
-    -fx-background-image: url("../../../images/Curve-fitted-background.png");
+    -fx-background-image: url("/../resources/images/Curve-fitted-background.png");
     -fx-padding: 15 25 15 15;
 }
 .chart-plot-background {
     -fx-background-color: red;
-    -fx-background-image: url("../../../images/Curve-fitted-chart-background.png"),
-                url("../../../images/Curve-fitted-graph-gridlines.png");
+    -fx-background-image: url("/../resources/images/Curve-fitted-chart-background.png"),
+                url("/../resources/images/Curve-fitted-graph-gridlines.png");
     -fx-background-size: cover, auto;
     -fx-background-repeat: no-repeat, repeat;
     -fx-background-position: 0% 0%, 0% 100%;

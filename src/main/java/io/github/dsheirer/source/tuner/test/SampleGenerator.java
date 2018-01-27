@@ -15,6 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.source.tuner.test;
 
+import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.LowPhaseNoiseOscillator;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
@@ -32,7 +33,7 @@ public class SampleGenerator
     private final static Logger mLog = LoggerFactory.getLogger(SampleGenerator.class);
 
     private Broadcaster<ComplexBuffer> mComplexBufferBroadcaster = new Broadcaster<>();
-    private LowPhaseNoiseOscillator mOscillator;
+    private IOscillator mOscillator;
     private int mSweepUpdateInterval;
     private long mInterval;
     private int mSamplesPerInterval;
@@ -57,7 +58,7 @@ public class SampleGenerator
             throw new IllegalArgumentException("Sweep update rate cannot be greater than sample rate");
         }
 
-        mOscillator = new LowPhaseNoiseOscillator(sampleRate, frequency);
+        mOscillator = new LowPhaseNoiseOscillator(frequency, sampleRate);
         mInterval = interval;
         mSweepUpdateInterval = sweepUpdateRate;
 
@@ -175,7 +176,7 @@ public class SampleGenerator
      */
     public long getFrequency()
     {
-        return mOscillator.getFrequency();
+        return (long)mOscillator.getFrequency();
     }
 
     /**
@@ -213,15 +214,15 @@ public class SampleGenerator
                        mReusableBuffer.getSamples().length != mSamplesPerInterval ||
                        mOscillatorFrequency != mOscillator.getFrequency())
                     {
-                        mOscillatorFrequency = mOscillator.getFrequency();
-                        mReusableBuffer = new TimestampedComplexBuffer(mOscillator.generate(mSamplesPerInterval));
+                        mOscillatorFrequency = (long)mOscillator.getFrequency();
+                        mReusableBuffer = new TimestampedComplexBuffer(mOscillator.generateComplex(mSamplesPerInterval));
                     }
 
                     mComplexBufferBroadcaster.receive(mReusableBuffer);
                 }
                 else
                 {
-                    float[] samples = mOscillator.generate(mSamplesPerInterval);
+                    float[] samples = mOscillator.generateComplex(mSamplesPerInterval);
                     mComplexBufferBroadcaster.receive(new TimestampedComplexBuffer(samples));
                 }
 
@@ -233,7 +234,7 @@ public class SampleGenerator
                     {
                         mTriggerInterval = 0;
 
-                        long updatedFrequency = mOscillator.getFrequency() + mSweepUpdateInterval;
+                        long updatedFrequency = (long)mOscillator.getFrequency() + mSweepUpdateInterval;
 
                         if(updatedFrequency > mOscillator.getSampleRate() / 2)
                         {

@@ -186,6 +186,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
     @Override
     protected void setFrequency(long frequency)
     {
+        mLog.debug("Center Frequency set to: " + frequency + " for channel " + getTunerChannel().toString());
         mCenterFrequency = frequency;
 
         //Set frequency correction to zero to trigger an update to the mixer and allow downstream monitors to

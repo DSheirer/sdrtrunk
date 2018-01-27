@@ -1,6 +1,6 @@
 /*******************************************************************************
  * sdr-trunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
  * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
@@ -18,6 +18,7 @@ package io.github.dsheirer.source.tuner.channel;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.Window;
 import io.github.dsheirer.dsp.filter.cic.ComplexPrimeCICDecimate;
+import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.Oscillator;
 import io.github.dsheirer.sample.Buffer;
 import io.github.dsheirer.sample.Listener;
@@ -47,7 +48,7 @@ public class CICTunerChannelSource extends TunerChannelSource
 
     private OverflowableTransferQueue<ComplexBuffer> mBuffer;
 
-    private Oscillator mFrequencyCorrectionMixer;
+    private IOscillator mFrequencyCorrectionMixer;
     private ComplexPrimeCICDecimate mDecimationFilter;
     private Listener<ComplexBuffer> mListener;
     private List<ComplexBuffer> mSampleBuffers = new ArrayList<ComplexBuffer>();

@@ -15,6 +15,8 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.channelizer;
 
+import io.github.dsheirer.dsp.filter.FilterFactory;
+import io.github.dsheirer.dsp.filter.Window;
 import io.github.dsheirer.dsp.filter.channelizer.output.IPolyphaseChannelOutputProcessor;
 import io.github.dsheirer.dsp.filter.channelizer.output.OneChannelOutputProcessor;
 import io.github.dsheirer.dsp.filter.channelizer.output.TwoChannelOutputProcessor;
@@ -32,7 +34,9 @@ import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -54,6 +58,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     private ChannelSourceEventListener mChannelSourceEventListener = new ChannelSourceEventListener();
     private BufferSourceEventMonitor mBufferSourceEventMonitor = new BufferSourceEventMonitor();
     private ScheduledBufferProcessor mBufferProcessor;
+    private Map<Integer,float[]> mOutputProcessorFilters = new HashMap<>();
 
     /**
      * Polyphase Channel Manager is a DDC channel manager and complex buffer queue/processor for a tuner.  This class
@@ -166,7 +171,15 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             case 1:
                 return new OneChannelOutputProcessor(mChannelCalculator.getChannelSampleRate(), indexes);
             case 2:
-                return new TwoChannelOutputProcessor(mChannelCalculator.getChannelSampleRate(), indexes);
+                try
+                {
+                    float[] filter = getOutputProcessorFilter(2);
+                    return new TwoChannelOutputProcessor(mChannelCalculator.getChannelSampleRate(), indexes, filter);
+                }
+                catch(FilterDesignException fde)
+                {
+                    mLog.error("Error designing 2 channel synthesis filter for output processor");
+                }
             default:
                 //TODO: create output processor for greater than 2 input channels
                 mLog.error("Request to create an output processor for unexpected channel index size:" + indexes.size());
@@ -241,6 +254,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                 //Update channel calculator immediately so that channels can be allocated
                 mChannelCalculator.setCenterFrequency(sourceEvent.getValue().longValue());
 
+                mLog.debug("Tuner frequency change: " + sourceEvent.getValue().longValue());
                 //Defer channelizer configuration changes to be handled on the buffer processor thread
                 mBufferSourceEventMonitor.receive(sourceEvent);
                 break;
@@ -294,6 +308,9 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                 mLog.error("Could not create filter for polyphase channelizer for sample rate [" + sampleRate + "]", fde);
             }
 
+            //Clear the previous channel synthesis filters so they can be recreated for the new channel sample rate
+            mOutputProcessorFilters.clear();
+
             //Broadcast the new channel sample rate
             double updatedChannelSampleRate = mChannelCalculator.getChannelSampleRate();
             updateOutputProcessors(SourceEvent.sampleRateChange(updatedChannelSampleRate));
@@ -322,6 +339,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             {
                 try
                 {
+                    mLog.debug("**Sending source event to channel: " + sourceEvent.toString());
                     channelSource.process(sourceEvent);
                 }
                 catch(SourceException se)
@@ -352,11 +370,26 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             //If the indexes size is the same then update the current processor, otherwise create a new one
             if(channelSource.getPolyphaseChannelOutputProcessor().getInputChannelCount() == indexes.size())
             {
+                mLog.debug("Updating existing output processor - indexes:" + indexes + " freq:" + centerFrequency);
                 channelSource.getPolyphaseChannelOutputProcessor().setPolyphaseChannelIndices(indexes);
                 channelSource.setFrequency(centerFrequency);
+
+                if(indexes.size() > 1)
+                {
+                    try
+                    {
+                        float[] filter = getOutputProcessorFilter(indexes.size());
+                        channelSource.getPolyphaseChannelOutputProcessor().setSynthesisFilter(filter);
+                    }
+                    catch(FilterDesignException fde)
+                    {
+                        mLog.error("Error creating an updated synthesis filter for the channel output processor");
+                    }
+                }
             }
             else
             {
+                mLog.debug("Setting new output processor - indexes:" + indexes + " freq:" + centerFrequency);
                 channelSource.setPolyphaseChannelOutputProcessor(getOutputProcessor(indexes), centerFrequency);
             }
         }
@@ -407,6 +440,29 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     public void removeSourceEventListener(Listener<SourceEvent> listener)
     {
         mSourceEventBroadcaster.removeListener(listener);
+    }
+
+    /**
+     * Generates (or reuses) an output processor filter for the specified number of channels.  Each
+     * filter is created only once and stored in a map for reuse.  This map is cleared anytime that the
+     * input sample rate changes, so that the filters can be recreated with the new channel sample rate.
+     * @param channels count
+     * @return filter
+     * @throws FilterDesignException if the filter cannot be designed to specification (-6 dB band edge)
+     */
+    private float[] getOutputProcessorFilter(int channels) throws FilterDesignException
+    {
+        float[] taps = mOutputProcessorFilters.get(channels);
+
+        if(taps == null)
+        {
+            taps = FilterFactory.getSincM2Synthesizer(mChannelCalculator.getChannelBandwidth(), channels,
+                POLYPHASE_FILTER_TAPS_PER_CHANNEL, Window.WindowType.BLACKMAN_HARRIS_7, true);
+
+            mOutputProcessorFilters.put(channels, taps);
+        }
+
+        return taps;
     }
 
     /**
@@ -482,7 +538,8 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                     switch(queuedSourceEvent.getEvent())
                     {
                         case NOTIFICATION_FREQUENCY_CHANGE:
-                            updateOutputProcessors(queuedSourceEvent);
+                            //Don't send the tuner's frequency change event down to the channels - it would cause chaos
+                            updateOutputProcessors(null);
                             break;
                         case NOTIFICATION_SAMPLE_RATE_CHANGE:
                             updateChannelizerSampleRate(queuedSourceEvent.getValue().intValue());

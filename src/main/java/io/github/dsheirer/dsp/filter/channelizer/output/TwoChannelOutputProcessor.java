@@ -1,24 +1,24 @@
 /*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
+import io.github.dsheirer.dsp.filter.Filters;
 import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelResultsBuffer;
+import io.github.dsheirer.dsp.filter.channelizer.TwoChannelSynthesizerM2;
+import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter;
 import io.github.dsheirer.sample.complex.TimestampedBufferAssembler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +27,10 @@ import java.util.List;
 
 public class TwoChannelOutputProcessor extends ChannelOutputProcessor
 {
+    private ComplexFIRFilter mLowPassFilter =
+        new ComplexFIRFilter(Filters.HALF_BAND_FILTER_47T.getCoefficients(), 1.0f);
+    private TwoChannelSynthesizerM2 mSynthesizer;
+
     private final static Logger mLog = LoggerFactory.getLogger(TwoChannelOutputProcessor.class);
 
     private int mChannelOffset1;
@@ -39,12 +43,31 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
      * @param sampleRate of the output sample stream.
      * @param channelIndexes containing two channel indices.
      */
-    public TwoChannelOutputProcessor(double sampleRate, List<Integer> channelIndexes)
+    public TwoChannelOutputProcessor(double sampleRate, List<Integer> channelIndexes, float[] filter)
     {
         //Set the frequency correction oscillator to 2 x output sample rate since we'll be correcting the frequency
         //after synthesizing both input channels
         super(2, sampleRate * 2);
         setPolyphaseChannelIndices(channelIndexes);
+        setSynthesisFilter(filter);
+    }
+
+    /**
+     * Sets the frequency offset to apply to the incoming samples to mix the desired signal to baseband.
+     * @param frequencyOffset in hertz
+     */
+    @Override
+    public void setFrequencyOffset(long frequencyOffset)
+    {
+//        super.setFrequencyOffset(frequencyOffset);
+        mLog.debug("**Ignoring** Setting frequency offset [" + frequencyOffset + "] for channel offsets [" + mChannelOffset1 + "," + mChannelOffset2 + "]");
+    }
+
+
+    @Override
+    public void setSynthesisFilter(float[] filter)
+    {
+        mSynthesizer = new TwoChannelSynthesizerM2(filter);
     }
 
     /**
@@ -78,6 +101,22 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
     public void process(List<PolyphaseChannelResultsBuffer> channelResultsBuffers,
                         TimestampedBufferAssembler timestampedBufferAssembler)
     {
-        mLog.debug("I got channel results - doing nothing !!");
+        for(PolyphaseChannelResultsBuffer buffer: channelResultsBuffers)
+        {
+            float[] channel1 = buffer.getChannel(mChannelOffset1);
+            float[] channel2 = buffer.getChannel(mChannelOffset2);
+
+            //Join the two channels using the synthesizer
+            float[] synthesized = mSynthesizer.process(channel1, channel2);
+
+            //Apply frequency correction to center the signal of interest within the synthesized channel
+            getFrequencyCorrectionMixer().mixComplex(synthesized);
+
+            //Apply low-pass filtering to attenuate neighboring channel(s)
+//            synthesized = mLowPassFilter.filter(synthesized);
+
+            //Send it on its merry way ...
+            timestampedBufferAssembler.receive(synthesized);
+        }
     }
 }

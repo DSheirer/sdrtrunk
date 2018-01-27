@@ -1,7 +1,8 @@
 package io.github.dsheirer.dsp.filter.design;
 
+import io.github.dsheirer.dsp.filter.FilterFactory;
+import io.github.dsheirer.dsp.filter.Window;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
-import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -72,22 +73,28 @@ public class FilterViewer extends Application
 
         float[] taps = null;
 
-//        taps = FilterFactory.getLowPass(48000, 6750, 7500, 60,
-//            Window.WindowType.HAMMING, true);
-
         try
         {
-            RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
-
-            if(designer.isValid())
-            {
-                taps = designer.getImpulseResponse();
-            }
+            taps = FilterFactory.getSincM2Channelizer(12500.0, 2, 19, Window.WindowType.BLACKMAN_HARRIS_7, true);
         }
         catch(FilterDesignException fde)
         {
-            mLog.error("Filter design error", fde);
+            mLog.error("Error");
         }
+
+//        try
+//        {
+//            RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
+//
+//            if(designer.isValid())
+//            {
+//                taps = designer.getImpulseResponse();
+//            }
+//        }
+//        catch(FilterDesignException fde)
+//        {
+//            mLog.error("Filter design error", fde);
+//        }
 
         return taps;
     }
