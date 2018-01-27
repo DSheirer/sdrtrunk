@@ -521,15 +521,21 @@ public class ChannelCalculator
 
         int index = indexes.get(centerIndex);
 
-        if(index == getWrapAroundIndex())
+        if(indexes.size() % 2 == 0)
         {
-            return (long)getIndexCenterFrequency(indexes.get(centerIndex), IndexBoundaryPolicy.ADJUST_NEGATIVE);
+            return (long)getIndexMaximumFrequency(index, IndexBoundaryPolicy.ADJUST_NEGATIVE);
         }
         else
         {
-            return (long)getIndexCenterFrequency(indexes.get(centerIndex), IndexBoundaryPolicy.ADJUST_POSITIVE);
+            if(index == getWrapAroundIndex())
+            {
+                return (long)getIndexCenterFrequency(index, IndexBoundaryPolicy.ADJUST_NEGATIVE);
+            }
+            else
+            {
+                return (long)getIndexCenterFrequency(index, IndexBoundaryPolicy.ADJUST_POSITIVE);
+            }
         }
-
     }
 
     /**
