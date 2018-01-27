@@ -49,7 +49,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelManager.class);
     private static final double MINIMUM_CHANNEL_BANDWIDTH = 12500.0;
     private static final double CHANNEL_OVERSAMPLING = 2.0;
-    private static final int POLYPHASE_FILTER_TAPS_PER_CHANNEL = 17;
+    private static final int POLYPHASE_FILTER_TAPS_PER_CHANNEL = 19;
 
     private Broadcaster<SourceEvent> mSourceEventBroadcaster = new Broadcaster<>();
     private IComplexBufferProvider mComplexBufferProvider;
@@ -483,7 +483,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
 
         if(taps == null)
         {
-            taps = FilterFactory.getSincM2Synthesizer(mChannelCalculator.getChannelSampleRate(), channels,
+            taps = FilterFactory.getSincM2Synthesizer(mChannelCalculator.getChannelBandwidth(), channels,
                 POLYPHASE_FILTER_TAPS_PER_CHANNEL, Window.WindowType.BLACKMAN_HARRIS_7, true);
 
             mOutputProcessorFilters.put(channels, taps);

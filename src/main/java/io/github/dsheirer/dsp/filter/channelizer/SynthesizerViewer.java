@@ -18,6 +18,7 @@ package io.github.dsheirer.dsp.filter.channelizer;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.Window;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
+import io.github.dsheirer.dsp.mixer.FS4DownConverter;
 import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.LowPhaseNoiseOscillator;
 import io.github.dsheirer.sample.Listener;
@@ -149,7 +150,7 @@ public class SynthesizerViewer extends JFrame
         {
             setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
             mSpectrumPanel = new SpectrumPanel(settingsManager);
-            mSpectrumPanel.setSampleSize(12);
+            mSpectrumPanel.setSampleSize(22);
             add(mSpectrumPanel);
 
             mDFTProcessor.addConverter(mComplexDecibelConverter);
@@ -190,7 +191,7 @@ public class SynthesizerViewer extends JFrame
         {
             setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill][]"));
             mSpectrumPanel = new SpectrumPanel(settingsManager);
-            mSpectrumPanel.setSampleSize(12);
+            mSpectrumPanel.setSampleSize(22);
             add(mSpectrumPanel, "wrap");
             add(channelControlPanel);
 
@@ -235,12 +236,11 @@ public class SynthesizerViewer extends JFrame
 
     public class ChannelControlPanel extends JPanel
     {
-        private static final int SAMPLE_RATE = 25000;
         private static final int MIN_FREQUENCY = -6250;
         private static final int MAX_FREQUENCY = 6250;
         private static final int DEFAULT_FREQUENCY = 50;
 
-        private IOscillator mOscillator = new LowPhaseNoiseOscillator(6000, CHANNEL_SAMPLE_RATE);
+        private IOscillator mOscillator = new LowPhaseNoiseOscillator(DEFAULT_FREQUENCY, CHANNEL_SAMPLE_RATE);
 
         public ChannelControlPanel()
         {
@@ -272,7 +272,8 @@ public class SynthesizerViewer extends JFrame
     public class DataGenerationManager implements Runnable
     {
         private TwoChannelSynthesizerM2 mSynthesizer;
-        private int mSamplesPerCycle = 25000 / DATA_GENERATOR_FRAME_RATE;
+        private FS4DownConverter mFS4DownConverter = new FS4DownConverter();
+        private int mSamplesPerCycle = CHANNEL_SAMPLE_RATE / DATA_GENERATOR_FRAME_RATE;
 
         public DataGenerationManager()
         {
@@ -295,6 +296,7 @@ public class SynthesizerViewer extends JFrame
             float[] channel2 = getChannel2ControlPanel().getOscillator().generateComplex(mSamplesPerCycle);
 
             float[] synthesized = mSynthesizer.process(channel1, channel2);
+            mFS4DownConverter.mixComplex(synthesized);
 
             getChannel1Panel().receive(new ComplexBuffer(channel1));
             getChannel2Panel().receive(new ComplexBuffer(channel2));

@@ -349,7 +349,7 @@ public class ChannelizerViewer extends JFrame
         {
             setLayout(new MigLayout("insets 0 0 0 0", "[center,grow,fill][]", "[grow,fill][]"));
             mSpectrumPanel = new SpectrumPanel(settingsManager);
-            mSpectrumPanel.setSampleSize(28);
+            mSpectrumPanel.setSampleSize(22);
             add(mSpectrumPanel, "span");
             add(new JLabel("Center:" + frequency));
 
