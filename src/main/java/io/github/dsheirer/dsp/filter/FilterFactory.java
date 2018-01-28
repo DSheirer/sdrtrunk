@@ -740,7 +740,7 @@ public class FilterFactory
     public static float[] getSincM2Channelizer(double channelBandwidth, int channels, int tapsPerChannel,
                            Window.WindowType windowType, boolean logResults) throws FilterDesignException
     {
-        return getSincFilter(channelBandwidth * channels * 2.0, channelBandwidth,
+        return getSincFilter(channelBandwidth * channels, channelBandwidth,
             channels, tapsPerChannel, windowType,logResults);
     }
 

@@ -15,10 +15,8 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
-import io.github.dsheirer.dsp.filter.Filters;
 import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelResultsBuffer;
 import io.github.dsheirer.dsp.filter.channelizer.TwoChannelSynthesizerM2;
-import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter;
 import io.github.dsheirer.dsp.mixer.FS4DownConverter;
 import io.github.dsheirer.sample.complex.TimestampedBufferAssembler;
 import org.slf4j.Logger;
@@ -28,8 +26,6 @@ import java.util.List;
 
 public class TwoChannelOutputProcessor extends ChannelOutputProcessor
 {
-    private ComplexFIRFilter mLowPassFilter =
-        new ComplexFIRFilter(Filters.HALF_BAND_FILTER_47T.getCoefficients(), 1.0f);
     private TwoChannelSynthesizerM2 mSynthesizer;
     private FS4DownConverter mFS4DownConverter = new FS4DownConverter();
 
@@ -113,13 +109,9 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
             //The synthesized channels are centered at +FS/4 ... downconvert to center the spectrum
             mFS4DownConverter.mixComplex(synthesized);
 
-            //Apply frequency correction to center the signal of interest within the synthesized channel
-//            getFrequencyCorrectionMixer().mixComplex(synthesized);
+            //Apply offset and frequency correction to center the signal of interest within the synthesized channel
+            getFrequencyCorrectionMixer().mixComplex(synthesized);
 
-            //Apply low-pass filtering to attenuate neighboring channel(s)
-//            synthesized = mLowPassFilter.filter(synthesized);
-
-            //Send it on its merry way ...
             timestampedBufferAssembler.receive(synthesized);
         }
     }

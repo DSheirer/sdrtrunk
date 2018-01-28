@@ -91,7 +91,7 @@ public class ChannelizerViewer extends JFrame
     private void init()
     {
         setTitle("Polyphase Channelizer Viewer");
-        setSize(1000, 800);
+        setSize(1200, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
         setLocationRelativeTo(null);
@@ -119,7 +119,7 @@ public class ChannelizerViewer extends JFrame
         {
             mPrimarySpectrumPanel = new PrimarySpectrumPanel(mSettingsManager,
                 mTestTuner.getTunerController().getSampleRate());
-            mPrimarySpectrumPanel.setPreferredSize(new Dimension(1000, 200));
+            mPrimarySpectrumPanel.setPreferredSize(new Dimension(1200, 200));
             mPrimarySpectrumPanel.setDFTSize(mMainPanelDFTSize);
             mTestTuner.getTunerController().addComplexBufferListener(mPrimarySpectrumPanel);
         }
@@ -135,8 +135,8 @@ public class ChannelizerViewer extends JFrame
             mControlPanel.setLayout(new MigLayout("insets 0 0 0 0", "", ""));
 
             mControlPanel.add(new JLabel("Tone:"), "align left");
-            long minimumFrequency = -(long)mTestTuner.getTunerController().getSampleRate() / 2;
-            long maximumFrequency = (long)mTestTuner.getTunerController().getSampleRate() / 2;
+            long minimumFrequency = -(long)mTestTuner.getTunerController().getSampleRate() / 2 + 1;
+            long maximumFrequency = (long)mTestTuner.getTunerController().getSampleRate() / 2 - 1;
             long toneFrequency = 0;
 
             SpinnerNumberModel model = new SpinnerNumberModel(toneFrequency, minimumFrequency, maximumFrequency,
@@ -310,7 +310,7 @@ public class ChannelizerViewer extends JFrame
         {
             setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
             mSpectrumPanel = new SpectrumPanel(settingsManager);
-            mSpectrumPanel.setSampleSize(26);
+            mSpectrumPanel.setSampleSize(16);
             add(mSpectrumPanel);
 
             mDFTProcessor.addConverter(mComplexDecibelConverter);
@@ -349,7 +349,7 @@ public class ChannelizerViewer extends JFrame
         {
             setLayout(new MigLayout("insets 0 0 0 0", "[center,grow,fill][]", "[grow,fill][]"));
             mSpectrumPanel = new SpectrumPanel(settingsManager);
-            mSpectrumPanel.setSampleSize(22);
+            mSpectrumPanel.setSampleSize(16);
             add(mSpectrumPanel, "span");
             add(new JLabel("Center:" + frequency));
 
@@ -362,7 +362,7 @@ public class ChannelizerViewer extends JFrame
                     mLoggingEnabled = mLoggingButton.isSelected();
                 }
             });
-            add(mLoggingButton);
+//            add(mLoggingButton);
 
             mDFTProcessor.addConverter(mComplexDecibelConverter);
             mDFTProcessor.process(SourceEvent.sampleRateChange(sampleRate));
@@ -433,7 +433,7 @@ public class ChannelizerViewer extends JFrame
             mSource = source;
             setLayout(new MigLayout("insets 0 0 0 0", "[center,grow,fill][]", "[grow,fill][]"));
             mSpectrumPanel = new SpectrumPanel(settingsManager);
-            mSpectrumPanel.setSampleSize(28);
+            mSpectrumPanel.setSampleSize(16);
             add(mSpectrumPanel, "span");
             add(new JLabel("Index:" + index));
 
@@ -446,7 +446,7 @@ public class ChannelizerViewer extends JFrame
                     mLoggingEnabled = mLoggingButton.isSelected();
                 }
             });
-            add(mLoggingButton);
+//            add(mLoggingButton);
 
             mDFTProcessor.addConverter(mComplexDecibelConverter);
             mDFTProcessor.process(SourceEvent.sampleRateChange(25000.0));
@@ -507,7 +507,7 @@ public class ChannelizerViewer extends JFrame
 
         if(useGUI)
         {
-            int channelsPerRow = 8;
+            int channelsPerRow = 16;
 
             final ChannelizerViewer frame = new ChannelizerViewer(channelsPerRow);
 
