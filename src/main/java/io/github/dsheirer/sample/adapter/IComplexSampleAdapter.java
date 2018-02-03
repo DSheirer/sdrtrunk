@@ -13,17 +13,16 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.source;
+package io.github.dsheirer.sample.adapter;
 
-import io.github.dsheirer.sample.Provider;
-import io.github.dsheirer.sample.SampleType;
 import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 
-public abstract class ComplexSource extends Source implements Provider<ReusableComplexBuffer>
+public interface IComplexSampleAdapter
 {
-    @Override
-    public SampleType getSampleType()
-    {
-        return SampleType.COMPLEX;
-    }
+    /**
+     * Converts the sample byte array into complex float samples, loading the converted float samples into the buffer.
+     * @param samples
+     * @param reusableComplexBuffer
+     */
+    void convertAndLoad(byte[] samples, ReusableComplexBuffer reusableComplexBuffer);
 }

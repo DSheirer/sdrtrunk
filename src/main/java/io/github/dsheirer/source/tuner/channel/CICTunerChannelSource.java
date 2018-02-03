@@ -25,7 +25,6 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.OverflowableTransferQueue;
 import io.github.dsheirer.sample.complex.Complex;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
-import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.Tuner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CICTunerChannelSource extends TunerChannelSource
+public class CICTunerChannelSource
 {
     private final static Logger mLog = LoggerFactory.getLogger(CICTunerChannelSource.class);
 
@@ -69,14 +68,12 @@ public class CICTunerChannelSource extends TunerChannelSource
      */
     public CICTunerChannelSource(Tuner tuner, TunerChannel tunerChannel)
     {
-        super(tuner.getTunerController().getSourceEventListener(), tunerChannel);
-
         mBuffer = new OverflowableTransferQueue<>(BUFFER_MAX_CAPACITY, BUFFER_OVERFLOW_RESET_THRESHOLD);
-        mBuffer.setSourceOverflowListener(this);
+//        mBuffer.setSourceOverflowListener(this);
 
         //Setup the frequency translator to the current source frequency
         mTunerFrequency = tuner.getTunerController().getFrequency();
-        long frequencyOffset = mTunerFrequency - getTunerChannel().getFrequency();
+        long frequencyOffset = mTunerFrequency - tunerChannel.getFrequency();
         mFrequencyCorrectionMixer = new Oscillator(frequencyOffset, tuner.getTunerController().getSampleRate());
 
         //Setup the decimation filter chain
@@ -87,7 +84,6 @@ public class CICTunerChannelSource extends TunerChannelSource
      * Sets the center frequency for the incoming sample buffers
      * @param frequency in hertz
      */
-    @Override
     protected void setFrequency(long frequency)
     {
         mTunerFrequency = frequency;
@@ -102,7 +98,6 @@ public class CICTunerChannelSource extends TunerChannelSource
      * Current frequency correction being applied to the channel sample stream
      * @return correction in hertz
      */
-    @Override
     public long getFrequencyCorrection()
     {
         return mChannelFrequencyCorrection;
@@ -118,7 +113,7 @@ public class CICTunerChannelSource extends TunerChannelSource
 
         updateMixerFrequencyOffset();
 
-        broadcastConsumerSourceEvent(SourceEvent.frequencyCorrectionChange(mChannelFrequencyCorrection));
+//        broadcastConsumerSourceEvent(SourceEvent.frequencyCorrectionChange(mChannelFrequencyCorrection));
     }
 
     /**
@@ -130,7 +125,6 @@ public class CICTunerChannelSource extends TunerChannelSource
         mBuffer.offer(buffer);
     }
 
-    @Override
     public void setListener(Listener<ComplexBuffer> listener)
     {
         /* Save a pointer to the listener so that if we have to change the
@@ -140,7 +134,6 @@ public class CICTunerChannelSource extends TunerChannelSource
         mDecimationFilter.setListener(listener);
     }
 
-    @Override
     public void removeListener(Listener<ComplexBuffer> listener)
     {
         mDecimationFilter.removeListener();
@@ -165,7 +158,7 @@ public class CICTunerChannelSource extends TunerChannelSource
 
             mTunerSampleRate = sampleRate;
 
-            broadcastConsumerSourceEvent(SourceEvent.channelSampleRateChange(getSampleRate()));
+//            broadcastConsumerSourceEvent(SourceEvent.channelSampleRateChange(getSampleRate()));
         }
     }
 
@@ -175,8 +168,8 @@ public class CICTunerChannelSource extends TunerChannelSource
      */
     private void updateMixerFrequencyOffset()
     {
-        long offset = mTunerFrequency - getTunerChannel().getFrequency() - mChannelFrequencyCorrection;
-        mFrequencyCorrectionMixer.setFrequency(offset);
+//        long offset = mTunerFrequency - getTunerChannel().getFrequency() - mChannelFrequencyCorrection;
+//        mFrequencyCorrectionMixer.setFrequency(offset);
     }
 
     public double getSampleRate()
@@ -184,7 +177,6 @@ public class CICTunerChannelSource extends TunerChannelSource
         return CHANNEL_RATE;
     }
 
-    @Override
     protected void processSamples()
     {
         mBuffer.drainTo(mSampleBuffers, 20);

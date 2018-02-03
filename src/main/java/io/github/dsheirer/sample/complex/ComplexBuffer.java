@@ -19,34 +19,11 @@ import io.github.dsheirer.sample.Buffer;
 
 public class ComplexBuffer extends Buffer
 {
-    //Default timestamp - we use a static variable here so that there is only ever 1 instance in memory
-    private static final long DEFAULT_TIMESTAMP = 0;
-
     /**
      * Wrapper around float array containing interleaved I/Q samples
      */
     public ComplexBuffer(float[] samples)
     {
         super(samples);
-    }
-
-
-    /**
-     * Reference timestamp for the first sample in this buffer.  This functionality is intended to be implemented by a
-     * subclass implementation.  The default value is 0.
-     *
-     * @return reference timestamp or a value of 0 if hasTimestamp() indicates false.
-     */
-    public long getTimestamp()
-    {
-        return DEFAULT_TIMESTAMP;
-    }
-
-    /**
-     * Indicates if this buffer has a timestamp that references the first sample in the buffer.
-     */
-    public boolean hasTimestamp()
-    {
-        return false;
     }
 }

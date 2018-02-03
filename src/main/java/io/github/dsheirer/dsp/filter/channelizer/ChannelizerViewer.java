@@ -18,7 +18,7 @@ package io.github.dsheirer.dsp.filter.channelizer;
 
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
@@ -121,7 +121,7 @@ public class ChannelizerViewer extends JFrame
                 mTestTuner.getTunerController().getSampleRate());
             mPrimarySpectrumPanel.setPreferredSize(new Dimension(1200, 200));
             mPrimarySpectrumPanel.setDFTSize(mMainPanelDFTSize);
-            mTestTuner.getTunerController().addComplexBufferListener(mPrimarySpectrumPanel);
+            mTestTuner.getTunerController().addBufferListener(mPrimarySpectrumPanel);
         }
 
         return mPrimarySpectrumPanel;
@@ -140,7 +140,7 @@ public class ChannelizerViewer extends JFrame
             long toneFrequency = 0;
 
             SpinnerNumberModel model = new SpinnerNumberModel(toneFrequency, minimumFrequency, maximumFrequency,
-                100 );
+                100);
 
             model.addChangeListener(new ChangeListener()
             {
@@ -300,7 +300,7 @@ public class ChannelizerViewer extends JFrame
         return tunerChannels;
     }
 
-    public class PrimarySpectrumPanel extends JPanel implements Listener<ComplexBuffer>, ISourceEventProcessor
+    public class PrimarySpectrumPanel extends JPanel implements Listener<ReusableComplexBuffer>, ISourceEventProcessor
     {
         private DFTProcessor mDFTProcessor = new DFTProcessor(SampleType.COMPLEX);
         private ComplexDecibelConverter mComplexDecibelConverter = new ComplexDecibelConverter();
@@ -324,9 +324,10 @@ public class ChannelizerViewer extends JFrame
         }
 
         @Override
-        public void receive(ComplexBuffer complexBuffer)
+        public void receive(ReusableComplexBuffer reusableComplexBuffer)
         {
-            mDFTProcessor.receive(complexBuffer);
+            mDFTProcessor.receive(reusableComplexBuffer.incrementUserCount());
+            reusableComplexBuffer.decrementUserCount();
         }
 
         @Override
@@ -336,7 +337,7 @@ public class ChannelizerViewer extends JFrame
         }
     }
 
-    public class ChannelPanel extends JPanel implements Listener<ComplexBuffer>, ISourceEventProcessor
+    public class ChannelPanel extends JPanel implements Listener<ReusableComplexBuffer>, ISourceEventProcessor
     {
         private TunerChannelSource mSource;
         private DFTProcessor mDFTProcessor = new DFTProcessor(SampleType.COMPLEX);
@@ -373,17 +374,18 @@ public class ChannelizerViewer extends JFrame
 
             if(mSource != null)
             {
-                mSource.setListener(new Listener<ComplexBuffer>()
+                mSource.setListener(new Listener<ReusableComplexBuffer>()
                 {
                     @Override
-                    public void receive(ComplexBuffer complexBuffer)
+                    public void receive(ReusableComplexBuffer complexBuffer)
                     {
                         if(mLoggingEnabled)
                         {
                             mLog.debug("Samples:" + Arrays.toString(complexBuffer.getSamples()));
                         }
 
-                        mDFTProcessor.receive(complexBuffer);
+                        mDFTProcessor.receive(complexBuffer.incrementUserCount());
+                        complexBuffer.decrementUserCount();
                     }
                 });
 
@@ -406,10 +408,10 @@ public class ChannelizerViewer extends JFrame
         }
 
         @Override
-        public void receive(ComplexBuffer complexBuffer)
+        public void receive(ReusableComplexBuffer reusableComplexBuffer)
         {
-            mLog.debug("Got a buffer for the channel dft processor");
-            mDFTProcessor.receive(complexBuffer);
+            mDFTProcessor.receive(reusableComplexBuffer.incrementUserCount());
+            reusableComplexBuffer.decrementUserCount();
         }
 
         @Override
@@ -419,7 +421,7 @@ public class ChannelizerViewer extends JFrame
         }
     }
 
-    public class DiscreteChannelPanel extends JPanel implements Listener<ComplexBuffer>, ISourceEventProcessor
+    public class DiscreteChannelPanel extends JPanel implements Listener<ReusableComplexBuffer>, ISourceEventProcessor
     {
         private TunerChannelSource mSource;
         private DFTProcessor mDFTProcessor = new DFTProcessor(SampleType.COMPLEX);
@@ -454,17 +456,18 @@ public class ChannelizerViewer extends JFrame
 
             if(mSource != null)
             {
-                mSource.setListener(new Listener<ComplexBuffer>()
+                mSource.setListener(new Listener<ReusableComplexBuffer>()
                 {
                     @Override
-                    public void receive(ComplexBuffer complexBuffer)
+                    public void receive(ReusableComplexBuffer complexBuffer)
                     {
                         if(mLoggingEnabled)
                         {
                             mLog.debug("Samples:" + Arrays.toString(complexBuffer.getSamples()));
                         }
 
-                        mDFTProcessor.receive(complexBuffer);
+                        mDFTProcessor.receive(complexBuffer.incrementUserCount());
+                        complexBuffer.decrementUserCount();
                     }
                 });
 
@@ -487,10 +490,10 @@ public class ChannelizerViewer extends JFrame
         }
 
         @Override
-        public void receive(ComplexBuffer complexBuffer)
+        public void receive(ReusableComplexBuffer reusableComplexBuffer)
         {
-            mLog.debug("Got a buffer for the channel dft processor");
-            mDFTProcessor.receive(complexBuffer);
+            mDFTProcessor.receive(reusableComplexBuffer.incrementUserCount());
+            reusableComplexBuffer.decrementUserCount();
         }
 
         @Override
@@ -524,16 +527,13 @@ public class ChannelizerViewer extends JFrame
         {
             TestTuner tuner = new TestTuner();
 
-            //Turn on buffer reuse since we're simply profiling data flow/throughput
-            tuner.getTunerController().setReuseBuffers(true);
-
             List<TunerChannel> tunerChannels = getTunerChannels(tuner);
 
             List<TunerChannelSource> sources = new ArrayList<>();
 
             int maxSourceCount = 30;
             int sourceCount = 0;
-            for(TunerChannel tunerChannel: tunerChannels)
+            for(TunerChannel tunerChannel : tunerChannels)
             {
                 if(sourceCount < maxSourceCount)
                 {
@@ -553,21 +553,24 @@ public class ChannelizerViewer extends JFrame
 
             mLog.debug("Starting [" + sources.size() + "] tuner channel sources");
 
-            for(TunerChannelSource tunerChannelSource: sources)
+            for(TunerChannelSource tunerChannelSource : sources)
             {
-                tunerChannelSource.setListener(new Listener<ComplexBuffer>()
+                tunerChannelSource.setListener(new Listener<ReusableComplexBuffer>()
                 {
                     @Override
-                    public void receive(ComplexBuffer complexBuffer)
+                    public void receive(ReusableComplexBuffer reusableComplexBuffer)
                     {
-                        //Do nothing
+                        reusableComplexBuffer.decrementUserCount();
                     }
                 });
 
                 tunerChannelSource.start();
             }
 
-            while(true);
+            while(true)
+            {
+                ;
+            }
         }
     }
 }

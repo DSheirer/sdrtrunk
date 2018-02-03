@@ -26,7 +26,8 @@ import io.github.dsheirer.dsp.filter.smoothing.SmoothingFilter.SmoothingType;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.complex.reusable.ReusableBufferQueue;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 import io.github.dsheirer.sample.real.RealBuffer;
 import io.github.dsheirer.settings.ColorSetting.ColorSettingName;
 import io.github.dsheirer.settings.ColorSettingMenuItem;
@@ -68,6 +69,7 @@ public class ChannelSpectrumPanel extends JPanel implements ChannelEventListener
     private JLayeredPane mLayeredPane;
     private SpectrumPanel mSpectrumPanel;
     private ChannelOverlayPanel mOverlayPanel;
+    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue();
 
     private Channel mCurrentChannel;
 
@@ -274,7 +276,9 @@ public class ChannelSpectrumPanel extends JPanel implements ChannelEventListener
 
         //Hack: we're placing real samples in a complex buffer that the DFT
         //processor is expecting.
-        mDFTProcessor.receive(new ComplexBuffer(decimated.getSamples()));
+        ReusableComplexBuffer reusableComplexBuffer = mReusableBufferQueue.getBuffer(decimated.getSamples().length);
+        reusableComplexBuffer.reloadFrom(decimated.getSamples(), System.currentTimeMillis());
+        mDFTProcessor.receive(reusableComplexBuffer.incrementUserCount());
     }
 
     /**

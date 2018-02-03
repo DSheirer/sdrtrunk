@@ -25,7 +25,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class Broadcaster<T> implements Listener<T>
 {
-    private List<Listener<T>> mListeners = new CopyOnWriteArrayList<>();
+    protected List<Listener<T>> mListeners = new CopyOnWriteArrayList<>();
 
     /**
      * Implements the Listener<T> interface to receive an element and broadcast that element to all registered

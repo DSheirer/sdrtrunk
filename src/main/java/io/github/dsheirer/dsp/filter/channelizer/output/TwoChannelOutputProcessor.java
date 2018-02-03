@@ -18,7 +18,7 @@ package io.github.dsheirer.dsp.filter.channelizer.output;
 import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelResultsBuffer;
 import io.github.dsheirer.dsp.filter.channelizer.TwoChannelSynthesizerM2;
 import io.github.dsheirer.dsp.mixer.FS4DownConverter;
-import io.github.dsheirer.sample.complex.TimestampedBufferAssembler;
+import io.github.dsheirer.sample.complex.reusable.ReusableBufferAssembler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,11 +92,11 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
      * extracted frequency-corrected channel I/Q sample set to the complex sample listener.
      *
      * @param channelResultsBuffers to process containing an array of channel I/Q sample pairs (I0,Q0,I1,Q1...In,Qn)
-     * @param timestampedBufferAssembler to receive the extracted, frequency-translated channel results
+     * @param reusableBufferAssembler to receive the extracted, frequency-translated channel results
      */
     @Override
     public void process(List<PolyphaseChannelResultsBuffer> channelResultsBuffers,
-                        TimestampedBufferAssembler timestampedBufferAssembler)
+                        ReusableBufferAssembler reusableBufferAssembler)
     {
         for(PolyphaseChannelResultsBuffer buffer: channelResultsBuffers)
         {
@@ -112,7 +112,7 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
             //Apply offset and frequency correction to center the signal of interest within the synthesized channel
             getFrequencyCorrectionMixer().mixComplex(synthesized);
 
-            timestampedBufferAssembler.receive(synthesized);
+            reusableBufferAssembler.receive(synthesized);
         }
     }
 }

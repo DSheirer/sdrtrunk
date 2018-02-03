@@ -32,12 +32,11 @@ public abstract class Module
 	 * ICallEventProvider				provides call events
 	 * IChannelEventListener			consumes channel events
 	 * IChannelEventProvider			provides channel events (reset, selection, start, etc)
-	 * IComplexBufferListener			consumes complex samples and normally 
-	 * 									produces demodulated real sample buffers
 	 * IFrequencyCorrectionController	provides tuned frequency error corrections
 	 * IMessageProvider					produces messages
 	 * IRealBufferListener				consumes demodulated real sample buffers
 	 * IRealBufferListener				produces demodulated real sample buffers
+	 * IReusableComplexBufferListener	consumes complex samples and normally produces demodulated real sample buffers
 	 * ISquelchStateListener			consumes squelch states
 	 * ISquelchStateProvider			provides squelch states
 	 */

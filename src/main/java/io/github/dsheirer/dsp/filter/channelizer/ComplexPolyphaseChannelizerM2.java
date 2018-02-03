@@ -21,7 +21,7 @@ package io.github.dsheirer.dsp.filter.channelizer;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.Window.WindowType;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,7 +84,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      */
     public ComplexPolyphaseChannelizerM2(double sampleRate, int tapsPerFilter) throws FilterDesignException
     {
-        super(sampleRate, (int)(sampleRate / DEFAULT_MINIMUM_CHANNEL_BANDWIDTH));
+        super(sampleRate, getChannelCount(sampleRate));
 
         float[] filterTaps = FilterFactory.getSincM2Channelizer(getChannelSampleRate(), getChannelCount(),
             tapsPerFilter, WindowType.BLACKMAN_HARRIS_7, true);
@@ -93,6 +93,25 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
         mTimestampManager = new SampleTimestampManager(oversampledChannelSampleRate);
 
         init(filterTaps);
+    }
+
+    /**
+     * Calculates the multiple of two number of channels that can be channelized from the specified sample rate so that
+     * each channel has a minimum bandwidth of the default channel bandwidth (12.5 kHz).
+     * @param sampleRate to channelize
+     * @return number of multiple of two channels that can be channelized.
+     */
+    private static int getChannelCount(double sampleRate)
+    {
+        int channels = (int)(sampleRate / DEFAULT_MINIMUM_CHANNEL_BANDWIDTH);
+
+        if(channels % 2 != 0)
+        {
+            channels--;
+        }
+
+        mLog.debug("Sample Rate [" + sampleRate + "] will produce [" + channels + "] channels at [" + (sampleRate / (double)channels) + "] each");
+        return channels;
     }
 
     /**
@@ -123,15 +142,12 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      * Receives the complex sample buffer and processes the results through the channelizer.
      */
     @Override
-    public void receive(ComplexBuffer complexBuffer)
+    public void receive(ReusableComplexBuffer reusableComplexBuffer)
     {
         //Use the buffer's reference timestamp to update our timestamp manager (for timestamping output buffers)
-        if(complexBuffer.hasTimestamp())
-        {
-            mTimestampManager.setReferenceTimestamp(complexBuffer.getTimestamp());
-        }
+        mTimestampManager.setReferenceTimestamp(reusableComplexBuffer.getTimestamp());
 
-        float[] samples = complexBuffer.getSamples();
+        float[] samples = reusableComplexBuffer.getSamples();
 
         int samplesPointer = 0;
 
@@ -153,6 +169,9 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
                 process();
             }
         }
+
+        //Decrement the user count to let the originator know we're done with their buffer
+        reusableComplexBuffer.decrementUserCount();
     }
 
     /**

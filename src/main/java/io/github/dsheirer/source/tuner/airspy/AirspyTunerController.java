@@ -22,11 +22,12 @@ import java.util.List;
 
 /**
  * SDR Trunk
- * Copyright (C) 2015-2017 Dennis Sheirer
+ * Copyright (C) 2015-2018 Dennis Sheirer
  *
+ * -----------------------------------------------------------------------------
  * Ported from libairspy at:
  * https://github.com/airspy/host/tree/master/libairspy
- * -----------------------------------------------------------------------------
+ *
  * Copyright (c) 2013, Michael Ossmann <mike@ossmann.com>
  * Copyright (c) 2012, Jared Boone <jared@sharebrained.com>
  * Copyright (c) 2014, Youssef Touil <youssef@airspy.com>
@@ -94,7 +95,7 @@ public class AirspyTunerController extends USBTunerController
     private Device mDevice;
     private DeviceHandle mDeviceHandle;
 
-    private AirspySampleAdapter mSampleAdapter = new AirspySampleAdapter();
+    private AirspySampleConverter mSampleAdapter = new AirspySampleConverter();
     private AirspyDeviceInformation mDeviceInfo;
     private List<AirspySampleRate> mSampleRates = new ArrayList<>();
     private int mSampleRate = 0;
@@ -122,8 +123,7 @@ public class AirspyTunerController extends USBTunerController
                     + "airspy rules file in \\etc\\udev\\rules.d ??");
             }
 
-            throw new SourceException("Couldn't open airspy device - " +
-                LibUsb.strError(result));
+            throw new SourceException("Couldn't open airspy device - " + LibUsb.strError(result));
         }
 
         try

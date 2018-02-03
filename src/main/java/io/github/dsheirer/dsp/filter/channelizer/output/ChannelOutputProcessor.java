@@ -22,7 +22,7 @@ import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelResultsBuffer;
 import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.Oscillator;
 import io.github.dsheirer.sample.OverflowableTransferQueue;
-import io.github.dsheirer.sample.complex.TimestampedBufferAssembler;
+import io.github.dsheirer.sample.complex.reusable.ReusableBufferAssembler;
 import io.github.dsheirer.sample.real.IOverflowListener;
 import io.github.dsheirer.source.Source;
 import org.slf4j.Logger;
@@ -89,10 +89,10 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
 
     /**
      * Processes all enqueued polyphase channelizer results until the internal queue is empty
-     * @param timestampedBufferAssembler to receive the processed channel results
+     * @param reusableBufferAssembler to receive the processed channel results
      */
     @Override
-    public void processChannelResults(TimestampedBufferAssembler timestampedBufferAssembler)
+    public void processChannelResults(ReusableBufferAssembler reusableBufferAssembler)
     {
         try
         {
@@ -100,7 +100,7 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
 
             if(toProcess > 0)
             {
-                process(mChannelResultsToProcess, timestampedBufferAssembler);
+                process(mChannelResultsToProcess, reusableBufferAssembler);
             }
         }
         catch(Throwable throwable)
@@ -114,10 +114,10 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     /**
      * Sub-class implementation to process one polyphase channelizer result array.
      * @param channelResults to process
-     * @param timestampedBufferAssembler to receive the processed channelizer results
+     * @param reusableBufferAssembler to receive the processed channelizer results
      */
     public abstract void process(List<PolyphaseChannelResultsBuffer> channelResults,
-                                 TimestampedBufferAssembler timestampedBufferAssembler);
+                                 ReusableBufferAssembler reusableBufferAssembler);
 
 
     /**

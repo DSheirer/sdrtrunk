@@ -24,13 +24,14 @@ import io.github.dsheirer.dsp.fm.FMDemodulator_CB;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
-import io.github.dsheirer.sample.complex.IComplexBufferListener;
+import io.github.dsheirer.sample.complex.reusable.IReusableComplexBufferListener;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 import io.github.dsheirer.sample.real.IUnFilteredRealBufferProvider;
 import io.github.dsheirer.sample.real.RealBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FMDemodulatorModule extends Module implements IComplexBufferListener, IUnFilteredRealBufferProvider
+public class FMDemodulatorModule extends Module implements IReusableComplexBufferListener, IUnFilteredRealBufferProvider
 {
     private final static Logger mLog = LoggerFactory.getLogger(FMDemodulatorModule.class);
 
@@ -38,6 +39,7 @@ public class FMDemodulatorModule extends Module implements IComplexBufferListene
 
     private ComplexFIRFilter_CB_CB mIQFilter;
     private FMDemodulator_CB mDemodulator;
+    private ReusableBufferListener mReusableBufferListener = new ReusableBufferListener();
 
     /**
      * FM Demodulator with I/Q filter.  Demodulated output is unfiltered and
@@ -68,9 +70,9 @@ public class FMDemodulatorModule extends Module implements IComplexBufferListene
     }
 
     @Override
-    public Listener<ComplexBuffer> getComplexBufferListener()
+    public Listener<ReusableComplexBuffer> getReusableComplexBufferListener()
     {
-        return mIQFilter;
+        return mReusableBufferListener;
     }
 
     @Override
@@ -109,5 +111,19 @@ public class FMDemodulatorModule extends Module implements IComplexBufferListene
     @Override
     public void stop()
     {
+    }
+
+    public class ReusableBufferListener implements Listener<ReusableComplexBuffer>
+    {
+        @Override
+        public void receive(ReusableComplexBuffer reusableComplexBuffer)
+        {
+            float[] samples = reusableComplexBuffer.getCopyOfSamples();
+
+            //TODO: redesign the filter chain so that we can simply pass a float array ...
+
+            mIQFilter.receive(new ComplexBuffer(samples));
+            reusableComplexBuffer.decrementUserCount();
+        }
     }
 }

@@ -16,9 +16,17 @@
 package io.github.dsheirer.dsp.mixer;
 
 import io.github.dsheirer.sample.complex.Complex;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.nio.FloatBuffer;
 
 public abstract class AbstractOscillator implements IOscillator
 {
+    private final static Logger mLog = LoggerFactory.getLogger(AbstractOscillator.class);
+
+    private FloatBuffer mSampleBuffer;
     private boolean mEnabled;
     private double mFrequency;
     private double mSampleRate;
@@ -143,5 +151,31 @@ public abstract class AbstractOscillator implements IOscillator
         }
 
         return samples;
+    }
+
+    /**
+     * Generates enough complex samples to fill the reusable complex buffer
+     * @param reusableComplexBuffer to fill with complex samples
+     */
+    @Override
+    public void generateComplex(ReusableComplexBuffer reusableComplexBuffer)
+    {
+        int sampleCount = reusableComplexBuffer.getSampleLength();
+
+        if(mSampleBuffer == null || mSampleBuffer.capacity() != sampleCount * 2)
+        {
+            mSampleBuffer = FloatBuffer.allocate(sampleCount * 2);
+        }
+
+        mSampleBuffer.rewind();
+
+        for(int x = 0; x < sampleCount; x++)
+        {
+            mSampleBuffer.put(inphase());
+            mSampleBuffer.put(quadrature());
+            rotate();
+        }
+
+        reusableComplexBuffer.reloadFrom(mSampleBuffer, System.currentTimeMillis());
     }
 }

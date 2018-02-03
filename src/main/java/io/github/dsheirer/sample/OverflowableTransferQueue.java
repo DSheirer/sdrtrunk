@@ -36,9 +36,9 @@ public class OverflowableTransferQueue<E>
     private IOverflowListener mOverflowListener;
     private Source mSourceOverflowListener;
 
-    private LinkedTransferQueue<E> mQueue = new LinkedTransferQueue<E>();
-    private AtomicInteger mCounter = new AtomicInteger();
-    private AtomicBoolean mOverflow = new AtomicBoolean();
+    protected LinkedTransferQueue<E> mQueue = new LinkedTransferQueue<E>();
+    protected AtomicInteger mCounter = new AtomicInteger();
+    protected AtomicBoolean mOverflow = new AtomicBoolean();
     private int mMaximumSize;
     private int mResetThreshold;
 
@@ -73,6 +73,21 @@ public class OverflowableTransferQueue<E>
                 setOverflow(true);
             }
         }
+        else
+        {
+            overflow(e);
+        }
+    }
+
+    /**
+     * Invoked when the buffer is in an overflow state.  The element argument is thrown away.  Override this method
+     * in subclasses to perform any necessary cleanup action(s).
+     *
+     * @param e element that is being thrown away due to an overflow condition
+     */
+    protected void overflow(E e)
+    {
+        //No-op.  Override in subclass to perform any cleanup actions during overflow
     }
 
     /**

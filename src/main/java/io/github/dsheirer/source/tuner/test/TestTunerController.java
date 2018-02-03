@@ -19,7 +19,7 @@
 package io.github.dsheirer.source.tuner.test;
 
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
@@ -34,7 +34,7 @@ public class TestTunerController extends TunerController
     public static final long MAXIMUM_FREQUENCY = 1000000000l;
     public static final int SAMPLE_RATE = 800000;
     public static final int DC_NOISE_BANDWIDTH = 0;
-    public static final double USABLE_BANDWIDTH = 1.00;
+    public static final double USABLE_BANDWIDTH_PERCENTAGE = 1.00;
 
     public static final int SPECTRAL_FRAME_RATE = 20;
     public static final long SAMPLE_GENERATION_INTERVAL = 1000 / SPECTRAL_FRAME_RATE;
@@ -47,7 +47,7 @@ public class TestTunerController extends TunerController
       */
     public TestTunerController()
     {
-        super(MINIMUM_FREQUENCY, MAXIMUM_FREQUENCY, DC_NOISE_BANDWIDTH, USABLE_BANDWIDTH);
+        super(MINIMUM_FREQUENCY, MAXIMUM_FREQUENCY, DC_NOISE_BANDWIDTH, USABLE_BANDWIDTH_PERCENTAGE);
 
         int sweepRate = 0;  //Hz per interval
         long initialToneFrequency = SAMPLE_RATE / 2 + 100;
@@ -65,25 +65,14 @@ public class TestTunerController extends TunerController
         }
     }
 
-    /**
-     * Sets the sample generator to reuse buffers instead of generating new buffers each time.  Enable this setting
-     * when you simply want to test/profile buffer data flows for consumer processes.
-     *
-     * @param reuseBuffers set to true to turn on buffer reuse
-     */
-    public void setReuseBuffers(boolean reuseBuffers)
-    {
-        mSampleGenerator.setReuseBuffers(reuseBuffers);
-    }
-
     @Override
-    public void addComplexBufferListener(Listener<ComplexBuffer> listener)
+    public void addBufferListener(Listener<ReusableComplexBuffer> listener)
     {
         mSampleGenerator.addListener(listener);
     }
 
     @Override
-    public void removeComplexBufferListener(Listener<ComplexBuffer> listener)
+    public void removeBufferListener(Listener<ReusableComplexBuffer> listener)
     {
         mSampleGenerator.removeListener(listener);
     }

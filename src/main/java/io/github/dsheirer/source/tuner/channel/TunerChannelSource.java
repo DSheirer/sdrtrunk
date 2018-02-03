@@ -19,7 +19,7 @@
 package io.github.dsheirer.source.tuner.channel;
 
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 import io.github.dsheirer.source.ComplexSource;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
@@ -89,7 +89,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
      * Sets the listener to receive the complex buffer sample output from this channel
      * @param complexBufferListener to receive complex buffers
      */
-    public abstract void setListener(Listener<ComplexBuffer> complexBufferListener);
+    public abstract void setListener(Listener<ReusableComplexBuffer> complexBufferListener);
 
     /**
      * Commands sub-class to process queued samples and distribute them to the consumer.  This method will be invoked

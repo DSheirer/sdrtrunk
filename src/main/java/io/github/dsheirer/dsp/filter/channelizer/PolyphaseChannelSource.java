@@ -17,8 +17,8 @@ package io.github.dsheirer.dsp.filter.channelizer;
 
 import io.github.dsheirer.dsp.filter.channelizer.output.IPolyphaseChannelOutputProcessor;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
-import io.github.dsheirer.sample.complex.TimestampedBufferAssembler;
+import io.github.dsheirer.sample.complex.reusable.ReusableBufferAssembler;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
@@ -29,7 +29,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
 {
     private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelSource.class);
 
-    private TimestampedBufferAssembler mTimestampedBufferAssembler;
+    private ReusableBufferAssembler mReusableBufferAssembler;
     private IPolyphaseChannelOutputProcessor mPolyphaseChannelOutputProcessor;
     private double mChannelSampleRate;
     private long mCenterFrequency;
@@ -51,25 +51,25 @@ public class PolyphaseChannelSource extends TunerChannelSource
         super(producerSourceEventListener, tunerChannel);
         mPolyphaseChannelOutputProcessor = outputProcessor;
         mChannelSampleRate = channelSampleRate;
-        mTimestampedBufferAssembler = new TimestampedBufferAssembler(2500, mChannelSampleRate);
+        mReusableBufferAssembler = new ReusableBufferAssembler(2500, mChannelSampleRate);
     }
 
     /**
      * Registers the listener to receive complex sample buffers from this channel source
      */
     @Override
-    public void setListener(final Listener<ComplexBuffer> listener)
+    public void setListener(final Listener<ReusableComplexBuffer> listener)
     {
-        mTimestampedBufferAssembler.setListener(listener);
+        mReusableBufferAssembler.setListener(listener);
    }
 
     /**
      * Removes the listener from receiving complex sample buffers from this channel source
      */
     @Override
-    public void removeListener(Listener<ComplexBuffer> listener)
+    public void removeListener(Listener<ReusableComplexBuffer> listener)
     {
-        mTimestampedBufferAssembler.setListener(null);
+        mReusableBufferAssembler.setListener(null);
     }
 
     /**
@@ -108,7 +108,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
             //Fully process the residual channel results buffer of the previous channel output processor
             if(existingProcessor != null)
             {
-                existingProcessor.processChannelResults(mTimestampedBufferAssembler);
+                existingProcessor.processChannelResults(mReusableBufferAssembler);
             }
 
             //Finally, setup the frequency offset for the output processor and reset the frequency correction value
@@ -129,7 +129,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
      */
     public void receiveChannelResults(PolyphaseChannelResultsBuffer channelResultsBuffer)
     {
-        mTimestampedBufferAssembler.updateTimestamp(channelResultsBuffer.getTimestamp());
+        mReusableBufferAssembler.updateTimestamp(channelResultsBuffer.getTimestamp());
         mPolyphaseChannelOutputProcessor.receiveChannelResults(channelResultsBuffer);
     }
 
@@ -200,7 +200,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
         //Lock on the output processor so that it can't be changed in the middle of processing
         synchronized(mPolyphaseChannelOutputProcessor)
         {
-            mPolyphaseChannelOutputProcessor.processChannelResults(mTimestampedBufferAssembler);
+            mPolyphaseChannelOutputProcessor.processChannelResults(mReusableBufferAssembler);
         }
     }
 

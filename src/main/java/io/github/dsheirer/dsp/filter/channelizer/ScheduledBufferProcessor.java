@@ -59,7 +59,29 @@ public class ScheduledBufferProcessor<E> implements Listener<E>
      */
     public ScheduledBufferProcessor(int maximumSize, int resetThreshold, long distributionInterval, int maxBuffersPerInterval)
     {
-        mQueue = new OverflowableTransferQueue<>(maximumSize, resetThreshold);
+        this(new OverflowableTransferQueue<>(maximumSize, resetThreshold), distributionInterval, maxBuffersPerInterval);
+    }
+
+    /**
+     * Scheduled Buffer Processor combines an internal overflowable buffer with a scheduled runnable processing task
+     * for periodically distributing internally queued elements to the registered listener.  This processor provides
+     * a convenient way to create a thread-safe buffer for receiving elements from one thread/runnable and then
+     * distributing those elements to a registered listener where distribution occurs on a separate scheduled thread
+     * pool runnable thread.  This allows the calling input thread to quickly return without incurring any subsequent
+     * processing workload.
+     *
+     * The internal queue is an overflowable queue implementation that allows a listener to be registered to receive
+     * notifications of overflow and reset state.  Queue sizing parameters are specified in the constructor.
+     *
+     * @param queue implmentation of an overflowable transfer queue
+     * @param distributionInterval in milliseconds specifying how often the internal scheduled thread pool buffer
+     * distributor should run
+     * @param maxBuffersPerInterval maximum number of buffers to pull from the internal queue during each distribution
+     * interval
+     */
+    public ScheduledBufferProcessor(OverflowableTransferQueue<E> queue, long distributionInterval, int maxBuffersPerInterval)
+    {
+        mQueue = queue;
         mDistributionInterval = distributionInterval;
         mMaxBuffersPerInterval = maxBuffersPerInterval;
     }
@@ -121,8 +143,16 @@ public class ScheduledBufferProcessor<E> implements Listener<E>
                 mScheduledFuture = null;
             }
 
-            mQueue.clear();
+            clearQueue();
         }
+    }
+
+    /**
+     * Clears any buffers from the queue
+     */
+    protected void clearQueue()
+    {
+        mQueue.clear();
     }
 
     /**

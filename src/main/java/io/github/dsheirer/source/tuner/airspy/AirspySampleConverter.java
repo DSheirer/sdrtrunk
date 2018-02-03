@@ -20,23 +20,44 @@ package io.github.dsheirer.source.tuner.airspy;
 
 import io.github.dsheirer.dsp.filter.dc.DCRemovalFilter_RB;
 import io.github.dsheirer.dsp.filter.hilbert.HilbertTransform;
-import io.github.dsheirer.sample.adapter.ISampleAdapter;
+import io.github.dsheirer.source.tuner.usb.converter.NativeBufferConverter;
 
-public class AirspySampleAdapter implements ISampleAdapter
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
+
+public class AirspySampleConverter extends NativeBufferConverter
 {
     private static final float SCALE_SIGNED_12_BIT_TO_FLOAT = 1.0f / 2048.0f;
 
     private DCRemovalFilter_RB mDCFilter = new DCRemovalFilter_RB(0.01f);
     private HilbertTransform mHilbertTransform = new HilbertTransform();
     private boolean mSamplePacking = false;
-
+    private FloatBuffer mFloatBuffer;
+    private float[] mConvertedSamples;
 
     /**
      * Adapter to translate byte buffers received from the airspy tuner into
      * float buffers for processing.
      */
-    public AirspySampleAdapter()
+    public AirspySampleConverter()
     {
+    }
+
+    @Override
+    protected FloatBuffer convertSamples(ByteBuffer buffer, int length)
+    {
+        float[] samples = convert(buffer);
+
+        if(mFloatBuffer == null || mFloatBuffer.capacity() != samples.length)
+        {
+            mFloatBuffer = FloatBuffer.allocate(samples.length);
+        }
+
+        mFloatBuffer.rewind();
+        mFloatBuffer.put(samples);
+
+        return mFloatBuffer;
     }
 
     /**
@@ -50,98 +71,85 @@ public class AirspySampleAdapter implements ISampleAdapter
         mSamplePacking = enabled;
     }
 
-    @Override
-    public float[] convert(byte[] samples)
+    private float[] convert(ByteBuffer samples)
     {
-        float[] realSamples;
-
         if(mSamplePacking)
         {
-            realSamples = convertPacked(samples);
+            convertPacked(samples.order(ByteOrder.LITTLE_ENDIAN));
         }
         else
         {
-            realSamples = convertUnpacked(samples);
+            convertUnpacked(samples);
         }
 
-        mDCFilter.filter(realSamples);
+        mDCFilter.filter(mConvertedSamples);
 
-        return mHilbertTransform.filter(realSamples);
+        return mHilbertTransform.filter(mConvertedSamples);
     }
 
     /**
      * Converts the byte array containing unsigned 12-bit short values into
      * signed float values in the range -1 to 1;
      *
-     * @param data - byte array of unsigned 16-bit values
-     * @return converted float values
+     * @param buffer - native byte buffer containing unsigned 16-bit values
      */
-    private float[] convertUnpacked(byte[] data)
+    private void convertUnpacked(ByteBuffer buffer)
     {
-        float[] samples = new float[data.length / 2];
+        buffer.rewind();
+
+        if(mConvertedSamples == null || mConvertedSamples.length != buffer.capacity() / 2)
+        {
+            mConvertedSamples = new float[buffer.capacity() / 2];
+        }
 
         int pointer = 0;
 
-        for(int x = 0; x < data.length; x += 2)
-        {
-            samples[pointer++] = scale((data[x] & 0xFF) |
-                (data[x + 1] << 8));
-        }
 
-        return samples;
+        while(buffer.remaining() >= 2)
+        {
+            byte lsb = buffer.get();
+            byte msb = buffer.get();
+            mConvertedSamples[pointer++] = scale((lsb & 0xFF) | (msb << 8));
+        }
     }
 
     /**
      * Converts every 3 bytes containing a pair of 12-bit unsigned values into
      * a pair of float values in the range -1 to 1;
      *
-     * @param data1 - byte array of unsigned 12-bit values
-     * @return converted float values
+     * @param buffer - native byte buffer containing packet 12-bit unsigned samples
      */
-    private float[] convertPacked(byte[] data1)
+    private void convertPacked(ByteBuffer buffer)
     {
-        byte[] data = new byte[data1.length];
+        buffer.rewind();
 
-        //Convert big-endian to little-endian
-        for(int x = 0; x < data1.length; x += 4)
+        int sampleCount = buffer.capacity() / 3 * 2;
+
+        if(mConvertedSamples == null || mConvertedSamples.length != sampleCount)
         {
-            data[x] = data1[x + 3];
-            data[x + 1] = data1[x + 2];
-            data[x + 2] = data1[x + 1];
-            data[x + 3] = data1[x];
+            mConvertedSamples = new float[sampleCount];
         }
-
-        int count = (int) ((float) data.length / 1.5f);
-
-		/* Ensure we have an even number of samples */
-        if(count % 2 == 1)
-        {
-            count--;
-        }
-
-        int bytes = (int) ((float) count * 1.5f);
-
-        float[] samples = new float[count];
 
         int pointer = 0;
 
+        byte b1;
+        byte b2;
+        byte b3;
         int first;
         int second;
 
-        for(int x = 0; x < bytes; x += 3)
+        while(buffer.remaining() >= 3)
         {
-            first = ((data[x] << 4) & 0xFF0) |
-                ((data[x + 1] >> 4) & 0xF);
+            b1 = buffer.get();
+            b2 = buffer.get();
+            b3 = buffer.get();
 
-            samples[pointer++] = scale(first);
+            first = ((b1 << 4) & 0xFF0) | ((b2 >> 4) & 0xF);
+            mConvertedSamples[pointer++] = scale(first);
 
-            second = ((data[x + 1] << 8) & 0xF00) |
-                (data[x + 2] & 0xFF);
-
-            samples[pointer++] = scale(second);
+            second = ((b2 << 8) & 0xF00) | (b3 & 0xFF);
+            mConvertedSamples[pointer++] = scale(second);
         }
-
-        return samples;
     }
 
     /**

@@ -41,9 +41,6 @@ public class TestTuner extends Tuner
 
     /**
      * Returns the tuner controller cast as a test tuner controller.
-     *
-     * Note: this is a temporary method until the tuner controller interface can be updated with the start(listener)
-     * and stop() methods.
      */
     public TestTunerController getTunerController()
     {

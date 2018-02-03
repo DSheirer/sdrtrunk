@@ -19,7 +19,6 @@ import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
-import io.github.dsheirer.source.tuner.ITunerChannelProvider;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 
@@ -27,16 +26,14 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Recording implements Comparable<Recording>, ISourceEventProcessor,	ITunerChannelProvider
+public class Recording implements Comparable<Recording>, ISourceEventProcessor
 {
 	private RecordingConfiguration mConfiguration;
 	
 	private List<TunerChannelSource> mTunerChannels = new ArrayList<TunerChannelSource>();
 	
-	@SuppressWarnings( "unused" )
 	private long mCenterFrequency;
 	
-	@SuppressWarnings( "unused" )
 	private SettingsManager mSettingsManager;
 	
 	public Recording( SettingsManager settingsManager,
@@ -75,19 +72,12 @@ public class Recording implements Comparable<Recording>, ISourceEventProcessor,	
 		return mTunerChannels.size() > 0;
 	}
 	
-	@Override
     public TunerChannelSource getChannel( TunerChannel channel )
     {
 	    // TODO Auto-generated method stub
 	    return null;
     }
 
-	@Override
-    public void releaseChannel( TunerChannelSource source )
-    {
-	    // TODO Auto-generated method stub
-    }
-	
 	public RecordingConfiguration getRecordingConfiguration()
 	{
 		return mConfiguration;

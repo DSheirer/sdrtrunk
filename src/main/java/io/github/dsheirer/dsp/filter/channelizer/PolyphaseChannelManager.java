@@ -23,8 +23,8 @@ import io.github.dsheirer.dsp.filter.channelizer.output.TwoChannelOutputProcesso
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
-import io.github.dsheirer.sample.complex.IComplexBufferProvider;
+import io.github.dsheirer.sample.complex.reusable.IReusableComplexBufferProvider;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
@@ -52,7 +52,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     private static final int POLYPHASE_FILTER_TAPS_PER_CHANNEL = 17;
 
     private Broadcaster<SourceEvent> mSourceEventBroadcaster = new Broadcaster<>();
-    private IComplexBufferProvider mComplexBufferProvider;
+    private IReusableComplexBufferProvider mReusableBufferProvider;
     private List<PolyphaseChannelSource> mChannelSources = new CopyOnWriteArrayList<>();
     private ChannelCalculator mChannelCalculator;
     private ComplexPolyphaseChannelizerM2 mPolyphaseChannelizer;
@@ -72,18 +72,18 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
      * Note: add this channel manager as a source event listener to the complex buffer provider to ensure this manager
      * adapts to changes in source frequency and sample rate.
      *
-     * @param complexBufferProvider that supports register/deregister of this channel manager
+     * @param reusableBufferProvider that supports register/deregister of this channel manager
      * @param frequency of the provided complex buffer samples
      * @param sampleRate of the provided complex buffer samples
      */
-    public PolyphaseChannelManager(IComplexBufferProvider complexBufferProvider, long frequency, double sampleRate)
+    public PolyphaseChannelManager(IReusableComplexBufferProvider reusableBufferProvider, long frequency, double sampleRate)
     {
-        if(complexBufferProvider == null)
+        if(reusableBufferProvider == null)
         {
             throw new IllegalArgumentException("Complex buffer provider argument cannot be null");
         }
 
-        mComplexBufferProvider = complexBufferProvider;
+        mReusableBufferProvider = reusableBufferProvider;
 
         int channelCount = (int)(sampleRate / MINIMUM_CHANNEL_BANDWIDTH);
 
@@ -229,7 +229,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
 
             if(mPolyphaseChannelizer.getRegisteredChannelCount() == 1)
             {
-                mComplexBufferProvider.addComplexBufferListener(mBufferProcessor);
+                mReusableBufferProvider.addBufferListener(mBufferProcessor);
                 mBufferProcessor.start();
             }
         }
@@ -250,7 +250,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
 
             if(mPolyphaseChannelizer.getRegisteredChannelCount() == 0)
             {
-                mComplexBufferProvider.removeComplexBufferListener(mBufferProcessor);
+                mReusableBufferProvider.removeBufferListener(mBufferProcessor);
                 mBufferProcessor.stop();
             }
         }
@@ -538,7 +538,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
      * that they can be processed on the buffer processor calling thread, avoiding unnecessary locks on the channelizer
      * and/or the channel sources and output processors.
      */
-    public class BufferSourceEventMonitor implements Listener<ComplexBuffer>
+    public class BufferSourceEventMonitor implements Listener<ReusableComplexBuffer>
     {
         private Queue<SourceEvent> mQueuedSourceEvents = new ConcurrentLinkedQueue<>();
 
@@ -553,7 +553,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         }
 
         @Override
-        public void receive(ComplexBuffer complexBuffer)
+        public void receive(ReusableComplexBuffer reusableComplexBuffer)
         {
             try
             {
@@ -578,13 +578,15 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
 
                 if(mPolyphaseChannelizer != null)
                 {
-                    mPolyphaseChannelizer.receive(complexBuffer);
+                    mPolyphaseChannelizer.receive(reusableComplexBuffer.incrementUserCount());
                 }
             }
             catch(Throwable throwable)
             {
                 mLog.error("Error", throwable);
             }
+
+            reusableComplexBuffer.decrementUserCount();
         }
     }
 }

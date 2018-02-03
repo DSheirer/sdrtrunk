@@ -23,7 +23,8 @@ import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.LowPhaseNoiseOscillator;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.complex.reusable.ReusableBufferQueue;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 import io.github.dsheirer.sample.real.IOverflowListener;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.SourceEvent;
@@ -140,7 +141,7 @@ public class SynthesizerViewer extends JFrame
         return mChannel2Panel;
     }
 
-    public class PrimarySpectrumPanel extends JPanel implements Listener<ComplexBuffer>
+    public class PrimarySpectrumPanel extends JPanel implements Listener<ReusableComplexBuffer>
     {
         private DFTProcessor mDFTProcessor = new DFTProcessor(SampleType.COMPLEX);
         private ComplexDecibelConverter mComplexDecibelConverter = new ComplexDecibelConverter();
@@ -174,13 +175,14 @@ public class SynthesizerViewer extends JFrame
         }
 
         @Override
-        public void receive(ComplexBuffer complexBuffer)
+        public void receive(ReusableComplexBuffer reusableComplexBuffer)
         {
-            mDFTProcessor.receive(complexBuffer);
+            mDFTProcessor.receive(reusableComplexBuffer.incrementUserCount());
+            reusableComplexBuffer.decrementUserCount();
         }
     }
 
-    public class ChannelPanel extends JPanel implements Listener<ComplexBuffer>
+    public class ChannelPanel extends JPanel implements Listener<ReusableComplexBuffer>
     {
         private DFTProcessor mDFTProcessor = new DFTProcessor(SampleType.COMPLEX);
         private ComplexDecibelConverter mComplexDecibelConverter = new ComplexDecibelConverter();
@@ -208,9 +210,10 @@ public class SynthesizerViewer extends JFrame
         }
 
         @Override
-        public void receive(ComplexBuffer complexBuffer)
+        public void receive(ReusableComplexBuffer reusableComplexBuffer)
         {
-            mDFTProcessor.receive(complexBuffer);
+            mDFTProcessor.receive(reusableComplexBuffer.incrementUserCount());
+            reusableComplexBuffer.decrementUserCount();
         }
     }
 
@@ -274,6 +277,7 @@ public class SynthesizerViewer extends JFrame
         private TwoChannelSynthesizerM2 mSynthesizer;
         private FS4DownConverter mFS4DownConverter = new FS4DownConverter();
         private int mSamplesPerCycle = CHANNEL_SAMPLE_RATE / DATA_GENERATOR_FRAME_RATE;
+        private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue();
 
         public DataGenerationManager()
         {
@@ -292,15 +296,19 @@ public class SynthesizerViewer extends JFrame
         @Override
         public void run()
         {
-            float[] channel1 = getChannel1ControlPanel().getOscillator().generateComplex(mSamplesPerCycle);
-            float[] channel2 = getChannel2ControlPanel().getOscillator().generateComplex(mSamplesPerCycle);
+            ReusableComplexBuffer channel1Buffer = mReusableBufferQueue.getBuffer(mSamplesPerCycle);
+            getChannel1ControlPanel().getOscillator().generateComplex(channel1Buffer);
 
-            float[] synthesized = mSynthesizer.process(channel1, channel2);
+            ReusableComplexBuffer channel2Buffer = mReusableBufferQueue.getBuffer(mSamplesPerCycle);
+            getChannel2ControlPanel().getOscillator().generateComplex(channel2Buffer);
+
+            float[] synthesized = mSynthesizer.process(channel1Buffer.getSamples(), channel2Buffer.getSamples());
             mFS4DownConverter.mixComplex(synthesized);
+            ReusableComplexBuffer synthesizedBuffer = mReusableBufferQueue.getBuffer(synthesized.length);
 
-            getChannel1Panel().receive(new ComplexBuffer(channel1));
-            getChannel2Panel().receive(new ComplexBuffer(channel2));
-            getSpectrumPanel().receive(new ComplexBuffer(synthesized));
+            getChannel1Panel().receive(channel1Buffer.incrementUserCount());
+            getChannel2Panel().receive(channel2Buffer.incrementUserCount());
+            getSpectrumPanel().receive(synthesizedBuffer.incrementUserCount());
         }
     }
 

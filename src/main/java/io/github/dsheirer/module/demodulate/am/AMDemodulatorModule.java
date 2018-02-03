@@ -1,19 +1,17 @@
 /*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014,2015 Dennis Sheirer
- * 
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- * 
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- * 
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
+ *
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
+ *
  ******************************************************************************/
 package io.github.dsheirer.module.demodulate.am;
 
@@ -26,12 +24,12 @@ import io.github.dsheirer.dsp.gain.AutomaticGainControl_RB;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
-import io.github.dsheirer.sample.complex.IComplexBufferListener;
+import io.github.dsheirer.sample.complex.reusable.IReusableComplexBufferListener;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 import io.github.dsheirer.sample.real.IFilteredRealBufferProvider;
 import io.github.dsheirer.sample.real.RealBuffer;
 
-public class AMDemodulatorModule extends Module
-    implements IComplexBufferListener, IFilteredRealBufferProvider
+public class AMDemodulatorModule extends Module implements IReusableComplexBufferListener, IFilteredRealBufferProvider
 {
     private static final int SAMPLE_RATE = 48000;
 
@@ -39,6 +37,7 @@ public class AMDemodulatorModule extends Module
     private AMDemodulator_CB mDemodulator;
     private RealFIRFilter_RB_RB mLowPassFilter;
     private AutomaticGainControl_RB mAGC;
+    private ReusableBufferListener mReusableBufferListener = new ReusableBufferListener();
 
     /**
      * AM Demodulator Module
@@ -60,9 +59,9 @@ public class AMDemodulatorModule extends Module
     }
 
     @Override
-    public Listener<ComplexBuffer> getComplexBufferListener()
+    public Listener<ReusableComplexBuffer> getReusableComplexBufferListener()
     {
-        return mIQFilter;
+        return mReusableBufferListener;
     }
 
     @Override
@@ -106,5 +105,20 @@ public class AMDemodulatorModule extends Module
     @Override
     public void stop()
     {
+    }
+
+
+    public class ReusableBufferListener implements Listener<ReusableComplexBuffer>
+    {
+        @Override
+        public void receive(ReusableComplexBuffer reusableComplexBuffer)
+        {
+            float[] samples = reusableComplexBuffer.getCopyOfSamples();
+
+            //TODO: redesign the filter chain so that we can simply pass a float array ...
+
+            mIQFilter.receive(new ComplexBuffer(samples));
+            reusableComplexBuffer.decrementUserCount();
+        }
     }
 }

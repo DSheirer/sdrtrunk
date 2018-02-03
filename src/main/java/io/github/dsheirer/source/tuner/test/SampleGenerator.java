@@ -17,10 +17,10 @@ package io.github.dsheirer.source.tuner.test;
 
 import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.LowPhaseNoiseOscillator;
-import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
-import io.github.dsheirer.sample.complex.TimestampedComplexBuffer;
+import io.github.dsheirer.sample.complex.reusable.ReusableBufferBroadcaster;
+import io.github.dsheirer.sample.complex.reusable.ReusableBufferQueue;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +32,7 @@ public class SampleGenerator
 {
     private final static Logger mLog = LoggerFactory.getLogger(SampleGenerator.class);
 
-    private Broadcaster<ComplexBuffer> mComplexBufferBroadcaster = new Broadcaster<>();
+    private ReusableBufferBroadcaster mComplexBufferBroadcaster = new ReusableBufferBroadcaster();
     private IOscillator mOscillator;
     private int mSweepUpdateInterval;
     private long mInterval;
@@ -80,21 +80,6 @@ public class SampleGenerator
     }
 
     /**
-     * Instructs the sample generator to reuse the same sample buffer each time instead of generating new samples for
-     * each and every buffer.  This is useful when you simply want to generate data to test or profile data flows and
-     * are not concerned about the content of the buffers.
-     *
-     * The generator will create a new buffer of data each time that it detects that the sample size changes or when
-     * the tone frequency changes.
-     *
-     * @param reuseBuffers set to true to turn on buffer reuse
-     */
-    public void setReuseBuffers(boolean reuseBuffers)
-    {
-        mReuseBuffers = reuseBuffers;
-    }
-
-    /**
      * Updates the number of complex samples generated per interval
      */
     private void updateSamplesPerInterval()
@@ -139,7 +124,7 @@ public class SampleGenerator
      *
      * @param listener to receive complex sample buffers
      */
-    public void addListener(Listener<ComplexBuffer> listener)
+    public void addListener(Listener<ReusableComplexBuffer> listener)
     {
         mComplexBufferBroadcaster.addListener(listener);
 
@@ -152,7 +137,7 @@ public class SampleGenerator
     /**
      * Removes the listener and stops the sample generator if there are no more listeners.
      */
-    public void removeListener(Listener<ComplexBuffer> listener)
+    public void removeListener(Listener<ReusableComplexBuffer> listener)
     {
         mComplexBufferBroadcaster.removeListener(listener);
 
@@ -200,31 +185,18 @@ public class SampleGenerator
     public class Generator implements Runnable
     {
         private int mTriggerInterval = 0;
-        private long mOscillatorFrequency = 1;
-        private ComplexBuffer mReusableBuffer;
+        private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("** Sample Generator **");
 
         @Override
         public void run()
         {
             if(mComplexBufferBroadcaster.hasListeners())
             {
-                if(mReuseBuffers)
-                {
-                    if(mReusableBuffer == null ||
-                       mReusableBuffer.getSamples().length != mSamplesPerInterval ||
-                       mOscillatorFrequency != mOscillator.getFrequency())
-                    {
-                        mOscillatorFrequency = (long)mOscillator.getFrequency();
-                        mReusableBuffer = new TimestampedComplexBuffer(mOscillator.generateComplex(mSamplesPerInterval));
-                    }
+                ReusableComplexBuffer reusableComplexBuffer = mReusableBufferQueue.getBuffer(mSamplesPerInterval);
 
-                    mComplexBufferBroadcaster.receive(mReusableBuffer);
-                }
-                else
-                {
-                    float[] samples = mOscillator.generateComplex(mSamplesPerInterval);
-                    mComplexBufferBroadcaster.receive(new TimestampedComplexBuffer(samples));
-                }
+                mOscillator.generateComplex(reusableComplexBuffer);
+
+                mComplexBufferBroadcaster.broadcast(reusableComplexBuffer.incrementUserCount());
 
                 if(mSweepUpdateInterval != 0)
                 {

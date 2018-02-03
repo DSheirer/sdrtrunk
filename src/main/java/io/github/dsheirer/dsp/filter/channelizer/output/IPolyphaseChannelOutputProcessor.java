@@ -19,7 +19,7 @@
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
 import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelResultsBuffer;
-import io.github.dsheirer.sample.complex.TimestampedBufferAssembler;
+import io.github.dsheirer.sample.complex.reusable.ReusableBufferAssembler;
 import io.github.dsheirer.source.Source;
 
 import java.util.List;
@@ -35,9 +35,9 @@ public interface IPolyphaseChannelOutputProcessor
     /**
      * Process the channel output channel results queue and deliver the output to the listener
      *
-     * @param timestampedBufferAssembler to receive the processed channel results
+     * @param reusableBufferAssembler to receive the processed channel results
      */
-    void processChannelResults(TimestampedBufferAssembler timestampedBufferAssembler);
+    void processChannelResults(ReusableBufferAssembler reusableBufferAssembler);
 
     /**
      * Sets the desired frequency offset from center.  The samples will be mixed with an oscillator set to this offset

@@ -19,8 +19,8 @@
 package io.github.dsheirer.source.tuner.fcd;
 
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.adapter.ShortAdapter;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.adapter.ComplexShortAdapter;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.mixer.ComplexMixer;
 import io.github.dsheirer.source.tuner.MixerTunerDataLine;
@@ -87,19 +87,19 @@ public abstract class FCDTunerController extends TunerController
             mLog.error("Error setting sample rate to [" + audioFormat.getSampleRate() + "]", se);
         }
 
-        mComplexMixer = new ComplexMixer( mixerTDL.getTargetDataLine(), audioFormat, tunerName, new ShortAdapter(),
-            mSampleBroadcaster);
+        mComplexMixer = new ComplexMixer( mixerTDL.getTargetDataLine(), audioFormat, tunerName,
+            new ComplexShortAdapter(), mSampleBroadcaster);
     }
 
     /**
      * Overrides the super class functionality to auto-start the complex mixer and provide samples to listeners
      */
     @Override
-    public void addComplexBufferListener(Listener<ComplexBuffer> listener)
+    public void addBufferListener(Listener<ReusableComplexBuffer> listener)
     {
-        boolean hasExistingListeners = hasComplexBufferListeners();
+        boolean hasExistingListeners = hasBufferListeners();
 
-        super.addComplexBufferListener(listener);
+        super.addBufferListener(listener);
 
         if(!hasExistingListeners)
         {
@@ -112,11 +112,11 @@ public abstract class FCDTunerController extends TunerController
      * more registered listeners
      */
     @Override
-    public void removeComplexBufferListener(Listener<ComplexBuffer> listener)
+    public void removeBufferListener(Listener<ReusableComplexBuffer> listener)
     {
-        super.removeComplexBufferListener(listener);
+        super.removeBufferListener(listener);
 
-        if(!hasComplexBufferListeners())
+        if(!hasBufferListeners())
         {
             mComplexMixer.stop();
         }

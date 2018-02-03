@@ -20,7 +20,7 @@ import io.github.dsheirer.dsp.filter.Window.WindowType;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 import io.github.dsheirer.sample.real.IOverflowListener;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Processes both complex samples or float samples and dispatches a float array of DFT results, using configurable fft
  * size and output dispatch timelines.
  */
-public class DFTProcessor implements Listener<ComplexBuffer>, ISourceEventProcessor, IDFTWidthChangeProcessor
+public class DFTProcessor implements Listener<ReusableComplexBuffer>, ISourceEventProcessor, IDFTWidthChangeProcessor
 {
     private static final Logger mLog = LoggerFactory.getLogger(DFTProcessor.class);
     private static final int BUFFER_QUEUE_MAX_SIZE = 12;
@@ -192,13 +192,18 @@ public class DFTProcessor implements Listener<ComplexBuffer>, ISourceEventProces
      * Places the sample into a transfer queue for future processing.
      */
     @Override
-    public void receive(ComplexBuffer sampleBuffer)
+    public void receive(ReusableComplexBuffer sampleBuffer)
     {
         mOverflowableBufferStream.offer(sampleBuffer);
     }
 
     private void calculate()
     {
+        //We always send the previous calculated samples - this should improve the screen rendering since the frame
+        //rate will always occur on an even rhythm.  Any delays caused by processing will be absorbed and not impact
+        //the screen rendering.
+        dispatch(mPreviousSamples);
+
         try
         {
             if(mFrameFlushCount > 0)
@@ -220,14 +225,12 @@ public class DFTProcessor implements Listener<ComplexBuffer>, ISourceEventProces
                 mFFT.complexForward(samples);
             }
 
-            dispatch(samples);
-
             mPreviousSamples = samples;
         }
         catch(IOException ioe)
         {
             //No new data, dispatch the previous samples again
-            dispatch(mPreviousSamples);
+            //no-op
         }
     }
 

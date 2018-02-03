@@ -26,7 +26,7 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 import io.github.dsheirer.settings.ColorSetting.ColorSettingName;
 import io.github.dsheirer.settings.ColorSettingMenuItem;
 import io.github.dsheirer.settings.SettingsManager;
@@ -75,7 +75,8 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Hashtable;
 
-public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuffer>, ISourceEventProcessor, IDFTWidthChangeProcessor
+public class SpectralDisplayPanel extends JPanel implements Listener<ReusableComplexBuffer>, ISourceEventProcessor,
+    IDFTWidthChangeProcessor
 {
     private static final long serialVersionUID = 1L;
 
@@ -412,9 +413,10 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuff
      * Complex sample buffer receive method
      */
     @Override
-    public void receive(ComplexBuffer sampleBuffer)
+    public void receive(ReusableComplexBuffer reusableComplexBuffer)
     {
-        mDFTProcessor.receive(sampleBuffer);
+        mDFTProcessor.receive(reusableComplexBuffer.incrementUserCount());
+        reusableComplexBuffer.decrementUserCount();
     }
 
     /**
@@ -435,7 +437,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuff
             mTuner.getTunerController().addListener(this);
 
             //Register the dft processor to receive samples from the tuner
-            mTuner.getTunerController().addComplexBufferListener(mDFTProcessor);
+            mTuner.getTunerController().addBufferListener(mDFTProcessor);
 
             mSpectrumPanel.setSampleSize(mTuner.getSampleSize());
 
@@ -458,7 +460,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ComplexBuff
             mTuner.getTunerController().removeListener(this);
 
             //Deregister the dft processor from receiving samples
-            mTuner.getTunerController().removeComplexBufferListener(mDFTProcessor);
+            mTuner.getTunerController().removeBufferListener(mDFTProcessor);
             mTuner = null;
         }
     }

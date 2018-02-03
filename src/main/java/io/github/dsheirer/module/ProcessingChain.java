@@ -49,8 +49,8 @@ import io.github.dsheirer.record.wave.ComplexBufferWaveRecorder;
 import io.github.dsheirer.record.wave.RealBufferWaveRecorder;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
-import io.github.dsheirer.sample.complex.IComplexBufferListener;
+import io.github.dsheirer.sample.complex.reusable.IReusableComplexBufferListener;
+import io.github.dsheirer.sample.complex.reusable.ReusableBufferBroadcaster;
 import io.github.dsheirer.sample.real.IFilteredRealBufferListener;
 import io.github.dsheirer.sample.real.IFilteredRealBufferProvider;
 import io.github.dsheirer.sample.real.IUnFilteredRealBufferListener;
@@ -98,7 +98,7 @@ public class ProcessingChain implements IChannelEventListener
     private Broadcaster<AudioPacket> mAudioPacketBroadcaster = new Broadcaster<>();
     private Broadcaster<CallEvent> mCallEventBroadcaster = new Broadcaster<>();
     private Broadcaster<ChannelEvent> mChannelEventBroadcaster = new Broadcaster<>();
-    private Broadcaster<ComplexBuffer> mComplexBufferBroadcaster = new Broadcaster<>();
+    private ReusableBufferBroadcaster mComplexBufferBroadcaster = new ReusableBufferBroadcaster();
     private Broadcaster<DecoderStateEvent> mDecoderStateEventBroadcaster = new Broadcaster<>();
     private Broadcaster<Heartbeat> mHeartbeatBroadcaster = new Broadcaster<>();
     private Broadcaster<SourceEvent> mSourceEventBroadcaster = new Broadcaster<>();
@@ -307,24 +307,14 @@ public class ProcessingChain implements IChannelEventListener
             mChannelEventBroadcaster.addListener(((IChannelEventListener) module).getChannelEventListener());
         }
 
-        if(module instanceof IComplexBufferListener)
-        {
-            mComplexBufferBroadcaster.addListener(((IComplexBufferListener) module).getComplexBufferListener());
-        }
-
         if(module instanceof IDecoderStateEventListener)
         {
             mDecoderStateEventBroadcaster.addListener(((IDecoderStateEventListener) module).getDecoderStateListener());
         }
 
-        if(module instanceof ISourceEventListener)
+        if(module instanceof IFilteredRealBufferListener)
         {
-            Listener<SourceEvent> listener = ((ISourceEventListener)module).getSourceEventListener();
-
-            if(listener != null)
-            {
-                mSourceEventBroadcaster.addListener(listener);
-            }
+            mFilteredRealBufferBroadcaster.addListener(((IFilteredRealBufferListener) module).getFilteredRealBufferListener());
         }
 
         if(module instanceof IHeartbeatListener)
@@ -337,9 +327,19 @@ public class ProcessingChain implements IChannelEventListener
             mMessageBroadcaster.addListener(((IMessageListener) module).getMessageListener());
         }
 
-        if(module instanceof IFilteredRealBufferListener)
+        if(module instanceof IReusableComplexBufferListener)
         {
-            mFilteredRealBufferBroadcaster.addListener(((IFilteredRealBufferListener) module).getFilteredRealBufferListener());
+            mComplexBufferBroadcaster.addListener(((IReusableComplexBufferListener) module).getReusableComplexBufferListener());
+        }
+
+        if(module instanceof ISourceEventListener)
+        {
+            Listener<SourceEvent> listener = ((ISourceEventListener)module).getSourceEventListener();
+
+            if(listener != null)
+            {
+                mSourceEventBroadcaster.addListener(listener);
+            }
         }
 
         if(module instanceof ISquelchStateListener)
@@ -379,19 +379,14 @@ public class ProcessingChain implements IChannelEventListener
             mChannelEventBroadcaster.removeListener(((IChannelEventListener) module).getChannelEventListener());
         }
 
-        if(module instanceof IComplexBufferListener)
-        {
-            mComplexBufferBroadcaster.removeListener(((IComplexBufferListener) module).getComplexBufferListener());
-        }
-
         if(module instanceof IDecoderStateEventListener)
         {
             mDecoderStateEventBroadcaster.removeListener(((IDecoderStateEventListener) module).getDecoderStateListener());
         }
 
-        if(module instanceof ISourceEventListener)
+        if(module instanceof IFilteredRealBufferListener)
         {
-            mSourceEventBroadcaster.removeListener(((ISourceEventListener) module).getSourceEventListener());
+            mFilteredRealBufferBroadcaster.removeListener(((IFilteredRealBufferListener) module).getFilteredRealBufferListener());
         }
 
         if(module instanceof IHeartbeatListener)
@@ -399,14 +394,19 @@ public class ProcessingChain implements IChannelEventListener
             mHeartbeatBroadcaster.removeListener(((IHeartbeatListener)module).getHeartbeatListener());
         }
 
+        if(module instanceof IReusableComplexBufferListener)
+        {
+            mComplexBufferBroadcaster.removeListener(((IReusableComplexBufferListener) module).getReusableComplexBufferListener());
+        }
+
+        if(module instanceof ISourceEventListener)
+        {
+            mSourceEventBroadcaster.removeListener(((ISourceEventListener) module).getSourceEventListener());
+        }
+
         if(module instanceof IMessageListener)
         {
             mMessageBroadcaster.removeListener(((IMessageListener) module).getMessageListener());
-        }
-
-        if(module instanceof IFilteredRealBufferListener)
-        {
-            mFilteredRealBufferBroadcaster.removeListener(((IFilteredRealBufferListener) module).getFilteredRealBufferListener());
         }
 
         if(module instanceof ISquelchStateListener)

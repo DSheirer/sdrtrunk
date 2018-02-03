@@ -17,7 +17,7 @@ package io.github.dsheirer.sample;
 
 public class Buffer
 {
-    private float[] mSamples;
+    protected float[] mSamples;
 
     /**
      * Buffer containing float sample data

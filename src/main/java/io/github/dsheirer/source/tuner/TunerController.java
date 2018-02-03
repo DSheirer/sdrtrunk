@@ -17,10 +17,10 @@
  ******************************************************************************/
 package io.github.dsheirer.source.tuner;
 
-import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
-import io.github.dsheirer.sample.complex.IComplexBufferProvider;
+import io.github.dsheirer.sample.complex.reusable.IReusableComplexBufferProvider;
+import io.github.dsheirer.sample.complex.reusable.ReusableBufferBroadcaster;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
@@ -33,10 +33,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class TunerController implements Tunable, ISourceEventProcessor, ISourceEventListener,
-    IComplexBufferProvider, Listener<ComplexBuffer>
+    IReusableComplexBufferProvider, Listener<ReusableComplexBuffer>
 {
     private final static Logger mLog = LoggerFactory.getLogger(TunerController.class);
-    protected Broadcaster<ComplexBuffer> mSampleBroadcaster = new Broadcaster<>();
+    protected ReusableBufferBroadcaster mSampleBroadcaster = new ReusableBufferBroadcaster();
     protected FrequencyController mFrequencyController;
     private int mMiddleUnusableHalfBandwidth;
     private double mUsableBandwidthPercentage;
@@ -89,13 +89,13 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
             case REQUEST_START_SAMPLE_STREAM:
                 if(sourceEvent.getSource() instanceof Listener)
                 {
-                    addComplexBufferListener((Listener<ComplexBuffer>)sourceEvent.getSource());
+                    addBufferListener((Listener<ReusableComplexBuffer>)sourceEvent.getSource());
                 }
                 break;
             case REQUEST_STOP_SAMPLE_STREAM:
                 if(sourceEvent.getSource() instanceof Listener)
                 {
-                    removeComplexBufferListener((Listener<ComplexBuffer>)sourceEvent.getSource());
+                    removeBufferListener((Listener<ReusableComplexBuffer>)sourceEvent.getSource());
                 }
                 break;
             default:
@@ -230,7 +230,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      * Adds the listener to receive complex buffer samples
      */
     @Override
-    public void addComplexBufferListener(Listener<ComplexBuffer> listener)
+    public void addBufferListener(Listener<ReusableComplexBuffer> listener)
     {
         mSampleBroadcaster.addListener(listener);
     }
@@ -239,7 +239,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      * Removes the listener from receiving complex buffer samples
      */
     @Override
-    public void removeComplexBufferListener(Listener<ComplexBuffer> listener)
+    public void removeBufferListener(Listener<ReusableComplexBuffer> listener)
     {
         mSampleBroadcaster.removeListener(listener);
     }
@@ -248,7 +248,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      * Indicates if there are any complex buffer listeners registered on this controller
      */
     @Override
-    public boolean hasComplexBufferListeners()
+    public boolean hasBufferListeners()
     {
         return mSampleBroadcaster.hasListeners();
     }
@@ -256,16 +256,16 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     /**
      * Broadcasts the buffer to any registered listeners
      */
-    protected void broadcast(ComplexBuffer complexBuffer)
+    protected void broadcast(ReusableComplexBuffer reusableComplexBuffer)
     {
-        mSampleBroadcaster.broadcast(complexBuffer);
+        mSampleBroadcaster.broadcast(reusableComplexBuffer.incrementUserCount());
     }
 
     /**
      * Implements the Listener<T> interface to receive and distribute complex buffers from subclass implementations
      */
     @Override
-    public void receive(ComplexBuffer complexBuffer)
+    public void receive(ReusableComplexBuffer complexBuffer)
     {
         broadcast(complexBuffer);
     }

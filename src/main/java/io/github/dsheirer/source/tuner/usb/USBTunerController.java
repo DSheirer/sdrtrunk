@@ -19,7 +19,7 @@
 package io.github.dsheirer.source.tuner.usb;
 
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 import io.github.dsheirer.source.tuner.TunerController;
 
 public abstract class USBTunerController extends TunerController
@@ -44,11 +44,11 @@ public abstract class USBTunerController extends TunerController
      * Adds the IQ buffer listener and automatically starts buffer transfer processing, if not already started.
      */
     @Override
-    public void addComplexBufferListener(Listener<ComplexBuffer> listener)
+    public void addBufferListener(Listener<ReusableComplexBuffer> listener)
     {
-        boolean hasExistingListeners = hasComplexBufferListeners();
+        boolean hasExistingListeners = hasBufferListeners();
 
-        super.addComplexBufferListener(listener);
+        super.addBufferListener(listener);
 
         if(!hasExistingListeners)
         {
@@ -60,11 +60,11 @@ public abstract class USBTunerController extends TunerController
      * Removes the IQ buffer listener and stops buffer transfer processing if there are no more listeners.
      */
     @Override
-    public void removeComplexBufferListener(Listener<ComplexBuffer> listener)
+    public void removeBufferListener(Listener<ReusableComplexBuffer> listener)
     {
-        super.removeComplexBufferListener(listener);
+        super.removeBufferListener(listener);
 
-        if(!hasComplexBufferListeners())
+        if(!hasBufferListeners())
         {
             getUSBTransferProcessor().removeListener();
         }
