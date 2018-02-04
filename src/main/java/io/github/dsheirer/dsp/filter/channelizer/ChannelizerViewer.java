@@ -82,7 +82,8 @@ public class ChannelizerViewer extends JFrame
     {
         mTestTuner = new TestTuner();
 
-        mChannelCount = (int)(mTestTuner.getTunerController().getUsableBandwidth() / CHANNEL_BANDWIDTH);
+//        mChannelCount = (int)(mTestTuner.getTunerController().getUsableBandwidth() / CHANNEL_BANDWIDTH);
+        mChannelCount = (int)(mTestTuner.getTunerController().getBandwidth() / CHANNEL_BANDWIDTH);
         mChannelsPerRow = channelsPerRow;
 
         init();
@@ -221,7 +222,7 @@ public class ChannelizerViewer extends JFrame
             {
                 long frequency = baseFrequency + (x * CHANNEL_BANDWIDTH);
 
-                mLog.debug("Channel " + x + " Frequency: " + frequency);
+                mLog.debug("Channel " + x + "/" + mChannelCount + " Frequency: " + frequency);
 
                 ChannelPanel channelPanel = new ChannelPanel(mSettingsManager, CHANNEL_BANDWIDTH * 2, frequency, CHANNEL_BANDWIDTH, (x == channelToLog));
                 channelPanel.setDFTSize(mChannelPanelDFTSize);
@@ -352,18 +353,6 @@ public class ChannelizerViewer extends JFrame
             mSpectrumPanel = new SpectrumPanel(settingsManager);
             mSpectrumPanel.setSampleSize(16);
             add(mSpectrumPanel, "span");
-            add(new JLabel("Center:" + frequency));
-
-            mLoggingButton = new JToggleButton("Logging");
-            mLoggingButton.addActionListener(new ActionListener()
-            {
-                @Override
-                public void actionPerformed(ActionEvent e)
-                {
-                    mLoggingEnabled = mLoggingButton.isSelected();
-                }
-            });
-//            add(mLoggingButton);
 
             mDFTProcessor.addConverter(mComplexDecibelConverter);
             mDFTProcessor.process(SourceEvent.sampleRateChange(sampleRate));
@@ -395,6 +384,27 @@ public class ChannelizerViewer extends JFrame
             {
                 mLog.error("Couldn't get a source from the tuner for frequency: " + frequency);
             }
+
+            if(mSource != null)
+            {
+                add(new JLabel("Center:" + frequency));
+            }
+            else
+            {
+                add(new JLabel("NO SRC:" + frequency));
+            }
+
+            mLoggingButton = new JToggleButton("Logging");
+            mLoggingButton.addActionListener(new ActionListener()
+            {
+                @Override
+                public void actionPerformed(ActionEvent e)
+                {
+                    mLoggingEnabled = mLoggingButton.isSelected();
+                }
+            });
+//            add(mLoggingButton);
+
         }
 
         public TunerChannelSource getSource()
