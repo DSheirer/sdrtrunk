@@ -1,7 +1,6 @@
 /*******************************************************************************
- * *********************************************************************************************************************
  * sdr-trunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
  * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
@@ -12,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License  along with this program.
  * If not, see <http://www.gnu.org/licenses/>
- * *********************************************************************************************************************
+ *
  ******************************************************************************/
 package io.github.dsheirer.source.tuner.frequency;
 
@@ -28,248 +27,284 @@ import java.util.List;
 
 public class FrequencyController
 {
-	private final static Logger mLog = LoggerFactory.getLogger(FrequencyController.class);
+    private final static Logger mLog = LoggerFactory.getLogger(FrequencyController.class);
 
-	private Tunable mTunable;
-	private long mFrequency = 101100000;
-	private long mTunedFrequency = 101100000;
-	private long mMinimumFrequency;
-	private long mMaximumFrequency;
-	private double mFrequencyCorrection = 0.0d;
-	private double mSampleRate = 0.0d;
+    private Tunable mTunable;
+    private long mFrequency = 101100000;
+    private long mTunedFrequency = 101100000;
+    private long mMinimumFrequency;
+    private long mMaximumFrequency;
+    private double mFrequencyCorrection = 0.0d;
+    private double mSampleRate = 0.0d;
+    private boolean mLocked = false;
 
-	private List<ISourceEventProcessor> mProcessors = new ArrayList<>();
+    private List<ISourceEventProcessor> mProcessors = new ArrayList<>();
 
-	public FrequencyController(Tunable tunable, long minFrequency, long maxFrequency, double frequencyCorrection)
-	{
-		mTunable = tunable;
-		mMinimumFrequency = minFrequency;
-		mMaximumFrequency = maxFrequency;
-		mFrequencyCorrection = frequencyCorrection;
-	}
+    public FrequencyController(Tunable tunable, long minFrequency, long maxFrequency, double frequencyCorrection)
+    {
+        mTunable = tunable;
+        mMinimumFrequency = minFrequency;
+        mMaximumFrequency = maxFrequency;
+        mFrequencyCorrection = frequencyCorrection;
+    }
 
-	/**
-	 * Get bandwidth in hertz
-	 */
-	public int getBandwidth()
-	{
-		return (int)mSampleRate;
-	}
+    /**
+     * Indicates if this frequency controller is locked by a remote process.  A locked state indicates that neither
+     * the frequency nor the sample rate should be changed.  The remote process will typically be a downstream
+     * consumer of the data produced by the device being controlled (ie polyphase channelizer) that does not want
+     * the sample rate or frequency to be changed while processing is ongoing.
+     *
+     * @return true if locked or false if not locked.
+     */
+    public boolean isLocked()
+    {
+        return mLocked;
+    }
 
-	/**
-	 * Set sample rate in hertz
-	 */
-	public void setSampleRate(int sampleRate) throws SourceException
-	{
-		mSampleRate = sampleRate;
+    /**
+     * Sets the lock state for this frequency controller.  Set to true when a consumer process requires that the
+     * frequency and sample rate controls be locked so that only the singular consumer process makes changes.  This
+     * is primarily to lock down user interface controls when the polyphase channelizer is producing channels.
+     *
+     * @param locked state
+     */
+    public void setLocked(boolean locked) throws SourceException
+    {
+        mLocked = locked;
 
-		broadcastSampleRateChange();
-	}
+        if(mLocked)
+        {
+            broadcast(SourceEvent.lockedState());
+        }
+        else
+        {
+            broadcast(SourceEvent.unlockedState());
+        }
+    }
 
-	/**
-	 * Get sample rate in hertz
-	 */
-	public double getSampleRate()
-	{
-		return mSampleRate;
-	}
+    /**
+     * Get bandwidth in hertz
+     */
+    public int getBandwidth()
+    {
+        return (int)mSampleRate;
+    }
 
-	/**
-	 * Get frequency in hertz
-	 */
-	public long getFrequency()
-	{
-		return mFrequency;
-	}
+    /**
+     * Set sample rate in hertz
+     */
+    public void setSampleRate(int sampleRate) throws SourceException
+    {
+        mSampleRate = sampleRate;
 
-	/**
-	 * Set frequency
-	 *
-	 * @param frequency in hertz
-	 * @throws SourceException if tunable doesn't support tuning a corrected
-	 *                         version of the requested frequency
-	 */
-	public void setFrequency(long frequency) throws SourceException
-	{
-		setFrequency(frequency, true);
-	}
+        broadcastSampleRateChange();
+    }
 
-	/**
-	 * Indicates if the specified frequency can be tuned (ie is within min/max frequency) by this controller.
-	 * @param frequency to evaluate
-	 * @return true if the frequency falls within the tuning range of this controller
-	 */
-	public boolean canTune(long frequency)
-	{
-		return getMinimumFrequency() <= frequency && frequency <= getMaximumFrequency();
-	}
+    /**
+     * Get sample rate in hertz
+     */
+    public double getSampleRate()
+    {
+        return mSampleRate;
+    }
 
-	/**
-	 * Set frequency with optional broadcast of frequency change event.  This
-	 * method supports changing the frequency correction value without
-	 * broadcasting a frequency change event.
-	 */
-	private void setFrequency(long frequency, boolean broadcastChange) throws SourceException
-	{
-		long tunedFrequency = getTunedFrequency(frequency);
+    /**
+     * Get frequency in hertz
+     */
+    public long getFrequency()
+    {
+        return mFrequency;
+    }
 
-		if(tunedFrequency < mMinimumFrequency)
-		{
-			throw new InvalidFrequencyException("Requested frequency not valid", frequency, mMinimumFrequency);
-		}
+    /**
+     * Set frequency
+     *
+     * @param frequency in hertz
+     * @throws SourceException if tunable doesn't support tuning a corrected
+     *                         version of the requested frequency
+     */
+    public void setFrequency(long frequency) throws SourceException
+    {
+        setFrequency(frequency, true);
+    }
 
-		if(tunedFrequency > mMaximumFrequency)
-		{
-			throw new InvalidFrequencyException("Requested frequency not valid", frequency, mMaximumFrequency);
-		}
+    /**
+     * Indicates if the specified frequency can be tuned (ie is within min/max frequency) by this controller.
+     *
+     * @param frequency to evaluate
+     * @return true if the frequency falls within the tuning range of this controller
+     */
+    public boolean canTune(long frequency)
+    {
+        return getMinimumFrequency() <= frequency && frequency <= getMaximumFrequency();
+    }
 
-		mFrequency = frequency;
+    /**
+     * Set frequency with optional broadcast of frequency change event.  This
+     * method supports changing the frequency correction value without
+     * broadcasting a frequency change event.
+     */
+    private void setFrequency(long frequency, boolean broadcastChange) throws SourceException
+    {
+        long tunedFrequency = getTunedFrequency(frequency);
 
-		mTunedFrequency = tunedFrequency;
+        if(tunedFrequency < mMinimumFrequency)
+        {
+            throw new InvalidFrequencyException("Requested frequency not valid", frequency, mMinimumFrequency);
+        }
 
-		if(mTunable != null)
-		{
-			mTunable.setTunedFrequency(mTunedFrequency);
-		}
+        if(tunedFrequency > mMaximumFrequency)
+        {
+            throw new InvalidFrequencyException("Requested frequency not valid", frequency, mMaximumFrequency);
+        }
 
-		/* Broadcast to all listeners that the frequency has changed */
-		if(broadcastChange)
-		{
-			broadcastFrequencyChange();
-		}
-	}
+        mFrequency = frequency;
 
-	public long getTunedFrequency()
-	{
-		return mTunedFrequency;
-	}
+        mTunedFrequency = tunedFrequency;
 
-	public long getMinimumFrequency()
-	{
-		return mMinimumFrequency;
-	}
+        if(mTunable != null)
+        {
+            mTunable.setTunedFrequency(mTunedFrequency);
+        }
 
-	public long getMaximumFrequency()
-	{
-		return mMaximumFrequency;
-	}
+        /* Broadcast to all listeners that the frequency has changed */
+        if(broadcastChange)
+        {
+            broadcastFrequencyChange();
+        }
+    }
 
-	/**
-	 * Calculate the tuned frequency by adding frequency correction to the
-	 * corrected frequency.
-	 *
-	 * @param correctedFrequency
-	 */
-	private long getTunedFrequency(long correctedFrequency)
-	{
-		return (long)((double)correctedFrequency /
-			(1.0 + (mFrequencyCorrection / 1000000.0)));
-	}
+    public long getTunedFrequency()
+    {
+        return mTunedFrequency;
+    }
 
-	/**
-	 * Calculate the corrected frequency by subtracting frequency correction
-	 * from the tuned frequency.
-	 *
-	 * @param tunedFrequency
-	 */
-	@SuppressWarnings("unused")
-	private long getCorrectedFrequency(long tunedFrequency)
-	{
-		return (long)((double)tunedFrequency /
-			(1.0 - (mFrequencyCorrection / 1000000.0)));
-	}
+    public long getMinimumFrequency()
+    {
+        return mMinimumFrequency;
+    }
 
-	public double getFrequencyCorrection()
-	{
-		return mFrequencyCorrection;
-	}
+    public long getMaximumFrequency()
+    {
+        return mMaximumFrequency;
+    }
 
-	public void setFrequencyCorrection(double correction) throws SourceException
-	{
-		mFrequencyCorrection = correction;
+    /**
+     * Calculate the tuned frequency by adding frequency correction to the
+     * corrected frequency.
+     *
+     * @param correctedFrequency
+     */
+    private long getTunedFrequency(long correctedFrequency)
+    {
+        return (long)((double)correctedFrequency /
+            (1.0 + (mFrequencyCorrection / 1000000.0)));
+    }
 
-		if(mFrequency > 0)
-		{
-			setFrequency(mFrequency, true);
-		}
+    /**
+     * Calculate the corrected frequency by subtracting frequency correction
+     * from the tuned frequency.
+     *
+     * @param tunedFrequency
+     */
+    @SuppressWarnings("unused")
+    private long getCorrectedFrequency(long tunedFrequency)
+    {
+        return (long)((double)tunedFrequency /
+            (1.0 - (mFrequencyCorrection / 1000000.0)));
+    }
 
-		broadcastFrequencyCorrectionChange();
-	}
+    public double getFrequencyCorrection()
+    {
+        return mFrequencyCorrection;
+    }
 
-	/**
-	 * Adds listener to receive frequency change events
-	 */
-	public void addListener(ISourceEventProcessor processor)
-	{
-		if(!mProcessors.contains(processor))
-		{
-			mProcessors.add(processor);
-		}
-	}
+    public void setFrequencyCorrection(double correction) throws SourceException
+    {
+        mFrequencyCorrection = correction;
 
-	/**
-	 * Removes listener from receiving frequency change events
-	 */
-	public void removeFrequencyChangeProcessor(ISourceEventProcessor processor)
-	{
-		mProcessors.remove(processor);
-	}
+        if(mFrequency > 0)
+        {
+            setFrequency(mFrequency, true);
+        }
 
+        broadcastFrequencyCorrectionChange();
+    }
 
-	/**
-	 * Broadcasts a change/update to the current (uncorrected) frequency or the
-	 * bandwidth/sample rate value.
-	 */
-	protected void broadcastFrequencyChange() throws SourceException
-	{
-		broadcast(SourceEvent.frequencyChange(mFrequency));
-	}
+    /**
+     * Adds listener to receive frequency change events
+     */
+    public void addListener(ISourceEventProcessor processor)
+    {
+        if(!mProcessors.contains(processor))
+        {
+            mProcessors.add(processor);
+        }
+    }
 
-	/**
-	 * Broadcast a frequency error/correction value change
-	 */
-	protected void broadcastFrequencyCorrectionChange() throws SourceException
-	{
-		broadcast(SourceEvent.frequencyCorrectionChange((int)mFrequencyCorrection));
-	}
-
-	/**
-	 * Broadcasts a sample rate change
-	 */
-	protected void broadcastSampleRateChange() throws SourceException
-	{
-		broadcast(SourceEvent.sampleRateChange(mSampleRate));
-	}
-
-	public void broadcast(SourceEvent event) throws SourceException
-	{
-		for(ISourceEventProcessor processor : mProcessors)
-		{
-			processor.process(event);
-		}
-	}
+    /**
+     * Removes listener from receiving frequency change events
+     */
+    public void removeFrequencyChangeProcessor(ISourceEventProcessor processor)
+    {
+        mProcessors.remove(processor);
+    }
 
 
-	public interface Tunable
-	{
-		/**
-		 * Gets the tuned frequency of the device
-		 */
-		public long getTunedFrequency() throws SourceException;
+    /**
+     * Broadcasts a change/update to the current (uncorrected) frequency or the
+     * bandwidth/sample rate value.
+     */
+    protected void broadcastFrequencyChange() throws SourceException
+    {
+        broadcast(SourceEvent.frequencyChange(mFrequency));
+    }
 
-		/**
-		 * Sets the tuned frequency of the device
-		 */
-		public void setTunedFrequency(long frequency) throws SourceException;
+    /**
+     * Broadcast a frequency error/correction value change
+     */
+    protected void broadcastFrequencyCorrectionChange() throws SourceException
+    {
+        broadcast(SourceEvent.frequencyCorrectionChange((int)mFrequencyCorrection));
+    }
 
-		/**
-		 * Gets the current bandwidth setting of the device
-		 */
-		public double getCurrentSampleRate() throws SourceException;
+    /**
+     * Broadcasts a sample rate change
+     */
+    protected void broadcastSampleRateChange() throws SourceException
+    {
+        broadcast(SourceEvent.sampleRateChange(mSampleRate));
+    }
 
-		/**
-		 * Indicates if this tunable can tune the frequency
-		 */
-		public boolean canTune(long frequency);
-	}
+    public void broadcast(SourceEvent event) throws SourceException
+    {
+        for(ISourceEventProcessor processor : mProcessors)
+        {
+            processor.process(event);
+        }
+    }
+
+
+    public interface Tunable
+    {
+        /**
+         * Gets the tuned frequency of the device
+         */
+        public long getTunedFrequency() throws SourceException;
+
+        /**
+         * Sets the tuned frequency of the device
+         */
+        public void setTunedFrequency(long frequency) throws SourceException;
+
+        /**
+         * Gets the current bandwidth setting of the device
+         */
+        public double getCurrentSampleRate() throws SourceException;
+
+        /**
+         * Indicates if this tunable can tune the frequency
+         */
+        public boolean canTune(long frequency);
+    }
 }

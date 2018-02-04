@@ -147,6 +147,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                     mChannelCalculator.getChannelSampleRate());
 
                 mChannelSources.add(channelSource);
+                mSourceEventBroadcaster.broadcast(SourceEvent.channelCountChange(getTunerChannelCount()));
             }
         }
         catch(IllegalArgumentException iae)
@@ -225,7 +226,6 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         synchronized(mBufferProcessor)
         {
             mPolyphaseChannelizer.addChannel(channelSource);
-            mSourceEventBroadcaster.broadcast(SourceEvent.channelCountChange(getTunerChannelCount()));
 
             if(mPolyphaseChannelizer.getRegisteredChannelCount() == 1)
             {

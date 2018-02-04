@@ -433,6 +433,9 @@ public class TunerChannelSourceManager extends ChannelSourceManager
             case NOTIFICATION_CHANNEL_COUNT_CHANGE:
                 //Rebroadcast this event to any registered listeners (ie tuner and tuner controller)
                 broadcast(sourceEvent);
+                //Lock the frequency and sample rate controls on the tuner controller so users can't change them
+                //when the polyphase manager has channels allocated
+                mTunerController.setLocked(getTunerChannelCount() > 0);
                 break;
             default:
                 mLog.info("Unrecognized source event: " + sourceEvent);

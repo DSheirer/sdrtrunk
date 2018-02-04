@@ -1,6 +1,6 @@
 /*******************************************************************************
  * sdr-trunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
  * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
@@ -41,6 +41,7 @@ import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.usb.UsbException;
+import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
@@ -51,7 +52,7 @@ public class HackRFTunerEditor extends TunerConfigurationEditor
 {
     private static final long serialVersionUID = 1L;
 
-    private final static Logger mLog = LoggerFactory.getLogger( HackRFTunerEditor.class );
+    private final static Logger mLog = LoggerFactory.getLogger(HackRFTunerEditor.class);
 
     private JTextField mConfigurationName;
     private JButton mTunerInfo;
@@ -64,9 +65,9 @@ public class HackRFTunerEditor extends TunerConfigurationEditor
 
     private HackRFTunerController mController;
 
-    public HackRFTunerEditor( TunerConfigurationModel tunerConfigurationModel, HackRFTuner tuner )
+    public HackRFTunerEditor(TunerConfigurationModel tunerConfigurationModel, HackRFTuner tuner)
     {
-        super( tunerConfigurationModel );
+        super(tunerConfigurationModel);
 
         mController = tuner.getController();
 
@@ -75,7 +76,7 @@ public class HackRFTunerEditor extends TunerConfigurationEditor
 
     private HackRFTunerConfiguration getConfiguration()
     {
-        if( hasItem() )
+        if(hasItem())
         {
             return (HackRFTunerConfiguration)getItem();
         }
@@ -83,241 +84,257 @@ public class HackRFTunerEditor extends TunerConfigurationEditor
         return null;
     }
 
-    private void init()
+    @Override
+    public void setSampleRateControl(boolean enabled)
     {
-        setLayout( new MigLayout( "fill,wrap 4", "[right][grow,fill][right][grow,fill]",
-            "[][][][][][][grow]" ) );
-
-        add( new JLabel( "HackRF Tuner Configuration" ), "span,align center" );
-
-        mConfigurationName = new JTextField();
-        mConfigurationName.setEnabled( false );
-        mConfigurationName.addFocusListener( new FocusListener()
+        EventQueue.invokeLater(new Runnable()
         {
             @Override
-            public void focusLost( FocusEvent e )
+            public void run()
+            {
+                mComboSampleRate.setEnabled(enabled);
+            }
+        });
+    }
+
+    private void init()
+    {
+        setLayout(new MigLayout("fill,wrap 4", "[right][grow,fill][right][grow,fill]",
+            "[][][][][][][grow]"));
+
+        add(new JLabel("HackRF Tuner Configuration"), "span,align center");
+
+        mConfigurationName = new JTextField();
+        mConfigurationName.setEnabled(false);
+        mConfigurationName.addFocusListener(new FocusListener()
+        {
+            @Override
+            public void focusLost(FocusEvent e)
             {
                 save();
             }
-            @Override
-            public void focusGained( FocusEvent e ) {}
-        } );
 
-        add( new JLabel( "Name:" ) );
-        add( mConfigurationName, "span 2" );
-
-        mTunerInfo = new JButton( "Tuner Info" );
-        mTunerInfo.setEnabled( false );
-        mTunerInfo.addActionListener( new ActionListener()
-        {
             @Override
-            public void actionPerformed( ActionEvent e )
+            public void focusGained(FocusEvent e)
             {
-                JOptionPane.showMessageDialog( HackRFTunerEditor.this, getTunerInfo(),
-                    "Tuner Info", JOptionPane.INFORMATION_MESSAGE );
             }
-        } );
-        add( mTunerInfo );
+        });
 
-        mComboSampleRate = new JComboBox<>( HackRFSampleRate.values() );
-        mComboSampleRate.setEnabled( false );
-        mComboSampleRate.addActionListener( new ActionListener()
+        add(new JLabel("Name:"));
+        add(mConfigurationName, "span 2");
+
+        mTunerInfo = new JButton("Tuner Info");
+        mTunerInfo.setEnabled(false);
+        mTunerInfo.addActionListener(new ActionListener()
         {
             @Override
-            public void actionPerformed( ActionEvent e )
+            public void actionPerformed(ActionEvent e)
+            {
+                JOptionPane.showMessageDialog(HackRFTunerEditor.this, getTunerInfo(),
+                    "Tuner Info", JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+        add(mTunerInfo);
+
+        mComboSampleRate = new JComboBox<>(HackRFSampleRate.values());
+        mComboSampleRate.setEnabled(false);
+        mComboSampleRate.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
             {
                 HackRFSampleRate sampleRate =
                     (HackRFSampleRate)mComboSampleRate.getSelectedItem();
                 try
                 {
 
-                    mController.setSampleRate( sampleRate );
+                    mController.setSampleRate(sampleRate);
                     save();
                 }
-                catch ( SourceException|UsbException e2 )
+                catch(SourceException | UsbException e2)
                 {
-                    JOptionPane.showMessageDialog( HackRFTunerEditor.this, "HackRF Tuner Controller"
+                    JOptionPane.showMessageDialog(HackRFTunerEditor.this, "HackRF Tuner Controller"
                         + " - couldn't apply the sample rate setting [" + sampleRate.getLabel() +
-                        "] " + e2.getLocalizedMessage() );
+                        "] " + e2.getLocalizedMessage());
 
-                    mLog.error( "HackRF Tuner Controller - couldn't apply sample rate setting [" +
-                        sampleRate.getLabel() + "]", e );
+                    mLog.error("HackRF Tuner Controller - couldn't apply sample rate setting [" +
+                        sampleRate.getLabel() + "]", e);
                 }
             }
-        } );
-        add( new JLabel( "Sample Rate:" ) );
-        add( mComboSampleRate );
+        });
+        add(new JLabel("Sample Rate:"));
+        add(mComboSampleRate);
 
-        SpinnerModel model = new SpinnerNumberModel(     0.0,   //initial value
+        SpinnerModel model = new SpinnerNumberModel(0.0,   //initial value
             -1000.0,   //min
             1000.0,   //max
-            0.1 ); //step
+            0.1); //step
 
-        mFrequencyCorrection = new JSpinner( model );
-        mFrequencyCorrection.setEnabled( false );
+        mFrequencyCorrection = new JSpinner(model);
+        mFrequencyCorrection.setEnabled(false);
         JSpinner.NumberEditor editor = (JSpinner.NumberEditor)mFrequencyCorrection.getEditor();
 
         DecimalFormat format = editor.getFormat();
-        format.setMinimumFractionDigits( 1 );
-        editor.getTextField().setHorizontalAlignment( SwingConstants.CENTER );
+        format.setMinimumFractionDigits(1);
+        editor.getTextField().setHorizontalAlignment(SwingConstants.CENTER);
 
-        mFrequencyCorrection.addChangeListener( new ChangeListener()
+        mFrequencyCorrection.addChangeListener(new ChangeListener()
         {
             @Override
-            public void stateChanged( ChangeEvent e )
+            public void stateChanged(ChangeEvent e)
             {
                 final double value = ((SpinnerNumberModel)mFrequencyCorrection
                     .getModel()).getNumber().doubleValue();
 
                 try
                 {
-                    mController.setFrequencyCorrection( value );
+                    mController.setFrequencyCorrection(value);
                     save();
                 }
-                catch ( SourceException e1 )
+                catch(SourceException e1)
                 {
-                    JOptionPane.showMessageDialog( HackRFTunerEditor.this, "HackRF Tuner Controller"
+                    JOptionPane.showMessageDialog(HackRFTunerEditor.this, "HackRF Tuner Controller"
                         + " - couldn't apply frequency correction value: " + value +
-                        e1.getLocalizedMessage() );
+                        e1.getLocalizedMessage());
 
-                    mLog.error( "HackRF Tuner Controller - couldn't apply frequency correction "
-                        + "value: " + value, e1 );
+                    mLog.error("HackRF Tuner Controller - couldn't apply frequency correction "
+                        + "value: " + value, e1);
                 }
             }
-        } );
+        });
 
-        add( new JLabel( "PPM:" ) );
-        add( mFrequencyCorrection );
+        add(new JLabel("PPM:"));
+        add(mFrequencyCorrection);
 
-        add( new JSeparator( JSeparator.HORIZONTAL ), "span,grow" );
-        add( new JLabel( "Gain" ) );
-        add( new JLabel( "" ), "span 2" ); //filler
+        add(new JSeparator(JSeparator.HORIZONTAL), "span,grow");
+        add(new JLabel("Gain"));
+        add(new JLabel(""), "span 2"); //filler
 
-        mAmplifier = new JToggleButton( "Amplifier" );
-        mAmplifier.setEnabled( false );
-        mAmplifier.addActionListener( new ActionListener()
+        mAmplifier = new JToggleButton("Amplifier");
+        mAmplifier.setEnabled(false);
+        mAmplifier.addActionListener(new ActionListener()
         {
             @Override
-            public void actionPerformed( ActionEvent arg0 )
+            public void actionPerformed(ActionEvent arg0)
             {
                 try
                 {
-                    mController.setAmplifierEnabled( mAmplifier.isSelected() );
+                    mController.setAmplifierEnabled(mAmplifier.isSelected());
                     save();
                 }
-                catch ( UsbException e )
+                catch(UsbException e)
                 {
-                    mLog.error( "couldn't enable/disable amplifier", e );
+                    mLog.error("couldn't enable/disable amplifier", e);
 
-                    JOptionPane.showMessageDialog( HackRFTunerEditor.this, "Couldn't change amplifier setting",
-                        "Error changing amplifier setting", JOptionPane.ERROR_MESSAGE );
+                    JOptionPane.showMessageDialog(HackRFTunerEditor.this, "Couldn't change amplifier setting",
+                        "Error changing amplifier setting", JOptionPane.ERROR_MESSAGE);
                 }
             }
-        } );
-        add( mAmplifier );
+        });
+        add(mAmplifier);
 
-        mComboLNAGain = new JComboBox<HackRFLNAGain>( HackRFLNAGain.values() );
-        mComboLNAGain.setEnabled( false );
-        mComboLNAGain.addActionListener( new ActionListener()
+        mComboLNAGain = new JComboBox<HackRFLNAGain>(HackRFLNAGain.values());
+        mComboLNAGain.setEnabled(false);
+        mComboLNAGain.addActionListener(new ActionListener()
         {
             @Override
-            public void actionPerformed( ActionEvent arg0 )
+            public void actionPerformed(ActionEvent arg0)
             {
                 try
                 {
                     HackRFLNAGain lnaGain = (HackRFLNAGain)mComboLNAGain.getSelectedItem();
 
-                    if ( lnaGain == null )
+                    if(lnaGain == null)
                     {
                         lnaGain = HackRFLNAGain.GAIN_0;
                     }
 
-                    mController.setLNAGain( lnaGain );
+                    mController.setLNAGain(lnaGain);
                     save();
                 }
-                catch ( UsbException e )
+                catch(UsbException e)
                 {
-                    JOptionPane.showMessageDialog( HackRFTunerEditor.this, "HackRF Tuner Controller"
-                        + " - couldn't apply the LNA gain setting - " + e.getLocalizedMessage() );
+                    JOptionPane.showMessageDialog(HackRFTunerEditor.this, "HackRF Tuner Controller"
+                        + " - couldn't apply the LNA gain setting - " + e.getLocalizedMessage());
 
-                    mLog.error( "HackRF Tuner Controller - couldn't apply LNA gain setting - ", e );
+                    mLog.error("HackRF Tuner Controller - couldn't apply LNA gain setting - ", e);
                 }
             }
-        } );
-        mComboLNAGain.setToolTipText( "<html>LNA Gain.  Adjust to set the IF gain</html>" );
-        add( new JLabel( "LNA:" ) );
-        add( mComboLNAGain );
+        });
+        mComboLNAGain.setToolTipText("<html>LNA Gain.  Adjust to set the IF gain</html>");
+        add(new JLabel("LNA:"));
+        add(mComboLNAGain);
 
-        mComboVGAGain = new JComboBox<HackRFVGAGain>( HackRFVGAGain.values() );
-        mComboVGAGain.addActionListener( new ActionListener()
+        mComboVGAGain = new JComboBox<HackRFVGAGain>(HackRFVGAGain.values());
+        mComboVGAGain.addActionListener(new ActionListener()
         {
             @Override
-            public void actionPerformed( ActionEvent arg0 )
+            public void actionPerformed(ActionEvent arg0)
             {
                 try
                 {
                     HackRFVGAGain vgaGain = (HackRFVGAGain)mComboVGAGain.getSelectedItem();
 
-                    if( vgaGain == null )
+                    if(vgaGain == null)
                     {
                         vgaGain = HackRFVGAGain.GAIN_4;
                     }
 
-                    mController.setVGAGain( vgaGain );
+                    mController.setVGAGain(vgaGain);
                     save();
                 }
-                catch ( UsbException e )
+                catch(UsbException e)
                 {
-                    JOptionPane.showMessageDialog( HackRFTunerEditor.this, "HackRF Tuner Controller"
-                        + " - couldn't apply the VGA gain setting - " + e.getLocalizedMessage() );
+                    JOptionPane.showMessageDialog(HackRFTunerEditor.this, "HackRF Tuner Controller"
+                        + " - couldn't apply the VGA gain setting - " + e.getLocalizedMessage());
 
-                    mLog.error( "HackRF Tuner Controller - couldn't apply VGA gain setting", e );
+                    mLog.error("HackRF Tuner Controller - couldn't apply VGA gain setting", e);
                 }
             }
-        } );
-        mComboVGAGain.setToolTipText( "<html>VGA Gain.  Adjust to set the baseband gain</html>" );
-        add( new JLabel( "VGA:" ) );
-        add( mComboVGAGain );
+        });
+        mComboVGAGain.setToolTipText("<html>VGA Gain.  Adjust to set the baseband gain</html>");
+        add(new JLabel("VGA:"));
+        add(mComboVGAGain);
     }
 
     /**
      * Sets each of the tuner configuration controls to the enabled argument state
      */
-    private void setControlsEnabled( boolean enabled )
+    private void setControlsEnabled(boolean enabled)
     {
-        if( mConfigurationName.isEnabled() != enabled )
+        if(mConfigurationName.isEnabled() != enabled)
         {
-            mConfigurationName.setEnabled( enabled );
+            mConfigurationName.setEnabled(enabled);
         }
 
-        if( mTunerInfo.isEnabled() != enabled )
+        if(mTunerInfo.isEnabled() != enabled)
         {
-            mTunerInfo.setEnabled( enabled );
+            mTunerInfo.setEnabled(enabled);
         }
 
-        if( mFrequencyCorrection.isEnabled() != enabled )
+        if(mFrequencyCorrection.isEnabled() != enabled)
         {
-            mFrequencyCorrection.setEnabled( enabled );
+            mFrequencyCorrection.setEnabled(enabled);
         }
 
-        if( mComboSampleRate.isEnabled() != enabled )
+        if(mComboSampleRate.isEnabled() != enabled)
         {
-            mComboSampleRate.setEnabled( enabled );
+            mComboSampleRate.setEnabled(enabled);
         }
 
-        if( mAmplifier.isEnabled() != enabled )
+        if(mAmplifier.isEnabled() != enabled)
         {
-            mAmplifier.setEnabled( enabled );
+            mAmplifier.setEnabled(enabled);
         }
 
-        if( mComboLNAGain.isEnabled() != enabled )
+        if(mComboLNAGain.isEnabled() != enabled)
         {
-            mComboLNAGain.setEnabled( enabled );
+            mComboLNAGain.setEnabled(enabled);
         }
 
-        if( mComboVGAGain.isEnabled() != enabled )
+        if(mComboVGAGain.isEnabled() != enabled)
         {
-            mComboVGAGain.setEnabled( enabled );
+            mComboVGAGain.setEnabled(enabled);
         }
     }
 
@@ -329,18 +346,18 @@ public class HackRFTunerEditor extends TunerConfigurationEditor
         {
             board = mController.getBoardID();
         }
-        catch ( UsbException e )
+        catch(UsbException e)
         {
-            mLog.error( "couldn't read HackRF board identifier", e );
+            mLog.error("couldn't read HackRF board identifier", e);
         }
 
         StringBuilder sb = new StringBuilder();
 
-        sb.append( "<html><h3>HackRF Tuner</h3>" );
+        sb.append("<html><h3>HackRF Tuner</h3>");
 
-        sb.append( "<b>Board: </b>" );
-        sb.append( board.getLabel() );
-        sb.append( "<br>" );
+        sb.append("<b>Board: </b>");
+        sb.append(board.getLabel());
+        sb.append("<br>");
 
         HackRFTunerController.Serial serial = null;
 
@@ -348,25 +365,25 @@ public class HackRFTunerEditor extends TunerConfigurationEditor
         {
             serial = mController.getSerial();
         }
-        catch( Exception e )
+        catch(Exception e)
         {
-            mLog.error( "couldn't read HackRF serial number", e );
+            mLog.error("couldn't read HackRF serial number", e);
         }
 
-        if( serial != null )
+        if(serial != null)
         {
-            sb.append( "<b>Serial: </b>" );
-            sb.append( serial.getSerialNumber() );
-            sb.append( "<br>" );
+            sb.append("<b>Serial: </b>");
+            sb.append(serial.getSerialNumber());
+            sb.append("<br>");
 
-            sb.append( "<b>Part: </b>" );
-            sb.append( serial.getPartID() );
-            sb.append( "<br>" );
+            sb.append("<b>Part: </b>");
+            sb.append(serial.getPartID());
+            sb.append("<br>");
         }
         else
         {
-            sb.append( "<b>Serial: Unknown</b><br>" );
-            sb.append( "<b>Part: Unknown</b><br>" );
+            sb.append("<b>Serial: Unknown</b><br>");
+            sb.append("<b>Part: Unknown</b><br>");
         }
 
         String firmware = null;
@@ -375,58 +392,61 @@ public class HackRFTunerEditor extends TunerConfigurationEditor
         {
             firmware = mController.getFirmwareVersion();
         }
-        catch( Exception e )
+        catch(Exception e)
         {
-            mLog.error( "couldn't read HackRF firmware version", e );
+            mLog.error("couldn't read HackRF firmware version", e);
         }
 
-        if( firmware != null )
+        if(firmware != null)
         {
-            sb.append( "<b>Firmware: </b>" );
-            sb.append( firmware );
-            sb.append( "<br>" );
+            sb.append("<b>Firmware: </b>");
+            sb.append(firmware);
+            sb.append("<br>");
         }
         else
         {
-            sb.append( "<b>Firmware: Unknown</b><br>" );
+            sb.append("<b>Firmware: Unknown</b><br>");
         }
 
         return sb.toString();
     }
 
     @Override
-    public void setItem( TunerConfiguration tunerConfiguration )
+    public void setItem(TunerConfiguration tunerConfiguration)
     {
-        super.setItem( tunerConfiguration );
+        super.setItem(tunerConfiguration);
 
         //Toggle loading so that we don't fire a change event and schedule a settings file save
         mLoading = true;
 
-        if( hasItem() )
+        if(hasItem())
         {
             HackRFTunerConfiguration config = getConfiguration();
 
-            if( tunerConfiguration.isAssigned() )
+            if(tunerConfiguration.isAssigned())
             {
-                setControlsEnabled( true );
+                setControlsEnabled(true);
 
-                mConfigurationName.setText( config.getName() );
-                mComboSampleRate.setSelectedItem( config.getSampleRate() );
-                mFrequencyCorrection.setValue( config.getFrequencyCorrection() );
-                mAmplifier.setSelected( config.getAmplifierEnabled() );
-                mComboLNAGain.setSelectedItem( config.getLNAGain() );
-                mComboVGAGain.setSelectedItem( config.getVGAGain() );
+                mConfigurationName.setText(config.getName());
+                mComboSampleRate.setSelectedItem(config.getSampleRate());
+                mFrequencyCorrection.setValue(config.getFrequencyCorrection());
+                mAmplifier.setSelected(config.getAmplifierEnabled());
+                mComboLNAGain.setSelectedItem(config.getLNAGain());
+                mComboVGAGain.setSelectedItem(config.getVGAGain());
+
+                //Update enabled state to reflect when frequency and sample rate controls are locked
+                mComboSampleRate.setEnabled(!mController.isLocked());
             }
             else
             {
-                setControlsEnabled( false );
-                mConfigurationName.setText( config.getName() );
+                setControlsEnabled(false);
+                mConfigurationName.setText(config.getName());
             }
         }
         else
         {
-            setControlsEnabled( false );
-            mConfigurationName.setText( "" );
+            setControlsEnabled(false);
+            mConfigurationName.setText("");
         }
 
         mLoading = false;
@@ -435,22 +455,22 @@ public class HackRFTunerEditor extends TunerConfigurationEditor
     @Override
     public void save()
     {
-        if( hasItem() && !mLoading )
+        if(hasItem() && !mLoading)
         {
             HackRFTunerConfiguration config = getConfiguration();
 
-            config.setName( mConfigurationName.getText() );
+            config.setName(mConfigurationName.getText());
 
             double value = ((SpinnerNumberModel)mFrequencyCorrection
                 .getModel()).getNumber().doubleValue();
-            config.setFrequencyCorrection( value );
-            config.setSampleRate( (HackRFSampleRate)mComboSampleRate.getSelectedItem() );
-            config.setAmplifierEnabled( mAmplifier.isSelected() );
-            config.setLNAGain( (HackRFLNAGain)mComboLNAGain.getSelectedItem() );
-            config.setVGAGain( (HackRFVGAGain)mComboVGAGain.getSelectedItem() );
+            config.setFrequencyCorrection(value);
+            config.setSampleRate((HackRFSampleRate)mComboSampleRate.getSelectedItem());
+            config.setAmplifierEnabled(mAmplifier.isSelected());
+            config.setLNAGain((HackRFLNAGain)mComboLNAGain.getSelectedItem());
+            config.setVGAGain((HackRFVGAGain)mComboVGAGain.getSelectedItem());
 
             getTunerConfigurationModel().broadcast(
-                new TunerConfigurationEvent( getConfiguration(), TunerConfigurationEvent.Event.CHANGE ) );
+                new TunerConfigurationEvent(getConfiguration(), TunerConfigurationEvent.Event.CHANGE));
         }
     }
 }

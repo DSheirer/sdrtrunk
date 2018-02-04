@@ -27,6 +27,8 @@ public class SourceEvent
         NOTIFICATION_CHANNEL_COUNT_CHANGE,
         NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE,
         NOTIFICATION_CHANNEL_SAMPLE_RATE_CHANGE,
+        NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED,
+        NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED,
         NOTIFICATION_FREQUENCY_CHANGE,
         NOTIFICATION_FREQUENCY_CORRECTION_CHANGE,
         NOTIFICATION_SAMPLE_RATE_CHANGE,
@@ -117,6 +119,22 @@ public class SourceEvent
     public boolean hasSource()
     {
         return mSource != null;
+    }
+
+    /**
+     * Creates a new locked state change event
+     */
+    public static SourceEvent lockedState()
+    {
+        return new SourceEvent(Event.NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED, 1);
+    }
+
+    /**
+     * Creates a new unlocked state change event
+     */
+    public static SourceEvent unlockedState()
+    {
+        return new SourceEvent(Event.NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED, 0);
     }
 
     /**

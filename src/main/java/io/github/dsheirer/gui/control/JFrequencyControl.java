@@ -20,7 +20,6 @@ package io.github.dsheirer.gui.control;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.InvalidFrequencyException;
 import io.github.dsheirer.source.SourceEvent;
-import io.github.dsheirer.source.SourceEvent.Event;
 import io.github.dsheirer.source.SourceException;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
@@ -32,6 +31,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import java.awt.Color;
 import java.awt.Cursor;
+import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.Image;
 import java.awt.Point;
@@ -146,9 +146,38 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
     @Override
     public void process(SourceEvent event)
     {
-        if(event.getEvent() == Event.NOTIFICATION_FREQUENCY_CHANGE)
+        switch(event.getEvent())
         {
-            setFrequency(event.getValue().longValue(), false);
+            case NOTIFICATION_FREQUENCY_CHANGE:
+                EventQueue.invokeLater(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        setFrequency(event.getValue().longValue(), false);
+                    }
+                });
+                break;
+            case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED:
+                EventQueue.invokeLater(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        setEnabled(false);
+                    }
+                });
+                break;
+            case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED:
+                EventQueue.invokeLater(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        setEnabled(true);
+                    }
+                });
+                break;
         }
     }
 

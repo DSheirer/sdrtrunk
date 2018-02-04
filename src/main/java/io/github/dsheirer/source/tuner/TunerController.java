@@ -104,6 +104,37 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
         }
     }
 
+    /**
+     * Indicates if the frequency and sample rate controls are locked by another process.  User interface controls
+     * should monitor source events and check the locked state via this method to correctly render the enabled state
+     * of the frequency and sample rate controls.
+     *
+     * @return true if the tuner controller is locked.
+     */
+    public boolean isLocked()
+    {
+        return mFrequencyController.isLocked();
+    }
+
+    /**
+     * Sets the frequency and sample rate locked state to the locked argument value.  This should only be changed
+     * by a downstream consumer of samples to prevent users or other processes from modifying the center frequency
+     * and/or sample rate of the tuner while processing samples.
+     *
+     * @param locked true to indicate the tuner controller is in a locked state, otherwise false.
+     */
+    public void setLocked(boolean locked)
+    {
+        try
+        {
+            mFrequencyController.setLocked(locked);
+        }
+        catch(SourceException se)
+        {
+            mLog.error("Couldn't set frequency controller locked state to: " + locked);
+        }
+    }
+
     public int getBandwidth()
     {
         return mFrequencyController.getBandwidth();
