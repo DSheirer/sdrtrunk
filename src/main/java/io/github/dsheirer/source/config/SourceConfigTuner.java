@@ -70,6 +70,15 @@ public class SourceConfigTuner extends SourceConfiguration
     }
 
     /**
+     * Indicates if this configuration has a specified preferred tuner
+     */
+    @JsonIgnore
+    public boolean hasPreferredTuner()
+    {
+        return mPreferredTuner != null;
+    }
+
+    /**
      * Specifies the preferred tuner to use for this configuration
      * @param preferredTuner to use, if available
      */

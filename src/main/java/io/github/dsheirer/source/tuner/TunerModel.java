@@ -70,6 +70,28 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
 		return null;
 	}
 
+    /**
+     * Find a tuner that matches the name argument
+     *
+     * @param name of the tuner
+     * @return named tuner or null
+     */
+	public Tuner getTuner(String name)
+    {
+        if(name != null)
+        {
+            for(Tuner tuner: mTuners)
+            {
+                if(tuner.getName().equalsIgnoreCase(name))
+                {
+                    return tuner;
+                }
+            }
+        }
+
+        return null;
+    }
+
 	public void addTuners( List<Tuner> Tuners )
 	{
 		for( Tuner tuner: Tuners )
@@ -270,6 +292,31 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
 		Iterator<Tuner> it = mTuners.iterator();
 		
 		Tuner tuner;
+
+		if(config.hasPreferredTuner())
+        {
+            tuner = getTuner(config.getPreferredTuner());
+
+            if(tuner != null)
+            {
+                try
+                {
+                    retVal = tuner.getChannel( tunerChannel );
+
+                    if(retVal != null)
+                    {
+                        return retVal;
+                    }
+                }
+                catch(Exception e)
+                {
+                    //Fall through to logger below
+                }
+            }
+
+            mLog.info("Unable to source channel [" + config.getFrequency() + "] from preferred tuner [" +
+                config.getPreferredTuner() + "] - searching for another tuner");
+        }
 		
 		while( it.hasNext() && retVal == null )
 		{
@@ -285,12 +332,10 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
 			}
             catch ( SourceException e )
             {
-            	mLog.error( "error obtaining channel from tuner [" +
-            			tuner.getName() + "]", e );
+            	mLog.error( "error obtaining channel from tuner [" + tuner.getName() + "]", e );
             }
 		}
     	
     	return retVal;
     }
-	
 }
