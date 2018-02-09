@@ -295,8 +295,9 @@ public class FIRFilterSpecification
      */
     public static class LowPassBuilder
     {
-        private int mSampleRate;
+        private double mSampleRate;
         private int mOrder;
+        private Boolean mOddLength;
         private int mGridDensity = 16;
         private int mPassBandEndFrequency;
         private int mStopBandStartFrequency;
@@ -309,7 +310,7 @@ public class FIRFilterSpecification
         {
         }
 
-        public LowPassBuilder sampleRate(int sampleRateHz)
+        public LowPassBuilder sampleRate(double sampleRateHz)
         {
             mSampleRate = sampleRateHz;
             return this;
@@ -322,6 +323,16 @@ public class FIRFilterSpecification
         public LowPassBuilder order(int order)
         {
             mOrder = order;
+            return this;
+        }
+
+        /**
+         * Indicates if the filters should be an odd-length (even order) filter.  This will override any requested
+         * filter order if it is set, otherwise the filter length will be determined from the filter order.
+         */
+        public LowPassBuilder oddLength(boolean oddLength)
+        {
+            mOddLength = oddLength;
             return this;
         }
 
@@ -371,13 +382,32 @@ public class FIRFilterSpecification
         {
             if(mOrder < 6)
             {
-                mOrder = estimateFilterOrder(mSampleRate, mPassBandEndFrequency,
-                    mStopBandStartFrequency, mPassBandRipple, mStopBandRipple);
+                mOrder = estimateFilterOrder(mSampleRate, mPassBandEndFrequency, mStopBandStartFrequency,
+                    mPassBandRipple, mStopBandRipple);
             }
 
-            FIRLinearPhaseFilterType type = (mOrder % 2 == 0
-                ? FIRLinearPhaseFilterType.TYPE_1_ODD_LENGTH_EVEN_ORDER_SYMMETRICAL
-                : FIRLinearPhaseFilterType.TYPE_2_EVEN_LENGTH_ODD_ORDER_SYMMETRICAL);
+            FIRLinearPhaseFilterType type = null;
+
+            if(mOddLength != null)
+            {
+                if(mOddLength)
+                {
+                    type = FIRLinearPhaseFilterType.TYPE_1_ODD_LENGTH_EVEN_ORDER_SYMMETRICAL;
+                    //Force order to even
+                    mOrder += mOrder % 2;
+                }
+                else
+                {
+                    type = FIRLinearPhaseFilterType.TYPE_2_EVEN_LENGTH_ODD_ORDER_SYMMETRICAL;
+                    //Force order to odd
+                    mOrder += (mOrder % 2 == 0 ? 1 : 0);
+                }
+            }
+            else
+            {
+                type = (mOrder % 2 == 0 ? FIRLinearPhaseFilterType.TYPE_1_ODD_LENGTH_EVEN_ORDER_SYMMETRICAL
+                    : FIRLinearPhaseFilterType.TYPE_2_EVEN_LENGTH_ODD_ORDER_SYMMETRICAL);
+            }
 
             FIRFilterSpecification spec = new FIRFilterSpecification(type, mOrder, mGridDensity);
 
@@ -386,7 +416,7 @@ public class FIRFilterSpecification
             spec.addFrequencyBand(passBand);
 
             FrequencyBand stopBand = new FrequencyBand(mSampleRate, mStopBandStartFrequency,
-                mSampleRate / 2, mStopBandAmplitude, mStopBandRipple);
+                (int)(mSampleRate / 2), mStopBandAmplitude, mStopBandRipple);
             spec.addFrequencyBand(stopBand);
 
             return spec;
@@ -398,7 +428,7 @@ public class FIRFilterSpecification
      */
     public static class HighPassBuilder
     {
-        private int mSampleRate;
+        private double mSampleRate;
         private int mOrder = -1;
         private int mGridDensity = 16;
         private int mPassBandStartFrequency;
@@ -412,7 +442,7 @@ public class FIRFilterSpecification
         {
         }
 
-        public HighPassBuilder sampleRate(int sampleRateHz)
+        public HighPassBuilder sampleRate(double sampleRateHz)
         {
             mSampleRate = sampleRateHz;
             return this;
@@ -474,8 +504,8 @@ public class FIRFilterSpecification
         {
             if(mOrder < 6)
             {
-                mOrder = estimateFilterOrder(mSampleRate, mStopBandEndFrequency,
-                    mPassBandStartFrequency, mPassBandRipple, mStopBandRipple);
+                mOrder = estimateFilterOrder(mSampleRate, mStopBandEndFrequency, mPassBandStartFrequency,
+                    mPassBandRipple, mStopBandRipple);
             }
 
             // High pass is a Type 1 filter -- ensure order is even
@@ -493,7 +523,7 @@ public class FIRFilterSpecification
             spec.addFrequencyBand(stopBand);
 
             FrequencyBand passBand = new FrequencyBand(mSampleRate, mPassBandStartFrequency,
-                mSampleRate / 2, mPassBandAmplitude, mPassBandRipple);
+                (int)(mSampleRate / 2), mPassBandAmplitude, mPassBandRipple);
             spec.addFrequencyBand(passBand);
 
             return spec;
@@ -507,7 +537,7 @@ public class FIRFilterSpecification
     {
         private int mOrder;
         private int mGridDensity = 16;
-        private int mSampleRate;
+        private double mSampleRate;
         private int mStopFrequency1;
         private int mPassFrequencyBegin;
         private int mPassFrequencyEnd;
@@ -544,7 +574,7 @@ public class FIRFilterSpecification
         /**
          * Sets the filter sample rate in hertz
          */
-        public BandPassBuilder sampleRate(int sampleRate)
+        public BandPassBuilder sampleRate(double sampleRate)
         {
             mSampleRate = sampleRate;
             return this;
@@ -644,15 +674,13 @@ public class FIRFilterSpecification
             if(mPassFrequencyEnd >= mStopFrequency2)
             {
                 throw new IllegalArgumentException("Pass band end frequency [" + mPassFrequencyEnd
-                    + "] must be less than stop band 2 beginning frequency [" + mStopFrequency2
-                    + "]");
+                    + "] must be less than stop band 2 beginning frequency [" + mStopFrequency2 + "]");
             }
 
             if(mStopFrequency2 >= (mSampleRate / 2))
             {
-                throw new IllegalArgumentException("Stop band 2 beginning frequency ["
-                    + mStopFrequency2 + "] must be less than half of the sample rate ["
-                    + (mSampleRate / 2) + "]");
+                throw new IllegalArgumentException("Stop band 2 beginning frequency [" + mStopFrequency2 +
+                    "] must be less than half of the sample rate [" + (mSampleRate / 2) + "]");
             }
         }
 
@@ -693,7 +721,7 @@ public class FIRFilterSpecification
     public static class ChannelizerBuilder
     {
         private int mGridDensity = 16;
-        private int mSampleRate;
+        private double mSampleRate;
         private int mChannelCount;
         private int mChannelBandwidth;
         private int mTapsPerChannel;
@@ -708,7 +736,7 @@ public class FIRFilterSpecification
         /**
          * Sets the filter sample rate in hertz
          */
-        public ChannelizerBuilder sampleRate(int sampleRate)
+        public ChannelizerBuilder sampleRate(double sampleRate)
         {
             mSampleRate = sampleRate;
             return this;
@@ -805,7 +833,7 @@ public class FIRFilterSpecification
 
             FIRFilterSpecification spec = new FIRFilterSpecification(type, order, mGridDensity);
 
-            double bandEdge = (double)mChannelBandwidth / (double)mSampleRate;
+            double bandEdge = (double)mChannelBandwidth / mSampleRate;
             double passEnd = bandEdge * (1.0 - mAlpha);
             double stopStart = bandEdge * (1.0 + mAlpha);
 
@@ -877,15 +905,13 @@ public class FIRFilterSpecification
      * @param stopBandRipple stop band ripple in dB
      * @return estimated filter length
      */
-    public static int estimateFilterOrder(int sampleRate, int frequency1, int frequency2,
+    public static int estimateFilterOrder(double sampleRate, int frequency1, int frequency2,
                                           double passBandRipple, double stopBandRipple)
     {
-        double df = Math.abs(frequency2 - frequency1) / (double)sampleRate;
+        double df = Math.abs(frequency2 - frequency1) / sampleRate;
 
-        double ddp = Math
-            .log10(stopBandRipple <= passBandRipple ? passBandRipple : stopBandRipple);
-        double dds = Math
-            .log10(stopBandRipple <= passBandRipple ? stopBandRipple : passBandRipple);
+        double ddp = Math.log10(stopBandRipple <= passBandRipple ? passBandRipple : stopBandRipple);
+        double dds = Math.log10(stopBandRipple <= passBandRipple ? stopBandRipple : passBandRipple);
 
         double a1 = 5.309e-3;
         double a2 = 7.114e-2;
@@ -917,12 +943,12 @@ public class FIRFilterSpecification
      * @param passBandRippleDb
      * @param stopBandRippleDb
      */
-    public static int estimateBandPassOrder(int sampleRate, int passBandStart, int passBandEnd,
+    public static int estimateBandPassOrder(double sampleRate, int passBandStart, int passBandEnd,
                                             double passBandRippleDb, double stopBandRippleDb)
     {
-        double df = (double)Math.abs(passBandEnd - passBandStart) / (double)sampleRate;
-        double ddp = (double)Math.log10(passBandRippleDb);
-        double dds = (double)Math.log10(stopBandRippleDb);
+        double df = (double)Math.abs(passBandEnd - passBandStart) / sampleRate;
+        double ddp = Math.log10(passBandRippleDb);
+        double dds = Math.log10(stopBandRippleDb);
 
         double a1 = 0.01201;
         double a2 = 0.09664;
@@ -987,13 +1013,13 @@ public class FIRFilterSpecification
          * @param amplitude of the frequency band relative to unity (0.0 - 1.0)
          * @param ripple of the frequency band specified as db ripple
          */
-        public FrequencyBand(int sampleRate, int start, int end, double amplitude, double ripple)
+        public FrequencyBand(double sampleRate, int start, int end, double amplitude, double ripple)
         {
-            this((double)start / (double)sampleRate, (double)end / (double)sampleRate,
+            this((double)start / sampleRate, (double)end / sampleRate,
                 amplitude, ripple);
         }
 
-        public FrequencyBand(int sampleRate, int start, int end, double amplitude, double ripple, double weight)
+        public FrequencyBand(double sampleRate, int start, int end, double amplitude, double ripple, double weight)
         {
             this(sampleRate, start, end, amplitude, ripple);
             mWeight = weight;

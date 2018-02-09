@@ -1,8 +1,7 @@
 package io.github.dsheirer.dsp.filter.design;
 
-import io.github.dsheirer.dsp.filter.FilterFactory;
-import io.github.dsheirer.dsp.filter.Window;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
+import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -41,14 +40,15 @@ public class FilterViewer extends Application
     private float[] getFilter()
     {
         FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-            .sampleRate(48000)
+            .sampleRate(25000)
             .gridDensity(16)
-            .passBandCutoff(2500)
+            .oddLength(true)
+            .passBandCutoff(6000)
             .passBandAmplitude(1.0)
             .passBandRipple(0.01)
-            .stopBandStart(4000)
+            .stopBandStart(6500)
             .stopBandAmplitude(0.0)
-            .stopBandRipple(0.008)
+            .stopBandRipple(0.028) //Approximately 60 dB attenuation
             .build();
 
 //        FIRFilterSpecification specification = FIRFilterSpecification.highPassBuilder()
@@ -73,28 +73,28 @@ public class FilterViewer extends Application
 
         float[] taps = null;
 
-        try
-        {
-            taps = FilterFactory.getSincM2Channelizer(12500.0, 2, 19, Window.WindowType.BLACKMAN_HARRIS_7, true);
-        }
-        catch(FilterDesignException fde)
-        {
-            mLog.error("Error");
-        }
-
 //        try
 //        {
-//            RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
-//
-//            if(designer.isValid())
-//            {
-//                taps = designer.getImpulseResponse();
-//            }
+//            taps = FilterFactory.getSincM2Channelizer(12500.0, 2, 19, Window.WindowType.BLACKMAN_HARRIS_7, true);
 //        }
 //        catch(FilterDesignException fde)
 //        {
-//            mLog.error("Filter design error", fde);
+//            mLog.error("Error");
 //        }
+
+        try
+        {
+            RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
+
+            if(designer.isValid())
+            {
+                taps = designer.getImpulseResponse();
+            }
+        }
+        catch(FilterDesignException fde)
+        {
+            mLog.error("Filter design error", fde);
+        }
 
         return taps;
     }

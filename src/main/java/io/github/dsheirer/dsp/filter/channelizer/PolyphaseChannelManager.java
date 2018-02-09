@@ -292,6 +292,10 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                 //Defer channelizer configuration changes to be handled on the buffer processor thread
                 mBufferSourceEventMonitor.receive(sourceEvent);
                 break;
+            case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED:
+            case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED:
+                //no-op
+                break;
             default:
                 mLog.info("Unrecognized source event: " + sourceEvent.toString());
                 break;

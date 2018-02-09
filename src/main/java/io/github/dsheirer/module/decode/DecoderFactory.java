@@ -101,6 +101,9 @@ public class DecoderFactory
 {
     private final static Logger mLog = LoggerFactory.getLogger(DecoderFactory.class);
 
+    private static final int NBFM_PASS_FREQUENCY = 6000;
+    private static final int NBFM_STOP_FREQUENCY = 6500;
+
     //Low-pass filter with ~60 dB attenuation and 89 taps
     private static final FIRFilterSpecification MPT1327_FILTER_SPECIFICATION = FIRFilterSpecification.lowPassBuilder()
         .sampleRate( 48000 ).gridDensity( 16 ).passBandCutoff( 3200 ).passBandAmplitude( 1.0 ).passBandRipple( 0.02 )
@@ -174,9 +177,6 @@ public class DecoderFactory
         /* Baseband low-pass filter pass and stop frequencies */
         DecodeConfiguration decodeConfig = channel.getDecodeConfiguration();
 
-        int iqPass = decodeConfig.getDecoderType().getChannelBandwidth() / 2;
-        int iqStop = iqPass + 1250;
-
         switch(decodeConfig.getDecoderType())
         {
             case AM:
@@ -189,7 +189,7 @@ public class DecoderFactory
             case NBFM:
                 modules.add(new NBFMDecoder(decodeConfig));
                 modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.NBFM, channel.getName()));
-                modules.add(new FMDemodulatorModule(iqPass, iqStop));
+                modules.add(new FMDemodulatorModule(NBFM_PASS_FREQUENCY, NBFM_STOP_FREQUENCY));
                 modules.add(new DemodulatedAudioFilterModule(4000, 6000));
                 modules.add(new AudioModule(metadata));
                 break;
@@ -197,14 +197,14 @@ public class DecoderFactory
                 MessageDirection direction = ((DecodeConfigLTRStandard) decodeConfig).getMessageDirection();
                 modules.add(new LTRStandardDecoder(aliasList, direction));
                 modules.add(new LTRStandardDecoderState(aliasList));
-                modules.add(new FMDemodulatorModule(iqPass, iqStop));
+                modules.add(new FMDemodulatorModule(NBFM_PASS_FREQUENCY, NBFM_STOP_FREQUENCY));
                 modules.add(new DemodulatedAudioFilterModule(4000, 6000));
                 modules.add(new AudioModule(metadata));
                 break;
             case LTR_NET:
                 modules.add(new LTRNetDecoder((DecodeConfigLTRNet) decodeConfig, aliasList));
                 modules.add(new LTRNetDecoderState(aliasList));
-                modules.add(new FMDemodulatorModule(iqPass, iqStop));
+                modules.add(new FMDemodulatorModule(NBFM_PASS_FREQUENCY, NBFM_STOP_FREQUENCY));
                 modules.add(new DemodulatedAudioFilterModule(4000, 6000));
                 modules.add(new AudioModule(metadata));
                 break;
@@ -227,14 +227,14 @@ public class DecoderFactory
                         (aliasList != null ? aliasList.getName() : null), mptConfig.getTrafficChannelPoolSize()));
                 }
 
-                modules.add(new FMDemodulatorModule(iqPass, iqStop));
+                modules.add(new FMDemodulatorModule(NBFM_PASS_FREQUENCY, NBFM_STOP_FREQUENCY));
                 modules.add(new DemodulatedAudioFilterModule(P25_C4FM_DEMOD_FILTER, 1.0f));
                 modules.add(new AudioModule(metadata));
                 break;
             case PASSPORT:
                 modules.add(new PassportDecoder(decodeConfig, aliasList));
                 modules.add(new PassportDecoderState(aliasList));
-                modules.add(new FMDemodulatorModule(iqPass, iqStop));
+                modules.add(new FMDemodulatorModule(NBFM_PASS_FREQUENCY, NBFM_STOP_FREQUENCY));
                 modules.add(new DemodulatedAudioFilterModule(4000, 6000));
                 modules.add(new AudioModule(metadata));
                 break;
@@ -247,7 +247,7 @@ public class DecoderFactory
                 switch(modulation)
                 {
                     case C4FM:
-                        modules.add(new FMDemodulatorModule(P25_C4FM_IQ_FILTER));
+//                        modules.add(new FMDemodulatorModule(P25_C4FM_IQ_FILTER));
                         modules.add(new DemodulatedAudioFilterModule(P25_C4FM_DEMOD_FILTER, 1.0f));
                         modules.add(new P25_C4FMDecoder(aliasList, decodeConfig.getAFCMaximumCorrection()));
                         modules.add(new P25DecoderState(aliasList, channelType, Modulation.C4FM,

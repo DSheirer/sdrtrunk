@@ -235,7 +235,7 @@ public class P25_LSMDecoder extends P25Decoder implements IReusableComplexBuffer
         @Override
         public void receive(ReusableComplexBuffer reusableComplexBuffer)
         {
-            float[] samples = reusableComplexBuffer.getCopyOfSamples();
+            float[] samples = reusableComplexBuffer.getSamplesCopy();
 
             //TODO: redesign the filter chain so that we can simply pass a float array ...
 

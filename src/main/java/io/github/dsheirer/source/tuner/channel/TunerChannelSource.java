@@ -180,15 +180,18 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
                 setSampleRate(sourceEvent.getValue().doubleValue());
                 break;
-
+            case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED:
+            case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED:
+            case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
+                //no-op
+                break;
             //Request events from the consumer
             case REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
                 setFrequencyCorrection(sourceEvent.getValue().longValue());
                 break;
-
             default:
                 mLog.error("Ignoring unrecognized source event: " + sourceEvent.getEvent() + " from [" +
-                    sourceEvent.getSource().getClass() + "]");
+                    (sourceEvent.hasSource() ? sourceEvent.getSource().getClass() : "") + "]");
                 break;
         }
     }

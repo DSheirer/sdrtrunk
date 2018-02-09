@@ -181,18 +181,39 @@ public class TunerChannelSourceManager extends ChannelSourceManager
 
         long bestIntegralFrequency = getIntegralFrequency(channels);
 
-        //See if we can reuse the current frequency
+        //Strategy 1: reuse the current frequency if it's a good integral and the channels fit
         if(isIntegralSpacing(currentCenterFrequency, bestIntegralFrequency) &&
             isValidCenterFrequency(channels, currentCenterFrequency))
         {
             return currentCenterFrequency;
         }
 
-        //Start by placing the first channel at the minimum location within the tuner bandwidth
         double usableHalfBandwidth = mTunerController.getUsableHalfBandwidth();
+
+        //Strategy 2: start by placing the center frequency exactly one channel width below the first channel frequency
+        //and iteratively increase it one channel width at a time.  This optimally places the channels nearest to the
+        //center of the bandwidth
+        long start = channels.first().getFrequency() - (int)mPolyphaseChannelManager.getChannelBandwidth();
+
+        if(isValidCenterFrequency(channels, start))
+        {
+            return start;
+        }
+
+        while(start - channels.first().getMinFrequency() < usableHalfBandwidth)
+        {
+            start += (int)mPolyphaseChannelManager.getChannelBandwidth();
+
+            if(isValidCenterFrequency(channels, start))
+            {
+                return start;
+            }
+        }
+
+        //Strategy 3: start by placing the first channel at the minimum location within the tuner bandwidth
         double startFrequency = channels.first().getMinFrequency() + usableHalfBandwidth;
 
-        //Align the test frequency to the next greater integral frequency placing to place the first channel at the
+        //Align the test frequency to the next greater integral frequency placing the first channel at the
         // minimum extreme of the available bandwidth as a starting location
         double delta = Math.abs(startFrequency - bestIntegralFrequency);
         double adjustment = delta % mPolyphaseChannelManager.getChannelBandwidth();
@@ -221,7 +242,8 @@ public class TunerChannelSourceManager extends ChannelSourceManager
             currentChannel++;
         }
 
-        //If we can't find an integral center frequency, choose a frequency that will fit the channels
+        //Strategy 4: brute force walk across the spectrum 1 hertz at a time looking for a center frequency that will
+        //fit all channels
         long testFrequency = channels.first().getMinFrequency() + mTunerController.getUsableHalfBandwidth();
         long minimumFrequency = testFrequency - availableTestBandwidth;
 

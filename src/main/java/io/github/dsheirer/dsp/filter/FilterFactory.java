@@ -51,7 +51,7 @@ public class FilterFactory
      * @param window - to apply against the coefficients
      * @return
      */
-    public static float[] getSinc(int sampleRate, long frequency, int length, Window.WindowType window)
+    public static float[] getSinc(double sampleRate, long frequency, int length, Window.WindowType window)
     {
         int evenLength = length % 2 == 0 ? length : length + 1;
 
@@ -137,7 +137,7 @@ public class FilterFactory
      * @param length
      * @return
      */
-    public static float[] getUnityResponseArray(int sampleRate, long frequency, int length)
+    public static float[] getUnityResponseArray(double sampleRate, long frequency, int length)
     {
         float[] unityArray = new float[length * 2];
 
@@ -201,7 +201,7 @@ public class FilterFactory
      * @param windowType - window to apply against the generated coefficients
      * @return
      */
-    public static float[] getLowPass(int sampleRate, long cutoff, int filterLength, Window.WindowType windowType)
+    public static float[] getLowPass(double sampleRate, long cutoff, int filterLength, Window.WindowType windowType)
     {
         return getSinc(sampleRate, cutoff, filterLength, windowType);
     }
@@ -220,7 +220,7 @@ public class FilterFactory
      * - passFrequency < stopFrequency
      * - stopFrequency <= sampleRate/2
      */
-    public static float[] getLowPass(int sampleRate, int passFrequency, int stopFrequency, int attenuation,
+    public static float[] getLowPass(double sampleRate, int passFrequency, int stopFrequency, int attenuation,
                                      Window.WindowType windowType, boolean forceOddLength)
     {
         if(stopFrequency < passFrequency || stopFrequency > (sampleRate / 2))
@@ -323,9 +323,9 @@ public class FilterFactory
      * @param attenuation in dB
      * @return
      */
-    public static int getTapCount(int sampleRate, long pass, long stop, int attenuation)
+    public static int getTapCount(double sampleRate, long pass, long stop, int attenuation)
     {
-        double frequency = ((double)stop - (double)pass) / (double)sampleRate;
+        double frequency = ((double)stop - (double)pass) / sampleRate;
 
         return (int)(Math.round((double)attenuation / (22.0d * frequency)));
     }
