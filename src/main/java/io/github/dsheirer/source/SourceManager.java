@@ -59,6 +59,11 @@ public class SourceManager
         return mTunerManager;
     }
 
+    public TunerModel getTunerModel()
+    {
+        return mTunerModel;
+    }
+
     public Source getSource(SourceConfiguration config, int bandwidth)
         throws SourceException
     {

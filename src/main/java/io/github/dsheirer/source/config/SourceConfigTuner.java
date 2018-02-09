@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014-2016 Dennis Sheirer
+ *     Copyright (C) 2014-2018 Dennis Sheirer
  *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ public class SourceConfigTuner extends SourceConfiguration
 
     private long mFrequency = 0;
     private int mBandwidth = 12500;
+    private String mPreferredTuner;
 
     public SourceConfigTuner()
     {
@@ -56,6 +57,34 @@ public class SourceConfigTuner extends SourceConfiguration
     public void setFrequency(long frequency)
     {
         mFrequency = frequency;
+    }
+
+    /**
+     * Preferred tuner to use for this configuration.
+     * @return tuner name or null
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "preferred_tuner")
+    public String getPreferredTuner()
+    {
+        return mPreferredTuner;
+    }
+
+    /**
+     * Indicates if this configuration has a specified preferred tuner
+     */
+    @JsonIgnore
+    public boolean hasPreferredTuner()
+    {
+        return mPreferredTuner != null;
+    }
+
+    /**
+     * Specifies the preferred tuner to use for this configuration
+     * @param preferredTuner to use, if available
+     */
+    public void setPreferredTuner(String preferredTuner)
+    {
+        mPreferredTuner = preferredTuner;
     }
 
     @JsonIgnore
