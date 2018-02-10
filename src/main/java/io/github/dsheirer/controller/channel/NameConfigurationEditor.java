@@ -300,6 +300,19 @@ public class NameConfigurationEditor extends Editor<Channel> implements Document
             {
                 mAliasListCombo.setSelectedItem(channel.getAliasListName());
             }
+
+            if(channel.isAutoStart())
+            {
+                mAutoStartCheckBox.setSelected(channel.isAutoStart());
+                mAutoStartOrder.setEnabled(true);
+            }
+            else
+            {
+                mAutoStartCheckBox.setSelected(false);
+                mAutoStartOrder.setEnabled(false);
+            }
+
+            mAutoStartOrder.setValue(channel.hasAutoStartOrder() ? channel.getAutoStartOrder() : 0);
         }
         else
         {
@@ -307,18 +320,6 @@ public class NameConfigurationEditor extends Editor<Channel> implements Document
             mChannelName.setText(null);
         }
 
-        if(channel.isAutoStart())
-        {
-            mAutoStartCheckBox.setSelected(channel.isAutoStart());
-            mAutoStartOrder.setEnabled(true);
-        }
-        else
-        {
-            mAutoStartCheckBox.setSelected(false);
-            mAutoStartOrder.setEnabled(false);
-        }
-
-        mAutoStartOrder.setValue(channel.hasAutoStartOrder() ? channel.getAutoStartOrder() : 0);
 
         setModified(false);
     }
