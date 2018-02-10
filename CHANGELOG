@@ -1,3 +1,8 @@
+0.3.4 20180210
+ - Adds channel auto-start and ordering capability with startup dialog allowing user to invoke or bypass channel
+   auto-start.  Provides user with more control over startup configuration.
+ - Adds preferred tuner attribute to channel configuration allowing user to select a preferred tuner for the channel
+
 0.3.3 20171225
  - Changes build system from ant to gradle.  Thanks to: Roman Tsypuk https://github.com/tsypuk
  - Adds LIST and ID3 metadata to wav audio recordings
