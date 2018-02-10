@@ -15,7 +15,6 @@
  ******************************************************************************/
 package io.github.dsheirer.controller.channel;
 
-import io.github.dsheirer.module.decode.p25.DecodeConfigP25Phase1;
 import io.github.dsheirer.util.ThreadPool;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
@@ -33,7 +32,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -244,43 +242,5 @@ public class ChannelAutoStartFrame extends JFrame
                 stopTimer();
             }
         }
-    }
-
-    public static void main(String[] args)
-    {
-        List<Channel> channels = new ArrayList<>();
-        Channel channel1 = new Channel();
-        channel1.setSystem("A System");
-        channel1.setSite("My Site");
-        channel1.setName("Channel 1 Name");
-        channel1.setDecodeConfiguration(new DecodeConfigP25Phase1());
-        channels.add(channel1);
-
-        Channel channel2 = new Channel();
-        channel2.setSystem("B System");
-        channel2.setSite("My Site2");
-        channel2.setName("Channel 2 Name");
-        channel2.setDecodeConfiguration(new DecodeConfigP25Phase1());
-        channel2.setAutoStartOrder(2);
-        channels.add(channel2);
-
-        Channel channel3 = new Channel();
-        channel3.setSystem("C System");
-        channel3.setSite("My Site3");
-        channel3.setName("Channel 3 Name");
-        channel3.setDecodeConfiguration(new DecodeConfigP25Phase1());
-        channel3.setAutoStartOrder(1);
-        channels.add(channel3);
-
-        ChannelEventListener listener = new ChannelEventListener()
-        {
-            @Override
-            public void channelChanged(ChannelEvent event)
-            {
-                mLog.debug("Channel Event: " + event);
-            }
-        };
-
-        ChannelAutoStartFrame frame = new ChannelAutoStartFrame(listener, channels);
     }
 }
