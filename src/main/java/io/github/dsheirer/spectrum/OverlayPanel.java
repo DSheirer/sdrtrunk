@@ -34,8 +34,16 @@ import io.github.dsheirer.source.tuner.frequency.IFrequencyChangeProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JPanel;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.RenderingHints;
+import java.awt.Stroke;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.geom.Line2D;
@@ -517,14 +525,14 @@ public class OverlayPanel extends JPanel implements ChannelEventListener, IFrequ
         for(Channel channel : mVisibleChannels)
         {
             if(mChannelDisplay == ChannelDisplay.ALL ||
-                (mChannelDisplay == ChannelDisplay.ENABLED && channel.getEnabled()))
+                (mChannelDisplay == ChannelDisplay.ENABLED && channel.isProcessing()))
             {
                 //Choose the correct background color to use
                 if(channel.isSelected())
                 {
                     graphics.setColor(mColorChannelConfigSelected);
                 }
-                else if(channel.getEnabled())
+                else if(channel.isProcessing())
                 {
                     graphics.setColor(mColorChannelConfigProcessing);
                 }
