@@ -30,8 +30,13 @@ import io.github.dsheirer.spectrum.menu.SmoothingItem;
 import io.github.dsheirer.spectrum.menu.SmoothingTypeItem;
 import net.miginfocom.swing.MigLayout;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JLayeredPane;
+import javax.swing.JMenu;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JSeparator;
+import javax.swing.SwingUtilities;
+import java.awt.Component;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.MouseEvent;
@@ -193,7 +198,7 @@ public class ChannelSpectrumPanel extends JPanel
 	
 	private void start()
 	{
-		if( mEnabled.get() && mCurrentChannel != null && mCurrentChannel.getEnabled() )
+		if( mEnabled.get() && mCurrentChannel != null && mCurrentChannel.isProcessing() )
 		{
 			ProcessingChain processingChain = mChannelProcessingManager
 					.getProcessingChain( mCurrentChannel );
@@ -209,7 +214,7 @@ public class ChannelSpectrumPanel extends JPanel
 	
 	private void stop()
 	{
-		if( mCurrentChannel != null && mCurrentChannel.getEnabled() )
+		if( mCurrentChannel != null && mCurrentChannel.isProcessing() )
 		{
 			ProcessingChain processingChain = mChannelProcessingManager
 					.getProcessingChain( mCurrentChannel );

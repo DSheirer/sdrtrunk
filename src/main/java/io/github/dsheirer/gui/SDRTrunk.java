@@ -25,6 +25,8 @@ import io.github.dsheirer.audio.AudioManager;
 import io.github.dsheirer.audio.broadcast.BroadcastModel;
 import io.github.dsheirer.audio.broadcast.BroadcastStatusPanel;
 import io.github.dsheirer.controller.ControllerPanel;
+import io.github.dsheirer.controller.channel.Channel;
+import io.github.dsheirer.controller.channel.ChannelAutoStartFrame;
 import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.controller.channel.ChannelSelectionManager;
@@ -51,8 +53,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.imageio.ImageIO;
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JSeparator;
+import javax.swing.KeyStroke;
+import java.awt.AWTException;
+import java.awt.Desktop;
+import java.awt.Dimension;
+import java.awt.EventQueue;
+import java.awt.Robot;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -61,6 +74,7 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 public class SDRTrunk implements Listener<TunerEvent>
 {
@@ -72,6 +86,8 @@ public class SDRTrunk implements Listener<TunerEvent>
     private BroadcastStatusPanel mBroadcastStatusPanel;
     private BroadcastModel mBroadcastModel;
     private ControllerPanel mControllerPanel;
+    private ChannelModel mChannelModel;
+    private ChannelProcessingManager mChannelProcessingManager;
     private SettingsManager mSettingsManager;
     private SpectralDisplayPanel mSpectralPanel;
     private JFrame mMainGui = new JFrame();
@@ -117,7 +133,7 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         AliasModel aliasModel = new AliasModel();
 
-        ChannelModel channelModel = new ChannelModel();
+        mChannelModel = new ChannelModel();
 
         ChannelMapModel channelMapModel = new ChannelMapModel();
 
@@ -127,43 +143,42 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         SourceManager sourceManager = new SourceManager(tunerModel, mSettingsManager);
 
-        ChannelProcessingManager channelProcessingManager = new ChannelProcessingManager(
-            channelModel, channelMapModel, aliasModel, eventLogManager, recorderManager, sourceManager);
-        channelProcessingManager.addAudioPacketListener(recorderManager);
+        mChannelProcessingManager = new ChannelProcessingManager(mChannelModel, channelMapModel, aliasModel,
+            eventLogManager, recorderManager, sourceManager);
+        mChannelProcessingManager.addAudioPacketListener(recorderManager);
 
-        channelModel.addListener(channelProcessingManager);
+        mChannelModel.addListener(mChannelProcessingManager);
 
         ChannelSelectionManager channelSelectionManager =
-            new ChannelSelectionManager(channelModel);
-        channelModel.addListener(channelSelectionManager);
+            new ChannelSelectionManager(mChannelModel);
+        mChannelModel.addListener(channelSelectionManager);
 
         AliasActionManager aliasActionManager = new AliasActionManager();
-        channelProcessingManager.addMessageListener(aliasActionManager);
+        mChannelProcessingManager.addMessageListener(aliasActionManager);
 
         AudioManager audioManager = new AudioManager(sourceManager.getMixerManager());
-        channelProcessingManager.addAudioPacketListener(audioManager);
+        mChannelProcessingManager.addAudioPacketListener(audioManager);
 
         mBroadcastModel = new BroadcastModel(mIconManager);
 
-        channelProcessingManager.addAudioPacketListener(mBroadcastModel);
+        mChannelProcessingManager.addAudioPacketListener(mBroadcastModel);
 
         MapService mapService = new MapService(mIconManager);
-        channelProcessingManager.addMessageListener(mapService);
+        mChannelProcessingManager.addMessageListener(mapService);
 
         mControllerPanel = new ControllerPanel(audioManager, aliasModel, mBroadcastModel,
-            channelModel, channelMapModel, channelProcessingManager, mIconManager,
+            mChannelModel, channelMapModel, mChannelProcessingManager, mIconManager,
             mapService, mSettingsManager, sourceManager, tunerModel);
 
-        mSpectralPanel = new SpectralDisplayPanel(channelModel,
-            channelProcessingManager, mSettingsManager);
+        mSpectralPanel = new SpectralDisplayPanel(mChannelModel,
+            mChannelProcessingManager, mSettingsManager);
 
-        TunerSpectralDisplayManager tunerSpectralDisplayManager =
-            new TunerSpectralDisplayManager(mSpectralPanel,
-                channelModel, channelProcessingManager, mSettingsManager);
+        TunerSpectralDisplayManager tunerSpectralDisplayManager = new TunerSpectralDisplayManager(mSpectralPanel,
+                mChannelModel, mChannelProcessingManager, mSettingsManager);
         tunerModel.addListener(tunerSpectralDisplayManager);
         tunerModel.addListener(this);
 
-        PlaylistManager playlistManager = new PlaylistManager(aliasModel, mBroadcastModel, channelModel,
+        PlaylistManager playlistManager = new PlaylistManager(aliasModel, mBroadcastModel, mChannelModel,
             channelMapModel);
 
         playlistManager.init();
@@ -183,6 +198,7 @@ public class SDRTrunk implements Listener<TunerEvent>
                 try
                 {
                     mMainGui.setVisible(true);
+                    autoStartChannels();
                 }
                 catch(Exception e)
                 {
@@ -190,6 +206,21 @@ public class SDRTrunk implements Listener<TunerEvent>
                 }
             }
         });
+    }
+
+    /**
+     * Shows a dialog that lists the channels that have been designated for auto-start, sorted by auto-start order and
+     * allows the user to start now, cancel, or allow the timer to expire and then start the channels.  The dialog will
+     * only show if there are one ore more channels designated for auto-start.
+     */
+    private void autoStartChannels()
+    {
+        List<Channel> channels = mChannelModel.getAutoStartChannels();
+
+        if(channels.size() > 0)
+        {
+            ChannelAutoStartFrame autoStartFrame = new ChannelAutoStartFrame(mChannelProcessingManager, channels);
+        }
     }
 
     /**
@@ -212,7 +243,8 @@ public class SDRTrunk implements Listener<TunerEvent>
          */
         mTitle = SystemProperties.getInstance().getApplicationName();
         mMainGui.setTitle(mTitle);
-        mMainGui.setBounds(100, 100, 1280, 800);
+        mMainGui.setSize(new Dimension(1280,800));
+        mMainGui.setLocationRelativeTo(null);
         mMainGui.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         //Set preferred sizes to influence the split

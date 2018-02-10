@@ -1,6 +1,6 @@
 /*******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,18 +45,18 @@ import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent.Event;
 public class Channel extends Configuration implements Listener<FrequencyChangeEvent>
 {
     // Standard channels are persisted and traffic channels are temporary
-    public enum ChannelType {STANDARD, TRAFFIC}
+    public enum ChannelType
+    {
+        STANDARD, TRAFFIC
+    }
 
     // Static unique channel identifier tracking
     private static int UNIQUE_ID = 0;
 
     private DecodeConfiguration mDecodeConfiguration = DecoderFactory.getDefaultDecodeConfiguration();
-    private AuxDecodeConfiguration mAuxDecodeConfiguration =
-        new AuxDecodeConfiguration();
-    private SourceConfiguration mSourceConfiguration =
-        SourceConfigFactory.getDefaultSourceConfiguration();
-    private EventLogConfiguration mEventLogConfiguration =
-        new EventLogConfiguration();
+    private AuxDecodeConfiguration mAuxDecodeConfiguration = new AuxDecodeConfiguration();
+    private SourceConfiguration mSourceConfiguration = SourceConfigFactory.getDefaultSourceConfiguration();
+    private EventLogConfiguration mEventLogConfiguration = new EventLogConfiguration();
     private RecordConfiguration mRecordConfiguration = new RecordConfiguration();
 
     private String mAliasListName;
@@ -64,7 +64,9 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
     private String mSite = "Site";
     private String mName = "Channel";
 
-    private boolean mEnabled;
+    private boolean mProcessing;
+    private boolean mAutoStart;
+    private Integer mAutoStartOrder;
     private boolean mSelected;
     private TunerChannel mTunerChannel = null;
 
@@ -113,6 +115,8 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
         channel.setSystem(mSystem);
         channel.setSite(mSite);
         channel.setAliasListName(mAliasListName);
+        channel.setAutoStart(mAutoStart);
+        channel.setAutoStartOrder(mAutoStartOrder);
 
         AuxDecodeConfiguration aux = new AuxDecodeConfiguration();
 
@@ -258,27 +262,90 @@ public class Channel extends Configuration implements Listener<FrequencyChangeEv
     }
 
     /**
-     * Indicates if this channel is enabled for processing.
+     * Indicates if this channel is currently started and processing.
      */
-    @JacksonXmlProperty(isAttribute = true, localName = "enabled")
-    public boolean getEnabled()
+    @JsonIgnore
+    public boolean isProcessing()
     {
-        return mEnabled;
+        return mProcessing;
     }
 
     /**
-     * Indicates if this channel will automatically start processing on
-     * application startup or if this channel is currently processing after
-     * application startup.
+     * Indicates if this channel is currently started and processing.
      *
-     * Note: this method is package private and is intended to be managed
-     * by a co-package central processing manager
+     * Note: this method is package private and is intended to be managed by a channel processing manager instance
      *
      * @see ChannelProcessingManager
      */
-    void setEnabled(boolean enabled)
+    void setProcessing(boolean processing)
     {
-        mEnabled = enabled;
+        mProcessing = processing;
+    }
+
+    /**
+     * Indicates if this channel has auto-start enabled.
+     *
+     * Note: the Json (de)serialization tag for auto-start is 'enabled'.  We've re-purposed the now
+     * transient enabled property for the auto-start persisted value to maintain backward compatibility.
+     *
+     * @return true if this channel should be auto-started on application startup
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "enabled")
+    public boolean getAutoStart()
+    {
+        return mAutoStart;
+    }
+
+    /**
+     * Indicates if this channel is set for auto-start
+     */
+    @JsonIgnore
+    public boolean isAutoStart()
+    {
+        return mAutoStart;
+    }
+
+    /**
+     * Sets the auto-start status for this channel.
+     *
+     * @param autoStart
+     */
+    public void setAutoStart(boolean autoStart)
+    {
+        mAutoStart = autoStart;
+    }
+
+    /**
+     * Auto-start order.  Specifies an optional ordering for channels so that when the application starts up,
+     * the channels can be started in a user-specified order.
+     *
+     * @return auto-start order or null
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "order")
+    public Integer getAutoStartOrder()
+    {
+        return mAutoStartOrder;
+    }
+
+    /**
+     * Sets the auto-start order for this channel
+     *
+     * @param order
+     */
+    public void setAutoStartOrder(Integer order)
+    {
+        mAutoStartOrder = order;
+    }
+
+    /**
+     * Indicates if this channel has an auto-start order specified (ie non-null).
+     *
+     * @return true if this channel has an auto-start order
+     */
+    @JsonIgnore
+    public boolean hasAutoStartOrder()
+    {
+        return mAutoStartOrder != null;
     }
 
     /**

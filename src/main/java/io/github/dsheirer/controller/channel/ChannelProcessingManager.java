@@ -159,7 +159,7 @@ public class ChannelProcessingManager implements ChannelEventListener
                 }
                 break;
             case REQUEST_DISABLE:
-                if(channel.getEnabled())
+                if(channel.isProcessing())
                 {
                     switch(channel.getChannelType())
                     {
@@ -176,7 +176,7 @@ public class ChannelProcessingManager implements ChannelEventListener
                     }
                 }
             case NOTIFICATION_DELETE:
-                if(channel.getEnabled())
+                if(channel.isProcessing())
                 {
                     stopProcessing(channel, true);
                 }
@@ -220,9 +220,9 @@ public class ChannelProcessingManager implements ChannelEventListener
 
         if(source == null)
         {
-            channel.setEnabled(false);
+            channel.setProcessing(false);
 
-            mChannelModel.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_ENABLE_REJECTED));
+            mChannelModel.broadcast(new ChannelEvent(channel, ChannelEvent.Event.NOTIFICATION_START_PROCESSING_REJECTED));
 
             return;
         }
@@ -325,7 +325,7 @@ public class ChannelProcessingManager implements ChannelEventListener
 
         getChannelMetadataModel().add(processingChain.getChannelState().getMutableMetadata(), channel);
 
-        channel.setEnabled(true);
+        channel.setProcessing(true);
 
         mProcessingChains.put(channel.getChannelID(), processingChain);
 
@@ -334,7 +334,7 @@ public class ChannelProcessingManager implements ChannelEventListener
 
     private void stopProcessing(Channel channel, boolean remove)
     {
-        channel.setEnabled(false);
+        channel.setProcessing(false);
 
         if(mProcessingChains.containsKey(channel.getChannelID()))
         {

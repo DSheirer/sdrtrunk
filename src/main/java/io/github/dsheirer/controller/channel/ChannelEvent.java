@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014-2016 Dennis Sheirer
+ *     Copyright (C) 2014-2018 Dennis Sheirer
  * 
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
@@ -42,6 +42,11 @@ public class ChannelEvent
 	{
 		return mEvent;
 	}
+
+	public String toString()
+	{
+		return getEvent().name() + " Channel:" + getChannel().getName();
+	}
 	
 	/**
 	 * Channel events to describe the specific event
@@ -55,7 +60,7 @@ public class ChannelEvent
 		//Channel is deleted/removed
 		NOTIFICATION_DELETE,
 		//Channel enable request was rejected
-		NOTIFICATION_ENABLE_REJECTED,
+		NOTIFICATION_START_PROCESSING_REJECTED,
 		//Channel has started processing/decoding
 		NOTIFICATION_PROCESSING_START,
 		//Channel has stopped processing/decoding
