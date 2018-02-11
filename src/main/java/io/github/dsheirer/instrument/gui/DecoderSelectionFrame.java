@@ -2,15 +2,19 @@ package io.github.dsheirer.instrument.gui;
 
 import io.github.dsheirer.alias.AliasModel;
 import io.github.dsheirer.audio.broadcast.BroadcastModel;
+import io.github.dsheirer.controller.channel.Channel;
 import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
 import io.github.dsheirer.module.decode.DecodeConfigurationEditor;
+import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.playlist.PlaylistManager;
 import io.github.dsheirer.source.IControllableFileSource;
 import net.miginfocom.swing.MigLayout;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JButton;
+import javax.swing.JDesktopPane;
+import javax.swing.JInternalFrame;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -18,14 +22,14 @@ public class DecoderSelectionFrame extends JInternalFrame
 {
     private static final long serialVersionUID = 1L;
 
+    private Channel mChannel = new Channel();
     private DecodeConfigurationEditor mDecodeEditor = new DecodeConfigurationEditor(null);
     private PlaylistManager mPlaylistManager;
 
     private IControllableFileSource mSource;
     private JDesktopPane mDesktop;
 
-    public DecoderSelectionFrame(JDesktopPane desktop,
-                                 IControllableFileSource source)
+    public DecoderSelectionFrame(JDesktopPane desktop, IControllableFileSource source)
     {
         AliasModel aliasModel = new AliasModel();
         BroadcastModel broadcastModel = new BroadcastModel(null);
@@ -37,6 +41,7 @@ public class DecoderSelectionFrame extends JInternalFrame
         mDesktop = desktop;
         mSource = source;
 
+        mDecodeEditor.setItem(mChannel);
         initGUI();
     }
 
@@ -72,17 +77,23 @@ public class DecoderSelectionFrame extends JInternalFrame
                 @Override
                 public void actionPerformed(ActionEvent arg0)
                 {
-//					DecodeConfiguration config = mDecodeEditor.getDecodeConfig();
-//					
-//					if( config != null )
-//					{
-//						DecoderViewFrame decoderFrame = new DecoderViewFrame( 
-//								mPlaylistManager, null, mSource );
-//
-//						decoderFrame.setVisible( true );
-//						
-//						mDesktop.add( decoderFrame );
-//					}
+                    mDecodeEditor.save();
+
+                    Channel channel = mDecodeEditor.getItem();
+
+                    if(channel != null)
+                    {
+                        DecodeConfiguration config = channel.getDecodeConfiguration();
+
+                        if( config != null )
+                        {
+                            DecoderViewFrame decoderFrame = new DecoderViewFrame(mPlaylistManager, channel, mSource );
+
+                            decoderFrame.setVisible( true );
+
+                            mDesktop.add( decoderFrame );
+                        }
+                    }
                 }
             });
         }
