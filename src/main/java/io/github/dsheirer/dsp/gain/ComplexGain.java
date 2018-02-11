@@ -5,27 +5,34 @@ import io.github.dsheirer.sample.complex.Complex;
 
 public class ComplexGain implements Listener<Complex>
 {
-	private float mGain;
-	private Listener<Complex> mListener;
+    private float mGain;
+    private Listener<Complex> mListener;
 
-	public ComplexGain( float gain )
-	{
-		mGain = gain;
-	}
-	
-	@Override
-	public void receive( Complex sample )
-	{
-		if( mListener != null )
-		{
-			sample.multiply( mGain );
-			
-			mListener.receive( sample );
-		}
-	}
+    public ComplexGain(float gain)
+    {
+        mGain = gain;
+    }
 
-	public void setListener( Listener<Complex> listener )
-	{
-		mListener = listener;
-	}
+    public Complex apply(Complex sample)
+    {
+        sample.multiply(mGain);
+
+        return sample;
+    }
+
+    @Override
+    public void receive(Complex sample)
+    {
+        if(mListener != null)
+        {
+            apply(sample);
+
+            mListener.receive(sample);
+        }
+    }
+
+    public void setListener(Listener<Complex> listener)
+    {
+        mListener = listener;
+    }
 }

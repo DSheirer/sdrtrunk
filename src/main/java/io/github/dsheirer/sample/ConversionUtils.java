@@ -21,14 +21,13 @@ public class ConversionUtils
      */
     public static float[] convertFromSigned16BitSamples( ByteBuffer buffer )
     {
-    	ShortBuffer byteBuffer = 
-    			buffer.order( ByteOrder.LITTLE_ENDIAN ).asShortBuffer();
+    	ShortBuffer byteBuffer = buffer.order( ByteOrder.LITTLE_ENDIAN ).asShortBuffer();
     	
     	float[] samples = new float[ buffer.limit() / 2 ];
     	
     	for( int x = 0; x < samples.length; x++ )
     	{
-    		samples[ x ] = (float)byteBuffer.get() / 32767.0f;
+    		samples[ x ] = (float)byteBuffer.get() / (float)Short.MAX_VALUE;
     	}
 
     	return samples;

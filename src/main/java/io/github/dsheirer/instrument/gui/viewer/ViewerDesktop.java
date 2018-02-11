@@ -22,15 +22,18 @@ import java.io.File;
 public class ViewerDesktop extends BorderPane
 {
     private PlaybackController mPlaybackController;
+    private ComplexSampleLineChart mSampleLineChart;
 
     public ViewerDesktop()
     {
         setBottom(getPlaybackController());
+        getPlaybackController().addListener(getSampleLineChart());
+        setCenter(getSampleLineChart());
     }
 
     public void load(File file)
     {
-
+        getPlaybackController().load(file);
     }
 
     public void close()
@@ -46,5 +49,16 @@ public class ViewerDesktop extends BorderPane
         }
 
         return mPlaybackController;
+    }
+
+
+    private ComplexSampleLineChart getSampleLineChart()
+    {
+        if(mSampleLineChart == null)
+        {
+            mSampleLineChart = new ComplexSampleLineChart(40);
+        }
+
+        return mSampleLineChart;
     }
 }

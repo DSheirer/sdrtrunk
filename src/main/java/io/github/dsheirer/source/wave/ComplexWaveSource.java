@@ -239,8 +239,7 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
                     buffer = Arrays.copyOf(buffer, samplesRead);
                 }
 
-                float[] samples = ConversionUtils
-                    .convertFromSigned16BitSamples(buffer);
+                float[] samples = ConversionUtils.convertFromSigned16BitSamples(buffer);
 
                 mListener.receive(new ComplexBuffer(samples));
             }
