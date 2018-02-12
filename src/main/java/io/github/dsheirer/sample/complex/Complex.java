@@ -358,6 +358,11 @@ public class Complex implements Serializable
 		return (float)Math.atan2( y(), x() );
 	}
 
+	public float angleDegrees()
+	{
+		return (float)Math.toDegrees(angle());
+	}
+
 	/**
 	 * Constrains the i and q quantities to +/- value. 
 	 * 

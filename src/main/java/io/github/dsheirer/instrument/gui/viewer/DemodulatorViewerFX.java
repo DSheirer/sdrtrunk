@@ -37,6 +37,7 @@ public class DemodulatorViewerFX extends Application
 {
     private Stage mStage;
     private MenuBar mMenuBar;
+    private RecentFilesMenuItem mRecentFilesMenuItem;
     private ViewerDesktop mViewerDesktop;
 
     @Override
@@ -82,6 +83,7 @@ public class DemodulatorViewerFX extends Application
                     fileChooser.setTitle("Open an I/Q recording file");
                     File file = fileChooser.showOpenDialog(mStage);
                     getViewerDesktop().load(file);
+                    getRecentFilesMenuItem().add(file);
                 }
             });
 
@@ -105,12 +107,33 @@ public class DemodulatorViewerFX extends Application
                 }
             });
 
-            menuFile.getItems().addAll(menuItemOpen, menuItemClose, new SeparatorMenuItem(), menuItemExit);
+            mRecentFilesMenuItem = new RecentFilesMenuItem("demodulator.viewer", 5);
+
+            menuFile.getItems().addAll(menuItemOpen, getRecentFilesMenuItem(), menuItemClose, new SeparatorMenuItem(),
+                    menuItemExit);
 
             mMenuBar.getMenus().addAll(menuFile);
         }
 
         return mMenuBar;
+    }
+
+    private RecentFilesMenuItem getRecentFilesMenuItem()
+    {
+        if(mRecentFilesMenuItem == null)
+        {
+            mRecentFilesMenuItem = new RecentFilesMenuItem("demodulator.viewer", 5);
+            mRecentFilesMenuItem.setFileSelectionListener(new RecentFilesMenuItem.IFileSelectionListener()
+            {
+                @Override
+                public void fileSelected(File file)
+                {
+                    getViewerDesktop().load(file);
+                }
+            });
+        }
+
+        return mRecentFilesMenuItem;
     }
 
     public static void main(String[] args)

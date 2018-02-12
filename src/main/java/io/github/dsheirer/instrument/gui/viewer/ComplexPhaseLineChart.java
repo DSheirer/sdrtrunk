@@ -28,29 +28,27 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
-import javafx.scene.chart.XYChart;
+import org.apache.commons.math3.complex.ComplexUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ComplexSampleLineChart extends LineChart implements Listener<ComplexBuffer>
+public class ComplexPhaseLineChart extends LineChart implements Listener<ComplexBuffer>
 {
-    private final static Logger mLog = LoggerFactory.getLogger(ComplexSampleLineChart.class);
+    private final static Logger mLog = LoggerFactory.getLogger(ComplexPhaseLineChart.class);
 
+    private static final Complex ANGLE_OFFSET_45_DEGREES = Complex.fromAngle((float)(Math.PI / 4.0));
     private ComplexCircularBuffer mComplexCircularBuffer;
-    private ComplexGain mComplexGain = new ComplexGain(500.0f);
-    private ObservableList<XYChart.Data<Integer,Float>> mISamples = FXCollections.observableArrayList();
-    private ObservableList<XYChart.Data<Integer,Float>> mQSamples = FXCollections.observableArrayList();
+    private ComplexGain mComplexGain = new ComplexGain(600.0f);
+    private ObservableList<Data<Integer,Float>> mPhaseValues = FXCollections.observableArrayList();
     private IntegerProperty mLengthProperty = new SimpleIntegerProperty(40);
 
-    public ComplexSampleLineChart(int length)
+    public ComplexPhaseLineChart(int length)
     {
-        super(new NumberAxis("Sample Number", 1, length, 1),
-            new NumberAxis("Value", -1.0, 1.0, 0.1));
+        super(new NumberAxis("Time", 1, length - 10, 1),
+            new NumberAxis("Phase", -Math.PI, Math.PI, 1.0));
 
-        LineChart.Series<Integer,Float> iSampleSeries = new LineChart.Series<>("Inphase", mISamples);
-        LineChart.Series<Integer,Float> qSampleSeries = new LineChart.Series<>("Quadrature", mQSamples);
-        ObservableList<XYChart.Series<Integer,Float>> observableList =
-            FXCollections.observableArrayList(iSampleSeries, qSampleSeries);
+        Series<Integer,Float> phaseSeries = new Series<>("Phase", mPhaseValues);
+        ObservableList<Series<Integer,Float>> observableList = FXCollections.observableArrayList(phaseSeries);
 
         setData(observableList);
         init(length);
@@ -69,10 +67,9 @@ public class ComplexSampleLineChart extends LineChart implements Listener<Comple
         mComplexCircularBuffer = new ComplexCircularBuffer(length);
         length().setValue(length);
 
-        for(int x = 1; x <= length; x++)
+        for(int x = 10; x <= length; x++)
         {
-            mISamples.add(new Data(x, 0.0f));
-            mQSamples.add(new Data(x, 0.0f));
+            mPhaseValues.add(new Data(x - 10, 0.0f));
         }
     }
 
@@ -106,15 +103,19 @@ public class ComplexSampleLineChart extends LineChart implements Listener<Comple
     {
         Complex[] samples = mComplexCircularBuffer.getAll();
 
-        for(int x = 0; x < samples.length; x++)
+        for(int x = 10; x < samples.length; x++)
         {
-            Complex sample = samples[x];
+            Complex previous = samples[x - 10].copy();
+            Complex sample = samples[x].copy();
 
-            if(sample != null)
+            if(previous != null && sample != null)
             {
-                sample.normalize();
-                mISamples.get(x).setYValue(sample.inphase());
-                mQSamples.get(x).setYValue(sample.quadrature());
+//                previous.normalize();
+//                sample.normalize();
+                previous.add(ANGLE_OFFSET_45_DEGREES);
+                sample.multiply(previous.conjugate());
+//                sample.normalize();
+                mPhaseValues.get(x - 10).setYValue(sample.angle());
             }
         }
     }

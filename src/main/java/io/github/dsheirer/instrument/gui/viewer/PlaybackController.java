@@ -99,6 +99,21 @@ public class PlaybackController extends HBox implements IFrameLocationListener, 
         }
     }
 
+    public void close()
+    {
+        if(mControllableFileSource != null)
+        {
+            try
+            {
+                mControllableFileSource.close();
+            }
+            catch(IOException ioe)
+            {
+                mLog.error("Error closing file", ioe);
+            }
+        }
+    }
+
     /**
      * Adds listener to receive complex buffers from this playback
      */

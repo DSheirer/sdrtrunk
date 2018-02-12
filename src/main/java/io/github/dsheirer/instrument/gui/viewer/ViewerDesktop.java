@@ -16,29 +16,35 @@
 package io.github.dsheirer.instrument.gui.viewer;
 
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 
 import java.io.File;
 
 public class ViewerDesktop extends BorderPane
 {
     private PlaybackController mPlaybackController;
+    private VBox mChartBox;
     private ComplexSampleLineChart mSampleLineChart;
+    private ComplexPhaseLineChart mPhaseLineChart;
 
     public ViewerDesktop()
     {
         setBottom(getPlaybackController());
         getPlaybackController().addListener(getSampleLineChart());
-        setCenter(getSampleLineChart());
+        getPlaybackController().addListener(getPhaseLineChart());
+        setCenter(getChartBox());
     }
 
     public void load(File file)
     {
+        close();
         getPlaybackController().load(file);
     }
 
     public void close()
     {
-
+        getPlaybackController().close();
     }
 
     private PlaybackController getPlaybackController()
@@ -51,6 +57,16 @@ public class ViewerDesktop extends BorderPane
         return mPlaybackController;
     }
 
+    private VBox getChartBox()
+    {
+        if(mChartBox == null)
+        {
+            mChartBox = new VBox();
+            mChartBox.getChildren().addAll(getSampleLineChart(), getPhaseLineChart());
+        }
+
+        return mChartBox;
+    }
 
     private ComplexSampleLineChart getSampleLineChart()
     {
@@ -60,5 +76,15 @@ public class ViewerDesktop extends BorderPane
         }
 
         return mSampleLineChart;
+    }
+
+    private ComplexPhaseLineChart getPhaseLineChart()
+    {
+        if(mPhaseLineChart == null)
+        {
+            mPhaseLineChart = new ComplexPhaseLineChart(50);
+        }
+
+        return mPhaseLineChart;
     }
 }
