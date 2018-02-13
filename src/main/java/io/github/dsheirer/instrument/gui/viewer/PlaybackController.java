@@ -67,6 +67,7 @@ public class PlaybackController extends HBox implements IFrameLocationListener, 
 
     public void load(File file)
     {
+        mLog.debug("loading:" + file.getAbsolutePath());
         if(file != null && file.isFile())
         {
             try
@@ -112,6 +113,8 @@ public class PlaybackController extends HBox implements IFrameLocationListener, 
                 mLog.error("Error closing file", ioe);
             }
         }
+
+        setControlsEnabled(false);
     }
 
     /**

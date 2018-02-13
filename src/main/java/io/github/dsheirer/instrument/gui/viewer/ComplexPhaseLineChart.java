@@ -115,7 +115,7 @@ public class ComplexPhaseLineChart extends LineChart implements Listener<Complex
                 previous.add(ANGLE_OFFSET_45_DEGREES);
                 sample.multiply(previous.conjugate());
 //                sample.normalize();
-                mPhaseValues.get(x - 10).setYValue(sample.angle());
+                mPhaseValues.get(x - 9).setYValue(sample.angle());
             }
         }
     }

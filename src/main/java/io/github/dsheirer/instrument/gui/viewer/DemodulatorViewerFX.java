@@ -37,7 +37,7 @@ public class DemodulatorViewerFX extends Application
 {
     private Stage mStage;
     private MenuBar mMenuBar;
-    private RecentFilesMenuItem mRecentFilesMenuItem;
+    private RecentFilesMenu mRecentFilesMenu;
     private ViewerDesktop mViewerDesktop;
 
     @Override
@@ -83,7 +83,7 @@ public class DemodulatorViewerFX extends Application
                     fileChooser.setTitle("Open an I/Q recording file");
                     File file = fileChooser.showOpenDialog(mStage);
                     getViewerDesktop().load(file);
-                    getRecentFilesMenuItem().add(file);
+                    getRecentFilesMenu().add(file);
                 }
             });
 
@@ -107,9 +107,7 @@ public class DemodulatorViewerFX extends Application
                 }
             });
 
-            mRecentFilesMenuItem = new RecentFilesMenuItem("demodulator.viewer", 5);
-
-            menuFile.getItems().addAll(menuItemOpen, getRecentFilesMenuItem(), menuItemClose, new SeparatorMenuItem(),
+            menuFile.getItems().addAll(menuItemOpen, getRecentFilesMenu(), menuItemClose, new SeparatorMenuItem(),
                     menuItemExit);
 
             mMenuBar.getMenus().addAll(menuFile);
@@ -118,12 +116,12 @@ public class DemodulatorViewerFX extends Application
         return mMenuBar;
     }
 
-    private RecentFilesMenuItem getRecentFilesMenuItem()
+    private RecentFilesMenu getRecentFilesMenu()
     {
-        if(mRecentFilesMenuItem == null)
+        if(mRecentFilesMenu == null)
         {
-            mRecentFilesMenuItem = new RecentFilesMenuItem("demodulator.viewer", 5);
-            mRecentFilesMenuItem.setFileSelectionListener(new RecentFilesMenuItem.IFileSelectionListener()
+            mRecentFilesMenu = new RecentFilesMenu("Recent","demodulator.viewer", 5);
+            mRecentFilesMenu.setFileSelectionListener(new RecentFilesMenu.IFileSelectionListener()
             {
                 @Override
                 public void fileSelected(File file)
@@ -133,7 +131,7 @@ public class DemodulatorViewerFX extends Application
             });
         }
 
-        return mRecentFilesMenuItem;
+        return mRecentFilesMenu;
     }
 
     public static void main(String[] args)
