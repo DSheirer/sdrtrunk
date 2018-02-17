@@ -15,6 +15,8 @@
  ******************************************************************************/
 package io.github.dsheirer.instrument.gui.viewer;
 
+import io.github.dsheirer.instrument.gui.viewer.decoder.DecoderPaneFactory;
+import io.github.dsheirer.module.decode.DecoderType;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -44,7 +46,7 @@ public class DemodulatorViewerFX extends Application
     public void start(Stage primaryStage) throws Exception
     {
         mStage = primaryStage;
-        mStage.setTitle("Demodulator Viewer FX");
+        setTitle(null);
 
         BorderPane borderPane = new BorderPane();
         borderPane.setTop(getMenuBar());
@@ -54,6 +56,18 @@ public class DemodulatorViewerFX extends Application
 
         mStage.setScene(scene);
         mStage.show();
+    }
+
+    private void setTitle(DecoderType decoderType)
+    {
+        if(decoderType != null)
+        {
+            mStage.setTitle("Demodulator Viewer FX - " + decoderType.getDisplayString());
+        }
+        else
+        {
+            mStage.setTitle("Demodulator Viewer FX");
+        }
     }
 
     private ViewerDesktop getViewerDesktop()
@@ -72,9 +86,9 @@ public class DemodulatorViewerFX extends Application
         {
             mMenuBar = new MenuBar();
 
-            Menu menuFile = new Menu("File");
-            MenuItem menuItemOpen = new MenuItem("Open ...");
-            menuItemOpen.setOnAction(new EventHandler<ActionEvent>()
+            Menu fileMenu = new Menu("File");
+            MenuItem openMenuItem = new MenuItem("Open ...");
+            openMenuItem.setOnAction(new EventHandler<ActionEvent>()
             {
                 @Override
                 public void handle(ActionEvent event)
@@ -87,8 +101,8 @@ public class DemodulatorViewerFX extends Application
                 }
             });
 
-            MenuItem menuItemClose = new MenuItem("Close");
-            menuItemClose.setOnAction(new EventHandler<ActionEvent>()
+            MenuItem closeMenuItem = new MenuItem("Close");
+            closeMenuItem.setOnAction(new EventHandler<ActionEvent>()
             {
                 @Override
                 public void handle(ActionEvent event)
@@ -97,8 +111,8 @@ public class DemodulatorViewerFX extends Application
                 }
             });
 
-            MenuItem menuItemExit = new MenuItem("Exit");
-            menuItemExit.setOnAction(new EventHandler<ActionEvent>()
+            MenuItem exitMenuItem = new MenuItem("Exit");
+            exitMenuItem.setOnAction(new EventHandler<ActionEvent>()
             {
                 @Override
                 public void handle(ActionEvent event)
@@ -107,10 +121,34 @@ public class DemodulatorViewerFX extends Application
                 }
             });
 
-            menuFile.getItems().addAll(menuItemOpen, getRecentFilesMenu(), menuItemClose, new SeparatorMenuItem(),
-                    menuItemExit);
+            fileMenu.getItems().addAll(openMenuItem, getRecentFilesMenu(), closeMenuItem, new SeparatorMenuItem(),
+                    exitMenuItem);
 
-            mMenuBar.getMenus().addAll(menuFile);
+            mMenuBar.getMenus().add(fileMenu);
+
+            Menu decoderMenu = new Menu("Decoder");
+
+            for(DecoderType decoderType: DecoderType.values())
+            {
+                if(DecoderPaneFactory.isSupported(decoderType))
+                {
+                    MenuItem decoderMenuItem = new MenuItem(decoderType.getShortDisplayString());
+
+                    decoderMenuItem.setOnAction(new EventHandler<ActionEvent>()
+                    {
+                        @Override
+                        public void handle(ActionEvent event)
+                        {
+                            getViewerDesktop().setDecoder(decoderType);
+                            setTitle(decoderType);
+                        }
+                    });
+
+                    decoderMenu.getItems().add(decoderMenuItem);
+                }
+            }
+
+            mMenuBar.getMenus().add(decoderMenu);
         }
 
         return mMenuBar;

@@ -13,7 +13,7 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.instrument.gui.viewer;
+package io.github.dsheirer.instrument.gui.viewer.chart;
 
 import io.github.dsheirer.buffer.ComplexCircularBuffer;
 import io.github.dsheirer.dsp.gain.ComplexGain;
@@ -44,8 +44,8 @@ public class ComplexSampleLineChart extends LineChart implements Listener<Comple
 
     public ComplexSampleLineChart(int length)
     {
-        super(new NumberAxis("Sample Number", 1, length, 1),
-            new NumberAxis("Value", -1.0, 1.0, 0.1));
+        super(new NumberAxis("Sample Number", 1, length, 2),
+            new NumberAxis("Value", -1.0, 1.0, 0.25));
 
         LineChart.Series<Integer,Float> iSampleSeries = new LineChart.Series<>("Inphase", mISamples);
         LineChart.Series<Integer,Float> qSampleSeries = new LineChart.Series<>("Quadrature", mQSamples);

@@ -19,10 +19,7 @@
 package io.github.dsheirer.module.decode.p25;
 
 import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.instrument.tap.Tap;
 import io.github.dsheirer.instrument.tap.TapGroup;
-import io.github.dsheirer.instrument.tap.stream.DibitTap;
-import io.github.dsheirer.instrument.tap.stream.FloatTap;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.real.IFilteredRealBufferListener;
 import io.github.dsheirer.sample.real.RealBuffer;
@@ -30,7 +27,6 @@ import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -105,93 +101,6 @@ public class P25_C4FMDecoder extends P25Decoder implements IFilteredRealBufferLi
 		return mSymbolFilter;
 	}
 	
-	/**
-	 * Instrumentation taps for monitoring internal processing
-	 */
-	@Override
-    public List<TapGroup> getTapGroups()
-    {
-		if( mAvailableTaps == null )
-		{
-			mAvailableTaps = new ArrayList<>();
-
-			TapGroup group = new TapGroup( "P25 C4FM Decoder" );
-			
-			group.add( new FloatTap( INSTRUMENT_C4FM_SYMBOL_FILTER_OUTPUT, 0, 0.1f ) );
-			group.add( new DibitTap( INSTRUMENT_C4FM_SLICER_OUTPUT, 0, 0.1f ) );
-
-			mAvailableTaps.add( group );
-			
-			if( mSymbolFilter != null )
-			{
-				mAvailableTaps.addAll( mSymbolFilter.getTapGroups() );
-			}
-		}
-		
-		return mAvailableTaps;
-    }
-
-	/**
-	 * Adds an instrumentation tap to monitor internal processing.  
-	 */
-	@Override
-    public void registerTap( Tap tap )
-    {
-		if( mSymbolFilter != null )
-		{
-			mSymbolFilter.registerTap( tap );
-		}
-		
-		switch( tap.getName() )
-		{
-			case INSTRUMENT_C4FM_SYMBOL_FILTER_OUTPUT:
-				FloatTap symbolTap = (FloatTap)tap;
-				mSymbolFilter.setListener( symbolTap );
-				symbolTap.setListener( mC4FMSlicer );
-				break;
-			case INSTRUMENT_C4FM_SLICER_OUTPUT:
-				DibitTap slicerTap = (DibitTap)tap;
-				
-				if( mC4FMSlicer != null )
-				{
-					mC4FMSlicer.addListener( slicerTap );
-				}
-				break;
-			default:
-				break;
-		}
-    }
-
-	/**
-	 * Removes the instrumentation tap.
-	 */
-	@Override
-    public void unregisterTap( Tap tap )
-    {
-		if( mSymbolFilter != null )
-		{
-			mSymbolFilter.unregisterTap( tap );
-		}
-		
-		switch( tap.getName() )
-		{
-			case INSTRUMENT_C4FM_SYMBOL_FILTER_OUTPUT:
-				mSymbolFilter.setListener( mC4FMSlicer );
-				break;
-			case INSTRUMENT_C4FM_SLICER_OUTPUT:
-				DibitTap slicerTap = (DibitTap)tap;
-				
-				if( mC4FMSlicer != null )
-				{
-					mC4FMSlicer.removeListener( slicerTap );
-				}
-				break;
-			default:
-				throw new IllegalArgumentException( "Unrecognized tap: " + 
-							tap.getName() );
-		}
-    }
-
 	@Override
 	public void reset()
 	{

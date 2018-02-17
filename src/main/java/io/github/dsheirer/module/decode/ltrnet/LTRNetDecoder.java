@@ -74,7 +74,7 @@ public class LTRNetDecoder extends Decoder
 		
 		mLTRMessageFramer.addMessageListener( mLTRMessageProcessor );
 		
-		mLTRMessageProcessor.setMessageListener( this );
+		mLTRMessageProcessor.setMessageListener( getMessageListener() );
 	}
 
 	@Override

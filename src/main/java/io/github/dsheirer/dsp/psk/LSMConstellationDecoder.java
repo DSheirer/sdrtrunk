@@ -13,36 +13,16 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.source;
+package io.github.dsheirer.dsp.psk;
 
-import javax.sound.sampled.UnsupportedAudioFileException;
-import java.io.File;
-import java.io.IOException;
+import io.github.dsheirer.dsp.symbol.Dibit;
+import io.github.dsheirer.sample.complex.Complex;
 
-/**
- * Defines a controllable source that can be manually controlled for stepping
- * through the file.
- */
-public interface IControllableFileSource
+public class LSMConstellationDecoder implements IQPSKSymbolDecoder
 {
-    /**
-     * Opens the file source
-     */
-    public void open() throws IOException, UnsupportedAudioFileException;
-
-    public void close() throws IOException;
-
-    public File getFile();
-
-    public void next(int frames) throws IOException;
-
-    public void next(int frames, boolean broadcast) throws IOException;
-
-    public long getFrameCount() throws IOException;
-
-    public int getSampleRate();
-
-    public void setListener(IFrameLocationListener listener);
-
-    public void removeListener(IFrameLocationListener listener);
+    @Override
+    public Dibit decode(Complex symbol)
+    {
+        return null;
+    }
 }

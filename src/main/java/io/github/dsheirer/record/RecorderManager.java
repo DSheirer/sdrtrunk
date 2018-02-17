@@ -42,6 +42,7 @@ public class RecorderManager implements Listener<AudioPacket>
     private static final Logger mLog = LoggerFactory.getLogger(RecorderManager.class);
 
     public static final int AUDIO_SAMPLE_RATE = 8000;
+    public static final int BASEBAND_SAMPLE_RATE = 48000;
     public static final long IDLE_RECORDER_REMOVAL_THRESHOLD = 6000; //6 seconds
 
     private Map<String,AudioPacketWaveRecorder> mRecorders = new HashMap<>();
@@ -229,7 +230,7 @@ public class RecorderManager implements Listener<AudioPacket>
         sb.append(SystemProperties.getInstance().getApplicationFolder("recordings"));
         sb.append(File.separator).append(channelName).append("_baseband");
 
-        return new ComplexBufferWaveRecorder(AUDIO_SAMPLE_RATE, sb.toString());
+        return new ComplexBufferWaveRecorder(BASEBAND_SAMPLE_RATE, sb.toString());
     }
 
     /**

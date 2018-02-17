@@ -13,36 +13,23 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.source;
+package io.github.dsheirer.dsp.psk;
 
-import javax.sound.sampled.UnsupportedAudioFileException;
-import java.io.File;
-import java.io.IOException;
+import io.github.dsheirer.sample.complex.Complex;
 
-/**
- * Defines a controllable source that can be manually controlled for stepping
- * through the file.
- */
-public interface IControllableFileSource
+public interface ISymbolPhaseErrorCalculator
 {
     /**
-     * Opens the file source
+     * Adjusts the calculated symbol as necessary before calculating any phase error.  This might be useful for
+     * differential encoding to remove a 45 degree rotational spin.
+     * @param symbol to adjust
      */
-    public void open() throws IOException, UnsupportedAudioFileException;
+    void adjust(Complex symbol);
 
-    public void close() throws IOException;
-
-    public File getFile();
-
-    public void next(int frames) throws IOException;
-
-    public void next(int frames, boolean broadcast) throws IOException;
-
-    public long getFrameCount() throws IOException;
-
-    public int getSampleRate();
-
-    public void setListener(IFrameLocationListener listener);
-
-    public void removeListener(IFrameLocationListener listener);
+    /**
+     * Calculates the phase error of the symbol relative to an alignment for the constellation
+     * @param symbol to calculate error
+     * @return error value
+     */
+    float getPhaseError(Complex symbol);
 }

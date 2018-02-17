@@ -51,8 +51,7 @@ public class Oscillator
 	 */
 	private void update()
 	{
-		float anglePerSample = 
-				(float)( 2.0d * Math.PI * mFrequency / mSampleRate );
+		float anglePerSample = (float)( 2.0d * Math.PI * mFrequency / mSampleRate );
 
 		mAnglePerSample = Complex.fromAngle( anglePerSample );
 	}

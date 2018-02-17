@@ -13,7 +13,7 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.instrument.gui.viewer;
+package io.github.dsheirer.instrument.gui.viewer.chart;
 
 import io.github.dsheirer.buffer.ComplexCircularBuffer;
 import io.github.dsheirer.dsp.gain.ComplexGain;
@@ -28,7 +28,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
-import org.apache.commons.math3.complex.ComplexUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +35,7 @@ public class ComplexPhaseLineChart extends LineChart implements Listener<Complex
 {
     private final static Logger mLog = LoggerFactory.getLogger(ComplexPhaseLineChart.class);
 
-    private static final Complex ANGLE_OFFSET_45_DEGREES = Complex.fromAngle((float)(Math.PI / 4.0));
+    private static final Complex ANGLE_OFFSET_45_DEGREES = Complex.fromAngle(Math.PI / 4.0);
     private ComplexCircularBuffer mComplexCircularBuffer;
     private ComplexGain mComplexGain = new ComplexGain(600.0f);
     private ObservableList<Data<Integer,Float>> mPhaseValues = FXCollections.observableArrayList();
@@ -44,8 +43,8 @@ public class ComplexPhaseLineChart extends LineChart implements Listener<Complex
 
     public ComplexPhaseLineChart(int length)
     {
-        super(new NumberAxis("Time", 1, length - 10, 1),
-            new NumberAxis("Phase", -Math.PI, Math.PI, 1.0));
+        super(new NumberAxis("Time", 1, length - 10, 2),
+            new NumberAxis("Phase", -Math.PI, Math.PI, Math.PI / 2.0));
 
         Series<Integer,Float> phaseSeries = new Series<>("Phase", mPhaseValues);
         ObservableList<Series<Integer,Float>> observableList = FXCollections.observableArrayList(phaseSeries);

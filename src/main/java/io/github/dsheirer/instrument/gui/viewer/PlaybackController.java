@@ -15,6 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.instrument.gui.viewer;
 
+import io.github.dsheirer.instrument.gui.viewer.decoder.DecoderPane;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
@@ -52,6 +53,7 @@ public class PlaybackController extends HBox implements IFrameLocationListener, 
     private HBox mControlsBox;
     private Label mFileLabel;
     private EventHandler<ActionEvent> mPlayEventHandler;
+    private DecoderPane mSampleRateListener;
 
     private IControllableFileSource mControllableFileSource;
     private Broadcaster<ComplexBuffer> mComplexBufferBroadcaster = new Broadcaster<>();
@@ -65,6 +67,16 @@ public class PlaybackController extends HBox implements IFrameLocationListener, 
         setControlsEnabled(false);
     }
 
+    public void setSampleRateListener(DecoderPane decoderPane)
+    {
+        mSampleRateListener = decoderPane;
+
+        if(mSampleRateListener != null && mControllableFileSource != null)
+        {
+            mSampleRateListener.setSampleRate(mControllableFileSource.getSampleRate());
+        }
+    }
+
     public void load(File file)
     {
         mLog.debug("loading:" + file.getAbsolutePath());
@@ -76,6 +88,11 @@ public class PlaybackController extends HBox implements IFrameLocationListener, 
                 mControllableFileSource.setListener(this);
                 ((ComplexWaveSource)mControllableFileSource).setListener((Listener<ComplexBuffer>)this);
                 mControllableFileSource.open();
+
+                if(mSampleRateListener != null)
+                {
+                    mSampleRateListener.setSampleRate(mControllableFileSource.getSampleRate());
+                }
             }
             catch(UnsupportedAudioFileException e)
             {

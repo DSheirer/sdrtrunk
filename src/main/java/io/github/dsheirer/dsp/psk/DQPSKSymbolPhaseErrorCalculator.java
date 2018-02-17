@@ -13,36 +13,18 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.source;
+package io.github.dsheirer.dsp.psk;
 
-import javax.sound.sampled.UnsupportedAudioFileException;
-import java.io.File;
-import java.io.IOException;
+import io.github.dsheirer.sample.complex.Complex;
 
-/**
- * Defines a controllable source that can be manually controlled for stepping
- * through the file.
- */
-public interface IControllableFileSource
+public class DQPSKSymbolPhaseErrorCalculator extends QPSKSymbolPhaseErrorCalculator
 {
-    /**
-     * Opens the file source
-     */
-    public void open() throws IOException, UnsupportedAudioFileException;
+    //Negative 45 degrees rotation to offset for differential additive 45 degrees of rotation
+    public static final Complex DIFFERENTIAL_OFFSET = Complex.fromAngle(Math.PI / -4.0d);
 
-    public void close() throws IOException;
-
-    public File getFile();
-
-    public void next(int frames) throws IOException;
-
-    public void next(int frames, boolean broadcast) throws IOException;
-
-    public long getFrameCount() throws IOException;
-
-    public int getSampleRate();
-
-    public void setListener(IFrameLocationListener listener);
-
-    public void removeListener(IFrameLocationListener listener);
+    @Override
+    public void adjust(Complex symbol)
+    {
+        symbol.multiply(DIFFERENTIAL_OFFSET);
+    }
 }

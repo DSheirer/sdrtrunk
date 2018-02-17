@@ -15,31 +15,53 @@
  ******************************************************************************/
 package io.github.dsheirer.instrument.gui.viewer;
 
+import io.github.dsheirer.instrument.gui.viewer.decoder.DecoderPane;
+import io.github.dsheirer.instrument.gui.viewer.decoder.DecoderPaneFactory;
+import io.github.dsheirer.module.decode.DecoderType;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
 
 import java.io.File;
 
 public class ViewerDesktop extends BorderPane
 {
     private PlaybackController mPlaybackController;
-    private VBox mChartBox;
-    private ComplexSampleLineChart mSampleLineChart;
-    private ComplexPhaseLineChart mPhaseLineChart;
+    private DecoderPane mDecoderPane = DecoderPaneFactory.getDefaultPane();
 
     public ViewerDesktop()
     {
         setBottom(getPlaybackController());
-        getPlaybackController().addListener(getSampleLineChart());
-        getPlaybackController().addListener(getPhaseLineChart());
-        setCenter(getChartBox());
+        setCenter(getDecoderPane());
     }
 
     public void load(File file)
     {
         close();
         getPlaybackController().load(file);
+    }
+
+    public void setDecoder(DecoderType decoderType)
+    {
+        getPlaybackController().removeListener(getDecoderPane());
+        getChildren().remove(getDecoderPane());
+
+        mDecoderPane = DecoderPaneFactory.getDecoderPane(decoderType);
+        setCenter(getDecoderPane());
+        getPlaybackController().addListener(getDecoderPane());
+
+        getPlaybackController().setSampleRateListener(getDecoderPane());
+    }
+
+    /**
+     * Decoder pane
+     */
+    public DecoderPane getDecoderPane()
+    {
+        if(mDecoderPane == null)
+        {
+            mDecoderPane = DecoderPaneFactory.getDefaultPane();
+        }
+
+        return mDecoderPane;
     }
 
     public void close()
@@ -55,36 +77,5 @@ public class ViewerDesktop extends BorderPane
         }
 
         return mPlaybackController;
-    }
-
-    private VBox getChartBox()
-    {
-        if(mChartBox == null)
-        {
-            mChartBox = new VBox();
-            mChartBox.getChildren().addAll(getSampleLineChart(), getPhaseLineChart());
-        }
-
-        return mChartBox;
-    }
-
-    private ComplexSampleLineChart getSampleLineChart()
-    {
-        if(mSampleLineChart == null)
-        {
-            mSampleLineChart = new ComplexSampleLineChart(40);
-        }
-
-        return mSampleLineChart;
-    }
-
-    private ComplexPhaseLineChart getPhaseLineChart()
-    {
-        if(mPhaseLineChart == null)
-        {
-            mPhaseLineChart = new ComplexPhaseLineChart(50);
-        }
-
-        return mPhaseLineChart;
     }
 }

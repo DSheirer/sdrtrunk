@@ -13,36 +13,23 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.source;
+package io.github.dsheirer.dsp.psk;
 
-import javax.sound.sampled.UnsupportedAudioFileException;
-import java.io.File;
-import java.io.IOException;
-
-/**
- * Defines a controllable source that can be manually controlled for stepping
- * through the file.
- */
-public interface IControllableFileSource
+public enum SymbolInversion
 {
-    /**
-     * Opens the file source
-     */
-    public void open() throws IOException, UnsupportedAudioFileException;
+    DEGREES_90_PLUS(Math.PI / 2.0),
+    DEGREES_90_MINUS(Math.PI / -2.0),
+    DEGREES_180(Math.PI);
 
-    public void close() throws IOException;
+    private double mAngleRadians;
 
-    public File getFile();
+    SymbolInversion(double angleRadians)
+    {
+        mAngleRadians = angleRadians;
+    }
 
-    public void next(int frames) throws IOException;
-
-    public void next(int frames, boolean broadcast) throws IOException;
-
-    public long getFrameCount() throws IOException;
-
-    public int getSampleRate();
-
-    public void setListener(IFrameLocationListener listener);
-
-    public void removeListener(IFrameLocationListener listener);
+    public double getError()
+    {
+        return mAngleRadians;
+    }
 }

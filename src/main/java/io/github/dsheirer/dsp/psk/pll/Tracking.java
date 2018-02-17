@@ -13,36 +13,36 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.source;
+package io.github.dsheirer.dsp.psk.pll;
 
-import javax.sound.sampled.UnsupportedAudioFileException;
-import java.io.File;
-import java.io.IOException;
-
-/**
- * Defines a controllable source that can be manually controlled for stepping
- * through the file.
- */
-public interface IControllableFileSource
+public enum Tracking
 {
-    /**
-     * Opens the file source
-     */
-    public void open() throws IOException, UnsupportedAudioFileException;
+    SEARCHING(50.0, Math.PI),
+    COARSE(100.0, 0.01),
+    FINE(150.0, 0.001),
+    LOCKED(200.0, 0.0001);
 
-    public void close() throws IOException;
+    private double mLoopBandwidth;
+    private double mVarianceThreshold;
 
-    public File getFile();
+    Tracking(double loopBandwidth, double varianceThreshold)
+    {
+        mLoopBandwidth = loopBandwidth;
+        mVarianceThreshold = varianceThreshold;
+    }
 
-    public void next(int frames) throws IOException;
+    public double getLoopBandwidth()
+    {
+        return mLoopBandwidth;
+    }
 
-    public void next(int frames, boolean broadcast) throws IOException;
+    public double getVarianceThreshold()
+    {
+        return mVarianceThreshold;
+    }
 
-    public long getFrameCount() throws IOException;
-
-    public int getSampleRate();
-
-    public void setListener(IFrameLocationListener listener);
-
-    public void removeListener(IFrameLocationListener listener);
+    public boolean meetsThreshold(double variance)
+    {
+        return variance < getVarianceThreshold();
+    }
 }
