@@ -15,6 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.psk;
 
+import io.github.dsheirer.dsp.psk.pll.CostasLoop;
 import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.sample.Listener;
@@ -31,7 +32,9 @@ public class QPSKDemodulator implements ComplexSampleListener
     private GardnerDetector mGardnerDetector = new GardnerDetector();
     private Listener<Complex> mSymbolListener;
     private Listener<Double> mPLLErrorListener;
+    private Listener<Double> mPLLFrequencyListener;
     private Listener<Dibit> mDibitListener;
+    private Listener<SymbolDecisionData> mSymbolDecisionDataListener;
 
     private Complex mPreviousSample = new Complex(0, 0);
     private Complex mPreviousMiddleSample = new Complex(0, 0);
@@ -42,6 +45,7 @@ public class QPSKDemodulator implements ComplexSampleListener
     private Complex mCurrentSymbol = new Complex(0, 0);
     private float mPhaseError;
     private float mSymbolTimingError;
+    private double mSampleRate;
 
     /**
      * Decoder for Quaternary Phase Shift Keying (QPSK) and Differential QPSK (DQPSK).  This decoder uses both a
@@ -63,6 +67,7 @@ public class QPSKDemodulator implements ComplexSampleListener
                 "] must be at least 2 x symbol rate [" + symbolRate + "]");
         }
 
+        mSampleRate = sampleRate;
         mPLL = phaseLockedLoop;
         mSymbolPhaseErrorCalculator = symbolPhaseErrorCalculator;
         mQPSKSymbolDecoder = symbolDecoder;
@@ -108,6 +113,12 @@ public class QPSKDemodulator implements ComplexSampleListener
             mMiddleSample = mInterpolatingSymbolBuffer.getMiddleSample();
             mCurrentSample = mInterpolatingSymbolBuffer.getCurrentSample();
 
+            //Eye diagram listener
+            if(mSymbolDecisionDataListener != null)
+            {
+                mSymbolDecisionDataListener.receive(mInterpolatingSymbolBuffer.getSymbolDecisionData());
+            }
+
             //Calculate middle and current symbols as the delta between the previous and current samples
             mMiddleSymbol.setInphase(Complex.multiplyInphase(mMiddleSample.inphase(), mMiddleSample.quadrature(), mPreviousMiddleSample.inphase(), -mPreviousMiddleSample.quadrature()));
             mMiddleSymbol.setQuadrature(Complex.multiplyQuadrature(mMiddleSample.inphase(), mMiddleSample.quadrature(), mPreviousMiddleSample.inphase(), -mPreviousMiddleSample.quadrature()));
@@ -127,12 +138,20 @@ public class QPSKDemodulator implements ComplexSampleListener
             mPreviousMiddleSample.setValues(mMiddleSample);
             mPreviousSymbol.setValues(mCurrentSymbol);
 
+            //Send to an external constellation symbol listener when registered
+            if(mSymbolListener != null)
+            {
+                mSymbolListener.receive(mCurrentSymbol);
+            }
+
             //Adjust the current symbol as necessary (e.g. for differential encoding)
             mSymbolPhaseErrorCalculator.adjust(mCurrentSymbol);
 
             //Calculate the phase error of the current symbol relative to the expected constellation and provide
             //feedback to the PLL
             mPhaseError = mSymbolPhaseErrorCalculator.getPhaseError(mCurrentSymbol);
+
+            mPhaseError = GardnerDetector.clip(mPhaseError, 0.2f);
             mPLL.adjust(mPhaseError);
 
             if(mPLLErrorListener != null)
@@ -140,16 +159,19 @@ public class QPSKDemodulator implements ComplexSampleListener
                 mPLLErrorListener.receive((double)mPhaseError);
             }
 
+            if(mPLLFrequencyListener != null)
+            {
+                double loopFrequency = ((CostasLoop)mPLL).getLoopFrequency();
+
+                loopFrequency *= mSampleRate / (2.0 * Math.PI);
+
+                mPLLFrequencyListener.receive(loopFrequency);
+            }
+
             //Decode the dibit from the symbol and send to the listener
             if(mDibitListener != null)
             {
                 mDibitListener.receive(mQPSKSymbolDecoder.decode(mCurrentSymbol));
-            }
-
-            //Send to an external constellation symbol listener when registered
-            if(mSymbolListener != null)
-            {
-                mSymbolListener.receive(mCurrentSymbol);
             }
 
             //TODO: Assemble dibits here and broadcast
@@ -179,4 +201,18 @@ public class QPSKDemodulator implements ComplexSampleListener
     {
         mPLLErrorListener = listener;
     }
+
+    /**
+     * Registers the listener to receive PLL error values
+     */
+    public void setPLLFrequencyListener(Listener<Double> listener)
+    {
+        mPLLFrequencyListener = listener;
+    }
+
+    public void setSymbolDecisionDataListener(Listener<SymbolDecisionData> listener)
+    {
+        mSymbolDecisionDataListener = listener;
+    }
+
 }

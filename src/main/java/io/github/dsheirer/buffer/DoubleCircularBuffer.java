@@ -18,6 +18,7 @@
 package io.github.dsheirer.buffer;
 
 import org.apache.commons.math3.stat.descriptive.moment.Mean;
+import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.apache.commons.math3.stat.descriptive.moment.Variance;
 import org.apache.commons.math3.stat.descriptive.rank.Max;
 import org.apache.commons.math3.stat.descriptive.rank.Min;
@@ -30,6 +31,7 @@ import java.util.Arrays;
  */
 public class DoubleCircularBuffer
 {
+    private StandardDeviation mStandardDeviation;
     private Variance mVariance;
     private Max mMax;
     private Mean mMean;
@@ -138,6 +140,16 @@ public class DoubleCircularBuffer
         }
 
         return mMin.evaluate(mBuffer, 0, mBuffer.length);
+    }
+
+    public double standardDeviation()
+    {
+        if(mStandardDeviation == null)
+        {
+            mStandardDeviation = new StandardDeviation();
+        }
+
+        return mStandardDeviation.evaluate(mBuffer);
     }
 
     /**

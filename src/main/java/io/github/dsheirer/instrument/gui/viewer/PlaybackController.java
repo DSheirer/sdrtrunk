@@ -79,7 +79,6 @@ public class PlaybackController extends HBox implements IFrameLocationListener, 
 
     public void load(File file)
     {
-        mLog.debug("loading:" + file.getAbsolutePath());
         if(file != null && file.isFile())
         {
             try
@@ -104,7 +103,7 @@ public class PlaybackController extends HBox implements IFrameLocationListener, 
             }
             catch(IOException ioe)
             {
-                mLog.error("Error opening file [" + (file != null ? file.getAbsolutePath() : "null") + "]");
+                mLog.error("Error opening file [" + (file != null ? file.getAbsolutePath() : "null") + "]", ioe);
 
                 Alert alert = new Alert(Alert.AlertType.ERROR, "There was an error opening the file",
                     ButtonType.OK);

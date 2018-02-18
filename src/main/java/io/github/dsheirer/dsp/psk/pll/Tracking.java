@@ -17,32 +17,55 @@ package io.github.dsheirer.dsp.psk.pll;
 
 public enum Tracking
 {
-    SEARCHING(50.0, Math.PI),
-    COARSE(100.0, 0.01),
-    FINE(150.0, 0.001),
-    LOCKED(200.0, 0.0001);
+//    SEARCHING(50.0, 0.01, Math.PI),
+//    COARSE(100.0, 0.001, 0.01),
+//    FINE(150.0, 0.0001, 0.001),
+//    LOCKED(200.0, 0.0, 0.0001);
+    SEARCHING(100.0, 0.4, Math.PI),
+    COARSE(150.0, 0.2, 0.4),
+    FINE(175.0, 0.1, 0.2),
+    LOCKED(200.0, 0.0, 0.1);
 
     private double mLoopBandwidth;
-    private double mVarianceThreshold;
+    private double mThresholdMinimum;
+    private double mThresholdMaximum;
 
-    Tracking(double loopBandwidth, double varianceThreshold)
+    Tracking(double loopBandwidth, double thresholdMinimum, double thresholdMaximum)
     {
         mLoopBandwidth = loopBandwidth;
-        mVarianceThreshold = varianceThreshold;
+        mThresholdMinimum = thresholdMinimum;
+        mThresholdMaximum = thresholdMaximum;
     }
 
+    /**
+     * Loop bandwidth setting
+     */
     public double getLoopBandwidth()
     {
         return mLoopBandwidth;
     }
 
-    public double getVarianceThreshold()
+    /**
+     * Minimum error value for this entry
+     */
+    public double getThresholdMinimum()
     {
-        return mVarianceThreshold;
+        return mThresholdMinimum;
     }
 
-    public boolean meetsThreshold(double variance)
+    /**
+     * Maximum error value for this entry
+     */
+    public double getThresholdMaximum()
     {
-        return variance < getVarianceThreshold();
+        return mThresholdMaximum;
+    }
+
+    /**
+     * Indicates if the error value is within the range for this entry
+     */
+    public boolean contains(double standardDeviation)
+    {
+        return getThresholdMinimum() <= standardDeviation && standardDeviation < getThresholdMaximum();
     }
 }

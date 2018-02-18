@@ -194,20 +194,21 @@ public class CostasLoop implements IPhaseLockedLoop
 
         mErrorBuffer.put(phaseError);
 
-        double variance = mErrorBuffer.variance();
+        double standardDeviation = mErrorBuffer.standardDeviation();
 
         switch(mTracking)
         {
             case SEARCHING:
-                if(Tracking.COARSE.meetsThreshold(variance))
+                if(Tracking.COARSE.contains(standardDeviation))
                 {
                     setTracking(Tracking.COARSE);
                 }
                 break;
             case COARSE:
-                if(Tracking.COARSE.meetsThreshold(variance))
+                if(Tracking.COARSE.contains(standardDeviation))
                 {
-                    if(Tracking.FINE.meetsThreshold(variance))
+                    //Promote if possible - otherwise remain
+                    if(Tracking.FINE.contains(standardDeviation))
                     {
                         setTracking(Tracking.FINE);
                     }
@@ -218,9 +219,10 @@ public class CostasLoop implements IPhaseLockedLoop
                 }
                 break;
             case FINE:
-                if(Tracking.FINE.meetsThreshold(variance))
+                if(Tracking.FINE.contains(standardDeviation))
                 {
-                    if(Tracking.LOCKED.meetsThreshold(variance))
+                    //Promote if possible - otherwise remain
+                    if(Tracking.LOCKED.contains(standardDeviation))
                     {
                         setTracking(Tracking.LOCKED);
                     }
@@ -231,7 +233,7 @@ public class CostasLoop implements IPhaseLockedLoop
                 }
                 break;
             case LOCKED:
-                if(!Tracking.LOCKED.meetsThreshold(variance))
+                if(!Tracking.LOCKED.contains(standardDeviation))
                 {
                     setTracking(Tracking.FINE);
                 }

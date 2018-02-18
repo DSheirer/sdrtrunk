@@ -698,7 +698,8 @@ public class P25MessageFramer implements Listener<Dibit>
                 @Override
                 public void syncDetected()
                 {
-                    mPhaseLockedLoop.correctInversion(mCorrection);
+                    mLog.warn("Phase Inversion SYNC detected - applying correction: " + mCorrection);
+//                    mPhaseLockedLoop.correctInversion(mCorrection);
 
                     /* Since we detected a sync pattern, start a message assembler */
                     for(P25MessageAssembler assembler : mAssemblers)

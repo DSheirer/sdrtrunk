@@ -51,11 +51,11 @@ public class FilterViewer extends Application
 //            .build();
         FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
             .sampleRate((int)48000.0)
-            .passBandCutoff(6000)
+            .passBandCutoff(2880)
             .passBandAmplitude(1.0)
-            .passBandRipple(0.1)
+            .passBandRipple(0.01)
             .stopBandAmplitude(0.0)
-            .stopBandStart(6250)
+            .stopBandStart(3600)
             .stopBandRipple(0.01)
             .build();
 
@@ -81,6 +81,9 @@ public class FilterViewer extends Application
 
         float[] taps = null;
 
+//        taps = FilterFactory.getSinc(6000, 1920, 47, Window.WindowType.BLACKMAN);
+
+//        taps = FilterFactory.getRootRaisedCosine(10, 10, 0.2f);
 //        taps = FilterFactory.getLowPass(48000, 6750, 7500, 60,
 //            Window.WindowType.HAMMING, true);
 

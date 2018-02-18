@@ -24,19 +24,19 @@ import javafx.scene.chart.NumberAxis;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PhaseLineChart extends LineChart implements Listener<Double>
+public class FrequencyLineChart extends LineChart implements Listener<Double>
 {
-    private final static Logger mLog = LoggerFactory.getLogger(PhaseLineChart.class);
+    private final static Logger mLog = LoggerFactory.getLogger(FrequencyLineChart.class);
 
     private DoubleCircularBuffer mDoubleCircularBuffer;
     private ObservableList<Data<Integer,Double>> mPhaseValues = FXCollections.observableArrayList();
 
-    public PhaseLineChart(int length)
+    public FrequencyLineChart(double maxFrequency, int length)
     {
         super(new NumberAxis("Time", 1, length, 2),
-            new NumberAxis("Phase", -0.8, 0.8, 0.1));
+            new NumberAxis("Frequency", -maxFrequency, maxFrequency, maxFrequency / 5.0));
 
-        Series<Integer,Double> phaseSeries = new Series<>("PLL Phase Error", mPhaseValues);
+        Series<Integer,Double> phaseSeries = new Series<>("PLL Frequency", mPhaseValues);
         ObservableList<Series<Integer,Double>> observableList = FXCollections.observableArrayList(phaseSeries);
 
         setData(observableList);

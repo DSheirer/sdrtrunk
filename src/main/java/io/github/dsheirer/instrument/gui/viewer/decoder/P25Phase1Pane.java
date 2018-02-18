@@ -15,8 +15,9 @@
  ******************************************************************************/
 package io.github.dsheirer.instrument.gui.viewer.decoder;
 
-import io.github.dsheirer.instrument.gui.viewer.chart.ComplexPhaseLineChart;
 import io.github.dsheirer.instrument.gui.viewer.chart.ComplexSampleLineChart;
+import io.github.dsheirer.instrument.gui.viewer.chart.EyeDiagramChart;
+import io.github.dsheirer.instrument.gui.viewer.chart.FrequencyLineChart;
 import io.github.dsheirer.instrument.gui.viewer.chart.PhaseLineChart;
 import io.github.dsheirer.instrument.gui.viewer.chart.SymbolChart;
 import io.github.dsheirer.module.decode.DecoderType;
@@ -32,10 +33,11 @@ public class P25Phase1Pane extends DecoderPane
 
     private HBox mSampleChartBox;
     private ComplexSampleLineChart mSampleLineChart;
-    private ComplexPhaseLineChart mPhaseLineChart;
+    private EyeDiagramChart mEyeDiagramChart;
     private HBox mDecoderChartBox;
     private SymbolChart mSymbolChart;
     private PhaseLineChart mPLLPhaseErrorLineChart;
+    private FrequencyLineChart mPLLFrequencyLineChart;
     private P25_C4FMDecoder2 mDecoder = new P25_C4FMDecoder2(null);
 
     public P25Phase1Pane()
@@ -47,11 +49,12 @@ public class P25Phase1Pane extends DecoderPane
     private void init()
     {
         addListener(getSampleLineChart());
-        addListener(getPhaseLineChart());
         addListener(getDecoder());
 
-        getDecoder().setSymbolListener(getSymbolChart());
-        getDecoder().setPLLPhaseErrorListener(getPLLPhaseErrorLineChart());
+        getDecoder().setDEBUGSymbolListener(getSymbolChart());
+        getDecoder().setDEBUGPLLPhaseErrorListener(getPLLPhaseErrorLineChart());
+        getDecoder().setDEBUGPLLFrequencyListener(getPLLFrequencyLineChart());
+        getDecoder().setDEBUGSymbolDecisionDataListener(getEyeDiagramChart());
 
         getChildren().addAll(getSampleChartBox(), getDecoderChartBox());
     }
@@ -73,7 +76,7 @@ public class P25Phase1Pane extends DecoderPane
     {
         if(mSymbolChart == null)
         {
-            mSymbolChart = new SymbolChart(20);
+            mSymbolChart = new SymbolChart(10);
         }
 
         return mSymbolChart;
@@ -86,9 +89,11 @@ public class P25Phase1Pane extends DecoderPane
             mDecoderChartBox = new HBox();
             getSymbolChart().setMaxWidth(Double.MAX_VALUE);
             getPLLPhaseErrorLineChart().setMaxWidth(Double.MAX_VALUE);
+            getPLLFrequencyLineChart().setMaxWidth(Double.MAX_VALUE);
             HBox.setHgrow(getSymbolChart(), Priority.ALWAYS);
             HBox.setHgrow(getPLLPhaseErrorLineChart(), Priority.ALWAYS);
-            mDecoderChartBox.getChildren().addAll(getSymbolChart(), getPLLPhaseErrorLineChart());
+            HBox.setHgrow(getPLLFrequencyLineChart(), Priority.ALWAYS);
+            mDecoderChartBox.getChildren().addAll(getSymbolChart(), getPLLPhaseErrorLineChart(), getPLLFrequencyLineChart());
         }
 
         return mDecoderChartBox;
@@ -100,10 +105,10 @@ public class P25Phase1Pane extends DecoderPane
         {
             mSampleChartBox = new HBox();
             getSampleLineChart().setMaxWidth(Double.MAX_VALUE);
-            getPhaseLineChart().setMaxWidth(Double.MAX_VALUE);
+            getEyeDiagramChart().setMaxWidth(Double.MAX_VALUE);
             HBox.setHgrow(getSampleLineChart(), Priority.ALWAYS);
-            HBox.setHgrow(getPhaseLineChart(), Priority.ALWAYS);
-            mSampleChartBox.getChildren().addAll(getSampleLineChart(), getPhaseLineChart());
+            HBox.setHgrow(getEyeDiagramChart(), Priority.ALWAYS);
+            mSampleChartBox.getChildren().addAll(getSampleLineChart(), getEyeDiagramChart());
         }
 
         return mSampleChartBox;
@@ -119,23 +124,33 @@ public class P25Phase1Pane extends DecoderPane
         return mSampleLineChart;
     }
 
-    private ComplexPhaseLineChart getPhaseLineChart()
+    private EyeDiagramChart getEyeDiagramChart()
     {
-        if(mPhaseLineChart == null)
+        if(mEyeDiagramChart == null)
         {
-            mPhaseLineChart = new ComplexPhaseLineChart(50);
+            mEyeDiagramChart = new EyeDiagramChart(10);
         }
 
-        return mPhaseLineChart;
+        return mEyeDiagramChart;
     }
 
     private PhaseLineChart getPLLPhaseErrorLineChart()
     {
         if(mPLLPhaseErrorLineChart == null)
         {
-            mPLLPhaseErrorLineChart = new PhaseLineChart(80);
+            mPLLPhaseErrorLineChart = new PhaseLineChart(40);
         }
 
         return mPLLPhaseErrorLineChart;
+    }
+
+    private FrequencyLineChart getPLLFrequencyLineChart()
+    {
+        if(mPLLFrequencyLineChart == null)
+        {
+            mPLLFrequencyLineChart = new FrequencyLineChart(2400, 40);
+        }
+
+        return mPLLFrequencyLineChart;
     }
 }

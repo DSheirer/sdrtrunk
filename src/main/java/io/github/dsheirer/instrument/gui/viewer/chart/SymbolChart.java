@@ -30,8 +30,8 @@ public class SymbolChart extends ScatterChart implements Listener<Complex>
     private final static Logger mLog = LoggerFactory.getLogger(SymbolChart.class);
 
     private ObservableList<ScatterChart.Data> mCurrentPoints = FXCollections.observableArrayList();
-    private ObservableList<ScatterChart.Data> mPreviousPoints = FXCollections.observableArrayList();
-    private ObservableList<ScatterChart.Data> mOldestPoints = FXCollections.observableArrayList();
+//    private ObservableList<ScatterChart.Data> mPreviousPoints = FXCollections.observableArrayList();
+//    private ObservableList<ScatterChart.Data> mOldestPoints = FXCollections.observableArrayList();
     private int mDataPointer;
     private int mHistory;
 
@@ -43,22 +43,22 @@ public class SymbolChart extends ScatterChart implements Listener<Complex>
      */
     public SymbolChart(int history)
     {
-        super(new NumberAxis("I", -1.0, 1.0, 0.2),
-            new NumberAxis("Q", -1.0, 1.0, 0.2));
+        super(new NumberAxis("I", -1.1, 1.1, 0.2),
+            new NumberAxis("Q", -1.1, 1.1, 0.2));
 
         mHistory = history;
 
         for(int x = 0; x < mHistory; x++)
         {
             mCurrentPoints.add(new XYChart.Data<>(0.0, 0.0));
-            mPreviousPoints.add(new XYChart.Data<>(0.0, 0.0));
-            mOldestPoints.add(new XYChart.Data<>(0.0, 0.0));
+//            mPreviousPoints.add(new XYChart.Data<>(0.0, 0.0));
+//            mOldestPoints.add(new XYChart.Data<>(0.0, 0.0));
         }
 
         ObservableList<XYChart.Series> data = FXCollections.observableArrayList();
         data.add(new ScatterChart.Series("Current", mCurrentPoints));
-        data.add(new ScatterChart.Series("Previous", mPreviousPoints));
-        data.add(new ScatterChart.Series("Oldest", mOldestPoints));
+//        data.add(new ScatterChart.Series("Previous", mPreviousPoints));
+//        data.add(new ScatterChart.Series("Oldest", mOldestPoints));
 
         this.setData(data);
     }
@@ -67,15 +67,15 @@ public class SymbolChart extends ScatterChart implements Listener<Complex>
     public void receive(Complex complex)
     {
         //Transfer previous to oldest
-        XYChart.Data oldest = mOldestPoints.get(mDataPointer);
-        XYChart.Data previous = mPreviousPoints.get(mDataPointer);
+//        XYChart.Data oldest = mOldestPoints.get(mDataPointer);
+//        XYChart.Data previous = mPreviousPoints.get(mDataPointer);
         XYChart.Data current = mCurrentPoints.get(mDataPointer);
 
-        oldest.setXValue(previous.getXValue());
-        oldest.setYValue(previous.getYValue());
-
-        previous.setXValue(current.getXValue());
-        previous.setYValue(current.getYValue());
+//        oldest.setXValue(previous.getXValue());
+//        oldest.setYValue(previous.getYValue());
+//
+//        previous.setXValue(current.getXValue());
+//        previous.setYValue(current.getYValue());
 
         current.setXValue(complex.inphase());
         current.setYValue(complex.quadrature());

@@ -33,11 +33,13 @@ public class InterpolatingSymbolBuffer
     private float mOmegaMid;
 
     private int mDelayLinePointer = 0;
+    private float mSamplesPerSymbol;
     private int mTwiceSamplesPerSymbol;
     private RealInterpolator mInterpolator = new RealInterpolator(1.0f);
 
     public InterpolatingSymbolBuffer(float samplesPerSymbol)
     {
+        mSamplesPerSymbol = samplesPerSymbol;
         mMu = samplesPerSymbol;
         mTwiceSamplesPerSymbol = (int)Math.floor(2.0 * samplesPerSymbol);
         mDelayLineInphase = new float[2 * mTwiceSamplesPerSymbol];
@@ -58,7 +60,8 @@ public class InterpolatingSymbolBuffer
         mDelayLineQuadrature[mDelayLinePointer + mTwiceSamplesPerSymbol] = currentSample.quadrature();
 
         //Increment pointer and keep pointer in bounds
-        mDelayLinePointer = (mDelayLinePointer + 1) % mTwiceSamplesPerSymbol;
+        mDelayLinePointer++;
+        mDelayLinePointer = mDelayLinePointer % mTwiceSamplesPerSymbol;
     }
 
     /**
@@ -80,11 +83,11 @@ public class InterpolatingSymbolBuffer
     {
         //mOmega is samples per symbol and is constrained to floating between +/- .005 of the nominal samples per
         //symbol
-        mOmega = mOmega + mGainOmega * symbolTimingError;
+        mOmega = mOmega + mGainOmega * -symbolTimingError;
         mOmega = mOmegaMid + clip(mOmega - mOmegaMid, mOmegaRel);
 
         //Add another symbol's worth of samples to the counter and adjust timing based on gardner error
-        increaseSampleCounter((mOmega + (mGainMu * symbolTimingError)));
+        increaseSampleCounter((mOmega + (mGainMu * -symbolTimingError)));
     }
 
     /**
@@ -126,6 +129,18 @@ public class InterpolatingSymbolBuffer
         mCurrentSample.setValues(getInphase(half_mu, half_sps), getQuadrature(half_mu, half_sps));
 
         return mCurrentSample;
+    }
+
+    /**
+     * Contents of the interpolating buffer and the current buffer index and symbol decision offset.  This data can
+     * be used to support an external eye-diagram chart.
+     * @return symbol decision data.
+     */
+    public SymbolDecisionData getSymbolDecisionData()
+    {
+        //TODO: I think that delay line pointer needs to have +4 added to it since the filter is 8 taps long
+        return new SymbolDecisionData(mDelayLineInphase, mDelayLineQuadrature,
+            mSamplesPerSymbol, mDelayLinePointer, mMu);
     }
 
     /**
