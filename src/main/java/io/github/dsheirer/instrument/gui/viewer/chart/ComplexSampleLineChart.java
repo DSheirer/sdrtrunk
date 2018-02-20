@@ -37,14 +37,15 @@ public class ComplexSampleLineChart extends LineChart implements Listener<Comple
     private final static Logger mLog = LoggerFactory.getLogger(ComplexSampleLineChart.class);
 
     private ComplexCircularBuffer mComplexCircularBuffer;
+    private ComplexCircularBuffer mDemodulationCircularBuffer;
     private ComplexGain mComplexGain = new ComplexGain(500.0f);
     private ObservableList<XYChart.Data<Integer,Float>> mISamples = FXCollections.observableArrayList();
     private ObservableList<XYChart.Data<Integer,Float>> mQSamples = FXCollections.observableArrayList();
     private IntegerProperty mLengthProperty = new SimpleIntegerProperty(40);
 
-    public ComplexSampleLineChart(int length)
+    public ComplexSampleLineChart(int length, int samplesPerSymbol)
     {
-        super(new NumberAxis("Sample Number", 1, length, 2),
+        super(new NumberAxis("Demodulated Samples", 0, length, 10),
             new NumberAxis("Value", -1.0, 1.0, 0.25));
 
         LineChart.Series<Integer,Float> iSampleSeries = new LineChart.Series<>("Inphase", mISamples);
@@ -53,10 +54,15 @@ public class ComplexSampleLineChart extends LineChart implements Listener<Comple
             FXCollections.observableArrayList(iSampleSeries, qSampleSeries);
 
         setData(observableList);
-        init(length);
+        init(length, samplesPerSymbol);
     }
 
-    private void init(int length)
+    public void setSamplesPerSymbol(int samplesPerSymbol)
+    {
+        mDemodulationCircularBuffer = new ComplexCircularBuffer(samplesPerSymbol);
+    }
+
+    private void init(int length, int samplesPerSymbol)
     {
         mLengthProperty.addListener(new ChangeListener<Number>()
         {
@@ -67,6 +73,7 @@ public class ComplexSampleLineChart extends LineChart implements Listener<Comple
             }
         });
         mComplexCircularBuffer = new ComplexCircularBuffer(length);
+        mDemodulationCircularBuffer = new ComplexCircularBuffer(samplesPerSymbol);
         length().setValue(length);
 
         for(int x = 1; x <= length; x++)
@@ -89,14 +96,16 @@ public class ComplexSampleLineChart extends LineChart implements Listener<Comple
     {
         float[] samples = complexBuffer.getSamples();
 
-        Complex sample;
+        Complex sample = new Complex(0,0);
 
         for(int x = 0; x < samples.length; x += 2)
         {
-            sample = new Complex(samples[x], samples[x + 1]);
-            Complex copy = sample.copy();
-            mComplexGain.apply(copy);
-            mComplexCircularBuffer.put(copy);
+            sample.setValues(samples[x], samples[x + 1]);
+            mComplexGain.apply(sample);
+
+            Complex previous = mDemodulationCircularBuffer.get(sample.copy());
+            sample.multiply(previous.conjugate());
+            mComplexCircularBuffer.put(sample.copy());
         }
 
         updateChart();

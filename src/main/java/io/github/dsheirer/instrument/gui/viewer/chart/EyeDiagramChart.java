@@ -15,8 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.instrument.gui.viewer.chart;
 
-import io.github.dsheirer.dsp.fm.FMDemodulator;
-import io.github.dsheirer.dsp.psk.SymbolDecisionData;
+import io.github.dsheirer.dsp.psk.SymbolDecisionData2;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.Complex;
 import javafx.collections.FXCollections;
@@ -26,7 +25,7 @@ import javafx.scene.chart.NumberAxis;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class EyeDiagramChart extends LineChart implements Listener<SymbolDecisionData>
+public class EyeDiagramChart extends LineChart implements Listener<SymbolDecisionData2>
 {
     private final static Logger mLog = LoggerFactory.getLogger(EyeDiagramChart.class);
 
@@ -38,9 +37,9 @@ public class EyeDiagramChart extends LineChart implements Listener<SymbolDecisio
     public EyeDiagramChart(int seriesCount)
     {
         super(new NumberAxis("Symbol Timing", 1.0, 10.0, 1.0),
-            new NumberAxis("Value", -1.0, 1.0, 0.25));
+            new NumberAxis("Value", -1.25, 1.25, 0.25));
 
-        mSeriesCount = seriesCount;
+        mSeriesCount = seriesCount * 2;
         init();
     }
 
@@ -82,37 +81,41 @@ public class EyeDiagramChart extends LineChart implements Listener<SymbolDecisio
     }
 
     @Override
-    public void receive(SymbolDecisionData symbolDecisionData)
+    public void receive(SymbolDecisionData2 symbolDecisionData)
     {
-        checkChartLength((int)symbolDecisionData.getSamplesPerSymbol());
-        int length = (int)symbolDecisionData.getSamplesPerSymbol() + 1;
+        Complex[] demodulated = symbolDecisionData.getDemodulated();
+
+        int length = demodulated.length;
+
+        checkChartLength(length);
 
 
-        ObservableList<Data<Double,Double>> series = getSeries(mSeriesPointer++, length + 1);
+        ObservableList<Data<Double,Double>> iSeries = getSeries(mSeriesPointer++, length + 1);
 
         if(mSeriesPointer >= mSeriesCount)
         {
             mSeriesPointer = 0;
         }
 
-        int index = symbolDecisionData.getSampleIndex();
+        ObservableList<Data<Double,Double>> qSeries = getSeries(mSeriesPointer++, length + 1);
 
-        Complex previous = new Complex(symbolDecisionData.getInphaseSamples()[index],
-                                       symbolDecisionData.getQuadratureSamples()[index]);
-
-        for(int x = 1; x <= length; x++)
+        if(mSeriesPointer >= mSeriesCount)
         {
-            Complex current = new Complex(symbolDecisionData.getInphaseSamples()[index + x],
-                                          symbolDecisionData.getQuadratureSamples()[index + x]);
+            mSeriesPointer = 0;
+        }
 
-            double demodulated = FMDemodulator.demodulate(previous, current);
-            demodulated *= 6;
+        for(int x = 0; x < length; x++)
+        {
+            demodulated[x].normalize();
+            Data<Double,Double> iDataPoint = iSeries.get(x);
+            iDataPoint.setXValue((double)x + 1 - symbolDecisionData.getSamplingPoint());
+            double iValue = demodulated[x].inphase();
+            iDataPoint.setYValue(iValue);
 
-            Data<Double,Double> dataPoint = series.get(x);
-            dataPoint.setXValue((double)x - symbolDecisionData.getSampleIndexOffset());
-            dataPoint.setYValue(demodulated);
-
-            previous = current;
+            Data<Double,Double> qDataPoint = qSeries.get(x);
+            qDataPoint.setXValue((double)x + 1 - symbolDecisionData.getSamplingPoint());
+            double qValue = demodulated[x].quadrature();
+            qDataPoint.setYValue(qValue);
         }
     }
 }

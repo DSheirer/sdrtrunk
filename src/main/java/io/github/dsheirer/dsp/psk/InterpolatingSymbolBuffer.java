@@ -25,33 +25,34 @@ public class InterpolatingSymbolBuffer
 
     private float[] mDelayLineInphase;
     private float[] mDelayLineQuadrature;
-    private float mMu; //Sample Counter
-    private float mGainMu = 0.05f; //Sample Counter Gain
-    private float mOmega;
-    private float mGainOmega = 0.1f * mGainMu * mGainMu;
-    private float mOmegaRel = 0.005f;
-    private float mOmegaMid;
+    private float mSamplingPoint; //Sample Counter
+    private float mSampleCounterGain = 0.05f; //Sample Counter Gain
+    private float mSamplesPerSymbol;
+    private float mDetectedSamplesPerSymbol;
+    private float mDetectedSamplesPerSymbolGain = 0.1f * mSampleCounterGain * mSampleCounterGain;
+    private float mMaxDeviation = 0.005f;
 
     private int mDelayLinePointer = 0;
-    private float mSamplesPerSymbol;
     private int mTwiceSamplesPerSymbol;
     private RealInterpolator mInterpolator = new RealInterpolator(1.0f);
+    private SymbolDecisionData2 mSymbolDecisionData2;
 
     public InterpolatingSymbolBuffer(float samplesPerSymbol)
     {
-        mSamplesPerSymbol = samplesPerSymbol;
-        mMu = samplesPerSymbol;
+        mSamplingPoint = samplesPerSymbol;
         mTwiceSamplesPerSymbol = (int)Math.floor(2.0 * samplesPerSymbol);
         mDelayLineInphase = new float[2 * mTwiceSamplesPerSymbol];
         mDelayLineQuadrature = new float[2 * mTwiceSamplesPerSymbol];
-        mOmega = samplesPerSymbol;
-        mOmegaMid = samplesPerSymbol;
+        mDetectedSamplesPerSymbol = samplesPerSymbol;
+        mSamplesPerSymbol = samplesPerSymbol;
 
+        mSymbolDecisionData2 = new SymbolDecisionData2((int)samplesPerSymbol);
     }
 
     public void receive(Complex currentSample)
     {
-        mMu--;
+        mSymbolDecisionData2.receive(currentSample);
+        mSamplingPoint--;
 
         //Fill up the delay line to use with the interpolator
         mDelayLineInphase[mDelayLinePointer] = currentSample.inphase();
@@ -62,6 +63,7 @@ public class InterpolatingSymbolBuffer
         //Increment pointer and keep pointer in bounds
         mDelayLinePointer++;
         mDelayLinePointer = mDelayLinePointer % mTwiceSamplesPerSymbol;
+
     }
 
     /**
@@ -70,7 +72,7 @@ public class InterpolatingSymbolBuffer
      */
     public void increaseSampleCounter(float samplesToAdd)
     {
-        mMu += samplesToAdd;
+        mSamplingPoint += samplesToAdd;
     }
 
     /**
@@ -81,13 +83,13 @@ public class InterpolatingSymbolBuffer
      */
     public void resetAndAdjust(float symbolTimingError)
     {
-        //mOmega is samples per symbol and is constrained to floating between +/- .005 of the nominal samples per
+        //mDetectedSamplesPerSymbol is samples per symbol and is constrained to floating between +/- .005 of the nominal samples per
         //symbol
-        mOmega = mOmega + mGainOmega * -symbolTimingError;
-        mOmega = mOmegaMid + clip(mOmega - mOmegaMid, mOmegaRel);
+        mDetectedSamplesPerSymbol = mDetectedSamplesPerSymbol + mDetectedSamplesPerSymbolGain * symbolTimingError;
+        mDetectedSamplesPerSymbol = mSamplesPerSymbol + clip(mDetectedSamplesPerSymbol - mSamplesPerSymbol, mMaxDeviation);
 
         //Add another symbol's worth of samples to the counter and adjust timing based on gardner error
-        increaseSampleCounter((mOmega + (mGainMu * -symbolTimingError)));
+        increaseSampleCounter((mDetectedSamplesPerSymbol + (mSampleCounterGain * symbolTimingError)));
     }
 
     /**
@@ -95,7 +97,7 @@ public class InterpolatingSymbolBuffer
      */
     public boolean hasSymbol()
     {
-        return mMu < 1.0f;
+        return mSamplingPoint < 1.0f;
     }
 
     /**
@@ -105,7 +107,7 @@ public class InterpolatingSymbolBuffer
     public Complex getMiddleSample()
     {
         /* Calculate interpolated middle sample and current sample */
-        mMiddleSample.setValues(getInphase(mMu), getQuadrature(mMu));
+        mMiddleSample.setValues(getInphase(mSamplingPoint), getQuadrature(mSamplingPoint));
 
         return mMiddleSample;
     }
@@ -116,17 +118,18 @@ public class InterpolatingSymbolBuffer
      */
     public Complex getCurrentSample()
     {
-        float half_omega = mOmega / 2.0f;
-        int half_sps = (int)Math.floor(half_omega);
-        float half_mu = mMu + half_omega - half_sps;
+        float halfDetectedSamplesPerSymbol = mDetectedSamplesPerSymbol / 2.0f;
+        int halfSamplingPointOffset = (int)Math.floor(halfDetectedSamplesPerSymbol);
+        float halfSamplingPoint = mSamplingPoint + halfDetectedSamplesPerSymbol - halfSamplingPointOffset;
 
-        if(half_mu > 1.0)
+        if(halfSamplingPoint > 1.0)
         {
-            half_mu -= 1.0;
-            half_sps += 1;
+            halfSamplingPoint -= 1.0;
+            halfSamplingPointOffset += 1;
         }
 
-        mCurrentSample.setValues(getInphase(half_mu, half_sps), getQuadrature(half_mu, half_sps));
+        mCurrentSample.setValues(getInphase(halfSamplingPointOffset, halfSamplingPoint),
+                                 getQuadrature(halfSamplingPointOffset, halfSamplingPoint));
 
         return mCurrentSample;
     }
@@ -136,11 +139,10 @@ public class InterpolatingSymbolBuffer
      * be used to support an external eye-diagram chart.
      * @return symbol decision data.
      */
-    public SymbolDecisionData getSymbolDecisionData()
+    public SymbolDecisionData2 getSymbolDecisionData()
     {
-        //TODO: I think that delay line pointer needs to have +4 added to it since the filter is 8 taps long
-        return new SymbolDecisionData(mDelayLineInphase, mDelayLineQuadrature,
-            mSamplesPerSymbol, mDelayLinePointer, mMu);
+        mSymbolDecisionData2.setSamplingPoint(mSamplingPoint);
+        return mSymbolDecisionData2;
     }
 
     /**
@@ -155,12 +157,13 @@ public class InterpolatingSymbolBuffer
 
     /**
      * Returns the interpolated inphase value for the specified offset
+     * @param delayLineOffset offset into the inphase delay line buffer
      * @param interpolation into the buffer to calculate the interpolated sample
      * @return inphase value of the interpolated sample
      */
-    public float getInphase(float interpolation, int indexOffet)
+    public float getInphase(int delayLineOffset, float interpolation)
     {
-        return mInterpolator.filter(mDelayLineInphase, mDelayLinePointer + indexOffet, interpolation);
+        return mInterpolator.filter(mDelayLineInphase, mDelayLinePointer + delayLineOffset, interpolation);
     }
 
     /**
@@ -175,12 +178,13 @@ public class InterpolatingSymbolBuffer
 
     /**
      * Returns the interpolated quadrature value for the specified offset
+     * @param delayLineOffset offset into the quadrature delay line buffer
      * @param interpolation into the buffer to calculate the interpolated sample
      * @return quadrature value of the interpolated sample
      */
-    public float getQuadrature(float interpolation, int indexOffset)
+    public float getQuadrature(int delayLineOffset, float interpolation)
     {
-        return mInterpolator.filter(mDelayLineQuadrature, mDelayLinePointer + indexOffset, interpolation);
+        return mInterpolator.filter(mDelayLineQuadrature, mDelayLinePointer + delayLineOffset, interpolation);
     }
 
     /**

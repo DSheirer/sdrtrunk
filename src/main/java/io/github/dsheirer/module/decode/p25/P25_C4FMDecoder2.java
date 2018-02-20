@@ -26,7 +26,7 @@ import io.github.dsheirer.dsp.psk.IQPSKSymbolDecoder;
 import io.github.dsheirer.dsp.psk.ISymbolPhaseErrorCalculator;
 import io.github.dsheirer.dsp.psk.QPSKDemodulator;
 import io.github.dsheirer.dsp.psk.QPSKSymbolDecoder;
-import io.github.dsheirer.dsp.psk.SymbolDecisionData;
+import io.github.dsheirer.dsp.psk.SymbolDecisionData2;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
 import io.github.dsheirer.dsp.psk.pll.Tracking;
 import io.github.dsheirer.sample.Listener;
@@ -64,7 +64,7 @@ public class P25_C4FMDecoder2 extends P25Decoder implements IComplexBufferListen
     private Listener<Complex> mDEBUGSymbolListener;
     private Listener<Double> mDEBUGPLLPhaseErrorListener;
     private Listener<Double> mDEBUGPLLFrequencyListener;
-    private Listener<SymbolDecisionData> mDEBUGSymbolDecisionDataListener;
+    private Listener<SymbolDecisionData2> mDEBUGSymbolDecisionDataListener;
 
     public P25_C4FMDecoder2(AliasList aliasList)
     {
@@ -121,7 +121,7 @@ public class P25_C4FMDecoder2 extends P25Decoder implements IComplexBufferListen
         mQPSKDemodulator.setPLLFrequencyListener(listener);
     }
 
-    public void setDEBUGSymbolDecisionDataListener(Listener<SymbolDecisionData> listener)
+    public void setDEBUGSymbolDecisionDataListener(Listener<SymbolDecisionData2> listener)
     {
         mDEBUGSymbolDecisionDataListener = listener;
         mQPSKDemodulator.setSymbolDecisionDataListener(listener);
@@ -131,9 +131,9 @@ public class P25_C4FMDecoder2 extends P25Decoder implements IComplexBufferListen
     public void receive(ComplexBuffer complexBuffer)
     {
         ComplexBuffer basebandFiltered = mBasebandFilter.filter(complexBuffer);
-//        ComplexBuffer symbolFiltered = mBasebandFilter.filter(basebandFiltered);
+        ComplexBuffer symbolFiltered = mSymbolFilter.filter(basebandFiltered);
 //        ComplexBuffer amplified = mAGC.filter(symbolFiltered);
-        mQPSKDemodulator.receive(basebandFiltered);
+        mQPSKDemodulator.receive(symbolFiltered);
 //        mQPSKDemodulator.receive(complexBuffer);
     }
 

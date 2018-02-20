@@ -56,7 +56,7 @@ public class SymbolChart extends ScatterChart implements Listener<Complex>
         }
 
         ObservableList<XYChart.Series> data = FXCollections.observableArrayList();
-        data.add(new ScatterChart.Series("Current", mCurrentPoints));
+        data.add(new ScatterChart.Series("Constellation", mCurrentPoints));
 //        data.add(new ScatterChart.Series("Previous", mPreviousPoints));
 //        data.add(new ScatterChart.Series("Oldest", mOldestPoints));
 

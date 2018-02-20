@@ -192,7 +192,12 @@ public class CostasLoop implements IPhaseLockedLoop
         /* Limit frequency to +/- maximum loop frequency */
         limitFrequency();
 
-        mErrorBuffer.put(phaseError);
+//        checkLoopBandwidth();
+    }
+
+    private void checkLoopBandwidth()
+    {
+        mErrorBuffer.put(mLoopFrequency);
 
         double standardDeviation = mErrorBuffer.standardDeviation();
 

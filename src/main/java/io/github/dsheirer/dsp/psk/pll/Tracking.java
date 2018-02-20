@@ -22,9 +22,9 @@ public enum Tracking
 //    FINE(150.0, 0.0001, 0.001),
 //    LOCKED(200.0, 0.0, 0.0001);
     SEARCHING(100.0, 0.4, Math.PI),
-    COARSE(150.0, 0.2, 0.4),
-    FINE(175.0, 0.1, 0.2),
-    LOCKED(200.0, 0.0, 0.1);
+    COARSE(200.0, 0.2, 0.4),
+    FINE(400.0, 0.1, 0.2),
+    LOCKED(600.0, 0.0, 0.1);
 
     private double mLoopBandwidth;
     private double mThresholdMinimum;

@@ -20,11 +20,20 @@ import io.github.dsheirer.sample.complex.Complex;
 public class DQPSKSymbolPhaseErrorCalculator extends QPSKSymbolPhaseErrorCalculator
 {
     //Negative 45 degrees rotation to offset for differential additive 45 degrees of rotation
-    public static final Complex DIFFERENTIAL_OFFSET = Complex.fromAngle(Math.PI / -4.0d);
+    public static final Complex DIFFERENTIAL_OFFSET = Complex.fromAngle(Math.PI / 4.0d);
 
     @Override
     public void adjust(Complex symbol)
     {
         symbol.multiply(DIFFERENTIAL_OFFSET);
+    }
+
+    @Override
+    public float getPhaseError(Complex symbol)
+    {
+        Complex copy = symbol.copy();
+
+        copy.multiply(DIFFERENTIAL_OFFSET);
+        return super.getPhaseError(copy);
     }
 }

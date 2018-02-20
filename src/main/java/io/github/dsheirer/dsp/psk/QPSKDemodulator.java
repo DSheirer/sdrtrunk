@@ -34,7 +34,7 @@ public class QPSKDemodulator implements ComplexSampleListener
     private Listener<Double> mPLLErrorListener;
     private Listener<Double> mPLLFrequencyListener;
     private Listener<Dibit> mDibitListener;
-    private Listener<SymbolDecisionData> mSymbolDecisionDataListener;
+    private Listener<SymbolDecisionData2> mSymbolDecisionDataListener;
 
     private Complex mPreviousSample = new Complex(0, 0);
     private Complex mPreviousMiddleSample = new Complex(0, 0);
@@ -46,6 +46,7 @@ public class QPSKDemodulator implements ComplexSampleListener
     private float mPhaseError;
     private float mSymbolTimingError;
     private double mSampleRate;
+
 
     /**
      * Decoder for Quaternary Phase Shift Keying (QPSK) and Differential QPSK (DQPSK).  This decoder uses both a
@@ -129,6 +130,16 @@ public class QPSKDemodulator implements ComplexSampleListener
             mMiddleSymbol.normalize();
             mCurrentSymbol.normalize();
 
+            //Send to an external constellation symbol listener when registered
+            if(mSymbolListener != null)
+            {
+                mSymbolListener.receive(mCurrentSymbol);
+            }
+
+            //We rotate the symbol from star pattern to polar pattern to facilitate phase error calculation
+//            mSymbolPhaseErrorCalculator.adjust(mCurrentSymbol);
+//            mSymbolPhaseErrorCalculator.adjust(mMiddleSymbol);
+
             //Symbol timing error calculations
             mSymbolTimingError = mGardnerDetector.getError(mPreviousSymbol, mMiddleSymbol, mCurrentSymbol);
             mInterpolatingSymbolBuffer.resetAndAdjust(mSymbolTimingError);
@@ -138,20 +149,12 @@ public class QPSKDemodulator implements ComplexSampleListener
             mPreviousMiddleSample.setValues(mMiddleSample);
             mPreviousSymbol.setValues(mCurrentSymbol);
 
-            //Send to an external constellation symbol listener when registered
-            if(mSymbolListener != null)
-            {
-                mSymbolListener.receive(mCurrentSymbol);
-            }
-
-            //Adjust the current symbol as necessary (e.g. for differential encoding)
-            mSymbolPhaseErrorCalculator.adjust(mCurrentSymbol);
 
             //Calculate the phase error of the current symbol relative to the expected constellation and provide
             //feedback to the PLL
             mPhaseError = mSymbolPhaseErrorCalculator.getPhaseError(mCurrentSymbol);
 
-            mPhaseError = GardnerDetector.clip(mPhaseError, 0.2f);
+            mPhaseError = GardnerDetector.clip(mPhaseError, 0.15f);
             mPLL.adjust(mPhaseError);
 
             if(mPLLErrorListener != null)
@@ -210,7 +213,7 @@ public class QPSKDemodulator implements ComplexSampleListener
         mPLLFrequencyListener = listener;
     }
 
-    public void setSymbolDecisionDataListener(Listener<SymbolDecisionData> listener)
+    public void setSymbolDecisionDataListener(Listener<SymbolDecisionData2> listener)
     {
         mSymbolDecisionDataListener = listener;
     }

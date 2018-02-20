@@ -56,6 +56,8 @@ public class P25Phase1Pane extends DecoderPane
         getDecoder().setDEBUGPLLFrequencyListener(getPLLFrequencyLineChart());
         getDecoder().setDEBUGSymbolDecisionDataListener(getEyeDiagramChart());
 
+        HBox.setHgrow(getSampleChartBox(), Priority.ALWAYS);
+        HBox.setHgrow(getDecoderChartBox(), Priority.ALWAYS);
         getChildren().addAll(getSampleChartBox(), getDecoderChartBox());
     }
 
@@ -65,6 +67,7 @@ public class P25Phase1Pane extends DecoderPane
         mLog.debug("Configuring for sample rate: " + sampleRate);
 
         mDecoder.setSampleRate(sampleRate);
+        getSampleLineChart().setSamplesPerSymbol((int)(sampleRate / 4800));
     }
 
     private P25_C4FMDecoder2 getDecoder()
@@ -87,6 +90,7 @@ public class P25Phase1Pane extends DecoderPane
         if(mDecoderChartBox == null)
         {
             mDecoderChartBox = new HBox();
+            mDecoderChartBox.setMaxHeight(Double.MAX_VALUE);
             getSymbolChart().setMaxWidth(Double.MAX_VALUE);
             getPLLPhaseErrorLineChart().setMaxWidth(Double.MAX_VALUE);
             getPLLFrequencyLineChart().setMaxWidth(Double.MAX_VALUE);
@@ -104,6 +108,7 @@ public class P25Phase1Pane extends DecoderPane
         if(mSampleChartBox == null)
         {
             mSampleChartBox = new HBox();
+            mSampleChartBox.setMaxHeight(Double.MAX_VALUE);
             getSampleLineChart().setMaxWidth(Double.MAX_VALUE);
             getEyeDiagramChart().setMaxWidth(Double.MAX_VALUE);
             HBox.setHgrow(getSampleLineChart(), Priority.ALWAYS);
@@ -118,7 +123,7 @@ public class P25Phase1Pane extends DecoderPane
     {
         if(mSampleLineChart == null)
         {
-            mSampleLineChart = new ComplexSampleLineChart(40);
+            mSampleLineChart = new ComplexSampleLineChart(100, 10);
         }
 
         return mSampleLineChart;
