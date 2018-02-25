@@ -15,7 +15,6 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.psk;
 
-import io.github.dsheirer.dsp.psk.pll.CostasLoop;
 import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.sample.Listener;
@@ -28,70 +27,46 @@ import org.slf4j.LoggerFactory;
 public class DQPSKDemodulator implements ComplexSampleListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(DQPSKDemodulator.class);
-    private InterpolatingSymbolBuffer2 mInterpolatingSymbolBuffer;
-    private IPhaseLockedLoop mPLL;
+    protected InterpolatingSampleBuffer mInterpolatingSampleBuffer;
+    protected IPhaseLockedLoop mPLL;
+    protected IQPSKSymbolDecoder mDQPSKSymbolDecoder;
     private ISymbolPhaseErrorCalculator mSymbolPhaseErrorCalculator;
-    private IQPSKSymbolDecoder mDQPSKSymbolDecoder;
-//    private GardnerDetector mGardnerDetector = new GardnerDetector();
-    private EarlyLateDetector mEarlyLateDetector = new EarlyLateDetector();
-    private EarlyLateDetector2 mEarlyLateDetector2 = new EarlyLateDetector2();
-    private Listener<Complex> mSymbolListener;
-    private Listener<Double> mPLLErrorListener;
-    private Listener<Double> mPLLFrequencyListener;
-    private Listener<Double> mSamplesPerSymbolListener;
-    private Listener<Dibit> mDibitListener;
-    private Listener<SymbolDecisionData2> mSymbolDecisionDataListener;
+    private DQPSKTimingErrorDetector mDQPSKTimingErrorDetector = new DQPSKTimingErrorDetector();
 
     private Complex mReceivedSample = new Complex(0, 0);
-
     private Complex mPreviousPrecedingSample = new Complex(0, 0);
     private Complex mPreviousCurrentSample = new Complex(0, 0);
-    private Complex mPreviousFollowingSample = new Complex(0, 0);
-
-    private Complex mCurrentPrecedingSample = new Complex(0, 0);
-    private Complex mCurrentCurrentSample = new Complex(0, 0);
-    private Complex mCurrentFollowingSample = new Complex(0, 0);
-
+    private Complex mPrecedingSample = new Complex(0, 0);
+    private Complex mCurrentSample = new Complex(0, 0);
     private Complex mPrecedingSymbol = new Complex(0, 0);
-    private Complex mCurrentSymbol = new Complex(0, 0);
-    private Complex mFollowingSymbol = new Complex(0, 0);
+    protected Complex mCurrentSymbol = new Complex(0, 0);
 
-    private float mPhaseError;
+    protected float mPhaseError;
     private float mSymbolTimingError;
-    private double mSampleRate;
-
+    private Listener<Dibit> mDibitListener;
 
     /**
-     * Decoder for Quaternary Phase Shift Keying (QPSK) and Differential QPSK (DQPSK).  This decoder uses both a
-     * phase-locked loop and a gardner symbol timing error detector to automatically align to the incoming carrier
-     * frequency and to adjust for any changes in symbol timing.
+     * Decoder for Differential Quaternary Phase Shift Keying (DQPSK).  This decoder uses both a Costas Loop (PLL) and
+     * a custom DQPSK symbol timing error detector to automatically align to the incoming carrier frequency and to
+     * adjust for any changes in symbol timing.
+     *
+     * This detector is optimized for constant amplitude DQPSK symbols like C4FM.
      *
      * @param phaseLockedLoop for tracking carrier frequency error
-     * @param symbolPhaseErrorCalculator to calculate symbol phase errors and optionally adjust for differential encoding
+     * @param symbolPhaseErrorCalculator to calculate symbol phase errors to apply against the PLL
      * @param symbolDecoder to decode demodulated symbols into dibits
-     * @param sampleRate of the incoming complex sample stream
-     * @param symbolRate of the decoded QPSK symbols.
      */
     public DQPSKDemodulator(IPhaseLockedLoop phaseLockedLoop, ISymbolPhaseErrorCalculator symbolPhaseErrorCalculator,
-                            IQPSKSymbolDecoder symbolDecoder, double sampleRate, double symbolRate)
+                            IQPSKSymbolDecoder symbolDecoder, InterpolatingSampleBuffer interpolatingSampleBuffer)
     {
-        if(sampleRate < (symbolRate * 2))
-        {
-            throw new IllegalArgumentException("Sample rate [" + sampleRate +
-                "] must be at least 2 x symbol rate [" + symbolRate + "]");
-        }
-
-        mSampleRate = sampleRate;
         mPLL = phaseLockedLoop;
         mSymbolPhaseErrorCalculator = symbolPhaseErrorCalculator;
         mDQPSKSymbolDecoder = symbolDecoder;
-
-        float samplesPerSymbol = (float)(sampleRate / symbolRate);
-        mInterpolatingSymbolBuffer = new InterpolatingSymbolBuffer2(samplesPerSymbol);
+        mInterpolatingSampleBuffer = interpolatingSampleBuffer;
     }
 
     /**
-     * Submits a buffer containing complex samples for decoding
+     * Processes a (filtered) buffer containing complex samples for decoding
      * @param complexBuffer with complex samples
      */
     public void receive(ComplexBuffer complexBuffer)
@@ -105,7 +80,7 @@ public class DQPSKDemodulator implements ComplexSampleListener
     }
 
     /**
-     * Submits a complex sample for decoding.
+     * Processes a complex sample for decoding.  Once sufficient samples are buffered, a symbol decision is made.
      * @param inphase value for the sample
      * @param quadrature value for the sample
      */
@@ -118,109 +93,64 @@ public class DQPSKDemodulator implements ComplexSampleListener
         //Mix current sample with costas loop to remove any rotation that is present from a mis-tuned carrier frequency
         mReceivedSample.multiply(mPLL.incrementAndGetCurrentVector());
 
-        mInterpolatingSymbolBuffer.receive(mReceivedSample);
+        //Store the sample in the interpolating buffer
+        mInterpolatingSampleBuffer.receive(mReceivedSample);
 
         //Calculate the symbol once we've stored enough samples
-        if(mInterpolatingSymbolBuffer.hasSymbol())
+        if(mInterpolatingSampleBuffer.hasSymbol())
         {
-            //Get middle and current samples from the interpolating buffer
-            mCurrentPrecedingSample = mInterpolatingSymbolBuffer.getPreceedingSample();
-            mCurrentCurrentSample = mInterpolatingSymbolBuffer.getCurrentSample();
-            mCurrentFollowingSample = mInterpolatingSymbolBuffer.getFollowingSample();
-
-            //Eye diagram listener
-            if(mSymbolDecisionDataListener != null)
-            {
-                mSymbolDecisionDataListener.receive(mInterpolatingSymbolBuffer.getSymbolDecisionData());
-            }
-
-            //Calculate preceding, current and following symbols as the delta rotation compared to the previous samples
-            mPrecedingSymbol.setInphase(Complex.multiplyInphase(mCurrentPrecedingSample.inphase(), mCurrentPrecedingSample.quadrature(),
-                mPreviousPrecedingSample.inphase(), -mPreviousPrecedingSample.quadrature()));
-            mPrecedingSymbol.setQuadrature(Complex.multiplyQuadrature(mCurrentPrecedingSample.inphase(), mCurrentPrecedingSample.quadrature(),
-                mPreviousPrecedingSample.inphase(), -mPreviousPrecedingSample.quadrature()));
-
-            mCurrentSymbol.setInphase(Complex.multiplyInphase(mCurrentCurrentSample.inphase(), mCurrentCurrentSample.quadrature(),
-                mPreviousCurrentSample.inphase(), -mPreviousCurrentSample.quadrature()));
-            mCurrentSymbol.setQuadrature(Complex.multiplyQuadrature(mCurrentCurrentSample.inphase(), mCurrentCurrentSample.quadrature(),
-                mPreviousCurrentSample.inphase(), -mPreviousCurrentSample.quadrature()));
-
-            mFollowingSymbol.setInphase(Complex.multiplyInphase(mCurrentFollowingSample.inphase(), mCurrentFollowingSample.quadrature(),
-                mPreviousFollowingSample.inphase(), -mPreviousFollowingSample.quadrature()));
-            mFollowingSymbol.setQuadrature(Complex.multiplyQuadrature(mCurrentFollowingSample.inphase(), mCurrentFollowingSample.quadrature(),
-                mPreviousFollowingSample.inphase(), -mPreviousFollowingSample.quadrature()));
-
-            //Set gain to unity before we calculate the error value
-            mPrecedingSymbol.normalize();
-            mCurrentSymbol.normalize();
-            mFollowingSymbol.normalize();
-
-            //Send to an external constellation symbol listener when registered
-            if(mSymbolListener != null)
-            {
-                mSymbolListener.receive(mCurrentSymbol);
-            }
-
-            //Symbol timing error calculations
-            mSymbolTimingError = mEarlyLateDetector.getError(mPrecedingSymbol, mCurrentSymbol, mFollowingSymbol);
-
-            mSymbolTimingError = GardnerDetector.clip(mSymbolTimingError, 0.5f);
-            mInterpolatingSymbolBuffer.resetAndAdjust(mSymbolTimingError);
-
-            if(mSamplesPerSymbolListener != null)
-            {
-                mSamplesPerSymbolListener.receive((double)mInterpolatingSymbolBuffer.getSamplingPoint());
-            }
-
-            //Store current samples/symbols to use for the next period
-            mPreviousPrecedingSample.setValues(mCurrentPrecedingSample);
-            mPreviousCurrentSample.setValues(mCurrentCurrentSample);
-            mPreviousFollowingSample.setValues(mCurrentFollowingSample);
-
-            //Calculate the phase error of the current symbol relative to the expected constellation and provide
-            //feedback to the PLL
-            mSymbolPhaseErrorCalculator.adjust(mCurrentSymbol);
-            mPhaseError = mSymbolPhaseErrorCalculator.getPhaseError(mCurrentSymbol);
-
-            mPhaseError = GardnerDetector.clip(mPhaseError, 0.15f);
-
-            mPLL.adjust(mPhaseError);
-//            mPLL.adjust(0.0);
-
-            if(mPLLErrorListener != null)
-            {
-                mPLLErrorListener.receive((double)mPhaseError);
-            }
-
-            if(mPLLFrequencyListener != null)
-            {
-                double loopFrequency = ((CostasLoop)mPLL).getLoopFrequency();
-
-                loopFrequency *= mSampleRate / (2.0 * Math.PI);
-
-                mPLLFrequencyListener.receive(loopFrequency);
-            }
-
-            //Decode the dibit from the symbol and send to the listener
-            if(mDibitListener != null)
-            {
-                mDibitListener.receive(mDQPSKSymbolDecoder.decode(mCurrentSymbol));
-            }
-
-            //TODO: Assemble dibits here and broadcast
+            calculateSymbol();
         }
     }
 
     /**
-     * Registers the listener to receive decoded QPSK symbols
+     * Calculates a symbol from the interpolating buffer
      */
-    public void setSymbolListener(Listener<Complex> listener)
+    protected void calculateSymbol()
     {
-        mSymbolListener = listener;
+        //Get preceding sample and an interpolated current sample from the interpolating buffer
+        mPrecedingSample = mInterpolatingSampleBuffer.getPrecedingSample();
+        mCurrentSample = mInterpolatingSampleBuffer.getCurrentSample();
+
+        //Calculate preceding, current and following symbols as the delta rotation compared to the previous samples
+        mPrecedingSymbol.setInphase(Complex.multiplyInphase(mPrecedingSample.inphase(), mPrecedingSample.quadrature(),
+            mPreviousPrecedingSample.inphase(), -mPreviousPrecedingSample.quadrature()));
+        mPrecedingSymbol.setQuadrature(Complex.multiplyQuadrature(mPrecedingSample.inphase(), mPrecedingSample.quadrature(),
+            mPreviousPrecedingSample.inphase(), -mPreviousPrecedingSample.quadrature()));
+
+        mCurrentSymbol.setInphase(Complex.multiplyInphase(mCurrentSample.inphase(), mCurrentSample.quadrature(),
+            mPreviousCurrentSample.inphase(), -mPreviousCurrentSample.quadrature()));
+        mCurrentSymbol.setQuadrature(Complex.multiplyQuadrature(mCurrentSample.inphase(), mCurrentSample.quadrature(),
+            mPreviousCurrentSample.inphase(), -mPreviousCurrentSample.quadrature()));
+
+        //Set gain to unity before we calculate the error value
+        mPrecedingSymbol.normalize();
+        mCurrentSymbol.normalize();
+
+        //Symbol timing error calculation
+        mSymbolTimingError = mDQPSKTimingErrorDetector.getError(mPrecedingSymbol, mCurrentSymbol);
+
+        mSymbolTimingError = clip(mSymbolTimingError, 0.5f);
+        mInterpolatingSampleBuffer.resetAndAdjust(mSymbolTimingError);
+
+        //Store current samples/symbols to use for the next period
+        mPreviousPrecedingSample.setValues(mPrecedingSample);
+        mPreviousCurrentSample.setValues(mCurrentSample);
+
+        //Calculate the phase error of the current symbol relative to the expected constellation and provide
+        //feedback to the PLL
+        mPhaseError = mSymbolPhaseErrorCalculator.getPhaseError(mCurrentSymbol);
+
+        mPLL.adjust(mPhaseError);
+
+        if(mDibitListener != null)
+        {
+            mDibitListener.receive(mDQPSKSymbolDecoder.decode(mCurrentSymbol));
+        }
     }
 
     /**
-     * Registers the listener to receive decoded QPSK dibits
+     * Registers the listener to receive dibit symbol decisions from this demodulator
      */
     public void setDibitListener(Listener<Dibit> listener)
     {
@@ -228,32 +158,19 @@ public class DQPSKDemodulator implements ComplexSampleListener
     }
 
     /**
-     * Registers the listener to receive PLL error values
+     * Constrains value to the range of ( -maximum <> maximum )
      */
-    public void setPLLErrorListener(Listener<Double> listener)
+    public static float clip(float value, float maximum)
     {
-        mPLLErrorListener = listener;
-    }
+        if(value > maximum)
+        {
+            return maximum;
+        }
+        else if(value < -maximum)
+        {
+            return -maximum;
+        }
 
-    /**
-     * Registers the listener to receive PLL error values
-     */
-    public void setPLLFrequencyListener(Listener<Double> listener)
-    {
-        mPLLFrequencyListener = listener;
+        return value;
     }
-
-    /**
-     * Registers the listener to receive PLL error values
-     */
-    public void setSamplesPerSymbolListener(Listener<Double> listener)
-    {
-        mSamplesPerSymbolListener = listener;
-    }
-
-    public void setSymbolDecisionDataListener(Listener<SymbolDecisionData2> listener)
-    {
-        mSymbolDecisionDataListener = listener;
-    }
-
 }

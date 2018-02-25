@@ -17,24 +17,32 @@ package io.github.dsheirer.dsp.psk;
 
 import io.github.dsheirer.sample.complex.Complex;
 
-public class EarlyLateDetector2
+public class InterpolatingSampleBufferInstrumented extends InterpolatingSampleBuffer
 {
-    //45 degrees rotation to orient the symbol to a polar axis to make error calculation easy/efficient
-    public static final Complex POSITIVE_OFFSET = Complex.fromAngle(Math.PI / 4.0d);
-    private Complex mSymbol = new Complex(0,0);
+    private SymbolDecisionData mSymbolDecisionData;
 
-    public float getError(Complex symbol)
+    public InterpolatingSampleBufferInstrumented(float samplesPerSymbol)
     {
-        mSymbol.setValues(symbol);
-        mSymbol.multiply(POSITIVE_OFFSET);
+        super(samplesPerSymbol);
 
-        if(Math.abs(mSymbol.quadrature()) > Math.abs(mSymbol.inphase()))
-        {
-            return mSymbol.inphase();
-        }
-        else
-        {
-            return mSymbol.quadrature();
-        }
+        mSymbolDecisionData = new SymbolDecisionData((int)samplesPerSymbol);
     }
+
+    public void receive(Complex sample)
+    {
+        super.receive(sample);
+        mSymbolDecisionData.receive(sample);
+    }
+
+    /**
+     * Contents of the interpolating buffer and the current buffer index and symbol decision offset.  This data can
+     * be used to support an external eye-diagram chart.
+     * @return symbol decision data.
+     */
+    public SymbolDecisionData getSymbolDecisionData()
+    {
+        mSymbolDecisionData.setSamplingPoint(getSamplingPoint());
+        return mSymbolDecisionData;
+    }
+
 }

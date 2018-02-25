@@ -15,26 +15,21 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.psk.pll;
 
+/**
+ * Phase Locked Loop (PLL) tracking bandwidth - controls how fast/slow the PLL tracks the carrier frequency
+ */
 public enum Tracking
 {
-//    SEARCHING(50.0, 0.01, Math.PI),
-//    COARSE(100.0, 0.001, 0.01),
-//    FINE(150.0, 0.0001, 0.001),
-//    LOCKED(200.0, 0.0, 0.0001);
-    SEARCHING(100.0, 0.4, Math.PI),
-    COARSE(200.0, 0.2, 0.4),
-    FINE(400.0, 0.1, 0.2),
-    LOCKED(600.0, 0.0, 0.1);
+    FASTEST(50.0),
+    FAST(100.0),
+    NORMAL(200.0),
+    SLOW(400.0);
 
     private double mLoopBandwidth;
-    private double mThresholdMinimum;
-    private double mThresholdMaximum;
 
-    Tracking(double loopBandwidth, double thresholdMinimum, double thresholdMaximum)
+    Tracking(double loopBandwidth)
     {
         mLoopBandwidth = loopBandwidth;
-        mThresholdMinimum = thresholdMinimum;
-        mThresholdMaximum = thresholdMaximum;
     }
 
     /**
@@ -43,29 +38,5 @@ public enum Tracking
     public double getLoopBandwidth()
     {
         return mLoopBandwidth;
-    }
-
-    /**
-     * Minimum error value for this entry
-     */
-    public double getThresholdMinimum()
-    {
-        return mThresholdMinimum;
-    }
-
-    /**
-     * Maximum error value for this entry
-     */
-    public double getThresholdMaximum()
-    {
-        return mThresholdMaximum;
-    }
-
-    /**
-     * Indicates if the error value is within the range for this entry
-     */
-    public boolean contains(double standardDeviation)
-    {
-        return getThresholdMinimum() <= standardDeviation && standardDeviation < getThresholdMaximum();
     }
 }

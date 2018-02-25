@@ -21,16 +21,17 @@ public class DQPSKSymbolPhaseErrorCalculator extends QPSKSymbolPhaseErrorCalcula
 {
     //45 degrees rotation to orient the symbol to a polar axis to make error calculation easy/efficient
     public static final Complex DIFFERENTIAL_OFFSET = Complex.fromAngle(Math.PI / 4.0d);
-
-    private boolean mToggle;
+    private Complex mSymbol = new Complex(0, 0);
 
     public DQPSKSymbolPhaseErrorCalculator()
     {
     }
 
     @Override
-    public void adjust(Complex symbol)
+    public float getPhaseError(Complex symbol)
     {
-        symbol.multiply(DIFFERENTIAL_OFFSET);
+        mSymbol.setValues(symbol);
+        mSymbol.multiply(DIFFERENTIAL_OFFSET);
+        return super.getPhaseError(mSymbol);
     }
 }

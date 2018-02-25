@@ -25,12 +25,6 @@ public class QPSKSymbolPhaseErrorCalculator implements ISymbolPhaseErrorCalculat
     private float mPhaseError;
 
     @Override
-    public void adjust(Complex symbol)
-    {
-        //No-op - since there is no differential, we don't have to adjust
-    }
-
-    @Override
     public float getPhaseError(Complex symbol)
     {
         mPhaseError = 0.0f;

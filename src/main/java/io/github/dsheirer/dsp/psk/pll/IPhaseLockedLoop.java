@@ -52,5 +52,8 @@ public interface IPhaseLockedLoop
      */
     Complex incrementAndGetCurrentVector();
 
-
+    /**
+     * Reset tracking to 0
+     */
+    void reset();
 }

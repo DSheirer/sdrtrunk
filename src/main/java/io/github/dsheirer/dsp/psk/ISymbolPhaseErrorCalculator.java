@@ -20,13 +20,6 @@ import io.github.dsheirer.sample.complex.Complex;
 public interface ISymbolPhaseErrorCalculator
 {
     /**
-     * Adjusts the calculated symbol as necessary before calculating any phase error.  This might be useful for
-     * differential encoding to remove a 45 degree rotational spin.
-     * @param symbol to adjust
-     */
-    void adjust(Complex symbol);
-
-    /**
      * Calculates the phase error of the symbol relative to an alignment for the constellation
      * @param symbol to calculate error
      * @return error value

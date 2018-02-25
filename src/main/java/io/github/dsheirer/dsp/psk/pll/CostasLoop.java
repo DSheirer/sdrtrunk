@@ -15,13 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.psk.pll;
 
-import io.github.dsheirer.buffer.DoubleCircularBuffer;
-import io.github.dsheirer.dsp.mixer.Oscillator;
 import io.github.dsheirer.sample.complex.Complex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.text.DecimalFormat;
 
 /**
  * Costas Loop - phase locked loop designed to automatically synchronize to the incoming carrier frequency in order to
@@ -34,21 +28,16 @@ import java.text.DecimalFormat;
  */
 public class CostasLoop implements IPhaseLockedLoop
 {
-    private final static Logger mLog = LoggerFactory.getLogger(CostasLoop.class);
     public static final double TWO_PI = 2.0 * Math.PI;
-    private DoubleCircularBuffer mErrorBuffer = new DoubleCircularBuffer(10);
+
+    private Complex mCurrentVector = new Complex(0, 0);
+    private double mLoopPhase = 0.0;
+    private double mLoopFrequency = 0.0;
+    private double mMaximumLoopFrequency;
     private double mDamping = Math.sqrt(2.0) / 2.0;
     private double mAlphaGain;
     private double mBetaGain;
-    private double mLoopPhase = 0.0;
-//    private double mLoopFrequency = 0.0;
-    private double mLoopFrequency = Math.PI * 2.0 * -10.0 / 48000.0;
-    private double mMaximumLoopFrequency;
-    private Complex mCurrentVector = new Complex(0, 0);
-
-    private Tracking mTracking = Tracking.SEARCHING;
-    private ITrackingStateListener mTrackingStateListener;
-    private boolean mAutomaticTrackingEnabled = true;
+    private Tracking mTracking = Tracking.NORMAL;
 
     /**
      * Costas Loop for tracking and correcting frequency error in a received carrier signal.
@@ -75,12 +64,12 @@ public class CostasLoop implements IPhaseLockedLoop
     {
         mLoopFrequency += correction;
 
-        if(mLoopFrequency > mMaximumLoopFrequency)
+        while(mLoopFrequency > mMaximumLoopFrequency)
         {
             mLoopFrequency -= 2.0 * mMaximumLoopFrequency;
         }
 
-        if(mLoopFrequency < -mMaximumLoopFrequency)
+        while(mLoopFrequency < -mMaximumLoopFrequency)
         {
             mLoopFrequency += 2.0 * mMaximumLoopFrequency;
         }
@@ -107,35 +96,6 @@ public class CostasLoop implements IPhaseLockedLoop
     {
         mTracking = tracking;
         updateLoopBandwidth();
-
-        mLog.debug("Tracking: " + tracking.name());
-
-        if(mTrackingStateListener != null)
-        {
-            mTrackingStateListener.trackingStateChanged(tracking);
-        }
-    }
-
-    /**
-     * Sets the listener to receive notifications when the tracking state changes
-     */
-    public void setTrackingStateListener(ITrackingStateListener listener)
-    {
-        mTrackingStateListener = listener;
-    }
-
-    /**
-     * Enables or disables automatic tracking state updates.  When enabled, the loop will automatically increase or
-     * decrease the loop alpha/beta gain values based on the variance of the error tracking values submitted to the
-     * loop control.  As the variance decreases, so will the gain values, and vice-versa.  Setting this to disabled
-     * will force the tracker to retain the gain values associated with either the default or user-specified tracking
-     * value.
-     *
-     * @param enabled true (default) to enable automatic gain tracking
-     */
-    public void setAutomaticTracking(boolean enabled)
-    {
-        mAutomaticTrackingEnabled = enabled;
     }
 
     /**
@@ -145,8 +105,16 @@ public class CostasLoop implements IPhaseLockedLoop
     {
         mLoopPhase += mLoopFrequency;
 
-        /* Keep the loop phase in bounds */
-        normalizePhase();
+        /* Normalize phase between +/- 2 * PI */
+        if(mLoopPhase > TWO_PI)
+        {
+            mLoopPhase -= TWO_PI;
+        }
+
+        if(mLoopPhase < -TWO_PI)
+        {
+            mLoopPhase += TWO_PI;
+        }
     }
 
     /**
@@ -171,11 +139,6 @@ public class CostasLoop implements IPhaseLockedLoop
         return mLoopFrequency;
     }
 
-    public double getMaximumLoopFrequency()
-    {
-        return mMaximumLoopFrequency;
-    }
-
     /**
      * Updates the costas loop frequency and phase to adjust for the phase
      * error value
@@ -187,97 +150,18 @@ public class CostasLoop implements IPhaseLockedLoop
         mLoopFrequency += (mBetaGain * phaseError);
         mLoopPhase += mLoopFrequency + (mAlphaGain * phaseError);
 
-        /* Maintain phase between +/- 2 * PI */
-        normalizePhase();
-
-        /* Limit frequency to +/- maximum loop frequency */
-        limitFrequency();
-
-//        checkLoopBandwidth();
-    }
-
-    private void checkLoopBandwidth()
-    {
-        mErrorBuffer.put(mLoopFrequency);
-
-        double standardDeviation = mErrorBuffer.standardDeviation();
-
-        switch(mTracking)
-        {
-            case SEARCHING:
-                if(Tracking.COARSE.contains(standardDeviation))
-                {
-                    setTracking(Tracking.COARSE);
-                }
-                break;
-            case COARSE:
-                if(Tracking.COARSE.contains(standardDeviation))
-                {
-                    //Promote if possible - otherwise remain
-                    if(Tracking.FINE.contains(standardDeviation))
-                    {
-                        setTracking(Tracking.FINE);
-                    }
-                }
-                else
-                {
-                    setTracking(Tracking.SEARCHING);
-                }
-                break;
-            case FINE:
-                if(Tracking.FINE.contains(standardDeviation))
-                {
-                    //Promote if possible - otherwise remain
-                    if(Tracking.LOCKED.contains(standardDeviation))
-                    {
-                        setTracking(Tracking.LOCKED);
-                    }
-                }
-                else
-                {
-                    setTracking(Tracking.COARSE);
-                }
-                break;
-            case LOCKED:
-                if(!Tracking.LOCKED.contains(standardDeviation))
-                {
-                    setTracking(Tracking.FINE);
-                }
-                break;
-        }
-    }
-
-    public double getErrorMean()
-    {
-        return mErrorBuffer.mean();
-    }
-
-    public double getErrorVariance()
-    {
-        return mErrorBuffer.variance();
-    }
-
-    /**
-     * Normalizes the phase tracker to maintain within +/- 2 Pi
-     */
-    private void normalizePhase()
-    {
-        while(mLoopPhase > TWO_PI)
+        /* Normalize phase between +/- 2 * PI */
+        if(mLoopPhase > TWO_PI)
         {
             mLoopPhase -= TWO_PI;
         }
 
-        while(mLoopPhase < -TWO_PI)
+        if(mLoopPhase < -TWO_PI)
         {
             mLoopPhase += TWO_PI;
         }
-    }
 
-    /**
-     * Constrains the frequency within the bounds of +/- loop frequency
-     */
-    private void limitFrequency()
-    {
+        /* Limit frequency to +/- maximum loop frequency */
         if(mLoopFrequency > mMaximumLoopFrequency)
         {
             mLoopFrequency = mMaximumLoopFrequency;
@@ -289,57 +173,10 @@ public class CostasLoop implements IPhaseLockedLoop
         }
     }
 
-    /**
-     * Tracking state listener interface for receiving updates when the tracking state of the costas loop changes
-     */
-    public interface ITrackingStateListener
+    @Override
+    public void reset()
     {
-        void trackingStateChanged(Tracking tracking);
+        mLoopPhase = 0.0;
+        mLoopFrequency = 0.0;
     }
-
-    public static void main(String[] arguments)
-    {
-        DecimalFormat decimalFormat = new DecimalFormat("0.000000");
-        double sampleRate = 25000.0;
-        int errorFrequency = 411;
-        double loopBandwidth = 50.0;
-
-        Oscillator oscillator = new Oscillator(errorFrequency, (int)sampleRate);
-        CostasLoop costasLoop = new CostasLoop(sampleRate, 4800.0);
-        costasLoop.setTrackingStateListener(new ITrackingStateListener()
-        {
-            @Override
-            public void trackingStateChanged(Tracking tracking)
-            {
-                mLog.debug("Tracking State Changed: " + tracking.name());
-            }
-        });
-
-        for(int x = 0; x < 1000; x++)
-        {
-            Complex complex = oscillator.getComplex();
-
-            oscillator.rotate();
-            costasLoop.increment();
-
-            if(x % 5 == 0)
-            {
-                complex.multiply(costasLoop.getCurrentVector().conjugate());
-
-                double phaseError = complex.angle();
-                costasLoop.adjust(phaseError);
-
-                double loopFrequency = costasLoop.getLoopFrequency() * sampleRate / TWO_PI;
-                double maxFrequency = costasLoop.getMaximumLoopFrequency() * sampleRate / TWO_PI;
-
-                mLog.debug(x + " Frequency: " + errorFrequency +
-                    " Loop:" + decimalFormat.format(loopFrequency) +
-                    " Max:" + maxFrequency +
-                    " Detected Error:" + decimalFormat.format(phaseError) +
-                    " Avg:" + decimalFormat.format(costasLoop.getErrorMean()) +
-                    " Var:" + decimalFormat.format(costasLoop.getErrorVariance()));
-            }
-        }
-    }
-
 }

@@ -15,7 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.instrument.gui.viewer.chart;
 
-import io.github.dsheirer.dsp.psk.SymbolDecisionData2;
+import io.github.dsheirer.dsp.psk.SymbolDecisionData;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.Complex;
 import javafx.collections.FXCollections;
@@ -25,7 +25,7 @@ import javafx.scene.chart.NumberAxis;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class EyeDiagramChart extends LineChart implements Listener<SymbolDecisionData2>
+public class EyeDiagramChart extends LineChart implements Listener<SymbolDecisionData>
 {
     private final static Logger mLog = LoggerFactory.getLogger(EyeDiagramChart.class);
 
@@ -81,7 +81,7 @@ public class EyeDiagramChart extends LineChart implements Listener<SymbolDecisio
     }
 
     @Override
-    public void receive(SymbolDecisionData2 symbolDecisionData)
+    public void receive(SymbolDecisionData symbolDecisionData)
     {
         Complex[] demodulated = symbolDecisionData.getDemodulated();
 

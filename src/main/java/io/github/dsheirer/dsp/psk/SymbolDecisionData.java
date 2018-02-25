@@ -15,56 +15,79 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.psk;
 
+import io.github.dsheirer.buffer.ComplexCircularBuffer;
+import io.github.dsheirer.sample.complex.Complex;
 
 public class SymbolDecisionData
 {
-    private float[] mSamplesInphase;
-    private float[] mSamplesQuadrature;
-    private float mSamplesPerSymbol;
-    private int mSampleIndex;
-    private float mSampleIndexOffset;
+    //45 degrees rotation to orient the symbol to a polar axis to make error calculation easy/efficient
+    public static final Complex DIFFERENTIAL_OFFSET = Complex.fromAngle(Math.PI / 4.0d);
+
+    private ComplexCircularBuffer mBuffer;
+    private float mSamplingPoint;
 
     /**
-     * Symbol decision data - samples and timing decision for a single symbol decision instant.
-     *
-     * @param samplesInphase
-     * @param samplesQuadrature
-     * @param samplesPerSymbol
-     * @param sampleIndex
-     * @param sampleIndexOffset
+     * Circular buffer for capturing two symbols worth of sample data for use in instrumentation.
+     * @param samplesPerSymbol to size the buffer
      */
-    public SymbolDecisionData(float[] samplesInphase, float[] samplesQuadrature, float samplesPerSymbol,
-                              int sampleIndex, float sampleIndexOffset)
+    public SymbolDecisionData(int samplesPerSymbol)
     {
-        mSamplesInphase = samplesInphase;
-        mSamplesQuadrature = samplesQuadrature;
-        mSamplesPerSymbol = samplesPerSymbol;
-        mSampleIndex = sampleIndex;
-        mSampleIndexOffset = sampleIndexOffset;
+        mBuffer = new ComplexCircularBuffer(2 * samplesPerSymbol);
     }
 
-    public float[] getInphaseSamples()
+    /**
+     * Stores the complex sample in the buffer
+     */
+    public void receive(float inphase, float quadrature)
     {
-        return mSamplesInphase;
+        mBuffer.put(new Complex(inphase, quadrature));
     }
 
-    public float[] getQuadratureSamples()
+    /**
+     * Stores the complex sample in the buffer
+     */
+    public void receive(Complex complex)
     {
-        return mSamplesQuadrature;
+        mBuffer.put(complex.copy());
     }
 
-    public float getSamplesPerSymbol()
+    /**
+     * Sets the fractional sampling point for the current symbol to use in interpolating the current symbol.
+     */
+    public void setSamplingPoint(float samplingPoint)
     {
-        return mSamplesPerSymbol;
+        mSamplingPoint = samplingPoint;
     }
 
-    public int getSampleIndex()
+    /**
+     * Fractional sampling point
+     */
+    public float getSamplingPoint()
     {
-        return mSampleIndex;
+        return mSamplingPoint;
     }
 
-    public float getSampleIndexOffset()
+    /**
+     * Array of demodulated samples representing the current symbol where each current sample is demodulated against
+     * the previous symbol's sample to produce the differential demodulated sample.  Samples are in time order.
+     *
+     * Note: differential decoding is on an integral samples-per-symbol basis and does not use fractional interpolation.
+     */
+    public Complex[] getDemodulated()
     {
-        return mSampleIndexOffset;
+        Complex[] samples = mBuffer.getAll();
+
+        int length = samples.length / 2;
+
+        Complex[] demodulated = new Complex[length];
+
+        for(int x = 0; x < samples.length / 2; x++)
+        {
+            Complex copy = samples[length + x].copy();
+            copy.multiply(samples[x].conjugate());
+            demodulated[x] = copy;
+        }
+
+        return demodulated;
     }
 }

@@ -450,6 +450,13 @@ public class LSMDemodulator implements Instrumentable, ComplexSampleListener
         }
 
         @Override
+        public void reset()
+        {
+            mLoopPhase = 0.0f;
+            mLoopFrequency = 0.0f;
+        }
+
+        @Override
         public void adjust(double error)
         {
             adjust(error);
