@@ -41,8 +41,8 @@ public class GardnerDetector
      */
     public float getError(Complex previous, Complex middle, Complex current)
     {
-        mErrorInphase = (previous.inphase() - current.inphase()) * middle.inphase();
-        mErrorQuadrature = (previous.quadrature() - current.quadrature()) * middle.quadrature();
+        mErrorInphase = (Math.abs(previous.inphase()) - Math.abs(current.inphase())) * Math.abs(middle.inphase());
+        mErrorQuadrature = (Math.abs(previous.quadrature()) - Math.abs(current.quadrature())) * Math.abs(middle.quadrature());
         mError = normalize(mErrorInphase + mErrorQuadrature, 1.0f);
 
         return mError;

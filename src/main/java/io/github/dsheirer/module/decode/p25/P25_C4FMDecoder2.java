@@ -21,10 +21,11 @@ import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter;
 import io.github.dsheirer.dsp.gain.ComplexFeedForwardGainControl;
+import io.github.dsheirer.dsp.psk.DQPSKDemodulator;
 import io.github.dsheirer.dsp.psk.DQPSKSymbolPhaseErrorCalculator;
 import io.github.dsheirer.dsp.psk.IQPSKSymbolDecoder;
 import io.github.dsheirer.dsp.psk.ISymbolPhaseErrorCalculator;
-import io.github.dsheirer.dsp.psk.QPSKDemodulator;
+import io.github.dsheirer.dsp.psk.QPSKStarSlicer;
 import io.github.dsheirer.dsp.psk.QPSKSymbolDecoder;
 import io.github.dsheirer.dsp.psk.SymbolDecisionData2;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
@@ -53,24 +54,26 @@ public class P25_C4FMDecoder2 extends P25Decoder implements IComplexBufferListen
     private Map<Double,float[]> mSymbolFilters = new HashMap<>();
     private ComplexFIRFilter mSymbolFilter;
 
-    private QPSKDemodulator mQPSKDemodulator;
+    private DQPSKDemodulator mQPSKDemodulator;
     private CostasLoop mCostasLoop;
     private ComplexBufferToStreamConverter mStreamConverter = new ComplexBufferToStreamConverter();
     private ComplexFeedForwardGainControl mAGC = new ComplexFeedForwardGainControl(32);
     private QPSKSymbolDecoder mQPSKSlicer = new QPSKSymbolDecoder();
     private P25MessageFramer mMessageFramer;
     private ISymbolPhaseErrorCalculator mSymbolPhaseErrorCalculator = new DQPSKSymbolPhaseErrorCalculator();
-    private IQPSKSymbolDecoder mSymbolDecoder = new QPSKSymbolDecoder();
+    private IQPSKSymbolDecoder mSymbolDecoder = new QPSKStarSlicer();
     private Listener<Complex> mDEBUGSymbolListener;
     private Listener<Double> mDEBUGPLLPhaseErrorListener;
     private Listener<Double> mDEBUGPLLFrequencyListener;
     private Listener<SymbolDecisionData2> mDEBUGSymbolDecisionDataListener;
+    private Listener<Double> mDEBUGSamplesPerSymbolListener;
+    private Listener<ComplexBuffer> mFilteredSymbolListener;
 
     public P25_C4FMDecoder2(AliasList aliasList)
     {
         super(aliasList);
 
-        setSampleRate(48000.0);
+        setSampleRate(48600.0);
 
         mStreamConverter.setListener(mAGC);
     }
@@ -90,12 +93,13 @@ public class P25_C4FMDecoder2 extends P25Decoder implements IComplexBufferListen
         mCostasLoop.setTracking(Tracking.FINE);
         mCostasLoop.setAutomaticTracking(false);
 
-        mQPSKDemodulator = new QPSKDemodulator(mCostasLoop, mSymbolPhaseErrorCalculator, mSymbolDecoder,
+        mQPSKDemodulator = new DQPSKDemodulator(mCostasLoop, mSymbolPhaseErrorCalculator, mSymbolDecoder,
             mSampleRate, SYMBOL_RATE);
         mQPSKDemodulator.setSymbolListener(mDEBUGSymbolListener);
         mQPSKDemodulator.setPLLErrorListener(mDEBUGPLLPhaseErrorListener);
         mQPSKDemodulator.setPLLFrequencyListener(mDEBUGPLLFrequencyListener);
         mQPSKDemodulator.setSymbolDecisionDataListener(mDEBUGSymbolDecisionDataListener);
+        mQPSKDemodulator.setSamplesPerSymbolListener(mDEBUGSamplesPerSymbolListener);
 
         //Message framer can trigger a symbol-inversion correction to the PLL when detected
         mMessageFramer = new P25MessageFramer(getAliasList(), mCostasLoop);
@@ -121,20 +125,36 @@ public class P25_C4FMDecoder2 extends P25Decoder implements IComplexBufferListen
         mQPSKDemodulator.setPLLFrequencyListener(listener);
     }
 
+    public void setDEBUGFilteredBufferListener(Listener<ComplexBuffer> listener)
+    {
+        mFilteredSymbolListener = listener;
+    }
+
     public void setDEBUGSymbolDecisionDataListener(Listener<SymbolDecisionData2> listener)
     {
         mDEBUGSymbolDecisionDataListener = listener;
         mQPSKDemodulator.setSymbolDecisionDataListener(listener);
     }
 
+    public void setDEBUGSamplesPerSymbolListener(Listener<Double> listener)
+    {
+        mDEBUGSamplesPerSymbolListener = listener;
+        mQPSKDemodulator.setSamplesPerSymbolListener(listener);
+    }
+
     @Override
     public void receive(ComplexBuffer complexBuffer)
     {
         ComplexBuffer basebandFiltered = mBasebandFilter.filter(complexBuffer);
-        ComplexBuffer symbolFiltered = mSymbolFilter.filter(basebandFiltered);
-//        ComplexBuffer amplified = mAGC.filter(symbolFiltered);
+//        ComplexBuffer symbolFiltered = mSymbolFilter.filter(complexBuffer);
+//        ComplexBuffer symbolFiltered = complexBuffer;
+        ComplexBuffer symbolFiltered = basebandFiltered;
         mQPSKDemodulator.receive(symbolFiltered);
-//        mQPSKDemodulator.receive(complexBuffer);
+
+        if(mFilteredSymbolListener != null)
+        {
+            mFilteredSymbolListener.receive(symbolFiltered);
+        }
     }
 
     private double getSampleRate()
@@ -150,11 +170,11 @@ public class P25_C4FMDecoder2 extends P25Decoder implements IComplexBufferListen
         {
             FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
                 .sampleRate((int)getSampleRate())
-                .passBandCutoff(2880)
+                .passBandCutoff(6000)
                 .passBandAmplitude(1.0)
                 .passBandRipple(0.01)
                 .stopBandAmplitude(0.0)
-                .stopBandStart(3600)
+                .stopBandStart(6250)
                 .stopBandRipple(0.01)
                 .build();
 
@@ -186,7 +206,8 @@ public class P25_C4FMDecoder2 extends P25Decoder implements IComplexBufferListen
 
         if(filter == null)
         {
-            filter = FilterFactory.getRootRaisedCosine(10, 10, 0.2f);
+            float samplesPerSymbol = (float)(getSampleRate() / 4800.0);
+            filter = FilterFactory.getRootRaisedCosine(samplesPerSymbol, 40, 0.2f);
             mSymbolFilters.put(getSampleRate(), filter);
         }
 

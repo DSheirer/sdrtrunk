@@ -101,7 +101,8 @@ public class ComplexSampleLineChart extends LineChart implements Listener<Comple
         for(int x = 0; x < samples.length; x += 2)
         {
             sample.setValues(samples[x], samples[x + 1]);
-            mComplexGain.apply(sample);
+//            mComplexGain.apply(sample);
+            sample.normalize();
 
             Complex previous = mDemodulationCircularBuffer.get(sample.copy());
             sample.multiply(previous.conjugate());

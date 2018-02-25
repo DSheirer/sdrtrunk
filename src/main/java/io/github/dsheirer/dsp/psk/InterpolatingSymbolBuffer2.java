@@ -20,35 +20,37 @@ import io.github.dsheirer.sample.complex.Complex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class InterpolatingSymbolBuffer
+public class InterpolatingSymbolBuffer2
 {
-    private final static Logger mLog = LoggerFactory.getLogger(InterpolatingSymbolBuffer.class);
-
-    private Complex mMiddleSample = new Complex(0,0);
+    private static final float MAXIMUM_SAMPLES_PER_SYMBOL_DEVIATION = 0.02f; //2%
+    private final static Logger mLog = LoggerFactory.getLogger(InterpolatingSymbolBuffer2.class);
+    private Complex mPreceedingSample = new Complex(0,0);
     private Complex mCurrentSample = new Complex(0,0);
+    private Complex mFollowingSample = new Complex(0,0);
 
     private float[] mDelayLineInphase;
     private float[] mDelayLineQuadrature;
-    private float mSamplingPoint; //Sample Counter
-    private float mSampleCounterGain = 0.05f; //Sample Counter Gain
-    private float mSamplesPerSymbol;
+    private float mSamplingPoint;
+    private float mSampleCounterGain = 0.05f;
     private float mDetectedSamplesPerSymbol;
     private float mDetectedSamplesPerSymbolGain = 0.1f * mSampleCounterGain * mSampleCounterGain;
-    private float mMaxDeviation = 0.005f;
+    private float mMaximumSamplesPerSymbol;;
+    private float mMinimumSamplesPerSymbol;;
 
     private int mDelayLinePointer = 0;
     private int mTwiceSamplesPerSymbol;
     private RealInterpolator mInterpolator = new RealInterpolator(1.0f);
     private SymbolDecisionData2 mSymbolDecisionData2;
 
-    public InterpolatingSymbolBuffer(float samplesPerSymbol)
+    public InterpolatingSymbolBuffer2(float samplesPerSymbol)
     {
         mSamplingPoint = samplesPerSymbol;
+        mDetectedSamplesPerSymbol = samplesPerSymbol;
+        mMaximumSamplesPerSymbol = samplesPerSymbol * (1.0f + MAXIMUM_SAMPLES_PER_SYMBOL_DEVIATION);
+        mMinimumSamplesPerSymbol = samplesPerSymbol * (1.0f - MAXIMUM_SAMPLES_PER_SYMBOL_DEVIATION);
         mTwiceSamplesPerSymbol = (int)Math.floor(2.0 * samplesPerSymbol);
         mDelayLineInphase = new float[2 * mTwiceSamplesPerSymbol];
         mDelayLineQuadrature = new float[2 * mTwiceSamplesPerSymbol];
-        mDetectedSamplesPerSymbol = samplesPerSymbol;
-        mSamplesPerSymbol = samplesPerSymbol;
 
         mSymbolDecisionData2 = new SymbolDecisionData2((int)samplesPerSymbol);
     }
@@ -89,12 +91,13 @@ public class InterpolatingSymbolBuffer
     {
         //mDetectedSamplesPerSymbol is samples per symbol and is constrained to floating between +/- .005 of the nominal samples per
         //symbol
-        mDetectedSamplesPerSymbol = mDetectedSamplesPerSymbol + mDetectedSamplesPerSymbolGain * symbolTimingError;
-        mDetectedSamplesPerSymbol = mSamplesPerSymbol + clip(mDetectedSamplesPerSymbol - mSamplesPerSymbol, mMaxDeviation);
+        mDetectedSamplesPerSymbol = mDetectedSamplesPerSymbol + (symbolTimingError * mDetectedSamplesPerSymbolGain);
+        mDetectedSamplesPerSymbol = constrain(mDetectedSamplesPerSymbol, mMinimumSamplesPerSymbol, mMaximumSamplesPerSymbol);
 
-        mLog.debug("Detected Samples Per Symbol:" + mDetectedSamplesPerSymbol);
+        mLog.debug("Detected Samples Per Symbol: " + mDetectedSamplesPerSymbol);
         //Add another symbol's worth of samples to the counter and adjust timing based on gardner error
         increaseSampleCounter((mDetectedSamplesPerSymbol + (mSampleCounterGain * symbolTimingError)));
+//        increaseSampleCounter(mDetectedSamplesPerSymbol);
     }
 
     /**
@@ -114,38 +117,38 @@ public class InterpolatingSymbolBuffer
     }
 
     /**
-     * Interpolated middle sample for the symbol.  Note: this method should only be invoked after testing for a
-     * complete symbol with the hasSymbol() method.
+     * Samples that precedes the current sample (uninterpolated).
      */
-    public Complex getMiddleSample()
+    public Complex getPreceedingSample()
     {
-        /* Calculate interpolated middle sample and current sample */
-        mMiddleSample.setValues(getInphase(mSamplingPoint), getQuadrature(mSamplingPoint));
+        mPreceedingSample.setValues(mDelayLineInphase[mDelayLinePointer + 3], mDelayLineQuadrature[mDelayLinePointer + 3]);
 
-        return mMiddleSample;
+        return mPreceedingSample;
     }
 
     /**
-     * Interpolated current sample for the symbol.  This sample represents the ideal symbol sampling point.
-     * Note: this method should only be invoked after testing for a complete symbol with the hasSymbol() method.
+     * Interpolated middle sample for the symbol.  Note: this method should only be invoked after testing for a
+     * complete symbol with the hasSymbol() method.
      */
     public Complex getCurrentSample()
     {
-        float halfDetectedSamplesPerSymbol = mDetectedSamplesPerSymbol / 2.0f;
-        int halfSamplingPointOffset = (int)Math.floor(halfDetectedSamplesPerSymbol);
-        float halfSamplingPoint = mSamplingPoint + halfDetectedSamplesPerSymbol - halfSamplingPointOffset;
-
-        if(halfSamplingPoint > 1.0)
-        {
-            halfSamplingPoint -= 1.0;
-            halfSamplingPointOffset += 1;
-        }
-
-        mCurrentSample.setValues(getInphase(halfSamplingPointOffset, halfSamplingPoint),
-                                 getQuadrature(halfSamplingPointOffset, halfSamplingPoint));
+        /* Calculate interpolated current sample */
+        mCurrentSample.setValues(getInphase(mSamplingPoint), getQuadrature(mSamplingPoint));
 
         return mCurrentSample;
     }
+
+    /**
+     * Samples that follows the current sample (uninterpolated).
+     */
+    public Complex getFollowingSample()
+    {
+        mFollowingSample.setValues(mDelayLineInphase[mDelayLinePointer + 4], mDelayLineQuadrature[mDelayLinePointer + 4]);
+
+        return mFollowingSample;
+    }
+
+
 
     /**
      * Contents of the interpolating buffer and the current buffer index and symbol decision offset.  This data can
@@ -212,6 +215,29 @@ public class InterpolatingSymbolBuffer
         else if(value < -maximum)
         {
             return -maximum;
+        }
+
+        return value;
+    }
+
+    /**
+     * Constrains the value within the minimum-maximum range
+     *
+     * @param value to constrain
+     * @param minimum value
+     * @param maximum value
+     * @return constrained value
+     */
+    public static float constrain(float value, float minimum, float maximum)
+    {
+        if(value > maximum)
+        {
+            return maximum;
+        }
+
+        if(value < minimum)
+        {
+            return minimum;
         }
 
         return value;

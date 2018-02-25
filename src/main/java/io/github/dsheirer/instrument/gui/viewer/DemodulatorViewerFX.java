@@ -29,6 +29,8 @@ import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 
@@ -37,6 +39,8 @@ import java.io.File;
  */
 public class DemodulatorViewerFX extends Application
 {
+    private final static Logger mLog = LoggerFactory.getLogger(DemodulatorViewerFX.class);
+
     private Stage mStage;
     private MenuBar mMenuBar;
     private RecentFilesMenu mRecentFilesMenu;
@@ -52,7 +56,7 @@ public class DemodulatorViewerFX extends Application
         borderPane.setTop(getMenuBar());
         borderPane.setCenter(getViewerDesktop());
 
-        Scene scene = new Scene(borderPane, 1200, 800);
+        Scene scene = new Scene(borderPane, 1500, 900);
 
         mStage.setScene(scene);
         mStage.show();

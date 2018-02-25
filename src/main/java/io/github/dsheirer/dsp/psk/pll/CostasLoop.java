@@ -41,7 +41,8 @@ public class CostasLoop implements IPhaseLockedLoop
     private double mAlphaGain;
     private double mBetaGain;
     private double mLoopPhase = 0.0;
-    private double mLoopFrequency = 0.0;
+//    private double mLoopFrequency = 0.0;
+    private double mLoopFrequency = Math.PI * 2.0 * -10.0 / 48000.0;
     private double mMaximumLoopFrequency;
     private Complex mCurrentVector = new Complex(0, 0);
 

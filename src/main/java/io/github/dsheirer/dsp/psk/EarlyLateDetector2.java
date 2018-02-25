@@ -17,20 +17,24 @@ package io.github.dsheirer.dsp.psk;
 
 import io.github.dsheirer.sample.complex.Complex;
 
-public class DQPSKSymbolPhaseErrorCalculator extends QPSKSymbolPhaseErrorCalculator
+public class EarlyLateDetector2
 {
     //45 degrees rotation to orient the symbol to a polar axis to make error calculation easy/efficient
-    public static final Complex DIFFERENTIAL_OFFSET = Complex.fromAngle(Math.PI / 4.0d);
+    public static final Complex POSITIVE_OFFSET = Complex.fromAngle(Math.PI / 4.0d);
+    private Complex mSymbol = new Complex(0,0);
 
-    private boolean mToggle;
-
-    public DQPSKSymbolPhaseErrorCalculator()
+    public float getError(Complex symbol)
     {
-    }
+        mSymbol.setValues(symbol);
+        mSymbol.multiply(POSITIVE_OFFSET);
 
-    @Override
-    public void adjust(Complex symbol)
-    {
-        symbol.multiply(DIFFERENTIAL_OFFSET);
+        if(Math.abs(mSymbol.quadrature()) > Math.abs(mSymbol.inphase()))
+        {
+            return mSymbol.inphase();
+        }
+        else
+        {
+            return mSymbol.quadrature();
+        }
     }
 }

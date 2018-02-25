@@ -20,6 +20,9 @@ import io.github.dsheirer.sample.complex.Complex;
 
 public class SymbolDecisionData2
 {
+    //45 degrees rotation to orient the symbol to a polar axis to make error calculation easy/efficient
+    public static final Complex DIFFERENTIAL_OFFSET = Complex.fromAngle(Math.PI / 4.0d);
+
     private ComplexCircularBuffer mBuffer;
     private float mSamplingPoint;
 
@@ -60,6 +63,9 @@ public class SymbolDecisionData2
         {
             Complex copy = samples[length + x].copy();
             copy.multiply(samples[x].conjugate());
+
+            //Test - rotate the demodulated symbol by 45 degrees to see the impact on the eye diagram
+//            copy.multiply(DIFFERENTIAL_OFFSET);
             demodulated[x] = copy;
         }
 
