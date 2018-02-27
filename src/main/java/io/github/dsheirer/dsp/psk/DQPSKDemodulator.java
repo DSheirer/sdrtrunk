@@ -29,9 +29,10 @@ public class DQPSKDemodulator implements ComplexSampleListener
     private final static Logger mLog = LoggerFactory.getLogger(DQPSKDemodulator.class);
     protected InterpolatingSampleBuffer mInterpolatingSampleBuffer;
     protected IPhaseLockedLoop mPLL;
-    protected IQPSKSymbolDecoder mDQPSKSymbolDecoder;
+    protected IQPSKSymbolDecoder mSymbolDecoder;
     private ISymbolPhaseErrorCalculator mSymbolPhaseErrorCalculator;
-    private DQPSKTimingErrorDetector mDQPSKTimingErrorDetector = new DQPSKTimingErrorDetector();
+    private DQPSKTimingErrorDetector mSymbolTimingErrorDetector = new DQPSKTimingErrorDetector();
+    private DQPSKSymbolEvaluator mSymbolEvaluator = new DQPSKSymbolEvaluator();
 
     private Complex mReceivedSample = new Complex(0, 0);
     private Complex mPreviousPrecedingSample = new Complex(0, 0);
@@ -61,7 +62,7 @@ public class DQPSKDemodulator implements ComplexSampleListener
     {
         mPLL = phaseLockedLoop;
         mSymbolPhaseErrorCalculator = symbolPhaseErrorCalculator;
-        mDQPSKSymbolDecoder = symbolDecoder;
+        mSymbolDecoder = symbolDecoder;
         mInterpolatingSampleBuffer = interpolatingSampleBuffer;
     }
 
@@ -127,8 +128,10 @@ public class DQPSKDemodulator implements ComplexSampleListener
         mPrecedingSymbol.normalize();
         mCurrentSymbol.normalize();
 
+        mSymbolEvaluator.setSymbol(mCurrentSymbol);
+
         //Symbol timing error calculation
-        mSymbolTimingError = mDQPSKTimingErrorDetector.getError(mPrecedingSymbol, mCurrentSymbol);
+        mSymbolTimingError = mSymbolTimingErrorDetector.getError(mPrecedingSymbol, mCurrentSymbol);
 
         mSymbolTimingError = clip(mSymbolTimingError, 0.5f);
         mInterpolatingSampleBuffer.resetAndAdjust(mSymbolTimingError);
@@ -141,11 +144,13 @@ public class DQPSKDemodulator implements ComplexSampleListener
         //feedback to the PLL
         mPhaseError = mSymbolPhaseErrorCalculator.getPhaseError(mCurrentSymbol);
 
+        mLog.debug("Phase error - ORIG:" + mPhaseError + " NEW:" + mSymbolEvaluator.getPhaseError());
+
         mPLL.adjust(mPhaseError);
 
         if(mDibitListener != null)
         {
-            mDibitListener.receive(mDQPSKSymbolDecoder.decode(mCurrentSymbol));
+            mDibitListener.receive(mSymbolDecoder.decode(mCurrentSymbol));
         }
     }
 
