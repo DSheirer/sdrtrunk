@@ -437,17 +437,14 @@ public class Complex implements Serializable
 
     public static void main(String[] args)
     {
-        double angle = Math.PI;  //180 degrees
+        Complex ROTATE_FROM_MINUS_45 = Complex.fromAngle(1.0 * Math.PI / 4.0);
+        Complex ROTATE_FROM_PLUS_135 = Complex.fromAngle(-3.0 * Math.PI / 4.0);
+        mLog.debug("REF: " + ROTATE_FROM_MINUS_45.toString());
 
-        Complex s1 = new Complex((float)Math.sin(angle), (float)Math.cos(angle));
+        Complex symbol = new Complex(0.7665009f, -0.6422432f);
+        mLog.debug("SYM: " + symbol.toString());
 
-        Complex tap = new Complex(1.0f, -0.1f);
-
-        Complex convolved = Complex.multiply(s1, tap);
-
-        mLog.debug("s: " + s1.toString() +
-            " t: " + tap.toString() +
-            " convolved: " + convolved.toString());
-
+        symbol.multiply(ROTATE_FROM_MINUS_45);
+        mLog.debug("DER: " + symbol.toString());
     }
 }

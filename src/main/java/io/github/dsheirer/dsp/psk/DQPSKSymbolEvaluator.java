@@ -25,74 +25,86 @@ public class DQPSKSymbolEvaluator implements IDQPSKSymbolEvaluator
     private static final Complex ROTATE_FROM_MINUS_45 = Complex.fromAngle(1.0 * Math.PI / 4.0);
     private static final Complex ROTATE_FROM_MINUS_135 = Complex.fromAngle(3.0 * Math.PI / 4.0);
 
-    private Complex mSymbolError = new Complex(0,0);
+    private Complex mSymbolError = new Complex(0, 0);
     private float mPhaseError = 0.0f;
     private float mTimingError = 0.0f;
-    private float mTimingErrorSign = 1.0f;
+    private float mTimingErrorPolarity = 1.0f;
     private Dibit mSymbolDecision = Dibit.D00_PLUS_1;
 
+    /**
+     * Data-directed symbol phase and timing error detector and symbol decision slicer.
+     *
+     * Symbol decision is based on the closest reference quadrant for the sampled symbol.
+     *
+     * Phase and timing error are calculated as the angular distance of the sampled symbol from the reference
+     * symbol.  Timing error is further corrected to compensate for clock-wise or counter-clock-wise vector rotation
+     * relative to the immediately preceding symbol.
+     */
     public DQPSKSymbolEvaluator()
     {
     }
 
     /**
-     * Sets the symbol to be evaluated and calculates the symbol decision and phase and timing errors of the symbol
-     * relative to the four QPSK reference symbol locations.  After invoking this method, you can access the phase and
-     * timing errors and the symbol decision via their respective accessor methods.
+     * Sets the preceding and current symbols to be evaluated for phase and timing errors and to determine the
+     * transmitted symbol relative to the closest reference symbol.  After invoking this method, you can access the
+     * phase and timing errors and the symbol decision via their respective accessor methods.
      *
-     * Phase and timing error values are calculated by determining the symbol's quadrant and multiplying the symbol
-     * by the complex conjugate of the reference symbol for that quadrant and then deriving the radian angle error
-     * value.  Both phase and timing error use this angle error, however the timing error is corrected with the
-     * appropriate sign so that the error value indicates the correct error direction.
+     * Phase and timing error values are calculated by first determining the symbol and then calculating the phase
+     * and timing errors relative to the reference symbol.  The timing error is corrected with the appropriate sign
+     * relative to the angular vector rotation so that the error value indicates the correct error direction.
      *
-     * @param complex symbol to be evaluated
+     * @param preceding differential-decoded sample/symbol used to detect rotation - does NOT need to be interpolated
+     * since it's only a reference
+     * @param current symbol to be evaluated - interpolated
      */
     @Override
-    public void setSymbol(Complex complex)
+    public void setSymbol(Complex preceding, Complex current)
     {
-        mSymbolError.setValues(complex);
+        mSymbolError.setValues(current);
 
         if(mSymbolError.quadrature() > 0.0f)
         {
             if(mSymbolError.inphase() > 0.0f)
             {
                 mSymbolDecision = Dibit.D00_PLUS_1;
+                mTimingErrorPolarity = (preceding.quadrature() > current.quadrature() ? 1.0f : -1.0f);
                 mSymbolError.multiply(ROTATE_FROM_PLUS_45);
             }
             else
             {
                 mSymbolDecision = Dibit.D01_PLUS_3;
+                mTimingErrorPolarity = (preceding.quadrature() < current.quadrature() ? 1.0f : -1.0f);
                 mSymbolError.multiply(ROTATE_FROM_PLUS_135);
             }
 
-            mTimingErrorSign = 1.0f;
         }
         else
         {
             if(mSymbolError.inphase() > 0.0f)
             {
                 mSymbolDecision = Dibit.D10_MINUS_1;
+                mTimingErrorPolarity = (preceding.quadrature() > current.quadrature() ? 1.0f : -1.0f);
                 mSymbolError.multiply(ROTATE_FROM_MINUS_45);
             }
             else
             {
                 mSymbolDecision = Dibit.D11_MINUS_3;
+                mTimingErrorPolarity = (preceding.quadrature() < current.quadrature() ? 1.0f : -1.0f);
                 mSymbolError.multiply(ROTATE_FROM_MINUS_135);
             }
-
-            mTimingErrorSign = -1.0f;
         }
 
         //Since we've rotated the error symbol back to 0 radians, the quadrature value closely approximates the
         //arctan of the error angle relative to 0 radians and this provides our error value
         mPhaseError = -mSymbolError.quadrature();
 
-        //Timing error is the same as phase error with the sign corrected according to the symbol's hemisphere
-        mTimingError = mPhaseError * mTimingErrorSign;
+        //Timing error is the same as phase error with the sign corrected according to the vector's angular rotation
+        mTimingError = mSymbolError.quadrature() * mTimingErrorPolarity;
     }
 
     /**
      * Phase error of the symbol relative to the nearest reference symbol.
+     *
      * @return phase error in radians of distance from the reference symbol.
      */
     @Override

@@ -31,7 +31,7 @@ public class InterpolatingSampleBuffer
     private int mTwiceSamplesPerSymbol;
 
     private float mSamplingPoint;
-    private float mSampleCounterGain = 0.05f;
+    private float mSampleCounterGain = 1.0f;
     private float mDetectedSamplesPerSymbol;
     private float mDetectedSamplesPerSymbolGain = 0.1f * mSampleCounterGain * mSampleCounterGain;
     private float mMaximumSamplesPerSymbol;
@@ -130,7 +130,7 @@ public class InterpolatingSampleBuffer
      */
     public Complex getPrecedingSample()
     {
-        mPrecedingSample.setValues(mDelayLineInphase[mDelayLinePointer + 3], mDelayLineQuadrature[mDelayLinePointer + 3]);
+        mPrecedingSample.setValues(mDelayLineInphase[mDelayLinePointer + 4], mDelayLineQuadrature[mDelayLinePointer + 3]);
         return mPrecedingSample;
     }
 
@@ -152,7 +152,7 @@ public class InterpolatingSampleBuffer
      */
     public float getInphase(float interpolation)
     {
-        return mInterpolator.filter(mDelayLineInphase, mDelayLinePointer, interpolation);
+        return mInterpolator.filter(mDelayLineInphase, mDelayLinePointer + 1, interpolation);
     }
 
     /**
@@ -162,6 +162,6 @@ public class InterpolatingSampleBuffer
      */
     public float getQuadrature(float interpolation)
     {
-        return mInterpolator.filter(mDelayLineQuadrature, mDelayLinePointer, interpolation);
+        return mInterpolator.filter(mDelayLineQuadrature, mDelayLinePointer + 1, interpolation);
     }
 }

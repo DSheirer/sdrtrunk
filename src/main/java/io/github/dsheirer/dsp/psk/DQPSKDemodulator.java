@@ -29,11 +29,7 @@ public class DQPSKDemodulator implements ComplexSampleListener
     private final static Logger mLog = LoggerFactory.getLogger(DQPSKDemodulator.class);
     protected InterpolatingSampleBuffer mInterpolatingSampleBuffer;
     protected IPhaseLockedLoop mPLL;
-    protected IQPSKSymbolDecoder mSymbolDecoder;
-    private ISymbolPhaseErrorCalculator mSymbolPhaseErrorCalculator;
-    private DQPSKTimingErrorDetector mSymbolTimingErrorDetector = new DQPSKTimingErrorDetector();
-    private DQPSKSymbolEvaluator mSymbolEvaluator = new DQPSKSymbolEvaluator();
-
+    protected DQPSKSymbolEvaluator mSymbolEvaluator = new DQPSKSymbolEvaluator();
     private Complex mReceivedSample = new Complex(0, 0);
     private Complex mPreviousPrecedingSample = new Complex(0, 0);
     private Complex mPreviousCurrentSample = new Complex(0, 0);
@@ -41,9 +37,6 @@ public class DQPSKDemodulator implements ComplexSampleListener
     private Complex mCurrentSample = new Complex(0, 0);
     private Complex mPrecedingSymbol = new Complex(0, 0);
     protected Complex mCurrentSymbol = new Complex(0, 0);
-
-    protected float mPhaseError;
-    private float mSymbolTimingError;
     private Listener<Dibit> mDibitListener;
 
     /**
@@ -54,15 +47,11 @@ public class DQPSKDemodulator implements ComplexSampleListener
      * This detector is optimized for constant amplitude DQPSK symbols like C4FM.
      *
      * @param phaseLockedLoop for tracking carrier frequency error
-     * @param symbolPhaseErrorCalculator to calculate symbol phase errors to apply against the PLL
-     * @param symbolDecoder to decode demodulated symbols into dibits
+     * @param interpolatingSampleBuffer to hold samples for interpolating a symbol
      */
-    public DQPSKDemodulator(IPhaseLockedLoop phaseLockedLoop, ISymbolPhaseErrorCalculator symbolPhaseErrorCalculator,
-                            IQPSKSymbolDecoder symbolDecoder, InterpolatingSampleBuffer interpolatingSampleBuffer)
+    public DQPSKDemodulator(IPhaseLockedLoop phaseLockedLoop, InterpolatingSampleBuffer interpolatingSampleBuffer)
     {
         mPLL = phaseLockedLoop;
-        mSymbolPhaseErrorCalculator = symbolPhaseErrorCalculator;
-        mSymbolDecoder = symbolDecoder;
         mInterpolatingSampleBuffer = interpolatingSampleBuffer;
     }
 
@@ -128,13 +117,9 @@ public class DQPSKDemodulator implements ComplexSampleListener
         mPrecedingSymbol.normalize();
         mCurrentSymbol.normalize();
 
-        mSymbolEvaluator.setSymbol(mCurrentSymbol);
+        mSymbolEvaluator.setSymbol(mPrecedingSymbol, mCurrentSymbol);
 
-        //Symbol timing error calculation
-        mSymbolTimingError = mSymbolTimingErrorDetector.getError(mPrecedingSymbol, mCurrentSymbol);
-
-        mSymbolTimingError = clip(mSymbolTimingError, 0.5f);
-        mInterpolatingSampleBuffer.resetAndAdjust(mSymbolTimingError);
+        mInterpolatingSampleBuffer.resetAndAdjust(mSymbolEvaluator.getTimingError());
 
         //Store current samples/symbols to use for the next period
         mPreviousPrecedingSample.setValues(mPrecedingSample);
@@ -142,15 +127,11 @@ public class DQPSKDemodulator implements ComplexSampleListener
 
         //Calculate the phase error of the current symbol relative to the expected constellation and provide
         //feedback to the PLL
-        mPhaseError = mSymbolPhaseErrorCalculator.getPhaseError(mCurrentSymbol);
-
-        mLog.debug("Phase error - ORIG:" + mPhaseError + " NEW:" + mSymbolEvaluator.getPhaseError());
-
-        mPLL.adjust(mPhaseError);
+        mPLL.adjust(clip(mSymbolEvaluator.getPhaseError(), 0.5f));
 
         if(mDibitListener != null)
         {
-            mDibitListener.receive(mSymbolDecoder.decode(mCurrentSymbol));
+            mDibitListener.receive(mSymbolEvaluator.getSymbolDecision());
         }
     }
 

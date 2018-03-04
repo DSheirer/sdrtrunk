@@ -23,9 +23,11 @@ public interface IDQPSKSymbolEvaluator
 {
     /**
      * Sets the sampled symbol to be evaluated.  Note: the symbol's gain value MUST be normalized to the unit circle.
-     * @param complex symbol
+     *
+     * @param preceding symbol used to detect (counter-)clock-wise rotation
+     * @param symbol currently being sampled
      */
-    void setSymbol(Complex complex);
+    void setSymbol(Complex preceding, Complex symbol);
 
     /**
      * Phase error of the symbol relative to the closest reference symbol

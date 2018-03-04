@@ -21,12 +21,8 @@ import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter;
 import io.github.dsheirer.dsp.psk.DQPSKDemodulator;
-import io.github.dsheirer.dsp.psk.DQPSKSymbolPhaseErrorCalculator;
-import io.github.dsheirer.dsp.psk.IQPSKSymbolDecoder;
-import io.github.dsheirer.dsp.psk.ISymbolPhaseErrorCalculator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBufferInstrumented;
-import io.github.dsheirer.dsp.psk.QPSKStarSlicer;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
@@ -43,8 +39,6 @@ public class P25_C4FMDecoder2 extends P25Decoder implements IComplexBufferListen
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25_C4FMDecoder2.class);
     protected static final double SYMBOL_RATE = 4800;
-    protected ISymbolPhaseErrorCalculator mSymbolPhaseErrorCalculator = new DQPSKSymbolPhaseErrorCalculator();
-    protected IQPSKSymbolDecoder mSymbolDecoder = new QPSKStarSlicer();
     protected InterpolatingSampleBuffer mInterpolatingSampleBuffer;
     protected DQPSKDemodulator mQPSKDemodulator;
     protected CostasLoop mCostasLoop;
@@ -72,8 +66,7 @@ public class P25_C4FMDecoder2 extends P25Decoder implements IComplexBufferListen
         mCostasLoop = new CostasLoop(mSampleRate, SYMBOL_RATE);
 
         mInterpolatingSampleBuffer = new InterpolatingSampleBufferInstrumented((float)(sampleRate / SYMBOL_RATE));
-        mQPSKDemodulator = new DQPSKDemodulator(mCostasLoop, mSymbolPhaseErrorCalculator, mSymbolDecoder,
-            mInterpolatingSampleBuffer);
+        mQPSKDemodulator = new DQPSKDemodulator(mCostasLoop, mInterpolatingSampleBuffer);
 
         //Message framer can trigger a symbol-inversion correction to the PLL when detected
         mMessageFramer = new P25MessageFramer(getAliasList(), mCostasLoop);
@@ -91,6 +84,7 @@ public class P25_C4FMDecoder2 extends P25Decoder implements IComplexBufferListen
     protected ComplexBuffer filter(ComplexBuffer complexBuffer)
     {
         return mBasebandFilter.filter(complexBuffer);
+//        return complexBuffer;
     }
 
     private double getSampleRate()

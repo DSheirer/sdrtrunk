@@ -37,17 +37,14 @@ public class DQPSKDemodulatorInstrumented extends DQPSKDemodulator
      * This detector is optimized for constant amplitude DQPSK symbols like C4FM.
      *
      * @param phaseLockedLoop for tracking carrier frequency error
-     * @param symbolPhaseErrorCalculator to calculate symbol phase errors to apply against the PLL
-     * @param symbolDecoder to decode demodulated symbols into dibits
      * @param interpolatingSampleBuffer
      * @param sampleRate of the incoming complex sample stream
      */
-    public DQPSKDemodulatorInstrumented(IPhaseLockedLoop phaseLockedLoop, ISymbolPhaseErrorCalculator
-                                        symbolPhaseErrorCalculator, IQPSKSymbolDecoder symbolDecoder,
+    public DQPSKDemodulatorInstrumented(IPhaseLockedLoop phaseLockedLoop,
                                         InterpolatingSampleBufferInstrumented interpolatingSampleBuffer,
                                         double sampleRate)
     {
-        super(phaseLockedLoop, symbolPhaseErrorCalculator, symbolDecoder, interpolatingSampleBuffer);
+        super(phaseLockedLoop, interpolatingSampleBuffer);
         mSampleRate = sampleRate;
     }
 
@@ -78,7 +75,7 @@ public class DQPSKDemodulatorInstrumented extends DQPSKDemodulator
 
         if(mPLLErrorListener != null)
         {
-            mPLLErrorListener.receive((double)mPhaseError);
+            mPLLErrorListener.receive((double)mSymbolEvaluator.getPhaseError());
         }
 
         if(mPLLFrequencyListener != null)

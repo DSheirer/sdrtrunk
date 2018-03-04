@@ -61,8 +61,7 @@ public class P25_C4FMDecoder2Instrumented extends P25_C4FMDecoder2
         InterpolatingSampleBufferInstrumented instrumentedBuffer = new InterpolatingSampleBufferInstrumented((float)(sampleRate / SYMBOL_RATE));
         mInterpolatingSampleBuffer = instrumentedBuffer;
 
-        DQPSKDemodulatorInstrumented instrumented = new DQPSKDemodulatorInstrumented(mCostasLoop,
-            mSymbolPhaseErrorCalculator, mSymbolDecoder, instrumentedBuffer, mSampleRate);
+        DQPSKDemodulatorInstrumented instrumented = new DQPSKDemodulatorInstrumented(mCostasLoop, instrumentedBuffer, mSampleRate);
         mQPSKDemodulator = instrumented;
 
         instrumented.setSymbolListener(mSymbolListener);

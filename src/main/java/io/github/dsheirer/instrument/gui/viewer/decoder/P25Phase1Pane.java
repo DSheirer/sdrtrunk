@@ -175,7 +175,7 @@ public class P25Phase1Pane extends DecoderPane
     {
         if(mSamplesPerSymbolLineChart == null)
         {
-            mSamplesPerSymbolLineChart = new DoubleLineChart( "Sample Point", 9.0, 11.0, 0.1, 40);
+            mSamplesPerSymbolLineChart = new DoubleLineChart( "Sample Point", 9.5, 11.5, 0.1, 40);
         }
 
         return mSamplesPerSymbolLineChart;
