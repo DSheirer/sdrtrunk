@@ -42,10 +42,10 @@ public class P25_C4FMDecoder2 extends P25Decoder implements IComplexBufferListen
     protected InterpolatingSampleBuffer mInterpolatingSampleBuffer;
     protected DQPSKDemodulator mQPSKDemodulator;
     protected CostasLoop mCostasLoop;
+    protected P25MessageFramer mMessageFramer;
     protected double mSampleRate;
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
     private ComplexFIRFilter mBasebandFilter;
-    private P25MessageFramer mMessageFramer;
 
     public P25_C4FMDecoder2(AliasList aliasList)
     {
@@ -84,7 +84,6 @@ public class P25_C4FMDecoder2 extends P25Decoder implements IComplexBufferListen
     protected ComplexBuffer filter(ComplexBuffer complexBuffer)
     {
         return mBasebandFilter.filter(complexBuffer);
-//        return complexBuffer;
     }
 
     private double getSampleRate()

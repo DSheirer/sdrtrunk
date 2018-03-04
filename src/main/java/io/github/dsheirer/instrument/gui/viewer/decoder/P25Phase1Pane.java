@@ -20,9 +20,11 @@ import io.github.dsheirer.instrument.gui.viewer.chart.DoubleLineChart;
 import io.github.dsheirer.instrument.gui.viewer.chart.EyeDiagramChart;
 import io.github.dsheirer.instrument.gui.viewer.chart.PhaseLineChart;
 import io.github.dsheirer.instrument.gui.viewer.chart.SymbolChart;
+import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.p25.P25_C4FMDecoder2Instrumented;
 import io.github.dsheirer.sample.Broadcaster;
+import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -65,6 +67,16 @@ public class P25Phase1Pane extends DecoderPane
         HBox.setHgrow(getSampleChartBox(), Priority.ALWAYS);
         HBox.setHgrow(getDecoderChartBox(), Priority.ALWAYS);
         getChildren().addAll(getSampleChartBox(), getDecoderChartBox());
+
+        mDecoder.setMessageListener(new Listener<Message>()
+        {
+            @Override
+            public void receive(Message message)
+            {
+                mLog.debug(message.getMessage());
+            }
+        });
+
     }
 
     @Override
