@@ -36,7 +36,7 @@ public class EyeDiagramChart extends LineChart implements Listener<SymbolDecisio
 
     public EyeDiagramChart(int seriesCount)
     {
-        super(new NumberAxis("Symbol Timing", 1.0, 10.0, 1.0),
+        super(new NumberAxis("Symbol Timing (5 = center)", 1.0, 10.0, 1.0),
             new NumberAxis("Value", -1.25, 1.25, 0.25));
 
         mSeriesCount = seriesCount * 2;

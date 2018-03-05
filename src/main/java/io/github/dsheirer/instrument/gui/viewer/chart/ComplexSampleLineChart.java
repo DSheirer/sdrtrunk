@@ -45,7 +45,7 @@ public class ComplexSampleLineChart extends LineChart implements Listener<Comple
 
     public ComplexSampleLineChart(int length, int samplesPerSymbol)
     {
-        super(new NumberAxis("Demodulated Samples", 0, length, 10),
+        super(new NumberAxis("Differential-Demodulated Samples", 0, length, 10),
             new NumberAxis("Value", -1.0, 1.0, 0.25));
 
         LineChart.Series<Integer,Float> iSampleSeries = new LineChart.Series<>("Inphase", mISamples);
