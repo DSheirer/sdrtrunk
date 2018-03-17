@@ -469,6 +469,7 @@ public class TunerChannelSource extends ComplexSource implements IFrequencyChang
             {
                 //Frequency correction requests are the only change requests supported from downstream components
                 case REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
+                    mLog.debug("Got a freq corr change request: " + event.getValue().intValue());
                     setFrequencyCorrection(event.getValue().intValue());
                     break;
             }

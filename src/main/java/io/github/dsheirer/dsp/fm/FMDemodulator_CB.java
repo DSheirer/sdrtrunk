@@ -26,8 +26,7 @@ import org.slf4j.LoggerFactory;
 
 public class FMDemodulator_CB extends FMDemodulator implements Listener<ComplexBuffer>
 {
-	private final static Logger mLog = 
-			LoggerFactory.getLogger( FMDemodulator_CB.class );
+	private final static Logger mLog = LoggerFactory.getLogger( FMDemodulator_CB.class );
 
 	private Listener<RealBuffer> mListener;
 	

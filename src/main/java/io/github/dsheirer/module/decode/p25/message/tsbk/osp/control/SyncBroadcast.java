@@ -78,7 +78,7 @@ public class SyncBroadcast extends TSBKMessage
         
         if( isMicroslotsLockedToMinuteRollover() )
         {
-            sb.append( " MICROSLOT-MINUTE ROLLOVER:LOCKED" );
+            sb.append( " MICROSLOT-MINUTE ROLLOVER:SLOW" );
         }
         else
         {

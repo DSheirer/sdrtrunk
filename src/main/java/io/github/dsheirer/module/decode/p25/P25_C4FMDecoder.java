@@ -1,244 +1,200 @@
 /*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
 package io.github.dsheirer.module.decode.p25;
 
 import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.instrument.tap.Tap;
-import io.github.dsheirer.instrument.tap.TapGroup;
-import io.github.dsheirer.instrument.tap.stream.DibitTap;
-import io.github.dsheirer.instrument.tap.stream.FloatTap;
+import io.github.dsheirer.dsp.filter.FilterFactory;
+import io.github.dsheirer.dsp.filter.design.FilterDesignException;
+import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
+import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter;
+import io.github.dsheirer.dsp.psk.DQPSKDemodulator;
+import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
+import io.github.dsheirer.dsp.psk.InterpolatingSampleBufferInstrumented;
+import io.github.dsheirer.dsp.psk.pll.CostasLoop;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.real.IFilteredRealBufferListener;
-import io.github.dsheirer.sample.real.RealBuffer;
+import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.complex.IComplexBufferListener;
 import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 
-public class P25_C4FMDecoder extends P25Decoder implements IFilteredRealBufferListener
+public class P25_C4FMDecoder extends P25Decoder implements IComplexBufferListener, Listener<ComplexBuffer>
 {
-	private final static Logger mLog = LoggerFactory.getLogger( P25_C4FMDecoder.class );
-	
-    /* Instrumentation Taps */
-	private static final String INSTRUMENT_C4FM_SYMBOL_FILTER_OUTPUT = "Tap Point: Symbol Filter Output";
-	private static final String INSTRUMENT_C4FM_SLICER_OUTPUT = "Tap Point: C4FM Slicer Output";
+    private final static Logger mLog = LoggerFactory.getLogger(P25_C4FMDecoder.class);
+    protected static final double SYMBOL_RATE = 4800;
+    protected InterpolatingSampleBuffer mInterpolatingSampleBuffer;
+    protected DQPSKDemodulator mQPSKDemodulator;
+    protected CostasLoop mCostasLoop;
+    protected P25MessageFramer mMessageFramer;
+    protected double mSampleRate;
+    private Map<Double,float[]> mBasebandFilters = new HashMap<>();
+    private ComplexFIRFilter mBasebandFilter;
 
-	private List<TapGroup> mAvailableTaps;
-	private C4FMSymbolFilter mSymbolFilter;
-	private C4FMSlicer mC4FMSlicer;
-	private P25MessageFramer mMessageFramer;
-	
-	/**
-	 * P25 Phase 1 C4FM Decoder processes real buffers of un-filtered, 
-	 * demodulated audio and produces decoded P25 Phase 1 Messages.
-	 * 
-	 * Provides Frequency Control to steer external tuner source and incorporates
-	 * internal gain control.
-	 * 
-	 * Note: use the P25AudioModule to convert the decoded messages into audio.
-	 * 
-	 * @param aliasList - optional (can be null) list of alias values for network
-	 * infrastructure and subscriber identities that will be included in each
-	 * decoded message
-	 */
-	public P25_C4FMDecoder(AliasList aliasList, int frequencyCorrectionMaximum )
-	{
-		super( aliasList );
-		
-		/* Shape gain and frequency offsets to optimize sample stream */
-		mSymbolFilter = new C4FMSymbolFilter( frequencyCorrectionMaximum );
-
-		/* Convert samples to symbols */
-		mC4FMSlicer = new C4FMSlicer();
-		mSymbolFilter.setListener( mC4FMSlicer );
-
-		/* Sync pattern detection and message construction */
-		mMessageFramer = new P25MessageFramer( aliasList );
-        mC4FMSlicer.addListener( mMessageFramer );
-        
-        /* Process and broadcast messages */
-        mMessageFramer.setListener( getMessageProcessor() );
-	}
-
-	@Override
-	public void dispose()
-	{
-		super.dispose();
-		
-		mSymbolFilter.dispose();
-		mSymbolFilter = null;
-		
-		mMessageFramer.dispose();
-		mMessageFramer = null;
-
-		mC4FMSlicer.dispose();
-		mC4FMSlicer = null;
-	}
-	
-	public Modulation getModulation()
-	{
-		return Modulation.C4FM;
-	}
-	
-	@Override
-	public Listener<RealBuffer> getFilteredRealBufferListener()
-	{
-		return mSymbolFilter;
-	}
-	
-	/**
-	 * Instrumentation taps for monitoring internal processing
-	 */
-	@Override
-    public List<TapGroup> getTapGroups()
+    public P25_C4FMDecoder(AliasList aliasList)
     {
-		if( mAvailableTaps == null )
-		{
-			mAvailableTaps = new ArrayList<>();
-
-			TapGroup group = new TapGroup( "P25 C4FM Decoder" );
-			
-			group.add( new FloatTap( INSTRUMENT_C4FM_SYMBOL_FILTER_OUTPUT, 0, 0.1f ) );
-			group.add( new DibitTap( INSTRUMENT_C4FM_SLICER_OUTPUT, 0, 0.1f ) );
-
-			mAvailableTaps.add( group );
-			
-			if( mSymbolFilter != null )
-			{
-				mAvailableTaps.addAll( mSymbolFilter.getTapGroups() );
-			}
-		}
-		
-		return mAvailableTaps;
+        super(aliasList);
+        setSampleRate(48000.0);
     }
 
-	/**
-	 * Adds an instrumentation tap to monitor internal processing.  
-	 */
-	@Override
-    public void registerTap( Tap tap )
+    public void setSampleRate(double sampleRate)
     {
-		if( mSymbolFilter != null )
-		{
-			mSymbolFilter.registerTap( tap );
-		}
-		
-		switch( tap.getName() )
-		{
-			case INSTRUMENT_C4FM_SYMBOL_FILTER_OUTPUT:
-				FloatTap symbolTap = (FloatTap)tap;
-				mSymbolFilter.setListener( symbolTap );
-				symbolTap.setListener( mC4FMSlicer );
-				break;
-			case INSTRUMENT_C4FM_SLICER_OUTPUT:
-				DibitTap slicerTap = (DibitTap)tap;
-				
-				if( mC4FMSlicer != null )
-				{
-					mC4FMSlicer.addListener( slicerTap );
-				}
-				break;
-			default:
-				break;
-		}
+        if(sampleRate <= SYMBOL_RATE * 2)
+        {
+            throw new IllegalArgumentException("Sample rate must be at least twice the symbol rate [4800]");
+        }
+
+        mSampleRate = sampleRate;
+        mBasebandFilter = new ComplexFIRFilter(getBasebandFilter(), 1.0f);
+
+        mCostasLoop = new CostasLoop(mSampleRate, SYMBOL_RATE);
+
+        mInterpolatingSampleBuffer = new InterpolatingSampleBufferInstrumented((float)(sampleRate / SYMBOL_RATE));
+        mQPSKDemodulator = new DQPSKDemodulator(mCostasLoop, mInterpolatingSampleBuffer);
+
+        //Message framer can trigger a symbol-inversion correction to the PLL when detected
+        mMessageFramer = new P25MessageFramer(getAliasList(), mCostasLoop);
+        mMessageFramer.setListener(getMessageProcessor());
+        mQPSKDemodulator.setDibitListener(mMessageFramer);
     }
 
-	/**
-	 * Removes the instrumentation tap.
-	 */
-	@Override
-    public void unregisterTap( Tap tap )
+    @Override
+    public void receive(ComplexBuffer complexBuffer)
     {
-		if( mSymbolFilter != null )
-		{
-			mSymbolFilter.unregisterTap( tap );
-		}
-		
-		switch( tap.getName() )
-		{
-			case INSTRUMENT_C4FM_SYMBOL_FILTER_OUTPUT:
-				mSymbolFilter.setListener( mC4FMSlicer );
-				break;
-			case INSTRUMENT_C4FM_SLICER_OUTPUT:
-				DibitTap slicerTap = (DibitTap)tap;
-				
-				if( mC4FMSlicer != null )
-				{
-					mC4FMSlicer.removeListener( slicerTap );
-				}
-				break;
-			default:
-				throw new IllegalArgumentException( "Unrecognized tap: " + 
-							tap.getName() );
-		}
+        ComplexBuffer filtered = filter(complexBuffer);
+        mQPSKDemodulator.receive(filtered);
     }
 
-	@Override
-	public void reset()
-	{
-		// TODO Auto-generated method stub
-		
-	}
+    protected ComplexBuffer filter(ComplexBuffer complexBuffer)
+    {
+        return mBasebandFilter.filter(complexBuffer);
+    }
 
-	@Override
-	public void start( ScheduledExecutorService executor )
-	{
-		// TODO Auto-generated method stub
-		
-	}
+    private double getSampleRate()
+    {
+        return mSampleRate;
+    }
 
-	@Override
-	public void stop()
-	{
-		// TODO Auto-generated method stub
-		
-	}
+    private float[] getBasebandFilter()
+    {
+        float[] filter = mBasebandFilters.get(getSampleRate());
 
-	@Override
-	public void setFrequencyChangeListener(	Listener<FrequencyChangeEvent> listener )
-	{
-		if( mSymbolFilter != null )
-		{
-			mSymbolFilter.setFrequencyChangeListener( listener );
-		}
-	}
+        if(filter == null)
+        {
+            FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
+                .sampleRate((int)getSampleRate())
+                .passBandCutoff(5100)
+                .passBandAmplitude(1.0)
+                .passBandRipple(0.01)
+                .stopBandAmplitude(0.0)
+                .stopBandStart(6500)
+                .stopBandRipple(0.01)
+                .build();
 
-	@Override
-	public void removeFrequencyChangeListener()
-	{
-		if( mSymbolFilter != null )
-		{
-			mSymbolFilter.setFrequencyChangeListener( null );
-		}
-	}
+            try
+            {
+                filter = FilterFactory.getTaps(specification);
 
-	@Override
-	public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
-	{
-		if( mSymbolFilter != null )
-		{
-			return mSymbolFilter.getFrequencyChangeListener();
-		}
-		
-		return null;
-	}
+            }
+            catch(FilterDesignException fde)
+            {
+                mLog.error("Couldn't design low pass baseband filter for sample rate: " + getSampleRate());
+            }
+            if(filter != null)
+            {
+                mBasebandFilters.put(getSampleRate(), filter);
+            }
+            else
+            {
+                throw new IllegalStateException("Couldn't design a C4FM symbol filter for sample rate: " + mSampleRate);
+            }
+        }
+
+        return filter;
+    }
+
+    public void dispose()
+    {
+        super.dispose();
+
+        mBasebandFilter.dispose();
+        mBasebandFilter = null;
+
+        mMessageFramer.dispose();
+        mMessageFramer = null;
+    }
+
+    @Override
+    public void setFrequencyChangeListener(Listener<FrequencyChangeEvent> listener)
+    {
+    }
+
+    @Override
+    public void removeFrequencyChangeListener()
+    {
+    }
+
+    @Override
+    public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
+    {
+        return new Listener<FrequencyChangeEvent>()
+        {
+            @Override
+            public void receive(FrequencyChangeEvent frequencyChangeEvent)
+            {
+                switch(frequencyChangeEvent.getEvent())
+                {
+                    case NOTIFICATION_FREQUENCY_CHANGE:
+                    case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
+                    case NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
+                    case NOTIFICATION_SAMPLE_RATE_CHANGE:
+                        mCostasLoop.reset();
+                        break;
+                }
+            }
+        };
+    }
+
+    @Override
+    public Listener<ComplexBuffer> getComplexBufferListener()
+    {
+        return P25_C4FMDecoder.this;
+    }
+
+    public Modulation getModulation()
+    {
+        return Modulation.C4FM;
+    }
+
+    @Override
+    public void reset()
+    {
+        mCostasLoop.reset();
+    }
+
+    @Override
+    public void start(ScheduledExecutorService executor)
+    {
+    }
+
+    @Override
+    public void stop()
+    {
+    }
 }

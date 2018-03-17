@@ -167,13 +167,8 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
         if(mInputStream != null)
         {
             mInputStream.close();
+            mInputStream = null;
         }
-        else
-        {
-            throw new IOException("Can't close wave source - was not opened");
-        }
-
-        mInputStream = null;
     }
 
     /**
@@ -239,8 +234,7 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
                     buffer = Arrays.copyOf(buffer, samplesRead);
                 }
 
-                float[] samples = ConversionUtils
-                    .convertFromSigned16BitSamples(buffer);
+                float[] samples = ConversionUtils.convertFromSigned16BitSamples(buffer);
 
                 mListener.receive(new ComplexBuffer(samples));
             }

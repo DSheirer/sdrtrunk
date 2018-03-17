@@ -666,11 +666,11 @@ public class FilterFactory
      * @param alpha - roll-off factor
      * @return - filter coefficients
      */
-    public static float[] getRootRaisedCosine(int samplesPerSymbol,
+    public static float[] getRootRaisedCosine(float samplesPerSymbol,
                                               int symbols,
                                               float alpha)
     {
-        int taps = samplesPerSymbol * symbols + 1;
+        int taps = (int)(samplesPerSymbol * (float)symbols + 1.0f);
 
         float scale = 0;
 
@@ -680,8 +680,8 @@ public class FilterFactory
         {
             float index = (float) x - ((float) taps / 2.0f);
 
-            float x1 = (float) Math.PI * index / (float) samplesPerSymbol;
-            float x2 = 4.0f * alpha * index / (float) samplesPerSymbol;
+            float x1 = (float) Math.PI * index / samplesPerSymbol;
+            float x2 = 4.0f * alpha * index / samplesPerSymbol;
             float x3 = x2 * x2 - 1.0f;
 
             float numerator, denominator;
@@ -692,7 +692,7 @@ public class FilterFactory
                 {
                     numerator = (float) Math.cos((1.0 + alpha) * x1) +
                         (float) Math.sin((1.0f - alpha) * x1) /
-                            (4.0f * alpha * index / (float) samplesPerSymbol);
+                            (4.0f * alpha * index / samplesPerSymbol);
                 }
                 else
                 {
@@ -713,9 +713,9 @@ public class FilterFactory
                 x3 = (1.0f - alpha) * x1;
                 x2 = (1.0f + alpha) * x1;
 
-                numerator = (float) (Math.sin(x2) * (1.0f + alpha) * Math.PI -
+                numerator = (float) (Math.sin(x2) * (1.0 + alpha) * Math.PI -
                     Math.cos(x3) * ((1.0 - alpha) * Math.PI *
-                        (double) samplesPerSymbol) / (4 * alpha * index) +
+                        (double) samplesPerSymbol) / (4.0 * alpha * index) +
                     Math.sin(x3) * (double) samplesPerSymbol *
                         (double) samplesPerSymbol / (4.0 * alpha * index * index));
 
