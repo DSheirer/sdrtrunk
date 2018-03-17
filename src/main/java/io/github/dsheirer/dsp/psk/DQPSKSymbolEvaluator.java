@@ -32,7 +32,7 @@ public class DQPSKSymbolEvaluator implements IDQPSKSymbolEvaluator
     private Dibit mSymbolDecision = Dibit.D00_PLUS_1;
 
     /**
-     * Data-directed symbol phase and timing error detector and symbol decision slicer.
+     * Decision-directed symbol phase and timing error detector and symbol decision slicer.
      *
      * Symbol decision is based on the closest reference quadrant for the sampled symbol.
      *

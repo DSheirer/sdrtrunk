@@ -23,7 +23,7 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.Complex;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
 
-public class P25_C4FMDecoder2Instrumented extends P25_C4FMDecoder2
+public class P25_C4FMDecoderInstrumented extends P25_C4FMDecoder
 {
     private Listener<Double> mPLLPhaseErrorListener;
     private Listener<Double> mPLLFrequencyListener;
@@ -32,7 +32,7 @@ public class P25_C4FMDecoder2Instrumented extends P25_C4FMDecoder2
     private Listener<ComplexBuffer> mFilteredSymbolListener;
     private Listener<SymbolDecisionData> mSymbolDecisionDataListener;
 
-    public P25_C4FMDecoder2Instrumented(AliasList aliasList)
+    public P25_C4FMDecoderInstrumented(AliasList aliasList)
     {
         super(aliasList);
     }

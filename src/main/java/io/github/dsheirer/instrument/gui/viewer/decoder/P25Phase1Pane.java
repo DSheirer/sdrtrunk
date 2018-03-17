@@ -22,7 +22,7 @@ import io.github.dsheirer.instrument.gui.viewer.chart.PhaseLineChart;
 import io.github.dsheirer.instrument.gui.viewer.chart.SymbolChart;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.p25.P25_C4FMDecoder2Instrumented;
+import io.github.dsheirer.module.decode.p25.P25_C4FMDecoderInstrumented;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
@@ -44,7 +44,7 @@ public class P25Phase1Pane extends DecoderPane
     private DoubleLineChart mPLLFrequencyLineChart;
     private DoubleLineChart mSamplesPerSymbolLineChart;
     private Broadcaster<ComplexBuffer> mFilteredBufferBroadcaster = new Broadcaster<>();
-    private P25_C4FMDecoder2Instrumented mDecoder = new P25_C4FMDecoder2Instrumented(null);
+    private P25_C4FMDecoderInstrumented mDecoder = new P25_C4FMDecoderInstrumented(null);
 
     public P25Phase1Pane()
     {
@@ -90,7 +90,7 @@ public class P25Phase1Pane extends DecoderPane
         getSampleLineChart().setSamplesPerSymbol((int)samplesPerSymbol);
     }
 
-    private P25_C4FMDecoder2Instrumented getDecoder()
+    private P25_C4FMDecoderInstrumented getDecoder()
     {
         return mDecoder;
     }
