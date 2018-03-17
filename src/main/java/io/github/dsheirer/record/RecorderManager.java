@@ -93,6 +93,7 @@ public class RecorderManager implements Listener<AudioPacket>
 
     /**
      * Primary ingest point for audio packets from all decoding channels
+     *
      * @param audioPacket to process
      */
     @Override
@@ -115,7 +116,7 @@ public class RecorderManager implements Listener<AudioPacket>
 
         while(!audioPackets.isEmpty())
         {
-            for(AudioPacket audioPacket: audioPackets)
+            for(AudioPacket audioPacket : audioPackets)
             {
                 String identifier = audioPacket.getMetadata().getUniqueIdentifier();
 
