@@ -25,6 +25,7 @@ import io.github.dsheirer.module.decode.DecoderType;
 import javax.swing.table.AbstractTableModel;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -42,9 +43,11 @@ public class ChannelModel extends AbstractTableModel implements IChannelEventBro
     public static final int COLUMN_ALIAS_LIST = 4;
     public static final int COLUMN_SOURCE = 5;
     public static final int COLUMN_DECODER = 6;
+    public static final int COLUMN_AUTO_START = 7;
 
-    private static final String[] COLUMN_NAMES = new String[] {"Enabled", "System", "Site", "Name", "Alias List",
-        "Source", "Decoder"};
+    private static final String[] COLUMN_NAMES = new String[] {"Playing", "System", "Site", "Name", "Alias List",
+        "Source", "Decoder", "Auto-Start"};
+    private static final String VALUE_YES = "Yes";
 
     private List<Channel> mChannels = new CopyOnWriteArrayList<>();
     private List<Channel> mTrafficChannels = new CopyOnWriteArrayList<>();
@@ -209,11 +212,6 @@ public class ChannelModel extends AbstractTableModel implements IChannelEventBro
 
         broadcast(new ChannelEvent(channel, Event.NOTIFICATION_ADD));
 
-        if(channel.getEnabled())
-        {
-            broadcast(new ChannelEvent(channel, Event.REQUEST_ENABLE));
-        }
-
         return index;
     }
 
@@ -245,6 +243,48 @@ public class ChannelModel extends AbstractTableModel implements IChannelEventBro
 
             broadcast(new ChannelEvent(channel, Event.NOTIFICATION_DELETE));
         }
+    }
+
+    /**
+     * List of channels that have the auto-start flag set.
+     *
+     * @return auto-start channels sorted by the channel order value.
+     */
+    public List<Channel> getAutoStartChannels()
+    {
+        List<Channel> autoStartChannels = new ArrayList<>();
+
+        for(Channel channel: getChannels())
+        {
+            if(channel.isAutoStart())
+            {
+                autoStartChannels.add(channel);
+            }
+        }
+
+        Collections.sort(autoStartChannels, new Comparator<Channel>()
+        {
+            @Override
+            public int compare(Channel channel1, Channel channel2)
+            {
+                if(channel1.hasAutoStartOrder() && channel2.hasAutoStartOrder())
+                {
+                    return Integer.compare(channel1.getAutoStartOrder(), channel2.getAutoStartOrder());
+                }
+                else if(channel1.hasAutoStartOrder())
+                {
+                    return -1;
+                }
+                else if(channel2.hasAutoStartOrder())
+                {
+                    return 1;
+                }
+
+                return 0;
+            }
+        });
+
+        return autoStartChannels;
     }
 
     /**
@@ -331,7 +371,7 @@ public class ChannelModel extends AbstractTableModel implements IChannelEventBro
         switch(columnIndex)
         {
             case COLUMN_ENABLED:
-                return channel.getEnabled() ? "Enabled" : null;
+                return channel.isProcessing() ? VALUE_YES : null;
             case COLUMN_SYSTEM:
                 return channel.getSystem();
             case COLUMN_SITE:
@@ -344,6 +384,19 @@ public class ChannelModel extends AbstractTableModel implements IChannelEventBro
                 return channel.getSourceConfiguration().getDescription();
             case COLUMN_DECODER:
                 return channel.getDecodeConfiguration().getDecoderType().getShortDisplayString();
+            case COLUMN_AUTO_START:
+                if(channel.isAutoStart())
+                {
+                    if(channel.hasAutoStartOrder())
+                    {
+                        return channel.getAutoStartOrder();
+                    }
+                    else
+                    {
+                        return VALUE_YES;
+                    }
+                }
+                break;
         }
 
         return null;

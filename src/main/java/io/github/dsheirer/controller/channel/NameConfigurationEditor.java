@@ -23,9 +23,21 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
+import javax.swing.ComboBoxModel;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JSpinner;
+import javax.swing.JTextField;
+import javax.swing.SpinnerModel;
+import javax.swing.SpinnerNumberModel;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.Collections;
@@ -48,6 +60,8 @@ public class NameConfigurationEditor extends Editor<Channel> implements Document
     private JComboBox<String> mSystemNameCombo;
     private JComboBox<String> mSiteNameCombo;
     private JComboBox<String> mAliasListCombo;
+    private JCheckBox mAutoStartCheckBox;
+    private JSpinner mAutoStartOrder;
 
     public NameConfigurationEditor(AliasModel aliasModel, ChannelModel model)
     {
@@ -139,6 +153,40 @@ public class NameConfigurationEditor extends Editor<Channel> implements Document
 
         add(new JLabel("Site:"));
         add(mSiteNameCombo);
+
+        JPanel autoStartPanel = new JPanel();
+
+        mAutoStartCheckBox = new JCheckBox("Auto-Start");
+        mAutoStartCheckBox.setToolTipText("Automatically start this channel each time the application runs.");
+        mAutoStartCheckBox.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                mAutoStartOrder.setEnabled(mAutoStartCheckBox.isSelected());
+                setModified(true);
+            }
+        });
+        autoStartPanel.add(mAutoStartCheckBox);
+
+        SpinnerModel model = new SpinnerNumberModel(0,0,500,1);
+        mAutoStartOrder = new JSpinner(model);
+        mAutoStartOrder.setEnabled(false);
+        mAutoStartOrder.setPreferredSize(new Dimension(60, mAutoStartOrder.getPreferredSize().height));
+        mAutoStartOrder.setToolTipText("Auto-start order: 1 (high) <> 500 (low). 0 = no ordering");
+        mAutoStartOrder.addChangeListener(new ChangeListener()
+        {
+            @Override
+            public void stateChanged(ChangeEvent e)
+            {
+                setModified(true);
+            }
+        });
+
+        autoStartPanel.add(new JLabel("Order:"));
+        autoStartPanel.add(mAutoStartOrder);
+        add(new JLabel()); //Empty space holder
+        add(autoStartPanel);
     }
 
     @Override
@@ -156,6 +204,11 @@ public class NameConfigurationEditor extends Editor<Channel> implements Document
 
             Object aliasList = mAliasListCombo.getSelectedItem();
             getItem().setAliasListName(aliasList == null ? null : (String)aliasList);
+
+            getItem().setAutoStart(mAutoStartCheckBox.isSelected());
+
+            int order = ((Number)mAutoStartOrder.getValue()).intValue();
+            getItem().setAutoStartOrder((order > 0 ? order : null));
         }
 
         setModified(false);
@@ -181,6 +234,16 @@ public class NameConfigurationEditor extends Editor<Channel> implements Document
         if(mSiteNameCombo.isEnabled() != enabled)
         {
             mSiteNameCombo.setEnabled(enabled);
+        }
+
+        if(mAutoStartCheckBox.isEnabled() != enabled)
+        {
+            mAutoStartCheckBox.setEnabled(enabled);
+        }
+
+        if(mAutoStartOrder.isEnabled() != enabled)
+        {
+            mAutoStartOrder.setEnabled(enabled);
         }
     }
 
@@ -237,12 +300,26 @@ public class NameConfigurationEditor extends Editor<Channel> implements Document
             {
                 mAliasListCombo.setSelectedItem(channel.getAliasListName());
             }
+
+            if(channel.isAutoStart())
+            {
+                mAutoStartCheckBox.setSelected(channel.isAutoStart());
+                mAutoStartOrder.setEnabled(true);
+            }
+            else
+            {
+                mAutoStartCheckBox.setSelected(false);
+                mAutoStartOrder.setEnabled(false);
+            }
+
+            mAutoStartOrder.setValue(channel.hasAutoStartOrder() ? channel.getAutoStartOrder() : 0);
         }
         else
         {
             setControlsEnabled(false);
             mChannelName.setText(null);
         }
+
 
         setModified(false);
     }

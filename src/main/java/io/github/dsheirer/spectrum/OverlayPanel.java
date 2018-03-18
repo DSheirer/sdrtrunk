@@ -525,14 +525,14 @@ public class OverlayPanel extends JPanel implements ChannelEventListener, ISourc
         for(Channel channel : mVisibleChannels)
         {
             if(mChannelDisplay == ChannelDisplay.ALL ||
-                (mChannelDisplay == ChannelDisplay.ENABLED && channel.getEnabled()))
+                (mChannelDisplay == ChannelDisplay.ENABLED && channel.isProcessing()))
             {
                 //Choose the correct background color to use
                 if(channel.isSelected())
                 {
                     graphics.setColor(mColorChannelConfigSelected);
                 }
-                else if(channel.getEnabled())
+                else if(channel.isProcessing())
                 {
                     graphics.setColor(mColorChannelConfigProcessing);
                 }

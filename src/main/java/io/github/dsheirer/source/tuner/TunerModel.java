@@ -71,13 +71,35 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
         return null;
     }
 
-    public void addTuners(List<Tuner> Tuners)
+    /**
+     * Find a tuner that matches the name argument
+     *
+     * @param name of the tuner
+     * @return named tuner or null
+     */
+	public Tuner getTuner(String name)
     {
-        for(Tuner tuner : Tuners)
+        if(name != null)
         {
-            addTuner(tuner);
+            for(Tuner tuner: mTuners)
+            {
+                if(tuner.getName().equalsIgnoreCase(name))
+                {
+                    return tuner;
+                }
+            }
         }
+
+        return null;
     }
+
+	public void addTuners( List<Tuner> Tuners )
+	{
+		for( Tuner tuner: Tuners )
+		{
+			addTuner( tuner );
+		}
+	}
 
     /**
      * Adds the Tuner to this model
@@ -262,27 +284,52 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
      */
     public Source getSource(SourceConfigTuner config, int bandwidth)
     {
-        TunerChannelSource retVal = null;
+    	TunerChannelSource retVal = null;
+    	
+		TunerChannel tunerChannel = config.getTunerChannel();
+		
+		tunerChannel.setBandwidth( bandwidth );
+		
+		Iterator<Tuner> it = mTuners.iterator();
+		
+		Tuner tuner;
 
-        TunerChannel tunerChannel = config.getTunerChannel();
-
-        tunerChannel.setBandwidth(bandwidth);
-
-        Iterator<Tuner> it = mTuners.iterator();
-
-        Tuner tuner;
-
-        while(it.hasNext() && retVal == null)
+		if(config.hasPreferredTuner())
         {
-            tuner = it.next();
+            tuner = getTuner(config.getPreferredTuner());
 
-            try
+            if(tuner != null)
+            {
+                try
+                {
+                    retVal = tuner.getChannel( tunerChannel );
+
+                    if(retVal != null)
+                    {
+                        return retVal;
+                    }
+                }
+                catch(Exception e)
+                {
+                    //Fall through to logger below
+                }
+            }
+
+            mLog.info("Unable to source channel [" + config.getFrequency() + "] from preferred tuner [" +
+                config.getPreferredTuner() + "] - searching for another tuner");
+        }
+
+		while( it.hasNext() && retVal == null )
+		{
+			tuner = it.next();
+			
+			try
             {
                 retVal = tuner.getChannelSourceManager().getSource(tunerChannel);
             }
             catch(Exception e)
             {
-                mLog.error("Error obtaining channel source from tuner [" + tuner.getName() + "]", e);
+            	mLog.error( "error obtaining channel from tuner [" + tuner.getName() + "]", e );
             }
         }
 

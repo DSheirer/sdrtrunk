@@ -128,7 +128,7 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
         {
             for(Channel configuredChannel : mTrafficChannelPool)
             {
-                if(!configuredChannel.getEnabled())
+                if(!configuredChannel.isProcessing())
                 {
                     channel = configuredChannel;
                     break;
@@ -196,7 +196,7 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
                     //Request to enable the channel
                     mChannelModel.broadcast(trafficChannelEvent);
 
-                    if(channel.getEnabled())
+                    if(channel.isProcessing())
                     {
                         mTrafficChannelsInUse.put(callEvent.getChannel(), channel);
                     }

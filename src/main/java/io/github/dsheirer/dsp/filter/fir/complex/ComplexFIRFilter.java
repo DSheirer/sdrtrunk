@@ -18,6 +18,7 @@ package io.github.dsheirer.dsp.filter.fir.complex;
 import io.github.dsheirer.dsp.filter.fir.FIRFilter;
 import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
 import io.github.dsheirer.sample.complex.Complex;
+import io.github.dsheirer.sample.complex.ComplexBuffer;
 
 public class ComplexFIRFilter extends FIRFilter
 {
@@ -37,83 +38,47 @@ public class ComplexFIRFilter extends FIRFilter
         mQFilter = new RealFIRFilter(coefficients, gain);
     }
 
-    /**
-     * Coefficients used in each of the I and Q filters
-     */
     public float[] getCoefficients()
     {
         return mIFilter.getCoefficients();
     }
 
-    /**
-     * Filters the inphase sample independent of the quadrature side of the filter
-     * @param sample to filter
-     * @return filtered inphase sample
-     */
     public float filterInphase(float sample)
     {
         return mIFilter.filter(sample);
     }
 
-    /**
-     * Filters the quadrature sample independent of the inphase side of the filter
-     * @param sample to filter
-     * @return filtered quadrature sample
-     */
     public float filterQuadrature(float sample)
     {
         return mQFilter.filter(sample);
     }
 
-    /**
-     * Loads the complex sample and provides a filtered output
-     * @param sample to load
-     * @return filtered complex sample
-     */
     public Complex filter(Complex sample)
     {
-        return filter(sample.inphase(), sample.quadrature());
+        float i = filterInphase(sample.inphase());
+        float q = filterQuadrature(sample.quadrature());
+
+        return new Complex(i, q);
     }
 
     /**
-     * Loads the complex sample and provides a filtered output
-     * @param i inphase sample to load
-     * @param q quadrature sample to load
-     * @return filtered complex sample
-     */
-    public Complex filter(float i, float q)
-    {
-        float filteredI = filterInphase(i);
-        float filteredQ = filterQuadrature(q);
-
-        return new Complex(filteredI, filteredQ);
-    }
-
-    /**
-     * Filters the complex sample array where the samples are loaded as i0,q0,i1,q1 ... iN-2,qN-1
+     * Filters the complex samples from the buffer and returns a new complex buffer with the filtered output
      *
-     * @param samples to filter.
+     * @param buffer with complex samples to filter
+     * @return new buffer containing filtered complex samples
      */
-    public float[] filter(float[] samples)
+    public ComplexBuffer filter(ComplexBuffer buffer)
     {
+        float[] samples = buffer.getSamples();
+        float[] filtered = new float[samples.length];
+
         for(int x = 0; x < samples.length; x += 2)
         {
-            samples[x] = filterInphase(samples[x]);
-            samples[x + 1] = filterInphase(samples[x + 1]);
+            filtered[x] = filterInphase(samples[x]);
+            filtered[x + 1] = filterQuadrature(samples[x + 1]);
         }
 
-        return samples;
-    }
-
-    /**
-     * Loads the complex sample into the filter but does not calculate a filtered output sample
-     * @param i inphase sample
-     * @param q quadrature sample
-     */
-    public void load(float i, float q)
-    {
-        mIFilter.load(i);
-        mQFilter.load(q);
+        return new ComplexBuffer(filtered);
     }
 
     @Override

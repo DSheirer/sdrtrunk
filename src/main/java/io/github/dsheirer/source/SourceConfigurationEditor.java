@@ -25,7 +25,8 @@ import io.github.dsheirer.source.mixer.MixerSourceEditor;
 import io.github.dsheirer.source.tuner.TunerSourceEditor;
 import net.miginfocom.swing.MigLayout;
 
-import javax.swing.*;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JComboBox;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -43,7 +44,7 @@ public class SourceConfigurationEditor extends Editor<Channel>
     	mMixerSourceEditor = new MixerSourceEditor( sourceManager );
     	mMixerSourceEditor.setSaveRequestListener( this );
     	
-    	mTunerSourceEditor = new TunerSourceEditor();
+    	mTunerSourceEditor = new TunerSourceEditor(sourceManager.getTunerModel());
     	mTunerSourceEditor.setSaveRequestListener( this );
     	
     	init();

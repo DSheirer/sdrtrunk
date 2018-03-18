@@ -62,7 +62,7 @@ public class LTRStandardDecoder extends Decoder implements IUnFilteredRealBuffer
 
 		mLTRMessageProcessor = new LTRStandardMessageProcessor( direction, aliasList );
 		mLTRMessageFramer.addMessageListener( mLTRMessageProcessor );
-		mLTRMessageProcessor.setMessageListener( this );
+		mLTRMessageProcessor.setMessageListener( getMessageListener() );
 	}
 
 	@Override

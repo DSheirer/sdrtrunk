@@ -147,7 +147,7 @@ public class MPT1327Decoder extends Decoder implements IFilteredRealBufferListen
 
         /* Fully decoded and framed messages processor */
         mMessageProcessor = new MPT1327MessageProcessor(aliasList);
-        mMessageProcessor.setMessageListener(this);
+        mMessageProcessor.setMessageListener(getMessageListener());
         mControlMessageFramer.addMessageListener(mMessageProcessor);
         mTrafficMessageFramer.addMessageListener(mMessageProcessor);
     }

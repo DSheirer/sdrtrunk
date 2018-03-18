@@ -45,7 +45,7 @@ public class WaveWriter implements AutoCloseable
 
     public static final String DATA_CHUNK_ID = "data";
 
-    private static final Pattern FILENAME_PATTERN = Pattern.compile("(.*_)(\\d+)(\\.wav)");
+    private static final Pattern FILENAME_PATTERN = Pattern.compile("(.*_)(\\d+)(\\.tmp)");
     public static final long MAX_WAVE_SIZE = 2l * (long)Integer.MAX_VALUE;
 
     private AudioFormat mAudioFormat;
@@ -112,7 +112,7 @@ public class WaveWriter implements AutoCloseable
 
         while(Files.exists(mFile))
         {
-            mFile = Paths.get(mFile.toFile().getAbsolutePath().replace(".wav", "_" + version + ".wav"));
+            mFile = Paths.get(mFile.toFile().getAbsolutePath().replace(".tmp", "_" + version + ".tmp"));
             version++;
         }
 
@@ -134,6 +134,35 @@ public class WaveWriter implements AutoCloseable
         mFileChannel.force(true);
         mFileChannel.close();
         mFileChannel = null;
+
+        rename();
+    }
+
+    /**
+     * Renames the file from *.tmp to *.wav after file has been closed.
+     * @throws IOException
+     */
+    private void rename() throws IOException
+    {
+        if(mFile != null && Files.exists(mFile))
+        {
+            String renamed = mFile.getFileName().toString();
+            renamed = renamed.replace(".tmp", ".wav");
+            Path renamedPath = mFile.resolveSibling(renamed);
+
+            int suffix = 1;
+
+            while(Files.exists(renamedPath))
+            {
+                String renamedWithSuffix = mFile.getFileName().toString();
+                renamedWithSuffix = renamedWithSuffix.replace(".tmp", "_" + suffix + ".wav");
+                Path renamedWithSuffixPath = mFile.resolveSibling(renamedWithSuffix);
+                renamedPath = mFile.resolveSibling(renamedWithSuffixPath);
+                suffix++;
+            }
+
+            Files.move(mFile, renamedPath);
+        }
     }
 
     @Override
@@ -379,7 +408,7 @@ public class WaveWriter implements AutoCloseable
 
         if(mFileRolloverCounter == 2)
         {
-            filename = filename.replace(".wav", "_2.wav");
+            filename = filename.replace(".tmp", "_2.tmp");
         }
         else
         {

@@ -4,8 +4,11 @@ import io.github.dsheirer.channel.state.DecoderState;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.module.decode.event.ActivitySummaryFrame;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JMenu;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JSeparator;
+import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
@@ -23,7 +26,7 @@ public class ChannelUtils
 		{
 			JMenu menu = new JMenu( "Channel: " + channel.getName() );
 			
-			if( channel.getEnabled() )
+			if( channel.isProcessing() )
 			{
 				JMenuItem disable = new JMenuItem( "Disable" );
 				disable.addActionListener( new ActionListener() 

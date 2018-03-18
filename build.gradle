@@ -15,7 +15,7 @@ repositories {
     mavenCentral()
 }
 
-version = '0.3.3-beta.3'
+version = '0.3.4-beta.1'
 sourceCompatibility = 1.8
 
 sourceSets {
@@ -54,6 +54,8 @@ dependencies {
     compile 'org.apache.axis:axis-jaxrpc:1.4'
     compile 'org.apache.axis:axis:1.4'
     compile 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml:2.9.3'
+    compile 'org.kordamp.ikonli:ikonli-javafx:2.1.1'
+    compile 'org.kordamp.ikonli:ikonli-fontawesome-pack:2.1.1'
 }
 
 task wrapper(type: Wrapper) {

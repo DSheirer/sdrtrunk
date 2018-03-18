@@ -1,17 +1,17 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
- * 
+ *     Copyright (C) 2014-2018 Dennis Sheirer
+ *
  *     This program is free software: you can redistribute it and/or modify
  *     it under the terms of the GNU General Public License as published by
  *     the Free Software Foundation, either version 3 of the License, or
  *     (at your option) any later version.
- * 
+ *
  *     This program is distributed in the hope that it will be useful,
  *     but WITHOUT ANY WARRANTY; without even the implied warranty of
  *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *     GNU General Public License for more details.
- * 
+ *
  *     You should have received a copy of the GNU General Public License
  *     along with this program.  If not, see <http://www.gnu.org/licenses/>
  ******************************************************************************/
@@ -26,70 +26,164 @@ import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfiguration;
 import net.miginfocom.swing.MigLayout;
 
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 public class TunerSourceEditor extends Editor<Channel>
 {
-	private static final long serialVersionUID = 1L;
-	private JFrequencyControl mFrequencyControl;
+    private static final long serialVersionUID = 1L;
+    private static final String NO_PREFERRED_TUNER = "(none)";
+    private static final String UNAVAILABLE_TUNER = " (unavailable)";
+    private JFrequencyControl mFrequencyControl;
+    private JComboBox<String> mTunerNameComboBox;
+    private TunerModel mTunerModel;
+    private List<String> mCurrentTunerNames;
 
-	public TunerSourceEditor()
-	{
-		init();
-	}
+    public TunerSourceEditor(TunerModel tunerModel)
+    {
+        mTunerModel = tunerModel;
+        init();
+    }
 
-	private void init()
-	{
-		setLayout( new MigLayout( "insets 0 0 0 0", "[left]", "" ) );
-		mFrequencyControl = new JFrequencyControl();
-		mFrequencyControl.setEnabled( false );
-		mFrequencyControl.addListener( new ISourceEventProcessor()
-		{
-			@Override
-			public void process(SourceEvent event )
-			{
-				setModified( true );
-			}
-		} );
-		add( mFrequencyControl );
-	}
+    private void init()
+    {
+        loadTunerNames();
 
-	public void save()
-	{
-		if( hasItem() && isModified() )
-		{
-			SourceConfigTuner config = new SourceConfigTuner();
-			config.setFrequency( mFrequencyControl.getFrequency() );
-			getItem().setSourceConfiguration( config );
-		}
+        setLayout(new MigLayout("insets 0 0 0 0", "[left]", ""));
+        mFrequencyControl = new JFrequencyControl();
+        mFrequencyControl.setEnabled(false);
+        mFrequencyControl.addListener(new IFrequencyChangeProcessor()
+        {
+            @Override
+            public void frequencyChanged(FrequencyChangeEvent event)
+            {
+                setModified(true);
+            }
+        });
+        add(mFrequencyControl);
 
-		setModified( false );
-	}
+        mTunerNameComboBox = new JComboBox<>(mCurrentTunerNames.toArray(new String[mCurrentTunerNames.size()]));
+        mTunerNameComboBox.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                setModified(true);
+            }
+        });
+        add(new JLabel("Preferred Tuner:"));
+        add(mTunerNameComboBox);
+    }
 
-	@Override
-	public void setItem( Channel item )
-	{
-		super.setItem( item );
+    private void loadTunerNames()
+    {
+        mCurrentTunerNames = new ArrayList<>();
 
-		if( hasItem() )
-		{
-			SourceConfiguration config = getItem().getSourceConfiguration();
+        for(Tuner tuner: mTunerModel.getTuners())
+        {
+            mCurrentTunerNames.add(tuner.getName());
+        }
 
-			mFrequencyControl.setEnabled( true );
+        Collections.sort(mCurrentTunerNames);
 
-			if( config instanceof SourceConfigTuner )
-			{
-				mFrequencyControl.setFrequency( ((SourceConfigTuner)config).getFrequency(), false );
-				setModified( false );
-			}
-			else
-			{
-				mFrequencyControl.setFrequency( 101000000, false );
-				setModified( true );
-			}
-		}
-		else
-		{
-			mFrequencyControl.setEnabled( false );
-			setModified( false );
-		}
-	}
+        mCurrentTunerNames.add(0, NO_PREFERRED_TUNER);
+    }
+
+    private void updateTunerNameCombo(String preferredTuner)
+    {
+        if(preferredTuner != null && !mCurrentTunerNames.contains(preferredTuner))
+        {
+            List<String> updatedTunerNameList = new ArrayList<>(mCurrentTunerNames);
+            String unavailableTuner = preferredTuner + UNAVAILABLE_TUNER;
+            updatedTunerNameList.add(unavailableTuner);
+            String[] tunerNameArray = updatedTunerNameList.toArray(new String[updatedTunerNameList.size()]);
+            mTunerNameComboBox.setModel(new DefaultComboBoxModel<>(tunerNameArray));
+            mTunerNameComboBox.setSelectedItem(unavailableTuner);
+        }
+        else
+        {
+            String[] tunerNameArray = mCurrentTunerNames.toArray(new String[mCurrentTunerNames.size()]);
+            mTunerNameComboBox.setModel(new DefaultComboBoxModel<>(tunerNameArray));
+
+            if(preferredTuner == null)
+            {
+                mTunerNameComboBox.setSelectedItem(NO_PREFERRED_TUNER);
+            }
+            else
+            {
+                mTunerNameComboBox.setSelectedItem(preferredTuner);
+            }
+        }
+    }
+
+    public void save()
+    {
+        if(hasItem() && isModified())
+        {
+            SourceConfigTuner config = new SourceConfigTuner();
+            config.setFrequency(mFrequencyControl.getFrequency());
+
+            String preferredTuner = (String)mTunerNameComboBox.getSelectedItem();
+
+            if(preferredTuner != null)
+            {
+                if(preferredTuner.equalsIgnoreCase(NO_PREFERRED_TUNER))
+                {
+                    config.setPreferredTuner(null);
+                }
+                else if(preferredTuner.contains(UNAVAILABLE_TUNER))
+                {
+                    //don't do anything - the config already contains this unavailable tuner name
+                }
+                else
+                {
+                    config.setPreferredTuner(preferredTuner);
+                }
+            }
+
+            getItem().setSourceConfiguration(config);
+        }
+
+        setModified(false);
+    }
+
+    @Override
+    public void setItem(Channel item)
+    {
+        super.setItem(item);
+
+        if(hasItem())
+        {
+            SourceConfiguration config = getItem().getSourceConfiguration();
+
+            mFrequencyControl.setEnabled(true);
+
+            if(config instanceof SourceConfigTuner)
+            {
+                SourceConfigTuner tunerConfig = (SourceConfigTuner)config;
+
+                mFrequencyControl.setFrequency(tunerConfig.getFrequency(), false);
+
+                updateTunerNameCombo(tunerConfig.getPreferredTuner());
+
+                setModified(false);
+            }
+            else
+            {
+                mFrequencyControl.setFrequency(101000000, false);
+                setModified(true);
+            }
+        }
+        else
+        {
+            mFrequencyControl.setEnabled(false);
+            setModified(false);
+        }
+    }
 }

@@ -247,10 +247,8 @@ public class DecoderFactory
                 switch(modulation)
                 {
                     case C4FM:
-//                        modules.add(new FMDemodulatorModule(P25_C4FM_IQ_FILTER));
-                        modules.add(new DemodulatedAudioFilterModule(P25_C4FM_DEMOD_FILTER, 1.0f));
-                        modules.add(new P25_C4FMDecoder(aliasList, decodeConfig.getAFCMaximumCorrection()));
-                        modules.add(new P25DecoderState(aliasList, channelType, Modulation.C4FM,
+                        modules.add(new P25_C4FMDecoder(aliasList));
+                        modules.add(new P25DecoderState(aliasList, channelType, P25Decoder.Modulation.C4FM,
                             p25Config.getIgnoreDataCalls()));
                         break;
                     case CQPSK:

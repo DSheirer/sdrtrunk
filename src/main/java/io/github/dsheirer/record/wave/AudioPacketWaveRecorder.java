@@ -104,7 +104,7 @@ public class AudioPacketWaveRecorder extends Module implements Listener<AudioPac
                 sb.append(mFilePrefix);
                 sb.append("_");
                 sb.append(TimeStamp.getLongTimeStamp("_"));
-                sb.append(".wav");
+                sb.append(".tmp");
 
                 mFile = Paths.get(sb.toString());
 

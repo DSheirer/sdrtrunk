@@ -62,7 +62,7 @@ public class PassportDecoder extends Decoder
 
 		mPassportMessageProcessor = new PassportMessageProcessor( aliasList );
 		mPassportMessageFramer.addMessageListener( mPassportMessageProcessor );
-		mPassportMessageProcessor.setMessageListener( this );
+		mPassportMessageProcessor.setMessageListener( getMessageListener() );
 	}
 
 	@Override
