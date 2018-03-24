@@ -30,6 +30,10 @@ public class ReusableComplexBuffer extends ComplexBuffer
     /**
      * Creates a reusable, timestamped complex buffer using the specified time in milliseconds.
      *
+     * NOTE: reusability of this buffer requires strict user count tracking.  Each component that receives this
+     * buffer should not modify the buffer contents.  Each component should also increment the user count before
+     * sending this buffer to another component and should decrement the user count when finished using this buffer.
+     *
      * @param disposalListener to be notified when all consumers/users are finished using the buffer
      * @param samples of data
      * @param timestamp in millis for the buffer
@@ -45,6 +49,10 @@ public class ReusableComplexBuffer extends ComplexBuffer
 
     /**
      * Constructs a timestamped complex buffer using the current system time in milliseconds.
+     *
+     * NOTE: reusability of this buffer requires strict user count tracking.  Each component that receives this
+     * buffer should not modify the buffer contents.  Each component should also increment the user count before
+     * sending this buffer to another component and should decrement the user count when finished using this buffer.
      *
      * @param disposalListener to be notified when all consumers are finished using the buffer
      * @param samples of data
@@ -80,6 +88,11 @@ public class ReusableComplexBuffer extends ComplexBuffer
     public long getTimestamp()
     {
         return mTimestamp;
+    }
+
+    public void setTimestamp(long timestamp)
+    {
+        mTimestamp = timestamp;
     }
 
     /**

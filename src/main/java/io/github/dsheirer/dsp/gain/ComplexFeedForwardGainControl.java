@@ -19,6 +19,8 @@ import io.github.dsheirer.buffer.FloatCircularBuffer;
 import io.github.dsheirer.sample.complex.Complex;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
 import io.github.dsheirer.sample.complex.ComplexSampleListener;
+import io.github.dsheirer.sample.complex.reusable.ReusableBufferQueue;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 
 public class ComplexFeedForwardGainControl implements ComplexSampleListener
 {
@@ -26,8 +28,8 @@ public class ComplexFeedForwardGainControl implements ComplexSampleListener
     public static final float MINIMUM_ENVELOPE = 0.0001f;
 
     private ComplexSampleListener mListener;
-
     private FloatCircularBuffer mEnvelopeHistory;
+    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue();
 
     private float mMaxEnvelope = 0.0f;
     private float mGain = 1.0f;
@@ -107,19 +109,59 @@ public class ComplexFeedForwardGainControl implements ComplexSampleListener
         mListener = listener;
     }
 
-    public ComplexBuffer filter(ComplexBuffer complexBuffer)
+    public float[] filter(float[] complesSamples)
     {
-        float[] samples = complexBuffer.getSamples();
-        float[] processed = new float[samples.length];
+        mMaxEnvelope = MINIMUM_ENVELOPE;
+        float currentEnvelope;
 
-        for(int x = 0; x < samples.length; x += 2)
+        for(int x = 0; x < complesSamples.length; x += 2)
         {
-            process(samples[x], samples[x + 1]);
+            currentEnvelope = Complex.envelope(complesSamples[x], complesSamples[x + 1]);
 
-            processed[x] = samples[x] * mGain;
-            processed[x + 1] = samples[x + 1] * mGain;
+            if(currentEnvelope > mMaxEnvelope)
+            {
+                mMaxEnvelope = currentEnvelope;
+            }
         }
 
-        return new ComplexBuffer(processed);
+        adjustGain();
+
+        float[] processed = new float[complesSamples.length];
+
+        for(int x = 0; x < complesSamples.length; x += 2)
+        {
+            processed[x] = complesSamples[x] * mGain;
+            processed[x + 1] = complesSamples[x + 1] * mGain;
+        }
+
+        return processed;
+    }
+
+    /**
+     * Applies gain to the complex sample buffer
+     * @param buffer to apply gain
+     * @return buffer with gain applied samples
+     */
+    public ComplexBuffer filter(ComplexBuffer buffer)
+    {
+        float[] filtered = filter(buffer.getSamples());
+        return new ComplexBuffer(filtered);
+    }
+
+    /**
+     * Applies gain to the complex sample buffer
+     * @param buffer to apply gain
+     * @return reusable buffer with the user count incremented to 1
+     */
+    public ReusableComplexBuffer filter(ReusableComplexBuffer buffer)
+    {
+        float[] filtered = filter(buffer.getSamples());
+
+        ReusableComplexBuffer filteredBuffer = mReusableBufferQueue.getBuffer(filtered.length);
+
+        filteredBuffer.reloadFrom(filtered, buffer.getTimestamp());
+        filteredBuffer.incrementUserCount();
+
+        return filteredBuffer;
     }
 }

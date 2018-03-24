@@ -18,6 +18,7 @@ package io.github.dsheirer.instrument.gui.viewer;
 import io.github.dsheirer.instrument.gui.viewer.decoder.DecoderPane;
 import io.github.dsheirer.instrument.gui.viewer.decoder.DecoderPaneFactory;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.p25.P25Decoder;
 import javafx.scene.layout.BorderPane;
 
 import java.io.File;
@@ -41,13 +42,21 @@ public class ViewerDesktop extends BorderPane
 
     public void setDecoder(DecoderType decoderType)
     {
+        setDecoderPane(DecoderPaneFactory.getDecoderPane(decoderType));
+    }
+
+    public void setP25Phase1Decoder(P25Decoder.Modulation modulation)
+    {
+        setDecoderPane(DecoderPaneFactory.getP25DecoderPane(modulation));
+    }
+
+    private void setDecoderPane(DecoderPane decoderPane)
+    {
         getPlaybackController().removeListener(getDecoderPane());
         getChildren().remove(getDecoderPane());
-
-        mDecoderPane = DecoderPaneFactory.getDecoderPane(decoderType);
+        mDecoderPane = decoderPane;
         setCenter(getDecoderPane());
         getPlaybackController().addListener(getDecoderPane());
-
         getPlaybackController().setSampleRateListener(getDecoderPane());
     }
 

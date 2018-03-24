@@ -16,9 +16,9 @@
 package io.github.dsheirer.instrument.gui.viewer;
 
 import io.github.dsheirer.instrument.gui.viewer.decoder.DecoderPane;
-import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.complex.reusable.ReusableBufferBroadcaster;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 import io.github.dsheirer.source.IControllableFileSource;
 import io.github.dsheirer.source.IFrameLocationListener;
 import io.github.dsheirer.source.wave.ComplexWaveSource;
@@ -40,7 +40,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.File;
 import java.io.IOException;
 
-public class PlaybackController extends HBox implements IFrameLocationListener, Listener<ComplexBuffer>
+public class PlaybackController extends HBox implements IFrameLocationListener, Listener<ReusableComplexBuffer>
 {
     private final static Logger mLog = LoggerFactory.getLogger(PlaybackController.class);
 
@@ -56,7 +56,7 @@ public class PlaybackController extends HBox implements IFrameLocationListener, 
     private DecoderPane mSampleRateListener;
 
     private IControllableFileSource mControllableFileSource;
-    private Broadcaster<ComplexBuffer> mComplexBufferBroadcaster = new Broadcaster<>();
+    private ReusableBufferBroadcaster mComplexBufferBroadcaster = new ReusableBufferBroadcaster();
 
     public PlaybackController()
     {
@@ -85,7 +85,7 @@ public class PlaybackController extends HBox implements IFrameLocationListener, 
             {
                 mControllableFileSource = new ComplexWaveSource(file);
                 mControllableFileSource.setListener(this);
-                ((ComplexWaveSource)mControllableFileSource).setListener((Listener<ComplexBuffer>)this);
+                ((ComplexWaveSource)mControllableFileSource).setListener((Listener<ReusableComplexBuffer>)this);
                 mControllableFileSource.open();
 
                 if(mSampleRateListener != null)
@@ -136,7 +136,7 @@ public class PlaybackController extends HBox implements IFrameLocationListener, 
     /**
      * Adds listener to receive complex buffers from this playback
      */
-    public void addListener(Listener<ComplexBuffer> listener)
+    public void addListener(Listener<ReusableComplexBuffer> listener)
     {
         mComplexBufferBroadcaster.addListener(listener);
     }
@@ -144,7 +144,7 @@ public class PlaybackController extends HBox implements IFrameLocationListener, 
     /**
      * Removes the listener from receiving complex buffers from this playback
      */
-    public void removeListener(Listener<ComplexBuffer> listener)
+    public void removeListener(Listener<ReusableComplexBuffer> listener)
     {
         mComplexBufferBroadcaster.removeListener(listener);
     }
@@ -304,7 +304,7 @@ public class PlaybackController extends HBox implements IFrameLocationListener, 
     }
 
     @Override
-    public void receive(ComplexBuffer complexBuffer)
+    public void receive(ReusableComplexBuffer complexBuffer)
     {
         mComplexBufferBroadcaster.broadcast(complexBuffer);
     }

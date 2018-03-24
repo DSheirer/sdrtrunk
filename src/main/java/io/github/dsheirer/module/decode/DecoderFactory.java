@@ -75,10 +75,10 @@ import io.github.dsheirer.module.decode.nbfm.NBFMDecoder;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoderEditor;
 import io.github.dsheirer.module.decode.p25.DecodeConfigP25Phase1;
 import io.github.dsheirer.module.decode.p25.P25Decoder.Modulation;
+import io.github.dsheirer.module.decode.p25.P25DecoderC4FM;
 import io.github.dsheirer.module.decode.p25.P25DecoderEditor;
+import io.github.dsheirer.module.decode.p25.P25DecoderLSM;
 import io.github.dsheirer.module.decode.p25.P25DecoderState;
-import io.github.dsheirer.module.decode.p25.P25_C4FMDecoder;
-import io.github.dsheirer.module.decode.p25.P25_LSMDecoder;
 import io.github.dsheirer.module.decode.p25.audio.P25AudioModule;
 import io.github.dsheirer.module.decode.p25.message.filter.P25MessageFilterSet;
 import io.github.dsheirer.module.decode.passport.DecodeConfigPassport;
@@ -247,12 +247,12 @@ public class DecoderFactory
                 switch(modulation)
                 {
                     case C4FM:
-                        modules.add(new P25_C4FMDecoder(aliasList));
-                        modules.add(new P25DecoderState(aliasList, channelType, P25Decoder.Modulation.C4FM,
+                        modules.add(new P25DecoderC4FM(aliasList));
+                        modules.add(new P25DecoderState(aliasList, channelType, Modulation.C4FM,
                             p25Config.getIgnoreDataCalls()));
                         break;
                     case CQPSK:
-                        modules.add(new P25_LSMDecoder(aliasList));
+                        modules.add(new P25DecoderLSM(aliasList));
                         modules.add(new P25DecoderState(aliasList, channelType, Modulation.CQPSK, p25Config.getIgnoreDataCalls()));
                         break;
                     default:

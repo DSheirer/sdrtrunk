@@ -16,6 +16,7 @@
 package io.github.dsheirer.instrument.gui.viewer.decoder;
 
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.p25.P25Decoder;
 
 import java.util.EnumSet;
 
@@ -31,7 +32,23 @@ public class DecoderPaneFactory
         switch(decoderType)
         {
             case P25_PHASE1:
-                return new P25Phase1Pane();
+                throw new IllegalArgumentException("Use the getP25DecoderPane() method for P25 decoder type");
+        }
+
+        return getDefaultPane();
+    }
+
+    /**
+     * Creates a decoder pane for the P25 decoder type
+     */
+    public static DecoderPane getP25DecoderPane(P25Decoder.Modulation modulation)
+    {
+        switch(modulation)
+        {
+            case C4FM:
+                return new P25Phase1C4FMPane();
+            case CQPSK:
+                return new P25Phase1LSMPane();
         }
 
         return getDefaultPane();

@@ -1,6 +1,6 @@
 /*******************************************************************************
  * sdr-trunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
  * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
@@ -26,15 +26,15 @@ import io.github.dsheirer.dsp.filter.smoothing.SmoothingFilter.SmoothingType;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.complex.reusable.ReusableBufferQueue;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 import io.github.dsheirer.sample.real.RealBuffer;
 import io.github.dsheirer.settings.ColorSetting.ColorSettingName;
 import io.github.dsheirer.settings.ColorSettingMenuItem;
 import io.github.dsheirer.settings.Setting;
 import io.github.dsheirer.settings.SettingChangeListener;
 import io.github.dsheirer.settings.SettingsManager;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent.Event;
+import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.spectrum.converter.DFTResultsConverter;
 import io.github.dsheirer.spectrum.converter.RealDecibelConverter;
 import io.github.dsheirer.spectrum.menu.AveragingItem;
@@ -45,8 +45,13 @@ import io.github.dsheirer.spectrum.menu.SmoothingItem;
 import io.github.dsheirer.spectrum.menu.SmoothingTypeItem;
 import net.miginfocom.swing.MigLayout;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JLayeredPane;
+import javax.swing.JMenu;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JSeparator;
+import javax.swing.SwingUtilities;
+import java.awt.Component;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.MouseEvent;
@@ -54,22 +59,20 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ChannelSpectrumPanel extends JPanel 
-								  implements ChannelEventListener,
-								  			 Listener<RealBuffer>,
-								  			 SettingChangeListener,
-								  			 SpectralDisplayAdjuster
+public class ChannelSpectrumPanel extends JPanel implements ChannelEventListener,
+    Listener<RealBuffer>, SettingChangeListener, SpectralDisplayAdjuster
 {
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-    private DFTProcessor mDFTProcessor = new DFTProcessor( SampleType.REAL );    
+    private DFTProcessor mDFTProcessor = new DFTProcessor(SampleType.REAL);
     private DFTResultsConverter mDFTConverter = new RealDecibelConverter();
     private JLayeredPane mLayeredPane;
     private SpectrumPanel mSpectrumPanel;
     private ChannelOverlayPanel mOverlayPanel;
-    
+    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue();
+
     private Channel mCurrentChannel;
-    
+
     private int mSampleBufferSize = 2400;
 
     private HalfBandFilter_RB_RB mDecimatingFilter = new HalfBandFilter_RB_RB( 
@@ -98,11 +101,10 @@ public class ChannelSpectrumPanel extends JPanel
     	mDFTProcessor.addConverter( mDFTConverter );
     	mDFTConverter.addListener( mSpectrumPanel );
 
-    	/* Set the DFTProcessor to the decimated 24kHz sample rate */
-    	mDFTProcessor.frequencyChanged( 
-    			new FrequencyChangeEvent( Event.NOTIFICATION_SAMPLE_RATE_CHANGE, 24000 ) );
-    	
-    	initGui();
+        /* Set the DFTProcessor to the decimated 24kHz sample rate */
+        mDFTProcessor.process(SourceEvent.sampleRateChange(24000.0));
+
+        initGui();
     }
     
     public void dispose()
@@ -272,9 +274,11 @@ public class ChannelSpectrumPanel extends JPanel
     {
 		RealBuffer decimated = mDecimatingFilter.filter( buffer );
 
-		//Hack: we're placing real samples in a complex buffer that the DFT
-		//processor is expecting.
-		mDFTProcessor.receive( new ComplexBuffer( decimated.getSamples() ) );
+        //Hack: we're placing real samples in a complex buffer that the DFT
+        //processor is expecting.
+        ReusableComplexBuffer reusableComplexBuffer = mReusableBufferQueue.getBuffer(decimated.getSamples().length);
+        reusableComplexBuffer.reloadFrom(decimated.getSamples(), System.currentTimeMillis());
+        mDFTProcessor.receive(reusableComplexBuffer.incrementUserCount());
     }
 
 	/**

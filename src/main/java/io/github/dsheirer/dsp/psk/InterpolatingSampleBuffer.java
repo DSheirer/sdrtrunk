@@ -24,6 +24,7 @@ public class InterpolatingSampleBuffer
 
     private Complex mPrecedingSample = new Complex(0,0);
     private Complex mCurrentSample = new Complex(0,0);
+    private Complex mMiddleSample = new Complex(0,0);
 
     private float[] mDelayLineInphase;
     private float[] mDelayLineQuadrature;
@@ -42,8 +43,9 @@ public class InterpolatingSampleBuffer
     /**
      * Buffer to store complex sample data and produce interpolated samples.
      * @param samplesPerSymbol
+     * @param symbolTimingGain for the symbol timing error adjustments
      */
-    public InterpolatingSampleBuffer(float samplesPerSymbol)
+    public InterpolatingSampleBuffer(float samplesPerSymbol, float symbolTimingGain)
     {
         mSamplingPoint = samplesPerSymbol;
         mDetectedSamplesPerSymbol = samplesPerSymbol;
@@ -52,6 +54,7 @@ public class InterpolatingSampleBuffer
         mTwiceSamplesPerSymbol = (int)Math.floor(2.0 * samplesPerSymbol);
         mDelayLineInphase = new float[2 * mTwiceSamplesPerSymbol];
         mDelayLineQuadrature = new float[2 * mTwiceSamplesPerSymbol];
+        mDetectedSamplesPerSymbolGain = symbolTimingGain * mSampleCounterGain * mSampleCounterGain;
     }
 
     /**
@@ -125,18 +128,21 @@ public class InterpolatingSampleBuffer
     }
 
     /**
-     * Un-interpolated sample that precedes the current interpolated sampling point.  The current sampling point falls
-     * somewhere between sample index 3 and index 4, therefore the preceding sample is located at index 3.
+     * Un-interpolated sample that precedes the current interpolated sampling point.  The current interpolated sampling
+     * point falls somewhere between sample index 3 and index 4 and the sample is interpolated from sample
+     * indexes 0 - 7, therefore the uninterpolated sample that immediately precedes the current sample is
+     * located at index 3.
      */
     public Complex getPrecedingSample()
     {
-        mPrecedingSample.setValues(mDelayLineInphase[mDelayLinePointer + 4], mDelayLineQuadrature[mDelayLinePointer + 3]);
+        mPrecedingSample.setValues(mDelayLineInphase[mDelayLinePointer + 3], mDelayLineQuadrature[mDelayLinePointer + 3]);
         return mPrecedingSample;
     }
 
     /**
-     * Interpolated middle sample for the symbol.  Note: this method should only be invoked after testing for a
-     * complete symbol with the hasSymbol() method.
+     * Interpolated current sample for the symbol.
+     *
+     * Note: this method should only be invoked after testing for a complete symbol with the hasSymbol() method.
      */
     public Complex getCurrentSample()
     {
@@ -146,13 +152,36 @@ public class InterpolatingSampleBuffer
     }
 
     /**
+     * Interpolated sample that is 1/2 symbol away from (after) the current sample.
+     *
+     * Note: this method should only be invoked after testing for a complete symbol with the hasSymbol() method.
+     */
+    public Complex getMiddleSample()
+    {
+        float halfDetectedSamplesPerSymbol = mDetectedSamplesPerSymbol / 2.0f;
+
+        //Interpolated sample that is half a symbol away from (occurred before) the current sample.
+        mMiddleSample.setValues(getInphase(halfDetectedSamplesPerSymbol),
+                                getQuadrature(halfDetectedSamplesPerSymbol));
+        return mMiddleSample;
+    }
+
+    /**
      * Returns the interpolated inphase value for the specified offset
      * @param interpolation into the buffer to calculate the interpolated sample
      * @return inphase value of the interpolated sample
      */
     public float getInphase(float interpolation)
     {
-        return mInterpolator.filter(mDelayLineInphase, mDelayLinePointer + 1, interpolation);
+        if(interpolation < 1.0f)
+        {
+            return mInterpolator.filter(mDelayLineInphase, mDelayLinePointer, interpolation);
+        }
+        else
+        {
+            int offset = (int)Math.floor(interpolation);
+            return mInterpolator.filter(mDelayLineInphase, mDelayLinePointer + offset, interpolation - offset);
+        }
     }
 
     /**
@@ -162,6 +191,14 @@ public class InterpolatingSampleBuffer
      */
     public float getQuadrature(float interpolation)
     {
-        return mInterpolator.filter(mDelayLineQuadrature, mDelayLinePointer + 1, interpolation);
+        if(interpolation < 1.0f)
+        {
+            return mInterpolator.filter(mDelayLineQuadrature, mDelayLinePointer, interpolation);
+        }
+        else
+        {
+            int offset = (int)Math.floor(interpolation);
+            return mInterpolator.filter(mDelayLineQuadrature, mDelayLinePointer + offset, interpolation - offset);
+        }
     }
 }

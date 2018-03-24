@@ -38,6 +38,11 @@ public class ReusableBufferQueue implements IReusableBufferDisposedListener
 
     }
 
+    public void dispose()
+    {
+        mReusableBufferQueue.clear();
+    }
+
     /**
      * Implements buffer disposed listener interface.  Disposed (ie user count = 0) buffers will automatically callback
      * to this method to indicate when they are disposed.

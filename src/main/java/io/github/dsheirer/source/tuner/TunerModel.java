@@ -77,11 +77,11 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
      * @param name of the tuner
      * @return named tuner or null
      */
-	public Tuner getTuner(String name)
+    public Tuner getTuner(String name)
     {
         if(name != null)
         {
-            for(Tuner tuner: mTuners)
+            for(Tuner tuner : mTuners)
             {
                 if(tuner.getName().equalsIgnoreCase(name))
                 {
@@ -93,13 +93,13 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
         return null;
     }
 
-	public void addTuners( List<Tuner> Tuners )
-	{
-		for( Tuner tuner: Tuners )
-		{
-			addTuner( tuner );
-		}
-	}
+    public void addTuners(List<Tuner> Tuners)
+    {
+        for(Tuner tuner : Tuners)
+        {
+            addTuner(tuner);
+        }
+    }
 
     /**
      * Adds the Tuner to this model
@@ -284,17 +284,17 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
      */
     public Source getSource(SourceConfigTuner config, int bandwidth)
     {
-    	TunerChannelSource retVal = null;
-    	
-		TunerChannel tunerChannel = config.getTunerChannel();
-		
-		tunerChannel.setBandwidth( bandwidth );
-		
-		Iterator<Tuner> it = mTuners.iterator();
-		
-		Tuner tuner;
+        TunerChannelSource retVal = null;
 
-		if(config.hasPreferredTuner())
+        TunerChannel tunerChannel = config.getTunerChannel();
+
+        tunerChannel.setBandwidth(bandwidth);
+
+        Iterator<Tuner> it = mTuners.iterator();
+
+        Tuner tuner;
+
+        if(config.hasPreferredTuner())
         {
             tuner = getTuner(config.getPreferredTuner());
 
@@ -302,7 +302,7 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
             {
                 try
                 {
-                    retVal = tuner.getChannel( tunerChannel );
+                    retVal = tuner.getChannelSourceManager().getSource(tunerChannel);
 
                     if(retVal != null)
                     {
@@ -319,17 +319,17 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
                 config.getPreferredTuner() + "] - searching for another tuner");
         }
 
-		while( it.hasNext() && retVal == null )
-		{
-			tuner = it.next();
-			
-			try
+        while(it.hasNext() && retVal == null)
+        {
+            tuner = it.next();
+
+            try
             {
                 retVal = tuner.getChannelSourceManager().getSource(tunerChannel);
             }
             catch(Exception e)
             {
-            	mLog.error( "error obtaining channel from tuner [" + tuner.getName() + "]", e );
+                mLog.error("error obtaining channel from tuner [" + tuner.getName() + "]", e);
             }
         }
 

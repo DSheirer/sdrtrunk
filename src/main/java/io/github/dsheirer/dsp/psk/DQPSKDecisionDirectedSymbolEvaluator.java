@@ -18,7 +18,7 @@ package io.github.dsheirer.dsp.psk;
 import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.sample.complex.Complex;
 
-public class DQPSKSymbolEvaluator implements IDQPSKSymbolEvaluator
+public class DQPSKDecisionDirectedSymbolEvaluator implements IPSKSymbolEvaluator<Dibit>
 {
     private static final Complex ROTATE_FROM_PLUS_135 = Complex.fromAngle(-3.0 * Math.PI / 4.0);
     private static final Complex ROTATE_FROM_PLUS_45 = Complex.fromAngle(-1.0 * Math.PI / 4.0);
@@ -32,7 +32,7 @@ public class DQPSKSymbolEvaluator implements IDQPSKSymbolEvaluator
     private Dibit mSymbolDecision = Dibit.D00_PLUS_1;
 
     /**
-     * Decision-directed symbol phase and timing error detector and symbol decision slicer.
+     * Differential QPSK Decision-directed symbol phase and timing error detector and symbol decision slicer.
      *
      * Symbol decision is based on the closest reference quadrant for the sampled symbol.
      *
@@ -40,7 +40,7 @@ public class DQPSKSymbolEvaluator implements IDQPSKSymbolEvaluator
      * symbol.  Timing error is further corrected to compensate for clock-wise or counter-clock-wise vector rotation
      * relative to the immediately preceding symbol.
      */
-    public DQPSKSymbolEvaluator()
+    public DQPSKDecisionDirectedSymbolEvaluator()
     {
     }
 
@@ -57,7 +57,6 @@ public class DQPSKSymbolEvaluator implements IDQPSKSymbolEvaluator
      * since it's only a reference
      * @param current symbol to be evaluated - interpolated
      */
-    @Override
     public void setSymbol(Complex preceding, Complex current)
     {
         mSymbolError.setValues(current);

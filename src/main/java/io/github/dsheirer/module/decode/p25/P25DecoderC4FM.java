@@ -20,79 +20,88 @@ import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter;
-import io.github.dsheirer.dsp.psk.DQPSKDemodulator;
+import io.github.dsheirer.dsp.psk.DQPSKDecisionDirectedDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
-import io.github.dsheirer.dsp.psk.InterpolatingSampleBufferInstrumented;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
-import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
-import io.github.dsheirer.sample.complex.IComplexBufferListener;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
+import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ScheduledExecutorService;
 
-public class P25_C4FMDecoder extends P25Decoder implements IComplexBufferListener, Listener<ComplexBuffer>
+public class P25DecoderC4FM extends P25Decoder
 {
-    private final static Logger mLog = LoggerFactory.getLogger(P25_C4FMDecoder.class);
-    protected static final double SYMBOL_RATE = 4800;
+    private final static Logger mLog = LoggerFactory.getLogger(P25DecoderC4FM.class);
+    protected static final float SYMBOL_TIMING_GAIN = 0.1f;
     protected InterpolatingSampleBuffer mInterpolatingSampleBuffer;
-    protected DQPSKDemodulator mQPSKDemodulator;
+    protected DQPSKDecisionDirectedDemodulator mQPSKDemodulator;
     protected CostasLoop mCostasLoop;
     protected P25MessageFramer mMessageFramer;
-    protected double mSampleRate;
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
     private ComplexFIRFilter mBasebandFilter;
 
-    public P25_C4FMDecoder(AliasList aliasList)
+    /**
+     * P25 Phase 1 - standard C4FM modulation decoder.  Uses Differential QPSK decoding with a Costas PLL and a
+     * decision-directed phase and timing error detector.
+     *
+     * @param aliasList
+     */
+    public P25DecoderC4FM(AliasList aliasList)
     {
-        super(aliasList);
+        super(4800.0, aliasList);
         setSampleRate(48000.0);
     }
 
     public void setSampleRate(double sampleRate)
     {
-        if(sampleRate <= SYMBOL_RATE * 2)
-        {
-            throw new IllegalArgumentException("Sample rate must be at least twice the symbol rate [4800]");
-        }
+        super.setSampleRate(sampleRate);
 
-        mSampleRate = sampleRate;
         mBasebandFilter = new ComplexFIRFilter(getBasebandFilter(), 1.0f);
 
-        mCostasLoop = new CostasLoop(mSampleRate, SYMBOL_RATE);
+        mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
+        mInterpolatingSampleBuffer = new InterpolatingSampleBuffer(getSamplesPerSymbol(), SYMBOL_TIMING_GAIN);
 
-        mInterpolatingSampleBuffer = new InterpolatingSampleBufferInstrumented((float)(sampleRate / SYMBOL_RATE));
-        mQPSKDemodulator = new DQPSKDemodulator(mCostasLoop, mInterpolatingSampleBuffer);
+        mQPSKDemodulator = new DQPSKDecisionDirectedDemodulator(mCostasLoop, mInterpolatingSampleBuffer);
 
-        //Message framer can trigger a symbol-inversion correction to the PLL when detected
+        //Message framer can issue a symbol-inversion correction request to the PLL when detected
         mMessageFramer = new P25MessageFramer(getAliasList(), mCostasLoop);
         mMessageFramer.setListener(getMessageProcessor());
-        mQPSKDemodulator.setDibitListener(mMessageFramer);
+        mQPSKDemodulator.setSymbolListener(mMessageFramer);
     }
 
+    /**
+     * Primary method for processing incoming complex sample buffers
+     * @param reusableComplexBuffer containing channelized complex samples
+     */
     @Override
-    public void receive(ComplexBuffer complexBuffer)
+    public void receive(ReusableComplexBuffer reusableComplexBuffer)
     {
-        ComplexBuffer filtered = filter(complexBuffer);
+        //User accounting of the incoming buffer is handled by the filter
+        ReusableComplexBuffer filtered = filter(reusableComplexBuffer);
+
+        //User accounting of the filtered buffer is handled by the demodulator
         mQPSKDemodulator.receive(filtered);
     }
 
-    protected ComplexBuffer filter(ComplexBuffer complexBuffer)
+    /**
+     * Filters the complex buffer and returns a new reusable complex buffer with the filtered contents.
+     * @param reusableComplexBuffer to filter
+     * @return filtered complex buffer
+     */
+    protected ReusableComplexBuffer filter(ReusableComplexBuffer reusableComplexBuffer)
     {
-        return mBasebandFilter.filter(complexBuffer);
+        //User accounting of the incoming buffer is handled by the filter
+        return mBasebandFilter.filter(reusableComplexBuffer);
     }
 
-    private double getSampleRate()
-    {
-        return mSampleRate;
-    }
-
+    /**
+     * Constructs a baseband filter for this decoder using the current sample rate
+     */
     private float[] getBasebandFilter()
     {
+        //Attempt to reuse a cached (ie already-designed) filter if available
         float[] filter = mBasebandFilters.get(getSampleRate());
 
         if(filter == null)
@@ -110,19 +119,19 @@ public class P25_C4FMDecoder extends P25Decoder implements IComplexBufferListene
             try
             {
                 filter = FilterFactory.getTaps(specification);
-
             }
             catch(FilterDesignException fde)
             {
                 mLog.error("Couldn't design low pass baseband filter for sample rate: " + getSampleRate());
             }
+
             if(filter != null)
             {
                 mBasebandFilters.put(getSampleRate(), filter);
             }
             else
             {
-                throw new IllegalStateException("Couldn't design a C4FM symbol filter for sample rate: " + mSampleRate);
+                throw new IllegalStateException("Couldn't design a C4FM baseband filter for sample rate: " + getSampleRate());
             }
         }
 
@@ -141,60 +150,36 @@ public class P25_C4FMDecoder extends P25Decoder implements IComplexBufferListene
     }
 
     @Override
-    public void setFrequencyChangeListener(Listener<FrequencyChangeEvent> listener)
+    protected void process(SourceEvent sourceEvent)
     {
-    }
-
-    @Override
-    public void removeFrequencyChangeListener()
-    {
-    }
-
-    @Override
-    public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
-    {
-        return new Listener<FrequencyChangeEvent>()
+        switch(sourceEvent.getEvent())
         {
-            @Override
-            public void receive(FrequencyChangeEvent frequencyChangeEvent)
-            {
-                switch(frequencyChangeEvent.getEvent())
-                {
-                    case NOTIFICATION_FREQUENCY_CHANGE:
-                    case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
-                    case NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
-                    case NOTIFICATION_SAMPLE_RATE_CHANGE:
-                        mCostasLoop.reset();
-                        break;
-                }
-            }
-        };
+            case NOTIFICATION_FREQUENCY_CHANGE:
+            case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
+            case NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
+                mCostasLoop.reset();
+                break;
+            case NOTIFICATION_SAMPLE_RATE_CHANGE:
+                mCostasLoop.reset();
+                setSampleRate(sourceEvent.getValue().doubleValue());
+                break;
+        }
     }
 
-    @Override
-    public Listener<ComplexBuffer> getComplexBufferListener()
-    {
-        return P25_C4FMDecoder.this;
-    }
-
+    /**
+     * P25 modulation supported by this decoder
+     */
     public Modulation getModulation()
     {
         return Modulation.C4FM;
     }
 
+    /**
+     * Resets this decoder to prepare for processing a new channel
+     */
     @Override
     public void reset()
     {
         mCostasLoop.reset();
-    }
-
-    @Override
-    public void start(ScheduledExecutorService executor)
-    {
-    }
-
-    @Override
-    public void stop()
-    {
     }
 }

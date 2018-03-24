@@ -22,6 +22,7 @@ import io.github.dsheirer.gui.control.JFrequencyControl;
 import io.github.dsheirer.gui.editor.Editor;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
+import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.config.SourceConfigTuner;
 import io.github.dsheirer.source.config.SourceConfiguration;
 import net.miginfocom.swing.MigLayout;
@@ -58,10 +59,10 @@ public class TunerSourceEditor extends Editor<Channel>
         setLayout(new MigLayout("insets 0 0 0 0", "[left]", ""));
         mFrequencyControl = new JFrequencyControl();
         mFrequencyControl.setEnabled(false);
-        mFrequencyControl.addListener(new IFrequencyChangeProcessor()
+        mFrequencyControl.addListener(new ISourceEventProcessor()
         {
             @Override
-            public void frequencyChanged(FrequencyChangeEvent event)
+            public void process(SourceEvent event) throws SourceException
             {
                 setModified(true);
             }

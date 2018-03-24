@@ -16,23 +16,31 @@
 package io.github.dsheirer.module.decode.p25;
 
 import io.github.dsheirer.alias.AliasList;
-import io.github.dsheirer.dsp.psk.DQPSKDemodulatorInstrumented;
+import io.github.dsheirer.dsp.psk.DQPSKGardnerDemodulatorInstrumented;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBufferInstrumented;
 import io.github.dsheirer.dsp.psk.SymbolDecisionData;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.Complex;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 
-public class P25_C4FMDecoderInstrumented extends P25_C4FMDecoder
+public class P25DecoderLSMInstrumented extends P25DecoderLSM
 {
     private Listener<Double> mPLLPhaseErrorListener;
     private Listener<Double> mPLLFrequencyListener;
     private Listener<Double> mSamplesPerSymbolListener;
-    private Listener<Complex> mSymbolListener;
-    private Listener<ComplexBuffer> mFilteredSymbolListener;
+    private Listener<Complex> mComplexSymbolListener;
+    private Listener<ReusableComplexBuffer> mFilteredSymbolListener;
     private Listener<SymbolDecisionData> mSymbolDecisionDataListener;
 
-    public P25_C4FMDecoderInstrumented(AliasList aliasList)
+    /**
+     * P25 Phase 1 - linear simulcast modulation (LSM) decoder.  Uses Differential QPSK decoding with a Costas PLL and
+     * a gardner timing error detector.
+     *
+     * Instrumented decoder instance.
+     *
+     * @param aliasList
+     */
+    public P25DecoderLSMInstrumented(AliasList aliasList)
     {
         super(aliasList);
     }
@@ -40,12 +48,16 @@ public class P25_C4FMDecoderInstrumented extends P25_C4FMDecoder
     /**
      * Overrides the filter method so that we can capture the filtered samples for instrumentation
      */
-    protected ComplexBuffer filter(ComplexBuffer complexBuffer)
+    protected ReusableComplexBuffer filter(ReusableComplexBuffer reusableComplexBuffer)
     {
-        ComplexBuffer filtered = super.filter(complexBuffer);
+        ReusableComplexBuffer filtered = super.filter(reusableComplexBuffer);
+
+        //Increment user count before we hand to another listener or return from this method
+        filtered.incrementUserCount();
 
         if(mFilteredSymbolListener != null)
         {
+            filtered.incrementUserCount();
             mFilteredSymbolListener.receive(filtered);
         }
 
@@ -58,39 +70,40 @@ public class P25_C4FMDecoderInstrumented extends P25_C4FMDecoder
     public void setSampleRate(double sampleRate)
     {
         super.setSampleRate(sampleRate);
-        InterpolatingSampleBufferInstrumented instrumentedBuffer = new InterpolatingSampleBufferInstrumented((float)(sampleRate / SYMBOL_RATE));
+
+        InterpolatingSampleBufferInstrumented instrumentedBuffer = new InterpolatingSampleBufferInstrumented(getSamplesPerSymbol(), SYMBOL_TIMING_GAIN);
         mInterpolatingSampleBuffer = instrumentedBuffer;
 
-        DQPSKDemodulatorInstrumented instrumented = new DQPSKDemodulatorInstrumented(mCostasLoop, instrumentedBuffer, mSampleRate);
+        DQPSKGardnerDemodulatorInstrumented instrumented = new DQPSKGardnerDemodulatorInstrumented(mCostasLoop, instrumentedBuffer, getSampleRate());
         mQPSKDemodulator = instrumented;
 
-        instrumented.setSymbolListener(mSymbolListener);
+        instrumented.setComplexSymbolListener(mComplexSymbolListener);
         instrumented.setPLLErrorListener(mPLLPhaseErrorListener);
         instrumented.setPLLFrequencyListener(mPLLFrequencyListener);
         instrumented.setSymbolDecisionDataListener(mSymbolDecisionDataListener);
         instrumented.setSamplesPerSymbolListener(mSamplesPerSymbolListener);
-        instrumented.setDibitListener(mMessageFramer);
+        instrumented.setSymbolListener(mMessageFramer);
     }
 
-    public void setSymbolListener(Listener<Complex> listener)
+    public void setComplexSymbolListener(Listener<Complex> listener)
     {
-        mSymbolListener = listener;
-        ((DQPSKDemodulatorInstrumented)mQPSKDemodulator).setSymbolListener(listener);
+        mComplexSymbolListener = listener;
+        ((DQPSKGardnerDemodulatorInstrumented)mQPSKDemodulator).setComplexSymbolListener(listener);
     }
 
     public void setPLLPhaseErrorListener(Listener<Double> listener)
     {
         mPLLPhaseErrorListener = listener;
-        ((DQPSKDemodulatorInstrumented)mQPSKDemodulator).setPLLErrorListener(listener);
+        ((DQPSKGardnerDemodulatorInstrumented)mQPSKDemodulator).setPLLErrorListener(listener);
     }
 
     public void setPLLFrequencyListener(Listener<Double> listener)
     {
         mPLLFrequencyListener = listener;
-        ((DQPSKDemodulatorInstrumented)mQPSKDemodulator).setPLLFrequencyListener(listener);
+        ((DQPSKGardnerDemodulatorInstrumented)mQPSKDemodulator).setPLLFrequencyListener(listener);
     }
 
-    public void setFilteredBufferListener(Listener<ComplexBuffer> listener)
+    public void setFilteredBufferListener(Listener<ReusableComplexBuffer> listener)
     {
         mFilteredSymbolListener = listener;
     }
@@ -98,12 +111,12 @@ public class P25_C4FMDecoderInstrumented extends P25_C4FMDecoder
     public void setSymbolDecisionDataListener(Listener<SymbolDecisionData> listener)
     {
         mSymbolDecisionDataListener = listener;
-        ((DQPSKDemodulatorInstrumented)mQPSKDemodulator).setSymbolDecisionDataListener(listener);
+        ((DQPSKGardnerDemodulatorInstrumented)mQPSKDemodulator).setSymbolDecisionDataListener(listener);
     }
 
     public void setSamplesPerSymbolListener(Listener<Double> listener)
     {
         mSamplesPerSymbolListener = listener;
-        ((DQPSKDemodulatorInstrumented)mQPSKDemodulator).setSamplesPerSymbolListener(listener);
+        ((DQPSKGardnerDemodulatorInstrumented)mQPSKDemodulator).setSamplesPerSymbolListener(listener);
     }
 }

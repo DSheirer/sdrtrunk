@@ -19,7 +19,7 @@ import io.github.dsheirer.buffer.ComplexCircularBuffer;
 import io.github.dsheirer.dsp.gain.ComplexGain;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.Complex;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.value.ChangeListener;
@@ -32,7 +32,7 @@ import javafx.scene.chart.XYChart;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ComplexSampleLineChart extends LineChart implements Listener<ComplexBuffer>
+public class ComplexSampleLineChart extends LineChart implements Listener<ReusableComplexBuffer>
 {
     private final static Logger mLog = LoggerFactory.getLogger(ComplexSampleLineChart.class);
 
@@ -92,7 +92,7 @@ public class ComplexSampleLineChart extends LineChart implements Listener<Comple
     }
 
     @Override
-    public void receive(ComplexBuffer complexBuffer)
+    public void receive(ReusableComplexBuffer complexBuffer)
     {
         float[] samples = complexBuffer.getSamples();
 
@@ -110,6 +110,8 @@ public class ComplexSampleLineChart extends LineChart implements Listener<Comple
         }
 
         updateChart();
+
+        complexBuffer.decrementUserCount();
     }
 
     private void updateChart()

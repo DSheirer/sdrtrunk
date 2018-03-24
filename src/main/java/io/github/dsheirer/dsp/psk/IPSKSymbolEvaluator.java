@@ -15,20 +15,8 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.psk;
 
-import io.github.dsheirer.dsp.symbol.Dibit;
-import io.github.dsheirer.sample.complex.Complex;
-
-
-public interface IDQPSKSymbolEvaluator
+public interface IPSKSymbolEvaluator<T>
 {
-    /**
-     * Sets the sampled symbol to be evaluated.  Note: the symbol's gain value MUST be normalized to the unit circle.
-     *
-     * @param preceding symbol used to detect (counter-)clock-wise rotation
-     * @param symbol currently being sampled
-     */
-    void setSymbol(Complex preceding, Complex symbol);
-
     /**
      * Phase error of the symbol relative to the closest reference symbol
      * @return angular phase error in radians
@@ -43,8 +31,8 @@ public interface IDQPSKSymbolEvaluator
     float getTimingError();
 
     /**
-     * Dibit decision indicating the reference symbol location closest to the symbol.
+     * Symbol decision indicating the reference symbol location closest to the symbol.
      * @return symbol decision
      */
-    Dibit getSymbolDecision();
+    T getSymbolDecision();
 }

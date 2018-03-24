@@ -18,24 +18,68 @@ package io.github.dsheirer.module.decode.p25;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.module.decode.Decoder;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.complex.reusable.IReusableComplexBufferListener;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.ISourceEventProvider;
+import io.github.dsheirer.source.SourceEvent;
 
-public abstract class P25Decoder extends Decoder implements ISourceEventListener, ISourceEventProvider, Instrumentable
+public abstract class P25Decoder extends Decoder implements ISourceEventListener, ISourceEventProvider,
+    IReusableComplexBufferListener, Listener<ReusableComplexBuffer>
 {
+    private double mSampleRate;
     private P25MessageProcessor mMessageProcessor;
     private AliasList mAliasList;
+    private Listener<SourceEvent> mSourceEventListener;
+    private double mSymbolRate;
 
-    public P25Decoder(AliasList aliasList)
+    public P25Decoder(double symbolRate, AliasList aliasList)
     {
+        mSymbolRate = symbolRate;
         mAliasList = aliasList;
         mMessageProcessor = new P25MessageProcessor(mAliasList);
         mMessageProcessor.setMessageListener(getMessageListener());
     }
 
+    protected double getSymbolRate()
+    {
+        return mSymbolRate;
+    }
+
     protected AliasList getAliasList()
     {
         return mAliasList;
+    }
+
+    /**
+     * Current sample rate for this decoder
+     */
+    protected double getSampleRate()
+    {
+        return mSampleRate;
+    }
+
+    /**
+     * Sets current sample rate for this decoder
+     */
+    public void setSampleRate(double sampleRate)
+    {
+        if(sampleRate <= getSymbolRate() * 2)
+        {
+            throw new IllegalArgumentException("Sample rate [" + sampleRate + "] must be >9600 (2 * " +
+                getSymbolRate() + " symbol rate)");
+        }
+
+        mSampleRate = sampleRate;
+    }
+
+    /**
+     * Samples per symbol based on current sample rate and symbol rate.
+     */
+    public float getSamplesPerSymbol()
+    {
+        return (float)(getSampleRate() / getSymbolRate());
     }
 
     public void dispose()
@@ -44,6 +88,83 @@ public abstract class P25Decoder extends Decoder implements ISourceEventListener
 
         mMessageProcessor.dispose();
         mMessageProcessor = null;
+    }
+
+    /**
+     * Sets the source event listener to receive source events from this decoder.
+     */
+    @Override
+    public void setSourceEventListener(Listener<SourceEvent> listener)
+    {
+        mSourceEventListener = listener;
+    }
+
+    /**
+     * Removes a registered source event listener from receiving source events from this decoder
+     */
+    @Override
+    public void removeSourceEventListener()
+    {
+        mSourceEventListener = null;
+    }
+
+    @Override
+    public Listener<SourceEvent> getSourceEventListener()
+    {
+        return new Listener<SourceEvent>()
+        {
+            @Override
+            public void receive(SourceEvent sourceEvent)
+            {
+                process(sourceEvent);
+            }
+        };
+    }
+
+    /**
+     * Sub-class processing of received source events
+     * @param sourceEvent
+     */
+    protected abstract void process(SourceEvent sourceEvent);
+
+    /**
+     * Broadcasts the source event to an optional registered listener.  This method should primarily be used to
+     * issue frequency correction requests to the channel source.
+     * @param sourceEvent to broadcast
+     */
+    protected void broadcast(SourceEvent sourceEvent)
+    {
+        if(mSourceEventListener != null)
+        {
+            mSourceEventListener.receive(sourceEvent);
+        }
+    }
+
+    /**
+     * Listener interface to receive reusable complex buffers
+     */
+    @Override
+    public Listener<ReusableComplexBuffer> getReusableComplexBufferListener()
+    {
+        return P25Decoder.this;
+    }
+
+    /**
+     * Starts the decoder
+     */
+    @Override
+    public void start()
+    {
+        //No-op
+    }
+
+    /**
+     * Stops the decoder
+     */
+    @Override
+    public void stop()
+    {
+        //No-op
     }
 
     @Override

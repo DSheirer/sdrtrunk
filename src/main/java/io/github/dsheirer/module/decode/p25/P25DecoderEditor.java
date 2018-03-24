@@ -31,7 +31,11 @@ import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JSlider;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.event.ActionEvent;
@@ -43,7 +47,7 @@ public class P25DecoderEditor extends ValidatingEditor<Channel>
 
 	private static final long serialVersionUID = 1L;
     
-    private JComboBox<P25_LSMDecoder.Modulation> mComboModulation;
+    private JComboBox<P25DecoderLSM.Modulation> mComboModulation;
     private JCheckBox mIgnoreDataCalls;
     private JLabel mTrafficChannelPoolSizeLabel;
     private JSlider mTrafficChannelPoolSize;
@@ -57,9 +61,9 @@ public class P25DecoderEditor extends ValidatingEditor<Channel>
 	{
 		setLayout( new MigLayout( "insets 0 0 0 0,wrap 3", "[right][grow,fill][]", "" ) );
 		
-		mComboModulation = new JComboBox<P25_LSMDecoder.Modulation>();
-		mComboModulation.setModel( new DefaultComboBoxModel<P25_LSMDecoder.Modulation>( 
-				P25_LSMDecoder.Modulation.values() ) );
+		mComboModulation = new JComboBox<P25DecoderLSM.Modulation>();
+		mComboModulation.setModel( new DefaultComboBoxModel<P25DecoderLSM.Modulation>(
+				P25DecoderLSM.Modulation.values() ) );
 		mComboModulation.setEnabled( false );
 		mComboModulation.addActionListener( new ActionListener()
 		{

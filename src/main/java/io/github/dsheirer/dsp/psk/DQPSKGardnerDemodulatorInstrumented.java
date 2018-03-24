@@ -20,29 +20,26 @@ import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.Complex;
 
-public class DQPSKDemodulatorInstrumented extends DQPSKDemodulator
+public class DQPSKGardnerDemodulatorInstrumented extends DQPSKGardnerDemodulator
 {
     private Listener<SymbolDecisionData> mSymbolDecisionDataListener;
     private Listener<Double> mSamplesPerSymbolListener;
-    private Listener<Complex> mSymbolListener;
+    private Listener<Complex> mComplexSymbolListener;
     private Listener<Double> mPLLErrorListener;
     private Listener<Double> mPLLFrequencyListener;
     private double mSampleRate;
 
     /**
-     * Decoder for Differential Quaternary Phase Shift Keying (DQPSK).  This decoder uses both a Costas Loop (PLL) and
-     * a custom DQPSK symbol timing error detector to automatically align to the incoming carrier frequency and to
-     * adjust for any changes in symbol timing.
+     * Implements a Differential QPSK demodulator using a Costas Loop (PLL) and a Gardner timing error detector.
      *
-     * This detector is optimized for constant amplitude DQPSK symbols like C4FM.
+     * This decoder is optimized for P25 Linear Simulcast Modulation (LSM).
      *
      * @param phaseLockedLoop for tracking carrier frequency error
-     * @param interpolatingSampleBuffer
-     * @param sampleRate of the incoming complex sample stream
+     * @param interpolatingSampleBuffer to hold samples for interpolating a symbol
      */
-    public DQPSKDemodulatorInstrumented(IPhaseLockedLoop phaseLockedLoop,
-                                        InterpolatingSampleBufferInstrumented interpolatingSampleBuffer,
-                                        double sampleRate)
+    public DQPSKGardnerDemodulatorInstrumented(IPhaseLockedLoop phaseLockedLoop,
+                                               InterpolatingSampleBuffer interpolatingSampleBuffer,
+                                               double sampleRate)
     {
         super(phaseLockedLoop, interpolatingSampleBuffer);
         mSampleRate = sampleRate;
@@ -57,20 +54,20 @@ public class DQPSKDemodulatorInstrumented extends DQPSKDemodulator
         if(mSymbolDecisionDataListener != null)
         {
             mSymbolDecisionDataListener.receive(
-                ((InterpolatingSampleBufferInstrumented)mInterpolatingSampleBuffer).getSymbolDecisionData());
+                ((InterpolatingSampleBufferInstrumented)getInterpolatingSampleBuffer()).getSymbolDecisionData());
         }
 
         super.calculateSymbol();
 
         if(mSamplesPerSymbolListener != null)
         {
-            mSamplesPerSymbolListener.receive((double)mInterpolatingSampleBuffer.getSamplingPoint());
+            mSamplesPerSymbolListener.receive((double)getInterpolatingSampleBuffer().getSamplingPoint());
         }
 
         //Send to an external constellation symbol listener when registered
-        if(mSymbolListener != null)
+        if(mComplexSymbolListener != null)
         {
-            mSymbolListener.receive(mCurrentSymbol);
+            mComplexSymbolListener.receive(mCurrentSymbol);
         }
 
         if(mPLLErrorListener != null)
@@ -80,7 +77,7 @@ public class DQPSKDemodulatorInstrumented extends DQPSKDemodulator
 
         if(mPLLFrequencyListener != null)
         {
-            double loopFrequency = ((CostasLoop)mPLL).getLoopFrequency();
+            double loopFrequency = ((CostasLoop)getPLL()).getLoopFrequency();
 
             loopFrequency *= mSampleRate / (2.0 * Math.PI);
 
@@ -107,9 +104,9 @@ public class DQPSKDemodulatorInstrumented extends DQPSKDemodulator
     /**
      * Registers the listener to receive decoded QPSK symbols
      */
-    public void setSymbolListener(Listener<Complex> listener)
+    public void setComplexSymbolListener(Listener<Complex> listener)
     {
-        mSymbolListener = listener;
+        mComplexSymbolListener = listener;
     }
 
     /**
@@ -127,5 +124,4 @@ public class DQPSKDemodulatorInstrumented extends DQPSKDemodulator
     {
         mPLLFrequencyListener = listener;
     }
-
 }

@@ -18,10 +18,12 @@ package io.github.dsheirer.dsp.filter.fir.complex;
 import io.github.dsheirer.dsp.filter.fir.FIRFilter;
 import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter;
 import io.github.dsheirer.sample.complex.Complex;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.complex.reusable.ReusableBufferQueue;
+import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 
 public class ComplexFIRFilter extends FIRFilter
 {
+    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue();
     private RealFIRFilter mIFilter;
     private RealFIRFilter mQFilter;
 
@@ -61,24 +63,43 @@ public class ComplexFIRFilter extends FIRFilter
         return new Complex(i, q);
     }
 
-    /**
-     * Filters the complex samples from the buffer and returns a new complex buffer with the filtered output
-     *
-     * @param buffer with complex samples to filter
-     * @return new buffer containing filtered complex samples
-     */
-    public ComplexBuffer filter(ComplexBuffer buffer)
+    public float[] filter(float[] samples)
     {
-        float[] samples = buffer.getSamples();
-        float[] filtered = new float[samples.length];
+        float[] filteredSamples = new float[samples.length];
 
         for(int x = 0; x < samples.length; x += 2)
         {
-            filtered[x] = filterInphase(samples[x]);
-            filtered[x + 1] = filterQuadrature(samples[x + 1]);
+            filteredSamples[x] = filterInphase(samples[x]);
+            filteredSamples[x + 1] = filterQuadrature(samples[x + 1]);
         }
 
-        return new ComplexBuffer(filtered);
+        return filteredSamples;
+    }
+
+    /**
+     * Filters the complex samples from the buffer and returns a new complex buffer with the filtered output
+     *
+     * @param originalBuffer with complex samples to filter
+     * @return new buffer containing filtered complex samples
+     */
+    public ReusableComplexBuffer filter(ReusableComplexBuffer originalBuffer)
+    {
+        ReusableComplexBuffer filteredBuffer = mReusableBufferQueue.getBuffer(originalBuffer.getSampleLength());
+        filteredBuffer.setTimestamp(originalBuffer.getTimestamp());
+
+        float[] samples = originalBuffer.getSamples();
+        float[] filteredSamples = filteredBuffer.getSamples();
+
+        for(int x = 0; x < originalBuffer.getSampleLength(); x += 2)
+        {
+            filteredSamples[x] = filterInphase(samples[x]);
+            filteredSamples[x + 1] = filterQuadrature(samples[x + 1]);
+        }
+
+        originalBuffer.decrementUserCount();
+        filteredBuffer.incrementUserCount();
+
+        return filteredBuffer;
     }
 
     @Override
@@ -86,5 +107,6 @@ public class ComplexFIRFilter extends FIRFilter
     {
         mIFilter.dispose();
         mQFilter.dispose();
+        mReusableBufferQueue.dispose();
     }
 }

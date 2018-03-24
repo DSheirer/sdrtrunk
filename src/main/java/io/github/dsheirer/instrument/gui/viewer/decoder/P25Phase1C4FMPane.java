@@ -22,18 +22,17 @@ import io.github.dsheirer.instrument.gui.viewer.chart.PhaseLineChart;
 import io.github.dsheirer.instrument.gui.viewer.chart.SymbolChart;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.p25.P25_C4FMDecoderInstrumented;
-import io.github.dsheirer.sample.Broadcaster;
+import io.github.dsheirer.module.decode.p25.P25DecoderC4FMInstrumented;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.complex.reusable.ReusableBufferBroadcaster;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class P25Phase1Pane extends DecoderPane
+public class P25Phase1C4FMPane extends DecoderPane
 {
-    private final static Logger mLog = LoggerFactory.getLogger(P25Phase1Pane.class);
+    private final static Logger mLog = LoggerFactory.getLogger(P25Phase1C4FMPane.class);
 
     private HBox mSampleChartBox;
     private ComplexSampleLineChart mSampleLineChart;
@@ -43,10 +42,10 @@ public class P25Phase1Pane extends DecoderPane
     private PhaseLineChart mPLLPhaseErrorLineChart;
     private DoubleLineChart mPLLFrequencyLineChart;
     private DoubleLineChart mSamplesPerSymbolLineChart;
-    private Broadcaster<ComplexBuffer> mFilteredBufferBroadcaster = new Broadcaster<>();
-    private P25_C4FMDecoderInstrumented mDecoder = new P25_C4FMDecoderInstrumented(null);
+    private ReusableBufferBroadcaster mFilteredBufferBroadcaster = new ReusableBufferBroadcaster();
+    private P25DecoderC4FMInstrumented mDecoder = new P25DecoderC4FMInstrumented(null);
 
-    public P25Phase1Pane()
+    public P25Phase1C4FMPane()
     {
         super(DecoderType.P25_PHASE1);
         init();
@@ -57,7 +56,7 @@ public class P25Phase1Pane extends DecoderPane
         addListener(getDecoder());
 
         getDecoder().setFilteredBufferListener(mFilteredBufferBroadcaster);
-        getDecoder().setSymbolListener(getSymbolChart());
+        getDecoder().setComplexSymbolListener(getSymbolChart());
         getDecoder().setPLLPhaseErrorListener(getPLLPhaseErrorLineChart());
         getDecoder().setPLLFrequencyListener(getPLLFrequencyLineChart());
         getDecoder().setSymbolDecisionDataListener(getEyeDiagramChart());
@@ -90,7 +89,7 @@ public class P25Phase1Pane extends DecoderPane
         getSampleLineChart().setSamplesPerSymbol((int)samplesPerSymbol);
     }
 
-    private P25_C4FMDecoderInstrumented getDecoder()
+    private P25DecoderC4FMInstrumented getDecoder()
     {
         return mDecoder;
     }

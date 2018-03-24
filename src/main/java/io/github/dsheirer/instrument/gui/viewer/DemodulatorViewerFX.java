@@ -17,6 +17,7 @@ package io.github.dsheirer.instrument.gui.viewer;
 
 import io.github.dsheirer.instrument.gui.viewer.decoder.DecoderPaneFactory;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.module.decode.p25.P25Decoder;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -50,7 +51,7 @@ public class DemodulatorViewerFX extends Application
     public void start(Stage primaryStage) throws Exception
     {
         mStage = primaryStage;
-        setTitle(null);
+        setTitle();
 
         BorderPane borderPane = new BorderPane();
         borderPane.setTop(getMenuBar());
@@ -62,6 +63,11 @@ public class DemodulatorViewerFX extends Application
         mStage.show();
     }
 
+    private void setTitle()
+    {
+        mStage.setTitle("Demodulator Viewer FX");
+    }
+
     private void setTitle(DecoderType decoderType)
     {
         if(decoderType != null)
@@ -70,7 +76,19 @@ public class DemodulatorViewerFX extends Application
         }
         else
         {
-            mStage.setTitle("Demodulator Viewer FX");
+            setTitle();
+        }
+    }
+
+    private void setTitle(P25Decoder.Modulation modulation)
+    {
+        if(modulation != null)
+        {
+            mStage.setTitle("Demodulator Viewer FX - P25 " + modulation.getLabel());
+        }
+        else
+        {
+            setTitle();
         }
     }
 
@@ -136,19 +154,52 @@ public class DemodulatorViewerFX extends Application
             {
                 if(DecoderPaneFactory.isSupported(decoderType))
                 {
-                    MenuItem decoderMenuItem = new MenuItem(decoderType.getShortDisplayString());
-
-                    decoderMenuItem.setOnAction(new EventHandler<ActionEvent>()
+                    if(decoderType == DecoderType.P25_PHASE1)
                     {
-                        @Override
-                        public void handle(ActionEvent event)
-                        {
-                            getViewerDesktop().setDecoder(decoderType);
-                            setTitle(decoderType);
-                        }
-                    });
+                        MenuItem c4fmDecoderMenuItem = new MenuItem("P25 Phase 1 C4FM");
 
-                    decoderMenu.getItems().add(decoderMenuItem);
+                        c4fmDecoderMenuItem.setOnAction(new EventHandler<ActionEvent>()
+                        {
+                            @Override
+                            public void handle(ActionEvent event)
+                            {
+                                getViewerDesktop().setP25Phase1Decoder(P25Decoder.Modulation.C4FM);
+                                setTitle(decoderType);
+                            }
+                        });
+
+                        decoderMenu.getItems().add(c4fmDecoderMenuItem);
+
+                        MenuItem lsmDecoderMenuItem = new MenuItem("P25 Phase 1 LSM");
+
+                        lsmDecoderMenuItem.setOnAction(new EventHandler<ActionEvent>()
+                        {
+                            @Override
+                            public void handle(ActionEvent event)
+                            {
+                                getViewerDesktop().setP25Phase1Decoder(P25Decoder.Modulation.CQPSK);
+                                setTitle(decoderType);
+                            }
+                        });
+
+                        decoderMenu.getItems().add(lsmDecoderMenuItem);
+                    }
+                    else
+                    {
+                        MenuItem decoderMenuItem = new MenuItem(decoderType.getShortDisplayString());
+
+                        decoderMenuItem.setOnAction(new EventHandler<ActionEvent>()
+                        {
+                            @Override
+                            public void handle(ActionEvent event)
+                            {
+                                getViewerDesktop().setDecoder(decoderType);
+                                setTitle(decoderType);
+                            }
+                        });
+
+                        decoderMenu.getItems().add(decoderMenuItem);
+                    }
                 }
             }
 
