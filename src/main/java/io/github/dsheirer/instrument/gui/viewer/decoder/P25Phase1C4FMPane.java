@@ -156,7 +156,7 @@ public class P25Phase1C4FMPane extends DecoderPane
     {
         if(mEyeDiagramChart == null)
         {
-            mEyeDiagramChart = new EyeDiagramChart(10);
+            mEyeDiagramChart = new EyeDiagramChart(10, "Symbol: 3-4");
         }
 
         return mEyeDiagramChart;

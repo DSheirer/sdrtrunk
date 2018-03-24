@@ -29,7 +29,7 @@ public class ComplexFeedForwardGainControl implements ComplexSampleListener
 
     private ComplexSampleListener mListener;
     private FloatCircularBuffer mEnvelopeHistory;
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue();
+    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("ComplexFeedForwardGainControl");
 
     private float mMaxEnvelope = 0.0f;
     private float mGain = 1.0f;
@@ -155,11 +155,36 @@ public class ComplexFeedForwardGainControl implements ComplexSampleListener
      */
     public ReusableComplexBuffer filter(ReusableComplexBuffer buffer)
     {
-        float[] filtered = filter(buffer.getSamples());
+        float[] samples = buffer.getSamples();
 
-        ReusableComplexBuffer filteredBuffer = mReusableBufferQueue.getBuffer(filtered.length);
+        ReusableComplexBuffer filteredBuffer = mReusableBufferQueue.getBuffer(samples.length);
+        filteredBuffer.setTimestamp(buffer.getTimestamp());
 
-        filteredBuffer.reloadFrom(filtered, buffer.getTimestamp());
+        float[] filtered = filteredBuffer.getSamples();
+
+        mMaxEnvelope = MINIMUM_ENVELOPE;
+
+        float currentEnvelope;
+
+        for(int x = 0; x < samples.length; x += 2)
+        {
+            currentEnvelope = Complex.envelope(samples[x], samples[x + 1]);
+
+            if(currentEnvelope > mMaxEnvelope)
+            {
+                mMaxEnvelope = currentEnvelope;
+            }
+        }
+
+        adjustGain();
+
+        for(int x = 0; x < samples.length; x += 2)
+        {
+            filtered[x] = samples[x] * mGain;
+            filtered[x + 1] = samples[x + 1] * mGain;
+        }
+
+        buffer.decrementUserCount();
         filteredBuffer.incrementUserCount();
 
         return filteredBuffer;

@@ -248,12 +248,35 @@ public class Complex implements Serializable
     }
 
     /**
-     * Returns the vector length to 1 (unit circle),
-     * avoiding square root multiplication
+     * Maintains the vector magnitude close to 1.0 (unit circle) when the magnitude is already
+     * close to 1.0, avoiding square root multiplication.  If you need a faster way to set the
+     * magnitude to close to 1.0 without the square root of normalize(), use fastNormalize2().
      */
     public void fastNormalize()
     {
-        multiply((float)(1.95f - magnitudeSquared()));
+        multiply((float)(1.9999f - magnitudeSquared()));
+    }
+
+    /**
+     * Sets vector magnitude to close to 1.0f without the magnitude square root operation
+     */
+    public void normalizeFast()
+    {
+        float inphaseAbsolute = Math.abs(inphase());
+        float quadratureAbsolute = Math.abs(quadrature());
+
+        float gain;
+
+        if(inphaseAbsolute > quadratureAbsolute)
+        {
+            gain = 1.0f / (inphaseAbsolute + (0.4f * quadratureAbsolute));
+        }
+        else
+        {
+            gain = 1.0f / (quadratureAbsolute + (0.4f * inphaseAbsolute));
+        }
+
+        multiply(gain);
     }
 
     public float left()
@@ -433,18 +456,5 @@ public class Complex implements Serializable
         {
             return quadratureAbsolute + (0.4f * inphaseAbsolute);
         }
-    }
-
-    public static void main(String[] args)
-    {
-        Complex ROTATE_FROM_MINUS_45 = Complex.fromAngle(1.0 * Math.PI / 4.0);
-        Complex ROTATE_FROM_PLUS_135 = Complex.fromAngle(-3.0 * Math.PI / 4.0);
-        mLog.debug("REF: " + ROTATE_FROM_MINUS_45.toString());
-
-        Complex symbol = new Complex(0.7665009f, -0.6422432f);
-        mLog.debug("SYM: " + symbol.toString());
-
-        symbol.multiply(ROTATE_FROM_MINUS_45);
-        mLog.debug("DER: " + symbol.toString());
     }
 }

@@ -52,9 +52,6 @@ public class P25DecoderLSMInstrumented extends P25DecoderLSM
     {
         ReusableComplexBuffer filtered = super.filter(reusableComplexBuffer);
 
-        //Increment user count before we hand to another listener or return from this method
-        filtered.incrementUserCount();
-
         if(mFilteredSymbolListener != null)
         {
             filtered.incrementUserCount();
@@ -71,7 +68,7 @@ public class P25DecoderLSMInstrumented extends P25DecoderLSM
     {
         super.setSampleRate(sampleRate);
 
-        InterpolatingSampleBufferInstrumented instrumentedBuffer = new InterpolatingSampleBufferInstrumented(getSamplesPerSymbol(), SYMBOL_TIMING_GAIN);
+        InterpolatingSampleBufferInstrumented instrumentedBuffer = new InterpolatingSampleBufferInstrumented(getSamplesPerSymbol(), SAMPLE_COUNTER_GAIN);
         mInterpolatingSampleBuffer = instrumentedBuffer;
 
         DQPSKGardnerDemodulatorInstrumented instrumented = new DQPSKGardnerDemodulatorInstrumented(mCostasLoop, instrumentedBuffer, getSampleRate());

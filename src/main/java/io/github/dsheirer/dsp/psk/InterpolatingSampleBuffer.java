@@ -32,7 +32,7 @@ public class InterpolatingSampleBuffer
     private int mTwiceSamplesPerSymbol;
 
     private float mSamplingPoint;
-    private float mSampleCounterGain = 1.0f;
+    private float mSampleCounterGain = 0.5f;
     private float mDetectedSamplesPerSymbol;
     private float mDetectedSamplesPerSymbolGain = 0.1f * mSampleCounterGain * mSampleCounterGain;
     private float mMaximumSamplesPerSymbol;
@@ -43,9 +43,9 @@ public class InterpolatingSampleBuffer
     /**
      * Buffer to store complex sample data and produce interpolated samples.
      * @param samplesPerSymbol
-     * @param symbolTimingGain for the symbol timing error adjustments
+     * @param sampleCounterGain for the symbol timing error adjustments
      */
-    public InterpolatingSampleBuffer(float samplesPerSymbol, float symbolTimingGain)
+    public InterpolatingSampleBuffer(float samplesPerSymbol, float sampleCounterGain)
     {
         mSamplingPoint = samplesPerSymbol;
         mDetectedSamplesPerSymbol = samplesPerSymbol;
@@ -54,7 +54,9 @@ public class InterpolatingSampleBuffer
         mTwiceSamplesPerSymbol = (int)Math.floor(2.0 * samplesPerSymbol);
         mDelayLineInphase = new float[2 * mTwiceSamplesPerSymbol];
         mDelayLineQuadrature = new float[2 * mTwiceSamplesPerSymbol];
-        mDetectedSamplesPerSymbolGain = symbolTimingGain * mSampleCounterGain * mSampleCounterGain;
+
+        mSampleCounterGain = sampleCounterGain;
+        mDetectedSamplesPerSymbolGain = 0.1f * mSampleCounterGain * mSampleCounterGain;
     }
 
     /**

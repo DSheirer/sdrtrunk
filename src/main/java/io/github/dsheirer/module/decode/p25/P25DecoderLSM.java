@@ -34,7 +34,7 @@ import java.util.Map;
 public class P25DecoderLSM extends P25Decoder
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25DecoderLSM.class);
-    protected static final float SYMBOL_TIMING_GAIN = 0.1f;
+    protected static final float SAMPLE_COUNTER_GAIN = 0.5f;
 
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
     private ComplexFIRFilter mBasebandFilter;
@@ -67,7 +67,7 @@ public class P25DecoderLSM extends P25Decoder
         mBasebandFilter = new ComplexFIRFilter(getBasebandFilter(), 1.0f);
 
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
-        mInterpolatingSampleBuffer = new InterpolatingSampleBuffer(getSamplesPerSymbol(), SYMBOL_TIMING_GAIN);
+        mInterpolatingSampleBuffer = new InterpolatingSampleBuffer(getSamplesPerSymbol(), SAMPLE_COUNTER_GAIN);
 
         mQPSKDemodulator = new DQPSKGardnerDemodulator(mCostasLoop, mInterpolatingSampleBuffer);
 

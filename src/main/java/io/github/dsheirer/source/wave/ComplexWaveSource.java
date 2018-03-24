@@ -45,7 +45,7 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     private Listener<ReusableComplexBuffer> mListener;
     private AudioInputStream mInputStream;
     private File mFile;
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue();
+    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("Complex Wave Source");
 
     public ComplexWaveSource(File file) throws IOException
     {

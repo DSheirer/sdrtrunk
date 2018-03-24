@@ -156,7 +156,7 @@ public class P25Phase1LSMPane extends DecoderPane
     {
         if(mEyeDiagramChart == null)
         {
-            mEyeDiagramChart = new EyeDiagramChart(10);
+            mEyeDiagramChart = new EyeDiagramChart(10, "Middle: 3-4 / Symbol: 8-9");
         }
 
         return mEyeDiagramChart;

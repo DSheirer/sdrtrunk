@@ -23,7 +23,7 @@ import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 
 public class ComplexFIRFilter extends FIRFilter
 {
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue();
+    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("Complex FIR Filter");
     private RealFIRFilter mIFilter;
     private RealFIRFilter mQFilter;
 
@@ -84,13 +84,13 @@ public class ComplexFIRFilter extends FIRFilter
      */
     public ReusableComplexBuffer filter(ReusableComplexBuffer originalBuffer)
     {
-        ReusableComplexBuffer filteredBuffer = mReusableBufferQueue.getBuffer(originalBuffer.getSampleLength());
+        ReusableComplexBuffer filteredBuffer = mReusableBufferQueue.getBuffer(originalBuffer.getSamples().length);
         filteredBuffer.setTimestamp(originalBuffer.getTimestamp());
 
         float[] samples = originalBuffer.getSamples();
         float[] filteredSamples = filteredBuffer.getSamples();
 
-        for(int x = 0; x < originalBuffer.getSampleLength(); x += 2)
+        for(int x = 0; x < originalBuffer.getSamples().length; x += 2)
         {
             filteredSamples[x] = filterInphase(samples[x]);
             filteredSamples[x + 1] = filterQuadrature(samples[x + 1]);

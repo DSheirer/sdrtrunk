@@ -50,9 +50,6 @@ public class P25DecoderC4FMInstrumented extends P25DecoderC4FM
     {
         ReusableComplexBuffer filtered = super.filter(reusableComplexBuffer);
 
-        //Increment user count before we hand to another listener or return from this method
-        filtered.incrementUserCount();
-
         if(mFilteredSymbolListener != null)
         {
             filtered.incrementUserCount();
@@ -70,7 +67,7 @@ public class P25DecoderC4FMInstrumented extends P25DecoderC4FM
         super.setSampleRate(sampleRate);
 
         InterpolatingSampleBufferInstrumented instrumentedBuffer =
-            new InterpolatingSampleBufferInstrumented(getSamplesPerSymbol(), SYMBOL_TIMING_GAIN);
+            new InterpolatingSampleBufferInstrumented(getSamplesPerSymbol(), SAMPLE_COUNTER_GAIN);
         mInterpolatingSampleBuffer = instrumentedBuffer;
 
         DQPSKDecisionDirectedDemodulatorInstrumented instrumented = new DQPSKDecisionDirectedDemodulatorInstrumented(mCostasLoop, instrumentedBuffer, getSampleRate());

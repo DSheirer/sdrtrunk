@@ -20,10 +20,16 @@ import io.github.dsheirer.sample.complex.Complex;
 
 public class DQPSKGardnerSymbolEvaluator implements IPSKSymbolEvaluator<Dibit>
 {
+    private static final Complex ROTATE_FROM_PLUS_135 = Complex.fromAngle(-3.0 * Math.PI / 4.0);
+    private static final Complex ROTATE_FROM_PLUS_45 = Complex.fromAngle(-1.0 * Math.PI / 4.0);
+    private static final Complex ROTATE_FROM_MINUS_45 = Complex.fromAngle(1.0 * Math.PI / 4.0);
+    private static final Complex ROTATE_FROM_MINUS_135 = Complex.fromAngle(3.0 * Math.PI / 4.0);
+
     private float mPhaseError = 0.0f;
     private float mTimingError = 0.0f;
     private Dibit mSymbolDecision = Dibit.D00_PLUS_1;
     private Complex mPreviousSymbol = new Complex(0, 0);
+    private Complex mEvaluationSymbol = new Complex(0, 0);
 
     /**
      * Differential QPSK Decision-directed symbol phase and timing error detector and symbol decision slicer.
@@ -53,40 +59,48 @@ public class DQPSKGardnerSymbolEvaluator implements IPSKSymbolEvaluator<Dibit>
      */
     public void setSymbols(Complex middle, Complex current)
     {
-        /* Gardner timing error calculations */
+        //Gardner timing error calculation
         float errorInphase = (mPreviousSymbol.inphase() - current.inphase()) * middle.inphase();
         float errorQuadrature = (mPreviousSymbol.quadrature() - current.quadrature()) * middle.quadrature();
-        mTimingError = normalize(errorInphase + errorQuadrature, 1.0f);
+        mTimingError = normalize(errorInphase + errorQuadrature, .3f);
 
-        //Calculate phase error and determine the transmitted dibit from the symbol
-        if(Math.abs(current.inphase()) > Math.abs(current.quadrature()))
+        //Store the current symbol to use in the next symbol calculation
+        mPreviousSymbol.setValues(current);
+
+        //Phase error and symbol decision calculations ...
+        mEvaluationSymbol.setValues(current);
+
+        if(mEvaluationSymbol.quadrature() > 0.0f)
         {
-            if(current.inphase() > 0)
+            if(mEvaluationSymbol.inphase() > 0.0f)
             {
-                mSymbolDecision = Dibit.D10_MINUS_1;
-                mPhaseError = -current.quadrature();
+                mSymbolDecision = Dibit.D00_PLUS_1;
+                mEvaluationSymbol.multiply(ROTATE_FROM_PLUS_45);
             }
             else
             {
                 mSymbolDecision = Dibit.D01_PLUS_3;
-                mPhaseError = current.quadrature();
+                mEvaluationSymbol.multiply(ROTATE_FROM_PLUS_135);
             }
+
         }
         else
         {
-            if(current.quadrature() > 0)
+            if(mEvaluationSymbol.inphase() > 0.0f)
             {
-                mSymbolDecision = Dibit.D00_PLUS_1;
-                mPhaseError = current.inphase();
+                mSymbolDecision = Dibit.D10_MINUS_1;
+                mEvaluationSymbol.multiply(ROTATE_FROM_MINUS_45);
             }
             else
             {
                 mSymbolDecision = Dibit.D11_MINUS_3;
-                mPhaseError = -current.inphase();
+                mEvaluationSymbol.multiply(ROTATE_FROM_MINUS_135);
             }
         }
 
-        mPreviousSymbol.setValues(current);
+        //Since we've rotated the error symbol back to 0 radians, the quadrature value closely approximates the
+        //arctan of the error angle relative to 0 radians and this provides our error value
+        mPhaseError = -mEvaluationSymbol.quadrature();
     }
 
     /**

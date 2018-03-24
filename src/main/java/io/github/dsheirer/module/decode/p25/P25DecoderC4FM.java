@@ -20,6 +20,7 @@ import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter;
+import io.github.dsheirer.dsp.gain.ComplexFeedForwardGainControl;
 import io.github.dsheirer.dsp.psk.DQPSKDecisionDirectedDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
@@ -34,11 +35,12 @@ import java.util.Map;
 public class P25DecoderC4FM extends P25Decoder
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25DecoderC4FM.class);
-    protected static final float SYMBOL_TIMING_GAIN = 0.1f;
+    protected static final float SAMPLE_COUNTER_GAIN = 0.5f;
     protected InterpolatingSampleBuffer mInterpolatingSampleBuffer;
     protected DQPSKDecisionDirectedDemodulator mQPSKDemodulator;
     protected CostasLoop mCostasLoop;
     protected P25MessageFramer mMessageFramer;
+    private ComplexFeedForwardGainControl mAGC = new ComplexFeedForwardGainControl(32);
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
     private ComplexFIRFilter mBasebandFilter;
 
@@ -61,7 +63,7 @@ public class P25DecoderC4FM extends P25Decoder
         mBasebandFilter = new ComplexFIRFilter(getBasebandFilter(), 1.0f);
 
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
-        mInterpolatingSampleBuffer = new InterpolatingSampleBuffer(getSamplesPerSymbol(), SYMBOL_TIMING_GAIN);
+        mInterpolatingSampleBuffer = new InterpolatingSampleBuffer(getSamplesPerSymbol(), SAMPLE_COUNTER_GAIN);
 
         mQPSKDemodulator = new DQPSKDecisionDirectedDemodulator(mCostasLoop, mInterpolatingSampleBuffer);
 
@@ -79,10 +81,13 @@ public class P25DecoderC4FM extends P25Decoder
     public void receive(ReusableComplexBuffer reusableComplexBuffer)
     {
         //User accounting of the incoming buffer is handled by the filter
-        ReusableComplexBuffer filtered = filter(reusableComplexBuffer);
+        ReusableComplexBuffer basebandFiltered = filter(reusableComplexBuffer);
+
+        //User accounting of the incoming buffer is handled by the gain filter
+        ReusableComplexBuffer gainApplied = mAGC.filter(basebandFiltered);
 
         //User accounting of the filtered buffer is handled by the demodulator
-        mQPSKDemodulator.receive(filtered);
+        mQPSKDemodulator.receive(gainApplied);
     }
 
     /**

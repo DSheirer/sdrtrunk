@@ -25,7 +25,7 @@ public class DQPSKDecisionDirectedSymbolEvaluator implements IPSKSymbolEvaluator
     private static final Complex ROTATE_FROM_MINUS_45 = Complex.fromAngle(1.0 * Math.PI / 4.0);
     private static final Complex ROTATE_FROM_MINUS_135 = Complex.fromAngle(3.0 * Math.PI / 4.0);
 
-    private Complex mSymbolError = new Complex(0, 0);
+    private Complex mEvaluationSymbol = new Complex(0, 0);
     private float mPhaseError = 0.0f;
     private float mTimingError = 0.0f;
     private float mTimingErrorPolarity = 1.0f;
@@ -59,46 +59,46 @@ public class DQPSKDecisionDirectedSymbolEvaluator implements IPSKSymbolEvaluator
      */
     public void setSymbol(Complex preceding, Complex current)
     {
-        mSymbolError.setValues(current);
+        mEvaluationSymbol.setValues(current);
 
-        if(mSymbolError.quadrature() > 0.0f)
+        if(mEvaluationSymbol.quadrature() > 0.0f)
         {
-            if(mSymbolError.inphase() > 0.0f)
+            if(mEvaluationSymbol.inphase() > 0.0f)
             {
                 mSymbolDecision = Dibit.D00_PLUS_1;
                 mTimingErrorPolarity = (preceding.quadrature() > current.quadrature() ? 1.0f : -1.0f);
-                mSymbolError.multiply(ROTATE_FROM_PLUS_45);
+                mEvaluationSymbol.multiply(ROTATE_FROM_PLUS_45);
             }
             else
             {
                 mSymbolDecision = Dibit.D01_PLUS_3;
                 mTimingErrorPolarity = (preceding.quadrature() < current.quadrature() ? 1.0f : -1.0f);
-                mSymbolError.multiply(ROTATE_FROM_PLUS_135);
+                mEvaluationSymbol.multiply(ROTATE_FROM_PLUS_135);
             }
 
         }
         else
         {
-            if(mSymbolError.inphase() > 0.0f)
+            if(mEvaluationSymbol.inphase() > 0.0f)
             {
                 mSymbolDecision = Dibit.D10_MINUS_1;
                 mTimingErrorPolarity = (preceding.quadrature() > current.quadrature() ? 1.0f : -1.0f);
-                mSymbolError.multiply(ROTATE_FROM_MINUS_45);
+                mEvaluationSymbol.multiply(ROTATE_FROM_MINUS_45);
             }
             else
             {
                 mSymbolDecision = Dibit.D11_MINUS_3;
                 mTimingErrorPolarity = (preceding.quadrature() < current.quadrature() ? 1.0f : -1.0f);
-                mSymbolError.multiply(ROTATE_FROM_MINUS_135);
+                mEvaluationSymbol.multiply(ROTATE_FROM_MINUS_135);
             }
         }
 
         //Since we've rotated the error symbol back to 0 radians, the quadrature value closely approximates the
         //arctan of the error angle relative to 0 radians and this provides our error value
-        mPhaseError = -mSymbolError.quadrature();
+        mPhaseError = -mEvaluationSymbol.quadrature();
 
         //Timing error is the same as phase error with the sign corrected according to the vector's angular rotation
-        mTimingError = mSymbolError.quadrature() * mTimingErrorPolarity;
+        mTimingError = mEvaluationSymbol.quadrature() * mTimingErrorPolarity;
     }
 
     /**
