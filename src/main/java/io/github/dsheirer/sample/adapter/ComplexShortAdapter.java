@@ -15,7 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.sample.adapter;
 
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

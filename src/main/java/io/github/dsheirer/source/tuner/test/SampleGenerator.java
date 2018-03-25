@@ -18,9 +18,9 @@ package io.github.dsheirer.source.tuner.test;
 import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.LowPhaseNoiseOscillator;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.reusable.ReusableBufferBroadcaster;
-import io.github.dsheirer.sample.complex.reusable.ReusableBufferQueue;
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -185,18 +185,19 @@ public class SampleGenerator
     public class Generator implements Runnable
     {
         private int mTriggerInterval = 0;
-        private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("** Sample Generator **");
+        private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("SampleGenerator");
 
         @Override
         public void run()
         {
             if(mComplexBufferBroadcaster.hasListeners())
             {
-                ReusableComplexBuffer reusableComplexBuffer = mReusableBufferQueue.getBuffer(mSamplesPerInterval);
+                ReusableComplexBuffer reusableComplexBuffer = mReusableComplexBufferQueue.getBuffer(mSamplesPerInterval);
 
                 mOscillator.generateComplex(reusableComplexBuffer);
 
-                mComplexBufferBroadcaster.broadcast(reusableComplexBuffer.incrementUserCount());
+                reusableComplexBuffer.incrementUserCount();
+                mComplexBufferBroadcaster.broadcast(reusableComplexBuffer);
 
                 if(mSweepUpdateInterval != 0)
                 {

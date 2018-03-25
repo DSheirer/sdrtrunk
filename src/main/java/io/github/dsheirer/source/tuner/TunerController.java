@@ -18,9 +18,9 @@
 package io.github.dsheirer.source.tuner;
 
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.reusable.IReusableComplexBufferProvider;
-import io.github.dsheirer.sample.complex.reusable.ReusableBufferBroadcaster;
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.IReusableBufferProvider;
+import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
@@ -33,10 +33,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class TunerController implements Tunable, ISourceEventProcessor, ISourceEventListener,
-    IReusableComplexBufferProvider, Listener<ReusableComplexBuffer>
+    IReusableBufferProvider<ReusableComplexBuffer>, Listener<ReusableComplexBuffer>
 {
     private final static Logger mLog = LoggerFactory.getLogger(TunerController.class);
-    protected ReusableBufferBroadcaster mSampleBroadcaster = new ReusableBufferBroadcaster();
+    protected ReusableBufferBroadcaster mReusableBufferBroadcaster = new ReusableBufferBroadcaster();
     protected FrequencyController mFrequencyController;
     private int mMiddleUnusableHalfBandwidth;
     private double mUsableBandwidthPercentage;
@@ -263,7 +263,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     @Override
     public void addBufferListener(Listener<ReusableComplexBuffer> listener)
     {
-        mSampleBroadcaster.addListener(listener);
+        mReusableBufferBroadcaster.addListener(listener);
     }
 
     /**
@@ -272,7 +272,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     @Override
     public void removeBufferListener(Listener<ReusableComplexBuffer> listener)
     {
-        mSampleBroadcaster.removeListener(listener);
+        mReusableBufferBroadcaster.removeListener(listener);
     }
 
     /**
@@ -281,7 +281,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     @Override
     public boolean hasBufferListeners()
     {
-        return mSampleBroadcaster.hasListeners();
+        return mReusableBufferBroadcaster.hasListeners();
     }
 
     /**
@@ -289,7 +289,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
      */
     protected void broadcast(ReusableComplexBuffer reusableComplexBuffer)
     {
-        mSampleBroadcaster.broadcast(reusableComplexBuffer.incrementUserCount());
+        mReusableBufferBroadcaster.broadcast(reusableComplexBuffer);
     }
 
     /**

@@ -26,8 +26,8 @@ import io.github.dsheirer.dsp.filter.smoothing.SmoothingFilter.SmoothingType;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.complex.reusable.ReusableBufferQueue;
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
 import io.github.dsheirer.sample.real.RealBuffer;
 import io.github.dsheirer.settings.ColorSetting.ColorSettingName;
 import io.github.dsheirer.settings.ColorSettingMenuItem;
@@ -69,435 +69,450 @@ public class ChannelSpectrumPanel extends JPanel implements ChannelEventListener
     private JLayeredPane mLayeredPane;
     private SpectrumPanel mSpectrumPanel;
     private ChannelOverlayPanel mOverlayPanel;
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue();
+    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("ChannelSpectrumPanel");
 
     private Channel mCurrentChannel;
 
     private int mSampleBufferSize = 2400;
 
-    private HalfBandFilter_RB_RB mDecimatingFilter = new HalfBandFilter_RB_RB( 
-		Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO.getCoefficients(), 1.0f, true );
-    
+    private HalfBandFilter_RB_RB mDecimatingFilter = new HalfBandFilter_RB_RB(
+        Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO.getCoefficients(), 1.0f, true);
+
     private AtomicBoolean mEnabled = new AtomicBoolean();
-    
+
     private SettingsManager mSettingsManager;
     private ChannelProcessingManager mChannelProcessingManager;
 
-    public ChannelSpectrumPanel( SettingsManager settingsManager, 
-    							 ChannelProcessingManager channelProcessingManager )
+    public ChannelSpectrumPanel(SettingsManager settingsManager,
+                                ChannelProcessingManager channelProcessingManager)
     {
-    	mSettingsManager = settingsManager;
-    	mChannelProcessingManager = channelProcessingManager;
-    	
-    	if( mSettingsManager != null )
-    	{
-    		mSettingsManager.addListener( this );
-    	}
-    	
-    	mSpectrumPanel = new SpectrumPanel( mSettingsManager );
-    	mSpectrumPanel.setAveraging( 1 );
+        mSettingsManager = settingsManager;
+        mChannelProcessingManager = channelProcessingManager;
 
-    	mOverlayPanel = new ChannelOverlayPanel( mSettingsManager );
-    	mDFTProcessor.addConverter( mDFTConverter );
-    	mDFTConverter.addListener( mSpectrumPanel );
+        if(mSettingsManager != null)
+        {
+            mSettingsManager.addListener(this);
+        }
+
+        mSpectrumPanel = new SpectrumPanel(mSettingsManager);
+        mSpectrumPanel.setAveraging(1);
+
+        mOverlayPanel = new ChannelOverlayPanel(mSettingsManager);
+        mDFTProcessor.addConverter(mDFTConverter);
+        mDFTConverter.addListener(mSpectrumPanel);
 
         /* Set the DFTProcessor to the decimated 24kHz sample rate */
         mDFTProcessor.process(SourceEvent.sampleRateChange(24000.0));
 
         initGui();
     }
-    
+
     public void dispose()
     {
-    	setEnabled( false );
-    	
-    	mDFTProcessor.dispose();
+        setEnabled(false);
 
-    	if( mSettingsManager != null )
-    	{
-    		mSettingsManager.removeListener( this );
-    	}
-    	
-    	mSettingsManager = null;
-    	mCurrentChannel = null;
-    	mDFTProcessor = null;
-    	mSpectrumPanel = null;
+        mDFTProcessor.dispose();
+
+        if(mSettingsManager != null)
+        {
+            mSettingsManager.removeListener(this);
+        }
+
+        mSettingsManager = null;
+        mCurrentChannel = null;
+        mDFTProcessor = null;
+        mSpectrumPanel = null;
     }
-    
-    public void setFrameRate( int framesPerSecond )
+
+    public void setFrameRate(int framesPerSecond)
     {
-    	mSampleBufferSize = (int)( 48000 / framesPerSecond );
-    	
-    	mDFTProcessor.setFrameRate( framesPerSecond );
+        mSampleBufferSize = (int)(48000 / framesPerSecond);
+
+        mDFTProcessor.setFrameRate(framesPerSecond);
     }
-    
+
     private void initGui()
     {
-    	setLayout( new MigLayout( "insets 0 0 0 0 ", 
-				  "[grow,fill]", 
-				  "[grow,fill]") );
-    	
-    	mLayeredPane = new JLayeredPane();
-    	mLayeredPane.addComponentListener( new ResizeListener() );
-    	
-    	MouseEventProcessor mouser = new MouseEventProcessor();
-    	
-    	mOverlayPanel.addMouseListener( mouser );
-    	mOverlayPanel.addMouseMotionListener( mouser );
-    	
-    	mLayeredPane.add( mSpectrumPanel, new Integer( 0 ), 0 );
-    	mLayeredPane.add( mOverlayPanel, new Integer( 1 ), 0 );
+        setLayout(new MigLayout("insets 0 0 0 0 ",
+            "[grow,fill]",
+            "[grow,fill]"));
 
-    	add( mLayeredPane );
+        mLayeredPane = new JLayeredPane();
+        mLayeredPane.addComponentListener(new ResizeListener());
+
+        MouseEventProcessor mouser = new MouseEventProcessor();
+
+        mOverlayPanel.addMouseListener(mouser);
+        mOverlayPanel.addMouseMotionListener(mouser);
+
+        mLayeredPane.add(mSpectrumPanel, new Integer(0), 0);
+        mLayeredPane.add(mOverlayPanel, new Integer(1), 0);
+
+        add(mLayeredPane);
     }
-    
-    public void setEnabled( boolean enabled )
+
+    public void setEnabled(boolean enabled)
     {
-    	if( enabled && mEnabled.compareAndSet( false, true ) )
-		{
-    		start();
-		}
-    	else if( !enabled && mEnabled.compareAndSet( true, false ) )
-    	{
-    		stop();
-    	}
+        if(enabled && mEnabled.compareAndSet(false, true))
+        {
+            start();
+        }
+        else if(!enabled && mEnabled.compareAndSet(true, false))
+        {
+            stop();
+        }
     }
 
     @Override
-	@SuppressWarnings( "incomplete-switch" )
-    public void channelChanged( ChannelEvent event )
+    @SuppressWarnings("incomplete-switch")
+    public void channelChanged(ChannelEvent event)
     {
-		switch( event.getEvent() )
-		{
-			case NOTIFICATION_SELECTION_CHANGE:
-				//ChannelSelectionManager ensures that only 1 channel can be
-				//selected and any previously selected channel will be first
-				//deselected before we get a new selection event
-				if( event.getChannel().isSelected() )
-				{
-					if( mCurrentChannel != null )
-					{
-						stop();
-						mCurrentChannel = null;
-					}
-					
-					mCurrentChannel = event.getChannel();
-					
-					if( mEnabled.get() )
-					{
-						start();
-					}
-				}
-				else
-				{
-					stop();
-					mCurrentChannel = null;
-				}
-				break;
-			case NOTIFICATION_PROCESSING_STOP:
-				if( event.getChannel() == mCurrentChannel )
-				{
-					if( mEnabled.get() )
-					{
-						stop();
-					}
+        switch(event.getEvent())
+        {
+            case NOTIFICATION_SELECTION_CHANGE:
+                //ChannelSelectionManager ensures that only 1 channel can be
+                //selected and any previously selected channel will be first
+                //deselected before we get a new selection event
+                if(event.getChannel().isSelected())
+                {
+                    if(mCurrentChannel != null)
+                    {
+                        stop();
+                        mCurrentChannel = null;
+                    }
 
-					mCurrentChannel = null;
-				}
-				break;
-		}
-    }
-	
-	private void start()
-	{
-		if( mEnabled.get() && mCurrentChannel != null && mCurrentChannel.isProcessing() )
-		{
-			ProcessingChain processingChain = mChannelProcessingManager
-					.getProcessingChain( mCurrentChannel );
+                    mCurrentChannel = event.getChannel();
 
-			if( processingChain != null )
-			{
-				processingChain.addRealBufferListener( this );
-				
-				mDFTProcessor.start();
-			}
-		}
-	}
-	
-	private void stop()
-	{
-		if( mCurrentChannel != null && mCurrentChannel.isProcessing() )
-		{
-			ProcessingChain processingChain = mChannelProcessingManager
-					.getProcessingChain( mCurrentChannel );
+                    if(mEnabled.get())
+                    {
+                        start();
+                    }
+                }
+                else
+                {
+                    stop();
+                    mCurrentChannel = null;
+                }
+                break;
+            case NOTIFICATION_PROCESSING_STOP:
+                if(event.getChannel() == mCurrentChannel)
+                {
+                    if(mEnabled.get())
+                    {
+                        stop();
+                    }
 
-			if( processingChain != null )
-			{
-				processingChain.removeRealBufferListener( this );
-			}
-		}
-
-		mDFTProcessor.stop();
-		
-		mSpectrumPanel.clearSpectrum();
-	}
-
-	@Override
-    public void settingChanged( Setting setting )
-    {
-		if( mSpectrumPanel != null )
-		{
-			mSpectrumPanel.settingChanged( setting );
-		}
-		if( mOverlayPanel != null )
-		{
-			mOverlayPanel.settingChanged( setting );
-		}
+                    mCurrentChannel = null;
+                }
+                break;
+        }
     }
 
-	@Override
-    public void settingDeleted( Setting setting )
+    private void start()
     {
-		if( mSpectrumPanel != null )
-		{
-			mSpectrumPanel.settingDeleted( setting );
-		}
+        if(mEnabled.get() && mCurrentChannel != null && mCurrentChannel.isProcessing())
+        {
+            ProcessingChain processingChain = mChannelProcessingManager
+                .getProcessingChain(mCurrentChannel);
 
-		if( mOverlayPanel != null )
-		{
-			mOverlayPanel.settingDeleted( setting );
-		}
+            if(processingChain != null)
+            {
+                processingChain.addRealBufferListener(this);
+
+                mDFTProcessor.start();
+            }
+        }
     }
 
-	@Override
-    public void receive( RealBuffer buffer )
+    private void stop()
     {
-		RealBuffer decimated = mDecimatingFilter.filter( buffer );
+        if(mCurrentChannel != null && mCurrentChannel.isProcessing())
+        {
+            ProcessingChain processingChain = mChannelProcessingManager
+                .getProcessingChain(mCurrentChannel);
+
+            if(processingChain != null)
+            {
+                processingChain.removeRealBufferListener(this);
+            }
+        }
+
+        mDFTProcessor.stop();
+
+        mSpectrumPanel.clearSpectrum();
+    }
+
+    @Override
+    public void settingChanged(Setting setting)
+    {
+        if(mSpectrumPanel != null)
+        {
+            mSpectrumPanel.settingChanged(setting);
+        }
+        if(mOverlayPanel != null)
+        {
+            mOverlayPanel.settingChanged(setting);
+        }
+    }
+
+    @Override
+    public void settingDeleted(Setting setting)
+    {
+        if(mSpectrumPanel != null)
+        {
+            mSpectrumPanel.settingDeleted(setting);
+        }
+
+        if(mOverlayPanel != null)
+        {
+            mOverlayPanel.settingDeleted(setting);
+        }
+    }
+
+    @Override
+    public void receive(RealBuffer buffer)
+    {
+        RealBuffer decimated = mDecimatingFilter.filter(buffer);
 
         //Hack: we're placing real samples in a complex buffer that the DFT
         //processor is expecting.
-        ReusableComplexBuffer reusableComplexBuffer = mReusableBufferQueue.getBuffer(decimated.getSamples().length);
+        ReusableComplexBuffer reusableComplexBuffer = mReusableComplexBufferQueue.getBuffer(decimated.getSamples().length);
         reusableComplexBuffer.reloadFrom(decimated.getSamples(), System.currentTimeMillis());
-        mDFTProcessor.receive(reusableComplexBuffer.incrementUserCount());
+        reusableComplexBuffer.incrementUserCount();
+        mDFTProcessor.receive(reusableComplexBuffer);
     }
 
-	/**
-	 * Monitors the sizing of the layered pane and resizes the spectrum and
-	 * channel panels whenever the layered pane is resized
-	 */
-	public class ResizeListener implements ComponentListener
-	{
-		@Override
-        public void componentResized( ComponentEvent e )
+    /**
+     * Monitors the sizing of the layered pane and resizes the spectrum and
+     * channel panels whenever the layered pane is resized
+     */
+    public class ResizeListener implements ComponentListener
+    {
+        @Override
+        public void componentResized(ComponentEvent e)
         {
-			Component c = e.getComponent();
-			
-			mSpectrumPanel.setBounds( 0, 0, c.getWidth(), c.getHeight() );
-			mOverlayPanel.setBounds( 0, 0, c.getWidth(), c.getHeight() );
+            Component c = e.getComponent();
+
+            mSpectrumPanel.setBounds(0, 0, c.getWidth(), c.getHeight());
+            mOverlayPanel.setBounds(0, 0, c.getWidth(), c.getHeight());
         }
 
-		@Override
-        public void componentHidden( ComponentEvent arg0 ) {}
-		@Override
-        public void componentMoved( ComponentEvent arg0 ) {}
-		@Override
-        public void componentShown( ComponentEvent arg0 ) {}
-	}
-	
-	/**
-	 * Mouse event handler for the channel panel.
-	 */
-	public class MouseEventProcessor implements MouseMotionListener, MouseListener
-	{
-		@Override
-        public void mouseMoved( MouseEvent event )
+        @Override
+        public void componentHidden(ComponentEvent arg0)
         {
-			update( event );
-        }
-		@Override
-        public void mouseDragged( MouseEvent event ) 
-		{
-			update( event );
-		}
-		
-		private void update( MouseEvent event )
-		{
-			if( event.getComponent() == mOverlayPanel )
-			{
-				mOverlayPanel.setCursorLocation( event.getPoint() );
-			}
-		}
-
-		@Override
-        public void mouseEntered( MouseEvent e ) 
-		{
-			if( e.getComponent() == mOverlayPanel )
-			{
-				mOverlayPanel.setCursorVisible( true );
-			}
-		}
-		
-		@Override
-        public void mouseExited( MouseEvent e )
-		{
-			mOverlayPanel.setCursorVisible( false );
-		}
-
-		/**
-		 * Displays the context menu.
-		 */
-		@Override
-        public void mouseClicked( MouseEvent event )
-        {
-			if( SwingUtilities.isRightMouseButton( event ) )
-			{
-				JPopupMenu contextMenu = new JPopupMenu();
-				
-				/**
-				 * Color Menus
-				 */
-				JMenu colorMenu = new JMenu( "Color" );
-
-				colorMenu.add( new ColorSettingMenuItem( mSettingsManager, 
-						ColorSettingName.SPECTRUM_CURSOR ) );
-
-				colorMenu.add( new ColorSettingMenuItem( mSettingsManager, 
-						ColorSettingName.SPECTRUM_LINE ) );
-
-				colorMenu.add( new ColorSettingMenuItem( mSettingsManager, 
-						ColorSettingName.SPECTRUM_BACKGROUND ) );
-
-				colorMenu.add( new ColorSettingMenuItem( mSettingsManager, 
-						ColorSettingName.SPECTRUM_GRADIENT_BOTTOM ) );
-
-				colorMenu.add( new ColorSettingMenuItem( mSettingsManager, 
-						ColorSettingName.SPECTRUM_GRADIENT_TOP ) );
-
-				contextMenu.add( colorMenu );
-				
-				/**
-				 * Display items: fft and frame rate
-				 */
-				JMenu displayMenu = new JMenu( "Display" );
-				contextMenu.add(  displayMenu );
-
-				/**
-				 * Averaging menu
-				 */
-				JMenu averagingMenu = new JMenu( "Averaging" );
-				averagingMenu.add( 
-						new AveragingItem( ChannelSpectrumPanel.this, 2 ) );
-				displayMenu.add( averagingMenu );
-				
-				/**
-				 * FFT width
-				 */
-				JMenu fftWidthMenu = new JMenu( "FFT Width" );
-				displayMenu.add( fftWidthMenu );
-				
-				for( DFTSize width: DFTSize.values() )
-				{
-					fftWidthMenu.add( new DFTSizeItem( mDFTProcessor, width ) );
-				}
-
-				/**
-				 * DFT Processor Frame Rate
-				 */
-				JMenu frameRateMenu = new JMenu( "Frame Rate" );
-				displayMenu.add(  frameRateMenu );
-				
-				frameRateMenu.add( new FrameRateItem( mDFTProcessor, 14 ) );
-				frameRateMenu.add( new FrameRateItem( mDFTProcessor, 16 ) );
-				frameRateMenu.add( new FrameRateItem( mDFTProcessor, 18 ) );
-				frameRateMenu.add( new FrameRateItem( mDFTProcessor, 20 ) );
-				frameRateMenu.add( new FrameRateItem( mDFTProcessor, 25 ) );
-				frameRateMenu.add( new FrameRateItem( mDFTProcessor, 30 ) );
-				frameRateMenu.add( new FrameRateItem( mDFTProcessor, 40 ) );
-				frameRateMenu.add( new FrameRateItem( mDFTProcessor, 50 ) );
-
-				/**
-				 * FFT Window Type
-				 */
-				JMenu fftWindowType = new JMenu( "Window Type" );
-				displayMenu.add( fftWindowType );
-				
-				for( WindowType type: WindowType.values() )
-				{
-					fftWindowType.add( 
-							new FFTWindowTypeItem( mDFTProcessor, type ) );
-				}
-
-				/**
-				 * Smoothing menu
-				 */
-				JMenu smoothingMenu = new JMenu( "Smoothing" );
-
-				if( mSpectrumPanel.getSmoothingType() != SmoothingType.NONE )
-				{
-					smoothingMenu.add( new SmoothingItem( ChannelSpectrumPanel.this, 5 ) );
-					smoothingMenu.add( new JSeparator() );
-				}
-				
-				smoothingMenu.add( new SmoothingTypeItem( ChannelSpectrumPanel.this, SmoothingType.GAUSSIAN ) );
-				smoothingMenu.add( new SmoothingTypeItem( ChannelSpectrumPanel.this, SmoothingType.TRIANGLE ) );
-				smoothingMenu.add( new SmoothingTypeItem( ChannelSpectrumPanel.this, SmoothingType.RECTANGLE ) );
-				smoothingMenu.add( new SmoothingTypeItem( ChannelSpectrumPanel.this, SmoothingType.NONE ) );
-				
-				displayMenu.add( smoothingMenu );
-
-				if( contextMenu != null )
-				{
-					contextMenu.show( mOverlayPanel, 
-							  event.getX(), 
-							  event.getY() );
-				}				
-			}
         }
 
-		@Override
-        public void mousePressed( MouseEvent e ) {}
-		@Override
-        public void mouseReleased( MouseEvent e ) {}
-	}
+        @Override
+        public void componentMoved(ComponentEvent arg0)
+        {
+        }
 
-	@Override
+        @Override
+        public void componentShown(ComponentEvent arg0)
+        {
+        }
+    }
+
+    /**
+     * Mouse event handler for the channel panel.
+     */
+    public class MouseEventProcessor implements MouseMotionListener, MouseListener
+    {
+        @Override
+        public void mouseMoved(MouseEvent event)
+        {
+            update(event);
+        }
+
+        @Override
+        public void mouseDragged(MouseEvent event)
+        {
+            update(event);
+        }
+
+        private void update(MouseEvent event)
+        {
+            if(event.getComponent() == mOverlayPanel)
+            {
+                mOverlayPanel.setCursorLocation(event.getPoint());
+            }
+        }
+
+        @Override
+        public void mouseEntered(MouseEvent e)
+        {
+            if(e.getComponent() == mOverlayPanel)
+            {
+                mOverlayPanel.setCursorVisible(true);
+            }
+        }
+
+        @Override
+        public void mouseExited(MouseEvent e)
+        {
+            mOverlayPanel.setCursorVisible(false);
+        }
+
+        /**
+         * Displays the context menu.
+         */
+        @Override
+        public void mouseClicked(MouseEvent event)
+        {
+            if(SwingUtilities.isRightMouseButton(event))
+            {
+                JPopupMenu contextMenu = new JPopupMenu();
+
+                /**
+                 * Color Menus
+                 */
+                JMenu colorMenu = new JMenu("Color");
+
+                colorMenu.add(new ColorSettingMenuItem(mSettingsManager,
+                    ColorSettingName.SPECTRUM_CURSOR));
+
+                colorMenu.add(new ColorSettingMenuItem(mSettingsManager,
+                    ColorSettingName.SPECTRUM_LINE));
+
+                colorMenu.add(new ColorSettingMenuItem(mSettingsManager,
+                    ColorSettingName.SPECTRUM_BACKGROUND));
+
+                colorMenu.add(new ColorSettingMenuItem(mSettingsManager,
+                    ColorSettingName.SPECTRUM_GRADIENT_BOTTOM));
+
+                colorMenu.add(new ColorSettingMenuItem(mSettingsManager,
+                    ColorSettingName.SPECTRUM_GRADIENT_TOP));
+
+                contextMenu.add(colorMenu);
+
+                /**
+                 * Display items: fft and frame rate
+                 */
+                JMenu displayMenu = new JMenu("Display");
+                contextMenu.add(displayMenu);
+
+                /**
+                 * Averaging menu
+                 */
+                JMenu averagingMenu = new JMenu("Averaging");
+                averagingMenu.add(
+                    new AveragingItem(ChannelSpectrumPanel.this, 2));
+                displayMenu.add(averagingMenu);
+
+                /**
+                 * FFT width
+                 */
+                JMenu fftWidthMenu = new JMenu("FFT Width");
+                displayMenu.add(fftWidthMenu);
+
+                for(DFTSize width : DFTSize.values())
+                {
+                    fftWidthMenu.add(new DFTSizeItem(mDFTProcessor, width));
+                }
+
+                /**
+                 * DFT Processor Frame Rate
+                 */
+                JMenu frameRateMenu = new JMenu("Frame Rate");
+                displayMenu.add(frameRateMenu);
+
+                frameRateMenu.add(new FrameRateItem(mDFTProcessor, 14));
+                frameRateMenu.add(new FrameRateItem(mDFTProcessor, 16));
+                frameRateMenu.add(new FrameRateItem(mDFTProcessor, 18));
+                frameRateMenu.add(new FrameRateItem(mDFTProcessor, 20));
+                frameRateMenu.add(new FrameRateItem(mDFTProcessor, 25));
+                frameRateMenu.add(new FrameRateItem(mDFTProcessor, 30));
+                frameRateMenu.add(new FrameRateItem(mDFTProcessor, 40));
+                frameRateMenu.add(new FrameRateItem(mDFTProcessor, 50));
+
+                /**
+                 * FFT Window Type
+                 */
+                JMenu fftWindowType = new JMenu("Window Type");
+                displayMenu.add(fftWindowType);
+
+                for(WindowType type : WindowType.values())
+                {
+                    fftWindowType.add(
+                        new FFTWindowTypeItem(mDFTProcessor, type));
+                }
+
+                /**
+                 * Smoothing menu
+                 */
+                JMenu smoothingMenu = new JMenu("Smoothing");
+
+                if(mSpectrumPanel.getSmoothingType() != SmoothingType.NONE)
+                {
+                    smoothingMenu.add(new SmoothingItem(ChannelSpectrumPanel.this, 5));
+                    smoothingMenu.add(new JSeparator());
+                }
+
+                smoothingMenu.add(new SmoothingTypeItem(ChannelSpectrumPanel.this, SmoothingType.GAUSSIAN));
+                smoothingMenu.add(new SmoothingTypeItem(ChannelSpectrumPanel.this, SmoothingType.TRIANGLE));
+                smoothingMenu.add(new SmoothingTypeItem(ChannelSpectrumPanel.this, SmoothingType.RECTANGLE));
+                smoothingMenu.add(new SmoothingTypeItem(ChannelSpectrumPanel.this, SmoothingType.NONE));
+
+                displayMenu.add(smoothingMenu);
+
+                if(contextMenu != null)
+                {
+                    contextMenu.show(mOverlayPanel,
+                        event.getX(),
+                        event.getY());
+                }
+            }
+        }
+
+        @Override
+        public void mousePressed(MouseEvent e)
+        {
+        }
+
+        @Override
+        public void mouseReleased(MouseEvent e)
+        {
+        }
+    }
+
+    @Override
     public int getAveraging()
     {
-	    return mSpectrumPanel.getAveraging();
+        return mSpectrumPanel.getAveraging();
     }
 
-	@Override
-    public void setAveraging( int averaging )
+    @Override
+    public void setAveraging(int averaging)
     {
-		mSpectrumPanel.setAveraging( averaging );
+        mSpectrumPanel.setAveraging(averaging);
     }
 
-	public void setSampleSize( double sampleSize )
-	{
-		mSpectrumPanel.setSampleSize( sampleSize );
-	}
+    public void setSampleSize(double sampleSize)
+    {
+        mSpectrumPanel.setSampleSize(sampleSize);
+    }
 
-	@Override
-	public int getSmoothing()
-	{
-		return mSpectrumPanel.getSmoothing();
-	}
+    @Override
+    public int getSmoothing()
+    {
+        return mSpectrumPanel.getSmoothing();
+    }
 
-	@Override
-	public void setSmoothing( int smoothing )
-	{
-		mSpectrumPanel.setSmoothing( smoothing );
-	}
+    @Override
+    public void setSmoothing(int smoothing)
+    {
+        mSpectrumPanel.setSmoothing(smoothing);
+    }
 
-	@Override
-	public SmoothingType getSmoothingType()
-	{
-		return mSpectrumPanel.getSmoothingType();
-	}
+    @Override
+    public SmoothingType getSmoothingType()
+    {
+        return mSpectrumPanel.getSmoothingType();
+    }
 
-	@Override
-	public void setSmoothingType( SmoothingType type )
-	{
-		mSpectrumPanel.setSmoothingType( type );
-	}
+    @Override
+    public void setSmoothingType(SmoothingType type)
+    {
+        mSpectrumPanel.setSmoothingType(type);
+    }
 }

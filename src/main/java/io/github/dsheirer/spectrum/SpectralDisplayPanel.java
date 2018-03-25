@@ -26,7 +26,7 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.settings.ColorSetting.ColorSettingName;
 import io.github.dsheirer.settings.ColorSettingMenuItem;
 import io.github.dsheirer.settings.SettingsManager;
@@ -415,8 +415,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
     @Override
     public void receive(ReusableComplexBuffer reusableComplexBuffer)
     {
-        mDFTProcessor.receive(reusableComplexBuffer.incrementUserCount());
-        reusableComplexBuffer.decrementUserCount();
+        mDFTProcessor.receive(reusableComplexBuffer);
     }
 
     /**

@@ -18,7 +18,7 @@ package io.github.dsheirer.dsp.filter.channelizer;
 
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
@@ -258,7 +258,7 @@ public class ChannelizerViewer extends JFrame
 
             for(int x = 0; x < mChannelCount; x++)
             {
-                TunerChannelSource source = mTestTuner.getChannelSourceManager().getSpecialSource(x);
+                TunerChannelSource source = mTestTuner.getChannelSourceManager().getTestingSource(x);
                 DiscreteChannelPanel channelPanel = new DiscreteChannelPanel(mSettingsManager, source, x);
                 channelPanel.setDFTSize(mChannelPanelDFTSize);
 
@@ -327,8 +327,7 @@ public class ChannelizerViewer extends JFrame
         @Override
         public void receive(ReusableComplexBuffer reusableComplexBuffer)
         {
-            mDFTProcessor.receive(reusableComplexBuffer.incrementUserCount());
-            reusableComplexBuffer.decrementUserCount();
+            mDFTProcessor.receive(reusableComplexBuffer);
         }
 
         @Override
@@ -373,7 +372,8 @@ public class ChannelizerViewer extends JFrame
                             mLog.debug("Samples:" + Arrays.toString(complexBuffer.getSamples()));
                         }
 
-                        mDFTProcessor.receive(complexBuffer.incrementUserCount());
+                        complexBuffer.incrementUserCount();
+                        mDFTProcessor.receive(complexBuffer);
                         complexBuffer.decrementUserCount();
                     }
                 });
@@ -420,7 +420,8 @@ public class ChannelizerViewer extends JFrame
         @Override
         public void receive(ReusableComplexBuffer reusableComplexBuffer)
         {
-            mDFTProcessor.receive(reusableComplexBuffer.incrementUserCount());
+            reusableComplexBuffer.incrementUserCount();
+            mDFTProcessor.receive(reusableComplexBuffer);
             reusableComplexBuffer.decrementUserCount();
         }
 
@@ -476,7 +477,8 @@ public class ChannelizerViewer extends JFrame
                             mLog.debug("Samples:" + Arrays.toString(complexBuffer.getSamples()));
                         }
 
-                        mDFTProcessor.receive(complexBuffer.incrementUserCount());
+                        complexBuffer.incrementUserCount();
+                        mDFTProcessor.receive(complexBuffer);
                         complexBuffer.decrementUserCount();
                     }
                 });
@@ -502,7 +504,8 @@ public class ChannelizerViewer extends JFrame
         @Override
         public void receive(ReusableComplexBuffer reusableComplexBuffer)
         {
-            mDFTProcessor.receive(reusableComplexBuffer.incrementUserCount());
+            reusableComplexBuffer.incrementUserCount();
+            mDFTProcessor.receive(reusableComplexBuffer);
             reusableComplexBuffer.decrementUserCount();
         }
 

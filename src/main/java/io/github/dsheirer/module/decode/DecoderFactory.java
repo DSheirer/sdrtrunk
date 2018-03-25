@@ -20,7 +20,7 @@ package io.github.dsheirer.module.decode;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.audio.AudioModule;
+import io.github.dsheirer.audio.AudioModule2;
 import io.github.dsheirer.channel.metadata.Metadata;
 import io.github.dsheirer.channel.state.AlwaysUnsquelchedDecoderState;
 import io.github.dsheirer.channel.traffic.TrafficChannelManager;
@@ -184,14 +184,14 @@ public class DecoderFactory
                 modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.AM, channel.getName()));
                 modules.add(new AMDemodulatorModule());
                 modules.add(new DemodulatedAudioFilterModule(4000, 6000));
-                modules.add(new AudioModule(metadata));
+                modules.add(new AudioModule2(metadata));
                 break;
             case NBFM:
                 modules.add(new NBFMDecoder(decodeConfig));
                 modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.NBFM, channel.getName()));
                 modules.add(new FMDemodulatorModule(NBFM_PASS_FREQUENCY, NBFM_STOP_FREQUENCY));
                 modules.add(new DemodulatedAudioFilterModule(4000, 6000));
-                modules.add(new AudioModule(metadata));
+                modules.add(new AudioModule2(metadata));
                 break;
             case LTR_STANDARD:
                 MessageDirection direction = ((DecodeConfigLTRStandard) decodeConfig).getMessageDirection();
@@ -199,14 +199,14 @@ public class DecoderFactory
                 modules.add(new LTRStandardDecoderState(aliasList));
                 modules.add(new FMDemodulatorModule(NBFM_PASS_FREQUENCY, NBFM_STOP_FREQUENCY));
                 modules.add(new DemodulatedAudioFilterModule(4000, 6000));
-                modules.add(new AudioModule(metadata));
+                modules.add(new AudioModule2(metadata));
                 break;
             case LTR_NET:
                 modules.add(new LTRNetDecoder((DecodeConfigLTRNet) decodeConfig, aliasList));
                 modules.add(new LTRNetDecoderState(aliasList));
                 modules.add(new FMDemodulatorModule(NBFM_PASS_FREQUENCY, NBFM_STOP_FREQUENCY));
                 modules.add(new DemodulatedAudioFilterModule(4000, 6000));
-                modules.add(new AudioModule(metadata));
+                modules.add(new AudioModule2(metadata));
                 break;
             case MPT1327:
                 DecodeConfigMPT1327 mptConfig = (DecodeConfigMPT1327) decodeConfig;
@@ -229,14 +229,14 @@ public class DecoderFactory
 
                 modules.add(new FMDemodulatorModule(NBFM_PASS_FREQUENCY, NBFM_STOP_FREQUENCY));
                 modules.add(new DemodulatedAudioFilterModule(P25_C4FM_DEMOD_FILTER, 1.0f));
-                modules.add(new AudioModule(metadata));
+                modules.add(new AudioModule2(metadata));
                 break;
             case PASSPORT:
                 modules.add(new PassportDecoder(decodeConfig, aliasList));
                 modules.add(new PassportDecoderState(aliasList));
                 modules.add(new FMDemodulatorModule(NBFM_PASS_FREQUENCY, NBFM_STOP_FREQUENCY));
                 modules.add(new DemodulatedAudioFilterModule(4000, 6000));
-                modules.add(new AudioModule(metadata));
+                modules.add(new AudioModule2(metadata));
                 break;
             case P25_PHASE1:
                 DecodeConfigP25Phase1 p25Config = (DecodeConfigP25Phase1) decodeConfig;

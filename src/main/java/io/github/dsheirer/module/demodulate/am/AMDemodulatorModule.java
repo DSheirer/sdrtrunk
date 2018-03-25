@@ -23,9 +23,9 @@ import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter_RB_RB;
 import io.github.dsheirer.dsp.gain.AutomaticGainControl_RB;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.buffer.IReusableComplexBufferListener;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
-import io.github.dsheirer.sample.complex.reusable.IReusableComplexBufferListener;
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 import io.github.dsheirer.sample.real.IFilteredRealBufferProvider;
 import io.github.dsheirer.sample.real.RealBuffer;
 

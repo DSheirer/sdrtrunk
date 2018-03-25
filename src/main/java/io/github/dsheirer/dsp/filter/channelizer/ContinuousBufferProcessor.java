@@ -28,15 +28,13 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class ScheduledBufferProcessor<E> implements Listener<E>
+public class ContinuousBufferProcessor<E> implements Listener<E>
 {
-    private final static Logger mLog = LoggerFactory.getLogger(ScheduledBufferProcessor.class);
+    private final static Logger mLog = LoggerFactory.getLogger(ContinuousBufferProcessor.class);
 
     private OverflowableTransferQueue<E> mQueue;
     private Listener<E> mListener;
     private ScheduledFuture<?> mScheduledFuture;
-    private long mDistributionInterval;
-    private int mMaxBuffersPerInterval;
     private AtomicBoolean mRunning = new AtomicBoolean();
 
     /**
@@ -52,14 +50,10 @@ public class ScheduledBufferProcessor<E> implements Listener<E>
      *
      * @param maximumSize of the internal queue (overflow happens when this is exceeded)
      * @param resetThreshold of the internal queue (overflow reset happens once queue size falls below this threshold
-     * @param distributionInterval in milliseconds specifying how often the internal scheduled thread pool buffer
-     * distributor should run
-     * @param maxBuffersPerInterval maximum number of buffers to pull from the internal queue during each distribution
-     * interval
      */
-    public ScheduledBufferProcessor(int maximumSize, int resetThreshold, long distributionInterval, int maxBuffersPerInterval)
+    public ContinuousBufferProcessor(int maximumSize, int resetThreshold)
     {
-        this(new OverflowableTransferQueue<>(maximumSize, resetThreshold), distributionInterval, maxBuffersPerInterval);
+        this(new OverflowableTransferQueue<>(maximumSize, resetThreshold));
     }
 
     /**
@@ -74,16 +68,10 @@ public class ScheduledBufferProcessor<E> implements Listener<E>
      * notifications of overflow and reset state.  Queue sizing parameters are specified in the constructor.
      *
      * @param queue implmentation of an overflowable transfer queue
-     * @param distributionInterval in milliseconds specifying how often the internal scheduled thread pool buffer
-     * distributor should run
-     * @param maxBuffersPerInterval maximum number of buffers to pull from the internal queue during each distribution
-     * interval
      */
-    public ScheduledBufferProcessor(OverflowableTransferQueue<E> queue, long distributionInterval, int maxBuffersPerInterval)
+    public ContinuousBufferProcessor(OverflowableTransferQueue<E> queue)
     {
         mQueue = queue;
-        mDistributionInterval = distributionInterval;
-        mMaxBuffersPerInterval = maxBuffersPerInterval;
     }
 
     /**
@@ -116,6 +104,7 @@ public class ScheduledBufferProcessor<E> implements Listener<E>
     @Override
     public void receive(E e)
     {
+//        mLog.debug("    Queuing: " + e.toString());
         mQueue.offer(e);
     }
 
@@ -126,7 +115,7 @@ public class ScheduledBufferProcessor<E> implements Listener<E>
     {
         if(mRunning.compareAndSet(false, true))
         {
-            mScheduledFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new Processor(), 0, mDistributionInterval, TimeUnit.MILLISECONDS);
+            mScheduledFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(new Processor(), 0, 5, TimeUnit.MILLISECONDS);
         }
     }
 
@@ -175,17 +164,22 @@ public class ScheduledBufferProcessor<E> implements Listener<E>
         {
             try
             {
-                mQueue.drainTo(mBuffers, mMaxBuffersPerInterval);
+                mQueue.drainTo(mBuffers, 10);
 
                 if(mListener != null)
                 {
-                    for(E buffer: mBuffers)
+                    while(!mBuffers.isEmpty())
                     {
-                        mListener.receive(buffer);
+                        for(E buffer: mBuffers)
+                        {
+//                            mLog.debug("Dispatching: " + buffer.toString() + " Count:" + mBuffers.size());
+                            mListener.receive(buffer);
+                        }
+
+                        mBuffers.clear();
+                        mQueue.drainTo(mBuffers, 10);
                     }
                 }
-
-                mBuffers.clear();
             }
             catch(Throwable throwable)
             {

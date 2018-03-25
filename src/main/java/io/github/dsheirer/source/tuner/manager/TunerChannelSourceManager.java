@@ -50,10 +50,10 @@ public class TunerChannelSourceManager extends ChannelSourceManager
     }
 
     @Override
-    public TunerChannelSource getSpecialSource(int index)
+    public TunerChannelSource getTestingSource(int index)
     {
         //TODO: remove this debug method
-        return mPolyphaseChannelManager.getSpecialChannel(index);
+        return mPolyphaseChannelManager.getTestChannel(index);
     }
 
     /**

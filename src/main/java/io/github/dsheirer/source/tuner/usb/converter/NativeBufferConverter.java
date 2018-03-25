@@ -15,15 +15,15 @@
  ******************************************************************************/
 package io.github.dsheirer.source.tuner.usb.converter;
 
-import io.github.dsheirer.sample.complex.reusable.ReusableBufferQueue;
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
 public abstract class NativeBufferConverter
 {
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue();
+    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("NativeBufferConverter");
 
     /**
      * Converts native byte buffers into complex float samples and produces reusable complex sample buffers.  Tracks
@@ -45,10 +45,11 @@ public abstract class NativeBufferConverter
     {
         FloatBuffer floatBuffer = convertSamples(byteBuffer, length);
 
-        ReusableComplexBuffer reusableComplexBuffer = mReusableBufferQueue.getBuffer(floatBuffer.capacity());
+        ReusableComplexBuffer reusableComplexBuffer = mReusableComplexBufferQueue.getBuffer(floatBuffer.capacity());
 
         //The reusable buffer will rewind the float buffer to the beginning
         reusableComplexBuffer.reloadFrom(floatBuffer, System.currentTimeMillis());
+        reusableComplexBuffer.incrementUserCount();
 
         return reusableComplexBuffer;
     }

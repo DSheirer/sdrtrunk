@@ -15,8 +15,8 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.mixer;
 
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.complex.Complex;
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -160,7 +160,7 @@ public abstract class AbstractOscillator implements IOscillator
     @Override
     public void generateComplex(ReusableComplexBuffer reusableComplexBuffer)
     {
-        int sampleCount = reusableComplexBuffer.getSampleLength();
+        int sampleCount = reusableComplexBuffer.getSampleCount();
 
         if(mSampleBuffer == null || mSampleBuffer.capacity() != sampleCount * 2)
         {

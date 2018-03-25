@@ -13,17 +13,13 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.source;
+package io.github.dsheirer.sample.buffer;
 
-import io.github.dsheirer.sample.Provider;
-import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-
-public abstract class ComplexSource extends Source implements Provider<ReusableComplexBuffer>
+public interface IReusableBufferDisposedListener<T extends ReusableBuffer>
 {
-    @Override
-    public SampleType getSampleType()
-    {
-        return SampleType.COMPLEX;
-    }
+    /**
+     * Notifies the listener that the timestamped buffer has been disposed and can now be reused.
+     * @param t reusableBuffer that has been disposed
+     */
+    void disposed(T t);
 }

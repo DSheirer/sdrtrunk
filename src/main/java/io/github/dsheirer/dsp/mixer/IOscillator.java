@@ -15,7 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.mixer;
 
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 
 /**
  * Oscillator interface.

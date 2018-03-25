@@ -23,8 +23,8 @@ import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.LowPhaseNoiseOscillator;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.complex.reusable.ReusableBufferQueue;
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
 import io.github.dsheirer.sample.real.IOverflowListener;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.SourceEvent;
@@ -177,8 +177,7 @@ public class SynthesizerViewer extends JFrame
         @Override
         public void receive(ReusableComplexBuffer reusableComplexBuffer)
         {
-            mDFTProcessor.receive(reusableComplexBuffer.incrementUserCount());
-            reusableComplexBuffer.decrementUserCount();
+            mDFTProcessor.receive(reusableComplexBuffer);
         }
     }
 
@@ -212,8 +211,7 @@ public class SynthesizerViewer extends JFrame
         @Override
         public void receive(ReusableComplexBuffer reusableComplexBuffer)
         {
-            mDFTProcessor.receive(reusableComplexBuffer.incrementUserCount());
-            reusableComplexBuffer.decrementUserCount();
+            mDFTProcessor.receive(reusableComplexBuffer);
         }
     }
 
@@ -277,7 +275,7 @@ public class SynthesizerViewer extends JFrame
         private TwoChannelSynthesizerM2 mSynthesizer;
         private FS4DownConverter mFS4DownConverter = new FS4DownConverter();
         private int mSamplesPerCycle = CHANNEL_SAMPLE_RATE / DATA_GENERATOR_FRAME_RATE;
-        private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue();
+        private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("SynthesizerViewer");
 
         public DataGenerationManager()
         {
@@ -296,19 +294,22 @@ public class SynthesizerViewer extends JFrame
         @Override
         public void run()
         {
-            ReusableComplexBuffer channel1Buffer = mReusableBufferQueue.getBuffer(mSamplesPerCycle);
+            ReusableComplexBuffer channel1Buffer = mReusableComplexBufferQueue.getBuffer(mSamplesPerCycle);
             getChannel1ControlPanel().getOscillator().generateComplex(channel1Buffer);
 
-            ReusableComplexBuffer channel2Buffer = mReusableBufferQueue.getBuffer(mSamplesPerCycle);
+            ReusableComplexBuffer channel2Buffer = mReusableComplexBufferQueue.getBuffer(mSamplesPerCycle);
             getChannel2ControlPanel().getOscillator().generateComplex(channel2Buffer);
 
             float[] synthesized = mSynthesizer.process(channel1Buffer.getSamples(), channel2Buffer.getSamples());
             mFS4DownConverter.mixComplex(synthesized);
-            ReusableComplexBuffer synthesizedBuffer = mReusableBufferQueue.getBuffer(synthesized.length);
+            ReusableComplexBuffer synthesizedBuffer = mReusableComplexBufferQueue.getBuffer(synthesized.length);
 
-            getChannel1Panel().receive(channel1Buffer.incrementUserCount());
-            getChannel2Panel().receive(channel2Buffer.incrementUserCount());
-            getSpectrumPanel().receive(synthesizedBuffer.incrementUserCount());
+            channel1Buffer.incrementUserCount();
+            getChannel1Panel().receive(channel1Buffer);
+            channel2Buffer.incrementUserCount();
+            getChannel2Panel().receive(channel2Buffer);
+            synthesizedBuffer.incrementUserCount();
+            getSpectrumPanel().receive(synthesizedBuffer);
         }
     }
 

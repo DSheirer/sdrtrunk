@@ -13,13 +13,27 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.sample.complex.reusable;
+package io.github.dsheirer.sample.buffer;
 
-public interface IReusableBufferDisposedListener
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class ReusableBufferQueue extends AbstractReusableBufferQueue<ReusableBuffer>
 {
-    /**
-     * Notifies the listener that the timestamped buffer has been disposed and can now be reused.
-     * @param reusableComplexBuffer that has been disposed
-     */
-    void disposed(ReusableComplexBuffer reusableComplexBuffer);
+    private final static Logger mLog = LoggerFactory.getLogger(ReusableBufferQueue.class);
+
+    public ReusableBufferQueue(String debugName)
+    {
+        super(debugName);
+    }
+
+    public ReusableBufferQueue()
+    {
+    }
+
+    @Override
+    protected ReusableBuffer createBuffer(int size)
+    {
+        return new ReusableBuffer(this, new float[size]);
+    }
 }

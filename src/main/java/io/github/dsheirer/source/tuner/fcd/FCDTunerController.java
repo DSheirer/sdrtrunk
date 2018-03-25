@@ -20,7 +20,7 @@ package io.github.dsheirer.source.tuner.fcd;
 
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.adapter.ComplexShortAdapter;
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.mixer.ComplexMixer;
 import io.github.dsheirer.source.tuner.MixerTunerDataLine;
@@ -88,7 +88,7 @@ public abstract class FCDTunerController extends TunerController
         }
 
         mComplexMixer = new ComplexMixer( mixerTDL.getTargetDataLine(), audioFormat, tunerName,
-            new ComplexShortAdapter(), mSampleBroadcaster);
+            new ComplexShortAdapter(), mReusableBufferBroadcaster);
     }
 
     /**

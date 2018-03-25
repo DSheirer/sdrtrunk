@@ -23,8 +23,8 @@ import io.github.dsheirer.dsp.filter.channelizer.output.TwoChannelOutputProcesso
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.reusable.IReusableComplexBufferProvider;
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.IReusableBufferProvider;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
@@ -52,13 +52,13 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     private static final int POLYPHASE_FILTER_TAPS_PER_CHANNEL = 17;
 
     private Broadcaster<SourceEvent> mSourceEventBroadcaster = new Broadcaster<>();
-    private IReusableComplexBufferProvider mReusableBufferProvider;
+    private IReusableBufferProvider<ReusableComplexBuffer> mReusableBufferProvider;
     private List<PolyphaseChannelSource> mChannelSources = new CopyOnWriteArrayList<>();
     private ChannelCalculator mChannelCalculator;
     private ComplexPolyphaseChannelizerM2 mPolyphaseChannelizer;
     private ChannelSourceEventListener mChannelSourceEventListener = new ChannelSourceEventListener();
     private BufferSourceEventMonitor mBufferSourceEventMonitor = new BufferSourceEventMonitor();
-    private ScheduledBufferProcessor mBufferProcessor;
+    private ContinuousBufferProcessor<ReusableComplexBuffer> mBufferProcessor;
     private Map<Integer,float[]> mOutputProcessorFilters = new HashMap<>();
 
     /**
@@ -76,7 +76,8 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
      * @param frequency of the provided complex buffer samples
      * @param sampleRate of the provided complex buffer samples
      */
-    public PolyphaseChannelManager(IReusableComplexBufferProvider reusableBufferProvider, long frequency, double sampleRate)
+    public PolyphaseChannelManager(IReusableBufferProvider<ReusableComplexBuffer> reusableBufferProvider,
+                                   long frequency, double sampleRate)
     {
         if(reusableBufferProvider == null)
         {
@@ -95,7 +96,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
 
         mChannelCalculator = new ChannelCalculator(sampleRate, channelCount, frequency, CHANNEL_OVERSAMPLING);
 
-        mBufferProcessor = new ScheduledBufferProcessor(500, 100, 50, 50);
+        mBufferProcessor = new ContinuousBufferProcessor(200, 50);
         mBufferProcessor.setListener(mBufferSourceEventMonitor);
 
         updateChannelizerSampleRate(sampleRate);
@@ -160,7 +161,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         return channelSource;
     }
 
-    public TunerChannelSource getSpecialChannel(int index)
+    public TunerChannelSource getTestChannel(int index)
     {
         PolyphaseChannelSource channelSource = null;
 
@@ -181,6 +182,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         }
         catch(IllegalArgumentException iae)
         {
+            mLog.error("Error", iae);
         }
 
         return channelSource;
@@ -582,15 +584,19 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
 
                 if(mPolyphaseChannelizer != null)
                 {
-                    mPolyphaseChannelizer.receive(reusableComplexBuffer.incrementUserCount());
+                    //User count management is handled by the channelizer
+                    mPolyphaseChannelizer.receive(reusableComplexBuffer);
+                }
+                else
+                {
+                    reusableComplexBuffer.decrementUserCount();
                 }
             }
             catch(Throwable throwable)
             {
                 mLog.error("Error", throwable);
+                reusableComplexBuffer.decrementUserCount();
             }
-
-            reusableComplexBuffer.decrementUserCount();
         }
     }
 }

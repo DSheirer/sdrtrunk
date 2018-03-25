@@ -13,19 +13,20 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.sample.complex.reusable;
+package io.github.dsheirer.sample.buffer;
 
-import io.github.dsheirer.sample.complex.ComplexBuffer;
 import org.apache.commons.lang3.Validate;
 
 import java.nio.FloatBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ReusableComplexBuffer extends ComplexBuffer
+public class ReusableBuffer
 {
-    private IReusableBufferDisposedListener mDisposalListener;
+    private float[] mSamples;
+    private IReusableBufferDisposedListener mBufferDisposedListener;
     private long mTimestamp;
     private AtomicInteger mUserCount = new AtomicInteger();
+    private String mDebugName;
 
     /**
      * Creates a reusable, timestamped complex buffer using the specified time in milliseconds.
@@ -34,32 +35,40 @@ public class ReusableComplexBuffer extends ComplexBuffer
      * buffer should not modify the buffer contents.  Each component should also increment the user count before
      * sending this buffer to another component and should decrement the user count when finished using this buffer.
      *
-     * @param disposalListener to be notified when all consumers/users are finished using the buffer
+     * @param bufferDisposedListener to be notified when all consumers/users are finished using the buffer
      * @param samples of data
      * @param timestamp in millis for the buffer
      */
-    public ReusableComplexBuffer(IReusableBufferDisposedListener disposalListener, float[] samples, long timestamp)
+    ReusableBuffer(IReusableBufferDisposedListener bufferDisposedListener, float[] samples, long timestamp)
     {
-        super(samples);
+        mSamples = samples;
 
-        Validate.notNull(disposalListener, "Timestamped Buffer Listener cannot be null");
-        mDisposalListener = disposalListener;
+        Validate.notNull(bufferDisposedListener, "Reusable Buffer Listener cannot be null");
+        mBufferDisposedListener = bufferDisposedListener;
         mTimestamp = timestamp;
     }
 
-    /**
-     * Constructs a timestamped complex buffer using the current system time in milliseconds.
-     *
-     * NOTE: reusability of this buffer requires strict user count tracking.  Each component that receives this
-     * buffer should not modify the buffer contents.  Each component should also increment the user count before
-     * sending this buffer to another component and should decrement the user count when finished using this buffer.
-     *
-     * @param disposalListener to be notified when all consumers are finished using the buffer
-     * @param samples of data
-     */
-    public ReusableComplexBuffer(IReusableBufferDisposedListener disposalListener, float[] samples)
+    public void setDebugName(String debugName)
     {
-        this(disposalListener, samples, System.currentTimeMillis());
+        mDebugName = debugName;
+    }
+
+    public String name()
+    {
+        return (mDebugName != null ? mDebugName : "(null)") + " User Count:" + getUserCount();
+    }
+
+    public String toString()
+    {
+        return name();
+    }
+
+    /**
+     * Samples for this buffer
+     */
+    public float[] getSamples()
+    {
+        return mSamples;
     }
 
     /**
@@ -74,11 +83,26 @@ public class ReusableComplexBuffer extends ComplexBuffer
     }
 
     /**
-     * Number of complex samples contained in this buffer
+     * Number of samples contained in this buffer
      */
-    public int getSampleLength()
+    public int getSampleCount()
     {
-        return getSamples().length / 2;
+        return getSamples().length;
+    }
+
+    /**
+     * Constructs a timestamped complex buffer using the current system time in milliseconds.
+     *
+     * NOTE: reusability of this buffer requires strict user count tracking.  Each component that receives this
+     * buffer should not modify the buffer contents.  Each component should also increment the user count before
+     * sending this buffer to another component and should decrement the user count when finished using this buffer.
+     *
+     * @param bufferDisposedListener to be notified when all consumers are finished using the buffer
+     * @param samples of data
+     */
+    public ReusableBuffer(IReusableBufferDisposedListener bufferDisposedListener, float[] samples)
+    {
+        this(bufferDisposedListener, samples, System.currentTimeMillis());
     }
 
     /**
@@ -173,21 +197,19 @@ public class ReusableComplexBuffer extends ComplexBuffer
      *
      * This method is thread-safe.
      */
-    public ReusableComplexBuffer decrementUserCount()
+    public void decrementUserCount()
     {
         int currentCount = mUserCount.decrementAndGet();
 
         if(currentCount == 0)
         {
-            mDisposalListener.disposed(this);
+            mBufferDisposedListener.disposed(this);
         }
         else if(currentCount < 0)
         {
             throw new IllegalStateException("User count is below zero.  This indicates that this buffer's decrement" +
                 " user count was invoked by more than the expected user count");
         }
-
-        return this;
     }
 
     /**
@@ -199,10 +221,9 @@ public class ReusableComplexBuffer extends ComplexBuffer
      *
      * This method is thread-safe.
      */
-    public ReusableComplexBuffer incrementUserCount()
+    public void incrementUserCount()
     {
         mUserCount.incrementAndGet();
-        return this;
     }
 
     /**
@@ -216,9 +237,16 @@ public class ReusableComplexBuffer extends ComplexBuffer
      *
      * @param additionalUserCount to add to the current user count
      */
-    public ReusableComplexBuffer incrementUserCount(int additionalUserCount)
+    public void incrementUserCount(int additionalUserCount)
     {
         mUserCount.addAndGet(additionalUserCount);
-        return this;
+    }
+
+    /**
+     * Number of users currently registered for this buffer
+     */
+    public int getUserCount()
+    {
+        return mUserCount.get();
     }
 }

@@ -17,8 +17,8 @@ package io.github.dsheirer.source.mixer;
 
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.adapter.IComplexSampleAdapter;
-import io.github.dsheirer.sample.complex.reusable.ReusableBufferQueue;
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
 import io.github.dsheirer.source.SourceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +42,7 @@ public class ComplexMixer
     private int mBytesPerFrame = 0;
     private IComplexSampleAdapter mSampleAdapter;
     private Listener<ReusableComplexBuffer> mListener;
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue();
+    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("ComplexMixer");
 
     /**
      * Complex Mixer - constructs a reader on the mixer/sound card target data line using the specified audio
@@ -173,7 +173,7 @@ public class ComplexMixer
                             /* Dispatch samples to registered listeners */
                             if(mListener != null)
                             {
-                                ReusableComplexBuffer reusableComplexBuffer = mReusableBufferQueue.getBuffer(sampleCount);
+                                ReusableComplexBuffer reusableComplexBuffer = mReusableComplexBufferQueue.getBuffer(sampleCount);
 
                                 //Convert samples and load into reusable buffer
                                 mSampleAdapter.convertAndLoad(buffer, reusableComplexBuffer);

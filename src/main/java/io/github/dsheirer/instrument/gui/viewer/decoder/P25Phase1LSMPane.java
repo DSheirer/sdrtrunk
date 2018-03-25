@@ -24,7 +24,7 @@ import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.p25.P25DecoderLSMInstrumented;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.reusable.ReusableBufferBroadcaster;
+import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import org.slf4j.Logger;

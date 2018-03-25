@@ -22,7 +22,7 @@ import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelResultsBuffer;
 import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.Oscillator;
 import io.github.dsheirer.sample.OverflowableTransferQueue;
-import io.github.dsheirer.sample.complex.reusable.ReusableBufferAssembler;
+import io.github.dsheirer.sample.buffer.ReusableBufferAssembler;
 import io.github.dsheirer.sample.real.IOverflowListener;
 import io.github.dsheirer.source.Source;
 import org.slf4j.Logger;

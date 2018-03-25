@@ -20,8 +20,8 @@ import io.github.dsheirer.dsp.psk.DQPSKGardnerDemodulatorInstrumented;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBufferInstrumented;
 import io.github.dsheirer.dsp.psk.SymbolDecisionData;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.complex.Complex;
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 
 public class P25DecoderLSMInstrumented extends P25DecoderLSM
 {

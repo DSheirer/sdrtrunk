@@ -13,11 +13,27 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.sample.complex.reusable;
+package io.github.dsheirer.sample.buffer;
 
-import io.github.dsheirer.sample.Listener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public interface IReusableComplexBufferListener
+public class ReusableComplexBufferQueue extends AbstractReusableBufferQueue<ReusableComplexBuffer>
 {
-	Listener<ReusableComplexBuffer> getReusableComplexBufferListener();
+    private final static Logger mLog = LoggerFactory.getLogger(ReusableComplexBufferQueue.class);
+
+    public ReusableComplexBufferQueue(String debugName)
+    {
+        super(debugName);
+    }
+
+    public ReusableComplexBufferQueue()
+    {
+    }
+
+    @Override
+    protected ReusableComplexBuffer createBuffer(int size)
+    {
+        return new ReusableComplexBuffer(this, new float[size]);
+    }
 }

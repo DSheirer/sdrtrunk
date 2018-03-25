@@ -16,7 +16,7 @@
 package io.github.dsheirer.source.tuner.usb;
 
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.tuner.TunerManager;
 import io.github.dsheirer.source.tuner.usb.converter.NativeBufferConverter;
 import io.github.dsheirer.util.ThreadPool;
@@ -394,9 +394,10 @@ public class USBTransferProcessor implements TransferCallback
                     {
                         ByteBuffer nativeBuffer = transfer.buffer();
 
-                        ReusableComplexBuffer sampleBuffer = mNativeBufferConverter.convert(nativeBuffer, transfer.actualLength());
+                        ReusableComplexBuffer reusableComplexBuffer =
+                            mNativeBufferConverter.convert(nativeBuffer, transfer.actualLength());
 
-                        mComplexBufferListener.receive(sampleBuffer);
+                        mComplexBufferListener.receive(reusableComplexBuffer);
                     }
 
                     transfer.buffer().rewind();

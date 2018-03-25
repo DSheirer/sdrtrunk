@@ -19,7 +19,7 @@
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
 import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelResultsBuffer;
-import io.github.dsheirer.sample.complex.reusable.ReusableBufferAssembler;
+import io.github.dsheirer.sample.buffer.ReusableBufferAssembler;
 import io.github.dsheirer.source.Source;
 
 import java.util.List;

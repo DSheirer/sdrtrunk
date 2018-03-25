@@ -13,7 +13,7 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.sample.complex.reusable;
+package io.github.dsheirer.sample.buffer;
 
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
@@ -36,29 +36,10 @@ public class ReusableBufferBroadcaster extends Broadcaster<ReusableComplexBuffer
     @Override
     public void broadcast(ReusableComplexBuffer reusableComplexBuffer)
     {
-        //There is a minuscule possibility that the listener list will change from the time that we get the size until
-        //the for/each iterator is created below, therefore we have to accurately track the user count.  If a listener
-        //is added in the time between getting the list size and creating the iterator, that listener will NOT receive
-        //a copy of the buffer, but will instead get the next buffer.  Likewise, if a listener is removed, we have to
-        //decrement the user count on the buffer after iterating the listener list.
-        int listenerCount = mListeners.size();
-
-        reusableComplexBuffer.incrementUserCount(listenerCount);
-
         for(Listener<ReusableComplexBuffer> listener : mListeners)
         {
-            if(listenerCount > 0)
-            {
-                listener.receive(reusableComplexBuffer);
-            }
-
-            listenerCount--;
-        }
-
-        while(listenerCount > 0)
-        {
-            reusableComplexBuffer.decrementUserCount();
-            listenerCount--;
+            reusableComplexBuffer.incrementUserCount();
+            listener.receive(reusableComplexBuffer);
         }
 
         //Decrement user counter for this broadcaster

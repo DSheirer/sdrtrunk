@@ -13,7 +13,7 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.sample.complex.reusable;
+package io.github.dsheirer.sample.buffer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,21 +21,22 @@ import org.slf4j.LoggerFactory;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
 
-public class ReusableBufferQueue implements IReusableBufferDisposedListener
+public abstract class AbstractReusableBufferQueue<T extends ReusableBuffer> implements IReusableBufferDisposedListener<T>
 {
-    private final static Logger mLog = LoggerFactory.getLogger(ReusableBufferQueue.class);
-    private Queue<ReusableComplexBuffer> mReusableBufferQueue = new LinkedTransferQueue<>();
+    private final static Logger mLog = LoggerFactory.getLogger(AbstractReusableBufferQueue.class);
+
+    private Queue<T> mReusableBufferQueue = new LinkedTransferQueue<>();
     private int mBufferCount = 0;
     private String mDebugName;
+    private int mBufferUserCounter;
 
-    public ReusableBufferQueue(String debugName)
+    public AbstractReusableBufferQueue(String debugName)
     {
         mDebugName = debugName;
     }
 
-    public ReusableBufferQueue()
+    public AbstractReusableBufferQueue()
     {
-
     }
 
     public void dispose()
@@ -47,12 +48,17 @@ public class ReusableBufferQueue implements IReusableBufferDisposedListener
      * Implements buffer disposed listener interface.  Disposed (ie user count = 0) buffers will automatically callback
      * to this method to indicate when they are disposed.
      *
-     * @param reusableComplexBuffer that has been disposed
+     * @param reusableBuffer that has been disposed
      */
     @Override
-    public void disposed(ReusableComplexBuffer reusableComplexBuffer)
+    public void disposed(T reusableBuffer)
     {
-        mReusableBufferQueue.offer(reusableComplexBuffer);
+        mReusableBufferQueue.offer(reusableBuffer);
+
+//        if(mDebugName != null && mDebugName.contentEquals("NativeBufferConverter"))
+//        {
+//            mLog.debug("Reclaimed: " + reusableBuffer.name());
+//        }
     }
 
     /**
@@ -62,18 +68,37 @@ public class ReusableBufferQueue implements IReusableBufferDisposedListener
      * @param size of the samples that will be loaded into the buffer
      * @return a reusable buffer
      */
-    public ReusableComplexBuffer getBuffer(int size)
+    public T getBuffer(int size)
     {
-        ReusableComplexBuffer buffer = mReusableBufferQueue.poll();
+        T buffer = mReusableBufferQueue.poll();
 
-        //Create a new buffer if we currently don't have any buffers to reuse
         if(buffer == null)
         {
-            buffer = new ReusableComplexBuffer(this, new float[size]);
+            buffer = createBuffer(size);
             mBufferCount++;
-            mLog.debug("Buffer Created - Count:" + mBufferCount + (mDebugName != null ? " [" + mDebugName + "]" : ""));
+            buffer.setDebugName("Owner:" + mDebugName + " Number:" + mBufferUserCounter++ + " NEW BUFFER");
+
+//            if(mDebugName != null && mDebugName.contentEquals("NativeBufferConverter"))
+//            {
+//                mLog.debug("Buffer Created - Count:" + mBufferCount + (mDebugName != null ? " [" + mDebugName + "]" : ""));
+//            }
+        }
+        else
+        {
+            String previous = buffer.name();
+            buffer.setDebugName("Owner:" + mDebugName + " Number:" + mBufferUserCounter++);
+
+//            if(mDebugName != null && mDebugName.contentEquals("NativeBufferConverter"))
+//            {
+//                mLog.debug("Buffer Reused: " + previous + " New Name:" + buffer.name());
+//            }
         }
 
         return buffer;
     }
+
+    /**
+     * Create a new buffer of the specified size
+     */
+    protected abstract T createBuffer(int size);
 }

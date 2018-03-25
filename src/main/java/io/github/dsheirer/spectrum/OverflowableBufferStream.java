@@ -17,7 +17,7 @@ package io.github.dsheirer.spectrum;
 
 
 import io.github.dsheirer.sample.OverflowableTransferQueue;
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -204,6 +204,13 @@ public class OverflowableBufferStream extends OverflowableTransferQueue<Reusable
         {
             throw new IOException("Reusable complex buffer queue is (currently) empty");
         }
+    }
+
+    @Override
+    protected void overflow(ReusableComplexBuffer reusableComplexBuffer)
+    {
+        mLog.debug("*** Overflow - throwing away buffer: " + reusableComplexBuffer.name());
+        reusableComplexBuffer.decrementUserCount();
     }
 
     /**

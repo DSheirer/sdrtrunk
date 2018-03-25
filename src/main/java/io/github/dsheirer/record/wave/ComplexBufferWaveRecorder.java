@@ -18,9 +18,9 @@ package io.github.dsheirer.record.wave;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.ConversionUtils;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.reusable.IReusableBufferDisposedListener;
-import io.github.dsheirer.sample.complex.reusable.IReusableComplexBufferListener;
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.IReusableBufferDisposedListener;
+import io.github.dsheirer.sample.buffer.IReusableComplexBufferListener;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
 import org.slf4j.Logger;
@@ -207,14 +207,14 @@ public class ComplexBufferWaveRecorder extends Module implements IReusableComple
     {
         public PoisonPill()
         {
-            super(new IReusableBufferDisposedListener()
+            super(new IReusableBufferDisposedListener<ReusableComplexBuffer>()
             {
                 @Override
                 public void disposed(ReusableComplexBuffer reusableComplexBuffer)
                 {
                     //no-op
                 }
-            }, new float[2], System.currentTimeMillis());
+            }, new float[2]);
         }
     }
 }

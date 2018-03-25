@@ -17,8 +17,8 @@ package io.github.dsheirer.source.wave;
 
 import io.github.dsheirer.sample.ConversionUtils;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.reusable.ReusableBufferQueue;
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
 import io.github.dsheirer.source.ComplexSource;
 import io.github.dsheirer.source.IControllableFileSource;
 import io.github.dsheirer.source.IFrameLocationListener;
@@ -45,7 +45,7 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     private Listener<ReusableComplexBuffer> mListener;
     private AudioInputStream mInputStream;
     private File mFile;
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("Complex Wave Source");
+    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("ComplexWaveSource");
 
     public ComplexWaveSource(File file) throws IOException
     {
@@ -216,7 +216,7 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
 
                 float[] samples = ConversionUtils.convertFromSigned16BitSamples(buffer);
 
-                ReusableComplexBuffer reusableBuffer = mReusableBufferQueue.getBuffer(samples.length);
+                ReusableComplexBuffer reusableBuffer = mReusableComplexBufferQueue.getBuffer(samples.length);
                 reusableBuffer.reloadFrom(samples, System.currentTimeMillis());
                 reusableBuffer.incrementUserCount();
                 mListener.receive(reusableBuffer);

@@ -13,7 +13,7 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.sample.complex.reusable;
+package io.github.dsheirer.sample.buffer;
 
 import io.github.dsheirer.dsp.filter.channelizer.SampleTimestampManager;
 import io.github.dsheirer.sample.Listener;
@@ -27,7 +27,7 @@ import java.nio.FloatBuffer;
  */
 public class ReusableBufferAssembler
 {
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue();
+    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("ReusableBufferAssembler");
     private SampleTimestampManager mTimestampManager;
     private FloatBuffer mBuffer;
     private int mBufferSize;
@@ -115,7 +115,7 @@ public class ReusableBufferAssembler
         if(mListener != null && mBuffer.position() > 0)
         {
             mBuffer.rewind();
-            ReusableComplexBuffer reusableComplexBuffer = mReusableBufferQueue.getBuffer(mBufferSize);
+            ReusableComplexBuffer reusableComplexBuffer = mReusableComplexBufferQueue.getBuffer(mBufferSize);
             reusableComplexBuffer.reloadFrom(mBuffer, mCurrentBufferTimestamp);
             reusableComplexBuffer.setUserCount(1);
             mListener.receive(reusableComplexBuffer);

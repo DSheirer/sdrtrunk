@@ -54,7 +54,8 @@ public abstract class ChannelSourceManager implements ISourceEventProcessor
      */
     public abstract TunerChannelSource getSource(TunerChannel tunerChannel);
 
-    public abstract TunerChannelSource getSpecialSource(int index);
+    //TODO: remove this testing method when finished with polyphase channel manager
+    public abstract TunerChannelSource getTestingSource(int index);
 
     /**
      * Adds a listener to receive source events

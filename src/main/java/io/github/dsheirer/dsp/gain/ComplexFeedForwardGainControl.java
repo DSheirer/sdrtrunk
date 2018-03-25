@@ -16,11 +16,11 @@
 package io.github.dsheirer.dsp.gain;
 
 import io.github.dsheirer.buffer.FloatCircularBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
 import io.github.dsheirer.sample.complex.Complex;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
 import io.github.dsheirer.sample.complex.ComplexSampleListener;
-import io.github.dsheirer.sample.complex.reusable.ReusableBufferQueue;
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 
 public class ComplexFeedForwardGainControl implements ComplexSampleListener
 {
@@ -29,7 +29,7 @@ public class ComplexFeedForwardGainControl implements ComplexSampleListener
 
     private ComplexSampleListener mListener;
     private FloatCircularBuffer mEnvelopeHistory;
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("ComplexFeedForwardGainControl");
+    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("ComplexFeedForwardGainControl");
 
     private float mMaxEnvelope = 0.0f;
     private float mGain = 1.0f;
@@ -157,7 +157,7 @@ public class ComplexFeedForwardGainControl implements ComplexSampleListener
     {
         float[] samples = buffer.getSamples();
 
-        ReusableComplexBuffer filteredBuffer = mReusableBufferQueue.getBuffer(samples.length);
+        ReusableComplexBuffer filteredBuffer = mReusableComplexBufferQueue.getBuffer(samples.length);
         filteredBuffer.setTimestamp(buffer.getTimestamp());
 
         float[] filtered = filteredBuffer.getSamples();

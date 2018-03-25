@@ -15,10 +15,10 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.channelizer;
 
-import io.github.dsheirer.sample.complex.reusable.OverflowableReusableBufferTransferQueue;
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.OverflowableReusableBufferTransferQueue;
+import io.github.dsheirer.sample.buffer.ReusableBuffer;
 
-public class ScheduledReusableBufferProcessor extends ScheduledBufferProcessor<ReusableComplexBuffer>
+public class ContinuousReusableBufferProcessor<T extends ReusableBuffer> extends ContinuousBufferProcessor<T>
 {
     /**
      * Scheduled Reusable Buffer Processor combines an internal overflowable buffer with a scheduled runnable processing
@@ -33,13 +33,9 @@ public class ScheduledReusableBufferProcessor extends ScheduledBufferProcessor<R
      *
      * @param maximumSize of the internal queue (overflow happens when this is exceeded)
      * @param resetThreshold of the internal queue (overflow reset happens once queue size falls below this threshold
-     * @param distributionInterval in milliseconds specifying how often the internal scheduled thread pool buffer
-     * distributor should run
-     * @param maxBuffersPerInterval maximum number of buffers to pull from the internal queue during each distribution
      */
-    public ScheduledReusableBufferProcessor(int maximumSize, int resetThreshold, long distributionInterval, int maxBuffersPerInterval)
+    public ContinuousReusableBufferProcessor(int maximumSize, int resetThreshold)
     {
-        super(new OverflowableReusableBufferTransferQueue(maximumSize, resetThreshold),
-            distributionInterval, maxBuffersPerInterval);
+        super(new OverflowableReusableBufferTransferQueue<T>(maximumSize, resetThreshold));
     }
 }

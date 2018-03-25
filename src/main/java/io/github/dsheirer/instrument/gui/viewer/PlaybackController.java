@@ -17,8 +17,8 @@ package io.github.dsheirer.instrument.gui.viewer;
 
 import io.github.dsheirer.instrument.gui.viewer.decoder.DecoderPane;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.reusable.ReusableBufferBroadcaster;
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.IControllableFileSource;
 import io.github.dsheirer.source.IFrameLocationListener;
 import io.github.dsheirer.source.wave.ComplexWaveSource;

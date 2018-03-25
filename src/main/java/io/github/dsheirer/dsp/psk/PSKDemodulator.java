@@ -17,9 +17,9 @@ package io.github.dsheirer.dsp.psk;
 
 import io.github.dsheirer.dsp.psk.pll.IPhaseLockedLoop;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.complex.Complex;
 import io.github.dsheirer.sample.complex.ComplexSampleListener;
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
 
 public abstract class PSKDemodulator<T> implements ComplexSampleListener
 {

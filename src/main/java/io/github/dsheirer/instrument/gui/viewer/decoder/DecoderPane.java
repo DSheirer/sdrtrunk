@@ -17,8 +17,8 @@ package io.github.dsheirer.instrument.gui.viewer.decoder;
 
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.reusable.ReusableBufferBroadcaster;
-import io.github.dsheirer.sample.complex.reusable.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 

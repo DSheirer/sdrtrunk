@@ -13,11 +13,11 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.sample.complex.reusable;
+package io.github.dsheirer.sample.buffer;
 
 import io.github.dsheirer.sample.OverflowableTransferQueue;
 
-public class OverflowableReusableBufferTransferQueue extends OverflowableTransferQueue<ReusableComplexBuffer>
+public class OverflowableReusableBufferTransferQueue<T extends ReusableBuffer> extends OverflowableTransferQueue<T>
 {
     /**
      * Concurrent transfer queue that couples a higher-throughput linked transfer queue with an atomic integer for
@@ -38,12 +38,12 @@ public class OverflowableReusableBufferTransferQueue extends OverflowableTransfe
      * Overrides the overflow method to decrement the user count on any buffers that are being discarded when the queue
      * is in an overflow state.
      *
-     * @param reusableComplexBuffer that will be discarded
+     * @param t reusableBuffer that will be discarded
      */
     @Override
-    protected void overflow(ReusableComplexBuffer reusableComplexBuffer)
+    protected void overflow(T t)
     {
-        reusableComplexBuffer.decrementUserCount();
+        t.decrementUserCount();
     }
 
     /**
@@ -54,7 +54,7 @@ public class OverflowableReusableBufferTransferQueue extends OverflowableTransfe
     {
         synchronized(mQueue)
         {
-            ReusableComplexBuffer buffer = mQueue.poll();
+            T buffer = mQueue.poll();
 
             while(buffer != null)
             {

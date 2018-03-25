@@ -18,7 +18,7 @@ package io.github.dsheirer.dsp.filter.channelizer.output;
 import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelResultsBuffer;
 import io.github.dsheirer.dsp.filter.channelizer.TwoChannelSynthesizerM2;
 import io.github.dsheirer.dsp.mixer.FS4DownConverter;
-import io.github.dsheirer.sample.complex.reusable.ReusableBufferAssembler;
+import io.github.dsheirer.sample.buffer.ReusableBufferAssembler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
