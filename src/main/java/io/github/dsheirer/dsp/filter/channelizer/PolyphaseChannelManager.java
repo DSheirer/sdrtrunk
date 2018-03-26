@@ -232,6 +232,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             if(mPolyphaseChannelizer.getRegisteredChannelCount() == 1)
             {
                 mReusableBufferProvider.addBufferListener(mBufferProcessor);
+                mPolyphaseChannelizer.start();
                 mBufferProcessor.start();
             }
         }
@@ -254,6 +255,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             {
                 mReusableBufferProvider.removeBufferListener(mBufferProcessor);
                 mBufferProcessor.stop();
+                mPolyphaseChannelizer.stop();
             }
         }
 

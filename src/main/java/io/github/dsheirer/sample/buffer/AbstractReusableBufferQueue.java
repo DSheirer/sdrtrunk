@@ -78,10 +78,7 @@ public abstract class AbstractReusableBufferQueue<T extends ReusableBuffer> impl
             mBufferCount++;
             buffer.setDebugName("Owner:" + mDebugName + " Number:" + mBufferUserCounter++ + " NEW BUFFER");
 
-//            if(mDebugName != null && mDebugName.contentEquals("NativeBufferConverter"))
-//            {
-//                mLog.debug("Buffer Created - Count:" + mBufferCount + (mDebugName != null ? " [" + mDebugName + "]" : ""));
-//            }
+            mLog.debug("Buffer Created - Count:" + mBufferCount + (mDebugName != null ? " [" + mDebugName + "]" : ""));
         }
         else
         {

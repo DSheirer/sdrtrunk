@@ -21,7 +21,9 @@ package io.github.dsheirer.dsp.filter.channelizer;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.Window.WindowType;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
+import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.real.IOverflowListener;
 import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +44,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
     private PolyphaseChannelResultsBuffer mChannelResultsBuffer;
     private int mChannelResultsBufferSize = 2500;
     private SampleTimestampManager mTimestampManager;
+    private IFFTProcessor mIFFTProcessor = new IFFTProcessor(300, 50);
 
     /**
      * Non-Maximally Decimated Polyphase Filter Bank (NMDPFB) channelizer that divides the input frequency band into
@@ -95,6 +98,16 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
         init(filterTaps);
     }
 
+    public void start()
+    {
+        mIFFTProcessor.start();
+    }
+
+    public void stop()
+    {
+        mIFFTProcessor.stop();
+    }
+
     /**
      * Calculates the multiple of two number of channels that can be channelized from the specified sample rate so that
      * each channel has a minimum bandwidth of the default channel bandwidth (12.5 kHz).
@@ -144,6 +157,8 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
     @Override
     public void receive(ReusableComplexBuffer reusableComplexBuffer)
     {
+        long start = System.nanoTime();
+
         //Use the buffer's reference timestamp to update our timestamp manager (for timestamping output buffers)
         mTimestampManager.setReferenceTimestamp(reusableComplexBuffer.getTimestamp());
 
@@ -172,6 +187,8 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
 
         //Decrement the user count to let the originator know we're done with their buffer
         reusableComplexBuffer.decrementUserCount();
+
+        mLog.debug("Duration: " + (System.nanoTime() - start));
     }
 
     /**
@@ -216,7 +233,6 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
 
             int half = getChannelCount() / 2;
 
-//            int outputOffset = getChannelCount() - half - 1;
             int outputOffset = getChannelCount() - 1;
             int outputIndex;
             int sampleIndex;
@@ -234,7 +250,6 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
 
             //The second half of the sample buffer was loaded using the previous column pointer - adjust for that now
             sampleIndexMap = mSampleIndexMap[(mColumnPointer == (mSamples.length - 1) ? 0 : mColumnPointer + 1)];
-//            outputOffset = getChannelCount() + half - 1;
             outputOffset = getChannelCount() - 1;
 
             for(int channel = half; channel < getChannelCount(); channel++)
@@ -248,10 +263,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
             }
         }
 
-        //Rotate each of the channels to the correct phase using the IFFT
-        mFFT.complexInverse(processed, true);
-
-        processChannelResults(processed);
+        mIFFTProcessor.receive(processed);
     }
 
     /**
@@ -395,6 +407,37 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
 
                 mSampleIndexMap[row][column] = ((offset < size) ? offset : offset - size);
             }
+        }
+    }
+
+    /**
+     * Processor to enqueue filtered channels, perform IFFT and dispatch the results
+     */
+    public class IFFTProcessor extends ContinuousBufferProcessor<float[]>
+    {
+        public IFFTProcessor(int maximumSize, int resetThreshold)
+        {
+            super(maximumSize, resetThreshold);
+
+            setListener(new Listener<float[]>()
+            {
+                @Override
+                public void receive(float[] floatsToProcess)
+                {
+                    //Rotate each of the channels to the correct phase using the IFFT
+                    mFFT.complexInverse(floatsToProcess, true);
+                    processChannelResults(floatsToProcess);
+                }
+            });
+
+            setOverflowListener(new IOverflowListener()
+            {
+                @Override
+                public void sourceOverflow(boolean overflow)
+                {
+                    mLog.debug("IFFTProcessor overflow changed - overflow:" + overflow);
+                }
+            });
         }
     }
 }
