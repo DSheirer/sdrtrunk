@@ -37,6 +37,7 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<Re
     private List<PolyphaseChannelSource> mChannels = new CopyOnWriteArrayList<>();
     private double mSampleRate;
     private int mChannelCount;
+    private int mSubChannelCount;
     private double mChannelSampleRate;
 
     /**
@@ -47,6 +48,7 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<Re
     public AbstractComplexPolyphaseChannelizer(double sampleRate, int channelCount)
     {
         mChannelCount = channelCount;
+        mSubChannelCount = channelCount * 2; //Number of I/Q channels
         mSampleRate = sampleRate;
         mChannelSampleRate = (double)mSampleRate / (double)mChannelCount;
     }
@@ -76,6 +78,14 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<Re
     public int getChannelCount()
     {
         return mChannelCount;
+    }
+
+    /**
+     * Number of sub channels (I/Q) being processed by this channelizer.  This is 2 * channel count.
+     */
+    public int getSubChannelCount()
+    {
+        return mSubChannelCount;
     }
 
     /**
