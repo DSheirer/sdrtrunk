@@ -33,7 +33,7 @@ public class ContinuousBufferProcessor<E> implements Listener<E>
     private final static Logger mLog = LoggerFactory.getLogger(ContinuousBufferProcessor.class);
 
     private OverflowableTransferQueue<E> mQueue;
-    private Listener<E> mListener;
+    private Listener<List<E>> mListener;
     private ScheduledFuture<?> mScheduledFuture;
     private AtomicBoolean mRunning = new AtomicBoolean();
 
@@ -89,7 +89,7 @@ public class ContinuousBufferProcessor<E> implements Listener<E>
      * Sets or changes the listener to receive buffers from this processor.
      * @param listener to receive buffers
      */
-    public void setListener(Listener<E> listener)
+    public void setListener(Listener<List<E>> listener)
     {
         mListener = listener;
     }
@@ -104,7 +104,6 @@ public class ContinuousBufferProcessor<E> implements Listener<E>
     @Override
     public void receive(E e)
     {
-//        mLog.debug("    Queuing: " + e.toString());
         mQueue.offer(e);
     }
 
@@ -157,28 +156,18 @@ public class ContinuousBufferProcessor<E> implements Listener<E>
      */
     class Processor implements Runnable
     {
-        private List<E> mBuffers = new ArrayList<>();
-
         @Override
         public void run()
         {
+            List<E> buffers = new ArrayList<>();
+
             try
             {
-                mQueue.drainTo(mBuffers, 10);
+                mQueue.drainTo(buffers);
 
                 if(mListener != null)
                 {
-                    while(!mBuffers.isEmpty())
-                    {
-                        for(E buffer: mBuffers)
-                        {
-//                            mLog.debug("Dispatching: " + buffer.toString() + " Count:" + mBuffers.size());
-                            mListener.receive(buffer);
-                        }
-
-                        mBuffers.clear();
-                        mQueue.drainTo(mBuffers, 10);
-                    }
+                    mListener.receive(buffers);
                 }
             }
             catch(Throwable throwable)

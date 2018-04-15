@@ -31,9 +31,26 @@ public class ReusableComplexBufferQueue extends AbstractReusableBufferQueue<Reus
     {
     }
 
-    @Override
-    protected ReusableComplexBuffer createBuffer(int size)
+    /**
+     * Returns a reusable buffer from an internal recycling queue, or creates a new buffer if there are currently no
+     * buffers available for reuse.
+     *
+     * @param size of the samples that will be loaded into the buffer
+     * @return a reusable buffer
+     */
+    public ReusableComplexBuffer getBuffer(int size)
     {
-        return new ReusableComplexBuffer(this, new float[size]);
+        ReusableComplexBuffer buffer = getRecycledBuffer();
+
+        if(buffer == null)
+        {
+            buffer = new ReusableComplexBuffer(this, new float[size]);
+            incrementBufferCount();
+
+            buffer.setDebugName("Owner:" + getDebugName());
+            mLog.debug("Buffer Created - Count:" + getBufferCount() + (getDebugName() != null ? " [" + getDebugName() + "]" : ""));
+        }
+
+        return buffer;
     }
 }

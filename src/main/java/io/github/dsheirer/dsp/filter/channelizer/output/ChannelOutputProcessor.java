@@ -18,11 +18,11 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
-import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelResultsBuffer;
 import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.Oscillator;
 import io.github.dsheirer.sample.OverflowableTransferQueue;
 import io.github.dsheirer.sample.buffer.ReusableBufferAssembler;
+import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
 import io.github.dsheirer.sample.real.IOverflowListener;
 import io.github.dsheirer.source.Source;
 import org.slf4j.Logger;
@@ -35,8 +35,8 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelOutputProcessor.class);
 
-    private OverflowableTransferQueue<PolyphaseChannelResultsBuffer> mChannelResultsQueue;
-    private List<PolyphaseChannelResultsBuffer> mChannelResultsToProcess = new ArrayList<>();
+    private OverflowableTransferQueue<ReusableChannelResultsBuffer> mChannelResultsQueue;
+    private List<ReusableChannelResultsBuffer> mChannelResultsToProcess = new ArrayList<>();
     private int mMaxResultsToProcess;
 
     private int mInputChannelCount;
@@ -82,7 +82,7 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     }
 
     @Override
-    public void receiveChannelResults(PolyphaseChannelResultsBuffer channelResults)
+    public void receiveChannelResults(ReusableChannelResultsBuffer channelResults)
     {
         mChannelResultsQueue.offer(channelResults);
     }
@@ -116,7 +116,7 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
      * @param channelResults to process
      * @param reusableBufferAssembler to receive the processed channelizer results
      */
-    public abstract void process(List<PolyphaseChannelResultsBuffer> channelResults,
+    public abstract void process(List<ReusableChannelResultsBuffer> channelResults,
                                  ReusableBufferAssembler reusableBufferAssembler);
 
 

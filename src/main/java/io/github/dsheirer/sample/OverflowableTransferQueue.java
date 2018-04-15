@@ -116,6 +116,23 @@ public class OverflowableTransferQueue<E>
     }
 
     /**
+     * Retrieves elements from the queue into the collection up to the maximum number of elements specified
+     */
+    public int drainTo(Collection<? super E> collection)
+    {
+        int drainCount = mQueue.drainTo(collection);
+
+        int size = mCounter.addAndGet(-drainCount);
+
+        if(mOverflow.get() && size <= mResetThreshold)
+        {
+            setOverflow(false);
+        }
+
+        return drainCount;
+    }
+
+    /**
      * Sets a listener to receive overflow state change events.
      */
     public void setOverflowListener(IOverflowListener listener)

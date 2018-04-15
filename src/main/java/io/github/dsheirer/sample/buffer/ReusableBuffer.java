@@ -18,15 +18,10 @@ package io.github.dsheirer.sample.buffer;
 import org.apache.commons.lang3.Validate;
 
 import java.nio.FloatBuffer;
-import java.util.concurrent.atomic.AtomicInteger;
 
-public class ReusableBuffer
+public class ReusableBuffer extends AbstractReusableBuffer
 {
     private float[] mSamples;
-    private IReusableBufferDisposedListener mBufferDisposedListener;
-    private long mTimestamp;
-    private AtomicInteger mUserCount = new AtomicInteger();
-    private String mDebugName;
 
     /**
      * Creates a reusable, timestamped complex buffer using the specified time in milliseconds.
@@ -41,26 +36,10 @@ public class ReusableBuffer
      */
     ReusableBuffer(IReusableBufferDisposedListener bufferDisposedListener, float[] samples, long timestamp)
     {
+        super(bufferDisposedListener, timestamp);
         mSamples = samples;
 
         Validate.notNull(bufferDisposedListener, "Reusable Buffer Listener cannot be null");
-        mBufferDisposedListener = bufferDisposedListener;
-        mTimestamp = timestamp;
-    }
-
-    public void setDebugName(String debugName)
-    {
-        mDebugName = debugName;
-    }
-
-    public String name()
-    {
-        return (mDebugName != null ? mDebugName : "(null)") + " User Count:" + getUserCount();
-    }
-
-    public String toString()
-    {
-        return name();
     }
 
     /**
@@ -103,20 +82,6 @@ public class ReusableBuffer
     public ReusableBuffer(IReusableBufferDisposedListener bufferDisposedListener, float[] samples)
     {
         this(bufferDisposedListener, samples, System.currentTimeMillis());
-    }
-
-    /**
-     * Reference timestamp for this complex buffer.  Timestamp is relative to the first sample in the buffer.
-     * @return timestamp as milliseconds since epoch
-     */
-    public long getTimestamp()
-    {
-        return mTimestamp;
-    }
-
-    public void setTimestamp(long timestamp)
-    {
-        mTimestamp = timestamp;
     }
 
     /**
@@ -175,78 +140,4 @@ public class ReusableBuffer
         mTimestamp = timestamp;
     }
 
-    /**
-     * Sets the number of users that will receive this buffer.  Each user is expected to invoke the
-     * decrementUserCount() method to indicate that they are finished using this buffer so that this buffer can be
-     * reused once the user count is zero.
-     *
-     * @param userCount that will receive this reusable buffer
-     */
-    public void setUserCount(int userCount)
-    {
-        mUserCount.set(userCount);
-    }
-
-    /**
-     * Decrements the user count for this buffer to indicate that the user/receiver of this buffer is finished using
-     * the buffer.
-     *
-     * User count is established prior to sending this buffer to each listener and each listener invokes this method to
-     * indicate that they have finished processing the buffer so that when the user count reaches zero, this buffer
-     * can be reused.
-     *
-     * This method is thread-safe.
-     */
-    public void decrementUserCount()
-    {
-        int currentCount = mUserCount.decrementAndGet();
-
-        if(currentCount == 0)
-        {
-            mBufferDisposedListener.disposed(this);
-        }
-        else if(currentCount < 0)
-        {
-            throw new IllegalStateException("User count is below zero.  This indicates that this buffer's decrement" +
-                " user count was invoked by more than the expected user count");
-        }
-    }
-
-    /**
-     * Increments the user count to indicate that this buffer will be sent to another user.
-     *
-     * Users/receivers of this buffer that wish to forward the buffer to additional users should increment the expected
-     * user count prior to invoking the decrementUserCount() to indicate that the original receiver of the buffer is
-     * finished to avoid the user count reaching zero and the buffer being flagged as ready for reuse.
-     *
-     * This method is thread-safe.
-     */
-    public void incrementUserCount()
-    {
-        mUserCount.incrementAndGet();
-    }
-
-    /**
-     * Increments the user count by the specified count to indicate that this buffer will be sent to additional users.
-     *
-     * Users/receivers of this buffer that wish to forward the buffer to additional users should increment the expected
-     * user count prior to invoking the decrementUserCount() to indicate that the original receiver of the buffer is
-     * finished to avoid the user count reaching zero and the buffer being flagged as ready for reuse.
-     *
-     * This method is thread-safe.
-     *
-     * @param additionalUserCount to add to the current user count
-     */
-    public void incrementUserCount(int additionalUserCount)
-    {
-        mUserCount.addAndGet(additionalUserCount);
-    }
-
-    /**
-     * Number of users currently registered for this buffer
-     */
-    public int getUserCount()
-    {
-        return mUserCount.get();
-    }
 }

@@ -15,7 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.sample.buffer;
 
-public interface IReusableBufferDisposedListener<T extends ReusableBuffer>
+public interface IReusableBufferDisposedListener<T extends AbstractReusableBuffer>
 {
     /**
      * Notifies the listener that the timestamped buffer has been disposed and can now be reused.

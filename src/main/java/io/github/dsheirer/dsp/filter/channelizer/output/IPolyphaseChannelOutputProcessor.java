@@ -18,8 +18,8 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
-import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelResultsBuffer;
 import io.github.dsheirer.sample.buffer.ReusableBufferAssembler;
+import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
 import io.github.dsheirer.source.Source;
 
 import java.util.List;
@@ -30,7 +30,7 @@ public interface IPolyphaseChannelOutputProcessor
      * Receive and enqueue output results from the polyphase analysis channelizer
      * @param channelResultsBuffer to enqueue
      */
-    void receiveChannelResults(PolyphaseChannelResultsBuffer channelResultsBuffer);
+    void receiveChannelResults(ReusableChannelResultsBuffer channelResultsBuffer);
 
     /**
      * Process the channel output channel results queue and deliver the output to the listener

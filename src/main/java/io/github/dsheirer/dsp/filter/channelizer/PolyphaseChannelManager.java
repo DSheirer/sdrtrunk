@@ -546,7 +546,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
      * that they can be processed on the buffer processor calling thread, avoiding unnecessary locks on the channelizer
      * and/or the channel sources and output processors.
      */
-    public class BufferSourceEventMonitor implements Listener<ReusableComplexBuffer>
+    public class BufferSourceEventMonitor implements Listener<List<ReusableComplexBuffer>>
     {
         private Queue<SourceEvent> mQueuedSourceEvents = new ConcurrentLinkedQueue<>();
 
@@ -561,11 +561,11 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         }
 
         @Override
-        public void receive(ReusableComplexBuffer reusableComplexBuffer)
+        public void receive(List<ReusableComplexBuffer> reusableComplexBuffers)
         {
             try
             {
-                //Process any queued source events before processing the buffer
+                //Process any queued source events before processing the buffers
                 SourceEvent queuedSourceEvent = mQueuedSourceEvents.poll();
 
                 while(queuedSourceEvent != null)
@@ -584,20 +584,26 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                     queuedSourceEvent = mQueuedSourceEvents.poll();
                 }
 
-                if(mPolyphaseChannelizer != null)
+                for(ReusableComplexBuffer reusableComplexBuffer: reusableComplexBuffers)
                 {
-                    //User count management is handled by the channelizer
-                    mPolyphaseChannelizer.receive(reusableComplexBuffer);
-                }
-                else
-                {
-                    reusableComplexBuffer.decrementUserCount();
+                    if(mPolyphaseChannelizer != null)
+                    {
+                        //User count management is handled by the channelizer
+                        mPolyphaseChannelizer.receive(reusableComplexBuffer);
+                    }
+                    else
+                    {
+                        reusableComplexBuffer.decrementUserCount();
+                    }
                 }
             }
             catch(Throwable throwable)
             {
                 mLog.error("Error", throwable);
-                reusableComplexBuffer.decrementUserCount();
+                for(ReusableComplexBuffer buffer: reusableComplexBuffers)
+                {
+                    buffer.decrementUserCount();
+                }
             }
         }
     }

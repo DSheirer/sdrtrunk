@@ -15,10 +15,10 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
-import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelResultsBuffer;
 import io.github.dsheirer.dsp.filter.channelizer.TwoChannelSynthesizerM2;
 import io.github.dsheirer.dsp.mixer.FS4DownConverter;
 import io.github.dsheirer.sample.buffer.ReusableBufferAssembler;
+import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,10 +95,10 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
      * @param reusableBufferAssembler to receive the extracted, frequency-translated channel results
      */
     @Override
-    public void process(List<PolyphaseChannelResultsBuffer> channelResultsBuffers,
+    public void process(List<ReusableChannelResultsBuffer> channelResultsBuffers,
                         ReusableBufferAssembler reusableBufferAssembler)
     {
-        for(PolyphaseChannelResultsBuffer buffer: channelResultsBuffers)
+        for(ReusableChannelResultsBuffer buffer: channelResultsBuffers)
         {
             float[] channel1 = buffer.getChannel(mChannelOffset1);
             float[] channel2 = buffer.getChannel(mChannelOffset2);
@@ -113,6 +113,8 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
             getFrequencyCorrectionMixer().mixComplex(synthesized);
 
             reusableBufferAssembler.receive(synthesized);
+
+            buffer.decrementUserCount();
         }
     }
 }

@@ -18,8 +18,8 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
-import io.github.dsheirer.dsp.filter.channelizer.PolyphaseChannelResultsBuffer;
 import io.github.dsheirer.sample.buffer.ReusableBufferAssembler;
+import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,10 +76,10 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
      * @param reusableBufferAssembler to receive the extracted, frequency-translated channel results
      */
     @Override
-    public void process(List<PolyphaseChannelResultsBuffer> channelResults,
+    public void process(List<ReusableChannelResultsBuffer> channelResults,
                         ReusableBufferAssembler reusableBufferAssembler)
     {
-        for(PolyphaseChannelResultsBuffer channelResultsBuffer: channelResults)
+        for(ReusableChannelResultsBuffer channelResultsBuffer: channelResults)
         {
             try
             {
@@ -96,6 +96,8 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
             {
                 mLog.error("Error extracting channel samples from polyphase channel results buffer");
             }
+
+            channelResultsBuffer.decrementUserCount();
         }
     }
 }

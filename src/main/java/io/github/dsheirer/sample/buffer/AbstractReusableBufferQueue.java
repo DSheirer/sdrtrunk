@@ -21,14 +21,14 @@ import org.slf4j.LoggerFactory;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
 
-public abstract class AbstractReusableBufferQueue<T extends ReusableBuffer> implements IReusableBufferDisposedListener<T>
+public abstract class AbstractReusableBufferQueue<T extends AbstractReusableBuffer>
+        implements IReusableBufferDisposedListener<T>
 {
     private final static Logger mLog = LoggerFactory.getLogger(AbstractReusableBufferQueue.class);
 
     private Queue<T> mReusableBufferQueue = new LinkedTransferQueue<>();
     private int mBufferCount = 0;
     private String mDebugName;
-    private int mBufferUserCounter;
 
     public AbstractReusableBufferQueue(String debugName)
     {
@@ -54,48 +54,31 @@ public abstract class AbstractReusableBufferQueue<T extends ReusableBuffer> impl
     public void disposed(T reusableBuffer)
     {
         mReusableBufferQueue.offer(reusableBuffer);
-
-//        if(mDebugName != null && mDebugName.contentEquals("NativeBufferConverter"))
-//        {
-//            mLog.debug("Reclaimed: " + reusableBuffer.name());
-//        }
     }
 
     /**
-     * Returns a reusable buffer from an internal recycling queue, or creates a new buffer if there are currently no
-     * buffers available for reuse.
-     *
-     * @param size of the samples that will be loaded into the buffer
-     * @return a reusable buffer
+     * Get a recycled buffer from the queue
      */
-    public T getBuffer(int size)
+    protected T getRecycledBuffer()
     {
-        T buffer = mReusableBufferQueue.poll();
-
-        if(buffer == null)
-        {
-            buffer = createBuffer(size);
-            mBufferCount++;
-            buffer.setDebugName("Owner:" + mDebugName + " Number:" + mBufferUserCounter++ + " NEW BUFFER");
-
-            mLog.debug("Buffer Created - Count:" + mBufferCount + (mDebugName != null ? " [" + mDebugName + "]" : ""));
-        }
-        else
-        {
-            String previous = buffer.name();
-            buffer.setDebugName("Owner:" + mDebugName + " Number:" + mBufferUserCounter++);
-
-//            if(mDebugName != null && mDebugName.contentEquals("NativeBufferConverter"))
-//            {
-//                mLog.debug("Buffer Reused: " + previous + " New Name:" + buffer.name());
-//            }
-        }
-
-        return buffer;
+        return mReusableBufferQueue.poll();
     }
 
     /**
-     * Create a new buffer of the specified size
+     * Increments the count of buffers managed by this queue.  Note: this method is NOT thread safe
      */
-    protected abstract T createBuffer(int size);
+    protected void incrementBufferCount()
+    {
+        mBufferCount++;
+    }
+
+    protected int getBufferCount()
+    {
+        return mBufferCount;
+    }
+
+    protected String getDebugName()
+    {
+        return mDebugName;
+    }
 }

@@ -18,6 +18,7 @@ package io.github.dsheirer.dsp.filter.channelizer;
 import io.github.dsheirer.dsp.filter.channelizer.output.IPolyphaseChannelOutputProcessor;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableBufferAssembler;
+import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
@@ -127,7 +128,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
      *
      * @param channelResultsBuffer containing an array of polyphase channelizer outputs.
      */
-    public void receiveChannelResults(PolyphaseChannelResultsBuffer channelResultsBuffer)
+    public void receiveChannelResults(ReusableChannelResultsBuffer channelResultsBuffer)
     {
         mReusableBufferAssembler.updateTimestamp(channelResultsBuffer.getTimestamp());
         mPolyphaseChannelOutputProcessor.receiveChannelResults(channelResultsBuffer);

@@ -22,6 +22,7 @@ import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.Window.WindowType;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
 import io.github.dsheirer.sample.real.IOverflowListener;
@@ -30,8 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChannelizer
 {
@@ -39,46 +39,48 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
 
     private static final int DEFAULT_MINIMUM_CHANNEL_BANDWIDTH = 12500;
 
-    private float[][] mSamples;
-    private float[][] mCoefficients;
-    private int[][] mSampleIndexMap;
-    private int mColumnPointer;
-    private int mRowPointer;
-    private int mBlockSize;
-    private int mSamplesPerBlock;
+    //Sized at 152 buffers a second where max = 5 seconds and reset = 2 seconds worth of buffers
+    private IFFTProcessor mIFFTProcessor = new IFFTProcessor((5 * 152), (2 * 152));
     private FloatFFT_1D mFFT;
-    private PolyphaseChannelResultsBuffer mChannelResultsBuffer;
-    private int mChannelResultsBufferSize = 2500;
-    private SampleTimestampManager mTimestampManager;
-    private IFFTProcessor mIFFTProcessor = new IFFTProcessor(300, 50);
-
-    private Map<Integer,Integer> mSampleToFilterMap = new HashMap<>();
-
-    private int[][] mTopBlockAccumulatorIndexMap;
-    private int[][] mMiddleBlockAccumulatorIndexMap;
-    private int[] mTopBlockMap;
-    private int[] mMiddleBlockMap;
     private float[] mInlineSamples;
     private float[] mInlineFilter;
     private float[] mInlineInterimOutput;
-    private float[] mChannelAccumulator;
-    private int mSampleBufferPointer;
-    private int mTapsPerChannel;
+    private float[] mFilterAccumulator;
     private boolean mTopBlockIndicator = true;
-
+    private int[] mTopBlockMap;
+    private int[] mMiddleBlockMap;
+    private int mSampleBufferPointer;
+    private int mSamplesPerBlock;
+    private int mTapsPerChannel;
 
     /**
      * Non-Maximally Decimated Polyphase Filter Bank (NMDPFB) channelizer that divides the input frequency band into
      * equal bandwidth channels that are each oversampled by 2x for output.
      *
+     * This polyphase channelizer is based off of the channelizer described by Fred Harris in Multirate Signal
+     * Processing for Communications Systems, p230-233.
+     *
+     * Samples are loaded into this filter one block at a time (1/2 channel count) and a filtered output is calculated
+     * to produce an overall 2x oversampled channel sample rate.  Each sample block load is preceded by a serpentine
+     * shift of the existing sample blocks.  We use the java System.arrayCopy() method which is able to leverage
+     * native processor intrinsics for efficiency.
+     *
+     * The prototype filter for the channelizer is rearranged to align with the structure of the sample buffer.
+     *
+     * Instead of using an array of channel filters as described in the Harris text, this filter and the sample buffer
+     * are arranged as a contiguous array to maximize Java's ability to leverage native processor Single Instruction
+     * Multiple Data (SIMD) intrinsics (since Java 8).  The filter process is broken into three steps:
+     *   -Multiply the inline array of samples and filter coefficients
+     *   -Accumulate the results for each sub-channel
+     *   -Rearrange the sub-channel results to correctly order the sub-channels
+     *
      * @param taps of a low-pass filter designed for the inbound sample rate with a cutoff frequency
      * equal to the channel bandwidth (sample rate / filters).  If you need to synthesize (combine two or more
-     * filter outputs) a new bandwidth signal from the outputs of this filter, then the filter should be designed
+     * channel outputs) a new bandwidth signal from the outputs of this filter, then the filter should be designed
      * as a nyquist filter with -6 dB attenuation at the channel bandwidth cutoff frequency
-     *
      * @param sampleRate of the incoming sample stream
-     * @param channelCount - number of filters/channels to output.  Since this filter bank oversamples each filter
-     * output, this number must be even (divisible by the 2x oversample rate).
+     * @param channelCount - number of filters/channels to output.  Since this filter bank performs 2x oversampling for
+     * each channel output, this number must be even (divisible by 2).
      */
     public ComplexPolyphaseChannelizerM2(float[] taps, int sampleRate, int channelCount)
     {
@@ -89,8 +91,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
             throw new IllegalArgumentException("Channel count must be an even multiple of the over-sample rate (2x)");
         }
 
-        double oversampledChannelSampleRate = getChannelSampleRate() * 2.0;
-        mTimestampManager = new SampleTimestampManager(oversampledChannelSampleRate);
+        mTapsPerChannel = (int)Math.ceil((double)taps.length / (double)channelCount);
 
         init(taps);
     }
@@ -99,22 +100,34 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      * Non-Maximally Decimated Polyphase Filter Bank (NMDPFB) channelizer that divides the input frequency band into
      * equal bandwidth channels that are each oversampled by 2x for output.
      *
-     * Note: this constructor uses a default minimum channel bandwidth of 12.5 kHz.  The number of channels is calculate
-     * from the sample rate and this default minimum channel bandwidth.  The resulting per-channel bandwidth will be
-     * between 12.5 and 25.0 kHz with the output per-channel sample rate of 2x the bandwidth.
+     * This polyphase channelizer is based off of the channelizer described by Fred Harris in Multirate Signal
+     * Processing for Communications Systems, p230-233.
+     *
+     * Samples are loaded into this filter one block at a time (1/2 channel count) and a filtered output is calculated
+     * to produce an overall 2x oversampled channel sample rate.  Each sample block load is preceded by a serpentine
+     * shift of the existing sample blocks.  We use the java System.arrayCopy() method which is able to leverage
+     * native processor intrinsics for efficiency.
+     *
+     * The prototype filter for the channelizer is rearranged to align with the structure of the sample buffer.
+     *
+     * Instead of using an array of channel filters as described in the Harris text, this filter and the sample buffer
+     * are arranged as a contiguous array to maximize Java's ability to leverage native processor Single Instruction
+     * Multiple Data (SIMD) intrinsics (since Java 8).  The filter process is broken into three steps:
+     *   -Multiply the inline array of samples and filter coefficients
+     *   -Accumulate the results for each sub-channel
+     *   -Rearrange the sub-channel results to correctly order the sub-channels
      *
      * @param sampleRate to be channelized.
-     * @param tapsPerFilter to use when designing the filter
+     * @param tapsPerChannel to use when designing the filter
      */
-    public ComplexPolyphaseChannelizerM2(double sampleRate, int tapsPerFilter) throws FilterDesignException
+    public ComplexPolyphaseChannelizerM2(double sampleRate, int tapsPerChannel) throws FilterDesignException
     {
         super(sampleRate, getChannelCount(sampleRate));
 
-        float[] filterTaps = FilterFactory.getSincM2Channelizer(getChannelSampleRate(), getChannelCount(),
-            tapsPerFilter, WindowType.BLACKMAN_HARRIS_7, true);
+        mTapsPerChannel = tapsPerChannel;
 
-        double oversampledChannelSampleRate = getChannelSampleRate() * 2.0;
-        mTimestampManager = new SampleTimestampManager(oversampledChannelSampleRate);
+        float[] filterTaps = FilterFactory.getSincM2Channelizer(getChannelSampleRate(), getChannelCount(),
+            mTapsPerChannel, WindowType.BLACKMAN_HARRIS_7, true);
 
         init(filterTaps);
     }
@@ -161,7 +174,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
             super.setSampleRate(sampleRate);
 
             float[] filterTaps = FilterFactory.getSincM2Channelizer(getChannelSampleRate(), getChannelCount(),
-                15, WindowType.BLACKMAN_HARRIS_7, true);
+                mTapsPerChannel, WindowType.BLACKMAN_HARRIS_7, true);
 
             init(filterTaps);
         }
@@ -175,54 +188,14 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
     /**
      * Receives the complex sample buffer and processes the results through the channelizer.
      */
-    public void receiveOld(ReusableComplexBuffer reusableComplexBuffer)
-    {
-        long start = System.nanoTime();
-
-        //Use the buffer's reference timestamp to update our timestamp manager (for timestamping output buffers)
-        mTimestampManager.setReferenceTimestamp(reusableComplexBuffer.getTimestamp());
-
-        float[] samples = reusableComplexBuffer.getSamples();
-
-        int samplesPointer = 0;
-
-        while(samplesPointer < samples.length)
-        {
-            int lengthToCopy = mBlockSize - (mRowPointer % mBlockSize);
-
-            if((samplesPointer + lengthToCopy) > samples.length)
-            {
-                lengthToCopy = samples.length - samplesPointer;
-            }
-
-            System.arraycopy(samples, samplesPointer, mSamples[mColumnPointer], mRowPointer, lengthToCopy);
-            samplesPointer += lengthToCopy;
-            mRowPointer += lengthToCopy;
-
-            if(mRowPointer % mBlockSize == 0)
-            {
-                //if row pointer at max, then mRowPointer = 0 and mColumnPointer--
-                processOld();
-            }
-        }
-
-        //Decrement the user count to let the originator know we're done with their buffer
-        reusableComplexBuffer.decrementUserCount();
-
-        mLog.debug("Duration: " + (System.nanoTime() - start));
-    }
-
-    /**
-     * Receives the complex sample buffer and processes the results through the channelizer.
-     */
     @Override
     public void receive(ReusableComplexBuffer reusableComplexBuffer)
     {
         long start = System.nanoTime();
         long processing = 0;
 
-        //Use the buffer's reference timestamp to update our timestamp manager (for timestamping output buffers)
-        mTimestampManager.setReferenceTimestamp(reusableComplexBuffer.getTimestamp());
+        ReusableChannelResultsBuffer channelResultsBuffer = getChannelResultsBuffer();
+        channelResultsBuffer.setTimestamp(reusableComplexBuffer.getTimestamp());
 
         float[] samples = reusableComplexBuffer.getSamples();
 
@@ -249,7 +222,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
             if(mSampleBufferPointer >= mSamplesPerBlock)
             {
                 //Filter buffered samples and produce a single sample across each of the polyphase channels
-                processing += process();
+                processing += process(channelResultsBuffer);
 
                 //Right-shift the samples in the buffer over to make room for a new block of samples
                 //Note: since JDK 8, hotspot JIT compiler uses native processor intrinsics for efficiency
@@ -258,78 +231,14 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
             }
         }
 
-        mLog.debug("Duration: " + (System.nanoTime() - start) + " Processing:" + processing);
+        channelResultsBuffer.incrementUserCount();
+
+        //Enqueue the channel results buffer for IFFT processing and distribution on a different thread
+        mIFFTProcessor.receive(channelResultsBuffer);
+
+//        mLog.debug("Duration: " + (System.nanoTime() - start) + " Processing:" + processing);
         //Decrement the user count to let the originator know we're done with their buffer
         reusableComplexBuffer.decrementUserCount();
-
-    }
-
-    /**
-     * Creates a base accumulator index map that is preloaded with the indexes that have to be summed to produce
-     * each subchannel filtered value.  This index map structure is designed for processing of polyphase filter
-     * samples in a contiguous/single sample array where the filter taps are also arranged to align with this
-     * inline sample array buffer.  This method preloads the index values, but the first dimension of the array
-     * must be rearranged to align with either top-block or middle-block processing so that each of the
-     * polyphase filter arm outputs is assigned to each sub-channel (I/Q) correctly.
-     *
-     * @param channelCount - number of channels
-     * @param tapsPerChannel - number of filter taps per channel
-     * @return output index to filter accumulator index mapping
-     */
-    private static int[][] getBaseAccumulatorIndexMap(int channelCount, int tapsPerChannel)
-    {
-        int subChannelCount = channelCount * 2;
-
-        int[][] accumulatorIndexMap = new int[subChannelCount][tapsPerChannel];
-
-        int pointer = 0;
-
-        //Step 1: load the interim product output indexes in sequential order.
-        for(int column = 0; column < tapsPerChannel; column++)
-        {
-            for(int subChannel = 0; subChannel < subChannelCount; subChannel++)
-            {
-                accumulatorIndexMap[subChannel][column] = pointer++;
-            }
-        }
-
-        return accumulatorIndexMap;
-    }
-
-    /**
-     * Creates a top-block processing accumulator map that maps each interim filter and sample index product
-     * to the corresponding final output index for the array that will feed the IFFT.
-     *
-     * @param channelCount - number of channels
-     * @param tapsPerChannel - number of filter taps per channel
-     * @return output index to filter accumulator index mapping
-     */
-    private static int[][] getTopBlockAccumulatorIndexMap(int channelCount, int tapsPerChannel)
-    {
-        int[][] baseIndexMap = getBaseAccumulatorIndexMap(channelCount, tapsPerChannel);
-
-        //SubChannel count is the number if I/Q channels (ie channels x 2)
-        int subChannelCount = channelCount * 2;
-
-        //Reorder the subchannel arrays to the structure needed for top-block processing
-        int blockSize = channelCount / 2;
-
-        int[][] reorderedMap = new int[subChannelCount][tapsPerChannel];
-
-        for(int channel = 0; channel < blockSize; channel++)
-        {
-            int newIndex = 2 * channel;
-            int originalIndex = 2 * (blockSize - channel - 1);
-            int offset = 2 * blockSize;
-
-            reorderedMap[newIndex] = baseIndexMap[originalIndex];
-            reorderedMap[newIndex + 1] = baseIndexMap[originalIndex + 1];
-
-            reorderedMap[offset + newIndex] = baseIndexMap[offset + originalIndex];
-            reorderedMap[offset + newIndex + 1] = baseIndexMap[offset + originalIndex + 1];
-        }
-
-        return reorderedMap;
     }
 
     /**
@@ -389,48 +298,12 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
 
         return newMap;
     }
-    /**
-     * Creates a middle-block processing accumulator map that maps each interim filter and sample index product
-     * to the corresponding final output index for the array that will feed the IFFT.
-     *
-     * @param channelCount - number of channels
-     * @param tapsPerChannel - number of filter taps per channel
-     * @return output index to filter accumulator index mapping
-     */
-    private static int[][] getMiddleBlockAccumulatorIndexMap(int channelCount, int tapsPerChannel)
-    {
-        int[][] baseIndexMap = getBaseAccumulatorIndexMap(channelCount, tapsPerChannel);
-
-        //SubChannel count is the number if I/Q channels (ie channels x 2)
-        int subChannelCount = channelCount * 2;
-
-        //Reorder the subchannel arrays to the structure needed for middle-block processing, where the outputs
-        //from the top and bottom blocks are inverted when compared to top-block processing
-        int blockSize = channelCount / 2;
-
-        int[][] reorderedMap = new int[subChannelCount][tapsPerChannel];
-
-        for(int channel = 0; channel < blockSize; channel++)
-        {
-            int newIndex = 2 * channel;
-            int originalIndex = 2 * (blockSize - channel - 1);
-            int offset = 2 * blockSize;
-
-            reorderedMap[newIndex] = baseIndexMap[offset + originalIndex];
-            reorderedMap[newIndex + 1] = baseIndexMap[offset + originalIndex + 1];
-
-            reorderedMap[offset + newIndex] = baseIndexMap[originalIndex];
-            reorderedMap[offset + newIndex + 1] = baseIndexMap[originalIndex + 1];
-        }
-
-        return reorderedMap;
-    }
 
     /**
-     * Arranges the filter coefficients for processing the polyphase filter bank using a contiguous array.
-     * @param coefficients
-     * @param channelCount
-     * @return
+     * Rearranges the filter coefficients to align with a contiguous sample buffer for processing efficiency.
+     * @param coefficients of the polyphase filter
+     * @param channelCount number of channels where each channel is an I/Q pair
+     * @return filter rearranged for inline sample buffer processing
      */
     private static float[] getAlignedFilter(float[] coefficients, int channelCount, int tapsPerChannel)
     {
@@ -467,370 +340,158 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      * Processes the sample buffer for each new block of sample data that is loaded and distributes the results to any
      * registered channel listeners.
      */
-    private void processOld()
+    private long process(ReusableChannelResultsBuffer channelResultsBuffer)
     {
-        mSampleToFilterMap.clear();
-
-
-        int sampleRowCount = getChannelCount() * 2;
-
-        float[] processed = new float[sampleRowCount];
-
-
-        //Top of block processing
-        if(mRowPointer >= sampleRowCount)
-        {
-            mLog.debug("Top Block");
-            int[] sampleIndexMap = mSampleIndexMap[mColumnPointer];
-
-            for(int channel = 0; channel < getChannelCount(); channel++)
-            {
-                int outputIndex = 2 * (getChannelCount() - channel - 1);
-                int sampleIndex = 2 * channel;
-
-                float[] filter = mCoefficients[channel];
-
-                processed[outputIndex] = filter(outputIndex, sampleIndex, mCoefficients[channel], sampleIndexMap);
-                processed[outputIndex + 1] = filter((outputIndex + 1), (sampleIndex + 1), mCoefficients[channel], sampleIndexMap);
-            }
-
-            mRowPointer = 0;
-            mColumnPointer--;
-
-            if(mColumnPointer < 0)
-            {
-                mColumnPointer = mSamples.length - 1;
-            }
-        }
-        //Mid-point processing
-        else
-        {
-            mLog.debug("Middle Block");
-            int[] sampleIndexMap = mSampleIndexMap[mColumnPointer];
-
-            int half = getChannelCount() / 2;
-
-            int outputOffset = getChannelCount() - 1;
-            int outputIndex;
-            int sampleIndex;
-            int filterIndex;
-
-            for(int channel = 0; channel < half; channel++)
-            {
-                outputIndex = 2 * (outputOffset - channel);
-                sampleIndex = 2 * channel;
-                filterIndex = channel + half;
-
-                processed[outputIndex] = filter(outputIndex, sampleIndex, mCoefficients[filterIndex], sampleIndexMap);
-                processed[outputIndex + 1] = filter((outputIndex + 1), (sampleIndex + 1), mCoefficients[filterIndex], sampleIndexMap);
-            }
-
-            //The second half of the sample buffer was loaded using the previous column pointer - adjust for that now
-            sampleIndexMap = mSampleIndexMap[(mColumnPointer == (mSamples.length - 1) ? 0 : mColumnPointer + 1)];
-            outputOffset = getChannelCount() - 1;
-
-            for(int channel = half; channel < getChannelCount(); channel++)
-            {
-                outputIndex = 2 * (outputOffset - channel);
-                sampleIndex = 2 * channel;
-                filterIndex = channel - half;
-
-                processed[outputIndex] = filter(outputIndex, sampleIndex, mCoefficients[filterIndex], sampleIndexMap);
-                processed[outputIndex + 1] = filter((outputIndex + 1), sampleIndex + 1, mCoefficients[filterIndex], sampleIndexMap);
-            }
-        }
-
-        mLog.debug("Processed:" + Arrays.toString(processed));
-
-        mIFFTProcessor.receive(processed);
-    }
-
-    private float[] getAccumulated()
-    {
-        return mChannelAccumulator;
-    }
-
-    /**
-     * Processes the sample buffer for each new block of sample data that is loaded and distributes the results to any
-     * registered channel listeners.
-     */
-    private long process()
-    {
-        //Calculate vector product of samples and filter coefficients using an iterative loop structure that the
-        //JIT compiler can easily recognize.
-
-        //Note: since JDK 8, the hotspot JIT compiler can compile this loop to use vector-optimized native processor
-        //Single Instruction Multiple Data (SIMD) intrinsics, potentially making this loop iteration faster using
-        //32-bit float SIMD intrinsics (e.g. intel SSE/2/3/4(4x), AVX(8x), or AVX2(16x) instruction sets).
+        //Multiply each of the samples by the corresponding filter tap
         for(int x = 0; x < mInlineSamples.length; x++)
         {
             mInlineInterimOutput[x] = mInlineSamples[x] * mInlineFilter[x];
         }
 
-        int offset = 0;
-
-        Arrays.fill(mChannelAccumulator, 0.0f);
-
         long start = System.nanoTime();
 
-        //Accumulate the product results
+        Arrays.fill(mFilterAccumulator, 0.0f);
+
+        int tapOffset = 0;
+
+        //Accumulate the sample/filter product results into each of the I/Q sub-channels
         for(int tap = 0; tap < mTapsPerChannel; tap++)
         {
-            offset = tap * getSubChannelCount();
+            tapOffset = tap * getSubChannelCount();
 
             for(int channel = 0; channel < getSubChannelCount(); channel++)
             {
-                mChannelAccumulator[channel] += mInlineInterimOutput[offset + channel];
+                mFilterAccumulator[channel] += mInlineInterimOutput[tapOffset + channel];
             }
         }
 
-        float[] processed = new float[getSubChannelCount()];
+        float[] processed = channelResultsBuffer.getEmptyBuffer(getSubChannelCount());
 
-        //Rearrange the accumulated results
         if(mTopBlockIndicator)
         {
             for(int x = 0; x < getSubChannelCount(); x++)
             {
-                processed[x] = mChannelAccumulator[mTopBlockMap[x]];
+                processed[x] = mFilterAccumulator[mTopBlockMap[x]];
             }
         }
         else
         {
             for(int x = 0; x < getSubChannelCount(); x++)
             {
-                processed[x] = mChannelAccumulator[mMiddleBlockMap[x]];
+                processed[x] = mFilterAccumulator[mMiddleBlockMap[x]];
             }
         }
 
-        long elapsed = System.nanoTime() - start;
-
-        //Accumulate the filtered channel results from the interim product array according to top/middle block
-
-        //Top of block processing
-//        if(mTopBlockIndicator)
-//        {
-////            mLog.debug("Top Block");
-//
-//            //Accumulate the product of each filter coefficient and sample into each sub-channel
-//            for(int subChannel = 0; subChannel < getSubChannelCount(); subChannel++)
-//            {
-//                for(int interimOutputIndex: mTopBlockAccumulatorIndexMap[subChannel])
-//                {
-//                    processed[subChannel] += mInlineInterimOutput[interimOutputIndex];
-//                }
-//            }
-//        }
-//        //Mid-point processing
-//        else
-//        {
-////            mLog.debug("Middle Block");
-//
-//            //Accumulate the product of each filter coefficient and sample into each sub-channel
-//            for(int subChannel = 0; subChannel < getSubChannelCount(); subChannel++)
-//            {
-//                for(int interimOutputIndex: mMiddleBlockAccumulatorIndexMap[subChannel])
-//                {
-//                    processed[subChannel] += mInlineInterimOutput[interimOutputIndex];
-//                }
-//            }
-//        }
-//
+        channelResultsBuffer.addChannelResults(processed);
 
         mTopBlockIndicator = !mTopBlockIndicator;
 
-//        mLog.debug("Processed:" + Arrays.toString(processed));
-//        mIFFTProcessor.receive(processed);
-        mFFT.complexInverse(processed, true);
-
-        processChannelResults(processed);
+        long elapsed = System.nanoTime() - start;
 
         return elapsed;
     }
 
-    /**
-     * Buffers the channel results and dispatches the channel results buffer to the channel output processors when full.
-     * @param channelResults
-     */
-    private void processChannelResults(float[] channelResults)
-    {
-        if(mChannelResultsBuffer == null)
-        {
-            mChannelResultsBuffer = new PolyphaseChannelResultsBuffer(mTimestampManager.getCurrentTimestamp(),
-                mChannelResultsBufferSize);
-        }
+//    /**
+//     * Buffers the channel results and dispatches the channel results buffer to the channel output processors when full.
+//     * @param buffer containing filtered and IFFT'd channelResults with a corresponding timestamp
+//     */
+//    private void processChannelResults(ReusableChannelResultsBuffer buffer)
+//    {
+//        if(mChannelResultsBuffer == null)
+//        {
+//            mChannelResultsBuffer = new PolyphaseChannelResultsBuffer(buffer.getTimestamp(),
+//                mChannelResultsBufferSize);
+//        }
+//
+//        try
+//        {
+//            mChannelResultsBuffer.add(buffer.getSamplesCopy());
+//        }
+//        catch(IllegalArgumentException iae)
+//        {
+//            //If the buffer is full (unlikely) or the channel results array length has changed (possible), flush the
+//            //current buffer, create a new one, and store the current results
+//            flushChannelResultsBuffer();
+//
+//            mChannelResultsBuffer = new PolyphaseChannelResultsBuffer(buffer.getTimestamp(), mChannelResultsBufferSize);
+//
+//            mChannelResultsBuffer.add(buffer.getSamplesCopy());
+//        }
+//
+//        if(mChannelResultsBuffer.isFull())
+//        {
+//            flushChannelResultsBuffer();
+//        }
+//
+//        buffer.decrementUserCount();
+//    }
 
-        try
-        {
-            mChannelResultsBuffer.add(channelResults);
-        }
-        catch(IllegalArgumentException iae)
-        {
-            //If the buffer is full (unlikely) or the channel results array length has changed (possible), flush the
-            //current buffer, create a new one, and store the current results
-            flushChannelResultsBuffer();
-
-            mChannelResultsBuffer = new PolyphaseChannelResultsBuffer(mTimestampManager.getCurrentTimestamp(),
-                mChannelResultsBufferSize);
-
-            mChannelResultsBuffer.add(channelResults);
-        }
-
-        if(mChannelResultsBuffer.isFull())
-        {
-            flushChannelResultsBuffer();
-        }
-
-        //Each channel results array is equivalent to one sample from our timestamp manager's perspective
-        mTimestampManager.increment();
-    }
-
-    /**
-     * Dispatches the non-empty channel results buffer to the channel output processors and nullifies the reference to
-     * the buffer so that a new buffer can be created upon receiving the next channel results.
-     */
-    private void flushChannelResultsBuffer()
-    {
-        if(mChannelResultsBuffer != null && !mChannelResultsBuffer.isEmpty())
-        {
-            dispatch(mChannelResultsBuffer);
-        }
-
-        mChannelResultsBuffer = null;
-    }
+//    /**
+//     * Dispatches the non-empty channel results buffer to the channel output processors and nullifies the reference to
+//     * the buffer so that a new buffer can be created upon receiving the next channel results.
+//     */
+//    private void flushChannelResultsBuffer()
+//    {
+//        if(mChannelResultsBuffer != null && !mChannelResultsBuffer.isEmpty())
+//        {
+//            dispatch(mChannelResultsBuffer);
+//        }
+//
+//        mChannelResultsBuffer = null;
+//    }
 
     /**
-     * Calculates the filtered output for polyphase filter arm.
-     *
-     * @param sampleRow index pointing to a row in the mSamples array to filter
-     * @param coefficients to use in filtering the samples
-     * @param sampleIndexMap to translate the column index offset based on the current sample column pointer
-     * @return filtered sample for the row
-     */
-    private float filter(int outputIndex, int sampleRow, float[] coefficients, int[] sampleIndexMap)
-    {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Out[" + outputIndex + "] ");
-        float accumulator = 0.0f;
-
-        for(int column = 0; column < mSamples.length; column++)
-        {
-            float sample = mSamples[sampleIndexMap[column]][sampleRow];
-            float coefficient = coefficients[column];
-
-            mSampleToFilterMap.put((int)sample, (int)coefficient);
-
-            sb.append("S").append((int)sample).append("*F").append((int)coefficient).append(" + ");
-            accumulator += mSamples[sampleIndexMap[column]][sampleRow] * coefficients[column];
-        }
-
-        mLog.debug(sb.toString());
-        return accumulator;
-    }
-
-
-    /**
-     * Initializes the channelizer structures.  Distributes the prototype filter coefficients to each of the polyphase
-     * filters, sets up the sample buffer array and pointers and initializes the FFT.
-     *
-     * These structures resemble those described by Fred Harris in Multirate Signal Processing for Communications
-     * Systems, p230-233.  However, instead of swapping the input sample buffers and swapping the output sample array
-     * on every other processing block, we simply swap the filter coefficient banks and leave the input sample buffer
-     * and output array indexes aligned.  However, the entire structure (sample buffer, coefficients and output array)
-     * is inverted (row zero index is M-1 and M-1 is zero index) to facilitate easy loading of data into the input
-     * sample buffer array using Java's efficient System.arrayCopy() utility.
-     *
-     * Note: the filter coefficients array is organized (row,column) for ease of accessing each filter arm row during
-     * convolution.  The samples array is organized (column,row) for ease/efficiency in loading each row of data.  Also,
-     * the input sample array implements a circular buffer where the mCoefficientsMap provides a lookup to each sample
-     * index based on the current value of the mColumnPointer.
+     * Initializes the channelizer filter structures.
      *
      * @param coefficients of the prototype filter for this channelizer
      */
     private void init(float[] coefficients)
     {
-        int columnCount = (int)Math.ceil((double)coefficients.length / (double)getChannelCount());
-        int filterRowCount = getChannelCount();
-        int sampleRowCount = getChannelCount() * 2;
-
-        //Sample and filter coefficient arrays are specifically setup as column/row and row/column
-        mSamples = new float[columnCount][sampleRowCount];
-        mCoefficients = new float[filterRowCount][columnCount];
-
-        mColumnPointer = columnCount - 1;
-        mBlockSize = getChannelCount();
-        mRowPointer = mBlockSize;
-
         //Setup the FFT
         mFFT = new FloatFFT_1D(getChannelCount());
 
-        //Setup the polyphase filters
-
-        //Setup the index map for the sample array circular buffer
-        initIndexMap(columnCount);
-
-        int coefficientIndex = 0;
-
-        //Load filter columns left-2-right (samples are loaded in reverse column order, right-2-left, for easy convolution)
-        for(int columnIndex = 0; columnIndex < columnCount; columnIndex++)
-        {
-            //Load filter rows bottom to top, opposite of sample row loading and sample output ordering
-            for(int rowIndex = filterRowCount - 1; rowIndex >= 0; rowIndex--)
-            {
-                mCoefficients[rowIndex][columnIndex] = coefficients[coefficientIndex++];
-            }
-        }
-
-        mTapsPerChannel = (int)Math.ceil((double)coefficients.length / (double)getChannelCount());
         int channelCount = getChannelCount();
         int bufferLength = getSubChannelCount() * mTapsPerChannel;
 
         mSamplesPerBlock = getChannelCount(); //Same as subChannelCount / 2
-        mTopBlockAccumulatorIndexMap = getTopBlockAccumulatorIndexMap(channelCount, mTapsPerChannel);
-        mMiddleBlockAccumulatorIndexMap = getMiddleBlockAccumulatorIndexMap(channelCount, mTapsPerChannel);
         mTopBlockMap = getTopBlockMap(channelCount);
         mMiddleBlockMap = getMiddleBlockMap(channelCount);
         mInlineFilter = getAlignedFilter(coefficients, channelCount, mTapsPerChannel);
         mInlineSamples = new float[bufferLength];
         mInlineInterimOutput = new float[bufferLength];
-        mChannelAccumulator = new float[getSubChannelCount()];
+        mFilterAccumulator = new float[getSubChannelCount()];
     }
 
     /**
-     * Generates a circular buffer index map to support lookup of the translated index based on the current column
-     * pointer and the desired sample index.
+     * Separate threaded processor to receive and enqueue filtered channel results buffers, perform IFFT on each array
+     * as required to align the phase of each polyphase channel, and then dispatch the results to any registered
+     * sample consumer channels.
      */
-    private void initIndexMap(int size)
-    {
-        mSampleIndexMap = new int[size][size];
-
-        for(int row = 0; row < size; row++)
-        {
-            for(int column = 0;column < size;column++)
-            {
-                int offset = row + column;
-
-                mSampleIndexMap[row][column] = ((offset < size) ? offset : offset - size);
-            }
-        }
-    }
-
-    /**
-     * Processor to enqueue filtered channels, perform IFFT and dispatch the results
-     */
-    public class IFFTProcessor extends ContinuousBufferProcessor<float[]>
+    public class IFFTProcessor extends ContinuousBufferProcessor<ReusableChannelResultsBuffer>
     {
         public IFFTProcessor(int maximumSize, int resetThreshold)
         {
             super(maximumSize, resetThreshold);
 
-            setListener(new Listener<float[]>()
+            //We create a listener interface to receive the buffers from the scheduled thread pool
+            //dispatcher thread that is part of this continuous buffer processor.  We perform an IFFT on each
+            //channel results array contained in each results buffer and then dispatch the buffer
+            //so that it can be distributed to each channel listener.
+            setListener(new Listener<List<ReusableChannelResultsBuffer>>()
             {
                 @Override
-                public void receive(float[] floatsToProcess)
+                public void receive(List<ReusableChannelResultsBuffer> buffers)
                 {
-                    //Rotate each of the channels to the correct phase using the IFFT
-                    mFFT.complexInverse(floatsToProcess, true);
-                    processChannelResults(floatsToProcess);
+                    for(ReusableChannelResultsBuffer buffer: buffers)
+                    {
+                        for(float[] channelResults: buffer.getChannelResults())
+                        {
+                            //Rotate each of the channels to the correct phase using the IFFT
+                            mFFT.complexInverse(channelResults, true);
+                        }
+
+                        dispatch(buffer);
+                    }
                 }
             });
 
@@ -859,21 +520,6 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
         }
 
         ComplexPolyphaseChannelizerM2 channelizer = new ComplexPolyphaseChannelizerM2(taps, sampleRate, channelCount);
-
-        int[][] top = channelizer.getTopBlockAccumulatorIndexMap(channelCount, tapsPerChannel);
-        int[][] middle = channelizer.getMiddleBlockAccumulatorIndexMap(channelCount, tapsPerChannel);
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("Middle:\n");
-
-        for(int x = 0; x < middle.length; x++)
-        {
-            sb.append(x).append(": ").append(Arrays.toString(middle[x])).append("\n");
-        }
-
-        mLog.debug(sb.toString());
-
-        mLog.debug(Arrays.toString(getMiddleBlockMap(channelCount)));
 
         ReusableComplexBufferQueue queue = new ReusableComplexBufferQueue();
 
