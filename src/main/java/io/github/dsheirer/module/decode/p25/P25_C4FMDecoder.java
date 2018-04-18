@@ -20,9 +20,9 @@ import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter;
+import io.github.dsheirer.dsp.gain.ComplexFeedForwardGainControl;
 import io.github.dsheirer.dsp.psk.DQPSKDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
-import io.github.dsheirer.dsp.psk.InterpolatingSampleBufferInstrumented;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
@@ -38,6 +38,7 @@ import java.util.concurrent.ScheduledExecutorService;
 public class P25_C4FMDecoder extends P25Decoder implements IComplexBufferListener, Listener<ComplexBuffer>
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25_C4FMDecoder.class);
+    private ComplexFeedForwardGainControl mAGC = new ComplexFeedForwardGainControl(32);
     protected static final double SYMBOL_RATE = 4800;
     protected InterpolatingSampleBuffer mInterpolatingSampleBuffer;
     protected DQPSKDemodulator mQPSKDemodulator;
@@ -65,7 +66,7 @@ public class P25_C4FMDecoder extends P25Decoder implements IComplexBufferListene
 
         mCostasLoop = new CostasLoop(mSampleRate, SYMBOL_RATE);
 
-        mInterpolatingSampleBuffer = new InterpolatingSampleBufferInstrumented((float)(sampleRate / SYMBOL_RATE));
+        mInterpolatingSampleBuffer = new InterpolatingSampleBuffer((float)(sampleRate / SYMBOL_RATE));
         mQPSKDemodulator = new DQPSKDemodulator(mCostasLoop, mInterpolatingSampleBuffer);
 
         //Message framer can trigger a symbol-inversion correction to the PLL when detected
@@ -77,8 +78,11 @@ public class P25_C4FMDecoder extends P25Decoder implements IComplexBufferListene
     @Override
     public void receive(ComplexBuffer complexBuffer)
     {
-        ComplexBuffer filtered = filter(complexBuffer);
-        mQPSKDemodulator.receive(filtered);
+        ComplexBuffer basebandFiltered = filter(complexBuffer);
+
+        ComplexBuffer gainApplied = mAGC.filter(basebandFiltered);
+
+        mQPSKDemodulator.receive(gainApplied);
     }
 
     protected ComplexBuffer filter(ComplexBuffer complexBuffer)
