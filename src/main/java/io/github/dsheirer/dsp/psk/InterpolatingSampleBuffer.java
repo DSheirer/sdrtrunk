@@ -130,7 +130,7 @@ public class InterpolatingSampleBuffer
      */
     public Complex getPrecedingSample()
     {
-        mPrecedingSample.setValues(mDelayLineInphase[mDelayLinePointer + 4], mDelayLineQuadrature[mDelayLinePointer + 3]);
+        mPrecedingSample.setValues(mDelayLineInphase[mDelayLinePointer + 3], mDelayLineQuadrature[mDelayLinePointer + 3]);
         return mPrecedingSample;
     }
 
