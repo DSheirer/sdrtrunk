@@ -1,4 +1,5 @@
-0.3.4 20180210
+0.3.4 20180418
+ - New P25 C4FM decoder that uses Differential QPSK decoder instead of FM demodulation with 4FSK.
  - Adds channel auto-start and ordering capability with startup dialog allowing user to invoke or bypass channel
    auto-start.  Provides user with more control over startup configuration.
  - Adds preferred tuner attribute to channel configuration allowing user to select a preferred tuner for the channel
