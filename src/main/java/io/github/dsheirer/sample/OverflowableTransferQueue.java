@@ -56,6 +56,13 @@ public class OverflowableTransferQueue<E>
         mResetThreshold = resetThreshold;
     }
 
+    public void dispose()
+    {
+        clear();
+        mOverflowListener = null;
+        mSourceOverflowListener = null;
+    }
+
     /**
      * Adds the element to the queue if able to do so without exceeding maximum queue size.  Otherwise, ignores
      * the element.

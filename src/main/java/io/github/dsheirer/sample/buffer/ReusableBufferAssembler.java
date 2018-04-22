@@ -59,8 +59,8 @@ public class ReusableBufferAssembler
 
     public void dispose()
     {
+        mReusableComplexBufferQueue.dispose();
         mListener = null;
-        mBuffer = null;
     }
 
     /**
@@ -117,7 +117,7 @@ public class ReusableBufferAssembler
             mBuffer.rewind();
             ReusableComplexBuffer reusableComplexBuffer = mReusableComplexBufferQueue.getBuffer(mBufferSize);
             reusableComplexBuffer.reloadFrom(mBuffer, mCurrentBufferTimestamp);
-            reusableComplexBuffer.setUserCount(1);
+            reusableComplexBuffer.incrementUserCount();
             mListener.receive(reusableComplexBuffer);
         }
 

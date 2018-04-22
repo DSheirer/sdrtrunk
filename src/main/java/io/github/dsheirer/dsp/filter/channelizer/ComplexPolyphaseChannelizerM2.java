@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChannelizer
@@ -132,11 +133,17 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
         init(filterTaps);
     }
 
+    /**
+     * Starts sample processing
+     */
     public void start()
     {
         mIFFTProcessor.start();
     }
 
+    /**
+     * Stops sample processing.
+     */
     public void stop()
     {
         mIFFTProcessor.stop();
@@ -503,6 +510,22 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
                     mLog.debug("IFFTProcessor overflow changed - overflow:" + overflow);
                 }
             });
+        }
+
+        /**
+         * Clears any buffers from the dispatch/processing queue.  Overrides the parent method so that we can set
+         * the user count to 0 to allow the buffer to be reclaimed.
+         */
+        protected Collection<ReusableChannelResultsBuffer> clearQueue()
+        {
+            Collection<ReusableChannelResultsBuffer> buffersToDispose = super.clearQueue();
+
+            for(ReusableChannelResultsBuffer buffer: buffersToDispose)
+            {
+                buffer.clearUserCount();
+            }
+
+            return buffersToDispose;
         }
     }
 

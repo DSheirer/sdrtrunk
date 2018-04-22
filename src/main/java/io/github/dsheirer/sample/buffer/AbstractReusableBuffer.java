@@ -15,10 +15,15 @@
  ******************************************************************************/
 package io.github.dsheirer.sample.buffer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.concurrent.atomic.AtomicInteger;
 
 public abstract class AbstractReusableBuffer
 {
+    private final static Logger mLog = LoggerFactory.getLogger(AbstractReusableBuffer.class);
+
     protected IReusableBufferDisposedListener mBufferDisposedListener;
     protected long mTimestamp;
     protected AtomicInteger mUserCount = new AtomicInteger();
@@ -33,6 +38,11 @@ public abstract class AbstractReusableBuffer
     public AbstractReusableBuffer(IReusableBufferDisposedListener bufferDisposedListener)
     {
         mBufferDisposedListener = bufferDisposedListener;
+    }
+
+    public void dispose()
+    {
+        mBufferDisposedListener = null;
     }
 
     public void setDebugName(String debugName)
@@ -65,15 +75,12 @@ public abstract class AbstractReusableBuffer
     }
 
     /**
-     * Sets the number of users that will receive this buffer.  Each user is expected to invoke the
-     * decrementUserCount() method to indicate that they are finished using this buffer so that this buffer can be
-     * reused once the user count is zero.
-     *
-     * @param userCount that will receive this reusable buffer
+     * Sets the user count to 0 and recycles this buffer
      */
-    public void setUserCount(int userCount)
+    public void clearUserCount()
     {
-        mUserCount.set(userCount);
+        mUserCount.set(0);
+        recycle();
     }
 
     /**
@@ -88,14 +95,25 @@ public abstract class AbstractReusableBuffer
      */
     public void decrementUserCount()
     {
-        int currentCount = mUserCount.decrementAndGet();
-
-        if(currentCount == 0)
+        if(mUserCount.decrementAndGet() <= 0)
         {
             recycle();
+        }
+    }
+
+    /**
+     * Sends this buffer back to the owning buffer queue for reuse
+     */
+    private void recycle()
+    {
+        prepareForRecycle();
+
+        if(mBufferDisposedListener != null)
+        {
             mBufferDisposedListener.disposed(this);
         }
-        else if(currentCount < 0)
+
+        if(mUserCount.get() < 0)
         {
             throw new IllegalStateException("User count is below zero.  This indicates that this buffer's decrement" +
                 " user count was invoked by more than the expected user count");
@@ -103,10 +121,10 @@ public abstract class AbstractReusableBuffer
     }
 
     /**
-     * Invoked just prior to notifying the owner that this buffer is ready for recycle.  This method
-     * is intended for sub-class implementations to perform any recycle cleanup actions.
+     * Invoked just prior to notifying the owner that this buffer is ready for prepareForRecycle.  This method
+     * is intended for sub-class implementations to perform any prepareForRecycle cleanup actions.
      */
-    protected void recycle()
+    protected void prepareForRecycle()
     {
         //No-op in this abstract class
     }
@@ -138,7 +156,14 @@ public abstract class AbstractReusableBuffer
      */
     public void incrementUserCount(int additionalUserCount)
     {
-        mUserCount.addAndGet(additionalUserCount);
+        if(additionalUserCount >= 0)
+        {
+            mUserCount.addAndGet(additionalUserCount);
+        }
+        else
+        {
+            mLog.debug("Request to add negative user count [" + additionalUserCount + "] ignored");
+        }
     }
 
     /**

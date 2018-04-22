@@ -641,8 +641,6 @@ public class ProcessingChain implements IChannelEventListener
                             "chain");
                 }
 
-				/* Release the source */
-                mSource.dispose();
                 mSource = null;
             }
         }

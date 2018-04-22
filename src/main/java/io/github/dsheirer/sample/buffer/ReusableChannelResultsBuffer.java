@@ -26,10 +26,10 @@ public class ReusableChannelResultsBuffer extends AbstractReusableBuffer
 
     /**
      * Reusable buffer for storing polyphase channelizer results arrays.  This buffer is NOT thread safe and is
-     * designed to be used by only one consumer.  The consumer must invoke the recycle() method to indicate that this
+     * designed to be used by only one consumer.  The consumer must invoke the prepareForRecycle() method to indicate that this
      * buffer can be reused.
      *
-     * @param disposedListener to receive notification when this buffer is ready for recycle
+     * @param disposedListener to receive notification when this buffer is ready for prepareForRecycle
      */
     ReusableChannelResultsBuffer(IReusableBufferDisposedListener disposedListener)
     {
@@ -39,7 +39,7 @@ public class ReusableChannelResultsBuffer extends AbstractReusableBuffer
     /**
      * Recycles this buffer for reuse.
      */
-    protected void recycle()
+    protected void prepareForRecycle()
     {
         mEmptyBuffers.addAll(mFilledBuffers);
         mFilledBuffers.clear();

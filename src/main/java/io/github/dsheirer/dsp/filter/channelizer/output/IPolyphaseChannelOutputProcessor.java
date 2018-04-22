@@ -70,4 +70,7 @@ public interface IPolyphaseChannelOutputProcessor
      * @param source to receive overflow notifications
      */
     void setSourceOverflowListener(Source source);
+
+
+    void dispose();
 }

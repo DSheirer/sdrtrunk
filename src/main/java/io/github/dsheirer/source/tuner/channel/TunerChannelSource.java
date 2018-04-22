@@ -40,7 +40,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     private TunerChannel mTunerChannel;
     private Listener<SourceEvent> mProducerSourceEventListener;
     private Listener<SourceEvent> mConsumerSourceEventListener;
-    private BufferProcessor mBufferProcessor = new BufferProcessor();
+    private ScheduledIntervalProcessor mScheduledIntervalProcessor = new ScheduledIntervalProcessor();
 
     /**
      * Tuner Channel Source is a Digital Drop Channel (DDC) abstract class that defines the minimum functionality
@@ -78,12 +78,12 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
      * Sets the frequency correction for the outbound sample stream to the consumer
      * @param correction in hertz
      */
-    protected abstract void setFrequencyCorrection(long correction);
+    protected abstract void setChannelFrequencyCorrection(long correction);
 
     /**
      * Frequency correction value currently being applied to the outbound sample stream
      */
-    public abstract long getFrequencyCorrection();
+    public abstract long getChannelFrequencyCorrection();
 
     /**
      * Sets the listener to receive the complex buffer sample output from this channel
@@ -125,7 +125,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
             mProducerSourceEventListener.receive(SourceEvent.startSampleStreamRequest(this));
         }
 
-        mBufferProcessor.start();
+        mScheduledIntervalProcessor.start();
     }
 
     /**
@@ -140,7 +140,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
             mProducerSourceEventListener.receive(SourceEvent.sourceDisposeRequest(this));
         }
 
-        mBufferProcessor.stop();
+        mScheduledIntervalProcessor.stop();
     }
 
     @Override
@@ -172,22 +172,19 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
     {
         switch(sourceEvent.getEvent())
         {
-            //Notification events from the producer
             case NOTIFICATION_FREQUENCY_CHANGE:
-                mLog.debug("Processing Source Event - setting frequency to " + sourceEvent.getValue().longValue());
-                setFrequency(sourceEvent.getValue().longValue());
+            case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED:
+            case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED:
+            case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
+            case NOTIFICATION_STOP_SAMPLE_STREAM:
+                //no-op
                 break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
                 setSampleRate(sourceEvent.getValue().doubleValue());
                 break;
-            case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED:
-            case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED:
-            case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
-                //no-op
-                break;
             //Request events from the consumer
             case REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
-                setFrequencyCorrection(sourceEvent.getValue().longValue());
+                setChannelFrequencyCorrection(sourceEvent.getValue().longValue());
                 break;
             default:
                 mLog.error("Ignoring unrecognized source event: " + sourceEvent.getEvent() + " from [" +
@@ -255,7 +252,7 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
      * sends a heartbeat to the registered consumer and then commands the sub-class implementation to process any
      * queued buffers and distribute complex buffer sample(s) to the registered consumer.
      */
-    public class BufferProcessor implements Runnable
+    public class ScheduledIntervalProcessor implements Runnable
     {
         private ScheduledFuture<?> mScheduledFuture;
         private boolean mStopped = false;

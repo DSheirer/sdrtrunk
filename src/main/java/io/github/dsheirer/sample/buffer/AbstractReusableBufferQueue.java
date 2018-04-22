@@ -30,18 +30,37 @@ public abstract class AbstractReusableBufferQueue<T extends AbstractReusableBuff
     private int mBufferCount = 0;
     private String mDebugName;
 
+    /**
+     * Base queue for managing reusable buffers.
+     *
+     * @param debugName to associate a debug string with this buffer instance
+     */
     public AbstractReusableBufferQueue(String debugName)
     {
         mDebugName = debugName;
     }
 
+    /**
+     * Base queue for managing reusable buffers.
+     */
     public AbstractReusableBufferQueue()
     {
     }
 
+    /**
+     * Disposes of any reclaimed buffers to prepare this queue for disposal.
+     */
     public void dispose()
     {
-        mReusableBufferQueue.clear();
+        T buffer = mReusableBufferQueue.poll();
+
+        while(buffer != null)
+        {
+            buffer.dispose();
+            buffer = mReusableBufferQueue.poll();
+        }
+
+        mBufferCount = 0;
     }
 
     /**
@@ -72,11 +91,17 @@ public abstract class AbstractReusableBufferQueue<T extends AbstractReusableBuff
         mBufferCount++;
     }
 
+    /**
+     * Current count of buffers created by this queue
+     */
     protected int getBufferCount()
     {
         return mBufferCount;
     }
 
+    /**
+     * Debug name for this queue instance
+     */
     protected String getDebugName()
     {
         return mDebugName;

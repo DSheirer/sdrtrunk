@@ -33,7 +33,7 @@ public class ChannelCalculator
      * from an index where the frequency may exist either at the overlapping boundary of two indexes, or in the middle
      * of the wrap-around (N/2) index.
      */
-    private enum IndexBoundaryPolicy
+    public enum IndexBoundaryPolicy
     {
         ADJUST_POSITIVE,
         ADJUST_NEGATIVE

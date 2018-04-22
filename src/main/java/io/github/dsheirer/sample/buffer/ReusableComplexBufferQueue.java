@@ -22,11 +22,18 @@ public class ReusableComplexBufferQueue extends AbstractReusableBufferQueue<Reus
 {
     private final static Logger mLog = LoggerFactory.getLogger(ReusableComplexBufferQueue.class);
 
+    /**
+     * Queue for managing the creation and reuse of reusable complex sample buffers.
+     * @param debugName to associate with this queue instance
+     */
     public ReusableComplexBufferQueue(String debugName)
     {
         super(debugName);
     }
 
+    /**
+     * Queue for managing the creation and reuse of reusable complex sample buffers.
+     */
     public ReusableComplexBufferQueue()
     {
     }

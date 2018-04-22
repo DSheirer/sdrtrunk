@@ -33,8 +33,8 @@ public class PolyphaseChannelSource extends TunerChannelSource
     private ReusableBufferAssembler mReusableBufferAssembler;
     private IPolyphaseChannelOutputProcessor mPolyphaseChannelOutputProcessor;
     private double mChannelSampleRate;
-    private long mCenterFrequency;
-    private long mFrequencyCorrection;
+    private long mIndexCenterFrequency;
+    private long mChannelFrequencyCorrection;
 
     /**
      * Polyphase channelizer tuner channel source implementation.  Adapts the channel array output samples from the
@@ -45,14 +45,17 @@ public class PolyphaseChannelSource extends TunerChannelSource
      * @param outputProcessor - to process polyphase channelizer channel results into a channel stream
      * @param producerSourceEventListener to receive source event requests (e.g. start/stop sample stream)
      * @param channelSampleRate for the downstream sample output
+     * @param centerFrequency of the incoming polyphase channel(s)
      */
     public PolyphaseChannelSource(TunerChannel tunerChannel, IPolyphaseChannelOutputProcessor outputProcessor,
-                                  Listener<SourceEvent> producerSourceEventListener, double channelSampleRate)
+                                  Listener<SourceEvent> producerSourceEventListener, double channelSampleRate,
+                                  long centerFrequency)
     {
         super(producerSourceEventListener, tunerChannel);
         mPolyphaseChannelOutputProcessor = outputProcessor;
         mChannelSampleRate = channelSampleRate;
         mReusableBufferAssembler = new ReusableBufferAssembler(2500, mChannelSampleRate);
+        setFrequency(centerFrequency);
     }
 
     /**
@@ -114,10 +117,10 @@ public class PolyphaseChannelSource extends TunerChannelSource
 
             //Finally, setup the frequency offset for the output processor and reset the frequency correction value
             //to allow consumers to adjust and calculate a new frequency correction value, if needed.
-            mCenterFrequency = frequency;
-            mFrequencyCorrection = 0;
+            mIndexCenterFrequency = frequency;
+            mChannelFrequencyCorrection = 0;
             mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
-            broadcastConsumerSourceEvent(SourceEvent.frequencyCorrectionChange(mFrequencyCorrection));
+            broadcastConsumerSourceEvent(SourceEvent.frequencyCorrectionChange(mChannelFrequencyCorrection));
         }
     }
 
@@ -158,13 +161,22 @@ public class PolyphaseChannelSource extends TunerChannelSource
     @Override
     public void dispose()
     {
-        mLog.info("Polyphase channel source received request to dispose");
+        if(mReusableBufferAssembler != null)
+        {
+            mReusableBufferAssembler.dispose();
+        }
+
+        if(mPolyphaseChannelOutputProcessor != null)
+        {
+            mPolyphaseChannelOutputProcessor.dispose();
+            mPolyphaseChannelOutputProcessor = null;
+        }
     }
 
     @Override
-    public long getFrequencyCorrection()
+    public long getChannelFrequencyCorrection()
     {
-        return mFrequencyCorrection;
+        return mChannelFrequencyCorrection;
     }
 
     /**
@@ -173,26 +185,26 @@ public class PolyphaseChannelSource extends TunerChannelSource
      *
      * @param value to apply for frequency correction in hertz
      */
-    protected void setFrequencyCorrection(long value)
+    protected void setChannelFrequencyCorrection(long value)
     {
-        mFrequencyCorrection = value;
+        mChannelFrequencyCorrection = value;
         updateFrequencyOffset();
-        broadcastConsumerSourceEvent(SourceEvent.frequencyCorrectionChange(mFrequencyCorrection));
+        broadcastConsumerSourceEvent(SourceEvent.frequencyCorrectionChange(mChannelFrequencyCorrection));
     }
 
     /**
-     * Sets the center frequency for the incoming sample stream channel results and resets frequency correction to zero.
+     * Sets the center frequency for this channel.frequency for the incoming sample stream channel results and resets frequency correction to zero.
      * @param frequency in hertz
      */
     @Override
     protected void setFrequency(long frequency)
     {
-        mLog.debug("Center Frequency set to: " + frequency + " for channel " + getTunerChannel().toString());
-        mCenterFrequency = frequency;
+        mLog.debug("Index Center Frequency set to: " + frequency + " for channel " + getTunerChannel().toString());
+        mIndexCenterFrequency = frequency;
 
         //Set frequency correction to zero to trigger an update to the mixer and allow downstream monitors to
         //recalculate the frequency error correction again
-        setFrequencyCorrection(0);
+        setChannelFrequencyCorrection(0);
     }
 
     @Override
@@ -210,7 +222,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
      */
     private long getFrequencyOffset()
     {
-        return getTunerChannel().getFrequency() - mCenterFrequency + mFrequencyCorrection;
+        return getTunerChannel().getFrequency() - mIndexCenterFrequency + mChannelFrequencyCorrection;
     }
 
     /**
@@ -222,6 +234,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
     {
         synchronized(mPolyphaseChannelOutputProcessor)
         {
+            mLog.debug("Setting output processor frequency offset to: " + getFrequencyOffset());
             mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
         }
     }

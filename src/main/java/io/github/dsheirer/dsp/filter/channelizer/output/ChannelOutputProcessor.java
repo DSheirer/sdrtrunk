@@ -40,7 +40,6 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     private int mMaxResultsToProcess;
 
     private int mInputChannelCount;
-//TODO: swap this out and use the LowPhaseNoiseOscillator
     private IOscillator mFrequencyCorrectionMixer;
     private boolean mFrequencyCorrectionEnabled;
 
@@ -55,10 +54,21 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     public ChannelOutputProcessor(int inputChannelCount, double sampleRate)
     {
         mInputChannelCount = inputChannelCount;
+
+//TODO: swap this out and use the LowPhaseNoiseOscillator
         mFrequencyCorrectionMixer = new Oscillator(0, sampleRate);
         mMaxResultsToProcess = (int)(sampleRate / 10) * 2;  //process at 100 millis interval, twice the expected inflow rate
 
         mChannelResultsQueue = new OverflowableTransferQueue<>((int)(sampleRate * 3), (int)(sampleRate * 0.5));
+    }
+
+    public void dispose()
+    {
+        if(mChannelResultsQueue != null)
+        {
+            mChannelResultsQueue.dispose();
+            mChannelResultsQueue = null;
+        }
     }
 
     /**
@@ -68,7 +78,7 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     @Override
     public void setFrequencyOffset(long frequencyOffset)
     {
-        mLog.debug("Setting frequency offset to: " + frequencyOffset);
+        mLog.debug("Setting frequency offset to: " + frequencyOffset + " for class:" + this.getClass());
         mFrequencyCorrectionMixer.setFrequency(frequencyOffset);
         mFrequencyCorrectionEnabled = (frequencyOffset != 0);
     }

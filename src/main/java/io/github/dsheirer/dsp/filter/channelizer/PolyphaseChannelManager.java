@@ -26,6 +26,7 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IReusableBufferProvider;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.ISourceEventProcessor;
+import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.TunerController;
@@ -134,21 +135,34 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
      */
     public TunerChannelSource getChannel(TunerChannel tunerChannel)
     {
+        mLog.debug("Getting channel: " + tunerChannel.toString());
         PolyphaseChannelSource channelSource = null;
 
         try
         {
             List<Integer> polyphaseIndexes = mChannelCalculator.getChannelIndexes(tunerChannel);
 
+            StringBuilder sb = new StringBuilder();
+            sb.append("Channel Indexes - ");
+            for(int index: polyphaseIndexes)
+            {
+                sb.append(index).append(":").append((long)mChannelCalculator.getIndexCenterFrequency(index,
+                    ChannelCalculator.IndexBoundaryPolicy.ADJUST_POSITIVE)).append(" ");
+            }
+            mLog.debug(sb.toString());
+
             IPolyphaseChannelOutputProcessor outputProcessor = getOutputProcessor(polyphaseIndexes);
+
+            mLog.debug("Channel Ouput Processor: " + outputProcessor.getClass());
 
             if(outputProcessor != null)
             {
+                long centerFrequency = mChannelCalculator.getCenterFrequencyForIndexes(polyphaseIndexes);
+
                 channelSource = new PolyphaseChannelSource(tunerChannel, outputProcessor, mChannelSourceEventListener,
-                    mChannelCalculator.getChannelSampleRate());
+                    mChannelCalculator.getChannelSampleRate(), centerFrequency);
 
                 mChannelSources.add(channelSource);
-                mSourceEventBroadcaster.broadcast(SourceEvent.channelCountChange(getTunerChannelCount()));
             }
         }
         catch(IllegalArgumentException iae)
@@ -176,8 +190,10 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
 
             if(outputProcessor != null)
             {
+                long centerFrequency = mChannelCalculator.getCenterFrequencyForIndexes(polyphaseIndexes);
+
                 channelSource = new PolyphaseChannelSource(tunerChannel, outputProcessor, mChannelSourceEventListener,
-                    mChannelCalculator.getChannelSampleRate());
+                    mChannelCalculator.getChannelSampleRate(), centerFrequency);
             }
         }
         catch(IllegalArgumentException iae)
@@ -227,8 +243,12 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     {
         synchronized(mBufferProcessor)
         {
-            mPolyphaseChannelizer.addChannel(channelSource);
+            //Note: the polyphase channel source has already been added to the mChannelSources in getChannel() method
 
+            mPolyphaseChannelizer.addChannel(channelSource);
+            mSourceEventBroadcaster.broadcast(SourceEvent.channelCountChange(getTunerChannelCount()));
+
+            //If this is the first channel, register to start the sample buffers flowing
             if(mPolyphaseChannelizer.getRegisteredChannelCount() == 1)
             {
                 mReusableBufferProvider.addBufferListener(mBufferProcessor);
@@ -249,8 +269,10 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         synchronized(mBufferProcessor)
         {
             mChannelSources.remove(channelSource);
+            mPolyphaseChannelizer.removeChannel(channelSource);
             mSourceEventBroadcaster.broadcast(SourceEvent.channelCountChange(getTunerChannelCount()));
 
+            //If this is the last/only channel, deregister to stop the sample buffers
             if(mPolyphaseChannelizer.getRegisteredChannelCount() == 0)
             {
                 mReusableBufferProvider.removeBufferListener(mBufferProcessor);
@@ -532,9 +554,18 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                             (sourceEvent.hasSource() ? sourceEvent.getSource().getClass() : "null source"));
                     }
                     break;
+                case REQUEST_SOURCE_DISPOSE:
+                    Source source = sourceEvent.getSource();
+
+                    if(source instanceof PolyphaseChannelSource)
+                    {
+                        source.dispose();
+                    }
+                    break;
                 default:
                     mLog.error("Received unrecognized source event from polyphase channel source [" +
                         sourceEvent.getEvent() + "]");
+                    break;
             }
         }
     }
