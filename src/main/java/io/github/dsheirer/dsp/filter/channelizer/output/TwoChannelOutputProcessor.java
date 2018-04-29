@@ -16,6 +16,10 @@
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
 import io.github.dsheirer.dsp.filter.channelizer.TwoChannelSynthesizerM2;
+import io.github.dsheirer.dsp.filter.design.FilterDesignException;
+import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
+import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter;
+import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import io.github.dsheirer.dsp.mixer.FS4DownConverter;
 import io.github.dsheirer.sample.buffer.ReusableBufferAssembler;
 import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
@@ -26,10 +30,43 @@ import java.util.List;
 
 public class TwoChannelOutputProcessor extends ChannelOutputProcessor
 {
+    private final static Logger mLog = LoggerFactory.getLogger(TwoChannelOutputProcessor.class);
+
+
+    private static float[] mFilterCoefficients;
+
+    static
+    {
+        try
+        {
+            FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
+                .sampleRate(25000)
+                .gridDensity(16)
+                .oddLength(true)
+                .passBandCutoff(6000)
+                .passBandAmplitude(1.0)
+                .passBandRipple(0.01)
+                .stopBandStart(6500)
+                .stopBandAmplitude(0.0)
+                .stopBandRipple(0.005) //Approximately 94 dB attenuation
+                .build();
+
+            RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
+
+            if(designer.isValid())
+            {
+                mFilterCoefficients = designer.getImpulseResponse();
+            }
+        }
+        catch(FilterDesignException fde)
+        {
+            mLog.error("Error designing low pass filter for two channel output processor", fde);
+        }
+    }
+
     private TwoChannelSynthesizerM2 mSynthesizer;
     private FS4DownConverter mFS4DownConverter = new FS4DownConverter();
-
-    private final static Logger mLog = LoggerFactory.getLogger(TwoChannelOutputProcessor.class);
+    private ComplexFIRFilter mLowPassFilter;
 
     private int mChannelOffset1;
     private int mChannelOffset2;
@@ -45,9 +82,11 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
     {
         //Set the frequency correction oscillator to 2 x output sample rate since we'll be correcting the frequency
         //after synthesizing both input channels
-        super(2, sampleRate * 2);
+        super(2, sampleRate);
         setPolyphaseChannelIndices(channelIndexes);
         setSynthesisFilter(filter);
+
+        mLowPassFilter = new ComplexFIRFilter(mFilterCoefficients, 1.0f);
     }
 
     /**
@@ -111,6 +150,8 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
 
             //Apply offset and frequency correction to center the signal of interest within the synthesized channel
             getFrequencyCorrectionMixer().mixComplex(synthesized);
+
+            mLowPassFilter.filter(synthesized);
 
             reusableBufferAssembler.receive(synthesized);
 

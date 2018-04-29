@@ -564,11 +564,17 @@ public class ProcessingChain implements IChannelEventListener
         {
             if(mSource != null)
             {
-                /* Reset each of the modules */
+                //Reset each of the modules
                 for(Module module : mModules)
                 {
                     module.reset();
                 }
+
+                //Broadcast the source sample rate so that each of the modules can self-configure
+                mSourceEventBroadcaster.broadcast(SourceEvent.sampleRateChange(mSource.getSampleRate(), "Processing Chain Startup"));
+
+                //Broadcast the source center frequencysample rate so that each of the modules can self-configure
+                mSourceEventBroadcaster.broadcast(SourceEvent.frequencyChange(mSource.getFrequency(), "Processing Chain Startup"));
 
                 //Setup the channel state to monitor source overflow conditions
                 mSource.setOverflowListener(mChannelState);
@@ -616,12 +622,6 @@ public class ProcessingChain implements IChannelEventListener
     {
         if(mRunning.compareAndSet(true, false))
         {
-			/* Stop each of the modules */
-            for(Module module : mModules)
-            {
-                module.stop();
-            }
-
             if(mSource != null)
             {
                 removeModule(mSource);
@@ -642,6 +642,12 @@ public class ProcessingChain implements IChannelEventListener
                 }
 
                 mSource = null;
+            }
+
+			/* Stop each of the remaining modules */
+            for(Module module : mModules)
+            {
+                module.stop();
             }
         }
     }

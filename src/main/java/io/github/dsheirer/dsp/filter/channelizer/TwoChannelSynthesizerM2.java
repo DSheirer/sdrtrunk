@@ -148,7 +148,7 @@ public class TwoChannelSynthesizerM2
 
         try
         {
-            float[] taps = FilterFactory.getSincM2Channelizer(12500.0, 2, 19, Window.WindowType.BLACKMAN_HARRIS_7, true);
+            float[] taps = FilterFactory.getSincM2Synthesizer(12500.0, 2, 19, Window.WindowType.BLACKMAN_HARRIS_7, true);
 
             TwoChannelSynthesizerM2 synthesizer = new TwoChannelSynthesizerM2(taps);
 

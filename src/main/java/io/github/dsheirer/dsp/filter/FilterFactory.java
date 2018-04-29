@@ -122,6 +122,32 @@ public class FilterFactory
     }
 
     /**
+     * Normalizes all filter coefficients to achieve an overall objective gain, by ensuring
+     * that the sum of the absolute value of all coefficients adds up to the objective.
+     *
+     * @param coefficients
+     * @return
+     */
+    public static float[] normalize(float[] coefficients, float objective)
+    {
+        float accumulator = 0;
+
+        for(int x = 0; x < coefficients.length; x++)
+        {
+            accumulator += Math.abs(coefficients[x]);
+        }
+
+        accumulator /= objective;
+
+        for(int x = 0; x < coefficients.length; x++)
+        {
+            coefficients[x] = coefficients[x] / accumulator;
+        }
+
+        return coefficients;
+    }
+
+    /**
      * Constructs an array of unity (1) response values representing the
      * desired (pre-windowing) frequency response, used by the sync function
      *
@@ -740,8 +766,11 @@ public class FilterFactory
     public static float[] getSincM2Channelizer(double channelBandwidth, int channels, int tapsPerChannel,
                            Window.WindowType windowType, boolean logResults) throws FilterDesignException
     {
-        return getSincFilter(channelBandwidth * channels, channelBandwidth,
+        float[] filter = getSincFilter(channelBandwidth * channels, channelBandwidth,
             channels, tapsPerChannel, windowType,logResults);
+
+        //Increase the overall gain of the filter to an objective of 1.0 times the number of channels
+        return normalize(filter, 1.0f * (float)channels);
     }
 
     /**
@@ -759,8 +788,11 @@ public class FilterFactory
     public static float[] getSincM2Synthesizer(double channelBandwidth, int channels, int tapsPerChannel,
                      Window.WindowType windowType, boolean logResults) throws FilterDesignException
     {
-        return getSincFilter(channelBandwidth * channels, channelBandwidth, channels,
+        float[] filter = getSincFilter(channelBandwidth * channels, channelBandwidth, channels,
             tapsPerChannel, windowType,logResults);
+
+        //Decrease the overall gain of the filter to an objective of 1.0 divided by the number of channels
+        return normalize(filter, 1.0f);// / (float)channels);
     }
 
     /**

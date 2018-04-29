@@ -49,6 +49,17 @@ public class SourceEvent
     private Event mEvent;
     private Number mValue;
     private Source mSource;
+    private String mEventDescription;
+
+    /**
+     * Private constructor.  Use the static constructor methods to create an event.
+     */
+    private SourceEvent(Event event, Number value, String eventDescription)
+    {
+        mEvent = event;
+        mValue = value;
+        mEventDescription = eventDescription;
+    }
 
     /**
      * Private constructor.  Use the static constructor methods to create an event.
@@ -148,6 +159,17 @@ public class SourceEvent
     }
 
     /**
+     * Creates a new frequency change event
+     *
+     * @param frequency in hertz
+     * @param eventDescription to add a tag to the event
+     */
+    public static SourceEvent frequencyChange(long frequency, String eventDescription)
+    {
+        return new SourceEvent(Event.NOTIFICATION_FREQUENCY_CHANGE, frequency, eventDescription);
+    }
+
+    /**
      * Creates a new frequency correction change event
      *
      * @param frequencyCorrection in hertz
@@ -175,6 +197,17 @@ public class SourceEvent
     public static SourceEvent sampleRateChange(double sampleRate)
     {
         return new SourceEvent(Event.NOTIFICATION_SAMPLE_RATE_CHANGE, sampleRate);
+    }
+
+    /**
+     * Creates a new sample rate change event
+     *
+     * @param sampleRate in hertz
+     * @param eventDescription to include with the event
+     */
+    public static SourceEvent sampleRateChange(double sampleRate, String eventDescription)
+    {
+        return new SourceEvent(Event.NOTIFICATION_SAMPLE_RATE_CHANGE, sampleRate, eventDescription);
     }
 
     /**
@@ -250,8 +283,12 @@ public class SourceEvent
         return new SourceEvent(Event.REQUEST_SOURCE_DISPOSE, source);
     }
 
+    @Override
     public String toString()
     {
-        return "SOURCE EVENT:" + mEvent + " VALUE:" + (mValue != null ? mValue : "(empty)");
+        return "SOURCE EVENT:" + mEvent +
+               " VALUE:" + (mValue != null ? mValue : "(empty)") +
+               " SOURCE:" + (mSource != null ? mSource.getClass() : "(null)") +
+               " DESCRIPTION:" + (mEventDescription != null ? mEventDescription : "");
     }
 }

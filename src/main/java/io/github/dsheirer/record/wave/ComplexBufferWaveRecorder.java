@@ -15,12 +15,14 @@
  ******************************************************************************/
 package io.github.dsheirer.record.wave;
 
+import io.github.dsheirer.dsp.filter.channelizer.ContinuousReusableBufferProcessor;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.ConversionUtils;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.IReusableBufferDisposedListener;
 import io.github.dsheirer.sample.buffer.IReusableComplexBufferListener;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.source.ISourceEventListener;
+import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
 import org.slf4j.Logger;
@@ -30,33 +32,45 @@ import javax.sound.sampled.AudioFormat;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ScheduledFuture;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * WAVE audio recorder module for recording complex (I&Q) samples to a wave file
  */
-public class ComplexBufferWaveRecorder extends Module implements IReusableComplexBufferListener, Listener<ReusableComplexBuffer>
+public class ComplexBufferWaveRecorder extends Module implements IReusableComplexBufferListener,
+    Listener<ReusableComplexBuffer>, ISourceEventListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(ComplexBufferWaveRecorder.class);
 
-    private WaveWriter mWriter;
+    private ContinuousReusableBufferProcessor<ReusableComplexBuffer> mBufferProcessor =
+        new ContinuousReusableBufferProcessor<>(500, 50);
+
+    private AtomicBoolean mRunning = new AtomicBoolean();
+    private ReusableBufferWaveWriter mWriter;
     private String mFilePrefix;
     private Path mFile;
     private AudioFormat mAudioFormat;
 
-    private BufferProcessor mBufferProcessor;
-    private ScheduledFuture<?> mProcessorHandle;
-    private LinkedBlockingQueue<ReusableComplexBuffer> mBuffers = new LinkedBlockingQueue<>(500);
-
-    private AtomicBoolean mRunning = new AtomicBoolean();
-
-    public ComplexBufferWaveRecorder(int sampleRate, String filePrefix)
+    public ComplexBufferWaveRecorder(float sampleRate, String filePrefix)
     {
-        mAudioFormat = new AudioFormat(sampleRate, 16, 2, true, false);
         mFilePrefix = filePrefix;
+        setSampleRate(sampleRate);
+    }
+
+    public void setSampleRate(float sampleRate)
+    {
+        if(mAudioFormat == null || mAudioFormat.getSampleRate() != sampleRate)
+        {
+            mAudioFormat = new AudioFormat(sampleRate, 16, 2, true, false);
+
+            if(mRunning.get())
+            {
+                stop();
+                start();
+            }
+        }
     }
 
     public Path getFile()
@@ -68,11 +82,6 @@ public class ComplexBufferWaveRecorder extends Module implements IReusableComple
     {
         if(mRunning.compareAndSet(false, true))
         {
-            if(mBufferProcessor == null)
-            {
-                mBufferProcessor = new BufferProcessor();
-            }
-
             try
             {
                 StringBuilder sb = new StringBuilder();
@@ -83,11 +92,10 @@ public class ComplexBufferWaveRecorder extends Module implements IReusableComple
 
                 mFile = Paths.get(sb.toString());
 
-                mWriter = new WaveWriter(mAudioFormat, mFile);
+                mWriter = new ReusableBufferWaveWriter(mAudioFormat, mFile);
 
-                /* Schedule the processor to run every 500 milliseconds */
-                mProcessorHandle = ThreadPool.SCHEDULED.scheduleAtFixedRate(
-                    mBufferProcessor, 0, 500, TimeUnit.MILLISECONDS);
+                mBufferProcessor.setListener(mWriter);
+                mBufferProcessor.start();
             }
             catch(IOException io)
             {
@@ -100,25 +108,40 @@ public class ComplexBufferWaveRecorder extends Module implements IReusableComple
     {
         if(mRunning.compareAndSet(true, false))
         {
-            receive(new PoisonPill());
+            if(mBufferProcessor != null)
+            {
+                mBufferProcessor.stop();
+                mBufferProcessor.setListener(null);
+            }
+
+            if(mWriter != null)
+            {
+                //Thread this operation so that it doesn't tie up the calling thread.  The wave writer
+                //close method will also rename the file and this can sometimes take a few seconds.
+                ThreadPool.SCHEDULED.schedule(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        try
+                        {
+                            mWriter.close();
+                        }
+                        catch(IOException ioe)
+                        {
+                            mLog.error("Error closing baseband I/Q recorder", ioe);
+                        }
+                    }
+                }, 0, TimeUnit.MILLISECONDS);
+            }
         }
     }
 
     @Override
     public void receive(ReusableComplexBuffer buffer)
     {
-        if(mRunning.get())
-        {
-            boolean success = mBuffers.offer(buffer);
-
-            if(!success)
-            {
-                mLog.error("recorder buffer overflow - purging [" +
-                    mFile.toFile().getAbsolutePath() + "]");
-
-                mBuffers.clear();
-            }
-        }
+        //Queue the buffer with the buffer processor so that recording occurs on the buffer processor thread
+        mBufferProcessor.receive(buffer);
     }
 
     @Override
@@ -138,83 +161,57 @@ public class ComplexBufferWaveRecorder extends Module implements IReusableComple
     {
     }
 
-    public class BufferProcessor implements Runnable
+    @Override
+    public Listener<SourceEvent> getSourceEventListener()
     {
-        public void run()
+        return new Listener<SourceEvent>()
         {
-            try
+            @Override
+            public void receive(SourceEvent sourceEvent)
             {
-                ReusableComplexBuffer reusableComplexBuffer = mBuffers.poll();
-
-                while(reusableComplexBuffer != null)
+                switch(sourceEvent.getEvent())
                 {
-                    if(reusableComplexBuffer instanceof PoisonPill)
-                    {
-                        //Clear the buffer queue
-                        reusableComplexBuffer = mBuffers.poll();
-
-                        while(reusableComplexBuffer != null)
-                        {
-                            reusableComplexBuffer.decrementUserCount();
-                            reusableComplexBuffer = mBuffers.poll();
-                        }
-
-                        if(mWriter != null)
-                        {
-                            try
-                            {
-                                mWriter.close();
-                                mWriter = null;
-                            }
-                            catch(IOException io)
-                            {
-                                mLog.error("Error stopping complex wave recorder [" + getFile() + "]", io);
-                            }
-                        }
-
-                        mFile = null;
-
-                        if(mProcessorHandle != null)
-                        {
-                            mProcessorHandle.cancel(true);
-                        }
-
-                        mProcessorHandle = null;
-                    }
-                    else
-                    {
-                        mWriter.writeData(ConversionUtils.convertToSigned16BitSamples(reusableComplexBuffer));
-                        reusableComplexBuffer.decrementUserCount();
-                        reusableComplexBuffer = mBuffers.poll();
-                    }
+                    case NOTIFICATION_SAMPLE_RATE_CHANGE:
+                        setSampleRate(sourceEvent.getValue().floatValue());
+                        break;
                 }
             }
-            catch(IOException ioe)
-            {
-                /* Stop this module if/when we get an IO exception */
-                mBuffers.clear();
-                stop();
-
-                mLog.error("IOException while trying to write to the wave writer", ioe);
-            }
-        }
+        };
     }
 
     /**
-     * This is used as a sentinel value to signal the buffer processor to end
+     * Wave writer implementation for reusable complex buffers delivered from buffer processor
      */
-    public class PoisonPill extends ReusableComplexBuffer
+    public class ReusableBufferWaveWriter extends WaveWriter implements Listener<List<ReusableComplexBuffer>>
     {
-        public PoisonPill()
+        public ReusableBufferWaveWriter(AudioFormat format, Path file) throws IOException
         {
-            super(new IReusableBufferDisposedListener<ReusableComplexBuffer>()
+            super(format, file);
+        }
+
+        @Override
+        public void receive(List<ReusableComplexBuffer> reusableComplexBuffers)
+        {
+            boolean error = false;
+
+            for(ReusableComplexBuffer reusableComplexBuffer: reusableComplexBuffers)
             {
-                @Override
-                public void disposed(ReusableComplexBuffer reusableComplexBuffer)
+                if(!error)
                 {
-                    //no-op
+                    try
+                    {
+                        mWriter.writeData(ConversionUtils.convertToSigned16BitSamples(reusableComplexBuffer));
+                    }
+                    catch(IOException ioe)
+                    {
+                        mLog.error("IOException while writing I/Q buffers to wave recorder - stopping recorder", ioe);
+                        error = true;
+                        stop();
+                    }
                 }
-            }, new float[2]);
+
+                reusableComplexBuffer.decrementUserCount();
+            }
         }
     }
 }

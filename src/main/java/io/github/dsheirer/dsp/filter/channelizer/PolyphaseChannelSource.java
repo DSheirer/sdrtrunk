@@ -199,7 +199,6 @@ public class PolyphaseChannelSource extends TunerChannelSource
     @Override
     protected void setFrequency(long frequency)
     {
-        mLog.debug("Index Center Frequency set to: " + frequency + " for channel " + getTunerChannel().toString());
         mIndexCenterFrequency = frequency;
 
         //Set frequency correction to zero to trigger an update to the mixer and allow downstream monitors to
@@ -218,11 +217,12 @@ public class PolyphaseChannelSource extends TunerChannelSource
     }
 
     /**
-     * Calculates the frequency offset required to mix the incoming signal to the desired output baseband
+     * Calculates the frequency offset required to mix the incoming signal to center the desired frequency
+     * within the channel
      */
     private long getFrequencyOffset()
     {
-        return getTunerChannel().getFrequency() - mIndexCenterFrequency + mChannelFrequencyCorrection;
+        return mIndexCenterFrequency - getTunerChannel().getFrequency() + mChannelFrequencyCorrection;
     }
 
     /**

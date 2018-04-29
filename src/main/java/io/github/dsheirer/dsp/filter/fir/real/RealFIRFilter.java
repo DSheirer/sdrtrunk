@@ -26,6 +26,7 @@ public class RealFIRFilter extends FIRFilter
 
     private float[] mCoefficients;
     private float mGain;
+    private float mAccumulator;
 
     /**
      * Float sample FIR filter base class.
@@ -84,12 +85,11 @@ public class RealFIRFilter extends FIRFilter
     {
         mBuffer[mBufferPointer] = sample;
 
-        float accumulator = 0.0f;
+        mAccumulator = 0.0f;
 
         for(int x = 0; x < mBufferSize; x++)
         {
-            accumulator += mCoefficients[x] *
-                mBuffer[mIndexMap[mBufferPointer][x]];
+            mAccumulator += mCoefficients[x] * mBuffer[mIndexMap[mBufferPointer][x]];
         }
 
         mBufferPointer--;
@@ -100,7 +100,18 @@ public class RealFIRFilter extends FIRFilter
         }
 
         /* Apply gain and return the filtered value */
-        return accumulator * mGain;
+        mAccumulator *= mGain;
+
+        return mAccumulator;
+    }
+
+    /**
+     * Current output value for the filter after the filter() method has been invoked.
+     * @return
+     */
+    public float currentValue()
+    {
+        return mAccumulator;
     }
 
     /**

@@ -26,6 +26,7 @@ public class ComplexFIRFilter extends FIRFilter
     private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("Complex FIR Filter");
     private RealFIRFilter mIFilter;
     private RealFIRFilter mQFilter;
+    private float[] mTemporaryBuffer;
 
     /**
      * Complex FIR Filter for processing complex sample pairs.  Wraps two real
@@ -50,9 +51,19 @@ public class ComplexFIRFilter extends FIRFilter
         return mIFilter.filter(sample);
     }
 
+    public float currentInphaseValue()
+    {
+        return mIFilter.currentValue();
+    }
+
     public float filterQuadrature(float sample)
     {
         return mQFilter.filter(sample);
+    }
+
+    public float currentQuadratureValue()
+    {
+        return mQFilter.currentValue();
     }
 
     public Complex filter(Complex sample)
@@ -65,15 +76,20 @@ public class ComplexFIRFilter extends FIRFilter
 
     public float[] filter(float[] samples)
     {
-        float[] filteredSamples = new float[samples.length];
+        if(mTemporaryBuffer == null || mTemporaryBuffer.length != samples.length)
+        {
+            mTemporaryBuffer = new float[samples.length];
+        }
+
+        System.arraycopy(samples, 0, mTemporaryBuffer, 0, samples.length);
 
         for(int x = 0; x < samples.length; x += 2)
         {
-            filteredSamples[x] = filterInphase(samples[x]);
-            filteredSamples[x + 1] = filterQuadrature(samples[x + 1]);
+            samples[x] = filterInphase(mTemporaryBuffer[x]);
+            samples[x + 1] = filterQuadrature(mTemporaryBuffer[x + 1]);
         }
 
-        return filteredSamples;
+        return samples;
     }
 
     /**

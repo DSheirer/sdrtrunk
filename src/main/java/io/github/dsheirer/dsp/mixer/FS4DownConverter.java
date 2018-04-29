@@ -15,17 +15,13 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.mixer;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class FS4DownConverter
 {
-    private final static Logger mLog = LoggerFactory.getLogger(FS4DownConverter.class);
-
     private int mPointer = 0;
 
     /**
-     * Performs complex down-sampling by one-fourth (-FS/4) of the sample rate using simple value assignments.
+     * Performs complex frequency conversion at one-fourth (-FS/4) of the sample rate using simple value
+     * assignments.
      *
      * See: Digital Signal Processing 3e, Lyons, p.674-675
      */

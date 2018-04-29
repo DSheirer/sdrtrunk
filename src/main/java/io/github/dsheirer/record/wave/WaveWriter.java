@@ -133,7 +133,6 @@ public class WaveWriter implements AutoCloseable
     {
         mFileChannel.force(true);
         mFileChannel.close();
-        mFileChannel = null;
 
         rename();
     }

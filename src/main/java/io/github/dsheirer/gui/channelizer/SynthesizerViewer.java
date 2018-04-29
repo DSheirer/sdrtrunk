@@ -13,10 +13,11 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.dsp.filter.channelizer;
+package io.github.dsheirer.gui.channelizer;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.Window;
+import io.github.dsheirer.dsp.filter.channelizer.TwoChannelSynthesizerM2;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.mixer.FS4DownConverter;
 import io.github.dsheirer.dsp.mixer.IOscillator;
