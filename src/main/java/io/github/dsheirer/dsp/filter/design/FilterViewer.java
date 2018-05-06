@@ -76,8 +76,8 @@ public class FilterViewer extends Application
 
         try
         {
-//            taps = FilterFactory.getSincM2Synthesizer(12500.0, 2, 19, Window.WindowType.BLACKMAN_HARRIS_7, true);
-            taps = FilterFactory.getSincFilter(25000.0, 12500.0, 2, 19, Window.WindowType.BLACKMAN_HARRIS_7, true);
+            taps = FilterFactory.getSincM2Synthesizer(12500.0, 2, 19, Window.WindowType.BLACKMAN_HARRIS_7, true);
+//            taps = FilterFactory.getSincFilter(25000.0, 12500.0, 2, 19, Window.WindowType.BLACKMAN_HARRIS_7, true);
         }
         catch(FilterDesignException fde)
         {

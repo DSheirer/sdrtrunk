@@ -66,7 +66,7 @@ public class SynthesizerViewer extends JFrame
     private ChannelPanel mChannel2Panel;
     private ChannelControlPanel mChannel1ControlPanel;
     private ChannelControlPanel mChannel2ControlPanel;
-    private DFTSize mMainPanelDFTSize = DFTSize.FFT32768;
+    private DFTSize mMainPanelDFTSize = DFTSize.FFT08192;
     private DFTSize mChannelPanelDFTSize = DFTSize.FFT08192;
 
     /**
@@ -152,7 +152,7 @@ public class SynthesizerViewer extends JFrame
         {
             setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
             mSpectrumPanel = new SpectrumPanel(settingsManager);
-            mSpectrumPanel.setSampleSize(22);
+            mSpectrumPanel.setSampleSize(16);
             add(mSpectrumPanel);
 
             mDFTProcessor.addConverter(mComplexDecibelConverter);
@@ -193,7 +193,7 @@ public class SynthesizerViewer extends JFrame
         {
             setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill][]"));
             mSpectrumPanel = new SpectrumPanel(settingsManager);
-            mSpectrumPanel.setSampleSize(22);
+            mSpectrumPanel.setSampleSize(16);
             add(mSpectrumPanel, "wrap");
             add(channelControlPanel);
 
@@ -282,7 +282,7 @@ public class SynthesizerViewer extends JFrame
         {
             try
             {
-                float[] taps = FilterFactory.getSincM2Synthesizer(12500.0, 2, 19,
+                float[] taps = FilterFactory.getSincM2Synthesizer(12500.0, 2, 12,
                     Window.WindowType.BLACKMAN_HARRIS_7, true);
                 mSynthesizer = new TwoChannelSynthesizerM2(taps);
             }
@@ -302,8 +302,8 @@ public class SynthesizerViewer extends JFrame
             getChannel2ControlPanel().getOscillator().generateComplex(channel2Buffer);
 
             float[] synthesized = mSynthesizer.process(channel1Buffer.getSamples(), channel2Buffer.getSamples());
-            mFS4DownConverter.mixComplex(synthesized);
             ReusableComplexBuffer synthesizedBuffer = mReusableComplexBufferQueue.getBuffer(synthesized.length);
+            System.arraycopy(synthesized, 0, synthesizedBuffer.getSamples(), 0, synthesized.length);
 
             channel1Buffer.incrementUserCount();
             getChannel1Panel().receive(channel1Buffer);

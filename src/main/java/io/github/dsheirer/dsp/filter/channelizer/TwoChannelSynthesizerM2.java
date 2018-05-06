@@ -15,11 +15,8 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.channelizer;
 
-import io.github.dsheirer.buffer.RealCircularBuffer;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.Window;
-import io.github.dsheirer.dsp.filter.design.FilterDesignException;
-import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter;
 import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.LowPhaseNoiseOscillator;
 import org.jtransforms.fft.FloatFFT_1D;
@@ -32,11 +29,15 @@ public class TwoChannelSynthesizerM2
 {
     private final static Logger mLog = LoggerFactory.getLogger(TwoChannelSynthesizerM2.class);
 
-    private ComplexFIRFilter mFilter1;
-    private ComplexFIRFilter mFilter2;
-
+    private float[] mData1i;
+    private float[] mData1q;
+    private float[] mData2i;
+    private float[] mData2q;
+    private float[] mFilter1;
+    private float[] mFilter2;
+    private float mAccumulator;
     private FloatFFT_1D mFFT = new FloatFFT_1D(2);
-    private boolean mFlag = false;
+    private boolean mFlag = true;
 
     /**
      * Polyphase synthesizer for mixing two M2 oversampled channels into a composite channel using
@@ -63,24 +64,26 @@ public class TwoChannelSynthesizerM2
     {
         int length = (filter.length / 2) + (filter.length % 2);
 
-        float[] filter1 = new float[length];
-        float[] filter2 = new float[length];
+        mFilter1 = new float[length];
+        mFilter2 = new float[length];
+
+        mData1i = new float[length];
+        mData1q = new float[length];
+        mData2i = new float[length];
+        mData2q = new float[length];
 
         for(int x = 0; x < filter.length; x += 2)
         {
             //Load the filter in reverse to facilitate convolution
             int index = length - (x / 2) - 1;
 
-            filter1[index] = filter[x];
+            mFilter1[index] = filter[x];
 
             if(x + 1 < filter.length)
             {
-                filter2[index] = filter[x + 1];
+                mFilter2[index] = filter[x + 1];
             }
         }
-
-        mFilter1 = new ComplexFIRFilter(filter1, 1.0f);
-        mFilter2 = new ComplexFIRFilter(filter2, 1.0f);
     }
 
     /**
@@ -98,6 +101,7 @@ public class TwoChannelSynthesizerM2
             throw new IllegalArgumentException("Channel 1 and 2 array length must be equal");
         }
 
+        //TODO: make this a reusable buffer
         float[] output = new float[channel1.length];
 
         float[] buffer = new float[4];
@@ -111,15 +115,29 @@ public class TwoChannelSynthesizerM2
 
             mFFT.complexInverse(buffer, true);
 
+            System.arraycopy(mData1i, 0, mData1i, 1, mData1i.length - 1);
+            System.arraycopy(mData1q, 0, mData1q, 1, mData1q.length - 1);
+            System.arraycopy(mData2i, 0, mData2i, 1, mData2i.length - 1);
+            System.arraycopy(mData2q, 0, mData2q, 1, mData2q.length - 1);
+
+            mData1i[0] = buffer[0];
+            mData1q[0] = buffer[1];
+            mData2i[0] = buffer[2];
+            mData2q[0] = buffer[3];
+
             if(mFlag)
             {
-                output[x] = mFilter1.filterInphase(buffer[0]) + mFilter2.filterInphase(buffer[2]);
-                output[x + 1] = mFilter1.filterQuadrature(buffer[1]) + mFilter2.filterQuadrature(buffer[3]);
+//                output[x] = filter(mFilter1, mData1i);
+//                output[x + 1] = filter(mFilter1, mData1q);
+                output[x] = filter(mFilter1, mData1i) + filter(mFilter2, mData2i);
+                output[x + 1] = filter(mFilter1, mData1q) + filter(mFilter2, mData2q);
             }
             else
             {
-                output[x] = mFilter1.filterInphase(buffer[2]) + mFilter2.filterInphase(buffer[0]);
-                output[x + 1] = mFilter1.filterQuadrature(buffer[3]) + mFilter2.filterQuadrature(buffer[1]);
+//                output[x] = filter(mFilter1, mData2i);
+//                output[x + 1] = filter(mFilter1, mData2q);
+                output[x] = filter(mFilter1, mData2i) + filter(mFilter2, mData1i);
+                output[x + 1] = filter(mFilter1, mData2q) + filter(mFilter2, mData1q);
             }
 
             mFlag = !mFlag;
@@ -128,27 +146,27 @@ public class TwoChannelSynthesizerM2
         return output;
     }
 
-    private static float filter(float[] taps, RealCircularBuffer dataBlock)
+    private float filter(float[] coefficients, float[] data)
     {
-        float accumulator = 0;
+        mAccumulator = 0.0f;
 
-        for(int x = 0; x < taps.length; x++)
+        for(int x = 0; x < coefficients.length; x++)
         {
-            accumulator += (taps[x] * dataBlock.get(x));
+            mAccumulator += coefficients[x] * data[x];
         }
 
-        return accumulator;
+        return mAccumulator;
     }
 
     public static void main(String[] args)
     {
         mLog.debug("Starting");
 
-        int sampleCount = 10;
+        int sampleCount = 30;
 
         try
         {
-            float[] taps = FilterFactory.getSincM2Synthesizer(12500.0, 2, 19, Window.WindowType.BLACKMAN_HARRIS_7, true);
+            float[] taps = FilterFactory.getSincM2Synthesizer(12500.0, 2, 8, Window.WindowType.BLACKMAN_HARRIS_7, true);
 
             TwoChannelSynthesizerM2 synthesizer = new TwoChannelSynthesizerM2(taps);
 
@@ -162,7 +180,7 @@ public class TwoChannelSynthesizerM2
             mLog.debug("1:" + Arrays.toString(channel1));
             mLog.debug("X:" + Arrays.toString(synthesized));
         }
-        catch(FilterDesignException fde)
+        catch(Exception fde)
         {
             mLog.error("Filter design error", fde);
         }
