@@ -301,15 +301,17 @@ public class SynthesizerViewer extends JFrame
             ReusableComplexBuffer channel2Buffer = mReusableComplexBufferQueue.getBuffer(mSamplesPerCycle);
             getChannel2ControlPanel().getOscillator().generateComplex(channel2Buffer);
 
-            float[] synthesized = mSynthesizer.process(channel1Buffer.getSamples(), channel2Buffer.getSamples());
-            ReusableComplexBuffer synthesizedBuffer = mReusableComplexBufferQueue.getBuffer(synthesized.length);
-            System.arraycopy(synthesized, 0, synthesizedBuffer.getSamples(), 0, synthesized.length);
-
             channel1Buffer.incrementUserCount();
-            getChannel1Panel().receive(channel1Buffer);
+            channel1Buffer.incrementUserCount();
             channel2Buffer.incrementUserCount();
+            channel2Buffer.incrementUserCount();
+
+            ReusableComplexBuffer synthesizedBuffer = mSynthesizer.process(channel1Buffer, channel2Buffer);
+
+            getChannel1Panel().receive(channel1Buffer);
+
             getChannel2Panel().receive(channel2Buffer);
-            synthesizedBuffer.incrementUserCount();
+
             getSpectrumPanel().receive(synthesizedBuffer);
         }
     }

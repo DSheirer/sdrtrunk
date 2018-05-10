@@ -20,7 +20,7 @@ package io.github.dsheirer.dsp.filter.channelizer.output;
 
 import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.Oscillator;
-import io.github.dsheirer.sample.OverflowableTransferQueue;
+import io.github.dsheirer.sample.buffer.OverflowableReusableBufferTransferQueue;
 import io.github.dsheirer.sample.buffer.ReusableBufferAssembler;
 import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
 import io.github.dsheirer.sample.real.IOverflowListener;
@@ -35,7 +35,7 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelOutputProcessor.class);
 
-    private OverflowableTransferQueue<ReusableChannelResultsBuffer> mChannelResultsQueue;
+    private OverflowableReusableBufferTransferQueue<ReusableChannelResultsBuffer> mChannelResultsQueue;
     private List<ReusableChannelResultsBuffer> mChannelResultsToProcess = new ArrayList<>();
     private int mMaxResultsToProcess;
 
@@ -59,7 +59,7 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
         mFrequencyCorrectionMixer = new Oscillator(0, sampleRate);
         mMaxResultsToProcess = (int)(sampleRate / 10) * 2;  //process at 100 millis interval, twice the expected inflow rate
 
-        mChannelResultsQueue = new OverflowableTransferQueue<>((int)(sampleRate * 3), (int)(sampleRate * 0.5));
+        mChannelResultsQueue = new OverflowableReusableBufferTransferQueue<>((int)(sampleRate * 3), (int)(sampleRate * 0.5));
     }
 
     public void dispose()

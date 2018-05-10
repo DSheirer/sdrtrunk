@@ -15,11 +15,17 @@
  ******************************************************************************/
 package io.github.dsheirer.sample.buffer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.LinkedList;
 import java.util.List;
 
 public class ReusableChannelResultsBuffer extends AbstractReusableBuffer
 {
+    private final static Logger mLog = LoggerFactory.getLogger(ReusableChannelResultsBuffer.class);
+    private ReusableComplexBufferQueue mReusableComplexBufferQueue =
+        new ReusableComplexBufferQueue("ReusableChannelResultsBuffer");
     private LinkedList<float[]> mEmptyBuffers = new LinkedList<>();
     private LinkedList<float[]> mFilledBuffers = new LinkedList<>();
     private Integer mLength;
@@ -103,7 +109,7 @@ public class ReusableChannelResultsBuffer extends AbstractReusableBuffer
      * @throws IllegalArgumentException if this buffer doesn't contain any samples or if the requested channel is
      * not within the channel range of the contained channel results.
      */
-    public float[] getChannel(int iChannelIndex)
+    public ReusableComplexBuffer getChannel(int iChannelIndex)
     {
         if(mFilledBuffers.isEmpty())
         {
@@ -116,18 +122,35 @@ public class ReusableChannelResultsBuffer extends AbstractReusableBuffer
                 "results -- max channel is " + mLength);
         }
 
-        float[] samples = new float[mFilledBuffers.size() * 2];
+        ReusableComplexBuffer channelBuffer = mReusableComplexBufferQueue.getBuffer(mFilledBuffers.size() * 2);
+
+        float[] samples = channelBuffer.getSamples();
+
         int pointer = 0;
 
         int qChannelIndex = iChannelIndex + 1;
 
         for(float[] channelResults: mFilledBuffers)
         {
-            samples[pointer++] = channelResults[iChannelIndex];
-            samples[pointer++] = channelResults[qChannelIndex];
+            try
+            {
+                samples[pointer] = channelResults[iChannelIndex];
+                pointer++;
+                samples[pointer] = channelResults[qChannelIndex];
+                pointer++;
+            }
+            catch(Exception e)
+            {
+                mLog.error("Error accessing channel results - iIndex:" + iChannelIndex +
+                " Results Size: " + mFilledBuffers.size() +
+                " Samples Length:" + samples.length +
+                " Pointer:" + pointer, e);
+            }
         }
 
-        return samples;
+        channelBuffer.incrementUserCount();
+
+        return channelBuffer;
     }
 
     /**

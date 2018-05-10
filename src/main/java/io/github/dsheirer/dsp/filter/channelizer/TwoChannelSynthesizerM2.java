@@ -15,27 +15,47 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.channelizer;
 
-import io.github.dsheirer.dsp.filter.FilterFactory;
-import io.github.dsheirer.dsp.filter.Window;
-import io.github.dsheirer.dsp.mixer.IOscillator;
-import io.github.dsheirer.dsp.mixer.LowPhaseNoiseOscillator;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
 import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 
+/**
+ * Implements a two-channel polyphase filer synthesizer.  This class is intended to be used with an M2 polyphase
+ * channelizer in order to recover a signal that overlaps the boundary between two channels.  This synthesizer will
+ * rejoin the two M2 neighboring channels, mix the signal of interest to baseband, and filter the the output stream to
+ * half of the sample rate, producing an overall M2 output sample rate.
+ *
+ * The synthesizer concept is modeled on the structure described by Fred Harris et al, in 'Interleaving Different
+ * Bandwidth Narrowband Channels in Perfect Reconstruction Cascade Polyphase Filter Banks for Efficient Flexible
+ * Variable Bandwidth Filters in Wideband Digital Transceivers'.
+ *
+ * The data buffers and sub-filter kernels bear no resemblance to the structures defined in the paper.  The data and
+ * filter structures in this class are organized to take advantage of Java's ability to leverage SIMD processor
+ * intrinsics for optimal efficiency in processing.  The paper specifies splitting the filter kernel into N polyphase
+ * partitions and creating N data buffers.  This class organizes the data buffer as a contiguous sample
+ * array and creates two copies of the filter kernel, one arranged for normal filtering and the second arranged for
+ * phase-shifted filtering.  Instead of calculating the dot-product for each sub-filter, we calculate the product of the
+ * full data array against the filter and then accumulate each sub-filter.  This allows java to use SIMD for the array
+ * product and then normal processing for the accumulation.  Since this is a two-channel processor and the results of
+ * each filter accumulation are added, we use a single accumulator across both filters.
+ *
+ */
 public class TwoChannelSynthesizerM2
 {
     private final static Logger mLog = LoggerFactory.getLogger(TwoChannelSynthesizerM2.class);
 
-    private float[] mData1i;
-    private float[] mData1q;
-    private float[] mData2i;
-    private float[] mData2q;
-    private float[] mFilter1;
-    private float[] mFilter2;
-    private float mAccumulator;
+    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("Two Channel Synthesizer M2");
+    private float[] mDataBuffer;
+    private float[] mNormalFilter;
+    private float[] mPhaseShiftedFilter;
+    private float[] mFilterProduct;
+    private float[] mIFFTBuffer = new float[4];
+    private float mIAccumulator;
+    private float mQAccumulator;
     private FloatFFT_1D mFFT = new FloatFFT_1D(2);
     private boolean mFlag = true;
 
@@ -62,100 +82,152 @@ public class TwoChannelSynthesizerM2
      */
     private void init(float[] filter)
     {
-        int length = (filter.length / 2) + (filter.length % 2);
+        int tapsPerChannel = (int)Math.ceil(filter.length / 2);
 
-        mFilter1 = new float[length];
-        mFilter2 = new float[length];
-
-        mData1i = new float[length];
-        mData1q = new float[length];
-        mData2i = new float[length];
-        mData2q = new float[length];
-
-        for(int x = 0; x < filter.length; x += 2)
-        {
-            //Load the filter in reverse to facilitate convolution
-            int index = length - (x / 2) - 1;
-
-            mFilter1[index] = filter[x];
-
-            if(x + 1 < filter.length)
-            {
-                mFilter2[index] = filter[x + 1];
-            }
-        }
+        mNormalFilter = getNormalFilter(filter, tapsPerChannel);
+        mPhaseShiftedFilter = getPhaseShiftedFilter(filter, tapsPerChannel);
+        mDataBuffer = new float[mNormalFilter.length];
+        mFilterProduct = new float[mNormalFilter.length];
     }
 
     /**
      * Synthesizes a new channel from the channel 1 and channel 2 sample arrays that are arranged as
      * i0, q0, i1, q1 ... iN-1, qN-1
      *
-     * @param channel1 input channel
-     * @param channel2 input channel
+     * @param channelBuffer1 input channel
+     * @param channelBuffer2 input channel
      * @return synthesized channel results of the same length as both channel 1/2 input arrays.
      */
-    public float[] process(float[] channel1, float[] channel2)
+    public ReusableComplexBuffer process(ReusableComplexBuffer channelBuffer1, ReusableComplexBuffer channelBuffer2)
     {
-        if(channel1.length != channel2.length)
+        if(channelBuffer1.getSamples().length != channelBuffer1.getSamples().length)
         {
             throw new IllegalArgumentException("Channel 1 and 2 array length must be equal");
         }
 
-        //TODO: make this a reusable buffer
-        float[] output = new float[channel1.length];
+        float[] channel1 = channelBuffer1.getSamples();
+        float[] channel2 = channelBuffer2.getSamples();
 
-        float[] buffer = new float[4];
+        ReusableComplexBuffer synthesizedComplexBuffer = mReusableComplexBufferQueue.getBuffer(channel1.length);
+
+        float[] output = synthesizedComplexBuffer.getSamples();
 
         for(int x = 0; x < channel1.length; x += 2)
         {
-            buffer[0] = channel1[x];     //i
-            buffer[1] = channel1[x + 1]; //q
-            buffer[2] = channel2[x];     //i
-            buffer[3] = channel2[x + 1]; //q
+            mIFFTBuffer[0] = channel1[x];     //i
+            mIFFTBuffer[1] = channel1[x + 1]; //q
+            mIFFTBuffer[2] = channel2[x];     //i
+            mIFFTBuffer[3] = channel2[x + 1]; //q
 
-            mFFT.complexInverse(buffer, true);
+            mFFT.complexInverse(mIFFTBuffer, true);
 
-            System.arraycopy(mData1i, 0, mData1i, 1, mData1i.length - 1);
-            System.arraycopy(mData1q, 0, mData1q, 1, mData1q.length - 1);
-            System.arraycopy(mData2i, 0, mData2i, 1, mData2i.length - 1);
-            System.arraycopy(mData2q, 0, mData2q, 1, mData2q.length - 1);
-
-            mData1i[0] = buffer[0];
-            mData1q[0] = buffer[1];
-            mData2i[0] = buffer[2];
-            mData2q[0] = buffer[3];
+            System.arraycopy(mDataBuffer, 0, mDataBuffer, 4, mDataBuffer.length - 4);
+            System.arraycopy(mIFFTBuffer, 0, mDataBuffer, 0, mIFFTBuffer.length);
 
             if(mFlag)
             {
-//                output[x] = filter(mFilter1, mData1i);
-//                output[x + 1] = filter(mFilter1, mData1q);
-                output[x] = filter(mFilter1, mData1i) + filter(mFilter2, mData2i);
-                output[x + 1] = filter(mFilter1, mData1q) + filter(mFilter2, mData2q);
+                for(int y = 0; y < mDataBuffer.length; y++)
+                {
+                    mFilterProduct[y] = mDataBuffer[y] * mNormalFilter[y];
+                }
             }
             else
             {
-//                output[x] = filter(mFilter1, mData2i);
-//                output[x + 1] = filter(mFilter1, mData2q);
-                output[x] = filter(mFilter1, mData2i) + filter(mFilter2, mData1i);
-                output[x + 1] = filter(mFilter1, mData2q) + filter(mFilter2, mData1q);
+                for(int y = 0; y < mDataBuffer.length; y++)
+                {
+                    mFilterProduct[y] = mDataBuffer[y] * mPhaseShiftedFilter[y];
+                }
             }
+
+            mIAccumulator = 0.0f;
+            mQAccumulator = 0.0f;
+
+            for(int y = 0; y < mFilterProduct.length; y += 2)
+            {
+                mIAccumulator += mFilterProduct[y];
+                mQAccumulator += mFilterProduct[y + 1];
+            }
+
+            output[x] = mIAccumulator;
+            output[x + 1] = mQAccumulator;
 
             mFlag = !mFlag;
         }
 
-        return output;
+        channelBuffer1.decrementUserCount();
+        channelBuffer2.decrementUserCount();
+
+        synthesizedComplexBuffer.incrementUserCount();
+
+        return synthesizedComplexBuffer;
     }
 
-    private float filter(float[] coefficients, float[] data)
+    private static float[] getNormalFilter(float[] coefficients, int tapsPerChannel)
     {
-        mAccumulator = 0.0f;
+        float[] filter = new float[4 * tapsPerChannel];
 
-        for(int x = 0; x < coefficients.length; x++)
+        int idealLength = 2 * tapsPerChannel;
+
+        int offset = idealLength - 2;
+
+        int index;
+
+        for(int x = 0; x < idealLength; x += 2)
         {
-            mAccumulator += coefficients[x] * data[x];
+            index = offset - x;
+
+            if(index < coefficients.length)
+            {
+                //Filter 1
+                filter[2 * x + 0] = coefficients[index];
+                filter[2 * x + 1] = coefficients[index];
+            }
+
+            index = offset - x + 1;
+
+            if(index < coefficients.length)
+            {
+                //Filter 2
+                filter[2 * x + 2] = coefficients[index];
+                filter[2 * x + 3] = coefficients[index];
+            }
         }
 
-        return mAccumulator;
+        return filter;
+    }
+
+    private static float[] getPhaseShiftedFilter(float[] coefficients, int tapsPerChannel)
+    {
+        float[] filter = new float[4 * tapsPerChannel];
+
+        int idealLength = 2 * tapsPerChannel;
+
+        int offset = idealLength - 2;
+
+        int index;
+
+        for(int x = 0; x < idealLength; x += 2)
+        {
+            index = offset - x + 1;
+
+            if(index < coefficients.length)
+            {
+                //Filter 2
+                filter[2 * x + 0] = coefficients[index];
+                filter[2 * x + 1] = coefficients[index];
+            }
+
+            index = offset - x;
+
+            if(index < coefficients.length)
+            {
+                //Filter 1
+                filter[2 * x + 2] = coefficients[index];
+                filter[2 * x + 3] = coefficients[index];
+            }
+        }
+
+        return filter;
     }
 
     public static void main(String[] args)
@@ -166,19 +238,38 @@ public class TwoChannelSynthesizerM2
 
         try
         {
-            float[] taps = FilterFactory.getSincM2Synthesizer(12500.0, 2, 8, Window.WindowType.BLACKMAN_HARRIS_7, true);
+//            float[] taps = FilterFactory.getSincM2Synthesizer(12500.0, 2, 20, Window.WindowType.BLACKMAN_HARRIS_7, true);
 
-            TwoChannelSynthesizerM2 synthesizer = new TwoChannelSynthesizerM2(taps);
+            float[] taps = new float[15];
+            for(int x = 0; x < taps.length; x++)
+            {
+                taps[x] = x;
+            }
 
-            IOscillator oscillator = new LowPhaseNoiseOscillator(3000.0, 25000.0);
+            float[] normalFilter = getPhaseShiftedFilter(taps, 8);
 
-            float[] channel1 = oscillator.generateComplex(sampleCount);
-            float[] channel2 = new float[sampleCount * 2];
+            mLog.debug("Filter: " + Arrays.toString(normalFilter));
 
-            float[] synthesized = synthesizer.process(channel1, channel2);
-
-            mLog.debug("1:" + Arrays.toString(channel1));
-            mLog.debug("X:" + Arrays.toString(synthesized));
+//            TwoChannelSynthesizerM2 synthesizer = new TwoChannelSynthesizerM2(taps);
+//
+//            IOscillator oscillator = new LowPhaseNoiseOscillator(3000.0, 25000.0);
+//
+//            float[] channel1 = oscillator.generateComplex(sampleCount);
+//            float[] channel2 = new float[sampleCount * 2];
+//
+//            float[] channel1 = new float[16];
+//            float[] channel2 = new float[16];
+//            for(int x = 1; x <= 16; x++)
+//            {
+//                channel1[x - 1] = x;
+//                channel2[x - 1] = x + 16;
+//            }
+//
+//
+//            float[] synthesized = synthesizer.process(channel1, channel2);
+//
+//            mLog.debug("1:" + Arrays.toString(channel1));
+//            mLog.debug("X:" + Arrays.toString(synthesized));
         }
         catch(Exception fde)
         {

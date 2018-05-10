@@ -102,10 +102,7 @@ public class ReusableBuffer extends AbstractReusableBuffer
 
         mUserCount.set(0);
 
-        if(mSamples.length != samples.length)
-        {
-            mSamples = new float[samples.length];
-        }
+        resize(samples.length);
 
         System.arraycopy(samples, 0, mSamples, 0, samples.length);
 
@@ -129,15 +126,23 @@ public class ReusableBuffer extends AbstractReusableBuffer
 
         mUserCount.set(0);
 
-        if(mSamples.length != floatBuffer.capacity())
-        {
-            mSamples = new float[floatBuffer.capacity()];
-        }
-
+        resize(floatBuffer.capacity());
         floatBuffer.rewind();
         floatBuffer.get(mSamples);
 
         mTimestamp = timestamp;
+    }
+
+    /**
+     * Resizes the internal array to the size argument
+     * @param size for the internal array
+     */
+    protected void resize(int size)
+    {
+        if(mSamples.length != size)
+        {
+            mSamples = new float[size];
+        }
     }
 
 }

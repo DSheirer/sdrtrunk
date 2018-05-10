@@ -58,6 +58,8 @@ public class ReusableComplexBufferQueue extends AbstractReusableBufferQueue<Reus
             mLog.debug("Buffer Created - Count:" + getBufferCount() + (getDebugName() != null ? " [" + getDebugName() + "]" : ""));
         }
 
+        buffer.resize(size);
+
         return buffer;
     }
 }

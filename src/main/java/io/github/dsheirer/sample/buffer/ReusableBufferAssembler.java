@@ -108,6 +108,16 @@ public class ReusableBufferAssembler
     }
 
     /**
+     * Adds the samples to this assembler.  As each buffer is assembled, it will be dispatched to the registered
+     * listener.
+     */
+    public void receive(ReusableComplexBuffer samplesBuffer)
+    {
+        receive(samplesBuffer.getSamples());
+        samplesBuffer.decrementUserCount();
+    }
+
+    /**
      * Flushes the current buffer contents to the registered listener
      */
     public void flush()

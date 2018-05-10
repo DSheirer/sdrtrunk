@@ -626,6 +626,8 @@ public class ProcessingChain implements IChannelEventListener
             {
                 removeModule(mSource);
 
+                mSource.stop();
+
                 mSource.setOverflowListener(null);
 
                 switch(mSource.getSampleType())

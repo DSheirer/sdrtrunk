@@ -23,6 +23,7 @@ import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import io.github.dsheirer.dsp.mixer.FS4DownConverter;
 import io.github.dsheirer.sample.buffer.ReusableBufferAssembler;
 import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -139,21 +140,21 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
     {
         for(ReusableChannelResultsBuffer buffer: channelResultsBuffers)
         {
-            float[] channel1 = buffer.getChannel(mChannelOffset1);
-            float[] channel2 = buffer.getChannel(mChannelOffset2);
+            ReusableComplexBuffer channel1 = buffer.getChannel(mChannelOffset1);
+            ReusableComplexBuffer channel2 = buffer.getChannel(mChannelOffset2);
 
             //Join the two channels using the synthesizer
-            float[] synthesized = mSynthesizer.process(channel1, channel2);
+            ReusableComplexBuffer synthesized = mSynthesizer.process(channel1, channel2);
 
             //The synthesized channels are centered at +FS/4 ... downconvert to center the spectrum
-            mFS4DownConverter.mixComplex(synthesized);
+            mFS4DownConverter.mixComplex(synthesized.getSamples());
 
             //Apply offset and frequency correction to center the signal of interest within the synthesized channel
-            getFrequencyCorrectionMixer().mixComplex(synthesized);
+            getFrequencyCorrectionMixer().mixComplex(synthesized.getSamples());
 
-            mLowPassFilter.filter(synthesized);
+            ReusableComplexBuffer lowPassFiltered = mLowPassFilter.filter(synthesized);
 
-            reusableBufferAssembler.receive(synthesized);
+            reusableBufferAssembler.receive(lowPassFiltered);
 
             buffer.decrementUserCount();
         }

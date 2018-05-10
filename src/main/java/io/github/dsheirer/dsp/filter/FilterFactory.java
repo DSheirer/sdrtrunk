@@ -792,7 +792,7 @@ public class FilterFactory
             tapsPerChannel, windowType,logResults);
 
         //Decrease the overall gain of the filter to an objective of 1.0 divided by the number of channels
-        return normalize(filter, 1.0f);// / (float)channels);
+        return normalize(filter, 1.0f);
     }
 
     /**

@@ -17,7 +17,7 @@ package io.github.dsheirer.sample.buffer;
 
 import io.github.dsheirer.sample.OverflowableTransferQueue;
 
-public class OverflowableReusableBufferTransferQueue<T extends ReusableBuffer> extends OverflowableTransferQueue<T>
+public class OverflowableReusableBufferTransferQueue<T extends AbstractReusableBuffer> extends OverflowableTransferQueue<T>
 {
     /**
      * Concurrent transfer queue that couples a higher-throughput linked transfer queue with an atomic integer for

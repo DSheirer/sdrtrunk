@@ -20,6 +20,7 @@ package io.github.dsheirer.dsp.filter.channelizer.output;
 
 import io.github.dsheirer.sample.buffer.ReusableBufferAssembler;
 import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,14 +84,14 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
         {
             try
             {
-                float[] samples = channelResultsBuffer.getChannel(mChannelOffset);
+                ReusableComplexBuffer channelBuffer = channelResultsBuffer.getChannel(mChannelOffset);
 
                 if(hasFrequencyCorrection())
                 {
-                    getFrequencyCorrectionMixer().mixComplex(samples);
+                    getFrequencyCorrectionMixer().mixComplex(channelBuffer.getSamples());
                 }
 
-                reusableBufferAssembler.receive(samples);
+                reusableBufferAssembler.receive(channelBuffer);
             }
             catch(IllegalArgumentException iae)
             {

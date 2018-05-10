@@ -34,7 +34,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public abstract class AbstractComplexPolyphaseChannelizer implements Listener<ReusableComplexBuffer>, ISourceEventListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(AbstractComplexPolyphaseChannelizer.class);
-    private ReusableChannelResultsBufferQueue mBufferQueue = new ReusableChannelResultsBufferQueue();
+    private ReusableChannelResultsBufferQueue mBufferQueue = new ReusableChannelResultsBufferQueue("AbstractComplexPolyphaseChannelizer");
     private Broadcaster<SourceEvent> mSourceChangeBroadcaster = new Broadcaster();
     private List<PolyphaseChannelSource> mChannels = new CopyOnWriteArrayList<>();
     private double mSampleRate;
