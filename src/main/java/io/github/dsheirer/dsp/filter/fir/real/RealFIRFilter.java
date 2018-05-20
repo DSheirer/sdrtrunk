@@ -17,6 +17,7 @@ package io.github.dsheirer.dsp.filter.fir.real;
 
 import io.github.dsheirer.dsp.filter.fir.FIRFilter;
 
+@Deprecated //Use RealFIRFilter2 instead
 public class RealFIRFilter extends FIRFilter
 {
     private float[] mBuffer;

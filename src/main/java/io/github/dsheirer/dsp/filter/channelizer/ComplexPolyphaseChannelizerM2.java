@@ -19,12 +19,10 @@
 package io.github.dsheirer.dsp.filter.channelizer;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
-import io.github.dsheirer.dsp.filter.Window.WindowType;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
 import io.github.dsheirer.sample.real.IOverflowListener;
 import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
@@ -34,6 +32,33 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * Non-Maximally Decimated Polyphase Filter Bank (NMDPFB) channelizer that divides the input baseband complex sample
+ * stream into equal bandwidth channels that are each oversampled by 2x for output.
+ *
+ * This polyphase channelizer is based off of the channelizer described by Fred Harris in Multirate Signal
+ * Processing for Communications Systems, p230-233.
+ *
+ * Samples are loaded into this filter one block at a time (1/2 channel count) and a filtered output is calculated
+ * to produce an overall 2x oversampled channel sample rate.  Each sample block load is preceded by a serpentine
+ * shift of the existing sample blocks.  We use the java System.arrayCopy() method which is able to leverage
+ * native processor intrinsics for efficiency.
+ *
+ * The prototype filter for the channelizer is rearranged to align with the structure of the sample buffer.
+ *
+ * Instead of using an array of channel filters as described in the Harris text, this filter and the sample buffer
+ * are arranged as a contiguous array to maximize Java's ability to leverage native processor Single Instruction
+ * Multiple Data (SIMD) intrinsics (since Java 8).  The filter process is broken into four steps:
+ *
+ *   -Multiply the inline array of samples and filter coefficients
+ *   -Accumulate the results for each sub-channel
+ *   -Rearrange the sub-channel results to correctly order the sub-channels
+ *   -Perform IFFT
+ *
+ * Note: design the prototype filter as a Nyquist windowed filter with a -6.02 db attenuation at the channel edge
+ * frequency if you need Perfect Reconstruction where you'll later re-join two or more channels to form a wider
+ * bandwidth channel or to isolate a signal that located between two channels.
+ */
 public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChannelizer
 {
     private final static Logger mLog = LoggerFactory.getLogger(ComplexPolyphaseChannelizerM2.class);
@@ -55,25 +80,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
     private int mTapsPerChannel;
 
     /**
-     * Non-Maximally Decimated Polyphase Filter Bank (NMDPFB) channelizer that divides the input frequency band into
-     * equal bandwidth channels that are each oversampled by 2x for output.
-     *
-     * This polyphase channelizer is based off of the channelizer described by Fred Harris in Multirate Signal
-     * Processing for Communications Systems, p230-233.
-     *
-     * Samples are loaded into this filter one block at a time (1/2 channel count) and a filtered output is calculated
-     * to produce an overall 2x oversampled channel sample rate.  Each sample block load is preceded by a serpentine
-     * shift of the existing sample blocks.  We use the java System.arrayCopy() method which is able to leverage
-     * native processor intrinsics for efficiency.
-     *
-     * The prototype filter for the channelizer is rearranged to align with the structure of the sample buffer.
-     *
-     * Instead of using an array of channel filters as described in the Harris text, this filter and the sample buffer
-     * are arranged as a contiguous array to maximize Java's ability to leverage native processor Single Instruction
-     * Multiple Data (SIMD) intrinsics (since Java 8).  The filter process is broken into three steps:
-     *   -Multiply the inline array of samples and filter coefficients
-     *   -Accumulate the results for each sub-channel
-     *   -Rearrange the sub-channel results to correctly order the sub-channels
+     * Creates a NMDPFB channelizer instance.
      *
      * @param taps of a low-pass filter designed for the inbound sample rate with a cutoff frequency
      * equal to the channel bandwidth (sample rate / filters).  If you need to synthesize (combine two or more
@@ -98,25 +105,8 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
     }
 
     /**
-     * Non-Maximally Decimated Polyphase Filter Bank (NMDPFB) channelizer that divides the input frequency band into
-     * equal bandwidth channels that are each oversampled by 2x for output.
-     *
-     * This polyphase channelizer is based off of the channelizer described by Fred Harris in Multirate Signal
-     * Processing for Communications Systems, p230-233.
-     *
-     * Samples are loaded into this filter one block at a time (1/2 channel count) and a filtered output is calculated
-     * to produce an overall 2x oversampled channel sample rate.  Each sample block load is preceded by a serpentine
-     * shift of the existing sample blocks.  We use the java System.arrayCopy() method which is able to leverage
-     * native processor intrinsics for efficiency.
-     *
-     * The prototype filter for the channelizer is rearranged to align with the structure of the sample buffer.
-     *
-     * Instead of using an array of channel filters as described in the Harris text, this filter and the sample buffer
-     * are arranged as a contiguous array to maximize Java's ability to leverage native processor Single Instruction
-     * Multiple Data (SIMD) intrinsics (since Java 8).  The filter process is broken into three steps:
-     *   -Multiply the inline array of samples and filter coefficients
-     *   -Accumulate the results for each sub-channel
-     *   -Rearrange the sub-channel results to correctly order the sub-channels
+     * Creates a NMDPFB channelizer instance and designs a Perfect Reconstruction prototype filter appropriate for
+     * the baseband sample rate and quantity of filter taps per polyphase sub-channel.
      *
      * @param sampleRate to be channelized.
      * @param tapsPerChannel to use when designing the filter
@@ -128,7 +118,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
         mTapsPerChannel = tapsPerChannel;
 
         float[] filterTaps = FilterFactory.getSincM2Channelizer(getChannelSampleRate(), getChannelCount(),
-            mTapsPerChannel, WindowType.BLACKMAN_HARRIS_7, true);
+            mTapsPerChannel, true);
 
         init(filterTaps);
     }
@@ -181,7 +171,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
             super.setSampleRate(sampleRate);
 
             float[] filterTaps = FilterFactory.getSincM2Channelizer(getChannelSampleRate(), getChannelCount(),
-                mTapsPerChannel, WindowType.BLACKMAN_HARRIS_7, true);
+                mTapsPerChannel, true);
 
             init(filterTaps);
         }
@@ -243,7 +233,6 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
         //Enqueue the channel results buffer for IFFT processing and distribution on a different thread
         mIFFTProcessor.receive(channelResultsBuffer);
 
-//        mLog.debug("Duration: " + (System.nanoTime() - start) + " Processing:" + processing);
         //Decrement the user count to let the originator know we're done with their buffer
         reusableComplexBuffer.decrementUserCount();
     }
@@ -320,6 +309,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
         int coefficientPointer = 0;
         int filterPointer = 0;
 
+        //Create a new filter that duplicates each tap to produce an interleaved I/Q filter
         while(coefficientPointer < coefficients.length)
         {
             filter[filterPointer++] = coefficients[coefficientPointer];
@@ -398,55 +388,6 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
         return elapsed;
     }
 
-//    /**
-//     * Buffers the channel results and dispatches the channel results buffer to the channel output processors when full.
-//     * @param buffer containing filtered and IFFT'd channelResults with a corresponding timestamp
-//     */
-//    private void processChannelResults(ReusableChannelResultsBuffer buffer)
-//    {
-//        if(mChannelResultsBuffer == null)
-//        {
-//            mChannelResultsBuffer = new PolyphaseChannelResultsBuffer(buffer.getTimestamp(),
-//                mChannelResultsBufferSize);
-//        }
-//
-//        try
-//        {
-//            mChannelResultsBuffer.add(buffer.getSamplesCopy());
-//        }
-//        catch(IllegalArgumentException iae)
-//        {
-//            //If the buffer is full (unlikely) or the channel results array length has changed (possible), flush the
-//            //current buffer, create a new one, and store the current results
-//            flushChannelResultsBuffer();
-//
-//            mChannelResultsBuffer = new PolyphaseChannelResultsBuffer(buffer.getTimestamp(), mChannelResultsBufferSize);
-//
-//            mChannelResultsBuffer.add(buffer.getSamplesCopy());
-//        }
-//
-//        if(mChannelResultsBuffer.isFull())
-//        {
-//            flushChannelResultsBuffer();
-//        }
-//
-//        buffer.decrementUserCount();
-//    }
-
-//    /**
-//     * Dispatches the non-empty channel results buffer to the channel output processors and nullifies the reference to
-//     * the buffer so that a new buffer can be created upon receiving the next channel results.
-//     */
-//    private void flushChannelResultsBuffer()
-//    {
-//        if(mChannelResultsBuffer != null && !mChannelResultsBuffer.isEmpty())
-//        {
-//            dispatch(mChannelResultsBuffer);
-//        }
-//
-//        mChannelResultsBuffer = null;
-//    }
-
     /**
      * Initializes the channelizer filter structures.
      *
@@ -454,12 +395,9 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      */
     private void init(float[] coefficients)
     {
-        //Setup the FFT
         mFFT = new FloatFFT_1D(getChannelCount());
-
         int channelCount = getChannelCount();
         int bufferLength = getSubChannelCount() * mTapsPerChannel;
-
         mSamplesPerBlock = getChannelCount(); //Same as subChannelCount / 2
         mTopBlockMap = getTopBlockMap(channelCount);
         mMiddleBlockMap = getMiddleBlockMap(channelCount);
@@ -535,26 +473,13 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
         int tapsPerChannel = 8;
         float[] taps = new float[channelCount * tapsPerChannel];
 
-        int sampleRate = 50000;
-
         for(int x = 0; x < taps.length; x++)
         {
             taps[x] = x;
         }
 
-        ComplexPolyphaseChannelizerM2 channelizer = new ComplexPolyphaseChannelizerM2(taps, sampleRate, channelCount);
+        float[] filter = getAlignedFilter(taps, channelCount, tapsPerChannel);
 
-        ReusableComplexBufferQueue queue = new ReusableComplexBufferQueue();
-
-        int sampleCount = channelCount * 2 * tapsPerChannel;
-        ReusableComplexBuffer buffer = queue.getBuffer(sampleCount);
-        buffer.incrementUserCount();
-
-        for(int x = 0; x < sampleCount; x++)
-        {
-            buffer.getSamples()[x] = x;
-        }
-
-        channelizer.receive(buffer);
+        mLog.debug(Arrays.toString(filter));
     }
 }

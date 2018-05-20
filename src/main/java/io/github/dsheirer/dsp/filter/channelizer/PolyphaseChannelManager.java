@@ -16,7 +16,6 @@
 package io.github.dsheirer.dsp.filter.channelizer;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
-import io.github.dsheirer.dsp.filter.Window;
 import io.github.dsheirer.dsp.filter.channelizer.output.IPolyphaseChannelOutputProcessor;
 import io.github.dsheirer.dsp.filter.channelizer.output.OneChannelOutputProcessor;
 import io.github.dsheirer.dsp.filter.channelizer.output.TwoChannelOutputProcessor;
@@ -45,13 +44,29 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+/**
+ * Polyphase Channel Manager is a DDC channel manager and complex buffer queue/processor for a tuner.  This class
+ * provides DDC polyphase channel sources and wraps a polyphase channelizer processing sample buffers produced by
+ * the tuner and distributing channelized sample buffers to each allocated DDC polyphase channel source.  This
+ * class is responsible for monitoring the tuner for changes in center frequency and/or sample rate and updating
+ * active DDC polyphase channel sources accordingly.  This class also monitors source event requests and
+ * notifications received from active DDC polyphase channel sources to adjust sample streams as required.
+ *
+ * Channel bandwidth and channel count are determined by the sample rate of the baseband buffer stream provider.  This
+ * class is currently designed to provide channels each with a minimum usable bandwidth of 12.5 kHz and oversampled by
+ * 2.0 to a minimum of 25.0 kHz channel sample rate.  If the baseband stream provider sample rate is not evenly
+ * divisible by 12.5 kHz channels for an even number of channels, the channel bandwidth will be increased.
+ *
+ * Note: add this channel manager as a source event listener to the complex buffer provider to ensure this manager
+ * adapts to changes in source frequency and sample rate.
+ */
 public class PolyphaseChannelManager implements ISourceEventProcessor
 {
     private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelManager.class);
     private static final double MINIMUM_CHANNEL_BANDWIDTH = 12500.0;
     private static final double CHANNEL_OVERSAMPLING = 2.0;
-    private static final int POLYPHASE_CHANNELIZER_TAPS_PER_CHANNEL = 8;
-    private static final int POLYPHASE_SYNTHESIZER_TAPS_PER_CHANNEL = 20;
+    private static final int POLYPHASE_CHANNELIZER_TAPS_PER_CHANNEL = 9;
+    private static final int POLYPHASE_SYNTHESIZER_TAPS_PER_CHANNEL = 9;
 
     private Broadcaster<SourceEvent> mSourceEventBroadcaster = new Broadcaster<>();
     private IReusableBufferProvider<ReusableComplexBuffer> mReusableBufferProvider;
@@ -64,19 +79,12 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     private Map<Integer,float[]> mOutputProcessorFilters = new HashMap<>();
 
     /**
-     * Polyphase Channel Manager is a DDC channel manager and complex buffer queue/processor for a tuner.  This class
-     * provides DDC polyphase channel sources and wraps a polyphase channelizer processing sample buffers produced by
-     * the tuner and distributing channelized sample buffers to each allocated DDC polyphase channel source.  This
-     * class is responsible for monitoring the tuner for changes in center frequency and/or sample rate and updating
-     * active DDC polyphase channel sources accordingly.  This class also monitors source event requests and
-     * notifications received from active DDC polyphase channel sources to adjust sample streams as required.
+     * Creates a polyphase channel manager instance.
      *
-     * Note: add this channel manager as a source event listener to the complex buffer provider to ensure this manager
-     * adapts to changes in source frequency and sample rate.
-     *
-     * @param reusableBufferProvider that supports register/deregister of this channel manager
-     * @param frequency of the provided complex buffer samples
-     * @param sampleRate of the provided complex buffer samples
+     * @param reusableBufferProvider (ie tuner) that supports register/deregister for reusable baseband sample buffer
+     * streams
+     * @param frequency of the baseband complex buffer sample stream (ie center frequency)
+     * @param sampleRate of the baseband complex buffer sample stream
      */
     public PolyphaseChannelManager(IReusableBufferProvider<ReusableComplexBuffer> reusableBufferProvider,
                                    long frequency, double sampleRate)
@@ -106,6 +114,8 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
 
     /**
      * Creates a polyphase channel manager for the tuner controller
+     *
+     * @param tunerController for a tuner that provides a baseband complex buffer stream.
      */
     public PolyphaseChannelManager(TunerController tunerController)
     {
@@ -187,11 +197,12 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
 
             IPolyphaseChannelOutputProcessor outputProcessor = getOutputProcessor(polyphaseIndexes);
 
-            TunerChannel tunerChannel = new TunerChannel(100000000, 12500);
 
             if(outputProcessor != null)
             {
                 long centerFrequency = mChannelCalculator.getCenterFrequencyForIndexes(polyphaseIndexes);
+
+                TunerChannel tunerChannel = new TunerChannel(centerFrequency, 12500);
 
                 channelSource = new PolyphaseChannelSource(tunerChannel, outputProcessor, mChannelSourceEventListener,
                     mChannelCalculator.getChannelSampleRate(), centerFrequency);
@@ -267,7 +278,6 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
      */
     private void stopChannelSource(PolyphaseChannelSource channelSource)
     {
-        mLog.debug("Stopping channel source ... count:" + mChannelSources.size());
         synchronized(mBufferProcessor)
         {
             mChannelSources.remove(channelSource);
@@ -292,7 +302,6 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         {
             //Do nothing
         }
-        mLog.debug("Stopped channel source ... count:" + mChannelSources.size());
     }
 
     /**
@@ -517,7 +526,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         if(taps == null)
         {
             taps = FilterFactory.getSincM2Synthesizer(mChannelCalculator.getChannelBandwidth(), channels,
-                POLYPHASE_SYNTHESIZER_TAPS_PER_CHANNEL, Window.WindowType.BLACKMAN_HARRIS_7, true);
+                POLYPHASE_SYNTHESIZER_TAPS_PER_CHANNEL);
 
             mOutputProcessorFilters.put(channels, taps);
         }
@@ -533,7 +542,6 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         @Override
         public void receive(SourceEvent sourceEvent)
         {
-            mLog.debug("****** Got a source event: " + sourceEvent.toString());
             switch(sourceEvent.getEvent())
             {
                 case REQUEST_START_SAMPLE_STREAM:

@@ -3,6 +3,7 @@ package io.github.dsheirer.dsp.filter.fir.real;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.real.RealBuffer;
 
+@Deprecated //Use RealFIRFilter2 version instead
 public class RealFIRFilter_RB_RB extends RealFIRFilter 
 					implements Listener<RealBuffer>
 {

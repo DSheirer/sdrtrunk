@@ -18,7 +18,7 @@ package io.github.dsheirer.dsp.filter.channelizer.output;
 import io.github.dsheirer.dsp.filter.channelizer.TwoChannelSynthesizerM2;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
-import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter;
+import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
 import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import io.github.dsheirer.dsp.mixer.FS4DownConverter;
 import io.github.dsheirer.sample.buffer.ReusableBufferAssembler;
@@ -27,47 +27,18 @@ import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class TwoChannelOutputProcessor extends ChannelOutputProcessor
 {
     private final static Logger mLog = LoggerFactory.getLogger(TwoChannelOutputProcessor.class);
 
-
-    private static float[] mFilterCoefficients;
-
-    static
-    {
-        try
-        {
-            FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-                .sampleRate(25000)
-                .gridDensity(16)
-                .oddLength(true)
-                .passBandCutoff(6000)
-                .passBandAmplitude(1.0)
-                .passBandRipple(0.01)
-                .stopBandStart(6500)
-                .stopBandAmplitude(0.0)
-                .stopBandRipple(0.005) //Approximately 94 dB attenuation
-                .build();
-
-            RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
-
-            if(designer.isValid())
-            {
-                mFilterCoefficients = designer.getImpulseResponse();
-            }
-        }
-        catch(FilterDesignException fde)
-        {
-            mLog.error("Error designing low pass filter for two channel output processor", fde);
-        }
-    }
-
+    private static Map<Integer,float[]> sLowPassFilterKernelMap = new HashMap<>();
     private TwoChannelSynthesizerM2 mSynthesizer;
     private FS4DownConverter mFS4DownConverter = new FS4DownConverter();
-    private ComplexFIRFilter mLowPassFilter;
+    private ComplexFIRFilter2 mLowPassFilter;
 
     private int mChannelOffset1;
     private int mChannelOffset2;
@@ -87,7 +58,23 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
         setPolyphaseChannelIndices(channelIndexes);
         setSynthesisFilter(filter);
 
-        mLowPassFilter = new ComplexFIRFilter(mFilterCoefficients, 1.0f);
+        float[] lowPassFilter = sLowPassFilterKernelMap.get((int)sampleRate);
+
+        if(lowPassFilter == null)
+        {
+            try
+            {
+                lowPassFilter = getLowPassFilter(sampleRate);
+                sLowPassFilterKernelMap.put((int)sampleRate, lowPassFilter);
+            }
+            catch(FilterDesignException fde)
+            {
+                mLog.error("Couldn't design a low-pass filter for 2-channel synthesizer", fde);
+                throw new IllegalStateException("Cannot design low-pass filter for 2 channel synthesizer", fde);
+            }
+        }
+
+        mLowPassFilter = new ComplexFIRFilter2(lowPassFilter, 1.0f);
     }
 
     /**
@@ -158,5 +145,40 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
 
             buffer.decrementUserCount();
         }
+    }
+
+    /**
+     * Creates a low-pass filter kernel for the specified sample rate.
+     * @param sampleRate for the channel
+     * @return filter
+     * @throws FilterDesignException if the filter cannot be designed
+     */
+    private static float[] getLowPassFilter(double sampleRate) throws FilterDesignException
+    {
+        double cutoff = sampleRate / 4.0;
+        int passBandCutoff = (int)(cutoff * 0.92);
+        int stopBandStart = (int)(cutoff * 1.08);
+
+        FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
+            .sampleRate(sampleRate)
+            .gridDensity(16)
+            .oddLength(true)
+            .passBandCutoff((int)passBandCutoff)
+            .passBandAmplitude(1.0)
+            .passBandRipple(0.01)
+            .stopBandStart((int)stopBandStart)
+            .stopBandAmplitude(0.0)
+            .stopBandRipple(0.005) //Approximately 94 dB attenuation
+            .build();
+
+        RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
+
+        if(designer.isValid())
+        {
+            return designer.getImpulseResponse();
+        }
+
+        throw new FilterDesignException("Couldn't design low-pass filter for sample rate: " + sampleRate +
+            " Pass End:" + passBandCutoff + " Stop Begin:" + stopBandStart);
     }
 }

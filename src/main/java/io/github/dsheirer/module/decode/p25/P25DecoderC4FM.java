@@ -19,7 +19,7 @@ import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
-import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter;
+import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
 import io.github.dsheirer.dsp.gain.ComplexFeedForwardGainControl;
 import io.github.dsheirer.dsp.psk.DQPSKDecisionDirectedDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
@@ -42,7 +42,7 @@ public class P25DecoderC4FM extends P25Decoder
     protected P25MessageFramer mMessageFramer;
     private ComplexFeedForwardGainControl mAGC = new ComplexFeedForwardGainControl(32);
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
-    private ComplexFIRFilter mBasebandFilter;
+    private ComplexFIRFilter2 mBasebandFilter;
 
     /**
      * P25 Phase 1 - standard C4FM modulation decoder.  Uses Differential QPSK decoding with a Costas PLL and a
@@ -60,7 +60,7 @@ public class P25DecoderC4FM extends P25Decoder
     {
         super.setSampleRate(sampleRate);
 
-        mBasebandFilter = new ComplexFIRFilter(getBasebandFilter(), 1.0f);
+        mBasebandFilter = new ComplexFIRFilter2(getBasebandFilter());
 
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
         mInterpolatingSampleBuffer = new InterpolatingSampleBuffer(getSamplesPerSymbol(), SAMPLE_COUNTER_GAIN);

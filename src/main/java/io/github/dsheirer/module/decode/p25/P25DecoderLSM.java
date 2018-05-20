@@ -18,7 +18,7 @@ package io.github.dsheirer.module.decode.p25;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.Window.WindowType;
-import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter;
+import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
 import io.github.dsheirer.dsp.gain.ComplexFeedForwardGainControl;
 import io.github.dsheirer.dsp.psk.DQPSKGardnerDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
@@ -37,7 +37,7 @@ public class P25DecoderLSM extends P25Decoder
     protected static final float SAMPLE_COUNTER_GAIN = 0.5f;
 
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
-    private ComplexFIRFilter mBasebandFilter;
+    private ComplexFIRFilter2 mBasebandFilter;
     private ComplexFeedForwardGainControl mAGC = new ComplexFeedForwardGainControl(32);
     protected DQPSKGardnerDemodulator mQPSKDemodulator;
     protected P25MessageFramer mMessageFramer;
@@ -64,7 +64,7 @@ public class P25DecoderLSM extends P25Decoder
     {
         super.setSampleRate(sampleRate);
 
-        mBasebandFilter = new ComplexFIRFilter(getBasebandFilter(), 1.0f);
+        mBasebandFilter = new ComplexFIRFilter2(getBasebandFilter());
 
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
         mInterpolatingSampleBuffer = new InterpolatingSampleBuffer(getSamplesPerSymbol(), SAMPLE_COUNTER_GAIN);

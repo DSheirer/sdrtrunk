@@ -31,6 +31,7 @@ import org.jtransforms.fft.FloatFFT_1D;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -41,6 +42,7 @@ public class FilterFactory
 {
     private final static Logger mLog = LoggerFactory.getLogger(FilterFactory.class);
     private static final double PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE = -6.020599842071533; //decibel(0.5, 0.0)
+    private static final double MARGIN_OF_ERROR = 0.0003;
 
     /**
      * Generates coefficients for a unity-gain, windowed low-pass filter
@@ -462,7 +464,7 @@ public class FilterFactory
     {
         Set<Integer> factors = new TreeSet<Integer>();
 
-		/* Brute force */
+        /* Brute force */
         for(int x = 1; x <= value; x++)
         {
             int remainder = (int)(value / x);
@@ -526,7 +528,7 @@ public class FilterFactory
         int taps = getTapCount(outputSampleRate, passFrequency, passFrequency + 1500,
             attenuation);
 
-		/* Make tap count odd */
+        /* Make tap count odd */
         if(taps % 2 == 0)
         {
             taps++;
@@ -594,7 +596,7 @@ public class FilterFactory
      * Ported to java from gnuradio/filter/firdes.cc
      *
      * For 40db attenuation, calculate the number of symbols based on the following formula:
-     *    Symbols = -44 * alpha + 33
+     * Symbols = -44 * alpha + 33
      *
      * Polyphase Channelizer notes:
      * -Set samples Per Symbol at 2 (or more) * number of channels
@@ -716,6 +718,7 @@ public class FilterFactory
 
     /**
      * Calculates the decibel magnitude of the real and imaginary complex sample
+     *
      * @param real (x-axis) value
      * @param imag (y-axis) value
      * @return magnitude in decibels
@@ -754,45 +757,29 @@ public class FilterFactory
     }
 
     /**
-     * Polyphase M2 channelizer sync filter.  Designed for an M*channel input and an M2 channel output.
-     * @param channelBandwidth per channel
-     * @param channels count
-     * @param tapsPerChannel minumum.  This may be increased to meet the band edge -6.02dB requirement
-     * @param windowType to use
-     * @param logResults to log the results of the design
-     * @return filter
-     * @throws FilterDesignException if the filter cannot be designed with a band edge of -6.02dB
-     */
-    public static float[] getSincM2Channelizer(double channelBandwidth, int channels, int tapsPerChannel,
-                           Window.WindowType windowType, boolean logResults) throws FilterDesignException
-    {
-        float[] filter = getSincFilter(channelBandwidth * channels, channelBandwidth,
-            channels, tapsPerChannel, windowType,logResults);
-
-        //Increase the overall gain of the filter to an objective of 1.0 times the number of channels
-        return normalize(filter, 1.0f * (float)channels);
-    }
-
-    /**
      * Polyphase M2 synthesizer sync filter.  Designed for multiple M2 oversampled channel inputs and
      * an M*channel count output.
      *
      * @param channelBandwidth per channel
      * @param channels count
      * @param tapsPerChannel minumum.  This may be increased to meet the band edge -6.02dB requirement
-     * @param windowType to use
-     * @param logResults to log the results of the design
      * @return filter
-     * @throws FilterDesignException if the filter cannot be designed with a band edge of -6.02dB
+     * @throws FilterDesignException
      */
-    public static float[] getSincM2Synthesizer(double channelBandwidth, int channels, int tapsPerChannel,
-                     Window.WindowType windowType, boolean logResults) throws FilterDesignException
+    public static float[] getSincM2Synthesizer(double channelBandwidth, int channels, int tapsPerChannel)
+        throws FilterDesignException
     {
-        float[] filter = getSincFilter(channelBandwidth * channels, channelBandwidth, channels,
-            tapsPerChannel, windowType,logResults);
+        int filterLength = (channels * tapsPerChannel) - 1;
 
-        //Decrease the overall gain of the filter to an objective of 1.0 divided by the number of channels
-        return normalize(filter, 1.0f);
+        //Design the prototype synthesizer with 105% of the channel bandwidth produced by the channelizer.
+        float[] taps = FilterFactory.getKaiserSinc(filterLength, channelBandwidth * 1.05, 80.0);
+
+        //This is an odd length filter - increase the length by 1 by pre-padding a zero coefficient
+        float[] extendedTaps = new float[taps.length + 1];
+        System.arraycopy(taps, 0, extendedTaps, 1, taps.length);
+
+        //Adjust the overall gain of the filter to an objective of 1.0 divided by the number of channels
+        return normalize(extendedTaps, 1.0f);
     }
 
     /**
@@ -820,18 +807,32 @@ public class FilterFactory
      *
      * @throws FilterDesignException if a filter cannot be designed with a band edge attenuation of -6.02 dB
      */
-    public static float[] getSincFilter(double sampleRate, double channelBandwidth, int channels,
-         int tapsPerChannel, Window.WindowType windowType, boolean logResults) throws FilterDesignException
+
+    /**
+     * Polyphase M2 channelizer sync filter.  Designed for an M*channel input and an M2 channel output.
+     *
+     * @param channelBandwidth per channel
+     * @param channels count
+     * @param tapsPerChannel minimum.  This may be increased to meet the band edge -6.02dB requirement
+     * @param logResults to log the results of the design
+     * @return filter
+     * @throws FilterDesignException if the filter cannot be designed with a band edge of -6.02dB
+     */
+    public static float[] getSincM2Channelizer(double channelBandwidth, int channels, int tapsPerChannel,
+                                               boolean logResults) throws FilterDesignException
     {
         int currentTapsPerChannel = tapsPerChannel;
         int filterLength = (channels * currentTapsPerChannel) - 1;
 
-        double cutoffFrequency = channelBandwidth / sampleRate;
-        double bandEdge = cutoffFrequency;
+        double sampleRate = channelBandwidth * channels;
+        double bandEdge = channelBandwidth / sampleRate;
+        double cutoffFrequency = bandEdge / 2.0;
         double increment = cutoffFrequency * 0.1;
 
         //Get an initial filter and band edge frequency response using the channel bandwidth as a cutoff
-        float[] taps = FilterFactory.getSinc(cutoffFrequency, filterLength, windowType);
+        float[] taps = null;
+
+        taps = FilterFactory.getKaiserSinc(filterLength, cutoffFrequency, 80.0);
         double response = FilterFactory.evaluate(taps, bandEdge);
 
         //Set cutoff adjustment threshold - we'll test cutoff frequencies to around 1 hertz resolution
@@ -841,13 +842,13 @@ public class FilterFactory
         while(increment > incrementThreshold)
         {
             //If the current cutoff meets the objective, test if a higher cutoff also meets the objective
-            if(matchesObjective(response, PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE) &&
+            if(matchesObjective(response, PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE, MARGIN_OF_ERROR) &&
                 (cutoffFrequency + increment <= bandEdge))
             {
-                float[] higherCutoffTaps = FilterFactory.getSinc(cutoffFrequency + increment, filterLength, windowType);
+                float[] higherCutoffTaps = FilterFactory.getKaiserSinc(filterLength, cutoffFrequency + increment, 80.0);
                 double higherCutoffResponse = FilterFactory.evaluate(higherCutoffTaps, bandEdge);
 
-                if(matchesObjective(higherCutoffResponse, PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE))
+                if(matchesObjective(higherCutoffResponse, PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE, MARGIN_OF_ERROR))
                 {
                     cutoffFrequency += increment;
                     taps = higherCutoffTaps;
@@ -859,7 +860,7 @@ public class FilterFactory
                 }
             }
             //If the current cutoff meets the objective, decrease the increment to test for smaller resolution cutoffs
-            else if(matchesObjective(response, PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE))
+            else if(matchesObjective(response, PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE, MARGIN_OF_ERROR))
             {
                 increment /= 2.0;
             }
@@ -882,7 +883,7 @@ public class FilterFactory
                     if(currentTapsPerChannel > (tapsPerChannel + 10))
                     {
                         throw new FilterDesignException("Couldn't design filter with taps per channel count in the " +
-                            "range of " + tapsPerChannel + " - " + (tapsPerChannel + 10));
+                            "range of " + tapsPerChannel + " - " + (tapsPerChannel + 10) + " Sample Rate:" + sampleRate + " Channels:" + channels);
                     }
 
                     filterLength = channels * currentTapsPerChannel - 1;
@@ -890,13 +891,13 @@ public class FilterFactory
                     increment = cutoffFrequency * 0.1;
                 }
 
-                taps = FilterFactory.getSinc(cutoffFrequency, filterLength, windowType);
+                taps = FilterFactory.getKaiserSinc(filterLength, cutoffFrequency, 80.0);
                 response = FilterFactory.evaluate(taps, bandEdge);
             }
         }
 
         //This will probably never happen, but ...
-        if(!matchesObjective(response, PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE))
+        if(!matchesObjective(response, PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE, MARGIN_OF_ERROR))
         {
             throw new FilterDesignException("Cannot design filter to specifications");
         }
@@ -912,20 +913,22 @@ public class FilterFactory
             mLog.debug("Input Sample Rate: " + sampleRate);
             mLog.debug("Channel Bandwidth: " + channelBandwidth);
             mLog.debug("Channels: " + channels);
-            mLog.debug("Window Type: " + windowType.name());
+            mLog.debug("Window Type: " + Window.WindowType.KAISER.name());
             mLog.debug("Taps Per Channel - Requested:" + tapsPerChannel + " Actual:" + ((double)extendedTaps.length / (double)channels));
             mLog.debug("Filter Length: " + (extendedTaps.length));
             mLog.debug("Requested Cutoff Frequency:  " + (sampleRate * bandEdge));
             mLog.debug("Actual Cutoff Frequency:  " + (sampleRate * cutoffFrequency));
+            mLog.debug("Attenuation at 0.0 OBJECTIVE:  " + 0.0);
             mLog.debug("Attenuation at 1.0 OBJECTIVE:  " + PERFECT_RECONSTRUCTION_GAIN_AT_BAND_EDGE);
-            mLog.debug("Attenuation at 1.00 Channels:  " + evaluate(taps, bandEdge * 1.00));
-            mLog.debug("Attenuation at 1.25 Channels:  " + evaluate(taps, bandEdge * 1.25));
-            mLog.debug("Attenuation at 1.50 Channels:  " + evaluate(taps, bandEdge * 1.50));
-            mLog.debug("Attenuation at 1.75 Channels:  " + evaluate(taps, bandEdge * 1.75));
-            mLog.debug("Attenuation at 2.00 Channels:  " + evaluate(taps, bandEdge * 2.00));
+            mLog.debug("Attenuation at 1.00 Channels:  " + evaluate(taps, bandEdge * 1.00) + "\tFrequency: " + (sampleRate * bandEdge * 1.0));
+            mLog.debug("Attenuation at 1.25 Channels:  " + evaluate(taps, bandEdge * 1.25) + "\tFrequency: " + (sampleRate * bandEdge * 1.25));
+            mLog.debug("Attenuation at 1.50 Channels:  " + evaluate(taps, bandEdge * 1.50) + "\tFrequency: " + (sampleRate * bandEdge * 1.5));
+            mLog.debug("Attenuation at 1.75 Channels:  " + evaluate(taps, bandEdge * 1.75) + "\tFrequency: " + (sampleRate * bandEdge * 1.75));
+            mLog.debug("Attenuation at 2.00 Channels:  " + evaluate(taps, bandEdge * 2.00) + "\tFrequency: " + (sampleRate * bandEdge * 2.0));
         }
 
-        return extendedTaps;
+        //Adjust the overall gain of the filter to an objective of 1.0 times the number of channels
+        return normalize(extendedTaps, 1.0f * (float)channels);
     }
 
     /**
@@ -952,7 +955,46 @@ public class FilterFactory
         double scalor = 2.0 * cutoff;
         double piScalor = Math.PI * scalor;
 
-        coefficients[half] = (float)(1.0 * scalor);
+        coefficients[half] = (float)(1.0 * scalor * window[half]);
+
+        for(int x = 1; x <= half; x++)
+        {
+            double a = piScalor * x;
+            double coefficient = scalor * Math.sin(a) / a;
+
+            coefficient *= window[half + x];
+            coefficients[half + x] = (float)coefficient;
+            coefficients[half - x] = (float)coefficient;
+        }
+
+        return coefficients;
+    }
+
+    /**
+     * Creates a Nyquist filter using a Kaiser Window.
+     *
+     * @param cutoff frequency (0.0 <> 0.5)
+     * @param length of the filter - must be odd-length
+     * @param attenuation desired for adjacent channels
+     * @return filter coefficients.
+     * @throws FilterDesignException if the requested length is not odd
+     */
+    public static float[] getKaiserSinc(int length, double cutoff, double attenuation) throws FilterDesignException
+    {
+        if(length % 2 == 0)
+        {
+            throw new FilterDesignException("Sinc filters must be odd-length");
+        }
+
+        float[] coefficients = new float[length];
+        int half = length / 2;
+
+        double[] window = Window.getKaiser(length, attenuation);
+
+        double scalor = 2.0 * cutoff;
+        double piScalor = Math.PI * scalor;
+
+        coefficients[half] = (float)(1.0 * scalor * window[half]);
 
         for(int x = 1; x <= half; x++)
         {
@@ -969,12 +1011,29 @@ public class FilterFactory
 
     /**
      * Compares two doubles for equals and avoids any rounding error that are present.
+     *
      * @param a value to compare
      * @param objective value to compare
      * @return true if they are equivalent within the margin of error
      */
-    private static boolean matchesObjective(double a, double objective)
+    private static boolean matchesObjective(double a, double objective, double marginOfError)
     {
-        return Math.abs(a - objective) < 0.0000000001;
+        return Math.abs(a - objective) <= marginOfError;
+    }
+
+    public static void main(String[] args)
+    {
+        float[] taps = null;
+
+        try
+        {
+            taps = FilterFactory.getSincM2Channelizer(12500.0, 800, 9, true);
+        }
+        catch(FilterDesignException fde)
+        {
+            mLog.error("Error", fde);
+        }
+
+        mLog.debug("Done: " + Arrays.toString(taps));
     }
 }

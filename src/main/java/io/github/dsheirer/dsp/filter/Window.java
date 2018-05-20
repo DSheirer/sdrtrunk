@@ -1,21 +1,39 @@
 /*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
+
+/*
+ * Kaiser Window design methods: getKaiser(), getKaiserBeta() and getBesselZerothOrder() with minor naming changes were
+ * adopted from:
+ *
+ * https://github.com/rjeschke/neetutils-base/blob/master/src/main/java/com/github/rjeschke/neetutils/audio/FIRUtils.java
+ *
+ * Copyright (C) 2012 René Jeschke <rene_jeschke@yahoo.de>
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package io.github.dsheirer.dsp.filter;
 
 import org.slf4j.Logger;
@@ -62,6 +80,8 @@ public class Window
                 return getHamming(length);
             case HANN:
                 return getHann(length);
+            case KAISER:
+                throw new IllegalArgumentException("Kaiser Window cannot be created via this method.  Use the getKaiser() method instead.");
             case NUTALL:
                 return getNutall(length);
             case NONE:
@@ -337,8 +357,13 @@ public class Window
         return coefficients;
     }
 
-
-    private static double getKaiserBeta(double attenuation)
+    /**
+     * Calculates the beta (roll-off factor) for a Kaiser window based on the specified attenuation.
+     *
+     * @param attenuation in decibels
+     * @return beta value in the range of 0.0 to 1.0
+     */
+    public static double getKaiserBeta(double attenuation)
     {
         if(attenuation > 50.0)
         {
@@ -352,6 +377,57 @@ public class Window
         {
             return 0.0;
         }
+    }
+
+    /**
+     * Creates a Kaiser window.
+     *
+     * @param length of the window
+     * @param attenuation desired
+     * @return window
+     */
+    public static double[] getKaiser(int length, double attenuation)
+    {
+        double[] coefficients = new double[length];
+
+        double beta = getKaiserBeta(attenuation);
+
+        double betaBesselZerothOrder = getBesselZerothOrder(beta);
+
+        double temp;
+
+        for(int x = 0; x < coefficients.length; x++)
+        {
+            temp = beta * Math.sqrt(1.0 - Math.pow(2.0 * x / (length - 1) - 1.0, 2));
+            coefficients[x] = getBesselZerothOrder(temp) / betaBesselZerothOrder;
+        }
+
+        return coefficients;
+    }
+
+
+    /**
+     * Zeroth order modified Bessel function.
+     *
+     * @param x Value.
+     * @return Return value.
+     */
+    public final static double getBesselZerothOrder(final double x)
+    {
+        double f = 1;
+        final double x2 = x * x * 0.25;
+        double xc = x2;
+        double v = 1 + x2;
+        for (int i = 2; i < 100; i++)
+        {
+            f *= i;
+            xc *= x2;
+            final double a = xc / (f * f);
+            v += a;
+            if (a < 1e-20) break;
+        }
+
+        return v;
     }
 
     /**
@@ -421,6 +497,7 @@ public class Window
         FLAT_TOP("Flat Top"),
         HAMMING("Hamming"),
         HANN("Hann"),
+        KAISER("Kaiser"),
         NUTALL("Nutall"),
         NONE("None");
 
@@ -435,5 +512,12 @@ public class Window
         {
             return mLabel;
         }
+    }
+
+    public static void main(String[] args)
+    {
+        double[] kaiser = getKaiser(16, 80.0);
+
+        mLog.debug("Window:" + Arrays.toString(kaiser));
     }
 }

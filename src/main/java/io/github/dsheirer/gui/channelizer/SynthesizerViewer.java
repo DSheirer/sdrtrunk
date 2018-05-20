@@ -16,7 +16,6 @@
 package io.github.dsheirer.gui.channelizer;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
-import io.github.dsheirer.dsp.filter.Window;
 import io.github.dsheirer.dsp.filter.channelizer.TwoChannelSynthesizerM2;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.mixer.FS4DownConverter;
@@ -282,8 +281,7 @@ public class SynthesizerViewer extends JFrame
         {
             try
             {
-                float[] taps = FilterFactory.getSincM2Synthesizer(12500.0, 2, 12,
-                    Window.WindowType.BLACKMAN_HARRIS_7, true);
+                float[] taps = FilterFactory.getSincM2Synthesizer(12500.0, 2, 12);
                 mSynthesizer = new TwoChannelSynthesizerM2(taps);
             }
             catch(FilterDesignException fde)

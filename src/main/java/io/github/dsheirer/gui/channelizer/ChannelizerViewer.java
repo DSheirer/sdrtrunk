@@ -195,6 +195,8 @@ public class ChannelizerViewer extends JFrame
 
     public class ChannelArrayPanel extends JPanel
     {
+        private final Logger mLog = LoggerFactory.getLogger(ChannelArrayPanel.class);
+
         public ChannelArrayPanel()
         {
             int bufferSize = CHANNEL_BANDWIDTH / CHANNEL_FFT_FRAME_RATE;
@@ -261,6 +263,8 @@ public class ChannelizerViewer extends JFrame
                 DiscreteChannelPanel channelPanel = new DiscreteChannelPanel(mSettingsManager, source, x);
                 channelPanel.setDFTSize(mChannelPanelDFTSize);
 
+                mLog.debug("Testing Channel [" + x + "] is set to [" + source.getTunerChannel().getFrequency() + "]");
+
                 if(x % mChannelsPerRow == mChannelsPerRow - 1)
                 {
                     add(channelPanel, "grow,push,wrap 2px");
@@ -310,7 +314,7 @@ public class ChannelizerViewer extends JFrame
         {
             setLayout(new MigLayout("insets 0 0 0 0", "[grow,fill]", "[grow,fill]"));
             mSpectrumPanel = new SpectrumPanel(settingsManager);
-            mSpectrumPanel.setSampleSize(16);
+            mSpectrumPanel.setSampleSize(28);
             add(mSpectrumPanel);
 
             mDFTProcessor.addConverter(mComplexDecibelConverter);
@@ -349,7 +353,7 @@ public class ChannelizerViewer extends JFrame
         {
             setLayout(new MigLayout("insets 0 0 0 0", "[center,grow,fill][]", "[grow,fill][]"));
             mSpectrumPanel = new SpectrumPanel(settingsManager);
-            mSpectrumPanel.setSampleSize(16);
+            mSpectrumPanel.setSampleSize(32);
             add(mSpectrumPanel, "span");
 
             mDFTProcessor.addConverter(mComplexDecibelConverter);
@@ -433,6 +437,8 @@ public class ChannelizerViewer extends JFrame
 
     public class DiscreteChannelPanel extends JPanel implements Listener<ReusableComplexBuffer>, ISourceEventProcessor
     {
+        private final Logger mLog = LoggerFactory.getLogger(DiscreteChannelPanel.class);
+
         private TunerChannelSource mSource;
         private DFTProcessor mDFTProcessor = new DFTProcessor(SampleType.COMPLEX);
         private ComplexDecibelConverter mComplexDecibelConverter = new ComplexDecibelConverter();
@@ -445,7 +451,7 @@ public class ChannelizerViewer extends JFrame
             mSource = source;
             setLayout(new MigLayout("insets 0 0 0 0", "[center,grow,fill][]", "[grow,fill][]"));
             mSpectrumPanel = new SpectrumPanel(settingsManager);
-            mSpectrumPanel.setSampleSize(16);
+            mSpectrumPanel.setSampleSize(32);
             add(mSpectrumPanel, "span");
             add(new JLabel("Index:" + index));
 

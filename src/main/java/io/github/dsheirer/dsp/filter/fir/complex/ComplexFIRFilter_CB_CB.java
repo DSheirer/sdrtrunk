@@ -3,6 +3,7 @@ package io.github.dsheirer.dsp.filter.fir.complex;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.complex.ComplexBuffer;
 
+@Deprecated //Use ComplexFIRFilter2 instead
 public class ComplexFIRFilter_CB_CB extends ComplexFIRFilter implements Listener<ComplexBuffer>
 {
     private Listener<ComplexBuffer> mListener;

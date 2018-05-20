@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class DFTProcessor implements Listener<ReusableComplexBuffer>, ISourceEventProcessor, IDFTWidthChangeProcessor
 {
     private static final Logger mLog = LoggerFactory.getLogger(DFTProcessor.class);
-    private static final int BUFFER_QUEUE_MAX_SIZE = 12;
+    private static final int BUFFER_QUEUE_MAX_SIZE = 20;
     private static final int BUFFER_QUEUE_OVERFLOW_RESET_THRESHOLD = 6;
     private static final String FRAME_RATE_PROPERTY = "spectral.display.frame.rate";
 

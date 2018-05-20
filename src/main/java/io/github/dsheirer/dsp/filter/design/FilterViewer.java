@@ -1,7 +1,6 @@
 package io.github.dsheirer.dsp.filter.design;
 
 import io.github.dsheirer.dsp.filter.FilterFactory;
-import io.github.dsheirer.dsp.filter.Window;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -76,7 +75,7 @@ public class FilterViewer extends Application
 
         try
         {
-            taps = FilterFactory.getSincM2Synthesizer(12500.0, 2, 19, Window.WindowType.BLACKMAN_HARRIS_7, true);
+            taps = FilterFactory.getSincM2Synthesizer(12500.0, 2, 19);
 //            taps = FilterFactory.getSincFilter(25000.0, 12500.0, 2, 19, Window.WindowType.BLACKMAN_HARRIS_7, true);
         }
         catch(FilterDesignException fde)
