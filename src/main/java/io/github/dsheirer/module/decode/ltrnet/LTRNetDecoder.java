@@ -50,7 +50,7 @@ public class LTRNetDecoder extends Decoder implements IReusableBufferListener, L
             mLTRMessageFramer = new MessageFramer(SyncPattern.LTR_STANDARD_ISW.getPattern(), LTR_NET_MESSAGE_LENGTH);
         }
 
-        mLTRDecoder.setListener(mLTRMessageFramer);
+        mLTRDecoder.setMessageFramer(mLTRMessageFramer);
         mLTRMessageFramer.setSyncDetectListener(mLTRDecoder);
         mLTRMessageProcessor = new LTRNetMessageProcessor(config.getMessageDirection(), aliasList);
         mLTRMessageFramer.addMessageListener(mLTRMessageProcessor);

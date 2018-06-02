@@ -15,6 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.fsk;
 
+import io.github.dsheirer.bits.MessageFramer;
 import io.github.dsheirer.dsp.filter.dc.IIRSinglePoleDCRemovalFilter;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
@@ -89,7 +90,7 @@ public class LTRDecoder implements Listener<ReusableBuffer>, ISyncDetectListener
     protected SynchronizationMonitor mSynchronizationMonitor;
     private IIRSinglePoleDCRemovalFilter mDCFilter = new IIRSinglePoleDCRemovalFilter(0.99999f);
     private RealFIRFilter2 mLowPassFilter = new RealFIRFilter2(sLowPassFilterCoefficients);
-    private Listener<Boolean> mSymbolDecisionListener;
+    private MessageFramer mMessageFramer;
 
     private boolean mSampleDecision;
 
@@ -155,9 +156,9 @@ public class LTRDecoder implements Listener<ReusableBuffer>, ISyncDetectListener
 
             if(mSampleBuffer.hasSymbol())
             {
-                if(mSymbolDecisionListener != null)
+                if(mMessageFramer != null)
                 {
-                    mSymbolDecisionListener.receive(mSampleBuffer.getSymbol());
+                    mMessageFramer.receive(mSampleBuffer.getSymbol());
                 }
 
                 mSampleBuffer.resetAndAdjust(-mTimingErrorDetector.getError());
@@ -172,11 +173,11 @@ public class LTRDecoder implements Listener<ReusableBuffer>, ISyncDetectListener
     /**
      * Registers a listener to receive decoded LTR symbols.
      *
-     * @param listener to receive symbols.
+     * @param messageFramer to receive symbols.
      */
-    public void setListener(Listener<Boolean> listener)
+    public void setMessageFramer(MessageFramer messageFramer)
     {
-        mSymbolDecisionListener = listener;
+        mMessageFramer = messageFramer;
     }
 
     /**
@@ -184,7 +185,7 @@ public class LTRDecoder implements Listener<ReusableBuffer>, ISyncDetectListener
      */
     public void removeListener()
     {
-        mSymbolDecisionListener = null;
+        mMessageFramer = null;
     }
 
 

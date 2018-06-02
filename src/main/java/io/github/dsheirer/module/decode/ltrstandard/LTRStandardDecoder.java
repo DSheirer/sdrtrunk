@@ -51,7 +51,7 @@ public class LTRStandardDecoder extends Decoder implements IReusableBufferListen
             mLTRMessageFramer = new MessageFramer(SyncPattern.LTR_STANDARD_ISW.getPattern(), LTR_STANDARD_MESSAGE_LENGTH);
         }
 
-        mLTRDecoder.setListener(mLTRMessageFramer);
+        mLTRDecoder.setMessageFramer(mLTRMessageFramer);
         mLTRMessageFramer.setSyncDetectListener(mLTRDecoder);
         mLTRMessageProcessor = new LTRStandardMessageProcessor(direction, aliasList);
         mLTRMessageFramer.addMessageListener(mLTRMessageProcessor);

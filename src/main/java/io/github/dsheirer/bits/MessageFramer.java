@@ -66,8 +66,7 @@ public class MessageFramer implements Listener<Boolean>, SyncDetectProvider
         mMessageAssemblers.clear();
     }
 
-    @Override
-    public void receive(Boolean bit)
+    public void receive(boolean bit)
     {
         mMatcher.receive(bit);
 
@@ -103,6 +102,13 @@ public class MessageFramer implements Listener<Boolean>, SyncDetectProvider
                 mSyncDetectListener.syncDetected();
             }
         }
+    }
+
+    @Deprecated //Legacy support ... remove once all producers are converted to use receive(boolean bit) method
+    @Override
+    public void receive(Boolean bit)
+    {
+        receive(bit);
     }
 
     /**
