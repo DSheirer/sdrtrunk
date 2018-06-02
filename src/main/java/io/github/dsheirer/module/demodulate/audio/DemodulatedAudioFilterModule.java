@@ -30,6 +30,7 @@ import io.github.dsheirer.sample.real.RealBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Deprecated //Remove once polyphase channelizer enhancement is complete
 public class DemodulatedAudioFilterModule extends Module implements IUnFilteredRealBufferListener, IFilteredRealBufferProvider
 {
     private final static Logger mLog = LoggerFactory.getLogger(DemodulatedAudioFilterModule.class);

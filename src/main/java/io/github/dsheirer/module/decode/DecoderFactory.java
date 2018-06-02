@@ -20,7 +20,7 @@ package io.github.dsheirer.module.decode;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.audio.AudioModule2;
+import io.github.dsheirer.audio.AudioModule;
 import io.github.dsheirer.channel.metadata.Metadata;
 import io.github.dsheirer.channel.state.AlwaysUnsquelchedDecoderState;
 import io.github.dsheirer.channel.traffic.TrafficChannelManager;
@@ -30,8 +30,6 @@ import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.controller.channel.map.ChannelMap;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
-import io.github.dsheirer.dsp.filter.FilterFactory;
-import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.filter.AllPassFilter;
 import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.filter.IFilter;
@@ -101,39 +99,8 @@ public class DecoderFactory
 {
     private final static Logger mLog = LoggerFactory.getLogger(DecoderFactory.class);
 
-    private static final int NBFM_PASS_FREQUENCY = 6000;
-    private static final int NBFM_STOP_FREQUENCY = 6500;
-
-    //Low-pass filter with ~60 dB attenuation and 89 taps
-    private static final FIRFilterSpecification MPT1327_FILTER_SPECIFICATION = FIRFilterSpecification.lowPassBuilder()
-        .sampleRate( 48000 ).gridDensity( 16 ).passBandCutoff( 3200 ).passBandAmplitude( 1.0 ).passBandRipple( 0.02 )
-        .stopBandStart( 4000 ).stopBandAmplitude( 0.0 ).stopBandRipple( 0.03 ).build();
-
-    private static final FIRFilterSpecification P25_C4FM_IQ_SPECIFICATION = FIRFilterSpecification.lowPassBuilder()
-        .sampleRate(48000).gridDensity(16).passBandCutoff(6750).passBandAmplitude(1.0).passBandRipple(0.01)
-        .stopBandStart(7000).stopBandAmplitude(0.0).stopBandRipple(0.008).build();
-
-    private static final FIRFilterSpecification P25_C4FM_DEMOD_SPECIFICATION = FIRFilterSpecification.lowPassBuilder()
-        .sampleRate(48000).gridDensity(16).passBandCutoff(2500).passBandAmplitude(1.0).passBandRipple(0.01)
-        .stopBandStart(4000).stopBandAmplitude(0.0).stopBandRipple(0.008).build();
-
-    private static float[] MPT1327_LOWPASS_FILTER;
-    private static float[] P25_C4FM_IQ_FILTER;
-    private static float[] P25_C4FM_DEMOD_FILTER;
-
-    static
-    {
-        try
-        {
-            MPT1327_LOWPASS_FILTER = FilterFactory.getTaps(MPT1327_FILTER_SPECIFICATION);
-            P25_C4FM_IQ_FILTER = FilterFactory.getTaps(P25_C4FM_IQ_SPECIFICATION);
-            P25_C4FM_DEMOD_FILTER = FilterFactory.getTaps(P25_C4FM_DEMOD_SPECIFICATION);
-        }
-        catch(Exception e)
-        {
-            mLog.error("Couldn't design startup filter(s)");
-        }
-    }
+    private static final double CHANNEL_BANDWIDTH = 12500.0;
+    private static final double DEMODULATED_AUDIO_SAMPLE_RATE = 8000.0;
 
     /**
      * Returns a list of one primary decoder and any auxiliary decoders, as
@@ -183,30 +150,28 @@ public class DecoderFactory
                 modules.add(new AMDecoder(decodeConfig));
                 modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.AM, channel.getName()));
                 modules.add(new AMDemodulatorModule());
+//TODO: update AM demodulator to produce demodulated 8 kHz audio and delete the following filter module
                 modules.add(new DemodulatedAudioFilterModule(4000, 6000));
-                modules.add(new AudioModule2(metadata));
+                modules.add(new AudioModule(metadata));
                 break;
             case NBFM:
                 modules.add(new NBFMDecoder(decodeConfig));
                 modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.NBFM, channel.getName()));
-                modules.add(new FMDemodulatorModule(NBFM_PASS_FREQUENCY, NBFM_STOP_FREQUENCY));
-                modules.add(new DemodulatedAudioFilterModule(4000, 6000));
-                modules.add(new AudioModule2(metadata));
+                modules.add(new FMDemodulatorModule(CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+                modules.add(new AudioModule(metadata));
                 break;
             case LTR_STANDARD:
                 MessageDirection direction = ((DecodeConfigLTRStandard) decodeConfig).getMessageDirection();
                 modules.add(new LTRStandardDecoder(aliasList, direction));
                 modules.add(new LTRStandardDecoderState(aliasList));
-                modules.add(new FMDemodulatorModule(NBFM_PASS_FREQUENCY, NBFM_STOP_FREQUENCY));
-                modules.add(new DemodulatedAudioFilterModule(4000, 6000));
-                modules.add(new AudioModule2(metadata));
+                modules.add(new FMDemodulatorModule(CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+                modules.add(new AudioModule(metadata));
                 break;
             case LTR_NET:
                 modules.add(new LTRNetDecoder((DecodeConfigLTRNet) decodeConfig, aliasList));
                 modules.add(new LTRNetDecoderState(aliasList));
-                modules.add(new FMDemodulatorModule(NBFM_PASS_FREQUENCY, NBFM_STOP_FREQUENCY));
-                modules.add(new DemodulatedAudioFilterModule(4000, 6000));
-                modules.add(new AudioModule2(metadata));
+                modules.add(new FMDemodulatorModule(CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+                modules.add(new AudioModule(metadata));
                 break;
             case MPT1327:
                 DecodeConfigMPT1327 mptConfig = (DecodeConfigMPT1327) decodeConfig;
@@ -227,16 +192,14 @@ public class DecoderFactory
                         (aliasList != null ? aliasList.getName() : null), mptConfig.getTrafficChannelPoolSize()));
                 }
 
-                modules.add(new FMDemodulatorModule(NBFM_PASS_FREQUENCY, NBFM_STOP_FREQUENCY));
-                modules.add(new DemodulatedAudioFilterModule(P25_C4FM_DEMOD_FILTER, 1.0f));
-                modules.add(new AudioModule2(metadata));
+                modules.add(new FMDemodulatorModule(CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+                modules.add(new AudioModule(metadata));
                 break;
             case PASSPORT:
                 modules.add(new PassportDecoder(decodeConfig, aliasList));
                 modules.add(new PassportDecoderState(aliasList));
-                modules.add(new FMDemodulatorModule(NBFM_PASS_FREQUENCY, NBFM_STOP_FREQUENCY));
-                modules.add(new DemodulatedAudioFilterModule(4000, 6000));
-                modules.add(new AudioModule2(metadata));
+                modules.add(new FMDemodulatorModule(CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+                modules.add(new AudioModule(metadata));
                 break;
             case P25_PHASE1:
                 DecodeConfigP25Phase1 p25Config = (DecodeConfigP25Phase1) decodeConfig;

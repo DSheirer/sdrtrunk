@@ -19,50 +19,55 @@ import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.Window;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
-import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter_CB_CB;
-import io.github.dsheirer.dsp.fm.FMDemodulator_CB;
+import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
+import io.github.dsheirer.dsp.filter.resample.RealResampler;
+import io.github.dsheirer.dsp.fm.FMDemodulator;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.buffer.IReusableBufferProvider;
 import io.github.dsheirer.sample.buffer.IReusableComplexBufferListener;
+import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.real.IUnFilteredRealBufferProvider;
-import io.github.dsheirer.sample.real.RealBuffer;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * FM Demodulator with integrated fractional resampler.
+ *
+ * Note: no filtering is applied to the demodulated audio.
+ */
 public class FMDemodulatorModule extends Module implements ISourceEventListener, IReusableComplexBufferListener,
-    IUnFilteredRealBufferProvider
+    Listener<ReusableComplexBuffer>, IReusableBufferProvider
 {
     private final static Logger mLog = LoggerFactory.getLogger(FMDemodulatorModule.class);
 
-    private ComplexFIRFilter_CB_CB mIQFilter;
-    private FMDemodulator_CB mDemodulator;
-    private ReusableBufferProcessor mReusableBufferProcessor = new ReusableBufferProcessor();
+    private ComplexFIRFilter2 mIQFilter;
+    private FMDemodulator mDemodulator = new FMDemodulator();
+    private RealResampler mResampler;
     private SourceEventProcessor mSourceEventProcessor = new SourceEventProcessor();
-    private int mPassFrequency;
-    private int mStopFrequency;
+    private Listener<ReusableBuffer> mResampledReusableBufferListener;
+    private double mChannelBandwidth;
+    private double mOutputSampleRate;
 
     /**
-     * FM Demodulator with I/Q filter.  Demodulated output is unfiltered and may contain a DC component.
+     * Creates an FM demodulator for the specified channel bandwidth and output sample rate.
      *
-     * @param pass - pass frequency for IQ filtering prior to demodulation.  This
-     * frequency should be less than or equal to half of the signal bandwidth since the filter will
-     * be applied against each of the inphase and quadrature signals and the
-     * combined pass bandwidth will be twice this value.
+     * A baseband I/Q filter will be constructed to low pass filter the incoming sample buffer stream to the desired
+     * channel bandwidth and the demodulated output will be resampled to the desired output sample rate.  The input
+     * low pass filter is constructed at runtime based on receiving a sample rate notification source event.
      */
-    public FMDemodulatorModule(int pass, int stop)
+    public FMDemodulatorModule(double channelBandwidth, double outputSampleRate)
     {
-        mDemodulator = new FMDemodulator_CB(1.0f);
-        mPassFrequency = pass;
-        mStopFrequency = stop;
+        mChannelBandwidth = channelBandwidth;
+        mOutputSampleRate = outputSampleRate;
     }
 
     @Override
     public Listener<ReusableComplexBuffer> getReusableComplexBufferListener()
     {
-        return mReusableBufferProcessor;
+        return this;
     }
 
     @Override
@@ -91,18 +96,6 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
     }
 
     @Override
-    public void setUnFilteredRealBufferListener(Listener<RealBuffer> listener)
-    {
-        mDemodulator.setListener(listener);
-    }
-
-    @Override
-    public void removeUnFilteredRealBufferListener()
-    {
-        mDemodulator.removeListener();
-    }
-
-    @Override
     public void start()
     {
     }
@@ -112,27 +105,38 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
     {
     }
 
-    /**
-     * Receives complex buffers and sends them through the filtering and demodulation process.  Manages accounting for
-     * the reusable buffers.
-     */
-    public class ReusableBufferProcessor implements Listener<ReusableComplexBuffer>
+    @Override
+    public void setBufferListener(Listener<ReusableBuffer> listener)
     {
-        @Override
-        public void receive(ReusableComplexBuffer reusableComplexBuffer)
+        mResampledReusableBufferListener = listener;
+    }
+
+    @Override
+    public void removeBufferListener()
+    {
+        mResampledReusableBufferListener = null;
+    }
+
+    @Override
+    public void receive(ReusableComplexBuffer reusableComplexBuffer)
+    {
+        if(mIQFilter == null)
         {
-            if(mIQFilter == null)
-            {
-                reusableComplexBuffer.decrementUserCount();
-                throw new IllegalStateException("FM demodulator module must receive a sample rate change source " +
-                    "event before it can process complex sample buffers");
-            }
-
-            float[] samples = reusableComplexBuffer.getSamplesCopy();
-
-            mIQFilter.receive(samples);
-
             reusableComplexBuffer.decrementUserCount();
+            throw new IllegalStateException("FM demodulator module must receive a sample rate change source " +
+                "event before it can process complex sample buffers");
+        }
+
+        ReusableComplexBuffer basebandFilteredBuffer = mIQFilter.filter(reusableComplexBuffer);
+        ReusableBuffer demodulatedBuffer = mDemodulator.demodulate(basebandFilteredBuffer);
+
+        if(mResampler != null)
+        {
+            mResampler.resample(demodulatedBuffer);
+        }
+        else
+        {
+            demodulatedBuffer.decrementUserCount();
         }
     }
 
@@ -146,7 +150,24 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
         {
             if(sourceEvent.getEvent() == SourceEvent.Event.NOTIFICATION_SAMPLE_RATE_CHANGE)
             {
+                if(mIQFilter != null)
+                {
+                    mIQFilter.dispose();
+                    mIQFilter = null;
+                }
+
                 double sampleRate = sourceEvent.getValue().doubleValue();
+
+                if((sampleRate < (2.0 * mChannelBandwidth)))
+                {
+                    throw new IllegalStateException("FM Demodulator with channel bandwidth [" + mChannelBandwidth +
+                        "] requires a channel sample rate of [" + (2.0 * mChannelBandwidth + "] - sample rate of [" +
+                        sampleRate + "] is not supported"));
+                }
+
+                double cutoff = sampleRate / 4.0;
+                int passBandStop = (int)cutoff - 500;
+                int stopBandStart = (int)cutoff + 500;
 
                 float[] filterTaps = null;
 
@@ -154,10 +175,10 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
                     .sampleRate(sampleRate)
                     .gridDensity(16)
                     .oddLength(true)
-                    .passBandCutoff(mPassFrequency)
+                    .passBandCutoff(passBandStop)
                     .passBandAmplitude(1.0)
                     .passBandRipple(0.01)
-                    .stopBandStart(mStopFrequency)
+                    .stopBandStart(stopBandStart)
                     .stopBandAmplitude(0.0)
                     .stopBandRipple(0.028) //Approximately 60 dB attenuation
                     .build();
@@ -169,18 +190,35 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
                 catch(FilterDesignException fde)
                 {
                     mLog.error("Couldn't design FM demodulator remez filter for sample rate [" + sampleRate +
-                        "] pass frequency [" + mPassFrequency + "] and stop frequency [" + mStopFrequency +
+                        "] pass frequency [" + passBandStop + "] and stop frequency [" + stopBandStart +
                         "] - using sinc filter");
                 }
 
                 if(filterTaps == null)
                 {
-                    filterTaps = FilterFactory.getLowPass(sampleRate, mPassFrequency, mStopFrequency, 60,
+                    filterTaps = FilterFactory.getLowPass(sampleRate, passBandStop, stopBandStart, 60,
                         Window.WindowType.HAMMING, true);
                 }
 
-                mIQFilter = new ComplexFIRFilter_CB_CB(filterTaps, 1.0f);
-                mIQFilter.setListener(mDemodulator);
+                mIQFilter = new ComplexFIRFilter2(filterTaps);
+
+                mResampler = new RealResampler(sampleRate, mOutputSampleRate);
+
+                mResampler.setListener(new Listener<ReusableBuffer>()
+                {
+                    @Override
+                    public void receive(ReusableBuffer reusableBuffer)
+                    {
+                        if(mResampledReusableBufferListener != null)
+                        {
+                            mResampledReusableBufferListener.receive(reusableBuffer);
+                        }
+                        else
+                        {
+                            reusableBuffer.decrementUserCount();
+                        }
+                    }
+                });
             }
         }
     }

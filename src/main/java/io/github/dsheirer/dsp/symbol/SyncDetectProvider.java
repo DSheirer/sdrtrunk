@@ -20,5 +20,5 @@ package io.github.dsheirer.dsp.symbol;
 
 public interface SyncDetectProvider
 {
-	public void setSyncDetectListener( SyncDetectListener listener );
+	public void setSyncDetectListener( ISyncDetectListener listener );
 }

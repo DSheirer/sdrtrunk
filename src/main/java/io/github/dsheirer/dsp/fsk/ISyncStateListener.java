@@ -13,11 +13,12 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.sample.buffer;
+package io.github.dsheirer.dsp.fsk;
 
-import io.github.dsheirer.sample.Listener;
-
-public interface IReusableComplexBufferListener<ReusableComplexBuffer>
+/**
+ * Interface to receive sync state change events.
+ */
+public interface ISyncStateListener
 {
-	Listener<ReusableComplexBuffer> getReusableComplexBufferListener();
+    void setSyncState(SyncState syncState);
 }

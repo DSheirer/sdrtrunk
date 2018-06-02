@@ -27,10 +27,6 @@ public class ReusableBufferQueue extends AbstractReusableBufferQueue<ReusableBuf
         super(debugName);
     }
 
-    public ReusableBufferQueue()
-    {
-    }
-
     /**
      * Returns a reusable buffer from an internal recycling queue, or creates a new buffer if there are currently no
      * buffers available for reuse.

@@ -17,19 +17,47 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.fm;
 
+import io.github.dsheirer.sample.buffer.ReusableBuffer;
+import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.complex.Complex;
 
-public abstract class FMDemodulator
+/**
+ * FM Demodulator for demodulating complex samples and producing demodulated floating point samples.
+ */
+public class FMDemodulator
 {
+    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("FMDemodulator");
     private float mPreviousI = 0.0f;
     private float mPreviousQ = 0.0f;
     protected float mGain;
 
+    /**
+     * Creates an FM demodulator instance with a default gain of 1.0.
+     */
+    public FMDemodulator()
+    {
+        this(1.0f);
+    }
+
+    /**
+     * Creates an FM demodulator instance and applies the gain value to each demodulated output sample.
+     * @param gain to apply to demodulated samples.
+     */
     public FMDemodulator(float gain)
     {
         mGain = gain;
     }
 
+    /**
+     * Demodulates the I/Q sample via complex sample multiplication by the complex conjugates of the most recently
+     * demodulated complex sample (ie previous sample).  Each new sample overwrites the previously stored sample to
+     * allow future invocations of the method to simply use a new sample value.
+     *
+     * @param currentI of the sample
+     * @param currentQ of the sample
+     * @return demodulated sample
+     */
     public float demodulate(float currentI, float currentQ)
     {
         /**
@@ -65,6 +93,12 @@ public abstract class FMDemodulator
         return (float)(angle * mGain);
     }
 
+    /**
+     * Demodulates the complex samples and returns the demodulated value.
+     * @param previous
+     * @param current
+     * @return
+     */
     public static double demodulate(Complex previous, Complex current)
     {
         double inphase = (current.inphase() * previous.inphase()) - (current.quadrature() * -previous.quadrature());
@@ -88,14 +122,48 @@ public abstract class FMDemodulator
         return angle;
     }
 
-    public abstract void dispose();
+    /**
+     * Demodulates the complex baseband sample buffer and returns a demodulated reusable buffer with the user count
+     * set to 1.  The complex baseband buffer's user count is decremented after demodulation.
+     *
+     * @param basebandSampleBuffer containing samples to demodulate
+     * @return demodulated sample buffer.
+     */
+    public ReusableBuffer demodulate(ReusableComplexBuffer basebandSampleBuffer)
+    {
+        ReusableBuffer demodulatedBuffer = mReusableBufferQueue.getBuffer(basebandSampleBuffer.getSampleCount());
 
+        float[] basebandSamples = basebandSampleBuffer.getSamples();
+        float[] demodulatedSamples = demodulatedBuffer.getSamples();
+
+        for(int x = 0; x < basebandSamples.length; x += 2)
+        {
+            demodulatedSamples[x / 2] = demodulate(basebandSamples[x], basebandSamples[x + 1]);
+        }
+
+        basebandSampleBuffer.decrementUserCount();
+        demodulatedBuffer.incrementUserCount();
+
+        return demodulatedBuffer;
+    }
+
+    public void dispose()
+    {
+        //no-op
+    }
+
+    /**
+     * Resets this demodulator by zeroing the stored previous sample.
+     */
     public void reset()
     {
         mPreviousI = 0.0f;
         mPreviousQ = 0.0f;
     }
 
+    /**
+     * Sets the gain to the specified level.
+     */
     public void setGain(float gain)
     {
         mGain = gain;

@@ -1,5 +1,7 @@
 package io.github.dsheirer.bits;
 
+import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
+
 public class SoftSyncDetector implements ISyncProcessor
 {
 	private ISyncDetectListener mListener;

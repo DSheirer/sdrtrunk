@@ -20,7 +20,7 @@ package io.github.dsheirer.module.decode.passport;
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.bits.MessageFramer;
 import io.github.dsheirer.bits.SyncPattern;
-import io.github.dsheirer.dsp.fsk.LTRFSKDecoder;
+import io.github.dsheirer.dsp.fsk.LTRFSKDecoderLegacy;
 import io.github.dsheirer.instrument.Instrumentable;
 import io.github.dsheirer.instrument.tap.Tap;
 import io.github.dsheirer.instrument.tap.TapGroup;
@@ -40,7 +40,7 @@ public class PassportDecoder extends Decoder
 	public static final int PASSPORT_MESSAGE_LENGTH = 68;
 	public static final int PASSPORT_SYNC_LENGTH = 9;
 
-	private LTRFSKDecoder mPassportFSKDecoder;
+	private LTRFSKDecoderLegacy mPassportFSKDecoder;
 	private MessageFramer mPassportMessageFramer;
 	private PassportMessageProcessor mPassportMessageProcessor;
 
@@ -52,7 +52,7 @@ public class PassportDecoder extends Decoder
      */
 	public PassportDecoder(DecodeConfiguration config, AliasList aliasList )
 	{
-		mPassportFSKDecoder = new LTRFSKDecoder();
+		mPassportFSKDecoder = new LTRFSKDecoderLegacy();
 
 		mPassportMessageFramer = 
 				new MessageFramer( SyncPattern.PASSPORT.getPattern(),

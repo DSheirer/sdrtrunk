@@ -13,11 +13,18 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.sample.buffer;
+package io.github.dsheirer.instrument.gui.viewer.decoder;
 
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.SampleType;
+import io.github.dsheirer.sample.buffer.ReusableBuffer;
+import javafx.scene.layout.VBox;
 
-public interface IReusableComplexBufferListener<ReusableComplexBuffer>
+public abstract class AbstractDecoderPane<T extends ReusableBuffer> extends VBox implements Listener<T>
 {
-	Listener<ReusableComplexBuffer> getReusableComplexBufferListener();
+    abstract SampleType getSampleType();
+
+    public void setSampleRate(double sampleRate)
+    {
+    }
 }

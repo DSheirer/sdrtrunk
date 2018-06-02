@@ -34,7 +34,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
-public class ComplexWaveSource extends ComplexSource implements IControllableFileSource
+public class ComplexWaveSource extends ComplexSource implements IControllableFileSource, AutoCloseable
 {
     private final static Logger mLog = LoggerFactory.getLogger(ComplexWaveSource.class);
 
@@ -274,5 +274,27 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     public void removeListener(IFrameLocationListener listener)
     {
         mFrameLocationListener = null;
+    }
+
+    /**
+     * Indicates if the file is a supported audio file type
+     */
+    public static boolean supports(File file)
+    {
+        try(AudioInputStream ais = AudioSystem.getAudioInputStream(file))
+        {
+            AudioFormat format = ais.getFormat();
+
+            if(format.getChannels() == 2 && format.getSampleSizeInBits() == 16)
+            {
+                return true;
+            }
+        }
+        catch(Exception e)
+        {
+            //Do nothing, we'll return a default of false
+        }
+
+        return false;
     }
 }

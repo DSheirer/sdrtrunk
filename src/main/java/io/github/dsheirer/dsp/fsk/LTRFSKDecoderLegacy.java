@@ -40,7 +40,7 @@ import io.github.dsheirer.sample.real.RealBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-public class LTRFSKDecoder implements Listener<RealBuffer>, Instrumentable
+public class LTRFSKDecoderLegacy implements Listener<RealBuffer>, Instrumentable
 {
 	private RealPrimeCICDecimate mCICDecimator;
 	
@@ -72,7 +72,7 @@ public class LTRFSKDecoder implements Listener<RealBuffer>, Instrumentable
 	 * Implements a Logic Trunked Radio sub-audible 300 baud FSK signaling 
 	 * decoder.  Expects a 48000 sample rate input.
 	 */
-	public LTRFSKDecoder()
+	public LTRFSKDecoderLegacy()
 	{
 		mCICDecimator = new RealPrimeCICDecimate( 32, 1, 375, 60, WindowType.HAMMING, 2 );
 		

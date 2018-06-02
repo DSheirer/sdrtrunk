@@ -17,17 +17,17 @@ package io.github.dsheirer.instrument.gui.viewer.decoder;
 
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.SampleType;
+import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 
-public class DecoderPane extends VBox implements Listener<ReusableComplexBuffer>
+public class RealDecoderPane extends AbstractDecoderPane<ReusableBuffer>
 {
-    private ReusableBufferBroadcaster mComplexBufferBroadcaster = new ReusableBufferBroadcaster();
+    private ReusableBufferBroadcaster mBufferBroadcaster = new ReusableBufferBroadcaster();
     private DecoderType mDecoderType;
 
-    public DecoderPane(DecoderType decoderType)
+    public RealDecoderPane(DecoderType decoderType)
     {
         mDecoderType = decoderType;
     }
@@ -35,25 +35,31 @@ public class DecoderPane extends VBox implements Listener<ReusableComplexBuffer>
     /**
      * Package private - used by factory class to create an empty pane
      */
-    DecoderPane()
+    RealDecoderPane()
     {
         getChildren().add(new Text("Please select a decoder from the menu"));
     }
 
     @Override
-    public void receive(ReusableComplexBuffer reusableComplexBuffer)
+    SampleType getSampleType()
     {
-        mComplexBufferBroadcaster.broadcast(reusableComplexBuffer);
+        return SampleType.COMPLEX;
     }
 
-    public void addListener(Listener<ReusableComplexBuffer> listener)
+    @Override
+    public void receive(ReusableBuffer reusableBuffer)
     {
-        mComplexBufferBroadcaster.addListener(listener);
+        mBufferBroadcaster.broadcast(reusableBuffer);
     }
 
-    public void removeListener(Listener<ReusableComplexBuffer> listener)
+    public void addListener(Listener<ReusableBuffer> listener)
     {
-        mComplexBufferBroadcaster.removeListener(listener);
+        mBufferBroadcaster.addListener(listener);
+    }
+
+    public void removeListener(Listener<ReusableBuffer> listener)
+    {
+        mBufferBroadcaster.removeListener(listener);
     }
 
     public void setSampleRate(double sampleRate)

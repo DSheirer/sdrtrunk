@@ -1,19 +1,16 @@
 /*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
 package io.github.dsheirer.audio;
@@ -23,90 +20,76 @@ import io.github.dsheirer.audio.squelch.SquelchState;
 import io.github.dsheirer.channel.metadata.Metadata;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
+import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter2;
 import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
-import io.github.dsheirer.dsp.filter.polyphase.PolyphaseFIRDecimatingFilter_RB;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.real.IFilteredRealBufferListener;
-import io.github.dsheirer.sample.real.RealBuffer;
+import io.github.dsheirer.sample.buffer.IReusableBufferListener;
+import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Provides packaging of demodulated audio sample buffers into audio packets for
- * broadcast to registered audio packet listeners.  Includes audio packet
- * metadata in constructed audio packets.
+ * Provides packaging of demodulated audio sample buffers into audio packets for broadcast to registered audio packet
+ * listeners.  Includes audio packet metadata in constructed audio packets.
  *
- * Incorporates audio squelch state listener to control if audio packets are
- * broadcast or ignored.
+ * Incorporates audio squelch state listener to control if audio packets are broadcast or ignored.
+ *
+ * This class is designed to support 8 kHz sample rate demodulated audio.
  */
-public class AudioModule extends Module implements IAudioPacketProvider, IFilteredRealBufferListener,
-    ISquelchStateListener, Listener<RealBuffer>
+public class AudioModule extends Module implements IAudioPacketProvider, IReusableBufferListener,
+    ISquelchStateListener, Listener<ReusableBuffer>
 {
     protected static final Logger mLog = LoggerFactory.getLogger(AudioModule.class);
 
-    private static float[] mDecimationCoefficients;
+    private static float[] sHighPassFilterCoefficients;
 
     static
     {
-        //Band-pass filter to both decimate (48kHz to 8kHz) and block 0 - 300 Hz (LTR signalling).
-        FIRFilterSpecification specification = FIRFilterSpecification.bandPassBuilder()
-            .sampleRate(48000)
-            .stopFrequency1(150)
-            .passFrequencyBegin(300)
-            .passFrequencyEnd(3500)
-            .stopFrequency2(4000)
-            .stopRipple(0.0004)
-            .passRipple(0.008)
+        FIRFilterSpecification specification = FIRFilterSpecification.highPassBuilder()
+            .sampleRate(8000)
+            .stopBandCutoff(200)
+            .stopBandAmplitude(0.0)
+            .stopBandRipple(0.025)
+            .passBandStart(300)
+            .passBandAmplitude(1.0)
+            .passBandRipple(0.01)
             .build();
-
-        RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
-
         try
         {
-            if(!designer.isValid())
-            {
-                throw new FilterDesignException("Couldn't design the audio decimation filter");
-            }
+            RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
 
-            mDecimationCoefficients = designer.getImpulseResponse();
+            if(designer.isValid())
+            {
+                sHighPassFilterCoefficients = designer.getImpulseResponse();
+            }
         }
-        catch(FilterDesignException e)
+        catch(FilterDesignException fde)
         {
-            mLog.debug("Error designing filter", e);
+            mLog.error("Filter design error", fde);
         }
     }
 
+    private RealFIRFilter2 mHighPassFilter = new RealFIRFilter2(sHighPassFilterCoefficients);
     private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
     private SquelchState mSquelchState = SquelchState.SQUELCH;
     private Listener<AudioPacket> mAudioPacketListener;
-    private PolyphaseFIRDecimatingFilter_RB mAudioDecimationFilter;
     private Metadata mMetadata;
 
+    /**
+     * Creates an Audio Module.
+     * @param metadata to use for audio packets produced by this audio module.
+     */
     public AudioModule(Metadata metadata)
     {
         mMetadata = metadata;
-
-        mAudioDecimationFilter = new PolyphaseFIRDecimatingFilter_RB(mDecimationCoefficients, 6, 2.0f);
-        mAudioDecimationFilter.setListener(new Listener<RealBuffer>()
-        {
-            @Override
-            public void receive(RealBuffer realBuffer)
-            {
-                if(mAudioPacketListener != null)
-                {
-                    AudioPacket packet = new AudioPacket(realBuffer.getSamples(), mMetadata.copyOf());
-                    mAudioPacketListener.receive(packet);
-                }
-            }
-        });
     }
 
     @Override
     public void dispose()
     {
-        mSquelchStateListener = null;
         mAudioPacketListener = null;
+        mSquelchStateListener = null;
     }
 
     @Override
@@ -123,30 +106,11 @@ public class AudioModule extends Module implements IAudioPacketProvider, IFilter
     @Override
     public void stop()
     {
-        /* Issue an end audio packet in case a recorder is still rolling */
+        /* Issue an end-audio packet in case a recorder is still rolling */
         if(mAudioPacketListener != null)
         {
             mAudioPacketListener.receive(new AudioPacket(AudioPacket.Type.END, mMetadata.copyOf()));
         }
-    }
-
-    /**
-     * Processes demodulated audio samples into audio packets with current audio
-     * metadata and sends to the registered listener
-     */
-    @Override
-    public void receive(RealBuffer buffer)
-    {
-        if(mAudioPacketListener != null && mSquelchState == SquelchState.UNSQUELCH)
-        {
-            mAudioDecimationFilter.receive(buffer);
-        }
-    }
-
-    @Override
-    public Listener<RealBuffer> getFilteredRealBufferListener()
-    {
-        return this;
     }
 
     @Override
@@ -165,6 +129,29 @@ public class AudioModule extends Module implements IAudioPacketProvider, IFilter
     public Listener<SquelchState> getSquelchStateListener()
     {
         return mSquelchStateListener;
+    }
+
+    @Override
+    public void receive(ReusableBuffer reusableBuffer)
+    {
+        if(mAudioPacketListener != null && mSquelchState == SquelchState.UNSQUELCH)
+        {
+            ReusableBuffer highPassFiltered = mHighPassFilter.filter(reusableBuffer);
+            AudioPacket packet = new AudioPacket(highPassFiltered.getSamplesCopy(), mMetadata.copyOf());
+            mAudioPacketListener.receive(packet);
+            highPassFiltered.decrementUserCount();
+        }
+        else
+        {
+            reusableBuffer.decrementUserCount();
+        }
+    }
+
+    @Override
+    public Listener getReusableBufferListener()
+    {
+        //Redirect received reusable buffers to the receive(buffer) method
+        return this;
     }
 
     /**

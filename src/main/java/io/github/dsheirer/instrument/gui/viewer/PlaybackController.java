@@ -15,13 +15,14 @@
  ******************************************************************************/
 package io.github.dsheirer.instrument.gui.viewer;
 
-import io.github.dsheirer.instrument.gui.viewer.decoder.DecoderPane;
+import io.github.dsheirer.instrument.gui.viewer.decoder.AbstractDecoderPane;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.IControllableFileSource;
 import io.github.dsheirer.source.IFrameLocationListener;
 import io.github.dsheirer.source.wave.ComplexWaveSource;
+import io.github.dsheirer.source.wave.RealWaveSource;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
@@ -40,7 +41,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.File;
 import java.io.IOException;
 
-public class PlaybackController extends HBox implements IFrameLocationListener, Listener<ReusableComplexBuffer>
+public class PlaybackController extends HBox implements IFrameLocationListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(PlaybackController.class);
 
@@ -48,15 +49,17 @@ public class PlaybackController extends HBox implements IFrameLocationListener, 
     private TextField mPlaybackPositionText;
     private Button mPlay1Button;
     private Button mPlay10Button;
+    private Button mPlay30Button;
     private Button mPlay100Button;
     private Button mPlay1000Button;
+    private Button mPlay2000Button;
     private HBox mControlsBox;
     private Label mFileLabel;
     private EventHandler<ActionEvent> mPlayEventHandler;
-    private DecoderPane mSampleRateListener;
+    private AbstractDecoderPane mSampleRateListener;
 
     private IControllableFileSource mControllableFileSource;
-    private ReusableBufferBroadcaster mComplexBufferBroadcaster = new ReusableBufferBroadcaster();
+    private ReusableBufferBroadcaster mReusableBufferBroadcaster = new ReusableBufferBroadcaster();
 
     public PlaybackController()
     {
@@ -64,10 +67,10 @@ public class PlaybackController extends HBox implements IFrameLocationListener, 
 
         getChildren().addAll(getControlsBox(), getFileLabel());
 
-        setControlsEnabled(false);
+        disableControls();
     }
 
-    public void setSampleRateListener(DecoderPane decoderPane)
+    public void setSampleRateListener(AbstractDecoderPane decoderPane)
     {
         mSampleRateListener = decoderPane;
 
@@ -81,38 +84,76 @@ public class PlaybackController extends HBox implements IFrameLocationListener, 
     {
         if(file != null && file.isFile())
         {
-            try
+            if(ComplexWaveSource.supports(file))
             {
-                mControllableFileSource = new ComplexWaveSource(file);
-                mControllableFileSource.setListener(this);
-                ((ComplexWaveSource)mControllableFileSource).setListener((Listener<ReusableComplexBuffer>)this);
-                mControllableFileSource.open();
-
-                if(mSampleRateListener != null)
+                try
                 {
-                    mSampleRateListener.setSampleRate(mControllableFileSource.getSampleRate());
+                    mControllableFileSource = new ComplexWaveSource(file);
+                    mControllableFileSource.setListener(this);
+                    ((ComplexWaveSource)mControllableFileSource).setListener(mReusableBufferBroadcaster);
+                    mControllableFileSource.open();
+
+                    if(mSampleRateListener != null)
+                    {
+                        mSampleRateListener.setSampleRate(mControllableFileSource.getSampleRate());
+                    }
                 }
-            }
-            catch(UnsupportedAudioFileException e)
-            {
-                mLog.error("Unsupported Audio File Type [" + (file != null ? file.getAbsolutePath() : "null") + "]");
+                catch(UnsupportedAudioFileException e)
+                {
+                    mLog.error("Unsupported Audio File Type [" + (file != null ? file.getAbsolutePath() : "null") + "]");
 
-                Alert alert = new Alert(Alert.AlertType.ERROR, "The file type is unsupported.", ButtonType.OK);
-                alert.show();
-                return;
-            }
-            catch(IOException ioe)
-            {
-                mLog.error("Error opening file [" + (file != null ? file.getAbsolutePath() : "null") + "]", ioe);
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "The file type is unsupported.", ButtonType.OK);
+                    alert.show();
+                    return;
+                }
+                catch(IOException ioe)
+                {
+                    mLog.error("Error opening file [" + (file != null ? file.getAbsolutePath() : "null") + "]", ioe);
 
-                Alert alert = new Alert(Alert.AlertType.ERROR, "There was an error opening the file",
-                    ButtonType.OK);
-                alert.show();
-                return;
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "There was an error opening the file",
+                        ButtonType.OK);
+                    alert.show();
+                    return;
+                }
+
+                enableControls();
+            }
+            else if(RealWaveSource.supports(file))
+            {
+                try
+                {
+                    mControllableFileSource = new RealWaveSource(file);
+                    mControllableFileSource.setListener(this);
+                    ((RealWaveSource)mControllableFileSource).setListener(mReusableBufferBroadcaster);
+                    mControllableFileSource.open();
+
+                    if(mSampleRateListener != null)
+                    {
+                        mSampleRateListener.setSampleRate(mControllableFileSource.getSampleRate());
+                    }
+                }
+                catch(UnsupportedAudioFileException e)
+                {
+                    mLog.error("Unsupported Audio File Type [" + (file != null ? file.getAbsolutePath() : "null") + "]");
+
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "The file type is unsupported.", ButtonType.OK);
+                    alert.show();
+                    return;
+                }
+                catch(IOException ioe)
+                {
+                    mLog.error("Error opening file [" + (file != null ? file.getAbsolutePath() : "null") + "]", ioe);
+
+                    Alert alert = new Alert(Alert.AlertType.ERROR, "There was an error opening the file",
+                        ButtonType.OK);
+                    alert.show();
+                    return;
+                }
+
+                enableControls();
             }
 
             getFileLabel().setText(file.getName());
-            setControlsEnabled(true);
         }
     }
 
@@ -130,36 +171,49 @@ public class PlaybackController extends HBox implements IFrameLocationListener, 
             }
         }
 
-        setControlsEnabled(false);
+        disableControls();
     }
 
     /**
      * Adds listener to receive complex buffers from this playback
      */
-    public void addListener(Listener<ReusableComplexBuffer> listener)
+    public void addListener(Listener<ReusableBuffer> listener)
     {
-        mComplexBufferBroadcaster.addListener(listener);
+        mReusableBufferBroadcaster.addListener(listener);
     }
 
     /**
      * Removes the listener from receiving complex buffers from this playback
      */
-    public void removeListener(Listener<ReusableComplexBuffer> listener)
+    public void removeListener(Listener<ReusableBuffer> listener)
     {
-        mComplexBufferBroadcaster.removeListener(listener);
+        mReusableBufferBroadcaster.removeListener(listener);
     }
 
     /**
      * Sets all of the playback controls to the specified enabled state.
      */
-    private void setControlsEnabled(boolean enabled)
+    private void disableControls()
     {
-        getRewindButton().setDisable(!enabled);
-        getPlaybackPositionText().setDisable(!enabled);
-        getPlay1Button().setDisable(!enabled);
-        getPlay10Button().setDisable(!enabled);
-        getPlay100Button().setDisable(!enabled);
-        getPlay1000Button().setDisable(!enabled);
+        getRewindButton().setDisable(true);
+        getPlaybackPositionText().setDisable(true);
+        getPlay1Button().setDisable(true);
+        getPlay10Button().setDisable(true);
+        getPlay100Button().setDisable(true);
+        getPlay1000Button().setDisable(true);
+    }
+
+    /**
+     * Sets all of the playback controls to the specified enabled state.
+     */
+    private void enableControls()
+    {
+        getRewindButton().setDisable(false);
+        getPlaybackPositionText().setDisable(false);
+        getPlay1Button().setDisable(false);
+        getPlay10Button().setDisable(false);
+        getPlay100Button().setDisable(false);
+        getPlay1000Button().setDisable(false);
     }
 
     private HBox getControlsBox()
@@ -169,7 +223,7 @@ public class PlaybackController extends HBox implements IFrameLocationListener, 
             mControlsBox = new HBox();
 
             mControlsBox.getChildren().addAll(getRewindButton(), getPlaybackPositionText(), getPlay1Button(),
-                getPlay10Button(), getPlay100Button(), getPlay1000Button());
+                getPlay10Button(), getPlay30Button(), getPlay100Button(), getPlay1000Button(), getPlay2000Button());
         }
 
         return mControlsBox;
@@ -213,6 +267,19 @@ public class PlaybackController extends HBox implements IFrameLocationListener, 
         return mPlay10Button;
     }
 
+    private  Button getPlay30Button()
+    {
+        if(mPlay30Button == null)
+        {
+            mPlay30Button = new Button("30");
+            mPlay30Button.setUserData(30);
+            mPlay30Button.setOnAction(getPlaybackEventHandler());
+            mPlay30Button.setGraphic(new FontIcon(FontAwesome.FAST_FORWARD));
+        }
+
+        return mPlay30Button;
+    }
+
     private  Button getPlay100Button()
     {
         if(mPlay100Button == null)
@@ -237,6 +304,19 @@ public class PlaybackController extends HBox implements IFrameLocationListener, 
         }
 
         return mPlay1000Button;
+    }
+
+    private  Button getPlay2000Button()
+    {
+        if(mPlay2000Button == null)
+        {
+            mPlay2000Button = new Button("2000");
+            mPlay2000Button.setUserData(2000);
+            mPlay2000Button.setOnAction(getPlaybackEventHandler());
+            mPlay2000Button.setGraphic(new FontIcon(FontAwesome.FAST_FORWARD));
+        }
+
+        return mPlay2000Button;
     }
 
     private EventHandler<ActionEvent> getPlaybackEventHandler()
@@ -301,11 +381,5 @@ public class PlaybackController extends HBox implements IFrameLocationListener, 
     public void frameLocationReset()
     {
         mLog.info("Frame location reset ... ignoring?");
-    }
-
-    @Override
-    public void receive(ReusableComplexBuffer complexBuffer)
-    {
-        mComplexBufferBroadcaster.broadcast(complexBuffer);
     }
 }

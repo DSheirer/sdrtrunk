@@ -13,11 +13,9 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.sample.buffer;
+package io.github.dsheirer.dsp.fsk;
 
-import io.github.dsheirer.sample.Listener;
-
-public interface IReusableComplexBufferListener<ReusableComplexBuffer>
+public enum SyncState
 {
-	Listener<ReusableComplexBuffer> getReusableComplexBufferListener();
+    COARSE, MEDIUM, FINE;
 }

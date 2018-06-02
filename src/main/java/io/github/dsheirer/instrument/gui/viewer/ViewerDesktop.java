@@ -15,7 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.instrument.gui.viewer;
 
-import io.github.dsheirer.instrument.gui.viewer.decoder.DecoderPane;
+import io.github.dsheirer.instrument.gui.viewer.decoder.AbstractDecoderPane;
 import io.github.dsheirer.instrument.gui.viewer.decoder.DecoderPaneFactory;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.p25.P25Decoder;
@@ -26,7 +26,7 @@ import java.io.File;
 public class ViewerDesktop extends BorderPane
 {
     private PlaybackController mPlaybackController;
-    private DecoderPane mDecoderPane = DecoderPaneFactory.getDefaultPane();
+    private AbstractDecoderPane mDecoderPane = DecoderPaneFactory.getDefaultPane();
 
     public ViewerDesktop()
     {
@@ -50,7 +50,7 @@ public class ViewerDesktop extends BorderPane
         setDecoderPane(DecoderPaneFactory.getP25DecoderPane(modulation));
     }
 
-    private void setDecoderPane(DecoderPane decoderPane)
+    private void setDecoderPane(AbstractDecoderPane decoderPane)
     {
         getPlaybackController().removeListener(getDecoderPane());
         getChildren().remove(getDecoderPane());
@@ -63,7 +63,7 @@ public class ViewerDesktop extends BorderPane
     /**
      * Decoder pane
      */
-    public DecoderPane getDecoderPane()
+    public AbstractDecoderPane getDecoderPane()
     {
         if(mDecoderPane == null)
         {

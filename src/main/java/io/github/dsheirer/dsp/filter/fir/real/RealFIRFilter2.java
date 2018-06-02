@@ -27,7 +27,7 @@ import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
  */
 public class RealFIRFilter2 extends FIRFilter
 {
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue();
+    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("RealFIRFilter2");
 
     private float[] mData;
     private float[] mCoefficients;

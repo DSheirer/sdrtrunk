@@ -19,6 +19,9 @@ package io.github.dsheirer.source.mixer;
 
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.adapter.ISampleAdapter;
+import io.github.dsheirer.sample.buffer.ReusableBuffer;
+import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
+import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
 import io.github.dsheirer.sample.real.RealBuffer;
 import io.github.dsheirer.source.RealSource;
 import io.github.dsheirer.source.SourceEvent;
@@ -29,14 +32,14 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.TargetDataLine;
-import java.util.Iterator;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RealMixerSource extends RealSource
 {
     private final static Logger mLog = LoggerFactory.getLogger(RealMixerSource.class);
-
+    private ReusableBufferBroadcaster<ReusableBuffer> mBufferBroadcaster = new ReusableBufferBroadcaster<>();
+    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("RealMixerSource");
     private long mFrequency = 0;
     private int mBufferSize = 16384;
 
@@ -103,9 +106,9 @@ public class RealMixerSource extends RealSource
     {
     }
 
-    public void setListener(Listener<RealBuffer> listener)
+    public void setListener(Listener<ReusableBuffer> listener)
     {
-        mSampleListeners.add(listener);
+        mBufferBroadcaster.addListener(listener);
 
 		/* If this is the first listener, start the reader thread */
         if(!mBufferReader.isRunning())
@@ -117,35 +120,14 @@ public class RealMixerSource extends RealSource
         }
     }
 
-    public void removeListener(Listener<RealBuffer> listener)
+    public void removeListener(Listener<ReusableBuffer> listener)
     {
-        mSampleListeners.remove(listener);
+        mBufferBroadcaster.removeListener(listener);
 
-		/* If this is the laster listener, stop the reader thread */
+		/* If this is the last listener, stop the reader thread */
         if(mSampleListeners.isEmpty())
         {
             mBufferReader.stop();
-        }
-    }
-
-    public void broadcast(RealBuffer samples)
-    {
-        Iterator<Listener<RealBuffer>> it = mSampleListeners.iterator();
-
-        while(it.hasNext())
-        {
-            Listener<RealBuffer> next = it.next();
-			
-			/* if this is the last (or only) listener, send him the original 
-			 * buffer, otherwise send him a copy of the buffer */
-            if(it.hasNext())
-            {
-                next.receive(samples.copyOf());
-            }
-            else
-            {
-                next.receive(samples);
-            }
         }
     }
 
@@ -240,11 +222,14 @@ public class RealMixerSource extends RealSource
                             mTargetDataLine.read(buffer, 0, buffer.length);
 
 	                        /* Convert samples to float array */
-                            float[] samples =
-                                mSampleAdapter.convert(buffer);
+//TODO: change this sample adapter over to use reusable buffers and move the buffer queue into the adapter
+                            float[] samples = mSampleAdapter.convert(buffer);
 	            			
 	            			/* Dispatch samples to registered listeners */
-                            broadcast(new RealBuffer(samples));
+                            ReusableBuffer reusableBuffer = mReusableBufferQueue.getBuffer(samples.length);
+                            reusableBuffer.reloadFrom(samples, System.currentTimeMillis());
+                            reusableBuffer.incrementUserCount();
+                            mBufferBroadcaster.broadcast(reusableBuffer);
                         }
                         catch(Exception e)
                         {

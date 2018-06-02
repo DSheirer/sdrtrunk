@@ -13,11 +13,28 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.sample.buffer;
+package io.github.dsheirer.dsp.fsk;
 
-import io.github.dsheirer.sample.Listener;
-
-public interface IReusableComplexBufferListener<ReusableComplexBuffer>
+public class LTRDecoderInstrumented extends LTRDecoder
 {
-	Listener<ReusableComplexBuffer> getReusableComplexBufferListener();
+    /**
+     * Instrumented extension to LTRDecoder
+     *
+     * @param messageLength in symbols
+     */
+    public LTRDecoderInstrumented(int messageLength)
+    {
+        super(messageLength, new SampleBufferInstrumented(SAMPLES_PER_SYMBOL, COARSE_TIMING_GAIN),
+            new ZeroCrossingErrorDetectorInstrumented(SAMPLES_PER_SYMBOL));
+    }
+
+    public SampleBufferInstrumented getSampleBuffer()
+    {
+        return (SampleBufferInstrumented)mSampleBuffer;
+    }
+
+    public ZeroCrossingErrorDetectorInstrumented getErrorDetector()
+    {
+        return (ZeroCrossingErrorDetectorInstrumented)mTimingErrorDetector;
+    }
 }

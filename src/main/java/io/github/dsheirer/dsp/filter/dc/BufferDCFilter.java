@@ -15,31 +15,40 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.dc;
 
+import io.github.dsheirer.sample.buffer.ReusableBuffer;
+import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class BufferDCFilter
 {
     private final static Logger mLog = LoggerFactory.getLogger(BufferDCFilter.class);
+    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("Buffer DC Filter");
+    private double mAccumulator;
 
     /**
      * Calculates the DC offset present in the samples and subtracts the offset from all samples.
      */
-    public static void filterReal(float[] samples)
+    public void filterReal(float[] samples)
     {
-        double accumulator = 0.0;
-
-        for(int x = 0; x < samples.length; x++)
-        {
-            accumulator += samples[x];
-        }
-
-        float adjustment = (float)(accumulator / (double)samples.length);
+        float adjustment = getOffset(samples);
 
         for(int x = 0; x < samples.length; x++)
         {
             samples[x] = samples[x] - adjustment;
         }
+    }
+
+    private float getOffset(float[] samples)
+    {
+        mAccumulator = 0.0;
+
+        for(int x = 0; x < samples.length; x++)
+        {
+            mAccumulator += samples[x];
+        }
+
+        return (float)(mAccumulator / (double)samples.length);
     }
 
     /**
@@ -66,5 +75,25 @@ public class BufferDCFilter
             samples[x] = samples[x] - iAdjustment;
             samples[x + 1] = samples[x + 1] - qAdjustment;
         }
+    }
+
+    public ReusableBuffer filter(ReusableBuffer unfilteredBuffer)
+    {
+        float[] unfilteredSamples = unfilteredBuffer.getSamples();
+
+        ReusableBuffer filteredBuffer = mReusableBufferQueue.getBuffer(unfilteredSamples.length);
+        float[] filteredSamples = filteredBuffer.getSamples();
+
+        float offset = getOffset(unfilteredSamples);
+
+        for(int x = 0; x < unfilteredSamples.length; x++)
+        {
+            filteredSamples[x] = unfilteredSamples[x] - offset;
+        }
+
+        unfilteredBuffer.decrementUserCount();
+        filteredBuffer.incrementUserCount();
+
+        return filteredBuffer;
     }
 }

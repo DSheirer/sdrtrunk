@@ -18,7 +18,7 @@
 package io.github.dsheirer.source.tuner;
 
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.IReusableBufferProvider;
+import io.github.dsheirer.sample.buffer.IReusableComplexBufferProvider;
 import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.ISourceEventListener;
@@ -33,7 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class TunerController implements Tunable, ISourceEventProcessor, ISourceEventListener,
-    IReusableBufferProvider<ReusableComplexBuffer>, Listener<ReusableComplexBuffer>
+    IReusableComplexBufferProvider, Listener<ReusableComplexBuffer>
 {
     private final static Logger mLog = LoggerFactory.getLogger(TunerController.class);
     protected ReusableBufferBroadcaster mReusableBufferBroadcaster = new ReusableBufferBroadcaster();

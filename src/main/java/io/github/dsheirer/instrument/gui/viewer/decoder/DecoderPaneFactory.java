@@ -22,15 +22,19 @@ import java.util.EnumSet;
 
 public class DecoderPaneFactory
 {
-    private static final EnumSet<DecoderType> SUPPORTED_DECODER_TYPES = EnumSet.of(DecoderType.P25_PHASE1);
+    private static final EnumSet<DecoderType> SUPPORTED_DECODER_TYPES =
+        EnumSet.of(DecoderType.P25_PHASE1,
+                   DecoderType.LTR_NET);
 
     /**
      * Creates a decoder pane for the decoder type
      */
-    public static DecoderPane getDecoderPane(DecoderType decoderType)
+    public static AbstractDecoderPane getDecoderPane(DecoderType decoderType)
     {
         switch(decoderType)
         {
+            case LTR_NET:
+                return new LTRNetPane();
             case P25_PHASE1:
                 throw new IllegalArgumentException("Use the getP25DecoderPane() method for P25 decoder type");
         }
@@ -41,7 +45,7 @@ public class DecoderPaneFactory
     /**
      * Creates a decoder pane for the P25 decoder type
      */
-    public static DecoderPane getP25DecoderPane(P25Decoder.Modulation modulation)
+    public static AbstractDecoderPane getP25DecoderPane(P25Decoder.Modulation modulation)
     {
         switch(modulation)
         {
@@ -57,9 +61,9 @@ public class DecoderPaneFactory
     /**
      * Creates an empty decoder pane
      */
-    public static DecoderPane getDefaultPane()
+    public static AbstractDecoderPane getDefaultPane()
     {
-        return new DecoderPane();
+        return new ComplexDecoderPane();
     }
 
     /**

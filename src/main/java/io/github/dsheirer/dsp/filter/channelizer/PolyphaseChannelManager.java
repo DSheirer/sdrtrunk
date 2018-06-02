@@ -22,7 +22,7 @@ import io.github.dsheirer.dsp.filter.channelizer.output.TwoChannelOutputProcesso
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.IReusableBufferProvider;
+import io.github.dsheirer.sample.buffer.IReusableComplexBufferProvider;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.Source;
@@ -69,7 +69,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     private static final int POLYPHASE_SYNTHESIZER_TAPS_PER_CHANNEL = 9;
 
     private Broadcaster<SourceEvent> mSourceEventBroadcaster = new Broadcaster<>();
-    private IReusableBufferProvider<ReusableComplexBuffer> mReusableBufferProvider;
+    private IReusableComplexBufferProvider mReusableBufferProvider;
     private List<PolyphaseChannelSource> mChannelSources = new CopyOnWriteArrayList<>();
     private ChannelCalculator mChannelCalculator;
     private ComplexPolyphaseChannelizerM2 mPolyphaseChannelizer;
@@ -81,20 +81,20 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
     /**
      * Creates a polyphase channel manager instance.
      *
-     * @param reusableBufferProvider (ie tuner) that supports register/deregister for reusable baseband sample buffer
+     * @param reusableComplexBufferProvider (ie tuner) that supports register/deregister for reusable baseband sample buffer
      * streams
      * @param frequency of the baseband complex buffer sample stream (ie center frequency)
      * @param sampleRate of the baseband complex buffer sample stream
      */
-    public PolyphaseChannelManager(IReusableBufferProvider<ReusableComplexBuffer> reusableBufferProvider,
+    public PolyphaseChannelManager(IReusableComplexBufferProvider reusableComplexBufferProvider,
                                    long frequency, double sampleRate)
     {
-        if(reusableBufferProvider == null)
+        if(reusableComplexBufferProvider == null)
         {
             throw new IllegalArgumentException("Complex buffer provider argument cannot be null");
         }
 
-        mReusableBufferProvider = reusableBufferProvider;
+        mReusableBufferProvider = reusableComplexBufferProvider;
 
         int channelCount = (int)(sampleRate / MINIMUM_CHANNEL_BANDWIDTH);
 

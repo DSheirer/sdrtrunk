@@ -1,119 +1,110 @@
 /*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014 Dennis Sheirer
- * 
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- * 
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- * 
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
+ *
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
+ *
  ******************************************************************************/
 package io.github.dsheirer.bits;
 
-import io.github.dsheirer.dsp.symbol.SyncDetectListener;
+import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.dsp.symbol.SyncDetectProvider;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * MessageFramer - processes bitsets looking for a sync pattern within
  * the bits, and then extracts the message, including the sync
  * pattern, for a total bit length of messageLength.
- * 
+ *
  * Will extract multiple messages simultaneously, for each sync pattern that is
  * encountered within the bitset bit stream.
  */
-public class MessageFramer implements Listener<Boolean>, 
-									  SyncDetectProvider
+public class MessageFramer implements Listener<Boolean>, SyncDetectProvider
 {
-	private boolean[] mSyncPattern;
-	private int mMessageLength;
-	private SyncDetectListener mSyncDetectListener;
-	private Broadcaster<BinaryMessage> mBroadcaster = 
-								new Broadcaster<BinaryMessage>();
-	private ArrayList<MessageAssembler> mMessageAssemblers = 
-                            new ArrayList<MessageAssembler>();
+    private boolean[] mSyncPattern;
+    private int mMessageLength;
+    private ISyncDetectListener mSyncDetectListener;
+    private Broadcaster<BinaryMessage> mBroadcaster = new Broadcaster<BinaryMessage>();
+    private List<MessageAssembler> mMessageAssemblers = new ArrayList<MessageAssembler>();
+    private List<MessageAssembler> mCompletedMessageAssemblers = new ArrayList<MessageAssembler>();
+    private SyncPatternMatcher mMatcher;
 
-	private ArrayList<MessageAssembler> mCompletedMessageAssemblers = 
-    								new ArrayList<MessageAssembler>();
-    
-	private BinaryMessage mPreviousBuffer = null;
-
-	private SyncPatternMatcher mMatcher;
-    
-    public MessageFramer( boolean[] syncPattern, int messageLength )
+    public MessageFramer(boolean[] syncPattern, int messageLength)
     {
         mSyncPattern = syncPattern;
-        mMatcher = new SyncPatternMatcher( syncPattern );
+        mMatcher = new SyncPatternMatcher(syncPattern);
         mMessageLength = messageLength;
     }
-    
+
     public void reset()
     {
-    	for( MessageAssembler assembler: mMessageAssemblers )
-    	{
-    		assembler.dispose();
-    	}
-        	
+        for(MessageAssembler assembler : mMessageAssemblers)
+        {
+            assembler.dispose();
+        }
+
         mMessageAssemblers.clear();
-    }    
-    
+    }
+
     public void dispose()
     {
-    	mBroadcaster.dispose();
-    	mCompletedMessageAssemblers.clear();
-    	mMessageAssemblers.clear();
+        mBroadcaster.dispose();
+        mCompletedMessageAssemblers.clear();
+        mMessageAssemblers.clear();
     }
 
     @Override
-    public void receive( Boolean bit )
+    public void receive(Boolean bit)
     {
-    	mMatcher.receive( bit );
-    	
+        mMatcher.receive(bit);
+
         Iterator<MessageAssembler> it = mMessageAssemblers.iterator();
-        
+
         MessageAssembler assembler;
-        
-        while( it.hasNext() )
+
+        while(it.hasNext())
         {
             assembler = it.next();
 
             /* Dispose and remove any completed assemblers */
-            if( assembler.complete() )
+            if(assembler.complete())
             {
-            	assembler.dispose();
-            	it.remove();
+                assembler.dispose();
+                it.remove();
             }
             /* Otherwise, send them the bit */
             else
             {
-                assembler.receive( bit );
+                assembler.receive(bit);
             }
         }
-        
+
         /* Check for sync match and add new message assembler */
-    	if( mMatcher.matches() )
-    	{
-            addMessageAssembler( new MessageAssembler( mMessageLength, mSyncPattern ) );
-            
+        if(mMatcher.matches())
+        {
+            addMessageAssembler(new MessageAssembler(mMessageLength, mSyncPattern));
+
             /* Notify any sync detect listener(s) */
-            if( mSyncDetectListener != null )
+            if(mSyncDetectListener != null)
             {
-            	mSyncDetectListener.syncDetected();
+                mSyncDetectListener.syncDetected();
             }
-    	}
+        }
     }
-    
+
     /**
      * Causes all messages currently under assembly to be forcibly
      * sent (ie flushed) to all registered message listeners, and
@@ -121,44 +112,44 @@ public class MessageFramer implements Listener<Boolean>,
      */
     public void flush()
     {
-        for( MessageAssembler assembler: mMessageAssemblers )
+        for(MessageAssembler assembler : mMessageAssemblers)
         {
             assembler.flush();
         }
     }
-    
-	@Override
-    public void setSyncDetectListener( SyncDetectListener listener )
+
+    @Override
+    public void setSyncDetectListener(ISyncDetectListener listener)
     {
-		mSyncDetectListener = listener;
+        mSyncDetectListener = listener;
     }
-    
+
     /**
      * Allow a message listener to register with this framer to receive
      * all framed messages
      */
-    public void addMessageListener( Listener<BinaryMessage> listener )
+    public void addMessageListener(Listener<BinaryMessage> listener)
     {
-        mBroadcaster.addListener( listener );
+        mBroadcaster.addListener(listener);
     }
-    
-    public void removeMessageListener( Listener<BinaryMessage> listener )
+
+    public void removeMessageListener(Listener<BinaryMessage> listener)
     {
-        mBroadcaster.removeListener( listener );
+        mBroadcaster.removeListener(listener);
     }
 
     /*
      * Adds a message assembler to receive bits from the bit stream
      */
-    private void addMessageAssembler( MessageAssembler assembler )
+    private void addMessageAssembler(MessageAssembler assembler)
     {
-        mMessageAssemblers.add( assembler );
+        mMessageAssemblers.add(assembler);
     }
 
-    @SuppressWarnings( "unused" )
-	private void removeMessageAssembler( MessageAssembler assembler )
+    @SuppressWarnings("unused")
+    private void removeMessageAssembler(MessageAssembler assembler)
     {
-        mMessageAssemblers.remove( assembler );
+        mMessageAssemblers.remove(assembler);
     }
 
     /**
@@ -166,7 +157,7 @@ public class MessageFramer implements Listener<Boolean>,
      * identified sync pattern, and every bit thereafter.  Once the accumulated
      * bits equal the message length, the message is sent and the assembler
      * flags itself as complete.
-     * 
+     *
      * By design, multiple message assemblers can exist at the same time, each
      * assembling different, overlapping potential messages
      */
@@ -174,46 +165,46 @@ public class MessageFramer implements Listener<Boolean>,
     {
         BinaryMessage mMessage;
         boolean mComplete = false;
-        
-        MessageAssembler( int messageLength )
+
+        MessageAssembler(int messageLength)
         {
-            mMessage = new BinaryMessage( messageLength );
+            mMessage = new BinaryMessage(messageLength);
         }
-        
-        MessageAssembler( int messageLength, boolean[] initialFill )
+
+        MessageAssembler(int messageLength, boolean[] initialFill)
         {
-            this(  messageLength );
-            
+            this(messageLength);
+
             /* Pre-load the message with the sync pattern */
-            for( int x = 0; x < initialFill.length; x++ )
+            for(int x = 0; x < initialFill.length; x++)
             {
-                receive( initialFill[ x ] );
+                receive(initialFill[x]);
             }
         }
-        
+
         public void dispose()
         {
-        	mMessage = null;
+            mMessage = null;
         }
 
         @Override
         /**
          * Receives one bit at a time, and assembles them into a message
          */
-        public void receive( Boolean bit )
+        public void receive(Boolean bit)
         {
             try
             {
-                mMessage.add( bit );
+                mMessage.add(bit);
             }
-            catch( BitSetFullException e )
+            catch(BitSetFullException e)
             {
                 e.printStackTrace();
             }
-            
+
             /* Once our message is complete (ie full), send it to all registered
              * message listeners, and set complete flag so for auto-removal */
-            if( mMessage.isFull() )
+            if(mMessage.isFull())
             {
                 mComplete = true;
                 flush();
@@ -226,7 +217,7 @@ public class MessageFramer implements Listener<Boolean>,
          */
         public void flush()
         {
-            mBroadcaster.receive( mMessage );
+            mBroadcaster.receive(mMessage);
             mComplete = true;
         }
 

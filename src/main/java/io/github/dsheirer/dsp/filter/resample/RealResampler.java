@@ -20,21 +20,20 @@ import com.laszlosystems.libresample4j.SampleBuffers;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
-import io.github.dsheirer.sample.real.RealBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 
-public class RealResampler implements Listener<RealBuffer>
+public class RealResampler
 {
     protected static final Logger mLog = LoggerFactory.getLogger(RealResampler.class);
 
+    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("RealResampler");
     private Resampler mResampler;
     private Listener<ReusableBuffer> mResampledListener;
     private BufferManager mBufferManager = new BufferManager();
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("RealResampler");
     private double mResampleFactor;
 
     /**
@@ -50,12 +49,11 @@ public class RealResampler implements Listener<RealBuffer>
 
     /**
      * Primary input method to the resampler
-     * @param realBuffer to resample
+     * @param reusableBuffer to resample
      */
-    @Override
-    public void receive(RealBuffer realBuffer)
+    public void resample(ReusableBuffer reusableBuffer)
     {
-        mBufferManager.load(realBuffer);
+        mBufferManager.load(reusableBuffer);
         mResampler.process(mResampleFactor, mBufferManager, false);
     }
 
@@ -74,24 +72,9 @@ public class RealResampler implements Listener<RealBuffer>
      */
     public class BufferManager implements SampleBuffers
     {
-        private int mBufferLength = 1000;
+        private int mBufferLength = 8000;
         private FloatBuffer mInputBuffer = ByteBuffer.allocate(mBufferLength).asFloatBuffer();
         private FloatBuffer mOutputBuffer = ByteBuffer.allocate(mBufferLength).asFloatBuffer();
-
-        public void resize(int bufferLength)
-        {
-            int floatBufferLength = bufferLength * 4;
-
-            FloatBuffer inputBuffer = ByteBuffer.allocate(floatBufferLength).asFloatBuffer();
-            inputBuffer.put(mInputBuffer);
-            mInputBuffer = inputBuffer;
-
-            FloatBuffer outputBuffer = ByteBuffer.allocate(floatBufferLength).asFloatBuffer();
-            outputBuffer.put(mOutputBuffer);
-            mOutputBuffer = outputBuffer;
-
-            mBufferLength = bufferLength;
-        }
 
         /**
          * Current length of the input and output buffers
@@ -104,16 +87,10 @@ public class RealResampler implements Listener<RealBuffer>
         /**
          * Queues the buffer sample for resampling
          */
-        public void load(RealBuffer realBuffer)
+        public void load(ReusableBuffer reusableBuffer)
         {
-            int remaining = mInputBuffer.remaining();
-
-            if(mInputBuffer.remaining() < realBuffer.getSamples().length)
-            {
-                resize(mInputBuffer.capacity() + (realBuffer.getSamples().length - mInputBuffer.remaining()));
-            }
-
-            mInputBuffer.put(realBuffer.getSamples());
+            mInputBuffer.put(reusableBuffer.getSamples());
+            reusableBuffer.decrementUserCount();
         }
 
         @Override
@@ -147,9 +124,10 @@ public class RealResampler implements Listener<RealBuffer>
         {
             mOutputBuffer.put(samples, offset, length);
 
-            while(mOutputBuffer.position() > 200)
+            while(mOutputBuffer.position() > 1000)
             {
-                ReusableBuffer outputBuffer = mReusableBufferQueue.getBuffer(200);
+                ReusableBuffer outputBuffer = mReusableBufferQueue.getBuffer(1000);
+                outputBuffer.incrementUserCount();
 
                 mOutputBuffer.flip();
                 mOutputBuffer.get(outputBuffer.getSamples());
@@ -157,8 +135,11 @@ public class RealResampler implements Listener<RealBuffer>
 
                 if(mResampledListener != null)
                 {
-                    outputBuffer.incrementUserCount();
                     mResampledListener.receive(outputBuffer);
+                }
+                else
+                {
+                    outputBuffer.decrementUserCount();
                 }
             }
         }

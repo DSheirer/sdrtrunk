@@ -20,7 +20,7 @@ import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ReusableBufferBroadcaster extends Broadcaster<ReusableComplexBuffer>
+public class ReusableBufferBroadcaster<T extends ReusableBuffer> extends Broadcaster<T>
 {
     private final static Logger mLog = LoggerFactory.getLogger(ReusableBufferBroadcaster.class);
 
@@ -34,15 +34,15 @@ public class ReusableBufferBroadcaster extends Broadcaster<ReusableComplexBuffer
      * send the buffer to all consumers.
      */
     @Override
-    public void broadcast(ReusableComplexBuffer reusableComplexBuffer)
+    public void broadcast(T reusableBuffer)
     {
-        for(Listener<ReusableComplexBuffer> listener : mListeners)
+        for(Listener<T> listener : mListeners)
         {
-            reusableComplexBuffer.incrementUserCount();
-            listener.receive(reusableComplexBuffer);
+            reusableBuffer.incrementUserCount();
+            listener.receive(reusableBuffer);
         }
 
         //Decrement user counter for this broadcaster
-        reusableComplexBuffer.decrementUserCount();
+        reusableBuffer.decrementUserCount();
     }
 }

@@ -13,19 +13,46 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.sample.buffer;
+package io.github.dsheirer.dsp.fsk;
 
-import io.github.dsheirer.sample.Listener;
+import javafx.beans.property.SimpleFloatProperty;
 
-public interface IReusableBufferProvider
+public class ZeroCrossingErrorDetectorInstrumented extends ZeroCrossingErrorDetector
 {
-    /**
-     * Adds the listener to receive complex buffer samples
-     */
-    void setBufferListener(Listener<ReusableBuffer> listener);
+    public SimpleFloatProperty timingError = new SimpleFloatProperty();
 
     /**
-     * Removes the listener from receiving complex buffer samples
+     * Constructs the detector for the specified samples per symbol.
+     *
+     * @param samplesPerSymbol
      */
-    void removeBufferListener();
+    public ZeroCrossingErrorDetectorInstrumented(float samplesPerSymbol)
+    {
+        super(samplesPerSymbol);
+    }
+
+    @Override
+    public float getError()
+    {
+        float error = super.getError();
+
+        timingError.setValue(error);
+
+        return error;
+    }
+
+    public float getZeroCrossingIdeal()
+    {
+        return mZeroCrossingIdeal;
+    }
+
+    public float getDetectedZeroCrossing()
+    {
+        return mDetectedZeroCrossing;
+    }
+
+    public boolean[] getBuffer()
+    {
+        return mBuffer;
+    }
 }

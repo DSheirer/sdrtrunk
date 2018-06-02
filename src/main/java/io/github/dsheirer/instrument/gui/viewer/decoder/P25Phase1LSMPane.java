@@ -30,7 +30,7 @@ import javafx.scene.layout.Priority;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class P25Phase1LSMPane extends DecoderPane
+public class P25Phase1LSMPane extends ComplexDecoderPane
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25Phase1LSMPane.class);
 
