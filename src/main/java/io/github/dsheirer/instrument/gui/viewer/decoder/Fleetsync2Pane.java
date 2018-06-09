@@ -15,14 +15,14 @@
  ******************************************************************************/
 package io.github.dsheirer.instrument.gui.viewer.decoder;
 
-import io.github.dsheirer.instrument.gui.viewer.chart.LTRNetSampleBufferChart;
+import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
+import io.github.dsheirer.instrument.gui.viewer.chart.DecodedSymbolChart;
+import io.github.dsheirer.instrument.gui.viewer.chart.Fleetsync2SampleBufferChart;
+import io.github.dsheirer.instrument.gui.viewer.chart.FleetsyncZeroCrossingErrorDetectorChart;
 import io.github.dsheirer.instrument.gui.viewer.chart.RealSampleLineChart;
-import io.github.dsheirer.instrument.gui.viewer.chart.ZeroCrossingErrorDetectorChart;
 import io.github.dsheirer.message.Message;
-import io.github.dsheirer.message.MessageDirection;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.ltrnet.DecodeConfigLTRNet;
-import io.github.dsheirer.module.decode.ltrnet.LTRNetDecoderInstrumented;
+import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2DecoderInstrumented;
 import io.github.dsheirer.sample.Listener;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -30,19 +30,20 @@ import javafx.scene.layout.VBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LTRNetPane extends RealDecoderPane
+public class Fleetsync2Pane extends RealDecoderPane
 {
-    private final static Logger mLog = LoggerFactory.getLogger(LTRNetPane.class);
+    private final static Logger mLog = LoggerFactory.getLogger(Fleetsync2Pane.class);
 
     private HBox mSampleChartBox;
     private RealSampleLineChart mRealSampleLineChart;
     private HBox mSymbolDecoderBox;
-    private LTRNetSampleBufferChart mLTRNetSampleBufferChart;
-    private ZeroCrossingErrorDetectorChart mZeroCrossingErrorDetectorChart;
+    private Fleetsync2SampleBufferChart mSampleBufferChart;
+    private FleetsyncZeroCrossingErrorDetectorChart mZeroCrossingErrorDetectorChart;
+    private DecodedSymbolChart mDecodedSymbolChart;
 
-    private LTRNetDecoderInstrumented mDecoder;
+    private Fleetsync2DecoderInstrumented mDecoder;
 
-    public LTRNetPane()
+    public Fleetsync2Pane()
     {
         super(DecoderType.LTR_NET);
         init();
@@ -64,15 +65,32 @@ public class LTRNetPane extends RealDecoderPane
 
         getChildren().addAll(getSampleChartBox(), getSymbolDecoderBox());
 
+        getDecoder().getAFSK1200Decoder().addListener(getDecodedSymbolChart());
+
+        getDecoder().setSyncDetectListener(new ISyncDetectListener()
+        {
+            @Override
+            public void syncDetected()
+            {
+                mLog.debug("Sync Detected!!!!!");
+            }
+        });
+
+        getDecoder().setMessageListener(new Listener<Message>()
+        {
+            @Override
+            public void receive(Message message)
+            {
+                mLog.debug(message.getMessage());
+            }
+        });
     }
 
-    private LTRNetDecoderInstrumented getDecoder()
+    private Fleetsync2DecoderInstrumented getDecoder()
     {
         if(mDecoder == null)
         {
-            DecodeConfigLTRNet config = new DecodeConfigLTRNet();
-            config.setMessageDirection(MessageDirection.OSW);
-            mDecoder = new LTRNetDecoderInstrumented(config, null);
+            mDecoder = new Fleetsync2DecoderInstrumented(null);
             mDecoder.setMessageListener(new Listener<Message>()
             {
                 @Override
@@ -94,9 +112,12 @@ public class LTRNetPane extends RealDecoderPane
             mSampleChartBox.setMaxHeight(Double.MAX_VALUE);
 
             getSampleLineChart().setMaxWidth(Double.MAX_VALUE);
-            HBox.setHgrow(getSampleLineChart(), Priority.ALWAYS);
+            getDecodedSymbolChart().setMaxWidth(Double.MAX_VALUE);
 
-            mSampleChartBox.getChildren().addAll(getSampleLineChart());
+            HBox.setHgrow(getSampleLineChart(), Priority.ALWAYS);
+            HBox.setHgrow(getDecodedSymbolChart(), Priority.ALWAYS);
+
+            mSampleChartBox.getChildren().addAll(getSampleLineChart(), getDecodedSymbolChart());
         }
 
         return mSampleChartBox;
@@ -106,7 +127,7 @@ public class LTRNetPane extends RealDecoderPane
     {
         if(mRealSampleLineChart == null)
         {
-            mRealSampleLineChart = new RealSampleLineChart(500, (8000.0 / 300.0));
+            mRealSampleLineChart = new RealSampleLineChart(200, (10.0));
         }
 
         return mRealSampleLineChart;
@@ -120,32 +141,45 @@ public class LTRNetPane extends RealDecoderPane
             mSymbolDecoderBox.setMaxWidth(Double.MAX_VALUE);
 
             getSampleBufferChart().setMaxWidth(Double.MAX_VALUE);
-            HBox.setHgrow(getSampleBufferChart(), Priority.ALWAYS);
+            getZeroCrossingErrorDetectorChart().setMaxWidth(Double.MAX_VALUE);
 
-            mSampleChartBox.getChildren().addAll(getSampleBufferChart(), getZeroCrossingErrorDetectorChart());
+            HBox.setHgrow(getSampleBufferChart(), Priority.ALWAYS);
+            HBox.setHgrow(getZeroCrossingErrorDetectorChart(), Priority.ALWAYS);
+
+            mSymbolDecoderBox.getChildren().addAll(getSampleBufferChart(), getZeroCrossingErrorDetectorChart());
         }
 
         return mSymbolDecoderBox;
     }
 
-    private LTRNetSampleBufferChart getSampleBufferChart()
+    private Fleetsync2SampleBufferChart getSampleBufferChart()
     {
-        if(mLTRNetSampleBufferChart == null)
+        if(mSampleBufferChart == null)
         {
-            mLTRNetSampleBufferChart = new LTRNetSampleBufferChart(getDecoder(), 106);
+            mSampleBufferChart = new Fleetsync2SampleBufferChart(getDecoder(), 106);
         }
 
-        return mLTRNetSampleBufferChart;
+        return mSampleBufferChart;
     }
 
-    private ZeroCrossingErrorDetectorChart getZeroCrossingErrorDetectorChart()
+    private FleetsyncZeroCrossingErrorDetectorChart getZeroCrossingErrorDetectorChart()
     {
         if(mZeroCrossingErrorDetectorChart == null)
         {
-            mZeroCrossingErrorDetectorChart = new ZeroCrossingErrorDetectorChart(getDecoder(),
-                getDecoder().getLTRDecoder().getErrorDetector().getBuffer().length);
+            mZeroCrossingErrorDetectorChart = new FleetsyncZeroCrossingErrorDetectorChart(getDecoder(),
+                getDecoder().getAFSK1200Decoder().getErrorDetector().getBuffer().length);
         }
 
         return mZeroCrossingErrorDetectorChart;
+    }
+
+    private DecodedSymbolChart getDecodedSymbolChart()
+    {
+        if(mDecodedSymbolChart == null)
+        {
+            mDecodedSymbolChart = new DecodedSymbolChart(50);
+        }
+
+        return mDecodedSymbolChart;
     }
 }

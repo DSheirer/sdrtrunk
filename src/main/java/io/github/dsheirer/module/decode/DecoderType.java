@@ -30,7 +30,7 @@ public enum DecoderType
     AM( "AM", "AM", "images/am.png", 10000 ),
     APRS( "APRS", "APRS", "images/aprs.png", 12500 ),
     DMR( "DMR", "DMR", "images/dmr.png", 12500 ),
-    FLEETSYNC2( "Fleetsync II", "Fsync2", "images/fm.png", 12500 ),
+    FLEETSYNC2( "Fleetsync II", "Fleetsync2", "images/fm.png", 12500 ),
     LJ_1200( "LJ1200 173.075", "LJ1200", "images/lj1200.png", 12500 ),
     LTR_STANDARD( "LTR-Standard", "LTR", "images/ltr.png", 10000 ),
     LTR_NET( "LTR-Net", "LTR-Net", "images/ltr_net.png", 12500 ),

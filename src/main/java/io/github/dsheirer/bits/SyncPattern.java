@@ -29,7 +29,7 @@ public enum SyncPattern
 		false, false, false, false           //0000 0x0
 	} ),
 
-	/* Revs (0x0A) and Sync (0x23EB) = 10101 0010001111101011 */
+	/* Revs (0x0A) and Sync (0x23EB) = 0101 000 1 000 11111 0 1 0 11 */
 	FLEETSYNC2( new boolean[] 
 	{ 
 		false, true, false, true, false,	//End of bit revs

@@ -33,7 +33,7 @@ public class RealResampler
     private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("RealResampler");
     private Resampler mResampler;
     private Listener<ReusableBuffer> mResampledListener;
-    private BufferManager mBufferManager = new BufferManager();
+    private BufferManager mBufferManager;
     private double mResampleFactor;
 
     /**
@@ -41,10 +41,11 @@ public class RealResampler
      * @param inputRate
      * @param outputRate
      */
-    public RealResampler(double inputRate, double outputRate)
+    public RealResampler(double inputRate, double outputRate, int inputBufferSize, int outputBufferSize)
     {
         mResampleFactor = outputRate / inputRate;
         mResampler = new Resampler(true, mResampleFactor, mResampleFactor);
+        mBufferManager = new BufferManager(inputBufferSize, outputBufferSize);
     }
 
     /**
@@ -72,16 +73,17 @@ public class RealResampler
      */
     public class BufferManager implements SampleBuffers
     {
-        private int mBufferLength = 8000;
-        private FloatBuffer mInputBuffer = ByteBuffer.allocate(mBufferLength).asFloatBuffer();
-        private FloatBuffer mOutputBuffer = ByteBuffer.allocate(mBufferLength).asFloatBuffer();
+        private int mOutputBufferSize;
+        private FloatBuffer mInputBuffer;
+        private FloatBuffer mOutputBuffer;
 
-        /**
-         * Current length of the input and output buffers
-         */
-        public int getBufferLength()
+        public BufferManager(int inputBufferSize, int outputBufferSize)
         {
-            return mBufferLength;
+            mOutputBufferSize = outputBufferSize;
+
+            //The size of the underlying byte buffer in bytes is 4 times the requested input buffer size in floats
+            mInputBuffer = ByteBuffer.allocate(inputBufferSize * 4).asFloatBuffer();
+            mOutputBuffer = ByteBuffer.allocate(inputBufferSize * 4).asFloatBuffer();
         }
 
         /**
@@ -124,9 +126,9 @@ public class RealResampler
         {
             mOutputBuffer.put(samples, offset, length);
 
-            while(mOutputBuffer.position() > 1000)
+            while(mOutputBuffer.position() > mOutputBufferSize)
             {
-                ReusableBuffer outputBuffer = mReusableBufferQueue.getBuffer(1000);
+                ReusableBuffer outputBuffer = mReusableBufferQueue.getBuffer(mOutputBufferSize);
                 outputBuffer.incrementUserCount();
 
                 mOutputBuffer.flip();

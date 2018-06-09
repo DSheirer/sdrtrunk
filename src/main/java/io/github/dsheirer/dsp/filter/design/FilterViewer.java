@@ -51,25 +51,25 @@ public class FilterViewer extends Application
 //            .stopBandRipple(0.03) //Approximately 60 dB attenuation
 //            .build();
 //
-        FIRFilterSpecification specification = FIRFilterSpecification.highPassBuilder()
-            .sampleRate(8000)
-            .stopBandCutoff(200)
-            .stopBandAmplitude(0.0)
-            .stopBandRipple(0.025)
-            .passBandStart(300)
-            .passBandAmplitude(1.0)
-            .passBandRipple(0.01)
-            .build();
-
-//        FIRFilterSpecification specification = FIRFilterSpecification.bandPassBuilder()
+//        FIRFilterSpecification specification = FIRFilterSpecification.highPassBuilder()
 //            .sampleRate(8000)
-//            .stopFrequency1(200)
-//            .passFrequencyBegin(300)
-//            .passFrequencyEnd(3800)
-//            .stopFrequency2(3900)
-//            .stopRipple(0.01)
-//            .passRipple(0.01)
+//            .stopBandCutoff(200)
+//            .stopBandAmplitude(0.0)
+//            .stopBandRipple(0.025)
+//            .passBandStart(300)
+//            .passBandAmplitude(1.0)
+//            .passBandRipple(0.01)
 //            .build();
+
+        FIRFilterSpecification specification = FIRFilterSpecification.bandPassBuilder()
+            .sampleRate(8000)
+            .stopFrequency1(1000)
+            .passFrequencyBegin(1100)
+            .passFrequencyEnd(1900)
+            .stopFrequency2(2000)
+            .stopRipple(0.000001)
+            .passRipple(0.00001)
+            .build();
 
         float[] taps = null;
 

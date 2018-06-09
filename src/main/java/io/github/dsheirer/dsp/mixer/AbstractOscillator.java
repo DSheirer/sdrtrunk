@@ -15,6 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.mixer;
 
+import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.complex.Complex;
 import org.slf4j.Logger;
@@ -177,5 +178,15 @@ public abstract class AbstractOscillator implements IOscillator
         }
 
         reusableComplexBuffer.reloadFrom(mSampleBuffer, System.currentTimeMillis());
+    }
+
+    /**
+     * Generates enough real samples to fill the reusable buffer
+     * @param reusableBuffer to fill with real samples
+     */
+    @Override
+    public void generateReal(ReusableBuffer reusableBuffer)
+    {
+        reusableBuffer.reloadFrom(generateReal(reusableBuffer.getSampleCount()), System.currentTimeMillis());
     }
 }

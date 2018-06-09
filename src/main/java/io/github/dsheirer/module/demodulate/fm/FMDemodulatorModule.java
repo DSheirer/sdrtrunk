@@ -202,7 +202,7 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
 
                 mIQFilter = new ComplexFIRFilter2(filterTaps);
 
-                mResampler = new RealResampler(sampleRate, mOutputSampleRate);
+                mResampler = new RealResampler(sampleRate, mOutputSampleRate, 2000, 1000);
 
                 mResampler.setListener(new Listener<ReusableBuffer>()
                 {

@@ -23,8 +23,7 @@ import java.util.EnumSet;
 public class DecoderPaneFactory
 {
     private static final EnumSet<DecoderType> SUPPORTED_DECODER_TYPES =
-        EnumSet.of(DecoderType.P25_PHASE1,
-                   DecoderType.LTR_NET);
+        EnumSet.of(DecoderType.P25_PHASE1, DecoderType.LTR_NET, DecoderType.FLEETSYNC2);
 
     /**
      * Creates a decoder pane for the decoder type
@@ -33,6 +32,8 @@ public class DecoderPaneFactory
     {
         switch(decoderType)
         {
+            case FLEETSYNC2:
+                return new Fleetsync2Pane();
             case LTR_NET:
                 return new LTRNetPane();
             case P25_PHASE1:

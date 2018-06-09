@@ -46,7 +46,8 @@ public class ZeroCrossingErrorDetector
     public ZeroCrossingErrorDetector(float samplesPerSymbol)
     {
         mBuffer = new boolean[(int)Math.ceil(samplesPerSymbol)];
-        mZeroCrossingIdeal = mBuffer.length - 1.5f - (samplesPerSymbol / 2.0f);
+//        mZeroCrossingIdeal = mBuffer.length - 1.5f - (samplesPerSymbol / 2.0f);  //Preserve this for LTR
+        mZeroCrossingIdeal = (samplesPerSymbol / 2.0f);
     }
 
     /**

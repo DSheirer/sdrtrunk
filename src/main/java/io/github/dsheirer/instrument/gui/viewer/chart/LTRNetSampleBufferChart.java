@@ -26,9 +26,9 @@ import javafx.scene.layout.StackPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SampleBufferChart extends LineChart
+public class LTRNetSampleBufferChart extends LineChart
 {
-    private final static Logger mLog = LoggerFactory.getLogger(SampleBufferChart.class);
+    private final static Logger mLog = LoggerFactory.getLogger(LTRNetSampleBufferChart.class);
     private ObservableList<Data<Integer,Float>> mSamples = FXCollections.observableArrayList();
     private Series<Integer,Float> mSampleSeries = new Series<>("Samples", mSamples);
 
@@ -46,7 +46,7 @@ public class SampleBufferChart extends LineChart
 
     private LTRNetDecoderInstrumented mLTRNetDecoderInstrumented;
 
-    public SampleBufferChart(LTRNetDecoderInstrumented decoder, int length)
+    public LTRNetSampleBufferChart(LTRNetDecoderInstrumented decoder, int length)
     {
         super(new NumberAxis("Samples", 0, length, 5),
             new NumberAxis("Value", -1.0, 1.0, 0.25));
