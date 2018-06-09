@@ -38,8 +38,8 @@ public class Fleetsync2SampleBufferChart extends LineChart
     private ObservableList<Data<Number,Number>> mSymbolSamples = FXCollections.observableArrayList();
     private Series<Number,Number> mSymbolSamplesSeries = new Series<>("Next Symbol Samples", mSymbolSamples);
 
-    private ObservableList<Data<Number,Number>> mSymbol = FXCollections.observableArrayList();
-    private Series<Number,Number> mSymbolSeries = new Series<>("Previous Symbol", mSymbol);
+    private ObservableList<Data<Number,Number>> mPreviousSymbol = FXCollections.observableArrayList();
+    private Series<Number,Number> mPreviousSymbolSeries = new Series<>("Previous Symbol", mPreviousSymbol);
 
     private ObservableList<Data<Number,Number>> mZeroCrossing = FXCollections.observableArrayList();
     private Series<Number,Number> mZeroCrossingSeries = new Series<>("Zero Crossing", mZeroCrossing);
@@ -52,7 +52,7 @@ public class Fleetsync2SampleBufferChart extends LineChart
             new NumberAxis("Value", -1.0, 1.0, 0.25));
 
         ObservableList<Series> observableList = FXCollections.observableArrayList(mSampleSeries, mSamplePointSeries,
-            mSymbolSamplesSeries, mSymbolSeries, mZeroCrossingSeries);
+            mSymbolSamplesSeries, mPreviousSymbolSeries, mZeroCrossingSeries);
 
         setData(observableList);
 
@@ -91,10 +91,10 @@ public class Fleetsync2SampleBufferChart extends LineChart
         {
             setBuffer(mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getSampleBuffer().getDelayLine());
 
-            while(mSymbol.size() < 2)
+            while(mPreviousSymbol.size() < 2)
             {
                 Data<Number,Number> sample = new Data<>(0.0, -0.55);
-                mSymbol.add(sample);
+                mPreviousSymbol.add(sample);
             }
 
             while(mZeroCrossing.size() < 2)
@@ -121,23 +121,23 @@ public class Fleetsync2SampleBufferChart extends LineChart
             mSamplePoints.get(0).setXValue(pointer1);
             mSamplePoints.get(1).setXValue(pointer2);
 
-            float samplesRemaining = mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getSampleBuffer().getMidSymbolSamplingPoint();
             float samplesPerSymbol = mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getSampleBuffer().getSamplesPerSymbol();
-
-            float start = pointer1 + samplesRemaining;
-            float end = start + samplesPerSymbol;
-
-            mSymbolSamples.get(0).setXValue(start);
-            mSymbolSamples.get(1).setXValue(end);
 
             boolean symbol = mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getSampleBuffer().getLastSymbol();
             int symbolStart = mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getSampleBuffer().getSymbolStart();
             int symbolEnd = mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getSampleBuffer().getSymbolEnd();
 
-            mSymbol.get(0).setXValue(symbolStart);
-            mSymbol.get(0).setYValue(symbol ? 0.55f : -0.55f);
-            mSymbol.get(1).setXValue(symbolEnd);
-            mSymbol.get(1).setYValue(symbol ? 0.55f : -0.55f);
+            float start = pointer1 + samplesPerSymbol - 1;
+            float end = symbolEnd;
+
+            mSymbolSamples.get(0).setXValue(start);
+            mSymbolSamples.get(1).setXValue(end);
+
+
+            mPreviousSymbol.get(0).setXValue(symbolStart);
+            mPreviousSymbol.get(0).setYValue(symbol ? 0.55f : -0.55f);
+            mPreviousSymbol.get(1).setXValue(symbolEnd);
+            mPreviousSymbol.get(1).setYValue(symbol ? 0.55f : -0.55f);
         }
     }
 
@@ -155,17 +155,16 @@ public class Fleetsync2SampleBufferChart extends LineChart
             int pointer1 = mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getSampleBuffer().getDelayLinePointer();
             int pointer2 = mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getSampleBuffer().getDelayLineSecondPointer();
 
-            float zeroCrossingIdeal = mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getErrorDetector().getZeroCrossingIdeal();
-            float detectedZeroCrossing = zeroCrossingIdeal - ((Number)newValue).floatValue();
+            int detectedZeroCrossing = ((Number)newValue).intValue();
 
-            int reference = (zeroCrossingIdeal < pointer1 || detectedZeroCrossing < pointer1 ? pointer2 : pointer1);
-            reference--;
-
-            float start = reference - zeroCrossingIdeal;
-            float end = reference - detectedZeroCrossing;
-
-            mZeroCrossing.get(0).setXValue(start);
-            mZeroCrossing.get(1).setXValue(end);
+//            int reference = (zeroCrossingIdeal < pointer1 || detectedZeroCrossing < pointer1 ? pointer2 : pointer1);
+//            reference--;
+//
+//            float start = reference - zeroCrossingIdeal;
+//            float end = reference - detectedZeroCrossing;
+//
+//            mZeroCrossing.get(0).setXValue(start);
+//            mZeroCrossing.get(1).setXValue(end);
         }
     }
 }

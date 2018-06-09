@@ -13,34 +13,41 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.module.decode.fleetsync2;
+package io.github.dsheirer.dsp.afsk;
 
-import io.github.dsheirer.dsp.afsk.AFSK1200DecoderInstrumented;
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import javafx.beans.property.SimpleIntegerProperty;
 
-/**
- * Instrumented version of the AFSK-1200 decoder for use with DemodulatorViewerFX
- */
-public class Fleetsync2DecoderInstrumented extends Fleetsync2Decoder
+public class AFSKTimingErrorDetectorInstrumented extends AFSKTimingErrorDetector
 {
-    public SimpleIntegerProperty bufferCount = new SimpleIntegerProperty();
+    public SimpleIntegerProperty timingError = new SimpleIntegerProperty();
 
-    public Fleetsync2DecoderInstrumented()
+    /**
+     * Constructs the detector for the specified samples per symbol.
+     *
+     * @param samplesPerSymbol
+     */
+    public AFSKTimingErrorDetectorInstrumented(int samplesPerSymbol)
     {
-        super(new AFSK1200DecoderInstrumented(false), null);
-    }
-
-    public AFSK1200DecoderInstrumented getAFSK1200Decoder()
-    {
-        return (AFSK1200DecoderInstrumented)getDecoder();
+        super(samplesPerSymbol);
     }
 
     @Override
-    public void receive(ReusableBuffer reusableBuffer)
+    public int getError()
     {
-        super.receive(reusableBuffer);
+        int error = super.getError();
 
-        bufferCount.setValue(bufferCount.intValue() + 1);
+        timingError.setValue(error);
+
+        return error;
+    }
+
+    public int getDetectedZeroCrossing()
+    {
+        return mDetectedZeroCrossing;
+    }
+
+    public boolean[] getBuffer()
+    {
+        return mBuffer;
     }
 }

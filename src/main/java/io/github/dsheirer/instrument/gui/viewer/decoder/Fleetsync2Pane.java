@@ -15,7 +15,6 @@
  ******************************************************************************/
 package io.github.dsheirer.instrument.gui.viewer.decoder;
 
-import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.instrument.gui.viewer.chart.DecodedSymbolChart;
 import io.github.dsheirer.instrument.gui.viewer.chart.Fleetsync2SampleBufferChart;
 import io.github.dsheirer.instrument.gui.viewer.chart.FleetsyncZeroCrossingErrorDetectorChart;
@@ -67,15 +66,6 @@ public class Fleetsync2Pane extends RealDecoderPane
 
         getDecoder().getAFSK1200Decoder().addListener(getDecodedSymbolChart());
 
-        getDecoder().setSyncDetectListener(new ISyncDetectListener()
-        {
-            @Override
-            public void syncDetected()
-            {
-                mLog.debug("Sync Detected!!!!!");
-            }
-        });
-
         getDecoder().setMessageListener(new Listener<Message>()
         {
             @Override
@@ -90,7 +80,7 @@ public class Fleetsync2Pane extends RealDecoderPane
     {
         if(mDecoder == null)
         {
-            mDecoder = new Fleetsync2DecoderInstrumented(null);
+            mDecoder = new Fleetsync2DecoderInstrumented();
             mDecoder.setMessageListener(new Listener<Message>()
             {
                 @Override

@@ -35,9 +35,6 @@ public class FleetsyncZeroCrossingErrorDetectorChart extends LineChart
     private ObservableList<Data<Number,Number>> mPreviousSamples = FXCollections.observableArrayList();
     private Series<Number,Number> mPreviousSampleSeries = new Series<>("Samples", mPreviousSamples);
 
-    private ObservableList<Data<Number,Number>> mIdeal = FXCollections.observableArrayList();
-    private Series<Number,Number> mIdealSeries = new Series<>("Ideal", mIdeal);
-
     private ObservableList<Data<Number,Number>> mDetected = FXCollections.observableArrayList();
     private Series<Number,Number> mDetectedSeries = new Series<>("Detected", mDetected);
 
@@ -49,7 +46,7 @@ public class FleetsyncZeroCrossingErrorDetectorChart extends LineChart
             new NumberAxis("Value", -1.0, 1.0, 0.25));
 
         ObservableList<Series> observableList = FXCollections.observableArrayList(mCurrentSampleSeries,
-            mPreviousSampleSeries, mIdealSeries, mDetectedSeries);
+            mPreviousSampleSeries, mDetectedSeries);
         setData(observableList);
 
         mFleetsync2DecoderInstrumented = decoder;
@@ -70,11 +67,6 @@ public class FleetsyncZeroCrossingErrorDetectorChart extends LineChart
             Data<Number,Number> sample2 = new Data<>(x, 0.0f);
             mPreviousSamples.add(sample2);
         }
-
-        Data<Number,Number> ideal1 = new Data<>(5, -0.1f);
-        mIdeal.add(ideal1);
-        Data<Number,Number> ideal2 = new Data<>(5, -0.9f);
-        mIdeal.add(ideal2);
 
         Data<Number,Number> detected1 = new Data<>(5, -0.25f);
         mDetected.add(detected1);
@@ -107,11 +99,6 @@ public class FleetsyncZeroCrossingErrorDetectorChart extends LineChart
                 Data<Number,Number> sample = mPreviousSamples.get(x);
                 sample.setYValue(samples[x] ? -0.4f : -0.6f);
             }
-
-            Data<Number,Number> ideal1 = mIdeal.get(0);
-            ideal1.setXValue(mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getErrorDetector().getZeroCrossingIdeal());
-            Data<Number,Number> ideal2 = mIdeal.get(1);
-            ideal2.setXValue(mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getErrorDetector().getZeroCrossingIdeal());
 
             if(error == 0.0f)
             {

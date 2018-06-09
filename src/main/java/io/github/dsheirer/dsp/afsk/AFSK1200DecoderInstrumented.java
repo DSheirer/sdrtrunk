@@ -13,7 +13,7 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.dsp.fsk;
+package io.github.dsheirer.dsp.afsk;
 
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
@@ -22,20 +22,20 @@ public class AFSK1200DecoderInstrumented extends AFSK1200Decoder
 {
     private Broadcaster<Boolean> mSymbolBroadcaster = new Broadcaster<>();
 
-    public AFSK1200DecoderInstrumented(int messageLength, SampleBuffer sampleBuffer, ZeroCrossingErrorDetector detector, boolean invertOutput)
+    public AFSK1200DecoderInstrumented(boolean invertOutput)
     {
-        super(messageLength, new SampleBufferInstrumented(SAMPLES_PER_SYMBOL, COARSE_TIMING_GAIN),
-            new ZeroCrossingErrorDetectorInstrumented(SAMPLES_PER_SYMBOL), invertOutput);
+        super(new AFSKSampleBufferInstrumented(SAMPLES_PER_SYMBOL, TIMING_ERROR_GAIN),
+            new AFSKTimingErrorDetectorInstrumented(SAMPLES_PER_SYMBOL), Output.NORMAL);
     }
 
-    public SampleBufferInstrumented getSampleBuffer()
+    public AFSKSampleBufferInstrumented getSampleBuffer()
     {
-        return (SampleBufferInstrumented)mSampleBuffer;
+        return (AFSKSampleBufferInstrumented)mSampleBuffer;
     }
 
-    public ZeroCrossingErrorDetectorInstrumented getErrorDetector()
+    public AFSKTimingErrorDetectorInstrumented getErrorDetector()
     {
-        return (ZeroCrossingErrorDetectorInstrumented)mTimingErrorDetector;
+        return (AFSKTimingErrorDetectorInstrumented)mTimingErrorDetector;
     }
 
     protected void dispatch(boolean symbol)

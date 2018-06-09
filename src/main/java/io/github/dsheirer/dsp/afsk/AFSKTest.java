@@ -13,7 +13,7 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.dsp.fsk;
+package io.github.dsheirer.dsp.afsk;
 
 import io.github.dsheirer.buffer.FloatAveragingBuffer;
 import io.github.dsheirer.dsp.mixer.IOscillator;
