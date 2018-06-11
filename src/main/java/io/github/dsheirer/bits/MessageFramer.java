@@ -32,7 +32,7 @@ import java.util.List;
  * Will extract multiple messages simultaneously, for each sync pattern that is
  * encountered within the bitset bit stream.
  */
-public class MessageFramer implements Listener<Boolean>, SyncDetectProvider
+public class MessageFramer implements IBinarySymbolProcessor, Listener<Boolean>, SyncDetectProvider
 {
     private boolean[] mSyncPattern;
     private int mMessageLength;

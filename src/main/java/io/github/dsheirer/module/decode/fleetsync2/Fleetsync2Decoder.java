@@ -34,19 +34,38 @@ public class Fleetsync2Decoder extends AbstractAFSKDecoder
     private MessageFramer mMessageFramer;
     private Fleetsync2MessageProcessor mMessageProcessor;
 
+    /**
+     * Constructs a decoder for Fleetsync II protocol
+     * @param afsk1200Decoder to use for decoding the symbols
+     * @param aliasList to assign aliases to decoded values
+     */
     public Fleetsync2Decoder(AFSK1200Decoder afsk1200Decoder, AliasList aliasList)
     {
         super(afsk1200Decoder);
+        init(aliasList);
+    }
+
+    /**
+     * Constructs a decoder for Fleetsync II protocol
+     * @param aliasList to assign aliases to decoded values
+     */
+    public Fleetsync2Decoder(AliasList aliasList)
+    {
+        super(AFSK1200Decoder.Output.NORMAL);
+        init(aliasList);
+    }
+
+    /**
+     * Initializes the decoding chain.
+     * @param aliasList to assign to the message processor
+     */
+    private void init(AliasList aliasList)
+    {
         mMessageFramer = new MessageFramer(SyncPattern.FLEETSYNC2.getPattern(), MESSAGE_LENGTH);
-        getDecoder().setMessageFramer(mMessageFramer);
+        getDecoder().setSymbolProcessor(mMessageFramer);
         mMessageProcessor = new Fleetsync2MessageProcessor(aliasList);
         mMessageFramer.addMessageListener(mMessageProcessor);
         mMessageProcessor.setMessageListener(getMessageListener());
-    }
-
-    public Fleetsync2Decoder(AliasList aliasList)
-    {
-        this(new AFSK1200Decoder(AFSK1200Decoder.Output.NORMAL), aliasList);
     }
 
     @Override

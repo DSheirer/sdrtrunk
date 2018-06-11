@@ -15,7 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.afsk;
 
-import io.github.dsheirer.bits.MessageFramer;
+import io.github.dsheirer.bits.IBinarySymbolProcessor;
 import io.github.dsheirer.buffer.FloatAveragingBuffer;
 import io.github.dsheirer.dsp.filter.design.FilterDesignException;
 import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
@@ -96,7 +96,7 @@ public class AFSK1200Decoder implements Listener<ReusableBuffer>
     protected AFSKSampleBuffer mSampleBuffer;
     protected AFSKTimingErrorDetector mTimingErrorDetector = new AFSKTimingErrorDetector(SAMPLES_PER_SYMBOL);
     private RealFIRFilter2 mBandPassFilter = new RealFIRFilter2(sBandPassFilterCoefficients);
-    protected MessageFramer mMessageFramer;
+    protected IBinarySymbolProcessor mBinarySymbolProcessor;
     private boolean mSampleDecision;
 
     //Resample to an integral of the baud rate 1200 baud * 6 samples per symbol = 7200.0 Hertz
@@ -155,20 +155,20 @@ public class AFSK1200Decoder implements Listener<ReusableBuffer>
 
     protected void dispatch(boolean symbol)
     {
-        if(mMessageFramer != null)
+        if(mBinarySymbolProcessor != null)
         {
-            mMessageFramer.receive(mNormalOutput ? symbol : !symbol);
+            mBinarySymbolProcessor.receive(mNormalOutput ? symbol : !symbol);
         }
     }
 
     /**
      * Registers a listener to receive decoded LTR symbols.
      *
-     * @param messageFramer to receive symbols.
+     * @param binarySymbolProcessor to receive symbols.
      */
-    public void setMessageFramer(MessageFramer messageFramer)
+    public void setSymbolProcessor(IBinarySymbolProcessor binarySymbolProcessor)
     {
-        mMessageFramer = messageFramer;
+        mBinarySymbolProcessor = binarySymbolProcessor;
     }
 
     /**
@@ -176,7 +176,7 @@ public class AFSK1200Decoder implements Listener<ReusableBuffer>
      */
     public void removeListener()
     {
-        mMessageFramer = null;
+        mBinarySymbolProcessor = null;
     }
 
 

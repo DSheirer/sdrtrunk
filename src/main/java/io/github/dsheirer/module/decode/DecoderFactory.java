@@ -64,10 +64,10 @@ import io.github.dsheirer.module.decode.mdc1200.MDCDecoderState;
 import io.github.dsheirer.module.decode.mdc1200.MDCMessageFilter;
 import io.github.dsheirer.module.decode.mpt1327.DecodeConfigMPT1327;
 import io.github.dsheirer.module.decode.mpt1327.MPT1327Decoder;
-import io.github.dsheirer.module.decode.mpt1327.MPT1327Decoder.Sync;
 import io.github.dsheirer.module.decode.mpt1327.MPT1327DecoderEditor;
 import io.github.dsheirer.module.decode.mpt1327.MPT1327DecoderState;
 import io.github.dsheirer.module.decode.mpt1327.MPT1327MessageFilter;
+import io.github.dsheirer.module.decode.mpt1327.Sync;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoder;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoderEditor;
@@ -175,15 +175,12 @@ public class DecoderFactory
                 break;
             case MPT1327:
                 DecodeConfigMPT1327 mptConfig = (DecodeConfigMPT1327) decodeConfig;
-
                 ChannelMap channelMap = channelMapModel.getChannelMap(mptConfig.getChannelMapName());
-
                 Sync sync = mptConfig.getSync();
-
                 modules.add(new MPT1327Decoder(aliasList, sync));
-
-
                 modules.add(new MPT1327DecoderState(aliasList, channelMap, channelType, mptConfig.getCallTimeout() * 1000));
+                modules.add(new FMDemodulatorModule(CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+                modules.add(new AudioModule(metadata));
 
                 if(channelType == ChannelType.STANDARD)
                 {
@@ -191,9 +188,6 @@ public class DecoderFactory
                         channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
                         (aliasList != null ? aliasList.getName() : null), mptConfig.getTrafficChannelPoolSize()));
                 }
-
-                modules.add(new FMDemodulatorModule(CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
-                modules.add(new AudioModule(metadata));
                 break;
             case PASSPORT:
                 modules.add(new PassportDecoder(decodeConfig, aliasList));

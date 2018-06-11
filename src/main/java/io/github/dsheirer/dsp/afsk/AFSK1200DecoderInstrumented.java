@@ -40,11 +40,7 @@ public class AFSK1200DecoderInstrumented extends AFSK1200Decoder
 
     protected void dispatch(boolean symbol)
     {
-        if(mMessageFramer != null)
-        {
-            mMessageFramer.receive(mNormalOutput ? symbol : !symbol);
-        }
-
+        super.dispatch(symbol);
         mSymbolBroadcaster.broadcast(symbol);
     }
 
