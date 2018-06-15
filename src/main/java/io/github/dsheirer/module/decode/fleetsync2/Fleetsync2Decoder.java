@@ -39,7 +39,7 @@ public class Fleetsync2Decoder extends AbstractAFSKDecoder
      * @param afsk1200Decoder to use for decoding the symbols
      * @param aliasList to assign aliases to decoded values
      */
-    public Fleetsync2Decoder(AFSK1200Decoder afsk1200Decoder, AliasList aliasList)
+    protected Fleetsync2Decoder(AFSK1200Decoder afsk1200Decoder, AliasList aliasList)
     {
         super(afsk1200Decoder);
         init(aliasList);

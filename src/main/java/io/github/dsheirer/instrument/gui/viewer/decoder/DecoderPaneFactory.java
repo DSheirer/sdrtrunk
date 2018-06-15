@@ -24,10 +24,11 @@ public class DecoderPaneFactory
 {
     private static final EnumSet<DecoderType> SUPPORTED_DECODER_TYPES = EnumSet.of(
         DecoderType.P25_PHASE1,
+        DecoderType.FLEETSYNC2,
         DecoderType.LJ_1200,
         DecoderType.LTR_NET,
         DecoderType.MPT1327,
-        DecoderType.FLEETSYNC2);
+        DecoderType.TAIT_1200);
 
     /**
      * Creates a decoder pane for the decoder type
@@ -44,6 +45,8 @@ public class DecoderPaneFactory
                 return new LTRNetPane();
             case MPT1327:
                 return new MPT1327Pane();
+            case TAIT_1200:
+                return new Tait1200Pane();
             case P25_PHASE1:
                 throw new IllegalArgumentException("Use the getP25DecoderPane() method for P25 decoder type");
         }

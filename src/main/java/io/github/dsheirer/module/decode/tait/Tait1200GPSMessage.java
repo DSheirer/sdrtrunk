@@ -121,8 +121,6 @@ public class Tait1200GPSMessage extends Message
     {
     	mMessage = message;
         mAliasList = list;
-        
-        mLog.debug( toString() );
     }
     
     public boolean isValid()
