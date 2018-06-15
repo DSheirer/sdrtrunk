@@ -13,7 +13,7 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.module.decode.fleetsync2;
+package io.github.dsheirer.module.decode.lj1200;
 
 import io.github.dsheirer.dsp.afsk.AFSK1200DecoderInstrumented;
 import io.github.dsheirer.instrument.gui.viewer.chart.IInstrumentedAFSK1200Decoder;
@@ -23,11 +23,11 @@ import javafx.beans.property.SimpleIntegerProperty;
 /**
  * Instrumented version of the AFSK-1200 decoder for use with DemodulatorViewerFX
  */
-public class Fleetsync2DecoderInstrumented extends Fleetsync2Decoder implements IInstrumentedAFSK1200Decoder
+public class LJ1200DecoderInstrumented extends LJ1200Decoder implements IInstrumentedAFSK1200Decoder
 {
     public SimpleIntegerProperty bufferCount = new SimpleIntegerProperty();
 
-    public Fleetsync2DecoderInstrumented()
+    public LJ1200DecoderInstrumented()
     {
         super(new AFSK1200DecoderInstrumented(false), null);
     }

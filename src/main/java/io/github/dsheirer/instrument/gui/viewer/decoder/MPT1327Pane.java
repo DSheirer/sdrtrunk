@@ -15,27 +15,44 @@
  ******************************************************************************/
 package io.github.dsheirer.instrument.gui.viewer.decoder;
 
+import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2DecoderInstrumented;
+import io.github.dsheirer.module.decode.mpt1327.MPT1327DecoderInstrumented;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Fleetsync2Pane extends AbstractAFSK1200Pane
+public class MPT1327Pane extends AbstractAFSK1200Pane
 {
-    private final static Logger mLog = LoggerFactory.getLogger(Fleetsync2Pane.class);
+    private final static Logger mLog = LoggerFactory.getLogger(MPT1327Pane.class);
 
-    private Fleetsync2DecoderInstrumented mDecoder;
+    private MPT1327DecoderInstrumented mDecoder;
 
-    public Fleetsync2Pane()
+    public MPT1327Pane()
     {
-        super(DecoderType.FLEETSYNC2);
+        super(DecoderType.MPT1327);
     }
 
-    protected Fleetsync2DecoderInstrumented getDecoder()
+    protected MPT1327DecoderInstrumented getDecoder()
     {
         if(mDecoder == null)
         {
-            mDecoder = new Fleetsync2DecoderInstrumented();
+            mDecoder = new MPT1327DecoderInstrumented();
+            mDecoder.getControlMessageFramer().setSyncDetectListener(new ISyncDetectListener()
+            {
+                @Override
+                public void syncDetected()
+                {
+//                    mLog.debug("Control Sync Detected!");
+                }
+            });
+            mDecoder.getTrafficMessageFramer().setSyncDetectListener(new ISyncDetectListener()
+            {
+                @Override
+                public void syncDetected()
+                {
+//                    mLog.debug("Traffic Sync Detected!");
+                }
+            });
         }
 
         return mDecoder;

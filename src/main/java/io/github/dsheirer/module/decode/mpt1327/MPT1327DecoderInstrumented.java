@@ -13,7 +13,7 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.module.decode.fleetsync2;
+package io.github.dsheirer.module.decode.mpt1327;
 
 import io.github.dsheirer.dsp.afsk.AFSK1200DecoderInstrumented;
 import io.github.dsheirer.instrument.gui.viewer.chart.IInstrumentedAFSK1200Decoder;
@@ -23,13 +23,13 @@ import javafx.beans.property.SimpleIntegerProperty;
 /**
  * Instrumented version of the AFSK-1200 decoder for use with DemodulatorViewerFX
  */
-public class Fleetsync2DecoderInstrumented extends Fleetsync2Decoder implements IInstrumentedAFSK1200Decoder
+public class MPT1327DecoderInstrumented extends MPT1327Decoder implements IInstrumentedAFSK1200Decoder
 {
     public SimpleIntegerProperty bufferCount = new SimpleIntegerProperty();
 
-    public Fleetsync2DecoderInstrumented()
+    public MPT1327DecoderInstrumented()
     {
-        super(new AFSK1200DecoderInstrumented(false), null);
+        super(new AFSK1200DecoderInstrumented(true), null, Sync.FRENCH);
     }
 
     @Override

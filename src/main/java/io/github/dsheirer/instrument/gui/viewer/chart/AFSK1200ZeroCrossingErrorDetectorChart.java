@@ -15,7 +15,6 @@
  ******************************************************************************/
 package io.github.dsheirer.instrument.gui.viewer.chart;
 
-import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2DecoderInstrumented;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -25,9 +24,9 @@ import javafx.scene.chart.NumberAxis;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FleetsyncZeroCrossingErrorDetectorChart extends LineChart
+public class AFSK1200ZeroCrossingErrorDetectorChart extends LineChart
 {
-    private final static Logger mLog = LoggerFactory.getLogger(FleetsyncZeroCrossingErrorDetectorChart.class);
+    private final static Logger mLog = LoggerFactory.getLogger(AFSK1200ZeroCrossingErrorDetectorChart.class);
 
     private ObservableList<Data<Number,Number>> mCurrentSamples = FXCollections.observableArrayList();
     private Series<Number,Number> mCurrentSampleSeries = new Series<>("Samples", mCurrentSamples);
@@ -38,9 +37,9 @@ public class FleetsyncZeroCrossingErrorDetectorChart extends LineChart
     private ObservableList<Data<Number,Number>> mDetected = FXCollections.observableArrayList();
     private Series<Number,Number> mDetectedSeries = new Series<>("Detected", mDetected);
 
-    private Fleetsync2DecoderInstrumented mFleetsync2DecoderInstrumented;
+    private IInstrumentedAFSK1200Decoder mIInstrumentedAFSK1200Decoder;
 
-    public FleetsyncZeroCrossingErrorDetectorChart(Fleetsync2DecoderInstrumented decoder, int length)
+    public AFSK1200ZeroCrossingErrorDetectorChart(IInstrumentedAFSK1200Decoder decoder, int length)
     {
         super(new NumberAxis("Samples", 0, length, 5),
             new NumberAxis("Value", -1.0, 1.0, 0.25));
@@ -49,9 +48,9 @@ public class FleetsyncZeroCrossingErrorDetectorChart extends LineChart
             mPreviousSampleSeries, mDetectedSeries);
         setData(observableList);
 
-        mFleetsync2DecoderInstrumented = decoder;
+        mIInstrumentedAFSK1200Decoder = decoder;
         decoder.getAFSK1200Decoder().getErrorDetector().timingError.addListener(new ErrorChangeListener());
-        decoder.bufferCount.addListener(new ChangeListener()
+        decoder.getBufferCountProperty().addListener(new ChangeListener()
         {
             @Override
             public void changed(ObservableValue observable, Object oldValue, Object newValue)
@@ -76,7 +75,7 @@ public class FleetsyncZeroCrossingErrorDetectorChart extends LineChart
 
     private void updateBuffer()
     {
-        boolean[] samples = mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getErrorDetector().getBuffer();
+        boolean[] samples = mIInstrumentedAFSK1200Decoder.getAFSK1200Decoder().getErrorDetector().getBuffer();
 
         for(int x = 0; x < samples.length; x++)
         {
@@ -90,9 +89,9 @@ public class FleetsyncZeroCrossingErrorDetectorChart extends LineChart
         @Override
         public void changed(ObservableValue observable, Object oldValue, Object newValue)
         {
-            float error = mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getErrorDetector().getError();
+            float error = mIInstrumentedAFSK1200Decoder.getAFSK1200Decoder().getErrorDetector().getError();
 
-            boolean[] samples = mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getErrorDetector().getBuffer();
+            boolean[] samples = mIInstrumentedAFSK1200Decoder.getAFSK1200Decoder().getErrorDetector().getBuffer();
 
             for(int x = 0; x < samples.length; x++)
             {
@@ -110,9 +109,9 @@ public class FleetsyncZeroCrossingErrorDetectorChart extends LineChart
             else
             {
                 Data<Number,Number> detected1 = mDetected.get(0);
-                detected1.setXValue(mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getErrorDetector().getDetectedZeroCrossing());
+                detected1.setXValue(mIInstrumentedAFSK1200Decoder.getAFSK1200Decoder().getErrorDetector().getDetectedZeroCrossing());
                 Data<Number,Number> detected2 = mDetected.get(1);
-                detected2.setXValue(mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getErrorDetector().getDetectedZeroCrossing());
+                detected2.setXValue(mIInstrumentedAFSK1200Decoder.getAFSK1200Decoder().getErrorDetector().getDetectedZeroCrossing());
             }
         }
     }

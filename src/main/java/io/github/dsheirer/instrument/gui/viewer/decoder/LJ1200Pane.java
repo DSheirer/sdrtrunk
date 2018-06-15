@@ -15,27 +15,44 @@
  ******************************************************************************/
 package io.github.dsheirer.instrument.gui.viewer.decoder;
 
+import io.github.dsheirer.dsp.symbol.ISyncDetectListener;
 import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2DecoderInstrumented;
+import io.github.dsheirer.module.decode.lj1200.LJ1200DecoderInstrumented;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Fleetsync2Pane extends AbstractAFSK1200Pane
+public class LJ1200Pane extends AbstractAFSK1200Pane
 {
-    private final static Logger mLog = LoggerFactory.getLogger(Fleetsync2Pane.class);
+    private final static Logger mLog = LoggerFactory.getLogger(LJ1200Pane.class);
 
-    private Fleetsync2DecoderInstrumented mDecoder;
+    private LJ1200DecoderInstrumented mDecoder;
 
-    public Fleetsync2Pane()
+    public LJ1200Pane()
     {
-        super(DecoderType.FLEETSYNC2);
+        super(DecoderType.LJ_1200);
     }
 
-    protected Fleetsync2DecoderInstrumented getDecoder()
+    protected LJ1200DecoderInstrumented getDecoder()
     {
         if(mDecoder == null)
         {
-            mDecoder = new Fleetsync2DecoderInstrumented();
+            mDecoder = new LJ1200DecoderInstrumented();
+            mDecoder.getTowerMessageFramer().setSyncDetectListener(new ISyncDetectListener()
+            {
+                @Override
+                public void syncDetected()
+                {
+                    mLog.debug("Tower Sync Detected!");
+                }
+            });
+            mDecoder.getTransponderMessageFramer().setSyncDetectListener(new ISyncDetectListener()
+            {
+                @Override
+                public void syncDetected()
+                {
+                    mLog.debug("Transponder Sync Detected!");
+                }
+            });
         }
 
         return mDecoder;

@@ -24,6 +24,9 @@ import io.github.dsheirer.module.decode.afsk.AbstractAFSKDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Instrumented version of the MPT1327 decoder.  Exposes properties for instrumented manual decoding of a signal.
+ */
 public class MPT1327Decoder extends AbstractAFSKDecoder implements IBinarySymbolProcessor
 {
     private final static Logger mLog = LoggerFactory.getLogger(MPT1327Decoder.class);
@@ -36,10 +39,20 @@ public class MPT1327Decoder extends AbstractAFSKDecoder implements IBinarySymbol
     private MessageFramer mTrafficMessageFramer;
     private MPT1327MessageProcessor mMessageProcessor;
 
+    protected MPT1327Decoder(AFSK1200Decoder decoder, AliasList aliasList, Sync sync)
+    {
+        super(decoder);
+        init(aliasList, sync);
+    }
+
     public MPT1327Decoder(AliasList aliasList, Sync sync)
     {
         super((sync == Sync.NORMAL ? AFSK1200Decoder.Output.NORMAL : AFSK1200Decoder.Output.INVERTED));
+        init(aliasList, sync);
+    }
 
+    private void init(AliasList aliasList, Sync sync)
+    {
         getDecoder().setSymbolProcessor(this);
 
         //Message framer for control channel messages
@@ -87,4 +100,13 @@ public class MPT1327Decoder extends AbstractAFSKDecoder implements IBinarySymbol
         mTrafficMessageFramer.dispose();
     }
 
+    public MessageFramer getControlMessageFramer()
+    {
+        return mControlMessageFramer;
+    }
+
+    public MessageFramer getTrafficMessageFramer()
+    {
+        return mTrafficMessageFramer;
+    }
 }

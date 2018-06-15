@@ -15,7 +15,6 @@
  ******************************************************************************/
 package io.github.dsheirer.instrument.gui.viewer.chart;
 
-import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2DecoderInstrumented;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -26,9 +25,9 @@ import javafx.scene.layout.StackPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Fleetsync2SampleBufferChart extends LineChart
+public class AFSK1200SampleBufferChart extends LineChart
 {
-    private final static Logger mLog = LoggerFactory.getLogger(Fleetsync2SampleBufferChart.class);
+    private final static Logger mLog = LoggerFactory.getLogger(AFSK1200SampleBufferChart.class);
     private ObservableList<Data<Integer,Float>> mSamples = FXCollections.observableArrayList();
     private Series<Integer,Float> mSampleSeries = new Series<>("Samples", mSamples);
 
@@ -44,9 +43,9 @@ public class Fleetsync2SampleBufferChart extends LineChart
     private ObservableList<Data<Number,Number>> mZeroCrossing = FXCollections.observableArrayList();
     private Series<Number,Number> mZeroCrossingSeries = new Series<>("Zero Crossing", mZeroCrossing);
 
-    private Fleetsync2DecoderInstrumented mFleetsync2DecoderInstrumented;
+    private IInstrumentedAFSK1200Decoder mIInstrumentedAFSK1200Decoder;
 
-    public Fleetsync2SampleBufferChart(Fleetsync2DecoderInstrumented decoder, int length)
+    public AFSK1200SampleBufferChart(IInstrumentedAFSK1200Decoder decoder, int length)
     {
         super(new NumberAxis("Samples", 0, length, 5),
             new NumberAxis("Value", -1.0, 1.0, 0.25));
@@ -56,8 +55,8 @@ public class Fleetsync2SampleBufferChart extends LineChart
 
         setData(observableList);
 
-        mFleetsync2DecoderInstrumented = decoder;
-        decoder.bufferCount.addListener(new BufferChangeListener());
+        mIInstrumentedAFSK1200Decoder = decoder;
+        decoder.getBufferCountProperty().addListener(new BufferChangeListener());
         decoder.getAFSK1200Decoder().getErrorDetector().timingError.addListener(new ErrorChangeListener());
     }
 
@@ -89,7 +88,7 @@ public class Fleetsync2SampleBufferChart extends LineChart
         @Override
         public void changed(ObservableValue observable, Object oldValue, Object newValue)
         {
-            setBuffer(mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getSampleBuffer().getDelayLine());
+            setBuffer(mIInstrumentedAFSK1200Decoder.getAFSK1200Decoder().getSampleBuffer().getDelayLine());
 
             while(mPreviousSymbol.size() < 2)
             {
@@ -115,17 +114,17 @@ public class Fleetsync2SampleBufferChart extends LineChart
                 mSymbolSamples.add(sample);
             }
 
-            int pointer1 = mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getSampleBuffer().getDelayLinePointer();
-            int pointer2 = mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getSampleBuffer().getDelayLineSecondPointer();
+            int pointer1 = mIInstrumentedAFSK1200Decoder.getAFSK1200Decoder().getSampleBuffer().getDelayLinePointer();
+            int pointer2 = mIInstrumentedAFSK1200Decoder.getAFSK1200Decoder().getSampleBuffer().getDelayLineSecondPointer();
 
             mSamplePoints.get(0).setXValue(pointer1);
             mSamplePoints.get(1).setXValue(pointer2);
 
-            float samplesPerSymbol = mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getSampleBuffer().getSamplesPerSymbol();
+            float samplesPerSymbol = mIInstrumentedAFSK1200Decoder.getAFSK1200Decoder().getSampleBuffer().getSamplesPerSymbol();
 
-            boolean symbol = mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getSampleBuffer().getLastSymbol();
-            int symbolStart = mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getSampleBuffer().getSymbolStart();
-            int symbolEnd = mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getSampleBuffer().getSymbolEnd();
+            boolean symbol = mIInstrumentedAFSK1200Decoder.getAFSK1200Decoder().getSampleBuffer().getLastSymbol();
+            int symbolStart = mIInstrumentedAFSK1200Decoder.getAFSK1200Decoder().getSampleBuffer().getSymbolStart();
+            int symbolEnd = mIInstrumentedAFSK1200Decoder.getAFSK1200Decoder().getSampleBuffer().getSymbolEnd();
 
             float start = pointer1 + samplesPerSymbol - 1;
             float end = symbolEnd;
@@ -152,8 +151,8 @@ public class Fleetsync2SampleBufferChart extends LineChart
                 mZeroCrossing.add(sample);
             }
 
-            int pointer1 = mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getSampleBuffer().getDelayLinePointer();
-            int pointer2 = mFleetsync2DecoderInstrumented.getAFSK1200Decoder().getSampleBuffer().getDelayLineSecondPointer();
+            int pointer1 = mIInstrumentedAFSK1200Decoder.getAFSK1200Decoder().getSampleBuffer().getDelayLinePointer();
+            int pointer2 = mIInstrumentedAFSK1200Decoder.getAFSK1200Decoder().getSampleBuffer().getDelayLineSecondPointer();
 
             int detectedZeroCrossing = ((Number)newValue).intValue();
 

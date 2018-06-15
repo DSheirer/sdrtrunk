@@ -13,31 +13,18 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.instrument.gui.viewer.decoder;
+package io.github.dsheirer.instrument.gui.viewer.chart;
 
-import io.github.dsheirer.module.decode.DecoderType;
-import io.github.dsheirer.module.decode.fleetsync2.Fleetsync2DecoderInstrumented;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.github.dsheirer.dsp.afsk.AFSK1200DecoderInstrumented;
+import io.github.dsheirer.message.Message;
+import io.github.dsheirer.sample.Listener;
+import javafx.beans.property.SimpleIntegerProperty;
 
-public class Fleetsync2Pane extends AbstractAFSK1200Pane
+public interface IInstrumentedAFSK1200Decoder
 {
-    private final static Logger mLog = LoggerFactory.getLogger(Fleetsync2Pane.class);
+    public SimpleIntegerProperty getBufferCountProperty();
 
-    private Fleetsync2DecoderInstrumented mDecoder;
+    public AFSK1200DecoderInstrumented getAFSK1200Decoder();
 
-    public Fleetsync2Pane()
-    {
-        super(DecoderType.FLEETSYNC2);
-    }
-
-    protected Fleetsync2DecoderInstrumented getDecoder()
-    {
-        if(mDecoder == null)
-        {
-            mDecoder = new Fleetsync2DecoderInstrumented();
-        }
-
-        return mDecoder;
-    }
+    public void setMessageListener(Listener<Message> listener);
 }
