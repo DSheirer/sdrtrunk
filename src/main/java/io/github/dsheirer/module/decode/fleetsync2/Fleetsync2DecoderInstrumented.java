@@ -16,7 +16,7 @@
 package io.github.dsheirer.module.decode.fleetsync2;
 
 import io.github.dsheirer.dsp.afsk.AFSK1200DecoderInstrumented;
-import io.github.dsheirer.instrument.chart.IInstrumentedAFSK1200Decoder;
+import io.github.dsheirer.gui.instrument.chart.IInstrumentedAFSK1200Decoder;
 import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import javafx.beans.property.SimpleIntegerProperty;
 

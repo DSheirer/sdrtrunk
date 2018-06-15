@@ -13,41 +13,18 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.module.decode.mdc1200;
+package io.github.dsheirer.gui.instrument.chart;
 
 import io.github.dsheirer.dsp.afsk.AFSK1200DecoderInstrumented;
-import io.github.dsheirer.gui.instrument.chart.IInstrumentedAFSK1200Decoder;
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
+import io.github.dsheirer.message.Message;
+import io.github.dsheirer.sample.Listener;
 import javafx.beans.property.SimpleIntegerProperty;
 
-/**
- * Instrumented version of the AFSK-1200 decoder for use with DemodulatorViewerFX
- */
-public class MDCDecoderInstrumented extends MDCDecoder implements IInstrumentedAFSK1200Decoder
+public interface IInstrumentedAFSK1200Decoder
 {
-    public SimpleIntegerProperty bufferCount = new SimpleIntegerProperty();
+    public SimpleIntegerProperty getBufferCountProperty();
 
-    public MDCDecoderInstrumented()
-    {
-        super(new AFSK1200DecoderInstrumented(false), null);
-    }
+    public AFSK1200DecoderInstrumented getAFSK1200Decoder();
 
-    @Override
-    public SimpleIntegerProperty getBufferCountProperty()
-    {
-        return bufferCount;
-    }
-
-    public AFSK1200DecoderInstrumented getAFSK1200Decoder()
-    {
-        return (AFSK1200DecoderInstrumented)getDecoder();
-    }
-
-    @Override
-    public void receive(ReusableBuffer reusableBuffer)
-    {
-        super.receive(reusableBuffer);
-
-        bufferCount.setValue(bufferCount.intValue() + 1);
-    }
+    public void setMessageListener(Listener<Message> listener);
 }
