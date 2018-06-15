@@ -27,6 +27,7 @@ public class DecoderPaneFactory
         DecoderType.FLEETSYNC2,
         DecoderType.LJ_1200,
         DecoderType.LTR_NET,
+        DecoderType.MDC1200,
         DecoderType.MPT1327,
         DecoderType.TAIT_1200);
 
@@ -43,6 +44,8 @@ public class DecoderPaneFactory
                 return new LJ1200Pane();
             case LTR_NET:
                 return new LTRNetPane();
+            case MDC1200:
+                return new MDC1200Pane();
             case MPT1327:
                 return new MPT1327Pane();
             case TAIT_1200:
