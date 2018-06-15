@@ -1,11 +1,6 @@
 package io.github.dsheirer.module.decode.p25;
 
 import io.github.dsheirer.dsp.gain.DirectGainControl;
-import io.github.dsheirer.instrument.Instrumentable;
-import io.github.dsheirer.instrument.tap.Tap;
-import io.github.dsheirer.instrument.tap.TapGroup;
-import io.github.dsheirer.instrument.tap.stream.AdditiveFloatTap;
-import io.github.dsheirer.instrument.tap.stream.FloatTap;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.real.RealBuffer;
 import io.github.dsheirer.sample.real.RealSampleListener;
@@ -13,10 +8,7 @@ import io.github.dsheirer.sample.real.RealSampleProvider;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class C4FMSymbolFilter implements Listener<RealBuffer>, ISourceEventListener, RealSampleProvider, Instrumentable
+public class C4FMSymbolFilter implements Listener<RealBuffer>, ISourceEventListener, RealSampleProvider
 {
     private static final float TAPS[][] =
         {
@@ -150,11 +142,6 @@ public class C4FMSymbolFilter implements Listener<RealBuffer>, ISourceEventListe
             {-1.98993e-04f, 1.24642e-03f, -5.41054e-03f, 9.98534e-01f, 7.89295e-03f, -2.76968e-03f, 8.53777e-04f, -1.54700e-04f}, // 127/128
             {0.00000e+00f, 0.00000e+00f, 0.00000e+00f, 1.00000e+00f, 0.00000e+00f, 0.00000e+00f, 0.00000e+00f, 0.00000e+00f}, // 128/128
         };
-
-    /* Instrumentation Taps */
-    private static final String INSTRUMENT_SYMBOL_SPREAD = "Tap Point: Symbol Spread (Goal=2.0)";
-    private FloatTap mSymbolSpreadTap;
-    private List<TapGroup> mAvailableTaps;
 
     private static final int NUMBER_FILTER_TAPS = 8;
     private static final int NUMBER_FILTER_STEPS = 128;
@@ -379,11 +366,6 @@ public class C4FMSymbolFilter implements Listener<RealBuffer>, ISourceEventListe
                     500 * (mCoarseFrequencyCorrection > 0 ? 1 : -1);
             }
 
-            if(mSymbolSpreadTap != null)
-            {
-                mSymbolSpreadTap.receive(mSymbolSpread);
-            }
-
 			/* dispatch the interpolated value to the listener */
             if(mListener != null)
             {
@@ -402,46 +384,6 @@ public class C4FMSymbolFilter implements Listener<RealBuffer>, ISourceEventListe
     public void removeListener(RealSampleListener listener)
     {
         mListener = null;
-    }
-
-    @Override
-    public List<TapGroup> getTapGroups()
-    {
-        if(mAvailableTaps == null)
-        {
-            mAvailableTaps = new ArrayList<>();
-			
-			/*
-			 * Since the target is 2.0, we subtract 2.0 from the value so that
-			 * a good value is plotted right on the zero center line
-			 */
-            TapGroup group = new TapGroup("C4FM Symbol Filter");
-
-            group.add(
-                new AdditiveFloatTap(INSTRUMENT_SYMBOL_SPREAD, 0, 0.1f, -2.0f));
-
-            mAvailableTaps.add(group);
-        }
-
-        return mAvailableTaps;
-    }
-
-    @Override
-    public void registerTap(Tap tap)
-    {
-        if(tap.getName().contentEquals(INSTRUMENT_SYMBOL_SPREAD))
-        {
-            mSymbolSpreadTap = (FloatTap)tap;
-        }
-    }
-
-    @Override
-    public void unregisterTap(Tap tap)
-    {
-        if(tap.getName().contentEquals(INSTRUMENT_SYMBOL_SPREAD))
-        {
-            mSymbolSpreadTap = null;
-        }
     }
 
     /**
