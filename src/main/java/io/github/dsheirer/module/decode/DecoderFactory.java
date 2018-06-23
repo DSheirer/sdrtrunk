@@ -89,6 +89,7 @@ import io.github.dsheirer.module.decode.tait.Tait1200DecoderState;
 import io.github.dsheirer.module.demodulate.am.AMDemodulatorModule;
 import io.github.dsheirer.module.demodulate.audio.DemodulatedAudioFilterModule;
 import io.github.dsheirer.module.demodulate.fm.FMDemodulatorModule;
+import io.github.dsheirer.source.SourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -147,31 +148,44 @@ public class DecoderFactory
         switch(decodeConfig.getDecoderType())
         {
             case AM:
+                if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
+                {
+                    modules.add(new AMDemodulatorModule());
+                    //TODO: update AM demodulator to produce demodulated 8 kHz audio and delete the following filter module
+                    modules.add(new DemodulatedAudioFilterModule(4000, 6000));
+                }
+
                 modules.add(new AMDecoder(decodeConfig));
                 modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.AM, channel.getName()));
-                modules.add(new AMDemodulatorModule());
-//TODO: update AM demodulator to produce demodulated 8 kHz audio and delete the following filter module
-                modules.add(new DemodulatedAudioFilterModule(4000, 6000));
                 modules.add(new AudioModule(metadata));
                 break;
             case NBFM:
                 modules.add(new NBFMDecoder(decodeConfig));
                 modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.NBFM, channel.getName()));
-                modules.add(new FMDemodulatorModule(CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
                 modules.add(new AudioModule(metadata));
+                if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
+                {
+                    modules.add(new FMDemodulatorModule(CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+                }
                 break;
             case LTR_STANDARD:
                 MessageDirection direction = ((DecodeConfigLTRStandard) decodeConfig).getMessageDirection();
                 modules.add(new LTRStandardDecoder(aliasList, direction));
                 modules.add(new LTRStandardDecoderState(aliasList));
-                modules.add(new FMDemodulatorModule(CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
                 modules.add(new AudioModule(metadata));
+                if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
+                {
+                    modules.add(new FMDemodulatorModule(CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+                }
                 break;
             case LTR_NET:
                 modules.add(new LTRNetDecoder((DecodeConfigLTRNet) decodeConfig, aliasList));
                 modules.add(new LTRNetDecoderState(aliasList));
-                modules.add(new FMDemodulatorModule(CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
                 modules.add(new AudioModule(metadata));
+                if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
+                {
+                    modules.add(new FMDemodulatorModule(CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+                }
                 break;
             case MPT1327:
                 DecodeConfigMPT1327 mptConfig = (DecodeConfigMPT1327) decodeConfig;
@@ -179,8 +193,11 @@ public class DecoderFactory
                 Sync sync = mptConfig.getSync();
                 modules.add(new MPT1327Decoder(aliasList, sync));
                 modules.add(new MPT1327DecoderState(aliasList, channelMap, channelType, mptConfig.getCallTimeout() * 1000));
-                modules.add(new FMDemodulatorModule(CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
                 modules.add(new AudioModule(metadata));
+                if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
+                {
+                    modules.add(new FMDemodulatorModule(CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+                }
 
                 if(channelType == ChannelType.STANDARD)
                 {
@@ -192,14 +209,16 @@ public class DecoderFactory
             case PASSPORT:
                 modules.add(new PassportDecoder(decodeConfig, aliasList));
                 modules.add(new PassportDecoderState(aliasList));
-                modules.add(new FMDemodulatorModule(CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
                 modules.add(new AudioModule(metadata));
+                if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
+                {
+                    modules.add(new FMDemodulatorModule(CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+                }
                 break;
             case P25_PHASE1:
                 DecodeConfigP25Phase1 p25Config = (DecodeConfigP25Phase1) decodeConfig;
 
                 Modulation modulation = p25Config.getModulation();
-
 
                 switch(modulation)
                 {
@@ -288,8 +307,7 @@ public class DecoderFactory
         {
             if(module instanceof Decoder)
             {
-                filterSet.addFilters(getMessageFilter(
-                    ((Decoder) module).getDecoderType()));
+                filterSet.addFilters(getMessageFilter(((Decoder)module).getDecoderType()));
             }
         }
 
