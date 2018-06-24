@@ -15,37 +15,34 @@
  ******************************************************************************/
 package io.github.dsheirer.sample.adapter;
 
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.github.dsheirer.sample.buffer.ReusableBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
- * Converts 16-bit/2-byte little endian byte data into a reusable buffer of complex float sample data
+ * Converts 16-bit/2-byte little endian byte data into a reusable buffer of real float sample data
  */
-public class ComplexShortAdapter extends ComplexSampleAdapter
+public class RealShortAdapter extends RealSampleAdapter
 {
-    private final static Logger mLog = LoggerFactory.getLogger(ComplexShortAdapter.class);
+    private ByteBuffer mByteBuffer;
     private ShortToFloatMap mMap = new ShortToFloatMap();
     private ByteOrder mByteOrder = ByteOrder.LITTLE_ENDIAN;
-    private ByteBuffer mByteBuffer;
 
     /**
      * Constructs a real sample adapter
      *
      * @param debugName to use for debug logging
      */
-    public ComplexShortAdapter(String debugName)
+    public RealShortAdapter(String debugName)
     {
         super(debugName);
     }
 
     @Override
-    public ReusableComplexBuffer convert(byte[] samples)
+    public ReusableBuffer convert(byte[] samples)
     {
-        ReusableComplexBuffer reusableBuffer = getBuffer(samples.length / 2);
+        ReusableBuffer reusableBuffer = getBuffer(samples.length / 2);
         float[] convertedSamples = reusableBuffer.getSamples();
 
         int pointer = 0;

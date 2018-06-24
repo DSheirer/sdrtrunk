@@ -1,6 +1,6 @@
 /*******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@ public class FCD2TunerController extends FCDTunerController
     public FCD2TunerController(MixerTunerDataLine mixerTDL, Device device, DeviceDescriptor descriptor)
     {
         super(mixerTDL, device, descriptor, MixerTunerType.FUNCUBE_DONGLE_PRO_PLUS.getDisplayString(),
-            MINIMUM_TUNABLE_FREQUENCY, MAXIMUM_TUNABLE_FREQUENCY, MixerTunerType.FUNCUBE_DONGLE_PRO.getAudioFormat());
+            MINIMUM_TUNABLE_FREQUENCY, MAXIMUM_TUNABLE_FREQUENCY, MixerTunerType.FUNCUBE_DONGLE_PRO_PLUS.getAudioFormat());
     }
 
     public void init() throws SourceException

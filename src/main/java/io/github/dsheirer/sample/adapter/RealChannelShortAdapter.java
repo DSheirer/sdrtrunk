@@ -15,7 +15,9 @@
  ******************************************************************************/
 package io.github.dsheirer.sample.adapter;
 
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableBuffer;
+import io.github.dsheirer.source.mixer.MixerChannel;
+import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,42 +25,55 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
- * Converts 16-bit/2-byte little endian byte data into a reusable buffer of complex float sample data
+ * Adapter for converting stereo/2-channel short sample data to single channel float samples.
  */
-public class ComplexShortAdapter extends ComplexSampleAdapter
+public class RealChannelShortAdapter extends RealSampleAdapter
 {
-    private final static Logger mLog = LoggerFactory.getLogger(ComplexShortAdapter.class);
+    private final static Logger mLog = LoggerFactory.getLogger(RealChannelShortAdapter.class);
     private ShortToFloatMap mMap = new ShortToFloatMap();
     private ByteOrder mByteOrder = ByteOrder.LITTLE_ENDIAN;
+    private MixerChannel mMixerChannel;
     private ByteBuffer mByteBuffer;
 
-    /**
-     * Constructs a real sample adapter
-     *
-     * @param debugName to use for debug logging
-     */
-    public ComplexShortAdapter(String debugName)
+    public RealChannelShortAdapter(MixerChannel channel, String debugName)
     {
         super(debugName);
+
+        /* Only use with LEFT/RIGHT channels */
+        Validate.isTrue(channel != MixerChannel.MONO);
+
+        mMixerChannel = channel;
     }
 
     @Override
-    public ReusableComplexBuffer convert(byte[] samples)
+    public ReusableBuffer convert(byte[] samples)
     {
-        ReusableComplexBuffer reusableBuffer = getBuffer(samples.length / 2);
+        ReusableBuffer reusableBuffer = getBuffer(samples.length / 4);
         float[] convertedSamples = reusableBuffer.getSamples();
-
-        int pointer = 0;
 
         mByteBuffer = ByteBuffer.wrap(samples);
 
         /* Set endian to correct byte ordering */
         mByteBuffer.order(mByteOrder);
 
+        int pointer = 0;
+
         while(mByteBuffer.hasRemaining())
         {
-            convertedSamples[pointer] = mMap.get(mByteBuffer.getShort());
-            pointer++;
+            if(mMixerChannel == MixerChannel.LEFT)
+            {
+                convertedSamples[pointer++] = mMap.get(mByteBuffer.getShort());
+
+                //Throw away the right channel
+                mByteBuffer.getShort();
+            }
+            else
+            {
+                //Throw away the left channel
+                mByteBuffer.getShort();
+
+                convertedSamples[pointer++] = mMap.get(mByteBuffer.getShort());
+            }
         }
 
         reusableBuffer.incrementUserCount();

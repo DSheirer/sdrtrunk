@@ -16,38 +16,18 @@
 package io.github.dsheirer.source.mixer;
 
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.adapter.ISampleAdapter;
+import io.github.dsheirer.sample.adapter.AbstractSampleAdapter;
 import io.github.dsheirer.sample.buffer.ReusableBuffer;
-import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
-import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
-import io.github.dsheirer.sample.real.RealBuffer;
 import io.github.dsheirer.source.RealSource;
 import io.github.dsheirer.source.SourceEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.TargetDataLine;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class RealMixerSource extends RealSource
 {
-    private final static Logger mLog = LoggerFactory.getLogger(RealMixerSource.class);
-    private ReusableBufferBroadcaster<ReusableBuffer> mBufferBroadcaster = new ReusableBufferBroadcaster<>();
-    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("RealMixerSource");
-    private long mFrequency = 0;
-    private int mBufferSize = 16384;
-
-    private BufferReader mBufferReader = new BufferReader();
-    private TargetDataLine mTargetDataLine;
-    private AudioFormat mAudioFormat;
-    private int mBytesPerFrame = 0;
-    private ISampleAdapter mSampleAdapter;
-
-    private CopyOnWriteArrayList<Listener<RealBuffer>> mSampleListeners = new CopyOnWriteArrayList<Listener<RealBuffer>>();
+    private long mFrequency;
+    private MixerReader mMixerReader;
 
     /**
      * Real Mixer Source - constructs a reader on the mixer/sound card target
@@ -58,89 +38,94 @@ public class RealMixerSource extends RealSource
      * @param targetDataLine - mixer or sound card to be used
      * @param format - audio format
      * @param sampleAdapter - adapter to convert byte array data read from the
-     * mixer into float array data.  Can optionally invert the channel data if
-     * the left/right stereo channels are inverted.
+     * mixer into float array data.
      */
-    public RealMixerSource(TargetDataLine targetDataLine, AudioFormat format, ISampleAdapter sampleAdapter)
+    public RealMixerSource(TargetDataLine targetDataLine, AudioFormat format, AbstractSampleAdapter sampleAdapter)
     {
-        mTargetDataLine = targetDataLine;
-        mAudioFormat = format;
-        mSampleAdapter = sampleAdapter;
+        mMixerReader = new MixerReader(format, targetDataLine, sampleAdapter, getHeartbeatManager());
     }
 
+    /**
+     * Registers a listener to receive source events
+     *
+     * @param listener
+     */
 	@Override
 	public void setSourceEventListener(Listener<SourceEvent> listener)
 	{
-		//Not implemented
+	    mMixerReader.setSourceEventListener(listener);
 	}
 
+    /**
+     * Removes a listener from receiving source events
+     */
 	@Override
 	public void removeSourceEventListener()
 	{
-		//Not implemented
+	    mMixerReader.removeSourceEventListener();
 	}
 
+    /**
+     * Current source event listener
+     */
 	@Override
 	public Listener<SourceEvent> getSourceEventListener()
 	{
-		//Not implemented
-		return null;
+		return mMixerReader.getSourceEventListener();
 	}
 
     @Override
     public void reset()
     {
+        stop();
     }
 
     @Override
     public void start()
     {
+        if(!mMixerReader.isRunning())
+        {
+            mMixerReader.start();
+        }
     }
 
     @Override
     public void stop()
     {
-    }
-
-    public void setListener(Listener<ReusableBuffer> listener)
-    {
-        mBufferBroadcaster.addListener(listener);
-
-		/* If this is the first listener, start the reader thread */
-        if(!mBufferReader.isRunning())
+        if(mMixerReader.isRunning())
         {
-            Thread thread = new Thread(mBufferReader);
-            thread.setDaemon(true);
-            thread.setName("Sample Reader");
-            thread.start();
-        }
-    }
-
-    public void removeListener(Listener<ReusableBuffer> listener)
-    {
-        mBufferBroadcaster.removeListener(listener);
-
-		/* If this is the last listener, stop the reader thread */
-        if(mSampleListeners.isEmpty())
-        {
-            mBufferReader.stop();
-        }
-    }
-
-    public double getSampleRate()
-    {
-        if(mTargetDataLine != null)
-        {
-            return mTargetDataLine.getFormat().getSampleRate();
-        }
-        else
-        {
-            return 0;
+            mMixerReader.stop();
         }
     }
 
     /**
-     * Returns the frequency of this source.  Default is 0.
+     * Sets the listener to receive sample data in reusable buffers.
+     */
+    public void setListener(Listener<ReusableBuffer> listener)
+    {
+        mMixerReader.setBufferListener(listener);
+    }
+
+    /**
+     * Removes the listener from receiving sample data.
+     * @param listener
+     */
+    public void removeListener(Listener<ReusableBuffer> listener)
+    {
+        mMixerReader.removeBufferListener();
+    }
+
+    /**
+     * Sample rate specified for the underlying target data line.
+     */
+    @Override
+    public double getSampleRate()
+    {
+        return mMixerReader.getSampleRate();
+    }
+
+    /**
+     * Returns the frequency of this source.  Default is 0 if the frequency hasn't been set.
      */
     public long getFrequency()
     {
@@ -148,131 +133,18 @@ public class RealMixerSource extends RealSource
     }
 
     /**
-     * Specify the frequency that will be returned from this source.  This may
-     * be useful if you are streaming an external audio source in through the
-     * sound card and you want to specify a frequency for that source
+     * Specify the frequency that will be returned from this source.  This may be useful if you are streaming an
+     * external audio source in through the sound card and you want to specify a frequency for that source
      */
     public void setFrequency(long frequency)
     {
         mFrequency = frequency;
     }
 
-    /**
-     * Reader thread.  Performs blocking read against the mixer target data
-     * line, converts the samples to an array of floats using the specified
-     * adapter.  Dispatches float arrays to all registered listeners.
-     */
-    public class BufferReader implements Runnable
-    {
-        private AtomicBoolean mRunning = new AtomicBoolean();
-
-        @Override
-        public void run()
-        {
-            if(mRunning.compareAndSet(false, true))
-            {
-                getHeartbeatManager().broadcast();
-
-                if(mTargetDataLine == null)
-                {
-                    mRunning.set(false);
-
-                    mLog.error("ComplexMixerSource - mixer target data line"
-                        + " is null");
-                }
-                else
-                {
-                    mBytesPerFrame = mAudioFormat.getSampleSizeInBits() / 8;
-
-                    if(mBytesPerFrame == AudioSystem.NOT_SPECIFIED)
-                    {
-                        mBytesPerFrame = 2;
-                    }
-    	    		
-    	    		/* Set buffer size to 1/10 second of samples */
-                    mBufferSize = (int)(mAudioFormat.getSampleRate()
-                        * 0.05) * mBytesPerFrame;
-
-            		/* We'll reuse the same buffer for each read */
-                    byte[] buffer = new byte[mBufferSize];
-
-                    try
-                    {
-                        mTargetDataLine.open(mAudioFormat);
-
-                        mTargetDataLine.start();
-                    }
-                    catch(LineUnavailableException e)
-                    {
-                        mLog.error("ComplexMixerSource - mixer target data line"
-                            + "not available to read data from", e);
-
-                        mRunning.set(false);
-                    }
-
-                    while(mRunning.get())
-                    {
-                        try
-                        {
-            				/* Blocking read - waits until the buffer fills */
-                            mTargetDataLine.read(buffer, 0, buffer.length);
-
-	                        /* Convert samples to float array */
-//TODO: change this sample adapter over to use reusable buffers and move the buffer queue into the adapter
-                            float[] samples = mSampleAdapter.convert(buffer);
-	            			
-	            			/* Dispatch samples to registered listeners */
-                            ReusableBuffer reusableBuffer = mReusableBufferQueue.getBuffer(samples.length);
-                            reusableBuffer.reloadFrom(samples, System.currentTimeMillis());
-                            reusableBuffer.incrementUserCount();
-                            mBufferBroadcaster.broadcast(reusableBuffer);
-                        }
-                        catch(Exception e)
-                        {
-                            mLog.error("ComplexMixerSource - error while reading"
-                                + "from the mixer target data line", e);
-
-                            mRunning.set(false);
-                        }
-                    }
-                }
-        		
-        		/* Close the data line if it is still open */
-                if(mTargetDataLine != null && mTargetDataLine.isOpen())
-                {
-                    mTargetDataLine.close();
-                }
-            }
-        }
-
-        /**
-         * Stops the reader thread
-         */
-        public void stop()
-        {
-            if(mRunning.compareAndSet(true, false))
-            {
-                mTargetDataLine.stop();
-                mTargetDataLine.close();
-            }
-        }
-
-        /**
-         * Indicates if the reader thread is running
-         */
-        public boolean isRunning()
-        {
-            return mRunning.get();
-        }
-    }
 
     @Override
     public void dispose()
     {
-        if(mBufferReader != null)
-        {
-            mBufferReader.stop();
-            mSampleListeners.clear();
-        }
+        mMixerReader.dispose();
     }
 }

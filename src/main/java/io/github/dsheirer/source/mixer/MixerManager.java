@@ -16,8 +16,8 @@
 package io.github.dsheirer.source.mixer;
 
 import io.github.dsheirer.audio.AudioFormats;
-import io.github.dsheirer.sample.adapter.ChannelShortAdapter;
-import io.github.dsheirer.sample.adapter.ShortAdapter;
+import io.github.dsheirer.sample.adapter.RealChannelShortAdapter;
+import io.github.dsheirer.sample.adapter.RealShortAdapter;
 import io.github.dsheirer.source.config.SourceConfigMixer;
 import io.github.dsheirer.source.config.SourceConfiguration;
 import io.github.dsheirer.source.tuner.MixerTunerDataLine;
@@ -90,7 +90,7 @@ public class MixerManager
                                 if(dataLine != null)
                                 {
                                     return new RealMixerSource(dataLine, AudioFormats.PCM_SIGNED_8KHZ_16BITS_MONO,
-                                        new ShortAdapter());
+                                        new RealShortAdapter("RealMixerSource - Mono"));
                                 }
                             }
                             catch(LineUnavailableException e)
@@ -100,7 +100,7 @@ public class MixerManager
                             }
 
                         }
-                        else
+                        else //STEREO
                         {
                             DataLine.Info info = new DataLine.Info(TargetDataLine.class,
                                     AudioFormats.PCM_SIGNED_8KHZ_16BITS_STEREO);
@@ -114,7 +114,7 @@ public class MixerManager
                                 if(dataLine != null)
                                 {
                                     return new RealMixerSource(dataLine, AudioFormats.PCM_SIGNED_8KHZ_16BITS_STEREO,
-                                        new ChannelShortAdapter(mixerConfig.getChannel()));
+                                        new RealChannelShortAdapter(mixerConfig.getChannel(), "RealMixerSource-Stereo"));
                                 }
                             }
                             catch(LineUnavailableException e)

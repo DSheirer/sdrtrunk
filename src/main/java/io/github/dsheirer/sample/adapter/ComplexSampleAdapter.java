@@ -16,13 +16,24 @@
 package io.github.dsheirer.sample.adapter;
 
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
 
-public interface IComplexSampleAdapter
+public abstract class ComplexSampleAdapter extends AbstractSampleAdapter<ReusableComplexBuffer>
 {
+    private ReusableComplexBufferQueue mReusableBufferQueue;
+
     /**
-     * Converts the sample byte array into complex float samples, loading the converted float samples into the buffer.
-     * @param samples
-     * @param reusableComplexBuffer
+     * Constructs a real sample adapter
+     *
+     * @param debugName to use for debug logging
      */
-    void convertAndLoad(byte[] samples, ReusableComplexBuffer reusableComplexBuffer);
+    public ComplexSampleAdapter(String debugName)
+    {
+        mReusableBufferQueue = new ReusableComplexBufferQueue(debugName);
+    }
+
+    protected ReusableComplexBuffer getBuffer(int size)
+    {
+        return mReusableBufferQueue.getBuffer(size);
+    }
 }

@@ -1,6 +1,6 @@
 /*******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -88,7 +88,11 @@ public abstract class FCDTunerController extends TunerController
         }
 
         mComplexMixer = new ComplexMixer( mixerTDL.getTargetDataLine(), audioFormat, tunerName,
-            new ComplexShortAdapter(), mReusableBufferBroadcaster);
+            new ComplexShortAdapter(mixerTDL.getMixerTunerType().getDisplayString()));
+
+        mComplexMixer.setBufferSize(audioFormat.getFrameSize() * (int)(audioFormat.getSampleRate() * 0.1));
+
+        mComplexMixer.setBufferListener(mReusableBufferBroadcaster);
     }
 
     /**
