@@ -18,11 +18,11 @@
  ******************************************************************************/
 package io.github.dsheirer.record;
 
-import io.github.dsheirer.audio.AudioPacket;
 import io.github.dsheirer.audio.IAudioPacketListener;
 import io.github.dsheirer.channel.metadata.Metadata;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,12 +38,12 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public abstract class AudioRecorder extends Module implements Listener<AudioPacket>, IAudioPacketListener
+public abstract class AudioRecorder extends Module implements Listener<ReusableAudioPacket>, IAudioPacketListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(AudioRecorder.class);
 
-    private LinkedBlockingQueue<AudioPacket> mAudioPacketQueue = new LinkedBlockingQueue<>(500);
-    private List<AudioPacket> mPacketsToProcess = new ArrayList<>();
+    private LinkedBlockingQueue<ReusableAudioPacket> mAudioPacketQueue = new LinkedBlockingQueue<>(500);
+    private List<ReusableAudioPacket> mPacketsToProcess = new ArrayList<>();
 
     private FileOutputStream mFileOutputStream;
     private AtomicBoolean mRunning = new AtomicBoolean();
@@ -108,12 +108,12 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
     }
 
     /**
-     * Implements the IAudioPacketListener interface and simply redirects to the Listener<AudioPacket> interface.
+     * Implements the IAudioPacketListener interface and simply redirects to the Listener<ReusableAudioPacket> interface.
      * This is necessary since you can't have multiple methods with the same erasure (ie Listener<xxx>) in the
      * parent module class.
      */
     @Override
-    public Listener<AudioPacket> getAudioPacketListener()
+    public Listener<ReusableAudioPacket> getAudioPacketListener()
     {
         return this;
     }
@@ -122,7 +122,7 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
      * Processes the audio packet and captures the latest Metadata for the recording for easy access.
      */
     @Override
-    public void receive(AudioPacket audioPacket)
+    public void receive(ReusableAudioPacket audioPacket)
     {
         if(mRunning.get())
         {
@@ -140,7 +140,12 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
             {
                 mLog.error("recorder buffer overflow - stopping recorder [" + getPath().toString() + "]");
                 stop();
+                audioPacket.decrementUserCount();
             }
+        }
+        else
+        {
+            audioPacket.decrementUserCount();
         }
     }
 
@@ -189,7 +194,7 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
     /**
      * Records the list of audio packets in the sub-class specific audio format.
      */
-    protected abstract void record(List<AudioPacket> audioPackets) throws IOException;
+    protected abstract void record(List<ReusableAudioPacket> audioPackets) throws IOException;
 
     /**
      * Starts this recorder as a scheduled thread running under the executor argument
@@ -234,12 +239,14 @@ public abstract class AudioRecorder extends Module implements Listener<AudioPack
             {
                 record(mPacketsToProcess);
 
-                for(AudioPacket packet : mPacketsToProcess)
+                for(ReusableAudioPacket packet : mPacketsToProcess)
                 {
-                    if(packet.getType() == AudioPacket.Type.AUDIO)
+                    if(packet.getType() == ReusableAudioPacket.Type.AUDIO)
                     {
-                        mSampleCount += packet.getAudioBuffer().getSamples().length;
+                        mSampleCount += packet.getAudioSamples().length;
                     }
+
+                    packet.decrementUserCount();
                 }
             }
             catch(IOException ioe)

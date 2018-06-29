@@ -25,6 +25,8 @@ import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IReusableBufferListener;
+import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
+import io.github.dsheirer.sample.buffer.ReusableAudioPacketQueue;
 import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +43,7 @@ public class AudioModule extends Module implements IAudioPacketProvider, IReusab
     ISquelchStateListener, Listener<ReusableBuffer>
 {
     protected static final Logger mLog = LoggerFactory.getLogger(AudioModule.class);
+    private ReusableAudioPacketQueue mAudioPacketQueue = new ReusableAudioPacketQueue("AudioModule");
 
     private static float[] sHighPassFilterCoefficients;
 
@@ -73,11 +76,12 @@ public class AudioModule extends Module implements IAudioPacketProvider, IReusab
     private RealFIRFilter2 mHighPassFilter = new RealFIRFilter2(sHighPassFilterCoefficients);
     private SquelchStateListener mSquelchStateListener = new SquelchStateListener();
     private SquelchState mSquelchState = SquelchState.SQUELCH;
-    private Listener<AudioPacket> mAudioPacketListener;
+    private Listener<ReusableAudioPacket> mAudioPacketListener;
     private Metadata mMetadata;
 
     /**
      * Creates an Audio Module.
+     *
      * @param metadata to use for audio packets produced by this audio module.
      */
     public AudioModule(Metadata metadata)
@@ -109,12 +113,15 @@ public class AudioModule extends Module implements IAudioPacketProvider, IReusab
         /* Issue an end-audio packet in case a recorder is still rolling */
         if(mAudioPacketListener != null)
         {
-            mAudioPacketListener.receive(new AudioPacket(AudioPacket.Type.END, mMetadata.copyOf()));
+            ReusableAudioPacket endAudioPacket = mAudioPacketQueue.getEndAudioBuffer();
+            endAudioPacket.setMetadata(mMetadata.copyOf());
+            endAudioPacket.incrementUserCount();
+            mAudioPacketListener.receive(endAudioPacket);
         }
     }
 
     @Override
-    public void setAudioPacketListener(Listener<AudioPacket> listener)
+    public void setAudioPacketListener(Listener<ReusableAudioPacket> listener)
     {
         mAudioPacketListener = listener;
     }
@@ -137,8 +144,14 @@ public class AudioModule extends Module implements IAudioPacketProvider, IReusab
         if(mAudioPacketListener != null && mSquelchState == SquelchState.UNSQUELCH)
         {
             ReusableBuffer highPassFiltered = mHighPassFilter.filter(reusableBuffer);
-            AudioPacket packet = new AudioPacket(highPassFiltered.getSamplesCopy(), mMetadata.copyOf());
-            mAudioPacketListener.receive(packet);
+
+            ReusableAudioPacket audioPacket = mAudioPacketQueue.getBuffer(highPassFiltered.getSampleCount());
+            audioPacket.loadAudioFrom(highPassFiltered);
+            audioPacket.setMetadata(mMetadata.copyOf());
+            audioPacket.incrementUserCount();
+
+            mAudioPacketListener.receive(audioPacket);
+
             highPassFiltered.decrementUserCount();
         }
         else
@@ -164,7 +177,9 @@ public class AudioModule extends Module implements IAudioPacketProvider, IReusab
         {
             if(state == SquelchState.SQUELCH && mAudioPacketListener != null)
             {
-                mAudioPacketListener.receive(new AudioPacket(AudioPacket.Type.END, mMetadata.copyOf()));
+                ReusableAudioPacket endAudioPacket = mAudioPacketQueue.getEndAudioBuffer();
+                endAudioPacket.setMetadata(mMetadata.copyOf());
+                mAudioPacketListener.receive(endAudioPacket);
             }
 
             mSquelchState = state;

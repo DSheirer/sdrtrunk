@@ -20,7 +20,7 @@ import io.github.dsheirer.sample.Listener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ReusableBufferBroadcaster<T extends ReusableBuffer> extends Broadcaster<T>
+public class ReusableBufferBroadcaster<T extends AbstractReusableBuffer> extends Broadcaster<T>
 {
     private final static Logger mLog = LoggerFactory.getLogger(ReusableBufferBroadcaster.class);
 

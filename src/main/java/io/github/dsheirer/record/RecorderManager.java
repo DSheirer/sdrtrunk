@@ -16,13 +16,13 @@
  */
 package io.github.dsheirer.record;
 
-import io.github.dsheirer.audio.AudioPacket;
 import io.github.dsheirer.channel.metadata.Metadata;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.record.wave.AudioPacketWaveRecorder;
 import io.github.dsheirer.record.wave.ComplexBufferWaveRecorder;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.OverflowableTransferQueue;
+import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.sample.real.IOverflowListener;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
@@ -37,7 +37,7 @@ import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-public class RecorderManager implements Listener<AudioPacket>
+public class RecorderManager implements Listener<ReusableAudioPacket>
 {
     private static final Logger mLog = LoggerFactory.getLogger(RecorderManager.class);
 
@@ -45,7 +45,8 @@ public class RecorderManager implements Listener<AudioPacket>
     public static final long IDLE_RECORDER_REMOVAL_THRESHOLD = 6000; //6 seconds
 
     private Map<String,AudioPacketWaveRecorder> mRecorders = new HashMap<>();
-    private OverflowableTransferQueue<AudioPacket> mAudioPacketQueue = new OverflowableTransferQueue<>(1000, 100);
+    private OverflowableTransferQueue<ReusableAudioPacket> mAudioPacketQueue = new OverflowableTransferQueue<>(1000, 100);
+    private List<ReusableAudioPacket> mAudioPackets = new ArrayList<>();
     private ScheduledFuture<?> mBufferProcessorFuture;
 
     private boolean mCanStartNewRecorders = true;
@@ -96,11 +97,15 @@ public class RecorderManager implements Listener<AudioPacket>
      * @param audioPacket to process
      */
     @Override
-    public void receive(AudioPacket audioPacket)
+    public void receive(ReusableAudioPacket audioPacket)
     {
         if(audioPacket.hasMetadata() && audioPacket.getMetadata().isRecordable())
         {
             mAudioPacketQueue.offer(audioPacket);
+        }
+        else
+        {
+            audioPacket.decrementUserCount();
         }
     }
 
@@ -109,13 +114,11 @@ public class RecorderManager implements Listener<AudioPacket>
      */
     private void processBuffers()
     {
-        List<AudioPacket> audioPackets = new ArrayList<>();
+        mAudioPacketQueue.drainTo(mAudioPackets, 50);
 
-        mAudioPacketQueue.drainTo(audioPackets, 50);
-
-        while(!audioPackets.isEmpty())
+        while(!mAudioPackets.isEmpty())
         {
-            for(AudioPacket audioPacket : audioPackets)
+            for(ReusableAudioPacket audioPacket : mAudioPackets)
             {
                 String identifier = audioPacket.getMetadata().getUniqueIdentifier();
 
@@ -123,17 +126,18 @@ public class RecorderManager implements Listener<AudioPacket>
                 {
                     AudioPacketWaveRecorder recorder = mRecorders.get(identifier);
 
-                    if(audioPacket.getType() == AudioPacket.Type.AUDIO)
+                    if(audioPacket.getType() == ReusableAudioPacket.Type.AUDIO)
                     {
+                        audioPacket.incrementUserCount();
                         recorder.receive(audioPacket);
                     }
-                    else if(audioPacket.getType() == AudioPacket.Type.END)
+                    else if(audioPacket.getType() == ReusableAudioPacket.Type.END)
                     {
                         AudioPacketWaveRecorder finished = mRecorders.remove(identifier);
                         finished.stop();
                     }
                 }
-                else if(audioPacket.getType() == AudioPacket.Type.AUDIO)
+                else if(audioPacket.getType() == ReusableAudioPacket.Type.AUDIO)
                 {
                     if(mCanStartNewRecorders)
                     {
@@ -147,6 +151,7 @@ public class RecorderManager implements Listener<AudioPacket>
 
                             recorder.start();
 
+                            audioPacket.incrementUserCount();
                             recorder.receive(audioPacket);
                             mRecorders.put(identifier, recorder);
                         }
@@ -164,10 +169,12 @@ public class RecorderManager implements Listener<AudioPacket>
                         }
                     }
                 }
+
+                audioPacket.decrementUserCount();
             }
 
-            audioPackets.clear();
-            mAudioPacketQueue.drainTo(audioPackets, 50);
+            mAudioPackets.clear();
+            mAudioPacketQueue.drainTo(mAudioPackets, 50);
         }
     }
 
@@ -194,7 +201,7 @@ public class RecorderManager implements Listener<AudioPacket>
     /**
      * Constructs a file name and path for an audio recording
      */
-    private String getFilePrefix(AudioPacket packet)
+    private String getFilePrefix(ReusableAudioPacket packet)
     {
         StringBuilder sb = new StringBuilder();
 

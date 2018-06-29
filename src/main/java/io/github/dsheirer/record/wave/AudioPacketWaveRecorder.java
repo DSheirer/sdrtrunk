@@ -17,11 +17,12 @@
 package io.github.dsheirer.record.wave;
 
 import io.github.dsheirer.audio.AudioFormats;
-import io.github.dsheirer.audio.AudioPacket;
 import io.github.dsheirer.channel.metadata.Metadata;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.ConversionUtils;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.buffer.OverflowableReusableBufferTransferQueue;
+import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
 import org.slf4j.Logger;
@@ -31,7 +32,6 @@ import javax.sound.sampled.AudioFormat;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * WAVE audio recorder module for recording audio buffers to a wave file
  */
-public class AudioPacketWaveRecorder extends Module implements Listener<AudioPacket>
+public class AudioPacketWaveRecorder extends Module implements Listener<ReusableAudioPacket>
 {
     private final static Logger mLog = LoggerFactory.getLogger(AudioPacketWaveRecorder.class);
 
@@ -48,9 +48,10 @@ public class AudioPacketWaveRecorder extends Module implements Listener<AudioPac
     private Path mFile;
     private AudioFormat mAudioFormat;
 
+    private OverflowableReusableBufferTransferQueue<ReusableAudioPacket> mTransferQueue =
+        new OverflowableReusableBufferTransferQueue<>(500, 100);
     private BufferProcessor mBufferProcessor;
     private ScheduledFuture<?> mProcessorHandle;
-    private LinkedBlockingQueue<AudioPacket> mAudioPackets = new LinkedBlockingQueue<>(500);
     private Metadata mMetadata;
     private long mLastBufferReceived;
 
@@ -153,19 +154,16 @@ public class AudioPacketWaveRecorder extends Module implements Listener<AudioPac
      * Primary input method for receiving audio packets to enqueue for later writing to the wav file.
      */
     @Override
-    public void receive(AudioPacket audioPacket)
+    public void receive(ReusableAudioPacket audioPacket)
     {
         if(mRunning.get())
         {
-            boolean success = mAudioPackets.offer(audioPacket);
-
-            if(!success)
-            {
-                mLog.error("recorder buffer overflow - purging [" + mFile.toFile().getAbsolutePath() + "]");
-                mAudioPackets.clear();
-            }
-
+            mTransferQueue.offer(audioPacket);
             mLastBufferReceived = System.currentTimeMillis();
+        }
+        else
+        {
+            audioPacket.decrementUserCount();
         }
     }
 
@@ -188,17 +186,23 @@ public class AudioPacketWaveRecorder extends Module implements Listener<AudioPac
      */
     private void write() throws IOException
     {
-        AudioPacket audioPacket = mAudioPackets.poll();
+        ReusableAudioPacket audioPacket = mTransferQueue.poll();
 
-        while(audioPacket != null && audioPacket.getType() == AudioPacket.Type.AUDIO)
+        while(audioPacket != null && audioPacket.getType() == ReusableAudioPacket.Type.AUDIO)
         {
             if(audioPacket.hasMetadata())
             {
                 mMetadata = audioPacket.getMetadata();
             }
 
-            mWriter.writeData(ConversionUtils.convertToSigned16BitSamples(audioPacket.getAudioBuffer()));
-            audioPacket = mAudioPackets.poll();
+            mWriter.writeData(ConversionUtils.convertToSigned16BitSamples(audioPacket.getAudioSamples()));
+            audioPacket.decrementUserCount();
+            audioPacket = mTransferQueue.poll();
+        }
+
+        if(audioPacket != null)
+        {
+            audioPacket.decrementUserCount();
         }
     }
 
@@ -216,7 +220,7 @@ public class AudioPacketWaveRecorder extends Module implements Listener<AudioPac
             catch(IOException ioe)
             {
 				/* Stop this module if/when we get an IO exception */
-                mAudioPackets.clear();
+                mTransferQueue.clear();
                 stop();
 
                 mLog.error("IO Exception while trying to write to the wave writer", ioe);

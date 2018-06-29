@@ -19,12 +19,12 @@
 package io.github.dsheirer.audio.broadcast;
 
 import io.github.dsheirer.alias.id.broadcast.BroadcastChannel;
-import io.github.dsheirer.audio.AudioPacket;
 import io.github.dsheirer.channel.metadata.Metadata;
 import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +46,7 @@ import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class BroadcastModel extends AbstractTableModel implements Listener<AudioPacket>
+public class BroadcastModel extends AbstractTableModel implements Listener<ReusableAudioPacket>
 {
     private final static Logger mLog = LoggerFactory.getLogger(BroadcastModel.class);
 
@@ -276,7 +276,7 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
     }
 
     @Override
-    public void receive(AudioPacket audioPacket)
+    public void receive(ReusableAudioPacket audioPacket)
     {
         if(audioPacket.hasMetadata() && audioPacket.getMetadata().isStreamable())
         {
@@ -284,11 +284,14 @@ public class BroadcastModel extends AbstractTableModel implements Listener<Audio
             {
                 if(mBroadcasterMap.containsKey(channel.getChannelName()))
                 {
+                    audioPacket.incrementUserCount();
                     mStreamManager.receive(audioPacket);
                     return;
                 }
             }
         }
+
+        audioPacket.decrementUserCount();
     }
 
     /**

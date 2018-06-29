@@ -24,6 +24,7 @@ import io.github.dsheirer.audio.output.StereoAudioOutput;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.source.mixer.MixerChannel;
 import io.github.dsheirer.source.mixer.MixerChannelConfiguration;
 import io.github.dsheirer.source.mixer.MixerManager;
@@ -43,7 +44,7 @@ import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-public class AudioManager implements Listener<AudioPacket>, IAudioController
+public class AudioManager implements Listener<ReusableAudioPacket>, IAudioController
 {
     private static final Logger mLog = LoggerFactory.getLogger(AudioManager.class);
 
@@ -58,7 +59,7 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
     public static final AudioEvent CONFIGURATION_CHANGE_COMPLETE =
         new AudioEvent(AudioEvent.Type.AUDIO_CONFIGURATION_CHANGE_COMPLETE, null);
 
-    private LinkedTransferQueue<AudioPacket> mAudioPacketQueue = new LinkedTransferQueue<>();
+    private LinkedTransferQueue<ReusableAudioPacket> mAudioPacketQueue = new LinkedTransferQueue<>();
     private Map<Integer,AudioOutputConnection> mChannelConnectionMap = new HashMap<>();
     private List<AudioOutputConnection> mAudioOutputConnections = new ArrayList<>();
     private AudioOutputConnection mLowestPriorityConnection;
@@ -170,7 +171,7 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
      * Primary ingest point for audio produced by all decoding channels, for distribution to audio playback devices.
      */
     @Override
-    public synchronized void receive(AudioPacket packet)
+    public synchronized void receive(ReusableAudioPacket packet)
     {
         mAudioPacketQueue.add(packet);
     }
@@ -362,7 +363,7 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
      * @param audioPacket from a decoding channel source
      * @return an audio output connection or null
      */
-    private AudioOutputConnection getConnection(AudioPacket audioPacket)
+    private AudioOutputConnection getConnection(ReusableAudioPacket audioPacket)
     {
         int channelMetadataID = audioPacket.getMetadata().getMetadataID();
 
@@ -410,6 +411,8 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 
     public class AudioPacketProcessor implements Runnable
     {
+        private List<ReusableAudioPacket> mPackets = new ArrayList<>();
+
         @Override
         public void run()
         {
@@ -419,14 +422,12 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
 
                 if(mAudioPacketQueue != null)
                 {
-                    List<AudioPacket> packets = new ArrayList<AudioPacket>();
+                    mAudioPacketQueue.drainTo(mPackets);
 
-                    mAudioPacketQueue.drainTo(packets);
-
-                    for(AudioPacket packet : packets)
+                    for(ReusableAudioPacket packet : mPackets)
                     {
                         /* Don't process any packet's marked as do not monitor */
-                        if(!packet.getMetadata().isDoNotMonitor() && packet.getType() == AudioPacket.Type.AUDIO)
+                        if(!packet.getMetadata().isDoNotMonitor() && packet.getType() == ReusableAudioPacket.Type.AUDIO)
                         {
                             AudioOutputConnection connection = getConnection(packet);
 
@@ -434,13 +435,29 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
                             {
                                 connection.receive(packet);
                             }
+                            else
+                            {
+                                packet.decrementUserCount();
+                            }
+                        }
+                        else
+                        {
+                            packet.decrementUserCount();
                         }
                     }
+
+                    mPackets.clear();
                 }
             }
             catch(Exception e)
             {
                 mLog.error("Encountered error while processing audio packets", e);
+
+                while(mPackets.size() > 0)
+                {
+                    ReusableAudioPacket audioPacket = mPackets.remove(0);
+                    audioPacket.decrementUserCount();
+                }
             }
         }
     }
@@ -463,7 +480,7 @@ public class AudioManager implements Listener<AudioPacket>, IAudioController
             mAudioOutput = audioOutput;
         }
 
-        public void receive(AudioPacket packet)
+        public void receive(ReusableAudioPacket packet)
         {
             if(packet.hasMetadata() && packet.getMetadata().getMetadataID() == mChannelMetadataID)
             {

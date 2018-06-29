@@ -18,7 +18,7 @@
  ******************************************************************************/
 package io.github.dsheirer.audio.convert;
 
-import io.github.dsheirer.audio.AudioPacket;
+import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 
 import java.util.List;
 
@@ -27,7 +27,7 @@ public interface IAudioConverter
     /**
      * Converts the PCM audio packets to converted audio format.  May produce partial audio frame data.
      */
-    public byte[] convert(List<AudioPacket> audioPackets);
+    public byte[] convert(List<ReusableAudioPacket> audioPackets);
 
     /**
      * Finalizes audio conversion by fully converting any partial frames left in the buffer and returning the

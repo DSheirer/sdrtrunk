@@ -18,9 +18,9 @@
  ******************************************************************************/
 package io.github.dsheirer.audio.broadcast;
 
-import io.github.dsheirer.audio.AudioPacket;
 import io.github.dsheirer.record.AudioRecorder;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
 import org.slf4j.Logger;
@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class StreamManager implements Listener<AudioPacket>
+public class StreamManager implements Listener<ReusableAudioPacket>
 {
     private final static Logger mLog = LoggerFactory.getLogger(StreamManager.class);
     private static final long MAXIMUM_RECORDER_LIFESPAN_MILLIS = 30000; //30 seconds
@@ -115,7 +115,7 @@ public class StreamManager implements Listener<AudioPacket>
     }
 
     @Override
-    public void receive(AudioPacket audioPacket)
+    public void receive(ReusableAudioPacket audioPacket)
     {
         if(mRunning.get() && audioPacket.hasMetadata())
         {
@@ -123,9 +123,9 @@ public class StreamManager implements Listener<AudioPacket>
             {
                 int channelMetadataID = audioPacket.getMetadata().getMetadataID();
 
-                AudioPacket.Type type = audioPacket.getType();
+                ReusableAudioPacket.Type type = audioPacket.getType();
 
-                if(type == AudioPacket.Type.AUDIO)
+                if(type == ReusableAudioPacket.Type.AUDIO)
                 {
                     if(mStreamRecorders.containsKey(channelMetadataID))
                     {
@@ -133,6 +133,7 @@ public class StreamManager implements Listener<AudioPacket>
 
                         if(recorder != null)
                         {
+                            audioPacket.incrementUserCount();
                             recorder.receive(audioPacket);
                         }
                     }
@@ -141,11 +142,12 @@ public class StreamManager implements Listener<AudioPacket>
                         AudioRecorder recorder = BroadcastFactory.getAudioRecorder(getTemporaryRecordingPath(),
                             mBroadcastFormat);
                         recorder.start();
+                        audioPacket.incrementUserCount();
                         recorder.receive(audioPacket);
                         mStreamRecorders.put(channelMetadataID, recorder);
                     }
                 }
-                else if(type == AudioPacket.Type.END)
+                else if(type == ReusableAudioPacket.Type.END)
                 {
                     removeRecorder(channelMetadataID);
                 }
@@ -155,6 +157,8 @@ public class StreamManager implements Listener<AudioPacket>
                 }
             }
         }
+
+        audioPacket.decrementUserCount();
     }
 
     /**

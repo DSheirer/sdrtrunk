@@ -18,7 +18,6 @@
  ******************************************************************************/
 package io.github.dsheirer.module;
 
-import io.github.dsheirer.audio.AudioPacket;
 import io.github.dsheirer.audio.IAudioPacketListener;
 import io.github.dsheirer.audio.IAudioPacketProvider;
 import io.github.dsheirer.audio.squelch.ISquelchStateListener;
@@ -52,6 +51,7 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IReusableBufferListener;
 import io.github.dsheirer.sample.buffer.IReusableBufferProvider;
 import io.github.dsheirer.sample.buffer.IReusableComplexBufferListener;
+import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
@@ -99,7 +99,7 @@ public class ProcessingChain implements IChannelEventListener
     private final static Logger mLog = LoggerFactory.getLogger(ProcessingChain.class);
 
     private Broadcaster<AttributeChangeRequest> mAttributeChangeRequestBroadcaster = new Broadcaster<>();
-    private Broadcaster<AudioPacket> mAudioPacketBroadcaster = new Broadcaster<>();
+    private ReusableBufferBroadcaster<ReusableAudioPacket> mAudioPacketBroadcaster = new ReusableBufferBroadcaster<>();
     private Broadcaster<CallEvent> mCallEventBroadcaster = new Broadcaster<>();
     private Broadcaster<ChannelEvent> mChannelEventBroadcaster = new Broadcaster<>();
     private ReusableBufferBroadcaster<ReusableComplexBuffer> mComplexBufferBroadcaster = new ReusableBufferBroadcaster();
@@ -724,12 +724,12 @@ public class ProcessingChain implements IChannelEventListener
     /**
      * Adds the listener to receive audio packets from all modules.
      */
-    public void addAudioPacketListener(Listener<AudioPacket> listener)
+    public void addAudioPacketListener(Listener<ReusableAudioPacket> listener)
     {
         mAudioPacketBroadcaster.addListener(listener);
     }
 
-    public void removeAudioPacketListener(Listener<AudioPacket> listener)
+    public void removeAudioPacketListener(Listener<ReusableAudioPacket> listener)
     {
         mAudioPacketBroadcaster.removeListener(listener);
     }
