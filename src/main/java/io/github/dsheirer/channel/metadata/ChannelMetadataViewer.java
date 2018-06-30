@@ -26,11 +26,10 @@ import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.module.decode.event.CallEventPanel;
 import io.github.dsheirer.module.decode.event.MessageActivityPanel;
 import io.github.dsheirer.settings.SettingsManager;
-import io.github.dsheirer.spectrum.ChannelSpectrumPanel;
 import net.miginfocom.swing.MigLayout;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JPanel;
+import java.awt.Color;
 
 public class ChannelMetadataViewer extends JPanel
 {
@@ -39,7 +38,6 @@ public class ChannelMetadataViewer extends JPanel
     private ChannelDetailPanel mChannelDetailPanel;
     private CallEventPanel mCallEventPanel;
     private MessageActivityPanel mMessageActivityPanel;
-    private ChannelSpectrumPanel mChannelSpectrumPanel;
 
     /**
      * GUI panel that combines the currently decoding channels metadata table and viewers for channel details,
@@ -51,7 +49,6 @@ public class ChannelMetadataViewer extends JPanel
         mChannelDetailPanel = new ChannelDetailPanel(channelProcessingManager);
         mCallEventPanel = new CallEventPanel(iconManager);
         mMessageActivityPanel = new MessageActivityPanel(channelProcessingManager);
-//        mChannelSpectrumPanel = new ChannelSpectrumPanel(settingsManager, channelProcessingManager);
         mChannelMetadataPanel = new ChannelMetadataPanel(channelProcessingManager, iconManager);
 
         init();

@@ -58,6 +58,16 @@ public class DCRemovalFilter
         return filtered;
     }
 
+    public float[] filter( float[] samples )
+    {
+        for( int x = 0; x < samples.length; x++ )
+        {
+            samples[ x ] = filter( samples[ x ] );
+        }
+
+        return samples;
+    }
+
     /**
      * Filters the buffer samples and returns a new reusable buffer with the filtered samples.
      *

@@ -45,7 +45,6 @@ import io.github.dsheirer.module.decode.event.ICallEventProvider;
 import io.github.dsheirer.module.decode.event.MessageActivityModel;
 import io.github.dsheirer.module.log.EventLogger;
 import io.github.dsheirer.record.wave.ComplexBufferWaveRecorder;
-import io.github.dsheirer.record.wave.RealBufferWaveRecorder;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IReusableBufferListener;
@@ -709,7 +708,7 @@ public class ProcessingChain implements IChannelEventListener
 
         for(Module module : mModules)
         {
-            if(module instanceof RealBufferWaveRecorder || module instanceof ComplexBufferWaveRecorder)
+            if(module instanceof ComplexBufferWaveRecorder)
             {
                 recordingModules.add(module);
             }

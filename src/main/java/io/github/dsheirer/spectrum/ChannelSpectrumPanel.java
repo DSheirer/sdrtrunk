@@ -26,9 +26,8 @@ import io.github.dsheirer.dsp.filter.smoothing.SmoothingFilter.SmoothingType;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
-import io.github.dsheirer.sample.real.RealBuffer;
 import io.github.dsheirer.settings.ColorSetting.ColorSettingName;
 import io.github.dsheirer.settings.ColorSettingMenuItem;
 import io.github.dsheirer.settings.Setting;
@@ -60,7 +59,7 @@ import java.awt.event.MouseMotionListener;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ChannelSpectrumPanel extends JPanel implements ChannelEventListener,
-    Listener<RealBuffer>, SettingChangeListener, SpectralDisplayAdjuster
+    Listener<ReusableBuffer>, SettingChangeListener, SpectralDisplayAdjuster
 {
     private static final long serialVersionUID = 1L;
 
@@ -164,7 +163,6 @@ public class ChannelSpectrumPanel extends JPanel implements ChannelEventListener
     }
 
     @Override
-    @SuppressWarnings("incomplete-switch")
     public void channelChanged(ChannelEvent event)
     {
         switch(event.getEvent())
@@ -217,7 +215,7 @@ public class ChannelSpectrumPanel extends JPanel implements ChannelEventListener
 
             if(processingChain != null)
             {
-                processingChain.addRealBufferListener(this);
+//                processingChain.addRealBufferListener(this);
 
                 mDFTProcessor.start();
             }
@@ -233,7 +231,7 @@ public class ChannelSpectrumPanel extends JPanel implements ChannelEventListener
 
             if(processingChain != null)
             {
-                processingChain.removeRealBufferListener(this);
+//                processingChain.removeRealBufferListener(this);
             }
         }
 
@@ -270,16 +268,17 @@ public class ChannelSpectrumPanel extends JPanel implements ChannelEventListener
     }
 
     @Override
-    public void receive(RealBuffer buffer)
+    public void receive(ReusableBuffer buffer)
     {
-        RealBuffer decimated = mDecimatingFilter.filter(buffer);
-
-        //Hack: we're placing real samples in a complex buffer that the DFT
-        //processor is expecting.
-        ReusableComplexBuffer reusableComplexBuffer = mReusableComplexBufferQueue.getBuffer(decimated.getSamples().length);
-        reusableComplexBuffer.reloadFrom(decimated.getSamples(), System.currentTimeMillis());
-        reusableComplexBuffer.incrementUserCount();
-        mDFTProcessor.receive(reusableComplexBuffer);
+        throw new IllegalStateException("This must be updated to work with reusable buffers");
+//        RealBuffer decimated = mDecimatingFilter.filter(buffer);
+//
+//        //Hack: we're placing real samples in a complex buffer that the DFT
+//        //processor is expecting.
+//        ReusableComplexBuffer reusableComplexBuffer = mReusableComplexBufferQueue.getBuffer(decimated.getSamples().length);
+//        reusableComplexBuffer.reloadFrom(decimated.getSamples(), System.currentTimeMillis());
+//        reusableComplexBuffer.incrementUserCount();
+//        mDFTProcessor.receive(reusableComplexBuffer);
     }
 
     /**
