@@ -15,131 +15,66 @@
  ******************************************************************************/
 package io.github.dsheirer.sample.buffer;
 
-import io.github.dsheirer.dsp.filter.channelizer.SampleTimestampManager;
 import io.github.dsheirer.sample.Listener;
-import org.apache.commons.lang3.Validate;
-
-import java.nio.FloatBuffer;
+import io.github.dsheirer.sample.real.RealSampleListener;
 
 /**
- * Assembles complex float samples into a ComplexBuffer containing an array of floats.  Monitors incoming sample count
- * to accurately assign a relative timestamp to each assembled buffer.
+ * Assembles single float samples into a ReusableBuffer containing an array of floats
  */
-public class ReusableBufferAssembler
+public class ReusableBufferAssembler implements RealSampleListener
 {
-    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("ReusableBufferAssembler");
-    private SampleTimestampManager mTimestampManager;
-    private FloatBuffer mBuffer;
     private int mBufferSize;
-    private long mCurrentBufferTimestamp;
-    private Listener<ReusableComplexBuffer> mListener;
+    private int mBufferPointer;
+    private ReusableBuffer mCurrentBuffer;
+    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("Real");
 
-    public ReusableBufferAssembler(int bufferSize, double sampleRate)
+    private Listener<ReusableBuffer> mListener;
+
+    public ReusableBufferAssembler(int bufferSize)
     {
-        Validate.isTrue(bufferSize % 2 == 0);
         mBufferSize = bufferSize;
-        mBuffer = FloatBuffer.allocate(mBufferSize);
-        mTimestampManager = new SampleTimestampManager(sampleRate);
-    }
-
-    /**
-     * Updates the reference timestamp to use for all subsequent samples that are assembled.  This timestamp should
-     * identify the relative timestamp of the first/next sample that is received by this assembler.
-     * @param timestamp to use relative to the incoming sample arrays.
-     */
-    public void updateTimestamp(long timestamp)
-    {
-        mTimestampManager.setReferenceTimestamp(timestamp);
-
-        if(mBuffer.position() == 0)
-        {
-            mCurrentBufferTimestamp = timestamp;
-        }
     }
 
     public void dispose()
     {
-        mReusableComplexBufferQueue.dispose();
         mListener = null;
     }
 
-    /**
-     * Adds the samples to this assembler.  As each buffer is assembled, it will be dispatched to the registered
-     * listener.
-     *
-     * @param samples to assemble
-     */
-    public void receive(float[] samples)
+    public void reset()
     {
-        if(mBuffer.remaining() >= samples.length)
-        {
-            mBuffer.put(samples);
-            mTimestampManager.increment(samples.length / 2);
+        mCurrentBuffer.decrementUserCount();
+        mCurrentBuffer = null;
+        mBufferPointer = 0;
+    }
 
-            if(!mBuffer.hasRemaining())
+    @Override
+    public void receive(float sample)
+    {
+        if(mCurrentBuffer == null)
+        {
+            mCurrentBuffer = mReusableBufferQueue.getBuffer(mBufferSize);
+            mCurrentBuffer.incrementUserCount();
+            mBufferPointer = 0;
+        }
+
+        mCurrentBuffer.getSamples()[mBufferPointer++] = sample;
+
+        if (mBufferPointer >= mBufferSize)
+        {
+            if (mListener != null)
             {
-                flush();
+                mListener.receive(mCurrentBuffer);
             }
-        }
-        else
-        {
-            int offset = 0;
-
-            while(offset < samples.length)
+            else
             {
-                int toCopy = mBuffer.remaining();
-
-                if((samples.length - offset) < toCopy)
-                {
-                    toCopy = samples.length - offset;
-                }
-
-                mBuffer.put(samples, offset, toCopy);
-
-                offset += toCopy;
-                mTimestampManager.increment(toCopy / 2);
-
-                if(!mBuffer.hasRemaining())
-                {
-                    flush();
-                }
+                mCurrentBuffer.decrementUserCount();
             }
+
+            mCurrentBuffer = null;
         }
     }
 
-    /**
-     * Adds the samples to this assembler.  As each buffer is assembled, it will be dispatched to the registered
-     * listener.
-     */
-    public void receive(ReusableComplexBuffer samplesBuffer)
-    {
-        receive(samplesBuffer.getSamples());
-        samplesBuffer.decrementUserCount();
-    }
-
-    /**
-     * Flushes the current buffer contents to the registered listener
-     */
-    public void flush()
-    {
-        if(mListener != null && mBuffer.position() > 0)
-        {
-            mBuffer.rewind();
-            ReusableComplexBuffer reusableComplexBuffer = mReusableComplexBufferQueue.getBuffer(mBufferSize);
-            reusableComplexBuffer.reloadFrom(mBuffer, mCurrentBufferTimestamp);
-            reusableComplexBuffer.incrementUserCount();
-            mListener.receive(reusableComplexBuffer);
-        }
-
-        mBuffer.rewind();
-        mCurrentBufferTimestamp = mTimestampManager.getCurrentTimestamp();
-    }
-
-    /**
-     * Sets the listener to receive the output from this buffer assembler.  Note: the listener is responsible for
-     * managing the user count for any buffers received from this buffer assembler.
-     */
-    public void setListener(Listener<ReusableComplexBuffer> listener)
+    public void setListener(Listener<ReusableBuffer> listener)
     {
         mListener = listener;
     }

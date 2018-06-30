@@ -18,9 +18,9 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.channelizer.output;
 
-import io.github.dsheirer.sample.buffer.ReusableBufferAssembler;
 import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBufferAssembler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,11 +74,11 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
      * extracted frequency-corrected channel I/Q sample set to the complex sample listener.
      *
      * @param channelResults to process containing a list of channel array of I/Q sample pairs (I0,Q0,I1,Q1...In,Qn)
-     * @param reusableBufferAssembler to receive the extracted, frequency-translated channel results
+     * @param reusableComplexBufferAssembler to receive the extracted, frequency-translated channel results
      */
     @Override
     public void process(List<ReusableChannelResultsBuffer> channelResults,
-                        ReusableBufferAssembler reusableBufferAssembler)
+                        ReusableComplexBufferAssembler reusableComplexBufferAssembler)
     {
         for(ReusableChannelResultsBuffer channelResultsBuffer: channelResults)
         {
@@ -91,7 +91,7 @@ public class OneChannelOutputProcessor extends ChannelOutputProcessor
                     getFrequencyCorrectionMixer().mixComplex(channelBuffer.getSamples());
                 }
 
-                reusableBufferAssembler.receive(channelBuffer);
+                reusableComplexBufferAssembler.receive(channelBuffer);
             }
             catch(IllegalArgumentException iae)
             {

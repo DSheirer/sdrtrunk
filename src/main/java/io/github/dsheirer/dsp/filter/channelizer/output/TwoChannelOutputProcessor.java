@@ -21,9 +21,9 @@ import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
 import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import io.github.dsheirer.dsp.mixer.FS4DownConverter;
-import io.github.dsheirer.sample.buffer.ReusableBufferAssembler;
 import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBufferAssembler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,11 +119,11 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
      * extracted frequency-corrected channel I/Q sample set to the complex sample listener.
      *
      * @param channelResultsBuffers to process containing an array of channel I/Q sample pairs (I0,Q0,I1,Q1...In,Qn)
-     * @param reusableBufferAssembler to receive the extracted, frequency-translated channel results
+     * @param reusableComplexBufferAssembler to receive the extracted, frequency-translated channel results
      */
     @Override
     public void process(List<ReusableChannelResultsBuffer> channelResultsBuffers,
-                        ReusableBufferAssembler reusableBufferAssembler)
+                        ReusableComplexBufferAssembler reusableComplexBufferAssembler)
     {
         for(ReusableChannelResultsBuffer buffer: channelResultsBuffers)
         {
@@ -141,7 +141,7 @@ public class TwoChannelOutputProcessor extends ChannelOutputProcessor
 
             ReusableComplexBuffer lowPassFiltered = mLowPassFilter.filter(synthesized);
 
-            reusableBufferAssembler.receive(lowPassFiltered);
+            reusableComplexBufferAssembler.receive(lowPassFiltered);
 
             buffer.decrementUserCount();
         }

@@ -17,9 +17,9 @@ package io.github.dsheirer.dsp.filter.channelizer;
 
 import io.github.dsheirer.dsp.filter.channelizer.output.IPolyphaseChannelOutputProcessor;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableBufferAssembler;
 import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBufferAssembler;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
@@ -30,7 +30,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
 {
     private final static Logger mLog = LoggerFactory.getLogger(PolyphaseChannelSource.class);
 
-    private ReusableBufferAssembler mReusableBufferAssembler;
+    private ReusableComplexBufferAssembler mReusableComplexBufferAssembler;
     private IPolyphaseChannelOutputProcessor mPolyphaseChannelOutputProcessor;
     private double mChannelSampleRate;
     private long mIndexCenterFrequency;
@@ -54,7 +54,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
         super(producerSourceEventListener, tunerChannel);
         mPolyphaseChannelOutputProcessor = outputProcessor;
         mChannelSampleRate = channelSampleRate;
-        mReusableBufferAssembler = new ReusableBufferAssembler(2500, mChannelSampleRate);
+        mReusableComplexBufferAssembler = new ReusableComplexBufferAssembler(2500, mChannelSampleRate);
         setFrequency(centerFrequency);
     }
 
@@ -64,7 +64,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
     @Override
     public void setListener(final Listener<ReusableComplexBuffer> listener)
     {
-        mReusableBufferAssembler.setListener(listener);
+        mReusableComplexBufferAssembler.setListener(listener);
    }
 
     /**
@@ -73,7 +73,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
     @Override
     public void removeListener(Listener<ReusableComplexBuffer> listener)
     {
-        mReusableBufferAssembler.setListener(null);
+        mReusableComplexBufferAssembler.setListener(null);
     }
 
     /**
@@ -112,7 +112,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
             //Fully process the residual channel results buffer of the previous channel output processor
             if(existingProcessor != null)
             {
-                existingProcessor.processChannelResults(mReusableBufferAssembler);
+                existingProcessor.processChannelResults(mReusableComplexBufferAssembler);
             }
 
             //Finally, setup the frequency offset for the output processor and reset the frequency correction value
@@ -133,7 +133,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
      */
     public void receiveChannelResults(ReusableChannelResultsBuffer channelResultsBuffer)
     {
-        mReusableBufferAssembler.updateTimestamp(channelResultsBuffer.getTimestamp());
+        mReusableComplexBufferAssembler.updateTimestamp(channelResultsBuffer.getTimestamp());
         mPolyphaseChannelOutputProcessor.receiveChannelResults(channelResultsBuffer);
     }
 
@@ -161,9 +161,9 @@ public class PolyphaseChannelSource extends TunerChannelSource
     @Override
     public void dispose()
     {
-        if(mReusableBufferAssembler != null)
+        if(mReusableComplexBufferAssembler != null)
         {
-            mReusableBufferAssembler.dispose();
+            mReusableComplexBufferAssembler.dispose();
         }
 
         if(mPolyphaseChannelOutputProcessor != null)
@@ -212,7 +212,7 @@ public class PolyphaseChannelSource extends TunerChannelSource
         //Lock on the output processor so that it can't be changed in the middle of processing
         synchronized(mPolyphaseChannelOutputProcessor)
         {
-            mPolyphaseChannelOutputProcessor.processChannelResults(mReusableBufferAssembler);
+            mPolyphaseChannelOutputProcessor.processChannelResults(mReusableComplexBufferAssembler);
         }
     }
 

@@ -20,10 +20,10 @@ package io.github.dsheirer.dsp.filter.channelizer.output;
 
 import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.Oscillator;
+import io.github.dsheirer.sample.IOverflowListener;
 import io.github.dsheirer.sample.buffer.OverflowableReusableBufferTransferQueue;
-import io.github.dsheirer.sample.buffer.ReusableBufferAssembler;
 import io.github.dsheirer.sample.buffer.ReusableChannelResultsBuffer;
-import io.github.dsheirer.sample.real.IOverflowListener;
+import io.github.dsheirer.sample.buffer.ReusableComplexBufferAssembler;
 import io.github.dsheirer.source.Source;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -99,10 +99,10 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
 
     /**
      * Processes all enqueued polyphase channelizer results until the internal queue is empty
-     * @param reusableBufferAssembler to receive the processed channel results
+     * @param reusableComplexBufferAssembler to receive the processed channel results
      */
     @Override
-    public void processChannelResults(ReusableBufferAssembler reusableBufferAssembler)
+    public void processChannelResults(ReusableComplexBufferAssembler reusableComplexBufferAssembler)
     {
         try
         {
@@ -110,7 +110,7 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
 
             if(toProcess > 0)
             {
-                process(mChannelResultsToProcess, reusableBufferAssembler);
+                process(mChannelResultsToProcess, reusableComplexBufferAssembler);
             }
         }
         catch(Throwable throwable)
@@ -124,10 +124,10 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
     /**
      * Sub-class implementation to process one polyphase channelizer result array.
      * @param channelResults to process
-     * @param reusableBufferAssembler to receive the processed channelizer results
+     * @param reusableComplexBufferAssembler to receive the processed channelizer results
      */
     public abstract void process(List<ReusableChannelResultsBuffer> channelResults,
-                                 ReusableBufferAssembler reusableBufferAssembler);
+                                 ReusableComplexBufferAssembler reusableComplexBufferAssembler);
 
 
     /**

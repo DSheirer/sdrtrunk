@@ -19,7 +19,6 @@ import io.github.dsheirer.buffer.FloatCircularBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
 import io.github.dsheirer.sample.complex.Complex;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
 import io.github.dsheirer.sample.complex.ComplexSampleListener;
 
 public class ComplexFeedForwardGainControl implements ComplexSampleListener
@@ -135,17 +134,6 @@ public class ComplexFeedForwardGainControl implements ComplexSampleListener
         }
 
         return processed;
-    }
-
-    /**
-     * Applies gain to the complex sample buffer
-     * @param buffer to apply gain
-     * @return buffer with gain applied samples
-     */
-    public ComplexBuffer filter(ComplexBuffer buffer)
-    {
-        float[] filtered = filter(buffer.getSamples());
-        return new ComplexBuffer(filtered);
     }
 
     /**

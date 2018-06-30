@@ -1,7 +1,5 @@
 package io.github.dsheirer.dsp.gain;
 
-import io.github.dsheirer.sample.real.RealBuffer;
-
 public class NonClippingGain
 {
 	private float mGain;
@@ -49,17 +47,5 @@ public class NonClippingGain
 		}
 		
 		return samples;
-	}
-
-	/**
-	 * Applies gain to the real buffer
-	 */
-	public RealBuffer apply( RealBuffer buffer )
-	{
-		float[] samples = buffer.getSamples();
-		
-		apply( samples );
-		
-		return buffer;
 	}
 }

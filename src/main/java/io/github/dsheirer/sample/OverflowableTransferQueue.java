@@ -18,7 +18,6 @@
  ******************************************************************************/
 package io.github.dsheirer.sample;
 
-import io.github.dsheirer.sample.real.IOverflowListener;
 import io.github.dsheirer.source.Source;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

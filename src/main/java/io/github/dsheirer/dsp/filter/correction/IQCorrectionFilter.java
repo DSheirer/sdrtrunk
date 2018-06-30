@@ -18,13 +18,15 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.correction;
 
-import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
 
 public class IQCorrectionFilter
 {
     private float mRatio = 0.00001f;
     private float mAverageInphase = 0.0f;
     private float mAverageQuadrature = 0.0f;
+    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("IQCorrectionFilter");
 
     public IQCorrectionFilter(float ratio)
     {
@@ -35,17 +37,23 @@ public class IQCorrectionFilter
     {
     }
 
-    public void filter(ComplexBuffer buffer)
+    public ReusableComplexBuffer filter(ReusableComplexBuffer buffer)
     {
         float[] samples = buffer.getSamples();
+
+        ReusableComplexBuffer filtered = mReusableComplexBufferQueue.getBuffer(samples.length);
+        filtered.incrementUserCount();
+        float[] filteredSamples = filtered.getSamples();
 
         for(int x = 0; x < samples.length; x += 2)
         {
             mAverageInphase = mAverageInphase + (mRatio * (samples[x] - mAverageInphase));
-            samples[x] -= mAverageInphase;
+            filteredSamples[x] = samples[x] - mAverageInphase;
 
             mAverageQuadrature = mAverageQuadrature + (mRatio * (samples[x + 1] - mAverageQuadrature));
-            samples[x + 1] -= mAverageQuadrature;
+            filteredSamples[x + 1] = samples[x + 1] - mAverageQuadrature;
         }
+
+        return filtered;
     }
 }

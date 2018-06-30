@@ -13,29 +13,13 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.sample.real;
+package io.github.dsheirer.sample;
 
-import io.github.dsheirer.sample.Buffer;
-
-import java.util.Arrays;
-
-public class RealBuffer extends Buffer
+public interface IOverflowListener
 {
     /**
-     * Wrapper around float array containing real float samples
+     * Indicates that the source is in overflow state (true) or out of overflow state (false)
+     * @param overflow true to indicate an overflow state
      */
-    public RealBuffer(float[] samples)
-    {
-        super(samples);
-    }
-
-    /**
-     * Creates a deep copy of the buffer and a shallow (reference) copy of the source event
-     */
-    public RealBuffer copyOf()
-    {
-        float[] copy = Arrays.copyOf(getSamples(), getSamples().length);
-
-        return new RealBuffer(copy);
-    }
+    void sourceOverflow(boolean overflow);
 }

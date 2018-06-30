@@ -21,12 +21,13 @@ import io.github.dsheirer.controller.channel.ChannelEventListener;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.dsp.filter.Filters;
 import io.github.dsheirer.dsp.filter.Window.WindowType;
-import io.github.dsheirer.dsp.filter.halfband.real.HalfBandFilter_RB_RB;
+import io.github.dsheirer.dsp.filter.halfband.real.HalfBandFilter;
 import io.github.dsheirer.dsp.filter.smoothing.SmoothingFilter.SmoothingType;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
 import io.github.dsheirer.sample.buffer.ReusableBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
 import io.github.dsheirer.settings.ColorSetting.ColorSettingName;
 import io.github.dsheirer.settings.ColorSettingMenuItem;
@@ -74,7 +75,7 @@ public class ChannelSpectrumPanel extends JPanel implements ChannelEventListener
 
     private int mSampleBufferSize = 2400;
 
-    private HalfBandFilter_RB_RB mDecimatingFilter = new HalfBandFilter_RB_RB(
+    private HalfBandFilter mDecimatingFilter = new HalfBandFilter(
         Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO.getCoefficients(), 1.0f, true);
 
     private AtomicBoolean mEnabled = new AtomicBoolean();
@@ -215,8 +216,7 @@ public class ChannelSpectrumPanel extends JPanel implements ChannelEventListener
 
             if(processingChain != null)
             {
-//                processingChain.addRealBufferListener(this);
-
+                processingChain.addDemodulatedAudioListener(this);
                 mDFTProcessor.start();
             }
         }
@@ -226,12 +226,11 @@ public class ChannelSpectrumPanel extends JPanel implements ChannelEventListener
     {
         if(mCurrentChannel != null && mCurrentChannel.isProcessing())
         {
-            ProcessingChain processingChain = mChannelProcessingManager
-                .getProcessingChain(mCurrentChannel);
+            ProcessingChain processingChain = mChannelProcessingManager.getProcessingChain(mCurrentChannel);
 
             if(processingChain != null)
             {
-//                processingChain.removeRealBufferListener(this);
+                processingChain.removeDemodulatedAudioListener(this);
             }
         }
 
@@ -270,15 +269,14 @@ public class ChannelSpectrumPanel extends JPanel implements ChannelEventListener
     @Override
     public void receive(ReusableBuffer buffer)
     {
-        throw new IllegalStateException("This must be updated to work with reusable buffers");
-//        RealBuffer decimated = mDecimatingFilter.filter(buffer);
-//
-//        //Hack: we're placing real samples in a complex buffer that the DFT
-//        //processor is expecting.
-//        ReusableComplexBuffer reusableComplexBuffer = mReusableComplexBufferQueue.getBuffer(decimated.getSamples().length);
-//        reusableComplexBuffer.reloadFrom(decimated.getSamples(), System.currentTimeMillis());
-//        reusableComplexBuffer.incrementUserCount();
-//        mDFTProcessor.receive(reusableComplexBuffer);
+        ReusableBuffer decimated = mDecimatingFilter.filter(buffer);
+
+        //Hack: we're placing real samples in a complex buffer that the DFT
+        //processor is expecting.
+        ReusableComplexBuffer reusableComplexBuffer = mReusableComplexBufferQueue.getBuffer(decimated.getSamples().length);
+        reusableComplexBuffer.reloadFrom(decimated.getSamples(), System.currentTimeMillis());
+        reusableComplexBuffer.incrementUserCount();
+        mDFTProcessor.receive(reusableComplexBuffer);
     }
 
     /**

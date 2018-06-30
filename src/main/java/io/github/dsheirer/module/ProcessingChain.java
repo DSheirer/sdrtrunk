@@ -54,11 +54,6 @@ import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
-import io.github.dsheirer.sample.real.IFilteredRealBufferListener;
-import io.github.dsheirer.sample.real.IFilteredRealBufferProvider;
-import io.github.dsheirer.sample.real.IUnFilteredRealBufferListener;
-import io.github.dsheirer.sample.real.IUnFilteredRealBufferProvider;
-import io.github.dsheirer.sample.real.RealBuffer;
 import io.github.dsheirer.source.ComplexSource;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.ISourceEventProvider;
@@ -97,18 +92,16 @@ public class ProcessingChain implements IChannelEventListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(ProcessingChain.class);
 
-    private Broadcaster<AttributeChangeRequest> mAttributeChangeRequestBroadcaster = new Broadcaster<>();
     private ReusableBufferBroadcaster<ReusableAudioPacket> mAudioPacketBroadcaster = new ReusableBufferBroadcaster<>();
+    private ReusableBufferBroadcaster<ReusableBuffer> mDemodulatedAudioBufferBroadcaster = new ReusableBufferBroadcaster();
+    private ReusableBufferBroadcaster<ReusableComplexBuffer> mBasebandComplexBufferBroadcaster = new ReusableBufferBroadcaster();
+    private Broadcaster<AttributeChangeRequest> mAttributeChangeRequestBroadcaster = new Broadcaster<>();
     private Broadcaster<CallEvent> mCallEventBroadcaster = new Broadcaster<>();
     private Broadcaster<ChannelEvent> mChannelEventBroadcaster = new Broadcaster<>();
-    private ReusableBufferBroadcaster<ReusableComplexBuffer> mComplexBufferBroadcaster = new ReusableBufferBroadcaster();
-    private ReusableBufferBroadcaster<ReusableBuffer> mDemodulatedAudioBufferBroadcaster = new ReusableBufferBroadcaster();
     private Broadcaster<DecoderStateEvent> mDecoderStateEventBroadcaster = new Broadcaster<>();
     private Broadcaster<Heartbeat> mHeartbeatBroadcaster = new Broadcaster<>();
     private Broadcaster<SourceEvent> mSourceEventBroadcaster = new Broadcaster<>();
     private Broadcaster<Message> mMessageBroadcaster = new Broadcaster<>();
-    private Broadcaster<RealBuffer> mFilteredRealBufferBroadcaster = new Broadcaster<>();
-    private Broadcaster<RealBuffer> mUnFilteredRealBufferBroadcaster = new Broadcaster<>();
     private Broadcaster<SquelchState> mSquelchStateBroadcaster = new Broadcaster<>();
 
     private AtomicBoolean mRunning = new AtomicBoolean();
@@ -169,9 +162,8 @@ public class ProcessingChain implements IChannelEventListener
         mAudioPacketBroadcaster.dispose();
         mCallEventBroadcaster.dispose();
         mChannelEventBroadcaster.dispose();
-        mComplexBufferBroadcaster.dispose();
+        mBasebandComplexBufferBroadcaster.dispose();
         mMessageBroadcaster.dispose();
-        mFilteredRealBufferBroadcaster.dispose();
         mSquelchStateBroadcaster.dispose();
     }
 
@@ -316,11 +308,6 @@ public class ProcessingChain implements IChannelEventListener
             mDecoderStateEventBroadcaster.addListener(((IDecoderStateEventListener) module).getDecoderStateListener());
         }
 
-        if(module instanceof IFilteredRealBufferListener)
-        {
-            mFilteredRealBufferBroadcaster.addListener(((IFilteredRealBufferListener) module).getFilteredRealBufferListener());
-        }
-
         if(module instanceof IHeartbeatListener)
         {
             mHeartbeatBroadcaster.addListener(((IHeartbeatListener)module).getHeartbeatListener());
@@ -338,7 +325,7 @@ public class ProcessingChain implements IChannelEventListener
 
         if(module instanceof IReusableComplexBufferListener)
         {
-            mComplexBufferBroadcaster.addListener(((IReusableComplexBufferListener)module).getReusableComplexBufferListener());
+            mBasebandComplexBufferBroadcaster.addListener(((IReusableComplexBufferListener)module).getReusableComplexBufferListener());
         }
 
         if(module instanceof ISourceEventListener)
@@ -354,11 +341,6 @@ public class ProcessingChain implements IChannelEventListener
         if(module instanceof ISquelchStateListener)
         {
             mSquelchStateBroadcaster.addListener(((ISquelchStateListener) module).getSquelchStateListener());
-        }
-
-        if(module instanceof IUnFilteredRealBufferListener)
-        {
-            mUnFilteredRealBufferBroadcaster.addListener(((IUnFilteredRealBufferListener) module).getUnFilteredRealBufferListener());
         }
     }
 
@@ -393,11 +375,6 @@ public class ProcessingChain implements IChannelEventListener
             mDecoderStateEventBroadcaster.removeListener(((IDecoderStateEventListener) module).getDecoderStateListener());
         }
 
-        if(module instanceof IFilteredRealBufferListener)
-        {
-            mFilteredRealBufferBroadcaster.removeListener(((IFilteredRealBufferListener) module).getFilteredRealBufferListener());
-        }
-
         if(module instanceof IHeartbeatListener)
         {
             mHeartbeatBroadcaster.removeListener(((IHeartbeatListener)module).getHeartbeatListener());
@@ -410,7 +387,7 @@ public class ProcessingChain implements IChannelEventListener
 
         if(module instanceof IReusableComplexBufferListener)
         {
-            mComplexBufferBroadcaster.removeListener(((IReusableComplexBufferListener) module).getReusableComplexBufferListener());
+            mBasebandComplexBufferBroadcaster.removeListener(((IReusableComplexBufferListener) module).getReusableComplexBufferListener());
         }
 
         if(module instanceof ISourceEventListener)
@@ -426,11 +403,6 @@ public class ProcessingChain implements IChannelEventListener
         if(module instanceof ISquelchStateListener)
         {
             mSquelchStateBroadcaster.removeListener(((ISquelchStateListener) module).getSquelchStateListener());
-        }
-
-        if(module instanceof IUnFilteredRealBufferListener)
-        {
-            mUnFilteredRealBufferBroadcaster.removeListener(((IUnFilteredRealBufferListener) module).getUnFilteredRealBufferListener());
         }
     }
 
@@ -475,11 +447,6 @@ public class ProcessingChain implements IChannelEventListener
             ((IMessageProvider) module).setMessageListener(mMessageBroadcaster);
         }
 
-        if(module instanceof IFilteredRealBufferProvider)
-        {
-            ((IFilteredRealBufferProvider) module).setFilteredRealBufferListener(mFilteredRealBufferBroadcaster);
-        }
-
         if(module instanceof IMessageProvider)
         {
             ((IMessageProvider) module).setMessageListener(mMessageBroadcaster);
@@ -498,11 +465,6 @@ public class ProcessingChain implements IChannelEventListener
         if(module instanceof ISquelchStateProvider)
         {
             ((ISquelchStateProvider) module).setSquelchStateListener(mSquelchStateBroadcaster);
-        }
-
-        if(module instanceof IUnFilteredRealBufferProvider)
-        {
-            ((IUnFilteredRealBufferProvider) module).setUnFilteredRealBufferListener(mUnFilteredRealBufferBroadcaster);
         }
     }
 
@@ -547,11 +509,6 @@ public class ProcessingChain implements IChannelEventListener
             ((IMessageProvider) module).setMessageListener(null);
         }
 
-        if(module instanceof IFilteredRealBufferProvider)
-        {
-            ((IFilteredRealBufferProvider) module).setFilteredRealBufferListener(null);
-        }
-
         if(module instanceof IMessageProvider)
         {
             ((IMessageProvider) module).setMessageListener(null);
@@ -570,11 +527,6 @@ public class ProcessingChain implements IChannelEventListener
         if(module instanceof ISquelchStateProvider)
         {
             ((ISquelchStateProvider) module).setSquelchStateListener(null);
-        }
-
-        if(module instanceof IUnFilteredRealBufferProvider)
-        {
-            ((IUnFilteredRealBufferProvider) module).setUnFilteredRealBufferListener(null);
         }
     }
 
@@ -609,7 +561,7 @@ public class ProcessingChain implements IChannelEventListener
                 switch(mSource.getSampleType())
                 {
                     case COMPLEX:
-                        ((ComplexSource) mSource).setListener(mComplexBufferBroadcaster);
+                        ((ComplexSource) mSource).setListener(mBasebandComplexBufferBroadcaster);
                         break;
                     case REAL:
                         ((RealSource) mSource).setListener(mDemodulatedAudioBufferBroadcaster);
@@ -657,7 +609,7 @@ public class ProcessingChain implements IChannelEventListener
                 switch(mSource.getSampleType())
                 {
                     case COMPLEX:
-                        ((ComplexSource) mSource).removeListener(mComplexBufferBroadcaster);
+                        ((ComplexSource) mSource).removeListener(mBasebandComplexBufferBroadcaster);
                         break;
                     case REAL:
                         ((RealSource) mSource).removeListener(mDemodulatedAudioBufferBroadcaster);
@@ -796,6 +748,9 @@ public class ProcessingChain implements IChannelEventListener
         }
     }
 
+    /**
+     * Removes the listener from receiving decoded messages from all decoders.
+     */
     public void removeMessageListener(Listener<Message> listener)
     {
         mMessageBroadcaster.removeListener(listener);
@@ -832,14 +787,20 @@ public class ProcessingChain implements IChannelEventListener
         mSquelchStateBroadcaster.removeListener(listener);
     }
 
-    public void addRealBufferListener(Listener<RealBuffer> listener)
+    /**
+     * Adds listener to receive demodulated audio buffers from an modules that produce demodulated audio.
+     */
+    public void addDemodulatedAudioListener(Listener<ReusableBuffer> listener)
     {
-        mFilteredRealBufferBroadcaster.addListener(listener);
+        mDemodulatedAudioBufferBroadcaster.addListener(listener);
     }
 
-    public void removeRealBufferListener(Listener<RealBuffer> listener)
+    /**
+     * Removes the listener from receiving demodulated audio buffers.
+     */
+    public void removeDemodulatedAudioListener(Listener<ReusableBuffer> listener)
     {
-        mFilteredRealBufferBroadcaster.removeListener(listener);
+        mDemodulatedAudioBufferBroadcaster.removeListener(listener);
     }
 
     @Override

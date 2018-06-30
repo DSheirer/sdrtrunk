@@ -18,8 +18,8 @@
 package io.github.dsheirer.source;
 
 import io.github.dsheirer.module.Module;
+import io.github.dsheirer.sample.IOverflowListener;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.real.IOverflowListener;
 import io.github.dsheirer.source.heartbeat.HeartbeatManager;
 import io.github.dsheirer.source.heartbeat.IHeartbeatProvider;
 

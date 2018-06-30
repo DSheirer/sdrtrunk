@@ -38,7 +38,7 @@ public class ComplexMixer
      * @param targetDataLine - mixer or sound card to be used
      * @param format - audio format
      * @param name - token name to use for this mixer
-     * @param complexSampleAdapter - adapter to convert byte array data read from the mixer into ComplexBuffer.
+     * @param complexSampleAdapter - adapter to convert byte array data read from the mixer into ReusableComplexBuffer.
      */
     public ComplexMixer(TargetDataLine targetDataLine, AudioFormat format, String name,
                         ComplexSampleAdapter complexSampleAdapter)

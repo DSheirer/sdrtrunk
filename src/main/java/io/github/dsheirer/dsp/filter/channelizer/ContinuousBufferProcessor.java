@@ -15,9 +15,9 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.channelizer;
 
+import io.github.dsheirer.sample.IOverflowListener;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.OverflowableTransferQueue;
-import io.github.dsheirer.sample.real.IOverflowListener;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
