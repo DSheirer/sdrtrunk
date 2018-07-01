@@ -154,7 +154,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
             channels--;
         }
 
-        mLog.debug("Sample Rate [" + sampleRate + "] will produce [" + channels + "] channels at [" + (sampleRate / (double)channels) + "] each");
+        mLog.debug("Sample Rate [" + sampleRate + "] providing [" + channels + "] channels at [" + (sampleRate / (double)channels) + "] Hz each");
         return channels;
     }
 

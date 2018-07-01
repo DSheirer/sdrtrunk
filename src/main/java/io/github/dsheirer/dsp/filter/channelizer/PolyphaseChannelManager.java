@@ -552,6 +552,9 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                         source.dispose();
                     }
                     break;
+                case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
+                    //ignore
+                    break;
                 default:
                     mLog.error("Received unrecognized source event from polyphase channel source [" +
                         sourceEvent.getEvent() + "]");
