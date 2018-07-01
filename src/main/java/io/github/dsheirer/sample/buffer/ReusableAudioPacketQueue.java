@@ -55,6 +55,9 @@ public class ReusableAudioPacketQueue extends AbstractReusableBufferQueue<Reusab
         return buffer;
     }
 
+    /**
+     * Provides an end-audio packet that will not contain any audio samples.
+     */
     public ReusableAudioPacket getEndAudioBuffer()
     {
         ReusableAudioPacket buffer = getRecycledBuffer();
@@ -62,13 +65,12 @@ public class ReusableAudioPacketQueue extends AbstractReusableBufferQueue<Reusab
         if(buffer == null)
         {
             buffer = new ReusableAudioPacket(this, 0);
-            incrementBufferCount();
-
             buffer.setDebugName("Owner:" + getDebugName());
-            mLog.debug("Buffer Created - Count:" + getBufferCount() + (getDebugName() != null ? " [" + getDebugName() + "]" : ""));
+            incrementBufferCount();
         }
 
         buffer.setType(ReusableAudioPacket.Type.END);
+        buffer.incrementUserCount();
 
         return buffer;
     }

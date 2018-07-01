@@ -29,7 +29,9 @@ public abstract class AbstractReusableBufferQueue<T extends AbstractReusableBuff
     private Queue<T> mReusableBufferQueue = new LinkedTransferQueue<>();
     private int mBufferCount = 0;
     private String mDebugName;
-    protected boolean mBufferCreationLoggingEnabled = true;
+
+    //Set to true to log when reusable buffers are created to monitor proper user count management
+    protected boolean mBufferCreationLoggingEnabled = false;
 
     /**
      * Base queue for managing reusable buffers.
