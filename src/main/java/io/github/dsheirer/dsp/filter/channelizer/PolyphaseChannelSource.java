@@ -234,7 +234,6 @@ public class PolyphaseChannelSource extends TunerChannelSource
     {
         synchronized(mPolyphaseChannelOutputProcessor)
         {
-            mLog.debug("Setting output processor frequency offset to: " + getFrequencyOffset());
             mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
         }
     }

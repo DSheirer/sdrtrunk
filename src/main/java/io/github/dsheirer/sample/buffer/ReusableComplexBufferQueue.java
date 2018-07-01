@@ -55,7 +55,7 @@ public class ReusableComplexBufferQueue extends AbstractReusableBufferQueue<Reus
             incrementBufferCount();
 
             buffer.setDebugName("Owner:" + getDebugName());
-            mLog.debug("Buffer Created - Count:" + getBufferCount() + (getDebugName() != null ? " [" + getDebugName() + "]" : ""));
+//            mLog.debug("Buffer Created - Count:" + getBufferCount() + (getDebugName() != null ? " [" + getDebugName() + "]" : ""));
         }
 
         buffer.resize(size);

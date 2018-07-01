@@ -24,6 +24,7 @@ import io.github.dsheirer.dsp.gain.ComplexFeedForwardGainControl;
 import io.github.dsheirer.dsp.psk.DQPSKDecisionDirectedDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
+import io.github.dsheirer.dsp.psk.pll.Tracking;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
@@ -63,6 +64,7 @@ public class P25DecoderC4FM extends P25Decoder
         mBasebandFilter = new ComplexFIRFilter2(getBasebandFilter());
 
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
+        mCostasLoop.setTracking(Tracking.FAST);
         mInterpolatingSampleBuffer = new InterpolatingSampleBuffer(getSamplesPerSymbol(), SAMPLE_COUNTER_GAIN);
 
         mQPSKDemodulator = new DQPSKDecisionDirectedDemodulator(mCostasLoop, mInterpolatingSampleBuffer);
@@ -162,6 +164,7 @@ public class P25DecoderC4FM extends P25Decoder
             case NOTIFICATION_FREQUENCY_CHANGE:
             case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
             case NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
+                mLog.debug("Resetting COSTAS loop for: " + sourceEvent.getEvent().name());
                 mCostasLoop.reset();
                 break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:

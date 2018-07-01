@@ -118,7 +118,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
         mTapsPerChannel = tapsPerChannel;
 
         float[] filterTaps = FilterFactory.getSincM2Channelizer(getChannelSampleRate(), getChannelCount(),
-            mTapsPerChannel, true);
+            mTapsPerChannel, false);
 
         init(filterTaps);
     }
@@ -171,7 +171,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
             super.setSampleRate(sampleRate);
 
             float[] filterTaps = FilterFactory.getSincM2Channelizer(getChannelSampleRate(), getChannelCount(),
-                mTapsPerChannel, true);
+                mTapsPerChannel, false);
 
             init(filterTaps);
         }
@@ -188,9 +188,6 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
     @Override
     public void receive(ReusableComplexBuffer reusableComplexBuffer)
     {
-        long start = System.nanoTime();
-        long processing = 0;
-
         ReusableChannelResultsBuffer channelResultsBuffer = getChannelResultsBuffer();
         channelResultsBuffer.setTimestamp(reusableComplexBuffer.getTimestamp());
 
@@ -219,7 +216,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
             if(mSampleBufferPointer >= mSamplesPerBlock)
             {
                 //Filter buffered samples and produce a single sample across each of the polyphase channels
-                processing += process(channelResultsBuffer);
+                process(channelResultsBuffer);
 
                 //Right-shift the samples in the buffer over to make room for a new block of samples
                 //Note: since JDK 8, hotspot JIT compiler uses native processor intrinsics for efficiency
@@ -337,15 +334,13 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      * Processes the sample buffer for each new block of sample data that is loaded and distributes the results to any
      * registered channel listeners.
      */
-    private long process(ReusableChannelResultsBuffer channelResultsBuffer)
+    private void process(ReusableChannelResultsBuffer channelResultsBuffer)
     {
         //Multiply each of the samples by the corresponding filter tap
         for(int x = 0; x < mInlineSamples.length; x++)
         {
             mInlineInterimOutput[x] = mInlineSamples[x] * mInlineFilter[x];
         }
-
-        long start = System.nanoTime();
 
         Arrays.fill(mFilterAccumulator, 0.0f);
 
@@ -382,10 +377,6 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
         channelResultsBuffer.addChannelResults(processed);
 
         mTopBlockIndicator = !mTopBlockIndicator;
-
-        long elapsed = System.nanoTime() - start;
-
-        return elapsed;
     }
 
     /**
@@ -465,21 +456,5 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
 
             return buffersToDispose;
         }
-    }
-
-    public static void main(String[] args)
-    {
-        int channelCount = 4;
-        int tapsPerChannel = 8;
-        float[] taps = new float[channelCount * tapsPerChannel];
-
-        for(int x = 0; x < taps.length; x++)
-        {
-            taps[x] = x;
-        }
-
-        float[] filter = getAlignedFilter(taps, channelCount, tapsPerChannel);
-
-        mLog.debug(Arrays.toString(filter));
     }
 }
