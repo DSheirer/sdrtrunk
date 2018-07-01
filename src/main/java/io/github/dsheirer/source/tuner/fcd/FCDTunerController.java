@@ -1,6 +1,6 @@
 /*******************************************************************************
  * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,12 +18,16 @@
  ******************************************************************************/
 package io.github.dsheirer.source.tuner.fcd;
 
+import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.adapter.ComplexShortAdapter;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceException;
+import io.github.dsheirer.source.mixer.ComplexMixer;
+import io.github.dsheirer.source.tuner.MixerTunerDataLine;
 import io.github.dsheirer.source.tuner.TunerClass;
 import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
-import io.github.dsheirer.source.tuner.fcd.proV1.FCD1TunerController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.Device;
@@ -32,6 +36,7 @@ import org.usb4java.DeviceHandle;
 import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 
+import javax.sound.sampled.AudioFormat;
 import javax.usb.UsbClaimException;
 import javax.usb.UsbException;
 import java.nio.ByteBuffer;
@@ -54,6 +59,8 @@ public abstract class FCDTunerController extends TunerController
     private DeviceHandle mDeviceHandle;
 
     private FCDConfiguration mConfiguration = new FCDConfiguration();
+    protected ComplexMixer mComplexMixer;
+
 
     /**
      * Generic FCD tuner controller - contains functionality common across both
@@ -64,11 +71,8 @@ public abstract class FCDTunerController extends TunerController
      * @param minTunableFrequency
      * @param maxTunableFrequency
      */
-    public FCDTunerController(Device device,
-                              DeviceDescriptor descriptor,
-                              int sampleRate,
-                              int minTunableFrequency,
-                              int maxTunableFrequency)
+    public FCDTunerController(MixerTunerDataLine mixerTDL, Device device, DeviceDescriptor descriptor, String tunerName,
+                              int minTunableFrequency, int maxTunableFrequency, AudioFormat audioFormat)
     {
         super(minTunableFrequency, maxTunableFrequency, DC_SPIKE_AVOID_BUFFER, USABLE_BANDWIDTH_PERCENT);
         mDevice = device;
@@ -76,11 +80,49 @@ public abstract class FCDTunerController extends TunerController
 
         try
         {
-            mFrequencyController.setSampleRate(sampleRate);
+            mFrequencyController.setSampleRate((int)audioFormat.getSampleRate());
         }
         catch(SourceException se)
         {
-            mLog.error("Error setting sample rate to [" + sampleRate + "]", se);
+            mLog.error("Error setting sample rate to [" + audioFormat.getSampleRate() + "]", se);
+        }
+
+        mComplexMixer = new ComplexMixer( mixerTDL.getTargetDataLine(), audioFormat, tunerName,
+            new ComplexShortAdapter(mixerTDL.getMixerTunerType().getDisplayString()));
+
+        mComplexMixer.setBufferSize(audioFormat.getFrameSize() * (int)(audioFormat.getSampleRate() * 0.1));
+
+        mComplexMixer.setBufferListener(mReusableBufferBroadcaster);
+    }
+
+    /**
+     * Overrides the super class functionality to auto-start the complex mixer and provide samples to listeners
+     */
+    @Override
+    public void addBufferListener(Listener<ReusableComplexBuffer> listener)
+    {
+        boolean hasExistingListeners = hasBufferListeners();
+
+        super.addBufferListener(listener);
+
+        if(!hasExistingListeners)
+        {
+            mComplexMixer.start();
+        }
+    }
+
+    /**
+     * Overrides the super class functionality to auto-stop the complex mixer and stop sample stream when there are no
+     * more registered listeners
+     */
+    @Override
+    public void removeBufferListener(Listener<ReusableComplexBuffer> listener)
+    {
+        super.removeBufferListener(listener);
+
+        if(!hasBufferListeners())
+        {
+            mComplexMixer.stop();
         }
     }
 
@@ -135,7 +177,7 @@ public abstract class FCDTunerController extends TunerController
     /**
      * Sample rate of the tuner
      */
-    public abstract int getCurrentSampleRate() throws SourceException;
+    public abstract double getCurrentSampleRate();
 
     /**
      * Tuner class
@@ -402,7 +444,7 @@ public abstract class FCDTunerController extends TunerController
     {
         ByteBuffer buffer = ByteBuffer.allocateDirect(64);
 
-		/* The FCD expects little-endian formatted values */
+        /* The FCD expects little-endian formatted values */
         buffer.order(ByteOrder.LITTLE_ENDIAN);
 
         buffer.put(0, command.getCommand());
@@ -538,14 +580,14 @@ public abstract class FCDTunerController extends TunerController
             return retVal;
         }
 
-        public FCD1TunerController.Block getBandBlocking()
+        public Block getBandBlocking()
         {
-            FCD1TunerController.Block retVal = FCD1TunerController.Block.UNKNOWN;
+            Block retVal = Block.UNKNOWN;
 
             switch(mMode)
             {
                 case APPLICATION:
-                    retVal = FCD1TunerController.Block.getBlock(mConfig.substring(23, 33).trim());
+                    retVal = Block.getBlock(mConfig.substring(23, 33).trim());
                     break;
                 case BOOTLOADER:
                 case UNKNOWN:
@@ -610,6 +652,41 @@ public abstract class FCDTunerController extends TunerController
                         retVal = BOOTLOADER;
                     }
                 }
+            }
+
+            return retVal;
+        }
+    }
+
+    public enum Block
+    {
+        CELLULAR_BAND_BLOCKED("Blocked"),
+        NO_BAND_BLOCK("Unblocked"),
+        UNKNOWN("Unknown");
+
+        private String mLabel;
+
+        private Block(String label)
+        {
+            mLabel = label;
+        }
+
+        public String getLabel()
+        {
+            return mLabel;
+        }
+
+        public static Block getBlock(String block)
+        {
+            Block retVal = UNKNOWN;
+
+            if(block.equalsIgnoreCase("No blk"))
+            {
+                retVal = NO_BAND_BLOCK;
+            }
+            else if(block.equalsIgnoreCase("Cell blk"))
+            {
+                retVal = CELLULAR_BAND_BLOCKED;
             }
 
             return retVal;

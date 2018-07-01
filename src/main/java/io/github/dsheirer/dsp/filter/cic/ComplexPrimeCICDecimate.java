@@ -1,19 +1,16 @@
 /*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.cic;
@@ -21,19 +18,19 @@ package io.github.dsheirer.dsp.filter.cic;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.Filters;
 import io.github.dsheirer.dsp.filter.Window;
-import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter_CB_CB;
-import io.github.dsheirer.dsp.filter.halfband.complex.HalfBandFilter_CB_CB;
+import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
+import io.github.dsheirer.dsp.filter.halfband.complex.ComplexHalfBandFilter;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBufferAssembler;
 import io.github.dsheirer.sample.complex.ComplexSampleListener;
-import io.github.dsheirer.sample.complex.ComplexToComplexBufferAssembler;
 import io.github.dsheirer.sample.decimator.ComplexDecimator;
 import org.apache.commons.lang3.Validate;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class ComplexPrimeCICDecimate implements Listener<ComplexBuffer>
+public class ComplexPrimeCICDecimate implements Listener<ReusableComplexBuffer>
 {
     public static int[] PRIMES = {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53,
         59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151,
@@ -87,7 +84,7 @@ public class ComplexPrimeCICDecimate implements Listener<ComplexBuffer>
             }
             else
             {
-				/* Wire the current stage to the previous stage */
+                /* Wire the current stage to the previous stage */
                 mDecimatingStages.get(x - 1).setListener(stage);
             }
         }
@@ -116,7 +113,7 @@ public class ComplexPrimeCICDecimate implements Listener<ComplexBuffer>
     /**
      * Adds a listener to receive the output of this CIC decimation filter
      */
-    public void setListener(Listener<ComplexBuffer> listener)
+    public void setListener(Listener<ReusableComplexBuffer> listener)
     {
         mOutput.setListener(listener);
     }
@@ -166,7 +163,7 @@ public class ComplexPrimeCICDecimate implements Listener<ComplexBuffer>
      * Primary input method for receiving sample arrays composed as I,Q,I,Q, etc.
      */
     @Override
-    public void receive(ComplexBuffer buffer)
+    public void receive(ReusableComplexBuffer buffer)
     {
         if(mFirstDecimatingStage != null)
         {
@@ -177,6 +174,8 @@ public class ComplexPrimeCICDecimate implements Listener<ComplexBuffer>
                 mFirstDecimatingStage.receive(samples[x], samples[x + 1]);
             }
         }
+
+        buffer.decrementUserCount();
     }
 
     /**
@@ -289,11 +288,11 @@ public class ComplexPrimeCICDecimate implements Listener<ComplexBuffer>
 
         public void receive(float i, float q)
         {
-			/* Subtract the oldest sample and add back in the newest */
+            /* Subtract the oldest sample and add back in the newest */
             mISum = mISum - mISamples[mSamplePointer] + i;
             mQSum = mQSum - mQSamples[mSamplePointer] + q;
 
-			/* Overwrite the oldest sample with the newest */
+            /* Overwrite the oldest sample with the newest */
             mISamples[mSamplePointer] = i;
             mQSamples[mSamplePointer] = q;
 
@@ -352,27 +351,37 @@ public class ComplexPrimeCICDecimate implements Listener<ComplexBuffer>
     public class Output implements ComplexSampleListener
     {
         /* Decimated output buffers will contain 1024 samples */
-        private ComplexToComplexBufferAssembler mAssembler =
-            new ComplexToComplexBufferAssembler(2048);
+        private ReusableComplexBufferAssembler mAssembler = new ReusableComplexBufferAssembler(2048, 48000.0);
 
-        private ComplexFIRFilter_CB_CB mCleanupFilter;
-        private HalfBandFilter_CB_CB mHalfBandFilter = new HalfBandFilter_CB_CB(
+        private ComplexFIRFilter2 mCleanupFilter;
+        private ComplexHalfBandFilter mHalfBandFilter = new ComplexHalfBandFilter(
             Filters.FIR_HALF_BAND_31T_ONE_EIGHTH_FCO.getCoefficients(), 0.4f, false);
+        private Listener<ReusableComplexBuffer> mReusableComplexBufferListener;
 
         public Output(int outputSampleRate, int passFrequency, int attenuation,
                       Window.WindowType windowType)
         {
-            mCleanupFilter = new ComplexFIRFilter_CB_CB(FilterFactory
-                .getCICCleanupFilter(outputSampleRate,
-                    passFrequency,
-                    attenuation,
-                    windowType), 0.4f);
+            mCleanupFilter = new ComplexFIRFilter2(FilterFactory
+                .getCICCleanupFilter(outputSampleRate, passFrequency, attenuation, windowType), 0.4f);
 
             //Bypassing the CIC cleanup filter for now
-            mAssembler.setListener(mHalfBandFilter);
-
-//			mAssembler.setListener( mCleanupFilter );
-//			mCleanupFilter.setListener( mHalfBandFilter );
+            mAssembler.setListener(new Listener<ReusableComplexBuffer>()
+            {
+                @Override
+                public void receive(ReusableComplexBuffer reusableComplexBuffer)
+                {
+                    if(mReusableComplexBufferListener != null)
+                    {
+                        ReusableComplexBuffer cleanupFiltered = mCleanupFilter.filter(reusableComplexBuffer);
+                        ReusableComplexBuffer halfBandFiltered = mHalfBandFilter.filter(cleanupFiltered);
+                        mReusableComplexBufferListener.receive(halfBandFiltered);
+                    }
+                    else
+                    {
+                        reusableComplexBuffer.decrementUserCount();
+                    }
+                }
+            });
         }
 
         public void dispose()
@@ -390,23 +399,17 @@ public class ComplexPrimeCICDecimate implements Listener<ComplexBuffer>
         @Override
         public void receive(float inphase, float quadrature)
         {
-            mAssembler.receive(inphase, quadrature);
+            mAssembler.receive(new float[]{inphase, quadrature});
         }
 
-        /**
-         * Adds a listener to receive output samples
-         */
-        public void setListener(Listener<ComplexBuffer> listener)
+        public void setListener(Listener<ReusableComplexBuffer> listener)
         {
-            mHalfBandFilter.setListener(listener);
+            mReusableComplexBufferListener = listener;
         }
 
-        /**
-         * Removes the listener from receiving output samples
-         */
         public void removeListener()
         {
-            mHalfBandFilter.removeListener();
+            mReusableComplexBufferListener = null;
         }
     }
 }

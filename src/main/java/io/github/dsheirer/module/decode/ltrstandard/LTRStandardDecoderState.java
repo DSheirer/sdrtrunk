@@ -46,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class LTRStandardDecoderState extends DecoderState
 {
@@ -73,18 +72,6 @@ public class LTRStandardDecoderState extends DecoderState
     public DecoderType getDecoderType()
     {
         return DecoderType.LTR_STANDARD;
-    }
-
-    @Override
-    public void start(ScheduledExecutorService executor)
-    {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void stop()
-    {
     }
 
     @Override
@@ -211,6 +198,24 @@ public class LTRStandardDecoderState extends DecoderState
         resetState();
     }
 
+    @Override
+    public void start()
+    {
+
+    }
+
+    @Override
+    public void stop()
+    {
+
+    }
+
+    @Override
+    public void init()
+    {
+
+    }
+
     /**
      * Performs a temporal reset following a call or other decode event
      */
@@ -254,11 +259,6 @@ public class LTRStandardDecoderState extends DecoderState
             broadcast(new AttributeChangeRequest<String>(Attribute.CHANNEL_FREQUENCY_LABEL,
                 "LCN:" + mLCNTracker.getCurrentChannel()));
         }
-    }
-
-    @Override
-    public void init()
-    {
     }
 
     @Override

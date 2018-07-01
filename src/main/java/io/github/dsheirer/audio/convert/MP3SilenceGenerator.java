@@ -18,8 +18,9 @@
  ******************************************************************************/
 package io.github.dsheirer.audio.convert;
 
-import io.github.dsheirer.audio.AudioPacket;
 import io.github.dsheirer.record.mp3.MP3Recorder;
+import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
+import io.github.dsheirer.sample.buffer.ReusableAudioPacketQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +34,7 @@ public class MP3SilenceGenerator implements ISilenceGenerator
 
     private MP3AudioConverter mGenerator = new MP3AudioConverter(MP3Recorder.MP3_BIT_RATE, MP3Recorder.CONSTANT_BIT_RATE);
     private byte[] mPreviousPartialFrameData;
+    private ReusableAudioPacketQueue mAudioPacketQueue = new ReusableAudioPacketQueue("MP3 Silence Generator");
 
     /**
      * Generates MP3 audio silence frames
@@ -44,9 +46,10 @@ public class MP3SilenceGenerator implements ISilenceGenerator
     public byte[] generate(long duration)
     {
         int length = (int)(duration * 8);   //8000 Hz sample rate
-        float[] silence = new float[length];
-        AudioPacket silencePacket = new AudioPacket(silence, null);
-        List<AudioPacket> silencePackets = new ArrayList<>();
+        ReusableAudioPacket silencePacket = mAudioPacketQueue.getBuffer(length);
+        Arrays.fill(silencePacket.getAudioSamples(), 0.0f);
+
+        List<ReusableAudioPacket> silencePackets = new ArrayList<>();
         silencePackets.add(silencePacket);
 
         byte[] frameData = mGenerator.convert(silencePackets);

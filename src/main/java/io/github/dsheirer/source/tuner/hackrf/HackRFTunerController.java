@@ -53,13 +53,12 @@
  ******************************************************************************/
 package io.github.dsheirer.source.tuner.hackrf;
 
-import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.adapter.ByteSampleAdapter;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
 import io.github.dsheirer.source.SourceException;
-import io.github.dsheirer.source.tuner.TunerController;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.usb.USBTransferProcessor;
+import io.github.dsheirer.source.tuner.usb.USBTunerController;
+import io.github.dsheirer.source.tuner.usb.converter.ByteSampleConverter;
+import io.github.dsheirer.source.tuner.usb.converter.NativeBufferConverter;
 import org.apache.commons.io.EndianUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +73,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
-public class HackRFTunerController extends TunerController
+public class HackRFTunerController extends USBTunerController
 {
     private final static Logger mLog = LoggerFactory.getLogger(HackRFTunerController.class);
 
@@ -92,7 +91,7 @@ public class HackRFTunerController extends TunerController
     public static final double USABLE_BANDWIDTH_PERCENT = 0.95;
     public static final int DC_SPIKE_AVOID_BUFFER = 5000;
 
-    private ByteSampleAdapter mSampleAdapter = new ByteSampleAdapter();
+    private NativeBufferConverter mNativeBufferConverter = new ByteSampleConverter();
     private USBTransferProcessor mUSBTransferProcessor;
 
     private HackRFSampleRate mSampleRate = HackRFSampleRate.RATE2_016MHZ;
@@ -155,7 +154,13 @@ public class HackRFTunerController extends TunerController
             name = "HackRF - Unidentified Serial";
         }
 
-        mUSBTransferProcessor = new USBTransferProcessor(name, mDeviceHandle, mSampleAdapter, USB_TRANSFER_BUFFER_SIZE);
+        mUSBTransferProcessor = new USBTransferProcessor(name, mDeviceHandle, mNativeBufferConverter, USB_TRANSFER_BUFFER_SIZE);
+    }
+
+    @Override
+    protected USBTransferProcessor getUSBTransferProcessor()
+    {
+        return mUSBTransferProcessor;
     }
 
     /**
@@ -328,7 +333,7 @@ public class HackRFTunerController extends TunerController
     }
 
     @Override
-    public int getCurrentSampleRate() throws SourceException
+    public double getCurrentSampleRate()
     {
         return mSampleRate.getRate();
     }
@@ -522,7 +527,7 @@ public class HackRFTunerController extends TunerController
         write(Request.SET_SAMPLE_RATE, 0, 0, buffer);
     }
 
-    public int getSampleRate()
+    public double getSampleRate()
     {
         return mSampleRate.getRate();
     }
@@ -872,23 +877,4 @@ public class HackRFTunerController extends TunerController
             return sb.toString();
         }
     }
-
-    /**
-     * Adds a sample listener.  If the buffer processing thread is
-     * not currently running, starts it running in a new thread.
-     */
-    public void addListener(Listener<ComplexBuffer> listener)
-    {
-        mUSBTransferProcessor.addListener(listener);
-    }
-
-    /**
-     * Removes the sample listener.  If this is the last registered listener,
-     * shuts down the buffer processing thread.
-     */
-    public void removeListener(Listener<ComplexBuffer> listener)
-    {
-        mUSBTransferProcessor.removeListener(listener);
-    }
-
 }

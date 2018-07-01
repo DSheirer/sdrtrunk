@@ -19,7 +19,6 @@
 package io.github.dsheirer.controller.channel;
 
 import io.github.dsheirer.alias.AliasModel;
-import io.github.dsheirer.audio.AudioPacket;
 import io.github.dsheirer.channel.metadata.Attribute;
 import io.github.dsheirer.channel.metadata.AttributeChangeRequest;
 import io.github.dsheirer.channel.metadata.ChannelMetadataModel;
@@ -35,6 +34,7 @@ import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.record.RecorderManager;
 import io.github.dsheirer.record.RecorderType;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.SourceManager;
@@ -54,7 +54,7 @@ public class ChannelProcessingManager implements ChannelEventListener
 
     private Map<Integer,ProcessingChain> mProcessingChains = new HashMap<>();
 
-    private List<Listener<AudioPacket>> mAudioPacketListeners = new CopyOnWriteArrayList<>();
+    private List<Listener<ReusableAudioPacket>> mAudioPacketListeners = new CopyOnWriteArrayList<>();
     private List<Listener<Message>> mMessageListeners = new CopyOnWriteArrayList<>();
 
     private ChannelModel mChannelModel;
@@ -232,7 +232,7 @@ public class ChannelProcessingManager implements ChannelEventListener
             processingChain = new ProcessingChain(channel.getChannelType());
 
 			/* Register global listeners */
-            for(Listener<AudioPacket> listener : mAudioPacketListeners)
+            for(Listener<ReusableAudioPacket> listener : mAudioPacketListeners)
             {
                 processingChain.addAudioPacketListener(listener);
             }
@@ -367,7 +367,7 @@ public class ChannelProcessingManager implements ChannelEventListener
      * Adds a message listener that will be added to all channels to receive
      * any messages.
      */
-    public void addAudioPacketListener(Listener<AudioPacket> listener)
+    public void addAudioPacketListener(Listener<ReusableAudioPacket> listener)
     {
         mAudioPacketListeners.add(listener);
     }
@@ -375,7 +375,7 @@ public class ChannelProcessingManager implements ChannelEventListener
     /**
      * Removes a message listener.
      */
-    public void removeAudioPacketListener(Listener<AudioPacket> listener)
+    public void removeAudioPacketListener(Listener<ReusableAudioPacket> listener)
     {
         mAudioPacketListeners.remove(listener);
     }

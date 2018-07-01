@@ -1,6 +1,6 @@
 /*******************************************************************************
- * SDR Trunk
- * Copyright (C) 2014 Dennis Sheirer
+ * sdrtrunk
+ * Copyright (C) 2014-2017 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,17 +17,25 @@
  ******************************************************************************/
 package io.github.dsheirer.gui.control;
 
+import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.InvalidFrequencyException;
+import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.SourceException;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent.Event;
-import io.github.dsheirer.source.tuner.frequency.IFrequencyChangeProcessor;
 import net.miginfocom.swing.MigLayout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.EventQueue;
+import java.awt.Font;
+import java.awt.Image;
+import java.awt.Point;
+import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -40,13 +48,12 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
-public class JFrequencyControl extends JPanel implements IFrequencyChangeProcessor
+public class JFrequencyControl extends JPanel implements ISourceEventProcessor
 {
     private static final long serialVersionUID = 1L;
-    private final static Logger mLog =
-            LoggerFactory.getLogger(JFrequencyControl.class);
+    private final static Logger mLog = LoggerFactory.getLogger(JFrequencyControl.class);
 
-    private List<IFrequencyChangeProcessor> mProcessors = new ArrayList<>();
+    private List<ISourceEventProcessor> mProcessors = new ArrayList<>();
 
     private Color mHighlightColor = Color.YELLOW;
 
@@ -54,7 +61,7 @@ public class JFrequencyControl extends JPanel implements IFrequencyChangeProcess
 
     private Cursor mBlankCursor;
 
-    private HashMap<Integer, Digit> mDigits = new HashMap<Integer, Digit>();
+    private HashMap<Integer,Digit> mDigits = new HashMap<Integer,Digit>();
 
     public JFrequencyControl()
     {
@@ -73,7 +80,7 @@ public class JFrequencyControl extends JPanel implements IFrequencyChangeProcess
 
         Font font = new Font(Font.MONOSPACED, Font.BOLD, 30);
 
-        for (int x = 9; x >= 0; x--)
+        for(int x = 9; x >= 0; x--)
         {
             Digit digit = null;
 
@@ -81,13 +88,13 @@ public class JFrequencyControl extends JPanel implements IFrequencyChangeProcess
             {
                 digit = new Digit(x);
             }
-            catch (ParseException e)
+            catch(ParseException e)
             {
                 mLog.error("JFrequencyControl - parse exception "
-                        + "constructing a digit - " + e);
+                    + "constructing a digit - " + e);
             }
 
-            if (digit != null)
+            if(digit != null)
             {
                 mDigits.put(x, digit);
 
@@ -95,7 +102,7 @@ public class JFrequencyControl extends JPanel implements IFrequencyChangeProcess
 
                 digit.setFont(font);
 
-                if (x == 6)
+                if(x == 6)
                 {
                     JLabel period = new JLabel(".");
 
@@ -116,7 +123,7 @@ public class JFrequencyControl extends JPanel implements IFrequencyChangeProcess
         Image cursorImage = Toolkit.getDefaultToolkit().createImage(imageByte);
 
         mBlankCursor = Toolkit.getDefaultToolkit()
-                .createCustomCursor(cursorImage, new Point(0, 0), "cursor");
+            .createCustomCursor(cursorImage, new Point(0, 0), "cursor");
 
         revalidate();
     }
@@ -126,7 +133,7 @@ public class JFrequencyControl extends JPanel implements IFrequencyChangeProcess
     {
         super.setEnabled(enabled);
 
-        for (Digit digit : mDigits.values())
+        for(Digit digit : mDigits.values())
         {
             digit.setEnabled(enabled);
         }
@@ -137,11 +144,40 @@ public class JFrequencyControl extends JPanel implements IFrequencyChangeProcess
      * rebroadcast this event, just set the control to indicate the new frequency.
      */
     @Override
-    public void frequencyChanged(FrequencyChangeEvent event)
+    public void process(SourceEvent event)
     {
-        if (event.getEvent() == Event.NOTIFICATION_FREQUENCY_CHANGE)
+        switch(event.getEvent())
         {
-            setFrequency(event.getValue().longValue(), false);
+            case NOTIFICATION_FREQUENCY_CHANGE:
+                EventQueue.invokeLater(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        setFrequency(event.getValue().longValue(), false);
+                    }
+                });
+                break;
+            case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED:
+                EventQueue.invokeLater(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        setEnabled(false);
+                    }
+                });
+                break;
+            case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED:
+                EventQueue.invokeLater(new Runnable()
+                {
+                    @Override
+                    public void run()
+                    {
+                        setEnabled(true);
+                    }
+                });
+                break;
         }
     }
 
@@ -153,7 +189,7 @@ public class JFrequencyControl extends JPanel implements IFrequencyChangeProcess
     {
         mFrequency = frequency;
 
-        for (Digit digit : mDigits.values())
+        for(Digit digit : mDigits.values())
         {
             digit.setFrequency(frequency, fireChangeEvent);
         }
@@ -168,7 +204,7 @@ public class JFrequencyControl extends JPanel implements IFrequencyChangeProcess
     {
         long frequency = 0;
 
-        for (Digit digit : mDigits.values())
+        for(Digit digit : mDigits.values())
         {
             frequency += digit.getFrequency();
         }
@@ -176,27 +212,26 @@ public class JFrequencyControl extends JPanel implements IFrequencyChangeProcess
         mFrequency = frequency;
     }
 
-    private void fireFrequencyChanged() throws SourceException
+    private void fireSourceChanged() throws SourceException
     {
         updateFrequency();
 
-        Iterator<IFrequencyChangeProcessor> it = mProcessors.iterator();
+        Iterator<ISourceEventProcessor> it = mProcessors.iterator();
 
-        FrequencyChangeEvent event = new FrequencyChangeEvent(
-                Event.REQUEST_FREQUENCY_CHANGE, mFrequency);
+        SourceEvent event = SourceEvent.frequencyRequest(mFrequency);
 
-        while (it.hasNext())
+        while(it.hasNext())
         {
-            it.next().frequencyChanged(event);
+            it.next().process(event);
         }
     }
 
-    public void addListener(IFrequencyChangeProcessor processor)
+    public void addListener(ISourceEventProcessor processor)
     {
         mProcessors.add(processor);
     }
 
-    public void removeListener(IFrequencyChangeProcessor processor)
+    public void removeListener(ISourceEventProcessor processor)
     {
         mProcessors.remove(processor);
     }
@@ -228,17 +263,17 @@ public class JFrequencyControl extends JPanel implements IFrequencyChangeProcess
         public void setFrequency(long frequency, boolean fireChangeEvent)
         {
             //Strip the digits higher than this one
-            long lower = frequency % (long) (Math.pow(10, mPower + 1));
+            long lower = frequency % (long)(Math.pow(10, mPower + 1));
 
             //Set the value to int value of dividing by 10 to this power
-            long value = (long) (lower / (long) (Math.pow(10, mPower)));
+            long value = (long)(lower / (long)(Math.pow(10, mPower)));
 
             set(value, fireChangeEvent);
         }
 
         public long getFrequency()
         {
-            return mValue * (long) Math.pow(10, mPower);
+            return mValue * (long)Math.pow(10, mPower);
         }
 
         public void increment()
@@ -248,7 +283,7 @@ public class JFrequencyControl extends JPanel implements IFrequencyChangeProcess
 
         public void increment(boolean fireChangeEvent)
         {
-            if (isEnabled())
+            if(isEnabled())
             {
                 set(mValue + 1, fireChangeEvent);
             }
@@ -261,7 +296,7 @@ public class JFrequencyControl extends JPanel implements IFrequencyChangeProcess
 
         public void decrement(boolean fireChangeEvent)
         {
-            if (isEnabled())
+            if(isEnabled())
             {
                 set(mValue - 1, fireChangeEvent);
             }
@@ -287,13 +322,13 @@ public class JFrequencyControl extends JPanel implements IFrequencyChangeProcess
             mValue = amount;
 
 
-            while (mValue < 0)
+            while(mValue < 0)
             {
                 mValue += 10;
 
                 Digit nextHigherDigit = mDigits.get(mPower + 1);
 
-                if (nextHigherDigit != null)
+                if(nextHigherDigit != null)
                 {
                     nextHigherDigit.decrement(false);
                     higherDigitDecremented = true;
@@ -301,55 +336,55 @@ public class JFrequencyControl extends JPanel implements IFrequencyChangeProcess
 
             }
 
-            while (mValue > 9)
+            while(mValue > 9)
             {
                 mValue -= 10;
 
                 Digit nextHigherDigit = mDigits.get(mPower + 1);
 
-                if (nextHigherDigit != null)
+                if(nextHigherDigit != null)
                 {
                     nextHigherDigit.increment(false);
                     higherDigitIncremented = true;
                 }
             }
 
-            if (fireChangeEvent)
+            if(fireChangeEvent)
             {
                 try
                 {
-                    fireFrequencyChanged();
+                    fireSourceChanged();
                 }
-                catch (SourceException se)
+                catch(SourceException se)
                 {
                     mValue = previous;
 
-                    if (higherDigitIncremented)
+                    if(higherDigitIncremented)
                     {
                         Digit nextHigherDigit = mDigits.get(mPower + 1);
 
-                        if (nextHigherDigit != null)
+                        if(nextHigherDigit != null)
                         {
                             nextHigherDigit.decrement(false);
                         }
                     }
 
-                    if (higherDigitDecremented)
+                    if(higherDigitDecremented)
                     {
                         Digit nextHigherDigit = mDigits.get(mPower + 1);
 
-                        if (nextHigherDigit != null)
+                        if(nextHigherDigit != null)
                         {
                             nextHigherDigit.increment(false);
                         }
                     }
 
-                    if (se instanceof InvalidFrequencyException)
+                    if(se instanceof InvalidFrequencyException)
                     {
-                        InvalidFrequencyException ife = (InvalidFrequencyException) se;
+                        InvalidFrequencyException ife = (InvalidFrequencyException)se;
 
                         JOptionPane.showMessageDialog(this, "Frequency [" + ife.getInvalidFrequency() +
-                                "] exceeds the frequency limit [" + ife.getValidFrequency() + "] for this tuner.");
+                            "] exceeds the frequency limit [" + ife.getValidFrequency() + "] for this tuner.");
                     }
                 }
             }
@@ -361,15 +396,15 @@ public class JFrequencyControl extends JPanel implements IFrequencyChangeProcess
         }
 
         private class Listener implements KeyListener,
-                MouseListener,
-                MouseWheelListener
+            MouseListener,
+            MouseWheelListener
         {
             @Override
             public void keyReleased(KeyEvent e)
             {
                 int key = e.getKeyCode();
 
-                switch (key)
+                switch(key)
                 {
                     case KeyEvent.VK_0:
                     case KeyEvent.VK_NUMPAD0:
@@ -456,7 +491,7 @@ public class JFrequencyControl extends JPanel implements IFrequencyChangeProcess
             @Override
             public void mouseClicked(MouseEvent e)
             {
-                switch (e.getButton())
+                switch(e.getButton())
                 {
                     case MouseEvent.BUTTON1:
                         increment();

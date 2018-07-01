@@ -1,31 +1,28 @@
 /*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
 package io.github.dsheirer.source.wave;
 
-import io.github.dsheirer.channel.heartbeat.Heartbeat;
 import io.github.dsheirer.sample.ConversionUtils;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
 import io.github.dsheirer.source.ComplexSource;
 import io.github.dsheirer.source.IControllableFileSource;
 import io.github.dsheirer.source.IFrameLocationListener;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
+import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,20 +33,19 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.concurrent.ScheduledExecutorService;
 
-public class ComplexWaveSource extends ComplexSource implements IControllableFileSource
+public class ComplexWaveSource extends ComplexSource implements IControllableFileSource, AutoCloseable
 {
-    private final static Logger mLog =
-        LoggerFactory.getLogger(ComplexWaveSource.class);
+    private final static Logger mLog = LoggerFactory.getLogger(ComplexWaveSource.class);
 
     private IFrameLocationListener mFrameLocationListener;
     private int mBytesPerFrame;
     private int mFrameCounter = 0;
     private long mFrequency = 0;
-    private Listener<ComplexBuffer> mListener;
+    private Listener<ReusableComplexBuffer> mListener;
     private AudioInputStream mInputStream;
     private File mFile;
+    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("ComplexWaveSource");
 
     public ComplexWaveSource(File file) throws IOException
     {
@@ -57,49 +53,33 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     }
 
     @Override
-    public void setFrequencyChangeListener(Listener<FrequencyChangeEvent> listener)
+    public void setSourceEventListener(Listener<SourceEvent> listener)
     {
         //Not implemented
     }
 
     @Override
-    public void removeFrequencyChangeListener()
+    public void removeSourceEventListener()
     {
         //Not implemented
     }
 
     @Override
-    public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
+    public Listener<SourceEvent> getSourceEventListener()
     {
         //Not implemented
         return null;
-    }
-
-    /**
-     * Not implemented
-     */
-    @Override
-    public void setHeartbeatListener(Listener<Heartbeat> listener)
-    {
-    }
-
-    /**
-     * Not implemented
-     */
-    @Override
-    public void removeHeartbeatListener()
-    {
     }
 
     @Override
     public void reset()
     {
         stop();
-        start(null);
+        start();
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
         try
         {
@@ -132,11 +112,11 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     }
 
     @Override
-    public int getSampleRate()
+    public double getSampleRate()
     {
         if(mInputStream != null)
         {
-            return (int)mInputStream.getFormat().getSampleRate();
+            return mInputStream.getFormat().getSampleRate();
         }
 
         return 0;
@@ -236,7 +216,9 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
 
                 float[] samples = ConversionUtils.convertFromSigned16BitSamples(buffer);
 
-                mListener.receive(new ComplexBuffer(samples));
+                ReusableComplexBuffer reusableBuffer = mReusableComplexBufferQueue.getBuffer(samples.length);
+                reusableBuffer.reloadFrom(samples, System.currentTimeMillis());
+                mListener.receive(reusableBuffer);
             }
         }
     }
@@ -246,7 +228,7 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
      * the wave file
      */
     @Override
-    public void setListener(Listener<ComplexBuffer> listener)
+    public void setListener(Listener<ReusableComplexBuffer> listener)
     {
         mListener = listener;
     }
@@ -254,7 +236,7 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     /**
      * Unregisters the listener from receiving sample buffers
      */
-    public void removeListener(Listener<ComplexBuffer> listener)
+    public void removeListener(Listener<ReusableComplexBuffer> listener)
     {
         mListener = null;
     }
@@ -291,5 +273,27 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
     public void removeListener(IFrameLocationListener listener)
     {
         mFrameLocationListener = null;
+    }
+
+    /**
+     * Indicates if the file is a supported audio file type
+     */
+    public static boolean supports(File file)
+    {
+        try(AudioInputStream ais = AudioSystem.getAudioInputStream(file))
+        {
+            AudioFormat format = ais.getFormat();
+
+            if(format.getChannels() == 2 && format.getSampleSizeInBits() == 16)
+            {
+                return true;
+            }
+        }
+        catch(Exception e)
+        {
+            //Do nothing, we'll return a default of false
+        }
+
+        return false;
     }
 }

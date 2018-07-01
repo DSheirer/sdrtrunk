@@ -20,8 +20,6 @@ package io.github.dsheirer.channel.state;
 
 import io.github.dsheirer.audio.squelch.ISquelchStateProvider;
 import io.github.dsheirer.audio.squelch.SquelchState;
-import io.github.dsheirer.channel.heartbeat.Heartbeat;
-import io.github.dsheirer.channel.heartbeat.IHeartbeatListener;
 import io.github.dsheirer.channel.metadata.Attribute;
 import io.github.dsheirer.channel.metadata.AttributeChangeRequest;
 import io.github.dsheirer.channel.metadata.IAttributeChangeRequestListener;
@@ -34,19 +32,19 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.event.CallEvent;
 import io.github.dsheirer.module.decode.event.ICallEventProvider;
+import io.github.dsheirer.sample.IOverflowListener;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.real.IOverflowListener;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
-import io.github.dsheirer.source.tuner.frequency.IFrequencyChangeListener;
+import io.github.dsheirer.source.ISourceEventListener;
+import io.github.dsheirer.source.SourceEvent;
+import io.github.dsheirer.source.heartbeat.Heartbeat;
+import io.github.dsheirer.source.heartbeat.IHeartbeatListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ScheduledExecutorService;
-
-import static io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent.Event.NOTIFICATION_FREQUENCY_CHANGE;
+import static io.github.dsheirer.source.SourceEvent.Event.NOTIFICATION_FREQUENCY_CHANGE;
 
 public class ChannelState extends Module implements ICallEventProvider, IDecoderStateEventListener,
-    IDecoderStateEventProvider, IFrequencyChangeListener, IHeartbeatListener, ISquelchStateProvider,
+    IDecoderStateEventProvider, ISourceEventListener, IHeartbeatListener, ISquelchStateProvider,
     IAttributeChangeRequestListener, IOverflowListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelState.class);
@@ -64,7 +62,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     private ChannelType mChannelType;
     private TrafficChannelManager mTrafficChannelEndListener;
     private CallEvent mTrafficChannelCallEvent;
-    private FrequencyChangeListener mFrequencyChangeListener;
+    private SourceChangeListener mSourceChangeListener;
 
     private boolean mSquelchLocked = false;
     private boolean mSelected = false;
@@ -124,7 +122,7 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
         mMutableMetadata.receive(new AttributeChangeRequest<State>(Attribute.CHANNEL_STATE, mState));
 
@@ -160,14 +158,14 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     }
 
     @Override
-    public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
+    public Listener<SourceEvent> getSourceEventListener()
     {
-        if(mFrequencyChangeListener == null)
+        if(mSourceChangeListener == null)
         {
-            mFrequencyChangeListener = new FrequencyChangeListener();
+            mSourceChangeListener = new SourceChangeListener();
         }
 
-        return mFrequencyChangeListener;
+        return mSourceChangeListener;
     }
 
     private boolean isStandardChannel()
@@ -520,14 +518,14 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     /**
      * Listener to receive frequency change events and rebroadcast them to the decoder states
      */
-    public class FrequencyChangeListener implements Listener<FrequencyChangeEvent>
+    public class SourceChangeListener implements Listener<SourceEvent>
     {
         @Override
-        public void receive(FrequencyChangeEvent frequencyChangeEvent)
+        public void receive(SourceEvent sourceEvent)
         {
-            if(frequencyChangeEvent.getEvent() == NOTIFICATION_FREQUENCY_CHANGE)
+            if(sourceEvent.getEvent() == NOTIFICATION_FREQUENCY_CHANGE)
             {
-                long frequency = frequencyChangeEvent.getValue().longValue();
+                long frequency = sourceEvent.getValue().longValue();
 
                 broadcast(new DecoderStateEvent(this, Event.SOURCE_FREQUENCY, getState(), frequency));
             }

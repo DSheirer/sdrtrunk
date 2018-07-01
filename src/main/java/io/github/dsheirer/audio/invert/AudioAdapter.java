@@ -20,6 +20,7 @@ package io.github.dsheirer.audio.invert;
 import io.github.dsheirer.dsp.filter.FilterFactory;
 import io.github.dsheirer.dsp.filter.FloatFIRFilter;
 import io.github.dsheirer.dsp.filter.Window.WindowType;
+import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.Oscillator;
 
 /**
@@ -29,7 +30,7 @@ import io.github.dsheirer.dsp.mixer.Oscillator;
 public class AudioAdapter
 {
 	private static int mGain = 5;
-	private Oscillator mSineWaveGenerator;
+	private IOscillator mSineWaveGenerator;
 	private FloatFIRFilter mPostInversionFilter;
 	private FloatFIRFilter mAudioHighPassFilter;
 	private AudioType mAudioType = AudioType.NORMAL;
@@ -88,7 +89,7 @@ public class AudioAdapter
 			default:
 				retVal = (float)( mPostInversionFilter.get( 
 						mAudioHighPassFilter.get( sample ) * 
-						mSineWaveGenerator.getFloat() ) );
+						mSineWaveGenerator.inphase() ) );
 				
 				mSineWaveGenerator.rotate();
 				break;

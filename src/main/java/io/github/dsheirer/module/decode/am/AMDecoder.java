@@ -22,8 +22,6 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.PrimaryDecoder;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 
-import java.util.concurrent.ScheduledExecutorService;
-
 public class AMDecoder extends PrimaryDecoder
 {
 	public AMDecoder( DecodeConfiguration config )
@@ -42,10 +40,10 @@ public class AMDecoder extends PrimaryDecoder
 	{
 	}
 
-	@Override
-	public void start( ScheduledExecutorService executor )
-	{
-	}
+    @Override
+    public void start()
+    {
+    }
 
 	@Override
 	public void stop()

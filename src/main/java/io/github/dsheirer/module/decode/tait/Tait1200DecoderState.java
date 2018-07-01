@@ -38,7 +38,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.TreeSet;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class Tait1200DecoderState extends DecoderState
 {
@@ -66,21 +65,29 @@ public class Tait1200DecoderState extends DecoderState
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
-    {
-    }
-
-    @Override
-    public void stop()
-    {
-    }
-
-    @Override
     public void reset()
     {
         mIdents.clear();
 
         resetState();
+    }
+
+    @Override
+    public void start()
+    {
+
+    }
+
+    @Override
+    public void stop()
+    {
+
+    }
+
+    @Override
+    public void init()
+    {
+
     }
 
     private void resetState()
@@ -174,12 +181,6 @@ public class Tait1200DecoderState extends DecoderState
         }
 
         return sb.toString();
-    }
-
-    @Override
-    public void init()
-    {
-        /* No initialization required */
     }
 
     /**

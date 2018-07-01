@@ -142,7 +142,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class P25DecoderState extends DecoderState
 {
@@ -223,11 +222,6 @@ public class P25DecoderState extends DecoderState
         return DecoderType.P25_PHASE1;
     }
 
-    @Override
-    public void stop()
-    {
-    }
-
     /**
      * Performs a full reset to prepare this object for reuse on a new channel
      */
@@ -239,6 +233,12 @@ public class P25DecoderState extends DecoderState
         mNAC = null;
         mSiteAttributeMonitor.reset();
         mSystem = null;
+    }
+
+    @Override
+    public void init()
+    {
+
     }
 
     /**
@@ -257,14 +257,6 @@ public class P25DecoderState extends DecoderState
         }
 
         mCurrentCallEvent = null;
-    }
-
-    /**
-     * Performs any initialization operations to prepare for use
-     */
-    @Override
-    public void init()
-    {
     }
 
     /**
@@ -3625,12 +3617,18 @@ public class P25DecoderState extends DecoderState
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
         //Change the default (45-second) traffic channel timeout to 1 second
         if(mChannelType == ChannelType.TRAFFIC)
         {
             broadcast(new ChangeChannelTimeoutEvent(this, ChannelType.TRAFFIC, 1000));
         }
+    }
+
+    @Override
+    public void stop()
+    {
+
     }
 }

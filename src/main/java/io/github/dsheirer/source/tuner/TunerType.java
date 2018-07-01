@@ -32,6 +32,7 @@ public enum TunerType
 	RAFAELMICRO_R820T( "R820T" ),
 	RAFAELMICRO_R828D( "R828D" ),
 	RTL2832_VARIOUS( "Generic" ),
+	TEST("Test"),
 	UNKNOWN( "Unknown" );
 	
 	private String mLabel;

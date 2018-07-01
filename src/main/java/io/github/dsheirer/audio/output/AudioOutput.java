@@ -19,10 +19,10 @@
 package io.github.dsheirer.audio.output;
 
 import io.github.dsheirer.audio.AudioEvent;
-import io.github.dsheirer.audio.AudioPacket;
 import io.github.dsheirer.channel.metadata.Metadata;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.source.mixer.MixerChannel;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
@@ -46,11 +46,11 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public abstract class AudioOutput implements Listener<AudioPacket>, LineListener
+public abstract class AudioOutput implements Listener<ReusableAudioPacket>, LineListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(AudioOutput.class);
 
-    private LinkedTransferQueue<AudioPacket> mBuffer = new LinkedTransferQueue<>();
+    private LinkedTransferQueue<ReusableAudioPacket> mBuffer = new LinkedTransferQueue<>();
     private int mBufferStartThreshold;
     private int mBufferStopThreshold;
 
@@ -190,7 +190,7 @@ public abstract class AudioOutput implements Listener<AudioPacket>, LineListener
      * Converts the audio packet data into a byte buffer format appropriate for
      * the underlying source data line.
      */
-    protected abstract ByteBuffer convert(AudioPacket packet);
+    protected abstract ByteBuffer convert(ReusableAudioPacket packet);
 
     /**
      * Audio output channel name
@@ -271,7 +271,7 @@ public abstract class AudioOutput implements Listener<AudioPacket>, LineListener
     }
 
     @Override
-    public void receive(AudioPacket packet)
+    public void receive(ReusableAudioPacket packet)
     {
         if(mCanProcessAudio)
         {
@@ -281,11 +281,17 @@ public abstract class AudioOutput implements Listener<AudioPacket>, LineListener
 
             mBuffer.add(packet);
         }
+        else
+        {
+            packet.decrementUserCount();
+        }
     }
 
     public class BufferProcessor implements Runnable
     {
         private AtomicBoolean mProcessing = new AtomicBoolean();
+        private List<ReusableAudioPacket> mAudioPackets = new ArrayList<ReusableAudioPacket>();
+
 
         public BufferProcessor()
         {
@@ -300,13 +306,11 @@ public abstract class AudioOutput implements Listener<AudioPacket>, LineListener
 				 * processor can run at any given time */
                 if(mProcessing.compareAndSet(false, true))
                 {
-                    List<AudioPacket> packets = new ArrayList<AudioPacket>();
+                    mBuffer.drainTo(mAudioPackets);
 
-                    mBuffer.drainTo(packets);
-
-                    for(AudioPacket packet : packets)
+                    for(ReusableAudioPacket packet : mAudioPackets)
                     {
-                        if(packet.getType() == AudioPacket.Type.AUDIO)
+                        if(packet.getType() == ReusableAudioPacket.Type.AUDIO)
                         {
                             broadcast(packet.getMetadata());
 
@@ -338,7 +342,13 @@ public abstract class AudioOutput implements Listener<AudioPacket>, LineListener
 
                             updateTimestamp();
                         }
+                        else
+                        {
+                            packet.decrementUserCount();
+                        }
                     }
+
+                    mAudioPackets.clear();
 
                     checkStop();
 

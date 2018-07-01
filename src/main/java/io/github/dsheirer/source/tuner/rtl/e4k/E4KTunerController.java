@@ -44,8 +44,8 @@ public class E4KTunerController extends RTL2832TunerController
 
     /* The local oscillator is defined by whole (integer) units of the oscillator
      * frequency and fractional units representing 1/65536th of the oscillator
-	 * frequency, meaning we can only tune the local oscillator in units of
-	 * 439.453125 hertz. */
+     * frequency, meaning we can only tune the local oscillator in units of
+     * 439.453125 hertz. */
     public static final long E4K_PLL_Y = 65536l; /* 16-bit fractional register */
     public static final byte MASTER1_RESET = (byte) 0x01;
     public static final byte MASTER1_NORM_STBY = (byte) 0x02;
@@ -191,7 +191,7 @@ public class E4KTunerController extends RTL2832TunerController
 
         try
         {
-			/* Read the contents of the 256-byte EEPROM */
+            /* Read the contents of the 256-byte EEPROM */
             eeprom = readEEPROM(mDeviceHandle, (short) 0, 256);
         }
         catch(Exception e)
@@ -218,7 +218,7 @@ public class E4KTunerController extends RTL2832TunerController
 
         try
         {
-			/* Dummy write to test USB interface */
+            /* Dummy write to test USB interface */
             writeRegister(mDeviceHandle, Block.USB,
                 Address.USB_SYSCTL.getAddress(), (short) 0x09, 1);
 
@@ -252,7 +252,7 @@ public class E4KTunerController extends RTL2832TunerController
 
         String deviceName = getTunerType().getLabel() + " " + getUniqueID();
 
-        mUSBTransferProcessor = new RTL2832USBTransferProcessor(deviceName, mDeviceHandle, mSampleAdapter,
+        mUSBTransferProcessor = new RTL2832USBTransferProcessor(deviceName, mDeviceHandle, mNativeBufferConverter,
             USB_TRANSFER_BUFFER_SIZE);
     }
 
@@ -263,7 +263,7 @@ public class E4KTunerController extends RTL2832TunerController
     @Override
     public void setSampleRateFilters(int bandwidth) throws SourceException
     {
-		/* Determine repeater state so we can restore it when done */
+        /* Determine repeater state so we can restore it when done */
         boolean i2CRepeaterEnabled = isI2CRepeaterEnabled();
 
         if(!i2CRepeaterEnabled)
@@ -293,7 +293,7 @@ public class E4KTunerController extends RTL2832TunerController
     {
         try
         {
-			/* Determine repeater state so we can restore it when done */
+            /* Determine repeater state so we can restore it when done */
             boolean i2CRepeaterEnabled = isI2CRepeaterEnabled();
 
             if(!i2CRepeaterEnabled)
@@ -313,7 +313,7 @@ public class E4KTunerController extends RTL2832TunerController
             int pllSetting = readE4KRegister(Register.SYNTH7, controlI2CRepeater);
             PLL pll = PLL.fromSetting(pllSetting);
 
-			/* Return the repeater to its previous state */
+            /* Return the repeater to its previous state */
             if(!i2CRepeaterEnabled)
             {
                 enableI2CRepeater(mDeviceHandle, false);
@@ -331,22 +331,22 @@ public class E4KTunerController extends RTL2832TunerController
     @Override
     public void setTunedFrequency(long frequency) throws SourceException
     {
-		/* Get the phase locked loop setting */
+        /* Get the phase locked loop setting */
         PLL pll = PLL.fromFrequency(frequency);
 
-		/* Z is an integer representing the number of scaled oscillator frequency
-		 * increments the multiplied frequency. */
+        /* Z is an integer representing the number of scaled oscillator frequency
+         * increments the multiplied frequency. */
         byte z = (byte) (frequency / pll.getScaledOscillator());
 
-		/* remainder is just as it describes.  It is what is left over after we
-		 * carve out scaled oscillator frequency increments (z) from the desired
-		 * frequency. */
+        /* remainder is just as it describes.  It is what is left over after we
+         * carve out scaled oscillator frequency increments (z) from the desired
+         * frequency. */
         int remainder = (int) (frequency - ((z & 0xFF) * pll.getScaledOscillator()));
 
-		/* X is a 16-bit representation of the remainder */
+        /* X is a 16-bit representation of the remainder */
         int x = (int) ((double) remainder / (double) pll.getScaledOscillator() * E4K_PLL_Y);
 
-		/* Calculate the exact (tunable) frequency and apply that to the tuner */
+        /* Calculate the exact (tunable) frequency and apply that to the tuner */
         long actualFrequency = calculateActualFrequency(pll, z, x);
 
         /**
@@ -360,34 +360,34 @@ public class E4KTunerController extends RTL2832TunerController
             actualFrequency = calculateActualFrequency(pll, z, x);
         }
 
-		/* Apply the actual frequency */
+        /* Apply the actual frequency */
         try
         {
             enableI2CRepeater(mDeviceHandle, true);
 
             boolean controlI2CRepeater = false;
 
-			/* Write the PLL setting */
+            /* Write the PLL setting */
             writeE4KRegister(Register.SYNTH7, pll.getIndex(), controlI2CRepeater);
 
-			/* Write z (integral) value */
+            /* Write z (integral) value */
             writeE4KRegister(Register.SYNTH3, z, controlI2CRepeater);
 
-			/* Write the x (fractional) value high-order byte to synth4 register */
+            /* Write the x (fractional) value high-order byte to synth4 register */
             writeE4KRegister(Register.SYNTH4, (byte) (x & 0xFF), controlI2CRepeater);
 
-			/* Write the x (fractional) value low-order byte to synth5 register */
+            /* Write the x (fractional) value low-order byte to synth5 register */
             writeE4KRegister(Register.SYNTH5,
                 (byte) ((Integer.rotateRight(x, 8)) & 0xFF),
                 controlI2CRepeater);
 
-			/* Set the band for the new frequency */
+            /* Set the band for the new frequency */
             setBand(actualFrequency, controlI2CRepeater);
 
-			/* Set the filter */
+            /* Set the filter */
             setRFFilter(actualFrequency, controlI2CRepeater);
 
-			/* Check for PLL lock */
+            /* Check for PLL lock */
             int lock = readE4KRegister(Register.SYNTH1, controlI2CRepeater);
 
             if(!((lock & 0x1) == 0x1))
@@ -425,24 +425,24 @@ public class E4KTunerController extends RTL2832TunerController
 
         boolean i2CRepeaterControl = false;
 
-		/* Perform dummy read */
+        /* Perform dummy read */
         readE4KRegister(Register.DUMMY, i2CRepeaterControl);
 
-		/* Reset everything and clear POR indicator */
-		/* NOTE: register value remains 0010 even after we write 0111 to it */
+        /* Reset everything and clear POR indicator */
+        /* NOTE: register value remains 0010 even after we write 0111 to it */
         writeE4KRegister(Register.MASTER1, (byte) (MASTER1_RESET |
                 MASTER1_NORM_STBY |
                 MASTER1_POR_DET),
             i2CRepeaterControl);
 
-		/* Configure clock input */
+        /* Configure clock input */
         writeE4KRegister(Register.CLK_INP, (byte) 0x00, i2CRepeaterControl);
 
-		/* Disable clock output */
+        /* Disable clock output */
         writeE4KRegister(Register.REF_CLK, (byte) 0x00, i2CRepeaterControl);
         writeE4KRegister(Register.CLKOUT_PWDN, (byte) 0x96, i2CRepeaterControl);
 
-		/* Magic Init */
+        /* Magic Init */
         magicInit(i2CRepeaterControl);
 
 //		/* Set common mode voltage a bit higher for more margin - 850 mv */
@@ -456,7 +456,7 @@ public class E4KTunerController extends RTL2832TunerController
 //		writeE4KRegister( Register.DCTIME1, (byte)0x01, i2CRepeaterControl );
 //		writeE4KRegister( Register.DCTIME2, (byte)0x01, i2CRepeaterControl );
 //
-		/* Set LNA Mode */
+        /* Set LNA Mode */
         writeE4KRegister(Register.AGC4, (byte) 0x10, i2CRepeaterControl); //High Threshold
         writeE4KRegister(Register.AGC5, (byte) 0x04, i2CRepeaterControl); //Low Threshold
         writeE4KRegister(Register.AGC6, (byte) 0x1A, i2CRepeaterControl); //LNA calibrate + loop rate
@@ -496,12 +496,12 @@ public class E4KTunerController extends RTL2832TunerController
 //								i2CRepeaterControl );
 
 
-		/* Use automatic gain as a default */
+        /* Use automatic gain as a default */
         setLNAGain(E4KLNAGain.AUTOMATIC, i2CRepeaterControl);
         setMixerGain(E4KMixerGain.AUTOMATIC, i2CRepeaterControl);
         setEnhanceGain(E4KEnhanceGain.AUTOMATIC, i2CRepeaterControl);
 
-		/* Set IF gain stages */
+        /* Set IF gain stages */
         setIFStage1Gain(IFStage1Gain.GAIN_PLUS6, i2CRepeaterControl);
         setIFStage2Gain(IFStage2Gain.GAIN_PLUS0, i2CRepeaterControl);
         setIFStage3Gain(IFStage3Gain.GAIN_PLUS0, i2CRepeaterControl);
@@ -509,7 +509,7 @@ public class E4KTunerController extends RTL2832TunerController
         setIFStage5Gain(IFStage5Gain.GAIN_PLUS9, i2CRepeaterControl);
         setIFStage6Gain(IFStage6Gain.GAIN_PLUS9, i2CRepeaterControl);
 
-		/* Set the most narrow filter we can possible use */
+        /* Set the most narrow filter we can possible use */
         setMixerFilter(MixerFilter.BW_1M9, i2CRepeaterControl);
         setRCFilter(RCFilter.BW_1M0, i2CRepeaterControl);
         setChannelFilter(ChannelFilter.BW_2M15, i2CRepeaterControl);
@@ -519,7 +519,7 @@ public class E4KTunerController extends RTL2832TunerController
 //		/* Disable DC detector */
 //		setDCRangeDetectorEnabled( false, i2CRepeaterControl );
 
-		/* Disable time variant DC correction */
+        /* Disable time variant DC correction */
         writeMaskedE4KRegister(Register.DC5, (byte) 0x03, (byte) 0, i2CRepeaterControl);
         writeMaskedE4KRegister(Register.DCTIME1, (byte) 0x03, (byte) 0, i2CRepeaterControl);
         writeMaskedE4KRegister(Register.DCTIME2, (byte) 0x03, (byte) 0, i2CRepeaterControl);
@@ -541,7 +541,7 @@ public class E4KTunerController extends RTL2832TunerController
             enableI2CRepeater(mDeviceHandle, true);
         }
 
-		/* Capture current gain settings to reapply at the end */
+        /* Capture current gain settings to reapply at the end */
         IFStage1Gain stage1 = getIFStage1Gain(i2CRepeaterControl);
         IFStage2Gain stage2 = getIFStage2Gain(i2CRepeaterControl);
         IFStage3Gain stage3 = getIFStage3Gain(i2CRepeaterControl);
@@ -549,15 +549,15 @@ public class E4KTunerController extends RTL2832TunerController
         IFStage5Gain stage5 = getIFStage5Gain(i2CRepeaterControl);
         IFStage6Gain stage6 = getIFStage6Gain(i2CRepeaterControl);
 
-		/* Set Mixer gain to manual using current auto Mixer gain setting */
+        /* Set Mixer gain to manual using current auto Mixer gain setting */
         E4KMixerGain mixerGain = getMixerGain(i2CRepeaterControl);
         setMixerGain(mixerGain, i2CRepeaterControl);
 
-		/* Set LNA gain to manual using current auto LNA gain setting */
+        /* Set LNA gain to manual using current auto LNA gain setting */
         E4KLNAGain lnaGain = getLNAGain(i2CRepeaterControl);
         setLNAGain(lnaGain, i2CRepeaterControl);
 
-		/* Set IF Stage 2 - 6 gains to maximum */
+        /* Set IF Stage 2 - 6 gains to maximum */
         setIFStage2Gain(IFStage2Gain.GAIN_PLUS9, i2CRepeaterControl);
         setIFStage3Gain(IFStage3Gain.GAIN_PLUS9, i2CRepeaterControl);
         setIFStage4Gain(IFStage4Gain.GAIN_PLUS2B, i2CRepeaterControl);
@@ -570,17 +570,17 @@ public class E4KTunerController extends RTL2832TunerController
          */
         for(DCGainCombination combo : DCGainCombination.values())
         {
-			/* Set mixer and stage1 gain values */
+            /* Set mixer and stage1 gain values */
             setMixerGain(combo.getMixerGain(), i2CRepeaterControl);
             setIFStage1Gain(combo.getIFStage1Gain(), i2CRepeaterControl);
 
-			/* Turn on the DC range detector */
+            /* Turn on the DC range detector */
             setDCRangeDetectorEnabled(true, i2CRepeaterControl);
 
-			/* Calibrate the DC value */
+            /* Calibrate the DC value */
             writeE4KRegister(Register.DC1, (byte) 0x01, i2CRepeaterControl);
 
-			/* Get the I/Q offset and range values */
+            /* Get the I/Q offset and range values */
             byte offsetI = (byte) (readE4KRegister(Register.DC2,
                 i2CRepeaterControl) & 0x3F);
             byte offsetQ = (byte) (readE4KRegister(Register.DC3,
@@ -590,7 +590,7 @@ public class E4KTunerController extends RTL2832TunerController
             byte rangeI = (byte) (range & 0x3);
             byte rangeQ = (byte) ((range >> 4) & 0x3);
 
-			/* Write the offset and range values to the lookup table */
+            /* Write the offset and range values to the lookup table */
             writeE4KRegister(combo.getIRegister(),
                 (byte) (offsetI | (rangeI << 6)),
                 i2CRepeaterControl);
@@ -735,7 +735,7 @@ public class E4KTunerController extends RTL2832TunerController
                 AGC7_MIX_GAIN_MANUAL,
                 localI2CRepeaterControl);
 
-			/* Set the desired manual gain setting */
+            /* Set the desired manual gain setting */
             writeMaskedE4KRegister(E4KMixerGain.getRegister(),
                 E4KMixerGain.getMask(),
                 gain.getValue(),
@@ -945,7 +945,7 @@ public class E4KTunerController extends RTL2832TunerController
 
         Band band = Band.fromFrequency(frequency);
 
-    	/* Set the bias */
+        /* Set the bias */
         switch(band)
         {
             case UHF:
@@ -1018,8 +1018,8 @@ public class E4KTunerController extends RTL2832TunerController
     }
 
     /*
-	 * Performs magic initialization ... and that's all we need to know, I guess
-	 */
+     * Performs magic initialization ... and that's all we need to know, I guess
+     */
     private void magicInit(boolean controlI2CRepeater) throws UsbException
     {
         if(controlI2CRepeater)
@@ -1058,7 +1058,7 @@ public class E4KTunerController extends RTL2832TunerController
     {
         int temp = readE4KRegister(register, controlI2CRepeater);
 
-		/* If the register is not set to the masked value, then change it */
+        /* If the register is not set to the masked value, then change it */
         if((byte) (temp & mask) != value)
         {
             writeE4KRegister(register,
@@ -1207,7 +1207,7 @@ public class E4KTunerController extends RTL2832TunerController
         }
 
         /* Returns the PLL setting with the closest frequency that is greater
-		 * than the frequency argument */
+         * than the frequency argument */
         public static PLL fromFrequency(long frequency)
         {
             for(PLL pll : values())
@@ -1288,7 +1288,7 @@ public class E4KTunerController extends RTL2832TunerController
         M1720(14, 1710000000, 1735000000),
 
         /* Note: max frequency is currently limited by the max integer value
-		 * and we set the max frequency for this filter to 2147 MHz */
+         * and we set the max frequency for this filter to 2147 MHz */
         M1750(15, 1735000000, 2147000000);
 
         private int mValue;
@@ -1446,7 +1446,7 @@ public class E4KTunerController extends RTL2832TunerController
                 }
             }
 
-			/* default */
+            /* default */
             return MixerFilter.BW_27M0;
         }
 
@@ -1557,7 +1557,7 @@ public class E4KTunerController extends RTL2832TunerController
                 }
             }
 
-			/* default */
+            /* default */
             return RCFilter.BW_21M4;
         }
 
@@ -1684,7 +1684,7 @@ public class E4KTunerController extends RTL2832TunerController
                 }
             }
 
-			/* default */
+            /* default */
             return ChannelFilter.BW_5M50;
         }
 

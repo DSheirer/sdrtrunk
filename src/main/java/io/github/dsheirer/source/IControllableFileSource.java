@@ -40,7 +40,7 @@ public interface IControllableFileSource
 
     public long getFrameCount() throws IOException;
 
-    public int getSampleRate();
+    public double getSampleRate();
 
     public void setListener(IFrameLocationListener listener);
 

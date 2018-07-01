@@ -25,7 +25,7 @@ import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 
 public class DecodeConfigP25Phase1 extends DecodeConfiguration
 {
-    private P25_LSMDecoder.Modulation mModulation = P25Decoder.Modulation.C4FM;
+    private P25DecoderLSM.Modulation mModulation = P25Decoder.Modulation.C4FM;
 
     private int mCallTimeout = 1;
     private int mTrafficChannelPoolSize = TRAFFIC_CHANNEL_LIMIT_DEFAULT;
@@ -33,7 +33,6 @@ public class DecodeConfigP25Phase1 extends DecodeConfiguration
 
     public DecodeConfigP25Phase1()
     {
-        setAFC(false);
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
@@ -42,18 +41,13 @@ public class DecodeConfigP25Phase1 extends DecodeConfiguration
         return DecoderType.P25_PHASE1;
     }
 
-    public boolean supportsAFC()
-    {
-        return false;
-    }
-
     @JacksonXmlProperty(isAttribute = true, localName = "modulation")
-    public P25_LSMDecoder.Modulation getModulation()
+    public P25DecoderLSM.Modulation getModulation()
     {
         return mModulation;
     }
 
-    public void setModulation(P25_LSMDecoder.Modulation modulation)
+    public void setModulation(P25DecoderLSM.Modulation modulation)
     {
         mModulation = modulation;
     }

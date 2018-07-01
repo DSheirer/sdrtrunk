@@ -18,7 +18,7 @@
  ******************************************************************************/
 package io.github.dsheirer.sample;
 
-import io.github.dsheirer.sample.real.IOverflowListener;
+import io.github.dsheirer.source.Source;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,10 +33,11 @@ public class OverflowableTransferQueue<E>
 
     public enum State {NORMAL, OVERFLOW};
     private IOverflowListener mOverflowListener;
+    private Source mSourceOverflowListener;
 
-    private LinkedTransferQueue<E> mQueue = new LinkedTransferQueue<E>();
-    private AtomicInteger mCounter = new AtomicInteger();
-    private AtomicBoolean mOverflow = new AtomicBoolean();
+    protected LinkedTransferQueue<E> mQueue = new LinkedTransferQueue<E>();
+    protected AtomicInteger mCounter = new AtomicInteger();
+    protected AtomicBoolean mOverflow = new AtomicBoolean();
     private int mMaximumSize;
     private int mResetThreshold;
 
@@ -52,6 +53,13 @@ public class OverflowableTransferQueue<E>
     {
         mMaximumSize = maximumSize;
         mResetThreshold = resetThreshold;
+    }
+
+    public void dispose()
+    {
+        clear();
+        mOverflowListener = null;
+        mSourceOverflowListener = null;
     }
 
     /**
@@ -71,6 +79,29 @@ public class OverflowableTransferQueue<E>
                 setOverflow(true);
             }
         }
+        else
+        {
+            overflow(e);
+        }
+    }
+
+    /**
+     * Invoked when the buffer is in an overflow state.  The element argument is thrown away.  Override this method
+     * in subclasses to perform any necessary cleanup action(s).
+     *
+     * @param e element that is being thrown away due to an overflow condition
+     */
+    protected void overflow(E e)
+    {
+        //No-op.  Override in subclass to perform any cleanup actions during overflow
+    }
+
+    /**
+     * Removes and returns a single element from the head of the queue or null if the queue is empty
+     */
+    public E poll()
+    {
+        return mQueue.poll();
     }
 
     /**
@@ -91,11 +122,36 @@ public class OverflowableTransferQueue<E>
     }
 
     /**
-     * Sets a listener to receive overflow state change events
+     * Retrieves elements from the queue into the collection up to the maximum number of elements specified
+     */
+    public int drainTo(Collection<? super E> collection)
+    {
+        int drainCount = mQueue.drainTo(collection);
+
+        int size = mCounter.addAndGet(-drainCount);
+
+        if(mOverflow.get() && size <= mResetThreshold)
+        {
+            setOverflow(false);
+        }
+
+        return drainCount;
+    }
+
+    /**
+     * Sets a listener to receive overflow state change events.
      */
     public void setOverflowListener(IOverflowListener listener)
     {
         mOverflowListener = listener;
+    }
+
+    /**
+     * Sets the source to receive overflow state change events (in addition to an IOverflow listener)
+     */
+    public void setSourceOverflowListener(Source source)
+    {
+        mSourceOverflowListener = source;
     }
 
 
@@ -109,6 +165,11 @@ public class OverflowableTransferQueue<E>
             if(mOverflowListener != null)
             {
                 mOverflowListener.sourceOverflow(overflow);
+            }
+
+            if(mSourceOverflowListener != null)
+            {
+                mSourceOverflowListener.broadcastOverflowState(overflow);
             }
         }
     }

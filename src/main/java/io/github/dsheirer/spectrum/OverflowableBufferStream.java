@@ -16,8 +16,8 @@
 package io.github.dsheirer.spectrum;
 
 
-import io.github.dsheirer.sample.Buffer;
 import io.github.dsheirer.sample.OverflowableTransferQueue;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,20 +25,20 @@ import java.io.IOException;
 import java.nio.FloatBuffer;
 import java.util.LinkedList;
 
-public class OverflowableBufferStream extends OverflowableTransferQueue<Buffer>
+public class OverflowableBufferStream extends OverflowableTransferQueue<ReusableComplexBuffer>
 {
     private static final Logger mLog = LoggerFactory.getLogger(OverflowableBufferStream.class);
 
     private int mFlushCount = 0;
-    private Buffer mCurrentBuffer;
+    private ReusableComplexBuffer mCurrentBuffer;
     private int mCurrentBufferPointer = 0;
     private FloatBuffer mFloatBuffer;
-    private LinkedList<Buffer> mBufferList = new LinkedList<>();
+    private LinkedList<ReusableComplexBuffer> mBufferList = new LinkedList<>();
     private int mBufferFetchLimit;
 
     /**
-     * Stream for receiving Buffers from a producer thread and providing access to a consumer thread to read the
-     * sample data.  Extends the overflowable transfer queue to define maximum and reset thresholds to ensure the
+     * Stream for receiving reusable buffers from a producer thread and providing access to a consumer thread to read
+     * the sample data.  Extends the overflowable transfer queue to define maximum and reset thresholds to ensure the
      * queue doesn't grow too large.
      *
      * This stream is designed for consistent sample size requests each time the get() samples method is invoked, such
@@ -55,7 +55,7 @@ public class OverflowableBufferStream extends OverflowableTransferQueue<Buffer>
     {
         super(maxSize, resetThreshold);
         mFloatBuffer = FloatBuffer.allocate(arraySize);
-        mBufferFetchLimit = maxSize = resetThreshold;
+        mBufferFetchLimit = maxSize - resetThreshold;
     }
 
     /**
@@ -181,7 +181,13 @@ public class OverflowableBufferStream extends OverflowableTransferQueue<Buffer>
      */
     private void getNextBuffer() throws IOException
     {
-        mCurrentBuffer = null;
+        if(mCurrentBuffer != null)
+        {
+            //Decrement the user count to let the originator know we're done with their buffer
+            mCurrentBuffer.decrementUserCount();
+            mCurrentBuffer = null;
+        }
+
         mCurrentBufferPointer = 0;
 
         if(mBufferList.isEmpty())
@@ -196,7 +202,35 @@ public class OverflowableBufferStream extends OverflowableTransferQueue<Buffer>
 
         if(mCurrentBuffer == null)
         {
-            throw new IOException("Buffer queue is (currently) empty");
+            throw new IOException("Reusable complex buffer queue is (currently) empty");
+        }
+    }
+
+    @Override
+    protected void overflow(ReusableComplexBuffer reusableComplexBuffer)
+    {
+        mLog.debug("*** Overflow - throwing away buffer: " + reusableComplexBuffer.name());
+        reusableComplexBuffer.decrementUserCount();
+    }
+
+    /**
+     * Clears all elements from the queue and resets the internal counter to 0
+     */
+    @Override
+    public void clear()
+    {
+        synchronized(mQueue)
+        {
+            ReusableComplexBuffer buffer = mQueue.poll();
+
+            while(buffer != null)
+            {
+                buffer.decrementUserCount();
+                buffer = mQueue.poll();
+            }
+
+            mCounter.set(0);
+            mOverflow.set(false);
         }
     }
 }

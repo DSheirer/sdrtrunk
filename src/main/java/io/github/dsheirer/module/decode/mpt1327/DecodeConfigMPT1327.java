@@ -20,7 +20,6 @@ package io.github.dsheirer.module.decode.mpt1327;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
-import io.github.dsheirer.module.decode.mpt1327.MPT1327Decoder.Sync;
 
 public class DecodeConfigMPT1327 extends DecodeConfiguration
 {

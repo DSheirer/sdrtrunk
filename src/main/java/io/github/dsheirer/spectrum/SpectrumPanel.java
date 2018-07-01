@@ -33,8 +33,14 @@ import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JPanel;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.GradientPaint;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.geom.GeneralPath;
 import java.awt.geom.Line2D;
 import java.util.Arrays;
@@ -295,7 +301,7 @@ public class SpectrumPanel extends JPanel implements DFTResultsListener, Setting
      */
     public void setSampleSize(double sampleSize)
     {
-        Validate.isTrue(2.0 <= sampleSize && sampleSize <= 32.0);
+        Validate.isTrue(2.0 <= sampleSize && sampleSize <= 64.0);
 
         mDBScale = (float)(20.0 * Math.log10(Math.pow(2.0, sampleSize - 1)));
     }

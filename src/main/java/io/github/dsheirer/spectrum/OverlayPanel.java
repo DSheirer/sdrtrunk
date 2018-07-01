@@ -28,9 +28,9 @@ import io.github.dsheirer.settings.ColorSetting.ColorSettingName;
 import io.github.dsheirer.settings.Setting;
 import io.github.dsheirer.settings.SettingChangeListener;
 import io.github.dsheirer.settings.SettingsManager;
-import io.github.dsheirer.source.tuner.TunerChannel;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
-import io.github.dsheirer.source.tuner.frequency.IFrequencyChangeProcessor;
+import io.github.dsheirer.source.ISourceEventProcessor;
+import io.github.dsheirer.source.SourceEvent;
+import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +52,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-public class OverlayPanel extends JPanel implements ChannelEventListener, IFrequencyChangeProcessor,
+public class OverlayPanel extends JPanel implements ChannelEventListener, ISourceEventProcessor,
         SettingChangeListener
 {
     private static final long serialVersionUID = 1L;
@@ -643,7 +643,7 @@ public class OverlayPanel extends JPanel implements ChannelEventListener, IFrequ
      * Frequency change event handler
      */
     @Override
-    public void frequencyChanged(FrequencyChangeEvent event)
+    public void process(SourceEvent event)
     {
         switch(event.getEvent())
         {

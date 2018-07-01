@@ -17,42 +17,53 @@
  ******************************************************************************/
 package io.github.dsheirer.source;
 
-import io.github.dsheirer.channel.heartbeat.IHeartbeatProvider;
 import io.github.dsheirer.module.Module;
+import io.github.dsheirer.sample.IOverflowListener;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.real.IOverflowListener;
-import io.github.dsheirer.source.tuner.frequency.IFrequencyChangeListener;
-import io.github.dsheirer.source.tuner.frequency.IFrequencyChangeProvider;
+import io.github.dsheirer.source.heartbeat.HeartbeatManager;
+import io.github.dsheirer.source.heartbeat.IHeartbeatProvider;
 
 /**
  * Abstract class to define the minimum functionality of a sample data provider.
  */
-public abstract class Source extends Module implements IFrequencyChangeListener, IFrequencyChangeProvider,
-    IHeartbeatProvider
+public abstract class Source extends Module implements ISourceEventListener, ISourceEventProvider, IHeartbeatProvider
 {
-    protected SampleType mSampleType;
+    private HeartbeatManager mHeartbeatManager = new HeartbeatManager();
+
+    /**
+     * Heartbeat manager for this source
+     */
+    public HeartbeatManager getHeartbeatManager()
+    {
+        return mHeartbeatManager;
+    }
+
+
     protected IOverflowListener mOverflowListener;
 
-    public Source( SampleType sampleType )
-    {
-        mSampleType = sampleType;
-    }
-    
-    public abstract int getSampleRate() throws SourceException;
-    
-    public abstract long getFrequency() throws SourceException;
-    
+    /**
+     * Indicates the type of samples provided by this source: real or complex
+     */
+    public abstract SampleType getSampleType();
+
+    /**
+     * Sample rate provided by this source
+     *
+     * @throws SourceException if there is an issue determining the sample rate for this source
+     */
+    public abstract double getSampleRate();
+
+    /**
+     * Center frequency for this source in Hertz
+     *
+     * @throws SourceException if there is an issue in determining the center frequency for this source
+     */
+    public abstract long getFrequency();
+
+    /**
+     * Process any cleanup actions to prepare for garbage collection of this source
+     */
     public abstract void dispose();
-    
-    public SampleType getSampleType()
-    {
-    	return mSampleType;
-    }
-    
-    public void setSampleType( SampleType sampleType )
-    {
-    	mSampleType = sampleType;
-    }
 
     /**
      * Registers the listener to receive overflow state changes.  Use null argument to clear the listener
@@ -65,9 +76,9 @@ public abstract class Source extends Module implements IFrequencyChangeListener,
     /**
      * Broadcasts an overflow state
      *
-     * @param overflow true if overlow, false if normal
+     * @param overflow true if overflow, false if normal
      */
-    protected void broadcastOverflowState(boolean overflow)
+    public void broadcastOverflowState(boolean overflow)
     {
         if(mOverflowListener != null)
         {

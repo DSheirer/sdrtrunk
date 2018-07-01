@@ -36,7 +36,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class LJ1200DecoderState extends DecoderState
 {
@@ -58,16 +57,6 @@ public class LJ1200DecoderState extends DecoderState
     public DecoderType getDecoderType()
     {
         return DecoderType.LJ_1200;
-    }
-
-    @Override
-    public void start(ScheduledExecutorService executor)
-    {
-    }
-
-    @Override
-    public void stop()
-    {
     }
 
     @Override
@@ -123,12 +112,6 @@ public class LJ1200DecoderState extends DecoderState
     }
 
     @Override
-    public void init()
-    {
-        /* No initialization steps */
-    }
-
-    @Override
     public void receiveDecoderStateEvent(DecoderStateEvent event)
     {
         if(event.getEvent() == Event.RESET)
@@ -147,5 +130,23 @@ public class LJ1200DecoderState extends DecoderState
     {
         mAddresses.clear();
         resetState();
+    }
+
+    @Override
+    public void start()
+    {
+
+    }
+
+    @Override
+    public void stop()
+    {
+
+    }
+
+    @Override
+    public void init()
+    {
+
     }
 }

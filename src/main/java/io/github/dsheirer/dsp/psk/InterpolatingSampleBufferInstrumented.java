@@ -21,10 +21,9 @@ public class InterpolatingSampleBufferInstrumented extends InterpolatingSampleBu
 {
     private SymbolDecisionData mSymbolDecisionData;
 
-    public InterpolatingSampleBufferInstrumented(float samplesPerSymbol)
+    public InterpolatingSampleBufferInstrumented(float samplesPerSymbol, float symbolTimingGain)
     {
-        super(samplesPerSymbol);
-
+        super(samplesPerSymbol, symbolTimingGain);
         mSymbolDecisionData = new SymbolDecisionData((int)samplesPerSymbol);
     }
 

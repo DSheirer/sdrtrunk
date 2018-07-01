@@ -18,8 +18,6 @@
 
 package io.github.dsheirer.module;
 
-import java.util.concurrent.ScheduledExecutorService;
-
 public abstract class Module
 {
 	/**
@@ -34,12 +32,11 @@ public abstract class Module
 	 * ICallEventProvider				provides call events
 	 * IChannelEventListener			consumes channel events
 	 * IChannelEventProvider			provides channel events (reset, selection, start, etc)
-	 * IComplexBufferListener			consumes complex samples and normally 
-	 * 									produces demodulated real sample buffers
 	 * IFrequencyCorrectionController	provides tuned frequency error corrections
 	 * IMessageProvider					produces messages
 	 * IRealBufferListener				consumes demodulated real sample buffers
 	 * IRealBufferListener				produces demodulated real sample buffers
+	 * IReusableComplexBufferListener	consumes complex samples and normally produces demodulated real sample buffers
 	 * ISquelchStateListener			consumes squelch states
 	 * ISquelchStateProvider			provides squelch states
 	 */
@@ -59,9 +56,9 @@ public abstract class Module
 	public abstract void reset();
 
 	/**
-	 * Start processing.  Provides an executor to use for scheduling tasks
+	 * Start processing.
 	 */
-	public abstract void start( ScheduledExecutorService executor );
+	public abstract void start();
 
 	/**
 	 * Stop processing

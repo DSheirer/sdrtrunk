@@ -16,8 +16,9 @@
 package io.github.dsheirer.dsp.gain;
 
 import io.github.dsheirer.buffer.FloatCircularBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
 import io.github.dsheirer.sample.complex.Complex;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
 import io.github.dsheirer.sample.complex.ComplexSampleListener;
 
 public class ComplexFeedForwardGainControl implements ComplexSampleListener
@@ -26,8 +27,8 @@ public class ComplexFeedForwardGainControl implements ComplexSampleListener
     public static final float MINIMUM_ENVELOPE = 0.0001f;
 
     private ComplexSampleListener mListener;
-
     private FloatCircularBuffer mEnvelopeHistory;
+    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("ComplexFeedForwardGainControl");
 
     private float mMaxEnvelope = 0.0f;
     private float mGain = 1.0f;
@@ -107,19 +108,72 @@ public class ComplexFeedForwardGainControl implements ComplexSampleListener
         mListener = listener;
     }
 
-    public ComplexBuffer filter(ComplexBuffer complexBuffer)
+    public float[] filter(float[] complesSamples)
     {
-        float[] samples = complexBuffer.getSamples();
-        float[] processed = new float[samples.length];
+        mMaxEnvelope = MINIMUM_ENVELOPE;
+        float currentEnvelope;
+
+        for(int x = 0; x < complesSamples.length; x += 2)
+        {
+            currentEnvelope = Complex.envelope(complesSamples[x], complesSamples[x + 1]);
+
+            if(currentEnvelope > mMaxEnvelope)
+            {
+                mMaxEnvelope = currentEnvelope;
+            }
+        }
+
+        adjustGain();
+
+        float[] processed = new float[complesSamples.length];
+
+        for(int x = 0; x < complesSamples.length; x += 2)
+        {
+            processed[x] = complesSamples[x] * mGain;
+            processed[x + 1] = complesSamples[x + 1] * mGain;
+        }
+
+        return processed;
+    }
+
+    /**
+     * Applies gain to the complex sample buffer
+     * @param buffer to apply gain
+     * @return reusable buffer with the user count incremented to 1
+     */
+    public ReusableComplexBuffer filter(ReusableComplexBuffer buffer)
+    {
+        float[] samples = buffer.getSamples();
+
+        ReusableComplexBuffer filteredBuffer = mReusableComplexBufferQueue.getBuffer(samples.length);
+        filteredBuffer.setTimestamp(buffer.getTimestamp());
+
+        float[] filtered = filteredBuffer.getSamples();
+
+        mMaxEnvelope = MINIMUM_ENVELOPE;
+
+        float currentEnvelope;
 
         for(int x = 0; x < samples.length; x += 2)
         {
-            process(samples[x], samples[x + 1]);
+            currentEnvelope = Complex.envelope(samples[x], samples[x + 1]);
 
-            processed[x] = samples[x] * mGain;
-            processed[x + 1] = samples[x + 1] * mGain;
+            if(currentEnvelope > mMaxEnvelope)
+            {
+                mMaxEnvelope = currentEnvelope;
+            }
         }
 
-        return new ComplexBuffer(processed);
+        adjustGain();
+
+        for(int x = 0; x < samples.length; x += 2)
+        {
+            filtered[x] = samples[x] * mGain;
+            filtered[x + 1] = samples[x + 1] * mGain;
+        }
+
+        buffer.decrementUserCount();
+
+        return filteredBuffer;
     }
 }

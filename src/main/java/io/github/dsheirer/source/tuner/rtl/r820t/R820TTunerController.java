@@ -1,6 +1,6 @@
 /*******************************************************************************
  *     SDR Trunk 
- *     Copyright (C) 2014-2016 Dennis Sheirer
+ *     Copyright (C) 2014-2017 Dennis Sheirer
  *
  *     Java port of librtlsdr <https://github.com/steve-m/librtlsdr>
  *
@@ -32,14 +32,13 @@ import org.usb4java.Device;
 import org.usb4java.DeviceDescriptor;
 import org.usb4java.LibUsbException;
 
-import javax.swing.*;
+import javax.swing.JPanel;
 import javax.usb.UsbException;
 import java.nio.ByteBuffer;
 
 public class R820TTunerController extends RTL2832TunerController
 {
-    private final static Logger mLog =
-        LoggerFactory.getLogger(R820TTunerController.class);
+    private final static Logger mLog = LoggerFactory.getLogger(R820TTunerController.class);
 
     public static final long MIN_FREQUENCY = 3180000;
     public static final long MAX_FREQUENCY = 1782030000;
@@ -188,14 +187,14 @@ public class R820TTunerController extends RTL2832TunerController
                 /* Set intermediate frequency to R820T IF frequency */
                 setIFFrequency(R820T_IF_FREQUENCY);
 
-				/* Enable spectrum inversion */
+                /* Enable spectrum inversion */
                 writeDemodRegister(mDeviceHandle,
                     Page.ONE,
                     (short) 0x15,
                     (short) 0x01,
                     1);
-				
-				/* Set default i/q path */
+
+                /* Set default i/q path */
                 writeDemodRegister(mDeviceHandle,
                     Page.ZERO,
                     (short) 0x06,
@@ -215,23 +214,23 @@ public class R820TTunerController extends RTL2832TunerController
     {
         FrequencyRange range = FrequencyRange.getRangeForFrequency(frequency);
 
-		/* Set open drain */
+        /* Set open drain */
         writeR820TRegister(Register.DRAIN, range.getOpenDrain(), controlI2C);
 
-		/* RF_MUX, Polymux */
+        /* RF_MUX, Polymux */
         writeR820TRegister(Register.RF_POLY_MUX, range.getRFMuxPolyMux(), controlI2C);
-		
-		/* TF Band */
+
+        /* TF Band */
         writeR820TRegister(Register.TF_BAND, range.getTFC(), controlI2C);
-		
-		/* XTAL CAP & Drive */
+
+        /* XTAL CAP & Drive */
         writeR820TRegister(Register.PLL_XTAL_CAPACITOR_AND_DRIVE,
             range.getXTALHighCap0P(), controlI2C);
-		
-		/* Register 8 - what is it? */
+
+        /* Register 8 - what is it? */
         writeR820TRegister(Register.UNKNOWN_REGISTER_8, (byte) 0x00, controlI2C);
-		
-		/* Register 9 - what is it? */
+
+        /* Register 9 - what is it? */
         writeR820TRegister(Register.UNKNOWN_REGISTER_9, (byte) 0x00, controlI2C);
     }
 
@@ -240,7 +239,7 @@ public class R820TTunerController extends RTL2832TunerController
      */
     public void init() throws SourceException
     {
-		/* Initialize the super class to open and claim the usb interface*/
+        /* Initialize the super class to open and claim the usb interface*/
         super.init();
 
         try
@@ -266,24 +265,24 @@ public class R820TTunerController extends RTL2832TunerController
      */
     public void initTuner(boolean controlI2C) throws UsbException
     {
-		/* Disable zero IF mode */
+        /* Disable zero IF mode */
         writeDemodRegister(mDeviceHandle,
             Page.ONE,
             (short) 0xB1,
             (short) 0x1A,
             1);
-		
-		/* Only enable in-phase ADC input */
+
+        /* Only enable in-phase ADC input */
         writeDemodRegister(mDeviceHandle,
             Page.ZERO,
             (short) 0x08,
             (short) 0x4D,
             1);
-		
-		/* Set intermediate frequency to R820T IF frequency (3.57 MHz) */
+
+        /* Set intermediate frequency to R820T IF frequency (3.57 MHz) */
         setIFFrequency(R820T_IF_FREQUENCY);
 
-		/* Enable spectrum inversion */
+        /* Enable spectrum inversion */
         writeDemodRegister(mDeviceHandle,
             Page.ONE,
             (short) 0x15,
@@ -303,12 +302,12 @@ public class R820TTunerController extends RTL2832TunerController
      */
     private void setTVStandard(boolean controlI2C) throws UsbException
     {
-	    /* Init Flag & Xtal check Result */
+        /* Init Flag & Xtal check Result */
         writeR820TRegister(Register.XTAL_CHECK, (byte) 0x00, controlI2C);
-	    
-	    /* Set version */
+
+        /* Set version */
         writeR820TRegister(Register.VERSION, VERSION, controlI2C);
-	    
+
         /* LT Gain Test */
         writeR820TRegister(Register.LNA_TOP, (byte) 0x00, controlI2C);
 
@@ -326,7 +325,7 @@ public class R820TTunerController extends RTL2832TunerController
             writeR820TRegister(Register.PLL_XTAL_CAPACITOR, (byte) 0x00, controlI2C);
 
             setPLL(56000 * 1000, controlI2C);
-            
+
             /* Start trigger */
             writeR820TRegister(Register.CALIBRATION_TRIGGER, (byte) 0x10, controlI2C);
 
@@ -349,36 +348,36 @@ public class R820TTunerController extends RTL2832TunerController
         {
             calibrationCode = 0;
         }
-    	
-    	/* Write calibration code */
+
+        /* Write calibration code */
         byte filt_q = 0x10;
 
         writeR820TRegister(Register.FILTER_CALIBRATION_CODE,
             (byte) (calibrationCode | filt_q), controlI2C);
 
-    	/* Set BW, Filter gain & HP Corner */
+        /* Set BW, Filter gain & HP Corner */
         writeR820TRegister(Register.BANDWIDTH_FILTER_GAIN_HIGHPASS_FILTER_CORNER,
             (byte) 0x6B, controlI2C);
 
-    	/* Set Image_R */
+        /* Set Image_R */
         writeR820TRegister(Register.IMAGE_REVERSE, (byte) 0x00, controlI2C);
-    	
-    	/* Set filter_3db, V6MHz */
+
+        /* Set filter_3db, V6MHz */
         writeR820TRegister(Register.FILTER_GAIN, (byte) 0x10, controlI2C);
 
-    	/* Channel filter extension */
+        /* Channel filter extension */
         writeR820TRegister(Register.CHANNEL_FILTER_EXTENSION, (byte) 0x60, controlI2C);
 
-    	/* Loop through */
+        /* Loop through */
         writeR820TRegister(Register.LOOP_THROUGH, (byte) 0x00, controlI2C);
 
-    	/* Loop through attenuation */
+        /* Loop through attenuation */
         writeR820TRegister(Register.LOOP_THROUGH_ATTENUATION, (byte) 0x00, controlI2C);
-    	
-    	/* Filter extension widest */
+
+        /* Filter extension widest */
         writeR820TRegister(Register.FILTER_EXTENSION_WIDEST, (byte) 0x00, controlI2C);
 
-    	/* RF poly filter current */
+        /* RF poly filter current */
         writeR820TRegister(Register.RF_POLY_FILTER_CURRENT, (byte) 0x60, controlI2C);
     }
 
@@ -404,7 +403,7 @@ public class R820TTunerController extends RTL2832TunerController
     private void systemFrequencySelect(long frequency, boolean controlI2C)
         throws UsbException
     {
-		/* LNA top? */
+        /* LNA top? */
         writeR820TRegister(Register.LNA_TOP2, (byte) 0xE5, controlI2C);
 
         byte mixer_top;
@@ -431,8 +430,8 @@ public class R820TTunerController extends RTL2832TunerController
         writeR820TRegister(Register.LNA_VTH_L, (byte) 0x53, controlI2C);
 
         writeR820TRegister(Register.MIXER_VTH_L, (byte) 0x75, controlI2C);
-		
-		/* Air-In only for Astrometa */
+
+        /* Air-In only for Astrometa */
         writeR820TRegister(Register.AIR_CABLE1_INPUT_SELECTOR, (byte) 0x00, controlI2C);
 
         writeR820TRegister(Register.CABLE2_INPUT_SELECTOR, (byte) 0x00, controlI2C);
@@ -443,7 +442,7 @@ public class R820TTunerController extends RTL2832TunerController
 
         writeR820TRegister(Register.FILTER_CURRENT, (byte) 0x40, controlI2C);
 
-		/* if( type != TUNER_ANALOG_TV ) ... */
+        /* if( type != TUNER_ANALOG_TV ) ... */
 
         writeR820TRegister(Register.LNA_TOP, (byte) 0x00, controlI2C);
 
@@ -457,10 +456,10 @@ public class R820TTunerController extends RTL2832TunerController
 
         writeR820TRegister(Register.MIXER_TOP2, mixer_top, controlI2C);
 
-		/* LNA discharge current */
+        /* LNA discharge current */
         writeR820TRegister(Register.LNA_DISCHARGE_CURRENT, (byte) 0x14, controlI2C);
-		
-		/* AGC clock 1 khz, external det1 cap 1u */
+
+        /* AGC clock 1 khz, external det1 cap 1u */
         writeR820TRegister(Register.AGC_CLOCK, (byte) 0x20, controlI2C);
     }
 
@@ -474,7 +473,7 @@ public class R820TTunerController extends RTL2832TunerController
      */
     private void setPLL(long frequency, boolean controlI2C) throws UsbException
     {
-	    /* Set reference divider to 0 */
+        /* Set reference divider to 0 */
         writeR820TRegister(Register.REFERENCE_DIVIDER_2, (byte) 0x00, controlI2C);
 
         /* Set PLL autotune to 128kHz */
@@ -525,7 +524,7 @@ public class R820TTunerController extends RTL2832TunerController
          * settings */
         if(!isPLLLocked(controlI2C))
         {
-        	/* Increase VCO current */
+            /* Increase VCO current */
             writeR820TRegister(Register.VCO_CURRENT, (byte) 0x60, controlI2C);
 
             if(!isPLLLocked(controlI2C))
@@ -612,8 +611,8 @@ public class R820TTunerController extends RTL2832TunerController
 
         mShadowRegister[register.getRegister()] = value;
 
-//        Log.info( "R820T writing register " + 
-//        		String.format( "%02X", register.getRegister() ) + " value " + 
+//        Log.info( "R820T writing register " +
+//        		String.format( "%02X", register.getRegister() ) + " value " +
 //        		String.format( "%02X", value ) );
     }
 

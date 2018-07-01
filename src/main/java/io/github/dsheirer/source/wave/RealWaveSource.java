@@ -17,14 +17,14 @@
  ******************************************************************************/
 package io.github.dsheirer.source.wave;
 
-import io.github.dsheirer.channel.heartbeat.Heartbeat;
 import io.github.dsheirer.sample.ConversionUtils;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.real.RealBuffer;
+import io.github.dsheirer.sample.buffer.ReusableBuffer;
+import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
 import io.github.dsheirer.source.IControllableFileSource;
 import io.github.dsheirer.source.IFrameLocationListener;
 import io.github.dsheirer.source.RealSource;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
+import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,17 +35,17 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class RealWaveSource extends RealSource implements IControllableFileSource, AutoCloseable
 {
     private final static Logger mLog = LoggerFactory.getLogger(RealWaveSource.class);
 
+    private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("RealWaveSource");
     private IFrameLocationListener mFrameLocationListener;
     private int mBytesPerFrame;
     private int mFrameCounter = 0;
     private long mFrequency = 0;
-    private Listener<RealBuffer> mListener;
+    private Listener<ReusableBuffer> mListener;
     private AudioInputStream mInputStream;
     private File mFile;
 
@@ -55,51 +55,34 @@ public class RealWaveSource extends RealSource implements IControllableFileSourc
     }
 
     @Override
-    public void setFrequencyChangeListener(Listener<FrequencyChangeEvent> listener)
-    {
-        //Not implemented
-    }
+	public void setSourceEventListener(Listener<SourceEvent> listener)
+	{
+		//Not implemented
+	}
 
-    @Override
-    public void removeFrequencyChangeListener()
-    {
-        //Not implemented
-    }
+	@Override
+	public void removeSourceEventListener()
+	{
+		//Not implemented
+	}
 
-    @Override
-    public Listener<FrequencyChangeEvent> getFrequencyChangeListener()
-    {
-        //Not implemented
-        return null;
-    }
-
-    /**
-     * Not implemented
-     */
-    @Override
-    public void setHeartbeatListener(Listener<Heartbeat> listener)
-    {
-    }
-
-    /**
-     * Not implemented
-     */
-    @Override
-    public void removeHeartbeatListener()
-    {
-    }
-
+	@Override
+	public Listener<SourceEvent> getSourceEventListener()
+	{
+		//Not implemented
+		return null;
+	}
 
     @Override
     public void reset()
     {
         stop();
-        start(null);
+        start();
     }
 
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
         try
         {
@@ -129,16 +112,15 @@ public class RealWaveSource extends RealSource implements IControllableFileSourc
     @Override
     public long getFrameCount() throws IOException
     {
-        // TODO Auto-generated method stub
         return 0;
     }
 
     @Override
-    public int getSampleRate()
+    public double getSampleRate()
     {
         if(mInputStream != null)
         {
-            return (int)mInputStream.getFormat().getSampleRate();
+            return mInputStream.getFormat().getSampleRate();
         }
 
         return 0;
@@ -246,20 +228,21 @@ public class RealWaveSource extends RealSource implements IControllableFileSourc
                     buffer = Arrays.copyOf(buffer, samplesRead);
                 }
 
-                float[] samples = ConversionUtils
-                    .convertFromSigned16BitSamples(buffer);
+                float[] samples = ConversionUtils.convertFromSigned16BitSamples(buffer);
 
-                mListener.receive(new RealBuffer(samples));
+                ReusableBuffer reusableBuffer = mReusableBufferQueue.getBuffer(samples.length);
+                reusableBuffer.reloadFrom(samples, System.currentTimeMillis());
+
+                mListener.receive(reusableBuffer);
             }
         }
     }
 
     /**
-     * Registers the listener to receive sample buffers as they are read from
-     * the wave file
+     * Registers the listener to receive sample buffers as they are read from the wave file
      */
     @Override
-    public void setListener(Listener<RealBuffer> listener)
+    public void setListener(Listener<ReusableBuffer> listener)
     {
         mListener = listener;
     }
@@ -267,7 +250,8 @@ public class RealWaveSource extends RealSource implements IControllableFileSourc
     /**
      * Unregisters the listener from receiving sample buffers
      */
-    public void removeListener(Listener<RealBuffer> listener)
+    @Override
+    public void removeListener(Listener<ReusableBuffer> listener)
     {
         mListener = null;
     }
@@ -304,5 +288,27 @@ public class RealWaveSource extends RealSource implements IControllableFileSourc
     public void removeListener(IFrameLocationListener listener)
     {
         mFrameLocationListener = null;
+    }
+
+    /**
+     * Indicates if the file is a supported audio file type
+     */
+    public static boolean supports(File file)
+    {
+        try(AudioInputStream ais = AudioSystem.getAudioInputStream(file))
+        {
+            AudioFormat format = ais.getFormat();
+
+            if(format.getChannels() == 1 && format.getSampleSizeInBits() == 16)
+            {
+                return true;
+            }
+        }
+        catch(Exception e)
+        {
+            //Do nothing, we'll return a default of false
+        }
+
+        return false;
     }
 }

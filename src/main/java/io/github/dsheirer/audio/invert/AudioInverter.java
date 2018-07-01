@@ -20,6 +20,7 @@ package io.github.dsheirer.audio.invert;
 import io.github.dsheirer.audio.InversionFrequency;
 import io.github.dsheirer.dsp.filter.Filters;
 import io.github.dsheirer.dsp.filter.FloatFIRFilter;
+import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.Oscillator;
 import io.github.dsheirer.sample.real.RealSampleListener;
 
@@ -29,7 +30,7 @@ import io.github.dsheirer.sample.real.RealSampleListener;
  */
 public class AudioInverter implements RealSampleListener
 {
-	private Oscillator mSineWaveGenerator;
+	private IOscillator mSineWaveGenerator;
 	private FloatFIRFilter mPostInversionLowPassFilter;
 	private RealSampleListener mListener;
 	
@@ -61,7 +62,7 @@ public class AudioInverter implements RealSampleListener
 		if( mPostInversionLowPassFilter != null )
 		{
 			mPostInversionLowPassFilter.receive( 
-					sample * mSineWaveGenerator.getFloat() );
+					sample * mSineWaveGenerator.inphase() );
 			
 			mSineWaveGenerator.rotate();
 		}

@@ -1,124 +1,76 @@
 /*******************************************************************************
- *     SDR Trunk 
- *     Copyright (C) 2014-2016 Dennis Sheirer
- * 
- *     This program is free software: you can redistribute it and/or modify
- *     it under the terms of the GNU General Public License as published by
- *     the Free Software Foundation, either version 3 of the License, or
- *     (at your option) any later version.
- * 
- *     This program is distributed in the hope that it will be useful,
- *     but WITHOUT ANY WARRANTY; without even the implied warranty of
- *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *     GNU General Public License for more details.
- * 
- *     You should have received a copy of the GNU General Public License
- *     along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * sdr-trunk
+ * Copyright (C) 2014-2017 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
+ *
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
+ *
  ******************************************************************************/
 package io.github.dsheirer.source.tuner.hackrf;
 
-import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
 import io.github.dsheirer.source.SourceException;
 import io.github.dsheirer.source.tuner.Tuner;
-import io.github.dsheirer.source.tuner.TunerChannel;
-import io.github.dsheirer.source.tuner.TunerChannelSource;
 import io.github.dsheirer.source.tuner.TunerClass;
-import io.github.dsheirer.source.tuner.TunerEvent;
 import io.github.dsheirer.source.tuner.TunerType;
+import io.github.dsheirer.source.tuner.hackrf.HackRFTunerController.BoardID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.RejectedExecutionException;
-
 public class HackRFTuner extends Tuner
 {
-	private final static Logger mLog = LoggerFactory.getLogger( HackRFTuner.class );
+    private final static Logger mLog = LoggerFactory.getLogger( HackRFTuner.class );
 
-	public HackRFTuner( HackRFTunerController controller ) throws SourceException
-	{
-		super( "HackRF", controller );
-	}
-	
-	public HackRFTunerController getController()
-	{
-		return (HackRFTunerController)getTunerController();
-	}
+    public HackRFTuner( HackRFTunerController controller ) throws SourceException
+    {
+        super( "HackRF", controller );
+    }
 
-	public void dispose()
-	{
-		//TODO: dispose of something here
-	}
-	
-	@Override
+    public HackRFTunerController getController()
+    {
+        return (HackRFTunerController)getTunerController();
+    }
+
+    public void dispose()
+    {
+    }
+
+    @Override
     public TunerClass getTunerClass()
     {
-	    return TunerClass.HACKRF_ONE;
+        return TunerClass.HACKRF_ONE;
     }
 
-	@Override
+    @Override
     public TunerType getTunerType()
     {
-	    return TunerType.HACKRF;
+        return TunerType.HACKRF;
     }
 
-	@Override
-	public double getSampleSize()
-	{
-		return 11.0;
-	}
-
-	@Override
-    public TunerChannelSource getChannel(TunerChannel channel )
-    		throws RejectedExecutionException, SourceException
+    @Override
+    public double getSampleSize()
     {
-		TunerChannelSource source = getController().getChannel( this, channel );
-
-		if( source != null )
-		{
-			broadcast( new TunerEvent( this, TunerEvent.Event.CHANNEL_COUNT ) );
-		}
-		
-		return source;
+        return 11.0;
     }
 
-	@Override
-    public void releaseChannel( TunerChannelSource source )
-    {
-		/* Unregister for receiving samples */
-		removeListener( (Listener<ComplexBuffer>)source );
-		
-		/* Tell the controller to release the channel and cleanup */
-		if( source != null )
-		{
-			getController().releaseChannel( source );
-		}
-    }
-
-	@Override
+    @Override
     public String getUniqueID()
     {
-		try
-		{
-			return getController().getSerial().getSerialNumber();
-		}
-		catch( Exception e )
-		{
-			mLog.error( "error gettting serial number", e );
-		}
-		
-		return HackRFTunerController.BoardID.HACKRF_ONE.getLabel();
+        try
+        {
+            return getController().getSerial().getSerialNumber();
+        }
+        catch( Exception e )
+        {
+            mLog.error( "error gettting serial number", e );
+        }
+
+        return BoardID.HACKRF_ONE.getLabel();
     }
-	
-	@Override
-	public void addListener( Listener<ComplexBuffer> listener )
-	{
-		getController().addListener( listener );
-	}
-	
-	@Override
-	public void removeListener( Listener<ComplexBuffer> listener )
-	{
-		getController().removeListener( listener );
-	}
 }

@@ -39,7 +39,6 @@ import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.TreeSet;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class LTRNetDecoderState extends DecoderState
 {
@@ -695,6 +694,24 @@ public class LTRNetDecoderState extends DecoderState
         resetState();
     }
 
+    @Override
+    public void start()
+    {
+
+    }
+
+    @Override
+    public void stop()
+    {
+
+    }
+
+    @Override
+    public void init()
+    {
+
+    }
+
     /**
      * Resets the decoder state after a call or other decode event
      */
@@ -765,12 +782,6 @@ public class LTRNetDecoderState extends DecoderState
     }
 
     @Override
-    public void init()
-    {
-		/* No initialization steps required */
-    }
-
-    @Override
     public void receiveDecoderStateEvent(DecoderStateEvent event)
     {
         switch(event.getEvent())
@@ -784,15 +795,5 @@ public class LTRNetDecoderState extends DecoderState
             default:
                 break;
         }
-    }
-
-    @Override
-    public void start(ScheduledExecutorService executor)
-    {
-    }
-
-    @Override
-    public void stop()
-    {
     }
 }

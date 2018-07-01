@@ -30,8 +30,6 @@ import io.github.dsheirer.controller.channel.ChannelModel;
 import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.controller.channel.map.ChannelMap;
 import io.github.dsheirer.controller.channel.map.ChannelMapModel;
-import io.github.dsheirer.dsp.filter.FilterFactory;
-import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
 import io.github.dsheirer.filter.AllPassFilter;
 import io.github.dsheirer.filter.FilterSet;
 import io.github.dsheirer.filter.IFilter;
@@ -69,15 +67,16 @@ import io.github.dsheirer.module.decode.mpt1327.MPT1327Decoder;
 import io.github.dsheirer.module.decode.mpt1327.MPT1327DecoderEditor;
 import io.github.dsheirer.module.decode.mpt1327.MPT1327DecoderState;
 import io.github.dsheirer.module.decode.mpt1327.MPT1327MessageFilter;
+import io.github.dsheirer.module.decode.mpt1327.Sync;
 import io.github.dsheirer.module.decode.nbfm.DecodeConfigNBFM;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoder;
 import io.github.dsheirer.module.decode.nbfm.NBFMDecoderEditor;
 import io.github.dsheirer.module.decode.p25.DecodeConfigP25Phase1;
-import io.github.dsheirer.module.decode.p25.P25Decoder;
+import io.github.dsheirer.module.decode.p25.P25Decoder.Modulation;
+import io.github.dsheirer.module.decode.p25.P25DecoderC4FM;
 import io.github.dsheirer.module.decode.p25.P25DecoderEditor;
+import io.github.dsheirer.module.decode.p25.P25DecoderLSM;
 import io.github.dsheirer.module.decode.p25.P25DecoderState;
-import io.github.dsheirer.module.decode.p25.P25_C4FMDecoder;
-import io.github.dsheirer.module.decode.p25.P25_LSMDecoder;
 import io.github.dsheirer.module.decode.p25.audio.P25AudioModule;
 import io.github.dsheirer.module.decode.p25.message.filter.P25MessageFilterSet;
 import io.github.dsheirer.module.decode.passport.DecodeConfigPassport;
@@ -88,8 +87,8 @@ import io.github.dsheirer.module.decode.passport.PassportMessageFilter;
 import io.github.dsheirer.module.decode.tait.Tait1200Decoder;
 import io.github.dsheirer.module.decode.tait.Tait1200DecoderState;
 import io.github.dsheirer.module.demodulate.am.AMDemodulatorModule;
-import io.github.dsheirer.module.demodulate.audio.DemodulatedAudioFilterModule;
 import io.github.dsheirer.module.demodulate.fm.FMDemodulatorModule;
+import io.github.dsheirer.source.SourceType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,36 +99,9 @@ public class DecoderFactory
 {
     private final static Logger mLog = LoggerFactory.getLogger(DecoderFactory.class);
 
-    //Low-pass filter with ~60 dB attenuation and 89 taps
-    private static final FIRFilterSpecification MPT1327_FILTER_SPECIFICATION = FIRFilterSpecification.lowPassBuilder()
-        .sampleRate( 48000 ).gridDensity( 16 ).passBandCutoff( 3200 ).passBandAmplitude( 1.0 ).passBandRipple( 0.02 )
-        .stopBandStart( 4000 ).stopBandAmplitude( 0.0 ).stopBandRipple( 0.03 ).build();
-
-    private static final FIRFilterSpecification P25_C4FM_IQ_SPECIFICATION = FIRFilterSpecification.lowPassBuilder()
-        .sampleRate(48000).gridDensity(16).passBandCutoff(6750).passBandAmplitude(1.0).passBandRipple(0.01)
-        .stopBandStart(7000).stopBandAmplitude(0.0).stopBandRipple(0.008).build();
-
-    private static final FIRFilterSpecification P25_C4FM_DEMOD_SPECIFICATION = FIRFilterSpecification.lowPassBuilder()
-        .sampleRate(48000).gridDensity(16).passBandCutoff(2500).passBandAmplitude(1.0).passBandRipple(0.01)
-        .stopBandStart(4000).stopBandAmplitude(0.0).stopBandRipple(0.008).build();
-
-    private static float[] MPT1327_LOWPASS_FILTER;
-    private static float[] P25_C4FM_IQ_FILTER;
-    private static float[] P25_C4FM_DEMOD_FILTER;
-
-    static
-    {
-        try
-        {
-            MPT1327_LOWPASS_FILTER = FilterFactory.getTaps(MPT1327_FILTER_SPECIFICATION);
-            P25_C4FM_IQ_FILTER = FilterFactory.getTaps(P25_C4FM_IQ_SPECIFICATION);
-            P25_C4FM_DEMOD_FILTER = FilterFactory.getTaps(P25_C4FM_DEMOD_SPECIFICATION);
-        }
-        catch(Exception e)
-        {
-            mLog.error("Couldn't design startup filter(s)");
-        }
-    }
+    private static final double AM_CHANNEL_BANDWIDTH = 3000.0;
+    private static final double FM_CHANNEL_BANDWIDTH = 12500.0;
+    private static final double DEMODULATED_AUDIO_SAMPLE_RATE = 8000.0;
 
     /**
      * Returns a list of one primary decoder and any auxiliary decoders, as
@@ -145,7 +117,7 @@ public class DecoderFactory
                                           Metadata metadata)
     {
 
-		/* Get the optional alias list for the decode modules to use */
+        /* Get the optional alias list for the decode modules to use */
         AliasList aliasList = aliasModel.getAliasList(channel.getAliasListName());
 
         List<Module> modules = getPrimaryModules(channelModel, channelMapModel, channelProcessingManager, aliasList,
@@ -170,89 +142,91 @@ public class DecoderFactory
 
         ChannelType channelType = channel.getChannelType();
 
-		/* Baseband low-pass filter pass and stop frequencies */
+        /* Baseband low-pass filter pass and stop frequencies */
         DecodeConfiguration decodeConfig = channel.getDecodeConfiguration();
-
-        int iqPass = decodeConfig.getDecoderType().getChannelBandwidth() / 2;
-        int iqStop = iqPass + 1250;
 
         switch(decodeConfig.getDecoderType())
         {
             case AM:
                 modules.add(new AMDecoder(decodeConfig));
                 modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.AM, channel.getName()));
-                modules.add(new AMDemodulatorModule());
-                modules.add(new DemodulatedAudioFilterModule(4000, 6000));
                 modules.add(new AudioModule(metadata));
+                if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
+                {
+                    modules.add(new AMDemodulatorModule(AM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+                }
                 break;
             case NBFM:
                 modules.add(new NBFMDecoder(decodeConfig));
                 modules.add(new AlwaysUnsquelchedDecoderState(DecoderType.NBFM, channel.getName()));
-                modules.add(new FMDemodulatorModule(iqPass, iqStop));
-                modules.add(new DemodulatedAudioFilterModule(4000, 6000));
                 modules.add(new AudioModule(metadata));
+                if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
+                {
+                    modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+                }
                 break;
             case LTR_STANDARD:
                 MessageDirection direction = ((DecodeConfigLTRStandard) decodeConfig).getMessageDirection();
                 modules.add(new LTRStandardDecoder(aliasList, direction));
                 modules.add(new LTRStandardDecoderState(aliasList));
-                modules.add(new FMDemodulatorModule(iqPass, iqStop));
-                modules.add(new DemodulatedAudioFilterModule(4000, 6000));
                 modules.add(new AudioModule(metadata));
+                if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
+                {
+                    modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+                }
                 break;
             case LTR_NET:
                 modules.add(new LTRNetDecoder((DecodeConfigLTRNet) decodeConfig, aliasList));
                 modules.add(new LTRNetDecoderState(aliasList));
-                modules.add(new FMDemodulatorModule(iqPass, iqStop));
-                modules.add(new DemodulatedAudioFilterModule(4000, 6000));
                 modules.add(new AudioModule(metadata));
+                if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
+                {
+                    modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+                }
                 break;
             case MPT1327:
                 DecodeConfigMPT1327 mptConfig = (DecodeConfigMPT1327) decodeConfig;
-
                 ChannelMap channelMap = channelMapModel.getChannelMap(mptConfig.getChannelMapName());
-
-                MPT1327Decoder.Sync sync = mptConfig.getSync();
-
+                Sync sync = mptConfig.getSync();
                 modules.add(new MPT1327Decoder(aliasList, sync));
-
-
                 modules.add(new MPT1327DecoderState(aliasList, channelMap, channelType, mptConfig.getCallTimeout() * 1000));
+                modules.add(new AudioModule(metadata));
+                if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
+                {
+                    modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+                }
 
                 if(channelType == ChannelType.STANDARD)
                 {
-                    modules.add(new TrafficChannelManager(channelModel, decodeConfig, channel.getEventLogConfiguration(),
+                    modules.add(new TrafficChannelManager(channelModel, decodeConfig,
                         channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
                         (aliasList != null ? aliasList.getName() : null), mptConfig.getTrafficChannelPoolSize()));
                 }
-
-                modules.add(new FMDemodulatorModule(iqPass, iqStop));
-                modules.add(new DemodulatedAudioFilterModule(P25_C4FM_DEMOD_FILTER, 1.0f));
-                modules.add(new AudioModule(metadata));
                 break;
             case PASSPORT:
                 modules.add(new PassportDecoder(decodeConfig, aliasList));
                 modules.add(new PassportDecoderState(aliasList));
-                modules.add(new FMDemodulatorModule(iqPass, iqStop));
-                modules.add(new DemodulatedAudioFilterModule(4000, 6000));
                 modules.add(new AudioModule(metadata));
+                if(channel.getSourceConfiguration().getSourceType() == SourceType.TUNER)
+                {
+                    modules.add(new FMDemodulatorModule(FM_CHANNEL_BANDWIDTH, DEMODULATED_AUDIO_SAMPLE_RATE));
+                }
                 break;
             case P25_PHASE1:
                 DecodeConfigP25Phase1 p25Config = (DecodeConfigP25Phase1) decodeConfig;
 
-                P25Decoder.Modulation modulation = p25Config.getModulation();
-
+                Modulation modulation = p25Config.getModulation();
 
                 switch(modulation)
                 {
                     case C4FM:
-                        modules.add(new P25_C4FMDecoder(aliasList));
-                        modules.add(new P25DecoderState(aliasList, channelType, P25Decoder.Modulation.C4FM,
+                        modules.add(new P25DecoderC4FM(aliasList));
+                        modules.add(new P25DecoderState(aliasList, channelType, Modulation.C4FM,
                             p25Config.getIgnoreDataCalls()));
                         break;
                     case CQPSK:
-                        modules.add(new P25_LSMDecoder(aliasList));
-                        modules.add(new P25DecoderState(aliasList, channelType, P25Decoder.Modulation.CQPSK, p25Config.getIgnoreDataCalls()));
+                        modules.add(new P25DecoderLSM(aliasList));
+                        modules.add(new P25DecoderState(aliasList, channelType, Modulation.CQPSK, p25Config.getIgnoreDataCalls()));
                         break;
                     default:
                         throw new IllegalArgumentException("Unrecognized P25 Phase 1 Modulation [" + modulation + "]");
@@ -260,7 +234,7 @@ public class DecoderFactory
 
                 if(channelType == ChannelType.STANDARD)
                 {
-                    modules.add(new TrafficChannelManager(channelModel, decodeConfig, channel.getEventLogConfiguration(),
+                    modules.add(new TrafficChannelManager(channelModel, decodeConfig,
                         channel.getRecordConfiguration(), channel.getSystem(), channel.getSite(),
                         (aliasList != null ? aliasList.getName() : null), p25Config.getTrafficChannelPoolSize()));
                 }
@@ -330,12 +304,11 @@ public class DecoderFactory
         {
             if(module instanceof Decoder)
             {
-                filterSet.addFilters(getMessageFilter(
-                    ((Decoder) module).getDecoderType()));
+                filterSet.addFilters(getMessageFilter(((Decoder)module).getDecoderType()));
             }
         }
 
-		/* If we don't have any filters, add an ALL-PASS filter */
+        /* If we don't have any filters, add an ALL-PASS filter */
         if(filterSet.getFilters().isEmpty())
         {
             filterSet.addFilter(new AllPassFilter<Message>());
@@ -453,28 +426,20 @@ public class DecoderFactory
                 case AM:
                     DecodeConfigAM originalAM = (DecodeConfigAM) config;
                     DecodeConfigAM copyAM = new DecodeConfigAM();
-                    copyAM.setAFC(originalAM.getAFC());
-                    copyAM.setAFCMaximumCorrection(originalAM.getAFCMaximumCorrection());
                     return copyAM;
                 case LTR_NET:
                     DecodeConfigLTRNet originalLTRNet = (DecodeConfigLTRNet) config;
                     DecodeConfigLTRNet copyLTRNet = new DecodeConfigLTRNet();
-                    copyLTRNet.setAFC(originalLTRNet.getAFC());
-                    copyLTRNet.setAFCMaximumCorrection(originalLTRNet.getAFCMaximumCorrection());
                     copyLTRNet.setMessageDirection(originalLTRNet.getMessageDirection());
                     return copyLTRNet;
                 case LTR_STANDARD:
                     DecodeConfigLTRStandard originalLTRStandard = (DecodeConfigLTRStandard) config;
                     DecodeConfigLTRStandard copyLTRStandard = new DecodeConfigLTRStandard();
-                    copyLTRStandard.setAFC(originalLTRStandard.getAFC());
-                    copyLTRStandard.setAFCMaximumCorrection(originalLTRStandard.getAFCMaximumCorrection());
                     copyLTRStandard.setMessageDirection(originalLTRStandard.getMessageDirection());
                     return copyLTRStandard;
                 case MPT1327:
                     DecodeConfigMPT1327 originalMPT = (DecodeConfigMPT1327) config;
                     DecodeConfigMPT1327 copyMPT = new DecodeConfigMPT1327();
-                    copyMPT.setAFC(originalMPT.getAFC());
-                    copyMPT.setAFCMaximumCorrection(originalMPT.getAFCMaximumCorrection());
                     copyMPT.setCallTimeout(originalMPT.getCallTimeout());
                     copyMPT.setChannelMapName(originalMPT.getChannelMapName());
                     copyMPT.setSync(originalMPT.getSync());
@@ -483,14 +448,10 @@ public class DecoderFactory
                 case NBFM:
                     DecodeConfigNBFM originalNBFM = (DecodeConfigNBFM) config;
                     DecodeConfigNBFM copyNBFM = new DecodeConfigNBFM();
-                    copyNBFM.setAFC(originalNBFM.getAFC());
-                    copyNBFM.setAFCMaximumCorrection(originalNBFM.getAFCMaximumCorrection());
                     return copyNBFM;
                 case P25_PHASE1:
                     DecodeConfigP25Phase1 originalP25 = (DecodeConfigP25Phase1) config;
                     DecodeConfigP25Phase1 copyP25 = new DecodeConfigP25Phase1();
-                    copyP25.setAFC(originalP25.getAFC());
-                    copyP25.setAFCMaximumCorrection(originalP25.getAFCMaximumCorrection());
                     copyP25.setIgnoreDataCalls(originalP25.getIgnoreDataCalls());
                     copyP25.setModulation(originalP25.getModulation());
                     copyP25.setTrafficChannelPoolSize(originalP25.getTrafficChannelPoolSize());
@@ -498,8 +459,6 @@ public class DecoderFactory
                 case PASSPORT:
                     DecodeConfigPassport originalPass = (DecodeConfigPassport) config;
                     DecodeConfigPassport copyPass = new DecodeConfigPassport();
-                    copyPass.setAFC(originalPass.getAFC());
-                    copyPass.setAFCMaximumCorrection(originalPass.getAFCMaximumCorrection());
                     return copyPass;
                 default:
                     throw new IllegalArgumentException("Unrecognized decoder configuration type:" + config.getDecoderType());

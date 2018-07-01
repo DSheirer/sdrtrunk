@@ -1,19 +1,16 @@
 /*******************************************************************************
- * sdrtrunk
+ * sdr-trunk
  * Copyright (C) 2014-2017 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
 package io.github.dsheirer.channel.traffic;
@@ -29,13 +26,12 @@ import io.github.dsheirer.controller.channel.TrafficChannelEvent;
 import io.github.dsheirer.module.Module;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import io.github.dsheirer.module.decode.event.CallEvent;
+import io.github.dsheirer.module.decode.event.CallEvent.CallEventType;
 import io.github.dsheirer.module.decode.event.ICallEventProvider;
-import io.github.dsheirer.module.log.config.EventLogConfiguration;
 import io.github.dsheirer.record.config.RecordConfiguration;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.config.SourceConfigTuner;
-import io.github.dsheirer.source.tuner.TunerChannel;
-import io.github.dsheirer.source.tuner.TunerChannel.Type;
+import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +39,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class TrafficChannelManager extends Module implements ICallEventProvider, IDecoderStateEventListener
 {
@@ -61,7 +56,6 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
 
     private ChannelModel mChannelModel;
     private DecodeConfiguration mDecodeConfiguration;
-    private EventLogConfiguration mEventLogConfiguration;
     private RecordConfiguration mRecordConfiguration;
     private String mSystem;
     private String mSite;
@@ -75,7 +69,6 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
      * @param channelModel containing channels currently in use
      * @param decodeConfiguration - decoder configuration to use for each
      * traffic channel allocation.
-     * @param eventLogConfiguration - logging configuration to use for traffic channels
      * @param recordConfiguration - recording options for each traffic channel
      * @param system label to use to describe the system
      * @param site label to use to describe the site
@@ -85,7 +78,6 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
      */
     public TrafficChannelManager(ChannelModel channelModel,
                                  DecodeConfiguration decodeConfiguration,
-                                 EventLogConfiguration eventLogConfiguration,
                                  RecordConfiguration recordConfiguration,
                                  String system,
                                  String site,
@@ -94,7 +86,6 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
     {
         mChannelModel = channelModel;
         mDecodeConfiguration = decodeConfiguration;
-        mEventLogConfiguration = eventLogConfiguration;
         mRecordConfiguration = recordConfiguration;
         mSystem = system;
         mSite = site;
@@ -150,8 +141,6 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
 
                 channel.setDecodeConfiguration(mDecodeConfiguration);
 
-                channel.setEventLogConfiguration(mEventLogConfiguration);
-
                 channel.setRecordConfiguration(mRecordConfiguration);
 
                 channel.setAliasListName(mAliasListName);
@@ -161,7 +150,7 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
                 mTrafficChannelPool.add(channel);
             }
 
-			/* If we have a configured channel, update metadata */
+            /* If we have a configured channel, update metadata */
             if(channel != null)
             {
                 channel.setSourceConfiguration(new SourceConfigTuner(tunerChannel));
@@ -184,7 +173,7 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
     {
         CallEvent callEvent = event.getCallEvent();
 
-		/* Check for duplicate events and suppress */
+        /* Check for duplicate events and suppress */
         synchronized(mTrafficChannelsInUse)
         {
             if(mTrafficChannelsInUse.containsKey(callEvent.getChannel()))
@@ -196,8 +185,8 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
 
             if(frequency > 0)
             {
-                Channel channel = getChannel(callEvent.getChannel(), new TunerChannel(Type.TRAFFIC,
-                    frequency, mDecodeConfiguration.getDecoderType().getChannelBandwidth()));
+                Channel channel = getChannel(callEvent.getChannel(), new TunerChannel(frequency,
+                    mDecodeConfiguration.getDecoderType().getChannelBandwidth()));
 
                 if(channel != null)
                 {
@@ -213,7 +202,7 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
                     }
                     else
                     {
-                        callEvent.setCallEventType(CallEvent.CallEventType.CALL_DETECT);
+                        callEvent.setCallEventType(CallEventType.CALL_DETECT);
 
                         String details = callEvent.getDetails();
 
@@ -230,7 +219,7 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
                 }
                 else
                 {
-                    callEvent.setCallEventType(CallEvent.CallEventType.CALL_DETECT);
+                    callEvent.setCallEventType(CallEventType.CALL_DETECT);
 
                     String details = callEvent.getDetails();
 
@@ -247,7 +236,7 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
             }
             else
             {
-                callEvent.setCallEventType(CallEvent.CallEventType.CALL_DETECT);
+                callEvent.setCallEventType(CallEventType.CALL_DETECT);
 
                 String details = callEvent.getDetails();
 
@@ -337,7 +326,7 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
     }
 
@@ -348,7 +337,7 @@ public class TrafficChannelManager extends Module implements ICallEventProvider,
         {
             List<String> channels = new ArrayList<>();
 
-			/* Copy the keyset so we don't get concurrent modification of the map */
+            /* Copy the keyset so we don't get concurrent modification of the map */
             channels.addAll(mTrafficChannelsInUse.keySet());
 
             for(String channel : channels)

@@ -41,6 +41,21 @@ public abstract class Decoder extends Module implements IMessageProvider
         mMessageListener = null;
     }
 
+    public void start()
+    {
+        //no-op
+    }
+
+    public void stop()
+    {
+        //no-op
+    }
+
+    public void reset()
+    {
+        //no-op
+    }
+
     /**
      * Identifies the decoder type (ie protocol)
      */

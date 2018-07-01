@@ -1,30 +1,24 @@
 /*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
 package io.github.dsheirer.source.tuner.usb;
 
-import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.OverflowableTransferQueue;
-import io.github.dsheirer.sample.adapter.ISampleAdapter;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
-import io.github.dsheirer.sample.real.IOverflowListener;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.tuner.TunerManager;
+import io.github.dsheirer.source.tuner.usb.converter.NativeBufferConverter;
 import io.github.dsheirer.util.ThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,8 +29,6 @@ import org.usb4java.Transfer;
 import org.usb4java.TransferCallback;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -50,72 +42,48 @@ public class USBTransferProcessor implements TransferCallback
     private static final long USB_TIMEOUT_MS = 2000l; //milliseconds
 
     //Number of native byte buffers to allocate for transferring data from the USB device
-    private static final int TRANSFER_BUFFER_POOL_SIZE = 16;
+    private static final int TRANSFER_BUFFER_POOL_SIZE = 20;
+    private static final int MAX_TRANSFERS_IN_PROGRESS_SIZE = 10;
+    private int mTransfersToSubmit = 0;
 
-    //Maximum number of filled buffers for the blocking queue
-    private static final int FILLED_BUFFER_MAX_CAPACITY = 500;
+    private LinkedTransferQueue<Transfer> mAvailableTransfers = new LinkedTransferQueue<>();
+    private LinkedTransferQueue<Transfer> mInProgressTransfers = new LinkedTransferQueue<>();
+    private LinkedTransferQueue<Transfer> mCompletedTransfers = new LinkedTransferQueue<>();
 
-    //Threshold for resetting buffer overflow condition
-    private static final int FILLED_BUFFER_OVERFLOW_RESET_THRESHOLD = 100;
-
-    private String mDeviceName;
-
-    //Handle to the USB bulk transfer device
-    private DeviceHandle mDeviceHandle;
-
-    //Tuner format-specific byte to IQ float sample converter
-    private ISampleAdapter mSampleAdapter;
+    //Tuner format-specific byte buffer to IQ float sample converter
+    private NativeBufferConverter mNativeBufferConverter;
 
     //Byte array transfer buffers size in bytes
     private int mBufferSize;
 
-    private Broadcaster<ComplexBuffer> mComplexBufferBroadcaster = new Broadcaster<>();
-    private OverflowableTransferQueue<byte[]> mFilledBuffers;
-    private LinkedTransferQueue<Transfer> mAvailableTransfers = new LinkedTransferQueue<>();
-    private LinkedTransferQueue<Transfer> mTransfersInProgress = new LinkedTransferQueue<>();
+    private Listener<ReusableComplexBuffer> mComplexBufferListener;
 
+    //Handle to the USB bulk transfer device
+    private DeviceHandle mUsbBulkTransferDeviceHandle;
     private AtomicBoolean mRunning = new AtomicBoolean();
-
     private ByteBuffer mLibUsbHandlerStatus = ByteBuffer.allocateDirect(4);
-
-    private BufferDispatcher mBufferDispatcher = new BufferDispatcher();
+    private CompletedTransferProcessor mCompletedTransferProcessor = new CompletedTransferProcessor();
     private ScheduledFuture mBufferDispatcherFuture;
+    private ScheduledFuture mRestartFuture;
+    private String mDeviceName;
+
 
     /**
      * Manages stream of USB transfer buffers and converts buffers to complex buffer samples for distribution to
      * any registered listeners.
      *
      * @param deviceName to use when logging information or errors
-     * @param deviceHandle to the USB bulk transfer device
-     * @param sampleAdapter specific to the tuner's byte buffer format for converting to floating point I/Q samples
+     * @param usbBulkTransferDeviceHandle to the USB bulk transfer device
+     * @param nativeBufferConverter specific to the tuner's byte buffer format for converting to floating point I/Q samples
      * @param bufferSize in bytes.  Should be a multiple of two: 65536, 131072 or 262144.
      */
-    public USBTransferProcessor(String deviceName,
-                                DeviceHandle deviceHandle,
-                                ISampleAdapter sampleAdapter,
-                                int bufferSize)
+    public USBTransferProcessor(String deviceName, DeviceHandle usbBulkTransferDeviceHandle,
+                                NativeBufferConverter nativeBufferConverter, int bufferSize)
     {
         mDeviceName = deviceName;
-        mDeviceHandle = deviceHandle;
-        mSampleAdapter = sampleAdapter;
+        mUsbBulkTransferDeviceHandle = usbBulkTransferDeviceHandle;
+        mNativeBufferConverter = nativeBufferConverter;
         mBufferSize = bufferSize;
-
-        mFilledBuffers = new OverflowableTransferQueue<>(FILLED_BUFFER_MAX_CAPACITY, FILLED_BUFFER_OVERFLOW_RESET_THRESHOLD);
-        mFilledBuffers.setOverflowListener(new IOverflowListener()
-        {
-            @Override
-            public void sourceOverflow(boolean overflow)
-            {
-                if(overflow)
-                {
-                    mLog.debug(mDeviceName + " - buffer overflow - temporary pause until processing catches up");
-                }
-                else
-                {
-                    mLog.debug(mDeviceName + " - buffer overflow cleared - resuming normal processing");
-                }
-            }
-        });
     }
 
     /**
@@ -126,54 +94,13 @@ public class USBTransferProcessor implements TransferCallback
         if(mRunning.compareAndSet(false, true))
         {
             prepareDeviceStart();
-
             prepareTransfers();
-
-            while(!mAvailableTransfers.isEmpty())
-            {
-                Transfer transfer = mAvailableTransfers.poll();
-
-                if(transfer != null)
-                {
-                    int result = LibUsb.submitTransfer(transfer);
-
-                    if(result == LibUsb.SUCCESS)
-                    {
-                        mTransfersInProgress.add(transfer);
-                    }
-                    else if(result == LibUsb.ERROR_PIPE)
-                    {
-                        int resetResult = LibUsb.clearHalt(mDeviceHandle, USB_BULK_TRANSFER_ENDPOINT);
-
-                        if(resetResult == LibUsb.SUCCESS)
-                        {
-                            int resubmitResult = LibUsb.submitTransfer(transfer);
-
-                            if(resubmitResult == LibUsb.SUCCESS)
-                            {
-                                mTransfersInProgress.add(transfer);
-                            }
-                            else
-                            {
-                                mLog.error(mDeviceName + " - error resubmitting transfer after endpoint clear halt");
-                            }
-                        }
-                        else
-                        {
-                            mLog.error(mDeviceName + " - unable to clear device endpoint halt");
-                        }
-                    }
-                    else
-                    {
-                        //TODO: broadcast to each listener that this source has an error and is shutting down
-                        mLog.error(mDeviceName + "- error submitting transfer [" + LibUsb.errorName(result) + "]");
-                    }
-                }
-            }
+            mTransfersToSubmit = MAX_TRANSFERS_IN_PROGRESS_SIZE;
+            submitTransfers();
 
             //Start transferred buffer dispatcher
-            mBufferDispatcherFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(mBufferDispatcher,
-                0, 11, TimeUnit.MILLISECONDS);
+            mBufferDispatcherFuture = ThreadPool.SCHEDULED.scheduleAtFixedRate(mCompletedTransferProcessor,
+                0, 6, TimeUnit.MILLISECONDS);
 
             //Register with LibUSB processor so that it auto-starts LibUSB processing
             TunerManager.LIBUSB_TRANSFER_PROCESSOR.registerTransferProcessor(this);
@@ -189,14 +116,21 @@ public class USBTransferProcessor implements TransferCallback
         {
             mBufferDispatcherFuture.cancel(true);
 
-            mFilledBuffers.clear();
-
-            //Cancel the lib usb process timer
-            for(Transfer transfer : mTransfersInProgress)
+            //Cancel all buffers that are currently in progress
+            for(Transfer transfer : mInProgressTransfers)
             {
                 LibUsb.cancelTransfer(transfer);
             }
 
+            //Clear all completed buffers
+            Transfer completedTransfer = mCompletedTransfers.poll();
+
+            while(completedTransfer != null)
+            {
+                completedTransfer.buffer().rewind();
+                mAvailableTransfers.add(completedTransfer);
+                completedTransfer = mCompletedTransfers.poll();
+            }
 
             //Unregister from LibUSB processor so that it auto-stops LibUSB processing
             TunerManager.LIBUSB_TRANSFER_PROCESSOR.unregisterTransferProcessor(this);
@@ -217,6 +151,97 @@ public class USBTransferProcessor implements TransferCallback
     }
 
     /**
+     * Restarts the device after there is an error.  Initially stops the device and then schedules a start() to
+     * occur in 10 milliseconds.
+     */
+    private void restart()
+    {
+        stop();
+
+        //Attempt to clear any halt condition
+        LibUsb.clearHalt(mUsbBulkTransferDeviceHandle, USB_BULK_TRANSFER_ENDPOINT);
+
+        mLog.warn("USB tuner [" + mDeviceName + "] stopped due to a buffer transfer error.  Restarting in 10 milliseconds");
+
+        if(mRestartFuture == null)
+        {
+            Runnable runnable = new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    start();
+                    mRestartFuture = null;
+                }
+            };
+
+            mRestartFuture = ThreadPool.SCHEDULED.schedule(runnable, 10, TimeUnit.MILLISECONDS);
+        }
+    }
+
+    /**
+     * (Re)Submits transfer buffers to the USB device.  Since we're offloading byte buffer to complex sample conversion
+     * to another thread, there may be times when sufficient transfer buffers are not available to keep a level number
+     * of transfer buffers in progress.  Therefore, we track the transfer buffers to submit deficit number and attempt
+     * to play catch-up each time this method is invoked.
+     */
+    private void submitTransfers()
+    {
+        if(mRunning.get())
+        {
+            int submitted = 0;
+
+            for(int x = 0; x < mTransfersToSubmit; x++)
+            {
+                Transfer transfer = mAvailableTransfers.poll();
+
+                if(transfer != null)
+                {
+                    int result = LibUsb.submitTransfer(transfer);
+
+                    if(result == LibUsb.SUCCESS)
+                    {
+                        mInProgressTransfers.add(transfer);
+                        submitted++;
+                    }
+                    else if(result == LibUsb.ERROR_PIPE)
+                    {
+                        mLog.warn("USB pipe error - attempting to clear halt on USB device [" + mDeviceName + "]");
+
+                        int resetResult = LibUsb.clearHalt(mUsbBulkTransferDeviceHandle, USB_BULK_TRANSFER_ENDPOINT);
+
+                        if(resetResult == LibUsb.SUCCESS)
+                        {
+                            int resubmitResult = LibUsb.submitTransfer(transfer);
+
+                            if(resubmitResult == LibUsb.SUCCESS)
+                            {
+                                mInProgressTransfers.add(transfer);
+                                submitted++;
+                            }
+                            else
+                            {
+                                mLog.error(mDeviceName + " - error resubmitting transfer after endpoint clear halt");
+                            }
+                        }
+                        else
+                        {
+                            mLog.error(mDeviceName + " - unable to clear device endpoint halt");
+                        }
+                    }
+                    else
+                    {
+                        //TODO: broadcast to each listener that this source has an error and is shutting down
+                        mLog.error(mDeviceName + "- error submitting transfer [" + LibUsb.errorName(result) + "]");
+                    }
+                }
+            }
+
+            mTransfersToSubmit -= submitted;
+        }
+    }
+
+    /**
      * Allows sub-class implementations to execute any device-specific operations to prepare for starting USB transfers
      */
     protected void prepareDeviceStart()
@@ -233,39 +258,29 @@ public class USBTransferProcessor implements TransferCallback
     }
 
     /**
-     * Indicates if there are complex buffer listeners registered with this processor
+     * Sets the listener and auto-starts the buffer processor
      */
-    public boolean hasListeners()
+    public void setListener(Listener<ReusableComplexBuffer> listener)
     {
-        return mComplexBufferBroadcaster.hasListeners();
-    }
-
-    public void addListener(Listener<ComplexBuffer> listener)
-    {
-        mComplexBufferBroadcaster.addListener(listener);
-
+        mComplexBufferListener = listener;
         start();
     }
 
-    public void removeListener(Listener<ComplexBuffer> listener)
+    /**
+     * Auto-stops the buffer processor and removes the listener
+     */
+    public void removeListener()
     {
-        mComplexBufferBroadcaster.removeListener(listener);
-
-        if(!hasListeners())
+        if(mComplexBufferListener != null)
         {
             stop();
+            mComplexBufferListener = null;
         }
-    }
-
-    public void removeAllListeners()
-    {
-        mComplexBufferBroadcaster.clear();
-        stop();
     }
 
     /**
      * Prepares (allocates) a set of transfer buffers for use in transferring data from the USB device via the bulk
-     * interface.  Since we're using direct allocation (native), buffers are retained and reused across multiple
+     * interface.  Since we're using direct memory allocation (native), buffers are retained and reused across multiple
      * start/stop cycles.
      */
     private void prepareTransfers() throws LibUsbException
@@ -281,7 +296,7 @@ public class USBTransferProcessor implements TransferCallback
 
             final ByteBuffer buffer = ByteBuffer.allocateDirect(mBufferSize);
 
-            LibUsb.fillBulkTransfer(transfer, mDeviceHandle, USB_BULK_TRANSFER_ENDPOINT, buffer, this,
+            LibUsb.fillBulkTransfer(transfer, mUsbBulkTransferDeviceHandle, USB_BULK_TRANSFER_ENDPOINT, buffer, this,
                 "Buffer", USB_TIMEOUT_MS);
 
             mAvailableTransfers.add(transfer);
@@ -289,12 +304,15 @@ public class USBTransferProcessor implements TransferCallback
     }
 
     /**
-     * Process a filled transfer buffer received back from the USB device
+     * Process a filled transfer buffer received back from the USB device.  Note: this method is invoked on the USB
+     * bus processing thread, so we try to keep processing to a minimum and place transfers in the completed
+     * transfer queue so that the scheduled processor thread handles any conversion and additional downstream
+     * processing workload.
      */
     @Override
     public void processTransfer(Transfer transfer)
     {
-        mTransfersInProgress.remove(transfer);
+        mInProgressTransfers.remove(transfer);
 
         switch(transfer.status())
         {
@@ -303,78 +321,32 @@ public class USBTransferProcessor implements TransferCallback
             case LibUsb.TRANSFER_TIMED_OUT:
                 if(transfer.actualLength() > 0)
                 {
-                    ByteBuffer buffer = transfer.buffer();
-
-                    byte[] data = new byte[transfer.actualLength()];
-                    buffer.get(data);
-                    buffer.rewind();
-
-                    if(mRunning.get())
-                    {
-                        mFilledBuffers.offer(data);
-                    }
-                }
-                break;
-            case LibUsb.TRANSFER_CANCELLED:
-                break;
-            default:
-                //Unexpected transfer error
-                mLog.error(mDeviceName + " - transfer error [" + getTransferStatus(transfer.status()) +
-                    "] transferred actual: " + transfer.actualLength());
-        }
-
-
-        if(mRunning.get())
-        {
-            int result = LibUsb.submitTransfer(transfer);
-
-            if(result == LibUsb.SUCCESS)
-            {
-                mTransfersInProgress.add(transfer);
-            }
-            else if(result == LibUsb.ERROR_PIPE)
-            {
-                int resetResult = LibUsb.clearHalt(mDeviceHandle, USB_BULK_TRANSFER_ENDPOINT);
-
-                if(resetResult == LibUsb.SUCCESS)
-                {
-                    int resubmitResult = LibUsb.submitTransfer(transfer);
-
-                    if(resubmitResult == LibUsb.SUCCESS)
-                    {
-                        mTransfersInProgress.add(transfer);
-                    }
-                    else
-                    {
-                        mLog.error(mDeviceName + " - error resubmitting transfer after endpoint clear halt");
-                    }
+                    mCompletedTransfers.add(transfer);
                 }
                 else
                 {
-                    mLog.error(mDeviceName + " - unable to clear device endpoint halt");
+                    transfer.buffer().rewind();
+                    mAvailableTransfers.add(transfer);
                 }
-            }
-            else
-            {
+                break;
+            case LibUsb.TRANSFER_CANCELLED:
+                transfer.buffer().rewind();
                 mAvailableTransfers.add(transfer);
-                mLog.error(mDeviceName + " - error submitting transfer [" + LibUsb.errorName(result) + "]");
+                break;
+            default:
+                //Unexpected transfer error - need to reset the bulk transfer interface
+                mLog.error(mDeviceName + " - transfer error [" + getTransferStatus(transfer.status()) +
+                    "] transferred actual: " + transfer.actualLength());
+                transfer.buffer().rewind();
+                mAvailableTransfers.add(transfer);
+                restart();
+                return;
+        }
 
-                if(mTransfersInProgress.isEmpty())
-                {
-                    mLog.warn(mDeviceName + " - all transfer buffer processing is stopped");
-                    //TODO: no transfers are in progress ... need to alert the user and the registered complex
-                    //TODO: buffer listeners so that they can respond accordingly
-                }
-            }
-        }
-        else
-        {
-            //We're stopping - park the transfer buffers
-            if(!mAvailableTransfers.contains(transfer))
-            {
-                mAvailableTransfers.add(transfer);
-            }
-        }
+        mTransfersToSubmit++;
+
+        //Dispatch a new transfer
+        submitTransfers();
     }
 
     /**
@@ -404,36 +376,40 @@ public class USBTransferProcessor implements TransferCallback
     }
 
     /**
-     * Fetches byte[] chunks from the raw sample buffer.  Converts each byte
-     * array and broadcasts the array to all registered listeners
+     * Processes completed USB buffer transfers, converts the transferred bytes into complex samples and dispatches the
+     * sample buffer to the listener.
      */
-    public class BufferDispatcher implements Runnable
+    public class CompletedTransferProcessor implements Runnable
     {
-        private List<byte[]> mBuffersToDispatch = new ArrayList<>();
-
         @Override
         public void run()
         {
-            mFilledBuffers.drainTo(mBuffersToDispatch, 50);
-
-            while(!mBuffersToDispatch.isEmpty())
+            try
             {
-                try
+                Transfer transfer = mCompletedTransfers.poll();
+
+                while(transfer != null)
                 {
-                    for(byte[] buffer : mBuffersToDispatch)
+                    if(mRunning.get() && mComplexBufferListener != null)
                     {
-                        float[] complexSamples = mSampleAdapter.convert(buffer);
+                        ByteBuffer nativeBuffer = transfer.buffer();
 
-                        mComplexBufferBroadcaster.broadcast(new ComplexBuffer(complexSamples));
+                        ReusableComplexBuffer reusableComplexBuffer =
+                            mNativeBufferConverter.convert(nativeBuffer, transfer.actualLength());
+
+                        mComplexBufferListener.receive(reusableComplexBuffer);
                     }
-                }
-                catch(Exception e)
-                {
-                    mLog.error(mDeviceName + " - error while dispatching complex IQ buffer samples", e);
-                }
 
-                mBuffersToDispatch.clear();
-                mFilledBuffers.drainTo(mBuffersToDispatch, 50);
+                    transfer.buffer().rewind();
+                    mAvailableTransfers.add(transfer);
+
+                    //Fetch the next transfer to process
+                    transfer = mCompletedTransfers.poll();
+                }
+            }
+            catch(Throwable throwable)
+            {
+                mLog.error("Error while processing USB transfer buffers", throwable);
             }
         }
     }

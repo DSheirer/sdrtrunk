@@ -31,6 +31,7 @@ import io.github.dsheirer.source.tuner.rtl.RTL2832Tuner;
 import io.github.dsheirer.source.tuner.rtl.RTL2832TunerController;
 import io.github.dsheirer.source.tuner.rtl.e4k.E4KTunerController;
 import io.github.dsheirer.source.tuner.rtl.r820t.R820TTunerController;
+import io.github.dsheirer.source.tuner.usb.USBMasterProcessor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.Device;
@@ -53,11 +54,11 @@ public class TunerManager
      * buffers can register with this processor and the processor will auto-start and auto-stop while USB transfer
      * processors are registered.
      */
-    public static final LibUSBTransferProcessor LIBUSB_TRANSFER_PROCESSOR;
+    public static final USBMasterProcessor LIBUSB_TRANSFER_PROCESSOR;
 
     static
     {
-        LIBUSB_TRANSFER_PROCESSOR = new LibUSBTransferProcessor();
+        LIBUSB_TRANSFER_PROCESSOR = new USBMasterProcessor();
     }
 
     public TunerManager(MixerManager mixerManager, TunerModel tunerModel)
@@ -246,25 +247,21 @@ public class TunerManager
             + "supported");
     }
 
-    private TunerInitStatus initFuncubeProTuner(Device device,
-                                                DeviceDescriptor descriptor)
+    private TunerInitStatus initFuncubeProTuner(Device device, DeviceDescriptor descriptor)
     {
         String reason = "NOT LOADED";
 
-        MixerTunerDataLine dataline = getMixerTunerDataLine(
-            TunerClass.FUNCUBE_DONGLE_PRO.getTunerType());
+        MixerTunerDataLine dataline = getMixerTunerDataLine(TunerClass.FUNCUBE_DONGLE_PRO.getTunerType());
 
         if(dataline != null)
         {
-            FCD1TunerController controller =
-                new FCD1TunerController(device, descriptor);
+            FCD1TunerController controller = new FCD1TunerController(dataline, device, descriptor);
 
             try
             {
                 controller.init();
 
-                FCDTuner tuner =
-                    new FCDTuner(dataline, controller);
+                FCDTuner tuner = new FCDTuner(controller);
 
                 return new TunerInitStatus(tuner, "LOADED");
             }
@@ -284,25 +281,21 @@ public class TunerManager
             + "loaded - " + reason);
     }
 
-    private TunerInitStatus initFuncubeProPlusTuner(Device device,
-                                                    DeviceDescriptor descriptor)
+    private TunerInitStatus initFuncubeProPlusTuner(Device device, DeviceDescriptor descriptor)
     {
         String reason = "NOT LOADED";
 
-        MixerTunerDataLine dataline = getMixerTunerDataLine(
-            TunerClass.FUNCUBE_DONGLE_PRO_PLUS.getTunerType());
+        MixerTunerDataLine dataline = getMixerTunerDataLine(TunerClass.FUNCUBE_DONGLE_PRO_PLUS.getTunerType());
 
         if(dataline != null)
         {
-            FCD2TunerController controller =
-                new FCD2TunerController(device, descriptor);
+            FCD2TunerController controller = new FCD2TunerController(dataline, device, descriptor);
 
             try
             {
                 controller.init();
 
-                FCDTuner tuner =
-                    new FCDTuner(dataline, controller);
+                FCDTuner tuner = new FCDTuner(controller);
 
                 return new TunerInitStatus(tuner, "LOADED");
             }
@@ -323,8 +316,7 @@ public class TunerManager
             + "loaded - " + reason);
     }
 
-    private TunerInitStatus initHackRFTuner(Device device,
-                                            DeviceDescriptor descriptor)
+    private TunerInitStatus initHackRFTuner(Device device, DeviceDescriptor descriptor)
     {
         try
         {

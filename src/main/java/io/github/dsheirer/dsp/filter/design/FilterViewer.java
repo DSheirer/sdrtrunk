@@ -40,52 +40,48 @@ public class FilterViewer extends Application
     private float[] getFilter()
     {
 //        FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-//            .sampleRate(48000)
+//            .sampleRate(8000)
 //            .gridDensity(16)
-//            .passBandCutoff(2500)
+//            .oddLength(true)
+//            .passBandCutoff(300)
 //            .passBandAmplitude(1.0)
 //            .passBandRipple(0.01)
-//            .stopBandStart(4000)
+//            .stopBandStart(500)
 //            .stopBandAmplitude(0.0)
-//            .stopBandRipple(0.008)
+//            .stopBandRipple(0.03) //Approximately 60 dB attenuation
 //            .build();
-        FIRFilterSpecification specification = FIRFilterSpecification.lowPassBuilder()
-            .sampleRate(48000)
-            .passBandCutoff(5100)
-            .passBandAmplitude(1.0)
-            .passBandRipple(0.01)
-            .stopBandAmplitude(0.0)
-            .stopBandStart(6500)
-            .stopBandRipple(0.01)
-            .build();
-
+//
 //        FIRFilterSpecification specification = FIRFilterSpecification.highPassBuilder()
-//            .sampleRate(24000)
-//            .stopBandCutoff(800)
+//            .sampleRate(8000)
+//            .stopBandCutoff(200)
 //            .stopBandAmplitude(0.0)
-//            .stopBandRipple(0.03)
-//            .passBandStart(1000)
+//            .stopBandRipple(0.025)
+//            .passBandStart(300)
 //            .passBandAmplitude(1.0)
-//            .passBandRipple(0.08)
+//            .passBandRipple(0.01)
 //            .build();
 
-//		FIRFilterSpecification specification = FIRFilterSpecification.bandPassBuilder()
-//	        .sampleRate( 48000 )
-//	        .stopFrequency1( 200 )
-//	        .passFrequencyBegin( 400 )
-//	        .passFrequencyEnd( 3200 )
-//	        .stopFrequency2( 3400 )
-//	        .stopRipple( 0.0003 )
-//	        .passRipple( 0.008)
-//	        .build();
+        FIRFilterSpecification specification = FIRFilterSpecification.bandPassBuilder()
+            .sampleRate(8000)
+            .stopFrequency1(1000)
+            .passFrequencyBegin(1100)
+            .passFrequencyEnd(1900)
+            .stopFrequency2(2000)
+            .stopRipple(0.000001)
+            .passRipple(0.00001)
+            .build();
 
         float[] taps = null;
 
-//        taps = FilterFactory.getSinc(6000, 1920, 47, Window.WindowType.BLACKMAN);
-
-//        taps = FilterFactory.getRootRaisedCosine(10, 10, 0.2f);
-//        taps = FilterFactory.getLowPass(48000, 6750, 7500, 60,
-//            Window.WindowType.HAMMING, true);
+//        try
+//        {
+//            taps = FilterFactory.getSincM2Synthesizer(12500.0, 2, 19);
+//            taps = FilterFactory.getSincFilter(25000.0, 12500.0, 2, 19, Window.WindowType.BLACKMAN_HARRIS_7, true);
+//        }
+//        catch(FilterDesignException fde)
+//        {
+//            mLog.error("Error");
+//        }
 
         try
         {
@@ -100,6 +96,12 @@ public class FilterViewer extends Application
         {
             mLog.error("Filter design error", fde);
         }
+
+        if(taps == null)
+        {
+            throw new IllegalStateException("Couldn't design filter");
+        }
+
 
         return taps;
     }

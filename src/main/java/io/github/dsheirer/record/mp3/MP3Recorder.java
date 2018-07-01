@@ -18,9 +18,9 @@
  ******************************************************************************/
 package io.github.dsheirer.record.mp3;
 
-import io.github.dsheirer.audio.AudioPacket;
 import io.github.dsheirer.audio.convert.MP3AudioConverter;
 import io.github.dsheirer.record.AudioRecorder;
+import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +55,7 @@ public class MP3Recorder extends AudioRecorder
     }
 
     @Override
-    protected void record(List<AudioPacket> audioPackets) throws IOException
+    protected void record(List<ReusableAudioPacket> audioPackets) throws IOException
     {
         OutputStream outputStream = getOutputStream();
 
@@ -92,7 +92,7 @@ public class MP3Recorder extends AudioRecorder
      * writes the ID3 tags to the output stream.
      * @param audioPackets
      */
-    private void processMetadata(List<AudioPacket> audioPackets)
+    private void processMetadata(List<ReusableAudioPacket> audioPackets)
     {
         //TODO: detect metadata changes and write out ID3 tags to the MP3 stream
     }

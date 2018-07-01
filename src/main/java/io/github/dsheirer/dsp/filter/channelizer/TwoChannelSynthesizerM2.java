@@ -1,0 +1,191 @@
+/*******************************************************************************
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
+ *
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
+ *
+ ******************************************************************************/
+package io.github.dsheirer.dsp.filter.channelizer;
+
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
+import org.jtransforms.fft.FloatFFT_1D;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * Implements a two-channel polyphase filer synthesizer.  This class is intended to be used with an M2 polyphase
+ * channelizer in order to recover a signal that overlaps the boundary between two channels.  This synthesizer will
+ * rejoin the two M2 neighboring channels, mix the signal of interest to baseband, and filter the output stream to
+ * half of the sample rate, producing an overall M2 output sample rate.
+ *
+ * The synthesizer concept is modeled on the structure described by Fred Harris et al, in 'Interleaving Different
+ * Bandwidth Narrowband Channels in Perfect Reconstruction Cascade Polyphase Filter Banks for Efficient Flexible
+ * Variable Bandwidth Filters in Wideband Digital Transceivers'.
+ *
+ * The data buffers and sub-filter kernels bear some resemblance to the structures defined in the paper.  The data and
+ * filter structures in this class are organized to take advantage of Java's ability to leverage SIMD processor
+ * intrinsics for optimal efficiency in processing.  The paper specifies splitting the filter kernel into N polyphase
+ * partitions and creating N data buffers.  This class organizes the data buffer as a contiguous sample
+ * array and creates an I/Q interleaved filter kernel.  Instead of calculating the dot-product for each sub-filter,
+ * we calculate the product of the full data array against the filter and then accumulate each sub-filter.  This allows
+ * java to use SIMD for the array product and then normal processing for the accumulation.  Since this is a two-channel
+ * processor and the results of each filter accumulation are added, we use a single accumulator across both filters.
+ *
+ */
+public class TwoChannelSynthesizerM2
+{
+    private final static Logger mLog = LoggerFactory.getLogger(TwoChannelSynthesizerM2.class);
+
+    private ReusableComplexBufferQueue mReusableComplexBufferQueue = new ReusableComplexBufferQueue("Two Channel Synthesizer M2");
+    private float[] mSerpentineDataBuffer;
+    private float[] mIQInterleavedFilter;
+    private float[] mFilterVectorProduct;
+    private float[] mIFFTBuffer = new float[4];
+    private float mIAccumulator;
+    private float mQAccumulator;
+    private FloatFFT_1D mFFT = new FloatFFT_1D(2);
+    private boolean mTopBlockFlag = true;
+
+    /**
+     * Polyphase synthesizer for mixing two M2 oversampled channels into a composite channel using perfect
+     * reconstruction filters (-6db at band edge).  Output sample rate is the same as the input sample rate of one of
+     * the channels.
+     */
+    public TwoChannelSynthesizerM2(float[] filter)
+    {
+        init(filter);
+    }
+
+    /**
+     * Initializes the synthesizer filter and data buffers for operation.
+     *
+     * @param filter to use for polyphase synthesis of two channels.
+     */
+    private void init(float[] filter)
+    {
+        int tapsPerChannel = (int)Math.ceil(filter.length / 2);
+
+        mIQInterleavedFilter = getInterleavedFilter(filter, tapsPerChannel);
+        mSerpentineDataBuffer = new float[mIQInterleavedFilter.length];
+        mFilterVectorProduct = new float[mIQInterleavedFilter.length];
+    }
+
+    /**
+     * Synthesizes a new channel from the channel 1 and channel 2 sample arrays that are arranged as
+     * i0, q0, i1, q1 ... iN-1, qN-1
+     *
+     * @param channelBuffer1 input channel
+     * @param channelBuffer2 input channel
+     * @return synthesized channel results of the same length as both channel 1/2 input arrays.
+     */
+    public ReusableComplexBuffer process(ReusableComplexBuffer channelBuffer1, ReusableComplexBuffer channelBuffer2)
+    {
+        if(channelBuffer1.getSamples().length != channelBuffer1.getSamples().length)
+        {
+            throw new IllegalArgumentException("Channel 1 and 2 array length must be equal");
+        }
+
+        float[] channel1 = channelBuffer1.getSamples();
+        float[] channel2 = channelBuffer2.getSamples();
+
+        ReusableComplexBuffer synthesizedComplexBuffer = mReusableComplexBufferQueue.getBuffer(channel1.length);
+
+        float[] output = synthesizedComplexBuffer.getSamples();
+
+        for(int x = 0; x < channel1.length; x += 2)
+        {
+            //Load samples from each channel into buffer for IFFT
+            mIFFTBuffer[0] = channel1[x];     //i
+            mIFFTBuffer[1] = channel1[x + 1]; //q
+            mIFFTBuffer[2] = channel2[x];     //i
+            mIFFTBuffer[3] = channel2[x + 1]; //q
+
+            //Perform Inverse FFT (IFFT)
+            mFFT.complexInverse(mIFFTBuffer, true);
+
+            //Perform serpentine shift of data blocks in the data buffer - make room for 4 new samples
+            System.arraycopy(mSerpentineDataBuffer, 0, mSerpentineDataBuffer, 4, mSerpentineDataBuffer.length - 4);
+
+            //Top Block - load samples into data buffer in normal order
+            if(mTopBlockFlag)
+            {
+                System.arraycopy(mIFFTBuffer, 0, mSerpentineDataBuffer, 0, mIFFTBuffer.length);
+            }
+            //Bottom Block - swap samples via data loading to account for phase shift
+            else
+            {
+                System.arraycopy(mIFFTBuffer, 0, mSerpentineDataBuffer, 2, 2);
+                System.arraycopy(mIFFTBuffer, 2, mSerpentineDataBuffer, 0, 2);
+            }
+
+            //Note: in order to use Java's ability to leverage SIMD intrinsics, we perform filtering in two steps
+            //(multiply then accumulate) since our filter and data are structured with I and Q vectors interleaved.
+            //This approach allows the Hotspot compiler to more easily recognize the scalor operations.
+
+            //Multiply data samples by the I/Q interleaved filter to form the vector product
+            for(int y = 0; y < mSerpentineDataBuffer.length; y++)
+            {
+                mFilterVectorProduct[y] = mSerpentineDataBuffer[y] * mIQInterleavedFilter[y];
+            }
+
+            //Accumulate output I/Q samples from vector product
+            mIAccumulator = 0.0f;
+            mQAccumulator = 0.0f;
+
+            for(int y = 0; y < mFilterVectorProduct.length; y += 2)
+            {
+                mIAccumulator += mFilterVectorProduct[y];
+                mQAccumulator += mFilterVectorProduct[y + 1];
+            }
+
+            output[x] = mIAccumulator;
+            output[x + 1] = mQAccumulator;
+
+            mTopBlockFlag = !mTopBlockFlag;
+        }
+
+        channelBuffer1.decrementUserCount();
+        channelBuffer2.decrementUserCount();
+
+        return synthesizedComplexBuffer;
+    }
+
+    /**
+     * Creates an interleaved I/Q filter where each coefficient from the filter argument is duplicated and the returned
+     * filter is twice the length of the original filter.
+     *
+     * Note: the returned filter array is sized to:  2 * channel count * taps per channel, which may be slightly more
+     * than twice the length of the original filter.  Any Added filter array elements will contain zero values.
+     *
+     * @param coefficients to create an interleaved filter
+     * @param tapsPerChannel count
+     * @return
+     */
+    private static float[] getInterleavedFilter(float[] coefficients, int tapsPerChannel)
+    {
+        int channelCount = 2;
+
+        float[] filter = new float[channelCount * tapsPerChannel * 2];
+
+        int coefficientPointer = 0;
+        int filterPointer = 0;
+
+        //Create a new filter that duplicates each tap to produce an interleaved I/Q filter
+        while(coefficientPointer < coefficients.length)
+        {
+            filter[filterPointer++] = coefficients[coefficientPointer];
+            filter[filterPointer++] = coefficients[coefficientPointer++];
+        }
+
+        return filter;
+    }
+}

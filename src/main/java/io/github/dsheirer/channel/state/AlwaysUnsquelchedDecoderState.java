@@ -25,8 +25,6 @@ import io.github.dsheirer.module.decode.DecoderType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ScheduledExecutorService;
-
 /**
  * Basic decoder channel state - provides the minimum channel state functionality
  * to support an always un-squelched audio decoder.
@@ -94,7 +92,7 @@ public class AlwaysUnsquelchedDecoderState extends DecoderState
     }
 
     @Override
-    public void start(ScheduledExecutorService executor)
+    public void start()
     {
         broadcast(new AttributeChangeRequest<String>(Attribute.PRIMARY_ADDRESS_TO, NO_SQUELCH));
         broadcast(new DecoderStateEvent(this, Event.ALWAYS_UNSQUELCH, State.IDLE));

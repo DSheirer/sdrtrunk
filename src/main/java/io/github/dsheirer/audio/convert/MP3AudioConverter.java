@@ -19,8 +19,8 @@
 package io.github.dsheirer.audio.convert;
 
 import io.github.dsheirer.audio.AudioFormats;
-import io.github.dsheirer.audio.AudioPacket;
 import io.github.dsheirer.audio.AudioUtils;
+import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import net.sourceforge.lame.lowlevel.LameEncoder;
 import net.sourceforge.lame.mp3.Lame;
 import net.sourceforge.lame.mp3.MPEGMode;
@@ -54,7 +54,7 @@ public class MP3AudioConverter implements IAudioConverter
     }
 
     @Override
-    public byte[] convert(List<AudioPacket> audioPackets)
+    public byte[] convert(List<ReusableAudioPacket> audioPackets)
     {
         mMP3Stream.reset();
 

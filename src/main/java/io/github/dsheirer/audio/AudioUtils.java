@@ -1,24 +1,22 @@
 /*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2016 Dennis Sheirer
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
 package io.github.dsheirer.audio;
 
 import io.github.dsheirer.sample.ConversionUtils;
+import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,17 +32,18 @@ public class AudioUtils
     /**
      * Converts the audio packets into a byte array of 16-bit, little-endian audio samples
      */
-    public static byte[] convertTo16BitSamples(List<AudioPacket> audioPackets)
+    public static byte[] convertTo16BitSamples(List<ReusableAudioPacket> audioPackets)
     {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
 
         try
         {
-            for(AudioPacket packet: audioPackets)
+            for(ReusableAudioPacket audioPacket: audioPackets)
             {
                 //Converting from 32-bit floats to signed 16-bit samples
-                ByteBuffer buffer = ConversionUtils.convertToSigned16BitSamples(packet.getAudioBuffer().getSamples());
+                ByteBuffer buffer = ConversionUtils.convertToSigned16BitSamples(audioPacket.getAudioSamples());
                 stream.write(buffer.array());
+                audioPacket.decrementUserCount();
             }
         }
         catch(IOException e)

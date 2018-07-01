@@ -24,19 +24,12 @@ import io.github.dsheirer.gui.editor.ValidatingEditor;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 import net.miginfocom.swing.MigLayout;
 
-import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import javax.swing.JLabel;
 
 public class NBFMDecoderEditor extends ValidatingEditor<Channel>
 {
     private static final long serialVersionUID = 1L;
     
-    private JCheckBox mAFC;
-    private JSlider mAFCMaximumCorrection;
-
 	public NBFMDecoderEditor()
 	{
 		init();
@@ -45,48 +38,7 @@ public class NBFMDecoderEditor extends ValidatingEditor<Channel>
 	private void init()
 	{
 		setLayout( new MigLayout( "insets 0 0 0 0,wrap 2", "[right][grow,fill]", "" ) );
-		
-        mAFC = new JCheckBox( "AFC: 3000 Hz" );
-        mAFC.setEnabled( false );
-        mAFC.setToolTipText( "AFC automatically adjusts the center frequency of the channel to "
-    		+ "correct/compensate for inaccuracies and frequency drift in the tuner" );
-        mAFC.addActionListener( new ActionListener()
-        {
-            @Override
-            public void actionPerformed( ActionEvent arg0 )
-            {
-            	setModified( true );
-            	
-            	if( mAFC.isSelected() && !mAFCMaximumCorrection.isEnabled() )
-            	{
-            		mAFCMaximumCorrection.setEnabled( true );
-            	}
-            	else if( !mAFC.isSelected() && mAFCMaximumCorrection.isEnabled() )
-            	{
-            		mAFCMaximumCorrection.setEnabled( false );
-            	}
-            }
-        } );
-
-        add( mAFC );
-        
-        mAFCMaximumCorrection = new JSlider( 0, 7000, 3000 );
-        mAFCMaximumCorrection.setEnabled( false );
-        mAFCMaximumCorrection.setToolTipText( "Maximum AFC frequency correction (0 - 15kHz)" );
-        mAFCMaximumCorrection.setMajorTickSpacing( 2000 );
-        mAFCMaximumCorrection.setMinorTickSpacing( 1000 );
-        mAFCMaximumCorrection.setPaintTicks( true );
-
-		mAFCMaximumCorrection.addChangeListener( new ChangeListener()
-		{
-			@Override
-			public void stateChanged( ChangeEvent e )
-			{
-				mAFC.setText( "AFC: " + mAFCMaximumCorrection.getValue() + " Hz" );
-				setModified( true );
-			}
-		} );
-        add( mAFCMaximumCorrection );
+		add( new JLabel( "Narrow Band FM Decoder" ) );
 	}
 
 	@Override
@@ -101,10 +53,6 @@ public class NBFMDecoderEditor extends ValidatingEditor<Channel>
 		if( hasItem() && isModified() )
 		{
 			DecodeConfigNBFM nbfm = new DecodeConfigNBFM();
-			
-			nbfm.setAFC( mAFC.isSelected() );                
-			nbfm.setAFCMaximumCorrection( mAFCMaximumCorrection.getValue() );
-			
 			getItem().setDecodeConfiguration( nbfm );
 		}
 		
@@ -113,10 +61,6 @@ public class NBFMDecoderEditor extends ValidatingEditor<Channel>
 
 	private void setControlsEnabled( boolean enabled )
 	{
-		if( mAFC.isEnabled() != enabled  )
-		{
-			mAFC.setEnabled( enabled );
-		}
 	}
 
 	@Override
@@ -133,19 +77,10 @@ public class NBFMDecoderEditor extends ValidatingEditor<Channel>
 			if( config instanceof DecodeConfigNBFM )
 			{
 				DecodeConfigNBFM nbfm = (DecodeConfigNBFM)config;
-				
-		        mAFC.setSelected( nbfm.isAFCEnabled() );
-		        mAFCMaximumCorrection.setValue( nbfm.getAFCMaximumCorrection() );
-		        mAFCMaximumCorrection.setEnabled( nbfm.isAFCEnabled() );
-		        
 				setModified( false );
 			}
 			else
 			{
-		        mAFC.setSelected( false );
-		        mAFCMaximumCorrection.setValue( DecodeConfiguration.DEFAULT_AFC_MAX_CORRECTION );
-		        mAFCMaximumCorrection.setEnabled( false );
-		        
 				setModified( true );
 			}
 		}

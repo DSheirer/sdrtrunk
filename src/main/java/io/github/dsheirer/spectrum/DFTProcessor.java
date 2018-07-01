@@ -18,11 +18,12 @@ package io.github.dsheirer.spectrum;
 import io.github.dsheirer.dsp.filter.Window;
 import io.github.dsheirer.dsp.filter.Window.WindowType;
 import io.github.dsheirer.properties.SystemProperties;
+import io.github.dsheirer.sample.IOverflowListener;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.complex.ComplexBuffer;
-import io.github.dsheirer.source.tuner.frequency.FrequencyChangeEvent;
-import io.github.dsheirer.source.tuner.frequency.IFrequencyChangeProcessor;
+import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.source.ISourceEventProcessor;
+import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.spectrum.converter.DFTResultsConverter;
 import io.github.dsheirer.util.ThreadPool;
 import org.jtransforms.fft.FloatFFT_1D;
@@ -40,15 +41,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Processes both complex samples or float samples and dispatches a float array of DFT results, using configurable fft
  * size and output dispatch timelines.
  */
-public class DFTProcessor implements Listener<ComplexBuffer>, IFrequencyChangeProcessor, IDFTWidthChangeProcessor
+public class DFTProcessor implements Listener<ReusableComplexBuffer>, ISourceEventProcessor, IDFTWidthChangeProcessor
 {
     private static final Logger mLog = LoggerFactory.getLogger(DFTProcessor.class);
-    private static final int BUFFER_QUEUE_MAX_SIZE = 12;
+    private static final int BUFFER_QUEUE_MAX_SIZE = 20;
     private static final int BUFFER_QUEUE_OVERFLOW_RESET_THRESHOLD = 6;
     private static final String FRAME_RATE_PROPERTY = "spectral.display.frame.rate";
 
-    //The Cosine and Hanning windows seem to offer the best spectral display with minimal bin leakage/smearing
-    private WindowType mWindowType = Window.WindowType.HANNING;
+    //The Cosine and Hann windows seem to offer the best spectral display with minimal bin leakage/smearing
+    private WindowType mWindowType = WindowType.HANN;
     private double[] mWindow;
     private DFTSize mDFTSize = DFTSize.FFT04096;
     private DFTSize mNewDFTSize = DFTSize.FFT04096;
@@ -81,6 +82,15 @@ public class DFTProcessor implements Listener<ComplexBuffer>, IFrequencyChangePr
         mListeners.clear();
         mOverflowableBufferStream.clear();
         mWindow = null;
+    }
+
+    /**
+     * Sets the listener to receive buffer overflow/reset indications
+     * @param listener
+     */
+    public void setOverflowListener(IOverflowListener listener)
+    {
+        mOverflowableBufferStream.setOverflowListener(listener);
     }
 
     public WindowType getWindowType()
@@ -182,13 +192,18 @@ public class DFTProcessor implements Listener<ComplexBuffer>, IFrequencyChangePr
      * Places the sample into a transfer queue for future processing.
      */
     @Override
-    public void receive(ComplexBuffer sampleBuffer)
+    public void receive(ReusableComplexBuffer sampleBuffer)
     {
         mOverflowableBufferStream.offer(sampleBuffer);
     }
 
     private void calculate()
     {
+        //We always send the previous calculated samples - this should improve the screen rendering since the frame
+        //rate will always occur on an even rhythm.  Any delays caused by processing will be absorbed and not impact
+        //the screen rendering.
+        dispatch(mPreviousSamples);
+
         try
         {
             if(mFrameFlushCount > 0)
@@ -210,14 +225,12 @@ public class DFTProcessor implements Listener<ComplexBuffer>, IFrequencyChangePr
                 mFFT.complexForward(samples);
             }
 
-            dispatch(samples);
-
             mPreviousSamples = samples;
         }
         catch(IOException ioe)
         {
             //No new data, dispatch the previous samples again
-            dispatch(mPreviousSamples);
+            //no-op
         }
     }
 
@@ -289,7 +302,7 @@ public class DFTProcessor implements Listener<ComplexBuffer>, IFrequencyChangePr
     }
 
     @Override
-    public void frequencyChanged(FrequencyChangeEvent event)
+    public void process(SourceEvent event)
     {
         switch(event.getEvent())
         {

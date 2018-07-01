@@ -25,17 +25,11 @@ public class DecodeConfigAM extends DecodeConfiguration
 {
 	public DecodeConfigAM()
     {
-	    setAFC( false );
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
     public DecoderType getDecoderType()
     {
         return DecoderType.AM;
-    }
-
-    public boolean supportsAFC()
-    {
-        return false;
     }
 }

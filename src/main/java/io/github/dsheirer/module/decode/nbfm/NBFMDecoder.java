@@ -22,8 +22,6 @@ import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.module.decode.PrimaryDecoder;
 import io.github.dsheirer.module.decode.config.DecodeConfiguration;
 
-import java.util.concurrent.ScheduledExecutorService;
-
 public class NBFMDecoder extends PrimaryDecoder
 {
 	public NBFMDecoder( DecodeConfiguration config )
@@ -43,7 +41,7 @@ public class NBFMDecoder extends PrimaryDecoder
 	}
 
 	@Override
-	public void start( ScheduledExecutorService executor )
+	public void start()
 	{
 	}
 
