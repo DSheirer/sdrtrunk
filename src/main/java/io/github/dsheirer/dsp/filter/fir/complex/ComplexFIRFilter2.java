@@ -124,7 +124,6 @@ public class ComplexFIRFilter2 extends FIRFilter
         }
 
         originalBuffer.decrementUserCount();
-        filteredBuffer.incrementUserCount();
 
         return filteredBuffer;
     }

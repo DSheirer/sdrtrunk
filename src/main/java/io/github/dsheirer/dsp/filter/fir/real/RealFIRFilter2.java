@@ -125,7 +125,6 @@ public class RealFIRFilter2 extends FIRFilter
             filteredSamples[x] = filter(unfilteredSamples[x]);
         }
 
-        filteredBuffer.incrementUserCount();
         unfilteredBuffer.decrementUserCount();
 
         return filteredBuffer;

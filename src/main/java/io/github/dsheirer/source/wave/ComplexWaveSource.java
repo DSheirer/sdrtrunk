@@ -218,7 +218,6 @@ public class ComplexWaveSource extends ComplexSource implements IControllableFil
 
                 ReusableComplexBuffer reusableBuffer = mReusableComplexBufferQueue.getBuffer(samples.length);
                 reusableBuffer.reloadFrom(samples, System.currentTimeMillis());
-                reusableBuffer.incrementUserCount();
                 mListener.receive(reusableBuffer);
             }
         }

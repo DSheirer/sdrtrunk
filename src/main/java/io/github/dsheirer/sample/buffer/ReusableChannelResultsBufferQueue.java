@@ -44,11 +44,11 @@ public class ReusableChannelResultsBufferQueue extends AbstractReusableBufferQue
         if(buffer == null)
         {
             buffer = new ReusableChannelResultsBuffer(this);
-            incrementBufferCount();
-
             buffer.setDebugName("Owner:" + getDebugName());
-//            mLog.debug("Buffer Created - Count:" + getBufferCount() + (getDebugName() != null ? " [" + getDebugName() + "]" : ""));
+            incrementBufferCount();
         }
+
+        buffer.incrementUserCount();
 
         return buffer;
     }

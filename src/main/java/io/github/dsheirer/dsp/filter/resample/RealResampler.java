@@ -129,7 +129,6 @@ public class RealResampler
             while(mOutputBuffer.position() > mOutputBufferSize)
             {
                 ReusableBuffer outputBuffer = mReusableBufferQueue.getBuffer(mOutputBufferSize);
-                outputBuffer.incrementUserCount();
 
                 mOutputBuffer.flip();
                 mOutputBuffer.get(outputBuffer.getSamples());

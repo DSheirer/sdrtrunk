@@ -29,6 +29,7 @@ public abstract class AbstractReusableBufferQueue<T extends AbstractReusableBuff
     private Queue<T> mReusableBufferQueue = new LinkedTransferQueue<>();
     private int mBufferCount = 0;
     private String mDebugName;
+    protected boolean mBufferCreationLoggingEnabled = true;
 
     /**
      * Base queue for managing reusable buffers.
@@ -89,6 +90,12 @@ public abstract class AbstractReusableBufferQueue<T extends AbstractReusableBuff
     protected void incrementBufferCount()
     {
         mBufferCount++;
+
+        if(mBufferCreationLoggingEnabled)
+        {
+            mLog.debug("Buffer Created - count:" + mBufferCount +
+                " debug:" + (mDebugName != null ? mDebugName : "null") + " class:" + this.getClass());
+        }
     }
 
     /**

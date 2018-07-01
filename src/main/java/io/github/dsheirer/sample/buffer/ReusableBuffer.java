@@ -118,14 +118,6 @@ public class ReusableBuffer extends AbstractReusableBuffer
      */
     public void reloadFrom(FloatBuffer floatBuffer, long timestamp)
     {
-        if(mUserCount.get() > 0)
-        {
-            throw new IllegalStateException("New data cannot be loaded into this reusable buffer while the user count " +
-                "is above zero - user count:" + mUserCount.get());
-        }
-
-        mUserCount.set(0);
-
         resize(floatBuffer.capacity());
         floatBuffer.rewind();
         floatBuffer.get(mSamples);

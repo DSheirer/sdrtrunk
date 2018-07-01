@@ -76,7 +76,6 @@ public class RealChannelShortAdapter extends RealSampleAdapter
             }
         }
 
-        reusableBuffer.incrementUserCount();
         return reusableBuffer;
     }
 

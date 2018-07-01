@@ -76,7 +76,6 @@ public class AMDemodulator
         }
 
         complexBuffer.decrementUserCount();
-        reusableBuffer.incrementUserCount();
 
         return reusableBuffer;
     }

@@ -232,7 +232,6 @@ public class RealWaveSource extends RealSource implements IControllableFileSourc
 
                 ReusableBuffer reusableBuffer = mReusableBufferQueue.getBuffer(samples.length);
                 reusableBuffer.reloadFrom(samples, System.currentTimeMillis());
-                reusableBuffer.incrementUserCount();
 
                 mListener.receive(reusableBuffer);
             }

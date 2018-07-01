@@ -127,7 +127,6 @@ public class ReusableComplexBufferAssembler
             mBuffer.rewind();
             ReusableComplexBuffer reusableComplexBuffer = mReusableComplexBufferQueue.getBuffer(mBufferSize);
             reusableComplexBuffer.reloadFrom(mBuffer, mCurrentBufferTimestamp);
-            reusableComplexBuffer.incrementUserCount();
             mListener.receive(reusableComplexBuffer);
         }
 

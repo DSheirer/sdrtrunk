@@ -92,7 +92,6 @@ public class BufferDCFilter
         }
 
         unfilteredBuffer.decrementUserCount();
-        filteredBuffer.incrementUserCount();
 
         return filteredBuffer;
     }

@@ -48,7 +48,6 @@ public class MP3SilenceGenerator implements ISilenceGenerator
         int length = (int)(duration * 8);   //8000 Hz sample rate
         ReusableAudioPacket silencePacket = mAudioPacketQueue.getBuffer(length);
         Arrays.fill(silencePacket.getAudioSamples(), 0.0f);
-        silencePacket.incrementUserCount();
 
         List<ReusableAudioPacket> silencePackets = new ArrayList<>();
         silencePackets.add(silencePacket);

@@ -90,7 +90,6 @@ public class DCRemovalFilter
         }
 
         unfilteredBuffer.decrementUserCount();
-        filteredBuffer.incrementUserCount();
 
         return filteredBuffer;
     }

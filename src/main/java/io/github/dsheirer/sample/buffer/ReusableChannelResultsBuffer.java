@@ -148,8 +148,6 @@ public class ReusableChannelResultsBuffer extends AbstractReusableBuffer
             }
         }
 
-        channelBuffer.incrementUserCount();
-
         return channelBuffer;
     }
 

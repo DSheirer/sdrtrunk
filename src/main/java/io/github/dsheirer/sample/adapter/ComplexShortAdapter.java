@@ -61,7 +61,6 @@ public class ComplexShortAdapter extends ComplexSampleAdapter
             pointer++;
         }
 
-        reusableBuffer.incrementUserCount();
         return reusableBuffer;
     }
 

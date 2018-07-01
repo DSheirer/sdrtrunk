@@ -196,7 +196,6 @@ public class SampleGenerator
 
                 mOscillator.generateComplex(reusableComplexBuffer);
 
-                reusableComplexBuffer.incrementUserCount();
                 mComplexBufferBroadcaster.broadcast(reusableComplexBuffer);
 
                 if(mSweepUpdateInterval != 0)

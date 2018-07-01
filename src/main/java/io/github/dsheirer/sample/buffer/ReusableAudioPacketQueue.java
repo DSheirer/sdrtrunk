@@ -44,14 +44,13 @@ public class ReusableAudioPacketQueue extends AbstractReusableBufferQueue<Reusab
         if(buffer == null)
         {
             buffer = new ReusableAudioPacket(this, size);
-            incrementBufferCount();
-
             buffer.setDebugName("Owner:" + getDebugName());
-//            mLog.debug("Buffer Created - Count:" + getBufferCount() + (getDebugName() != null ? " [" + getDebugName() + "]" : ""));
+            incrementBufferCount();
         }
 
         buffer.setType(ReusableAudioPacket.Type.AUDIO);
         buffer.resize(size);
+        buffer.incrementUserCount();
 
         return buffer;
     }

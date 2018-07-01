@@ -173,7 +173,6 @@ public class ComplexFeedForwardGainControl implements ComplexSampleListener
         }
 
         buffer.decrementUserCount();
-        filteredBuffer.incrementUserCount();
 
         return filteredBuffer;
     }

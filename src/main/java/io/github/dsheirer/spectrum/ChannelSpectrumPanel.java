@@ -275,7 +275,6 @@ public class ChannelSpectrumPanel extends JPanel implements ChannelEventListener
         //processor is expecting.
         ReusableComplexBuffer reusableComplexBuffer = mReusableComplexBufferQueue.getBuffer(decimated.getSamples().length);
         reusableComplexBuffer.reloadFrom(decimated.getSamples(), System.currentTimeMillis());
-        reusableComplexBuffer.incrementUserCount();
         mDFTProcessor.receive(reusableComplexBuffer);
     }
 

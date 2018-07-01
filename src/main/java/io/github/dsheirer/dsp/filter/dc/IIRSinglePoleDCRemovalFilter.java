@@ -79,7 +79,6 @@ public class IIRSinglePoleDCRemovalFilter implements RealSampleListener
         }
 
         inputBuffer.decrementUserCount();
-        outputBuffer.incrementUserCount();
 
         return outputBuffer;
     }

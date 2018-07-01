@@ -95,7 +95,6 @@ public class HalfBandFilter
             outputSamples[x] = filter(inputSamples[x]);
         }
 
-        output.incrementUserCount();
 		input.decrementUserCount();
 
 		return output;

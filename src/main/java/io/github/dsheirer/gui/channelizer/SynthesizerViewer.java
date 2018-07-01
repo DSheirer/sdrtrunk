@@ -300,8 +300,6 @@ public class SynthesizerViewer extends JFrame
             getChannel2ControlPanel().getOscillator().generateComplex(channel2Buffer);
 
             channel1Buffer.incrementUserCount();
-            channel1Buffer.incrementUserCount();
-            channel2Buffer.incrementUserCount();
             channel2Buffer.incrementUserCount();
 
             ReusableComplexBuffer synthesizedBuffer = mSynthesizer.process(channel1Buffer, channel2Buffer);

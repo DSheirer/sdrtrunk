@@ -53,7 +53,6 @@ public class ReusableBufferAssembler implements RealSampleListener
         if(mCurrentBuffer == null)
         {
             mCurrentBuffer = mReusableBufferQueue.getBuffer(mBufferSize);
-            mCurrentBuffer.incrementUserCount();
             mBufferPointer = 0;
         }
 

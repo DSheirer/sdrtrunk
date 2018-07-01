@@ -142,7 +142,6 @@ public class FMDemodulator
         }
 
         basebandSampleBuffer.decrementUserCount();
-        demodulatedBuffer.incrementUserCount();
 
         return demodulatedBuffer;
     }

@@ -225,8 +225,6 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
             }
         }
 
-        channelResultsBuffer.incrementUserCount();
-
         //Enqueue the channel results buffer for IFFT processing and distribution on a different thread
         mIFFTProcessor.receive(channelResultsBuffer);
 

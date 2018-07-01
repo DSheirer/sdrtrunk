@@ -156,8 +156,6 @@ public class TwoChannelSynthesizerM2
         channelBuffer1.decrementUserCount();
         channelBuffer2.decrementUserCount();
 
-        synthesizedComplexBuffer.incrementUserCount();
-
         return synthesizedComplexBuffer;
     }
 

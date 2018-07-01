@@ -162,7 +162,6 @@ public class P25AudioModule extends Module implements Listener<Message>, IAudioP
                 ReusableAudioPacket audioPacket = mAudioPacketQueue.getBuffer(audio.length);
                 audioPacket.setMetadata(mMetadata.copyOf());
                 audioPacket.loadAudioFrom(audio);
-                audioPacket.incrementUserCount();
 
                 mAudioPacketListener.receive(audioPacket);
             }

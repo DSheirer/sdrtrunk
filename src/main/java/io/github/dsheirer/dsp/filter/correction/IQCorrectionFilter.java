@@ -42,7 +42,6 @@ public class IQCorrectionFilter
         float[] samples = buffer.getSamples();
 
         ReusableComplexBuffer filtered = mReusableComplexBufferQueue.getBuffer(samples.length);
-        filtered.incrementUserCount();
         float[] filteredSamples = filtered.getSamples();
 
         for(int x = 0; x < samples.length; x += 2)

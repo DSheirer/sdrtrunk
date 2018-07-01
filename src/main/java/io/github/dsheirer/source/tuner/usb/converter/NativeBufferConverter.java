@@ -49,7 +49,6 @@ public abstract class NativeBufferConverter
 
         //The reusable buffer will rewind the float buffer to the beginning
         reusableComplexBuffer.reloadFrom(floatBuffer, System.currentTimeMillis());
-        reusableComplexBuffer.incrementUserCount();
 
         return reusableComplexBuffer;
     }

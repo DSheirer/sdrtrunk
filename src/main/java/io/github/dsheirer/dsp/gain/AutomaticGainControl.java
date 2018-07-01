@@ -160,7 +160,6 @@ public class AutomaticGainControl
         }
 
         input.decrementUserCount();
-        output.incrementUserCount();
 
         return output;
     }

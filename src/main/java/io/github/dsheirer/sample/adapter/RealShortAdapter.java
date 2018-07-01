@@ -58,7 +58,6 @@ public class RealShortAdapter extends RealSampleAdapter
             pointer++;
         }
 
-        reusableBuffer.incrementUserCount();
         return reusableBuffer;
     }
 

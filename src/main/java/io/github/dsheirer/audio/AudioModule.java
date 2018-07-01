@@ -148,7 +148,6 @@ public class AudioModule extends Module implements IAudioPacketProvider, IReusab
             ReusableAudioPacket audioPacket = mAudioPacketQueue.getBuffer(highPassFiltered.getSampleCount());
             audioPacket.loadAudioFrom(highPassFiltered);
             audioPacket.setMetadata(mMetadata.copyOf());
-            audioPacket.incrementUserCount();
 
             mAudioPacketListener.receive(audioPacket);
 

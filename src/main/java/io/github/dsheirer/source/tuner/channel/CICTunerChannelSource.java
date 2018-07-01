@@ -186,7 +186,6 @@ public class CICTunerChannelSource
             float[] samples = buffer.getSamples();
 
             ReusableComplexBuffer reusableComplexBuffer = mReusableComplexBufferQueue.getBuffer(samples.length);
-            reusableComplexBuffer.incrementUserCount();
             float[] translated = reusableComplexBuffer.getSamples();
 
             /* Perform frequency translation */

@@ -29,7 +29,8 @@ public class ReusableBufferQueue extends AbstractReusableBufferQueue<ReusableBuf
 
     /**
      * Returns a reusable buffer from an internal recycling queue, or creates a new buffer if there are currently no
-     * buffers available for reuse.
+     * buffers available for reuse.  The user count is set to one and must be managed throughout the lifecycle
+     * of the buffer.
      *
      * @param size of the samples that will be loaded into the buffer
      * @return a reusable buffer
@@ -41,13 +42,12 @@ public class ReusableBufferQueue extends AbstractReusableBufferQueue<ReusableBuf
         if(buffer == null)
         {
             buffer = new ReusableBuffer(this, new float[size]);
-            incrementBufferCount();
-
             buffer.setDebugName("Owner:" + getDebugName());
-//            mLog.debug("Buffer Created - Count:" + getBufferCount() + (getDebugName() != null ? " [" + getDebugName() + "]" : ""));
+            incrementBufferCount();
         }
 
         buffer.resize(size);
+        buffer.incrementUserCount();
 
         return buffer;
     }
