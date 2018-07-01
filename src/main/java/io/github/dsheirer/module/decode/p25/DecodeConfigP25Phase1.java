@@ -33,18 +33,12 @@ public class DecodeConfigP25Phase1 extends DecodeConfiguration
 
     public DecodeConfigP25Phase1()
     {
-        setAFC(false);
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "type", namespace = "http://www.w3.org/2001/XMLSchema-instance")
     public DecoderType getDecoderType()
     {
         return DecoderType.P25_PHASE1;
-    }
-
-    public boolean supportsAFC()
-    {
-        return false;
     }
 
     @JacksonXmlProperty(isAttribute = true, localName = "modulation")
