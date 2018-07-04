@@ -17,10 +17,6 @@ package io.github.dsheirer.dsp.afsk;
 
 import io.github.dsheirer.bits.IBinarySymbolProcessor;
 import io.github.dsheirer.buffer.FloatAveragingBuffer;
-import io.github.dsheirer.dsp.filter.design.FilterDesignException;
-import io.github.dsheirer.dsp.filter.fir.FIRFilterSpecification;
-import io.github.dsheirer.dsp.filter.fir.real.RealFIRFilter2;
-import io.github.dsheirer.dsp.filter.fir.remez.RemezFIRFilterDesigner;
 import io.github.dsheirer.dsp.filter.resample.RealResampler;
 import io.github.dsheirer.dsp.mixer.IOscillator;
 import io.github.dsheirer.dsp.mixer.Oscillator;
@@ -57,45 +53,15 @@ public class AFSK1200Decoder implements Listener<ReusableBuffer>
     public static final double SPACE = 1800.0;
     public static final float TIMING_ERROR_GAIN = 1.0f / 3.0f; //Timing error adjustments over 3 symbol periods
 
-    private static float[] sBandPassFilterCoefficients;
-
-    static
-    {
-        FIRFilterSpecification specification = FIRFilterSpecification.bandPassBuilder()
-            .sampleRate(8000)
-            .stopFrequency1(1000)
-            .passFrequencyBegin(1100)
-            .passFrequencyEnd(1900)
-            .stopFrequency2(2000)
-            .stopRipple(0.000001)
-            .passRipple(0.00001)
-            .build();
-
-        try
-        {
-            RemezFIRFilterDesigner designer = new RemezFIRFilterDesigner(specification);
-
-            if(designer.isValid())
-            {
-                sBandPassFilterCoefficients = designer.getImpulseResponse();
-            }
-        }
-        catch(FilterDesignException fde)
-        {
-            mLog.error("Filter design error", fde);
-        }
-    }
-
-    private Correlator mCorrelator1200 = new Correlator(SAMPLE_RATE, MARK, AVERAGING_PERIOD, CORRELATION_PERIOD);
-    private Correlator mCorrelator1800 = new Correlator(SAMPLE_RATE, SPACE, AVERAGING_PERIOD, CORRELATION_PERIOD);
-    private float[] mCorrelationValues1200;
-    private float[] mCorrelationValues1800;
+    private Correlator mCorrelatorMark = new Correlator(SAMPLE_RATE, MARK, AVERAGING_PERIOD, CORRELATION_PERIOD);
+    private Correlator mCorrelatorSpace = new Correlator(SAMPLE_RATE, SPACE, AVERAGING_PERIOD, CORRELATION_PERIOD);
+    private float[] mCorrelationValuesMark;
+    private float[] mCorrelationValuesSpace;
 
     protected boolean mNormalOutput;
     protected float mSymbolTimingGain = TIMING_ERROR_GAIN;
     protected AFSKSampleBuffer mSampleBuffer;
     protected AFSKTimingErrorDetector mTimingErrorDetector = new AFSKTimingErrorDetector(SAMPLES_PER_SYMBOL);
-    private RealFIRFilter2 mBandPassFilter = new RealFIRFilter2(sBandPassFilterCoefficients);
     protected IBinarySymbolProcessor mBinarySymbolProcessor;
     private boolean mSampleDecision;
 
@@ -146,10 +112,6 @@ public class AFSK1200Decoder implements Listener<ReusableBuffer>
     @Override
     public void receive(ReusableBuffer buffer)
     {
-//TODO: remove the passband filter ... the correlators should be able to deal with the noise and the filters may be
-//TODO: introducing noise anyway
-//        ReusableBuffer bandPassFiltered = mBandPassFilter.filter(buffer);
-//        mResampler.resample(bandPassFiltered);
         mResampler.resample(buffer);
     }
 
@@ -186,15 +148,15 @@ public class AFSK1200Decoder implements Listener<ReusableBuffer>
         public void receive(ReusableBuffer buffer)
         {
             //Calculate correlation values against each 1200/1800 reference signal
-            mCorrelationValues1200 = mCorrelator1200.process(buffer);
-            mCorrelationValues1800 = mCorrelator1800.process(buffer);
+            mCorrelationValuesMark = mCorrelatorMark.process(buffer);
+            mCorrelationValuesSpace = mCorrelatorSpace.process(buffer);
 
             buffer.decrementUserCount();
 
-            for(int x = 0; x < mCorrelationValues1200.length; x++)
+            for(int x = 0; x < mCorrelationValuesMark.length; x++)
             {
                 //1200 = Mark (1) and 1800 = Space (0)
-                mSampleDecision = mCorrelationValues1200[x] > mCorrelationValues1800[x];
+                mSampleDecision = mCorrelationValuesMark[x] > mCorrelationValuesSpace[x];
                 mSampleBuffer.receive(mSampleDecision);
                 mTimingErrorDetector.receive(mSampleDecision);
 

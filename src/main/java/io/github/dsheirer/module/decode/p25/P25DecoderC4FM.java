@@ -164,7 +164,6 @@ public class P25DecoderC4FM extends P25Decoder
             case NOTIFICATION_FREQUENCY_CHANGE:
             case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
             case NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
-                mLog.debug("Resetting COSTAS loop for: " + sourceEvent.getEvent().name());
                 mCostasLoop.reset();
                 break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:

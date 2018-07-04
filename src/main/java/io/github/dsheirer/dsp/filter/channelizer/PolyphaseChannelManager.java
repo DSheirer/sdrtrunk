@@ -319,6 +319,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                 break;
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED:
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED:
+            case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
                 //no-op
                 break;
             default:
