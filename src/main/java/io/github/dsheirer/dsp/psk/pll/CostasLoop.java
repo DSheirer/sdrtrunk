@@ -16,6 +16,8 @@
 package io.github.dsheirer.dsp.psk.pll;
 
 import io.github.dsheirer.sample.complex.Complex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Costas Loop - phase locked loop designed to automatically synchronize to the incoming carrier frequency in order to
@@ -28,6 +30,8 @@ import io.github.dsheirer.sample.complex.Complex;
  */
 public class CostasLoop implements IPhaseLockedLoop
 {
+    private final static Logger mLog = LoggerFactory.getLogger(CostasLoop.class);
+
     public static final double TWO_PI = 2.0 * Math.PI;
 
     private Complex mCurrentVector = new Complex(0, 0);
@@ -37,7 +41,10 @@ public class CostasLoop implements IPhaseLockedLoop
     private double mDamping = Math.sqrt(2.0) / 2.0;
     private double mAlphaGain;
     private double mBetaGain;
-    private Tracking mTracking = Tracking.NORMAL;
+    private Tracking mTracking = Tracking.FASTEST;
+    private double mSymbolRate;
+    private double mSampleRate;
+    private int mCounter;
 
     /**
      * Costas Loop for tracking and correcting frequency error in a received carrier signal.
@@ -47,6 +54,8 @@ public class CostasLoop implements IPhaseLockedLoop
      */
     public CostasLoop(double sampleRate, double symbolRate)
     {
+        mSymbolRate = symbolRate;
+        mSampleRate = sampleRate;
         mMaximumLoopFrequency = TWO_PI * (symbolRate / 2.0) / sampleRate;
         updateLoopBandwidth();
     }
@@ -171,6 +180,16 @@ public class CostasLoop implements IPhaseLockedLoop
         {
             mLoopFrequency = -mMaximumLoopFrequency;
         }
+
+        //TODO: broadcast channel offset to the tuner to use in auto-adjusting tuner PPM
+//        mCounter++;
+//
+//        if(mCounter > (5 * mSymbolRate))
+//        {
+//            mCounter = 0;
+//            mLog.info("Current Costas Loop Frequency: " + mLoopFrequency + " [" +
+//                (int)(mSampleRate / TWO_PI * mLoopFrequency) + " Hz Offset] sample rate [" + mSampleRate + "]");
+//        }
     }
 
     @Override
