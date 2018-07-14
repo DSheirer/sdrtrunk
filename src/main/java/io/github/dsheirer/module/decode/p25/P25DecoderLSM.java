@@ -115,14 +115,9 @@ public class P25DecoderLSM extends P25Decoder
     {
         switch(sourceEvent.getEvent())
         {
-            case NOTIFICATION_FREQUENCY_CHANGE:
-            case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
-            case NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
-                mCostasLoop.reset();
-                break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
-                mCostasLoop.reset();
                 setSampleRate(sourceEvent.getValue().doubleValue());
+                mCostasLoop.reset();
                 break;
         }
     }

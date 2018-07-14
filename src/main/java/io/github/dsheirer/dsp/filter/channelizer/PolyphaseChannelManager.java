@@ -416,7 +416,9 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             long centerFrequency = mChannelCalculator.getCenterFrequencyForIndexes(indexes);
 
             //If the indexes size is the same then update the current processor, otherwise create a new one
-            if(channelSource.getPolyphaseChannelOutputProcessor().getInputChannelCount() == indexes.size())
+            IPolyphaseChannelOutputProcessor outputProcessor = channelSource.getPolyphaseChannelOutputProcessor();
+
+            if(outputProcessor != null && outputProcessor.getInputChannelCount() == indexes.size())
             {
                 channelSource.getPolyphaseChannelOutputProcessor().setPolyphaseChannelIndices(indexes);
                 channelSource.setFrequency(centerFrequency);

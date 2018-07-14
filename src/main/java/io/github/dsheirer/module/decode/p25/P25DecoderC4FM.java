@@ -64,7 +64,7 @@ public class P25DecoderC4FM extends P25Decoder
         mBasebandFilter = new ComplexFIRFilter2(getBasebandFilter());
 
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
-        mCostasLoop.setTracking(Tracking.FAST);
+        mCostasLoop.setTracking(Tracking.FASTEST);
         mInterpolatingSampleBuffer = new InterpolatingSampleBuffer(getSamplesPerSymbol(), SAMPLE_COUNTER_GAIN);
 
         mQPSKDemodulator = new DQPSKDecisionDirectedDemodulator(mCostasLoop, mInterpolatingSampleBuffer);
@@ -161,11 +161,6 @@ public class P25DecoderC4FM extends P25Decoder
     {
         switch(sourceEvent.getEvent())
         {
-            case NOTIFICATION_FREQUENCY_CHANGE:
-            case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
-            case NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
-                mCostasLoop.reset();
-                break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
                 mCostasLoop.reset();
                 setSampleRate(sourceEvent.getValue().doubleValue());

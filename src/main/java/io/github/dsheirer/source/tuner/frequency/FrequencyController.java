@@ -95,15 +95,18 @@ public class FrequencyController
      */
     public void setSampleRate(int sampleRate) throws SourceException
     {
-        if(!mLocked)
+        if(sampleRate != mSampleRate)
         {
-            mSampleRate = sampleRate;
+            if(!mLocked)
+            {
+                mSampleRate = sampleRate;
 
-            broadcastSampleRateChange();
-        }
-        else
-        {
-            mLog.warn("Cannot change sample rate while tuner is is LOCKED state.");
+                broadcastSampleRateChange();
+            }
+            else
+            {
+                mLog.warn("Cannot change sample rate while tuner is is LOCKED state.");
+            }
         }
     }
 
