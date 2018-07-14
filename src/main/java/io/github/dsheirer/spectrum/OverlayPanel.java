@@ -342,6 +342,10 @@ public class OverlayPanel extends JPanel implements ChannelEventListener, ISourc
         {
             minor = 1;
         }
+        if(label == 0)
+        {
+            label = 1;
+        }
 
         //Adjust the start frequency to a multiple of the minor tick spacing
         long frequency = minFrequency - (minFrequency % minor);

@@ -29,6 +29,7 @@ public class TunerEvent
         CHANNEL_COUNT,
         FREQUENCY,
         SAMPLE_RATE,
+        CLEAR_MAIN_SPECTRAL_DISPLAY,
         REQUEST_MAIN_SPECTRAL_DISPLAY,
         REQUEST_NEW_SPECTRAL_DISPLAY;
     }

@@ -165,12 +165,15 @@ public class DFTProcessor implements Listener<ReusableComplexBuffer>, ISourceEve
 
     public void start()
     {
-        //Schedule the DFT to run calculations at a fixed rate
-        int initialDelay = 0;
-        int period = (int) (1000 / mFrameRate);
+        if(mProcessorTaskHandle == null)
+        {
+            //Schedule the DFT to run calculations at a fixed rate
+            int initialDelay = 0;
+            int period = (int) (1000 / mFrameRate);
 
-        mProcessorTaskHandle = ThreadPool.SCHEDULED.scheduleAtFixedRate(new DFTCalculationTask(), initialDelay, period,
-            TimeUnit.MILLISECONDS);
+            mProcessorTaskHandle = ThreadPool.SCHEDULED.scheduleAtFixedRate(new DFTCalculationTask(), initialDelay, period,
+                TimeUnit.MILLISECONDS);
+        }
     }
 
     public void stop()
@@ -179,7 +182,13 @@ public class DFTProcessor implements Listener<ReusableComplexBuffer>, ISourceEve
         if(mProcessorTaskHandle != null)
         {
             mProcessorTaskHandle.cancel(true);
+            mProcessorTaskHandle = null;
         }
+    }
+
+    public boolean isRunning()
+    {
+        return mProcessorTaskHandle != null;
     }
 
     public void restart()

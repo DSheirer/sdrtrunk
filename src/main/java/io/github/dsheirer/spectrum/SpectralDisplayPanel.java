@@ -22,7 +22,6 @@ import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.controller.channel.ChannelUtils;
 import io.github.dsheirer.dsp.filter.Window.WindowType;
 import io.github.dsheirer.dsp.filter.smoothing.SmoothingFilter.SmoothingType;
-import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
@@ -33,6 +32,7 @@ import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.ISourceEventProcessor;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.Tuner;
+import io.github.dsheirer.source.tuner.TunerModel;
 import io.github.dsheirer.spectrum.OverlayPanel.ChannelDisplay;
 import io.github.dsheirer.spectrum.converter.ComplexDecibelConverter;
 import io.github.dsheirer.spectrum.converter.DFTResultsConverter;
@@ -71,7 +71,6 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Hashtable;
 
@@ -82,9 +81,8 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
 
     private final static Logger mLog = LoggerFactory.getLogger(SpectralDisplayPanel.class);
 
-    private static DecimalFormat sCURSOR_FORMAT = new DecimalFormat("000.00000");
-
     public static final String FFT_SIZE_PROPERTY = "spectral.display.dft.size";
+    public static final String SPECTRAL_DISPLAY_ENABLED = "spectral.display.enabled";
     public static final int NO_ZOOM = 0;
     public static final int MAX_ZOOM = 6;
 
@@ -102,6 +100,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
     private ChannelModel mChannelModel;
     private ChannelProcessingManager mChannelProcessingManager;
     private SettingsManager mSettingsManager;
+    private TunerModel mTunerModel;
     private Tuner mTuner;
 
     /**
@@ -118,11 +117,13 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
      */
     public SpectralDisplayPanel(ChannelModel channelModel,
                                 ChannelProcessingManager channelProcessingManager,
-                                SettingsManager settingsManager)
+                                SettingsManager settingsManager,
+                                TunerModel tunerModel)
     {
         mChannelModel = channelModel;
         mChannelProcessingManager = channelProcessingManager;
         mSettingsManager = settingsManager;
+        mTunerModel = tunerModel;
 
         mSpectrumPanel = new SpectrumPanel(mSettingsManager);
         mOverlayPanel = new OverlayPanel(mSettingsManager, mChannelModel);
@@ -428,6 +429,8 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
 
         mDFTProcessor.clearBuffer();
 
+        mDFTProcessor.start();
+
         mTuner = tuner;
 
         if(mTuner != null)
@@ -462,6 +465,11 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
             mTuner.getTunerController().removeBufferListener(mDFTProcessor);
             mTuner = null;
         }
+
+        mDFTProcessor.stop();
+        mDFTProcessor.clearBuffer();
+        mSpectrumPanel.clearSpectrum();
+        mWaterfallPanel.clearWaterfall();
     }
 
     /**
@@ -614,6 +622,7 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
                 if(event.getComponent() == mWaterfallPanel)
                 {
                     contextMenu.add(new PauseItem(mWaterfallPanel, "Pause"));
+                    contextMenu.add(new JSeparator());
                 }
 
                 long frequency =
@@ -642,22 +651,6 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
                     }
 
                 }
-
-//                JMenu frequencyMenu = new JMenu(
-//                    sCURSOR_FORMAT.format((float) frequency / 1000000.0f));
-//
-//                JMenu decoderMenu = new JMenu("Add Decoder");
-//
-//                for(DecoderType type : DecoderType.getPrimaryDecoders())
-//                {
-//                    decoderMenu.add(new DecoderItem(type, frequency));
-//                }
-//
-//                frequencyMenu.add(decoderMenu);
-//
-//                contextMenu.add(frequencyMenu);
-//
-//                contextMenu.add(new JSeparator());
 
                 /**
                  * Color Menus
@@ -791,6 +784,27 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
 
                 contextMenu.add(zoomMenu);
 
+                if(mTuner != null)
+                {
+                    contextMenu.add(new JSeparator());
+                    contextMenu.add(new ClearTunerMenuItem(SpectralDisplayPanel.this));
+                }
+
+                boolean separatorAdded = false;
+
+                for(Tuner tuner: mTunerModel.getTuners())
+                {
+                    if(mTuner == null || mTuner != tuner)
+                    {
+                        if(!separatorAdded)
+                        {
+                            contextMenu.add(new JSeparator());
+                            separatorAdded = true;
+                        }
+
+                        contextMenu.add(new ShowTunerMenuItem(SpectralDisplayPanel.this, tuner));
+                    }
+                }
 
                 if(contextMenu != null)
                 {
@@ -916,36 +930,6 @@ public class SpectralDisplayPanel extends JPanel implements Listener<ReusableCom
                             mOverlayPanel.setChannelDisplay(mChannelDisplay);
                         }
                     });
-                }
-            });
-        }
-    }
-
-    /**
-     * Context menu item to provide one-click access to starting a channel
-     * processing with the selected decoder
-     */
-    public class DecoderItem extends JMenuItem
-    {
-        private static final long serialVersionUID = 1L;
-
-        private ChannelModel mChannelModel;
-        private long mFrequency;
-        private DecoderType mDecoder;
-
-        public DecoderItem(DecoderType type, long frequency)
-        {
-            super(type.getDisplayString());
-
-            mFrequency = frequency;
-            mDecoder = type;
-
-            addActionListener(new ActionListener()
-            {
-                @Override
-                public void actionPerformed(ActionEvent e)
-                {
-                    mChannelModel.createChannel(mDecoder, mFrequency);
                 }
             });
         }

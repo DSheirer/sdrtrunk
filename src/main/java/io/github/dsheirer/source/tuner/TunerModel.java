@@ -1,5 +1,6 @@
 package io.github.dsheirer.source.tuner;
 
+import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.Source;
 import io.github.dsheirer.source.SourceException;
@@ -9,6 +10,7 @@ import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import io.github.dsheirer.source.tuner.channel.TunerChannelSource;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
+import io.github.dsheirer.spectrum.SpectralDisplayPanel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -177,10 +179,16 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
      */
     public void requestFirstTunerDisplay()
     {
-        if(mTuners.size() > 0)
+        SystemProperties properties = SystemProperties.getInstance();
+        boolean enabled = properties.get(SpectralDisplayPanel.SPECTRAL_DISPLAY_ENABLED, true);
+
+        if(enabled && mTuners.size() > 0)
         {
-            broadcast(new TunerEvent(mTuners.get(0),
-                Event.REQUEST_MAIN_SPECTRAL_DISPLAY));
+            broadcast(new TunerEvent(mTuners.get(0), Event.REQUEST_MAIN_SPECTRAL_DISPLAY));
+        }
+        else
+        {
+            broadcast(new TunerEvent(null, Event.CLEAR_MAIN_SPECTRAL_DISPLAY));
         }
     }
 
