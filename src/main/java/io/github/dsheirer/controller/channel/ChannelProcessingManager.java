@@ -364,6 +364,22 @@ public class ChannelProcessingManager implements ChannelEventListener
     }
 
     /**
+     * Stops all currently processing channels to prepare for shutdown.
+     */
+    public void shutdown()
+    {
+        mLog.debug("Stopping Channels ...");
+        for(Channel channel: mChannelModel.getChannels())
+        {
+            if(channel.isProcessing())
+            {
+                mLog.debug("Stopping channel: " + channel.toString());
+                stopProcessing(channel, true);
+            }
+        }
+    }
+
+    /**
      * Adds a message listener that will be added to all channels to receive
      * any messages.
      */

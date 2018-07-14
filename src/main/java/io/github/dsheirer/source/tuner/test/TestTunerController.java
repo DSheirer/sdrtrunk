@@ -66,6 +66,12 @@ public class TestTunerController extends TunerController
     }
 
     @Override
+    public void dispose()
+    {
+        //no-op
+    }
+
+    @Override
     public void addBufferListener(Listener<ReusableComplexBuffer> listener)
     {
         mSampleGenerator.addListener(listener);

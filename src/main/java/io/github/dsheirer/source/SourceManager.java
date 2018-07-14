@@ -44,6 +44,15 @@ public class SourceManager
         //in via the constructor.  Perform loading outside of this class.
     }
 
+    /**
+     * Prepare for shutdown and release all tuners
+     */
+    public void shutdown()
+    {
+        mTunerManager.releaseTuners();
+        mTunerManager.dispose();
+    }
+
     public MixerManager getMixerManager()
     {
         return mMixerManager;

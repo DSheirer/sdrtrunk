@@ -1,19 +1,16 @@
 /*******************************************************************************
- * sdrtrunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * sdr-trunk
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
+ * later version.
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * This program is distributed in the hope that it will be useful,  but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ * You should have received a copy of the GNU General Public License  along with this program.
+ * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
 package io.github.dsheirer.source.tuner;
@@ -74,7 +71,15 @@ public class TunerManager
      */
     public void dispose()
     {
-        LibUsb.exit(null);
+        mLog.info("Shutting down LibUsb ...");
+        try
+        {
+            LibUsb.exit(null);
+        }
+        catch(Exception e)
+        {
+            mLog.error("Error shutting down LibUsb", e);
+        }
     }
 
     /**
@@ -215,6 +220,22 @@ public class TunerManager
         }
 
         return new TunerInitStatus(null, "Unknown Device");
+    }
+
+    /**
+     * Releases all tuners in preparation for shutdown
+     */
+    public void releaseTuners()
+    {
+        mLog.info("Releasing [" + mTunerModel.getTuners().size() + "] tuner(s) ...");
+        Tuner tuner = mTunerModel.getTuner(0);
+
+        while(tuner != null)
+        {
+            mTunerModel.removeTuner(tuner);
+            tuner.dispose();
+            tuner = mTunerModel.getTuner(0);
+        }
     }
 
     private TunerInitStatus initAirspyTuner(Device device,

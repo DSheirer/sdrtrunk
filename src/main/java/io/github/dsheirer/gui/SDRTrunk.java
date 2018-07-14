@@ -69,6 +69,8 @@ import java.awt.Robot;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.FileSystems;
@@ -88,6 +90,7 @@ public class SDRTrunk implements Listener<TunerEvent>
     private ControllerPanel mControllerPanel;
     private ChannelModel mChannelModel;
     private ChannelProcessingManager mChannelProcessingManager;
+    private SourceManager mSourceManager;
     private SettingsManager mSettingsManager;
     private SpectralDisplayPanel mSpectralPanel;
     private JFrame mMainGui = new JFrame();
@@ -141,10 +144,10 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         RecorderManager recorderManager = new RecorderManager();
 
-        SourceManager sourceManager = new SourceManager(tunerModel, mSettingsManager);
+        mSourceManager = new SourceManager(tunerModel, mSettingsManager);
 
         mChannelProcessingManager = new ChannelProcessingManager(mChannelModel, channelMapModel, aliasModel,
-            eventLogManager, recorderManager, sourceManager);
+            eventLogManager, recorderManager, mSourceManager);
         mChannelProcessingManager.addAudioPacketListener(recorderManager);
 
         mChannelModel.addListener(mChannelProcessingManager);
@@ -156,7 +159,7 @@ public class SDRTrunk implements Listener<TunerEvent>
         AliasActionManager aliasActionManager = new AliasActionManager();
         mChannelProcessingManager.addMessageListener(aliasActionManager);
 
-        AudioManager audioManager = new AudioManager(sourceManager.getMixerManager());
+        AudioManager audioManager = new AudioManager(mSourceManager.getMixerManager());
         mChannelProcessingManager.addAudioPacketListener(audioManager);
 
         mBroadcastModel = new BroadcastModel(mIconManager);
@@ -168,13 +171,13 @@ public class SDRTrunk implements Listener<TunerEvent>
 
         mControllerPanel = new ControllerPanel(audioManager, aliasModel, mBroadcastModel,
             mChannelModel, channelMapModel, mChannelProcessingManager, mIconManager,
-            mapService, mSettingsManager, sourceManager, tunerModel);
+            mapService, mSettingsManager, mSourceManager, tunerModel);
 
         mSpectralPanel = new SpectralDisplayPanel(mChannelModel,
             mChannelProcessingManager, mSettingsManager);
 
         TunerSpectralDisplayManager tunerSpectralDisplayManager = new TunerSpectralDisplayManager(mSpectralPanel,
-                mChannelModel, mChannelProcessingManager, mSettingsManager);
+            mChannelModel, mChannelProcessingManager, mSettingsManager);
         tunerModel.addListener(tunerSpectralDisplayManager);
         tunerModel.addListener(this);
 
@@ -224,14 +227,6 @@ public class SDRTrunk implements Listener<TunerEvent>
     }
 
     /**
-     * Launch the application.
-     */
-    public static void main(String[] args)
-    {
-        new SDRTrunk();
-    }
-
-    /**
      * Initialize the contents of the frame.
      */
     private void initGUI()
@@ -243,9 +238,10 @@ public class SDRTrunk implements Listener<TunerEvent>
          */
         mTitle = SystemProperties.getInstance().getApplicationName();
         mMainGui.setTitle(mTitle);
-        mMainGui.setSize(new Dimension(1280,800));
+        mMainGui.setSize(new Dimension(1280, 800));
         mMainGui.setLocationRelativeTo(null);
         mMainGui.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        mMainGui.addWindowListener(new ShutdownMonitor());
 
         //Set preferred sizes to influence the split
         mSpectralPanel.setPreferredSize(new Dimension(1280, 300));
@@ -318,6 +314,7 @@ public class SDRTrunk implements Listener<TunerEvent>
             {
                 public void actionPerformed(ActionEvent event)
                 {
+                    processShutdown();
                     System.exit(0);
                 }
             }
@@ -398,6 +395,21 @@ public class SDRTrunk implements Listener<TunerEvent>
         });
 
         menuBar.add(screenCaptureItem);
+    }
+
+    /**
+     * Performs shutdown operations
+     */
+    private void processShutdown()
+    {
+        mLog.debug("Application shutdown started ...");
+        mLog.debug("Stopping channels ...");
+        mChannelProcessingManager.shutdown();
+        mLog.debug("Stopping spectral display ...");
+        mSpectralPanel.clearTuner();
+        mLog.debug("Releasing tuners ...");
+        mSourceManager.shutdown();
+        mLog.debug("Shutdown complete.");
     }
 
     /**
@@ -520,6 +532,15 @@ public class SDRTrunk implements Listener<TunerEvent>
         }
     }
 
+    public class ShutdownMonitor extends WindowAdapter
+    {
+        @Override
+        public void windowClosing(WindowEvent e)
+        {
+            processShutdown();
+        }
+    }
+
     public class BroadcastStatusVisibleMenuItem extends JCheckBoxMenuItem
     {
         private ControllerPanel mControllerPanel;
@@ -542,5 +563,13 @@ public class SDRTrunk implements Listener<TunerEvent>
                 }
             });
         }
+    }
+
+    /**
+     * Launch the application.
+     */
+    public static void main(String[] args)
+    {
+        new SDRTrunk();
     }
 }

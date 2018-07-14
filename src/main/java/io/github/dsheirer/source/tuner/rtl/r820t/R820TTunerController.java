@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.Device;
 import org.usb4java.DeviceDescriptor;
+import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 
 import javax.swing.JPanel;
@@ -257,6 +258,26 @@ public class R820TTunerController extends RTL2832TunerController
         catch(UsbException e)
         {
             throw new SourceException("error during init()", e);
+        }
+    }
+
+    @Override
+    public void dispose()
+    {
+        mLog.info("Releasing R820T Tuner");
+
+        if(mDeviceHandle != null)
+        {
+            try
+            {
+                LibUsb.close(mDeviceHandle);
+            }
+            catch(Exception e)
+            {
+                mLog.error("error while closing device handle", e);
+            }
+
+            mDeviceHandle = null;
         }
     }
 

@@ -62,6 +62,11 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     }
 
     /**
+     * Dispose of this tuner controller and prepare for shutdown.
+     */
+    public abstract void dispose();
+
+    /**
      * Implements the ISourceEventListener interface to receive requests from sample consumers
      */
     @Override
