@@ -40,10 +40,13 @@ import io.github.dsheirer.record.RecorderManager;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.settings.SettingsManager;
 import io.github.dsheirer.source.SourceManager;
+import io.github.dsheirer.source.tuner.Tuner;
 import io.github.dsheirer.source.tuner.TunerEvent;
 import io.github.dsheirer.source.tuner.TunerModel;
 import io.github.dsheirer.source.tuner.TunerSpectralDisplayManager;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
+import io.github.dsheirer.spectrum.ClearTunerMenuItem;
+import io.github.dsheirer.spectrum.ShowTunerMenuItem;
 import io.github.dsheirer.spectrum.SpectralDisplayPanel;
 import io.github.dsheirer.util.ThreadPool;
 import io.github.dsheirer.util.TimeStamp;
@@ -174,10 +177,10 @@ public class SDRTrunk implements Listener<TunerEvent>
             mapService, mSettingsManager, mSourceManager, tunerModel);
 
         mSpectralPanel = new SpectralDisplayPanel(mChannelModel,
-            mChannelProcessingManager, mSettingsManager);
+            mChannelProcessingManager, mSettingsManager, tunerModel);
 
         TunerSpectralDisplayManager tunerSpectralDisplayManager = new TunerSpectralDisplayManager(mSpectralPanel,
-            mChannelModel, mChannelProcessingManager, mSettingsManager);
+            mChannelModel, mChannelProcessingManager, mSettingsManager, tunerModel);
         tunerModel.addListener(tunerSpectralDisplayManager);
         tunerModel.addListener(this);
 
@@ -325,6 +328,15 @@ public class SDRTrunk implements Listener<TunerEvent>
         JMenu viewMenu = new JMenu("View");
 
         viewMenu.add(new BroadcastStatusVisibleMenuItem(mControllerPanel));
+        viewMenu.add(new JSeparator());
+
+        for(Tuner tuner: mSourceManager.getTunerModel().getTuners())
+        {
+            viewMenu.add(new ShowTunerMenuItem(mSpectralPanel, tuner));
+        }
+
+        viewMenu.add(new JSeparator());
+        viewMenu.add(new ClearTunerMenuItem(mSpectralPanel));
 
         menuBar.add(viewMenu);
 

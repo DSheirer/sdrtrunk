@@ -327,8 +327,7 @@ public class SpectrumPanel extends JPanel implements DFTResultsListener, Setting
      */
     public void clearSpectrum()
     {
-        mDisplayFFTBins = null;
-
+        Arrays.fill(mDisplayFFTBins, 0.0f);
         repaint();
     }
 
