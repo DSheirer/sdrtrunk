@@ -37,10 +37,6 @@ public class HackRFTuner extends Tuner
         return (HackRFTunerController)getTunerController();
     }
 
-    public void dispose()
-    {
-    }
-
     @Override
     public TunerClass getTunerClass()
     {

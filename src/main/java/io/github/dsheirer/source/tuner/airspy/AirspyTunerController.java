@@ -180,6 +180,24 @@ public class AirspyTunerController extends USBTunerController
             USB_TRANSFER_BUFFER_SIZE);
     }
 
+    @Override
+    public void dispose()
+    {
+        if(mDeviceHandle != null)
+        {
+            mLog.info("Releasing Airspy Tuner - " + getDeviceInfo().getSerialNumber());
+            try
+            {
+                LibUsb.close(mDeviceHandle);
+            }
+            catch(Exception e)
+            {
+                mLog.error("error while closing device handle", e);
+            }
+
+            mDeviceHandle = null;
+        }
+    }
 
     @Override
     protected USBTransferProcessor getUSBTransferProcessor()

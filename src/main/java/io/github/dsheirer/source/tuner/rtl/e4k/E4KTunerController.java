@@ -256,6 +256,26 @@ public class E4KTunerController extends RTL2832TunerController
             USB_TRANSFER_BUFFER_SIZE);
     }
 
+    @Override
+    public void dispose()
+    {
+        if(mDeviceHandle != null)
+        {
+            mLog.info("Releasing E4000 Tuner");
+
+            try
+            {
+                LibUsb.close(mDeviceHandle);
+            }
+            catch(Exception e)
+            {
+                mLog.error("error while closing device handle", e);
+            }
+
+            mDeviceHandle = null;
+        }
+    }
+
     /**
      * Sets the IF filters (mixer, channel and RC) to the correct filter setting
      * for the selected bandwidth/sample rate

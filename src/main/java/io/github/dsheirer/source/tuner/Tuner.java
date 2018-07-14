@@ -98,8 +98,12 @@ public abstract class Tuner implements ISourceEventProcessor
         return mName;
     }
 
+    /**
+     * Dispose and prepare for shutdown
+     */
     public void dispose()
     {
+        getTunerController().dispose();
     }
 
     /**

@@ -38,10 +38,6 @@ public class RTL2832Tuner extends Tuner
         mTunerClass = tunerClass;
     }
 
-    public void dispose()
-    {
-    }
-
     public RTL2832TunerController getController()
     {
         return (RTL2832TunerController)getTunerController();
