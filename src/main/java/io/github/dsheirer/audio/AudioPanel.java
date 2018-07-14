@@ -53,8 +53,8 @@ public class AudioPanel extends JPanel implements Listener<AudioEvent>
 
     private static final Logger mLog = LoggerFactory.getLogger(AudioPanel.class);
 
-    private static ImageIcon MUTED_ICON = IconManager.getScaledIcon("/images/audio_muted.png", 20);
-    private static ImageIcon UNMUTED_ICON = IconManager.getScaledIcon("/images/audio_unmuted.png", 20);
+    private static ImageIcon MUTED_ICON = IconManager.getScaledIcon("images/audio_muted.png", 20);
+    private static ImageIcon UNMUTED_ICON = IconManager.getScaledIcon("images/audio_unmuted.png", 20);
 
     private IconManager mIconManager;
     private SettingsManager mSettingsManager;
