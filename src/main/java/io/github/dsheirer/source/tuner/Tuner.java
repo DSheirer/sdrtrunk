@@ -65,6 +65,10 @@ public abstract class Tuner implements ISourceEventProcessor
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
                 broadcast(new TunerEvent(Tuner.this, Event.SAMPLE_RATE));
                 break;
+            case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED:
+            case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED:
+                broadcast(new TunerEvent(Tuner.this, Event.LOCK_STATE_CHANGE));
+                break;
             default:
                 break;
         }

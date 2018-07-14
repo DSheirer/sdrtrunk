@@ -22,8 +22,8 @@ import io.github.dsheirer.source.SourceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class FrequencyController
 {
@@ -38,7 +38,7 @@ public class FrequencyController
     private double mSampleRate = 0.0d;
     private boolean mLocked = false;
 
-    private List<ISourceEventProcessor> mProcessors = new ArrayList<>();
+    private List<ISourceEventProcessor> mProcessors = new CopyOnWriteArrayList<>();
 
     public FrequencyController(Tunable tunable, long minFrequency, long maxFrequency, double frequencyCorrection)
     {
@@ -95,9 +95,16 @@ public class FrequencyController
      */
     public void setSampleRate(int sampleRate) throws SourceException
     {
-        mSampleRate = sampleRate;
+        if(!mLocked)
+        {
+            mSampleRate = sampleRate;
 
-        broadcastSampleRateChange();
+            broadcastSampleRateChange();
+        }
+        else
+        {
+            mLog.warn("Cannot change sample rate while tuner is is LOCKED state.");
+        }
     }
 
     /**
@@ -106,6 +113,17 @@ public class FrequencyController
     public double getSampleRate()
     {
         return mSampleRate;
+    }
+
+    /**
+     * Indicates if the specified frequency can be tuned (ie is within min/max frequency) by this controller.
+     *
+     * @param frequency to evaluate
+     * @return true if the frequency falls within the tuning range of this controller
+     */
+    public boolean canTune(long frequency)
+    {
+        return getMinimumFrequency() <= frequency && frequency <= getMaximumFrequency();
     }
 
     /**
@@ -126,17 +144,6 @@ public class FrequencyController
     public void setFrequency(long frequency) throws SourceException
     {
         setFrequency(frequency, true);
-    }
-
-    /**
-     * Indicates if the specified frequency can be tuned (ie is within min/max frequency) by this controller.
-     *
-     * @param frequency to evaluate
-     * @return true if the frequency falls within the tuning range of this controller
-     */
-    public boolean canTune(long frequency)
-    {
-        return getMinimumFrequency() <= frequency && frequency <= getMaximumFrequency();
     }
 
     /**

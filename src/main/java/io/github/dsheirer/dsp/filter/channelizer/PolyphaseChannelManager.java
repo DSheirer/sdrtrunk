@@ -108,8 +108,6 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
 
         mBufferProcessor = new ContinuousBufferProcessor(200, 50);
         mBufferProcessor.setListener(mBufferSourceEventMonitor);
-
-        updateChannelizerSampleRate(sampleRate);
     }
 
     /**
@@ -229,6 +227,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             default:
                 //TODO: create output processor for greater than 2 input channels
                 mLog.error("Request to create an output processor for unexpected channel index size:" + indexes.size());
+                mLog.info(mChannelCalculator.toString());
                 return null;
         }
     }
@@ -244,6 +243,8 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
         synchronized(mBufferProcessor)
         {
             //Note: the polyphase channel source has already been added to the mChannelSources in getChannel() method
+
+            checkChannelizerConfiguration();
 
             mPolyphaseChannelizer.addChannel(channelSource);
             mSourceEventBroadcaster.broadcast(SourceEvent.channelCountChange(getTunerChannelCount()));
@@ -312,10 +313,9 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                 break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
                 //Update channel calculator immediately so that channels can be allocated
-                mChannelCalculator.setSampleRate(sourceEvent.getValue().doubleValue());
-
-                //Defer channelizer configuration changes to be handled on the buffer processor thread
-                mBufferSourceEventMonitor.receive(sourceEvent);
+                double sampleRate = sourceEvent.getValue().doubleValue();
+                int channelCount = (int)Math.ceil(sampleRate / MINIMUM_CHANNEL_BANDWIDTH);
+                mChannelCalculator.setRates(sampleRate, channelCount);
                 break;
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED:
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED:
@@ -325,7 +325,6 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             default:
                 mLog.info("Unrecognized source event: " + sourceEvent.toString());
                 break;
-
         }
     }
 
@@ -335,40 +334,39 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
      * Note: this method should only be invoked on the mBufferProcessor thread or prior to starting the mBufferProcessor.
      * Sample rate source events will normally arrive via the incoming complex buffer stream from the mBufferProcessor
      * and will be handled as they arrive.
-     *
-     * @param sampleRate to use for the channelizer
      */
-    private void updateChannelizerSampleRate(double sampleRate)
+    private void checkChannelizerConfiguration()
     {
-        if(mPolyphaseChannelizer == null || Math.abs(mPolyphaseChannelizer.getSampleRate() - sampleRate) > 0.5)
+        //Channel calculator is always in sync with the tuner's current sample rate
+        double tunerSampleRate = mChannelCalculator.getSampleRate();
+
+        //If the channelizer is not setup, or setup to the wrong sample rate, recreate it
+        if(mPolyphaseChannelizer == null || Math.abs(mPolyphaseChannelizer.getSampleRate() - tunerSampleRate) > 0.5)
         {
+            if(mPolyphaseChannelizer != null && mPolyphaseChannelizer.getRegisteredChannelCount() > 0)
+            {
+                throw new IllegalStateException("Polyphase Channelizer cannot be changed to a new sample rate while " +
+                    "channels are currently sourced.  Ensure you remove all tuner channels before changing tuner " +
+                    "sample rate.  Current channel count:" +
+                    (mPolyphaseChannelizer != null ? mPolyphaseChannelizer.getRegisteredChannelCount() : "0"));
+            }
+
             try
             {
-                if(mPolyphaseChannelizer == null)
-                {
-                    mPolyphaseChannelizer = new ComplexPolyphaseChannelizerM2(sampleRate,
-                        POLYPHASE_CHANNELIZER_TAPS_PER_CHANNEL);
-                }
-                else
-                {
-                    mPolyphaseChannelizer.setSampleRate(sampleRate);
-                }
+                mPolyphaseChannelizer = new ComplexPolyphaseChannelizerM2(tunerSampleRate,
+                    POLYPHASE_CHANNELIZER_TAPS_PER_CHANNEL);
             }
             catch(IllegalArgumentException iae)
             {
-                mLog.error("Could not create polyphase channelizer for sample rate [" + sampleRate + "]", iae);
+                mLog.error("Could not create polyphase channelizer for sample rate [" + tunerSampleRate + "]", iae);
             }
             catch(FilterDesignException fde)
             {
-                mLog.error("Could not create filter for polyphase channelizer for sample rate [" + sampleRate + "]", fde);
+                mLog.error("Could not create filter for polyphase channelizer for sample rate [" + tunerSampleRate + "]", fde);
             }
 
-            //Clear the previous channel synthesis filters so they can be recreated for the new channel sample rate
+            //Clear any previous channel synthesis filters so they can be recreated for the new channel sample rate
             mOutputProcessorFilters.clear();
-
-            //Broadcast the new channel sample rate
-            double updatedChannelSampleRate = mChannelCalculator.getChannelSampleRate();
-            updateOutputProcessors(SourceEvent.sampleRateChange(updatedChannelSampleRate, "Channelizer Sample Rate Update"));
         }
     }
 
@@ -599,9 +597,6 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                         case NOTIFICATION_FREQUENCY_CHANGE:
                             //Don't send the tuner's frequency change event down to the channels - it would cause chaos
                             updateOutputProcessors(null);
-                            break;
-                        case NOTIFICATION_SAMPLE_RATE_CHANGE:
-                            updateChannelizerSampleRate(queuedSourceEvent.getValue().intValue());
                             break;
                     }
 

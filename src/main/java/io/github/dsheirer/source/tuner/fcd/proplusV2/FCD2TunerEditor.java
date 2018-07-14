@@ -76,12 +76,6 @@ public class FCD2TunerEditor extends TunerConfigurationEditor
         return null;
     }
 
-    @Override
-    public void setSampleRateControl(boolean enabled)
-    {
-        //no-op
-    }
-
     private void init()
     {
         setLayout(new MigLayout("fill,wrap 4", "[right][grow,fill][right][grow,fill]",

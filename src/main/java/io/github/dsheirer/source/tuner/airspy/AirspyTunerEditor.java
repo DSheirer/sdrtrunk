@@ -43,7 +43,6 @@ import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.usb.UsbException;
-import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
@@ -55,8 +54,7 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
 {
     private static final long serialVersionUID = 1L;
 
-    private final static Logger mLog =
-        LoggerFactory.getLogger(AirspyTunerEditor.class);
+    private final static Logger mLog = LoggerFactory.getLogger(AirspyTunerEditor.class);
 
     private JTextField mConfigurationName;
     private JButton mTunerInfo;
@@ -101,24 +99,6 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
         }
 
         return null;
-    }
-
-    /**
-     * Updates the enabled state of the sample rate combo control.
-     *
-     * @param enabled state for the sample rate control
-     */
-    @Override
-    public void setSampleRateControl(boolean enabled)
-    {
-        EventQueue.invokeLater(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                mSampleRateCombo.setEnabled(enabled);
-            }
-        });
     }
 
     private void init()
@@ -617,6 +597,21 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
     }
 
     /**
+     * Updates the sample rate tooltip according to the tuner controller's lock state.
+     */
+    private void updateSampleRateToolTip()
+    {
+        if(mController.isLocked())
+        {
+            mSampleRateCombo.setToolTipText("Sample Rate is locked.  Disable decoding channels to unlock.");
+        }
+        else
+        {
+            mSampleRateCombo.setToolTipText("Select a sample rate for the tuner");
+        }
+    }
+
+    /**
      * Sets all controls to the argument enabled state
      */
     private void setControlsEnabled(boolean enabled)
@@ -631,7 +626,13 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
             mTunerInfo.setEnabled(enabled);
         }
 
-        if(mSampleRateCombo.isEnabled() != enabled)
+        updateSampleRateToolTip();
+
+        if(mController.isLocked())
+        {
+            mSampleRateCombo.setEnabled(false);
+        }
+        else if(mSampleRateCombo.isEnabled() != enabled)
         {
             mSampleRateCombo.setEnabled(enabled);
         }

@@ -45,7 +45,6 @@ import javax.swing.SwingConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.usb.UsbException;
-import java.awt.EventQueue;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.FocusEvent;
@@ -86,19 +85,6 @@ public class E4KTunerEditor extends TunerConfigurationEditor
         }
 
         return null;
-    }
-
-    @Override
-    public void setSampleRateControl(boolean enabled)
-    {
-        EventQueue.invokeLater(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                mComboSampleRate.setEnabled(enabled);
-            }
-        });
     }
 
     private void init()
@@ -355,6 +341,21 @@ public class E4KTunerEditor extends TunerConfigurationEditor
     }
 
     /**
+     * Updates the sample rate tooltip according to the tuner controller's lock state.
+     */
+    private void updateSampleRateToolTip()
+    {
+        if(mController.isLocked())
+        {
+            mComboSampleRate.setToolTipText("Sample Rate is locked.  Disable decoding channels to unlock.");
+        }
+        else
+        {
+            mComboSampleRate.setToolTipText("Select a sample rate for the tuner");
+        }
+    }
+
+    /**
      * Sets each of the tuner configuration controls to the enabled argument state
      */
     private void setControlsEnabled(boolean enabled)
@@ -374,7 +375,13 @@ public class E4KTunerEditor extends TunerConfigurationEditor
             mFrequencyCorrection.setEnabled(enabled);
         }
 
-        if(mComboSampleRate.isEnabled() != enabled)
+        updateSampleRateToolTip();
+
+        if(mController.isLocked())
+        {
+            mComboSampleRate.setEnabled(false);
+        }
+        else if(mComboSampleRate.isEnabled() != enabled)
         {
             mComboSampleRate.setEnabled(enabled);
         }

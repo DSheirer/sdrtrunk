@@ -80,8 +80,7 @@ public class AirspyTunerController extends USBTunerController
     public static final long FREQUENCY_MAX = 1800000000l;
     public static final long FREQUENCY_DEFAULT = 101100000;
     public static final double USABLE_BANDWIDTH_PERCENT = 0.90;
-    public static final AirspySampleRate DEFAULT_SAMPLE_RATE =
-        new AirspySampleRate(0, 10000000, "10.00 MHz");
+    public static final AirspySampleRate DEFAULT_SAMPLE_RATE = new AirspySampleRate(0, 10000000, "10.00 MHz");
 
     private static final long USB_TIMEOUT_MS = 2000l; //milliseconds
     private static final byte USB_INTERFACE = (byte) 0x0;
@@ -168,7 +167,7 @@ public class AirspyTunerController extends USBTunerController
 
         try
         {
-            setSampleRate(DEFAULT_SAMPLE_RATE);
+            setSampleRate(mSampleRates.get(0));
         }
         catch(IllegalArgumentException | LibUsbException | UsbException e)
         {
@@ -292,8 +291,7 @@ public class AirspyTunerController extends USBTunerController
             }
             catch(UsbException e)
             {
-                throw new SourceException("Couldn't set sample rate [" +
-                    rate.toString() + "]", e);
+                throw new SourceException("Couldn't set sample rate [" + rate.toString() + "]", e);
             }
 
             try
@@ -314,8 +312,7 @@ public class AirspyTunerController extends USBTunerController
             }
             catch(Exception e)
             {
-                throw new SourceException("Couldn't apply gain settings from "
-                    + "airspy config", e);
+                throw new SourceException("Couldn't apply gain settings from airspy config", e);
             }
 
             try
@@ -389,8 +386,7 @@ public class AirspyTunerController extends USBTunerController
      *                                  is not supported by the current firmware
      * @throws UsbException             if there was a USB error
      */
-    public void setSampleRate(AirspySampleRate rate) throws
-        LibUsbException, UsbException, SourceException
+    public void setSampleRate(AirspySampleRate rate) throws LibUsbException, UsbException, SourceException
     {
         if(rate.getRate() != mSampleRate)
         {
@@ -398,8 +394,7 @@ public class AirspyTunerController extends USBTunerController
 
             if(result != 1)
             {
-                throw new UsbException("Error setting sample rate [" +
-                    rate + "] rate - return value [" + result + "]");
+                throw new UsbException("Error setting sample rate [" + rate + "] rate - return value [" + result + "]");
             }
             else
             {
@@ -607,8 +602,7 @@ public class AirspyTunerController extends USBTunerController
      * Queries the device for available sample rates.  Will always provide at
      * least the default 10 MHz sample rate.
      */
-    private void determineAvailableSampleRates()
-        throws LibUsbException, UsbException
+    private void determineAvailableSampleRates() throws LibUsbException, UsbException
     {
         mSampleRates.clear();
 
@@ -629,7 +623,6 @@ public class AirspyTunerController extends USBTunerController
                 for(int x = 0; x < count; x++)
                 {
                     int rate = EndianUtils.readSwappedInteger(rawRates, (x * 4));
-
                     mSampleRates.add(new AirspySampleRate(x, rate, formatSampleRate(rate)));
                 }
             }

@@ -68,9 +68,10 @@ public abstract class AbstractComplexPolyphaseChannelizer implements Listener<Re
      * Sets the input sample rate for for this channelizer
      * @param sampleRate in hertz
      */
-    public void setSampleRate(double sampleRate)
+    public void setRates(double sampleRate, int channelCount)
     {
         mSampleRate = sampleRate;
+        mChannelCount = channelCount;
         mChannelSampleRate = mSampleRate / (double)mChannelCount;
     }
 
