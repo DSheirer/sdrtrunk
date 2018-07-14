@@ -32,12 +32,4 @@ public abstract class TunerConfigurationEditor extends Editor<TunerConfiguration
     {
         return mTunerConfigurationModel;
     }
-
-    /**
-     * Sets the state of the sample rate editor control.  When enabled, users are allowed to change the sample rate
-     * of the tuner.  When disabled, user controls should NOT allow sample rate changes.
-     *
-     * @param enabled state for the sample rate control
-     */
-    public abstract void setSampleRateControl(boolean enabled);
 }

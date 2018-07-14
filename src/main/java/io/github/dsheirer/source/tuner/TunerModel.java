@@ -257,7 +257,16 @@ public class TunerModel extends AbstractTableModel implements Listener<TunerEven
                         return 0;
                     }
                 case CHANNEL_COUNT:
-                    return tuner.getChannelSourceManager().getTunerChannelCount();
+                    int channelCount = tuner.getChannelSourceManager().getTunerChannelCount();
+
+                    if(channelCount > 0)
+                    {
+                        return channelCount + " (LOCKED)";
+                    }
+                    else
+                    {
+                        return "0";
+                    }
                 case SPECTRAL_DISPLAY_MAIN:
                     return "Main";
                 case SPECTRAL_DISPLAY_NEW:

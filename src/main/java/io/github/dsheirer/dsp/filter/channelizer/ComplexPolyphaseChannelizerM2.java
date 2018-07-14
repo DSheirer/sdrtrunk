@@ -145,7 +145,7 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      * @param sampleRate to channelize
      * @return number of multiple of two channels that can be channelized.
      */
-    private static int getChannelCount(double sampleRate)
+    public static int getChannelCount(double sampleRate)
     {
         int channels = (int)(sampleRate / DEFAULT_MINIMUM_CHANNEL_BANDWIDTH);
 
@@ -164,12 +164,11 @@ public class ComplexPolyphaseChannelizerM2 extends AbstractComplexPolyphaseChann
      * @param sampleRate in hertz
      */
     @Override
-    public void setSampleRate(double sampleRate)
+    public void setRates(double sampleRate, int channelCount)
     {
         try
         {
-            super.setSampleRate(sampleRate);
-
+            super.setRates(sampleRate, channelCount);
             float[] filterTaps = FilterFactory.getSincM2Channelizer(getChannelSampleRate(), getChannelCount(),
                 mTapsPerChannel, false);
 

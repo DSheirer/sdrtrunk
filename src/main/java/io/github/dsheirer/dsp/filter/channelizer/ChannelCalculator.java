@@ -20,7 +20,6 @@ import io.github.dsheirer.source.tuner.channel.TunerChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,7 +42,7 @@ public class ChannelCalculator
     private int mChannelCount;
     private double mCenterFrequency;
     private double mChannelBandwidth;
-    private double mOversampling = 1.0;
+    private double mOversampling = 2.0;
 
     /**
      * Calculates channel index(es) from a polyphase channelizer output to source a DDC polyphase channel source
@@ -137,9 +136,11 @@ public class ChannelCalculator
      *
      * @param sampleRate to use for channel count
      */
-    public void setSampleRate(double sampleRate)
+    public void setRates(double sampleRate, int channelCount)
     {
-        setChannelCount((int)(sampleRate / getChannelBandwidth()));
+        mSampleRate = sampleRate;
+        mChannelCount = channelCount;
+        updateChannelBandwidth();
     }
 
     /**
@@ -544,51 +545,13 @@ public class ChannelCalculator
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
-        sb.append("Channels:").append(getChannelCount());
+        sb.append("Channel Calculator Settings");
+        sb.append(" Channels:").append(getChannelCount());
         sb.append(" Sample Rate:").append(getSampleRate());
         sb.append(" Channel Bandwidth:").append(getChannelBandwidth());
         sb.append(" Channel Rate:").append(getChannelSampleRate());
         sb.append(" Min:").append(getMinimumFrequency());
         sb.append(" Max:").append(getMaximumFrequency());
         return sb.toString();
-    }
-
-
-    public static void main(String[] args)
-    {
-        mLog.debug("Starting ....");
-
-        double channelBandwidth = 12500.0;
-        double sampleRate = 100000.0; //Airspy
-        int channelCount = (int)(sampleRate / channelBandwidth);
-        double centerFrequency = 455000000;
-
-        ChannelCalculator calculator = new ChannelCalculator(sampleRate, channelCount, centerFrequency, 2.0);
-
-        mLog.debug(calculator.toString());
-
-        DecimalFormat decimalFormat = new DecimalFormat("000,000,000.0");
-
-        int wrapAroundIndex = calculator.getWrapAroundIndex();
-
-        IndexBoundaryPolicy indexBoundaryPolicy = IndexBoundaryPolicy.ADJUST_NEGATIVE;
-
-        for(int index = wrapAroundIndex; index < calculator.getChannelCount(); index++)
-        {
-            mLog.debug("Index:" + index + " Min:" + decimalFormat.format(calculator.getIndexMinimumFrequency(index, indexBoundaryPolicy)) +
-                " Center:" + decimalFormat.format(calculator.getIndexCenterFrequency(index, indexBoundaryPolicy)) +
-                " Max:" + decimalFormat.format(calculator.getIndexMaximumFrequency(index, indexBoundaryPolicy)));
-        }
-
-        indexBoundaryPolicy = IndexBoundaryPolicy.ADJUST_POSITIVE;
-
-        for(int index = 0; index <= wrapAroundIndex; index++)
-        {
-            mLog.debug("Index:" + index + " Min:" + decimalFormat.format(calculator.getIndexMinimumFrequency(index, indexBoundaryPolicy)) +
-                " Center:" + decimalFormat.format(calculator.getIndexCenterFrequency(index, indexBoundaryPolicy)) +
-                " Max:" + decimalFormat.format(calculator.getIndexMaximumFrequency(index, indexBoundaryPolicy)));
-        }
-
-        mLog.debug("Finished");
     }
 }

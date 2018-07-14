@@ -125,6 +125,8 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
         mBlankCursor = Toolkit.getDefaultToolkit()
             .createCustomCursor(cursorImage, new Point(0, 0), "cursor");
 
+        setTooltip(false);
+
         revalidate();
     }
 
@@ -136,6 +138,26 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
         for(Digit digit : mDigits.values())
         {
             digit.setEnabled(enabled);
+        }
+    }
+
+    private void setTooltip(boolean locked)
+    {
+        String tooltip = null;
+
+        if(locked)
+        {
+            tooltip = "Frequency control is locked.  Disable decoding channels to unlock.";
+        }
+        else
+        {
+            tooltip = "Click on a frequency digit and type a frequency value, or click the upper/lower digits to " +
+                "change the value";
+        }
+
+        for(Digit digit: mDigits.values())
+        {
+            digit.setToolTipText(tooltip);
         }
     }
 
@@ -165,6 +187,7 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
                     public void run()
                     {
                         setEnabled(false);
+                        setTooltip(true);
                     }
                 });
                 break;
@@ -175,6 +198,7 @@ public class JFrequencyControl extends JPanel implements ISourceEventProcessor
                     public void run()
                     {
                         setEnabled(true);
+                        setTooltip(false);
                     }
                 });
                 break;
