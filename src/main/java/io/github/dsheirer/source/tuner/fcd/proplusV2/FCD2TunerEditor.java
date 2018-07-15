@@ -207,6 +207,12 @@ public class FCD2TunerEditor extends TunerConfigurationEditor
         add(mMixerGain);
     }
 
+    @Override
+    public void setTunerLockState(boolean locked)
+    {
+        //no-op
+    }
+
     /**
      * Sets each of the tuner configuration controls to the enabled argument state
      */

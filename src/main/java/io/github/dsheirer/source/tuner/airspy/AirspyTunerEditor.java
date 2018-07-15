@@ -611,6 +611,12 @@ public class AirspyTunerEditor extends TunerConfigurationEditor
         }
     }
 
+    @Override
+    public void setTunerLockState(boolean locked)
+    {
+        mSampleRateCombo.setEnabled(!locked);
+    }
+
     /**
      * Sets all controls to the argument enabled state
      */

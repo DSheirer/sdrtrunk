@@ -100,12 +100,20 @@ public class TunerViewPanel extends JPanel
                 switch(tunerEvent.getEvent())
                 {
                     case LOCK_STATE_CHANGE:
-                        int row = mTunerTable.getSelectedRow();
-
-                        if(row >= 0)
+                        if(tunerEvent.getTuner() != null)
                         {
-                            int modelRow = mTunerTable.convertRowIndexToModel(row);
-                            mTunerEditor.setItem(mTunerModel.getTuner(modelRow));
+                            int row = mTunerTable.getSelectedRow();
+
+                            if(row >= 0)
+                            {
+                                int modelRow = mTunerTable.convertRowIndexToModel(row);
+                                Tuner selectedTuner = mTunerModel.getTuner(modelRow);
+
+                                if(selectedTuner == tunerEvent.getTuner())
+                                {
+                                    mTunerEditor.setTunerLockState(selectedTuner.getTunerController().isLocked());
+                                }
+                            }
                         }
                         break;
                 }

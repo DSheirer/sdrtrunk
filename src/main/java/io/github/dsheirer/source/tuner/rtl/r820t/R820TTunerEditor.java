@@ -409,6 +409,12 @@ public class R820TTunerEditor extends TunerConfigurationEditor
         }
     }
 
+    @Override
+    public void setTunerLockState(boolean locked)
+    {
+        mComboSampleRate.setEnabled(!locked);
+    }
+
     /**
      * Sets each of the tuner configuration controls to the enabled argument state
      */

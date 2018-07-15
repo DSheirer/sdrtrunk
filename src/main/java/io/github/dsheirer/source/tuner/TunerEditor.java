@@ -21,6 +21,7 @@ import io.github.dsheirer.gui.control.JFrequencyControl;
 import io.github.dsheirer.gui.editor.Editor;
 import io.github.dsheirer.gui.editor.EmptyEditor;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
+import io.github.dsheirer.source.tuner.configuration.TunerConfigurationEditor;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationFactory;
 import io.github.dsheirer.source.tuner.configuration.TunerConfigurationModel;
 import net.miginfocom.swing.MigLayout;
@@ -64,6 +65,22 @@ public class TunerEditor extends Editor<Tuner>
     {
         mTunerConfigurationModel = tunerConfigurationModel;
         init();
+    }
+
+    /**
+     * Updates the lock state of the tuner so that the frequency control and sample rate controls
+     * can be adjusted accordingly.
+     *
+     * @param locked true if the tuner is locked and the controls should be locked.
+     */
+    public void setTunerLockState(boolean locked)
+    {
+        mFrequencyControl.setEnabled(!locked);
+
+        if(mEditor instanceof TunerConfigurationEditor)
+        {
+            ((TunerConfigurationEditor)mEditor).setTunerLockState(locked);
+        }
     }
 
     public void init()

@@ -303,6 +303,12 @@ public class FCD1TunerEditor extends TunerConfigurationEditor
         add(mCorrectionPhase);
     }
 
+    @Override
+    public void setTunerLockState(boolean locked)
+    {
+        //no-op
+    }
+
     /**
      * Sets each of the tuner configuration controls to the enabled argument state
      */
