@@ -32,4 +32,12 @@ public abstract class TunerConfigurationEditor extends Editor<TunerConfiguration
     {
         return mTunerConfigurationModel;
     }
+
+    /**
+     * Sets the lock state for the tuner so that the frequency and sample rate controls can be
+     * enabled/disabled.
+     *
+     * @param locked true if the tuner is locked.
+     */
+    public abstract void setTunerLockState(boolean locked);
 }

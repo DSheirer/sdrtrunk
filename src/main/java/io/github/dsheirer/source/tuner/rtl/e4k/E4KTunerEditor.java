@@ -355,6 +355,13 @@ public class E4KTunerEditor extends TunerConfigurationEditor
         }
     }
 
+    @Override
+    public void setTunerLockState(boolean locked)
+    {
+        mComboSampleRate.setEnabled(!locked);
+    }
+
+
     /**
      * Sets each of the tuner configuration controls to the enabled argument state
      */
