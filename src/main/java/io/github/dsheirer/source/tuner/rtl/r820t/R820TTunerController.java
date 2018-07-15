@@ -773,26 +773,29 @@ public class R820TTunerController extends RTL2832TunerController
 
     /**
      * R820T mixer gain settings
+     *
+     * Note: gain labels were changed from measured dB values to simple 1-16 value labels to conform
+     * with the ICD listing the values from 0-15 as minimum to maximum.
      */
     public enum R820TMixerGain
     {
         AUTOMATIC("Automatic", 0x10),
-        GAIN_0("0", 0x00),
-        GAIN_5("5", 0x01),
-        GAIN_15("15", 0x02),
-        GAIN_25("25", 0x03),
-        GAIN_44("44", 0x04),
-        GAIN_53("53", 0x05),
-        GAIN_63("63", 0x06),
-        GAIN_88("88", 0x07),
-        GAIN_105("105", 0x08),
-        GAIN_115("115", 0x09),
-        GAIN_123("123", 0x0A),
-        GAIN_139("139", 0x0B),
-        GAIN_152("152", 0x0C),
-        GAIN_158("158", 0x0D),
-        GAIN_161("161", 0x0E),
-        GAIN_153("153", 0x0F);
+        GAIN_0("1", 0x00),
+        GAIN_5("2", 0x01),
+        GAIN_15("3", 0x02),
+        GAIN_25("4", 0x03),
+        GAIN_44("5", 0x04),
+        GAIN_53("6", 0x05),
+        GAIN_63("7", 0x06),
+        GAIN_88("8", 0x07),
+        GAIN_105("9", 0x08),
+        GAIN_115("10", 0x09),
+        GAIN_123("11", 0x0A),
+        GAIN_139("12", 0x0B),
+        GAIN_152("13", 0x0C),
+        GAIN_158("14", 0x0D),
+        GAIN_161("15", 0x0E),
+        GAIN_153("16", 0x0F);
 
         private String mLabel;
         private int mSetting;
