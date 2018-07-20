@@ -85,9 +85,12 @@ public class TunerViewPanel extends JPanel
                 if(!event.getValueIsAdjusting())
                 {
                     int row = mTunerTable.getSelectedRow();
-                    int modelRow = mTunerTable.convertRowIndexToModel(row);
 
-                    mTunerEditor.setItem(mTunerModel.getTuner(modelRow));
+                    if(row >= 0)
+                    {
+                        int modelRow = mTunerTable.convertRowIndexToModel(row);
+                        mTunerEditor.setItem(mTunerModel.getTuner(modelRow));
+                    }
                 }
             }
         });
