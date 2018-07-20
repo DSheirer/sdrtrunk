@@ -15,6 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.spectrum;
 
+import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.source.tuner.Tuner;
 
 import javax.swing.JMenuItem;
@@ -44,6 +45,8 @@ public class ShowTunerMenuItem extends JMenuItem
                     public void run()
                     {
                         mSpectralDisplayPanel.showTuner(mTuner);
+                        SystemProperties properties = SystemProperties.getInstance();
+                        properties.set(SpectralDisplayPanel.SPECTRAL_DISPLAY_ENABLED, true);
                     }
                 });
             }
