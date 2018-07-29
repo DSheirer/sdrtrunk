@@ -23,12 +23,13 @@ public class TunerEvent
 
     public enum Event
     {
-        ADD,
-        LOCK_STATE_CHANGE,
-        REMOVE,
         CHANNEL_COUNT,
-        FREQUENCY,
-        SAMPLE_RATE,
+        FREQUENCY_UPDATED,
+        FREQUENCY_ERROR_UPDATED,
+        LOCK_STATE_CHANGE,
+        MEASURED_FREQUENCY_ERROR_UPDATED,
+        SAMPLE_RATE_UPDATED,
+
         CLEAR_MAIN_SPECTRAL_DISPLAY,
         REQUEST_MAIN_SPECTRAL_DISPLAY,
         REQUEST_NEW_SPECTRAL_DISPLAY;

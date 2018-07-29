@@ -132,7 +132,7 @@ public abstract class P25Decoder extends Decoder implements ISourceEventListener
      * issue frequency correction requests to the channel source.
      * @param sourceEvent to broadcast
      */
-    protected void broadcast(SourceEvent sourceEvent)
+    public void broadcast(SourceEvent sourceEvent)
     {
         if(mSourceEventListener != null)
         {

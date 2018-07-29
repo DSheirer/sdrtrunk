@@ -237,4 +237,11 @@ public class PolyphaseChannelSource extends TunerChannelSource
             mPolyphaseChannelOutputProcessor.setFrequencyOffset(getFrequencyOffset());
         }
     }
+
+    @Override
+    public String toString()
+    {
+        return "POLYPHASE [" + mPolyphaseChannelOutputProcessor.getInputChannelCount() + "] " +
+            getTunerChannel().getFrequency();
+    }
 }

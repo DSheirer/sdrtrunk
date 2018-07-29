@@ -459,6 +459,11 @@ public class TunerChannelSourceManager extends ChannelSourceManager
                 //when the polyphase manager has channels allocated
                 mTunerController.setLocked(getTunerChannelCount() > 0);
                 break;
+            case NOTIFICATION_MEASURED_FREQUENCY_ERROR_SYNC_LOCKED:
+                //Rebroadcast these frequency measurement errors to the tuner and tuner controller
+                //for display and/or correction
+                broadcast(sourceEvent);
+                break;
             default:
                 mLog.info("Unrecognized source event: " + sourceEvent);
                 break;

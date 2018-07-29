@@ -44,6 +44,12 @@ public class MDC1200Pane extends AbstractAFSK1200Pane
                 {
                     mLog.debug("Sync Detected!");
                 }
+
+                @Override
+                public void syncLost()
+                {
+                    mLog.debug("Sync Lost!");
+                }
             });
         }
 

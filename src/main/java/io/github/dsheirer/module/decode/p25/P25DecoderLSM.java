@@ -22,20 +22,17 @@ import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
 import io.github.dsheirer.dsp.gain.ComplexFeedForwardGainControl;
 import io.github.dsheirer.dsp.psk.DQPSKGardnerDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
+import io.github.dsheirer.dsp.psk.pll.AdaptivePLLGainMonitor;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
-import io.github.dsheirer.dsp.psk.pll.Tracking;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class P25DecoderLSM extends P25Decoder
 {
-    private final static Logger mLog = LoggerFactory.getLogger(P25DecoderLSM.class);
-    protected static final float SAMPLE_COUNTER_GAIN = 0.5f;
+    protected static final float SAMPLE_COUNTER_GAIN = 0.3f;
 
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
     private ComplexFIRFilter2 mBasebandFilter;
@@ -43,6 +40,7 @@ public class P25DecoderLSM extends P25Decoder
     protected DQPSKGardnerDemodulator mQPSKDemodulator;
     protected P25MessageFramer mMessageFramer;
     protected CostasLoop mCostasLoop;
+    protected AdaptivePLLGainMonitor mPLLGainMonitor;
     protected InterpolatingSampleBuffer mInterpolatingSampleBuffer;
 
     /**
@@ -54,11 +52,12 @@ public class P25DecoderLSM extends P25Decoder
     public P25DecoderLSM(AliasList aliasList)
     {
         super(4800.0, aliasList);
-        setSampleRate(48000.0);
+        setSampleRate(25000.0);
     }
 
     /**
      * Sets or changes the channel sample rate
+     *
      * @param sampleRate in hertz
      */
     public void setSampleRate(double sampleRate)
@@ -68,14 +67,17 @@ public class P25DecoderLSM extends P25Decoder
         mBasebandFilter = new ComplexFIRFilter2(getBasebandFilter());
 
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
-        mCostasLoop.setTracking(Tracking.NORMAL);
+        mPLLGainMonitor = new AdaptivePLLGainMonitor(mCostasLoop, this);
+
         mInterpolatingSampleBuffer = new InterpolatingSampleBuffer(getSamplesPerSymbol(), SAMPLE_COUNTER_GAIN);
 
         mQPSKDemodulator = new DQPSKGardnerDemodulator(mCostasLoop, mInterpolatingSampleBuffer);
 
-        //Message framer can issue a symbol-inversion correction request to the PLL when detected
-        mMessageFramer = new P25MessageFramer(getAliasList(), mCostasLoop);
+        //The Costas Loop receives symbol-inversion correction requests when detected.
+        //The PLL gain monitor receives sync detect/loss signals from the message framer
+        mMessageFramer = new P25MessageFramer(getAliasList(), mCostasLoop, mPLLGainMonitor);
         mMessageFramer.setListener(getMessageProcessor());
+        mMessageFramer.setSampleRate(sampleRate);
         mQPSKDemodulator.setSymbolListener(mMessageFramer);
     }
 
@@ -97,13 +99,18 @@ public class P25DecoderLSM extends P25Decoder
 
     /**
      * Filters the complex buffer and returns a new reusable complex buffer with the filtered contents.
+     *
      * @param reusableComplexBuffer to filter
      * @return filtered complex buffer
      */
     protected ReusableComplexBuffer filter(ReusableComplexBuffer reusableComplexBuffer)
     {
+        //No additional filtering of the channel is currently needed, since the polyphase channelizer
+        //provides the filtering.
+        return reusableComplexBuffer;
+
         //User accounting of the incoming buffer is handled by the filter
-        return mBasebandFilter.filter(reusableComplexBuffer);
+//        return mBasebandFilter.filter(reusableComplexBuffer);
     }
 
     /**
@@ -119,6 +126,10 @@ public class P25DecoderLSM extends P25Decoder
                 setSampleRate(sourceEvent.getValue().doubleValue());
                 mCostasLoop.reset();
                 break;
+            case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
+                //Reset the PLL if/when the tuner PPM changes so that we can re-lock
+                mCostasLoop.reset();
+                break;
         }
     }
 
@@ -129,6 +140,7 @@ public class P25DecoderLSM extends P25Decoder
     public void reset()
     {
         mCostasLoop.reset();
+        mPLLGainMonitor.reset();
     }
 
     public void dispose()
@@ -163,7 +175,7 @@ public class P25DecoderLSM extends P25Decoder
 
         if(filter == null)
         {
-            filter = FilterFactory.getLowPass(48000, 7250, 8000, 60,
+            filter = FilterFactory.getLowPass(getSampleRate(), 7250, 8000, 60,
                 WindowType.HANN, true);
 
             mBasebandFilters.put(getSampleRate(), filter);

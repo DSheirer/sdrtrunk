@@ -18,18 +18,23 @@ package io.github.dsheirer.dsp.psk.pll;
 /**
  * Phase Locked Loop (PLL) tracking bandwidth - controls how fast/slow the PLL tracks the carrier frequency
  */
-public enum Tracking
+public enum PLLGain
 {
-    FASTEST(50.0),
-    FAST(100.0),
-    NORMAL(200.0),
-    SLOW(400.0);
+    LEVEL_1(50.0, 0, 1),
+    LEVEL_2(75.0, 2, 4),
+    LEVEL_3(100.0, 5, 6),
+    LEVEL_4(125.0, 7, 8),
+    LEVEL_5(150.0, 9, 10);
 
     private double mLoopBandwidth;
+    private int mRangeStart;
+    private int mRangeEnd;
 
-    Tracking(double loopBandwidth)
+    PLLGain(double loopBandwidth, int start, int end)
     {
         mLoopBandwidth = loopBandwidth;
+        mRangeStart = start;
+        mRangeEnd = end;
     }
 
     /**
@@ -38,5 +43,45 @@ public enum Tracking
     public double getLoopBandwidth()
     {
         return mLoopBandwidth;
+    }
+
+    public int getRangeStart()
+    {
+        return mRangeStart;
+    }
+
+    public int getRangeEnd()
+    {
+        return mRangeEnd;
+    }
+
+    /**
+     * Look up PLL gain from a running sync detection count.
+     *
+     * @param syncCount 0-10
+     * @return PLL gain appropriate for the sync detection value
+     */
+    public static PLLGain fromSyncCount(int syncCount)
+    {
+        if(syncCount <= LEVEL_1.getRangeEnd())
+        {
+            return LEVEL_1;
+        }
+        else if(syncCount <= LEVEL_2.getRangeEnd())
+        {
+            return LEVEL_2;
+        }
+        else if(syncCount <= LEVEL_3.getRangeEnd())
+        {
+            return LEVEL_3;
+        }
+        else if(syncCount <= LEVEL_4.getRangeEnd())
+        {
+            return LEVEL_4;
+        }
+        else
+        {
+            return LEVEL_5;
+        }
     }
 }

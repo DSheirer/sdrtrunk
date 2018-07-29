@@ -30,6 +30,7 @@ public class R820TTunerConfiguration extends TunerConfiguration
     private R820TTunerController.R820TVGAGain mVGAGain = R820TTunerController.R820TVGAGain.GAIN_210;
     private double mFrequencyCorrection = 0.0d;
     private RTL2832TunerController.SampleRate mSampleRate = RTL2832TunerController.SampleRate.RATE_2_400MHZ;
+    private boolean mAutoPPMCorrection = true;
 
     /**
      * Default constructor for JAXB
@@ -114,5 +115,24 @@ public class R820TTunerConfiguration extends TunerConfiguration
     public void setSampleRate(RTL2832TunerController.SampleRate sampleRate)
     {
         mSampleRate = sampleRate;
+    }
+
+    /**
+     * Indicates if automatic correction of PPM from measured frequency error is enabled/disabled.
+     * @return true if auto-correction is enabled.
+     */
+    @JacksonXmlProperty(isAttribute = true, localName = "auto_ppm_correction_enabled")
+    public boolean getAutoPPMCorrectionEnabled()
+    {
+        return mAutoPPMCorrection;
+    }
+
+    /**
+     * Sets the enabled state for auto-correction of PPM from measured frequency error values.
+     * @param enabled
+     */
+    public void setAutoPPMCorrectionEnabled(boolean enabled)
+    {
+        mAutoPPMCorrection = enabled;
     }
 }

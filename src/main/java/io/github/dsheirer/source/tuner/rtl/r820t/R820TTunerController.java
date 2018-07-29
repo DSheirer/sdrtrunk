@@ -23,6 +23,7 @@
 package io.github.dsheirer.source.tuner.rtl.r820t;
 
 import io.github.dsheirer.source.SourceException;
+import io.github.dsheirer.source.tuner.FrequencyErrorCorrectionManager;
 import io.github.dsheirer.source.tuner.TunerType;
 import io.github.dsheirer.source.tuner.configuration.TunerConfiguration;
 import io.github.dsheirer.source.tuner.rtl.RTL2832TunerController;
@@ -33,7 +34,6 @@ import org.usb4java.DeviceDescriptor;
 import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 
-import javax.swing.JPanel;
 import javax.usb.UsbException;
 import java.nio.ByteBuffer;
 
@@ -70,12 +70,36 @@ public class R820TTunerController extends RTL2832TunerController
             0x6C, 0x83, 0x80, 0x00, 0x0F, 0x00, 0xC0, 0x30,
             0x48, 0xCC, 0x60, 0x00, 0x54, 0xAE, 0x4A, 0xC0};
 
-    private JPanel mEditor;
+    public FrequencyErrorCorrectionManager mFrequencyErrorCorrectionManager;
 
     public R820TTunerController(Device device, DeviceDescriptor deviceDescriptor) throws SourceException
     {
         super(device, deviceDescriptor, MIN_FREQUENCY, MAX_FREQUENCY, DC_SPIKE_AVOID_BUFFER,
             USABLE_BANDWIDTH_PERCENT);
+
+        mFrequencyErrorCorrectionManager = new FrequencyErrorCorrectionManager(this);
+    }
+
+    /**
+     * Manager for applying automatic frequency error PPM adjustments to the tuner controller based on
+     * frequency error measurements received from certain downstream decoders (e.g. P25).
+     * @return manager
+     */
+    public FrequencyErrorCorrectionManager getFrequencyErrorCorrectionManager()
+    {
+        return mFrequencyErrorCorrectionManager;
+    }
+
+    /**
+     * Overrides updates for measured frequency error so that the updates can also be applied to the
+     * frequency error correction manager for automatic PPM updating.
+     * @param measuredFrequencyError in hertz averaged over a 5 second interval.
+     */
+    @Override
+    public void setMeasuredFrequencyError(int measuredFrequencyError)
+    {
+        super.setMeasuredFrequencyError(measuredFrequencyError);
+        getFrequencyErrorCorrectionManager().updatePPM(getPPMFrequencyError());
     }
 
     @Override
@@ -105,6 +129,8 @@ public class R820TTunerController extends RTL2832TunerController
 
                 double correction = config.getFrequencyCorrection();
                 setFrequencyCorrection(correction);
+
+                getFrequencyErrorCorrectionManager().setEnabled(config.getAutoPPMCorrectionEnabled());
 
                 R820TGain masterGain = config.getMasterGain();
                 setGain(masterGain, true);

@@ -23,8 +23,8 @@ import io.github.dsheirer.dsp.filter.fir.complex.ComplexFIRFilter2;
 import io.github.dsheirer.dsp.gain.ComplexFeedForwardGainControl;
 import io.github.dsheirer.dsp.psk.DQPSKDecisionDirectedDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
+import io.github.dsheirer.dsp.psk.pll.AdaptivePLLGainMonitor;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
-import io.github.dsheirer.dsp.psk.pll.Tracking;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
@@ -36,10 +36,12 @@ import java.util.Map;
 public class P25DecoderC4FM extends P25Decoder
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25DecoderC4FM.class);
-    protected static final float SAMPLE_COUNTER_GAIN = 0.5f;
+
+    protected static final float SAMPLE_COUNTER_GAIN = 0.3f;
     protected InterpolatingSampleBuffer mInterpolatingSampleBuffer;
     protected DQPSKDecisionDirectedDemodulator mQPSKDemodulator;
     protected CostasLoop mCostasLoop;
+    protected AdaptivePLLGainMonitor mPLLGainMonitor;
     protected P25MessageFramer mMessageFramer;
     private ComplexFeedForwardGainControl mAGC = new ComplexFeedForwardGainControl(32);
     private Map<Double,float[]> mBasebandFilters = new HashMap<>();
@@ -54,7 +56,7 @@ public class P25DecoderC4FM extends P25Decoder
     public P25DecoderC4FM(AliasList aliasList)
     {
         super(4800.0, aliasList);
-        setSampleRate(48000.0);
+        setSampleRate(25000.0);
     }
 
     public void setSampleRate(double sampleRate)
@@ -64,14 +66,16 @@ public class P25DecoderC4FM extends P25Decoder
         mBasebandFilter = new ComplexFIRFilter2(getBasebandFilter());
 
         mCostasLoop = new CostasLoop(getSampleRate(), getSymbolRate());
-        mCostasLoop.setTracking(Tracking.FASTEST);
+        mPLLGainMonitor = new AdaptivePLLGainMonitor(mCostasLoop, this);
         mInterpolatingSampleBuffer = new InterpolatingSampleBuffer(getSamplesPerSymbol(), SAMPLE_COUNTER_GAIN);
 
         mQPSKDemodulator = new DQPSKDecisionDirectedDemodulator(mCostasLoop, mInterpolatingSampleBuffer);
 
-        //Message framer can issue a symbol-inversion correction request to the PLL when detected
-        mMessageFramer = new P25MessageFramer(getAliasList(), mCostasLoop);
+        //The Costas Loop receives symbol-inversion correction requests when detected.
+        //The PLL gain monitor receives sync detect/loss signals from the message framer
+        mMessageFramer = new P25MessageFramer(getAliasList(), mCostasLoop, mPLLGainMonitor);
         mMessageFramer.setListener(getMessageProcessor());
+        mMessageFramer.setSampleRate(sampleRate);
         mQPSKDemodulator.setSymbolListener(mMessageFramer);
     }
 
@@ -165,6 +169,10 @@ public class P25DecoderC4FM extends P25Decoder
                 mCostasLoop.reset();
                 setSampleRate(sourceEvent.getValue().doubleValue());
                 break;
+            case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
+                //Reset the PLL if/when the tuner PPM changes so that we can re-lock
+                mCostasLoop.reset();
+                break;
         }
     }
 
@@ -183,5 +191,6 @@ public class P25DecoderC4FM extends P25Decoder
     public void reset()
     {
         mCostasLoop.reset();
+        mPLLGainMonitor.reset();
     }
 }

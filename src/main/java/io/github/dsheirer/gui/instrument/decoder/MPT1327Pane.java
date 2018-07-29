@@ -44,6 +44,12 @@ public class MPT1327Pane extends AbstractAFSK1200Pane
                 {
 //                    mLog.debug("Control Sync Detected!");
                 }
+
+                @Override
+                public void syncLost()
+                {
+                    //no-op
+                }
             });
             mDecoder.getTrafficMessageFramer().setSyncDetectListener(new ISyncDetectListener()
             {
@@ -51,6 +57,12 @@ public class MPT1327Pane extends AbstractAFSK1200Pane
                 public void syncDetected()
                 {
 //                    mLog.debug("Traffic Sync Detected!");
+                }
+
+                @Override
+                public void syncLost()
+                {
+                    //no-op
                 }
             });
         }

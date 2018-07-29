@@ -35,17 +35,16 @@ import io.github.dsheirer.module.decode.event.ICallEventProvider;
 import io.github.dsheirer.sample.IOverflowListener;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.source.ISourceEventListener;
+import io.github.dsheirer.source.ISourceEventProvider;
 import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.heartbeat.Heartbeat;
 import io.github.dsheirer.source.heartbeat.IHeartbeatListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static io.github.dsheirer.source.SourceEvent.Event.NOTIFICATION_FREQUENCY_CHANGE;
-
 public class ChannelState extends Module implements ICallEventProvider, IDecoderStateEventListener,
-    IDecoderStateEventProvider, ISourceEventListener, IHeartbeatListener, ISquelchStateProvider,
-    IAttributeChangeRequestListener, IOverflowListener
+    IDecoderStateEventProvider, ISourceEventListener, ISourceEventProvider, IHeartbeatListener,
+    ISquelchStateProvider, IAttributeChangeRequestListener, IOverflowListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(ChannelState.class);
 
@@ -57,12 +56,13 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     private Listener<CallEvent> mCallEventListener;
     private Listener<DecoderStateEvent> mDecoderStateListener;
     private Listener<SquelchState> mSquelchStateListener;
+    private Listener<SourceEvent> mExternalSourceEventListener;
     private DecoderStateEventReceiver mDecoderStateEventReceiver = new DecoderStateEventReceiver();
     private HeartbeatReceiver mHeartbeatReceiver = new HeartbeatReceiver();
     private ChannelType mChannelType;
     private TrafficChannelManager mTrafficChannelEndListener;
     private CallEvent mTrafficChannelCallEvent;
-    private SourceChangeListener mSourceChangeListener;
+    private SourceEventListener mInternalSourceEventListener;
 
     private boolean mSquelchLocked = false;
     private boolean mSelected = false;
@@ -160,12 +160,12 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     @Override
     public Listener<SourceEvent> getSourceEventListener()
     {
-        if(mSourceChangeListener == null)
+        if(mInternalSourceEventListener == null)
         {
-            mSourceChangeListener = new SourceChangeListener();
+            mInternalSourceEventListener = new SourceEventListener();
         }
 
-        return mSourceChangeListener;
+        return mInternalSourceEventListener;
     }
 
     private boolean isStandardChannel()
@@ -252,6 +252,17 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
         if(mSquelchStateListener != null && !mSquelchLocked)
         {
             mSquelchStateListener.receive(state);
+        }
+    }
+
+    /**
+     * Broadcasts the source event to a registered external source event listener
+     */
+    protected void broadcast(SourceEvent sourceEvent)
+    {
+        if(mExternalSourceEventListener != null)
+        {
+            mExternalSourceEventListener.receive(sourceEvent);
         }
     }
 
@@ -516,18 +527,46 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
     }
 
     /**
-     * Listener to receive frequency change events and rebroadcast them to the decoder states
+     * Registers the listener to receive source events from the channel state
      */
-    public class SourceChangeListener implements Listener<SourceEvent>
+    @Override
+    public void setSourceEventListener(Listener<SourceEvent> listener)
+    {
+        mExternalSourceEventListener = listener;
+    }
+
+    /**
+     * De-Registers a listener from receiving source events from the channel state
+     */
+    @Override
+    public void removeSourceEventListener()
+    {
+        mExternalSourceEventListener = null;
+    }
+
+    /**
+     * Listener to receive source events.
+     */
+    public class SourceEventListener implements Listener<SourceEvent>
     {
         @Override
         public void receive(SourceEvent sourceEvent)
         {
-            if(sourceEvent.getEvent() == NOTIFICATION_FREQUENCY_CHANGE)
+            switch(sourceEvent.getEvent())
             {
-                long frequency = sourceEvent.getValue().longValue();
-
-                broadcast(new DecoderStateEvent(this, Event.SOURCE_FREQUENCY, getState(), frequency));
+                case NOTIFICATION_FREQUENCY_CHANGE:
+                    //Rebroadcast source frequency change events for the decoder(s) to process
+                    long frequency = sourceEvent.getValue().longValue();
+                    broadcast(new DecoderStateEvent(this, Event.SOURCE_FREQUENCY, getState(), frequency));
+                    break;
+                case NOTIFICATION_MEASURED_FREQUENCY_ERROR:
+                    //Rebroadcast frequency error measurements to external listener if we're currently
+                    //in an active (ie sync locked) state.
+                    if(getState().isActiveState())
+                    {
+                        broadcast(SourceEvent.frequencyErrorMeasurementSyncLocked(sourceEvent.getValue().longValue(), mChannelType.name()));
+                    }
+                    break;
             }
         }
     }

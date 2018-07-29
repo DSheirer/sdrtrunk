@@ -134,6 +134,12 @@ public class LTRDecoder implements Listener<ReusableBuffer>, ISyncDetectListener
         mSynchronizationMonitor.syncDetected();
     }
 
+    @Override
+    public void syncLost()
+    {
+        //no-op
+    }
+
     /**
      * Processes the buffer samples by converting all samples to boolean values reflecting if the sample value is
      * greater than zero (or not).  Average symbol timing offset is calculated for the full buffer and the offset is
