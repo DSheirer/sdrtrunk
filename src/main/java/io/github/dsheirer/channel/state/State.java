@@ -109,6 +109,17 @@ public enum State
 
     public abstract boolean canChangeTo(State state);
 
+    /**
+     * Indicates that this state is an active (ie decoding) state and is one of the states
+     * enumerated in the CALL_STATES enumeration set.
+     *
+     * @return true if this state is an active state
+     */
+    public boolean isActiveState()
+    {
+        return CALL_STATES.contains(this);
+    }
+
     public String getDisplayValue()
     {
         return mDisplayValue;

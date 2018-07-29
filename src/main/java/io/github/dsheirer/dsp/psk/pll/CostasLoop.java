@@ -41,10 +41,12 @@ public class CostasLoop implements IPhaseLockedLoop
     private double mDamping = Math.sqrt(2.0) / 2.0;
     private double mAlphaGain;
     private double mBetaGain;
-    private Tracking mTracking = Tracking.FASTEST;
+    private PLLGain mPLLGain = PLLGain.LEVEL_1;
     private double mSymbolRate;
     private double mSampleRate;
-    private int mCounter;
+    private IFrequencyErrorProcessor mFrequencyErrorProcessor;
+    private long mFrequencyError;
+    private int mBaudCounter;
 
     /**
      * Costas Loop for tracking and correcting frequency error in a received carrier signal.
@@ -58,6 +60,17 @@ public class CostasLoop implements IPhaseLockedLoop
         mSampleRate = sampleRate;
         mMaximumLoopFrequency = TWO_PI * (symbolRate / 2.0) / sampleRate;
         updateLoopBandwidth();
+    }
+
+    /**
+     * Registers the listener to receive the measured frequency error as tracked by the PLL at one
+     * second intervals.
+     *
+     * @param listener to receive frequency error measurement.
+     */
+    public void setFrequencyErrorProcessor(IFrequencyErrorProcessor listener)
+    {
+        mFrequencyErrorProcessor = listener;
     }
 
     /**
@@ -89,21 +102,21 @@ public class CostasLoop implements IPhaseLockedLoop
      */
     private void updateLoopBandwidth()
     {
-        double bandwidth = TWO_PI / mTracking.getLoopBandwidth();
+        double bandwidth = TWO_PI / mPLLGain.getLoopBandwidth();
 
         mAlphaGain = (4.0 * mDamping * bandwidth) / (1.0 + (2.0 * mDamping * bandwidth) + (bandwidth * bandwidth));
         mBetaGain = (4.0 * bandwidth * bandwidth) / (1.0 + (2.0 * mDamping * bandwidth) + (bandwidth * bandwidth));
     }
 
     /**
-     * Sets the tracking state for this costas loop.  The tracking state affects the aggressiveness of the alpha/beta
+     * Sets the PLLGain state for this costas loop.  The PLLGain state affects the aggressiveness of the alpha/beta
      * gain values in synchronizing with the signal carrier.
      *
-     * @param tracking
+     * @param PLLGain
      */
-    public void setTracking(Tracking tracking)
+    public void setPLLGain(PLLGain PLLGain)
     {
-        mTracking = tracking;
+        mPLLGain = PLLGain;
         updateLoopBandwidth();
     }
 
@@ -159,7 +172,7 @@ public class CostasLoop implements IPhaseLockedLoop
         mLoopFrequency += (mBetaGain * phaseError);
         mLoopPhase += mLoopFrequency + (mAlphaGain * phaseError);
 
-        /* Normalize phase between +/- 2 * PI */
+        //Normalize phase between +/- 2 * PI
         if(mLoopPhase > TWO_PI)
         {
             mLoopPhase -= TWO_PI;
@@ -170,7 +183,7 @@ public class CostasLoop implements IPhaseLockedLoop
             mLoopPhase += TWO_PI;
         }
 
-        /* Limit frequency to +/- maximum loop frequency */
+        //Limit frequency to +/- maximum loop frequency
         if(mLoopFrequency > mMaximumLoopFrequency)
         {
             mLoopFrequency = mMaximumLoopFrequency;
@@ -181,17 +194,25 @@ public class CostasLoop implements IPhaseLockedLoop
             mLoopFrequency = -mMaximumLoopFrequency;
         }
 
-        //TODO: broadcast channel offset to the tuner to use in auto-adjusting tuner PPM
-//        mCounter++;
-//
-//        if(mCounter > (5 * mSymbolRate))
-//        {
-//            mCounter = 0;
-//            mLog.info("Current Costas Loop Frequency: " + mLoopFrequency + " [" +
-//                (int)(mSampleRate / TWO_PI * mLoopFrequency) + " Hz Offset] sample rate [" + mSampleRate + "]");
-//        }
+        //Broadcast current frequency error measurement once a second to an external listener
+        mBaudCounter++;
+
+        if(mBaudCounter > mSymbolRate)
+        {
+            mBaudCounter = 0;
+
+            mFrequencyError = (long)(mSampleRate / TWO_PI * mLoopFrequency);
+
+            if(mFrequencyErrorProcessor != null)
+            {
+                mFrequencyErrorProcessor.processFrequencyError(mFrequencyError);
+            }
+        }
     }
 
+    /**
+     * Resets the PLL internal tracking values
+     */
     @Override
     public void reset()
     {

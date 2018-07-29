@@ -181,6 +181,15 @@ public abstract class TunerChannelSource extends ComplexSource implements ISourc
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
                 setSampleRate(sourceEvent.getValue().doubleValue());
                 break;
+            case NOTIFICATION_MEASURED_FREQUENCY_ERROR:
+                //Ignore these raw frequency measurement errors.  We're only interested in the measurements
+                //that occur when the channel state indicates that we're sync-locked.
+                break;
+            case NOTIFICATION_MEASURED_FREQUENCY_ERROR_SYNC_LOCKED:
+                //Rebroadcast this measurement event so the producer can process it
+                sourceEvent.setSource(this);
+                broadcastProducerSourceEvent(sourceEvent);
+                break;
             //Request events from the consumer
             case REQUEST_CHANNEL_FREQUENCY_CORRECTION_CHANGE:
                 setChannelFrequencyCorrection(sourceEvent.getValue().longValue());

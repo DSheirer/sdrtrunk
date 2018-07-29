@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import org.usb4java.LibUsbException;
 
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -64,6 +65,7 @@ public class R820TTunerEditor extends TunerConfigurationEditor
     private JButton mTunerInfo;
     private JComboBox<SampleRate> mComboSampleRate;
     private JSpinner mFrequencyCorrection;
+    private JCheckBox mAutoPPMEnabled;
     private JComboBox<R820TGain> mComboMasterGain;
     private JComboBox<R820TMixerGain> mComboMixerGain;
     private JComboBox<R820TLNAGain> mComboLNAGain;
@@ -201,6 +203,22 @@ public class R820TTunerEditor extends TunerConfigurationEditor
 
         add(new JLabel("PPM:"));
         add(mFrequencyCorrection);
+
+        add(new JLabel("")); //Space filler
+        add(new JLabel("")); //Space filler
+        add(new JLabel("")); //Space filler
+        mAutoPPMEnabled = new JCheckBox("PPM Auto-Correction");
+        mAutoPPMEnabled.addActionListener(new ActionListener()
+        {
+            @Override
+            public void actionPerformed(ActionEvent e)
+            {
+                boolean enabled = mAutoPPMEnabled.isSelected();
+                mController.getFrequencyErrorCorrectionManager().setEnabled(enabled);
+                save();
+            }
+        });
+        add(mAutoPPMEnabled);
 
         add(new JSeparator(JSeparator.HORIZONTAL), "span,grow");
 
@@ -435,6 +453,11 @@ public class R820TTunerEditor extends TunerConfigurationEditor
             mFrequencyCorrection.setEnabled(enabled);
         }
 
+        if(mAutoPPMEnabled.isEnabled() != enabled)
+        {
+            mAutoPPMEnabled.setEnabled(enabled);
+        }
+
         updateSampleRateToolTip();
 
         if(mController.isLocked())
@@ -524,6 +547,8 @@ public class R820TTunerEditor extends TunerConfigurationEditor
                 .getModel()).getNumber().doubleValue();
             config.setFrequencyCorrection(value);
 
+            config.setAutoPPMCorrectionEnabled(mAutoPPMEnabled.isSelected());
+
             config.setSampleRate((SampleRate)mComboSampleRate.getSelectedItem());
 
             R820TGain gain = (R820TGain)mComboMasterGain.getSelectedItem();
@@ -560,6 +585,7 @@ public class R820TTunerEditor extends TunerConfigurationEditor
                 setControlsEnabled(true);
                 mConfigurationName.setText(config.getName());
                 mFrequencyCorrection.setValue(config.getFrequencyCorrection());
+                mAutoPPMEnabled.setSelected(config.getAutoPPMCorrectionEnabled());
                 mComboSampleRate.setSelectedItem(config.getSampleRate());
                 mComboMasterGain.setSelectedItem(config.getMasterGain());
                 mComboMixerGain.setSelectedItem(config.getMixerGain());

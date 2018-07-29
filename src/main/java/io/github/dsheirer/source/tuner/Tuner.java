@@ -22,6 +22,8 @@ import io.github.dsheirer.source.SourceEvent;
 import io.github.dsheirer.source.tuner.TunerEvent.Event;
 import io.github.dsheirer.source.tuner.manager.ChannelSourceManager;
 import io.github.dsheirer.source.tuner.manager.TunerChannelSourceManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Tuner provides an interface to a software or hardware tuner controller that provides I/Q sample data coupled with a
@@ -29,9 +31,12 @@ import io.github.dsheirer.source.tuner.manager.TunerChannelSourceManager;
  */
 public abstract class Tuner implements ISourceEventProcessor
 {
+    private final static Logger mLog = LoggerFactory.getLogger(Tuner.class);
+
     private Broadcaster<TunerEvent> mTunerEventBroadcaster = new Broadcaster<>();
     private ChannelSourceManager mChannelSourceManager;
     private TunerController mTunerController;
+    private TunerFrequencyErrorMonitor mTunerFrequencyErrorMonitor;
     private String mName;
 
     /**
@@ -49,6 +54,9 @@ public abstract class Tuner implements ISourceEventProcessor
         mChannelSourceManager = new TunerChannelSourceManager(mTunerController);
         //Register to receive channel count change notifications
         mChannelSourceManager.addSourceEventListener(this::process);
+
+        mTunerFrequencyErrorMonitor = new TunerFrequencyErrorMonitor(this);
+        mTunerFrequencyErrorMonitor.start();
     }
 
     @Override
@@ -60,16 +68,23 @@ public abstract class Tuner implements ISourceEventProcessor
                 broadcast(new TunerEvent(Tuner.this, Event.CHANNEL_COUNT));
                 break;
             case NOTIFICATION_FREQUENCY_CHANGE:
-                broadcast(new TunerEvent(Tuner.this, Event.FREQUENCY));
+                broadcast(new TunerEvent(Tuner.this, Event.FREQUENCY_UPDATED));
+                break;
+            case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
+                broadcast(new TunerEvent(Tuner.this, Event.FREQUENCY_ERROR_UPDATED));
                 break;
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
-                broadcast(new TunerEvent(Tuner.this, Event.SAMPLE_RATE));
+                broadcast(new TunerEvent(Tuner.this, Event.SAMPLE_RATE_UPDATED));
                 break;
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED:
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED:
                 broadcast(new TunerEvent(Tuner.this, Event.LOCK_STATE_CHANGE));
                 break;
+            case NOTIFICATION_MEASURED_FREQUENCY_ERROR_SYNC_LOCKED:
+                mTunerFrequencyErrorMonitor.receive(event);
+                break;
             default:
+                mLog.debug("Unrecognized Source Event: " + event.toString());
                 break;
         }
     }

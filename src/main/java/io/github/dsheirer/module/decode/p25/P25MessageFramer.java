@@ -36,11 +36,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class P25MessageFramer implements Listener<Dibit>
 {
-    private final static Logger mLog =
-        LoggerFactory.getLogger(P25MessageFramer.class);
+    private final static Logger mLog = LoggerFactory.getLogger(P25MessageFramer.class);
 
     /* Determines the threshold for sync pattern soft matching */
     private static final int SYNC_MATCH_THRESHOLD = 2;
@@ -49,9 +49,10 @@ public class P25MessageFramer implements Listener<Dibit>
     /* Costas Loop phase lock error correction values.  A phase lock error of
      * 90 degrees requires a correction of 1/4 of the symbol rate (1200Hz).  An
      * error of 180 degrees requires a correction of 1/2 of the symbol rate */
-    public static final double SYMBOL_FREQUENCY = 2.0d * Math.PI * 4800.0d / 48000.0d;
-    public static final double PHASE_CORRECTION_90_DEGREES = SYMBOL_FREQUENCY / 4.0d;
-    public static final double PHASE_CORRECTION_180_DEGREES = SYMBOL_FREQUENCY / 2.0d;
+    public static final double DEFAULT_SAMPLE_RATE = 25000.0;
+    public static final double FREQUENCY_PHASE_CORRECTION_90_DEGREES = 1200.0;
+    public static final double FREQUENCY_PHASE_CORRECTION_180_DEGREES = 2400.0;
+
     public static final int TSBK_BEGIN = 64;
     public static final int TSBK_CRC_START = 144;
     public static final int TSBK_END = 260;
@@ -71,9 +72,12 @@ public class P25MessageFramer implements Listener<Dibit>
     private SoftSyncDetector mPrimarySyncDetector = new SoftSyncDetector(
         FrameSync.P25_PHASE1_NORMAL.getSync(), SYNC_MATCH_THRESHOLD);
 
-    private MultiSyncPatternMatcher mMatcher = new MultiSyncPatternMatcher(48);
-    private ArrayList<P25MessageAssembler> mAssemblers =
-        new ArrayList<P25MessageAssembler>();
+    private PLLPhaseInversionDetector mInversionDetector90CW;
+    private PLLPhaseInversionDetector mInversionDetector90CCW;
+    private PLLPhaseInversionDetector mInversionDetector180;
+
+    private MultiSyncPatternMatcher mMatcher;
+    private List<P25MessageAssembler> mAssemblers = new ArrayList<P25MessageAssembler>();
 
     private Listener<Message> mListener;
     private AliasList mAliasList;
@@ -88,9 +92,12 @@ public class P25MessageFramer implements Listener<Dibit>
      * to the message length, and then broadcast that bit buffer to the registered
      * listener.
      */
-    public P25MessageFramer(AliasList aliasList)
+    public P25MessageFramer(AliasList aliasList, ISyncDetectListener syncDetectListener)
     {
         mAliasList = aliasList;
+
+        //Assign the sync detect listener to the matcher with a sync loss threshold equal to the longest message length
+        mMatcher = new MultiSyncPatternMatcher(syncDetectListener, DataUnitID.LDU1.getMessageLength(), 48);
 
         mPrimarySyncDetector.setListener(new ISyncDetectListener()
         {
@@ -105,6 +112,12 @@ public class P25MessageFramer implements Listener<Dibit>
                         break;
                     }
                 }
+            }
+
+            @Override
+            public void syncLost()
+            {
+                //no-op
             }
         });
 
@@ -122,23 +135,39 @@ public class P25MessageFramer implements Listener<Dibit>
         mAssemblers.add(new P25MessageAssembler());
     }
 
-    public P25MessageFramer(AliasList aliasList, IPhaseLockedLoop phaseLockedLoop)
+    public P25MessageFramer(AliasList aliasList, IPhaseLockedLoop phaseLockedLoop, ISyncDetectListener syncDetectListener)
     {
-        this(aliasList);
+        this(aliasList, syncDetectListener);
 
         if(phaseLockedLoop != null)
         {
             //Add additional sync pattern detectors to detect when we get 90/180 degree out of phase sync pattern
             //detections so that we can apply correction to the phase locked loop
-            mMatcher.add(new PLLPhaseInversionDetector(FrameSync.P25_PHASE1_ERROR_90_CCW,
-                phaseLockedLoop, PHASE_CORRECTION_90_DEGREES));
+            mInversionDetector90CW = new PLLPhaseInversionDetector(FrameSync.P25_PHASE1_ERROR_90_CW,
+                phaseLockedLoop, DEFAULT_SAMPLE_RATE, FREQUENCY_PHASE_CORRECTION_90_DEGREES);
+            mMatcher.add(mInversionDetector90CW);
 
-            mMatcher.add(new PLLPhaseInversionDetector(FrameSync.P25_PHASE1_ERROR_90_CW,
-                phaseLockedLoop, -PHASE_CORRECTION_90_DEGREES));
+            mInversionDetector90CCW = new PLLPhaseInversionDetector(FrameSync.P25_PHASE1_ERROR_90_CCW,
+                phaseLockedLoop, DEFAULT_SAMPLE_RATE, -FREQUENCY_PHASE_CORRECTION_90_DEGREES);
+            mMatcher.add(mInversionDetector90CCW);
 
-            mMatcher.add(new PLLPhaseInversionDetector(FrameSync.P25_PHASE1_ERROR_180,
-                phaseLockedLoop, PHASE_CORRECTION_180_DEGREES));
+            mInversionDetector180 = new PLLPhaseInversionDetector(FrameSync.P25_PHASE1_ERROR_180,
+                phaseLockedLoop, DEFAULT_SAMPLE_RATE, FREQUENCY_PHASE_CORRECTION_180_DEGREES);
+            mMatcher.add(mInversionDetector180);
         }
+    }
+
+    /**
+     * Updates the incoming sample stream sample rate to allow the PLL phase inversion detectors to
+     * recalculate their internal phase correction values.
+     *
+     * @param sampleRate of the incoming sample stream
+     */
+    public void setSampleRate(double sampleRate)
+    {
+        mInversionDetector180.setSampleRate(sampleRate);
+        mInversionDetector90CW.setSampleRate(sampleRate);
+        mInversionDetector90CCW.setSampleRate(sampleRate);
     }
 
     public void dispose()
@@ -671,34 +700,46 @@ public class P25MessageFramer implements Listener<Dibit>
     }
 
     /**
-     * Sync pattern detector to listen for costas loop phase lock errors and
-     * apply a phase correction to the costas loop so that we don't miss any
-     * messages.
+     * Sync pattern detector to listen for costas loop phase lock errors and apply a phase correction to the costas
+     * loop so that we don't miss any messages.
      *
-     * When the costas loop locks with a +/- 90 degree or 180 degree phase
-     * error, the slicer will incorrectly apply the symbol pattern rotated left
-     * or right by the phase error.  However, we can detect these rotated sync
-     * patterns and apply immediate phase correction so that message processing
-     * can continue.
+     * When the costas loop locks with a +/- 90 degree or 180 degree phase error, the slicer will incorrectly apply
+     * the symbol pattern rotated left or right by the phase error.  However, we can detect these rotated sync patterns
+     * and apply immediate phase correction so that message processing can continue.
      */
     public class PLLPhaseInversionDetector extends SyncDetector
     {
+        private FrameSync mFrameSync;
         private IPhaseLockedLoop mPhaseLockedLoop;
-        private double mCorrection;
+        private double mSampleRate;
+        private double mFrequencyCorrection;
+        private double mPllCorrection;
 
-        public PLLPhaseInversionDetector(FrameSync frameSync, IPhaseLockedLoop phaseLockedLoop, double correction)
+        /**
+         * Constructs the PLL phase inversion detector.
+         *
+         * @param frameSync pattern to monitor for detecting phase inversion errors
+         * @param phaseLockedLoop to receive phase correction values
+         * @param sampleRate of the incoming sample stream
+         * @param frequencyCorrection to apply to the PLL.  Examples:
+         *      QPSK +/-90 degree correction: +/-SYMBOL RATE / 4.0
+         *      QPSK 180 degree correction: SYMBOL RATE / 2.0
+         */
+        public PLLPhaseInversionDetector(FrameSync frameSync, IPhaseLockedLoop phaseLockedLoop, double sampleRate,
+                                         double frequencyCorrection)
         {
             super(frameSync.getSync());
-
+            mFrameSync = frameSync;
             mPhaseLockedLoop = phaseLockedLoop;
-            mCorrection = correction;
+            mFrequencyCorrection = frequencyCorrection;
+            setSampleRate(sampleRate);
 
             setListener(new ISyncDetectListener()
             {
                 @Override
                 public void syncDetected()
                 {
-                    mPhaseLockedLoop.correctInversion(mCorrection);
+                    mPhaseLockedLoop.correctInversion(mPllCorrection);
 
                     /* Since we detected a sync pattern, start a message assembler */
                     for(P25MessageAssembler assembler : mAssemblers)
@@ -710,7 +751,24 @@ public class P25MessageFramer implements Listener<Dibit>
                         }
                     }
                 }
+
+                @Override
+                public void syncLost()
+                {
+                    //no-op
+                }
             });
+
+        }
+
+        /**
+         * Sets or adjusts the sample rate so that the phase inversion correction value can be recalculated.
+         * @param sampleRate
+         */
+        public void setSampleRate(double sampleRate)
+        {
+            mSampleRate = sampleRate;
+            mPllCorrection = 2.0 * Math.PI * mFrequencyCorrection / mSampleRate;
         }
     }
 }

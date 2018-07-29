@@ -41,6 +41,7 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     private int mMiddleUnusableHalfBandwidth;
     private double mUsableBandwidthPercentage;
     private Listener<SourceEvent> mSourceEventListener;
+    private int mMeasuredFrequencyError;
 
     /**
      * Abstract tuner controller class.  The tuner controller manages frequency bandwidth and currently tuned channels
@@ -240,6 +241,46 @@ public abstract class TunerController implements Tunable, ISourceEventProcessor,
     public int getUsableHalfBandwidth()
     {
         return (int)(getUsableBandwidth() / 2);
+    }
+
+    /**
+     * Current measured frequency error as received/reported from certain downstream decoders.
+      * @return measured frequency error in hertz averaged over 1-second intervals
+     */
+    public int getMeasuredFrequencyError()
+    {
+        return mMeasuredFrequencyError;
+    }
+
+    /**
+     * Indicates if this tuner controller has a non-zero measured frequency error value.
+     */
+    public boolean hasMeasuredFrequencyError()
+    {
+        return mMeasuredFrequencyError != 0;
+    }
+
+    /**
+     * Calculates the current PPM error value as measured by certain downstream decoders.
+     * @return
+     */
+    public double getPPMFrequencyError()
+    {
+        if(hasMeasuredFrequencyError())
+        {
+            return mMeasuredFrequencyError / ((double)getFrequency() / 1E6d);
+        }
+
+        return 0.0d;
+    }
+
+    /**
+     * Sets the measured frequency error average.
+     * @param measuredFrequencyError in hertz averaged over a 5 second interval.
+     */
+    public void setMeasuredFrequencyError(int measuredFrequencyError)
+    {
+        mMeasuredFrequencyError = measuredFrequencyError;
     }
 
     /**

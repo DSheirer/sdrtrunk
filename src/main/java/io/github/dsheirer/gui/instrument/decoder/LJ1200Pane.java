@@ -44,6 +44,12 @@ public class LJ1200Pane extends AbstractAFSK1200Pane
                 {
                     mLog.debug("Tower Sync Detected!");
                 }
+
+                @Override
+                public void syncLost()
+                {
+                    //no-op
+                }
             });
             mDecoder.getTransponderMessageFramer().setSyncDetectListener(new ISyncDetectListener()
             {
@@ -51,6 +57,12 @@ public class LJ1200Pane extends AbstractAFSK1200Pane
                 public void syncDetected()
                 {
                     mLog.debug("Transponder Sync Detected!");
+                }
+
+                @Override
+                public void syncLost()
+                {
+                    //no-op
                 }
             });
         }

@@ -176,7 +176,7 @@ public class P25Phase1LSMPane extends ComplexDecoderPane
     {
         if(mPLLFrequencyLineChart == null)
         {
-            mPLLFrequencyLineChart = new DoubleLineChart( "PLL Frequency", -500, 500, 50, 40);
+            mPLLFrequencyLineChart = new DoubleLineChart( "PLL Frequency", -2500, 2500, 200, 40);
         }
 
         return mPLLFrequencyLineChart;
@@ -186,7 +186,7 @@ public class P25Phase1LSMPane extends ComplexDecoderPane
     {
         if(mSamplesPerSymbolLineChart == null)
         {
-            mSamplesPerSymbolLineChart = new DoubleLineChart( "Sample Point", 9.5, 11.5, 0.1, 40);
+            mSamplesPerSymbolLineChart = new DoubleLineChart( "Sample Point", 4.5, 7.0, 0.1, 40);
         }
 
         return mSamplesPerSymbolLineChart;

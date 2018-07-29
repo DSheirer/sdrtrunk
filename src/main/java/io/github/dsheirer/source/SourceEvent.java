@@ -31,6 +31,8 @@ public class SourceEvent
         NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_UNLOCKED,
         NOTIFICATION_FREQUENCY_CHANGE,
         NOTIFICATION_FREQUENCY_CORRECTION_CHANGE,
+        NOTIFICATION_MEASURED_FREQUENCY_ERROR,
+        NOTIFICATION_MEASURED_FREQUENCY_ERROR_SYNC_LOCKED,
         NOTIFICATION_SAMPLE_RATE_CHANGE,
         NOTIFICATION_STOP_SAMPLE_STREAM,
 
@@ -125,6 +127,14 @@ public class SourceEvent
     }
 
     /**
+     * Sets the source associated with this event
+     */
+    public void setSource(Source source)
+    {
+        mSource = source;
+    }
+
+    /**
      * Indicates if this event contains an optional source
      */
     public boolean hasSource()
@@ -187,6 +197,28 @@ public class SourceEvent
     public static SourceEvent channelFrequencyCorrectionChange(long frequencyCorrection)
     {
         return new SourceEvent(Event.NOTIFICATION_CHANNEL_FREQUENCY_CORRECTION_CHANGE, frequencyCorrection);
+    }
+
+    /**
+     * Creates a new frequency error measurement notification event.
+     *
+     * @param frequencyError in hertz
+     */
+    public static SourceEvent frequencyErrorMeasurement(long frequencyError)
+    {
+        return new SourceEvent(Event.NOTIFICATION_MEASURED_FREQUENCY_ERROR, frequencyError);
+    }
+
+    /**
+     * Creates a new frequency error measurement notification event.  This event is different from
+     * the raw frequency error measurement and indicates that the current state of the PLL is
+     * locked and tracking the signal.
+     *
+     * @param frequencyError in hertz
+     */
+    public static SourceEvent frequencyErrorMeasurementSyncLocked(long frequencyError, String eventDescription)
+    {
+        return new SourceEvent(Event.NOTIFICATION_MEASURED_FREQUENCY_ERROR_SYNC_LOCKED, frequencyError, eventDescription);
     }
 
     /**
@@ -288,7 +320,7 @@ public class SourceEvent
     {
         return "SOURCE EVENT:" + mEvent +
                " VALUE:" + (mValue != null ? mValue : "(empty)") +
-               " SOURCE:" + (mSource != null ? mSource.getClass() : "(null)") +
+               " SOURCE:" + (mSource != null ? mSource.toString() : "(null)") +
                " DESCRIPTION:" + (mEventDescription != null ? mEventDescription : "");
     }
 }

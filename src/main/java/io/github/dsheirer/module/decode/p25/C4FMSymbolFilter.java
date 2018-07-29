@@ -149,7 +149,7 @@ public class C4FMSymbolFilter implements Listener<ReusableBuffer>, ISourceEventL
     private static final int SAMPLE_RATE = 48000;
     private static final int SYMBOL_RATE = 4800;
 
-    /* Tracking loop gain constant */
+    /* PLLGain loop gain constant */
     private static final double K_SYMBOL_SPREAD = 0.0100;
 
     /* Constraints on symbol spreading */

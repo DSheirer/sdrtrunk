@@ -556,6 +556,10 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
                 case NOTIFICATION_FREQUENCY_CORRECTION_CHANGE:
                     //ignore
                     break;
+                case NOTIFICATION_MEASURED_FREQUENCY_ERROR_SYNC_LOCKED:
+                    //Rebroadcast so that the tuner source can process this event
+                    mSourceEventBroadcaster.broadcast(sourceEvent);
+                    break;
                 default:
                     mLog.error("Received unrecognized source event from polyphase channel source [" +
                         sourceEvent.getEvent() + "]");

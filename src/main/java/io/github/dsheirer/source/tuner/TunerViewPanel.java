@@ -130,20 +130,7 @@ public class TunerViewPanel extends JPanel
             {
                 int column = mTunerTable.columnAtPoint(e.getPoint());
 
-                if(column == TunerModel.SPECTRAL_DISPLAY_MAIN)
-                {
-                    int tableRow = mTunerTable.rowAtPoint(e.getPoint());
-                    int modelRow = mTunerTable.convertRowIndexToModel(tableRow);
-
-                    Tuner tuner = mTunerModel.getTuner(modelRow);
-
-                    if(tuner != null)
-                    {
-                        mTunerModel.broadcast(new TunerEvent(tuner,
-                            Event.REQUEST_MAIN_SPECTRAL_DISPLAY));
-                    }
-                }
-                else if(column == TunerModel.SPECTRAL_DISPLAY_NEW)
+                if(column == TunerModel.SPECTRAL_DISPLAY_NEW)
                 {
                     int tableRow = mTunerTable.rowAtPoint(e.getPoint());
                     int modelRow = mTunerTable.convertRowIndexToModel(tableRow);
@@ -160,9 +147,7 @@ public class TunerViewPanel extends JPanel
         });
 
         TableCellRenderer renderer = new LinkCellRenderer();
-
-        mTunerTable.getColumnModel().getColumn(5).setCellRenderer(renderer);
-        mTunerTable.getColumnModel().getColumn(6).setCellRenderer(renderer);
+        mTunerTable.getColumnModel().getColumn(TunerModel.SPECTRAL_DISPLAY_NEW).setCellRenderer(renderer);
 
         JScrollPane listScroller = new JScrollPane(mTunerTable);
         listScroller.setPreferredSize(new Dimension(400, 20));
@@ -191,15 +176,7 @@ public class TunerViewPanel extends JPanel
                 value, isSelected, hasFocus, row, column);
 
             label.setForeground(Color.BLUE.brighter());
-
-            if(column == TunerModel.SPECTRAL_DISPLAY_MAIN)
-            {
-                label.setToolTipText("Show this tuner in the main spectral display");
-            }
-            else if(column == TunerModel.SPECTRAL_DISPLAY_NEW)
-            {
-                label.setToolTipText("Show this tuner in a new spectral display");
-            }
+            label.setToolTipText("Show this tuner in a new spectral display");
 
             return label;
         }

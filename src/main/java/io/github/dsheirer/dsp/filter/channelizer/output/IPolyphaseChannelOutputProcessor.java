@@ -60,6 +60,11 @@ public interface IPolyphaseChannelOutputProcessor
     void setPolyphaseChannelIndices(List<Integer> indexes);
 
     /**
+     * List of current polyphase channel indices for the output processor
+     */
+    int getPolyphaseChannelIndexCount();
+
+    /**
      * Updates the synthesis filter taps for this output processor
      * @param filter
      */

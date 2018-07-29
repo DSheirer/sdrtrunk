@@ -455,7 +455,10 @@ public class WaterfallPanel extends JPanel implements DFTResultsListener,
             @Override
             public void run()
             {
-                mMemoryImageSource.newPixels(mPixels, mColorModel, 0, mDFTSize);
+                if(mMemoryImageSource != null)
+                {
+                    mMemoryImageSource.newPixels(mPixels, mColorModel, 0, mDFTSize);
+                }
             }
         });
     }

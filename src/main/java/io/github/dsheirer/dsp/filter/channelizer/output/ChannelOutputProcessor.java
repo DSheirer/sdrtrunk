@@ -62,6 +62,12 @@ public abstract class ChannelOutputProcessor implements IPolyphaseChannelOutputP
         mChannelResultsQueue = new OverflowableReusableBufferTransferQueue<>((int)(sampleRate * 3), (int)(sampleRate * 0.5));
     }
 
+    @Override
+    public int getPolyphaseChannelIndexCount()
+    {
+        return mInputChannelCount;
+    }
+
     public void dispose()
     {
         if(mChannelResultsQueue != null)

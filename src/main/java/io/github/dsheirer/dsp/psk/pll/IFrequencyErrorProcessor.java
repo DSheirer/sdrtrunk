@@ -13,15 +13,17 @@
  * If not, see <http://www.gnu.org/licenses/>
  *
  ******************************************************************************/
-package io.github.dsheirer.dsp.symbol;
+package io.github.dsheirer.dsp.psk.pll;
 
 /**
- * Listener interface to be notified each time a sync pattern has been detected and/or when the sync
- * has been lost.
+ * Interface for passing frequency error measurements.
  */
-public interface ISyncDetectListener
+public interface IFrequencyErrorProcessor
 {
-    void syncDetected();
-
-    void syncLost();
+    /**
+     * Provides a frequency error measurement to the listener.
+     *
+     * @param error value as measured by the provider
+     */
+    void processFrequencyError(long error);
 }

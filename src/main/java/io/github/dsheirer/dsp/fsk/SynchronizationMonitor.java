@@ -30,13 +30,13 @@ import org.slf4j.LoggerFactory;
  *
  * Synchronization States:
  *
- *  -COARSE - default state.  demoted from MEDIUM after one message period with no sync detection.
+ * -COARSE - default state.  demoted from MEDIUM after one message period with no sync detection.
  *
- *  -MEDIUM - promoted from COARSE when one sync detection occurs after two message periods, or demoted from FINE
- *            after two message periods with no sync detections.
+ * -MEDIUM - promoted from COARSE when one sync detection occurs after two message periods, or demoted from FINE
+ * after two message periods with no sync detections.
  *
- *  -FINE   - promoted from MEDIUM after two or more consecutive sync detections within the preceding two or more
- *            message periods.
+ * -FINE   - promoted from MEDIUM after two or more consecutive sync detections within the preceding two or more
+ * message periods.
  */
 public class SynchronizationMonitor implements ISyncDetectListener
 {
@@ -50,6 +50,7 @@ public class SynchronizationMonitor implements ISyncDetectListener
 
     /**
      * Constructs the synchronization monitor for the specified message symbol length.
+     *
      * @param messageLength in symbols.
      */
     public SynchronizationMonitor(int messageLength)
@@ -125,6 +126,12 @@ public class SynchronizationMonitor implements ISyncDetectListener
         mSymbolCount = 0;
         mSyncCount++;
         updateSyncState();
+    }
+
+    @Override
+    public void syncLost()
+    {
+        //no-op
     }
 
     /**
