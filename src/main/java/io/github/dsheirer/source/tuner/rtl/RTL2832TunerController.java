@@ -1233,14 +1233,22 @@ public abstract class RTL2832TunerController extends USBTunerController
     public enum SampleRate
     {
         /* Note: sample rates below 1.0MHz are subject to aliasing */
+        RATE_0_230MHZ(0x1F40, 230400, "0.230 MHz"),
         RATE_0_240MHZ(0x1E00, 240000, "0.240 MHz"),
+        RATE_0_256MHZ(0x1C20, 256000, "0.256 MHz"),
         RATE_0_288MHZ(0x1900, 288000, "0.288 MHz"),
+        RATE_0_300MHZ(0x1800, 300000, "0.300 MHz"),
         RATE_0_960MHZ(0x0780, 960000, "0.960 MHz"),
+        RATE_1_024MHZ(0x0708, 1024000, "1.024 MHz"),
         RATE_1_200MHZ(0x0600, 1200000, "1.200 MHz"),
         RATE_1_440MHZ(0x0500, 1440000, "1.440 MHz"),
-        RATE_1_920MHZ(0x03C0, 2016000, "2.016 MHz"),
-        RATE_2_304MHZ(0x0320, 2208000, "2.208 MHz"),
+        RATE_1_600MHZ(0x0480, 1600000, "1.600 MHz"),
+        RATE_1_800MHZ(0x0480, 1800000, "1.800 MHz"),
+        RATE_1_920MHZ(0x03C0, 1920000, "1.920 MHz"),
+        RATE_2_048MHZ(0x0384, 2048000, "2.048 MHz"),
+        RATE_2_304MHZ(0x0320, 2304000, "2.304 MHz"),
         RATE_2_400MHZ(0x0300, 2400000, "2.400 MHz"),
+        RATE_2_560MHZ(0x02D0, 2560000, "2.560 MHz"),
         RATE_2_880MHZ(0x0280, 2880000, "2.880 MHz");
 
         private int mRatioHigh;
