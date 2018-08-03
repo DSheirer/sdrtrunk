@@ -87,6 +87,32 @@ public class USBTransferProcessor implements TransferCallback
     }
 
     /**
+     * Modifies the usb transfer buffer size used for transfering native byte buffers from the
+     * USB device.  Note: changing the buffer size while the transfer processor is running causes
+     * the transfer to stop momentarily while the existing buffers are destroyed and new buffers
+     * with the correct size are recreated.
+     *
+     * Note: this method is not thread safe.  Ensure that no other threads invoke stop() or start()
+     * while a buffer size change is in progress.
+     *
+     * @param bufferSize to use for native usb buffer transfers
+     */
+    public void setBufferSize(int bufferSize)
+    {
+        if(bufferSize % 2 == 1)
+        {
+            throw new IllegalArgumentException("Buffer size must be a multiple of 2 for complex samples");
+        }
+
+        if(mBufferSize != bufferSize)
+        {
+            stop();
+            mBufferSize = bufferSize;
+            start();
+        }
+    }
+
+    /**
      * Start USB transfer buffer processing.  Subsequent calls to this method after started will be ignored.
      */
     private void start()
