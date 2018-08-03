@@ -52,7 +52,7 @@ public abstract class RTL2832TunerController extends USBTunerController
 
     public final static int TWO_TO_22_POWER = 4194304;
     public final static int USB_TRANSFER_BUFFER_SIZE_HIGH_SAMPLE_RATE = 131072;
-    public final static int USB_TRANSFER_BUFFER_SIZE_LOW_SAMPLE_RATE = 16384;
+    public final static int USB_TRANSFER_BUFFER_SIZE_LOW_SAMPLE_RATE = 8192;
     public final static byte USB_INTERFACE = (byte) 0x0;
     public final static byte CONTROL_ENDPOINT_IN = (byte) (LibUsb.ENDPOINT_IN | LibUsb.REQUEST_TYPE_VENDOR);
     public final static byte CONTROL_ENDPOINT_OUT = (byte) (LibUsb.ENDPOINT_OUT | LibUsb.REQUEST_TYPE_VENDOR);
