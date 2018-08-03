@@ -434,8 +434,8 @@ public class TunerChannelSourceManager extends ChannelSourceManager
                 catch(IllegalArgumentException iae)
                 {
                     //Center frequency calculation failed
-                    mLog.debug("Couldn't calculate new tuner center frequency for new tuner channel [" +
-                        tunerChannel + "] unable to allocate new tuner channel");
+//                    mLog.debug("Couldn't calculate new tuner center frequency for new tuner channel [" +
+//                        tunerChannel + "] unable to allocate new tuner channel");
                 }
             }
         }
