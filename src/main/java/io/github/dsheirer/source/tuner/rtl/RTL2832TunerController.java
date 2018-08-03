@@ -52,7 +52,8 @@ public abstract class RTL2832TunerController extends USBTunerController
 
     public final static int TWO_TO_22_POWER = 4194304;
 
-    public final static int USB_TRANSFER_BUFFER_SIZE = 131072;
+    public final static int USB_TRANSFER_BUFFER_SIZE_HIGH_SAMPLE_RATE = 131072;
+    public final static int USB_TRANSFER_BUFFER_SIZE_LOW_SAMPLE_RATE = 32768;
     public final static byte USB_INTERFACE = (byte) 0x0;
     public final static byte CONTROL_ENDPOINT_IN = (byte) (LibUsb.ENDPOINT_IN | LibUsb.REQUEST_TYPE_VENDOR);
     public final static byte CONTROL_ENDPOINT_OUT = (byte) (LibUsb.ENDPOINT_OUT | LibUsb.REQUEST_TYPE_VENDOR);
@@ -155,7 +156,7 @@ public abstract class RTL2832TunerController extends USBTunerController
         String deviceName = getTunerType().getLabel() + " " + getUniqueID();
 
         mUSBTransferProcessor = new RTL2832USBTransferProcessor(deviceName, mDeviceHandle, mNativeBufferConverter,
-            USB_TRANSFER_BUFFER_SIZE);
+            USB_TRANSFER_BUFFER_SIZE_HIGH_SAMPLE_RATE);
     }
 
     @Override
@@ -985,6 +986,18 @@ public abstract class RTL2832TunerController extends USBTunerController
         mSampleRate = sampleRate;
 
         mFrequencyController.setSampleRate(sampleRate.getRate());
+
+        if(mUSBTransferProcessor != null)
+        {
+            if(sampleRate.getRate() > 300000)
+            {
+                mUSBTransferProcessor.setBufferSize(USB_TRANSFER_BUFFER_SIZE_HIGH_SAMPLE_RATE);
+            }
+            else
+            {
+                mUSBTransferProcessor.setBufferSize(USB_TRANSFER_BUFFER_SIZE_LOW_SAMPLE_RATE);
+            }
+        }
     }
 
     public void setSampleRateFrequencyCorrection(int ppm) throws SourceException

@@ -253,7 +253,7 @@ public class E4KTunerController extends RTL2832TunerController
         String deviceName = getTunerType().getLabel() + " " + getUniqueID();
 
         mUSBTransferProcessor = new RTL2832USBTransferProcessor(deviceName, mDeviceHandle, mNativeBufferConverter,
-            USB_TRANSFER_BUFFER_SIZE);
+            USB_TRANSFER_BUFFER_SIZE_HIGH_SAMPLE_RATE);
     }
 
     @Override
