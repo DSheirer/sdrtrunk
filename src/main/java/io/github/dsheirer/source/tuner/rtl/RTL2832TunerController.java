@@ -51,13 +51,11 @@ public abstract class RTL2832TunerController extends USBTunerController
     private final static Logger mLog = LoggerFactory.getLogger(RTL2832TunerController.class);
 
     public final static int TWO_TO_22_POWER = 4194304;
-
     public final static int USB_TRANSFER_BUFFER_SIZE_HIGH_SAMPLE_RATE = 131072;
-    public final static int USB_TRANSFER_BUFFER_SIZE_LOW_SAMPLE_RATE = 32768;
+    public final static int USB_TRANSFER_BUFFER_SIZE_LOW_SAMPLE_RATE = 16384;
     public final static byte USB_INTERFACE = (byte) 0x0;
     public final static byte CONTROL_ENDPOINT_IN = (byte) (LibUsb.ENDPOINT_IN | LibUsb.REQUEST_TYPE_VENDOR);
     public final static byte CONTROL_ENDPOINT_OUT = (byte) (LibUsb.ENDPOINT_OUT | LibUsb.REQUEST_TYPE_VENDOR);
-
     public final static long TIMEOUT_US = 1000000l; //uSeconds
     public final static byte REQUEST_ZERO = (byte) 0;
     public final static byte EEPROM_ADDRESS = (byte) 0xA0;
@@ -1255,9 +1253,7 @@ public abstract class RTL2832TunerController extends USBTunerController
         private int mRate;
         private String mLabel;
 
-        private SampleRate(int ratioHigh,
-                           int rate,
-                           String label)
+        private SampleRate(int ratioHigh, int rate, String label)
         {
             mRatioHigh = ratioHigh;
             mRate = rate;
@@ -1318,7 +1314,7 @@ public abstract class RTL2832TunerController extends USBTunerController
         private int mCheckAddress;
         private int mCheckValue;
 
-        private TunerTypeCheck(int i2c, int address, int value)
+        TunerTypeCheck(int i2c, int address, int value)
         {
             mI2CAddress = i2c;
             mCheckAddress = address;
