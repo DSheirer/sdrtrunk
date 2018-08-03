@@ -314,7 +314,7 @@ public class PolyphaseChannelManager implements ISourceEventProcessor
             case NOTIFICATION_SAMPLE_RATE_CHANGE:
                 //Update channel calculator immediately so that channels can be allocated
                 double sampleRate = sourceEvent.getValue().doubleValue();
-                int channelCount = (int)Math.ceil(sampleRate / MINIMUM_CHANNEL_BANDWIDTH);
+                int channelCount = ComplexPolyphaseChannelizerM2.getChannelCount(sampleRate);
                 mChannelCalculator.setRates(sampleRate, channelCount);
                 break;
             case NOTIFICATION_FREQUENCY_AND_SAMPLE_RATE_LOCKED:
