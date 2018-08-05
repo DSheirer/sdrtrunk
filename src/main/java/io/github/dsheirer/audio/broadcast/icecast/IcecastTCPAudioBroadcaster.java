@@ -27,15 +27,14 @@ import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
-import org.apache.mina.core.write.WriteTimeoutException;
 import org.apache.mina.filter.codec.ProtocolCodecFilter;
 import org.apache.mina.transport.socket.nio.NioSocketConnector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.ConnectException;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.nio.channels.UnresolvedAddressException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -46,7 +45,8 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
     private final static String TERMINATOR = "\r\n";
     private final static String SEPARATOR = ":";
     private static final long RECONNECT_INTERVAL_MILLISECONDS = 3000; //3 seconds
-    private static final long CONNECTION_ATTEMPT_TIMEOUT = 5000; //5 seconds
+    private static final long CONNECTION_ATTEMPT_TIMEOUT_MILLISECONDS = 5000; //5 seconds
+    private static final int WRITE_TIMEOUT_SECONDS = 5;
 
     private NioSocketConnector mSocketConnector;
     private IoSession mStreamingSession = null;
@@ -101,7 +101,7 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
             if(mSocketConnector == null)
             {
                 mSocketConnector = new NioSocketConnector();
-                mSocketConnector.setConnectTimeoutCheckInterval(CONNECTION_ATTEMPT_TIMEOUT);
+                mSocketConnector.getSessionConfig().setWriteTimeout(WRITE_TIMEOUT_SECONDS);
 
 //                LoggingFilter loggingFilter = new LoggingFilter(IcecastTCPAudioBroadcaster.class);
 //                loggingFilter.setMessageSentLogLevel(LogLevel.NONE);
@@ -127,45 +127,41 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
                             .connect(new InetSocketAddress(getBroadcastConfiguration().getHost(),
                                 getBroadcastConfiguration().getPort()));
 
-                        boolean connected = future.await(CONNECTION_ATTEMPT_TIMEOUT, TimeUnit.MILLISECONDS);
+                        boolean connected = future.await(CONNECTION_ATTEMPT_TIMEOUT_MILLISECONDS, TimeUnit.MILLISECONDS);
 
-                        mStreamingSession = future.getSession();
+                        if(connected)
+                        {
+                            mStreamingSession = future.getSession();
+                            mConnecting.set(false);
+                            return;
+                        }
+                    }
+                    catch(RuntimeIoException rioe)
+                    {
+                        if(rioe.getCause() instanceof SocketException)
+                        {
+                            setBroadcastState(BroadcastState.NETWORK_UNAVAILABLE);
+                            mConnecting.set(false);
+                            return;
+                        }
                     }
                     catch(UnresolvedAddressException uae)
                     {
-                        //What do you do with this?  Nothing.
+                        setBroadcastState(BroadcastState.NETWORK_UNAVAILABLE);
+                        mConnecting.set(false);
+                        return;
                     }
-                    catch(InterruptedException ie)
+                    catch(Exception e)
                     {
-                        //We couldn't connect within the timeout period -- disconnect so that we can try again later
-                        disconnect();
-                    }
-                    catch(RuntimeIoException rie)
-                    {
-                        Throwable throwableCause = rie.getCause();
-
-                        if(throwableCause instanceof ConnectException)
-                        {
-                            setBroadcastState(BroadcastState.NO_SERVER);
-                        }
-                        else if(throwableCause != null)
-                        {
-                            setBroadcastState(BroadcastState.ERROR);
-                            mLog.debug("[" + getStreamName() + "] failed to connect", rie);
-                        }
-                        else
-                        {
-                            setBroadcastState(BroadcastState.ERROR);
-                            mLog.debug("[" + getStreamName() + "] failed to connect - no exception is available");
-                        }
-
-                        disconnect();
+                        mLog.error("Error", e);
+                        //Disregard ... we'll disconnect and try again
                     }
                     catch(Throwable t)
                     {
-                        disconnect();
+                        mLog.error("Throwable error caught", t);
                     }
 
+                    disconnect();
                     mConnecting.set(false);
                 }
             };
@@ -188,6 +184,7 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
         }
         else
         {
+            setBroadcastState(BroadcastState.DISCONNECTED);
             mLastConnectionAttempt = System.currentTimeMillis();
         }
     }
@@ -263,49 +260,12 @@ public class IcecastTCPAudioBroadcaster extends IcecastAudioBroadcaster
         @Override
         public void exceptionCaught(IoSession session, Throwable cause) throws Exception
         {
-            if(cause instanceof IOException)
-            {
-                IOException ioe = (IOException)cause;
-
-                if(ioe.getMessage() != null)
-                {
-                    String reason = ioe.getMessage();
-
-                    if(connected())
-                    {
-                        disconnect();
-                    }
-                    else if(reason.startsWith("Connection reset"))
-                    {
-                        disconnect();
-                    }
-                    else if(reason.startsWith("Operation timed out"))
-                    {
-                        disconnect();
-                    }
-                    else
-                    {
-                        setBroadcastState(BroadcastState.ERROR);
-                        disconnect();
-                    }
-                }
-                else if(ioe instanceof WriteTimeoutException)
-                {
-                    disconnect();
-                }
-                else
-                {
-                    setBroadcastState(BroadcastState.ERROR);
-                    disconnect();
-                    mLog.error("[" + getStreamName() + "] Unspecified IO error - streaming halted.", cause);
-                }
-            }
-            else
+            if(!(cause instanceof IOException))
             {
                 mLog.error("[" + getStreamName() + "] Broadcast error", cause);
-                setBroadcastState(BroadcastState.ERROR);
-                disconnect();
             }
+
+            disconnect();
         }
 
         @Override

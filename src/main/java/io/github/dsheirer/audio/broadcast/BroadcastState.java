@@ -71,6 +71,11 @@ public enum BroadcastState
     MOUNT_POINT_IN_USE("Mount Point In Use", false),
 
     /**
+     * Network is unavailable or the server address cannot be resolved
+     */
+    NETWORK_UNAVAILABLE("Network Unavailable", false),
+
+    /**
      * Server is not known or reachable
      */
     NO_SERVER("No Server", false),

@@ -245,7 +245,11 @@ public abstract class AudioBroadcaster implements Listener<AudioRecording>
     {
         if(mBroadcastState != state)
         {
-            mLog.info("[" + getStreamName() + "] status: " + state);
+            if(state == BroadcastState.CONNECTED || state == BroadcastState.DISCONNECTED)
+            {
+                mLog.info("[" + getStreamName() + "] status: " + state);
+            }
+
             mBroadcastState = state;
 
             broadcast(new BroadcastEvent(this, BroadcastEvent.Event.BROADCASTER_STATE_CHANGE));

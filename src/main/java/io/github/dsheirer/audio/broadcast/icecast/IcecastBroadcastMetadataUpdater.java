@@ -22,6 +22,7 @@ import io.github.dsheirer.audio.broadcast.IBroadcastMetadataUpdater;
 import io.github.dsheirer.channel.metadata.Metadata;
 import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.util.ThreadPool;
+import org.apache.mina.core.RuntimeIoException;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.service.IoHandlerAdapter;
 import org.apache.mina.core.session.IoSession;
@@ -35,7 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.UnsupportedEncodingException;
-import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.URLEncoder;
 import java.nio.channels.UnresolvedAddressException;
@@ -117,70 +117,64 @@ public class IcecastBroadcastMetadataUpdater implements IBroadcastMetadataUpdate
     {
         mMetadataQueue.offer(getSong(metadata));
 
-        if(mUpdating.compareAndSet(false, true))
+        if(!mUpdating.get() && !mMetadataQueue.isEmpty())
         {
-            String song = mMetadataQueue.poll();
-
-            while(song != null)
+            Runnable runnable =  new Runnable()
             {
-                HttpRequest updateRequest = createUpdateRequest(song);
-
-                if(updateRequest != null)
+                @Override
+                public void run()
                 {
-                    ThreadPool.SCHEDULED.schedule(new Runnable()
+                    if(!mMetadataQueue.isEmpty() && mUpdating.compareAndSet(false, true))
                     {
-                        @Override
-                        public void run()
+                        try
                         {
-                            try
-                            {
-                                ConnectFuture connectFuture = getSocketConnector()
-                                    .connect(new InetSocketAddress(mIcecastConfiguration.getHost(),
-                                        mIcecastConfiguration.getPort()));
-                                connectFuture.awaitUninterruptibly();
-                                IoSession session = connectFuture.getSession();
+                            ConnectFuture connectFuture = getSocketConnector()
+                                .connect(new InetSocketAddress(mIcecastConfiguration.getHost(),
+                                    mIcecastConfiguration.getPort()));
+                            connectFuture.awaitUninterruptibly();
+                            IoSession session = connectFuture.getSession();
 
-                                if(session != null)
-                                {
-                                    session.write(updateRequest);
-                                }
-                            }
-                            catch(UnresolvedAddressException uae)
+                            if(session != null)
                             {
-                                //Do nothing - the server is temporarily unavailable
-                            }
-                            catch(Exception e)
-                            {
-                                Throwable throwableCause = e.getCause();
+                                String song = mMetadataQueue.poll();
 
-                                if(throwableCause instanceof ConnectException)
+                                while(song != null)
                                 {
-                                    //Do nothing, the server is unavailable
-                                }
-                                else if(throwableCause instanceof UnresolvedAddressException)
-                                {
-                                    //Do nothing - the server is temporarily unavailable
-                                }
-                                else
-                                {
-                                    if(!mStackTraceLoggingSuppressed)
+                                    HttpRequest updateRequest = createUpdateRequest(song);
+
+                                    if(updateRequest != null)
                                     {
-                                        mLog.error("Error sending metadata update.  Future errors will " +
-                                            "be suppressed", e);
-
-                                        mStackTraceLoggingSuppressed = true;
+                                        session.write(updateRequest);
                                     }
+
+                                    //Fetch next metadata update to send
+                                    song = mMetadataQueue.poll();
                                 }
+
+                                session.closeNow();
                             }
                         }
-                    }, 0l, TimeUnit.SECONDS);
+                        catch(UnresolvedAddressException | RuntimeIoException ure)
+                        {
+                            //Do nothing - the server is temporarily unavailable
+                        }
+                        catch(Exception e)
+                        {
+                            Throwable throwableCause = e.getCause();
+
+                            if(!mStackTraceLoggingSuppressed)
+                            {
+                                mLog.error("Error sending metadata update.  Future errors will be suppressed", e);
+                                mStackTraceLoggingSuppressed = true;
+                            }
+                        }
+
+                        mUpdating.set(false);
+                    }
                 }
+            };
 
-                //Fetch next metadata update to send
-                song = mMetadataQueue.poll();
-            }
-
-            mUpdating.set(false);
+            ThreadPool.SCHEDULED.schedule(runnable, 0l, TimeUnit.SECONDS);
         }
     }
 
