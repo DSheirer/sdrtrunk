@@ -20,9 +20,14 @@ package io.github.dsheirer.audio.broadcast;
 
 import net.miginfocom.swing.MigLayout;
 
-import javax.swing.*;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableCellRenderer;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Component;
 
 public class BroadcastStatusPanel extends JPanel
 {
@@ -96,7 +101,8 @@ public class BroadcastStatusPanel extends JPanel
                         setBackground(table.getBackground());
                         setForeground(Color.LIGHT_GRAY);
                     }
-                    else if(state == BroadcastState.INVALID_SETTINGS)
+                    else if(state == BroadcastState.INVALID_SETTINGS ||
+                            state == BroadcastState.NETWORK_UNAVAILABLE)
                     {
                         setBackground(Color.YELLOW);
                         setForeground(table.getForeground());
