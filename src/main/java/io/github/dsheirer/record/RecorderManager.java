@@ -1,7 +1,6 @@
-/*
- * *********************************************************************************************************************
+/*******************************************************************************
  * sdr-trunk
- * Copyright (C) 2014-2017 Dennis Sheirer
+ * Copyright (C) 2014-2018 Dennis Sheirer
  *
  * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
  * License as published by  the Free Software Foundation, either version 3 of the License, or  (at your option) any
@@ -12,8 +11,8 @@
  *
  * You should have received a copy of the GNU General Public License  along with this program.
  * If not, see <http://www.gnu.org/licenses/>
- * *********************************************************************************************************************
- */
+ *
+ ******************************************************************************/
 package io.github.dsheirer.record;
 
 import io.github.dsheirer.channel.metadata.Metadata;
@@ -240,20 +239,8 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
     public ComplexBufferWaveRecorder getBasebandRecorder(String channelName)
     {
         StringBuilder sb = new StringBuilder();
-        sb.append(SystemProperties.getInstance().getApplicationFolder("recordings"));
+        sb.append(getRecordingBasePath());
         sb.append(File.separator).append(channelName).append("_baseband");
-
-        return new ComplexBufferWaveRecorder(BASEBAND_SAMPLE_RATE, sb.toString());
-    }
-
-    /**
-     * Constructs a baseband recorder for use in a processing chain.
-     */
-    public ComplexBufferWaveRecorder getBitstreamRecorder(String channelName)
-    {
-        StringBuilder sb = new StringBuilder();
-        sb.append(SystemProperties.getInstance().getApplicationFolder("recordings"));
-        sb.append(File.separator).append(channelName).append("_bitstream");
 
         return new ComplexBufferWaveRecorder(BASEBAND_SAMPLE_RATE, sb.toString());
     }
