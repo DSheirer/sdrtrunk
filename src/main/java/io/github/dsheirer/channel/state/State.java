@@ -24,54 +24,114 @@ import java.util.EnumSet;
  */
 public enum State
 {
-    IDLE("IDLE")
+    /**
+     * Active state indicates that valid messages are being decoded that do not indicate any call or data
+     * activity.  For example, this is used for P25 when a channel is actively transmitting Terminator Data
+     * Units in between data packets or at the beginning or end of a call.
+     */
+    ACTIVE("ACTIVE")
         {
             @Override
             public boolean canChangeTo(State state)
             {
-                return state != TEARDOWN && state != RESET && state != OVERFLOW;
+                return state == CALL |
+                       state == CONTROL ||
+                       state == DATA ||
+                       state == ENCRYPTED ||
+                       state == FADE ||
+                       state == TEARDOWN;
             }
         },
+    /**
+     * Indicates that call messages are being decoded, or a call is in progress (ie producing audio).
+     */
     CALL("CALL")
         {
             @Override
             public boolean canChangeTo(State state)
             {
-                return state == CONTROL || state == DATA || state == ENCRYPTED || state == FADE || state == TEARDOWN;
+                return state == ACTIVE ||
+                       state == CONTROL ||
+                       state == DATA ||
+                       state == ENCRYPTED ||
+                       state == FADE ||
+                       state == TEARDOWN;
             }
         },
-    DATA("DATA")
-        {
-            @Override
-            public boolean canChangeTo(State state)
-            {
-                return state == CALL || state == CONTROL || state == ENCRYPTED || state == FADE || state == TEARDOWN;
-            }
-        },
-    ENCRYPTED("ENCRYPTED")
-        {
-            @Override
-            public boolean canChangeTo(State state)
-            {
-                return state == FADE || state == TEARDOWN;
-            }
-        },
+    /**
+     * Indicates a trunking control channel is being decoded.
+     */
     CONTROL("CONTROL")
         {
             @Override
             public boolean canChangeTo(State state)
             {
-                return state == IDLE || state == FADE;
+                return state == IDLE ||
+                       state == FADE;
             }
         },
+    /**
+     * Indicates data packets are being decoded
+     */
+    DATA("DATA")
+        {
+            @Override
+            public boolean canChangeTo(State state)
+            {
+                return state == ACTIVE ||
+                       state == CALL ||
+                       state == CONTROL ||
+                       state == ENCRYPTED ||
+                       state == FADE ||
+                       state == TEARDOWN;
+            }
+        },
+    /**
+     * Indicates encrypted audio is detected.
+     */
+    ENCRYPTED("ENCRYPTED")
+        {
+            @Override
+            public boolean canChangeTo(State state)
+            {
+                return state == FADE ||
+                       state == TEARDOWN;
+            }
+        },
+    /**
+     * Fade state occurs when the channel is no longer actively decoding an messages.  This is a transitory
+     * state before transition to IDLE or back to an active state.
+     */
     FADE("FADE")
         {
             @Override
             public boolean canChangeTo(State state)
             {
-                return state != FADE && state != RESET && state != OVERFLOW;
+                return state != FADE &&
+                       state != RESET &&
+                       state != OVERFLOW;
             }
         },
+    /**
+     * Indicates the channel is idle and not actively decoding any messages
+     */
+    IDLE("IDLE")
+        {
+            @Override
+            public boolean canChangeTo(State state)
+            {
+                return state != TEARDOWN &&
+                       state != RESET &&
+                       state != OVERFLOW;
+            }
+        },
+    /**
+     * Indicates that the channel's sample buffer has overflowed and new buffer samples are no longer being
+     * delivered to the channel.  This state persists until the processing catches up and reduces the number
+     * of samples in the input buffer below a threshold value.  Transition to and from this state is exclusively
+     * managed by the Channel State and no other channel states can be processed from the channel decoders
+     * until the channel state is taken out of overflow.
+     */
     OVERFLOW("OVERFLOW")
         {
             @Override
@@ -80,6 +140,9 @@ public enum State
                 return false;
             }
         },
+    /**
+     * Indicates that the channel has been reset and is ready to use for a new decoding session.
+     */
     RESET("RESET")
         {
             @Override
@@ -88,6 +151,10 @@ public enum State
                 return state == IDLE;
             }
         },
+    /**
+     * Call or data teardown.  This state is used by traffic channels to indicate that a call or data session
+     * has concluded and the channel is ready for tear down and reuse.
+     */
     TEARDOWN("TEARDOWN")
         {
             @Override
@@ -99,7 +166,7 @@ public enum State
 
     private String mDisplayValue;
 
-    public static final EnumSet<State> CALL_STATES = EnumSet.of(CALL, CONTROL, DATA, ENCRYPTED);
+    public static final EnumSet<State> CALL_STATES = EnumSet.of(ACTIVE, CALL, CONTROL, DATA, ENCRYPTED);
     public static final EnumSet<State> IDLE_STATES = EnumSet.of(IDLE, FADE);
 
     private State(String displayValue)

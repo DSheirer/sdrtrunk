@@ -25,32 +25,36 @@ import io.github.dsheirer.controller.channel.ChannelProcessingManager;
 import io.github.dsheirer.controller.channel.ChannelUtils;
 import io.github.dsheirer.icon.IconManager;
 import io.github.dsheirer.module.ProcessingChain;
-import io.github.dsheirer.properties.SystemProperties;
 import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
 import net.miginfocom.swing.MigLayout;
 import org.apache.commons.lang3.Validate;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import javax.swing.*;
+import javax.swing.JLabel;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.SwingConstants;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableCellRenderer;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Component;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ChannelMetadataPanel extends JPanel implements ListSelectionListener
 {
-    private final static Logger mLog = LoggerFactory.getLogger(ChannelMetadataPanel.class);
-
-    private static final String PROPERTY_PREFIX_BACKGROUND = "channel.metadata.panel.state.color.";
-    private static final String PROPERTY_PREFIX_FOREGROUND = "channel.metadata.panel.text.color.";
     private ChannelProcessingManager mChannelProcessingManager;
     private IconManager mIconManager;
     private JTable mTable;
     private Broadcaster<ProcessingChain> mSelectedProcessingChainBroadcaster = new Broadcaster<>();
+    private Map<State,Color> mBackgroundColors = new HashMap<>();
+    private Map<State,Color> mForegroundColors = new HashMap<>();
 
     /**
      * Table view for currently decoding channel metadata
@@ -94,7 +98,34 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
 
         add(scrollPane);
 
-//        new TableColumnWidthMonitor(mTable, PROPERTY_PREFIX, new int[] {15,15,15,15,25,25,25,25,15,40});
+        setColors();
+    }
+
+    /**
+     * Setup the background and foreground color palette for the various channel states.
+     */
+    private void setColors()
+    {
+        mBackgroundColors.put(State.ACTIVE, Color.CYAN);
+        mForegroundColors.put(State.ACTIVE, Color.YELLOW);
+        mBackgroundColors.put(State.CALL, Color.BLUE);
+        mForegroundColors.put(State.CALL, Color.YELLOW);
+        mBackgroundColors.put(State.CONTROL, Color.ORANGE);
+        mForegroundColors.put(State.CONTROL, Color.BLUE);
+        mBackgroundColors.put(State.DATA, Color.GREEN);
+        mForegroundColors.put(State.DATA, Color.BLUE);
+        mBackgroundColors.put(State.ENCRYPTED, Color.MAGENTA);
+        mForegroundColors.put(State.ENCRYPTED, Color.WHITE);
+        mBackgroundColors.put(State.FADE, Color.LIGHT_GRAY);
+        mForegroundColors.put(State.FADE, Color.DARK_GRAY);
+        mBackgroundColors.put(State.IDLE, Color.WHITE);
+        mForegroundColors.put(State.IDLE, Color.DARK_GRAY);
+        mBackgroundColors.put(State.OVERFLOW, Color.RED);
+        mForegroundColors.put(State.OVERFLOW, Color.YELLOW);
+        mBackgroundColors.put(State.RESET, Color.PINK);
+        mForegroundColors.put(State.RESET, Color.YELLOW);
+        mBackgroundColors.put(State.TEARDOWN, Color.DARK_GRAY);
+        mForegroundColors.put(State.TEARDOWN, Color.WHITE);
     }
 
     @Override
@@ -185,44 +216,14 @@ public class ChannelMetadataPanel extends JPanel implements ListSelectionListene
                 State state = (State)value;
                 label.setText(state.getDisplayValue());
 
-                switch(state)
+                if(mBackgroundColors.containsKey(state))
                 {
-                    case CALL:
-                        background = SystemProperties.getInstance().get(PROPERTY_PREFIX_BACKGROUND + "call", Color.BLUE);
-                        foreground = SystemProperties.getInstance().get(PROPERTY_PREFIX_FOREGROUND + "call", Color.YELLOW);
-                        break;
-                    case CONTROL:
-                        background = SystemProperties.getInstance().get(PROPERTY_PREFIX_BACKGROUND + "control", Color.ORANGE);
-                        foreground = SystemProperties.getInstance().get(PROPERTY_PREFIX_FOREGROUND + "control", Color.BLUE);
-                        break;
-                    case DATA:
-                        background = SystemProperties.getInstance().get(PROPERTY_PREFIX_BACKGROUND + "data", Color.GREEN);
-                        foreground = SystemProperties.getInstance().get(PROPERTY_PREFIX_FOREGROUND + "data", Color.BLUE);
-                        break;
-                    case ENCRYPTED:
-                        background = SystemProperties.getInstance().get(PROPERTY_PREFIX_BACKGROUND + "encrypted", Color.MAGENTA);
-                        foreground = SystemProperties.getInstance().get(PROPERTY_PREFIX_FOREGROUND + "encrypted", Color.WHITE);
-                        break;
-                    case FADE:
-                        background = SystemProperties.getInstance().get(PROPERTY_PREFIX_BACKGROUND + "fade", Color.LIGHT_GRAY.BLUE);
-                        foreground = SystemProperties.getInstance().get(PROPERTY_PREFIX_FOREGROUND + "fade", Color.YELLOW);
-                        break;
-                    case IDLE:
-                        background = SystemProperties.getInstance().get(PROPERTY_PREFIX_BACKGROUND + "idle", Color.WHITE);
-                        foreground = SystemProperties.getInstance().get(PROPERTY_PREFIX_FOREGROUND + "idle", Color.BLUE);
-                        break;
-                    case OVERFLOW:
-                        background = SystemProperties.getInstance().get(PROPERTY_PREFIX_BACKGROUND + "overflow", Color.RED);
-                        foreground = SystemProperties.getInstance().get(PROPERTY_PREFIX_FOREGROUND + "overflow", Color.YELLOW);
-                        break;
-                    case RESET:
-                        background = SystemProperties.getInstance().get(PROPERTY_PREFIX_BACKGROUND + "reset", Color.PINK);
-                        foreground = SystemProperties.getInstance().get(PROPERTY_PREFIX_FOREGROUND + "reset", Color.YELLOW);
-                        break;
-                    case TEARDOWN:
-                        background = SystemProperties.getInstance().get(PROPERTY_PREFIX_BACKGROUND + "teardown", Color.DARK_GRAY);
-                        foreground = SystemProperties.getInstance().get(PROPERTY_PREFIX_FOREGROUND + "teardown", Color.WHITE);
-                        break;
+                    background = mBackgroundColors.get(state);
+                }
+
+                if(mForegroundColors.containsKey(state))
+                {
+                    foreground = mForegroundColors.get(state);
                 }
             }
             else

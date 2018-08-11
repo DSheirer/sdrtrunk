@@ -303,6 +303,11 @@ public class ChannelState extends Module implements ICallEventProvider, IDecoder
         {
             switch(state)
             {
+                case ACTIVE:
+                    broadcast(SquelchState.SQUELCH);
+                    updateFadeTimeout();
+                    mState = state;
+                    break;
                 case CONTROL:
                     //Don't allow traffic channels to be control channels, otherwise they can't transition to teardown
                     if(isStandardChannel())
