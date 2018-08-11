@@ -254,6 +254,7 @@ public class P25DecoderState extends DecoderState
         if(mCurrentCallEvent != null)
         {
             mCurrentCallEvent.end();
+            broadcast(mCurrentCallEvent);
         }
 
         mCurrentCallEvent = null;
@@ -395,6 +396,10 @@ public class P25DecoderState extends DecoderState
      */
     private void processTDU(TDUMessage tdu)
     {
+        if(mChannelType == ChannelType.STANDARD)
+        {
+            broadcast(new DecoderStateEvent(this, Event.DECODE, State.ACTIVE));
+        }
     }
 
     /**
@@ -432,19 +437,21 @@ public class P25DecoderState extends DecoderState
      */
     private void processTDULC(TDULinkControlMessage tdulc)
     {
+        if(mCurrentCallEvent != null)
+        {
+            mCurrentCallEvent.end();
+            broadcast(mCurrentCallEvent);
+            mCurrentCallEvent = null;
+        }
+
         if(tdulc.getOpcode() == LinkControlOpcode.CALL_TERMINATION_OR_CANCELLATION)
         {
             broadcast(new DecoderStateEvent(this, Event.END, State.FADE));
 
-            if(mCurrentCallEvent != null)
-            {
-                mCurrentCallEvent.end();
-                mCurrentCallEvent = null;
-            }
         }
         else
         {
-            broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL));
+            broadcast(new DecoderStateEvent(this, Event.DECODE, State.ACTIVE));
         }
 
         switch(tdulc.getOpcode())
@@ -495,22 +502,17 @@ public class P25DecoderState extends DecoderState
                 /* This opcode as handled at the beginning of the method */
                 break;
             case CHANNEL_IDENTIFIER_UPDATE:
-                //TODO: does the activity summary need this message?
-
 				/* This message is handled by the P25MessageProcessor and
                  * inserted into any channels needing frequency band info */
                 break;
             case CHANNEL_IDENTIFIER_UPDATE_EXPLICIT:
-                //TODO: does the activity summary need this message?
-
 				/* This message is handled by the P25MessageProcessor and
                  * inserted into any channels needing frequency band info */
                 break;
             case EXTENDED_FUNCTION_COMMAND:
                 if(tdulc instanceof ExtendedFunctionCommand)
                 {
-                    ExtendedFunctionCommand efc =
-                        (ExtendedFunctionCommand)tdulc;
+                    ExtendedFunctionCommand efc = (ExtendedFunctionCommand)tdulc;
 
                     broadcast(new P25CallEvent.Builder(CallEvent.CallEventType.COMMAND)
                         .aliasList(getAliasList())
@@ -606,42 +608,25 @@ public class P25DecoderState extends DecoderState
                 }
                 break;
             case GROUP_VOICE_CHANNEL_USER:
-				/* Used on a traffic channel to reflect current call entities */
+				//Used on a traffic channel to reflect that the channel is currently being used by the
+				//TO talkgroup, but that channel is currently quiet (ie no voice) */
                 if(tdulc instanceof GroupVoiceChannelUser)
                 {
-                    GroupVoiceChannelUser gvcuser =
-                        (GroupVoiceChannelUser)tdulc;
+                    GroupVoiceChannelUser gvcuser = (GroupVoiceChannelUser)tdulc;
 
-                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CALL));
+                    broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.ACTIVE));
 
-                    String from = gvcuser.getSourceAddress();
+                    //The from value should always be "000000" indicating that nobody is currently talking
+                    mFromTalkgroupMonitor.reset();
+
                     String to = gvcuser.getGroupAddress();
-
-                    mFromTalkgroupMonitor.process(from);
                     mToTalkgroupMonitor.process(to);
-
-                    if(mCurrentCallEvent == null)
-                    {
-                        mCurrentCallEvent = new P25CallEvent.Builder(CallEvent.CallEventType.GROUP_CALL)
-                            .aliasList(getAliasList())
-                            .channel(mCurrentChannel)
-                            .details("TDULC GROUP VOICE CHANNEL USER" +
-                                (gvcuser.isEncrypted() ? "ENCRYPTED " : "") +
-                                (gvcuser.isEmergency() ? "EMERGENCY " : ""))
-                            .frequency(mCurrentChannelFrequency)
-                            .from(from)
-                            .to(to)
-                            .build();
-
-                        broadcast(mCurrentCallEvent);
-                    }
                 }
                 break;
             case MESSAGE_UPDATE:
                 if(tdulc instanceof MessageUpdate)
                 {
-                    MessageUpdate mu =
-                        (MessageUpdate)tdulc;
+                    MessageUpdate mu = (MessageUpdate)tdulc;
 
                     broadcast(new P25CallEvent.Builder(CallEvent.CallEventType.SDM)
                         .aliasList(getAliasList())
@@ -748,8 +733,7 @@ public class P25DecoderState extends DecoderState
                     io.github.dsheirer.module.decode.p25.message.tdu.lc.SecondaryControlChannelBroadcast sccb =
                         (io.github.dsheirer.module.decode.p25.message.tdu.lc.SecondaryControlChannelBroadcast)tdulc;
 
-                    String site = sccb.getRFSubsystemID() + "-" +
-                        sccb.getSiteID();
+                    String site = sccb.getRFSubsystemID() + "-" + sccb.getSiteID();
 
                     mSiteAttributeMonitor.process(site);
                 }
@@ -761,11 +745,9 @@ public class P25DecoderState extends DecoderState
             case SECONDARY_CONTROL_CHANNEL_BROADCAST_EXPLICIT:
                 if(tdulc instanceof SecondaryControlChannelBroadcastExplicit)
                 {
-                    SecondaryControlChannelBroadcastExplicit sccb =
-                        (SecondaryControlChannelBroadcastExplicit)tdulc;
+                    SecondaryControlChannelBroadcastExplicit sccb = (SecondaryControlChannelBroadcastExplicit)tdulc;
 
-                    String site = sccb.getRFSubsystemID() + "-" +
-                        sccb.getSiteID();
+                    String site = sccb.getRFSubsystemID() + "-" + sccb.getSiteID();
 
                     mSiteAttributeMonitor.process(site);
                 }
@@ -777,8 +759,7 @@ public class P25DecoderState extends DecoderState
             case STATUS_QUERY:
                 if(tdulc instanceof StatusQuery)
                 {
-                    StatusQuery sq =
-                        (StatusQuery)tdulc;
+                    StatusQuery sq = (StatusQuery)tdulc;
 
                     broadcast(new P25CallEvent.Builder(CallEvent.CallEventType.QUERY)
                         .aliasList(getAliasList())
@@ -816,8 +797,7 @@ public class P25DecoderState extends DecoderState
             case TELEPHONE_INTERCONNECT_ANSWER_REQUEST:
                 if(tdulc instanceof TelephoneInterconnectAnswerRequest)
                 {
-                    TelephoneInterconnectAnswerRequest tiar =
-                        (TelephoneInterconnectAnswerRequest)tdulc;
+                    TelephoneInterconnectAnswerRequest tiar = (TelephoneInterconnectAnswerRequest)tdulc;
 
                     broadcast(new P25CallEvent.Builder(CallEvent.CallEventType.PAGE)
                         .aliasList(getAliasList())
@@ -835,8 +815,7 @@ public class P25DecoderState extends DecoderState
                 if(mChannelType == ChannelType.STANDARD &&
                     tdulc instanceof TelephoneInterconnectVoiceChannelUser)
                 {
-                    TelephoneInterconnectVoiceChannelUser tivcu =
-                        (TelephoneInterconnectVoiceChannelUser)tdulc;
+                    TelephoneInterconnectVoiceChannelUser tivcu = (TelephoneInterconnectVoiceChannelUser)tdulc;
 
                     String to = tivcu.getAddress();
 
@@ -860,8 +839,7 @@ public class P25DecoderState extends DecoderState
             case UNIT_AUTHENTICATION_COMMAND:
                 if(tdulc instanceof UnitAuthenticationCommand)
                 {
-                    UnitAuthenticationCommand uac =
-                        (UnitAuthenticationCommand)tdulc;
+                    UnitAuthenticationCommand uac = (UnitAuthenticationCommand)tdulc;
 
                     broadcast(new P25CallEvent.Builder(CallEvent.CallEventType.COMMAND)
                         .aliasList(getAliasList())
@@ -877,8 +855,7 @@ public class P25DecoderState extends DecoderState
             case UNIT_REGISTRATION_COMMAND:
                 if(tdulc instanceof UnitRegistrationCommand)
                 {
-                    UnitRegistrationCommand urc =
-                        (UnitRegistrationCommand)tdulc;
+                    UnitRegistrationCommand urc = (UnitRegistrationCommand)tdulc;
 
                     broadcast(new P25CallEvent.Builder(CallEvent.CallEventType.COMMAND)
                         .aliasList(getAliasList())
@@ -894,8 +871,7 @@ public class P25DecoderState extends DecoderState
             case UNIT_TO_UNIT_ANSWER_REQUEST:
                 if(tdulc instanceof UnitToUnitAnswerRequest)
                 {
-                    UnitToUnitAnswerRequest uuar =
-                        (UnitToUnitAnswerRequest)tdulc;
+                    UnitToUnitAnswerRequest uuar = (UnitToUnitAnswerRequest)tdulc;
 
                     broadcast(new P25CallEvent.Builder(CallEvent.CallEventType.PAGE)
                         .aliasList(getAliasList())
@@ -913,27 +889,12 @@ public class P25DecoderState extends DecoderState
 				/* Used on traffic channels to indicate the current call entities */
                 if(tdulc instanceof UnitToUnitVoiceChannelUser)
                 {
-                    UnitToUnitVoiceChannelUser uuvcu =
-                        (UnitToUnitVoiceChannelUser)tdulc;
+                    UnitToUnitVoiceChannelUser uuvcu = (UnitToUnitVoiceChannelUser)tdulc;
 
-                    String from = uuvcu.getSourceAddress();
-                    mFromTalkgroupMonitor.process(from);
+                    mFromTalkgroupMonitor.reset();
 
                     String to = uuvcu.getTargetAddress();
                     mToTalkgroupMonitor.process(to);
-
-                    if(mCurrentCallEvent != null)
-                    {
-                        mCurrentCallEvent = new P25CallEvent.Builder(CallEvent.CallEventType.UNIT_TO_UNIT_CALL)
-                            .aliasList(getAliasList())
-                            .channel(mCurrentChannel)
-                            .details((uuvcu.isEncrypted() ? "ENCRYPTED " : "") +
-                                (uuvcu.isEmergency() ? "EMERGENCY " : ""))
-                            .frequency(mCurrentChannelFrequency)
-                            .from(from)
-                            .to(to)
-                            .build();
-                    }
                 }
                 break;
             default:
@@ -1166,8 +1127,16 @@ public class P25DecoderState extends DecoderState
                             (io.github.dsheirer.module.decode.p25.message.ldu.lc.GroupVoiceChannelUser)ldu;
 
                         mFromTalkgroupMonitor.process(gvcuser.getSourceAddress());
+                        mCurrentCallEvent.setFromID(mFromTalkgroupMonitor.getValue());
 
                         mToTalkgroupMonitor.process(gvcuser.getGroupAddress());
+
+                        String to = mToTalkgroupMonitor.getValue();
+
+                        if(mCurrentCallEvent.getToID() == null || !mCurrentCallEvent.getToID().contentEquals(to))
+                        {
+                            mCurrentCallEvent.setToID(to);
+                        }
 
                         if(mChannelType == ChannelType.STANDARD)
                         {
@@ -1631,14 +1600,13 @@ public class P25DecoderState extends DecoderState
      */
     private void processPDU(PDUMessage pdu)
     {
+        broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA));
+
         if(pdu instanceof PacketData || pdu instanceof PDUTypeUnknown)
         {
-            broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA));
         }
         else if(pdu instanceof PDUConfirmedMessage)
         {
-            broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.DATA));
-
             PDUConfirmedMessage pduc = (PDUConfirmedMessage)pdu;
 
             switch(pduc.getPDUType())
@@ -1723,6 +1691,11 @@ public class P25DecoderState extends DecoderState
                             sbTo.append(sud.getUDPDestinationPort());
                         }
 
+                        mFromTalkgroupMonitor.reset();
+                        mFromTalkgroupMonitor.process(sbFrom.toString());
+                        mToTalkgroupMonitor.reset();
+                        mToTalkgroupMonitor.process(pduc.getLogicalLinkID());
+
                         broadcast(new DecoderStateEvent(this, Event.START, State.DATA));
 
                         broadcast(new P25CallEvent.Builder(CallEvent.CallEventType.DATA_CALL)
@@ -1750,9 +1723,6 @@ public class P25DecoderState extends DecoderState
         }
         else
         {
-			/* These are alternate trunking control blocks in PDU format */
-            broadcast(new DecoderStateEvent(this, Event.CONTINUATION, State.CONTROL));
-
             switch(pdu.getOpcode())
             {
                 case GROUP_DATA_CHANNEL_GRANT:

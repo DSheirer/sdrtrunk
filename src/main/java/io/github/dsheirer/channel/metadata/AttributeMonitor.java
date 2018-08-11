@@ -123,6 +123,11 @@ public class AttributeMonitor<T>
     {
         mCurrentValue = null;
         mOccurrenceCounts.clear();
+
+        if(mListener != null)
+        {
+            mListener.receive(new AttributeChangeRequest(mAttribute, null, null));
+        }
     }
 
     /**
