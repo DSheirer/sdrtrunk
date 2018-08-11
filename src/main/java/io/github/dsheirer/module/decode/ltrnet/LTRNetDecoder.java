@@ -24,9 +24,9 @@ import io.github.dsheirer.module.decode.Decoder;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IReusableBufferListener;
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 
-public class LTRNetDecoder extends Decoder implements IReusableBufferListener, Listener<ReusableBuffer>
+public class LTRNetDecoder extends Decoder implements IReusableBufferListener, Listener<ReusableFloatBuffer>
 {
     public static final int LTR_NET_MESSAGE_LENGTH = 40;
     protected LTRDecoder mLTRDecoder;
@@ -73,15 +73,15 @@ public class LTRNetDecoder extends Decoder implements IReusableBufferListener, L
     }
 
     @Override
-    public Listener<ReusableBuffer> getReusableBufferListener()
+    public Listener<ReusableFloatBuffer> getReusableBufferListener()
     {
         return mLTRDecoder;
     }
 
     @Override
-    public void receive(ReusableBuffer reusableBuffer)
+    public void receive(ReusableFloatBuffer reusableFloatBuffer)
     {
-        mLTRDecoder.receive(reusableBuffer);
+        mLTRDecoder.receive(reusableFloatBuffer);
     }
 
     @Override

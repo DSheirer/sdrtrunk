@@ -15,8 +15,8 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.dc;
 
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,11 +77,11 @@ public class BufferDCFilter
         }
     }
 
-    public ReusableBuffer filter(ReusableBuffer unfilteredBuffer)
+    public ReusableFloatBuffer filter(ReusableFloatBuffer unfilteredBuffer)
     {
         float[] unfilteredSamples = unfilteredBuffer.getSamples();
 
-        ReusableBuffer filteredBuffer = mReusableBufferQueue.getBuffer(unfilteredSamples.length);
+        ReusableFloatBuffer filteredBuffer = mReusableBufferQueue.getBuffer(unfilteredSamples.length);
         float[] filteredSamples = filteredBuffer.getSamples();
 
         float offset = getOffset(unfilteredSamples);

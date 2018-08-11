@@ -17,9 +17,9 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.fm;
 
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import io.github.dsheirer.sample.complex.Complex;
 
 /**
@@ -129,9 +129,9 @@ public class FMDemodulator
      * @param basebandSampleBuffer containing samples to demodulate
      * @return demodulated sample buffer.
      */
-    public ReusableBuffer demodulate(ReusableComplexBuffer basebandSampleBuffer)
+    public ReusableFloatBuffer demodulate(ReusableComplexBuffer basebandSampleBuffer)
     {
-        ReusableBuffer demodulatedBuffer = mReusableBufferQueue.getBuffer(basebandSampleBuffer.getSampleCount());
+        ReusableFloatBuffer demodulatedBuffer = mReusableBufferQueue.getBuffer(basebandSampleBuffer.getSampleCount());
 
         float[] basebandSamples = basebandSampleBuffer.getSamples();
         float[] demodulatedSamples = demodulatedBuffer.getSamples();

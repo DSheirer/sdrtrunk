@@ -17,8 +17,8 @@ package io.github.dsheirer.gui.instrument;
 
 import io.github.dsheirer.gui.instrument.decoder.AbstractDecoderPane;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import io.github.dsheirer.sample.buffer.ReusableBufferBroadcaster;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import io.github.dsheirer.source.IControllableFileSource;
 import io.github.dsheirer.source.IFrameLocationListener;
 import io.github.dsheirer.source.wave.ComplexWaveSource;
@@ -177,7 +177,7 @@ public class PlaybackController extends HBox implements IFrameLocationListener
     /**
      * Adds listener to receive complex buffers from this playback
      */
-    public void addListener(Listener<ReusableBuffer> listener)
+    public void addListener(Listener<ReusableFloatBuffer> listener)
     {
         mReusableBufferBroadcaster.addListener(listener);
     }
@@ -185,7 +185,7 @@ public class PlaybackController extends HBox implements IFrameLocationListener
     /**
      * Removes the listener from receiving complex buffers from this playback
      */
-    public void removeListener(Listener<ReusableBuffer> listener)
+    public void removeListener(Listener<ReusableFloatBuffer> listener)
     {
         mReusableBufferBroadcaster.removeListener(listener);
     }

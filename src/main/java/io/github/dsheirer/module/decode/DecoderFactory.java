@@ -93,6 +93,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 
 public class DecoderFactory
@@ -466,5 +467,18 @@ public class DecoderFactory
         }
 
         return null;
+    }
+
+    /**
+     * Decoder(s) that support bitstreams.
+     *
+     * @return set of decoders that support bitstreams.
+     */
+    public static EnumSet<DecoderType> getBitstreamDecoders()
+    {
+//        return EnumSet.of(DecoderType.P25_PHASE1);
+
+        //None of the decoders currently support bitstream output.
+        return EnumSet.noneOf(DecoderType.class);
     }
 }

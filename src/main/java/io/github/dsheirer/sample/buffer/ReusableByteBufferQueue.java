@@ -18,11 +18,11 @@ package io.github.dsheirer.sample.buffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ReusableBufferQueue extends AbstractReusableBufferQueue<ReusableFloatBuffer>
+public class ReusableByteBufferQueue extends AbstractReusableBufferQueue<ReusableByteBuffer>
 {
-    private final static Logger mLog = LoggerFactory.getLogger(ReusableBufferQueue.class);
+    private final static Logger mLog = LoggerFactory.getLogger(ReusableByteBufferQueue.class);
 
-    public ReusableBufferQueue(String debugName)
+    public ReusableByteBufferQueue(String debugName)
     {
         super(debugName);
     }
@@ -35,13 +35,13 @@ public class ReusableBufferQueue extends AbstractReusableBufferQueue<ReusableFlo
      * @param size of the samples that will be loaded into the buffer
      * @return a reusable buffer
      */
-    public ReusableFloatBuffer getBuffer(int size)
+    public ReusableByteBuffer getBuffer(int size)
     {
-        ReusableFloatBuffer buffer = getRecycledBuffer();
+        ReusableByteBuffer buffer = getRecycledBuffer();
 
         if(buffer == null)
         {
-            buffer = new ReusableFloatBuffer(this, new float[size]);
+            buffer = new ReusableByteBuffer(this, new byte[size]);
             buffer.setDebugName("Owner:" + getDebugName());
             incrementBufferCount();
         }

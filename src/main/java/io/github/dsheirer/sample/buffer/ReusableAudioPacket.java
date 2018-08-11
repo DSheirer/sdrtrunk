@@ -113,16 +113,16 @@ public class ReusableAudioPacket extends AbstractReusableBuffer
      * Loads a copy of the float sample data from the reusable buffer into this audio packet, resizing the
      * internal audio sample buffer as necessary.
      *
-     * @param reusableBuffer to load audio sample data from
+     * @param reusableFloatBuffer to load audio sample data from
      */
-    public void loadAudioFrom(ReusableBuffer reusableBuffer)
+    public void loadAudioFrom(ReusableFloatBuffer reusableFloatBuffer)
     {
-        if(reusableBuffer.getSamples().length != mAudioSamples.length)
+        if(reusableFloatBuffer.getSamples().length != mAudioSamples.length)
         {
-            resize(reusableBuffer.getSamples().length);
+            resize(reusableFloatBuffer.getSamples().length);
         }
 
-        System.arraycopy(reusableBuffer.getSamples(), 0, mAudioSamples, 0, reusableBuffer.getSamples().length);
+        System.arraycopy(reusableFloatBuffer.getSamples(), 0, mAudioSamples, 0, reusableFloatBuffer.getSamples().length);
     }
 
     /**

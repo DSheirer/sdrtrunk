@@ -26,9 +26,9 @@ import io.github.dsheirer.dsp.filter.smoothing.SmoothingFilter.SmoothingType;
 import io.github.dsheirer.module.ProcessingChain;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBufferQueue;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import io.github.dsheirer.settings.ColorSetting.ColorSettingName;
 import io.github.dsheirer.settings.ColorSettingMenuItem;
 import io.github.dsheirer.settings.Setting;
@@ -60,7 +60,7 @@ import java.awt.event.MouseMotionListener;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ChannelSpectrumPanel extends JPanel implements ChannelEventListener,
-    Listener<ReusableBuffer>, SettingChangeListener, SpectralDisplayAdjuster
+    Listener<ReusableFloatBuffer>, SettingChangeListener, SpectralDisplayAdjuster
 {
     private static final long serialVersionUID = 1L;
 
@@ -267,9 +267,9 @@ public class ChannelSpectrumPanel extends JPanel implements ChannelEventListener
     }
 
     @Override
-    public void receive(ReusableBuffer buffer)
+    public void receive(ReusableFloatBuffer buffer)
     {
-        ReusableBuffer decimated = mDecimatingFilter.filter(buffer);
+        ReusableFloatBuffer decimated = mDecimatingFilter.filter(buffer);
 
         //Hack: we're placing real samples in a complex buffer that the DFT
         //processor is expecting.

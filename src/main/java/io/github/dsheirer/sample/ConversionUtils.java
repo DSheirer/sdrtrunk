@@ -1,6 +1,6 @@
 package io.github.dsheirer.sample;
 
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -56,7 +56,7 @@ public class ConversionUtils
      * Converts the float samples in a complex buffer to a little endian 16-bit
      * buffer
      */
-    public static ByteBuffer convertToSigned16BitSamples(ReusableBuffer buffer)
+    public static ByteBuffer convertToSigned16BitSamples(ReusableFloatBuffer buffer)
     {
         return convertToSigned16BitSamples(buffer.getSamples());
     }

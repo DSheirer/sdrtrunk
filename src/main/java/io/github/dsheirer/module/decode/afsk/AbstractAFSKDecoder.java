@@ -19,7 +19,7 @@ import io.github.dsheirer.dsp.afsk.AFSK1200Decoder;
 import io.github.dsheirer.module.decode.Decoder;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IReusableBufferListener;
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 
 /**
  * Abstract class for Audio Frequency Shift Keying (AFSK) 1200-baud decoder based decoder modules.
@@ -28,7 +28,7 @@ import io.github.dsheirer.sample.buffer.ReusableBuffer;
  *
  * Sub-class implementations should invoke getDecoder().setListener() to receive decoded symbol stream.
  */
-public abstract class AbstractAFSKDecoder extends Decoder implements IReusableBufferListener, Listener<ReusableBuffer>
+public abstract class AbstractAFSKDecoder extends Decoder implements IReusableBufferListener, Listener<ReusableFloatBuffer>
 {
     private AFSK1200Decoder mAFSK1200Decoder;
 
@@ -48,13 +48,13 @@ public abstract class AbstractAFSKDecoder extends Decoder implements IReusableBu
     }
 
     @Override
-    public void receive(ReusableBuffer reusableBuffer)
+    public void receive(ReusableFloatBuffer reusableFloatBuffer)
     {
-        mAFSK1200Decoder.receive(reusableBuffer);
+        mAFSK1200Decoder.receive(reusableFloatBuffer);
     }
 
     @Override
-    public Listener<ReusableBuffer> getReusableBufferListener()
+    public Listener<ReusableFloatBuffer> getReusableBufferListener()
     {
         return this;
     }

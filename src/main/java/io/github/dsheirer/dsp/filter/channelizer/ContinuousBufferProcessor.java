@@ -137,6 +137,46 @@ public class ContinuousBufferProcessor<E> implements Listener<E>
     }
 
     /**
+     * Stops this buffer processor,stops queuing of incoming buffers and flushes the internal buffer queue
+     * contents to the listener.
+     */
+    public void flushAndStop()
+    {
+        if(mRunning.compareAndSet(true, false))
+        {
+            if(mScheduledFuture != null)
+            {
+                mScheduledFuture.cancel(true);
+                mScheduledFuture = null;
+            }
+
+            process();
+        }
+    }
+
+    /**
+     * Distributes queued buffers to the listener
+     */
+    private void process()
+    {
+        List<E> buffers = new ArrayList<>();
+
+        try
+        {
+            mQueue.drainTo(buffers);
+
+            if(mListener != null)
+            {
+                mListener.receive(buffers);
+            }
+        }
+        catch(Throwable throwable)
+        {
+            mLog.error("Error while dispatching buffers to listener", throwable);
+        }
+    }
+
+    /**
      * Clears any buffers from the queue
      */
     protected Collection<E> clearQueue()
@@ -162,21 +202,7 @@ public class ContinuousBufferProcessor<E> implements Listener<E>
         @Override
         public void run()
         {
-            List<E> buffers = new ArrayList<>();
-
-            try
-            {
-                mQueue.drainTo(buffers);
-
-                if(mListener != null)
-                {
-                    mListener.receive(buffers);
-                }
-            }
-            catch(Throwable throwable)
-            {
-                mLog.error("Error while dispatching buffers to listeners", throwable);
-            }
+            process();
         }
     }
 }

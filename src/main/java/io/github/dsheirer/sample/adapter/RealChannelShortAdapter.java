@@ -15,7 +15,7 @@
  ******************************************************************************/
 package io.github.dsheirer.sample.adapter;
 
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import io.github.dsheirer.source.mixer.MixerChannel;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
@@ -46,10 +46,10 @@ public class RealChannelShortAdapter extends RealSampleAdapter
     }
 
     @Override
-    public ReusableBuffer convert(byte[] samples)
+    public ReusableFloatBuffer convert(byte[] samples)
     {
-        ReusableBuffer reusableBuffer = getBuffer(samples.length / 4);
-        float[] convertedSamples = reusableBuffer.getSamples();
+        ReusableFloatBuffer reusableFloatBuffer = getBuffer(samples.length / 4);
+        float[] convertedSamples = reusableFloatBuffer.getSamples();
 
         mByteBuffer = ByteBuffer.wrap(samples);
 
@@ -76,7 +76,7 @@ public class RealChannelShortAdapter extends RealSampleAdapter
             }
         }
 
-        return reusableBuffer;
+        return reusableFloatBuffer;
     }
 
     /**

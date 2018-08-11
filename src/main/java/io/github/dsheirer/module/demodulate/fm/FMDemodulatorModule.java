@@ -26,8 +26,8 @@ import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IReusableBufferProvider;
 import io.github.dsheirer.sample.buffer.IReusableComplexBufferListener;
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
@@ -47,7 +47,7 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
     private FMDemodulator mDemodulator = new FMDemodulator();
     private RealResampler mResampler;
     private SourceEventProcessor mSourceEventProcessor = new SourceEventProcessor();
-    private Listener<ReusableBuffer> mResampledReusableBufferListener;
+    private Listener<ReusableFloatBuffer> mResampledReusableBufferListener;
     private double mChannelBandwidth;
     private double mOutputSampleRate;
 
@@ -106,7 +106,7 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
     }
 
     @Override
-    public void setBufferListener(Listener<ReusableBuffer> listener)
+    public void setBufferListener(Listener<ReusableFloatBuffer> listener)
     {
         mResampledReusableBufferListener = listener;
     }
@@ -128,7 +128,7 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
         }
 
         ReusableComplexBuffer basebandFilteredBuffer = mIQFilter.filter(reusableComplexBuffer);
-        ReusableBuffer demodulatedBuffer = mDemodulator.demodulate(basebandFilteredBuffer);
+        ReusableFloatBuffer demodulatedBuffer = mDemodulator.demodulate(basebandFilteredBuffer);
 
         if(mResampler != null)
         {
@@ -204,18 +204,18 @@ public class FMDemodulatorModule extends Module implements ISourceEventListener,
 
                 mResampler = new RealResampler(sampleRate, mOutputSampleRate, 2000, 1000);
 
-                mResampler.setListener(new Listener<ReusableBuffer>()
+                mResampler.setListener(new Listener<ReusableFloatBuffer>()
                 {
                     @Override
-                    public void receive(ReusableBuffer reusableBuffer)
+                    public void receive(ReusableFloatBuffer reusableFloatBuffer)
                     {
                         if(mResampledReusableBufferListener != null)
                         {
-                            mResampledReusableBufferListener.receive(reusableBuffer);
+                            mResampledReusableBufferListener.receive(reusableFloatBuffer);
                         }
                         else
                         {
-                            reusableBuffer.decrementUserCount();
+                            reusableFloatBuffer.decrementUserCount();
                         }
                     }
                 });

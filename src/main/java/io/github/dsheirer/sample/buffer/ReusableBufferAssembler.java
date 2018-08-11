@@ -19,16 +19,16 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.real.RealSampleListener;
 
 /**
- * Assembles single float samples into a ReusableBuffer containing an array of floats
+ * Assembles single float samples into a ReusableFloatBuffer containing an array of floats
  */
 public class ReusableBufferAssembler implements RealSampleListener
 {
     private int mBufferSize;
     private int mBufferPointer;
-    private ReusableBuffer mCurrentBuffer;
+    private ReusableFloatBuffer mCurrentBuffer;
     private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("Real");
 
-    private Listener<ReusableBuffer> mListener;
+    private Listener<ReusableFloatBuffer> mListener;
 
     public ReusableBufferAssembler(int bufferSize)
     {
@@ -73,7 +73,7 @@ public class ReusableBufferAssembler implements RealSampleListener
         }
     }
 
-    public void setListener(Listener<ReusableBuffer> listener)
+    public void setListener(Listener<ReusableFloatBuffer> listener)
     {
         mListener = listener;
     }

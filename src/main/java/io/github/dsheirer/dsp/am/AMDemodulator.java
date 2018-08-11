@@ -15,9 +15,9 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.am;
 
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 
 /**
  * Performs AM demodulation on baseband I/Q samples to produce demodulated float output.
@@ -63,11 +63,11 @@ public class AMDemodulator
      * @param complexBuffer to demodulate
      * @return demodulated audio buffer.
      */
-    public ReusableBuffer demodulate(ReusableComplexBuffer complexBuffer)
+    public ReusableFloatBuffer demodulate(ReusableComplexBuffer complexBuffer)
     {
-        ReusableBuffer reusableBuffer = mReusableBufferQueue.getBuffer(complexBuffer.getSampleCount());
+        ReusableFloatBuffer reusableFloatBuffer = mReusableBufferQueue.getBuffer(complexBuffer.getSampleCount());
         float[] input = complexBuffer.getSamples();
-        float[] output = reusableBuffer.getSamples();
+        float[] output = reusableFloatBuffer.getSamples();
         mOutputBufferPointer = 0;
 
         for(int x= 0; x < complexBuffer.getSamples().length; x += 2)
@@ -77,6 +77,6 @@ public class AMDemodulator
 
         complexBuffer.decrementUserCount();
 
-        return reusableBuffer;
+        return reusableFloatBuffer;
     }
 }

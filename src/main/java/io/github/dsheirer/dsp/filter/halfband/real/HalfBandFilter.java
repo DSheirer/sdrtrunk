@@ -17,8 +17,8 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.halfband.real;
 
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import org.apache.commons.lang3.Validate;
 
 public class HalfBandFilter
@@ -84,10 +84,10 @@ public class HalfBandFilter
         mBufferPointer = mBufferPointer % mBufferSize;
     }
 
-    public ReusableBuffer filter(ReusableBuffer input)
+    public ReusableFloatBuffer filter(ReusableFloatBuffer input)
     {
         float[] inputSamples = input.getSamples();
-		ReusableBuffer output = mReusableBufferQueue.getBuffer(inputSamples.length);
+		ReusableFloatBuffer output = mReusableBufferQueue.getBuffer(inputSamples.length);
 		float[] outputSamples = output.getSamples();
 
 		for(int x = 0; x < inputSamples.length; x++)
