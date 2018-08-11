@@ -15,8 +15,8 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.dc;
 
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import io.github.dsheirer.sample.real.RealSampleListener;
 
 public class IIRSinglePoleDCRemovalFilter implements RealSampleListener
@@ -67,9 +67,9 @@ public class IIRSinglePoleDCRemovalFilter implements RealSampleListener
      * @param inputBuffer to filter
      * @return filtered samples in a new (ie reused) output buffer
      */
-    public ReusableBuffer filter(ReusableBuffer inputBuffer)
+    public ReusableFloatBuffer filter(ReusableFloatBuffer inputBuffer)
     {
-        ReusableBuffer outputBuffer = mReusableBufferQueue.getBuffer(inputBuffer.getSampleCount());
+        ReusableFloatBuffer outputBuffer = mReusableBufferQueue.getBuffer(inputBuffer.getSampleCount());
         float[] inputSamples = inputBuffer.getSamples();
         float[] outputSamples = outputBuffer.getSamples();
 

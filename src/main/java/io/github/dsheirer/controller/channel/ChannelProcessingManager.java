@@ -33,6 +33,7 @@ import io.github.dsheirer.module.decode.event.MessageActivityModel;
 import io.github.dsheirer.module.log.EventLogManager;
 import io.github.dsheirer.record.RecorderManager;
 import io.github.dsheirer.record.RecorderType;
+import io.github.dsheirer.record.binary.BinaryRecorder;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.source.Source;
@@ -307,6 +308,25 @@ public class ChannelProcessingManager implements ChannelEventListener
             if(recorders.contains(RecorderType.TRAFFIC_BASEBAND) && channel.getChannelType() == Channel.ChannelType.TRAFFIC)
             {
                 processingChain.addModule(mRecorderManager.getBasebandRecorder(channel.toString()));
+            }
+
+            /* Add decoded bit stream recorder if the decoder supports bitstream output */
+            if(DecoderFactory.getBitstreamDecoders().contains(channel.getDecodeConfiguration().getDecoderType()))
+            {
+                if((recorders.contains(RecorderType.DEMODULATED_BIT_STREAM) &&
+                    channel.getChannelType() == Channel.ChannelType.STANDARD))
+                {
+                    processingChain.addModule(new BinaryRecorder(mRecorderManager.getRecordingBasePath(),
+                        channel.toString()));
+                }
+
+                /* Add traffic channel decoded bit stream recorder */
+                if(recorders.contains(RecorderType.TRAFFIC_DEMODULATED_BIT_STREAM) &&
+                    channel.getChannelType() == Channel.ChannelType.TRAFFIC)
+                {
+                    processingChain.addModule(new BinaryRecorder(mRecorderManager.getRecordingBasePath(),
+                        channel.toString()));
+                }
             }
         }
 

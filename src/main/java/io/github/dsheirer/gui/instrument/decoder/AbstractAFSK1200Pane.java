@@ -23,7 +23,7 @@ import io.github.dsheirer.gui.instrument.chart.RealSampleLineChart;
 import io.github.dsheirer.message.Message;
 import io.github.dsheirer.module.decode.DecoderType;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -52,7 +52,7 @@ public abstract class AbstractAFSK1200Pane extends RealDecoderPane
     private void init()
     {
         //This is force-cast without type checking ....
-        addListener((Listener<ReusableBuffer>)getDecoder());
+        addListener((Listener<ReusableFloatBuffer>)getDecoder());
 
         addListener(getSampleLineChart());
 

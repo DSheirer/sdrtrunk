@@ -17,7 +17,7 @@ package io.github.dsheirer.module.decode.ltrnet;
 
 import io.github.dsheirer.alias.AliasList;
 import io.github.dsheirer.dsp.fsk.LTRDecoderInstrumented;
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import javafx.beans.property.SimpleIntegerProperty;
 
 public class LTRNetDecoderInstrumented extends LTRNetDecoder
@@ -35,9 +35,9 @@ public class LTRNetDecoderInstrumented extends LTRNetDecoder
     }
 
     @Override
-    public void receive(ReusableBuffer reusableBuffer)
+    public void receive(ReusableFloatBuffer reusableFloatBuffer)
     {
-        super.receive(reusableBuffer);
+        super.receive(reusableFloatBuffer);
 
         bufferCount.setValue(bufferCount.intValue() + 1);
     }

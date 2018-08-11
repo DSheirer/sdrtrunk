@@ -15,10 +15,10 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.channelizer;
 
+import io.github.dsheirer.sample.buffer.AbstractReusableBuffer;
 import io.github.dsheirer.sample.buffer.OverflowableReusableBufferTransferQueue;
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
 
-public class ContinuousReusableBufferProcessor<T extends ReusableBuffer> extends ContinuousBufferProcessor<T>
+public class ContinuousReusableBufferProcessor<T extends AbstractReusableBuffer> extends ContinuousBufferProcessor<T>
 {
     /**
      * Scheduled Reusable Buffer Processor combines an internal overflowable buffer with a scheduled runnable processing

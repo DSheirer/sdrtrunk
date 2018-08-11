@@ -15,45 +15,83 @@
  ******************************************************************************/
 package io.github.dsheirer.sample.buffer;
 
-public class ReusableComplexBuffer extends ReusableFloatBuffer
+import org.apache.commons.lang3.Validate;
+
+public class ReusableByteBuffer extends AbstractReusableBuffer
 {
+    private byte[] mSamples;
+
     /**
-     * Creates a reusable, timestamped complex buffer using the specified time in milliseconds.
+     * Creates a reusable, timestamped byte buffer using the specified time in milliseconds.
      *
      * NOTE: reusability of this buffer requires strict user count tracking.  Each component that receives this
      * buffer should not modify the buffer contents.  Each component should also increment the user count before
      * sending this buffer to another component and should decrement the user count when finished using this buffer.
      *
-     * @param disposalListener to be notified when all consumers/users are finished using the buffer
-     * @param samples of data
+     * @param bufferDisposedListener to be notified when all consumers/users are finished using the buffer
+     * @param bytes of data
      * @param timestamp in millis for the buffer
      */
-    ReusableComplexBuffer(IReusableBufferDisposedListener disposalListener, float[] samples, long timestamp)
+    ReusableByteBuffer(IReusableBufferDisposedListener bufferDisposedListener, byte[] bytes, long timestamp)
     {
-        super(disposalListener, samples, timestamp);
+        super(bufferDisposedListener, timestamp);
+        mSamples = bytes;
+
+        Validate.notNull(bufferDisposedListener, "Reusable Byte Buffer Listener cannot be null");
     }
 
     /**
-     * Constructs a timestamped complex buffer using the current system time in milliseconds.
+     * Constructs a timestamped byte buffer using the current system time in milliseconds.
      *
      * NOTE: reusability of this buffer requires strict user count tracking.  Each component that receives this
      * buffer should not modify the buffer contents.  Each component should also increment the user count before
      * sending this buffer to another component and should decrement the user count when finished using this buffer.
      *
-     * @param disposalListener to be notified when all consumers are finished using the buffer
-     * @param samples of data
+     * @param bufferDisposedListener to be notified when all consumers are finished using the buffer
+     * @param bytes of data
      */
-    protected ReusableComplexBuffer(IReusableBufferDisposedListener disposalListener, float[] samples)
+    public ReusableByteBuffer(IReusableBufferDisposedListener bufferDisposedListener, byte[] bytes)
     {
-        this(disposalListener, samples, System.currentTimeMillis());
+        this(bufferDisposedListener, bytes, System.currentTimeMillis());
     }
 
     /**
-     * Number of complex samples contained in this buffer
+     * Samples for this buffer
      */
-    @Override
+    public byte[] getBytes()
+    {
+        return mSamples;
+    }
+
+    /**
+     * Creates a copy of the samples from this buffer
+     */
+    public byte[] getSamplesCopy()
+    {
+        byte[] bytes = getBytes();
+        byte[] copy = new byte[bytes.length];
+        System.arraycopy(bytes, 0, copy, 0, bytes.length);
+        return copy;
+    }
+
+    /**
+     * Number of bytes contained in this buffer
+     */
     public int getSampleCount()
     {
-        return getSamples().length / 2;
+        return getBytes().length;
+    }
+
+    /**
+     * Resizes the internal array to the size argument
+     *
+     * @param size for the internal array
+     */
+    protected void resize(int size)
+    {
+        if(mSamples.length != size)
+        {
+            mSamples = new byte[size];
+        }
     }
 }

@@ -16,8 +16,8 @@
 package io.github.dsheirer.dsp.filter.fir.real;
 
 import io.github.dsheirer.dsp.filter.fir.FIRFilter;
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 
 /**
  * Finite Impulse Response (FIR) filter for filtering individual float samples or float sample arrays.
@@ -113,11 +113,11 @@ public class RealFIRFilter2 extends FIRFilter
      * @param unfilteredBuffer containing a sample array to be filtered
      * @return a new reusable buffer with the filtered samples.
      */
-    public ReusableBuffer filter(ReusableBuffer unfilteredBuffer)
+    public ReusableFloatBuffer filter(ReusableFloatBuffer unfilteredBuffer)
     {
         float[] unfilteredSamples = unfilteredBuffer.getSamples();
 
-        ReusableBuffer filteredBuffer = mReusableBufferQueue.getBuffer(unfilteredSamples.length);
+        ReusableFloatBuffer filteredBuffer = mReusableBufferQueue.getBuffer(unfilteredSamples.length);
         float[] filteredSamples = filteredBuffer.getSamples();
 
         for(int x = 0; x < unfilteredSamples.length; x++)

@@ -19,7 +19,7 @@ import org.apache.commons.lang3.Validate;
 
 import java.nio.FloatBuffer;
 
-public class ReusableBuffer extends AbstractReusableBuffer
+public class ReusableFloatBuffer extends AbstractReusableBuffer
 {
     private float[] mSamples;
 
@@ -34,7 +34,7 @@ public class ReusableBuffer extends AbstractReusableBuffer
      * @param samples of data
      * @param timestamp in millis for the buffer
      */
-    ReusableBuffer(IReusableBufferDisposedListener bufferDisposedListener, float[] samples, long timestamp)
+    ReusableFloatBuffer(IReusableBufferDisposedListener bufferDisposedListener, float[] samples, long timestamp)
     {
         super(bufferDisposedListener, timestamp);
         mSamples = samples;
@@ -79,7 +79,7 @@ public class ReusableBuffer extends AbstractReusableBuffer
      * @param bufferDisposedListener to be notified when all consumers are finished using the buffer
      * @param samples of data
      */
-    public ReusableBuffer(IReusableBufferDisposedListener bufferDisposedListener, float[] samples)
+    public ReusableFloatBuffer(IReusableBufferDisposedListener bufferDisposedListener, float[] samples)
     {
         this(bufferDisposedListener, samples, System.currentTimeMillis());
     }

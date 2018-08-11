@@ -15,8 +15,8 @@
  ******************************************************************************/
 package io.github.dsheirer.dsp.filter.dc;
 
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 
 /**
  * DC removal filter for removing any DC offset that may be present when a signal is not aligned within the
@@ -77,9 +77,9 @@ public class DCRemovalFilter
      * @param unfilteredBuffer containing samples to filter
      * @return a new reusable buffer containing the filtered samples with the user count set to 1.
      */
-    public ReusableBuffer filter(ReusableBuffer unfilteredBuffer)
+    public ReusableFloatBuffer filter(ReusableFloatBuffer unfilteredBuffer)
     {
-        ReusableBuffer filteredBuffer = mReusableBufferQueue.getBuffer(unfilteredBuffer.getSampleCount());
+        ReusableFloatBuffer filteredBuffer = mReusableBufferQueue.getBuffer(unfilteredBuffer.getSampleCount());
 
         float[] unfilteredSamples = unfilteredBuffer.getSamples();
         float[] filteredSamples = filteredBuffer.getSamples();

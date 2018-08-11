@@ -29,8 +29,8 @@ import io.github.dsheirer.module.Module;
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IReusableBufferProvider;
 import io.github.dsheirer.sample.buffer.IReusableComplexBufferListener;
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
@@ -55,7 +55,7 @@ public class AMDemodulatorModule extends Module implements ISourceEventListener,
     private double mChannelBandwidth;
     private double mOutputSampleRate;
     private RealResampler mResampler;
-    private Listener<ReusableBuffer> mResampledReusableBufferListener;
+    private Listener<ReusableFloatBuffer> mResampledReusableBufferListener;
     private SourceEventProcessor mSourceEventProcessor = new SourceEventProcessor();
 
     /**
@@ -109,7 +109,7 @@ public class AMDemodulatorModule extends Module implements ISourceEventListener,
     public void receive(ReusableComplexBuffer basebandBuffer)
     {
         ReusableComplexBuffer filteredBuffer = mIQFilter.filter(basebandBuffer);
-        ReusableBuffer demodulated = mDemodulator.demodulate(filteredBuffer);
+        ReusableFloatBuffer demodulated = mDemodulator.demodulate(filteredBuffer);
         mResampler.resample(demodulated);
     }
 
@@ -117,12 +117,12 @@ public class AMDemodulatorModule extends Module implements ISourceEventListener,
      * Processes resampled audio buffers produced by the resampler.
      * @param resampledAudio buffer to process.
      */
-    private void processResampledAudio(ReusableBuffer resampledAudio)
+    private void processResampledAudio(ReusableFloatBuffer resampledAudio)
     {
         if(mResampledReusableBufferListener != null)
         {
-            ReusableBuffer filteredAudio = mLowPassFilter.filter(resampledAudio);
-            ReusableBuffer gainApplied = mAGC.process(filteredAudio);
+            ReusableFloatBuffer filteredAudio = mLowPassFilter.filter(resampledAudio);
+            ReusableFloatBuffer gainApplied = mAGC.process(filteredAudio);
             mResampledReusableBufferListener.receive(gainApplied);
         }
         else
@@ -172,7 +172,7 @@ public class AMDemodulatorModule extends Module implements ISourceEventListener,
     }
 
     @Override
-    public void setBufferListener(Listener<ReusableBuffer> listener)
+    public void setBufferListener(Listener<ReusableFloatBuffer> listener)
     {
         mResampledReusableBufferListener = listener;
     }
@@ -253,10 +253,10 @@ public class AMDemodulatorModule extends Module implements ISourceEventListener,
 
                 mResampler = new RealResampler(sampleRate, mOutputSampleRate, 2000, 1000);
 
-                mResampler.setListener(new Listener<ReusableBuffer>()
+                mResampler.setListener(new Listener<ReusableFloatBuffer>()
                 {
                     @Override
-                    public void receive(ReusableBuffer resampledAudioBuffer)
+                    public void receive(ReusableFloatBuffer resampledAudioBuffer)
                     {
                         processResampledAudio(resampledAudioBuffer);
                     }

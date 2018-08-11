@@ -17,7 +17,7 @@ package io.github.dsheirer.module.decode.lj1200;
 
 import io.github.dsheirer.dsp.afsk.AFSK1200DecoderInstrumented;
 import io.github.dsheirer.gui.instrument.chart.IInstrumentedAFSK1200Decoder;
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import javafx.beans.property.SimpleIntegerProperty;
 
 /**
@@ -44,9 +44,9 @@ public class LJ1200DecoderInstrumented extends LJ1200Decoder implements IInstrum
     }
 
     @Override
-    public void receive(ReusableBuffer reusableBuffer)
+    public void receive(ReusableFloatBuffer reusableFloatBuffer)
     {
-        super.receive(reusableBuffer);
+        super.receive(reusableFloatBuffer);
 
         bufferCount.setValue(bufferCount.intValue() + 1);
     }

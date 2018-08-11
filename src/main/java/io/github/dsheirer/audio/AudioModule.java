@@ -27,7 +27,7 @@ import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.IReusableBufferListener;
 import io.github.dsheirer.sample.buffer.ReusableAudioPacket;
 import io.github.dsheirer.sample.buffer.ReusableAudioPacketQueue;
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * This class is designed to support 8 kHz sample rate demodulated audio.
  */
 public class AudioModule extends Module implements IAudioPacketProvider, IReusableBufferListener,
-    ISquelchStateListener, Listener<ReusableBuffer>
+    ISquelchStateListener, Listener<ReusableFloatBuffer>
 {
     protected static final Logger mLog = LoggerFactory.getLogger(AudioModule.class);
     private ReusableAudioPacketQueue mAudioPacketQueue = new ReusableAudioPacketQueue("AudioModule");
@@ -139,11 +139,11 @@ public class AudioModule extends Module implements IAudioPacketProvider, IReusab
     }
 
     @Override
-    public void receive(ReusableBuffer reusableBuffer)
+    public void receive(ReusableFloatBuffer reusableFloatBuffer)
     {
         if(mAudioPacketListener != null && mSquelchState == SquelchState.UNSQUELCH)
         {
-            ReusableBuffer highPassFiltered = mHighPassFilter.filter(reusableBuffer);
+            ReusableFloatBuffer highPassFiltered = mHighPassFilter.filter(reusableFloatBuffer);
 
             ReusableAudioPacket audioPacket = mAudioPacketQueue.getBuffer(highPassFiltered.getSampleCount());
             audioPacket.loadAudioFrom(highPassFiltered);
@@ -155,7 +155,7 @@ public class AudioModule extends Module implements IAudioPacketProvider, IReusab
         }
         else
         {
-            reusableBuffer.decrementUserCount();
+            reusableFloatBuffer.decrementUserCount();
         }
     }
 

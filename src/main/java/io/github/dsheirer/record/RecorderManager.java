@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -228,6 +229,11 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
         return sb.toString();
     }
 
+    public Path getRecordingBasePath()
+    {
+        return SystemProperties.getInstance().getApplicationFolder("recordings");
+    }
+
     /**
      * Constructs a baseband recorder for use in a processing chain.
      */
@@ -236,6 +242,18 @@ public class RecorderManager implements Listener<ReusableAudioPacket>
         StringBuilder sb = new StringBuilder();
         sb.append(SystemProperties.getInstance().getApplicationFolder("recordings"));
         sb.append(File.separator).append(channelName).append("_baseband");
+
+        return new ComplexBufferWaveRecorder(BASEBAND_SAMPLE_RATE, sb.toString());
+    }
+
+    /**
+     * Constructs a baseband recorder for use in a processing chain.
+     */
+    public ComplexBufferWaveRecorder getBitstreamRecorder(String channelName)
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.append(SystemProperties.getInstance().getApplicationFolder("recordings"));
+        sb.append(File.separator).append(channelName).append("_bitstream");
 
         return new ComplexBufferWaveRecorder(BASEBAND_SAMPLE_RATE, sb.toString());
     }

@@ -18,8 +18,8 @@ package io.github.dsheirer.dsp.filter.resample;
 import com.laszlosystems.libresample4j.Resampler;
 import com.laszlosystems.libresample4j.SampleBuffers;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +32,7 @@ public class RealResampler
 
     private ReusableBufferQueue mReusableBufferQueue = new ReusableBufferQueue("RealResampler");
     private Resampler mResampler;
-    private Listener<ReusableBuffer> mResampledListener;
+    private Listener<ReusableFloatBuffer> mResampledListener;
     private BufferManager mBufferManager;
     private double mResampleFactor;
 
@@ -50,11 +50,11 @@ public class RealResampler
 
     /**
      * Primary input method to the resampler
-     * @param reusableBuffer to resample
+     * @param reusableFloatBuffer to resample
      */
-    public void resample(ReusableBuffer reusableBuffer)
+    public void resample(ReusableFloatBuffer reusableFloatBuffer)
     {
-        mBufferManager.load(reusableBuffer);
+        mBufferManager.load(reusableFloatBuffer);
         mResampler.process(mResampleFactor, mBufferManager, false);
     }
 
@@ -62,7 +62,7 @@ public class RealResampler
      * Registers the listener to receive the resampled buffer output
      * @param resampledBufferListener to receive buffers
      */
-    public void setListener(Listener<ReusableBuffer> resampledBufferListener)
+    public void setListener(Listener<ReusableFloatBuffer> resampledBufferListener)
     {
         mResampledListener = resampledBufferListener;
     }
@@ -89,10 +89,10 @@ public class RealResampler
         /**
          * Queues the buffer sample for resampling
          */
-        public void load(ReusableBuffer reusableBuffer)
+        public void load(ReusableFloatBuffer reusableFloatBuffer)
         {
-            mInputBuffer.put(reusableBuffer.getSamples());
-            reusableBuffer.decrementUserCount();
+            mInputBuffer.put(reusableFloatBuffer.getSamples());
+            reusableFloatBuffer.decrementUserCount();
         }
 
         @Override
@@ -128,7 +128,7 @@ public class RealResampler
 
             while(mOutputBuffer.position() > mOutputBufferSize)
             {
-                ReusableBuffer outputBuffer = mReusableBufferQueue.getBuffer(mOutputBufferSize);
+                ReusableFloatBuffer outputBuffer = mReusableBufferQueue.getBuffer(mOutputBufferSize);
 
                 mOutputBuffer.flip();
                 mOutputBuffer.get(outputBuffer.getSamples());

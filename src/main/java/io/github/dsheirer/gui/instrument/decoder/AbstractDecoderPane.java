@@ -17,10 +17,10 @@ package io.github.dsheirer.gui.instrument.decoder;
 
 import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.SampleType;
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 import javafx.scene.layout.VBox;
 
-public abstract class AbstractDecoderPane<T extends ReusableBuffer> extends VBox implements Listener<T>
+public abstract class AbstractDecoderPane<T extends ReusableFloatBuffer> extends VBox implements Listener<T>
 {
     abstract SampleType getSampleType();
 

@@ -15,10 +15,10 @@
  ******************************************************************************/
 package io.github.dsheirer.sample.adapter;
 
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 
-public abstract class RealSampleAdapter extends AbstractSampleAdapter<ReusableBuffer>
+public abstract class RealSampleAdapter extends AbstractSampleAdapter<ReusableFloatBuffer>
 {
     private ReusableBufferQueue mReusableBufferQueue;
 
@@ -32,7 +32,7 @@ public abstract class RealSampleAdapter extends AbstractSampleAdapter<ReusableBu
         mReusableBufferQueue = new ReusableBufferQueue(debugName);
     }
 
-    protected ReusableBuffer getBuffer(int size)
+    protected ReusableFloatBuffer getBuffer(int size)
     {
         return mReusableBufferQueue.getBuffer(size);
     }

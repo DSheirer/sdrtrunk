@@ -2,8 +2,8 @@ package io.github.dsheirer.dsp.gain;
 
 import io.github.dsheirer.buffer.DoubleCircularBuffer;
 import io.github.dsheirer.buffer.RealCircularBuffer;
-import io.github.dsheirer.sample.buffer.ReusableBuffer;
 import io.github.dsheirer.sample.buffer.ReusableBufferQueue;
+import io.github.dsheirer.sample.buffer.ReusableFloatBuffer;
 
 /*******************************************************************************
  *     SDR Trunk 
@@ -147,9 +147,9 @@ public class AutomaticGainControl
      * @param input samples to process
      * @return output samples with gain applied
      */
-    public ReusableBuffer process(ReusableBuffer input)
+    public ReusableFloatBuffer process(ReusableFloatBuffer input)
     {
-        ReusableBuffer output = mReusableBufferQueue.getBuffer(input.getSampleCount());
+        ReusableFloatBuffer output = mReusableBufferQueue.getBuffer(input.getSampleCount());
 
         float[] inputSamples = input.getSamples();
         float[] outputSamples = output.getSamples();
