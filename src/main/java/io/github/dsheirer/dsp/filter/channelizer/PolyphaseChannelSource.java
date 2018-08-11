@@ -134,7 +134,11 @@ public class PolyphaseChannelSource extends TunerChannelSource
     public void receiveChannelResults(ReusableChannelResultsBuffer channelResultsBuffer)
     {
         mReusableComplexBufferAssembler.updateTimestamp(channelResultsBuffer.getTimestamp());
-        mPolyphaseChannelOutputProcessor.receiveChannelResults(channelResultsBuffer);
+
+        if(mPolyphaseChannelOutputProcessor != null)
+        {
+            mPolyphaseChannelOutputProcessor.receiveChannelResults(channelResultsBuffer);
+        }
     }
 
     /**
