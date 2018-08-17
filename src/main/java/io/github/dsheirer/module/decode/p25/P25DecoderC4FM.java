@@ -25,6 +25,7 @@ import io.github.dsheirer.dsp.psk.DQPSKDecisionDirectedDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
 import io.github.dsheirer.dsp.psk.pll.AdaptivePLLGainMonitor;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
+import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
 import org.slf4j.Logger;
@@ -76,7 +77,15 @@ public class P25DecoderC4FM extends P25Decoder
         mMessageFramer = new P25MessageFramer(getAliasList(), mCostasLoop, mPLLGainMonitor);
         mMessageFramer.setListener(getMessageProcessor());
         mMessageFramer.setSampleRate(sampleRate);
-        mQPSKDemodulator.setSymbolListener(mMessageFramer);
+
+//        mQPSKDemodulator.setSymbolListener(mMessageFramer);
+        mQPSKDemodulator.setSymbolListener(getByteBufferAssembler());
+    }
+
+    @Override
+    public Listener getReusableByteBufferListener()
+    {
+        return mMessageFramer;
     }
 
     /**

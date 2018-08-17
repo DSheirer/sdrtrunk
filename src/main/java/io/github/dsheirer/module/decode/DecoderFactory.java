@@ -476,9 +476,6 @@ public class DecoderFactory
      */
     public static EnumSet<DecoderType> getBitstreamDecoders()
     {
-//        return EnumSet.of(DecoderType.P25_PHASE1);
-
-        //None of the decoders currently support bitstream output.
-        return EnumSet.noneOf(DecoderType.class);
+        return EnumSet.of(DecoderType.P25_PHASE1);
     }
 }

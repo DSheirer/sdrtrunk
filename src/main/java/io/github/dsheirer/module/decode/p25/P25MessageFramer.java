@@ -32,13 +32,14 @@ import io.github.dsheirer.module.decode.p25.message.vselp.VSELP1Message;
 import io.github.dsheirer.module.decode.p25.message.vselp.VSELP2Message;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class P25MessageFramer implements Listener<Dibit>
+public class P25MessageFramer implements Listener<ReusableByteBuffer>
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25MessageFramer.class);
 
@@ -199,23 +200,29 @@ public class P25MessageFramer implements Listener<Dibit>
     }
 
     @Override
-    public void receive(Dibit symbol)
+    public void receive(ReusableByteBuffer reusableByteBuffer)
     {
-        for(P25MessageAssembler assembler : mAssemblers)
-        {
-            if(assembler.isActive())
-            {
-                assembler.receive(symbol);
-
-                if(assembler.complete())
-                {
-                    assembler.reset();
-                }
-            }
-        }
-
-        mMatcher.receive(symbol.getBit1(), symbol.getBit2());
+        //process the buffer received
     }
+
+    //    @Override
+//    public void receive(Dibit symbol)
+//    {
+//        for(P25MessageAssembler assembler : mAssemblers)
+//        {
+//            if(assembler.isActive())
+//            {
+//                assembler.receive(symbol);
+//
+//                if(assembler.complete())
+//                {
+//                    assembler.reset();
+//                }
+//            }
+//        }
+//
+//        mMatcher.receive(symbol.getBit1(), symbol.getBit2());
+//    }
 
     public void setListener(Listener<Message> listener)
     {

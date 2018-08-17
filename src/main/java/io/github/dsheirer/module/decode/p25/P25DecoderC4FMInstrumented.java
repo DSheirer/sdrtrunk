@@ -78,7 +78,7 @@ public class P25DecoderC4FMInstrumented extends P25DecoderC4FM
         instrumented.setPLLFrequencyListener(mPLLFrequencyListener);
         instrumented.setSymbolDecisionDataListener(mSymbolDecisionDataListener);
         instrumented.setSamplesPerSymbolListener(mSamplesPerSymbolListener);
-        instrumented.setSymbolListener(mMessageFramer);
+        instrumented.setSymbolListener(getByteBufferAssembler());
     }
 
     public void setComplexSymbolListener(Listener<Complex> listener)

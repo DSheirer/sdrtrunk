@@ -79,7 +79,7 @@ public class P25DecoderLSMInstrumented extends P25DecoderLSM
         instrumented.setPLLFrequencyListener(mPLLFrequencyListener);
         instrumented.setSymbolDecisionDataListener(mSymbolDecisionDataListener);
         instrumented.setSamplesPerSymbolListener(mSamplesPerSymbolListener);
-        instrumented.setSymbolListener(mMessageFramer);
+        instrumented.setSymbolListener(getByteBufferAssembler());
     }
 
     public void setComplexSymbolListener(Listener<Complex> listener)
