@@ -16,11 +16,12 @@
 package io.github.dsheirer.module.decode.p25;
 
 import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.dsp.symbol.Dibit;
 import io.github.dsheirer.dsp.symbol.DibitToByteBufferAssembler;
 import io.github.dsheirer.module.decode.Decoder;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.IReusableByteBufferListener;
 import io.github.dsheirer.sample.buffer.IReusableByteBufferProvider;
 import io.github.dsheirer.sample.buffer.IReusableComplexBufferListener;
 import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
@@ -29,11 +30,11 @@ import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.ISourceEventProvider;
 import io.github.dsheirer.source.SourceEvent;
 
-public abstract class P25Decoder extends Decoder
-    implements ISourceEventListener, ISourceEventProvider, IReusableComplexBufferListener, Listener<ReusableComplexBuffer>,
-    IReusableByteBufferProvider, IReusableByteBufferListener
+public abstract class P25Decoder extends Decoder implements ISourceEventListener, ISourceEventProvider,
+    IReusableComplexBufferListener, Listener<ReusableComplexBuffer>, IReusableByteBufferProvider
 {
     private double mSampleRate;
+    private Broadcaster<Dibit> mDibitBroadcaster = new Broadcaster<>();
     private DibitToByteBufferAssembler mByteBufferAssembler = new DibitToByteBufferAssembler(300);
     private P25MessageProcessor mMessageProcessor;
     private AliasList mAliasList;
@@ -46,14 +47,15 @@ public abstract class P25Decoder extends Decoder
         mAliasList = aliasList;
         mMessageProcessor = new P25MessageProcessor(mAliasList);
         mMessageProcessor.setMessageListener(getMessageListener());
+        mDibitBroadcaster.addListener(mByteBufferAssembler);
     }
 
     /**
      * Assembler for packaging Dibit stream into reusable byte buffers.
      */
-    protected DibitToByteBufferAssembler getByteBufferAssembler()
+    protected Broadcaster<Dibit> getDibitBroadcaster()
     {
-        return mByteBufferAssembler;
+        return mDibitBroadcaster;
     }
 
     /**
@@ -62,7 +64,7 @@ public abstract class P25Decoder extends Decoder
     @Override
     public void setBufferListener(Listener<ReusableByteBuffer> listener)
     {
-        getByteBufferAssembler().setBufferListener(listener);
+        mByteBufferAssembler.setBufferListener(listener);
     }
 
     /**
@@ -71,7 +73,7 @@ public abstract class P25Decoder extends Decoder
     @Override
     public void removeBufferListener(Listener<ReusableByteBuffer> listener)
     {
-        getByteBufferAssembler().removeBufferListener(listener);
+        mByteBufferAssembler.removeBufferListener(listener);
     }
 
     /**
@@ -80,7 +82,7 @@ public abstract class P25Decoder extends Decoder
     @Override
     public boolean hasBufferListeners()
     {
-        return getByteBufferAssembler().hasBufferListeners();
+        return mByteBufferAssembler.hasBufferListeners();
     }
 
     protected double getSymbolRate()

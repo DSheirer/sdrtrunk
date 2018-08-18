@@ -32,14 +32,10 @@ import io.github.dsheirer.module.decode.p25.message.vselp.VSELP1Message;
 import io.github.dsheirer.module.decode.p25.message.vselp.VSELP2Message;
 import io.github.dsheirer.module.decode.p25.reference.DataUnitID;
 import io.github.dsheirer.sample.Listener;
-import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class P25MessageFramer implements Listener<ReusableByteBuffer>
+public class P25MessageFramer implements Listener<Dibit>
 {
     private final static Logger mLog = LoggerFactory.getLogger(P25MessageFramer.class);
 
@@ -78,7 +74,7 @@ public class P25MessageFramer implements Listener<ReusableByteBuffer>
     private PLLPhaseInversionDetector mInversionDetector180;
 
     private MultiSyncPatternMatcher mMatcher;
-    private List<P25MessageAssembler> mAssemblers = new ArrayList<P25MessageAssembler>();
+    private P25MessageAssembler mMessageAssembler = new P25MessageAssembler();
 
     private Listener<Message> mListener;
     private AliasList mAliasList;
@@ -105,13 +101,9 @@ public class P25MessageFramer implements Listener<ReusableByteBuffer>
             @Override
             public void syncDetected()
             {
-                for(P25MessageAssembler assembler : mAssemblers)
+                if(!mMessageAssembler.isActive())
                 {
-                    if(!assembler.isActive())
-                    {
-                        assembler.setActive(true);
-                        break;
-                    }
+                    mMessageAssembler.setActive(true);
                 }
             }
 
@@ -123,17 +115,6 @@ public class P25MessageFramer implements Listener<ReusableByteBuffer>
         });
 
         mMatcher.add(mPrimarySyncDetector);
-
-        /**
-         * We use two message assemblers to catch any sync detections, so that
-         * if we have a false trigger then we still have a chance to catch the
-         * valid message. If we have two false triggers before the arrival of
-         * the actual message sync, then the third or subsequent real or false
-         * sync pattern will produce a debug message indicating no assemblers
-         * are available..
-         */
-        mAssemblers.add(new P25MessageAssembler());
-        mAssemblers.add(new P25MessageAssembler());
     }
 
     public P25MessageFramer(AliasList aliasList, IPhaseLockedLoop phaseLockedLoop, ISyncDetectListener syncDetectListener)
@@ -173,12 +154,7 @@ public class P25MessageFramer implements Listener<ReusableByteBuffer>
 
     public void dispose()
     {
-        for(P25MessageAssembler a : mAssemblers)
-        {
-            a.dispose();
-        }
-
-        mAssemblers.clear();
+        mMessageAssembler.dispose();
 
         mListener = null;
         mAliasList = null;
@@ -200,29 +176,20 @@ public class P25MessageFramer implements Listener<ReusableByteBuffer>
     }
 
     @Override
-    public void receive(ReusableByteBuffer reusableByteBuffer)
+    public void receive(Dibit symbol)
     {
-        //process the buffer received
-    }
+        if(mMessageAssembler.isActive())
+        {
+            mMessageAssembler.receive(symbol);
 
-    //    @Override
-//    public void receive(Dibit symbol)
-//    {
-//        for(P25MessageAssembler assembler : mAssemblers)
-//        {
-//            if(assembler.isActive())
-//            {
-//                assembler.receive(symbol);
-//
-//                if(assembler.complete())
-//                {
-//                    assembler.reset();
-//                }
-//            }
-//        }
-//
-//        mMatcher.receive(symbol.getBit1(), symbol.getBit2());
-//    }
+            if(mMessageAssembler.complete())
+            {
+                mMessageAssembler.reset();
+            }
+        }
+
+        mMatcher.receive(symbol.getBit1(), symbol.getBit2());
+    }
 
     public void setListener(Listener<Message> listener)
     {
@@ -749,13 +716,9 @@ public class P25MessageFramer implements Listener<ReusableByteBuffer>
                     mPhaseLockedLoop.correctInversion(mPllCorrection);
 
                     /* Since we detected a sync pattern, start a message assembler */
-                    for(P25MessageAssembler assembler : mAssemblers)
+                    if(!mMessageAssembler.isActive())
                     {
-                        if(!assembler.isActive())
-                        {
-                            assembler.setActive(true);
-                            break;
-                        }
+                        mMessageAssembler.setActive(true);
                     }
                 }
 

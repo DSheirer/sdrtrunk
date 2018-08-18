@@ -24,7 +24,6 @@ import io.github.dsheirer.dsp.psk.DQPSKGardnerDemodulator;
 import io.github.dsheirer.dsp.psk.InterpolatingSampleBuffer;
 import io.github.dsheirer.dsp.psk.pll.AdaptivePLLGainMonitor;
 import io.github.dsheirer.dsp.psk.pll.CostasLoop;
-import io.github.dsheirer.sample.Listener;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.SourceEvent;
 
@@ -76,17 +75,17 @@ public class P25DecoderLSM extends P25Decoder
 
         //The Costas Loop receives symbol-inversion correction requests when detected.
         //The PLL gain monitor receives sync detect/loss signals from the message framer
+        if(mMessageFramer != null)
+        {
+            getDibitBroadcaster().removeListener(mMessageFramer);
+            mMessageFramer.dispose();
+        }
+
         mMessageFramer = new P25MessageFramer(getAliasList(), mCostasLoop, mPLLGainMonitor);
         mMessageFramer.setListener(getMessageProcessor());
         mMessageFramer.setSampleRate(sampleRate);
-//        mQPSKDemodulator.setSymbolListener(mMessageFramer);
-        mQPSKDemodulator.setSymbolListener(getByteBufferAssembler());
-    }
-
-    @Override
-    public Listener getReusableByteBufferListener()
-    {
-        return mMessageFramer;
+        mQPSKDemodulator.setSymbolListener(getDibitBroadcaster());
+        getDibitBroadcaster().addListener(mMessageFramer);
     }
 
     /**
