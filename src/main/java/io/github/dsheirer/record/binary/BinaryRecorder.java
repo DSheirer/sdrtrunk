@@ -45,6 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class BinaryRecorder extends Module implements IReusableByteBufferListener
 {
     private final static Logger mLog = LoggerFactory.getLogger(BinaryRecorder.class);
+    private static final int MAX_RECORDING_BYTE_SIZE = 524288;  //500 kB
 
     private ContinuousReusableBufferProcessor<ReusableByteBuffer> mBufferProcessor =
         new ContinuousReusableBufferProcessor<>(500, 50);
@@ -53,6 +54,7 @@ public class BinaryRecorder extends Module implements IReusableByteBufferListene
     private Path mBaseRecordingPath;
     private String mRecordingIdentifier;
     private BinaryWriter mBinaryWriter = new BinaryWriter();
+    private int mBytesRecordedCounter;
 
     /**
      * Constructs a binary recorder.
@@ -115,7 +117,7 @@ public class BinaryRecorder extends Module implements IReusableByteBufferListene
         StringBuilder sb = new StringBuilder();
         sb.append(TimeStamp.getTimeStamp("_"));
         sb.append("_");
-        sb.append(mRecordingIdentifier);
+        sb.append(mRecordingIdentifier.trim());
         sb.append(".bits");
 
         return mBaseRecordingPath.resolve(sb.toString());
@@ -148,22 +150,62 @@ public class BinaryRecorder extends Module implements IReusableByteBufferListene
 
         public void start(Path path) throws IOException
         {
-            mCurrentPath = path;
-            mWritableByteChannel = Files.newByteChannel(path,
-                EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.WRITE));
+            synchronized(this)
+            {
+                mCurrentPath = path;
+                mWritableByteChannel = Files.newByteChannel(path,
+                    EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.WRITE));
+                mLog.info("Binary (bitstream) recording started: " + mCurrentPath.toString());
+            }
         }
 
         public void stop() throws IOException
         {
-            if(mWritableByteChannel != null)
+            synchronized(this)
             {
-                mWritableByteChannel.close();
-            }
+                if(mWritableByteChannel != null)
+                {
+                    mWritableByteChannel.close();
+                }
 
-            mWritableByteChannel = null;
-            mCurrentPath = null;
+                mWritableByteChannel = null;
+                mCurrentPath = null;
+            }
         }
 
+        /**
+         * Closes the current recording and starts a new recording.  This method is normally used
+         * when the current recording size has reached the maximum threshold.
+         */
+        private void cycleRecording()
+        {
+            synchronized(this)
+            {
+                try
+                {
+                    if(mWritableByteChannel != null)
+                    {
+                        mWritableByteChannel.close();
+                    }
+
+                    mCurrentPath = getRecordingPath();
+                    mWritableByteChannel = Files.newByteChannel(mCurrentPath,
+                        EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.WRITE));
+                    mLog.info("Binary (bitstream) recording started: " + mCurrentPath.toString());
+                }
+                catch(IOException ioe)
+                {
+                    mLog.error("Error while cycling a max-size bit stream recorder", ioe);
+                }
+
+                mBytesRecordedCounter = 0;
+            }
+        }
+
+        /**
+         * Primary receive method for incoming byte buffers
+         * @param reusableComplexBuffers to record
+         */
         @Override
         public void receive(List<ReusableByteBuffer> reusableComplexBuffers)
         {
@@ -174,7 +216,12 @@ public class BinaryRecorder extends Module implements IReusableByteBufferListene
                     try
                     {
                         ByteBuffer byteBuffer = ByteBuffer.wrap(buffer.getSamplesCopy());
-                        mWritableByteChannel.write(byteBuffer);
+                        mBytesRecordedCounter += mWritableByteChannel.write(byteBuffer);
+
+                        if(mBytesRecordedCounter > MAX_RECORDING_BYTE_SIZE)
+                        {
+                            cycleRecording();
+                        }
                     }
                     catch(IOException ioe)
                     {

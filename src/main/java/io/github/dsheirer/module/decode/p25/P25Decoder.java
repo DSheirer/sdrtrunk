@@ -16,19 +16,26 @@
 package io.github.dsheirer.module.decode.p25;
 
 import io.github.dsheirer.alias.AliasList;
+import io.github.dsheirer.dsp.symbol.Dibit;
+import io.github.dsheirer.dsp.symbol.DibitToByteBufferAssembler;
 import io.github.dsheirer.module.decode.Decoder;
 import io.github.dsheirer.module.decode.DecoderType;
+import io.github.dsheirer.sample.Broadcaster;
 import io.github.dsheirer.sample.Listener;
+import io.github.dsheirer.sample.buffer.IReusableByteBufferProvider;
 import io.github.dsheirer.sample.buffer.IReusableComplexBufferListener;
+import io.github.dsheirer.sample.buffer.ReusableByteBuffer;
 import io.github.dsheirer.sample.buffer.ReusableComplexBuffer;
 import io.github.dsheirer.source.ISourceEventListener;
 import io.github.dsheirer.source.ISourceEventProvider;
 import io.github.dsheirer.source.SourceEvent;
 
 public abstract class P25Decoder extends Decoder implements ISourceEventListener, ISourceEventProvider,
-    IReusableComplexBufferListener, Listener<ReusableComplexBuffer>
+    IReusableComplexBufferListener, Listener<ReusableComplexBuffer>, IReusableByteBufferProvider
 {
     private double mSampleRate;
+    private Broadcaster<Dibit> mDibitBroadcaster = new Broadcaster<>();
+    private DibitToByteBufferAssembler mByteBufferAssembler = new DibitToByteBufferAssembler(300);
     private P25MessageProcessor mMessageProcessor;
     private AliasList mAliasList;
     private Listener<SourceEvent> mSourceEventListener;
@@ -40,6 +47,42 @@ public abstract class P25Decoder extends Decoder implements ISourceEventListener
         mAliasList = aliasList;
         mMessageProcessor = new P25MessageProcessor(mAliasList);
         mMessageProcessor.setMessageListener(getMessageListener());
+        mDibitBroadcaster.addListener(mByteBufferAssembler);
+    }
+
+    /**
+     * Assembler for packaging Dibit stream into reusable byte buffers.
+     */
+    protected Broadcaster<Dibit> getDibitBroadcaster()
+    {
+        return mDibitBroadcaster;
+    }
+
+    /**
+     * Implements the IByteBufferProvider interface - delegates to the byte buffer assembler
+     */
+    @Override
+    public void setBufferListener(Listener<ReusableByteBuffer> listener)
+    {
+        mByteBufferAssembler.setBufferListener(listener);
+    }
+
+    /**
+     * Implements the IByteBufferProvider interface - delegates to the byte buffer assembler
+     */
+    @Override
+    public void removeBufferListener(Listener<ReusableByteBuffer> listener)
+    {
+        mByteBufferAssembler.removeBufferListener(listener);
+    }
+
+    /**
+     * Implements the IByteBufferProvider interface - delegates to the byte buffer assembler
+     */
+    @Override
+    public boolean hasBufferListeners()
+    {
+        return mByteBufferAssembler.hasBufferListeners();
     }
 
     protected double getSymbolRate()

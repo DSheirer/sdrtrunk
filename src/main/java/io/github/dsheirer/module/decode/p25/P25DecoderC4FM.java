@@ -71,12 +71,20 @@ public class P25DecoderC4FM extends P25Decoder
 
         mQPSKDemodulator = new DQPSKDecisionDirectedDemodulator(mCostasLoop, mInterpolatingSampleBuffer);
 
+        if(mMessageFramer != null)
+        {
+            getDibitBroadcaster().removeListener(mMessageFramer);
+            mMessageFramer.dispose();
+        }
+
         //The Costas Loop receives symbol-inversion correction requests when detected.
         //The PLL gain monitor receives sync detect/loss signals from the message framer
         mMessageFramer = new P25MessageFramer(getAliasList(), mCostasLoop, mPLLGainMonitor);
         mMessageFramer.setListener(getMessageProcessor());
         mMessageFramer.setSampleRate(sampleRate);
-        mQPSKDemodulator.setSymbolListener(mMessageFramer);
+
+        mQPSKDemodulator.setSymbolListener(getDibitBroadcaster());
+        getDibitBroadcaster().addListener(mMessageFramer);
     }
 
     /**
